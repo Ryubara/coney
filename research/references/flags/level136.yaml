@@ -1,0 +1,25 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level136_run4life_init:fP1_01", level: level136, name: fP1_01, pos: [-492.5, 579.2, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP1_02", level: level136, name: fP1_02, pos: [-494.6, 579.2, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP1_03", level: level136, name: fP1_03, pos: [-497, 579.2, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP1_04", level: level136, name: fP1_04, pos: [-498.6, 579.2, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP1_05", level: level136, name: fP1_05, pos: [-500.7, 579.1, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP1_06", level: level136, name: fP1_06, pos: [-503, 579.1, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP1_07", level: level136, name: fP1_07, pos: [-505, 579.1, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP1_08", level: level136, name: fP1_08, pos: [-506.7, 579.1, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP1_09", level: level136, name: fP1_09, pos: [-508.4, 579.1, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP2_01", level: level136, name: fP2_01, pos: [-492.5, 574.4, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP2_02", level: level136, name: fP2_02, pos: [-494.3, 574.4, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP2_03", level: level136, name: fP2_03, pos: [-496.3, 574.4, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP2_04", level: level136, name: fP2_04, pos: [-497.9, 574.9, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP2_05", level: level136, name: fP2_05, pos: [-499.7, 574.9, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP2_06", level: level136, name: fP2_06, pos: [-501.6, 574.3, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP2_07", level: level136, name: fP2_07, pos: [-504.7, 574.3, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP2_08", level: level136, name: fP2_08, pos: [-506.4, 574.3, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fP2_09", level: level136, name: fP2_09, pos: [-533.8, 575.4, 16.2], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fFinish1", level: level136, name: fFinish1, pos: [-210.3, 579.2, 16.2], heading: 270, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fFinish02", level: level136, name: fFinish02, pos: [-210.3, 573.9, 16.2], heading: 270, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fRailCam1", level: level136, name: fRailCam1, pos: [-541.1, 568.3, 24.6], heading: 89, script: level136_run4life_init}
+  - {id: "level136_run4life_init:fRailCam2", level: level136, name: fRailCam2, pos: [-95, 568.3, 24.6], heading: 89, script: level136_run4life_init}

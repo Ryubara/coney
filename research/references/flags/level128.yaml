@@ -1,0 +1,46 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level128_brawl_init:fP1_1", level: level128, name: fP1_1, pos: [-175.3, 544.5, 16.2], heading: 88, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP1_2", level: level128, name: fP1_2, pos: [-175.6, 543.3, 16.2], heading: 88, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP1_3", level: level128, name: fP1_3, pos: [-175.8, 545.5, 16.2], heading: 88, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP1_4", level: level128, name: fP1_4, pos: [-176.8, 542.2, 16.2], heading: 88, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP1_5", level: level128, name: fP1_5, pos: [-177, 544.3, 16.2], heading: 88, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP1_6", level: level128, name: fP1_6, pos: [-177.1, 546.5, 16.2], heading: 88, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP1_7", level: level128, name: fP1_7, pos: [-178.1, 543, 16.2], heading: 88, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP1_8", level: level128, name: fP1_8, pos: [-178.1, 545.4, 16.2], heading: 88, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP1_9", level: level128, name: fP1_9, pos: [-178.2, 544.2, 16.2], heading: 88, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP1_10", level: level128, name: fP1_10, pos: [-178.2, 546.6, 16.2], heading: 88, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP2_1", level: level128, name: fP2_1, pos: [-170.2, 544.3, 16.1], heading: 270, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP2_2", level: level128, name: fP2_2, pos: [-169.4, 545.6, 16.1], heading: 270, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP2_3", level: level128, name: fP2_3, pos: [-169.5, 542.8, 16.1], heading: 270, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP2_4", level: level128, name: fP2_4, pos: [-168.3, 543.3, 16.1], heading: 270, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP2_5", level: level128, name: fP2_5, pos: [-168.3, 545, 16.1], heading: 270, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP2_6", level: level128, name: fP2_6, pos: [-168.6, 541.4, 16.1], heading: 270, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP2_7", level: level128, name: fP2_7, pos: [-168.2, 546.8, 16.1], heading: 270, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP2_8", level: level128, name: fP2_8, pos: [-167, 542.5, 16.1], heading: 270, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP2_9", level: level128, name: fP2_9, pos: [-167.1, 545.7, 16.1], heading: 270, script: level128_brawl_init}
+  - {id: "level128_brawl_init:fP2_10", level: level128, name: fP2_10, pos: [-167, 544.3, 16.1], heading: 270, script: level128_brawl_init}
+  - {id: "level128_survival_init:fP1_1", level: level128, name: fP1_1, pos: [-175.3, 544.5, 16.2], heading: 88, script: level128_survival_init}
+  - {id: "level128_survival_init:fP1_2", level: level128, name: fP1_2, pos: [-175.6, 543.3, 16.2], heading: 88, script: level128_survival_init}
+  - {id: "level128_survival_init:fP1_3", level: level128, name: fP1_3, pos: [-175.8, 545.5, 16.2], heading: 88, script: level128_survival_init}
+  - {id: "level128_survival_init:fP1_4", level: level128, name: fP1_4, pos: [-176.8, 542.2, 16.2], heading: 88, script: level128_survival_init}
+  - {id: "level128_survival_init:fP1_5", level: level128, name: fP1_5, pos: [-177, 544.3, 16.2], heading: 88, script: level128_survival_init}
+  - {id: "level128_survival_init:fP1_6", level: level128, name: fP1_6, pos: [-177.1, 546.5, 16.2], heading: 88, script: level128_survival_init}
+  - {id: "level128_survival_init:fP1_7", level: level128, name: fP1_7, pos: [-178.1, 543, 16.2], heading: 88, script: level128_survival_init}
+  - {id: "level128_survival_init:fP1_8", level: level128, name: fP1_8, pos: [-178.1, 545.4, 16.2], heading: 88, script: level128_survival_init}
+  - {id: "level128_survival_init:fP1_9", level: level128, name: fP1_9, pos: [-178.2, 544.2, 16.2], heading: 88, script: level128_survival_init}
+  - {id: "level128_survival_init:fP1_10", level: level128, name: fP1_10, pos: [-178.2, 546.6, 16.2], heading: 88, script: level128_survival_init}
+  - {id: "level128_survival_init:fP2_1", level: level128, name: fP2_1, pos: [-170.2, 544.3, 16.1], heading: 270, script: level128_survival_init}
+  - {id: "level128_survival_init:fP2_2", level: level128, name: fP2_2, pos: [-169.4, 545.6, 16.1], heading: 270, script: level128_survival_init}
+  - {id: "level128_survival_init:fP2_3", level: level128, name: fP2_3, pos: [-169.5, 542.8, 16.1], heading: 270, script: level128_survival_init}
+  - {id: "level128_survival_init:fP2_4", level: level128, name: fP2_4, pos: [-168.3, 543.3, 16.1], heading: 270, script: level128_survival_init}
+  - {id: "level128_survival_init:fP2_5", level: level128, name: fP2_5, pos: [-168.3, 545, 16.1], heading: 270, script: level128_survival_init}
+  - {id: "level128_survival_init:fP2_6", level: level128, name: fP2_6, pos: [-168.6, 541.4, 16.1], heading: 270, script: level128_survival_init}
+  - {id: "level128_survival_init:fP2_7", level: level128, name: fP2_7, pos: [-168.2, 546.8, 16.1], heading: 270, script: level128_survival_init}
+  - {id: "level128_survival_init:fP2_8", level: level128, name: fP2_8, pos: [-167, 542.5, 16.1], heading: 270, script: level128_survival_init}
+  - {id: "level128_survival_init:fP2_9", level: level128, name: fP2_9, pos: [-167.1, 545.7, 16.1], heading: 270, script: level128_survival_init}
+  - {id: "level128_survival_init:fP2_10", level: level128, name: fP2_10, pos: [-167, 544.3, 16.1], heading: 270, script: level128_survival_init}
+  - {id: "level128_survival_init:fExit", level: level128, name: fExit, pos: [-184.1, 565.1, 16.1], heading: 59, activity: 8, script: level128_survival_init}
+  - {id: "level128_survival_init:fExit01", level: level128, name: fExit01, pos: [-163.8, 542.7, 16.1], heading: 59, activity: 8, script: level128_survival_init}
+  - {id: "level128_survival_init:fExit02", level: level128, name: fExit02, pos: [-144.5, 546.1, 16.2], heading: 59, activity: 8, script: level128_survival_init}

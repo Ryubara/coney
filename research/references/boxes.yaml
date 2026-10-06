@@ -1,0 +1,990 @@
+# Volume boxes: a Coney game reference list. The page docs/references/boxes.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Volume boxes"
+about: |
+  The axis-aligned boxes level scripts add with `AddVolumeBox(name, kind, corner, size)` to test
+  whether humans are inside an area, switch collision and mark a gang's turf (`GangAddTurfBox`).
+  The kind picks the class: 0 a `VolumeBox`, 2 a `PlayerBox`, 3 a `TurfBox`
+  ([Tasks](../research/tasks.md#classes)).
+complete: |
+  Every `AddVolumeBox` call whose name is a literal string: 974 boxes (547 volume, 251 player and 176
+  turf boxes) in 47 levels. *Held in* and *Turf of* are filled where a script keeps the handle in a global: 64 of
+  the 87 `GangAddTurfBox` calls resolve to a box. What a player box does differently from a volume box is not
+  traced.
+defaults: {source: "the level scripts, AddVolumeBox and GangAddTurfBox", evidence: inferred}
+entries:
+  - {id: "level2:vbIntroCam_01", level: level2, name: vbIntroCam_01, kind: 2, class: PlayerBox, corner: [453.2, 197, 12.8], size: [5.9, 64, 2.9], script: level2}
+  - {id: "level2:vbIntroCam_02", level: level2, name: vbIntroCam_02, kind: 2, class: PlayerBox, corner: [458.1, 198.2, 12.3], size: [4.7, 14, 12], script: level2}
+  - {id: "level2:vbLeadRail_01", level: level2, name: vbLeadRail_01, kind: 2, class: PlayerBox, corner: [459.1, 185.2, 4.8], size: [4.7, 14, 12], script: level2}
+  - {id: "level2:vbLeadRail_02", level: level2, name: vbLeadRail_02, kind: 2, class: PlayerBox, corner: [462.8, 196.3, 12.3], size: [4.7, 14, 12], script: level2}
+  - {id: "level2:vClinicTurf", level: level2, name: vClinicTurf, kind: 3, class: TurfBox, corner: [463.9, 82.4, -0.5], size: [58.5, 32, 12.2], held_in: vClinicTurf, script: level2}
+  - {id: "level2:vMainTurf", level: level2, name: vMainTurf, kind: 3, class: TurfBox, corner: [312.9, -72.7, -1.8], size: [167.8, 143.6, 60.8], held_in: vMainTurf, script: level2}
+  - {id: "level2:vEnterTenement", level: level2, name: vEnterTenement, kind: 0, class: VolumeBox, corner: [397.2, -33, 6.1], size: [10, 8.4, 3.7], held_in: vEnterTenement, script: level2}
+  - {id: "level2:vStartWander", level: level2, name: vStartWander, kind: 0, class: VolumeBox, corner: [466.4, 7.3, -0.1], size: [6, 52, 15], held_in: vStartWander, script: level2}
+  - {id: "level2:vStartClinicTalk", level: level2, name: vStartClinicTalk, kind: 0, class: VolumeBox, corner: [470.1, 128.1, -0.3], size: [3.9, 2.5, 3.5], held_in: vStartClinicTalk, script: level2}
+  - {id: "level2:vNearClubhouse", level: level2, name: vNearClubhouse, kind: 0, class: VolumeBox, corner: [460.8, -65.9, -0.6], size: [4.9, 2.7, 5], held_in: vNearClubhouse, script: level2}
+  - {id: "level2:vJunkyardTurf", level: level2, name: vJunkyardTurf, kind: 3, class: TurfBox, corner: [357.9, 7.3, -187.4], size: [37.7, 49.3, 10], held_in: vJunkyardTurf, turf_of: [GangJunkyardBackup], script: level2}
+  - {id: "level2:vTenementTurf", level: level2, name: vTenementTurf, kind: 3, class: TurfBox, corner: [408.3, -64.9, 6.1], size: [31.8, 35.7, 10], held_in: vTenementTurf, turf_of: [GangPartyOrphans], script: level2}
+  - {id: "level2:vClubhouseTurf", level: level2, name: vClubhouseTurf, kind: 3, class: TurfBox, corner: [465.4, -82.3, -1.1], size: [39.5, 28, 10], held_in: vClubhouseTurf, script: level2}
+  - {id: "level2:vEnterStreet", level: level2, name: vEnterStreet, kind: 0, class: VolumeBox, corner: [438, 166.9, -0.2], size: [4, 4.9, 8], held_in: vEnterStreet, script: level2}
+  - {id: "level2:vJunkyardGate", level: level2, name: vJunkyardGate, kind: 0, class: VolumeBox, corner: [367.2, 13.4, 7.5], size: [1.6, 1.6, 4], held_in: vJunkyardGate, script: level2}
+  - {id: "level2:vClinicScene", level: level2, name: vClinicScene, kind: 0, class: VolumeBox, corner: [486.7, 110.4, 4.2], size: [9.2, 3.9, 7], held_in: vClinicScene, script: level2}
+  - {id: "level2:vStartWander01", level: level2, name: vStartWander01, kind: 0, class: VolumeBox, corner: [415.3, -13.3, -0.1], size: [6, 20, 15], held_in: vStartWander01, script: level2}
+  - {id: "level2:vStartPark", level: level2, name: vStartPark, kind: 0, class: VolumeBox, corner: [468.4, -0.6, -1.1], size: [20.2, 8, 15], held_in: vStartPark, script: level2}
+  - {id: "level2:vJesseScene", level: level2, name: vJesseScene, kind: 0, class: VolumeBox, corner: [474, 91.8, -0.2], size: [4, 4, 5], held_in: vJesseScene, script: level2}
+  - {id: "level2:vStartFenceDialogue", level: level2, name: vStartFenceDialogue, kind: 0, class: VolumeBox, corner: [437.8, 136.1, -0.4], size: [27.3, 6.5, 5], held_in: vStartFenceDialogue, script: level2}
+  - {id: "level2:vBumDoor", level: level2, name: vBumDoor, kind: 0, class: VolumeBox, corner: [463.4, 120.6, -0.3], size: [1.5, 2.3, 3.5], held_in: vBumDoor, script: level2}
+  - {id: "level2:vPreloadParty", level: level2, name: vPreloadParty, kind: 0, class: VolumeBox, corner: [449, -43.1, 4.4], size: [6, 5.4, 8], held_in: vPreloadParty, script: level2}
+  - {id: "level2:vClinicBumTurf", level: level2, name: vClinicBumTurf, kind: 3, class: TurfBox, corner: [464.8, 120.6, -0.7], size: [12.9, 10.2, 5.2], held_in: vClinicBumTurf, turf_of: [GangClinicBums, GangGateBum], script: level2}
+  - {id: "level2:vReachClubhouse", level: level2, name: vReachClubhouse, kind: 0, class: VolumeBox, corner: [468.4, -46.8, -0.9], size: [3.2, 5.4, 8], held_in: vReachClubhouse, script: level2}
+  - {id: "level2:vSpotDiceOrphans", level: level2, name: vSpotDiceOrphans, kind: 0, class: VolumeBox, corner: [458.9, 185, 4.6], size: [3.8, 6.9, 9], held_in: vSpotDiceOrphans, script: level2}
+  - {id: "level2:vJesseTurf1", level: level2, name: vJesseTurf1, kind: 3, class: TurfBox, corner: [302.5, -40.8, -1.7], size: [170, 110, 83], held_in: vJesseTurf1, turf_of: [GangJesse], script: level2}
+  - {id: "level2:vJesseTurf2", level: level2, name: vJesseTurf2, kind: 3, class: TurfBox, corner: [469.6, -14.3, -1.7], size: [22, 27.4, 17.3], held_in: vJesseTurf2, turf_of: [GangJesse], script: level2}
+  - {id: "level2:vbSideRail", level: level2, name: vbSideRail, kind: 2, class: PlayerBox, corner: [436.9, 180.4, 4.7], size: [28, 4.8, 3], held_in: vbSideRail, script: level2}
+  - {id: "level3:vFightTurf_02", level: level3, name: vFightTurf_02, kind: 3, class: TurfBox, corner: [-74.4, -173.3, -1], size: [15, 5.9, 4.4], script: level3}
+  - {id: "level3:vFightTurf_01", level: level3, name: vFightTurf_01, kind: 3, class: TurfBox, corner: [-57.2, -176.1, -1], size: [15.1, 8.8, 4.4], script: level3}
+  - {id: "level3:vFightTurf_03", level: level3, name: vFightTurf_03, kind: 3, class: TurfBox, corner: [-59.2, -190.9, -1], size: [19.2, 11.5, 4.4], script: level3}
+  - {id: "level3:vFixCam_01", level: level3, name: vFixCam_01, kind: 0, class: VolumeBox, corner: [-129.3, 358.7, 18.3], size: [5, 14.5, 7.1], script: level3}
+  - {id: "level3:vFixCam_02", level: level3, name: vFixCam_02, kind: 0, class: VolumeBox, corner: [-64, 357.6, 16], size: [6.2, 16.6, 10], script: level3}
+  - {id: "level3:vFixCam_11", level: level3, name: vFixCam_11, kind: 0, class: VolumeBox, corner: [-24.9, 357.9, 13.2], size: [17.6, 16, 7.1], script: level3}
+  - {id: "level3:vFixCam_9", level: level3, name: vFixCam_9, kind: 0, class: VolumeBox, corner: [19.6, 355.5, 13.2], size: [4.7, 20.8, 11.9], script: level3}
+  - {id: "level3:vFixCam_12", level: level3, name: vFixCam_12, kind: 0, class: VolumeBox, corner: [101.6, 313.7, 10.1], size: [11.9, 20.6, 11.9], script: level3}
+  - {id: "level3:vFixCam_5", level: level3, name: vFixCam_5, kind: 0, class: VolumeBox, corner: [108.5, 322.6, 12], size: [7.9, 25.9, 5.3], script: level3}
+  - {id: "level3:vFixCam_13", level: level3, name: vFixCam_13, kind: 0, class: VolumeBox, corner: [109.1, 354, 8.7], size: [12.1, 23.8, 8.6], script: level3}
+  - {id: "level3:vFixCam_14", level: level3, name: vFixCam_14, kind: 0, class: VolumeBox, corner: [-158.7, 358.7, 18.3], size: [8.1, 14.5, 7.1], script: level3}
+  - {id: "level3:vbJumpWarn_1", level: level3, name: vbJumpWarn_1, kind: 2, class: PlayerBox, corner: [-185.2, 340.9, 24.4], size: [5.4, 6, 9.3], script: level3}
+  - {id: "level3:vbJumpWarn_03", level: level3, name: vbJumpWarn_03, kind: 2, class: PlayerBox, corner: [-133.4, 359, 21], size: [4.2, 6, 9.3], script: level3}
+  - {id: "level3:vbJumpWarn_04", level: level3, name: vbJumpWarn_04, kind: 2, class: PlayerBox, corner: [-69.4, 359.6, 15.8], size: [5.4, 13, 9.3], script: level3}
+  - {id: "level3:vbJumpWarn_05", level: level3, name: vbJumpWarn_05, kind: 2, class: PlayerBox, corner: [96.2, 357.5, 16.3], size: [5.4, 16.8, 4], script: level3}
+  - {id: "level3:vbJumpWarn_06", level: level3, name: vbJumpWarn_06, kind: 2, class: PlayerBox, corner: [15.4, 363.7, 18.6], size: [4.2, 7.1, 4], script: level3}
+  - {id: "level3:vbJumpWarn_07", level: level3, name: vbJumpWarn_07, kind: 2, class: PlayerBox, corner: [58.3, 332.6, 15.7], size: [5.4, 18, 7], script: level3}
+  - {id: "level3:vbJumpWarn_08", level: level3, name: vbJumpWarn_08, kind: 2, class: PlayerBox, corner: [146.5, 360, 13], size: [4.6, 13.6, 7], script: level3}
+  - {id: "level3:vbJumpWarn_09", level: level3, name: vbJumpWarn_09, kind: 2, class: PlayerBox, corner: [188.5, 359.4, 15.8], size: [4.3, 12.9, 7], script: level3}
+  - {id: "level3:vbJumpWarn_10", level: level3, name: vbJumpWarn_10, kind: 2, class: PlayerBox, corner: [-151.9, 344.3, 19.9], size: [5.4, 4.4, 5], script: level3}
+  - {id: "level3:vbJumpWarn_12", level: level3, name: vbJumpWarn_12, kind: 2, class: PlayerBox, corner: [-101.9, 332.9, 16], size: [5.4, 11, 9.3], script: level3}
+  - {id: "level3:vbJumpWarn_13", level: level3, name: vbJumpWarn_13, kind: 2, class: PlayerBox, corner: [-90.4, 331.9, 16], size: [5.4, 11, 9.3], script: level3}
+  - {id: "level3:vbJumpWarn_14", level: level3, name: vbJumpWarn_14, kind: 2, class: PlayerBox, corner: [-37.5, 337.5, 16], size: [6, 11, 9.3], script: level3}
+  - {id: "level3:vbJumpWarn_02", level: level3, name: vbJumpWarn_02, kind: 2, class: PlayerBox, corner: [120.3, 336.6, 8.8], size: [5.4, 12.8, 7], script: level3}
+  - {id: "level3:vSideRail_01", level: level3, name: vSideRail_01, kind: 2, class: PlayerBox, corner: [-202.7, 357.3, 18.3], size: [49.8, 19, 9.3], script: level3}
+  - {id: "level3:vSideRail_02", level: level3, name: vSideRail_02, kind: 2, class: PlayerBox, corner: [-62, 357.4, 12.1], size: [38.5, 18.7, 16.4], script: level3}
+  - {id: "level3:vMainRail_05", level: level3, name: vMainRail_05, kind: 2, class: PlayerBox, corner: [-152.7, 356.9, 18.3], size: [23.1, 19.8, 9.3], script: level3}
+  - {id: "level3:vMainRail_06", level: level3, name: vMainRail_06, kind: 2, class: PlayerBox, corner: [-126, 357.4, 18.3], size: [18.4, 18.7, 9.3], script: level3}
+  - {id: "level3:vMainRail_02", level: level3, name: vMainRail_02, kind: 2, class: PlayerBox, corner: [25.7, 357.4, 15.8], size: [71.9, 18.7, 9.3], script: level3}
+  - {id: "level3:vMainRail_03", level: level3, name: vMainRail_03, kind: 2, class: PlayerBox, corner: [-8.3, 356.9, 12.9], size: [26, 18.7, 16.2], script: level3}
+  - {id: "level3:vMainRail_04", level: level3, name: vMainRail_04, kind: 2, class: PlayerBox, corner: [-256.2, 357.2, 18.3], size: [53.4, 19.2, 9.3], script: level3}
+  - {id: "level3:vTopRail_02", level: level3, name: vTopRail_02, kind: 2, class: PlayerBox, corner: [8.1, 323.7, 13.2], size: [9.2, 18.7, 9.3], script: level3}
+  - {id: "level3:vTopRail_19", level: level3, name: vTopRail_19, kind: 0, class: VolumeBox, corner: [20, 357, -41.5], size: [5.5, 18.6, 57.1], script: level3}
+  - {id: "level3:vTopRail_11", level: level3, name: vTopRail_11, kind: 0, class: VolumeBox, corner: [98.5, 357.1, -47.1], size: [14.5, 20.5, 57.1], script: level3}
+  - {id: "level3:vTopRail_12", level: level3, name: vTopRail_12, kind: 0, class: VolumeBox, corner: [144.8, 324.7, -47.6], size: [14.5, 85.3, 57.1], script: level3}
+  - {id: "level3:vTopRail_13", level: level3, name: vTopRail_13, kind: 0, class: VolumeBox, corner: [186.2, 324.7, -43.8], size: [14.5, 85.3, 57.1], script: level3}
+  - {id: "level3:vTopRail_14", level: level3, name: vTopRail_14, kind: 0, class: VolumeBox, corner: [-132.2, 324.7, -42.9], size: [14.5, 85.3, 57.1], script: level3}
+  - {id: "level3:vTopRail_15", level: level3, name: vTopRail_15, kind: 0, class: VolumeBox, corner: [-66.4, 355.9, -42.9], size: [14.5, 20.5, 57.1], script: level3}
+  - {id: "level3:vBigRail_01", level: level3, name: vBigRail_01, kind: 2, class: PlayerBox, corner: [-107.5, 357.6, 13.2], size: [44.1, 18.7, 9.3], script: level3}
+  - {id: "level3:vColKill_04", level: level3, name: vColKill_04, kind: 0, class: VolumeBox, corner: [205.1, 385.6, 5.2], size: [1.7, 1.2, 6.2], script: level3}
+  - {id: "level3:vColKill_02", level: level3, name: vColKill_02, kind: 0, class: VolumeBox, corner: [213.8, 366.9, 8.3], size: [2.1, 1.1, 6.2], script: level3}
+  - {id: "level3:vColKill_03", level: level3, name: vColKill_03, kind: 0, class: VolumeBox, corner: [215.9, 366.9, 8.3], size: [2.1, 1.1, 6.2], script: level3}
+  - {id: "level3:vColKill_01", level: level3, name: vColKill_01, kind: 0, class: VolumeBox, corner: [220.7, 388.1, 5.2], size: [1, 0.9, 6.2], script: level3}
+  - {id: "level3:vbAmbSound_01", level: level3, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [200.9, 360.8, 5], size: [30.1, 31.1, 10.7], script: level3}
+  - {id: "level3:vbAmbSound_02", level: level3, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [-33, -253, 20.7], size: [32, 21, 10.8], script: level3}
+  - {id: "level3:vTagCompTurf", level: level3, name: vTagCompTurf, kind: 3, class: TurfBox, corner: [-85, -197.6, -1], size: [44.6, 36, 12.6], held_in: vTagCompTurf, script: level3}
+  - {id: "level3:vComment", level: level3, name: vComment, kind: 0, class: VolumeBox, corner: [-116.7, -169.5, -1], size: [14.5, 21, 10.1], held_in: vComment, script: level3}
+  - {id: "level3:vGallery", level: level3, name: vGallery, kind: 0, class: VolumeBox, corner: [195.9, 356.5, 2.4], size: [32.8, 40.8, 17.6], held_in: vGallery, script: level3}
+  - {id: "level3:vDeathGallery", level: level3, name: vDeathGallery, kind: 0, class: VolumeBox, corner: [185.7, 350.2, -20.4], size: [53.1, 53.4, 17.6], held_in: vDeathGallery, script: level3}
+  - {id: "level3:vbEnterGallery", level: level3, name: vbEnterGallery, kind: 2, class: PlayerBox, corner: [200.8, 355.8, 11.8], size: [8, 24.9, 11], held_in: vbEnterGallery, script: level3}
+  - {id: "level3:vbStartRail", level: level3, name: vbStartRail, kind: 2, class: PlayerBox, corner: [-260.5, 357.4, 18.3], size: [4.4, 18.7, 9.3], held_in: vbStartRail, script: level3}
+  - {id: "level3:vbSpawnMidCut", level: level3, name: vbSpawnMidCut, kind: 2, class: PlayerBox, corner: [26.1, 317.8, 15.2], size: [6, 16, 10], held_in: vbSpawnMidCut, script: level3}
+  - {id: "level3:vbObjBox", level: level3, name: vbObjBox, kind: 2, class: PlayerBox, corner: [57.8, 315.5, 13.9], size: [10, 18, 10], held_in: vbObjBox, script: level3}
+  - {id: "level3:vbWarrRegroup", level: level3, name: vbWarrRegroup, kind: 2, class: PlayerBox, corner: [26.1, 315.2, 13.5], size: [45.6, 19.4, 11.3], held_in: vbWarrRegroup, script: level3}
+  - {id: "level3:vbStopRunning", level: level3, name: vbStopRunning, kind: 0, class: VolumeBox, corner: [202.8, 360.5, 13.7], size: [5.4, 10, 7], held_in: vbStopRunning, script: level3}
+  - {id: "level3:vChaseKill", level: level3, name: vChaseKill, kind: 0, class: VolumeBox, corner: [-163.4, 324.7, -54.9], size: [363.5, 85.3, 63.9], held_in: vChaseKill, script: level3}
+  - {id: "level3:vLeaveCam", level: level3, name: vLeaveCam, kind: 0, class: VolumeBox, corner: [-72.7, -187.5, -1], size: [12.8, 20.9, 8.6], held_in: vLeaveCam, script: level3}
+  - {id: "level3:vChattersbox", level: level3, name: vChattersbox, kind: 0, class: VolumeBox, corner: [-82.1, -182.7, 4.1], size: [2.7, 15.1, 8.6], held_in: vChattersbox, script: level3}
+  - {id: "level5:volCar_01", level: level5, name: volCar_01, kind: 0, class: VolumeBox, corner: [-115.6, -182, -1], size: [30, 20, 10], script: level5}
+  - {id: "level5:volCar_02", level: level5, name: volCar_02, kind: 0, class: VolumeBox, corner: [-115.6, -190.8, -1], size: [30, 50, 10], script: level5}
+  - {id: "level5:volSanRun1_01", level: level5, name: volSanRun1_01, kind: 0, class: VolumeBox, corner: [30.1, 5.2, -1], size: [20, 10, 6], script: level5}
+  - {id: "level5:volSanRun1_02", level: level5, name: volSanRun1_02, kind: 0, class: VolumeBox, corner: [38.6, 41.4, -1], size: [10, 4, 6], script: level5}
+  - {id: "level5:volSanRun1_03", level: level5, name: volSanRun1_03, kind: 0, class: VolumeBox, corner: [37.9, 45.3, -1], size: [16, 10, 10], script: level5}
+  - {id: "level5:volSanRun2_02", level: level5, name: volSanRun2_02, kind: 0, class: VolumeBox, corner: [120, 55.4, -1], size: [10, 30, 6], script: level5}
+  - {id: "level5:volSanRun2_03", level: level5, name: volSanRun2_03, kind: 0, class: VolumeBox, corner: [180.3, 119.4, -1], size: [10, 6, 6], script: level5}
+  - {id: "level5:volSanRun2_01", level: level5, name: volSanRun2_01, kind: 0, class: VolumeBox, corner: [133.2, 23.8, -1], size: [16, 18, 6], script: level5}
+  - {id: "level5:volFightPit_01", level: level5, name: volFightPit_01, kind: 0, class: VolumeBox, corner: [179.2, 141.7, -1.3], size: [10, 20, 6], script: level5}
+  - {id: "level5:volFightPit_02", level: level5, name: volFightPit_02, kind: 0, class: VolumeBox, corner: [182.2, 160.4, -2.3], size: [8, 10, 6], script: level5}
+  - {id: "level5:volFightPit_03", level: level5, name: volFightPit_03, kind: 0, class: VolumeBox, corner: [216.7, 153.1, 4.5], size: [8, 8, 6], script: level5}
+  - {id: "level5:volSanEnd_01", level: level5, name: volSanEnd_01, kind: 0, class: VolumeBox, corner: [106.1, 15.1, -1], size: [6, 10, 6], script: level5}
+  - {id: "level5:volFightF1_01", level: level5, name: volFightF1_01, kind: 0, class: VolumeBox, corner: [75.1, 19.5, -1], size: [10, 6, 6], script: level5}
+  - {id: "level5:volSanWarp_01", level: level5, name: volSanWarp_01, kind: 0, class: VolumeBox, corner: [68.4, 43.2, -1], size: [6, 6, 6], script: level5}
+  - {id: "level5:volSanWarp_02", level: level5, name: volSanWarp_02, kind: 0, class: VolumeBox, corner: [128, 45.2, 2.5], size: [12, 6, 6], script: level5}
+  - {id: "level5:volSanWarp_03", level: level5, name: volSanWarp_03, kind: 0, class: VolumeBox, corner: [166.3, 119.6, -1], size: [6, 6, 6], script: level5}
+  - {id: "level5:volSanWarp_04", level: level5, name: volSanWarp_04, kind: 0, class: VolumeBox, corner: [180, 127.6, -1], size: [6, 6, 6], script: level5}
+  - {id: "level5:volSanWarp_05", level: level5, name: volSanWarp_05, kind: 0, class: VolumeBox, corner: [86.2, 170.2, -1], size: [6, 6, 6], script: level5}
+  - {id: "level5:volSanWarp_08", level: level5, name: volSanWarp_08, kind: 0, class: VolumeBox, corner: [111.9, 224.2, -0.5], size: [12, 6, 6], script: level5}
+  - {id: "level5:volSanRun3_03", level: level5, name: volSanRun3_03, kind: 0, class: VolumeBox, corner: [92.2, 172.1, -1], size: [11, 8, 6], script: level5}
+  - {id: "level5:volSanRun3_02", level: level5, name: volSanRun3_02, kind: 0, class: VolumeBox, corner: [122.7, 174.1, -0.9], size: [16, 12, 12], script: level5}
+  - {id: "level5:volFixCam_01", level: level5, name: volFixCam_01, kind: 0, class: VolumeBox, corner: [111.9, 219.7, 3.4], size: [12, 4, 13], script: level5}
+  - {id: "level5:volSanGo_01", level: level5, name: volSanGo_01, kind: 0, class: VolumeBox, corner: [155.8, 140, 4.1], size: [16, 12, 6], script: level5}
+  - {id: "level5:volSanGo_02", level: level5, name: volSanGo_02, kind: 0, class: VolumeBox, corner: [138.6, 146.6, -0.9], size: [16, 16, 4], script: level5}
+  - {id: "level5:volBackTimerOn_02", level: level5, name: volBackTimerOn_02, kind: 0, class: VolumeBox, corner: [179, 125, -1], size: [8, 8, 8], script: level5}
+  - {id: "level5:volBackTimerOn_01", level: level5, name: volBackTimerOn_01, kind: 0, class: VolumeBox, corner: [58.3, 35.1, -1], size: [8, 8, 8], script: level5}
+  - {id: "level5:volBackTimerOff_02", level: level5, name: volBackTimerOff_02, kind: 0, class: VolumeBox, corner: [179.1, 140.3, -1.3], size: [8, 8, 6], script: level5}
+  - {id: "level5:volBackTimerOff_01", level: level5, name: volBackTimerOff_01, kind: 0, class: VolumeBox, corner: [67, 18.3, -1.3], size: [8, 8, 6], script: level5}
+  - {id: "level5:vbAmbSound_01", level: level5, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [130.8, 99.4, -0.1], size: [11.3, 9.7, 3.5], script: level5}
+  - {id: "level5:vbAmbSound_07", level: level5, name: vbAmbSound_07, kind: 2, class: PlayerBox, corner: [-36.8, -148.2, -200], size: [32.8, 30.2, 10], script: level5}
+  - {id: "level5:vbAmbSound_03", level: level5, name: vbAmbSound_03, kind: 2, class: PlayerBox, corner: [-9.7, -14.7, -0.1], size: [10, 8, 3.5], script: level5}
+  - {id: "level5:vbAmbSound_04", level: level5, name: vbAmbSound_04, kind: 2, class: PlayerBox, corner: [161.8, 120, -0.1], size: [26.9, 20, 3.5], script: level5}
+  - {id: "level5:vbAmbSound_05", level: level5, name: vbAmbSound_05, kind: 2, class: PlayerBox, corner: [32.5, 210.3, -0.1], size: [36.4, 32.3, 16.5], script: level5}
+  - {id: "level5:vbAmbSound_06", level: level5, name: vbAmbSound_06, kind: 2, class: PlayerBox, corner: [25.2, 220.2, -0.1], size: [10, 5, 7], script: level5}
+  - {id: "level5:vbAmbSound_02", level: level5, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [-9.8, -9.9, -0.1], size: [29.1, 24.6, 3.5], script: level5}
+  - {id: "level5:turfBar", level: level5, name: turfBar, kind: 3, class: TurfBox, corner: [-9.9, -29.3, -201], size: [40, 50, 10], held_in: turfBar, script: level5}
+  - {id: "level5:turfHurF1", level: level5, name: turfHurF1, kind: 3, class: TurfBox, corner: [22.8, -7.2, -1], size: [100, 70, 10], held_in: turfHurF1, script: level5}
+  - {id: "level5:turfFight04", level: level5, name: turfFight04, kind: 3, class: TurfBox, corner: [153.1, 140.4, -2.4], size: [40, 30, 12.1], held_in: turfFight04, script: level5}
+  - {id: "level5:turfCar01", level: level5, name: turfCar01, kind: 3, class: TurfBox, corner: [-138.2, -227.2, -1], size: [120, 120, 10], held_in: turfCar01, script: level5}
+  - {id: "level5:volStartHouse", level: level5, name: volStartHouse, kind: 0, class: VolumeBox, corner: [54.2, 190.4, -1], size: [16, 12, 6], held_in: volStartHouse, script: level5}
+  - {id: "level5:volSanDoor01", level: level5, name: volSanDoor01, kind: 0, class: VolumeBox, corner: [129, 13.3, -1], size: [12, 24, 10], held_in: volSanDoor01, script: level5}
+  - {id: "level5:volStartSanRun2", level: level5, name: volStartSanRun2, kind: 0, class: VolumeBox, corner: [104.1, 15, -0.5], size: [10, 10, 6], held_in: volStartSanRun2, script: level5}
+  - {id: "level5:turfCar02", level: level5, name: turfCar02, kind: 3, class: TurfBox, corner: [-139.5, -133, -1], size: [50, 70, 10], held_in: turfCar02, script: level5}
+  - {id: "level5:volPhoneGuy2", level: level5, name: volPhoneGuy2, kind: 0, class: VolumeBox, corner: [-89.3, -132.6, -0.7], size: [12, 24, 6], held_in: volPhoneGuy2, script: level5}
+  - {id: "level5:volObjective01", level: level5, name: volObjective01, kind: 0, class: VolumeBox, corner: [-61.3, -82, -1], size: [6, 6, 6], held_in: volObjective01, script: level5}
+  - {id: "level5:vAdvCombat", level: level5, name: vAdvCombat, kind: 0, class: VolumeBox, corner: [-89.6, -100.4, -1], size: [6, 6, 6], held_in: vAdvCombat, script: level5}
+  - {id: "level5:volSpawnStreet2", level: level5, name: volSpawnStreet2, kind: 0, class: VolumeBox, corner: [-64.6, -180.7, -2.5], size: [10, 20, 10], held_in: volSpawnStreet2, script: level5}
+  - {id: "level9:vbTrainTurf_01", level: level9, name: vbTrainTurf_01, kind: 3, class: TurfBox, corner: [-175.8, 198.8, -6.3], size: [320, 155.2, 45], script: level9}
+  - {id: "level9:vbMainCam_1", level: level9, name: vbMainCam_1, kind: 2, class: PlayerBox, corner: [79.2, 258.3, -0.5], size: [6, 6, 7.5], script: level9}
+  - {id: "level9:vbMainCam_2", level: level9, name: vbMainCam_2, kind: 2, class: PlayerBox, corner: [56.1, 280.2, -0.5], size: [6, 6, 7.5], script: level9}
+  - {id: "level9:vbInTrain_1", level: level9, name: vbInTrain_1, kind: 2, class: PlayerBox, corner: [76.5, 263.5, 0.6], size: [2.7, 15.6, 1.8], script: level9}
+  - {id: "level9:vbInTrain_02", level: level9, name: vbInTrain_02, kind: 2, class: PlayerBox, corner: [66.1, 279.6, 0.6], size: [2.7, 8, 1.8], script: level9}
+  - {id: "level9:vbInTrain_03", level: level9, name: vbInTrain_03, kind: 2, class: PlayerBox, corner: [61.4, 282.2, 0.6], size: [2.7, 8.4, 1.8], script: level9}
+  - {id: "level9:vbFirstMoonTurf_01", level: level9, name: vbFirstMoonTurf_01, kind: 3, class: TurfBox, corner: [94.4, 251.1, -0.5], size: [34, 48, 10], script: level9}
+  - {id: "level9:vbFirstMoonTurf_02", level: level9, name: vbFirstMoonTurf_02, kind: 3, class: TurfBox, corner: [48.6, 282, -0.5], size: [34, 48, 10], script: level9}
+  - {id: "level9:vbFirstMoonTurf_03", level: level9, name: vbFirstMoonTurf_03, kind: 3, class: TurfBox, corner: [66, 273, -0.5], size: [35, 48, 10], script: level9}
+  - {id: "level9:vbFinalObj_01", level: level9, name: vbFinalObj_01, kind: 0, class: VolumeBox, corner: [65.2, 320.5, 2.1], size: [27, 13.8, 6.9], script: level9}
+  - {id: "level9:vbFinalObj_02", level: level9, name: vbFinalObj_02, kind: 0, class: VolumeBox, corner: [37.7, 360.3, 2.1], size: [80, 20, 6.9], script: level9}
+  - {id: "level9:vbPlatMoonSpawn", level: level9, name: vbPlatMoonSpawn, kind: 2, class: PlayerBox, corner: [-101.5, 284.2, -4.8], size: [60, 40, 20], held_in: vbPlatMoonSpawn, script: level9}
+  - {id: "level9:vbTriggerBeast", level: level9, name: vbTriggerBeast, kind: 2, class: PlayerBox, corner: [59.1, 285.4, -0.5], size: [4.5, 3, 7.5], held_in: vbTriggerBeast, script: level9}
+  - {id: "level9:vbTriggerArrest", level: level9, name: vbTriggerArrest, kind: 2, class: PlayerBox, corner: [51.1, 270.9, -0.7], size: [5, 15, 7.5], held_in: vbTriggerArrest, script: level9}
+  - {id: "level9:vbFirstMoon", level: level9, name: vbFirstMoon, kind: 2, class: PlayerBox, corner: [85, 280.7, -1.3], size: [16, 16, 6.9], held_in: vbFirstMoon, script: level9}
+  - {id: "level9:vbTrainShack", level: level9, name: vbTrainShack, kind: 0, class: VolumeBox, corner: [-39.9, 262.4, 0], size: [23.8, 5.5, 2.7], held_in: vbTrainShack, script: level9}
+  - {id: "level9:vbCutscene2", level: level9, name: vbCutscene2, kind: 2, class: PlayerBox, corner: [53, 306, 1.4], size: [14, 11, 7], held_in: vbCutscene2, script: level9}
+  - {id: "level9:vbG7Turf", level: level9, name: vbG7Turf, kind: 3, class: TurfBox, corner: [-1.9, 260.4, -2], size: [23, 15, 6.7], held_in: vbG7Turf, turf_of: [GangG7], script: level9}
+  - {id: "level9:vbWalkUp", level: level9, name: vbWalkUp, kind: 2, class: PlayerBox, corner: [58.9, 309.3, 1.4], size: [9.5, 9.5, 7], held_in: vbWalkUp, script: level9}
+  - {id: "level9:vbStopArrest", level: level9, name: vbStopArrest, kind: 2, class: PlayerBox, corner: [54.5, 240.9, -0.7], size: [5, 26, 7.5], held_in: vbStopArrest, script: level9}
+  - {id: "level9:vbBeastCam", level: level9, name: vbBeastCam, kind: 2, class: PlayerBox, corner: [62, 283.7, -0.5], size: [6, 3, 7.5], held_in: vbBeastCam, script: level9}
+  - {id: "level9:vbG7Toggle", level: level9, name: vbG7Toggle, kind: 2, class: PlayerBox, corner: [-1.9, 260.4, -2], size: [23, 15, 6.7], held_in: vbG7Toggle, script: level9}
+  - {id: "level9:vbSpawnRoofToss", level: level9, name: vbSpawnRoofToss, kind: 2, class: PlayerBox, corner: [18.6, 275.5, -0.5], size: [2.4, 14, 4], held_in: vbSpawnRoofToss, script: level9}
+  - {id: "level9:vbArriveObj", level: level9, name: vbArriveObj, kind: 2, class: PlayerBox, corner: [62.7, 313.8, 1.4], size: [6, 4, 7], held_in: vbArriveObj, script: level9}
+  - {id: "level9:vbTagTutorial", level: level9, name: vbTagTutorial, kind: 2, class: PlayerBox, corner: [62.6, 299.6, -0.2], size: [7.8, 6.3, 3.2], held_in: vbTagTutorial, script: level9}
+  - {id: "level9:vbRestOfYard", level: level9, name: vbRestOfYard, kind: 2, class: PlayerBox, corner: [79.7, 263, 0.4], size: [1.7, 4, 4], held_in: vbRestOfYard, script: level9}
+  - {id: "level9:vbRadioObj", level: level9, name: vbRadioObj, kind: 2, class: PlayerBox, corner: [6.2, 271.3, -1.6], size: [4.7, 4, 4], held_in: vbRadioObj, script: level9}
+  - {id: "level9:vbTriggRoofDrop", level: level9, name: vbTriggRoofDrop, kind: 2, class: PlayerBox, corner: [29.4, 275.1, -0.7], size: [2.4, 6, 4], held_in: vbTriggRoofDrop, script: level9}
+  - {id: "level9:vbMoon1Turf", level: level9, name: vbMoon1Turf, kind: 3, class: TurfBox, corner: [-188.8, 295.7, -2.3], size: [199.7, 60, 14], held_in: vbMoon1Turf, script: level9}
+  - {id: "level9:vbMoon3Turf", level: level9, name: vbMoon3Turf, kind: 3, class: TurfBox, corner: [-113.6, 243, -2.3], size: [170, 44, 14], held_in: vbMoon3Turf, script: level9}
+  - {id: "level9:vbCopsOn", level: level9, name: vbCopsOn, kind: 2, class: PlayerBox, corner: [-11.4, 235.2, -0.1], size: [4.4, 90.3, 15], held_in: vbCopsOn, script: level9}
+  - {id: "level9:vbFoxOnRoof", level: level9, name: vbFoxOnRoof, kind: 2, class: PlayerBox, corner: [-134.2, 287.2, 5.9], size: [20.5, 14, 7], held_in: vbFoxOnRoof, script: level9}
+  - {id: "level9:vbCanRemSpeak", level: level9, name: vbCanRemSpeak, kind: 2, class: PlayerBox, corner: [21.2, 260.7, -0.3], size: [9.9, 9.9, 5], held_in: vbCanRemSpeak, script: level9}
+  - {id: "level9:vbFogAmbient", level: level9, name: vbFogAmbient, kind: 2, class: PlayerBox, corner: [63.9, 315.6, 0], size: [24.2, 96, 10], held_in: vbFogAmbient, script: level9}
+  - {id: "level11:turfBopStreet_05", level: level11, name: turfBopStreet_05, kind: 3, class: TurfBox, corner: [-112.9, -74.4, -7], size: [60, 70, 25], script: level11}
+  - {id: "level11:turfBopStreet_03", level: level11, name: turfBopStreet_03, kind: 3, class: TurfBox, corner: [-14.1, -130.4, -7], size: [30, 70, 25], script: level11}
+  - {id: "level11:turfBopStreet_02", level: level11, name: turfBopStreet_02, kind: 3, class: TurfBox, corner: [-13.2, -8, -7], size: [30, 90, 25], script: level11}
+  - {id: "level11:turfBopStreet_04", level: level11, name: turfBopStreet_04, kind: 3, class: TurfBox, corner: [104.6, -52.7, -7], size: [46, 50, 25], script: level11}
+  - {id: "level11:turfBopStreet_01", level: level11, name: turfBopStreet_01, kind: 3, class: TurfBox, corner: [22.4, -5.3, -7], size: [90, 40, 25], script: level11}
+  - {id: "level11:turfBopStreet_06", level: level11, name: turfBopStreet_06, kind: 3, class: TurfBox, corner: [44.2, -95.7, -1.3], size: [20, 20, 10], script: level11}
+  - {id: "level11:turfBopStreet_07", level: level11, name: turfBopStreet_07, kind: 3, class: TurfBox, corner: [-75.6, 4, -7], size: [70, 52, 25], script: level11}
+  - {id: "level11:volBarBT_01", level: level11, name: volBarBT_01, kind: 2, class: PlayerBox, corner: [-10.7, 48.6, -200], size: [6, 8, 6], script: level11}
+  - {id: "level11:volBarBT_02", level: level11, name: volBarBT_02, kind: 2, class: PlayerBox, corner: [-42.5, -55.7, -1], size: [6, 10, 6], script: level11}
+  - {id: "level11:volBarBT_03", level: level11, name: volBarBT_03, kind: 2, class: PlayerBox, corner: [122.3, -74.7, 1.1], size: [4, 8, 6], script: level11}
+  - {id: "level11:volStriper_03", level: level11, name: volStriper_03, kind: 0, class: VolumeBox, corner: [135.3, -78, 0], size: [6, 6, 6], script: level11}
+  - {id: "level11:volStriper_02", level: level11, name: volStriper_02, kind: 0, class: VolumeBox, corner: [128.4, -77, 0], size: [6, 6, 6], script: level11}
+  - {id: "level11:volStriper_01", level: level11, name: volStriper_01, kind: 0, class: VolumeBox, corner: [121.3, -96.3, 0], size: [6, 8, 6], script: level11}
+  - {id: "level11:volStriper_04", level: level11, name: volStriper_04, kind: 0, class: VolumeBox, corner: [128.4, -83.1, 0], size: [6, 6, 6], script: level11}
+  - {id: "level11:turfBar2", level: level11, name: turfBar2, kind: 3, class: TurfBox, corner: [-72.5, -103.1, -7], size: [54, 74, 25], held_in: turfBar2, script: level11}
+  - {id: "level11:volBar3Inside", level: level11, name: volBar3Inside, kind: 2, class: PlayerBox, corner: [131.7, -57.1, 0.2], size: [4, 4, 6], held_in: volBar3Inside, script: level11}
+  - {id: "level11:turfBar3", level: level11, name: turfBar3, kind: 3, class: TurfBox, corner: [114.5, -103.1, 0.2], size: [30, 50, 10], held_in: turfBar3, script: level11}
+  - {id: "level11:turfTenderB2", level: level11, name: turfTenderB2, kind: 3, class: TurfBox, corner: [-53, -51.4, -7], size: [30, 22, 25], held_in: turfTenderB2, script: level11}
+  - {id: "level11:turfB2Final", level: level11, name: turfB2Final, kind: 3, class: TurfBox, corner: [12.2, -128.6, -7], size: [40, 40.4, 25], held_in: turfB2Final, script: level11}
+  - {id: "level11:turfBar1", level: level11, name: turfBar1, kind: 3, class: TurfBox, corner: [-32.7, 36.8, -200.7], size: [30, 30, 25], held_in: turfBar1, script: level11}
+  - {id: "level11:turfPit", level: level11, name: turfPit, kind: 3, class: TurfBox, corner: [56.4, -116.2, -7], size: [50, 80, 25], held_in: turfPit, script: level11}
+  - {id: "level11:volBopIntro", level: level11, name: volBopIntro, kind: 0, class: VolumeBox, corner: [126.5, -12.5, -0.3], size: [12, 16, 6], held_in: volBopIntro, script: level11}
+  - {id: "level11:volRoman", level: level11, name: volRoman, kind: 0, class: VolumeBox, corner: [-3.2, 23.5, -0.9], size: [20, 20, 6], held_in: volRoman, script: level11}
+  - {id: "level11:volRVandal", level: level11, name: volRVandal, kind: 0, class: VolumeBox, corner: [-32, 37.3, -200.8], size: [28.6, 28.7, 20], held_in: volRVandal, script: level11}
+  - {id: "level11:turfC1Bops", level: level11, name: turfC1Bops, kind: 3, class: TurfBox, corner: [67.2, -45.2, -7], size: [90, 74, 25], held_in: turfC1Bops, script: level11}
+  - {id: "level11:volPoolHall", level: level11, name: volPoolHall, kind: 0, class: VolumeBox, corner: [-72.7, -29.2, -0.9], size: [20, 20, 6], held_in: volPoolHall, script: level11}
+  - {id: "level11:turfPoolBar", level: level11, name: turfPoolBar, kind: 3, class: TurfBox, corner: [-40.6, -58.1, -1], size: [3, 10, 6], held_in: turfPoolBar, script: level11}
+  - {id: "level11:turfRomanBar02", level: level11, name: turfRomanBar02, kind: 3, class: TurfBox, corner: [-21.5, 42.5, -200.1], size: [18, 12, 5], held_in: turfRomanBar02, script: level11}
+  - {id: "level11:turfRomanBar03", level: level11, name: turfRomanBar03, kind: 3, class: TurfBox, corner: [-32, 41.7, -200.1], size: [10, 16, 5], held_in: turfRomanBar03, script: level11}
+  - {id: "level11:turfRomanBar04", level: level11, name: turfRomanBar04, kind: 3, class: TurfBox, corner: [-30.6, 36.5, -200.1], size: [16, 6, 5], held_in: turfRomanBar04, script: level11}
+  - {id: "level11:volRomanUpper", level: level11, name: volRomanUpper, kind: 0, class: VolumeBox, corner: [-20.8, 56.7, -197.4], size: [13.9, 8.7, 6], held_in: volRomanUpper, script: level11}
+  - {id: "level11:volObjStrip", level: level11, name: volObjStrip, kind: 2, class: PlayerBox, corner: [131.8, -54, 0.2], size: [4, 4, 6], held_in: volObjStrip, script: level11}
+  - {id: "level11:volSeeBoppers", level: level11, name: volSeeBoppers, kind: 0, class: VolumeBox, corner: [48.1, -5.1, -0.9], size: [20, 20, 6], held_in: volSeeBoppers, script: level11}
+  - {id: "level11:turfPoolBar01", level: level11, name: turfPoolBar01, kind: 3, class: TurfBox, corner: [-49.1, -55.2, -1], size: [22, 30, 6], held_in: turfPoolBar01, script: level11}
+  - {id: "level14:wStoreCam_Electronic", level: level14, name: wStoreCam_Electronic, kind: 0, class: VolumeBox, corner: [-147.6, 33.8, -1], size: [10, 11.5, 4.3], script: level14}
+  - {id: "level14:wStoreCam_Jewellry2", level: level14, name: wStoreCam_Jewellry2, kind: 0, class: VolumeBox, corner: [-147.2, 3.9, -1], size: [9.4, 11.1, 4.3], script: level14}
+  - {id: "level14:wStoreCam_Jewellry1", level: level14, name: wStoreCam_Jewellry1, kind: 0, class: VolumeBox, corner: [-117.1, 9.1, -1], size: [9.4, 11.1, 4.3], script: level14}
+  - {id: "level14:wStoreCam_Liquor", level: level14, name: wStoreCam_Liquor, kind: 0, class: VolumeBox, corner: [-24.2, -22.8, -1], size: [9.6, 11.2, 4.3], script: level14}
+  - {id: "level14:wStoreCam_Pharmacy", level: level14, name: wStoreCam_Pharmacy, kind: 0, class: VolumeBox, corner: [4.1, -7.7, -1], size: [9.4, 11.1, 4.3], script: level14}
+  - {id: "level14:wStoreCam_Electronic2", level: level14, name: wStoreCam_Electronic2, kind: 0, class: VolumeBox, corner: [-153.6, 33.9, -1], size: [6.7, 11.5, 4.3], script: level14}
+  - {id: "level14:vbAmbSound_01", level: level14, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [-147.5, 33.9, -0.1], size: [9.9, 11.7, 3.5], script: level14}
+  - {id: "level14:vbAmbSound_02", level: level14, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [-147.5, 3.8, -0.1], size: [9.9, 11.7, 3.5], script: level14}
+  - {id: "level14:vbAmbSound_03", level: level14, name: vbAmbSound_03, kind: 2, class: PlayerBox, corner: [-117.4, 8.8, -0.1], size: [9.9, 11.7, 3.5], script: level14}
+  - {id: "level14:vbAmbSound_04", level: level14, name: vbAmbSound_04, kind: 2, class: PlayerBox, corner: [-25.6, 32, -0.1], size: [9.9, 11.7, 3.5], script: level14}
+  - {id: "level14:vbAmbSound_05", level: level14, name: vbAmbSound_05, kind: 2, class: PlayerBox, corner: [-24.3, -22.9, -0.1], size: [9.9, 11.7, 3.5], script: level14}
+  - {id: "level14:vbAmbSound_06", level: level14, name: vbAmbSound_06, kind: 2, class: PlayerBox, corner: [3.9, -8, -0.1], size: [9.9, 11.7, 3.5], script: level14}
+  - {id: "level14:vbAmbSound_07", level: level14, name: vbAmbSound_07, kind: 2, class: PlayerBox, corner: [-50.2, -33.4, -198], size: [60, 60, 20], script: level14}
+  - {id: "level14:vbAmbSound_08", level: level14, name: vbAmbSound_08, kind: 2, class: PlayerBox, corner: [-72.4, 8.9, 2.4], size: [13, 21, 3.5], script: level14}
+  - {id: "level14:vbAmbSound_09", level: level14, name: vbAmbSound_09, kind: 2, class: PlayerBox, corner: [-74.8, 51.7, -0.6], size: [12.2, 20, 7.5], script: level14}
+  - {id: "level14:vbAmbSound_10", level: level14, name: vbAmbSound_10, kind: 2, class: PlayerBox, corner: [-69.9, 47.6, -0.6], size: [7.4, 6, 7.5], script: level14}
+  - {id: "level14:vSecurityTurf", level: level14, name: vSecurityTurf, kind: 3, class: TurfBox, corner: [-158.9, -51.8, -1], size: [34.8, 30.8, 17.5], held_in: vSecurityTurf, script: level14}
+  - {id: "level14:vClubhouse", level: level14, name: vClubhouse, kind: 0, class: VolumeBox, corner: [-101.5, 48.5, -4], size: [27.7, 27.1, 10.1], held_in: vClubhouse, script: level14}
+  - {id: "level14:vJSBTurf", level: level14, name: vJSBTurf, kind: 3, class: TurfBox, corner: [-96, 47.9, -3.5], size: [32.3, 27.3, 10.1], held_in: vJSBTurf, script: level14}
+  - {id: "level14:vBumTurf", level: level14, name: vBumTurf, kind: 3, class: TurfBox, corner: [-95, 56.7, -3.5], size: [20.5, 19.9, 10.1], held_in: vBumTurf, script: level14}
+  - {id: "level14:vJSBTurf01", level: level14, name: vJSBTurf01, kind: 3, class: TurfBox, corner: [-81.7, 40.8, -0.1], size: [20.9, 11.3, 10.1], held_in: vJSBTurf01, script: level14}
+  - {id: "level14:vEndMission", level: level14, name: vEndMission, kind: 0, class: VolumeBox, corner: [-65.9, 37.9, -3], size: [21.8, 11.2, 10.1], held_in: vEndMission, script: level14}
+  - {id: "level14:vCourtyard", level: level14, name: vCourtyard, kind: 0, class: VolumeBox, corner: [-96.5, 56.8, -3.5], size: [20.5, 19.9, 10.1], held_in: vCourtyard, script: level14}
+  - {id: "level14:vTDTurf", level: level14, name: vTDTurf, kind: 3, class: TurfBox, corner: [9.5, 45, -1], size: [32.3, 29.9, 14.7], held_in: vTDTurf, script: level14}
+  - {id: "level14:vPartyTurf", level: level14, name: vPartyTurf, kind: 3, class: TurfBox, corner: [-172.7, 39, -1], size: [28.8, 26.4, 19.9], held_in: vPartyTurf, script: level14}
+  - {id: "level14:vAptTurf", level: level14, name: vAptTurf, kind: 3, class: TurfBox, corner: [-80.9, 7.6, -4.1], size: [24.1, 33, 15.1], held_in: vAptTurf, script: level14}
+  - {id: "level14:vToolTurf02", level: level14, name: vToolTurf02, kind: 3, class: TurfBox, corner: [-116.6, 21, -1], size: [24.1, 25.3, 10.6], held_in: vToolTurf02, script: level14}
+  - {id: "level14:vToolTurf01", level: level14, name: vToolTurf01, kind: 3, class: TurfBox, corner: [-80.3, -23.2, -3.9], size: [24.1, 25.3, 10.6], held_in: vToolTurf01, script: level14}
+  - {id: "level20:vStreetStall_03", level: level20, name: vStreetStall_03, kind: 0, class: VolumeBox, corner: [352.8, -95.6, 0], size: [1.1, 1.1, 3], script: level20}
+  - {id: "level20:vStreetStall_02", level: level20, name: vStreetStall_02, kind: 0, class: VolumeBox, corner: [322, -178, -0.1], size: [1.1, 1.1, 3], script: level20}
+  - {id: "level20:vStreetStall_01", level: level20, name: vStreetStall_01, kind: 0, class: VolumeBox, corner: [289.7, -159.3, -0.1], size: [1.1, 1.1, 3], script: level20}
+  - {id: "level20:vMark_01", level: level20, name: vMark_01, kind: 3, class: TurfBox, corner: [516.3, 69.4, -0.4], size: [14, 12, 5], script: level20}
+  - {id: "level20:vMark_02", level: level20, name: vMark_02, kind: 3, class: TurfBox, corner: [523.6, 55.4, -0.4], size: [8, 14, 5], script: level20}
+  - {id: "level20:vMark_03", level: level20, name: vMark_03, kind: 3, class: TurfBox, corner: [522.6, 62.1, -0.4], size: [9, 14, 5], script: level20}
+  - {id: "level20:vbAmbSound_01", level: level20, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [261.2, -127.6, -0.1], size: [13, 11.4, 3.5], script: level20}
+  - {id: "level20:vbAmbSound_02", level: level20, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [358.9, -110.2, -0.1], size: [15.1, 11.4, 3.5], script: level20}
+  - {id: "level20:vbAmbSound_03", level: level20, name: vbAmbSound_03, kind: 2, class: PlayerBox, corner: [367.3, -39.2, -0.1], size: [9.9, 11.4, 3.5], script: level20}
+  - {id: "level20:vbAmbSound_04", level: level20, name: vbAmbSound_04, kind: 2, class: PlayerBox, corner: [407.2, 25.1, -0.1], size: [9.9, 11.4, 3.5], script: level20}
+  - {id: "level20:vbAmbSound_05", level: level20, name: vbAmbSound_05, kind: 2, class: PlayerBox, corner: [447.8, 46, -0.5], size: [9.9, 11.4, 3.5], script: level20}
+  - {id: "level20:vbAmbSound_06", level: level20, name: vbAmbSound_06, kind: 2, class: PlayerBox, corner: [287.4, -119.9, 2.2], size: [10.2, 23.1, 3.5], script: level20}
+  - {id: "level20:vbAmbSound_07", level: level20, name: vbAmbSound_07, kind: 2, class: PlayerBox, corner: [304.5, -94.5, 2.2], size: [12.3, 10.3, 3.5], script: level20}
+  - {id: "level20:vbAmbSound_08", level: level20, name: vbAmbSound_08, kind: 2, class: PlayerBox, corner: [306.5, -132.1, 2.2], size: [19.4, 10.2, 3.5], script: level20}
+  - {id: "level20:vHunsApproach", level: level20, name: vHunsApproach, kind: 0, class: VolumeBox, corner: [347.5, -128.8, -0.1], size: [11, 9.3, 4], held_in: vHunsApproach, script: level20}
+  - {id: "level20:vRestaurant", level: level20, name: vRestaurant, kind: 0, class: VolumeBox, corner: [348.8, -170.2, 0.1], size: [13.1, 11.3, 6.1], held_in: vRestaurant, script: level20}
+  - {id: "level20:vRestaurantTurf", level: level20, name: vRestaurantTurf, kind: 3, class: TurfBox, corner: [348.8, -170.2, 0.1], size: [13.1, 11.3, 6.1], held_in: vRestaurantTurf, script: level20}
+  - {id: "level20:vTakeoutStore", level: level20, name: vTakeoutStore, kind: 0, class: VolumeBox, corner: [340.5, -168.3, 0], size: [26, 11.3, 5.8], held_in: vTakeoutStore, script: level20}
+  - {id: "level20:vPharmacy", level: level20, name: vPharmacy, kind: 0, class: VolumeBox, corner: [298.5, -35.8, 0], size: [11.3, 9.8, 6], held_in: vPharmacy, script: level20}
+  - {id: "level20:vSection1", level: level20, name: vSection1, kind: 0, class: VolumeBox, corner: [320.8, 44.2, -199.8], size: [3.3, 3.8, 3], held_in: vSection1, script: level20}
+  - {id: "level20:vSection1Cleanup", level: level20, name: vSection1Cleanup, kind: 0, class: VolumeBox, corner: [312.3, 30.2, -199.8], size: [3, 5.1, 3], held_in: vSection1Cleanup, script: level20}
+  - {id: "level20:vbVandalsExit", level: level20, name: vbVandalsExit, kind: 0, class: VolumeBox, corner: [329.2, -2.9, -200.2], size: [7, 3, 4], held_in: vbVandalsExit, script: level20}
+  - {id: "level20:vChaseHuns", level: level20, name: vChaseHuns, kind: 3, class: TurfBox, corner: [490, 49.1, -3.4], size: [54, 38, 15], held_in: vChaseHuns, script: level20}
+  - {id: "level20:vMVandal", level: level20, name: vMVandal, kind: 0, class: VolumeBox, corner: [283.8, -23.1, -202.7], size: [72, 80, 15], held_in: vMVandal, script: level20}
+  - {id: "level20:vUnsuspendStore", level: level20, name: vUnsuspendStore, kind: 0, class: VolumeBox, corner: [272.1, -82.7, -1.7], size: [12, 6, 8], held_in: vUnsuspendStore, script: level20}
+  - {id: "level20:vChaseGate", level: level20, name: vChaseGate, kind: 0, class: VolumeBox, corner: [285.5, -155.5, 0], size: [4.2, 2.4, 3], held_in: vChaseGate, script: level20}
+  - {id: "level20:vPlaySubwaySound", level: level20, name: vPlaySubwaySound, kind: 0, class: VolumeBox, corner: [351.5, -96.6, -6.9], size: [13.2, 26, 6], held_in: vPlaySubwaySound, script: level20}
+  - {id: "level20:vStreetPeds", level: level20, name: vStreetPeds, kind: 0, class: VolumeBox, corner: [354.3, -81.9, -8.2], size: [5.7, 5.2, 7], held_in: vStreetPeds, script: level20}
+  - {id: "level20:vStall1", level: level20, name: vStall1, kind: 0, class: VolumeBox, corner: [351.4, -95.9, 0.1], size: [3.6, 3.6, 6], held_in: vStall1, script: level20}
+  - {id: "level20:vStall2", level: level20, name: vStall2, kind: 0, class: VolumeBox, corner: [321.5, -180, 0], size: [3.6, 3.6, 6], held_in: vStall2, script: level20}
+  - {id: "level20:vStall3", level: level20, name: vStall3, kind: 0, class: VolumeBox, corner: [287.8, -161.3, -0.3], size: [3.6, 3.6, 6], held_in: vStall3, script: level20}
+  - {id: "level20:vWLTag", level: level20, name: vWLTag, kind: 0, class: VolumeBox, corner: [357.7, -170.1, -1], size: [2, 1.5, 6], held_in: vWLTag, script: level20}
+  - {id: "level20:vRunBackup", level: level20, name: vRunBackup, kind: 0, class: VolumeBox, corner: [482.3, 14.7, -0.2], size: [7.5, 3.8, 3], held_in: vRunBackup, script: level20}
+  - {id: "level20:vAttGhostBackup", level: level20, name: vAttGhostBackup, kind: 0, class: VolumeBox, corner: [493.4, 49.4, 2.4], size: [6, 8, 3.5], held_in: vAttGhostBackup, script: level20}
+  - {id: "level20:vGetOutOfBackAlley", level: level20, name: vGetOutOfBackAlley, kind: 0, class: VolumeBox, corner: [531.5, 55.3, -1], size: [4, 8, 6], held_in: vGetOutOfBackAlley, script: level20}
+  - {id: "level20:vUpperCam02", level: level20, name: vUpperCam02, kind: 0, class: VolumeBox, corner: [500.8, 69.6, 2.9], size: [5, 10, 3.5], held_in: vUpperCam02, script: level20}
+  - {id: "level20:vUpperCam01", level: level20, name: vUpperCam01, kind: 0, class: VolumeBox, corner: [501.4, 56.4, 4], size: [5, 5.9, 3.5], held_in: vUpperCam01, script: level20}
+  - {id: "level20:vMainCam01", level: level20, name: vMainCam01, kind: 0, class: VolumeBox, corner: [515.5, 71.1, 0], size: [10, 10, 6], held_in: vMainCam01, script: level20}
+  - {id: "level20:vMainCam02", level: level20, name: vMainCam02, kind: 0, class: VolumeBox, corner: [493.5, 47.9, 2.8], size: [6, 6, 6], held_in: vMainCam02, script: level20}
+  - {id: "level20:vUpperCam03", level: level20, name: vUpperCam03, kind: 0, class: VolumeBox, corner: [507.9, 72.2, 2.9], size: [5, 10, 3.5], held_in: vUpperCam03, script: level20}
+  - {id: "level20:vUpperCam04", level: level20, name: vUpperCam04, kind: 0, class: VolumeBox, corner: [511.6, 58.1, 4], size: [5, 10, 3.5], held_in: vUpperCam04, script: level20}
+  - {id: "level20:vRailCam02", level: level20, name: vRailCam02, kind: 0, class: VolumeBox, corner: [508.5, 66.3, -1.8], size: [8, 8, 6], held_in: vRailCam02, script: level20}
+  - {id: "level20:vRailCam03", level: level20, name: vRailCam03, kind: 0, class: VolumeBox, corner: [503.6, 63.9, -0.3], size: [7, 6, 6], held_in: vRailCam03, script: level20}
+  - {id: "level20:vRailCam01", level: level20, name: vRailCam01, kind: 0, class: VolumeBox, corner: [490.8, 57.1, -0.3], size: [8, 18, 6], held_in: vRailCam01, script: level20}
+  - {id: "level20:vFinalScene", level: level20, name: vFinalScene, kind: 0, class: VolumeBox, corner: [580.2, 65.5, -5.4], size: [4.2, 4.1, 6], held_in: vFinalScene, script: level20}
+  - {id: "level31:vTopsideCopTurf", level: level31, name: vTopsideCopTurf, kind: 3, class: TurfBox, corner: [49.4, 49.4, 4.9], size: [128.1, 30.3, 20], held_in: vTopsideCopTurf, turf_of: [GangPlatformCops3], script: level31}
+  - {id: "level31:vTopsideGangTurf", level: level31, name: vTopsideGangTurf, kind: 3, class: TurfBox, corner: [89.1, -7.5, 4.9], size: [93.8, 94, 20], held_in: vTopsideGangTurf, turf_of: [GangPlatformCops2, GangTopsideAC, GangTopsideJSB], script: level31}
+  - {id: "level31:vGamblingClub", level: level31, name: vGamblingClub, kind: 0, class: VolumeBox, corner: [146.8, 85.4, 5.8], size: [2.9, 1.7, 3], held_in: vGamblingClub, script: level31}
+  - {id: "level31:vBackalleyTurf", level: level31, name: vBackalleyTurf, kind: 3, class: TurfBox, corner: [89, 85.8, 4.8], size: [76.4, 13, 20], held_in: vBackalleyTurf, turf_of: [GangPlatformCops2], script: level31}
+  - {id: "level31:vBumGate", level: level31, name: vBumGate, kind: 0, class: VolumeBox, corner: [73.3, 155.6, -1.1], size: [1.4, 1.6, 4], held_in: vBumGate, script: level31}
+  - {id: "level31:vSewerTurf", level: level31, name: vSewerTurf, kind: 3, class: TurfBox, corner: [5.2, 145.4, -2.1], size: [67.9, 69.3, 25], held_in: vSewerTurf, turf_of: [GangRenegadeBums], script: level31}
+  - {id: "level31:vNearDevil", level: level31, name: vNearDevil, kind: 0, class: VolumeBox, corner: [-62.5, 130.8, 5], size: [10.5, 4, 5], held_in: vNearDevil, script: level31}
+  - {id: "level31:vDevilWindow", level: level31, name: vDevilWindow, kind: 0, class: VolumeBox, corner: [-58.4, 81.4, 5.1], size: [30, 16, 4], held_in: vDevilWindow, script: level31}
+  - {id: "level31:vBreakHiders2", level: level31, name: vBreakHiders2, kind: 0, class: VolumeBox, corner: [153.7, 12.7, 5.6], size: [3.1, 5.5, 4], held_in: vBreakHiders2, script: level31}
+  - {id: "level31:vBreakHiders1", level: level31, name: vBreakHiders1, kind: 0, class: VolumeBox, corner: [125.4, 35.6, 5.8], size: [4.1, 4.7, 4], held_in: vBreakHiders1, script: level31}
+  - {id: "level31:vStreetAmbient", level: level31, name: vStreetAmbient, kind: 0, class: VolumeBox, corner: [69.3, 75.8, 4.1], size: [3.8, 3.3, 5], held_in: vStreetAmbient, script: level31}
+  - {id: "level31:vCopSetup1", level: level31, name: vCopSetup1, kind: 3, class: TurfBox, corner: [111.1, 74.5, 5.8], size: [8.9, 10.8, 7.2], held_in: vCopSetup1, turf_of: [GangCopFighters1, GangExtraCop1], script: level31}
+  - {id: "level31:vCopSetup2", level: level31, name: vCopSetup2, kind: 3, class: TurfBox, corner: [63.2, 55.3, 5.8], size: [8.9, 10.8, 7.2], held_in: vCopSetup2, turf_of: [GangCopFighters2, GangExtraCop2], script: level31}
+  - {id: "level31:vBreakDoor", level: level31, name: vBreakDoor, kind: 0, class: VolumeBox, corner: [5.6, 171.7, 7.9], size: [1.4, 2.4, 4], held_in: vBreakDoor, script: level31}
+  - {id: "level31:vEnterBumFight", level: level31, name: vEnterBumFight, kind: 0, class: VolumeBox, corner: [5.6, 168.5, 8], size: [13.1, 16.1, 13.1], held_in: vEnterBumFight, script: level31}
+  - {id: "level31:vApproachRenegades", level: level31, name: vApproachRenegades, kind: 0, class: VolumeBox, corner: [29.8, 196, 2], size: [4.8, 2.5, 4], held_in: vApproachRenegades, script: level31}
+  - {id: "level31:vSpotDowned", level: level31, name: vSpotDowned, kind: 0, class: VolumeBox, corner: [-56.3, 83.8, 8.8], size: [4.3, 10.9, 5.9], held_in: vSpotDowned, script: level31}
+  - {id: "level31:vEnterBandArea", level: level31, name: vEnterBandArea, kind: 0, class: VolumeBox, corner: [-30.3, 102.9, 3.5], size: [9, 4.4, 5], held_in: vEnterBandArea, script: level31}
+  - {id: "level31:vPedsLeave", level: level31, name: vPedsLeave, kind: 0, class: VolumeBox, corner: [-41.2, 107.1, 3.5], size: [10, 4.4, 5], held_in: vPedsLeave, script: level31}
+  - {id: "level31:tbBandArea", level: level31, name: tbBandArea, kind: 3, class: TurfBox, corner: [-16.3, 94.9, 4], size: [3.7, 12.8, 6], held_in: tbBandArea, script: level31}
+  - {id: "level31:tbDanceFloor", level: level31, name: tbDanceFloor, kind: 3, class: TurfBox, corner: [-30.9, 94.8, 3.5], size: [14.4, 12.6, 7], held_in: tbDanceFloor, script: level31}
+  - {id: "level31:tbBarArea", level: level31, name: tbBarArea, kind: 3, class: TurfBox, corner: [-44.5, 95.2, 4.2], size: [13.2, 22, 7], held_in: tbBarArea, script: level31}
+  - {id: "level31:tbRedDevil", level: level31, name: tbRedDevil, kind: 3, class: TurfBox, corner: [-44.5, 95.2, 3.9], size: [32, 22, 6], held_in: tbRedDevil, script: level31}
+  - {id: "level31:vPoolConfront", level: level31, name: vPoolConfront, kind: 0, class: VolumeBox, corner: [-31.6, 110.1, 3.5], size: [10, 4.4, 5], held_in: vPoolConfront, script: level31}
+  - {id: "level31:vBumBarf", level: level31, name: vBumBarf, kind: 0, class: VolumeBox, corner: [-55.2, 62.4, 3.5], size: [3, 7.6, 8], held_in: vBumBarf, script: level31}
+  - {id: "level31:vFindBirdie", level: level31, name: vFindBirdie, kind: 0, class: VolumeBox, corner: [-52.9, 4.3, 9.2], size: [4, 8, 8], held_in: vFindBirdie, script: level31}
+  - {id: "level31:tbACTurf", level: level31, name: tbACTurf, kind: 3, class: TurfBox, corner: [-73, 30.2, 3.3], size: [56, 40, 10], held_in: tbACTurf, script: level31}
+  - {id: "level31:vRefineryEntrance", level: level31, name: vRefineryEntrance, kind: 0, class: VolumeBox, corner: [-63.4, 29.9, 4.2], size: [4, 4, 6], held_in: vRefineryEntrance, script: level31}
+  - {id: "level31:tbBackroom", level: level31, name: tbBackroom, kind: 3, class: TurfBox, corner: [-47.6, -16.4, 9.3], size: [11, 7.4, 5], held_in: tbBackroom, script: level31}
+  - {id: "level31:vBarTurf", level: level31, name: vBarTurf, kind: 3, class: TurfBox, corner: [-44.8, 96.8, 5.2], size: [5.6, 6.8, 4], held_in: vBarTurf, turf_of: [GangDevilBar], script: level31}
+  - {id: "level31:vCatWalk", level: level31, name: vCatWalk, kind: 0, class: VolumeBox, corner: [-53.7, -6.3, 9.2], size: [5, 10.1, 2], held_in: vCatWalk, script: level31}
+  - {id: "level31:vOnStage", level: level31, name: vOnStage, kind: 0, class: VolumeBox, corner: [-16.5, 94.9, 4], size: [3.7, 12.8, 6], held_in: vOnStage, script: level31}
+  - {id: "level34:vLevelVandal", level: level34, name: vLevelVandal, kind: 0, class: VolumeBox, corner: [-142.9, -300.1, -0.8], size: [138.9, 279.9, 30], held_in: vLevelVandal, script: level34}
+  - {id: "level34:vIntro", level: level34, name: vIntro, kind: 0, class: VolumeBox, corner: [-44.4, -77.5, -0.3], size: [3.3, 6.4, 3.8], held_in: vIntro, script: level34}
+  - {id: "level34:vTier2Turf", level: level34, name: vTier2Turf, kind: 3, class: TurfBox, corner: [-127.7, -224.4, -0.8], size: [59.2, 107.3, 53.7], held_in: vTier2Turf, turf_of: [GangRiotMoonrunners, GangRiotRogues], script: level34}
+  - {id: "level34:vSection2", level: level34, name: vSection2, kind: 0, class: VolumeBox, corner: [-131.2, -224.1, -0.8], size: [76.7, 107.3, 53.7], held_in: vSection2, script: level34}
+  - {id: "level34:vNearPanzerStore", level: level34, name: vNearPanzerStore, kind: 0, class: VolumeBox, corner: [-99.4, -218.4, -0.7], size: [9.9, 11.5, 6], held_in: vNearPanzerStore, script: level34}
+  - {id: "level34:vCarPoizo", level: level34, name: vCarPoizo, kind: 0, class: VolumeBox, corner: [-75.3, -146.6, -0.4], size: [2.2, 6.1, 3.8], held_in: vCarPoizo, script: level34}
+  - {id: "level34:vNearHunStore", level: level34, name: vNearHunStore, kind: 0, class: VolumeBox, corner: [-99.2, -180.4, -0.7], size: [24.8, 16, 6], held_in: vNearHunStore, script: level34}
+  - {id: "level34:vTier3Turf", level: level34, name: vTier3Turf, kind: 3, class: TurfBox, corner: [-111.5, -279.5, -0.8], size: [96.5, 55.2, 53.7], held_in: vTier3Turf, turf_of: [GangCops, GangWantedMoonrunners, GangWantedPanzers, GangWantedRogues], script: level34}
+  - {id: "level34:vSection3", level: level34, name: vSection3, kind: 0, class: VolumeBox, corner: [-111.5, -279.4, -1.9], size: [96.5, 55.2, 53.7], held_in: vSection3, script: level34}
+  - {id: "level34:vSection1", level: level34, name: vSection1, kind: 0, class: VolumeBox, corner: [-74.8, -154.2, -0.9], size: [66.1, 102.9, 53.7], held_in: vSection1, script: level34}
+  - {id: "level34:vNearFuries", level: level34, name: vNearFuries, kind: 0, class: VolumeBox, corner: [-175.7, -266.5, -9.5], size: [5.1, 4, 9], held_in: vNearFuries, script: level34}
+  - {id: "level34:vFuryTurf", level: level34, name: vFuryTurf, kind: 3, class: TurfBox, corner: [-233.3, -258.1, -12.5], size: [53.5, 55.1, 21.2], held_in: vFuryTurf, script: level34}
+  - {id: "level34:vSubwayExit", level: level34, name: vSubwayExit, kind: 0, class: VolumeBox, corner: [-256.6, -203.2, -12.7], size: [2, 3.8, 3.5], held_in: vSubwayExit, script: level34}
+  - {id: "level34:vNearHiFi", level: level34, name: vNearHiFi, kind: 0, class: VolumeBox, corner: [-37.9, -251.8, -0.8], size: [22.3, 20.6, 8], held_in: vNearHiFi, script: level34}
+  - {id: "level34:vEnterRiot", level: level34, name: vEnterRiot, kind: 0, class: VolumeBox, corner: [-22.1, -72, -0.1], size: [2, 2.2, 2.5], held_in: vEnterRiot, script: level34}
+  - {id: "level34:vHiFiTurf", level: level34, name: vHiFiTurf, kind: 3, class: TurfBox, corner: [-77.5, -279.2, -0.4], size: [15.8, 16.7, 9.5], held_in: vHiFiTurf, turf_of: [GangMusicOwner], script: level34}
+  - {id: "level34:vNearMolotovCar", level: level34, name: vNearMolotovCar, kind: 0, class: VolumeBox, corner: [-89.2, -190.3, -0.8], size: [14.8, 7.5, 4.5], held_in: vNearMolotovCar, script: level34}
+  - {id: "level34:vLoadTagger", level: level34, name: vLoadTagger, kind: 0, class: VolumeBox, corner: [-26.7, -122.1, -0.8], size: [5.6, 2.7, 4], held_in: vLoadTagger, script: level34}
+  - {id: "level34:vStartIntroLooters", level: level34, name: vStartIntroLooters, kind: 0, class: VolumeBox, corner: [-8.9, -72.8, -6.2], size: [3, 4, 4], held_in: vStartIntroLooters, script: level34}
+  - {id: "level34:vRiotCleanup", level: level34, name: vRiotCleanup, kind: 0, class: VolumeBox, corner: [-142.8, -271, -0.3], size: [6.3, 8.4, 6], held_in: vRiotCleanup, script: level34}
+  - {id: "level34:vRiotTurf", level: level34, name: vRiotTurf, kind: 3, class: TurfBox, corner: [-143, -299.8, -0.8], size: [150.4, 300.1, 30], held_in: vRiotTurf, turf_of: [GangCops, GangLevelCops], script: level34}
+  - {id: "level34:vPharmacyTurf", level: level34, name: vPharmacyTurf, kind: 3, class: TurfBox, corner: [-99.4, -218.4, -0.7], size: [9.9, 11.5, 6], held_in: vPharmacyTurf, turf_of: [GangPharmacyOwner], script: level34}
+  - {id: "level34:vFuryConfront", level: level34, name: vFuryConfront, kind: 0, class: VolumeBox, corner: [-234.8, -273.4, -12.4], size: [26.3, 8.2, 5.9], held_in: vFuryConfront, script: level34}
+  - {id: "level34:vEnterDiamond", level: level34, name: vEnterDiamond, kind: 0, class: VolumeBox, corner: [-224.1, -266.8, -12.4], size: [20, 46, 10], held_in: vEnterDiamond, script: level34}
+  - {id: "level34:vWBreakTutorial", level: level34, name: vWBreakTutorial, kind: 0, class: VolumeBox, corner: [-45.1, -113.4, -0.2], size: [2.9, 6.1, 2.7], held_in: vWBreakTutorial, script: level34}
+  - {id: "level34:vSection3Gate", level: level34, name: vSection3Gate, kind: 0, class: VolumeBox, corner: [-109.3, -224, -0.3], size: [3.6, 1.8, 5], held_in: vSection3Gate, script: level34}
+  - {id: "level51:volMeetWar_01", level: level51, name: volMeetWar_01, kind: 0, class: VolumeBox, corner: [-85.1, 499.4, -1.7], size: [40, 30, 10], script: level51}
+  - {id: "level51:volMeetWar_02", level: level51, name: volMeetWar_02, kind: 0, class: VolumeBox, corner: [-93.7, 503.1, -1.7], size: [70, 36, 10], script: level51}
+  - {id: "level51:vPitRange_04", level: level51, name: vPitRange_04, kind: 0, class: VolumeBox, corner: [202.3, 245.5, -3.4], size: [20, 30, 10], script: level51}
+  - {id: "level51:vPitRange_02", level: level51, name: vPitRange_02, kind: 0, class: VolumeBox, corner: [169.6, 263.6, -3.4], size: [16, 40, 10], script: level51}
+  - {id: "level51:vPitRange_03", level: level51, name: vPitRange_03, kind: 0, class: VolumeBox, corner: [193.6, 257.6, -3.4], size: [24, 46, 10], script: level51}
+  - {id: "level51:vPitRange_01", level: level51, name: vPitRange_01, kind: 0, class: VolumeBox, corner: [167.6, 251, -3.4], size: [26, 30, 10], script: level51}
+  - {id: "level51:vPitRange_05", level: level51, name: vPitRange_05, kind: 0, class: VolumeBox, corner: [178.3, 277.1, -3.4], size: [16, 40, 10], script: level51}
+  - {id: "level51:vPitRange_06", level: level51, name: vPitRange_06, kind: 0, class: VolumeBox, corner: [150, 303.7, -3.4], size: [40, 24, 10], script: level51}
+  - {id: "level51:vPitRange_07", level: level51, name: vPitRange_07, kind: 0, class: VolumeBox, corner: [170, 282.2, -3.4], size: [16, 20, 10], script: level51}
+  - {id: "level51:vCHRange_01", level: level51, name: vCHRange_01, kind: 0, class: VolumeBox, corner: [80.2, 304.1, -3.4], size: [20, 30, 10], script: level51}
+  - {id: "level51:vCHRange_02", level: level51, name: vCHRange_02, kind: 0, class: VolumeBox, corner: [89.6, 273.9, -3.4], size: [32, 30, 10], script: level51}
+  - {id: "level51:vCHRange_03", level: level51, name: vCHRange_03, kind: 0, class: VolumeBox, corner: [69.3, 284.6, -3.4], size: [20, 30, 10], script: level51}
+  - {id: "level51:vCHRange_04", level: level51, name: vCHRange_04, kind: 0, class: VolumeBox, corner: [70.4, 271.5, -3.4], size: [30, 26, 10], script: level51}
+  - {id: "level51:vCHRange_05", level: level51, name: vCHRange_05, kind: 0, class: VolumeBox, corner: [65.9, 318.4, -3.4], size: [24, 14, 10], script: level51}
+  - {id: "level51:vCHRange_07", level: level51, name: vCHRange_07, kind: 0, class: VolumeBox, corner: [65.7, 301.9, -3.4], size: [20, 30, 10], script: level51}
+  - {id: "level51:volAYRange_01", level: level51, name: volAYRange_01, kind: 0, class: VolumeBox, corner: [-108.2, 426.4, -1], size: [44, 24, 6], script: level51}
+  - {id: "level51:volAYRange_02", level: level51, name: volAYRange_02, kind: 0, class: VolumeBox, corner: [-107.9, 447, -1], size: [40, 20, 6], script: level51}
+  - {id: "level51:volAYRange_03", level: level51, name: volAYRange_03, kind: 0, class: VolumeBox, corner: [-77.9, 427.8, -1], size: [30, 20, 6], script: level51}
+  - {id: "level51:volAYRange_04", level: level51, name: volAYRange_04, kind: 0, class: VolumeBox, corner: [-109.4, 462.4, -1], size: [30, 24, 6], script: level51}
+  - {id: "level51:volAYRange_05", level: level51, name: volAYRange_05, kind: 0, class: VolumeBox, corner: [-54.7, 427.6, -1], size: [34, 20, 6], script: level51}
+  - {id: "level51:volAYRange_06", level: level51, name: volAYRange_06, kind: 0, class: VolumeBox, corner: [-105, 428, -1], size: [20, 30, 6], script: level51}
+  - {id: "level51:vLook_01", level: level51, name: vLook_01, kind: 0, class: VolumeBox, corner: [-10.8, 432.2, -1.2], size: [12, 12, 6], script: level51}
+  - {id: "level51:vLook_02", level: level51, name: vLook_02, kind: 0, class: VolumeBox, corner: [-52.8, 423, -1.2], size: [24, 12, 6], script: level51}
+  - {id: "level51:Trig_09", level: level51, name: Trig_09, kind: 2, class: PlayerBox, corner: [-421.8, 573.5, 15.9], size: [2, 6, 10], script: level51}
+  - {id: "level51:Trig_01", level: level51, name: Trig_01, kind: 2, class: PlayerBox, corner: [-270.9, 573.5, 15.9], size: [6.4, 6, 10], script: level51}
+  - {id: "level51:Trig_03", level: level51, name: Trig_03, kind: 2, class: PlayerBox, corner: [-297.4, 573.5, 15.9], size: [6.4, 6, 10], script: level51}
+  - {id: "level51:Trig_05", level: level51, name: Trig_05, kind: 2, class: PlayerBox, corner: [-311.4, 573.5, 15.9], size: [6.4, 6, 10], script: level51}
+  - {id: "level51:Trig_07", level: level51, name: Trig_07, kind: 2, class: PlayerBox, corner: [-329.9, 573.5, 15.9], size: [6.4, 6, 10], script: level51}
+  - {id: "level51:Trig_10", level: level51, name: Trig_10, kind: 2, class: PlayerBox, corner: [-441.4, 573.5, 15.9], size: [6.4, 6, 10], script: level51}
+  - {id: "level51:Trig_12", level: level51, name: Trig_12, kind: 2, class: PlayerBox, corner: [-455, 573.5, 15.9], size: [6.4, 6, 10], script: level51}
+  - {id: "level51:Trig_14", level: level51, name: Trig_14, kind: 2, class: PlayerBox, corner: [-472.7, 573.5, 15.9], size: [6.4, 6, 10], script: level51}
+  - {id: "level51:Trig_16", level: level51, name: Trig_16, kind: 2, class: PlayerBox, corner: [-487.8, 573.5, 15.9], size: [6.4, 6, 10], script: level51}
+  - {id: "level51:Trig_18", level: level51, name: Trig_18, kind: 2, class: PlayerBox, corner: [-501.8, 573.5, 15.9], size: [6.4, 6, 10], script: level51}
+  - {id: "level51:Trig_20", level: level51, name: Trig_20, kind: 2, class: PlayerBox, corner: [-516.1, 573.5, 15.9], size: [6.4, 6, 10], script: level51}
+  - {id: "level51:Trig_22", level: level51, name: Trig_22, kind: 2, class: PlayerBox, corner: [-529.9, 574.1, 15.9], size: [4.4, 6, 10], script: level51}
+  - {id: "level51:Chase2Trig_01", level: level51, name: Chase2Trig_01, kind: 0, class: VolumeBox, corner: [-617, 515.1, 10.2], size: [40, 8, 20], script: level51}
+  - {id: "level51:Chase2Trig_02", level: level51, name: Chase2Trig_02, kind: 0, class: VolumeBox, corner: [-617, 483, 10.2], size: [40, 8, 20], script: level51}
+  - {id: "level51:Chase2Trig_03", level: level51, name: Chase2Trig_03, kind: 0, class: VolumeBox, corner: [-617, 450.3, 10.2], size: [40, 8, 20], script: level51}
+  - {id: "level51:Chase2Trig_04", level: level51, name: Chase2Trig_04, kind: 0, class: VolumeBox, corner: [-617, 417.8, 10.2], size: [40, 8, 20], script: level51}
+  - {id: "level51:Chase2Trig_05", level: level51, name: Chase2Trig_05, kind: 0, class: VolumeBox, corner: [-617, 384.7, 10.2], size: [40, 8, 20], script: level51}
+  - {id: "level51:Chase2Trig_06", level: level51, name: Chase2Trig_06, kind: 0, class: VolumeBox, corner: [-617, 352, 10.2], size: [40, 8, 20], script: level51}
+  - {id: "level51:Chase2Trig_10", level: level51, name: Chase2Trig_10, kind: 0, class: VolumeBox, corner: [-617, 567, 10.2], size: [40, 8, 20], script: level51}
+  - {id: "level51:Chase2Trig_07", level: level51, name: Chase2Trig_07, kind: 0, class: VolumeBox, corner: [-617, 331.9, 10.2], size: [40, 8, 20], script: level51}
+  - {id: "level51:trufTBST", level: level51, name: trufTBST, kind: 3, class: TurfBox, corner: [-132, 413.7, -5.1], size: [160, 150, 25], held_in: trufTBST, turf_of: [GangTBABack], script: level51}
+  - {id: "level51:volTBCh02", level: level51, name: volTBCh02, kind: 0, class: VolumeBox, corner: [105.1, 250.8, -2], size: [16, 16, 20], held_in: volTBCh02, script: level51}
+  - {id: "level51:volTBStart01", level: level51, name: volTBStart01, kind: 0, class: VolumeBox, corner: [136, 234.2, -3.6], size: [6, 12, 10], held_in: volTBStart01, script: level51}
+  - {id: "level51:turfOpenTB", level: level51, name: turfOpenTB, kind: 3, class: TurfBox, corner: [32.7, 163, -1], size: [70, 110, 10], held_in: turfOpenTB, script: level51}
+  - {id: "level51:volFinal", level: level51, name: volFinal, kind: 0, class: VolumeBox, corner: [-605.9, 315.5, 12.6], size: [16, 16, 10], held_in: volFinal, script: level51}
+  - {id: "level51:volMoveTB", level: level51, name: volMoveTB, kind: 0, class: VolumeBox, corner: [194.9, 221.5, -1], size: [8, 8, 6], held_in: volMoveTB, script: level51}
+  - {id: "level51:volKillSeeks", level: level51, name: volKillSeeks, kind: 0, class: VolumeBox, corner: [171.1, 245.3, -2.9], size: [50, 12, 6], held_in: volKillSeeks, script: level51}
+  - {id: "level51:turfC01", level: level51, name: turfC01, kind: 3, class: TurfBox, corner: [145.4, 216.9, -5], size: [80, 110, 25], held_in: turfC01, script: level51}
+  - {id: "level51:volPoizoFire", level: level51, name: volPoizoFire, kind: 0, class: VolumeBox, corner: [175.4, 233.8, -1], size: [14, 8, 6], held_in: volPoizoFire, script: level51}
+  - {id: "level51:volBusE", level: level51, name: volBusE, kind: 0, class: VolumeBox, corner: [-86.9, 464.7, 2.4], size: [10, 10, 6], held_in: volBusE, script: level51}
+  - {id: "level51:volBusC", level: level51, name: volBusC, kind: 0, class: VolumeBox, corner: [-12.9, 427.1, -0.8], size: [24, 30, 6], held_in: volBusC, script: level51}
+  - {id: "level51:volBusF", level: level51, name: volBusF, kind: 0, class: VolumeBox, corner: [-120.5, 422.1, -0.7], size: [60, 20, 6], held_in: volBusF, script: level51}
+  - {id: "level51:turfC", level: level51, name: turfC, kind: 3, class: TurfBox, corner: [121.6, 290.8, -5], size: [20, 20, 25], held_in: turfC, script: level51}
+  - {id: "level51:TurfFinal", level: level51, name: TurfFinal, kind: 3, class: TurfBox, corner: [-83.4, 514, -0.9], size: [40, 40, 6], held_in: TurfFinal, script: level51}
+  - {id: "level51:volLoadStreetC2", level: level51, name: volLoadStreetC2, kind: 0, class: VolumeBox, corner: [167.2, 318.9, -0.9], size: [6, 6, 6], held_in: volLoadStreetC2, script: level51}
+  - {id: "level51:volC2SeeObj", level: level51, name: volC2SeeObj, kind: 0, class: VolumeBox, corner: [168.8, 296.5, -0.5], size: [10, 5.7, 6], held_in: volC2SeeObj, script: level51}
+  - {id: "level51:volStreet01", level: level51, name: volStreet01, kind: 0, class: VolumeBox, corner: [128.8, 293.7, 0], size: [14, 14, 6], held_in: volStreet01, script: level51}
+  - {id: "level51:volHideObjC2", level: level51, name: volHideObjC2, kind: 0, class: VolumeBox, corner: [167.6, 321.1, -0.7], size: [2, 2, 6], held_in: volHideObjC2, script: level51}
+  - {id: "level51:volBusD", level: level51, name: volBusD, kind: 0, class: VolumeBox, corner: [-56.7, 427.1, -0.8], size: [24, 24, 6], held_in: volBusD, script: level51}
+  - {id: "level51:volSeeMeetWar", level: level51, name: volSeeMeetWar, kind: 0, class: VolumeBox, corner: [-79.3, 486.3, -1.7], size: [6, 6, 10], held_in: volSeeMeetWar, script: level51}
+  - {id: "level51:volCH3Go", level: level51, name: volCH3Go, kind: 0, class: VolumeBox, corner: [112, 315.4, -0.5], size: [4, 4, 6], held_in: volCH3Go, script: level51}
+  - {id: "level51:volCh6Go", level: level51, name: volCh6Go, kind: 0, class: VolumeBox, corner: [-181.2, 570, 15.3], size: [4, 4, 6], held_in: volCh6Go, script: level51}
+  - {id: "level51:turfCH", level: level51, name: turfCH, kind: 3, class: TurfBox, corner: [11.3, 272.2, -5], size: [110, 90, 20], held_in: turfCH, script: level51}
+  - {id: "level51:volClubHouse", level: level51, name: volClubHouse, kind: 0, class: VolumeBox, corner: [64.6, 332.5, 5.8], size: [23, 20, 10], held_in: volClubHouse, script: level51}
+  - {id: "level51:volCH4Guys", level: level51, name: volCH4Guys, kind: 0, class: VolumeBox, corner: [86.3, 329.1, 2.6], size: [4, 8, 6], held_in: volCH4Guys, script: level51}
+  - {id: "level51:volStartCHRail", level: level51, name: volStartCHRail, kind: 0, class: VolumeBox, corner: [65.3, 329.1, 5.7], size: [22, 3.3, 3.5], held_in: volStartCHRail, script: level51}
+  - {id: "level51:volCHKill", level: level51, name: volCHKill, kind: 0, class: VolumeBox, corner: [78.7, 336, -0.4], size: [8, 8, 4], held_in: volCHKill, script: level51}
+  - {id: "level51:volBusEnd", level: level51, name: volBusEnd, kind: 0, class: VolumeBox, corner: [-538, 572.7, 13.5], size: [8, 8, 6], held_in: volBusEnd, script: level51}
+  - {id: "level51:volWarpToEnd", level: level51, name: volWarpToEnd, kind: 0, class: VolumeBox, corner: [-250.1, 572.5, 15.6], size: [8, 8, 6], held_in: volWarpToEnd, script: level51}
+  - {id: "level51:volCH4Go", level: level51, name: volCH4Go, kind: 0, class: VolumeBox, corner: [29.3, 335.9, 5.8], size: [10, 20, 6], held_in: volCH4Go, script: level51}
+  - {id: "level51:turfTBCH06", level: level51, name: turfTBCH06, kind: 3, class: TurfBox, corner: [9.2, 320.7, -1.3], size: [30, 42.3, 20], held_in: turfTBCH06, script: level51}
+  - {id: "level51:volCH4Go01", level: level51, name: volCH4Go01, kind: 0, class: VolumeBox, corner: [36.3, 335.3, 5.8], size: [12, 22, 6], held_in: volCH4Go01, script: level51}
+  - {id: "level51:volVerminCheck", level: level51, name: volVerminCheck, kind: 0, class: VolumeBox, corner: [9.3, 319.3, -1.3], size: [30, 45.1, 16], held_in: volVerminCheck, script: level51}
+  - {id: "level51:volTBCh022", level: level51, name: volTBCh022, kind: 0, class: VolumeBox, corner: [88.6, 242.4, -2], size: [16, 16, 20], held_in: volTBCh022, script: level51}
+  - {id: "level51:trufTBSTRspond01", level: level51, name: trufTBSTRspond01, kind: 3, class: TurfBox, corner: [-119.4, 436.2, -5.1], size: [50, 50, 25], held_in: trufTBSTRspond01, script: level51}
+  - {id: "level51:trufTBSTRspond02", level: level51, name: trufTBSTRspond02, kind: 3, class: TurfBox, corner: [-114.9, 417.5, -5.1], size: [130, 30, 25], held_in: trufTBSTRspond02, script: level51}
+  - {id: "level51:trufTBSTRspond03", level: level51, name: trufTBSTRspond03, kind: 3, class: TurfBox, corner: [-14.9, 443.4, -5.1], size: [30, 50, 25], held_in: trufTBSTRspond03, script: level51}
+  - {id: "level51:volCH3Go01", level: level51, name: volCH3Go01, kind: 0, class: VolumeBox, corner: [100, 303.8, 4.3], size: [12.4, 13.1, 6], held_in: volCH3Go01, script: level51}
+  - {id: "level52:vbAmbSound_01", level: level52, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [481.6, -113.2, -0.1], size: [9.8, 11.3, 3.5], script: level52}
+  - {id: "level52:vPark", level: level52, name: vPark, kind: 0, class: VolumeBox, corner: [464, -91.1, -0.3], size: [17.2, 31, 6.5], held_in: vPark, script: level52}
+  - {id: "level52:vTurfChapter2", level: level52, name: vTurfChapter2, kind: 3, class: TurfBox, corner: [405.1, -257.4, -1], size: [140, 165.6, 25], held_in: vTurfChapter2, turf_of: [GangBeatCops, GangCopSpawner, GangDoorCops, GangGateCops], script: level52}
+  - {id: "level52:vAjaxTrigger", level: level52, name: vAjaxTrigger, kind: 0, class: VolumeBox, corner: [414.8, -131.5, -0.3], size: [36, 41, 20], held_in: vAjaxTrigger, script: level52}
+  - {id: "level52:vHomeFree", level: level52, name: vHomeFree, kind: 0, class: VolumeBox, corner: [440.5, -69, -0.3], size: [23.9, 20, 3.5], held_in: vHomeFree, script: level52}
+  - {id: "level52:vRembrandtTrigger", level: level52, name: vRembrandtTrigger, kind: 0, class: VolumeBox, corner: [407.1, -175.2, -0.1], size: [5.4, 5.4, 3.5], held_in: vRembrandtTrigger, script: level52}
+  - {id: "level52:vCowboyTrigger", level: level52, name: vCowboyTrigger, kind: 0, class: VolumeBox, corner: [492.3, -151.3, -0.1], size: [8, 8, 3.5], held_in: vCowboyTrigger, script: level52}
+  - {id: "level52:vFoxTrigger", level: level52, name: vFoxTrigger, kind: 0, class: VolumeBox, corner: [444.5, -183.2, -0.1], size: [4, 4, 3.5], held_in: vFoxTrigger, script: level52}
+  - {id: "level52:vAlleyMothersTrigger", level: level52, name: vAlleyMothersTrigger, kind: 0, class: VolumeBox, corner: [488.5, -130, -0.1], size: [4, 36, 3.5], held_in: vAlleyMothersTrigger, script: level52}
+  - {id: "level52:vHideEliminators2Trigger1", level: level52, name: vHideEliminators2Trigger1, kind: 0, class: VolumeBox, corner: [484, -194.6, -0.1], size: [18.6, 26, 3.5], held_in: vHideEliminators2Trigger1, script: level52}
+  - {id: "level52:vHideEliminators1Trigger1", level: level52, name: vHideEliminators1Trigger1, kind: 0, class: VolumeBox, corner: [414.8, -131.5, -0.3], size: [36, 41, 20], held_in: vHideEliminators1Trigger1, script: level52}
+  - {id: "level52:vHideEliminators1Trigger2", level: level52, name: vHideEliminators1Trigger2, kind: 0, class: VolumeBox, corner: [447.3, -108.5, -0.1], size: [16, 7.4, 2.5], held_in: vHideEliminators1Trigger2, script: level52}
+  - {id: "level52:vHideEliminators2Trigger2", level: level52, name: vHideEliminators2Trigger2, kind: 0, class: VolumeBox, corner: [499.7, -167.2, -0.1], size: [8, 8, 3.5], held_in: vHideEliminators2Trigger2, script: level52}
+  - {id: "level52:vCochiseTrigger", level: level52, name: vCochiseTrigger, kind: 0, class: VolumeBox, corner: [463.9, -219.3, -0.1], size: [10, 10, 3.5], held_in: vCochiseTrigger, script: level52}
+  - {id: "level52:vVerminTrigger", level: level52, name: vVerminTrigger, kind: 0, class: VolumeBox, corner: [477.3, -136.6, -0.2], size: [4, 4, 3.5], held_in: vVerminTrigger, script: level52}
+  - {id: "level52:vRembrandtTalkTrigger", level: level52, name: vRembrandtTalkTrigger, kind: 0, class: VolumeBox, corner: [406.9, -175.2, -0.1], size: [10, 10, 3.5], held_in: vRembrandtTalkTrigger, script: level52}
+  - {id: "level52:vHideEliminators1Trigger3", level: level52, name: vHideEliminators1Trigger3, kind: 0, class: VolumeBox, corner: [451.6, -103, -0.1], size: [6.3, 6, 2.5], held_in: vHideEliminators1Trigger3, script: level52}
+  - {id: "level52:vHideEliminators2Trigger3", level: level52, name: vHideEliminators2Trigger3, kind: 0, class: VolumeBox, corner: [502.7, -167.2, -0.1], size: [5, 5, 3.5], held_in: vHideEliminators2Trigger3, script: level52}
+  - {id: "level52:vTurfChapter2a", level: level52, name: vTurfChapter2a, kind: 3, class: TurfBox, corner: [431, -94.2, -1], size: [33, 8, 25], held_in: vTurfChapter2a, turf_of: [GangBeatCops, GangCopSpawner, GangDoorCops, GangGateCops], script: level52}
+  - {id: "level52:vPenTrigger", level: level52, name: vPenTrigger, kind: 0, class: VolumeBox, corner: [516.7, -217.3, -0.1], size: [5.5, 13.8, 3.5], held_in: vPenTrigger, script: level52}
+  - {id: "level52:vRunnerEliminators2Trigger", level: level52, name: vRunnerEliminators2Trigger, kind: 0, class: VolumeBox, corner: [414.7, -125.2, -0.2], size: [66.9, 5.3, 3.5], held_in: vRunnerEliminators2Trigger, script: level52}
+  - {id: "level52:vRunnerMothers2Trigger", level: level52, name: vRunnerMothers2Trigger, kind: 0, class: VolumeBox, corner: [456.7, -137.5, -0.2], size: [57.5, 5.3, 3.5], held_in: vRunnerMothers2Trigger, script: level52}
+  - {id: "level52:vRunnerMothers1Trigger", level: level52, name: vRunnerMothers1Trigger, kind: 0, class: VolumeBox, corner: [406.9, -179.1, -0.2], size: [52.6, 8, 3.5], held_in: vRunnerMothers1Trigger, script: level52}
+  - {id: "level52:vRunnerEliminators1Trigger", level: level52, name: vRunnerEliminators1Trigger, kind: 0, class: VolumeBox, corner: [439.8, -207.3, -0.2], size: [44.3, 5, 12.5], held_in: vRunnerEliminators1Trigger, script: level52}
+  - {id: "level52:vOrphanGateTrigger", level: level52, name: vOrphanGateTrigger, kind: 0, class: VolumeBox, corner: [504.1, -214.3, -0.1], size: [1.6, 1.6, 3.5], held_in: vOrphanGateTrigger, script: level52}
+  - {id: "level52:vParkExit", level: level52, name: vParkExit, kind: 0, class: VolumeBox, corner: [467.2, -63.3, 0.9], size: [1.6, 1.6, 3.5], held_in: vParkExit, script: level52}
+  - {id: "level52:vPharmacyStore", level: level52, name: vPharmacyStore, kind: 0, class: VolumeBox, corner: [481.5, -113.4, -0.1], size: [10, 11.5, 3.5], held_in: vPharmacyStore, script: level52}
+  - {id: "level52:vLiquorStore", level: level52, name: vLiquorStore, kind: 0, class: VolumeBox, corner: [449.6, -186.8, -0.1], size: [9.8, 11.5, 3.5], held_in: vLiquorStore, script: level52}
+  - {id: "level52:vLeavePark", level: level52, name: vLeavePark, kind: 0, class: VolumeBox, corner: [467.2, -63.3, 0.9], size: [1.6, 1.6, 3.5], held_in: vLeavePark, script: level52}
+  - {id: "level52:vTurfParkGang", level: level52, name: vTurfParkGang, kind: 3, class: TurfBox, corner: [440.2, -91.1, -1], size: [41.2, 42, 10], held_in: vTurfParkGang, turf_of: [ParkGang], script: level52}
+  - {id: "level52:vTurfChapter3", level: level52, name: vTurfChapter3, kind: 3, class: TurfBox, corner: [487, 139.7, -0.1], size: [10, 10, 3.5], held_in: vTurfChapter3, script: level52}
+  - {id: "level52:vOrphanTrigger", level: level52, name: vOrphanTrigger, kind: 0, class: VolumeBox, corner: [487.2, 129.1, -0.1], size: [8, 4, 3.5], held_in: vOrphanTrigger, script: level52}
+  - {id: "level52:vHideMothersTrigger2", level: level52, name: vHideMothersTrigger2, kind: 0, class: VolumeBox, corner: [442.2, -185.7, -0.1], size: [4, 4, 3.5], held_in: vHideMothersTrigger2, script: level52}
+  - {id: "level52:vHideMothersTrigger1", level: level52, name: vHideMothersTrigger1, kind: 0, class: VolumeBox, corner: [442.2, -185.8, -0.1], size: [7.4, 8, 3.5], held_in: vHideMothersTrigger1, script: level52}
+  - {id: "level52:vParkMusic", level: level52, name: vParkMusic, kind: 0, class: VolumeBox, corner: [464.1, -91.3, -0.3], size: [17.2, 31.4, 6.5], held_in: vParkMusic, script: level52}
+  - {id: "level54:vbStreetTurf_1", level: level54, name: vbStreetTurf_1, kind: 3, class: TurfBox, corner: [-623.4, -104.7, -12.4], size: [600, 182.5, 50], script: level54}
+  - {id: "level54:vbStreetTurf_2", level: level54, name: vbStreetTurf_2, kind: 3, class: TurfBox, corner: [-652, -223.7, -12.4], size: [30, 300, 50], script: level54}
+  - {id: "level54:camswitch_01", level: level54, name: camswitch_01, kind: 2, class: PlayerBox, corner: [-85, -82.5, 0], size: [6, 30, 15], script: level54}
+  - {id: "level54:camswitch_02", level: level54, name: camswitch_02, kind: 2, class: PlayerBox, corner: [-269.2, -80.7, 0], size: [6, 30, 15], script: level54}
+  - {id: "level54:camswitch_03", level: level54, name: camswitch_03, kind: 2, class: PlayerBox, corner: [-284.9, -48.7, -1.1], size: [6, 20, 15], script: level54}
+  - {id: "level54:camswitch_04", level: level54, name: camswitch_04, kind: 2, class: PlayerBox, corner: [-438.6, -38.6, -1.1], size: [6, 4, 15], script: level54}
+  - {id: "level54:camswitch_05", level: level54, name: camswitch_05, kind: 2, class: PlayerBox, corner: [-449.3, -42.1, -1.1], size: [6, 12, 15], script: level54}
+  - {id: "level54:camswitch_06", level: level54, name: camswitch_06, kind: 2, class: PlayerBox, corner: [-488.7, -46.1, -1.6], size: [8, 16, 20], script: level54}
+  - {id: "level54:camswitch_07", level: level54, name: camswitch_07, kind: 2, class: PlayerBox, corner: [-588.6, -29.9, -1.2], size: [8, 6, 15], script: level54}
+  - {id: "level54:camswitch_08", level: level54, name: camswitch_08, kind: 2, class: PlayerBox, corner: [-591.3, 48.7, -1.2], size: [6, 20, 15], script: level54}
+  - {id: "level54:camswitch_10", level: level54, name: camswitch_10, kind: 2, class: PlayerBox, corner: [-643.5, 8.9, -1.2], size: [4, 20, 15], script: level54}
+  - {id: "level54:camswitch_12", level: level54, name: camswitch_12, kind: 2, class: PlayerBox, corner: [-645, -176.3, -1.2], size: [6, 24, 15], script: level54}
+  - {id: "level54:camswitch_11", level: level54, name: camswitch_11, kind: 2, class: PlayerBox, corner: [-652.5, -18.8, -1.2], size: [16, 10, 15], script: level54}
+  - {id: "level54:camswitch_14", level: level54, name: camswitch_14, kind: 2, class: PlayerBox, corner: [-650.1, -218.7, -1.2], size: [6, 10, 15], script: level54}
+  - {id: "level54:camswitch_13", level: level54, name: camswitch_13, kind: 2, class: PlayerBox, corner: [-653.5, -189.2, -1.2], size: [6, 24, 15], script: level54}
+  - {id: "level54:camswitch_09", level: level54, name: camswitch_09, kind: 2, class: PlayerBox, corner: [-645.6, 51.4, -1.2], size: [10, 4, 15], script: level54}
+  - {id: "level54:vbLook_01", level: level54, name: vbLook_01, kind: 2, class: PlayerBox, corner: [-334.2, -39.2, -0.6], size: [4, 6, 4.3], script: level54}
+  - {id: "level54:vbLook_02", level: level54, name: vbLook_02, kind: 2, class: PlayerBox, corner: [-406.9, -38.9, -0.6], size: [4, 6, 4.3], script: level54}
+  - {id: "level54:vbLook_03", level: level54, name: vbLook_03, kind: 2, class: PlayerBox, corner: [-585.9, -9, -0.6], size: [4, 6, 4.3], script: level54}
+  - {id: "level54:vbLook_04", level: level54, name: vbLook_04, kind: 2, class: PlayerBox, corner: [-648.4, -60.5, -0.6], size: [4, 6, 4.3], script: level54}
+  - {id: "level54:vbLook_05", level: level54, name: vbLook_05, kind: 2, class: PlayerBox, corner: [-648.6, -114.1, -0.6], size: [4, 6, 4.3], script: level54}
+  - {id: "level54:vbLook_06", level: level54, name: vbLook_06, kind: 2, class: PlayerBox, corner: [-648.6, -152.9, -0.6], size: [4, 6, 4.3], script: level54}
+  - {id: "level54:vbLeadOut_1", level: level54, name: vbLeadOut_1, kind: 2, class: PlayerBox, corner: [-339, -42.2, -0.7], size: [7.6, 10.1, 5], script: level54}
+  - {id: "level54:vbLeadOut_02", level: level54, name: vbLeadOut_02, kind: 2, class: PlayerBox, corner: [-387.8, -42.2, -0.7], size: [7.6, 10.1, 5], script: level54}
+  - {id: "level54:vbLeadOut_03", level: level54, name: vbLeadOut_03, kind: 2, class: PlayerBox, corner: [-417.8, -42.2, -0.7], size: [7.6, 10.1, 5], script: level54}
+  - {id: "level54:vbLeadIn_1", level: level54, name: vbLeadIn_1, kind: 2, class: PlayerBox, corner: [-355.1, -42.2, -0.7], size: [7.6, 10.1, 5], script: level54}
+  - {id: "level54:vbLeadIn_02", level: level54, name: vbLeadIn_02, kind: 2, class: PlayerBox, corner: [-403.9, -42.2, -0.7], size: [7.6, 10.1, 5], script: level54}
+  - {id: "level54:vbLeadIn_03", level: level54, name: vbLeadIn_03, kind: 2, class: PlayerBox, corner: [-433.9, -42.2, -0.7], size: [7.6, 10.1, 5], script: level54}
+  - {id: "level54:vbHint_01", level: level54, name: vbHint_01, kind: 2, class: PlayerBox, corner: [-344.8, -39.8, -0.4], size: [5.4, 5.9, 2.9], script: level54}
+  - {id: "level54:vbHint_02", level: level54, name: vbHint_02, kind: 2, class: PlayerBox, corner: [-393.7, -39.8, -0.4], size: [5.4, 5.9, 2.9], script: level54}
+  - {id: "level54:vbHint_03", level: level54, name: vbHint_03, kind: 2, class: PlayerBox, corner: [-430.1, -39.8, -0.4], size: [5.4, 5.9, 2.9], script: level54}
+  - {id: "level54:vbHint_9", level: level54, name: vbHint_9, kind: 2, class: PlayerBox, corner: [-649.1, -80.8, -0.4], size: [5.4, 5.9, 2.9], script: level54}
+  - {id: "level54:vbHint_10", level: level54, name: vbHint_10, kind: 2, class: PlayerBox, corner: [-649.8, -129.3, -0.4], size: [5.4, 5.9, 2.9], script: level54}
+  - {id: "level54:vbHint_11", level: level54, name: vbHint_11, kind: 2, class: PlayerBox, corner: [-649.8, -159.4, -0.4], size: [5.4, 5.9, 2.9], script: level54}
+  - {id: "level54:vbHint_4", level: level54, name: vbHint_4, kind: 2, class: PlayerBox, corner: [-476.4, -38.8, 5.6], size: [6, 3, 2.9], script: level54}
+  - {id: "level54:vbHint_5", level: level54, name: vbHint_5, kind: 2, class: PlayerBox, corner: [-502.9, -32.5, 3.9], size: [6, 3, 2.9], script: level54}
+  - {id: "level54:vbHint_6", level: level54, name: vbHint_6, kind: 2, class: PlayerBox, corner: [-519.7, -32.5, 4], size: [6, 3, 2.9], script: level54}
+  - {id: "level54:vbHint_7", level: level54, name: vbHint_7, kind: 2, class: PlayerBox, corner: [-545.3, -32.5, 7.5], size: [6, 3, 2.9], script: level54}
+  - {id: "level54:vbHint_8", level: level54, name: vbHint_8, kind: 2, class: PlayerBox, corner: [-560.8, -25.9, 7.5], size: [6, 3, 2.9], script: level54}
+  - {id: "level54:vbUberHack_02", level: level54, name: vbUberHack_02, kind: 0, class: VolumeBox, corner: [-247.7, -74.5, 1.8], size: [7.5, 20.2, 10.1], script: level54}
+  - {id: "level54:vbUberHack_03", level: level54, name: vbUberHack_03, kind: 0, class: VolumeBox, corner: [-329.7, -47, -1.4], size: [7.5, 20.2, 10.1], script: level54}
+  - {id: "level54:vbUberHack_04", level: level54, name: vbUberHack_04, kind: 0, class: VolumeBox, corner: [-398.4, -47, -1.2], size: [7.5, 20.2, 10.1], script: level54}
+  - {id: "level54:vbUberHack_05", level: level54, name: vbUberHack_05, kind: 0, class: VolumeBox, corner: [-498.3, -47, -0.8], size: [7.5, 20.2, 15], script: level54}
+  - {id: "level54:vbUberHack_06", level: level54, name: vbUberHack_06, kind: 0, class: VolumeBox, corner: [-578.3, -43.9, 3.8], size: [7.5, 20.2, 15], script: level54}
+  - {id: "level54:vbTransition_01", level: level54, name: vbTransition_01, kind: 2, class: PlayerBox, corner: [-571, -33.4, 0.2], size: [4, 8, 15], script: level54}
+  - {id: "level54:vbTransition_02", level: level54, name: vbTransition_02, kind: 2, class: PlayerBox, corner: [-565.9, -36.7, 0.2], size: [4, 8, 15], script: level54}
+  - {id: "level54:vbparkTurf", level: level54, name: vbparkTurf, kind: 3, class: TurfBox, corner: [-1114.5, -372.7, -38.4], size: [260, 460, 70], held_in: vbparkTurf, script: level54}
+  - {id: "level54:pitTurf1", level: level54, name: pitTurf1, kind: 3, class: TurfBox, corner: [-491.1, -39.6, -0.5], size: [32, 5, 10], held_in: pitTurf1, script: level54}
+  - {id: "level54:pitTurf2", level: level54, name: pitTurf2, kind: 3, class: TurfBox, corner: [-513.2, -40.1, -0.5], size: [24, 12, 10], held_in: pitTurf2, script: level54}
+  - {id: "level54:pitTurf3", level: level54, name: pitTurf3, kind: 3, class: TurfBox, corner: [-552.6, -40.1, -0.5], size: [40, 12, 15], held_in: pitTurf3, script: level54}
+  - {id: "level54:vbKill", level: level54, name: vbKill, kind: 0, class: VolumeBox, corner: [-644.8, -246.6, -12.4], size: [10, 10, 50], held_in: vbKill, script: level54}
+  - {id: "level54:vbStreetPursuitTurf", level: level54, name: vbStreetPursuitTurf, kind: 3, class: TurfBox, corner: [-908.5, -313.4, -28.6], size: [300, 60, 70], held_in: vbStreetPursuitTurf, script: level54}
+  - {id: "level54:vbReverse", level: level54, name: vbReverse, kind: 2, class: PlayerBox, corner: [-276.1, -50.3, -1.1], size: [6, 10, 15], held_in: vbReverse, script: level54}
+  - {id: "level54:vbBreakBridge", level: level54, name: vbBreakBridge, kind: 2, class: PlayerBox, corner: [-593, 55.8, -1.2], size: [8.8, 8.8, 15], held_in: vbBreakBridge, script: level54}
+  - {id: "level54:vbCheckpoint1", level: level54, name: vbCheckpoint1, kind: 2, class: PlayerBox, corner: [-591.6, 18.3, -0.9], size: [7.3, 11.9, 6], held_in: vbCheckpoint1, script: level54}
+  - {id: "level54:vbSuspendAlt", level: level54, name: vbSuspendAlt, kind: 0, class: VolumeBox, corner: [-278.2, -57.6, -2.2], size: [10, 4, 23.9], held_in: vbSuspendAlt, script: level54}
+  - {id: "level54:vbGoGoGo", level: level54, name: vbGoGoGo, kind: 0, class: VolumeBox, corner: [-308, -48.1, -1.1], size: [6, 20, 15], held_in: vbGoGoGo, script: level54}
+  - {id: "level54:vbBridgeBar", level: level54, name: vbBridgeBar, kind: 2, class: PlayerBox, corner: [-593, 47.7, -1.2], size: [8.8, 8.8, 15], held_in: vbBridgeBar, script: level54}
+  - {id: "level54:vbFuryGate", level: level54, name: vbFuryGate, kind: 2, class: PlayerBox, corner: [-630.3, 57.4, 1.8], size: [4, 10, 5], held_in: vbFuryGate, script: level54}
+  - {id: "level54:vbStopPath2", level: level54, name: vbStopPath2, kind: 0, class: VolumeBox, corner: [-576.9, -41.6, 4.5], size: [2.9, 12, 5.9], held_in: vbStopPath2, script: level54}
+  - {id: "level54:vbDestructor", level: level54, name: vbDestructor, kind: 2, class: PlayerBox, corner: [-590.4, 52.9, 2.5], size: [5, 12.4, 7.7], held_in: vbDestructor, script: level54}
+  - {id: "level54:vbFlusher", level: level54, name: vbFlusher, kind: 0, class: VolumeBox, corner: [-651.7, -213.8, 4.7], size: [9.9, 9.9, 4.9], held_in: vbFlusher, script: level54}
+  - {id: "level54:vbSwitchSideLead", level: level54, name: vbSwitchSideLead, kind: 0, class: VolumeBox, corner: [-537.5, -34.4, 7.1], size: [2.8, 7.7, 3.8], held_in: vbSwitchSideLead, script: level54}
+  - {id: "level54:vbTriggerPopsicle", level: level54, name: vbTriggerPopsicle, kind: 2, class: PlayerBox, corner: [-1023.5, -65.5, -17.3], size: [15, 6.2, 3.1], held_in: vbTriggerPopsicle, script: level54}
+  - {id: "level54:vbTriggerSplit", level: level54, name: vbTriggerSplit, kind: 2, class: PlayerBox, corner: [-844.9, -275.3, -8.3], size: [20, 3.7, 10], held_in: vbTriggerSplit, script: level54}
+  - {id: "level54:vbOutToStreet", level: level54, name: vbOutToStreet, kind: 2, class: PlayerBox, corner: [-662.5, -123.7, -0.7], size: [13.5, 11.7, 5.8], held_in: vbOutToStreet, script: level54}
+  - {id: "level54:vbSlowDown", level: level54, name: vbSlowDown, kind: 0, class: VolumeBox, corner: [-652.6, -115.1, -0.7], size: [13.5, 11.7, 5.8], held_in: vbSlowDown, script: level54}
+  - {id: "level54:vbRoofTurf", level: level54, name: vbRoofTurf, kind: 3, class: TurfBox, corner: [-976.5, -86.5, -7.7], size: [60, 60, 10], held_in: vbRoofTurf, script: level54}
+  - {id: "level54:vbStartAjaxScrap", level: level54, name: vbStartAjaxScrap, kind: 2, class: PlayerBox, corner: [-1013.5, -118.1, -18.8], size: [29, 16.2, 8.1], held_in: vbStartAjaxScrap, script: level54}
+  - {id: "level54:vbStragglerArrives", level: level54, name: vbStragglerArrives, kind: 0, class: VolumeBox, corner: [-1020.7, -60.3, -17.3], size: [18, 6.2, 3.1], held_in: vbStragglerArrives, script: level54}
+  - {id: "level54:vbChangePath", level: level54, name: vbChangePath, kind: 0, class: VolumeBox, corner: [-570.6, -35.6, 4.5], size: [2.9, 6, 5.9], held_in: vbChangePath, script: level54}
+  - {id: "level54:vbSlowFuries", level: level54, name: vbSlowFuries, kind: 0, class: VolumeBox, corner: [-248.2, -80.7, 0], size: [6, 30, 15], held_in: vbSlowFuries, script: level54}
+  - {id: "level54:vbTightenPlatformer", level: level54, name: vbTightenPlatformer, kind: 2, class: PlayerBox, corner: [-563.5, -37.3, -1.6], size: [8, 16, 20], held_in: vbTightenPlatformer, script: level54}
+  - {id: "level54:vbStartFury", level: level54, name: vbStartFury, kind: 2, class: PlayerBox, corner: [-62.7, -52.8, 0], size: [6, 30, 15], held_in: vbStartFury, script: level54}
+  - {id: "level54:vbCutToFury", level: level54, name: vbCutToFury, kind: 0, class: VolumeBox, corner: [-97.7, -82.8, 0], size: [6, 30, 15], held_in: vbCutToFury, script: level54}
+  - {id: "level54:vbCutBack", level: level54, name: vbCutBack, kind: 0, class: VolumeBox, corner: [-149, -82.8, 0], size: [6, 30, 15], held_in: vbCutBack, script: level54}
+  - {id: "level54:vbCheckForFight", level: level54, name: vbCheckForFight, kind: 2, class: PlayerBox, corner: [-1023.4, -69.6, -17.3], size: [15, 6.2, 3.1], held_in: vbCheckForFight, script: level54}
+  - {id: "level55:vStall_01", level: level55, name: vStall_01, kind: 0, class: VolumeBox, corner: [378.6, 19.2, -197.3], size: [4.3, 2, 5], script: level55}
+  - {id: "level55:vStall_02", level: level55, name: vStall_02, kind: 0, class: VolumeBox, corner: [378.6, 16.8, -197.3], size: [4.3, 2, 5], script: level55}
+  - {id: "level55:vStall_03", level: level55, name: vStall_03, kind: 0, class: VolumeBox, corner: [378.6, 14.4, -197.3], size: [4.3, 2, 5], script: level55}
+  - {id: "level55:vStall_04", level: level55, name: vStall_04, kind: 0, class: VolumeBox, corner: [378.6, 12, -197.3], size: [4.3, 2, 5], script: level55}
+  - {id: "level55:vCam_01", level: level55, name: vCam_01, kind: 0, class: VolumeBox, corner: [367.7, 24, 3.9], size: [18.9, 8.1, 4.5], script: level55}
+  - {id: "level55:vCam_02", level: level55, name: vCam_02, kind: 0, class: VolumeBox, corner: [360.2, 8.6, 3.9], size: [7.2, 8.1, 4.5], script: level55}
+  - {id: "level55:vLizCam_WideDeep", level: level55, name: vLizCam_WideDeep, kind: 0, class: VolumeBox, corner: [374.1, 2.1, 3.5], size: [6, 9.5, 1.6], script: level55}
+  - {id: "level55:vEndLizScene", level: level55, name: vEndLizScene, kind: 0, class: VolumeBox, corner: [374.3, -7.1, 1.7], size: [5.9, 12.6, 4.6], held_in: vEndLizScene, script: level55}
+  - {id: "level55:vRailCam", level: level55, name: vRailCam, kind: 0, class: VolumeBox, corner: [376.5, -5, -197.3], size: [10.4, 35.6, 11.7], held_in: vRailCam, script: level55}
+  - {id: "level55:vPunkTurf", level: level55, name: vPunkTurf, kind: 3, class: TurfBox, corner: [361.6, -3.4, -197.3], size: [21.4, 33.7, 11.7], held_in: vPunkTurf, script: level55}
+  - {id: "level55:vBathroom", level: level55, name: vBathroom, kind: 0, class: VolumeBox, corner: [361.6, -16.6, -197.3], size: [21.4, 33.7, 11.7], held_in: vBathroom, script: level55}
+  - {id: "level55:vVandal", level: level55, name: vVandal, kind: 0, class: VolumeBox, corner: [360.3, -6.8, 0], size: [36.6, 44.2, 21.8], held_in: vVandal, script: level55}
+  - {id: "level55:vClubhouse", level: level55, name: vClubhouse, kind: 0, class: VolumeBox, corner: [367.2, 7.8, 4], size: [20.7, 16.4, 7.8], held_in: vClubhouse, script: level55}
+  - {id: "level55:vWindowBox", level: level55, name: vWindowBox, kind: 0, class: VolumeBox, corner: [386.8, 3.9, -5], size: [20.7, 24, 7.8], held_in: vWindowBox, script: level55}
+  - {id: "level55:vOutsideCam", level: level55, name: vOutsideCam, kind: 0, class: VolumeBox, corner: [374.3, -1.9, 1.7], size: [5.9, 12.6, 4.6], held_in: vOutsideCam, script: level55}
+  - {id: "level60:VDestTrig_01", level: level60, name: VDestTrig_01, kind: 0, class: VolumeBox, corner: [-195.4, 14.8, -0.1], size: [6, 2, 7], script: level60}
+  - {id: "level60:VSMTrig_01", level: level60, name: VSMTrig_01, kind: 0, class: VolumeBox, corner: [-688.5, 18.1, -0.1], size: [5, 2, 10], script: level60}
+  - {id: "level60:VSMTrig_03", level: level60, name: VSMTrig_03, kind: 0, class: VolumeBox, corner: [-795.6, 17.7, -0.1], size: [5, 2, 7], script: level60}
+  - {id: "level60:VSMTrig_02", level: level60, name: VSMTrig_02, kind: 0, class: VolumeBox, corner: [-782.5, 11.8, -1.1], size: [24, 8, 5.3], script: level60}
+  - {id: "level61:VHunTrig_12", level: level61, name: VHunTrig_12, kind: 0, class: VolumeBox, corner: [-254.8, 17.6, -0.1], size: [4, 2, 10], script: level61}
+  - {id: "level61:VHatsTrig_06", level: level61, name: VHatsTrig_06, kind: 0, class: VolumeBox, corner: [-604.7, 19.9, -0.2], size: [2, 4, 7], script: level61}
+  - {id: "level61:VHatsTrig_07", level: level61, name: VHatsTrig_07, kind: 0, class: VolumeBox, corner: [-550.5, 17.3, -0.1], size: [4, 2, 7], script: level61}
+  - {id: "level61:VHatsTrig_08", level: level61, name: VHatsTrig_08, kind: 0, class: VolumeBox, corner: [-596, 13.8, -5.1], size: [10, 6, 5.5], script: level61}
+  - {id: "level61:VEETrig_05", level: level61, name: VEETrig_05, kind: 0, class: VolumeBox, corner: [-435.7, 17.3, -0.1], size: [6, 2, 7], script: level61}
+  - {id: "level61:VPunksTrig_07", level: level61, name: VPunksTrig_07, kind: 0, class: VolumeBox, corner: [-780.8, 17.4, -0.1], size: [4, 2, 7], script: level61}
+  - {id: "level61:Turf_14", level: level61, name: Turf_14, kind: 3, class: TurfBox, corner: [-765.4, 18.4, -0.9], size: [6.8, 7.4, 7], script: level61}
+  - {id: "level61:Turf_01", level: level61, name: Turf_01, kind: 3, class: TurfBox, corner: [-435.6, 20.1, -0.4], size: [5.2, 5.6, 2], script: level61}
+  - {id: "level62:VLizTrig_09", level: level62, name: VLizTrig_09, kind: 0, class: VolumeBox, corner: [-162, 17.3, -0.1], size: [4, 2, 7], script: level62}
+  - {id: "level62:VLizTrig_10", level: level62, name: VLizTrig_10, kind: 0, class: VolumeBox, corner: [-239.4, 17.5, -0.1], size: [4, 2, 7], script: level62}
+  - {id: "level62:VBoppTrig_09", level: level62, name: VBoppTrig_09, kind: 0, class: VolumeBox, corner: [-426.3, 15.7, -0.1], size: [4, 4, 7], script: level62}
+  - {id: "level62:VBoppTrig_10", level: level62, name: VBoppTrig_10, kind: 0, class: VolumeBox, corner: [-467.7, 15.7, -0.1], size: [4, 4, 7], script: level62}
+  - {id: "level62:VBoppTrig_11", level: level62, name: VBoppTrig_11, kind: 0, class: VolumeBox, corner: [-508.1, 15.7, -0.1], size: [4, 4, 7], script: level62}
+  - {id: "level62:VHurrTrig_07", level: level62, name: VHurrTrig_07, kind: 0, class: VolumeBox, corner: [-806.5, 16.9, -0.1], size: [4, 2, 7], script: level62}
+  - {id: "level63:VOrphTrig_11", level: level63, name: VOrphTrig_11, kind: 0, class: VolumeBox, corner: [-138.1, 18.7, -0.1], size: [2, 8, 7], script: level63}
+  - {id: "level64:Turf_01", level: level64, name: Turf_01, kind: 3, class: TurfBox, corner: [-593, 19.9, -0.9], size: [6, 6, 7], script: level64}
+  - {id: "level64:Turf_02", level: level64, name: Turf_02, kind: 3, class: TurfBox, corner: [-443.5, 14.3, -0.9], size: [6.4, 11.4, 7], script: level64}
+  - {id: "level64:VRiffsTrig_02", level: level64, name: VRiffsTrig_02, kind: 0, class: VolumeBox, corner: [-310.3, 17.4, -0.9], size: [2, 8, 7], script: level64}
+  - {id: "level64:VRogueTrig_09", level: level64, name: VRogueTrig_09, kind: 0, class: VolumeBox, corner: [-621.1, 13.7, -3.2], size: [16, 6, 3], script: level64}
+  - {id: "level80:vbAmbSound_01", level: level80, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [-249.3, 217.9, 1.1], size: [11.8, 10, 3.5], script: level80}
+  - {id: "level80:vbAmbSound_02", level: level80, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [-183.8, 81.8, 1.1], size: [28.2, 30, 10], script: level80}
+  - {id: "level80:vbAmbSound_03", level: level80, name: vbAmbSound_03, kind: 2, class: PlayerBox, corner: [-187.7, 81.8, 1.1], size: [6, 16.9, 10], script: level80}
+  - {id: "level80:vbAmbSound_04", level: level80, name: vbAmbSound_04, kind: 2, class: PlayerBox, corner: [-217, 89, -197], size: [33, 46, 10], script: level80}
+  - {id: "level80:vAjaxTrigger", level: level80, name: vAjaxTrigger, kind: 0, class: VolumeBox, corner: [-195.7, 154.4, 1.1], size: [8, 11.9, 3.5], held_in: vAjaxTrigger, script: level80}
+  - {id: "level80:vSnowCowboyTrigger", level: level80, name: vSnowCowboyTrigger, kind: 0, class: VolumeBox, corner: [-195.7, 210.8, 1.1], size: [11.5, 7.2, 3.5], held_in: vSnowCowboyTrigger, script: level80}
+  - {id: "level80:vTurfSnowCowboy", level: level80, name: vTurfSnowCowboy, kind: 3, class: TurfBox, corner: [-202.6, 229.2, 1.1], size: [10.8, 14.9, 3.5], held_in: vTurfSnowCowboy, turf_of: [GangSnowCowboy, GangSnowCowboyCops], script: level80}
+  - {id: "level80:vFoxTrigger", level: level80, name: vFoxTrigger, kind: 0, class: VolumeBox, corner: [-237.3, 256.2, 1.1], size: [10, 6, 3.5], held_in: vFoxTrigger, script: level80}
+  - {id: "level80:vVandalBox", level: level80, name: vVandalBox, kind: 0, class: VolumeBox, corner: [-265, 262.2, 1], size: [34.3, 19, 6], held_in: vVandalBox, script: level80}
+  - {id: "level80:vBottleBox", level: level80, name: vBottleBox, kind: 0, class: VolumeBox, corner: [-264.7, 274.7, 1.1], size: [8.2, 6.5, 3.5], held_in: vBottleBox, script: level80}
+  - {id: "level80:vTurfFoxCops", level: level80, name: vTurfFoxCops, kind: 3, class: TurfBox, corner: [-264.6, 247.2, 1.1], size: [15, 34, 3.5], held_in: vTurfFoxCops, turf_of: [GangFoxCops], script: level80}
+  - {id: "level80:vCochiseSwanTrigger", level: level80, name: vCochiseSwanTrigger, kind: 0, class: VolumeBox, corner: [-244.4, 167.3, 4.2], size: [9.5, 10.4, 3.5], held_in: vCochiseSwanTrigger, script: level80}
+  - {id: "level80:vSnowCowboyScene", level: level80, name: vSnowCowboyScene, kind: 0, class: VolumeBox, corner: [-197.8, 226, 1.1], size: [4, 3, 3.5], held_in: vSnowCowboyScene, script: level80}
+  - {id: "level80:vPharmacyStore", level: level80, name: vPharmacyStore, kind: 0, class: VolumeBox, corner: [-249.4, 217.9, 1.1], size: [12.4, 10.2, 3.5], held_in: vPharmacyStore, script: level80}
+  - {id: "level80:vStoreFrontTrigger", level: level80, name: vStoreFrontTrigger, kind: 0, class: VolumeBox, corner: [-242.7, 228, 1.1], size: [1.6, 1.6, 3.5], held_in: vStoreFrontTrigger, script: level80}
+  - {id: "level80:vStoreBackTrigger", level: level80, name: vStoreBackTrigger, kind: 0, class: VolumeBox, corner: [-246.7, 218.1, 1.1], size: [1.6, 1.6, 3.5], held_in: vStoreBackTrigger, script: level80}
+  - {id: "level80:vWarriorsTrigger", level: level80, name: vWarriorsTrigger, kind: 0, class: VolumeBox, corner: [-198.4, 124.1, 1.1], size: [10, 10, 3.5], held_in: vWarriorsTrigger, script: level80}
+  - {id: "level80:vDestroyerCopTrigger", level: level80, name: vDestroyerCopTrigger, kind: 0, class: VolumeBox, corner: [-220.7, 218.5, 1.1], size: [7.6, 4, 3.5], held_in: vDestroyerCopTrigger, script: level80}
+  - {id: "level80:vArrestDestroyerTrigger", level: level80, name: vArrestDestroyerTrigger, kind: 0, class: VolumeBox, corner: [-207.4, 250.8, 1.1], size: [7.2, 2, 3.5], held_in: vArrestDestroyerTrigger, script: level80}
+  - {id: "level80:vThrowTutorialTrigger", level: level80, name: vThrowTutorialTrigger, kind: 0, class: VolumeBox, corner: [-246.4, 265.8, 5.5], size: [5, 6, 3.5], held_in: vThrowTutorialTrigger, script: level80}
+  - {id: "level80:vFoxRescueTrigger", level: level80, name: vFoxRescueTrigger, kind: 0, class: VolumeBox, corner: [-240, 252.1, 1.1], size: [4, 4, 3.5], held_in: vFoxRescueTrigger, script: level80}
+  - {id: "level80:vStealTrigger", level: level80, name: vStealTrigger, kind: 0, class: VolumeBox, corner: [-249.4, 217.9, 1.1], size: [12.4, 10.2, 3.5], held_in: vStealTrigger, script: level80}
+  - {id: "level80:vDestroyerTalkTrigger", level: level80, name: vDestroyerTalkTrigger, kind: 0, class: VolumeBox, corner: [-248.1, 234.6, 1.1], size: [8, 4, 3.5], held_in: vDestroyerTalkTrigger, script: level80}
+  - {id: "level80:vTurfDestroyers", level: level80, name: vTurfDestroyers, kind: 3, class: TurfBox, corner: [-254.1, 147.4, 1.1], size: [10, 10, 3.5], held_in: vTurfDestroyers, turf_of: [GangCochiseSwan, GangDestroyers1, GangDestroyers2], script: level80}
+  - {id: "level80:vGarbageBumTrigger", level: level80, name: vGarbageBumTrigger, kind: 0, class: VolumeBox, corner: [-199.7, 282.7, 1.1], size: [2, 2, 3.5], held_in: vGarbageBumTrigger, script: level80}
+  - {id: "level81:vChaseCam_01", level: level81, name: vChaseCam_01, kind: 2, class: PlayerBox, corner: [100.3, -94, -216], size: [4, 4, 3.5], script: level81}
+  - {id: "level81:vChaseCam_02", level: level81, name: vChaseCam_02, kind: 2, class: PlayerBox, corner: [128.7, -117.9, -216], size: [4, 4, 3.5], script: level81}
+  - {id: "level81:vChaseCam_04", level: level81, name: vChaseCam_04, kind: 2, class: PlayerBox, corner: [156.4, -118.1, -216.6], size: [4, 4, 3.5], script: level81}
+  - {id: "level81:vChaseCam_05", level: level81, name: vChaseCam_05, kind: 2, class: PlayerBox, corner: [177.7, -117.9, -216.6], size: [4, 4, 3.5], script: level81}
+  - {id: "level81:vChaseCam_03", level: level81, name: vChaseCam_03, kind: 2, class: PlayerBox, corner: [147.9, -118.1, -214.7], size: [4, 4, 3.5], script: level81}
+  - {id: "level81:vChaseCam_06", level: level81, name: vChaseCam_06, kind: 2, class: PlayerBox, corner: [198.6, -81.5, -214.8], size: [4, 4, 3.5], script: level81}
+  - {id: "level81:vTurfBrawl", level: level81, name: vTurfBrawl, kind: 3, class: TurfBox, corner: [4.9, -50.3, -5.5], size: [53.8, 31.4, 31.2], held_in: vTurfBrawl, script: level81}
+  - {id: "level81:vThrowersBox", level: level81, name: vThrowersBox, kind: 0, class: VolumeBox, corner: [38.8, -33.9, 3], size: [12, 6, 1.7], held_in: vThrowersBox, script: level81}
+  - {id: "level81:vChatterTrigger", level: level81, name: vChatterTrigger, kind: 0, class: VolumeBox, corner: [207.7, -32.2, -212.9], size: [3, 3, 5], held_in: vChatterTrigger, script: level81}
+  - {id: "level81:vAmbushTrigger", level: level81, name: vAmbushTrigger, kind: 0, class: VolumeBox, corner: [81.6, -41.3, -210.7], size: [15.9, 4, 6.8], held_in: vAmbushTrigger, script: level81}
+  - {id: "level81:vHorrorTurf", level: level81, name: vHorrorTurf, kind: 3, class: TurfBox, corner: [72.3, -63.9, -210.7], size: [32.7, 43.3, 6.8], held_in: vHorrorTurf, script: level81}
+  - {id: "level81:vPowerSwitch", level: level81, name: vPowerSwitch, kind: 2, class: PlayerBox, corner: [103, -31.9, -209.6], size: [2, 2, 3.5], held_in: vPowerSwitch, script: level81}
+  - {id: "level81:vChaseTrigger", level: level81, name: vChaseTrigger, kind: 0, class: VolumeBox, corner: [98.8, -59.4, -216.8], size: [9, 12, 6], held_in: vChaseTrigger, script: level81}
+  - {id: "level81:vSmoke1", level: level81, name: vSmoke1, kind: 0, class: VolumeBox, corner: [155.4, -117.6, -216.6], size: [4, 3, 3.5], held_in: vSmoke1, script: level81}
+  - {id: "level81:vSmoke2", level: level81, name: vSmoke2, kind: 0, class: VolumeBox, corner: [163.9, -117.6, -216.6], size: [4, 3, 3.5], held_in: vSmoke2, script: level81}
+  - {id: "level81:vSmoke3", level: level81, name: vSmoke3, kind: 0, class: VolumeBox, corner: [172.9, -117.6, -216.6], size: [4, 3, 3.5], held_in: vSmoke3, script: level81}
+  - {id: "level81:vTunnelExit", level: level81, name: vTunnelExit, kind: 0, class: VolumeBox, corner: [197.6, -60.1, -210], size: [6, 8, 6], held_in: vTunnelExit, script: level81}
+  - {id: "level81:vTera", level: level81, name: vTera, kind: 0, class: VolumeBox, corner: [128.7, -117.6, -215.9], size: [4, 3, 3.5], held_in: vTera, script: level81}
+  - {id: "level81:vSpider", level: level81, name: vSpider, kind: 0, class: VolumeBox, corner: [100.1, -87.6, -215.9], size: [4, 3, 3.5], held_in: vSpider, script: level81}
+  - {id: "level81:vStrobe2", level: level81, name: vStrobe2, kind: 0, class: VolumeBox, corner: [160.2, -117.6, -216.6], size: [4, 3, 3.5], held_in: vStrobe2, script: level81}
+  - {id: "level81:vStrobe1", level: level81, name: vStrobe1, kind: 0, class: VolumeBox, corner: [102.6, -107.6, -215.9], size: [4, 3, 3.5], held_in: vStrobe1, script: level81}
+  - {id: "level81:vSpook", level: level81, name: vSpook, kind: 0, class: VolumeBox, corner: [182.3, -117.2, -215.9], size: [4, 3, 3.5], held_in: vSpook, script: level81}
+  - {id: "level81:vStrobe3", level: level81, name: vStrobe3, kind: 0, class: VolumeBox, corner: [198.7, -95.7, -216.6], size: [4, 3, 3.5], held_in: vStrobe3, script: level81}
+  - {id: "level81:vStrobe4", level: level81, name: vStrobe4, kind: 0, class: VolumeBox, corner: [198.6, -72.3, -213.2], size: [4, 3, 3.5], held_in: vStrobe4, script: level81}
+  - {id: "level81:vSteamKill", level: level81, name: vSteamKill, kind: 0, class: VolumeBox, corner: [37.5, -47.6, -0.6], size: [5.8, 1.9, 2.5], held_in: vSteamKill, script: level81}
+  - {id: "level81:vbLightOn", level: level81, name: vbLightOn, kind: 0, class: VolumeBox, corner: [219.1, -52.9, -213.2], size: [4.5, 8, 8], held_in: vbLightOn, script: level81}
+  - {id: "level81:vbLightOff", level: level81, name: vbLightOff, kind: 0, class: VolumeBox, corner: [202.4, -33.7, -211.3], size: [8, 6, 5], held_in: vbLightOff, script: level81}
+  - {id: "level81:vbNoZoom", level: level81, name: vbNoZoom, kind: 0, class: VolumeBox, corner: [207.5, -30.2, -212.9], size: [21.1, 7.3, 3.6], held_in: vbNoZoom, script: level81}
+  - {id: "level82:vEvents_04", level: level82, name: vEvents_04, kind: 0, class: VolumeBox, corner: [143.1, -103.9, -3], size: [72.9, 81.7, 10.2], script: level82}
+  - {id: "level82:vCopTurf_01", level: level82, name: vCopTurf_01, kind: 3, class: TurfBox, corner: [202.9, -133.7, -1], size: [177.2, 197.3, 91.7], script: level82}
+  - {id: "level82:vCopTurf_02", level: level82, name: vCopTurf_02, kind: 3, class: TurfBox, corner: [137.4, -147.8, -1], size: [138.5, 126.3, 91.7], script: level82}
+  - {id: "level82:vChangeRange_07", level: level82, name: vChangeRange_07, kind: 0, class: VolumeBox, corner: [345.9, -160.9, -199.8], size: [20, 28, 4], script: level82}
+  - {id: "level82:vChangeRange_04", level: level82, name: vChangeRange_04, kind: 0, class: VolumeBox, corner: [365.9, -160.9, -199.8], size: [10, 28, 4], script: level82}
+  - {id: "level82:vChangeRange_05", level: level82, name: vChangeRange_05, kind: 0, class: VolumeBox, corner: [345.9, -123.7, -199.8], size: [30, 20, 4], script: level82}
+  - {id: "level82:vChangeRange_01", level: level82, name: vChangeRange_01, kind: 0, class: VolumeBox, corner: [306, -129.6, -199.8], size: [30, 26, 4], script: level82}
+  - {id: "level82:vChangeRange_02", level: level82, name: vChangeRange_02, kind: 0, class: VolumeBox, corner: [305.9, -159.8, -199.8], size: [30, 36, 4], script: level82}
+  - {id: "level82:vChangeRange_06", level: level82, name: vChangeRange_06, kind: 0, class: VolumeBox, corner: [345.8, -134.9, -195.3], size: [30, 20, 4], script: level82}
+  - {id: "level82:vbAmbSound_01", level: level82, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [506.6, -85.1, -0.1], size: [26.6, 26.7, 13.5], script: level82}
+  - {id: "level82:vbAmbSound_02", level: level82, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [346, -158.6, -199.6], size: [30, 55, 11], script: level82}
+  - {id: "level82:vbAmbSound_03", level: level82, name: vbAmbSound_03, kind: 2, class: PlayerBox, corner: [306, -158.6, -199.6], size: [30, 55, 11], script: level82}
+  - {id: "level82:vbAmbSound_04", level: level82, name: vbAmbSound_04, kind: 2, class: PlayerBox, corner: [61.1, 16.9, -0.1], size: [26.7, 25, 12.5], script: level82}
+  - {id: "level82:vbAmbSound_05", level: level82, name: vbAmbSound_05, kind: 2, class: PlayerBox, corner: [61.3, 7, -0.1], size: [6.6, 14, 12.5], script: level82}
+  - {id: "level82:vbAmbSound_06", level: level82, name: vbAmbSound_06, kind: 2, class: PlayerBox, corner: [96.8, -59.5, -0.1], size: [28.8, 29.4, 3.5], script: level82}
+  - {id: "level82:vbAmbSound_07", level: level82, name: vbAmbSound_07, kind: 2, class: PlayerBox, corner: [106.7, -69.4, -0.1], size: [29.4, 18.8, 3.5], script: level82}
+  - {id: "level82:vbAmbSound_08", level: level82, name: vbAmbSound_08, kind: 2, class: PlayerBox, corner: [46.7, -141.4, -0.1], size: [59.3, 59.5, 3.5], script: level82}
+  - {id: "level82:vT2", level: level82, name: vT2, kind: 0, class: VolumeBox, corner: [149.8, -102.9, -1], size: [50.7, 93.6, 3.9], held_in: vT2, script: level82}
+  - {id: "level82:vSceneC3", level: level82, name: vSceneC3, kind: 0, class: VolumeBox, corner: [276.4, -87.2, 8.5], size: [11, 14.9, 6.9], held_in: vSceneC3, script: level82}
+  - {id: "level82:vSM09Turf", level: level82, name: vSM09Turf, kind: 3, class: TurfBox, corner: [249.5, -125.2, -1], size: [56.5, 58, 28.4], held_in: vSM09Turf, script: level82}
+  - {id: "level82:vCopArea", level: level82, name: vCopArea, kind: 0, class: VolumeBox, corner: [194.7, -19, -1], size: [28.7, 51.7, 38.8], held_in: vCopArea, script: level82}
+  - {id: "level82:vStakeCam01", level: level82, name: vStakeCam01, kind: 0, class: VolumeBox, corner: [170.1, -22.4, -1], size: [50.3, 18.2, 10.8], held_in: vStakeCam01, script: level82}
+  - {id: "level82:vLastCheckpoint", level: level82, name: vLastCheckpoint, kind: 0, class: VolumeBox, corner: [296.2, -132.8, 4], size: [4.1, 4.6, 2.2], held_in: vLastCheckpoint, script: level82}
+  - {id: "level82:vViewCops", level: level82, name: vViewCops, kind: 0, class: VolumeBox, corner: [273.9, -104.3, 8], size: [26.8, 5.1, 2.5], held_in: vViewCops, script: level82}
+  - {id: "level82:vT21", level: level82, name: vT21, kind: 0, class: VolumeBox, corner: [265.4, -118.1, 8], size: [31.1, 9.9, 2.5], held_in: vT21, script: level82}
+  - {id: "level82:vT3", level: level82, name: vT3, kind: 0, class: VolumeBox, corner: [205, -11.7, -1], size: [15.9, 24.5, 8.6], held_in: vT3, script: level82}
+  - {id: "level82:vLCScene", level: level82, name: vLCScene, kind: 0, class: VolumeBox, corner: [196.6, -16.2, -1], size: [6.9, 12.9, 5.3], held_in: vLCScene, script: level82}
+  - {id: "level82:vRoofTurf", level: level82, name: vRoofTurf, kind: 3, class: TurfBox, corner: [265.6, -163.7, 4.3], size: [54.5, 67.5, 13.9], held_in: vRoofTurf, script: level82}
+  - {id: "level82:vRoofDest", level: level82, name: vRoofDest, kind: 0, class: VolumeBox, corner: [292, -142.1, 8.8], size: [4, 3.9, 2.6], held_in: vRoofDest, script: level82}
+  - {id: "level82:vBumTurf03", level: level82, name: vBumTurf03, kind: 3, class: TurfBox, corner: [157.5, -107.4, -1], size: [44.4, 127.3, 10.2], held_in: vBumTurf03, turf_of: [GangRiotBums, GangWimpBums], script: level82}
+  - {id: "level82:vFactoryTurf", level: level82, name: vFactoryTurf, kind: 3, class: TurfBox, corner: [237.8, -38.9, -1], size: [28.9, 47, 11.2], held_in: vFactoryTurf, script: level82}
+  - {id: "level82:vCopsTurf", level: level82, name: vCopsTurf, kind: 3, class: TurfBox, corner: [292.9, -32.6, -1], size: [28.6, 22.9, 11.2], held_in: vCopsTurf, script: level82}
+  - {id: "level82:vFightTurf", level: level82, name: vFightTurf, kind: 3, class: TurfBox, corner: [178.6, -47.1, -1], size: [3.9, 4, 2.2], held_in: vFightTurf, script: level82}
+  - {id: "level82:vDonutStore", level: level82, name: vDonutStore, kind: 0, class: VolumeBox, corner: [194, -113.5, -1], size: [12.6, 13.2, 10.1], held_in: vDonutStore, script: level82}
+  - {id: "level82:vDestTurf", level: level82, name: vDestTurf, kind: 3, class: TurfBox, corner: [401, -42.3, -4.9], size: [32.8, 39.6, 25.7], held_in: vDestTurf, script: level82}
+  - {id: "level82:vStationTurf", level: level82, name: vStationTurf, kind: 3, class: TurfBox, corner: [192, -120.4, -1], size: [29.2, 31.4, 10.1], held_in: vStationTurf, script: level82}
+  - {id: "level82:vDestWalk", level: level82, name: vDestWalk, kind: 0, class: VolumeBox, corner: [390.9, -45.3, -7.4], size: [17.4, 7, 9.4], held_in: vDestWalk, script: level82}
+  - {id: "level82:tWareHouse01", level: level82, name: tWareHouse01, kind: 3, class: TurfBox, corner: [306, -161, -200.9], size: [30, 60, 22.2], held_in: tWareHouse01, script: level82}
+  - {id: "level82:vOpenDS03", level: level82, name: vOpenDS03, kind: 0, class: VolumeBox, corner: [352, -149.8, -199.8], size: [24, 8, 6], held_in: vOpenDS03, script: level82}
+  - {id: "level82:vWHPit", level: level82, name: vWHPit, kind: 0, class: VolumeBox, corner: [336.1, -158.8, -199.8], size: [9.7, 52.6, 4], held_in: vWHPit, script: level82}
+  - {id: "level82:tWareHouse02", level: level82, name: tWareHouse02, kind: 3, class: TurfBox, corner: [345.9, -161, -200.9], size: [30, 60, 22.2], held_in: tWareHouse02, script: level82}
+  - {id: "level82:tWareHouse03", level: level82, name: tWareHouse03, kind: 3, class: TurfBox, corner: [305.8, -161, -200.9], size: [70, 60, 22.2], held_in: tWareHouse03, script: level82}
+  - {id: "level82:volPhase02", level: level82, name: volPhase02, kind: 0, class: VolumeBox, corner: [336, -149, -195.7], size: [8, 6, 6], held_in: volPhase02, script: level82}
+  - {id: "level82:volPhase03", level: level82, name: volPhase03, kind: 0, class: VolumeBox, corner: [337.9, -119.5, -195.7], size: [8, 6, 6], held_in: volPhase03, script: level82}
+  - {id: "level82:volWHGoal01", level: level82, name: volWHGoal01, kind: 0, class: VolumeBox, corner: [323.6, -147.6, -199.1], size: [3, 3, 6], held_in: volWHGoal01, script: level82}
+  - {id: "level82:volWHGoal02", level: level82, name: volWHGoal02, kind: 0, class: VolumeBox, corner: [346.2, -120.2, -195.5], size: [3, 4, 6], held_in: volWHGoal02, script: level82}
+  - {id: "level82:volWHGoal04", level: level82, name: volWHGoal04, kind: 0, class: VolumeBox, corner: [301.1, -133.2, -195.4], size: [12, 4, 6], held_in: volWHGoal04, script: level82}
+  - {id: "level82:vKillWall", level: level82, name: vKillWall, kind: 0, class: VolumeBox, corner: [278.4, -132.4, -193.7], size: [6, 6, 5.5], held_in: vKillWall, script: level82}
+  - {id: "level82:volWHOutSide", level: level82, name: volWHOutSide, kind: 0, class: VolumeBox, corner: [336, -149.8, -196.3], size: [9.9, 37.9, 5], held_in: volWHOutSide, script: level82}
+  - {id: "level82:volWHGoal03", level: level82, name: volWHGoal03, kind: 0, class: VolumeBox, corner: [355.3, -118.1, -199.2], size: [3, 4, 6], held_in: volWHGoal03, script: level82}
+  - {id: "level82:vRoofCam2", level: level82, name: vRoofCam2, kind: 0, class: VolumeBox, corner: [279.8, -131.7, -192.8], size: [4.4, 10.2, 4], held_in: vRoofCam2, script: level82}
+  - {id: "level83:vbSwitchCam_01", level: level83, name: vbSwitchCam_01, kind: 2, class: PlayerBox, corner: [0.2, -85.6, -1.9], size: [10.6, 4, 5.1], script: level83}
+  - {id: "level83:vbSwitchCam_02", level: level83, name: vbSwitchCam_02, kind: 2, class: PlayerBox, corner: [-6.5, -77.3, -0.1], size: [10.6, 4, 5.1], script: level83}
+  - {id: "level83:vbSwitchCam_03", level: level83, name: vbSwitchCam_03, kind: 2, class: PlayerBox, corner: [-4.9, -34.4, -0.1], size: [10.6, 4, 5.1], script: level83}
+  - {id: "level83:vbAmbSound_01", level: level83, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [220.8, -1.3, -0.1], size: [26.9, 24.9, 12.6], script: level83}
+  - {id: "level83:vbAmbSound_02", level: level83, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [220.7, -11.8, -0.1], size: [6.9, 11.8, 12.6], script: level83}
+  - {id: "level83:vbAmbSound_03", level: level83, name: vbAmbSound_03, kind: 2, class: PlayerBox, corner: [261.9, 16.5, -0.1], size: [13.5, 13.5, 3.5], script: level83}
+  - {id: "level83:vbAmbSound_04", level: level83, name: vbAmbSound_04, kind: 2, class: PlayerBox, corner: [263.7, 52.8, -0.1], size: [17.3, 19.1, 3.5], script: level83}
+  - {id: "level83:vbAmbSound_05", level: level83, name: vbAmbSound_05, kind: 2, class: PlayerBox, corner: [272.5, 111.3, -0.1], size: [28.5, 50, 12.5], script: level83}
+  - {id: "level83:vBoxDonut", level: level83, name: vBoxDonut, kind: 0, class: VolumeBox, corner: [261.6, 20.3, 0], size: [14.1, 13.5, 8.1], held_in: vBoxDonut, script: level83}
+  - {id: "level83:vStoreDiner", level: level83, name: vStoreDiner, kind: 0, class: VolumeBox, corner: [304.6, 47.2, -1], size: [13.7, 20.1, 8.8], held_in: vStoreDiner, script: level83}
+  - {id: "level83:vNorthStreet", level: level83, name: vNorthStreet, kind: 0, class: VolumeBox, corner: [127.4, 12.6, -1], size: [247, 94.8, 57.6], held_in: vNorthStreet, script: level83}
+  - {id: "level83:vSpotBeansie", level: level83, name: vSpotBeansie, kind: 0, class: VolumeBox, corner: [257.2, 48.5, -1], size: [9.1, 6.8, 7.4], held_in: vSpotBeansie, script: level83}
+  - {id: "level83:vAlley", level: level83, name: vAlley, kind: 2, class: PlayerBox, corner: [229.5, 65.1, -1], size: [25.3, 12, 10], held_in: vAlley, script: level83}
+  - {id: "level83:vDinerTurf", level: level83, name: vDinerTurf, kind: 3, class: TurfBox, corner: [248.1, 9.3, -1], size: [40.6, 36, 12.5], held_in: vDinerTurf, turf_of: [GangBeansie], script: level83}
+  - {id: "level83:vAlleyTurf", level: level83, name: vAlleyTurf, kind: 3, class: TurfBox, corner: [227.1, 61.7, -1], size: [40.6, 36, 12.5], held_in: vAlleyTurf, script: level83}
+  - {id: "level83:vFightPenTurf", level: level83, name: vFightPenTurf, kind: 3, class: TurfBox, corner: [162.4, 20.3, -203], size: [38.7, 27.2, 23.3], held_in: vFightPenTurf, script: level83}
+  - {id: "level83:vbBoardwalk", level: level83, name: vbBoardwalk, kind: 2, class: PlayerBox, corner: [-119.3, -14.4, 0.2], size: [11.5, 8, 5.1], held_in: vbBoardwalk, script: level83}
+  - {id: "level83:vbAlleyTurf", level: level83, name: vbAlleyTurf, kind: 3, class: TurfBox, corner: [203.3, -16.4, -0.7], size: [88, 40, 20], held_in: vbAlleyTurf, script: level83}
+  - {id: "level83:vbPlaySubway", level: level83, name: vbPlaySubway, kind: 2, class: PlayerBox, corner: [127, -100.3, -0.4], size: [110.2, 163.5, 20], held_in: vbPlaySubway, script: level83}
+  - {id: "level83:vbLeaveAptObj", level: level83, name: vbLeaveAptObj, kind: 2, class: PlayerBox, corner: [14.3, -86, -0.1], size: [5, 5, 6], held_in: vbLeaveAptObj, script: level83}
+  - {id: "level83:vbLemScene", level: level83, name: vbLemScene, kind: 2, class: PlayerBox, corner: [162.5, -82.8, -3.9], size: [20, 20, 24.9], held_in: vbLemScene, script: level83}
+  - {id: "level83:vbApartmentTurf", level: level83, name: vbApartmentTurf, kind: 3, class: TurfBox, corner: [19, -136.5, -4.5], size: [120, 60, 20], held_in: vbApartmentTurf, script: level83}
+  - {id: "level83:vbShantyTurf", level: level83, name: vbShantyTurf, kind: 3, class: TurfBox, corner: [159.3, -92.5, -3], size: [43.7, 116, 15], held_in: vbShantyTurf, script: level83}
+  - {id: "level83:vbSpawnShanty", level: level83, name: vbSpawnShanty, kind: 2, class: PlayerBox, corner: [247.2, -5.6, -2.4], size: [6.6, 8, 12], held_in: vbSpawnShanty, script: level83}
+  - {id: "level83:vbTurnOnCops", level: level83, name: vbTurnOnCops, kind: 2, class: PlayerBox, corner: [108.2, -107.4, -0.4], size: [9.9, 9.7, 4.8], held_in: vbTurnOnCops, script: level83}
+  - {id: "level83:vbChaseTurf", level: level83, name: vbChaseTurf, kind: 3, class: TurfBox, corner: [-143.5, -160.7, -4.5], size: [260, 200, 30], held_in: vbChaseTurf, script: level83}
+  - {id: "level83:vbSwitchAmbient", level: level83, name: vbSwitchAmbient, kind: 2, class: PlayerBox, corner: [34.5, -98.2, -3], size: [49.3, 19.9, 20], held_in: vbSwitchAmbient, script: level83}
+  - {id: "level83:vbDonutRegion", level: level83, name: vbDonutRegion, kind: 2, class: PlayerBox, corner: [261.3, 22.8, -0.1], size: [14.1, 14, 8.1], held_in: vbDonutRegion, script: level83}
+  - {id: "level83:vbLeaveArea", level: level83, name: vbLeaveArea, kind: 2, class: PlayerBox, corner: [253.9, 12.5, 0], size: [4.4, 7.3, 3.7], held_in: vbLeaveArea, script: level83}
+  - {id: "level83:vbEscapeTurf", level: level83, name: vbEscapeTurf, kind: 3, class: TurfBox, corner: [220.2, 12.2, -2.4], size: [120, 90, 12.5], held_in: vbEscapeTurf, turf_of: [GangBeansie, GangDinerDest], script: level83}
+  - {id: "level84:VCarChaseTrig_01", level: level84, name: VCarChaseTrig_01, kind: 0, class: VolumeBox, corner: [-52, -105.5, -0.8], size: [6, 6, 10], script: level84}
+  - {id: "level84:VCarChaseTrig_05", level: level84, name: VCarChaseTrig_05, kind: 0, class: VolumeBox, corner: [64.5, -104.8, -0.8], size: [4, 4, 10], script: level84}
+  - {id: "level84:VCarChaseTrig_03", level: level84, name: VCarChaseTrig_03, kind: 0, class: VolumeBox, corner: [26, -105.5, -0.8], size: [6, 6, 10], script: level84}
+  - {id: "level84:VCarChaseTrig_02", level: level84, name: VCarChaseTrig_02, kind: 0, class: VolumeBox, corner: [-13, -105.5, -0.8], size: [6, 6, 10], script: level84}
+  - {id: "level84:VCarChaseTrig_08", level: level84, name: VCarChaseTrig_08, kind: 0, class: VolumeBox, corner: [54.5, -107.5, -0.8], size: [10, 10, 10], script: level84}
+  - {id: "level84:VCarChaseTrig_09", level: level84, name: VCarChaseTrig_09, kind: 0, class: VolumeBox, corner: [67.6, -118.2, -0.8], size: [10, 10, 10], script: level84}
+  - {id: "level84:VCarChaseTrig_10", level: level84, name: VCarChaseTrig_10, kind: 0, class: VolumeBox, corner: [-52.5, -105.5, -0.8], size: [6, 6, 10], script: level84}
+  - {id: "level84:VCarChaseTrig_11", level: level84, name: VCarChaseTrig_11, kind: 0, class: VolumeBox, corner: [-13.5, -105.5, -0.8], size: [6, 6, 10], script: level84}
+  - {id: "level84:VCarChaseTrig_12", level: level84, name: VCarChaseTrig_12, kind: 0, class: VolumeBox, corner: [25.5, -105.5, -0.8], size: [6, 6, 10], script: level84}
+  - {id: "level84:VCarChaseTrig_13", level: level84, name: VCarChaseTrig_13, kind: 0, class: VolumeBox, corner: [64.3, -113, -0.8], size: [10, 14, 10], script: level84}
+  - {id: "level84:TurfFight02", level: level84, name: TurfFight02, kind: 3, class: TurfBox, corner: [-479.6, -240.8, -1.4], size: [16, 10, 6], held_in: TurfFight02, script: level84}
+  - {id: "level84:vFOVZoom", level: level84, name: vFOVZoom, kind: 0, class: VolumeBox, corner: [-471.1, -229.9, -0.9], size: [14, 24, 6], held_in: vFOVZoom, script: level84}
+  - {id: "level84:vFOVZoom01", level: level84, name: vFOVZoom01, kind: 0, class: VolumeBox, corner: [-472.7, -229.9, -0.9], size: [16, 24, 6], held_in: vFOVZoom01, script: level84}
+  - {id: "level84:TurfF01", level: level84, name: TurfF01, kind: 3, class: TurfBox, corner: [-598.2, -226.9, -0.9], size: [4, 4, 6], held_in: TurfF01, turf_of: [GangRiff03, GangRogF05], script: level84}
+  - {id: "level84:TurfF02", level: level84, name: TurfF02, kind: 3, class: TurfBox, corner: [-600.1, -224.8, -0.9], size: [4, 4, 6], held_in: TurfF02, turf_of: [GangRiff04, GangRogF06], script: level84}
+  - {id: "level84:TurfF03", level: level84, name: TurfF03, kind: 3, class: TurfBox, corner: [-594, -227.2, -0.9], size: [4, 4, 6], held_in: TurfF03, turf_of: [GangRiff05, GangRogF07], script: level84}
+  - {id: "level86:vbAmbSound_01", level: level86, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [-138, 51.5, -0.1], size: [29.5, 17.3, 3.5], script: level86}
+  - {id: "level86:vbAmbSound_02", level: level86, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [-148.6, -19.6, -0.1], size: [13.2, 25.4, 3.5], script: level86}
+  - {id: "level86:vbAmbSound_03", level: level86, name: vbAmbSound_03, kind: 2, class: PlayerBox, corner: [-38, 6.4, -0.1], size: [19.6, 14.9, 3.5], script: level86}
+  - {id: "level86:vbAmbSound_04", level: level86, name: vbAmbSound_04, kind: 2, class: PlayerBox, corner: [-77.8, 11.3, -0.1], size: [19.6, 19.6, 3.5], script: level86}
+  - {id: "level86:vbAmbSound_05", level: level86, name: vbAmbSound_05, kind: 2, class: PlayerBox, corner: [-174.8, 11, -0.1], size: [29.8, 20.6, 3.5], script: level86}
+  - {id: "level86:vbAmbSound_06", level: level86, name: vbAmbSound_06, kind: 2, class: PlayerBox, corner: [-187.7, 81.6, -0.1], size: [32.6, 24.5, 12.5], script: level86}
+  - {id: "level86:vbAmbSound_07", level: level86, name: vbAmbSound_07, kind: 2, class: PlayerBox, corner: [-187.7, 103.7, -0.1], size: [15.6, 8, 12.5], script: level86}
+  - {id: "level86:vPerimeterMildred", level: level86, name: vPerimeterMildred, kind: 0, class: VolumeBox, corner: [-91.1, 4.6, -3], size: [60, 16, 6.5], held_in: vPerimeterMildred, script: level86}
+  - {id: "level86:vPerimeterTwiggy", level: level86, name: vPerimeterTwiggy, kind: 0, class: VolumeBox, corner: [-108.7, 23, -0.1], size: [64, 48, 6.5], held_in: vPerimeterTwiggy, script: level86}
+  - {id: "level86:vPerimeterChuck", level: level86, name: vPerimeterChuck, kind: 0, class: VolumeBox, corner: [-150.4, 15.7, -0.1], size: [64, 60, 6.5], held_in: vPerimeterChuck, script: level86}
+  - {id: "level86:vTurfTwiggy", level: level86, name: vTurfTwiggy, kind: 3, class: TurfBox, corner: [-95.1, 48, -0.1], size: [25.2, 20, 6.5], held_in: vTurfTwiggy, script: level86}
+  - {id: "level86:vTurfMarcello", level: level86, name: vTurfMarcello, kind: 3, class: TurfBox, corner: [-143.3, -17.2, -0.1], size: [30.9, 28, 6.5], held_in: vTurfMarcello, script: level86}
+  - {id: "level86:vTurfMildred", level: level86, name: vTurfMildred, kind: 3, class: TurfBox, corner: [-54.7, 1, -0.6], size: [20.6, 20, 6.5], held_in: vTurfMildred, script: level86}
+  - {id: "level86:vTurfChuck", level: level86, name: vTurfChuck, kind: 3, class: TurfBox, corner: [-138.6, 46, -0.1], size: [29.9, 22.9, 6.5], held_in: vTurfChuck, script: level86}
+  - {id: "level86:vChuck", level: level86, name: vChuck, kind: 0, class: VolumeBox, corner: [-138.4, 47.1, -0.7], size: [29.5, 17.4, 6.5], held_in: vChuck, script: level86}
+  - {id: "level86:vMarcello", level: level86, name: vMarcello, kind: 0, class: VolumeBox, corner: [-136.1, -5.9, -0.1], size: [19, 13, 6.5], held_in: vMarcello, script: level86}
+  - {id: "level86:vTwiggy", level: level86, name: vTwiggy, kind: 0, class: VolumeBox, corner: [-88.3, 48.1, -0.1], size: [22, 18, 6.5], held_in: vTwiggy, script: level86}
+  - {id: "level86:vMildred", level: level86, name: vMildred, kind: 0, class: VolumeBox, corner: [-54.6, 0.3, -0.1], size: [20.2, 20.6, 6.5], held_in: vMildred, script: level86}
+  - {id: "level86:vTurfWanderWalk", level: level86, name: vTurfWanderWalk, kind: 3, class: TurfBox, corner: [-207.7, -44.8, -0.1], size: [208.5, 140, 20], held_in: vTurfWanderWalk, script: level86}
+  - {id: "level86:vVandalChuck", level: level86, name: vVandalChuck, kind: 0, class: VolumeBox, corner: [-139.9, 45.3, -0.1], size: [32, 26, 6.5], held_in: vVandalChuck, script: level86}
+  - {id: "level86:vVandalMarcello", level: level86, name: vVandalMarcello, kind: 0, class: VolumeBox, corner: [-144.9, -4.5, -0.1], size: [34, 14, 6.5], held_in: vVandalMarcello, script: level86}
+  - {id: "level86:vVandalMildred", level: level86, name: vVandalMildred, kind: 0, class: VolumeBox, corner: [-58.7, 2.5, -0.1], size: [34, 24, 6.5], held_in: vVandalMildred, script: level86}
+  - {id: "level86:vVandalTwiggy", level: level86, name: vVandalTwiggy, kind: 0, class: VolumeBox, corner: [-86.5, 46.2, -0.1], size: [34, 24, 6.5], held_in: vVandalTwiggy, script: level86}
+  - {id: "level86:vStartStoreOwners", level: level86, name: vStartStoreOwners, kind: 0, class: VolumeBox, corner: [-138.3, 51.2, -0.1], size: [29.1, 8.7, 6.5], held_in: vStartStoreOwners, script: level86}
+  - {id: "level86:vTurfHotDogGuy", level: level86, name: vTurfHotDogGuy, kind: 3, class: TurfBox, corner: [-97.3, 36, -0.1], size: [12, 12, 6.5], held_in: vTurfHotDogGuy, script: level86}
+  - {id: "level86:vSoundChuck", level: level86, name: vSoundChuck, kind: 0, class: VolumeBox, corner: [-141.4, 47.5, -0.1], size: [32, 26, 6.5], held_in: vSoundChuck, script: level86}
+  - {id: "level86:vSoundMarcello", level: level86, name: vSoundMarcello, kind: 0, class: VolumeBox, corner: [-136.6, -5.4, -0.1], size: [26, 13.2, 6.5], held_in: vSoundMarcello, script: level86}
+  - {id: "level86:vSoundMildred", level: level86, name: vSoundMildred, kind: 0, class: VolumeBox, corner: [-54.8, -2.6, -0.1], size: [40, 24, 6.5], held_in: vSoundMildred, script: level86}
+  - {id: "level86:vHammerBox", level: level86, name: vHammerBox, kind: 0, class: VolumeBox, corner: [44.3, 44.8, -0.1], size: [10, 6, 6.5], held_in: vHammerBox, script: level86}
+  - {id: "level86:vSecondVanBox", level: level86, name: vSecondVanBox, kind: 0, class: VolumeBox, corner: [50.5, 62.5, -1.7], size: [14, 12, 6.5], held_in: vSecondVanBox, script: level86}
+  - {id: "level86:vPerimeterMarcello", level: level86, name: vPerimeterMarcello, kind: 0, class: VolumeBox, corner: [-156.6, -33.5, -3.1], size: [70, 70, 6.5], held_in: vPerimeterMarcello, script: level86}
+  - {id: "level86:vClipBox", level: level86, name: vClipBox, kind: 0, class: VolumeBox, corner: [39.1, 51.5, -0.1], size: [16, 14, 6.5], held_in: vClipBox, script: level86}
+  - {id: "level87:vbStreetTurf_01", level: level87, name: vbStreetTurf_01, kind: 3, class: TurfBox, corner: [315.8, 27.8, -3.8], size: [220, 158, 30], script: level87}
+  - {id: "level87:vbStoreCam_Laundry", level: level87, name: vbStoreCam_Laundry, kind: 2, class: PlayerBox, corner: [330.7, 136.4, -0.4], size: [11.2, 10, 5.1], script: level87}
+  - {id: "level87:vbStoreCam_Pharmacy", level: level87, name: vbStoreCam_Pharmacy, kind: 2, class: PlayerBox, corner: [371.6, 148.4, -1.2], size: [10, 11.4, 5.8], script: level87}
+  - {id: "level87:vbStoreCam_Liquor", level: level87, name: vbStoreCam_Liquor, kind: 2, class: PlayerBox, corner: [440, 114.1, -1.4], size: [10.2, 11.6, 5.8], script: level87}
+  - {id: "level87:vbStoreCam_Hardware", level: level87, name: vbStoreCam_Hardware, kind: 2, class: PlayerBox, corner: [410.9, 89.1, -1.2], size: [11.7, 11.5, 5.7], script: level87}
+  - {id: "level87:vbAmbSound_01", level: level87, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [371.9, 148.4, -0.8], size: [9.7, 11.3, 3.5], script: level87}
+  - {id: "level87:vbAmbSound_02", level: level87, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [440.3, 114.2, -0.1], size: [9.7, 11.3, 3.5], script: level87}
+  - {id: "level87:vbAmbSound_03", level: level87, name: vbAmbSound_03, kind: 2, class: PlayerBox, corner: [412.8, 89, -0.1], size: [9.7, 11.3, 3.5], script: level87}
+  - {id: "level87:vbAmbSound_12", level: level87, name: vbAmbSound_12, kind: 2, class: PlayerBox, corner: [330.7, 136.6, -0.9], size: [11.3, 9.8, 3.5], script: level87}
+  - {id: "level87:vbPornTrigger", level: level87, name: vbPornTrigger, kind: 2, class: PlayerBox, corner: [435.8, 82.7, 8.4], size: [4, 4, 3.7], held_in: vbPornTrigger, script: level87}
+  - {id: "level87:vbStartroofChat", level: level87, name: vbStartroofChat, kind: 2, class: PlayerBox, corner: [451.2, 128.1, -2.2], size: [18, 44, 14.1], held_in: vbStartroofChat, script: level87}
+  - {id: "level87:vbBumScrap", level: level87, name: vbBumScrap, kind: 2, class: PlayerBox, corner: [385.8, 145.7, -1.6], size: [30, 7.5, 20], held_in: vbBumScrap, script: level87}
+  - {id: "level87:vbRPGo", level: level87, name: vbRPGo, kind: 2, class: PlayerBox, corner: [448.7, 107.8, 8.2], size: [6, 4, 4], held_in: vbRPGo, script: level87}
+  - {id: "level87:vbSide2Turf", level: level87, name: vbSide2Turf, kind: 3, class: TurfBox, corner: [414.9, 42.8, -6], size: [86.1, 146.5, 20], held_in: vbSide2Turf, script: level87}
+  - {id: "level87:vbBackAlleyTurf", level: level87, name: vbBackAlleyTurf, kind: 3, class: TurfBox, corner: [372.8, 54.1, -2.1], size: [46, 72, 15], held_in: vbBackAlleyTurf, script: level87}
+  - {id: "level87:vbLosBox", level: level87, name: vbLosBox, kind: 2, class: PlayerBox, corner: [455.2, 100.2, -0.7], size: [14.4, 13.1, 6.6], held_in: vbLosBox, script: level87}
+  - {id: "level87:vbHearParty", level: level87, name: vbHearParty, kind: 2, class: PlayerBox, corner: [440.1, 99.6, -2.3], size: [40, 38.9, 19.5], held_in: vbHearParty, script: level87}
+  - {id: "level87:vbStartRoofRadio", level: level87, name: vbStartRoofRadio, kind: 2, class: PlayerBox, corner: [415.6, 93.8, -2], size: [88.3, 10, 27.5], held_in: vbStartRoofRadio, script: level87}
+  - {id: "level87:vbHomeInvasion", level: level87, name: vbHomeInvasion, kind: 2, class: PlayerBox, corner: [489, 146.5, 0], size: [9.9, 11.1, 5.9], held_in: vbHomeInvasion, script: level87}
+  - {id: "level87:vbSpawnHome", level: level87, name: vbSpawnHome, kind: 2, class: PlayerBox, corner: [489.5, 141.5, 0], size: [3.5, 4.7, 2.3], held_in: vbSpawnHome, script: level87}
+  - {id: "level87:vbRailDistSwitch", level: level87, name: vbRailDistSwitch, kind: 2, class: PlayerBox, corner: [489, 149.8, 0], size: [11, 8, 3.3], held_in: vbRailDistSwitch, script: level87}
+  - {id: "level87:vbRembrandtGo", level: level87, name: vbRembrandtGo, kind: 0, class: VolumeBox, corner: [351.5, 49.2, -0.8], size: [2.5, 7.1, 3.6], held_in: vbRembrandtGo, script: level87}
+  - {id: "level87:vbTriggerPuker", level: level87, name: vbTriggerPuker, kind: 0, class: VolumeBox, corner: [345.4, 72.7, -0.6], size: [30, 20, 4], held_in: vbTriggerPuker, script: level87}
+  - {id: "level87:vbTrainTrigger", level: level87, name: vbTrainTrigger, kind: 2, class: PlayerBox, corner: [385.2, 167.3, 5], size: [4.1, 4.1, 2.1], held_in: vbTrainTrigger, script: level87}
+  - {id: "level87:vbTurnOffSystemSound", level: level87, name: vbTurnOffSystemSound, kind: 2, class: PlayerBox, corner: [433.5, 64, -2], size: [50, 80, 27.5], held_in: vbTurnOffSystemSound, script: level87}
+  - {id: "level87:vbExitFour", level: level87, name: vbExitFour, kind: 2, class: PlayerBox, corner: [419.3, 78.2, -0.1], size: [12, 11, 2.8], held_in: vbExitFour, script: level87}
+  - {id: "level87:vbStartRoofBanter", level: level87, name: vbStartRoofBanter, kind: 2, class: PlayerBox, corner: [475.7, 71.6, 5.3], size: [6.1, 6.5, 3.2], held_in: vbStartRoofBanter, script: level87}
+  - {id: "level87:vbPukeScoutTurf", level: level87, name: vbPukeScoutTurf, kind: 3, class: TurfBox, corner: [437.2, -96.8, -0.8], size: [16, 16, 6], held_in: vbPukeScoutTurf, script: level87}
+  - {id: "level87:volObjTutorial05", level: level87, name: volObjTutorial05, kind: 0, class: VolumeBox, corner: [415.1, -104.1, -0.8], size: [4, 10, 6], held_in: volObjTutorial05, script: level87}
+  - {id: "level87:volTag9Objective", level: level87, name: volTag9Objective, kind: 0, class: VolumeBox, corner: [428.6, -115.8, 1.9], size: [4.4, 8, 4], held_in: volTag9Objective, script: level87}
+  - {id: "level87:volDistract", level: level87, name: volDistract, kind: 0, class: VolumeBox, corner: [424.7, -94.7, -0.2], size: [4.5, 14, 8], held_in: volDistract, script: level87}
+  - {id: "level87:volObjTutorial03", level: level87, name: volObjTutorial03, kind: 0, class: VolumeBox, corner: [425, -101.6, -0.2], size: [12, 20, 3], held_in: volObjTutorial03, script: level87}
+  - {id: "level87:volObjTutorial04", level: level87, name: volObjTutorial04, kind: 0, class: VolumeBox, corner: [416.9, -104.2, -0.8], size: [8, 10, 6], held_in: volObjTutorial04, script: level87}
+  - {id: "level87:volObjTutorial02", level: level87, name: volObjTutorial02, kind: 0, class: VolumeBox, corner: [429.9, -102, -0.8], size: [8, 10, 6], held_in: volObjTutorial02, script: level87}
+  - {id: "level87:volPuker", level: level87, name: volPuker, kind: 0, class: VolumeBox, corner: [444.9, -80.7, -0.8], size: [8, 10, 6], held_in: volPuker, script: level87}
+  - {id: "level87:volCh5HB01", level: level87, name: volCh5HB01, kind: 0, class: VolumeBox, corner: [405.2, -69.4, -0.8], size: [12, 12, 6], held_in: volCh5HB01, script: level87}
+  - {id: "level87:volObjTutorial01", level: level87, name: volObjTutorial01, kind: 0, class: VolumeBox, corner: [410.4, -72.6, -0.8], size: [8, 14, 6], held_in: volObjTutorial01, script: level87}
+  - {id: "level87:vbDestClubTurf", level: level87, name: vbDestClubTurf, kind: 3, class: TurfBox, corner: [363.2, -166.5, -6.5], size: [100, 120, 29.4], held_in: vbDestClubTurf, script: level87}
+  - {id: "level87:vbGotBack", level: level87, name: vbGotBack, kind: 2, class: PlayerBox, corner: [413.7, -103.7, -0.4], size: [4, 6, 6], held_in: vbGotBack, script: level87}
+  - {id: "level87:vbFinalGlow", level: level87, name: vbFinalGlow, kind: 2, class: PlayerBox, corner: [417.4, -110.3, -2.7], size: [4.4, 8, 4], held_in: vbFinalGlow, script: level87}
+  - {id: "level87:vbStealth5", level: level87, name: vbStealth5, kind: 0, class: VolumeBox, corner: [406.3, -108.2, -2.4], size: [2.5, 2.5, 3], held_in: vbStealth5, script: level87}
+  - {id: "level87:vbGoVoltron", level: level87, name: vbGoVoltron, kind: 2, class: PlayerBox, corner: [343.1, 56.3, -0.1], size: [6.5, 4.8, 5], held_in: vbGoVoltron, script: level87}
+  - {id: "level87:vbForceScoutTurn", level: level87, name: vbForceScoutTurn, kind: 2, class: PlayerBox, corner: [425.3, -69.2, -0.1], size: [6, 11.8, 5.9], held_in: vbForceScoutTurn, script: level87}
+  - {id: "level87:vbCheckTeleport", level: level87, name: vbCheckTeleport, kind: 2, class: PlayerBox, corner: [433.5, -99, 0], size: [1.2, 5.7, 2.9], held_in: vbCheckTeleport, script: level87}
+  - {id: "level92:vbAmbSound_01", level: level92, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [-138, 47.6, -0.1], size: [29.5, 17.3, 3.5], script: level92}
+  - {id: "level92:vbAmbSound_02", level: level92, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [-136.3, -5.3, -0.1], size: [25.4, 13.1, 3.5], script: level92}
+  - {id: "level92:vbAmbSound_03", level: level92, name: vbAmbSound_03, kind: 2, class: PlayerBox, corner: [-54.7, 6.4, -0.1], size: [19.6, 14.9, 3.5], script: level92}
+  - {id: "level92:vbAmbSound_06", level: level92, name: vbAmbSound_06, kind: 2, class: PlayerBox, corner: [-187.7, 81.6, -194.3], size: [32.6, 24.5, 12.5], script: level92}
+  - {id: "level92:vbAmbSound_05", level: level92, name: vbAmbSound_05, kind: 2, class: PlayerBox, corner: [-187.7, 103.7, -197.6], size: [15.6, 8, 12.5], script: level92}
+  - {id: "level92:vTopTier", level: level92, name: vTopTier, kind: 0, class: VolumeBox, corner: [-86.9, 119.5, -311.9], size: [5.1, 7.4, 2.5], held_in: vTopTier, script: level92}
+  - {id: "level92:vHeadStore", level: level92, name: vHeadStore, kind: 0, class: VolumeBox, corner: [-54.7, 6.5, 0], size: [15.7, 14.8, 9.5], held_in: vHeadStore, script: level92}
+  - {id: "level92:vVoodooStore", level: level92, name: vVoodooStore, kind: 0, class: VolumeBox, corner: [-88.9, 47.3, -0.6], size: [24.2, 19.3, 9.7], held_in: vVoodooStore, script: level92}
+  - {id: "level92:vPlumbStore", level: level92, name: vPlumbStore, kind: 0, class: VolumeBox, corner: [-138, 47.8, -1.7], size: [29.5, 17.5, 8.8], held_in: vPlumbStore, script: level92}
+  - {id: "level92:vPlumbFront", level: level92, name: vPlumbFront, kind: 0, class: VolumeBox, corner: [-125, 46.1, 0.1], size: [6.2, 1.6, 3.5], held_in: vPlumbFront, script: level92}
+  - {id: "level92:vVoodooFront", level: level92, name: vVoodooFront, kind: 0, class: VolumeBox, corner: [-76.2, 47.5, -0.6], size: [6, 6, 6.5], held_in: vVoodooFront, script: level92}
+  - {id: "level92:vHeadFront", level: level92, name: vHeadFront, kind: 0, class: VolumeBox, corner: [-58, 9.9, 0.1], size: [3.1, 2.6, 3.5], held_in: vHeadFront, script: level92}
+  - {id: "level92:vMeatFront", level: level92, name: vMeatFront, kind: 0, class: VolumeBox, corner: [-132.5, 7.9, 0.1], size: [2.4, 1.6, 3.5], held_in: vMeatFront, script: level92}
+  - {id: "level92:vTurfPlumbBackup", level: level92, name: vTurfPlumbBackup, kind: 3, class: TurfBox, corner: [-158.1, 32, 0.1], size: [55.6, 40, 3.5], held_in: vTurfPlumbBackup, script: level92}
+  - {id: "level92:vTurfVoodooBackup", level: level92, name: vTurfVoodooBackup, kind: 3, class: TurfBox, corner: [-102.2, 17.6, 0.1], size: [37.4, 48.7, 3.5], held_in: vTurfVoodooBackup, script: level92}
+  - {id: "level92:vTurfHeadBackup", level: level92, name: vTurfHeadBackup, kind: 3, class: TurfBox, corner: [-58.9, 3.8, 0.1], size: [20, 20, 3.5], held_in: vTurfHeadBackup, script: level92}
+  - {id: "level92:vTurfMeat", level: level92, name: vTurfMeat, kind: 3, class: TurfBox, corner: [-130.2, -11, 0.1], size: [13.2, 24.5, 3.5], held_in: vTurfMeat, script: level92}
+  - {id: "level92:vVoodooTalk", level: level92, name: vVoodooTalk, kind: 0, class: VolumeBox, corner: [-97.9, 37.7, -0.6], size: [33, 28.8, 6.5], held_in: vVoodooTalk, script: level92}
+  - {id: "level92:vPlumbTalk", level: level92, name: vPlumbTalk, kind: 0, class: VolumeBox, corner: [-145.7, 31.8, 0.1], size: [43.3, 28.4, 3.5], held_in: vPlumbTalk, script: level92}
+  - {id: "level92:vHeadTalk", level: level92, name: vHeadTalk, kind: 0, class: VolumeBox, corner: [-70.7, 3.8, 0.1], size: [16, 20, 3.5], held_in: vHeadTalk, script: level92}
+  - {id: "level92:vTurfHead", level: level92, name: vTurfHead, kind: 3, class: TurfBox, corner: [-54.7, 6.5, 0], size: [15.7, 14.8, 9.5], held_in: vTurfHead, turf_of: [GangHeadOwner], script: level92}
+  - {id: "level92:vTurfPlumb", level: level92, name: vTurfPlumb, kind: 3, class: TurfBox, corner: [-138, 47.8, -1.7], size: [29.5, 17.5, 8.8], held_in: vTurfPlumb, script: level92}
+  - {id: "level92:vTurfVoodoo", level: level92, name: vTurfVoodoo, kind: 3, class: TurfBox, corner: [-88.9, 47.4, -0.6], size: [24.2, 19.3, 9.7], held_in: vTurfVoodoo, turf_of: [GangVoodooOwner], script: level92}
+  - {id: "level92:vPlumbStoreOwner", level: level92, name: vPlumbStoreOwner, kind: 0, class: VolumeBox, corner: [-134.8, 42.4, -1.7], size: [6, 6, 8.8], held_in: vPlumbStoreOwner, script: level92}
+  - {id: "level92:vRoofTop", level: level92, name: vRoofTop, kind: 0, class: VolumeBox, corner: [-190.4, 105.3, -194], size: [10, 10, 8.8], held_in: vRoofTop, script: level92}
+  - {id: "level92:vTurfPlumbOwner", level: level92, name: vTurfPlumbOwner, kind: 3, class: TurfBox, corner: [-133.8, 43.4, -1.7], size: [4, 4, 8.8], held_in: vTurfPlumbOwner, turf_of: [GangEndWarriors, GangPlumbOwner], script: level92}
+  - {id: "level92:vTurfCarny", level: level92, name: vTurfCarny, kind: 3, class: TurfBox, corner: [-78.1, -17.1, 0.1], size: [23.2, 43.5, 3.5], held_in: vTurfCarny, script: level92}
+  - {id: "level92:vMeatTalk", level: level92, name: vMeatTalk, kind: 0, class: VolumeBox, corner: [-144.8, -5.2, 0.1], size: [40.8, 21.9, 3.5], held_in: vMeatTalk, script: level92}
+  - {id: "level92:vPlumbPerimeter", level: level92, name: vPlumbPerimeter, kind: 0, class: VolumeBox, corner: [-138.1, 45.1, -1.7], size: [32.9, 19.7, 8.8], held_in: vPlumbPerimeter, script: level92}
+  - {id: "level92:vMeatPerimeter", level: level92, name: vMeatPerimeter, kind: 0, class: VolumeBox, corner: [-138.8, -5.2, 0.1], size: [27.8, 15.1, 3.5], held_in: vMeatPerimeter, script: level92}
+  - {id: "level92:vHeadPerimeter", level: level92, name: vHeadPerimeter, kind: 0, class: VolumeBox, corner: [-58.2, 6.5, 0], size: [19.4, 14.8, 9.5], held_in: vHeadPerimeter, script: level92}
+  - {id: "level92:vVoodooPerimeter", level: level92, name: vVoodooPerimeter, kind: 0, class: VolumeBox, corner: [-88.9, 45.1, -0.6], size: [24.2, 21.7, 9.7], held_in: vVoodooPerimeter, script: level92}
+  - {id: "level92:vTurfMeatDestroyers", level: level92, name: vTurfMeatDestroyers, kind: 3, class: TurfBox, corner: [-139.2, -8.1, 0.1], size: [18, 23.3, 3.5], held_in: vTurfMeatDestroyers, script: level92}
+  - {id: "level93:vLCTrigger_01", level: level93, name: vLCTrigger_01, kind: 2, class: PlayerBox, corner: [427.1, -103.7, 0.1], size: [6, 6, 3.5], script: level93}
+  - {id: "level93:vLCTrigger_02", level: level93, name: vLCTrigger_02, kind: 2, class: PlayerBox, corner: [444.2, -72.9, 0.1], size: [8.5, 9.4, 3.5], script: level93}
+  - {id: "level93:vLCTrigger_03", level: level93, name: vLCTrigger_03, kind: 2, class: PlayerBox, corner: [405.6, -63.8, 0.1], size: [10, 11.6, 3.5], script: level93}
+  - {id: "level93:vLCTrigger_04", level: level93, name: vLCTrigger_04, kind: 2, class: PlayerBox, corner: [365.8, -68.6, 0.1], size: [9, 8, 3.5], script: level93}
+  - {id: "level93:vbAmbSound_01", level: level93, name: vbAmbSound_01, kind: 2, class: PlayerBox, corner: [371.9, 148.4, -0.1], size: [9.8, 11.3, 3.5], script: level93}
+  - {id: "level93:vbAmbSound_04", level: level93, name: vbAmbSound_04, kind: 2, class: PlayerBox, corner: [370.4, -31.9, -2.5], size: [30.9, 24.3, 11.5], script: level93}
+  - {id: "level93:vbAmbSound_06", level: level93, name: vbAmbSound_06, kind: 2, class: PlayerBox, corner: [370.3, -45.4, -2.5], size: [17.6, 17.4, 11.5], script: level93}
+  - {id: "level93:vbAmbSound_05", level: level93, name: vbAmbSound_05, kind: 2, class: PlayerBox, corner: [380.7, -40.2, -2.5], size: [19.2, 12, 11.5], script: level93}
+  - {id: "level93:vbAmbSound_07", level: level93, name: vbAmbSound_07, kind: 2, class: PlayerBox, corner: [324.4, 40.6, -199.9], size: [18.7, 36, 3.5], script: level93}
+  - {id: "level93:vbAmbSound_02", level: level93, name: vbAmbSound_02, kind: 2, class: PlayerBox, corner: [340.3, 103.1, -0.1], size: [9.8, 11.3, 3.5], script: level93}
+  - {id: "level93:vbAmbSound_03", level: level93, name: vbAmbSound_03, kind: 2, class: PlayerBox, corner: [402.9, 183.7, -0.1], size: [12.5, 25.2, 3.5], script: level93}
+  - {id: "level93:vPharmacyStore", level: level93, name: vPharmacyStore, kind: 0, class: VolumeBox, corner: [371.8, 148.4, 0.1], size: [9.8, 11.3, 3.5], held_in: vPharmacyStore, script: level93}
+  - {id: "level93:vLiquorStore", level: level93, name: vLiquorStore, kind: 0, class: VolumeBox, corner: [340.3, 103.1, 0.1], size: [9.8, 11.3, 3.5], held_in: vLiquorStore, script: level93}
+  - {id: "level93:vPharmacyFront", level: level93, name: vPharmacyFront, kind: 0, class: VolumeBox, corner: [369.8, 154.3, 0.1], size: [2, 2.4, 3.5], held_in: vPharmacyFront, script: level93}
+  - {id: "level93:vLiquorFront", level: level93, name: vLiquorFront, kind: 0, class: VolumeBox, corner: [350.2, 109, 0.1], size: [2, 2.4, 3.5], held_in: vLiquorFront, script: level93}
+  - {id: "level93:vAlleyTrigger", level: level93, name: vAlleyTrigger, kind: 0, class: VolumeBox, corner: [371.1, 92.5, 0.1], size: [1.6, 2.4, 3.5], held_in: vAlleyTrigger, script: level93}
+  - {id: "level93:vTurfPimp", level: level93, name: vTurfPimp, kind: 3, class: TurfBox, corner: [380.1, 61.2, 0.1], size: [23.7, 35.4, 3.5], held_in: vTurfPimp, script: level93}
+  - {id: "level93:vTurfRiot", level: level93, name: vTurfRiot, kind: 3, class: TurfBox, corner: [308.3, 67.3, -1], size: [110, 142, 10], held_in: vTurfRiot, turf_of: [GangHouseDestroyers, GangRiotDestroyers, GangRiotWarriors], script: level93}
+  - {id: "level93:vTurfStore", level: level93, name: vTurfStore, kind: 3, class: TurfBox, corner: [330.2, 124.1, 0.1], size: [8, 10, 3.5], held_in: vTurfStore, script: level93}
+  - {id: "level93:vHouseFight", level: level93, name: vHouseFight, kind: 0, class: VolumeBox, corner: [388.3, 150, 0.1], size: [17.8, 16.5, 3.5], held_in: vHouseFight, script: level93}
+  - {id: "level93:vTurfCorner", level: level93, name: vTurfCorner, kind: 3, class: TurfBox, corner: [385.9, 61.4, 0.1], size: [12, 10, 3.5], held_in: vTurfCorner, script: level93}
+  - {id: "level93:vRoofFight", level: level93, name: vRoofFight, kind: 0, class: VolumeBox, corner: [369.2, 131, 5.8], size: [10.7, 10.1, 3.5], held_in: vRoofFight, script: level93}
+  - {id: "level93:vStoreFight", level: level93, name: vStoreFight, kind: 0, class: VolumeBox, corner: [328.7, 121.6, 0.1], size: [11, 14.8, 3.5], held_in: vStoreFight, script: level93}
+  - {id: "level93:vTurfHouse", level: level93, name: vTurfHouse, kind: 3, class: TurfBox, corner: [380.9, 162.5, 3.1], size: [10.5, 9, 6], held_in: vTurfHouse, script: level93}
+  - {id: "level93:vCornerFight", level: level93, name: vCornerFight, kind: 0, class: VolumeBox, corner: [383.1, 61.3, 0.1], size: [17.6, 12.4, 3.5], held_in: vCornerFight, script: level93}
+  - {id: "level93:vTurfRoof", level: level93, name: vTurfRoof, kind: 3, class: TurfBox, corner: [371.6, 133.2, 5.8], size: [6, 6, 3.5], held_in: vTurfRoof, script: level93}
+  - {id: "level93:vGarbageBumTrigger", level: level93, name: vGarbageBumTrigger, kind: 0, class: VolumeBox, corner: [374.6, 129.3, 0.1], size: [2, 1.6, 3.5], held_in: vGarbageBumTrigger, script: level93}
+  - {id: "level93:vTurfLiquorDestroyers", level: level93, name: vTurfLiquorDestroyers, kind: 3, class: TurfBox, corner: [332.7, 98.2, 0.1], size: [37.7, 38.4, 3.5], held_in: vTurfLiquorDestroyers, script: level93}
+  - {id: "level93:vTurfWarehouseDestroyers2", level: level93, name: vTurfWarehouseDestroyers2, kind: 3, class: TurfBox, corner: [383.7, 142.2, 0.1], size: [23.1, 20.6, 3.5], held_in: vTurfWarehouseDestroyers2, script: level93}
+  - {id: "level93:vGambleHouseFront", level: level93, name: vGambleHouseFront, kind: 0, class: VolumeBox, corner: [408.5, 183.6, 0.1], size: [4, 2, 3.5], held_in: vGambleHouseFront, script: level93}
+  - {id: "level93:vWarehouse", level: level93, name: vWarehouse, kind: 0, class: VolumeBox, corner: [383.7, 151.9, 0.1], size: [14, 11, 3.5], held_in: vWarehouse, script: level93}
+  - {id: "level93:vPharmacyPerimeter", level: level93, name: vPharmacyPerimeter, kind: 0, class: VolumeBox, corner: [369.5, 148.4, 0.1], size: [12.1, 11.3, 3.5], held_in: vPharmacyPerimeter, script: level93}
+  - {id: "level93:vLiquorPerimeter", level: level93, name: vLiquorPerimeter, kind: 0, class: VolumeBox, corner: [340.2, 103.1, 0.1], size: [12.1, 11.3, 3.5], held_in: vLiquorPerimeter, script: level93}
+  - {id: "level93:vPimp", level: level93, name: vPimp, kind: 0, class: VolumeBox, corner: [394.1, 74.9, 0.1], size: [8.6, 18, 3.5], held_in: vPimp, script: level93}
+  - {id: "level93:vGambleHousePerimeter", level: level93, name: vGambleHousePerimeter, kind: 0, class: VolumeBox, corner: [402.8, 183.7, 0.1], size: [12.6, 25.3, 3.5], held_in: vGambleHousePerimeter, script: level93}
+  - {id: "level93:vTurfGambleHouse", level: level93, name: vTurfGambleHouse, kind: 3, class: TurfBox, corner: [402.8, 186.3, 0.1], size: [12.6, 22.6, 3.5], held_in: vTurfGambleHouse, script: level93}
+  - {id: "level93:vLCInsideGate", level: level93, name: vLCInsideGate, kind: 0, class: VolumeBox, corner: [350.2, -49.1, 0.1], size: [4, 4, 3.5], held_in: vLCInsideGate, script: level93}
+  - {id: "level93:vYardTrigger", level: level93, name: vYardTrigger, kind: 0, class: VolumeBox, corner: [346, 67, 0.1], size: [2, 2.4, 3.5], held_in: vYardTrigger, script: level93}
+  - {id: "level93:vTurfYard1", level: level93, name: vTurfYard1, kind: 3, class: TurfBox, corner: [401.6, -138.7, -2.3], size: [31.5, 34.8, 3.5], held_in: vTurfYard1, script: level93}
+  - {id: "level93:vTurfYard2", level: level93, name: vTurfYard2, kind: 3, class: TurfBox, corner: [405.5, -107.9, -2.3], size: [27.1, 39.2, 7], held_in: vTurfYard2, script: level93}
+  - {id: "level93:vTurfYard3", level: level93, name: vTurfYard3, kind: 3, class: TurfBox, corner: [399.7, -141.5, -2.3], size: [10.4, 11.4, 4.8], held_in: vTurfYard3, script: level93}
+  - {id: "level93:vTurfYard4", level: level93, name: vTurfYard4, kind: 3, class: TurfBox, corner: [369.7, -156.2, -1], size: [19.3, 10.5, 3.5], held_in: vTurfYard4, script: level93}
+  - {id: "level93:vClubhouseTrigger", level: level93, name: vClubhouseTrigger, kind: 0, class: VolumeBox, corner: [392.5, -137.8, 3.7], size: [4, 4, 3.5], held_in: vClubhouseTrigger, script: level93}
+  - {id: "level93:vHookerTalk", level: level93, name: vHookerTalk, kind: 0, class: VolumeBox, corner: [394.3, 81.9, 0.1], size: [6, 6, 3.5], held_in: vHookerTalk, script: level93}
+  - {id: "level93:vTurfBalcony1", level: level93, name: vTurfBalcony1, kind: 3, class: TurfBox, corner: [428.7, -131.9, 2.4], size: [4.5, 28, 3.5], held_in: vTurfBalcony1, script: level93}
+  - {id: "level93:vTurfBalcony3", level: level93, name: vTurfBalcony3, kind: 3, class: TurfBox, corner: [405.7, -147.7, 2.4], size: [4.5, 20.9, 3.5], held_in: vTurfBalcony3, script: level93}
+  - {id: "level93:vRallyWarriorTrigger", level: level93, name: vRallyWarriorTrigger, kind: 0, class: VolumeBox, corner: [409.2, -105.1, -2], size: [6, 8, 3.5], held_in: vRallyWarriorTrigger, script: level93}
+  - {id: "level93:vTurfBalcony2", level: level93, name: vTurfBalcony2, kind: 3, class: TurfBox, corner: [414, -131.8, 2.4], size: [19, 4.2, 3.5], held_in: vTurfBalcony2, script: level93}
+  - {id: "level93:vTurfWarehouseDestroyers1", level: level93, name: vTurfWarehouseDestroyers1, kind: 3, class: TurfBox, corner: [383.6, 153.8, 0.1], size: [11.8, 9, 3.5], held_in: vTurfWarehouseDestroyers1, turf_of: [GangWarehouseDestroyers1], script: level93}
+  - {id: "level93:vWarehouseTrigger", level: level93, name: vWarehouseTrigger, kind: 0, class: VolumeBox, corner: [383.7, 147.8, 0.1], size: [23.1, 20.6, 3.5], held_in: vWarehouseTrigger, script: level93}
+  - {id: "level93:vGambleHouse", level: level93, name: vGambleHouse, kind: 0, class: VolumeBox, corner: [402.8, 186.3, 0.1], size: [12.6, 22.6, 3.5], held_in: vGambleHouse, script: level93}
+  - {id: "level93:vDestroyerTagger", level: level93, name: vDestroyerTagger, kind: 0, class: VolumeBox, corner: [322.5, 134, 0.1], size: [8, 10, 3.5], held_in: vDestroyerTagger, script: level93}
+  - {id: "level93:vKillWall", level: level93, name: vKillWall, kind: 0, class: VolumeBox, corner: [335.4, -46.3, -201.1], size: [16.4, 0.2, 8], held_in: vKillWall, script: level93}
+  - {id: "level93:vStreetTrigger", level: level93, name: vStreetTrigger, kind: 0, class: VolumeBox, corner: [411.5, 119.4, 0.1], size: [7, 7, 3.5], held_in: vStreetTrigger, script: level93}
+  - {id: "level93:vWarpVergil01", level: level93, name: vWarpVergil01, kind: 0, class: VolumeBox, corner: [332.7, -35.6, -200.2], size: [4, 4, 7.2], held_in: vWarpVergil01, script: level93}
+  - {id: "level93:vbFirstLine", level: level93, name: vbFirstLine, kind: 2, class: PlayerBox, corner: [344.9, 119.9, 0.1], size: [8, 18, 3.5], held_in: vbFirstLine, script: level93}
+  - {id: "level93:vKillWall01", level: level93, name: vKillWall01, kind: 0, class: VolumeBox, corner: [317.9, -34, -201.1], size: [6.3, 1, 8], held_in: vKillWall01, script: level93}
+  - {id: "level93:vHideoutGateTrigger", level: level93, name: vHideoutGateTrigger, kind: 0, class: VolumeBox, corner: [351.6, -49.1, 0.1], size: [4, 4, 3.5], held_in: vHideoutGateTrigger, script: level93}
+  - {id: "level93:vZoombox", level: level93, name: vZoombox, kind: 0, class: VolumeBox, corner: [314.5, -49.8, -202.2], size: [9.5, 5.6, 4.1], held_in: vZoombox, script: level93}
+  - {id: "level95:vbStore_3", level: level95, name: vbStore_3, kind: 0, class: VolumeBox, corner: [-54.6, 6.2, -0.3], size: [16.7, 14.9, 3], script: level95}
+  - {id: "level95:vbStore_2", level: level95, name: vbStore_2, kind: 0, class: VolumeBox, corner: [-88.9, 47, -0.3], size: [24, 20, 3], script: level95}
+  - {id: "level95:vbStore_1", level: level95, name: vbStore_1, kind: 0, class: VolumeBox, corner: [-136.5, -5.3, -0.3], size: [25.5, 13, 3], script: level95}
+  - {id: "level95:vbWorkout_01", level: level95, name: vbWorkout_01, kind: 0, class: VolumeBox, corner: [-187.7, 99.2, -197.9], size: [16, 13, 4], script: level95}
+  - {id: "level95:vbConeyAmb_1", level: level95, name: vbConeyAmb_1, kind: 2, class: PlayerBox, corner: [-270.9, 61.3, 0], size: [60, 80, 10], script: level95}
+  - {id: "level95:vbConeyAmb_2", level: level95, name: vbConeyAmb_2, kind: 2, class: PlayerBox, corner: [-211.1, 14.3, 0], size: [54, 140, 10], script: level95}
+  - {id: "level95:vbConeyAmb_3", level: level95, name: vbConeyAmb_3, kind: 2, class: PlayerBox, corner: [-157.4, 52.3, 0], size: [120, 40, 10], script: level95}
+  - {id: "level95:vbConeyAmb_4", level: level95, name: vbConeyAmb_4, kind: 2, class: PlayerBox, corner: [-157.2, 28.4, 0], size: [100, 24, 10], script: level95}
+  - {id: "level95:vbConeyAmb_5", level: level95, name: vbConeyAmb_5, kind: 2, class: PlayerBox, corner: [-157, -21.6, 0], size: [120, 50, 10], script: level95}
+  - {id: "level95:vbAmbSound_1", level: level95, name: vbAmbSound_1, kind: 2, class: PlayerBox, corner: [-138, 49.1, -0.1], size: [29.5, 17.3, 3.5], script: level95}
+  - {id: "level95:vbAmbSound_2", level: level95, name: vbAmbSound_2, kind: 2, class: PlayerBox, corner: [-103.5, -16.2, -0.1], size: [13.2, 25.4, 3.5], script: level95}
+  - {id: "level95:vbAmbSound_3", level: level95, name: vbAmbSound_3, kind: 2, class: PlayerBox, corner: [-54.9, 6.4, -0.1], size: [19.6, 14.9, 3.5], script: level95}
+  - {id: "level95:vbAmbSound_4", level: level95, name: vbAmbSound_4, kind: 2, class: PlayerBox, corner: [-86.7, 46.3, -0.1], size: [19.6, 19.6, 3.5], script: level95}
+  - {id: "level95:vbAmbSound_5", level: level95, name: vbAmbSound_5, kind: 2, class: PlayerBox, corner: [-141.3, -12.1, -0.1], size: [29.8, 20.6, 3.5], script: level95}
+  - {id: "level95:vbTutorialStart", level: level95, name: vbTutorialStart, kind: 0, class: VolumeBox, corner: [-187.8, 98, -194.1], size: [6, 4, 4], held_in: vbTutorialStart, script: level95}
+  - {id: "level95:vTurfCarny", level: level95, name: vTurfCarny, kind: 3, class: TurfBox, corner: [-230, 29.5, -1.3], size: [60, 50, 20], held_in: vTurfCarny, turf_of: [apephibian.PunkGang], script: level95}
+  - {id: "level99:vNearStore", level: level99, name: vNearStore, kind: 0, class: VolumeBox, corner: [45, 48.4, 0], size: [16, 2.6, 7], held_in: vNearStore, script: level99}
+  - {id: "level99:vInsideStore", level: level99, name: vInsideStore, kind: 0, class: VolumeBox, corner: [47.4, 51.2, 0], size: [11.4, 9.8, 8], held_in: vInsideStore, script: level99}
+  - {id: "level99:vFenceJump", level: level99, name: vFenceJump, kind: 0, class: VolumeBox, corner: [44.4, 31.3, 0], size: [6, 2.4, 4], held_in: vFenceJump, script: level99}
+  - {id: "level99:vClimb", level: level99, name: vClimb, kind: 0, class: VolumeBox, corner: [51.6, 6, 0.1], size: [8, 8.2, 4], held_in: vClimb, script: level99}
+  - {id: "level99:vReachWindow", level: level99, name: vReachWindow, kind: 0, class: VolumeBox, corner: [43.2, -4.3, 4.1], size: [4, 6, 4], held_in: vReachWindow, script: level99}
+  - {id: "level99:vAlmostDone", level: level99, name: vAlmostDone, kind: 0, class: VolumeBox, corner: [22.8, 2.6, -0.1], size: [7.6, 7.2, 5], held_in: vAlmostDone, script: level99}
+  - {id: "level99:vFenceJump2", level: level99, name: vFenceJump2, kind: 0, class: VolumeBox, corner: [44.4, 22.3, 0], size: [6, 2.4, 1], held_in: vFenceJump2, script: level99}
+  - {id: "level99:vVerminJumps", level: level99, name: vVerminJumps, kind: 0, class: VolumeBox, corner: [36.3, 14.5, 3.9], size: [8.5, 6, 4], held_in: vVerminJumps, script: level99}
+  - {id: "level99:vMark01", level: level99, name: vMark01, kind: 0, class: VolumeBox, corner: [-284.1, 126.2, 0.2], size: [1.6, 1.6, 3], held_in: vMark01, script: level99}
+  - {id: "level99:vMark03", level: level99, name: vMark03, kind: 0, class: VolumeBox, corner: [-288.2, 120.8, 0.2], size: [1.6, 1.6, 3], held_in: vMark03, script: level99}
+  - {id: "level99:vFenceSection", level: level99, name: vFenceSection, kind: 0, class: VolumeBox, corner: [45.9, 48.6, 0], size: [1.5, 1.4, 3], held_in: vFenceSection, script: level99}
+  - {id: "level99:vFenceJump3", level: level99, name: vFenceJump3, kind: 0, class: VolumeBox, corner: [44.4, 12.8, 0], size: [6, 2.4, 1], held_in: vFenceJump3, script: level99}
+  - {id: "level99:vReachRooftop", level: level99, name: vReachRooftop, kind: 0, class: VolumeBox, corner: [62.8, -2.5, 4], size: [1.2, 1.2, 3], held_in: vReachRooftop, script: level99}
+  - {id: "level99:vDoneClimb", level: level99, name: vDoneClimb, kind: 0, class: VolumeBox, corner: [56.2, 4.5, 4.1], size: [2.2, 1.6, 2], held_in: vDoneClimb, script: level99}
+  - {id: "level99:vReachRooftop2", level: level99, name: vReachRooftop2, kind: 0, class: VolumeBox, corner: [50.4, -5.2, 3.3], size: [4, 11.3, 5], held_in: vReachRooftop2, script: level99}
+  - {id: "level99:vFirstClimb", level: level99, name: vFirstClimb, kind: 0, class: VolumeBox, corner: [56.2, 6, 1.3], size: [2.2, 1.6, 2], held_in: vFirstClimb, script: level99}
+  - {id: "level101_kinghill_init:vTopTier", level: level101, name: vTopTier, kind: 0, class: VolumeBox, corner: [15.6, -4.8, 8.3], size: [5.6, 7.4, 3.5], held_in: vTopTier, script: level101_kinghill_init}
+  - {id: "level103_wchair_init:vFinishLine", level: level103, name: vFinishLine, kind: 0, class: VolumeBox, corner: [-100.6, -5.8, 0], size: [40.3, 24.4, 31.6], held_in: vFinishLine, script: level103_wchair_init}
+  - {id: "level104_wchair_init:vFinishLine", level: level104, name: vFinishLine, kind: 0, class: VolumeBox, corner: [1.2, -24.5, -11.5], size: [10, 28, 18], held_in: vFinishLine, script: level104_wchair_init}
+  - {id: "level105_brawl_init:vPOS_2", level: level105, name: vPOS_2, kind: 0, class: VolumeBox, corner: [1.1, 1.5, -3.9], size: [15.6, 9, 10], script: level105_brawl_init}
+  - {id: "level105_brawl_init:vPOS_4", level: level105, name: vPOS_4, kind: 0, class: VolumeBox, corner: [-14.7, -11.9, -3.9], size: [12.8, 13.3, 10], script: level105_brawl_init}
+  - {id: "level105_brawl_init:vPOS_1", level: level105, name: vPOS_1, kind: 0, class: VolumeBox, corner: [-1.9, -11.9, -3.9], size: [18.6, 13.3, 10], script: level105_brawl_init}
+  - {id: "level105_brawl_init:vPOS_3", level: level105, name: vPOS_3, kind: 0, class: VolumeBox, corner: [-14.5, 1.5, -3.9], size: [15.6, 9, 10], script: level105_brawl_init}
+  - {id: "level107_tagbt_init:vSohoArena", level: level107, name: vSohoArena, kind: 3, class: TurfBox, corner: [0.9, -46.6, -0.7], size: [46, 32, 15], held_in: vSohoArena, script: level107_tagbt_init}
+  - {id: "level108_mercy_init:vFinishLine", level: level108, name: vFinishLine, kind: 0, class: VolumeBox, corner: [-84.3, 540.6, 0], size: [40.3, 24.4, 31.6], held_in: vFinishLine, script: level108_mercy_init}
+  - {id: "level108_wchair_init:vFinishLine", level: level108, name: vFinishLine, kind: 0, class: VolumeBox, corner: [-84.3, 540.6, 0], size: [40.3, 24.4, 31.6], held_in: vFinishLine, script: level108_wchair_init}
+  - {id: "level111_car_init:vStore01", level: level111, name: vStore01, kind: 0, class: VolumeBox, corner: [9.2, -13.3, -0.9], size: [11.8, 12, 11.8], held_in: vStore01, script: level111_car_init}
+  - {id: "level111_car_init:vStore02", level: level111, name: vStore02, kind: 0, class: VolumeBox, corner: [-20.9, -17.8, -0.9], size: [11.8, 12, 11.8], held_in: vStore02, script: level111_car_init}
+  - {id: "level111_car_init:vStore03", level: level111, name: vStore03, kind: 0, class: VolumeBox, corner: [-26.1, 11.4, -0.8], size: [16, 12, 11.8], held_in: vStore03, script: level111_car_init}
+  - {id: "level111_car_init:vCar01", level: level111, name: vCar01, kind: 0, class: VolumeBox, corner: [-16.2, -52.2, -2.2], size: [9, 8, 11.8], held_in: vCar01, script: level111_car_init}
+  - {id: "level111_car_init:vCar02", level: level111, name: vCar02, kind: 0, class: VolumeBox, corner: [-2.6, -52.2, -2.2], size: [7, 9, 11.8], held_in: vCar02, script: level111_car_init}
+  - {id: "level111_hifi_init:vStore01", level: level111, name: vStore01, kind: 0, class: VolumeBox, corner: [9.2, -13.3, -0.9], size: [11.8, 12, 11.8], held_in: vStore01, script: level111_hifi_init}
+  - {id: "level111_hifi_init:vStore02", level: level111, name: vStore02, kind: 0, class: VolumeBox, corner: [-20.9, -17.8, -0.9], size: [11.8, 12, 11.8], held_in: vStore02, script: level111_hifi_init}
+  - {id: "level111_hifi_init:vStore03", level: level111, name: vStore03, kind: 0, class: VolumeBox, corner: [-26.1, 11.4, -0.8], size: [16, 12, 11.8], held_in: vStore03, script: level111_hifi_init}
+  - {id: "level111_mercy_init:vStore01", level: level111, name: vStore01, kind: 0, class: VolumeBox, corner: [9.2, -13.3, -0.9], size: [11.8, 12, 11.8], held_in: vStore01, script: level111_mercy_init}
+  - {id: "level111_mercy_init:vStore02", level: level111, name: vStore02, kind: 0, class: VolumeBox, corner: [-20.9, -17.8, -0.9], size: [11.8, 12, 11.8], held_in: vStore02, script: level111_mercy_init}
+  - {id: "level111_mercy_init:vStore03", level: level111, name: vStore03, kind: 0, class: VolumeBox, corner: [-26.1, 11.4, -0.8], size: [16, 12, 11.8], held_in: vStore03, script: level111_mercy_init}
+  - {id: "level112_mercy_init:vFinishLine", level: level112, name: vFinishLine, kind: 0, class: VolumeBox, corner: [-65.9, 30.3, 0], size: [14.7, 20, 9.3], held_in: vFinishLine, script: level112_mercy_init}
+  - {id: "level112_wchair_init:vFinishLine", level: level112, name: vFinishLine, kind: 0, class: VolumeBox, corner: [-162.6, -3.5, 0], size: [14.7, 20, 9.3], held_in: vFinishLine, script: level112_wchair_init}
+  - {id: "level114_wchair_init:vFinishLine", level: level114, name: vFinishLine, kind: 0, class: VolumeBox, corner: [-69.8, -38.5, 0], size: [40.3, 24.4, 31.6], held_in: vFinishLine, script: level114_wchair_init}
+  - {id: "level122_tagbt_init:vSohoArena", level: level122, name: vSohoArena, kind: 3, class: TurfBox, corner: [-22.8, -19.9, -3.1], size: [48.8, 41.3, 15], held_in: vSohoArena, script: level122_tagbt_init}
+  - {id: "level129_kinghill_init:vTopTier", level: level129, name: vTopTier, kind: 0, class: VolumeBox, corner: [9.4, -27.8, 8.3], size: [5, 7.4, 3.5], held_in: vTopTier, script: level129_kinghill_init}
+  - {id: "level130_kinghill_init:vTopTier", level: level130, name: vTopTier, kind: 0, class: VolumeBox, corner: [-2.3, -9.1, 20.1], size: [5, 10, 3.5], held_in: vTopTier, script: level130_kinghill_init}
+  - {id: "level131_royal_init:vRing", level: level131, name: vRing, kind: 0, class: VolumeBox, corner: [-10.3, -7.8, 15.3], size: [22, 17.5, 9], held_in: vRing, script: level131_royal_init}
+  - {id: "level131_royal_init:vRight", level: level131, name: vRight, kind: 0, class: VolumeBox, corner: [5.5, -18.5, 10.9], size: [22, 40, 9], held_in: vRight, script: level131_royal_init}
+  - {id: "level131_royal_init:vLeft", level: level131, name: vLeft, kind: 0, class: VolumeBox, corner: [-24.7, -18.8, 10.9], size: [22, 40, 9], held_in: vLeft, script: level131_royal_init}
+  - {id: "level131_royal_init:vFront", level: level131, name: vFront, kind: 0, class: VolumeBox, corner: [-19.3, -19.4, 10.9], size: [40, 17.5, 9], held_in: vFront, script: level131_royal_init}
+  - {id: "level131_royal_init:vBack", level: level131, name: vBack, kind: 0, class: VolumeBox, corner: [-19.6, 3.3, 10.9], size: [40, 17.5, 9], held_in: vBack, script: level131_royal_init}
+  - {id: "level131_royal_init:vBackSpecial", level: level131, name: vBackSpecial, kind: 0, class: VolumeBox, corner: [-10, 4.4, 10.9], size: [6, 17.5, 9], held_in: vBackSpecial, script: level131_royal_init}
+  - {id: "level131_royal_init:vLeftSpecial", level: level131, name: vLeftSpecial, kind: 0, class: VolumeBox, corner: [-15.9, 2.4, 10.9], size: [6, 6, 9], held_in: vLeftSpecial, script: level131_royal_init}
+  - {id: "level131_royal_init:vFrontSpecial", level: level131, name: vFrontSpecial, kind: 0, class: VolumeBox, corner: [-6.6, -12.5, 10.9], size: [6, 6, 9], held_in: vFrontSpecial, script: level131_royal_init}
+  - {id: "level131_royal_init:vRightSpecial", level: level131, name: vRightSpecial, kind: 0, class: VolumeBox, corner: [4.1, 8.4, 10.9], size: [6, 6, 9], held_in: vRightSpecial, script: level131_royal_init}
+  - {id: "level132_royal_init:vRing", level: level132, name: vRing, kind: 0, class: VolumeBox, corner: [-4.9, 217.3, 7.1], size: [24, 22, 12.3], held_in: vRing, script: level132_royal_init}
+  - {id: "level132_royal_init:vLeft", level: level132, name: vLeft, kind: 0, class: VolumeBox, corner: [-15.8, 213.8, 1.1], size: [12.6, 30, 12.3], held_in: vLeft, script: level132_royal_init}
+  - {id: "level132_royal_init:vBack", level: level132, name: vBack, kind: 0, class: VolumeBox, corner: [-15.7, 237.4, 1.1], size: [40, 10, 12.3], held_in: vBack, script: level132_royal_init}
+  - {id: "level132_royal_init:vRight", level: level132, name: vRight, kind: 0, class: VolumeBox, corner: [8.4, 211.1, 1.1], size: [12.6, 34, 12.3], held_in: vRight, script: level132_royal_init}
+  - {id: "level132_royal_init:vFront", level: level132, name: vFront, kind: 0, class: VolumeBox, corner: [-15.9, 210, 1.1], size: [42, 10, 12.3], held_in: vFront, script: level132_royal_init}
+  - {id: "level132_royal_init:vBackSpecial", level: level132, name: vBackSpecial, kind: 0, class: VolumeBox, corner: [0.7, 239, 8.1], size: [6, 6, 6], held_in: vBackSpecial, script: level132_royal_init}
+  - {id: "level132_royal_init:vLeftSpecial", level: level132, name: vLeftSpecial, kind: 0, class: VolumeBox, corner: [-10.7, 230, 7.1], size: [6, 6, 8], held_in: vLeftSpecial, script: level132_royal_init}
+  - {id: "level132_royal_init:vFrontSpecial", level: level132, name: vFrontSpecial, kind: 0, class: VolumeBox, corner: [-3.9, 211.3, 8.1], size: [6, 6, 6], held_in: vFrontSpecial, script: level132_royal_init}
+  - {id: "level132_royal_init:vRightSpecial", level: level132, name: vRightSpecial, kind: 0, class: VolumeBox, corner: [9.4, 211.8, 8.1], size: [6, 6, 6], held_in: vRightSpecial, script: level132_royal_init}
+  - {id: "level133_royal_init:vRing", level: level133, name: vRing, kind: 0, class: VolumeBox, corner: [-63.4, 0.4, 12.1], size: [16, 12, 9.3], held_in: vRing, script: level133_royal_init}
+  - {id: "level133_royal_init:vLeft", level: level133, name: vLeft, kind: 0, class: VolumeBox, corner: [-73.6, -8.6, 10.7], size: [12.6, 30, 9.3], held_in: vLeft, script: level133_royal_init}
+  - {id: "level133_royal_init:vBack", level: level133, name: vBack, kind: 0, class: VolumeBox, corner: [-70.7, 11.1, 10.7], size: [30, 10, 9.3], held_in: vBack, script: level133_royal_init}
+  - {id: "level133_royal_init:vRight", level: level133, name: vRight, kind: 0, class: VolumeBox, corner: [-50, -8.6, 10.7], size: [12.6, 30, 9.3], held_in: vRight, script: level133_royal_init}
+  - {id: "level133_royal_init:vFront", level: level133, name: vFront, kind: 0, class: VolumeBox, corner: [-70.7, -8.1, 10.7], size: [30, 10, 9.3], held_in: vFront, script: level133_royal_init}
+  - {id: "level133_royal_init:vBackSpecial", level: level133, name: vBackSpecial, kind: 0, class: VolumeBox, corner: [-62.4, 10.7, 12.1], size: [6, 6, 9.3], held_in: vBackSpecial, script: level133_royal_init}
+  - {id: "level133_royal_init:vLeftSpecial", level: level133, name: vLeftSpecial, kind: 0, class: VolumeBox, corner: [-68.2, 3, 12.1], size: [6, 6, 9.3], held_in: vLeftSpecial, script: level133_royal_init}
+  - {id: "level133_royal_init:vRightSpecial", level: level133, name: vRightSpecial, kind: 0, class: VolumeBox, corner: [-48.8, 1.5, 12.1], size: [4, 6, 9.3], held_in: vRightSpecial, script: level133_royal_init}
+  - {id: "level133_royal_init:vFrontSpecial", level: level133, name: vFrontSpecial, kind: 0, class: VolumeBox, corner: [-61, -3.1, 12.1], size: [4, 6, 9.3], held_in: vFrontSpecial, script: level133_royal_init}
+  - {id: "level134_shoot_init:vTurf", level: level134, name: vTurf, kind: 3, class: TurfBox, corner: [-5.3, -16.8, -1], size: [30, 40, 23.8], held_in: vTurf, script: level134_shoot_init}
+  - {id: "level134_survival_init:vTurf", level: level134, name: vTurf, kind: 3, class: TurfBox, corner: [-5.3, -16.8, -1], size: [30, 40, 23.8], held_in: vTurf, script: level134_survival_init}
+  - {id: "level136_run4life_init:vFinish", level: level136, name: vFinish, kind: 0, class: VolumeBox, corner: [-211.2, 565.5, 0], size: [108.1, 23.2, 34.5], held_in: vFinish, script: level136_run4life_init}
+  - {id: "level137_run4life_init:vFinish", level: level137, name: vFinish, kind: 0, class: VolumeBox, corner: [-27.2, -98.5, 0], size: [108.1, 23.2, 34.5], held_in: vFinish, script: level137_run4life_init}
+  - {id: "d26c7832:vStore01", name: vStore01, kind: 0, class: VolumeBox, corner: [9.2, -13.3, -0.9], size: [11.8, 12, 11.8], held_in: vStore01, script: d26c7832}
+  - {id: "d26c7832:vStore02", name: vStore02, kind: 0, class: VolumeBox, corner: [-20.9, -17.8, -0.9], size: [11.8, 12, 11.8], held_in: vStore02, script: d26c7832}
+  - {id: "d26c7832:vStore03", name: vStore03, kind: 0, class: VolumeBox, corner: [-26.1, 11.4, -0.8], size: [16, 12, 11.8], held_in: vStore03, script: d26c7832}

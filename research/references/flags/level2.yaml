@@ -1,0 +1,112 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level2:fSWalk", level: level2, name: fSWalk, heading: 0, script: level2}
+  - {id: "level2:fFirebarrel_01", level: level2, name: fFirebarrel_01, pos: [461.3, 166.8, 0], heading: 241, activity: 5, script: level2}
+  - {id: "level2:fBumCheer_02", level: level2, name: fBumCheer_02, pos: [466.1, 124.7, 0.1], heading: 273, script: level2}
+  - {id: "level2:fBumCheer_01", level: level2, name: fBumCheer_01, pos: [466, 123.3, 0.1], heading: 252, script: level2}
+  - {id: "level2:fBumCheer_03", level: level2, name: fBumCheer_03, pos: [466.2, 126.1, 0.1], heading: 273, script: level2}
+  - {id: "level2:fBumCheer_04", level: level2, name: fBumCheer_04, pos: [466.2, 127.6, 0.1], heading: 273, script: level2}
+  - {id: "level2:fBumCheer_05", level: level2, name: fBumCheer_05, pos: [466.2, 129, 0.1], heading: 273, script: level2}
+  - {id: "level2:fCrumb_7", level: level2, name: fCrumb_7, pos: [463.3, -63.6, -0.3], heading: 89, script: level2}
+  - {id: "level2:fCrumb_5", level: level2, name: fCrumb_5, pos: [403.4, -31.5, 6.5], heading: 89, script: level2}
+  - {id: "level2:fCrumb_2", level: level2, name: fCrumb_2, pos: [488.6, 112.6, 4.6], heading: 89, script: level2}
+  - {id: "level2:fCrumb_1", level: level2, name: fCrumb_1, pos: [439.9, 169.8, 0], heading: 89, script: level2}
+  - {id: "level2:fCrumb_3", level: level2, name: fCrumb_3, pos: [476, 94, 0], heading: 89, script: level2}
+  - {id: "level2:BumPath_01", level: level2, name: BumPath_01, pos: [444.4, 93.5, 0], heading: 89, script: level2}
+  - {id: "level2:BumPath_02", level: level2, name: BumPath_02, pos: [443.4, 183.6, 0], heading: 89, script: level2}
+  - {id: "level2:JunkyardExit_01", level: level2, name: JunkyardExit_01, pos: [372.3, 17.2, -187.1], heading: 89, activity: 8, script: level2}
+  - {id: "level2:JunkyardExit_02", level: level2, name: JunkyardExit_02, pos: [371, 9.1, -187.1], heading: 89, activity: 8, script: level2}
+  - {id: "level2:JunkyardExit_03", level: level2, name: JunkyardExit_03, pos: [382.9, 9.4, -187.1], heading: 89, activity: 8, script: level2}
+  - {id: "level2:JunkyardExit_04", level: level2, name: JunkyardExit_04, pos: [380.4, 36.5, -187.1], heading: 89, activity: 8, script: level2}
+  - {id: "level2:JunkyardExit_05", level: level2, name: JunkyardExit_05, pos: [393.7, 24.5, -187.1], heading: 89, activity: 8, script: level2}
+  - {id: "level2:Tag_04", level: level2, name: Tag_04, pos: [361.6, -31.8, 7.9], heading: 0, activity: 12, script: level2}
+  - {id: "level2:Tag_02", level: level2, name: Tag_02, pos: [479.3, 24.2, 6.3], heading: 60, activity: 12, script: level2}
+  - {id: "level2:Tag_05", level: level2, name: Tag_05, pos: [483.5, -57.9, 0], heading: 240, activity: 12, script: level2}
+  - {id: "level2:Tag_03", level: level2, name: Tag_03, pos: [485.1, -13.4, 1], heading: 330, activity: 12, script: level2}
+  - {id: "level2:Tag_01", level: level2, name: Tag_01, pos: [462.3, 117.8, 0], heading: 270, activity: 12, script: level2}
+  - {id: "level2:PedNet_01", level: level2, name: PedNet_01, pos: [332, -32, 7.9], heading: 59, script: level2}
+  - {id: "level2:PedNet_02", level: level2, name: PedNet_02, pos: [346.1, -31.7, 7.9], heading: 59, script: level2}
+  - {id: "level2:PedNet_03", level: level2, name: PedNet_03, pos: [346.5, -10.6, 7.9], heading: 59, script: level2}
+  - {id: "level2:PedNet_04", level: level2, name: PedNet_04, pos: [346.6, 4.4, 7.9], heading: 59, script: level2}
+  - {id: "level2:PedNet_05", level: level2, name: PedNet_05, pos: [346.4, 23.9, 7.9], heading: 59, script: level2}
+  - {id: "level2:PedNet_06", level: level2, name: PedNet_06, pos: [331.1, 26.5, 7.9], heading: 59, script: level2}
+  - {id: "level2:PedNet_07", level: level2, name: PedNet_07, pos: [394.8, -10.9, 3.2], heading: 59, script: level2}
+  - {id: "level2:PedNet_08", level: level2, name: PedNet_08, pos: [436, 5.5, 0], heading: 59, script: level2}
+  - {id: "level2:PedNet_09", level: level2, name: PedNet_09, pos: [441.1, -9.5, 0], heading: 59, script: level2}
+  - {id: "level2:PedNet_10", level: level2, name: PedNet_10, pos: [480.6, 13.9, 0], heading: 59, script: level2}
+  - {id: "level2:PedNet_11", level: level2, name: PedNet_11, pos: [461.3, 18.2, 0], heading: 59, script: level2}
+  - {id: "level2:PedNet_12", level: level2, name: PedNet_12, pos: [445.3, 51.2, 0], heading: 59, script: level2}
+  - {id: "level2:PedNet_13", level: level2, name: PedNet_13, pos: [459.4, 53.6, 0], heading: 59, script: level2}
+  - {id: "level2:PedExit_01", level: level2, name: PedExit_01, pos: [315.4, 3.6, 7.9], heading: 59, activity: 8, script: level2}
+  - {id: "level2:PedExit_02", level: level2, name: PedExit_02, pos: [364.6, 19.7, 7.9], heading: 59, activity: 8, script: level2}
+  - {id: "level2:PedExit_03", level: level2, name: PedExit_03, pos: [363.2, -26.6, 7.9], heading: 59, activity: 8, script: level2}
+  - {id: "level2:PedExit_04", level: level2, name: PedExit_04, pos: [424.4, -15.1, 0], heading: 59, activity: 8, script: level2}
+  - {id: "level2:PedExit_05", level: level2, name: PedExit_05, pos: [435, 37.2, 0.1], heading: 59, activity: 8, script: level2}
+  - {id: "level2:PedExit_06", level: level2, name: PedExit_06, pos: [484.4, 8.4, 1], heading: 59, activity: 8, script: level2}
+  - {id: "level2:PedExit_07", level: level2, name: PedExit_07, pos: [480, 49.7, 0.1], heading: 59, activity: 8, script: level2}
+  - {id: "level2:PedExit_08", level: level2, name: PedExit_08, pos: [364.4, -40.3, 7.9], heading: 59, activity: 8, script: level2}
+  - {id: "level2:fCowardHang", level: level2, name: fCowardHang, pos: [458.6, 167.7, 0.1], heading: 148, script: level2}
+  - {id: "level2:fClinicHang", level: level2, name: fClinicHang, pos: [476.5, 100.6, 0], heading: 59, script: level2}
+  - {id: "level2:fJesseStart", level: level2, name: fJesseStart, pos: [502.6, 55.4, 1.8], heading: 59, script: level2}
+  - {id: "level2:fJesseMiddle", level: level2, name: fJesseMiddle, pos: [457.2, 41.8, 0], heading: 59, script: level2}
+  - {id: "level2:fJesseEnd", level: level2, name: fJesseEnd, pos: [486.5, -5.4, 1], heading: 59, script: level2}
+  - {id: "level2:fGasHang", level: level2, name: fGasHang, pos: [443.3, 39.4, 0.1], heading: 59, script: level2}
+  - {id: "level2:fParkHang", level: level2, name: fParkHang, pos: [483.6, -5.5, 1], heading: 59, script: level2}
+  - {id: "level2:fTagHang", level: level2, name: fTagHang, pos: [359.7, -27.7, 8.2], heading: 323, activity: 19, script: level2}
+  - {id: "level2:fDrink01", level: level2, name: fDrink01, pos: [327.9, 25.8, 7.9], heading: 65, script: level2}
+  - {id: "level2:fClubhouseHang", level: level2, name: fClubhouseHang, pos: [478.4, -63.3, -0.2], heading: 59, script: level2}
+  - {id: "level2:fClubhouseRadar", level: level2, name: fClubhouseRadar, pos: [484.7, -57.2, 4.1], heading: 59, script: level2}
+  - {id: "level2:fJunkyardGate", level: level2, name: fJunkyardGate, pos: [368, 14.1, 7.9], heading: 59, script: level2}
+  - {id: "level2:fJunkyardHang", level: level2, name: fJunkyardHang, pos: [384, 33.7, -187.2], heading: 59, script: level2}
+  - {id: "level2:fThrowersHang", level: level2, name: fThrowersHang, pos: [485.2, 93.3, 3.2], heading: 59, script: level2}
+  - {id: "level2:fCowardsSpot", level: level2, name: fCowardsSpot, pos: [461, 125.6, 0.2], heading: 328, script: level2}
+  - {id: "level2:fWander1Hang", level: level2, name: fWander1Hang, pos: [332.1, -6.9, 7.9], heading: 59, script: level2}
+  - {id: "level2:fWander2Hang", level: level2, name: fWander2Hang, pos: [347.1, 20.4, 7.9], heading: 59, script: level2}
+  - {id: "level2:fClubhouseHang2", level: level2, name: fClubhouseHang2, pos: [472.2, -67.7, -0.3], heading: 59, script: level2}
+  - {id: "level2:fClinicBumHang", level: level2, name: fClinicBumHang, pos: [472.2, 126.5, 0.3], heading: 329, script: level2}
+  - {id: "level2:fCowardsFence1", level: level2, name: fCowardsFence1, pos: [464.3, 124.6, 0.2], heading: 92, script: level2}
+  - {id: "level2:fCowardsFence2", level: level2, name: fCowardsFence2, pos: [464.3, 127.1, 0.2], heading: 92, script: level2}
+  - {id: "level2:wWarmHands02", level: level2, name: wWarmHands02, pos: [472.9, 124.4, 0.3], heading: 329, activity: 5, script: level2}
+  - {id: "level2:fWarmHands", level: level2, name: fWarmHands, pos: [471.7, 126.3, 0.3], heading: 151, activity: 5, script: level2}
+  - {id: "level2:fJesseWarned", level: level2, name: fJesseWarned, pos: [500.4, 51.2, 2.1], heading: 59, script: level2}
+  - {id: "level2:fWander01", level: level2, name: fWander01, pos: [331.1, 27.2, 7.9], heading: 59, script: level2}
+  - {id: "level2:fWander02", level: level2, name: fWander02, pos: [346.3, 24.4, 7.9], heading: 59, script: level2}
+  - {id: "level2:fWander03", level: level2, name: fWander03, pos: [350.5, 3.3, 7.7], heading: 59, script: level2}
+  - {id: "level2:fWander04", level: level2, name: fWander04, pos: [350.6, -10.4, 7.7], heading: 59, script: level2}
+  - {id: "level2:fWander05", level: level2, name: fWander05, pos: [346.7, -25.2, 7.8], heading: 59, script: level2}
+  - {id: "level2:fWander06", level: level2, name: fWander06, pos: [331.3, -29.7, 7.9], heading: 59, script: level2}
+  - {id: "level2:fWander07", level: level2, name: fWander07, pos: [395.8, -31.4, 6.5], heading: 59, script: level2}
+  - {id: "level2:fWander08", level: level2, name: fWander08, pos: [398.2, -11.6, 2.9], heading: 59, script: level2}
+  - {id: "level2:fWander09", level: level2, name: fWander09, pos: [414.9, 3.5, 1], heading: 59, script: level2}
+  - {id: "level2:fGasRoofHang", level: level2, name: fGasRoofHang, pos: [438.8, 21.4, 5.1], heading: 59, script: level2}
+  - {id: "level2:_xWindowExit2", level: level2, name: _xWindowExit2, pos: [508.8, 74.1, 5.6], heading: 45, activity: 8, script: level2}
+  - {id: "level2:_xWindowExit1", level: level2, name: _xWindowExit1, pos: [508.8, 87.5, 5.6], heading: 45, activity: 8, script: level2}
+  - {id: "level2:fSullyFence", level: level2, name: fSullyFence, pos: [387.1, 41.7, -187], heading: 184, script: level2}
+  - {id: "level2:fSullyAway", level: level2, name: fSullyAway, pos: [387.3, 43.8, -187], heading: 185, script: level2}
+  - {id: "level2:fRecordPlayer", level: level2, name: fRecordPlayer, pos: [483.9, -65.3, 0], heading: 280, script: level2}
+  - {id: "level2:_xWindowExit03", level: level2, name: _xWindowExit03, pos: [508.9, 80.9, 2.3], heading: 50, activity: 8, script: level2}
+  - {id: "level2:fThrowersHang2", level: level2, name: fThrowersHang2, pos: [476, 89.6, 7.6], heading: 59, script: level2}
+  - {id: "level2:fSullysCar", level: level2, name: fSullysCar, pos: [388.2, 30.8, -187.1], heading: 89, script: level2}
+  - {id: "level2:fClinicHang2", level: level2, name: fClinicHang2, pos: [493.3, 102.3, 0.1], heading: 59, script: level2}
+  - {id: "level2:ClubExit01", level: level2, name: ClubExit01, pos: [463.1, -67.4, -0.3], heading: 89, activity: 8, script: level2}
+  - {id: "level2:ClubExit02", level: level2, name: ClubExit02, pos: [478.9, -57.7, -0.3], heading: 89, activity: 8, script: level2}
+  - {id: "level2:fSpray", level: level2, name: fSpray, pos: [434.5, 17.3, 5.1], heading: 48, group: 64, script: level2}
+  - {id: "level2:fFlash", level: level2, name: fFlash, pos: [331, -33.1, 7.9], heading: 47, group: 64, script: level2}
+  - {id: "level2:fBumGate", level: level2, name: fBumGate, pos: [465.8, 121.4, 0.1], heading: 226, script: level2}
+  - {id: "level2:fBumDoor", level: level2, name: fBumDoor, pos: [464.1, 121.7, 0.1], heading: 89, script: level2}
+  - {id: "level2:wWarmHands03", level: level2, name: wWarmHands03, pos: [471.4, 124.7, 0.3], heading: 61, activity: 5, script: level2}
+  - {id: "level2:wWarmHands04", level: level2, name: wWarmHands04, pos: [473.2, 125.8, 0.3], heading: 244, activity: 5, script: level2}
+  - {id: "level2:fSpray01", level: level2, name: fSpray01, pos: [444.8, 91.4, 0.1], heading: 48, group: 64, script: level2}
+  - {id: "level2:fStreetExit", level: level2, name: fStreetExit, pos: [462.2, 175.6, 0.1], heading: 89, activity: 8, script: level2}
+  - {id: "level2:fStreetExit01", level: level2, name: fStreetExit01, pos: [459.6, 93.4, 0.1], heading: 89, activity: 8, script: level2}
+  - {id: "level2:storeJewelry", level: level2, name: storeJewelry, pos: [440.2, 97.9, 0], heading: 0, activity: 14, group: 32, script: level2}
+  - {id: "level2:fFirstSpot", level: level2, name: fFirstSpot, pos: [461, 191.5, 9.2], heading: 89, script: level2}
+  - {id: "level2:_xwLean07", level: level2, name: _xwLean07, pos: [454.4, -5.1, 0], heading: 331, activity: 30, script: level2}
+  - {id: "level2:_xwLean09", level: level2, name: _xwLean09, pos: [474.2, 31.6, 0.1], heading: 241, activity: 30, script: level2}
+  - {id: "level2:_xwLean10", level: level2, name: _xwLean10, pos: [451, 55, 0], heading: 182, activity: 30, script: level2}
+  - {id: "level2:_xwLean11", level: level2, name: _xwLean11, pos: [329.5, -8.6, 7.9], heading: 92, activity: 30, script: level2}
+  - {id: "level2:_xwLean12", level: level2, name: _xwLean12, pos: [348.6, -16.8, 7.9], heading: 273, activity: 30, script: level2}
+  - {id: "level2:_xwPhone01", level: level2, name: _xwPhone01, pos: [344.7, 27.5, 7.8], heading: 47, script: level2}
+  - {id: "level2:_xwPhone02", level: level2, name: _xwPhone02, pos: [483.1, 16.8, 0], heading: 107, script: level2}
+  - {id: "level2:_xwFireBarrell02", level: level2, name: _xwFireBarrell02, pos: [437.1, 19.4, 0], heading: 245, activity: 5, script: level2}

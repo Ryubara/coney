@@ -1,0 +1,265 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level52:fSWalk", level: level52, name: fSWalk, heading: 0, script: level52}
+  - {id: "level52:fHideEliminator2_03", level: level52, name: fHideEliminator2_03, pos: [505.6, -166.3, 0], heading: 324, activity: 21, script: level52}
+  - {id: "level52:fHideEliminator2_01", level: level52, name: fHideEliminator2_01, pos: [504.8, -164.8, 0], heading: 324, activity: 21, script: level52}
+  - {id: "level52:fHideEliminator2_02", level: level52, name: fHideEliminator2_02, pos: [506.5, -164.4, 0], heading: 324, activity: 21, script: level52}
+  - {id: "level52:fHideEliminator1_01", level: level52, name: fHideEliminator1_01, pos: [454.7, -100.5, 0], heading: 148, activity: 21, script: level52}
+  - {id: "level52:fHideEliminator1_02", level: level52, name: fHideEliminator1_02, pos: [455.2, -99.2, 0], heading: 148, activity: 21, script: level52}
+  - {id: "level52:fHideEliminator1_03", level: level52, name: fHideEliminator1_03, pos: [454, -98.8, 0], heading: 148, activity: 21, script: level52}
+  - {id: "level52:fHideMothers_01", level: level52, name: fHideMothers_01, pos: [443.8, -184.3, 0], heading: 42, activity: 21, script: level52}
+  - {id: "level52:fHideMothers_03", level: level52, name: fHideMothers_03, pos: [442.8, -184.3, 0], heading: 43, activity: 21, script: level52}
+  - {id: "level52:fHideMothers_02", level: level52, name: fHideMothers_02, pos: [443.8, -185.1, 0], heading: 41, activity: 21, script: level52}
+  - {id: "level52:fPathCop2Path_04", level: level52, name: fPathCop2Path_04, pos: [415.3, -154.3, 0], heading: 182, group: 64, script: level52}
+  - {id: "level52:fPathCop2Path_01", level: level52, name: fPathCop2Path_01, pos: [424.7, -172.5, 0], heading: 182, group: 64, script: level52}
+  - {id: "level52:fPathCop2Path_02", level: level52, name: fPathCop2Path_02, pos: [424.9, -141.6, 0], heading: 182, group: 64, script: level52}
+  - {id: "level52:fPathCop2Path_03", level: level52, name: fPathCop2Path_03, pos: [413.3, -141.6, 0], heading: 182, group: 64, script: level52}
+  - {id: "level52:fPathCop2Path_05", level: level52, name: fPathCop2Path_05, pos: [413.2, -172.9, 0], heading: 182, group: 64, script: level52}
+  - {id: "level52:fPathCop1Path_01", level: level52, name: fPathCop1Path_01, pos: [438.4, -153.9, 0.1], heading: 182, group: 64, script: level52}
+  - {id: "level52:fPathCop1Path_02", level: level52, name: fPathCop1Path_02, pos: [454.4, -162.4, 0.1], heading: 182, group: 64, script: level52}
+  - {id: "level52:fPathCop1Path_03", level: level52, name: fPathCop1Path_03, pos: [415.4, -135.5, 0], heading: 182, group: 64, script: level52}
+  - {id: "level52:fPathCop1Path_04", level: level52, name: fPathCop1Path_04, pos: [430.9, -122.3, 0.1], heading: 182, group: 64, script: level52}
+  - {id: "level52:Tag_01", level: level52, name: Tag_01, pos: [460, -182.7, 5.7], heading: 273, activity: 12, script: level52}
+  - {id: "level52:Tag_02", level: level52, name: Tag_02, pos: [517, -258.3, -1.5], heading: 92, activity: 12, script: level52}
+  - {id: "level52:Tag_03", level: level52, name: Tag_03, pos: [513.6, -206.5, 0.1], heading: 92, activity: 12, script: level52}
+  - {id: "level52:Tag_04", level: level52, name: Tag_04, pos: [459.6, -155.2, 3.2], heading: 183, activity: 12, script: level52}
+  - {id: "level52:Tag_05", level: level52, name: Tag_05, pos: [486.5, -139.2, 5], heading: 183, activity: 12, script: level52}
+  - {id: "level52:Tag_06", level: level52, name: Tag_06, pos: [459.5, -94.4, 0.1], heading: 92, activity: 12, script: level52}
+  - {id: "level52:PedNet_05", level: level52, name: PedNet_05, pos: [480.9, -227.8, 0.1], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_06", level: level52, name: PedNet_06, pos: [463.5, -227.7, 0.1], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_07", level: level52, name: PedNet_07, pos: [480, -173, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_08", level: level52, name: PedNet_08, pos: [461.7, -172.9, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_09", level: level52, name: PedNet_09, pos: [462.6, -115.3, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_10", level: level52, name: PedNet_10, pos: [479.4, -115.3, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_11", level: level52, name: PedNet_11, pos: [479, -98.6, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_12", level: level52, name: PedNet_12, pos: [461.2, -96.5, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_13", level: level52, name: PedNet_13, pos: [499.5, -172.5, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_14", level: level52, name: PedNet_14, pos: [500.8, -188.9, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_15", level: level52, name: PedNet_15, pos: [461.8, -239.2, 2.6], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_16", level: level52, name: PedNet_16, pos: [414.5, -167.6, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_21", level: level52, name: PedNet_21, pos: [509.3, -98.8, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_22", level: level52, name: PedNet_22, pos: [508.7, -124.8, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_23", level: level52, name: PedNet_23, pos: [500.6, -153.6, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_24", level: level52, name: PedNet_24, pos: [479.8, -157.1, 0.1], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_25", level: level52, name: PedNet_25, pos: [480.1, -128, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_26", level: level52, name: PedNet_26, pos: [462.2, -134.9, 0.1], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_27", level: level52, name: PedNet_27, pos: [458.6, -157.1, 0.1], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_17", level: level52, name: PedNet_17, pos: [443.7, -135, 0.1], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_18", level: level52, name: PedNet_18, pos: [428.1, -135.3, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_19", level: level52, name: PedNet_19, pos: [417.2, -127.8, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_20", level: level52, name: PedNet_20, pos: [454.8, -111.3, 0], heading: 89, group: 2, script: level52}
+  - {id: "level52:PedNet_28", level: level52, name: PedNet_28, pos: [533.1, -250.6, -3.9], heading: 89, group: 1, script: level52}
+  - {id: "level52:PedNet_29", level: level52, name: PedNet_29, pos: [533.1, -263.7, -4], heading: 89, group: 1, script: level52}
+  - {id: "level52:PedNet_30", level: level52, name: PedNet_30, pos: [586.5, -263.7, -4], heading: 89, group: 1, script: level52}
+  - {id: "level52:PedNet_31", level: level52, name: PedNet_31, pos: [586.3, -250.6, -3.9], heading: 89, group: 1, script: level52}
+  - {id: "level52:PedNet_32", level: level52, name: PedNet_32, pos: [571.3, -250.6, -4], heading: 89, group: 1, script: level52}
+  - {id: "level52:PedNet_33", level: level52, name: PedNet_33, pos: [552.9, -250.6, -4], heading: 89, group: 1, script: level52}
+  - {id: "level52:PedNet_34", level: level52, name: PedNet_34, pos: [562, -263.7, -4], heading: 89, group: 1, script: level52}
+  - {id: "level52:PedExit_01", level: level52, name: PedExit_01, pos: [471.2, -231.9, 0.1], heading: 89, activity: 8, script: level52}
+  - {id: "level52:PedExit_02", level: level52, name: PedExit_02, pos: [453.2, -114.7, 0], heading: 89, activity: 8, script: level52}
+  - {id: "level52:PedExit_03", level: level52, name: PedExit_03, pos: [413.2, -141.5, 0], heading: 89, activity: 8, script: level52}
+  - {id: "level52:PedExit_04", level: level52, name: PedExit_04, pos: [485.7, -189.8, 0], heading: 89, activity: 8, script: level52}
+  - {id: "level52:PedExit_05", level: level52, name: PedExit_05, pos: [527.8, -267, -4], heading: 89, activity: 8, script: level52}
+  - {id: "level52:PedExit_06", level: level52, name: PedExit_06, pos: [580.6, -246.2, -3.9], heading: 89, activity: 8, script: level52}
+  - {id: "level52:PedExit_07", level: level52, name: PedExit_07, pos: [529.9, -240.3, -3.9], heading: 89, activity: 8, script: level52}
+  - {id: "level52:fHangOrphans", level: level52, name: fHangOrphans, pos: [513.8, -213.2, 0.1], heading: 92, script: level52}
+  - {id: "level52:fHangDoorCops", level: level52, name: fHangDoorCops, pos: [471.5, -133, 0], heading: 89, script: level52}
+  - {id: "level52:fParkGate", level: level52, name: fParkGate, pos: [468, -62.5, 1], heading: 92, script: level52}
+  - {id: "level52:fHangGateCops", level: level52, name: fHangGateCops, pos: [471.5, -173.2, 0], heading: 89, script: level52}
+  - {id: "level52:fC2Swan", level: level52, name: fC2Swan, pos: [469.7, -237.1, 0], heading: 51, script: level52}
+  - {id: "level52:fC2Snow", level: level52, name: fC2Snow, pos: [470.8, -237.9, 0], heading: 61, script: level52}
+  - {id: "level52:fC2Cochise", level: level52, name: fC2Cochise, pos: [469, -214.3, 0], heading: 168, script: level52}
+  - {id: "level52:fC2Cowboy", level: level52, name: fC2Cowboy, pos: [497.3, -147.9, 0], heading: 92, script: level52}
+  - {id: "level52:fC2Ajax", level: level52, name: fC2Ajax, pos: [418.1, -98.5, 4.2], heading: 184, script: level52}
+  - {id: "level52:fC2Rembrandt", level: level52, name: fC2Rembrandt, pos: [407.8, -173.4, 0], heading: 93, script: level52}
+  - {id: "level52:fC2Fox", level: level52, name: fC2Fox, pos: [447.3, -181.1, 0], heading: 92, script: level52}
+  - {id: "level52:fC2Vermin", level: level52, name: fC2Vermin, pos: [479.3, -134.7, 0], heading: 181, script: level52}
+  - {id: "level52:fOCochise", level: level52, name: fOCochise, pos: [528.6, -209.9, 0.1], heading: 273, script: level52}
+  - {id: "level52:fOCowboy", level: level52, name: fOCowboy, pos: [528.3, -208.7, 0.1], heading: 273, script: level52}
+  - {id: "level52:fOSnow", level: level52, name: fOSnow, pos: [527.2, -209.6, 0.1], heading: 273, script: level52}
+  - {id: "level52:fOSwan", level: level52, name: fOSwan, pos: [526.6, -210.8, 0.1], heading: 272, script: level52}
+  - {id: "level52:fOAjax", level: level52, name: fOAjax, pos: [528.5, -211.1, 0.1], heading: 272, script: level52}
+  - {id: "level52:fOFox", level: level52, name: fOFox, pos: [527.4, -212, 0.1], heading: 271, script: level52}
+  - {id: "level52:fORembrandt", level: level52, name: fORembrandt, pos: [529.1, -212, 0.1], heading: 273, script: level52}
+  - {id: "level52:fOVermin", level: level52, name: fOVermin, pos: [528.5, -213.3, 0.1], heading: 272, script: level52}
+  - {id: "level52:fHangPark", level: level52, name: fHangPark, pos: [455.5, -61, 0.1], heading: 93, script: level52}
+  - {id: "level52:fParkHang", level: level52, name: fParkHang, pos: [473.1, -64.5, 1.1], heading: 92, script: level52}
+  - {id: "level52:fHangRoofMothers", level: level52, name: fHangRoofMothers, pos: [497, -146.2, 0], heading: 93, script: level52}
+  - {id: "level52:fSwan", level: level52, name: fSwan, pos: [560.9, -261.7, -4], heading: 272, script: level52}
+  - {id: "level52:fFox", level: level52, name: fFox, pos: [561.5, -263, -4], heading: 272, script: level52}
+  - {id: "level52:fSnow", level: level52, name: fSnow, pos: [561.5, -260.6, -4], heading: 273, script: level52}
+  - {id: "level52:fCochise", level: level52, name: fCochise, pos: [562.5, -259.7, -4], heading: 273, script: level52}
+  - {id: "level52:fVermin", level: level52, name: fVermin, pos: [562.1, -264.1, -4], heading: 273, script: level52}
+  - {id: "level52:fAjax", level: level52, name: fAjax, pos: [562.6, -262, -4], heading: 272, script: level52}
+  - {id: "level52:fRembrandt", level: level52, name: fRembrandt, pos: [563.4, -263.3, -4], heading: 273, script: level52}
+  - {id: "level52:fCowboy", level: level52, name: fCowboy, pos: [562.9, -261, -4], heading: 273, script: level52}
+  - {id: "level52:fHangHideEliminators1", level: level52, name: fHangHideEliminators1, pos: [454.4, -102.1, 0], heading: 360, script: level52}
+  - {id: "level52:fHangHideEliminators2", level: level52, name: fHangHideEliminators2, pos: [505.3, -164.1, 0], heading: 273, script: level52}
+  - {id: "level52:fHideRembrandt", level: level52, name: fHideRembrandt, pos: [408.7, -173.4, 0], heading: 92, activity: 21, script: level52}
+  - {id: "level52:fOrphanTrigger", level: level52, name: fOrphanTrigger, pos: [521, -218, 0.1], heading: 2, script: level52}
+  - {id: "level52:fHangRoofThrower1", level: level52, name: fHangRoofThrower1, pos: [572.5, -267, 0.9], heading: 344, script: level52}
+  - {id: "level52:fHangRoofThrower2", level: level52, name: fHangRoofThrower2, pos: [581.8, -266.9, 0.9], heading: 292, script: level52}
+  - {id: "level52:fHangRoofThrower3", level: level52, name: fHangRoofThrower3, pos: [587.9, -266.2, 2.6], heading: 287, script: level52}
+  - {id: "level52:fOrphanThrower1", level: level52, name: fOrphanThrower1, pos: [513.7, -204.5, 0.1], heading: 105, script: level52}
+  - {id: "level52:fOrphanThrower2", level: level52, name: fOrphanThrower2, pos: [514.9, -207.4, 0.1], heading: 102, script: level52}
+  - {id: "level52:fSully", level: level52, name: fSully, pos: [512.4, -213.2, 0.1], heading: 92, script: level52}
+  - {id: "level52:fJesse", level: level52, name: fJesse, pos: [512.3, -213.9, 0.1], heading: 92, script: level52}
+  - {id: "level52:fOrphan01", level: level52, name: fOrphan01, pos: [512.1, -214.7, 0.1], heading: 92, script: level52}
+  - {id: "level52:fOrphan02", level: level52, name: fOrphan02, pos: [512, -212.6, 0.1], heading: 93, script: level52}
+  - {id: "level52:fOrphan03", level: level52, name: fOrphan03, pos: [511.6, -211.8, 0.1], heading: 92, script: level52}
+  - {id: "level52:fOrphan04", level: level52, name: fOrphan04, pos: [511.9, -215.6, 0.1], heading: 92, script: level52}
+  - {id: "level52:fOrphan05", level: level52, name: fOrphan05, pos: [511.4, -210.9, 0.1], heading: 93, script: level52}
+  - {id: "level52:fOrphan06", level: level52, name: fOrphan06, pos: [511.4, -216.4, 0.1], heading: 93, script: level52}
+  - {id: "level52:fOrphan07", level: level52, name: fOrphan07, pos: [510.8, -214.9, 0.1], heading: 92, script: level52}
+  - {id: "level52:fOrphan08", level: level52, name: fOrphan08, pos: [510.9, -213.2, 0.1], heading: 93, script: level52}
+  - {id: "level52:fHangDealer2", level: level52, name: fHangDealer2, pos: [514.4, -201.6, 0.1], heading: 78, group: 64, script: level52}
+  - {id: "level52:fHangDealer1", level: level52, name: fHangDealer1, pos: [442.1, -213.5, 7], heading: 58, group: 64, script: level52}
+  - {id: "level52:fHangDealer3", level: level52, name: fHangDealer3, pos: [446.3, -102.1, 4.3], heading: 231, activity: 21, group: 64, script: level52}
+  - {id: "level52:fC3Cowboy", level: level52, name: fC3Cowboy, pos: [492.7, 130.3, 0.1], heading: 4, script: level52}
+  - {id: "level52:fC3Snow", level: level52, name: fC3Snow, pos: [491.8, 131.3, 0.1], heading: 4, script: level52}
+  - {id: "level52:fC3Swan", level: level52, name: fC3Swan, pos: [491, 131.8, 0.1], heading: 3, script: level52}
+  - {id: "level52:fC3Ajax", level: level52, name: fC3Ajax, pos: [490.6, 130.1, 0.1], heading: 3, script: level52}
+  - {id: "level52:fC3Fox", level: level52, name: fC3Fox, pos: [490.2, 131.2, 0.1], heading: 3, script: level52}
+  - {id: "level52:fC3Rembrandt", level: level52, name: fC3Rembrandt, pos: [489.5, 130.6, 0.1], heading: 4, script: level52}
+  - {id: "level52:fC3Vermin", level: level52, name: fC3Vermin, pos: [488.9, 130, 0.1], heading: 3, script: level52}
+  - {id: "level52:fC3Cochise", level: level52, name: fC3Cochise, pos: [491.2, 130.7, 0.1], heading: 4, script: level52}
+  - {id: "level52:fC3Mercy", level: level52, name: fC3Mercy, pos: [491.7, 129.8, 0.1], heading: 3, script: level52}
+  - {id: "level52:fOrphanCar", level: level52, name: fOrphanCar, pos: [499.5, 142.2, 1.6], heading: 183, script: level52}
+  - {id: "level52:fOrphanHold1", level: level52, name: fOrphanHold1, pos: [489.4, 142.6, 0.1], heading: 183, script: level52}
+  - {id: "level52:fOrphanHold2", level: level52, name: fOrphanHold2, pos: [495.8, 142.6, 0.1], heading: 183, script: level52}
+  - {id: "level52:fOrphanHold3", level: level52, name: fOrphanHold3, pos: [492.9, 141.8, 0.1], heading: 183, script: level52}
+  - {id: "level52:fOrphanSpawn", level: level52, name: fOrphanSpawn, pos: [492.2, 148.6, 0.1], heading: 183, script: level52}
+  - {id: "level52:fSullyHold1", level: level52, name: fSullyHold1, pos: [491.2, 141, 0.1], heading: 183, script: level52}
+  - {id: "level52:fSullyHold3", level: level52, name: fSullyHold3, pos: [492.8, 140.3, 0.1], heading: 183, script: level52}
+  - {id: "level52:fSullyHold2", level: level52, name: fSullyHold2, pos: [494.3, 141, 0.1], heading: 183, script: level52}
+  - {id: "level52:fOrphan1Hold2", level: level52, name: fOrphan1Hold2, pos: [496.1, 144.2, 0.1], heading: 183, script: level52}
+  - {id: "level52:fOrphan1Hold1", level: level52, name: fOrphan1Hold1, pos: [489.4, 144.2, 0.1], heading: 183, script: level52}
+  - {id: "level52:fOrphan1Hold3", level: level52, name: fOrphan1Hold3, pos: [492.9, 143.4, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Cowboy1", level: level52, name: fC3Cowboy1, pos: [539.8, 136.6, 0.1], heading: 37, script: level52}
+  - {id: "level52:fC3Snow1", level: level52, name: fC3Snow1, pos: [540.5, 138.8, 0.1], heading: 37, script: level52}
+  - {id: "level52:fC3Swan1", level: level52, name: fC3Swan1, pos: [540.9, 140.5, 0.1], heading: 36, script: level52}
+  - {id: "level52:fC3Ajax1", level: level52, name: fC3Ajax1, pos: [538.6, 138.1, 0.1], heading: 36, script: level52}
+  - {id: "level52:fC3Fox1", level: level52, name: fC3Fox1, pos: [539.8, 139.9, 0.1], heading: 35, script: level52}
+  - {id: "level52:fC3Rembrandt1", level: level52, name: fC3Rembrandt1, pos: [538.4, 139.2, 0.1], heading: 37, script: level52}
+  - {id: "level52:fC3Vermin1", level: level52, name: fC3Vermin1, pos: [537.1, 138.8, 0.1], heading: 36, script: level52}
+  - {id: "level52:fC3Cochise1", level: level52, name: fC3Cochise1, pos: [539.6, 138.8, 0.1], heading: 37, script: level52}
+  - {id: "level52:fC3Mercy1", level: level52, name: fC3Mercy1, pos: [540.3, 137.6, 0.1], heading: 36, script: level52}
+  - {id: "level52:fSubwayExit", level: level52, name: fSubwayExit, pos: [551.3, 173.8, 0.1], heading: 93, script: level52}
+  - {id: "level52:fParkFox", level: level52, name: fParkFox, pos: [453.7, -61, 0.1], heading: 92, script: level52}
+  - {id: "level52:fParkCochise", level: level52, name: fParkCochise, pos: [455.3, -59.3, 0.1], heading: 183, script: level52}
+  - {id: "level52:fParkRembrandt", level: level52, name: fParkRembrandt, pos: [457, -61.1, 0.1], heading: 272, script: level52}
+  - {id: "level52:fParkCowboy", level: level52, name: fParkCowboy, pos: [455.4, -62.9, 0.1], heading: 2, script: level52}
+  - {id: "level52:fParkVermin", level: level52, name: fParkVermin, pos: [456.8, -59.9, 0.1], heading: 234, script: level52}
+  - {id: "level52:fParkAjax", level: level52, name: fParkAjax, pos: [454, -62.4, 0.1], heading: 51, script: level52}
+  - {id: "level52:fOrphanGateTrigger", level: level52, name: fOrphanGateTrigger, pos: [504.9, -213.6, 0], heading: 93, script: level52}
+  - {id: "level52:fRunCowboy", level: level52, name: fRunCowboy, pos: [492.8, 134.1, 0.1], heading: 93, script: level52}
+  - {id: "level52:fRunSnow", level: level52, name: fRunSnow, pos: [494.1, 134.3, 0.1], heading: 92, script: level52}
+  - {id: "level52:fRunSwan", level: level52, name: fRunSwan, pos: [496.3, 135.3, 0.1], heading: 93, script: level52}
+  - {id: "level52:fRunAjax", level: level52, name: fRunAjax, pos: [493.9, 135.5, 0.1], heading: 92, script: level52}
+  - {id: "level52:fRunFox", level: level52, name: fRunFox, pos: [495, 135.9, 0.1], heading: 92, script: level52}
+  - {id: "level52:fRunRembrandt", level: level52, name: fRunRembrandt, pos: [492.6, 135.1, 0.1], heading: 93, script: level52}
+  - {id: "level52:fRunVermin", level: level52, name: fRunVermin, pos: [492.8, 136.1, 0.1], heading: 93, script: level52}
+  - {id: "level52:fRunCochise", level: level52, name: fRunCochise, pos: [494.5, 134.9, 0.1], heading: 93, script: level52}
+  - {id: "level52:fRunMercy", level: level52, name: fRunMercy, pos: [495.6, 134.6, 0.1], heading: 92, script: level52}
+  - {id: "level52:fSubway", level: level52, name: fSubway, pos: [551.4, 139.6, 0.2], heading: 36, script: level52}
+  - {id: "level52:fHangHideMothers", level: level52, name: fHangHideMothers, pos: [443.4, -184.4, 0], heading: 92, script: level52}
+  - {id: "level52:fSFox", level: level52, name: fSFox, pos: [592.1, -262.2, -4], heading: 272, script: level52}
+  - {id: "level52:fSSnow", level: level52, name: fSSnow, pos: [591.7, -259.7, -4], heading: 273, script: level52}
+  - {id: "level52:fSCochise", level: level52, name: fSCochise, pos: [593.6, -259.1, -3.9], heading: 273, script: level52}
+  - {id: "level52:fSVermin", level: level52, name: fSVermin, pos: [592.8, -263, -4], heading: 273, script: level52}
+  - {id: "level52:fSAjax", level: level52, name: fSAjax, pos: [592.9, -260.7, -4], heading: 272, script: level52}
+  - {id: "level52:fSRembrandt", level: level52, name: fSRembrandt, pos: [593.8, -261.8, -4], heading: 273, script: level52}
+  - {id: "level52:fSCowboy", level: level52, name: fSCowboy, pos: [594.4, -260.3, -4], heading: 272, script: level52}
+  - {id: "level52:fSSwan", level: level52, name: fSSwan, pos: [591.3, -261, -4], heading: 272, script: level52}
+  - {id: "level52:fPSwan", level: level52, name: fPSwan, pos: [473.6, -65.3, 1.1], heading: 183, script: level52}
+  - {id: "level52:fPSnow", level: level52, name: fPSnow, pos: [472.3, -64.9, 1.1], heading: 183, script: level52}
+  - {id: "level52:fC3Jesse", level: level52, name: fC3Jesse, pos: [490.9, 145.8, 0.1], heading: 182, script: level52}
+  - {id: "level52:fC3Sully", level: level52, name: fC3Sully, pos: [492.1, 145.7, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan01", level: level52, name: fC3Orphan01, pos: [492.6, 146.5, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan02", level: level52, name: fC3Orphan02, pos: [491.4, 146.6, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan03", level: level52, name: fC3Orphan03, pos: [490, 146.6, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan04", level: level52, name: fC3Orphan04, pos: [493.9, 146.6, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan05", level: level52, name: fC3Orphan05, pos: [488.8, 146.6, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan06", level: level52, name: fC3Orphan06, pos: [495, 146.6, 0.1], heading: 182, script: level52}
+  - {id: "level52:fC3Orphan07", level: level52, name: fC3Orphan07, pos: [488.1, 147.3, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan08", level: level52, name: fC3Orphan08, pos: [489.5, 147.4, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan09", level: level52, name: fC3Orphan09, pos: [490.8, 147.3, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan11", level: level52, name: fC3Orphan11, pos: [493.2, 147.3, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan12", level: level52, name: fC3Orphan12, pos: [494.5, 147.4, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan10", level: level52, name: fC3Orphan10, pos: [492.1, 147.3, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan13", level: level52, name: fC3Orphan13, pos: [495.6, 147.4, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan14", level: level52, name: fC3Orphan14, pos: [488.9, 147.9, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan15", level: level52, name: fC3Orphan15, pos: [490.3, 148, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan16", level: level52, name: fC3Orphan16, pos: [491.6, 147.9, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan17", level: level52, name: fC3Orphan17, pos: [492.8, 147.9, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan18", level: level52, name: fC3Orphan18, pos: [493.9, 147.9, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan19", level: level52, name: fC3Orphan19, pos: [495.1, 147.9, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan20", level: level52, name: fC3Orphan20, pos: [496.3, 147.9, 0.1], heading: 183, script: level52}
+  - {id: "level52:fC3Orphan21", level: level52, name: fC3Orphan21, pos: [487.5, 148, 0.1], heading: 183, script: level52}
+  - {id: "level52:fSSully", level: level52, name: fSSully, pos: [507.1, -214, 0.1], heading: 92, script: level52}
+  - {id: "level52:fSJesse", level: level52, name: fSJesse, pos: [507.1, -213.1, 0.1], heading: 92, script: level52}
+  - {id: "level52:fSOrphan01", level: level52, name: fSOrphan01, pos: [506.1, -213.9, 0.1], heading: 92, script: level52}
+  - {id: "level52:fSOrphan02", level: level52, name: fSOrphan02, pos: [505.1, -212.1, 0.1], heading: 93, script: level52}
+  - {id: "level52:fSOrphan03", level: level52, name: fSOrphan03, pos: [506.1, -213.2, 0.1], heading: 92, script: level52}
+  - {id: "level52:fSOrphan04", level: level52, name: fSOrphan04, pos: [505.8, -214.6, 0.1], heading: 92, script: level52}
+  - {id: "level52:fSOrphan05", level: level52, name: fSOrphan05, pos: [505.5, -212.5, 0.1], heading: 93, script: level52}
+  - {id: "level52:fSOrphan06", level: level52, name: fSOrphan06, pos: [504.7, -214.7, 0.1], heading: 93, script: level52}
+  - {id: "level52:fSOrphan07", level: level52, name: fSOrphan07, pos: [505.5, -215.1, 0.1], heading: 92, script: level52}
+  - {id: "level52:fSOrphan08", level: level52, name: fSOrphan08, pos: [504.6, -212.6, 0.1], heading: 93, script: level52}
+  - {id: "level52:fSOrphanThrower1", level: level52, name: fSOrphanThrower1, pos: [506.1, -211.9, 0.1], heading: 93, script: level52}
+  - {id: "level52:fSOrphanThrower2", level: level52, name: fSOrphanThrower2, pos: [506.1, -211.3, 0.1], heading: 93, script: level52}
+  - {id: "level52:fHangParkCops", level: level52, name: fHangParkCops, pos: [470.3, -100.2, 0], heading: 89, script: level52}
+  - {id: "level52:fOrphanCar01", level: level52, name: fOrphanCar01, pos: [497.1, 142.6, 1], heading: 183, script: level52}
+  - {id: "level52:fOrphanCar02", level: level52, name: fOrphanCar02, pos: [497.7, 141.8, 1.1], heading: 183, script: level52}
+  - {id: "level52:wPhone01", level: level52, name: wPhone01, pos: [576.1, -252.5, -3.9], heading: 138, activity: 6, script: level52}
+  - {id: "level52:storePharmacy", level: level52, name: storePharmacy, pos: [484.2, -107.7, 0], heading: 180, activity: 14, group: 31, script: level52}
+  - {id: "level52:_xfHideZone01", level: level52, name: _xfHideZone01, pos: [488.6, -211.7, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone02", level: level52, name: _xfHideZone02, pos: [469, -237.4, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone03", level: level52, name: _xfHideZone03, pos: [455.9, -238.9, 2.5], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone04", level: level52, name: _xfHideZone04, pos: [446.6, -222.6, 6.9], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone05", level: level52, name: _xfHideZone05, pos: [454.2, -218.6, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone06", level: level52, name: _xfHideZone06, pos: [459.4, -165.4, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone08", level: level52, name: _xfHideZone08, pos: [435.5, -167.5, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone16", level: level52, name: _xfHideZone16, pos: [455.2, -100.1, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone17", level: level52, name: _xfHideZone17, pos: [461.2, -88.1, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone18", level: level52, name: _xfHideZone18, pos: [500.8, -118.2, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone19", level: level52, name: _xfHideZone19, pos: [502.8, -132.9, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone20", level: level52, name: _xfHideZone20, pos: [492.2, -141.9, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone22", level: level52, name: _xfHideZone22, pos: [409, -141, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone23", level: level52, name: _xfHideZone23, pos: [429.2, -140.4, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone25", level: level52, name: _xfHideZone25, pos: [512, -185.3, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone26", level: level52, name: _xfHideZone26, pos: [447.1, -217.7, 3.6], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone27", level: level52, name: _xfHideZone27, pos: [427.8, -172.7, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone28", level: level52, name: _xfHideZone28, pos: [408.6, -172.6, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone29", level: level52, name: _xfHideZone29, pos: [475, -161.6, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone30", level: level52, name: _xfHideZone30, pos: [436.1, -122, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone31", level: level52, name: _xfHideZone31, pos: [444.8, -93.7, 4.2], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone32", level: level52, name: _xfHideZone32, pos: [432.3, -92.3, 4.2], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone33", level: level52, name: _xfHideZone33, pos: [511, -147.6, 5], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone34", level: level52, name: _xfHideZone34, pos: [505.5, -164.7, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone35", level: level52, name: _xfHideZone35, pos: [528.7, -202, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone36", level: level52, name: _xfHideZone36, pos: [418.5, -151.4, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone37", level: level52, name: _xfHideZone37, pos: [409.7, -134.9, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone38", level: level52, name: _xfHideZone38, pos: [439.5, -149, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone39", level: level52, name: _xfHideZone39, pos: [443.6, -184.1, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone40", level: level52, name: _xfHideZone40, pos: [514.6, -194.8, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xfHideZone41", level: level52, name: _xfHideZone41, pos: [456, -122.1, 0], heading: 89, activity: 33, script: level52}
+  - {id: "level52:_xwFireBarrell02", level: level52, name: _xwFireBarrell02, pos: [529.4, -265.5, -4], heading: 152, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell03", level: level52, name: _xwFireBarrell03, pos: [519.5, -260.2, -1.6], heading: 226, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell04", level: level52, name: _xwFireBarrell04, pos: [518.5, -261.3, -1.6], heading: 47, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell05", level: level52, name: _xwFireBarrell05, pos: [524.5, -190.1, 0], heading: 307, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell06", level: level52, name: _xwFireBarrell06, pos: [523.3, -189.3, 0], heading: 127, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell07", level: level52, name: _xwFireBarrell07, pos: [529.1, -206.7, 0], heading: 26, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell08", level: level52, name: _xwFireBarrell08, pos: [529.9, -205.4, 0], heading: 206, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell09", level: level52, name: _xwFireBarrell09, pos: [462, -252.7, 2.5], heading: 55, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell10", level: level52, name: _xwFireBarrell10, pos: [463.2, -251.7, 2.5], heading: 236, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell11", level: level52, name: _xwFireBarrell11, pos: [422.5, -161.5, 0], heading: 55, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell12", level: level52, name: _xwFireBarrell12, pos: [427.4, -164.2, 0], heading: 236, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell17", level: level52, name: _xwFireBarrell17, pos: [510.9, -127.5, 0], heading: 55, activity: 5, script: level52}
+  - {id: "level52:_xwFireBarrell18", level: level52, name: _xwFireBarrell18, pos: [512.2, -126.5, 0], heading: 236, activity: 5, script: level52}
+  - {id: "level52:_xwFlagCopCap01", level: level52, name: _xwFlagCopCap01, pos: [606.9, -256.2, -3.9], heading: 249, activity: 13, script: level52}
+  - {id: "level52:_xwFlagCopCap02", level: level52, name: _xwFlagCopCap02, pos: [608, -259.4, -3.9], heading: 249, activity: 13, script: level52}
+  - {id: "level52:_xwFlagCopCap03", level: level52, name: _xwFlagCopCap03, pos: [605, -260.6, -3.9], heading: 70, activity: 13, script: level52}
+  - {id: "level52:_xwFlagCopCap04", level: level52, name: _xwFlagCopCap04, pos: [603.9, -257.4, -3.9], heading: 70, activity: 13, script: level52}
+  - {id: "level52:_xwPhone", level: level52, name: _xwPhone, pos: [576.1, -252.5, -4.1], heading: 138, activity: 6, script: level52}

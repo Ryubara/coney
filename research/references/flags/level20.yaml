@@ -1,0 +1,274 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level20:fSWalk", level: level20, name: fSWalk, heading: 0, script: level20}
+  - {id: "level20:fStorePath_01", level: level20, name: fStorePath_01, pos: [281.3, -48.2, 0.2], heading: 89, script: level20}
+  - {id: "level20:fStorePath_02", level: level20, name: fStorePath_02, pos: [285.9, -54.4, 0.2], heading: 89, script: level20}
+  - {id: "level20:fPickup_01", level: level20, name: fPickup_01, pos: [332.4, 5.6, -199.7], heading: 273, script: level20}
+  - {id: "level20:fPickup_02", level: level20, name: fPickup_02, pos: [341, 12.4, -199.7], heading: 319, script: level20}
+  - {id: "level20:fPickup_03", level: level20, name: fPickup_03, pos: [338.5, 41, -199.7], heading: 41, script: level20}
+  - {id: "level20:fPickup_04", level: level20, name: fPickup_04, pos: [325, 38.9, -199.7], heading: 271, script: level20}
+  - {id: "level20:fPickup_05", level: level20, name: fPickup_05, pos: [309.6, 38.9, -199.7], heading: 272, script: level20}
+  - {id: "level20:fPickup_06", level: level20, name: fPickup_06, pos: [312.9, -9, -199.7], heading: 181, script: level20}
+  - {id: "level20:fCivUse_05", level: level20, name: fCivUse_05, pos: [492, 39.9, -0.8], heading: 179, activity: 7, script: level20}
+  - {id: "level20:fCivUse_01", level: level20, name: fCivUse_01, pos: [422.7, 20.1, 0.2], heading: 1, activity: 7, script: level20}
+  - {id: "level20:fCivUse_02", level: level20, name: fCivUse_02, pos: [496, 35.2, -1], heading: 29, activity: 7, script: level20}
+  - {id: "level20:fCivUse_04", level: level20, name: fCivUse_04, pos: [497.9, 37.5, -1.1], heading: 245, activity: 29, script: level20}
+  - {id: "level20:fCivUse_03", level: level20, name: fCivUse_03, pos: [484.6, 30.8, -0.4], heading: 52, activity: 17, script: level20}
+  - {id: "level20:fGhostRail_01", level: level20, name: fGhostRail_01, pos: [481.8, 63.1, 1.3], heading: 89, script: level20}
+  - {id: "level20:fGhostRail_01#2", level: level20, name: fGhostRail_01, pos: [487.4, 65.1, 1.3], heading: 89, script: level20}
+  - {id: "level20:fGhostRail_02", level: level20, name: fGhostRail_02, pos: [527.9, 75.3, 1.3], heading: 89, script: level20}
+  - {id: "level20:fStreetStall_03", level: level20, name: fStreetStall_03, pos: [353.3, -95.2, 0.3], heading: 3, script: level20}
+  - {id: "level20:fStreetStall_02", level: level20, name: fStreetStall_02, pos: [322.4, -177.4, 0.3], heading: 137, script: level20}
+  - {id: "level20:fStreetStall_01", level: level20, name: fStreetStall_01, pos: [290.3, -158.8, 0.3], heading: 228, script: level20}
+  - {id: "level20:fSweep_1", level: level20, name: fSweep_1, pos: [362.5, -171.3, 0.2], heading: 89, script: level20}
+  - {id: "level20:fSweep_2", level: level20, name: fSweep_2, pos: [364.8, -167.3, 0.2], heading: 89, script: level20}
+  - {id: "level20:fSweep_3", level: level20, name: fSweep_3, pos: [364.1, -169.1, 0.2], heading: 89, script: level20}
+  - {id: "level20:fLeftUse_02", level: level20, name: fLeftUse_02, pos: [493.4, 74, 4.2], heading: 89, script: level20}
+  - {id: "level20:fLeftUse_03", level: level20, name: fLeftUse_03, pos: [493.1, 72.4, 4.2], heading: 90, script: level20}
+  - {id: "level20:fRightUse_01", level: level20, name: fRightUse_01, pos: [512, 79.8, 4.3], heading: 245, script: level20}
+  - {id: "level20:fRightUse_02", level: level20, name: fRightUse_02, pos: [512.7, 78.2, 4.3], heading: 245, script: level20}
+  - {id: "level20:fRightUse_03", level: level20, name: fRightUse_03, pos: [513.3, 76.9, 4.3], heading: 245, activity: 9, script: level20}
+  - {id: "level20:MarkerPath_01", level: level20, name: MarkerPath_01, pos: [510.5, 76, 4.3], heading: 89, script: level20}
+  - {id: "level20:MarkerPath_02", level: level20, name: MarkerPath_02, pos: [498.4, 74.1, 4.3], heading: 89, script: level20}
+  - {id: "level20:MarkerPath_03", level: level20, name: MarkerPath_03, pos: [498.5, 72.7, 4.3], heading: 89, script: level20}
+  - {id: "level20:fWarpFinalHun_01", level: level20, name: fWarpFinalHun_01, pos: [496.7, 53.3, 3.8], heading: 0, script: level20}
+  - {id: "level20:fWarpFinalHun_02", level: level20, name: fWarpFinalHun_02, pos: [495.8, 52.7, 3.5], heading: 0, script: level20}
+  - {id: "level20:fWarpFinalHun_03", level: level20, name: fWarpFinalHun_03, pos: [497.5, 52.3, 3.2], heading: 0, script: level20}
+  - {id: "level20:fWarpFinalHun_04", level: level20, name: fWarpFinalHun_04, pos: [495.5, 51.6, 2.6], heading: 0, script: level20}
+  - {id: "level20:fWarpFinalHun_05", level: level20, name: fWarpFinalHun_05, pos: [497.6, 51.2, 2.4], heading: 0, script: level20}
+  - {id: "level20:PedNet_01", level: level20, name: PedNet_01, pos: [348.7, -89.7, 0.3], heading: 89, script: level20}
+  - {id: "level20:PedNet_02", level: level20, name: PedNet_02, pos: [357, -99.7, 0.3], heading: 89, script: level20}
+  - {id: "level20:PedNet_03", level: level20, name: PedNet_03, pos: [349.2, -143.5, 0.2], heading: 89, script: level20}
+  - {id: "level20:PedNet_04", level: level20, name: PedNet_04, pos: [355.9, -147.3, 0.2], heading: 89, script: level20}
+  - {id: "level20:PedNet_05", level: level20, name: PedNet_05, pos: [315.7, -181.6, 0.3], heading: 89, script: level20}
+  - {id: "level20:PedNet_06", level: level20, name: PedNet_06, pos: [314.8, -174.6, 0.3], heading: 89, script: level20}
+  - {id: "level20:PedNet_07", level: level20, name: PedNet_07, pos: [290.8, -152, 0.3], heading: 89, script: level20}
+  - {id: "level20:PedNet_08", level: level20, name: PedNet_08, pos: [284.9, -157.8, 0.3], heading: 89, script: level20}
+  - {id: "level20:PedNet_09", level: level20, name: PedNet_09, pos: [275.6, -125.9, 0.2], heading: 89, script: level20}
+  - {id: "level20:PedNet_10", level: level20, name: PedNet_10, pos: [285, -118.5, 0.2], heading: 89, script: level20}
+  - {id: "level20:PedNet_11", level: level20, name: PedNet_11, pos: [275.8, -70, 0.2], heading: 89, script: level20}
+  - {id: "level20:PedNet_12", level: level20, name: PedNet_12, pos: [283.6, -73.9, 0.2], heading: 89, script: level20}
+  - {id: "level20:PedNet_13", level: level20, name: PedNet_13, pos: [313.5, -42.3, 0.2], heading: 89, script: level20}
+  - {id: "level20:PedNet_14", level: level20, name: PedNet_14, pos: [313.9, -30.4, 0.2], heading: 89, script: level20}
+  - {id: "level20:PedNet_22", level: level20, name: PedNet_22, pos: [417.1, 83.4, 0.3], heading: 89, script: level20}
+  - {id: "level20:PedNet_23", level: level20, name: PedNet_23, pos: [413, 88.6, 0.3], heading: 89, script: level20}
+  - {id: "level20:PedNet_24", level: level20, name: PedNet_24, pos: [435.8, 110.2, 0.3], heading: 89, script: level20}
+  - {id: "level20:PedNet_25", level: level20, name: PedNet_25, pos: [439.1, 105.7, 0.3], heading: 89, script: level20}
+  - {id: "level20:PedNet_28", level: level20, name: PedNet_28, pos: [585.6, 77.5, -2.8], heading: 89, script: level20}
+  - {id: "level20:PedNet_29", level: level20, name: PedNet_29, pos: [559.2, 53.7, -2.8], heading: 89, script: level20}
+  - {id: "level20:PedNet_30", level: level20, name: PedNet_30, pos: [555.2, 55.9, -2.8], heading: 89, script: level20}
+  - {id: "level20:PedExit_01", level: level20, name: PedExit_01, pos: [367.5, -152.9, 0.2], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_02", level: level20, name: PedExit_02, pos: [322.6, -184.5, 0.2], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_03", level: level20, name: PedExit_03, pos: [268.6, -156.6, 0.3], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_04", level: level20, name: PedExit_04, pos: [250.5, -130.8, 0.2], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_05", level: level20, name: PedExit_05, pos: [259.5, -89.1, 0.2], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_06", level: level20, name: PedExit_06, pos: [289.2, -77.9, 0.3], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_07", level: level20, name: PedExit_07, pos: [335.8, -50.6, 0.2], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_08", level: level20, name: PedExit_08, pos: [357.1, -139.8, 0.3], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_09", level: level20, name: PedExit_09, pos: [316.6, -31.7, 0.2], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_12", level: level20, name: PedExit_12, pos: [589.8, 75, -8.8], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_13", level: level20, name: PedExit_13, pos: [592.5, 54.4, -2.8], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_14", level: level20, name: PedExit_14, pos: [378.6, -124.7, -2.8], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_15", level: level20, name: PedExit_15, pos: [291, -151.1, 0.3], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_16", level: level20, name: PedExit_16, pos: [283.9, -157.6, 0.3], heading: 89, activity: 8, script: level20}
+  - {id: "level20:PedExit_17", level: level20, name: PedExit_17, pos: [331.5, -156.6, 0.2], heading: 89, activity: 8, script: level20}
+  - {id: "level20:MarketNet_01", level: level20, name: MarketNet_01, pos: [326.2, -6.8, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_02", level: level20, name: MarketNet_02, pos: [326.4, -13.5, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_03", level: level20, name: MarketNet_03, pos: [331.8, -11.7, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_04", level: level20, name: MarketNet_04, pos: [334.8, 3.2, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_05", level: level20, name: MarketNet_05, pos: [333.3, 10.7, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_06", level: level20, name: MarketNet_06, pos: [347.4, 10.6, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_07", level: level20, name: MarketNet_07, pos: [348.6, 20.5, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_08", level: level20, name: MarketNet_08, pos: [338.1, 38.2, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_09", level: level20, name: MarketNet_09, pos: [337.9, 27, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_10", level: level20, name: MarketNet_10, pos: [326.2, 37.8, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_11", level: level20, name: MarketNet_11, pos: [324, 45.5, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_12", level: level20, name: MarketNet_12, pos: [313.4, 44.9, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_13", level: level20, name: MarketNet_13, pos: [309.3, 37.9, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_14", level: level20, name: MarketNet_14, pos: [315.9, 31.6, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_15", level: level20, name: MarketNet_15, pos: [314.3, -0.5, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_16", level: level20, name: MarketNet_16, pos: [300.1, -3.7, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketNet_17", level: level20, name: MarketNet_17, pos: [312.5, -9.2, -199.7], heading: 89, script: level20}
+  - {id: "level20:MarketExit_01", level: level20, name: MarketExit_01, pos: [333.7, -14.8, -199.7], heading: 89, activity: 8, script: level20}
+  - {id: "level20:MarketExit_02", level: level20, name: MarketExit_02, pos: [323.6, -17.2, -199.7], heading: 89, activity: 8, script: level20}
+  - {id: "level20:MarketExit_03", level: level20, name: MarketExit_03, pos: [298.7, -9.3, -199.7], heading: 89, activity: 8, script: level20}
+  - {id: "level20:MarketExit_04", level: level20, name: MarketExit_04, pos: [338.1, 2.8, -199.7], heading: 89, activity: 8, script: level20}
+  - {id: "level20:MarketExit_05", level: level20, name: MarketExit_05, pos: [330.9, 37.5, -199.7], heading: 89, activity: 8, script: level20}
+  - {id: "level20:MarketExit_06", level: level20, name: MarketExit_06, pos: [310.4, 9.4, -199.7], heading: 89, activity: 8, script: level20}
+  - {id: "level20:MarketExit_07", level: level20, name: MarketExit_07, pos: [323.1, 31, -199.7], heading: 89, activity: 8, script: level20}
+  - {id: "level20:Tag_01", level: level20, name: Tag_01, pos: [258.1, -154.2, 0.2], heading: 136, activity: 12, script: level20}
+  - {id: "level20:Tag_02", level: level20, name: Tag_02, pos: [271.3, -132.2, 0.2], heading: 182, activity: 12, script: level20}
+  - {id: "level20:Tag_03", level: level20, name: Tag_03, pos: [248.4, -126.6, 0.2], heading: 91, activity: 12, script: level20}
+  - {id: "level20:Tag_04", level: level20, name: Tag_04, pos: [285.7, -78.8, 0.2], heading: 0, activity: 12, script: level20}
+  - {id: "level20:Tag_05", level: level20, name: Tag_05, pos: [321.7, -50.4, 0.2], heading: 45, activity: 12, script: level20}
+  - {id: "level20:Tag_06", level: level20, name: Tag_06, pos: [284.7, -82.4, 2.2], heading: 90, activity: 12, script: level20}
+  - {id: "level20:Tag_07", level: level20, name: Tag_07, pos: [274.3, -46.5, 0.2], heading: 134, activity: 12, script: level20}
+  - {id: "level20:Tag_11", level: level20, name: Tag_11, pos: [358.7, -169.4, 0.2], heading: 316, activity: 12, script: level20}
+  - {id: "level20:fPedSit_03", level: level20, name: fPedSit_03, pos: [276.4, -135.7, 0.3], heading: 184, activity: 4, script: level20}
+  - {id: "level20:fPedSit_01", level: level20, name: fPedSit_01, pos: [275.4, -144.9, 0.3], heading: 62, activity: 4, script: level20}
+  - {id: "level20:fPedSit_02", level: level20, name: fPedSit_02, pos: [274.1, -137.8, 0.2], heading: 93, activity: 4, script: level20}
+  - {id: "level20:fShadowPatrol", level: level20, name: fShadowPatrol, pos: [351.8, -144.6, 0.3], heading: 54, script: level20}
+  - {id: "level20:fRadarMarketplace", level: level20, name: fRadarMarketplace, pos: [329.6, -44.2, 0.2], heading: 89, script: level20}
+  - {id: "level20:fStoreFlag01", level: level20, name: fStoreFlag01, pos: [350.3, -155.2, 0.2], heading: 138, activity: 22, script: level20}
+  - {id: "level20:fStoreFlag02", level: level20, name: fStoreFlag02, pos: [348.1, -157.3, 0.2], heading: 138, activity: 22, script: level20}
+  - {id: "level20:fStoreFlag03", level: level20, name: fStoreFlag03, pos: [350.9, -157.5, 0.2], heading: 318, activity: 25, script: level20}
+  - {id: "level20:fCooksHang", level: level20, name: fCooksHang, pos: [356.4, -162.6, 0.2], heading: 135, script: level20}
+  - {id: "level20:fHunLean1", level: level20, name: fHunLean1, pos: [289.5, -54.5, 0.2], heading: 320, activity: 7, script: level20}
+  - {id: "level20:fHunLean2", level: level20, name: fHunLean2, pos: [287.8, -54.1, 0.2], heading: 7, activity: 30, script: level20}
+  - {id: "level20:fHunSmoke1", level: level20, name: fHunSmoke1, pos: [290.2, -53, 0.2], heading: 281, activity: 7, script: level20}
+  - {id: "level20:fHunSmoke2", level: level20, name: fHunSmoke2, pos: [291, -51.6, 0.2], heading: 272, activity: 7, script: level20}
+  - {id: "level20:fHunLean3", level: level20, name: fHunLean3, pos: [290.1, -49.9, 0.2], heading: 224, activity: 30, script: level20}
+  - {id: "level20:fDoneRounds", level: level20, name: fDoneRounds, pos: [301.7, -4.2, -199.7], heading: 286, script: level20}
+  - {id: "level20:wBrowse", level: level20, name: wBrowse, pos: [332.3, 7.3, -199.7], heading: 272, activity: 22, script: level20}
+  - {id: "level20:wBrowse01", level: level20, name: wBrowse01, pos: [337.5, 12.9, -199.7], heading: 5, activity: 22, script: level20}
+  - {id: "level20:wBrowse02", level: level20, name: wBrowse02, pos: [331, 0.6, -199.7], heading: 317, activity: 22, script: level20}
+  - {id: "level20:wLeanBack", level: level20, name: wLeanBack, pos: [335.1, -1.4, -199.7], heading: 271, activity: 30, script: level20}
+  - {id: "level20:wLeanBack01", level: level20, name: wLeanBack01, pos: [347.7, 15.2, -199.7], heading: 92, activity: 30, script: level20}
+  - {id: "level20:wSmoke", level: level20, name: wSmoke, pos: [346.7, 8.5, -199.7], heading: 340, activity: 7, script: level20}
+  - {id: "level20:wLeanBack02", level: level20, name: wLeanBack02, pos: [346.2, 24.2, -199.7], heading: 93, activity: 30, script: level20}
+  - {id: "level20:wBrowse03", level: level20, name: wBrowse03, pos: [342.1, 27.2, -199.7], heading: 185, activity: 22, script: level20}
+  - {id: "level20:wBrowse04", level: level20, name: wBrowse04, pos: [325.3, 42.6, -199.7], heading: 275, activity: 22, script: level20}
+  - {id: "level20:wBrowse05", level: level20, name: wBrowse05, pos: [337.6, 30.9, -199.7], heading: 275, activity: 22, script: level20}
+  - {id: "level20:wLeanBack03", level: level20, name: wLeanBack03, pos: [335.2, 36, -199.7], heading: 87, activity: 30, script: level20}
+  - {id: "level20:wSmoke01", level: level20, name: wSmoke01, pos: [352.5, 27.5, -199.7], heading: 262, activity: 7, script: level20}
+  - {id: "level20:wLeanBack04", level: level20, name: wLeanBack04, pos: [330.1, 44.1, -199.7], heading: 182, activity: 30, script: level20}
+  - {id: "level20:wSmoke02", level: level20, name: wSmoke02, pos: [317.8, 47.4, -199.7], heading: 190, activity: 7, script: level20}
+  - {id: "level20:wBrowse06", level: level20, name: wBrowse06, pos: [309.2, 37.7, -199.7], heading: 275, activity: 22, script: level20}
+  - {id: "level20:wBrowse07", level: level20, name: wBrowse07, pos: [309, 31, -199.7], heading: 180, activity: 22, script: level20}
+  - {id: "level20:wLeanBack05", level: level20, name: wLeanBack05, pos: [323.3, 32.6, -199.7], heading: 271, activity: 30, script: level20}
+  - {id: "level20:wBrowse08", level: level20, name: wBrowse08, pos: [313.5, 17.9, -199.7], heading: 273, activity: 22, script: level20}
+  - {id: "level20:wBrowse09", level: level20, name: wBrowse09, pos: [313, 31, -199.7], heading: 183, activity: 22, script: level20}
+  - {id: "level20:wBrowse10", level: level20, name: wBrowse10, pos: [318, 34.3, -199.7], heading: 178, activity: 22, script: level20}
+  - {id: "level20:wLeanBack06", level: level20, name: wLeanBack06, pos: [316.7, 18.6, -199.7], heading: 273, activity: 30, script: level20}
+  - {id: "level20:wLeanBack07", level: level20, name: wLeanBack07, pos: [316.9, 14.2, -199.7], heading: 275, activity: 30, script: level20}
+  - {id: "level20:wLeanBack08", level: level20, name: wLeanBack08, pos: [309.8, 13.6, -199.7], heading: 93, activity: 30, script: level20}
+  - {id: "level20:wBrowse11", level: level20, name: wBrowse11, pos: [313.6, 3, -199.7], heading: 273, activity: 22, script: level20}
+  - {id: "level20:wBrowse12", level: level20, name: wBrowse12, pos: [302.2, -7, -199.7], heading: 183, activity: 22, script: level20}
+  - {id: "level20:wBrowse13", level: level20, name: wBrowse13, pos: [310.9, -8.8, -199.7], heading: 168, activity: 22, script: level20}
+  - {id: "level20:wSmoke03", level: level20, name: wSmoke03, pos: [310.1, 0, -199.7], heading: 118, activity: 7, script: level20}
+  - {id: "level20:wSmoke04", level: level20, name: wSmoke04, pos: [316.8, -6.2, -199.7], heading: 257, activity: 7, script: level20}
+  - {id: "level20:fVandalHunsHang1", level: level20, name: fVandalHunsHang1, pos: [310, 41.1, -199.7], heading: 89, script: level20}
+  - {id: "level20:fSceneExit", level: level20, name: fSceneExit, pos: [329.1, 37.4, -199.7], heading: 89, script: level20}
+  - {id: "level20:fVandalWait1", level: level20, name: fVandalWait1, pos: [327.6, 40.2, -199.7], heading: 253, script: level20}
+  - {id: "level20:fLowCivLean1", level: level20, name: fLowCivLean1, pos: [487.9, 66.7, 0.3], heading: 115, activity: 30, script: level20}
+  - {id: "level20:fChaseWarmHands", level: level20, name: fChaseWarmHands, pos: [432.2, 11.8, 0.2], heading: 288, activity: 5, script: level20}
+  - {id: "level20:fMarketEnd", level: level20, name: fMarketEnd, pos: [299.9, -3.8, -199.7], heading: 89, script: level20}
+  - {id: "level20:wSmoke05", level: level20, name: wSmoke05, pos: [300.4, -5, -199.7], heading: 315, activity: 7, script: level20}
+  - {id: "level20:wLeanBack09", level: level20, name: wLeanBack09, pos: [297.4, -4.2, -199.7], heading: 93, activity: 30, script: level20}
+  - {id: "level20:wLeanBack10", level: level20, name: wLeanBack10, pos: [298.4, -2.2, -199.7], heading: 182, activity: 30, script: level20}
+  - {id: "level20:wLeanBack11", level: level20, name: wLeanBack11, pos: [300.5, -2.3, -199.7], heading: 182, activity: 30, script: level20}
+  - {id: "level20:fChaseGate", level: level20, name: fChaseGate, pos: [287, -153.8, 0], heading: 312, script: level20}
+  - {id: "level20:fHunSearch1", level: level20, name: fHunSearch1, pos: [307.5, -174.5, 0.3], heading: 89, script: level20}
+  - {id: "level20:fHunSearch2", level: level20, name: fHunSearch2, pos: [278.8, -108.9, 0.2], heading: 89, script: level20}
+  - {id: "level20:fShadowSearch", level: level20, name: fShadowSearch, pos: [353.6, -127.6, 0.3], heading: 89, script: level20}
+  - {id: "level20:fFox", level: level20, name: fFox, pos: [285.9, -150.7, 0.3], heading: 317, script: level20}
+  - {id: "level20:fVermin", level: level20, name: fVermin, pos: [284.1, -152.6, 0.3], heading: 312, script: level20}
+  - {id: "level20:fWaitHereBoy", level: level20, name: fWaitHereBoy, pos: [527.4, 56, 0.3], heading: 89, script: level20}
+  - {id: "level20:fWhiteLotusTag", level: level20, name: fWhiteLotusTag, pos: [358.8, -169.5, 0.2], heading: 128, script: level20}
+  - {id: "level20:fPaint", level: level20, name: fPaint, pos: [381.5, -140.4, -2.8], heading: 272, group: 64, script: level20}
+  - {id: "level20:fFlash1", level: level20, name: fFlash1, pos: [261.6, -154.8, 0.3], heading: 226, group: 64, script: level20}
+  - {id: "level20:fFlash2", level: level20, name: fFlash2, pos: [330.9, -57.1, 0.2], heading: 1, group: 64, script: level20}
+  - {id: "level20:fPaint1", level: level20, name: fPaint1, pos: [248.8, -99.4, 0.2], heading: 55, group: 64, script: level20}
+  - {id: "level20:fFlash3", level: level20, name: fFlash3, pos: [348.7, -88, 0.3], heading: 146, group: 64, script: level20}
+  - {id: "level20:fFlash4", level: level20, name: fFlash4, pos: [594.5, 52.5, -2.8], heading: 317, group: 64, script: level20}
+  - {id: "level20:fEndSubway", level: level20, name: fEndSubway, pos: [581.5, 66.5, -2.7], heading: 89, script: level20}
+  - {id: "level20:fMarkerHide", level: level20, name: fMarkerHide, pos: [498.2, 88.4, 4.2], heading: 188, script: level20}
+  - {id: "level20:fGhostSit", level: level20, name: fGhostSit, pos: [496.1, 84.7, 4.2], heading: 173, activity: 4, script: level20}
+  - {id: "level20:fTeleMarkerHolder", level: level20, name: fTeleMarkerHolder, pos: [451, 66.6, 0.2], heading: 230, script: level20}
+  - {id: "level20:fLowCivSit", level: level20, name: fLowCivSit, pos: [498.5, 68.7, 0.2], heading: 183, activity: 4, script: level20}
+  - {id: "level20:fLowCivSmoke", level: level20, name: fLowCivSmoke, pos: [510.1, 78.9, 8.2], heading: 205, activity: 7, script: level20}
+  - {id: "level20:fMarkLastStand2", level: level20, name: fMarkLastStand2, pos: [530.6, 57.6, 0.3], heading: 92, script: level20}
+  - {id: "level20:fGhost", level: level20, name: fGhost, pos: [510.9, 77.1, 4.2], heading: 173, script: level20}
+  - {id: "level20:fStage201", level: level20, name: fStage201, pos: [498.8, 78.1, 4.3], heading: 176, script: level20}
+  - {id: "level20:fStage202", level: level20, name: fStage202, pos: [496, 59.1, 4.3], heading: 4, script: level20}
+  - {id: "level20:fStage203", level: level20, name: fStage203, pos: [497.8, 58.4, 4.3], heading: 4, script: level20}
+  - {id: "level20:fGhostSmoke", level: level20, name: fGhostSmoke, pos: [497.2, 77, 4.3], heading: 174, script: level20}
+  - {id: "level20:fGhostSmoke01", level: level20, name: fGhostSmoke01, pos: [512.7, 70.4, 4.3], heading: 247, script: level20}
+  - {id: "level20:fStage204", level: level20, name: fStage204, pos: [503.2, 66.5, 0.3], heading: 312, script: level20}
+  - {id: "level20:fStage205", level: level20, name: fStage205, pos: [502.2, 66.3, 0.3], heading: 312, script: level20}
+  - {id: "level20:fGhosBackt01", level: level20, name: fGhosBackt01, pos: [498.3, 72.4, 4.3], heading: 168, script: level20}
+  - {id: "level20:fGhosBackt02", level: level20, name: fGhosBackt02, pos: [497.1, 72.6, 4.3], heading: 168, script: level20}
+  - {id: "level20:fGhosBackt03", level: level20, name: fGhosBackt03, pos: [499.6, 73.4, 4.3], heading: 168, script: level20}
+  - {id: "level20:fGhosBackt04", level: level20, name: fGhosBackt04, pos: [500.7, 74.6, 4.3], heading: 168, script: level20}
+  - {id: "level20:fGhosBackt05", level: level20, name: fGhosBackt05, pos: [495.7, 73.5, 4.3], heading: 168, script: level20}
+  - {id: "level20:fOutOfBackAlley", level: level20, name: fOutOfBackAlley, pos: [532.7, 56.8, 0.3], heading: 138, script: level20}
+  - {id: "level20:fStage206", level: level20, name: fStage206, pos: [500.4, 65.6, 0.3], heading: 72, script: level20}
+  - {id: "level20:fStage207", level: level20, name: fStage207, pos: [500.7, 66.6, 0.3], heading: 72, script: level20}
+  - {id: "level20:fMarkLastStand1", level: level20, name: fMarkLastStand1, pos: [515.7, 72.4, 0.2], heading: 71, script: level20}
+  - {id: "level20:fMarkLastStand3", level: level20, name: fMarkLastStand3, pos: [513.4, 74.7, 0.2], heading: 131, script: level20}
+  - {id: "level20:fStage208", level: level20, name: fStage208, pos: [526.8, 65.6, 0.3], heading: 159, script: level20}
+  - {id: "level20:fStage209", level: level20, name: fStage209, pos: [525.8, 65.7, 0.3], heading: 159, script: level20}
+  - {id: "level20:fMarkLastStand04", level: level20, name: fMarkLastStand04, pos: [535.9, 68.4, -2.7], heading: 92, script: level20}
+  - {id: "level20:StorePharmacy01", level: level20, name: StorePharmacy01, pos: [304.2, -30.9, 0.2], heading: 89, activity: 14, group: 31, script: level20}
+  - {id: "level20:_xwGarbage01", level: level20, name: _xwGarbage01, pos: [265.8, -132.7, 0.3], heading: 271, activity: 10, script: level20}
+  - {id: "level20:_xwGarbage02", level: level20, name: _xwGarbage02, pos: [293.4, -142.8, 0.3], heading: 131, activity: 10, script: level20}
+  - {id: "level20:_xwGarbage03", level: level20, name: _xwGarbage03, pos: [357.8, -157.3, 0.2], heading: 131, activity: 10, script: level20}
+  - {id: "level20:_xwGarbage04", level: level20, name: _xwGarbage04, pos: [359.3, -127.9, 0.2], heading: 131, activity: 10, script: level20}
+  - {id: "level20:_xwGarbage05", level: level20, name: _xwGarbage05, pos: [337.6, -52.5, 0.2], heading: 92, activity: 10, script: level20}
+  - {id: "level20:_xwPiss02", level: level20, name: _xwPiss02, pos: [327.9, -181.4, 0.3], heading: 88, activity: 1, script: level20}
+  - {id: "level20:_xwPiss03", level: level20, name: _xwPiss03, pos: [364, -160.2, 0.2], heading: 148, activity: 1, script: level20}
+  - {id: "level20:_xwPiss04", level: level20, name: _xwPiss04, pos: [265.3, -134.7, 0.3], heading: 300, activity: 1, script: level20}
+  - {id: "level20:_xwGarbage06", level: level20, name: _xwGarbage06, pos: [269.4, -83.3, 0.2], heading: 271, activity: 10, script: level20}
+  - {id: "level20:_xwPiss05", level: level20, name: _xwPiss05, pos: [268.7, -84.1, 0.2], heading: 300, activity: 1, script: level20}
+  - {id: "level20:_xwPiss06", level: level20, name: _xwPiss06, pos: [331, -40.1, 0.2], heading: 1, activity: 1, script: level20}
+  - {id: "level20:_xwGarbage07", level: level20, name: _xwGarbage07, pos: [565.6, 67.3, -2.8], heading: 225, activity: 10, script: level20}
+  - {id: "level20:_xwGarbage08", level: level20, name: _xwGarbage08, pos: [570.3, 62.1, -2.8], heading: 225, activity: 10, script: level20}
+  - {id: "level20:_xwPiss07", level: level20, name: _xwPiss07, pos: [593.5, 74.1, -2.7], heading: 97, activity: 1, script: level20}
+  - {id: "level20:_xwFire02", level: level20, name: _xwFire02, pos: [248.7, -85.4, 0.2], heading: 89, activity: 5, script: level20}
+  - {id: "level20:_xwFire01", level: level20, name: _xwFire01, pos: [249.8, -85.4, 0.2], heading: 271, activity: 5, script: level20}
+  - {id: "level20:_xwSmoke02", level: level20, name: _xwSmoke02, pos: [572.2, 75, -2.8], heading: 89, activity: 7, script: level20}
+  - {id: "level20:_xwSmoke06", level: level20, name: _xwSmoke06, pos: [303.7, -39.4, 0.3], heading: 89, activity: 7, script: level20}
+  - {id: "level20:_xwSmoke08", level: level20, name: _xwSmoke08, pos: [316.3, -174.1, 0.3], heading: 89, activity: 7, script: level20}
+  - {id: "level20:_xwSmoke10", level: level20, name: _xwSmoke10, pos: [357.4, -147.6, 0.2], heading: 89, activity: 7, script: level20}
+  - {id: "level20:_xwSmoke11", level: level20, name: _xwSmoke11, pos: [279.6, -145.6, 0.3], heading: 89, activity: 7, script: level20}
+  - {id: "level20:_xwLeanBack02", level: level20, name: _xwLeanBack02, pos: [293, -166.3, 0.2], heading: 48, activity: 30, script: level20}
+  - {id: "level20:_xwBrowse01", level: level20, name: _xwBrowse01, pos: [301.3, -29.2, 0.3], heading: 316, activity: 22, script: level20}
+  - {id: "level20:_xwBrowse02", level: level20, name: _xwBrowse02, pos: [302.8, -27.8, 0.3], heading: 316, activity: 22, script: level20}
+  - {id: "level20:_xwBrowse03", level: level20, name: _xwBrowse03, pos: [299.7, -31.9, 0.3], heading: 228, activity: 22, script: level20}
+  - {id: "level20:_xwBrowse04", level: level20, name: _xwBrowse04, pos: [306, -27.5, 0.3], heading: 47, activity: 22, script: level20}
+  - {id: "level20:_xwBrowse05", level: level20, name: _xwBrowse05, pos: [307.7, -29.2, 0.3], heading: 47, activity: 22, script: level20}
+  - {id: "level20:_xwBrowse06", level: level20, name: _xwBrowse06, pos: [289.2, -157.4, 0.2], heading: 184, activity: 22, script: level20}
+  - {id: "level20:fBrowse2", level: level20, name: fBrowse2, pos: [354.6, -95.1, 0.2], heading: 325, activity: 22, script: level20}
+  - {id: "level20:_xwBrowse08", level: level20, name: _xwBrowse08, pos: [321.2, -178.4, 0.2], heading: 102, activity: 22, script: level20}
+  - {id: "level20:fBrowse1", level: level20, name: fBrowse1, pos: [351.8, -95.1, 0.2], heading: 40, activity: 22, script: level20}
+  - {id: "level20:_xwBrowse10", level: level20, name: _xwBrowse10, pos: [323.6, -176.4, 0.2], heading: 184, activity: 22, script: level20}
+  - {id: "level20:_xwBrowse11", level: level20, name: _xwBrowse11, pos: [291.5, -159.8, 0.2], heading: 271, activity: 22, script: level20}
+  - {id: "level20:fPhone1", level: level20, name: fPhone1, pos: [351.6, -151.4, 0.2], heading: 239, script: level20}
+  - {id: "level20:fSmoke1", level: level20, name: fSmoke1, pos: [358.6, -99.4, 0.3], heading: 273, activity: 30, script: level20}
+  - {id: "level20:_xwSmoke13", level: level20, name: _xwSmoke13, pos: [348.3, -107.6, 0.3], heading: 89, activity: 7, script: level20}
+  - {id: "level20:fLeanBack1", level: level20, name: fLeanBack1, pos: [347.8, -98, 0.3], heading: 92, activity: 30, script: level20}
+  - {id: "level20:fTalk1", level: level20, name: fTalk1, pos: [354, -102.1, 0.2], heading: 60, activity: 7, script: level20}
+  - {id: "level20:fTalk2", level: level20, name: fTalk2, pos: [355.2, -101.2, 0.2], heading: 238, activity: 7, script: level20}
+  - {id: "level20:_xwTrash13", level: level20, name: _xwTrash13, pos: [273.7, -135.3, 0.2], heading: 323, activity: 10, script: level20}
+  - {id: "level20:_xwTrash14", level: level20, name: _xwTrash14, pos: [285.5, -147, 0.2], heading: 323, activity: 10, script: level20}
+  - {id: "level20:_xfHideZone04", level: level20, name: _xfHideZone04, pos: [306.8, -16.3, 0.2], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone12", level: level20, name: _xfHideZone12, pos: [329.6, -19.2, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone13", level: level20, name: _xfHideZone13, pos: [327.2, -1.3, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone14", level: level20, name: _xfHideZone14, pos: [328.5, 11.3, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone15", level: level20, name: _xfHideZone15, pos: [342.8, 2.7, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone16", level: level20, name: _xfHideZone16, pos: [352.6, 9.7, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone19", level: level20, name: _xfHideZone19, pos: [333.7, 16.5, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone20", level: level20, name: _xfHideZone20, pos: [334.7, 45.9, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone21", level: level20, name: _xfHideZone21, pos: [322, 49.8, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone22", level: level20, name: _xfHideZone22, pos: [326.3, 35.8, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone23", level: level20, name: _xfHideZone23, pos: [305.9, 43, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone24", level: level20, name: _xfHideZone24, pos: [314.1, 38.2, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone31", level: level20, name: _xfHideZone31, pos: [307.4, -13, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone35", level: level20, name: _xfHideZone35, pos: [310.5, 22.8, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone38", level: level20, name: _xfHideZone38, pos: [348.6, 33.9, -199.8], heading: 89, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone39", level: level20, name: _xfHideZone39, pos: [254.3, -122.5, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone41", level: level20, name: _xfHideZone41, pos: [285.1, -129.8, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone43", level: level20, name: _xfHideZone43, pos: [327.5, -154.4, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone44", level: level20, name: _xfHideZone44, pos: [331.3, -177.1, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone45", level: level20, name: _xfHideZone45, pos: [358.2, -174, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone46", level: level20, name: _xfHideZone46, pos: [383.7, -126.4, -2.8], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone47", level: level20, name: _xfHideZone47, pos: [262.5, -163.2, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone50", level: level20, name: _xfHideZone50, pos: [256.3, -102.8, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone51", level: level20, name: _xfHideZone51, pos: [262.9, -83.9, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone52", level: level20, name: _xfHideZone52, pos: [336.2, -52.1, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone53", level: level20, name: _xfHideZone53, pos: [249.8, -133.2, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone54", level: level20, name: _xfHideZone54, pos: [294.8, -60.8, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone55", level: level20, name: _xfHideZone55, pos: [290.2, -75.6, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20:_xfHideZone56", level: level20, name: _xfHideZone56, pos: [246.9, -89.9, 0.2], heading: 95, activity: 33, script: level20}
+  - {id: "level20_marketplace:fLedgerIcon", level: level20, name: fLedgerIcon, heading: 89, script: level20_marketplace}

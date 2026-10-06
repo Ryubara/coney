@@ -1,0 +1,46 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level120_brawl_init:fP1_1", level: level120, name: fP1_1, pos: [-65.7, 48.8, 0.6], heading: 257, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP1_2", level: level120, name: fP1_2, pos: [-65.7, 50.1, 0.6], heading: 257, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP1_3", level: level120, name: fP1_3, pos: [-65.1, 47.9, 0.6], heading: 257, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP1_4", level: level120, name: fP1_4, pos: [-64.6, 51.3, 0.6], heading: 257, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP1_5", level: level120, name: fP1_5, pos: [-64.6, 49.3, 0.6], heading: 257, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP1_6", level: level120, name: fP1_6, pos: [-64, 47.5, 0.6], heading: 257, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP1_7", level: level120, name: fP1_7, pos: [-63.7, 50.7, 0.6], heading: 257, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP1_8", level: level120, name: fP1_8, pos: [-63.3, 48.5, 0.6], heading: 257, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP1_9", level: level120, name: fP1_9, pos: [-63.4, 49.6, 0.6], heading: 257, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP1_10", level: level120, name: fP1_10, pos: [-63.4, 47.6, 0.6], heading: 257, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP2_1", level: level120, name: fP2_1, pos: [-71.5, 48.9, 0.6], heading: 79, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP2_2", level: level120, name: fP2_2, pos: [-71.1, 47.6, 0.6], heading: 79, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP2_3", level: level120, name: fP2_3, pos: [-71.6, 50.3, 0.6], heading: 79, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP2_4", level: level120, name: fP2_4, pos: [-72.7, 49.7, 0.6], heading: 79, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP2_5", level: level120, name: fP2_5, pos: [-72.3, 48, 0.6], heading: 79, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP2_6", level: level120, name: fP2_6, pos: [-72.7, 51.5, 0.6], heading: 79, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP2_7", level: level120, name: fP2_7, pos: [-72.1, 46.2, 0.6], heading: 79, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP2_8", level: level120, name: fP2_8, pos: [-74.1, 50.2, 0.6], heading: 79, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP2_9", level: level120, name: fP2_9, pos: [-73.4, 47.1, 0.6], heading: 79, script: level120_brawl_init}
+  - {id: "level120_brawl_init:fP2_10", level: level120, name: fP2_10, pos: [-73.7, 48.4, 0.6], heading: 79, script: level120_brawl_init}
+  - {id: "level120_mercy_init:fP1_01", level: level120, name: fP1_01, pos: [-73.8, 56.4, 0.6], heading: 148, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP1_02", level: level120, name: fP1_02, pos: [-73.1, 58.3, 0.6], heading: 147, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP1_03", level: level120, name: fP1_03, pos: [-73.4, 59.4, 0.6], heading: 145, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP1_04", level: level120, name: fP1_04, pos: [-74.9, 61.4, 0.6], heading: 145, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP1_05", level: level120, name: fP1_05, pos: [-75.3, 56.7, 0.6], heading: 145, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP1_06", level: level120, name: fP1_06, pos: [-76.7, 58.7, 0.6], heading: 145, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP1_07", level: level120, name: fP1_07, pos: [-76.3, 60.4, 0.6], heading: 145, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP1_08", level: level120, name: fP1_08, pos: [-76.7, 55.7, 0.6], heading: 145, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP1_09", level: level120, name: fP1_09, pos: [-78.2, 57.7, 0.6], heading: 145, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP1_10", level: level120, name: fP1_10, pos: [-74.9, 58.4, 0.6], heading: 145, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP2_01", level: level120, name: fP2_01, pos: [-73.4, 44.1, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP2_02", level: level120, name: fP2_02, pos: [-74.4, 45.1, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP2_03", level: level120, name: fP2_03, pos: [-74.3, 39.4, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP2_04", level: level120, name: fP2_04, pos: [-75.5, 41.9, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP2_05", level: level120, name: fP2_05, pos: [-76.5, 44.2, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP2_06", level: level120, name: fP2_06, pos: [-77.7, 46.7, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP2_07", level: level120, name: fP2_07, pos: [-77.1, 41.2, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP2_08", level: level120, name: fP2_08, pos: [-78.1, 43.5, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP2_09", level: level120, name: fP2_09, pos: [-79.3, 45.9, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fP2_10", level: level120, name: fP2_10, pos: [-75.9, 38.7, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:P2Box", level: level120, name: P2Box, pos: [-78.3, 40.3, 0.3], heading: 65, script: level120_mercy_init}
+  - {id: "level120_mercy_init:P1Box", level: level120, name: P1Box, pos: [-77.1, 60.4, 0.6], heading: 148, script: level120_mercy_init}
+  - {id: "level120_mercy_init:fMercy", level: level120, name: fMercy, pos: [-51.1, 57.8, 0.6], heading: 238, script: level120_mercy_init}

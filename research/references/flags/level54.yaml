@@ -1,0 +1,185 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level54:fSWalk", level: level54, name: fSWalk, heading: 0, script: level54}
+  - {id: "level54:fMark_2", level: level54, name: fMark_2, pos: [-676.8, -252.6, -3], heading: 94, script: level54}
+  - {id: "level54:fMark_3", level: level54, name: fMark_3, pos: [-678.8, -249.5, -3], heading: 92, script: level54}
+  - {id: "level54:fMark_1", level: level54, name: fMark_1, pos: [-674.6, -250.9, -3], heading: 92, script: level54}
+  - {id: "level54:fWarWarp_cowboy", level: level54, name: fWarWarp_cowboy, pos: [-586.7, 1.9, 0.1], heading: 10, script: level54}
+  - {id: "level54:fWarWarp_snow", level: level54, name: fWarWarp_snow, pos: [-584.9, 1.5, 0.1], heading: 356, script: level54}
+  - {id: "level54:fWarWarp_ajax", level: level54, name: fWarWarp_ajax, pos: [-585.2, 0.3, 0.1], heading: 356, script: level54}
+  - {id: "level54:fParkSpot_swan", level: level54, name: fParkSpot_swan, pos: [-960.2, -116, -13.3], heading: 262, script: level54}
+  - {id: "level54:fParkSpot_snow", level: level54, name: fParkSpot_snow, pos: [-959.1, -114.9, -13.3], heading: 273, script: level54}
+  - {id: "level54:fFirstWarp_snow", level: level54, name: fFirstWarp_snow, pos: [-442.6, -36.9, 0.1], heading: 277, script: level54}
+  - {id: "level54:fFirstWarp_cowboy", level: level54, name: fFirstWarp_cowboy, pos: [-446.6, -35.6, 0.1], heading: 277, script: level54}
+  - {id: "level54:fFirstWarp_ajax", level: level54, name: fFirstWarp_ajax, pos: [-444, -35.7, 0.1], heading: 269, script: level54}
+  - {id: "level54:fLook_01", level: level54, name: fLook_01, pos: [-329, -38.1, 0], heading: 89, script: level54}
+  - {id: "level54:fLook_02", level: level54, name: fLook_02, pos: [-402.4, -35.1, 0.3], heading: 89, script: level54}
+  - {id: "level54:fLook_03", level: level54, name: fLook_03, pos: [-586.3, -9.7, 0.1], heading: 359, script: level54}
+  - {id: "level54:fLook_04", level: level54, name: fLook_04, pos: [-648.3, -54.6, 0.1], heading: 360, script: level54}
+  - {id: "level54:fLook_05", level: level54, name: fLook_05, pos: [-644.7, -108.1, 0.1], heading: 360, script: level54}
+  - {id: "level54:fLook_06", level: level54, name: fLook_06, pos: [-648.8, -146.9, 0.1], heading: 360, script: level54}
+  - {id: "level54:fEndChase_ajax", level: level54, name: fEndChase_ajax, pos: [-648.4, -169.8, 0.1], heading: 177, script: level54}
+  - {id: "level54:fEndChase_snow", level: level54, name: fEndChase_snow, pos: [-647.2, -169.1, 0.1], heading: 180, script: level54}
+  - {id: "level54:fEndChase_cowboy", level: level54, name: fEndChase_cowboy, pos: [-647.4, -171.4, 0.1], heading: 178, script: level54}
+  - {id: "level54:fAlleyWarp_ajax", level: level54, name: fAlleyWarp_ajax, pos: [-280.7, -40.9, 0.1], heading: 301, script: level54}
+  - {id: "level54:fAlleyWarp_snow", level: level54, name: fAlleyWarp_snow, pos: [-279.4, -42.7, 0.1], heading: 301, script: level54}
+  - {id: "level54:fAlleyWarp_cowboy", level: level54, name: fAlleyWarp_cowboy, pos: [-283.7, -39.8, 0.1], heading: 317, script: level54}
+  - {id: "level54:fAlleyWarp_swan", level: level54, name: fAlleyWarp_swan, pos: [-277.2, -46.5, 0.1], heading: 301, script: level54}
+  - {id: "level54:fStart_swan", level: level54, name: fStart_swan, pos: [-57.6, -31.3, 3.1], heading: 204, script: level54}
+  - {id: "level54:fStart_snow", level: level54, name: fStart_snow, pos: [-57.4, -27.4, 3.1], heading: 177, script: level54}
+  - {id: "level54:fStart_cowboy", level: level54, name: fStart_cowboy, pos: [-56.5, -24.2, 3.1], heading: 184, script: level54}
+  - {id: "level54:fStart_ajax", level: level54, name: fStart_ajax, pos: [-55.3, -20.3, 3.1], heading: 183, script: level54}
+  - {id: "level54:fPathOne_01", level: level54, name: fPathOne_01, pos: [-66.6, -46, 3], heading: 89, script: level54}
+  - {id: "level54:fPathOne_02", level: level54, name: fPathOne_02, pos: [-72.9, -64.6, 3.1], heading: 89, script: level54}
+  - {id: "level54:fPathOne_03", level: level54, name: fPathOne_03, pos: [-263.9, -64.4, 3], heading: 89, script: level54}
+  - {id: "level54:fPathOne_04", level: level54, name: fPathOne_04, pos: [-286.5, -35.1, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPitMark_1", level: level54, name: fPitMark_1, pos: [-640, 49.9, 3], heading: 89, script: level54}
+  - {id: "level54:fPitMark_2", level: level54, name: fPitMark_2, pos: [-640.3, 53.1, 3], heading: 89, script: level54}
+  - {id: "level54:fPitMark_3", level: level54, name: fPitMark_3, pos: [-642.3, 56.2, 3], heading: 89, script: level54}
+  - {id: "level54:fPathTwo_01", level: level54, name: fPathTwo_01, pos: [-285.2, -35.2, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPathTwo_02", level: level54, name: fPathTwo_02, pos: [-386, -36.8, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPathTwo_03", level: level54, name: fPathTwo_03, pos: [-486.8, -37, 4.7], heading: 89, script: level54}
+  - {id: "level54:fPathTwo_04", level: level54, name: fPathTwo_04, pos: [-532.8, -30.3, 6.7], heading: 89, script: level54}
+  - {id: "level54:fPathTwo_05", level: level54, name: fPathTwo_05, pos: [-565.5, -24.6, 8.4], heading: 89, script: level54}
+  - {id: "level54:fPitPath_01", level: level54, name: fPitPath_01, pos: [-584.1, -14.6, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPitPath_02", level: level54, name: fPitPath_02, pos: [-587.6, 25.7, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPitPath_03", level: level54, name: fPitPath_03, pos: [-588.4, 66.7, 5.1], heading: 89, script: level54}
+  - {id: "level54:fPitPath_04", level: level54, name: fPitPath_04, pos: [-604.8, 66.1, 3], heading: 180, script: level54}
+  - {id: "level54:fPitStop_02", level: level54, name: fPitStop_02, pos: [-640, 52.2, 3], heading: 93, script: level54}
+  - {id: "level54:fPathThree_01", level: level54, name: fPathThree_01, pos: [-643.7, 62.3, 3], heading: 89, script: level54}
+  - {id: "level54:fPathThree_02", level: level54, name: fPathThree_02, pos: [-644.7, 4.9, 3.6], heading: 89, script: level54}
+  - {id: "level54:fPathThree_03", level: level54, name: fPathThree_03, pos: [-646.8, -40.2, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPathThree_04", level: level54, name: fPathThree_04, pos: [-646.8, -116.7, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPathThree_05", level: level54, name: fPathThree_05, pos: [-646.9, -201.7, 6], heading: 89, script: level54}
+  - {id: "level54:fPathFour_01", level: level54, name: fPathFour_01, pos: [-646.8, -187.1, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPathFour_02", level: level54, name: fPathFour_02, pos: [-646.3, -226.9, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPathFour_03", level: level54, name: fPathFour_03, pos: [-640.9, -251.7, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPathFour_04", level: level54, name: fPathFour_04, pos: [-679.4, -251.2, -2.9], heading: 89, script: level54}
+  - {id: "level54:fPathFive_01", level: level54, name: fPathFive_01, pos: [-678.4, -268.7, -2.9], heading: 89, script: level54}
+  - {id: "level54:fPathFive_02", level: level54, name: fPathFive_02, pos: [-736.5, -270.1, -3.9], heading: 89, script: level54}
+  - {id: "level54:fPathFive_03", level: level54, name: fPathFive_03, pos: [-833.2, -273.2, -7.1], heading: 89, script: level54}
+  - {id: "level54:fPathFive_04", level: level54, name: fPathFive_04, pos: [-867, -276, -11.3], heading: 89, script: level54}
+  - {id: "level54:fPathFive_05", level: level54, name: fPathFive_05, pos: [-917.4, -225.2, -13.3], heading: 89, script: level54}
+  - {id: "level54:fSecondStop_01", level: level54, name: fSecondStop_01, pos: [-637.9, 66.4, 3], heading: 166, script: level54}
+  - {id: "level54:fSecondStop_02", level: level54, name: fSecondStop_02, pos: [-633.5, 66.4, 3], heading: 171, script: level54}
+  - {id: "level54:fSecondStop_03", level: level54, name: fSecondStop_03, pos: [-627.9, 66.4, 3], heading: 172, script: level54}
+  - {id: "level54:fPitWarp_ajax", level: level54, name: fPitWarp_ajax, pos: [-599.8, 67.2, 5], heading: 273, script: level54}
+  - {id: "level54:fPitWarp_snow", level: level54, name: fPitWarp_snow, pos: [-602.7, 67.1, 3.6], heading: 273, script: level54}
+  - {id: "level54:fPitWarp_cowboy", level: level54, name: fPitWarp_cowboy, pos: [-602.7, 65.7, 3.6], heading: 270, script: level54}
+  - {id: "level54:fANewFlag_ajax", level: level54, name: fANewFlag_ajax, pos: [-642.3, 40.9, 0.1], heading: 22, script: level54}
+  - {id: "level54:fANewFlag_cowboy", level: level54, name: fANewFlag_cowboy, pos: [-641.9, 45.7, 1.5], heading: 22, script: level54}
+  - {id: "level54:fANewFlag_snow", level: level54, name: fANewFlag_snow, pos: [-642, 49.4, 3], heading: 48, script: level54}
+  - {id: "level54:fBridgeSpot_swan", level: level54, name: fBridgeSpot_swan, pos: [-590.3, 61.3, 0.1], heading: 277, script: level54}
+  - {id: "level54:fBridgeSpot_snow", level: level54, name: fBridgeSpot_snow, pos: [-590.3, 59.7, 0.1], heading: 277, script: level54}
+  - {id: "level54:fPoppose_swan", level: level54, name: fPoppose_swan, pos: [-1015.7, -65, -17], heading: 5, script: level54}
+  - {id: "level54:fPoppose_snow", level: level54, name: fPoppose_snow, pos: [-1015.1, -66.5, -17], heading: 3, script: level54}
+  - {id: "level54:fBumNet_01", level: level54, name: fBumNet_01, pos: [-583.6, -17.5, 0.1], heading: 235, group: 5, script: level54}
+  - {id: "level54:fBumNet_02", level: level54, name: fBumNet_02, pos: [-584.5, -2, 0.1], heading: 350, group: 5, script: level54}
+  - {id: "level54:fBumNet_03", level: level54, name: fBumNet_03, pos: [-583.6, 10.6, 0.1], heading: 350, group: 5, script: level54}
+  - {id: "level54:fBumNet_04", level: level54, name: fBumNet_04, pos: [-560.6, -26.3, 0.1], heading: 33, group: 5, script: level54}
+  - {id: "level54:fBumNet_05", level: level54, name: fBumNet_05, pos: [-543.2, -31.7, 0.1], heading: 325, group: 5, script: level54}
+  - {id: "level54:fBumNet_06", level: level54, name: fBumNet_06, pos: [-519.7, -31.4, 0.1], heading: 325, group: 5, script: level54}
+  - {id: "level54:fBumNet_07", level: level54, name: fBumNet_07, pos: [-500.4, -31.2, 0.1], heading: 325, group: 5, script: level54}
+  - {id: "level54:fBumNet_08", level: level54, name: fBumNet_08, pos: [-685.4, -268.1, -3], heading: 42, group: 5, script: level54}
+  - {id: "level54:fBumNet_09", level: level54, name: fBumNet_09, pos: [-702.8, -270.3, -3.3], heading: 4, group: 5, script: level54}
+  - {id: "level54:fBumNet_10", level: level54, name: fBumNet_10, pos: [-730, -271.2, -3.7], heading: 4, group: 5, script: level54}
+  - {id: "level54:fBumNet_11", level: level54, name: fBumNet_11, pos: [-773, -269.1, -4.5], heading: 4, group: 5, script: level54}
+  - {id: "level54:_xfBumNet_11", level: level54, name: _xfBumNet_11, pos: [-585.3, -17.5, 0.1], heading: 235, activity: 10, script: level54}
+  - {id: "level54:_xfBumNet_11#2", level: level54, name: _xfBumNet_11, pos: [-586.4, -2, 0.1], heading: 350, activity: 10, script: level54}
+  - {id: "level54:_xfBumNet_11#3", level: level54, name: _xfBumNet_11, pos: [-583.6, 12.3, 0.1], heading: 350, activity: 10, script: level54}
+  - {id: "level54:_xfBumNet_11#4", level: level54, name: _xfBumNet_11, pos: [-685.4, -270.7, -3], heading: 42, activity: 10, script: level54}
+  - {id: "level54:_xfBumNet_11#5", level: level54, name: _xfBumNet_11, pos: [-704.1, -270.3, -3.3], heading: 4, activity: 10, script: level54}
+  - {id: "level54:_xfBumNet_11#6", level: level54, name: _xfBumNet_11, pos: [-727.2, -271.2, -3.7], heading: 4, activity: 10, script: level54}
+  - {id: "level54:fFirstCorner_swan", level: level54, name: fFirstCorner_swan, pos: [-261.6, -62.4, 3], heading: 279, script: level54}
+  - {id: "level54:fFirstCorner_snow", level: level54, name: fFirstCorner_snow, pos: [-263.1, -61.8, 3], heading: 281, script: level54}
+  - {id: "level54:fFirstCorner_ajax", level: level54, name: fFirstCorner_ajax, pos: [-265.6, -61.5, 3], heading: 279, script: level54}
+  - {id: "level54:fFirstCorner_cowboy", level: level54, name: fFirstCorner_cowboy, pos: [-267.5, -62.2, 3], heading: 279, script: level54}
+  - {id: "level54:fTrailPath_01", level: level54, name: fTrailPath_01, pos: [-558, -24.7, 8.4], heading: 89, script: level54}
+  - {id: "level54:fTrailPath_02", level: level54, name: fTrailPath_02, pos: [-572.5, -32.5, 6], heading: 89, script: level54}
+  - {id: "level54:fTrailPath_03", level: level54, name: fTrailPath_03, pos: [-585.4, 1.1, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPlayers_snow", level: level54, name: fPlayers_snow, pos: [-431.5, -35.7, 0.1], heading: 253, script: level54}
+  - {id: "level54:fPlayers_swan", level: level54, name: fPlayers_swan, pos: [-430.6, -37.3, 0.1], heading: 253, script: level54}
+  - {id: "level54:fEgress_1", level: level54, name: fEgress_1, pos: [-656.2, -114.8, 0.1], heading: 275, script: level54}
+  - {id: "level54:fEgress_2", level: level54, name: fEgress_2, pos: [-655.5, -116.2, 0.1], heading: 275, script: level54}
+  - {id: "level54:fEgress_3", level: level54, name: fEgress_3, pos: [-656, -118.9, 0.1], heading: 275, script: level54}
+  - {id: "level54:fEgress_4", level: level54, name: fEgress_4, pos: [-656, -120.3, 0.1], heading: 275, script: level54}
+  - {id: "level54:fNoMoreAlley_swan", level: level54, name: fNoMoreAlley_swan, pos: [-648.2, -106.2, 0.1], heading: 182, script: level54}
+  - {id: "level54:fNoMoreAlley_snow", level: level54, name: fNoMoreAlley_snow, pos: [-645.8, -106.2, 0.1], heading: 182, script: level54}
+  - {id: "level54:fBoss_swan", level: level54, name: fBoss_swan, pos: [-999.4, -38.6, -17], heading: 184, script: level54}
+  - {id: "level54:fBoss_snow", level: level54, name: fBoss_snow, pos: [-1001.1, -38.6, -17], heading: 184, script: level54}
+  - {id: "level54:fBoss_ajax", level: level54, name: fBoss_ajax, pos: [-999.6, -36.9, -17], heading: 184, script: level54}
+  - {id: "level54:fBoss_cowboy", level: level54, name: fBoss_cowboy, pos: [-1000.7, -36, -17], heading: 184, script: level54}
+  - {id: "level54:fBossObj", level: level54, name: fBossObj, pos: [-968, -57.8, -13], heading: 93, script: level54}
+  - {id: "level54:fFightBoss_swan", level: level54, name: fFightBoss_swan, pos: [-962.5, -56.7, -13], heading: 92, script: level54}
+  - {id: "level54:fFightBoss_snow", level: level54, name: fFightBoss_snow, pos: [-963.4, -57.6, -13], heading: 92, script: level54}
+  - {id: "level54:fFightBoss_ajax", level: level54, name: fFightBoss_ajax, pos: [-963.9, -58.7, -13], heading: 92, script: level54}
+  - {id: "level54:fFightBoss_cowboy", level: level54, name: fFightBoss_cowboy, pos: [-965.6, -57.2, -13], heading: 92, script: level54}
+  - {id: "level54:fUberHack_01", level: level54, name: fUberHack_01, pos: [-67.1, -15.9, 3.1], heading: 89, group: 32, script: level54}
+  - {id: "level54:fUberHack_02", level: level54, name: fUberHack_02, pos: [-199.8, -65.9, 3], heading: 89, group: 32, script: level54}
+  - {id: "level54:fUberHack_03", level: level54, name: fUberHack_03, pos: [-281.6, -44, 0.1], heading: 89, group: 32, script: level54}
+  - {id: "level54:fUberHack_04", level: level54, name: fUberHack_04, pos: [-351.1, -40.2, 0.1], heading: 89, group: 32, script: level54}
+  - {id: "level54:fUberHack_05", level: level54, name: fUberHack_05, pos: [-452.8, -36.7, 0.1], heading: 89, group: 32, script: level54}
+  - {id: "level54:fUberHack_06", level: level54, name: fUberHack_06, pos: [-533.3, -33.1, 0.1], heading: 89, group: 32, script: level54}
+  - {id: "level54:fTransition_snow", level: level54, name: fTransition_snow, pos: [-583.9, -27.7, 0.1], heading: 4, script: level54}
+  - {id: "level54:fTransition_cowboy", level: level54, name: fTransition_cowboy, pos: [-584.2, -25.2, 0.1], heading: 3, script: level54}
+  - {id: "level54:fTransition_ajax", level: level54, name: fTransition_ajax, pos: [-584.6, -23, 0.1], heading: 7, script: level54}
+  - {id: "level54:fBooger_swan", level: level54, name: fBooger_swan, pos: [-105.6, -67.4, 3.1], heading: 272, script: level54}
+  - {id: "level54:fBooger_ajax", level: level54, name: fBooger_ajax, pos: [-108.8, -68.5, 3.1], heading: 272, script: level54}
+  - {id: "level54:fBooger_cowboy", level: level54, name: fBooger_cowboy, pos: [-112.3, -67.6, 3.1], heading: 272, script: level54}
+  - {id: "level54:fBooger_snow", level: level54, name: fBooger_snow, pos: [-115.1, -67, 3.1], heading: 272, script: level54}
+  - {id: "level54:fFuryDump_01", level: level54, name: fFuryDump_01, pos: [-257.6, -61.3, 3], heading: 279, script: level54}
+  - {id: "level54:fFuryDump_02", level: level54, name: fFuryDump_02, pos: [-258.2, -63.3, 3], heading: 279, script: level54}
+  - {id: "level54:fFuryDump_03", level: level54, name: fFuryDump_03, pos: [-256.5, -62.2, 3], heading: 279, script: level54}
+  - {id: "level54:fFuryDump_04", level: level54, name: fFuryDump_04, pos: [-255.6, -63.7, 3], heading: 279, script: level54}
+  - {id: "level54:fFuryDump_05", level: level54, name: fFuryDump_05, pos: [-254.6, -60.8, 3], heading: 279, script: level54}
+  - {id: "level54:fFuryDump_06", level: level54, name: fFuryDump_06, pos: [-253.4, -62.9, 3], heading: 279, script: level54}
+  - {id: "level54:fFuryDump_07", level: level54, name: fFuryDump_07, pos: [-252.2, -61.8, 3], heading: 279, script: level54}
+  - {id: "level54:fFuryDump_08", level: level54, name: fFuryDump_08, pos: [-250.9, -63.7, 3], heading: 279, script: level54}
+  - {id: "level54:fFuryDump_09", level: level54, name: fFuryDump_09, pos: [-249.4, -62.7, 3], heading: 279, script: level54}
+  - {id: "level54:fFuryDump_10", level: level54, name: fFuryDump_10, pos: [-250.9, -60.9, 3], heading: 279, script: level54}
+  - {id: "level54:fKillYouWithMyBrain_snow", level: level54, name: fKillYouWithMyBrain_snow, pos: [-569.2, -29, 6.9], heading: 185, script: level54}
+  - {id: "level54:fKillYouWithMyBrain_swan", level: level54, name: fKillYouWithMyBrain_swan, pos: [-569.1, -27.4, 7.8], heading: 185, script: level54}
+  - {id: "level54:fFirefly_snow", level: level54, name: fFirefly_snow, pos: [-562.9, -33.9, 2.8], heading: 272, script: level54}
+  - {id: "level54:fFirefly_swan", level: level54, name: fFirefly_swan, pos: [-563, -31.7, 2.8], heading: 272, script: level54}
+  - {id: "level54:fWorld_bum_2", level: level54, name: fWorld_bum_2, pos: [-198.2, -61.1, 3], heading: 6, activity: 10, script: level54}
+  - {id: "level54:fWorld_Civ_1", level: level54, name: fWorld_Civ_1, pos: [-120.4, -61.2, 3], heading: 185, activity: 7, script: level54}
+  - {id: "level54:fWorld_Civ_2", level: level54, name: fWorld_Civ_2, pos: [-184.8, -59.8, 3], heading: 181, activity: 30, script: level54}
+  - {id: "level54:fWorld_bum_1", level: level54, name: fWorld_bum_1, pos: [-242.7, -65.1, 3], heading: 334, activity: 10, script: level54}
+  - {id: "level54:fFlagNet_01", level: level54, name: fFlagNet_01, pos: [-114.6, -62.1, 3], heading: 6, group: 5, script: level54}
+  - {id: "level54:fFlagNet_02", level: level54, name: fFlagNet_02, pos: [-163.9, -61.9, 3], heading: 6, group: 5, script: level54}
+  - {id: "level54:fFlagNet_03", level: level54, name: fFlagNet_03, pos: [-198, -61.9, 3], heading: 6, group: 5, script: level54}
+  - {id: "level54:fFlagNet_04", level: level54, name: fFlagNet_04, pos: [-267, -61.9, 3], heading: 6, group: 5, script: level54}
+  - {id: "level54:_xfFirebarrel_19", level: level54, name: _xfFirebarrel_19, pos: [-992.6, -66.3, -13], heading: 105, activity: 5, script: level54}
+  - {id: "level54:_xfFirebarrel_20", level: level54, name: _xfFirebarrel_20, pos: [-991.5, -65.6, -13], heading: 190, activity: 5, script: level54}
+  - {id: "level54:fFur1hang", level: level54, name: fFur1hang, pos: [-680, -260.8, -3], heading: 89, script: level54}
+  - {id: "level54:fLeaveAlley", level: level54, name: fLeaveAlley, pos: [-679.5, -261.1, -3], heading: 89, script: level54}
+  - {id: "level54:fPX", level: level54, name: fPX, pos: [-1000.3, 6.5, -13.5], heading: 89, script: level54}
+  - {id: "level54:fPF2hang", level: level54, name: fPF2hang, pos: [-1013.7, -44.8, -17], heading: 89, script: level54}
+  - {id: "level54:fPF2data", level: level54, name: fPF2data, pos: [-1015.1, -43.6, -17], heading: 89, script: level54}
+  - {id: "level54:fPit1", level: level54, name: fPit1, pos: [-487.5, -37.3, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPit2", level: level54, name: fPit2, pos: [-507.8, -35.1, 0.1], heading: 89, script: level54}
+  - {id: "level54:fPit3", level: level54, name: fPit3, pos: [-542.5, -34.5, 0.1], heading: 89, script: level54}
+  - {id: "level54:fFurX", level: level54, name: fFurX, pos: [-365, -37.7, 0.1], heading: 89, activity: 8, script: level54}
+  - {id: "level54:fStreetPursuit", level: level54, name: fStreetPursuit, pos: [-659, -267.5, 0.7], heading: 89, script: level54}
+  - {id: "level54:fParkFury1", level: level54, name: fParkFury1, pos: [-1008.9, -38.6, -17], heading: 19, script: level54}
+  - {id: "level54:fFuryBoss", level: level54, name: fFuryBoss, pos: [-949.9, -57, -11.5], heading: 89, script: level54}
+  - {id: "level54:fFuryHorde", level: level54, name: fFuryHorde, pos: [-620.9, 53.5, 3], heading: 89, script: level54}
+  - {id: "level54:fPenObjective", level: level54, name: fPenObjective, pos: [-638, 53.8, 3], heading: 89, script: level54}
+  - {id: "level54:fPopsicle", level: level54, name: fPopsicle, pos: [-1015.2, -64.5, -17], heading: 121, script: level54}
+  - {id: "level54:fParkStart", level: level54, name: fParkStart, pos: [-835.3, -275.3, -7.1], heading: 89, script: level54}
+  - {id: "level54:fSwanPit", level: level54, name: fSwanPit, pos: [-637.9, 53, 3], heading: 259, script: level54}
+  - {id: "level54:fSwanIsADickhead", level: level54, name: fSwanIsADickhead, pos: [-283.6, -44.3, 0.1], heading: 89, script: level54}
+  - {id: "level54:_xfworld1", level: level54, name: _xfworld1, pos: [-500.4, -30, 0.1], heading: 325, activity: 10, script: level54}
+  - {id: "level54:_xfworld2", level: level54, name: _xfworld2, pos: [-519.7, -30, 0.1], heading: 325, activity: 10, script: level54}
+  - {id: "level54:_xfworld", level: level54, name: _xfworld, pos: [-543.2, -30.2, 0.1], heading: 325, activity: 10, script: level54}
+  - {id: "level54:_xfworld4", level: level54, name: _xfworld4, pos: [-560.6, -24.7, 0.1], heading: 33, activity: 10, script: level54}
+  - {id: "level54:fOutToStreet", level: level54, name: fOutToStreet, pos: [-646.8, -105.2, 0.1], heading: 89, script: level54}
+  - {id: "level54:fBossObj#2", level: level54, name: fBossObj, pos: [-968, -57.8, -13], heading: 93, script: level54}
+  - {id: "level54:_xfRoofExit", level: level54, name: _xfRoofExit, pos: [-922.7, -63.3, -5.9], heading: 89, activity: 8, script: level54}
+  - {id: "level54:_xfRoofExit01", level: level54, name: _xfRoofExit01, pos: [-961.1, -33.3, -5.9], heading: 89, activity: 8, script: level54}
+  - {id: "level54:_xfRoofExit02", level: level54, name: _xfRoofExit02, pos: [-960.4, -80.7, -5.9], heading: 89, activity: 8, script: level54}
+  - {id: "level54:fRT", level: level54, name: fRT, pos: [-931.8, -69.2, -5.9], heading: 89, activity: 8, script: level54}
+  - {id: "level54:fWhereTheyRunTo", level: level54, name: fWhereTheyRunTo, pos: [-849.9, -266.8, -8.9], heading: 89, script: level54}
+  - {id: "level54:fCorpse1", level: level54, name: fCorpse1, pos: [-994.5, -47.7, -13], heading: 184, script: level54}
+  - {id: "level54:fCorpse2", level: level54, name: fCorpse2, pos: [-1008.1, -42, -17], heading: 184, script: level54}

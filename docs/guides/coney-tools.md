@@ -217,7 +217,8 @@ uv run --project python coney-tools refs extract [DISC] [--only LIST ...] [--nam
 
 Reads your own disc (`DISC` works as for the `wad` commands) and refreshes every list, or only the ones named
 (`characters`, `levels`, ...): the configuration calls of the compiled scripts, the Character List of
-`warriors.glr`, every animation clip, two tables of the executable and the WAD's entry names. It keeps every
+`warriors.glr`, every animation clip, three tables of the executable, the scene list `scene_list.cnk`, the
+movies in the disc's `PSS` folder (when `DISC` is a folder) and the WAD's entry names. It keeps every
 hand-written field and every entry it did not produce, then renders the pages. `--names` adds WAD names found
 another way (a file with one name per line, or the last word of each line, as `wad names` writes), each kept only
 when it hashes to an entry; the names already in `wad-names.yaml` are always used. A full run takes about half a

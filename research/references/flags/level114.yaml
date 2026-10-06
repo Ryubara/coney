@@ -1,0 +1,141 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level114_muggr_init:MugNet_01", level: level114, name: MugNet_01, pos: [-39.7, -29.5, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:MugNet_02", level: level114, name: MugNet_02, pos: [-14.5, -51.3, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:MugNet_03", level: level114, name: MugNet_03, pos: [18.5, -19.1, 0.2], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:MugNet_04", level: level114, name: MugNet_04, pos: [18.2, 24, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:MugNet_05", level: level114, name: MugNet_05, pos: [27.5, 24.1, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:MugNet_06", level: level114, name: MugNet_06, pos: [26, -25.1, 0.2], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:MugNet_07", level: level114, name: MugNet_07, pos: [20.4, -26.6, 0.2], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:MugNet_08", level: level114, name: MugNet_08, pos: [-4.3, -51, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:MugNet_09", level: level114, name: MugNet_09, pos: [-13.4, -62.8, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:MugNet_10", level: level114, name: MugNet_10, pos: [-44.5, -34.7, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP1_1", level: level114, name: fP1_1, pos: [-3.7, -46.2, 0.2], heading: 50, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP1_02", level: level114, name: fP1_02, pos: [-3.6, -47.4, 0.2], heading: 50, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP1_03", level: level114, name: fP1_03, pos: [-4.8, -46.2, 0.2], heading: 50, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP1_04", level: level114, name: fP1_04, pos: [-6, -46.2, 0.2], heading: 50, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP1_05", level: level114, name: fP1_05, pos: [-4.9, -47.3, 0.2], heading: 50, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP1_06", level: level114, name: fP1_06, pos: [-4.1, -48.1, 0.2], heading: 50, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP1_07", level: level114, name: fP1_07, pos: [-4.1, -49, 0.2], heading: 50, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP1_08", level: level114, name: fP1_08, pos: [-5.3, -48.4, 0.2], heading: 50, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP1_09", level: level114, name: fP1_09, pos: [-6.2, -47.4, 0.2], heading: 50, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP1_10", level: level114, name: fP1_10, pos: [-7.2, -46.4, 0.2], heading: 50, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP2_1", level: level114, name: fP2_1, pos: [7.6, -35.2, 0.2], heading: 237, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP2_02", level: level114, name: fP2_02, pos: [7.4, -34.3, 0.2], heading: 237, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP2_03", level: level114, name: fP2_03, pos: [8.7, -35.8, 0.2], heading: 237, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP2_04", level: level114, name: fP2_04, pos: [8.8, -34.5, 0.2], heading: 237, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP2_05", level: level114, name: fP2_05, pos: [7.6, -33, 0.2], heading: 237, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP2_06", level: level114, name: fP2_06, pos: [9.8, -35.7, 0.2], heading: 237, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP2_07", level: level114, name: fP2_07, pos: [11.3, -35.2, 0.2], heading: 237, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP2_08", level: level114, name: fP2_08, pos: [10.1, -34.3, 0.2], heading: 237, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP2_09", level: level114, name: fP2_09, pos: [8.8, -33.1, 0.2], heading: 237, script: level114_muggr_init}
+  - {id: "level114_muggr_init:fP2_10", level: level114, name: fP2_10, pos: [7.9, -31.8, 0.2], heading: 237, script: level114_muggr_init}
+  - {id: "level114_muggr_init:BumMugNet_01", level: level114, name: BumMugNet_01, pos: [-35.8, -30.9, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:BumMugNet_02", level: level114, name: BumMugNet_02, pos: [-31.6, -45.4, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:BumMugNet_03", level: level114, name: BumMugNet_03, pos: [-0.3, -36, 0.2], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:BumMugNet_04", level: level114, name: BumMugNet_04, pos: [11.4, -25.1, 0.2], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:BumMugNet_05", level: level114, name: BumMugNet_05, pos: [27.4, -23.1, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:BumMugNet_06", level: level114, name: BumMugNet_06, pos: [27.3, -3.1, 0.3], heading: 89, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwSmoke01", level: level114, name: _xwSmoke01, pos: [-42.5, -31, 0.3], heading: 133, activity: 7, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwBrowse01", level: level114, name: _xwBrowse01, pos: [-40.7, -34, 0.3], heading: 202, activity: 22, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwBrowse02", level: level114, name: _xwBrowse02, pos: [-39.8, -35.1, 0.3], heading: 260, activity: 22, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwSmoke02", level: level114, name: _xwSmoke02, pos: [-24.7, -53.6, 0.3], heading: 98, activity: 7, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwSmoke03", level: level114, name: _xwSmoke03, pos: [-12.2, -49.5, 0.3], heading: 98, activity: 7, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwSmoke04", level: level114, name: _xwSmoke04, pos: [0.5, -36.6, 0.3], heading: 137, activity: 7, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwLookInside01", level: level114, name: _xwLookInside01, pos: [13, -34.1, 0.2], heading: 139, activity: 9, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwLookInside02", level: level114, name: _xwLookInside02, pos: [16.7, -30.4, 0.2], heading: 139, activity: 9, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwLookInside03", level: level114, name: _xwLookInside03, pos: [19, -28.2, 0.2], heading: 139, activity: 9, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwSmoke05", level: level114, name: _xwSmoke05, pos: [24.1, 25.2, 0.3], heading: 211, activity: 7, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwBrowse03", level: level114, name: _xwBrowse03, pos: [-7.3, -52.9, 0.3], heading: 149, activity: 22, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwBrowse04", level: level114, name: _xwBrowse04, pos: [-8.2, -53.9, 0.3], heading: 115, activity: 22, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwBrowse05", level: level114, name: _xwBrowse05, pos: [-10.4, -55.6, 0.3], heading: 136, activity: 22, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwBrowse06", level: level114, name: _xwBrowse06, pos: [-12.3, -57.5, 0.3], heading: 138, activity: 22, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwSmoke06", level: level114, name: _xwSmoke06, pos: [-1.2, -48.8, 0.3], heading: 296, activity: 7, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwBrowse07", level: level114, name: _xwBrowse07, pos: [23.7, 29.1, 0.3], heading: 346, activity: 22, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwBrowse08", level: level114, name: _xwBrowse08, pos: [22.1, 29.2, 0.3], heading: 20, activity: 22, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwBrowse09", level: level114, name: _xwBrowse09, pos: [19.8, 29.2, 0.3], heading: 342, activity: 22, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwSmoke07", level: level114, name: _xwSmoke07, pos: [17.8, 16.1, 0.3], heading: 98, activity: 7, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwSmoke08", level: level114, name: _xwSmoke08, pos: [27.4, 2.2, 0.3], heading: 242, activity: 7, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwTrash01", level: level114, name: _xwTrash01, pos: [29.5, -25.7, 0.2], heading: 326, activity: 10, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwTrash02", level: level114, name: _xwTrash02, pos: [29, -34.3, 0.2], heading: 326, activity: 10, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwTrash03", level: level114, name: _xwTrash03, pos: [28.8, -26.1, 0.2], heading: 326, activity: 10, script: level114_muggr_init}
+  - {id: "level114_muggr_init:_xwPhone1", level: level114, name: _xwPhone1, pos: [21.3, -27.1, 0.2], heading: 237, activity: 6, script: level114_muggr_init}
+  - {id: "level114_muggr_init:ExitPOINT", level: level114, name: ExitPOINT, pos: [26.4, 32, -3.1], heading: 89, activity: 8, script: level114_muggr_init}
+  - {id: "level114_muggr_init:storeElectronic", level: level114, name: storeElectronic, pos: [18.6, -31.9, 0.2], heading: 225, activity: 14, group: 30, script: level114_muggr_init}
+  - {id: "level114_muggr_init:storeJewelry02", level: level114, name: storeJewelry02, pos: [-24.6, -61.1, 0.2], heading: 310, activity: 14, group: 26, script: level114_muggr_init}
+  - {id: "level114_wchair_init:fRace_01", level: level114, name: fRace_01, pos: [-30.2, -40, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_02", level: level114, name: fRace_02, pos: [-18.7, -51.2, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_03", level: level114, name: fRace_03, pos: [-0.8, -42.1, 0.2], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_04", level: level114, name: fRace_04, pos: [15.4, -26.2, 0], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_05", level: level114, name: fRace_05, pos: [22, -11.2, 0], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_06", level: level114, name: fRace_06, pos: [21.6, 14.3, 0], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_07", level: level114, name: fRace_07, pos: [22.2, 28.3, 0], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_08", level: level114, name: fRace_08, pos: [21.6, 15, 0], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_09", level: level114, name: fRace_09, pos: [18.5, -23.3, 0], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_10", level: level114, name: fRace_10, pos: [-1, -42.4, 0], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_11", level: level114, name: fRace_11, pos: [-18.9, -51, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fRace_12", level: level114, name: fRace_12, pos: [-40.4, -29.8, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:MugNet_01", level: level114, name: MugNet_01, pos: [-39.7, -29.5, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:MugNet_02", level: level114, name: MugNet_02, pos: [-14.5, -51.3, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:MugNet_03", level: level114, name: MugNet_03, pos: [18.5, -19.1, 0.2], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:MugNet_04", level: level114, name: MugNet_04, pos: [18.2, 24, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:MugNet_05", level: level114, name: MugNet_05, pos: [27.5, 24.1, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:MugNet_06", level: level114, name: MugNet_06, pos: [26, -25.1, 0.2], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:MugNet_07", level: level114, name: MugNet_07, pos: [20.4, -26.6, 0.2], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:MugNet_08", level: level114, name: MugNet_08, pos: [-4.3, -51, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:MugNet_09", level: level114, name: MugNet_09, pos: [-13.4, -62.8, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:MugNet_10", level: level114, name: MugNet_10, pos: [-44.5, -34.7, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP1_1", level: level114, name: fP1_1, pos: [-3.7, -46.2, 0.2], heading: 50, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP1_02", level: level114, name: fP1_02, pos: [-3.6, -47.4, 0.2], heading: 50, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP1_03", level: level114, name: fP1_03, pos: [-4.8, -46.2, 0.2], heading: 50, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP1_04", level: level114, name: fP1_04, pos: [-6, -46.2, 0.2], heading: 50, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP1_05", level: level114, name: fP1_05, pos: [-4.9, -47.3, 0.2], heading: 50, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP1_06", level: level114, name: fP1_06, pos: [-4.1, -48.1, 0.2], heading: 50, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP1_07", level: level114, name: fP1_07, pos: [-4.1, -49, 0.2], heading: 50, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP1_08", level: level114, name: fP1_08, pos: [-5.3, -48.4, 0.2], heading: 50, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP1_09", level: level114, name: fP1_09, pos: [-6.2, -47.4, 0.2], heading: 50, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP1_10", level: level114, name: fP1_10, pos: [-7.2, -46.4, 0.2], heading: 50, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP2_1", level: level114, name: fP2_1, pos: [7.6, -35.2, 0.2], heading: 237, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP2_02", level: level114, name: fP2_02, pos: [7.4, -34.3, 0.2], heading: 237, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP2_03", level: level114, name: fP2_03, pos: [8.7, -35.8, 0.2], heading: 237, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP2_04", level: level114, name: fP2_04, pos: [8.8, -34.5, 0.2], heading: 237, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP2_05", level: level114, name: fP2_05, pos: [7.6, -33, 0.2], heading: 237, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP2_06", level: level114, name: fP2_06, pos: [9.8, -35.7, 0.2], heading: 237, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP2_07", level: level114, name: fP2_07, pos: [11.3, -35.2, 0.2], heading: 237, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP2_08", level: level114, name: fP2_08, pos: [10.1, -34.3, 0.2], heading: 237, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP2_09", level: level114, name: fP2_09, pos: [8.8, -33.1, 0.2], heading: 237, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fP2_10", level: level114, name: fP2_10, pos: [7.9, -31.8, 0.2], heading: 237, script: level114_wchair_init}
+  - {id: "level114_wchair_init:BumMugNet_01", level: level114, name: BumMugNet_01, pos: [-35.8, -30.9, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:BumMugNet_02", level: level114, name: BumMugNet_02, pos: [-31.6, -45.4, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:BumMugNet_03", level: level114, name: BumMugNet_03, pos: [-0.3, -36, 0.2], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:BumMugNet_04", level: level114, name: BumMugNet_04, pos: [11.4, -25.1, 0.2], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:BumMugNet_05", level: level114, name: BumMugNet_05, pos: [27.4, -23.1, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:BumMugNet_06", level: level114, name: BumMugNet_06, pos: [27.3, -3.1, 0.3], heading: 89, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fStartRace1", level: level114, name: fStartRace1, pos: [-38, -30.2, -0.5], heading: 137, script: level114_wchair_init}
+  - {id: "level114_wchair_init:fStartRace2", level: level114, name: fStartRace2, pos: [-40.3, -32.3, -0.5], heading: 136, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwSmoke01", level: level114, name: _xwSmoke01, pos: [-42.5, -31, 0.3], heading: 133, activity: 7, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwBrowse01", level: level114, name: _xwBrowse01, pos: [-40.7, -34, 0.3], heading: 202, activity: 22, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwBrowse02", level: level114, name: _xwBrowse02, pos: [-39.8, -35.1, 0.3], heading: 260, activity: 22, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwSmoke02", level: level114, name: _xwSmoke02, pos: [-24.7, -53.6, 0.3], heading: 98, activity: 7, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwSmoke03", level: level114, name: _xwSmoke03, pos: [-12.2, -49.5, 0.3], heading: 98, activity: 7, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwSmoke04", level: level114, name: _xwSmoke04, pos: [0.5, -36.6, 0.3], heading: 137, activity: 7, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwLookInside01", level: level114, name: _xwLookInside01, pos: [13, -34.1, 0.2], heading: 139, activity: 9, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwLookInside02", level: level114, name: _xwLookInside02, pos: [16.7, -30.4, 0.2], heading: 139, activity: 9, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwLookInside03", level: level114, name: _xwLookInside03, pos: [19, -28.2, 0.2], heading: 139, activity: 9, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwSmoke05", level: level114, name: _xwSmoke05, pos: [24.1, 25.2, 0.3], heading: 211, activity: 7, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwBrowse03", level: level114, name: _xwBrowse03, pos: [-7.3, -52.9, 0.3], heading: 149, activity: 22, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwBrowse04", level: level114, name: _xwBrowse04, pos: [-8.2, -53.9, 0.3], heading: 115, activity: 22, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwBrowse05", level: level114, name: _xwBrowse05, pos: [-10.4, -55.6, 0.3], heading: 136, activity: 22, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwBrowse06", level: level114, name: _xwBrowse06, pos: [-12.3, -57.5, 0.3], heading: 138, activity: 22, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwSmoke06", level: level114, name: _xwSmoke06, pos: [-1.2, -48.8, 0.3], heading: 296, activity: 7, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwBrowse07", level: level114, name: _xwBrowse07, pos: [23.7, 29.1, 0.3], heading: 346, activity: 22, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwBrowse08", level: level114, name: _xwBrowse08, pos: [22.1, 29.2, 0.3], heading: 20, activity: 22, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwBrowse09", level: level114, name: _xwBrowse09, pos: [19.8, 29.2, 0.3], heading: 342, activity: 22, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwSmoke07", level: level114, name: _xwSmoke07, pos: [17.8, 16.1, 0.3], heading: 98, activity: 7, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwSmoke08", level: level114, name: _xwSmoke08, pos: [27.4, 2.2, 0.3], heading: 242, activity: 7, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwTrash01", level: level114, name: _xwTrash01, pos: [29.5, -25.7, 0.2], heading: 326, activity: 10, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwTrash02", level: level114, name: _xwTrash02, pos: [29, -34.3, 0.2], heading: 326, activity: 10, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwTrash03", level: level114, name: _xwTrash03, pos: [28.8, -26.1, 0.2], heading: 326, activity: 10, script: level114_wchair_init}
+  - {id: "level114_wchair_init:_xwPhone1", level: level114, name: _xwPhone1, pos: [21.3, -27.1, 0.2], heading: 237, activity: 6, script: level114_wchair_init}
+  - {id: "level114_wchair_init:ExitPOINT", level: level114, name: ExitPOINT, pos: [26.4, 32, -3.1], heading: 89, activity: 8, script: level114_wchair_init}

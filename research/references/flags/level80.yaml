@@ -1,0 +1,118 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level80:PedExit_01", level: level80, name: PedExit_01, pos: [-188.8, 182.3, 1.4], heading: 89, activity: 8, script: level80}
+  - {id: "level80:PedExit_02", level: level80, name: PedExit_02, pos: [-199.6, 155.4, 1.3], heading: 89, activity: 8, script: level80}
+  - {id: "level80:PedExit_03", level: level80, name: PedExit_03, pos: [-213.6, 141.7, 1.3], heading: 89, activity: 8, script: level80}
+  - {id: "level80:PedExit_04", level: level80, name: PedExit_04, pos: [-186.3, 214.3, 1.3], heading: 89, activity: 8, script: level80}
+  - {id: "level80:PedExit_05", level: level80, name: PedExit_05, pos: [-187, 248.2, 1.3], heading: 89, activity: 8, script: level80}
+  - {id: "level80:PedExit_06", level: level80, name: PedExit_06, pos: [-228.3, 283.9, 1.3], heading: 89, activity: 8, script: level80}
+  - {id: "level80:PedExit_07", level: level80, name: PedExit_07, pos: [-207.8, 260.8, 1.3], heading: 89, activity: 8, script: level80}
+  - {id: "level80:Tag_01", level: level80, name: Tag_01, pos: [-204.9, 150.4, 1.3], heading: 270, activity: 12, script: level80}
+  - {id: "level80:fC1Cleon", level: level80, name: fC1Cleon, pos: [-193.4, 127.5, 1.3], heading: 183, script: level80}
+  - {id: "level80:fC1Rembrandt", level: level80, name: fC1Rembrandt, pos: [-194.1, 108.4, 5.7], heading: 15, script: level80}
+  - {id: "level80:fHangAjax", level: level80, name: fHangAjax, pos: [-194.8, 161, 1.3], heading: 2, script: level80}
+  - {id: "level80:fHangSnowCowboy", level: level80, name: fHangSnowCowboy, pos: [-195.8, 237.1, 1.3], heading: 92, script: level80}
+  - {id: "level80:fArrestedSnow", level: level80, name: fArrestedSnow, pos: [-194.9, 231.8, 1.3], heading: 255, script: level80}
+  - {id: "level80:fArrestedCowboy", level: level80, name: fArrestedCowboy, pos: [-197.5, 234.8, 1.3], heading: 317, script: level80}
+  - {id: "level80:fHangFox", level: level80, name: fHangFox, pos: [-257.2, 260.2, 1.3], heading: 92, script: level80}
+  - {id: "level80:fHangFoxCops", level: level80, name: fHangFoxCops, pos: [-251.5, 264.6, 1.3], heading: 92, script: level80}
+  - {id: "level80:fFoxCopsExit", level: level80, name: fFoxCopsExit, pos: [-263.9, 275.4, 1.3], heading: 92, script: level80}
+  - {id: "level80:fC1Vermin", level: level80, name: fC1Vermin, pos: [-192.9, 108.3, 5.7], heading: 359, script: level80}
+  - {id: "level80:fBottleTarget", level: level80, name: fBottleTarget, pos: [-259.6, 278, 1.3], heading: 92, script: level80}
+  - {id: "level80:fFoxGate", level: level80, name: fFoxGate, pos: [-232.6, 250, 1.3], heading: 3, script: level80}
+  - {id: "level80:fHideFox", level: level80, name: fHideFox, pos: [-257, 259.9, 1.3], heading: 92, activity: 21, script: level80}
+  - {id: "level80:fCochise", level: level80, name: fCochise, pos: [-251.5, 150.4, 1.3], heading: 75, script: level80}
+  - {id: "level80:fSwan", level: level80, name: fSwan, pos: [-252.1, 151.4, 1.3], heading: 50, script: level80}
+  - {id: "level80:fDestroyer1", level: level80, name: fDestroyer1, pos: [-251, 151.6, 1.3], heading: 246, script: level80}
+  - {id: "level80:fDestroyer2", level: level80, name: fDestroyer2, pos: [-249.7, 150.2, 1.3], heading: 246, script: level80}
+  - {id: "level80:fDestroyer3", level: level80, name: fDestroyer3, pos: [-251.5, 153.1, 1.3], heading: 246, script: level80}
+  - {id: "level80:fDestroyer4", level: level80, name: fDestroyer4, pos: [-248.1, 150.2, 1.3], heading: 246, script: level80}
+  - {id: "level80:fDestroyer5", level: level80, name: fDestroyer5, pos: [-249, 151.7, 1.3], heading: 246, script: level80}
+  - {id: "level80:fDestroyer6", level: level80, name: fDestroyer6, pos: [-249.9, 153, 1.3], heading: 246, script: level80}
+  - {id: "level80:fDestroyer7", level: level80, name: fDestroyer7, pos: [-250.9, 154.5, 1.3], heading: 246, script: level80}
+  - {id: "level80:fDestroyer8", level: level80, name: fDestroyer8, pos: [-246.2, 150.3, 1.3], heading: 246, script: level80}
+  - {id: "level80:fDestroyer9", level: level80, name: fDestroyer9, pos: [-247.1, 151.8, 1.3], heading: 246, script: level80}
+  - {id: "level80:fDestroyer10", level: level80, name: fDestroyer10, pos: [-248, 153.1, 1.3], heading: 246, script: level80}
+  - {id: "level80:fSCCop1", level: level80, name: fSCCop1, pos: [-198.6, 233.5, 1.3], heading: 2, script: level80}
+  - {id: "level80:fSCCop2", level: level80, name: fSCCop2, pos: [-196.8, 233.5, 1.3], heading: 3, script: level80}
+  - {id: "level80:fSCCop3", level: level80, name: fSCCop3, pos: [-199.3, 232.2, 1.3], heading: 3, script: level80}
+  - {id: "level80:fSCCop4", level: level80, name: fSCCop4, pos: [-197.9, 232.2, 1.3], heading: 2, script: level80}
+  - {id: "level80:fSCCop5", level: level80, name: fSCCop5, pos: [-196.4, 232.2, 1.3], heading: 2, script: level80}
+  - {id: "level80:fSCCopExit", level: level80, name: fSCCopExit, pos: [-198.4, 254.4, 1.3], heading: 2, script: level80}
+  - {id: "level80:fCSRembrandt", level: level80, name: fCSRembrandt, pos: [-236.4, 163.7, 1.3], heading: 230, script: level80}
+  - {id: "level80:fCSVermin", level: level80, name: fCSVermin, pos: [-239.1, 164.2, 1.3], heading: 226, script: level80}
+  - {id: "level80:fCSAjax", level: level80, name: fCSAjax, pos: [-239.6, 165.1, 1.3], heading: 238, script: level80}
+  - {id: "level80:fCSCleon", level: level80, name: fCSCleon, pos: [-238, 163.2, 1.3], heading: 226, script: level80}
+  - {id: "level80:fCSFox", level: level80, name: fCSFox, pos: [-238.4, 166, 1.3], heading: 240, script: level80}
+  - {id: "level80:fCSSnow", level: level80, name: fCSSnow, pos: [-239.8, 166.1, 1.3], heading: 238, script: level80}
+  - {id: "level80:fCSCowboy", level: level80, name: fCSCowboy, pos: [-237.1, 162.5, 1.3], heading: 226, script: level80}
+  - {id: "level80:fFCop1", level: level80, name: fFCop1, pos: [-254.2, 252.9, 1.3], heading: 2, script: level80}
+  - {id: "level80:fFCop2", level: level80, name: fFCop2, pos: [-253.1, 255.4, 1.3], heading: 2, script: level80}
+  - {id: "level80:fARembrandt", level: level80, name: fARembrandt, pos: [-187.1, 167, 1.3], heading: 6, script: level80}
+  - {id: "level80:fAVermin", level: level80, name: fAVermin, pos: [-189.4, 167, 1.3], heading: 2, script: level80}
+  - {id: "level80:fACleon", level: level80, name: fACleon, pos: [-188.4, 168.1, 1.3], heading: 4, script: level80}
+  - {id: "level80:fFoxTrigger", level: level80, name: fFoxTrigger, pos: [-228.1, 260, 1.3], heading: 92, script: level80}
+  - {id: "level80:fStoreFront", level: level80, name: fStoreFront, pos: [-241.9, 228.8, 1.3], heading: 183, script: level80}
+  - {id: "level80:fStoreBack", level: level80, name: fStoreBack, pos: [-245.9, 218.9, 1.3], heading: 182, script: level80}
+  - {id: "level80:fFVermin2", level: level80, name: fFVermin2, pos: [-243.2, 257.4, 1.3], heading: 99, script: level80}
+  - {id: "level80:fStreetDestroyer1", level: level80, name: fStreetDestroyer1, pos: [-246.4, 235.8, 1.3], heading: 57, script: level80}
+  - {id: "level80:fStreetDestroyer2", level: level80, name: fStreetDestroyer2, pos: [-242.1, 237.5, 1.3], heading: 159, script: level80}
+  - {id: "level80:fSCRembrandt1", level: level80, name: fSCRembrandt1, pos: [-196.9, 220.3, 1.3], heading: 220, script: level80}
+  - {id: "level80:fSCVermin1", level: level80, name: fSCVermin1, pos: [-199.1, 220.3, 1.3], heading: 216, script: level80}
+  - {id: "level80:fSCAjax1", level: level80, name: fSCAjax1, pos: [-196.1, 218.9, 1.3], heading: 214, script: level80}
+  - {id: "level80:fSCCleon1", level: level80, name: fSCCleon1, pos: [-198.4, 218.8, 1.3], heading: 220, script: level80}
+  - {id: "level80:fSCVermin", level: level80, name: fSCVermin, pos: [-195.9, 225.1, 1.3], heading: 216, script: level80}
+  - {id: "level80:fSCAjax", level: level80, name: fSCAjax, pos: [-192.5, 224.5, 1.3], heading: 214, script: level80}
+  - {id: "level80:fSCRembrandt", level: level80, name: fSCRembrandt, pos: [-193.9, 225.4, 1.3], heading: 220, script: level80}
+  - {id: "level80:fSCCleon", level: level80, name: fSCCleon, pos: [-194.3, 223.9, 1.3], heading: 220, script: level80}
+  - {id: "level80:fFoxCopPath1", level: level80, name: fFoxCopPath1, pos: [-253.1, 265.2, 1.3], heading: 92, script: level80}
+  - {id: "level80:fFoxCopPath2", level: level80, name: fFoxCopPath2, pos: [-254.4, 250, 1.3], heading: 92, script: level80}
+  - {id: "level80:fFoxCopPath3", level: level80, name: fFoxCopPath3, pos: [-251.4, 257.4, 1.3], heading: 92, script: level80}
+  - {id: "level80:fFCleon1", level: level80, name: fFCleon1, pos: [-235.5, 257.8, 1.3], heading: 92, script: level80}
+  - {id: "level80:fFVermin1", level: level80, name: fFVermin1, pos: [-236.2, 256.7, 1.3], heading: 89, script: level80}
+  - {id: "level80:fFCowboy1", level: level80, name: fFCowboy1, pos: [-242.3, 257.9, 1.3], heading: 89, script: level80}
+  - {id: "level80:fFRembrandt1", level: level80, name: fFRembrandt1, pos: [-242.7, 256.6, 1.3], heading: 273, script: level80}
+  - {id: "level80:fFSnow1", level: level80, name: fFSnow1, pos: [-241.7, 255.5, 1.3], heading: 102, script: level80}
+  - {id: "level80:fFAjax1", level: level80, name: fFAjax1, pos: [-241, 257.2, 1.3], heading: 89, script: level80}
+  - {id: "level80:fFRembrandt2", level: level80, name: fFRembrandt2, pos: [-230.6, 252.4, 1.3], heading: 334, script: level80}
+  - {id: "level80:fFAjax2", level: level80, name: fFAjax2, pos: [-233, 251.9, 1.3], heading: 12, script: level80}
+  - {id: "level80:fFSnow2", level: level80, name: fFSnow2, pos: [-231.6, 251.9, 1.3], heading: 344, script: level80}
+  - {id: "level80:fFCowboy2", level: level80, name: fFCowboy2, pos: [-234.2, 252.4, 1.3], heading: 32, script: level80}
+  - {id: "level80:fThrowPlayer1", level: level80, name: fThrowPlayer1, pos: [-243.8, 268.2, 5.8], heading: 297, script: level80}
+  - {id: "level80:fFRembrandt4", level: level80, name: fFRembrandt4, pos: [-232.2, 243.3, 1.3], heading: 181, script: level80}
+  - {id: "level80:fFSnow4", level: level80, name: fFSnow4, pos: [-232.9, 244.6, 1.3], heading: 187, script: level80}
+  - {id: "level80:fFAjax4", level: level80, name: fFAjax4, pos: [-228.4, 242.9, 1.3], heading: 200, script: level80}
+  - {id: "level80:fFCowboy4", level: level80, name: fFCowboy4, pos: [-229.2, 241.5, 1.3], heading: 163, script: level80}
+  - {id: "level80:fFVermin4", level: level80, name: fFVermin4, pos: [-233.9, 241, 1.3], heading: 181, script: level80}
+  - {id: "level80:fFCleon4", level: level80, name: fFCleon4, pos: [-232, 241, 1.3], heading: 183, script: level80}
+  - {id: "level80:fFSnow4#2", level: level80, name: fFSnow4, pos: [-234.7, 243.2, 1.3], heading: 183, script: level80}
+  - {id: "level80:fFFox4", level: level80, name: fFFox4, pos: [-229.8, 244.3, 1.3], heading: 181, script: level80}
+  - {id: "level80:fSnowCowboyTrigger", level: level80, name: fSnowCowboyTrigger, pos: [-195.8, 227, 1.3], heading: 92, script: level80}
+  - {id: "level80:fBumPath1", level: level80, name: fBumPath1, pos: [-187, 258.1, 1.3], heading: 2, script: level80}
+  - {id: "level80:fBumPath2", level: level80, name: fBumPath2, pos: [-208.2, 260.4, 1.3], heading: 2, script: level80}
+  - {id: "level80:fBumTrash", level: level80, name: fBumTrash, pos: [-199.2, 283.7, 1.3], heading: 93, activity: 10, script: level80}
+  - {id: "level80:fCochiseSwan", level: level80, name: fCochiseSwan, pos: [-236.4, 176.6, 4.3], heading: 92, script: level80}
+  - {id: "level80:fC1Cleon1", level: level80, name: fC1Cleon1, pos: [-198.9, 128.3, 1.3], heading: 300, script: level80}
+  - {id: "level80:fC1Rembrandt1", level: level80, name: fC1Rembrandt1, pos: [-197.2, 129.4, 1.3], heading: 300, script: level80}
+  - {id: "level80:fC1Vermin1", level: level80, name: fC1Vermin1, pos: [-199, 126.4, 1.3], heading: 300, script: level80}
+  - {id: "level80:fDestroyer11", level: level80, name: fDestroyer11, pos: [-249.1, 154.5, 1.3], heading: 246, script: level80}
+  - {id: "level80:fDestroyer12", level: level80, name: fDestroyer12, pos: [-250.3, 155.9, 1.3], heading: 246, script: level80}
+  - {id: "level80:fExplosion1", level: level80, name: fExplosion1, pos: [-181.1, 85.3, 6.1], heading: 93, script: level80}
+  - {id: "level80:fExplosion2", level: level80, name: fExplosion2, pos: [-182.2, 86.9, 5.8], heading: 93, script: level80}
+  - {id: "level80:fExplosion3", level: level80, name: fExplosion3, pos: [-183.9, 86.7, 6.3], heading: 93, script: level80}
+  - {id: "level80:fThrowPlayer2", level: level80, name: fThrowPlayer2, pos: [-244.6, 267, 5.8], heading: 299, script: level80}
+  - {id: "level80:fBottles", level: level80, name: fBottles, pos: [-244.5, 268.4, 5.8], heading: 93, script: level80}
+  - {id: "level80:fC1Vermin2", level: level80, name: fC1Vermin2, pos: [-195.2, 125.8, 1.3], heading: 300, script: level80}
+  - {id: "level80:fECleon", level: level80, name: fECleon, pos: [-204.3, 133.3, -196.1], heading: 273, script: level80}
+  - {id: "level80:fEVermin", level: level80, name: fEVermin, pos: [-204.3, 132.3, -196.1], heading: 273, script: level80}
+  - {id: "level80:storePharmacy01", level: level80, name: storePharmacy01, pos: [-242, 226.9, 1.2], heading: 4, activity: 14, group: 24, script: level80}
+  - {id: "level80:_xwFlagCopCap01", level: level80, name: _xwFlagCopCap01, pos: [-227.1, 236.2, 1.3], heading: 282, activity: 13, script: level80}
+  - {id: "level80:_xwFlagCopCap02", level: level80, name: _xwFlagCopCap02, pos: [-227.8, 232.8, 1.3], heading: 282, activity: 13, script: level80}
+  - {id: "level80:_xwFlagCopCap03", level: level80, name: _xwFlagCopCap03, pos: [-231, 233.5, 1.3], heading: 102, activity: 13, script: level80}
+  - {id: "level80:_xwFlagCopCap04", level: level80, name: _xwFlagCopCap04, pos: [-230.3, 236.8, 1.3], heading: 102, activity: 13, script: level80}
+  - {id: "level80:_xwFlagWgnCap01", level: level80, name: _xwFlagWgnCap01, pos: [-239.3, 150.8, 1.4], heading: 179, activity: 13, script: level80}
+  - {id: "level80:_xwFlagWgnCap02", level: level80, name: _xwFlagWgnCap02, pos: [-236, 150.8, 1.4], heading: 179, activity: 13, script: level80}
+  - {id: "level80:_xwFlagWgnCap03", level: level80, name: _xwFlagWgnCap03, pos: [-236.1, 147.5, 1.4], heading: 0, activity: 13, script: level80}
+  - {id: "level80:_xwFlagWgnCap04", level: level80, name: _xwFlagWgnCap04, pos: [-239.4, 147.5, 1.4], heading: 0, activity: 13, script: level80}
+  - {id: "level80:_xwFlagWgnTicket05", level: level80, name: _xwFlagWgnTicket05, pos: [-239.5, 147.8, 1.4], heading: 0, activity: 26, script: level80}

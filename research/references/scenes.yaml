@@ -1,0 +1,1271 @@
+# Scenes and movies: a Coney game reference list. The page docs/references/scenes.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Scenes and movies"
+about: |
+  The in-engine scenes (cutscenes and animation sets, `.scn` records) and the full-motion movies
+  (`PSS/<name>.BIK`). `ScenePreload(name)` returns a scene id, the record's index in the global scene
+  list `scene_list.cnk`, which the other scene bindings take; `PlayMovie(name)` plays a movie.
+  How both work: [Scripts](../research/scripting.md#scenes-and-movies).
+complete: |
+  All 16 movies, and every scene of `scene_list.cnk` except the 1,525 segments that continue a longer
+  scene: 1,240 scenes, 24 of them under names cut to 16 characters. A scene's levels and scripts are those that
+  preload it by name; scenes that C++ code or a computed name loads show none.
+defaults: {source: "scene_list.cnk, the scripts' ScenePreload, the level records", evidence: confirmed-code}
+entries:
+  - {id: "movie:L1_IN", kind: movie, name: L1_IN, played_by: [boot, "level1 intro", "front end Menu.movies[2]"], on_disc: true}
+  - {id: "movie:L31_IN", kind: movie, name: L31_IN, played_by: ["level31 intro"], on_disc: true}
+  - {id: "movie:L31_OUT", kind: movie, name: L31_OUT, played_by: ["level31 outro"], on_disc: true}
+  - {id: "movie:L34_OUT", kind: movie, name: L34_OUT, played_by: ["level34 outro"], on_disc: true}
+  - {id: "movie:L51_IN", kind: movie, name: L51_IN, played_by: ["level51 intro"], on_disc: true}
+  - {id: "movie:L52_IN", kind: movie, name: L52_IN, played_by: ["level52 intro"], on_disc: true}
+  - {id: "movie:L54_IN", kind: movie, name: L54_IN, played_by: ["level54 intro"], on_disc: true}
+  - {id: "movie:L81_OUT", kind: movie, name: L81_OUT, played_by: ["level81 outro"], on_disc: true}
+  - {id: "movie:L84_OUT", kind: movie, name: L84_OUT, played_by: ["level84 outro"], on_disc: true}
+  - {id: "movie:L87_OUT", kind: movie, name: L87_OUT, played_by: ["level87 outro"], on_disc: true}
+  - {id: "movie:L99_IN", kind: movie, name: L99_IN, played_by: ["level99 intro"], on_disc: true}
+  - {id: "movie:L9_IN", kind: movie, name: L9_IN, played_by: ["level9 intro"], on_disc: true}
+  - {id: "movie:L9_OUT", kind: movie, name: L9_OUT, played_by: ["level9 outro"], on_disc: true}
+  - {id: "movie:LOGO", kind: movie, name: LOGO, played_by: [boot], on_disc: true}
+  - {id: "movie:PLOGO", kind: movie, name: PLOGO, played_by: [boot], on_disc: true}
+  - {id: "movie:TRAILER", kind: movie, name: TRAILER, played_by: ["front end Menu.movies[1]"], on_disc: true}
+  - {id: Benson_Sub1, kind: scene, name: Benson_Sub1, scene: 0, size: 12768}
+  - {id: Benson_Sub2, kind: scene, name: Benson_Sub2, scene: 1, size: 12736}
+  - {id: Benson_Sub3, kind: scene, name: Benson_Sub3, scene: 2, size: 2112, levels: [level14], scripts: [level14]}
+  - {id: Coney_Sub1, kind: scene, name: Coney_Sub1, scene: 3, size: 22336, levels: [level99], scripts: [level99]}
+  - {id: Coney_Sub1nocar, kind: scene, name: Coney_Sub1nocar, scene: 4, size: 2704}
+  - {id: Coney_Sub2, kind: scene, name: Coney_Sub2, scene: 5, size: 27472, levels: [level99], scripts: [level99]}
+  - {id: Coney_Sub3, kind: scene, name: Coney_Sub3, scene: 6, size: 1920, levels: [level80], scripts: [level80]}
+  - {id: Coney_Sub4, kind: scene, name: Coney_Sub4, scene: 7, size: 1920, levels: [level80], scripts: [level80]}
+  - {id: Coney_Sub5, kind: scene, name: Coney_Sub5, scene: 8, size: 13360, levels: [level83], scripts: [level83]}
+  - {id: EConey_Sub1, kind: scene, name: EConey_Sub1, scene: 9, size: 14624}
+  - {id: EConey_Sub2, kind: scene, name: EConey_Sub2, scene: 10, size: 14032}
+  - {id: EConey_Sub3, kind: scene, name: EConey_Sub3, scene: 11, size: 14192}
+  - {id: EConey_Sub4, kind: scene, name: EConey_Sub4, scene: 12, size: 2112}
+  - {id: EConey_Sub5, kind: scene, name: EConey_Sub5, scene: 13, size: 2336, levels: [level87], scripts: [level87, level87_chap3_shanty]}
+  - {id: Gunhill_Sub1, kind: scene, name: Gunhill_Sub1, scene: 14, size: 2096}
+  - {id: Gunhill_Sub2, kind: scene, name: Gunhill_Sub2, scene: 15, size: 2096}
+  - {id: Harlem_Subsound, kind: scene, name: Harlem_Subsound, scene: 16, size: 1216, levels: [level5], scripts: [level5_chapter1]}
+  - {id: L3_S2, kind: scene, name: L3_S2, scene: 17, size: 21360}
+  - {id: L51_car_drop, kind: scene, name: L51_car_drop, scene: 18, size: 1728}
+  - {id: L84_car_chase01, kind: scene, name: L84_car_chase01, scene: 19, size: 7216}
+  - {id: L84_car_chase02, kind: scene, name: L84_car_chase02, scene: 20, size: 13520}
+  - {id: Pel_subway, kind: scene, name: Pel_subway, scene: 21, size: 19984, levels: [level31, level115], scripts: [level115, level31]}
+  - {id: Sheep_Sub1, kind: scene, name: Sheep_Sub1, scene: 22, size: 14944}
+  - {id: Sheep_Sub2, kind: scene, name: Sheep_Sub2, scene: 23, size: 12880}
+  - {id: Train_Sub1, kind: scene, name: Train_Sub1, scene: 24, size: 2464}
+  - {id: Train_Sub2, kind: scene, name: Train_Sub2, scene: 25, size: 2096}
+  - {id: Train_Sub3, kind: scene, name: Train_Sub3, scene: 26, size: 1904}
+  - {id: Train_Sub3sound, kind: scene, name: Train_Sub3sound, scene: 27, size: 496}
+  - {id: Tremont_Sub1, kind: scene, name: Tremont_Sub1, scene: 28, size: 24816, levels: [level2], scripts: [level2]}
+  - {id: Tremont_Sub2, kind: scene, name: Tremont_Sub2, scene: 29, size: 28544, levels: [level2], scripts: [level2]}
+  - {id: Tremont_Sub3, kind: scene, name: Tremont_Sub3, scene: 30, size: 9008, levels: [level2], scripts: [level2]}
+  - {id: Tremont_Sub4, kind: scene, name: Tremont_Sub4, scene: 31, size: 10912, levels: [level2], scripts: [level2]}
+  - {id: Tremont_sedan1, kind: scene, name: Tremont_sedan1, scene: 32, size: 5504}
+  - {id: WonderWheel, kind: scene, name: WonderWheel, scene: 33, size: 44272}
+  - {id: WonderWheel_100, kind: scene, name: WonderWheel_100, scene: 34, size: 44448}
+  - {id: WonderWheel_99, kind: scene, name: WonderWheel_99, scene: 35, size: 44272, levels: [level99], scripts: [level99]}
+  - {id: WonderWheel_b, kind: scene, name: WonderWheel_b, scene: 36, size: 44272}
+  - {id: WonderWheel_cam-37, kind: scene, name: WonderWheel_cam, scene: 37, size: 44528}
+  - {id: WonderWheel_cam-38, kind: scene, name: WonderWheel_cam, scene: 38, size: 44528}
+  - {id: Wonderwheel_92, kind: scene, name: Wonderwheel_92, scene: 39, size: 44272}
+  - {id: arrest_idle, kind: scene, name: arrest_idle, scene: 40, size: 3328}
+  - {id: arrest_release, kind: scene, name: arrest_release, scene: 41, size: 20928}
+  - {id: bar_ani_cop_001, kind: scene, name: bar_ani_cop_001, scene: 42, size: 7440}
+  - {id: bar_ani_war_001, kind: scene, name: bar_ani_war_001, scene: 43, size: 5920}
+  - {id: bar_sab_bou_001, kind: scene, name: bar_sab_bou_001, scene: 44, size: 8240}
+  - {id: bar_sab_cop_002, kind: scene, name: bar_sab_cop_002, scene: 45, size: 6096}
+  - {id: bar_sab_cop_005, kind: scene, name: bar_sab_cop_005, scene: 46, size: 9008}
+  - {id: bar_sbr_bou_001, kind: scene, name: bar_sbr_bou_001, scene: 47, size: 10528}
+  - {id: bar_sbr_cop_001, kind: scene, name: bar_sbr_cop_001, scene: 48, size: 42576}
+  - {id: bar_sbr_cop_002, kind: scene, name: bar_sbr_cop_002, scene: 49, size: 52080}
+  - {id: bar_sbr_cop_003, kind: scene, name: bar_sbr_cop_003, scene: 50, size: 47840}
+  - {id: bar_srw_bou_002, kind: scene, name: bar_srw_bou_002, scene: 51, size: 7536}
+  - {id: bar_srw_cop_002, kind: scene, name: bar_srw_cop_002, scene: 52, size: 7344}
+  - {id: bar_swe_bou_001, kind: scene, name: bar_swe_bou_001, scene: 53, size: 3152}
+  - {id: bar_swe_cop_001, kind: scene, name: bar_swe_cop_001, scene: 54, size: 6896}
+  - {id: bar_swm_bou_001, kind: scene, name: bar_swm_bou_001, scene: 55, size: 8304}
+  - {id: bar_swm_cop_001, kind: scene, name: bar_swm_cop_001, scene: 56, size: 7632}
+  - {id: bar_swm_cop_002, kind: scene, name: bar_swm_cop_002, scene: 57, size: 12112}
+  - {id: bar_wcm_cln_001, kind: scene, name: bar_wcm_cln_001, scene: 58, size: 8048}
+  - {id: bar_wcm_swn_001, kind: scene, name: bar_wcm_swn_001, scene: 59, size: 7840}
+  - {id: bar_woc_cln_001, kind: scene, name: bar_woc_cln_001, scene: 60, size: 8688}
+  - {id: bar_woc_swn_001, kind: scene, name: bar_woc_swn_001, scene: 61, size: 8464}
+  - {id: bar_wup_cln_001, kind: scene, name: bar_wup_cln_001, scene: 62, size: 7328}
+  - {id: bar_wup_swn_001, kind: scene, name: bar_wup_swn_001, scene: 63, size: 6176}
+  - {id: bat_idle_000, kind: scene, name: bat_idle_000, scene: 64, size: 10336}
+  - {id: bat_idle_001, kind: scene, name: bat_idle_001, scene: 65, size: 13120}
+  - {id: bec_bum_000, kind: scene, name: bec_bum_000, scene: 66, size: 7520}
+  - {id: bec_bum_001, kind: scene, name: bec_bum_001, scene: 67, size: 9424}
+  - {id: bec_bum_002, kind: scene, name: bec_bum_002, scene: 68, size: 7712}
+  - {id: bec_cop_000, kind: scene, name: bec_cop_000, scene: 69, size: 5040}
+  - {id: bec_cop_001, kind: scene, name: bec_cop_001, scene: 70, size: 5888}
+  - {id: bec_cop_002, kind: scene, name: bec_cop_002, scene: 71, size: 5280}
+  - {id: bec_dea_000, kind: scene, name: bec_dea_000, scene: 72, size: 7712}
+  - {id: bec_dea_001, kind: scene, name: bec_dea_001, scene: 73, size: 5760}
+  - {id: bec_dea_002, kind: scene, name: bec_dea_002, scene: 74, size: 8352}
+  - {id: bec_who_000, kind: scene, name: bec_who_000, scene: 75, size: 3680}
+  - {id: bec_who_001, kind: scene, name: bec_who_001, scene: 76, size: 3472}
+  - {id: bec_who_002, kind: scene, name: bec_who_002, scene: 77, size: 7088}
+  - {id: billboard_mimes, kind: scene, name: billboard_mimes, scene: 78, size: 38448}
+  - {id: billboard_trans, kind: scene, name: billboard_trans, scene: 79, size: 3504}
+  - {id: bum_sleep_end, kind: scene, name: bum_sleep_end, scene: 80, size: 11488, levels: [level14], scripts: [level14_jsb]}
+  - {id: bum_sleep_end01, kind: scene, name: bum_sleep_end01, scene: 81, size: 11488}
+  - {id: bum_sleep_end02, kind: scene, name: bum_sleep_end02, scene: 82, size: 11488}
+  - {id: bum_sleep_end03, kind: scene, name: bum_sleep_end03, scene: 83, size: 11488}
+  - {id: bum_sleep_end04, kind: scene, name: bum_sleep_end04, scene: 84, size: 11488}
+  - {id: cam_audio_story, kind: scene, name: cam_audio_story, scene: 85, size: 880}
+  - {id: cam_audio_video, kind: scene, name: cam_audio_video, scene: 86, size: 656}
+  - {id: cam_light_rmble, kind: scene, name: cam_light_rmble, scene: 87, size: 832}
+  - {id: cam_light_video, kind: scene, name: cam_light_video, scene: 88, size: 688}
+  - {id: cam_rmble_light, kind: scene, name: cam_rmble_light, scene: 89, size: 800}
+  - {id: cam_rmble_story, kind: scene, name: cam_rmble_story, scene: 90, size: 784}
+  - {id: cam_story_audio, kind: scene, name: cam_story_audio, scene: 91, size: 880}
+  - {id: cam_story_rmble, kind: scene, name: cam_story_rmble, scene: 92, size: 784}
+  - {id: cam_video_audio, kind: scene, name: cam_video_audio, scene: 93, size: 656}
+  - {id: cam_video_light, kind: scene, name: cam_video_light, scene: 94, size: 656}
+  - {id: car_explode, kind: scene, name: car_explode, scene: 95, size: 21200}
+  - {id: car_flip_over, kind: scene, name: car_flip_over, scene: 96, size: 83536}
+  - {id: check_body, kind: scene, name: check_body, scene: 97, size: 7152}
+  - {id: check_body_loop, kind: scene, name: check_body_loop, scene: 98, size: 1104}
+  - {id: combat_lose_b, kind: scene, name: combat_lose_b, scene: 99, size: 3968}
+  - {id: combat_lose_c, kind: scene, name: combat_lose_c, scene: 100, size: 1824}
+  - {id: combat_lose_e, kind: scene, name: combat_lose_e, scene: 101, size: 1264}
+  - {id: combat_win, kind: scene, name: combat_win, scene: 102, size: 4672}
+  - {id: cop_take_down, kind: scene, name: cop_take_down, scene: 103, size: 26416}
+  - {id: couple_kis_stan, kind: scene, name: couple_kis_stan, scene: 104, size: 16544}
+  - {id: couple_kiss_ben, kind: scene, name: couple_kiss_ben, scene: 105, size: 2576}
+  - {id: craps_all, kind: scene, name: craps_all, scene: 106, size: 36464}
+  - {id: craps_play1_exi, kind: scene, name: craps_play1_exi, scene: 107, size: 4464}
+  - {id: craps_play1_idl, kind: scene, name: craps_play1_idl, scene: 108, size: 5936}
+  - {id: craps_play2_exi, kind: scene, name: craps_play2_exi, scene: 109, size: 3808}
+  - {id: craps_play2_idl, kind: scene, name: craps_play2_idl, scene: 110, size: 3520}
+  - {id: craps_play3, kind: scene, name: craps_play3, scene: 111, size: 13168}
+  - {id: craps_player, kind: scene, name: craps_player, scene: 112, size: 4832}
+  - {id: craps_spectator, kind: scene, name: craps_spectator, scene: 113, size: 1296}
+  - {id: deadbody5, kind: scene, name: deadbody5, scene: 114, size: 784}
+  - {id: deadbody_01, kind: scene, name: deadbody_01, scene: 115, size: 720}
+  - {id: deadbody_02, kind: scene, name: deadbody_02, scene: 116, size: 720}
+  - {id: deadbody_03, kind: scene, name: deadbody_03, scene: 117, size: 736}
+  - {id: deadbody_04, kind: scene, name: deadbody_04, scene: 118, size: 736}
+  - {id: fidget_tired_C, kind: scene, name: fidget_tired_C, scene: 119, size: 9584}
+  - {id: fidget_tired_C2, kind: scene, name: fidget_tired_C2, scene: 120, size: 9584}
+  - {id: fire_esc_1_c, kind: scene, name: fire_esc_1_c, scene: 121, size: 2752}
+  - {id: fire_esc_1_e, kind: scene, name: fire_esc_1_e, scene: 122, size: 7728}
+  - {id: fire_esc_2_c, kind: scene, name: fire_esc_2_c, scene: 123, size: 1472}
+  - {id: fire_esc_2_e, kind: scene, name: fire_esc_2_e, scene: 124, size: 3664}
+  - {id: fire_esc_3_c, kind: scene, name: fire_esc_3_c, scene: 125, size: 1168}
+  - {id: fire_esc_3_e, kind: scene, name: fire_esc_3_e, scene: 126, size: 2544}
+  - {id: fire_esc_break, kind: scene, name: fire_esc_break, scene: 127, size: 3472}
+  - {id: fire_esc_hit, kind: scene, name: fire_esc_hit, scene: 128, size: 3312}
+  - {id: fire_esc_shake, kind: scene, name: fire_esc_shake, scene: 129, size: 1472}
+  - {id: fire_escape, kind: scene, name: fire_escape, scene: 130, size: 14544}
+  - {id: gen_beer_drink, kind: scene, name: gen_beer_drink, scene: 131, size: 3792}
+  - {id: gen_beer_drink_-132, kind: scene, name: gen_beer_drink_, scene: 132, size: 1440}
+  - {id: gen_beer_drink_-133, kind: scene, name: gen_beer_drink_, scene: 133, size: 3872}
+  - {id: gen_beer_idle, kind: scene, name: gen_beer_idle, scene: 134, size: 1824}
+  - {id: gen_beer_idle02, kind: scene, name: gen_beer_idle02, scene: 135, size: 11312}
+  - {id: gen_beer_talk, kind: scene, name: gen_beer_talk, scene: 136, size: 6048}
+  - {id: gen_bum_sleep, kind: scene, name: gen_bum_sleep, scene: 137, size: 2272}
+  - {id: gen_cop001, kind: scene, name: gen_cop001, scene: 138, size: 6768}
+  - {id: gen_cop002, kind: scene, name: gen_cop002, scene: 139, size: 6448}
+  - {id: gen_cop003, kind: scene, name: gen_cop003, scene: 140, size: 7120}
+  - {id: gen_cop004, kind: scene, name: gen_cop004, scene: 141, size: 3776}
+  - {id: gen_cop_a001, kind: scene, name: gen_cop_a001, scene: 142, size: 5984}
+  - {id: gen_cop_a002, kind: scene, name: gen_cop_a002, scene: 143, size: 10800}
+  - {id: gen_cop_a003, kind: scene, name: gen_cop_a003, scene: 144, size: 5888}
+  - {id: gen_cop_a004, kind: scene, name: gen_cop_a004, scene: 145, size: 5200}
+  - {id: gen_cop_ar001, kind: scene, name: gen_cop_ar001, scene: 146, size: 6960}
+  - {id: gen_cop_ar002, kind: scene, name: gen_cop_ar002, scene: 147, size: 6880}
+  - {id: gen_cop_ar003, kind: scene, name: gen_cop_ar003, scene: 148, size: 6224}
+  - {id: gen_cop_ar004, kind: scene, name: gen_cop_ar004, scene: 149, size: 5888}
+  - {id: gen_cop_ar005, kind: scene, name: gen_cop_ar005, scene: 150, size: 6960}
+  - {id: gen_cop_ar006, kind: scene, name: gen_cop_ar006, scene: 151, size: 6032}
+  - {id: gen_cop_ch001, kind: scene, name: gen_cop_ch001, scene: 152, size: 5952}
+  - {id: gen_cop_ch002, kind: scene, name: gen_cop_ch002, scene: 153, size: 6352}
+  - {id: gen_cop_ch003, kind: scene, name: gen_cop_ch003, scene: 154, size: 4928}
+  - {id: gen_cop_ch004, kind: scene, name: gen_cop_ch004, scene: 155, size: 4928}
+  - {id: gen_cop_ch005, kind: scene, name: gen_cop_ch005, scene: 156, size: 3776}
+  - {id: gen_cop_ch006, kind: scene, name: gen_cop_ch006, scene: 157, size: 5952}
+  - {id: gen_cop_p001, kind: scene, name: gen_cop_p001, scene: 158, size: 7520}
+  - {id: gen_cop_p002, kind: scene, name: gen_cop_p002, scene: 159, size: 7968}
+  - {id: gen_cop_p003, kind: scene, name: gen_cop_p003, scene: 160, size: 6912}
+  - {id: gen_cop_p004, kind: scene, name: gen_cop_p004, scene: 161, size: 7168}
+  - {id: gen_cop_re001, kind: scene, name: gen_cop_re001, scene: 162, size: 4400}
+  - {id: gen_cop_re002, kind: scene, name: gen_cop_re002, scene: 163, size: 5248}
+  - {id: gen_cop_re003, kind: scene, name: gen_cop_re003, scene: 164, size: 8016}
+  - {id: gen_cop_re004, kind: scene, name: gen_cop_re004, scene: 165, size: 6288}
+  - {id: gen_cop_re005, kind: scene, name: gen_cop_re005, scene: 166, size: 4112}
+  - {id: gen_cop_re006, kind: scene, name: gen_cop_re006, scene: 167, size: 3744}
+  - {id: gen_cop_re007, kind: scene, name: gen_cop_re007, scene: 168, size: 7520}
+  - {id: gen_copaj_a001, kind: scene, name: gen_copaj_a001, scene: 169, size: 7632}
+  - {id: gen_copaj_p001, kind: scene, name: gen_copaj_p001, scene: 170, size: 4432}
+  - {id: gen_copfo_a001, kind: scene, name: gen_copfo_a001, scene: 171, size: 6976}
+  - {id: gen_copfo_p001, kind: scene, name: gen_copfo_p001, scene: 172, size: 8752}
+  - {id: gen_copsn_a001, kind: scene, name: gen_copsn_a001, scene: 173, size: 6976}
+  - {id: gen_copsn_p001, kind: scene, name: gen_copsn_p001, scene: 174, size: 4912}
+  - {id: gen_copsw_a001, kind: scene, name: gen_copsw_a001, scene: 175, size: 8784}
+  - {id: gen_copsw_p001, kind: scene, name: gen_copsw_p001, scene: 176, size: 5536}
+  - {id: gen_cowar_001, kind: scene, name: gen_cowar_001, scene: 177, size: 9296}
+  - {id: gen_disco_dj, kind: scene, name: gen_disco_dj, scene: 178, size: 2320}
+  - {id: gen_disco_fem, kind: scene, name: gen_disco_fem, scene: 179, size: 8576}
+  - {id: gen_disco_male, kind: scene, name: gen_disco_male, scene: 180, size: 7760}
+  - {id: gen_drink_beer0, kind: scene, name: gen_drink_beer0, scene: 181, size: 5936}
+  - {id: gen_hide_bench, kind: scene, name: gen_hide_bench, scene: 182, size: 3504}
+  - {id: gen_hide_idle, kind: scene, name: gen_hide_idle, scene: 183, size: 1632}
+  - {id: gen_hurt_lean, kind: scene, name: gen_hurt_lean, scene: 184, size: 4944}
+  - {id: gen_injured_001, kind: scene, name: gen_injured_001, scene: 185, size: 4880}
+  - {id: gen_piss_end, kind: scene, name: gen_piss_end, scene: 186, size: 9648}
+  - {id: gen_piss_loop, kind: scene, name: gen_piss_loop, scene: 187, size: 9392}
+  - {id: gen_piss_start, kind: scene, name: gen_piss_start, scene: 188, size: 6144}
+  - {id: gen_pry_open_do, kind: scene, name: gen_pry_open_do, scene: 189, size: 8992}
+  - {id: gen_put_in_trun, kind: scene, name: gen_put_in_trun, scene: 190, size: 7856}
+  - {id: gen_slap_girl, kind: scene, name: gen_slap_girl, scene: 191, size: 17280}
+  - {id: gen_smoke, kind: scene, name: gen_smoke, scene: 192, size: 12896}
+  - {id: gen_spectator01, kind: scene, name: gen_spectator01, scene: 193, size: 1808}
+  - {id: gen_spectator02, kind: scene, name: gen_spectator02, scene: 194, size: 1696}
+  - {id: gen_spectator03, kind: scene, name: gen_spectator03, scene: 195, size: 1520}
+  - {id: gen_stripper, kind: scene, name: gen_stripper, scene: 196, size: 9616}
+  - {id: gen_taunt_001, kind: scene, name: gen_taunt_001, scene: 197, size: 4784}
+  - {id: gen_taunt_002, kind: scene, name: gen_taunt_002, scene: 198, size: 5456}
+  - {id: gen_taunt_003, kind: scene, name: gen_taunt_003, scene: 199, size: 4896}
+  - {id: gen_taunt_004, kind: scene, name: gen_taunt_004, scene: 200, size: 12528}
+  - {id: gen_taunt_chall, kind: scene, name: gen_taunt_chall, scene: 201, size: 11952}
+  - {id: gen_thrown_001, kind: scene, name: gen_thrown_001, scene: 202, size: 7120}
+  - {id: gen_trunk, kind: scene, name: gen_trunk, scene: 203, size: 11584, levels: [level14], scripts: [level14_dirtycop]}
+  - {id: gen_walk_end, kind: scene, name: gen_walk_end, scene: 204, size: 8160}
+  - {id: gen_whistle, kind: scene, name: gen_whistle, scene: 205, size: 3984}
+  - {id: hit_bell, kind: scene, name: hit_bell, scene: 206, size: 11744}
+  - {id: kiss_liedown, kind: scene, name: kiss_liedown, scene: 207, size: 2592}
+  - {id: kiss_stand_up, kind: scene, name: kiss_stand_up, scene: 208, size: 50384}
+  - {id: knock_left, kind: scene, name: knock_left, scene: 209, size: 7664}
+  - {id: knock_left1, kind: scene, name: knock_left1, scene: 210, size: 3760}
+  - {id: knock_right, kind: scene, name: knock_right, scene: 211, size: 7456}
+  - {id: knock_right1, kind: scene, name: knock_right1, scene: 212, size: 4096}
+  - {id: l11_c1, kind: scene, name: l11_c1, scene: 213, size: 80960}
+  - {id: l11_c2, kind: scene, name: l11_c2, scene: 230, size: 196128, levels: [level11], scripts: [level11_chapter1]}
+  - {id: l11_c3, kind: scene, name: l11_c3, scene: 233, size: 83696}
+  - {id: l11_c4, kind: scene, name: l11_c4, scene: 234, size: 178928, levels: [level11], scripts: [level11_chapter3, level11_chapter4]}
+  - {id: l11_c7, kind: scene, name: l11_c7, scene: 236, size: 190176, levels: [level11], scripts: [level11_chapter5, level11_chapter6]}
+  - {id: l11_c8, kind: scene, name: l11_c8, scene: 246, size: 140368, levels: [level11], scripts: [level11_chapter6]}
+  - {id: l11_c9, kind: scene, name: l11_c9, scene: 249, size: 50720}
+  - {id: l11_cam_pan, kind: scene, name: l11_cam_pan, scene: 250, size: 672, levels: [level11], scripts: [level11_chapter4]}
+  - {id: l11_l7_015, kind: scene, name: l11_l7_015, scene: 251, size: 21696, levels: [level11], scripts: [level11_chapter5]}
+  - {id: l11_lights, kind: scene, name: l11_lights, scene: 252, size: 8992, levels: [level11], scripts: [level11_chapter5, level11_chapter6]}
+  - {id: l11_poizo_01, kind: scene, name: l11_poizo_01, scene: 253, size: 592, levels: [level11], scripts: [level11_chapter1]}
+  - {id: l11_strip_pole, kind: scene, name: l11_strip_pole, scene: 254, size: 35712}
+  - {id: l11_t17_001, kind: scene, name: l11_t17_001, scene: 255, size: 29600, levels: [level11], scripts: [level11_chapter2]}
+  - {id: l11_t17_012, kind: scene, name: l11_t17_012, scene: 256, size: 59536, levels: [level11], scripts: [level11_chapter2]}
+  - {id: l11_t19, kind: scene, name: l11_t19, scene: 257, size: 55392}
+  - {id: l14_c1, kind: scene, name: l14_c1, scene: 258, size: 143328}
+  - {id: l14_c2, kind: scene, name: l14_c2, scene: 271, size: 189616}
+  - {id: l14_c3, kind: scene, name: l14_c3, scene: 279, size: 125136}
+  - {id: l14_c4, kind: scene, name: l14_c4, scene: 311, size: 149968}
+  - {id: l14_c6_a, kind: scene, name: l14_c6_a, scene: 315, size: 111504}
+  - {id: l14_c6_b, kind: scene, name: l14_c6_b, scene: 316, size: 191152}
+  - {id: l14_c6_c, kind: scene, name: l14_c6_c, scene: 317, size: 77360}
+  - {id: l14_l1_000, kind: scene, name: l14_l1_000, scene: 318, size: 4240}
+  - {id: l14_l1_001, kind: scene, name: l14_l1_001, scene: 319, size: 4032}
+  - {id: l14_l1_002, kind: scene, name: l14_l1_002, scene: 320, size: 4240}
+  - {id: l14_l2_000, kind: scene, name: l14_l2_000, scene: 321, size: 2176}
+  - {id: l14_l2_001, kind: scene, name: l14_l2_001, scene: 322, size: 3744}
+  - {id: l14_l2_002, kind: scene, name: l14_l2_002, scene: 323, size: 2752}
+  - {id: l14_l2_003, kind: scene, name: l14_l2_003, scene: 324, size: 2592}
+  - {id: l14_l2_004, kind: scene, name: l14_l2_004, scene: 325, size: 3312}
+  - {id: l14_l2_005, kind: scene, name: l14_l2_005, scene: 326, size: 2752}
+  - {id: l14_l2_006, kind: scene, name: l14_l2_006, scene: 327, size: 4576}
+  - {id: l14_l2_007, kind: scene, name: l14_l2_007, scene: 328, size: 4784}
+  - {id: l14_no_stash, kind: scene, name: l14_no_stash, scene: 329, size: 7344}
+  - {id: l14_p1_000, kind: scene, name: l14_p1_000, scene: 330, size: 24928}
+  - {id: l14_p1_001, kind: scene, name: l14_p1_001, scene: 331, size: 11168}
+  - {id: l14_p1_002, kind: scene, name: l14_p1_002, scene: 332, size: 7184}
+  - {id: l14_p1_003, kind: scene, name: l14_p1_003, scene: 333, size: 7296}
+  - {id: l14_p1_004, kind: scene, name: l14_p1_004, scene: 334, size: 6256}
+  - {id: l14_p2_000, kind: scene, name: l14_p2_000, scene: 335, size: 15296}
+  - {id: l14_p2_001, kind: scene, name: l14_p2_001, scene: 336, size: 5136}
+  - {id: l14_p2_002, kind: scene, name: l14_p2_002, scene: 337, size: 6912}
+  - {id: l14_p2_003, kind: scene, name: l14_p2_003, scene: 338, size: 4112}
+  - {id: l14_p2_004, kind: scene, name: l14_p2_004, scene: 339, size: 6176}
+  - {id: l14_p3_000, kind: scene, name: l14_p3_000, scene: 340, size: 4240}
+  - {id: l14_p3_001, kind: scene, name: l14_p3_001, scene: 341, size: 6464}
+  - {id: l14_p3_002, kind: scene, name: l14_p3_002, scene: 342, size: 11312}
+  - {id: l14_p3_003, kind: scene, name: l14_p3_003, scene: 343, size: 4240}
+  - {id: l14_p3_004, kind: scene, name: l14_p3_004, scene: 344, size: 4240}
+  - {id: l14_p4_000, kind: scene, name: l14_p4_000, scene: 345, size: 6688}
+  - {id: l14_p4_001, kind: scene, name: l14_p4_001, scene: 346, size: 5200}
+  - {id: l14_p4_002, kind: scene, name: l14_p4_002, scene: 347, size: 4592}
+  - {id: l14_p4_003, kind: scene, name: l14_p4_003, scene: 348, size: 8928}
+  - {id: l14_p4_004, kind: scene, name: l14_p4_004, scene: 349, size: 19312}
+  - {id: l14_p4_005, kind: scene, name: l14_p4_005, scene: 350, size: 7712}
+  - {id: l14_p4_006, kind: scene, name: l14_p4_006, scene: 351, size: 6000}
+  - {id: l14_p4_007, kind: scene, name: l14_p4_007, scene: 352, size: 3744}
+  - {id: l14_p4_008, kind: scene, name: l14_p4_008, scene: 353, size: 7712}
+  - {id: l14_p5_000, kind: scene, name: l14_p5_000, scene: 354, size: 20208}
+  - {id: l14_p5_001, kind: scene, name: l14_p5_001, scene: 355, size: 10464}
+  - {id: l14_p5_002, kind: scene, name: l14_p5_002, scene: 356, size: 13424}
+  - {id: l14_p5_003, kind: scene, name: l14_p5_003, scene: 357, size: 23008}
+  - {id: l14_p5_004, kind: scene, name: l14_p5_004, scene: 358, size: 22464}
+  - {id: l14_s1_000, kind: scene, name: l14_s1_000, scene: 359, size: 2224}
+  - {id: l14_s1_001, kind: scene, name: l14_s1_001, scene: 360, size: 5248}
+  - {id: l14_s2_000, kind: scene, name: l14_s2_000, scene: 361, size: 4240}
+  - {id: l14_s2_001, kind: scene, name: l14_s2_001, scene: 362, size: 4240}
+  - {id: l14_s2_002, kind: scene, name: l14_s2_002, scene: 363, size: 4240}
+  - {id: l14_s3_000, kind: scene, name: l14_s3_000, scene: 364, size: 4240}
+  - {id: l14_s4_000, kind: scene, name: l14_s4_000, scene: 365, size: 4240}
+  - {id: l14_s5_000, kind: scene, name: l14_s5_000, scene: 366, size: 4240}
+  - {id: l14_s5_001, kind: scene, name: l14_s5_001, scene: 367, size: 4240}
+  - {id: l14_stash, kind: scene, name: l14_stash, scene: 368, size: 10848}
+  - {id: l14_stashDesk, kind: scene, name: l14_stashDesk, scene: 369, size: 12704, levels: [level14], scripts: [level14_jsb]}
+  - {id: l14_stashFile, kind: scene, name: l14_stashFile, scene: 370, size: 12512, levels: [level14], scripts: [level14_jsb]}
+  - {id: l14_stashLocker, kind: scene, name: l14_stashLocker, scene: 371, size: 12320, levels: [level14], scripts: [level14_jsb]}
+  - {id: l14_stashSofa, kind: scene, name: l14_stashSofa, scene: 372, size: 12800, levels: [level14], scripts: [level14_jsb]}
+  - {id: l14_t1_009, kind: scene, name: l14_t1_009, scene: 373, size: 22416, levels: [level14], scripts: [level14]}
+  - {id: l1_in_sub, kind: scene, name: l1_in_sub, scene: 374, size: 1760}
+  - {id: l20_c1, kind: scene, name: l20_c1, scene: 375, size: 133200}
+  - {id: l20_c1_a, kind: scene, name: l20_c1_a, scene: 376, size: 63264}
+  - {id: l20_c2, kind: scene, name: l20_c2, scene: 385, size: 114752, levels: [level20], scripts: [level20_endtrain]}
+  - {id: l20_c3, kind: scene, name: l20_c3, scene: 389, size: 168256}
+  - {id: l20_c4, kind: scene, name: l20_c4, scene: 394, size: 134480, levels: [level20], scripts: [level20_backalley, level20_marketplace]}
+  - {id: l20_c5, kind: scene, name: l20_c5, scene: 399, size: 142224, levels: [level20], scripts: [level20_mainstreet]}
+  - {id: l20_c5_a, kind: scene, name: l20_c5_a, scene: 400, size: 69184}
+  - {id: l20_c5_b, kind: scene, name: l20_c5_b, scene: 402, size: 90144}
+  - {id: l20_c5_c, kind: scene, name: l20_c5_c, scene: 403, size: 1728}
+  - {id: l20_c6, kind: scene, name: l20_c6, scene: 409, size: 117840, levels: [level20], scripts: [level20_mainstreet]}
+  - {id: l20_fox, kind: scene, name: l20_fox, scene: 414, size: 156448, levels: [level20], scripts: [level20_bossfight, level20_endtrain]}
+  - {id: l20_ghost, kind: scene, name: l20_ghost, scene: 416, size: 128512, levels: [level20], scripts: [level20_backalley, level20_bossfight]}
+  - {id: l20_ghost_run, kind: scene, name: l20_ghost_run, scene: 417, size: 17648}
+  - {id: l20_huns_att, kind: scene, name: l20_huns_att, scene: 420, size: 63312}
+  - {id: l20_market_a, kind: scene, name: l20_market_a, scene: 421, size: 35456}
+  - {id: l20_market_b, kind: scene, name: l20_market_b, scene: 422, size: 32832}
+  - {id: l20_market_c, kind: scene, name: l20_market_c, scene: 423, size: 38064}
+  - {id: l20_market_d, kind: scene, name: l20_market_d, scene: 424, size: 46384}
+  - {id: l20_market_e, kind: scene, name: l20_market_e, scene: 425, size: 35440}
+  - {id: l20_market_f, kind: scene, name: l20_market_f, scene: 426, size: 32016}
+  - {id: l20_market_g, kind: scene, name: l20_market_g, scene: 427, size: 36864}
+  - {id: l20_market_h, kind: scene, name: l20_market_h, scene: 428, size: 39744}
+  - {id: l20_market_i, kind: scene, name: l20_market_i, scene: 429, size: 35264}
+  - {id: l20_play_chess, kind: scene, name: l20_play_chess, scene: 430, size: 25728}
+  - {id: l20_poizo_01, kind: scene, name: l20_poizo_01, scene: 431, size: 7728}
+  - {id: l20_poizo_02, kind: scene, name: l20_poizo_02, scene: 432, size: 1376}
+  - {id: l20_sparring, kind: scene, name: l20_sparring, scene: 433, size: 43312}
+  - {id: l2_c1, kind: scene, name: l2_c1, scene: 434, size: 175600}
+  - {id: l2_c1_a, kind: scene, name: l2_c1_a, scene: 435, size: 117712, levels: [level2], scripts: [level2_clinic]}
+  - {id: l2_c1_loop, kind: scene, name: l2_c1_loop, scene: 437, size: 9792}
+  - {id: l2_c2_a, kind: scene, name: l2_c2_a, scene: 455, size: 169504}
+  - {id: l2_c3, kind: scene, name: l2_c3, scene: 461, size: 126576, levels: [level2], scripts: [level2_clubhouse]}
+  - {id: l2_c4, kind: scene, name: l2_c4, scene: 473, size: 104784, levels: [level2], scripts: [level2_clinic]}
+  - {id: l2_c5, kind: scene, name: l2_c5, scene: 475, size: 192256, levels: [level2], scripts: [level2_junkyard]}
+  - {id: l2_c6_b, kind: scene, name: l2_c6_b, scene: 492, size: 98032, levels: [level2], scripts: [level2_junkyard]}
+  - {id: l2_c7, kind: scene, name: l2_c7, scene: 498, size: 127408, levels: [level2], scripts: [level2_clubhouse]}
+  - {id: l2_orphans, kind: scene, name: l2_orphans, scene: 499, size: 101264, levels: [level2], scripts: [level2_tenement]}
+  - {id: l2_subentr, kind: scene, name: l2_subentr, scene: 502, size: 110496}
+  - {id: l2_subexit, kind: scene, name: l2_subexit, scene: 512, size: 154672}
+  - {id: l2_t1, kind: scene, name: l2_t1, scene: 516, size: 21056}
+  - {id: l2_t3_015, kind: scene, name: l2_t3_015, scene: 517, size: 127408}
+  - {id: l2_t8, kind: scene, name: l2_t8, scene: 518, size: 129696}
+  - {id: l2_t8_014, kind: scene, name: l2_t8_014, scene: 519, size: 37280}
+  - {id: l31_c1, kind: scene, name: l31_c1, scene: 520, size: 103536}
+  - {id: l31_c1_a, kind: scene, name: l31_c1_a, scene: 521, size: 149056}
+  - {id: l31_c2, kind: scene, name: l31_c2, scene: 532, size: 128992, levels: [level31], scripts: [level31_sewers]}
+  - {id: l31_c2_a, kind: scene, name: l31_c2_a, scene: 533, size: 193552, levels: [level31], scripts: [level31_reddevil]}
+  - {id: l31_c3, kind: scene, name: l31_c3, scene: 562, size: 178064, levels: [level31], scripts: [level31_birdie, level31_reddevil]}
+  - {id: l31_c4, kind: scene, name: l31_c4, scene: 571, size: 172160, levels: [level31], scripts: [level31_birdie]}
+  - {id: l31_c5, kind: scene, name: l31_c5, scene: 579, size: 83264}
+  - {id: l31_c6, kind: scene, name: l31_c6, scene: 591, size: 146912}
+  - {id: l31_c7, kind: scene, name: l31_c7, scene: 596, size: 146160}
+  - {id: l31_cochise, kind: scene, name: l31_cochise, scene: 598, size: 55280}
+  - {id: l31_cops, kind: scene, name: l31_cops, scene: 599, size: 134512, levels: [level31], scripts: [level31_platform]}
+  - {id: l31_cut_lock, kind: scene, name: l31_cut_lock, scene: 600, size: 20416, levels: [level31], scripts: [level31_gclub]}
+  - {id: l31_in_sub, kind: scene, name: l31_in_sub, scene: 601, size: 800}
+  - {id: l31_out_sub, kind: scene, name: l31_out_sub, scene: 602, size: 656}
+  - {id: l31_sit, kind: scene, name: l31_sit, scene: 603, size: 832}
+  - {id: l34_c1, kind: scene, name: l34_c1, scene: 604, size: 141024}
+  - {id: l34_c2, kind: scene, name: l34_c2, scene: 608, size: 171296}
+  - {id: l34_c3, kind: scene, name: l34_c3, scene: 610, size: 184048}
+  - {id: l34_c4, kind: scene, name: l34_c4, scene: 619, size: 137504, levels: [level34], scripts: [level34_gate]}
+  - {id: l34_c5_a, kind: scene, name: l34_c5_a, scene: 634, size: 129056}
+  - {id: l34_c5_b, kind: scene, name: l34_c5_b, scene: 636, size: 156592}
+  - {id: l34_car_flip, kind: scene, name: l34_car_flip, scene: 638, size: 149632, levels: [level34], scripts: [level34_riot]}
+  - {id: l34_gang_attack-640, kind: scene, name: l34_gang_attack, scene: 640, size: 181280}
+  - {id: l34_gang_attack-641, kind: scene, name: l34_gang_attack, scene: 641, size: 62160}
+  - {id: l34_out_sub, kind: scene, name: l34_out_sub, scene: 642, size: 1520}
+  - {id: l3_c1, kind: scene, name: l3_c1, scene: 643, size: 187872}
+  - {id: l3_c1_a, kind: scene, name: l3_c1_a, scene: 644, size: 189008}
+  - {id: l3_c2, kind: scene, name: l3_c2, scene: 679, size: 197760}
+  - {id: l3_c2_e, kind: scene, name: l3_c2_e, scene: 680, size: 144160}
+  - {id: l3_c2_ee, kind: scene, name: l3_c2_ee, scene: 684, size: 84144, levels: [level3], scripts: [level3_balcony]}
+  - {id: l3_c3, kind: scene, name: l3_c3, scene: 728, size: 172144, levels: [level3], scripts: [level3_balcony]}
+  - {id: l3_c3_a, kind: scene, name: l3_c3_a, scene: 729, size: 93072}
+  - {id: l3_c4, kind: scene, name: l3_c4, scene: 740, size: 139072, levels: [level3], scripts: [level3_chase]}
+  - {id: l3_c7, kind: scene, name: l3_c7, scene: 748, size: 150112}
+  - {id: l3_c8_a, kind: scene, name: l3_c8_a, scene: 752, size: 46064}
+  - {id: l3_c8_b, kind: scene, name: l3_c8_b, scene: 753, size: 100912}
+  - {id: l3_c9_a, kind: scene, name: l3_c9_a, scene: 754, size: 135456}
+  - {id: l3_c9_b, kind: scene, name: l3_c9_b, scene: 756, size: 137216}
+  - {id: l3_f1_000, kind: scene, name: l3_f1_000, scene: 757, size: 7504}
+  - {id: l3_f1_001, kind: scene, name: l3_f1_001, scene: 758, size: 3984}
+  - {id: l3_f1_002, kind: scene, name: l3_f1_002, scene: 759, size: 5792}
+  - {id: l3_f1_004, kind: scene, name: l3_f1_004, scene: 760, size: 5680}
+  - {id: l3_f1_005, kind: scene, name: l3_f1_005, scene: 761, size: 6768}
+  - {id: l3_f1_006, kind: scene, name: l3_f1_006, scene: 762, size: 7408}
+  - {id: l3_f2_000, kind: scene, name: l3_f2_000, scene: 763, size: 7120}
+  - {id: l3_f2_001, kind: scene, name: l3_f2_001, scene: 764, size: 7088}
+  - {id: l3_f2_002, kind: scene, name: l3_f2_002, scene: 765, size: 7120}
+  - {id: l3_f2_003, kind: scene, name: l3_f2_003, scene: 766, size: 7120}
+  - {id: l3_f2_004, kind: scene, name: l3_f2_004, scene: 767, size: 3520}
+  - {id: l3_f2_005, kind: scene, name: l3_f2_005, scene: 768, size: 8224}
+  - {id: l3_f3_000, kind: scene, name: l3_f3_000, scene: 769, size: 5984}
+  - {id: l3_f3_001, kind: scene, name: l3_f3_001, scene: 770, size: 4400}
+  - {id: l3_f3_002, kind: scene, name: l3_f3_002, scene: 771, size: 7168}
+  - {id: l3_f3_003, kind: scene, name: l3_f3_003, scene: 772, size: 6224}
+  - {id: l3_f3_004, kind: scene, name: l3_f3_004, scene: 773, size: 4976}
+  - {id: l3_f3_005, kind: scene, name: l3_f3_005, scene: 774, size: 4960}
+  - {id: l3_f4_000, kind: scene, name: l3_f4_000, scene: 775, size: 4848}
+  - {id: l3_f4_001, kind: scene, name: l3_f4_001, scene: 776, size: 7984}
+  - {id: l3_f5_000, kind: scene, name: l3_f5_000, scene: 777, size: 5632}
+  - {id: l3_f5_001, kind: scene, name: l3_f5_001, scene: 778, size: 6016}
+  - {id: l3_hiha_bo_fall, kind: scene, name: l3_hiha_bo_fall, scene: 779, size: 48656}
+  - {id: l3_hiha_bo_idle, kind: scene, name: l3_hiha_bo_idle, scene: 780, size: 5872}
+  - {id: l3_l1_000, kind: scene, name: l3_l1_000, scene: 781, size: 4672}
+  - {id: l3_l2_000, kind: scene, name: l3_l2_000, scene: 782, size: 50368}
+  - {id: l3_l3_000, kind: scene, name: l3_l3_000, scene: 783, size: 7680}
+  - {id: l3_m1_000, kind: scene, name: l3_m1_000, scene: 784, size: 10416}
+  - {id: l3_m3_000a, kind: scene, name: l3_m3_000a, scene: 785, size: 7120}
+  - {id: l3_m3_000b, kind: scene, name: l3_m3_000b, scene: 786, size: 7120}
+  - {id: l3_m3_001, kind: scene, name: l3_m3_001, scene: 787, size: 7120}
+  - {id: l3_m3_002, kind: scene, name: l3_m3_002, scene: 788, size: 7120}
+  - {id: l3_m3_005, kind: scene, name: l3_m3_005, scene: 789, size: 7904}
+  - {id: l3_m4_000, kind: scene, name: l3_m4_000, scene: 790, size: 10672}
+  - {id: l3_m4_001, kind: scene, name: l3_m4_001, scene: 791, size: 4672}
+  - {id: l3_m4_002, kind: scene, name: l3_m4_002, scene: 792, size: 7456}
+  - {id: l3_m4_003, kind: scene, name: l3_m4_003, scene: 793, size: 6016}
+  - {id: l3_m5_000, kind: scene, name: l3_m5_000, scene: 794, size: 7232}
+  - {id: l3_m7_000, kind: scene, name: l3_m7_000, scene: 795, size: 7712}
+  - {id: l3_m7_001, kind: scene, name: l3_m7_001, scene: 796, size: 6384}
+  - {id: l3_m8_000, kind: scene, name: l3_m8_000, scene: 797, size: 7408}
+  - {id: l3_m8_001, kind: scene, name: l3_m8_001, scene: 798, size: 5616}
+  - {id: l3_p1_000, kind: scene, name: l3_p1_000, scene: 799, size: 31904}
+  - {id: l3_p1_001, kind: scene, name: l3_p1_001, scene: 800, size: 8896}
+  - {id: l3_p1_002, kind: scene, name: l3_p1_002, scene: 801, size: 7056}
+  - {id: l3_p1_003, kind: scene, name: l3_p1_003, scene: 802, size: 10624}
+  - {id: l3_p1_004, kind: scene, name: l3_p1_004, scene: 803, size: 11232}
+  - {id: l3_p1_005, kind: scene, name: l3_p1_005, scene: 804, size: 5152}
+  - {id: l3_p1_006, kind: scene, name: l3_p1_006, scene: 805, size: 15840}
+  - {id: l3_p2_000, kind: scene, name: l3_p2_000, scene: 806, size: 38032}
+  - {id: l3_p2_001, kind: scene, name: l3_p2_001, scene: 807, size: 7808}
+  - {id: l3_p2_002, kind: scene, name: l3_p2_002, scene: 808, size: 6592}
+  - {id: l3_p2_003, kind: scene, name: l3_p2_003, scene: 809, size: 7968}
+  - {id: l3_p2_004, kind: scene, name: l3_p2_004, scene: 810, size: 7808}
+  - {id: l3_p2_005, kind: scene, name: l3_p2_005, scene: 811, size: 7888}
+  - {id: l3_p2_006, kind: scene, name: l3_p2_006, scene: 812, size: 9424}
+  - {id: l3_p2_007, kind: scene, name: l3_p2_007, scene: 813, size: 7680}
+  - {id: l3_p3_000, kind: scene, name: l3_p3_000, scene: 814, size: 36400}
+  - {id: l3_p3_001, kind: scene, name: l3_p3_001, scene: 815, size: 5824}
+  - {id: l3_p3_002, kind: scene, name: l3_p3_002, scene: 816, size: 6496}
+  - {id: l3_p3_003, kind: scene, name: l3_p3_003, scene: 817, size: 6816}
+  - {id: l3_p3_004, kind: scene, name: l3_p3_004, scene: 818, size: 11216}
+  - {id: l3_re_pose, kind: scene, name: l3_re_pose, scene: 819, size: 8896, levels: [level3], scripts: [level3_comp]}
+  - {id: l3_s1_000, kind: scene, name: l3_s1_000, scene: 820, size: 4368}
+  - {id: l3_s1_001, kind: scene, name: l3_s1_001, scene: 821, size: 8016}
+  - {id: l3_s2_000, kind: scene, name: l3_s2_000, scene: 822, size: 5888}
+  - {id: l3_s2_001, kind: scene, name: l3_s2_001, scene: 823, size: 8592}
+  - {id: l3_s3_000, kind: scene, name: l3_s3_000, scene: 824, size: 9216}
+  - {id: l3_s3_001, kind: scene, name: l3_s3_001, scene: 825, size: 9232}
+  - {id: l3_s3_002, kind: scene, name: l3_s3_002, scene: 826, size: 4432}
+  - {id: l3_s3_003, kind: scene, name: l3_s3_003, scene: 827, size: 7024}
+  - {id: l3_s3_004, kind: scene, name: l3_s3_004, scene: 828, size: 7152}
+  - {id: l3_s4_000a, kind: scene, name: l3_s4_000a, scene: 829, size: 6448}
+  - {id: l3_s4_000b, kind: scene, name: l3_s4_000b, scene: 830, size: 6320}
+  - {id: l3_scaf_hit, kind: scene, name: l3_scaf_hit, scene: 831, size: 10880, levels: [level3], scripts: [level3_balcony]}
+  - {id: l3_scaf_hit2, kind: scene, name: l3_scaf_hit2, scene: 832, size: 10880, levels: [level3], scripts: [level3_balcony]}
+  - {id: l3_t1_000, kind: scene, name: l3_t1_000, scene: 833, size: 4560}
+  - {id: l3_t1_005, kind: scene, name: l3_t1_005, scene: 834, size: 4896}
+  - {id: l3_t1_006, kind: scene, name: l3_t1_006, scene: 835, size: 9840}
+  - {id: l3_t2_000, kind: scene, name: l3_t2_000, scene: 836, size: 5008}
+  - {id: l3_t2_001, kind: scene, name: l3_t2_001, scene: 837, size: 4240}
+  - {id: l3_t2_006, kind: scene, name: l3_t2_006, scene: 838, size: 7840}
+  - {id: l3_t2_007, kind: scene, name: l3_t2_007, scene: 839, size: 5440}
+  - {id: l3_t3, kind: scene, name: l3_t3, scene: 840, size: 9024}
+  - {id: l3_t3_000, kind: scene, name: l3_t3_000, scene: 841, size: 7136}
+  - {id: l3_t3_001, kind: scene, name: l3_t3_001, scene: 842, size: 19520}
+  - {id: l3_t4_006, kind: scene, name: l3_t4_006, scene: 843, size: 9296}
+  - {id: l4_manaquin, kind: scene, name: l4_manaquin, scene: 844, size: 3984}
+  - {id: l4_panel_a_l, kind: scene, name: l4_panel_a_l, scene: 845, size: 544}
+  - {id: l4_panel_a_r, kind: scene, name: l4_panel_a_r, scene: 846, size: 496}
+  - {id: l4_panel_b_l, kind: scene, name: l4_panel_b_l, scene: 847, size: 576}
+  - {id: l4_panel_b_r, kind: scene, name: l4_panel_b_r, scene: 848, size: 560}
+  - {id: l4_panel_c_l, kind: scene, name: l4_panel_c_l, scene: 849, size: 672}
+  - {id: l4_panel_c_r, kind: scene, name: l4_panel_c_r, scene: 850, size: 544}
+  - {id: l4_panel_d_l, kind: scene, name: l4_panel_d_l, scene: 851, size: 480}
+  - {id: l4_panel_d_r, kind: scene, name: l4_panel_d_r, scene: 852, size: 464}
+  - {id: l4_panel_e_l, kind: scene, name: l4_panel_e_l, scene: 853, size: 560}
+  - {id: l4_panel_e_r, kind: scene, name: l4_panel_e_r, scene: 854, size: 528}
+  - {id: l4_panel_f_l, kind: scene, name: l4_panel_f_l, scene: 855, size: 1312}
+  - {id: l4_panel_f_r, kind: scene, name: l4_panel_f_r, scene: 856, size: 656}
+  - {id: l4_panel_g_l, kind: scene, name: l4_panel_g_l, scene: 857, size: 704}
+  - {id: l4_panel_g_r, kind: scene, name: l4_panel_g_r, scene: 858, size: 560}
+  - {id: l4_railcar, kind: scene, name: l4_railcar, scene: 859, size: 1264}
+  - {id: l4_skull, kind: scene, name: l4_skull, scene: 860, size: 8896}
+  - {id: l4_spider, kind: scene, name: l4_spider, scene: 861, size: 3712}
+  - {id: l51_Ver_roof, kind: scene, name: l51_Ver_roof, scene: 862, size: 37328}
+  - {id: l51_bus_a, kind: scene, name: l51_bus_a, scene: 863, size: 111744, levels: [level51], scripts: [level51_chapter1]}
+  - {id: l51_bus_b, kind: scene, name: l51_bus_b, scene: 865, size: 124128, levels: [level51], scripts: [level51_chapter5]}
+  - {id: l51_bus_b_att, kind: scene, name: l51_bus_b_att, scene: 866, size: 129776}
+  - {id: l51_bus_c, kind: scene, name: l51_bus_c, scene: 868, size: 147680}
+  - {id: l51_bus_c_att, kind: scene, name: l51_bus_c_att, scene: 869, size: 115424}
+  - {id: l51_bus_chase, kind: scene, name: l51_bus_chase, scene: 873, size: 104368, levels: [level51], scripts: [level51_chapter8]}
+  - {id: l51_bus_crash, kind: scene, name: l51_bus_crash, scene: 891, size: 8080}
+  - {id: l51_bus_d, kind: scene, name: l51_bus_d, scene: 892, size: 322864}
+  - {id: l51_bus_d_att, kind: scene, name: l51_bus_d_att, scene: 893, size: 189680}
+  - {id: l51_bus_e, kind: scene, name: l51_bus_e, scene: 897, size: 131216, levels: [level51], scripts: [level51_chapter5]}
+  - {id: l51_bus_e2, kind: scene, name: l51_bus_e2, scene: 898, size: 133952}
+  - {id: l51_bus_e_att, kind: scene, name: l51_bus_e_att, scene: 899, size: 129056}
+  - {id: l51_bus_end, kind: scene, name: l51_bus_end, scene: 902, size: 179568}
+  - {id: l51_bus_f, kind: scene, name: l51_bus_f, scene: 909, size: 104624}
+  - {id: l51_bus_hide, kind: scene, name: l51_bus_hide, scene: 912, size: 162272, levels: [level51], scripts: [level51_chapter5]}
+  - {id: l51_bus_line, kind: scene, name: l51_bus_line, scene: 914, size: 11216}
+  - {id: l51_bus_mid, kind: scene, name: l51_bus_mid, scene: 915, size: 107056}
+  - {id: l51_bus_stop, kind: scene, name: l51_bus_stop, scene: 920, size: 7760}
+  - {id: l51_bus_stopngo, kind: scene, name: l51_bus_stopngo, scene: 921, size: 2080}
+  - {id: l51_c1, kind: scene, name: l51_c1, scene: 922, size: 104032}
+  - {id: l51_c10, kind: scene, name: l51_c10, scene: 923, size: 12368}
+  - {id: l51_c11, kind: scene, name: l51_c11, scene: 924, size: 87840}
+  - {id: l51_c11_sub, kind: scene, name: l51_c11_sub, scene: 925, size: 496}
+  - {id: l51_c12, kind: scene, name: l51_c12, scene: 926, size: 116080, levels: [level51], scripts: [level51_chapter2, level51_chapter2a]}
+  - {id: l51_c2, kind: scene, name: l51_c2, scene: 940, size: 121664, levels: [level51], scripts: [level51_chapter9]}
+  - {id: l51_c4, kind: scene, name: l51_c4, scene: 977, size: 137920}
+  - {id: l51_c5, kind: scene, name: l51_c5, scene: 1007, size: 171968, levels: [level51], scripts: [level51_chapter9]}
+  - {id: l51_c6, kind: scene, name: l51_c6, scene: 1025, size: 54016}
+  - {id: l51_c6_a, kind: scene, name: l51_c6_a, scene: 1026, size: 123024}
+  - {id: l51_c6_b1, kind: scene, name: l51_c6_b1, scene: 1046, size: 113936}
+  - {id: l51_c6_b2, kind: scene, name: l51_c6_b2, scene: 1047, size: 168288}
+  - {id: l51_c6_b3, kind: scene, name: l51_c6_b3, scene: 1048, size: 83200}
+  - {id: l51_c6_b4, kind: scene, name: l51_c6_b4, scene: 1049, size: 77744}
+  - {id: l51_c6_b4_b, kind: scene, name: l51_c6_b4_b, scene: 1050, size: 127504}
+  - {id: l51_c6_b5, kind: scene, name: l51_c6_b5, scene: 1052, size: 83360}
+  - {id: l51_c6_cops, kind: scene, name: l51_c6_cops, scene: 1053, size: 2320}
+  - {id: l51_c6_hurr, kind: scene, name: l51_c6_hurr, scene: 1054, size: 74640}
+  - {id: l51_c6_panz, kind: scene, name: l51_c6_panz, scene: 1055, size: 180864}
+  - {id: l51_c7, kind: scene, name: l51_c7, scene: 1056, size: 151200, levels: [level51], scripts: [level51_chapter2a, level51_chapter3]}
+  - {id: l51_c8, kind: scene, name: l51_c8, scene: 1058, size: 113712, levels: [level51], scripts: [level51_chapter3]}
+  - {id: l51_c9, kind: scene, name: l51_c9, scene: 1061, size: 164656, levels: [level51], scripts: [level51_chapter5]}
+  - {id: l51_c9_a, kind: scene, name: l51_c9_a, scene: 1062, size: 159568, levels: [level51], scripts: [level51_chapter5, level51_chapter8]}
+  - {id: l51_in_sub, kind: scene, name: l51_in_sub, scene: 1072, size: 4400}
+  - {id: l51_l1, kind: scene, name: l51_l1, scene: 1073, size: 27504}
+  - {id: l51_l1_000, kind: scene, name: l51_l1_000, scene: 1074, size: 2208}
+  - {id: l51_l1_001, kind: scene, name: l51_l1_001, scene: 1075, size: 2432}
+  - {id: l51_l1_002, kind: scene, name: l51_l1_002, scene: 1076, size: 2352}
+  - {id: l51_l1_003, kind: scene, name: l51_l1_003, scene: 1077, size: 2784}
+  - {id: l51_l2, kind: scene, name: l51_l2, scene: 1078, size: 45872}
+  - {id: l51_l2_000, kind: scene, name: l51_l2_000, scene: 1079, size: 4640}
+  - {id: l51_l2_001, kind: scene, name: l51_l2_001, scene: 1080, size: 3072}
+  - {id: l51_l2_002, kind: scene, name: l51_l2_002, scene: 1081, size: 6176}
+  - {id: l51_l2_003, kind: scene, name: l51_l2_003, scene: 1082, size: 4384}
+  - {id: l51_l2_004, kind: scene, name: l51_l2_004, scene: 1083, size: 5216}
+  - {id: l51_l2_005, kind: scene, name: l51_l2_005, scene: 1084, size: 3328}
+  - {id: l51_l2_006, kind: scene, name: l51_l2_006, scene: 1085, size: 5248}
+  - {id: l51_l2_b, kind: scene, name: l51_l2_b, scene: 1086, size: 45952}
+  - {id: l51_l3_000, kind: scene, name: l51_l3_000, scene: 1087, size: 2400}
+  - {id: l51_l3_001, kind: scene, name: l51_l3_001, scene: 1088, size: 2352}
+  - {id: l51_l3_002, kind: scene, name: l51_l3_002, scene: 1089, size: 2656}
+  - {id: l51_l4_000, kind: scene, name: l51_l4_000, scene: 1090, size: 2432}
+  - {id: l51_l4_001, kind: scene, name: l51_l4_001, scene: 1091, size: 3344}
+  - {id: l51_p1, kind: scene, name: l51_p1, scene: 1092, size: 19920}
+  - {id: l51_p1_000, kind: scene, name: l51_p1_000, scene: 1093, size: 4672}
+  - {id: l51_p1_001, kind: scene, name: l51_p1_001, scene: 1094, size: 2368}
+  - {id: l51_p1_002, kind: scene, name: l51_p1_002, scene: 1095, size: 5424}
+  - {id: l51_p1_003, kind: scene, name: l51_p1_003, scene: 1096, size: 5616}
+  - {id: l51_p1_004, kind: scene, name: l51_p1_004, scene: 1097, size: 5216}
+  - {id: l51_poizo_01, kind: scene, name: l51_poizo_01, scene: 1098, size: 3760}
+  - {id: l51_ver_run, kind: scene, name: l51_ver_run, scene: 1099, size: 85328}
+  - {id: l52_c1, kind: scene, name: l52_c1, scene: 1100, size: 162096, levels: [level52], scripts: [level52_chapter1]}
+  - {id: l52_c1_a, kind: scene, name: l52_c1_a, scene: 1101, size: 176784, levels: [level52], scripts: [level52_chapter1]}
+  - {id: l52_c2, kind: scene, name: l52_c2, scene: 1166, size: 138768, levels: [level52], scripts: ["36763710", level52, level52_chapter4]}
+  - {id: l52_c4, kind: scene, name: l52_c4, scene: 1190, size: 162592}
+  - {id: l52_c5, kind: scene, name: l52_c5, scene: 1205, size: 143520, levels: [level52], scripts: [level52_chapter1, level52_chapter2]}
+  - {id: l52_c6, kind: scene, name: l52_c6, scene: 1217, size: 154048, levels: [level52], scripts: [level52_chapter4]}
+  - {id: l52_c7, kind: scene, name: l52_c7, scene: 1226, size: 142768, levels: [level52], scripts: [level52_chapter1]}
+  - {id: l52_crouch, kind: scene, name: l52_crouch, scene: 1228, size: 1808}
+  - {id: l52_crouch_end, kind: scene, name: l52_crouch_end, scene: 1229, size: 2304}
+  - {id: l52_in_sub, kind: scene, name: l52_in_sub, scene: 1230, size: 1264}
+  - {id: l52_p1_000, kind: scene, name: l52_p1_000, scene: 1231, size: 51456}
+  - {id: l52_p1_001, kind: scene, name: l52_p1_001, scene: 1232, size: 20672}
+  - {id: l52_p1_002, kind: scene, name: l52_p1_002, scene: 1233, size: 18656}
+  - {id: l52_p1_003, kind: scene, name: l52_p1_003, scene: 1234, size: 23088}
+  - {id: l52_p1_004, kind: scene, name: l52_p1_004, scene: 1235, size: 10208}
+  - {id: l52_p1_005, kind: scene, name: l52_p1_005, scene: 1236, size: 22272}
+  - {id: l52_p1_006, kind: scene, name: l52_p1_006, scene: 1237, size: 9152}
+  - {id: l52_poizo01, kind: scene, name: l52_poizo01, scene: 1238, size: 1680}
+  - {id: l52_s1_000, kind: scene, name: l52_s1_000, scene: 1239, size: 15712}
+  - {id: l52_s1_001, kind: scene, name: l52_s1_001, scene: 1240, size: 12400}
+  - {id: l54_boss_intro, kind: scene, name: l54_boss_intro, scene: 1241, size: 148272, levels: [level54], scripts: [level54_boss]}
+  - {id: l54_c1, kind: scene, name: l54_c1, scene: 1242, size: 166672, levels: [level54], scripts: [level54_streets]}
+  - {id: l54_c1_a, kind: scene, name: l54_c1_a, scene: 1243, size: 191504}
+  - {id: l54_c2, kind: scene, name: l54_c2, scene: 1270, size: 116304, levels: [level54], scripts: [level54_park]}
+  - {id: l54_c3_a, kind: scene, name: l54_c3_a, scene: 1274, size: 121168, levels: [level54], scripts: [level54_popsicle]}
+  - {id: l54_c3_b, kind: scene, name: l54_c3_b, scene: 1276, size: 195648, levels: [level54], scripts: [level54_boss]}
+  - {id: l54_c3_c, kind: scene, name: l54_c3_c, scene: 1286, size: 141824, levels: [level54], scripts: [level54_boss]}
+  - {id: l54_c4, kind: scene, name: l54_c4, scene: 1291, size: 98608}
+  - {id: l54_c5, kind: scene, name: l54_c5, scene: 1303, size: 174128}
+  - {id: l54_c6, kind: scene, name: l54_c6, scene: 1310, size: 130880}
+  - {id: l54_c6_a, kind: scene, name: l54_c6_a, scene: 1311, size: 123056, levels: [level54], scripts: [level54_park]}
+  - {id: l54_flyby, kind: scene, name: l54_flyby, scene: 1318, size: 1840}
+  - {id: l54_flyby_2, kind: scene, name: l54_flyby_2, scene: 1319, size: 1712}
+  - {id: l54_flyby_3, kind: scene, name: l54_flyby_3, scene: 1320, size: 1568}
+  - {id: l54_flyby_4, kind: scene, name: l54_flyby_4, scene: 1321, size: 1648}
+  - {id: l54_hurry_up01, kind: scene, name: l54_hurry_up01, scene: 1322, size: 7856}
+  - {id: l54_hurry_up02, kind: scene, name: l54_hurry_up02, scene: 1323, size: 8400}
+  - {id: l54_hurry_up03, kind: scene, name: l54_hurry_up03, scene: 1324, size: 7760}
+  - {id: l54_in_sub, kind: scene, name: l54_in_sub, scene: 1325, size: 704}
+  - {id: l55_3kiss, kind: scene, name: l55_3kiss, scene: 1326, size: 4128, levels: [level55], scripts: [level55_party]}
+  - {id: l55_c1, kind: scene, name: l55_c1, scene: 1327, size: 181616}
+  - {id: l55_c2, kind: scene, name: l55_c2, scene: 1333, size: 184144}
+  - {id: l55_c3, kind: scene, name: l55_c3, scene: 1335, size: 156512}
+  - {id: l55_c4, kind: scene, name: l55_c4, scene: 1342, size: 148176}
+  - {id: l55_c5, kind: scene, name: l55_c5, scene: 1344, size: 70560}
+  - {id: l55_c6, kind: scene, name: l55_c6, scene: 1358, size: 125760, levels: [level55], scripts: [level55_punkfight]}
+  - {id: l55_c7, kind: scene, name: l55_c7, scene: 1364, size: 126272}
+  - {id: l55_c9, kind: scene, name: l55_c9, scene: 1366, size: 196368}
+  - {id: l55_dance, kind: scene, name: l55_dance, scene: 1375, size: 42816, levels: [level55], scripts: [level55_party]}
+  - {id: l55_fem_dance_a, kind: scene, name: l55_fem_dance_a, scene: 1376, size: 26496, levels: [level55], scripts: [level55_party]}
+  - {id: l55_fem_dance_b, kind: scene, name: l55_fem_dance_b, scene: 1377, size: 25664, levels: [level55], scripts: [level55_party]}
+  - {id: l55_gun_idle, kind: scene, name: l55_gun_idle, scene: 1378, size: 1616}
+  - {id: l55_gun_shot, kind: scene, name: l55_gun_shot, scene: 1379, size: 2496}
+  - {id: l55_kickopen, kind: scene, name: l55_kickopen, scene: 1380, size: 99168, levels: [level55], scripts: [level55_punkfight]}
+  - {id: l55_kickopen01, kind: scene, name: l55_kickopen01, scene: 1381, size: 22080}
+  - {id: l55_kickopen03, kind: scene, name: l55_kickopen03, scene: 1382, size: 22080}
+  - {id: l55_kickopen04, kind: scene, name: l55_kickopen04, scene: 1383, size: 22080}
+  - {id: l55_kiss, kind: scene, name: l55_kiss, scene: 1384, size: 50368}
+  - {id: l55_kiss2, kind: scene, name: l55_kiss2, scene: 1385, size: 51648, levels: [level55], scripts: [level55_party]}
+  - {id: l55_l1_000, kind: scene, name: l55_l1_000, scene: 1386, size: 6752}
+  - {id: l55_l1_002, kind: scene, name: l55_l1_002, scene: 1387, size: 5088}
+  - {id: l55_make_out, kind: scene, name: l55_make_out, scene: 1388, size: 41600, levels: [level55], scripts: [level55_party]}
+  - {id: l55_mug, kind: scene, name: l55_mug, scene: 1389, size: 121888, levels: [level55], scripts: [level55_punkfight]}
+  - {id: l55_rem_smash, kind: scene, name: l55_rem_smash, scene: 1390, size: 158048, levels: [level55], scripts: [level55_lizziesattack, level55_punkfight]}
+  - {id: l55_s1_000, kind: scene, name: l55_s1_000, scene: 1391, size: 7120}
+  - {id: l55_s1_001, kind: scene, name: l55_s1_001, scene: 1392, size: 7120}
+  - {id: l55_s2_000, kind: scene, name: l55_s2_000, scene: 1393, size: 7120}
+  - {id: l55_s2_001, kind: scene, name: l55_s2_001, scene: 1394, size: 7120}
+  - {id: l55_s2_002, kind: scene, name: l55_s2_002, scene: 1395, size: 7120}
+  - {id: l55_s2_003, kind: scene, name: l55_s2_003, scene: 1396, size: 7120}
+  - {id: l55_s2_004, kind: scene, name: l55_s2_004, scene: 1397, size: 7120}
+  - {id: l5_a1_000, kind: scene, name: l5_a1_000, scene: 1398, size: 4048}
+  - {id: l5_a1_001, kind: scene, name: l5_a1_001, scene: 1399, size: 3168}
+  - {id: l5_a1_002, kind: scene, name: l5_a1_002, scene: 1400, size: 6320}
+  - {id: l5_a1_003, kind: scene, name: l5_a1_003, scene: 1401, size: 5808}
+  - {id: l5_a2_000, kind: scene, name: l5_a2_000, scene: 1402, size: 3520}
+  - {id: l5_a2_001, kind: scene, name: l5_a2_001, scene: 1403, size: 5040}
+  - {id: l5_a2_002, kind: scene, name: l5_a2_002, scene: 1404, size: 5888}
+  - {id: l5_a2_003, kind: scene, name: l5_a2_003, scene: 1405, size: 3888}
+  - {id: l5_a3_000, kind: scene, name: l5_a3_000, scene: 1406, size: 4896}
+  - {id: l5_a3_001, kind: scene, name: l5_a3_001, scene: 1407, size: 4608}
+  - {id: l5_a3_002, kind: scene, name: l5_a3_002, scene: 1408, size: 4928}
+  - {id: l5_a3_003, kind: scene, name: l5_a3_003, scene: 1409, size: 4496}
+  - {id: l5_a3_004, kind: scene, name: l5_a3_004, scene: 1410, size: 2352}
+  - {id: l5_a3_005, kind: scene, name: l5_a3_005, scene: 1411, size: 1488}
+  - {id: l5_a3_006, kind: scene, name: l5_a3_006, scene: 1412, size: 6544}
+  - {id: l5_a3_007, kind: scene, name: l5_a3_007, scene: 1413, size: 3616}
+  - {id: l5_a3_008, kind: scene, name: l5_a3_008, scene: 1414, size: 4512}
+  - {id: l5_a3_009, kind: scene, name: l5_a3_009, scene: 1415, size: 4320}
+  - {id: l5_a3_010, kind: scene, name: l5_a3_010, scene: 1416, size: 3904}
+  - {id: l5_a3_011, kind: scene, name: l5_a3_011, scene: 1417, size: 2816}
+  - {id: l5_a3_012, kind: scene, name: l5_a3_012, scene: 1418, size: 4032}
+  - {id: l5_a3_013, kind: scene, name: l5_a3_013, scene: 1419, size: 4240}
+  - {id: l5_a3_014, kind: scene, name: l5_a3_014, scene: 1420, size: 4240}
+  - {id: l5_a4_000, kind: scene, name: l5_a4_000, scene: 1421, size: 2880}
+  - {id: l5_a4_001, kind: scene, name: l5_a4_001, scene: 1422, size: 4752}
+  - {id: l5_a4_002, kind: scene, name: l5_a4_002, scene: 1423, size: 2912}
+  - {id: l5_a5_000, kind: scene, name: l5_a5_000, scene: 1424, size: 5088}
+  - {id: l5_a5_001, kind: scene, name: l5_a5_001, scene: 1425, size: 5072}
+  - {id: l5_a5_002, kind: scene, name: l5_a5_002, scene: 1426, size: 5984}
+  - {id: l5_a5_003, kind: scene, name: l5_a5_003, scene: 1427, size: 5232}
+  - {id: l5_a5_004, kind: scene, name: l5_a5_004, scene: 1428, size: 5152}
+  - {id: l5_a5_005, kind: scene, name: l5_a5_005, scene: 1429, size: 5040}
+  - {id: l5_a6_000, kind: scene, name: l5_a6_000, scene: 1430, size: 4448}
+  - {id: l5_a6_001, kind: scene, name: l5_a6_001, scene: 1431, size: 5312}
+  - {id: l5_a6_002, kind: scene, name: l5_a6_002, scene: 1432, size: 3760}
+  - {id: l5_bang_door, kind: scene, name: l5_bang_door, scene: 1433, size: 10640}
+  - {id: l5_c1, kind: scene, name: l5_c1, scene: 1434, size: 143344}
+  - {id: l5_c2, kind: scene, name: l5_c2, scene: 1437, size: 183232, levels: [level5], scripts: [level5_chapter1, level5_chapter1a]}
+  - {id: l5_c3, kind: scene, name: l5_c3, scene: 1449, size: 111024, levels: [level5], scripts: [level5_chapter3]}
+  - {id: l5_c4, kind: scene, name: l5_c4, scene: 1455, size: 149168, levels: [level5], scripts: [level5_chapter1]}
+  - {id: l5_c5, kind: scene, name: l5_c5, scene: 1458, size: 139552, levels: [level5], scripts: [level5_chapter1a]}
+  - {id: l5_c6, kind: scene, name: l5_c6, scene: 1463, size: 120896, levels: [level5], scripts: [level5_chapter2, level5_chapter3]}
+  - {id: l5_c7, kind: scene, name: l5_c7, scene: 1473, size: 171712, levels: [level5], scripts: [level5_chapter3]}
+  - {id: l5_c8, kind: scene, name: l5_c8, scene: 1480, size: 172400, levels: [level5], scripts: [level5_chapter3]}
+  - {id: l5_c8_a, kind: scene, name: l5_c8_a, scene: 1481, size: 161520}
+  - {id: l5_c8_b, kind: scene, name: l5_c8_b, scene: 1483, size: 185376, levels: [level5], scripts: [level5_chapter1]}
+  - {id: l5_car, kind: scene, name: l5_car, scene: 1495, size: 60176}
+  - {id: l5_chandelier, kind: scene, name: l5_chandelier, scene: 1496, size: 5376, levels: [level5], scripts: [level5_chapter3]}
+  - {id: l5_chandelier2, kind: scene, name: l5_chandelier2, scene: 1497, size: 2976, levels: [level5], scripts: [level5_chapter3]}
+  - {id: l5_chase_poizo1, kind: scene, name: l5_chase_poizo1, scene: 1498, size: 1712}
+  - {id: l5_chase_poizo2, kind: scene, name: l5_chase_poizo2, scene: 1499, size: 1568}
+  - {id: l5_chase_poizo3, kind: scene, name: l5_chase_poizo3, scene: 1500, size: 2336}
+  - {id: l5_dyn_001, kind: scene, name: l5_dyn_001, scene: 1501, size: 3440}
+  - {id: l5_dyn_002, kind: scene, name: l5_dyn_002, scene: 1502, size: 6416}
+  - {id: l5_dyn_003, kind: scene, name: l5_dyn_003, scene: 1503, size: 3744}
+  - {id: l5_f1, kind: scene, name: l5_f1, scene: 1504, size: 11664}
+  - {id: l5_f1_000, kind: scene, name: l5_f1_000, scene: 1505, size: 4240}
+  - {id: l5_l1_000, kind: scene, name: l5_l1_000, scene: 1506, size: 4240}
+  - {id: l5_l1_001, kind: scene, name: l5_l1_001, scene: 1507, size: 4240}
+  - {id: l5_l1_002, kind: scene, name: l5_l1_002, scene: 1508, size: 4240}
+  - {id: l5_l1_003, kind: scene, name: l5_l1_003, scene: 1509, size: 4240}
+  - {id: l5_l2_000, kind: scene, name: l5_l2_000, scene: 1510, size: 4240}
+  - {id: l5_l2_001, kind: scene, name: l5_l2_001, scene: 1511, size: 4240}
+  - {id: l5_l2_006, kind: scene, name: l5_l2_006, scene: 1512, size: 4240}
+  - {id: l5_l2_008, kind: scene, name: l5_l2_008, scene: 1513, size: 4240}
+  - {id: l5_l2_009, kind: scene, name: l5_l2_009, scene: 1514, size: 4240}
+  - {id: l5_l2_010, kind: scene, name: l5_l2_010, scene: 1515, size: 4240}
+  - {id: l5_l2_011, kind: scene, name: l5_l2_011, scene: 1516, size: 4240}
+  - {id: l5_l2_012, kind: scene, name: l5_l2_012, scene: 1517, size: 4240}
+  - {id: l5_l2_013, kind: scene, name: l5_l2_013, scene: 1518, size: 4240}
+  - {id: l5_l2_014, kind: scene, name: l5_l2_014, scene: 1519, size: 4240}
+  - {id: l5_l2_018, kind: scene, name: l5_l2_018, scene: 1520, size: 4240}
+  - {id: l5_l2_020, kind: scene, name: l5_l2_020, scene: 1521, size: 4240}
+  - {id: l5_l3_000, kind: scene, name: l5_l3_000, scene: 1522, size: 4240}
+  - {id: l5_l3_001, kind: scene, name: l5_l3_001, scene: 1523, size: 4240}
+  - {id: l5_l3_002, kind: scene, name: l5_l3_002, scene: 1524, size: 4240}
+  - {id: l5_l3_003, kind: scene, name: l5_l3_003, scene: 1525, size: 4240}
+  - {id: l5_l3_a, kind: scene, name: l5_l3_a, scene: 1526, size: 53760}
+  - {id: l5_l4_000, kind: scene, name: l5_l4_000, scene: 1527, size: 28816}
+  - {id: l5_l5_000a, kind: scene, name: l5_l5_000a, scene: 1528, size: 3344}
+  - {id: l5_l5_000b, kind: scene, name: l5_l5_000b, scene: 1529, size: 2944}
+  - {id: l5_l5_000c, kind: scene, name: l5_l5_000c, scene: 1530, size: 2400}
+  - {id: l5_l5_001a, kind: scene, name: l5_l5_001a, scene: 1531, size: 4272}
+  - {id: l5_l5_001b, kind: scene, name: l5_l5_001b, scene: 1532, size: 4496}
+  - {id: l5_l5_001c, kind: scene, name: l5_l5_001c, scene: 1533, size: 4640}
+  - {id: l5_l5_001d, kind: scene, name: l5_l5_001d, scene: 1534, size: 5840}
+  - {id: l5_l5_002a, kind: scene, name: l5_l5_002a, scene: 1535, size: 2080}
+  - {id: l5_l5_002b, kind: scene, name: l5_l5_002b, scene: 1536, size: 2816}
+  - {id: l5_l5_003a, kind: scene, name: l5_l5_003a, scene: 1537, size: 4848}
+  - {id: l5_l5_003b, kind: scene, name: l5_l5_003b, scene: 1538, size: 6912}
+  - {id: l5_l5_003c, kind: scene, name: l5_l5_003c, scene: 1539, size: 2032}
+  - {id: l5_l6_000, kind: scene, name: l5_l6_000, scene: 1540, size: 5888}
+  - {id: l5_leg_hurt, kind: scene, name: l5_leg_hurt, scene: 1541, size: 3888}
+  - {id: l5_m10_000, kind: scene, name: l5_m10_000, scene: 1542, size: 5216}
+  - {id: l5_m10_002, kind: scene, name: l5_m10_002, scene: 1543, size: 4960}
+  - {id: l5_m10_004, kind: scene, name: l5_m10_004, scene: 1544, size: 5616}
+  - {id: l5_m13_001, kind: scene, name: l5_m13_001, scene: 1545, size: 6544}
+  - {id: l5_m1_002, kind: scene, name: l5_m1_002, scene: 1546, size: 3376}
+  - {id: l5_m2_000, kind: scene, name: l5_m2_000, scene: 1547, size: 7072}
+  - {id: l5_m2_000a, kind: scene, name: l5_m2_000a, scene: 1548, size: 4720}
+  - {id: l5_m2_000b, kind: scene, name: l5_m2_000b, scene: 1549, size: 4032}
+  - {id: l5_m2_000c, kind: scene, name: l5_m2_000c, scene: 1550, size: 6176}
+  - {id: l5_m2_000d, kind: scene, name: l5_m2_000d, scene: 1551, size: 9392}
+  - {id: l5_m2_001, kind: scene, name: l5_m2_001, scene: 1552, size: 6320}
+  - {id: l5_m2_001a, kind: scene, name: l5_m2_001a, scene: 1553, size: 4096}
+  - {id: l5_m2_001b, kind: scene, name: l5_m2_001b, scene: 1554, size: 4432}
+  - {id: l5_m2_001c, kind: scene, name: l5_m2_001c, scene: 1555, size: 4176}
+  - {id: l5_m2_002, kind: scene, name: l5_m2_002, scene: 1556, size: 12384}
+  - {id: l5_m2_003, kind: scene, name: l5_m2_003, scene: 1557, size: 3968}
+  - {id: l5_m2_004, kind: scene, name: l5_m2_004, scene: 1558, size: 18512}
+  - {id: l5_m2_005, kind: scene, name: l5_m2_005, scene: 1559, size: 3936}
+  - {id: l5_m2_006, kind: scene, name: l5_m2_006, scene: 1560, size: 10720}
+  - {id: l5_m5_000, kind: scene, name: l5_m5_000, scene: 1561, size: 4944}
+  - {id: l5_m5_001, kind: scene, name: l5_m5_001, scene: 1562, size: 5616}
+  - {id: l5_m5_002, kind: scene, name: l5_m5_002, scene: 1563, size: 6736}
+  - {id: l5_m5_003, kind: scene, name: l5_m5_003, scene: 1564, size: 2608}
+  - {id: l5_m5_004, kind: scene, name: l5_m5_004, scene: 1565, size: 8752}
+  - {id: l5_m5_005, kind: scene, name: l5_m5_005, scene: 1566, size: 2624}
+  - {id: l5_m5_006, kind: scene, name: l5_m5_006, scene: 1567, size: 4416}
+  - {id: l5_m5_007, kind: scene, name: l5_m5_007, scene: 1568, size: 5072}
+  - {id: l5_m5_008, kind: scene, name: l5_m5_008, scene: 1569, size: 2656}
+  - {id: l5_m5_009, kind: scene, name: l5_m5_009, scene: 1570, size: 3312}
+  - {id: l5_m5_010, kind: scene, name: l5_m5_010, scene: 1571, size: 7680}
+  - {id: l5_m6_000, kind: scene, name: l5_m6_000, scene: 1572, size: 6416}
+  - {id: l5_m8_000, kind: scene, name: l5_m8_000, scene: 1573, size: 5280}
+  - {id: l5_m8_001, kind: scene, name: l5_m8_001, scene: 1574, size: 2736}
+  - {id: l5_m8_002, kind: scene, name: l5_m8_002, scene: 1575, size: 3424}
+  - {id: l5_m8_003, kind: scene, name: l5_m8_003, scene: 1576, size: 2608}
+  - {id: l5_m8_004, kind: scene, name: l5_m8_004, scene: 1577, size: 7632}
+  - {id: l5_p1_000, kind: scene, name: l5_p1_000, scene: 1578, size: 20624}
+  - {id: l5_p1_001, kind: scene, name: l5_p1_001, scene: 1579, size: 5136}
+  - {id: l5_p1_002, kind: scene, name: l5_p1_002, scene: 1580, size: 4544}
+  - {id: l5_p1_003, kind: scene, name: l5_p1_003, scene: 1581, size: 4224}
+  - {id: l5_p1_004, kind: scene, name: l5_p1_004, scene: 1582, size: 6112}
+  - {id: l5_p2_000, kind: scene, name: l5_p2_000, scene: 1583, size: 25776}
+  - {id: l5_p2_001, kind: scene, name: l5_p2_001, scene: 1584, size: 6208}
+  - {id: l5_p2_002, kind: scene, name: l5_p2_002, scene: 1585, size: 4736}
+  - {id: l5_p2_003, kind: scene, name: l5_p2_003, scene: 1586, size: 6048}
+  - {id: l5_p2_004, kind: scene, name: l5_p2_004, scene: 1587, size: 16544}
+  - {id: l5_p3_000, kind: scene, name: l5_p3_000, scene: 1588, size: 41376}
+  - {id: l5_p3_001, kind: scene, name: l5_p3_001, scene: 1589, size: 3456}
+  - {id: l5_p3_002, kind: scene, name: l5_p3_002, scene: 1590, size: 4592}
+  - {id: l5_p3_003, kind: scene, name: l5_p3_003, scene: 1591, size: 8960}
+  - {id: l5_p3_004, kind: scene, name: l5_p3_004, scene: 1592, size: 18752}
+  - {id: l5_p3_005, kind: scene, name: l5_p3_005, scene: 1593, size: 2592}
+  - {id: l5_p3_006, kind: scene, name: l5_p3_006, scene: 1594, size: 2624}
+  - {id: l5_s1_000, kind: scene, name: l5_s1_000, scene: 1595, size: 5216}
+  - {id: l5_s1_001, kind: scene, name: l5_s1_001, scene: 1596, size: 3520}
+  - {id: l5_s1_002, kind: scene, name: l5_s1_002, scene: 1597, size: 4960}
+  - {id: l5_s1_003, kind: scene, name: l5_s1_003, scene: 1598, size: 5328}
+  - {id: l5_s1_004, kind: scene, name: l5_s1_004, scene: 1599, size: 5616}
+  - {id: l5_s1_008, kind: scene, name: l5_s1_008, scene: 1600, size: 4240}
+  - {id: l5_s1_010, kind: scene, name: l5_s1_010, scene: 1601, size: 4240}
+  - {id: l5_s2_000, kind: scene, name: l5_s2_000, scene: 1602, size: 4496}
+  - {id: l5_s2_001, kind: scene, name: l5_s2_001, scene: 1603, size: 11744}
+  - {id: l5_s3, kind: scene, name: l5_s3, scene: 1604, size: 7520}
+  - {id: l5_s3_000, kind: scene, name: l5_s3_000, scene: 1605, size: 4240}
+  - {id: l5_s3_002, kind: scene, name: l5_s3_002, scene: 1606, size: 4928}
+  - {id: l5_s3_003, kind: scene, name: l5_s3_003, scene: 1607, size: 4912}
+  - {id: l5_s3_008, kind: scene, name: l5_s3_008, scene: 1608, size: 4208}
+  - {id: l5_s3_010, kind: scene, name: l5_s3_010, scene: 1609, size: 4208}
+  - {id: l5_s4_000, kind: scene, name: l5_s4_000, scene: 1610, size: 1488}
+  - {id: l5_s4_001, kind: scene, name: l5_s4_001, scene: 1611, size: 6544}
+  - {id: l5_s4_002, kind: scene, name: l5_s4_002, scene: 1612, size: 3616}
+  - {id: l5_s5_000, kind: scene, name: l5_s5_000, scene: 1613, size: 4304}
+  - {id: l5_s5_001, kind: scene, name: l5_s5_001, scene: 1614, size: 5376}
+  - {id: l5_s5_002, kind: scene, name: l5_s5_002, scene: 1615, size: 8128}
+  - {id: l5_s5_003, kind: scene, name: l5_s5_003, scene: 1616, size: 8112}
+  - {id: l5_t10_004, kind: scene, name: l5_t10_004, scene: 1617, size: 16816, levels: [level5], scripts: [level5_chapter2]}
+  - {id: l5_t13_000, kind: scene, name: l5_t13_000, scene: 1618, size: 57696}
+  - {id: l5_t16_000, kind: scene, name: l5_t16_000, scene: 1619, size: 12608}
+  - {id: l5_t1_000, kind: scene, name: l5_t1_000, scene: 1620, size: 2784}
+  - {id: l5_t1_001, kind: scene, name: l5_t1_001, scene: 1621, size: 2752}
+  - {id: l5_t1_004, kind: scene, name: l5_t1_004, scene: 1622, size: 5536}
+  - {id: l5_t1_005, kind: scene, name: l5_t1_005, scene: 1623, size: 4000}
+  - {id: l5_t2_000, kind: scene, name: l5_t2_000, scene: 1624, size: 3728}
+  - {id: l5_t2_001, kind: scene, name: l5_t2_001, scene: 1625, size: 3920}
+  - {id: l5_t2_005, kind: scene, name: l5_t2_005, scene: 1626, size: 1904}
+  - {id: l5_t2_007, kind: scene, name: l5_t2_007, scene: 1627, size: 3920}
+  - {id: l5_t7, kind: scene, name: l5_t7, scene: 1628, size: 73776}
+  - {id: l5_t8_000, kind: scene, name: l5_t8_000, scene: 1629, size: 9904, levels: [level5], scripts: [level5_chapter2]}
+  - {id: l5_t9_004, kind: scene, name: l5_t9_004, scene: 1630, size: 41568, levels: [level5], scripts: [level5_chapter2]}
+  - {id: l5_t9_010, kind: scene, name: l5_t9_010, scene: 1631, size: 25456, levels: [level5], scripts: [level5_chapter2]}
+  - {id: l60_intro, kind: scene, name: l60_intro, scene: 1632, size: 170816, levels: [level60], scripts: [level60_destroyers]}
+  - {id: l61_train_dn, kind: scene, name: l61_train_dn, scene: 1633, size: 8448, levels: [level61], scripts: [level61_punks]}
+  - {id: l61_train_up, kind: scene, name: l61_train_up, scene: 1634, size: 8416, levels: [level61], scripts: [level61_punks]}
+  - {id: l63_train_ac, kind: scene, name: l63_train_ac, scene: 1635, size: 3600, levels: [level63], scripts: [level63_orphans]}
+  - {id: l64_intro, kind: scene, name: l64_intro, scene: 1636, size: 62304}
+  - {id: l70aj_speedbag, kind: scene, name: l70aj_speedbag, scene: 1638, size: 6240}
+  - {id: l70aj_verm, kind: scene, name: l70aj_verm, scene: 1639, size: 77216}
+  - {id: l70boppers, kind: scene, name: l70boppers, scene: 1640, size: 128576}
+  - {id: l70cb_co, kind: scene, name: l70cb_co, scene: 1641, size: 26720}
+  - {id: l70cb_rem, kind: scene, name: l70cb_rem, scene: 1642, size: 22976}
+  - {id: l70cb_verm, kind: scene, name: l70cb_verm, scene: 1643, size: 29280}
+  - {id: l70cl_aj, kind: scene, name: l70cl_aj, scene: 1644, size: 27920}
+  - {id: l70cl_aj_end, kind: scene, name: l70cl_aj_end, scene: 1645, size: 15904}
+  - {id: l70cl_rem, kind: scene, name: l70cl_rem, scene: 1646, size: 31360}
+  - {id: l70cleon, kind: scene, name: l70cleon, scene: 1647, size: 82000}
+  - {id: l70co_aj, kind: scene, name: l70co_aj, scene: 1648, size: 28528}
+  - {id: l70co_sn, kind: scene, name: l70co_sn, scene: 1649, size: 33680}
+  - {id: l70elims, kind: scene, name: l70elims, scene: 1650, size: 105024}
+  - {id: l70huns, kind: scene, name: l70huns, scene: 1651, size: 196176}
+  - {id: l70moons, kind: scene, name: l70moons, scene: 1653, size: 116832}
+  - {id: l70punks, kind: scene, name: l70punks, scene: 1654, size: 139040}
+  - {id: l70remsubway, kind: scene, name: l70remsubway, scene: 1655, size: 6096}
+  - {id: l70saras, kind: scene, name: l70saras, scene: 1656, size: 114672}
+  - {id: l70subblur1, kind: scene, name: l70subblur1, scene: 1657, size: 464}
+  - {id: l70subblur2, kind: scene, name: l70subblur2, scene: 1658, size: 1792}
+  - {id: l70subblur3, kind: scene, name: l70subblur3, scene: 1659, size: 5760}
+  - {id: l70subdrs, kind: scene, name: l70subdrs, scene: 1660, size: 118928}
+  - {id: l70subextr, kind: scene, name: l70subextr, scene: 1662, size: 43248}
+  - {id: l70submap1, kind: scene, name: l70submap1, scene: 1663, size: 4784}
+  - {id: l70submap2, kind: scene, name: l70submap2, scene: 1664, size: 464}
+  - {id: l70submap3, kind: scene, name: l70submap3, scene: 1665, size: 464}
+  - {id: l70submaphd, kind: scene, name: l70submaphd, scene: 1666, size: 2400}
+  - {id: l70substatn, kind: scene, name: l70substatn, scene: 1667, size: 16960}
+  - {id: l70subtunnl, kind: scene, name: l70subtunnl, scene: 1668, size: 1712}
+  - {id: l70sw_rem, kind: scene, name: l70sw_rem, scene: 1669, size: 24368}
+  - {id: l70wonderw, kind: scene, name: l70wonderw, scene: 1670, size: 44496}
+  - {id: l80_c1, kind: scene, name: l80_c1, scene: 1671, size: 117808, levels: [level80], scripts: [level80_chapter1]}
+  - {id: l80_c2, kind: scene, name: l80_c2, scene: 1683, size: 59120}
+  - {id: l80_c3, kind: scene, name: l80_c3, scene: 1684, size: 113008, levels: [level80], scripts: [level80_chapter4]}
+  - {id: l80_c3_a, kind: scene, name: l80_c3_a, scene: 1685, size: 144832, levels: [level80], scripts: [level80_chapter4]}
+  - {id: l80_c3_b, kind: scene, name: l80_c3_b, scene: 1693, size: 113792, levels: [level80], scripts: [level80_chapter4]}
+  - {id: l80_c4, kind: scene, name: l80_c4, scene: 1714, size: 174704, levels: [level80], scripts: [level80_chapter1]}
+  - {id: l80_c5, kind: scene, name: l80_c5, scene: 1718, size: 194672, levels: [level80], scripts: [level80_chapter2]}
+  - {id: l80_c6, kind: scene, name: l80_c6, scene: 1730, size: 142128, levels: [level80], scripts: [level80_chapter3]}
+  - {id: l80_c6_b, kind: scene, name: l80_c6_b, scene: 1731, size: 108880, levels: [level80], scripts: [level80_chapter3]}
+  - {id: l80_c6_c, kind: scene, name: l80_c6_c, scene: 1736, size: 56128}
+  - {id: l80_c7, kind: scene, name: l80_c7, scene: 1744, size: 161136, levels: [level80], scripts: [level80_chapter4]}
+  - {id: l80_crouch, kind: scene, name: l80_crouch, scene: 1750, size: 3936}
+  - {id: l80_crouch_bld, kind: scene, name: l80_crouch_bld, scene: 1751, size: 3552}
+  - {id: l80_grab_kick, kind: scene, name: l80_grab_kick, scene: 1752, size: 28320}
+  - {id: l80_l1, kind: scene, name: l80_l1, scene: 1753, size: 4208}
+  - {id: l80_l1_000, kind: scene, name: l80_l1_000, scene: 1754, size: 5264}
+  - {id: l80_l1_001, kind: scene, name: l80_l1_001, scene: 1755, size: 7920}
+  - {id: l80_l1_002, kind: scene, name: l80_l1_002, scene: 1756, size: 3504}
+  - {id: l80_l2_000, kind: scene, name: l80_l2_000, scene: 1757, size: 5200}
+  - {id: l80_l2_001, kind: scene, name: l80_l2_001, scene: 1758, size: 4064}
+  - {id: l80_l2_002, kind: scene, name: l80_l2_002, scene: 1759, size: 4208}
+  - {id: l80_l2_003, kind: scene, name: l80_l2_003, scene: 1760, size: 13776}
+  - {id: l80_l2_004, kind: scene, name: l80_l2_004, scene: 1761, size: 3376}
+  - {id: l80_l3, kind: scene, name: l80_l3, scene: 1762, size: 72816}
+  - {id: l80_l3_000, kind: scene, name: l80_l3_000, scene: 1763, size: 18368}
+  - {id: l80_l3_001, kind: scene, name: l80_l3_001, scene: 1764, size: 3280}
+  - {id: l80_l3_002, kind: scene, name: l80_l3_002, scene: 1765, size: 12608}
+  - {id: l80_l4_000, kind: scene, name: l80_l4_000, scene: 1767, size: 8928}
+  - {id: l80_m1_000, kind: scene, name: l80_m1_000, scene: 1768, size: 12352}
+  - {id: l80_make_out, kind: scene, name: l80_make_out, scene: 1769, size: 50432, levels: [level80], scripts: [level80_chapter1]}
+  - {id: l80_p1_000, kind: scene, name: l80_p1_000, scene: 1770, size: 31984}
+  - {id: l80_p1_001, kind: scene, name: l80_p1_001, scene: 1771, size: 6592}
+  - {id: l80_p1_002, kind: scene, name: l80_p1_002, scene: 1772, size: 14000}
+  - {id: l80_p1_003, kind: scene, name: l80_p1_003, scene: 1773, size: 4304}
+  - {id: l80_p1_004, kind: scene, name: l80_p1_004, scene: 1774, size: 23024}
+  - {id: l80_s2_000, kind: scene, name: l80_s2_000, scene: 1775, size: 10896}
+  - {id: l80_s2_001, kind: scene, name: l80_s2_001, scene: 1776, size: 7728}
+  - {id: l80_s2_002, kind: scene, name: l80_s2_002, scene: 1777, size: 5360}
+  - {id: l80_s2_003, kind: scene, name: l80_s2_003, scene: 1778, size: 5536}
+  - {id: l80_s2_004, kind: scene, name: l80_s2_004, scene: 1779, size: 8928}
+  - {id: l80_s3_000, kind: scene, name: l80_s3_000, scene: 1780, size: 7120}
+  - {id: l80_t1_001, kind: scene, name: l80_t1_001, scene: 1781, size: 30752}
+  - {id: l81_bos_path01, kind: scene, name: l81_bos_path01, scene: 1782, size: 28400}
+  - {id: l81_bos_path02, kind: scene, name: l81_bos_path02, scene: 1783, size: 59008}
+  - {id: l81_bos_path03, kind: scene, name: l81_bos_path03, scene: 1784, size: 48928}
+  - {id: l81_bos_path04, kind: scene, name: l81_bos_path04, scene: 1785, size: 59056}
+  - {id: l81_bos_path05, kind: scene, name: l81_bos_path05, scene: 1786, size: 15888}
+  - {id: l81_bosscart, kind: scene, name: l81_bosscart, scene: 1787, size: 48928, levels: [level81], scripts: [level81_chatterbox]}
+  - {id: l81_c1, kind: scene, name: l81_c1, scene: 1788, size: 123280}
+  - {id: l81_c2, kind: scene, name: l81_c2, scene: 1792, size: 193280, levels: [level81], scripts: [level81_brawl]}
+  - {id: l81_c3, kind: scene, name: l81_c3, scene: 1812, size: 163520, levels: [level81], scripts: [level81_brawl]}
+  - {id: l81_c3_a, kind: scene, name: l81_c3_a, scene: 1813, size: 88736, levels: [level81], scripts: [level81_chase]}
+  - {id: l81_c4, kind: scene, name: l81_c4, scene: 1819, size: 170672, levels: [level81], scripts: [level81_chatterbox, level81_cracker]}
+  - {id: l81_c5, kind: scene, name: l81_c5, scene: 1823, size: 168096}
+  - {id: l81_c6, kind: scene, name: l81_c6, scene: 1824, size: 5824}
+  - {id: l81_cart_cam, kind: scene, name: l81_cart_cam, scene: 1825, size: 896}
+  - {id: l81_cart_intro, kind: scene, name: l81_cart_intro, scene: 1826, size: 32144, levels: [level81], scripts: [level81_horror_house]}
+  - {id: l81_final, kind: scene, name: l81_final, scene: 1827, size: 122800, levels: [level81], scripts: [level81_chatterbox]}
+  - {id: l81_l1_000, kind: scene, name: l81_l1_000, scene: 1828, size: 18048}
+  - {id: l81_l3, kind: scene, name: l81_l3, scene: 1829, size: 10400}
+  - {id: l81_out_sub, kind: scene, name: l81_out_sub, scene: 1830, size: 1440}
+  - {id: l81_ridecart, kind: scene, name: l81_ridecart, scene: 1831, size: 120256, levels: [level81], scripts: [level81_chase, level81_cracker, level81_horror_house]}
+  - {id: l81_ridecart_2, kind: scene, name: l81_ridecart_2, scene: 1832, size: 32688}
+  - {id: l81_skulls, kind: scene, name: l81_skulls, scene: 1833, size: 72112, levels: [level81], scripts: [level81_chase]}
+  - {id: l81_spiders, kind: scene, name: l81_spiders, scene: 1834, size: 75072, levels: [level81], scripts: [level81_chase]}
+  - {id: l81_t4_001, kind: scene, name: l81_t4_001, scene: 1835, size: 15264}
+  - {id: l81_tera01, kind: scene, name: l81_tera01, scene: 1836, size: 2320, levels: [level81], scripts: [level81_chase]}
+  - {id: l81_tera02, kind: scene, name: l81_tera02, scene: 1837, size: 2656, levels: [level81], scripts: [level81_chatterbox, level81_cracker]}
+  - {id: l82_c1_a, kind: scene, name: l82_c1_a, scene: 1838, size: 191216}
+  - {id: l82_c1_b, kind: scene, name: l82_c1_b, scene: 1842, size: 184448}
+  - {id: l82_c1_c, kind: scene, name: l82_c1_c, scene: 1852, size: 104064, levels: [level82], scripts: [level82_chapter1]}
+  - {id: l82_c2, kind: scene, name: l82_c2, scene: 1853, size: 92192}
+  - {id: l82_c2_a, kind: scene, name: l82_c2_a, scene: 1854, size: 87520}
+  - {id: l82_c3, kind: scene, name: l82_c3, scene: 1880, size: 124128}
+  - {id: l82_c4, kind: scene, name: l82_c4, scene: 1896, size: 109440, levels: [level82], scripts: [level82_chapter4, level82_chapter5]}
+  - {id: l82_c5, kind: scene, name: l82_c5, scene: 1899, size: 78656, levels: [level82], scripts: [level82_chapter5]}
+  - {id: l82_c6, kind: scene, name: l82_c6, scene: 1900, size: 144880, levels: [level82], scripts: [level82_chapter2]}
+  - {id: l82_c7, kind: scene, name: l82_c7, scene: 1902, size: 100416}
+  - {id: l82_l1_000, kind: scene, name: l82_l1_000, scene: 1903, size: 11152}
+  - {id: l82_l1_000a, kind: scene, name: l82_l1_000a, scene: 1904, size: 7120}
+  - {id: l82_l1_001a, kind: scene, name: l82_l1_001a, scene: 1905, size: 7120}
+  - {id: l82_l1_001b, kind: scene, name: l82_l1_001b, scene: 1906, size: 7120}
+  - {id: l82_l1_002a, kind: scene, name: l82_l1_002a, scene: 1907, size: 7120}
+  - {id: l82_l1_002b, kind: scene, name: l82_l1_002b, scene: 1908, size: 7120}
+  - {id: l82_l1_002c, kind: scene, name: l82_l1_002c, scene: 1909, size: 7120}
+  - {id: l82_l1_002d, kind: scene, name: l82_l1_002d, scene: 1910, size: 7120}
+  - {id: l82_l1_003a, kind: scene, name: l82_l1_003a, scene: 1911, size: 7120}
+  - {id: l82_l1_003b, kind: scene, name: l82_l1_003b, scene: 1912, size: 7120}
+  - {id: l82_l1_005a, kind: scene, name: l82_l1_005a, scene: 1913, size: 7120}
+  - {id: l82_l1_005b, kind: scene, name: l82_l1_005b, scene: 1914, size: 7120}
+  - {id: l82_l1_005c, kind: scene, name: l82_l1_005c, scene: 1915, size: 7120}
+  - {id: l82_l2_000, kind: scene, name: l82_l2_000, scene: 1916, size: 4816}
+  - {id: l82_l2_001, kind: scene, name: l82_l2_001, scene: 1917, size: 5808}
+  - {id: l82_l2_002, kind: scene, name: l82_l2_002, scene: 1918, size: 6224}
+  - {id: l82_l2_003, kind: scene, name: l82_l2_003, scene: 1919, size: 5792}
+  - {id: l82_l2_004, kind: scene, name: l82_l2_004, scene: 1920, size: 7792}
+  - {id: l82_l3, kind: scene, name: l82_l3, scene: 1921, size: 23824}
+  - {id: l82_l3_000, kind: scene, name: l82_l3_000, scene: 1922, size: 12304}
+  - {id: l82_l3_001, kind: scene, name: l82_l3_001, scene: 1923, size: 8544}
+  - {id: l82_l3_002, kind: scene, name: l82_l3_002, scene: 1924, size: 3280}
+  - {id: l82_l3_003, kind: scene, name: l82_l3_003, scene: 1925, size: 6736}
+  - {id: l82_l3_004, kind: scene, name: l82_l3_004, scene: 1926, size: 7984}
+  - {id: l82_l4_000, kind: scene, name: l82_l4_000, scene: 1927, size: 7984}
+  - {id: l82_l4_001, kind: scene, name: l82_l4_001, scene: 1928, size: 7120}
+  - {id: l82_l4_002, kind: scene, name: l82_l4_002, scene: 1929, size: 7120}
+  - {id: l82_p1_000, kind: scene, name: l82_p1_000, scene: 1930, size: 7824}
+  - {id: l82_p1_001, kind: scene, name: l82_p1_001, scene: 1931, size: 13152}
+  - {id: l82_s1_000, kind: scene, name: l82_s1_000, scene: 1932, size: 7120}
+  - {id: l82_s2, kind: scene, name: l82_s2, scene: 1933, size: 3472}
+  - {id: l82_s2_000, kind: scene, name: l82_s2_000, scene: 1934, size: 7120}
+  - {id: l82_s2_001, kind: scene, name: l82_s2_001, scene: 1935, size: 7120}
+  - {id: l82_s3, kind: scene, name: l82_s3, scene: 1936, size: 30576}
+  - {id: l82_s3_000, kind: scene, name: l82_s3_000, scene: 1937, size: 6944}
+  - {id: l82_s3_001, kind: scene, name: l82_s3_001, scene: 1938, size: 4688}
+  - {id: l82_stakeout, kind: scene, name: l82_stakeout, scene: 1939, size: 61264}
+  - {id: l83_beansie, kind: scene, name: l83_beansie, scene: 1940, size: 6784, levels: [level83], scripts: [level83_c2_alleys, level83_c3_diner]}
+  - {id: l83_c1, kind: scene, name: l83_c1, scene: 1941, size: 120592}
+  - {id: l83_c2, kind: scene, name: l83_c2, scene: 1947, size: 97232}
+  - {id: l83_c2_a, kind: scene, name: l83_c2_a, scene: 1948, size: 131424}
+  - {id: l83_c3, kind: scene, name: l83_c3, scene: 1982, size: 104592, levels: [level83], scripts: [level83_c5_apartment]}
+  - {id: l83_c4, kind: scene, name: l83_c4, scene: 1984, size: 67072, levels: [level83], scripts: [level83_c5_apartment, level83_c6_chase]}
+  - {id: l83_c5, kind: scene, name: l83_c5, scene: 1997, size: 60320, levels: [level83], scripts: [level83_c6_chase]}
+  - {id: l83_destroyers, kind: scene, name: l83_destroyers, scene: 2055, size: 61344, levels: [level83], scripts: [level83_c2_alleys]}
+  - {id: l83_fb1, kind: scene, name: l83_fb1, scene: 2056, size: 4576}
+  - {id: l83_fightpen, kind: scene, name: l83_fightpen, scene: 2057, size: 89056, levels: [level83], scripts: [level83_c1_fightpen]}
+  - {id: l83_flyby01, kind: scene, name: l83_flyby01, scene: 2059, size: 3712}
+  - {id: l83_flyby02, kind: scene, name: l83_flyby02, scene: 2060, size: 5184}
+  - {id: l83_flyby02a, kind: scene, name: l83_flyby02a, scene: 2061, size: 5424}
+  - {id: l83_flyby02b, kind: scene, name: l83_flyby02b, scene: 2062, size: 5456}
+  - {id: l83_flyby03, kind: scene, name: l83_flyby03, scene: 2063, size: 3552}
+  - {id: l83_flyby04, kind: scene, name: l83_flyby04, scene: 2064, size: 3824}
+  - {id: l83_l1, kind: scene, name: l83_l1, scene: 2065, size: 22656}
+  - {id: l83_l1_000, kind: scene, name: l83_l1_000, scene: 2066, size: 7120}
+  - {id: l83_l2_000, kind: scene, name: l83_l2_000, scene: 2067, size: 1568}
+  - {id: l83_l2_001, kind: scene, name: l83_l2_001, scene: 2068, size: 7120}
+  - {id: l83_l2_002, kind: scene, name: l83_l2_002, scene: 2069, size: 7120}
+  - {id: l83_l2_003, kind: scene, name: l83_l2_003, scene: 2070, size: 7120}
+  - {id: l83_l4_000, kind: scene, name: l83_l4_000, scene: 2071, size: 3600}
+  - {id: l83_l4_001, kind: scene, name: l83_l4_001, scene: 2072, size: 13744}
+  - {id: l83_l4_002, kind: scene, name: l83_l4_002, scene: 2073, size: 20096}
+  - {id: l83_lc_getup, kind: scene, name: l83_lc_getup, scene: 2074, size: 11936}
+  - {id: l83_lemmy_att, kind: scene, name: l83_lemmy_att, scene: 2075, size: 56368, levels: [level83], scripts: [level83_c4_shanty]}
+  - {id: l83_pawn_shop, kind: scene, name: l83_pawn_shop, scene: 2076, size: 169728, levels: [level83], scripts: [level83_c5_apartment]}
+  - {id: l83_poizo01, kind: scene, name: l83_poizo01, scene: 2077, size: 800}
+  - {id: l83_s1_000, kind: scene, name: l83_s1_000, scene: 2078, size: 7120}
+  - {id: l83_s1_001, kind: scene, name: l83_s1_001, scene: 2079, size: 7120}
+  - {id: l83_s1_002, kind: scene, name: l83_s1_002, scene: 2080, size: 7120}
+  - {id: l83_s2_000, kind: scene, name: l83_s2_000, scene: 2081, size: 7120}
+  - {id: l83_s3_000, kind: scene, name: l83_s3_000, scene: 2082, size: 7120}
+  - {id: l83_s3_001, kind: scene, name: l83_s3_001, scene: 2083, size: 7120}
+  - {id: l83_s4_000, kind: scene, name: l83_s4_000, scene: 2084, size: 7120}
+  - {id: l83_t11_007, kind: scene, name: l83_t11_007, scene: 2085, size: 11056}
+  - {id: l83_t1_000, kind: scene, name: l83_t1_000, scene: 2086, size: 9168}
+  - {id: l84_c1, kind: scene, name: l84_c1, scene: 2087, size: 188768}
+  - {id: l84_c2, kind: scene, name: l84_c2, scene: 2094, size: 94944}
+  - {id: l84_c2_a, kind: scene, name: l84_c2_a, scene: 2095, size: 113552}
+  - {id: l84_c3, kind: scene, name: l84_c3, scene: 2110, size: 180000, levels: [level84], scripts: [level84_final]}
+  - {id: l84_c4, kind: scene, name: l84_c4, scene: 2118, size: 113920}
+  - {id: l84_c5, kind: scene, name: l84_c5, scene: 2134, size: 88944}
+  - {id: l84_c6, kind: scene, name: l84_c6, scene: 2135, size: 46464, levels: [level84], scripts: [level84_final]}
+  - {id: l84_c7, kind: scene, name: l84_c7, scene: 2136, size: 118480, levels: [level84], scripts: [level84_final]}
+  - {id: l84_carchase, kind: scene, name: l84_carchase, scene: 2179, size: 124704, levels: [level84], scripts: [level84_chase]}
+  - {id: l84_dj_lady, kind: scene, name: l84_dj_lady, scene: 2180, size: 51472}
+  - {id: l84_sw_mercy, kind: scene, name: l84_sw_mercy, scene: 2181, size: 51248}
+  - {id: l86_c1, kind: scene, name: l86_c1, scene: 2197, size: 101728, levels: [level86], scripts: [level86_chapter1_reg]}
+  - {id: l86_c2, kind: scene, name: l86_c2, scene: 2207, size: 101584, levels: [level86], scripts: [level86_chapter1_reg]}
+  - {id: l86_c3, kind: scene, name: l86_c3, scene: 2220, size: 92016, levels: [level86], scripts: [level86_chapter2_reg, level86_chapter3_reg, level86_chapter4]}
+  - {id: l86_c3_a, kind: scene, name: l86_c3_a, scene: 2221, size: 115712, levels: [level86], scripts: [level86_chapter4]}
+  - {id: l86_c4, kind: scene, name: l86_c4, scene: 2238, size: 190432, levels: [level86], scripts: [level86_chapter4]}
+  - {id: l86_c5, kind: scene, name: l86_c5, scene: 2240, size: 184992}
+  - {id: l86_l1_000, kind: scene, name: l86_l1_000, scene: 2241, size: 7920}
+  - {id: l86_l1_001, kind: scene, name: l86_l1_001, scene: 2242, size: 7312}
+  - {id: l86_l1_002, kind: scene, name: l86_l1_002, scene: 2243, size: 7312}
+  - {id: l86_l1_003, kind: scene, name: l86_l1_003, scene: 2244, size: 7792}
+  - {id: l86_l2, kind: scene, name: l86_l2, scene: 2245, size: 11824}
+  - {id: l86_l2_000, kind: scene, name: l86_l2_000, scene: 2246, size: 9920}
+  - {id: l86_l2_001, kind: scene, name: l86_l2_001, scene: 2247, size: 7968}
+  - {id: l86_l2_002, kind: scene, name: l86_l2_002, scene: 2248, size: 5056}
+  - {id: l86_l2_003, kind: scene, name: l86_l2_003, scene: 2249, size: 7584}
+  - {id: l86_l3_000, kind: scene, name: l86_l3_000, scene: 2250, size: 7120}
+  - {id: l86_l4_000, kind: scene, name: l86_l4_000, scene: 2251, size: 5648}
+  - {id: l86_l4_001, kind: scene, name: l86_l4_001, scene: 2252, size: 8816}
+  - {id: l86_molotov, kind: scene, name: l86_molotov, scene: 2253, size: 62880, levels: [level86], scripts: [level86_chapter4]}
+  - {id: l86_p1, kind: scene, name: l86_p1, scene: 2254, size: 91984}
+  - {id: l86_p1_000, kind: scene, name: l86_p1_000, scene: 2255, size: 20592}
+  - {id: l86_p1_001, kind: scene, name: l86_p1_001, scene: 2256, size: 23728}
+  - {id: l86_p1_002, kind: scene, name: l86_p1_002, scene: 2257, size: 11456}
+  - {id: l86_p1_003, kind: scene, name: l86_p1_003, scene: 2258, size: 12000}
+  - {id: l86_p1_004, kind: scene, name: l86_p1_004, scene: 2259, size: 1008}
+  - {id: l86_pete, kind: scene, name: l86_pete, scene: 2260, size: 16448}
+  - {id: l86_stefano, kind: scene, name: l86_stefano, scene: 2261, size: 14192}
+  - {id: l86_t2, kind: scene, name: l86_t2, scene: 2262, size: 25968}
+  - {id: l86_t3, kind: scene, name: l86_t3, scene: 2263, size: 24384}
+  - {id: l86_t4, kind: scene, name: l86_t4, scene: 2264, size: 26224}
+  - {id: l86_twiggy, kind: scene, name: l86_twiggy, scene: 2265, size: 15136}
+  - {id: l87_beer_drink, kind: scene, name: l87_beer_drink, scene: 2266, size: 3792}
+  - {id: l87_beer_drink_-2267, kind: scene, name: l87_beer_drink_, scene: 2267, size: 1824}
+  - {id: l87_beer_drink_-2268, kind: scene, name: l87_beer_drink_, scene: 2268, size: 4912}
+  - {id: l87_c1, kind: scene, name: l87_c1, scene: 2269, size: 177776, levels: [level87], scripts: [level87_chap1_tutorial]}
+  - {id: l87_c2, kind: scene, name: l87_c2, scene: 2275, size: 126688}
+  - {id: l87_c2_a, kind: scene, name: l87_c2_a, scene: 2276, size: 164848, levels: [level87], scripts: [level87_chap5_club]}
+  - {id: l87_drunk_dest, kind: scene, name: l87_drunk_dest, scene: 2281, size: 142304, levels: [level87], scripts: [level87_chap1_tutorial, level87_chap2_street1]}
+  - {id: l87_fb1, kind: scene, name: l87_fb1, scene: 2282, size: 2496}
+  - {id: l87_ig1, kind: scene, name: l87_ig1, scene: 2283, size: 97536, levels: [level87], scripts: [level87_chap5_club]}
+  - {id: l87_l1_000, kind: scene, name: l87_l1_000, scene: 2289, size: 11728}
+  - {id: l87_l1_001, kind: scene, name: l87_l1_001, scene: 2290, size: 8512}
+  - {id: l87_l1_002, kind: scene, name: l87_l1_002, scene: 2291, size: 18816}
+  - {id: l87_l1_003, kind: scene, name: l87_l1_003, scene: 2292, size: 9216}
+  - {id: l87_l1_004, kind: scene, name: l87_l1_004, scene: 2293, size: 11888}
+  - {id: l87_m1, kind: scene, name: l87_m1, scene: 2294, size: 29808}
+  - {id: l87_out_sub, kind: scene, name: l87_out_sub, scene: 2295, size: 736}
+  - {id: l87_poizo01, kind: scene, name: l87_poizo01, scene: 2296, size: 2032}
+  - {id: l87_poizo02, kind: scene, name: l87_poizo02, scene: 2297, size: 1024, levels: [level87], scripts: [level87_chap5_club]}
+  - {id: l87_s4_000, kind: scene, name: l87_s4_000, scene: 2298, size: 5968}
+  - {id: l87_s4_001, kind: scene, name: l87_s4_001, scene: 2299, size: 6064}
+  - {id: l87_wipe_bar, kind: scene, name: l87_wipe_bar, scene: 2300, size: 13952}
+  - {id: l88_c1, kind: scene, name: l88_c1, scene: 2301, size: 41712}
+  - {id: l88_c2, kind: scene, name: l88_c2, scene: 2302, size: 125120}
+  - {id: l88_c5, kind: scene, name: l88_c5, scene: 2303, size: 107280}
+  - {id: l88_c6, kind: scene, name: l88_c6, scene: 2304, size: 45632}
+  - {id: l88_l2_000, kind: scene, name: l88_l2_000, scene: 2305, size: 5408}
+  - {id: l88_l2_001, kind: scene, name: l88_l2_001, scene: 2306, size: 7856}
+  - {id: l88_p1_000, kind: scene, name: l88_p1_000, scene: 2307, size: 15440}
+  - {id: l88_p1_001, kind: scene, name: l88_p1_001, scene: 2308, size: 14576}
+  - {id: l88_p1_002, kind: scene, name: l88_p1_002, scene: 2309, size: 5312}
+  - {id: l88_p1_003, kind: scene, name: l88_p1_003, scene: 2310, size: 7408}
+  - {id: l88_p1_004, kind: scene, name: l88_p1_004, scene: 2311, size: 7408}
+  - {id: l90_c1, kind: scene, name: l90_c1, scene: 2312, size: 162096}
+  - {id: l91_c1, kind: scene, name: l91_c1, scene: 2323, size: 168432}
+  - {id: l92_c1, kind: scene, name: l92_c1, scene: 2327, size: 102624, levels: [level92], scripts: [level92_chapter1]}
+  - {id: l92_c2, kind: scene, name: l92_c2, scene: 2357, size: 112256, levels: [level92], scripts: [level92_chapter1]}
+  - {id: l92_c3, kind: scene, name: l92_c3, scene: 2381, size: 167360, levels: [level92], scripts: [level92_chapter2]}
+  - {id: l92_c3_a, kind: scene, name: l92_c3_a, scene: 2382, size: 150592, levels: [level92], scripts: [level92_chapter2]}
+  - {id: l92_c4, kind: scene, name: l92_c4, scene: 2390, size: 99072, levels: [level92], scripts: [level92_chapter3]}
+  - {id: l92_l5_000, kind: scene, name: l92_l5_000, scene: 2400, size: 4176}
+  - {id: l92_l5_001, kind: scene, name: l92_l5_001, scene: 2401, size: 2752}
+  - {id: l92_l5_002, kind: scene, name: l92_l5_002, scene: 2402, size: 2944}
+  - {id: l92_l5_003, kind: scene, name: l92_l5_003, scene: 2403, size: 4448}
+  - {id: l92_l5_004, kind: scene, name: l92_l5_004, scene: 2404, size: 4672}
+  - {id: l92_l6, kind: scene, name: l92_l6, scene: 2405, size: 9984}
+  - {id: l92_l6_000, kind: scene, name: l92_l6_000, scene: 2406, size: 2592}
+  - {id: l92_l6_001, kind: scene, name: l92_l6_001, scene: 2407, size: 3504}
+  - {id: l92_l6_002, kind: scene, name: l92_l6_002, scene: 2408, size: 4784}
+  - {id: l92_m1_000, kind: scene, name: l92_m1_000, scene: 2409, size: 5840}
+  - {id: l92_m1_001, kind: scene, name: l92_m1_001, scene: 2410, size: 5664}
+  - {id: l92_m1_002, kind: scene, name: l92_m1_002, scene: 2411, size: 2416}
+  - {id: l92_m1_003, kind: scene, name: l92_m1_003, scene: 2412, size: 4032}
+  - {id: l92_m1_004, kind: scene, name: l92_m1_004, scene: 2413, size: 3536}
+  - {id: l92_m1_005, kind: scene, name: l92_m1_005, scene: 2414, size: 2016}
+  - {id: l92_m2_000, kind: scene, name: l92_m2_000, scene: 2415, size: 4512}
+  - {id: l92_m2_001, kind: scene, name: l92_m2_001, scene: 2416, size: 3984}
+  - {id: l92_m2_003, kind: scene, name: l92_m2_003, scene: 2417, size: 5552}
+  - {id: l92_m2_004, kind: scene, name: l92_m2_004, scene: 2418, size: 4704}
+  - {id: l92_meatshop_po, kind: scene, name: l92_meatshop_po, scene: 2419, size: 26784}
+  - {id: l92_p1_000, kind: scene, name: l92_p1_000, scene: 2420, size: 19264}
+  - {id: l92_p1_001, kind: scene, name: l92_p1_001, scene: 2421, size: 5136}
+  - {id: l92_p1_002, kind: scene, name: l92_p1_002, scene: 2422, size: 2800}
+  - {id: l92_p1_003, kind: scene, name: l92_p1_003, scene: 2423, size: 3712}
+  - {id: l92_p1_004, kind: scene, name: l92_p1_004, scene: 2424, size: 7200}
+  - {id: l92_playcards, kind: scene, name: l92_playcards, scene: 2425, size: 33872}
+  - {id: l92_plump_poizo, kind: scene, name: l92_plump_poizo, scene: 2426, size: 1440}
+  - {id: l92_poizo, kind: scene, name: l92_poizo, scene: 2427, size: 1552, levels: [level92], scripts: [level92_chapter1]}
+  - {id: l92_poizoi_head, kind: scene, name: l92_poizoi_head, scene: 2428, size: 1040}
+  - {id: l92_s1_000, kind: scene, name: l92_s1_000, scene: 2429, size: 4240}
+  - {id: l92_s1_001, kind: scene, name: l92_s1_001, scene: 2430, size: 4240}
+  - {id: l92_s1_002, kind: scene, name: l92_s1_002, scene: 2431, size: 4240}
+  - {id: l92_t21_000, kind: scene, name: l92_t21_000, scene: 2432, size: 20128}
+  - {id: l92_t29_000, kind: scene, name: l92_t29_000, scene: 2433, size: 16704, levels: [level92], scripts: [level92_chapter2]}
+  - {id: l92_t30_000, kind: scene, name: l92_t30_000, scene: 2434, size: 17888}
+  - {id: l92_t31_000, kind: scene, name: l92_t31_000, scene: 2435, size: 7536}
+  - {id: l93_beam_a, kind: scene, name: l93_beam_a, scene: 2436, size: 1904, levels: [level93], scripts: [level93_chapter6]}
+  - {id: l93_beam_b, kind: scene, name: l93_beam_b, scene: 2437, size: 1904, levels: [level93], scripts: [level93_chapter6]}
+  - {id: l93_c1, kind: scene, name: l93_c1, scene: 2438, size: 159232, levels: [level93], scripts: [level93_chapter1]}
+  - {id: l93_c2, kind: scene, name: l93_c2, scene: 2445, size: 123008, levels: [level93], scripts: [level93_chapter3]}
+  - {id: l93_c2_a, kind: scene, name: l93_c2_a, scene: 2446, size: 135296}
+  - {id: l93_c2_b, kind: scene, name: l93_c2_b, scene: 2450, size: 144592, levels: [level93], scripts: [level93_chapter3]}
+  - {id: l93_c2_c, kind: scene, name: l93_c2_c, scene: 2453, size: 112080, levels: [level93], scripts: [level93_chapter4]}
+  - {id: l93_c3, kind: scene, name: l93_c3, scene: 2465, size: 195840, levels: [level93], scripts: [level93_chapter6]}
+  - {id: l93_c4, kind: scene, name: l93_c4, scene: 2467, size: 150080, levels: [level93], scripts: [level93_chapter4, level93_chapter5]}
+  - {id: l93_c5, kind: scene, name: l93_c5, scene: 2472, size: 152224, levels: [level93], scripts: [level93_chapter5, level93_chapter6]}
+  - {id: l93_c5_a, kind: scene, name: l93_c5_a, scene: 2473, size: 124368}
+  - {id: l93_c6, kind: scene, name: l93_c6, scene: 2480, size: 98336, levels: [level93], scripts: [level93_chapter2]}
+  - {id: l93_l1_000, kind: scene, name: l93_l1_000, scene: 2490, size: 4096}
+  - {id: l93_l1_001, kind: scene, name: l93_l1_001, scene: 2491, size: 3280}
+  - {id: l93_l1_002, kind: scene, name: l93_l1_002, scene: 2492, size: 4064}
+  - {id: l93_l1_003, kind: scene, name: l93_l1_003, scene: 2493, size: 12592}
+  - {id: l93_l1_004, kind: scene, name: l93_l1_004, scene: 2494, size: 3936}
+  - {id: l93_l3_000, kind: scene, name: l93_l3_000, scene: 2495, size: 4096}
+  - {id: l93_l3_001, kind: scene, name: l93_l3_001, scene: 2496, size: 12608}
+  - {id: l93_l3_002, kind: scene, name: l93_l3_002, scene: 2497, size: 5760}
+  - {id: l93_l3_003, kind: scene, name: l93_l3_003, scene: 2498, size: 4288}
+  - {id: l93_l4_000, kind: scene, name: l93_l4_000, scene: 2499, size: 9984}
+  - {id: l93_l4_001, kind: scene, name: l93_l4_001, scene: 2500, size: 13504}
+  - {id: l93_p1_000, kind: scene, name: l93_p1_000, scene: 2501, size: 51536}
+  - {id: l93_p1_001, kind: scene, name: l93_p1_001, scene: 2502, size: 9264}
+  - {id: l93_p1_002, kind: scene, name: l93_p1_002, scene: 2503, size: 12400}
+  - {id: l93_p1_003, kind: scene, name: l93_p1_003, scene: 2504, size: 5824}
+  - {id: l93_p1_004, kind: scene, name: l93_p1_004, scene: 2505, size: 8288}
+  - {id: l93_pimp, kind: scene, name: l93_pimp, scene: 2506, size: 96816, levels: [level93], scripts: [level93_chapter1]}
+  - {id: l93_playcards, kind: scene, name: l93_playcards, scene: 2507, size: 26000, levels: [level93], scripts: [level93_chapter2]}
+  - {id: l93_s1_000, kind: scene, name: l93_s1_000, scene: 2508, size: 18400}
+  - {id: l94_c1, kind: scene, name: l94_c1, scene: 2509, size: 105600}
+  - {id: l95_intro_01, kind: scene, name: l95_intro_01, scene: 2520, size: 18768}
+  - {id: l95_intro_02, kind: scene, name: l95_intro_02, scene: 2521, size: 18768}
+  - {id: l95_intro_03, kind: scene, name: l95_intro_03, scene: 2522, size: 18768}
+  - {id: l95_intro_04, kind: scene, name: l95_intro_04, scene: 2523, size: 18768}
+  - {id: l95_intro_05, kind: scene, name: l95_intro_05, scene: 2524, size: 18768}
+  - {id: l95_intro_06, kind: scene, name: l95_intro_06, scene: 2525, size: 18768}
+  - {id: l95_intro_07, kind: scene, name: l95_intro_07, scene: 2526, size: 18768}
+  - {id: l95_intro_08, kind: scene, name: l95_intro_08, scene: 2527, size: 18768}
+  - {id: l95_intro_09, kind: scene, name: l95_intro_09, scene: 2528, size: 18768}
+  - {id: l95_intro_10, kind: scene, name: l95_intro_10, scene: 2529, size: 18768}
+  - {id: l95_intro_11, kind: scene, name: l95_intro_11, scene: 2530, size: 18768}
+  - {id: l95_intro_12, kind: scene, name: l95_intro_12, scene: 2531, size: 18768}
+  - {id: l95_intro_13, kind: scene, name: l95_intro_13, scene: 2532, size: 18768}
+  - {id: l95_intro_14, kind: scene, name: l95_intro_14, scene: 2533, size: 18768}
+  - {id: l95_intro_15, kind: scene, name: l95_intro_15, scene: 2534, size: 18768}
+  - {id: l95_intro_16, kind: scene, name: l95_intro_16, scene: 2535, size: 18768}
+  - {id: l95_intro_17, kind: scene, name: l95_intro_17, scene: 2536, size: 18768}
+  - {id: l95_intro_18, kind: scene, name: l95_intro_18, scene: 2537, size: 18768}
+  - {id: l95_rumble_gang, kind: scene, name: l95_rumble_gang, scene: 2538, size: 13744}
+  - {id: l96_c6_a, kind: scene, name: l96_c6_a, scene: 2539, size: 73072}
+  - {id: l96_c6_b, kind: scene, name: l96_c6_b, scene: 2540, size: 123920}
+  - {id: l96_c6_c, kind: scene, name: l96_c6_c, scene: 2541, size: 33312}
+  - {id: l96_c6_d, kind: scene, name: l96_c6_d, scene: 2542, size: 46000}
+  - {id: l96_c6_e, kind: scene, name: l96_c6_e, scene: 2543, size: 55376}
+  - {id: l96_c6_f, kind: scene, name: l96_c6_f, scene: 2544, size: 97936}
+  - {id: l96_c6_g, kind: scene, name: l96_c6_g, scene: 2545, size: 109664}
+  - {id: l96_c6_g1, kind: scene, name: l96_c6_g1, scene: 2546, size: 180544}
+  - {id: l96_c6_g2, kind: scene, name: l96_c6_g2, scene: 2548, size: 116176}
+  - {id: l96_c6_h, kind: scene, name: l96_c6_h, scene: 2552, size: 184160}
+  - {id: l96_c6_i, kind: scene, name: l96_c6_i, scene: 2555, size: 43808}
+  - {id: l96_c6_j, kind: scene, name: l96_c6_j, scene: 2556, size: 143264}
+  - {id: l96_e6_c2, kind: scene, name: l96_e6_c2, scene: 2559, size: 1936}
+  - {id: l97_c1, kind: scene, name: l97_c1, scene: 2560, size: 129584}
+  - {id: l98_c1, kind: scene, name: l98_c1, scene: 2562, size: 111536}
+  - {id: l98_c1_sub, kind: scene, name: l98_c1_sub, scene: 2563, size: 640}
+  - {id: l99_ash_intro, kind: scene, name: l99_ash_intro, scene: 2612, size: 118944}
+  - {id: l99_c1, kind: scene, name: l99_c1, scene: 2613, size: 86720}
+  - {id: l99_c2, kind: scene, name: l99_c2, scene: 2619, size: 171520}
+  - {id: l99_c3, kind: scene, name: l99_c3, scene: 2625, size: 132624}
+  - {id: l99_c4, kind: scene, name: l99_c4, scene: 2626, size: 131472}
+  - {id: l99_c5, kind: scene, name: l99_c5, scene: 2627, size: 84352}
+  - {id: l99_c6, kind: scene, name: l99_c6, scene: 2629, size: 58688}
+  - {id: l99_c7, kind: scene, name: l99_c7, scene: 2630, size: 162752}
+  - {id: l99_c8, kind: scene, name: l99_c8, scene: 2647, size: 119344}
+  - {id: l99_c9, kind: scene, name: l99_c9, scene: 2649, size: 64416, levels: [level99], scripts: [level99_lesson2]}
+  - {id: l99_in_sub, kind: scene, name: l99_in_sub, scene: 2650, size: 944}
+  - {id: l99_l1_000, kind: scene, name: l99_l1_000, scene: 2651, size: 8384}
+  - {id: l99_t1, kind: scene, name: l99_t1, scene: 2652, size: 191024}
+  - {id: l9_arrest, kind: scene, name: l9_arrest, scene: 2655, size: 113056, levels: [level9], scripts: [level9_chap1_radio]}
+  - {id: l9_c1, kind: scene, name: l9_c1, scene: 2657, size: 109504}
+  - {id: l9_c1_a, kind: scene, name: l9_c1_a, scene: 2658, size: 165952, levels: [level9], scripts: [level9_chap2_tags]}
+  - {id: l9_c2, kind: scene, name: l9_c2, scene: 2668, size: 9104}
+  - {id: l9_c3, kind: scene, name: l9_c3, scene: 2669, size: 149504, levels: [level9], scripts: [level9_chap3_escape]}
+  - {id: l9_c4, kind: scene, name: l9_c4, scene: 2671, size: 51568, levels: [level9], scripts: [level9_chap3_escape]}
+  - {id: l9_c4_a, kind: scene, name: l9_c4_a, scene: 2672, size: 134688}
+  - {id: l9_c4_b, kind: scene, name: l9_c4_b, scene: 2673, size: 157696}
+  - {id: l9_cops, kind: scene, name: l9_cops, scene: 2676, size: 83840, levels: [level9], scripts: [level9_chap1_radio]}
+  - {id: l9_flyby1, kind: scene, name: l9_flyby1, scene: 2677, size: 1552}
+  - {id: l9_in_sub, kind: scene, name: l9_in_sub, scene: 2678, size: 1008}
+  - {id: l9_mintro, kind: scene, name: l9_mintro, scene: 2679, size: 138320, levels: [level9], scripts: [level9_chap1_radio]}
+  - {id: l9_new_marks, kind: scene, name: l9_new_marks, scene: 2681, size: 39280}
+  - {id: l9_trainyard, kind: scene, name: l9_trainyard, scene: 2682, size: 109440, levels: [level9], scripts: [level9_chap1_radio]}
+  - {id: load_screen, kind: scene, name: load_screen, scene: 2683, size: 114592}
+  - {id: load_screen02, kind: scene, name: load_screen02, scene: 2684, size: 114608}
+  - {id: load_screen03, kind: scene, name: load_screen03, scene: 2694, size: 114640}
+  - {id: load_screen04, kind: scene, name: load_screen04, scene: 2701, size: 115072}
+  - {id: load_screen05, kind: scene, name: load_screen05, scene: 2711, size: 115648}
+  - {id: load_screen06, kind: scene, name: load_screen06, scene: 2721, size: 129744}
+  - {id: padlock, kind: scene, name: padlock, scene: 2734, size: 1136}
+  - {id: padunlock, kind: scene, name: padunlock, scene: 2735, size: 1216}
+  - {id: pay_binoc_exit, kind: scene, name: pay_binoc_exit, scene: 2736, size: 3280}
+  - {id: pay_binoc_idle, kind: scene, name: pay_binoc_idle, scene: 2737, size: 1664}
+  - {id: pick_lock, kind: scene, name: pick_lock, scene: 2738, size: 8352}
+  - {id: push_dmstr, kind: scene, name: push_dmstr, scene: 2739, size: 18544}
+  - {id: push_dmstr_b, kind: scene, name: push_dmstr_b, scene: 2740, size: 19056}
+  - {id: read_mag_exit, kind: scene, name: read_mag_exit, scene: 2741, size: 4320}
+  - {id: read_mag_idle, kind: scene, name: read_mag_idle, scene: 2742, size: 1264}
+  - {id: rumble_102, kind: scene, name: rumble_102, scene: 2743, size: 2192}
+  - {id: rumble_105, kind: scene, name: rumble_105, scene: 2744, size: 1312}
+  - {id: rumble_106, kind: scene, name: rumble_106, scene: 2745, size: 2512}
+  - {id: rumble_107, kind: scene, name: rumble_107, scene: 2746, size: 3264}
+  - {id: sanchez_climb_f, kind: scene, name: sanchez_climb_f, scene: 2747, size: 10048}
+  - {id: sanchez_fence, kind: scene, name: sanchez_fence, scene: 2748, size: 16896}
+  - {id: sanchez_fence_f, kind: scene, name: sanchez_fence_f, scene: 2749, size: 8432}
+  - {id: sanchez_fence_i, kind: scene, name: sanchez_fence_i, scene: 2750, size: 2096}
+  - {id: sanchez_fence_t, kind: scene, name: sanchez_fence_t, scene: 2751, size: 4160}
+  - {id: scafold_colapse, kind: scene, name: scafold_colapse, scene: 2752, size: 4240}
+  - {id: scafold_neutral, kind: scene, name: scafold_neutral, scene: 2753, size: 1632}
+  - {id: turn_bd_dazeout, kind: scene, name: turn_bd_dazeout, scene: 2754, size: 3984}
+  - {id: turn_bd_sc1, kind: scene, name: turn_bd_sc1, scene: 2755, size: 6192}
+  - {id: turn_bd_sc2, kind: scene, name: turn_bd_sc2, scene: 2756, size: 6032}
+  - {id: turn_bd_train1, kind: scene, name: turn_bd_train1, scene: 2757, size: 7072}
+  - {id: turn_bd_train2, kind: scene, name: turn_bd_train2, scene: 2758, size: 4528}
+  - {id: victim_arrested, kind: scene, name: victim_arrested, scene: 2759, size: 12656}
+  - {id: warr_mugging_fa, kind: scene, name: warr_mugging_fa, scene: 2760, size: 192}
+  - {id: warr_mugging_su, kind: scene, name: warr_mugging_su, scene: 2761, size: 192}
+  - {id: wonderwheel_81, kind: scene, name: wonderwheel_81, scene: 2762, size: 118560}
+  - {id: wonderwheel_86, kind: scene, name: wonderwheel_86, scene: 2763, size: 118672}
+  - {id: wonderwheel_95, kind: scene, name: wonderwheel_95, scene: 2764, size: 44208}

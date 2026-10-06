@@ -9,6 +9,9 @@ hooks:
 validation:
   nav:
     omitted_files: warn
+# The per-level pages of a split reference list are reached from its overview page, not the navigation.
+not_in_nav: |
+  /references/flags/
 
 theme:
   name: material
@@ -110,6 +113,10 @@ nav:
       - Particle effects: references/particles.md
       - Levels: references/levels.md
       - Level starts: references/level-starts.md
+      - World flags: references/flags.md
+      - Object zones: references/zones.md
+      - Volume boxes: references/boxes.md
+      - Scenes and movies: references/scenes.md
       - Animation clips: references/animations.md
       - Anim ids: references/anim-ids.md
       - Controls: references/controls.md

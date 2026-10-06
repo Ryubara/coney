@@ -1,0 +1,72 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level99:PedNet_01", level: level99, name: PedNet_01, pos: [32.6, 48.5, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_02", level: level99, name: PedNet_02, pos: [53.1, 48.7, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_03", level: level99, name: PedNet_03, pos: [77.7, 48.7, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_04", level: level99, name: PedNet_04, pos: [76.9, 32.9, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_05", level: level99, name: PedNet_05, pos: [53.7, 32.9, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_06", level: level99, name: PedNet_06, pos: [32.1, 33.1, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_07", level: level99, name: PedNet_07, pos: [30.8, 56.4, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_08", level: level99, name: PedNet_08, pos: [65.9, 54.1, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_09", level: level99, name: PedNet_09, pos: [78.2, -6.4, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_10", level: level99, name: PedNet_10, pos: [78.2, -7.5, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_11", level: level99, name: PedNet_11, pos: [57.3, -11.8, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_12", level: level99, name: PedNet_12, pos: [34, -13.2, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_13", level: level99, name: PedNet_13, pos: [33.8, -18.3, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedNet_14", level: level99, name: PedNet_14, pos: [48.9, -37.7, 0.3], heading: 89, script: level99}
+  - {id: "level99:PedExit_01", level: level99, name: PedExit_01, pos: [69.1, 56.1, 0.3], heading: 89, activity: 8, script: level99}
+  - {id: "level99:PedExit_02", level: level99, name: PedExit_02, pos: [79.7, 31.9, 0.3], heading: 89, activity: 8, script: level99}
+  - {id: "level99:PedExit_04", level: level99, name: PedExit_04, pos: [31, 55, 0.3], heading: 89, activity: 8, script: level99}
+  - {id: "level99:PedExit_05", level: level99, name: PedExit_05, pos: [69.8, -10.3, 0.3], heading: 89, activity: 8, script: level99}
+  - {id: "level99:PedExit_06", level: level99, name: PedExit_06, pos: [48.6, -6.9, 0.3], heading: 89, activity: 8, script: level99}
+  - {id: "level99:fStop_01", level: level99, name: fStop_01, pos: [51.1, 7.2, 0.3], heading: 2, script: level99}
+  - {id: "level99:fStop_04", level: level99, name: fStop_04, pos: [41.5, 19.4, 4.2], heading: 179, script: level99}
+  - {id: "level99:fStop_05", level: level99, name: fStop_05, pos: [29.5, 6.4, 0.3], heading: 273, script: level99}
+  - {id: "level99:fStop_02", level: level99, name: fStop_02, pos: [58, 8.7, 0.3], heading: 291, script: level99}
+  - {id: "level99:fStop_03", level: level99, name: fStop_03, pos: [41.3, 2.8, 4.3], heading: 127, script: level99}
+  - {id: "level99:fStop_06", level: level99, name: fStop_06, pos: [21.4, -4.1, 0.3], heading: 139, script: level99}
+  - {id: "level99:_xwPhone_02", level: level99, name: _xwPhone_02, pos: [59, 50.4, 0.3], heading: 2, activity: 6, script: level99}
+  - {id: "level99:fDealer", level: level99, name: fDealer, pos: [20.4, -16.4, 0.3], heading: 216, script: level99}
+  - {id: "level99:fVerminWait", level: level99, name: fVerminWait, pos: [62.8, -3.3, 4.3], heading: 273, script: level99}
+  - {id: "level99:fHitDealer", level: level99, name: fHitDealer, pos: [18.5, -16.3, 0.3], heading: 182, script: level99}
+  - {id: "level99:fRemWarp", level: level99, name: fRemWarp, pos: [45.9, 34.6, 0.3], heading: 208, script: level99}
+  - {id: "level99:fPenCenter", level: level99, name: fPenCenter, pos: [-285.2, 124.2, 0.3], heading: 42, script: level99}
+  - {id: "level99:fViewGlow2", level: level99, name: fViewGlow2, pos: [-287.4, 121.5, 0.3], heading: 89, script: level99}
+  - {id: "level99:fVerminCar", level: level99, name: fVerminCar, pos: [60.2, 39.7, 0.3], heading: 345, script: level99}
+  - {id: "level99:fStoreRadar", level: level99, name: fStoreRadar, pos: [53.2, 56, 0], heading: 89, script: level99}
+  - {id: "level99:fVerminStore", level: level99, name: fVerminStore, pos: [46.6, 50.5, 0.3], heading: 178, script: level99}
+  - {id: "level99:fStreetCenter", level: level99, name: fStreetCenter, pos: [57.6, 42.1, 0.3], heading: 272, script: level99}
+  - {id: "level99:fVerminFencePoizo", level: level99, name: fVerminFencePoizo, pos: [47.3, 20.2, 0], heading: 2, script: level99}
+  - {id: "level99:fRoofTeleport", level: level99, name: fRoofTeleport, pos: [63.6, -1.9, 4.3], heading: 272, script: level99}
+  - {id: "level99:fBreakFencePoizo", level: level99, name: fBreakFencePoizo, pos: [26.1, 3.8, 0.3], heading: 184, script: level99}
+  - {id: "level99:fVerminStand", level: level99, name: fVerminStand, pos: [-279.1, 131.2, 3.8], heading: 215, script: level99}
+  - {id: "level99:fStoreFront", level: level99, name: fStoreFront, pos: [55.7, 49.5, 0.3], heading: 182, script: level99}
+  - {id: "level99:fBumCan", level: level99, name: fBumCan, pos: [68.4, 56, 0.3], heading: 319, activity: 10, script: level99}
+  - {id: "level99:fAllDone", level: level99, name: fAllDone, pos: [53.1, 41.9, 0.3], heading: 324, script: level99}
+  - {id: "level99:fClimbWarp", level: level99, name: fClimbWarp, pos: [57.2, 11.8, 0.3], heading: 183, script: level99}
+  - {id: "level99:fClimbWait", level: level99, name: fClimbWait, pos: [57.3, 5.1, 4.3], heading: 3, script: level99}
+  - {id: "level99:fRadarJump", level: level99, name: fRadarJump, pos: [45.4, -2.3, 4.3], heading: 89, script: level99}
+  - {id: "level99:fAllDone2", level: level99, name: fAllDone2, pos: [54.3, 42, 0.3], heading: 324, script: level99}
+  - {id: "level99:fStoreFront2", level: level99, name: fStoreFront2, pos: [54.3, 49.7, 0.3], heading: 182, script: level99}
+  - {id: "level99:fStreetCenter2", level: level99, name: fStreetCenter2, pos: [58.3, 43.2, 0.3], heading: 272, script: level99}
+  - {id: "level99:fClimbWarp2", level: level99, name: fClimbWarp2, pos: [56.5, 12.2, 0.3], heading: 183, script: level99}
+  - {id: "level99:fRoofTeleport2", level: level99, name: fRoofTeleport2, pos: [63.8, -1.1, 4.3], heading: 272, script: level99}
+  - {id: "level99:fBreakFencePoizo2", level: level99, name: fBreakFencePoizo2, pos: [25.3, 4.1, 0.3], heading: 184, script: level99}
+  - {id: "level99:fHitDealer2", level: level99, name: fHitDealer2, pos: [17.7, -15.5, 0.3], heading: 182, script: level99}
+  - {id: "level99:fAshTeleport2", level: level99, name: fAshTeleport2, pos: [68.5, 52.2, -8.5], heading: 89, script: level99}
+  - {id: "level99:fAshTeleport1", level: level99, name: fAshTeleport1, pos: [-287.8, 124.8, -8.5], heading: 89, script: level99}
+  - {id: "level99:fRudyStand", level: level99, name: fRudyStand, pos: [-275.6, 124.2, 0.3], heading: 270, script: level99}
+  - {id: "level99:fPenCenter2", level: level99, name: fPenCenter2, pos: [-287, 124.8, 0.3], heading: 42, script: level99}
+  - {id: "level99:wPhone01", level: level99, name: wPhone01, pos: [32.7, 45.7, 0.3], heading: 314, activity: 6, script: level99}
+  - {id: "level99:_xwStore01", level: level99, name: _xwStore01, pos: [48.9, 50.6, 0.3], heading: 3, activity: 9, script: level99}
+  - {id: "level99:_xwStore03", level: level99, name: _xwStore03, pos: [57.3, 50.6, 0.3], heading: 3, activity: 9, script: level99}
+  - {id: "level99:_xwSmoke01", level: level99, name: _xwSmoke01, pos: [61.4, 49.2, 0.3], heading: 188, activity: 7, script: level99}
+  - {id: "level99:_xwSmoke02", level: level99, name: _xwSmoke02, pos: [74.2, 33.1, 0.3], heading: 343, activity: 7, script: level99}
+  - {id: "level99:_xwSmoke03", level: level99, name: _xwSmoke03, pos: [56.4, 32.7, 0.3], heading: 3, activity: 7, script: level99}
+  - {id: "level99:_xwSmoke04", level: level99, name: _xwSmoke04, pos: [31.3, 32.7, 0.3], heading: 28, activity: 7, script: level99}
+  - {id: "level99:_xwSmoke05", level: level99, name: _xwSmoke05, pos: [44.4, 48.8, 0.3], heading: 188, activity: 7, script: level99}
+  - {id: "level99:_xwLeanBack01", level: level99, name: _xwLeanBack01, pos: [41.2, 31.6, 0.3], heading: 4, activity: 30, script: level99}
+  - {id: "level99:_xwLeanBack02", level: level99, name: _xwLeanBack02, pos: [70, 31.5, 0.3], heading: 4, activity: 30, script: level99}
+  - {id: "level99:_xwLeanBack03", level: level99, name: _xwLeanBack03, pos: [70, 51, 0.3], heading: 181, activity: 30, script: level99}
+  - {id: "level99:_xwLeanBack04", level: level99, name: _xwLeanBack04, pos: [41, 50.8, 0.3], heading: 182, activity: 30, script: level99}

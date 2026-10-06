@@ -1,0 +1,130 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level111_car_init:fP1_01", level: level111, name: fP1_01, pos: [-5.7, -47.8, 0], heading: 179, script: level111_car_init}
+  - {id: "level111_car_init:fP1_02", level: level111, name: fP1_02, pos: [-5.1, -47.7, 0], heading: 179, script: level111_car_init}
+  - {id: "level111_car_init:fP1_03", level: level111, name: fP1_03, pos: [-6.6, -46.6, 0], heading: 179, script: level111_car_init}
+  - {id: "level111_car_init:fP1_04", level: level111, name: fP1_04, pos: [-5.2, -45.4, 0], heading: 179, script: level111_car_init}
+  - {id: "level111_car_init:fP1_05", level: level111, name: fP1_05, pos: [-4.7, -46.7, 0], heading: 179, script: level111_car_init}
+  - {id: "level111_car_init:fP1_06", level: level111, name: fP1_06, pos: [-6.4, -45.3, 0], heading: 179, script: level111_car_init}
+  - {id: "level111_car_init:fP1_07", level: level111, name: fP1_07, pos: [-5.8, -46.5, 0], heading: 179, script: level111_car_init}
+  - {id: "level111_car_init:fP1_08", level: level111, name: fP1_08, pos: [-4.3, -45.3, 0], heading: 179, script: level111_car_init}
+  - {id: "level111_car_init:fP1_09", level: level111, name: fP1_09, pos: [-3.9, -46.6, 0], heading: 179, script: level111_car_init}
+  - {id: "level111_car_init:fP2_01", level: level111, name: fP2_01, pos: [-5.2, -55, 0], heading: 360, script: level111_car_init}
+  - {id: "level111_car_init:fP2_02", level: level111, name: fP2_02, pos: [-6.8, -55, 0], heading: 360, script: level111_car_init}
+  - {id: "level111_car_init:fP2_03", level: level111, name: fP2_03, pos: [-5.7, -58, 0], heading: 0, script: level111_car_init}
+  - {id: "level111_car_init:fP2_04", level: level111, name: fP2_04, pos: [-5.4, -56.5, 0], heading: 0, script: level111_car_init}
+  - {id: "level111_car_init:fP2_05", level: level111, name: fP2_05, pos: [-7.6, -56.5, 0], heading: 0, script: level111_car_init}
+  - {id: "level111_car_init:fP2_06", level: level111, name: fP2_06, pos: [-4.3, -56.5, 0], heading: 0, script: level111_car_init}
+  - {id: "level111_car_init:fP2_07", level: level111, name: fP2_07, pos: [-4.8, -58, 0], heading: 0, script: level111_car_init}
+  - {id: "level111_car_init:fP2_08", level: level111, name: fP2_08, pos: [-6.7, -58, 0], heading: 0, script: level111_car_init}
+  - {id: "level111_car_init:fP2_09", level: level111, name: fP2_09, pos: [-6.6, -56.5, 0], heading: 0, script: level111_car_init}
+  - {id: "level111_car_init:fRace_05", level: level111, name: fRace_05, pos: [10.8, -4.5, 0], heading: 89, script: level111_car_init}
+  - {id: "level111_car_init:fMercy", level: level111, name: fMercy, pos: [0.6, 4, 0], heading: 89, script: level111_car_init}
+  - {id: "level111_car_init:P1Box", level: level111, name: P1Box, pos: [-0.7, -37.7, 0], heading: 89, script: level111_car_init}
+  - {id: "level111_car_init:P2Box", level: level111, name: P2Box, pos: [0.5, 47.8, 0], heading: 89, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagCupCap01", level: level111, name: _xwFlagCupCap01, pos: [-0.7, -43.2, 0], heading: 179, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagCupCap02", level: level111, name: _xwFlagCupCap02, pos: [2.3, -43.1, 0], heading: 179, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagCupCap03", level: level111, name: _xwFlagCupCap03, pos: [2.4, -46.3, 0], heading: 359, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagCupCap04", level: level111, name: _xwFlagCupCap04, pos: [-0.7, -46.3, 0], heading: 359, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagCupTicket05", level: level111, name: _xwFlagCupTicket05, pos: [-0.1, -46.3, 0], heading: 359, activity: 26, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagCarCap03", level: level111, name: _xwFlagCarCap03, pos: [2.4, -52.1, 0.1], heading: 359, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagCarCap02", level: level111, name: _xwFlagCarCap02, pos: [2.3, -48.7, 0.1], heading: 179, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagCarCap04", level: level111, name: _xwFlagCarCap04, pos: [-1, -52.1, 0.1], heading: 359, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagCarTicket01", level: level111, name: _xwFlagCarTicket01, pos: [-0.3, -52, 0.1], heading: 359, activity: 26, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagCarCap01", level: level111, name: _xwFlagCarCap01, pos: [-1.1, -48.9, 0.1], heading: 179, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagWgnTicket05", level: level111, name: _xwFlagWgnTicket05, pos: [-13.1, -49.4, 0.1], heading: 268, activity: 26, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagWgnCap04", level: level111, name: _xwFlagWgnCap04, pos: [-12.9, -50.5, 0.1], heading: 268, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagWgnCap02", level: level111, name: _xwFlagWgnCap02, pos: [-16.2, -47.1, 0], heading: 88, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagWgnCap01", level: level111, name: _xwFlagWgnCap01, pos: [-16, -50.7, 0], heading: 88, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagWgnCap03", level: level111, name: _xwFlagWgnCap03, pos: [-12.9, -47, 0], heading: 268, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagWgnTicket06", level: level111, name: _xwFlagWgnTicket06, pos: [-8.3, -49.4, 0.1], heading: 268, activity: 26, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagWgnCap05", level: level111, name: _xwFlagWgnCap05, pos: [-8.1, -50.5, 0.1], heading: 268, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagWgnCap06", level: level111, name: _xwFlagWgnCap06, pos: [-11.3, -47.1, 0], heading: 88, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagWgnCap07", level: level111, name: _xwFlagWgnCap07, pos: [-11.2, -50.7, 0], heading: 88, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwFlagWgnCap08", level: level111, name: _xwFlagWgnCap08, pos: [-8.1, -47, 0], heading: 268, activity: 13, script: level111_car_init}
+  - {id: "level111_car_init:_xwPhone01", level: level111, name: _xwPhone01, pos: [6, 51.1, -0.2], heading: 137, activity: 6, script: level111_car_init}
+  - {id: "level111_car_init:storeElectronic", level: level111, name: storeElectronic, pos: [-11.8, 16.3, 0], heading: 0, activity: 14, group: 30, script: level111_car_init}
+  - {id: "level111_car_init:storeJewelry", level: level111, name: storeJewelry, pos: [11.7, -5.5, 0], heading: 180, activity: 14, group: 32, script: level111_car_init}
+  - {id: "level111_car_init:storeJewelry02", level: level111, name: storeJewelry02, pos: [-11.7, -13.6, 0], heading: 355, activity: 14, group: 26, script: level111_car_init}
+  - {id: "level111_hifi_init:fP1_01", level: level111, name: fP1_01, pos: [-2.2, 14, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP1_02", level: level111, name: fP1_02, pos: [-2.1, 12.7, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP1_03", level: level111, name: fP1_03, pos: [-0.9, 15.1, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP1_04", level: level111, name: fP1_04, pos: [0.2, 13.2, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP1_05", level: level111, name: fP1_05, pos: [-1.1, 12.5, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP1_06", level: level111, name: fP1_06, pos: [0.3, 14.4, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP1_07", level: level111, name: fP1_07, pos: [-0.9, 14.2, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP1_08", level: level111, name: fP1_08, pos: [0.3, 11.8, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP1_09", level: level111, name: fP1_09, pos: [-0.9, 11.6, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP2_01", level: level111, name: fP2_01, pos: [-2.7, 19.5, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP2_02", level: level111, name: fP2_02, pos: [-2.7, 17.9, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP2_03", level: level111, name: fP2_03, pos: [0.3, 19, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP2_04", level: level111, name: fP2_04, pos: [-1.2, 19.3, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP2_05", level: level111, name: fP2_05, pos: [-1.2, 17.1, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP2_06", level: level111, name: fP2_06, pos: [-1.2, 20.4, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP2_07", level: level111, name: fP2_07, pos: [0.3, 19.9, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP2_08", level: level111, name: fP2_08, pos: [0.3, 18, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fP2_09", level: level111, name: fP2_09, pos: [-1.2, 18.1, 0], heading: 270, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fRace_05", level: level111, name: fRace_05, pos: [10.8, -4.5, 0], heading: 89, script: level111_hifi_init}
+  - {id: "level111_hifi_init:P2Box", level: level111, name: P2Box, pos: [-4.1, 28.1, 0], heading: 89, script: level111_hifi_init}
+  - {id: "level111_hifi_init:P1Box", level: level111, name: P1Box, pos: [-4.2, 5, 0], heading: 89, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fRumbleCheer1", level: level111, name: fRumbleCheer1, pos: [-4.1, 3, 2.3], heading: 12, script: level111_hifi_init}
+  - {id: "level111_hifi_init:fRumbleCheer2", level: level111, name: fRumbleCheer2, pos: [-4.2, 30.1, 2.3], heading: 166, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagCupCap01", level: level111, name: _xwFlagCupCap01, pos: [-0.7, -43.2, 0], heading: 179, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagCupCap02", level: level111, name: _xwFlagCupCap02, pos: [2.3, -43.1, 0], heading: 179, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagCupCap03", level: level111, name: _xwFlagCupCap03, pos: [2.4, -46.3, 0], heading: 359, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagCupCap04", level: level111, name: _xwFlagCupCap04, pos: [-0.7, -46.3, 0], heading: 359, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagCupTicket05", level: level111, name: _xwFlagCupTicket05, pos: [-0.1, -46.3, 0], heading: 359, activity: 26, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagCarCap03", level: level111, name: _xwFlagCarCap03, pos: [2.4, -52.1, 0.1], heading: 359, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagCarCap02", level: level111, name: _xwFlagCarCap02, pos: [2.3, -48.7, 0.1], heading: 179, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagCarCap04", level: level111, name: _xwFlagCarCap04, pos: [-1, -52.1, 0.1], heading: 359, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagCarTicket01", level: level111, name: _xwFlagCarTicket01, pos: [-0.3, -52, 0.1], heading: 359, activity: 26, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagCarCap01", level: level111, name: _xwFlagCarCap01, pos: [-1.1, -48.9, 0.1], heading: 179, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnTicket05", level: level111, name: _xwFlagWgnTicket05, pos: [-13.1, -49.4, 0.1], heading: 268, activity: 26, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap04", level: level111, name: _xwFlagWgnCap04, pos: [-12.9, -50.5, 0.1], heading: 268, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap02", level: level111, name: _xwFlagWgnCap02, pos: [-16.2, -47.1, 0], heading: 88, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap01", level: level111, name: _xwFlagWgnCap01, pos: [-16, -50.7, 0], heading: 88, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap03", level: level111, name: _xwFlagWgnCap03, pos: [-12.9, -47, 0], heading: 268, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnTicket06", level: level111, name: _xwFlagWgnTicket06, pos: [-8.3, -49.4, 0.1], heading: 268, activity: 26, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap05", level: level111, name: _xwFlagWgnCap05, pos: [-8.1, -50.5, 0.1], heading: 268, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap06", level: level111, name: _xwFlagWgnCap06, pos: [-11.3, -47.1, 0], heading: 88, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap07", level: level111, name: _xwFlagWgnCap07, pos: [-11.2, -50.7, 0], heading: 88, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap08", level: level111, name: _xwFlagWgnCap08, pos: [-8.1, -47, 0], heading: 268, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwPhone01", level: level111, name: _xwPhone01, pos: [6, 51.1, -0.2], heading: 137, activity: 6, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap05#2", level: level111, name: _xwFlagWgnCap05, pos: [-5.6, 0.2, 0.1], heading: 90, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnTicket06#2", level: level111, name: _xwFlagWgnTicket06, pos: [-2.7, 0, 0.2], heading: 270, activity: 26, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap08#2", level: level111, name: _xwFlagWgnCap08, pos: [-2.4, 0.2, 0.2], heading: 270, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap07#2", level: level111, name: _xwFlagWgnCap07, pos: [-2.3, 3.4, 0.2], heading: 270, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap06#2", level: level111, name: _xwFlagWgnCap06, pos: [-5.6, 3.5, 0.2], heading: 90, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap01#2", level: level111, name: _xwFlagWgnCap01, pos: [-2.3, 33, 0.1], heading: 269, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap02#2", level: level111, name: _xwFlagWgnCap02, pos: [-2.3, 29.7, 0.2], heading: 269, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap03#2", level: level111, name: _xwFlagWgnCap03, pos: [-5.6, 29.8, 0.2], heading: 90, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnCap04#2", level: level111, name: _xwFlagWgnCap04, pos: [-5.6, 33, 0.2], heading: 90, activity: 13, script: level111_hifi_init}
+  - {id: "level111_hifi_init:_xwFlagWgnTicket05#2", level: level111, name: _xwFlagWgnTicket05, pos: [-5.3, 33.2, 0.2], heading: 90, activity: 26, script: level111_hifi_init}
+  - {id: "level111_mercy_init:fP1_01", level: level111, name: fP1_01, pos: [-1.3, -7.5, 0], heading: 0, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP1_02", level: level111, name: fP1_02, pos: [0.3, 42.3, 0], heading: 179, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP1_03", level: level111, name: fP1_03, pos: [-1.3, 43.5, 0], heading: 179, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP1_04", level: level111, name: fP1_04, pos: [0.2, 44.7, 0], heading: 179, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP1_05", level: level111, name: fP1_05, pos: [0.6, 43.4, 0], heading: 179, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP1_06", level: level111, name: fP1_06, pos: [-1, 44.7, 0], heading: 179, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP1_07", level: level111, name: fP1_07, pos: [-0.4, 43.5, 0], heading: 179, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP1_08", level: level111, name: fP1_08, pos: [1, 44.8, 0], heading: 179, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP1_09", level: level111, name: fP1_09, pos: [1.5, 43.5, 0], heading: 179, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP2_01", level: level111, name: fP2_01, pos: [-0.4, 17.3, 0], heading: 179, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP2_02", level: level111, name: fP2_02, pos: [-2.9, -32.5, 0], heading: 360, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP2_03", level: level111, name: fP2_03, pos: [-1.8, -35.5, 0], heading: 0, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP2_04", level: level111, name: fP2_04, pos: [-1.5, -34, 0], heading: 0, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP2_05", level: level111, name: fP2_05, pos: [-3.7, -34, 0], heading: 0, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP2_06", level: level111, name: fP2_06, pos: [-0.4, -34, 0], heading: 0, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP2_07", level: level111, name: fP2_07, pos: [-1, -35.5, 0], heading: 0, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP2_08", level: level111, name: fP2_08, pos: [-2.8, -35.5, 0], heading: 0, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fP2_09", level: level111, name: fP2_09, pos: [-2.7, -34, 0], heading: 0, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fRace_04", level: level111, name: fRace_04, pos: [9.8, -11.7, 0], heading: 89, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fRace_05", level: level111, name: fRace_05, pos: [10.8, -4.5, 0], heading: 89, script: level111_mercy_init}
+  - {id: "level111_mercy_init:fMercy", level: level111, name: fMercy, pos: [0.6, 4, 0], heading: 89, script: level111_mercy_init}
+  - {id: "level111_mercy_init:P1Box", level: level111, name: P1Box, pos: [-0.7, -12.7, 0], heading: 89, script: level111_mercy_init}
+  - {id: "level111_mercy_init:P2Box", level: level111, name: P2Box, pos: [0.5, 22.8, 0], heading: 89, script: level111_mercy_init}
+  - {id: "level111_mercy_init:_xwPhone01", level: level111, name: _xwPhone01, pos: [6, 51.1, -0.2], heading: 137, activity: 6, script: level111_mercy_init}
+  - {id: "level111_mercy_init:storeElectronic", level: level111, name: storeElectronic, pos: [-11.8, 16.3, 0], heading: 0, activity: 14, group: 30, script: level111_mercy_init}
+  - {id: "level111_mercy_init:storeJewelry", level: level111, name: storeJewelry, pos: [11.7, -5.5, 0], heading: 180, activity: 14, group: 32, script: level111_mercy_init}
+  - {id: "level111_mercy_init:storeJewelry02", level: level111, name: storeJewelry02, pos: [-11.7, -13.6, 0], heading: 355, activity: 14, group: 26, script: level111_mercy_init}

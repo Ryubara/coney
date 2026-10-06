@@ -1,0 +1,236 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level83:fSweep_03", level: level83, name: fSweep_03, pos: [316.5, 61.6, 0.3], heading: 89, script: level83}
+  - {id: "level83:fSweep_02", level: level83, name: fSweep_02, pos: [306.9, 60.6, 0.3], heading: 286, script: level83}
+  - {id: "level83:fSweep_01", level: level83, name: fSweep_01, pos: [308, 52.9, 0.3], heading: 183, script: level83}
+  - {id: "level83:fExit_100", level: level83, name: fExit_100, pos: [268.7, 63.5, 0.2], heading: 89, activity: 8, script: level83}
+  - {id: "level83:fExit_99", level: level83, name: fExit_99, pos: [302.4, 81, 0.2], heading: 89, activity: 8, script: level83}
+  - {id: "level83:fExit_06", level: level83, name: fExit_06, pos: [70.4, -100.4, 0.3], heading: 89, activity: 8, script: level83}
+  - {id: "level83:fExit_05", level: level83, name: fExit_05, pos: [189.7, 7.7, 0], heading: 89, activity: 8, script: level83}
+  - {id: "level83:fExit_04", level: level83, name: fExit_04, pos: [198.9, -34.8, 0], heading: 89, activity: 8, script: level83}
+  - {id: "level83:fExit_03", level: level83, name: fExit_03, pos: [140.4, -77.8, 0], heading: 89, activity: 8, script: level83}
+  - {id: "level83:fExit_02", level: level83, name: fExit_02, pos: [92.6, -119.6, 0.3], heading: 89, activity: 8, script: level83}
+  - {id: "level83:fExit_1", level: level83, name: fExit_1, pos: [27, -83.9, 0.3], heading: 89, activity: 8, script: level83}
+  - {id: "level83:fDinerHang_05", level: level83, name: fDinerHang_05, pos: [313.2, 52.8, 0.3], heading: 183, activity: 30, script: level83}
+  - {id: "level83:fDinerHang_04", level: level83, name: fDinerHang_04, pos: [306.5, 61.6, 0.3], heading: 105, activity: 7, script: level83}
+  - {id: "level83:fDinerHang_03", level: level83, name: fDinerHang_03, pos: [310.8, 62.8, 0.3], heading: 105, activity: 7, script: level83}
+  - {id: "level83:fDinerHang_02", level: level83, name: fDinerHang_02, pos: [316.9, 65.4, 0.3], heading: 83, activity: 6, script: level83}
+  - {id: "level83:fDinerHang_01", level: level83, name: fDinerHang_01, pos: [311.3, 61.1, 0.3], heading: 20, activity: 29, script: level83}
+  - {id: "level83:fPenWarp_Snow", level: level83, name: fPenWarp_Snow, pos: [182.4, 32.5, -198.7], heading: 147, script: level83}
+  - {id: "level83:fPenWarp_Ajax", level: level83, name: fPenWarp_Ajax, pos: [181.9, 33, -198.7], heading: 326, script: level83}
+  - {id: "level83:fDonutStreet_04", level: level83, name: fDonutStreet_04, pos: [336.1, 45.8, 0.3], heading: 89, group: 3, script: level83}
+  - {id: "level83:fDonutStreet_03", level: level83, name: fDonutStreet_03, pos: [333.8, 39, 0.3], heading: 132, group: 3, script: level83}
+  - {id: "level83:fDonutStreet_02", level: level83, name: fDonutStreet_02, pos: [260.1, 35.2, 0.3], heading: 89, group: 3, script: level83}
+  - {id: "level83:fDonutStreet_01", level: level83, name: fDonutStreet_01, pos: [266.2, 45.9, 0.3], heading: 209, group: 3, script: level83}
+  - {id: "level83:fDonutStreet_05", level: level83, name: fDonutStreet_05, pos: [299.1, 36.6, 0.3], heading: 221, group: 3, script: level83}
+  - {id: "level83:fDonutStreet_06", level: level83, name: fDonutStreet_06, pos: [282.6, 46.1, 0.3], heading: 209, group: 3, script: level83}
+  - {id: "level83:fDonutStreet_07", level: level83, name: fDonutStreet_07, pos: [278.3, 36.7, 0.3], heading: 209, group: 3, script: level83}
+  - {id: "level83:fDonutStreet_08", level: level83, name: fDonutStreet_08, pos: [301, 46.2, 0.3], heading: 209, group: 3, script: level83}
+  - {id: "level83:fDonutStreet_09", level: level83, name: fDonutStreet_09, pos: [300.5, 19.3, 0.3], heading: 209, group: 3, script: level83}
+  - {id: "level83:fDonutStreet_10", level: level83, name: fDonutStreet_10, pos: [264.3, 14.2, 0.3], heading: 209, group: 3, script: level83}
+  - {id: "level83:fAlleyWarp_Snow", level: level83, name: fAlleyWarp_Snow, pos: [237.7, 70.6, 0.3], heading: 90, script: level83}
+  - {id: "level83:fAlleyWarp_Ajax", level: level83, name: fAlleyWarp_Ajax, pos: [238.6, 69.2, 0.3], heading: 90, script: level83}
+  - {id: "level83:fDinerDoorWarp_Ajax", level: level83, name: fDinerDoorWarp_Ajax, pos: [267.9, 32.7, 0], heading: 183, script: level83}
+  - {id: "level83:fDinerDoorWarp_Snow", level: level83, name: fDinerDoorWarp_Snow, pos: [269, 32.7, 0], heading: 183, script: level83}
+  - {id: "level83:fDinerWarp_Snow", level: level83, name: fDinerWarp_Snow, pos: [263.5, 57.2, 0.3], heading: 183, script: level83}
+  - {id: "level83:fDinerWarp_Ajax", level: level83, name: fDinerWarp_Ajax, pos: [261.3, 57.2, 0.3], heading: 183, script: level83}
+  - {id: "level83:fUseAlley_07", level: level83, name: fUseAlley_07, pos: [254.7, 72.9, 0.2], heading: 84, activity: 29, script: level83}
+  - {id: "level83:fUseAlley_02", level: level83, name: fUseAlley_02, pos: [256, 79.3, 0.2], heading: 182, activity: 29, script: level83}
+  - {id: "level83:fUseAlley_01", level: level83, name: fUseAlley_01, pos: [256.5, 71.6, 0.2], heading: 347, activity: 7, script: level83}
+  - {id: "level83:fCheerPos_WS07", level: level83, name: fCheerPos_WS07, pos: [185.7, 22.7, -198.7], heading: 344, script: level83}
+  - {id: "level83:fCheerPos_WS06", level: level83, name: fCheerPos_WS06, pos: [184.8, 22.6, -198.7], heading: 5, script: level83}
+  - {id: "level83:fCheerPos_WS05", level: level83, name: fCheerPos_WS05, pos: [184.1, 22.7, -198.7], heading: 8, script: level83}
+  - {id: "level83:fCheerPos_WS04", level: level83, name: fCheerPos_WS04, pos: [182.8, 23, -198.7], heading: 26, script: level83}
+  - {id: "level83:fCheerPos_WS03", level: level83, name: fCheerPos_WS03, pos: [182.1, 23.2, -198.7], heading: 36, script: level83}
+  - {id: "level83:fCheerPos_WS02", level: level83, name: fCheerPos_WS02, pos: [177.6, 24.7, -198.7], heading: 36, script: level83}
+  - {id: "level83:fCheerPos_WS01", level: level83, name: fCheerPos_WS01, pos: [176.9, 25, -198.7], heading: 23, script: level83}
+  - {id: "level83:fPenPos_Cleon", level: level83, name: fPenPos_Cleon, pos: [187.8, 24.5, -195.1], heading: 303, script: level83}
+  - {id: "level83:fPenPos_Cochise", level: level83, name: fPenPos_Cochise, pos: [188.5, 23.9, -195.1], heading: 301, script: level83}
+  - {id: "level83:fPenPos_Swan", level: level83, name: fPenPos_Swan, pos: [189, 24.9, -195.1], heading: 293, script: level83}
+  - {id: "level83:fPenPos_Vermin", level: level83, name: fPenPos_Vermin, pos: [188.1, 25.6, -195.1], heading: 308, script: level83}
+  - {id: "level83:fPenPos_Cowboy", level: level83, name: fPenPos_Cowboy, pos: [188.1, 37.9, -195.2], heading: 221, script: level83}
+  - {id: "level83:fFlashSite_02", level: level83, name: fFlashSite_02, pos: [205.6, -19.1, 0.3], heading: 3, group: 64, script: level83}
+  - {id: "level83:fFlashSite_01", level: level83, name: fFlashSite_01, pos: [97.1, -99.8, 0.3], heading: 226, group: 64, script: level83}
+  - {id: "level83:fTemp_Snow", level: level83, name: fTemp_Snow, pos: [43.3, -92.7, 0.7], heading: 89, script: level83}
+  - {id: "level83:fTemp_Ajax", level: level83, name: fTemp_Ajax, pos: [43.9, -93.9, 0.7], heading: 89, script: level83}
+  - {id: "level83:fPawnNet_03", level: level83, name: fPawnNet_03, pos: [49.2, -90.5, 0.7], heading: 269, group: 32, script: level83}
+  - {id: "level83:fPawnNet_02", level: level83, name: fPawnNet_02, pos: [47.1, -96.4, 0.7], heading: 269, script: level83}
+  - {id: "level83:fPawnNet_01", level: level83, name: fPawnNet_01, pos: [49.5, -96.7, 0.7], heading: 269, group: 32, script: level83}
+  - {id: "level83:BumNetwork_23", level: level83, name: BumNetwork_23, pos: [249.2, 17.9, 0.3], heading: 89, group: 4, script: level83}
+  - {id: "level83:BumNetwork_22", level: level83, name: BumNetwork_22, pos: [251.1, -12.9, 0.3], heading: 89, group: 4, script: level83}
+  - {id: "level83:BumNetwork_21", level: level83, name: BumNetwork_21, pos: [217.7, -12.4, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_19", level: level83, name: BumNetwork_19, pos: [145.3, -78.7, 0.2], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_18", level: level83, name: BumNetwork_18, pos: [130.2, -88.7, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_17", level: level83, name: BumNetwork_17, pos: [135.2, -66.9, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_16", level: level83, name: BumNetwork_16, pos: [112.2, -88.3, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_15", level: level83, name: BumNetwork_15, pos: [188.3, -71.5, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_14", level: level83, name: BumNetwork_14, pos: [194.2, -80.7, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_13", level: level83, name: BumNetwork_13, pos: [185.5, -90.1, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_12", level: level83, name: BumNetwork_12, pos: [168.8, -47.9, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_11", level: level83, name: BumNetwork_11, pos: [201.1, -49.6, 0.2], heading: 89, group: 4, script: level83}
+  - {id: "level83:BumNetwork_10", level: level83, name: BumNetwork_10, pos: [188.8, -59.9, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_09", level: level83, name: BumNetwork_09, pos: [201.1, -34.9, 0.3], heading: 89, group: 4, script: level83}
+  - {id: "level83:BumNetwork_08", level: level83, name: BumNetwork_08, pos: [191.2, -37.2, 0.3], heading: 89, group: 4, script: level83}
+  - {id: "level83:BumNetwork_07", level: level83, name: BumNetwork_07, pos: [162.8, -27.2, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_06", level: level83, name: BumNetwork_06, pos: [169.9, -30, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_05", level: level83, name: BumNetwork_05, pos: [173.2, -17.5, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_04", level: level83, name: BumNetwork_04, pos: [196.4, -25.9, 0.3], heading: 263, group: 68, script: level83}
+  - {id: "level83:BumNetwork_03", level: level83, name: BumNetwork_03, pos: [192.5, -17.7, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_02", level: level83, name: BumNetwork_02, pos: [200.5, -16.6, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:BumNetwork_01", level: level83, name: BumNetwork_01, pos: [180, 17.5, 0.3], heading: 89, group: 68, script: level83}
+  - {id: "level83:fChapt6Warp_Snow", level: level83, name: fChapt6Warp_Snow, pos: [11.8, -84.1, 0.3], heading: 268, script: level83}
+  - {id: "level83:fChapt6Warp_Ajax", level: level83, name: fChapt6Warp_Ajax, pos: [17.3, -84.1, 0.3], heading: 268, script: level83}
+  - {id: "level83:fRunSpot_1", level: level83, name: fRunSpot_1, pos: [-1.7, -62.4, 0.3], heading: 89, script: level83}
+  - {id: "level83:fSD_StreetDest_05", level: level83, name: fSD_StreetDest_05, pos: [77, -104.9, 0.3], heading: 270, script: level83}
+  - {id: "level83:fSD_StreetDest_04", level: level83, name: fSD_StreetDest_04, pos: [77, -109.6, 0.3], heading: 270, script: level83}
+  - {id: "level83:fSD_StreetDest_03", level: level83, name: fSD_StreetDest_03, pos: [79.1, -105.3, 0.3], heading: 270, script: level83}
+  - {id: "level83:fSD_StreetDest_02", level: level83, name: fSD_StreetDest_02, pos: [74.7, -108.4, 0.3], heading: 270, script: level83}
+  - {id: "level83:fSD_StreetDest_01", level: level83, name: fSD_StreetDest_01, pos: [81.2, -107.3, 0.3], heading: 270, script: level83}
+  - {id: "level83:fAptWarp_Snow", level: level83, name: fAptWarp_Snow, pos: [71.2, -90.2, 4.7], heading: 27, script: level83}
+  - {id: "level83:fAptWarp_Ajax", level: level83, name: fAptWarp_Ajax, pos: [71.9, -88.9, 4.7], heading: 27, script: level83}
+  - {id: "level83:fWeaponSite_02", level: level83, name: fWeaponSite_02, pos: [231.6, -2.7, 0.3], heading: 123, group: 64, script: level83}
+  - {id: "level83:fWeaponSite_01", level: level83, name: fWeaponSite_01, pos: [111.4, -114.2, 0.3], heading: 324, group: 64, script: level83}
+  - {id: "level83:fAptAreaNet_10", level: level83, name: fAptAreaNet_10, pos: [84.8, -100.9, 0.3], heading: 89, group: 97, script: level83}
+  - {id: "level83:fAptAreaNet_09", level: level83, name: fAptAreaNet_09, pos: [62.2, -100.9, 0.3], heading: 89, group: 97, script: level83}
+  - {id: "level83:fAptAreaNet_08", level: level83, name: fAptAreaNet_08, pos: [30.2, -100.9, 0.3], heading: 89, group: 65, script: level83}
+  - {id: "level83:fAptAreaNet_07", level: level83, name: fAptAreaNet_07, pos: [30.2, -84.5, 0.3], heading: 89, group: 65, script: level83}
+  - {id: "level83:fAptAreaNet_06", level: level83, name: fAptAreaNet_06, pos: [22.4, -84.5, 0.3], heading: 89, group: 65, script: level83}
+  - {id: "level83:fAptAreaNet_05", level: level83, name: fAptAreaNet_05, pos: [22.4, -112.7, 0.3], heading: 89, group: 65, script: level83}
+  - {id: "level83:fAptAreaNet_04", level: level83, name: fAptAreaNet_04, pos: [61.9, -112.7, 0.3], heading: 89, group: 97, script: level83}
+  - {id: "level83:fAptAreaNet_03", level: level83, name: fAptAreaNet_03, pos: [88.5, -113.4, 0.3], heading: 89, group: 97, script: level83}
+  - {id: "level83:fAptAreaNet_02", level: level83, name: fAptAreaNet_02, pos: [107.6, -107.4, 0.3], heading: 89, group: 97, script: level83}
+  - {id: "level83:fAptAreaNet_01", level: level83, name: fAptAreaNet_01, pos: [94.8, -101, 0.3], heading: 89, group: 97, script: level83}
+  - {id: "level83:fCopNet_01", level: level83, name: fCopNet_01, pos: [105.8, -107.4, 0.3], heading: 89, group: 2, script: level83}
+  - {id: "level83:fCopNet_02", level: level83, name: fCopNet_02, pos: [103.9, -114.3, 0.3], heading: 89, group: 2, script: level83}
+  - {id: "level83:fCopNet_03", level: level83, name: fCopNet_03, pos: [60.2, -114.9, 0.3], heading: 89, group: 2, script: level83}
+  - {id: "level83:fCopNet_04", level: level83, name: fCopNet_04, pos: [22.9, -114.4, 0.3], heading: 89, group: 2, script: level83}
+  - {id: "level83:fCopNet_05", level: level83, name: fCopNet_05, pos: [22.5, -85.4, 0.3], heading: 89, group: 2, script: level83}
+  - {id: "level83:fCopNet_06", level: level83, name: fCopNet_06, pos: [29.8, -85.4, 0.3], heading: 89, group: 2, script: level83}
+  - {id: "level83:fCopNet_07", level: level83, name: fCopNet_07, pos: [29.8, -101, 0.3], heading: 89, group: 2, script: level83}
+  - {id: "level83:fCopNet_08", level: level83, name: fCopNet_08, pos: [59.8, -101, 0.3], heading: 89, group: 2, script: level83}
+  - {id: "level83:fGotVest_Ajax", level: level83, name: fGotVest_Ajax, pos: [175.6, -72, 0.3], heading: 275, script: level83}
+  - {id: "level83:fGotVest_Snow", level: level83, name: fGotVest_Snow, pos: [176.6, -71, 0.3], heading: 275, script: level83}
+  - {id: "level83:fFaceRightWay_Ajax", level: level83, name: fFaceRightWay_Ajax, pos: [56.9, -102.1, 0.3], heading: 272, script: level83}
+  - {id: "level83:fFaceRightWay_Snow", level: level83, name: fFaceRightWay_Snow, pos: [57, -103.5, 0.3], heading: 272, script: level83}
+  - {id: "level83:fPostPen_Ajax", level: level83, name: fPostPen_Ajax, pos: [184.9, 31.3, -198.7], heading: 136, script: level83}
+  - {id: "level83:fPostPen_Snow", level: level83, name: fPostPen_Snow, pos: [184.8, 31.7, -198.7], heading: 68, script: level83}
+  - {id: "level83:fAlleyPoizo_Snow", level: level83, name: fAlleyPoizo_Snow, pos: [252.3, 14.3, 0], heading: 183, script: level83}
+  - {id: "level83:fAlleyPoizo_Ajax", level: level83, name: fAlleyPoizo_Ajax, pos: [251, 13, 0], heading: 178, script: level83}
+  - {id: "level83:fPoizoPos_Snow", level: level83, name: fPoizoPos_Snow, pos: [255.5, 16.7, 0], heading: 222, script: level83}
+  - {id: "level83:fPoizoPos_Ajax", level: level83, name: fPoizoPos_Ajax, pos: [254.9, 15.7, 0], heading: 222, script: level83}
+  - {id: "level83:fDevilFlag_01", level: level83, name: fDevilFlag_01, pos: [89.9, -109.2, 0.3], heading: 89, script: level83}
+  - {id: "level83:fDevilFlag_02", level: level83, name: fDevilFlag_02, pos: [-106.9, -10.2, 1.2], heading: 89, script: level83}
+  - {id: "level83:fMSD_MSD_01", level: level83, name: fMSD_MSD_01, pos: [83.3, -104.8, 0.3], heading: 270, script: level83}
+  - {id: "level83:fMSD_MSD_02", level: level83, name: fMSD_MSD_02, pos: [75.8, -103.9, 0.3], heading: 270, script: level83}
+  - {id: "level83:fMSD_MSD_03", level: level83, name: fMSD_MSD_03, pos: [81.8, -103.6, 0.3], heading: 270, script: level83}
+  - {id: "level83:fMSD_MSD_04", level: level83, name: fMSD_MSD_04, pos: [79.8, -108, 0.3], heading: 270, script: level83}
+  - {id: "level83:fMSD_MSD_05", level: level83, name: fMSD_MSD_05, pos: [79.8, -103.2, 0.3], heading: 270, script: level83}
+  - {id: "level83:fMSD_MSD_06", level: level83, name: fMSD_MSD_06, pos: [85, -103.8, 0.3], heading: 270, script: level83}
+  - {id: "level83:fMSD_MSD_07", level: level83, name: fMSD_MSD_07, pos: [83.4, -109.3, 0.3], heading: 270, script: level83}
+  - {id: "level83:fMSD_MSD_08", level: level83, name: fMSD_MSD_08, pos: [86, -106.9, 0.3], heading: 270, script: level83}
+  - {id: "level83:fMSD_MSD_09", level: level83, name: fMSD_MSD_09, pos: [82.1, -110.4, 0.3], heading: 270, script: level83}
+  - {id: "level83:fMSD_MSD_10", level: level83, name: fMSD_MSD_10, pos: [82.9, -106.5, 0.3], heading: 270, script: level83}
+  - {id: "level83:_xwChair_b", level: level83, name: _xwChair_b, pos: [271.2, 28.3, 0.3], heading: 3, activity: 4, script: level83}
+  - {id: "level83:_xwChair_b04", level: level83, name: _xwChair_b04, pos: [271, 31.3, 0.3], heading: 183, activity: 4, script: level83}
+  - {id: "level83:_xwChair_b01", level: level83, name: _xwChair_b01, pos: [266.1, 28.4, 0.3], heading: 3, activity: 4, script: level83}
+  - {id: "level83:_xwChair_b02", level: level83, name: _xwChair_b02, pos: [264.6, 30.1, 0.3], heading: 117, activity: 4, script: level83}
+  - {id: "level83:fIceCream02", level: level83, name: fIceCream02, pos: [194.3, 38.7, 0], heading: 5, script: level83}
+  - {id: "level83:fPhoneFlag", level: level83, name: fPhoneFlag, pos: [297.5, 36.5, 0.2], heading: 221, activity: 6, group: 7, script: level83}
+  - {id: "level83:fIceCream01", level: level83, name: fIceCream01, pos: [202.1, 52, 0], heading: 89, script: level83}
+  - {id: "level83:fLeavePen", level: level83, name: fLeavePen, pos: [189.1, 30.7, -198.7], heading: 326, script: level83}
+  - {id: "level83:fDonutHang", level: level83, name: fDonutHang, pos: [268.3, 29.3, 0], heading: 89, script: level83}
+  - {id: "level83:fDinerObj", level: level83, name: fDinerObj, pos: [268.4, 34.1, 0], heading: 89, script: level83}
+  - {id: "level83:fAlleyHang", level: level83, name: fAlleyHang, pos: [257.1, 74.6, 0.2], heading: 308, script: level83}
+  - {id: "level83:fIceCream", level: level83, name: fIceCream, pos: [194.3, 41, 0], heading: 89, script: level83}
+  - {id: "level83:fFightPen", level: level83, name: fFightPen, pos: [181.6, 32.2, -198.7], heading: 23, script: level83}
+  - {id: "level83:fBoardwalk", level: level83, name: fBoardwalk, pos: [-110.7, -7.6, 1.2], heading: 342, script: level83}
+  - {id: "level83:fShakeFence", level: level83, name: fShakeFence, pos: [48.4, -90.1, 0.7], heading: 4, script: level83}
+  - {id: "level83:fAD2", level: level83, name: fAD2, pos: [225.5, -11.6, 0.3], heading: 89, script: level83}
+  - {id: "level83:_xfAD2World05", level: level83, name: _xfAD2World05, pos: [225, -10.8, 0.3], heading: 140, activity: 29, group: 32, script: level83}
+  - {id: "level83:_xfAD2World04", level: level83, name: _xfAD2World04, pos: [226.5, -11.6, 0.3], heading: 273, activity: 29, script: level83}
+  - {id: "level83:_xfAD2World03", level: level83, name: _xfAD2World03, pos: [224.6, -11.6, 0.3], heading: 93, activity: 7, script: level83}
+  - {id: "level83:_xfAD2World02", level: level83, name: _xfAD2World02, pos: [225.1, -12.5, 0.3], heading: 30, activity: 7, group: 32, script: level83}
+  - {id: "level83:_xfAD2World01", level: level83, name: _xfAD2World01, pos: [226.1, -10.6, 0.3], heading: 213, activity: 29, group: 32, script: level83}
+  - {id: "level83:_xfAD2World06", level: level83, name: _xfAD2World06, pos: [226.1, -12.4, 0.3], heading: 333, activity: 7, group: 32, script: level83}
+  - {id: "level83:_xfAD1World02", level: level83, name: _xfAD1World02, pos: [248.7, 9.7, 0.3], heading: 130, activity: 29, script: level83}
+  - {id: "level83:_xfAD1World06", level: level83, name: _xfAD1World06, pos: [248.8, 8.5, 0.3], heading: 57, activity: 29, script: level83}
+  - {id: "level83:fAD1", level: level83, name: fAD1, pos: [249.5, 9.1, 0.3], heading: 7, script: level83}
+  - {id: "level83:fPawnerSpot", level: level83, name: fPawnerSpot, pos: [46.6, -90.4, 0.7], heading: 44, script: level83}
+  - {id: "level83:_xfPawn02", level: level83, name: _xfPawn02, pos: [47.3, -96.8, 0.7], heading: 235, activity: 22, group: 32, script: level83}
+  - {id: "level83:_xfPawn1", level: level83, name: _xfPawn1, pos: [46.8, -90.5, 0.7], heading: 269, activity: 22, script: level83}
+  - {id: "level83:_xfShan4World06", level: level83, name: _xfShan4World06, pos: [182.4, 19.1, 0.3], heading: 70, activity: 7, script: level83}
+  - {id: "level83:_xfShan4World05", level: level83, name: _xfShan4World05, pos: [184.9, 18.7, 0.3], heading: 313, activity: 29, script: level83}
+  - {id: "level83:_xfShanDest1World09", level: level83, name: _xfShanDest1World09, pos: [177.8, -49.8, 0], heading: 182, activity: 29, script: level83}
+  - {id: "level83:_xfShanDest1World08", level: level83, name: _xfShanDest1World08, pos: [178.4, -51.3, 0], heading: 317, activity: 29, script: level83}
+  - {id: "level83:_xfShanDest1World07", level: level83, name: _xfShanDest1World07, pos: [177.1, -50, 0], heading: 141, activity: 29, script: level83}
+  - {id: "level83:_xfShanDest1World06", level: level83, name: _xfShanDest1World06, pos: [181.8, -33.7, 0], heading: 273, activity: 29, script: level83}
+  - {id: "level83:_xfShanDest1World05", level: level83, name: _xfShanDest1World05, pos: [179.9, -33.7, 0], heading: 93, activity: 29, script: level83}
+  - {id: "level83:_xfShanDest1World04", level: level83, name: _xfShanDest1World04, pos: [180.4, -34.7, 0], heading: 30, activity: 29, script: level83}
+  - {id: "level83:_xfShanDest1World03", level: level83, name: _xfShanDest1World03, pos: [181.4, -32.8, 0], heading: 213, activity: 29, script: level83}
+  - {id: "level83:fPawnFlag", level: level83, name: fPawnFlag, pos: [48.5, -89, 0.7], heading: 270, script: level83}
+  - {id: "level83:fShanSolo3", level: level83, name: fShanSolo3, pos: [193.2, -78.5, 0], heading: 322, activity: 29, script: level83}
+  - {id: "level83:fShanSolo2", level: level83, name: fShanSolo2, pos: [161.5, -30.6, 0], heading: 225, activity: 1, script: level83}
+  - {id: "level83:_xfShanDest2World3", level: level83, name: _xfShanDest2World3, pos: [177.8, -52, 0], heading: 321, activity: 29, script: level83}
+  - {id: "level83:_xfShanDest2World2", level: level83, name: _xfShanDest2World2, pos: [178.6, -50.1, 0], heading: 240, activity: 17, script: level83}
+  - {id: "level83:_xfShanDest2World1", level: level83, name: _xfShanDest2World1, pos: [176.4, -51.2, 0], heading: 74, activity: 29, script: level83}
+  - {id: "level83:_xfShanDest1World2", level: level83, name: _xfShanDest1World2, pos: [181.4, -34.6, 0], heading: 333, activity: 29, script: level83}
+  - {id: "level83:_xfShanDest1World1", level: level83, name: _xfShanDest1World1, pos: [180.3, -33, 0], heading: 140, activity: 29, script: level83}
+  - {id: "level83:fShanSolo1", level: level83, name: fShanSolo1, pos: [196.4, -26.8, 0.3], heading: 276, activity: 29, script: level83}
+  - {id: "level83:fCSpawn2", level: level83, name: fCSpawn2, pos: [-8.8, -61.4, 3.6], heading: 89, script: level83}
+  - {id: "level83:fCSpawn1", level: level83, name: fCSpawn1, pos: [-7.7, -77.7, 2.9], heading: 89, script: level83}
+  - {id: "level83:fStreetDestData", level: level83, name: fStreetDestData, pos: [87.5, -107.1, 0.3], heading: 270, script: level83}
+  - {id: "level83:fLCWarp", level: level83, name: fLCWarp, pos: [72.8, -86, 4.7], heading: 211, script: level83}
+  - {id: "level83:fLeaveAptObj", level: level83, name: fLeaveAptObj, pos: [19.3, -84, 0.3], heading: 268, script: level83}
+  - {id: "level83:fLCGirl", level: level83, name: fLCGirl, pos: [67.6, -82.7, 4.7], heading: 126, script: level83}
+  - {id: "level83:fBackEntranceObj", level: level83, name: fBackEntranceObj, pos: [49.9, -92.9, 0.7], heading: 270, script: level83}
+  - {id: "level83:fStreetDest", level: level83, name: fStreetDest, pos: [83.2, -102.4, 0.3], heading: 270, script: level83}
+  - {id: "level83:fAptObj", level: level83, name: fAptObj, pos: [43.7, -99, 0.7], heading: 89, script: level83}
+  - {id: "level83:fLeaveShanty", level: level83, name: fLeaveShanty, pos: [160.3, -72, 0.3], heading: 89, script: level83}
+  - {id: "level83:fLemmy", level: level83, name: fLemmy, pos: [164.1, -71.6, 0.3], heading: 89, script: level83}
+  - {id: "level83:_xfShan3World04", level: level83, name: _xfShan3World04, pos: [200.1, -47.4, 0.3], heading: 231, activity: 7, script: level83}
+  - {id: "level83:_xfShan3World03", level: level83, name: _xfShan3World03, pos: [200.1, -51, 0.3], heading: 317, activity: 29, script: level83}
+  - {id: "level83:_xfShan3World02", level: level83, name: _xfShan3World02, pos: [198.6, -51.4, 0.3], heading: 9, activity: 30, script: level83}
+  - {id: "level83:_xfShan3World1", level: level83, name: _xfShan3World1, pos: [198.6, -47, 0.3], heading: 185, activity: 30, script: level83}
+  - {id: "level83:_xfShan4World04", level: level83, name: _xfShan4World04, pos: [184.1, 18.5, 0.3], heading: 346, activity: 29, script: level83}
+  - {id: "level83:_xfShan4World3", level: level83, name: _xfShan4World3, pos: [184.9, 19.5, 0.3], heading: 305, activity: 29, script: level83}
+  - {id: "level83:_xfShan4World1", level: level83, name: _xfShan4World1, pos: [182.9, 18.7, 0.3], heading: 42, activity: 29, script: level83}
+  - {id: "level83:fShanDest4", level: level83, name: fShanDest4, pos: [183.6, 19.5, 0.3], heading: 89, script: level83}
+  - {id: "level83:fShanDest3", level: level83, name: fShanDest3, pos: [198.6, -49.2, 0.3], heading: 89, script: level83}
+  - {id: "level83:fShanDest2", level: level83, name: fShanDest2, pos: [177.5, -50.8, 0], heading: 89, script: level83}
+  - {id: "level83:fShanDest1", level: level83, name: fShanDest1, pos: [180.9, -33.7, 0], heading: 89, script: level83}
+  - {id: "level83:fShantyObj", level: level83, name: fShantyObj, pos: [164.1, -71.6, 0.3], heading: 89, script: level83}
+  - {id: "level83:fIceExit", level: level83, name: fIceExit, pos: [241.7, 40.7, 0.3], heading: 89, activity: 8, script: level83}
+  - {id: "level83:_xExit02", level: level83, name: _xExit02, pos: [170.8, 45.9, 0.3], heading: 89, activity: 8, script: level83}
+  - {id: "level83:_xExit03", level: level83, name: _xExit03, pos: [255, 94.8, 0.3], heading: 89, activity: 8, script: level83}
+  - {id: "level83:_xExit04", level: level83, name: _xExit04, pos: [324.1, 69.6, 0.3], heading: 89, activity: 8, script: level83}
+  - {id: "level83:_xExit05", level: level83, name: _xExit05, pos: [251.9, -11.8, 0.3], heading: 89, activity: 8, script: level83}
+  - {id: "level83:fCDest", level: level83, name: fCDest, pos: [-108.8, -7.7, 1.2], heading: 89, script: level83}
+  - {id: "level83:fFirstTurn", level: level83, name: fFirstTurn, pos: [-110.2, -7.6, 1.2], heading: 89, script: level83}
+  - {id: "level83:fCF1", level: level83, name: fCF1, pos: [-38.8, 30, 3.7], heading: 89, script: level83}
+  - {id: "level83:fCF2", level: level83, name: fCF2, pos: [-36.4, 30, 3.7], heading: 89, script: level83}
+  - {id: "level83:_xDonut1", level: level83, name: _xDonut1, pos: [265.8, 26.8, 0], heading: 182, activity: 17, script: level83}
+  - {id: "level83:_xDonut02", level: level83, name: _xDonut02, pos: [268.8, 26.8, 0], heading: 182, activity: 7, script: level83}
+  - {id: "level83:_xDonut03", level: level83, name: _xDonut03, pos: [273.7, 26.2, 0], heading: 182, activity: 17, script: level83}
+  - {id: "level83:_xDonut04", level: level83, name: _xDonut04, pos: [263.4, 28.7, 0], heading: 136, activity: 17, script: level83}
+  - {id: "level83:fSpotBeansie", level: level83, name: fSpotBeansie, pos: [262.1, 54.5, 0.3], heading: 89, script: level83}
+  - {id: "level83:fGarbage", level: level83, name: fGarbage, pos: [333.8, 39, 0.2], heading: 132, activity: 10, group: 3, script: level83}
+  - {id: "level83:fTestSite", level: level83, name: fTestSite, pos: [48, -106.2, 0.3], heading: 89, group: 64, script: level83}
+  - {id: "level83:fLeaveArea", level: level83, name: fLeaveArea, pos: [254.5, 15.3, 0.3], heading: 89, script: level83}
+  - {id: "level83:_xwFireBarrell09", level: level83, name: _xwFireBarrell09, pos: [165.1, -74.3, 0.5], heading: 117, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell10", level: level83, name: _xwFireBarrell10, pos: [166.7, -75.1, 0.5], heading: 297, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell07", level: level83, name: _xwFireBarrell07, pos: [176.8, 11, 0.5], heading: 117, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell08", level: level83, name: _xwFireBarrell08, pos: [178.3, 10.3, 0.5], heading: 297, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell11", level: level83, name: _xwFireBarrell11, pos: [183.6, -9.5, 0.5], heading: 117, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell12", level: level83, name: _xwFireBarrell12, pos: [185, -10.1, 0.5], heading: 297, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell13", level: level83, name: _xwFireBarrell13, pos: [174.7, -31.1, 0.5], heading: 117, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell14", level: level83, name: _xwFireBarrell14, pos: [176.1, -31.7, 0.5], heading: 297, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell15", level: level83, name: _xwFireBarrell15, pos: [182.7, -65.4, 0.5], heading: 117, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell16", level: level83, name: _xwFireBarrell16, pos: [184.1, -66.1, 0.5], heading: 297, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell17", level: level83, name: _xwFireBarrell17, pos: [237.6, -13.6, 0.3], heading: 117, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell18", level: level83, name: _xwFireBarrell18, pos: [239, -14.2, 0.3], heading: 297, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell19", level: level83, name: _xwFireBarrell19, pos: [260.2, 18.7, 0.3], heading: 297, activity: 5, script: level83}
+  - {id: "level83:_xwFireBarrell20", level: level83, name: _xwFireBarrell20, pos: [258.8, 19.3, 0.3], heading: 117, activity: 5, script: level83}
+  - {id: "level83:wFireBarrell21", level: level83, name: wFireBarrell21, pos: [279.8, 74.5, 0.3], heading: 117, activity: 5, script: level83}
+  - {id: "level83:wFireBarrell22", level: level83, name: wFireBarrell22, pos: [281.2, 73.9, 0.3], heading: 297, activity: 5, script: level83}
+  - {id: "level83:fStorePharmacy", level: level83, name: fStorePharmacy, pos: [58.4, -119.6, 0], heading: 270, activity: 14, group: 24, script: level83}

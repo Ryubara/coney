@@ -1,0 +1,181 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level31:fSWalk", level: level31, name: fSWalk, heading: 0, script: level31}
+  - {id: "level31:SewerNet_01", level: level31, name: SewerNet_01, pos: [60.8, 158.2, -0.5], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_02", level: level31, name: SewerNet_02, pos: [60.6, 151, -0.4], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_03", level: level31, name: SewerNet_03, pos: [55.5, 148.6, -0.4], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_04", level: level31, name: SewerNet_04, pos: [31.8, 155.8, -0.5], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_05", level: level31, name: SewerNet_05, pos: [28.7, 156.5, -0.5], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_06", level: level31, name: SewerNet_06, pos: [46, 153.6, -0.4], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_07", level: level31, name: SewerNet_07, pos: [31.4, 207.1, 3.1], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_08", level: level31, name: SewerNet_08, pos: [-19, 149.3, -1.1], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_09", level: level31, name: SewerNet_09, pos: [-37.1, 146.6, -1.1], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_10", level: level31, name: SewerNet_10, pos: [-43.2, 140.9, 2.9], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_11", level: level31, name: SewerNet_11, pos: [-68.2, 157.1, 2.9], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_12", level: level31, name: SewerNet_12, pos: [-62.2, 151, -1.1], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerNet_13", level: level31, name: SewerNet_13, pos: [-50.5, 148.3, -1.1], heading: 89, group: 4, script: level31}
+  - {id: "level31:SewerExit_01", level: level31, name: SewerExit_01, pos: [25.9, 159.1, -0.5], heading: 89, activity: 8, script: level31}
+  - {id: "level31:SewerExit_02", level: level31, name: SewerExit_02, pos: [47.1, 158.8, -0.4], heading: 89, activity: 8, script: level31}
+  - {id: "level31:SewerExit_03", level: level31, name: SewerExit_03, pos: [31.9, 208.8, 3.3], heading: 89, activity: 8, script: level31}
+  - {id: "level31:SewerExit_04", level: level31, name: SewerExit_04, pos: [59.1, 146, -0.4], heading: 89, activity: 8, script: level31}
+  - {id: "level31:AlleyNet_01", level: level31, name: AlleyNet_01, pos: [93.1, 1.3, 6], heading: 89, group: 36, script: level31}
+  - {id: "level31:AlleyNet_02", level: level31, name: AlleyNet_02, pos: [95.2, 25.1, 6.1], heading: 89, group: 36, script: level31}
+  - {id: "level31:AlleyNet_03", level: level31, name: AlleyNet_03, pos: [114, 35.7, 6.1], heading: 89, group: 36, script: level31}
+  - {id: "level31:AlleyNet_04", level: level31, name: AlleyNet_04, pos: [127.2, 25.8, 6], heading: 89, group: 36, script: level31}
+  - {id: "level31:AlleyNet_05", level: level31, name: AlleyNet_05, pos: [135.2, 39.4, 6], heading: 89, group: 36, script: level31}
+  - {id: "level31:AlleyNet_06", level: level31, name: AlleyNet_06, pos: [147.5, 16, 6], heading: 89, group: 36, script: level31}
+  - {id: "level31:AlleyNet_07", level: level31, name: AlleyNet_07, pos: [157, 39.2, 6], heading: 89, group: 36, script: level31}
+  - {id: "level31:PedExit_01", level: level31, name: PedExit_01, pos: [85.8, 170, -0.9], heading: 89, activity: 8, script: level31}
+  - {id: "level31:PedExit_02", level: level31, name: PedExit_02, pos: [75.4, 170.3, -0.8], heading: 89, activity: 8, script: level31}
+  - {id: "level31:PedExit_03", level: level31, name: PedExit_03, pos: [84.9, 145, -0.9], heading: 89, activity: 8, script: level31}
+  - {id: "level31:PedExit_05", level: level31, name: PedExit_05, pos: [99.2, 4.6, 6], heading: 89, activity: 8, script: level31}
+  - {id: "level31:PedExit_04", level: level31, name: PedExit_04, pos: [108.8, 14, 6], heading: 89, activity: 8, script: level31}
+  - {id: "level31:PedExit_06", level: level31, name: PedExit_06, pos: [135, 16.3, 6], heading: 89, activity: 8, script: level31}
+  - {id: "level31:PedExit_07", level: level31, name: PedExit_07, pos: [147.9, 39.9, 6], heading: 89, activity: 8, script: level31}
+  - {id: "level31:PedExit_08", level: level31, name: PedExit_08, pos: [162.4, 63.1, 6], heading: 89, activity: 8, script: level31}
+  - {id: "level31:PedExit_09", level: level31, name: PedExit_09, pos: [56.9, 76.2, 6], heading: 89, activity: 8, script: level31}
+  - {id: "level31:PedExit_10", level: level31, name: PedExit_10, pos: [91.2, 47.4, 6], heading: 89, activity: 8, script: level31}
+  - {id: "level31:StreetNet_01", level: level31, name: StreetNet_01, pos: [159.8, 70.6, 6], heading: 89, group: 34, script: level31}
+  - {id: "level31:StreetNet_02", level: level31, name: StreetNet_02, pos: [160.4, 57.3, 6], heading: 89, group: 34, script: level31}
+  - {id: "level31:StreetNet_03", level: level31, name: StreetNet_03, pos: [124.3, 57.1, 6], heading: 89, group: 34, script: level31}
+  - {id: "level31:StreetNet_04", level: level31, name: StreetNet_04, pos: [123.4, 69.7, 6], heading: 89, group: 34, script: level31}
+  - {id: "level31:StreetNet_05", level: level31, name: StreetNet_05, pos: [94.7, 69.3, 6], heading: 89, group: 34, script: level31}
+  - {id: "level31:StreetNet_06", level: level31, name: StreetNet_06, pos: [94.9, 57, 6], heading: 89, group: 34, script: level31}
+  - {id: "level31:StreetNet_07", level: level31, name: StreetNet_07, pos: [52.6, 69.8, 6], heading: 89, group: 34, script: level31}
+  - {id: "level31:StreetNet_08", level: level31, name: StreetNet_08, pos: [52.6, 57.4, 6.1], heading: 89, group: 34, script: level31}
+  - {id: "level31:fPlatformLook_01", level: level31, name: fPlatformLook_01, pos: [68.7, 71.6, 6], heading: 89, script: level31}
+  - {id: "level31:fPlatformLook_02", level: level31, name: fPlatformLook_02, pos: [86.7, 71.6, 6], heading: 89, script: level31}
+  - {id: "level31:fREFINERY_floor", level: level31, name: fREFINERY_floor, pos: [-41.9, 6.3, 5.3], heading: 89, script: level31}
+  - {id: "level31:fBirdieExit_01", level: level31, name: fBirdieExit_01, pos: [-48.4, 106.6, 5.3], heading: 90, activity: 8, script: level31}
+  - {id: "level31:fBirdieExit_02", level: level31, name: fBirdieExit_02, pos: [-19.8, 63.3, 5.3], heading: 90, activity: 8, script: level31}
+  - {id: "level31:fBirdieExit_03", level: level31, name: fBirdieExit_03, pos: [-59.4, 62.9, 5.3], heading: 90, activity: 8, script: level31}
+  - {id: "level31:fBirdieExit_04", level: level31, name: fBirdieExit_04, pos: [-71.5, 35, 5.3], heading: 90, activity: 8, script: level31}
+  - {id: "level31:BirdieNet_01", level: level31, name: BirdieNet_01, pos: [-56.1, 66.6, 5.3], heading: 90, script: level31}
+  - {id: "level31:BirdieNet_02", level: level31, name: BirdieNet_02, pos: [-39.7, 65.7, 5.3], heading: 90, script: level31}
+  - {id: "level31:BirdieNet_03", level: level31, name: BirdieNet_03, pos: [-23.4, 65.7, 5.3], heading: 90, script: level31}
+  - {id: "level31:BirdieNet_04", level: level31, name: BirdieNet_04, pos: [-41.2, 33.5, 5.3], heading: 90, script: level31}
+  - {id: "level31:fWarPos_01", level: level31, name: fWarPos_01, pos: [-50.7, 6.7, 10.4], heading: 92, script: level31}
+  - {id: "level31:fWarPos_02", level: level31, name: fWarPos_02, pos: [-51.1, 9.7, 10.4], heading: 93, script: level31}
+  - {id: "level31:fWarPos_03", level: level31, name: fWarPos_03, pos: [-45.9, -15.8, 10.4], heading: 13, script: level31}
+  - {id: "level31:fWarPos_04", level: level31, name: fWarPos_04, pos: [-42, -13.1, 10.4], heading: 193, script: level31}
+  - {id: "level31:fWarPos_05", level: level31, name: fWarPos_05, pos: [-38.3, -10.6, 10.4], heading: 8, script: level31}
+  - {id: "level31:fWarPos_06", level: level31, name: fWarPos_06, pos: [-44.1, -15.8, 10.4], heading: 18, script: level31}
+  - {id: "level31:fWarPos_07", level: level31, name: fWarPos_07, pos: [-41.5, -15.9, 10.4], heading: 18, script: level31}
+  - {id: "level31:fWarPos_08", level: level31, name: fWarPos_08, pos: [-39, -15.9, 10.4], heading: 18, script: level31}
+  - {id: "level31:fRail_01", level: level31, name: fRail_01, pos: [-52.3, 16.7, 11.8], heading: 89, script: level31}
+  - {id: "level31:fRail_02", level: level31, name: fRail_02, pos: [-52.3, 16.7, 15.6], heading: 89, script: level31}
+  - {id: "level31:Tag_01", level: level31, name: Tag_01, pos: [76.5, 64.6, -0.1], heading: 273, activity: 12, script: level31}
+  - {id: "level31:Tag_02", level: level31, name: Tag_02, pos: [114.3, 13.4, 6], heading: 183, activity: 12, script: level31}
+  - {id: "level31:Tag_03", level: level31, name: Tag_03, pos: [153.8, 86, 6], heading: 183, activity: 12, script: level31}
+  - {id: "level31:fBandHangout01", level: level31, name: fBandHangout01, pos: [-33, 105, 4.9], heading: 89, script: level31}
+  - {id: "level31:_xBarExit01", level: level31, name: _xBarExit01, pos: [-26.3, 98.9, 4.4], heading: 89, activity: 8, script: level31}
+  - {id: "level31:_xBarExit02", level: level31, name: _xBarExit02, pos: [-16.4, 115.1, 5], heading: 89, activity: 8, script: level31}
+  - {id: "level31:_xBarExit03", level: level31, name: _xBarExit03, pos: [-40.8, 115.9, 5], heading: 89, activity: 8, script: level31}
+  - {id: "level31:_xBarExit04", level: level31, name: _xBarExit04, pos: [-33.2, 98.5, 5.4], heading: 89, activity: 8, script: level31}
+  - {id: "level31:_xBarExit05", level: level31, name: _xBarExit05, pos: [-29.5, 112.1, 5], heading: 89, activity: 8, script: level31}
+  - {id: "level31:fGateWalk1", level: level31, name: fGateWalk1, pos: [67.9, 156.5, -0.5], heading: 273, script: level31}
+  - {id: "level31:fGateWalk2", level: level31, name: fGateWalk2, pos: [69.8, 157.4, -0.5], heading: 273, script: level31}
+  - {id: "level31:fGateWalk3", level: level31, name: fGateWalk3, pos: [69.8, 155.3, -0.5], heading: 273, script: level31}
+  - {id: "level31:fCutters", level: level31, name: fCutters, pos: [99.6, 33.3, 6.1], heading: 89, script: level31}
+  - {id: "level31:fArrestedBulls", level: level31, name: fArrestedBulls, pos: [83.7, 63.4, 6], heading: 89, script: level31}
+  - {id: "level31:fPlatformHang", level: level31, name: fPlatformHang, pos: [78.7, 67.4, 0], heading: 89, script: level31}
+  - {id: "level31:fTopsideSearch", level: level31, name: fTopsideSearch, pos: [126.1, 63.5, 6], heading: 89, script: level31}
+  - {id: "level31:fHiders1", level: level31, name: fHiders1, pos: [127, 37.6, 6], heading: 89, script: level31}
+  - {id: "level31:fHiders2", level: level31, name: fHiders2, pos: [154.4, 15.3, 6], heading: 89, script: level31}
+  - {id: "level31:fGamblingClub", level: level31, name: fGamblingClub, pos: [148.2, 86.2, 6], heading: 89, script: level31}
+  - {id: "level31:fBumGate", level: level31, name: fBumGate, pos: [73.9, 156.4, -0.6], heading: 89, script: level31}
+  - {id: "level31:fRenegadeHang", level: level31, name: fRenegadeHang, pos: [31.7, 207.4, 3.1], heading: 89, script: level31}
+  - {id: "level31:fSewerTBHang", level: level31, name: fSewerTBHang, pos: [16, 181.2, 8.2], heading: 89, script: level31}
+  - {id: "level31:fCopGate", level: level31, name: fCopGate, pos: [72.2, 86, 0.5], heading: 40, script: level31}
+  - {id: "level31:fInevitableDeath", level: level31, name: fInevitableDeath, pos: [82.8, 74.4, -0.8], heading: 89, script: level31}
+  - {id: "level31:fCopWait", level: level31, name: fCopWait, pos: [71.3, 81.5, 2.9], heading: 5, script: level31}
+  - {id: "level31:wWatch", level: level31, name: wWatch, pos: [78.8, 89.8, 6], heading: 184, activity: 9, script: level31}
+  - {id: "level31:fSewerBDoor", level: level31, name: fSewerBDoor, pos: [6.2, 172.8, 8.2], heading: 89, script: level31}
+  - {id: "level31:fFlashDealer1", level: level31, name: fFlashDealer1, pos: [159, 96.9, 6.1], heading: 228, group: 64, script: level31}
+  - {id: "level31:fPaintDealer1", level: level31, name: fPaintDealer1, pos: [51.3, 104.2, 6], heading: 145, group: 64, script: level31}
+  - {id: "level31:fDevilWindow", level: level31, name: fDevilWindow, pos: [-42.5, 89.6, 5.4], heading: 89, script: level31}
+  - {id: "level31:fSewerBumGreet", level: level31, name: fSewerBumGreet, pos: [32.2, 203.5, 2.8], heading: 184, script: level31}
+  - {id: "level31:f1ACDevilHang", level: level31, name: f1ACDevilHang, pos: [-36.2, 100.8, 5.3], heading: 89, script: level31}
+  - {id: "level31:f2ACDevilHang", level: level31, name: f2ACDevilHang, pos: [-22, 100.8, 4.3], heading: 89, script: level31}
+  - {id: "level31:fSmoke110", level: level31, name: fSmoke110, pos: [-32.9, 114.9, 4.9], heading: 126, activity: 7, script: level31}
+  - {id: "level31:fSmoke202", level: level31, name: fSmoke202, pos: [-32.6, 100.7, 5.3], heading: 270, activity: 7, script: level31}
+  - {id: "level31:fDrink203", level: level31, name: fDrink203, pos: [-42.7, 102.2, 5.3], heading: 149, activity: 29, script: level31}
+  - {id: "level31:fPinball103", level: level31, name: fPinball103, pos: [-41.5, 110.5, 4.9], heading: 272, activity: 32, script: level31}
+  - {id: "level31:fSmoke101", level: level31, name: fSmoke101, pos: [-17, 112.8, 4.9], heading: 274, activity: 7, script: level31}
+  - {id: "level31:fSmoke102", level: level31, name: fSmoke102, pos: [-26.6, 115.7, 4.9], heading: 213, activity: 7, script: level31}
+  - {id: "level31:fDance105", level: level31, name: fDance105, pos: [-22.9, 98.8, 4.3], heading: 93, activity: 19, script: level31}
+  - {id: "level31:fDance106", level: level31, name: fDance106, pos: [-29.9, 104.4, 4.3], heading: 136, activity: 19, script: level31}
+  - {id: "level31:fDance203", level: level31, name: fDance203, pos: [-37.5, 114.3, 5], heading: 143, activity: 19, script: level31}
+  - {id: "level31:fDance107", level: level31, name: fDance107, pos: [-21.1, 97.4, 4.3], heading: 52, activity: 19, script: level31}
+  - {id: "level31:fDance108", level: level31, name: fDance108, pos: [-19.8, 103.5, 4.3], heading: 135, activity: 19, script: level31}
+  - {id: "level31:fSmoke109", level: level31, name: fSmoke109, pos: [-21.3, 108.6, 4.9], heading: 277, activity: 7, script: level31}
+  - {id: "level31:fSmoke104", level: level31, name: fSmoke104, pos: [-31, 109.2, 4.9], heading: 9, activity: 7, script: level31}
+  - {id: "level31:fPedHang", level: level31, name: fPedHang, pos: [-29.4, 109.4, 4.9], heading: 289, script: level31}
+  - {id: "level31:fBandHangout", level: level31, name: fBandHangout, pos: [-15.7, 101.4, 5.4], heading: 89, script: level31}
+  - {id: "level31:fDance01", level: level31, name: fDance01, pos: [-38.1, 103.6, 5.3], heading: 89, script: level31}
+  - {id: "level31:fWarmHandsBum05", level: level31, name: fWarmHandsBum05, pos: [-57, 65.6, 5.4], heading: 91, activity: 5, script: level31}
+  - {id: "level31:fWarmHandsBum06", level: level31, name: fWarmHandsBum06, pos: [-20.3, 66.1, 5.4], heading: 272, activity: 5, script: level31}
+  - {id: "level31:fAlleyACHang1", level: level31, name: fAlleyACHang1, pos: [-20.9, 66.1, 5.3], heading: 89, script: level31}
+  - {id: "level31:_xwDrinking01", level: level31, name: _xwDrinking01, pos: [-22.6, 67, 5.3], heading: 120, activity: 29, script: level31}
+  - {id: "level31:_xwDrinking02", level: level31, name: _xwDrinking02, pos: [-19.9, 67.2, 5.3], heading: 219, activity: 29, script: level31}
+  - {id: "level31:_xwDrinking03", level: level31, name: _xwDrinking03, pos: [-21.1, 64.4, 5.3], heading: 3, activity: 29, script: level31}
+  - {id: "level31:fPoolACHang", level: level31, name: fPoolACHang, pos: [-37.3, 109.6, 4.9], heading: 89, script: level31}
+  - {id: "level31:_xwLeanBack01", level: level31, name: _xwLeanBack01, pos: [-20.8, 69.4, 5.3], heading: 182, activity: 30, script: level31}
+  - {id: "level31:fWarmHandsBum07", level: level31, name: fWarmHandsBum07, pos: [-40.7, 32.7, 5.3], heading: 91, activity: 5, script: level31}
+  - {id: "level31:fCATWALK", level: level31, name: fCATWALK, pos: [-51.3, -0.7, 10.3], heading: 95, script: level31}
+  - {id: "level31:fAlleyACHang2", level: level31, name: fAlleyACHang2, pos: [-57.9, 35.2, 5.3], heading: 89, script: level31}
+  - {id: "level31:fWarmHandsBum08", level: level31, name: fWarmHandsBum08, pos: [-59.2, 35, 5.3], heading: 91, activity: 5, script: level31}
+  - {id: "level31:_xwDrinking04", level: level31, name: _xwDrinking04, pos: [-58.2, 38.4, 5.3], heading: 184, activity: 29, script: level31}
+  - {id: "level31:_xwDrinking05", level: level31, name: _xwDrinking05, pos: [-56.6, 36, 5.3], heading: 226, activity: 29, script: level31}
+  - {id: "level31:_xwDrinking06", level: level31, name: _xwDrinking06, pos: [-60.1, 36.1, 5.3], heading: 128, activity: 29, script: level31}
+  - {id: "level31:_xwDrinking07", level: level31, name: _xwDrinking07, pos: [-58.6, 33.3, 5.3], heading: 18, activity: 29, script: level31}
+  - {id: "level31:fRefineryEntrance", level: level31, name: fRefineryEntrance, pos: [-61.5, 32, 5.3], heading: 92, script: level31}
+  - {id: "level31:fFindBirdie", level: level31, name: fFindBirdie, pos: [-51.1, 8.8, 10.3], heading: 89, script: level31}
+  - {id: "level31:_xwDrinking08", level: level31, name: _xwDrinking08, pos: [-56, 37.4, 5.3], heading: 223, activity: 29, script: level31}
+  - {id: "level31:fPosition1", level: level31, name: fPosition1, pos: [-37.9, 3.8, 5.3], heading: 273, script: level31}
+  - {id: "level31:fPosition2", level: level31, name: fPosition2, pos: [-41.4, 4.8, 5.3], heading: 182, script: level31}
+  - {id: "level31:fFlashDealer2", level: level31, name: fFlashDealer2, pos: [-44, 56.9, 5.4], heading: 89, group: 64, script: level31}
+  - {id: "level31:fPosition03", level: level31, name: fPosition03, pos: [-33.4, 3.4, 5.3], heading: 273, script: level31}
+  - {id: "level31:fBumPoizoWarp1", level: level31, name: fBumPoizoWarp1, pos: [31.4, 196.1, 2.3], heading: 2, script: level31}
+  - {id: "level31:fBumPoizoWarp2", level: level31, name: fBumPoizoWarp2, pos: [33.2, 195.7, 2.3], heading: 2, script: level31}
+  - {id: "level31:fBumPoizoWarp3", level: level31, name: fBumPoizoWarp3, pos: [31, 194.8, 2.2], heading: 2, script: level31}
+  - {id: "level31:_xwFireBarrell05", level: level31, name: _xwFireBarrell05, pos: [42.2, 158.6, -0.5], heading: 322, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell02", level: level31, name: _xwFireBarrell02, pos: [26.3, 153.7, -0.5], heading: 272, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell04", level: level31, name: _xwFireBarrell04, pos: [57.8, 149.1, -0.5], heading: 317, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell06", level: level31, name: _xwFireBarrell06, pos: [24.1, 210, 5.1], heading: 272, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell07", level: level31, name: _xwFireBarrell07, pos: [23.6, 202.6, 5.1], heading: 272, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell08", level: level31, name: _xwFireBarrell08, pos: [32, 209.8, 3.4], heading: 2, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell09", level: level31, name: _xwFireBarrell09, pos: [134.9, 14.3, 6], heading: 217, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell10", level: level31, name: _xwFireBarrell10, pos: [115.2, 23.5, 6], heading: 127, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell11", level: level31, name: _xwFireBarrell11, pos: [99.1, 1.1, 6], heading: 127, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell12", level: level31, name: _xwFireBarrell12, pos: [159.8, 38.2, 6], heading: 137, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell13", level: level31, name: _xwFireBarrell13, pos: [-38.7, 146.7, -1.1], heading: 272, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell14", level: level31, name: _xwFireBarrell14, pos: [-19.4, 151.6, -1.1], heading: 37, activity: 5, script: level31}
+  - {id: "level31:_xwFireBarrell15", level: level31, name: _xwFireBarrell15, pos: [-51.6, 154.8, -1.1], heading: 37, activity: 5, script: level31}
+  - {id: "level31:wBench", level: level31, name: wBench, pos: [59.2, 95.2, 6.1], heading: 273, activity: 4, script: level31}
+  - {id: "level31:wBench01", level: level31, name: wBench01, pos: [55.6, 83.2, 6.1], heading: 93, activity: 4, script: level31}
+  - {id: "level31:_xwTrash01", level: level31, name: _xwTrash01, pos: [-39.6, 36.8, 5.3], heading: 93, activity: 10, script: level31}
+  - {id: "level31:_xwTrash02", level: level31, name: _xwTrash02, pos: [-39.5, 37.8, 5.3], heading: 93, activity: 10, script: level31}
+  - {id: "level31:_xwTrash03", level: level31, name: _xwTrash03, pos: [-60.6, 67.4, 5.3], heading: 214, activity: 10, script: level31}
+  - {id: "level31:_xwTrash04", level: level31, name: _xwTrash04, pos: [-35.6, 48.3, 5.3], heading: 93, activity: 10, script: level31}
+  - {id: "level31:_xwTrash05", level: level31, name: _xwTrash05, pos: [-35.5, 49.3, 5.3], heading: 93, activity: 10, script: level31}
+  - {id: "level31:_xfHideZone01", level: level31, name: _xfHideZone01, pos: [93.9, 83.6, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone02", level: level31, name: _xfHideZone02, pos: [148.4, 101, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone03", level: level31, name: _xfHideZone03, pos: [117.6, 44.6, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone04", level: level31, name: _xfHideZone04, pos: [127.2, 38.1, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone05", level: level31, name: _xfHideZone05, pos: [132.2, 47.7, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone06", level: level31, name: _xfHideZone06, pos: [165.6, 94.6, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone07", level: level31, name: _xfHideZone07, pos: [91, 15.4, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone08", level: level31, name: _xfHideZone08, pos: [46.6, 88.5, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone09", level: level31, name: _xfHideZone09, pos: [62, 35, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone10", level: level31, name: _xfHideZone10, pos: [138.4, 9.5, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone11", level: level31, name: _xfHideZone11, pos: [106.9, 15.3, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone12", level: level31, name: _xfHideZone12, pos: [102.9, 40.2, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone13", level: level31, name: _xfHideZone13, pos: [73.2, 53.5, -0.1], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone14", level: level31, name: _xfHideZone14, pos: [154.8, 15.5, 6], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone15", level: level31, name: _xfHideZone15, pos: [74.3, 76, -0.1], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone16", level: level31, name: _xfHideZone16, pos: [65.4, 92.7, -0.1], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone17", level: level31, name: _xfHideZone17, pos: [91.1, 91.3, -0.7], heading: 89, activity: 33, script: level31}
+  - {id: "level31:_xfHideZone18", level: level31, name: _xfHideZone18, pos: [-41.6, -14.3, 10.3], heading: 89, activity: 33, script: level31}
+  - {id: "level31:storeJewellery", level: level31, name: storeJewellery, pos: [102, 52.5, 6], heading: 270, activity: 14, group: 29, script: level31}

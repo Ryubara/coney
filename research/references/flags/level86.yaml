@@ -1,0 +1,139 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level86:fSWalk", level: level86, name: fSWalk, heading: 0, script: level86}
+  - {id: "level86:fIdle_01", level: level86, name: fIdle_01, pos: [33.8, 67.4, 4.5], heading: 147, script: level86}
+  - {id: "level86:fIdle_02", level: level86, name: fIdle_02, pos: [34.5, 67.3, 4.5], heading: 147, script: level86}
+  - {id: "level86:fIdle_03", level: level86, name: fIdle_03, pos: [32.2, 65.4, 4.5], heading: 147, script: level86}
+  - {id: "level86:fIdle_04", level: level86, name: fIdle_04, pos: [31.7, 63.5, 4.5], heading: 102, script: level86}
+  - {id: "level86:fIdle_05", level: level86, name: fIdle_05, pos: [32, 58.7, 4.5], heading: 102, script: level86}
+  - {id: "level86:fIdle_06", level: level86, name: fIdle_06, pos: [32, 57.1, 4.5], heading: 102, script: level86}
+  - {id: "level86:fIdle_07", level: level86, name: fIdle_07, pos: [31.2, 56.4, 4.5], heading: 102, script: level86}
+  - {id: "level86:fIdle_08", level: level86, name: fIdle_08, pos: [30.5, 61.7, 4.5], heading: 102, script: level86}
+  - {id: "level86:fIdle_09", level: level86, name: fIdle_09, pos: [28.2, 54.5, 4.5], heading: 102, script: level86}
+  - {id: "level86:fIdle_10", level: level86, name: fIdle_10, pos: [30.5, 49.7, 4.5], heading: 72, script: level86}
+  - {id: "level86:fIdle_11", level: level86, name: fIdle_11, pos: [27.3, 53.6, 4.5], heading: 102, script: level86}
+  - {id: "level86:fIdle_12", level: level86, name: fIdle_12, pos: [31.6, 52.2, 4.5], heading: 102, script: level86}
+  - {id: "level86:PedNet_01", level: level86, name: PedNet_01, pos: [-143.8, 44, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_02", level: level86, name: PedNet_02, pos: [-133.4, 39.8, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_03", level: level86, name: PedNet_03, pos: [-141.9, 39.8, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_04", level: level86, name: PedNet_04, pos: [-121.5, 48.8, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_05", level: level86, name: PedNet_05, pos: [-141.7, 33.2, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_06", level: level86, name: PedNet_06, pos: [-121.2, 44.8, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_07", level: level86, name: PedNet_07, pos: [-103.3, 48.8, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_08", level: level86, name: PedNet_08, pos: [-122.2, 33.2, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_09", level: level86, name: PedNet_09, pos: [-96.5, 33.2, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_10", level: level86, name: PedNet_10, pos: [-77.6, 43, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_11", level: level86, name: PedNet_11, pos: [-76.3, 33.2, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_12", level: level86, name: PedNet_12, pos: [-67.9, 35, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_13", level: level86, name: PedNet_13, pos: [-70.7, 42.1, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_14", level: level86, name: PedNet_14, pos: [-129.8, 12.2, 0.3], heading: 89, group: 5, script: level86}
+  - {id: "level86:PedNet_15", level: level86, name: PedNet_15, pos: [-141, 15.5, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_16", level: level86, name: PedNet_16, pos: [-137.7, 4.2, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_17", level: level86, name: PedNet_17, pos: [-147.7, 8.1, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_18", level: level86, name: PedNet_18, pos: [-141.7, 11.9, 0.3], heading: 89, group: 5, script: level86}
+  - {id: "level86:PedNet_19", level: level86, name: PedNet_19, pos: [-139.7, 11.2, 5.8], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_20", level: level86, name: PedNet_20, pos: [-121, 11.8, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_21", level: level86, name: PedNet_21, pos: [-107.8, 12.9, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_22", level: level86, name: PedNet_22, pos: [-107, -5.6, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_23", level: level86, name: PedNet_23, pos: [-132.6, 9.4, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_24", level: level86, name: PedNet_24, pos: [-107.1, 4.8, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_25", level: level86, name: PedNet_25, pos: [-112.5, 11.7, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_26", level: level86, name: PedNet_26, pos: [-124.6, 12.3, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_27", level: level86, name: PedNet_27, pos: [-94.3, 11.5, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_28", level: level86, name: PedNet_28, pos: [-70, 9.7, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_29", level: level86, name: PedNet_29, pos: [-74.7, 8.3, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_30", level: level86, name: PedNet_30, pos: [-60.8, 8.3, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_31", level: level86, name: PedNet_31, pos: [-59.4, -7.9, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_32", level: level86, name: PedNet_32, pos: [-77.9, 34.7, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_33", level: level86, name: PedNet_33, pos: [-100.3, 33.1, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_34", level: level86, name: PedNet_34, pos: [-60.2, 15.8, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_35", level: level86, name: PedNet_35, pos: [-55.9, 11.3, 0.3], heading: 89, group: 1, script: level86}
+  - {id: "level86:PedNet_36", level: level86, name: PedNet_36, pos: [-103.2, 56.3, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_37", level: level86, name: PedNet_37, pos: [-103.2, 76.5, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_38", level: level86, name: PedNet_38, pos: [-95.3, 88.6, 1.8], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_39", level: level86, name: PedNet_39, pos: [-81.4, 76.1, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_40", level: level86, name: PedNet_40, pos: [-70, 65.7, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedNet_41", level: level86, name: PedNet_41, pos: [-80.3, 65.5, 0.3], heading: 89, group: 4, script: level86}
+  - {id: "level86:PedExit_01", level: level86, name: PedExit_01, pos: [-132.4, 36.6, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:PedExit_02", level: level86, name: PedExit_02, pos: [-121.6, 23.2, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:PedExit_03", level: level86, name: PedExit_03, pos: [-141.7, 20.6, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:PedExit_04", level: level86, name: PedExit_04, pos: [-83.3, 72.4, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:wChair_k01", level: level86, name: wChair_k01, pos: [-49.5, 17.3, 0.3], heading: 167, activity: 4, script: level86}
+  - {id: "level86:wChair_k", level: level86, name: wChair_k, pos: [-47.7, 15.7, 0.3], heading: 287, activity: 4, script: level86}
+  - {id: "level86:wChair_k02", level: level86, name: wChair_k02, pos: [-134.7, 3.9, 0.3], heading: 167, activity: 4, script: level86}
+  - {id: "level86:wChair_k03", level: level86, name: wChair_k03, pos: [-133.6, -0.2, 0.3], heading: 227, activity: 4, script: level86}
+  - {id: "level86:fChuck", level: level86, name: fChuck, pos: [-120.7, 56.4, 0.3], heading: 89, script: level86}
+  - {id: "level86:fMildred", level: level86, name: fMildred, pos: [-41.7, 10.1, 0.3], heading: 89, script: level86}
+  - {id: "level86:fMarcello", level: level86, name: fMarcello, pos: [-128.1, 4.5, 0.3], heading: 115, script: level86}
+  - {id: "level86:fTwiggy", level: level86, name: fTwiggy, pos: [-78.8, 62.6, 0.3], heading: 195, script: level86}
+  - {id: "level86:fMarcelloOutside", level: level86, name: fMarcelloOutside, pos: [-132, -10.2, 0.3], heading: 89, script: level86}
+  - {id: "level86:fMildredOutside", level: level86, name: fMildredOutside, pos: [-53.8, 11.2, 0.3], heading: 89, script: level86}
+  - {id: "level86:fChuckOutside", level: level86, name: fChuckOutside, pos: [-120.6, 46.3, 0.3], heading: 89, script: level86}
+  - {id: "level86:fDestHang", level: level86, name: fDestHang, pos: [32, 50.7, 3.4], heading: 147, script: level86}
+  - {id: "level86:fHangHotDogGuy", level: level86, name: fHangHotDogGuy, pos: [-91.5, 44.2, 0.3], heading: 89, script: level86}
+  - {id: "level86:fC2Swan", level: level86, name: fC2Swan, pos: [-65.8, 43, 0.3], heading: 95, script: level86}
+  - {id: "level86:fC2Cleon", level: level86, name: fC2Cleon, pos: [-66.4, 43.8, 0.3], heading: 95, script: level86}
+  - {id: "level86:fC2Snow", level: level86, name: fC2Snow, pos: [-66.5, 42.1, 0.3], heading: 95, script: level86}
+  - {id: "level86:fC2Vermin", level: level86, name: fC2Vermin, pos: [-67.2, 43, 0.3], heading: 95, script: level86}
+  - {id: "level86:fDestroyersTag", level: level86, name: fDestroyersTag, pos: [-65.6, 53.6, 0.3], heading: 89, script: level86}
+  - {id: "level86:fDestroyersTag01", level: level86, name: fDestroyersTag01, pos: [-57.3, 4.6, 1.4], heading: 89, script: level86}
+  - {id: "level86:fDestroyersTag02", level: level86, name: fDestroyersTag02, pos: [-119, 63.1, 0.3], heading: 4, script: level86}
+  - {id: "level86:fDestroyersTag03", level: level86, name: fDestroyersTag03, pos: [-135.8, -2.5, 0.3], heading: 270, script: level86}
+  - {id: "level86:fMildred01", level: level86, name: fMildred01, pos: [-41.9, 15.8, 0.3], heading: 219, script: level86}
+  - {id: "level86:fTwiggy01", level: level86, name: fTwiggy01, pos: [-72.5, 60, 0.8], heading: 195, script: level86}
+  - {id: "level86:fTwiggy02", level: level86, name: fTwiggy02, pos: [-68.6, 58.4, 2.8], heading: 195, script: level86}
+  - {id: "level86:fTwiggy03", level: level86, name: fTwiggy03, pos: [-68.7, 62.1, 2.8], heading: 195, script: level86}
+  - {id: "level86:fTwiggy04", level: level86, name: fTwiggy04, pos: [-88.4, 58.4, 0.3], heading: 195, script: level86}
+  - {id: "level86:fTwiggy05", level: level86, name: fTwiggy05, pos: [-88.4, 55.3, 0.3], heading: 195, script: level86}
+  - {id: "level86:fTwiggy06", level: level86, name: fTwiggy06, pos: [-88.4, 52.9, 0.3], heading: 195, script: level86}
+  - {id: "level86:fDestHang05", level: level86, name: fDestHang05, pos: [34, 59.5, 4.5], heading: 147, script: level86}
+  - {id: "level86:fDestHang01", level: level86, name: fDestHang01, pos: [34.2, 49, 4.5], heading: 147, script: level86}
+  - {id: "level86:fDestHang03", level: level86, name: fDestHang03, pos: [34, 64, 4.5], heading: 147, script: level86}
+  - {id: "level86:fDestHang04", level: level86, name: fDestHang04, pos: [34.1, 65.6, 4.5], heading: 147, script: level86}
+  - {id: "level86:fLook01", level: level86, name: fLook01, pos: [-113.9, 47.5, 0.3], heading: 4, activity: 9, script: level86}
+  - {id: "level86:fLook02", level: level86, name: fLook02, pos: [-128.4, 47.3, 0.3], heading: 4, activity: 9, script: level86}
+  - {id: "level86:fLeanCar01", level: level86, name: fLeanCar01, pos: [-148, 38.1, 0.3], heading: 4, activity: 30, script: level86}
+  - {id: "level86:fSmokingChick01", level: level86, name: fSmokingChick01, pos: [-102.6, 48.6, 0.3], heading: 269, activity: 7, script: level86}
+  - {id: "level86:fHaveSmoke01", level: level86, name: fHaveSmoke01, pos: [-91.5, 28, 0.3], heading: 85, activity: 7, script: level86}
+  - {id: "level86:fStoreBrowse02", level: level86, name: fStoreBrowse02, pos: [-131.2, 0.9, 0.3], heading: 85, activity: 22, script: level86}
+  - {id: "level86:fStoreBrowse03", level: level86, name: fStoreBrowse03, pos: [-43.9, 18.2, 0.3], heading: 89, activity: 22, script: level86}
+  - {id: "level86:fEatIceCream", level: level86, name: fEatIceCream, pos: [-62.4, 17, 0.3], heading: 325, script: level86}
+  - {id: "level86:fEatIceCream01", level: level86, name: fEatIceCream01, pos: [-61.5, 20.5, 0.3], heading: 195, script: level86}
+  - {id: "level86:fTrash", level: level86, name: fTrash, pos: [-46.4, 54.9, 0.3], heading: 39, activity: 10, script: level86}
+  - {id: "level86:fChuck01", level: level86, name: fChuck01, pos: [-112.4, 59.5, 0.3], heading: 240, script: level86}
+  - {id: "level86:fMarcelloCut", level: level86, name: fMarcelloCut, pos: [-123.8, -1.2, 0.3], heading: 4, script: level86}
+  - {id: "level86:fTwiggyLean", level: level86, name: fTwiggyLean, pos: [-76.9, 50.7, 0.3], heading: 4, activity: 30, script: level86}
+  - {id: "level86:fTwiggyLook", level: level86, name: fTwiggyLook, pos: [-82.4, 58.2, 0.3], heading: 240, activity: 22, script: level86}
+  - {id: "level86:fTwiggyWrite", level: level86, name: fTwiggyWrite, pos: [-82, 57, 0.3], heading: 265, activity: 26, script: level86}
+  - {id: "level86:fTwiggyLook01", level: level86, name: fTwiggyLook01, pos: [-77.6, 59.4, 0.3], heading: 240, activity: 22, script: level86}
+  - {id: "level86:fTwiggyLook02", level: level86, name: fTwiggyLook02, pos: [-79.5, 50.2, 0.3], heading: 275, activity: 22, script: level86}
+  - {id: "level86:fMarcelloCut01", level: level86, name: fMarcelloCut01, pos: [-127.2, -0.5, 0.3], heading: 275, script: level86}
+  - {id: "level86:fMarcelloCut02", level: level86, name: fMarcelloCut02, pos: [-120.4, -1.2, 0.3], heading: 89, script: level86}
+  - {id: "level86:fSit", level: level86, name: fSit, pos: [-144.8, 3.9, 0.3], heading: 0, activity: 4, script: level86}
+  - {id: "level86:fSit01", level: level86, name: fSit01, pos: [-144.5, 8, 0.3], heading: 265, activity: 4, script: level86}
+  - {id: "level86:fEndGlow", level: level86, name: fEndGlow, pos: [-101.8, 41.6, 0.3], heading: 89, script: level86}
+  - {id: "level86:fBrowse02", level: level86, name: fBrowse02, pos: [-115.3, 46.7, 0.3], heading: 4, activity: 22, script: level86}
+  - {id: "level86:fHaveSmoke03", level: level86, name: fHaveSmoke03, pos: [-136.2, 33.7, 0.3], heading: 4, activity: 7, script: level86}
+  - {id: "level86:fLean02", level: level86, name: fLean02, pos: [-96.2, 51.4, 0.3], heading: 274, activity: 30, script: level86}
+  - {id: "level86:fLook03", level: level86, name: fLook03, pos: [-129.9, 30.9, 0.3], heading: 179, activity: 9, script: level86}
+  - {id: "level86:fHaveSmoke04", level: level86, name: fHaveSmoke04, pos: [-82.1, 52.4, 0.3], heading: 180, activity: 7, script: level86}
+  - {id: "level86:fLook04", level: level86, name: fLook04, pos: [-109.7, 31.7, 0.3], heading: 179, activity: 9, script: level86}
+  - {id: "level86:fLook05", level: level86, name: fLook05, pos: [-99.5, 31.6, 0.3], heading: 179, activity: 9, script: level86}
+  - {id: "level86:fDestHang02", level: level86, name: fDestHang02, pos: [33.9, 53.3, 4.5], heading: 147, script: level86}
+  - {id: "level86:fFirstThrow", level: level86, name: fFirstThrow, pos: [48.7, 64.2, 1.4], heading: 147, script: level86}
+  - {id: "level86:fLean03", level: level86, name: fLean03, pos: [-92.4, 25.6, 0.3], heading: 90, activity: 30, script: level86}
+  - {id: "level86:fDestHang06", level: level86, name: fDestHang06, pos: [48.4, 48.4, 0.3], heading: 147, script: level86}
+  - {id: "level86:fStoreBrowse04", level: level86, name: fStoreBrowse04, pos: [-134.3, -2.4, 0.3], heading: 270, activity: 22, script: level86}
+  - {id: "level86:fChuck02", level: level86, name: fChuck02, pos: [-127.4, 57, 0.3], heading: 89, script: level86}
+  - {id: "level86:fExit", level: level86, name: fExit, pos: [-105.7, 61.6, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:fExit01", level: level86, name: fExit01, pos: [-98.9, 74.1, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:fExit02", level: level86, name: fExit02, pos: [-109.9, -0.3, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:fExit03", level: level86, name: fExit03, pos: [-96.2, -9.4, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:fExit04", level: level86, name: fExit04, pos: [-120.5, 19.6, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:fExit05", level: level86, name: fExit05, pos: [-147.5, 47.7, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:fExit06", level: level86, name: fExit06, pos: [-103.2, 88.9, 1.8], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:fExit07", level: level86, name: fExit07, pos: [-100.7, 7, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:fExit08", level: level86, name: fExit08, pos: [60.2, 66.7, 0.3], heading: 89, activity: 8, group: 5, script: level86}
+  - {id: "level86:fPlayPinball", level: level86, name: fPlayPinball, pos: [-42.6, 8.9, 0.3], heading: 182, activity: 23, script: level86}
+  - {id: "level86:fPlayPinball01", level: level86, name: fPlayPinball01, pos: [-44, 9, 0.3], heading: 182, activity: 23, script: level86}

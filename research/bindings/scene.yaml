@@ -7,10 +7,10 @@
   calls:
     - {addr: 0x00353f88, name: Scene_Preload}
   args:
-    - {name: name, lua: string, desc: "Scene name from the level's scene list (for example `l11_c2`)."}
+    - {name: name, lua: string, desc: "Scene name (for example `l11_c2`); the first record of `scene_list.cnk` whose name contains it is loaded."}
     - {name: onLoaded, lua: string, desc: "Optional name of a Lua function called when the scene has loaded."}
   results:
-    - {lua: number, desc: "The scene's id (its index in the level's scene table), used by the other Scene bindings. An unknown name gives 0, the first scene."}
+    - {lua: number, desc: "The scene's id (its index in the global scene list `scene_list.cnk`, [Scenes and movies](../scenes.md)), used by the other Scene bindings. An unknown name gives 0, the first scene."}
   description: >-
     Starts loading a scripted scene (in-engine cutscene or animation set) into one of 12 scene slots and returns its
     id; a scene already loaded or loading is not loaded again.

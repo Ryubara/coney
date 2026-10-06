@@ -22,14 +22,14 @@ icon of at most 64 × 64 that Coney renders from the disc), **swatch** (a colour
 | <span id="glass"></span>Glass pane | A breakable window pane | `SpawnBreakableGlass` | handle | 100 | still to list | [World and objects](bindings/world.md) | none |
 | <span id="particle"></span>Particle system | Fire, smoke, sparks, strobes | `SpawnParticle` | handle | 1,400 | [Particle effects](particles.md) | [Effects and lighting](bindings/effects.md) | icon render: cut the type's rectangle from its sheet record and fit it to 64 × 64 (sprite traced for 58 types; [Particles](../research/particles.md#sprite-words)) |
 | <span id="light"></span>Dynamic light | A point, spot, directional or ambient light | `SetLight` | its own light handle | not traced | still to list | [Effects and lighting](bindings/effects.md) | swatch |
-| <span id="flag"></span>World flag | A named point with a heading: spawn point, waypoint, objective | `AddFlag` | handle; `FindFlag` by name | per level | still to list | [World and objects](bindings/world.md) | none |
+| <span id="flag"></span>World flag | A named point with a heading: spawn point, waypoint, objective | `AddFlag` | handle; `FindFlag` by name | per level | [World flags](flags.md) | [World and objects](bindings/world.md) | none |
 | <span id="path"></span>Path | A route of points AI humans follow | `AddPath` | a userdata | 32 | | [World and objects](bindings/world.md), [AI](bindings/ai.md) | none |
-| <span id="box"></span>Volume, turf and player boxes | Trigger boxes; a gang's turf | `AddVolumeBox`, `GangAddTurfBox` | handle | per level | still to list | [World and objects](bindings/world.md), [Gangs](bindings/gang.md) | none |
+| <span id="box"></span>Volume, turf and player boxes | Trigger boxes; a gang's turf | `AddVolumeBox`, `GangAddTurfBox` | handle | per level | [Volume boxes](boxes.md) | [World and objects](bindings/world.md), [Gangs](bindings/gang.md) | none |
 | <span id="trigger"></span>Trigger sphere | A radius around an object that reports entries | `TriggerSphereCfg` | its object's handle | one per object | | [World and objects](bindings/world.md) | none |
-| <span id="zone"></span>Object zone | A group of placed objects switched on and off together | the level's placements | zone number | 255 | still to list | [World and objects](bindings/world.md), [Script flow](bindings/script.md) | none |
+| <span id="zone"></span>Object zone | A group of placed objects switched on and off together | the level's placements | zone number | 255 | [Object zones](zones.md) | [World and objects](bindings/world.md), [Script flow](bindings/script.md) | none |
 | <span id="camera"></span>Camera | Follow, locked, fixed, rail and scene cameras | `CameraCreateLocked`, `CameraCreateFixed`, `CameraCreateThird`, ... | handle | not traced | still to list (types) | [Cameras](bindings/camera.md) | none |
-| <span id="scene"></span>Scene | An in-engine cutscene or animation set | `ScenePreload` | scene id (index in the level's scene table) | 12 loaded | still to list | [Scenes and movies](bindings/scene.md) | none |
-| <span id="movie"></span>Movie | A full-motion video | `PlayMovie` | name | one at a time | still to list | [Scenes and movies](bindings/scene.md) | none |
+| <span id="scene"></span>Scene | An in-engine cutscene or animation set | `ScenePreload` | scene id (index in the scene list `scene_list.cnk`) | 12 loaded | [Scenes and movies](scenes.md) | [Scenes and movies](bindings/scene.md) | none |
+| <span id="movie"></span>Movie | A full-motion video | `PlayMovie` | name | one at a time | [Scenes and movies](scenes.md#movie) | [Scenes and movies](bindings/scene.md) | none |
 | <span id="sound"></span>Sound and emitter | A one-shot or looping sound; an ambient emitter | `SoundPlay`, `SoundPreLoad`, `AddAmbientSoundEmitter2` | sound handle; emitter id | not traced | [Sound and music](sound.md), [Speech](speech.md) | [Sound and music](bindings/sound.md) | none |
 | <span id="blip"></span>Radar blip | A mark on the radar for a human, object or flag | `HUDAddRadarMissionObjective`, `HUDAddRadarHuman` | the marked thing's handle | 128 per radar | [Radar icons and blips](radar-icons.md) | [HUD and menus](bindings/hud.md) | icon render: rectangle *n* of `part_page0`, fitted to 64 × 64 ([GUI](../research/gui.md#radar-icons)) |
 | <span id="icon"></span>Spinning icon | The marker over a target: a world object of class `dyn_icon` | `HuAttachSpinningIcon`, `GangAttachSpinningIcon` | through its human or gang | one per human | [Objects](objects.md) (class `dyn_icon`) | [Characters](bindings/character.md), [Gangs](bindings/gang.md) | model render |
@@ -119,10 +119,10 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 | Marker | [spinning icon](#icon); the HUD's tutorial arrow (`HUDEnableInstArrow`) | [Objects and weapons](objects.md) | [Characters](bindings/character.md), [HUD and menus](bindings/hud.md) |
 | Checkpoint (race) | none; a [trigger sphere](#trigger) or [volume box](#box) does the job. A Warriors checkpoint is a restart point (`SetCheckPoint`) | [Level starts](level-starts.md) | [Levels and game state](bindings/level.md) |
 | Ptfx | [particle system](#particle) | [Particle effects](particles.md) | [Effects and lighting](bindings/effects.md) |
-| Zone | [object zone](#zone), [turf box](#box) | still to list | [World and objects](bindings/world.md) |
+| Zone | [object zone](#zone), [turf box](#box) | [Object zones](zones.md), [Volume boxes](boxes.md) | [World and objects](bindings/world.md) |
 | Interior | none: a level or one of its streamed sections | [Levels](levels.md) | [Levels and game state](bindings/level.md) |
 | Camera | [camera](#camera) | | [Cameras](bindings/camera.md) |
-| Cutscene | [scene](#scene), [movie](#movie) | still to list | [Scenes and movies](bindings/scene.md) |
+| Cutscene | [scene](#scene), [movie](#movie) | [Scenes and movies](scenes.md) | [Scenes and movies](bindings/scene.md) |
 | Sound | [sound and emitter](#sound) | [Sound and music](sound.md), [Speech](speech.md) | [Sound and music](bindings/sound.md) |
 | Weather | [weather and screen effects](#weather) | | [Effects and lighting](bindings/effects.md) |
 | HUD colour | the `CL` colours | [HUD colours](hud-colours.md) | [HUD and menus](bindings/hud.md) |

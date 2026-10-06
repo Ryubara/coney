@@ -185,12 +185,20 @@ Not on the wheel, with pools of their own:
 | volume, turf and player boxes | `FreeList<VolumeBox>`, `FreeListContainer<TurfBox>`, `FreeList<PlayerBox>`; base constructor `0x004127c0`, vtable `0x00545c48` | per level, `CfgSetDatabaseSizes` | yes |
 | spawn record (a placed object, live or not) | `ObjectTaskRec`, `ObjectTaskManager +0x14` | per level, `CfgSetDatabaseSizes` objects + 500, 0x28 each | serial 0 ([Handles](#handles)) |
 | camera | `Cam_ICamera` base `0x00120868`, vtable `0x00535510` ([Camera](camera.md)) | not traced | yes |
-| object zone | a bit mask in the `ObjectTaskManager`; zone 0 on, 1-254 off at start (`0x00398348` from `0x00397a48`) | 255 | the zone number |
+| object zone | a bit mask in the `ObjectTaskManager`; zone 0 on, 1-254 off at start (`0x00398348` from `0x00397a48`); the zones scripts use: [Object zones](../references/zones.md) | 255 | the zone number |
 | brain, goal, action | [AI](ai.md#brain) | 60, 170, 100 | by human |
 | gang | `0x005e6e30` ([AI](ai.md#gang-record)) | 32 × 0xb10 | the slot 0-31 |
 | formation | `0x006ceaf0` ([AI](ai.md#formations)) | 41 × 0x280 | |
 | path | `AddPath` | 32 | a userdata |
 | physics bodies and shapes | [Physics](physics.md#iphysics) | | |
+
+**Boxes.** `AddVolumeBox`'s kind picks the pool (`VolumeBox_Add`, `0x004125b8`): 0 a `VolumeBox`
+(`FreeList<VolumeBox>` at `0x0051483c`, 0x1f0-byte records), 2 a `PlayerBox` (`FreeList<PlayerBox>` at `0x00514814`,
+0x100 bytes), 3 a `TurfBox` (through the factory `FreeListContainer<TurfBox>` at `0x00514834`, vtable `0x00545d28`);
+kind 1 returns `NilHandle`. `CfgSetDatabaseSizes`' third argument sizes them: its items 1, 3 and 4 the volume,
+player and turf pools; item 2's sizer (`0x00413200`) does nothing. Confirmed (code) at `0x0041d628`, `0x00414f68`,
+`0x00413218`, `0x00414d48`; what a player box does differently is not traced. The boxes the scripts add:
+[Volume boxes](../references/boxes.md).
 
 `FreeList<AnimTask>`, `FreeList<WarAnimInstance>`, `FreeList<SoundTask>` and `FreeList<ScriptObject>` are pools
 too (their allocation tags); their sizes are not traced.

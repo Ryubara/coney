@@ -80,6 +80,10 @@ class Topic:
     compact: bool = False  # one flow mapping per line in the YAML (long lists)
     nav: str = ""  # the short name in the navigation and the index
     images: bool = False  # entries may carry an `image` thumbnail (a path below docs/references/images/)
+    # One data file and one page per `group_by` group: research/references/<key>/<part>.yaml holds the group's
+    # entries and docs/references/<key>/<part>.md its table; <key>.yaml keeps the prose and <key>.md is an overview.
+    # For a list too long for one file (each stays under the repository's 512 KB file guard) and one page.
+    split: bool = False
 
     def field_map(self) -> dict[str, Field]:
         """Every field by name, the common ones included."""
@@ -184,18 +188,52 @@ def load(path: Path, topic: Topic) -> RefList:
     unknown = sorted(set(data) - set(_TOP_KEYS))
     if unknown:
         raise RefsError(f"{path}: unknown top-level keys {', '.join(unknown)}")
+    entries = list(data.get("entries") or [])
+    where = str(path)
+    if topic.split:
+        entries += _load_parts(parts_dir(path))
+        where = f"{path} and {parts_dir(path)}"
     reflist = RefList(
         topic,
         str(data.get("title") or topic.key),
         str(data.get("about") or "").strip(),
         str(data.get("complete") or "").strip(),
         dict(data.get("defaults") or {}),
-        list(data.get("entries") or []),
+        entries,
     )
-    problems = validate(reflist, str(path))
+    problems = validate(reflist, where)
     if problems:
         raise RefsError("\n".join(problems))
     return reflist
+
+
+def parts_dir(path: Path) -> Path:
+    """Where a split list keeps its parts: research/references/flags.yaml -> research/references/flags/."""
+    return path.with_suffix("")
+
+
+def part_name(value: Any) -> str:
+    """The file stem of the part (and page) an entry's group goes to: its value as an anchor-safe slug."""
+    return re.sub(r"[^a-z0-9]+", "-", str(value or "other").lower()).strip("-") or "other"
+
+
+def _natural(path: Path) -> list[Any]:
+    """Sort key putting `level2` before `level11`: digit runs compare as numbers (as zero-padded text)."""
+    return [part.zfill(12) if part.isdigit() else part for part in re.split(r"(\d+)", path.stem)]
+
+
+def _load_parts(folder: Path) -> list[dict[str, Any]]:
+    """The entries of every part of a split list, parts in natural order. Raises RefsError on a bad part."""
+    entries: list[dict[str, Any]] = []
+    for part in sorted(folder.glob("*.yaml"), key=_natural) if folder.is_dir() else []:
+        try:
+            data = yaml.safe_load(part.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, yaml.YAMLError) as error:
+            raise RefsError(f"{part}: cannot be read ({error})") from error
+        if not isinstance(data, dict) or set(data) != {"entries"} or not isinstance(data["entries"], list):
+            raise RefsError(f"{part}: a part holds only a list of entries")
+        entries += data["entries"]
+    return entries
 
 
 # --- the families still to list ----------------------------------------------------------------------------------
@@ -282,10 +320,11 @@ def _block(text: str, indent: str = "  ") -> str:
 
 
 def dump(reflist: RefList) -> str:
-    """The list as YAML text in the canonical layout: fields in schema order, one entry after another."""
+    """The list as YAML text in the canonical layout: fields in schema order, one entry after another.
+
+    For a split list this is the main file only (prose and defaults); `dump_parts` gives the entries.
+    """
     topic = reflist.topic
-    fields = topic.field_map()
-    order = list(fields)
     lines = [
         f"# {reflist.title}: a Coney game reference list. The page docs/references/{topic.key}.md is generated",
         "# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the",
@@ -294,9 +333,36 @@ def dump(reflist: RefList) -> str:
         f"about: {_block(reflist.about)}",
         f"complete: {_block(reflist.complete)}",
         "defaults: " + _scalar(reflist.defaults),
+    ]
+    if topic.split:
+        lines += [
+            f"# The entries are in research/references/{topic.key}/, one file per {topic.group_by}.",
+            "entries: []",
+        ]
+        return "\n".join(lines) + "\n"
+    return "\n".join([*lines, "entries:", *_entry_lines(topic, reflist.entries)]) + "\n"
+
+
+def dump_parts(reflist: RefList) -> dict[str, str]:
+    """A split list's parts as YAML text, by file stem: each group's entries, in list order."""
+    topic = reflist.topic
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for entry in reflist.entries:
+        groups.setdefault(part_name(entry.get(topic.group_by or "")), []).append(entry)
+    header = [
+        f"# {reflist.title}: a part of research/references/{topic.key}.yaml, which holds the list's prose and",
+        "# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.",
         "entries:",
     ]
-    for entry in reflist.entries:
+    return {name: "\n".join([*header, *_entry_lines(topic, entries)]) + "\n" for name, entries in groups.items()}
+
+
+def _entry_lines(topic: Topic, entries: list[dict[str, Any]]) -> list[str]:
+    """The YAML lines of `entries`, fields in schema order."""
+    fields = topic.field_map()
+    order = list(fields)
+    lines: list[str] = []
+    for entry in entries:
         keys = sorted(entry, key=lambda k: order.index(k) if k in order else len(order))
         pairs = [(k, entry[k]) for k in keys if entry[k] is not None or k == topic.key_field]
         if topic.compact:
@@ -306,16 +372,25 @@ def dump(reflist: RefList) -> str:
         for k, v in pairs:
             lines.append(f"  {'- ' if first else '  '}{k}: {_scalar(v, fields[k].kind if k in fields else None)}")
             first = False
-    return "\n".join(lines) + "\n"
+    return lines
 
 
 def write(path: Path, reflist: RefList) -> None:
-    """Write the list in canonical form, after checking it."""
+    """Write the list in canonical form, after checking it; a split list also rewrites its parts folder."""
     problems = validate(reflist, str(path))
     if problems:
         raise RefsError("\n".join(problems))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(dump(reflist), encoding="utf-8", newline="\n")
+    if reflist.topic.split:
+        folder = parts_dir(path)
+        folder.mkdir(exist_ok=True)
+        parts = dump_parts(reflist)
+        for old in folder.glob("*.yaml"):
+            if old.stem not in parts:
+                old.unlink()  # a group that left the list
+        for name, text in parts.items():
+            (folder / f"{name}.yaml").write_text(text, encoding="utf-8", newline="\n")
 
 
 # --- merging extracted facts -------------------------------------------------------------------------------------

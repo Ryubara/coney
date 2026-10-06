@@ -335,6 +335,26 @@ returns the camera's handle. `global.lua` sets these globals to **3, 6.6, 4.8, 1
 and 0.2**; `CameraNormal()` applies them again to `MainCam`. Inferred from the disassembly; the values are confirmed
 (runtime) in the camera object ([Camera](camera.md#the-follow-camera-object)).
 
+### Scenes and movies {#scenes-and-movies}
+
+- **The scene list.** Boot step 13 (`0x003535e8`, [Boot](boot.md#main)) loads `scene_list.cnk`, and `0x00353460`
+  copies its Scene List chunk (type `0x43`): a u32 count, then 24-byte records `{u32 id, u32 size, char name[16]}`,
+  to `0x006eba10`, the count to `0x00512aec`. Confirmed (code). On the NTSC-U disc there are 2,765 records, each id
+  its own index, one per `.scn` record ([Scene records](formats/wad-contents.md#scene-records)): 1,216 scene headers,
+  1,525 segments of long scenes and 24 whose names are cut to 16 characters.
+- **`ScenePreload(name)`** (`0x00353f88`) takes the id `0x00353698` finds: the **first** record whose name
+  *contains* `name` (`0x00435d30` is a case-sensitive `strstr`), or 0 when none does; then `0x00353af0` loads it into
+  a free slot of the 12 unless it is loaded or loading already. Confirmed (code). The scene id is global, not per
+  level. Each of the 187 names the scripts pass finds its own record on the NTSC-U disc (no shorter name hits an
+  earlier record). Lookups by exact name (`0x00353778`, `strcmp`) and by id (`0x00353730`) exist too, and C++ code
+  calls `0x00353698` itself (the AI, `0x002cb5d0`), so not every scene is preloaded by a script.
+- **Movies.** `PlayMovie(name, flag)` → `Movie_Play` (`0x0042a938`) opens `PSS\<name>.BIK` (format `0x0058bfe0`),
+  confirmed (code). Who names them: the boot (`LOGO`, `PLOGO`, `L1_IN`), a level record's intro `L%d_IN`
+  (`0x00550160`) and outro `L%d_OUT` (`0x0054ed20`) ([Level loading](level-loading.md#the-level-record)), and the
+  front end's `Menu.movies` (`TRAILER`, `L1_IN`). The disc's `PSS` folder holds exactly those 16 movies.
+
+Both are listed in [Scenes and movies](../references/scenes.md).
+
 ### `level99.lua` (the first mission) {#level99}
 
 The first story level's script, inferred from the disassembly. Its main chunk defines helpers, calls

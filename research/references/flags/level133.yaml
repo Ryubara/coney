@@ -1,0 +1,24 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level133_royal_init:fP1_01", level: level133, name: fP1_01, pos: [-56.9, 6.9, 13.8], heading: 89, script: level133_royal_init}
+  - {id: "level133_royal_init:fP1_02", level: level133, name: fP1_02, pos: [-56.8, 5.4, 13.8], heading: 89, script: level133_royal_init}
+  - {id: "level133_royal_init:fP1_03", level: level133, name: fP1_03, pos: [-58, 6.9, 13.8], heading: 89, script: level133_royal_init}
+  - {id: "level133_royal_init:fP1_04", level: level133, name: fP1_04, pos: [-58, 5.4, 13.8], heading: 89, script: level133_royal_init}
+  - {id: "level133_royal_init:fP1_05", level: level133, name: fP1_05, pos: [-58, 4.3, 13.8], heading: 89, script: level133_royal_init}
+  - {id: "level133_royal_init:fP1_06", level: level133, name: fP1_06, pos: [-59.3, 6.9, 13.8], heading: 89, script: level133_royal_init}
+  - {id: "level133_royal_init:fP1_07", level: level133, name: fP1_07, pos: [-59.3, 5.4, 13.8], heading: 89, script: level133_royal_init}
+  - {id: "level133_royal_init:fP1_08", level: level133, name: fP1_08, pos: [-59.3, 4.3, 13.8], heading: 89, script: level133_royal_init}
+  - {id: "level133_royal_init:fP1_09", level: level133, name: fP1_09, pos: [-59.3, 8.2, 13.8], heading: 89, script: level133_royal_init}
+  - {id: "level133_royal_init:fP1_10", level: level133, name: fP1_10, pos: [-57.5, 8.2, 13.8], heading: 89, script: level133_royal_init}
+  - {id: "level133_royal_init:fP2_01", level: level133, name: fP2_01, pos: [-55.2, 5.5, 13.8], heading: 270, script: level133_royal_init}
+  - {id: "level133_royal_init:fP2_02", level: level133, name: fP2_02, pos: [-55.2, 7, 13.8], heading: 270, script: level133_royal_init}
+  - {id: "level133_royal_init:fP2_03", level: level133, name: fP2_03, pos: [-54, 8.2, 13.8], heading: 270, script: level133_royal_init}
+  - {id: "level133_royal_init:fP2_04", level: level133, name: fP2_04, pos: [-54, 7, 13.8], heading: 270, script: level133_royal_init}
+  - {id: "level133_royal_init:fP2_05", level: level133, name: fP2_05, pos: [-54, 5.9, 13.8], heading: 270, script: level133_royal_init}
+  - {id: "level133_royal_init:fP2_06", level: level133, name: fP2_06, pos: [-53.9, 4.5, 13.8], heading: 270, script: level133_royal_init}
+  - {id: "level133_royal_init:fP2_07", level: level133, name: fP2_07, pos: [-52.5, 7, 13.8], heading: 270, script: level133_royal_init}
+  - {id: "level133_royal_init:fP2_08", level: level133, name: fP2_08, pos: [-52.5, 5.9, 13.8], heading: 270, script: level133_royal_init}
+  - {id: "level133_royal_init:fP2_09", level: level133, name: fP2_09, pos: [-52.4, 4.6, 13.8], heading: 270, script: level133_royal_init}
+  - {id: "level133_royal_init:fP2_10", level: level133, name: fP2_10, pos: [-52.5, 8.2, 13.8], heading: 270, script: level133_royal_init}
+  - {id: "level133_royal_init:fTop", level: level133, name: fTop, pos: [-55, 6.6, 13.8], heading: 89, script: level133_royal_init}

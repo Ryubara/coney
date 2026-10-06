@@ -69,14 +69,32 @@ def pages(root: Path, lists: list[refs.RefList]) -> dict[Path, str]:
     )
     out = {root / DOCS_DIR / "index.md": index}
     out.update({root / DOCS_DIR / f"{reflist.topic.key}.md": refs_render.page(reflist) for reflist in lists})
+    for reflist in lists:
+        if reflist.topic.split:
+            out.update({root / DOCS_DIR / path: text for path, text in refs_render.group_pages(reflist).items()})
     return out
+
+
+def leftover_pages(root: Path, wanted: dict[Path, str]) -> list[Path]:
+    """Pages in a split list's folder that no group produces any more (a group that left the list)."""
+    found = []
+    for item in TOPICS:
+        folder = root / DOCS_DIR / item.key
+        if item.split and folder.is_dir():
+            found += [path for path in sorted(folder.glob("*.md")) if path not in wanted]
+    return found
 
 
 def run_render(check: bool) -> int:
     """Write the pages, or with `check` report the stale ones and return 1."""
     root = find_repo_root(Path.cwd())
     stale = []
-    for path, text in pages(root, load_all(root)).items():
+    wanted = pages(root, load_all(root))
+    for path in leftover_pages(root, wanted):
+        stale.append(path.relative_to(root).as_posix())
+        if not check:
+            path.unlink()
+    for path, text in wanted.items():
         current = path.read_text(encoding="utf-8") if path.is_file() else None
         if current == text:
             continue
@@ -280,6 +298,60 @@ STARTERS: dict[str, dict[str, Any]] = {
         "complete": "Every story level whose script creates player 1 at a literal position, and every Rumble flag\n"
         "script whose name is known. The hub (`level95`) places the Warchief at a flag and is hand-written.\n"
         "A checkpoint's own script may move the player again once it has loaded (see each entry's notes).",
+    },
+    "flags": {
+        "title": "World flags",
+        "source": "the level scripts, AddFlag",
+        "about": "The named points with a heading that level scripts add with `AddFlag(name, {x, y, z}, heading,\n"
+        "activity, group)` and use to spawn humans, send them somewhere and test against ([World\n"
+        "flags](../research/flags.md)). Scripts keep the handle `AddFlag` returns; `FindFlag` finds a\n"
+        "flag by name. Ambient humans pick flags by **activity**: a flag with one is a spot where a\n"
+        "civilian sits, smokes, warms his hands or leaves the level.",
+        "complete": "Every `AddFlag` call whose name is a literal string: 7,057 flags (4,167 names) added by 94\n"
+        "scripts of 62 levels. 23 positions are computed at run time and show none; 79 flags come from\n"
+        "scripts shared by several levels or whose names are not recovered (*other*). What each activity\n"
+        "does is on [World flags](../research/flags.md#activities); what the group means on path-network\n"
+        "flags is not traced. The two flags `InitLevel` adds itself (`CrimeScene`, `GangCall`) are not\n"
+        "listed.",
+    },
+    "zones": {
+        "title": "Object zones",
+        "source": "the level scripts, ObjEnableZone and ObjSpawn",
+        "about": "The zone numbers that group a level's spawned objects, so a script can switch a whole area's\n"
+        "objects on or off with `ObjEnableZone(zone, enable)`. Zone 0 is on when a level starts and holds\n"
+        "every object spawned without a zone; zones 1 to 254 start off\n"
+        "([Tasks](../research/tasks.md#classes)). Numbers are per level: the same number names different\n"
+        "objects in different levels.",
+        "complete": "Every zone number a level's scripts name (`Zone<n>` globals, `<TABLE>.<NAME>_ZONE` fields),\n"
+        "switch or spawn objects into: 225 zones in 62 levels. 66 of the 3,133 calls are left out because\n"
+        "their zone is not a number the level defines: `global.lua`'s `BNESetup` switches its caller's\n"
+        "`Zone21` to `Zone32`, and two calls of `level95` compute the zone. Objects the level file places\n"
+        "in a zone are not counted (how it assigns them is not traced).",
+    },
+    "boxes": {
+        "title": "Volume boxes",
+        "source": "the level scripts, AddVolumeBox and GangAddTurfBox",
+        "about": "The axis-aligned boxes level scripts add with `AddVolumeBox(name, kind, corner, size)` to test\n"
+        "whether humans are inside an area, switch collision and mark a gang's turf (`GangAddTurfBox`).\n"
+        "The kind picks the class: 0 a `VolumeBox`, 2 a `PlayerBox`, 3 a `TurfBox`\n"
+        "([Tasks](../research/tasks.md#classes)).",
+        "complete": "Every `AddVolumeBox` call whose name is a literal string: 974 boxes (547 volume, 251 player and\n"
+        "176 turf boxes) in 47 levels. *Held in* and *Turf of* are filled where a script keeps the handle\n"
+        "in a global: 64 of the 87 `GangAddTurfBox` calls resolve to a box. What a player box does\n"
+        "differently from a volume box is not traced.",
+    },
+    "scenes": {
+        "title": "Scenes and movies",
+        "source": "scene_list.cnk, the scripts' ScenePreload, the level records",
+        "evidence": "confirmed-code",
+        "about": "The in-engine scenes (cutscenes and animation sets, `.scn` records) and the full-motion movies\n"
+        "(`PSS/<name>.BIK`). `ScenePreload(name)` returns a scene id, the record's index in the global\n"
+        "scene list `scene_list.cnk`, which the other scene bindings take; `PlayMovie(name)` plays a\n"
+        "movie. How both work: [Scripts](../research/scripting.md#scenes-and-movies).",
+        "complete": "All 16 movies, and every scene of `scene_list.cnk` except the 1,525 segments that continue a\n"
+        "longer scene: 1,240 scenes, 24 of them under names cut to 16 characters. A scene's levels and\n"
+        "scripts are those that preload it by name; scenes that C++ code or a computed name loads show\n"
+        "none.",
     },
     "animations": {
         "title": "Animation clips",

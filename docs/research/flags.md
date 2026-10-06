@@ -79,13 +79,63 @@ Written by `Flag_Construct` (`0x00415e70`), confirmed (code); the meanings are o
 | `+0x48` | u32 | the **parent** handle: an object the flag follows (`NilHandle` from `AddFlag`) |
 | `+0x4c` | | an embedded list node (vtable `0x00544b98`), linked to the flag (`0x00384a10`) |
 | `+0xcc` | u32 | 0 |
-| `+0xd0` | u16 | `AddFlag`'s fourth argument |
+| `+0xd0` | u16 | `AddFlag`'s fourth argument: the **activity** ([Activities](#activities)) |
 | `+0xd4` | u32 | **enabled**: 1 from `AddFlag`; `FlagEnable` writes it (`0x00415dc8`) |
-| `+0xd8` | s32 | `AddFlag`'s fifth argument (read as 16 bits, sign-extended) |
+| `+0xd8` | s32 | `AddFlag`'s fifth argument (read as 16 bits, sign-extended): the **group** ([Groups](#groups)) |
 | `+0xdc` | u32 | the **user**: who is using the flag now, `NilHandle` at first (`FlagGetOwner` reads it, `0x00416ed0`) |
 | `+0xe0` | u32 | 0 |
 
-The fourth and fifth arguments are 0 in almost every call; their readers are not traced.
+The fourth and fifth arguments are 0 in 4,340 of the 7,057 calls. Every flag the scripts add, with both, is in
+[World flags](../references/flags.md).
+
+### Activities (`+0xd0`) {#activities}
+
+The fourth argument says what an ambient human does at the flag. Confirmed (code):
+
+- `0x00416f08` returns the nearest enabled flag with a given activity; for activity 8 only one that `0x0028ff38`
+  accepts for the human's brain. `0x00417028` and `0x004172c8` pick the nearest and the farthest flag of an activity
+  within 89 degrees of a direction.
+- `0x00416718` says whether a human may use the flag: the flag must be enabled (`+0xd4`), and each activity admits
+  some role categories (the character type's byte `+0x11b`, [Characters](characters.md)), some only while
+  `0x00226ff0` returns 0 (not traced), and activities 35 and 36 only a brain of kind 6. Activities 0, 3, 8, 12, 14,
+  15, 18 and 33 admit no one through it.
+- `0x004162f8` picks the clip: the table at `0x005896a0` holds three clip names of 0x1a bytes per activity (37 rows
+  of 0x4e; idle, enter, exit where there are three), with the count of names per activity at `0x00589678`; activities
+  4, 7 (for a woman, byte `+0x14b` of the type), 17, 19, 22 and 34 choose among variants instead.
+- `0x00416b18`: a human that reaches an activity-8 flag is removed (`0x002271c0`); these are the exits.
+- `0x00416530`, `0x00416690`: per-activity sound and timing tables at `0x0058a310` and `0x0058a1e8` (8 bytes per
+  activity); their meaning is not traced.
+
+The activities by their first clip, and the flag names that carry each (names inferred from the scripts):
+
+| Activity | First clip | Flags named | Activity | First clip | Flags named |
+| --- | --- | --- | --- | --- | --- |
+| 1 | `gen_piss` | `_xwTakePiss` | 20 | `gen_disco_dj` | `fParty` |
+| 2 | `buy_object` | | 21 | `gen_hiding_idle` | `fHide...` |
+| 3 | `wreck_idle` | | 22 | `browse_store01` | `_xwBrowse` |
+| 4 | `sit_chr_lng_C` | `_xwChairK`, `_xwBench` | 23 | `play_pinball` | `fPlayPinball` |
+| 5 | `warmhands_idle` | `_xwFireBarrell` | 24 | `pick_lock` | |
+| 6 | `phone_idle` | `_xwPhone` | 25 | `market_vendor01` | `fStoreFlag` |
+| 7 | `smoke_idle` | `_xwSmoke` | 26 | `write_on_pad_C` | `_xwFlagCarTicket` |
+| 8 | none: exit | `PedExit`, `_xExit` | 27, 28 | `laundry_wash`, `laundry_dry` | |
+| 9 | `tv_idle` | `_xwWindowLook` | 29 | `gen_beer_idle02` | `_xWDrink` |
+| 10 | `trash_idle` | `_xwTrash` | 30-32 | `lean_back_C`, `lean_l_loop`, `lean_r_loop` | `_xwLeanBack` |
+| 11 | `gen_whistle` | `xfWistleGirl` | 33 | none | `_xfHideZone` (323) |
+| 12 | none | `Tag` (spray-tag spots) | 34 | `siton_ledge2_C` | `fDrinkStart` |
+| 13 | `hubcap_idle` | `_xwFlagCarCap` | 35 | `read_mag_stand_idle` | `_xwReadMagazine` |
+| 14 | none | `storeJewelry`, `storeFront` | 36 | `lean_counter_C` | `_xwLeanCounter` |
+| 15, 18 | none | | 16 | `speech_idle` | |
+| 17 | `fidget_crossarms` | `_xWStand` | 19 | `dance_male001` | `fDance` |
+
+### Groups (`+0xd8`) {#groups}
+
+The fifth argument is a number other code compares. One reader is traced, confirmed (code): when a crime of type 1 is
+reported (`0x0041b8b0`), the game finds the nearest activity-14 flag (a store front) within 10 m, marks it used (bit
+16 of `+0xd8`, with a gang number in bits 18-22) and switches off (`0x00417540`, `FlagEnable`'s writer) every flag
+of activity 2 or 22 within 10 m whose group equals the store's low byte: the store's buyers and browsers leave. On
+store flags the group is the store's number (24-45). On flags of activity 0 it looks like a bit set of path networks,
+from the names (inferred): 1 `PedNet` and `fPedStrip`, 2 `fCopPoint` and `fCopNet`, 4 `fBumNet` and `SewerNet`, 64
+`fDealNet`, and sums of them; that reader is not traced.
 
 ## Behaviour
 
@@ -225,7 +275,7 @@ Coney's choices, where the page is silent or Coney differs:
 
 ## Open questions
 
-- The meaning of `AddFlag`'s fourth and fifth arguments (`+0xd0`, `+0xd8`) and of `+0xcc` and `+0xe0`.
+- The reader of the group on path-network flags, the activity sound and timing tables, and `+0xcc` and `+0xe0`.
 - What gives a flag a parent (`Flag_New`'s last argument is always `NilHandle` through `Flag_Add`; another writer of
   `+0x48` is not traced) and what sets the user `+0xdc`.
 - The vtable slots of the flag (`0x00545e68`) beyond the handle and name getters.

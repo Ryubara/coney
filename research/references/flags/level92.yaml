@@ -1,0 +1,156 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level92:fSWalk", level: level92, name: fSWalk, heading: 0, script: level92}
+  - {id: "level92:fLine_01", level: level92, name: fLine_01, pos: [-113.1, 126.7, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_02", level: level92, name: fLine_02, pos: [-113.1, 125.6, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_03", level: level92, name: fLine_03, pos: [-113.1, 124.5, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_04", level: level92, name: fLine_04, pos: [-113.1, 123.4, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_05", level: level92, name: fLine_05, pos: [-113.1, 122.3, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_06", level: level92, name: fLine_06, pos: [-113.1, 121.2, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_07", level: level92, name: fLine_07, pos: [-113.1, 120.1, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_08", level: level92, name: fLine_08, pos: [-113.1, 119, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_09", level: level92, name: fLine_09, pos: [-113.1, 117.9, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_10", level: level92, name: fLine_10, pos: [-113.1, 116.8, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_11", level: level92, name: fLine_11, pos: [-113.1, 115.7, -320.6], heading: 93, script: level92}
+  - {id: "level92:fLine_12", level: level92, name: fLine_12, pos: [-113.1, 114.6, -320.6], heading: 93, script: level92}
+  - {id: "level92:_xwHaveSmoke_01", level: level92, name: _xwHaveSmoke_01, pos: [-105.5, 33.5, 0.3], heading: 2, activity: 7, script: level92}
+  - {id: "level92:_xwHaveSmoke_02", level: level92, name: _xwHaveSmoke_02, pos: [-131.6, 33, 0.3], heading: 2, activity: 7, script: level92}
+  - {id: "level92:_xwHaveSmoke_03", level: level92, name: _xwHaveSmoke_03, pos: [-134.3, 45.8, 0.3], heading: 182, activity: 7, script: level92}
+  - {id: "level92:_xwHaveSmoke_04", level: level92, name: _xwHaveSmoke_04, pos: [-90.5, 45.6, 0.3], heading: 182, activity: 7, script: level92}
+  - {id: "level92:_xwHaveSmoke_05", level: level92, name: _xwHaveSmoke_05, pos: [-115.3, 15.4, 0.3], heading: 182, activity: 7, script: level92}
+  - {id: "level92:_xwHaveSmoke_06", level: level92, name: _xwHaveSmoke_06, pos: [-89.9, 5.7, 0.3], heading: 57, activity: 7, script: level92}
+  - {id: "level92:_xwHaveSmoke_07", level: level92, name: _xwHaveSmoke_07, pos: [-76.5, 19.3, 0.3], heading: 142, activity: 7, script: level92}
+  - {id: "level92:Tag_01", level: level92, name: Tag_01, pos: [-107.4, 63, 0.3], heading: 93, activity: 12, script: level92}
+  - {id: "level92:Tag_02", level: level92, name: Tag_02, pos: [-70.2, 72.1, 0.3], heading: 183, activity: 12, script: level92}
+  - {id: "level92:Tag_03", level: level92, name: Tag_03, pos: [-51, 21.8, 0.3], heading: 3, activity: 12, script: level92}
+  - {id: "level92:Tag_04", level: level92, name: Tag_04, pos: [-118.8, 28.5, 0.3], heading: 273, activity: 12, script: level92}
+  - {id: "level92:Tag_05", level: level92, name: Tag_05, pos: [-144.5, 14.5, 0.3], heading: 93, activity: 12, script: level92}
+  - {id: "level92:PedExit_01", level: level92, name: PedExit_01, pos: [-141.4, 24.6, 0.3], heading: 89, activity: 8, script: level92}
+  - {id: "level92:PedExit_02", level: level92, name: PedExit_02, pos: [-121.3, 24.6, 0.3], heading: 89, activity: 8, script: level92}
+  - {id: "level92:PedExit_03", level: level92, name: PedExit_03, pos: [-89.4, 24.6, 0.3], heading: 89, activity: 8, script: level92}
+  - {id: "level92:PedExit_04", level: level92, name: PedExit_04, pos: [-68.7, -3.5, 0.3], heading: 89, activity: 8, script: level92}
+  - {id: "level92:PedExit_05", level: level92, name: PedExit_05, pos: [-49.3, 54.8, 0.3], heading: 89, activity: 8, script: level92}
+  - {id: "level92:PedExit_06", level: level92, name: PedExit_06, pos: [-104.5, 63.5, 0.3], heading: 89, activity: 8, script: level92}
+  - {id: "level92:PedNet_01", level: level92, name: PedNet_01, pos: [-155.2, 44.8, 0.3], heading: 89, group: 3, script: level92}
+  - {id: "level92:PedNet_02", level: level92, name: PedNet_02, pos: [-155.1, 33.5, 0.3], heading: 89, group: 3, script: level92}
+  - {id: "level92:PedNet_03", level: level92, name: PedNet_03, pos: [-105.5, 44.8, 0.3], heading: 89, group: 3, script: level92}
+  - {id: "level92:PedNet_04", level: level92, name: PedNet_04, pos: [-121.6, 33.5, 0.3], heading: 89, group: 3, script: level92}
+  - {id: "level92:PedNet_05", level: level92, name: PedNet_05, pos: [-89.8, 33.5, 0.3], heading: 89, group: 3, script: level92}
+  - {id: "level92:PedNet_06", level: level92, name: PedNet_06, pos: [-71.2, 33.5, 0.3], heading: 89, group: 3, script: level92}
+  - {id: "level92:PedNet_07", level: level92, name: PedNet_07, pos: [-71.2, 44.8, 0.3], heading: 89, group: 3, script: level92}
+  - {id: "level92:PedNet_08", level: level92, name: PedNet_08, pos: [-141.7, 29.7, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_09", level: level92, name: PedNet_09, pos: [-141.7, 15.9, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_10", level: level92, name: PedNet_10, pos: [-121.6, 29.7, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_11", level: level92, name: PedNet_11, pos: [-121.6, 17.9, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_12", level: level92, name: PedNet_12, pos: [-121.2, 12, 0.3], heading: 89, group: 1, script: level92}
+  - {id: "level92:PedNet_13", level: level92, name: PedNet_13, pos: [-140.9, 10.9, 0.3], heading: 89, group: 1, script: level92}
+  - {id: "level92:PedNet_14", level: level92, name: PedNet_14, pos: [-107.2, 12, 0.3], heading: 89, group: 1, script: level92}
+  - {id: "level92:PedNet_15", level: level92, name: PedNet_15, pos: [-90.4, 12, 0.3], heading: 89, group: 1, script: level92}
+  - {id: "level92:PedNet_16", level: level92, name: PedNet_16, pos: [-74.8, 7.5, 0.3], heading: 89, group: 1, script: level92}
+  - {id: "level92:PedNet_17", level: level92, name: PedNet_17, pos: [-57.7, 18.6, 0.3], heading: 89, group: 1, script: level92}
+  - {id: "level92:PedNet_18", level: level92, name: PedNet_18, pos: [-75.8, 18.8, 0.3], heading: 89, group: 1, script: level92}
+  - {id: "level92:PedNet_19", level: level92, name: PedNet_19, pos: [-57.6, -11.2, 0.3], heading: 89, group: 1, script: level92}
+  - {id: "level92:PedNet_20", level: level92, name: PedNet_20, pos: [-68.6, -11.3, 0.3], heading: 89, group: 1, script: level92}
+  - {id: "level92:PedNet_21", level: level92, name: PedNet_21, pos: [-89.8, 17.9, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_22", level: level92, name: PedNet_22, pos: [-89.8, 29.7, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_23", level: level92, name: PedNet_23, pos: [-49.1, 69, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_24", level: level92, name: PedNet_24, pos: [-49.8, 44.7, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_25", level: level92, name: PedNet_25, pos: [-70.2, 69.4, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_26", level: level92, name: PedNet_26, pos: [-80, 76.4, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_27", level: level92, name: PedNet_27, pos: [-93.3, 74.1, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_28", level: level92, name: PedNet_28, pos: [-104.5, 73, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_29", level: level92, name: PedNet_29, pos: [-105.1, 53.3, 0.3], heading: 89, group: 4, script: level92}
+  - {id: "level92:PedNet_30", level: level92, name: PedNet_30, pos: [-143.1, 3.4, 0.3], heading: 89, group: 1, script: level92}
+  - {id: "level92:wChair_k01", level: level92, name: wChair_k01, pos: [-48, 11.8, 0.3], heading: 327, activity: 4, script: level92}
+  - {id: "level92:wChair_k02", level: level92, name: wChair_k02, pos: [-46.7, 14.3, 0.3], heading: 277, activity: 4, script: level92}
+  - {id: "level92:wChair_k", level: level92, name: wChair_k, pos: [-48.4, 12.8, 0.3], heading: 197, activity: 4, script: level92}
+  - {id: "level92:wChair_k03", level: level92, name: wChair_k03, pos: [-47.1, 16.6, 0.3], heading: 197, activity: 4, script: level92}
+  - {id: "level92:wChair_k05", level: level92, name: wChair_k05, pos: [-132.6, 3, 0.3], heading: 102, activity: 4, script: level92}
+  - {id: "level92:wChair_k06", level: level92, name: wChair_k06, pos: [-131.3, 2.7, 0.3], heading: 252, activity: 4, script: level92}
+  - {id: "level92:fTopTier", level: level92, name: fTopTier, pos: [-84.4, 123.2, -311.8], heading: 273, script: level92}
+  - {id: "level92:fPlumbStore", level: level92, name: fPlumbStore, pos: [-122.3, 53.5, 0.3], heading: 89, script: level92}
+  - {id: "level92:fHeadStore", level: level92, name: fHeadStore, pos: [-51.9, 11.3, 0.3], heading: 93, script: level92}
+  - {id: "level92:fVoodooStore", level: level92, name: fVoodooStore, pos: [-75.7, 56.5, 0.3], heading: 182, script: level92}
+  - {id: "level92:fMeatStore", level: level92, name: fMeatStore, pos: [-125.7, -0.6, 0], heading: 360, script: level92}
+  - {id: "level92:fHangClubDestroyers", level: level92, name: fHangClubDestroyers, pos: [-180.4, 90.7, -194.3], heading: 89, script: level92}
+  - {id: "level92:fReferee", level: level92, name: fReferee, pos: [-77.8, 122.8, -307.7], heading: 272, script: level92}
+  - {id: "level92:fSwan", level: level92, name: fSwan, pos: [-101, 83.5, 1.8], heading: 182, script: level92}
+  - {id: "level92:fCowboy", level: level92, name: fCowboy, pos: [-103.2, 84.1, 1.8], heading: 182, script: level92}
+  - {id: "level92:fPlumbFront", level: level92, name: fPlumbFront, pos: [-121.9, 46.9, 0.3], heading: 93, script: level92}
+  - {id: "level92:fVoodooFront", level: level92, name: fVoodooFront, pos: [-74.1, 48.5, 0.3], heading: 93, script: level92}
+  - {id: "level92:fHeadFront", level: level92, name: fHeadFront, pos: [-57, 11.2, 0.3], heading: 93, script: level92}
+  - {id: "level92:fMeatFront", level: level92, name: fMeatFront, pos: [-131.3, 8.7, 0.3], heading: 3, script: level92}
+  - {id: "level92:fMeatOwner", level: level92, name: fMeatOwner, pos: [-119.8, 4.4, 0], heading: 273, script: level92}
+  - {id: "level92:fSMeatOwner", level: level92, name: fSMeatOwner, pos: [-116.1, 4, 0], heading: 273, script: level92}
+  - {id: "level92:fSMeatClerk1", level: level92, name: fSMeatClerk1, pos: [-114.3, 3.8, 0], heading: 272, script: level92}
+  - {id: "level92:fSMeatClerk2", level: level92, name: fSMeatClerk2, pos: [-114.8, 5, 0], heading: 272, script: level92}
+  - {id: "level92:fKSwan", level: level92, name: fKSwan, pos: [-84.4, 122.3, -311.8], heading: 262, script: level92}
+  - {id: "level92:fKCowboy", level: level92, name: fKCowboy, pos: [-84.1, 124, -311.8], heading: 289, script: level92}
+  - {id: "level92:fPlumbOwnerMeet", level: level92, name: fPlumbOwnerMeet, pos: [-131.8, 44.8, 0.3], heading: 93, script: level92}
+  - {id: "level92:fCSwan", level: level92, name: fCSwan, pos: [-172.6, 85, -194.3], heading: 275, script: level92}
+  - {id: "level92:fCCowboy", level: level92, name: fCCowboy, pos: [-171.6, 85.9, -194.3], heading: 275, script: level92}
+  - {id: "level92:fCCleon", level: level92, name: fCCleon, pos: [-172.2, 86.8, -194.3], heading: 275, script: level92}
+  - {id: "level92:fCVermin", level: level92, name: fCVermin, pos: [-171.7, 84.2, -194.3], heading: 275, script: level92}
+  - {id: "level92:fCDestroyer1", level: level92, name: fCDestroyer1, pos: [-177, 85.8, -194.3], heading: 93, script: level92}
+  - {id: "level92:fCDestroyer2", level: level92, name: fCDestroyer2, pos: [-177, 84.8, -194.3], heading: 93, script: level92}
+  - {id: "level92:fCDestroyer3", level: level92, name: fCDestroyer3, pos: [-177.6, 87, -194.3], heading: 93, script: level92}
+  - {id: "level92:fCDestroyer4", level: level92, name: fCDestroyer4, pos: [-178, 83, -194.3], heading: 93, script: level92}
+  - {id: "level92:fCDestroyer5", level: level92, name: fCDestroyer5, pos: [-179.2, 86.1, -194.3], heading: 93, script: level92}
+  - {id: "level92:fCDestroyer6", level: level92, name: fCDestroyer6, pos: [-179, 84.2, -194.3], heading: 93, script: level92}
+  - {id: "level92:fCDestroyer7", level: level92, name: fCDestroyer7, pos: [-180.9, 88.6, -194.3], heading: 93, script: level92}
+  - {id: "level92:fCDestroyer8", level: level92, name: fCDestroyer8, pos: [-182, 83.8, -194.3], heading: 93, script: level92}
+  - {id: "level92:fCDestroyer9", level: level92, name: fCDestroyer9, pos: [-181.7, 87.7, -194.3], heading: 93, script: level92}
+  - {id: "level92:fRoofTop", level: level92, name: fRoofTop, pos: [-185.4, 110.3, -193.8], heading: 93, script: level92}
+  - {id: "level92:fHCleon", level: level92, name: fHCleon, pos: [-112.8, 99.4, -320.6], heading: 93, script: level92}
+  - {id: "level92:fHVermin", level: level92, name: fHVermin, pos: [-111.9, 99.4, -320.6], heading: 93, script: level92}
+  - {id: "level92:fHEliminator1", level: level92, name: fHEliminator1, pos: [-112.8, 98.5, -320.6], heading: 93, script: level92}
+  - {id: "level92:fHEliminator2", level: level92, name: fHEliminator2, pos: [-111.9, 98.5, -320.6], heading: 93, script: level92}
+  - {id: "level92:fHPanzer1", level: level92, name: fHPanzer1, pos: [-112.8, 97.6, -320.6], heading: 93, script: level92}
+  - {id: "level92:fHPanzer2", level: level92, name: fHPanzer2, pos: [-111.9, 97.6, -320.6], heading: 93, script: level92}
+  - {id: "level92:fHMoon1", level: level92, name: fHMoon1, pos: [-112.8, 96.6, -320.6], heading: 93, script: level92}
+  - {id: "level92:fHMoon2", level: level92, name: fHMoon2, pos: [-111.9, 96.6, -320.6], heading: 93, script: level92}
+  - {id: "level92:fHSVermin", level: level92, name: fHSVermin, pos: [-107.8, 125.4, -320.6], heading: 241, script: level92}
+  - {id: "level92:fHSEliminator1", level: level92, name: fHSEliminator1, pos: [-106, 121.9, -320.6], heading: 181, script: level92}
+  - {id: "level92:fHSEliminator2", level: level92, name: fHSEliminator2, pos: [-105.7, 120.6, -320.6], heading: 329, script: level92}
+  - {id: "level92:fHSPanzer1", level: level92, name: fHSPanzer1, pos: [-107.7, 117.7, -320.6], heading: 13, script: level92}
+  - {id: "level92:fHSPanzer2", level: level92, name: fHSPanzer2, pos: [-107.7, 119.2, -320.6], heading: 175, script: level92}
+  - {id: "level92:fHSMoon1", level: level92, name: fHSMoon1, pos: [-109.6, 114.7, -320.6], heading: 2, script: level92}
+  - {id: "level92:fHSMoon2", level: level92, name: fHSMoon2, pos: [-109.6, 115.9, -320.6], heading: 212, script: level92}
+  - {id: "level92:fHSCleon", level: level92, name: fHSCleon, pos: [-107.7, 124.2, -320.6], heading: 308, script: level92}
+  - {id: "level92:fHSSaracen2", level: level92, name: fHSSaracen2, pos: [-106.8, 113.7, -320.6], heading: 41, script: level92}
+  - {id: "level92:fHSSaracen1", level: level92, name: fHSSaracen1, pos: [-106.2, 114.8, -320.6], heading: 195, script: level92}
+  - {id: "level92:fHSSwan", level: level92, name: fHSSwan, pos: [-111.1, 119.8, -320.6], heading: 94, script: level92}
+  - {id: "level92:fHSCowboy", level: level92, name: fHSCowboy, pos: [-110.9, 120.9, -320.6], heading: 125, script: level92}
+  - {id: "level92:fCarnySweeper2", level: level92, name: fCarnySweeper2, pos: [-63.1, -2, 0.3], heading: 92, script: level92}
+  - {id: "level92:fCarnySweeper1", level: level92, name: fCarnySweeper1, pos: [-64.5, 13.3, 0.3], heading: 92, script: level92}
+  - {id: "level92:fHangDealer1", level: level92, name: fHangDealer1, pos: [-80.2, 84, 0.3], heading: 183, group: 64, script: level92}
+  - {id: "level92:fHangDealer2", level: level92, name: fHangDealer2, pos: [-146.6, 10, 0.3], heading: 106, group: 64, script: level92}
+  - {id: "level92:fHangDealer3", level: level92, name: fHangDealer3, pos: [-49, 22.7, 0.3], heading: 315, group: 64, script: level92}
+  - {id: "level92:fCDestroyer10", level: level92, name: fCDestroyer10, pos: [-179.7, 87.9, -194.3], heading: 93, script: level92}
+  - {id: "level92:fCDestroyer11", level: level92, name: fCDestroyer11, pos: [-180.6, 82.9, -194.3], heading: 93, script: level92}
+  - {id: "level92:fDCowboy", level: level92, name: fDCowboy, pos: [-131.7, 10, 0.3], heading: 183, script: level92}
+  - {id: "level92:fDSwan", level: level92, name: fDSwan, pos: [-130.9, 9.6, 0.3], heading: 183, script: level92}
+  - {id: "level92:fCLC", level: level92, name: fCLC, pos: [-177.6, 114.7, -193.7], heading: 93, script: level92}
+  - {id: "level92:_xwTakePiss", level: level92, name: _xwTakePiss, pos: [-52.6, 31.3, 0.3], heading: 273, activity: 1, script: level92}
+  - {id: "level92:_xwWindowLook", level: level92, name: _xwWindowLook, pos: [-113.2, 47, 0.2], heading: 3, activity: 9, script: level92}
+  - {id: "level92:_xwTakePiss01", level: level92, name: _xwTakePiss01, pos: [-45.9, 60.1, 0.3], heading: 93, activity: 1, script: level92}
+  - {id: "level92:_xwTakePiss02", level: level92, name: _xwTakePiss02, pos: [-64.8, 71.7, 0.3], heading: 3, activity: 1, script: level92}
+  - {id: "level92:_xwTakePiss04", level: level92, name: _xwTakePiss04, pos: [-102.7, 62.1, 0.3], heading: 93, activity: 1, script: level92}
+  - {id: "level92:_xwTakePiss05", level: level92, name: _xwTakePiss05, pos: [-138.9, 28, 0.3], heading: 93, activity: 1, script: level92}
+  - {id: "level92:_xwTakePiss06", level: level92, name: _xwTakePiss06, pos: [-144.2, 19.3, 0.3], heading: 273, activity: 1, script: level92}
+  - {id: "level92:_xwTakePiss07", level: level92, name: _xwTakePiss07, pos: [-122.4, 18.5, 0.3], heading: 273, activity: 1, script: level92}
+  - {id: "level92:_xwTakePiss08", level: level92, name: _xwTakePiss08, pos: [-86.9, 26.8, 0.3], heading: 93, activity: 1, script: level92}
+  - {id: "level92:_xwWindowLook01", level: level92, name: _xwWindowLook01, pos: [-130.8, 47, 0.2], heading: 3, activity: 9, script: level92}
+  - {id: "level92:_xwWindowLook02", level: level92, name: _xwWindowLook02, pos: [-128.1, 8.4, 0.2], heading: 183, activity: 9, script: level92}
+  - {id: "level92:_xwWindowLook03", level: level92, name: _xwWindowLook03, pos: [-137.1, 5.6, 0.2], heading: 93, activity: 9, script: level92}
+  - {id: "level92:_xwTakePiss03", level: level92, name: _xwTakePiss03, pos: [-76.2, 80.3, 0.3], heading: 93, activity: 1, script: level92}
+  - {id: "level92:_xwTakePiss09", level: level92, name: _xwTakePiss09, pos: [-91.9, 29, 0.3], heading: 273, activity: 1, script: level92}
+  - {id: "level92:_xwFireBarrell20", level: level92, name: _xwFireBarrell20, pos: [-47.6, 69.7, 0.2], heading: 127, activity: 5, script: level92}
+  - {id: "level92:_xwFireBarrell19", level: level92, name: _xwFireBarrell19, pos: [-46.3, 68.8, 0.2], heading: 307, activity: 5, script: level92}
+  - {id: "level92:_xwFireBarrell21", level: level92, name: _xwFireBarrell21, pos: [-84.8, 70.6, 0.2], heading: 307, activity: 5, script: level92}
+  - {id: "level92:_xwFireBarrell22", level: level92, name: _xwFireBarrell22, pos: [-86.1, 71.5, 0.2], heading: 127, activity: 5, script: level92}
+  - {id: "level92:_xwFireBarrell23", level: level92, name: _xwFireBarrell23, pos: [-142.4, 23, 0.2], heading: 307, activity: 5, script: level92}
+  - {id: "level92:_xwFireBarrell24", level: level92, name: _xwFireBarrell24, pos: [-143.7, 23.9, 0.2], heading: 127, activity: 5, script: level92}
+  - {id: "level92:_xwFireBarrell25", level: level92, name: _xwFireBarrell25, pos: [-90.1, 24, 0.2], heading: 307, activity: 5, script: level92}
+  - {id: "level92:_xwFireBarrell26", level: level92, name: _xwFireBarrell26, pos: [-91.4, 24.9, 0.2], heading: 127, activity: 5, script: level92}

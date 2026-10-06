@@ -1,0 +1,23 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level113_brawl_init:fP1_1", level: level113, name: fP1_1, pos: [220.5, 55.5, -2.9], heading: 358, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP1_2", level: level113, name: fP1_2, pos: [221.7, 55.2, -2.9], heading: 358, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP1_3", level: level113, name: fP1_3, pos: [219.5, 55, -2.9], heading: 358, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP1_4", level: level113, name: fP1_4, pos: [222.8, 53.9, -2.9], heading: 358, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP1_5", level: level113, name: fP1_5, pos: [220.7, 53.8, -2.9], heading: 358, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP1_6", level: level113, name: fP1_6, pos: [218.5, 53.7, -2.9], heading: 358, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP1_7", level: level113, name: fP1_7, pos: [221.9, 52.6, -2.9], heading: 358, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP1_8", level: level113, name: fP1_8, pos: [219.6, 52.6, -2.9], heading: 358, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP1_9", level: level113, name: fP1_9, pos: [220.8, 52.6, -2.9], heading: 358, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP1_10", level: level113, name: fP1_10, pos: [218.4, 52.6, -2.9], heading: 358, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP2_1", level: level113, name: fP2_1, pos: [219.4, 62.6, -2.9], heading: 180, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP2_2", level: level113, name: fP2_2, pos: [218, 63.3, -2.9], heading: 180, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP2_3", level: level113, name: fP2_3, pos: [220.8, 63.3, -2.9], heading: 180, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP2_4", level: level113, name: fP2_4, pos: [220.4, 64.5, -2.9], heading: 180, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP2_5", level: level113, name: fP2_5, pos: [218.6, 64.4, -2.9], heading: 180, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP2_6", level: level113, name: fP2_6, pos: [222.2, 64.1, -2.9], heading: 180, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP2_7", level: level113, name: fP2_7, pos: [216.9, 64.5, -2.9], heading: 180, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP2_8", level: level113, name: fP2_8, pos: [221.1, 65.7, -2.9], heading: 180, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP2_9", level: level113, name: fP2_9, pos: [217.9, 65.6, -2.9], heading: 180, script: level113_brawl_init}
+  - {id: "level113_brawl_init:fP2_10", level: level113, name: fP2_10, pos: [219.4, 65.7, -2.9], heading: 180, script: level113_brawl_init}

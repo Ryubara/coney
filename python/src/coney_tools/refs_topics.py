@@ -274,6 +274,116 @@ LEVEL_STARTS = Topic(
     nav="Level starts",
 )
 
+WORLD_FLAGS = Topic(
+    "flags",
+    "id",
+    "flag",
+    (
+        F("id", "str", "`<script>:<name>`, with `#2`, `#3` ... for a name the same script adds again.", required=True),
+        F("level", "str", "The level whose scripts add the flag; none for a shared script.", "Level"),
+        F(
+            "name",
+            "str",
+            "The flag's name (`AddFlag`'s first argument; `FindFlag` matches the first 15 characters).",
+            "Flag",
+        ),
+        F(
+            "pos",
+            "list",
+            "Position `{x, y, z}` in metres, game axes (z up), when the script gives it literally.",
+            "Position",
+        ),
+        F("heading", "float", "Facing in degrees about z.", "Heading"),
+        F(
+            "activity",
+            "int",
+            "Fourth argument (flag `+0xd0`): what a human does there; picks the clip and who may use the flag "
+            "([activities](../research/flags.md#activities)). 0, none, is left out.",
+            "Activity",
+        ),
+        F(
+            "group",
+            "int",
+            "Fifth argument (flag `+0xd8`): a store's group number or a path network's bits "
+            "([groups](../research/flags.md#groups)). 0 is left out.",
+            "Group",
+        ),
+        F("script", "str", "The script that adds it (without `.lua`).", "Script"),
+    ),
+    group_by="level",
+    compact=True,
+    nav="World flags",
+    split=True,
+)
+
+OBJECT_ZONES = Topic(
+    "zones",
+    "id",
+    "zone",
+    (
+        F("id", "str", "`<level>:<zone>`.", required=True),
+        F("level", "str", "The level whose scripts use the zone.", "Level"),
+        F("zone", "int", "Zone number (`ObjEnableZone`'s first argument, `ObjSpawn`'s fifth).", "Zone"),
+        F("names", "list", "The globals and table fields the level's scripts give the number.", "Names"),
+        F("objects", "int", "How many `ObjSpawn` calls of the level put an object in the zone.", "Spawned objects"),
+        F("enabled_by", "list", "Scripts that switch the zone on.", "Enabled by"),
+        F("disabled_by", "list", "Scripts that switch it off.", "Disabled by"),
+    ),
+    group_by="level",
+    nav="Object zones",
+)
+
+VOLUME_BOXES = Topic(
+    "boxes",
+    "id",
+    "box",
+    (
+        F("id", "str", "`<script>:<name>`, with `#2`, `#3` ... for a name the same script adds again.", required=True),
+        F("level", "str", "The level whose scripts add the box; none for a shared script.", "Level"),
+        F("name", "str", "The box's name (`AddVolumeBox`'s first argument).", "Box"),
+        F("kind", "int", "`AddVolumeBox`'s second argument: 0, 2 or 3 (1 is refused).", "Kind"),
+        F("class", "str", "The class the kind makes: `VolumeBox`, `PlayerBox` or `TurfBox`.", "Class"),
+        F("corner", "list", "Minimum corner `{x, y, z}` in metres.", "Corner"),
+        F("size", "list", "Extent `{dx, dy, dz}` in metres.", "Size"),
+        F("held_in", "str", "The global the level's scripts keep the handle in.", "Held in"),
+        F("turf_of", "list", "Gangs (the scripts' globals) given the box as turf with `GangAddTurfBox`.", "Turf of"),
+        F("script", "str", "The script that adds it (without `.lua`).", "Script"),
+    ),
+    group_by="level",
+    compact=True,
+    nav="Volume boxes",
+)
+
+SCENES = Topic(
+    "scenes",
+    "id",
+    "scene",
+    (
+        F("id", "str", "A scene's name; `movie:<name>` for a movie.", required=True),
+        F("kind", "str", "`movie` or `scene`.", "Kind"),
+        F("name", "str", "The name `PlayMovie` or `ScenePreload` takes.", "Name"),
+        F("scene", "int", "Scene id: the record's index in `scene_list.cnk`, what `ScenePreload` returns.", "Scene id"),
+        F("size", "int", "The scene record's size in bytes."),
+        F("levels", "list", "Levels whose scripts preload the scene by name.", "Levels"),
+        F("scripts", "list", "Scripts that preload it by name.", "Preloaded by"),
+        F(
+            "played_by",
+            "list",
+            "What plays the movie: the boot, a level record's intro or outro, the front end.",
+            "Played by",
+        ),
+        F(
+            "on_disc",
+            "bool",
+            "Whether the disc's `PSS` folder holds `<name>.BIK` (unknown for a disc image).",
+            "On disc",
+        ),
+    ),
+    group_by="kind",
+    compact=True,
+    nav="Scenes and movies",
+)
+
 ANIMATIONS = Topic(
     "animations",
     "id",
@@ -673,6 +783,10 @@ TOPICS: tuple[Topic, ...] = (
     PARTICLES,
     LEVELS,
     LEVEL_STARTS,
+    WORLD_FLAGS,
+    OBJECT_ZONES,
+    VOLUME_BOXES,
+    SCENES,
     ANIMATIONS,
     ANIM_IDS,
     CONTROLS,

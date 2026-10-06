@@ -36,6 +36,10 @@ copied ([LEGAL.md](repo:LEGAL.md#no-game-data), "Reference lists").
 | [Particle effects](particles.md) | 270 | All 270 types are listed. |
 | [Levels](levels.md) | 111 | Every record is listed with every field. |
 | [Level starts](level-starts.md) | 188 | Every story level whose script creates player 1 at a literal position, and every Rumble flag script whose name is known. |
+| [World flags](flags.md) | 7,057 | Every `AddFlag` call whose name is a literal string: 7,057 flags (4,167 names) added by 94 scripts of 62 levels. |
+| [Object zones](zones.md) | 225 | Every zone number a level's scripts name (`Zone<n>` globals, `<TABLE>.<NAME>_ZONE` fields), switch or spawn objects into: 225 zones in 62 levels. |
+| [Volume boxes](boxes.md) | 974 | Every `AddVolumeBox` call whose name is a literal string: 974 boxes (547 volume, 251 player and 176 turf boxes) in 47 levels. |
+| [Scenes and movies](scenes.md) | 1,256 | All 16 movies, and every scene of `scene_list.cnk` except the 1,525 segments that continue a longer scene: 1,240 scenes, 24 of them under names cut to 16 characters. |
 | [Animation clips](animations.md) | 1,875 | Every clip (1,875) is listed. |
 | [Anim ids](anim-ids.md) | 722 | All 722 ids are listed with the generic clip and Rembrandt's own clip where he has one. |
 | [Controls](controls.md) | 18 | Every button bit and both sticks are listed. |
@@ -65,10 +69,6 @@ it.
 
 | Family | What it is | Where the ids come from | Count | Image | What a list needs |
 | --- | --- | --- | --- | --- | --- |
-| World flags | Named points with a heading that scripts spawn humans at, send them to and test against. | `AddFlag` in each level's `AddFlagsBoxesPaths`; `FindFlag` looks them up by name | 4,167 names in 7,057 calls, 94 scripts | none | Disc extraction (name, level, position, heading); RE for the two integers `AddFlag` stores |
-| Object zones | Groups of a level's placed objects that scripts switch on and off. | `ObjEnableZone`, `ObjSpawn`'s zone argument and the level scripts' `Zone<n>` globals (45) | 255 zone bits; 69 numbers used | none | Disc extraction (zone names and numbers per level) |
-| Volume boxes | Named trigger boxes scripts test humans against. | `AddVolumeBox` (867 names in 974 calls, 53 scripts); kinds 0, 2 and 3 | 867 names | none | Disc extraction; RE for the box kinds |
-| Scenes and movies | The in-engine cutscenes and the full-motion movies scripts play. | `ScenePreload` (187 names in 247 calls, 108 scripts), `PlayMovie` | 187 scene names; movies not counted | none | Disc extraction |
 | Inventory and pocket items | The item ids of the inventory bindings (`InvGiveItem`, `InvNumberOf`) and of a human's pocket. | `CfgInventoryItem` (18 calls, `config_preload2.lua`); ids 0-22; `HuPutItemInPocket` | 23 ids | model render of the item's object: Coney renders characters only so far | Disc extraction; RE for the id-to-item order |
 | Unlockables | The records scripts unlock and test (levels, items, extras). | `UM_Unlock`, `UM_IsDataUnlocked`: a record type byte (7 used) and a data id; the unlock manager `0x006fe998` | not counted | none | RE: the record table and its types |
 | Power and Warrior classes | The combat-strength profiles character types refer to, and the playable Warriors' stats per difficulty. | `CfgPowerClass` (311 calls, 31 arguments) and `CfgWarriorClass` (55 calls) in the difficulty configs ([Characters](../research/characters.md#power-classes)) | 51 power class ids; 9 Warriors | none | Disc extraction; argument meanings partly traced |

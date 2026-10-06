@@ -1,0 +1,28 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level102_brawl_init:fP1_1", level: level102, name: fP1_1, pos: [-9.1, 8.9, -11.1], heading: 128, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP1_2", level: level102, name: fP1_2, pos: [-10.1, 8.1, -11.1], heading: 128, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP1_3", level: level102, name: fP1_3, pos: [-8.8, 10, -11.1], heading: 128, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP1_4", level: level102, name: fP1_4, pos: [-11.8, 8.1, -11.1], heading: 128, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP1_5", level: level102, name: fP1_5, pos: [-10.5, 9.8, -11.1], heading: 128, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP1_6", level: level102, name: fP1_6, pos: [-9.2, 11.6, -11.1], heading: 128, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP1_7", level: level102, name: fP1_7, pos: [-12.2, 9.6, -11.1], heading: 128, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP1_8", level: level102, name: fP1_8, pos: [-10.7, 11.4, -11.1], heading: 128, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP1_9", level: level102, name: fP1_9, pos: [-11.5, 10.5, -11.1], heading: 128, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP1_10", level: level102, name: fP1_10, pos: [-10, 12.4, -11.1], heading: 128, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP2_1", level: level102, name: fP2_1, pos: [-5.3, 5.4, -11.1], heading: 310, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP2_2", level: level102, name: fP2_2, pos: [-3.8, 6, -11.1], heading: 310, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP2_3", level: level102, name: fP2_3, pos: [-5.7, 3.8, -11.1], heading: 310, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP2_4", level: level102, name: fP2_4, pos: [-4.5, 3.4, -11.1], heading: 310, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP2_5", level: level102, name: fP2_5, pos: [-3.4, 4.8, -11.1], heading: 310, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP2_6", level: level102, name: fP2_6, pos: [-5.9, 2.2, -11.1], heading: 310, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP2_7", level: level102, name: fP2_7, pos: [-2.2, 6.1, -11.1], heading: 310, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP2_8", level: level102, name: fP2_8, pos: [-4, 2, -11.1], heading: 310, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP2_9", level: level102, name: fP2_9, pos: [-2, 4.6, -11.1], heading: 310, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fP2_10", level: level102, name: fP2_10, pos: [-2.9, 3.4, -11.1], heading: 310, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fLowRailPoint", level: level102, name: fLowRailPoint, pos: [-15.2, 9.6, -8.5], heading: 105, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fHighRailPoint", level: level102, name: fHighRailPoint, pos: [-15.2, 9.6, -4.6], heading: 105, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fIncludeCrowd", level: level102, name: fIncludeCrowd, pos: [-16.1, 16, -11.1], heading: 89, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fLeftRailPoint", level: level102, name: fLeftRailPoint, pos: [-6.6, 13.9, -7.7], heading: 229, script: level102_brawl_init}
+  - {id: "level102_brawl_init:fRightRailPoint", level: level102, name: fRightRailPoint, pos: [1.8, 7.7, -7.7], heading: 225, script: level102_brawl_init}

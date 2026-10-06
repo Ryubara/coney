@@ -1,0 +1,107 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level107_brawl_init:fP1_1", level: level107, name: fP1_1, pos: [10.4, -24.6, 0], heading: 90, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP1_2", level: level107, name: fP1_2, pos: [8.4, -26.4, 0], heading: 90, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP1_3", level: level107, name: fP1_3, pos: [8.3, -25.7, 0], heading: 92, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP1_4", level: level107, name: fP1_4, pos: [8.3, -25.1, 0], heading: 90, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP1_5", level: level107, name: fP1_5, pos: [9.1, -24.9, 0], heading: 90, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP1_6", level: level107, name: fP1_6, pos: [9.1, -24.3, 0], heading: 90, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP1_7", level: level107, name: fP1_7, pos: [9.1, -23.7, 0], heading: 90, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP1_8", level: level107, name: fP1_8, pos: [8.3, -23.8, 0], heading: 92, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP1_9", level: level107, name: fP1_9, pos: [8.3, -23.1, 0], heading: 90, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP2_1", level: level107, name: fP2_1, pos: [19, -24.6, 0], heading: 273, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP2_2", level: level107, name: fP2_2, pos: [20.2, -23.2, 0], heading: 273, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP2_3", level: level107, name: fP2_3, pos: [20.5, -23.8, 0], heading: 273, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP2_4", level: level107, name: fP2_4, pos: [20, -24.4, 0], heading: 273, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP2_5", level: level107, name: fP2_5, pos: [20, -25, 0], heading: 273, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP2_6", level: level107, name: fP2_6, pos: [19.9, -25.6, 0], heading: 273, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP2_7", level: level107, name: fP2_7, pos: [21.2, -24.4, 0], heading: 273, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP2_8", level: level107, name: fP2_8, pos: [21.1, -25.3, 0], heading: 273, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fP2_9", level: level107, name: fP2_9, pos: [21.1, -26, 0], heading: 273, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fWin_1", level: level107, name: fWin_1, pos: [17.9, -27, 0], heading: 2, script: level107_brawl_init}
+  - {id: "level107_brawl_init:_xwFlagWgnCap01", level: level107, name: _xwFlagWgnCap01, pos: [24, -30.2, 0.2], heading: 269, activity: 13, script: level107_brawl_init}
+  - {id: "level107_brawl_init:_xwFlagWgnCap02", level: level107, name: _xwFlagWgnCap02, pos: [24, -33.5, 0.2], heading: 269, activity: 13, script: level107_brawl_init}
+  - {id: "level107_brawl_init:_xwFlagWgnCap03", level: level107, name: _xwFlagWgnCap03, pos: [20.7, -33.4, 0.2], heading: 90, activity: 13, script: level107_brawl_init}
+  - {id: "level107_brawl_init:_xwFlagWgnCap04", level: level107, name: _xwFlagWgnCap04, pos: [20.7, -30.2, 0.2], heading: 90, activity: 13, script: level107_brawl_init}
+  - {id: "level107_brawl_init:_xwFlagWgnTicket05", level: level107, name: _xwFlagWgnTicket05, pos: [21, -30, 0.2], heading: 90, activity: 26, script: level107_brawl_init}
+  - {id: "level107_brawl_init:_xwFlagWgnCap05", level: level107, name: _xwFlagWgnCap05, pos: [10.4, -19.7, 0.2], heading: 89, activity: 13, script: level107_brawl_init}
+  - {id: "level107_brawl_init:_xwFlagWgnCap06", level: level107, name: _xwFlagWgnCap06, pos: [10.4, -16.4, 0.2], heading: 89, activity: 13, script: level107_brawl_init}
+  - {id: "level107_brawl_init:_xwFlagWgnCap07", level: level107, name: _xwFlagWgnCap07, pos: [13.6, -16.5, 0.2], heading: 270, activity: 13, script: level107_brawl_init}
+  - {id: "level107_brawl_init:_xwFlagWgnCap08", level: level107, name: _xwFlagWgnCap08, pos: [13.7, -19.7, 0.2], heading: 270, activity: 13, script: level107_brawl_init}
+  - {id: "level107_brawl_init:_xwFlagWgnTicket06", level: level107, name: _xwFlagWgnTicket06, pos: [13.4, -19.9, 0.2], heading: 270, activity: 26, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fMolotav", level: level107, name: fMolotav, pos: [13.8, -32.8, 6], heading: 2, script: level107_brawl_init}
+  - {id: "level107_brawl_init:fRevival", level: level107, name: fRevival, pos: [2.2, -21.7, 1.1], heading: 93, script: level107_brawl_init}
+  - {id: "level107_caps_init:fDance_01", level: level107, name: fDance_01, pos: [17.3, -17.8, 0], heading: 89, script: level107_caps_init}
+  - {id: "level107_caps_init:fDance_02", level: level107, name: fDance_02, pos: [16.5, -18.6, 0], heading: 89, script: level107_caps_init}
+  - {id: "level107_caps_init:fDance_03", level: level107, name: fDance_03, pos: [17.9, -19.3, 0], heading: 89, script: level107_caps_init}
+  - {id: "level107_caps_init:fP1_1", level: level107, name: fP1_1, pos: [10.4, -24.6, 0], heading: 90, script: level107_caps_init}
+  - {id: "level107_caps_init:fP1_2", level: level107, name: fP1_2, pos: [8.4, -26.4, 0], heading: 90, script: level107_caps_init}
+  - {id: "level107_caps_init:fP1_3", level: level107, name: fP1_3, pos: [8.3, -25.7, 0], heading: 92, script: level107_caps_init}
+  - {id: "level107_caps_init:fP1_4", level: level107, name: fP1_4, pos: [8.3, -25.1, 0], heading: 90, script: level107_caps_init}
+  - {id: "level107_caps_init:fP1_5", level: level107, name: fP1_5, pos: [9.1, -24.9, 0], heading: 90, script: level107_caps_init}
+  - {id: "level107_caps_init:fP1_6", level: level107, name: fP1_6, pos: [9.1, -24.3, 0], heading: 90, script: level107_caps_init}
+  - {id: "level107_caps_init:fP1_7", level: level107, name: fP1_7, pos: [9.1, -23.7, 0], heading: 90, script: level107_caps_init}
+  - {id: "level107_caps_init:fP1_8", level: level107, name: fP1_8, pos: [8.3, -23.8, 0], heading: 92, script: level107_caps_init}
+  - {id: "level107_caps_init:fP1_9", level: level107, name: fP1_9, pos: [8.3, -23.1, 0], heading: 90, script: level107_caps_init}
+  - {id: "level107_caps_init:fP2_1", level: level107, name: fP2_1, pos: [19, -24.6, 0], heading: 273, script: level107_caps_init}
+  - {id: "level107_caps_init:fP2_2", level: level107, name: fP2_2, pos: [20.2, -23.2, 0], heading: 273, script: level107_caps_init}
+  - {id: "level107_caps_init:fP2_3", level: level107, name: fP2_3, pos: [20.5, -23.8, 0], heading: 273, script: level107_caps_init}
+  - {id: "level107_caps_init:fP2_4", level: level107, name: fP2_4, pos: [20, -24.4, 0], heading: 273, script: level107_caps_init}
+  - {id: "level107_caps_init:fP2_5", level: level107, name: fP2_5, pos: [20, -25, 0], heading: 273, script: level107_caps_init}
+  - {id: "level107_caps_init:fP2_6", level: level107, name: fP2_6, pos: [19.9, -25.6, 0], heading: 273, script: level107_caps_init}
+  - {id: "level107_caps_init:fP2_7", level: level107, name: fP2_7, pos: [21.2, -24.4, 0], heading: 273, script: level107_caps_init}
+  - {id: "level107_caps_init:fP2_8", level: level107, name: fP2_8, pos: [21.1, -25.3, 0], heading: 273, script: level107_caps_init}
+  - {id: "level107_caps_init:fP2_9", level: level107, name: fP2_9, pos: [21.1, -26, 0], heading: 273, script: level107_caps_init}
+  - {id: "level107_caps_init:fWin_1", level: level107, name: fWin_1, pos: [17.9, -27, 0], heading: 2, script: level107_caps_init}
+  - {id: "level107_caps_init:_xwFlagWgnCap01", level: level107, name: _xwFlagWgnCap01, pos: [24, -30.2, 0.2], heading: 269, activity: 13, script: level107_caps_init}
+  - {id: "level107_caps_init:_xwFlagWgnCap02", level: level107, name: _xwFlagWgnCap02, pos: [24, -33.5, 0.2], heading: 269, activity: 13, script: level107_caps_init}
+  - {id: "level107_caps_init:_xwFlagWgnCap03", level: level107, name: _xwFlagWgnCap03, pos: [20.7, -33.4, 0.2], heading: 90, activity: 13, script: level107_caps_init}
+  - {id: "level107_caps_init:_xwFlagWgnCap04", level: level107, name: _xwFlagWgnCap04, pos: [20.7, -30.2, 0.2], heading: 90, activity: 13, script: level107_caps_init}
+  - {id: "level107_caps_init:_xwFlagWgnTicket05", level: level107, name: _xwFlagWgnTicket05, pos: [21, -30, 0.2], heading: 90, activity: 26, script: level107_caps_init}
+  - {id: "level107_caps_init:_xwFlagWgnCap05", level: level107, name: _xwFlagWgnCap05, pos: [10.4, -19.7, 0.2], heading: 89, activity: 13, script: level107_caps_init}
+  - {id: "level107_caps_init:_xwFlagWgnCap06", level: level107, name: _xwFlagWgnCap06, pos: [10.4, -16.4, 0.2], heading: 89, activity: 13, script: level107_caps_init}
+  - {id: "level107_caps_init:_xwFlagWgnCap07", level: level107, name: _xwFlagWgnCap07, pos: [13.6, -16.5, 0.2], heading: 270, activity: 13, script: level107_caps_init}
+  - {id: "level107_caps_init:_xwFlagWgnCap08", level: level107, name: _xwFlagWgnCap08, pos: [13.7, -19.7, 0.2], heading: 270, activity: 13, script: level107_caps_init}
+  - {id: "level107_caps_init:_xwFlagWgnTicket06", level: level107, name: _xwFlagWgnTicket06, pos: [13.4, -19.9, 0.2], heading: 270, activity: 26, script: level107_caps_init}
+  - {id: "level107_caps_init:fMolotav", level: level107, name: fMolotav, pos: [13.8, -32.8, 6], heading: 2, script: level107_caps_init}
+  - {id: "level107_caps_init:fRevival", level: level107, name: fRevival, pos: [2.2, -21.7, 1.1], heading: 93, script: level107_caps_init}
+  - {id: "level107_tagbt_init:fP1_1", level: level107, name: fP1_1, pos: [19, -27.3, 0], heading: 216, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP1_2", level: level107, name: fP1_2, pos: [18.9, -26.1, 0], heading: 216, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP1_3", level: level107, name: fP1_3, pos: [19.6, -26.2, 0], heading: 218, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP1_4", level: level107, name: fP1_4, pos: [20, -26.8, 0], heading: 216, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP1_5", level: level107, name: fP1_5, pos: [18.9, -24.7, 0], heading: 216, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP1_6", level: level107, name: fP1_6, pos: [19.6, -24.8, 0], heading: 216, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP1_7", level: level107, name: fP1_7, pos: [19.9, -25.4, 0], heading: 216, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP1_8", level: level107, name: fP1_8, pos: [20.5, -25.7, 0], heading: 218, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP1_9", level: level107, name: fP1_9, pos: [21.2, -25.9, 0], heading: 216, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP2_1", level: level107, name: fP2_1, pos: [8.9, -27.4, 0], heading: 149, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP2_2", level: level107, name: fP2_2, pos: [7.7, -26.9, 0], heading: 149, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP2_3", level: level107, name: fP2_3, pos: [8.3, -26.5, 0], heading: 149, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP2_4", level: level107, name: fP2_4, pos: [8.7, -26, 0], heading: 149, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP2_5", level: level107, name: fP2_5, pos: [6.4, -25.6, 0], heading: 149, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP2_6", level: level107, name: fP2_6, pos: [7, -25.5, 0], heading: 149, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP2_7", level: level107, name: fP2_7, pos: [7.6, -25.2, 0], heading: 149, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP2_8", level: level107, name: fP2_8, pos: [8, -24.9, 0], heading: 149, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fP2_9", level: level107, name: fP2_9, pos: [8.8, -24.9, 0], heading: 149, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fPaint_01", level: level107, name: fPaint_01, pos: [31.6, -43.6, 4.6], heading: 89, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fPaint_02", level: level107, name: fPaint_02, pos: [11.7, -17.1, 2.5], heading: 89, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fPaint_03", level: level107, name: fPaint_03, pos: [7.4, -33.6, 6.1], heading: 89, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fPaint_04", level: level107, name: fPaint_04, pos: [36.8, -21.3, 4.8], heading: 89, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fPaint_05", level: level107, name: fPaint_05, pos: [42.3, -30.5, 5.6], heading: 89, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fWin_1", level: level107, name: fWin_1, pos: [16.9, -34.3, 0], heading: 3, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fWin_2", level: level107, name: fWin_2, pos: [10, -34.3, 0], heading: 4, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:_xwFlagWgnCap01", level: level107, name: _xwFlagWgnCap01, pos: [24, -30.2, 0.2], heading: 269, activity: 13, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:_xwFlagWgnCap02", level: level107, name: _xwFlagWgnCap02, pos: [24, -33.5, 0.2], heading: 269, activity: 13, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:_xwFlagWgnCap03", level: level107, name: _xwFlagWgnCap03, pos: [20.7, -33.4, 0.2], heading: 90, activity: 13, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:_xwFlagWgnCap04", level: level107, name: _xwFlagWgnCap04, pos: [20.7, -30.2, 0.2], heading: 90, activity: 13, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:_xwFlagWgnTicket05", level: level107, name: _xwFlagWgnTicket05, pos: [21, -30, 0.2], heading: 90, activity: 26, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:_xwFlagWgnCap05", level: level107, name: _xwFlagWgnCap05, pos: [10.4, -19.7, 0.2], heading: 89, activity: 13, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:_xwFlagWgnCap06", level: level107, name: _xwFlagWgnCap06, pos: [10.4, -16.4, 0.2], heading: 89, activity: 13, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:_xwFlagWgnCap07", level: level107, name: _xwFlagWgnCap07, pos: [13.6, -16.5, 0.2], heading: 270, activity: 13, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:_xwFlagWgnCap08", level: level107, name: _xwFlagWgnCap08, pos: [13.7, -19.7, 0.2], heading: 270, activity: 13, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:_xwFlagWgnTicket06", level: level107, name: _xwFlagWgnTicket06, pos: [13.4, -19.9, 0.2], heading: 270, activity: 26, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fWarrTag1", level: level107, name: fWarrTag1, pos: [16.9, -34.3, 0], heading: 181, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fWarrTag2", level: level107, name: fWarrTag2, pos: [10, -34.3, 0], heading: 175, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fMoonTag", level: level107, name: fMoonTag, pos: [32.8, -21.6, 0], heading: 46, script: level107_tagbt_init}
+  - {id: "level107_tagbt_init:fElecTag", level: level107, name: fElecTag, pos: [14.1, -17.2, 0], heading: 270, script: level107_tagbt_init}

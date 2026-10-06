@@ -184,11 +184,11 @@ An entry of `level.yaml`:
 ## Reference lists {#reference-lists}
 
 The [Game references](../references/index.md) are lists of the things scripts, mods and Coney's code name:
-characters, gangs, objects, cars, particle effects, levels and their player starts, clips, anim ids, controls,
-commands, colours, radar icons, text tags, text labels, script constants, sounds, speech, script events and WAD entry
-names. Each is a YAML file in `research/references/<list>.yaml`, and its page in `docs/references/` is generated
-from it. They hold only names, ids, numbers and our own short descriptions (`LEGAL.md`, "Reference lists"): never
-game text, script source or a file from the disc.
+characters, gangs, objects, cars, particle effects, levels and their player starts, world flags, object zones, volume
+boxes, scenes and movies, clips, anim ids, controls, commands, colours, radar icons, text tags, text labels, script
+constants, sounds, speech, script events and WAD entry names. Each is a YAML file in `research/references/<list>.yaml`,
+and its page in `docs/references/` is generated from it. They hold only names, ids, numbers and our own short
+descriptions (`LEGAL.md`, "Reference lists"): never game text, script source or a file from the disc.
 
 A list file has a fixed shape; the fields of its entries are defined per list in
 `python/src/coney_tools/refs_topics.py`, and each page ends with its list's fields:
@@ -220,6 +220,12 @@ Commands ([coney-tools](coney-tools.md#refs)):
 uv run --project python coney-tools refs extract [DISC] [--only LIST ...] [--names FILE]   # refresh from your disc
 uv run --project python coney-tools refs render [--check]                                 # write or check the pages
 ```
+
+A list too long for one file is **split** (`split=True` on its topic; [World flags](../references/flags.md) is one):
+`<list>.yaml` keeps the title, prose and defaults, `research/references/<list>/<group>.yaml` holds the entries of one
+`group_by` group each, and the page `<list>.md` becomes an overview linking one page per group,
+`docs/references/<list>/<group>.md`, where the entries keep their anchors. Every file stays under the repository's
+512 KB file guard, and each page loads fast.
 
 To change a list by hand, edit its YAML and run `refs render`; CI fails when a page is out of date with its YAML.
 

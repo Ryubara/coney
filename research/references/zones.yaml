@@ -1,0 +1,1098 @@
+# Object zones: a Coney game reference list. The page docs/references/zones.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Object zones"
+about: |
+  The zone numbers that group a level's spawned objects, so a script can switch a whole area's objects
+  on or off with `ObjEnableZone(zone, enable)`. Zone 0 is on when a level starts and holds every object
+  spawned without a zone; zones 1 to 254 start off ([Tasks](../research/tasks.md#classes)). Numbers are
+  per level: the same number names different objects in different levels.
+complete: |
+  Every zone number a level's scripts name (`Zone<n>` globals, `<TABLE>.<NAME>_ZONE` fields), switch
+  or spawn objects into: 225 zones in 62 levels. 66 of the 3,133 calls are left out because their zone is not a
+  number the level defines: `global.lua`'s `BNESetup` switches its caller's `Zone21` to `Zone32`, and two calls
+  of `level95` compute the zone. Objects the level file places in a zone are not counted (how it assigns them is
+  not traced).
+defaults: {source: "the level scripts, ObjEnableZone and ObjSpawn", evidence: inferred}
+entries:
+  - id: "level2:0"
+    level: level2
+    zone: 0
+    names: [Zone0]
+  - id: "level2:32"
+    level: level2
+    zone: 32
+    names: [Zone32]
+  - id: "level3:0"
+    level: level3
+    zone: 0
+    names: [Zone0]
+  - id: "level3:2"
+    level: level3
+    zone: 2
+    names: [Zone2]
+    enabled_by: [level3_balcony]
+  - id: "level3:4"
+    level: level3
+    zone: 4
+    names: [Zone4]
+    objects: 163
+    enabled_by: [level3_chase, level3_gallery]
+  - id: "level5:0"
+    level: level5
+    zone: 0
+    names: [Zone0]
+  - id: "level5:1"
+    level: level5
+    zone: 1
+    names: [Zone1]
+    enabled_by: [level5_chapter1]
+    disabled_by: [level5_chapter2]
+  - id: "level5:2"
+    level: level5
+    zone: 2
+    names: [Zone2]
+    objects: 5
+    enabled_by: [level5_chapter2, level5_scenetest]
+  - id: "level5:3"
+    level: level5
+    zone: 3
+    names: [Zone3]
+    objects: 9
+    enabled_by: [level5_chapter2]
+    disabled_by: [level5_chapter3]
+  - id: "level5:5"
+    level: level5
+    zone: 5
+    names: [Zone5]
+    objects: 22
+    enabled_by: [level5_chapter3, level5_scenetest]
+  - id: "level5:6"
+    level: level5
+    zone: 6
+    names: [Zone6]
+    objects: 1
+    enabled_by: [level5_chapter1a, level5_scenetest]
+    disabled_by: [level5_chapter1a]
+  - id: "level5:10"
+    level: level5
+    zone: 10
+    names: [Zone10]
+    enabled_by: [level5_chapter1a]
+    disabled_by: [level5_chapter1a]
+  - id: "level9:0"
+    level: level9
+    zone: 0
+    names: [Zone0]
+  - id: "level9:1"
+    level: level9
+    zone: 1
+    names: [Zone1]
+    objects: 1
+    enabled_by: [level9_chap1_radio, level9_scenetest]
+  - id: "level9:41"
+    level: level9
+    zone: 41
+    names: [Zone41]
+    objects: 1
+    enabled_by: [level9_chap1_radio]
+    disabled_by: [level9_chap1_radio]
+  - id: "level11:0"
+    level: level11
+    zone: 0
+    names: [Zone0]
+  - id: "level11:4"
+    level: level11
+    zone: 4
+    names: [Zone4]
+    objects: 11
+    enabled_by: [level11_scenetest]
+    disabled_by: [level11_chapter4]
+  - id: "level11:5"
+    level: level11
+    zone: 5
+    names: [Zone5]
+    enabled_by: [level11_chapter4]
+    disabled_by: [level11_chapter5]
+  - id: "level11:7"
+    level: level11
+    zone: 7
+    names: [Zone7]
+    objects: 1
+    enabled_by: [level11_scenetest]
+  - id: "level11:11"
+    level: level11
+    zone: 11
+    names: [Zone11]
+    objects: 1
+    enabled_by: [level11_chapter5]
+  - id: "level11:24"
+    level: level11
+    zone: 24
+    names: [Zone24]
+  - id: "level11:80"
+    level: level11
+    zone: 80
+    names: [Zone80]
+    objects: 1
+    enabled_by: [level11_chapter6]
+    disabled_by: [level11_chapter6]
+  - id: "level11:81"
+    level: level11
+    zone: 81
+    names: [Zone81]
+    objects: 1
+    enabled_by: [level11_chapter6]
+    disabled_by: [level11_chapter6]
+  - id: "level14:0"
+    level: level14
+    zone: 0
+    names: [Zone0]
+  - id: "level14:24"
+    level: level14
+    zone: 24
+    names: [Zone24]
+  - id: "level14:26"
+    level: level14
+    zone: 26
+    names: [Zone26]
+  - id: "level14:27"
+    level: level14
+    zone: 27
+    names: [Zone27]
+  - id: "level14:30"
+    level: level14
+    zone: 30
+    names: [Zone30]
+  - id: "level14:32"
+    level: level14
+    zone: 32
+    names: [Zone32]
+  - id: "level20:0"
+    level: level20
+    zone: 0
+    names: [Zone0]
+  - id: "level20:5"
+    level: level20
+    zone: 5
+    names: [Zone5]
+    objects: 5
+    enabled_by: [level20_marketplace]
+  - id: "level20:31"
+    level: level20
+    zone: 31
+    names: [Zone31]
+  - id: "level31:0"
+    level: level31
+    zone: 0
+    names: [Zone0]
+  - id: "level31:15"
+    level: level31
+    zone: 15
+    names: [Zone15]
+    objects: 1
+    enabled_by: [level31_gclub]
+  - id: "level31:29"
+    level: level31
+    zone: 29
+    names: [Zone29]
+  - id: "level31:87"
+    level: level31
+    zone: 87
+    names: [Zone87]
+    enabled_by: [level31_reddevil]
+  - id: "level31:111"
+    level: level31
+    zone: 111
+    enabled_by: [level31_reddevil]
+    disabled_by: [level31_reddevil]
+  - id: "level34:0"
+    level: level34
+    zone: 0
+    names: [Zone0]
+  - id: "level34:2"
+    level: level34
+    zone: 2
+    names: [Zone2]
+    enabled_by: [level34_riot]
+  - id: "level34:3"
+    level: level34
+    zone: 3
+    names: [Zone3]
+    enabled_by: [level34_riot]
+  - id: "level34:32"
+    level: level34
+    zone: 32
+    names: [Zone32]
+    enabled_by: [level34_gate, level34_riot]
+  - id: "level34:33"
+    level: level34
+    zone: 33
+    names: [Zone33]
+    enabled_by: [level34_riot]
+  - id: "level34:34"
+    level: level34
+    zone: 34
+    names: [Zone34]
+    enabled_by: [level34_gate, level34_riot]
+  - id: "level34:35"
+    level: level34
+    zone: 35
+    names: [Zone35]
+    enabled_by: [level34_riot]
+  - id: "level34:36"
+    level: level34
+    zone: 36
+    names: [Zone36]
+    enabled_by: [level34_gate, level34_riot]
+  - id: "level34:37"
+    level: level34
+    zone: 37
+    names: [Zone37]
+    enabled_by: [level34_riot]
+  - id: "level34:38"
+    level: level34
+    zone: 38
+    names: [Zone38]
+    enabled_by: [level34_gate, level34_riot]
+  - id: "level34:40"
+    level: level34
+    zone: 40
+    names: [Zone40]
+    enabled_by: [level34_gate, level34_riot]
+  - id: "level34:41"
+    level: level34
+    zone: 41
+    names: [Zone41]
+    enabled_by: [level34_riot]
+  - id: "level34:42"
+    level: level34
+    zone: 42
+    names: [Zone42]
+    enabled_by: [level34_gate, level34_riot]
+  - id: "level34:43"
+    level: level34
+    zone: 43
+    names: [Zone43]
+    enabled_by: [level34_riot]
+  - id: "level34:44"
+    level: level34
+    zone: 44
+    names: [Zone44]
+    enabled_by: [level34_gate, level34_riot]
+  - id: "level34:45"
+    level: level34
+    zone: 45
+    names: [Zone45]
+    enabled_by: [level34_riot]
+  - id: "level34:46"
+    level: level34
+    zone: 46
+    enabled_by: [level34_gate]
+  - id: "level34:48"
+    level: level34
+    zone: 48
+    enabled_by: [level34_gate]
+  - id: "level34:50"
+    level: level34
+    zone: 50
+    names: [Zone50]
+    objects: 14
+    enabled_by: [level34_park, level34_riot, level34_scenetest]
+  - id: "level34:51"
+    level: level34
+    zone: 51
+    names: [Zone51]
+    enabled_by: [level34_riot]
+  - id: "level51:0"
+    level: level51
+    zone: 0
+    names: [Zone0]
+  - id: "level51:1"
+    level: level51
+    zone: 1
+    names: [Zone1]
+    enabled_by: [level51_chapter1, level51_scenetest]
+    disabled_by: [level51_chapter2]
+  - id: "level51:2"
+    level: level51
+    zone: 2
+    names: [Zone2]
+    enabled_by: [level51_chapter1, level51_chapter2, level51_chapter2a]
+    disabled_by: [level51_chapter2a]
+  - id: "level51:3"
+    level: level51
+    zone: 3
+    names: [Zone3]
+    objects: 2
+    enabled_by: [level51_chapter3]
+    disabled_by: [level51_chapter3]
+  - id: "level51:4"
+    level: level51
+    zone: 4
+    names: [Zone4]
+  - id: "level51:5"
+    level: level51
+    zone: 5
+    names: [Zone5]
+    enabled_by: [level51_chapter3, level51_chapter5]
+    disabled_by: [level51_chapter8]
+  - id: "level51:6"
+    level: level51
+    zone: 6
+    names: [Zone6]
+    enabled_by: [level51_chapter5]
+    disabled_by: [level51_chapter8]
+  - id: "level51:7"
+    level: level51
+    zone: 7
+    names: [Zone7]
+    objects: 56
+    enabled_by: [level51_chapter8]
+    disabled_by: [level51_chapter8]
+  - id: "level51:9"
+    level: level51
+    zone: 9
+    enabled_by: [level51_chapter9, level51_scenetest]
+    disabled_by: [level51_chapter9]
+  - id: "level51:12"
+    level: level51
+    zone: 12
+    names: [Zone12]
+    objects: 1
+    enabled_by: [level51_chapter9, level51_scenetest]
+    disabled_by: [level51_chapter9]
+  - id: "level51:13"
+    level: level51
+    zone: 13
+    enabled_by: [level51_scenetest]
+  - id: "level51:20"
+    level: level51
+    zone: 20
+    names: [Zone20]
+    enabled_by: [level51_chapter3]
+  - id: "level52:0"
+    level: level52
+    zone: 0
+    names: [Zone0]
+  - id: "level52:3"
+    level: level52
+    zone: 3
+    enabled_by: [level52_chapter4]
+  - id: "level52:31"
+    level: level52
+    zone: 31
+    names: [Zone31]
+  - id: "level54:0"
+    level: level54
+    zone: 0
+    names: [Zone0]
+  - id: "level54:3"
+    level: level54
+    zone: 3
+    enabled_by: [level54_boss, level54_scenetest]
+  - id: "level54:4"
+    level: level54
+    zone: 4
+    names: [Zone4]
+    objects: 3
+    enabled_by: [level54_boss, level54_scenetest]
+    disabled_by: [level54, level54_boss]
+  - id: "level54:9"
+    level: level54
+    zone: 9
+    names: [Zone9]
+    objects: 2
+    enabled_by: [level54_boss, level54_scenetest]
+    disabled_by: [level54_boss]
+  - id: "level55:0"
+    level: level55
+    zone: 0
+    names: [Zone0]
+  - id: "level55:2"
+    level: level55
+    zone: 2
+    names: [Zone2]
+    enabled_by: [level55]
+  - id: "level60:0"
+    level: level60
+    zone: 0
+    names: [Zone0]
+  - id: "level61:0"
+    level: level61
+    zone: 0
+    names: [Zone0]
+  - id: "level62:0"
+    level: level62
+    zone: 0
+    names: [Zone0]
+  - id: "level63:0"
+    level: level63
+    zone: 0
+    names: [Zone0]
+  - id: "level64:0"
+    level: level64
+    zone: 0
+    names: [Zone0]
+  - id: "level80:0"
+    level: level80
+    zone: 0
+    names: [Zone0]
+  - id: "level80:24"
+    level: level80
+    zone: 24
+    names: [Zone24]
+  - id: "level81:0"
+    level: level81
+    zone: 0
+    names: [Zone0]
+  - id: "level82:0"
+    level: level82
+    zone: 0
+    names: [Zone0]
+  - id: "level82:1"
+    level: level82
+    zone: 1
+    names: [Zone1]
+    enabled_by: [level82_chapter4]
+    disabled_by: [level82_chapter5]
+  - id: "level82:2"
+    level: level82
+    zone: 2
+    names: [Zone2]
+    enabled_by: [level82_chapter2]
+    disabled_by: [level82_chapter1, level82_chapter2]
+  - id: "level82:3"
+    level: level82
+    zone: 3
+    names: [Zone3]
+    enabled_by: [level82_chapter1, level82_chapter2]
+  - id: "level82:5"
+    level: level82
+    zone: 5
+    names: [Zone5]
+    enabled_by: [level82_chapter5]
+    disabled_by: [level82_chapter5]
+  - id: "level82:6"
+    level: level82
+    zone: 6
+    names: [Zone6]
+    disabled_by: [level82_chapter5]
+  - id: "level83:0"
+    level: level83
+    zone: 0
+    names: [Zone0]
+  - id: "level83:24"
+    level: level83
+    zone: 24
+    names: [Zone24]
+  - id: "level83:30"
+    level: level83
+    zone: 30
+    names: [Zone30]
+  - id: "level84:0"
+    level: level84
+    zone: 0
+    names: [Zone0]
+  - id: "level84:1"
+    level: level84
+    zone: 1
+    names: [Zone1]
+    objects: 5
+    enabled_by: [level84_intro, level84_scenetest]
+    disabled_by: [level84_chase]
+  - id: "level84:2"
+    level: level84
+    zone: 2
+    names: [Zone2]
+    enabled_by: [level84_chase, level84_final]
+    disabled_by: [level84_chase]
+  - id: "level84:3"
+    level: level84
+    zone: 3
+    names: [Zone3]
+    enabled_by: [level84_final]
+    disabled_by: [level84_final]
+  - id: "level84:4"
+    level: level84
+    zone: 4
+    names: [Zone4]
+    enabled_by: [level84_final, level84_scenetest]
+    disabled_by: [level84_final]
+  - id: "level86:0"
+    level: level86
+    zone: 0
+    names: [Zone0]
+  - id: "level86:1"
+    level: level86
+    zone: 1
+    names: [Zone1]
+    enabled_by: [level86, level86_chapter2_reg]
+    disabled_by: [level86_chapter3_reg]
+  - id: "level86:2"
+    level: level86
+    zone: 2
+    names: [Zone2]
+    enabled_by: [level86]
+    disabled_by: [level86_chapter3_reg]
+  - id: "level86:3"
+    level: level86
+    zone: 3
+    names: [Zone3]
+    enabled_by: [level86]
+    disabled_by: [level86_chapter3_reg]
+  - id: "level86:4"
+    level: level86
+    zone: 4
+    names: [Zone4]
+    objects: 2
+    enabled_by: [level86]
+    disabled_by: [level86_chapter3_reg]
+  - id: "level86:5"
+    level: level86
+    zone: 5
+    enabled_by: [level86]
+    disabled_by: [level86_chapter3_reg]
+  - id: "level86:6"
+    level: level86
+    zone: 6
+    names: [Zone6]
+    enabled_by: [level86]
+    disabled_by: [level86_chapter3_reg]
+  - id: "level86:7"
+    level: level86
+    zone: 7
+    names: [Zone7]
+    enabled_by: [level86]
+    disabled_by: [level86_chapter3_reg]
+  - id: "level86:9"
+    level: level86
+    zone: 9
+    enabled_by: [level86_chapter4]
+  - id: "level86:10"
+    level: level86
+    zone: 10
+    names: [Zone10]
+    enabled_by: [level86]
+    disabled_by: [level86_chapter3_reg, level86_chapter4]
+  - id: "level87:0"
+    level: level87
+    zone: 0
+    names: [Zone0]
+  - id: "level87:1"
+    level: level87
+    zone: 1
+    names: [Zone1]
+    objects: 2
+    enabled_by: [level87_chap1_tutorial, level87_chap5_club, level87_scenetest]
+  - id: "level87:2"
+    level: level87
+    zone: 2
+    disabled_by: [level87]
+  - id: "level87:5"
+    level: level87
+    zone: 5
+    names: [Zone5]
+    objects: 2
+    enabled_by: [level87_chap5_club, level87_scenetest]
+  - id: "level87:6"
+    level: level87
+    zone: 6
+    names: [Zone6]
+    objects: 1
+    enabled_by: [level87_chap5_club, level87_scenetest]
+  - id: "level87:27"
+    level: level87
+    zone: 27
+    names: [Zone27]
+  - id: "level87:31"
+    level: level87
+    zone: 31
+    names: [Zone31]
+  - id: "level92:0"
+    level: level92
+    zone: 0
+    names: [Zone0]
+  - id: "level92:1"
+    level: level92
+    zone: 1
+    names: [VD.VOODOO_ZONE, Zone1]
+    enabled_by: [level92_chapter2]
+    disabled_by: [level92_chapter2]
+  - id: "level92:2"
+    level: level92
+    zone: 2
+    names: [MT.MEAT_ZONE, Zone2]
+    enabled_by: [level92_chapter2]
+    disabled_by: [level92_chapter2]
+  - id: "level92:3"
+    level: level92
+    zone: 3
+    names: [PB.PLUMB_ZONE, Zone3]
+    enabled_by: [level92_chapter2]
+    disabled_by: [level92_chapter2]
+  - id: "level92:4"
+    level: level92
+    zone: 4
+    names: [HD.HEAD_ZONE, Zone4]
+    disabled_by: [level92_chapter2]
+  - id: "level92:6"
+    level: level92
+    zone: 6
+    disabled_by: [level92_chapter1]
+  - id: "level93:0"
+    level: level93
+    zone: 0
+    names: [Zone0]
+  - id: "level93:2"
+    level: level93
+    zone: 2
+    names: [PH.PHARMACY_ZONE, Zone2]
+    disabled_by: [level93_chapter1, level93_chapter2]
+  - id: "level93:3"
+    level: level93
+    zone: 3
+    names: [LQ.LIQUOR_ZONE, Zone3]
+    disabled_by: [level93_chapter1, level93_chapter2]
+  - id: "level93:4"
+    level: level93
+    zone: 4
+    names: [WH.WAREHOUSE_ZONE, Zone4]
+    enabled_by: [level93_chapter2]
+    disabled_by: [level93_chapter2]
+  - id: "level93:5"
+    level: level93
+    zone: 5
+    names: [GH.GAMBLE_ZONE, Zone5]
+    objects: 4
+    enabled_by: [level93_chapter2]
+    disabled_by: [level93_chapter2]
+  - id: "level93:6"
+    level: level93
+    zone: 6
+    names: [C4.PATH_BLOCK_ZONE, Zone6]
+    enabled_by: [level93_chapter4]
+    disabled_by: [level93_chapter4]
+  - id: "level93:66"
+    level: level93
+    zone: 66
+    names: [Zone66]
+    objects: 12
+    enabled_by: [level93_chapter6]
+    disabled_by: [level93_chapter6]
+  - id: "level95:0"
+    level: level95
+    zone: 0
+    names: [Zone0]
+  - id: "level95:1"
+    level: level95
+    zone: 1
+    names: [Zone1]
+    objects: 16
+    enabled_by: [level95, level95_clubhouse]
+    disabled_by: [level95, level95_clubhouse]
+  - id: "level95:2"
+    level: level95
+    zone: 2
+    names: [Zone2]
+    objects: 1
+    disabled_by: [level95, level95_clubhouse]
+  - id: "level95:3"
+    level: level95
+    zone: 3
+    names: [Zone3]
+    objects: 237
+    disabled_by: [level95, level95_clubhouse]
+  - id: "level95:4"
+    level: level95
+    zone: 4
+    disabled_by: [level95, level95_clubhouse]
+  - id: "level95:5"
+    level: level95
+    zone: 5
+    names: [Zone5]
+    objects: 5
+    enabled_by: [level95, level95_clubhouse]
+    disabled_by: [level95, level95_clubhouse]
+  - id: "level95:6"
+    level: level95
+    zone: 6
+    names: [Zone6]
+  - id: "level95:7"
+    level: level95
+    zone: 7
+    objects: 1
+    enabled_by: [level95]
+  - id: "level95:8"
+    level: level95
+    zone: 8
+    names: [Zone8]
+    objects: 1
+    enabled_by: [level95, level95_clubhouse]
+  - id: "level95:9"
+    level: level95
+    zone: 9
+    objects: 1
+    disabled_by: [level95, level95_clubhouse]
+  - id: "level95:11"
+    level: level95
+    zone: 11
+    names: [Zone11]
+    enabled_by: [level95, level95_clubhouse]
+  - id: "level95:13"
+    level: level95
+    zone: 13
+    names: [Zone13]
+    enabled_by: [level95_coney]
+    disabled_by: [level95_coney]
+  - id: "level95:14"
+    level: level95
+    zone: 14
+    enabled_by: [level95_coney]
+    disabled_by: [level95_coney]
+  - id: "level95:15"
+    level: level95
+    zone: 15
+    names: [Zone15, homeless.MEAT_ZONE]
+    enabled_by: [level95_coney]
+    disabled_by: [level95_coney]
+  - id: "level95:16"
+    level: level95
+    zone: 16
+    names: [Zone16]
+    enabled_by: [level95_coney]
+    disabled_by: [level95_coney]
+  - id: "level95:17"
+    level: level95
+    zone: 17
+    names: [Zone17]
+    enabled_by: [level95_coney]
+    disabled_by: [level95_coney]
+  - id: "level95:19"
+    level: level95
+    zone: 19
+    names: [Zone19]
+    objects: 2
+  - id: "level95:32"
+    level: level95
+    zone: 32
+    names: [Zone32, roam.JEWELERY_ZONE]
+    enabled_by: [level95_coney]
+    disabled_by: [level95_coney]
+  - id: "level99:0"
+    level: level99
+    zone: 0
+    names: [Zone0]
+  - id: "level99:1"
+    level: level99
+    zone: 1
+    names: [Zone1]
+    objects: 3
+    enabled_by: [level99_combat]
+  - id: "level99:26"
+    level: level99
+    zone: 26
+    names: [Zone26]
+  - id: "level101:21"
+    level: level101
+    zone: 21
+    disabled_by: [level101]
+  - id: "level102:0"
+    level: level102
+    zone: 0
+    names: [Zone0]
+  - id: "level102:1"
+    level: level102
+    zone: 1
+    names: [Zone1]
+  - id: "level102:21"
+    level: level102
+    zone: 21
+    disabled_by: [level102]
+  - id: "level103:0"
+    level: level103
+    zone: 0
+    names: [Zone0]
+  - id: "level103:21"
+    level: level103
+    zone: 21
+    disabled_by: [level103]
+  - id: "level103:24"
+    level: level103
+    zone: 24
+    names: [Zone24]
+    objects: 4
+  - id: "level104:0"
+    level: level104
+    zone: 0
+    names: [Zone0]
+  - id: "level104:21"
+    level: level104
+    zone: 21
+    disabled_by: [level104]
+  - id: "level104:24"
+    level: level104
+    zone: 24
+    names: [Zone24]
+    objects: 3
+  - id: "level105:0"
+    level: level105
+    zone: 0
+    names: [Zone0]
+  - id: "level105:21"
+    level: level105
+    zone: 21
+    disabled_by: [level105]
+  - id: "level107:0"
+    level: level107
+    zone: 0
+    names: [Zone0]
+  - id: "level107:19"
+    level: level107
+    zone: 19
+    names: [Zone19]
+  - id: "level107:21"
+    level: level107
+    zone: 21
+    disabled_by: [level107]
+  - id: "level108:21"
+    level: level108
+    zone: 21
+    disabled_by: [level108]
+  - id: "level108:24"
+    level: level108
+    zone: 24
+    names: [Zone24]
+    objects: 9
+  - id: "level109:0"
+    level: level109
+    zone: 0
+    names: [Zone0]
+  - id: "level109:21"
+    level: level109
+    zone: 21
+    disabled_by: [level109]
+  - id: "level110:0"
+    level: level110
+    zone: 0
+    names: [Zone0]
+  - id: "level110:21"
+    level: level110
+    zone: 21
+    disabled_by: [level110]
+  - id: "level111:0"
+    level: level111
+    zone: 0
+    names: [Zone0]
+  - id: "level111:11"
+    level: level111
+    zone: 11
+    names: [Zone11]
+    objects: 31
+  - id: "level111:21"
+    level: level111
+    zone: 21
+    disabled_by: [level111]
+  - id: "level111:30"
+    level: level111
+    zone: 30
+    names: [Zone30]
+  - id: "level112:0"
+    level: level112
+    zone: 0
+    names: [Zone0]
+  - id: "level112:21"
+    level: level112
+    zone: 21
+    disabled_by: [level112]
+  - id: "level112:24"
+    level: level112
+    zone: 24
+    names: [Zone24]
+    objects: 16
+  - id: "level113:0"
+    level: level113
+    zone: 0
+    names: [Zone0]
+  - id: "level113:21"
+    level: level113
+    zone: 21
+    disabled_by: [level113]
+  - id: "level114:0"
+    level: level114
+    zone: 0
+    names: [Zone0]
+  - id: "level114:18"
+    level: level114
+    zone: 18
+    names: [Zone18]
+  - id: "level114:21"
+    level: level114
+    zone: 21
+    disabled_by: [level114]
+  - id: "level114:24"
+    level: level114
+    zone: 24
+    names: [Zone24]
+    objects: 9
+  - id: "level115:0"
+    level: level115
+    zone: 0
+    names: [Zone0]
+  - id: "level115:21"
+    level: level115
+    zone: 21
+    disabled_by: [level115]
+  - id: "level116:0"
+    level: level116
+    zone: 0
+    names: [Zone0]
+  - id: "level116:21"
+    level: level116
+    zone: 21
+    disabled_by: [level116]
+  - id: "level118:0"
+    level: level118
+    zone: 0
+    names: [Zone0]
+  - id: "level118:21"
+    level: level118
+    zone: 21
+    disabled_by: [level118]
+  - id: "level119:0"
+    level: level119
+    zone: 0
+    names: [Zone0]
+  - id: "level119:21"
+    level: level119
+    zone: 21
+    disabled_by: [level119]
+  - id: "level120:0"
+    level: level120
+    zone: 0
+    names: [Zone0]
+  - id: "level120:21"
+    level: level120
+    zone: 21
+    disabled_by: [level120]
+  - id: "level121:0"
+    level: level121
+    zone: 0
+    names: [Zone0]
+  - id: "level121:21"
+    level: level121
+    zone: 21
+    disabled_by: [level121]
+  - id: "level122:0"
+    level: level122
+    zone: 0
+    names: [Zone0]
+  - id: "level122:21"
+    level: level122
+    zone: 21
+    disabled_by: [level122]
+  - id: "level123:0"
+    level: level123
+    zone: 0
+    names: [Zone0]
+  - id: "level123:21"
+    level: level123
+    zone: 21
+    disabled_by: [level123]
+  - id: "level124:0"
+    level: level124
+    zone: 0
+    names: [Zone0]
+  - id: "level124:21"
+    level: level124
+    zone: 21
+    disabled_by: [level124]
+  - id: "level126:0"
+    level: level126
+    zone: 0
+    names: [Zone0]
+  - id: "level126:21"
+    level: level126
+    zone: 21
+    disabled_by: [level126]
+  - id: "level127:0"
+    level: level127
+    zone: 0
+    names: [Zone0]
+  - id: "level127:21"
+    level: level127
+    zone: 21
+    disabled_by: [level127]
+  - id: "level128:0"
+    level: level128
+    zone: 0
+    names: [Zone0]
+  - id: "level128:21"
+    level: level128
+    zone: 21
+    disabled_by: [level128]
+  - id: "level129:21"
+    level: level129
+    zone: 21
+    disabled_by: [level129]
+  - id: "level130:2"
+    level: level130
+    zone: 2
+    names: [Zone2]
+    objects: 18
+  - id: "level130:21"
+    level: level130
+    zone: 21
+    disabled_by: [level130]
+  - id: "level131:0"
+    level: level131
+    zone: 0
+    names: [Zone0]
+  - id: "level131:21"
+    level: level131
+    zone: 21
+    disabled_by: [level131]
+  - id: "level132:0"
+    level: level132
+    zone: 0
+    names: [Zone0]
+  - id: "level132:21"
+    level: level132
+    zone: 21
+    disabled_by: [level132]
+  - id: "level133:0"
+    level: level133
+    zone: 0
+    names: [Zone0]
+  - id: "level133:21"
+    level: level133
+    zone: 21
+    disabled_by: [level133]
+  - id: "level134:0"
+    level: level134
+    zone: 0
+    names: [Zone0]
+  - id: "level134:21"
+    level: level134
+    zone: 21
+    disabled_by: [level134]
+  - id: "level134:30"
+    level: level134
+    zone: 30
+    objects: 4
+  - id: "level136:0"
+    level: level136
+    zone: 0
+    names: [Zone0]
+  - id: "level136:21"
+    level: level136
+    zone: 21
+    disabled_by: [level136]
+  - id: "level137:0"
+    level: level137
+    zone: 0
+    names: [Zone0]
+  - id: "level137:21"
+    level: level137
+    zone: 21
+    disabled_by: [level137]

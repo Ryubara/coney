@@ -1,0 +1,24 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level129_kinghill_init:fP1_01", level: level129, name: fP1_01, pos: [19.7, -8.7, 0.3], heading: 197, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP1_02", level: level129, name: fP1_02, pos: [18.6, -7.7, 0.3], heading: 197, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP1_03", level: level129, name: fP1_03, pos: [21.2, -8.3, 0.3], heading: 197, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP1_04", level: level129, name: fP1_04, pos: [17.6, -7, 0.3], heading: 197, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP1_05", level: level129, name: fP1_05, pos: [22.5, -8.2, 0.3], heading: 197, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP1_06", level: level129, name: fP1_06, pos: [20.5, -7.2, 0.3], heading: 197, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP1_07", level: level129, name: fP1_07, pos: [21.8, -7.2, 0.3], heading: 197, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP1_08", level: level129, name: fP1_08, pos: [19.5, -6.9, 0.3], heading: 197, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP1_09", level: level129, name: fP1_09, pos: [18.4, -6.4, 0.3], heading: 197, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP1_10", level: level129, name: fP1_10, pos: [20.2, -6.2, 0.3], heading: 197, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP2_01", level: level129, name: fP2_01, pos: [10.1, -8.7, 0.3], heading: 167, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP2_02", level: level129, name: fP2_02, pos: [8.7, -8.4, 0.3], heading: 167, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP2_03", level: level129, name: fP2_03, pos: [11.2, -7.9, 0.3], heading: 167, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP2_04", level: level129, name: fP2_04, pos: [7.3, -8, 0.3], heading: 167, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP2_05", level: level129, name: fP2_05, pos: [12.1, -6.9, 0.3], heading: 167, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP2_06", level: level129, name: fP2_06, pos: [9, -7.4, 0.3], heading: 167, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP2_07", level: level129, name: fP2_07, pos: [10.2, -7.1, 0.3], heading: 167, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP2_08", level: level129, name: fP2_08, pos: [7.6, -7, 0.3], heading: 167, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP2_09", level: level129, name: fP2_09, pos: [10.9, -6.4, 0.3], heading: 167, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fP2_10", level: level129, name: fP2_10, pos: [9.1, -6.1, 0.3], heading: 167, script: level129_kinghill_init}
+  - {id: "level129_kinghill_init:fTopTier", level: level129, name: fTopTier, pos: [11.6, -24, 8.8], heading: 181, script: level129_kinghill_init}

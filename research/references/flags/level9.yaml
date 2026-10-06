@@ -1,0 +1,210 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level9:fSWalk", level: level9, name: fSWalk, heading: 0, script: level9}
+  - {id: "level9:fT1S1L1_Left", level: level9, name: fT1S1L1_Left, pos: [68.6, 300.5, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT1S1L1_Centre", level: level9, name: fT1S1L1_Centre, pos: [66.1, 300.5, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT1S1L1_Right", level: level9, name: fT1S1L1_Right, pos: [63.6, 300.5, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT1S2L1_Centre", level: level9, name: fT1S2L1_Centre, pos: [71.7, 297.7, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT1S2L1_Left", level: level9, name: fT1S2L1_Left, pos: [69.2, 297.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT1S2L1_Right", level: level9, name: fT1S2L1_Right, pos: [74.2, 297.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT2S1L1_Centre", level: level9, name: fT2S1L1_Centre, pos: [2.4, 300.1, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT2S1L1_Right", level: level9, name: fT2S1L1_Right, pos: [-0.1, 300.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT2S1L1_Left", level: level9, name: fT2S1L1_Left, pos: [4.9, 300.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT2S1L2_Right", level: level9, name: fT2S1L2_Right, pos: [-12.2, 300.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT2S1L2_Left", level: level9, name: fT2S1L2_Left, pos: [-7.2, 300.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT2S1L2_Centre", level: level9, name: fT2S1L2_Centre, pos: [-9.7, 300.1, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT2S2L1_Left", level: level9, name: fT2S2L1_Left, pos: [-0.1, 295.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT2S2L1_Right", level: level9, name: fT2S2L1_Right, pos: [4.9, 295.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT2S2L1_Centre", level: level9, name: fT2S2L1_Centre, pos: [2.4, 295.8, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT2S2L2_Right", level: level9, name: fT2S2L2_Right, pos: [-6.5, 295.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT2S2L2_Centre", level: level9, name: fT2S2L2_Centre, pos: [-9, 295.8, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT2S2L2_Left", level: level9, name: fT2S2L2_Left, pos: [-11.5, 295.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT7S1L1_Centre", level: level9, name: fT7S1L1_Centre, pos: [-69, 261.1, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT7S1L1_Right", level: level9, name: fT7S1L1_Right, pos: [-71.5, 261.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT7S1L1_Left", level: level9, name: fT7S1L1_Left, pos: [-66.5, 261.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT7S1L2_Right", level: level9, name: fT7S1L2_Right, pos: [-83.8, 261.1, 0.2], heading: 89, script: level9}
+  - {id: "level9:fT7S1L2_Left", level: level9, name: fT7S1L2_Left, pos: [-78.8, 261.1, 0.2], heading: 89, script: level9}
+  - {id: "level9:fT7S1L2_Centre", level: level9, name: fT7S1L2_Centre, pos: [-81.3, 261.1, 0.2], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT7S2L1_Left", level: level9, name: fT7S2L1_Left, pos: [-71.5, 256.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT7S2L1_Right", level: level9, name: fT7S2L1_Right, pos: [-66.5, 256.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT7S2L1_Centre", level: level9, name: fT7S2L1_Centre, pos: [-69, 256.8, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT7S2L2_Right", level: level9, name: fT7S2L2_Right, pos: [-78.7, 256.9, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT7S2L2_Centre", level: level9, name: fT7S2L2_Centre, pos: [-81.2, 256.9, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT7S2L2_Left", level: level9, name: fT7S2L2_Left, pos: [-83.7, 256.9, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT6S1L1_Left", level: level9, name: fT6S1L1_Left, pos: [-122, 284.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT6S1L1_Right", level: level9, name: fT6S1L1_Right, pos: [-117, 284.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT6S1L1_Centre", level: level9, name: fT6S1L1_Centre, pos: [-119.5, 284.7, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT6S1L2_Left", level: level9, name: fT6S1L2_Left, pos: [-132.6, 284.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT6S1L2_Right", level: level9, name: fT6S1L2_Right, pos: [-127.6, 284.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT6S1L2_Centre", level: level9, name: fT6S1L2_Centre, pos: [-130.1, 284.8, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT5S1L1_Centre", level: level9, name: fT5S1L1_Centre, pos: [-95.9, 300.2, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT5S1L1_Right", level: level9, name: fT5S1L1_Right, pos: [-98.4, 300.2, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT5S1L1_Left", level: level9, name: fT5S1L1_Left, pos: [-93.4, 300.2, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT5S1L2_Right", level: level9, name: fT5S1L2_Right, pos: [-110.6, 300.2, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT5S1L2_Left", level: level9, name: fT5S1L2_Left, pos: [-105.6, 300.2, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT5S1L2_Centre", level: level9, name: fT5S1L2_Centre, pos: [-108.1, 300.2, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT5S2L1_Left", level: level9, name: fT5S2L1_Left, pos: [-98.3, 295.9, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT5S2L1_Right", level: level9, name: fT5S2L1_Right, pos: [-93.3, 295.9, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT5S2L1_Centre", level: level9, name: fT5S2L1_Centre, pos: [-95.8, 295.9, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT5S2L2_Right", level: level9, name: fT5S2L2_Right, pos: [-105.6, 296, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT5S2L2_Centre", level: level9, name: fT5S2L2_Centre, pos: [-108.1, 296, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT5S2L2_Left", level: level9, name: fT5S2L2_Left, pos: [-110.6, 296, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT4S1L1_Centre", level: level9, name: fT4S1L1_Centre, pos: [-91.9, 317.1, 0.9], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT4S1L1_Right", level: level9, name: fT4S1L1_Right, pos: [-94.4, 317.1, 0.9], heading: 89, script: level9}
+  - {id: "level9:fT4S1L1_Left", level: level9, name: fT4S1L1_Left, pos: [-89.4, 317.1, 0.9], heading: 89, script: level9}
+  - {id: "level9:fT4S1L2_Right", level: level9, name: fT4S1L2_Right, pos: [-106.7, 317.2, 0.9], heading: 89, script: level9}
+  - {id: "level9:fT4S1L2_Left", level: level9, name: fT4S1L2_Left, pos: [-101.7, 317.2, 0.9], heading: 89, script: level9}
+  - {id: "level9:fT4S1L2_Centre", level: level9, name: fT4S1L2_Centre, pos: [-104.2, 317.2, 0.9], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT4S2L1_Left", level: level9, name: fT4S2L1_Left, pos: [-97.8, 312.6, 0], heading: 89, script: level9}
+  - {id: "level9:fT4S2L1_Right", level: level9, name: fT4S2L1_Right, pos: [-92.8, 312.6, 0], heading: 89, script: level9}
+  - {id: "level9:fT4S2L1_Centre", level: level9, name: fT4S2L1_Centre, pos: [-95.3, 312.6, 0], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT4S2L2_Right", level: level9, name: fT4S2L2_Right, pos: [-102.4, 312.5, 0], heading: 89, script: level9}
+  - {id: "level9:fT4S2L2_Centre", level: level9, name: fT4S2L2_Centre, pos: [-104.9, 312.5, 0], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT4S2L2_Left", level: level9, name: fT4S2L2_Left, pos: [-107.4, 312.5, 0], heading: 89, script: level9}
+  - {id: "level9:fT3S1L1_Right", level: level9, name: fT3S1L1_Right, pos: [-23.3, 266.5, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT3S1L1_Centre", level: level9, name: fT3S1L1_Centre, pos: [-25.8, 266.5, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT3S1L1_Left", level: level9, name: fT3S1L1_Left, pos: [-28.3, 266.5, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT3S1L2_Right", level: level9, name: fT3S1L2_Right, pos: [-33.2, 266.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:fT3S1L2_Centre", level: level9, name: fT3S1L2_Centre, pos: [-35.6, 266.7, 0.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fT3S1L2_Left", level: level9, name: fT3S1L2_Left, pos: [-38, 266.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCh2Warp_Snow", level: level9, name: fCh2Warp_Snow, pos: [11, 265.2, -0.9], heading: 325, script: level9}
+  - {id: "level9:fCh2Warp_Rembrandt", level: level9, name: fCh2Warp_Rembrandt, pos: [11, 266.6, -0.9], heading: 325, script: level9}
+  - {id: "level9:fPScout_01", level: level9, name: fPScout_01, pos: [-13.8, 265, 0], heading: 273, script: level9}
+  - {id: "level9:fPScout_02", level: level9, name: fPScout_02, pos: [9.5, 302.7, 0], heading: 99, script: level9}
+  - {id: "level9:fPScout_03", level: level9, name: fPScout_03, pos: [-91.3, 322.3, 0.9], heading: 2, script: level9}
+  - {id: "level9:fPScout_04", level: level9, name: fPScout_04, pos: [-93.3, 303.6, 0], heading: 101, script: level9}
+  - {id: "level9:fPScout_05", level: level9, name: fPScout_05, pos: [-89.3, 292.8, 0], heading: 101, script: level9}
+  - {id: "level9:fRailDir_2", level: level9, name: fRailDir_2, pos: [-75.9, 297.8, 1.2], heading: 89, script: level9}
+  - {id: "level9:fRailDir_1", level: level9, name: fRailDir_1, pos: [-21.1, 287.3, 1.2], heading: 89, script: level9}
+  - {id: "level9:fMoonSpot_MInterr_03", level: level9, name: fMoonSpot_MInterr_03, pos: [-15.4, 265.2, 0.1], heading: 272, script: level9}
+  - {id: "level9:fMoonSpot_MInterr_01", level: level9, name: fMoonSpot_MInterr_01, pos: [-14.3, 266.4, 0.1], heading: 272, script: level9}
+  - {id: "level9:fMoonSpot_MInterr_02", level: level9, name: fMoonSpot_MInterr_02, pos: [-13.8, 264.5, 0.1], heading: 272, script: level9}
+  - {id: "level9:fWU_Rembrandt", level: level9, name: fWU_Rembrandt, pos: [60.4, 309.2, 2.3], heading: 161, script: level9}
+  - {id: "level9:fWU_Snow", level: level9, name: fWU_Snow, pos: [59.8, 309.3, 2.3], heading: 161, script: level9}
+  - {id: "level9:fWU_Fox", level: level9, name: fWU_Fox, pos: [60.7, 310.3, 2.5], heading: 161, script: level9}
+  - {id: "level9:fGate_Rembrandt", level: level9, name: fGate_Rembrandt, pos: [88.2, 290.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:fGate_Snow", level: level9, name: fGate_Snow, pos: [86.5, 288, 0.1], heading: 89, script: level9}
+  - {id: "level9:fTunnel_Rembrandt", level: level9, name: fTunnel_Rembrandt, pos: [66.4, 316, 3.6], heading: 234, script: level9}
+  - {id: "level9:fTunnel_Fox", level: level9, name: fTunnel_Fox, pos: [71.4, 318.6, 3.8], heading: 234, script: level9}
+  - {id: "level9:fTunnel_Snow", level: level9, name: fTunnel_Snow, pos: [69.8, 320.4, 3.8], heading: 234, script: level9}
+  - {id: "level9:fGoHere_Rembrandt", level: level9, name: fGoHere_Rembrandt, pos: [68.2, 306.7, 0], heading: 181, script: level9}
+  - {id: "level9:fGoHere_Snow", level: level9, name: fGoHere_Snow, pos: [66.5, 306.7, 0], heading: 181, script: level9}
+  - {id: "level9:fFixCamAngle_1", level: level9, name: fFixCamAngle_1, pos: [79.8, 351.1, 4.1], heading: 89, script: level9}
+  - {id: "level9:fFixCamAngle_2", level: level9, name: fFixCamAngle_2, pos: [73, 322.7, 4], heading: 89, script: level9}
+  - {id: "level9:fTrainMarker_1", level: level9, name: fTrainMarker_1, pos: [67.1, 297.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fTrainMarker_2", level: level9, name: fTrainMarker_2, pos: [-4.2, 298.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fTrainMarker_3", level: level9, name: fTrainMarker_3, pos: [-31.1, 269, 0.1], heading: 89, script: level9}
+  - {id: "level9:fTrainMarker_4", level: level9, name: fTrainMarker_4, pos: [-98.1, 314.5, 0], heading: 89, script: level9}
+  - {id: "level9:fTrainMarker_5", level: level9, name: fTrainMarker_5, pos: [-102.5, 298, 0.1], heading: 89, script: level9}
+  - {id: "level9:fTrainMarker_6", level: level9, name: fTrainMarker_6, pos: [-124.2, 287.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fTrainMarker_7", level: level9, name: fTrainMarker_7, pos: [-73.9, 258.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:Tag_01", level: level9, name: Tag_01, pos: [-73.2, 339.7, 0.9], heading: 89, script: level9}
+  - {id: "level9:Tag_02", level: level9, name: Tag_02, pos: [19.8, 296.1, 4.3], heading: 89, script: level9}
+  - {id: "level9:Tag_03", level: level9, name: Tag_03, pos: [9, 250.9, 0.1], heading: 89, script: level9}
+  - {id: "level9:Tag_04", level: level9, name: Tag_04, pos: [66.4, 314.2, 3.2], heading: 89, script: level9}
+  - {id: "level9:fDialogue_1", level: level9, name: fDialogue_1, pos: [-69, 256.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fDialogue_02", level: level9, name: fDialogue_02, pos: [-69, 261.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fDialogue_03", level: level9, name: fDialogue_03, pos: [-81.3, 261.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fDialogue_04", level: level9, name: fDialogue_04, pos: [-81.3, 256.9, 0.1], heading: 89, script: level9}
+  - {id: "level9:fDialogue_05", level: level9, name: fDialogue_05, pos: [-119.5, 284.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:fDialogue_06", level: level9, name: fDialogue_06, pos: [-130, 284.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:fPostTrain_Rembrandt", level: level9, name: fPostTrain_Rembrandt, pos: [62.3, 286.6, 0.9], heading: 305, script: level9}
+  - {id: "level9:fPostTrain_Snow", level: level9, name: fPostTrain_Snow, pos: [62.3, 286.4, 0.9], heading: 301, script: level9}
+  - {id: "level9:fCopNet_01", level: level9, name: fCopNet_01, pos: [53.6, 297.4, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_02", level: level9, name: fCopNet_02, pos: [69.4, 276.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_03", level: level9, name: fCopNet_03, pos: [20, 250.4, 0], heading: 89, script: level9}
+  - {id: "level9:fCopNet_04", level: level9, name: fCopNet_04, pos: [36.1, 279, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_05", level: level9, name: fCopNet_05, pos: [54.3, 249.5, 0.2], heading: 89, script: level9}
+  - {id: "level9:fCopNet_06", level: level9, name: fCopNet_06, pos: [-5.8, 282.4, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_07", level: level9, name: fCopNet_07, pos: [-9.4, 249.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_08", level: level9, name: fCopNet_08, pos: [-43.6, 247.9, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_09", level: level9, name: fCopNet_09, pos: [-43.6, 269.8, 4.7], heading: 89, script: level9}
+  - {id: "level9:fCopNet_10", level: level9, name: fCopNet_10, pos: [-60.4, 282.6, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_11", level: level9, name: fCopNet_11, pos: [-14, 261.3, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_12", level: level9, name: fCopNet_12, pos: [-14.8, 281.3, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_13", level: level9, name: fCopNet_13, pos: [-109.3, 291.4, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_14", level: level9, name: fCopNet_14, pos: [9.2, 297.2, 0.2], heading: 89, script: level9}
+  - {id: "level9:fCopNet_15", level: level9, name: fCopNet_15, pos: [-34.4, 303, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_16", level: level9, name: fCopNet_16, pos: [-70.1, 292.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_17", level: level9, name: fCopNet_17, pos: [-43.5, 292.8, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_18", level: level9, name: fCopNet_18, pos: [-12.1, 311.4, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_19", level: level9, name: fCopNet_19, pos: [-62.2, 311.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_20", level: level9, name: fCopNet_20, pos: [-99.7, 302.9, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_21", level: level9, name: fCopNet_21, pos: [-135.5, 304.4, 0], heading: 89, script: level9}
+  - {id: "level9:fCopNet_22", level: level9, name: fCopNet_22, pos: [-152.1, 318.3, 0.9], heading: 89, script: level9}
+  - {id: "level9:fCopNet_23", level: level9, name: fCopNet_23, pos: [-68.7, 320.5, 0.9], heading: 89, script: level9}
+  - {id: "level9:fCopNet_24", level: level9, name: fCopNet_24, pos: [-143.1, 278.5, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_25", level: level9, name: fCopNet_25, pos: [-136.8, 264.3, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_26", level: level9, name: fCopNet_26, pos: [-87.1, 264.3, 0], heading: 89, script: level9}
+  - {id: "level9:fCopNet_27", level: level9, name: fCopNet_27, pos: [-154, 251.5, 0.1], heading: 89, script: level9}
+  - {id: "level9:fCopNet_28", level: level9, name: fCopNet_28, pos: [95.5, 275, 0.1], heading: 89, script: level9}
+  - {id: "level9:fEnd", level: level9, name: fEnd, pos: [69.8, 319.1, 3.8], heading: 224, script: level9}
+  - {id: "level9:fmplathang", level: level9, name: fmplathang, pos: [-70.1, 341.4, 0.9], heading: 89, script: level9}
+  - {id: "level9:fmplatdata", level: level9, name: fmplatdata, pos: [-68.5, 340.1, 0.9], heading: 89, script: level9}
+  - {id: "level9:fmplatexit", level: level9, name: fmplatexit, pos: [-156.5, 323.4, 0.1], heading: 89, activity: 8, script: level9}
+  - {id: "level9:fWanMoonhang", level: level9, name: fWanMoonhang, pos: [-7.8, 263.7, 0], heading: 89, script: level9}
+  - {id: "level9:fG1G2X", level: level9, name: fG1G2X, pos: [-155.9, 245.2, 0.1], heading: 89, activity: 8, script: level9}
+  - {id: "level9:fWanMoondata", level: level9, name: fWanMoondata, pos: [-12.9, 266.5, 0], heading: 89, script: level9}
+  - {id: "level9:fSinhang", level: level9, name: fSinhang, pos: [10.7, 268.4, -0.9], heading: 89, script: level9}
+  - {id: "level9:fTrainChase", level: level9, name: fTrainChase, pos: [4.2, 293.6, 0], heading: 89, script: level9}
+  - {id: "level9:fFoxRun1", level: level9, name: fFoxRun1, pos: [40, 273.7, 0.1], heading: 89, script: level9}
+  - {id: "level9:_xfphone1", level: level9, name: _xfphone1, pos: [118.8, 259.6, 0.1], heading: 63, activity: 6, script: level9}
+  - {id: "level9:_xfphone02", level: level9, name: _xfphone02, pos: [95.8, 273.1, 0.1], heading: 63, activity: 6, script: level9}
+  - {id: "level9:_xfphone03", level: level9, name: _xfphone03, pos: [70, 258.9, 0.1], heading: 63, activity: 6, script: level9}
+  - {id: "level9:_xfphone04", level: level9, name: _xfphone04, pos: [67.5, 316.7, 3.6], heading: 63, activity: 6, script: level9}
+  - {id: "level9:_xPhone1", level: level9, name: _xPhone1, pos: [-9.3, 247, 0.1], heading: 89, activity: 6, script: level9}
+  - {id: "level9:_xPhone02", level: level9, name: _xPhone02, pos: [-22.4, 317.7, 0.1], heading: 89, activity: 6, script: level9}
+  - {id: "level9:_xPhone03", level: level9, name: _xPhone03, pos: [-65.5, 348.7, 0.9], heading: 89, activity: 6, script: level9}
+  - {id: "level9:_xPhone04", level: level9, name: _xPhone04, pos: [-156.8, 320.8, 0.1], heading: 89, activity: 6, script: level9}
+  - {id: "level9:_xPhone05", level: level9, name: _xPhone05, pos: [-73, 300.8, 0.1], heading: 89, activity: 6, script: level9}
+  - {id: "level9:fMechanicRoof", level: level9, name: fMechanicRoof, pos: [-124.5, 294.3, 6.2], heading: 89, script: level9}
+  - {id: "level9:fCopMark", level: level9, name: fCopMark, pos: [73, 262.1, 0], heading: 309, script: level9}
+  - {id: "level9:fMInter", level: level9, name: fMInter, pos: [-15.5, 265, 0], heading: 89, script: level9}
+  - {id: "level9:fMoonChill", level: level9, name: fMoonChill, pos: [48.9, 265.2, 0.1], heading: 89, script: level9}
+  - {id: "level9:_xfMCW1", level: level9, name: _xfMCW1, pos: [49.9, 265.9, 0.1], heading: 233, activity: 7, script: level9}
+  - {id: "level9:_xfMCW02", level: level9, name: _xfMCW02, pos: [47.8, 265.6, 0.1], heading: 127, activity: 29, script: level9}
+  - {id: "level9:_xfMCW03", level: level9, name: _xfMCW03, pos: [49, 264.4, 0.1], heading: 2, activity: 29, script: level9}
+  - {id: "level9:_xfMCW04", level: level9, name: _xfMCW04, pos: [48.9, 266.7, 0.1], heading: 182, activity: 29, script: level9}
+  - {id: "level9:fTrain4Pursuit", level: level9, name: fTrain4Pursuit, pos: [-65.3, 303.9, 0], heading: 89, script: level9}
+  - {id: "level9:fFirstMoon", level: level9, name: fFirstMoon, pos: [105.5, 267.8, 0.1], heading: 274, script: level9}
+  - {id: "level9:_xFM1", level: level9, name: _xFM1, pos: [105.4, 266.2, 0.1], heading: 2, activity: 7, script: level9}
+  - {id: "level9:_xFM02", level: level9, name: _xFM02, pos: [105.4, 269.2, 0.1], heading: 180, activity: 29, script: level9}
+  - {id: "level9:_xFM03", level: level9, name: _xFM03, pos: [106.5, 268.7, 0.1], heading: 236, activity: 29, script: level9}
+  - {id: "level9:_xFM04", level: level9, name: _xFM04, pos: [106.5, 267, 0.1], heading: 310, activity: 29, script: level9}
+  - {id: "level9:_xFM05", level: level9, name: _xFM05, pos: [104.4, 268.8, 0.1], heading: 138, activity: 7, script: level9}
+  - {id: "level9:_xFM06", level: level9, name: _xFM06, pos: [104.4, 266.9, 0.1], heading: 52, activity: 29, script: level9}
+  - {id: "level9:fSucker", level: level9, name: fSucker, pos: [49.8, 253.2, 0.2], heading: 89, script: level9}
+  - {id: "level9:fEndOfTunnel", level: level9, name: fEndOfTunnel, pos: [72, 225.9, 0.1], heading: 89, activity: 8, script: level9}
+  - {id: "level9:fArrive", level: level9, name: fArrive, pos: [64, 314.3, 2.9], heading: 236, script: level9}
+  - {id: "level9:fSandraD", level: level9, name: fSandraD, pos: [64.4, 306.9, 3.1], heading: 89, activity: 12, script: level9}
+  - {id: "level9:fMRoofToss", level: level9, name: fMRoofToss, pos: [18, 264.8, 8.4], heading: 89, script: level9}
+  - {id: "level9:fRestOfYard", level: level9, name: fRestOfYard, pos: [81.1, 263.5, 0.9], heading: 89, script: level9}
+  - {id: "level9:fRadioRoom", level: level9, name: fRadioRoom, pos: [21.3, 263.1, 0.1], heading: 89, script: level9}
+  - {id: "level9:fExitSubway", level: level9, name: fExitSubway, pos: [61.7, 286.8, 0.7], heading: 89, script: level9}
+  - {id: "level9:fRemrandtPose", level: level9, name: fRemrandtPose, pos: [63.5, 286.3, 0.9], heading: 79, script: level9}
+  - {id: "level9:fMRoofTossSpot", level: level9, name: fMRoofTossSpot, pos: [27.8, 266.2, 5.1], heading: 89, script: level9}
+  - {id: "level9:fHereIsTunnelEnd", level: level9, name: fHereIsTunnelEnd, pos: [71, 396.5, 4.8], heading: 89, script: level9}
+  - {id: "level9:fG7Chair", level: level9, name: fG7Chair, pos: [7.5, 273.2, -0.9], heading: 272, activity: 4, script: level9}
+  - {id: "level9:_xfHideZone03", level: level9, name: _xfHideZone03, pos: [-86.6, 309.2, 5.7], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone04", level: level9, name: _xfHideZone04, pos: [77.4, 271.8, 0.8], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone05", level: level9, name: _xfHideZone05, pos: [66.4, 284.1, 0.8], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone06", level: level9, name: _xfHideZone06, pos: [-43.2, 283.7, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone07", level: level9, name: _xfHideZone07, pos: [-27.3, 246.2, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone08", level: level9, name: _xfHideZone08, pos: [-80.6, 245, 0.2], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone09", level: level9, name: _xfHideZone09, pos: [-115.9, 245, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone10", level: level9, name: _xfHideZone10, pos: [-156.4, 293.9, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone11", level: level9, name: _xfHideZone11, pos: [-103.6, 282.4, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone12", level: level9, name: _xfHideZone12, pos: [-22.3, 317.5, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone14", level: level9, name: _xfHideZone14, pos: [-66.1, 349.8, 0.9], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone15", level: level9, name: _xfHideZone15, pos: [-35.2, 318.2, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone16", level: level9, name: _xfHideZone16, pos: [-4.2, 290.9, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone17", level: level9, name: _xfHideZone17, pos: [-139.4, 295.2, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone18", level: level9, name: _xfHideZone18, pos: [8.2, 249.9, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone19", level: level9, name: _xfHideZone19, pos: [-86.6, 309.2, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone20", level: level9, name: _xfHideZone20, pos: [-77.5, 294.2, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone21", level: level9, name: _xfHideZone21, pos: [-45.8, 255.6, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone22", level: level9, name: _xfHideZone22, pos: [-17.7, 317.5, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone23", level: level9, name: _xfHideZone23, pos: [-4.1, 269.5, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone24", level: level9, name: _xfHideZone24, pos: [-95.7, 251, 0], heading: 89, activity: 33, script: level9}
+  - {id: "level9:_xfHideZone25", level: level9, name: _xfHideZone25, pos: [-73.3, 248.5, 0.2], heading: 89, activity: 33, script: level9}

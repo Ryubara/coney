@@ -1,0 +1,150 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level34:fFuryFence_01", level: level34, name: fFuryFence_01, pos: [-212.3, -257.8, -11.8], heading: 228, script: level34}
+  - {id: "level34:fFuryFence_02", level: level34, name: fFuryFence_02, pos: [-209.7, -261, -11.8], heading: 228, script: level34}
+  - {id: "level34:fFuryFence_03", level: level34, name: fFuryFence_03, pos: [-206.8, -263.9, -11.8], heading: 228, script: level34}
+  - {id: "level34:Tag_01", level: level34, name: Tag_01, pos: [-28.7, -98.5, 6], heading: 273, activity: 12, script: level34}
+  - {id: "level34:Tag_03", level: level34, name: Tag_03, pos: [-81.6, -144.1, 0], heading: 247, activity: 12, script: level34}
+  - {id: "level34:Tag_05", level: level34, name: Tag_05, pos: [-145.6, -223.3, 5], heading: 183, activity: 12, script: level34}
+  - {id: "level34:Tag_06", level: level34, name: Tag_06, pos: [-16.1, -234.4, 0], heading: 93, activity: 12, script: level34}
+  - {id: "level34:Tag_04", level: level34, name: Tag_04, pos: [-76.5, -204.2, 0], heading: 93, activity: 12, script: level34}
+  - {id: "level34:Tag_02", level: level34, name: Tag_02, pos: [-29, -152.9, 0], heading: 183, activity: 12, script: level34}
+  - {id: "level34:Tag_07", level: level34, name: Tag_07, pos: [-134.8, -255.8, 0], heading: 273, activity: 12, script: level34}
+  - {id: "level34:PedNet_01", level: level34, name: PedNet_01, pos: [-62.3, -55.6, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_02", level: level34, name: PedNet_02, pos: [-52.7, -55.6, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_03", level: level34, name: PedNet_03, pos: [-49.7, -73.4, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_04", level: level34, name: PedNet_04, pos: [-31.3, -70.2, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_05", level: level34, name: PedNet_05, pos: [-24.7, -76.4, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_06", level: level34, name: PedNet_06, pos: [-51.4, -77.5, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_07", level: level34, name: PedNet_07, pos: [-52.7, -109.1, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_08", level: level34, name: PedNet_08, pos: [-62.3, -107.2, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_09", level: level34, name: PedNet_09, pos: [-40.8, -109.5, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_10", level: level34, name: PedNet_10, pos: [-21, -109.1, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_11", level: level34, name: PedNet_11, pos: [-24.2, -143.3, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_12", level: level34, name: PedNet_12, pos: [-76.3, -143.3, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_13", level: level34, name: PedNet_13, pos: [-87.1, -150.9, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_14", level: level34, name: PedNet_14, pos: [-87.7, -186.2, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_15", level: level34, name: PedNet_15, pos: [-89.6, -202.9, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_16", level: level34, name: PedNet_16, pos: [-87.1, -221.4, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_17", level: level34, name: PedNet_17, pos: [-79, -221.2, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_18", level: level34, name: PedNet_18, pos: [-76, -186.3, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_19", level: level34, name: PedNet_19, pos: [-106.8, -203.7, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_20", level: level34, name: PedNet_20, pos: [-105.3, -179.4, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_21", level: level34, name: PedNet_21, pos: [-118.4, -190.4, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_22", level: level34, name: PedNet_22, pos: [-108.2, -220.7, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_23", level: level34, name: PedNet_23, pos: [-123.7, -220.8, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_24", level: level34, name: PedNet_24, pos: [-105.7, -245.8, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_25", level: level34, name: PedNet_25, pos: [-83.4, -248, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_26", level: level34, name: PedNet_26, pos: [-52.3, -246.1, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_27", level: level34, name: PedNet_27, pos: [-52.3, -230.8, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_28", level: level34, name: PedNet_28, pos: [-29.5, -229.7, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_29", level: level34, name: PedNet_29, pos: [-18.3, -241, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_30", level: level34, name: PedNet_30, pos: [-47.3, -251.9, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_31", level: level34, name: PedNet_31, pos: [-51.2, -277, 0.1], heading: 89, script: level34}
+  - {id: "level34:PedNet_32", level: level34, name: PedNet_32, pos: [-65.7, -277.3, 0.1], heading: 89, script: level34}
+  - {id: "level34:PedNet_33", level: level34, name: PedNet_33, pos: [-68.8, -253.9, 0], heading: 89, script: level34}
+  - {id: "level34:PedNet_34", level: level34, name: PedNet_34, pos: [-107.9, -255.6, 0], heading: 89, script: level34}
+  - {id: "level34:PedExit_02", level: level34, name: PedExit_02, pos: [-57.7, -60.8, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_03", level: level34, name: PedExit_03, pos: [-18.4, -112.5, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_05", level: level34, name: PedExit_05, pos: [-26.5, -145.7, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_09", level: level34, name: PedExit_09, pos: [-104.7, -193, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_10", level: level34, name: PedExit_10, pos: [-125.9, -220, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_11", level: level34, name: PedExit_11, pos: [-104.1, -264.6, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_15", level: level34, name: PedExit_15, pos: [-26.1, -228, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_16", level: level34, name: PedExit_16, pos: [-56.6, -275.5, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_19", level: level34, name: PedExit_19, pos: [-82, -215.4, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_21", level: level34, name: PedExit_21, pos: [-57.2, -95.2, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_24", level: level34, name: PedExit_24, pos: [-70.3, -245.9, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:PedExit_26", level: level34, name: PedExit_26, pos: [-81.9, -123.2, 0], heading: 89, activity: 8, script: level34}
+  - {id: "level34:fCopSearch3", level: level34, name: fCopSearch3, pos: [-50, -242.2, 0], heading: 89, script: level34}
+  - {id: "level34:fFinalGate", level: level34, name: fFinalGate, pos: [-144.1, -269.3, 0], heading: 89, script: level34}
+  - {id: "level34:fSubwayExit", level: level34, name: fSubwayExit, pos: [-255.4, -201.3, -11.8], heading: 45, script: level34}
+  - {id: "level34:fVerminStand", level: level34, name: fVerminStand, pos: [-43.7, -74.5, 0], heading: 273, script: level34}
+  - {id: "level34:fThrowMolotov", level: level34, name: fThrowMolotov, pos: [-80.5, -210.5, 0], heading: 89, script: level34}
+  - {id: "level34:fSubwayAmb", level: level34, name: fSubwayAmb, pos: [-21, -70.9, 0], heading: 89, script: level34}
+  - {id: "level34:fCopSearch2", level: level34, name: fCopSearch2, pos: [-81.9, -179.1, 0], heading: 89, script: level34}
+  - {id: "level34:fCopSearch1", level: level34, name: fCopSearch1, pos: [-56.5, -79.1, 0], heading: 89, script: level34}
+  - {id: "level34:fStereoWarp", level: level34, name: fStereoWarp, pos: [-75.6, -145.1, 0], heading: 217, script: level34}
+  - {id: "level34:fFurieScene", level: level34, name: fFurieScene, pos: [-173.7, -264.5, 0], heading: 89, script: level34}
+  - {id: "level34:fFlashDealer", level: level34, name: fFlashDealer, pos: [-101, -267.5, 0], heading: 317, group: 64, script: level34}
+  - {id: "level34:fFlashDealer01", level: level34, name: fFlashDealer01, pos: [-21.2, -93, 6.1], heading: 183, group: 64, script: level34}
+  - {id: "level34:fPaintDealer", level: level34, name: fPaintDealer, pos: [-11.7, -149.3, 0], heading: 285, group: 64, script: level34}
+  - {id: "level34:fSection3Gate", level: level34, name: fSection3Gate, pos: [-107.4, -223.2, 0], heading: 89, script: level34}
+  - {id: "level34:storeMusic1", level: level34, name: storeMusic1, pos: [-71.9, -269.8, 0], heading: 180, activity: 14, group: 37, script: level34}
+  - {id: "level34:storeFront", level: level34, name: storeFront, pos: [-87.1, -189.2, 0], heading: 92, activity: 14, group: 40, script: level34}
+  - {id: "level34:storeFront5", level: level34, name: storeFront5, pos: [-87.9, -124.3, 0], heading: 92, activity: 14, group: 45, script: level34}
+  - {id: "level34:storeFront1", level: level34, name: storeFront1, pos: [-75.8, -189.2, 0], heading: 92, activity: 14, group: 41, script: level34}
+  - {id: "level34:storeMusic1#2", level: level34, name: storeMusic1, pos: [-44.8, -99.3, 0], heading: 89, activity: 14, group: 33, script: level34}
+  - {id: "level34:storeJewelry1", level: level34, name: storeJewelry1, pos: [-69.3, -154.9, 0], heading: 89, activity: 14, group: 34, script: level34}
+  - {id: "level34:storePharmacy", level: level34, name: storePharmacy, pos: [-94.2, -212.3, 0], heading: 180, activity: 14, group: 36, script: level34}
+  - {id: "level34:storeJewelry", level: level34, name: storeJewelry, pos: [-68.4, -77.2, 0], heading: 0, activity: 14, group: 32, script: level34}
+  - {id: "level34:storeFront2", level: level34, name: storeFront2, pos: [-75.7, -171.7, 0], heading: 92, activity: 14, group: 42, script: level34}
+  - {id: "level34:storeElectronic", level: level34, name: storeElectronic, pos: [-28.7, -235.8, 0], heading: 180, activity: 14, group: 38, script: level34}
+  - {id: "level34:storeFront4", level: level34, name: storeFront4, pos: [-87.9, -141.8, 0], heading: 92, activity: 14, group: 44, script: level34}
+  - {id: "level34:storeFront3", level: level34, name: storeFront3, pos: [-87.9, -160.2, 0], heading: 92, activity: 14, group: 43, script: level34}
+  - {id: "level34:storeHardware", level: level34, name: storeHardware, pos: [-94.4, -173.6, 0], heading: 267, activity: 14, group: 35, script: level34}
+  - {id: "level34:_xwTrash03", level: level34, name: _xwTrash03, pos: [-54.1, -99.9, 0], heading: 3, activity: 10, script: level34}
+  - {id: "level34:_xwFlagCupCap01", level: level34, name: _xwFlagCupCap01, pos: [-58.9, -82.9, 0], heading: 269, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCupCap02", level: level34, name: _xwFlagCupCap02, pos: [-58.8, -86, 0], heading: 269, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCupCap03", level: level34, name: _xwFlagCupCap03, pos: [-62, -86, 0], heading: 90, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCupCap04", level: level34, name: _xwFlagCupCap04, pos: [-62, -83, 0], heading: 90, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCupTicket05", level: level34, name: _xwFlagCupTicket05, pos: [-62, -83.5, 0], heading: 90, activity: 26, script: level34}
+  - {id: "level34:_xwFlagCarCap03", level: level34, name: _xwFlagCarCap03, pos: [-55.8, -100.5, 0.1], heading: 90, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCarCap02", level: level34, name: _xwFlagCarCap02, pos: [-52.4, -100.5, 0.1], heading: 269, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCarCap04", level: level34, name: _xwFlagCarCap04, pos: [-55.7, -97.2, 0.1], heading: 90, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCarTicket01", level: level34, name: _xwFlagCarTicket01, pos: [-55.6, -97.9, 0.1], heading: 90, activity: 26, script: level34}
+  - {id: "level34:_xwFlagCarCap01", level: level34, name: _xwFlagCarCap01, pos: [-52.5, -97.1, 0.1], heading: 269, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCarCap05", level: level34, name: _xwFlagCarCap05, pos: [-83.2, -154.9, 0.1], heading: 245, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCarCap06", level: level34, name: _xwFlagCarCap06, pos: [-86.3, -156.3, 0.1], heading: 65, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCarCap07", level: level34, name: _xwFlagCarCap07, pos: [-81.9, -158, 0.1], heading: 245, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCarTicket02", level: level34, name: _xwFlagCarTicket02, pos: [-82.3, -157.3, 0.1], heading: 245, activity: 26, script: level34}
+  - {id: "level34:_xwFlagCarCap08", level: level34, name: _xwFlagCarCap08, pos: [-84.9, -159.3, 0.1], heading: 65, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCupCap09", level: level34, name: _xwFlagCupCap09, pos: [-112.8, -184.1, 0], heading: 357, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCupCap10", level: level34, name: _xwFlagCupCap10, pos: [-115.8, -184.3, 0], heading: 357, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCupCap11", level: level34, name: _xwFlagCupCap11, pos: [-116, -181.1, 0], heading: 177, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCupCap12", level: level34, name: _xwFlagCupCap12, pos: [-113, -180.9, 0], heading: 177, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCupTicket07", level: level34, name: _xwFlagCupTicket07, pos: [-113.6, -181, 0], heading: 177, activity: 26, script: level34}
+  - {id: "level34:_xwFlagCopCap01", level: level34, name: _xwFlagCopCap01, pos: [-56.2, -250.6, 0.1], heading: 275, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCopCap02", level: level34, name: _xwFlagCopCap02, pos: [-56.5, -254, 0.1], heading: 275, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCopCap03", level: level34, name: _xwFlagCopCap03, pos: [-59.8, -253.7, 0.1], heading: 95, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCopCap04", level: level34, name: _xwFlagCopCap04, pos: [-59.4, -250.3, 0.1], heading: 95, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCopCap05", level: level34, name: _xwFlagCopCap05, pos: [-44.2, -228.4, 0.1], heading: 233, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCopCap06", level: level34, name: _xwFlagCopCap06, pos: [-42.2, -231.1, 0.1], heading: 233, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCopCap07", level: level34, name: _xwFlagCopCap07, pos: [-44.8, -233.1, 0.1], heading: 53, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCopCap08", level: level34, name: _xwFlagCopCap08, pos: [-46.8, -230.3, 0.1], heading: 53, activity: 13, script: level34}
+  - {id: "level34:_xwFlagWgnCap01", level: level34, name: _xwFlagWgnCap01, pos: [-37.3, -233.4, 0.2], heading: 189, activity: 13, script: level34}
+  - {id: "level34:_xwFlagWgnCap02", level: level34, name: _xwFlagWgnCap02, pos: [-34.1, -233.9, 0.4], heading: 189, activity: 13, script: level34}
+  - {id: "level34:_xwFlagWgnCap03", level: level34, name: _xwFlagWgnCap03, pos: [-34.8, -237.1, 0.4], heading: 9, activity: 13, script: level34}
+  - {id: "level34:_xwFlagWgnCap04", level: level34, name: _xwFlagWgnCap04, pos: [-37.9, -236.6, 0.2], heading: 9, activity: 13, script: level34}
+  - {id: "level34:_xwFlagWgnTicket05", level: level34, name: _xwFlagWgnTicket05, pos: [-38, -236.3, 0.2], heading: 9, activity: 26, script: level34}
+  - {id: "level34:_xwFlagCarCap03#2", level: level34, name: _xwFlagCarCap03, pos: [-80.4, -211.9, 0.1], heading: 90, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCarCap02#2", level: level34, name: _xwFlagCarCap02, pos: [-77, -211.8, 0.1], heading: 269, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCarCap04#2", level: level34, name: _xwFlagCarCap04, pos: [-80.3, -208.5, 0.1], heading: 90, activity: 13, script: level34}
+  - {id: "level34:_xwFlagCarTicket01#2", level: level34, name: _xwFlagCarTicket01, pos: [-80.2, -209.2, 0.1], heading: 90, activity: 26, script: level34}
+  - {id: "level34:_xwFlagCarCap01#2", level: level34, name: _xwFlagCarCap01, pos: [-77.1, -208.4, 0.1], heading: 269, activity: 13, script: level34}
+  - {id: "level34:_xwFireBarrell02", level: level34, name: _xwFireBarrell02, pos: [-53.6, -111.1, 0], heading: 92, activity: 5, script: level34}
+  - {id: "level34:_xwFireBarrell22", level: level34, name: _xwFireBarrell22, pos: [-21.3, -115, 0], heading: 108, activity: 5, script: level34}
+  - {id: "level34:_xwTrash02", level: level34, name: _xwTrash02, pos: [-16.3, -115, 0], heading: 245, activity: 10, script: level34}
+  - {id: "level34:_xwFireBarrell23", level: level34, name: _xwFireBarrell23, pos: [-25.2, -150.3, 0], heading: 151, activity: 5, script: level34}
+  - {id: "level34:_xwTrash17", level: level34, name: _xwTrash17, pos: [-79.2, -165.5, 0], heading: 181, activity: 10, script: level34}
+  - {id: "level34:_xwFireBarrell24", level: level34, name: _xwFireBarrell24, pos: [-91.9, -205.3, 0], heading: 103, activity: 5, script: level34}
+  - {id: "level34:_xwFireBarrell25", level: level34, name: _xwFireBarrell25, pos: [-111.6, -186.7, 0], heading: 103, activity: 5, script: level34}
+  - {id: "level34:_xwFireBarrell26", level: level34, name: _xwFireBarrell26, pos: [-106.1, -213, 0], heading: 103, activity: 5, script: level34}
+  - {id: "level34:_xwFireBarrell27", level: level34, name: _xwFireBarrell27, pos: [-101.5, -245.3, 0], heading: 80, activity: 5, script: level34}
+  - {id: "level34:_xwTrash18", level: level34, name: _xwTrash18, pos: [-36.8, -247, 0], heading: 271, activity: 10, script: level34}
+  - {id: "level34:_xwFireBarrell28", level: level34, name: _xwFireBarrell28, pos: [-16.6, -227.5, 0], heading: 73, activity: 5, script: level34}
+  - {id: "level34:_xwTrash01", level: level34, name: _xwTrash01, pos: [-114.4, -194, 0], heading: 209, activity: 10, script: level34}
+  - {id: "level34:_xwFireBarrell29", level: level34, name: _xwFireBarrell29, pos: [-134.3, -254.4, 0], heading: 316, activity: 5, script: level34}
+  - {id: "level34:_xwFireBarrell30", level: level34, name: _xwFireBarrell30, pos: [-151.6, -254.4, -3.6], heading: 80, activity: 5, script: level34}
+  - {id: "level34:_xwFireBarrell31", level: level34, name: _xwFireBarrell31, pos: [-175.2, -268.4, -8.9], heading: 80, activity: 5, script: level34}
+  - {id: "level34:_xwTrash19", level: level34, name: _xwTrash19, pos: [-225.2, -264.5, -11.9], heading: 322, activity: 10, script: level34}
+  - {id: "level34:_xwTrash20", level: level34, name: _xwTrash20, pos: [-241.1, -247.6, -11.9], heading: 198, activity: 10, script: level34}
+  - {id: "level34:_xwTrash21", level: level34, name: _xwTrash21, pos: [-249.3, -233.7, -11.9], heading: 310, activity: 10, script: level34}
+  - {id: "level34:_xfHideZone01", level: level34, name: _xfHideZone01, pos: [-28.2, -105.4, 0], heading: 89, activity: 33, script: level34}
+  - {id: "level34:_xfHideZone02", level: level34, name: _xfHideZone02, pos: [-12.3, -141.2, 0], heading: 89, activity: 33, script: level34}
+  - {id: "level34:_xfHideZone03", level: level34, name: _xfHideZone03, pos: [-12.9, -239.7, 0], heading: 89, activity: 33, script: level34}
+  - {id: "level34:_xfHideZone04", level: level34, name: _xfHideZone04, pos: [-101.9, -259.4, 0], heading: 89, activity: 33, script: level34}
+  - {id: "level34:_xfHideZone05", level: level34, name: _xfHideZone05, pos: [-125.2, -222.2, 0], heading: 89, activity: 33, script: level34}
+  - {id: "level34:_xfHideZone06", level: level34, name: _xfHideZone06, pos: [-104.8, -192.7, 0], heading: 89, activity: 33, script: level34}
+  - {id: "level34:_xfHideZone07", level: level34, name: _xfHideZone07, pos: [-94.5, -245.4, 0], heading: 89, activity: 33, script: level34}

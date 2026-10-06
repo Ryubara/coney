@@ -1,0 +1,19 @@
+# World flags: a Coney game reference list. The page docs/references/flags.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "World flags"
+about: |
+  The named points with a heading that level scripts add with `AddFlag(name, {x, y, z}, heading,
+  activity, group)` and use to spawn humans, send them somewhere and test against
+  ([World flags](../research/flags.md)). Scripts keep the handle `AddFlag` returns; `FindFlag` finds a
+  flag by name. Ambient humans pick flags by **activity**: a flag with one is a spot where a
+  civilian sits, smokes, warms his hands or leaves the level.
+complete: |
+  Every `AddFlag` call whose name is a literal string: 7,057 flags (4,167 names) added by 94 scripts
+  of 62 levels. 23 positions are computed at run time and show none; 79 flags come from scripts shared by several
+  levels or whose names are not recovered (*other*). What each activity does is on
+  [World flags](../research/flags.md#activities); what the group means on path-network flags is not traced. The
+  two flags `InitLevel` adds itself (`CrimeScene`, `GangCall`) are not listed.
+defaults: {source: "the level scripts, AddFlag", evidence: inferred}
+# The entries are in research/references/flags/, one file per level.
+entries: []

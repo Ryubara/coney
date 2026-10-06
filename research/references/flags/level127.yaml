@@ -1,0 +1,46 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level127_brawl_init:fP1_01", level: level127, name: fP1_01, pos: [-219.3, -230.7, -11.8], heading: 0, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP1_02", level: level127, name: fP1_02, pos: [-218, -231.3, -11.8], heading: 0, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP1_03", level: level127, name: fP1_03, pos: [-220.6, -231.5, -11.8], heading: 0, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP1_04", level: level127, name: fP1_04, pos: [-216.7, -231.7, -11.8], heading: 0, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP1_05", level: level127, name: fP1_05, pos: [-221.8, -232, -11.8], heading: 0, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP1_06", level: level127, name: fP1_06, pos: [-219.6, -232.4, -11.8], heading: 0, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP1_07", level: level127, name: fP1_07, pos: [-220.8, -232.7, -11.8], heading: 0, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP1_08", level: level127, name: fP1_08, pos: [-218.5, -232.3, -11.8], heading: 0, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP1_09", level: level127, name: fP1_09, pos: [-217.4, -232.5, -11.8], heading: 0, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP1_10", level: level127, name: fP1_10, pos: [-219, -233.3, -11.8], heading: 0, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP2_01", level: level127, name: fP2_01, pos: [-219.1, -227.3, -11.8], heading: 180, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP2_02", level: level127, name: fP2_02, pos: [-220.3, -226.7, -11.8], heading: 180, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP2_03", level: level127, name: fP2_03, pos: [-217.8, -226.8, -11.8], heading: 180, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP2_04", level: level127, name: fP2_04, pos: [-221.6, -226.1, -11.8], heading: 180, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP2_05", level: level127, name: fP2_05, pos: [-216.7, -226.1, -11.8], heading: 180, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP2_06", level: level127, name: fP2_06, pos: [-219.8, -225.8, -11.8], heading: 180, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP2_07", level: level127, name: fP2_07, pos: [-218.6, -225.8, -11.8], heading: 180, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP2_08", level: level127, name: fP2_08, pos: [-221.1, -225.1, -11.8], heading: 180, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP2_09", level: level127, name: fP2_09, pos: [-217.8, -225.3, -11.8], heading: 180, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fP2_10", level: level127, name: fP2_10, pos: [-219.5, -224.6, -11.8], heading: 180, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fExit", level: level127, name: fExit, pos: [-210, -223.1, -11.8], heading: 180, activity: 8, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fExit01", level: level127, name: fExit01, pos: [-209, -228, -11.8], heading: 180, activity: 8, script: level127_brawl_init}
+  - {id: "level127_brawl_init:fExit02", level: level127, name: fExit02, pos: [-213.2, -243.4, -11.8], heading: 180, activity: 8, script: level127_brawl_init}
+  - {id: "level127_survival_init:fP1_01", level: level127, name: fP1_01, pos: [-219.3, -230.7, -11.8], heading: 0, script: level127_survival_init}
+  - {id: "level127_survival_init:fP1_02", level: level127, name: fP1_02, pos: [-218, -231.3, -11.8], heading: 0, script: level127_survival_init}
+  - {id: "level127_survival_init:fP1_03", level: level127, name: fP1_03, pos: [-220.6, -231.5, -11.8], heading: 0, script: level127_survival_init}
+  - {id: "level127_survival_init:fP1_04", level: level127, name: fP1_04, pos: [-216.7, -231.7, -11.8], heading: 0, script: level127_survival_init}
+  - {id: "level127_survival_init:fP1_05", level: level127, name: fP1_05, pos: [-221.8, -232, -11.8], heading: 0, script: level127_survival_init}
+  - {id: "level127_survival_init:fP1_06", level: level127, name: fP1_06, pos: [-219.6, -232.4, -11.8], heading: 0, script: level127_survival_init}
+  - {id: "level127_survival_init:fP1_07", level: level127, name: fP1_07, pos: [-220.8, -232.7, -11.8], heading: 0, script: level127_survival_init}
+  - {id: "level127_survival_init:fP1_08", level: level127, name: fP1_08, pos: [-218.5, -232.3, -11.8], heading: 0, script: level127_survival_init}
+  - {id: "level127_survival_init:fP1_09", level: level127, name: fP1_09, pos: [-217.4, -232.5, -11.8], heading: 0, script: level127_survival_init}
+  - {id: "level127_survival_init:fP1_10", level: level127, name: fP1_10, pos: [-219, -233.3, -11.8], heading: 0, script: level127_survival_init}
+  - {id: "level127_survival_init:fP2_01", level: level127, name: fP2_01, pos: [-219.1, -227.3, -11.8], heading: 180, script: level127_survival_init}
+  - {id: "level127_survival_init:fP2_02", level: level127, name: fP2_02, pos: [-220.3, -226.7, -11.8], heading: 180, script: level127_survival_init}
+  - {id: "level127_survival_init:fP2_03", level: level127, name: fP2_03, pos: [-217.8, -226.8, -11.8], heading: 180, script: level127_survival_init}
+  - {id: "level127_survival_init:fP2_04", level: level127, name: fP2_04, pos: [-221.6, -226.1, -11.8], heading: 180, script: level127_survival_init}
+  - {id: "level127_survival_init:fP2_05", level: level127, name: fP2_05, pos: [-216.7, -226.1, -11.8], heading: 180, script: level127_survival_init}
+  - {id: "level127_survival_init:fP2_06", level: level127, name: fP2_06, pos: [-219.8, -225.8, -11.8], heading: 180, script: level127_survival_init}
+  - {id: "level127_survival_init:fP2_07", level: level127, name: fP2_07, pos: [-218.6, -225.8, -11.8], heading: 180, script: level127_survival_init}
+  - {id: "level127_survival_init:fP2_08", level: level127, name: fP2_08, pos: [-221.1, -225.1, -11.8], heading: 180, script: level127_survival_init}
+  - {id: "level127_survival_init:fP2_09", level: level127, name: fP2_09, pos: [-217.8, -225.3, -11.8], heading: 180, script: level127_survival_init}
+  - {id: "level127_survival_init:fP2_10", level: level127, name: fP2_10, pos: [-219.5, -224.6, -11.8], heading: 180, script: level127_survival_init}

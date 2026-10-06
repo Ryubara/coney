@@ -313,11 +313,11 @@ ScenePreload(name, onLoaded) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `name` | string | Scene name from the level's scene list (for example `l11_c2`). |
+| 1 | `name` | string | Scene name (for example `l11_c2`); the first record of `scene_list.cnk` whose name contains it is loaded. |
 | 2 | `onLoaded` | string | Optional name of a Lua function called when the scene has loaded. |
 
-**Returns** number: The scene's id (its index in the level's scene table), used by the other Scene bindings. An unknown
-name gives 0, the first scene.
+**Returns** number: The scene's id (its index in the global scene list `scene_list.cnk`, [Scenes and
+movies](../scenes.md)), used by the other Scene bindings. An unknown name gives 0, the first scene.
 
 Starts loading a scripted scene (in-engine cutscene or animation set) into one of 12 scene slots and returns its id; a
 scene already loaded or loading is not loaded again.

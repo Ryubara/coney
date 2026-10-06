@@ -1,0 +1,176 @@
+# World flags: a part of research/references/flags.yaml, which holds the list's prose and
+# defaults. Written by `coney-tools refs extract`, which keeps the hand-written fields.
+entries:
+  - {id: "level3:fSWalk", level: level3, name: fSWalk, heading: 0, script: level3}
+  - {id: "level3:fStreetWarp_Rembrandt", level: level3, name: fStreetWarp_Rembrandt, pos: [-145.1, -154.3, -6], heading: 89, script: level3}
+  - {id: "level3:fStreetWarp_Ajax", level: level3, name: fStreetWarp_Ajax, pos: [-146, -153.7, -6], heading: 89, script: level3}
+  - {id: "level3:fStreetWarp_Snow", level: level3, name: fStreetWarp_Snow, pos: [-146, -155.1, -6], heading: 89, script: level3}
+  - {id: "level3:fStreetWarp_Cowboy", level: level3, name: fStreetWarp_Cowboy, pos: [-147.2, -153.7, -6], heading: 89, script: level3}
+  - {id: "level3:fPaint_01", level: level3, name: fPaint_01, pos: [-51.6, -196.9, 4.6], heading: 89, script: level3}
+  - {id: "level3:fPaint_02", level: level3, name: fPaint_02, pos: [-71.5, -169.8, 2.5], heading: 89, script: level3}
+  - {id: "level3:fPaint_03", level: level3, name: fPaint_03, pos: [-77.1, -186.2, 6.2], heading: 89, script: level3}
+  - {id: "level3:fPaint_04", level: level3, name: fPaint_04, pos: [-48.1, -172.4, 4.8], heading: 89, script: level3}
+  - {id: "level3:fPaint_05", level: level3, name: fPaint_05, pos: [-40.4, -183.2, 5.6], heading: 89, script: level3}
+  - {id: "level3:FlagNet_01", level: level3, name: FlagNet_01, pos: [-147.1, -154.8, -6], heading: 89, activity: 8, group: 1, script: level3}
+  - {id: "level3:FlagNet_02", level: level3, name: FlagNet_02, pos: [-145.6, -165.4, 0], heading: 89, group: 1, script: level3}
+  - {id: "level3:FlagNet_03", level: level3, name: FlagNet_03, pos: [-145.6, -154.5, 0], heading: 89, group: 1, script: level3}
+  - {id: "level3:FlagNet_04", level: level3, name: FlagNet_04, pos: [-44.1, -157.4, 0], heading: 89, group: 1, script: level3}
+  - {id: "level3:FlagNet_05", level: level3, name: FlagNet_05, pos: [-44.1, -166.3, 0], heading: 89, group: 1, script: level3}
+  - {id: "level3:FlagNet_06", level: level3, name: FlagNet_06, pos: [-37.5, -160.5, 0], heading: 89, activity: 8, group: 1, script: level3}
+  - {id: "level3:fElecWarp_T201", level: level3, name: fElecWarp_T201, pos: [-68.9, -170.8, 0], heading: 270, script: level3}
+  - {id: "level3:fElecWarp_T202", level: level3, name: fElecWarp_T202, pos: [-68.9, -168.9, 0], heading: 270, script: level3}
+  - {id: "level3:fElecWarp_T203", level: level3, name: fElecWarp_T203, pos: [-68.1, -168.4, 0], heading: 270, script: level3}
+  - {id: "level3:fMoonWarp_T101", level: level3, name: fMoonWarp_T101, pos: [-53.8, -173.2, 0], heading: 89, script: level3}
+  - {id: "level3:fMoonWarp_T102", level: level3, name: fMoonWarp_T102, pos: [-52.6, -174.6, 0], heading: 89, script: level3}
+  - {id: "level3:fMoonWarp_T103", level: level3, name: fMoonWarp_T103, pos: [-51, -175.6, 0], heading: 89, script: level3}
+  - {id: "level3:fPanWarp_T301", level: level3, name: fPanWarp_T301, pos: [-77.6, -179.2, 0], heading: 89, script: level3}
+  - {id: "level3:fPanWarp_T302", level: level3, name: fPanWarp_T302, pos: [-77.6, -180.2, 0], heading: 89, script: level3}
+  - {id: "level3:fPanWarp_T303", level: level3, name: fPanWarp_T303, pos: [-77.6, -181.3, 0], heading: 89, script: level3}
+  - {id: "level3:fWarrTagWarp_Rembrandt", level: level3, name: fWarrTagWarp_Rembrandt, pos: [-68.5, -181, 0], heading: 89, script: level3}
+  - {id: "level3:fWarrTagWarp_Snow", level: level3, name: fWarrTagWarp_Snow, pos: [-67.5, -179.7, 0], heading: 89, script: level3}
+  - {id: "level3:fWarrTagWarp_Cowboy", level: level3, name: fWarrTagWarp_Cowboy, pos: [-65.7, -180, 0], heading: 89, script: level3}
+  - {id: "level3:fWarrTagWarp_Ajax", level: level3, name: fWarrTagWarp_Ajax, pos: [-64.6, -181, 0], heading: 89, script: level3}
+  - {id: "level3:fOates_01", level: level3, name: fOates_01, pos: [-66.2, -170.1, 0], heading: 96, script: level3}
+  - {id: "level3:fOates_02", level: level3, name: fOates_02, pos: [-67.2, -181.9, 0], heading: 158, script: level3}
+  - {id: "level3:fOates_03", level: level3, name: fOates_03, pos: [-50.4, -177.6, 0], heading: 41, script: level3}
+  - {id: "level3:fOates_04", level: level3, name: fOates_04, pos: [-76.8, -180.6, 0], heading: 150, script: level3}
+  - {id: "level3:fElecTag", level: level3, name: fElecTag, pos: [-69.3, -169.5, 0], heading: 270, script: level3}
+  - {id: "level3:fElecWarp_T201#2", level: level3, name: fElecWarp_T201, pos: [-68.9, -170.8, 0], heading: 270, script: level3}
+  - {id: "level3:fElecWarp_T202#2", level: level3, name: fElecWarp_T202, pos: [-68.9, -168.9, 0], heading: 270, script: level3}
+  - {id: "level3:fElecWarp_T203#2", level: level3, name: fElecWarp_T203, pos: [-68.1, -168.4, 0], heading: 270, script: level3}
+  - {id: "level3:fEle_Rembrandt", level: level3, name: fEle_Rembrandt, pos: [-81.6, -189.1, 0], heading: 89, script: level3}
+  - {id: "level3:fEle_Snow", level: level3, name: fEle_Snow, pos: [-78.1, -189, 0], heading: 89, script: level3}
+  - {id: "level3:fEle_Ajax", level: level3, name: fEle_Ajax, pos: [-78.2, -191.2, 0], heading: 89, script: level3}
+  - {id: "level3:fEle_Cowboy", level: level3, name: fEle_Cowboy, pos: [-81.6, -191.4, 0], heading: 89, script: level3}
+  - {id: "level3:fPrepEle_Rembrandt", level: level3, name: fPrepEle_Rembrandt, pos: [-80.2, -182.8, 0], heading: 89, script: level3}
+  - {id: "level3:fPrepEle_Ajax", level: level3, name: fPrepEle_Ajax, pos: [-77.7, -184.5, 0], heading: 89, script: level3}
+  - {id: "level3:fPrepEle_Snow", level: level3, name: fPrepEle_Snow, pos: [-77.7, -182.8, 0], heading: 89, script: level3}
+  - {id: "level3:fPrepEle_Cowboy", level: level3, name: fPrepEle_Cowboy, pos: [-80.1, -184.5, 0], heading: 89, script: level3}
+  - {id: "level3:fUpEle_Rembrandt", level: level3, name: fUpEle_Rembrandt, pos: [-78.6, -193.4, 12.4], heading: 89, script: level3}
+  - {id: "level3:fUpEle_Ajax", level: level3, name: fUpEle_Ajax, pos: [-78.6, -195.5, 12.4], heading: 89, script: level3}
+  - {id: "level3:fUpEle_Snow", level: level3, name: fUpEle_Snow, pos: [-80.2, -195.5, 12.4], heading: 89, script: level3}
+  - {id: "level3:fUpEle_Cowboy", level: level3, name: fUpEle_Cowboy, pos: [-80.2, -193.6, 12.4], heading: 89, script: level3}
+  - {id: "level3:fBalc_Rembrandt", level: level3, name: fBalc_Rembrandt, pos: [-72.2, -192.9, 13], heading: 89, script: level3}
+  - {id: "level3:fBalc_Snow", level: level3, name: fBalc_Snow, pos: [-72.5, -191.2, 13], heading: 338, script: level3}
+  - {id: "level3:fBalc_Cowboy", level: level3, name: fBalc_Cowboy, pos: [-73.8, -192.9, 13], heading: 89, script: level3}
+  - {id: "level3:fBalc_Ajax", level: level3, name: fBalc_Ajax, pos: [-73.4, -196.2, 13], heading: 89, script: level3}
+  - {id: "level3:fTop_Ajax", level: level3, name: fTop_Ajax, pos: [-59.3, -189.1, 18.6], heading: 89, script: level3}
+  - {id: "level3:fTop_Rembrandt", level: level3, name: fTop_Rembrandt, pos: [-59.4, -189.7, 18.6], heading: 89, script: level3}
+  - {id: "level3:fTop_Snow", level: level3, name: fTop_Snow, pos: [-58, -189, 18.6], heading: 89, script: level3}
+  - {id: "level3:fTop_Cowboy", level: level3, name: fTop_Cowboy, pos: [-58.7, -189.7, 18.6], heading: 89, script: level3}
+  - {id: "level3:fGate_01", level: level3, name: fGate_01, pos: [-55.9, -170.3, 0], heading: 344, script: level3}
+  - {id: "level3:fGate_02", level: level3, name: fGate_02, pos: [-58.9, -170.3, 0], heading: 26, script: level3}
+  - {id: "level3:fWalk_T101", level: level3, name: fWalk_T101, pos: [-66.6, -175.2, 0], heading: 86, script: level3}
+  - {id: "level3:fWalk_T102", level: level3, name: fWalk_T102, pos: [-67.6, -176.8, 0], heading: 89, script: level3}
+  - {id: "level3:fWalk_T103", level: level3, name: fWalk_T103, pos: [-65, -176.3, 0], heading: 89, script: level3}
+  - {id: "level3:fDance_01", level: level3, name: fDance_01, pos: [-74.2, -171.8, 0], heading: 316, activity: 19, script: level3}
+  - {id: "level3:fDance_02", level: level3, name: fDance_02, pos: [-76.7, -172.2, 0], heading: 41, activity: 19, script: level3}
+  - {id: "level3:fDance_03", level: level3, name: fDance_03, pos: [-76, -169.6, 0], heading: 162, activity: 19, script: level3}
+  - {id: "level3:fLean_01", level: level3, name: fLean_01, pos: [-102.1, -166.5, 1.5], heading: 2, script: level3}
+  - {id: "level3:fLean_02", level: level3, name: fLean_02, pos: [-99.5, -166.9, 1.5], heading: 330, script: level3}
+  - {id: "level3:fGalleryWarp_Rembrandt", level: level3, name: fGalleryWarp_Rembrandt, pos: [208.9, 368.1, 9.8], heading: 89, script: level3}
+  - {id: "level3:fGalleryWarp_Ajax", level: level3, name: fGalleryWarp_Ajax, pos: [208.9, 365.8, 9.8], heading: 89, script: level3}
+  - {id: "level3:fGalleryWarp_Snow", level: level3, name: fGalleryWarp_Snow, pos: [206.7, 367.9, 9.8], heading: 89, script: level3}
+  - {id: "level3:fGalleryWarp_Cowboy", level: level3, name: fGalleryWarp_Cowboy, pos: [206.7, 366.4, 9.8], heading: 89, script: level3}
+  - {id: "level3:fTarget_01", level: level3, name: fTarget_01, pos: [-72.2, -192.9, 18.1], heading: 89, script: level3}
+  - {id: "level3:fTarget_02", level: level3, name: fTarget_02, pos: [-68.2, -191.7, 18.1], heading: 89, script: level3}
+  - {id: "level3:fTarget_03", level: level3, name: fTarget_03, pos: [-72.1, -190.9, 18.1], heading: 89, script: level3}
+  - {id: "level3:fTarget_04", level: level3, name: fTarget_04, pos: [-74.5, -182.2, 1.5], heading: 89, script: level3}
+  - {id: "level3:fTarget_05", level: level3, name: fTarget_05, pos: [-63, -173.1, 0], heading: 89, script: level3}
+  - {id: "level3:fTarget_06", level: level3, name: fTarget_06, pos: [-66, -177.2, 0], heading: 89, script: level3}
+  - {id: "level3:fTarget_07", level: level3, name: fTarget_07, pos: [-73.2, -170.4, 1.5], heading: 89, script: level3}
+  - {id: "level3:fTarget_08", level: level3, name: fTarget_08, pos: [-62.6, -183.6, 1.5], heading: 89, script: level3}
+  - {id: "level3:fFight_T301", level: level3, name: fFight_T301, pos: [-51.5, -185.4, 0], heading: 89, script: level3}
+  - {id: "level3:fFight_T302", level: level3, name: fFight_T302, pos: [-51.2, -185.8, 0], heading: 89, script: level3}
+  - {id: "level3:fFight_T303", level: level3, name: fFight_T303, pos: [-51.6, -186.4, 0], heading: 89, script: level3}
+  - {id: "level3:fTagGallery_Gall01", level: level3, name: fTagGallery_Gall01, pos: [204.9, 361.9, 9.8], heading: 178, script: level3}
+  - {id: "level3:fTagGallery_Gall02", level: level3, name: fTagGallery_Gall02, pos: [211.8, 361.9, 9.8], heading: 178, script: level3}
+  - {id: "level3:fTagGallery_Gall03", level: level3, name: fTagGallery_Gall03, pos: [220.9, 364.2, 9.8], heading: 87, script: level3}
+  - {id: "level3:fTagGallery_Gall04", level: level3, name: fTagGallery_Gall04, pos: [220.9, 368.6, 9.8], heading: 87, script: level3}
+  - {id: "level3:fTagGallery_Gall05", level: level3, name: fTagGallery_Gall05, pos: [214.1, 391.3, 6.1], heading: 357, script: level3}
+  - {id: "level3:fTagGallery_Gall06", level: level3, name: fTagGallery_Gall06, pos: [203.3, 372.7, 6.1], heading: 178, script: level3}
+  - {id: "level3:fTagGallery_Gall07", level: level3, name: fTagGallery_Gall07, pos: [210.9, 372.7, 6.1], heading: 178, script: level3}
+  - {id: "level3:fRoofWarp_Rembrandt", level: level3, name: fRoofWarp_Rembrandt, pos: [-267, 353.5, 16.5], heading: 331, script: level3}
+  - {id: "level3:fRoofWarp_Ajax", level: level3, name: fRoofWarp_Ajax, pos: [-261.3, 351.9, 13.3], heading: 271, script: level3}
+  - {id: "level3:fRoofWarp_Cowboy", level: level3, name: fRoofWarp_Cowboy, pos: [-265.2, 352.7, 15.8], heading: 273, script: level3}
+  - {id: "level3:fRoofWarp_Snow", level: level3, name: fRoofWarp_Snow, pos: [-263.4, 352.3, 14.8], heading: 269, script: level3}
+  - {id: "level3:fRoofChase_1", level: level3, name: fRoofChase_1, pos: [-214.7, 364, 20.2], heading: 89, script: level3}
+  - {id: "level3:fRoofChase_02", level: level3, name: fRoofChase_02, pos: [-196.6, 362.9, 23.8], heading: 89, script: level3}
+  - {id: "level3:fRoofChase_03", level: level3, name: fRoofChase_03, pos: [-166.3, 364.2, 21], heading: 89, script: level3}
+  - {id: "level3:fRoofChase_04", level: level3, name: fRoofChase_04, pos: [-114.2, 367.4, 18.8], heading: 89, script: level3}
+  - {id: "level3:fRoofChase_05", level: level3, name: fRoofChase_05, pos: [-49.4, 366.8, 16.9], heading: 89, script: level3}
+  - {id: "level3:fRoofChase_06", level: level3, name: fRoofChase_06, pos: [-28.9, 366.8, 17], heading: 89, script: level3}
+  - {id: "level3:fRoofChase_07", level: level3, name: fRoofChase_07, pos: [44.3, 367.4, 17.1], heading: 89, script: level3}
+  - {id: "level3:fRoofChase_08", level: level3, name: fRoofChase_08, pos: [67.3, 367.2, 12.4], heading: 89, script: level3}
+  - {id: "level3:fFireWarp_Ajax", level: level3, name: fFireWarp_Ajax, pos: [61.7, 371.2, 15.1], heading: 274, script: level3}
+  - {id: "level3:fFireWarp_Rembrandt", level: level3, name: fFireWarp_Rembrandt, pos: [63.6, 370.3, 15.1], heading: 297, script: level3}
+  - {id: "level3:fFireWarp_Cowboy", level: level3, name: fFireWarp_Cowboy, pos: [62.2, 369.3, 15.1], heading: 278, script: level3}
+  - {id: "level3:fFireWarp_Snow", level: level3, name: fFireWarp_Snow, pos: [62.4, 373.2, 15.1], heading: 264, script: level3}
+  - {id: "level3:fParty_1", level: level3, name: fParty_1, pos: [52.3, 364.9, 14.4], heading: 42, activity: 20, group: 1, script: level3}
+  - {id: "level3:fRoofPath2_01", level: level3, name: fRoofPath2_01, pos: [112.9, 366.9, 10.9], heading: 89, script: level3}
+  - {id: "level3:fRoofPath2_02", level: level3, name: fRoofPath2_02, pos: [157.6, 367.9, 10.4], heading: 89, script: level3}
+  - {id: "level3:fRoofPath2_03", level: level3, name: fRoofPath2_03, pos: [163.2, 363.9, 10.4], heading: 89, script: level3}
+  - {id: "level3:fMimeGate_mchase06", level: level3, name: fMimeGate_mchase06, pos: [77.5, 373.1, 38.7], heading: 183, script: level3}
+  - {id: "level3:fMimeGate_mchase07", level: level3, name: fMimeGate_mchase07, pos: [75.1, 374.4, 38.7], heading: 150, script: level3}
+  - {id: "level3:fMimeGate_mchase08", level: level3, name: fMimeGate_mchase08, pos: [74.2, 375.4, 38.7], heading: 134, script: level3}
+  - {id: "level3:fMimeGate_mchase02", level: level3, name: fMimeGate_mchase02, pos: [74.6, 373.7, 38.7], heading: 148, script: level3}
+  - {id: "level3:fMimeGate_mchase05", level: level3, name: fMimeGate_mchase05, pos: [79.4, 374.5, 38.7], heading: 216, script: level3}
+  - {id: "level3:fMimeGate_mchase03", level: level3, name: fMimeGate_mchase03, pos: [79.8, 373.5, 38.7], heading: 201, script: level3}
+  - {id: "level3:fMimeGate_mchase04", level: level3, name: fMimeGate_mchase04, pos: [78.2, 375.3, 38.7], heading: 182, script: level3}
+  - {id: "level3:fMimeGate_mchase01", level: level3, name: fMimeGate_mchase01, pos: [75.9, 375, 38.7], heading: 157, script: level3}
+  - {id: "level3:fPostGate_Rembrandt", level: level3, name: fPostGate_Rembrandt, pos: [112.3, 369.5, 11], heading: 89, script: level3}
+  - {id: "level3:fPostGate_Ajax", level: level3, name: fPostGate_Ajax, pos: [112.3, 367.2, 11], heading: 89, script: level3}
+  - {id: "level3:fPostGate_Cowboy", level: level3, name: fPostGate_Cowboy, pos: [112.3, 365.5, 11], heading: 89, script: level3}
+  - {id: "level3:fPostGate_Snow", level: level3, name: fPostGate_Snow, pos: [62.5, 366.8, 13.7], heading: 89, script: level3}
+  - {id: "level3:fScnPanWarp_T301", level: level3, name: fScnPanWarp_T301, pos: [-70.3, -176.3, 0], heading: 68, script: level3}
+  - {id: "level3:fScnPanWarp_T302", level: level3, name: fScnPanWarp_T302, pos: [-71.1, -175.2, 0], heading: 83, script: level3}
+  - {id: "level3:fScnPanWarp_T303", level: level3, name: fScnPanWarp_T303, pos: [-70.3, -174.2, 0], heading: 100, script: level3}
+  - {id: "level3:fScnMoonWarp_T101", level: level3, name: fScnMoonWarp_T101, pos: [-69.1, -183.1, 0], heading: 64, script: level3}
+  - {id: "level3:fScnMoonWarp_T102", level: level3, name: fScnMoonWarp_T102, pos: [-69.7, -182.5, 0], heading: 64, script: level3}
+  - {id: "level3:fScnMoonWarp_T103", level: level3, name: fScnMoonWarp_T103, pos: [-70.1, -181.8, 0], heading: 64, script: level3}
+  - {id: "level3:fScnElecWarp_T201", level: level3, name: fScnElecWarp_T201, pos: [-67.8, -171.7, 0], heading: 100, script: level3}
+  - {id: "level3:fScnElecWarp_T202", level: level3, name: fScnElecWarp_T202, pos: [-68.3, -170.3, 0], heading: 100, script: level3}
+  - {id: "level3:fScnElecWarp_T203", level: level3, name: fScnElecWarp_T203, pos: [-68.1, -169.4, 0], heading: 100, script: level3}
+  - {id: "level3:fPathRemove_04", level: level3, name: fPathRemove_04, pos: [206, 386.2, 7.2], heading: 178, script: level3}
+  - {id: "level3:fPathRemove_02", level: level3, name: fPathRemove_02, pos: [214.9, 367.4, 10.3], heading: 178, script: level3}
+  - {id: "level3:fPathRemove_03", level: level3, name: fPathRemove_03, pos: [216.7, 367.4, 10.3], heading: 178, script: level3}
+  - {id: "level3:fPathRemove_01", level: level3, name: fPathRemove_01, pos: [221.2, 388.6, 7.2], heading: 178, script: level3}
+  - {id: "level3:fScnWarr_Snow", level: level3, name: fScnWarr_Snow, pos: [-66.6, -177.4, 0], heading: 86, script: level3}
+  - {id: "level3:fScnWarr_Rembrandt", level: level3, name: fScnWarr_Rembrandt, pos: [-66.9, -178, 0], heading: 86, script: level3}
+  - {id: "level3:fScnWarr_Ajax", level: level3, name: fScnWarr_Ajax, pos: [-67.1, -176.9, 0], heading: 86, script: level3}
+  - {id: "level3:fScnWarr_Cowboy", level: level3, name: fScnWarr_Cowboy, pos: [-67.7, -177.5, 0], heading: 86, script: level3}
+  - {id: "level3:fTagComp", level: level3, name: fTagComp, pos: [-57.3, -167.3, 0], heading: 89, script: level3}
+  - {id: "level3:fSpecialBurner", level: level3, name: fSpecialBurner, pos: [-79.5, -187.3, 0], heading: 89, script: level3}
+  - {id: "level3:fPanTag", level: level3, name: fPanTag, pos: [-79, -181, 0], heading: 89, script: level3}
+  - {id: "level3:fWarrTag", level: level3, name: fWarrTag, pos: [-66.8, -186.8, 0], heading: 89, script: level3}
+  - {id: "level3:fMoonTag", level: level3, name: fMoonTag, pos: [-50.4, -173.7, 0], heading: 46, script: level3}
+  - {id: "level3:fElecTag#2", level: level3, name: fElecTag, pos: [-69.3, -169.5, 0], heading: 270, script: level3}
+  - {id: "level3:fRooftopWarp", level: level3, name: fRooftopWarp, pos: [-125.3, -157.9, 0], heading: 89, script: level3}
+  - {id: "level3:fChatterObj", level: level3, name: fChatterObj, pos: [-69.6, -192.9, 13], heading: 89, script: level3}
+  - {id: "level3:fFlash", level: level3, name: fFlash, pos: [-31.8, -157.5, 0], heading: 89, group: 64, script: level3}
+  - {id: "level3:fButton", level: level3, name: fButton, pos: [-76.6, -186.7, 0], heading: 183, script: level3}
+  - {id: "level3:fScopes", level: level3, name: fScopes, pos: [-80.8, -180.5, 4.7], heading: 89, script: level3}
+  - {id: "level3:fCB", level: level3, name: fCB, pos: [-81.1, -173.6, 9.5], heading: 89, script: level3}
+  - {id: "level3:fFence", level: level3, name: fFence, pos: [-74, -166.6, 0], heading: 183, activity: 9, script: level3}
+  - {id: "level3:fEntrance", level: level3, name: fEntrance, pos: [-56.9, -175.4, 0], heading: 89, script: level3}
+  - {id: "level3:fPulley", level: level3, name: fPulley, pos: [-80.5, -177.9, 17.2], heading: 89, script: level3}
+  - {id: "level3:_xwFlagCopCap01", level: level3, name: _xwFlagCopCap01, pos: [-124.9, 362.7, -4.1], heading: 246, activity: 13, script: level3}
+  - {id: "level3:_xwFlagCopCap02", level: level3, name: _xwFlagCopCap02, pos: [-123.5, 359.5, -4.1], heading: 246, activity: 13, script: level3}
+  - {id: "level3:_xwFlagCopCap03", level: level3, name: _xwFlagCopCap03, pos: [-126.5, 358.2, -4.1], heading: 66, activity: 13, script: level3}
+  - {id: "level3:_xwFlagCopCap04", level: level3, name: _xwFlagCopCap04, pos: [-127.8, 361.4, -4.1], heading: 66, activity: 13, script: level3}
+  - {id: "level3:fPLocation", level: level3, name: fPLocation, pos: [56.5, 367.6, 14.4], heading: 89, script: level3}
+  - {id: "level3:fPDoor", level: level3, name: fPDoor, pos: [59.5, 366.7, 14.4], heading: 89, script: level3}
+  - {id: "level3:fTriggerTheEnd", level: level3, name: fTriggerTheEnd, pos: [80.8, 368.6, 38.7], heading: 89, script: level3}
+  - {id: "level3:fRoofEnd", level: level3, name: fRoofEnd, pos: [202.9, 367.9, 16.3], heading: 89, script: level3}
+  - {id: "level3:fFence01", level: level3, name: fFence01, pos: [-147.2, -148.5, -6], heading: 5, activity: 22, script: level3}
+  - {id: "level3:fScopes01", level: level3, name: fScopes01, pos: [-80.8, -170.2, 4.7], heading: 89, script: level3}
+  - {id: "level3:_xwFlagWgnCap01", level: level3, name: _xwFlagWgnCap01, pos: [-59.5, -182.6, 0.2], heading: 269, activity: 13, script: level3}
+  - {id: "level3:_xwFlagWgnCap02", level: level3, name: _xwFlagWgnCap02, pos: [-59.5, -185.9, 0.2], heading: 269, activity: 13, script: level3}
+  - {id: "level3:_xwFlagWgnCap03", level: level3, name: _xwFlagWgnCap03, pos: [-62.7, -185.9, 0.2], heading: 90, activity: 13, script: level3}
+  - {id: "level3:_xwFlagWgnCap04", level: level3, name: _xwFlagWgnCap04, pos: [-62.7, -182.6, 0.2], heading: 90, activity: 13, script: level3}
+  - {id: "level3:_xwFlagWgnTicket05", level: level3, name: _xwFlagWgnTicket05, pos: [-62.4, -182.5, 0.2], heading: 90, activity: 26, script: level3}
+  - {id: "level3:_xwFlagWgnCap05", level: level3, name: _xwFlagWgnCap05, pos: [-73, -172.1, 0.2], heading: 89, activity: 13, script: level3}
+  - {id: "level3:_xwFlagWgnCap06", level: level3, name: _xwFlagWgnCap06, pos: [-73, -168.8, 0.2], heading: 89, activity: 13, script: level3}
+  - {id: "level3:_xwFlagWgnCap07", level: level3, name: _xwFlagWgnCap07, pos: [-69.8, -168.9, 0.2], heading: 270, activity: 13, script: level3}
+  - {id: "level3:_xwFlagWgnCap08", level: level3, name: _xwFlagWgnCap08, pos: [-69.8, -172.1, 0.2], heading: 270, activity: 13, script: level3}
+  - {id: "level3:_xwFlagWgnTicket06", level: level3, name: _xwFlagWgnTicket06, pos: [-70.1, -172.3, 0.2], heading: 270, activity: 26, script: level3}
