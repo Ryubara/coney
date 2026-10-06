@@ -10,9 +10,10 @@ on:
 permissions:
   contents: read
 
+# A new push to a pull request cancels its older run; on main every run finishes, so each merge gets a verdict.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Linux Clang is 19, not Ubuntu 24.04's default 18: libstdc++ declares std::expected only when __cpp_concepts is at
 # least 202002L, which Clang first reports in version 19, so Clang 18 cannot compile Coney's use of std::expected.
@@ -69,7 +70,8 @@ jobs:
           path: build/ci/_deps
           key: deps-ci-${{ matrix.name }}-${{ hashFiles('cmake/deps.cmake') }}
       - run: cmake --preset ci
-      - run: cmake --build --preset ci
+      # -k 0: keep compiling after a failure, so one run lists every error.
+      - run: cmake --build --preset ci -- -k 0
       - run: ctest --preset ci
 
   sanitizers:
@@ -110,7 +112,7 @@ jobs:
           path: build/asan/_deps
           key: deps-asan-${{ matrix.name }}-${{ hashFiles('cmake/deps.cmake') }}
       - run: cmake --preset asan
-      - run: cmake --build --preset asan
+      - run: cmake --build --preset asan -- -k 0
       - run: ctest --preset asan
 
   clang-tidy:
@@ -133,7 +135,8 @@ jobs:
           path: build/ci/_deps
           key: deps-ci-clang-tidy-${{ hashFiles('cmake/deps.cmake') }}
       - run: cmake --preset ci
-      - run: cmake --build --preset ci
+      # The build job reports compile errors; build what compiles so clang-tidy still checks every file.
+      - run: cmake --build --preset ci -- -k 0 || true
       # Coney's own sources only (src/ and tests/), never the fetched dependencies under _deps/.
       - run: run-clang-tidy-19 -p build/ci -quiet '^(?!.*_deps).*/(src|tests)/'
 
