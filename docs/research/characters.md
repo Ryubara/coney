@@ -191,7 +191,7 @@ player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads at 
 values confirmed (runtime). A street civilian (class 2) had a 0.35 hurt threshold, stun 750 ms, ground time 2000 ms,
 power 200, byte `+0x36` 4 (confirmed (runtime)). The AI's fields `+0x08` (block chance), `+0x0c` (block chance while
 hurt), `+0x24` (counter chance) and `+0x37` (the pattern-reading threshold) are on [AI](ai.md#block); `+0x18`, `+0x32`
-and the bytes after `+0x37` are not traced:
+and the bytes after `+0x37` are not traced. The sparring Warriors' class 40 is on [AI](ai.md#level99):
 
 | Field | Rembrandt (class 64) | Use |
 | --- | --- | --- |

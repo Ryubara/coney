@@ -337,7 +337,9 @@ confirmed (code) at the functions below.
    state `0x8000` or `+0x08` `0x1000`) and the command is `0x1f` without a full rage meter, or 8 (L1 released). It
    clears the sprint, calls `0x002801e8`, sets state `0x8001`, starts rage on `0x1f` with a full meter
    (`0x0027ffa0`), and returns 0 on command 4 (R1 held), so nothing else runs while R1 is held. This is the sprint's
-   "other clear" on [Characters](characters.md#sprint).
+   "other clear" on [Characters](characters.md#sprint). R1 held is read from the pad record (`0x00147f98`, 0 when
+   per-player `+0x19` is −1), so **an AI human never starts a block**: command 4 alone does nothing
+   ([AI](ai.md#block)).
 2. The chain (`0x00280630`), then the sprint (`0x0027d5a0`).
 3. The state routes: mugging (`0x100`) → `Player_UpdateMugging`; being mugged (`0x200`) → release; a theft
    (`0x4000000`) → `Player_UpdateTheft`; `0x8000000` / `0x10000000` → nothing; `0x400` → `0x0027ec20` (tackling);
@@ -348,7 +350,8 @@ confirmed (code) at the functions below.
    `0x002811f0`; `0x33` → `0x00281188`; `0x32` → `0x002832c8`; `0x22` or `0x39` → `0x00288838`; `0x22`, `0x30`,
    `0x23`, `0x24` → `0x00287730`; **`0x20` → charge**; **`0x21` → dive**; **`0xf` → square**; **`0x10` → cross**
    (weapon types 4, 5, 6 → `0x002880d8` instead); **`0xd`, `0xe` → grab or tackle**; `0x27` → `0x00286ba8`; 7 (L1
-   pressed) → `0x0027da10`; 6 (L1 held) → `0x0027dc00`; 8 → `0x00227b98` / `0x00227a90` ([Targets](#targets)).
+   pressed) → `0x0027da10`; 6 (L1 held) → `0x0027dc00`; 8 → `0x00227b98` / `0x00227a90` ([Targets](#targets));
+   **3 → the AI's grab or tackle counter** (`0x0027d6e0`), only when per-player `+0x1b` is 0 ([AI](ai.md#block)).
    Commands `0x30`-`0x39` are not made by the street's tables; scripts or weapons make them (inferred). `0x00288838`
    acts only for armed weapon types; `0x30` matches no branch of `0x00287730` (inferred: unused there).
 
@@ -479,11 +482,11 @@ So a press in `0x4` is dropped by its path, and one in `0x40000` by the dispatch
 
 ### Block (and no dodge) {#block}
 
-**R1 held** in a fight stance blocks: anim state 21 then 606 `BLOCK_SUSTAIN` (605 `BLOCK_START` was not seen as the
-playing id), state flags `0x8001`. The stick at 0.8 to a side while blocking gives anim state 24, 607
-`BLOCK_SHUFFLE`, turning in place. Cross pressed while blocking plays `X1` and returns to the block. Confirmed
-(runtime). No separate dodge command exists in the street's tables (confirmed (runtime)); the shuffle is the only
-evasive move found.
+**R1 held** on a pad, in a fight stance, blocks (an AI human cannot block, [AI](ai.md#block)): anim state 21 then 606
+`BLOCK_SUSTAIN` (605 `BLOCK_START` was not seen as the playing id), state flags `0x8001`. The stick at 0.8 to a side
+while blocking gives anim state 24, 607 `BLOCK_SHUFFLE`, turning in place. Cross pressed while blocking plays `X1` and
+returns to the block. Confirmed (runtime). No separate dodge command exists in the street's tables (confirmed
+(runtime)); the shuffle is the only evasive move found.
 
 **A hit on a block** (`0x00269f30`, from `Human_ApplyPendingDamage` while state `0x8000`), confirmed (code): a block
 that holds **cancels all the damage** and plays a block reaction from the table at `0x00510898` by height and
