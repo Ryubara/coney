@@ -412,9 +412,8 @@ or its wake-up after 14 s; state 7's placement and the out-of-sight search's sta
   (Coney: his class's brain type, the profile unchanged).
 - The playback rate of a dynamic clip played by `HuUseAnim` (Coney: 1).
 - The range beyond which `GoalEngageEnemy`'s goal gives up its enemy (Coney: none).
-- For the out-of-sight search (`0x00251d28`): which node it starts from, how many nodes it visits before it gives up,
-  how the turned tries' angles are drawn, and whether its distances and cone are flat or 3D (Coney: the nearest node of
-  the player's polygon, 128 open, evenly outside the cone, 3D); and where state 7 places its human (`0x001679e8`).
+- Where spawner state 7 places its human (`0x001679e8`). The out-of-sight search itself is answered in
+  [AI: the search](ai.md#spawner-search).
 - The wheelchair's clips and start (state code 5), and whether the update is 1/30 s or 1/60 s (Coney: no clips, the
   constants per 1/30 s step).
 - What `ActGiveWay`'s action (`0x002fe4b0`) does (Coney: nothing).

@@ -588,8 +588,8 @@ polygon out of every test below, so an opened door's hole stops cutting the area
   lacks flag 8, whose `+0x4a` equals the byte of the ground found by a ray down from 0.4 m above the point, and whose
   box (+0.35 m) holds it; then the inside test `0x0024ea60` over its polygons, skipping flags 8 and `0x10`.
 
-`0x00251d28` is a second, Dijkstra-like search that stops at the first node beyond a distance inside a cone of
-directions, skipping bit-31 edges (inferred: for fleeing).
+`0x00251d28` is a second A* search that stops at the first node beyond a distance outside a cone of
+directions, skipping bit-31 edges; its one caller places spawned humans out of sight ([The search](#spawner-search)).
 
 #### Following a route {#route-follow}
 
@@ -1123,14 +1123,45 @@ spawner's own position whatever the state, also for the states that place their 
    than the spawner's **value** in metres from it and outside a cone around the camera's forward of half its field
    of view + 10° (`+0x2ac`). The first goal is 100 m straight ahead of the camera; up to 16 more tries each turn the
    forward by a random angle outside that cone and put the goal at 2 × value. No node in 17 tries: no spawn this
-   update.
-3. **Second player**: with two players, a node that the other camera can see 1.6 m above it (`0x00122548`, within
-   the smaller of its view distance capped at 70 m and the value) is refused.
+   update. In detail ([the search](#spawner-search)):
+    - **Origin**: the camera's position (vtable `+0x21c`) with its z replaced by the player human's z (position
+      table `0x00714b00`); every distance below is from this point, in 3D.
+    - **Start node**: the player human's area (`0x00250708`), then its node nearest the human's position that he
+      reaches in a straight line, up to 30 tried by distance (`0x00251150` → `0x00250e98`, as for a route's ends in
+      [Path planning](#path-planning)). No area or no node: no spawn this update, and no try is made.
+    - **Cone**: the camera's forward (its orientation's y axis: vtable `+0xac`, then `0x003363b0`) with z then set to
+      0 and **not** normalised again; half-angle *h* = (field of view × 0.5 + 10)° in radians.
+    - **Try 1**: goal = origin + 100 × the forward taken *before* its z is cleared.
+    - **Tries 2-17**: θ = `Random_Float(h, 2π − h)` (`0x00335420`: a uniform draw, the raw random number / 2³² scaled
+      into the range); the flattened forward is turned by θ about the vertical (a quaternion about (0, 0, 1),
+      `0x00511740`), and goal = origin + 2 × value × that vector. Each try turns the **original** forward, not the
+      previous try's; a θ is drawn before every search, so 17 draws are made and the first is unused. The cone the
+      search tests keeps the original flattened forward on every try; only the goal moves.
+3. **Second player**: with two players, a node that the other camera can see 1.6 m above it (`0x00122548`, its
+   distance argument the larger of the value and its view distance capped at 70 m) is refused.
 4. **Turf**: the node must lie in one of the gang's turf boxes (`Gang_IsPointInTurf`, `0x001652e8`); a gang with no
    turf takes any. Otherwise no spawn this update.
 
 The human stands on the node found. The function's other branch (a flag near the point, checked for being unseen) is
 not reached from its one caller.
+
+###### The search {#spawner-search}
+
+`0x00251d28(value, h, startNode, origin, goal, coneAxis)`, confirmed (code):
+
+- **A\*** over the route nodes (C records of `0x20`) from the start node toward the goal: f = g + h at node `+0x16`,
+  g at `+0x18`, h at `+0x1a`, parent at `+0x1c` (all `u16`, 1/16 m). h = 16 × the 3D distance from the node to the
+  goal (`0x00251820`); an edge costs as in [Path planning](#path-planning) (`0x00251890` with mask `0xff`, so the
+  `ClimbFilter` extras apply when it is on). Unlike the route search there is **no mask test** and no 65000 cap:
+  every edge is taken except one whose D word has **bit 31** set (a hazard-avoided link), which is skipped. A node
+  already open is updated only when the new g is lower.
+- **Popping** the node with the lowest f (ties: the heap's order) marks it closed (`+0x18` = `0xabcd`) and tests it,
+  the start node included: found when its distance from the origin exceeds 70 m, or exceeds the value and the unit
+  vector origin → node has a dot product with the cone axis below cos *h*. Found: the goal point is overwritten with
+  the node's position and the search returns 1.
+- **Limits**: the open list is a heap of at most **1,000** entries (`0x002531c0`), the closed list at most **3,000**
+  nodes (`0x002534d0`). An empty open list, a full open list on a push or a full closed list ends the search with
+  nothing (0); on leaving, the closed marks are cleared.
 
 #### Crimes and the police {#crimes}
 
