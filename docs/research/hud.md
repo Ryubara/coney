@@ -46,6 +46,12 @@ the profile-manager screens, in a file not yet named ([Source map](source-map.md
 | `0x001a1008` / `0x001a1138` | `HudBar_Setup` / `HudBar_Draw` | the meter used for rage (and the mini-game bars) | confirmed (code) |
 | `0x001b6c50` | `HudCounter_Setup` | icon plus number (the item counters) | confirmed (code) |
 | `0x001cdc80` | `HintBox_Update` | `TutorialHUD.cpp`; the box at HUD `+0x8a10` (`0x00609250`) | confirmed (code) |
+| `0x001ce3c0` / `0x001ce218` | `HintBox_Queue` / `HintBox_InsertByPriority` | queue a hint by priority ([Hints](#hints-hudsettutorialtext)) | confirmed (code) |
+| `0x001ce1e8` / `0x001ce718` | `HintBox_QueueGameHint` / `HintBox_WithdrawGameHint` | the game's own hints, by `CfgTutorialMessage` id | confirmed (code) |
+| `0x001ce5c0` / `0x001ce748` / `0x001ce550` | `HintBox_Withdraw` / `HintBox_FlushPriority` / `HintBox_Contains` | remove one hint, flush by priority, `HUDCheckTutorialText` | confirmed (code) |
+| `0x001bb250` / `0x001bb2f0` | `MarkupText_SetText` / `MarkupText_IsExpired` | the markup text widget's text and its `<DISPLAYTIME>` / `<FREEZE>` end | confirmed (code) |
+| `0x0019ef80` / `0x0019f1b0` / `0x0019f528` | `ActionPrompt_Setup` / `_SetText` / `_Update` | the action prompts at HUD `+0x6b40` ([Action prompts](#action-prompts)) | confirmed (code) |
+| `0x001b3cb0` | `HUD_ShowAnnouncement(hud, kind)` | a built-in announcement in the widget at `+0xe340` | confirmed (code) |
 | `0x001ce9a8` | `Tutorial_CallCallback` | calls the `HUDSetTutorialCallback` function on each player-1 hit ([Tutorial callback](#tutorial-callback)) | confirmed (code) |
 | `0x001c8b08` / `0x001c9028` | `ScrollIn_Queue` / `ScrollIn_Update` | queued messages at HUD `+0x8dd0` | confirmed (code) |
 | `0x001dad88` | `HUD_SetObjective` | `HUDSetObjective` | confirmed (code) |
@@ -233,7 +239,7 @@ Set at every `HintBox_Update` (`0x001cdc80`), default mode, confirmed (code) and
 | `+0x40` | `0x80000000` | box colour, black at alpha 128 |
 | `+0x50`, `+0x54` | -0.018, -0.035 | box offset from the text's top-left |
 | `+0x60`, `+0x64` | 0.03, 0.035 | box size beyond the text's |
-| `+0x70`, `+0x74` | 4,000, 200 | ms (inferred: display time and fade) |
+| `+0x70`, `+0x74` | 4,000, 200 | written every update but **read by nothing found** (the box's functions read only `+0x00`-`+0x64` through its pointer `+0x3a4`); a hint's time comes from its markup ([Hints](#hints-hudsettutorialtext)) |
 
 The box is the text's rectangle grown by those amounts and drawn first; the text is placed so that its bottom is at
 `y` = 1.0 less the box's height. **Runtime check:** the box spans screen x 0.052-0.708 and y 0.812-0.923 (GUI x
@@ -247,16 +253,29 @@ The box is the text's rectangle grown by those amounts and drawn first; the text
 overlay pass ([Boot](boot.md)). Mode 0xb (mission complete) runs the overlay pass but not `HUD_Update`, so the HUD is
 drawn as it was left. Confirmed (code) at `0x0015d160`.
 
+**Not during a letterbox.** `HUD_Render` draws **nothing** (and turns both radars off) unless player 1's screen
+effects have the letterbox fully out: state `+0x1e8` = 0 and level `+0x1ec` = 0 ([Graphics](graphics.md#screen-effects)).
+So no HUD part, text or prompt shows while a cinematic scene's bars are in or moving, whatever `HideHud` says; the
+scene's subtitles are drawn by the caption system after the HUD ([Scenes: subtitles](scenes.md#subtitles)). Confirmed
+(code) at `0x001b1688`.
+
 **Render order** (`0x001b1688`), when the HUD is shown (`+0x177a0` = 1, set by `RestoreHud`): the radars and their
 frames, the instruction arrow and two other widgets, the counter panels, the bars of `HUDEnableBar`, each **player
-panel**, then per player the action prompt widgets, the announcement, the score boards, then the hint box and the
-scroll-in messages. When hidden (`HideHud`), only the player panels' hide is applied and the announcement widget still
-updates. The 2D pass sorts batches by depth afterwards ([GUI](gui.md#draw-order)), so this order matters only within
-one batch. Confirmed (code); the roles of the unnamed widgets are not traced.
+panel**, the announcement, per player the score boards and other panels, the centred custom announcement (`+0xe150`),
+then the scroll-in messages, the hint box, and last the **action prompts**. When hidden (`HideHud`), only the player
+panels' hide is applied (`0x001b2380`) and the centred custom announcement is still drawn when `+0x177a8` is set. The
+2D pass sorts batches by depth afterwards ([GUI](gui.md#draw-order)), so this order matters only within one batch.
+Confirmed (code); the roles of the unnamed widgets are not traced.
 
-**What hides what:** while an announcement (`HUDSetAnnounceMsg`, HUD `+0xe340`) or a mini-game panel is showing, the
-scroll-in messages and the hint box are hidden; while a scroll-in message shows, the hint box is hidden. Confirmed
-(code) at `0x001b1688`.
+**What hides what** (the bottom-left text), confirmed (code) at `0x001b1688`:
+
+| Showing | Hidden that frame |
+| --- | --- |
+| an announcement (`+0xe340`, until its markup time ends) or a mini-game panel | the scroll-in message, the hint box, the action prompts |
+| a scroll-in message (objective) | the hint box |
+
+Hidden parts are not paused: a hidden hint keeps its place and its timer runs on. The prompts are also not drawn in an
+Armies of the Night level (`0x0041d110`).
 
 ### The player panel
 
@@ -309,16 +328,63 @@ with command icons, `HUDShowWarCommand`). Confirmed (code) for the structure; th
 - **Mode 2:** two scroll-in messages, the header with the HUD string `0xe5`/`0xe6` and then the text; for slot 1 also
   `0x001b3cb0(hud, 2)` per player (not traced).
 
-**Scroll-in messages** (`ScrollInHUD.cpp`, HUD `+0x8dd0`): a queue; the front message is shown at its position with its
-text style (`0x0050ea50` one player, `0x0050ea4c` split), its y centred on the given y less `0x0050ea58`, and removed
-once its time has passed plus 500 ms. Confirmed (code) at `0x001c9028`.
+**Scroll-in messages** (`ScrollInHUD.cpp`, HUD `+0x8dd0`): a **first-in, first-out** queue with no priorities
+(`ScrollIn_Queue` appends at the tail; nothing is queued when its pool `+0x548` has no free entry, and a message equal
+to the one showing, header and text compared as strings, is dropped). The front message is shown at its position with
+its wrap width (`0x0050ea50` one player, `0x0050ea4c` split), its y centred on the given y less `0x0050ea58`, and
+removed once game time (`GameTimer +0x48`, so not while frozen) is past its start plus its `ms` plus 500 ms; the next
+one starts on the following update. Confirmed (code) at `0x001c8b08`, `0x001c9028`.
 
-### Hints (`HUDSetTutorialText`)
+### Hints (`HUDSetTutorialText`) {#hints-hudsettutorialtext}
 
-The hint box (`TutorialHUD.cpp`, HUD `+0x8a10`) shows one queued hint at a time ([HUDSetTutorialText](../references/bindings/hud.md#hudsettutorialtext)):
-when it is free it takes the next hint, sets the text with the style `0x0050ebd8` (one player) or `0x0050ebd0`, plays
-interface cue `0x15`, and lays out the box ([layout](#hint-box-layout-0x0050eb50)). It is hidden while a scroll-in
-message or an announcement shows. Confirmed (code) at `0x001cdc80`, `0x001b1688`; seen at runtime.
+The hint box (`TutorialHUD.cpp`, HUD `+0x8a10`, constructor `0x001cd8e0`, set-up `0x001cd988`) is a markup text widget
+([GUI](gui.md#widget-classes)) over a box sprite (`part_page0` rectangle 78, depth 11,000). It shows **one hint at a
+time** from a queue ([HUDSetTutorialText](../references/bindings/hud.md#hudsettutorialtext)). Confirmed (code) at the
+functions named:
+
+- **Queue.** A pool of **20** entries `{text, priority}` (box `+0x1f0`, free list `+0x294`); the queue (`+0x290`) is
+  kept **sorted by priority, lowest number first, first-in first-out within a priority** (`HintBox_InsertByPriority`
+  inserts before the first entry with a higher number). When the pool is empty a new hint is dropped. The text is
+  kept by pointer, not copied.
+- **Queueing** (`HintBox_Queue(box, text, priority)`, `0x001ce3c0`): a nil text clears the showing hint unless the game
+  is paused. Otherwise the hint is inserted; if a hint is showing and the new priority is **lower** (more urgent), the
+  showing hint is put back in the queue with its own priority and cleared, so the new one shows on the next update and
+  the old one **starts again from the beginning** later. Equal or higher numbers wait.
+- **Taking the next** (`HintBox_Update`, `0x001cdc80`, each HUD update and also during a freeze, from `GameTimer_Update`
+  `0x00145a10`): when no hint shows, the front of the queue becomes the text (`MarkupText_SetText`), its priority goes
+  to `+0x3ac`, interface cue `0x15` plays, and the box is laid out ([layout](#hint-box-layout-0x0050eb50)).
+- **How long a hint stays** comes **only from its markup** (`MarkupText_IsExpired`, `0x001bb2f0`; when it returns true
+  the text is cleared, vtable `+0x6c` = `0x001b9290`, and the next update takes the next hint):
+    - `<DISPLAYTIME ms>`: gone `ms` after it was first laid out, timed on the clock at `0x0050b8b8` (inferred: the
+      real clock, as it also times the caption fades during a freeze); in its last 1,000 ms its alpha falls as
+      remaining × 0.255 ([GUI markup](gui.md#markup)), and the box's alpha follows (`0x001ce8b8`: 125 × the text's
+      alpha / 255);
+    - `<FREEZE ms>`: the game is paused for at least 2,000 ms and until `ms` has passed, or cross is released after the
+      2,000 ms ([Boot](boot.md#timers)); the hint goes when the game runs again. A last line containing `press` and
+      `to continue` is not drawn for the first 2,000 ms and then fades in over 334 ms (`0x001b9600`; matched in
+      English only, inferred);
+    - **neither tag: it stays** until it is flushed, withdrawn or interrupted by a more urgent hint.
+
+  Disc check (counts only): of the hint strings, `config_strings_en.lua` has 7 `<DISPLAYTIME>` tags and `level99.lua` 8
+  (2,500-8,000 ms); neither uses `<FREEZE>`, so most hints stay until the script removes them.
+- **Removing:** `HUDFlushTutorialText(p)` (`HintBox_FlushPriority`, `0x001ce748`) removes every queued hint of priority
+  `p`, and the showing one when its priority is `p`; 4 removes all. `HintBox_Withdraw(box, text)` (`0x001ce5c0`)
+  removes one hint by its text pointer (the showing one only when the game is not paused). `HUDCheckTutorialText`
+  (`HintBox_Contains`, `0x001ce550`) is true while the text is showing or queued.
+- **Style:** text colour `0x005fd310` (178, 178, 178, 255) ([GUI](gui.md#colour-table)), markup lines `<CR2>` and
+  `<CRM>` enabled; the widget's `+0x1d4` is 0.74 with one player and 0.52 split, or the number after a leading
+  `<AUTOINDENT` tag (`0x001bb390`). Read at runtime (PCSX2 2.9.94, copies of quick-save slots 3-8, `level99`): a
+  priority-3 hint showing with no end time (`+0x170` = -1), `+0x1d4` 0.74, box height (`+0x3b0`) 0.124.
+- **The game's own hints.** `CfgTutorialMessage(id, text)` (`0x001cd888`) fills a table at `0x00622fd0`;
+  `HintBox_QueueGameHint(box, id)` (`0x001ce1e8`) queues entry `id` at **priority 2**, and `HintBox_WithdrawGameHint`
+  removes it. 19 functions queue them (human, brain, radar and objective code, for example hint `0x15` from
+  `HUDSetObjective` above and hint 6 from `Humans_Update`); the two read show each hint once, behind a game-state flag
+  and the tutorial switch `W_GameState + 0x56e2` (`HUDEnableGameTutorialText`). Which event raises which id is not
+  catalogued.
+- **Action-object hints** go in at **priority 0**, the most urgent ([Action prompts](#action-prompts)).
+
+The box is hidden while a scroll-in message, an announcement or a mini-game panel shows ([What hides
+what](#the-huds-frame)); it is drawn by `0x001ce8b8` and hidden by `0x001bb2b0`.
 
 ### The tutorial callback (`HUDSetTutorialCallback`) {#tutorial-callback}
 
@@ -341,13 +407,50 @@ the combat tutorial's **"player 1 hit someone"** hook. Confirmed (code):
 
 ### Announcements and other messages
 
-- **`HUDSetAnnounceMsg`** (widget HUD `+0xe340`): at **(0.02, 0.90)** with one player, (0.22, 0.90) with two
-  (`0x0050d4a0`, `0x0050d4a4`, `0x0050d4a8`). Confirmed (code) at `0x001af010`.
-- A centred text at (0.5, 0.25) (HUD `+0xe150`, `0x0050d470`), not traced.
+- **`HUDSetAnnounceMsg(kind, text, flag)`** (`0x001b5b08`): kind **5** sets `text` in the **centred** widget (HUD
+  `+0xe150`) at **(0.5, 0.25)** (`0x0050d470`; 0.35 in one other mode); any other kind shows the built-in message
+  `kind` of the `CfgAnnounceMessage` table (`0x00622e20`) in the widget at HUD `+0xe340` (`HUD_ShowAnnouncement`,
+  `0x001b3cb0`, which also looks up interface cue `0x14` into `+0xe4d4`), at **(0.02, 0.90)** with one player, (0.22,
+  0.90) with two (`0x0050d4a0`, `0x0050d4a4`, `0x0050d4a8`). Each call **replaces** the text at once: there is no
+  announcement queue. An announcement lasts as its markup says (`<DISPLAYTIME>`): `HUD_Render` clears `+0xe344` when
+  `MarkupText_IsExpired` says so; without the tag it stays until replaced. While the `+0xe340` one shows it hides the
+  bottom-left texts ([What hides what](#the-huds-frame)); the centred one hides nothing. `flag` goes to
+  `0x00617fe8`. Confirmed (code) at `0x001b5b08`, `0x001b3cb0`, `0x001af010`, `0x001b1688`.
 - **Counter panels** (`HUDGetNewPH`, five at HUD `+0xacb0`): rows at x 0.96 (`0x0050d510`), y 0.26 + 0.08 × row
   (`0x0050d518`, `0x0050d520`), filled from the top with the visible panels. Confirmed (code) at `0x001af010`.
-- **Action prompts** (two per player, HUD `+0x6b40`, `0x590` bytes each): the context text of what the player can do
-  (`0x0019f1b0`), raised by 0.02 (`0x0050d504`). Positions not traced.
+
+### Action prompts {#action-prompts}
+
+The "what can I do here" text at the bottom of the screen: **one prompt per player** (HUD `+0x6b40` and `+0x70d0`,
+`0x590` bytes each), a scroll-in text widget (base `0x001e6e98`, vtable `0x00539270`) plus an optional two-frame
+icon sprite at `+0x480`. Confirmed (code) unless marked:
+
+- **Set-up** (`ActionPrompt_Setup`, `0x0019ef80`, from the HUD's init `0x001adb60`): position x **0.5**, base y
+  `+0x464` = **0.86** (read at runtime; the code compares it with 0.86, 0.78, 1.0 and 0.8 for the other modes), size
+  0.06, colour **(128, 128, 128, 255)**, font slot 3 (`part_page0`), not visible; `+0x468` the player.
+- **Place** (`ActionPrompt_Update`, `0x0019f528`): one player: x 0.5, centred; y = base + the raise `+0x46c`. Two
+  players: x 0.33 or 0.66 (`0x0050cfcc` / `0x0050cfd0`, 0.25 / 0.74 in 16:9).
+- **The raise** (`ActionPrompt_SetRaise`, `0x0019f430`, each HUD update) keeps the prompt clear of the texts below it:
+  while the hint box shows (box `+0x3a8` set and no scroll-in), raise = 0.05 (`0x0050d500`) − the box's height (`+0x3b0`);
+  otherwise −0.02 (`0x0050d504`) − the showing scroll-in's height (scroll-in `+0x578`, 0 when none). A prompt of more
+  than one line moves up a further 0.025 (`0x0050cfb4`) × its height in lines. **Runtime check** (PCSX2 2.9.94, quick
+  save slot copies, `level99`): with a hint box 0.124 high the raise was −0.0738 = 0.05 − 0.124.
+- **Its text** is chosen each update by `HUD_Update` for each player who is free to act (not in a scene, a paired
+  move, a mini-game, a car or several other states, `0x001af010`), in this order: when `0x00225ff0` holds and the
+  human's `+0xc4` handle resolves (inferred: something held), HUD string 1 or 0 by that object's `+0x5a0`; when
+  `0x00279078` finds a human and the game state's check `0x0041e420(…, 1)` is at least 1 for either, string 4
+  (neither traced further); the **action object** in reach (`0x00240888`): its prompt `+0x10`, and its hint `+0x14` is
+  queued in the hint box **at priority 0** once (remembered at HUD `+0x177bc` per player, withdrawn by `0x001b3e20`
+  when the object or its hint changes or none is in reach); else a talkable human within 1.5 m whose brain state is 0
+  or 3 (`ActionPrompt_FindNearbyHuman`, `0x001acd60`): the HUD string its interface names (ids 1-388), its own text,
+  or string 9. The strings are `GSTRING.HUD` entries ([Strings](gui.md#strings)).
+- **Showing:** no text hides the prompt (`0x001b2490`); a new or changed text restarts it (`ActionPrompt_SetText`,
+  `0x0019f1b0`; a text that parses as a number goes through `0x0019f128`). A prompt naming `Spray`, `Flash`, `Blades`
+  or `Give Mon...` also wakes the player panel ([Activity](#the-player-panel)). With the cycle animation on
+  (`HUDTurnOnActionCycleAnim`, `+0x45c`) the icon alternates between two sprite words (`+0x440`/`+0x444`) at the rate
+  `+0x448` (`0x0019f328`).
+- **Drawn last** in the HUD, and not while an announcement or a mini-game panel shows ([The HUD's
+  frame](#the-huds-frame)).
 
 ### The instruction arrow (`HUDEnableInstArrow`)
 
@@ -401,9 +504,11 @@ None yet.
 
 - Which character each name-banner sheet (records `0x1f`-`0x32`) names, beyond Rembrandt (`0x2f`).
 - The handcuff and key counters' icon rectangles, and the counters' exact text offsets.
-- The action prompts' positions and text style; when a prompt shows.
-- Who sets HUD `+0x177ac` (the radar's automatic return) and `+0x177a8`.
+- The action prompts' text alignment and icon sprite; what `0x00225ff0`, `0x00279078` and the many "free to act"
+  checks of `0x001af010` test; a runtime look at a shown prompt.
+- Which event raises each of the game's own hints (the 19 callers of `HintBox_QueueGameHint`).
+- What the input object at HUD `+0x18e60` is, whose message 1 shows the next caption (`0x001cb340`).
+- Who sets HUD `+0x177ac` (the radar's automatic return) and `+0x177a8` (the centred announcement while hidden).
 - The radar disc's size formula (the camera slot `+0xc4` value) and the map texture it draws.
-- The hint box's `+0x70` / `+0x74` (4,000 and 200 ms): display time and fade, or something else.
 - Human state flag `0x200000`, which turns the banner blue-grey.
 - The layouts of the other video modes (16:9, progressive, PAL) that `0x00211ef8`, `0x001af010` and `0x001cdc80` apply.

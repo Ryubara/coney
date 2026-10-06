@@ -62,13 +62,17 @@
     - {name: text, lua: string, desc: "The text to show when `kind` is 5 (scripts pass a string from the level's string table, or GSTRING.CHEAT)."}
     - {name: flag, lua: boolean, desc: "Stored in a HUD global (0x00617fe8) that the announcement display reads; the Armies of the Night levels pass true. Meaning not traced."}
   description: >-
-    Shows a centre-screen announcement: the custom text for kind 5, or one of the built-in announcement messages (with
-    its sound cue) for the other kinds. global.lua uses it to announce an entered cheat.
+    Shows an announcement: the custom text for kind 5 centred at GUI (0.5, 0.25), or one of the built-in announcement
+    messages at the bottom left (0.02, 0.90) for the other kinds. Each call replaces the text at once (no queue).
+    global.lua uses it to announce an entered cheat.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Kind 5 goes to a separate text widget (0x0060e990); the other kinds restart the HUD manager's announcement widget
-    (+0xe340) and start a sound (id 0x14).
+    Kind 5 goes to a separate text widget (0x0060e990, HUD +0xe150); the other kinds restart the HUD manager's
+    announcement widget (+0xe340) through 0x001b3cb0, which also looks up interface cue 0x14. An announcement lasts as
+    its own <DISPLAYTIME> markup says, else until replaced; while the +0xe340 one shows, the objective message, the hint
+    box and the action prompts are hidden. Details: [The in-game
+    HUD](../../research/hud.md#announcements-and-other-messages).
   usage: {chunks: 17, calls: 50, boot: true, mission1: true, result_used: false}
 
 - name: HUDSetANBossTexture
@@ -438,14 +442,16 @@
     - {addr: 0x001b4980, name: Tutorial_QueueText}
   args:
     - {name: text, lua: string, desc: "The hint text to show; nil clears the current hint when the game is not paused."}
-    - {name: priority, lua: number, ctype: unsigned, default: 1, desc: "Priority 1-3 (default 1): a hint with a lower number than the one showing interrupts it; others wait in the queue."}
+    - {name: priority, lua: number, ctype: unsigned, default: 1, desc: "Priority (default 1; the game's own hints use 2, action-object hints 0): lower numbers show first; a hint with a lower number than the one showing interrupts it, which goes back in the queue and restarts later; equal numbers wait in order."}
   description: >-
     Queues a tutorial hint in the hint box (the text panel used by the tutorial and for gameplay tips).
   evidence: confirmed-code
   depth: thorough
   notes: >-
     The hint box is the object at 0x00609250: black at alpha 128 at the bottom left, text at GUI x 0.016, interface
-    sound cue 0x15 for each new hint; hidden while an objective message or an announcement shows. Layout:
+    sound cue 0x15 for each new hint; hidden while an objective message or an announcement shows. At most 20 hints are
+    held (more are dropped) and the text is kept by pointer. A hint stays until its own <DISPLAYTIME ms> or <FREEZE ms>
+    markup ends it, or until it is flushed, withdrawn or interrupted; without either tag it stays. Queue and timing:
     [The in-game HUD](../../research/hud.md#hints-hudsettutorialtext).
   usage: {chunks: 53, calls: 244, boot: true, mission1: true, result_used: false}
 

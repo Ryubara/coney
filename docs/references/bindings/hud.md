@@ -919,11 +919,14 @@ HUDSetAnnounceMsg(kind, text, flag)
 
 **Returns** nothing.
 
-Shows a centre-screen announcement: the custom text for kind 5, or one of the built-in announcement messages (with its
-sound cue) for the other kinds. global.lua uses it to announce an entered cheat.
+Shows an announcement: the custom text for kind 5 centred at GUI (0.5, 0.25), or one of the built-in announcement
+messages at the bottom left (0.02, 0.90) for the other kinds. Each call replaces the text at once (no queue). global.lua
+uses it to announce an entered cheat.
 
-**Notes.** Kind 5 goes to a separate text widget (0x0060e990); the other kinds restart the HUD manager's announcement
-widget (+0xe340) and start a sound (id 0x14).
+**Notes.** Kind 5 goes to a separate text widget (0x0060e990, HUD +0xe150); the other kinds restart the HUD manager's
+announcement widget (+0xe340) through 0x001b3cb0, which also looks up interface cue 0x14. An announcement lasts as its
+own <DISPLAYTIME> markup says, else until replaced; while the +0xe340 one shows, the objective message, the hint box and
+the action prompts are hidden. Details: [The in-game HUD](../../research/hud.md#announcements-and-other-messages).
 
 - **Evidence:** confirmed (code) at `0x001b5b08`; detail: traced
 - **Wrapper** `0x0036e858` (registered by `RegisterBindings`); **calls** `0x001b5b08` `HUD_SetAnnounceMessage`
@@ -1359,14 +1362,16 @@ HUDSetTutorialText(text, priority)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `text` | string | The hint text to show; nil clears the current hint when the game is not paused. |
-| 2 | `priority` | number, truncated to an unsigned integer; default 1 | Priority 1-3 (default 1): a hint with a lower number than the one showing interrupts it; others wait in the queue. |
+| 2 | `priority` | number, truncated to an unsigned integer; default 1 | Priority (default 1; the game's own hints use 2, action-object hints 0): lower numbers show first; a hint with a lower number than the one showing interrupts it, which goes back in the queue and restarts later; equal numbers wait in order. |
 
 **Returns** nothing.
 
 Queues a tutorial hint in the hint box (the text panel used by the tutorial and for gameplay tips).
 
 **Notes.** The hint box is the object at 0x00609250: black at alpha 128 at the bottom left, text at GUI x 0.016,
-interface sound cue 0x15 for each new hint; hidden while an objective message or an announcement shows. Layout: [The
+interface sound cue 0x15 for each new hint; hidden while an objective message or an announcement shows. At most 20 hints
+are held (more are dropped) and the text is kept by pointer. A hint stays until its own <DISPLAYTIME ms> or <FREEZE ms>
+markup ends it, or until it is flushed, withdrawn or interrupted; without either tag it stays. Queue and timing: [The
 in-game HUD](../../research/hud.md#hints-hudsettutorialtext).
 
 - **Evidence:** confirmed (code) at `0x001b4980`; detail: traced
