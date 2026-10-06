@@ -14,7 +14,7 @@
     Sets a camera's near and far clip distances; levels use it to set their draw distance.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 19, calls: 23, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 19, calls: 23, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 2, 81, 86, 93, 14, 9, 51, 52]}
 
 - name: CameraMakeActive
   wrapper: 0x003656a0
@@ -33,7 +33,7 @@
     scene returns to instead. See [Camera](../../research/camera.md#blends).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 193, calls: 629, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 193, calls: 629, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: CameraGetActive
@@ -48,7 +48,7 @@
     Returns a player's current camera.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: true, levels: [87, 86, 54]}
 
 - name: CamDelete
   wrapper: 0x00365818
@@ -60,7 +60,7 @@
     Deletes a fixed or locked camera; the shared camera kinds (follow, rail, hood and the others) are kept.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 57, calls: 90, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 57, calls: 90, boot: false, mission1: false, result_used: true, levels: [87, 95, 2, 3, 5, 81, 93, 9, 51, 54, 84, 92, 11]}
 
 - name: CamGetPos
   wrapper: 0x00365850
@@ -74,7 +74,7 @@
     Returns a camera's world position.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [87, 54]}
 
 - name: CameraTransform
   wrapper: 0x003658c0
@@ -115,7 +115,7 @@
     return to it ([Camera](../../research/camera.md#setting-up)).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 167, calls: 310, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 167, calls: 310, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: CamSetupFollow
@@ -132,7 +132,7 @@
     global.lua's CameraCreateFollow. See [Camera](../../research/camera.md#setting-up).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: CamTarget
@@ -151,7 +151,7 @@
     and re-adding him (level99_lesson1) changes nothing ([Camera](../../research/camera.md#script-calls)).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 42, calls: 214, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 42, calls: 214, boot: false, mission1: true, result_used: false, levels: [5, 81, 55, 84, 82, 11]}
   coney: implemented
 
 - name: CamSetFollowHeading
@@ -165,7 +165,7 @@
     with it).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 68, calls: 85, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 68, calls: 85, boot: false, mission1: false, result_used: false, levels: [80, 87, 5, 81, 93, 51, 52, 55, 82, 92, 83, 20, 11]}
 
 - name: CamSetFollowAngle
   wrapper: 0x00365bb8
@@ -179,7 +179,7 @@
     degrees ([Camera](../../research/camera.md#script-calls)).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 76, calls: 94, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 76, calls: 94, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 93, 51, 52, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: CamSetFollowZoom
@@ -198,7 +198,7 @@
   notes: >-
     Confirmed (runtime): level99 checkpoint 1 reads band 3.0-3.5, zoom step 4.8, limit 30; after CamSetFollowZoom(1)
     at checkpoint 2, 4.8-5.3, 6.6, 40.
-  usage: {chunks: 13, calls: 17, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 13, calls: 17, boot: false, mission1: true, result_used: false, levels: [80, 95, 81, 93, 9, 54, 55, 92, 83]}
   coney: implemented
 
 - name: CamSetFollowPos
@@ -212,7 +212,7 @@
     Puts a player's follow camera at a world position at once (used at checkpoints).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 12, calls: 17, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 12, calls: 17, boot: false, mission1: false, result_used: false, levels: [87, 5, 9, 51, 52, 54, 11]}
 
 - name: CameraCreateLocked
   wrapper: 0x00365d38
@@ -237,7 +237,7 @@
   notes: >-
     Argument order checked against the callee's slots: fov through slot +0x194, the three angles stored at +0x200,
     near slot +0x1a4, far slot +0x1ac.
-  usage: {chunks: 86, calls: 360, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 86, calls: 360, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: CameraCreateThird
@@ -260,7 +260,7 @@
     Creates a third-person camera that follows a target from a set distance and height.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true, levels: [3, 81]}
 
 - name: CameraCreateFixed
   wrapper: 0x00366140
@@ -280,7 +280,7 @@
     Creates a fixed camera: it stays at one position and turns to keep a target in view.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 9, calls: 12, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 9, calls: 12, boot: false, mission1: false, result_used: true, levels: [3, 81, 51, 52, 54, 55, 84]}
 
 - name: CameraCreateWin
   wrapper: 0x00366360
@@ -325,7 +325,7 @@
     Sets up a player's rail camera: it slides along a path of points (CamAddRailPoint) while watching the target.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 27, calls: 48, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 27, calls: 48, boot: false, mission1: false, result_used: true, levels: [2, 3, 5, 81, 86, 93, 9, 51, 54, 55, 84, 82, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: CamLeadRail
   wrapper: 0x003666e8
@@ -340,7 +340,7 @@
     Sets how a rail camera leads its target along the rail.
   evidence: inferred
   depth: brief
-  usage: {chunks: 9, calls: 15, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 9, calls: 15, boot: false, mission1: false, result_used: false, levels: [2, 81, 9, 51, 54, 84]}
 
 - name: CamAddRailPoint
   wrapper: 0x003667a0
@@ -355,7 +355,7 @@
     Appends a point to a rail camera's path.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 27, calls: 132, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 27, calls: 132, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 9, 51, 54, 55, 84, 82, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: CamLockRail
   wrapper: 0x00366880
@@ -368,7 +368,7 @@
     Locks or releases a rail camera.
   evidence: inferred
   depth: brief
-  usage: {chunks: 15, calls: 118, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 15, calls: 118, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: CamModifyRail
   wrapper: 0x003668e8
@@ -383,7 +383,7 @@
     Changes one of a rail camera's settings, optionally over time.
   evidence: inferred
   depth: brief
-  usage: {chunks: 26, calls: 132, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 26, calls: 132, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 51, 54, 84, 82, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: CamSetupHood
   wrapper: 0x003669b0
@@ -403,7 +403,7 @@
     Sets up the camera mounted on a vehicle (the bus and car chases), for every player.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: true, levels: [51, 84]}
 
 - name: CamUseDeathCamera
   wrapper: 0x00366bd8
@@ -437,7 +437,7 @@
     CamAddPoizoPoint.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: true, levels: [87, 3, 14, 9, 55, 83]}
 
 - name: CamReversePoizo
   wrapper: 0x00366dd0
@@ -451,7 +451,7 @@
     Plays the scripted camera path backwards.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [14]}
 
 - name: CamAddPoizoPoint
   wrapper: 0x00366e18
@@ -470,7 +470,7 @@
     Adds a point to the scripted camera path.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 6, calls: 10, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 10, boot: false, mission1: false, result_used: false, levels: [87, 3, 14, 9, 55, 83]}
 
 - name: CamAddPoizoPointCam
   wrapper: 0x00366f90
@@ -486,7 +486,7 @@
     Adds a point to the scripted camera path taken from an existing camera.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [87]}
 
 - name: CamLockLocked
   wrapper: 0x00367030
@@ -500,7 +500,7 @@
     Adds or removes a human from the humans a locked camera tracks.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false, levels: [87]}
 
 - name: CamSetSecondary
   wrapper: 0x003670c0
@@ -520,7 +520,7 @@
   notes: >-
     Stores the target at follow camera +0x320 and the range at +0x3fc (0 for NilHandle), and the target in the
     player's mugging camera (type 7) too.
-  usage: {chunks: 7, calls: 26, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 7, calls: 26, boot: false, mission1: true, result_used: false, levels: [2, 3, 31, 55]}
   coney: implemented
 
 - name: CamCanSee
@@ -536,7 +536,7 @@
     Tests whether an object is in view of a player's camera (used to spawn enemies out of sight).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 19, calls: 179, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 19, calls: 179, boot: false, mission1: false, result_used: true, levels: [93, 9, 54, 84, 82, 60, 61, 62, 63, 64]}
 
 - name: CamEnable
   wrapper: 0x003671e0
@@ -553,7 +553,7 @@
   notes: >-
     Flags: 0 → 0x0050b1b8[player], 1 → 0x0050b1cc, 3 → 0x0050b1c0, 4 → 0x0050b1c8, 6 → 0x0050b1d0, 7 → 0x0050b2ac, 8 →
     0x0050b2b0, 9 → 0x0050b1d4, 10 → 0x0050b248, 11 → 0x0050b23c, 12 → 0x0050b2b4, 13 → 0x0050b1e0.
-  usage: {chunks: 85, calls: 405, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 85, calls: 405, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 2, 3, 5, 81, 86, 93, 31, 9, 51, 54, 55, 84, 82, 83, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: CamSetSplitMode
@@ -652,4 +652,4 @@
     Sets render flag 0x200 on both parts of a door, inferred to let the camera see through it.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [31, 54]}

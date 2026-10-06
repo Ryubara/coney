@@ -28,7 +28,7 @@
   depth: brief
   notes: >-
     What reads the bytes is not traced; the 'level details' reading is speculative.
-  usage: {chunks: 18, calls: 26, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 18, calls: 26, boot: false, mission1: false, result_used: false, levels: [80, 95, 34, 3, 93, 51, 84, 82, 60, 61, 62, 63, 64]}
 
 - name: clearDetailFlag
   wrapper: 0x0036c698
@@ -41,7 +41,7 @@
     Clears bits in a detail-flag byte (the reverse of setDetailFlag).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false, levels: [80, 95, 34, 3, 51, 82]}
 
 - name: CapturePVSSamplePoint
   wrapper: 0x0036c868
@@ -67,4 +67,4 @@
     bytes, presumably a checksum of the level's door data in development builds.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 62, calls: 62, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 62, calls: 62, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}

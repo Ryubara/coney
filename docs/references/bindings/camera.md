@@ -73,6 +73,7 @@ Adds a point to the scripted camera path.
 - **Evidence:** confirmed (code) at `0x0011cbb0`; detail: brief
 - **Wrapper** `0x00366e18` (registered by `RegisterBindings`); **calls** `0x0011cbb0`
 - **Used by** 6 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CamAddPoizoPointCam {#camaddpoizopointcam}
@@ -94,6 +95,7 @@ Adds a point to the scripted camera path taken from an existing camera.
 - **Evidence:** confirmed (code) at `0x0011cc68`; detail: brief
 - **Wrapper** `0x00366f90` (registered by `RegisterBindings`); **calls** `0x0011cc68`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CamAddRailPoint {#camaddrailpoint}
@@ -114,6 +116,7 @@ Appends a point to a rail camera's path.
 - **Evidence:** confirmed (code) at `0x0011d098`; detail: brief
 - **Wrapper** `0x003667a0` (registered by `RegisterBindings`); **calls** `0x0011d098`
 - **Used by** 27 of 467 script chunks (132 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 19 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## CamAssignRevCamButton {#camassignrevcambutton}
@@ -154,6 +157,7 @@ Tests whether an object is in view of a player's camera (used to spawn enemies o
 - **Evidence:** confirmed (code) at `0x0011dd78`; detail: brief
 - **Wrapper** `0x00367160` (registered by `RegisterBindings`); **calls** `0x0011dd78`
 - **Used by** 19 of 467 script chunks (179 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 10 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## CamDelete {#camdelete}
@@ -173,6 +177,7 @@ Deletes a fixed or locked camera; the shared camera kinds (follow, rail, hood an
 - **Evidence:** confirmed (code) at `0x0011b888`; detail: brief
 - **Wrapper** `0x00365818` (registered by `RegisterBindings`); **calls** `0x0011b888`
 - **Used by** 57 of 467 script chunks (90 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 13 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CamEnable {#camenable}
@@ -197,6 +202,7 @@ Turns one of the camera system's switches on or off. The scripts use 0, 3, 4, 7 
 - **Evidence:** confirmed (code) at `0x0011de58`; detail: traced
 - **Wrapper** `0x003671e0` (registered by `RegisterBindings`); **calls** `0x0011de58` `Camera_EnableFeature`
 - **Used by** 85 of 467 script chunks (405 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## CameraCreateFixed {#cameracreatefixed}
@@ -222,6 +228,7 @@ Creates a fixed camera: it stays at one position and turns to keep a target in v
 - **Evidence:** confirmed (code) at `0x0011c6b8`; detail: brief
 - **Wrapper** `0x00366140` (registered by `RegisterBindings`); **calls** `0x0011c6b8`
 - **Used by** 9 of 467 script chunks (12 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 7 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## CameraCreateLocked {#cameracreatelocked}
@@ -252,6 +259,7 @@ level99's tutorial cut-aways are nine more ([Camera](../../research/camera.md#lo
 - **Evidence:** confirmed (code) at `0x0011bc48`; detail: traced
 - **Wrapper** `0x00365d38` (registered by `RegisterBindings`); **calls** `0x0011bc48` `Camera_CreateLocked`
 - **Used by** 86 of 467 script chunks (360 references); boot to menu: yes; mission 1: yes; result used: yes
+- **Later in the story:** 27 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## CameraCreateThird {#cameracreatethird}
@@ -279,6 +287,7 @@ Creates a third-person camera that follows a target from a set distance and heig
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00365f28` (registered by `RegisterBindings`); **calls** `0x0011be18`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## CameraCreateWin {#cameracreatewin}
@@ -328,6 +337,7 @@ Returns a player's current camera.
 - **Evidence:** confirmed (code) at `0x0011b838`; detail: brief
 - **Wrapper** `0x003657a0` (registered by `RegisterBindings`); **calls** `0x0011b838`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CameraMakeActive {#cameramakeactive}
@@ -354,6 +364,7 @@ to instead. See [Camera](../../research/camera.md#blends).
 - **Evidence:** confirmed (code) at `0x0011b770`; detail: traced
 - **Wrapper** `0x003656a0` (registered by `RegisterBindings`); **calls** `0x0011b770` `Camera_MakeActiveByHandle`
 - **Used by** 193 of 467 script chunks (629 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## CameraReset {#camerareset}
@@ -376,6 +387,7 @@ moved; the other player's follow camera is reset too. level99 resets its follow 
 - **Evidence:** confirmed (code) at `0x0011bad8`; detail: traced
 - **Wrapper** `0x00365a10` (registered by `RegisterBindings`); **calls** `0x0011bad8` `Camera_ResetByHandle`
 - **Used by** 167 of 467 script chunks (310 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## CameraSetClipping {#camerasetclipping}
@@ -397,6 +409,7 @@ Sets a camera's near and far clip distances; levels use it to set their draw dis
 - **Evidence:** confirmed (code) at `0x0011bb98`; detail: brief
 - **Wrapper** `0x00365600` (registered by `RegisterBindings`); **calls** `0x0011bb98`
 - **Used by** 19 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 11 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## CameraTransform {#cameratransform}
@@ -474,6 +487,7 @@ Returns a camera's world position.
 - **Evidence:** confirmed (code) at `0x0011b920`; detail: brief
 - **Wrapper** `0x00365850` (registered by `RegisterBindings`); **calls** `0x0011b920`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 2 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CamGhostDoor {#camghostdoor}
@@ -493,6 +507,7 @@ Sets render flag 0x200 on both parts of a door, inferred to let the camera see t
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00379be8` (registered by `RegisterBindings`); **calls** `0x003973a0`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
 
 ## CamLeadRail {#camleadrail}
@@ -515,6 +530,7 @@ Sets how a rail camera leads its target along the rail.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003666e8` (registered by `RegisterBindings`); **calls** `0x0011cf70`
 - **Used by** 9 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## CamLockLocked {#camlocklocked}
@@ -536,6 +552,7 @@ Adds or removes a human from the humans a locked camera tracks.
 - **Evidence:** confirmed (code) at `0x0011bdc0`; detail: brief
 - **Wrapper** `0x00367030` (registered by `RegisterBindings`); **calls** `0x0011bdc0`
 - **Used by** 1 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CamLockRail {#camlockrail}
@@ -556,6 +573,7 @@ Locks or releases a rail camera.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00366880` (registered by `RegisterBindings`); **calls** `0x0011d180`
 - **Used by** 15 of 467 script chunks (118 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## CamModifyRail {#cammodifyrail}
@@ -578,6 +596,7 @@ Changes one of a rail camera's settings, optionally over time.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003668e8` (registered by `RegisterBindings`); **calls** `0x0011d228`
 - **Used by** 26 of 467 script chunks (132 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 17 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## CamRegisterObject {#camregisterobject}
@@ -618,6 +637,7 @@ Plays the scripted camera path backwards.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00366dd0` (registered by `RegisterBindings`); **calls** `0x0011cb70`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** not implemented
 
 ## CamSetFollowAngle {#camsetfollowangle}
@@ -639,6 +659,7 @@ lasts until the next CameraReset or CfgFollowCamera. level99's -10 clamps to the
 - **Evidence:** confirmed (code) at `0x0011c3b8`; detail: traced
 - **Wrapper** `0x00365bb8` (registered by `RegisterBindings`); **calls** `0x0011c3b8` `Camera_SetFollowPitch`
 - **Used by** 76 of 467 script chunks (94 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 16 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## CamSetFollowHeading {#camsetfollowheading}
@@ -659,6 +680,7 @@ it).
 - **Evidence:** confirmed (code) at `0x0011c2f0`; detail: brief
 - **Wrapper** `0x00365b80` (registered by `RegisterBindings`); **calls** `0x0011c2f0`
 - **Used by** 68 of 467 script chunks (85 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## CamSetFollowPos {#camsetfollowpos}
@@ -679,6 +701,7 @@ Puts a player's follow camera at a world position at once (used at checkpoints).
 - **Evidence:** confirmed (code) at `0x0011c638`; detail: brief
 - **Wrapper** `0x00365c60` (registered by `RegisterBindings`); **calls** `0x0011c638`
 - **Used by** 12 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 7 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CamSetFollowZoom {#camsetfollowzoom}
@@ -704,6 +727,7 @@ CamSetFollowZoom(1) at checkpoint 2, 4.8-5.3, 6.6, 40.
 - **Evidence:** confirmed (code) at `0x0011c470`; detail: traced
 - **Wrapper** `0x00365bf0` (registered by `RegisterBindings`); **calls** `0x0011c470` `Camera_SetFollowZoom`
 - **Used by** 13 of 467 script chunks (17 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 9 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## CamSetGameAspect {#camsetgameaspect}
@@ -788,6 +812,7 @@ player's mugging camera (type 7) too.
 - **Evidence:** confirmed (code) at `0x0011dcf0`; detail: traced
 - **Wrapper** `0x003670c0` (registered by `RegisterBindings`); **calls** `0x0011dcf0` `Camera_SetFollowSecondary`
 - **Used by** 7 of 467 script chunks (26 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** implemented
 
 ## CamSetSplitMode {#camsetsplitmode}
@@ -828,6 +853,7 @@ global.lua's CameraCreateFollow. See [Camera](../../research/camera.md#setting-u
 - **Evidence:** confirmed (code) at `0x0011bfa8`; detail: traced
 - **Wrapper** `0x00365a48` (registered by `RegisterBindings`); **calls** `0x0011bfa8` `Camera_SetupFollow`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: yes
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## CamSetupHood {#camsetuphood}
@@ -853,6 +879,7 @@ Sets up the camera mounted on a vehicle (the bus and car chases), for every play
 - **Evidence:** confirmed (code) at `0x0011d808`; detail: brief
 - **Wrapper** `0x003669b0` (registered by `RegisterBindings`); **calls** `0x0011d808`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 2 of 28 levels, first [`level51`](story.md#level51) (mission 14)
 - **Coney:** not implemented
 
 ## CamSetupPoizo {#camsetuppoizo}
@@ -877,6 +904,7 @@ Starts a scripted camera path (the `Poizo` camera) from an existing camera; poin
 - **Evidence:** confirmed (code) at `0x0011c9e0`; detail: brief
 - **Wrapper** `0x00366c80` (registered by `RegisterBindings`); **calls** `0x0011c9e0`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CamSetupRail {#camsetuprail}
@@ -902,6 +930,7 @@ Sets up a player's rail camera: it slides along a path of points (CamAddRailPoin
 - **Evidence:** confirmed (code) at `0x0011cce8`; detail: brief
 - **Wrapper** `0x00366518` (registered by `RegisterBindings`); **calls** `0x0011cce8`
 - **Used by** 27 of 467 script chunks (48 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 19 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## CamTarget {#camtarget}
@@ -926,6 +955,7 @@ the first two entries and keeps its last target when the list is empty, so with 
 - **Evidence:** confirmed (code) at `0x0011c270`; detail: traced
 - **Wrapper** `0x00365ad8` (registered by `RegisterBindings`); **calls** `0x0011c270` `Camera_TargetList`
 - **Used by** 42 of 467 script chunks (214 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** implemented
 
 ## CamUseDeathCamera {#camusedeathcamera}

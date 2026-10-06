@@ -150,6 +150,7 @@ records](../../research/crimes.md#context-records)).
 - **Evidence:** confirmed (code) at `0x00417af0`; detail: traced
 - **Wrapper** `0x0036c130` (registered by `RegisterBindings`); **calls** `0x00417af0` `Cfg_SetActionDistance`
 - **Used by** 6 of 467 script chunks (30 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## CfgAnimSpeeds {#cfganimspeeds}
@@ -346,6 +347,7 @@ per gang (0 to 70).
 - **Evidence:** confirmed (code) at `0x002947f0`; detail: traced
 - **Wrapper** `0x0035e258` (registered by `RegisterBindings`); **calls** `0x002947f0` `Cfg_SetBaseChanceToBlock`
 - **Used by** 16 of 467 script chunks (18 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## CfgBreakAndEnterDelay {#cfgbreakandenterdelay}
@@ -441,6 +443,7 @@ state block), presumably how long a human stays on fire.
 - **Evidence:** confirmed (code) at `0x0023a9a0`; detail: traced
 - **Wrapper** `0x0035a6b0` (registered by `RegisterBindings`); **calls** `0x0023a9a0` `Cfg_SetBurnTime`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
 
 ## CfgButtonHeldFrames {#cfgbuttonheldframes}
@@ -529,6 +532,7 @@ Stores the call-for-help chance (byte at 0x00510adf).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035e958` (registered by `RegisterBindings`); **calls** `0x00294888`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## CfgChar {#cfgchar}
@@ -619,6 +623,7 @@ Sets two civilian aggression percentages (how likely civilians fight back), stor
 - **Evidence:** confirmed (code) at `0x00294828`; detail: traced
 - **Wrapper** `0x0035e300` (registered by `RegisterBindings`); **calls** `0x00294828` `Cfg_SetCivilianAggression`
 - **Used by** 6 of 467 script chunks (11 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CfgClimbWithGhetto {#cfgclimbwithghetto}
@@ -754,6 +759,7 @@ set it.
 - **Evidence:** confirmed (code) at `0x0041d8a0`; detail: brief
 - **Wrapper** `0x0036be50` (registered by `RegisterBindings`); **calls** `0x0041d8a0`
 - **Used by** 10 of 467 script chunks (37 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CfgDamageEndurance {#cfgdamageendurance}
@@ -796,6 +802,7 @@ Sets the global flag 0x005148ac that tells the scene code to silence the level m
 - **Evidence:** confirmed (code) at `0x0041d930`; detail: traced
 - **Wrapper** `0x0035e530` (registered by `RegisterBindings`); **calls** `0x0041d930` `Cfg_SetDisableMusicForScenes`
 - **Used by** 21 of 467 script chunks (35 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## CfgDistances {#cfgdistances}
@@ -838,6 +845,7 @@ Enables or disables one crime type (byte at game state + 0x32b + crime).
 - **Evidence:** confirmed (code) at `0x0041da80`; detail: brief
 - **Wrapper** `0x0036bec8` (registered by `RegisterBindings`); **calls** `0x0041da80`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## CfgEnableDispatcher {#cfgenabledispatcher}
@@ -861,6 +869,7 @@ crime fields beside it.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035e418` (registered by `RegisterBindings`); **calls** `0x0041d8e0`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level9`](story.md#level9) (mission 13)
 - **Coney:** not implemented
 
 ## CfgEnableGrappleCounters {#cfgenablegrapplecounters}
@@ -880,6 +889,7 @@ Stores the grapple-counter switch (byte at game state +0x56e3).
 - **Evidence:** confirmed (code) at `0x0041da60`; detail: brief
 - **Wrapper** `0x0036c1d8` (registered by `RegisterBindings`); **calls** `0x0041da60`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CfgEnableTurfInvasion {#cfgenableturfinvasion}
@@ -899,6 +909,7 @@ Stores the turf-invasion switch (byte at game state +0x56e1).
 - **Evidence:** confirmed (code) at `0x0041da50`; detail: traced
 - **Wrapper** `0x0036c1a8` (registered by `RegisterBindings`); **calls** `0x0041da50` `Cfg_SetTurfInvasion`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## CfgExcludedVandalizeZone {#cfgexcludedvandalizezone}
@@ -920,6 +931,7 @@ Stores a 16-bit zone index (0x005148bc) excluded from vandalism (tagging, smashi
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035e598` (registered by `RegisterBindings`); **calls** `0x0041d978`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
 - **Coney:** not implemented
 
 ## CfgFollowCamera {#cfgfollowcamera}
@@ -949,6 +961,7 @@ global.lua's CameraCreateFollow and CameraNormal.
 - **Evidence:** confirmed (code) at `0x0011c0b8`; detail: traced
 - **Wrapper** `0x0036ab88` (registered by `RegisterBindings`); **calls** `0x0011c0b8` `Cam_ConfigureFollow`
 - **Used by** 13 of 467 script chunks (28 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## CfgGang {#cfggang}
@@ -1023,6 +1036,7 @@ Stores the enemy-count threshold for combat music (0x005148a8).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035e4f8` (registered by `RegisterBindings`); **calls** `0x0041d920`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CfgGearData {#cfggeardata}
@@ -1169,6 +1183,7 @@ Stores the per-human inventory callback name in the inventory block (0x0041e490)
 - **Evidence:** confirmed (code) at `0x0041ed10`; detail: brief
 - **Wrapper** `0x0036c068` (registered by `RegisterBindings`); **calls** `0x0041ed10`
 - **Used by** 12 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 9 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## CfgHuInventoryCallback2 {#cfghuinventorycallback2}
@@ -1207,7 +1222,8 @@ Stores the inventory pickup callback name (inventory +0xfd4). The tutorial uses 
 - **Evidence:** confirmed (code) at `0x0041ece8`; detail: traced
 - **Wrapper** `0x0036c038` (registered by `RegisterBindings`); **calls** `0x0041ece8` `Cfg_SetInventoryCallback`
 - **Used by** 9 of 467 script chunks (12 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** implemented
+- **Later in the story:** 4 of 28 levels, first [`level34`](story.md#level34) (mission 4)
+- **Coney:** not implemented
 
 ## CfgInventoryItem {#cfginventoryitem}
 
@@ -1233,7 +1249,8 @@ count, pickup sound and duration.
 - **Evidence:** confirmed (code) at `0x0041eca0`; detail: traced
 - **Wrapper** `0x0036bf58` (registered by `RegisterBindings`); **calls** `0x0041eca0` `Cfg_SetInventoryItem`
 - **Used by** 2 of 467 script chunks (18 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
+- **Coney:** not implemented
 
 ## CfgJumpIsAction {#cfgjumpisaction}
 
@@ -1357,6 +1374,7 @@ Stores the mercy-struggle damage (0x00510acc); one level sets it.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035e8a8` (registered by `RegisterBindings`); **calls** `0x00294860`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
 - **Coney:** not implemented
 
 ## CfgMoneyCallback {#cfgmoneycallback}
@@ -1376,6 +1394,7 @@ Stores the money callback name in the inventory block (0x0041e4f0).
 - **Evidence:** confirmed (code) at `0x0041ed60`; detail: brief
 - **Wrapper** `0x0036c0c8` (registered by `RegisterBindings`); **calls** `0x0041ed60`
 - **Used by** 6 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## CfgMultiplayerJoin {#cfgmultiplayerjoin}
@@ -1398,7 +1417,8 @@ to reset the join state. The tutorial and most missions switch it per section.
 - **Evidence:** confirmed (code) at `0x0041da08`; detail: traced
 - **Wrapper** `0x0035e818` (registered by `RegisterBindings`); **calls** `0x0041da08` `Cfg_SetMultiplayerJoin`
 - **Used by** 52 of 467 script chunks (69 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** implemented
+- **Later in the story:** 11 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## CfgObj {#cfgobj}
 
@@ -1489,6 +1509,7 @@ it.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035a2f8` (registered by `RegisterBindings`); **calls** `0x0041d618`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## CfgPedInteractDelay {#cfgpedinteractdelay}
@@ -1510,6 +1531,7 @@ Stores the pedestrian interaction delay (0x00510fcc).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035e990` (registered by `RegisterBindings`); **calls** `0x002948a0`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
 
 ## CfgPickupIsAction {#cfgpickupisaction}
@@ -1576,6 +1598,7 @@ pad-controlled byte (+0x1b of its pad record).
 - **Evidence:** confirmed (code) at `0x00236480`; detail: traced
 - **Wrapper** `0x0035a1f0` (registered by `RegisterBindings`); **calls** `0x00236480` `Cfg_SetPlayerCombatWalkOnly`
 - **Used by** 13 of 467 script chunks (15 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## CfgPlayerMugging {#cfgplayermugging}
@@ -1599,6 +1622,7 @@ mugging](../../research/crimes.md#mugging)).
 - **Evidence:** confirmed (code) at `0x0041daf8`; detail: traced
 - **Wrapper** `0x0035e9c8` (registered by `RegisterBindings`); **calls** `0x0041daf8` `Cfg_SetPlayerMugging`
 - **Used by** 9 of 467 script chunks (9 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CfgPlayerRunButton {#cfgplayerrunbutton}
@@ -1718,6 +1742,7 @@ Stores the power-up pickup switch (byte at game state +0x56e5).
 - **Evidence:** confirmed (code) at `0x0041da70`; detail: brief
 - **Wrapper** `0x0036c208` (registered by `RegisterBindings`); **calls** `0x0041da70`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## CfgQueueGrappleCombos {#cfgqueuegrapplecombos}
@@ -1834,6 +1859,7 @@ Sets the colour and two parameters of the rain effect object (0x005971a8).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00368550` (registered by `RegisterBindings`); **calls** `0x0018dd58`
 - **Used by** 9 of 467 script chunks (21 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## CfgRumbleArena {#cfgrumblearena}
@@ -2080,6 +2106,7 @@ Stores the crime script callback name in the game state (+0x2dc).
 - **Evidence:** confirmed (code) at `0x0041dab0`; detail: brief
 - **Wrapper** `0x0036bf28` (registered by `RegisterBindings`); **calls** `0x0041dab0`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level9`](story.md#level9) (mission 13)
 - **Coney:** not implemented
 
 ## CfgSetDatabaseSizes {#cfgsetdatabasesizes}
@@ -2107,6 +2134,7 @@ free is made).
 - **Wrapper** `0x0036bb10` (registered by `RegisterBindings`); **calls** `0x0041d628` `Cfg_SetDatabaseSizes`, 2 virtual
   calls
 - **Used by** 90 of 467 script chunks (90 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## CfgSetDefaultFollowSlotSet {#cfgsetdefaultfollowslotset}
@@ -2150,6 +2178,7 @@ Stores the enemy-spotting switch in the game state (+0x56f8).
 - **Evidence:** confirmed (code) at `0x0041d738`; detail: traced
 - **Wrapper** `0x0036bd90` (registered by `RegisterBindings`); **calls** `0x0041d738` `Cfg_SetEnemySpotting`
 - **Used by** 24 of 467 script chunks (44 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## CfgSetGlassProperties {#cfgsetglassproperties}
@@ -2176,7 +2205,7 @@ Sets one breakable-glass type's two flags and two ids in the world object's glas
 - **Evidence:** confirmed (code) at `0x0039c290`; detail: traced
 - **Wrapper** `0x0036ad80` (registered by `RegisterBindings`); **calls** `0x0039c290` `Cfg_SetGlassProperties`
 - **Used by** 1 of 467 script chunks (19 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** implemented
+- **Coney:** not implemented
 
 ## CfgSetGlobalTimeToLive {#cfgsetglobaltimetolive}
 
@@ -2220,7 +2249,8 @@ two from LockPick_End (0x0022d908) ([Crimes: lock picking](../../research/crimes
 - **Evidence:** confirmed (code) at `0x002365f0`; detail: traced
 - **Wrapper** `0x0035a6e8` (registered by `RegisterBindings`); **calls** `0x002365f0`
 - **Used by** 7 of 467 script chunks (12 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 6 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## CfgSetLockPickStageFailHandler {#cfgsetlockpickstagefailhandler}
 
@@ -2241,7 +2271,7 @@ picking](../../research/crimes.md#lockpick)).
 - **Evidence:** confirmed (code) at `0x00236698`; detail: traced
 - **Wrapper** `0x0035a760` (registered by `RegisterBindings`); **calls** `0x00236698`
 - **Used by** no script on the disc
-- **Coney:** implemented
+- **Coney:** not implemented
 
 ## CfgSetMaxThrowError {#cfgsetmaxthrowerror}
 
@@ -2263,6 +2293,7 @@ Sets how far (in degrees) a thrown object may deviate from its aim; one level se
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035e480` (registered by `RegisterBindings`); **calls** `0x0041d940`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## CfgSetMeleeRange {#cfgsetmeleerange}
@@ -2306,6 +2337,7 @@ Stores the outdoor flag in the game state (+0x3e4); global.lua switches it as th
 - **Evidence:** confirmed (code) at `0x0041d728`; detail: traced
 - **Wrapper** `0x0036ad50` (registered by `RegisterBindings`); **calls** `0x0041d728` `Cfg_SetOutdoorMode`
 - **Used by** 15 of 467 script chunks (29 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## CfgSetStatTypeMax {#cfgsetstattypemax}
@@ -2334,7 +2366,7 @@ points matrix fields.
 - **Evidence:** confirmed (code) at `0x004223e8`; detail: traced
 - **Wrapper** `0x0037c7a8` (registered by `RegisterBindings`); **calls** `0x004223e8` `Cfg_SetStatTypeMax`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** implemented
+- **Coney:** not implemented
 
 ## CfgSetStatValue {#cfgsetstatvalue}
 
@@ -2359,7 +2391,7 @@ No index check.
 - **Evidence:** confirmed (code) at `0x00422430`; detail: traced
 - **Wrapper** `0x0037c8c0` (registered by `RegisterBindings`); **calls** `0x00422430` `Cfg_SetStatValue`
 - **Used by** 2 of 467 script chunks (46 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** implemented
+- **Coney:** not implemented
 
 ## CfgSetSteroTheftHandler {#cfgsetsterothefthandler}
 
@@ -2381,7 +2413,8 @@ stored at 0x0051027c. The tutorial (level99_lesson1) uses it to count the stolen
 - **Evidence:** confirmed (code) at `0x00236508`; detail: traced
 - **Wrapper** `0x0035a790` (registered by `RegisterBindings`); **calls** `0x00236508` `Cfg_SetStereoTheftHandler`
 - **Used by** 6 of 467 script chunks (11 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** implemented
+- **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
+- **Coney:** not implemented
 
 ## CfgSetTargetingPoints {#cfgsettargetingpoints}
 
@@ -2509,6 +2542,7 @@ can only turn the feature off.
 - **Evidence:** confirmed (code) at `0x0041d748`; detail: traced
 - **Wrapper** `0x0036bdc0` (registered by `RegisterBindings`); **calls** `0x0041d748` `Cfg_SetWarriorSpotting`
 - **Used by** 25 of 467 script chunks (45 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## CfgSetWarriorVandalize {#cfgsetwarriorvandalize}
@@ -2528,6 +2562,7 @@ Stores the warrior-vandalise switch in the game state (+0x5700).
 - **Evidence:** confirmed (code) at `0x0041d758`; detail: brief
 - **Wrapper** `0x0036bdf0` (registered by `RegisterBindings`); **calls** `0x0041d758`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
 - **Coney:** not implemented
 
 ## CfgSnap {#cfgsnap}
@@ -2604,6 +2639,7 @@ flag.
 - **Evidence:** confirmed (code) at `0x0039be28`; detail: brief
 - **Wrapper** `0x003792c0` (registered by `RegisterBindings`); **calls** `0x0039be28`
 - **Used by** 13 of 467 script chunks (36 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 7 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CfgStickDeflection {#cfgstickdeflection}
@@ -2628,6 +2664,7 @@ the locomotion predicates. The first argument is read from Lua but never stored.
 - **Evidence:** confirmed (code) at `0x00236470`; detail: traced
 - **Wrapper** `0x0035a250` (registered by `RegisterBindings`); **calls** `0x00236470` `Cfg_SetStickDeflection`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## CfgStrafe {#cfgstrafe}
@@ -2692,6 +2729,7 @@ state's reset turns it on for every language but English.
 - **Evidence:** confirmed (code) at `0x0041da30`; detail: traced
 - **Wrapper** `0x0035e7b0` (registered by `RegisterBindings`); **calls** `0x0041da30` `Cfg_SetSubtitles`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## CfgTagSettings {#cfgtagsettings}
@@ -2715,6 +2753,7 @@ Configures a graffiti tag object through four object messages (ids 0x27, 0x37, 0
 - **Evidence:** confirmed (code) at `0x0039bc28`; detail: brief
 - **Wrapper** `0x003795c0` (registered by `RegisterBindings`); **calls** `0x0039bc28`
 - **Used by** 9 of 467 script chunks (47 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CfgTagStartCallback {#cfgtagstartcallback}
@@ -2736,6 +2775,7 @@ Registers the script callback (interned, stored at 0x006b6870) fired when a tag 
 - **Evidence:** confirmed (code) at `0x00238f10`; detail: traced
 - **Wrapper** `0x0035cc20` (registered by `RegisterBindings`); **calls** `0x00238f10` `Cfg_SetTagStartCallback`
 - **Used by** 6 of 467 script chunks (8 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CfgTurnRate {#cfgturnrate}
@@ -2803,6 +2843,7 @@ Stores the AI vertical sight modifier (0x00510ad4).
 - **Evidence:** confirmed (code) at `0x00294808`; detail: traced
 - **Wrapper** `0x0035e290` (registered by `RegisterBindings`); **calls** `0x00294808` `Cfg_SetVerticalSightModifier`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CfgWarriorClass {#cfgwarriorclass}
@@ -2904,6 +2945,7 @@ Stores the warrior-weapons switch in the game state (+0x5704).
 - **Evidence:** confirmed (code) at `0x0041d770`; detail: brief
 - **Wrapper** `0x0036be20` (registered by `RegisterBindings`); **calls** `0x0041d770`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
 
 ## CfgWorkoutParams {#cfgworkoutparams}
@@ -2930,4 +2972,5 @@ the script passes is lost. Likely a bug in the binding.
 - **Evidence:** confirmed (code) at `0x00234530`; detail: traced
 - **Wrapper** `0x0035c5a0` (registered by `RegisterBindings`); **calls** `0x00234530` `Cfg_SetWorkoutParams`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented

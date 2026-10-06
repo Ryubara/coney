@@ -90,7 +90,7 @@
   notes: >-
     Readers: 0x00240e38, 0x00287a18, 0x0025f4d0, 0x00286cc8, 0x0025d390; each tests the flag with the human's
     pad-controlled byte (+0x1b of its pad record).
-  usage: {chunks: 13, calls: 15, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 13, calls: 15, boot: true, mission1: false, result_used: false, levels: [95, 60, 61, 62, 63, 64]}
 
 - name: CfgPlayerRunButton
   wrapper: 0x0035a220
@@ -122,7 +122,7 @@
   notes: >-
     Callee 0x00236470 stores only its second float. Readers include 0x00225a50, 0x00225c10, 0x00225dc0, 0x00240e38,
     0x00259578.
-  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false, levels: [95]}
 
 - name: CfgJumpIsAction
   wrapper: 0x0035a2c8
@@ -151,7 +151,7 @@
   depth: brief
   notes: >-
     Storage confirmed (code) at 0x0041d618; the money meaning is inferred from the name and the levels that call it.
-  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 31, 11]}
 
 - name: CfgCharClassAttribs
   wrapper: 0x0035a330
@@ -305,7 +305,7 @@
   depth: thorough
   notes: >-
     The 'burning' meaning is inferred from the name; the timer use is confirmed (code).
-  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false, levels: [86]}
 
 - name: CfgSetLockPickHandler
   wrapper: 0x0035a6e8
@@ -321,7 +321,7 @@
     other two from LockPick_End (0x0022d908) ([Crimes: lock picking](../../research/crimes.md#lockpick)).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 7, calls: 12, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 12, boot: false, mission1: false, result_used: false, levels: [80, 87, 51, 52, 54, 82]}
   coney: implemented
 
 - name: CfgSetLockPickStageFailHandler
@@ -352,7 +352,7 @@
   depth: thorough
   notes: >-
     'Stero' is the binding's own spelling. When the callback fires is inferred from the name and the scripts.
-  usage: {chunks: 6, calls: 11, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 6, calls: 11, boot: false, mission1: true, result_used: false, levels: [87, 5, 93, 14, 11]}
   coney: implemented
 
 - name: CfgBreathingSound
@@ -441,7 +441,7 @@
   notes: >-
     The fourth argument goes through the boolean helper, so any non-nil value other than 0 becomes 1.0: the 1.8 the
     script passes is lost. Likely a bug in the binding.
-  usage: {chunks: 2, calls: 4, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 4, boot: true, mission1: false, result_used: false, levels: [95]}
 
 - name: CfgTagStartCallback
   wrapper: 0x0035cc20
@@ -455,7 +455,7 @@
   depth: thorough
   notes: >-
     When exactly it fires is inferred from the name and the levels that use it.
-  usage: {chunks: 6, calls: 8, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 8, boot: true, mission1: false, result_used: false, levels: [87, 3, 9]}
 
 - name: CfgBurnRates
   wrapper: 0x0035dc90
@@ -687,7 +687,7 @@
     raise it per gang (0 to 70).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 16, calls: 18, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 16, calls: 18, boot: true, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: CfgVerticalSightModifier
   wrapper: 0x0035e290
@@ -701,7 +701,7 @@
   depth: thorough
   notes: >-
     How the sight test uses it is not traced.
-  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false, levels: [87, 9, 54]}
 
 - name: CfgCanBeAttackedModifier
   wrapper: 0x0035e2c8
@@ -730,7 +730,7 @@
   depth: thorough
   notes: >-
     Which situation each percentage covers is not traced.
-  usage: {chunks: 6, calls: 11, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 11, boot: true, mission1: false, result_used: false, levels: [87, 95, 83]}
 
 - name: CfgSearchTimes
   wrapper: 0x0035e378
@@ -762,7 +762,7 @@
   notes: >-
     Storage confirmed (code) at 0x0041d8e0 and 0x0041d0a8; the police meaning is inferred from the name and the crime
     fields beside it.
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [9]}
 
 - name: CfgSetMaxThrowError
   wrapper: 0x0035e480
@@ -777,7 +777,7 @@
   depth: brief
   notes: >-
     Storage and the degree-to-radian conversion confirmed (code) at 0x0041d940; which axis is which is inferred.
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [2]}
 
 - name: CfgGangSizeForCombatMusic
   wrapper: 0x0035e4f8
@@ -791,7 +791,7 @@
   depth: brief
   notes: >-
     Storage confirmed (code) at 0x0041d920; meaning from the name.
-  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [87, 83, 20]}
 
 - name: CfgDisableMusicForScenes
   wrapper: 0x0035e530
@@ -805,7 +805,7 @@
   depth: thorough
   notes: >-
     Storage confirmed (code) at 0x0041d930; the scene behaviour follows the name (readers not traced).
-  usage: {chunks: 21, calls: 35, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 21, calls: 35, boot: true, mission1: false, result_used: false, levels: [80, 87, 2, 5, 93, 31, 14, 9, 51, 52, 55, 83, 11]}
 
 - name: CfgSetTimeScale
   wrapper: 0x0035e560
@@ -834,7 +834,7 @@
   depth: brief
   notes: >-
     Storage confirmed (code) at 0x0041d978.
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [55]}
 
 - name: CfgHUDMessage
   wrapper: 0x0035e5d0
@@ -931,7 +931,7 @@
     game state's reset turns it on for every language but English.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: CfgLanguage
   wrapper: 0x0035e7e0
@@ -958,7 +958,7 @@
   depth: thorough
   notes: >-
     What 0x0041a460 resets is not traced.
-  usage: {chunks: 52, calls: 69, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 52, calls: 69, boot: false, mission1: true, result_used: false, levels: [80, 95, 81, 31, 51, 84, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: CfgWarriorCommand
@@ -988,7 +988,7 @@
   depth: brief
   notes: >-
     Storage confirmed (code) at 0x00294860.
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [55]}
 
 - name: CfgSearchCounts
   wrapper: 0x0035e8e0
@@ -1017,7 +1017,7 @@
   depth: brief
   notes: >-
     Storage and clamp confirmed (code) at 0x00294888.
-  usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: false, levels: [34, 31, 82, 20, 11]}
 
 - name: CfgPedInteractDelay
   wrapper: 0x0035e990
@@ -1031,7 +1031,7 @@
   depth: brief
   notes: >-
     Storage confirmed (code) at 0x002948a0; unit not traced.
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [20]}
 
 - name: CfgPlayerMugging
   wrapper: 0x0035e9c8
@@ -1047,7 +1047,7 @@
     ([Crimes: mugging](../../research/crimes.md#mugging)).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 9, calls: 9, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 9, calls: 9, boot: false, mission1: true, result_used: false, levels: [87, 60, 61, 62, 63, 64]}
 
 - name: CfgRaindrops
   wrapper: 0x00368550
@@ -1063,7 +1063,7 @@
   depth: brief
   notes: >-
     Storage confirmed (code) at 0x0018dd58 / 0x00183630; the meaning of kind and scale is inferred.
-  usage: {chunks: 9, calls: 21, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 9, calls: 21, boot: false, mission1: false, result_used: false, levels: [93, 51, 82, 61, 64]}
 
 - name: CfgAttackDelay
   wrapper: 0x003697f0
@@ -1364,7 +1364,7 @@
     through global.lua's CameraCreateFollow and CameraNormal.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 13, calls: 28, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 13, calls: 28, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: CfgSetOutdoorMode
@@ -1379,7 +1379,7 @@
   depth: thorough
   notes: >-
     What the flag changes (lighting, weather, camera) is not traced.
-  usage: {chunks: 15, calls: 29, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 15, calls: 29, boot: true, mission1: false, result_used: false, levels: [80, 87, 95, 3, 5, 86, 14, 51, 52, 82, 92, 83, 11]}
 
 - name: CfgSetGlassProperties
   wrapper: 0x0036ad80
@@ -1574,7 +1574,7 @@
     The second table entry goes to 0x00413200, which does nothing. Allocation names: ObjectTaskRec, WorldFlag,
     FreeList<VolumeBox>, FreeList<PlayerBox>, FreeListContainer<TurfBox>. Calling it twice leaks the old pools
     (inferred: no free is made).
-  usage: {chunks: 90, calls: 90, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 90, calls: 90, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: CfgSetDefaultFollowSlotSet
@@ -1604,7 +1604,7 @@
     Stores the enemy-spotting switch in the game state (+0x56f8).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 24, calls: 44, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 24, calls: 44, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: CfgSetWarriorSpotting
   wrapper: 0x0036bdc0
@@ -1619,7 +1619,7 @@
   depth: thorough
   notes: >-
     Bug in the original: 0x0041d748 ignores its parameter. Scripts call it with both true and false.
-  usage: {chunks: 25, calls: 45, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 25, calls: 45, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: CfgSetWarriorVandalize
   wrapper: 0x0036bdf0
@@ -1631,7 +1631,7 @@
     Stores the warrior-vandalise switch in the game state (+0x5700).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [92]}
 
 - name: CfgWarriorWeapons
   wrapper: 0x0036be20
@@ -1643,7 +1643,7 @@
     Stores the warrior-weapons switch in the game state (+0x5704).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [5]}
 
 - name: CfgCrimeResponders
   wrapper: 0x0036be50
@@ -1659,7 +1659,7 @@
   depth: brief
   notes: >-
     No range check on the crime index.
-  usage: {chunks: 10, calls: 37, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 37, boot: false, mission1: false, result_used: false, levels: [87, 95, 14, 9, 82]}
 
 - name: CfgEnableCrimeType
   wrapper: 0x0036bec8
@@ -1672,7 +1672,7 @@
     Enables or disables one crime type (byte at game state + 0x32b + crime).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95, 9]}
 
 - name: CfgSetCrimeCallback
   wrapper: 0x0036bf28
@@ -1684,7 +1684,7 @@
     Stores the crime script callback name in the game state (+0x2dc).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [9, 82]}
 
 - name: CfgInventoryItem
   wrapper: 0x0036bf58
@@ -1703,7 +1703,7 @@
   depth: thorough
   notes: >-
     Slot entries are 0x2c bytes from +0x04. That the duration is how long a power-up lasts is inferred.
-  usage: {chunks: 2, calls: 18, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 18, boot: true, mission1: false, result_used: false, levels: [20]}
   coney: implemented
 
 - name: CfgInventoryCallback
@@ -1716,7 +1716,7 @@
     Stores the inventory pickup callback name (inventory +0xfd4). The tutorial uses it to count loot.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 9, calls: 12, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 9, calls: 12, boot: false, mission1: true, result_used: false, levels: [34, 84, 20, 11]}
   coney: implemented
 
 - name: CfgHuInventoryCallback
@@ -1729,7 +1729,7 @@
     Stores the per-human inventory callback name in the inventory block (0x0041e490).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 12, calls: 30, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 12, calls: 30, boot: false, mission1: false, result_used: false, levels: [3, 14, 82, 83, 60, 61, 62, 63, 64]}
 
 - name: CfgHuInventoryCallback2
   wrapper: 0x0036c098
@@ -1753,7 +1753,7 @@
     Stores the money callback name in the inventory block (0x0041e4f0).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 6, calls: 15, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 15, boot: false, mission1: false, result_used: false, levels: [95, 34, 31, 11]}
 
 - name: CfgBreakAndEnterDelay
   wrapper: 0x0036c0f8
@@ -1784,7 +1784,7 @@
   notes: >-
     The kinds, confirmed (code) at 0x00417ca0: 0 a handcuffed human, 1 an object or flag with its own text, 2 a
     pickable lock, 3 a car stereo, 4 and 5 objects with their own text ([Crimes: context records](../../research/crimes.md#context-records)).
-  usage: {chunks: 6, calls: 30, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 30, boot: true, mission1: false, result_used: false, levels: [95, 86, 11]}
 
 - name: CfgEnableTurfInvasion
   wrapper: 0x0036c1a8
@@ -1796,7 +1796,7 @@
     Stores the turf-invasion switch (byte at game state +0x56e1).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false, levels: [95]}
 
 - name: CfgEnableGrappleCounters
   wrapper: 0x0036c1d8
@@ -1808,7 +1808,7 @@
     Stores the grapple-counter switch (byte at game state +0x56e3).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [87]}
 
 - name: CfgPowerupPickup
   wrapper: 0x0036c208
@@ -1820,7 +1820,7 @@
     Stores the power-up pickup switch (byte at game state +0x56e5).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: CfgCredits
   wrapper: 0x0036ee48
@@ -1861,7 +1861,7 @@
   depth: brief
   notes: >-
     Message built with the world message helpers at 0x003a2d20-0x003a2e00; parameter meanings not traced.
-  usage: {chunks: 13, calls: 36, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 13, calls: 36, boot: false, mission1: false, result_used: false, levels: [87, 81, 93, 51, 11, 61, 64]}
 
 - name: CfgTagSettings
   wrapper: 0x003795c0
@@ -1878,7 +1878,7 @@
     tag.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 9, calls: 47, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 9, calls: 47, boot: false, mission1: false, result_used: false, levels: [87, 95, 3, 86, 9]}
 
 - name: CfgSetStatTypeMax
   wrapper: 0x0037c7a8

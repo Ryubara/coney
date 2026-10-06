@@ -14,7 +14,7 @@
   depth: brief
   notes: >-
     Level scripts call it once while setting up; what reads the cap is not traced.
-  usage: {chunks: 48, calls: 48, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 48, calls: 48, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 5, 86, 31, 9, 52, 82, 83, 20, 11]}
 
 - name: SetCopSpawnMax
   wrapper: 0x0035b0d8
@@ -26,7 +26,7 @@
     Sets the cap on spawned police (`W_GameState + 0x326`, 16-bit).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [11]}
 
 - name: GetProfileDifficulty
   wrapper: 0x0035c770
@@ -78,7 +78,7 @@
   notes: >-
     The code is confirmed (code) at `0x0018e6b8`; that the two controllers are the players' screen tint is inferred
     from the 0.25 s colour blend and their being indexed per player.
-  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: ExitStore
@@ -92,7 +92,7 @@
   depth: thorough
   notes: >-
     Code confirmed at `0x0018e780`; the screen-tint reading is inferred, as for EnterStore.
-  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: GetRumbleModeData
@@ -175,7 +175,7 @@
   notes: >-
     Value names follow the five config scripts (`config_easy` 0, `config_normal` 1, `config_hard` 2, `config_fury` 3,
     `config_rumble` 4); runtime value at the front end confirmed (runtime), see scripting.md.
-  usage: {chunks: 23, calls: 31, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 23, calls: 31, boot: true, mission1: true, result_used: true, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 51, 52, 54, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: SetDifficulty
@@ -204,7 +204,7 @@
   depth: thorough
   notes: >-
     Values confirmed (runtime), see scripting.md.
-  usage: {chunks: 92, calls: 126, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 92, calls: 126, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GetNumberOfLevelsPacked
@@ -283,7 +283,7 @@
   notes: >-
     The store is confirmed (code); its use as the game-over check is inferred from the name and the scripts that clear
     it around scripted fights.
-  usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: false, levels: [51, 84]}
 
 - name: PrecacheWorld
   wrapper: 0x0036c7a0
@@ -301,7 +301,7 @@
   notes: >-
     Its callee `0x0040c948` is in the address range the draft's callee filter drops (0x00408000-0x0040d000), so the
     draft entry has no `calls`.
-  usage: {chunks: 36, calls: 136, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 36, calls: 136, boot: false, mission1: false, result_used: false, levels: [95, 11]}
 
 - name: QueueFileToPrecache
   wrapper: 0x0036c838
@@ -315,7 +315,7 @@
   depth: brief
   notes: >-
     Callee `0x0040cc40` is outside the draft's callee list for the same reason as PrecacheWorld.
-  usage: {chunks: 34, calls: 167, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 34, calls: 167, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: ResetStore
   wrapper: 0x0036da10
@@ -330,7 +330,7 @@
   depth: brief
   notes: >-
     What message 0x13 does to the store is not traced.
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: MissionComplete
   wrapper: 0x0036df28
@@ -360,7 +360,7 @@
   notes: >-
     The level unload remakes the Lua state (scripting.md), so code after this call in the same script runs only until
     the change happens.
-  usage: {chunks: 44, calls: 81, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 44, calls: 81, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: Quit
@@ -387,7 +387,7 @@
   depth: brief
   notes: >-
     Read through the timer's vtable slot `+0x34`; inferred to be the same clock as `+0x48`, which the schedule uses.
-  usage: {chunks: 2, calls: 14, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 14, boot: false, mission1: false, result_used: true, levels: [95]}
   coney: implemented
 
 - name: CheckMultiplayer
@@ -401,7 +401,7 @@
   depth: brief
   notes: >-
     The callee handles the player list at `W_GameState + 0x224`; the join/leave reading is inferred.
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: SetLoadPriority
   wrapper: 0x0036e630
@@ -415,7 +415,7 @@
   depth: brief
   notes: >-
     Callee outside the draft's callee list (address-range filter).
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [51]}
 
 - name: SetCrimeLevel
   wrapper: 0x003702f0
@@ -477,7 +477,7 @@
   notes: >-
     Each frame of play the time moves toward the target; on reaching it the watch stops and the callback is called
     with no arguments (0x004233f8, scripting.md#stopwatch). Confirmed (code).
-  usage: {chunks: 32, calls: 39, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 32, calls: 39, boot: false, mission1: true, result_used: false, levels: [87, 95, 3, 54, 55, 83, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: W_GetStopWatchTime
@@ -490,7 +490,7 @@
     Returns the stopwatch's remaining (or elapsed) time.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: true, levels: [95]}
   coney: implemented
 
 - name: W_StartStopWatch
@@ -507,7 +507,7 @@
   notes: >-
     The update steps the watch only while +0x14 is non-zero and clears it on reaching the target
     (0x004233f8, scripting.md#stopwatch).
-  usage: {chunks: 37, calls: 78, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 37, calls: 78, boot: false, mission1: true, result_used: false, levels: [87, 95, 3, 54, 55, 83, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: W_ShowStopWatch
@@ -525,7 +525,7 @@
   depth: brief
   notes: >-
     That the third value is a warning threshold is inferred from its default and use.
-  usage: {chunks: 30, calls: 64, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 30, calls: 64, boot: false, mission1: false, result_used: false, levels: [95, 3, 92, 83, 60, 61, 62, 63, 64]}
 
 - name: ProcessTag
   wrapper: 0x00379540
@@ -543,7 +543,7 @@
   notes: >-
     The object must report type bit 0x10 (a tag); otherwise nothing happens. The exact visual effect of each message
     is not traced.
-  usage: {chunks: 10, calls: 15, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 15, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 92, 20, 11]}
 
 - name: CrimeIsHappening
   wrapper: 0x0037a2f8
@@ -566,7 +566,7 @@
     The position is transformed (`0x00252ae0`) before being passed on to the crime report 0x0041b8b0, which asks for
     responders; what each type does: [AI: crimes](../../research/ai.md#crimes). Severity, radius and flags
     are never read, confirmed (code) at 0x0037a2f8, 0x0041b6e0 and 0x0041b8b0 ([Crimes: wanted](../../research/crimes.md#wanted)).
-  usage: {chunks: 12, calls: 18, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 12, calls: 18, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: SpawnCustomCrime
   wrapper: 0x0037a4a8
@@ -583,7 +583,7 @@
   depth: brief
   notes: >-
     The responders reading is inferred from the scripts.
-  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [82]}
 
 - name: SetCrimeSceneTimeLength
   wrapper: 0x0037a5c8
@@ -609,7 +609,7 @@
   depth: thorough
   notes: >-
     The store is confirmed (code); its effect on the police is inferred from the name.
-  usage: {chunks: 9, calls: 12, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 9, calls: 12, boot: false, mission1: true, result_used: false, levels: [87, 95, 2, 86, 52, 54, 11]}
   coney: implemented
 
 - name: ForceCrimeLevel
@@ -623,7 +623,7 @@
     (Gang_UpdateWanted, 0x001698f0) and the crime level does not drop to 0 ([Crimes: wanted](../../research/crimes.md#wanted)).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 9, calls: 9, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 9, calls: 9, boot: false, mission1: false, result_used: false, levels: [34, 31, 52]}
 
 - name: SetCopGuardArrestedRange
   wrapper: 0x0037a660
@@ -654,7 +654,7 @@
   notes: >-
     Inventory: two players of 23 item slots (0-22) at `W_GameState + 0x480`; a player number other than 1 or 2 returns
     0.
-  usage: {chunks: 9, calls: 18, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 9, calls: 18, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: InvPlayerHasItem
@@ -670,7 +670,7 @@
     Tests whether a player holds an inventory item.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true, levels: [11]}
   coney: implemented
 
 - name: InvSetSpraycanCharges
@@ -685,7 +685,7 @@
     amount the first time sets a game-state flag that later triggers a one-off HUD hint.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 10, calls: 19, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 10, calls: 19, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: InvGiveRevive
@@ -700,7 +700,7 @@
     data 7) the cap is 4. Runs the inventory's item-added Lua callbacks when they are set.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 12, calls: 43, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 12, calls: 43, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: InvNumberRevives
@@ -715,7 +715,7 @@
     Returns a player's revive count.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 4, calls: 4, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 4, calls: 4, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: InvGiveSkeletonKey
@@ -729,7 +729,7 @@
     Adds handcuff (skeleton) keys, item 6, to a player's inventory, clamped to the item's limits.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 4, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 1, calls: 4, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: InvNumberSkeletonKeys
@@ -744,7 +744,7 @@
     Returns a player's handcuff-key count.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: InvGetMoney
@@ -759,7 +759,7 @@
     Returns how much money a player carries.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 12, calls: 48, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 12, calls: 48, boot: false, mission1: true, result_used: true, levels: [87, 34, 86, 31, 14, 83, 11]}
   coney: implemented
 
 - name: InvSetMoney
@@ -774,7 +774,7 @@
     inferred: the HUD's money-change display).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 7, calls: 16, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 7, calls: 16, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: AddMoneyToBank
@@ -806,7 +806,7 @@
   depth: thorough
   notes: >-
     The money-changed callback is a name kept at inventory `+0x1034`; it receives the 0-based player index.
-  usage: {chunks: 3, calls: 7, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 3, calls: 7, boot: false, mission1: true, result_used: false, levels: [86]}
   coney: implemented
 
 - name: TakeMoney
@@ -820,7 +820,7 @@
     Takes money from a player (GiveMoney with the amount negated); the total never goes below 0.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 17, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 17, boot: false, mission1: false, result_used: false, levels: [86, 31, 11]}
   coney: implemented
 
 - name: InvNumberOf
@@ -836,7 +836,7 @@
     Returns a player's count of any inventory item.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 7, calls: 32, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 7, calls: 32, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: InvGiveItem
@@ -852,7 +852,7 @@
     bindings.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 6, calls: 46, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 6, calls: 46, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GameIsOver
@@ -865,7 +865,7 @@
     Tells a script that the level is already ending (mission complete, failed or a level change requested).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [81]}
 
 - name: SSMC_StartSaveSequence
   wrapper: 0x0037b6a8
@@ -879,7 +879,7 @@
   depth: thorough
   notes: >-
     The hub (`level95.lua`) calls it.
-  usage: {chunks: 3, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 8, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: SSMC_StartLoadSequence
   wrapper: 0x0037b6c8
@@ -949,7 +949,7 @@
     a 35-word object list to its checkpoint copy). During a mission scripts call it to mark a chapter done; the
     checkpoint picks the chapter when the level is next entered (scripting.md#level99). What a restart restores from
     the copies is not traced.
-  usage: {chunks: 64, calls: 76, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 64, calls: 76, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GetCheckPoint
@@ -963,7 +963,7 @@
     mission.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 32, calls: 48, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 32, calls: 48, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: SetLUASaveDataFloat
@@ -982,7 +982,7 @@
   notes: >-
     No bounds check: slots outside 1-8 overwrite the neighbouring game-state fields (slot 9 is the first word of the
     saved flags).
-  usage: {chunks: 21, calls: 67, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 21, calls: 67, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 5, 14, 9, 51, 52, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GetLUASaveDataFloat
@@ -999,7 +999,7 @@
     progress bits from slot 1 at every checkpoint above 1.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 19, calls: 51, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 19, calls: 51, boot: false, mission1: false, result_used: true, levels: [87, 34, 2, 5, 14, 9, 51, 52, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: SetLUASaveDataBool
@@ -1016,7 +1016,7 @@
   depth: thorough
   notes: >-
     Flags above 128 are written beyond the saved words and are not saved.
-  usage: {chunks: 1, calls: 3, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 3, boot: true, mission1: false, result_used: false, levels: [95, 34, 2, 5, 31, 14, 51, 52, 55, 92, 20, 11]}
 
 - name: GetLUASaveDataBool
   wrapper: 0x0037b910
@@ -1030,7 +1030,7 @@
     Reads a saved script flag.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 4, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 1, calls: 4, boot: true, mission1: false, result_used: true, levels: [34, 2, 5, 31, 14, 9, 51, 52, 92, 20, 11]}
 
 - name: IsDongleValid
   wrapper: 0x0037b960
@@ -1086,7 +1086,7 @@
   depth: thorough
   notes: >-
     Group meanings are not traced; nothing happens if the handle is not a human.
-  usage: {chunks: 4, calls: 7, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 4, calls: 7, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: StatGetRank
@@ -1132,7 +1132,7 @@
   depth: thorough
   notes: >-
     Computed by `0x00422998`; the formula is not traced.
-  usage: {chunks: 6, calls: 12, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 6, calls: 12, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: StatGetPreviousHiScore
@@ -1157,7 +1157,7 @@
     Clears all statistics (stats object `0x006fe490`). The hub calls it.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
   coney: implemented
 
 - name: StatResetPlayer
@@ -1170,7 +1170,7 @@
     Clears one player's statistics.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: StatGetHighScore
@@ -1263,7 +1263,7 @@
     Lists the unlockable records of one type into a table.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: UM_Unlock
   wrapper: 0x0037d050
@@ -1279,7 +1279,7 @@
     ([Saving](../../research/save.md#record)), which is how story progress is kept.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 28, calls: 71, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 28, calls: 71, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: UM_IsUnlocked
@@ -1310,7 +1310,7 @@
     is available.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 22, calls: 83, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 22, calls: 83, boot: true, mission1: false, result_used: true, levels: [87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 51, 52, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: UM_IsLevelComplete
@@ -1326,7 +1326,7 @@
     stands.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 3, calls: 33, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 3, calls: 33, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: UM_IsTypeDirty
@@ -1342,7 +1342,7 @@
     Asks whether anything of a type was unlocked since last asked, optionally clearing the marks.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 2, calls: 16, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 16, boot: true, mission1: false, result_used: true, levels: [95]}
   coney: implemented
 
 - name: UM_IsDataDirty
@@ -1359,7 +1359,7 @@
     Asks whether one unlockable (by type and data id) is newly unlocked, optionally clearing the mark.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 9, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 9, boot: false, mission1: false, result_used: true, levels: [95]}
   coney: implemented
 
 - name: UM_GetRecordData
@@ -1375,7 +1375,7 @@
     Reads one field of an unlockable record.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: true, levels: [95]}
   coney: implemented
 
 - name: UM_UnlockAll

@@ -112,7 +112,7 @@ def run_render(check: bool) -> int:
     return 0
 
 
-def _known_names(root: Path, names_file: Path | None) -> list[str]:
+def known_names(root: Path, names_file: Path | None) -> list[str]:
     """Names found before: the WAD names list, and a names file (one name per line) when given."""
     names: list[str] = []
     path = _yaml_path(root, topic("wad-names"))
@@ -134,7 +134,7 @@ def run_extract(disc_arg: str | None, only: list[str] | None, names_file: Path |
 
     root = find_repo_root(Path.cwd())
     wanted = [topic(key) for key in only] if only else list(TOPICS)
-    facts = refs_extract.DiscFacts(open_disc(disc_arg), _known_names(root, names_file))
+    facts = refs_extract.DiscFacts(open_disc(disc_arg), known_names(root, names_file))
     for item in wanted:
         fresh = refs_extract.EXTRACTORS[item.key](facts, root / IMAGES_DIR)
         path = _yaml_path(root, item)

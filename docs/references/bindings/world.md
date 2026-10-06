@@ -116,6 +116,7 @@ NilHandle as parent). A full pool is not checked: the constructor then runs on a
 - **Evidence:** confirmed (code) at `0x00415c18`; detail: traced
 - **Wrapper** `0x00379fd0` (registered by `RegisterBindings`); **calls** `0x00415c18` `Flag_Add`
 - **Used by** 94 of 467 script chunks (7058 references); boot to menu: no; mission 1: yes; result used: yes
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## AddPath {#addpath}
@@ -140,6 +141,7 @@ the AI slice.
 - **Evidence:** confirmed (code) at `0x00415740`; detail: brief
 - **Wrapper** `0x0037ab38` (registered by `RegisterBindings`); **calls** `0x00415740` `Path_Add`
 - **Used by** 15 of 467 script chunks (42 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 10 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## AddVolumeBox {#addvolumebox}
@@ -171,6 +173,7 @@ trigger update of a kind-0 box is confirmed (code) at 0x00415378.
 - **Evidence:** confirmed (code) at `0x004125b8`; detail: traced
 - **Wrapper** `0x0037ac70` (registered by `RegisterBindings`); **calls** `0x004125b8` `VolumeBox_Add`
 - **Used by** 53 of 467 script chunks (974 references); boot to menu: no; mission 1: yes; result used: yes
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## BreakGlassInRadius {#breakglassinradius}
@@ -195,7 +198,8 @@ parts in range are hit as well (0x0038b0e8). No alarm, crime or statistic follow
 - **Evidence:** confirmed (code) at `0x003966c8`; detail: traced
 - **Wrapper** `0x0036dc18` (registered by `RegisterBindings`); **calls** `0x003966c8` `World_BreakGlassInRadius`
 - **Used by** 6 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 5 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## BreakObjectsInRadius {#breakobjectsinradius}
 
@@ -221,7 +225,8 @@ objects](../../research/objects.md#door-states)).
 - **Evidence:** confirmed (code) at `0x00396390`; detail: brief
 - **Wrapper** `0x0036dc90` (registered by `RegisterBindings`); **calls** `0x00396390` `World_BreakObjectsInRadius`
 - **Used by** 12 of 467 script chunks (22 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 7 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## CarCanBeDamagedBy {#carcanbedamagedby}
 
@@ -260,6 +265,7 @@ Deletes a car (its destroy method, vtable +0x4c).
 - **Evidence:** confirmed (code) at `0x0038dea8`; detail: brief
 - **Wrapper** `0x003784f0` (registered by `RegisterBindings`); **calls** `0x0038dea8` `Car_Destroy`
 - **Used by** 5 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## CarExplode {#carexplode}
@@ -280,6 +286,7 @@ Blows up a car.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003786a0` (registered by `RegisterBindings`); **calls** `0x0038dfa0` `Car_Explode`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## CarMakeGoodAsNew {#carmakegoodasnew}
@@ -300,6 +307,7 @@ flags are cleared (0x003875e8). A handle that is not a car does nothing.
 - **Evidence:** confirmed (code) at `0x0038e068`; detail: traced
 - **Wrapper** `0x00378808` (registered by `RegisterBindings`); **calls** `0x0038e068` `Car_Repair`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** not implemented
 
 ## CarPlaceInTrunk {#carplaceintrunk}
@@ -345,6 +353,7 @@ forced open.
 - **Evidence:** confirmed (code) at `0x0038e0f0`; detail: brief
 - **Wrapper** `0x003788b8` (registered by `RegisterBindings`); **calls** `0x0038e0f0` `Car_PlaceInTrunkOnDetach`
 - **Used by** 12 of 467 script chunks (34 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 12 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CarRemovePart {#carremovepart}
@@ -366,6 +375,7 @@ Removes a part (a door, bonnet or similar) from a car.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00378700` (registered by `RegisterBindings`); **calls** `0x0038dfe0` `Car_RemovePart`
 - **Used by** 3 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
 
 ## CarSetColor {#carsetcolor}
@@ -388,6 +398,7 @@ Sets a car's paint colour (stored at +0x12e8 / +0x12ec, with a 'colour set' flag
 - **Evidence:** confirmed (code) at `0x0038df38`; detail: traced
 - **Wrapper** `0x003785c8` (registered by `RegisterBindings`); **calls** `0x0038df38` `Car_SetColour`
 - **Used by** 15 of 467 script chunks (23 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 14 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## CarSetPartDamage {#carsetpartdamage}
@@ -433,6 +444,7 @@ from the name.
 - **Evidence:** confirmed (code) at `0x0038d5b8`; detail: brief
 - **Wrapper** `0x0036ddc0` (registered by `RegisterBindings`); **calls** `0x0038d5b8` `Car_SetPartOpen`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** not implemented
 
 ## CarSpawn {#carspawn}
@@ -456,6 +468,7 @@ Creates a parked car of a given type from the car pool (object manager +0x844), 
 - **Evidence:** confirmed (code) at `0x0038dde8`; detail: traced
 - **Wrapper** `0x00378320` (registered by `RegisterBindings`); **calls** `0x0038dde8` `Car_Spawn`
 - **Used by** 26 of 467 script chunks (118 references); boot to menu: no; mission 1: yes; result used: yes
+- **Later in the story:** 19 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## CarSpawnRadio {#carspawnradio}
@@ -479,6 +492,7 @@ confirmed (code).
 - **Evidence:** confirmed (code) at `0x0038d690`; detail: traced
 - **Wrapper** `0x0036de50` (registered by `RegisterBindings`); **calls** `0x0038d690` `Car_SpawnRadio`
 - **Used by** 15 of 467 script chunks (37 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 10 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## ChangeBlocker {#changeblocker}
@@ -502,6 +516,7 @@ the neighbouring door-link bindings.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00379c80` (registered by `RegisterBindings`); **calls** `0x00252c28` `NavLink_SetBlocked`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## ChangeCollision {#changecollision}
@@ -523,6 +538,7 @@ in the box gets its enabled bit set or cleared ([Collision](../../research/colli
 - **Evidence:** confirmed (code) at `0x0034fba0`; detail: brief
 - **Wrapper** `0x00379c20` (registered by `RegisterBindings`); **calls** `0x0034fba0` `CollisionMesh_SetEnabledInVolume`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## CloseDoor {#closedoor}
@@ -545,7 +561,8 @@ return and its number's navigation links get the avoid bit.
 - **Evidence:** confirmed (code) at `0x00397010`; detail: traced
 - **Wrapper** `0x00379b78` (registered by `RegisterBindings`); **calls** `0x00397010` `Door_Close`
 - **Used by** 53 of 467 script chunks (84 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** implemented
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## ConvertJumpToDoor {#convertjumptodoor}
 
@@ -567,7 +584,8 @@ links](../../research/objects.md#nav-links); the "jump" and "door" readings come
 - **Evidence:** confirmed (code) at `0x00250db0`; detail: brief
 - **Wrapper** `0x0036e228` (registered by `RegisterBindings`); **calls** `0x00250db0` `NavLink_ConvertJumpToDoor`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
+- **Coney:** not implemented
 
 ## DisableDoorCollision {#disabledoorcollision}
 
@@ -587,7 +605,7 @@ links. No script calls it.
 - **Evidence:** confirmed (code) at `0x00397338`; detail: brief
 - **Wrapper** `0x00379bb0` (registered by `RegisterBindings`); **calls** `0x00397338` `Door_DisableCollision`
 - **Used by** no script on the disc
-- **Coney:** implemented
+- **Coney:** not implemented
 
 ## DisableDoorLink {#disabledoorlink}
 
@@ -609,7 +627,8 @@ Sets the avoid bit (bit 31) on the kind-0x10 navigation link nearest the positio
 - **Evidence:** confirmed (code) at `0x00250e00`; detail: brief
 - **Wrapper** `0x0036e2d8` (registered by `RegisterBindings`); **calls** `0x00250e00` `NavLink_DisableDoor`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
+- **Coney:** not implemented
 
 ## DoorOpen {#dooropen}
 
@@ -633,7 +652,8 @@ objects](../../research/objects.md#door-states).
 - **Evidence:** confirmed (code) at `0x00396f08`; detail: traced
 - **Wrapper** `0x00379a50` (registered by `RegisterBindings`); **calls** `0x00396f08` `Door_OpenBy`
 - **Used by** 19 of 467 script chunks (31 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 10 of 28 levels, first [`level34`](story.md#level34) (mission 4)
+- **Coney:** not implemented
 
 ## DoorOpenDegree {#dooropendegree}
 
@@ -656,7 +676,8 @@ Swings a door open to a given angle (message 0x42 with the angle), with its open
 - **Evidence:** confirmed (code) at `0x00396e28`; detail: traced
 - **Wrapper** `0x00379900` (registered by `RegisterBindings`); **calls** `0x00396e28` `Door_OpenToAngle`
 - **Used by** 50 of 467 script chunks (97 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** implemented
+- **Later in the story:** 19 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## EnableDoorLink {#enabledoorlink}
 
@@ -675,7 +696,8 @@ Clears the avoid bit on the kind-0x10 navigation link nearest the position and i
 - **Evidence:** confirmed (code) at `0x00250e48`; detail: brief
 - **Wrapper** `0x0036e388` (registered by `RegisterBindings`); **calls** `0x00250e48` `NavLink_EnableDoor`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
+- **Coney:** not implemented
 
 ## EnableVolumeBox {#enablevolumebox}
 
@@ -695,6 +717,7 @@ Enables or disables a volume box (its enable method, vtable +0x5c).
 - **Evidence:** confirmed (code) at `0x00412bf8`; detail: brief
 - **Wrapper** `0x0037af58` (registered by `RegisterBindings`); **calls** `0x00412bf8` `VolumeBox_Enable`
 - **Used by** 43 of 467 script chunks (173 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## FindFlag {#findflag}
@@ -715,6 +738,7 @@ Looks up a flag by name (linear search over the flags in creation order, case-se
 - **Evidence:** confirmed (code) at `0x00415c48`; detail: brief
 - **Wrapper** `0x0037a770` (registered by `RegisterBindings`); **calls** `0x00415c48` `Flag_FindByName`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** implemented
 
 ## FlagEnable {#flagenable}
@@ -735,6 +759,7 @@ Enables or disables a flag, so AI and interactions stop or resume using it.
 - **Evidence:** confirmed (code) at `0x00415ce8`; detail: brief
 - **Wrapper** `0x0037a228` (registered by `RegisterBindings`); **calls** `0x00415ce8` `Flag_Enable`
 - **Used by** 2 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## FlagGetOwner {#flaggetowner}
@@ -754,6 +779,7 @@ Returns who currently owns a flag, for example which human is using a phone or a
 - **Evidence:** confirmed (code) at `0x00416ed0`; detail: brief
 - **Wrapper** `0x00378160` (registered by `RegisterBindings`); **calls** `0x00416ed0` `Flag_GetOwner`
 - **Used by** 9 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 4 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## FlagNetAddLink {#flagnetaddlink}
@@ -781,6 +807,7 @@ and the last index at 0x006e9f40.
 - **Evidence:** confirmed (code) at `0x002a7458`; detail: traced
 - **Wrapper** `0x0037a7e0` (registered by `RegisterBindings`); **calls** `0x002a7458` `FlagNet_AddNode`
 - **Used by** 29 of 467 script chunks (774 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## FlagNetClear {#flagnetclear}
@@ -798,6 +825,7 @@ Empties the flag network: all 128 nodes and their links become NilHandle.
 - **Evidence:** confirmed (code) at `0x002a7328`; detail: brief
 - **Wrapper** `0x0037ab18` (registered by `RegisterBindings`); **calls** `0x002a7328` `FlagNet_Clear`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## FlagNetTraverse {#flagnettraverse}
@@ -843,6 +871,7 @@ Wrapper `0x0037a8d0`; calls `0x002a7810`.
 - **Evidence:** confirmed (code) at `0x002a78c8`; detail: traced
 - **Wrapper** `0x0037a968` (registered by `RegisterBindings`); **calls** `0x002a78c8` `FlagNet_StartTraverse`
 - **Used by** 27 of 467 script chunks (60 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 19 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## FlagNetValidate {#flagnetvalidate}
@@ -860,6 +889,7 @@ Checks every link of the flag network (0x002a73a8 per non-empty link); a debuggi
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0037aaf8` (registered by `RegisterBindings`); **calls** `0x002a7c48` `FlagNet_Validate`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level82`](story.md#level82) (flashback 1)
 - **Coney:** not implemented
 
 ## FreezeWorld {#freezeworld}
@@ -904,6 +934,7 @@ result into the table {x, y, z} that HuCreate and Teleport take.
 - **Evidence:** confirmed (code) at `0x00416bb8`; detail: traced
 - **Wrapper** `0x0037a288` (registered by `RegisterBindings`); **calls** `0x00416bb8` `Flag_GetPosition`
 - **Used by** 14 of 467 script chunks (25 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** implemented
 
 ## GetHitpoints {#gethitpoints}
@@ -926,7 +957,8 @@ so this reads a door's too ([World objects: breaking a door](../../research/obje
 - **Evidence:** confirmed (code) at `0x00385918`; detail: brief
 - **Wrapper** `0x0036c900` (registered by `RegisterBindings`); **calls** `0x00385918` `Object_GetHitpoints`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** implemented
+- **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
+- **Coney:** not implemented
 
 ## GetLeftDoorHandle {#getleftdoorhandle}
 
@@ -948,7 +980,8 @@ is not guaranteed.
 - **Evidence:** confirmed (code) at `0x00397400`; detail: traced
 - **Wrapper** `0x00379d50` (registered by `RegisterBindings`); **calls** `0x00397400` `Door_GetLeftLeaf`
 - **Used by** 42 of 467 script chunks (74 references); boot to menu: no; mission 1: yes; result used: yes
-- **Coney:** implemented
+- **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## GetObjectName {#getobjectname}
 
@@ -968,6 +1001,7 @@ Returns the type name of a game object, read from the object type table (type re
 - **Evidence:** confirmed (code) at `0x003859f0`; detail: brief
 - **Wrapper** `0x0036c9c8` (registered by `RegisterBindings`); **calls** `0x003859f0` `Obj_GetTypeName`
 - **Used by** 8 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 7 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GetPTank {#getptank}
@@ -995,6 +1029,7 @@ background and releases them when it finishes.
 - **Evidence:** confirmed (code) at `0x0039c388`; detail: traced
 - **Wrapper** `0x00378bf8` (registered by `RegisterBindings`); **calls** `0x0039c388` `PTank_Create`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GetRightDoorHandle {#getrightdoorhandle}
@@ -1014,7 +1049,8 @@ Returns the right leaf of a double door.
 - **Evidence:** confirmed (code) at `0x00397478`; detail: brief
 - **Wrapper** `0x00379dc8` (registered by `RegisterBindings`); **calls** `0x00397478` `Door_GetRightLeaf`
 - **Used by** 29 of 467 script chunks (47 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** implemented
+- **Later in the story:** 12 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## IsDoorOpen {#isdooropen}
 
@@ -1035,7 +1071,8 @@ Tests whether a door is open.
 - **Evidence:** confirmed (code) at `0x00397508`; detail: brief
 - **Wrapper** `0x00379f80` (registered by `RegisterBindings`); **calls** `0x00397508` `Door_IsOpen`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** implemented
+- **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
+- **Coney:** not implemented
 
 ## IsInsideBox {#isinsidebox}
 
@@ -1056,6 +1093,7 @@ Tests whether a character or object stands inside a volume box.
 - **Evidence:** confirmed (code) at `0x00413198`; detail: traced
 - **Wrapper** `0x0037afb8` (registered by `RegisterBindings`); **calls** `0x00413198` `VolumeBox_ContainsObject`
 - **Used by** 75 of 467 script chunks (297 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## ObjColor {#objcolor}
@@ -1102,6 +1140,7 @@ Removes a game object. If a human is holding it, the human first lets go of it.
 - **Evidence:** confirmed (code) at `0x00396c58`; detail: traced
 - **Wrapper** `0x00377f18` (registered by `RegisterBindings`); **calls** `0x00396c58` `Obj_Destroy`
 - **Used by** 93 of 467 script chunks (265 references); boot to menu: yes; mission 1: yes; result used: yes
+- **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## ObjectChangeState {#objectchangestate}
@@ -1123,7 +1162,8 @@ directly.
 - **Evidence:** confirmed (code) at `0x003976c8`; detail: brief
 - **Wrapper** `0x00379210` (registered by `RegisterBindings`); **calls** `0x003976c8` `Obj_ChangeState`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
+- **Coney:** not implemented
 
 ## ObjEnablePhysics {#objenablephysics}
 
@@ -1147,6 +1187,7 @@ hands the object to the body's owner (body +0x74 slot +0x14), waking it; off cal
 - **Evidence:** confirmed (code) at `0x00396a90`; detail: brief
 - **Wrapper** `0x00377f78` (registered by `RegisterBindings`); **calls** `0x00396a90` `Obj_EnablePhysics`
 - **Used by** 12 of 467 script chunks (73 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 7 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
 
 ## ObjEnableZone {#objenablezone}
@@ -1171,6 +1212,7 @@ confirmed (code) at 0x00398348.
 - **Evidence:** confirmed (code) at `0x00396778`; detail: traced
 - **Wrapper** `0x00377b20` (registered by `RegisterBindings`); **calls** `0x00396778` `ObjZone_Enable`
 - **Used by** 95 of 467 script chunks (305 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## ObjGetIndex {#objgetindex}
@@ -1192,6 +1234,7 @@ Looks up an object type by name and returns its index.
 - **Evidence:** confirmed (code) at `0x00397780`; detail: brief
 - **Wrapper** `0x0036ded8` (registered by `RegisterBindings`); **calls** `0x00397780` `ObjType_FindIndex`
 - **Used by** 7 of 467 script chunks (51 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## ObjGetZone {#objgetzone}
@@ -1211,6 +1254,7 @@ Returns the object zone a game object belongs to.
 - **Evidence:** confirmed (code) at `0x00396810`; detail: brief
 - **Wrapper** `0x00377c70` (registered by `RegisterBindings`); **calls** `0x00396810` `Obj_GetZone`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 2 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
 
 ## ObjHide {#objhide}
@@ -1230,6 +1274,7 @@ Hides a game object without destroying it (show/hide message 0x0a with 0).
 - **Evidence:** confirmed (code) at `0x00396b68`; detail: traced
 - **Wrapper** `0x00378050` (registered by `RegisterBindings`); **calls** `0x00396b68` `Obj_Hide`
 - **Used by** 50 of 467 script chunks (154 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## ObjIsA {#objisa}
@@ -1271,6 +1316,7 @@ Tests whether a game object handle is still valid.
 - **Evidence:** confirmed (code) at `0x00397598`; detail: brief
 - **Wrapper** `0x0036de88` (registered by `RegisterBindings`); **calls** `0x00397598` `Obj_Exists`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## ObjIsZoneEnabled {#objiszoneenabled}
@@ -1290,6 +1336,7 @@ Tests whether an object zone is enabled.
 - **Evidence:** confirmed (code) at `0x003967a8`; detail: brief
 - **Wrapper** `0x00377b80` (registered by `RegisterBindings`); **calls** `0x003967a8` `ObjZone_IsEnabled`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** not implemented
 
 ## ObjMarkZone {#objmarkzone}
@@ -1313,6 +1360,7 @@ Sets or clears a second per-zone flag in the spawn table; the scripts call it wi
 - **Evidence:** confirmed (code) at `0x003967e0`; detail: brief
 - **Wrapper** `0x00377bd0` (registered by `RegisterBindings`); **calls** `0x003967e0` `ObjZone_Mark`
 - **Used by** 12 of 467 script chunks (27 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## ObjScriptArgEnd {#objscriptargend}
@@ -1435,6 +1483,7 @@ scripts' use.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0036e0b0` (registered by `RegisterBindings`); **calls** `0x00413770` `Train_SetPoint`
 - **Used by** 7 of 467 script chunks (68 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
 
 ## ObjShow {#objshow}
@@ -1457,6 +1506,7 @@ Makes a hidden game object visible again (show/hide message 0x0a with 1).
 - **Evidence:** confirmed (code) at `0x00396a08`; detail: traced
 - **Wrapper** `0x00377fd8` (registered by `RegisterBindings`); **calls** `0x00396a08` `Obj_Show`
 - **Used by** 70 of 467 script chunks (181 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## ObjSpawn {#objspawn}
@@ -1495,6 +1545,7 @@ the game state is non-zero.
 - **Evidence:** confirmed (code) at `0x00396858`; detail: traced
 - **Wrapper** `0x00377cc8` (registered by `RegisterBindings`); **calls** `0x00396858` `Obj_Spawn`
 - **Used by** 123 of 467 script chunks (2875 references); boot to menu: yes; mission 1: yes; result used: yes
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## ObjStartTrain {#objstarttrain}
@@ -1515,6 +1566,7 @@ Resets and starts a scripted train set up with `ObjSetTrainPoint`.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0036e178` (registered by `RegisterBindings`); **calls** `0x004137d8` `Train_Start`
 - **Used by** 7 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
 
 ## ObjStopTrain {#objstoptrain}
@@ -1534,6 +1586,7 @@ Stops a running scripted train (clears its running flag).
 - **Evidence:** confirmed (code) at `0x00413828`; detail: brief
 - **Wrapper** `0x0036e1f0` (registered by `RegisterBindings`); **calls** `0x00413828` `Train_Stop`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
 
 ## OpenDoor {#opendoor}
@@ -1554,7 +1607,8 @@ collision goes about half a second later.
 - **Evidence:** confirmed (code) at `0x00396ea0`; detail: brief
 - **Wrapper** `0x00379ac8` (registered by `RegisterBindings`); **calls** `0x00396ea0` `Door_Open`
 - **Used by** 46 of 467 script chunks (85 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 23 of 28 levels, first [`level95`](story.md#level95) (the hub)
+- **Coney:** not implemented
 
 ## OpenDoorAnimated {#opendooranimated}
 
@@ -1575,7 +1629,8 @@ and it is given action 0x1a (0x002266a8).
 - **Evidence:** confirmed (code) at `0x00396fa8`; detail: brief
 - **Wrapper** `0x00379b00` (registered by `RegisterBindings`); **calls** `0x00396fa8` `Door_OpenAnimated`
 - **Used by** 6 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 5 of 28 levels, first [`level95`](story.md#level95) (the hub)
+- **Coney:** not implemented
 
 ## OrientObject {#orientobject}
 
@@ -1626,6 +1681,7 @@ What 0x00251718 tests on a node is not traced. Planning: [AI](../../research/ai.
 - **Evidence:** confirmed (code) at `0x00386010`; detail: traced
 - **Wrapper** `0x0036cf88` (registered by `RegisterBindings`); **calls** `0x00386010` `Obj_PathExists`
 - **Used by** 16 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 16 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## ReleasePTank {#releaseptank}
@@ -1645,6 +1701,7 @@ Frees a sprite batch made by `GetPTank` (0x003a4f78 releases the resource manage
 - **Evidence:** confirmed (code) at `0x0039c3d0`; detail: traced
 - **Wrapper** `0x00378d78` (registered by `RegisterBindings`); **calls** `0x0039c3d0` `PTank_Release`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## RotateVolumeBox {#rotatevolumebox}
@@ -1671,6 +1728,7 @@ m01 dy, y' = m10 dx + m11 dy), confirmed (code); that the values are a cos/sin p
 - **Evidence:** confirmed (code) at `0x00412c40`; detail: traced
 - **Wrapper** `0x0037ae68` (registered by `RegisterBindings`); **calls** `0x00412c40` `VolumeBox_SetRotation`
 - **Used by** 31 of 467 script chunks (211 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 21 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## SetDoorPickable {#setdoorpickable}
@@ -1696,7 +1754,8 @@ picking](../../research/objects.md#lock-pick)).
 - **Evidence:** confirmed (code) at `0x00397078`; detail: brief
 - **Wrapper** `0x00379e40` (registered by `RegisterBindings`); **calls** `0x00397078` `Door_SetPickable`
 - **Used by** 16 of 467 script chunks (24 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 9 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## SetFlagPos {#setflagpos}
 
@@ -1716,6 +1775,7 @@ Moves a flag to a new position.
 - **Evidence:** confirmed (code) at `0x00416b68`; detail: brief
 - **Wrapper** `0x0037a150` (registered by `RegisterBindings`); **calls** `0x00416b68` `Flag_SetPosition`
 - **Used by** 19 of 467 script chunks (37 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## SetPositionOfWater {#setpositionofwater}
@@ -1744,6 +1804,7 @@ scripts' numbers.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0037ba48` (registered by `RegisterBindings`); **calls** `0x0040ca18` `Water_Set`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level84`](story.md#level84) (mission 18)
 - **Coney:** not implemented
 
 ## SpawnBreakableGlass {#spawnbreakableglass}
@@ -1775,7 +1836,8 @@ pane does: [World objects](../../research/objects.md#glass).
 - **Evidence:** confirmed (code) at `0x0039c0e0`; detail: traced
 - **Wrapper** `0x00378db0` (registered by `RegisterBindings`); **calls** `0x0039c0e0` `Glass_Spawn`
 - **Used by** 32 of 467 script chunks (929 references); boot to menu: no; mission 1: yes; result used: yes
-- **Coney:** implemented
+- **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## SpawnDoor {#spawndoor}
 
@@ -1801,7 +1863,8 @@ initialiser (`0x003fb5f8` for `dyn_door_swinging`) reads them back ([World objec
 - **Evidence:** confirmed (code) at `0x00397230`; detail: traced
 - **Wrapper** `0x003796b8` (registered by `RegisterBindings`); **calls** `0x00397230` `Door_Spawn`
 - **Used by** 46 of 467 script chunks (484 references); boot to menu: no; mission 1: yes; result used: yes
-- **Coney:** implemented
+- **Later in the story:** 27 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## TriggerSphereCfg {#triggerspherecfg}
 
@@ -1830,6 +1893,7 @@ own message-5 period is its +0x164 (1000 by default); that `interval` reaches it
 - **Evidence:** confirmed (code) at `0x00414bc0`; detail: traced
 - **Wrapper** `0x0036d0e0` (registered by `RegisterBindings`); **calls** `0x00414bc0` `TriggerSphere_Configure`
 - **Used by** 70 of 467 script chunks (172 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## TriggerSphereEnable {#triggersphereenable}
@@ -1854,6 +1918,7 @@ nothing for an object without a component container.
 - **Evidence:** confirmed (code) at `0x00414ae0`; detail: traced
 - **Wrapper** `0x0036d008` (registered by `RegisterBindings`); **calls** `0x00414ae0` `TriggerSphere_Enable`
 - **Used by** 30 of 467 script chunks (58 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TriggerSphereSetRadius {#triggerspheresetradius}
@@ -1874,6 +1939,7 @@ Changes the radius of an object's trigger sphere (component +0x174), creating th
 - **Evidence:** confirmed (code) at `0x00414a28`; detail: brief
 - **Wrapper** `0x0036d068` (registered by `RegisterBindings`); **calls** `0x00414a28` `TriggerSphere_SetRadius`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## UnloadTimedObjects {#unloadtimedobjects}
@@ -1894,4 +1960,5 @@ the final level.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0036dda0` (registered by `RegisterBindings`); **calls** `0x003978a8` `ObjMgr_UnloadTimed`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level84`](story.md#level84) (mission 18)
 - **Coney:** not implemented

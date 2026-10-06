@@ -14,7 +14,7 @@
     Returns an object's run-time type flags.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true, levels: [34, 81]}
 
 - name: GetName
   wrapper: 0x0036c978
@@ -44,7 +44,7 @@
   depth: thorough
   notes: >-
     The vector is one static buffer (`0x006ebd20`): every call overwrites it, so copy x, y, z before calling again.
-  usage: {chunks: 71, calls: 193, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 71, calls: 193, boot: true, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: TestDistance
@@ -63,7 +63,7 @@
     closer.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 16, calls: 38, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 16, calls: 38, boot: true, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: isRelease
   wrapper: 0x0036d5a8
@@ -75,7 +75,7 @@
     Tells the scripts this is a release build (`0x00357990`), which turns off their debug helpers.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 36, calls: 72, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 36, calls: 72, boot: true, mission1: false, result_used: true, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 92, 20, 11]}
   coney: implemented
 
 - name: GetPlatform
@@ -89,7 +89,7 @@
     names.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: true, levels: [93]}
   coney: implemented
 
 - name: ToInt
@@ -102,7 +102,7 @@
     Converts a number to an integer by truncation.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 6, calls: 7, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 6, calls: 7, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: random
@@ -122,5 +122,5 @@
     The generator's state is only the table index at `0x006eb880` (advanced by 1, masked to 10 bits, per draw),
     zeroed at start-up and never seeded; C++ code draws from the same index. A test mode should seed Coney's own
     generator.
-  usage: {chunks: 111, calls: 343, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 111, calls: 343, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented

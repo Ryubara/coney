@@ -28,7 +28,7 @@
     object already had is stopped and replaced.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false, levels: [51, 84]}
 
 - name: SndFadeOut
   wrapper: 0x00370f28
@@ -55,7 +55,7 @@
     Turns music ducking on or off (audio manager +0x3fab4).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [54]}
 
 - name: SndCfgMusicInfo
   wrapper: 0x00370fd0
@@ -89,7 +89,7 @@
   notes: >-
     0x00114628: compares with the stored name (64 bytes at audio manager +0x1e0 + 0x23d64), formats "%s_preload"
     (0x00547d00) and calls 0x003579a0 (doFile's code).
-  usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false, levels: [95]}
 
 - name: SndSetPitchMod
   wrapper: 0x003710c0
@@ -101,7 +101,7 @@
     Sets a global pitch modifier for sound effects (audio manager +0x3fa5c).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: SndSetNIDuck
   wrapper: 0x003710f8
@@ -114,7 +114,7 @@
     sound plays (audio manager +0x3faac; inferred: the lines of HuSpeakNI).
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: SndLoadBank
   wrapper: 0x00371130
@@ -128,7 +128,7 @@
     once loading ends in place of the default "sound".
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false, levels: [3, 5, 81, 31, 55, 84, 60, 61, 62, 63, 64]}
 
 - name: SoundSetSoundVolume
   wrapper: 0x00371160
@@ -140,7 +140,7 @@
     Does nothing in this build: the function it calls (0x001140d0) returns at once.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [64]}
 
 - name: SoundSetMusicVolume
   wrapper: 0x00371198
@@ -154,7 +154,7 @@
   depth: thorough
   notes: >-
     0x0010e710 stores it at music player +0x5c and sets a changed flag.
-  usage: {chunks: 50, calls: 67, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 50, calls: 67, boot: true, mission1: false, result_used: false, levels: [95, 81, 86, 54, 84, 83, 11, 64]}
 
 - name: SoundPlayMusicTrack
   wrapper: 0x00371230
@@ -180,7 +180,7 @@
   depth: brief
   notes: >-
     0x00113510 → 0x0010d8e8 with loop off. The string form is the one the scripts use.
-  usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: false, levels: [31, 51, 55, 84, 64]}
   coney: partial
 
 - name: SoundLoopMusicTrack
@@ -206,7 +206,7 @@
   depth: thorough
   notes: >-
     0x00113590 → 0x00112de0 → 0x0010d8e8 (loop on); 0x0041cf30 is the game-state check.
-  usage: {chunks: 87, calls: 183, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 87, calls: 183, boot: true, mission1: true, result_used: false, levels: [95, 5, 81, 86, 93, 31, 51, 52, 54, 55, 84, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: partial
 
 - name: SoundStopMusicTrack
@@ -218,7 +218,7 @@
     according to its state (0x0010d9a0).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 90, calls: 189, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 90, calls: 189, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: partial
 
 - name: SoundDisableCombatMusic
@@ -229,7 +229,7 @@
     Turns the automatic (system) music off, as SoundEnableSystemMusic(false) does.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [31]}
 
 - name: SoundSetSystemMusicState
   wrapper: 0x00371438
@@ -241,7 +241,7 @@
     Sets the system (automatic, mood-driven) music's state and updates it (0x00419fc8); the scripts use 0, 1 and 3.
   evidence: inferred
   depth: brief
-  usage: {chunks: 8, calls: 16, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 16, boot: false, mission1: false, result_used: false, levels: [2, 3, 86, 14, 55]}
 
 - name: SoundEnableSystemMusic
   wrapper: 0x00371470
@@ -253,7 +253,7 @@
     Turns the system music, the game's automatic mood music, on or off (0x0041a008).
   evidence: inferred
   depth: brief
-  usage: {chunks: 89, calls: 154, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 89, calls: 154, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: SoundSetMusicTrack
   wrapper: 0x003714a0
@@ -270,7 +270,7 @@
   depth: brief
   notes: >-
     0x00113ed0; what the three slots mean is inferred from the scripts' track names.
-  usage: {chunks: 73, calls: 275, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 73, calls: 275, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: SoundSetMusicStateCallback
   wrapper: 0x00371540
@@ -282,7 +282,7 @@
     Registers a Lua function to be told when the system music changes state (0x0041b4c0).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [55]}
 
 - name: SoundPlayAmbientTrack
   wrapper: 0x00371570
@@ -297,7 +297,7 @@
   depth: thorough
   notes: >-
     0x00110b18 → 0x00110b60; the ambient track's sound handle is kept at audio manager +0x24274.
-  usage: {chunks: 84, calls: 139, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 84, calls: 139, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 61, 64]}
 
 - name: SoundStopAmbientTrack
   wrapper: 0x003715a0
@@ -307,7 +307,7 @@
     Stops the background ambience loop (0x00110c70).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 28, calls: 50, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 28, calls: 50, boot: false, mission1: true, result_used: false, levels: [87, 95, 3, 5, 86, 93, 31, 14, 9, 52, 84, 82, 92, 83, 20, 11, 61, 64]}
 
 - name: SetAmbientTrackVolume
   wrapper: 0x003715c0
@@ -319,7 +319,7 @@
     Sets the volume of the background ambience loop that is playing; does nothing when none is (0x00110cc0).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 8, calls: 15, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 8, calls: 15, boot: true, mission1: true, result_used: false, levels: [87, 34, 93, 31, 52]}
 
 - name: SoundPlay
   wrapper: 0x003715f8
@@ -334,7 +334,7 @@
     Plays a sound once at a position in the world, at normal volume and pitch.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 17, calls: 27, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 17, calls: 27, boot: false, mission1: false, result_used: true, levels: [95, 2, 3, 5, 81, 93, 14, 82, 83, 11]}
 
 - name: SoundPlay2D
   wrapper: 0x003716f8
@@ -350,7 +350,7 @@
   depth: thorough
   notes: >-
     0x001137a8 → 0x0010fcd8.
-  usage: {chunks: 50, calls: 233, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 50, calls: 233, boot: true, mission1: false, result_used: false, levels: [95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 92, 83, 20, 11, 61, 64]}
 
 - name: SoundPreLoad
   wrapper: 0x00371768
@@ -365,7 +365,7 @@
     Loads and positions a sound without starting it, so that SoundStart can play it later without delay.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: true, levels: [5, 93, 14]}
 
 - name: SoundStart
   wrapper: 0x00371868
@@ -377,7 +377,7 @@
     Starts a sound prepared with SoundPreLoad.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [5, 93, 14]}
 
 - name: SoundStop
   wrapper: 0x003718a0
@@ -432,7 +432,7 @@
     AddAmbientSoundEmitter2.
   evidence: inferred
   depth: brief
-  usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: true, levels: [3, 5, 93, 14, 52, 82, 11]}
 
 - name: AddAmbientSoundEmitter2
   wrapper: 0x00371db0
@@ -462,7 +462,7 @@
     0x00113920 → 0x0010cf58. Which argument lands in which emitter field is confirmed (code); the meaning of the
     numbers is inferred from the scripts' values. Names containing certain substrings get a special type (0x0010cf58
     compares against 0x00546ce0, 0x00546ce8, 0x00546cf0).
-  usage: {chunks: 58, calls: 2230, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 58, calls: 2230, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: SetAmbientEmitterPositions
   wrapper: 0x00372058
@@ -482,7 +482,7 @@
   depth: thorough
   notes: >-
     0x00113a58 → 0x0010d590.
-  usage: {chunks: 53, calls: 421, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 53, calls: 421, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: AddAmbientEmitter
   wrapper: 0x00372350
@@ -516,7 +516,7 @@
     Scales the volume of one ambient emitter, for example a radio turned down.
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [2, 54, 82]}
 
 - name: PlayAmbientEmitter
   wrapper: 0x00372668
@@ -543,7 +543,7 @@
     Switches an ambient emitter on or off.
   evidence: inferred
   depth: brief
-  usage: {chunks: 15, calls: 43, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 15, calls: 43, boot: false, mission1: false, result_used: false, levels: [95, 34, 2, 3, 5, 81, 86, 93, 14, 54, 82, 11]}
 
 - name: NewMaterialSlots
   wrapper: 0x00372700
@@ -620,7 +620,7 @@
   depth: thorough
   notes: >-
     0x00116480.
-  usage: {chunks: 6, calls: 18, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 18, boot: true, mission1: false, result_used: false, levels: [81]}
 
 - name: NewAnimSlots
   wrapper: 0x00372ad8
@@ -707,7 +707,7 @@
   depth: thorough
   notes: >-
     Only the store is confirmed (code); the reader of +0x60 is not traced.
-  usage: {chunks: 20, calls: 53, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 20, calls: 53, boot: true, mission1: true, result_used: false, levels: [87, 95, 3, 5, 14, 51, 54, 84, 82, 20, 11]}
 
 - name: SoundSetEffect
   wrapper: 0x00372e58
@@ -725,7 +725,7 @@
   notes: >-
     0x00114028 → 0x00113000 calls the sound device twice (cores 0 and 1). The argument meanings follow the PS2 reverb
     parameters and are inferred.
-  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false, levels: [80, 95, 34, 3, 5, 86, 93, 14, 9, 51, 52, 82, 92, 83, 20, 11]}
 
 - name: SoundCfgInterfaceSound
   wrapper: 0x00372f20
@@ -755,7 +755,7 @@
   depth: thorough
   notes: >-
     0x001130c8.
-  usage: {chunks: 14, calls: 15, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 14, calls: 15, boot: true, mission1: false, result_used: false, levels: [80, 95, 3, 5, 86, 93, 14, 51, 52, 82, 92, 83, 11]}
 
 - name: SoundPauseSound
   wrapper: 0x00372fb0
@@ -767,7 +767,7 @@
     Pauses or resumes all game sound, for example around a scripted pause.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 36, calls: 139, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 36, calls: 139, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: SoundPlayCommand
   wrapper: 0x00372fe0
@@ -788,7 +788,7 @@
     or speech is off.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 60, calls: 97, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 60, calls: 97, boot: false, mission1: false, result_used: true, levels: [87, 95, 3, 81, 86, 93, 31, 14, 9]}
 
 - name: SoundPreLoadScene
   wrapper: 0x00373118
@@ -820,4 +820,4 @@
   depth: brief
   notes: >-
     0x003ac4d0.
-  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false, levels: [87, 95, 11]}

@@ -78,7 +78,7 @@
     Brain refresh at 0x0028c1a8: off installs the handlers 0x0028fbb0/0x004edd40/0x004edd48 and, for type 0, clears
     the player record's control byte (+0x1b); on reads the handlers from the per-type tables at
     0x00715530/0x00715568/0x007155a0 (seven types) and, for type 0, sets control again.
-  usage: {chunks: 120, calls: 894, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 120, calls: 894, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: BrSuspend
@@ -96,7 +96,7 @@
   depth: thorough
   notes: >-
     Unlike `BrDead` it does not swap the brain's handlers or touch the pad.
-  usage: {chunks: 11, calls: 22, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 11, calls: 22, boot: false, mission1: true, result_used: false, levels: [95, 5, 11, 61, 64]}
   coney: implemented
 
 - name: BrSetType
@@ -113,7 +113,7 @@
   depth: brief
   notes: >-
     Seven types (tables at 0x00715530); the meaning of each type beyond 0 is inferred from the scripts' use.
-  usage: {chunks: 8, calls: 17, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 17, boot: false, mission1: false, result_used: false, levels: [95, 3, 82, 83]}
 
 - name: BrSetPedType
   wrapper: 0x0035ecb0
@@ -128,7 +128,7 @@
   depth: brief
   notes: >-
     Storage confirmed (code) at 0x00292460; what the types change is inferred from the scripts' calls.
-  usage: {chunks: 12, calls: 26, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 12, calls: 26, boot: false, mission1: false, result_used: false, levels: [34, 5, 86, 92, 20, 11]}
 
 - name: BrGetPedType
   wrapper: 0x0035ed28
@@ -174,7 +174,7 @@
   notes: >-
     Goals: 0x0028d910 pops until the stack index (`+0x2c`) is -1. Actions: 0x0028db20 removes the up to eight queued
     actions (`+0x2e` count, ring at `+0x68`).
-  usage: {chunks: 124, calls: 520, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 124, calls: 520, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 64]}
   coney: implemented
 
 - name: BrFlushActions
@@ -188,7 +188,7 @@
     place, so the current goal plans again on its next update.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 34, calls: 67, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 34, calls: 67, boot: false, mission1: false, result_used: false, levels: [20]}
 
 - name: BrHasGoals
   wrapper: 0x0035ee50
@@ -214,7 +214,7 @@
     Pops every goal off a human's goal stack, ending each one, but leaves already queued actions to finish.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 40, calls: 84, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 40, calls: 84, boot: false, mission1: false, result_used: false, levels: [5, 86, 51, 52]}
 
 - name: BrPopGoal
   wrapper: 0x0035eed8
@@ -240,7 +240,7 @@
     just given takes effect in the same frame.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 4, calls: 13, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 13, boot: false, mission1: false, result_used: false, levels: [54]}
 
 - name: BrSetThreatResponse
   wrapper: 0x0035ef48
@@ -257,7 +257,7 @@
   notes: >-
     Storage at 0x00292708; the 0 case is confirmed by `Brain_Fight` (0x0028d2e8). What 1-3 change is not traced (many
     readers of brain `+0x21c`). Gang-wide: `GangSetThreatResponse`.
-  usage: {chunks: 43, calls: 116, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 43, calls: 116, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 5, 81, 86, 93, 31, 9, 51, 52, 54, 92, 83, 20, 11]}
   coney: implemented
 
 - name: BrCanUseWorldFlags
@@ -276,7 +276,7 @@
   notes: >-
     Storage confirmed (code) at 0x00292c10; that the chance is a percentage is inferred from the values the scripts
     pass.
-  usage: {chunks: 6, calls: 15, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 15, boot: true, mission1: false, result_used: false, levels: [95, 2, 5, 93, 31, 84, 92, 20, 11]}
 
 - name: BrHasEnemies
   wrapper: 0x0035f050
@@ -290,7 +290,7 @@
     Tells whether a human currently considers anyone an enemy.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: true, levels: [95, 14, 20]}
 
 - name: BrHasAttackers
   wrapper: 0x0035f0a0
@@ -304,7 +304,7 @@
     Tells whether anyone is currently attacking the human. One script calls it.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [54]}
 
 - name: BrClearBackoff
   wrapper: 0x0035f0f0
@@ -317,7 +317,7 @@
     stops backing away; otherwise does nothing. `global.lua` uses it in its fight helpers.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: BrSetDamageResponse
   wrapper: 0x0035f278
@@ -332,7 +332,7 @@
   depth: brief
   notes: >-
     Storage confirmed (code) at 0x00292758.
-  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false, levels: [81, 86, 20]}
 
 - name: BrSetInvestigateResponse
   wrapper: 0x0035f370
@@ -348,7 +348,7 @@
   depth: thorough
   notes: >-
     Storage confirmed (code) at 0x002927a8; the meaning of 0 and 1 is inferred from the scripts' use.
-  usage: {chunks: 29, calls: 74, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 29, calls: 74, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 5, 81, 86, 93, 31, 14, 9, 52, 92, 83, 20]}
 
 - name: BrSetPlayerResponse
   wrapper: 0x0035f468
@@ -363,7 +363,7 @@
   depth: brief
   notes: >-
     Storage confirmed (code) at 0x002927f8.
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [92, 11]}
 
 - name: BrSetThugWantsWeapon
   wrapper: 0x0035f990
@@ -379,7 +379,7 @@
   depth: thorough
   notes: >-
     Storage confirmed (code) at 0x00292848; the behaviour behind the byte is inferred from the name.
-  usage: {chunks: 37, calls: 78, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 37, calls: 78, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 2, 3, 5, 81, 86, 93, 51, 52, 54, 55, 82, 83, 20, 11]}
 
 - name: BrSetThugWantsHat
   wrapper: 0x0035f9f0
@@ -392,7 +392,7 @@
     Sets whether a thug goes after hats knocked off in fights (brain `+0x266`).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 12, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 12, boot: false, mission1: false, result_used: false, levels: [62]}
 
 - name: BrSetFOV
   wrapper: 0x0035fa50
@@ -406,7 +406,7 @@
     sections.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 19, calls: 114, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 19, calls: 114, boot: false, mission1: false, result_used: false, levels: [87, 14, 52, 20, 60, 61, 62, 63, 64]}
 
 - name: BrSetMeleeRange
   wrapper: 0x0035fac8
@@ -469,7 +469,7 @@
   notes: >-
     Confirmed (code) at 0x00295dd8: `count` is the number of slots (`+0x271`), `count2` how many followers may
     take one (`+0x272`); the rest queue behind them. Behaviour: [AI](../../research/ai.md#formations).
-  usage: {chunks: 3, calls: 4, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 3, calls: 4, boot: true, mission1: true, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: BrSetFollowSlotSet
@@ -503,7 +503,7 @@
   notes: >-
     Confirmed (code) at 0x00292b10 and 0x00295ec8 (nine slots of 12 bytes per set). Whether +y is the leader's forward
     direction is inferred.
-  usage: {chunks: 2, calls: 12, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 2, calls: 12, boot: true, mission1: true, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: BrSetReactToViolence
@@ -520,7 +520,7 @@
   depth: thorough
   notes: >-
     Storage confirmed (code) at 0x00292bc8; the reactions themselves are inferred.
-  usage: {chunks: 33, calls: 85, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 33, calls: 85, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 5, 86, 93, 31, 84, 92, 83, 20, 11]}
 
 - name: GoalMoveToFlag
   wrapper: 0x0035ff18
@@ -545,7 +545,7 @@
   notes: >-
     Constructor 0x002da3b0, start 0x002da408 (offset point by angle and distance, 0x003376c0), update 0x002da588. The
     meaning of the last argument is inferred.
-  usage: {chunks: 84, calls: 304, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 84, calls: 304, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GoalMoveToExitFlag
@@ -568,7 +568,7 @@
   notes: >-
     Goal_MoveToExitFlag 0x002da810, constructor 0x002da8f8. Removal at an exit flag (activity 8): 0x00416b18, [World
     flags](../../research/flags.md#activities). `HuExitWorld` finds the flag itself.
-  usage: {chunks: 10, calls: 26, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 26, boot: false, mission1: false, result_used: false, levels: [80, 34, 2, 86, 31, 52, 83, 20]}
 
 - name: GoalMoveToUseFlag
   wrapper: 0x003601a8
@@ -590,7 +590,7 @@
   notes: >-
     Constructor 0x002db768 (reserves the flag through 0x004161b0). Mission-1 scripts use it to seat and position
     extras. The roles of the two floats and the flag are inferred.
-  usage: {chunks: 28, calls: 97, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 28, calls: 97, boot: false, mission1: true, result_used: false, levels: [80, 87, 3, 5, 86, 93, 31, 9, 51, 52, 82, 92, 83, 20, 11]}
 
 - name: GoalMoveToHuman
   wrapper: 0x003602e0
@@ -608,7 +608,7 @@
   notes: >-
     Argument order confirmed (code) at 0x002dc458 (the goal goes on the first human's brain); the arrival behaviour is
     inferred.
-  usage: {chunks: 3, calls: 11, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 11, boot: false, mission1: false, result_used: false, levels: [86]}
 
 - name: GoalAddressPerson
   wrapper: 0x003603a8
@@ -629,7 +629,7 @@
   notes: >-
     Constructor 0x002cc408 interns the callback name through the script system (slot +0xcc). It resolves the speaker
     without checking it is a human. Process 0x002cc588. Behaviour: [AI](../../research/ai.md#address-person).
-  usage: {chunks: 9, calls: 15, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 9, calls: 15, boot: false, mission1: true, result_used: false, levels: [87, 95, 2, 86, 54, 83]}
   coney: implemented
 
 - name: GoalGetItem
@@ -644,7 +644,7 @@
     Sends a human to pick up a particular object.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false, levels: [31]}
 
 - name: GoalEngageEnemy
   wrapper: 0x00360550
@@ -657,7 +657,7 @@
     Makes a human start fighting a given enemy.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false, levels: [81, 20]}
 
 - name: GoalFollowPlayer
   wrapper: 0x003605c8
@@ -676,7 +676,7 @@
   notes: >-
     Constructor 0x002de380; its start (0x002de498) widens the follower's field of view and joins the leader's
     formation (0x00296028). The meaning of `mode` is inferred.
-  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false, levels: [86, 54, 55]}
 
 - name: GoalTrackHuman
   wrapper: 0x00360690
@@ -712,7 +712,7 @@
     Makes a human follow a moving object, as in scripted chases.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 5, boot: false, mission1: false, result_used: false, levels: [81, 51]}
 
 - name: GoalFollowFormation
   wrapper: 0x003607f8
@@ -725,7 +725,7 @@
     Makes a human take a place in another human's follow formation.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [11]}
 
 - name: GoalTravelPath
   wrapper: 0x00360870
@@ -746,7 +746,7 @@
   notes: >-
     Goal_TravelPath 0x002e05a8 builds it with constructor 0x002e0748 (no loop, no wait); Process 0x002e0968 picks the
     next point (0x002e07d0). The tactic `TacticTravelPath` uses the same goal with a loop mode and a wait.
-  usage: {chunks: 6, calls: 16, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 16, boot: false, mission1: false, result_used: false, levels: [80, 5, 51, 84]}
 
 - name: GoalTravelPath2
   wrapper: 0x00360988
@@ -764,7 +764,7 @@
     As `GoalTravelPath`, with an extra point index (inferred: the point to stop at).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: GoalLeadChase
   wrapper: 0x00360ac8
@@ -782,7 +782,7 @@
     Makes a human run a path ahead of a chaser, pacing itself by how far behind the chaser is.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [2]}
 
 - name: GoalRunCarrotRun
   wrapper: 0x00360c10
@@ -802,7 +802,7 @@
     Makes a human run a path just ahead of a chasing gang, the 'carrot' in chase missions.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false, levels: [5, 84, 20]}
 
 - name: GoalDevilRun
   wrapper: 0x00360d98
@@ -823,7 +823,7 @@
     attacking when close.
   evidence: inferred
   depth: brief
-  usage: {chunks: 6, calls: 33, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 33, boot: false, mission1: false, result_used: false, levels: [3, 54]}
 
 - name: GoalGuardFlag
   wrapper: 0x00360f28
@@ -840,7 +840,7 @@
     Makes a human stand guard at a flag, facing a direction, optionally for a limited time with a callback.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 14, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 14, boot: false, mission1: false, result_used: false, levels: [3, 14, 55]}
 
 - name: GoalArrestHuman
   wrapper: 0x00361030
@@ -871,7 +871,7 @@
   depth: thorough
   notes: >-
     0x002b2b90 calls 0x0028d2e8, which returns at once when brain `+0x21c` is 0.
-  usage: {chunks: 15, calls: 33, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 15, calls: 33, boot: false, mission1: true, result_used: false, levels: [80, 95, 34, 2, 93, 31, 52, 83, 20]}
   coney: implemented
 
 - name: GoalMelee
@@ -885,7 +885,7 @@
     Makes a human brawl in melee, with a given opponent or with whoever is near.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [87]}
 
 - name: GoalPlayAnimation
   wrapper: 0x003611d0
@@ -937,7 +937,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002e5128 registers (scene, human, role) with the scene through 0x003541a0.
-  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: GoalJoinCinematic
@@ -958,7 +958,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002e53e0.
-  usage: {chunks: 7, calls: 22, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 7, calls: 22, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: GoalJoinAnimation
@@ -978,7 +978,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002e56f0; 0x002e5650 never runs the first update.
-  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: GoalHooker
@@ -1092,7 +1092,7 @@
   depth: brief
   notes: >-
     Both forms build the same goal (0x002a3320); argument roles past the ranges are inferred.
-  usage: {chunks: 3, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 8, boot: false, mission1: false, result_used: false, levels: [81, 86, 52]}
 
 - name: GoalCopperPatrol
   wrapper: 0x00361ea0
@@ -1108,7 +1108,7 @@
     Makes a cop patrol along a path.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [52]}
 
 - name: GoalAreaWalker
   wrapper: 0x00361fa0
@@ -1131,7 +1131,7 @@
   notes: >-
     Wrapper 0x00361fa0, constructor 0x002a4dc8 (vtable 0x0053fa90), Process 0x002a4eb0. With `flag` NilHandle the
     centre is the human's own position. Mode 3's idles: anim 0x29c, or 0x29e at 25 %.
-  usage: {chunks: 13, calls: 33, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 13, calls: 33, boot: false, mission1: false, result_used: false, levels: [95, 34, 86, 31, 9, 52, 82, 92]}
 
 - name: GoalObjectThrower
   wrapper: 0x003620c0
@@ -1151,7 +1151,7 @@
     Makes a human throw objects at up to three targets, as boss throwers do.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false, levels: [86, 84, 64]}
 
 - name: GoalPathBlocker
   wrapper: 0x00362360
@@ -1198,7 +1198,7 @@
     Makes a human stay at a position, returning to it if pushed away.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [31]}
 
 - name: GoalBossDiego
   wrapper: 0x00362600
@@ -1261,7 +1261,7 @@
     Makes a human go to a spot and spray a graffiti tag.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 6, boot: false, mission1: false, result_used: false, levels: [3, 86]}
 
 - name: GoalTagEx
   wrapper: 0x00362a28
@@ -1293,7 +1293,7 @@
     Makes a human throw an object (a molotov, a chair) at a target and call back the script.
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [87, 95, 34]}
 
 - name: GoalAvoidEnemies
   wrapper: 0x00362c00
@@ -1312,7 +1312,7 @@
     Makes a human keep its distance from enemies.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [86]}
 
 - name: GoalCopRespond
   wrapper: 0x00362d68
@@ -1344,7 +1344,7 @@
     Makes a witness go and call the police about a crime.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [14, 82]}
 
 - name: GoalDealer
   wrapper: 0x00363018
@@ -1366,7 +1366,7 @@
   notes: >-
     Wrapper 0x002c6c88 remaps the type by class; constructor 0x002c6d90 rolls `random(100) < dirtyChance` into
     `+0x41`. The other arguments' roles are inferred from the scripts' field names.
-  usage: {chunks: 21, calls: 27, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 21, calls: 27, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 51, 52, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: GoalShopkeeper
@@ -1386,7 +1386,7 @@
     Makes a human run a store: stay behind the counter, greet and react to the player in the store's volume.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false, levels: [95, 93, 20]}
 
 - name: GoalRiot
   wrapper: 0x00363268
@@ -1404,7 +1404,7 @@
     Makes a human riot: smash, loot and fight in an area.
   evidence: inferred
   depth: brief
-  usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false, levels: [34, 86, 93, 31, 82]}
 
 - name: GoalBumLogic
   wrapper: 0x003633a8
@@ -1425,7 +1425,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002abef8 (clamps the chance to 100, interns the callback). What each type does is inferred.
-  usage: {chunks: 26, calls: 71, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 26, calls: 71, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 2, 5, 86, 31, 14, 51, 52, 92, 83, 20, 11]}
 
 - name: GoalBumLogicTrigger
   wrapper: 0x003634c8
@@ -1437,7 +1437,7 @@
     Pokes a bum's ambient goal into its triggered reaction (inferred).
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [87, 14]}
 
 - name: GoalPlayDynAnimation
   wrapper: 0x00363530
@@ -1456,7 +1456,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002d2eb0. The flag's effect is inferred.
-  usage: {chunks: 22, calls: 49, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 22, calls: 49, boot: false, mission1: true, result_used: false, levels: [87, 95, 2, 86, 93, 31, 54, 84, 92, 83]}
   coney: implemented
 
 - name: GoalPlayDynIdle
@@ -1480,7 +1480,7 @@
     Constructor 0x002d3a18 (the three names go to dynamic anim slots read back at human +0x488, +0x4b0, +0x4d8),
     Process 0x002d3d58: states 0 start (anim 0x29f), 1 loop (until the time, -1 for ever), 2 end (anim 0x2a1 when
     there is one), 3 done. With no flag it plays where it stands. `TacticIdle`'s dynIdle option ends it early.
-  usage: {chunks: 21, calls: 99, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 21, calls: 99, boot: false, mission1: false, result_used: false, levels: [87, 95, 3, 86, 93, 31, 14, 54, 55, 82, 92, 83, 64]}
 
 - name: GoalPlayGenAnim
   wrapper: 0x003636c8
@@ -1494,7 +1494,7 @@
     Plays one of a few generic animations on a human and calls the script back.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 5, 62]}
 
 - name: GoalStandIdle
   wrapper: 0x00363758
@@ -1521,7 +1521,7 @@
     Makes a human stay put and throw objects at enemies (bartenders throwing bottles).
   evidence: inferred
   depth: brief
-  usage: {chunks: 5, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 8, boot: false, mission1: false, result_used: false, levels: [34, 31, 11]}
 
 - name: GoalCallGang
   wrapper: 0x003638b8
@@ -1538,7 +1538,7 @@
     Makes a human call its gang for help.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [20]}
 
 - name: GoalMark
   wrapper: 0x003639c8
@@ -1552,7 +1552,7 @@
     Makes a human wait at a flag as a mark (in the marketplace mission, the accountant's pick-up points).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 5, boot: false, mission1: false, result_used: false, levels: [20]}
 
 - name: GoalPeddler
   wrapper: 0x00363a68
@@ -1568,7 +1568,7 @@
     Makes a human act as a street vendor that greets passers-by within range.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 9, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 9, boot: false, mission1: false, result_used: false, levels: [95, 93, 20]}
 
 - name: GoalBigLedgeThrower
   wrapper: 0x00363b38
@@ -1586,7 +1586,7 @@
     A boss that throws objects from a ledge at up to three targets.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 7, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 7, boot: false, mission1: false, result_used: false, levels: [3]}
 
 - name: GoalBackoff
   wrapper: 0x00363d70
@@ -1605,7 +1605,7 @@
   depth: thorough
   notes: >-
     Constructor 0x002d92e8. The flag's meaning is inferred.
-  usage: {chunks: 8, calls: 23, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 8, calls: 23, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: GoalLutherShooter
   wrapper: 0x00363e50
@@ -1626,7 +1626,7 @@
     Luther's gunfire behaviour in the final missions.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [64]}
 
 - name: GoalBoxer
   wrapper: 0x00363ff8
@@ -1639,7 +1639,7 @@
     Makes a human work out on a heavy bag (the hideout's training bag).
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: GoalBigBrawler
   wrapper: 0x00364070
@@ -1698,7 +1698,7 @@
     Makes a human cower in fear.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 11, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 11, boot: false, mission1: false, result_used: false, levels: [86, 93, 92, 20]}
 
 - name: GoalGrabTarget
   wrapper: 0x00364500
@@ -1711,7 +1711,7 @@
     Makes a human grab another human.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: ActTurn
   wrapper: 0x00364578
@@ -1741,7 +1741,7 @@
     Queues an action that turns the human to face a target.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [5]}
 
 - name: ActTurnToDir
   wrapper: 0x00364708
@@ -1760,7 +1760,7 @@
   notes: >-
     0x002fdb90 allocates the action (`Brain_AllocAction`); the same turn action serves `GoalPlayDynIdle` and
     `GoalAreaWalker` ([AI](../../research/ai.md#look-at)).
-  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false, levels: [2, 54, 55]}
 
 - name: ActLookAt
   wrapper: 0x003647d8
@@ -1780,7 +1780,7 @@
     Wrapper 0x002fe0c8, action set-up 0x002fe160 (a turn action, 0x002fdc28, with the target kept at `+0x1c`, vtable
     0x005430a0); update 0x002fe1b0 / 0x002fdd08 writes the heading to the target into brain `+0x110` each update.
     Behaviour: [AI](../../research/ai.md#look-at).
-  usage: {chunks: 37, calls: 112, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 37, calls: 112, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 5, 86, 9, 51, 52, 54, 55, 83, 20, 11, 60, 61, 62, 64]}
   coney: implemented
 
 - name: ActGiveWay
@@ -1856,7 +1856,7 @@
   notes: >-
     0x001655e0 shuts the tactic down, returns it to the pool and clears gang `+0x40`; a status byte from the tactic is
     kept at gang `+0xdd`.
-  usage: {chunks: 92, calls: 208, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 92, calls: 208, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: TacticHoldTheLine
@@ -1883,7 +1883,7 @@
     Constructor 0x00313f38 (vtable 0x00543a40): Start 0x00314038, Process 0x00314538 (every 1.75 s), event
     0x003147a0. The defenders are min(line length in metres, 60 % of the members). Behaviour:
     [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 18, calls: 18, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 18, calls: 18, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
 
 - name: TacticDefend
   wrapper: 0x00374c18
@@ -1903,7 +1903,7 @@
   notes: >-
     Constructor 0x003101d8 (vtable 0x00543800): Start 0x00310618, Process 0x00310768 (every 1.5 s), event 0x00310a60.
     The formation uses set 3 with two slots per member (up to 9). Behaviour: [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 23, calls: 25, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 23, calls: 25, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 83, 20]}
 
 - name: TacticWalkinTall
   wrapper: 0x00374cd0
@@ -1924,7 +1924,7 @@
     Constructor 0x0031ec90 (vtable 0x005440a0): Start 0x0031ef28, Process 0x0031efb8, event 0x0031f268. Start
     substitutes anim 0x253 with four swagger anims (0x00511620) and says the `shadow_spot` line. Behaviour:
     [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 18, calls: 36, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 18, calls: 36, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
 
 - name: TacticPursue
   wrapper: 0x00374d90
@@ -1948,7 +1948,7 @@
   notes: >-
     Constructor 0x00317c40 (vtable 0x00543c20): Start 0x00317f20, Process 0x003183b8 (every 150 ms), event
     0x00318770. Hits by a player's gang do not fire `TacDamage`. Behaviour: [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 22, calls: 23, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 22, calls: 23, boot: false, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: TacticHanginOut
   wrapper: 0x00374f00
@@ -1972,7 +1972,7 @@
     Constructor 0x00311ad8 (vtable 0x00543920): Start 0x00312348, Process 0x00312518, event 0x00312580. Start also
     substitutes anim 0x25b with eight hang-out idles (0x00511480). Behaviour:
     [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 28, calls: 72, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 28, calls: 72, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: TacticWander
   wrapper: 0x00375038
@@ -1999,7 +1999,7 @@
     Constructor 0x0031f300 (vtable 0x00544100): Start 0x0031f638 (0x0031f410), Process 0x00320360 (world flags
     0x0031fb80, vandalism 0x0031fdc0, theft 0x003200c8), event 0x00320410. Behaviour:
     [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 19, calls: 20, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 19, calls: 20, boot: false, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
 
 - name: TacticTravelPath
   wrapper: 0x003751d0
@@ -2026,7 +2026,7 @@
     Constructor 0x0031cbc0 (vtable 0x00543f80): Start 0x0031cf80, Process 0x0031d460, event 0x0031d758. A free member
     near the leader may stop to use a nearby usable flag (inferred). Behaviour:
     [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 20, calls: 38, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 20, calls: 38, boot: false, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20, 11]}
 
 - name: TacticAttack
   wrapper: 0x00375370
@@ -2045,7 +2045,7 @@
     Constructor 0x003075c8 (vtable 0x00543320): Start 0x00307fe0, Process 0x003081a8, event 0x00308478. A gang with
     `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x00307a10), not traced. Behaviour:
     [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 54, calls: 184, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 54, calls: 184, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: TacticMoveToFlag
   wrapper: 0x003753d0
@@ -2067,7 +2067,7 @@
   notes: >-
     Constructor 0x00317410 (vtable 0x00543bc0): Start 0x00317700 (0x003174e8), Process 0x00317ad0, event 0x00317b38.
     No time limit. Behaviour: [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 28, calls: 69, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 28, calls: 69, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: TacticAddress
   wrapper: 0x003754d8
@@ -2104,7 +2104,7 @@
   depth: thorough
   notes: >-
     Constructor 0x0030f4d0 (vtable 0x005437a0, a timer 2 s ahead).
-  usage: {chunks: 31, calls: 50, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 31, calls: 50, boot: false, mission1: true, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: TacticVandalize
@@ -2127,7 +2127,7 @@
     Constructor 0x0031e3b8 (vtable 0x00544040): Start 0x0031e5f8, Process 0x0031ea00, event 0x0031eaf0. The
     constructor can also take up to four objects instead of a zone; the binding never passes any. Behaviour:
     [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 20, calls: 31, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 20, calls: 31, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
 
 - name: TacticVandalizeCars
   wrapper: 0x003757b8
@@ -2142,7 +2142,7 @@
     Has a gang wreck up to four given cars.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [86]}
 
 - name: TacticSteal
   wrapper: 0x00375930
@@ -2162,7 +2162,7 @@
   notes: >-
     Constructor 0x0031c030 (vtable 0x00543ec0): Start 0x0031c1d0 (0x0031c0e0), event 0x0031c258; Process always 0.
     Behaviour: [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 19, calls: 19, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
 
 - name: TacticShadow
   wrapper: 0x00375a20
@@ -2240,7 +2240,7 @@
     Process always 0. The goal (vtable 0x005419b0, Process 0x002e3630) re-picks the nearest enemy every 1.5 s and
     flees at gait 5 (4 when the human is tired) unless `gait` is given. Behaviour:
     [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 25, calls: 32, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 25, calls: 32, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 83, 20]}
 
 - name: TacticManWeaponPile
   wrapper: 0x00375ef8
@@ -2261,7 +2261,7 @@
   notes: >-
     Constructor 0x00317050 (vtable 0x00543b60): Start 0x00317218 (0x00317108), event 0x00317350. The goal's own
     behaviour (0x002a3320, goal type 82) is not traced here. Behaviour: [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 20, calls: 20, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 20, calls: 20, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20, 62]}
 
 - name: TacticDomination
   wrapper: 0x00376008
@@ -2276,7 +2276,7 @@
     Has a gang take and hold an area around a flag (king of the hill).
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 10, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 10, boot: false, mission1: false, result_used: false, levels: [92]}
 
 - name: TacticRing
   wrapper: 0x003760c0
@@ -2316,7 +2316,7 @@
     Constructor 0x0031d878 (vtable 0x00543fe0): Start 0x0031dc28, Process 0x0031e098 (every second), event
     0x0031e280. Hits, sightings and attacks alert the members without calling back. Behaviour:
     [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 21, calls: 23, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 21, calls: 23, boot: false, mission1: false, result_used: false, levels: [80, 87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
 
 - name: TacticStandGround
   wrapper: 0x003762f0
@@ -2329,7 +2329,7 @@
     Has a gang stand its ground where it is.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [11]}
 
 - name: TacticBoss
   wrapper: 0x00376350
@@ -2375,7 +2375,7 @@
     Constructor 0x0030e670 (vtable 0x00543740): Start 0x0030ec20, Process 0x0030eec0 (every 250 ms; posture every 500
     ms), event 0x0030f408. With no route between the leaders it returns 1 when the other leader is in view, else 9.
     Behaviour: [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 26, calls: 35, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 26, calls: 35, boot: false, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: TacticTaunt
   wrapper: 0x00376608
@@ -2415,7 +2415,7 @@
   notes: >-
     Constructor 0x003149f0 (vtable 0x00543aa0): Start 0x00314f38, Process 0x003150c8, event 0x00315228. Behaviour:
     [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 21, calls: 22, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 21, calls: 22, boot: false, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 83, 20]}
 
 - name: TacticBossScenarioA
   wrapper: 0x003767f8
@@ -2440,7 +2440,7 @@
     The Diego and Vargas boss fight, tuned per stage by the tables.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false, levels: [5]}
 
 - name: TacticBossScenarioB
   wrapper: 0x00376e78
@@ -2463,7 +2463,7 @@
     The Lizzies' gunfight, with the shooting tuned by the arguments.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [55]}
 
 - name: TacticBossScenarioC
   wrapper: 0x003770a0
@@ -2477,7 +2477,7 @@
     Moe's boss fight.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [11]}
 
 - name: TacticBossScenarioD
   wrapper: 0x00377130
@@ -2491,7 +2491,7 @@
     A rooftop boss fight (the Destroyers' roof).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [82]}
 
 - name: TacticBossScenarioE
   wrapper: 0x003771c0
@@ -2510,7 +2510,7 @@
     Luther's gunfight in the final mission.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [84]}
 
 - name: TacticBossScenarioF
   wrapper: 0x00377338
@@ -2530,7 +2530,7 @@
     Birdie's boss fight, moving between three positions.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [31]}
 
 - name: TacticBossScenarioG
   wrapper: 0x00377590
@@ -2545,7 +2545,7 @@
     Virgil's boss fight.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: TacticBossScenarioH
   wrapper: 0x00377648
@@ -2559,7 +2559,7 @@
     Chatterbox's boss fight.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [81]}
 
 - name: TacticScout
   wrapper: 0x003776d8
@@ -2582,7 +2582,7 @@
   notes: >-
     Constructor 0x0031a430 (vtable 0x00543da0): Start 0x0031af98, Process 0x0031b030, event 0x0031b1b0 (0x0031a818).
     Behaviour: [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false, levels: [87, 81, 14, 51, 82]}
 
 - name: TacticPathScout
   wrapper: 0x00377810
@@ -2601,7 +2601,7 @@
     Has a gang scout along a route of up to sixteen flags.
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: false, levels: [14, 9, 82]}
 
 - name: TacticTrigger
   wrapper: 0x00377a10
@@ -2617,5 +2617,5 @@
   depth: brief
   notes: >-
     Confirmed (code) at 0x00316fa0. What the two switches do is inferred (cheering, joining in).
-  usage: {chunks: 3, calls: 15, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 15, boot: false, mission1: false, result_used: false, levels: [2, 11]}
   coney: implemented

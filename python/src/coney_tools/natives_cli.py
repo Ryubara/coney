@@ -1,13 +1,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools natives ...` commands: render, coney and cpp (all with --check), stats, and mission1 (reads the
-disc)."""
+"""The `coney-tools natives ...` commands: render, coney and cpp (all with --check), stats, and mission1 and
+missions (read the disc)."""
 
 from __future__ import annotations
 
 import collections
+from collections.abc import Callable
 from pathlib import Path
 
-from coney_tools import natives, natives_cpp, natives_render
+from coney_tools import lua4, natives, natives_cpp, natives_render
 from coney_tools.config import ConfigError, find_repo_root
 
 
@@ -166,18 +167,7 @@ def run_mission1(disc_arg: str | None, check_only: bool) -> int:
     scripts, helpers = natives_mission.scripts_from(chunks)
     names = natives_mission.reached_names(scripts, helpers)
     used = natives_mission.mission_bindings(names, (b.name for b in masterlist.bindings))
-    stale: list[str] = []
-    for path in sorted((root / natives.DATA_DIR).glob("*.yaml")):
-        try:
-            text = path.read_bytes().decode("utf-8").replace("\r\n", "\n")
-        except (OSError, UnicodeDecodeError) as error:
-            raise ConfigError(f"{path}: cannot be read ({error})") from error
-        updated = natives_mission.set_mission1(text, used)
-        if updated == text:
-            continue
-        stale.append(path.name)
-        if not check_only:
-            path.write_bytes(updated.encode("utf-8"))
+    stale = _rewrite_data(root, lambda text: natives_mission.set_mission1(text, used), check_only)
     rows = [b for b in masterlist.bindings if b.name in used]
     traced = sum(1 for b in rows if b.depth == "thorough")
     implemented = collections.Counter(b.coney for b in rows)
@@ -191,5 +181,72 @@ def run_mission1(disc_arg: str | None, check_only: bool) -> int:
         )
         return 1
     state = f"updated {', '.join(stale)}; run `natives render`" if stale else "mission1 up to date"
+    print(f"natives: {state}")
+    return 0
+
+
+def _rewrite_data(root: Path, change: Callable[[str], str], check_only: bool) -> list[str]:
+    """Apply `change` to the text of every data file; returns the names of the files it changed, writing them unless
+    `check_only`."""
+    stale: list[str] = []
+    for path in sorted((root / natives.DATA_DIR).glob("*.yaml")):
+        try:
+            text = path.read_bytes().decode("utf-8").replace("\r\n", "\n")
+        except (OSError, UnicodeDecodeError) as error:
+            raise ConfigError(f"{path}: cannot be read ({error})") from error
+        updated = change(text)
+        if updated == text:
+            continue
+        stale.append(path.name)
+        if not check_only:
+            path.write_bytes(updated.encode("utf-8"))
+    return stale
+
+
+def run_missions(disc_arg: str | None, check_only: bool) -> int:
+    """Set each entry's `usage.levels` from the scripts of the story's later levels on the player's disc; with
+    `check_only`, write nothing and return 1 when one differs. Prints each level's counts either way: the bindings it
+    can call, those no earlier level of the story calls (level99 included), and how many of those are traced."""
+    from coney_tools import natives_mission, refs_extract  # the disc readers are only needed here
+    from coney_tools.refs_cli import known_names
+    from coney_tools.wad_cli import open_disc
+
+    root = find_repo_root(Path.cwd())
+    masterlist = _load_checked(root)
+    if masterlist is None:
+        return 1
+    script_names = [name for name in known_names(root, None) if name.endswith(".lua")]
+    disc = refs_extract.DiscFacts(open_disc(disc_arg))
+
+    def chunk(name: str) -> lua4.Proto:
+        # One compiled script from the disc, by WAD name.
+        entry = disc.by_name(name)
+        if entry is None:
+            raise ConfigError(f"{name} is not on this disc")
+        return lua4.parse_chunk(disc.read(entry))
+
+    helpers = chunk(natives_mission.HELPERS_SCRIPT)
+    by_name = {b.name: b for b in masterlist.bindings}
+    seen = {b.name for b in masterlist.bindings if b.usage and b.usage.mission1}
+    levels_of: dict[str, list[int]] = collections.defaultdict(list)
+    for level, label in natives.STORY_LEVELS:
+        files = natives_mission.level_scripts(level, script_names)
+        if not files:
+            raise ConfigError(f"no scripts of level{level} in the WAD names list")
+        names = natives_mission.reached_names([chunk(name) for name in files], helpers)
+        used = natives_mission.mission_bindings(names, by_name)
+        for name in used:
+            levels_of[name].append(level)
+        new = used - seen
+        seen |= used
+        traced = sum(1 for name in new if by_name[name].depth == "thorough")
+        print(f"level{level} ({label}, {len(files)} scripts): {len(used)} bindings; new {len(new)}, traced {traced}")
+    stale = _rewrite_data(root, lambda text: natives_mission.set_levels(text, levels_of), check_only)
+    if check_only and stale:
+        print(
+            f"natives: levels stale in {', '.join(stale)}; run `uv run --project python coney-tools natives missions`"
+        )
+        return 1
+    state = f"updated {', '.join(stale)}; run `natives render`" if stale else "levels up to date"
     print(f"natives: {state}")
     return 0

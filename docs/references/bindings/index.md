@@ -106,8 +106,10 @@ path** is `enum_preload.lua`, the three `config_preload*.lua`, `config_strings_e
 (266 bindings); **mission 1** is `level99.lua`, `level99_combat.lua`, `level99_lesson1.lua` and `level99_lesson2.lua`,
 the `global.lua` helpers they reach (by name, as a `Table.field` or as a callback string, transitively) and the two
 helpers the engine calls when a mission ends, `UnlockAndLoad` and `runNextMission` (215 bindings, listed with their
-status on [Mission 1 coverage](mission1.md); `coney-tools natives mission1` sets the marker from the disc). A binding no
-script uses still works if a mod calls it, but nothing in the game has exercised it, so its description is less certain.
+status on [Mission 1 coverage](mission1.md); `coney-tools natives mission1` sets the marker from the disc). Each later
+level of the story is read the same way, and its bindings are listed on [Story coverage](story.md) (`coney-tools natives
+missions`). A binding no script uses still works if a mod calls it, but nothing in the game has exercised it, so its
+description is less certain.
 
 ## Coney status {#coney-status}
 

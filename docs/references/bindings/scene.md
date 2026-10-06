@@ -75,6 +75,7 @@ Binds a world object to one of a scene's object slots, so the scene moves that o
 - **Evidence:** confirmed (code) at `0x00354280`; detail: traced
 - **Wrapper** `0x00367f48` (registered by `RegisterBindings`); **calls** `0x00354280` `Scene_BindObject`
 - **Used by** 9 of 467 script chunks (12 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## SceneDone {#scenedone}
@@ -159,6 +160,7 @@ Reports whether a scene has finished loading.
 - **Evidence:** confirmed (code) at `0x00354178`; detail: traced
 - **Wrapper** `0x003674d0` (registered by `RegisterBindings`); **calls** `0x00354178`
 - **Used by** 3 of 467 script chunks (6 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## SceneLength {#scenelength}
@@ -228,6 +230,7 @@ Wrapper `0x00367810`; calls `0x00353e38`.
 - **Evidence:** confirmed (code) at `0x00353e70`; detail: brief
 - **Wrapper** `0x00367a20` (registered by `RegisterBindings`); **calls** `0x00353e70`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** implemented
 
 ## ScenePlayAnimation {#sceneplayanimation}
@@ -254,6 +257,7 @@ Plays a loaded scene as an animation only (no position or orientation override),
 - **Evidence:** confirmed (code) at `0x00353f40`; detail: traced
 - **Wrapper** `0x00367cd8` (registered by `RegisterBindings`); **calls** `0x00353f40` `Scene_PlayAnimation`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## ScenePlayCinematic {#sceneplaycinematic}
@@ -287,6 +291,7 @@ until it ends or is skipped.
 - **Evidence:** confirmed (code) at `0x00353c68`; detail: traced
 - **Wrapper** `0x00367580` (registered by `RegisterBindings`); **calls** `0x00353c68` `Scene_PlayCinematic`
 - **Used by** 9 of 467 script chunks (14 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## ScenePlayFixedScene {#sceneplayfixedscene}
@@ -313,6 +318,7 @@ for scene tables whose Animation field is a value other than 1.
 - **Evidence:** confirmed (code) at `0x00353d60`; detail: traced
 - **Wrapper** `0x00367708` (registered by `RegisterBindings`); **calls** `0x00353d60` `Scene_PlayFixed`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## ScenePreload {#scenepreload}
@@ -339,6 +345,7 @@ docs/research/scenes.md#loading.
 - **Evidence:** confirmed (code) at `0x00353f88`; detail: traced
 - **Wrapper** `0x00367448` (registered by `RegisterBindings`); **calls** `0x00353f88` `Scene_Preload`
 - **Used by** 110 of 467 script chunks (256 references); boot to menu: yes; mission 1: yes; result used: yes
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## SceneSetCallback {#scenesetcallback}
@@ -361,6 +368,7 @@ actually starts (used for bus and chase set-ups and the credits).
 - **Evidence:** confirmed (code) at `0x00354710`; detail: traced
 - **Wrapper** `0x00367550` (registered by `RegisterBindings`); **calls** `0x00354710`
 - **Used by** 6 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** implemented
 
 ## SceneStop {#scenestop}
@@ -384,6 +392,7 @@ as usual (docs/research/scenes.md#ending). The non-forced path on a looping scen
 - **Evidence:** confirmed (code) at `0x00354038`; detail: traced
 - **Wrapper** `0x00367e20` (registered by `RegisterBindings`); **calls** `0x00354038` `Scene_Stop`
 - **Used by** 53 of 467 script chunks (62 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 12 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## SceneTerminate {#sceneterminate}
@@ -403,6 +412,7 @@ Stops a scene without forcing it: the same as SceneStop(scene, false).
 - **Evidence:** confirmed (code) at `0x00354c48`; detail: brief
 - **Wrapper** `0x00368240` (registered by `RegisterBindings`); **calls** `0x00354c48`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## SceneUnload {#sceneunload}
@@ -422,4 +432,5 @@ Frees a loaded scene's slot, but only while the scene is loaded and not playing.
 - **Evidence:** confirmed (code) at `0x00353fc8`; detail: traced
 - **Wrapper** `0x00367518` (registered by `RegisterBindings`); **calls** `0x00353fc8`
 - **Used by** 8 of 467 script chunks (9 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented

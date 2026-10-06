@@ -12,7 +12,7 @@
     Switches the heat-haze screen effect (screen effect 7) on or off on both screen-effects managers.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: ScreenQueueEffect
   wrapper: 0x003682a8
@@ -30,7 +30,7 @@
     Dispatch is a six-entry jump table at 0x00552f70 (0x0018d450); each type is described on
     [Graphics](../../research/graphics.md#screen-effects). A fade out of more than 0.2 s runs over seconds - 0.2; a fade
     in starts at full black; the level is clamped to 0-1 ([Front end](../../research/frontend.md#fades)).
-  usage: {chunks: 169, calls: 660, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 169, calls: 660, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: SetLevelColour
@@ -44,7 +44,7 @@
     mood.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false, levels: [55]}
 
 - name: StartRain
   wrapper: 0x00368670
@@ -71,7 +71,7 @@
   notes: >-
     Which number controls what is inferred from the values; the packing into the effect's parameter block is confirmed
     (code) at 0x0018dda0.
-  usage: {chunks: 10, calls: 22, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 22, boot: false, mission1: false, result_used: false, levels: [93, 51, 82, 61, 64]}
 
 - name: EndRain
   wrapper: 0x00368970
@@ -82,7 +82,7 @@
     level's weather.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 43, calls: 45, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 43, calls: 45, boot: true, mission1: false, result_used: false, levels: [93, 51, 82, 61, 64]}
 
 - name: SpawnRainPlane
   wrapper: 0x00368990
@@ -99,7 +99,7 @@
     (0x0018be58).
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 27, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 27, boot: false, mission1: false, result_used: false, levels: [93, 51, 82]}
 
 - name: StartFog
   wrapper: 0x00368c40
@@ -148,7 +148,7 @@
     Starts the indoor smoke haze screen effect (screen effect 3) on both views.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 8, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 8, boot: false, mission1: false, result_used: false, levels: [5, 81, 93, 55, 11]}
 
 - name: EndRoomSmoke
   wrapper: 0x00368fb8
@@ -158,7 +158,7 @@
     Stops the room smoke screen effect (effect 3) on both screen-effects managers.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 39, calls: 39, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 39, calls: 39, boot: true, mission1: false, result_used: false, levels: [5, 81, 55]}
 
 - name: StartFilmGrain
   wrapper: 0x00368fd8
@@ -202,7 +202,7 @@
   depth: brief
   notes: >-
     Meanings of the three numbers are inferred from the values.
-  usage: {chunks: 17, calls: 17, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 17, calls: 17, boot: false, mission1: false, result_used: false, levels: [87, 34, 81, 93, 9, 51]}
 
 - name: MaxFogParticles
   wrapper: 0x003692b0
@@ -214,7 +214,7 @@
     Limits the particle count of the current 3D fog objects (message 0x22 with the count).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: false, levels: [34, 81, 9]}
 
 - name: End3DFog
   wrapper: 0x003692e8
@@ -225,7 +225,7 @@
     calls it when resetting effects.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 40, calls: 40, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 40, calls: 40, boot: true, mission1: false, result_used: false, levels: [34, 81, 93, 9, 51]}
 
 - name: SetGammaRamp
   wrapper: 0x00369308
@@ -256,7 +256,7 @@
     in a boss fight.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [55]}
 
 - name: SetWorldAmbient
   wrapper: 0x0036e4b8
@@ -273,7 +273,7 @@
   depth: thorough
   notes: >-
     Stored in the light manager (0x0050cce4) at +0x50..+0x5c.
-  usage: {chunks: 3, calls: 3, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: true, mission1: false, result_used: false, levels: [51, 64]}
   coney: implemented
 
 - name: SetFogColor
@@ -289,7 +289,7 @@
     0x0050cdb4). `level99.lua`'s `Main` calls it first.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 66, calls: 67, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 66, calls: 67, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: SetFogDistance
@@ -304,7 +304,7 @@
   depth: brief
   notes: >-
     Behaviour: [The streamed world](../../research/world.md#fog).
-  usage: {chunks: 14, calls: 14, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 14, calls: 14, boot: false, mission1: false, result_used: false, levels: [80, 3, 5, 86, 93, 9, 51, 52, 55, 84, 82, 92, 83, 11]}
   coney: implemented
 
 - name: AddStatRespEmitter
@@ -358,7 +358,7 @@
     Starts falling embers at an object's position (0x00179310), used in a burning building.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: TermFallingEmbers
   wrapper: 0x00378278
@@ -368,7 +368,7 @@
     Stops the falling embers effect (0x001790a8).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: StartGarbage
   wrapper: 0x00378298
@@ -381,7 +381,7 @@
     camera.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false, levels: [87, 86, 52]}
 
 - name: EndGarbage
   wrapper: 0x003782d0
@@ -391,7 +391,7 @@
     Stops the blowing-litter camera effect.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 7, calls: 7, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 7, boot: true, mission1: false, result_used: false, levels: [87, 86, 52]}
 
 - name: EnableGroundFog
   wrapper: 0x003782f0
@@ -421,7 +421,7 @@
     returns its handle.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 36, calls: 596, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 36, calls: 596, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 55, 82, 92, 83, 20, 11, 61, 63, 64]}
 
 - name: WidgetSetColour
   wrapper: 0x00378b00
@@ -435,7 +435,7 @@
     Changes the colour of a world object such as a coloured light in the funfair levels.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [81]}
 
 - name: StartParticle
   wrapper: 0x00379128
@@ -447,7 +447,7 @@
     Starts a particle object's emission (message 0x12).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 20, calls: 48, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 20, calls: 48, boot: false, mission1: false, result_used: false, levels: [80, 3, 5, 81, 93, 31, 14, 9, 51, 52, 54, 84, 11]}
 
 - name: EndParticle
   wrapper: 0x00379160
@@ -459,7 +459,7 @@
     Stops a particle object's emission, letting live particles die out (message 0x13).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 16, calls: 39, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 16, calls: 39, boot: false, mission1: false, result_used: false, levels: [80, 5, 81, 51, 52, 54, 84, 11]}
 
 - name: ParticleChangeState
   wrapper: 0x00379198
@@ -472,7 +472,7 @@
     Changes the state of a particle or effect object.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [86]}
 
 - name: KillParticle
   wrapper: 0x00379288
@@ -484,7 +484,7 @@
     Destroys a particle object at once (message 0x15).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 11, calls: 297, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 11, calls: 297, boot: false, mission1: false, result_used: true, levels: [95, 3, 81, 93, 31, 54, 83, 63]}
 
 - name: SetGamma
   wrapper: 0x0037bc98
@@ -541,7 +541,7 @@
   depth: thorough
   notes: >-
     The wrapper calls 0x0040cc70 directly.
-  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false, levels: [95]}
 
 - name: QueueMotionBlurEffect
   wrapper: 0x0037be90
@@ -568,7 +568,7 @@
   notes: >-
     Both forms end in 0x0018c8c8 on the manager at 0x005fdeb8 (0x0040cd28 for the colour form, 0x0040cce8 for the
     alpha form).
-  usage: {chunks: 4, calls: 14, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 4, calls: 14, boot: true, mission1: true, result_used: false, levels: [95]}
 
 - name: SetLight
   wrapper: 0x0037c348
@@ -613,7 +613,7 @@
     RenderWare (0 → 0x80 point, 1 → 0x81 spot, 2 → 1 directional, 3 → 2 ambient) is confirmed (code), and so are the
     corona, lights and effects arguments (0x0017c508, 0x0017caa8, 0x0017d880; confirmed (runtime) in level99). See
     docs/research/lighting.md#record.
-  usage: {chunks: 61, calls: 5301, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 61, calls: 5301, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: SetLightFlicker
@@ -639,7 +639,7 @@
   depth: thorough
   notes: >-
     The modes and timings are on docs/research/lighting.md#flicker.
-  usage: {chunks: 9, calls: 163, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 9, calls: 163, boot: false, mission1: false, result_used: false, levels: [95, 2, 86, 92, 20, 63]}
   coney: implemented
 
 - name: SetShadowColor
@@ -682,4 +682,4 @@
     effect.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 4, calls: 23, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 4, calls: 23, boot: false, mission1: true, result_used: false, levels: [52, 84]}

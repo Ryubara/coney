@@ -33,7 +33,7 @@
   notes: >-
     Doors and barriers keep their hitpoints in their data and mirror them at +0x128 after every hit (0x003a6ec8), so
     this reads a door's too ([World objects: breaking a door](../../research/objects.md#door-break)).
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true, levels: [55]}
   coney: implemented
 
 - name: GetObjectName
@@ -48,7 +48,7 @@
     Returns the type name of a game object, read from the object type table (type record +0x28).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 8, calls: 26, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 8, calls: 26, boot: false, mission1: false, result_used: true, levels: [95, 34, 2, 31, 55, 92, 11]}
 
 - name: OrientObject
   wrapper: 0x0036ccc0
@@ -86,7 +86,7 @@
     0x00386010 reads both positions (object vtable +0xa4) and calls 0x0024e078(from, to, 0, 0, 1, 0xffff): polygon
     lookup 0x00250708, straight check 0x0024fbf8, end nodes 0x00251150, search 0x002511c8, then the route is freed.
     What 0x00251718 tests on a node is not traced. Planning: [AI](../../research/ai.md#path-planning).
-  usage: {chunks: 16, calls: 17, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 16, calls: 17, boot: false, mission1: false, result_used: true, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 51, 52, 82, 92, 83, 20, 11]}
 
 - name: TriggerSphereEnable
   wrapper: 0x0036d008
@@ -103,7 +103,7 @@
   notes: >-
     On: the sphere component's enabled word (+0x180) becomes 1; off: 0x004144d0 releases the component. Does nothing
     for an object without a component container.
-  usage: {chunks: 30, calls: 58, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 30, calls: 58, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 3, 5, 81, 86, 93, 31, 9, 51, 54, 55, 84, 82, 83, 20, 11]}
 
 - name: TriggerSphereSetRadius
   wrapper: 0x0036d068
@@ -116,7 +116,7 @@
     Changes the radius of an object's trigger sphere (component +0x174), creating the component if needed.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [2, 31]}
 
 - name: TriggerSphereCfg
   wrapper: 0x0036d0e0
@@ -138,7 +138,7 @@
   notes: >-
     Stores and the update are confirmed (code) at 0x00414bc0 and 0x004146e0 (scripting.md#triggers). The sphere's
     own message-5 period is its +0x164 (1000 by default); that `interval` reaches it is not traced.
-  usage: {chunks: 70, calls: 172, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 70, calls: 172, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: ObjScriptArgStart
   wrapper: 0x0036daf0
@@ -216,7 +216,7 @@
   depth: thorough
   notes: >-
     Implementation 0x003963b8; [World objects: a pane's life](../../research/objects.md#pane).
-  usage: {chunks: 6, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 8, boot: false, mission1: false, result_used: false, levels: [80, 95, 3, 5, 64]}
   coney: implemented
 
 - name: BreakObjectsInRadius
@@ -236,7 +236,7 @@
     The search (0x0039a850) takes up to 384 objects. Crime reports: [AI](../../research/ai.md#crimes). What 0x15 does
     depends on the object; a swinging door sends itself a hit two updates later
     ([World objects](../../research/objects.md#door-states)).
-  usage: {chunks: 12, calls: 22, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 12, calls: 22, boot: false, mission1: false, result_used: false, levels: [80, 5, 86, 93, 52, 55, 20]}
   coney: implemented
 
 - name: UnloadTimedObjects
@@ -250,7 +250,7 @@
   depth: brief
   notes: >-
     What makes an object 'timed' is not traced.
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [84]}
 
 - name: CarSetPartOpen
   wrapper: 0x0036ddc0
@@ -267,7 +267,7 @@
   notes: >-
     The number-to-part mapping is confirmed (code) at 0x0038d5b8; which physical panel each id is, is inferred from
     the name.
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [14]}
 
 - name: CarSpawnRadio
   wrapper: 0x0036de50
@@ -283,7 +283,7 @@
   notes: >-
     The 'stealable radio' meaning is inferred from the name and the game's car-radio theft; the call chain is
     confirmed (code).
-  usage: {chunks: 15, calls: 37, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 15, calls: 37, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 93, 31, 14, 82, 11]}
 
 - name: ObjIsAlive
   wrapper: 0x0036de88
@@ -297,7 +297,7 @@
     Tests whether a game object handle is still valid.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false, levels: [95, 93, 92]}
 
 - name: ObjGetIndex
   wrapper: 0x0036ded8
@@ -313,7 +313,7 @@
   depth: brief
   notes: >-
     The value returned for an unknown name is not traced.
-  usage: {chunks: 7, calls: 51, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 7, calls: 51, boot: false, mission1: false, result_used: true, levels: [34, 3, 5, 31, 11]}
 
 - name: ObjSetTrainPoint
   wrapper: 0x0036e0b0
@@ -332,7 +332,7 @@
   notes: >-
     The per-slot storage is confirmed (code) at 0x00413770; the 'chain of objects' reading is inferred from the
     scripts' use.
-  usage: {chunks: 7, calls: 68, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 68, boot: false, mission1: false, result_used: false, levels: [81, 31, 61, 63]}
 
 - name: ObjStartTrain
   wrapper: 0x0036e178
@@ -345,7 +345,7 @@
     Resets and starts a scripted train set up with `ObjSetTrainPoint`.
   evidence: inferred
   depth: brief
-  usage: {chunks: 7, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 8, boot: false, mission1: false, result_used: false, levels: [81, 31, 61, 63]}
 
 - name: ObjStopTrain
   wrapper: 0x0036e1f0
@@ -357,7 +357,7 @@
     Stops a running scripted train (clears its running flag).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [31, 63]}
 
 - name: ConvertJumpToDoor
   wrapper: 0x0036e228
@@ -373,7 +373,7 @@
   notes: >-
     What the kinds mean to a route follower: [World objects: navigation links](../../research/objects.md#nav-links); the "jump" and
     "door" readings come from the name.
-  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false, levels: [5, 81, 54]}
   coney: implemented
 
 - name: DisableDoorLink
@@ -389,7 +389,7 @@
   depth: brief
   notes: >-
     [World objects: navigation links](../../research/objects.md#nav-links).
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [81, 54]}
   coney: implemented
 
 - name: EnableDoorLink
@@ -402,7 +402,7 @@
     Clears the avoid bit on the kind-0x10 navigation link nearest the position and its reverse (0x00250b10).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [81, 54]}
   coney: implemented
 
 - name: ObjIsA
@@ -435,7 +435,7 @@
   notes: >-
     That the dirty flag (+0x67e8) causes spawning or removal is inferred from the names; the bit operation is
     confirmed (code) at 0x00398348.
-  usage: {chunks: 95, calls: 305, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 95, calls: 305, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: ObjIsZoneEnabled
   wrapper: 0x00377b80
@@ -449,7 +449,7 @@
     Tests whether an object zone is enabled.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [14]}
 
 - name: ObjMarkZone
   wrapper: 0x00377bd0
@@ -465,7 +465,7 @@
   depth: brief
   notes: >-
     What the mark means (for example 'already visited, do not respawn') is not traced.
-  usage: {chunks: 12, calls: 27, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 12, calls: 27, boot: false, mission1: false, result_used: false, levels: [95, 5, 93, 51, 84, 82]}
 
 - name: ObjGetZone
   wrapper: 0x00377c70
@@ -479,7 +479,7 @@
     Returns the object zone a game object belongs to.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [86, 14]}
 
 - name: ObjSpawn
   wrapper: 0x00377cc8
@@ -511,7 +511,7 @@
     to the record (`+0x14`) and from there to the object's tint (`0x003992a4`, [Object tints](../tints.md)),
     confirmed (code); the flag bits' meaning is inferred from how the record is filled. The power cuffs are
     additionally suppressed when 0x0041d160 on the game state is non-zero.
-  usage: {chunks: 123, calls: 2875, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 123, calls: 2875, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: ObjDestroy
@@ -528,7 +528,7 @@
   notes: >-
     The release path chooses by the object type's class byte (+0x65): 6 and 5 call different release routines
     (0x00258330, 0x0024ce40), others 0x00257f38.
-  usage: {chunks: 93, calls: 265, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 93, calls: 265, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 63]}
 
 - name: ObjEnablePhysics
   wrapper: 0x00377f78
@@ -545,7 +545,7 @@
   notes: >-
     That on means simulated and off frozen is inferred from the name; the two callees are not traced. Physics:
     [Physics](../../research/physics.md).
-  usage: {chunks: 12, calls: 73, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 12, calls: 73, boot: false, mission1: false, result_used: false, levels: [5, 81, 51, 84, 61, 62, 63]}
 
 - name: ObjShow
   wrapper: 0x00377fd8
@@ -560,7 +560,7 @@
   depth: thorough
   notes: >-
     That +0x138 is a fade distance in metres is inferred from the scripts' field name.
-  usage: {chunks: 70, calls: 181, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 70, calls: 181, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11, 61, 64]}
 
 - name: ObjHide
   wrapper: 0x00378050
@@ -572,7 +572,7 @@
     Hides a game object without destroying it (show/hide message 0x0a with 0).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 50, calls: 154, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 50, calls: 154, boot: true, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11, 61, 64]}
 
 - name: ObjColor
   wrapper: 0x00378088
@@ -602,7 +602,7 @@
     Returns who currently owns a flag, for example which human is using a phone or a chair marker.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 9, calls: 29, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 9, calls: 29, boot: false, mission1: false, result_used: true, levels: [87, 5, 83, 11]}
 
 - name: CarSpawn
   wrapper: 0x00378320
@@ -620,7 +620,7 @@
     Creates a parked car of a given type from the car pool (object manager +0x844), places it and returns its handle.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 26, calls: 118, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 26, calls: 118, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 51, 52, 82, 92, 20, 11, 60, 62]}
 
 - name: CarDestroy
   wrapper: 0x003784f0
@@ -632,7 +632,7 @@
     Deletes a car (its destroy method, vtable +0x4c).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 10, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 10, boot: false, mission1: false, result_used: false, levels: [95, 34, 5, 93]}
 
 - name: CarSetPartDamage
   wrapper: 0x00378528
@@ -661,7 +661,7 @@
   depth: thorough
   notes: >-
     Component order is read from the scripts' calls; the packing (0x0017aca8) is confirmed (code).
-  usage: {chunks: 15, calls: 23, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 15, calls: 23, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 86, 93, 31, 14, 52, 54, 82, 92, 11]}
 
 - name: CarExplode
   wrapper: 0x003786a0
@@ -674,7 +674,7 @@
     Blows up a car.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [34, 52]}
 
 - name: CarRemovePart
   wrapper: 0x00378700
@@ -688,7 +688,7 @@
     Removes a part (a door, bonnet or similar) from a car.
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 7, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 7, boot: false, mission1: false, result_used: false, levels: [5, 14]}
 
 - name: CarCanBeDamagedBy
   wrapper: 0x00378790
@@ -714,7 +714,7 @@
     broken flags are cleared (0x003875e8). A handle that is not a car does nothing.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 2, calls: 2, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: true, result_used: false, levels: [14]}
 
 - name: CarPlaceInTrunk
   wrapper: 0x00378840
@@ -745,7 +745,7 @@
   notes: >-
     When the boot gives the item up (the 'on detach' of the name) is not traced; inferred: when the boot is forced
     open.
-  usage: {chunks: 12, calls: 34, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 12, calls: 34, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 5, 86, 93, 31, 14, 52, 82, 92, 11]}
 
 - name: GetPTank
   wrapper: 0x00378bf8
@@ -767,7 +767,7 @@
   notes: >-
     Callee 0x0039c388 → 0x003a4e88 → 0x0018aec0 on the resource manager (0x0050cd4c). See [GUI](../../research/gui.md)
     for PTank instances. The meaning of `count` and `distance` is not traced.
-  usage: {chunks: 4, calls: 7, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 4, calls: 7, boot: true, mission1: false, result_used: true, levels: [95]}
 
 - name: ReleasePTank
   wrapper: 0x00378d78
@@ -779,7 +779,7 @@
     Frees a sprite batch made by `GetPTank` (0x003a4f78 releases the resource manager slot `handle >> 16`).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 4, calls: 7, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 7, boot: true, mission1: false, result_used: false, levels: [95]}
 
 - name: SpawnBreakableGlass
   wrapper: 0x00378db0
@@ -805,7 +805,7 @@
   notes: >-
     The two numbers are collision triangle indices (`0x003a4768`, `0x003a46c8`); the types and what breaking a pane
     does: [World objects](../../research/objects.md#glass).
-  usage: {chunks: 32, calls: 929, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 32, calls: 929, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 55, 82, 92, 83, 20, 11, 60, 61, 64]}
   coney: implemented
 
 - name: ObjectChangeState
@@ -820,7 +820,7 @@
     directly.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [86]}
   coney: implemented
 
 - name: SpawnDoor
@@ -842,7 +842,7 @@
   notes: >-
     The spawn passes position, rotation and the three integers as message arguments to 0x003a2e60; the door's
     initialiser (`0x003fb5f8` for `dyn_door_swinging`) reads them back ([World objects](../../research/objects.md#doors)).
-  usage: {chunks: 46, calls: 484, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 46, calls: 484, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 64]}
   coney: implemented
 
 - name: DoorOpenDegree
@@ -859,7 +859,7 @@
   depth: thorough
   notes: >-
     [World objects: states and commands](../../research/objects.md#door-states).
-  usage: {chunks: 50, calls: 97, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 50, calls: 97, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 2, 81, 86, 93, 31, 9, 51, 52, 54, 92, 83, 20, 11, 60, 61, 62]}
   coney: implemented
 
 - name: DoorOpen
@@ -877,7 +877,7 @@
   notes: >-
     The direction is the sign of the door's turned axis against the human-to-door direction (0x003f9910);
     [World objects](../../research/objects.md#door-states).
-  usage: {chunks: 19, calls: 31, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 19, calls: 31, boot: false, mission1: false, result_used: false, levels: [34, 2, 5, 14, 51, 52, 55, 84, 20, 11]}
   coney: implemented
 
 - name: OpenDoor
@@ -891,7 +891,7 @@
     and its collision goes about half a second later.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 46, calls: 85, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 46, calls: 85, boot: false, mission1: false, result_used: false, levels: [95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 54, 55, 82, 92, 83, 20, 11, 60, 61, 62, 64]}
   coney: implemented
 
 - name: OpenDoorAnimated
@@ -906,7 +906,7 @@
     (0x00227080) and it is given action 0x1a (0x002266a8).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 6, calls: 7, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 7, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 14, 51]}
   coney: implemented
 
 - name: CloseDoor
@@ -922,7 +922,7 @@
   depth: thorough
   notes: >-
     [World objects: states and commands](../../research/objects.md#door-states).
-  usage: {chunks: 53, calls: 84, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 53, calls: 84, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11, 60, 61, 62, 64]}
   coney: implemented
 
 - name: DisableDoorCollision
@@ -951,7 +951,7 @@
     lie in the box gets its enabled bit set or cleared ([Collision](../../research/collision.md)).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false, levels: [3, 93, 31, 54, 82]}
 
 - name: ChangeBlocker
   wrapper: 0x00379c80
@@ -967,7 +967,7 @@
   notes: >-
     The bit operation is confirmed (code) at 0x00252c28; that the record is a navigation link is inferred from the
     neighbouring door-link bindings.
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [34, 3]}
 
 - name: GetLeftDoorHandle
   wrapper: 0x00379d50
@@ -984,7 +984,7 @@
   notes: >-
     If the door does not resolve, the reply object of the previous query is read (0x003a50c0); a NilHandle result is
     not guaranteed.
-  usage: {chunks: 42, calls: 74, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 42, calls: 74, boot: false, mission1: true, result_used: true, levels: [80, 95, 2, 3, 5, 81, 86, 93, 31, 9, 55, 82, 92, 83, 20]}
   coney: implemented
 
 - name: GetRightDoorHandle
@@ -999,7 +999,7 @@
     Returns the right leaf of a double door.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 29, calls: 47, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 29, calls: 47, boot: false, mission1: false, result_used: true, levels: [80, 95, 2, 81, 86, 93, 31, 9, 55, 82, 92, 20]}
   coney: implemented
 
 - name: SetDoorPickable
@@ -1018,7 +1018,7 @@
     ended when it is made unpickable ([Crimes: lock picking](../../research/crimes.md#lockpick)). A pickable door
     shows a `sub_triglint` glint and refuses OpenDoor, DoorOpen and DoorOpenDegree
     ([World objects: lock picking](../../research/objects.md#lock-pick)).
-  usage: {chunks: 16, calls: 24, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 16, calls: 24, boot: false, mission1: false, result_used: false, levels: [80, 95, 93, 9, 51, 52, 54, 83, 20]}
   coney: implemented
 
 - name: IsDoorOpen
@@ -1033,7 +1033,7 @@
     Tests whether a door is open.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [81, 83]}
   coney: implemented
 
 - name: AddFlag
@@ -1057,7 +1057,7 @@
   notes: >-
     Callee 0x00415c18 → 0x00415b68 (a flag from the flag pool, 0x00415af0, initialised by 0x00415e70 with NilHandle as
     parent). A full pool is not checked: the constructor then runs on a null pointer.
-  usage: {chunks: 94, calls: 7058, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 94, calls: 7058, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: SetFlagPos
@@ -1071,7 +1071,7 @@
     Moves a flag to a new position.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 19, calls: 37, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 19, calls: 37, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
 
 - name: FlagEnable
   wrapper: 0x0037a228
@@ -1084,7 +1084,7 @@
     Enables or disables a flag, so AI and interactions stop or resume using it.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 15, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 15, boot: false, mission1: false, result_used: false, levels: [2, 20]}
 
 - name: GetFlagPos
   wrapper: 0x0037a288
@@ -1099,7 +1099,7 @@
     the result into the table {x, y, z} that HuCreate and Teleport take.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 14, calls: 25, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 14, calls: 25, boot: true, mission1: false, result_used: true, levels: [95, 3, 93, 20]}
   coney: implemented
 
 - name: FindFlag
@@ -1115,7 +1115,7 @@
     stored 15-character name). Three scripts call it, once each.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95]}
   coney: implemented
 
 - name: FlagNetAddLink
@@ -1136,7 +1136,7 @@
   notes: >-
     Nodes are 20-byte records at 0x006e9440 (flag plus four links), with a 16-bit field per node at 0x006e9e40 and the
     last index at 0x006e9f40.
-  usage: {chunks: 29, calls: 774, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 29, calls: 774, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 82, 92, 83, 20, 11]}
 
 - name: FlagNetTraverse
   wrapper: 0x0037a968
@@ -1167,7 +1167,7 @@
   notes: >-
     Both forms release the human's current goal (0x0028d758). The mode-to-speed reading is inferred from the stored
     values.
-  usage: {chunks: 27, calls: 60, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 27, calls: 60, boot: true, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 82, 92, 83, 20, 11]}
 
 - name: FlagNetValidate
   wrapper: 0x0037aaf8
@@ -1177,7 +1177,7 @@
     Checks every link of the flag network (0x002a73a8 per non-empty link); a debugging aid used once.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [82]}
 
 - name: FlagNetClear
   wrapper: 0x0037ab18
@@ -1187,7 +1187,7 @@
     Empties the flag network: all 128 nodes and their links become NilHandle.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: AddPath
   wrapper: 0x0037ab38
@@ -1206,7 +1206,7 @@
   notes: >-
     The result is pushed as a usertype; what scripts can do with it (it is passed to goal bindings) belongs to the AI
     slice.
-  usage: {chunks: 15, calls: 42, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 15, calls: 42, boot: false, mission1: false, result_used: true, levels: [80, 2, 3, 5, 93, 51, 52, 54, 84, 20]}
 
 - name: AddVolumeBox
   wrapper: 0x0037ac70
@@ -1232,7 +1232,7 @@
     Kinds 0 and 2 come from two pools (0x0051483c, 0x00514814); kind 3 from the factory at 0x00514834. What
     distinguishes the kinds in play is not traced. Rotate the box about the vertical axis with `RotateVolumeBox`. The
     trigger update of a kind-0 box is confirmed (code) at 0x00415378.
-  usage: {chunks: 53, calls: 974, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 53, calls: 974, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: RotateVolumeBox
@@ -1252,7 +1252,7 @@
   notes: >-
     The inside test (0x00412a18) rotates the box's four corners about its centre by this matrix (x' = m00 dx + m01 dy,
     y' = m10 dx + m11 dy), confirmed (code); that the values are a cos/sin pair follows from the scripts' values.
-  usage: {chunks: 31, calls: 211, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 31, calls: 211, boot: false, mission1: true, result_used: false, levels: [80, 87, 34, 2, 5, 81, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 64]}
   coney: implemented
 
 - name: EnableVolumeBox
@@ -1266,7 +1266,7 @@
     Enables or disables a volume box (its enable method, vtable +0x5c).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 43, calls: 173, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 43, calls: 173, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 31, 9, 51, 54, 55, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: IsInsideBox
   wrapper: 0x0037afb8
@@ -1281,7 +1281,7 @@
     Tests whether a character or object stands inside a volume box.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 75, calls: 297, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 75, calls: 297, boot: true, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: SetPositionOfWater
   wrapper: 0x0037ba48
@@ -1302,4 +1302,4 @@
   notes: >-
     The wrapper calls 0x0040ca18 directly; the meaning of the size and last two values is inferred from the scripts'
     numbers.
-  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [84, 82, 83, 64]}

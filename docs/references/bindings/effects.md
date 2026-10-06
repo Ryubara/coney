@@ -138,6 +138,7 @@ Switches the heat-haze screen effect (screen effect 7) on or off on both screen-
 - **Evidence:** confirmed (code) at `0x0018dcc0`; detail: brief
 - **Wrapper** `0x00368278` (registered by `RegisterBindings`); **calls** `0x0018dcc0` `ScreenFx_EnableHeat`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## EnableShadow {#enableshadow}
@@ -159,6 +160,7 @@ effect.
 - **Evidence:** confirmed (code) at `0x0017f270`; detail: traced
 - **Wrapper** `0x0037c748` (registered by `RegisterBindings`); **calls** `0x0017f270` `Shadow_Enable_Stub`
 - **Used by** 4 of 467 script chunks (23 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level52`](story.md#level52) (mission 15)
 - **Coney:** not implemented
 
 ## End3DFog {#end3dfog}
@@ -177,6 +179,7 @@ it when resetting effects.
 - **Evidence:** confirmed (code) at `0x0018e3c8`; detail: traced
 - **Wrapper** `0x003692e8` (registered by `RegisterBindings`); **calls** `0x0018e3c8` `Fog3D_End`
 - **Used by** 40 of 467 script chunks (40 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## EndFilmGrain {#endfilmgrain}
@@ -228,6 +231,7 @@ Stops the blowing-litter camera effect.
 - **Evidence:** confirmed (code) at `0x003977d0`; detail: traced
 - **Wrapper** `0x003782d0` (registered by `RegisterBindings`); **calls** `0x003977d0` `Garbage_End`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## EndParticle {#endparticle}
@@ -247,6 +251,7 @@ Stops a particle object's emission, letting live particles die out (message 0x13
 - **Evidence:** confirmed (code) at `0x00397610`; detail: brief
 - **Wrapper** `0x00379160` (registered by `RegisterBindings`); **calls** `0x00397610` `Particle_End`
 - **Used by** 16 of 467 script chunks (39 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 8 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## EndRain {#endrain}
@@ -265,6 +270,7 @@ weather.
 - **Evidence:** confirmed (code) at `0x0018deb0`; detail: traced
 - **Wrapper** `0x00368970` (registered by `RegisterBindings`); **calls** `0x0018deb0` `ScreenFx_EndRain`
 - **Used by** 43 of 467 script chunks (45 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## EndRoomSmoke {#endroomsmoke}
@@ -282,6 +288,7 @@ Stops the room smoke screen effect (effect 3) on both screen-effects managers.
 - **Evidence:** confirmed (code) at `0x0018e0f8`; detail: traced
 - **Wrapper** `0x00368fb8` (registered by `RegisterBindings`); **calls** `0x0018e0f8` `ScreenFx_EndRoomSmoke`
 - **Used by** 39 of 467 script chunks (39 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
 
 ## GetGamma {#getgamma}
@@ -320,6 +327,7 @@ Starts falling embers at an object's position (0x00179310), used in a burning bu
 - **Evidence:** confirmed (code) at `0x00179758`; detail: brief
 - **Wrapper** `0x003781d8` (registered by `RegisterBindings`); **calls** `0x00179758` `Embers_Init`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## KillParticle {#killparticle}
@@ -339,6 +347,7 @@ Destroys a particle object at once (message 0x15).
 - **Evidence:** confirmed (code) at `0x00397730`; detail: brief
 - **Wrapper** `0x00379288` (registered by `RegisterBindings`); **calls** `0x00397730` `Particle_Kill`
 - **Used by** 11 of 467 script chunks (297 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 8 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## MaxFogParticles {#maxfogparticles}
@@ -358,6 +367,7 @@ Limits the particle count of the current 3D fog objects (message 0x22 with the c
 - **Evidence:** confirmed (code) at `0x0018e2f0`; detail: brief
 - **Wrapper** `0x003692b0` (registered by `RegisterBindings`); **calls** `0x0018e2f0` `Fog3D_SetMaxParticles`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## ParticleChangeState {#particlechangestate}
@@ -378,6 +388,7 @@ Changes the state of a particle or effect object.
 - **Evidence:** confirmed (code) at `0x00397660`; detail: brief
 - **Wrapper** `0x00379198` (registered by `RegisterBindings`); **calls** `0x00397660` `Particle_ChangeState`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
 
 ## QueueMotionBlurEffect {#queuemotionblureffect}
@@ -419,6 +430,7 @@ Wrapper `0x0037be18`; calls `0x0040cce8`.
 - **Evidence:** confirmed (code) at `0x0040cd28`; detail: traced
 - **Wrapper** `0x0037be90` (registered by `RegisterBindings`); **calls** `0x0040cd28` `ScreenFx_QueueMotionBlurColour`
 - **Used by** 4 of 467 script chunks (14 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## ScreenQueueEffect {#screenqueueeffect}
@@ -444,6 +456,7 @@ starts at full black; the level is clamped to 0-1 ([Front end](../../research/fr
 - **Evidence:** confirmed (code) at `0x0018b168`; detail: traced
 - **Wrapper** `0x003682a8` (registered by `RegisterBindings`); **calls** `0x0018b168` `ScreenFx_Queue`
 - **Used by** 169 of 467 script chunks (660 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## SetFogColor {#setfogcolor}
@@ -466,7 +479,8 @@ Sets the colour of the world's distance fog (packed to bytes with alpha 255 and 
 - **Evidence:** confirmed (code) at `0x0040c868`; detail: traced
 - **Wrapper** `0x0036e558` (registered by `RegisterBindings`); **calls** `0x0040c868` `Level_SetFogColour`
 - **Used by** 66 of 467 script chunks (67 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** implemented
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## SetFogDistance {#setfogdistance}
 
@@ -487,7 +501,8 @@ Sets where the world fog starts, as a fraction of the far clip distance (the dev
 - **Evidence:** confirmed (code) at `0x0040c908`; detail: brief
 - **Wrapper** `0x0036e5f8` (registered by `RegisterBindings`); **calls** `0x0040c908` `Level_SetFogDistance`
 - **Used by** 14 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 14 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## SetGamma {#setgamma}
 
@@ -530,7 +545,7 @@ directional light's colour.
 - **Evidence:** confirmed (code) at `0x001b4908`; detail: traced
 - **Wrapper** `0x0037bd30` (registered by `RegisterBindings`); **calls** `0x001b4908` `LightManager_SetColourOffset`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** implemented
+- **Coney:** not implemented
 
 ## SetGammaRamp {#setgammaramp}
 
@@ -570,6 +585,7 @@ Sets a full-screen colour overlay (screen effect 9) that tints the whole level, 
 - **Evidence:** confirmed (code) at `0x0018e5f0`; detail: traced
 - **Wrapper** `0x003683d0` (registered by `RegisterBindings`); **calls** `0x0018e5f0` `ScreenFx_SetColourOverlay`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
 - **Coney:** not implemented
 
 ## SetLight {#setlight}
@@ -625,7 +641,8 @@ Wrapper `0x0037bfb8`; calls `0x0017ef20`.
 - **Evidence:** confirmed (code) at `0x0017f160`; detail: traced
 - **Wrapper** `0x0037c348` (registered by `RegisterBindings`); **calls** `0x0017f160` `Light_SetState`
 - **Used by** 61 of 467 script chunks (5301 references); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** implemented
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
+- **Coney:** not implemented
 
 ## SetLightFlicker {#setlightflicker}
 
@@ -657,7 +674,8 @@ sub_flashing_light particle instead. Does nothing for light 0.
 - **Evidence:** confirmed (code) at `0x0017f1b8`; detail: traced
 - **Wrapper** `0x0037c438` (registered by `RegisterBindings`); **calls** `0x0017f1b8` `Light_SetFlicker`
 - **Used by** 9 of 467 script chunks (163 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
+- **Coney:** not implemented
 
 ## SetMotionAlpha {#setmotionalpha}
 
@@ -679,6 +697,7 @@ game-state check (0x0041d110) blocks it.
 - **Evidence:** confirmed (code) at `0x0040cc70`; detail: traced
 - **Wrapper** `0x0037bde0` (registered by `RegisterBindings`); **calls** `0x0040cc70` `ScreenFx_SetMotionAlpha`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## SetShadowColor {#setshadowcolor}
@@ -744,7 +763,8 @@ Sets the world's ambient light colour; the game adds 0.07 to each component, so 
 - **Evidence:** confirmed (code) at `0x0017f218`; detail: traced
 - **Wrapper** `0x0036e4b8` (registered by `RegisterBindings`); **calls** `0x0017f218` `LightManager_SetWorldAmbient`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 2 of 28 levels, first [`level51`](story.md#level51) (mission 14)
+- **Coney:** not implemented
 
 ## SpawnAreaEffect {#spawnareaeffect}
 
@@ -768,6 +788,7 @@ boss fight.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0036ca88` (registered by `RegisterBindings`); **calls** `0x00385b08` `AreaEffect_Spawn`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
 - **Coney:** not implemented
 
 ## SpawnParticle {#spawnparticle}
@@ -791,6 +812,7 @@ its handle.
 - **Evidence:** confirmed (code) at `0x0039bfb0`; detail: traced
 - **Wrapper** `0x00378958` (registered by `RegisterBindings`); **calls** `0x0039bfb0` `Particle_Spawn`
 - **Used by** 36 of 467 script chunks (596 references); boot to menu: no; mission 1: yes; result used: yes
+- **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## SpawnRainPlane {#spawnrainplane}
@@ -815,6 +837,7 @@ Adds a vertical sheet of falling rain in the world (for doorways and awnings), h
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00368990` (registered by `RegisterBindings`); **calls** `0x0018dd38` `ScreenFx_SpawnRainPlane`
 - **Used by** 3 of 467 script chunks (27 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## Start3DFog {#start3dfog}
@@ -841,6 +864,7 @@ object (template at 0x00552fb8) built from the texture, colour and three numbers
 - **Evidence:** confirmed (code) at `0x0018e148`; detail: brief
 - **Wrapper** `0x00369140` (registered by `RegisterBindings`); **calls** `0x0018e148` `Fog3D_Start`
 - **Used by** 17 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## StartFilmGrain {#startfilmgrain}
@@ -914,6 +938,7 @@ Starts the blowing-litter camera effect (`ICameraGarbage`, 0x005971a0): 64 litte
 - **Evidence:** confirmed (code) at `0x003977a8`; detail: traced
 - **Wrapper** `0x00378298` (registered by `RegisterBindings`); **calls** `0x003977a8` `Garbage_Start`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## StartParticle {#startparticle}
@@ -933,6 +958,7 @@ Starts a particle object's emission (message 0x12).
 - **Evidence:** confirmed (code) at `0x003975c0`; detail: brief
 - **Wrapper** `0x00379128` (registered by `RegisterBindings`); **calls** `0x003975c0` `Particle_Start`
 - **Used by** 20 of 467 script chunks (48 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## StartRain {#startrain}
@@ -966,6 +992,7 @@ confirmed (code) at 0x0018dda0.
 - **Evidence:** confirmed (code) at `0x0018dda0`; detail: brief
 - **Wrapper** `0x00368670` (registered by `RegisterBindings`); **calls** `0x0018dda0` `ScreenFx_StartRain`
 - **Used by** 10 of 467 script chunks (22 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## StartRoomSmoke {#startroomsmoke}
@@ -986,6 +1013,7 @@ Starts the indoor smoke haze screen effect (screen effect 3) on both views.
 - **Evidence:** confirmed (code) at `0x0018e070`; detail: brief
 - **Wrapper** `0x00368ec0` (registered by `RegisterBindings`); **calls** `0x0018e070` `ScreenFx_StartRoomSmoke`
 - **Used by** 8 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
 
 ## TermFallingEmbers {#termfallingembers}
@@ -1003,6 +1031,7 @@ Stops the falling embers effect (0x001790a8).
 - **Evidence:** confirmed (code) at `0x001797e8`; detail: brief
 - **Wrapper** `0x00378278` (registered by `RegisterBindings`); **calls** `0x001797e8` `Embers_Term`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## WidgetSetColour {#widgetsetcolour}
@@ -1024,4 +1053,5 @@ Changes the colour of a world object such as a coloured light in the funfair lev
 - **Evidence:** confirmed (code) at `0x0039c2e0`; detail: brief
 - **Wrapper** `0x00378b00` (registered by `RegisterBindings`); **calls** `0x0039c2e0`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented

@@ -50,6 +50,7 @@ Clears bits in a detail-flag byte (the reverse of setDetailFlag).
 - **Evidence:** confirmed (code) at `0x0041d860`; detail: brief
 - **Wrapper** `0x0036c698` (registered by `RegisterBindings`); **calls** `0x0041d860`
 - **Used by** 8 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## DoorCRCCheck {#doorcrccheck}
@@ -73,6 +74,7 @@ presumably a checksum of the level's door data in development builds.
 - **Evidence:** confirmed (code) at `0x00397330`; detail: traced
 - **Wrapper** `0x00379978` (registered by `RegisterBindings`); **calls** `0x00397330`
 - **Used by** 62 of 467 script chunks (62 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## SetBugstarIP {#setbugstarip}
@@ -115,4 +117,5 @@ on.
 - **Evidence:** confirmed (code) at `0x0041d830`; detail: brief
 - **Wrapper** `0x0036c620` (registered by `RegisterBindings`); **calls** `0x0041d830`
 - **Used by** 18 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented

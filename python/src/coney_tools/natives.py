@@ -55,6 +55,18 @@ ARG_CTYPES = ("int", "unsigned", "float", "double")
 RESULT_LUA_TYPES = ("number", "boolean", "string", "usertype")
 CONEY_STATUSES = ("not implemented", "partial", "implemented")
 USAGE_KEYS = ("chunks", "calls", "boot", "mission1", "result_used")
+#: The story's levels after the first, in the order a player meets them, each with a short label: the missions as
+#: `global.lua`'s `runNextMission` and the hub's `fRunMission` chain them, then the hub's flashbacks and the Armies of
+#: the Night bonus game (docs/research/scripting.md#run-next-mission). A binding's optional `usage.levels` lists the
+#: numbers of those whose scripts can call it, in this order (`coney-tools natives missions` sets it from the disc).
+STORY_LEVELS: tuple[tuple[int, str], ...] = (
+    (80, "mission 2"),
+    (87, "mission 3"),
+    (95, "the hub"),
+    *((level, f"mission {i}") for i, level in enumerate((34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84), 4)),
+    *((level, f"flashback {i}") for i, level in enumerate((82, 92, 83, 20, 11), 1)),
+    *((level, f"Armies of the Night {i}") for i, level in enumerate((60, 61, 62, 63, 64), 1)),
+)
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
@@ -111,6 +123,7 @@ class Usage:
     boot: bool
     mission1: bool
     result_used: bool
+    levels: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -290,7 +303,7 @@ def _load_usage(check: _Checker, raw: Any) -> Usage | None:
     if not isinstance(raw, dict):
         check.fail("missing `usage` (chunks, calls, boot, mission1, result_used)")
         return None
-    _check_keys(check, raw, set(USAGE_KEYS), "usage")
+    _check_keys(check, raw, {*USAGE_KEYS, "levels"}, "usage")
     values: dict[str, Any] = {}
     for key in USAGE_KEYS:
         value = raw.get(key)
@@ -302,9 +315,16 @@ def _load_usage(check: _Checker, raw: Any) -> Usage | None:
         values[key] = value
     if values["chunks"] > values["calls"]:
         check.fail("usage: more chunks than calls")
-    if values["calls"] == 0 and (values["boot"] or values["mission1"] or values["result_used"]):
+    levels = raw.get("levels", [])
+    order = [level for level, _ in STORY_LEVELS]
+    if not isinstance(levels, list) or any(level not in order for level in levels):
+        check.fail("usage `levels` must list story levels (natives.STORY_LEVELS)")
+        levels = []
+    elif levels != sorted(set(levels), key=order.index):
+        check.fail("usage `levels` must be in story order, each once")
+    if values["calls"] == 0 and (values["boot"] or values["mission1"] or values["result_used"] or levels):
         check.fail("usage: never called, yet marked as used")
-    return Usage(**values)
+    return Usage(**values, levels=tuple(levels))
 
 
 _ENTRY_KEYS = {

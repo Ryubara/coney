@@ -48,6 +48,7 @@ this build.
 - **Evidence:** confirmed (code) at `0x003579a0`; detail: traced
 - **Wrapper** `0x0036d648` (registered by `RegisterBindings`); **calls** `0x003579a0`
 - **Used by** 39 of 467 script chunks (80 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## doInclude {#doinclude}
@@ -86,6 +87,7 @@ Cancels scheduled calls (slot `+0xac`).
 - **Evidence:** confirmed (code) at `0x00386450`; detail: traced
 - **Wrapper** `0x0036d848` (registered by `RegisterBindings`); **calls** `0x00386450`
 - **Used by** 134 of 467 script chunks (358 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## gc {#gc}
@@ -103,6 +105,7 @@ Runs a Lua garbage collection now and pushes the next forced collection 2 s away
 - **Evidence:** confirmed (code) at `0x00386370`; detail: traced
 - **Wrapper** `0x0036d700` (registered by `RegisterBindings`); **calls** `0x00386370`
 - **Used by** 18 of 467 script chunks (56 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 7 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** implemented
 
 ## preLoadFile {#preloadfile}
@@ -127,6 +130,7 @@ called. Level scripts load their checkpoint scripts this way.
 - **Evidence:** confirmed (code) at `0x00357a68`; detail: traced
 - **Wrapper** `0x0036d6a8` (registered by `RegisterBindings`); **calls** `0x00357a68`
 - **Used by** 61 of 467 script chunks (94 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## RegisterUpdate {#registerupdate}
@@ -167,6 +171,7 @@ to a function is dropped silently.
 - **Evidence:** confirmed (code) at `0x003863d8`; detail: traced
 - **Wrapper** `0x0036d750` (registered by `RegisterBindings`); **calls** `0x003863d8`
 - **Used by** 204 of 467 script chunks (1911 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## ScheduleFuncArg1 {#schedulefuncarg1}
@@ -191,6 +196,7 @@ the game time; scripting.md's `ScheduleFuncArg1(name, ms, n)` has the two number
 - **Evidence:** confirmed (code) at `0x00386410`; detail: traced
 - **Wrapper** `0x0036d7b0` (registered by `RegisterBindings`); **calls** `0x00386410`
 - **Used by** 89 of 467 script chunks (293 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## SetAllClearCallBack {#setallclearcallback}
@@ -210,6 +216,7 @@ Sets the function called when all enemies of the current area have been cleared 
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003705d0` (registered by `RegisterBindings`); **calls** `0x0041add0`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
 
 ## SetArmiesMultiplayerCallback {#setarmiesmultiplayercallback}
@@ -270,6 +277,7 @@ Registers a Lua callback for a message from any car (`0x0038e538` on the world's
 - **Evidence:** confirmed (code) at `0x00386340`; detail: brief
 - **Wrapper** `0x0036d2e8` (registered by `RegisterBindings`); **calls** `0x00386340`
 - **Used by** 10 of 467 script chunks (20 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 8 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## SetHatCallBack {#sethatcallback}
@@ -289,6 +297,7 @@ Sets the function called when the player takes a hat (kept at `W_GameState + 0x3
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00370600` (registered by `RegisterBindings`); **calls** `0x0041af20`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
 - **Coney:** not implemented
 
 ## SetMsgHandler {#setmsghandler}
@@ -318,6 +327,7 @@ scripts' handler names (references/script-events.md).
 - **Evidence:** confirmed (code) at `0x00386298`; detail: traced
 - **Wrapper** `0x0036d1c8` (registered by `RegisterBindings`); **calls** `0x00386298`
 - **Used by** 195 of 467 script chunks (3040 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## SetMsgHandlerEx {#setmsghandlerex}
@@ -345,6 +355,7 @@ cleared (`+0x12c`).
 - **Evidence:** confirmed (code) at `0x00386168`; detail: traced
 - **Wrapper** `0x0036d348` (registered by `RegisterBindings`); **calls** `0x00386168`
 - **Used by** 43 of 467 script chunks (212 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## SetMultiplayerCallback {#setmultiplayercallback}
@@ -367,6 +378,7 @@ new player an inventory.
 - **Evidence:** confirmed (code) at `0x0041b0f0`; detail: traced
 - **Wrapper** `0x00370630` (registered by `RegisterBindings`); **calls** `0x0041b0f0`
 - **Used by** 6 of 467 script chunks (7 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## SetObjZoneMsgHandler {#setobjzonemsghandler}
@@ -389,6 +401,7 @@ Registers a Lua callback for a message about an object zone (a group of world ob
 - **Evidence:** confirmed (code) at `0x00386308`; detail: brief
 - **Wrapper** `0x0036d258` (registered by `RegisterBindings`); **calls** `0x00386308`
 - **Used by** 5 of 467 script chunks (34 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## SetStartGameCallback {#setstartgamecallback}
@@ -408,4 +421,5 @@ Sets the function run once the level has finished loading (kept at `0x005e6d88`)
 - **Evidence:** confirmed (code) at `0x0015fe50`; detail: traced
 - **Wrapper** `0x0036df98` (registered by `RegisterBindings`); **calls** `0x0015fe50`
 - **Used by** 116 of 467 script chunks (219 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented

@@ -24,7 +24,7 @@
   depth: thorough
   notes: >-
     Steps and offsets: Characters, creation. The model loads later if its files are not yet resident.
-  usage: {chunks: 100, calls: 3411, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 100, calls: 3411, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: HuDelete
@@ -43,7 +43,7 @@
     What the object's slot method (vtable +0x0c, called with 0-25) does is not traced; that the dead flag makes the
     human update remove it is inferred. Contrast `HuKill`, which kills through the damage path. Record flags:
     [Characters](../../research/characters.md#the-record).
-  usage: {chunks: 80, calls: 213, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 80, calls: 213, boot: false, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 84, 82, 92, 83, 20, 11, 61, 64]}
 
 - name: HuKill
   wrapper: 0x00358640
@@ -61,7 +61,7 @@
     The handle is not checked for being a human. That the pending damage is applied on the next update is from the
     damage page ([Combat](../../research/combat.md#damage)); the outcome (knock-out or death) follows the usual rules
     (inferred).
-  usage: {chunks: 29, calls: 46, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 29, calls: 46, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 3, 86, 93, 31, 14, 9, 51, 52, 54, 55, 83, 20, 60, 61, 62, 63, 64]}
 
 - name: SwapPlayerControl
   wrapper: 0x00358678
@@ -106,7 +106,7 @@
   depth: thorough
   notes: >-
     Bit confirmed (code) at 0x00234038; the effect is inferred from the name.
-  usage: {chunks: 31, calls: 322, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 31, calls: 322, boot: false, mission1: true, result_used: false, levels: [80, 2, 3, 5, 31, 55, 84, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: HuSetNoAutoLock
   wrapper: 0x003587b0
@@ -120,7 +120,7 @@
     skips this human.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false, levels: [54]}
 
 - name: HuSetAutoCombat
   wrapper: 0x00358810
@@ -133,7 +133,7 @@
     Lets the human join fights automatically (flag 0x200000000000 at +0xe0).
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false, levels: [3, 55]}
 
 - name: HuSetAccurate
   wrapper: 0x00358870
@@ -176,7 +176,7 @@
     disabled and command 45 is bound to presses of cross.
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 19, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 19, boot: false, mission1: false, result_used: false, levels: [81, 51, 84]}
 
 - name: HuRender
   wrapper: 0x00358aa0
@@ -206,7 +206,7 @@
   depth: brief
   notes: >-
     That `+0x2b4` gates the shadow draw is inferred from the name; the draw is not traced.
-  usage: {chunks: 10, calls: 38, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 38, boot: false, mission1: false, result_used: false, levels: [80, 87, 81, 86, 93, 31, 52, 55, 84, 83]}
 
 - name: HuRubberNeck
   wrapper: 0x00358b38
@@ -219,7 +219,7 @@
     Lets the human stop and stare at nearby events (flag 0x1000000 at +0xe0).
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [54]}
 
 - name: HuBlockLook
   wrapper: 0x00358b98
@@ -232,7 +232,7 @@
     Blocks or allows the human's head-look behaviour (flag 0x1000 at +0xe0).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 46, calls: 127, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 46, calls: 127, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 86, 93, 82, 92]}
 
 - name: HuForceLook
   wrapper: 0x00358bf8
@@ -245,7 +245,7 @@
     Sets or clears the human's force-look flag (0x10000 at +0xe0).
   evidence: speculative
   depth: brief
-  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [80, 5]}
 
 - name: HuClearLook
   wrapper: 0x00358c58
@@ -257,7 +257,7 @@
     Does nothing in this build: the function it calls returns immediately.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false, levels: [2, 5, 31, 54]}
 
 - name: HuSetScale
   wrapper: 0x00358c90
@@ -273,7 +273,7 @@
   depth: brief
   notes: >-
     Whether the drawn model scales by the same factor is not traced.
-  usage: {chunks: 17, calls: 29, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 17, calls: 29, boot: false, mission1: false, result_used: false, levels: [95, 3, 51, 52, 84, 82, 83, 20]}
 
 - name: HuSetLookPos
   wrapper: 0x00358d08
@@ -306,7 +306,7 @@
   depth: thorough
   notes: >-
     The two option bits are passed on as 0x20 / 0x40 but what they change in the controller is not traced.
-  usage: {chunks: 41, calls: 160, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 41, calls: 160, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 2, 3, 5, 31, 51, 52, 54, 55, 82, 92, 83, 20, 60, 61, 62, 63, 64]}
 
 - name: HuSetName
   wrapper: 0x00358ef0
@@ -319,7 +319,7 @@
     Renames the human (0x0021cda8), so lookups by name find it under the new one.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuIsAimingAt
   wrapper: 0x00358f50
@@ -334,7 +334,7 @@
     Tells whether a player is aiming at the given target.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true, levels: [80]}
 
 - name: HuGetControlName
   wrapper: 0x00358fd0
@@ -348,7 +348,7 @@
     Returns the name of the human's current controller.
   evidence: speculative
   depth: brief
-  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: true, levels: [80]}
 
 - name: HuBlockJump
   wrapper: 0x00359020
@@ -361,7 +361,7 @@
     Blocks or allows jumping for the human (flag 0x10000000 at +0xe0).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false, levels: [2, 60, 61, 62, 63, 64]}
 
 - name: HuBlockClimb
   wrapper: 0x00359080
@@ -387,7 +387,7 @@
     Blocks or allows all grabs on this human; it sets both the front and rear grab flags at once.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: HuBlockRearGrab
   wrapper: 0x00359140
@@ -400,7 +400,7 @@
     Blocks or allows grabs from behind on this human (flag 0x80000000 at +0xe0).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [52]}
 
 - name: HuBlockFrontGrab
   wrapper: 0x003591a0
@@ -426,7 +426,7 @@
     Blocks or allows tackles on this human (flag 0x100000000 at +0xe0).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 52]}
 
 - name: HuSetTireless
   wrapper: 0x00359260
@@ -441,7 +441,7 @@
   depth: thorough
   notes: >-
     Bit confirmed (code) at 0x002350c8; the effect is inferred from the name.
-  usage: {chunks: 50, calls: 144, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 50, calls: 144, boot: true, mission1: true, result_used: false, levels: [3, 51, 54, 84, 61]}
 
 - name: HuSetManualStun
   wrapper: 0x003592c0
@@ -472,7 +472,7 @@
   notes: >-
     The store is confirmed (code) at 0x00235198; no reader of `0x800` is in
     [Combat](../../research/combat.md#human-flags) yet.
-  usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: false, levels: [3, 5, 31, 55, 84, 20, 11]}
 
 - name: HuSetAutoEscape
   wrapper: 0x00359380
@@ -485,7 +485,7 @@
     Lets the human escape grabs automatically (flag 0x20000 at +0xe0).
   evidence: inferred
   depth: brief
-  usage: {chunks: 8, calls: 13, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 13, boot: false, mission1: false, result_used: false, levels: [80, 54, 82]}
 
 - name: HuMakeBeatUp
   wrapper: 0x003593e0
@@ -497,7 +497,7 @@
     Puts the human into the beaten-down state: drops what it holds and sets it lying on the ground with 1 hitpoint.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [92]}
 
 - name: HuMakeGrounded
   wrapper: 0x00359418
@@ -510,7 +510,7 @@
     Knocks the human down or lets it get up.
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 10, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 10, boot: false, mission1: false, result_used: false, levels: [54, 55]}
 
 - name: HuSetRageMode
   wrapper: 0x00359478
@@ -528,7 +528,7 @@
   notes: >-
     The Lua function's name is read from 0x006b6830 at run time (not traced). Rage itself:
     [Combat](../../research/combat.md#rage).
-  usage: {chunks: 9, calls: 18, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 9, calls: 18, boot: false, mission1: false, result_used: false, levels: [5, 81, 51, 84, 82, 20, 11]}
 
 - name: HuSetBlurMode
   wrapper: 0x003594d8
@@ -542,7 +542,7 @@
     Turns a blur effect on or off for the player's view, like being dazed.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 5, boot: false, mission1: false, result_used: false, levels: [81]}
 
 - name: HuSetLockedRage
   wrapper: 0x00359570
@@ -559,7 +559,7 @@
   depth: thorough
   notes: >-
     That the bit freezes the meter is inferred from the name; the writes are confirmed (code) at 0x00236b38.
-  usage: {chunks: 3, calls: 9, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 3, calls: 9, boot: true, mission1: true, result_used: false, levels: [11]}
 
 - name: HuSetPreventRage
   wrapper: 0x003595d0
@@ -575,7 +575,7 @@
   depth: thorough
   notes: >-
     The inversion is confirmed (code) at 0x00236ad0; what the bit gates is inferred from the name.
-  usage: {chunks: 44, calls: 93, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 44, calls: 93, boot: false, mission1: true, result_used: false, levels: [84, 60, 61, 62, 63, 64]}
 
 - name: HuSetRageFrac
   wrapper: 0x00359630
@@ -633,7 +633,7 @@
     Sets or clears flag bit 0x10000000000 of the human's flag word; from the name, the human's hat is not knocked off.
   evidence: inferred
   depth: brief
-  usage: {chunks: 7, calls: 9, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 9, boot: false, mission1: false, result_used: false, levels: [80, 81, 54]}
 
 - name: HuSetKeepWeapon
   wrapper: 0x003597e0
@@ -649,7 +649,7 @@
   depth: thorough
   notes: >-
     Bit confirmed (code) at 0x00237328; the effect is inferred from the name.
-  usage: {chunks: 12, calls: 18, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 12, calls: 18, boot: true, mission1: true, result_used: false, levels: [34, 93, 14, 51, 54, 83]}
 
 - name: HuSetFastClimber
   wrapper: 0x00359840
@@ -664,7 +664,7 @@
   depth: thorough
   notes: >-
     The bit is confirmed (code) at 0x00235b68; its effect on climbing is inferred from the name.
-  usage: {chunks: 12, calls: 22, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 12, calls: 22, boot: false, mission1: true, result_used: false, levels: [3, 5, 54, 83, 20]}
 
 - name: HuSetUngrabbable
   wrapper: 0x003598a0
@@ -679,7 +679,7 @@
   depth: thorough
   notes: >-
     Bit confirmed (code) at 0x00235bc8; the effect is inferred from the name.
-  usage: {chunks: 23, calls: 30, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 23, calls: 30, boot: true, mission1: true, result_used: false, levels: [95, 5, 31, 54, 20, 11, 60, 61, 62]}
 
 - name: HuSetUngroundable
   wrapper: 0x00359900
@@ -694,7 +694,7 @@
   depth: thorough
   notes: >-
     Bit confirmed (code) at 0x00235c28; the effect is inferred from the name.
-  usage: {chunks: 29, calls: 261, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 29, calls: 261, boot: true, mission1: true, result_used: false, levels: [95, 5, 31, 54, 11, 60, 61, 62, 63, 64]}
 
 - name: HuSetUnstunnable
   wrapper: 0x00359960
@@ -709,7 +709,7 @@
   depth: thorough
   notes: >-
     Bit confirmed (code) at 0x00235c88; the effect is inferred from the name.
-  usage: {chunks: 40, calls: 113, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 40, calls: 113, boot: true, mission1: true, result_used: false, levels: [95, 61, 64]}
 
 - name: HuSetIncreasedReact
   wrapper: 0x003599c0
@@ -742,7 +742,7 @@
   depth: thorough
   notes: >-
     Bit confirmed (code) at 0x00235d50; the effect is inferred from the name.
-  usage: {chunks: 7, calls: 10, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 7, calls: 10, boot: true, mission1: true, result_used: false, levels: [54]}
 
 - name: HuSetDoubleDamage
   wrapper: 0x00359a80
@@ -755,7 +755,7 @@
     Sets or clears flag bit 0x4000 of the human's flag word; from the name, the human then deals double damage.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [83]}
 
 - name: HuSetUnarrestable
   wrapper: 0x00359ae0
@@ -769,7 +769,7 @@
     +0x12c when cleared); from the name, the police cannot arrest the human.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 82]}
 
 - name: HuIsOnFire
   wrapper: 0x00359b40
@@ -783,7 +783,7 @@
     Tells whether the human is on fire.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [93]}
 
 - name: HuSetOnFire
   wrapper: 0x00359b90
@@ -797,7 +797,7 @@
     fire-proof, raging or in certain states.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: HuSetFireProof
   wrapper: 0x00359bf0
@@ -811,7 +811,7 @@
     Setting a human on fire (HuSetOnFire) does nothing while the bit is set.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 8, calls: 27, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 27, boot: false, mission1: false, result_used: false, levels: [86, 93, 60, 64]}
 
 - name: HuAttachGear
   wrapper: 0x00359c50
@@ -830,7 +830,7 @@
     On: 0x0024cef0 checks unlockables 5 and 6 of group 6 (0x00424130 on 0x006fe998) and spawns each pair only if the
     slots are empty. Off: 0x0024d340 deletes the four objects. Only exactly 1 attaches. global.lua calls it when a
     player is created.
-  usage: {chunks: 2, calls: 4, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 4, boot: true, mission1: false, result_used: false, levels: [95]}
 
 - name: HuApplyDamageModifier
   wrapper: 0x00359cb0
@@ -845,7 +845,7 @@
   depth: brief
   notes: >-
     Inferred from the name, the callee 0x00236038 and the scripts' values.
-  usage: {chunks: 8, calls: 30, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 30, boot: false, mission1: false, result_used: false, levels: [3, 93, 83, 60, 61, 62, 63, 64]}
 
 - name: HuGiveCuffs
   wrapper: 0x0035aa28
@@ -858,7 +858,7 @@
     Gives the human handcuffs; for a player it goes through the player's HUD (message 5), so the pickup is shown.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 7, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 7, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuSetWounded
   wrapper: 0x0035aaa0
@@ -871,7 +871,7 @@
     Starts (0x0022fa78) or ends (0x0022fc00) the human's wounded state.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [34]}
 
 - name: HuSetWoundable
   wrapper: 0x0035ab00
@@ -885,7 +885,7 @@
     health).
   evidence: inferred
   depth: brief
-  usage: {chunks: 20, calls: 117, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 20, calls: 117, boot: false, mission1: false, result_used: false, levels: [86, 55, 92, 83, 20, 60, 61, 62, 63, 64]}
 
 - name: HuSetRevivable
   wrapper: 0x0035ab60
@@ -901,7 +901,7 @@
   depth: brief
   notes: >-
     The store is confirmed (code) at 0x00235db0; the revive code that reads `0x4` is not traced.
-  usage: {chunks: 56, calls: 107, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 56, calls: 107, boot: false, mission1: false, result_used: false, levels: [80, 95, 31, 54, 92, 20, 60, 61, 62, 63, 64]}
 
 - name: HuLockMovement
   wrapper: 0x0035abc0
@@ -934,7 +934,7 @@
     The order of the checks and which pair states end is long; the summary follows the calls made (0x0022fe10
     extinguish, 0x0022fc00 unwound, 0x0022f3c8 / 0x0022f8d8 for bits 0x80000 / 0x100000, 0x002266a8 state 0) and is
     not exhaustive.
-  usage: {chunks: 82, calls: 169, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 82, calls: 169, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 2, 3, 5, 81, 86, 93, 31, 9, 51, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: HuSetStunned
   wrapper: 0x0035ac80
@@ -947,7 +947,7 @@
     Puts the human into its stunned state (0x0022f658) or takes it out (0x0022f8d8).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [64]}
 
 - name: HuSetConscious
   wrapper: 0x0035ace0
@@ -960,7 +960,7 @@
     Knocks the human unconscious or brings it round.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [60, 61, 64]}
 
 - name: HuSetArrested
   wrapper: 0x0035ad40
@@ -973,7 +973,7 @@
     Arrests or releases the human, as the police do; a released human gets back up.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 51, calls: 60, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 51, calls: 60, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: HuForceEnableReticule
   wrapper: 0x0035ada0
@@ -986,7 +986,7 @@
     Forces the targeting reticule on or off; the setting is one global (0x005104f8), not per human.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 9, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 9, boot: false, mission1: false, result_used: false, levels: [86]}
 
 - name: HuGiveWeapon
   wrapper: 0x0035ae00
@@ -1016,7 +1016,7 @@
   depth: thorough
   notes: >-
     Checks the held object's class byte +0x86 (0x00231a38) before calling the drop routine 0x00257f38.
-  usage: {chunks: 29, calls: 66, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 29, calls: 66, boot: true, mission1: true, result_used: false, levels: [80, 95, 2, 5, 81, 86, 93, 31, 9, 52, 54, 84, 82, 92, 83]}
 
 - name: HuAttachSpinningIcon
   wrapper: 0x0035aeb0
@@ -1033,7 +1033,7 @@
   depth: thorough
   notes: >-
     The icon's handle is kept at +0x360; remove it with HuRemoveSpinningIcon.
-  usage: {chunks: 18, calls: 34, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 18, calls: 34, boot: false, mission1: true, result_used: false, levels: [95, 5, 86, 93, 92, 20]}
 
 - name: HuRemoveSpinningIcon
   wrapper: 0x0035af48
@@ -1045,7 +1045,7 @@
     Removes the marker icon attached with HuAttachSpinningIcon.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 55, calls: 105, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 55, calls: 105, boot: false, mission1: true, result_used: false, levels: [95, 2, 5, 86, 93, 92, 83, 20, 11]}
 
 - name: HuSetSpinningIconColor
   wrapper: 0x0035af80
@@ -1076,7 +1076,7 @@
   depth: brief
   notes: >-
     Despite the name it returns a handle, not a boolean; compare with NilHandle.
-  usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: true, levels: [3, 54, 11]}
 
 - name: HuGet
   wrapper: 0x0035b110
@@ -1118,7 +1118,7 @@
     body's flags (+0x40 of the body at +0x1a0) and stores the value at +0x3bf.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 48, calls: 197, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 48, calls: 197, boot: true, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 93, 31, 14, 9, 51, 52, 55, 84, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: HuFind
   wrapper: 0x0035b260
@@ -1146,7 +1146,7 @@
     Returns the human's position.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 11, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 5, calls: 11, boot: false, mission1: false, result_used: true, levels: [95, 61]}
 
 - name: HuGetHeading
   wrapper: 0x0035b340
@@ -1175,7 +1175,7 @@
     from enemies.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 104, calls: 245, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 104, calls: 245, boot: true, mission1: false, result_used: true, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 84, 82, 92, 83, 20, 11]}
 
 - name: HuGetGangType
   wrapper: 0x0035b3f0
@@ -1192,7 +1192,7 @@
   depth: thorough
   notes: >-
     The values come from the gang's configuration; the list of types is with the gang bindings.
-  usage: {chunks: 35, calls: 75, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 35, calls: 75, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: HuTeleportFollowers
   wrapper: 0x0035b448
@@ -1221,7 +1221,7 @@
   notes: >-
     The checks and the radii (0x00219860) are confirmed (code) at 0x0023b138; how the free spot is searched is not
     traced.
-  usage: {chunks: 7, calls: 7, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 7, calls: 7, boot: false, mission1: true, result_used: false, levels: [54, 60, 61, 62, 63, 64]}
 
 - name: HuSetSlowMo
   wrapper: 0x0035b4f8
@@ -1235,7 +1235,7 @@
     player human given is marked (+0x3bb) so the effect can be ended with it.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false, levels: [3]}
 
 - name: HuIsGrabbed
   wrapper: 0x0035b578
@@ -1249,7 +1249,7 @@
     Tells whether the human is being grabbed.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [87]}
 
 - name: HuIsAlive
   wrapper: 0x0035b5c8
@@ -1264,7 +1264,7 @@
     arrested and similar, flags 0x180050000).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 157, calls: 1535, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 157, calls: 1535, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: HuIsDead
   wrapper: 0x0035b618
@@ -1278,7 +1278,7 @@
     Tells whether the human is dead; a deleted human also counts as dead.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: true, levels: [95, 34]}
 
 - name: HuIsInScene
   wrapper: 0x0035b668
@@ -1292,7 +1292,7 @@
     Tells whether the human is in a scene.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true, levels: [20]}
 
 - name: HuIsArrested
   wrapper: 0x0035b6b8
@@ -1306,7 +1306,7 @@
     Tells whether the police have arrested (cuffed) the human.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 13, calls: 51, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 13, calls: 51, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: HuIsAPlayer
   wrapper: 0x0035b708
@@ -1320,7 +1320,7 @@
     Tells whether a human is controlled by a player.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 167, calls: 1132, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 167, calls: 1132, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: HuIsHidden
   wrapper: 0x0035b758
@@ -1334,7 +1334,7 @@
     Tells whether the human is hiding (a flag in its AI record).
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: true, levels: [51, 82, 20]}
 
 - name: HuIsMugged
   wrapper: 0x0035b7a8
@@ -1376,7 +1376,7 @@
     Returns the human's character class.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 7, calls: 14, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 7, calls: 14, boot: false, mission1: false, result_used: true, levels: [95, 31, 20]}
 
 - name: HuSetDamage
   wrapper: 0x0035b8a0
@@ -1392,7 +1392,7 @@
     Applies damage to the human, as if hit by the attacker.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [81, 55]}
 
 - name: HuSetKillerMode
   wrapper: 0x0035b980
@@ -1406,7 +1406,7 @@
     knock down.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false, levels: [81, 93, 83]}
 
 - name: HuSetGodMode
   wrapper: 0x0035b9e0
@@ -1423,7 +1423,7 @@
   notes: >-
     The bit is confirmed (code) at 0x00235a28; that it blocks damage is inferred from the name and how the scripts use
     it. Only an `on` of exactly 1 sets the bit.
-  usage: {chunks: 81, calls: 496, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 81, calls: 496, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 51, 54, 55, 84, 82, 92, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: HuSetDemiGodMode
   wrapper: 0x0035ba40
@@ -1443,7 +1443,7 @@
     A hit that would take a demi-god's health below the fraction sets it to the fraction instead and sets god mode
     (flag 0x10), so it takes no more damage until a script clears that (0x00265f70, 0x00256f28; combat.md#damage-table).
     Only an `on` of exactly 1 sets the bit.
-  usage: {chunks: 8, calls: 21, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 8, calls: 21, boot: false, mission1: true, result_used: false, levels: [95, 3]}
 
 - name: HuSetHealth
   wrapper: 0x0035bad8
@@ -1456,7 +1456,7 @@
     Sets the human's current health (+0x144 of its 0x180-byte record), capped at its maximum (+0x146).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 23, calls: 57, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 23, calls: 57, boot: false, mission1: false, result_used: false, levels: [80, 5, 93, 31, 51, 55, 84, 92, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: HuSetHealthPercent
   wrapper: 0x0035bb50
@@ -1470,7 +1470,7 @@
     outside (0, 100] restores full health rather than killing the human.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 17, calls: 29, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 17, calls: 29, boot: false, mission1: true, result_used: false, levels: [95, 2, 3, 81, 93, 31, 54, 55, 83]}
 
 - name: HuSetMaxHealth
   wrapper: 0x0035bbc8
@@ -1483,7 +1483,7 @@
     Sets the human's maximum health (+0x146 of its record) and fills its current health to the same value.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 39, calls: 205, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 39, calls: 205, boot: false, mission1: false, result_used: false, levels: [87, 86, 93, 31, 14, 54, 55, 82, 92, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: HuGetHealthPercent
   wrapper: 0x0035bc40
@@ -1498,7 +1498,7 @@
     training enemies to be beaten down.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 25, calls: 28, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 25, calls: 28, boot: false, mission1: true, result_used: true, levels: [5, 81, 93, 31, 54, 55, 84, 82, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: HuRevive
   wrapper: 0x0035bc98
@@ -1513,7 +1513,7 @@
   depth: thorough
   notes: >-
     Calls 0x0022eb40 with full=1: health (record +0x144) set to the maximum.
-  usage: {chunks: 55, calls: 73, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 55, calls: 73, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63, 64]}
 
 - name: HuSetStrong
   wrapper: 0x0035bcd0
@@ -1607,7 +1607,7 @@
     Tells a script what kind of object (weapon, bottle, bag) the human is holding.
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: true, levels: [80, 86, 93]}
 
 - name: HuGetHeldObject
   wrapper: 0x0035bf68
@@ -1623,7 +1623,7 @@
   depth: thorough
   notes: >-
     NilHandle is a number, so test the result against NilHandle, not for nil.
-  usage: {chunks: 23, calls: 59, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 23, calls: 59, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 2, 5, 81, 93, 31, 84, 92, 20, 11]}
 
 - name: HuInCombat
   wrapper: 0x0035bfe0
@@ -1637,7 +1637,7 @@
     Tells whether the human is fighting.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true, levels: [20]}
 
 - name: HuSetCombatMode
   wrapper: 0x0035c030
@@ -1652,7 +1652,7 @@
   depth: brief
   notes: >-
     Only exactly true (1) turns it on. Fight stance: [Combat](../../research/combat.md#state-flags).
-  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [95, 54, 55, 83]}
 
 - name: HuSetIdleAnim
   wrapper: 0x0035c090
@@ -1680,7 +1680,7 @@
     Switches a player's human between pad control and AI control (player record +0x1b).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 7, calls: 30, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 30, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HuCanSee
   wrapper: 0x0035c180
@@ -1696,7 +1696,7 @@
     perception settings.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [86, 82]}
 
 - name: HuSetLOSRange
   wrapper: 0x0035c200
@@ -1712,7 +1712,7 @@
   depth: thorough
   notes: >-
     Storage at 0x002383a0. The AI's sight check: [AI](../../research/ai.md#tactic-kinds).
-  usage: {chunks: 27, calls: 71, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 27, calls: 71, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 93, 14, 9, 51, 52, 54, 84, 82, 83, 20, 11]}
 
 - name: HuSetHearRange
   wrapper: 0x0035c278
@@ -1727,7 +1727,7 @@
   depth: brief
   notes: >-
     Storage at 0x002383e8; the hearing checks that read it are not traced here.
-  usage: {chunks: 5, calls: 7, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 7, boot: false, mission1: false, result_used: false, levels: [86, 31, 84, 20]}
 
 - name: HuSetHelpHearRange
   wrapper: 0x0035c2f0
@@ -1740,7 +1740,7 @@
     Sets how far the human's AI hears calls for help from its allies (+0x138 of its AI record).
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 8, boot: false, mission1: false, result_used: false, levels: [9, 82]}
 
 - name: HuExitWorld
   wrapper: 0x0035c368
@@ -1756,7 +1756,7 @@
   depth: thorough
   notes: >-
     Exit flags and removal on arrival: [World flags](../../research/flags.md#activities).
-  usage: {chunks: 41, calls: 85, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 41, calls: 85, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: HuSetMoney
   wrapper: 0x0035c3a0
@@ -1772,7 +1772,7 @@
   depth: thorough
   notes: >-
     That the amount is what the human drops or is mugged for is inferred from the name and the scripts.
-  usage: {chunks: 55, calls: 109, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 55, calls: 109, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 93, 31, 51, 84, 82, 83, 20, 11]}
 
 - name: HuGetMoney
   wrapper: 0x0035c418
@@ -1786,7 +1786,7 @@
     Returns how much money the human carries.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true, levels: [95]}
 
 - name: HuSetCarriedItem
   wrapper: 0x0035c470
@@ -1802,7 +1802,7 @@
   depth: thorough
   notes: >-
     Stores the name at +0x257 and sets +0x278 to 100 (likely the drop chance in percent, inferred).
-  usage: {chunks: 37, calls: 72, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 37, calls: 72, boot: false, mission1: true, result_used: false, levels: [34, 2]}
 
 - name: HuPutItemInPocket
   wrapper: 0x0035c4d0
@@ -1820,7 +1820,7 @@
   notes: >-
     The stores are confirmed (code) at 0x00238190; that mugging and knock-outs drop the pocket is inferred from the
     scripts' use.
-  usage: {chunks: 28, calls: 78, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 28, calls: 78, boot: false, mission1: false, result_used: false, levels: [9, 54, 55, 84, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: HuRemoveItemInPocket
   wrapper: 0x0035c568
@@ -1832,7 +1832,7 @@
     Empties the human's pocket.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 36, calls: 69, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 36, calls: 69, boot: false, mission1: false, result_used: false, levels: [20]}
 
 - name: HuSetWorkoutParams
   wrapper: 0x0035c7d8
@@ -1861,7 +1861,7 @@
     taken from level95_workout's handler names.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuWorkout
   wrapper: 0x0035c8f0
@@ -1880,7 +1880,7 @@
     human's target and enters the workout state (0x1b).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuStopWorkout
   wrapper: 0x0035ca00
@@ -1892,7 +1892,7 @@
     Ends the human's workout (state 0x1c), or returns it to state 0 when it is still walking to the equipment.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuSetWorkoutBlend
   wrapper: 0x0035ca38
@@ -1905,7 +1905,7 @@
     Sets the blend of the workout animation (+0x670) while the human is working out; does nothing otherwise.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuSpecial
   wrapper: 0x0035cab0
@@ -1968,7 +1968,7 @@
   depth: thorough
   notes: >-
     The inventory check (0x0041e420 on item 3) is confirmed (code); that item 3 is the spray can is inferred.
-  usage: {chunks: 10, calls: 12, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 12, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 92, 20, 11]}
 
 - name: HuTagColor
   wrapper: 0x0035ccf0
@@ -1984,7 +1984,7 @@
   depth: brief
   notes: >-
     Scripts pass 0-255 values, which overflow the packing; what the packing does with them is not traced.
-  usage: {chunks: 9, calls: 16, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 9, calls: 16, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 3, 93, 9]}
 
 - name: HuTagPattern
   wrapper: 0x0035cdc8
@@ -2001,7 +2001,7 @@
   notes: >-
     The copy is confirmed (code) at 0x00274188; that the player traces it with the stick is inferred from the tagging
     minigame.
-  usage: {chunks: 7, calls: 13, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 13, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 92, 20, 11]}
 
 - name: HuTagDifficulty
   wrapper: 0x0035cea0
@@ -2031,7 +2031,7 @@
     Spawns a weapon or item and puts it in the human's hand, which is how levels arm enemies and the Warriors.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 62, calls: 265, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 62, calls: 265, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: HuPlaceHatOnHead
   wrapper: 0x0035cff0
@@ -2058,7 +2058,7 @@
     fight, ignore).
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuGetHUD
   wrapper: 0x0035d0c8
@@ -2099,7 +2099,7 @@
     (+0x3ac), and a non-player human takes over the previous chief's pad and HUD. Used when Snow takes over the gang.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false, levels: [81, 83]}
 
 - name: HuChangePlayerGang
   wrapper: 0x0035d1a8
@@ -2118,7 +2118,7 @@
   depth: thorough
   notes: >-
     Returns at once if player 1 is already in that gang. Pad indices are kept in order.
-  usage: {chunks: 12, calls: 15, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 12, calls: 15, boot: false, mission1: true, result_used: false, levels: [3, 81, 51, 54, 55, 84, 92, 64]}
 
 - name: HuSwitchPlayer
   wrapper: 0x0035d218
@@ -2150,7 +2150,7 @@
     Stores the voice set the human speaks with (+0x3b0).
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: HuGetVoiceIndex
   wrapper: 0x0035d308
@@ -2164,7 +2164,7 @@
     Returns which voice set the human speaks with, for choosing speech files.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 30, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 30, boot: false, mission1: false, result_used: true, levels: [95]}
 
 - name: HuSetStateRespVoiceIndex
   wrapper: 0x0035d360
@@ -2178,7 +2178,7 @@
     down and so on.
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false, levels: [93, 82, 83]}
 
 - name: HuSetMugCallback
   wrapper: 0x0035d3d8
@@ -2195,7 +2195,7 @@
   notes: >-
     The storage is confirmed (code) at 0x00239e78; when the name is called is inferred from the scripts (`PedMugged`
     handlers set on the players).
-  usage: {chunks: 6, calls: 20, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 6, calls: 20, boot: false, mission1: true, result_used: false, levels: [34, 82, 20]}
 
 - name: HuSetMug
   wrapper: 0x0035d438
@@ -2209,7 +2209,7 @@
     for interrogation ([Crimes: mugging](../../research/crimes.md#mugging)).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 18, calls: 111, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 18, calls: 111, boot: false, mission1: false, result_used: false, levels: [95, 83, 60, 61, 62, 63, 64]}
 
 - name: HuSetInterrogation
   wrapper: 0x0035d498
@@ -2232,7 +2232,7 @@
   depth: brief
   notes: >-
     The icon value itself is not passed on; the call uses one fixed icon (0x0055c6e0).
-  usage: {chunks: 5, calls: 10, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 10, boot: false, mission1: false, result_used: false, levels: [2, 83, 11]}
 
 - name: HuMarkReachable
   wrapper: 0x0035d5b0
@@ -2247,7 +2247,7 @@
   depth: brief
   notes: >-
     The store is confirmed (code) at 0x00239e30; the readers of brain `+0x11e` are not traced.
-  usage: {chunks: 9, calls: 29, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 9, calls: 29, boot: false, mission1: false, result_used: false, levels: [5, 81, 93, 55, 84, 83, 20, 11]}
 
 - name: HuButtonMiniGame
   wrapper: 0x0035d610
@@ -2268,7 +2268,7 @@
   depth: brief
   notes: >-
     Inferred from the callee 0x0023aee0 and the scripts' calls; the outcome passed to the callback is not traced.
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [55, 11]}
 
 - name: HuColor
   wrapper: 0x0035d730
@@ -2282,7 +2282,7 @@
     drawn (docs/research/lighting.md#humans).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 6, calls: 84, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 84, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: GetDistanceTweenHumans
   wrapper: 0x0035dc08
@@ -2302,7 +2302,7 @@
   notes: >-
     No handle check: a dead or wrong handle is dereferenced, so pass live handles only (compare TestDistance, which
     checks).
-  usage: {chunks: 6, calls: 12, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 6, calls: 12, boot: true, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: AddAnimCallback
   wrapper: 0x0035e9f8
@@ -2346,7 +2346,7 @@
   notes: >-
     The slot is marked as an all-humans entry; dispatch as for AddAnimCallback (first matching slot only). Remove it
     with DelAnimCallback(0, anim). Details: [Characters](../../research/characters.md#anim-callbacks).
-  usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false, levels: [92]}
   coney: implemented
 
 - name: DelAnimCallback
@@ -2363,7 +2363,7 @@
   depth: thorough
   notes: >-
     Only the first matching slot is removed.
-  usage: {chunks: 3, calls: 11, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 3, calls: 11, boot: false, mission1: true, result_used: false, levels: [92]}
   coney: implemented
 
 - name: LoadBumAnims
@@ -2377,7 +2377,7 @@
     0x00510ff8), each through the same call as SetDynamicAnimation.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 8, calls: 9, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 9, boot: false, mission1: false, result_used: false, levels: [87, 5, 51, 11]}
 
 - name: HuSetLookAtTarget
   wrapper: 0x00364b30
@@ -2390,7 +2390,7 @@
     Does nothing in this build: the function it calls (0x00299238) returns at once. Use HuSetLookTarget instead.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuShutUp
   wrapper: 0x00364ba8
@@ -2406,7 +2406,7 @@
   depth: thorough
   notes: >-
     What +0x194 means exactly is not traced; the stop itself is confirmed (code) at 0x0021ec38.
-  usage: {chunks: 39, calls: 126, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 39, calls: 126, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 81, 86, 93, 31, 14, 51, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: HuSay
   wrapper: 0x00364c08
@@ -2419,7 +2419,7 @@
     Makes the human say a speech line.
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95, 86, 82]}
 
 - name: HuEnableSpeaking
   wrapper: 0x00364c68
@@ -2432,7 +2432,7 @@
     Allows or silences the human's ambient speech (byte +0x198).
   evidence: inferred
   depth: brief
-  usage: {chunks: 21, calls: 125, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 21, calls: 125, boot: false, mission1: false, result_used: false, levels: [54, 60, 61, 62, 63, 64]}
 
 - name: HuEnableSoundCommands
   wrapper: 0x00364cc8
@@ -2445,7 +2445,7 @@
     Enables or disables the human's spoken command sounds (byte +0x199).
   evidence: inferred
   depth: brief
-  usage: {chunks: 57, calls: 196, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 57, calls: 196, boot: false, mission1: false, result_used: false, levels: [95, 60, 61, 62, 63, 64]}
 
 - name: HuEnableTagDone
   wrapper: 0x00364d28
@@ -2459,7 +2459,7 @@
     set to say tagdone (83) when a tag is finished or tagcheer (80) on a slip ([Crimes: tagging](../../research/crimes.md#tagging)).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [9]}
 
 - name: HuEnableTagCheer
   wrapper: 0x00364d88
@@ -2473,7 +2473,7 @@
     tagcheer) ([Crimes: tagging](../../research/crimes.md#tagging)).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [3]}
 
 - name: HuEnableOnFire
   wrapper: 0x00364de8
@@ -2486,7 +2486,7 @@
     Allows or prevents the human catching fire (byte +0x19b).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [93]}
 
 - name: HuSpeak
   wrapper: 0x00364e48
@@ -2507,7 +2507,7 @@
   depth: thorough
   notes: >-
     HuSpeakNI is the same but cuts off the current line instead of giving up.
-  usage: {chunks: 43, calls: 142, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 43, calls: 142, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 54, 55, 82, 83, 20, 11]}
 
 - name: HuSpeakNI
   wrapper: 0x00364f50
@@ -2529,7 +2529,7 @@
   notes: >-
     NI is read as 'interrupt' from the behaviour (0x0021e698 stops the current line first); the expansion of the
     letters is not known.
-  usage: {chunks: 101, calls: 627, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 101, calls: 627, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: HuSetIdleDialogMaxIter
   wrapper: 0x00365058
@@ -2542,7 +2542,7 @@
     Stores a byte at +0x197 of the human that, from the name, limits how often it repeats its idle dialogue.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [9, 83]}
 
 - name: HuActionDialog
   wrapper: 0x003650d0
@@ -2562,7 +2562,7 @@
   notes: >-
     Inferred from the callee 0x00239788 (two calls to the speech routine 0x002395a0, each storing the partner's handle
     at +0x18c) and the scripts' calls.
-  usage: {chunks: 7, calls: 21, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 21, boot: false, mission1: false, result_used: false, levels: [5, 51, 84, 82, 20, 11]}
 
 - name: HuPlayDynAnim
   wrapper: 0x003651a0
@@ -2575,7 +2575,7 @@
     Plays a level-specific animation on the human, unless it is dead or busy.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: HuPlayDynPair
   wrapper: 0x00365200
@@ -2591,7 +2591,7 @@
     for its duration.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [86]}
 
 - name: HuPlayDynamicAnim
   wrapper: 0x003652b0
@@ -2606,7 +2606,7 @@
     Plays a dynamic animation on the human, like HuPlayDynAnim.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [52]}
 
 - name: HuUseAnim
   wrapper: 0x00365370
@@ -2623,7 +2623,7 @@
     (+0x3c8). For slot 0 it also makes the human unpushable while the replacement is set.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 103, calls: 625, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 103, calls: 625, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 86, 93, 31, 14, 9, 51, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: HuUseAnyAnim
   wrapper: 0x00365408
@@ -2639,7 +2639,7 @@
     Like HuUseAnim, but for any animation id.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false, levels: [3, 81, 51]}
 
 - name: HuAreActionsBlocked
   wrapper: 0x003654a0
@@ -2653,7 +2653,7 @@
     Tells whether the human currently cannot act (busy in a state that blocks actions).
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: true, levels: [87, 95, 9]}
 
 - name: HuIsTagging
   wrapper: 0x003654f0
@@ -2667,7 +2667,7 @@
     Tells whether the human is tagging (state bit 0x2000000, 0x002238c0).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: true, levels: [5, 51]}
 
 - name: HuLockPad
   wrapper: 0x00365540
@@ -2684,7 +2684,7 @@
   notes: >-
     Writes the player record's +0x1e; HuLockPadMovement writes the neighbouring +0x1f, which locks only the analog
     stick movement. That +0x1e locks the buttons is inferred from the pair.
-  usage: {chunks: 37, calls: 52, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 37, calls: 52, boot: false, mission1: true, result_used: false, levels: [3, 55]}
 
 - name: HuLockPadMovement
   wrapper: 0x003655a0
@@ -2700,7 +2700,7 @@
   depth: brief
   notes: >-
     Player record +0x1f (Characters, per-player record).
-  usage: {chunks: 10, calls: 28, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 28, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 3, 9]}
 
 - name: AddCommand
   wrapper: 0x00369518
@@ -2720,7 +2720,7 @@
   notes: >-
     Tables at 0x005ddd10 onwards, counts at 0x0050b740-0x0050b760, matched by 0x00147940. Commands are global (not per
     human); EnableCommand masks them per pad.
-  usage: {chunks: 2, calls: 35, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 35, boot: true, mission1: false, result_used: false, levels: [84]}
 
 - name: ResetCommands
   wrapper: 0x003695e0
@@ -2743,7 +2743,7 @@
     Removes a command's button binding, so its buttons no longer produce it.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 6, calls: 11, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 11, boot: false, mission1: false, result_used: false, levels: [84, 60, 61, 62, 63, 64]}
 
 - name: EnableCommand
   wrapper: 0x00369638
@@ -2761,7 +2761,7 @@
   notes: >-
     Sets or clears the pad's bit in the per-binding pad mask; a disabled command is not given to the human when its
     buttons are used. Has no effect while the human is AI-controlled (player record +0x1b clear).
-  usage: {chunks: 19, calls: 96, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 19, calls: 96, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 93, 83, 60, 61, 62, 63, 64]}
 
 - name: EnableCommands
   wrapper: 0x003696d8
@@ -2775,7 +2775,7 @@
     moments.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 8, calls: 19, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 8, calls: 19, boot: false, mission1: true, result_used: false, levels: [80, 87, 54, 84]}
 
 - name: ForceCommand
   wrapper: 0x00369750
@@ -2805,7 +2805,7 @@
     Tests whether a handle is a human's.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true, levels: [92]}
 
 - name: Teleport
   wrapper: 0x0036cbc0
@@ -2819,7 +2819,7 @@
     Moves an object to a position (and optionally turns it) through the object's own position setter.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 54, calls: 140, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 54, calls: 140, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 86, 14, 9, 51, 55, 84, 83]}
 
 - name: TeleportToFlag
   wrapper: 0x0036cdc0
@@ -2835,7 +2835,7 @@
     binding in the scripts.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 162, calls: 1471, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 162, calls: 1471, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: WalkingDistance
@@ -2854,7 +2854,7 @@
   depth: brief
   notes: >-
     The -1e9 failure value is confirmed (code) at 0x00385f60.
-  usage: {chunks: 5, calls: 8, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 5, calls: 8, boot: false, mission1: false, result_used: true, levels: [87, 95, 20]}
 
 - name: KillHumans
   wrapper: 0x0036d990
@@ -2867,7 +2867,7 @@
     5.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false, levels: [2, 31, 20]}
 
 - name: CullCorpses
   wrapper: 0x0036d9c8
@@ -2884,7 +2884,7 @@
   notes: >-
     Inferred from the callee 0x00232230: it walks the human table, skips the living, and marks corpses with the
     removal flag. Any number counts as true (one script passes 88).
-  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [81, 84, 83]}
 
 - name: SetDeathTimer
   wrapper: 0x0036da48
@@ -2902,7 +2902,7 @@
   notes: >-
     The stores are confirmed (code) at 0x0023a4e0; what each time controls is inferred, and which reader uses which is
     not traced. The arguments are read as 16-bit values.
-  usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false, levels: [84]}
 
 - name: ClimbFilter
   wrapper: 0x0036e438
@@ -2917,7 +2917,7 @@
   depth: brief
   notes: >-
     What the filter excludes is not traced (speculative: which ledges or objects count as climbable).
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [82]}
 
 - name: SetDynamicAnimation
   wrapper: 0x0036e668
@@ -2934,7 +2934,7 @@
   depth: thorough
   notes: >-
     See characters.md#creation for how dynamic animations are loaded later.
-  usage: {chunks: 88, calls: 381, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 88, calls: 381, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: SetCharacterModel
   wrapper: 0x0036e6c0
@@ -2948,7 +2948,7 @@
     created later without a wait; up to 32 models at once. The model comes from the type's class record (+0x112).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 61, calls: 294, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 61, calls: 294, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: TurnWarriorCommands
   wrapper: 0x00374780
@@ -2976,7 +2976,7 @@
   depth: brief
   notes: >-
     0x0041c2d0 → 0x0041c4e0. What each command starts: [AI](../../research/ai.md#warrior-commands).
-  usage: {chunks: 7, calls: 15, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 15, boot: false, mission1: false, result_used: false, levels: [80, 87, 93, 82]}
 
 - name: WCEnableAllCommands
   wrapper: 0x00374820
@@ -2989,7 +2989,7 @@
     state +0x41e) and updates that player's command HUD. The tutorial turns them off until it teaches them.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 20, calls: 30, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 20, calls: 30, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 5, 81, 93, 31, 51, 55, 84, 83, 11]}
 
 - name: WCEnableCommand
   wrapper: 0x00374850
@@ -3004,7 +3004,7 @@
     HUD when enabling.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 25, calls: 133, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 25, calls: 133, boot: false, mission1: false, result_used: false, levels: [80, 87, 2, 3, 5, 81, 93, 31, 51, 84, 11]}
 
 - name: WCIssueCommand
   wrapper: 0x003748e0
@@ -3025,7 +3025,7 @@
     Command numbers 0-6 are the seven entries of the command menu; which tactic each starts is in the dispatcher's
     switch and is described by name only (inferred). The third argument is passed through as the dispatcher's 'forced'
     flag; the scripts always pass true.
-  usage: {chunks: 25, calls: 45, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 25, calls: 45, boot: false, mission1: true, result_used: false, levels: [80, 95, 3, 5, 81, 86, 93, 31, 51, 52, 54, 55, 84, 83, 11]}
 
 - name: WCLockCommands
   wrapper: 0x00374970
@@ -3038,7 +3038,7 @@
     Locks or unlocks the Warrior command menu for the player who controls `player`.
   evidence: inferred
   depth: brief
-  usage: {chunks: 10, calls: 16, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 16, boot: false, mission1: false, result_used: false, levels: [80, 93, 55]}
 
 - name: WCSetCallback
   wrapper: 0x003749d0
@@ -3050,7 +3050,7 @@
     Stores the name of a Lua function to call when the player issues a Warrior command (game state +0x2fc).
   evidence: inferred
   depth: brief
-  usage: {chunks: 4, calls: 12, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 12, boot: false, mission1: false, result_used: false, levels: [80, 31]}
 
 - name: WCEnableAutomaticSwitching
   wrapper: 0x00374a00

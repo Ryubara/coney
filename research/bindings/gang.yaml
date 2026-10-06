@@ -46,7 +46,7 @@
   notes: >-
     Only members present at the call are changed (a loop over the 16 member slots); the meaning of each mode value is
     inferred from the scripts' use.
-  usage: {chunks: 20, calls: 43, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 20, calls: 43, boot: true, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: GangSetDamageResponse
@@ -60,7 +60,7 @@
     Sets how the gang's current members react when they take damage.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [31]}
 
 - name: GangSetInvestigateResponse
   wrapper: 0x0035f3e8
@@ -75,7 +75,7 @@
   depth: thorough
   notes: >-
     Same per-member loop as GangSetThreatResponse; value meanings beyond 0 are inferred.
-  usage: {chunks: 42, calls: 112, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 42, calls: 112, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: GangSetRespondPercentage
   wrapper: 0x0035f4e0
@@ -92,7 +92,7 @@
   depth: brief
   notes: >-
     Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai.md#tactic-kinds)); other readers may exist.
-  usage: {chunks: 10, calls: 23, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 23, boot: false, mission1: false, result_used: false, levels: [87, 14, 51, 52, 82]}
 
 - name: GangSetCustomSpotDialog
   wrapper: 0x0035f558
@@ -128,7 +128,7 @@
   notes: >-
     Which flag means 'wanted now' and which 'wanted pending' is inferred from the police code that sets them; the
     reads are confirmed (0x0016b580).
-  usage: {chunks: 13, calls: 25, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 13, calls: 25, boot: true, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: GangClearWanted
   wrapper: 0x0035f630
@@ -144,7 +144,7 @@
   notes: >-
     global.lua calls it on GangWarriors. It also calls the script system's find-function slot, so a script callback
     may run (which one is not traced).
-  usage: {chunks: 11, calls: 14, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 11, calls: 14, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: GangClearResponders
   wrapper: 0x0035f668
@@ -155,7 +155,7 @@
     wanted state are deleted, police responders are stood down (0x0016cc60).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 17, calls: 17, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 17, calls: 17, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: GangCanSaveAllys
   wrapper: 0x0035f688
@@ -168,7 +168,7 @@
     Sets whether the gang's current members help allies who are being attacked (a byte in each member's AI, +0x2d6).
   evidence: inferred
   depth: brief
-  usage: {chunks: 5, calls: 15, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 15, boot: false, mission1: false, result_used: false, levels: [31, 9]}
 
 - name: GangBrFlush
   wrapper: 0x0035f6f0
@@ -183,7 +183,7 @@
   depth: thorough
   notes: >-
     Per member it calls 0x0028d910 (pop every goal) and 0x0028db20 (pop every action).
-  usage: {chunks: 35, calls: 82, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 35, calls: 82, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GangSetTargetable
@@ -198,7 +198,7 @@
     +0x120).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 4, calls: 7, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 4, calls: 7, boot: false, mission1: true, result_used: false, levels: [31, 83]}
 
 - name: GangSetAttackable
   wrapper: 0x0035f790
@@ -215,7 +215,7 @@
   notes: >-
     The store is confirmed (code) at 0x0016bb58; the readers of brain `+0x11f` are not traced. Later members keep
     their own value.
-  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false, levels: [93, 9, 54]}
 
 - name: GangSetHearRange
   wrapper: 0x0035f7f8
@@ -231,7 +231,7 @@
   depth: brief
   notes: >-
     Which of the two ranges is hearing and which is another sense is inferred from the name.
-  usage: {chunks: 7, calls: 75, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 75, boot: false, mission1: false, result_used: false, levels: [87, 93, 51, 82]}
 
 - name: GangCanFlee
   wrapper: 0x0035f890
@@ -244,7 +244,7 @@
     Sets whether the gang may flee (a byte at gang +0xdf).
   evidence: inferred
   depth: brief
-  usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false, levels: [95, 2, 52, 62, 63]}
 
 - name: GangSetMoney
   wrapper: 0x0035f8f8
@@ -257,7 +257,7 @@
     Sets the money every current member carries (what the player can mug or loot from them), at +0x370 of each human.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 15, calls: 23, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 15, calls: 23, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: GangClearBums
   wrapper: 0x0035f970
@@ -271,7 +271,7 @@
   notes: >-
     Looks up the player's human (game state +0x228), takes its gang and releases every member whose class byte (+0x11b
     of its character record) is 6.
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: GangCreate
   wrapper: 0x00373148
@@ -292,7 +292,7 @@
   depth: thorough
   notes: >-
     0x0016cdf0. A gang holds at most 10 members, or 16 for police (type 1) and type 0x17 (0x00166308).
-  usage: {chunks: 119, calls: 1391, boot: false, mission1: true, result_used: true}
+  usage: {chunks: 119, calls: 1391, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GangDelete
@@ -307,7 +307,7 @@
   depth: thorough
   notes: >-
     What happens to members still in the world (0x00164738) is not traced.
-  usage: {chunks: 49, calls: 146, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 49, calls: 146, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GangSuspend
@@ -324,7 +324,7 @@
   depth: thorough
   notes: >-
     Only the flag write is confirmed; what the gang update skips while it is set is inferred.
-  usage: {chunks: 75, calls: 357, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 75, calls: 357, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 61]}
   coney: implemented
 
 - name: GangInvincible
@@ -340,7 +340,7 @@
     mission's combat tutorial uses it to keep the player's crew alive.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 3, calls: 17, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 3, calls: 17, boot: false, mission1: true, result_used: false, levels: [31]}
 
 - name: GangEnableAttackStrategies
   wrapper: 0x00373308
@@ -355,7 +355,7 @@
   depth: thorough
   notes: >-
     The flag write is confirmed; what the strategies are is inferred from the name.
-  usage: {chunks: 4, calls: 11, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 11, boot: true, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: GangSetMsgHandler
   wrapper: 0x00373370
@@ -376,7 +376,7 @@
     the event's value; other ids pass the event through a generic marshaller and count as handled when the function
     returns true. The message ids' meanings are inferred from the scripts' handler names. Behaviour:
     [AI](../../research/ai.md#gang-events).
-  usage: {chunks: 140, calls: 1155, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 140, calls: 1155, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GangClearHandlers
@@ -389,7 +389,7 @@
     Removes all of the gang's message handlers and the per-member handlers of its current members.
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: GangAddTurfBox
   wrapper: 0x00373438
@@ -404,7 +404,7 @@
     ninth box is ignored silently.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 28, calls: 87, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 28, calls: 87, boot: true, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 61, 64]}
 
 - name: GangRemoveTurfBox
   wrapper: 0x003734b0
@@ -420,7 +420,7 @@
   depth: brief
   notes: >-
     0x00165260 does the removal. What the turf boxes are used for is in `GangAddTurfBox`.
-  usage: {chunks: 5, calls: 23, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 23, boot: false, mission1: false, result_used: false, levels: [80, 34, 93, 31]}
 
 - name: GangAddMember
   wrapper: 0x00373528
@@ -438,7 +438,7 @@
   depth: brief
   notes: >-
     0x00166308.
-  usage: {chunks: 39, calls: 128, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 39, calls: 128, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 2, 5, 81, 86, 93, 31, 9, 51, 52, 54, 55, 84, 92, 83, 11, 64]}
   coney: implemented
 
 - name: GangGetHeadCount
@@ -457,7 +457,7 @@
   depth: thorough
   notes: >-
     0x00166158.
-  usage: {chunks: 63, calls: 160, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 63, calls: 160, boot: true, mission1: false, result_used: true, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: GangGetStandingCount
@@ -472,7 +472,7 @@
     Counts the gang's members that are still standing.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 29, calls: 133, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 29, calls: 133, boot: false, mission1: false, result_used: true, levels: [80, 87, 95, 81, 93, 9, 52, 54, 92, 83, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GangGoodToGo
@@ -488,7 +488,7 @@
     Asks whether every member of the gang is ready to move on, for example before a scripted walk.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [95, 20]}
 
 - name: GangSetLeader
   wrapper: 0x00373710
@@ -503,7 +503,7 @@
   depth: thorough
   notes: >-
     The handle is stored without checking membership.
-  usage: {chunks: 6, calls: 8, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 8, boot: true, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 64]}
 
 - name: GangGetLeader
   wrapper: 0x00373788
@@ -519,7 +519,7 @@
   depth: thorough
   notes: >-
     0x0016a578 asks the leader object for its handle through its vtable.
-  usage: {chunks: 6, calls: 32, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 6, calls: 32, boot: true, mission1: false, result_used: true, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: GangSetLOS
   wrapper: 0x00373808
@@ -533,7 +533,7 @@
     members keep their own.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 6, calls: 16, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 16, boot: false, mission1: false, result_used: false, levels: [93, 31, 14, 83, 20]}
 
 - name: GangExitWorld
   wrapper: 0x00373880
@@ -551,7 +551,7 @@
   depth: thorough
   notes: >-
     0x0016a670; the per-member goal it gives is given through vtables and is not fully traced.
-  usage: {chunks: 24, calls: 48, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 24, calls: 48, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 5, 86, 93, 31, 51, 52, 54, 82, 92, 20, 64]}
 
 - name: GangEngageEnemy
   wrapper: 0x00373930
@@ -567,7 +567,7 @@
   notes: >-
     The target handle is not checked. The goal's behaviour (Process 0x002afa48) is a fight sub-goal
     ([AI](../../research/ai.md#fight)).
-  usage: {chunks: 10, calls: 18, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 18, boot: false, mission1: false, result_used: false, levels: [80, 86, 93, 52, 92, 20]}
 
 - name: GangLookAt
   wrapper: 0x003739a8
@@ -581,7 +581,7 @@
     to 500 ms).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [52]}
 
 - name: GangBrDead
   wrapper: 0x00373a20
@@ -597,7 +597,7 @@
   depth: thorough
   notes: >-
     Per member 0x00292330: flush actions (0x0028db20) and set the brain's off flag (+0x09, 0x0028ced8).
-  usage: {chunks: 76, calls: 325, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 76, calls: 325, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 31, 14, 9, 52, 54, 55, 82, 92, 83, 20, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GangSetFriend
@@ -630,7 +630,7 @@
   depth: brief
   notes: >-
     One script calls it.
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [11]}
 
 - name: GangMakeEnemies
   wrapper: 0x00373b78
@@ -645,7 +645,7 @@
   depth: thorough
   notes: >-
     GangSetEnemy in both directions (0x001690c8).
-  usage: {chunks: 119, calls: 355, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 119, calls: 355, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GangMakeFriends
@@ -661,7 +661,7 @@
   depth: thorough
   notes: >-
     GangSetFriend in both directions (0x00169060).
-  usage: {chunks: 37, calls: 135, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 37, calls: 135, boot: true, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: GangMakeEnemiesOfType
@@ -676,7 +676,7 @@
     set).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 8, calls: 17, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 17, boot: false, mission1: false, result_used: false, levels: [3, 93, 9, 54]}
 
 - name: GangMakeNeutralOfType
   wrapper: 0x00373ce0
@@ -689,7 +689,7 @@
     Makes the gang neutral (neither friend nor enemy) towards every existing gang of the given type, both ways.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: GangSetNeutral
   wrapper: 0x00373d58
@@ -702,7 +702,7 @@
     One-way relation: clears the second gang's bit in both of the first gang's masks (0x00169130).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false, levels: [93, 31, 83]}
 
 - name: GangAddSpawner
   wrapper: 0x00373dd0
@@ -736,7 +736,7 @@
     0x0016aec0 → 0x00166ff8. The layout (which argument goes to which spawner field) is confirmed (code); the meaning
     of the numeric arguments is inferred from the stored fields and the scripts' values. Default per-spawner timers
     (10, 20, 30, 60 ...) are set at creation.
-  usage: {chunks: 37, calls: 221, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 37, calls: 221, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 84, 82, 92, 83, 20, 11]}
 
 - name: GangIsASpawner
   wrapper: 0x00374108
@@ -751,7 +751,7 @@
     Asks whether a gang owns a spawner of the given name.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 7, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 7, boot: false, mission1: false, result_used: true, levels: [95]}
 
 - name: GangSetSpawnerModel
   wrapper: 0x00374178
@@ -785,7 +785,7 @@
   notes: >-
     The store is confirmed (code) at 0x00168e68; the reader of spawner `+0x8c` is not traced. Spawners:
     [AI](../../research/ai.md#spawners).
-  usage: {chunks: 12, calls: 29, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 12, calls: 29, boot: false, mission1: false, result_used: false, levels: [34, 3, 81, 86, 93, 9, 54, 82, 83]}
 
 - name: GangStartSpawner
   wrapper: 0x00374288
@@ -802,7 +802,7 @@
   depth: brief
   notes: >-
     0x00168cd0; what each state does is in [AI: spawners](../../research/ai.md#spawners).
-  usage: {chunks: 45, calls: 229, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 45, calls: 229, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 82, 92, 83, 20, 11]}
 
 - name: GangSetMaxConcurrent
   wrapper: 0x00374350
@@ -816,7 +816,7 @@
     Changes how many characters a spawner keeps alive at the same time.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 8, calls: 34, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 34, boot: false, mission1: false, result_used: false, levels: [34, 93, 52, 82, 83]}
 
 - name: GangQueueResponders
   wrapper: 0x003743f0
@@ -832,7 +832,7 @@
     responder system is free (0x0016cb78).
   evidence: inferred
   depth: brief
-  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [93, 51, 82]}
 
 - name: GangRespond
   wrapper: 0x00374518
@@ -847,7 +847,7 @@
     non-police gangs also get a lost-target search animation set.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [20]}
 
 - name: GangSetAlwaysSeen
   wrapper: 0x00374620
@@ -862,7 +862,7 @@
   depth: brief
   notes: >-
     The store is confirmed (code) at 0x0016bde8; its readers are not traced.
-  usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: false, levels: [3, 5, 81, 31, 52, 84, 83]}
 
 - name: GangCanUseWorldFlags
   wrapper: 0x00374688
@@ -880,7 +880,7 @@
   notes: >-
     Writes +0x2d1 (on) and +0x2d2 (percent) in each member's AI; the world-flag behaviour itself is inferred from the
     name.
-  usage: {chunks: 17, calls: 37, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 17, calls: 37, boot: true, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: GangSetReactToViolence
   wrapper: 0x00374718
@@ -893,7 +893,7 @@
     Sets whether the gang's current members react to fights and violence nearby (a byte in each member's AI, +0x267).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false, levels: [20]}
 
 - name: GangCallForHelp
   wrapper: 0x0037a698

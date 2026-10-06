@@ -211,6 +211,13 @@ def _add_natives_commands(groups: Any) -> None:
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
     )
     mission.add_argument("--check", action="store_true", help="change nothing; exit 1 when a marker is stale")
+    missions = commands.add_parser(
+        "missions", help="set usage.levels from the scripts of the story's later levels on your disc"
+    )
+    missions.add_argument(
+        "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
+    )
+    missions.add_argument("--check", action="store_true", help="change nothing; exit 1 when a list is stale")
 
 
 def _add_refs_commands(groups: Any) -> None:
@@ -405,6 +412,8 @@ def _run(args: argparse.Namespace) -> int:
             return natives_cli.run_cpp(args.check)
         if args.command == "mission1":
             return natives_cli.run_mission1(args.disc, args.check)
+        if args.command == "missions":
+            return natives_cli.run_missions(args.disc, args.check)
         return natives_cli.run_coney(args.check) if args.command == "coney" else natives_cli.run_stats()
     if args.group == "refs":
         if args.command == "render":

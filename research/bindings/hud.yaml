@@ -51,7 +51,7 @@
     Shows or hides the Warrior-command element (the squad-order display) on one player's HUD.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 9, calls: 32, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 9, calls: 32, boot: false, mission1: false, result_used: false, levels: [87, 3, 93]}
 
 - name: HUDSetAnnounceMsg
   wrapper: 0x0036e858
@@ -73,7 +73,7 @@
     its own <DISPLAYTIME> markup says, else until replaced; while the +0xe340 one shows, the objective message, the hint
     box and the action prompts are hidden. Details: [The in-game
     HUD](../../research/hud.md#announcements-and-other-messages).
-  usage: {chunks: 17, calls: 50, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 17, calls: 50, boot: true, mission1: true, result_used: false, levels: [95, 34, 60, 61, 62, 63, 64]}
 
 - name: HUDSetANBossTexture
   wrapper: 0x0036e8d8
@@ -87,7 +87,7 @@
     Shows or removes a boss portrait on both players' Armies of the Night HUDs (the arcade mini-game, levels 60-64).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 15, calls: 38, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 15, calls: 38, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDEnableClubActionText
   wrapper: 0x0036e968
@@ -103,7 +103,7 @@
   depth: thorough
   notes: >-
     Writes the y fraction to 0x00607d74 and 0x006077e4; other video modes use 0.08, 0.2/0.78 or 0.15/0.8.
-  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false, levels: [95]}
 
 - name: HUDGetNewPH
   wrapper: 0x0036e998
@@ -122,7 +122,7 @@
   depth: thorough
   notes: >-
     Panels live in the HUD object at 0x0060b4f0, 0xa50 bytes each.
-  usage: {chunks: 20, calls: 40, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 20, calls: 40, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: HUDReleasePH
   wrapper: 0x0036ea40
@@ -134,7 +134,7 @@
     Frees a counter panel and hides it.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 16, calls: 37, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 16, calls: 37, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: HUDSetPHValue
   wrapper: 0x0036ea78
@@ -152,7 +152,7 @@
     counter in the game (global.lua's Objective and TagInfo helpers).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 53, calls: 239, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 53, calls: 239, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: HUDSetPHLabelFlashing
   wrapper: 0x0036eb80
@@ -182,7 +182,7 @@
   notes: >-
     While the flag is set the panel's render restarts its 2 s show and 1 s fade every frame (0x00213290). Behaviour:
     [The in-game HUD](../../research/hud.md#the-player-panel).
-  usage: {chunks: 43, calls: 131, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 43, calls: 131, boot: true, mission1: true, result_used: false, levels: [95, 34, 2, 5, 31, 14, 9, 51, 52, 92, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: HUDShowMissionSelect
   wrapper: 0x0036ec40
@@ -195,7 +195,7 @@
     Opens the clubhouse mission-select screen (game mode 0x10) unless it is already open. level95 uses it.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: ShowGameStatsInterface
   wrapper: 0x0036ec98
@@ -207,7 +207,7 @@
     Opens the game statistics screen (game mode 0x13) unless it is already open.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
 
 - name: ShowRumbleModeInterface
   wrapper: 0x0036ecc8
@@ -224,7 +224,7 @@
   depth: thorough
   notes: >-
     The names go to 0x005e67c0 / 0x005e67c4; the 0/1 flag to 0x0063ef64.
-  usage: {chunks: 37, calls: 71, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 37, calls: 71, boot: true, mission1: false, result_used: false, levels: [95]}
   coney: partial
 
 - name: ShowRumbleModeIntro
@@ -252,7 +252,7 @@
     Loads what the end credits need ahead of ShowCredits (called by level84_end).
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [84]}
 
 - name: ShowCredits
   wrapper: 0x0036ee28
@@ -262,7 +262,7 @@
     Starts the end credits on the HUD (called by level84_end).
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [84]}
 
 - name: HUDEnableGameTutorialText
   wrapper: 0x0036eec8
@@ -277,7 +277,7 @@
   depth: thorough
   notes: >-
     What reads the flag is not traced.
-  usage: {chunks: 36, calls: 38, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 36, calls: 38, boot: false, mission1: true, result_used: false, levels: [86]}
 
 - name: ShowProfileManager
   wrapper: 0x0036eef8
@@ -324,7 +324,7 @@
   depth: thorough
   notes: >-
     global.lua still calls it after scenes; Coney can implement it as a no-op.
-  usage: {chunks: 3, calls: 3, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
 
 - name: HUDLaunchMissionFailed
   wrapper: 0x0036f130
@@ -337,7 +337,7 @@
     mission-failed screen and pushes it (game mode 0xc).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 24, calls: 38, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 24, calls: 38, boot: false, mission1: false, result_used: false, levels: [87, 3, 5, 86, 93, 31, 14, 51, 54, 55, 84, 92, 83, 20, 11]}
   coney: implemented
 
 - name: HUDLaunchRumbleWin
@@ -367,7 +367,7 @@
     Pushes the Armies of the Night game-over screen (game mode 0xd).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDSetMissionFailedCallbacks
   wrapper: 0x0036f1e8
@@ -380,7 +380,7 @@
     level.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 6, calls: 15, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 15, boot: false, mission1: false, result_used: false, levels: [93, 51, 84, 82]}
 
 - name: HUDLaunchMissionComplete
   wrapper: 0x0036f218
@@ -397,7 +397,7 @@
     The kind is stored on every call, also when mode 0xb is already on top and nothing is pushed; 0x0050c754 (the
     level-change flag mode 1's Exit reads) is set only when it pushes with kind 0. Mode 0xb's Enter sets the kind back
     to 0 before calling UnlockAndLoad, whose runNextMission(1) launches 4; the shipped scripts pass only 0 and 4.
-  usage: {chunks: 10, calls: 12, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 10, calls: 12, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: HUDEnableFixedCamIcon
@@ -410,7 +410,7 @@
     Shows or hides the HUD icon that marks a fixed (non-player) camera.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDSetObjective
   wrapper: 0x0036f280
@@ -433,7 +433,7 @@
     0 for slot 1 also queues tutorial hint 0x15 once while game tutorial text is on. That mode 2 ticks the line off is
     inferred (0x001a5070). The checklist is the object at 0x0062e790 (pointer 0x0050eddc). Behaviour:
     [The in-game HUD](../../research/hud.md#objectives-hudsetobjective).
-  usage: {chunks: 149, calls: 675, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 149, calls: 675, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: HUDRemoveAllGoalText
   wrapper: 0x0036f360
@@ -443,7 +443,7 @@
     Clears the HUD's goal text (objective slot 0).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 7, calls: 7, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 7, calls: 7, boot: false, mission1: true, result_used: false, levels: [80, 86, 52, 92]}
 
 - name: HUDSetTutorialText
   wrapper: 0x0036f380
@@ -462,7 +462,7 @@
     held (more are dropped) and the text is kept by pointer. A hint stays until its own <DISPLAYTIME ms> or <FREEZE ms>
     markup ends it, or until it is flushed, withdrawn or interrupted; without either tag it stays. Queue and timing:
     [The in-game HUD](../../research/hud.md#hints-hudsettutorialtext).
-  usage: {chunks: 53, calls: 244, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 53, calls: 244, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: HUDCheckTutorialText
   wrapper: 0x0036f3e8
@@ -476,7 +476,7 @@
     Reports whether a tutorial hint is still on screen or waiting.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true, levels: [3, 31]}
 
 - name: HUDFlushTutorialText
   wrapper: 0x0036f430
@@ -488,7 +488,7 @@
     Clears tutorial hints from the hint box, by priority or all of them.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 13, calls: 55, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 13, calls: 55, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: HUDSetChaseHUDState_NORMAL
   wrapper: 0x0036f468
@@ -523,7 +523,7 @@
     Puts the chase HUD into its destroy state (removes it).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [3, 83]}
 
 - name: HUDSetChaseHUDState_CREATE
   wrapper: 0x0036f558
@@ -554,7 +554,7 @@
     Creates or removes a HUD bar: boss health, vehicle damage, Rumble score bars.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 28, calls: 100, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 28, calls: 100, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 51, 54, 55, 84, 82, 92, 20, 11]}
 
 - name: HUDEnableGenBar
   wrapper: 0x0036f748
@@ -585,7 +585,7 @@
     Sets how full a HUD bar is.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 28, calls: 103, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 28, calls: 103, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 51, 54, 55, 84, 82, 92, 20, 11]}
 
 - name: HUDSetBarProperty
   wrapper: 0x0036f8e8
@@ -600,7 +600,7 @@
     Sets a generic bar's colour and width.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 21, calls: 39, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 21, calls: 39, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 54, 55, 84, 82, 92, 20, 11]}
 
 - name: HUDEnableTextProgress
   wrapper: 0x0036fa28
@@ -615,7 +615,7 @@
     Creates or removes the text scoreboard (up to six labelled rows) used in Rumble and king-of-the-hill fights.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 4, calls: 6, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 6, boot: false, mission1: false, result_used: false, levels: [92]}
 
 - name: HUDSetTextProgress
   wrapper: 0x0036fb38
@@ -630,7 +630,7 @@
     Updates a scoreboard row's score and colour and re-sorts the rows by score, highest first.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 4, calls: 16, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 16, boot: false, mission1: false, result_used: false, levels: [92]}
 
 - name: HUDTurnOnActionCycleAnim
   wrapper: 0x0036fc80
@@ -648,7 +648,7 @@
     workouts).
   evidence: inferred
   depth: brief
-  usage: {chunks: 7, calls: 13, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 13, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 51, 54, 84]}
 
 - name: HUDTurnOffActionCycleAnim
   wrapper: 0x0036fd98
@@ -660,7 +660,7 @@
     Removes the animated button prompt for a player.
   evidence: inferred
   depth: brief
-  usage: {chunks: 8, calls: 27, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 27, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 51, 54, 84]}
 
 - name: HUDEnableInstArrow
   wrapper: 0x0036fdd0
@@ -744,7 +744,7 @@
     Not tied to the hint text. Cleared only by nil or when the HUD is released at UnloadLevel. Player 2's hits do not
     call it. Because the name is not interned, the original relies on the script keeping the string alive (constants
     in a chunk are). Details: [The in-game HUD](../../research/hud.md#tutorial-callback).
-  usage: {chunks: 2, calls: 20, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 2, calls: 20, boot: false, mission1: true, result_used: false, levels: [95]}
 
 - name: HUDTurnOnRadar
   wrapper: 0x003700c8
@@ -758,7 +758,7 @@
   depth: thorough
   notes: >-
     Also sets the radar-on global 0x00617fec and the HUD manager's flag +0x177b0.
-  usage: {chunks: 52, calls: 87, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 52, calls: 87, boot: false, mission1: true, result_used: false, levels: [80, 95, 34, 2, 3, 5, 86, 31, 14, 55, 84, 82, 92, 83, 20]}
 
 - name: HUDTurnOffRadar
   wrapper: 0x00370100
@@ -773,7 +773,7 @@
   notes: >-
     HUD_Update turns both radars back on when no screen fade runs, HUD +0x177ac is set and +0x177b0 is 0; who sets
     +0x177ac is not traced. Behaviour: [The in-game HUD](../../research/hud.md#the-radar-on-screen).
-  usage: {chunks: 67, calls: 121, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 67, calls: 121, boot: false, mission1: true, result_used: false, levels: [95, 3, 5, 81, 51, 55, 84, 92, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: HUDSetNumIndicator
   wrapper: 0x00370138
@@ -801,7 +801,7 @@
     Shows or hides the `press start to join` message on a player's Armies of the Night HUD.
   evidence: inferred
   depth: brief
-  usage: {chunks: 10, calls: 78, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 78, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDANLaunchEndScreen
   wrapper: 0x00370228
@@ -813,7 +813,7 @@
     Shows or removes the Armies of the Night end screen.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [64]}
 
 - name: HUDANSetCredit
   wrapper: 0x00370258
@@ -825,7 +825,7 @@
     Sets the Armies of the Night credit counter (0x00619910). global.lua sets it to 99 on every level load.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 7, calls: 23, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 7, calls: 23, boot: true, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDANGetCredit
   wrapper: 0x00370290
@@ -837,7 +837,7 @@
     Returns the Armies of the Night credit counter.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 30, boot: false, mission1: false, result_used: true}
+  usage: {chunks: 5, calls: 30, boot: false, mission1: false, result_used: true, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDSetRadarObjectFlash
   wrapper: 0x00370690
@@ -851,7 +851,7 @@
     Makes an object's radar blip flash, or stops it, on both radars.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 9, calls: 18, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 9, calls: 18, boot: false, mission1: true, result_used: false, levels: [87, 95, 5, 51, 11]}
 
 - name: HUDSetRadarZoomScale
   wrapper: 0x00370728
@@ -863,7 +863,7 @@
     Sets both radars' zoom scale.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 6, calls: 8, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 8, boot: false, mission1: false, result_used: false, levels: [81, 51, 82]}
 
 - name: HUDAddRadarMissionObjective
   wrapper: 0x00370760
@@ -876,7 +876,7 @@
     choose its icon.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 66, calls: 129, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 66, calls: 129, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: HUDAddSecondaryRadarMissionObjective
   wrapper: 0x00370798
@@ -888,7 +888,7 @@
     Adds a secondary-objective blip (blip type 1) for an object to both radars.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 6, calls: 9, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 6, calls: 9, boot: false, mission1: true, result_used: false, levels: [87, 95, 9, 83]}
 
 - name: HUDChangeRadarMissionObjective
   wrapper: 0x003707d0
@@ -916,7 +916,7 @@
     Changes the icon (and scale) of an object's radar blip on both radars.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 70, calls: 154, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 70, calls: 154, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: HUDDeleteRadarMissionObjective
   wrapper: 0x00370980
@@ -928,7 +928,7 @@
     Removes every radar blip of an object from both radars (the same function as HUDDeleteRadarObject).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 63, calls: 149, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 63, calls: 149, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: HUDRadarSetRange
   wrapper: 0x003709b8
@@ -942,7 +942,7 @@
     ignored.
   evidence: inferred
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [3]}
 
 - name: HUDDeleteRadarObject
   wrapper: 0x00370a30
@@ -955,7 +955,7 @@
     blip with it.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 16, calls: 25, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 16, calls: 25, boot: false, mission1: true, result_used: false, levels: [80, 95, 86, 93, 9, 51, 52, 82, 92, 83]}
 
 - name: HUDAddRadarHuman
   wrapper: 0x00370a68
@@ -968,7 +968,7 @@
     mate, an enemy, a neutral (grey) or a special marker shown to both players.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 9, calls: 25, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 9, calls: 25, boot: false, mission1: true, result_used: false, levels: [80, 51, 52, 82]}
 
 - name: HUDAddRadarObject
   wrapper: 0x00370aa0
@@ -1007,7 +1007,7 @@
     Sets the Armies of the Night `GO` sign mode (a byte at 0x0060f260).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 19, calls: 136, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 19, calls: 136, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: HUDANEnableChkIndicator
   wrapper: 0x00370c38
@@ -1033,7 +1033,7 @@
   depth: thorough
   notes: >-
     level99's Main calls ShowHud(0) then RestoreHud().
-  usage: {chunks: 5, calls: 5, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 5, calls: 5, boot: false, mission1: true, result_used: false, levels: [34, 2, 31, 20]}
 
 - name: HideHud
   wrapper: 0x00370ca0
@@ -1047,7 +1047,7 @@
   notes: >-
     Skipped when 0x0041d110 is true and `W_GameState + 0x14c` is 1; clears the HUD manager's visible flag +0x177a0.
     Behaviour: [The in-game HUD](../../research/hud.md#showing-and-hiding).
-  usage: {chunks: 56, calls: 97, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 56, calls: 97, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: RestoreHud
   wrapper: 0x00370cc0
@@ -1057,7 +1057,7 @@
     Shows the whole HUD again after HideHud.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 82, calls: 199, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 82, calls: 199, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 51, 52, 54, 55, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
 
 - name: HidePlayerHud
   wrapper: 0x00370ce0
@@ -1067,7 +1067,7 @@
     Hides both players' panels (name banner, rage meter, score, money) only.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 44, calls: 50, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 44, calls: 50, boot: false, mission1: false, result_used: false, levels: [95, 3, 84, 92]}
 
 - name: ShowPlayerHud
   wrapper: 0x00370d00
@@ -1077,7 +1077,7 @@
     Shows both players' status panels again.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 3, 92]}
 
 - name: FlashRageBar
   wrapper: 0x00370d20
@@ -1104,4 +1104,4 @@
     Sets a global flag (0x005109ac) that enables mission information in the hub (level95 turns it on, level101 off).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 34, calls: 35, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 34, calls: 35, boot: false, mission1: false, result_used: false, levels: [95]}

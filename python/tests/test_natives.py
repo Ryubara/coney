@@ -42,7 +42,7 @@ GOOD = """
       args:
         - {name: track, lua: string, desc: "Track name."}
       note: "Used when the argument is a string."
-  usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false, levels: [80, 95]}
 - name: unusedThing
   category: debug
   wrapper: 0x00100200
@@ -162,12 +162,17 @@ def test_pages_cover_every_category() -> None:
     """Every category gets a page, the index counts each, and no prose line passes 120 characters."""
     masterlist = natives.parse(GOOD)
     pages = natives_render.render(masterlist)
-    assert set(pages) == {"index.md", "mission1.md"} | {f"{c}.md" for c in natives.CATEGORIES}
+    assert set(pages) == {"index.md", "mission1.md", "story.md"} | {f"{c}.md" for c in natives.CATEGORIES}
     assert "[`MakeThing`](#makething)" in pages["world.md"]
     # The mission page lists only PlayIt, the one entry marked mission1, with its detail and Coney status.
     row = "| [`PlayIt`](sound.md#playit) | Sound and music | brief | inferred | not implemented |"
     assert row in pages["mission1.md"]
     assert "MakeThing" not in pages["mission1.md"]
+    # PlayIt, already used by mission 1, is not new at level80; the story page counts it and lists nothing new there.
+    assert "| [`level80`](#level80) | mission 2 | 1 | 0 | 0 | 0 |" in pages["story.md"]
+    assert "PlayIt" not in pages["story.md"]
+    section = "\n".join(natives_render.binding_section(masterlist.bindings[1]))
+    assert "first [`level80`](story.md#level80) (mission 2)" in section
     assert "| **All** | **3** | **2** | **1** | **1** | **1** |" in pages["index.md"]
     assert "../../roadmap.md#script-mods" in pages["index.md"]
     for name, text in pages.items():
@@ -313,3 +318,13 @@ def test_cpp_marks_handles() -> None:
     """A number argument whose description says handle gets the handle editor."""
     masterlist = natives.parse(GOOD.replace('desc: "Track id."', 'desc: "Handle of the track."'))
     assert "A::Handle" in natives_cpp.render_cpp(masterlist)
+
+
+@pytest.mark.parametrize(
+    ("levels", "problem"),
+    [("[7]", "must list story levels"), ("[95, 80]", "story order"), ("[80, 80]", "story order")],
+)
+def test_usage_levels_must_be_story_levels_in_order(levels: str, problem: str) -> None:
+    """`usage.levels` holds story levels only, in story order, each once."""
+    text = GOOD.replace("levels: [80, 95]", f"levels: {levels}")
+    assert any(problem in p for p in natives.parse(text).problems)

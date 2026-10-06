@@ -124,3 +124,29 @@ def test_scripts_from_needs_every_chunk() -> None:
     scripts, helpers = natives_mission.scripts_from(chunks)
     assert len(scripts) == 4
     assert natives_mission.names_in(helpers) == {"BindA"}
+
+
+def test_level_scripts_keep_chapters_and_drop_strings_and_scene_tests() -> None:
+    names = ["level8.lua", "level80.lua", "level80_chapter1.lua", "level80_strings_en.lua", "level80_scenetest.lua"]
+    assert natives_mission.level_scripts(80, [*names, "level800.lua", "global.lua"]) == [
+        "level80.lua",
+        "level80_chapter1.lua",
+    ]
+    assert natives_mission.level_scripts(8, names) == ["level8.lua"]
+
+
+def test_set_levels_adds_replaces_and_drops_the_list() -> None:
+    text = (
+        "- name: BindA\n"
+        "  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true}\n"
+        "- name: BindB\n"
+        "  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false, levels: [80]}\n"
+        "  coney: implemented\n"
+    )
+    assert natives_mission.set_levels(text, {"BindA": [80, 95]}) == (
+        "- name: BindA\n"
+        "  usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true, levels: [80, 95]}\n"
+        "- name: BindB\n"
+        "  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}\n"
+        "  coney: implemented\n"
+    )

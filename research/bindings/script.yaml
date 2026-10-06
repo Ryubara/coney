@@ -22,7 +22,7 @@
     mission is won, failed or left (0x00384c38). The arguments per number are confirmed (code) at 0x00384ce0; the
     senders of 3, 4, 5 (volume boxes, trigger spheres) and 8 (flags) are confirmed, the meaning of the others is
     inferred from the scripts' handler names (references/script-events.md).
-  usage: {chunks: 195, calls: 3040, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 195, calls: 3040, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: SetObjZoneMsgHandler
@@ -38,7 +38,7 @@
     list (`0x0039a7e0`).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 5, calls: 34, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 5, calls: 34, boot: false, mission1: false, result_used: false, levels: [93, 51, 92, 83]}
 
 - name: SetGeneralCarMsgHandler
   wrapper: 0x0036d2e8
@@ -51,7 +51,7 @@
     Registers a Lua callback for a message from any car (`0x0038e538` on the world's car list).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 10, calls: 20, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 20, boot: false, mission1: false, result_used: false, levels: [34, 2, 3, 5, 93, 14, 82, 92]}
 
 - name: SetMsgHandlerEx
   wrapper: 0x0036d348
@@ -71,7 +71,7 @@
   notes: >-
     With message 0 and a non-empty prompt the object's prompt is set (vtable `+0x124`); otherwise its prompt is
     cleared (`+0x12c`).
-  usage: {chunks: 43, calls: 212, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 43, calls: 212, boot: true, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 55, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: doFile
@@ -87,7 +87,7 @@
   notes: >-
     A PC-style path under the current level's folder is built when `0x001458c0` returns 0, which it never does in this
     build.
-  usage: {chunks: 39, calls: 80, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 39, calls: 80, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 92, 20, 11]}
   coney: implemented
 
 - name: doInclude
@@ -117,7 +117,7 @@
   notes: >-
     The completion routine is `0x00356d00`; that it calls the callback after running the file is inferred
     (scripting.md, open question).
-  usage: {chunks: 61, calls: 94, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 61, calls: 94, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: gc
@@ -128,7 +128,7 @@
     Runs a Lua garbage collection now and pushes the next forced collection 2 s away (script system slot `+0x1c`).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 18, calls: 56, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 18, calls: 56, boot: true, mission1: true, result_used: false, levels: [95, 5, 93, 31, 14, 52, 82]}
   coney: implemented
 
 - name: RegisterUpdate
@@ -155,7 +155,7 @@
     resolves to a function is dropped silently.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 204, calls: 1911, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 204, calls: 1911, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: ScheduleFuncArg1
@@ -173,7 +173,7 @@
   notes: >-
     The argument order is (name, argument, delay): confirmed at `0x003572e8`, which adds its last parameter to the
     game time; scripting.md's `ScheduleFuncArg1(name, ms, n)` has the two numbers the wrong way round.
-  usage: {chunks: 89, calls: 293, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 89, calls: 293, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: FlushScheduledFuncs
@@ -186,7 +186,7 @@
     Cancels scheduled calls (slot `+0xac`).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 134, calls: 358, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 134, calls: 358, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 
 - name: SetStartGameCallback
@@ -199,7 +199,7 @@
     Sets the function run once the level has finished loading (kept at `0x005e6d88`).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 116, calls: 219, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 116, calls: 219, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: SetCheatCallback
@@ -226,7 +226,7 @@
     Sets the function called when all enemies of the current area have been cleared (kept at `W_GameState + 0x2bc`).
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [20]}
 
 - name: SetHatCallBack
   wrapper: 0x00370600
@@ -238,7 +238,7 @@
     Sets the function called when the player takes a hat (kept at `W_GameState + 0x33c`).
   evidence: inferred
   depth: brief
-  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [11]}
 
 - name: SetMultiplayerCallback
   wrapper: 0x00370630
@@ -253,7 +253,7 @@
   depth: thorough
   notes: >-
     The store is confirmed; the trigger is inferred from the scripts' handler names.
-  usage: {chunks: 6, calls: 7, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 7, boot: true, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
 
 - name: SetArmiesMultiplayerCallback
   wrapper: 0x00370660

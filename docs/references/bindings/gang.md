@@ -90,6 +90,7 @@ first.
 - **Evidence:** confirmed (code) at `0x0016a3f8`; detail: brief
 - **Wrapper** `0x00373528` (registered by `RegisterBindings`); **calls** `0x0016a3f8`
 - **Used by** 39 of 467 script chunks (128 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 19 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GangAddSpawner {#gangaddspawner}
@@ -130,6 +131,7 @@ meaning of the numeric arguments is inferred from the stored fields and the scri
 - **Evidence:** confirmed (code) at `0x0016aec0`; detail: traced
 - **Wrapper** `0x00373dd0` (registered by `RegisterBindings`); **calls** `0x0016aec0`
 - **Used by** 37 of 467 script chunks (221 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GangAddTurfBox {#gangaddturfbox}
@@ -152,6 +154,7 @@ is ignored silently.
 - **Evidence:** confirmed (code) at `0x0016a328`; detail: traced
 - **Wrapper** `0x00373438` (registered by `RegisterBindings`); **calls** `0x0016a328`
 - **Used by** 28 of 467 script chunks (87 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 25 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GangAttachSpinningIcon {#gangattachspinningicon}
@@ -199,6 +202,7 @@ gangs off during cutscenes and set-ups.
 - **Evidence:** confirmed (code) at `0x0016aa98`; detail: traced
 - **Wrapper** `0x00373a20` (registered by `RegisterBindings`); **calls** `0x0016aa98`
 - **Used by** 76 of 467 script chunks (325 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GangBrFlush {#gangbrflush}
@@ -221,6 +225,7 @@ given new goals.
 - **Evidence:** confirmed (code) at `0x0016ba18`; detail: traced
 - **Wrapper** `0x0035f6f0` (registered by `RegisterBindings`); **calls** `0x0016ba18`
 - **Used by** 35 of 467 script chunks (82 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GangCallForHelp {#gangcallforhelp}
@@ -264,6 +269,7 @@ Sets whether the gang may flee (a byte at gang +0xdf).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035f890` (registered by `RegisterBindings`); **calls** `0x0016bcf0`
 - **Used by** 7 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GangCanSaveAllys {#gangcansaveallys}
@@ -284,6 +290,7 @@ Sets whether the gang's current members help allies who are being attacked (a by
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035f688` (registered by `RegisterBindings`); **calls** `0x0016b980`
 - **Used by** 5 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
 
 ## GangCanUseWorldFlags {#gangcanuseworldflags}
@@ -309,6 +316,7 @@ the name.
 - **Evidence:** confirmed (code) at `0x0016be30`; detail: traced
 - **Wrapper** `0x00374688` (registered by `RegisterBindings`); **calls** `0x0016be30`
 - **Used by** 17 of 467 script chunks (37 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GangClearBums {#gangclearbums}
@@ -329,6 +337,7 @@ Removes the bums (homeless characters, character class 6) from the player's gang
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035f970` (registered by `RegisterBindings`); **calls** `0x0016b8d0`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GangClearHandlers {#gangclearhandlers}
@@ -348,6 +357,7 @@ Removes all of the gang's message handlers and the per-member handlers of its cu
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00373400` (registered by `RegisterBindings`); **calls** `0x0016ab90`
 - **Used by** 2 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GangClearResponders {#gangclearresponders}
@@ -366,6 +376,7 @@ state are deleted, police responders are stood down (0x0016cc60).
 - **Evidence:** confirmed (code) at `0x0016b8b0`; detail: traced
 - **Wrapper** `0x0035f668` (registered by `RegisterBindings`); **calls** `0x0016b8b0`
 - **Used by** 17 of 467 script chunks (17 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GangClearWanted {#gangclearwanted}
@@ -389,6 +400,7 @@ callback may run (which one is not traced).
 - **Evidence:** confirmed (code) at `0x0016b5e0`; detail: traced
 - **Wrapper** `0x0035f630` (registered by `RegisterBindings`); **calls** `0x0016b5e0`
 - **Used by** 11 of 467 script chunks (14 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GangCreate {#gangcreate}
@@ -414,6 +426,7 @@ default animation and response tables. Members are added afterwards (HuCreate's 
 - **Evidence:** confirmed (code) at `0x0016a1c8`; detail: traced
 - **Wrapper** `0x00373148` (registered by `RegisterBindings`); **calls** `0x0016a1c8`
 - **Used by** 119 of 467 script chunks (1391 references); boot to menu: no; mission 1: yes; result used: yes
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GangDelete {#gangdelete}
@@ -435,6 +448,7 @@ Deletes a gang: every other gang stops treating it as friend or enemy, and the s
 - **Evidence:** confirmed (code) at `0x0016a1e8`; detail: traced
 - **Wrapper** `0x00373200` (registered by `RegisterBindings`); **calls** `0x0016a1e8`
 - **Used by** 49 of 467 script chunks (146 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GangEnableAttackStrategies {#gangenableattackstrategies}
@@ -457,6 +471,7 @@ Turns the gang's coordinated attack strategies (flanking, taking turns) on or of
 - **Evidence:** confirmed (code) at `0x0016a2a8`; detail: traced
 - **Wrapper** `0x00373308` (registered by `RegisterBindings`); **calls** `0x0016a2a8`
 - **Used by** 4 of 467 script chunks (11 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GangEngageEnemy {#gangengageenemy}
@@ -480,6 +495,7 @@ Gives every current member of the gang an `EngageEnemy` goal (type 11) against t
 - **Evidence:** confirmed (code) at `0x0016a870`; detail: brief
 - **Wrapper** `0x00373930` (registered by `RegisterBindings`); **calls** `0x0016a870` `Gang_EngageEnemy`
 - **Used by** 10 of 467 script chunks (18 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GangExitWorld {#gangexitworld}
@@ -505,6 +521,7 @@ any) runs at once and the gang is deleted unless deleteGang is false.
 - **Evidence:** confirmed (code) at `0x0016a670`; detail: traced
 - **Wrapper** `0x00373880` (registered by `RegisterBindings`); **calls** `0x0016a670`
 - **Used by** 24 of 467 script chunks (48 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GangGetHeadCount {#ganggetheadcount}
@@ -528,6 +545,7 @@ beaten.
 - **Evidence:** confirmed (code) at `0x0016a458`; detail: traced
 - **Wrapper** `0x003735d0` (registered by `RegisterBindings`); **calls** `0x0016a458`
 - **Used by** 63 of 467 script chunks (160 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## GangGetLeader {#ganggetleader}
@@ -549,6 +567,7 @@ Returns the gang's current leader.
 - **Evidence:** confirmed (code) at `0x0016a578`; detail: traced
 - **Wrapper** `0x00373788` (registered by `RegisterBindings`); **calls** `0x0016a578`
 - **Used by** 6 of 467 script chunks (32 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GangGetStandingCount {#ganggetstandingcount}
@@ -569,6 +588,7 @@ Counts the gang's members that are still standing.
 - **Evidence:** confirmed (code) at `0x0016a4a8`; detail: brief
 - **Wrapper** `0x00373648` (registered by `RegisterBindings`); **calls** `0x0016a4a8`
 - **Used by** 29 of 467 script chunks (133 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GangGoodToGo {#ganggoodtogo}
@@ -590,6 +610,7 @@ Asks whether every member of the gang is ready to move on, for example before a 
 - **Evidence:** confirmed (code) at `0x0016a4e8`; detail: brief
 - **Wrapper** `0x003736a0` (registered by `RegisterBindings`); **calls** `0x0016a4e8`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GangInvincible {#ganginvincible}
@@ -612,6 +633,7 @@ combat tutorial uses it to keep the player's crew alive.
 - **Evidence:** confirmed (code) at `0x0016a260`; detail: traced
 - **Wrapper** `0x003732a0` (registered by `RegisterBindings`); **calls** `0x0016a260`
 - **Used by** 3 of 467 script chunks (17 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
 
 ## GangIsASpawner {#gangisaspawner}
@@ -633,6 +655,7 @@ Asks whether a gang owns a spawner of the given name.
 - **Evidence:** confirmed (code) at `0x0016b618`; detail: brief
 - **Wrapper** `0x00374108` (registered by `RegisterBindings`); **calls** `0x0016b618`
 - **Used by** 2 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GangIsWanted {#gangiswanted}
@@ -659,6 +682,7 @@ reads are confirmed (0x0016b580).
 - **Evidence:** confirmed (code) at `0x0016b580`; detail: traced
 - **Wrapper** `0x0035f5c0` (registered by `RegisterBindings`); **calls** `0x0016b580`
 - **Used by** 13 of 467 script chunks (25 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 20 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GangLookAt {#ganglookat}
@@ -680,6 +704,7 @@ Makes every current member stop what it is doing and turn to look at a target, e
 - **Evidence:** confirmed (code) at `0x0016a910`; detail: brief
 - **Wrapper** `0x003739a8` (registered by `RegisterBindings`); **calls** `0x0016a910`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level52`](story.md#level52) (mission 15)
 - **Coney:** not implemented
 
 ## GangMakeEnemies {#gangmakeenemies}
@@ -702,6 +727,7 @@ Makes two gangs enemies of each other, both ways, so their members fight on sigh
 - **Evidence:** confirmed (code) at `0x0016acf0`; detail: traced
 - **Wrapper** `0x00373b78` (registered by `RegisterBindings`); **calls** `0x0016acf0`
 - **Used by** 119 of 467 script chunks (355 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GangMakeEnemiesOfType {#gangmakeenemiesoftype}
@@ -722,6 +748,7 @@ Makes the gang an enemy of every existing gang of the given type, in both direct
 - **Evidence:** confirmed (code) at `0x0016ae60`; detail: brief
 - **Wrapper** `0x00373c68` (registered by `RegisterBindings`); **calls** `0x0016ae60`
 - **Used by** 8 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## GangMakeFriends {#gangmakefriends}
@@ -744,6 +771,7 @@ Makes two gangs friends of each other, both ways.
 - **Evidence:** confirmed (code) at `0x0016ad80`; detail: traced
 - **Wrapper** `0x00373bf0` (registered by `RegisterBindings`); **calls** `0x0016ad80`
 - **Used by** 37 of 467 script chunks (135 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 27 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## GangMakeNeutralOfType {#gangmakeneutraloftype}
@@ -764,6 +792,7 @@ Makes the gang neutral (neither friend nor enemy) towards every existing gang of
 - **Evidence:** confirmed (code) at `0x0016ae90`; detail: brief
 - **Wrapper** `0x00373ce0` (registered by `RegisterBindings`); **calls** `0x0016ae90`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GangQueueResponders {#gangqueueresponders}
@@ -787,6 +816,7 @@ system is free (0x0016cb78).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003743f0` (registered by `RegisterBindings`); **calls** `0x0016b678`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## GangRemoveSpinningIcon {#gangremovespinningicon}
@@ -829,6 +859,7 @@ Removes a volume box from the gang's turf: the gang keeps up to eight turf box h
 - **Evidence:** confirmed (code) at `0x0016a3a8`; detail: brief
 - **Wrapper** `0x003734b0` (registered by `RegisterBindings`); **calls** `0x0016a3a8` `Gang_RemoveTurfBox`
 - **Used by** 5 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GangRespond {#gangrespond}
@@ -851,6 +882,7 @@ gangs also get a lost-target search animation set.
 - **Evidence:** confirmed (code) at `0x0016b728`; detail: brief
 - **Wrapper** `0x00374518` (registered by `RegisterBindings`); **calls** `0x0016b728`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
 
 ## GangSetAlwaysSeen {#gangsetalwaysseen}
@@ -873,6 +905,7 @@ Sets the byte at gang `+0xdc` for a gang in use; from the name, the gang counts 
 - **Evidence:** speculative; detail: brief
 - **Wrapper** `0x00374620` (registered by `RegisterBindings`); **calls** `0x0016bde8` `Gang_SetAlwaysSeen`
 - **Used by** 8 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 7 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## GangSetAttackable {#gangsetattackable}
@@ -897,6 +930,7 @@ their own value.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035f790` (registered by `RegisterBindings`); **calls** `0x0016bb58` `Gang_SetAttackable`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## GangSetCustomSpotDialog {#gangsetcustomspotdialog}
@@ -940,6 +974,7 @@ Sets how the gang's current members react when they take damage.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035f2f0` (registered by `RegisterBindings`); **calls** `0x0016b460`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
 
 ## GangSetEnemy {#gangsetenemy}
@@ -963,6 +998,7 @@ Use GangMakeEnemies for both directions.
 - **Evidence:** confirmed (code) at `0x0016ac98`; detail: brief
 - **Wrapper** `0x00373b00` (registered by `RegisterBindings`); **calls** `0x0016ac98`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
 - **Coney:** not implemented
 
 ## GangSetFriend {#gangsetfriend}
@@ -1009,6 +1045,7 @@ Sets how far the gang's current members can hear noises, used for stealth sectio
 - **Evidence:** confirmed (code) at `0x0016bbf0`; detail: brief
 - **Wrapper** `0x0035f7f8` (registered by `RegisterBindings`); **calls** `0x0016bbf0`
 - **Used by** 7 of 467 script chunks (75 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GangSetInvestigateResponse {#gangsetinvestigateresponse}
@@ -1031,6 +1068,7 @@ Sets whether and how the gang's current members go to investigate disturbances (
 - **Evidence:** confirmed (code) at `0x0016b4f0`; detail: traced
 - **Wrapper** `0x0035f3e8` (registered by `RegisterBindings`); **calls** `0x0016b4f0`
 - **Used by** 42 of 467 script chunks (112 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 22 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GangSetLeader {#gangsetleader}
@@ -1053,6 +1091,7 @@ Makes a human the gang's leader; the leader is the one the other members follow 
 - **Evidence:** confirmed (code) at `0x0016a538`; detail: traced
 - **Wrapper** `0x00373710` (registered by `RegisterBindings`); **calls** `0x0016a538`
 - **Used by** 6 of 467 script chunks (8 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 22 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GangSetLOS {#gangsetlos}
@@ -1074,6 +1113,7 @@ keep their own.
 - **Evidence:** confirmed (code) at `0x0016a5e8`; detail: brief
 - **Wrapper** `0x00373808` (registered by `RegisterBindings`); **calls** `0x0016a5e8` `Gang_SetSightRange`
 - **Used by** 6 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## GangSetMaxConcurrent {#gangsetmaxconcurrent}
@@ -1095,6 +1135,7 @@ Changes how many characters a spawner keeps alive at the same time.
 - **Evidence:** confirmed (code) at `0x0016b0b0`; detail: brief
 - **Wrapper** `0x00374350` (registered by `RegisterBindings`); **calls** `0x0016b0b0`
 - **Used by** 8 of 467 script chunks (34 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## GangSetMoney {#gangsetmoney}
@@ -1115,6 +1156,7 @@ Sets the money every current member carries (what the player can mug or loot fro
 - **Evidence:** confirmed (code) at `0x0016bd38`; detail: brief
 - **Wrapper** `0x0035f8f8` (registered by `RegisterBindings`); **calls** `0x0016bd38`
 - **Used by** 15 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## GangSetMsgHandler {#gangsetmsghandler}
@@ -1143,6 +1185,7 @@ true. The message ids' meanings are inferred from the scripts' handler names. Be
 - **Evidence:** confirmed (code) at `0x0016ab38`; detail: traced
 - **Wrapper** `0x00373370` (registered by `RegisterBindings`); **calls** `0x0016ab38`
 - **Used by** 140 of 467 script chunks (1155 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GangSetNeutral {#gangsetneutral}
@@ -1163,6 +1206,7 @@ One-way relation: clears the second gang's bit in both of the first gang's masks
 - **Evidence:** confirmed (code) at `0x0016ae10`; detail: brief
 - **Wrapper** `0x00373d58` (registered by `RegisterBindings`); **calls** `0x0016ae10`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## GangSetReactToViolence {#gangsetreacttoviolence}
@@ -1183,6 +1227,7 @@ Sets whether the gang's current members react to fights and violence nearby (a b
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00374718` (registered by `RegisterBindings`); **calls** `0x0016bee0`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
 
 ## GangSetRespondPercentage {#gangsetrespondpercentage}
@@ -1207,6 +1252,7 @@ out and 100 sends everyone.
 - **Evidence:** confirmed (code) at `0x0016a2e8`; detail: brief
 - **Wrapper** `0x0035f4e0` (registered by `RegisterBindings`); **calls** `0x0016a2e8` `Gang_SetRespondPercentage`
 - **Used by** 10 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GangSetSpawnerModel {#gangsetspawnermodel}
@@ -1255,6 +1301,7 @@ only places its humans where the player cannot see them appear.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00374200` (registered by `RegisterBindings`); **calls** `0x0016b070` `Gang_SetSpawnerMustBeOffScreen`
 - **Used by** 12 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 9 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## GangSetTargetable {#gangsettargetable}
@@ -1276,6 +1323,7 @@ Sets whether the gang's current members can be targeted (locked on to) by the pl
 - **Evidence:** confirmed (code) at `0x0016bac0`; detail: traced
 - **Wrapper** `0x0035f728` (registered by `RegisterBindings`); **calls** `0x0016bac0`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
 
 ## GangSetThreatResponse {#gangsetthreatresponse}
@@ -1300,6 +1348,7 @@ value is inferred from the scripts' use.
 - **Evidence:** confirmed (code) at `0x0016b3d0`; detail: traced
 - **Wrapper** `0x0035f1f8` (registered by `RegisterBindings`); **calls** `0x0016b3d0`
 - **Used by** 20 of 467 script chunks (43 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 22 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## GangStartSpawner {#gangstartspawner}
@@ -1324,6 +1373,7 @@ Starts, stops or switches the state of a gang's spawner, and records the time of
 - **Evidence:** confirmed (code) at `0x0016afc8`; detail: brief
 - **Wrapper** `0x00374288` (registered by `RegisterBindings`); **calls** `0x0016afc8`
 - **Used by** 45 of 467 script chunks (229 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GangSuspend {#gangsuspend}
@@ -1347,4 +1397,5 @@ example GangWarriors around cutscenes.
 - **Evidence:** confirmed (code) at `0x0016a220`; detail: traced
 - **Wrapper** `0x00373238` (registered by `RegisterBindings`); **calls** `0x0016a220`
 - **Used by** 75 of 467 script chunks (357 references); boot to menu: yes; mission 1: yes; result used: yes
+- **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented

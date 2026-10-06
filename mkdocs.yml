@@ -162,6 +162,7 @@ nav:
       - Script bindings:
           - Overview: references/bindings/index.md
           - Mission 1 coverage: references/bindings/mission1.md
+          - Story coverage: references/bindings/story.md
           - Characters: references/bindings/character.md
           - AI: references/bindings/ai.md
           - Gangs: references/bindings/gang.md

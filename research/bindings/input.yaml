@@ -17,7 +17,7 @@
   depth: thorough
   notes: >-
     Which bit is which PS2 button is not traced here (the pad layer's button order).
-  usage: {chunks: 16, calls: 135, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 16, calls: 135, boot: true, mission1: true, result_used: false, levels: [87, 95, 2, 3, 5, 86, 93, 31, 9, 51, 55, 84, 82, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
 - name: PadSetHandlerEx
@@ -34,5 +34,5 @@
   notes: >-
     The store and the call are confirmed (code); the event that triggers it is inferred from the scripts' handler
     names.
-  usage: {chunks: 4, calls: 12, boot: false, mission1: true, result_used: false}
+  usage: {chunks: 4, calls: 12, boot: false, mission1: true, result_used: false, levels: [95, 55]}
   coney: implemented

@@ -20,7 +20,7 @@
     Scene table at 0x006eba10 (0x18-byte entries, count at 0x00512aec); slots at 0x006eba18 (0x40 bytes each). A slot
     is unloaded when its scene has played (0x00353bf0), so a scene is preloaded again before its next play. Research:
     docs/research/scenes.md#loading.
-  usage: {chunks: 110, calls: 256, boot: true, mission1: true, result_used: true}
+  usage: {chunks: 110, calls: 256, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: SceneIsPreloaded
@@ -35,7 +35,7 @@
     Reports whether a scene has finished loading.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 3, calls: 6, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 3, calls: 6, boot: true, mission1: false, result_used: true, levels: [87]}
   coney: implemented
 
 - name: SceneUnload
@@ -48,7 +48,7 @@
     Frees a loaded scene's slot, but only while the scene is loaded and not playing.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 8, calls: 9, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 8, calls: 9, boot: true, mission1: false, result_used: false, levels: [87, 51, 84, 83]}
   coney: implemented
 
 - name: SceneSetCallback
@@ -64,7 +64,7 @@
   depth: thorough
   notes: >-
     Called from the scene start 0x0039d870 once everything is loaded, before the camera and tracks start.
-  usage: {chunks: 6, calls: 14, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 14, boot: false, mission1: false, result_used: false, levels: [93, 51, 84]}
   coney: implemented
 
 - name: ScenePlayCinematic
@@ -93,7 +93,7 @@
     Plays at the world origin with no rotation, so the record's coordinates are world coordinates. Task flags +0xed
     bars, +0xe5 skippable, +0xeb looping, +0xef freeze, +0xe7 final, +0xe8 chain, BlendCam at +0x94 (0x003a13d0,
     0x00353818). Research: docs/research/scenes.md#playing.
-  usage: {chunks: 9, calls: 14, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 9, calls: 14, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: ScenePlayFixedScene
@@ -115,7 +115,7 @@
     frozen); global.lua's helpers use it for scene tables whose Animation field is a value other than 1.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 4, calls: 4, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 4, calls: 4, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: ScenePlay
@@ -155,7 +155,7 @@
     Plays a loaded scene at a given world position and orientation instead of its authored one.
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [14]}
   coney: implemented
 
 - name: ScenePlayAnimation
@@ -177,7 +177,7 @@
     Plays a loaded scene as an animation only (no position or orientation override), for global.lua's scene helpers.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: SceneStop
@@ -194,7 +194,7 @@
   notes: >-
     A starting scene goes to its end at once; a playing one has its roles' clips ended (0x003a0a68) and then ends as
     usual (docs/research/scenes.md#ending). The non-forced path on a looping scene is 0x003a0be8.
-  usage: {chunks: 53, calls: 62, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 53, calls: 62, boot: true, mission1: false, result_used: false, levels: [87, 81, 93, 14, 9, 51, 55, 84, 92, 20, 11, 63]}
   coney: implemented
 
 - name: SceneDone
@@ -239,7 +239,7 @@
     Binds a world object to one of a scene's object slots, so the scene moves that object when it plays.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 9, calls: 12, boot: true, mission1: true, result_used: false}
+  usage: {chunks: 9, calls: 12, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
   coney: implemented
 
 - name: SceneInvokeInPlace
@@ -287,7 +287,7 @@
     Stops a scene without forcing it: the same as SceneStop(scene, false).
   evidence: confirmed-code
   depth: brief
-  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [80]}
   coney: implemented
 
 - name: PlayMovie

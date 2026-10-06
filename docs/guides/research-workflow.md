@@ -175,7 +175,9 @@ An entry of `level.yaml`:
 - `usage` is counted from the disc's compiled Lua chunks: how many chunks reference the binding's global name and
   how many references there are (`calls`), whether the boot-to-menu scripts or the first mission's scripts
   reference it (`mission1` also counts the `global.lua` helpers those scripts reach; `coney-tools natives mission1`
-  sets it from the disc), and whether a traced call keeps its result (a lower bound). It holds counts only.
+  sets it from the disc), and whether a traced call keeps its result (a lower bound). It holds counts only. The
+  optional `levels: [80, 87, ...]` lists the story's later levels whose scripts can call it, in story order
+  (`coney-tools natives missions` sets it from the disc).
 - `coney` is never edited by hand: `coney-tools natives coney` sets it from Coney's binding table
   (`src/scripting/script_bindings.cpp`), writing the key only when it is not the default
   ([coney-tools](coney-tools.md#natives)).

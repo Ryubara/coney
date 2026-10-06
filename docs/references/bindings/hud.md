@@ -105,6 +105,7 @@ Sets a global flag (0x005109ac) that enables mission information in the hub (lev
 - **Evidence:** confirmed (code) at `0x0023b128`; detail: brief
 - **Wrapper** `0x0037d3f0` (registered by `RegisterBindings`); **calls** `0x0023b128`
 - **Used by** 34 of 467 script chunks (35 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## FlashRageBar {#flashragebar}
@@ -151,6 +152,7 @@ Behaviour: [The in-game HUD](../../research/hud.md#the-player-panel).
 - **Evidence:** confirmed (code) at `0x001b3f30`; detail: traced
 - **Wrapper** `0x0036ebe0` (registered by `RegisterBindings`); **calls** `0x001b3f30` `HUD_ForceShowPlayer`
 - **Used by** 43 of 467 script chunks (131 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 17 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GetDefaultFont {#getdefaultfont}
@@ -211,6 +213,7 @@ shows it again.
 - **Evidence:** confirmed (code) at `0x001b3ed0`; detail: traced
 - **Wrapper** `0x00370ca0` (registered by `RegisterBindings`); **calls** `0x001b3ed0` `HUD_HideAll`
 - **Used by** 56 of 467 script chunks (97 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HidePlayerHud {#hideplayerhud}
@@ -228,6 +231,7 @@ Hides both players' panels (name banner, rage meter, score, money) only.
 - **Evidence:** confirmed (code) at `0x001b3ef0`; detail: brief
 - **Wrapper** `0x00370ce0` (registered by `RegisterBindings`); **calls** `0x001b3ef0`
 - **Used by** 44 of 467 script chunks (50 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## HUDAddRadarHuman {#hudaddradarhuman}
@@ -248,6 +252,7 @@ enemy, a neutral (grey) or a special marker shown to both players.
 - **Evidence:** confirmed (code) at `0x001b4168`; detail: traced
 - **Wrapper** `0x00370a68` (registered by `RegisterBindings`); **calls** `0x001b4168` `HUD_RadarAddHuman`
 - **Used by** 9 of 467 script chunks (25 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDAddRadarMissionObjective {#hudaddradarmissionobjective}
@@ -268,6 +273,7 @@ its icon.
 - **Evidence:** confirmed (code) at `0x001b3f98`; detail: traced
 - **Wrapper** `0x00370760` (registered by `RegisterBindings`); **calls** `0x001b3f98` `HUD_RadarAddObjective`
 - **Used by** 66 of 467 script chunks (129 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 22 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDAddRadarObject {#hudaddradarobject}
@@ -307,6 +313,7 @@ Adds a secondary-objective blip (blip type 1) for an object to both radars.
 - **Evidence:** confirmed (code) at `0x001b3fc0`; detail: traced
 - **Wrapper** `0x00370798` (registered by `RegisterBindings`); **calls** `0x001b3fc0`
 - **Used by** 6 of 467 script chunks (9 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## HUDANEnableChkIndicator {#hudanenablechkindicator}
@@ -346,6 +353,7 @@ Shows or hides the `press start to join` message on a player's Armies of the Nig
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003701c8` (registered by `RegisterBindings`); **calls** `0x001b46a0`
 - **Used by** 10 of 467 script chunks (78 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## HUDANGetCredit {#hudangetcredit}
@@ -363,6 +371,7 @@ Returns the Armies of the Night credit counter.
 - **Evidence:** confirmed (code) at `0x001b4700`; detail: brief
 - **Wrapper** `0x00370290` (registered by `RegisterBindings`); **calls** `0x001b4700`
 - **Used by** 5 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## HUDANLaunchEndScreen {#hudanlaunchendscreen}
@@ -382,6 +391,7 @@ Shows or removes the Armies of the Night end screen.
 - **Evidence:** confirmed (code) at `0x001b44d8`; detail: brief
 - **Wrapper** `0x00370228` (registered by `RegisterBindings`); **calls** `0x001b44d8`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level64`](story.md#level64) (Armies of the Night 5)
 - **Coney:** not implemented
 
 ## HUDANSetCredit {#hudansetcredit}
@@ -401,6 +411,7 @@ Sets the Armies of the Night credit counter (0x00619910). global.lua sets it to 
 - **Evidence:** confirmed (code) at `0x001b46e0`; detail: traced
 - **Wrapper** `0x00370258` (registered by `RegisterBindings`); **calls** `0x001b46e0` `HUD_ANSetCredits`
 - **Used by** 7 of 467 script chunks (23 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## HUDANSetGOSignMode {#hudansetgosignmode}
@@ -420,6 +431,7 @@ Sets the Armies of the Night `GO` sign mode (a byte at 0x0060f260).
 - **Evidence:** confirmed (code) at `0x001b4690`; detail: brief
 - **Wrapper** `0x00370c00` (registered by `RegisterBindings`); **calls** `0x001b4690`
 - **Used by** 19 of 467 script chunks (136 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## HUDCenterComponents {#hudcentercomponents}
@@ -483,6 +495,7 @@ Reports whether a tutorial hint is still on screen or waiting.
 - **Evidence:** confirmed (code) at `0x001b49a8`; detail: brief
 - **Wrapper** `0x0036f3e8` (registered by `RegisterBindings`); **calls** `0x001b49a8`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## HUDDeleteRadarItem {#huddeleteradaritem}
@@ -521,6 +534,7 @@ Removes every radar blip of an object from both radars (the same function as HUD
 - **Evidence:** confirmed (code) at `0x001b4098`; detail: traced
 - **Wrapper** `0x00370980` (registered by `RegisterBindings`); **calls** `0x001b4098` `HUD_RadarRemove`
 - **Used by** 63 of 467 script chunks (149 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 22 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDDeleteRadarObject {#huddeleteradarobject}
@@ -541,6 +555,7 @@ with it.
 - **Evidence:** confirmed (code) at `0x001b4300`; detail: traced
 - **Wrapper** `0x00370a30` (registered by `RegisterBindings`); **calls** `0x001b4300`
 - **Used by** 16 of 467 script chunks (25 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 10 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDEnableBar {#hudenablebar}
@@ -566,6 +581,7 @@ Creates or removes a HUD bar: boss health, vehicle damage, Rumble score bars.
 - **Evidence:** confirmed (code) at `0x001b53b0`; detail: brief
 - **Wrapper** `0x0036f5b8` (registered by `RegisterBindings`); **calls** `0x001b53b0`
 - **Used by** 28 of 467 script chunks (100 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 15 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## HUDEnableClubActionText {#hudenableclubactiontext}
@@ -588,6 +604,7 @@ Moves the HUD's context action-prompt text between its normal low position and a
 - **Evidence:** confirmed (code) at `0x001b5ea8`; detail: traced
 - **Wrapper** `0x0036e968` (registered by `RegisterBindings`); **calls** `0x001b5ea8` `HUD_SetActionTextHigh`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## HUDEnableFixedCamIcon {#hudenablefixedcamicon}
@@ -607,6 +624,7 @@ Shows or hides the HUD icon that marks a fixed (non-player) camera.
 - **Evidence:** confirmed (code) at `0x001b4740`; detail: brief
 - **Wrapper** `0x0036f250` (registered by `RegisterBindings`); **calls** `0x001b4740`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## HUDEnableGameTutorialText {#hudenablegametutorialtext}
@@ -629,6 +647,7 @@ Rumble levels turn it off.
 - **Evidence:** confirmed (code) at `0x001b5ff0`; detail: traced
 - **Wrapper** `0x0036eec8` (registered by `RegisterBindings`); **calls** `0x001b5ff0` `GameState_SetTutorialText`
 - **Used by** 36 of 467 script chunks (38 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
 
 ## HUDEnableGenBar {#hudenablegenbar}
@@ -699,6 +718,7 @@ Creates or removes the text scoreboard (up to six labelled rows) used in Rumble 
 - **Evidence:** confirmed (code) at `0x001b5590`; detail: brief
 - **Wrapper** `0x0036fa28` (registered by `RegisterBindings`); **calls** `0x001b5590`
 - **Used by** 4 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
 - **Coney:** not implemented
 
 ## HUDFlushTutorialText {#hudflushtutorialtext}
@@ -718,6 +738,7 @@ Clears tutorial hints from the hint box, by priority or all of them.
 - **Evidence:** confirmed (code) at `0x001b49d0`; detail: traced
 - **Wrapper** `0x0036f430` (registered by `RegisterBindings`); **calls** `0x001b49d0` `Tutorial_Flush`
 - **Used by** 13 of 467 script chunks (55 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 20 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDGetNewPH {#hudgetnewph}
@@ -743,6 +764,7 @@ and layout. The panel stays hidden until a value is set.
 - **Evidence:** confirmed (code) at `0x001b4790`; detail: traced
 - **Wrapper** `0x0036e998` (registered by `RegisterBindings`); **calls** `0x001b4790` `HUD_PanelAlloc`
 - **Used by** 20 of 467 script chunks (40 references); boot to menu: yes; mission 1: yes; result used: yes
+- **Later in the story:** 21 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDLaunchANGameOver {#hudlaunchangameover}
@@ -762,6 +784,7 @@ Pushes the Armies of the Night game-over screen (game mode 0xd).
 - **Evidence:** confirmed (code) at `0x001cede8`; detail: brief
 - **Wrapper** `0x0036f1b8` (registered by `RegisterBindings`); **calls** `0x001cede8`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## HUDLaunchMissionComplete {#hudlaunchmissioncomplete}
@@ -786,6 +809,7 @@ before calling UnlockAndLoad, whose runNextMission(1) launches 4; the shipped sc
 - **Evidence:** confirmed (code) at `0x0015d420`; detail: traced
 - **Wrapper** `0x0036f218` (registered by `RegisterBindings`); **calls** `0x0015d420` `MissionComplete_Launch`
 - **Used by** 10 of 467 script chunks (12 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## HUDLaunchMissionFailed {#hudlaunchmissionfailed}
@@ -806,7 +830,8 @@ screen and pushes it (game mode 0xc).
 - **Evidence:** confirmed (code) at `0x001d1f88`; detail: brief
 - **Wrapper** `0x0036f130` (registered by `RegisterBindings`); **calls** `0x001d1f88` `MissionFailed_Launch`
 - **Used by** 24 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** implemented
+- **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
+- **Coney:** not implemented
 
 ## HUDLaunchRumbleWin {#hudlaunchrumblewin}
 
@@ -821,11 +846,7 @@ HUDLaunchRumbleWin(winner, reason)
 
 **Returns** nothing.
 
-Shows the Rumble result screen (game mode 0x14) with the two lines of text; its choices replay the arena, reopen the
-Rumble menu or quit.
-
-**Notes.** 0x001dfe20 pushes mode 0x14 (0x00155648) and copies the texts into the result screen at 0x00635390.
-Behaviour: [Rumble](../../research/rumble.md#result-screen).
+Shows the Rumble result screen (game mode 0x14) with the two lines of text.
 
 - **Evidence:** confirmed (code) at `0x001dfe20`; detail: brief
 - **Wrapper** `0x0036f160` (registered by `RegisterBindings`); **calls** `0x001dfe20`
@@ -850,6 +871,7 @@ Sets the radar's range (inferred). The function it calls takes only the HUD mana
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003709b8` (registered by `RegisterBindings`); **calls** `0x001b40c0`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## HUDReleasePH {#hudreleaseph}
@@ -869,6 +891,7 @@ Frees a counter panel and hides it.
 - **Evidence:** confirmed (code) at `0x001b47b8`; detail: traced
 - **Wrapper** `0x0036ea40` (registered by `RegisterBindings`); **calls** `0x001b47b8` `HUD_PanelRelease`
 - **Used by** 16 of 467 script chunks (37 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 20 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDRemoveAllGoalText {#hudremoveallgoaltext}
@@ -886,6 +909,7 @@ Clears the HUD's goal text (objective slot 0).
 - **Evidence:** confirmed (code) at `0x001db248`; detail: traced
 - **Wrapper** `0x0036f360` (registered by `RegisterBindings`); **calls** `0x001db248`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDSetANBossTexture {#hudsetanbosstexture}
@@ -907,6 +931,7 @@ Shows or removes a boss portrait on both players' Armies of the Night HUDs (the 
 - **Evidence:** confirmed (code) at `0x001b5b80`; detail: brief
 - **Wrapper** `0x0036e8d8` (registered by `RegisterBindings`); **calls** `0x001b5b80`
 - **Used by** 15 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
 - **Coney:** not implemented
 
 ## HUDSetAnnounceMsg {#hudsetannouncemsg}
@@ -935,6 +960,7 @@ the action prompts are hidden. Details: [The in-game HUD](../../research/hud.md#
 - **Evidence:** confirmed (code) at `0x001b5b08`; detail: traced
 - **Wrapper** `0x0036e858` (registered by `RegisterBindings`); **calls** `0x001b5b08` `HUD_SetAnnounceMessage`
 - **Used by** 17 of 467 script chunks (50 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 7 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## HUDSetBarPercentage {#hudsetbarpercentage}
@@ -958,6 +984,7 @@ Sets how full a HUD bar is.
 - **Evidence:** confirmed (code) at `0x001b5450`; detail: brief
 - **Wrapper** `0x0036f7f8` (registered by `RegisterBindings`); **calls** `0x001b5450`
 - **Used by** 28 of 467 script chunks (103 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 15 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## HUDSetBarProperty {#hudsetbarproperty}
@@ -980,6 +1007,7 @@ Sets a generic bar's colour and width.
 - **Evidence:** confirmed (code) at `0x001b54f0`; detail: brief
 - **Wrapper** `0x0036f8e8` (registered by `RegisterBindings`); **calls** `0x001b54f0`
 - **Used by** 21 of 467 script chunks (39 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 14 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## HUDSetChaseHUDState_CREATE {#hudsetchasehudstate_create}
@@ -1017,6 +1045,7 @@ Puts the chase HUD into its destroy state (removes it).
 - **Evidence:** confirmed (code) at `0x001b4a88`; detail: brief
 - **Wrapper** `0x0036f538` (registered by `RegisterBindings`); **calls** `0x001b4a88`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## HUDSetChaseHUDState_NORMAL {#hudsetchasehudstate_normal}
@@ -1149,6 +1178,7 @@ Sets the Lua function the mission-failed screen calls to restart the current cha
 - **Evidence:** confirmed (code) at `0x001d1ff0`; detail: brief
 - **Wrapper** `0x0036f1e8` (registered by `RegisterBindings`); **calls** `0x001d1ff0`
 - **Used by** 6 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## HUDSetNumIndicator {#hudsetnumindicator}
@@ -1200,6 +1230,7 @@ HUD](../../research/hud.md#objectives-hudsetobjective).
 - **Evidence:** confirmed (code) at `0x001dad88`; detail: traced
 - **Wrapper** `0x0036f280` (registered by `RegisterBindings`); **calls** `0x001dad88` `HUD_SetObjective`
 - **Used by** 149 of 467 script chunks (675 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDSetPHLabelFlashing {#hudsetphlabelflashing}
@@ -1245,6 +1276,7 @@ the game (global.lua's Objective and TagInfo helpers).
 - **Evidence:** confirmed (code) at `0x001b47e0`; detail: traced
 - **Wrapper** `0x0036ea78` (registered by `RegisterBindings`); **calls** `0x001b47e0` `HUD_PanelSetValue`
 - **Used by** 53 of 467 script chunks (239 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 21 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDSetRadarItemTexture {#hudsetradaritemtexture}
@@ -1267,6 +1299,7 @@ Changes the icon (and scale) of an object's radar blip on both radars.
 - **Evidence:** confirmed (code) at `0x001b4038`; detail: traced
 - **Wrapper** `0x003708c8` (registered by `RegisterBindings`); **calls** `0x001b4038` `HUD_RadarSetIcon`
 - **Used by** 70 of 467 script chunks (154 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 22 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDSetRadarObjectFlash {#hudsetradarobjectflash}
@@ -1288,6 +1321,7 @@ Makes an object's radar blip flash, or stops it, on both radars.
 - **Evidence:** confirmed (code) at `0x001b4298`; detail: traced
 - **Wrapper** `0x00370690` (registered by `RegisterBindings`); **calls** `0x001b4298` `HUD_RadarFlash`
 - **Used by** 9 of 467 script chunks (18 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## HUDSetRadarZoomScale {#hudsetradarzoomscale}
@@ -1307,6 +1341,7 @@ Sets both radars' zoom scale.
 - **Evidence:** confirmed (code) at `0x001b40e0`; detail: brief
 - **Wrapper** `0x00370728` (registered by `RegisterBindings`); **calls** `0x001b40e0`
 - **Used by** 6 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
 
 ## HUDSetTextProgress {#hudsettextprogress}
@@ -1329,6 +1364,7 @@ Updates a scoreboard row's score and colour and re-sorts the rows by score, high
 - **Evidence:** confirmed (code) at `0x001b57c8`; detail: brief
 - **Wrapper** `0x0036fb38` (registered by `RegisterBindings`); **calls** `0x001b57c8`
 - **Used by** 4 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
 - **Coney:** not implemented
 
 ## HUDSetTutorialCallback {#hudsettutorialcallback}
@@ -1355,6 +1391,7 @@ a chunk are). Details: [The in-game HUD](../../research/hud.md#tutorial-callback
 - **Evidence:** confirmed (code) at `0x001b5e90`; detail: traced
 - **Wrapper** `0x00370098` (registered by `RegisterBindings`); **calls** `0x001b5e90` `Tutorial_SetCallback`
 - **Used by** 2 of 467 script chunks (20 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## HUDSetTutorialText {#hudsettutorialtext}
@@ -1381,6 +1418,7 @@ in-game HUD](../../research/hud.md#hints-hudsettutorialtext).
 - **Evidence:** confirmed (code) at `0x001b4980`; detail: traced
 - **Wrapper** `0x0036f380` (registered by `RegisterBindings`); **calls** `0x001b4980` `Tutorial_QueueText`
 - **Used by** 53 of 467 script chunks (244 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 22 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDShowMissionSelect {#hudshowmissionselect}
@@ -1401,6 +1439,7 @@ Opens the clubhouse mission-select screen (game mode 0x10) unless it is already 
 - **Evidence:** confirmed (code) at `0x00155180`; detail: brief
 - **Wrapper** `0x0036ec40` (registered by `RegisterBindings`); **calls** `0x00155180` `MissionSelect_Show`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## HUDShowMissionSummaryText {#hudshowmissionsummarytext}
@@ -1423,6 +1462,7 @@ Does nothing in this build: the function it calls (0x001b3878) returns at once.
 - **Evidence:** confirmed (code) at `0x001b4768`; detail: traced
 - **Wrapper** `0x0036f0d0` (registered by `RegisterBindings`); **calls** `0x001b4768`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## HUDShowWarCommand {#hudshowwarcommand}
@@ -1443,6 +1483,7 @@ Shows or hides the Warrior-command element (the squad-order display) on one play
 - **Evidence:** confirmed (code) at `0x001b4948`; detail: brief
 - **Wrapper** `0x0036e7f8` (registered by `RegisterBindings`); **calls** `0x001b4948`
 - **Used by** 9 of 467 script chunks (32 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## HUDTurnOffActionCycleAnim {#hudturnoffactioncycleanim}
@@ -1462,6 +1503,7 @@ Removes the animated button prompt for a player.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0036fd98` (registered by `RegisterBindings`); **calls** `0x001b5ae0`
 - **Used by** 8 of 467 script chunks (27 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## HUDTurnOffRadar {#hudturnoffradar}
@@ -1484,6 +1526,7 @@ sets +0x177ac is not traced. Behaviour: [The in-game HUD](../../research/hud.md#
 - **Evidence:** confirmed (code) at `0x001b43a8`; detail: traced
 - **Wrapper** `0x00370100` (registered by `RegisterBindings`); **calls** `0x001b43a8` `HUD_RadarOff`
 - **Used by** 67 of 467 script chunks (121 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 15 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## HUDTurnOnActionCycleAnim {#hudturnonactioncycleanim}
@@ -1509,6 +1552,7 @@ workouts).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0036fc80` (registered by `RegisterBindings`); **calls** `0x001b5a90`
 - **Used by** 7 of 467 script chunks (13 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## HUDTurnOnRadar {#hudturnonradar}
@@ -1530,6 +1574,7 @@ Shows the radar (minimap) for one or both players.
 - **Evidence:** confirmed (code) at `0x001b4328`; detail: traced
 - **Wrapper** `0x003700c8` (registered by `RegisterBindings`); **calls** `0x001b4328` `HUD_RadarOn`
 - **Used by** 52 of 467 script chunks (87 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## PreloadCredits {#preloadcredits}
@@ -1547,6 +1592,7 @@ Loads what the end credits need ahead of ShowCredits (called by level84_end).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0036ee08` (registered by `RegisterBindings`); **calls** `0x001b5fb0`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level84`](story.md#level84) (mission 18)
 - **Coney:** not implemented
 
 ## RestoreHud {#restorehud}
@@ -1564,6 +1610,7 @@ Shows the whole HUD again after HideHud.
 - **Evidence:** confirmed (code) at `0x001b3f78`; detail: traced
 - **Wrapper** `0x00370cc0` (registered by `RegisterBindings`); **calls** `0x001b3f78` `HUD_ShowAll`
 - **Used by** 82 of 467 script chunks (199 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## ShowCredits {#showcredits}
@@ -1581,6 +1628,7 @@ Starts the end credits on the HUD (called by level84_end).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0036ee28` (registered by `RegisterBindings`); **calls** `0x001b5fd0`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level84`](story.md#level84) (mission 18)
 - **Coney:** not implemented
 
 ## ShowGameStatsInterface {#showgamestatsinterface}
@@ -1600,6 +1648,7 @@ Opens the game statistics screen (game mode 0x13) unless it is already open.
 - **Evidence:** confirmed (code) at `0x001551e0`; detail: brief
 - **Wrapper** `0x0036ec98` (registered by `RegisterBindings`); **calls** `0x001551e0`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## ShowHud {#showhud}
@@ -1621,6 +1670,7 @@ Does nothing in this build: the function it calls (0x001b3ec8) returns at once. 
 - **Evidence:** confirmed (code) at `0x001b3ec8`; detail: traced
 - **Wrapper** `0x00370c68` (registered by `RegisterBindings`); **calls** `0x001b3ec8`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## ShowOptionMenu {#showoptionmenu}
@@ -1657,6 +1707,7 @@ Shows both players' status panels again.
 - **Evidence:** confirmed (code) at `0x001b3f10`; detail: brief
 - **Wrapper** `0x00370d00` (registered by `RegisterBindings`); **calls** `0x001b3f10`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## ShowProfileManager {#showprofilemanager}
@@ -1703,6 +1754,7 @@ they are looked up by name when they fire).
 - **Evidence:** confirmed (code) at `0x00155228`; detail: traced
 - **Wrapper** `0x0036ecc8` (registered by `RegisterBindings`); **calls** `0x00155228` `RumbleMenu_Show`
 - **Used by** 37 of 467 script chunks (71 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** partial
 
 ## ShowRumbleModeIntro {#showrumblemodeintro}
@@ -1718,11 +1770,7 @@ ShowRumbleModeIntro(onDone, names)
 
 **Returns** nothing.
 
-Shows the Rumble match introduction: the names one by one with the announcer, a prompt the player confirms, then a 3-2-1
-countdown, after which `onDone` is called.
-
-**Notes.** Opens the HUD's RM_Intro screen (0x001f9418, 0x001f9558; update 0x001fad40). Behaviour:
-[Rumble](../../research/rumble.md#intro).
+Shows the Rumble match introduction with the competing gangs' names.
 
 - **Evidence:** confirmed (code) at `0x001b5f88`; detail: brief
 - **Wrapper** `0x0036ed48` (registered by `RegisterBindings`); **calls** `0x001b5f88`

@@ -53,6 +53,7 @@ Returns the platform number; `config_preload2.lua` stores it as `Platform` to ch
 - **Evidence:** confirmed (code) at `0x00357998`; detail: traced
 - **Wrapper** `0x0036d5e0` (registered by `RegisterBindings`); **calls** `0x00357998`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** implemented
 
 ## GetPosition {#getposition}
@@ -76,6 +77,7 @@ again.
 - **Evidence:** confirmed (code) at `0x00385a50`; detail: traced
 - **Wrapper** `0x0036ca18` (registered by `RegisterBindings`); **calls** `0x00385a50`
 - **Used by** 71 of 467 script chunks (193 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GetRTTI {#getrtti}
@@ -96,6 +98,7 @@ Returns an object's run-time type flags.
 - **Evidence:** confirmed (code) at `0x00385950`; detail: brief
 - **Wrapper** `0x0036c888` (registered by `RegisterBindings`); **calls** `0x00385950`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 2 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## isRelease {#isrelease}
@@ -113,6 +116,7 @@ Tells the scripts this is a release build (`0x00357990`), which turns off their 
 - **Evidence:** confirmed (code) at `0x00357990`; detail: traced
 - **Wrapper** `0x0036d5a8` (registered by `RegisterBindings`); **calls** `0x00357990`
 - **Used by** 36 of 467 script chunks (72 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## random {#random}
@@ -137,6 +141,7 @@ zeroed at start-up and never seeded; C++ code draws from the same index. A test 
 - **Evidence:** confirmed (code) at `0x00386488`; detail: traced
 - **Wrapper** `0x0036dfc8` (registered by `RegisterBindings`); **calls** `0x00386488`
 - **Used by** 111 of 467 script chunks (343 references); boot to menu: yes; mission 1: yes; result used: yes
+- **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## TestDistance {#testdistance}
@@ -160,6 +165,7 @@ read, and the squared distance compared with the squared limit, so exactly at th
 - **Evidence:** confirmed (code) at `0x00385ea8`; detail: traced
 - **Wrapper** `0x0036ce58` (registered by `RegisterBindings`); **calls** `0x00385ea8`
 - **Used by** 16 of 467 script chunks (38 references); boot to menu: yes; mission 1: no; result used: yes
+- **Later in the story:** 21 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## ToInt {#toint}
@@ -180,4 +186,5 @@ Converts a number to an integer by truncation.
 - **Evidence:** confirmed (code) at `0x0036d938`; detail: traced
 - **Wrapper** `0x0036d938` (registered by `RegisterBindings`); **calls** nothing (the wrapper does the work itself)
 - **Used by** 6 of 467 script chunks (7 references); boot to menu: yes; mission 1: yes; result used: yes
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented

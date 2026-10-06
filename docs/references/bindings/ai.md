@@ -223,6 +223,7 @@ Behaviour: [AI](../../research/ai.md#look-at).
 - **Evidence:** confirmed (code) at `0x002fe0c8`; detail: traced
 - **Wrapper** `0x003647d8` (registered by `RegisterBindings`); **calls** `0x002fe0c8` `Action_LookAt`
 - **Used by** 37 of 467 script chunks (112 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## ActMoveTo {#actmoveto}
@@ -290,6 +291,7 @@ Queues an action that turns the human to face a target.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00364640` (registered by `RegisterBindings`); **calls** `0x002fdf70` `Action_TurnToTarget`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
 
 ## ActTurnToDir {#actturntodir}
@@ -316,6 +318,7 @@ per update.
 - **Evidence:** confirmed (code) at `0x002fdb90`; detail: brief
 - **Wrapper** `0x00364708` (registered by `RegisterBindings`); **calls** `0x002fdb90` `Action_TurnToHeading`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## BrCanUseWorldFlags {#brcanuseworldflags}
@@ -341,6 +344,7 @@ scripts pass.
 - **Evidence:** confirmed (code) at `0x00292c10`; detail: traced
 - **Wrapper** `0x0035efc0` (registered by `RegisterBindings`); **calls** `0x00292c10` `Brain_SetWorldFlagUse`
 - **Used by** 6 of 467 script chunks (15 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 9 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## BrClearBackoff {#brclearbackoff}
@@ -361,6 +365,7 @@ backing away; otherwise does nothing. `global.lua` uses it in its fight helpers.
 - **Evidence:** confirmed (code) at `0x00292cf0`; detail: traced
 - **Wrapper** `0x0035f0f0` (registered by `RegisterBindings`); **calls** `0x00292cf0` `Brain_ClearBackoff`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## BrDead {#brdead}
@@ -389,6 +394,7 @@ clears the player record's control byte (+0x1b); on reads the handlers from the 
 - **Evidence:** confirmed (code) at `0x00292330`; detail: traced
 - **Wrapper** `0x0035eb78` (registered by `RegisterBindings`); **calls** `0x00292330` `Brain_SetDead`
 - **Used by** 120 of 467 script chunks (894 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## BrEnable {#brenable}
@@ -434,6 +440,7 @@ queued actions (`+0x2e` count, ring at `+0x68`).
 - **Evidence:** confirmed (code) at `0x00292530`; detail: traced
 - **Wrapper** `0x0035ede0` (registered by `RegisterBindings`); **calls** `0x00292530` `Brain_FlushAll`
 - **Used by** 124 of 467 script chunks (520 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## BrFlushActions {#brflushactions}
@@ -454,6 +461,7 @@ so the current goal plans again on its next update.
 - **Evidence:** confirmed (code) at `0x00292590`; detail: brief
 - **Wrapper** `0x0035ee18` (registered by `RegisterBindings`); **calls** `0x00292590` `Brain_FlushActions`
 - **Used by** 34 of 467 script chunks (67 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
 
 ## BrFlushGoals {#brflushgoals}
@@ -473,6 +481,7 @@ Pops every goal off a human's goal stack, ending each one, but leaves already qu
 - **Evidence:** confirmed (code) at `0x00292618`; detail: brief
 - **Wrapper** `0x0035eea0` (registered by `RegisterBindings`); **calls** `0x00292618` `Brain_FlushGoals`
 - **Used by** 40 of 467 script chunks (84 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
 
 ## BrGetPedType {#brgetpedtype}
@@ -513,6 +522,7 @@ Tells whether anyone is currently attacking the human. One script calls it.
 - **Evidence:** confirmed (code) at `0x00292ca8`; detail: brief
 - **Wrapper** `0x0035f0a0` (registered by `RegisterBindings`); **calls** `0x00292ca8` `Brain_HasAttackers`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level54`](story.md#level54) (mission 16)
 - **Coney:** not implemented
 
 ## BrHasEnemies {#brhasenemies}
@@ -533,6 +543,7 @@ Tells whether a human currently considers anyone an enemy.
 - **Evidence:** confirmed (code) at `0x00292c68`; detail: brief
 - **Wrapper** `0x0035f050` (registered by `RegisterBindings`); **calls** `0x00292c68` `Brain_HasEnemies`
 - **Used by** 4 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: yes
+- **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## BrHasGoals {#brhasgoals}
@@ -593,6 +604,7 @@ given takes effect in the same frame.
 - **Evidence:** confirmed (code) at `0x002926a8`; detail: brief
 - **Wrapper** `0x0035ef10` (registered by `RegisterBindings`); **calls** `0x002926a8` `Brain_ProcessTopGoal`
 - **Used by** 4 of 467 script chunks (13 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level54`](story.md#level54) (mission 16)
 - **Coney:** not implemented
 
 ## BrSetAttackWeight {#brsetattackweight}
@@ -636,6 +648,7 @@ Sets how a human reacts to taking damage.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035f278` (registered by `RegisterBindings`); **calls** `0x00292758` `Brain_SetDamageResponse`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
 
 ## BrSetFollowSlot {#brsetfollowslot}
@@ -662,6 +675,7 @@ forward direction is inferred.
 - **Evidence:** confirmed (code) at `0x00292b10`; detail: traced
 - **Wrapper** `0x0035fd90` (registered by `RegisterBindings`); **calls** `0x00292b10` `Follow_SetSlotOffset`
 - **Used by** 2 of 467 script chunks (12 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## BrSetFollowSlotSet {#brsetfollowslotset}
@@ -703,6 +717,7 @@ sections.
 - **Evidence:** confirmed (code) at `0x002928d8`; detail: brief
 - **Wrapper** `0x0035fa50` (registered by `RegisterBindings`); **calls** `0x002928d8` `Brain_SetFieldOfView`
 - **Used by** 19 of 467 script chunks (114 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 9 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## BrSetInvestigateResponse {#brsetinvestigateresponse}
@@ -726,6 +741,7 @@ helpers.
 - **Evidence:** confirmed (code) at `0x002927a8`; detail: traced
 - **Wrapper** `0x0035f370` (registered by `RegisterBindings`); **calls** `0x002927a8` `Brain_SetInvestigateResponse`
 - **Used by** 29 of 467 script chunks (74 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## BrSetMeleeRange {#brsetmeleerange}
@@ -796,6 +812,7 @@ take one (`+0x272`); the rest queue behind them. Behaviour: [AI](../../research/
 - **Evidence:** confirmed (code) at `0x00292a60`; detail: traced
 - **Wrapper** `0x0035fc80` (registered by `RegisterBindings`); **calls** `0x00292a60` `Follow_SetSlotCount`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## BrSetPedType {#brsetpedtype}
@@ -818,6 +835,7 @@ Sets the pedestrian type stored in the human's brain (`+0x26c`), which `BrGetPed
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035ecb0` (registered by `RegisterBindings`); **calls** `0x00292460` `Brain_SetPedType`
 - **Used by** 12 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## BrSetPlayerResponse {#brsetplayerresponse}
@@ -840,6 +858,7 @@ Sets how a human reacts to the player specifically.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035f468` (registered by `RegisterBindings`); **calls** `0x002927f8` `Brain_SetPlayerResponse`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
 - **Coney:** not implemented
 
 ## BrSetReactToViolence {#brsetreacttoviolence}
@@ -862,6 +881,7 @@ Sets whether a human reacts to violence nearby (brain `+0x267`). `global.lua` pa
 - **Evidence:** confirmed (code) at `0x00292bc8`; detail: traced
 - **Wrapper** `0x0035feb8` (registered by `RegisterBindings`); **calls** `0x00292bc8` `Brain_SetReactsToViolence`
 - **Used by** 33 of 467 script chunks (85 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 13 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## BrSetThreatResponse {#brsetthreatresponse}
@@ -886,6 +906,7 @@ shopkeepers and scripted extras; tactics set their own (`TacticAttack` 2, `Avoid
 - **Evidence:** confirmed (code) at `0x00292708`; detail: brief
 - **Wrapper** `0x0035ef48` (registered by `RegisterBindings`); **calls** `0x00292708` `Brain_SetThreatResponse`
 - **Used by** 43 of 467 script chunks (116 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## BrSetThugWantsHat {#brsetthugwantshat}
@@ -906,6 +927,7 @@ Sets whether a thug goes after hats knocked off in fights (brain `+0x266`).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035f9f0` (registered by `RegisterBindings`); **calls** `0x00292890` `Brain_SetWantsHat`
 - **Used by** 1 of 467 script chunks (12 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level62`](story.md#level62) (Armies of the Night 3)
 - **Coney:** not implemented
 
 ## BrSetThugWantsWeapon {#brsetthugwantsweapon}
@@ -929,6 +951,7 @@ set-up helpers; `GoalManWeaponPile` sets it too.
 - **Evidence:** confirmed (code) at `0x00292848`; detail: traced
 - **Wrapper** `0x0035f990` (registered by `RegisterBindings`); **calls** `0x00292848` `Brain_SetWantsWeapon`
 - **Used by** 37 of 467 script chunks (78 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 17 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## BrSetType {#brsettype}
@@ -952,6 +975,7 @@ Changes the kind of brain a human has (brain `+0x04`) and rebuilds its behaviour
 - **Evidence:** confirmed (code) at `0x00292410`; detail: brief
 - **Wrapper** `0x0035ec38` (registered by `RegisterBindings`); **calls** `0x00292410` `Brain_SetType`
 - **Used by** 8 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## BrSuspend {#brsuspend}
@@ -976,6 +1000,7 @@ him afterwards.
 - **Evidence:** confirmed (code) at `0x002923a0`; detail: traced
 - **Wrapper** `0x0035ebd8` (registered by `RegisterBindings`); **calls** `0x002923a0` `Brain_SetSuspended`
 - **Used by** 11 of 467 script chunks (22 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** implemented
 
 ## GoalAddressPerson {#goaladdressperson}
@@ -1004,6 +1029,7 @@ speaker without checking it is a human. Process 0x002cc588. Behaviour: [AI](../.
 - **Evidence:** confirmed (code) at `0x002cc348`; detail: traced
 - **Wrapper** `0x003603a8` (registered by `RegisterBindings`); **calls** `0x002cc348` `Goal_AddressPerson`
 - **Used by** 9 of 467 script chunks (15 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## GoalAreaWalker {#goalareawalker}
@@ -1034,6 +1060,7 @@ centre is the human's own position. Mode 3's idles: anim 0x29c, or 0x29e at 25 %
 - **Evidence:** confirmed (code) at `0x002a4cb8`; detail: traced
 - **Wrapper** `0x00361fa0` (registered by `RegisterBindings`); **calls** `0x002a4cb8` `Goal_AreaWalker`
 - **Used by** 13 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 8 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GoalArrestHuman {#goalarresthuman}
@@ -1080,6 +1107,7 @@ Makes a human keep its distance from enemies.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00362c00` (registered by `RegisterBindings`); **calls** `0x002e3090` `Goal_AvoidEnemies`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
 
 ## GoalBackoff {#goalbackoff}
@@ -1106,6 +1134,7 @@ Makes a human back away from another and keep its distance, for a time or until 
 - **Evidence:** confirmed (code) at `0x002d9238`; detail: traced
 - **Wrapper** `0x00363d70` (registered by `RegisterBindings`); **calls** `0x002d9238` `Goal_Backoff`
 - **Used by** 8 of 467 script chunks (23 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GoalBigBrawler {#goalbigbrawler}
@@ -1174,6 +1203,7 @@ A boss that throws objects from a ledge at up to three targets.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00363b38` (registered by `RegisterBindings`); **calls** `0x002edf20` `Goal_BigLedgeThrower`
 - **Used by** 1 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## GoalBigThrower {#goalbigthrower}
@@ -1261,6 +1291,7 @@ Makes a human work out on a heavy bag (the hideout's training bag).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00363ff8` (registered by `RegisterBindings`); **calls** `0x002d97c0` `Goal_Boxer`
 - **Used by** 2 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GoalBumLogic {#goalbumlogic}
@@ -1289,6 +1320,7 @@ Gives a homeless human its ambient behaviour (begging, rummaging, sleeping by ty
 - **Evidence:** confirmed (code) at `0x002abd38`; detail: traced
 - **Wrapper** `0x003633a8` (registered by `RegisterBindings`); **calls** `0x002abd38` `Goal_Bum`
 - **Used by** 26 of 467 script chunks (71 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 14 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GoalBumLogicTrigger {#goalbumlogictrigger}
@@ -1308,6 +1340,7 @@ Pokes a bum's ambient goal into its triggered reaction (inferred).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003634c8` (registered by `RegisterBindings`); **calls** `0x002abe08` `Goal_BumTrigger`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GoalCallGang {#goalcallgang}
@@ -1332,6 +1365,7 @@ Makes a human call its gang for help.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003638b8` (registered by `RegisterBindings`); **calls** `0x002d5c28` `Goal_CallGang`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
 
 ## GoalCallPolice {#goalcallpolice}
@@ -1355,6 +1389,7 @@ Makes a witness go and call the police about a crime.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00362ec0` (registered by `RegisterBindings`); **calls** `0x002a7d08` `Goal_CallPolice`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** not implemented
 
 ## GoalCopperGuard {#goalcopperguard}
@@ -1400,6 +1435,7 @@ Makes a cop patrol along a path.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00361ea0` (registered by `RegisterBindings`); **calls** `0x002c1060` `Goal_CopPatrol`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level52`](story.md#level52) (mission 15)
 - **Coney:** not implemented
 
 ## GoalCopperRespond {#goalcopperrespond}
@@ -1464,6 +1500,7 @@ Makes a human cower in fear.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003644a0` (registered by `RegisterBindings`); **calls** `0x002d4c38` `Goal_Cower`
 - **Used by** 4 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
 
 ## GoalDealer {#goaldealer}
@@ -1492,6 +1529,7 @@ roll against `dirtyChance` when the goal is made. Levels use it for the flash de
 - **Evidence:** confirmed (code) at `0x002c6c88`; detail: traced
 - **Wrapper** `0x00363018` (registered by `RegisterBindings`); **calls** `0x002c6c88` `Goal_Dealer`
 - **Used by** 21 of 467 script chunks (27 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## GoalDevilRun {#goaldevilrun}
@@ -1520,6 +1558,7 @@ attacking when close.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00360d98` (registered by `RegisterBindings`); **calls** `0x002e1760` `Goal_DevilRun`
 - **Used by** 6 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## GoalEngageEnemy {#goalengageenemy}
@@ -1540,6 +1579,7 @@ Makes a human start fighting a given enemy.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00360550` (registered by `RegisterBindings`); **calls** `0x002af528` `Goal_EngageEnemy`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
 
 ## GoalFight {#goalfight}
@@ -1565,6 +1605,7 @@ Not a goal on the stack despite its name. It does nothing when the human's threa
 - **Evidence:** confirmed (code) at `0x002b2b90`; detail: traced
 - **Wrapper** `0x003610a8` (registered by `RegisterBindings`); **calls** `0x002b2b90` `Brain_StartFight`
 - **Used by** 15 of 467 script chunks (33 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 9 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GoalFollowFormation {#goalfollowformation}
@@ -1585,6 +1626,7 @@ Makes a human take a place in another human's follow formation.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003607f8` (registered by `RegisterBindings`); **calls** `0x002dfb00` `Goal_FollowFormation`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
 - **Coney:** not implemented
 
 ## GoalFollowObject {#goalfollowobject}
@@ -1607,6 +1649,7 @@ Makes a human follow a moving object, as in scripted chases.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00360730` (registered by `RegisterBindings`); **calls** `0x002df6c0` `Goal_FollowObject`
 - **Used by** 2 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
 
 ## GoalFollowPlayer {#goalfollowplayer}
@@ -1633,6 +1676,7 @@ formation (0x00296028). The meaning of `mode` is inferred.
 - **Evidence:** confirmed (code) at `0x002de2c8`; detail: traced
 - **Wrapper** `0x003605c8` (registered by `RegisterBindings`); **calls** `0x002de2c8` `Goal_FollowPlayer`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
 
 ## GoalGetItem {#goalgetitem}
@@ -1654,6 +1698,7 @@ Sends a human to pick up a particular object.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003604b0` (registered by `RegisterBindings`); **calls** `0x002dc708` `Goal_GetItem`
 - **Used by** 2 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
 
 ## GoalGrabTarget {#goalgrabtarget}
@@ -1674,6 +1719,7 @@ Makes a human grab another human.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00364500` (registered by `RegisterBindings`); **calls** `0x002bb3d0` `Goal_GrabTarget`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GoalGuardFlag {#goalguardflag}
@@ -1698,6 +1744,7 @@ Makes a human stand guard at a flag, facing a direction, optionally for a limite
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00360f28` (registered by `RegisterBindings`); **calls** `0x002b79b8` `Goal_GuardFlag`
 - **Used by** 4 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## GoalHoldPosition {#goalholdposition}
@@ -1720,6 +1767,7 @@ Makes a human stay at a position, returning to it if pushed away.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003624e0` (registered by `RegisterBindings`); **calls** `0x002be590` `Goal_HoldPosition`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
 
 ## GoalHooker {#goalhooker}
@@ -1766,6 +1814,7 @@ Gives a human the goal of taking part in an animation scene in the given role, r
 - **Evidence:** confirmed (code) at `0x002e5650`; detail: traced
 - **Wrapper** `0x003615d8` (registered by `RegisterBindings`); **calls** `0x002e5650` `Goal_JoinAnimation`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GoalJoinCinematic {#goaljoincinematic}
@@ -1792,6 +1841,7 @@ Gives a human the goal of taking part in a cinematic scene in the given role. If
 - **Evidence:** confirmed (code) at `0x002e5300`; detail: traced
 - **Wrapper** `0x003614f8` (registered by `RegisterBindings`); **calls** `0x002e5300` `Goal_JoinCinematic`
 - **Used by** 7 of 467 script chunks (22 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GoalJoinFixedScene {#goaljoinfixedscene}
@@ -1818,6 +1868,7 @@ its role at once. `global.lua`'s scene helpers call it for each human of a scene
 - **Evidence:** confirmed (code) at `0x002e5048`; detail: traced
 - **Wrapper** `0x00361418` (registered by `RegisterBindings`); **calls** `0x002e5048` `Goal_JoinFixedScene`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GoalJoinScene {#goaljoinscene}
@@ -1868,6 +1919,7 @@ Makes a human run a path ahead of a chaser, pacing itself by how far behind the 
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00360ac8` (registered by `RegisterBindings`); **calls** `0x002e0a78` `Goal_LeadChase`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** not implemented
 
 ## GoalLutherShooter {#goalluthershooter}
@@ -1896,6 +1948,7 @@ Luther's gunfire behaviour in the final missions.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00363e50` (registered by `RegisterBindings`); **calls** `0x002f3118` `Goal_LutherShooter`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level64`](story.md#level64) (Armies of the Night 5)
 - **Coney:** not implemented
 
 ## GoalManWeaponPile {#goalmanweaponpile}
@@ -1951,6 +2004,7 @@ Wrapper `0x00361a50`; calls `0x002a30e8`.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00361b80` (registered by `RegisterBindings`); **calls** `0x002a31f0` `Goal_ManWeaponPile`
 - **Used by** 3 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
 
 ## GoalMark {#goalmark}
@@ -1972,6 +2026,7 @@ Makes a human wait at a flag as a mark (in the marketplace mission, the accounta
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003639c8` (registered by `RegisterBindings`); **calls** `0x002d87b0` `Goal_Mark`
 - **Used by** 1 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
 - **Coney:** not implemented
 
 ## GoalMelee {#goalmelee}
@@ -1992,6 +2047,7 @@ Makes a human brawl in melee, with a given opponent or with whoever is near.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00361150` (registered by `RegisterBindings`); **calls** `0x002add08` `Goal_Melee`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GoalMoveToExitFlag {#goalmovetoexitflag}
@@ -2021,6 +2077,7 @@ is removed.
 - **Evidence:** confirmed (code) at `0x002da810`; detail: brief
 - **Wrapper** `0x00360090` (registered by `RegisterBindings`); **calls** `0x002da810` `Goal_MoveToExitFlag`
 - **Used by** 10 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 8 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GoalMoveToFlag {#goalmovetoflag}
@@ -2053,6 +2110,7 @@ The meaning of the last argument is inferred.
 - **Evidence:** confirmed (code) at `0x002da2c0`; detail: traced
 - **Wrapper** `0x0035ff18` (registered by `RegisterBindings`); **calls** `0x002da2c0` `Goal_MoveToFlag`
 - **Used by** 84 of 467 script chunks (304 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## GoalMoveToHuman {#goalmovetohuman}
@@ -2078,6 +2136,7 @@ behaviour is inferred.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003602e0` (registered by `RegisterBindings`); **calls** `0x002dc458` `Goal_MoveToHuman`
 - **Used by** 3 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
 
 ## GoalMoveToUseFlag {#goalmovetouseflag}
@@ -2107,6 +2166,7 @@ extras. The roles of the two floats and the flag are inferred.
 - **Evidence:** confirmed (code) at `0x002db6b0`; detail: traced
 - **Wrapper** `0x003601a8` (registered by `RegisterBindings`); **calls** `0x002db6b0` `Goal_MoveToUseFlag`
 - **Used by** 28 of 467 script chunks (97 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GoalObjectThrower {#goalobjectthrower}
@@ -2134,6 +2194,7 @@ Makes a human throw objects at up to three targets, as boss throwers do.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003620c0` (registered by `RegisterBindings`); **calls** `0x002a3e50` `Goal_ObjectThrower`
 - **Used by** 4 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
 
 ## GoalPathBlocker {#goalpathblocker}
@@ -2203,6 +2264,7 @@ Makes a human act as a street vendor that greets passers-by within range.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00363a68` (registered by `RegisterBindings`); **calls** `0x002ad2c0` `Goal_Peddler`
 - **Used by** 4 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GoalPedestrianFlag {#goalpedestrianflag}
@@ -2294,6 +2356,7 @@ into the human (`+0x468`) for the animation system to pick up. Mission 1 uses it
 - **Evidence:** confirmed (code) at `0x002d2df8`; detail: traced
 - **Wrapper** `0x00363530` (registered by `RegisterBindings`); **calls** `0x002d2df8` `Goal_PlayDynamicAnimation`
 - **Used by** 22 of 467 script chunks (49 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 10 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## GoalPlayDynIdle {#goalplaydynidle}
@@ -2324,6 +2387,7 @@ one), 3 done. With no flag it plays where it stands. `TacticIdle`'s dynIdle opti
 - **Evidence:** confirmed (code) at `0x002d3940`; detail: traced
 - **Wrapper** `0x003635d0` (registered by `RegisterBindings`); **calls** `0x002d3940` `Goal_PlayDynamicIdle`
 - **Used by** 21 of 467 script chunks (99 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 13 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GoalPlayGenAnim {#goalplaygenanim}
@@ -2345,6 +2409,7 @@ Plays one of a few generic animations on a human and calls the script back.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003636c8` (registered by `RegisterBindings`); **calls** `0x002d4628` `Goal_PlayGenericAnimation`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GoalRiot {#goalriot}
@@ -2370,6 +2435,7 @@ Makes a human riot: smash, loot and fight in an area.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00363268` (registered by `RegisterBindings`); **calls** `0x002d0e98` `Goal_Riot`
 - **Used by** 8 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## GoalRunCarrotRun {#goalruncarrotrun}
@@ -2397,6 +2463,7 @@ Makes a human run a path just ahead of a chasing gang, the 'carrot' in chase mis
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00360c10` (registered by `RegisterBindings`); **calls** `0x002e1140` `Goal_RunCarrot`
 - **Used by** 4 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
 
 ## GoalShopkeeper {#goalshopkeeper}
@@ -2423,6 +2490,7 @@ Makes a human run a store: stay behind the counter, greet and react to the playe
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00363128` (registered by `RegisterBindings`); **calls** `0x002e5a00` `Goal_Shopkeeper`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
 - **Coney:** not implemented
 
 ## GoalStandIdle {#goalstandidle}
@@ -2489,6 +2557,7 @@ Makes a human stay put and throw objects at enemies (bartenders throwing bottles
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003637b8` (registered by `RegisterBindings`); **calls** `0x002eee50` `Goal_StationaryThrower`
 - **Used by** 5 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level34`](story.md#level34) (mission 4)
 - **Coney:** not implemented
 
 ## GoalTag {#goaltag}
@@ -2511,6 +2580,7 @@ Makes a human go to a spot and spray a graffiti tag.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00362960` (registered by `RegisterBindings`); **calls** `0x002cce88` `Goal_Tag`
 - **Used by** 4 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
 - **Coney:** not implemented
 
 ## GoalTagEx {#goaltagex}
@@ -2557,6 +2627,7 @@ Makes a human throw an object (a molotov, a chair) at a target and call back the
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00362b18` (registered by `RegisterBindings`); **calls** `0x002cf480` `Goal_ThrowObject`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## GoalTrackHuman {#goaltrackhuman}
@@ -2612,6 +2683,7 @@ the next point (0x002e07d0). The tactic `TacticTravelPath` uses the same goal wi
 - **Evidence:** confirmed (code) at `0x002e05a8`; detail: brief
 - **Wrapper** `0x00360870` (registered by `RegisterBindings`); **calls** `0x002e05a8` `Goal_TravelPath`
 - **Used by** 6 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## GoalTravelPath2 {#goaltravelpath2}
@@ -2637,6 +2709,7 @@ As `GoalTravelPath`, with an extra point index (inferred: the point to stop at).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00360988` (registered by `RegisterBindings`); **calls** `0x002e0670` `Goal_TravelPath2`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## SetGlobalPedRules {#setglobalpedrules}
@@ -2760,6 +2833,7 @@ with `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x0
 - **Evidence:** confirmed (code) at `0x00307548`; detail: traced
 - **Wrapper** `0x00375370` (registered by `RegisterBindings`); **calls** `0x00307548` `Tactic_Attack`
 - **Used by** 54 of 467 script chunks (184 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 27 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticAvoidEnemies {#tacticavoidenemies}
@@ -2792,6 +2866,7 @@ at gait 5 (4 when the human is tired) unless `gait` is given. Behaviour: [AI](..
 - **Evidence:** confirmed (code) at `0x00316988`; detail: traced
 - **Wrapper** `0x00375d98` (registered by `RegisterBindings`); **calls** `0x00316988` `Tactic_AvoidEnemies`
 - **Used by** 25 of 467 script chunks (32 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticBoss {#tacticboss}
@@ -2846,6 +2921,7 @@ The Diego and Vargas boss fight, tuned per stage by the tables.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003767f8` (registered by `RegisterBindings`); **calls** `0x00309a40` `Tactic_BossDiegoVargas`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level5`](story.md#level5) (mission 7)
 - **Coney:** not implemented
 
 ## TacticBossScenarioB {#tacticbossscenariob}
@@ -2876,6 +2952,7 @@ The Lizzies' gunfight, with the shooting tuned by the arguments.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00376e78` (registered by `RegisterBindings`); **calls** `0x0030a878` `Tactic_BossLizzies`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
 - **Coney:** not implemented
 
 ## TacticBossScenarioC {#tacticbossscenarioc}
@@ -2897,6 +2974,7 @@ Moe's boss fight.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003770a0` (registered by `RegisterBindings`); **calls** `0x0030ae98` `Tactic_BossMoe`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
 - **Coney:** not implemented
 
 ## TacticBossScenarioD {#tacticbossscenariod}
@@ -2918,6 +2996,7 @@ A rooftop boss fight (the Destroyers' roof).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00377130` (registered by `RegisterBindings`); **calls** `0x0030b6f8` `Tactic_BossRoof`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level82`](story.md#level82) (flashback 1)
 - **Coney:** not implemented
 
 ## TacticBossScenarioE {#tacticbossscenarioe}
@@ -2944,6 +3023,7 @@ Luther's gunfight in the final mission.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003771c0` (registered by `RegisterBindings`); **calls** `0x0030c2a8` `Tactic_BossLuther`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level84`](story.md#level84) (mission 18)
 - **Coney:** not implemented
 
 ## TacticBossScenarioF {#tacticbossscenariof}
@@ -2971,6 +3051,7 @@ Birdie's boss fight, moving between three positions.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00377338` (registered by `RegisterBindings`); **calls** `0x0030cbd8` `Tactic_BossBirdie`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level31`](story.md#level31) (mission 11)
 - **Coney:** not implemented
 
 ## TacticBossScenarioG {#tacticbossscenariog}
@@ -2993,6 +3074,7 @@ Virgil's boss fight.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00377590` (registered by `RegisterBindings`); **calls** `0x0030d6f8` `Tactic_BossVirgil`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level93`](story.md#level93) (mission 10)
 - **Coney:** not implemented
 
 ## TacticBossScenarioH {#tacticbossscenarioh}
@@ -3014,6 +3096,7 @@ Chatterbox's boss fight.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00377648` (registered by `RegisterBindings`); **calls** `0x0030e028` `Tactic_BossChatterbox`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level81`](story.md#level81) (mission 8)
 - **Coney:** not implemented
 
 ## TacticClear {#tacticclear}
@@ -3037,6 +3120,7 @@ tactic is kept at gang `+0xdd`.
 - **Evidence:** confirmed (code) at `0x00315d70`; detail: traced
 - **Wrapper** `0x00374a80` (registered by `RegisterBindings`); **calls** `0x00315d70` `Gang_ClearTactic`
 - **Used by** 92 of 467 script chunks (208 references); boot to menu: yes; mission 1: yes; result used: no
+- **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
 
 ## TacticConfront {#tacticconfront}
@@ -3074,6 +3158,7 @@ Behaviour: [AI](../../research/ai.md#tactic-kinds).
 - **Evidence:** confirmed (code) at `0x00316dd8`; detail: traced
 - **Wrapper** `0x00376408` (registered by `RegisterBindings`); **calls** `0x00316dd8` `Tactic_Confront`
 - **Used by** 26 of 467 script chunks (35 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticCrowd {#tacticcrowd}
@@ -3098,6 +3183,7 @@ reactions. The crowd tactic is type 0x1b.
 - **Evidence:** confirmed (code) at `0x00316450`; detail: traced
 - **Wrapper** `0x00375648` (registered by `RegisterBindings`); **calls** `0x00316450` `Tactic_Crowd`
 - **Used by** 31 of 467 script chunks (50 references); boot to menu: no; mission 1: yes; result used: no
+- **Later in the story:** 19 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
 
 ## TacticDefend {#tacticdefend}
@@ -3126,6 +3212,7 @@ callback gets 11 `TacHumanToDefendDead` when he dies and 9 `TacNoEnemies` when n
 - **Evidence:** confirmed (code) at `0x00315d98`; detail: traced
 - **Wrapper** `0x00374c18` (registered by `RegisterBindings`); **calls** `0x00315d98` `Tactic_Defend`
 - **Used by** 23 of 467 script chunks (25 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticDomination {#tacticdomination}
@@ -3148,6 +3235,7 @@ Has a gang take and hold an area around a flag (king of the hill).
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00376008` (registered by `RegisterBindings`); **calls** `0x00316b30` `Tactic_Domination`
 - **Used by** 3 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level92`](story.md#level92) (flashback 2)
 - **Coney:** not implemented
 
 ## TacticGetString {#tacticgetstring}
@@ -3200,6 +3288,7 @@ also substitutes anim 0x25b with eight hang-out idles (0x00511480). Behaviour: [
 - **Evidence:** confirmed (code) at `0x00315fc8`; detail: traced
 - **Wrapper** `0x00374f00` (registered by `RegisterBindings`); **calls** `0x00315fc8` `Tactic_HanginOut`
 - **Used by** 28 of 467 script chunks (72 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticHoldTheLine {#tacticholdtheline}
@@ -3232,6 +3321,7 @@ after `hits` hits on members within `window` seconds, 13 when a defender falls a
 - **Evidence:** confirmed (code) at `0x00313e30`; detail: traced
 - **Wrapper** `0x00374ab8` (registered by `RegisterBindings`); **calls** `0x00313e30` `Tactic_HoldTheLine`
 - **Used by** 18 of 467 script chunks (18 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticIdle {#tacticidle}
@@ -3261,6 +3351,7 @@ Behaviour: [AI](../../research/ai.md#tactic-kinds).
 - **Evidence:** confirmed (code) at `0x00316ee8`; detail: traced
 - **Wrapper** `0x00376718` (registered by `RegisterBindings`); **calls** `0x00316ee8` `Tactic_Idle`
 - **Used by** 21 of 467 script chunks (22 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 19 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticInfo {#tacticinfo}
@@ -3316,6 +3407,7 @@ behaviour (0x002a3320, goal type 82) is not traced here. Behaviour: [AI](../../r
 - **Evidence:** confirmed (code) at `0x00316a68`; detail: traced
 - **Wrapper** `0x00375ef8` (registered by `RegisterBindings`); **calls** `0x00316a68` `Tactic_ManWeaponPile`
 - **Used by** 20 of 467 script chunks (20 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticMoveToFlag {#tacticmovetoflag}
@@ -3344,6 +3436,7 @@ formation 3 m apart; the callback gets 8 `TacArrived` when the leader arrives, a
 - **Evidence:** confirmed (code) at `0x00316298`; detail: traced
 - **Wrapper** `0x003753d0` (registered by `RegisterBindings`); **calls** `0x00316298` `Tactic_MoveToFlag`
 - **Used by** 28 of 467 script chunks (69 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticPathScout {#tacticpathscout}
@@ -3370,6 +3463,7 @@ Has a gang scout along a route of up to sixteen flags.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00377810` (registered by `RegisterBindings`); **calls** `0x0031a340` `Tactic_PathScout`
 - **Used by** 3 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 3 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** not implemented
 
 ## TacticPursue {#tacticpursue}
@@ -3401,6 +3495,7 @@ target gang is gone or the search after losing it runs out.
 - **Evidence:** confirmed (code) at `0x00315ee8`; detail: traced
 - **Wrapper** `0x00374d90` (registered by `RegisterBindings`); **calls** `0x00315ee8` `Tactic_Pursue`
 - **Used by** 22 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticRing {#tacticring}
@@ -3477,6 +3572,7 @@ whether any member is fighting (checked every 200 ms). No code is sent from Proc
 - **Evidence:** confirmed (code) at `0x0031a268`; detail: traced
 - **Wrapper** `0x003776d8` (registered by `RegisterBindings`); **calls** `0x0031a268` `Tactic_Scout`
 - **Used by** 7 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticShadow {#tacticshadow}
@@ -3522,6 +3618,7 @@ Has a gang stand its ground where it is.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003762f0` (registered by `RegisterBindings`); **calls** `0x00316d58` `Tactic_StandGround`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level11`](story.md#level11) (flashback 5)
 - **Coney:** not implemented
 
 ## TacticSteal {#tacticsteal}
@@ -3549,6 +3646,7 @@ and sighting codes.
 - **Evidence:** confirmed (code) at `0x00316638`; detail: traced
 - **Wrapper** `0x00375930` (registered by `RegisterBindings`); **calls** `0x00316638` `Tactic_Steal`
 - **Used by** 19 of 467 script chunks (19 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticTaunt {#tactictaunt}
@@ -3608,6 +3706,7 @@ member near the leader may stop to use a nearby usable flag (inferred). Behaviou
 - **Evidence:** confirmed (code) at `0x003161a0`; detail: traced
 - **Wrapper** `0x003751d0` (registered by `RegisterBindings`); **calls** `0x003161a0` `Tactic_TravelPath`
 - **Used by** 20 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 19 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticTrigger {#tactictrigger}
@@ -3631,6 +3730,7 @@ Switches a reaction of a gang running a crowd tactic (`TacticCrowd`, type 0x1b);
 - **Evidence:** confirmed (code) at `0x00316fa0`; detail: brief
 - **Wrapper** `0x00377a10` (registered by `RegisterBindings`); **calls** `0x00316fa0` `Tactic_TriggerCrowd`
 - **Used by** 3 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 2 of 28 levels, first [`level2`](story.md#level2) (mission 5)
 - **Coney:** implemented
 
 ## TacticUseFlag {#tacticuseflag}
@@ -3660,6 +3760,7 @@ nearest player comes within `range` of the flag they leave it and the callback g
 - **Evidence:** confirmed (code) at `0x00316ca0`; detail: traced
 - **Wrapper** `0x003761e8` (registered by `RegisterBindings`); **calls** `0x00316ca0` `Tactic_UseFlag`
 - **Used by** 21 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 18 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
 
 ## TacticVandalize {#tacticvandalize}
@@ -3689,6 +3790,7 @@ constructor can also take up to four objects instead of a zone; the binding neve
 - **Evidence:** confirmed (code) at `0x003164e0`; detail: traced
 - **Wrapper** `0x003756c8` (registered by `RegisterBindings`); **calls** `0x003164e0` `Tactic_Vandalize`
 - **Used by** 20 of 467 script chunks (31 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticVandalizeCars {#tacticvandalizecars}
@@ -3711,6 +3813,7 @@ Has a gang wreck up to four given cars.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x003757b8` (registered by `RegisterBindings`); **calls** `0x00316590` `Tactic_VandalizeCars`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 1 of 28 levels, first [`level86`](story.md#level86) (mission 9)
 - **Coney:** not implemented
 
 ## TacticWalkinTall {#tacticwalkintall}
@@ -3739,6 +3842,7 @@ substitutes anim 0x253 with four swagger anims (0x00511620) and says the `shadow
 - **Evidence:** confirmed (code) at `0x00315e48`; detail: traced
 - **Wrapper** `0x00374cd0` (registered by `RegisterBindings`); **calls** `0x00315e48` `Tactic_WalkinTall`
 - **Used by** 18 of 467 script chunks (36 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented
 
 ## TacticWander {#tacticwander}
@@ -3773,4 +3877,5 @@ shared hit and sighting codes.
 - **Evidence:** confirmed (code) at `0x003160a8`; detail: traced
 - **Wrapper** `0x00375038` (registered by `RegisterBindings`); **calls** `0x003160a8` `Tactic_Wander`
 - **Used by** 19 of 467 script chunks (20 references); boot to menu: no; mission 1: no; result used: no
+- **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** not implemented

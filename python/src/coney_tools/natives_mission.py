@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Which script bindings the first mission can call, read from the compiled scripts.
+"""Which script bindings the first mission, and each later level of the story, can call, read from the compiled
+scripts.
 
 The first mission is `level99.lua` and its three chapter scripts. They call bindings directly and through the
 helpers `global.lua` defines (`ObjectiveAdd`, `SuperRunScene`, ...), and when the mission ends the engine itself calls
@@ -9,6 +10,10 @@ failure and pause menus). A binding counts as used by the mission when any of th
 names it as a global, a `Table.field` or a callback string). Nested functions of a reached function are reached too,
 unless they are themselves named helpers. `global.lua`'s main chunk is not followed: it runs before every level and
 belongs to the boot path.
+
+The later levels of the story (`natives.STORY_LEVELS`) are read the same way, each on its own: a level's scripts are
+`levelNN.lua` and its `levelNN_*.lua` chapters, without the language files (`_strings`) and the developers' scene
+tests (`_scenetest`), found by name among the script names of the WAD names list.
 
 The result is an upper bound: a branch the mission never takes still counts. It holds names only; no script text
 is kept.
@@ -33,6 +38,7 @@ HELPERS_SCRIPT = "global.lua"
 ENGINE_CALLBACKS = ("UnlockAndLoad", "runNextMission")
 
 _USAGE_LINE = re.compile(r"^(  usage: \{.*\bmission1: )(true|false)(\b.*)$")
+_LEVELS_LINE = re.compile(r"^(  usage: \{.*?)(, levels: \[[^\]]*\])?(\}.*)$")
 
 
 def _opcode(word: int) -> str:
@@ -145,6 +151,32 @@ def set_mission1(text: str, used: set[str]) -> str:
         match = _USAGE_LINE.match(line)
         if match and name is not None:
             line = f"{match.group(1)}{'true' if name in used else 'false'}{match.group(3)}"
+        out.append(line)
+    return "\n".join(out) + "\n"
+
+
+def level_scripts(level: int, names: Iterable[str]) -> list[str]:
+    """The script names of one level among `names`, sorted: `levelNN.lua` and its `levelNN_*.lua` chapters, without
+    the language files and the scene tests."""
+    pattern = re.compile(rf"^level{level}(_[a-z0-9_]+)?\.lua$")
+    return sorted(
+        name for name in set(names) if pattern.match(name) and "_strings" not in name and "_scenetest" not in name
+    )
+
+
+def set_levels(text: str, levels_of: Mapping[str, Iterable[int]]) -> str:
+    """The YAML text of one data file with each entry's `usage.levels` set from `levels_of` (binding name -> level
+    numbers, in story order); an entry no level uses gets no `levels` key. Only `usage:` lines change."""
+    out: list[str] = []
+    name: str | None = None
+    for line in text.splitlines():
+        if line.startswith("- name: "):
+            name = line[len("- name: ") :].split("#")[0].strip()
+        match = _LEVELS_LINE.match(line)
+        if match and name is not None:
+            levels = list(levels_of.get(name, ()))
+            listed = f", levels: [{', '.join(str(level) for level in levels)}]" if levels else ""
+            line = f"{match.group(1)}{listed}{match.group(3)}"
         out.append(line)
     return "\n".join(out) + "\n"
 
