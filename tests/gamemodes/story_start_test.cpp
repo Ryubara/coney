@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <filesystem>
 #include <functional>
 #include <map>
 #include <memory>
@@ -35,9 +36,11 @@
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
 #include "scripting/script_system.h"
+#include "support/fixtures.h"
 #include "support/font_fixtures.h"
 #include "support/lua_fixtures.h"
 #include "support/recording_device.h"
+#include "warriors/disk_profile_store.h"
 
 using coney::GameModeStack;
 using coney::GameplayMode;
@@ -129,7 +132,10 @@ struct StoryRun {
     std::unique_ptr<coney::ScriptedInput> input;
     coney::GameTimer timer;
 
-    StoryRun(std::vector<coney::InputEvent> script, bool unlockAndLoad) : files(storyScripts(unlockAndLoad)) {
+    // `profiles`: the folder of saved profiles; nothing keeps them for the run only.
+    StoryRun(std::vector<coney::InputEvent> script, bool unlockAndLoad,
+             const std::optional<std::filesystem::path>& profiles = std::nullopt)
+        : files(storyScripts(unlockAndLoad)) {
         // PM_Create's keyboard (global string 0x97); the synthetic preloads set no strings.
         strings.set(coney::gui::PmCreate::kCharactersString, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.  !?#&");
         input = std::make_unique<coney::ScriptedInput>(std::move(script));
@@ -152,7 +158,8 @@ struct StoryRun {
                 -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
                 starts.push_back(start);
                 return std::make_unique<FakeLevel>(levelUpdates);
-            });
+            },
+            profiles);
         flow->start();
     }
 
@@ -263,6 +270,25 @@ TEST_CASE("mission complete: kind 1 puts the checkpoint back and ends gameplay b
     CHECK(run.stack.topId() == coney::ProfileManagerMode::kId);
     CHECK(run.stack.size() == 2);
     CHECK(run.flow->scripts().generation() == 3);
+}
+
+TEST_CASE("mission complete: the autosave after a mission writes the game state into the profile", "[story_start]") {
+    const coney::test::TempDir folder;
+    StoryRun run(storyScript(), false, folder.path());
+    run.frames(330);
+    run.untilTopLeaves(coney::ProfileManagerMode::kId);
+    run.frames(3);
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    REQUIRE(run.flow->profiles().loaded() == 0);
+
+    // The mission banks money; mode 0xb's autosave stores it.
+    run.flow->state().saved.addToBank(250);
+    run.flow->missionComplete().launch(MissionCompleteMode::kKindCheckpointOne);
+    run.frames(1);
+    coney::GameState reread;
+    coney::DiskProfileStore store(folder.path(), reread);
+    REQUIRE(store.load(0));
+    CHECK(reread.saved.bankedMoney == 250);
 }
 
 TEST_CASE("mission complete: kind 2 reloads the current level", "[story_start]") {

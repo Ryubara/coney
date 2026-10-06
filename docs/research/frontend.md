@@ -972,7 +972,7 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | [x] | PM_Difficulty | three or four items, default index 1 (3), `W_GameState + 0x43c` | the fourth item's query |
 | [ ] | PM_Light | square, bar and hint; value 40, step 5 | the brightness applied (`0x0017ec38`), the bar's exact width |
 | [x] | PM_Subtitles | ON : OFF, default by language; sets done | nothing known |
-| [ ] | PM_Load / PM_Continue / PM_Delete | written over Coney's session-only profiles | Coney's saves (save research) |
+| [ ] | PM_Load / PM_Continue / PM_Delete | over Coney's saved profiles ([save](save.md#coneys-implementation)) | Menu.reloadProfiles re-reading the folder |
 | [ ] | Leaving the menus | done flag, 1.0 s fade out, the profile created, `Menu.startGame` | the 16:9 apply, the card dialogs, the fade's arithmetic |
 | [ ] | Rumble menu frame | PM_Mode's style on black, lines of text | the cycling background, centred titles (size 2.23, y 0.08), usage at 0.91, `RM_Camera`, fades 0.7 / 1.5 s ([Rumble screens](#rumble-screens)) |
 | [ ] | Game Mode | a list of titles | three-row `ScrollingMenu` of title and description, arrows, no wrap |
@@ -1084,7 +1084,8 @@ it is the new top. So STORY goes as in the original: the profile manager's exit 
 `UnlockAndLoad` (the same choice again; already on top, so no second push) and its update pops it; the frame after,
 mode 8 finishes the front end and pushes mode 1, which loads `level99` with Rembrandt where its script creates him.
 Coney's choices: the kind is stored on every launch, on top or not, as in the original; no mission-complete screen,
-save-system call, inventories or autosave (Coney has no saves); the frame is black.
+save-system call or inventories; after the pop it autosaves through the profile store
+([save](save.md#coneys-implementation)); the frame is black.
 
 **Mode 0x12, the profile manager** (`src/gamemodes/profile_manager_mode.h`, `ProfileManagerMode`): `show` is
 `ShowProfileManager` (`0x001552b0`: keep the two callbacks, push unless on top); `enter` plays `menu` unless it is
@@ -1124,10 +1125,11 @@ PM_Greet. The menus end when a screen sets the done flag (`PmSession`, the contr
   rows and selection) is apart from its look (its `open` and `draw`, with the shared placements and colours in
   `pm_look.h`), so the look can move to the shared widgets without touching the logic. They write the game state (the
   two-player flag, `+0x43c`, `+0x57a4`, `+0x438`) and ask the save system through `ProfileStore`
-  (`src/warriors/profile_store.h`). **Coney's stand-ins:** the profile record is `Profile` (name, difficulty,
-  brightness, subtitles, damaged) until the save research lands; `SessionProfileStore` keeps profiles in memory for
-  the run only, so every run starts with no profile (PM_Profile offers create and reload) and the fourth difficulty is
-  locked. Coney's choices where the page is silent: a grid move that cannot leave its item never wraps; the keyboard's
+  (`src/warriors/profile_store.h`). The store is `DiskProfileStore` ([save](save.md#coneys-implementation)):
+  `Profile` (name, difficulty, brightness, subtitles, damaged) is the screens' view of a saved record; in test mode
+  without `--profiles`, `SessionProfileStore` keeps profiles for the run only (every run starts with none, the fourth
+  difficulty locked). Coney's choices where the page is silent: a grid move that cannot leave its item never wraps;
+  the keyboard's
   left and right stay in their row and skip blank cells, up and down keep the column (then the nearest selectable cell
   to its left), DEL is drawn after OK's word; PM_Light steps on the menu commands' left and right and plays nothing past
   either end, and its brightness is only stored; PM_Create's "name used" text shows until the screen is left.
@@ -1277,9 +1279,8 @@ TODO for the analysts, found while implementing:
 
 What the implementer still needs:
 
-- Mode 6's real card check once Coney has saves, and the autosave the mission-complete mode asks for.
-- PM_Extras, the profile record and Coney's saves for PM_Load / PM_Delete, and the message box mode 6 uses
-  ([GUI](gui.md#open-questions)).
+- Mode 6's load at boot and RELOAD PROFILES (`Menu.reloadProfiles`) re-reading the profile folder.
+- PM_Extras and the message box mode 6 uses ([GUI](gui.md#open-questions)).
 - The Rumble menu's other entries: the mode list's and the gang records' addresses (so their names and values can be
   read from the player's executable), the other gangs and arenas, the warchief choice, the screens' layout, titles,
   usage lines and sounds, and `ShowRumbleModeIntro`.

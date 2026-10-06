@@ -61,6 +61,7 @@
 #include "platform/frame_pacer.h"
 #include "platform/imgui_overlay.h"
 #include "platform/play_level_mode.h"
+#include "platform/profile_folder.h"
 #include "platform/reference_renderer.h"
 #include "platform/render_engine.h"
 #include "platform/sandbox_viewer_mode.h"
@@ -640,8 +641,13 @@ int main(int argc, char** argv) {
             (*mode)->setSounds(playSounds);
             return std::unique_ptr<coney::GameMode>(std::move(*mode));
         };
+        // The saved profiles: the player's folder, or none in test mode (docs/research/save.md#coney).
+        const std::optional<std::filesystem::path> profiles = coney::platform::profileFolder(*options);
         startUp.emplace(renderer, modes, loadSheet, strings, legal, printText, coney::script::wadScriptSource(*wad),
-                        std::move(loadLevel));
+                        std::move(loadLevel), profiles);
+        if (profiles) {
+            printText(std::format("profiles: {} in {}\n", startUp->profiles().count(), profiles->string()));
+        }
         // The game's random table, from the disc's own executable (docs/research/flags.md#player-starts).
         std::vector<std::uint32_t> table;
         if (levelScriptOptions(*wad, {}, table).randomTable.size() == coney::GameRandom::kTableSize) {

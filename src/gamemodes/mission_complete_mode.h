@@ -9,6 +9,7 @@
 #include "graphics/render_device.h"
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
+#include "warriors/profile_store.h"
 
 namespace coney {
 
@@ -21,10 +22,11 @@ class LevelFlowMode;
 /// update runs one frame of the world and, once a kind is set, leaves and acts on the kind: 1 puts the checkpoint back
 /// to 1, 2 chooses the current level again, 3 the next record; and when the mode below is gameplay (mode 1), that goes
 /// too, so the level flow starts the chosen level. Kind 4, the story start's, is none of these.
+/// After the pop it asks for the autosave (`Autosave_Request`, docs/research/save.md#mode-6): the profile store's
+/// save(), which writes only while saving is enabled.
 ///
 /// Coney's stand-ins (docs/research/frontend.md#coneys-implementation):
-/// - There is no mission-complete screen and no save system: the original's inventories, its save-system call and the
-///   autosave it asks for after the pop have nothing to act on.
+/// - There is no mission-complete screen and no inventories: the money the original banks here has nothing to act on.
 /// - There are no humans to put into a still state, and no world: the frame is black.
 /// - The kind is stored on every launch, whether or not the mode was already on top.
 ///
@@ -66,6 +68,9 @@ class MissionCompleteMode final : public GameMode {
     /// Forgets the kind, so the next launch starts clear.
     void exit() override { m_kind = 0; }
 
+    /// The save system the autosave goes to (must outlive the mode); null: no autosave.
+    void setProfiles(ProfileStore* profiles) { m_profiles = profiles; }
+
     /// The kind of the last launch (`+0x24`), 0 for none.
     [[nodiscard]] int kind() const { return m_kind; }
     /// Launches since start-up.
@@ -80,6 +85,7 @@ class MissionCompleteMode final : public GameMode {
     std::function<void(std::string_view)> m_log;
     int m_kind = 0;
     std::uint64_t m_launches = 0;
+    ProfileStore* m_profiles = nullptr;
 };
 
 } // namespace coney

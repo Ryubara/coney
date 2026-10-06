@@ -58,6 +58,10 @@ ModeResult MissionCompleteMode::update(GameModeStack& stack, const FrameTime& fr
     default:
         break;
     }
+    // The autosave the original asks for after the pop (Autosave_Request).
+    if (m_profiles != nullptr && !m_profiles->save()) {
+        m_log("mission complete: the autosave failed\n");
+    }
     // Gameplay below goes too, so the level flow on top starts the chosen level.
     if (stack.topId() == GameplayMode::kId) {
         stack.pop();

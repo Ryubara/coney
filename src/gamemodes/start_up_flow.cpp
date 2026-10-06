@@ -4,13 +4,28 @@
 #include <format>
 #include <utility>
 
+#include "warriors/disk_profile_store.h"
+
 namespace coney {
+
+namespace {
+
+// The save system for `folder`: profiles on disk there, or for the run only when there is no folder (test mode).
+std::unique_ptr<ProfileStore> makeProfileStore(const std::optional<std::filesystem::path>& folder, GameState& state) {
+    if (folder.has_value()) {
+        return std::make_unique<DiskProfileStore>(folder.value(), state);
+    }
+    return std::make_unique<SessionProfileStore>();
+}
+
+} // namespace
 
 StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
                          const ProfileManagerMode::SheetLoader& loadSheet, gui::GlobalStrings& strings,
                          LegalScreenSettings legal, const std::function<void(std::string_view)>& log,
-                         script::ScriptSource scripts, GameplayMode::LevelLoader loadLevel)
-    : m_stack(stack), m_log(log), m_services(log),
+                         script::ScriptSource scripts, GameplayMode::LevelLoader loadLevel,
+                         const std::optional<std::filesystem::path>& profileFolder)
+    : m_stack(stack), m_log(log), m_services(log), m_profiles(makeProfileStore(profileFolder, m_state)),
       m_context{&m_state,      &strings, this,        &m_recorded, &m_humans,       &m_flags,
                 &m_rumbleData, nullptr,  &m_messages, &m_boxes,    &m_animCallbacks},
       m_hasScripts(static_cast<bool>(scripts)),
@@ -18,7 +33,7 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
           std::move(scripts),
           [this](script::ScriptSystem& system, script::LuaVm& vm) { script::installBindings(system, vm, m_context); },
           log),
-      m_profileManager(device, loadSheet, strings, m_services, m_fade, m_scripts, m_state, m_profiles, legal.europe,
+      m_profileManager(device, loadSheet, strings, m_services, m_fade, m_scripts, m_state, *m_profiles, legal.europe,
                        log),
       m_gameplay(device, m_scripts, m_context, m_state, m_humans, m_flags, m_recorded, std::move(loadLevel), log),
       m_levelFlow(device, stack, m_profileManager, m_services, m_scripts, m_state, log,
@@ -29,6 +44,7 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
     m_state.language = legal.language;
     m_services.attachScripts(&m_scripts);
     m_gameplay.setMoviePlayer(&m_services);
+    m_missionComplete.setProfiles(m_profiles.get());
 }
 
 void StartUpFlow::start() {

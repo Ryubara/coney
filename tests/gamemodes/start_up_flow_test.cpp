@@ -7,9 +7,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <filesystem>
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -21,14 +23,17 @@
 #include "core/game_timer.h"
 #include "core/input_script.h"
 #include "gamemodes/game_mode_stack.h"
+#include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_flow_mode.h"
 #include "gamemodes/memory_card_mode.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
+#include "support/fixtures.h"
 #include "support/font_fixtures.h"
 #include "support/lua_fixtures.h"
 #include "support/recording_device.h"
+#include "warriors/profile_record.h"
 
 using coney::GameModeStack;
 using coney::GameTimer;
@@ -195,7 +200,9 @@ struct ScriptedRun {
     explicit ScriptedRun(std::string_view script)
         : ScriptedRun(coney::parseInputScript(script).value_or(std::vector<coney::InputEvent>{})) {}
 
-    explicit ScriptedRun(std::vector<coney::InputEvent> script) {
+    // `profiles`: the folder of saved profiles; nothing keeps them for the run only.
+    explicit ScriptedRun(std::vector<coney::InputEvent> script,
+                         const std::optional<std::filesystem::path>& profiles = std::nullopt) {
         // PM_Create's keyboard (global string 0x97); the synthetic preloads set no strings.
         strings.set(coney::gui::PmCreate::kCharactersString, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.  !?#&");
         input = std::make_unique<coney::ScriptedInput>(std::move(script));
@@ -210,7 +217,8 @@ struct ScriptedRun {
                     return coney::fail(coney::ErrorCode::NotFound, "no such script");
                 }
                 return found->second;
-            });
+            },
+            coney::GameplayMode::LevelLoader{}, profiles);
         flow->start();
     }
 
@@ -259,4 +267,22 @@ TEST_CASE("start-up with scripts: story reaches Menu.startGame, the level reques
     CHECK(run.stack.topId() == ProfileManagerMode::kId);
     CHECK(run.flow->profileManager().controller().currentName() == "PM_Greet");
     CHECK(run.flow->scripts().errors() == 0);
+}
+
+TEST_CASE("start-up with scripts: a new story profile is saved to the profile folder and read back", "[start_up]") {
+    const coney::test::TempDir folder;
+    {
+        ScriptedRun run(coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt").value(),
+                        folder.path());
+        CHECK(run.flow->profiles().count() == 0);
+        run.frames(361);
+        CHECK(run.logged("profile manager: profile \"A\" created in slot 0"));
+        CHECK(std::filesystem::file_size(folder.path() / "profile-1.sav") == coney::ProfileRecord::kSize);
+        CHECK(run.flow->profiles().inUse());
+    }
+    // A later run over the same folder lists it, and the store loads it.
+    ScriptedRun again(std::vector<coney::InputEvent>{}, folder.path());
+    REQUIRE(again.flow->profiles().profile(0) != nullptr);
+    CHECK(again.flow->profiles().profile(0)->name == "A");
+    CHECK(again.flow->profiles().load(0));
 }

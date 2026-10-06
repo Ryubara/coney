@@ -272,7 +272,10 @@ dialogs.
   it at once (the autosave after a new game); `save` is the autosave (only while saving is enabled); `remove` deletes
   the file, with no undo.
 - The folder ([`profileFolder`](repo:src/platform/profile_folder.h)) is `--profiles DIR`, else `profiles` in SDL's
-  per-user data folder; test mode without `--profiles` keeps the profiles in memory for the run.
+  per-user data folder; test mode without `--profiles` keeps the profiles in memory for the run
+  (`SessionProfileStore`). The start-up flow picks the store; the mission-complete mode (0xb) autosaves after its pop.
+- Not yet: mode 6's load at boot and RELOAD PROFILES re-reading the folder (the store reads it once, at start-up), and
+  the money bank's adds (Coney has no inventories).
 - **Coney's choices**: bit *i* of the unlockable and script-flag sets is byte *i* / 8, bit *i* % 8 (the little-endian
   layout of 32-bit words, inferred); the three bytes after the brightness byte are written as zero; the date and time a
   slot keeps (`+0x16`) are not stored; the fourth-difficulty unlock (slot `+0xb4`) leaves the "every story level
