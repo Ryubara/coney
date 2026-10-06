@@ -180,6 +180,7 @@ target_sources(coney_core PRIVATE
     camera/follow_collision.cpp
     camera/locked_camera.cpp
     camera/slow_motion.cpp
+    camera/win_camera.cpp
     characters/anim_set.cpp
     human/body.cpp
     human/climb.cpp

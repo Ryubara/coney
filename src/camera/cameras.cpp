@@ -2,6 +2,7 @@
 #include "camera/cameras.h"
 
 #include <algorithm>
+#include <numbers>
 #include <utility>
 
 #include "camera/camera_lens.h"
@@ -71,6 +72,41 @@ void Cameras::configureFollow(const FollowSettings& settings, float slowMotion) 
 
 void Cameras::createLocked(double handle, const LockedCamera& camera) { m_locked.insert_or_assign(handle, camera); }
 
+void Cameras::deleteCamera(double handle) {
+    if (m_locked.erase(handle) == 0) {
+        return;
+    }
+    if (m_current.kind == CameraKind::Locked && m_current.handle == handle) {
+        setCurrent(CameraRef{.kind = m_follow != nullptr ? CameraKind::Follow : CameraKind::None});
+    }
+}
+
+double Cameras::createWin(double handle, double target, const WinCameraSettings& settings) {
+    if (m_winHandle == 0.0) {
+        m_winHandle = handle;
+    }
+    m_winTarget = target;
+    m_winSettings = settings;
+    startWin();
+    return m_winHandle;
+}
+
+void Cameras::startWin() {
+    if (!m_place) {
+        return;
+    }
+    if (const std::optional<std::pair<anim::Vec3, float>> placed = m_place(m_winTarget)) {
+        m_win.emplace(placed->first, placed->second, m_winSettings);
+    }
+}
+
+void Cameras::setFollowHeading(float degrees) {
+    if (m_follow == nullptr || !m_lastTarget) {
+        return;
+    }
+    m_follow->place(m_lastTarget->feet, m_follow->zoomDistance(), degrees * std::numbers::pi_v<float> / 180.0F);
+}
+
 const LockedCamera* Cameras::locked(double handle) const {
     const auto found = m_locked.find(handle);
     return found == m_locked.end() ? nullptr : &found->second;
@@ -82,6 +118,9 @@ std::optional<CameraRef> Cameras::find(double handle) const {
     }
     if (m_locked.contains(handle)) {
         return CameraRef{.kind = CameraKind::Locked, .handle = handle};
+    }
+    if (m_win && m_winHandle != 0.0 && handle == m_winHandle) {
+        return CameraRef{.kind = CameraKind::Win, .handle = handle};
     }
     return std::nullopt;
 }
@@ -97,6 +136,8 @@ CameraView Cameras::viewOf(CameraRef ref) const {
         return m_view;
     case CameraKind::Scene:
         return m_sceneView;
+    case CameraKind::Win:
+        return m_win ? m_win->view() : m_view;
     case CameraKind::None:
         break;
     }
@@ -126,6 +167,9 @@ void Cameras::makeActive(double handle, float seconds) {
     const std::optional<CameraRef> ref = find(handle);
     if (!ref) {
         return;
+    }
+    if (ref->kind == CameraKind::Win) {
+        startWin();
     }
     // A scene camera keeps the screen: the script changes what the scene returns to.
     if (m_current.kind == CameraKind::Scene) {
@@ -260,6 +304,10 @@ void Cameras::update(const FollowTarget& target, std::uint8_t rawRightX, std::ui
         } else {
             m_follow->observe(target);
         }
+    }
+    // The win camera orbits while it is shown.
+    if (m_win && m_current.kind == CameraKind::Win) {
+        m_win->update(seconds);
     }
     // The blend toward the destination's live view; at the end the destination becomes current directly.
     CameraView view = viewOf(m_current);

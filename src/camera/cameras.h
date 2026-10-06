@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -16,6 +17,7 @@
 #include "camera/follow_camera.h"
 #include "camera/locked_camera.h"
 #include "camera/slow_motion.h"
+#include "camera/win_camera.h"
 #include "raycast/collision_mesh.h"
 
 // Player 1's cameras, as the camera manager keeps them: the follow camera, the locked cameras the scripts make, which
@@ -32,6 +34,7 @@ enum class CameraKind : std::uint8_t {
     Follow, ///< The player's follow camera (type 2).
     Locked, ///< A locked camera (type 1).
     Scene,  ///< A scene's camera (type 4), which the scene player moves.
+    Win,    ///< The Rumble win camera (`Cam_Win`), which circles the winner.
 };
 
 /// A camera the manager knows: its kind and, for a locked one, its handle.
@@ -70,6 +73,11 @@ class Cameras {
     [[nodiscard]] FollowCamera* follow() const { return m_follow; }
     /// Sets how the manager finds humans by handle.
     void setLocator(Locator locator) { m_locate = std::move(locator); }
+    /// Where a human stands and faces (feet, heading in degrees) by its script handle, for the win camera; nothing for
+    /// a handle that names none.
+    using Placer = std::function<std::optional<std::pair<anim::Vec3, float>>(double handle)>;
+    /// Sets how the manager finds a human's placement.
+    void setPlacer(Placer placer) { m_place = std::move(placer); }
 
     /// `CamSetupFollow(name, target)`: puts the follow camera on its target behind it (its reset) and returns its
     /// handle, `handle` the first time and the same one after (without a follow camera yet, it is reset when one is
@@ -85,6 +93,24 @@ class Cameras {
     void createLocked(double handle, const LockedCamera& camera);
     /// The locked camera with `handle`, or null.
     [[nodiscard]] const LockedCamera* locked(double handle) const;
+    /// `CamDelete(camera)`: forgets the locked camera with `handle`; the shared kinds (follow, win) are kept. When it
+    /// is current the follow camera is made current at once (**Coney choice**: what the original shows then is not
+    /// traced).
+    /// @orig 0x0011b888 Camera_Delete (unknown)
+    void deleteCamera(double handle);
+    /// `CameraCreateWin`: sets the one win camera up on the human `target` with `settings` and returns its handle,
+    /// `handle` the first time and the same one after. It starts from where the target stands (through the placer)
+    /// now, and again when it is made active, as the original starts a camera on activation (the winner is moved onto
+    /// his flag between the two).
+    /// @orig 0x0011c858 Camera_CreateWin (unknown)
+    [[nodiscard]] double createWin(double handle, double target, const WinCameraSettings& settings);
+    /// The win camera, once made.
+    [[nodiscard]] const WinCamera* win() const { return m_win ? &*m_win : nullptr; }
+    /// `CamSetFollowHeading(degrees)`: the follow camera swung round at once to view along `degrees` (0 facing +y),
+    /// at its distance from the target's last feet (**Coney's reading** of the angle). Nothing before the follow
+    /// camera has a target.
+    /// @orig 0x0011c2f0 Camera_SetFollowHeading (unknown)
+    void setFollowHeading(float degrees);
 
     /// `CameraMakeActive(camera, seconds)`: makes the camera with `handle` current, at once with 0 seconds or no
     /// current camera (which runs the follow camera's activation), otherwise through a blend from the view shown now.
@@ -158,6 +184,8 @@ class Cameras {
     [[nodiscard]] CameraView viewOf(CameraRef ref) const;
     // The camera a handle names, or none.
     [[nodiscard]] std::optional<CameraRef> find(double handle) const;
+    // Starts the win camera on its target where it stands now; nothing when the target is not found.
+    void startWin();
     // Makes `ref` current at once, running the follow camera's activation.
     void setCurrent(CameraRef ref);
     // Starts a blend from the view shown now to `ref`, or cuts when there is nothing to blend from.
@@ -167,6 +195,11 @@ class Cameras {
     std::optional<double> m_followHandle;
     std::optional<FollowSettings> m_pendingSettings; // a CfgFollowCamera made before the follow camera was attached
     std::map<double, LockedCamera> m_locked;
+    std::optional<WinCamera> m_win;
+    double m_winHandle = 0.0; // the win camera's handle once made
+    double m_winTarget = 0.0;
+    WinCameraSettings m_winSettings;
+    Placer m_place;
     CameraRef m_current;
     std::optional<CameraBlend> m_blend; // toward m_current
     std::vector<CameraRef> m_stack;

@@ -826,6 +826,11 @@ The world viewer keeps its own free camera with the player camera's lens
 - **A fresh camera** (at the start, or after the player is put back) sits behind the player at 4.8 m and 13°. `--start`
   with a distance and a yaw places it there instead, its wanted position with it and the hard band stepped once
   (`FollowCamera::place()`), so a trace scenario starts with the camera of the original's save state.
+- **The Rumble cameras** (`src/camera/win_camera.*`, [Rumble: win camera](rumble.md#win-camera)): `CameraCreateWin`
+  sets up the one win camera on the winner, which starts again when made active (the scripts teleport the winner in
+  the same frame) and orbits until replaced; its stop condition is not read. `CamDelete` forgets a locked camera,
+  cutting to the follow camera when it was current (**Coney choice**); `CamSetFollowHeading` places the follow camera
+  at its distance from the player's last feet along the heading (**Coney's reading** of the angle).
 
 ## Notes for implementers
 
