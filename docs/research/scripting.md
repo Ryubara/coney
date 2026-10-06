@@ -517,7 +517,8 @@ picks the chapter only when the level is entered (`Main`, above); `RunLevel` als
 → `P1.FirstGlow`, `vClimb` → `P3.MoveToClimb`, ...); message 8 on four flags (an AI teacher arrived); messages 1, 3, 4
 and 16 on the dealer, whose trigger sphere gives 3 and 4; 18 on a civilian and, through `GangSetMsgHandler`, on a gang;
 2 on two breakable fences; one 50-second stopwatch (`P1.SendWarriors` → `P1.TimesUp`); about 60 scheduled calls; the
-tutorial's text callbacks (`HUDSetTutorialCallback`) and pad handlers (`PadSetHandlerEx`). How each is delivered:
+tutorial's attack callback (`HUDSetTutorialCallback`, [HUD](hud.md#tutorial-callback)), animation callbacks
+([Characters](characters.md#anim-callbacks)) and pad handlers (`PadSetHandlerEx`). How each is delivered:
 [Message handlers](#message-handlers), [Trigger boxes and spheres](#triggers), [The mission stopwatch](#stopwatch),
 [Scheduled calls](#scheduled-calls). No script of the mission launches a failure: the players are demi-gods (below)
 and the only failure the engine raises by itself is a player falling out of the world
@@ -733,7 +734,6 @@ of the original).
 - Binding arguments the [script bindings](../references/bindings/index.md) reference marks as not understood yet: which
   bit of `PadSetHandler`'s mask is which PS2 button; who sends messages 0, 6, 7 and 9-`0x19` and what their extra values
   mean (the arguments are in [Message handlers](#message-handlers)); the scene-play flags (`ScenePlay` and its
-  relatives) beyond their `global.lua` names; when animation callbacks (`AddAnimCallback`) fire and with what arguments;
-  most fields of the large `Cfg*` records (`CfgChar`, `CfgPowerClass`, `CfgWarriorClass`), which are written through
-  computed addresses with no reader found yet. Each would move up from inferred once a reader or a runtime observation
-  is found.
+  relatives) beyond their `global.lua` names; most fields of the large `Cfg*` records (`CfgChar`, `CfgPowerClass`,
+  `CfgWarriorClass`), which are written through computed addresses with no reader found yet. Each would move up from
+  inferred once a reader or a runtime observation is found.

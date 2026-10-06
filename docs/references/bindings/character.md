@@ -228,11 +228,11 @@ AddAllAnimCallback(anim, callback) -> boolean
 **Returns** boolean (1 for true, nil for false): True when the callback was stored; nil when all 16 callback slots are
 in use.
 
-Registers a Lua function to be called when any human plays the given animation. Shares the 16-slot callback table at
-0x006b6710 with AddAnimCallback.
+Registers a Lua function to be called, as f(humanHandle, animId), each time any human starts playing the given
+animation. Shares the 16-slot callback table at 0x006b6710 with AddAnimCallback.
 
-**Notes.** When and with which arguments the callback fires is not traced; the slot is marked as an all-humans entry.
-Remove it with DelAnimCallback(0, anim).
+**Notes.** The slot is marked as an all-humans entry; dispatch as for AddAnimCallback (first matching slot only). Remove
+it with DelAnimCallback(0, anim). Details: [Characters](../../research/characters.md#anim-callbacks).
 
 - **Evidence:** confirmed (code) at `0x0023aab0`; detail: brief
 - **Wrapper** `0x0035ea90` (registered by `RegisterBindings`); **calls** `0x0023aab0` `AnimCallback_AddForAll`
@@ -254,12 +254,15 @@ AddAnimCallback(human, anim, callback) -> boolean
 **Returns** boolean (1 for true, nil for false): True when a free slot was found and the callback stored; nil when all
 16 slots of the table at 0x006b6710 are taken.
 
-Registers a Lua function to be called when this human plays the given animation; the first mission's tutorial uses it to
-react to the player idling, mounting or holding a grab. Entries live in a 16-slot table of {human, anim/all flag,
-interned name}.
+Registers a Lua function to be called, as f(humanHandle, animId), each time this human starts playing the given
+animation; the first mission's tutorial uses it to react to the player idling, mounting or holding a grab. Entries live
+in a 16-slot table of {human, anim, all-humans flag, interned name}; an entry stays until DelAnimCallback or the next
+level.
 
-**Notes.** Storing is confirmed at 0x0023a9f8; the dispatch (when the callback runs, and its arguments) is not traced. A
-slot counts as free when its human handle no longer resolves, so entries of deleted humans are reused.
+**Notes.** The dispatch (0x0023ac50) runs synchronously when the animation code resolves the id to a clip to play
+(0x00175080), and only the first matching slot fires. A slot counts as free when its human handle no longer resolves, so
+entries of deleted humans (and, since the flag is not tested, all-humans entries) can be overwritten. Details:
+[Characters](../../research/characters.md#anim-callbacks).
 
 - **Evidence:** confirmed (code) at `0x0023a9f8`; detail: traced
 - **Wrapper** `0x0035e9f8` (registered by `RegisterBindings`); **calls** `0x0023a9f8` `AnimCallback_Add`

@@ -85,6 +85,7 @@ string gives them.
 | `0x00177b80` / `0x00174d00` | `CharacterInstance` create / constructor | the model instance (0x330 bytes, vtable `0x00538a78`) | confirmed (code) |
 | `0x00217a98` | `Human_AttachInstance` | gives the human its instance (`+0xd8`) | confirmed (code) |
 | `0x00175080` | `CharacterInstance_GetAnim(id)` | an anim id to an animation | confirmed (code) |
+| `0x0023ac50` | `AnimCallback_Dispatch(human, id)` | runs the script's anim callback ([Animation callbacks](#anim-callbacks)) | confirmed (code) |
 | `0x001897a8` | resource manager update | loads missing characters and dynamic animations later | confirmed (code) |
 
 ## Data
@@ -873,6 +874,36 @@ Confirmed (runtime):
 - Stick 1.0: the run start (414) the same way, then the gait blend at 2. The first update after the start clip ran
   at 6.49 m/s, so the target was 1.553 and the value fell to 1.825 (jog and run mixed) before going back to 2.0 at
   7.80 m/s: the target follows the speed every update.
+
+### Animation callbacks (`AddAnimCallback`) {#anim-callbacks}
+
+Scripts register Lua functions to run when a human starts an animation ([`AddAnimCallback`,
+`AddAllAnimCallback`, `DelAnimCallback`](../references/bindings/character.md#addanimcallback)). Confirmed (code) at the
+addresses given:
+
+- **The table** (`0x006b6710`): 16 slots of 16 bytes, {human handle, anim id, all-humans flag, interned Lua name}.
+  `AddAnimCallback` (`0x0023a9f8`) takes the first slot whose handle no longer resolves; `AddAllAnimCallback`
+  (`0x0023aab0`) the first whose handle does not resolve and whose flag is 0, and sets the flag. A full table returns
+  nil. `AddAnimCallback` does not test the flag, so it can take (overwrite) an all-humans slot, whose handle never
+  resolves. `InitLevel` (`0x0015fe90`) empties every slot (`0x0023a9b8`); an entry of a deleted human becomes free by
+  itself.
+- **When it fires**: `CharacterInstance_GetAnim(id)` (`0x00175080`), called with its third argument 0, runs the dispatch
+  (`AnimCallback_Dispatch`, `0x0023ac50`) for the instance's human (instance `+0x2b8`) when the id resolves to a clip.
+  The animation-task code calls it that way each time it takes a clip for an id: every task constructor (a clip
+  started, `0x00105678`, `0x00105990`, `0x00106140`, ..., the gait blend `0x0010a310`) and the blend tasks' advance
+  when they move to another clip (`0x0010a5b8`, `0x00109588`). So the callback fires **when the human starts playing
+  that anim id**, not at the clip's end, and again every time it is started (inferred for the advance cases: they
+  re-resolve when the blend crosses to a new clip). Lookups for other uses (`0x00221bf0`, third argument 1) do not
+  fire it.
+- **The match**: slots in order; a slot matches when its anim id equals the id and either its all-humans flag is set
+  or its handle resolves to this human. **Only the first match fires**; the dispatch then returns.
+- **The call**: synchronous, inside the animation code: the name is looked up (script slot `+0x4c`,
+  [Scripting](scripting.md)), then called with **two arguments, the human's handle and the anim id** (slots `+0x5c` and
+  `+0x6c`, call `+0x8c` with 2).
+- **Not one-shot**: the slot stays until `DelAnimCallback(human, anim)` (`0x0023ab80`; the first slot whose id matches
+  and whose flag is set or whose handle is the human's) or the next `InitLevel`.
+- A paired task (`0x00108450`, `0x00108a78`) looks the id up in **the other human's** instance, so the dispatch runs
+  for that human (inferred from the instance used).
 
 ### Moving, standing on the ground and falling {#ground}
 
