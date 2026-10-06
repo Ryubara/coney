@@ -2,6 +2,8 @@
 #include "sandbox/sandbox_layout.h"
 
 #include <cmath>
+#include <cstddef>
+#include <format>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -203,4 +205,20 @@ TEST_CASE("a target line places a passive human to fight, with a heading and hea
     CHECK(errorOf("target a at=0,0,0\ntarget a at=1,0,0\n") == "line 2: target a given twice");
     CHECK(errorOf("target a at=0,0,0 health=0\n").starts_with("line 1: health= needs a whole number"));
     CHECK(errorOf("target at=0,0,0\n").starts_with("line 1: target needs a name first"));
+}
+
+TEST_CASE("a fighter line places an AI human that fights back, with a heading", "[sandbox][layout]") {
+    const auto layout = parseSandboxLayout("fighter brawler at=0,-15,0 heading=90\nfighter b at=1,2,0\n");
+    REQUIRE(layout.has_value());
+    REQUIRE(layout->fighters.size() == 2);
+    CHECK(layout->fighters[0].name == "brawler");
+    CHECK(layout->fighters[0].position.y == Approx(-15.0F));
+    CHECK(layout->fighters[0].headingDegrees == Approx(90.0F));
+    CHECK(layout->fighters[1].headingDegrees == Approx(0.0F));
+    CHECK(errorOf("fighter a at=0,0,0\nfighter a at=1,0,0\n") == "line 2: fighter a given twice");
+    std::string many;
+    for (std::size_t k = 0; k <= coney::sandbox::kMaxFighters; ++k) {
+        many += std::format("fighter f{} at=0,0,0\n", k);
+    }
+    CHECK(errorOf(many).ends_with(std::format("at most {} fighters", coney::sandbox::kMaxFighters)));
 }

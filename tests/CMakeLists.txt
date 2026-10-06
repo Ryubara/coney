@@ -154,6 +154,10 @@ target_sources(coney_tests PRIVATE
     debug/pad_menu_input_test.cpp
     debug/play_pages_test.cpp
     debug/tunables_test.cpp)
+# The AI humans' brains (docs/research/ai.md).
+target_sources(coney_tests PRIVATE
+    ai/brain_test.cpp
+    ai/disc_ai_config_test.cpp)
 # A failed runtime check fails the run on stderr instead of opening a dialog (platform/error_dialogs.h).
 target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
 coney_target_defaults(coney_tests)
