@@ -40,7 +40,9 @@ add_library(coney_core STATIC
     gamemodes/pause_mode.cpp
     gamemodes/player_frame.cpp
     gamemodes/profile_manager_mode.cpp
+    gamemodes/rumble_intro_layer.cpp
     gamemodes/rumble_menu_mode.cpp
+    gamemodes/rumble_result_mode.cpp
     gamemodes/sheet_viewer_mode.cpp
     gamemodes/start_up_flow.cpp
     gamemodes/text_viewer_mode.cpp
@@ -83,7 +85,9 @@ add_library(coney_core STATIC
     gui/profile_management_gui/pm_widgets.cpp
     gui/rumble_mode_gui/rumble_data.cpp
     gui/rumble_mode_gui/rumble_gang_chooser.cpp
+    gui/rumble_mode_gui/rumble_intro.cpp
     gui/rumble_mode_gui/rumble_menu.cpp
+    gui/rumble_mode_gui/rumble_result_menu.cpp
     gui/screen_flow_controller.cpp
     gui/scrolling_menu.cpp
     gui/text_layout.cpp
@@ -107,6 +111,7 @@ add_library(coney_core STATIC
     scripting/object_bindings.cpp
     scripting/player_bindings.cpp
     scripting/rumble_bindings.cpp
+    scripting/rumble_match_bindings.cpp
     scripting/scene_bindings.cpp
     scripting/script_bindings.cpp
     scripting/script_system.cpp

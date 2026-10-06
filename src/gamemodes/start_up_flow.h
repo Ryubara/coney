@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -18,7 +19,9 @@
 #include "gamemodes/mission_failed_mode.h"
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/profile_manager_mode.h"
+#include "gamemodes/rumble_intro_layer.h"
 #include "gamemodes/rumble_menu_mode.h"
+#include "gamemodes/rumble_result_mode.h"
 #include "graphics/render_device.h"
 #include "graphics/screen_fade.h"
 #include "gui/global_strings.h"
@@ -110,6 +113,10 @@ class StartUpFlow final : public script::BindingHost {
     void setPauseHooks(const PauseHooks& hooks);
     /// Mode 0x11.
     [[nodiscard]] RumbleMenuMode& rumbleMenu() { return m_rumbleMenu; }
+    /// The Rumble intro over play.
+    [[nodiscard]] RumbleIntroLayer& rumbleIntro() { return m_rumbleIntro; }
+    /// Mode 0x14.
+    [[nodiscard]] RumbleResultMode& rumbleResult() { return m_rumbleResult; }
     /// The humans the level scripts created.
     [[nodiscard]] const CreatedHumans& humans() const { return m_humans; }
     /// The level's world flags.
@@ -133,6 +140,8 @@ class StartUpFlow final : public script::BindingHost {
     void startLoadSequence() override;
     void startDeleteSequence() override;
     void launchMissionFailed(std::string_view reason) override;
+    void showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) override;
+    void launchRumbleWin(std::string_view winner, std::string_view reason) override;
 
   private:
     // The sheet of sprite-sheet table record `record`, through the loader set, or an error without one.
@@ -165,6 +174,8 @@ class StartUpFlow final : public script::BindingHost {
     PauseMode m_pause;
     MissionFailedMode m_missionFailed;
     RumbleMenuMode m_rumbleMenu;
+    RumbleIntroLayer m_rumbleIntro;
+    RumbleResultMode m_rumbleResult;
     MemoryCardMode m_memoryCard;
     LegalScreenMode m_legal;
 };

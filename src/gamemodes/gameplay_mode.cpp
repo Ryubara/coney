@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "gamemodes/gameplay_mode.h"
 
+#include <algorithm>
 #include <array>
 #include <format>
 #include <optional>
@@ -122,6 +123,22 @@ void GameplayMode::enter() {
         }
         return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
     });
+    // The win camera starts on its target where he stands and faces; player 1 where a teleport the level has not
+    // applied yet puts him (the scripts move the winner and start the camera in one frame).
+    m_cameras->setPlacer(
+        [this, scripted = m_scripted.get()](double handle) -> std::optional<std::pair<anim::Vec3, float>> {
+            std::optional<world_objects::Placement> placement = scripted->humanPlacement(handle);
+            if (const HumanCreation* player = m_humans.player(1); player != nullptr && player->handle == handle &&
+                                                                  player->teleported &&
+                                                                  player->teleports != m_playerTeleports) {
+                placement = player->teleported;
+            }
+            if (!placement) {
+                return std::nullopt;
+            }
+            const std::array<float, 3>& p = placement->position;
+            return std::pair{anim::Vec3{p[0], p[1], p[2]}, placement->headingDegrees};
+        });
     m_context.cameras = m_cameras.get();
     // The level script spawns the level's panes and doors into gameplay's objects, typed by what the boot scripts'
     // `CfgSetGlassProperties` calls recorded.
@@ -278,6 +295,15 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
     if (m_phase != Phase::Playing && m_loadingScreen != nullptr && !updateLoadingScreen(frame)) {
         return ModeResult::Stay;
     }
+    const ModeResult result = updateWorld(stack, frame);
+    // START pauses the game (PauseMenu_Toggle), last in the frame of play.
+    if (m_pause != nullptr) {
+        m_pause->playFrame(stack, stack.pads());
+    }
+    return result;
+}
+
+ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& frame) {
     // The level's step (the characters, the cameras, the streaming), then the scripts' frame, as a frame of play
     // orders them.
     ModeResult result = ModeResult::Stay;
@@ -308,9 +334,9 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
             scripted->teleportPlayer(to);
         }
     }
-    // START pauses the game (PauseMenu_Toggle), last in the frame of play.
-    if (m_pause != nullptr) {
-        m_pause->playFrame(stack, stack.pads());
+    // The screens over play (the Rumble intro) after the scripts' frame.
+    for (PlayOverlay* overlay : m_overlays) {
+        overlay->playFrame(frame, stack.pads());
     }
     return result;
 }
@@ -329,6 +355,17 @@ void GameplayMode::render(const RenderTime& time) {
     // The loading screen's tick, on game time.
     if (m_phase != Phase::Playing && m_loadingScreen != nullptr) {
         m_loadingScreen->render(time.gameTicks / (GameTimer::kTicksPerSecond / 1000));
+        return;
+    }
+    // A screen over play is drawn over the level's frame.
+    if (std::ranges::any_of(m_overlays, [](const PlayOverlay* overlay) { return overlay->showing(); })) {
+        renderWithOverlay(time, [this](graphics::RenderDevice& device) {
+            for (PlayOverlay* overlay : m_overlays) {
+                if (overlay->showing()) {
+                    overlay->draw(device);
+                }
+            }
+        });
         return;
     }
     if (m_level) {
@@ -369,6 +406,10 @@ void GameplayMode::exit() {
         m_context.sound->gameplayLeft();
     }
     endLevel();
+    // The screens over play end with the level.
+    for (PlayOverlay* overlay : m_overlays) {
+        overlay->levelEnded();
+    }
     m_humans.clear();
     m_flags.clear();
     if (m_context.messages != nullptr) {

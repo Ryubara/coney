@@ -283,6 +283,7 @@
     Opens the HUD's RM_Intro screen (0x001f9418, 0x001f9558; update 0x001fad40). Behaviour:
     [Rumble](../../research/rumble.md#intro).
   usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: PreloadCredits
   wrapper: 0x0036ee08
@@ -415,6 +416,7 @@
     0x001dfe20 pushes mode 0x14 (0x00155648) and copies the texts into the result screen at 0x00635390. Behaviour:
     [Rumble](../../research/rumble.md#result-screen).
   usage: {chunks: 33, calls: 66, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: HUDLaunchANGameOver
   wrapper: 0x0036f1b8

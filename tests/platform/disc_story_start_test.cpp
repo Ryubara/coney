@@ -413,8 +413,9 @@ TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight
     coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
 
     // START, the stick up most of the way (wrapping to QUICK RUMBLE), cross; cross on each of the Rumble menu's screens
-    // (1 ON 1, one player, side 1's and side 2's default gangs, the Fight Pen); then in the arena the stick at 40 %
-    // right and 70 % forward for two seconds, then let go.
+    // (1 ON 1, one player, side 1's and side 2's default gangs, the Fight Pen); in the arena cross on the intro's
+    // prompt (a few times, to be sure of meeting it); then after the countdown the stick at 40 % right and 70 % forward
+    // for two seconds, then let go.
     auto script = coney::parseInputScript("200 tap start\n"
                                           "212 stick left 0 70\n"
                                           "214 stick left 0 0\n"
@@ -424,8 +425,13 @@ TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight
                                           "300 tap cross\n"
                                           "305 tap cross\n"
                                           "310 tap cross\n"
-                                          "390 stick left 40 70\n"
-                                          "450 stick left 0 0\n");
+                                          "630 tap cross\n"
+                                          "670 tap cross\n"
+                                          "710 tap cross\n"
+                                          "750 tap cross\n"
+                                          "790 tap cross\n"
+                                          "1000 stick left 40 70\n"
+                                          "1060 stick left 0 0\n");
     REQUIRE(script.has_value());
     coney::ScriptedInput input(std::move(*script));
     coney::GameModeStack stack;
@@ -469,8 +475,14 @@ TEST_CASE("the disc's QUICK RUMBLE reaches a Baseball Fury standing on the Fight
     CHECK(std::abs(play->playerHeadingDegrees() - 128.0F) < 0.01F);
     CHECK(!play->player().human().airborne());
 
+    // The intro names the two gangs; accepting its prompt runs the countdown, which hands the match to the script.
+    CHECK((flow.rumbleIntro().pending() || flow.rumbleIntro().showing()));
+    stack.runUntilEmpty(timer, {}, 600);
+    CHECK_FALSE(flow.rumbleIntro().showing());
+    CHECK(flow.rumbleIntro().intro().names().size() == 2);
+
     // The pad moves him, and he stands again when the stick is let go.
-    stack.runUntilEmpty(timer, {}, 100);
+    stack.runUntilEmpty(timer, {}, 120);
     CHECK(play->stats().travelled > 1.0F);
     CHECK(play->player().human().speed() == 0.0F);
     CHECK(flow.scripts().errors() == 0);

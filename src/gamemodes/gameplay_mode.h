@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "ai/brains.h"
 #include "ai/scripted_brains.h"
@@ -19,6 +20,7 @@
 #include "gamemodes/level_start.h"
 #include "gamemodes/loading_screen.h"
 #include "gamemodes/movie_player.h"
+#include "gamemodes/play_overlay.h"
 #include "graphics/level_lighting.h"
 #include "graphics/render_device.h"
 #include "scenes/scene_player.h"
@@ -210,6 +212,14 @@ class GameplayMode final : public GameMode {
     /// PauseMode::playFrame().
     void setPause(PauseMode* pause) { m_pause = pause; }
 
+    /// Steps `overlay` (not owned; it must outlive the mode) after the scripts' frame of each frame of play, and draws
+    /// it over the level's frame while it is showing (the Rumble intro).
+    void addOverlay(PlayOverlay* overlay) { m_overlays.push_back(overlay); }
+
+    /// A frame of play without START's pause check: what update() runs before it. The Rumble result (mode 0x14), over
+    /// gameplay, keeps the world going with it.
+    ModeResult updateWorld(GameModeStack& stack, const FrameTime& frame);
+
     /// Ends the level, its brains and gangs, and makes a fresh Lua state (`UnloadLevel`'s script part).
     void exit() override;
 
@@ -276,8 +286,9 @@ class GameplayMode final : public GameMode {
     std::unique_ptr<effects::LevelEffects> m_effects;    // before the level, which draws them
     std::unique_ptr<world_objects::Cars> m_cars;         // the level's parked cars; before the level, which draws them
     std::unique_ptr<GameMode> m_level;
-    std::uint32_t m_playerTeleports = 0; // player 1's teleports the level has been told of
-    PauseMode* m_pause = nullptr;        // what START pauses through; not owned
+    std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of
+    PauseMode* m_pause = nullptr;         // what START pauses through; not owned
+    std::vector<PlayOverlay*> m_overlays; // screens over play; not owned
 };
 
 } // namespace coney

@@ -96,6 +96,12 @@ class BindingHost {
     /// `HUDLaunchMissionFailed(reason)`: show the mission-failed mode (0xc) with `reason`. Does nothing by default, for
     /// a host without game modes.
     virtual void launchMissionFailed(std::string_view /*reason*/) {}
+    /// `ShowRumbleModeIntro(onDone, names)`: the Rumble intro and countdown over play, then Lua `onDone()`. Does
+    /// nothing by default, for a host without play.
+    virtual void showRumbleModeIntro(std::string_view /*onDone*/, std::span<const std::string> /*names*/) {}
+    /// `HUDLaunchRumbleWin(winner, reason)`: the Rumble result mode (0x14). Does nothing by default, for a host without
+    /// game modes.
+    virtual void launchRumbleWin(std::string_view /*winner*/, std::string_view /*reason*/) {}
 };
 
 /// How far Coney implements a binding.

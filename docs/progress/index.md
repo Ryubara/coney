@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 12.2%](https://img.shields.io/badge/reimplemented-12.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 12.5%](https://img.shields.io/badge/reimplemented-12.5%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▍░░░░░░░░░░░░░░░░░` | 12.2% of the game's own code (407,716 of 3,354,776 bytes, 1,113 functions) |
+| **Reimplemented** | `██▌░░░░░░░░░░░░░░░░░` | 12.5% of the game's own code (420,540 of 3,354,776 bytes, 1,150 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -54,21 +54,21 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
 | `Audio` | `█▎░░░░░░░░░░░░░░░░░░` | 6.5% | 48 | 57,368 |
-| `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 34 | 165,680 |
+| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 3.9% | 39 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 25 | 62,808 |
-| `FileIO` | `█▍░░░░░░░░░░░░░░░░░░` | 7.0% | 6 | 7,120 |
-| `GameModes` | `█████░░░░░░░░░░░░░░░` | 25.0% | 63 | 100,440 |
+| `FileIO` | `██▋░░░░░░░░░░░░░░░░░` | 13.0% | 7 | 7,120 |
+| `GameModes` | `█████▏░░░░░░░░░░░░░░` | 25.8% | 66 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 54 | 195,624 |
-| `GUI` | `███▌░░░░░░░░░░░░░░░░` | 17.6% | 167 | 497,416 |
-| `Human` | `██▏░░░░░░░░░░░░░░░░░` | 10.8% | 297 | 1,096,672 |
+| `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 175 | 497,416 |
+| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.2% | 306 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████▋░░░░░░░░░░░░░░` | 28.2% | 168 | 197,192 |
+| `Scripting` | `█████▊░░░░░░░░░░░░░░` | 28.8% | 179 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 49 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -177,12 +177,15 @@ at the top of the repository's `README.md`.
 | `0x00115bb0` | `VoiceTable_SetPercent` | `Audio` | 128 |
 | `0x001164a8` | `VoiceTable_Build` | `Audio` | 784 |
 | `0x0011a170` | `Task_Update` | `Audio` | not filled in |
+| `0x0011b888` | `Camera_Delete` | `Camera` | 152 |
 | `0x0011bad8` | `Camera_ResetByHandle` | `Camera` | not filled in |
 | `0x0011bfa8` | `Camera_SetupFollow` | `Camera` | not filled in |
 | `0x0011c0b8` | `CfgFollowCamera` | `Camera` | not filled in |
 | `0x0011c270` | `Camera_TargetList` | `Camera` | not filled in |
+| `0x0011c2f0` | `Camera_SetFollowHeading` | `Camera` | 200 |
 | `0x0011c3b8` | `Camera_SetFollowPitch` | `Camera` | not filled in |
 | `0x0011c470` | `Camera_SetFollowZoom` | `Camera` | not filled in |
+| `0x0011c858` | `Camera_CreateWin` | `Camera` | 392 |
 | `0x0011dcf0` | `Camera_SetFollowSecondary` | `Camera` | not filled in |
 | `0x0011de58` | `Camera_EnableFeature` | `Camera` | not filled in |
 | `0x0011e878` | `Cameras_Update` | `Camera` | not filled in |
@@ -211,6 +214,8 @@ at the top of the repository's `README.md`.
 | `0x00135680` | `Cam_Locked_Update` | `Camera` | not filled in |
 | `0x00143078` | `Cam_Blend_Start` | `Camera` | not filled in |
 | `0x00143590` | `Cam_Blend_Update` | `Camera` | not filled in |
+| `0x001439d8` | `Cam_Win_Start` | `Camera` | 632 |
+| `0x00143c78` | `Cam_Win_Update` | `Camera` | 552 |
 | `0x00143f68` | `Crc32_Hash` | `Core` | 112 |
 | `0x00143fd8` | `Crc32_Lowercase` | `Core` | 120 |
 | `0x001440a0` | `ChunkSystem_PopObject` | `Core` | 40 |
@@ -253,6 +258,7 @@ at the top of the repository's `README.md`.
 | `0x001552b0` | `ShowProfileManager` | `FileIO` | 88 |
 | `0x00155378` | `SSMC_StartLoadSequence` | `FileIO` | 72 |
 | `0x001553c0` | `SSMC_StartDeleteSequence` | `FileIO` | 72 |
+| `0x00155648` | `RumbleWin_Choose` | `FileIO` | 432 |
 | `0x001582e0` | `Mode1::Enter` | `GameModes` | 424 |
 | `0x00158728` | `Mode1::Update` | `GameModes` | 3,392 |
 | `0x00159a58` | `Mode5::Enter` | `GameModes` | 96 |
@@ -287,6 +293,9 @@ at the top of the repository's `README.md`.
 | `0x0015e8b0` | `Mode11::Enter` | `GameModes` | 344 |
 | `0x0015ea40` | `Mode11::Exit` | `GameModes` | 608 |
 | `0x0015eca0` | `Mode11::Update` | `GameModes` | not filled in |
+| `0x0015f1a0` | `Mode14_Enter` | `GameModes` | 128 |
+| `0x0015f248` | `Mode14_Exit` | `GameModes` | 192 |
+| `0x0015f308` | `Mode14_Update` | `GameModes` | 496 |
 | `0x0015fe50` | `InitLevel_SetStartCallback` | `GameModes` | 64 |
 | `0x0015fe90` | `InitLevel` | `GameModes` | 2,344 |
 | `0x00160d78` | `MenuLoadLevel_Choose` | `GameModes` | 56 |
@@ -402,6 +411,7 @@ at the top of the repository's `README.md`.
 | `0x001b5b08` | `HUD_SetAnnounceMessage` | `GUI` | 120 |
 | `0x001b5c30` | `HUD_EnableInstructionArrow` | `GUI` | 152 |
 | `0x001b5e90` | `Tutorial_SetCallback` | `GUI` | 24 |
+| `0x001b5f88` | `ShowRumbleModeIntro` | `GUI` | 40 |
 | `0x001b5ff0` | `GameState_SetTutorialText` | `GUI` | 16 |
 | `0x001b7a18` | `LockPickDial_SetDifficulty` | `GUI` | 336 |
 | `0x001b8530` | `LockPickDial_Draw` | `GUI` | 2,056 |
@@ -460,6 +470,10 @@ at the top of the repository's `README.md`.
 | `0x001dbee0` | `PauseMenu_Open` | `GUI` | not filled in |
 | `0x001ddcf8` | `PauseMenu_Update` | `GUI` | not filled in |
 | `0x001df700` | `PauseMenu_Render` | `GUI` | not filled in |
+| `0x001dfe20` | `RumbleWin_Launch` | `GUI` | 104 |
+| `0x001e0008` | `RumbleWin_Show` | `GUI` | 1,064 |
+| `0x001e0460` | `RumbleWin_Input` | `GUI` | 256 |
+| `0x001e0778` | `RumbleWin_Update` | `GUI` | 544 |
 | `0x001e1338` | `ScrollingMenu::ScrollingMenu` | `GUI` | not filled in |
 | `0x001e1e48` | `ScrollingMenu_HandleCommand` | `GUI` | not filled in |
 | `0x001e95c0` | `MenuInput_Dispatch` | `GUI` | 1,080 |
@@ -481,6 +495,9 @@ at the top of the repository's `README.md`.
 | `0x001f8110` | `RM_GameMode_AddGame` | `GUI` | 432 |
 | `0x001f85c0` | `RM_GameMode_Init` | `GUI` | 1,392 |
 | `0x001f8d80` | `RM_GameMode_OnInput` | `GUI` | 376 |
+| `0x001f9418` | `RM_Intro_Open` | `GUI` | 264 |
+| `0x001f9558` | `RM_Intro_Build` | `GUI` | 1,504 |
+| `0x001fad40` | `RM_Intro_Update` | `GUI` | 472 |
 | `0x001fc5b0` | `RM_NumPlayers_Init` | `GUI` | 2,632 |
 | `0x001fd1c8` | `RM_NumPlayers_OnInput` | `GUI` | 416 |
 | `0x001fe048` | `RumbleMode_GetGang1Name` | `GUI` | 24 |
@@ -569,6 +586,7 @@ at the top of the repository's `README.md`.
 | `0x00231090` | `AttackKind_ToCommand` | `Human` | 264 |
 | `0x00231198` | `AttackKind_ChainDelay` | `Human` | 1,016 |
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
+| `0x00233ef0` | `Human_Delete` | `Human` | 112 |
 | `0x00234038` | `Human_SetNoTarget` | `Human` | 112 |
 | `0x002350c8` | `Human_SetTireless` | `Human` | 104 |
 | `0x00235268` | `Human_SetPushable` | `Human` | 72 |
@@ -768,6 +786,7 @@ at the top of the repository's `README.md`.
 | `0x002b54d8` | `BlockGoal_Init` | `Human` | 72 |
 | `0x002b5520` | `BlockGoal_Start` | `Human` | 328 |
 | `0x002b5808` | `BlockGoal_Process` | `Human` | 656 |
+| `0x002b75b8` | `Brain_Melee` | `Human` | 184 |
 | `0x002c6c88` | `Goal_Dealer` | `Human` | 264 |
 | `0x002c6d90` | `DealerGoal_Init` | `Human` | 232 |
 | `0x002c6e78` | `DealerGoal_Start` | `Human` | 288 |
@@ -827,6 +846,13 @@ at the top of the repository's `README.md`.
 | `0x003067d8` | `Tactic_Process` | `Human` | 120 |
 | `0x003068f8` | `Tactic_SetCallback` | `Human` | 64 |
 | `0x00306938` | `Tactic_FireCallback` | `Human` | 184 |
+| `0x003075c8` | `TacticAttack_Init` | `Human` | 160 |
+| `0x00307fe0` | `TacticAttack_Start` | `Human` | 232 |
+| `0x003081a8` | `TacticAttack_Process` | `Human` | 720 |
+| `0x00308478` | `TacticAttack_Event` | `Human` | 352 |
+| `0x0030e670` | `TacticConfront_Init` | `Human` | 808 |
+| `0x0030ec20` | `TacticConfront_Start` | `Human` | 176 |
+| `0x0030eec0` | `TacticConfront_Process` | `Human` | 1,352 |
 | `0x0030f4d0` | `TacticCrowd_Init` | `Human` | 160 |
 | `0x0030f570` | `TacticCrowd_Seat` | `Human` | 320 |
 | `0x0030f6b0` | `TacticCrowd_Start` | `Human` | 304 |
@@ -903,10 +929,15 @@ at the top of the repository's `README.md`.
 | `0x003579a0` | `doFile` | `Scripting` | 200 |
 | `0x00357a68` | `preLoadFile` | `Scripting` | 312 |
 | `0x00358428` | `HuCreate` | `Scripting` | 480 |
+| `0x00358608` | `HuDelete` | `Scripting` | 56 |
+| `0x0035b398` | `HuGetGang` | `Scripting` | 88 |
+| `0x0035bbc8` | `HuSetMaxHealth` | `Scripting` | 120 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0035eb78` | `BrDead` | `Scripting` | 96 |
 | `0x0035ebd8` | `BrSuspend` | `Scripting` | 96 |
 | `0x0035ede0` | `BrFlush` | `Scripting` | 56 |
+| `0x0035ee18` | `BrFlushActions` | `Scripting` | 56 |
+| `0x0035eea0` | `BrFlushGoals` | `Scripting` | 56 |
 | `0x0035ef48` | `BrSetThreatResponse` | `Scripting` | 120 |
 | `0x0035f1f8` | `GangSetThreatResponse` | `Scripting` | 128 |
 | `0x0035f630` | `GangClearWanted` | `Scripting` | 56 |
@@ -930,12 +961,15 @@ at the top of the repository's `README.md`.
 | `0x00364e48` | `HuSpeak` | `Scripting` | 264 |
 | `0x00364f50` | `HuSpeakNI` | `Scripting` | 264 |
 | `0x003656a0` | `CameraMakeActive` | `Scripting` | not filled in |
+| `0x00365818` | `CamDelete` | `Scripting` | 56 |
 | `0x00365a10` | `CameraReset` | `Scripting` | not filled in |
 | `0x00365a48` | `CamSetupFollow` | `Scripting` | not filled in |
 | `0x00365ad8` | `CamTarget` | `Scripting` | not filled in |
+| `0x00365b80` | `CamSetFollowHeading` | `Scripting` | 56 |
 | `0x00365bb8` | `CamSetFollowAngle` | `Scripting` | not filled in |
 | `0x00365bf0` | `CamSetFollowZoom` | `Scripting` | not filled in |
 | `0x00365d38` | `CameraCreateLocked` | `Scripting` | not filled in |
+| `0x00366360` | `CameraCreateWin` | `Scripting` | 440 |
 | `0x003670c0` | `CamSetSecondary` | `Scripting` | not filled in |
 | `0x003671e0` | `CamEnable` | `Scripting` | not filled in |
 | `0x00367448` | `ScenePreload` | `Scripting` | 136 |
@@ -974,10 +1008,12 @@ at the top of the repository's `README.md`.
 | `0x0036ea40` | `HUDReleasePH` | `Scripting` | 56 |
 | `0x0036ea78` | `HUDSetPHValue` | `Scripting` | 264 |
 | `0x0036ebe0` | `ForceShowPlayerHud` | `Scripting` | 96 |
+| `0x0036ed48` | `ShowRumbleModeIntro` | `Scripting` | 192 |
 | `0x0036eec8` | `HUDEnableGameTutorialText` | `Scripting` | 48 |
 | `0x0036eef8` | `ShowProfileManager_Binding` | `Scripting` | not filled in |
 | `0x0036f0d0` | `HUDShowMissionSummaryText` | `Scripting` | 96 |
 | `0x0036f130` | `HUDLaunchMissionFailed` | `Scripting` | not filled in |
+| `0x0036f160` | `HUDLaunchRumbleWin` | `Scripting` | 88 |
 | `0x0036f218` | `HUDLaunchMissionComplete` | `Scripting` | 56 |
 | `0x0036f280` | `HUDSetObjective` | `Scripting` | 224 |
 | `0x0036f360` | `HUDRemoveAllGoalText` | `Scripting` | 32 |
@@ -1021,6 +1057,7 @@ at the top of the repository's `README.md`.
 | `0x00373bf0` | `GangMakeFriends` | `Scripting` | 120 |
 | `0x00373dd0` | `GangAddSpawner` | `Scripting` | 824 |
 | `0x00374a80` | `TacticClear` | `Scripting` | 56 |
+| `0x00375370` | `TacticAttack` | `Scripting` | 96 |
 | `0x00375648` | `TacticCrowd` | `Scripting` | 128 |
 | `0x00377a10` | `TacticTrigger` | `Scripting` | 160 |
 | `0x00377cc8` | `ObjSpawn` | `Scripting` | not filled in |

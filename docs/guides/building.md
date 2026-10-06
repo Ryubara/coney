@@ -307,22 +307,35 @@ The layout is Coney's: the screen's
 name and its entries in white and grey on black. Confirming the arena calls the scripts' `Menu.startRumbleMode`, whose
 level request loads the arena; the arena's script reads the set-up (`GetRumbleModeData`, `GetRumbleModeGangName`), and
 its start callback creates player 1, the Furies' first fighter, and teleports him to his gang's first flag, where you
-control him. The Rumble's other fighters are created by the script but not drawn yet. In a script, from the title
-screen (the stick up most of the way wraps the main menu round to QUICK RUMBLE, then cross on each screen, twice on
-Choose Gangs):
+control him. A Brawl then plays to its end ([Rumble mode](../research/rumble.md#coney)): the intro names the two
+gangs over the arena, and cross on its prompt starts the countdown; the Orphan confronts you and fights. Knock him
+out and the win camera circles the winner, then the result screen offers **Replay** (the match again) and, after
+**more**, **Rumble menu** (back to Game Mode) and **Quit** (the main menu). In a script, from boot (cross skips the
+two logo movies, the stick up most of the way wraps the main menu round to QUICK RUMBLE, then cross on each screen,
+twice on Choose Gangs, then on the intro's prompt):
 
 ```text
-200 tap start
-212 stick left 0 70
-214 stick left 0 0
-225 tap cross
-280 tap cross
-290 tap cross
-300 tap cross
-305 tap cross
-310 tap cross
-360 stick left 40 70
+120 tap cross
+135 tap cross
+430 tap start
+442 stick left 0 70
+444 stick left 0 0
+455 tap cross
+510 tap cross
+520 tap cross
+530 tap cross
+535 tap cross
+540 tap cross
+860 tap cross
+900 tap cross
+940 tap cross
+980 tap cross
+1020 tap cross
 ```
+
+Add `tap square` every 12 frames from 1100 to 2000 and the Orphan goes down; the result screen takes input from
+about frame 2400 (`2400 tap cross` replays). The run logs each step (`rumble intro: done, calling FinishCountdown`,
+`rumble result: winner ...`, `rumble result: choice 0`).
 
 `--load ENTRY` loads one WAD entry through the reimplemented chunk system and prints a summary of it. `ENTRY` is a
 file name such as `level1.lev` (any letter case) or a name hash written `0x` and up to 8 hex digits, such as

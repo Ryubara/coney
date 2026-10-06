@@ -421,6 +421,12 @@ name = "Task_Update"
 subsystem = "Audio"
 
 [[function]]
+address = 0x0011b888
+name = "Camera_Delete"
+subsystem = "Camera"
+size = 152
+
+[[function]]
 address = 0x0011bad8
 name = "Camera_ResetByHandle"
 subsystem = "Camera"
@@ -441,6 +447,12 @@ name = "Camera_TargetList"
 subsystem = "Camera"
 
 [[function]]
+address = 0x0011c2f0
+name = "Camera_SetFollowHeading"
+subsystem = "Camera"
+size = 200
+
+[[function]]
 address = 0x0011c3b8
 name = "Camera_SetFollowPitch"
 subsystem = "Camera"
@@ -449,6 +461,12 @@ subsystem = "Camera"
 address = 0x0011c470
 name = "Camera_SetFollowZoom"
 subsystem = "Camera"
+
+[[function]]
+address = 0x0011c858
+name = "Camera_CreateWin"
+subsystem = "Camera"
+size = 392
 
 [[function]]
 address = 0x0011dcf0
@@ -596,6 +614,18 @@ subsystem = "Camera"
 address = 0x00143590
 name = "Cam_Blend_Update"
 subsystem = "Camera"
+
+[[function]]
+address = 0x001439d8
+name = "Cam_Win_Start"
+subsystem = "Camera"
+size = 632
+
+[[function]]
+address = 0x00143c78
+name = "Cam_Win_Update"
+subsystem = "Camera"
+size = 552
 
 [[function]]
 address = 0x00143f68
@@ -835,6 +865,12 @@ subsystem = "FileIO"
 size = 72
 
 [[function]]
+address = 0x00155648
+name = "RumbleWin_Choose"
+subsystem = "FileIO"
+size = 432
+
+[[function]]
 address = 0x001582e0
 name = "Mode1::Enter"
 subsystem = "GameModes"
@@ -1030,6 +1066,24 @@ size = 608
 address = 0x0015eca0
 name = "Mode11::Update"
 subsystem = "GameModes"
+
+[[function]]
+address = 0x0015f1a0
+name = "Mode14_Enter"
+subsystem = "GameModes"
+size = 128
+
+[[function]]
+address = 0x0015f248
+name = "Mode14_Exit"
+subsystem = "GameModes"
+size = 192
+
+[[function]]
+address = 0x0015f308
+name = "Mode14_Update"
+subsystem = "GameModes"
+size = 496
 
 [[function]]
 address = 0x0015fe50
@@ -1708,6 +1762,12 @@ subsystem = "GUI"
 size = 24
 
 [[function]]
+address = 0x001b5f88
+name = "ShowRumbleModeIntro"
+subsystem = "GUI"
+size = 40
+
+[[function]]
 address = 0x001b5ff0
 name = "GameState_SetTutorialText"
 subsystem = "GUI"
@@ -2034,6 +2094,30 @@ name = "PauseMenu_Render"
 subsystem = "GUI"
 
 [[function]]
+address = 0x001dfe20
+name = "RumbleWin_Launch"
+subsystem = "GUI"
+size = 104
+
+[[function]]
+address = 0x001e0008
+name = "RumbleWin_Show"
+subsystem = "GUI"
+size = 1064
+
+[[function]]
+address = 0x001e0460
+name = "RumbleWin_Input"
+subsystem = "GUI"
+size = 256
+
+[[function]]
+address = 0x001e0778
+name = "RumbleWin_Update"
+subsystem = "GUI"
+size = 544
+
+[[function]]
 address = 0x001e1338
 name = "ScrollingMenu::ScrollingMenu"
 subsystem = "GUI"
@@ -2154,6 +2238,24 @@ address = 0x001f8d80
 name = "RM_GameMode_OnInput"
 subsystem = "GUI"
 size = 376
+
+[[function]]
+address = 0x001f9418
+name = "RM_Intro_Open"
+subsystem = "GUI"
+size = 264
+
+[[function]]
+address = 0x001f9558
+name = "RM_Intro_Build"
+subsystem = "GUI"
+size = 1504
+
+[[function]]
+address = 0x001fad40
+name = "RM_Intro_Update"
+subsystem = "GUI"
+size = 472
 
 [[function]]
 address = 0x001fc5b0
@@ -2673,6 +2775,12 @@ address = 0x00233d60
 name = "Human_Create"
 subsystem = "Human"
 size = 400
+
+[[function]]
+address = 0x00233ef0
+name = "Human_Delete"
+subsystem = "Human"
+size = 112
 
 [[function]]
 address = 0x00234038
@@ -3830,6 +3938,12 @@ subsystem = "Human"
 size = 656
 
 [[function]]
+address = 0x002b75b8
+name = "Brain_Melee"
+subsystem = "Human"
+size = 184
+
+[[function]]
 address = 0x002c6c88
 name = "Goal_Dealer"
 subsystem = "Human"
@@ -4182,6 +4296,48 @@ address = 0x00306938
 name = "Tactic_FireCallback"
 subsystem = "Human"
 size = 184
+
+[[function]]
+address = 0x003075c8
+name = "TacticAttack_Init"
+subsystem = "Human"
+size = 160
+
+[[function]]
+address = 0x00307fe0
+name = "TacticAttack_Start"
+subsystem = "Human"
+size = 232
+
+[[function]]
+address = 0x003081a8
+name = "TacticAttack_Process"
+subsystem = "Human"
+size = 720
+
+[[function]]
+address = 0x00308478
+name = "TacticAttack_Event"
+subsystem = "Human"
+size = 352
+
+[[function]]
+address = 0x0030e670
+name = "TacticConfront_Init"
+subsystem = "Human"
+size = 808
+
+[[function]]
+address = 0x0030ec20
+name = "TacticConfront_Start"
+subsystem = "Human"
+size = 176
+
+[[function]]
+address = 0x0030eec0
+name = "TacticConfront_Process"
+subsystem = "Human"
+size = 1352
 
 [[function]]
 address = 0x0030f4d0
@@ -4624,6 +4780,24 @@ subsystem = "Scripting"
 size = 480
 
 [[function]]
+address = 0x00358608
+name = "HuDelete"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x0035b398
+name = "HuGetGang"
+subsystem = "Scripting"
+size = 88
+
+[[function]]
+address = 0x0035bbc8
+name = "HuSetMaxHealth"
+subsystem = "Scripting"
+size = 120
+
+[[function]]
 address = 0x0035e5d0
 name = "CfgHUDMessage"
 subsystem = "Scripting"
@@ -4643,6 +4817,18 @@ size = 96
 [[function]]
 address = 0x0035ede0
 name = "BrFlush"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x0035ee18
+name = "BrFlushActions"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x0035eea0
+name = "BrFlushGoals"
 subsystem = "Scripting"
 size = 56
 
@@ -4784,6 +4970,12 @@ name = "CameraMakeActive"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x00365818
+name = "CamDelete"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
 address = 0x00365a10
 name = "CameraReset"
 subsystem = "Scripting"
@@ -4799,6 +4991,12 @@ name = "CamTarget"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x00365b80
+name = "CamSetFollowHeading"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
 address = 0x00365bb8
 name = "CamSetFollowAngle"
 subsystem = "Scripting"
@@ -4812,6 +5010,12 @@ subsystem = "Scripting"
 address = 0x00365d38
 name = "CameraCreateLocked"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x00366360
+name = "CameraCreateWin"
+subsystem = "Scripting"
+size = 440
 
 [[function]]
 address = 0x003670c0
@@ -5034,6 +5238,12 @@ subsystem = "Scripting"
 size = 96
 
 [[function]]
+address = 0x0036ed48
+name = "ShowRumbleModeIntro"
+subsystem = "Scripting"
+size = 192
+
+[[function]]
 address = 0x0036eec8
 name = "HUDEnableGameTutorialText"
 subsystem = "Scripting"
@@ -5054,6 +5264,12 @@ size = 96
 address = 0x0036f130
 name = "HUDLaunchMissionFailed"
 subsystem = "Scripting"
+
+[[function]]
+address = 0x0036f160
+name = "HUDLaunchRumbleWin"
+subsystem = "Scripting"
+size = 88
 
 [[function]]
 address = 0x0036f218
@@ -5312,6 +5528,12 @@ address = 0x00374a80
 name = "TacticClear"
 subsystem = "Scripting"
 size = 56
+
+[[function]]
+address = 0x00375370
+name = "TacticAttack"
+subsystem = "Scripting"
+size = 96
 
 [[function]]
 address = 0x00375648

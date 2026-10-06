@@ -77,6 +77,7 @@
     `Camera_Release` (with 0) refuses a camera that is a player's previous camera (`0x005d9148[i]`), so deleting the
     camera just switched away from does nothing; type 16 (CameraCreateThird) is not deletable this way.
   usage: {chunks: 57, calls: 90, boot: false, mission1: false, result_used: true, levels: [87, 95, 2, 3, 5, 81, 93, 9, 51, 54, 84, 92, 11]}
+  coney: implemented
 
 - name: CamGetPos
   wrapper: 0x00365850
@@ -191,6 +192,7 @@
     "from the character's facing" reading is inferred from 0x001250a8; distance rule and pitch reset:
     [Camera](../../research/camera.md#setting-up).
   usage: {chunks: 68, calls: 85, boot: false, mission1: false, result_used: false, levels: [80, 87, 5, 81, 93, 51, 52, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: CamSetFollowAngle
   wrapper: 0x00365bb8
@@ -355,6 +357,7 @@
     One shared camera object, `Cam_Win` (0x00120188, constructor 0x00143918), set up by 0x0011c858; start 0x001439d8,
     orbit 0x00143c78. Behaviour: [Rumble](../../research/rumble.md#win-camera).
   usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: CamSetupRail
   wrapper: 0x00366518

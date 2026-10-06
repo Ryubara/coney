@@ -44,6 +44,7 @@
     human update remove it is inferred. Contrast `HuKill`, which kills through the damage path. Record flags:
     [Characters](../../research/characters.md#the-record).
   usage: {chunks: 80, calls: 213, boot: false, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 84, 82, 92, 83, 20, 11, 61, 64]}
+  coney: implemented
 
 - name: HuKill
   wrapper: 0x00358640
@@ -1392,6 +1393,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 104, calls: 245, boot: true, mission1: false, result_used: true, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HuGetGangType
   wrapper: 0x0035b3f0
@@ -1748,6 +1750,7 @@
     Also heals a hurt human to full. No clamping: values above 32767 wrap negative. Health fields:
     characters.md#the-record.
   usage: {chunks: 39, calls: 205, boot: false, mission1: false, result_used: false, levels: [87, 86, 93, 31, 14, 54, 55, 82, 92, 83, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuGetHealthPercent
   wrapper: 0x0035bc40

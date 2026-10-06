@@ -923,7 +923,7 @@ Behaviour: [Rumble](../../research/rumble.md#result-screen).
 - **Evidence:** confirmed (code) at `0x001dfe20`; detail: brief
 - **Wrapper** `0x0036f160` (registered by `RegisterBindings`); **calls** `0x001dfe20`
 - **Used by** 33 of 467 script chunks (66 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDRadarSetRange {#hudradarsetrange}
 
@@ -1942,4 +1942,4 @@ countdown, after which `onDone` is called.
 - **Evidence:** confirmed (code) at `0x001b5f88`; detail: brief
 - **Wrapper** `0x0036ed48` (registered by `RegisterBindings`); **calls** `0x001b5f88`
 - **Used by** 33 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented

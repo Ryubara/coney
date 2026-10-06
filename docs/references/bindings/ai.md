@@ -475,7 +475,7 @@ stay ([AI: actions](../../research/ai.md)).
 - **Wrapper** `0x0035ee18` (registered by `RegisterBindings`); **calls** `0x00292590` `Brain_FlushActions`
 - **Used by** 34 of 467 script chunks (67 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrFlushGoals {#brflushgoals}
 
@@ -499,7 +499,7 @@ each goal's script callback fires with "completed" 0. Unlike BrFlush it leaves t
   `Brain_ClearGoals`
 - **Used by** 40 of 467 script chunks (84 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrGetPedType {#brgetpedtype}
 
@@ -3162,7 +3162,7 @@ with `+0xd9` set also starts one of seven coordinated sub-tactics every 7 s (0x0
 - **Wrapper** `0x00375370` (registered by `RegisterBindings`); **calls** `0x00307548` `Tactic_Attack`
 - **Used by** 54 of 467 script chunks (184 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 27 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticAvoidEnemies {#tacticavoidenemies}
 
@@ -3578,7 +3578,7 @@ Behaviour: [AI](../../research/ai.md#tactic-kinds).
 - **Wrapper** `0x00376408` (registered by `RegisterBindings`); **calls** `0x00316dd8` `Tactic_Confront`
 - **Used by** 26 of 467 script chunks (35 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticCrowd {#tacticcrowd}
 

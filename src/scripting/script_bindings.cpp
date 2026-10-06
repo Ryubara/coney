@@ -28,6 +28,7 @@
 #include "scripting/object_bindings.h"
 #include "scripting/player_bindings.h"
 #include "scripting/rumble_bindings.h"
+#include "scripting/rumble_match_bindings.h"
 #include "scripting/scene_bindings.h"
 #include "scripting/sound_bindings.h"
 #include "scripting/spawn_bindings.h"
@@ -526,6 +527,19 @@ constexpr std::array kBindings{
     real("ScreenQueueEffect"),
     real("HUDLaunchMissionComplete"),
     real("HUDLaunchMissionFailed"),
+    // A Rumble match: the intro, the result screen, the tactics and the fighters (rumble_match_bindings.h).
+    real("ShowRumbleModeIntro"),
+    real("HUDLaunchRumbleWin"),
+    real("TacticAttack"),
+    real("TacticConfront"),
+    real("BrFlushActions"),
+    real("BrFlushGoals"),
+    real("HuSetMaxHealth"),
+    real("HuDelete"),
+    real("HuGetGang"),
+    real("CameraCreateWin"),
+    real("CamSetFollowHeading"),
+    real("CamDelete"),
     real("SSMC_StartDeleteSequence"),
     real("SSMC_StartLoadSequence"),
     // The level scripts' humans, flags, saved numbers, start callback and Rumble set-up (level_bindings.h).
@@ -1015,6 +1029,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
         CONEY_ASSERT(std::ranges::find(kStringBindings, info.name) != kStringBindings.end() ||
                      std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end() ||
                      std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end() ||
+                     std::ranges::find(kRumbleMatchBindings, info.name) != kRumbleMatchBindings.end() ||
                      std::ranges::find(kAiBindings, info.name) != kAiBindings.end() ||
                      std::ranges::find(kCameraBindings, info.name) != kCameraBindings.end() ||
                      std::ranges::find(kGangBindings, info.name) != kGangBindings.end() ||
@@ -1056,6 +1071,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addCameraBindings(vm, context, nextHandle);
     addSpawnBindings(vm, context, nextHandle);
     addObjectBindings(vm, context, nextHandle);
+    addRumbleMatchBindings(vm, context, nextHandle);
     addHumanBindings(vm, context, nextHandle);
     addEffectsBindings(vm, context, nextHandle);
     addCarBindings(vm, context, nextHandle);

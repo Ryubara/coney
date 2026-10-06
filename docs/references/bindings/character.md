@@ -992,7 +992,7 @@ the human update remove it is inferred. Contrast `HuKill`, which kills through t
 - **Wrapper** `0x00358608` (registered by `RegisterBindings`); **calls** `0x00233ef0` `Human_Delete`
 - **Used by** 80 of 467 script chunks (213 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuDrop {#hudrop}
 
@@ -1381,7 +1381,7 @@ enemies.
 - **Wrapper** `0x0035b398` (registered by `RegisterBindings`); **calls** `0x00235438` `Human_GetGangId`
 - **Used by** 104 of 467 script chunks (245 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGetGangType {#hugetgangtype}
 
@@ -3359,7 +3359,7 @@ characters.md#the-record.
 - **Wrapper** `0x0035bbc8` (registered by `RegisterBindings`); **calls** `0x00237be0` `Human_SetMaxHealth`
 - **Used by** 39 of 467 script chunks (205 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 16 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetMoney {#husetmoney}
 

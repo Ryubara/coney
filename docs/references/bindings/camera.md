@@ -208,7 +208,7 @@ the camera just switched away from does nothing; type 16 (CameraCreateThird) is 
   `0x0011e440` `Camera_Release`
 - **Used by** 57 of 467 script chunks (90 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 13 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamEnable {#camenable}
 
@@ -362,7 +362,7 @@ Sets up the win camera that circles the winner at the end of a Rumble match.
 - **Evidence:** confirmed (code) at `0x0011c858`; detail: brief
 - **Wrapper** `0x00366360` (registered by `RegisterBindings`); **calls** `0x0011c858`
 - **Used by** 33 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CameraGetActive {#cameragetactive}
 
@@ -787,7 +787,7 @@ The "from the character's facing" reading is inferred from 0x001250a8; distance 
 - **Wrapper** `0x00365b80` (registered by `RegisterBindings`); **calls** `0x0011c2f0` `Camera_SetFollowHeading`
 - **Used by** 68 of 467 script chunks (85 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamSetFollowPos {#camsetfollowpos}
 

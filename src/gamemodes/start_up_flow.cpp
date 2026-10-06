@@ -48,6 +48,10 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
           m_levelFlow, stack, log),
       m_rumbleMenu(device, loadSheet, stack, m_scripts, m_state, strings, m_rumbleData, m_services, m_fade,
                    legal.europe, log),
+      m_rumbleIntro(loadSheet, strings, m_services, m_state, log),
+      m_rumbleResult(
+          device, loadSheet, strings, m_services, m_state, m_levelFlow, stack,
+          [this] { return m_rumbleMenu.fromFrontEnd(); }, log),
       m_memoryCard(device, stack, m_levelFlow, loadSheet, strings, cardCheckingMs, log),
       m_legal(device, loadSheet, legal, log, &m_scripts) {
     m_state.language = legal.language;
@@ -63,6 +67,9 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
     m_gameplay.setPause(&m_pause);
     m_pause.setWorld(&m_gameplay);
     m_missionFailed.setWorld(&m_gameplay);
+    // A Rumble match: the intro over play, the result screen over the world going on.
+    m_gameplay.addOverlay(&m_rumbleIntro);
+    m_rumbleResult.setWorld(&m_gameplay);
 }
 
 void StartUpFlow::start() {
@@ -110,6 +117,14 @@ void StartUpFlow::startLoadSequence() { m_memoryCard.startLoadSequence(); }
 void StartUpFlow::startDeleteSequence() { m_memoryCard.startDeleteSequence(); }
 
 void StartUpFlow::launchMissionFailed(std::string_view reason) { m_missionFailed.launch(reason); }
+
+void StartUpFlow::showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) {
+    m_rumbleIntro.show(onDone, names);
+}
+
+void StartUpFlow::launchRumbleWin(std::string_view winner, std::string_view reason) {
+    m_rumbleResult.launch(winner, reason);
+}
 
 void StartUpFlow::setPauseHooks(const PauseHooks& hooks) {
     m_pause.setHooks(hooks);

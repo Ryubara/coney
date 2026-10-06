@@ -275,23 +275,23 @@ the old one follows the new (`0x00122248`, `0x00122438`, `0x001222b0`). Returns 
 
 ## Bindings the Rumble scripts call that Coney lacks {#bindings}
 
-Status from the masterlist at `7bfa5eb` (`coney: not implemented` or partial; branches in flight may have some). Each
-links to its [reference](../references/bindings/index.md) entry by name.
+Status from the masterlist at `7bfa5eb` (`coney: not implemented` or partial; branches in flight may have some),
+less the bindings [Coney's implementation](#coney) has since. Each links to its
+[reference](../references/bindings/index.md) entry by name.
 
-- **Every arena** (`level1xx.lua`, 62): `BrFlushActions`, `BrFlushGoals`, `CNSEnableMissionInfo`, `CamDelete`,
-  `CamSetFollowHeading`, `CamUseDeathCamera`, `CameraCreateWin`, `CfgMultiplayerJoin`, `DoorCRCCheck`, `End3DFog`,
-  `EndFog`, `EndRain`, `EndRoomSmoke`, `ForceShowPlayerHud`, `HUDEnableGameTutorialText`, `HUDLaunchRumbleWin`,
+- **Every arena** (`level1xx.lua`, 62): `CNSEnableMissionInfo`, `CamUseDeathCamera`, `CfgMultiplayerJoin`,
+  `DoorCRCCheck`, `End3DFog`, `EndFog`, `EndRain`, `EndRoomSmoke`, `ForceShowPlayerHud`, `HUDEnableGameTutorialText`,
   `HUDSetObjective`, `HUDSetPHValue`, `HUDTurnOffRadar`, `HUDTurnOnRadar`, `HideHud`, `HidePlayerHud`, `HuBlockLook`,
-  `HuDelete`, `HuEnableSoundCommands`, `HuGetGang`, `HuIsAPlayer`, `HuIsAlive`, `HuLockMovement`, `HuLockPad`,
+  `HuEnableSoundCommands`, `HuLockMovement`, `HuLockPad`,
   `HuRemoveItemInPocket`, `HuRemoveSpinningIcon`, `HuRevive`, `HuSetArrested`, `HuSetCarriedItem`, `HuSetMoney`,
   `HuSetNormalMode`, `HuSetPreventRage`, `HuSetRevivable`, `HuSetTireless`, `HuSetUnstunnable`, `HuSwitchPlayer`,
   `HuUseAnim`, `IsInsideBox`, `ObjEnableZone`, `PrecacheWorld`, `QueueFileToPrecache`, `RestoreHud`,
-  `SetDynamicAnimation`, `SetFogColor`, `SetGameMode`, `SetLight`, `SetSpawnMax`, `ShowRumbleModeIntro`,
+  `SetDynamicAnimation`, `SetFogColor`, `SetGameMode`, `SetLight`, `SetSpawnMax`,
   `SoundPauseSound`, `SoundPlay2D`, `SoundPlayCommand`, `SoundSetMusicVolume`, `Teleport`; partial:
   `ShowRumbleModeInterface`, `SoundLoopMusicTrack`, `SoundStopMusicTrack`.
 - **Brawl** (with the Fight Pen's flag chunk): `BrSetReactToViolence`, `EndGarbage`, `GangSetDamageResponse`,
-  `GangSetInvestigateResponse`, `HUDSetNumIndicator`, `HUDShowWarCommand`, `HuDropWeapon`, `HuSetMaxHealth`,
-  `HuSpeakNI`, `SoundEnableSystemMusic`, `TacticAttack`, `TacticConfront`, `WCEnableAutomaticSwitching`,
+  `GangSetInvestigateResponse`, `HUDSetNumIndicator`, `HUDShowWarCommand`, `HuDropWeapon`,
+  `HuSpeakNI`, `SoundEnableSystemMusic`, `WCEnableAutomaticSwitching`,
   `WCEnableCommand`, `WCIssueCommand`, `WCLockCommands`; partial `SoundPlayMusicTrack`.
 - **King of the hill**: `CamSetSplitMode`, `CameraSetClipping`, `GangAttachSpinningIcon`, `GangRemoveSpinningIcon`,
   `GangStartSpawner`, `HUDAddRadarMissionObjective`, `HUDDeleteRadarMissionObjective`, `HUDEnableTextProgress`,
@@ -320,10 +320,28 @@ links to its [reference](../references/bindings/index.md) entry by name.
   `SSMC_StartLoadSequence`, `SetAmbientEmitterPositions`, `SetDoorPickable`, `SetLightFlicker`, `SoundPlay`,
   `SpawnBreakableGlass`, `SpawnDoor`, `SpawnParticle`, `StartParticle`, `StartRain`; partial `PlayMovie`.
 
-## Coney's implementation
+## Coney's implementation {#coney}
 
-The set-up menus, `GetRumbleModeData`, `GetRumbleModeGangName`, the flags and `HuCreate` reach the first fighter
-([Building: QUICK RUMBLE](../guides/building.md)); nothing on this page yet.
+A Brawl (1 ON 1) plays to its end ([Building: QUICK RUMBLE](../guides/building.md)): the set-up menus, the arena
+script's sides, the intro and countdown, the other side's fighters, the knockdown, the win camera and the result
+screen with its three paths. The other game types are not built yet.
+
+- **Intro** (`repo:src/gui/rumble_mode_gui/rumble_intro.h`, drawn over play by
+  `repo:src/gamemodes/rumble_intro_layer.h`): `ShowRumbleModeIntro` is held until the level's first frame, because
+  Coney runs the start callback before the level loads.
+- **Fighters**: `TacticConfront` and `TacticAttack` (`repo:src/ai/tactic_confront.h`, `repo:src/ai/tactic_attack.h`)
+  with stand-in confront and melee goals; `HuSetMaxHealth`, `HuDelete`, `HuGetGang`, `BrFlushGoals` and
+  `BrFlushActions` (`repo:src/scripting/rumble_match_bindings.h`). The humans the start callback creates are counted
+  in their gangs and answer `HuIsAlive` until the level makes them, so `AddBrawlGang1`/`2` set the down handler.
+- **Win camera** (`repo:src/camera/win_camera.h`): `CameraCreateWin`, `CamDelete` and `CamSetFollowHeading`; it
+  starts on activation, from where the winner was teleported.
+- **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
+  `repo:src/gui/rumble_mode_gui/rumble_result_menu.h`):
+  the world keeps running under it; its choices act through the pause menu's outcomes.
+
+Coney's stand-ins, each an open question below where the page is silent: the intro's layout, separator text and
+voice lengths; the result lines' look and the grids' rows; the melee and confront goals; the confront tactic's radii
+and route test.
 
 ## Open questions {#open-questions}
 
@@ -332,3 +350,12 @@ The set-up menus, `GetRumbleModeData`, `GetRumbleModeGangName`, the flags and `H
 - The win camera's stop condition (`0x005fdeb8 + 0x1d8` / `+0x1dc`) and the base camera slots `+0x194` / `+0x1ac`.
 - What the sound call on `"menu"` (`0x0010fa50`) does when the result screen's choices appear.
 - The countdown's first sound (`+0xfc` of the intro, loaded before the screen opens).
+- The intro's layout (where the names, separator, prompt and countdown sit, their font and colour), the separator's
+  text and how long each announcer line lasts (Coney: centred white big_font, "VS", 1.5 s per line without lengths).
+- The intro's screen effects 0 (left out by Coney) and how opaque the prompt is when the screen takes the pad
+  (Coney: 0.95).
+- The result screen's two lines' font, scale and colour, and the grids' rows (Coney: one row of two).
+- `Goal_Melee` (8) and the confront goal (60): how the melee goal picks its target and moves, and how a confronting
+  member closes in (Coney: the nearest gang enemy, run to and fight; close to the critical range).
+- The confront tactic's gang radii and route test between the leaders (Coney: radii 0, always a route, so
+  code 9 never fires).
