@@ -226,6 +226,11 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("HUDTurnOffRadar", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             hud.radarOff(intArg(args, 0, 2));
                         }));
+    // `HUDSetNumIndicator(player, on, gang)`: gang defaults to -1 (none).
+    // @orig 0x00370138 HUDSetNumIndicator (unknown)
+    vm.registerFunction("HUDSetNumIndicator", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            hud.setNumIndicator(intArg(args, 0), boolArg(args, 1), intArg(args, 2, -1));
+                        }));
     // Blip types: 10 a mission objective, 1 a secondary one, and a human's by its class (Coney: 7, the class is not
     // read yet).
     // @orig 0x001b3f98 HUD_RadarAddObjective (unknown)

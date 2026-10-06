@@ -92,6 +92,7 @@ struct HumanStatus {
     float healthPercent = 0.0F; ///< `HuGetHealthPercent`.
     int gangType = 0xffff;      ///< `HuGetGangType`: its gang's kind; 65535 for none.
     double heldObject = 0;      ///< `HuGetHeldObject`: NilHandle (0) for none.
+    bool soundCommands = true;  ///< May say speech commands (`HuEnableSoundCommands`).
 };
 
 /// `HuSetLookTarget(human, target, ms, weight, flagA, flagB)` as the binding reads it.
@@ -195,6 +196,10 @@ class HumanBindingHost {
     virtual void setCarriedItem(double /*human*/, std::string_view /*object*/) {}
     /// `HuSetMugCallback`: empty clears it.
     virtual void setMugCallback(double /*human*/, std::string_view /*callback*/) {}
+    /// `HuEnableSoundCommands`.
+    virtual void setSoundCommands(double /*human*/, bool /*on*/) {}
+    /// `HuPutItemInPocket` (item 0 and count 0 for `HuRemoveItemInPocket`).
+    virtual void setPocket(double /*human*/, int /*item*/, int /*count*/) {}
     /// `HuSetLookTarget`.
     virtual void setLookTarget(const LookTargetCall& /*call*/) {}
     /// `HuTeleportNearHuman`.
@@ -231,6 +236,8 @@ class HumanBindingHost {
     virtual void clearBackoff(double /*human*/) {}
     /// `BrSetThugWantsWeapon`.
     virtual void setWantsWeapon(double /*human*/, bool /*wants*/) {}
+    /// `BrSetDamageResponse`.
+    virtual void setDamageResponse(double /*human*/, int /*response*/) {}
     /// `GoalBackoff`.
     virtual void goalBackoff(const BackoffCall& /*call*/) {}
     /// `GoalBumLogic`.
@@ -250,6 +257,8 @@ class HumanBindingHost {
     virtual void setInvincible(int /*gang*/, bool /*on*/) {}
     /// `GangSetTargetable`.
     virtual void setTargetable(int /*gang*/, bool /*on*/) {}
+    /// `GangSetDamageResponse`: every current member's.
+    virtual void setGangDamageResponse(int /*gang*/, int /*response*/) {}
 
     /// The game state's characters' rules changed (a configuration binding): the host takes what it uses of them.
     virtual void applyRules(const CharacterRules& /*rules*/) {}

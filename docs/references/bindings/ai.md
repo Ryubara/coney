@@ -684,7 +684,7 @@ lead-chase goal (0x002e0bf0) and a boss tactic (0x00309840) also set it to 0, be
 - **Wrapper** `0x0035f278` (registered by `RegisterBindings`); **calls** `0x00292758` `Brain_SetDamageResponse`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level81`](story.md#level81) (mission 8)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetFollowSlot {#brsetfollowslot}
 

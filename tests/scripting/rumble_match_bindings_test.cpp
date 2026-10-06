@@ -266,5 +266,9 @@ TEST_CASE("HuSwitchPlayer hands the pad to the player's first standing team-mate
     level.scene.player().human().fighter().health().set(0);
     CHECK(level.call("HuSwitchPlayer", {Value(1.0)}).number() == 0.0);
     level.scripted->setSwitcher([](Brain& /*from*/, Brain& to) { to.setType(coney::ai::BrainType::Player); }, true);
+    // ... and only in the story's game mode, 0.
+    level.call("SetGameMode", {Value(3.0), Value(3.0), Value(19.0), Value(2.0)});
+    CHECK(level.call("HuSwitchPlayer", {Value(1.0)}).number() == 0.0);
+    level.call("SetGameMode", {Value(0.0), Value(0.0), Value(0.0), Value(0.0)});
     CHECK(level.call("HuSwitchPlayer", {Value(1.0)}).number() == stranger.handle());
 }

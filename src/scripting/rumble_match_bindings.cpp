@@ -14,6 +14,7 @@
 #include "camera/win_camera.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
+#include "warriors/game_state.h"
 
 namespace coney::script {
 
@@ -171,13 +172,14 @@ NativeFunction makeHuGetGang(const BindingContext& context) {
 }
 
 // `HuSwitchPlayer(human)`: the new player's handle, NilHandle when the pad stays; the cameras that followed the old
-// player follow the new one.
+// player follow the new one. The kind-0 fallback is the story's: the game mode (`SetGameMode`) must be 0.
 // @orig 0x0035d218 HuSwitchPlayer (unknown)
 NativeFunction makeHuSwitchPlayer(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         AiBindingHost* ai = context->ai;
         const double from = handleArg(args, 0);
-        const double to = ai != nullptr ? ai->switchPlayer(from) : kNilHandle;
+        const bool storyMode = context->state == nullptr || context->state->gameMode.mode == 0;
+        const double to = ai != nullptr ? ai->switchPlayer(from, storyMode) : kNilHandle;
         if (camera::Cameras* cameras = context->cameras; cameras != nullptr && to != kNilHandle) {
             cameras->switchTarget(from, to);
         }

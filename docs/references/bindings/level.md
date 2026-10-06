@@ -439,7 +439,7 @@ Returns the current game mode.
 - **Evidence:** confirmed (code) at `0x0041d7e0`; detail: brief
 - **Wrapper** `0x0036c378` (registered by `RegisterBindings`); **calls** `0x0041d7e0`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetGameTime {#getgametime}
 
@@ -1014,7 +1014,7 @@ value argument is 0), so the scripts' 50 and 500 differ only with no camera.
   `WorldManager_Preload`
 - **Used by** 36 of 467 script chunks (136 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ProcessTag {#processtag}
 
@@ -1066,7 +1066,7 @@ queues the gangs' character packs this way ([Front end](../../research/frontend.
   `0x0040e1a0` `WorldManager_QueuePack`
 - **Used by** 34 of 467 script chunks (167 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## Quit {#quit}
 
@@ -1328,7 +1328,7 @@ clears it. Used by the Rumble arenas.
 - **Evidence:** confirmed (code) at `0x0041d788`; detail: brief
 - **Wrapper** `0x0036c2b0` (registered by `RegisterBindings`); **calls** `0x0041d788`
 - **Used by** 33 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetLoadPriority {#setloadpriority}
 

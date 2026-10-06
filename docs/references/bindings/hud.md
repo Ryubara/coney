@@ -110,7 +110,7 @@ was meant to show is not built.
 - **Wrapper** `0x0037d3f0` (registered by `RegisterBindings`); **calls** `0x0023b128` `CNS_SetMissionInfoEnabled`
 - **Used by** 34 of 467 script chunks (35 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## FlashRageBar {#flashragebar}
 
@@ -1305,7 +1305,7 @@ Shows a number indicator (the remaining members of a gang) on a player's HUD or 
 - **Evidence:** confirmed (code) at `0x001b4438`; detail: brief
 - **Wrapper** `0x00370138` (registered by `RegisterBindings`); **calls** `0x001b4438`
 - **Used by** 3 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDSetObjective {#hudsetobjective}
 

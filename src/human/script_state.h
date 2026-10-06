@@ -66,9 +66,15 @@ struct ScriptState {
     /// The head-look asked for, if any. **Coney stand-in**: no head-look controller yet.
     bool looking = false;
     LookOrder look;
-    /// The dynamic clips replacing kUseAnimIds (`+0x3c8`, `HuUseAnim`); empty for none. **Coney stand-in**: the clip is
-    /// not played in place of the original yet.
+    /// The dynamic clips replacing kUseAnimIds (`+0x3c8`, `HuUseAnim`); empty for none. The play mode plays slot 0's
+    /// in place of the idle (Human::setIdleClip()); the other slots are only kept.
     std::array<std::string, kUseAnimIds.size()> animOverrides;
+    /// May say speech commands (`+0x199`, `HuEnableSoundCommands`): clear, `SoundPlayCommand` says nothing for it.
+    bool soundCommands = true;
+    /// The pocket (`HuPutItemInPocket`, `HuRemoveItemInPocket`): the inventory item id (`+0x250`, 0 for none) and the
+    /// count (`+0x254`, a byte). **Coney stand-in**: no mugging or knock-down drop reads it yet, so it is only kept.
+    int pocketItem = 0;
+    int pocketCount = 0;
 };
 
 } // namespace coney::human

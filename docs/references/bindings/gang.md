@@ -1072,7 +1072,7 @@ gang's in-use flag is not checked.
 - **Wrapper** `0x0035f2f0` (registered by `RegisterBindings`); **calls** `0x0016b460`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level31`](story.md#level31) (mission 11)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetEnemy {#gangsetenemy}
 

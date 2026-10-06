@@ -51,6 +51,9 @@ inline constexpr std::uint64_t kIncreasedReact = 0x200000;
 inline constexpr std::uint64_t kRageAllowed = 0x2000000;
 /// Stamina and power stay full: no sprint drain, no power spent (`HuSetTireless`, `0x00226448`).
 inline constexpr std::uint64_t kTireless = 0x4000000;
+/// Its movement locked (`HuLockMovement`, `0x00234ef8`). **Coney stand-in**: what reads the bit is not on the page, so
+/// a locked human is moved neither by its stick nor by its brain, as an arrested one is; it still fights and acts.
+inline constexpr std::uint64_t kMovementLocked = 0x200000000;
 /// Never throws the weapon it holds (`HuSetNoThrowWeapon`; inferred from the name).
 inline constexpr std::uint64_t kNoThrowWeapon = 0x4000000000;
 /// Demi-god (`HuSetDemiGodMode`): one hit cannot take health below the floor fraction of the maximum, and reaching it

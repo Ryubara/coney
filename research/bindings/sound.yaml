@@ -895,6 +895,7 @@
     Through the device's slots +0x64 / +0x6c (0x0014c5e0 / 0x0014c600). While paused, pitch updates stop; whether
     sounds started meanwhile play is not traced.
   usage: {chunks: 36, calls: 139, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: SoundPlayCommand
   wrapper: 0x00372fe0

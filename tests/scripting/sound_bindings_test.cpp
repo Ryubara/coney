@@ -83,6 +83,7 @@ class RecordingSound final : public coney::script::SoundHost {
         positions.assign(points.begin(), points.end());
     }
     void playAmbientTrack(std::uint32_t sound) override { calls.push_back(std::format("track {:#x}", sound)); }
+    void pauseSound(bool on) override { calls.push_back(std::format("pause {}", on)); }
     double play2D(std::uint32_t sound) override {
         calls.push_back(std::format("2d {:#x}", sound));
         return 7.0;
@@ -198,6 +199,13 @@ TEST_CASE("SoundPlay2D plays a sound by its name's hash and answers its handle; 
     CHECK(h.sound.calls == std::vector<std::string>{std::format("2d {:#x}", coney::crc32("vags/test/cue_21"))});
     Harness quiet(false);
     CHECK(quiet.call("SoundPlay2D", {str("vags/test/cue_21")}).number() == 0.0);
+}
+
+TEST_CASE("SoundPauseSound pauses the sound by default and resumes it with false", "[sound_bindings]") {
+    Harness h;
+    h.call("SoundPauseSound");
+    h.call("SoundPauseSound", {Value(0.0)});
+    CHECK(h.sound.calls == std::vector<std::string>{"pause true", "pause false"});
 }
 
 TEST_CASE("an emitter's twelve arguments and its positions reach the sound host", "[sound_bindings]") {

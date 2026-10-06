@@ -181,7 +181,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// The player's team-mate (switchTarget()) takes the pad through the switcher and becomes player 1 (setPlayer());
     /// its handle, or NilHandle when `human` is not the player's or no one can take over.
     /// @orig 0x0041a8c0 Human_SwitchPlayer (unknown)
-    double switchPlayer(double human) override;
+    double switchPlayer(double human, bool storyMode) override;
     /// The gang calls: Gangs' members of the same names.
     [[nodiscard]] int gangCreate(int kind, std::string_view name) override;
     void gangDelete(int gang) override;
@@ -251,9 +251,9 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     bool held(std::function<void()> call);
     // Who takes the pad from `from`: a member of its gang in slot order that no pad drives and that is not down (the
     // first found: **Coney's**, as no binding Coney has sets the priority byte `+0x1b1` the original prefers); with
-    // none, and when allowed, such a human of a kind-0 gang. Null when there is none.
+    // none, and when allowed (`anyKindZero`), such a human of a kind-0 gang. Null when there is none.
     // @orig 0x0022a770 Gang_PickSwitchMember (unknown)
-    [[nodiscard]] Brain* switchTarget(const Brain& from) const;
+    [[nodiscard]] Brain* switchTarget(const Brain& from, bool anyKindZero) const;
 
     Brains* m_owner;
     const world_objects::WorldFlags* m_flags;

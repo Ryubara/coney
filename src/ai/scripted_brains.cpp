@@ -350,7 +350,7 @@ void ScriptedBrains::humanDelete(double human) {
     }
 }
 
-Brain* ScriptedBrains::switchTarget(const Brain& from) const {
+Brain* ScriptedBrains::switchTarget(const Brain& from, bool anyKindZero) const {
     // Not driven by a pad, and on its feet with health left.
     const auto canTake = [&from](const Brain* member) {
         return member != &from && member->type() != BrainType::Player &&
@@ -364,7 +364,7 @@ Brain* ScriptedBrains::switchTarget(const Brain& from) const {
             }
         }
     }
-    if (!m_switchToKindZero) {
+    if (!anyKindZero) {
         return nullptr;
     }
     for (std::size_t id = 0; id < kGangSlots; ++id) {
@@ -381,12 +381,12 @@ Brain* ScriptedBrains::switchTarget(const Brain& from) const {
     return nullptr;
 }
 
-double ScriptedBrains::switchPlayer(double human) {
+double ScriptedBrains::switchPlayer(double human, bool storyMode) {
     Brain* from = named(human);
     if (from == nullptr || from->type() != BrainType::Player || !m_switcher) {
         return 0.0;
     }
-    Brain* to = switchTarget(*from);
+    Brain* to = switchTarget(*from, m_switchToKindZero && storyMode);
     if (to == nullptr) {
         return 0.0;
     }

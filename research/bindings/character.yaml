@@ -1100,6 +1100,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 35, calls: 38, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: HuSetNormalMode
   wrapper: 0x0035ac20
@@ -2147,6 +2148,7 @@
     Item 12 (the ledger) makes the human unmuggable ([Crimes: mugging](../../research/crimes.md#mugging)); the item
     id is not range-checked here.
   usage: {chunks: 28, calls: 78, boot: false, mission1: false, result_used: false, levels: [9, 54, 55, 84, 83, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuRemoveItemInPocket
   wrapper: 0x0035c568
@@ -2162,6 +2164,7 @@
   notes: >-
     Pocket fields: [Crimes](../../research/crimes.md) and player-state.md. Money (`+0x370`) is untouched.
   usage: {chunks: 36, calls: 69, boot: false, mission1: false, result_used: false, levels: [20]}
+  coney: implemented
 
 - name: HuSetWorkoutParams
   wrapper: 0x0035c7d8
@@ -2873,6 +2876,7 @@
   notes: >-
     Whether HuSpeak's named lines also check the byte is not traced.
   usage: {chunks: 57, calls: 196, boot: false, mission1: false, result_used: false, levels: [95, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuEnableTagDone
   wrapper: 0x00364d28
@@ -3332,6 +3336,7 @@
     Other object kinds take the transform as given; a human linked in a grab (+0x280 set) is not lowered; this
     corrects 'neither snaps to the ground' on Characters for the 0.5 ray only (the ray's units are not checked).
   usage: {chunks: 54, calls: 140, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 86, 14, 9, 51, 55, 84, 83]}
+  coney: implemented
 
 - name: TeleportToFlag
   wrapper: 0x0036cdc0
@@ -3626,3 +3631,4 @@
   evidence: inferred
   depth: brief
   usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false}
+  coney: implemented

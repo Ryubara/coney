@@ -108,6 +108,8 @@ struct BrainSenses {
     int investigate = 1;
     /// `BrSetReactToViolence` (`+0x267`): reacts to fights it sees. **Coney choice** until set: true.
     bool reactsToViolence = true;
+    /// `BrSetDamageResponse` (`+0x220`, 1 when a brain is made): no reader is on the page, so it is only kept.
+    int damageResponse = 1;
     float hearRange = kDefaultHearRange;         ///< `+0x134`, `GangSetHearRange(gang, false, range)`.
     float helpHearRange = kDefaultHelpHearRange; ///< `+0x138`, `GangSetHearRange(gang, true, range)`.
     bool worldFlags = false;                     ///< `+0x2d1`, `GangCanUseWorldFlags`.

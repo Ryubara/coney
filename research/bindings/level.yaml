@@ -157,6 +157,7 @@
   notes: >-
     The parameter meanings are inferred from the arena scripts' arguments.
   usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: GetGameMode
   wrapper: 0x0036c378
@@ -169,6 +170,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: GetDifficulty
   wrapper: 0x0036c3d8
@@ -321,6 +323,7 @@
     same test). A second call while a preload runs is refused. With a camera the radius argument is ignored (the
     callee's value argument is 0), so the scripts' 50 and 500 differ only with no camera.
   usage: {chunks: 36, calls: 136, boot: false, mission1: false, result_used: false, levels: [95, 11]}
+  coney: implemented
 
 - name: QueueFileToPrecache
   wrapper: 0x0036c838
@@ -339,6 +342,7 @@
     A name that does not exist is dropped silently at load time; nothing checks it when queued. The Rumble set-up
     queues the gangs' character packs this way ([Front end](../../research/frontend.md)).
   usage: {chunks: 34, calls: 167, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: ResetStore
   wrapper: 0x0036da10

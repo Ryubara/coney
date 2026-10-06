@@ -94,6 +94,8 @@ class SoundHost {
     virtual double play2D(std::uint32_t sound) = 0;
     /// `SoundStopAmbientTrack()`.
     virtual void stopAmbientTrack() = 0;
+    /// `SoundPauseSound(on)`: pauses every sound playing now where it is (`on`), or resumes them.
+    virtual void pauseSound(bool on) = 0;
     /// `SetAmbientTrackVolume(volume)`, 0-1.
     virtual void setAmbientTrackVolume(float volume) = 0;
 
@@ -133,7 +135,7 @@ class SoundHost {
 
 /// The sound bindings: the configuration the preloads make, the ambience, the music, the listener, the speech lines by
 /// name and the speech commands. All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 23> kSoundBindings{"AddAmbientSound",
+inline constexpr std::array<std::string_view, 24> kSoundBindings{"AddAmbientSound",
                                                                  "AddAmbientSoundEmitter2",
                                                                  "HuShutUp",
                                                                  "HuSpeak",
@@ -147,6 +149,7 @@ inline constexpr std::array<std::string_view, 23> kSoundBindings{"AddAmbientSoun
                                                                  "SndSetListener",
                                                                  "SoundCfgInterfaceSound",
                                                                  "SoundLoopMusicTrack",
+                                                                 "SoundPauseSound",
                                                                  "SoundPlay2D",
                                                                  "SoundPlayAmbientTrack",
                                                                  "SoundPlayCommand",

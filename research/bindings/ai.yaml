@@ -380,6 +380,7 @@
     reached through an embedded-brain offset), so what each mode does is open. GoalManWeaponPile, GoalObjectThrower,
     the lead-chase goal (0x002e0bf0) and a boss tactic (0x00309840) also set it to 0, beside threat response 0.
   usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false, levels: [81, 86, 20]}
+  coney: implemented
 
 - name: BrSetInvestigateResponse
   wrapper: 0x0035f370

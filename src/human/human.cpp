@@ -734,8 +734,8 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
             StickIntent{.angle = m_record.move->heading + kPi / 2.0F, .magnitude = *m_moveSpeed > 0.0F ? 1.0F : 0.0F};
     }
     // An arrested human is not moved by its stick or its brain (**Coney stand-in**, human/script_state.h), nor is one
-    // a grab holds.
-    if (m_script.arrested || m_fighter.holdState().has_value()) {
+    // a grab holds, nor one whose movement a script locked (human/human_flags.h).
+    if (m_script.arrested || m_fighter.holdState().has_value() || hasFlag(flag::kMovementLocked)) {
         m_intent.magnitude = 0.0F;
         m_moveSpeed.reset();
     }

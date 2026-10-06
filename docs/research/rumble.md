@@ -275,50 +275,25 @@ the old one follows the new (`0x00122248`, `0x00122438`, `0x001222b0`). Returns 
 
 ## Bindings the Rumble scripts call that Coney lacks {#bindings}
 
-Status from the masterlist at `7bfa5eb` (`coney: not implemented` or partial; branches in flight may have some),
-less the bindings [Coney's implementation](#coney) has since. Each links to its
-[reference](../references/bindings/index.md) entry by name.
+Status from the [binding reference](../references/bindings/index.md) (`Coney: not implemented` or partial; branches in
+flight may have some). Each links to its reference entry by name.
 
-- **Every arena** (`level1xx.lua`, 62): `CNSEnableMissionInfo`, `CamUseDeathCamera`, `CfgMultiplayerJoin`,
-  `DoorCRCCheck`, `End3DFog`, `EndFog`, `EndRain`, `EndRoomSmoke`, `ForceShowPlayerHud`, `HUDEnableGameTutorialText`,
-  `HUDSetObjective`, `HUDSetPHValue`, `HUDTurnOffRadar`, `HUDTurnOnRadar`, `HideHud`, `HidePlayerHud`, `HuBlockLook`,
-  `HuEnableSoundCommands`, `HuLockMovement`, `HuLockPad`,
-  `HuRemoveItemInPocket`, `HuRemoveSpinningIcon`, `HuRevive`, `HuSetArrested`, `HuSetCarriedItem`, `HuSetMoney`,
-  `HuSetNormalMode`, `HuSetPreventRage`, `HuSetRevivable`, `HuSetTireless`, `HuSetUnstunnable`,
-  `HuUseAnim`, `IsInsideBox`, `ObjEnableZone`, `PrecacheWorld`, `QueueFileToPrecache`, `RestoreHud`,
-  `SetDynamicAnimation`, `SetFogColor`, `SetGameMode`, `SetLight`, `SetSpawnMax`,
-  `SoundPauseSound`, `SoundPlayCommand`, `SoundSetMusicVolume`, `Teleport`; partial:
-  `ShowRumbleModeInterface`, `SoundLoopMusicTrack`, `SoundStopMusicTrack`.
-- **Brawl** (with the Fight Pen's flag chunk): `BrSetReactToViolence`, `EndGarbage`, `GangSetDamageResponse`,
-  `GangSetInvestigateResponse`, `HUDSetNumIndicator`, `HUDShowWarCommand`, `HuDropWeapon`,
-  `HuSpeakNI`, `SoundEnableSystemMusic`, `WCEnableAutomaticSwitching`,
-  `WCEnableCommand`, `WCIssueCommand`, `WCLockCommands`; partial `SoundPlayMusicTrack`.
+- **Every arena** (`level1xx.lua`, 62): `CamUseDeathCamera`, `End3DFog`, `EndFog`, `EndRain`, `EndRoomSmoke`; partial
+  `ShowRumbleModeInterface`.
+- **Brawl** (with the Fight Pen's flag chunk): `EndGarbage`, `SoundEnableSystemMusic`.
 - **King of the hill**: `CamSetSplitMode`, `CameraSetClipping`, `GangAttachSpinningIcon`, `GangRemoveSpinningIcon`,
-  `GangStartSpawner`, `HUDAddRadarMissionObjective`, `HUDDeleteRadarMissionObjective`, `HUDEnableTextProgress`,
-  `HUDSetTextProgress`, `HuForceEnableReticule`, `HuSetGodMode`, `ObjHide`, `ObjShow`, `TacticDomination`, and the
-  stopwatch bindings `W_GetStopWatchTime`, `W_SetStopWatch`, `W_ShowStopWatch`, `W_StartStopWatch`.
-- **Battle royal**: `CameraSetClipping`, `HuForceEnableReticule`, `HuKill`, `HuLockPadMovement`, `HuSetConscious`,
-  `HuSetGodMode`, `HuSetSlowMo`, `TacticDomination`, `TestDistance`, `TurnWarriorCommands`, `WCEnableAllCommands`.
-- **Survival**: `BrSetAttackWeight`, `BrSetType`, `GangAddSpawner`, `GangStartSpawner`, `GoalEngageEnemy`,
-  `GoalMoveToHuman`, `HuGetCharType`, `HuGetPosition`, `ObjShow`, `SetCharacterModel`, `TacticHanginOut`,
-  `TurnWarriorCommands`, `WCEnableAllCommands`, `W_SetStopWatch`, `W_ShowStopWatch`, `W_StartStopWatch`.
-- **Tag battle**: `CfgHuInventoryCallback`, `CfgInventoryCallback`, `CfgTagSettings`, `CfgTagStartCallback`,
-  `GangGetLeader`, `GangSetLeader`, `GoalTag`, `HUDAddRadarMissionObjective`, `HUDDeleteRadarMissionObjective`,
-  `HUDEnableBar`, `HUDEnableGenBar`, `HUDSetBarPercentage`, `HUDSetRadarItemTexture`, `HUDSetRadarZoomScale`,
-  `HuSetMug`, `HuSetPushable`, `HuTag`, `HuTagColor`, `HuTagPattern`, `InvGetSpraycanCharges`,
-  `InvSetSpraycanCharges`, `ObjDestroy`, `ObjHide`, `ObjShow`, `SoundPlayAmbientTrack`, `TacticDefend`,
-  `TacticMoveToFlag`, `TriggerSphereCfg`.
-- **Mercy**: `BrSetInvestigateResponse`, `GoalGrabTarget`, `HuIsGrabbed`, `HuSetGodMode`, `ObjShow`,
-  `TriggerSphereCfg`.
-- **Wheelchair**: `ActGiveWay`, `AddPath`, `BrSetInvestigateResponse`, `CamAssignRevCamButton`, `CamSetSplitMode`,
-  `CameraSetClipping`, `GoalTravelPath`, `HUDAddRadarMissionObjective`, `HUDDeleteRadarMissionObjective`,
-  `HUDSetRadarItemTexture`, `HuLockPadMovement`, `HuSetGodMode`, `HuSetNoAutoLock`, `HuSetNoTarget`, `HuSetPushable`,
-  `HuSetWheelchairControl`, `ObjColor`, `ObjDestroy`, `ObjHide`, `ObjShow`, `PadSetHandler`, `SoundPlayAmbientTrack`,
-  `TestDistance`, `TriggerSphereCfg`.
-- **Other arenas' set dressing**: `AddAmbientSoundEmitter2`, `CarSpawn`, `CfgSteam`, `EndParticle`, `FlagNetAddLink`,
-  `GetPTank`, `ObjSetTrainPoint`, `ObjStartTrain`, `ObjStopTrain`, `ReleasePTank`, `SSMC_StartDeleteSequence`,
-  `SSMC_StartLoadSequence`, `SetAmbientEmitterPositions`, `SetDoorPickable`, `SetLightFlicker`, `SoundPlay`,
-  `SpawnBreakableGlass`, `SpawnDoor`, `SpawnParticle`, `StartParticle`, `StartRain`; partial `PlayMovie`.
+  `HUDEnableTextProgress`, `HUDSetTextProgress`, `HuForceEnableReticule`, `TacticDomination`, `W_ShowStopWatch`.
+- **Battle royal**: `CameraSetClipping`, `HuForceEnableReticule`, `HuSetConscious`, `HuSetSlowMo`, `TacticDomination`,
+  `TurnWarriorCommands`.
+- **Survival**: `BrSetAttackWeight`, `BrSetType`, `GoalEngageEnemy`, `GoalMoveToHuman`, `HuGetCharType`,
+  `HuGetPosition`, `TacticHanginOut`, `TurnWarriorCommands`, `W_ShowStopWatch`.
+- **Tag battle**: `CfgHuInventoryCallback`, `CfgTagSettings`, `GoalTag`, `HUDEnableBar`, `HUDEnableGenBar`,
+  `HUDSetBarPercentage`, `HUDSetRadarZoomScale`, `HuSetMug`, `HuTag`, `TacticDefend`, `TacticMoveToFlag`.
+- **Mercy**: `GoalGrabTarget`.
+- **Wheelchair**: `ActGiveWay`, `CamAssignRevCamButton`, `CamSetSplitMode`, `CameraSetClipping`, `HuSetNoAutoLock`,
+  `HuSetWheelchairControl`, `ObjColor`.
+- **Other arenas' set dressing**: `CfgSteam`, `EndParticle`, `GetPTank`, `ObjSetTrainPoint`, `ObjStartTrain`,
+  `ObjStopTrain`, `ReleasePTank`, `SoundPlay`, `StartParticle`, `StartRain`; partial `PlayMovie`.
 
 ## Coney's implementation {#coney}
 
@@ -343,18 +318,24 @@ other game types are not built yet.
   named (`repo:src/characters/dynamic_clips.h`) and plays wherever the idle would.
 - **Win camera** (`repo:src/camera/win_camera.h`): `CameraCreateWin`, `CamDelete` and `CamSetFollowHeading`; it
   starts on activation, from where the winner was teleported.
+- **Arena set-up** (`repo:src/scripting/arena_bindings.h`): `SetGameMode` and `GetGameMode` (the hand-over's
+  kind-0 fallback needs mode 0), the precache queue, `HuLockMovement`, `HuEnableSoundCommands`, the pocket, the damage
+  response and `Teleport`; `HUDSetNumIndicator` and `SoundPauseSound` with the HUD and sound bindings.
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
   `repo:src/gui/rumble_mode_gui/rumble_result_menu.h`):
   the world keeps running under it; its choices act through the pause menu's outcomes.
 
-Coney's stand-ins, each an open question below where the page is silent: the intro's layout, separator text and
-voice lengths; the result lines' look and the grids' rows; the melee and confront goals; the confront tactic's radii
-and route test; the switch's choice and the brain left behind; a dynamic clip's rate.
+Coney's stand-ins, each an open question below where the page is silent: the intro's layout, separator text and voice
+lengths; the result lines' look and the grids' rows; the melee and confront goals; the confront tactic's radii and route
+test; the switch's choice and the brain left behind; a dynamic clip's rate; a locked human's movement (neither stick nor
+brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue.
 
 ## Open questions {#open-questions}
 
 - The gang slots `Gang1` and `Gang2` take at runtime (King of the hill's `GameOver` assumes 1 and 2).
-- What `SetGameMode`'s arguments 3 and 19 select, and who reads them.
+- What `SetGameMode`'s arguments 3 and 19 select, and who reads them; where the mode returns to 0 after an arena.
+- What reads `HuLockMovement`'s flag (`0x200000000`) and so what a locked human may still do.
+- Where `HUDSetNumIndicator`'s count is drawn and how it looks.
 - The win camera's stop condition (`0x005fdeb8 + 0x1d8` / `+0x1dc`) and the base camera slots `+0x194` / `+0x1ac`.
 - What the sound call on `"menu"` (`0x0010fa50`) does when the result screen's choices appear.
 - The countdown's first sound (`+0xfc` of the intro, loaded before the screen opens).

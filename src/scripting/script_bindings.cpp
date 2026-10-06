@@ -15,6 +15,7 @@
 #include "scenes/scene_player.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/anim_callbacks.h"
+#include "scripting/arena_bindings.h"
 #include "scripting/binding_args.h"
 #include "scripting/camera_bindings.h"
 #include "scripting/car_bindings.h"
@@ -819,6 +820,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("HUDRemoveAllGoalText"),
     real("HUDSetAnnounceMsg"),
     real("HUDSetInstArrowAnimSpeed"),
+    real("HUDSetNumIndicator"),
     real("HUDSetObjective"),
     real("HUDSetPHValue"),
     real("HUDSetRadarItemTexture"),
@@ -870,6 +872,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("SetAmbientEmitterPositions"),
     real("SoundPlayAmbientTrack"),
     real("SoundPlay2D"),
+    real("SoundPauseSound"),
     real("SoundStopAmbientTrack"),
     real("SetAmbientTrackVolume"),
     real("SoundPlayMusicTrack"),
@@ -898,6 +901,21 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("ObjHide"),
     real("ObjShow"),
     real("TriggerSphereCfg"),
+    // The Rumble arenas' game mode, precache queue and switches, and the humans' movement lock, speech switch,
+    // pocket, damage response and teleport (arena_bindings.h).
+    real("BrSetDamageResponse"),
+    real("CNSEnableMissionInfo"),
+    real("GangSetDamageResponse"),
+    real("GetGameMode"),
+    real("HuEnableSoundCommands"),
+    real("HuLockMovement"),
+    real("HuPutItemInPocket"),
+    real("HuRemoveItemInPocket"),
+    real("PrecacheWorld"),
+    real("QueueFileToPrecache"),
+    real("SetGameMode"),
+    real("Teleport"),
+    real("WCEnableAutomaticSwitching"),
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
     // The four the script system's constructor registers itself: configuration kept for later.
@@ -1128,7 +1146,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kCarBindings, info.name) != kCarBindings.end() ||
                      std::ranges::find(kHudBindings, info.name) != kHudBindings.end() ||
                      std::ranges::find(kWorldBindings, info.name) != kWorldBindings.end() ||
-                     std::ranges::find(kStoryBindings, info.name) != kStoryBindings.end());
+                     std::ranges::find(kStoryBindings, info.name) != kStoryBindings.end() ||
+                     std::ranges::find(kArenaBindings, info.name) != kArenaBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -1160,6 +1179,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addStoryBindings(scripts, vm, context, nextHandle);
     addEffectsBindings(vm, context, nextHandle);
     addCarBindings(vm, context, nextHandle);
+    addArenaBindings(vm, context);
     addWorldBindings(vm, context);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the

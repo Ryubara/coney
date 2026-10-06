@@ -96,6 +96,7 @@ add_library(coney_core STATIC
     gui/widget.cpp
     scripting/ai_bindings.cpp
     scripting/anim_callbacks.cpp
+    scripting/arena_bindings.cpp
     scripting/camera_bindings.cpp
     scripting/config_strings.cpp
     scripting/gang_bindings.cpp

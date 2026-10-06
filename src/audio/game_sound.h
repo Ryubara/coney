@@ -81,6 +81,8 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     /// SoundEngine::play() as a 2D sound; the engine's handle id.
     double play2D(std::uint32_t sound) override;
     void stopAmbientTrack() override;
+    /// SoundPlayer::pauseAll() or resumeAll().
+    void pauseSound(bool on) override;
     void setAmbientTrackVolume(float volume) override;
     void playMusic(std::uint32_t track, bool loop, std::string_view callback) override;
     void stopMusic() override;

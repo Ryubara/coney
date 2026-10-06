@@ -66,6 +66,7 @@
     0x0028a570, and goal inits that zero it such as Goal_ObjectThrower), so the value may have no effect in this
     build. The gang's in-use flag is not checked.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [31]}
+  coney: implemented
 
 - name: GangSetInvestigateResponse
   wrapper: 0x0035f3e8

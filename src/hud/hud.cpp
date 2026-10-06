@@ -200,6 +200,14 @@ void Hud::radarOff(int player) {
     m_radar.scriptOn = false;
 }
 
+void Hud::setNumIndicator(int player, bool on, int gang) {
+    if (player < 0 || player >= static_cast<int>(kNumIndicators)) {
+        return;
+    }
+    // No gang forces it off.
+    m_indicators.at(static_cast<std::size_t>(player)) = NumIndicator{.on = on && gang != -1, .gang = gang};
+}
+
 void Hud::update(const HudFrame& frame) {
     m_nowMs = frame.nowMs;
     m_levelNumber = frame.levelNumber;

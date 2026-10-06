@@ -1118,7 +1118,7 @@ scripts ask for with SoundPlayCommand ([Sound: speech](../../research/sound.md#s
 - **Wrapper** `0x00364cc8` (registered by `RegisterBindings`); **calls** `0x00239240` `Human_EnableSoundCommands`
 - **Used by** 57 of 467 script chunks (196 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuEnableSpeaking {#huenablespeaking}
 
@@ -1998,7 +1998,7 @@ Locks or unlocks the human's movement (flag 0x200000000 at +0xe0).
 - **Evidence:** confirmed (code) at `0x00234ef8`; detail: brief
 - **Wrapper** `0x0035abc0` (registered by `RegisterBindings`); **calls** `0x00234ef8`
 - **Used by** 35 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuLockPad {#hulockpad}
 
@@ -2284,7 +2284,7 @@ item id is not range-checked here.
 - **Wrapper** `0x0035c4d0` (registered by `RegisterBindings`); **calls** `0x00238190` `Human_SetPocketItem`
 - **Used by** 28 of 467 script chunks (78 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 12 of 28 levels, first [`level9`](story.md#level9) (mission 13)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuRemoveItemInPocket {#huremoveiteminpocket}
 
@@ -2307,7 +2307,7 @@ knock-down no longer yields the item set by HuPutItemInPocket.
 - **Wrapper** `0x0035c568` (registered by `RegisterBindings`); **calls** `0x002381f0` `Human_RemoveItemInPocket`
 - **Used by** 36 of 467 script chunks (69 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level20`](story.md#level20) (flashback 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuRemoveSpinningIcon {#huremovespinningicon}
 
@@ -5021,7 +5021,7 @@ corrects 'neither snaps to the ground' on Characters for the 0.5 ray only (the r
   `Human_SetTransform`
 - **Used by** 54 of 467 script chunks (140 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 10 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TeleportToFlag {#teleporttoflag}
 
@@ -5135,7 +5135,7 @@ Stores whether the game may switch the player automatically to another gang memb
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00374a00` (registered by `RegisterBindings`); **calls** `0x0041dd68` `GameState_SetAutoSwitch`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## WCEnableCommand {#wcenablecommand}
 

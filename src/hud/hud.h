@@ -81,6 +81,13 @@ struct RadarState {
     std::map<double, RadarBlip> blips;
 };
 
+/// A number indicator (`HUDSetNumIndicator`): the remaining members of a gang, as Rumble brawls show. **Coney
+/// stand-in**: its place and look are not on the page, so it is kept and not drawn.
+struct NumIndicator {
+    bool on = false;
+    int gang = -1; ///< The gang whose count it shows; -1 for none.
+};
+
 /// The whole in-game HUD: the original's one static object at `0x00600840`. It holds the two player panels, the hint
 /// box, the objective checklist and its scroll-in messages, the announcement, the counter panels, the instruction
 /// arrow and the radars' state, and takes the HUD bindings' calls.
@@ -195,6 +202,14 @@ class Hud {
     [[nodiscard]] RadarState& radar() { return m_radar; }
     [[nodiscard]] const RadarState& radar() const { return m_radar; }
 
+    /// The number indicators: player 0's, player 1's and the shared one.
+    static constexpr std::size_t kNumIndicators = 3;
+    /// `HUDSetNumIndicator(player, on, gang)`: indicator `player` (0-2) shows gang `gang`'s count; gang -1 turns it
+    /// off. A bad index does nothing.
+    /// @orig 0x001b4438 HUD_SetNumIndicator (unknown)
+    void setNumIndicator(int player, bool on, int gang);
+    [[nodiscard]] const NumIndicator& numIndicator(std::size_t index) const { return m_indicators.at(index); }
+
     /// The debug menus' values for player `player`'s panel.
     [[nodiscard]] PanelOverrides& overrides(std::size_t player) { return m_overrides.at(player); }
     [[nodiscard]] const PanelOverrides& overrides(std::size_t player) const { return m_overrides.at(player); }
@@ -247,6 +262,7 @@ class Hud {
     CounterPanels m_counters;
     InstructionArrow m_arrow;
     RadarState m_radar;
+    std::array<NumIndicator, kNumIndicators> m_indicators{};
     std::array<PanelOverrides, kPlayers> m_overrides{};
     std::uint64_t m_nowMs = 0;
     int m_levelNumber = 0;

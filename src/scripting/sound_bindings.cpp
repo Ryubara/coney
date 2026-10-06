@@ -10,7 +10,9 @@
 
 #include "core/name_hash.h"
 #include "scenes/scene_player.h"
+#include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
+#include "scripting/human_bindings.h"
 #include "warriors/created_humans.h"
 
 namespace coney::script {
@@ -94,6 +96,16 @@ void runCallback(ScriptSystem& scripts, const std::string& name, std::optional<d
 // command lines (docs/research/sound.md#speech).
 bool speechOff(const BindingContext& context) { return context.scenes != nullptr && context.scenes->cinematicActive(); }
 
+// Whether a script silenced the human's speech commands (`HuEnableSoundCommands`, the byte `Human_SayCommand` reads).
+bool commandsSilenced(const BindingContext& context, double human) {
+    HumanBindingHost* humans = context.ai != nullptr ? context.ai->humans() : nullptr;
+    if (humans == nullptr) {
+        return false;
+    }
+    const std::optional<HumanStatus> status = humans->status(human);
+    return status.has_value() && !status->soundCommands;
+}
+
 // A binding that hands its arguments to the sound host when there is one and returns nothing. The host is read at each
 // call: main gives it once the audio has started.
 template <typename Body> NativeFunction soundCall(const BindingContext& context, Body body) {
@@ -162,7 +174,8 @@ NativeFunction makeSoundPlayCommand(ScriptSystem& scripts, const BindingContext&
                                .interrupt = boolArg(args, 3, true),
                                .target = handleArg(args, 4, kNilHandle)};
         std::optional<double> line;
-        if (SoundHost* sound = context->sound; sound != nullptr && !speechOff(*context)) {
+        if (SoundHost* sound = context->sound;
+            sound != nullptr && !speechOff(*context) && !commandsSilenced(*context, human)) {
             line = sound->sayCommand(call, callback);
         }
         if (!line) {
@@ -308,6 +321,11 @@ void addSoundBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
         SoundHost* sound = context->sound;
         return binding::number(sound != nullptr ? sound->play2D(crc32(binding::string(args, 0))) : 0.0);
     });
+    // `SoundPauseSound(on)`: on defaults to true.
+    // @orig 0x00114088 Audio_PauseSound (unknown)
+    vm.registerFunction("SoundPauseSound", soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
+                            sound.pauseSound(boolArg(args, 0, true));
+                        }));
     // @orig 0x00113630 Sound_StopAmbientTrack (unknown)
     vm.registerFunction("SoundStopAmbientTrack",
                         soundCall(context, [](SoundHost& sound, std::span<const Value>) { sound.stopAmbientTrack(); }));

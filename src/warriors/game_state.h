@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "core/game_random.h"
 #include "core/language.h"
@@ -45,6 +46,16 @@ struct RumbleSetup {
     std::array<bool, 3> playerOptions{};
     /// `0x0063ef78`: the chosen mode has preset fighters, so no gangs are chosen.
     bool presetGangs = false;
+};
+
+/// The game mode `SetGameMode` sets (docs/references/bindings/level.md#setgamemode): 0 in the story; each Rumble
+/// arena passes its own. What the three parameters select is an open question (docs/research/rumble.md).
+struct GameModeSetting {
+    std::uint32_t mode = 0;     ///< `+0x158`: `GetGameMode`; the hand-over's kind-0 fallback needs 0.
+    std::uint32_t a = 0;        ///< `+0x15c`: the arenas pass 3.
+    std::uint32_t b = 0;        ///< `+0x160`: the arenas pass 19.
+    std::uint32_t gangSize = 0; ///< `+0x164`: the arenas pass their gang size.
+    bool versus = false;        ///< `+0x56f0`: set for modes 1 and 2 (inferred: two players).
 };
 
 /// The part of the game state (`W_GameState`, 0x57c0 bytes in the original) that the front end and its scripts use:
@@ -91,6 +102,15 @@ struct GameState {
     /// What the story missions' scripts set beyond the characters' rules (the Warrior commands' callback, the music
     /// switches, the tagging set-up...).
     StoryState story;
+    /// `SetGameMode`'s mode and parameters.
+    GameModeSetting gameMode;
+    /// `+0x431` (`WCEnableAutomaticSwitching`): the game may move the player to another gang member by itself
+    /// (inferred from the name; its reader is not on the page, so Coney only keeps it). **Coney choice** until set: on.
+    bool autoSwitch = true;
+    /// `0x005109ac` (`CNSEnableMissionInfo`): nothing in the original reads it.
+    bool missionInfo = false;
+    /// The world manager's precache queue (`+0x0c`, `QueueFileToPrecache`): the files the next `PrecacheWorld` loads.
+    std::vector<std::string> precacheQueue;
 };
 
 } // namespace coney

@@ -58,7 +58,8 @@ std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
                                        .arrested = false,
                                        .healthPercent = 100.0F,
                                        .gangType = 0xffff,
-                                       .heldObject = 0.0};
+                                       .heldObject = 0.0,
+                                       .soundCommands = true};
         }
         return std::nullopt;
     }
@@ -68,7 +69,8 @@ std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
                                .arrested = human.script().arrested,
                                .healthPercent = human.healthPercent(),
                                .gangType = brain->gang() != nullptr ? brain->gang()->kind() : 0xffff,
-                               .heldObject = human.script().heldObject};
+                               .heldObject = human.script().heldObject,
+                               .soundCommands = human.script().soundCommands};
 }
 
 void ScriptedHumans::setFlags(double human, std::uint64_t bits, bool on) {
@@ -120,6 +122,17 @@ void ScriptedHumans::setCarriedItem(double human, std::string_view object) {
 
 void ScriptedHumans::setMugCallback(double human, std::string_view callback) {
     onBrain(human, [name = std::string(callback)](Brain& brain) { brain.human().script().mugCallback = name; });
+}
+
+void ScriptedHumans::setSoundCommands(double human, bool on) {
+    onBrain(human, [on](Brain& brain) { brain.human().script().soundCommands = on; });
+}
+
+void ScriptedHumans::setPocket(double human, int item, int count) {
+    onBrain(human, [item, count](Brain& brain) {
+        brain.human().script().pocketItem = item;
+        brain.human().script().pocketCount = count;
+    });
 }
 
 void ScriptedHumans::setLookTarget(const script::LookTargetCall& call) {
@@ -280,6 +293,10 @@ void ScriptedHumans::setWantsWeapon(double human, bool wants) {
     onBrain(human, [wants](Brain& brain) { brain.setWantsWeapon(wants); });
 }
 
+void ScriptedHumans::setDamageResponse(double human, int response) {
+    onBrain(human, [response](Brain& brain) { brain.senses().damageResponse = response; });
+}
+
 void ScriptedHumans::goalBackoff(const script::BackoffCall& call) {
     onBrain(call.human, [this, call](Brain& brain) {
         static_cast<void>(brain.pushGoal(
@@ -342,6 +359,15 @@ void ScriptedHumans::clearResponders() {
 }
 
 void ScriptedHumans::clearWanted(int /*gang*/) {}
+
+void ScriptedHumans::setGangDamageResponse(int gang, int response) {
+    // Only the members it has now: later ones keep their own (docs/references/bindings/gang.md).
+    if (Gang* found = m_scripted->owner().gangs().find(gang); found != nullptr) {
+        for (Brain* member : found->members()) {
+            member->senses().damageResponse = response;
+        }
+    }
+}
 
 void ScriptedHumans::setInvincible(int gang, bool on) { m_scripted->owner().gangs().setInvincible(gang, on); }
 

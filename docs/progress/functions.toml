@@ -392,6 +392,12 @@ subsystem = "Audio"
 size = 16
 
 [[function]]
+address = 0x00114088
+name = "Audio_PauseSound"
+subsystem = "Audio"
+size = 72
+
+[[function]]
 address = 0x001140d8
 name = "Sound_PlayCommand"
 subsystem = "Audio"
@@ -1303,6 +1309,12 @@ subsystem = "GameModes"
 size = 144
 
 [[function]]
+address = 0x0016b460
+name = "Gang_SetDamageResponse"
+subsystem = "GameModes"
+size = 144
+
+[[function]]
 address = 0x0016b4f0
 name = "Gang_SetInvestigateResponse"
 subsystem = "GameModes"
@@ -1811,6 +1823,12 @@ address = 0x001b43a8
 name = "HUD_RadarOff"
 subsystem = "GUI"
 size = 144
+
+[[function]]
+address = 0x001b4438
+name = "HUD_SetNumIndicator"
+subsystem = "GUI"
+size = 160
 
 [[function]]
 address = 0x001b4790
@@ -2893,6 +2911,12 @@ subsystem = "Human"
 size = 112
 
 [[function]]
+address = 0x00234ef8
+name = "Human_LockMovement"
+subsystem = "Human"
+size = 112
+
+[[function]]
 address = 0x002350c8
 name = "Human_SetTireless"
 subsystem = "Human"
@@ -3106,6 +3130,18 @@ subsystem = "Human"
 size = 88
 
 [[function]]
+address = 0x00238190
+name = "Human_SetPocketItem"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x002381f0
+name = "Human_RemoveItemInPocket"
+subsystem = "Human"
+size = 64
+
+[[function]]
 address = 0x00238230
 name = "Human_SetCarriedItemName"
 subsystem = "Human"
@@ -3164,6 +3200,12 @@ subsystem = "Human"
 address = 0x00239188
 name = "Tag_SetPattern"
 subsystem = "Human"
+
+[[function]]
+address = 0x00239240
+name = "Human_EnableSoundCommands"
+subsystem = "Human"
+size = 64
 
 [[function]]
 address = 0x00239370
@@ -3272,6 +3314,12 @@ size = 80
 address = 0x0023ae90
 name = "Human_LockPadMovement"
 subsystem = "Human"
+
+[[function]]
+address = 0x0023b128
+name = "CNS_SetMissionInfoEnabled"
+subsystem = "Human"
+size = 16
 
 [[function]]
 address = 0x0023b138
@@ -3936,6 +3984,12 @@ address = 0x00292530
 name = "Brain_FlushAll"
 subsystem = "Human"
 size = 96
+
+[[function]]
+address = 0x00292758
+name = "Brain_SetDamageResponse"
+subsystem = "Human"
+size = 80
 
 [[function]]
 address = 0x002927a8
@@ -5682,6 +5736,12 @@ subsystem = "Scripting"
 size = 56
 
 [[function]]
+address = 0x00370138
+name = "HUDSetNumIndicator"
+subsystem = "Scripting"
+size = 144
+
+[[function]]
 address = 0x00370690
 name = "HUDSetRadarObjectFlash"
 subsystem = "Scripting"
@@ -6003,6 +6063,12 @@ address = 0x00385a50
 name = "Object_GetPosition"
 subsystem = "Scripting"
 size = 184
+
+[[function]]
+address = 0x00385bb8
+name = "Object_Teleport"
+subsystem = "Scripting"
+size = 216
 
 [[function]]
 address = 0x00385db0
@@ -6402,6 +6468,18 @@ subsystem = "World"
 size = 48
 
 [[function]]
+address = 0x0040c948
+name = "World_Precache"
+subsystem = "World"
+size = 208
+
+[[function]]
+address = 0x0040cc40
+name = "World_QueuePackToPrecache"
+subsystem = "World"
+size = 40
+
+[[function]]
 address = 0x0040cce8
 name = "ScreenFx_QueueMotionBlurAlpha"
 subsystem = "World"
@@ -6799,6 +6877,18 @@ subsystem = "Warriors"
 size = 16
 
 [[function]]
+address = 0x0041d788
+name = "GameState_SetGameMode"
+subsystem = "Warriors"
+size = 88
+
+[[function]]
+address = 0x0041d7e0
+name = "GameState_GetGameMode"
+subsystem = "Warriors"
+size = 16
+
+[[function]]
 address = 0x0041d7f0
 name = "GetLanguage"
 subsystem = "Warriors"
@@ -6890,6 +6980,12 @@ subsystem = "Warriors"
 address = 0x0041dd40
 name = "GameState_SetWarriorCommandCallback"
 subsystem = "Warriors"
+
+[[function]]
+address = 0x0041dd68
+name = "GameState_SetAutoSwitch"
+subsystem = "Warriors"
+size = 16
 
 [[function]]
 address = 0x0041e250

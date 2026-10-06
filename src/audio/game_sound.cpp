@@ -136,6 +136,14 @@ double GameSound::play2D(std::uint32_t sound) {
     return engine != nullptr ? static_cast<double>(engine->play(sound).id) : 0.0;
 }
 
+void GameSound::pauseSound(bool on) {
+    if (on) {
+        m_sounds.pauseAll();
+    } else {
+        m_sounds.resumeAll();
+    }
+}
+
 void GameSound::stopAmbientTrack() {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->stopAmbientTrack();

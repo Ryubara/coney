@@ -47,6 +47,8 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// Kept with a 100 % chance (`+0x278` = 100).
     void setCarriedItem(double human, std::string_view object) override;
     void setMugCallback(double human, std::string_view callback) override;
+    void setSoundCommands(double human, bool on) override;
+    void setPocket(double human, int item, int count) override;
     /// Kept while both humans (or the target object) exist.
     void setLookTarget(const script::LookTargetCall& call) override;
     /// Puts an AI human beside `near`: on its right, the two bodies' radii apart, at its height, keeping its heading.
@@ -74,6 +76,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// @orig 0x00292cf0 Brain_ClearBackoff (unknown)
     void clearBackoff(double human) override;
     void setWantsWeapon(double human, bool wants) override;
+    void setDamageResponse(double human, int response) override;
     void goalBackoff(const script::BackoffCall& call) override;
     void goalBumLogic(const script::BumLogicCall& call) override;
     /// Reserves the flag for the human and pushes the goal, which frees it at its end.
@@ -87,6 +90,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void clearWanted(int gang) override;
     void setInvincible(int gang, bool on) override;
     void setTargetable(int gang, bool on) override;
+    void setGangDamageResponse(int gang, int response) override;
     /// Takes the rage handlers and the formations' default slots.
     void applyRules(const CharacterRules& rules) override;
 

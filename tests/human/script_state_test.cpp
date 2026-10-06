@@ -185,6 +185,19 @@ TEST_CASE("an arrested human stays where it is and is not alive until released",
     CHECK(std::fabs(fight.human().position().y - 40.0F) > 0.5F);
 }
 
+TEST_CASE("a human whose movement is locked is not moved by the stick until unlocked", "[human][script]") {
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().setFlag(flag::kMovementLocked, true);
+    // Still alive, unlike an arrested human; the stick at 70 % does not move it.
+    CHECK(fight.human().alive());
+    fight.run("0 stick left 0 70\n", 30);
+    CHECK(fight.human().position().y == 40.0F);
+    fight.human().setFlag(flag::kMovementLocked, false);
+    fight.run("0 stick left 0 70\n", 30);
+    CHECK(std::fabs(fight.human().position().y - 40.0F) > 0.5F);
+}
+
 TEST_CASE("a tireless human's stamina stays full while it sprints", "[human][script]") {
     const FightCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));

@@ -935,6 +935,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 3, calls: 9, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: HUDANEnableJoinMsg
   wrapper: 0x003701c8
@@ -1307,3 +1308,4 @@
     The only reference to 0x005109ac is this store (no other load in the program), so whatever `CNS` mission info was
     meant to show is not built.
   usage: {chunks: 34, calls: 35, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented

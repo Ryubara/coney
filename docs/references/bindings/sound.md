@@ -928,7 +928,7 @@ sounds started meanwhile play is not traced.
   `AudioManager_Pause`, `0x0010fb68` `AudioManager_Resume`
 - **Used by** 36 of 467 script chunks (139 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundPlay {#soundplay}
 

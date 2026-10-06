@@ -27,7 +27,7 @@ so it is not counted.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▌░░░░░░░░░░░░░░░░░` | 12.7% of the game's own code (425,204 of 3,354,776 bytes, 1,253 functions) |
+| **Reimplemented** | `██▌░░░░░░░░░░░░░░░░░` | 12.7% of the game's own code (426,740 of 3,354,776 bytes, 1,269 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](docs/roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
