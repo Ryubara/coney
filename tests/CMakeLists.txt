@@ -68,6 +68,7 @@ add_executable(coney_tests
     raycast/collision_mesh_test.cpp
     raycast/disc_collision_test.cpp
     scripting/ai_bindings_test.cpp
+    scripting/anim_callbacks_test.cpp
     scripting/config_strings_test.cpp
     scripting/disc_script_system_test.cpp
     scripting/disc_strings_test.cpp

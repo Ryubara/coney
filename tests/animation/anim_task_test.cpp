@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <numbers>
 #include <vector>
@@ -171,4 +172,23 @@ TEST_CASE("a pose's root motion is section A as sampled, and bone 0 read as a tu
     const coney::anim::RootMotion motion = coney::anim::rootMotionOf(pose);
     CHECK(motion.velocity.y == Approx(1.5F));
     CHECK(motion.turn == Approx(-angle));
+}
+
+TEST_CASE("the start hook hears each anim id a task starts: a change and a clip handing over to its next",
+          "[anim_task]") {
+    const AnimClip start = testClip(0.3F, 1.0F);
+    const AnimClip loop = testClip(1.0F, 0.0F);
+    AnimTaskStack stack;
+    std::vector<std::uint32_t> started;
+    stack.setStartHook([&started](std::uint32_t animId) { started.push_back(animId); });
+    stack.change(std::make_unique<coney::anim::ClipThenNextTask>(start, 413, 1.0F, 0U,
+                                                                 std::make_unique<LoopTask>(loop, 408, 1.0F, 0U)),
+                 0.0F);
+    CHECK(started == std::vector<std::uint32_t>{413});
+    stack.advance(0.2F);
+    stack.advance(0.2F); // hands over to the loop
+    stack.advance(1.0F); // the loop wraps: not a new start
+    CHECK(started == std::vector<std::uint32_t>{413, 408});
+    stack.change(std::make_unique<LoopTask>(loop, 388, 1.0F, 0U), 0.15F);
+    CHECK(started == std::vector<std::uint32_t>{413, 408, 388});
 }

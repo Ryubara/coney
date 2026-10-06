@@ -67,8 +67,9 @@ struct ScriptedCast {
 ///   start callback runs before the level loads (runLevelScript()).
 /// - The level's brains and gangs are made before its script (the AI host of `context`), but the humans the script
 ///   creates are made, and the calls on them run, only once the level has loaded its characters (ScriptedCast).
-/// - Each frame after the level's step: the volume boxes' trigger update over the scripts' humans (their messages to
-///   the objects' handlers in `context`), then the scripts' frame (scheduled calls and the stopwatch).
+/// - Each frame after the level's step: the animation callbacks of the anims the scripts' humans started, then the
+///   volume boxes' trigger update over those humans (their messages to the objects' handlers in `context`), then the
+///   scripts' frame (scheduled calls and the stopwatch).
 /// - A teleport of player 1 by a script during play (HumanCreation::teleports changes) is handed to the level when it
 ///   is a ScriptedPlayer.
 /// - A level that fails to load leaves the frame black, with the error logged.

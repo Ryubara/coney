@@ -25,6 +25,7 @@ class VolumeBoxes;
 namespace coney::script {
 
 class AiBindingHost;
+class AnimCallbacks;
 class MessageHandlers;
 
 /// What the bindings ask of the game outside the script system and the game state: the menus, the level flow, the
@@ -122,6 +123,7 @@ struct BindingContext {
     AiBindingHost* ai = nullptr;                 ///< The brains the AI bindings drive; null drives none.
     MessageHandlers* messages = nullptr;         ///< The objects' handlers (`SetMsgHandler`); null keeps none.
     world_objects::VolumeBoxes* boxes = nullptr; ///< The level's volume boxes (`AddVolumeBox`); null keeps none.
+    AnimCallbacks* animCallbacks = nullptr;      ///< The animation callbacks (`AddAnimCallback`); null keeps none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

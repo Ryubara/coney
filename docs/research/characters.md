@@ -1251,6 +1251,11 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
 - `src/characters/anim_set.*` answers an anim id from the character's own data, then from the generic character data
   `0x9da2e531` (594 `gen_*` clips) in place of the default table, with the clip's rate from the Anim Range List flags
   ([CfgAnimSpeeds](formats/animation.md)) and its speed (root displacement × rate / duration).
+- `src/scripting/anim_callbacks.*` is the [animation callbacks](#anim-callbacks)' 16-slot table and its three
+  bindings; a human's task stack reports each anim id it starts (`AnimTaskStack::setStartHook`: a change, a clip
+  handing over to its next, a gait blend moving to another clip), and the scripts' brains run the first matching
+  callback with (human, anim id). **Coney choice**: the callbacks run after the characters' step, in order, not inside
+  the animation code.
 - `src/human/locomotion.*` is the pure maths: the camera-relative stick, dead zone and run threshold
   (`PlayerRecord_Update`), the target speed and gait, the per-gait turn limit with its ease and carry, acceleration,
   the skid rule, the slope factor and the gait blend's target (`0x0025ec28`); the sprint's target speed; and the

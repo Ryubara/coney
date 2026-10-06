@@ -11,6 +11,7 @@
 
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
+#include "scripting/anim_callbacks.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
@@ -123,6 +124,7 @@ class LevelScripts {
     world_objects::WorldFlags m_flags;
     script::MessageHandlers m_messages;
     world_objects::VolumeBoxes m_boxes;
+    script::AnimCallbacks m_animCallbacks;
     QuietBindingHost m_host;
     gui::RumbleData m_rumbleData;
     script::BindingContext m_context;

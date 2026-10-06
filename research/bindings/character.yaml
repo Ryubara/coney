@@ -2323,6 +2323,7 @@
     resolves, so entries of deleted humans (and, since the flag is not tested, all-humans entries) can be overwritten.
     Details: [Characters](../../research/characters.md#anim-callbacks).
   usage: {chunks: 3, calls: 11, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: AddAllAnimCallback
   wrapper: 0x0035ea90
@@ -2342,6 +2343,7 @@
     The slot is marked as an all-humans entry; dispatch as for AddAnimCallback (first matching slot only). Remove it
     with DelAnimCallback(0, anim). Details: [Characters](../../research/characters.md#anim-callbacks).
   usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: DelAnimCallback
   wrapper: 0x0035eb00
@@ -2358,6 +2360,7 @@
   notes: >-
     Only the first matching slot is removed.
   usage: {chunks: 3, calls: 11, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: LoadBumAnims
   wrapper: 0x00363500

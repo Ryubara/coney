@@ -678,14 +678,15 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   `SetStartGameCallback`, `GetRumbleModeData`, `GetRumbleModeGangName` and `CfgSetDatabaseSizes`,
   [World flags](flags.md#coneys-implementation), the AI and gang bindings, which hand their calls to the AI host,
   [AI](ai.md#coney), and the trigger bindings of `src/scripting/trigger_bindings.h`: `SetMsgHandler`,
-  `SetMsgHandlerEx`, `AddVolumeBox` and `RotateVolumeBox`, below),
+  `SetMsgHandlerEx`, `AddVolumeBox` and `RotateVolumeBox`, below, and the three animation callback bindings,
+  [Characters](characters.md#anim-callbacks)),
   **routed** (handed to a
   Coney stand-in: `PlayMovie`, the three music bindings, `ShowRumbleModeInterface`, and the scene stand-in's
   `ScenePreload`, `ScenePlayCinematic`, `ScenePlayAnimation` and `ScenePlayFixedScene`) or a **stub** (returns
   its documented default: nothing, a new handle for `GetPTank`, `ObjSpawn` and `CameraCreateLocked`,
   0 for `InvNumberOf`,
   false for `SceneIsPreloaded` and `UM_IsTypeDirty`). The configuration stubs (the `Cfg*` bindings, `CfgObj`, sound, unlockables
-  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 78 real, 9 routed and 109
+  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 81 real, 9 routed and 109
   stubs (72 of them recording): every binding the front-end path calls, and what the level scripts need for their
   starts.
 - **Message handlers and triggers** (`src/scripting/message_handlers.h`, `src/world_objects/volume_boxes.h`): an
@@ -697,8 +698,8 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   level's step; `--play-level LEVEL` enters a level the same way, after the preloads and a fresh state
   (`LevelScripts`, `src/gamemodes/level_start.h`). In `level99` at checkpoint 1 the tutorial runs from the intro
   through the two markers (`vMark01`, `vMark03`), the `l99_t1` scene and `P1.SetupBasicAttacks`; the basic-attacks
-  lesson then waits for the tutorial callback (`HUDSetTutorialCallback`) and the animation callbacks
-  (`AddAnimCallback`), not built yet.
+  lesson then waits for the tutorial callback (`HUDSetTutorialCallback`, [HUD](hud.md#tutorial-callback)), which the
+  HUD work brings, called when player 1 lands or has blocked a hit.
 - **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
   `GetLevelId` and the level flow (record 0 is `level100`).
 - **The front end** runs the preloads at the legal screen and `global.lua` and `level100.lua` in the same state when the

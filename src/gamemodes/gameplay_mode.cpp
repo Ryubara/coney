@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "core/game_timer.h"
+#include "scripting/anim_callbacks.h"
 
 namespace coney {
 
@@ -38,6 +39,10 @@ void GameplayMode::enter() {
                                                       [this](double handle) { return m_humans.placement(handle); });
     m_scripted->setScripts(&m_scripts);
     m_scripted->setMessages(m_context.messages);
+    if (m_context.animCallbacks != nullptr) {
+        m_context.animCallbacks->clear();
+    }
+    m_scripted->setAnimCallbacks(m_context.animCallbacks);
     m_scripted->hold();
     // The last level's objects are gone, and their handlers and boxes with them.
     if (m_context.messages != nullptr) {
@@ -92,6 +97,9 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
     }
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     m_scripts.setTime(nowMs);
+    if (m_scripted) {
+        m_scripted->runAnimCallbacks();
+    }
     updateBoxes(nowMs);
     m_scripts.update(nowMs, frame.seconds);
 

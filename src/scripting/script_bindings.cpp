@@ -12,6 +12,7 @@
 #include "characters/character_class.h"
 #include "core/assert.h"
 #include "scripting/ai_bindings.h"
+#include "scripting/anim_callbacks.h"
 #include "scripting/binding_args.h"
 #include "scripting/config_strings.h"
 #include "scripting/gang_bindings.h"
@@ -524,6 +525,10 @@ constexpr std::array kBindings{
     real("RotateVolumeBox"),
     real("SetMsgHandler"),
     real("SetMsgHandlerEx"),
+    // The animation callbacks (anim_callbacks.h).
+    real("AddAnimCallback"),
+    real("AddAllAnimCallback"),
+    real("DelAnimCallback"),
     // The level scripts' goals and actions for a human's brain (ai_bindings.h).
     real("GoalMoveToFlag"),
     real("ActLookAt"),
@@ -797,12 +802,14 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end() ||
                      std::ranges::find(kAiBindings, info.name) != kAiBindings.end() ||
                      std::ranges::find(kGangBindings, info.name) != kGangBindings.end() ||
-                     std::ranges::find(kTriggerBindings, info.name) != kTriggerBindings.end());
+                     std::ranges::find(kTriggerBindings, info.name) != kTriggerBindings.end() ||
+                     std::ranges::find(kAnimCallbackBindings, info.name) != kAnimCallbackBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
     addAiBindings(vm, context);
     addGangBindings(vm, context);
+    addAnimCallbackBindings(vm, context);
     // The level bindings make world objects, so they take their handles from the same counter as the stubs.
     const auto nextHandle = [handles = factory.handles] {
         const double handle = handles->next;

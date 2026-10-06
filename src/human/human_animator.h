@@ -4,7 +4,9 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <span>
+#include <utility>
 
 #include "animation/anim_pose.h"
 #include "animation/anim_task.h"
@@ -199,6 +201,8 @@ class HumanAnimator {
     void setFlags(std::uint32_t bits) { m_tasks.setFlags(bits); }
     /// Clears bits of the record `+0x08`.
     void clearFlags(std::uint32_t bits) { m_tasks.clearFlags(bits); }
+    /// Called with each anim id the human starts playing (anim::AnimTaskStack::setStartHook()).
+    void setStartHook(std::function<void(std::uint32_t animId)> hook) { m_tasks.setStartHook(std::move(hook)); }
     [[nodiscard]] AnimState state() const { return m_state; }
     /// The anim id playing (record `+0x20`): the newest task's.
     [[nodiscard]] std::uint32_t animId() const;

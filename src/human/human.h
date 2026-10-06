@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <span>
@@ -187,6 +188,9 @@ class Human final : public Combatant {
     /// The last stick intent, after the camera's turn.
     [[nodiscard]] const StickIntent& intent() const { return m_intent; }
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
+    /// Called with each anim id the human starts playing, for the scripts' animation callbacks
+    /// (docs/research/characters.md#anim-callbacks); empty for none.
+    void setAnimStartHook(std::function<void(std::uint32_t animId)> hook) { m_animator.setStartHook(std::move(hook)); }
     [[nodiscard]] const Speeds& speeds() const { return m_animator.speeds(); }
     /// Stamina (record `+0x14a`).
     [[nodiscard]] const Stamina& stamina() const { return m_stamina; }

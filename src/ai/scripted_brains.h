@@ -8,6 +8,7 @@
 #include <optional>
 #include <span>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "ai/brain.h"
@@ -21,6 +22,7 @@
 #include "world_objects/volume_boxes.h"
 
 namespace coney::script {
+class AnimCallbacks;
 class MessageHandlers;
 class ScriptSystem;
 } // namespace coney::script
@@ -52,6 +54,14 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// Sets the objects' message handlers (`SetMsgHandler`) the humans' events and the flags' arrivals go to (null for
     /// none). It must outlive this, or be replaced.
     void setMessages(const script::MessageHandlers* messages) { m_messages = messages; }
+    /// Sets the scripts' animation callbacks (null for none), which then resolve handles to the bound humans; it must
+    /// outlive this, or be replaced. A bound human's anim starts are kept for runAnimCallbacks().
+    void setAnimCallbacks(script::AnimCallbacks* callbacks);
+    /// Calls the animation callback of each anim a bound human started since the last call, in order, with (human,
+    /// anim id). **Coney choice**: the original calls it inside the animation code, as the clip is taken; Coney runs
+    /// them after the characters' step, so a callback never changes a human in the middle of its update.
+    /// @orig 0x0023ac50 AnimCallback_Dispatch (unknown)
+    void runAnimCallbacks();
     /// The bound humans as the volume boxes test them: handle, feet and whether alive (health not run out).
     [[nodiscard]] std::vector<world_objects::BoxSubject> boxSubjects() const;
 
@@ -178,6 +188,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     world_objects::ObjectLocator m_locate;
     script::ScriptSystem* m_scripts = nullptr;
     const script::MessageHandlers* m_messages = nullptr;
+    script::AnimCallbacks* m_animCallbacks = nullptr;
+    std::vector<std::pair<double, std::uint32_t>> m_animStarts; // (human, anim id) since runAnimCallbacks()
     Brain* m_player = nullptr;
     std::map<double, Brain*> m_brains;
     std::size_t m_arrivals = 0;

@@ -66,6 +66,7 @@ add_library(coney_core STATIC
     gui/usage_info.cpp
     gui/widget.cpp
     scripting/ai_bindings.cpp
+    scripting/anim_callbacks.cpp
     scripting/config_strings.cpp
     scripting/gang_bindings.cpp
     scripting/level_bindings.cpp

@@ -163,6 +163,7 @@ TEST_CASE("the brain and goal bindings read their arguments and defaults as tolu
     harness.call("GoalFight", {Value(4.0), Value(1.0), Value(0.0)});
     harness.call("BrDead", {Value(4.0)});
     harness.call("BrDead", {Value(4.0), Value(0.0)});
+    harness.call("BrDead", {Value(4.0), Value()}); // Lua 4's false is a nil passed
     harness.call("GoalPlayDynAnimation", {Value(4.0), Value(std::string("bow")), Value()});
     harness.call("GoalPlayDynAnimation",
                  {Value(4.0), Value(std::string("bow")), Value(std::string("P1.Done")), Value(0.0)});
@@ -175,8 +176,8 @@ TEST_CASE("the brain and goal bindings read their arguments and defaults as tolu
     harness.call("BrSetFollowSlot", {Value(1.0), Value(2.0), Value(table), Value(1.0)});
     harness.call("TacticTrigger", {Value(3.0), Value(1.0), Value(1.0)});
 
-    CHECK(ai.log == std::vector<std::string>{"fight 4 1", "dead 4 true", "dead 4 false", "slot 1 2 1.5 -2 1",
-                                             "trigger 3 1 true"});
+    CHECK(ai.log == std::vector<std::string>{"fight 4 1", "dead 4 true", "dead 4 false", "dead 4 false",
+                                             "slot 1 2 1.5 -2 1", "trigger 3 1 true"});
     REQUIRE(ai.dyns.size() == 2);
     CHECK(ai.dyns[0].anim == "bow");
     CHECK(ai.dyns[0].callback.empty());

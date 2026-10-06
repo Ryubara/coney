@@ -237,7 +237,7 @@ it with DelAnimCallback(0, anim). Details: [Characters](../../research/character
 - **Evidence:** confirmed (code) at `0x0023aab0`; detail: brief
 - **Wrapper** `0x0035ea90` (registered by `RegisterBindings`); **calls** `0x0023aab0` `AnimCallback_AddForAll`
 - **Used by** 1 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## AddAnimCallback {#addanimcallback}
 
@@ -267,7 +267,7 @@ entries of deleted humans (and, since the flag is not tested, all-humans entries
 - **Evidence:** confirmed (code) at `0x0023a9f8`; detail: traced
 - **Wrapper** `0x0035e9f8` (registered by `RegisterBindings`); **calls** `0x0023a9f8` `AnimCallback_Add`
 - **Used by** 3 of 467 script chunks (11 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## AddCommand {#addcommand}
 
@@ -360,7 +360,7 @@ Removes the animation callback for this human and animation (or the all-humans o
 - **Evidence:** confirmed (code) at `0x0023ab80`; detail: traced
 - **Wrapper** `0x0035eb00` (registered by `RegisterBindings`); **calls** `0x0023ab80` `AnimCallback_Remove`
 - **Used by** 3 of 467 script chunks (11 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## DelCommand {#delcommand}
 

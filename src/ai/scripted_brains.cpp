@@ -16,6 +16,7 @@
 #include "ai/tactic_crowd.h"
 #include "ai/track_human_goal.h"
 #include "ai/turn_action.h"
+#include "scripting/anim_callbacks.h"
 #include "scripting/lua_value.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_system.h"
@@ -41,12 +42,39 @@ ScriptedBrains::~ScriptedBrains() {
     if (m_owner->gangs().scripts() == this) {
         m_owner->gangs().setScripts(nullptr);
     }
+    setAnimCallbacks(nullptr);
+}
+
+void ScriptedBrains::setAnimCallbacks(script::AnimCallbacks* callbacks) {
+    if (m_animCallbacks != nullptr) {
+        m_animCallbacks->setResolves({});
+    }
+    m_animCallbacks = callbacks;
+    if (m_animCallbacks != nullptr) {
+        m_animCallbacks->setResolves([this](double handle) { return brain(handle) != nullptr; });
+    }
+}
+
+void ScriptedBrains::runAnimCallbacks() {
+    std::vector<std::pair<double, std::uint32_t>> starts = std::exchange(m_animStarts, {});
+    if (m_animCallbacks == nullptr || m_scripts == nullptr) {
+        return;
+    }
+    for (const auto& [human, anim] : starts) {
+        const std::string_view function = m_animCallbacks->match(human, anim);
+        if (!function.empty()) {
+            const std::array<script::Value, 2> args{script::Value(human), script::Value(static_cast<double>(anim))};
+            m_scripts->call(std::string(function), args);
+        }
+    }
 }
 
 void ScriptedBrains::bind(double handle, Brain& brain, int gang) {
     m_brains[handle] = &brain;
     brain.setHandle(handle);
     brain.setServices(this);
+    // Its anim starts, for the scripts' animation callbacks (the queue is bounded by what one step can start).
+    brain.human().setAnimStartHook([this, handle](std::uint32_t anim) { m_animStarts.emplace_back(handle, anim); });
     if (gang >= 0) {
         m_owner->gangs().addMember(gang, brain);
     }

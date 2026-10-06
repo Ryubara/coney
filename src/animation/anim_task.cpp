@@ -221,7 +221,12 @@ float AnimTaskStack::outgoingWeight(float elapsed, float duration) {
     return (1.0F + std::cos(std::numbers::pi_v<float> * std::max(elapsed, 0.0F) / duration)) * 0.5F;
 }
 
-void AnimTaskStack::startTask(const AnimTask& task) { m_flags = (m_flags & ~task.heldFlags()) | task.startFlags(); }
+void AnimTaskStack::startTask(const AnimTask& task) {
+    m_flags = (m_flags & ~task.heldFlags()) | task.startFlags();
+    if (m_startHook) {
+        m_startHook(task.animId());
+    }
+}
 
 std::uint32_t AnimTaskStack::heldBy(const AnimTask* skipTask, std::size_t skipTaskLayer, std::size_t skipFade) const {
     std::uint32_t kept = 0;
@@ -293,7 +298,12 @@ void AnimTaskStack::advance(float seconds) {
         Layer& layer = m_layers[i];
         const AnimClip* clip = i == 0 ? layer.task->eventClip() : nullptr;
         const float before = layer.task->time();
+        const std::uint32_t idBefore = layer.task->animId();
         layer.task->advance(seconds);
+        // A gait blend that moved to another clip has started that clip's anim id.
+        if (m_startHook && layer.task->type() == AnimTaskType::GaitBlend && layer.task->animId() != idBefore) {
+            m_startHook(layer.task->animId());
+        }
         if (clip != nullptr) {
             const float after = layer.task->eventClip() == clip ? layer.task->time() : clip->duration;
             fireEvents(*layer.task, *clip, before, after, after < before);

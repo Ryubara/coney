@@ -11,13 +11,13 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 48 implemented, 6 partial, 161 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 50 implemented, 6 partial, 159 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`AddAnimCallback`](character.md#addanimcallback) | Characters | traced | confirmed (code) | not implemented |
-| [`DelAnimCallback`](character.md#delanimcallback) | Characters | traced | confirmed (code) | not implemented |
+| [`AddAnimCallback`](character.md#addanimcallback) | Characters | traced | confirmed (code) | implemented |
+| [`DelAnimCallback`](character.md#delanimcallback) | Characters | traced | confirmed (code) | implemented |
 | [`EnableCommand`](character.md#enablecommand) | Characters | traced | confirmed (code) | not implemented |
 | [`EnableCommands`](character.md#enablecommands) | Characters | traced | confirmed (code) | not implemented |
 | [`HuAttachSpinningIcon`](character.md#huattachspinningicon) | Characters | traced | confirmed (code) | not implemented |

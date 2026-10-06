@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 7.1%](https://img.shields.io/badge/reimplemented-7.1%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 7.3%](https://img.shields.io/badge/reimplemented-7.3%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▍░░░░░░░░░░░░░░░░░░` | 7.1% of the game's own code (237,764 of 3,354,776 bytes, 564 functions) |
+| **Reimplemented** | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% of the game's own code (245,020 of 3,354,776 bytes, 582 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,18 +62,18 @@ at the top of the repository's `README.md`.
 | `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 45 | 100,440 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 30 | 195,624 |
 | `GUI` | `█▌░░░░░░░░░░░░░░░░░░` | 7.7% | 56 | 497,416 |
-| `Human` | `█▉░░░░░░░░░░░░░░░░░░` | 9.5% | 226 | 1,096,672 |
+| `Human` | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% | 231 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
-| `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 17,904 |
-| `Scripting` | `████▎░░░░░░░░░░░░░░░` | 21.0% | 80 | 197,192 |
+| `Scene` | `▋░░░░░░░░░░░░░░░░░░░` | 3.4% | 4 | 17,904 |
+| `Scripting` | `████▋░░░░░░░░░░░░░░░` | 22.9% | 85 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
-| `WorldObjects` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 10 | 22,008 |
+| `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
 | `Warriors` | `▍░░░░░░░░░░░░░░░░░░░` | 1.8% | 12 | 54,264 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
@@ -326,6 +326,11 @@ at the top of the repository's `README.md`.
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
 | `0x0023a5f8` | `Cfg_SetTurnRate` | `Human` | not filled in |
 | `0x0023a7a0` | `Cfg_SetTurnRates` | `Human` | not filled in |
+| `0x0023a9b8` | `AnimCallback_Clear` | `Human` | 64 |
+| `0x0023a9f8` | `AnimCallback_Add` | `Human` | 184 |
+| `0x0023aab0` | `AnimCallback_AddForAll` | `Human` | 208 |
+| `0x0023ab80` | `AnimCallback_Remove` | `Human` | 208 |
+| `0x0023ac50` | `AnimCallback_Dispatch` | `Human` | 312 |
 | `0x0023cf88` | `Human_TurnToOver` | `Human` | not filled in |
 | `0x0023d2b8` | `Human_MoveToOver` | `Human` | not filled in |
 | `0x0023d8c8` | `Human_Move` | `Human` | not filled in |
@@ -543,6 +548,10 @@ at the top of the repository's `README.md`.
 | `0x00351160` | `CollisionMesh_SetEnabledInBox` | `RayCast` | not filled in |
 | `0x00351468` | `CollisionMesh_SphereTestCell` | `RayCast` | not filled in |
 | `0x003519f8` | `CollisionMesh_SpherePush` | `RayCast` | not filled in |
+| `0x00353c68` | `Scene_PlayCinematic` | `Scene` | 248 |
+| `0x00353d60` | `Scene_PlayFixed` | `Scene` | 216 |
+| `0x00353f40` | `Scene_PlayAnimation` | `Scene` | 72 |
+| `0x00353f88` | `Scene_Preload` | `Scene` | 64 |
 | `0x00356390` | `ScriptSystem_Create` | `Scripting` | 192 |
 | `0x00356450` | `ScriptSystem_Destroy` | `Scripting` | 136 |
 | `0x003564d8` | `ScriptSystem::ScriptSystem` | `Scripting` | 312 |
@@ -616,8 +625,13 @@ at the top of the repository's `README.md`.
 | `0x0037b7d8` | `SetLUASaveDataFloat` | `Scripting` | 120 |
 | `0x0037b850` | `GetLUASaveDataFloat` | `Scripting` | 88 |
 | `0x0037d420` | `RegisterBindings` | `Scripting` | 27,408 |
+| `0x00384c38` | `MessageHandler_Deliver` | `Scripting` | 168 |
+| `0x00384ce0` | `MessageHandler_Marshal` | `Scripting` | 3,032 |
 | `0x00385a50` | `Object_GetPosition` | `Scripting` | 184 |
 | `0x00385db0` | `Object_TeleportToFlag` | `Scripting` | 248 |
+| `0x003860b8` | `MessageHandler_Set` | `Scripting` | 176 |
+| `0x00386168` | `SetMsgHandlerEx` | `Scripting` | 304 |
+| `0x00386298` | `SetMsgHandler` | `Scripting` | 112 |
 | `0x00386370` | `gc` | `Scripting` | 48 |
 | `0x003863d8` | `ScheduleFunc` | `Scripting` | 56 |
 | `0x00386410` | `ScheduleFuncArg1` | `Scripting` | 64 |
@@ -646,6 +660,10 @@ at the top of the repository's `README.md`.
 | `0x004120a8` | `World_FindPartToUnload` | `World` | not filled in |
 | `0x00412310` | `World_RequestPart` | `World` | not filled in |
 | `0x004123e8` | `World_ResetVisibility` | `World` | not filled in |
+| `0x004125b8` | `VolumeBox_Add` | `WorldObjects` | 520 |
+| `0x00412a18` | `VolumeBox_IsInside` | `WorldObjects` | 480 |
+| `0x00412c40` | `VolumeBox_SetRotation` | `WorldObjects` | 96 |
+| `0x00415378` | `VolumeBox_Update` | `WorldObjects` | 792 |
 | `0x004158f8` | `FlagPool_Create` | `WorldObjects` | 320 |
 | `0x00415a38` | `FlagPool_Destroy` | `WorldObjects` | 184 |
 | `0x00415af0` | `FlagPool_Take` | `WorldObjects` | 120 |

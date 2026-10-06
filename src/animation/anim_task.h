@@ -3,8 +3,10 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_clip.h"
@@ -280,6 +282,10 @@ class AnimTaskStack {
     [[nodiscard]] std::size_t taskCount() const { return m_layers.empty() ? 0 : m_layers.size() * 2 - 1; }
     /// Layers held, newest first.
     [[nodiscard]] std::size_t layerCount() const { return m_layers.size(); }
+    /// Called with the anim id whenever a task starts playing (change(), a clip handing over to its next) and when a
+    /// gait blend moves to another clip: where the original resolves an id to a clip and runs the animation
+    /// callbacks (`CharacterInstance_GetAnim`, docs/research/characters.md#anim-callbacks). Empty for none.
+    void setStartHook(std::function<void(std::uint32_t animId)> hook) { m_startHook = std::move(hook); }
 
     /// The outgoing weight of a fade `elapsed` seconds into `duration`: 1 at the start, 0 at the end and after;
     /// 0 for a zero duration.
@@ -305,8 +311,9 @@ class AnimTaskStack {
     // looped in between).
     void fireEvents(AnimTask& task, const AnimClip& clip, float before, float after, bool wrapped);
 
-    std::vector<Layer> m_layers; // newest first
-    std::uint32_t m_flags = 0;   // the human's record +0x08
+    std::vector<Layer> m_layers;                    // newest first
+    std::uint32_t m_flags = 0;                      // the human's record +0x08
+    std::function<void(std::uint32_t)> m_startHook; // setStartHook()
 };
 
 /// The root's motion in a pose: section A as sampled (already scaled by its task's rate), and bone 0's rotation read

@@ -18,6 +18,7 @@
 #include "graphics/screen_fade.h"
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
+#include "scripting/anim_callbacks.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
@@ -103,6 +104,7 @@ class StartUpFlow final : public script::BindingHost {
     world_objects::WorldFlags m_flags;
     script::MessageHandlers m_messages;
     world_objects::VolumeBoxes m_boxes;
+    script::AnimCallbacks m_animCallbacks;
     gui::RumbleData m_rumbleData; // the Rumble menu's lists, which its chunks build
     FrontEndServices m_services;
     graphics::ScreenFade m_fade;

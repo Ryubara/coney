@@ -34,9 +34,9 @@ bool boolArg(std::span<const Value> args, std::size_t i) {
     return binding::number(args, i) != 0.0 || args[i].type() != Value::Type::Number;
 }
 
-// Argument `i` as a boolean that is `fallback` when omitted.
+// Argument `i` as a boolean that is `fallback` when omitted; a nil passed (Lua 4's false) is false, as tolua reads it.
 bool boolArgOr(std::span<const Value> args, std::size_t i, bool fallback) {
-    return absent(args, i) ? fallback : boolArg(args, i);
+    return i >= args.size() ? fallback : boolArg(args, i);
 }
 
 // A handle argument: truncated to an unsigned integer.

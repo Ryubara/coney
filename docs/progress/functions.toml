@@ -1309,6 +1309,36 @@ name = "Cfg_SetTurnRates"
 subsystem = "Human"
 
 [[function]]
+address = 0x0023a9b8
+name = "AnimCallback_Clear"
+subsystem = "Human"
+size = 64
+
+[[function]]
+address = 0x0023a9f8
+name = "AnimCallback_Add"
+subsystem = "Human"
+size = 184
+
+[[function]]
+address = 0x0023aab0
+name = "AnimCallback_AddForAll"
+subsystem = "Human"
+size = 208
+
+[[function]]
+address = 0x0023ab80
+name = "AnimCallback_Remove"
+subsystem = "Human"
+size = 208
+
+[[function]]
+address = 0x0023ac50
+name = "AnimCallback_Dispatch"
+subsystem = "Human"
+size = 312
+
+[[function]]
 address = 0x0023cf88
 name = "Human_TurnToOver"
 subsystem = "Human"
@@ -3174,19 +3204,19 @@ subsystem = "World"
 [[function]]
 address = 0x004125b8
 name = "VolumeBox_Add"
-subsystem = "unattributed"
+subsystem = "WorldObjects"
 size = 520
 
 [[function]]
 address = 0x00412a18
 name = "VolumeBox_IsInside"
-subsystem = "unattributed"
+subsystem = "WorldObjects"
 size = 480
 
 [[function]]
 address = 0x00412c40
 name = "VolumeBox_SetRotation"
-subsystem = "unattributed"
+subsystem = "WorldObjects"
 size = 96
 
 [[function]]

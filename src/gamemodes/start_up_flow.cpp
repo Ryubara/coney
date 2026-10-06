@@ -10,8 +10,9 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
                          const ProfileManagerMode::SheetLoader& loadSheet, gui::GlobalStrings& strings,
                          LegalScreenSettings legal, const std::function<void(std::string_view)>& log,
                          script::ScriptSource scripts, GameplayMode::LevelLoader loadLevel)
-    : m_stack(stack), m_log(log), m_services(log), m_context{&m_state, &strings,      this,    &m_recorded, &m_humans,
-                                                             &m_flags, &m_rumbleData, nullptr, &m_messages, &m_boxes},
+    : m_stack(stack), m_log(log), m_services(log),
+      m_context{&m_state,      &strings, this,        &m_recorded, &m_humans,       &m_flags,
+                &m_rumbleData, nullptr,  &m_messages, &m_boxes,    &m_animCallbacks},
       m_hasScripts(static_cast<bool>(scripts)),
       m_scripts(
           std::move(scripts),
