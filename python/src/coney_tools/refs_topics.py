@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from coney_tools import refs_env
 from coney_tools.refs import Field, Topic
+from coney_tools.refs_engine import CAMERAS, GOAL_TYPES, SCREEN_EFFECTS
 
 F = Field
 
@@ -777,6 +778,7 @@ TOPICS: tuple[Topic, ...] = (
     CHARACTERS,
     CHARACTER_MODELS,
     GANGS,
+    GOAL_TYPES,
     SPEED_CLASSES,
     OBJECTS,
     OBJECT_GROUPS,
@@ -789,6 +791,8 @@ TOPICS: tuple[Topic, ...] = (
     VOLUME_BOXES,
     SCENES,
     *refs_env.TOPICS,
+    CAMERAS,
+    SCREEN_EFFECTS,
     ANIMATIONS,
     ANIM_IDS,
     CONTROLS,

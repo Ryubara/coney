@@ -40,28 +40,10 @@ families:
     count: "366 character ids, 46 gangs, 29 arenas"
     image: none
     needs: Disc extraction
-  - family: Camera types and switches
-    what: The camera classes the factory makes and the switches of `CamEnable`.
-    source: "Factory `0x0011e1b0` (types 0-5, 7, 8, 0xc, 0xd, 0x10; [Boot](../research/boot.md)); `CamEnable` switches 0-13"
-    count: "11 types, 14 switches"
-    image: none
-    needs: "RE for the untagged types and the switches"
-  - family: Screen effects
-    what: The full-screen effects `ScreenQueueEffect` queues and `CfgScrFx` configures.
-    source: "`ScreenQueueEffect` types 0-5 (653 calls); `CfgScrFx` (11 entries, `config_preload2.lua`)"
-    count: "6 types"
-    image: none
-    needs: "RE for types 2-5"
   - family: Statistics
     what: The stat tables the end-of-level screens score.
     source: "`CfgSetStatValue` (tables 0-5, 46 calls), `CfgSetStatTypeMax`"
     count: "6 tables"
-    image: none
-    needs: RE
-  - family: AI goal types
-    what: The goal classes behind the `Goal*` bindings.
-    source: "148 goal classes, type id at vtable `+0x0c` ([AI](../research/ai.md#goals) names 22)"
-    count: "148"
     image: none
     needs: RE
 excluded: >-

@@ -19,7 +19,7 @@
   calls:
     - {addr: 0x0018b168, name: ScreenFx_Queue}
   args:
-    - {name: effect, lua: number, ctype: int, desc: "Effect type 0-5: 0 fades the screen in from black, 1 fades it out to black; 2-5 are other effects (not traced). Values 6 and above do nothing."}
+    - {name: effect, lua: number, ctype: int, desc: "Effect type 0-5 ([Screen effects](../screen-effects.md#queue)): 0 fades in from black, 1 fades out to black, 2 and 3 bring the letterbox in and out, 4 and 5 start and end the blur pulse. Values 6 and above do nothing."}
     - {name: seconds, lua: number, ctype: float, desc: "Duration in seconds (0 makes the change immediate)."}
   description: >-
     Queues a full-screen effect, usually a fade, on both screen-effects managers. A running fade blocks some menu
@@ -27,8 +27,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Dispatch is a six-entry jump table at 0x00552f70 (0x0018d450); fade in/out for 0/1 is confirmed (code) through
-    0x0018cc60 and the front end's use.
+    Dispatch is a six-entry jump table at 0x00552f70 (0x0018d450); each type is described on
+    [Graphics](../../research/graphics.md#screen-effects).
   usage: {chunks: 169, calls: 660, boot: true, mission1: true, result_used: false}
   coney: implemented
 

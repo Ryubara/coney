@@ -10,7 +10,8 @@ pad played ([Feel comparison](feel.md)).
 The camera behind the player in normal play: how a level script creates it, what it is configured with, how it is
 made current, and what its update does as far as it has been read. It is what the first playable milestone needs to
 show the player walking. The lens (field of view, clip planes, view window) is on
-[The streamed world](world.md#player-camera); the other camera kinds (locked, scene, mugging, power) are not covered.
+[The streamed world](world.md#player-camera); the other camera kinds are listed under [Types](#types) but their updates
+are not covered.
 
 In one paragraph: there is one **`Cam_Follow`** object per player, a singleton made on first use. `level99.lua` creates
 the follow camera with the `global.lua` helper `CameraCreateFollow("follow", player)`, which sets it up on the player
@@ -58,6 +59,32 @@ manager, `Cam_Follow.cpp` the follow camera. Names are ours unless a class strin
 | `0x001562c8` | cameras to the device | the lens and draw distance each frame ([The streamed world](world.md#player-camera)) | confirmed (code) |
 
 ## Data
+
+### Types {#types}
+
+Every camera is one of fourteen classes; each class's vtable function word `+0x1ec` (the `+0x1e8` slot) returns its
+type, confirmed (code) for all fourteen ([the list](../references/cameras.md#type), with tags, vtables and sizes).
+The factory `0x0011e1b0(type, name, player)` allocates types 0, 1, 4 and 0x10 afresh; for 2, 3, 5, 7 and 8 it calls a
+getter that makes the camera on first use and keeps it (per player in `0x005d9158`-`0x005d918c`, or one in
+`0x0050b16c`); for 0xc and 0xd it calls the getter with "do not make" and so only returns an existing one. Types 6,
+9 and 0xb are never made by the factory, only by their getters. No class returns 10, 14 or 15. confirmed (code).
+
+### Switches {#switches}
+
+`CamEnable(switch, on, player)` (`Camera_EnableFeature`, `0x0011de58`) writes one of fourteen flags; a level's camera
+reset `0x00122b80` sets them back (switches 1 and 13 to 0, the rest to 1), confirmed (code). The flags, scopes,
+defaults and readers are on [the list](../references/cameras.md#switch). What the readers show, inferred from the
+code at the cited addresses:
+
+- **Two-player views.** `0x00121888` decides each update whether each player's view is shown. With switch 3 on and
+  two players, a view is kept only while its player still counts (`0x00123500`: 0 while `0x00227e60` holds for the
+  human, and for one state of `0x00223b70` unless unlock 6/15 is set), so the other player gets the whole screen;
+  switch 13 keeps both views. With switch 3 off both views always show. Switches 4 and 12 apply the same test to
+  the follow and rail cameras' targets.
+- **Shake** (`0x00121298`): the shake amount drives the pad's rumble byte (pad record `+0x41`) in every case; the
+  random view offset is added only while switch 6 is on.
+- **Right stick** (`0x00129050`): returns at once while `0x0050b1b0[player]` or switch 0 (`0x0050b1b8[player]`) is
+  0, so neither the stick nor the zoom buttons act.
 
 ### The follow camera object {#the-follow-camera-object}
 

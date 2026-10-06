@@ -1,0 +1,204 @@
+# Screen effects: a Coney game reference list. The page docs/references/screen-effects.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Screen effects"
+about: |
+  The full-screen effects scripts call for: the six effects `ScreenQueueEffect(type, seconds)` queues, the
+  thirteen looks `CfgScrFx` configures (each a screen tint and a motion-blur strength the screen blends to) and
+  the four effect layers the weather bindings start and end. Every view has its own screen-effects manager
+  ([Graphics: screen effects](../research/graphics.md#screen-effects)).
+complete: |
+  All six queue types, thirteen look slots and four layers are listed. The queue's handlers and the layers'
+  tags are read from the executable; the looks' numbers are the `CfgScrFx` calls of `config_preload2.lua` (looks 3
+  and 4 have none). Who uses looks 1, 6, 11 and 12 is not traced, nor what looks 0, 3, 4 and 8 are for.
+defaults: {source: "SLUS_212.15, ScreenEffectsManager.cpp (0x0018b168-0x0018e7c0); config_preload2.lua, CfgScrFx", evidence: confirmed-code}
+entries:
+  - id: queue-0
+    kind: queue
+    number: 0
+    handler: 0x0018d49c
+    calls: 176
+    scripts: ["37bfa135", "6ecd70b0", global.lua, hifi.lua, level100.lua, level100main.lua]
+    meaning: "Fade in from black"
+  - id: queue-1
+    kind: queue
+    number: 1
+    handler: 0x0018d4c8
+    calls: 300
+    scripts: ["36763710", global.lua, level1.lua, level100.lua, level100main.lua, level101.lua]
+    meaning: "Fade out to black; also ends look 2 for the view's player"
+  - id: queue-2
+    kind: queue
+    number: 2
+    handler: 0x0018d534
+    calls: 69
+    scripts: ["36763710", level11.lua, level11_chapter6.lua, level14.lua, level20.lua, level2_clinic.lua]
+    meaning: "Letterbox in: two black bars, each up to 12% of the screen high; clears the HUD's panels"
+  - id: queue-3
+    kind: queue
+    number: 3
+    handler: 0x0018d564
+    calls: 108
+    scripts: ["36763710", level101.lua, level102.lua, level103.lua, level104.lua, level105.lua]
+    meaning: "Letterbox out"
+  - id: queue-4
+    kind: queue
+    number: 4
+    handler: 0x0018d57c
+    meaning: "Start look 5's blur pulse: it rises over the look's in time, holds, then ends itself"
+  - id: queue-5
+    kind: queue
+    number: 5
+    handler: 0x0018d59c
+    meaning: "End the blur pulse over the look's out time (at once when the seconds are 0)"
+  - id: look-0
+    kind: look
+    number: 0
+    colour: [0, 0, 0, 0]
+    in_ms: 50
+    out_ms: 3000
+    value: 150
+    hold_ms: 100
+    value2: 2500
+    set_by: "`0x00284280`"
+  - id: look-1
+    kind: look
+    number: 1
+    colour: [0, 0, 0, 0]
+    in_ms: 0
+    out_ms: 0
+    value: 75
+    hold_ms: 0
+    value2: 0
+  - id: look-2
+    kind: look
+    number: 2
+    colour: [51, 25, 0, 80]
+    in_ms: 1000
+    out_ms: 5000
+    value: 150
+    hold_ms: 20000
+    value2: 5000
+    set_by: "`0x00236d28` (sets human flag `0x80000`); ended by `0x00236fb8` and `ScreenQueueEffect(1)`"
+    meaning: "A dark orange tint a player state turns on (human flag `0x80000`)"
+    evidence: inferred
+  - id: look-3
+    kind: look
+    number: 3
+    set_by: "after look 2 ends (`0x0018b950`)"
+  - id: look-4
+    kind: look
+    number: 4
+    set_by: "after look 0 ends (`0x0018b950`)"
+  - id: look-5
+    kind: look
+    number: 5
+    in_ms: 1250
+    out_ms: 4000
+    hold_ms: 6000
+    strength: 28
+    factors: [0.002, 0.003]
+    set_by: "`ScreenQueueEffect` 4 and 5"
+    meaning: "The blur or glow pulse, drawn through the device's blur slot (`+0x108`)"
+  - id: look-6
+    kind: look
+    number: 6
+    colour: [255, 255, 255, 255]
+    in_ms: 30
+    out_ms: 30
+    value: 0
+    hold_ms: 60
+    value2: 60
+    meaning: "A white flash (from its colour and 30 ms times)"
+    evidence: speculative
+  - id: look-7
+    kind: look
+    number: 7
+    colour: [0, 0, 0, 0]
+    in_ms: 1000
+    out_ms: 5000
+    value: 1
+    hold_ms: 0
+    value2: 0
+    set_by: "`EnableHeat`"
+    meaning: "Heat haze"
+  - id: look-8
+    kind: look
+    number: 8
+    colour: [0, 0, 0, 0]
+    in_ms: 0
+    out_ms: 0
+    value: 15
+    hold_ms: 0
+    value2: 0
+    set_by: "its out time ends look 3 (`0x0018b950`)"
+  - id: look-9
+    kind: look
+    number: 9
+    colour: [0, 0, 0, 0]
+    in_ms: 0
+    out_ms: 0
+    value: 15
+    hold_ms: 0
+    value2: 0
+    set_by: "`SetLevelColour`; `ExitStore` returns to it"
+    meaning: "The level's colour tint"
+  - id: look-10
+    kind: look
+    number: 10
+    colour: [0, 0, 0, 0]
+    in_ms: 0
+    out_ms: 0
+    value: 15
+    hold_ms: 0
+    value2: 0
+    set_by: "`EnterStore`"
+    meaning: "The look inside a store"
+  - id: look-11
+    kind: look
+    number: 11
+    colour: [0, 0, 0, 0]
+    in_ms: 0
+    out_ms: 0
+    value: 15
+    hold_ms: 0
+    value2: 0
+  - id: look-12
+    kind: look
+    number: 12
+    colour: [0, 0, 0, 0]
+    in_ms: 0
+    out_ms: 0
+    value: 0
+    hold_ms: 0
+    value2: 0
+  - id: layer-0
+    kind: layer
+    number: 0
+    class: OE_Rain
+    bindings: [StartRain, EndRain]
+    calls: 67
+    scripts: [global.lua, level101.lua, level102.lua, level103.lua, level104.lua, level105.lua]
+    meaning: Rain
+  - id: layer-1
+    kind: layer
+    number: 1
+    class: OE_Fog
+    bindings: [StartFog, EndFog]
+    calls: 34
+    scripts: [global.lua, level101.lua, level102.lua, level103.lua, level104.lua, level105.lua]
+    meaning: Fog
+  - id: layer-2
+    kind: layer
+    number: 2
+    class: OE_FilmGrain
+    bindings: [StartFilmGrain, EndFilmGrain]
+    meaning: "Film grain; `StartFilmGrain` does nothing in this build, so no script starts it"
+  - id: layer-3
+    kind: layer
+    number: 3
+    class: OE_RoomSmoke
+    bindings: [StartRoomSmoke, EndRoomSmoke]
+    calls: 47
+    scripts: [a1ab63b7, global.lua, level101.lua, level102.lua, level103.lua, level104.lua]
+    meaning: "Smoke filling a room"

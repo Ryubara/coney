@@ -236,6 +236,38 @@ front end and the HUD draw sprites from these pages ([2D drawing](#2d-drawing)).
 systems and radar blips name a sprite (a sheet and a rectangle in one word) is on
 [Particles](particles.md#sprite-words).
 
+### Screen effects {#screen-effects}
+
+Two screen-effects managers (`ScreenEffectsManager.cpp`), `0x005fdeb8` and `0x005fdebc`, one per view, 0x220 bytes
+each, made by `0x0018ba10` and drawn through device slot `+0x128` (`0x0018dac0`). Every number a script can pass is
+on [Screen effects](../references/screen-effects.md). Layout, confirmed (code) at the functions cited:
+
+| Offset | What | Written by |
+| --- | --- | --- |
+| `+0x10 + 0x18 × k` | look *k* (0-12): `+0x10` in seconds, `+0x14` out seconds, `+0x18` motion-blur alpha, `+0x1c` a value, `+0x20` a time in 60 Hz frames, `+0x24` tint RGBA | `CfgScrFx` (`0x0018b4a8`, colour form) |
+| `+0x148` / `+0x14c` / `+0x150` | the blur pulse's strength and two factors | `CfgScrFx` numeric form (`0x0018b648`) |
+| `+0x154 + 0x10 × layer` | effect layer 0-3 (rain, fog, film grain, room smoke): its object and two "on" words | `0x0018bae0` / `0x0018bd48` |
+| `+0x194` / `+0x198` | the base look and the current look | `0x0018b460`, `0x0018b7d0`, `0x0018b950` |
+| `+0x1d4`-`+0x1e4` | the fade: running, level, rate per second | `0x0018cc60` |
+| `+0x1e8`-`+0x1f4` | the letterbox: state, level 0-1, rate | `0x0018d868` |
+| `+0x1f8`-`+0x210` | the blur pulse: state (1 start, 2 rising, 3 held), level, rate, start time, auto-end | `0x0018d058` |
+| `+0x212` | the view's player | |
+
+`ScreenQueueEffect(type, seconds)` runs `0x0018d450(manager, type, seconds)` on both managers, a jump table of six
+at `0x00552f70`; types 6 and above do nothing. The letterbox (`0x0018d5f8`) is two black quads, top and bottom,
+each `level × 0.12` of the screen height. The blur pulse (`0x0018d1d0`) draws device slot `+0x108` with look 5's
+two factors and `strength × level`; started by type 4 it holds for look 5's frame time and then queues type 5
+itself.
+
+#### Looks {#looks}
+
+A look is a tint and a motion-blur strength the view blends to. `0x0018b7d0(manager, look)` switches to look 0, 2,
+5 or 7 (blending the tint with `0x0018c988` and the blur with `0x0018c8c8` over the look's in time);
+`0x0018b950(manager, look)` ends one, going on to its follower (0 → 4, 2 → 3) or back to the base look (look 3
+over look 8's out time);
+`0x0018b460` sets the base look (`SetLevelColour` 9, `EnterStore` 10, `ExitStore` 9). `QueueMotionBlurEffect`
+blends the blur alone ([effects bindings](../references/bindings/effects.md)). Confirmed (code).
+
 ## Behaviour
 
 ### Start-up {#start-up}

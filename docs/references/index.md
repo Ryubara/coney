@@ -29,6 +29,7 @@ copied ([LEGAL.md](repo:LEGAL.md#no-game-data), "Reference lists").
 | [Characters](characters.md) | 449 | Every type `CfgChar` configures (449) is listed with every argument. |
 | [Character models](character-models.md) | 543 | Every record (543) is listed. |
 | [Gangs](gangs.md) | 25 | Every gang type (25) is listed with its arguments; the meaning of the byte values is not traced. Labels are hand-written. |
+| [AI goal types](goal-types.md) | 149 | All 149 goal classes are listed, read from their vtables in the executable: type ids 0-158, with 10, 30, 76, 77, 81, 97, 98, 106, 139 and 151 unused. |
 | [Speed classes](speed-classes.md) | 5 | All five classes are listed. |
 | [Objects and weapons](objects.md) | 1,371 | Every object type (1,371) is listed with its class, type, physics shape, size and animations. |
 | [Object groups](object-groups.md) | 5 | Every group named by a character type is listed. |
@@ -46,6 +47,8 @@ copied ([LEGAL.md](repo:LEGAL.md#no-game-data), "Reference lists").
 | [Lights](lights.md) | 5,283 | Every 14-argument `SetLight` call; arguments the script computes show none. |
 | [Spawner states](spawner-states.md) | 12 | All twelve states are listed; 6 and 10 only the game sets. |
 | [Crime types](crime-types.md) | 15 | All 15 types are listed. |
+| [Camera types and switches](cameras.md) | 28 | All fourteen classes the code makes are listed: types 10, 14 and 15 belong to no class. |
+| [Screen effects](screen-effects.md) | 23 | All six queue types, thirteen look slots and four layers are listed. |
 | [Animation clips](animations.md) | 1,875 | Every clip (1,875) is listed. |
 | [Anim ids](anim-ids.md) | 722 | All 722 ids are listed with the generic clip and Rembrandt's own clip where he has one. |
 | [Controls](controls.md) | 18 | Every button bit and both sticks are listed. |
@@ -81,10 +84,7 @@ it.
 | Attack delays and weights | Each attack kind's delay and the per-class weights the AI picks attacks by. | `CfgAttackDelay` (44 indices), the `Att_*` tables and `BrSetAttackWeight` (`config_preload2.lua`) | 45 attack kinds | none | Disc extraction |
 | Hat fittings | Where each hat sits on each head shape. | `CfgHat` (908 calls, `config_preload2.lua`; 41 hats per set) | 908 fittings | model render: the hats are objects (Coney renders characters only so far) | Disc extraction |
 | Rumble roster | The characters, gangs, arenas and rules of Rumble mode. | `CfgRumbleChar` (732 calls), `CfgRumbleGang` (46), `CfgRumbleArena` (29), `CfgRumbleGame` (9), the `rumble_*.lua` scripts | 366 character ids, 46 gangs, 29 arenas | none | Disc extraction |
-| Camera types and switches | The camera classes the factory makes and the switches of `CamEnable`. | Factory `0x0011e1b0` (types 0-5, 7, 8, 0xc, 0xd, 0x10; [Boot](../research/boot.md)); `CamEnable` switches 0-13 | 11 types, 14 switches | none | RE for the untagged types and the switches |
-| Screen effects | The full-screen effects `ScreenQueueEffect` queues and `CfgScrFx` configures. | `ScreenQueueEffect` types 0-5 (653 calls); `CfgScrFx` (11 entries, `config_preload2.lua`) | 6 types | none | RE for types 2-5 |
 | Statistics | The stat tables the end-of-level screens score. | `CfgSetStatValue` (tables 0-5, 46 calls), `CfgSetStatTypeMax` | 6 tables | none | RE |
-| AI goal types | The goal classes behind the `Goal*` bindings. | 148 goal classes, type id at vtable `+0x0c` ([AI](../research/ai.md#goals) names 22) | 148 | none | RE |
 
 Not to be listed: the credits (`CfgCredits`) and the text of any string table, which are game text; boss portraits
 (`HUDSetANBossTexture`), loading screens and other artwork.

@@ -521,7 +521,7 @@
   calls:
     - {addr: 0x0011de58, name: Camera_EnableFeature}
   args:
-    - {name: feature, lua: number, ctype: unsigned, desc: "Which camera switch, 0-13. 0 is per player; 2 sets a rail-camera flag; 3 re-lays out the views; 5 enables or disables the follow camera's sprint zoom (turning it off cancels a zoom in progress); 10 sets the auto-centre option byte of both pads; the others set global flags whose meaning is not traced."}
+    - {name: feature, lua: number, ctype: unsigned, desc: "Which camera switch, 0-13 ([Camera switches](../cameras.md#switch)). 5 enables or disables the follow camera's sprint zoom (turning it off cancels a zoom in progress); 3 also re-lays out the views."}
     - {name: "on", lua: boolean, desc: "true turns the switch on."}
     - {name: player, lua: number, ctype: int, default: -1, desc: "Player index for the per-player switches (0, 2, 5), or -1 (default) for every player."}
   description: >-

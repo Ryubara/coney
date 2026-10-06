@@ -145,29 +145,31 @@ type 3"). The player's update `0x003035d8` only keeps books (target validity, at
 
 Goals come from a pool of 170 of 0x90 bytes at `0x006e0430` (bitmap `0x006ceac0`). Base fields: `+0x00` the brain,
 `+0x04` started, `+0x05` resumed, `+0x08` wait-until time (-1 none), `+0x0c` vtable. Vtable function words: `+0x0c`
-the type id, `+0x1c` destroy, `+0x24` Start, `+0x2c` End, `+0x34` Resume, `+0x44` **Process**, `+0x4c` event (default
-`0x0029ef80`). There are 148 goal classes. The ones this page uses:
+the type id, `+0x14` the class's name (a string, such as `MoveToFlag`), `+0x1c` destroy, `+0x24` Start, `+0x2c` End,
+`+0x34` Resume, `+0x44` **Process**, `+0x4c` event (default `0x0029ef80`). There are 149 goal classes, types 0-158
+with ten unused, all on [AI goal types](../references/goal-types.md) with the bindings that make them; confirmed
+(code), each vtable read. The ones this page uses (names the game's):
 
 | Type | Goal | Constructor | Notes |
 | --- | --- | --- | --- |
 | `0x01` | MoveToFlag | `0x002da3b0` (vtable `0x00542130`) | [`GoalMoveToFlag`](#move-to-flag) |
 | `0x06` | MoveToHuman | `0x002dc4f8` | |
 | `0x08` | Melee | `0x002ade10` | `Goal_Melee`; popped by `Brain_PushFightGoal` |
-| `0x0b` | a fight sub-goal | `0x002af5b0` | |
+| `0x0b` | EngageEnemy | `0x002af5b0` | a fight sub-goal |
 | `0x0f` | **Fight** | `0x002b2c20` (vtable `0x005402d0`) | [below](#fight) |
 | `0x12`-`0x1a` | reaction goals | | [below](#reaction-goals) |
-| `0x1b` | **Block** | `0x002b54d8` (vtable `0x0053feb0`) | [below](#block) |
+| `0x1b` | **Blocking** | `0x002b54d8` (vtable `0x0053feb0`) | [below](#block) |
 | `0x1f` | GrabTarget | `0x002bb458` | |
 | `0x21` | PlayAnimation (a scene) | `0x002e4980` | pushed by `GoalAddressPerson` |
 | `0x22` | PlayDynAnimation | `0x002d2eb0` | [`GoalPlayDynAnimation`](#dyn-animation) |
 | `0x29` | JoinCinematic | `0x002e53e0` (vtable `0x005421f0`) | `GoalJoinCinematic` (`0x002e5300`); Process `0x002e5618` |
 | `0x30` | TrackHuman | `0x002df250` | [`GoalTrackHuman`](#formations) |
 | `0x36` | HoldPosition | `0x002be640` (vtable `0x00540510`) | `GoalHoldPosition` (`0x002be590`), and the tactic code at `0x00313718`; Process `0x002be818` |
-| `0x41` | a melee sub-goal | `0x002c0430` | popped by `Brain_PushFightGoal` |
-| `0x4f` | Bum | `0x002abef8` | `GoalBumLogic` |
+| `0x41` | FindEnemy | `0x002c0430` | popped by `Brain_PushFightGoal` |
+| `0x4f` | BumLogic | `0x002abef8` | `GoalBumLogic` |
 | `0x57` | AddressPerson | `0x002cc408` | [`GoalAddressPerson`](#address-person) |
-| `0x69` / `0x73` | FlagNet traverse | `0x002aae30` / `0x002c1338` | |
-| `0x6b` / `0x72` | a civilian's reaction to the player / flee | `0x002aa558` / `0x002d55d8` | pushed by the civilian think |
+| `0x69` / `0x73` | Pedestrian / Patrol | `0x002aae30` / `0x002c1338` | `FlagNetTraverse` |
+| `0x6b` / `0x72` | PedReaction / Hostile | `0x002aa558` / `0x002d55d8` | pushed by the civilian think |
 | `0x80` | Dealer | `0x002c6d90` | [`GoalDealer`](#dealer) |
 | `0x85` | BigFighter | `0x002e9cd0` (vtable `0x00542940`) | |
 | `0x9b` | Backoff | `0x002d92e8` | |

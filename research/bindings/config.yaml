@@ -1388,7 +1388,7 @@
   calls:
     - {addr: 0x0018e530}
   args:
-    - {name: effect, lua: number, ctype: unsigned, desc: "Screen effect type; this numeric form is meant for type 5 (whose fourth number also sets a frame count)."}
+    - {name: effect, lua: number, ctype: unsigned, desc: "Look slot; this numeric form is meant for look 5, the blur pulse ([Screen effects](../screen-effects.md#look)), whose fourth number also sets a frame count."}
     - {name: inMs, lua: number, ctype: unsigned, desc: "Milliseconds, stored as seconds at the effect's +0x10."}
     - {name: outMs, lua: number, ctype: unsigned, desc: "Milliseconds, stored as seconds at +0x14."}
     - {name: ms, lua: number, ctype: unsigned, desc: "For type 5: milliseconds converted to 60 Hz frames (x 0.06) at +0x98."}
@@ -1400,7 +1400,7 @@
     calls:
       - {addr: 0x0018e470}
     args:
-      - {name: effect, lua: number, ctype: unsigned, desc: "Screen effect type (0-12): selects a 0x18-byte slot in both screen-effect managers."}
+      - {name: effect, lua: number, ctype: unsigned, desc: "Look slot 0-12 ([Screen effects](../screen-effects.md#look)): selects a 0x18-byte slot in both screen-effect managers."}
       - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Effect colour {r, g, b, a}, each 0-255."}
       - {name: inMs, lua: number, ctype: unsigned, desc: "Milliseconds, stored as seconds at slot +0x10."}
       - {name: outMs, lua: number, ctype: unsigned, desc: "Milliseconds, stored as seconds at slot +0x14."}

@@ -429,7 +429,7 @@ ScreenQueueEffect(effect, seconds)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `effect` | number, truncated to an integer | Effect type 0-5: 0 fades the screen in from black, 1 fades it out to black; 2-5 are other effects (not traced). Values 6 and above do nothing. |
+| 1 | `effect` | number, truncated to an integer | Effect type 0-5 ([Screen effects](../screen-effects.md#queue)): 0 fades in from black, 1 fades out to black, 2 and 3 bring the letterbox in and out, 4 and 5 start and end the blur pulse. Values 6 and above do nothing. |
 | 2 | `seconds` | number (single precision) | Duration in seconds (0 makes the change immediate). |
 
 **Returns** nothing.
@@ -437,8 +437,8 @@ ScreenQueueEffect(effect, seconds)
 Queues a full-screen effect, usually a fade, on both screen-effects managers. A running fade blocks some menu input and
 is what the front end waits on ([Front end](../../research/frontend.md#profile-manager)).
 
-**Notes.** Dispatch is a six-entry jump table at 0x00552f70 (0x0018d450); fade in/out for 0/1 is confirmed (code)
-through 0x0018cc60 and the front end's use.
+**Notes.** Dispatch is a six-entry jump table at 0x00552f70 (0x0018d450); each type is described on
+[Graphics](../../research/graphics.md#screen-effects).
 
 - **Evidence:** confirmed (code) at `0x0018b168`; detail: traced
 - **Wrapper** `0x003682a8` (registered by `RegisterBindings`); **calls** `0x0018b168` `ScreenFx_Queue`

@@ -181,10 +181,9 @@ milliseconds used for freezes come from the global `Timer`'s slot `+0x30`. Confi
   `0x0042a938`) game time follows the real clock without a cap.
 - **Camera types**, confirmed (code) at the camera factory `0x0011e1b0(type, ...)` (`Camera/Cam_ICamera.cpp`) and the
   classes' slot `+0x1e8`: type 4 allocates with the tag `Cam_Scene` and builds a camera whose slot `+0x1e8`
-  (`0x004dc5a8`) returns 4; the other cases are 0 (tag `Cam_Fixed`), 1 (`Cam_Locked`), 0x10 (`Cam_3rdPerson`), and 2, 3,
-  5, 7, 8, 0xc and 0xd, which use constructor functions without a tag. In a Quick Rumble fight the player camera
-  (`0x005d9150` → vtable `0x00535d50`) is type 2, its slot `+0x1e8` (`0x004db698`) returning 2: confirmed (runtime),
-  PCSX2 2.9.94, memory read over PINE.
+  (`0x004dc5a8`) returns 4; every type and its class are on [Camera types](../references/cameras.md#type). In a Quick
+  Rumble fight the player camera (`0x005d9150` → vtable `0x00535d50`, the follow camera) is type 2, its slot
+  `+0x1e8` (`0x004db698`) returning 2: confirmed (runtime), PCSX2 2.9.94, memory read over PINE.
 - **Paused**: neither clock moves in either mode, and `TogglePause` resynchronises both bases when it unpauses, so the
   paused time is skipped. Pausing also refreshes the input state of every player who has one (`0x00146078`).
 - **Freeze** (`0x00145ea8(timer, ms, minMs)`, used by the GUI's `<FREEZE ms>` tag with `minMs` = 2000,
@@ -456,6 +455,5 @@ TODO for the analysts, found while implementing:
 - Is `main` in `Core/ChunkSystem.cpp` or in an unnamed `Core/` file?
 - The memory system's page (answered): [Memory](memory.md).
 - What `0x001cae58(0x00619570)` is (answered): "a kind-2 caption is showing" ([Timers](#timers)). Still open: who
-  sets the single-step request `GameTimer + 0x58` (no writer found; a debug feature, speculative), and what the
-  untagged camera types 2, 3, 5, 7, 8, 0xc and 0xd are (candidates: the files `Cam_Follow.cpp`, `Cam_Mini.cpp`,
-  `Cam_Mug.cpp`, `Cam_Power.cpp`; type 2 is the fight camera).
+  sets the single-step request `GameTimer + 0x58` (no writer found; a debug feature, speculative). The camera
+  types (answered): [Camera: types](camera.md#types); type 2 is the follow camera.

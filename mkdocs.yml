@@ -108,6 +108,7 @@ nav:
       - Characters: references/characters.md
       - Character models: references/character-models.md
       - Gangs: references/gangs.md
+      - AI goal types: references/goal-types.md
       - Speed classes: references/speed-classes.md
       - Objects and weapons: references/objects.md
       - Object groups: references/object-groups.md
@@ -125,6 +126,8 @@ nav:
       - Lights: references/lights.md
       - Spawner states: references/spawner-states.md
       - Crime types: references/crime-types.md
+      - Camera types and switches: references/cameras.md
+      - Screen effects: references/screen-effects.md
       - Animation clips: references/animations.md
       - Anim ids: references/anim-ids.md
       - Controls: references/controls.md

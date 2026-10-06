@@ -1,0 +1,312 @@
+# Camera types and switches: a Coney game reference list. The page docs/references/cameras.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Camera types and switches"
+about: |
+  The camera classes the game makes, by the type number each class reports, and the switches `CamEnable`
+  turns on and off ([Camera](../research/camera.md#types), [camera bindings](bindings/camera.md)). A script
+  holds a camera by handle; the type says which class the handle is.
+complete: |
+  All fourteen classes the code makes are listed: types 10, 14 and 15 belong to no class. The types, tags and
+  vtables are read from the executable; sizes and makers are from the factory `0x0011e1b0` and the getters. All
+  fourteen switches (0-13) are listed with the flag each sets and its default; switches 2, 7, 8 and 11 are read by
+  code not traced further.
+defaults: {source: "SLUS_212.15, camera factory 0x0011e1b0 and CamEnable 0x0011de58", evidence: confirmed-code}
+entries:
+  - id: type-0
+    kind: type
+    number: 0
+    class: Cam_Fixed
+    vtable: 0x00535a90
+    size: 0x0210
+    made: "factory, constructor `0x00123ea0`"
+    made_by: [CameraCreateFixed]
+    calls: 11
+    scripts: ["36763710", level3_chase.lua, level51_chapter9.lua, level52.lua, level54.lua, level55_lizziesattack.lua]
+    meaning: "A camera at a set place that turns to look at a target"
+  - id: type-1
+    kind: type
+    number: 1
+    class: Cam_Locked
+    vtable: 0x005362d0
+    size: 0x0220
+    made: "factory, constructor `0x001352f0`"
+    made_by: [CameraCreateLocked]
+    calls: 355
+    scripts: ["36763710", "670ba2b0", level1.lua, level100.lua, level111_hifi_init.lua, level11_chapter2.lua]
+    meaning: "A camera with a set place and direction; `CamLockLocked` gives it humans to track"
+  - id: type-2
+    kind: type
+    number: 2
+    class: Cam_Follow
+    vtable: 0x00535d50
+    size: 0x0480
+    made: "one per player, `0x0011f9e0` (array `0x005d9158`)"
+    made_by: [CamSetupFollow]
+    calls: 1
+    scripts: [global.lua]
+    meaning: "The player's follow camera ([Camera](../research/camera.md))"
+  - id: type-3
+    kind: type
+    number: 3
+    class: Cam_Spline
+    vtable: 0x00537350
+    size: 0x0350
+    made: "one, `0x00120038` (`0x0050b16c`)"
+    made_by: [CamSetupPoizo]
+    calls: 6
+    scripts: [level14.lua, level3_chase.lua, level55_punkfight.lua, level87_chap1_tutorial.lua, level87_chap4_street2.lua, level9_chap3_escape.lua]
+    meaning: "The scripted camera path (`CamSetupPoizo`, `CamAddPoizoPoint`)"
+  - id: type-4
+    kind: type
+    number: 4
+    class: Cam_Scene
+    vtable: 0x00537090
+    size: 0x01f0
+    made: "factory, constructor `0x001421b8`"
+    meaning: "The camera of scenes and in-engine movies; game time is not capped while it is current ([Boot](../research/boot.md#timers))"
+    notes: "Made by the scene start `0x0039d870`, `0x00354558` and the movie player `0x0042a938`."
+  - id: type-5
+    kind: type
+    number: 5
+    class: Cam_Transition
+    vtable: 0x00537610
+    size: 0x0240
+    made: "one per player, `0x0011fac8` (array `0x005d9180`)"
+    made_by: [CameraMakeActive]
+    calls: 627
+    scripts: ["36763710", "670ba2b0", "6ecd70b0", d26c7832, f2ede7bf, global.lua]
+    meaning: "The blend between the previous and the new camera (`CameraMakeActive` with a blend time)"
+  - id: type-6
+    kind: type
+    number: 6
+    class: Cam_Power
+    vtable: 0x00536b10
+    size: 0x0340
+    made: "one per player, `0x0011fc98` (array `0x005d9188`)"
+    meaning: "The power-move camera, made by `0x00101dd8` while switch 9 is on"
+    evidence: inferred
+  - id: type-7
+    kind: type
+    number: 7
+    class: Cam_Mug
+    vtable: 0x00536850
+    size: 0x0250
+    made: "one per player, `0x0011fd80` (array `0x005d9170`)"
+    meaning: "The mugging camera, made by human code (`0x0022cb00`)"
+    evidence: inferred
+  - id: type-8
+    kind: type
+    number: 8
+    class: Cam_Mini
+    vtable: 0x00536590
+    size: 0x0260
+    made: "one per player, `0x0011fe68` (array `0x005d9178`)"
+    meaning: "The mini-game camera (its name string is `Minigame`), made by human code (`0x0022d030`)"
+    evidence: inferred
+  - id: type-9
+    kind: type
+    number: 9
+    class: Cam_Rail
+    vtable: 0x00536dd0
+    size: 0x03f0
+    made: "one per player, `0x0011fbb0` (array `0x005d9160`)"
+    made_by: [CamSetupRail]
+    calls: 46
+    scripts: [level11_chapter6.lua, level2.lua, level3_chase.lua, level51_chapter8.lua, level51_chapter9.lua, level54.lua]
+    meaning: "A camera that runs along a rail of points after its target (`CamAddRailPoint`)"
+  - id: type-11
+    kind: type
+    number: 11
+    class: Cam_Hood
+    vtable: 0x00536010
+    size: 0x0220
+    made: "one per player, `0x0011ff50` (array `0x005d9168`)"
+    made_by: [CamSetupHood]
+    calls: 4
+    scripts: [level51_chapter9.lua, level84_chase.lua]
+    meaning: "A camera mounted on a vehicle"
+  - id: type-12
+    kind: type
+    number: 12
+    class: Cam_Failed
+    vtable: 0x005357d0
+    size: 0x0200
+    made: "one, `0x001200e0` (`0x0050b170`)"
+    made_by: [CamUseDeathCamera]
+    calls: 33
+    scripts: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua]
+    meaning: "The death camera"
+    notes: "The factory only returns the existing one (it calls the getter with 0)."
+  - id: type-13
+    kind: type
+    number: 13
+    class: Cam_Win
+    vtable: 0x005378d0
+    size: 0x0200
+    made: "one, `0x00120188` (`0x0050b174`)"
+    made_by: [CameraCreateWin]
+    calls: 33
+    scripts: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua]
+    meaning: "The level-won camera that circles a human"
+    notes: "The factory only returns the existing one (it calls the getter with 0)."
+  - id: type-16
+    kind: type
+    number: 16
+    class: Cam_3rdPerson
+    vtable: 0x00535250
+    size: 0x0230
+    made: "factory, constructor `0x001204f0`"
+    made_by: [CameraCreateThird]
+    calls: 3
+    scripts: [level3_chase.lua, level81_chatterbox.lua]
+    meaning: "A third-person camera behind a target"
+  - id: switch-0
+    kind: switch
+    number: 0
+    sets: "`0x0050b1b8[player]`"
+    scope: "per player"
+    default: 1
+    read_by: "`0x00129050` (right stick and zoom), `0x001af010`"
+    calls: 52
+    scripts: [level101.lua, level102.lua, level103.lua, level104.lua, level105.lua, level107.lua]
+    meaning: "Right-stick turning and the zoom buttons for the player: off, the stick step returns"
+  - id: switch-1
+    kind: switch
+    number: 1
+    sets: "`0x0050b1cc`"
+    scope: global
+    default: 0
+    read_by: "`0x00130990` (follow camera collision)"
+    calls: 6
+    scripts: [level60.lua, level61.lua, level62.lua, level63.lua, level64.lua, level84_chase.lua]
+    meaning: "An extra sphere test (`0x001303c8`) in the follow camera's world collision"
+    evidence: inferred
+  - id: switch-2
+    kind: switch
+    number: 2
+    sets: "rail camera `+0x3e6`"
+    scope: "per player"
+    default: 0
+    read_by: "the rail camera"
+    calls: 1
+    scripts: [level83_c5_apartment.lua]
+    meaning: "A byte of the player's rail camera; not traced"
+    evidence: inferred
+  - id: switch-3
+    kind: switch
+    number: 3
+    sets: "`0x0050b1c0`"
+    scope: global
+    default: 1
+    read_by: "`0x00121888`, `0x00122ed0` (views), `0x001282a0`, `0x0013b7b8` (targets)"
+    calls: 216
+    scripts: [hifi.lua, kinghill.lua, level101.lua, level102.lua, level103.lua, level104.lua]
+    meaning: "Two-player views: a view shows only while its player still counts (`0x00123500`); off, both always show"
+    evidence: inferred
+  - id: switch-4
+    kind: switch
+    number: 4
+    sets: "`0x0050b1c8`"
+    scope: global
+    default: 1
+    read_by: "`0x001282a0`, `0x00126c40`, `0x0013c710` (targets)"
+    calls: 74
+    scripts: [caps.lua, hifi.lua, kinghill.lua, level101.lua, level102.lua, level103.lua]
+    meaning: "With `0x0050b1c4` (set by `0x00418ac8`), a player is a camera target only while he still counts"
+    evidence: inferred
+  - id: switch-5
+    kind: switch
+    number: 5
+    sets: "follow camera `+0x468`"
+    scope: "per player"
+    default: 1
+    read_by: "`0x00126a30` (sprint zoom)"
+    calls: 2
+    scripts: [level81_chase.lua, level81_cracker.lua]
+    meaning: "The follow camera's [sprint zoom](../research/camera.md#sprint-zoom)"
+  - id: switch-6
+    kind: switch
+    number: 6
+    sets: "`0x0050b1d0`"
+    scope: global
+    default: 1
+    read_by: "`0x00121298` (camera shake)"
+    calls: 7
+    scripts: [level60.lua, level61.lua, level62.lua, level63.lua, level64.lua]
+    meaning: "Camera shake: off, the shake offset is not added to the view (the pad still rumbles)"
+    evidence: inferred
+  - id: switch-7
+    kind: switch
+    number: 7
+    sets: "`0x0050b2ac`"
+    scope: global
+    default: 1
+    read_by: "`0x0013e708` (rail camera)"
+    calls: 1
+    scripts: [level54_park.lua]
+    meaning: "A step of the rail camera's update; not traced"
+    evidence: inferred
+  - id: switch-8
+    kind: switch
+    number: 8
+    sets: "`0x0050b2b0`"
+    scope: global
+    default: 1
+    read_by: "`0x0013b7b8`, `0x0013d6b0` (rail camera targets)"
+    calls: 1
+    scripts: [level81_chase.lua]
+    meaning: "Part of the rail camera's choice of targets; not traced"
+    evidence: inferred
+  - id: switch-9
+    kind: switch
+    number: 9
+    sets: "`0x0050b1d4`"
+    scope: global
+    default: 1
+    read_by: "`0x00101dd8` (power camera)"
+    calls: 3
+    scripts: [level55_subway.lua, level99_lesson2.lua]
+    meaning: "Lets power moves switch to the power camera (type 6)"
+    evidence: inferred
+  - id: switch-10
+    kind: switch
+    number: 10
+    sets: "`0x0050b248`, `0x0050b249`"
+    scope: "both pads"
+    default: 1
+    read_by: "`0x00129c78` (auto-follow)"
+    calls: 1
+    scripts: [level55_punkfight.lua]
+    meaning: "Auto-follow: the follow camera swings behind the player"
+  - id: switch-11
+    kind: switch
+    number: 11
+    sets: "`0x0050b23c`"
+    scope: global
+    default: 1
+    read_by: "`0x0012ae58` (argument of `0x00129050`)"
+    meaning: "An argument of the stick-and-zoom step; `Human_SetWheelchairControl` sets it too; not traced"
+    evidence: inferred
+  - id: switch-12
+    kind: switch
+    number: 12
+    sets: "`0x0050b2b4`"
+    scope: global
+    default: 1
+    read_by: "`0x0013b7b8` (rail camera targets)"
+    calls: 2
+    scripts: [level82_chapter5.lua, level93_chapter6.lua]
+    meaning: "Part of the rail camera's choice of targets: off, a player is a target only while he still counts"
+    evidence: inferred
+  - id: switch-13
+    kind: switch
+    number: 13
+    sets: "`0x0050b1e0`"
+    scope: global
+    default: 0
+    read_by: "`0x00121888` (views)"
+    calls: 3
+    scripts: [level31_birdie.lua, level86_chapter4.lua, wchair.lua]
+    meaning: "Keeps both two-player views shown even when a player no longer counts"
+    evidence: inferred

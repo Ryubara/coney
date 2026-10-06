@@ -1940,7 +1940,7 @@ CfgScrFx(effect, inMs, outMs, ms, n, f1, f2)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `effect` | number, truncated to an unsigned integer | Screen effect type; this numeric form is meant for type 5 (whose fourth number also sets a frame count). |
+| 1 | `effect` | number, truncated to an unsigned integer | Look slot; this numeric form is meant for look 5, the blur pulse ([Screen effects](../screen-effects.md#look)), whose fourth number also sets a frame count. |
 | 2 | `inMs` | number, truncated to an unsigned integer | Milliseconds, stored as seconds at the effect's +0x10. |
 | 3 | `outMs` | number, truncated to an unsigned integer | Milliseconds, stored as seconds at +0x14. |
 | 4 | `ms` | number, truncated to an unsigned integer | For type 5: milliseconds converted to 60 Hz frames (x 0.06) at +0x98. |
@@ -1966,7 +1966,7 @@ CfgScrFx(effect, colour, inMs, outMs, value, ms, value2)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `effect` | number, truncated to an unsigned integer | Screen effect type (0-12): selects a 0x18-byte slot in both screen-effect managers. |
+| 1 | `effect` | number, truncated to an unsigned integer | Look slot 0-12 ([Screen effects](../screen-effects.md#look)): selects a 0x18-byte slot in both screen-effect managers. |
 | 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Effect colour {r, g, b, a}, each 0-255. |
 | 3 | `inMs` | number, truncated to an unsigned integer | Milliseconds, stored as seconds at slot +0x10. |
 | 4 | `outMs` | number, truncated to an unsigned integer | Milliseconds, stored as seconds at slot +0x14. |

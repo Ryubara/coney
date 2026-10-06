@@ -17,7 +17,7 @@ from typing import Any
 
 import yaml
 
-from coney_tools import refs, refs_env, refs_render
+from coney_tools import refs, refs_engine, refs_env, refs_render
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.refs import Topic
 from coney_tools.refs_topics import TOPICS, topic
@@ -488,3 +488,5 @@ STARTERS: dict[str, dict[str, Any]] = {
     },
     **refs_env.STARTERS,
 }
+# The engine lists start from their own module's table (refs_engine.py).
+STARTERS.update(refs_engine.STARTERS)
