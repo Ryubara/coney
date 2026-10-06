@@ -317,7 +317,8 @@ sound with flags `0x12` (the front end's cue 9 on START, `0xf` on back; [Front e
    a target, the speaker looks at it for the line's length plus 0.5 s.
 
 Voice lines are streamed, positional and directional (class flags `0x1c` or `0x4c`, priorities 7-11, far 20-50 m).
-No lip-sync data was found: the speaking human only turns to its target. Scenes play their own soundtrack
+No lip-sync data was found: the speaking human only turns to its target. Voice lines in play have no subtitles; only
+scenes and movies do ([Scenes: subtitles](scenes.md#subtitles)). Scenes play their own soundtrack
 ([Scene soundtracks](#scene-sound)).
 
 ### Speech lines by name

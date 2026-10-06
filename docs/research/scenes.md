@@ -43,6 +43,7 @@ the letterbox, gives the player control back and calls the script's end function
 | `0x00353818` | `Scene_Play` | common worker of the play bindings | confirmed (code) |
 | `0x003a13d0` | `SceneTask_Create` | a scene task with its flags | confirmed (code) |
 | `0x0039ca48` | `SceneTask_Init` | the task's defaults | confirmed (code) |
+| `0x001cae60` | `Captions_WaitTitleCard` | holds the start while a scene's title card shows ([Subtitles](#title-card)) | confirmed (code) |
 | `0x0039d3a8` | `SceneTask_Bind` | runners for the camera, objects and lights | confirmed (code) |
 | `0x0039d870` | `SceneTask_Start` | waits for everything, then starts; re-entered until it does | confirmed (code) |
 | `0x0039cbf0` | `SceneTask_Update` | vtable `+0x13c`, every 2 ticks | confirmed (code) |
@@ -310,7 +311,7 @@ The task's update (`0x0039cbf0`) runs every **2 ticks** (30 a second, `Task_SetU
    (`0x0051489c + 0x56e4`).
 7. While the delay has not run out, step every bound human toward its start mark (`0x0039d618`, 0.1); wait until all
    arrive or the delay ends.
-8. Wait until the caption system is ready for the scene's name (`0x001cae60(0x00619570)`; [Boot](boot.md#timers)).
+8. Wait while the scene's **title card** shows, if it has one (`0x001cae60(0x00619570)`, [Subtitles](#title-card)).
 9. **Start:** call the global scene callback (`SceneSetCallback`) with no arguments; make or reuse the scene camera
    ([Camera](#camera)); start the camera, object and light runners at frame 0; for each bound human ([Humans](#humans));
    for a cinematic, **letterbox in** on every player's view (`ScreenQueueEffect` type 2 over **1.5 s**, at once when
@@ -416,6 +417,65 @@ looping one that is not forced only stops looping (`0x003a0be8`) and ends after 
 (1,240 headers, 1,525 segments; the 24 cut names found by content), none failing; 3,153 roles, 2,352 objects, 512
 cameras, 21 lights, 405,373 frames (3 h 45 min); every segment chain resolves; the header's frame count equals its
 parts' durations in all but 2 headers that have no tracks. Records sha256 `0f465735…c1e979ef`.
+
+## Subtitles {#subtitles}
+
+A scene's subtitles are captions of the caption system (`0x00619570`, which is HUD `+0x18d30`), the same one the movies
+use: their text is the level's Subtitles chunk, found by the scene's name, and they are drawn by `Captions_Draw`
+([Movies: captions](movies.md#captions) has the chunk, the record kinds, the subtitles option and the drawing). What
+is particular to scenes, confirmed (code) unless marked:
+
+- **Selecting.** `SceneTask_Create` (`0x003a13d0`) calls `Captions_SelectScene` with the header's name (`+0x08`), so a
+  scene's captions are those of the kind-1 record with its name in the current language's section. With no such
+  record the previous selection stays (`0x001cad38` restores it).
+- **Timing.** Captions follow the scene's own track events, type 41 on the **camera track** (only there on the disc):
+  `+4` = 0 shows the next record (`Captions_Next`, `0x001cb190`), 4 hides the caption, 5 sets the ordinary kind
+  without changing the text, 6 clears the fade flag below and shows the next. Events fire when the track runner passes
+  their frame (`0x00354d98`), so captions run on the scene's 30-a-second clock and stop when the game is paused, while
+  the soundtrack streams on its own from event 13 ([Sound](sound.md#scene-sound)). A caption has **no duration of its
+  own**: it stays until the next type-41 event, a type-27 fade-out, or a skip. A scene without a camera shows none.
+- **Fade-out.** A type-27 event hides the current caption first when the flag `+0x4c` is set (`Captions_SelectScene`
+  sets it; an event 41 with `+4` = 6 clears it so that caption outlasts the fade), then sets the flag again.
+- **Skip.** The skip clears the caption (`Captions_SetKind(4)` at `0x0039cbf0`, [Skipping](#skipping)); the end
+  (`0x0039f450`) does not touch it.
+- **The option.** Ordinary captions (kind 3) show only with the subtitles option on (`W_GameState + 0x438`, the
+  `PM_Subtitles` screen, [Front end](frontend.md#pm-screens)); a kind-2 record always shows.
+- **Position and letterbox.** An ordinary caption is centred at x 0.5, y 0.75 of the screen in the default mode, grey
+  `(178, 178, 178, 255)`, wrapped at 0.7 of the width ([Movies](movies.md#caption-drawing)). The letterbox's bottom bar
+  covers the bottom `level × 0.12` of the screen ([Graphics](graphics.md#screen-effects)), so the caption sits above
+  it. The overlay pass (`0x00156658`) draws the captions **after** the screen effects and the HUD, so they are on top
+  of the bars. While the letterbox is in or moving (screen effects `+0x1e8` or `+0x1ec` not 0) `HUD_Render` draws no
+  HUD at all ([HUD](hud.md#the-huds-frame)), so nothing else competes with a scene's captions.
+- **Speech in play has no subtitles.** The only callers of the caption functions are the scene task, the track runner,
+  `Movie_Play` and the title card below; `SoundPlayCommand`, `HuSpeak` and the voice lines never reach them
+  ([Sound](sound.md#speech)).
+
+### The title card {#title-card}
+
+A scene whose section starts with a **kind-2 record** opens with a title card, a place-and-time line (two lines with
+`<CR>`) drawn in the screen's centre at 1.2 times the text size in dark red, shown whatever the subtitles option says.
+`Captions_WaitTitleCard` (`0x001cae60`), called every start attempt (step 8 of [Starting](#starting)) until it returns
+true:
+
+1. When the selected scene is not this scene's name, or no record is next: ready.
+2. If the next record is kind 2, show it (`Captions_Next`; `Captions_SetKind(2)` sets `+0x54` and `+0x58`).
+3. With the game not paused: when `+0x54` is 0 the card is over: hide the caption (kind 4) and return ready. Otherwise
+   clear `+0x54`, stamp `+0x5c` with the real clock and **freeze the game for 5,000 ms** (`GameTimer_Freeze(timer,
+   5000, 0)`, [Boot](boot.md#timers)); not ready.
+
+So the card holds the scene for 5 s of frozen game time; the freeze cannot be ended with the button while a kind-2
+caption shows (`+0x58`), and `Captions_Draw` fades it in over the first 1.5 s and out over the last 1.5 s, all before
+the letterbox comes in (step 9). **Disc check** (scratch script over the 25 levels with a Subtitles chunk, English
+sections): 23 of 209 scene sections open with a kind-2 record and none has one later; in `level99` it is `l99_c1`, the
+intro.
+
+**Disc counts** (the same check): 1,422 type-41 events, all on camera tracks (`+4` = 0: 1,228; 4: 186; 5: 5; 6: 3). In
+202 of the 206 scenes that have both a section and a header, the number of show events (0 and 6) equals the section's
+ordinary captions; the other 4 are a movie's caption scene listed twice and three scenes with captions but no events
+(one without a camera). 12 scenes have show events but no section; in them a show would take the record after the
+previous scene's (inferred from `0x001cad38`; `l99_c4` is one, not checked at runtime). Following the events, 11 scenes
+end with a caption still current (inferred: it stays on screen after the scene until something hides it). An ordinary
+caption is current for 8 to 546 frames, median 89 (3 s).
 
 ## Coney's implementation
 
