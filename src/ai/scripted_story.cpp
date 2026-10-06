@@ -17,6 +17,7 @@
 #include "ai/scripted_goals.h"
 #include "ai/story_goals.h"
 #include "ai/story_tactics.h"
+#include "ai/tactic_attack.h"
 #include "ai/track_human_goal.h"
 #include "combat/meters.h"
 #include "human/human.h"
@@ -493,6 +494,22 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool /*forced
         }
     }
     return true;
+}
+
+int ScriptedStory::musicMood() const {
+    const Brain* player = m_scripted->player();
+    if (player == nullptr) {
+        return 0;
+    }
+    Brains& brains = m_scripted->owner();
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        Brain& brain = brains.at(i);
+        if (isAi(brain) && brain.target() == player && Brain::fightable(brain) &&
+            (brain.findGoal(GoalType::Fight) != nullptr || brain.findGoal(kMeleeGoal) != nullptr)) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 double ScriptedStory::playerOne() const {

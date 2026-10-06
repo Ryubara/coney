@@ -16,11 +16,9 @@ constexpr std::uint8_t kStickRest = 128;
 // The switches a level's camera reset turns off; the rest are on (0x00122b80).
 constexpr std::array<std::size_t, 2> kSwitchesOff{1, 13};
 
-// The follow camera's view: at its position looking at its look-at point, through its lens and the player camera's
-// far clip.
-CameraView followView(const FollowCamera& follow) {
-    return viewLookingAt(follow.position(), follow.lookAt(), follow.fieldOfView(), follow.nearClip(),
-                         kPlayerCameraLens.farClip);
+// The follow camera's view: at its position looking at its look-at point, through its lens and `farClip`.
+CameraView followView(const FollowCamera& follow, float farClip) {
+    return viewLookingAt(follow.position(), follow.lookAt(), follow.fieldOfView(), follow.nearClip(), farClip);
 }
 
 } // namespace
@@ -47,7 +45,7 @@ void Cameras::attachFollow(FollowCamera* follow) {
     }
     if (m_current.kind == CameraKind::None || m_current.kind == CameraKind::Follow) {
         m_current = CameraRef{.kind = CameraKind::Follow, .handle = 0.0};
-        m_view = followView(*m_follow);
+        m_view = followView(*m_follow, m_followFarClip);
     }
 }
 
@@ -125,10 +123,53 @@ std::optional<CameraRef> Cameras::find(double handle) const {
     return std::nullopt;
 }
 
+void Cameras::setClipping(double handle, float nearClip, float farClip) {
+    const std::optional<CameraRef> ref = find(handle);
+    if (!ref) {
+        return;
+    }
+    const float far = std::min(farClip, LockedCamera::kMaxFarClip);
+    if (ref->kind == CameraKind::Follow) {
+        m_followFarClip = far;
+    } else if (ref->kind == CameraKind::Locked) {
+        LockedCamera& camera = m_locked.at(handle);
+        camera.nearClip = nearClip;
+        camera.farClip = far;
+    } else if (ref->kind == CameraKind::Win) {
+        m_winSettings.farClip = std::min(far, WinCamera::kMaxFarClip);
+    }
+}
+
+std::optional<double> Cameras::activeHandle() const {
+    switch (m_current.kind) {
+    case CameraKind::Follow:
+        return m_followHandle;
+    case CameraKind::Locked:
+    case CameraKind::Win:
+        return m_current.handle;
+    default:
+        return std::nullopt;
+    }
+}
+
+std::optional<anim::Vec3> Cameras::positionOf(double handle) const {
+    const std::optional<CameraRef> ref = find(handle);
+    if (!ref) {
+        return std::nullopt;
+    }
+    return viewOf(*ref).position;
+}
+
+void Cameras::setFollowPosition(anim::Vec3 position) {
+    if (m_follow != nullptr) {
+        m_follow->placeAt(position);
+    }
+}
+
 CameraView Cameras::viewOf(CameraRef ref) const {
     switch (ref.kind) {
     case CameraKind::Follow:
-        return m_follow != nullptr ? followView(*m_follow) : m_view;
+        return m_follow != nullptr ? followView(*m_follow, m_followFarClip) : m_view;
     case CameraKind::Locked:
         if (const LockedCamera* camera = locked(ref.handle); camera != nullptr) {
             return camera->view();

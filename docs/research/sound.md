@@ -404,8 +404,13 @@ line follows its speaker; a line stopped by `HuShutUp` or cut off drops its call
 human's `+0x194` is not modelled); `HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at
 target; a human's voice set is his type's own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of
 blocked lines is not applied; `SndSetListener` 0 is the camera and 1 the player (inferred); the bank deferral of mode
-1's enter ends with the load screen. Not built yet: reverb, the other ambient bindings
-(`AddAmbientSoundEmitter`, `EnableAmbientEmitter`, `SetAmbientEmitterVolumeMod`), the game's own speech commands.
+1's enter ends with the load screen. The system music (`repo:src/gamemodes/system_music.h`) keeps each mood's track
+hashes and, while on, loops a random track of the mood each frame's surroundings give when the mood changes; the
+mood is 1 while an AI human with health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2,
+its chase goals not built, never comes), the pick draws from the game's random index, and the fades are the music
+player's own. `SoundSetEffect` and `SoundEnableEffects` are kept in the game state only. Not built yet: reverb, the
+other ambient bindings (`AddAmbientSoundEmitter`, `EnableAmbientEmitter`, `SetAmbientEmitterVolumeMod`), the game's
+own speech commands.
 
 ## Open questions
 

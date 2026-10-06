@@ -316,6 +316,7 @@
     Setting the value it already has only clears game state `+0x3f4` (not traced). `SoundSetMusicTrack` turns it on
     too. Tracks per mood and the fades: [Sound](../../research/sound.md#music-player).
   usage: {chunks: 89, calls: 154, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: SoundSetMusicTrack
   wrapper: 0x003714a0
@@ -338,6 +339,7 @@
     The names are not checked against the loaded track list. Also sets audio manager `+0xcc` = 1 (not traced). The
     mood names are inferred from 0x0041a060's tests. [Sound](../../research/sound.md#music-player).
   usage: {chunks: 73, calls: 275, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: SoundSetMusicStateCallback
   wrapper: 0x00371540
@@ -845,6 +847,7 @@
     0x00114028 → 0x00113000 calls the sound device twice (cores 0 and 1). The argument meanings follow the PS2 reverb
     parameters and are inferred.
   usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false, levels: [80, 95, 34, 3, 5, 86, 93, 14, 9, 51, 52, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: SoundCfgInterfaceSound
   wrapper: 0x00372f20
@@ -876,6 +879,7 @@
   notes: >-
     0x001130c8.
   usage: {chunks: 14, calls: 15, boot: true, mission1: false, result_used: false, levels: [80, 95, 3, 5, 86, 93, 14, 51, 52, 82, 92, 83, 11]}
+  coney: implemented
 
 - name: SoundPauseSound
   wrapper: 0x00372fb0

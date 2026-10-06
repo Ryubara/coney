@@ -292,3 +292,32 @@ TEST_CASE("CamSetupFollow and CfgFollowCamera made before the player exists appl
     CHECK(cameras.current().kind == CameraKind::Follow);
     CHECK(near(cameras.view().position, follow.position()));
 }
+
+TEST_CASE("CameraSetClipping sets a locked camera's clips and the follow camera's far clip, at most 150", "[camera]") {
+    Rig rig;
+    rig.cameras.setClipping(kFollowHandle, 5.0F, 80.0F);
+    CHECK(rig.cameras.followFarClip() == 80.0F);
+    rig.step();
+    CHECK(rig.cameras.view().farClip == 80.0F);
+    CHECK(rig.cameras.view().nearClip == Approx(0.1F));
+    rig.cameras.setClipping(kLockedHandle, 0.5F, 400.0F);
+    REQUIRE(rig.cameras.locked(kLockedHandle) != nullptr);
+    CHECK(rig.cameras.locked(kLockedHandle)->nearClip == 0.5F);
+    CHECK(rig.cameras.locked(kLockedHandle)->farClip == 150.0F);
+    rig.cameras.setClipping(99.0, 1.0F, 1.0F); // no camera: nothing
+}
+
+TEST_CASE("the active camera's handle and a camera's place are found by handle", "[camera]") {
+    Rig rig;
+    rig.cameras.makeActive(kLockedHandle, 0.0F);
+    CHECK(rig.cameras.activeHandle() == kLockedHandle);
+    REQUIRE(rig.cameras.positionOf(kLockedHandle).has_value());
+    CHECK(near(*rig.cameras.positionOf(kLockedHandle), cutAway().position));
+    CHECK_FALSE(rig.cameras.positionOf(99.0).has_value());
+    rig.cameras.makeActive(kFollowHandle, 0.0F);
+    CHECK(rig.cameras.activeHandle() == kFollowHandle);
+    // The follow camera put at a point stays there.
+    const Vec3 spot{kFeet.x + 2.0F, kFeet.y - 3.0F, kFeet.z + 2.0F};
+    rig.cameras.setFollowPosition(spot);
+    CHECK(near(rig.follow.position(), spot));
+}

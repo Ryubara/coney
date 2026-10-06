@@ -22,6 +22,9 @@ inline constexpr std::size_t kStoryPlayers = 2;
 inline constexpr std::size_t kDetailBytes = 4;
 /// The points `HuTagPattern` keeps (64 (x, y) pairs at `0x006cd978`).
 inline constexpr std::size_t kTagPatternPoints = 64;
+/// The system music's moods (calm, fight, hunted) and the tracks each holds (`0x0010e9e0`).
+inline constexpr std::size_t kMusicMoods = 3;
+inline constexpr std::size_t kMoodTracks = 3;
 /// The models `SetCharacterModel` keeps (resource manager `+0xb4`, 32 slots).
 inline constexpr std::size_t kKeptModels = 32;
 
@@ -68,6 +71,12 @@ struct StoryState {
     int reverbDelay = 0;
     int reverbFeedback = 0;
     bool reverbOn = false;
+    /// The system music (audio manager `+0x64`): on (`SoundEnableSystemMusic`, game state `+0x3f8`), each mood's track
+    /// hashes (`SoundSetMusicTrack`, up to kMoodTracks: 0 calm, 1 fight, 2 hunted) and the mood playing (-1: a new pick
+    /// is due).
+    bool systemMusic = false;
+    std::array<std::vector<std::uint32_t>, kMusicMoods> moodTracks;
+    int musicMood = -1;
     /// `StartGarbage` / `EndGarbage`: the litter kind blowing round the camera, -1 for none. **Coney stand-in**: the
     /// litter is not drawn yet.
     int garbage = -1;

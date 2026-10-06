@@ -527,6 +527,7 @@
     Each type's message handler decides; types that do not handle `0x12` ignore it. Messages: [World
     objects](../../research/objects.md), types: [Particles](../../research/particles.md).
   usage: {chunks: 20, calls: 48, boot: false, mission1: false, result_used: false, levels: [80, 3, 5, 81, 93, 31, 14, 9, 51, 52, 54, 84, 11]}
+  coney: implemented
 
 - name: EndParticle
   wrapper: 0x00379160
@@ -544,6 +545,7 @@
     Each type's message handler decides; types that do not handle `0x13` ignore it. Whether particles already in
     flight finish their life is up to each type (not traced in general).
   usage: {chunks: 16, calls: 39, boot: false, mission1: false, result_used: false, levels: [80, 5, 81, 51, 52, 54, 84, 11]}
+  coney: implemented
 
 - name: ParticleChangeState
   wrapper: 0x00379198

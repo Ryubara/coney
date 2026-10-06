@@ -362,6 +362,12 @@ void FollowCamera::place(anim::Vec3 targetFeet, float distance, float viewHeadin
     stepHardBand();
 }
 
+void FollowCamera::placeAt(anim::Vec3 position) {
+    m_lookAt = lookAtOf(m_targetFeet);
+    m_wanted = position;
+    m_position = position;
+}
+
 anim::Vec3 FollowCamera::forward() const {
     const anim::Vec3 view = anim::subtract(m_lookAt, m_position);
     return anim::length(view) > 1e-6F ? anim::normalise(view) : anim::Vec3{0.0F, 1.0F, 0.0F};

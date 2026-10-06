@@ -1,0 +1,206 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include "scripting/story_effects_bindings.h"
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <span>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "camera/cameras.h"
+#include "core/name_hash.h"
+#include "effects/level_effects.h"
+#include "scripting/binding_args.h"
+#include "scripting/lua_value.h"
+#include "scripting/sound_bindings.h"
+#include "warriors/game_state.h"
+#include "world_objects/spawn_records.h"
+
+namespace coney::script {
+
+namespace {
+
+// `NilHandle`'s value.
+constexpr double kNilHandle = 0.0;
+
+// Argument `i` truncated to a whole number, as tolua reads an integer.
+std::int64_t wholeArg(std::span<const Value> args, std::size_t i) {
+    return static_cast<std::int64_t>(std::trunc(binding::number(args, i)));
+}
+
+// Argument `i` as a handle: truncated to an unsigned 32-bit integer.
+double handleArg(std::span<const Value> args, std::size_t i) {
+    return static_cast<double>(static_cast<std::uint32_t>(wholeArg(args, i)));
+}
+
+// Whether argument `i` is missing or nil, so its default applies.
+bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
+
+// Argument `i` as a boolean as tolua reads one: nil and false are false, a number is its value's truth.
+bool boolArg(std::span<const Value> args, std::size_t i) { return !absent(args, i) && binding::number(args, i) != 0.0; }
+
+// An M_Vector4 (x, y, z and w 1) as a table.
+binding::Results vectorResult(anim::Vec3 p) {
+    auto vector = std::make_shared<Table>();
+    for (const auto& [field, value] :
+         {std::pair{"x", p.x}, std::pair{"y", p.y}, std::pair{"z", p.z}, std::pair{"w", 1.0F}}) {
+        if (auto set = vector->set(Value(std::string(field)), Value(static_cast<double>(value))); !set) {
+            return std::unexpected(set.error());
+        }
+    }
+    return std::vector<Value>{Value(std::move(vector))};
+}
+
+// `CameraSetClipping(camera, near, far)`.
+// @orig 0x0011bb98 Camera_SetClipping (unknown)
+NativeFunction makeCameraSetClipping(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->cameras != nullptr) {
+            context->cameras->setClipping(handleArg(args, 0), static_cast<float>(binding::number(args, 1)),
+                                          static_cast<float>(binding::number(args, 2)));
+        }
+        return binding::none();
+    };
+}
+
+// `CameraGetActive(player) -> camera`: player 1's current camera, NilHandle for none. **Coney choice**: Coney has one
+// player, so any other index answers NilHandle.
+// @orig 0x0011b838 Camera_GetActiveHandle (unknown)
+NativeFunction makeCameraGetActive(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const bool first = absent(args, 0) || wholeArg(args, 0) == 0;
+        const std::optional<double> active =
+            context->cameras != nullptr && first ? context->cameras->activeHandle() : std::nullopt;
+        return binding::number(active.value_or(kNilHandle));
+    };
+}
+
+// `CamGetPos(camera) -> M_Vector4`: where the camera is; the zero vector for a handle that names no camera.
+// @orig 0x0011b920 Camera_GetPositionByHandle (unknown)
+NativeFunction makeCamGetPos(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const std::optional<anim::Vec3> at =
+            context->cameras != nullptr ? context->cameras->positionOf(handleArg(args, 0)) : std::nullopt;
+        return vectorResult(at.value_or(anim::Vec3{}));
+    };
+}
+
+// `CamSetFollowPos(pos, player)`: player 1's follow camera put there at once; the table is left as it is.
+// @orig 0x0011c638 Camera_SetFollowPosition (unknown)
+NativeFunction makeCamSetFollowPos(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const std::optional<std::array<float, 3>> at = binding::position(args, 0);
+        const bool first = absent(args, 1) || wholeArg(args, 1) == 0;
+        if (context->cameras != nullptr && at && first) {
+            context->cameras->setFollowPosition(anim::Vec3{(*at)[0], (*at)[1], (*at)[2]});
+        }
+        return binding::none();
+    };
+}
+
+// `StartParticle(object)` / `EndParticle(object)`: message `0x12` or `0x13` to the object: a particle system starts or
+// stops making sprites, a plain object (a spawn record) is shown or hidden.
+// @orig 0x003975c0 Particle_Start (unknown)
+// @orig 0x00397610 Particle_End (unknown)
+NativeFunction makeParticleSwitch(const BindingContext& context, bool on) {
+    return [context = &context, on](std::span<const Value> args) {
+        const double handle = handleArg(args, 0);
+        if (context->effects != nullptr && context->effects->particles.setEmitting(handle, on)) {
+            return binding::none();
+        }
+        if (context->spawnRecords != nullptr) {
+            if (world_objects::SpawnRecord* record = context->spawnRecords->resolve(handle); record != nullptr) {
+                record->hidden = !on;
+            }
+        }
+        return binding::none();
+    };
+}
+
+// `SoundEnableSystemMusic(on)`: a change forces a new pick (the next frame's step); off stops the music.
+// @orig 0x00113ea8 Sound_EnableSystemMusic (unknown)
+NativeFunction makeSoundEnableSystemMusic(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        StoryState& story = context->state->story;
+        const bool on = boolArg(args, 0);
+        if (on == story.systemMusic) {
+            return binding::none();
+        }
+        story.systemMusic = on;
+        story.musicMood = -1;
+        if (!on && context->sound != nullptr) {
+            context->sound->stopMusic();
+        }
+        return binding::none();
+    };
+}
+
+// `SoundSetMusicTrack(slot, track1, track2, track3)`: the mood's tracks (the non-empty names' hashes, in order), and
+// the system music on; the mood playing is picked again. **Coney choice**: a slot outside 0-2 does nothing (the
+// original does not check it).
+// @orig 0x00113ed0 Sound_SetMusicTrack (unknown)
+NativeFunction makeSoundSetMusicTrack(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        StoryState& story = context->state->story;
+        const std::int64_t slot = wholeArg(args, 0);
+        if (slot < 0 || slot >= static_cast<std::int64_t>(kMusicMoods)) {
+            return binding::none();
+        }
+        std::vector<std::uint32_t>& tracks = story.moodTracks.at(static_cast<std::size_t>(slot));
+        tracks.clear();
+        for (std::size_t i = 1; i <= kMoodTracks; ++i) {
+            if (const std::string name = absent(args, i) ? std::string() : binding::string(args, i); !name.empty()) {
+                tracks.push_back(crc32(name));
+            }
+        }
+        story.systemMusic = true;
+        if (story.musicMood == slot) {
+            story.musicMood = -1;
+        }
+        return binding::none();
+    };
+}
+
+// `SoundSetEffect(effect, depth, delay, feedback)`: the reverb's settings, kept (**Coney stand-in**: no reverb yet).
+// @orig 0x00114028 Sound_SetEffect (unknown)
+NativeFunction makeSoundSetEffect(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        StoryState& story = context->state->story;
+        story.reverbType = static_cast<int>(wholeArg(args, 0));
+        story.reverbDepth = static_cast<float>(binding::number(args, 1));
+        story.reverbDelay = static_cast<int>(wholeArg(args, 2));
+        story.reverbFeedback = static_cast<int>(wholeArg(args, 3));
+        return binding::none();
+    };
+}
+
+// `SoundEnableEffects(on)`: the reverb on (the default, when the argument is left out) or off, kept (**Coney
+// stand-in**).
+// @orig 0x00114060 Sound_EnableEffects (unknown)
+NativeFunction makeSoundEnableEffects(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        context->state->story.reverbOn = args.empty() || boolArg(args, 0);
+        return binding::none();
+    };
+}
+
+} // namespace
+
+void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context) {
+    vm.registerFunction("CameraGetActive", makeCameraGetActive(context));
+    vm.registerFunction("CameraSetClipping", makeCameraSetClipping(context));
+    vm.registerFunction("CamGetPos", makeCamGetPos(context));
+    vm.registerFunction("CamSetFollowPos", makeCamSetFollowPos(context));
+    vm.registerFunction("EndParticle", makeParticleSwitch(context, false));
+    vm.registerFunction("SoundEnableEffects", makeSoundEnableEffects(context));
+    vm.registerFunction("SoundEnableSystemMusic", makeSoundEnableSystemMusic(context));
+    vm.registerFunction("SoundSetEffect", makeSoundSetEffect(context));
+    vm.registerFunction("SoundSetMusicTrack", makeSoundSetMusicTrack(context));
+    vm.registerFunction("StartParticle", makeParticleSwitch(context, true));
+}
+
+} // namespace coney::script

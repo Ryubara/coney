@@ -386,10 +386,30 @@ subsystem = "Audio"
 size = 56
 
 [[function]]
+address = 0x00113ea8
+name = "Sound_EnableSystemMusic"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00113ed0
+name = "Sound_SetMusicTrack"
+subsystem = "Audio"
+
+[[function]]
 address = 0x00114018
 name = "Sound_SetListener"
 subsystem = "Audio"
 size = 16
+
+[[function]]
+address = 0x00114028
+name = "Sound_SetEffect"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00114060
+name = "Sound_EnableEffects"
+subsystem = "Audio"
 
 [[function]]
 address = 0x00114088
@@ -433,14 +453,29 @@ name = "Task_Update"
 subsystem = "Audio"
 
 [[function]]
+address = 0x0011b838
+name = "Camera_GetActiveHandle"
+subsystem = "Camera"
+
+[[function]]
 address = 0x0011b888
 name = "Camera_Delete"
 subsystem = "Camera"
 size = 152
 
 [[function]]
+address = 0x0011b920
+name = "Camera_GetPositionByHandle"
+subsystem = "Camera"
+
+[[function]]
 address = 0x0011bad8
 name = "Camera_ResetByHandle"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011bb98
+name = "Camera_SetClipping"
 subsystem = "Camera"
 
 [[function]]
@@ -472,6 +507,11 @@ subsystem = "Camera"
 [[function]]
 address = 0x0011c470
 name = "Camera_SetFollowZoom"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011c638
+name = "Camera_SetFollowPosition"
 subsystem = "Camera"
 
 [[function]]
@@ -1221,6 +1261,11 @@ address = 0x00168f58
 name = "Gang_AreFriends"
 subsystem = "GameModes"
 size = 136
+
+[[function]]
+address = 0x001696e0
+name = "Gangs_MusicMood"
+subsystem = "GameModes"
 
 [[function]]
 address = 0x001698f0
@@ -6458,6 +6503,16 @@ subsystem = "TaskEngine"
 size = 8
 
 [[function]]
+address = 0x003975c0
+name = "Particle_Start"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00397610
+name = "Particle_End"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x00398348
 name = "ObjZoneMask_Set"
 subsystem = "TaskEngine"
@@ -6935,6 +6990,11 @@ address = 0x00418428
 name = "RepeatTracker_Note"
 subsystem = "Warriors"
 size = 240
+
+[[function]]
+address = 0x0041a060
+name = "GameState_UpdateSystemMusic"
+subsystem = "Warriors"
 
 [[function]]
 address = 0x0041a8c0

@@ -870,6 +870,10 @@ The world viewer keeps its own free camera with the player camera's lens
   ([Characters](characters.md#update)), and the device takes the lens once per frame.
 - Keep the camera deterministic (no real time) so the test mode can compare frames.
 
+In Coney, `CameraSetClipping` sets a locked camera's near and far clips and the follow camera's own far clip (at most
+150; the follow camera keeps its 0.1 near clip), `CameraGetActive` answers the current camera's handle (NilHandle for a
+scene's or for player 2), `CamGetPos` its position, and `CamSetFollowPos` puts the follow camera at a point at once.
+
 ## Open questions
 
 - **The circling rate** (answered): the original circles at about 190°/s at a run and 143°/s at a walk; the 122°/s

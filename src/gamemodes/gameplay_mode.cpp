@@ -15,6 +15,7 @@
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/player_frame.h"
+#include "gamemodes/system_music.h"
 #include "hud/hud.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/anim_callbacks.h"
@@ -359,6 +360,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_scripted->runAnimCallbacks();
         m_scripted->humanHost().runRageHandlers();
         m_scripted->storyHost().update();
+        stepSystemMusic(m_state.story, m_context.sound, m_state.random, m_scripted->storyHost().musicMood());
     }
     updateBoxes(nowMs);
     if (m_scripted && m_context.messages != nullptr) {

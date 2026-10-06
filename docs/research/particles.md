@@ -150,7 +150,8 @@ pane's [shatter](objects.md#shatter) makes its shards with `spawnShard`, and the
 budget is 4,096 sprites; a name Coney does not draw, or the table lacks, makes an inert system that still answers to
 its handle; an attached system keeps its spawn offset from its parent; glows, flashes, flames and sparks add to what
 is behind them, the rest blend by alpha; a shard is an untextured quad; a shatter wants player 1 within 10 m and room
-for 158 sprites.
+for 158 sprites. `StartParticle` and `EndParticle` switch a system's stream on and off (sprites in flight live out
+their life; each type's own answer to messages `0x12` and `0x13` is not traced), and show or hide a plain object.
 
 ## Open questions
 

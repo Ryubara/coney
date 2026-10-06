@@ -132,6 +132,11 @@ class ScriptedStory final : public script::StoryBindingHost {
 
     /// The spawner start kept for gang `gang`; null for none.
     [[nodiscard]] const SpawnerStart* spawnerStart(int gang) const;
+    /// The system music's mood round player 1: 1 (fight) while an AI human with health left targets him and has a fight
+    /// or melee goal, else 0 (calm). **Coney stand-in**: the hunted mood (2, a gang member chasing him, goals `0xc`,
+    /// `0x75`, `0x76`) is not built, as those goals are not.
+    /// @orig 0x001696e0 Gangs_MusicMood (unknown)
+    [[nodiscard]] int musicMood() const;
     /// The last Warrior command started (-1 for none).
     [[nodiscard]] int warriorCommand() const { return m_warriorCommand; }
 

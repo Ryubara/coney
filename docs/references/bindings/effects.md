@@ -264,7 +264,7 @@ flight finish their life is up to each type (not traced in general).
 - **Wrapper** `0x00379160` (registered by `RegisterBindings`); **calls** `0x00397610` `Particle_End`
 - **Used by** 16 of 467 script chunks (39 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## EndRain {#endrain}
 
@@ -1021,7 +1021,7 @@ objects](../../research/objects.md), types: [Particles](../../research/particles
 - **Wrapper** `0x00379128` (registered by `RegisterBindings`); **calls** `0x003975c0` `Particle_Start`
 - **Used by** 20 of 467 script chunks (48 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## StartRain {#startrain}
 

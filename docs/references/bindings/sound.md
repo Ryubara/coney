@@ -836,7 +836,7 @@ Turns the reverb effect on or off.
 - **Wrapper** `0x00372f80` (registered by `RegisterBindings`); **calls** `0x00114060`
 - **Used by** 14 of 467 script chunks (15 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundEnableSystemMusic {#soundenablesystemmusic}
 
@@ -862,7 +862,7 @@ on too. Tracks per mood and the fades: [Sound](../../research/sound.md#music-pla
 - **Wrapper** `0x00371470` (registered by `RegisterBindings`); **calls** `0x00113ea8` `Sound_EnableSystemMusic`
 - **Used by** 89 of 467 script chunks (154 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundLoopMusicTrack {#soundloopmusictrack}
 
@@ -1152,7 +1152,7 @@ reverb parameters and are inferred.
 - **Wrapper** `0x00372e58` (registered by `RegisterBindings`); **calls** `0x00114028`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 16 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundSetMusicStateCallback {#soundsetmusicstatecallback}
 
@@ -1208,7 +1208,7 @@ names are inferred from 0x0041a060's tests. [Sound](../../research/sound.md#musi
 - **Wrapper** `0x003714a0` (registered by `RegisterBindings`); **calls** `0x00113ed0` `Sound_SetMusicTrack`
 - **Used by** 73 of 467 script chunks (275 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 21 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundSetMusicVolume {#soundsetmusicvolume}
 

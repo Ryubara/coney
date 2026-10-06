@@ -12,6 +12,7 @@
 
 #include "animation/anim_math.h"
 #include "camera/camera_blend.h"
+#include "camera/camera_lens.h"
 #include "camera/camera_shake.h"
 #include "camera/camera_view.h"
 #include "camera/follow_camera.h"
@@ -112,6 +113,21 @@ class Cameras {
     /// @orig 0x0011c2f0 Camera_SetFollowHeading (unknown)
     void setFollowHeading(float degrees);
 
+    /// `CameraSetClipping(camera, near, far)`: the camera's near clip and its own far clip, at most
+    /// LockedCamera::kMaxFarClip; the follow camera keeps its near clip. Nothing for a handle that names no camera.
+    /// @orig 0x0011bb98 Camera_SetClipping (unknown)
+    void setClipping(double handle, float nearClip, float farClip);
+    /// The follow camera's own far clip (the player camera's 115 until `CameraSetClipping`).
+    [[nodiscard]] float followFarClip() const { return m_followFarClip; }
+    /// `CameraGetActive`: the handle of the current camera; nothing for none or a scene's camera.
+    /// @orig 0x0011b838 Camera_GetActiveHandle (unknown)
+    [[nodiscard]] std::optional<double> activeHandle() const;
+    /// `CamGetPos`: where the camera with `handle` is now; nothing for a handle that names no camera.
+    /// @orig 0x0011b920 Camera_GetPositionByHandle (unknown)
+    [[nodiscard]] std::optional<anim::Vec3> positionOf(double handle) const;
+    /// `CamSetFollowPos`: the follow camera put at `position` at once (FollowCamera::placeAt()); nothing without one.
+    void setFollowPosition(anim::Vec3 position);
+
     /// `CameraMakeActive(camera, seconds)`: makes the camera with `handle` current, at once with 0 seconds or no
     /// current camera (which runs the follow camera's activation), otherwise through a blend from the view shown now.
     /// While a scene camera is current it replaces the camera on the stack instead. A handle that names no camera
@@ -209,6 +225,7 @@ class Cameras {
     std::optional<double> m_followHandle;
     std::optional<FollowSettings> m_pendingSettings; // a CfgFollowCamera made before the follow camera was attached
     std::map<double, LockedCamera> m_locked;
+    float m_followFarClip = kPlayerCameraLens.farClip;
     std::optional<WinCamera> m_win;
     double m_winHandle = 0.0; // the win camera's handle once made
     double m_winTarget = 0.0;

@@ -258,6 +258,10 @@ class FollowCamera {
     /// a trace that starts where the original's save state had the camera (`--start`). The constructor's placement is
     /// this at the leash band's near edge behind the target.
     void place(anim::Vec3 targetFeet, float distance, float viewHeading);
+    /// `CamSetFollowPos`: the camera put at `position` at once, its wanted position there too and its look-at point
+    /// snapped onto the target's last feet, with no blend.
+    /// @orig 0x0011c638 Camera_SetFollowPosition (unknown)
+    void placeAt(anim::Vec3 position);
 
     /// Where the camera is.
     [[nodiscard]] anim::Vec3 position() const { return m_position; }

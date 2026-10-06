@@ -26,6 +26,7 @@ add_library(coney_core STATIC
     gamemodes/front_end_services.cpp
     gamemodes/game_mode_stack.cpp
     gamemodes/gameplay_mode.cpp
+    gamemodes/system_music.cpp
     gamemodes/legal_screen_mode.cpp
     gamemodes/level_crime_services.cpp
     gamemodes/loading_screen.cpp
@@ -119,6 +120,7 @@ add_library(coney_core STATIC
     scripting/sound_bindings.cpp
     scripting/spawn_bindings.cpp
     scripting/story_bindings.cpp
+    scripting/story_effects_bindings.cpp
     scripting/trigger_bindings.cpp
     scripting/world_bindings.cpp
     warriors/created_humans.cpp

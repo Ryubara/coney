@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.8% of the game's own code (430,988 of 3,354,776 bytes, 1,304 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.8% of the game's own code (430,988 of 3,354,776 bytes, 1,316 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-351 reimplemented function(s) have no size yet and add no bytes.
+363 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -53,13 +53,13 @@ at the top of the repository's `README.md`.
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
-| `Audio` | `█▍░░░░░░░░░░░░░░░░░░` | 6.7% | 50 | 57,368 |
-| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 41 | 165,680 |
+| `Audio` | `█▍░░░░░░░░░░░░░░░░░░` | 6.7% | 54 | 57,368 |
+| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 45 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 25 | 62,808 |
 | `FileIO` | `██▋░░░░░░░░░░░░░░░░░` | 13.0% | 7 | 7,120 |
-| `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 84 | 100,440 |
+| `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 85 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
 | `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.5% | 382 | 1,096,672 |
@@ -70,11 +70,11 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 29.8% | 191 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 55 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 57 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% | 31 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 23 | 22,008 |
-| `Warriors` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 91 | 54,264 |
+| `Warriors` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 92 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -171,7 +171,11 @@ at the top of the repository's `README.md`.
 | `0x00113a58` | `Ambient_SetEmitterPositions` | `Audio` | 208 |
 | `0x00113dd0` | `Sound_AllocateCharacterVoices` | `Audio` | 40 |
 | `0x00113df8` | `Sound_SetCommandSoundPercent` | `Audio` | 56 |
+| `0x00113ea8` | `Sound_EnableSystemMusic` | `Audio` | not filled in |
+| `0x00113ed0` | `Sound_SetMusicTrack` | `Audio` | not filled in |
 | `0x00114018` | `Sound_SetListener` | `Audio` | 16 |
+| `0x00114028` | `Sound_SetEffect` | `Audio` | not filled in |
+| `0x00114060` | `Sound_EnableEffects` | `Audio` | not filled in |
 | `0x00114088` | `Audio_PauseSound` | `Audio` | 72 |
 | `0x001140d8` | `Sound_PlayCommand` | `Audio` | 160 |
 | `0x001141b0` | `Sound_CfgInterfaceSound` | `Audio` | 48 |
@@ -179,14 +183,18 @@ at the top of the repository's `README.md`.
 | `0x00115bb0` | `VoiceTable_SetPercent` | `Audio` | 128 |
 | `0x001164a8` | `VoiceTable_Build` | `Audio` | 784 |
 | `0x0011a170` | `Task_Update` | `Audio` | not filled in |
+| `0x0011b838` | `Camera_GetActiveHandle` | `Camera` | not filled in |
 | `0x0011b888` | `Camera_Delete` | `Camera` | 152 |
+| `0x0011b920` | `Camera_GetPositionByHandle` | `Camera` | not filled in |
 | `0x0011bad8` | `Camera_ResetByHandle` | `Camera` | not filled in |
+| `0x0011bb98` | `Camera_SetClipping` | `Camera` | not filled in |
 | `0x0011bfa8` | `Camera_SetupFollow` | `Camera` | not filled in |
 | `0x0011c0b8` | `CfgFollowCamera` | `Camera` | not filled in |
 | `0x0011c270` | `Camera_TargetList` | `Camera` | not filled in |
 | `0x0011c2f0` | `Camera_SetFollowHeading` | `Camera` | 200 |
 | `0x0011c3b8` | `Camera_SetFollowPitch` | `Camera` | not filled in |
 | `0x0011c470` | `Camera_SetFollowZoom` | `Camera` | not filled in |
+| `0x0011c638` | `Camera_SetFollowPosition` | `Camera` | not filled in |
 | `0x0011c858` | `Camera_CreateWin` | `Camera` | 392 |
 | `0x0011dcf0` | `Camera_SetFollowSecondary` | `Camera` | not filled in |
 | `0x0011de58` | `Camera_EnableFeature` | `Camera` | not filled in |
@@ -319,6 +327,7 @@ at the top of the repository's `README.md`.
 | `0x00166220` | `Gang_StandingCount` | `GameModes` | 232 |
 | `0x00166308` | `Gang_AddMember` | `GameModes` | 464 |
 | `0x00168f58` | `Gang_AreFriends` | `GameModes` | 136 |
+| `0x001696e0` | `Gangs_MusicMood` | `GameModes` | not filled in |
 | `0x001698f0` | `Gang_UpdateWanted` | `GameModes` | 304 |
 | `0x0016a1e8` | `Gang_FreeWhenEmpty` | `GameModes` | not filled in |
 | `0x0016a220` | `Gang_Suspend` | `GameModes` | 64 |
@@ -1227,6 +1236,8 @@ at the top of the repository's `README.md`.
 | `0x00397078` | `Door_SetPickable` | `TaskEngine` | 336 |
 | `0x00397230` | `Door_Spawn` | `TaskEngine` | 256 |
 | `0x00397330` | `DoorCRCCheck` | `TaskEngine` | 8 |
+| `0x003975c0` | `Particle_Start` | `TaskEngine` | not filled in |
+| `0x00397610` | `Particle_End` | `TaskEngine` | not filled in |
 | `0x00398348` | `ObjZoneMask_Set` | `TaskEngine` | 104 |
 | `0x00398940` | `ObjRecord_Add` | `TaskEngine` | not filled in |
 | `0x00398df8` | `ObjRecord_SetPinned` | `TaskEngine` | not filled in |
@@ -1313,6 +1324,7 @@ at the top of the repository's `README.md`.
 | `0x00416bb8` | `Flag_GetPosition` | `WorldObjects` | 40 |
 | `0x00416ed0` | `Flag_GetOwner` | `WorldObjects` | not filled in |
 | `0x00418428` | `RepeatTracker_Note` | `Warriors` | 240 |
+| `0x0041a060` | `GameState_UpdateSystemMusic` | `Warriors` | not filled in |
 | `0x0041a8c0` | `Human_SwitchPlayer` | `Warriors` | 256 |
 | `0x0041ab30` | `SlowMotion_On` | `Warriors` | not filled in |
 | `0x0041ab60` | `SlowMotion_Off` | `Warriors` | not filled in |

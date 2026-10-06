@@ -41,6 +41,7 @@ struct ParticleSystem {
     std::uint32_t colour = 0xFFFFFFFFU; ///< `+0xb0`, `0xRRGGBBAA`.
     std::uint16_t rect = 0;             ///< The low half of the sprite word `+0xc4`.
     bool hidden = false;                ///< `+0x54` bit 0x04: drawn not.
+    bool emitting = true;               ///< On (`StartParticle`) or off (`EndParticle`): a stream makes sprites.
     float age = 0.0F;                   ///< Seconds since its spawn.
     float emitDue = 0.0F;               ///< Seconds until a stream type makes its next sprite.
     bool started = false;               ///< Whether its first step (a burst's emission) has run.
@@ -99,6 +100,13 @@ class ParticleSystems {
     bool kill(double handle);
     /// Hides or shows the system `handle` names (messages 0x29 and 0x2a); an unknown handle is ignored.
     void setHidden(double handle, bool hidden);
+
+    /// `StartParticle` / `EndParticle` (messages `0x12` and `0x13`): the system `handle` names starts or stops making
+    /// sprites; those in flight live out their life (**Coney choice**: each type's own answer is not traced). False
+    /// when no system has the handle.
+    /// @orig 0x003975c0 Particle_Start (unknown)
+    /// @orig 0x00397610 Particle_End (unknown)
+    bool setEmitting(double handle, bool on);
 
     /// One step of `seconds`: each system follows its parent, makes and moves its sprites, and ends when its type's
     /// behaviour says so.

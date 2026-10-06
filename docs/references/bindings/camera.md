@@ -385,7 +385,7 @@ CameraMakeActive) or read its position.
 - **Wrapper** `0x003657a0` (registered by `RegisterBindings`); **calls** `0x0011b838` `Camera_GetActiveHandle`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CameraMakeActive {#cameramakeactive}
 
@@ -463,7 +463,7 @@ world](../../research/world.md#a-frame).
 - **Wrapper** `0x00365600` (registered by `RegisterBindings`); **calls** `0x0011bb98` `Camera_SetClipping`
 - **Used by** 19 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CameraTransform {#cameratransform}
 
@@ -543,7 +543,7 @@ Returns where a camera is in the world, for example to place a flag or an effect
 - **Wrapper** `0x00365850` (registered by `RegisterBindings`); **calls** `0x0011b920` `Camera_GetPositionByHandle`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamGhostDoor {#camghostdoor}
 
@@ -815,7 +815,7 @@ camera current. The leash rules then keep the camera where it was put until the 
   `0x00125c50`
 - **Used by** 12 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamSetFollowZoom {#camsetfollowzoom}
 

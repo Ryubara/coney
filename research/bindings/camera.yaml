@@ -22,6 +22,7 @@
     the handle is checked, so an invalid handle crashes. Draw distance: [The streamed
     world](../../research/world.md#a-frame).
   usage: {chunks: 19, calls: 23, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 2, 81, 86, 93, 14, 9, 51, 52]}
+  coney: implemented
 
 - name: CameraMakeActive
   wrapper: 0x003656a0
@@ -59,6 +60,7 @@
   notes: >-
     The handle is pushed as an unsigned number (negative values get 2^32 added).
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: true, levels: [87, 86, 54]}
+  coney: implemented
 
 - name: CamDelete
   wrapper: 0x00365818
@@ -94,6 +96,7 @@
   notes: >-
     The vector is the camera's own, not a copy: read it at once, it changes as the camera moves.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [87, 54]}
+  coney: implemented
 
 - name: CameraTransform
   wrapper: 0x003658c0
@@ -247,6 +250,7 @@
     Does nothing if the player has no follow camera yet (it is not created here); it does not make the follow camera
     current. The leash rules then keep the camera where it was put until the player drags it.
   usage: {chunks: 12, calls: 17, boot: false, mission1: false, result_used: false, levels: [87, 5, 9, 51, 52, 54, 11]}
+  coney: implemented
 
 - name: CameraCreateLocked
   wrapper: 0x00365d38

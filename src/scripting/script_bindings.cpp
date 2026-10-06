@@ -34,6 +34,7 @@
 #include "scripting/sound_bindings.h"
 #include "scripting/spawn_bindings.h"
 #include "scripting/story_bindings.h"
+#include "scripting/story_effects_bindings.h"
 #include "scripting/trigger_bindings.h"
 #include "scripting/world_bindings.h"
 #include "world_objects/object_types.h"
@@ -706,6 +707,15 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("SetInterrogateParam"),
     real("WCEnableAllCommands"),
     real("WCIssueCommand"),
+    // The story missions' cameras, particles and sound (story_effects_bindings.h).
+    real("CameraGetActive"),
+    real("CameraSetClipping"),
+    real("CamGetPos"),
+    real("CamSetFollowPos"),
+    real("EndParticle"),
+    real("SoundEnableSystemMusic"),
+    real("SoundSetMusicTrack"),
+    real("StartParticle"),
     // The story's second and third missions (story_bindings.h).
     real("TacticAvoidEnemies"),
     real("TacticDefend"),
@@ -1011,8 +1021,8 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     recording("AddCommand"),
     // Sound and music state.
     stub("SndLoadMatrix"),
-    stub("SoundEnableEffects"),
-    stub("SoundSetEffect"),
+    real("SoundEnableEffects"),
+    real("SoundSetEffect"),
     // Unlockables and saves: Coney has none.
     stub("ResetCommands"),
     stub("SetLUASaveDataBool"),
@@ -1170,7 +1180,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kHudBindings, info.name) != kHudBindings.end() ||
                      std::ranges::find(kWorldBindings, info.name) != kWorldBindings.end() ||
                      std::ranges::find(kStoryBindings, info.name) != kStoryBindings.end() ||
-                     std::ranges::find(kArenaBindings, info.name) != kArenaBindings.end());
+                     std::ranges::find(kArenaBindings, info.name) != kArenaBindings.end() ||
+                     std::ranges::find(kStoryEffectsBindings, info.name) != kStoryEffectsBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -1200,6 +1211,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addRumbleMatchBindings(vm, context, nextHandle);
     addHumanBindings(vm, context, nextHandle);
     addStoryBindings(scripts, vm, context, nextHandle);
+    addStoryEffectsBindings(vm, context);
     addEffectsBindings(vm, context, nextHandle);
     addCarBindings(vm, context, nextHandle);
     addArenaBindings(vm, context);

@@ -231,6 +231,15 @@ void ParticleSystems::emit(ParticleSystem& system, std::size_t count) {
     }
 }
 
+bool ParticleSystems::setEmitting(double handle, bool on) {
+    const auto found = std::ranges::find(m_systems, handle, &ParticleSystem::handle);
+    if (handle == 0 || found == m_systems.end()) {
+        return false;
+    }
+    found->emitting = on;
+    return true;
+}
+
 bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
     // Follow the parent, while it is there.
     if (system.parent != 0 && m_locator) {
@@ -263,7 +272,7 @@ bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
         }
     }
     // A stream makes its sprites as its interval comes round.
-    if (behaviour == ParticleBehaviour::Flames) {
+    if (behaviour == ParticleBehaviour::Flames && system.emitting) {
         system.emitDue -= seconds;
         while (system.emitDue <= 0.0F) {
             emit(system, 1);

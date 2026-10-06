@@ -163,3 +163,19 @@ TEST_CASE("the same seed gives the same sprites", "[particles]") {
         CHECK(pa[i].position == pb[i].position);
     }
 }
+
+TEST_CASE("a stream switched off makes no sprites until it is switched on again", "[particles]") {
+    ParticleSystems systems;
+    REQUIRE(systems.spawn("part_fire", Vec3{}, {}, 0, 2) != nullptr);
+    CHECK(systems.setEmitting(2, false));
+    CHECK_FALSE(systems.setEmitting(99, false));
+    for (int i = 0; i < 30; ++i) {
+        systems.step(kStep);
+    }
+    CHECK(systems.find(2)->particles.empty());
+    CHECK(systems.setEmitting(2, true));
+    for (int i = 0; i < 30; ++i) {
+        systems.step(kStep);
+    }
+    CHECK_FALSE(systems.find(2)->particles.empty());
+}

@@ -20,6 +20,7 @@
 
 #include "core/error.h"
 #include "core/name_hash.h"
+#include "gamemodes/system_music.h"
 #include "gui/global_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
@@ -255,4 +256,39 @@ TEST_CASE("the speech bindings pass the speaker, the line and the callback; a re
                                                     "speak 12 vags/speeches/l99/b true Said -1", "shut up 12 true",
                                                     "speak 12 vags/speeches/l99/c false Said 3",
                                                     "command 12 -1 16 false Said"});
+}
+
+TEST_CASE("the system music plays a track of the mood and changes with it", "[scripting][sound]") {
+    Harness harness;
+    coney::StoryState& story = harness.state.story;
+    harness.call("SoundSetMusicTrack", {Value(0.0), Value("calm_a"), Value(""), Value("calm_b")});
+    harness.call("SoundSetMusicTrack", {Value(1.0), Value("fight_a")});
+    CHECK(story.systemMusic);
+    CHECK(story.moodTracks[0] == std::vector<std::uint32_t>{coney::crc32("calm_a"), coney::crc32("calm_b")});
+
+    coney::stepSystemMusic(story, &harness.sound, harness.state.random, 1);
+    REQUIRE(harness.sound.calls.size() == 1);
+    CHECK(harness.sound.calls[0] == std::format("music {:#x} true ", coney::crc32("fight_a")));
+    // The same mood again: nothing new.
+    coney::stepSystemMusic(story, &harness.sound, harness.state.random, 1);
+    CHECK(harness.sound.calls.size() == 1);
+    // A mood with no tracks stops the music; switched off, the music stops and nothing more is picked.
+    coney::stepSystemMusic(story, &harness.sound, harness.state.random, 2);
+    CHECK(harness.sound.calls.back() == "music stop");
+    harness.call("SoundEnableSystemMusic", {Value()});
+    CHECK_FALSE(story.systemMusic);
+    const std::size_t calls = harness.sound.calls.size();
+    coney::stepSystemMusic(story, &harness.sound, harness.state.random, 0);
+    CHECK(harness.sound.calls.size() == calls);
+}
+
+TEST_CASE("the reverb's settings are kept", "[scripting][sound]") {
+    Harness harness;
+    harness.call("SoundSetEffect", {Value(5.0), Value(0.2), Value(50.0), Value(50.0)});
+    harness.call("SoundEnableEffects");
+    CHECK(harness.state.story.reverbType == 5);
+    CHECK(harness.state.story.reverbDepth == Approx(0.2F));
+    CHECK(harness.state.story.reverbOn);
+    harness.call("SoundEnableEffects", {Value()});
+    CHECK_FALSE(harness.state.story.reverbOn);
 }
