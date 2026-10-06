@@ -241,7 +241,7 @@ read, confirmed (code) at 0x0037a2f8, 0x0041b6e0 and 0x0041b8b0 ([Crimes: wanted
 - **Wrapper** `0x0037a2f8` (registered by `RegisterBindings`); **calls** `0x0041b6e0`
 - **Used by** 12 of 467 script chunks (18 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 22 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## EnableGameOverCheck {#enablegameovercheck}
 
@@ -1430,7 +1430,7 @@ only the spawner path reads it). What counts `+0x432` up and down is not traced.
 - **Wrapper** `0x0035b0a0` (registered by `RegisterBindings`); **calls** `0x00299510` `GameState_SetSpawnMax`
 - **Used by** 48 of 467 script chunks (48 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SpawnCustomCrime {#spawncustomcrime}
 

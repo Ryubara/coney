@@ -171,7 +171,7 @@ read, and the squared distance compared with the squared limit, so exactly at th
 - **Wrapper** `0x0036ce58` (registered by `RegisterBindings`); **calls** `0x00385ea8`
 - **Used by** 16 of 467 script chunks (38 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 21 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ToInt {#toint}
 

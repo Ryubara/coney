@@ -221,8 +221,10 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     // Without the pad the record keeps only the brain's move, which the brains write in the step.
     const anim::Vec3 cameraForward = m_cameras != nullptr ? camera::viewForward(m_cameras->view()) : m_camera.forward();
     if (m_padControlled) {
-        m_human.record() = PlayerRecord{.stickX = pad.leftX(),
-                                        .stickY = pad.leftY(),
+        // A locked stick reads as centred (HuLockPadMovement); the buttons still act.
+        const bool stickFree = !script.movementLocked;
+        m_human.record() = PlayerRecord{.stickX = stickFree ? pad.leftX() : 0.0F,
+                                        .stickY = stickFree ? pad.leftY() : 0.0F,
                                         .cameraForward = cameraForward,
                                         .sprintHeld = !script.padLocked && pad.held(pad::kL2),
                                         .actionPressed = !script.padLocked && pad.pressed(pad::kTriangle),

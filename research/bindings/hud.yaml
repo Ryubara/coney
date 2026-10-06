@@ -59,6 +59,7 @@
     Used around scripted moments where squad orders must not be given; the per-command availability shown in the
     display comes from game state `+0x41e` and is not set here.
   usage: {chunks: 9, calls: 32, boot: false, mission1: false, result_used: false, levels: [87, 3, 93]}
+  coney: implemented
 
 - name: HUDSetAnnounceMsg
   wrapper: 0x0036e858

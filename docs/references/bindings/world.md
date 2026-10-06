@@ -144,7 +144,7 @@ paths repeatedly runs out of slots.
 - **Wrapper** `0x0037ab38` (registered by `RegisterBindings`); **calls** `0x00415740` `Path_Add`
 - **Used by** 15 of 467 script chunks (42 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 10 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## AddVolumeBox {#addvolumebox}
 
@@ -773,7 +773,7 @@ occupant list without sending leave messages, so humans still inside on re-enabl
   `VolumeBox_SetEnabled`
 - **Used by** 43 of 467 script chunks (173 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## FindFlag {#findflag}
 
@@ -849,7 +849,7 @@ a direct write (inferred: an inlined write in the goals).
 - **Wrapper** `0x00378160` (registered by `RegisterBindings`); **calls** `0x00416ed0` `Flag_GetOwner`
 - **Used by** 9 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 4 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## FlagNetAddLink {#flagnetaddlink}
 
@@ -1190,7 +1190,7 @@ Tests whether a character or object stands inside a volume box.
 - **Wrapper** `0x0037afb8` (registered by `RegisterBindings`); **calls** `0x00413198` `VolumeBox_ContainsObject`
 - **Used by** 75 of 467 script chunks (297 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjColor {#objcolor}
 
@@ -1835,7 +1835,7 @@ What 0x00251718 tests on a node is not traced. Planning: [AI](../../research/ai.
 - **Wrapper** `0x0036cf88` (registered by `RegisterBindings`); **calls** `0x00386010` `Obj_PathExists`
 - **Used by** 16 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 16 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ReleasePTank {#releaseptank}
 
@@ -1934,7 +1934,7 @@ spot; a flag that follows a parent keeps reporting the parent's position.
   `Flag_SetPositionRaw`
 - **Used by** 19 of 467 script chunks (37 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetPositionOfWater {#setpositionofwater}
 

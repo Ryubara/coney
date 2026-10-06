@@ -48,7 +48,7 @@ TEST_CASE("the status comes from Coney's binding table", "[debug]") {
     CHECK(coney::debug::nativeStatus("GetPlatform") == NativeStatus::Implemented);
     CHECK(coney::debug::nativeStatus("PlayMovie") == NativeStatus::Partial);
     CHECK(coney::debug::nativeStatus("GetPTank") == NativeStatus::Stub);
-    CHECK(coney::debug::nativeStatus("GangGetLeader") == NativeStatus::Missing);
+    CHECK(coney::debug::nativeStatus("GoalPathBlocker") == NativeStatus::Missing);
 }
 
 TEST_CASE("arguments start at their defaults and become the values a script would pass", "[debug]") {
@@ -87,7 +87,7 @@ TEST_CASE("a call goes through the VM: a real binding answers, a stub records, a
     REQUIRE(coney::debug::callNative(vm, "CfgObj", objArgs));
     CHECK(sandbox.recorded().count("CfgObj") == 1);
 
-    const auto missing = coney::debug::callNative(vm, "GangGetLeader", {});
+    const auto missing = coney::debug::callNative(vm, "GoalPathBlocker", {});
     REQUIRE_FALSE(missing);
     CHECK(missing.error().code == coney::ErrorCode::NotFound);
 

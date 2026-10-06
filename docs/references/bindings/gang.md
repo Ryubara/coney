@@ -160,7 +160,7 @@ is ignored silently.
 - **Wrapper** `0x00373438` (registered by `RegisterBindings`); **calls** `0x0016a328`
 - **Used by** 28 of 467 script chunks (87 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 25 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangAttachSpinningIcon {#gangattachspinningicon}
 
@@ -338,7 +338,7 @@ the name.
 - **Wrapper** `0x00374688` (registered by `RegisterBindings`); **calls** `0x0016be30`
 - **Used by** 17 of 467 script chunks (37 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangClearBums {#gangclearbums}
 
@@ -502,7 +502,7 @@ Turns the gang's coordinated attack strategies (flanking, taking turns) on or of
 - **Wrapper** `0x00373308` (registered by `RegisterBindings`); **calls** `0x0016a2a8`
 - **Used by** 4 of 467 script chunks (11 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangEngageEnemy {#gangengageenemy}
 
@@ -528,7 +528,7 @@ a fight sub-goal ([AI](../../research/ai.md#fight)). The gang's tactic is left a
 - **Wrapper** `0x00373930` (registered by `RegisterBindings`); **calls** `0x0016a870` `Gang_EngageEnemy`
 - **Used by** 10 of 467 script chunks (18 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangExitWorld {#gangexitworld}
 
@@ -554,7 +554,7 @@ any) runs at once and the gang is deleted unless deleteGang is false.
 - **Wrapper** `0x00373880` (registered by `RegisterBindings`); **calls** `0x0016a670`
 - **Used by** 24 of 467 script chunks (48 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangGetHeadCount {#ganggetheadcount}
 
@@ -600,7 +600,7 @@ Returns the gang's current leader.
 - **Wrapper** `0x00373788` (registered by `RegisterBindings`); **calls** `0x0016a578`
 - **Used by** 6 of 467 script chunks (32 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangGetStandingCount {#ganggetstandingcount}
 
@@ -734,7 +734,7 @@ reads are confirmed (0x0016b580).
 - **Wrapper** `0x0035f5c0` (registered by `RegisterBindings`); **calls** `0x0016b580`
 - **Used by** 13 of 467 script chunks (25 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 20 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangLookAt {#ganglookat}
 
@@ -940,7 +940,7 @@ members' brains to decide where they go and whom they chase.
 - **Wrapper** `0x003734b0` (registered by `RegisterBindings`); **calls** `0x0016a3a8` `Gang_RemoveTurfBox`
 - **Used by** 5 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangRespond {#gangrespond}
 
@@ -1149,7 +1149,7 @@ gang stores no range). The readers of brain `+0x134` / `+0x138` are not traced h
 - **Wrapper** `0x0035f7f8` (registered by `RegisterBindings`); **calls** `0x0016bbf0` `Gang_SetHearRange`
 - **Used by** 7 of 467 script chunks (75 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetInvestigateResponse {#gangsetinvestigateresponse}
 
@@ -1172,7 +1172,7 @@ Sets whether and how the gang's current members go to investigate disturbances (
 - **Wrapper** `0x0035f3e8` (registered by `RegisterBindings`); **calls** `0x0016b4f0`
 - **Used by** 42 of 467 script chunks (112 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 22 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetLeader {#gangsetleader}
 
@@ -1195,7 +1195,7 @@ Makes a human the gang's leader; the leader is the one the other members follow 
 - **Wrapper** `0x00373710` (registered by `RegisterBindings`); **calls** `0x0016a538`
 - **Used by** 6 of 467 script chunks (8 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 22 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetLOS {#gangsetlos}
 
@@ -1385,7 +1385,7 @@ Values above 255 wrap (one byte).
 - **Wrapper** `0x0035f4e0` (registered by `RegisterBindings`); **calls** `0x0016a2e8` `Gang_SetRespondPercentage`
 - **Used by** 10 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetSpawnerModel {#gangsetspawnermodel}
 
@@ -1513,7 +1513,7 @@ level's spawn cap allows (SetSpawnMax).
   `Gang_SetSpawnerState`, `0x00168aa0` `Gang_FindSpawnerByName`
 - **Used by** 45 of 467 script chunks (229 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSuspend {#gangsuspend}
 

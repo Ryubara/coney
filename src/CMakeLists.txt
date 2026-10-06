@@ -117,6 +117,7 @@ add_library(coney_core STATIC
     scripting/script_system.cpp
     scripting/sound_bindings.cpp
     scripting/spawn_bindings.cpp
+    scripting/story_bindings.cpp
     scripting/trigger_bindings.cpp
     scripting/world_bindings.cpp
     warriors/created_humans.cpp
@@ -238,6 +239,8 @@ target_sources(coney_core PRIVATE
     ai/scripted_brains.cpp
     ai/scripted_goals.cpp
     ai/scripted_humans.cpp
+    ai/scripted_story.cpp
+    ai/story_goals.cpp
     ai/tactic.cpp
     ai/tactic_attack.cpp
     ai/tactic_confront.cpp

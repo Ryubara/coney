@@ -288,4 +288,27 @@ void Gangs::update(std::uint64_t nowMs) {
     m_retired.clear();
 }
 
+std::size_t Gang::turfCount() const {
+    return static_cast<std::size_t>(std::ranges::count_if(m_orders.turf, [](double box) { return box != 0.0; }));
+}
+
+Brain* Gang::leader() const {
+    // Whether `brain` can lead: a member, alive, no player's and on its feet.
+    const auto canLead = [](const Brain* brain) {
+        return brain != nullptr && brain->type() != BrainType::Player &&
+               !brain->human().fighter().health().depleted() && brain->human().state() == human::TargetState::Standing;
+    };
+    for (Brain* member : m_members) {
+        if (member->handle() == m_orders.leader && canLead(member)) {
+            return member;
+        }
+    }
+    for (Brain* member : m_members) {
+        if (canLead(member)) {
+            return member;
+        }
+    }
+    return nullptr;
+}
+
 } // namespace coney::ai

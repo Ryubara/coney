@@ -69,6 +69,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 16, calls: 38, boot: true, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: isRelease
   wrapper: 0x0036d5a8

@@ -38,6 +38,8 @@ class ScriptSystem;
 
 namespace coney::ai {
 
+class ScriptedStory;
+
 /// The brains the scripts drive by handle, and the gangs they make.
 class ScriptedBrains final : public script::AiBindingHost, public FlagServices, public ScriptServices {
   public:
@@ -102,6 +104,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] const std::map<double, Brain*>& bound() const { return m_brains; }
     /// The character bindings' host on the same brains (ai::ScriptedHumans).
     [[nodiscard]] ScriptedHumans& humanHost() { return *m_humans; }
+    /// The story bindings' host on the same brains (ai::ScriptedStory).
+    [[nodiscard]] ScriptedStory& storyHost() { return *m_story; }
+    /// The level's world flags.
+    [[nodiscard]] const world_objects::WorldFlags& flags() const { return *m_flags; }
     /// Names `brain` (which must outlive the binding, or be unbound first) by `handle`, sets its handle, and puts it in
     /// gang `gang` (`HuCreate`'s seventh argument; -1 for none).
     void bind(double handle, Brain& brain, int gang = -1);
@@ -191,6 +197,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] std::optional<world_objects::Placement> humanPlacement(double handle) const override;
     /// The character bindings' host (ai::ScriptedHumans).
     [[nodiscard]] script::HumanBindingHost* humans() override { return m_humans.get(); }
+    /// The story bindings' host (ai::ScriptedStory).
+    [[nodiscard]] script::StoryBindingHost* story() override;
 
     // ---- FlagServices ----
 
@@ -245,6 +253,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     bool m_holding = false;
     std::vector<std::function<void()>> m_held; // the calls held, oldest first
     std::unique_ptr<ScriptedHumans> m_humans;
+    std::unique_ptr<ScriptedStory> m_story;
     std::map<double, HeldHuman> m_heldHumans; // the humans created while holding, by handle
 };
 

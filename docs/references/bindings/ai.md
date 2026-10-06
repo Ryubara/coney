@@ -756,7 +756,7 @@ inferred from the 360 value scripts use for all-round sight.
 - **Wrapper** `0x0035fa50` (registered by `RegisterBindings`); **calls** `0x002928d8` `Brain_SetFieldOfView`
 - **Used by** 19 of 467 script chunks (114 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetInvestigateResponse {#brsetinvestigateresponse}
 
@@ -780,7 +780,7 @@ helpers.
 - **Wrapper** `0x0035f370` (registered by `RegisterBindings`); **calls** `0x002927a8` `Brain_SetInvestigateResponse`
 - **Used by** 29 of 467 script chunks (74 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetMeleeRange {#brsetmeleerange}
 
@@ -930,7 +930,7 @@ Sets whether a human reacts to violence nearby (brain `+0x267`). `global.lua` pa
 - **Wrapper** `0x0035feb8` (registered by `RegisterBindings`); **calls** `0x00292bc8` `Brain_SetReactsToViolence`
 - **Used by** 33 of 467 script chunks (85 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetThreatResponse {#brsetthreatresponse}
 
@@ -1437,7 +1437,7 @@ list at 0x00510ff8.
   `BumGoal_Trigger`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalCallGang {#goalcallgang}
 
@@ -2284,7 +2284,7 @@ threat response of 0 only keeps fighting a target that already holds an attack s
 - **Wrapper** `0x00361150` (registered by `RegisterBindings`); **calls** `0x002add08` `Goal_Melee`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalMoveToExitFlag {#goalmovetoexitflag}
 
@@ -2322,7 +2322,7 @@ for one kind) before it gives up the flag. A panicking human (brain `+0x2e` abov
 - **Wrapper** `0x00360090` (registered by `RegisterBindings`); **calls** `0x002da810` `Goal_MoveToExitFlag`
 - **Used by** 10 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalMoveToFlag {#goalmovetoflag}
 
@@ -2651,7 +2651,7 @@ one), 3 done. With no flag it plays where it stands. `TacticIdle`'s dynIdle opti
 - **Wrapper** `0x003635d0` (registered by `RegisterBindings`); **calls** `0x002d3940` `Goal_PlayDynamicIdle`
 - **Used by** 21 of 467 script chunks (99 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalPlayGenAnim {#goalplaygenanim}
 
@@ -2946,7 +2946,7 @@ waits while the human is busy (0x002286a0); the throw is re-queued every 30 upda
 - **Wrapper** `0x00362b18` (registered by `RegisterBindings`); **calls** `0x002cf480` `Goal_ThrowObject`, `0x002cf690`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalTrackHuman {#goaltrackhuman}
 
@@ -3005,7 +3005,7 @@ is the end mode, as `TacticTravelPath`'s `loop` sets it. A nil path is not check
 - **Wrapper** `0x00360870` (registered by `RegisterBindings`); **calls** `0x002e05a8` `Goal_TravelPath`
 - **Used by** 6 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalTravelPath2 {#goaltravelpath2}
 

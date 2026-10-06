@@ -68,8 +68,6 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// **Coney stand-in**: Coney has one player and no second pad, so the take-over of the gang's members is not
     /// built; nothing happens when player 1 is in that gang already, otherwise the gang is noted (playerGang()).
     void changePlayerGang(int gang, bool stamp) override;
-    /// **Coney stand-in**: the crew's tactics for the Warrior commands are not built; the command is noted.
-    void issueWarriorCommand(double player, int command) override;
     /// 0 for player 1's human.
     [[nodiscard]] std::optional<int> playerIndex(double handle) const override;
     /// Pops the top goal when it is a back-off.
@@ -101,11 +99,11 @@ class ScriptedHumans final : public script::HumanBindingHost {
     [[nodiscard]] const std::vector<script::SpawnerCall>& spawners(int gang) const;
     /// Who holds the flag with `handle` (0 for no one).
     [[nodiscard]] double reservation(double flag) const;
-    /// The gang `HuChangePlayerGang` last named (-1 for none), the game time of the last stamped change, and the last
-    /// Warrior command issued (-1 for none).
+    /// reservation(), for `FlagGetOwner`.
+    [[nodiscard]] double flagUser(double flag) const override { return reservation(flag); }
+    /// The gang `HuChangePlayerGang` last named (-1 for none), and the game time of the last stamped change.
     [[nodiscard]] int playerGang() const { return m_playerGang; }
     [[nodiscard]] std::uint64_t gangChangeMs() const { return m_gangChangeMs; }
-    [[nodiscard]] int warriorCommand() const { return m_warriorCommand; }
 
   private:
     // Runs `body` on the brain named by `handle` now, or when the level makes it while calls are held; nothing when
@@ -124,7 +122,6 @@ class ScriptedHumans final : public script::HumanBindingHost {
     std::map<double, double> m_reservations; // flag -> the human using it
     int m_playerGang = -1;
     std::uint64_t m_gangChangeMs = 0;
-    int m_warriorCommand = -1;
 };
 
 } // namespace coney::ai

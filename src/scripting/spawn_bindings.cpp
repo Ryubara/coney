@@ -47,8 +47,12 @@ NativeFunction makeCfgObj(const BindingContext& context) {
             recorded->add("CfgObj", args);
         }
         if (types != nullptr) {
+            // The kind (argument 20) is kept as a byte (`+0x86`).
+            constexpr std::size_t kObjectKindArg = 19;
             types->add(binding::string(args, 0), binding::string(args, 1),
-                       static_cast<int>(std::trunc(binding::number(args, 2))));
+                       static_cast<int>(std::trunc(binding::number(args, 2))),
+                       static_cast<int>(static_cast<std::uint32_t>(std::trunc(binding::number(args, kObjectKindArg))) &
+                                        0xffU));
         }
         return binding::none();
     };

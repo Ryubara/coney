@@ -81,6 +81,7 @@
   notes: >-
     Same per-member loop as GangSetThreatResponse; value meanings beyond 0 are inferred.
   usage: {chunks: 42, calls: 112, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: GangSetRespondPercentage
   wrapper: 0x0035f4e0
@@ -100,6 +101,7 @@
     Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai.md#tactic-kinds)); other readers may exist. Values
     above 255 wrap (one byte).
   usage: {chunks: 10, calls: 23, boot: false, mission1: false, result_used: false, levels: [87, 14, 51, 52, 82]}
+  coney: implemented
 
 - name: GangSetCustomSpotDialog
   wrapper: 0x0035f558
@@ -136,6 +138,7 @@
     Which flag means 'wanted now' and which 'wanted pending' is inferred from the police code that sets them; the
     reads are confirmed (0x0016b580).
   usage: {chunks: 13, calls: 25, boot: true, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: GangClearWanted
   wrapper: 0x0035f630
@@ -257,6 +260,7 @@
     Only members alive at the call change; humans the gang spawns later keep their own default (inferred: the gang
     stores no range). The readers of brain `+0x134` / `+0x138` are not traced here.
   usage: {chunks: 7, calls: 75, boot: false, mission1: false, result_used: false, levels: [87, 93, 51, 82]}
+  coney: implemented
 
 - name: GangCanFlee
   wrapper: 0x0035f890
@@ -400,6 +404,7 @@
   notes: >-
     The flag write is confirmed; what the strategies are is inferred from the name.
   usage: {chunks: 4, calls: 11, boot: true, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: GangSetMsgHandler
   wrapper: 0x00373370
@@ -456,6 +461,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 28, calls: 87, boot: true, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 61, 64]}
+  coney: implemented
 
 - name: GangRemoveTurfBox
   wrapper: 0x003734b0
@@ -476,6 +482,7 @@
     `GangAddTurfBox` fills the first empty slot, so removed slots are reused. The callers of the tests (0x0028ff38,
     0x0031fdc0, 0x003200c8, 0x0030eec0 ...) are not traced one by one.
   usage: {chunks: 5, calls: 23, boot: false, mission1: false, result_used: false, levels: [80, 34, 93, 31]}
+  coney: implemented
 
 - name: GangAddMember
   wrapper: 0x00373528
@@ -579,6 +586,7 @@
   notes: >-
     The handle is stored without checking membership.
   usage: {chunks: 6, calls: 8, boot: true, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 64]}
+  coney: implemented
 
 - name: GangGetLeader
   wrapper: 0x00373788
@@ -595,6 +603,7 @@
   notes: >-
     0x0016a578 asks the leader object for its handle through its vtable.
   usage: {chunks: 6, calls: 32, boot: true, mission1: false, result_used: true, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: GangSetLOS
   wrapper: 0x00373808
@@ -631,6 +640,7 @@
   notes: >-
     0x0016a670; the per-member goal it gives is given through vtables and is not fully traced.
   usage: {chunks: 24, calls: 48, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 5, 86, 93, 31, 51, 52, 54, 82, 92, 20, 64]}
+  coney: implemented
 
 - name: GangEngageEnemy
   wrapper: 0x00373930
@@ -649,6 +659,7 @@
     The target handle is not checked. The goal's constructor is 0x002af5b0 and its behaviour (Process 0x002afa48) a
     fight sub-goal ([AI](../../research/ai.md#fight)). The gang's tactic is left as it is.
   usage: {chunks: 10, calls: 18, boot: false, mission1: false, result_used: false, levels: [80, 86, 93, 52, 92, 20]}
+  coney: implemented
 
 - name: GangLookAt
   wrapper: 0x003739a8
@@ -926,6 +937,7 @@
     The value and next-spawn time are written even when the mode is not accepted. Spawners only run while the
     level's spawn cap allows (SetSpawnMax).
   usage: {chunks: 45, calls: 229, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: GangSetMaxConcurrent
   wrapper: 0x00374350
@@ -1031,6 +1043,7 @@
     Writes +0x2d1 (on) and +0x2d2 (percent) in each member's AI; the world-flag behaviour itself is inferred from the
     name.
   usage: {chunks: 17, calls: 37, boot: true, mission1: false, result_used: false, levels: [87, 95, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: GangSetReactToViolence
   wrapper: 0x00374718

@@ -15,8 +15,8 @@ missions` sets each entry's `usage.levels` from the disc.
 
 | Level | Story | Bindings | New | New, traced | New, in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [`level80`](#level80) | mission 2 | 178 | 50 | 50 | 13 |
-| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 17 |
+| [`level80`](#level80) | mission 2 | 178 | 50 | 50 | 42 |
+| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 55 |
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 16 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 1 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 1 |
@@ -46,43 +46,43 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level80: mission 2 {#level80}
 
-178 bindings, 50 new: 50 traced, 13 implemented in Coney (141 of all 178).
+178 bindings, 50 new: 50 traced, 42 implemented in Coney (170 of all 178).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`GetDistanceTweenHumans`](character.md#getdistancetweenhumans) | Characters | traced | confirmed (code) | not implemented |
-| [`HuBlockLook`](character.md#hublocklook) | Characters | traced | confirmed (code) | not implemented |
+| [`GetDistanceTweenHumans`](character.md#getdistancetweenhumans) | Characters | traced | confirmed (code) | implemented |
+| [`HuBlockLook`](character.md#hublocklook) | Characters | traced | confirmed (code) | implemented |
 | [`HuDelete`](character.md#hudelete) | Characters | traced | confirmed (code) | implemented |
-| [`HuForceLook`](character.md#huforcelook) | Characters | traced | confirmed (code) | not implemented |
-| [`HuGetControlName`](character.md#hugetcontrolname) | Characters | traced | confirmed (code) | not implemented |
-| [`HuIsAimingAt`](character.md#huisaimingat) | Characters | traced | confirmed (code) | not implemented |
-| [`HuLockPadMovement`](character.md#hulockpadmovement) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetAutoEscape`](character.md#husetautoescape) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetHealth`](character.md#husethealth) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetKeepHat`](character.md#husetkeephat) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetRevivable`](character.md#husetrevivable) | Characters | traced | confirmed (code) | not implemented |
-| [`HuShadow`](character.md#hushadow) | Characters | traced | confirmed (code) | not implemented |
-| [`HuWhatAmIHolding`](character.md#huwhatamiholding) | Characters | traced | confirmed (code) | not implemented |
-| [`IssueWarriorCommand`](character.md#issuewarriorcommand) | Characters | traced | confirmed (code) | not implemented |
-| [`WCEnableCommand`](character.md#wcenablecommand) | Characters | traced | confirmed (code) | not implemented |
-| [`WCLockCommands`](character.md#wclockcommands) | Characters | traced | confirmed (code) | not implemented |
-| [`WCSetCallback`](character.md#wcsetcallback) | Characters | traced | confirmed (code) | not implemented |
-| [`GoalMoveToExitFlag`](ai.md#goalmovetoexitflag) | AI | traced | confirmed (code) | not implemented |
-| [`GoalTravelPath`](ai.md#goaltravelpath) | AI | traced | confirmed (code) | not implemented |
+| [`HuForceLook`](character.md#huforcelook) | Characters | traced | confirmed (code) | implemented |
+| [`HuGetControlName`](character.md#hugetcontrolname) | Characters | traced | confirmed (code) | implemented |
+| [`HuIsAimingAt`](character.md#huisaimingat) | Characters | traced | confirmed (code) | implemented |
+| [`HuLockPadMovement`](character.md#hulockpadmovement) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetAutoEscape`](character.md#husetautoescape) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetHealth`](character.md#husethealth) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetKeepHat`](character.md#husetkeephat) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetRevivable`](character.md#husetrevivable) | Characters | traced | confirmed (code) | implemented |
+| [`HuShadow`](character.md#hushadow) | Characters | traced | confirmed (code) | implemented |
+| [`HuWhatAmIHolding`](character.md#huwhatamiholding) | Characters | traced | confirmed (code) | implemented |
+| [`IssueWarriorCommand`](character.md#issuewarriorcommand) | Characters | traced | confirmed (code) | implemented |
+| [`WCEnableCommand`](character.md#wcenablecommand) | Characters | traced | confirmed (code) | implemented |
+| [`WCLockCommands`](character.md#wclockcommands) | Characters | traced | confirmed (code) | implemented |
+| [`WCSetCallback`](character.md#wcsetcallback) | Characters | traced | confirmed (code) | implemented |
+| [`GoalMoveToExitFlag`](ai.md#goalmovetoexitflag) | AI | traced | confirmed (code) | implemented |
+| [`GoalTravelPath`](ai.md#goaltravelpath) | AI | traced | confirmed (code) | implemented |
 | [`TacticUseFlag`](ai.md#tacticuseflag) | AI | traced | confirmed (code) | not implemented |
 | [`GangAddMember`](gang.md#gangaddmember) | Gangs | traced | confirmed (code) | implemented |
-| [`GangAddTurfBox`](gang.md#gangaddturfbox) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangEngageEnemy`](gang.md#gangengageenemy) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangAddTurfBox`](gang.md#gangaddturfbox) | Gangs | traced | confirmed (code) | implemented |
+| [`GangEngageEnemy`](gang.md#gangengageenemy) | Gangs | traced | confirmed (code) | implemented |
 | [`GangGetStandingCount`](gang.md#ganggetstandingcount) | Gangs | traced | confirmed (code) | implemented |
-| [`GangIsWanted`](gang.md#gangiswanted) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangRemoveTurfBox`](gang.md#gangremoveturfbox) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangIsWanted`](gang.md#gangiswanted) | Gangs | traced | confirmed (code) | implemented |
+| [`GangRemoveTurfBox`](gang.md#gangremoveturfbox) | Gangs | traced | confirmed (code) | implemented |
 | [`CameraSetClipping`](camera.md#camerasetclipping) | Cameras | traced | confirmed (code) | not implemented |
 | [`CamSetFollowHeading`](camera.md#camsetfollowheading) | Cameras | traced | confirmed (code) | implemented |
-| [`AddPath`](world.md#addpath) | World and objects | traced | confirmed (code) | not implemented |
+| [`AddPath`](world.md#addpath) | World and objects | traced | confirmed (code) | implemented |
 | [`BreakGlassInRadius`](world.md#breakglassinradius) | World and objects | traced | confirmed (code) | implemented |
 | [`BreakObjectsInRadius`](world.md#breakobjectsinradius) | World and objects | traced | confirmed (code) | implemented |
 | [`GetRightDoorHandle`](world.md#getrightdoorhandle) | World and objects | traced | confirmed (code) | implemented |
-| [`IsInsideBox`](world.md#isinsidebox) | World and objects | traced | confirmed (code) | not implemented |
+| [`IsInsideBox`](world.md#isinsidebox) | World and objects | traced | confirmed (code) | implemented |
 | [`ObjHide`](world.md#objhide) | World and objects | traced | confirmed (code) | implemented |
 | [`SetDoorPickable`](world.md#setdoorpickable) | World and objects | traced | confirmed (code) | implemented |
 | [`EndParticle`](effects.md#endparticle) | Effects and lighting | traced | confirmed (code) | not implemented |
@@ -93,41 +93,41 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`SoundSetEffect`](sound.md#soundseteffect) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SoundSetMusicTrack`](sound.md#soundsetmusictrack) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SceneTerminate`](scene.md#sceneterminate) | Scenes and movies | traced | confirmed (code) | implemented |
-| [`CfgDisableMusicForScenes`](config.md#cfgdisablemusicforscenes) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgDisableMusicForScenes`](config.md#cfgdisablemusicforscenes) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgSetLockPickHandler`](config.md#cfgsetlockpickhandler) | Configuration (Cfg) | traced | confirmed (code) | implemented |
-| [`CfgSetOutdoorMode`](config.md#cfgsetoutdoormode) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgSetOutdoorMode`](config.md#cfgsetoutdoormode) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`GetPosition`](util.md#getposition) | Utilities | traced | confirmed (code) | implemented |
-| [`TestDistance`](util.md#testdistance) | Utilities | traced | confirmed (code) | not implemented |
-| [`clearDetailFlag`](debug.md#cleardetailflag) | Debug | traced | confirmed (code) | not implemented |
-| [`setDetailFlag`](debug.md#setdetailflag) | Debug | traced | confirmed (code) | not implemented |
+| [`TestDistance`](util.md#testdistance) | Utilities | traced | confirmed (code) | implemented |
+| [`clearDetailFlag`](debug.md#cleardetailflag) | Debug | traced | confirmed (code) | implemented |
+| [`setDetailFlag`](debug.md#setdetailflag) | Debug | traced | confirmed (code) | implemented |
 
 ## level87: mission 3 {#level87}
 
-261 bindings, 87 new: 87 traced, 17 implemented in Coney (175 of all 261).
+261 bindings, 87 new: 87 traced, 55 implemented in Coney (225 of all 261).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuAreActionsBlocked`](character.md#huareactionsblocked) | Characters | traced | confirmed (code) | not implemented |
-| [`HuExitWorld`](character.md#huexitworld) | Characters | traced | confirmed (code) | not implemented |
+| [`HuAreActionsBlocked`](character.md#huareactionsblocked) | Characters | traced | confirmed (code) | implemented |
+| [`HuExitWorld`](character.md#huexitworld) | Characters | traced | confirmed (code) | implemented |
 | [`HuGetGang`](character.md#hugetgang) | Characters | traced | confirmed (code) | implemented |
-| [`HuIsGrabbed`](character.md#huisgrabbed) | Characters | traced | confirmed (code) | not implemented |
-| [`HuKill`](character.md#hukill) | Characters | traced | confirmed (code) | not implemented |
-| [`HuSetLOSRange`](character.md#husetlosrange) | Characters | traced | confirmed (code) | not implemented |
+| [`HuIsGrabbed`](character.md#huisgrabbed) | Characters | traced | confirmed (code) | implemented |
+| [`HuKill`](character.md#hukill) | Characters | traced | confirmed (code) | implemented |
+| [`HuSetLOSRange`](character.md#husetlosrange) | Characters | traced | confirmed (code) | implemented |
 | [`HuSetMaxHealth`](character.md#husetmaxhealth) | Characters | traced | confirmed (code) | implemented |
 | [`HuTag`](character.md#hutag) | Characters | traced | confirmed (code) | not implemented |
-| [`HuTagColor`](character.md#hutagcolor) | Characters | traced | confirmed (code) | not implemented |
-| [`HuTagPattern`](character.md#hutagpattern) | Characters | traced | confirmed (code) | not implemented |
+| [`HuTagColor`](character.md#hutagcolor) | Characters | traced | confirmed (code) | implemented |
+| [`HuTagPattern`](character.md#hutagpattern) | Characters | traced | confirmed (code) | implemented |
 | [`LoadBumAnims`](character.md#loadbumanims) | Characters | traced | confirmed (code) | not implemented |
-| [`SetCharacterModel`](character.md#setcharactermodel) | Characters | traced | confirmed (code) | not implemented |
-| [`WalkingDistance`](character.md#walkingdistance) | Characters | traced | confirmed (code) | not implemented |
-| [`BrSetFOV`](ai.md#brsetfov) | AI | traced | confirmed (code) | not implemented |
-| [`BrSetInvestigateResponse`](ai.md#brsetinvestigateresponse) | AI | traced | confirmed (code) | not implemented |
-| [`BrSetReactToViolence`](ai.md#brsetreacttoviolence) | AI | traced | confirmed (code) | not implemented |
+| [`SetCharacterModel`](character.md#setcharactermodel) | Characters | traced | confirmed (code) | implemented |
+| [`WalkingDistance`](character.md#walkingdistance) | Characters | traced | confirmed (code) | implemented |
+| [`BrSetFOV`](ai.md#brsetfov) | AI | traced | confirmed (code) | implemented |
+| [`BrSetInvestigateResponse`](ai.md#brsetinvestigateresponse) | AI | traced | confirmed (code) | implemented |
+| [`BrSetReactToViolence`](ai.md#brsetreacttoviolence) | AI | traced | confirmed (code) | implemented |
 | [`BrSetThreatResponse`](ai.md#brsetthreatresponse) | AI | traced | confirmed (code) | implemented |
-| [`GoalBumLogicTrigger`](ai.md#goalbumlogictrigger) | AI | traced | confirmed (code) | not implemented |
-| [`GoalMelee`](ai.md#goalmelee) | AI | traced | confirmed (code) | not implemented |
-| [`GoalPlayDynIdle`](ai.md#goalplaydynidle) | AI | traced | confirmed (code) | not implemented |
-| [`GoalThrowObject`](ai.md#goalthrowobject) | AI | traced | confirmed (code) | not implemented |
+| [`GoalBumLogicTrigger`](ai.md#goalbumlogictrigger) | AI | traced | confirmed (code) | implemented |
+| [`GoalMelee`](ai.md#goalmelee) | AI | traced | confirmed (code) | implemented |
+| [`GoalPlayDynIdle`](ai.md#goalplaydynidle) | AI | traced | confirmed (code) | implemented |
+| [`GoalThrowObject`](ai.md#goalthrowobject) | AI | traced | confirmed (code) | implemented |
 | [`TacticAttack`](ai.md#tacticattack) | AI | traced | confirmed (code) | implemented |
 | [`TacticAvoidEnemies`](ai.md#tacticavoidenemies) | AI | traced | confirmed (code) | not implemented |
 | [`TacticConfront`](ai.md#tacticconfront) | AI | traced | confirmed (code) | implemented |
@@ -144,16 +144,16 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`TacticVandalize`](ai.md#tacticvandalize) | AI | traced | confirmed (code) | not implemented |
 | [`TacticWalkinTall`](ai.md#tacticwalkintall) | AI | traced | confirmed (code) | not implemented |
 | [`TacticWander`](ai.md#tacticwander) | AI | traced | confirmed (code) | not implemented |
-| [`GangCanUseWorldFlags`](gang.md#gangcanuseworldflags) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangEnableAttackStrategies`](gang.md#gangenableattackstrategies) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangExitWorld`](gang.md#gangexitworld) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangCanUseWorldFlags`](gang.md#gangcanuseworldflags) | Gangs | traced | confirmed (code) | implemented |
+| [`GangEnableAttackStrategies`](gang.md#gangenableattackstrategies) | Gangs | traced | confirmed (code) | implemented |
+| [`GangExitWorld`](gang.md#gangexitworld) | Gangs | traced | confirmed (code) | implemented |
 | [`GangGetHeadCount`](gang.md#ganggetheadcount) | Gangs | traced | confirmed (code) | implemented |
-| [`GangGetLeader`](gang.md#ganggetleader) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangSetHearRange`](gang.md#gangsethearrange) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangSetInvestigateResponse`](gang.md#gangsetinvestigateresponse) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangSetLeader`](gang.md#gangsetleader) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangSetRespondPercentage`](gang.md#gangsetrespondpercentage) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangStartSpawner`](gang.md#gangstartspawner) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangGetLeader`](gang.md#ganggetleader) | Gangs | traced | confirmed (code) | implemented |
+| [`GangSetHearRange`](gang.md#gangsethearrange) | Gangs | traced | confirmed (code) | implemented |
+| [`GangSetInvestigateResponse`](gang.md#gangsetinvestigateresponse) | Gangs | traced | confirmed (code) | implemented |
+| [`GangSetLeader`](gang.md#gangsetleader) | Gangs | traced | confirmed (code) | implemented |
+| [`GangSetRespondPercentage`](gang.md#gangsetrespondpercentage) | Gangs | traced | confirmed (code) | implemented |
+| [`GangStartSpawner`](gang.md#gangstartspawner) | Gangs | traced | confirmed (code) | implemented |
 | [`CamAddPoizoPoint`](camera.md#camaddpoizopoint) | Cameras | traced | confirmed (code) | not implemented |
 | [`CamAddPoizoPointCam`](camera.md#camaddpoizopointcam) | Cameras | traced | confirmed (code) | not implemented |
 | [`CamDelete`](camera.md#camdelete) | Cameras | traced | confirmed (code) | implemented |
@@ -163,41 +163,41 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`CamSetFollowPos`](camera.md#camsetfollowpos) | Cameras | traced | confirmed (code) | not implemented |
 | [`CamSetupPoizo`](camera.md#camsetuppoizo) | Cameras | traced | confirmed (code) | not implemented |
 | [`CarPlaceInTrunkOnDetach`](world.md#carplaceintrunkondetach) | World and objects | traced | confirmed (code) | not implemented |
-| [`EnableVolumeBox`](world.md#enablevolumebox) | World and objects | traced | confirmed (code) | not implemented |
-| [`FlagGetOwner`](world.md#flaggetowner) | World and objects | traced | confirmed (code) | not implemented |
-| [`PathValid`](world.md#pathvalid) | World and objects | traced | confirmed (code) | not implemented |
-| [`SetFlagPos`](world.md#setflagpos) | World and objects | traced | confirmed (code) | not implemented |
+| [`EnableVolumeBox`](world.md#enablevolumebox) | World and objects | traced | confirmed (code) | implemented |
+| [`FlagGetOwner`](world.md#flaggetowner) | World and objects | traced | confirmed (code) | implemented |
+| [`PathValid`](world.md#pathvalid) | World and objects | traced | confirmed (code) | implemented |
+| [`SetFlagPos`](world.md#setflagpos) | World and objects | traced | confirmed (code) | implemented |
 | [`TriggerSphereEnable`](world.md#triggersphereenable) | World and objects | traced | confirmed (code) | not implemented |
 | [`EndGarbage`](effects.md#endgarbage) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`Start3DFog`](effects.md#start3dfog) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`StartGarbage`](effects.md#startgarbage) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`HUDLaunchMissionFailed`](hud.md#hudlaunchmissionfailed) | HUD and menus | traced | confirmed (code) | implemented |
-| [`HUDShowWarCommand`](hud.md#hudshowwarcommand) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDShowWarCommand`](hud.md#hudshowwarcommand) | HUD and menus | traced | confirmed (code) | implemented |
 | [`SetupRadio`](sound.md#setupradio) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SoundPlayCommand`](sound.md#soundplaycommand) | Sound and music | traced | confirmed (code) | implemented |
 | [`SceneIsPreloaded`](scene.md#sceneispreloaded) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`SceneStop`](scene.md#scenestop) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`SceneUnload`](scene.md#sceneunload) | Scenes and movies | traced | confirmed (code) | implemented |
-| [`CrimeIsHappening`](level.md#crimeishappening) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`CrimeIsHappening`](level.md#crimeishappening) | Levels and game state | traced | confirmed (code) | implemented |
 | [`GetLUASaveDataFloat`](level.md#getluasavedatafloat) | Levels and game state | traced | confirmed (code) | implemented |
 | [`ProcessTag`](level.md#processtag) | Levels and game state | traced | confirmed (code) | not implemented |
 | [`SetLUASaveDataFloat`](level.md#setluasavedatafloat) | Levels and game state | traced | confirmed (code) | implemented |
-| [`SetSpawnMax`](level.md#setspawnmax) | Levels and game state | traced | confirmed (code) | not implemented |
+| [`SetSpawnMax`](level.md#setspawnmax) | Levels and game state | traced | confirmed (code) | implemented |
 | [`UM_IsDataUnlocked`](level.md#um_isdataunlocked) | Levels and game state | traced | confirmed (code) | implemented |
 | [`doFile`](script.md#dofile) | Script flow | traced | confirmed (code) | implemented |
-| [`CfgCivilianAggression`](config.md#cfgcivilianaggression) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgCrimeResponders`](config.md#cfgcrimeresponders) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgEnableGrappleCounters`](config.md#cfgenablegrapplecounters) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgGangSizeForCombatMusic`](config.md#cfggangsizeforcombatmusic) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgCivilianAggression`](config.md#cfgcivilianaggression) | Configuration (Cfg) | traced | confirmed (code) | implemented |
+| [`CfgCrimeResponders`](config.md#cfgcrimeresponders) | Configuration (Cfg) | traced | confirmed (code) | implemented |
+| [`CfgEnableGrappleCounters`](config.md#cfgenablegrapplecounters) | Configuration (Cfg) | traced | confirmed (code) | implemented |
+| [`CfgGangSizeForCombatMusic`](config.md#cfggangsizeforcombatmusic) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgSteam`](config.md#cfgsteam) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgTagSettings`](config.md#cfgtagsettings) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgTagStartCallback`](config.md#cfgtagstartcallback) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
-| [`CfgVerticalSightModifier`](config.md#cfgverticalsightmodifier) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgTagStartCallback`](config.md#cfgtagstartcallback) | Configuration (Cfg) | traced | confirmed (code) | implemented |
+| [`CfgVerticalSightModifier`](config.md#cfgverticalsightmodifier) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`isRelease`](util.md#isrelease) | Utilities | traced | confirmed (code) | implemented |
 
 ## level95: the hub {#level95}
 
-323 bindings, 91 new: 91 traced, 16 implemented in Coney (202 of all 323).
+323 bindings, 91 new: 91 traced, 16 implemented in Coney (234 of all 323).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -295,7 +295,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level34: mission 4 {#level34}
 
-204 bindings, 17 new: 17 traced, 1 implemented in Coney (147 of all 204).
+204 bindings, 17 new: 17 traced, 1 implemented in Coney (170 of all 204).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -319,7 +319,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level2: mission 5 {#level2}
 
-243 bindings, 19 new: 19 traced, 1 implemented in Coney (167 of all 243).
+243 bindings, 19 new: 19 traced, 1 implemented in Coney (196 of all 243).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -345,7 +345,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level3: mission 6 {#level3}
 
-259 bindings, 22 new: 22 traced, 2 implemented in Coney (163 of all 259).
+259 bindings, 22 new: 22 traced, 2 implemented in Coney (193 of all 259).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -374,7 +374,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level5: mission 7 {#level5}
 
-274 bindings, 16 new: 16 traced, 2 implemented in Coney (181 of all 274).
+274 bindings, 16 new: 16 traced, 2 implemented in Coney (212 of all 274).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -397,7 +397,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level81: mission 8 {#level81}
 
-236 bindings, 20 new: 20 traced, 3 implemented in Coney (152 of all 236).
+236 bindings, 20 new: 20 traced, 3 implemented in Coney (170 of all 236).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -424,7 +424,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level86: mission 9 {#level86}
 
-245 bindings, 17 new: 17 traced, 2 implemented in Coney (163 of all 245).
+245 bindings, 17 new: 17 traced, 2 implemented in Coney (188 of all 245).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -448,7 +448,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level93: mission 10 {#level93}
 
-295 bindings, 24 new: 24 traced, 2 implemented in Coney (177 of all 295).
+295 bindings, 24 new: 24 traced, 2 implemented in Coney (215 of all 295).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -479,7 +479,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level31: mission 11 {#level31}
 
-266 bindings, 9 new: 9 traced, 1 implemented in Coney (176 of all 266).
+266 bindings, 9 new: 9 traced, 1 implemented in Coney (208 of all 266).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -495,7 +495,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level14: mission 12 {#level14}
 
-226 bindings, 6 new: 6 traced, 1 implemented in Coney (151 of all 226).
+226 bindings, 6 new: 6 traced, 1 implemented in Coney (178 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -508,7 +508,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level9: mission 13 {#level9}
 
-225 bindings, 6 new: 6 traced, 0 implemented in Coney (148 of all 225).
+225 bindings, 6 new: 6 traced, 0 implemented in Coney (176 of all 225).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -521,7 +521,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level51: mission 14 {#level51}
 
-256 bindings, 6 new: 6 traced, 1 implemented in Coney (172 of all 256).
+256 bindings, 6 new: 6 traced, 1 implemented in Coney (202 of all 256).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -534,7 +534,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level52: mission 15 {#level52}
 
-235 bindings, 4 new: 4 traced, 0 implemented in Coney (160 of all 235).
+235 bindings, 4 new: 4 traced, 0 implemented in Coney (190 of all 235).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -545,7 +545,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level54: mission 16 {#level54}
 
-241 bindings, 7 new: 7 traced, 0 implemented in Coney (162 of all 241).
+241 bindings, 7 new: 7 traced, 0 implemented in Coney (186 of all 241).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -559,7 +559,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level55: mission 17 {#level55}
 
-226 bindings, 8 new: 8 traced, 1 implemented in Coney (156 of all 226).
+226 bindings, 8 new: 8 traced, 1 implemented in Coney (177 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -574,7 +574,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level84: mission 18 {#level84}
 
-219 bindings, 8 new: 8 traced, 0 implemented in Coney (143 of all 219).
+219 bindings, 8 new: 8 traced, 0 implemented in Coney (162 of all 219).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -589,7 +589,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level82: flashback 1 {#level82}
 
-250 bindings, 4 new: 4 traced, 0 implemented in Coney (155 of all 250).
+250 bindings, 4 new: 4 traced, 0 implemented in Coney (184 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -600,7 +600,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level92: flashback 2 {#level92}
 
-237 bindings, 8 new: 8 traced, 1 implemented in Coney (167 of all 237).
+237 bindings, 8 new: 8 traced, 1 implemented in Coney (193 of all 237).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -615,7 +615,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level83: flashback 3 {#level83}
 
-250 bindings, 1 new: 1 traced, 0 implemented in Coney (175 of all 250).
+250 bindings, 1 new: 1 traced, 0 implemented in Coney (205 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -623,7 +623,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level20: flashback 4 {#level20}
 
-258 bindings, 11 new: 11 traced, 2 implemented in Coney (169 of all 258).
+258 bindings, 11 new: 11 traced, 2 implemented in Coney (199 of all 258).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -641,7 +641,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level11: flashback 5 {#level11}
 
-260 bindings, 7 new: 7 traced, 1 implemented in Coney (179 of all 260).
+260 bindings, 7 new: 7 traced, 1 implemented in Coney (204 of all 260).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -655,7 +655,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level60: Armies of the Night 1 {#level60}
 
-150 bindings, 15 new: 15 traced, 0 implemented in Coney (113 of all 150).
+150 bindings, 15 new: 15 traced, 0 implemented in Coney (119 of all 150).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -677,11 +677,11 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level61: Armies of the Night 2 {#level61}
 
-168 bindings, 0 new: 0 traced, 0 implemented in Coney (122 of all 168).
+168 bindings, 0 new: 0 traced, 0 implemented in Coney (129 of all 168).
 
 ## level62: Armies of the Night 3 {#level62}
 
-127 bindings, 1 new: 1 traced, 0 implemented in Coney (87 of all 127).
+127 bindings, 1 new: 1 traced, 0 implemented in Coney (93 of all 127).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -689,11 +689,11 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level63: Armies of the Night 4 {#level63}
 
-150 bindings, 0 new: 0 traced, 0 implemented in Coney (109 of all 150).
+150 bindings, 0 new: 0 traced, 0 implemented in Coney (115 of all 150).
 
 ## level64: Armies of the Night 5 {#level64}
 
-154 bindings, 4 new: 4 traced, 0 implemented in Coney (102 of all 154).
+154 bindings, 4 new: 4 traced, 0 implemented in Coney (112 of all 154).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

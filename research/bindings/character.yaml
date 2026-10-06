@@ -63,6 +63,7 @@
     damage page ([Combat](../../research/combat.md#damage)); the outcome (knock-out or death) follows the usual rules
     (inferred).
   usage: {chunks: 29, calls: 46, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 3, 86, 93, 31, 14, 9, 51, 52, 54, 55, 83, 20, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: SwapPlayerControl
   wrapper: 0x00358678
@@ -228,6 +229,7 @@
     Nothing happens for an invalid handle or a human with no instance. The shadow and its other conditions:
     [Lighting](../../research/lighting.md#humans). The default value of `+0x2b4` is not traced.
   usage: {chunks: 10, calls: 38, boot: false, mission1: false, result_used: false, levels: [80, 87, 81, 86, 93, 31, 52, 55, 84, 83]}
+  coney: implemented
 
 - name: HuRubberNeck
   wrapper: 0x00358b38
@@ -263,6 +265,7 @@
     `HuForceLook` (`0x10000`) overrides it: the check is skipped. A dead human and two other states (0x00228070,
     0x00228090) never turn the head either way.
   usage: {chunks: 46, calls: 127, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 86, 93, 82, 92]}
+  coney: implemented
 
 - name: HuForceLook
   wrapper: 0x00358bf8
@@ -282,6 +285,7 @@
     `GoalPlayDynAnimation` sets and clears the same bit around its clip ([AI](../../research/ai.md#dyn-animation)),
     so the end of such a goal also clears a forced look.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [80, 5]}
+  coney: implemented
 
 - name: HuClearLook
   wrapper: 0x00358c58
@@ -389,6 +393,7 @@
     Always false for a non-player (`+0x1b0` = -1) or an invalid target. `+0x634` is written only by the aim trace
     (and cleared by `Human_Init`), so it keeps the last aimed object after the aim ends.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true, levels: [80]}
+  coney: implemented
 
 - name: HuGetControlName
   wrapper: 0x00358fd0
@@ -409,6 +414,7 @@
     A handler not in the list (or a virtual one) gives INVALID_CONTROL. The names are the game's own strings at
     0x00510328-0x00510488.
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: true, levels: [80]}
+  coney: implemented
 
 - name: HuBlockJump
   wrapper: 0x00359020
@@ -569,6 +575,7 @@
     Readers: the power-out escape in `Human_UpdateMeters` (0x002562d0) and the grab intro's end (0x0026c1d8),
     [Combat](../../research/combat.md#human-flags).
   usage: {chunks: 8, calls: 13, boot: false, mission1: false, result_used: false, levels: [80, 54, 82]}
+  coney: implemented
 
 - name: HuMakeBeatUp
   wrapper: 0x003593e0
@@ -749,6 +756,7 @@
     Only exactly true sets the bit. A riot hat (`TYPE_RIOT_HAT`) never comes off. A knocked-off hat may be given a
     timer (0x00395d20, 8 s or game state `+0x26c`) whose meaning is not traced.
   usage: {chunks: 7, calls: 9, boot: false, mission1: false, result_used: false, levels: [80, 81, 54]}
+  coney: implemented
 
 - name: HuSetKeepWeapon
   wrapper: 0x003597e0
@@ -1078,6 +1086,7 @@
     Only exactly true sets the bit. `Human_MakePlayer` sets it on every player, so scripts clear it to keep a
     character down or set it on allies. The same-gang test is skipped for some revivers (0x00222a90).
   usage: {chunks: 56, calls: 107, boot: false, mission1: false, result_used: false, levels: [80, 95, 31, 54, 92, 20, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuLockMovement
   wrapper: 0x0035abc0
@@ -1477,6 +1486,7 @@
     Tests record `+0xd4` flags with `0x002265f0(human, 0x830)`; a handle that is not a human (type flag 0x40) gives
     nil.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [87]}
+  coney: implemented
 
 - name: HuIsAlive
   wrapper: 0x0035b5c8
@@ -1718,6 +1728,7 @@
     No lower bound: 0 or a negative value is stored as given; what the damage code then does with it is not traced
     (`HuKill` is the way to kill). Health scale: [Combat](../../research/combat.md#damage).
   usage: {chunks: 23, calls: 57, boot: false, mission1: false, result_used: false, levels: [80, 5, 93, 31, 51, 55, 84, 92, 83, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuSetHealthPercent
   wrapper: 0x0035bb50
@@ -1880,6 +1891,7 @@
   notes: >-
     The constants are on the [enums](../enums.md) list.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: true, levels: [80, 86, 93]}
+  coney: implemented
 
 - name: HuGetHeldObject
   wrapper: 0x0035bf68
@@ -2010,6 +2022,7 @@
   notes: >-
     Storage at 0x002383a0. The AI's sight check: [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 27, calls: 71, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 93, 14, 9, 51, 52, 54, 84, 82, 83, 20, 11]}
+  coney: implemented
 
 - name: HuSetHearRange
   wrapper: 0x0035c278
@@ -2063,6 +2076,7 @@
   notes: >-
     Exit flags and removal on arrival: [World flags](../../research/flags.md#activities).
   usage: {chunks: 41, calls: 85, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: HuSetMoney
   wrapper: 0x0035c3a0
@@ -2327,6 +2341,7 @@
     0-1 fractions give near-black bytes (1.0 gives 1, 0.5 gives 0); negatives give 0. Who reads `+0x640` (the tag drawing) is not
     traced.
   usage: {chunks: 9, calls: 16, boot: false, mission1: false, result_used: false, levels: [87, 34, 2, 3, 93, 9]}
+  coney: implemented
 
 - name: HuTagPattern
   wrapper: 0x0035cdc8
@@ -2344,6 +2359,7 @@
     The copy is confirmed (code) at 0x00274188; that the player traces it with the stick is inferred from the tagging
     minigame.
   usage: {chunks: 7, calls: 13, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 92, 20, 11]}
+  coney: implemented
 
 - name: HuTagDifficulty
   wrapper: 0x0035cea0
@@ -2693,6 +2709,7 @@
     No handle check: a dead or wrong handle is dereferenced, so pass live handles only (compare TestDistance, which
     checks).
   usage: {chunks: 6, calls: 12, boot: true, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: AddAnimCallback
   wrapper: 0x0035e9f8
@@ -3116,6 +3133,7 @@
     combat functions. Bits 0x2000, 0x4000, 0x10000-0x40000, 0x100000, 0x800000, 0x8000000, 0x10000000, 0x80000000,
     0x100000000 and 0x10000000000-0x40000000000 are in the mask but not yet named.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: true, levels: [87, 95, 9]}
+  coney: implemented
 
 - name: HuIsTagging
   wrapper: 0x003654f0
@@ -3173,6 +3191,7 @@
     Reader: `PlayerRecord_Update` (0x00146078), [Characters](../../research/characters.md#input). The lock stays
     until cleared.
   usage: {chunks: 10, calls: 28, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 3, 9]}
+  coney: implemented
 
 - name: AddCommand
   wrapper: 0x00369518
@@ -3352,6 +3371,7 @@
     route `0x002511c8`, its length `0x0024e608`. Two different regions where either has no links (`+0x2` = 0) fail
     without a route search.
   usage: {chunks: 5, calls: 8, boot: false, mission1: false, result_used: true, levels: [87, 95, 20]}
+  coney: implemented
 
 - name: KillHumans
   wrapper: 0x0036d990
@@ -3461,6 +3481,7 @@
     With all 32 slots in use the request is silently ignored. Adding sets the manager's `+0x1b4` (a reload-needed
     flag, inferred). Types sharing a model share a slot, so releasing one releases them all.
   usage: {chunks: 61, calls: 294, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: TurnWarriorCommands
   wrapper: 0x00374780
@@ -3494,6 +3515,7 @@
     disabled (`WCEnableCommand`) or the human is not a war chief. The command number is not range-checked. What each
     command starts: [AI](../../research/ai.md#warrior-commands).
   usage: {chunks: 7, calls: 15, boot: false, mission1: false, result_used: false, levels: [80, 87, 93, 82]}
+  coney: implemented
 
 - name: WCEnableAllCommands
   wrapper: 0x00374820
@@ -3528,6 +3550,7 @@
     Every command is enabled again at a level reset (0x00418c68). Disabling does not touch the HUD. A non-player
     human (`+0x1b0` = -1) or an out-of-range command writes outside the table.
   usage: {chunks: 25, calls: 133, boot: false, mission1: false, result_used: false, levels: [80, 87, 2, 3, 5, 81, 93, 31, 51, 84, 11]}
+  coney: implemented
 
 - name: WCIssueCommand
   wrapper: 0x003748e0
@@ -3571,6 +3594,7 @@
     outside the two bytes. The second hit is enough when the chief's brain byte `+0x2e4` is set; a Warrior already
     fighting ignores the hits.
   usage: {chunks: 10, calls: 16, boot: false, mission1: false, result_used: false, levels: [80, 93, 55]}
+  coney: implemented
 
 - name: WCSetCallback
   wrapper: 0x003749d0
@@ -3588,6 +3612,7 @@
     Not called for a refused command or when an unforced repeat only repeats the line. Nothing happens if no such
     global function exists. Cleared at a level reset (0x00418c68). One callback for both players.
   usage: {chunks: 4, calls: 12, boot: false, mission1: false, result_used: false, levels: [80, 31]}
+  coney: implemented
 
 - name: WCEnableAutomaticSwitching
   wrapper: 0x00374a00

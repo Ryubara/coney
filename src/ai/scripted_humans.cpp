@@ -259,8 +259,6 @@ void ScriptedHumans::changePlayerGang(int gang, bool stamp) {
     }
 }
 
-void ScriptedHumans::issueWarriorCommand(double /*player*/, int command) { m_warriorCommand = command; }
-
 std::optional<int> ScriptedHumans::playerIndex(double handle) const {
     const Brain* brain = m_scripted->brain(handle);
     if (brain == nullptr || brain->type() != BrainType::Player) {

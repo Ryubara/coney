@@ -1614,7 +1614,7 @@ display comes from game state `+0x41e` and is not set here.
   `WarCommandDisplay_SetAllowed`
 - **Used by** 9 of 467 script chunks (32 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDTurnOffActionCycleAnim {#hudturnoffactioncycleanim}
 

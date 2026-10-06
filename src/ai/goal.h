@@ -16,6 +16,7 @@ class Brain;
 enum class GoalType : std::uint8_t {
     Idle = 0x00,             ///< IdleGoal: stands in place.
     MoveToFlag = 0x01,       ///< MoveToFlagGoal.
+    MoveToExitFlag = 0x02,   ///< MoveToExitFlagGoal: leaves the scene through an exit flag.
     MoveToUseFlag = 0x04,    ///< MoveToUseFlagGoal.
     Fight = 0x0f,            ///< FightGoal.
     Spectate = 0x10,         ///< SpectateGoal: stands and watches for a while.
@@ -28,9 +29,13 @@ enum class GoalType : std::uint8_t {
     Block = 0x1b,            ///< BlockGoal.
     PlayAnimation = 0x21,    ///< PlayAnimationGoal: a scene.
     PlayDynAnimation = 0x22, ///< PlayDynAnimationGoal.
+    PlayDynIdle = 0x23,      ///< PlayDynIdleGoal.
     TrackHuman = 0x30,       ///< TrackHumanGoal.
+    TravelPath = 0x38,       ///< TravelPathGoal.
+    FindEnemy = 0x41,        ///< FindEnemyGoal: looks for an enemy to fight.
     BumLogic = 0x4f,         ///< BumLogicGoal.
     AddressPerson = 0x57,    ///< AddressPersonGoal.
+    ThrowObject = 0x5d,      ///< ThrowObjectGoal.
     Pedestrian = 0x69,       ///< PedestrianGoal: wanders the flag network (`FlagNetTraverse`).
     Dealer = 0x80,           ///< DealerGoal.
     Backoff = 0x9b,          ///< BackoffGoal.

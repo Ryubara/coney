@@ -18,6 +18,7 @@ struct ObjectType {
     int hitpoints = 0;           ///< `+0x58`: a door's or barrier's hitpoints.
     std::uint32_t modelHash = 0; ///< `+0x8c`: CRC-32 of the name, the Object List key of its model.
     std::size_t index = 0;       ///< `+0x60`: the record's own index.
+    int objectKind = 0;          ///< `+0x86`: the kind (`TYPE_BAT`, `TYPE_HAT`...), `CfgObj`'s 20th argument.
 };
 
 /// The object database (`0x00512c04`): the types `CfgObj` configures, found by name.
@@ -30,11 +31,11 @@ class ObjectTypes {
     /// The longest class name kept (`+0x43`, 20 characters); a longer one is cut.
     static constexpr std::size_t kMaxClassName = 20;
 
-    /// `CfgObj(name, className, hitpoints, ...)`: adds a type and returns it. The model hash is the CRC-32 of the
-    /// name as given (the scripts' names are lower case). A second type of the same name is added too, but lookups
-    /// keep finding the first.
+    /// `CfgObj(name, className, hitpoints, ..., objectKind, ...)`: adds a type and returns it. The model hash is the
+    /// CRC-32 of the name as given (the scripts' names are lower case). A second type of the same name is added too,
+    /// but lookups keep finding the first.
     /// @orig 0x00390f18 Cfg_AddObjectType (unknown)
-    const ObjectType& add(std::string_view name, std::string_view className, int hitpoints);
+    const ObjectType& add(std::string_view name, std::string_view className, int hitpoints, int objectKind = 0);
 
     /// The type named `name`; null when none is.
     /// @orig 0x003913d8 ObjectDb_FindByName (unknown)

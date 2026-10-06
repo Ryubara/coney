@@ -59,6 +59,10 @@ namespace coney::hud {
 class Hud;
 }
 
+namespace coney {
+class CrimeServices;
+}
+
 namespace coney::script {
 
 /// What the bindings ask of the game outside the script system and the game state: the menus, the level flow, the
@@ -185,6 +189,9 @@ struct BindingContext {
     hud::Hud* hud = nullptr;                     ///< The HUD the HUD bindings act on; null acts on none.
     world_objects::TriggerSpheres* spheres = nullptr; ///< The level's trigger spheres (`TriggerSphereCfg`); null: none.
     world_objects::FlagNet* flagNet = nullptr;        ///< The level's flag network (`FlagNetAddLink`); null: none.
+    /// What a crime the scripts report reaches (`CrimeIsHappening`): the level's gangs, police and HUD; null reports
+    /// none.
+    CrimeServices* crimes = nullptr;
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

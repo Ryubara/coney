@@ -24,9 +24,8 @@ namespace {
 constexpr double kNilHandle = 0.0;
 // The longest names the original keeps: a carried item's (`+0x257`) and a rage handler's (32-byte buffers).
 constexpr std::size_t kNameLength = 31;
-// The command ids `EnableCommand` takes, and the Warrior commands `WCIssueCommand` takes.
+// The command ids `EnableCommand` takes.
 constexpr int kLastCommand = 57;
-constexpr int kWarriorCommandCount = static_cast<int>(kWarriorCommands);
 // Money is clamped to this (`HuSetMoney`).
 constexpr int kMaxMoney = 999;
 // `SetInterrogateParam`'s sets: 0-2 write the first override, 3-5 the second.
@@ -446,33 +445,6 @@ NativeFunction makeWcEnableAllCommands(const BindingContext& context) {
     });
 }
 
-// `WCIssueCommand(player, command, on)`: nothing while the commands are locked, for a human no player controls, or
-// for a command the player has disabled; else it is the player's last command and the crew takes it. `on` is the
-// dispatcher's forced flag (the scripts always pass true).
-// @orig 0x0041dc80 GameState_IssueWarriorCommandFor (unknown)
-NativeFunction makeWcIssueCommand(const BindingContext& context) {
-    return [context = &context](std::span<const Value> args) {
-        HumanBindingHost* host = hostOf(*context);
-        CharacterRules& rules = context->state->characters;
-        const int command = intArg(args, 1);
-        if (host == nullptr || rules.warriorCommandsLocked || command < 0 || command >= kWarriorCommandCount) {
-            return binding::none();
-        }
-        const double player = handleArg(args, 0);
-        const std::optional<int> index = host->playerIndex(player);
-        if (!index || *index < 0 || *index >= static_cast<int>(kWarriorPlayers)) {
-            return binding::none();
-        }
-        const auto p = static_cast<std::size_t>(*index);
-        if (!rules.warriorCommands.at(p).at(static_cast<std::size_t>(command))) {
-            return binding::none();
-        }
-        rules.lastWarriorCommand.at(p) = command;
-        host->issueWarriorCommand(player, command);
-        return binding::none();
-    };
-}
-
 // ---- The brains.
 
 // `BrClearBackoff(human)`.
@@ -749,7 +721,6 @@ void addHumanBindings(LuaVm& vm, const BindingContext& context, std::function<do
     vm.registerFunction("SetDynamicAnimation", makeSetDynamicAnimation(context));
     vm.registerFunction("HuChangePlayerGang", makeChangePlayerGang(context));
     vm.registerFunction("WCEnableAllCommands", makeWcEnableAllCommands(context));
-    vm.registerFunction("WCIssueCommand", makeWcIssueCommand(context));
     vm.registerFunction("BrClearBackoff", makeClearBackoff(context));
     vm.registerFunction("BrSetThugWantsWeapon", makeSetThugWantsWeapon(context));
     vm.registerFunction("GoalBackoff", makeGoalBackoff(context));

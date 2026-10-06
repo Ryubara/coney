@@ -41,6 +41,22 @@ inline constexpr int kGangMessageDown = 18;
 inline constexpr int kGangMessageHeadcount = 2;
 inline constexpr int kGangMessageArrest = 0x11;
 
+/// A gang's turf holds at most this many volume boxes (`+0x15c`, count `+0x17c`).
+inline constexpr std::size_t kTurfBoxes = 8;
+
+/// What the story scripts set on a gang beyond its members, masks and tactic (docs/references/bindings/gang.md).
+struct GangOrders {
+    double leader = 0;                     ///< `+0x44`: the leader's handle (`GangSetLeader`); 0 for none.
+    std::array<double, kTurfBoxes> turf{}; ///< `+0x15c`: the turf's volume boxes; 0 for an empty slot.
+    int respondPercent = 0;                ///< `+0xd7`: members that may help at once, percent.
+    bool attackStrategies = false;         ///< `+0xd9`: the coordinated attacks (not built in Coney).
+    /// `GangExitWorld`: the members are leaving; the callback runs once the last has gone, and the gang is then
+    /// deleted unless `keepWhenEmpty`.
+    bool exiting = false;
+    std::string exitCallback;
+    bool keepWhenEmpty = false;
+};
+
 /// One gang.
 class Gang {
   public:
@@ -70,6 +86,15 @@ class Gang {
     [[nodiscard]] int standing() const;
     /// The gangs it belongs to.
     [[nodiscard]] Gangs& owner() const { return *m_owner; }
+    /// What the story scripts set on it.
+    [[nodiscard]] GangOrders& orders() { return m_orders; }
+    [[nodiscard]] const GangOrders& orders() const { return m_orders; }
+    /// The turf boxes in use (`+0x17c`).
+    [[nodiscard]] std::size_t turfCount() const;
+    /// The gang's leader (`0x00165678`): the leader set while it is a member, alive, not a player and not down; else
+    /// the first member that is. Null when none is. **Coney choice**: "down" is Coney's grounded state.
+    /// @orig 0x00165678 Gang_GetLeader (unknown)
+    [[nodiscard]] Brain* leader() const;
 
     /// `member`'s event, before its brain has it (`Gang_OnEvent`): while scripts run, the message handler for the
     /// event's id is called: for 18 with (member, other, standing()), for 2 with (member, other, the headcount), for
@@ -95,6 +120,7 @@ class Gang {
     std::vector<Brain*> m_members;
     std::unique_ptr<Tactic> m_tactic;
     std::map<int, std::string> m_handlers;
+    GangOrders m_orders;
 };
 
 /// The gangs of a level, by id.

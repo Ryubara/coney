@@ -32,6 +32,7 @@
 #include "scripting/scene_bindings.h"
 #include "scripting/sound_bindings.h"
 #include "scripting/spawn_bindings.h"
+#include "scripting/story_bindings.h"
 #include "scripting/trigger_bindings.h"
 #include "scripting/world_bindings.h"
 #include "world_objects/object_types.h"
@@ -699,6 +700,70 @@ constexpr std::array kBindings{
     real("SetInterrogateParam"),
     real("WCEnableAllCommands"),
     real("WCIssueCommand"),
+    // The story's second and third missions (story_bindings.h).
+    real("AddPath"),
+    real("BrSetFOV"),
+    real("BrSetInvestigateResponse"),
+    real("BrSetReactToViolence"),
+    real("CfgCrimeResponders"),
+    real("CfgEnableGrappleCounters"),
+    real("CfgGangSizeForCombatMusic"),
+    real("CfgSetOutdoorMode"),
+    real("clearDetailFlag"),
+    real("CrimeIsHappening"),
+    real("EnableVolumeBox"),
+    real("FlagGetOwner"),
+    real("GangAddTurfBox"),
+    real("GangCanUseWorldFlags"),
+    real("GangEnableAttackStrategies"),
+    real("GangEngageEnemy"),
+    real("GangExitWorld"),
+    real("GangGetLeader"),
+    real("GangIsWanted"),
+    real("GangRemoveTurfBox"),
+    real("GangSetHearRange"),
+    real("GangSetInvestigateResponse"),
+    real("GangSetLeader"),
+    real("GangSetRespondPercentage"),
+    real("GangStartSpawner"),
+    real("GetDistanceTweenHumans"),
+    real("GoalBumLogicTrigger"),
+    real("GoalMelee"),
+    real("GoalMoveToExitFlag"),
+    real("GoalPlayDynIdle"),
+    real("GoalThrowObject"),
+    real("GoalTravelPath"),
+    real("HuAreActionsBlocked"),
+    real("HuBlockLook"),
+    real("HUDShowWarCommand"),
+    real("HuExitWorld"),
+    real("HuForceLook"),
+    real("HuGetControlName"),
+    real("HuIsAimingAt"),
+    real("HuIsGrabbed"),
+    real("HuKill"),
+    real("HuLockPadMovement"),
+    real("HuSetAutoEscape"),
+    real("HuSetHealth"),
+    real("HuSetKeepHat"),
+    real("HuSetLOSRange"),
+    real("HuSetRevivable"),
+    real("HuShadow"),
+    real("HuTagColor"),
+    real("HuTagPattern"),
+    real("HuWhatAmIHolding"),
+    real("IsInsideBox"),
+    real("IssueWarriorCommand"),
+    real("PathValid"),
+    real("SetCharacterModel"),
+    real("setDetailFlag"),
+    real("SetFlagPos"),
+    real("SetSpawnMax"),
+    real("TestDistance"),
+    real("WalkingDistance"),
+    real("WCEnableCommand"),
+    real("WCLockCommands"),
+    real("WCSetCallback"),
     real("GangCreate"),
     real("GangDelete"),
     real("GangAddMember"),
@@ -856,8 +921,8 @@ constexpr std::array kBindings{
     recording("CfgButtonMash"),
     recording("CfgCanBeAttackedModifier"),
     recording("CfgCharClassAttribs"),
-    recording("CfgCivilianAggression"),
-    recording("CfgDisableMusicForScenes"),
+    real("CfgCivilianAggression"),
+    real("CfgDisableMusicForScenes"),
     recording("CfgDistances"),
     recording("CfgEnableTurfInvasion"),
     recording("CfgGangMusic"),
@@ -882,9 +947,9 @@ constexpr std::array kBindings{
     recording("CfgSetTurnRates"),
     recording("CfgSnap"),
     recording("CfgStickDeflection"),
-    recording("CfgTagStartCallback"),
+    real("CfgTagStartCallback"),
     recording("CfgTurnRate"),
-    recording("CfgVerticalSightModifier"),
+    real("CfgVerticalSightModifier"),
     recording("CfgWarriorClass"),
     recording("CfgWarriorUpgrade"),
     recording("CfgWorkoutParams"),
@@ -1058,7 +1123,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kEffectsBindings, info.name) != kEffectsBindings.end() ||
                      std::ranges::find(kCarBindings, info.name) != kCarBindings.end() ||
                      std::ranges::find(kHudBindings, info.name) != kHudBindings.end() ||
-                     std::ranges::find(kWorldBindings, info.name) != kWorldBindings.end());
+                     std::ranges::find(kWorldBindings, info.name) != kWorldBindings.end() ||
+                     std::ranges::find(kStoryBindings, info.name) != kStoryBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -1087,6 +1153,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addObjectBindings(vm, context, nextHandle);
     addRumbleMatchBindings(vm, context, nextHandle);
     addHumanBindings(vm, context, nextHandle);
+    addStoryBindings(scripts, vm, context, nextHandle);
     addEffectsBindings(vm, context, nextHandle);
     addCarBindings(vm, context, nextHandle);
     addWorldBindings(vm, context);

@@ -95,6 +95,7 @@
     lookup 0x00250708, straight check 0x0024fbf8, end nodes 0x00251150, search 0x002511c8, then the route is freed.
     What 0x00251718 tests on a node is not traced. Planning: [AI](../../research/ai.md#path-planning).
   usage: {chunks: 16, calls: 17, boot: false, mission1: false, result_used: true, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 51, 52, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: TriggerSphereEnable
   wrapper: 0x0036d008
@@ -694,6 +695,7 @@
     The release only clears the user when it is the leaving human. The store that sets the user was not found as a
     direct write (inferred: an inlined write in the goals).
   usage: {chunks: 9, calls: 29, boot: false, mission1: false, result_used: true, levels: [87, 5, 83, 11]}
+  coney: implemented
 
 - name: CarSpawn
   wrapper: 0x00378320
@@ -1230,6 +1232,7 @@
   notes: >-
     No type check: a handle of another object writes that object's `+0x10`. The heading is unchanged.
   usage: {chunks: 19, calls: 37, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 86, 93, 31, 14, 9, 52, 54, 55, 84, 82, 92, 20]}
+  coney: implemented
 
 - name: FlagEnable
   wrapper: 0x0037a228
@@ -1387,6 +1390,7 @@
     slots at the next level). A path can be found again by name (0x00415878). No binding removes one, so a script
     that adds paths repeatedly runs out of slots.
   usage: {chunks: 15, calls: 42, boot: false, mission1: false, result_used: true, levels: [80, 2, 3, 5, 93, 51, 52, 54, 84, 20]}
+  coney: implemented
 
 - name: AddVolumeBox
   wrapper: 0x0037ac70
@@ -1454,6 +1458,7 @@
     Box behaviour: [Scripts: triggers](../../research/scripting.md#triggers). Only the plain box's slot (vtable
     0x00545df8) was read; other box kinds may differ.
   usage: {chunks: 43, calls: 173, boot: false, mission1: false, result_used: false, levels: [87, 2, 3, 5, 81, 31, 9, 51, 54, 55, 83, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: IsInsideBox
   wrapper: 0x0037afb8
@@ -1469,6 +1474,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 75, calls: 297, boot: true, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: SetPositionOfWater
   wrapper: 0x0037ba48

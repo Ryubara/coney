@@ -32,6 +32,14 @@ struct ScriptState {
     bool arrested = false;
     /// The pad's buttons locked (per-player `+0x1e`, `HuLockPad`): its commands, sprint and actions are not taken.
     bool padLocked = false;
+    /// The pad's left stick locked (per-player `+0x1f`, `HuLockPadMovement`): it reads as centred, the buttons still
+    /// act.
+    bool movementLocked = false;
+    /// The blob shadow drawn (character instance `+0x2b4`, `HuShadow`). **Coney choice** until set (the default is not
+    /// traced): drawn.
+    bool shadow = true;
+    /// The paint colour it tags with (`+0x640`, `HuTagColor`), `0xRRGGBBAA`.
+    std::uint32_t tagColour = 0;
     /// The commands disabled for the pad that drives the human (`EnableCommand`), a bit per command id 1-63.
     std::uint64_t disabledCommands = 0;
     /// Can be pushed aside by others (`+0x3bf`, `HuSetPushable`). **Coney stand-in**: Coney's bodies do not push

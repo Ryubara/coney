@@ -52,7 +52,7 @@ Clears the `mask` bits in one of the four detail-flag bytes at `W_GameState + 0x
 - **Wrapper** `0x0036c698` (registered by `RegisterBindings`); **calls** `0x0041d860` `GameState_ClearDetailFlag`
 - **Used by** 8 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## DoorCRCCheck {#doorcrccheck}
 
@@ -121,4 +121,4 @@ belongs to another object); the scripts' use (indices 0-3) suggests a leftover d
 - **Wrapper** `0x0036c620` (registered by `RegisterBindings`); **calls** `0x0041d830` `GameState_SetDetailFlag`
 - **Used by** 18 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented

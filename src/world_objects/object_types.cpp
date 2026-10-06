@@ -7,11 +7,12 @@
 
 namespace coney::world_objects {
 
-const ObjectType& ObjectTypes::add(std::string_view name, std::string_view className, int hitpoints) {
+const ObjectType& ObjectTypes::add(std::string_view name, std::string_view className, int hitpoints, int objectKind) {
     ObjectType type;
     type.name = std::string(name.substr(0, kMaxName));
     type.className = std::string(className.substr(0, kMaxClassName));
     type.hitpoints = hitpoints;
+    type.objectKind = objectKind;
     type.modelHash = crc32(type.name);
     type.index = m_types.size();
     // The original's hash table finds the first of a name; keep that one.

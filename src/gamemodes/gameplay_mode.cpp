@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "ai/scripted_story.h"
 #include "animation/anim_math.h"
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
@@ -36,6 +37,9 @@ GameplayMode::~GameplayMode() {
     endLevel();
     if (m_context.objects == &m_objects) {
         m_context.objects = nullptr;
+    }
+    if (m_context.crimes == &m_objectServices.crimeServices()) {
+        m_context.crimes = nullptr;
     }
 }
 
@@ -126,6 +130,11 @@ void GameplayMode::enter() {
         m_context.boxes->clear();
     }
     m_context.ai = m_scripted.get();
+    // The crimes the scripts report reach the level's gangs and police; the story's per-level switches start clear.
+    m_context.crimes = &m_objectServices.crimeServices();
+    if (m_context.state != nullptr) {
+        m_context.state->story.resetForLevel();
+    }
     // The level's trigger spheres, round the objects the scripts name, and its flag network for the pedestrians.
     m_spheres.setLocate([this](double handle) { return objectPosition(handle); });
     m_spheres.setClearLine([this](const std::array<float, 3>& from, const std::array<float, 3>& to) {
@@ -347,6 +356,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     if (m_scripted) {
         m_scripted->runAnimCallbacks();
         m_scripted->humanHost().runRageHandlers();
+        m_scripted->storyHost().update();
     }
     updateBoxes(nowMs);
     if (m_scripted && m_context.messages != nullptr) {

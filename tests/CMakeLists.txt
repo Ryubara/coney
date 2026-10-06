@@ -232,6 +232,7 @@ target_sources(coney_tests PRIVATE
     ai/route_planner_test.cpp
     ai/scripted_goals_test.cpp
     ai/scripted_humans_test.cpp
+    ai/scripted_story_test.cpp
     ai/rumble_tactics_test.cpp
     ai/tactics_test.cpp)
 # The sound engine, its data and streams, the mixer and the game-facing sound calls (docs/research/sound.md).

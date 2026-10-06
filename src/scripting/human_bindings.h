@@ -23,7 +23,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addHumanBindings().
-inline constexpr std::array<std::string_view, 61> kHumanBindings{"BrClearBackoff",
+inline constexpr std::array<std::string_view, 60> kHumanBindings{"BrClearBackoff",
                                                                  "BrSetThugWantsWeapon",
                                                                  "CfgPlayerMugging",
                                                                  "CfgRageHandlers",
@@ -82,8 +82,7 @@ inline constexpr std::array<std::string_view, 61> kHumanBindings{"BrClearBackoff
                                                                  "HuUseAnim",
                                                                  "SetDynamicAnimation",
                                                                  "SetInterrogateParam",
-                                                                 "WCEnableAllCommands",
-                                                                 "WCIssueCommand"};
+                                                                 "WCEnableAllCommands"};
 
 /// What a human handle names, for the getters: nothing when it names no human.
 struct HumanStatus {
@@ -221,8 +220,8 @@ class HumanBindingHost {
     virtual bool useAnim(double /*human*/, int /*slot*/, std::string_view /*anim*/, bool /*loaded*/) { return false; }
     /// `HuChangePlayerGang`: the players take over members of gang `gang`; with `stamp` the game time is noted.
     virtual void changePlayerGang(int /*gang*/, bool /*stamp*/) {}
-    /// `WCIssueCommand`, the checks passed: the player's crew takes Warrior command `command`.
-    virtual void issueWarriorCommand(double /*player*/, int /*command*/) {}
+    /// Who has reserved the flag with `handle` to use it (`GoalMoveToUseFlag`); 0 for no one.
+    [[nodiscard]] virtual double flagUser(double /*flag*/) const { return 0; }
     /// Which player (0 or 1) the human with `handle` is; nothing for a human no player controls.
     [[nodiscard]] virtual std::optional<int> playerIndex(double /*handle*/) const { return std::nullopt; }
 

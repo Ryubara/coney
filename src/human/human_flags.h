@@ -13,8 +13,19 @@ namespace coney::human::flag {
 
 /// May start a climb from a run (`Human_MakePlayer` sets it; `HuSetFastClimber`).
 inline constexpr std::uint64_t kFastClimber = 0x2;
-/// Set by `Human_MakePlayer` with kFastClimber; its meaning is not researched.
-inline constexpr std::uint64_t kMadePlayer = 0x4;
+/// Can be revived when down (`HuSetRevivable`): the revive search (`0x00278fa0`) accepts only a knocked-down human with
+/// it. `Human_MakePlayer` sets it on every player.
+inline constexpr std::uint64_t kRevivable = 0x4;
+/// The head does not turn toward its look-at target (`HuBlockLook`, read by `0x002482e0`).
+inline constexpr std::uint64_t kBlockLook = 0x1000;
+/// The head turns toward its look-at target whatever the human does (`HuForceLook`; `GoalPlayDynAnimation` sets it
+/// around its clip).
+inline constexpr std::uint64_t kForceLook = 0x10000;
+/// Escapes a grab when the grabber's power runs out, and can counter a grab at the end of its intro
+/// (`HuSetAutoEscape`, `0x002562d0`, `0x0026c1d8`).
+inline constexpr std::uint64_t kAutoEscape = 0x20000;
+/// The hat is never knocked off (`HuSetKeepHat`, read by the knock-off `0x00258330`).
+inline constexpr std::uint64_t kKeepHat = 0x10000000000;
 /// God mode (`HuSetGodMode`): the human takes no damage. Set too once a demi-god's health reaches its floor.
 inline constexpr std::uint64_t kGod = 0x10;
 /// Nobody can grab the human (`HuSetUngrabbable`; the effect is inferred from the name).
@@ -45,13 +56,14 @@ inline constexpr std::uint64_t kNoThrowWeapon = 0x4000000000;
 /// Demi-god (`HuSetDemiGodMode`): one hit cannot take health below the floor fraction of the maximum, and reaching it
 /// sets kGod (`0x00265f70`, `0x00256f28`).
 inline constexpr std::uint64_t kDemiGod = 0x20000000000;
-/// Never picked as a target (`HuSetNoTarget`, `HuSetNoAutoLock`; `0x00279410`).
+/// Never picked as a target (`HuSetNoTarget`; the target filter `0x00279410`). `HuSetNoAutoLock` sets another bit
+/// (`0x8000000000`), not this one.
 inline constexpr std::uint64_t kNoTarget = 0x100000000000;
 
-/// The flags a player's human starts with: what `Human_MakePlayer` sets (kFastClimber, kMadePlayer, kRageAllowed) and
+/// The flags a player's human starts with: what `Human_MakePlayer` sets (kFastClimber, kRevivable, kRageAllowed) and
 /// the combo rule kComboStrength (docs/research/combat.md#human-flags). kDemiGod, also seen on the player at runtime,
 /// is the level scripts' (`HuSetDemiGodMode`): a mode whose scripts never set it (the Rumble arena) lets the player be
 /// knocked out.
-inline constexpr std::uint64_t kPlayerFlags = kFastClimber | kMadePlayer | kComboStrength | kRageAllowed;
+inline constexpr std::uint64_t kPlayerFlags = kFastClimber | kRevivable | kComboStrength | kRageAllowed;
 
 } // namespace coney::human::flag

@@ -31,6 +31,7 @@
     No load of `W_GameState + 0x3e8`-`0x3eb` was found (every `0x3e8`-`0x3eb` offset access in the program belongs
     to another object); the scripts' use (indices 0-3) suggests a leftover development switch.
   usage: {chunks: 18, calls: 26, boot: false, mission1: false, result_used: false, levels: [80, 95, 34, 3, 93, 51, 84, 82, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: clearDetailFlag
   wrapper: 0x0036c698
@@ -45,6 +46,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false, levels: [80, 95, 34, 3, 51, 82]}
+  coney: implemented
 
 - name: CapturePVSSamplePoint
   wrapper: 0x0036c868

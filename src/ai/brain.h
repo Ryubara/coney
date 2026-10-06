@@ -96,6 +96,24 @@ struct BrainEvent {
     int value = 0;
 };
 
+/// The default hearing ranges, metres: noises (`+0x134`) and allies calling for help (`+0x138`)
+/// (docs/references/bindings/gang.md#gangsethearrange).
+inline constexpr float kDefaultHearRange = 50.0F;
+inline constexpr float kDefaultHelpHearRange = 20.0F;
+
+/// What the story scripts set on a brain's senses and reactions beyond its sight (docs/references/bindings/ai.md). Kept
+/// for the brains' reactions, which Coney does not build yet (each field says who reads it).
+struct BrainSenses {
+    /// `BrSetInvestigateResponse` (`+0x224`): 0 does not go to look at disturbances. **Coney choice** until set: 1.
+    int investigate = 1;
+    /// `BrSetReactToViolence` (`+0x267`): reacts to fights it sees. **Coney choice** until set: true.
+    bool reactsToViolence = true;
+    float hearRange = kDefaultHearRange;         ///< `+0x134`, `GangSetHearRange(gang, false, range)`.
+    float helpHearRange = kDefaultHelpHearRange; ///< `+0x138`, `GangSetHearRange(gang, true, range)`.
+    bool worldFlags = false;                     ///< `+0x2d1`, `GangCanUseWorldFlags`.
+    int worldFlagPercent = 0;                    ///< `+0x2d2`.
+};
+
 /// The configuration a brain fights by: what the configuration scripts set (docs/research/ai.md#fight).
 struct FightSettings {
     AttackWeights attackWeights = attNormal(); ///< The class's `Att_*` table (`+0x298`).
@@ -297,6 +315,12 @@ class Brain {
     [[nodiscard]] int attackWarnings() const { return m_attackWarnings; }
     /// The range and field of view (half-angle, radians) an announced attack must be within (`+0x130`, `+0x12c`).
     void setSight(float range, float fieldOfView);
+    /// The sight range (`+0x130`, `HuSetLOSRange`) and field of view (`+0x12c`, `BrSetFOV`).
+    [[nodiscard]] float sightRange() const { return m_sightRange; }
+    [[nodiscard]] float fieldOfView() const { return m_fieldOfView; }
+    /// The senses and reactions the story scripts set.
+    [[nodiscard]] BrainSenses& senses() { return m_senses; }
+    [[nodiscard]] const BrainSenses& senses() const { return m_senses; }
     /// The attack weights (`+0x298`).
     [[nodiscard]] const AttackWeights& attackWeights() const { return m_settings.attackWeights; }
     /// Sets one kind's weight (`BrSetAttackWeight`).
@@ -411,9 +435,10 @@ class Brain {
     int m_attackWarnings = 0;                                          // +0x200
     float m_sightRange = kDefaultSightRange;                           // +0x130
     float m_fieldOfView = kDefaultFieldOfView;                         // +0x12c
-    int m_threatResponse = 2;                                          // +0x21c
-    float m_meleeNear = kDefaultMeleeNear;                             // +0x13c
-    float m_meleeFar = kDefaultMeleeFar;                               // +0x140
+    BrainSenses m_senses;
+    int m_threatResponse = 2;              // +0x21c
+    float m_meleeNear = kDefaultMeleeNear; // +0x13c
+    float m_meleeFar = kDefaultMeleeFar;   // +0x140
     int m_goalsRanOut = 0;
     RoutePlanner* m_planner = nullptr;
     MoveFailure m_moveFailure = MoveFailure::None; // +0x284

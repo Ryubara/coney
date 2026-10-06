@@ -495,7 +495,7 @@ which checks).
 - **Wrapper** `0x0035dc08` (registered by `RegisterBindings`); **calls** `0x002fee38` `Objects_GetDistance`
 - **Used by** 6 of 467 script chunks (12 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 20 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuActionDialog {#huactiondialog}
 
@@ -581,7 +581,7 @@ combat functions. Bits 0x2000, 0x4000, 0x10000-0x40000, 0x100000, 0x800000, 0x80
   `0x00228228` `HumanRecord_AreActionsBlocked`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuAttachGear {#huattachgear}
 
@@ -750,7 +750,7 @@ a scene or a conversation.
 - **Wrapper** `0x00358b98` (registered by `RegisterBindings`); **calls** `0x0023a2c0` `Human_SetBlockLook`
 - **Used by** 46 of 467 script chunks (127 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuBlockRearGrab {#hublockreargrab}
 
@@ -1217,7 +1217,7 @@ happens when there is no such flag.
 - **Wrapper** `0x0035c368` (registered by `RegisterBindings`); **calls** `0x00238478` `Human_ExitWorld`
 - **Used by** 41 of 467 script chunks (85 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 22 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuFind {#hufind}
 
@@ -1291,7 +1291,7 @@ its look-at target even mid-animation; only death and two other states (0x002280
 - **Wrapper** `0x00358bf8` (registered by `RegisterBindings`); **calls** `0x0023a328` `Human_SetForceLook`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGet {#huget}
 
@@ -1360,7 +1360,7 @@ stick, throwControl while aiming a throw, grabbingControl while holding someone,
 - **Wrapper** `0x00358fd0` (registered by `RegisterBindings`); **calls** `0x002380c0` `Human_GetControlName`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGetGang {#hugetgang}
 
@@ -1703,7 +1703,7 @@ that with `target`. Level scripts use it to react when the player lines up a thr
 - **Wrapper** `0x00358f50` (registered by `RegisterBindings`); **calls** `0x0023a468` `Human_IsAimingAt`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuIsAlive {#huisalive}
 
@@ -1813,7 +1813,7 @@ gives nil.
 - **Wrapper** `0x0035b578` (registered by `RegisterBindings`); **calls** `0x002355e0` `Human_IsGrabbed`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuIsHidden {#huishidden}
 
@@ -1978,7 +1978,7 @@ the damage page ([Combat](../../research/combat.md#damage)); the outcome (knock-
 - **Wrapper** `0x00358640` (registered by `RegisterBindings`); **calls** `0x00237e70` `Human_Kill`
 - **Used by** 29 of 467 script chunks (46 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuLockMovement {#hulockmovement}
 
@@ -2049,7 +2049,7 @@ until cleared.
 - **Wrapper** `0x003655a0` (registered by `RegisterBindings`); **calls** `0x0023ae90` `Human_LockPadMovement`
 - **Used by** 10 of 467 script chunks (28 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuMakeBeatUp {#humakebeatup}
 
@@ -2509,7 +2509,7 @@ player cannot simply hold it.
 - **Wrapper** `0x00359380` (registered by `RegisterBindings`); **calls** `0x00235200` `Human_SetAutoEscape`
 - **Used by** 8 of 467 script chunks (13 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetBlockFromReact {#husetblockfromreact}
 
@@ -2919,7 +2919,7 @@ traced (`HuKill` is the way to kill). Health scale: [Combat](../../research/comb
 - **Wrapper** `0x0035bad8` (registered by `RegisterBindings`); **calls** `0x00237848` `Human_SetHealth`
 - **Used by** 23 of 467 script chunks (57 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetHealthPercent {#husethealthpercent}
 
@@ -3126,7 +3126,7 @@ a timer (0x00395d20, 8 s or game state `+0x26c`) whose meaning is not traced.
 - **Wrapper** `0x00359780` (registered by `RegisterBindings`); **calls** `0x00237388` `Human_SetKeepHat`
 - **Used by** 7 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetKeepWeapon {#husetkeepweapon}
 
@@ -3292,7 +3292,7 @@ hang-out and use-flag tactics change it too.
 - **Wrapper** `0x0035c200` (registered by `RegisterBindings`); **calls** `0x002383a0` `Human_SetLOSRange`
 - **Used by** 27 of 467 script chunks (71 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 16 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetManualStun {#husetmanualstun}
 
@@ -3797,7 +3797,7 @@ character down or set it on allies. The same-gang test is skipped for some reviv
 - **Wrapper** `0x0035ab60` (registered by `RegisterBindings`); **calls** `0x00235db0` `Human_SetRevivable`
 - **Used by** 56 of 467 script chunks (107 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetScale {#husetscale}
 
@@ -4340,7 +4340,7 @@ a shadow would look wrong.
 - **Wrapper** `0x00358ad8` (registered by `RegisterBindings`); **calls** `0x00238030` `Human_SetShadow`
 - **Used by** 10 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 10 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuShutUp {#hushutup}
 
@@ -4567,7 +4567,7 @@ drawing) is not traced.
 - **Wrapper** `0x0035ccf0` (registered by `RegisterBindings`); **calls** `0x00239080` `Human_SetTagColour`
 - **Used by** 9 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuTagDifficulty {#hutagdifficulty}
 
@@ -4615,7 +4615,7 @@ tagging minigame.
 - **Wrapper** `0x0035cdc8` (registered by `RegisterBindings`); **calls** `0x00239188` `Tag_SetPattern`
 - **Used by** 7 of 467 script chunks (13 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuTeleportFollowers {#huteleportfollowers}
 
@@ -4736,7 +4736,7 @@ from 0x00226ff0 and its type record from the object-type table (0x00391330).
 - **Wrapper** `0x0035bf10` (registered by `RegisterBindings`); **calls** `0x00237d08` `Human_GetHeldObjectType`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuWorkout {#huworkout}
 
@@ -4828,7 +4828,7 @@ called.
 - **Wrapper** `0x003747b8` (registered by `RegisterBindings`); **calls** `0x0041c2d0` `GameState_IssueWarriorCommand`
 - **Used by** 7 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## KillHumans {#killhumans}
 
@@ -4920,7 +4920,7 @@ flag, inferred). Types sharing a model share a slot, so releasing one releases t
   `ResourceManager_SetCharacterModel`, `0x0018ad40`
 - **Used by** 61 of 467 script chunks (294 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetDeathTimer {#setdeathtimer}
 
@@ -5094,7 +5094,7 @@ without a route search.
   `Nav_GetWalkingDistance`
 - **Used by** 5 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## WCEnableAllCommands {#wcenableallcommands}
 
@@ -5163,7 +5163,7 @@ human (`+0x1b0` = -1) or an out-of-range command writes outside the table.
 - **Wrapper** `0x00374850` (registered by `RegisterBindings`); **calls** `0x0041dbe8` `GameState_EnableWarriorCommand`
 - **Used by** 25 of 467 script chunks (133 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## WCIssueCommand {#wcissuecommand}
 
@@ -5221,7 +5221,7 @@ ignores the hits.
 - **Wrapper** `0x00374970` (registered by `RegisterBindings`); **calls** `0x0041dcf0` `GameState_LockWarriorCommands`
 - **Used by** 10 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## WCSetCallback {#wcsetcallback}
 
@@ -5247,4 +5247,4 @@ global function exists. Cleared at a level reset (0x00418c68). One callback for 
   `GameState_SetWarriorCommandCallback`
 - **Used by** 4 of 467 script chunks (12 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented

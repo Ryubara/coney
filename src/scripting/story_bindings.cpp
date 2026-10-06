@@ -1,0 +1,815 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include "scripting/story_bindings.h"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <span>
+#include <string>
+#include <utility>
+
+#include "camera/cameras.h"
+#include "human/human_flags.h"
+#include "scripting/ai_bindings.h"
+#include "scripting/binding_args.h"
+#include "scripting/human_bindings.h"
+#include "warriors/crime_reports.h"
+#include "world_objects/object_types.h"
+#include "world_objects/volume_boxes.h"
+
+namespace coney::script {
+
+namespace {
+
+// Coney's NilHandle (scripting/script_bindings.cpp), and the handle tolua gives an omitted handle argument whose
+// default is the original's NilHandle (4294967295).
+constexpr double kNilHandle = 0.0;
+constexpr double kOmittedHandle = 4294967295.0;
+// `WalkingDistance`'s answer when there is no route.
+constexpr double kNoWalk = -1000000000.0;
+// The longest callback name the game state keeps (`WCSetCallback`: 32-byte buffer).
+constexpr std::size_t kCallbackLength = 31;
+// The Warrior commands (0 follow ... 6 none).
+constexpr int kWarriorCommandCount = static_cast<int>(kWarriorCommands);
+// `HuTagPattern`'s table: 256 numbers read, the first 128 (64 points) kept.
+constexpr std::size_t kTagPatternRead = 256;
+
+// Argument `i` truncated to a whole number, as tolua reads an integer.
+std::int64_t wholeArg(std::span<const Value> args, std::size_t i) {
+    return static_cast<std::int64_t>(std::trunc(binding::number(args, i)));
+}
+
+// Argument `i` as an integer.
+int intArg(std::span<const Value> args, std::size_t i) { return static_cast<int>(wholeArg(args, i)); }
+
+// Argument `i` as an integer, `fallback` when omitted.
+int intArgOr(std::span<const Value> args, std::size_t i, int fallback) {
+    return i >= args.size() ? fallback : intArg(args, i);
+}
+
+// Argument `i` as an unsigned integer, `fallback` when omitted.
+std::uint32_t unsignedArgOr(std::span<const Value> args, std::size_t i, std::uint32_t fallback) {
+    return i >= args.size() ? fallback : static_cast<std::uint32_t>(wholeArg(args, i));
+}
+
+// Argument `i` as a float, `fallback` when omitted.
+float floatArgOr(std::span<const Value> args, std::size_t i, float fallback) {
+    return i >= args.size() ? fallback : static_cast<float>(binding::number(args, i));
+}
+
+// Argument `i` as a float.
+float floatArg(std::span<const Value> args, std::size_t i) { return static_cast<float>(binding::number(args, i)); }
+
+// Whether argument `i` is missing or nil.
+bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
+
+// Argument `i` as a boolean: nil and 0 are false.
+bool boolArg(std::span<const Value> args, std::size_t i) {
+    if (absent(args, i)) {
+        return false;
+    }
+    return binding::number(args, i) != 0.0 || args[i].type() != Value::Type::Number;
+}
+
+// Argument `i` as a boolean that is `fallback` when omitted; a nil passed (Lua 4's false) is false, as tolua reads it.
+bool boolArgOr(std::span<const Value> args, std::size_t i, bool fallback) {
+    return i >= args.size() ? fallback : boolArg(args, i);
+}
+
+// Argument `i` as the switches that set a bit only for exactly true (1).
+bool exactlyOne(std::span<const Value> args, std::size_t i) {
+    if (absent(args, i)) {
+        return false;
+    }
+    return args[i].type() == Value::Type::Number ? binding::number(args, i) == 1.0 : boolArg(args, i);
+}
+
+// A handle argument: truncated to an unsigned integer.
+double handleArg(std::span<const Value> args, std::size_t i) {
+    return static_cast<double>(static_cast<std::uint32_t>(wholeArg(args, i)));
+}
+
+// A handle argument whose omission (or the original's NilHandle) means none: 0.
+double optionalHandleArg(std::span<const Value> args, std::size_t i) {
+    if (absent(args, i)) {
+        return kNilHandle;
+    }
+    const double handle = handleArg(args, i);
+    return handle == kOmittedHandle ? kNilHandle : handle;
+}
+
+// A string argument that is empty for nil (a callback or anim name), cut to `length` characters.
+std::string nameArg(std::span<const Value> args, std::size_t i, std::size_t length = std::string::npos) {
+    std::string name = absent(args, i) ? std::string{} : binding::string(args, i);
+    if (name.size() > length) {
+        name.resize(length);
+    }
+    return name;
+}
+
+// Numbers 1..n of the table at argument `i`, 0 for a missing one; all 0 when it is not a table.
+template <std::size_t N> std::array<double, N> tableArg(std::span<const Value> args, std::size_t i) {
+    std::array<double, N> values{};
+    if (i >= args.size() || args[i].table() == nullptr) {
+        return values;
+    }
+    const Table& table = *args[i].table();
+    for (std::size_t k = 0; k < N; ++k) {
+        values.at(k) = table.get(Value(static_cast<double>(k + 1))).number().value_or(0.0);
+    }
+    return values;
+}
+
+// The story host of the level, if there is a level with an AI host.
+StoryBindingHost* storyOf(const BindingContext& context) {
+    return context.ai != nullptr ? context.ai->story() : nullptr;
+}
+
+// The first-mission character host of the level (the flag switches), if any.
+HumanBindingHost* humansOf(const BindingContext& context) {
+    return context.ai != nullptr ? context.ai->humans() : nullptr;
+}
+
+// A binding that hands its arguments to the story host when there is one and returns nothing. The host is read at
+// each call, not at registration: a level gives its brains to a Lua state made before it (gamemodes/gameplay_mode.h).
+template <typename Body> NativeFunction storyCall(const BindingContext& context, Body body) {
+    return [context = &context, body](std::span<const Value> args) {
+        if (StoryBindingHost* host = storyOf(*context); host != nullptr) {
+            body(*host, args);
+        }
+        return binding::none();
+    };
+}
+
+// A binding that sets (`on`, read by `read`) or clears `bits` of the human named by argument 0, through the first
+// mission's character host.
+template <typename Read> NativeFunction flagCall(const BindingContext& context, std::uint64_t bits, Read read) {
+    return [context = &context, bits, read](std::span<const Value> args) {
+        if (HumanBindingHost* host = humansOf(*context); host != nullptr) {
+            host->setFlags(handleArg(args, 0), bits, read(args, 1));
+        }
+        return binding::none();
+    };
+}
+
+// A configuration binding: changes the game state's story fields with `body`.
+template <typename Body> NativeFunction stateCall(const BindingContext& context, Body body) {
+    return [context = &context, body](std::span<const Value> args) {
+        body(context->state->story, args);
+        return binding::none();
+    };
+}
+
+// The squared distance between two points.
+float squaredDistance(const StoryPoint& a, const StoryPoint& b) {
+    const float dx = a[0] - b[0];
+    const float dy = a[1] - b[1];
+    const float dz = a[2] - b[2];
+    return (dx * dx) + (dy * dy) + (dz * dz);
+}
+
+// Where the object `handle` names is, through the story host; nothing without one or such an object.
+std::optional<StoryPoint> positionOf(const BindingContext& context, double handle) {
+    const StoryBindingHost* host = storyOf(context);
+    return host != nullptr ? host->position(handle) : std::nullopt;
+}
+
+// Which player (0 or 1) controls the human `handle` names; nothing for none.
+std::optional<std::size_t> playerOf(const BindingContext& context, double handle) {
+    const HumanBindingHost* host = humansOf(context);
+    const std::optional<int> index = host != nullptr ? host->playerIndex(handle) : std::nullopt;
+    if (!index || *index < 0 || *index >= static_cast<int>(kStoryPlayers)) {
+        return std::nullopt;
+    }
+    return static_cast<std::size_t>(*index);
+}
+
+// ---- The Warrior commands ----
+
+// The dispatcher every Warrior command goes through (the menu's, `WCIssueCommand`'s and `IssueWarriorCommand`'s):
+// nothing while a scene camera is player 1's, the commands are locked, the player's menu is locked, the command is
+// disabled for the player or the human is no war chief; otherwise the command is the player's last, an unforced repeat
+// of the current one only repeats its line, and any other starts the crew's tactic, then the `WCSetCallback` function
+// is called with (chief, command). **Coney choices**: a command outside 0-6 is refused (the original does not check
+// it), and the chief's line is not said (the speech commands of the lines are not on the page).
+// @orig 0x0041c4e0 GameState_DispatchWarriorCommand (unknown)
+void dispatchWarriorCommand(ScriptSystem& scripts, const BindingContext& context, double chief, int command,
+                            bool forced) {
+    StoryBindingHost* host = storyOf(context);
+    CharacterRules& rules = context.state->characters;
+    StoryState& story = context.state->story;
+    if (host == nullptr || rules.warriorCommandsLocked || command < 0 || command >= kWarriorCommandCount) {
+        return;
+    }
+    if (context.cameras != nullptr && context.cameras->current().kind == camera::CameraKind::Scene) {
+        return;
+    }
+    const std::optional<std::size_t> player = playerOf(context, chief);
+    if (!player || story.menuLocked.at(*player) ||
+        !rules.warriorCommands.at(*player).at(static_cast<std::size_t>(command))) {
+        return;
+    }
+    const bool repeat = rules.lastWarriorCommand.at(*player) == command;
+    rules.lastWarriorCommand.at(*player) = command;
+    if (repeat && !forced) {
+        return;
+    }
+    if (!host->startWarriorCommand(chief, command, forced)) {
+        return;
+    }
+    if (!story.commandCallback.empty()) {
+        const std::array<Value, 2> args{Value(chief), Value(static_cast<double>(command))};
+        scripts.call(story.commandCallback, args);
+    }
+}
+
+// `IssueWarriorCommand(command, forced)`: as player 1's war chief.
+// @orig 0x0041c2d0 GameState_IssueWarriorCommand (unknown)
+NativeFunction makeIssueWarriorCommand(ScriptSystem& scripts, const BindingContext& context) {
+    return [scripts = &scripts, context = &context](std::span<const Value> args) {
+        if (const StoryBindingHost* host = storyOf(*context); host != nullptr) {
+            dispatchWarriorCommand(*scripts, *context, host->playerOne(), intArg(args, 0), boolArg(args, 1));
+        }
+        return binding::none();
+    };
+}
+
+// `WCEnableCommand(player, command, on)`: the command's switch for the player who controls `player`. **Coney
+// choice**: a human no player controls or a command outside 0-6 does nothing (the original writes outside the table).
+// @orig 0x0041dbe8 GameState_EnableWarriorCommand (unknown)
+NativeFunction makeWcEnableCommand(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const std::optional<std::size_t> player = playerOf(*context, handleArg(args, 0));
+        const int command = intArg(args, 1);
+        if (player && command >= 0 && command < kWarriorCommandCount) {
+            context->state->characters.warriorCommands.at(*player).at(static_cast<std::size_t>(command)) =
+                boolArg(args, 2);
+        }
+        return binding::none();
+    };
+}
+
+// `WCLockCommands(player, locked)`: whether the crew of the player who controls `player` turns on a chief who keeps
+// hitting them (the byte's only reader, the Warrior brain's retaliation, is not built: kept for it).
+// @orig 0x0041dcf0 GameState_LockWarriorCommands (unknown)
+NativeFunction makeWcLockCommands(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (const std::optional<std::size_t> player = playerOf(*context, handleArg(args, 0)); player) {
+            context->state->story.noRetaliation.at(*player) = boolArg(args, 1);
+        }
+        return binding::none();
+    };
+}
+
+// `WCSetCallback(callback)`: nil clears it; 31 characters are kept.
+// @orig 0x0041dd40 GameState_SetWarriorCommandCallback (unknown)
+NativeFunction makeWcSetCallback(const BindingContext& context) {
+    return stateCall(context, [](StoryState& story, std::span<const Value> args) {
+        story.commandCallback = nameArg(args, 0, kCallbackLength);
+    });
+}
+
+// `HUDShowWarCommand(on, player)`: whether the command display may open on that player's HUD.
+// @orig 0x001b4948 HUD_ShowWarCommand (unknown)
+NativeFunction makeHudShowWarCommand(const BindingContext& context) {
+    return stateCall(context, [](StoryState& story, std::span<const Value> args) {
+        const std::uint32_t player = unsignedArgOr(args, 1, 0);
+        if (player < kStoryPlayers) {
+            story.commandDisplay.at(player) = boolArgOr(args, 0, true);
+        }
+    });
+}
+
+// ---- Distances, paths and boxes ----
+
+// `GetDistanceTweenHumans(a, b) -> number`: the straight distance between two objects. **Coney choice**: 0 when either
+// handle names nothing (the original reads through a bad handle).
+// @orig 0x002fee38 Objects_GetDistance (unknown)
+NativeFunction makeGetDistanceTweenHumans(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const std::optional<StoryPoint> a = positionOf(*context, handleArg(args, 0));
+        const std::optional<StoryPoint> b = positionOf(*context, handleArg(args, 1));
+        return binding::number(a && b ? std::sqrt(squaredDistance(*a, *b)) : 0.0);
+    };
+}
+
+// `TestDistance(a, b, distance) -> boolean`: closer than `distance` (exactly at it is not); false for a bad handle.
+// @orig 0x00385ea8 Objects_TestDistance (unknown)
+NativeFunction makeTestDistance(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const std::optional<StoryPoint> a = positionOf(*context, handleArg(args, 0));
+        const std::optional<StoryPoint> b = positionOf(*context, handleArg(args, 1));
+        const float limit = floatArg(args, 2);
+        return binding::boolean(a && b && squaredDistance(*a, *b) < limit * limit);
+    };
+}
+
+// `WalkingDistance(from, to) -> number`: over the level's routes; -1000000000 when there is none.
+// @orig 0x00385f60 WalkingDistance (unknown)
+// @orig 0x0024e478 Nav_GetWalkingDistance (unknown)
+NativeFunction makeWalkingDistance(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        StoryBindingHost* host = storyOf(*context);
+        const std::optional<float> walk =
+            host != nullptr ? host->walkingDistance(handleArg(args, 0), handleArg(args, 1)) : std::nullopt;
+        return binding::number(walk ? static_cast<double>(*walk) : kNoWalk);
+    };
+}
+
+// `PathValid(from, to) -> boolean`: a walkable route joins the two objects.
+// @orig 0x00386010 Obj_PathExists (unknown)
+NativeFunction makePathValid(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        StoryBindingHost* host = storyOf(*context);
+        return binding::boolean(host != nullptr &&
+                                host->walkingDistance(handleArg(args, 0), handleArg(args, 1)).has_value());
+    };
+}
+
+// `AddPath(name, {f1, ..., f8}) -> path`: a path through up to eight flags, or nil when the 32 slots are taken. **Coney
+// stand-in**: Coney's VM has no user types, so the path is a number handle the path bindings take back.
+// @orig 0x00415740 Path_Add (unknown)
+NativeFunction makeAddPath(const BindingContext& context, std::function<double()> nextHandle) {
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+        StoryBindingHost* host = storyOf(*context);
+        if (host == nullptr) {
+            return std::vector<Value>{Value()};
+        }
+        std::array<double, 8> points{};
+        const std::array<double, 8> read = tableArg<8>(args, 1);
+        std::ranges::transform(read, points.begin(),
+                               [](double h) { return static_cast<double>(static_cast<std::uint32_t>(h)); });
+        const double handle = nextHandle();
+        return host->addPath(handle, binding::string(args, 0), points) ? std::vector<Value>{Value(handle)}
+                                                                       : std::vector<Value>{Value()};
+    };
+}
+
+// `IsInsideBox(box, object) -> boolean`: the object's position inside the (turned) box; false for a bad handle.
+// @orig 0x00413198 VolumeBox_ContainsObject (unknown)
+NativeFunction makeIsInsideBox(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const world_objects::VolumeBox* box =
+            context->boxes != nullptr ? context->boxes->find(handleArg(args, 0)) : nullptr;
+        const std::optional<StoryPoint> at = positionOf(*context, handleArg(args, 1));
+        return binding::boolean(box != nullptr && at && world_objects::VolumeBoxes::inside(*box, *at));
+    };
+}
+
+// `EnableVolumeBox(box, enable)`: a disabled box tests nobody, and its occupants are forgotten without a leave
+// message, so they get a fresh enter once it is enabled again.
+// @orig 0x00412bf8 VolumeBox_Enable (unknown)
+// @orig 0x004152e0 VolumeBox_SetEnabled (unknown)
+NativeFunction makeEnableVolumeBox(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (world_objects::VolumeBox* box =
+                context->boxes != nullptr ? context->boxes->find(handleArg(args, 0)) : nullptr;
+            box != nullptr) {
+            box->enabled = boolArg(args, 1);
+            if (!box->enabled) {
+                box->occupants.clear();
+            }
+        }
+        return binding::none();
+    };
+}
+
+// `FlagGetOwner(flag) -> handle`: who uses the flag now; NilHandle for no one or no flag.
+// @orig 0x00416ed0 Flag_GetOwner (unknown)
+NativeFunction makeFlagGetOwner(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const double handle = handleArg(args, 0);
+        const world_objects::WorldFlag* flag = context->flags != nullptr ? context->flags->find(handle) : nullptr;
+        if (flag == nullptr) {
+            return binding::number(kNilHandle);
+        }
+        const HumanBindingHost* host = humansOf(*context);
+        const double user = flag->user != kNilHandle || host == nullptr ? flag->user : host->flagUser(handle);
+        return binding::number(user);
+    };
+}
+
+// `SetFlagPos(flag, {x, y, z})`: the flag's own position; one that follows a parent keeps reporting the parent's.
+// **Coney choice**: a handle that names no flag does nothing (the original writes through it).
+// @orig 0x00416b68 Flag_SetPosition (unknown)
+NativeFunction makeSetFlagPos(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        world_objects::WorldFlag* flag = context->flags != nullptr ? context->flags->find(handleArg(args, 0)) : nullptr;
+        if (flag != nullptr) {
+            flag->position = binding::position(args, 1).value_or(std::array<float, 3>{});
+        }
+        return binding::none();
+    };
+}
+
+// ---- The humans ----
+
+// `HuGetControlName(human) -> string`: the control handler driving the human; nil for no human.
+// @orig 0x002380c0 Human_GetControlName (unknown)
+NativeFunction makeHuGetControlName(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const StoryBindingHost* host = storyOf(*context);
+        const std::optional<std::string> name = host != nullptr ? host->controlName(handleArg(args, 0)) : std::nullopt;
+        return name ? std::vector<Value>{Value(*name)} : std::vector<Value>{Value()};
+    };
+}
+
+// `HuWhatAmIHolding(human) -> number`: the held object's kind (`TYPE_*`, its type's `+0x86`); 0 for nothing.
+// @orig 0x00237d08 Human_GetHeldObjectType (unknown)
+NativeFunction makeHuWhatAmIHolding(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const StoryBindingHost* host = storyOf(*context);
+        const std::string held = host != nullptr ? host->heldObject(handleArg(args, 0)) : std::string{};
+        const world_objects::ObjectType* type =
+            held.empty() || context->objectTypes == nullptr ? nullptr : context->objectTypes->find(held);
+        return binding::number(type != nullptr ? type->objectKind : 0);
+    };
+}
+
+// A boolean getter of the human named by argument 0 (false without a host).
+template <typename Read> NativeFunction storyQuery(const BindingContext& context, Read read) {
+    return [context = &context, read](std::span<const Value> args) {
+        const StoryBindingHost* host = storyOf(*context);
+        return binding::boolean(host != nullptr && read(*host, args));
+    };
+}
+
+// `HuTagColor(human, {r, g, b, a})`: each element × 255 twice and its low byte kept (a whole 0-255 comes out as it
+// is), packed with r in the top byte.
+// @orig 0x00239080 Human_SetTagColour (unknown)
+NativeFunction makeHuTagColor(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        const std::array<double, 4> colour = tableArg<4>(args, 1);
+        std::uint32_t packed = 0;
+        for (const double component : colour) {
+            const double scaled = component * 255.0 * 255.0;
+            const auto byte =
+                scaled <= 0.0 ? 0U : static_cast<std::uint32_t>(static_cast<std::uint64_t>(scaled) & 0xffU);
+            packed = (packed << 8U) | byte;
+        }
+        host.setTagColour(handleArg(args, 0), packed);
+    });
+}
+
+// `HuTagPattern(count, {x1, y1, ...})`: the next tag's stick pattern; 64 points are kept.
+// @orig 0x00239188 Tag_SetPattern (unknown)
+NativeFunction makeHuTagPattern(const BindingContext& context) {
+    return stateCall(context, [](StoryState& story, std::span<const Value> args) {
+        story.tagPatternCount = static_cast<std::uint32_t>(wholeArg(args, 0));
+        const std::array<double, kTagPatternRead> points = tableArg<kTagPatternRead>(args, 1);
+        for (std::size_t i = 0; i < story.tagPattern.size(); ++i) {
+            story.tagPattern.at(i) = static_cast<float>(points.at(i));
+        }
+    });
+}
+
+// `GoalMoveToExitFlag(human, flag, gait, angle, distance, radius)`.
+// @orig 0x002da810 Goal_MoveToExitFlag (unknown)
+NativeFunction makeGoalMoveToExitFlag(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        host.goalMoveToExitFlag(ExitFlagCall{.human = handleArg(args, 0),
+                                             .flag = handleArg(args, 1),
+                                             .gait = intArg(args, 2),
+                                             .angle = floatArg(args, 3),
+                                             .distance = floatArg(args, 4),
+                                             .radius = floatArg(args, 5)});
+    });
+}
+
+// `HuExitWorld(human)`: to the nearest exit flag its brain accepts, running, with a 2 m radius.
+// @orig 0x00238478 Human_ExitWorld (unknown)
+NativeFunction makeHuExitWorld(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        constexpr int kRun = 4;
+        constexpr float kExitRadius = 2.0F;
+        host.goalMoveToExitFlag(
+            ExitFlagCall{.human = handleArg(args, 0), .flag = kNilHandle, .gait = kRun, .radius = kExitRadius});
+    });
+}
+
+// `GoalTravelPath(human, path, mode, reverse, gait, radius)`: the path is read only when a second argument is given.
+// @orig 0x002e05a8 Goal_TravelPath (unknown)
+NativeFunction makeGoalTravelPath(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        host.goalTravelPath(TravelPathCall{.human = handleArg(args, 0),
+                                           .path = absent(args, 1) ? kNilHandle : handleArg(args, 1),
+                                           .mode = intArg(args, 2),
+                                           .reverse = boolArg(args, 3),
+                                           .gait = intArg(args, 4),
+                                           .radius = floatArg(args, 5)});
+    });
+}
+
+// `GoalThrowObject(human, target, range, gait, callback)`.
+// @orig 0x002cf480 Goal_ThrowObject (unknown)
+NativeFunction makeGoalThrowObject(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        constexpr float kThrowRange = 16.0F;
+        host.goalThrowObject(ThrowObjectCall{.human = handleArg(args, 0),
+                                             .target = handleArg(args, 1),
+                                             .range = floatArgOr(args, 2, kThrowRange),
+                                             .gait = intArgOr(args, 3, 2),
+                                             .callback = nameArg(args, 4)});
+    });
+}
+
+// `GoalPlayDynIdle(human, flag, startAnim, loopAnim, endAnim, timeMs)`: nothing without a loop anim.
+// @orig 0x002d3940 Goal_PlayDynamicIdle (unknown)
+NativeFunction makeGoalPlayDynIdle(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        DynIdleCall call{.human = handleArg(args, 0),
+                         .flag = optionalHandleArg(args, 1),
+                         .startAnim = nameArg(args, 2),
+                         .loopAnim = nameArg(args, 3),
+                         .endAnim = nameArg(args, 4),
+                         .timeMs = intArgOr(args, 5, -1)};
+        if (!call.loopAnim.empty()) {
+            host.goalPlayDynIdle(call);
+        }
+    });
+}
+
+// ---- The gangs ----
+
+// `GangAddTurfBox(gang, box)`: only a volume box is taken.
+// @orig 0x0016a328 Gang_AddTurfBox (unknown)
+NativeFunction makeGangAddTurfBox(const BindingContext& context) {
+    return storyCall(context, [context = &context](StoryBindingHost& host, std::span<const Value> args) {
+        const double box = handleArg(args, 1);
+        if (context->boxes != nullptr && context->boxes->find(box) != nullptr) {
+            host.addTurfBox(intArg(args, 0), box);
+        }
+    });
+}
+
+// `GangIsWanted(gang, current) -> boolean`. **Coney stand-in**: Coney keeps one wanted state per gang (the crime
+// report's 10 s), so both flags read it.
+// @orig 0x0016b580 Gang_IsWanted (unknown)
+NativeFunction makeGangIsWanted(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const int gang = intArg(args, 0);
+        return binding::boolean(gang >= 0 && context->state->player.crimes.wanted(gang));
+    };
+}
+
+// `GangExitWorld(gang, exit, callback, deleteGang)`.
+// @orig 0x0016a670 Gang_ExitWorld (unknown)
+NativeFunction makeGangExitWorld(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        host.gangExitWorld(intArg(args, 0), optionalHandleArg(args, 1), nameArg(args, 2), boolArgOr(args, 3, true));
+    });
+}
+
+// `GangStartSpawner(gang, name, mode, value)`: the value read as 16 bits; -1 keeps the spawner's.
+// @orig 0x0016afc8 Gang_StartSpawner (unknown)
+NativeFunction makeGangStartSpawner(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        host.startSpawner(intArg(args, 0), binding::string(args, 1), intArg(args, 2),
+                          static_cast<std::int16_t>(intArgOr(args, 3, -1)));
+    });
+}
+
+// `GangCanUseWorldFlags(gang, on, percent)`: the percentage forced to 0 when off.
+// @orig 0x0016be30 Gang_CanUseWorldFlags (unknown)
+NativeFunction makeGangCanUseWorldFlags(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        constexpr std::uint32_t kDefaultPercent = 10;
+        const bool on = boolArgOr(args, 1, true);
+        host.canUseWorldFlags(intArg(args, 0), on, on ? static_cast<int>(unsignedArgOr(args, 2, kDefaultPercent)) : 0);
+    });
+}
+
+// ---- Configuration ----
+
+// `CrimeIsHappening(pos, kind, radius, severity, offender, victim, flags)`: a crime report that sends responders; the
+// radius, severity and flags are never read.
+// @orig 0x0041b6e0 Crime_IsHappening (unknown)
+NativeFunction makeCrimeIsHappening(ScriptSystem& scripts, const BindingContext& context) {
+    return [scripts = &scripts, context = &context](std::span<const Value> args) {
+        CrimeServices none;
+        CrimeServices& services = context->crimes != nullptr ? *context->crimes : none;
+        const std::array<float, 3> at = binding::position(args, 0).value_or(std::array<float, 3>{});
+        context->state->player.crimes.report(services, static_cast<std::int16_t>(intArg(args, 1)), at,
+                                             handleArg(args, 4), optionalHandleArg(args, 5), true, 0, scripts->now());
+        return binding::none();
+    };
+}
+
+} // namespace
+
+void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context,
+                      std::function<double()> nextHandle) {
+    // The Warrior commands.
+    vm.registerFunction("IssueWarriorCommand", makeIssueWarriorCommand(scripts, context));
+    vm.registerFunction("WCIssueCommand", [scripts = &scripts, context = &context](std::span<const Value> args) {
+        // `WCIssueCommand(player, command, on)`: `on` is the dispatcher's forced flag (the scripts pass true).
+        // @orig 0x0041dc80 GameState_IssueWarriorCommandFor (unknown)
+        dispatchWarriorCommand(*scripts, *context, handleArg(args, 0), intArg(args, 1), boolArg(args, 2));
+        return binding::none();
+    });
+    vm.registerFunction("WCEnableCommand", makeWcEnableCommand(context));
+    vm.registerFunction("WCLockCommands", makeWcLockCommands(context));
+    vm.registerFunction("WCSetCallback", makeWcSetCallback(context));
+    vm.registerFunction("HUDShowWarCommand", makeHudShowWarCommand(context));
+
+    // Distances, paths, boxes and flags.
+    vm.registerFunction("GetDistanceTweenHumans", makeGetDistanceTweenHumans(context));
+    vm.registerFunction("TestDistance", makeTestDistance(context));
+    vm.registerFunction("WalkingDistance", makeWalkingDistance(context));
+    vm.registerFunction("PathValid", makePathValid(context));
+    vm.registerFunction("AddPath", makeAddPath(context, std::move(nextHandle)));
+    vm.registerFunction("IsInsideBox", makeIsInsideBox(context));
+    vm.registerFunction("EnableVolumeBox", makeEnableVolumeBox(context));
+    vm.registerFunction("FlagGetOwner", makeFlagGetOwner(context));
+    vm.registerFunction("SetFlagPos", makeSetFlagPos(context));
+
+    // The humans' switches: bits of the flag word (only exactly true sets the keep-hat and revivable bits).
+    // @orig 0x0023a2c0 Human_SetBlockLook (unknown)
+    vm.registerFunction("HuBlockLook", flagCall(context, human::flag::kBlockLook, boolArg));
+    // @orig 0x0023a328 Human_SetForceLook (unknown)
+    vm.registerFunction("HuForceLook", flagCall(context, human::flag::kForceLook, boolArg));
+    // @orig 0x00235200 Human_SetAutoEscape (unknown)
+    vm.registerFunction("HuSetAutoEscape", flagCall(context, human::flag::kAutoEscape, boolArg));
+    // @orig 0x00237388 Human_SetKeepHat (unknown)
+    vm.registerFunction("HuSetKeepHat", flagCall(context, human::flag::kKeepHat, exactlyOne));
+    // @orig 0x00235db0 Human_SetRevivable (unknown)
+    vm.registerFunction("HuSetRevivable", flagCall(context, human::flag::kRevivable, exactlyOne));
+
+    // The humans.
+    using A = std::span<const Value>;
+    // @orig 0x00237e70 Human_Kill (unknown)
+    vm.registerFunction("HuKill", storyCall(context, [](StoryBindingHost& h, A a) { h.killHuman(handleArg(a, 0)); }));
+    // `HuSetHealth(human, health)`: 16 bits.
+    // @orig 0x00237848 Human_SetHealth (unknown)
+    vm.registerFunction("HuSetHealth", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.setHealth(handleArg(a, 0), static_cast<std::int16_t>(intArg(a, 1)));
+                        }));
+    // @orig 0x00238030 Human_SetShadow (unknown)
+    vm.registerFunction(
+        "HuShadow", storyCall(context, [](StoryBindingHost& h, A a) { h.setShadow(handleArg(a, 0), boolArg(a, 1)); }));
+    // @orig 0x0023ae90 Human_LockPadMovement (unknown)
+    vm.registerFunction("HuLockPadMovement", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.lockMovement(handleArg(a, 0), boolArg(a, 1));
+                        }));
+    // @orig 0x002383a0 Human_SetLOSRange (unknown)
+    vm.registerFunction("HuSetLOSRange", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.setSightRange(handleArg(a, 0), floatArg(a, 1));
+                        }));
+    // @orig 0x002928d8 Brain_SetFieldOfView (unknown)
+    vm.registerFunction("BrSetFOV", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.setFieldOfView(handleArg(a, 0), floatArg(a, 1));
+                        }));
+    // @orig 0x002927a8 Brain_SetInvestigateResponse (unknown)
+    vm.registerFunction("BrSetInvestigateResponse", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.setInvestigateResponse(handleArg(a, 0), intArg(a, 1));
+                        }));
+    // @orig 0x00292bc8 Brain_SetReactsToViolence (unknown)
+    vm.registerFunction("BrSetReactToViolence", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.setReactToViolence(handleArg(a, 0), boolArgOr(a, 1, true));
+                        }));
+    vm.registerFunction("HuGetControlName", makeHuGetControlName(context));
+    vm.registerFunction("HuWhatAmIHolding", makeHuWhatAmIHolding(context));
+    // @orig 0x0023a468 Human_IsAimingAt (unknown)
+    vm.registerFunction("HuIsAimingAt", storyQuery(context, [](const StoryBindingHost& h, A a) {
+                            return h.aimingAt(handleArg(a, 0), handleArg(a, 1));
+                        }));
+    // @orig 0x002355e0 Human_IsGrabbed (unknown)
+    vm.registerFunction("HuIsGrabbed",
+                        storyQuery(context, [](const StoryBindingHost& h, A a) { return h.grabbed(handleArg(a, 0)); }));
+    // @orig 0x002387a8 Human_AreActionsBlocked (unknown)
+    vm.registerFunction("HuAreActionsBlocked", storyQuery(context, [](const StoryBindingHost& h, A a) {
+                            return h.actionsBlocked(handleArg(a, 0));
+                        }));
+    vm.registerFunction("HuTagColor", makeHuTagColor(context));
+    vm.registerFunction("HuTagPattern", makeHuTagPattern(context));
+
+    // The goals.
+    vm.registerFunction("GoalMoveToExitFlag", makeGoalMoveToExitFlag(context));
+    vm.registerFunction("HuExitWorld", makeHuExitWorld(context));
+    vm.registerFunction("GoalTravelPath", makeGoalTravelPath(context));
+    vm.registerFunction("GoalThrowObject", makeGoalThrowObject(context));
+    vm.registerFunction("GoalPlayDynIdle", makeGoalPlayDynIdle(context));
+    // `GoalMelee(human, target)`: NilHandle (the default) lets it pick.
+    // @orig 0x002add08 Goal_Melee (unknown)
+    vm.registerFunction("GoalMelee", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.goalMelee(handleArg(a, 0), optionalHandleArg(a, 1));
+                        }));
+    // @orig 0x002abe08 Goal_BumTrigger (unknown)
+    vm.registerFunction("GoalBumLogicTrigger",
+                        storyCall(context, [](StoryBindingHost& h, A a) { h.bumTrigger(handleArg(a, 0)); }));
+
+    // The gangs.
+    vm.registerFunction("GangAddTurfBox", makeGangAddTurfBox(context));
+    // @orig 0x0016a3a8 Gang_RemoveTurfBox (unknown)
+    vm.registerFunction("GangRemoveTurfBox", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.removeTurfBox(intArg(a, 0), handleArg(a, 1));
+                        }));
+    // @orig 0x0016a870 Gang_EngageEnemy (unknown)
+    vm.registerFunction("GangEngageEnemy", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.engageEnemy(intArg(a, 0), handleArg(a, 1));
+                        }));
+    vm.registerFunction("GangIsWanted", makeGangIsWanted(context));
+    // @orig 0x0016b4f0 Gang_SetInvestigateResponse (unknown)
+    vm.registerFunction("GangSetInvestigateResponse", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.setGangInvestigateResponse(intArg(a, 0), intArg(a, 1));
+                        }));
+    // `GangSetRespondPercentage(gang, percent)`: one byte.
+    // @orig 0x0016a2e8 Gang_SetRespondPercentage (unknown)
+    vm.registerFunction("GangSetRespondPercentage", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.setRespondPercentage(
+                                static_cast<std::int16_t>(intArg(a, 0)),
+                                static_cast<int>(static_cast<std::uint32_t>(wholeArg(a, 1)) & 0xffU));
+                        }));
+    // @orig 0x0016bbf0 Gang_SetHearRange (unknown)
+    vm.registerFunction("GangSetHearRange", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.setHearRange(static_cast<std::int16_t>(intArg(a, 0)), boolArg(a, 1), floatArg(a, 2));
+                        }));
+    // @orig 0x0016a2a8 Gang_EnableAttackStrategies (unknown)
+    vm.registerFunction("GangEnableAttackStrategies", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.enableAttackStrategies(intArg(a, 0), boolArgOr(a, 1, true));
+                        }));
+    // @orig 0x0016a538 Gang_SetLeader (unknown)
+    vm.registerFunction("GangSetLeader", storyCall(context, [](StoryBindingHost& h, A a) {
+                            h.setLeader(intArg(a, 0), handleArg(a, 1));
+                        }));
+    // `GangGetLeader(gang) -> handle`: NilHandle for none.
+    // @orig 0x0016a578 Gang_GetLeaderHandle (unknown)
+    vm.registerFunction("GangGetLeader", [context = &context](A a) {
+        const StoryBindingHost* host = storyOf(*context);
+        return binding::number(host != nullptr ? host->leader(intArg(a, 0)) : kNilHandle);
+    });
+    vm.registerFunction("GangExitWorld", makeGangExitWorld(context));
+    vm.registerFunction("GangStartSpawner", makeGangStartSpawner(context));
+    vm.registerFunction("GangCanUseWorldFlags", makeGangCanUseWorldFlags(context));
+
+    // The configuration the missions set.
+    // @orig 0x0041d930 Cfg_SetDisableMusicForScenes (unknown)
+    vm.registerFunction("CfgDisableMusicForScenes",
+                        stateCall(context, [](StoryState& s, A a) { s.noMusicInScenes = boolArg(a, 0); }));
+    // @orig 0x0041d728 Cfg_SetOutdoorMode (unknown)
+    vm.registerFunction("CfgSetOutdoorMode", stateCall(context, [](StoryState& s, A a) { s.outdoor = boolArg(a, 0); }));
+    // @orig 0x0041d920 Cfg_SetGangSizeForCombatMusic (unknown)
+    vm.registerFunction("CfgGangSizeForCombatMusic",
+                        stateCall(context, [](StoryState& s, A a) { s.combatMusicGangSize = intArg(a, 0); }));
+    // @orig 0x00299510 GameState_SetSpawnMax (unknown)
+    vm.registerFunction("SetSpawnMax", stateCall(context, [](StoryState& s, A a) {
+                            s.spawnMax = static_cast<std::int16_t>(intArg(a, 0));
+                        }));
+    // @orig 0x0041da60 Cfg_SetGrappleCounters (unknown)
+    vm.registerFunction("CfgEnableGrappleCounters",
+                        stateCall(context, [](StoryState& s, A a) { s.grappleCounters = boolArgOr(a, 0, true); }));
+    // `CfgCivilianAggression(a, b)`: two bytes.
+    // @orig 0x00294828 Cfg_SetCivilianAggression (unknown)
+    vm.registerFunction("CfgCivilianAggression", stateCall(context, [](StoryState& s, A a) {
+                            s.civilianAggression = {
+                                static_cast<int>(static_cast<std::uint32_t>(wholeArg(a, 0)) & 0xffU),
+                                static_cast<int>(static_cast<std::uint32_t>(wholeArg(a, 1)) & 0xffU)};
+                        }));
+    // @orig 0x00294808 Cfg_SetVerticalSightModifier (unknown)
+    vm.registerFunction("CfgVerticalSightModifier",
+                        stateCall(context, [](StoryState& s, A a) { s.verticalSight = floatArg(a, 0); }));
+    // @orig 0x00238f10 Cfg_SetTagStartCallback (unknown)
+    vm.registerFunction("CfgTagStartCallback",
+                        stateCall(context, [](StoryState& s, A a) { s.tagStartCallback = nameArg(a, 0); }));
+    // `CfgCrimeResponders(crime, count)`: a byte per crime type.
+    // @orig 0x0041d8a0 Cfg_SetCrimeResponders (unknown)
+    vm.registerFunction("CfgCrimeResponders", [context = &context](A a) {
+        context->state->player.crimes.setResponders(
+            static_cast<int>(static_cast<std::uint32_t>(wholeArg(a, 0)) & 0xffU),
+            static_cast<int>(static_cast<std::uint32_t>(wholeArg(a, 1)) & 0xffU));
+        return binding::none();
+    });
+    vm.registerFunction("CrimeIsHappening", makeCrimeIsHappening(scripts, context));
+    // `SetCharacterModel(type, release)`: the type kept (or dropped) in the level's model list.
+    // @orig 0x0040cda8 ResourceManager_SetCharacterModel (unknown)
+    vm.registerFunction("SetCharacterModel", stateCall(context, [](StoryState& s, A a) {
+                            const int type = intArg(a, 0);
+                            std::erase(s.keptModels, type);
+                            if (!boolArg(a, 1) && s.keptModels.size() < kKeptModels) {
+                                s.keptModels.push_back(type);
+                            }
+                        }));
+    // `setDetailFlag(index, mask)` and `clearDetailFlag(index, mask)`: one of four bytes nothing reads. **Coney
+    // choice**: an index outside 0-3 does nothing (the original writes past them).
+    // @orig 0x0041d830 GameState_SetDetailFlag (unknown)
+    vm.registerFunction("setDetailFlag", stateCall(context, [](StoryState& s, A a) {
+                            if (const std::int64_t i = wholeArg(a, 0);
+                                i >= 0 && i < static_cast<std::int64_t>(kDetailBytes)) {
+                                s.detailFlags.at(static_cast<std::size_t>(i)) |=
+                                    static_cast<std::uint8_t>(static_cast<std::uint32_t>(wholeArg(a, 1)) & 0xffU);
+                            }
+                        }));
+    // @orig 0x0041d860 GameState_ClearDetailFlag (unknown)
+    vm.registerFunction("clearDetailFlag", stateCall(context, [](StoryState& s, A a) {
+                            if (const std::int64_t i = wholeArg(a, 0);
+                                i >= 0 && i < static_cast<std::int64_t>(kDetailBytes)) {
+                                s.detailFlags.at(static_cast<std::size_t>(i)) &=
+                                    static_cast<std::uint8_t>(~static_cast<std::uint32_t>(wholeArg(a, 1)) & 0xffU);
+                            }
+                        }));
+}
+
+} // namespace coney::script

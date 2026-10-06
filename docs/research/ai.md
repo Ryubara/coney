@@ -1339,6 +1339,21 @@ pushes `PedestrianGoal` (`0x69`) on a human that is not a player's; **stand-in**
 (mode 2 jog, 3 run) to the node nearest the human, then on to a random linked node within 1 m, for ever, standing at a
 node with no links; the variant `chance` picks and the two flags are kept, not used.
 
+**The story's goals, gangs and Warrior commands** (`src/ai/scripted_story.*`, `src/ai/story_goals.*`,
+`src/scripting/story_bindings.*`, for `level80` and `level87`). `GoalMoveToExitFlag` (2) and `HuExitWorld` set the
+brain dead (not a player's) and walk to the exit flag; **stand-ins** for the camera tests: arriving within 8 m of
+player 1 picks the nearest other exit (activity 8), arriving farther is `HuDelete`, and every 8 s a human more than
+60 m from player 1 is killed (`HuKill`). `GoalTravelPath` (`0x38`) pushes a `GoalMoveToFlag` per point of an
+`AddPath` path (a number handle, as Coney's VM has no user types), then stops, loops or turns round. `GoalMelee` with
+no target pushes a finding goal (`0x41`; **stand-in**: the nearest hostile within the sight range, once a second).
+`GoalThrowObject` (`0x5d`) walks into range and turns; **stand-in** for the throw: what it holds is let go.
+`GoalPlayDynIdle` (`0x23`) walks to the flag, turns to its heading and stands for its time; the clips are kept, not
+played. `GangExitWorld` sends each AI member out; once none is alive the callback gets the gang's id and the gang is
+deleted unless kept. Turf boxes, leader, respond percentage, hear ranges, investigate response, world-flag use and
+attack strategies are kept for readers not built. **Warrior commands, stand-in** for the untraced tactics: the crew's
+tactic is cleared and its AI members flushed, then 0 follow and 2 defend track the chief (2 m), 1 attack finds
+enemies, 3 hold stands; 4, 5 and 6 start nothing; the lines are not said. `GangStartSpawner` is kept only.
+
 **Open in Coney.** The dispatcher's answer to an AI's command 3 (76 against a grab, 9 against a tackle, as paired moves)
 is not built, nor are an AI's own grabs and tackles (the player grabs and tackles an AI's human,
 [Combat](combat.md#grab)); the pattern read at Start; the per-kind time `0x00231590` and the spacing bytes; the pick's
@@ -1381,6 +1396,8 @@ the run-stop.
 - The tactic event codes (`TacticGetString`, `0x00315c58`) passed to a tactic's callback.
 - What the player gang's type-3 tactic (vtable `0x005439e0`) is called and does, and what `0x0041c4e0` decides.
 - The perception struct (`+0xf8`).
+- The Warrior commands' tactics (`0x00310e00`, `0x00320530`, `0x00313400`, `0x00319570`, `0x00320b60`), the exit
+  goal's on-screen test, the finding goal's search values (90, 30, 10) and the throw's Process (`0x002cf690`).
 - The think handlers of types 2, 3 and 5 in detail; what goals the Warriors' think pushes for an ally.
 - Which class `+0x11b` value 13 is ([Combat](combat.md#open-questions)), and what the byte
   `*(0x0051489c) + 0x56e3` that lets every AI counter is.

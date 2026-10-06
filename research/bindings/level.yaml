@@ -18,6 +18,7 @@
     Level scripts call it once while setting up. Humans placed with HuCreate are not limited by it (inferred: only
     the spawner path reads it). What counts `+0x432` up and down is not traced.
   usage: {chunks: 48, calls: 48, boot: false, mission1: false, result_used: false, levels: [87, 95, 34, 2, 5, 86, 31, 9, 52, 82, 83, 20, 11]}
+  coney: implemented
 
 - name: SetCopSpawnMax
   wrapper: 0x0035b0d8
@@ -617,6 +618,7 @@
     responders; what each type does: [AI: crimes](../../research/ai.md#crimes). Severity, radius and flags
     are never read, confirmed (code) at 0x0037a2f8, 0x0041b6e0 and 0x0041b8b0 ([Crimes: wanted](../../research/crimes.md#wanted)).
   usage: {chunks: 12, calls: 18, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: SpawnCustomCrime
   wrapper: 0x0037a4a8

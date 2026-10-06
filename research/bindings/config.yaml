@@ -461,6 +461,7 @@
   notes: >-
     When exactly it fires is inferred from the name and the levels that use it.
   usage: {chunks: 6, calls: 8, boot: true, mission1: false, result_used: false, levels: [87, 3, 9]}
+  coney: implemented
 
 - name: CfgBurnRates
   wrapper: 0x0035dc90
@@ -707,6 +708,7 @@
   notes: >-
     How the sight test uses it is not traced.
   usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false, levels: [87, 9, 54]}
+  coney: implemented
 
 - name: CfgCanBeAttackedModifier
   wrapper: 0x0035e2c8
@@ -736,6 +738,7 @@
   notes: >-
     Which situation each percentage covers is not traced.
   usage: {chunks: 6, calls: 11, boot: true, mission1: false, result_used: false, levels: [87, 95, 83]}
+  coney: implemented
 
 - name: CfgSearchTimes
   wrapper: 0x0035e378
@@ -809,6 +812,7 @@
     inferred; a rival gang already fighting a crew member (goal 0xc) gives state 1 without the threshold. The
     global's value before any call is not traced.
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [87, 83, 20]}
+  coney: implemented
 
 - name: CfgDisableMusicForScenes
   wrapper: 0x0035e530
@@ -823,6 +827,7 @@
   notes: >-
     Storage confirmed (code) at 0x0041d930; the scene behaviour follows the name (readers not traced).
   usage: {chunks: 21, calls: 35, boot: true, mission1: false, result_used: false, levels: [80, 87, 2, 5, 93, 31, 14, 9, 51, 52, 55, 83, 11]}
+  coney: implemented
 
 - name: CfgSetTimeScale
   wrapper: 0x0035e560
@@ -1424,6 +1429,7 @@
   notes: >-
     What the flag changes (lighting, weather, camera) is not traced.
   usage: {chunks: 15, calls: 29, boot: true, mission1: false, result_used: false, levels: [80, 87, 95, 3, 5, 86, 14, 51, 52, 82, 92, 83, 11]}
+  coney: implemented
 
 - name: CfgSetGlassProperties
   wrapper: 0x0036ad80
@@ -1722,6 +1728,7 @@
     No range check: a crime index past 14 writes into the next game-state fields. Types 6, 7, 10, 12 and 14 never
     send responders whatever is set.
   usage: {chunks: 10, calls: 37, boot: false, mission1: false, result_used: false, levels: [87, 95, 14, 9, 82]}
+  coney: implemented
 
 - name: CfgEnableCrimeType
   wrapper: 0x0036bec8
@@ -1903,6 +1910,7 @@
     Reader: the counter tests on ai.md (`0x00223e20`). Which humans brain type 3 and class `+0x11b` 13 are is open.
     The byte's value before any call is not traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [87]}
+  coney: implemented
 
 - name: CfgPowerupPickup
   wrapper: 0x0036c208

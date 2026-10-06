@@ -33,6 +33,8 @@ class Brains {
     [[nodiscard]] Brain* find(const human::Human& human);
     /// Gives every brain, and each added later, `planner` (null for none; it must outlive them or be replaced).
     void setPlanner(RoutePlanner* planner);
+    /// The planner setPlanner() gave (null for none).
+    [[nodiscard]] RoutePlanner* planner() const { return m_planner; }
 
     /// One step: the game time advances by one step; the formations, then the gangs (their tactics) step; each enabled
     /// brain whose human is in the world thinks when `index % 5 == step % 5` and updates; then every player brain's

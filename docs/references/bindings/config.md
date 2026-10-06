@@ -629,7 +629,7 @@ Sets two civilian aggression percentages (how likely civilians fight back), stor
 - **Wrapper** `0x0035e300` (registered by `RegisterBindings`); **calls** `0x00294828` `Cfg_SetCivilianAggression`
 - **Used by** 6 of 467 script chunks (11 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgClimbWithGhetto {#cfgclimbwithghetto}
 
@@ -768,7 +768,7 @@ send responders whatever is set.
   `0x0041b8a0`
 - **Used by** 10 of 467 script chunks (37 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgDamageEndurance {#cfgdamageendurance}
 
@@ -811,7 +811,7 @@ Sets the global flag 0x005148ac that tells the scene code to silence the level m
 - **Wrapper** `0x0035e530` (registered by `RegisterBindings`); **calls** `0x0041d930` `Cfg_SetDisableMusicForScenes`
 - **Used by** 21 of 467 script chunks (35 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgDistances {#cfgdistances}
 
@@ -912,7 +912,7 @@ open. The byte's value before any call is not traced.
 - **Wrapper** `0x0036c1d8` (registered by `RegisterBindings`); **calls** `0x0041da60` `Cfg_SetGrappleCounters`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgEnableTurfInvasion {#cfgenableturfinvasion}
 
@@ -1066,7 +1066,7 @@ before any call is not traced.
 - **Wrapper** `0x0035e4f8` (registered by `RegisterBindings`); **calls** `0x0041d920` `Cfg_SetGangSizeForCombatMusic`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgGearData {#cfggeardata}
 
@@ -2411,7 +2411,7 @@ Stores the outdoor flag in the game state (+0x3e4); global.lua switches it as th
 - **Wrapper** `0x0036ad50` (registered by `RegisterBindings`); **calls** `0x0041d728` `Cfg_SetOutdoorMode`
 - **Used by** 15 of 467 script chunks (29 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetStatTypeMax {#cfgsetstattypemax}
 
@@ -2863,7 +2863,7 @@ Registers the script callback (interned, stored at 0x006b6870) fired when a tag 
 - **Wrapper** `0x0035cc20` (registered by `RegisterBindings`); **calls** `0x00238f10` `Cfg_SetTagStartCallback`
 - **Used by** 6 of 467 script chunks (8 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgTurnRate {#cfgturnrate}
 
@@ -2931,7 +2931,7 @@ Stores the AI vertical sight modifier (0x00510ad4).
 - **Wrapper** `0x0035e290` (registered by `RegisterBindings`); **calls** `0x00294808` `Cfg_SetVerticalSightModifier`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgWarriorClass {#cfgwarriorclass}
 

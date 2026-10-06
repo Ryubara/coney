@@ -12,6 +12,7 @@
 #include "warriors/level_table.h"
 #include "warriors/player_state.h"
 #include "warriors/profile_record.h"
+#include "warriors/story_state.h"
 #include "warriors/unlockables.h"
 
 namespace coney {
@@ -87,6 +88,9 @@ struct GameState {
     /// The inventories, statistics, unlockables' records, stopwatch, crime fields and Lua pad handlers the bindings act
     /// on (docs/research/player-state.md).
     PlayerState player;
+    /// What the story missions' scripts set beyond the characters' rules (the Warrior commands' callback, the music
+    /// switches, the tagging set-up...).
+    StoryState story;
 };
 
 } // namespace coney

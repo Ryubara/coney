@@ -20,6 +20,7 @@
 #include "ai/goal.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_humans.h"
+#include "ai/scripted_story.h"
 #include "combat/combat_tuning.h"
 #include "core/error.h"
 #include "gui/global_strings.h"
@@ -332,7 +333,7 @@ TEST_CASE("WCIssueCommand reaches a player's crew only while the command is enab
     level.call("WCEnableAllCommands", {Value()});
     level.call("WCIssueCommand", {Value(1.0), Value(5.0), Value(1.0)});
     CHECK(level.state.characters.lastWarriorCommand[0] == 3);
-    CHECK(level.scripted->humanHost().warriorCommand() == 3);
+    CHECK(level.scripted->storyHost().warriorCommand() == 3);
     CHECK(level.call("HuChangePlayerGang", {Value(4.0), Value(1.0)}).number() == 1.0);
     CHECK(level.scripted->humanHost().playerGang() == 4);
 }

@@ -14,6 +14,7 @@
 #include "ai/dealer_goal.h"
 #include "ai/pedestrian_goal.h"
 #include "ai/play_dyn_animation_goal.h"
+#include "ai/scripted_story.h"
 #include "ai/tactic_attack.h"
 #include "ai/tactic_confront.h"
 #include "ai/tactic_crowd.h"
@@ -38,8 +39,8 @@ constexpr int kFlagArrival = 8;
 
 ScriptedBrains::ScriptedBrains(Brains& brains, const world_objects::WorldFlags& flags,
                                world_objects::ObjectLocator locate)
-    : m_owner(&brains), m_flags(&flags), m_locate(std::move(locate)),
-      m_humans(std::make_unique<ScriptedHumans>(*this)) {
+    : m_owner(&brains), m_flags(&flags), m_locate(std::move(locate)), m_humans(std::make_unique<ScriptedHumans>(*this)),
+      m_story(std::make_unique<ScriptedStory>(*this)) {
     m_owner->gangs().setScripts(this);
 }
 
@@ -49,6 +50,8 @@ ScriptedBrains::~ScriptedBrains() {
     }
     setAnimCallbacks(nullptr);
 }
+
+script::StoryBindingHost* ScriptedBrains::story() { return m_story.get(); }
 
 void ScriptedBrains::setAnimCallbacks(script::AnimCallbacks* callbacks) {
     if (m_animCallbacks != nullptr) {
