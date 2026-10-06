@@ -1,0 +1,78 @@
+# level99's sparring fight as the script runs it: the state is saved as `P1.SetupWarriors` starts its scene, so the
+# scene's end calls `P1.SendWarriors`, which wakes the three `CombatWarriors` (classes 58-60, brain type 2,
+# `Att_Normal`) and gives each `GoalFight(warrior, player, 0)`. The player stands still for the whole fight (the
+# script's 50 s stopwatch). Research: docs/research/ai.md#level99-fight. The state is not a quick-save slot: make it
+# as ai.md#level99-save says and pass it with --state.
+description = "level99 sparring fight: the three type-2 Warriors against a still player (no input); commands and pacing"
+research = "docs/research/ai.md#level99-fight"
+input = "warriors_passive.txt"
+updates = 1700
+fields = ["player", "enemy"]
+
+[original]
+state = "states/l99-warriors-before-fight.p2s"
+patches = ["scripted-pad", "right-stick", "call-brains", "set-command", "brain-think"]
+let = { enemy = 'human("Generic1")', g2 = 'human("Generic2")', g3 = 'human("Generic3")' }
+
+[[field]]
+name = "g2_command"
+address = "prec(g2) + 0x20"
+type = "u32"
+
+[[field]]
+name = "g2_clip"
+address = "rec(g2) + 0x20"
+type = "s32"
+
+[[field]]
+name = "g2_next_attack"
+address = "brain(g2) + 0x1e8"
+type = "u32"
+
+[[field]]
+name = "g2_x"
+address = "tf(g2) + 0x0"
+type = "f32"
+
+[[field]]
+name = "g2_y"
+address = "tf(g2) + 0x4"
+type = "f32"
+
+[[field]]
+name = "g3_command"
+address = "prec(g3) + 0x20"
+type = "u32"
+
+[[field]]
+name = "g3_clip"
+address = "rec(g3) + 0x20"
+type = "s32"
+
+[[field]]
+name = "g3_next_attack"
+address = "brain(g3) + 0x1e8"
+type = "u32"
+
+[[field]]
+name = "g3_x"
+address = "tf(g3) + 0x0"
+type = "f32"
+
+[[field]]
+name = "g3_y"
+address = "tf(g3) + 0x4"
+type = "f32"
+
+[[field]]
+name = "p_attackers"                      # the player's brain +0x1a4: the first attack slot's handle
+address = "brain(player) + 0x1a4"
+type = "u32"
+
+[[field]]
+name = "p_slots_max"                      # brain +0x1e4, the attack slots allowed on the player
+address = "brain(player) + 0x1e4"
+type = "u8"
+
+[coney]
+level = "level99"

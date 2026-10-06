@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from coney_tools import pcsx2_state
+from coney_tools.config import ConfigError
 from coney_tools.game_memory import (
     CAMERA_POINTER,
     GAME_TIMER_POINTER,
@@ -26,6 +27,7 @@ from coney_tools.game_memory import (
     GameMemory,
     parse,
 )
+from coney_tools.pcsx2_cli import _scenario_state
 from coney_tools.pine import PineClient, PineError, Read, Write, decode, encode
 from coney_tools.recorder import PAD_BYTES, TICK_COUNTER, Recorder
 from coney_tools.scenario import ScenarioError, load_scenario
@@ -393,6 +395,29 @@ def test_scenarios_name_their_problems(tmp_path: Path) -> None:
         load_scenario(path, tmp_path)
 
 
+def test_a_scenario_may_name_a_state_file_under_scratch(tmp_path: Path) -> None:
+    scenario = load_scenario(_repo(tmp_path, "", '[original]\nstate = "states/x.p2s"\n'), tmp_path)
+    assert scenario.slot is None
+    assert scenario.state == "states/x.p2s"
+    scratch = tmp_path / "scratch"
+    # The file must exist under the scratch folder; --state wins over the scenario's own.
+    with pytest.raises(ConfigError, match="does not exist"):
+        _scenario_state(scenario, None, scratch)
+    (scratch / "states").mkdir(parents=True)
+    (scratch / "states" / "x.p2s").write_bytes(b"")
+    assert _scenario_state(scenario, None, scratch) == str(scratch / "states" / "x.p2s")
+    assert _scenario_state(scenario, "slot:3", scratch) == "slot:3"
+    path = tmp_path / "research" / "traces" / "scenarios" / "demo.toml"
+    head = 'input = "demo.txt"\nupdates = 6\nfields = ["demo"]\n[original]\n'
+    for original, problem in [
+        ('state = "/abs.p2s"\n', "relative to scratch_dir"),
+        ('slot = 1\nstate = "x.p2s"\n', "both a slot and a state"),
+    ]:
+        path.write_text(head + original, encoding="utf-8")
+        with pytest.raises(ScenarioError, match=problem):
+            load_scenario(path, tmp_path)
+
+
 def test_the_repository_scenarios_load() -> None:
     folder = REPO / "research/traces/scenarios"
     scenarios = sorted(folder.glob("*.toml"))
@@ -402,5 +427,5 @@ def test_the_repository_scenarios_load() -> None:
         # A scenario plays input, unless it says it has none (a run that only logs calls).
         assert scenario.events or "no input" in scenario.description, path
         assert scenario.coney_level, path
-        assert scenario.slot is not None, path
+        assert scenario.slot is not None or scenario.state is not None, path
         assert "scripted-pad" in scenario.patches, path

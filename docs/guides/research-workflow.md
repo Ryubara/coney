@@ -328,9 +328,11 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   (`0x000b0000`) and runs the two instructions. The recorder reads the ring every poll and writes one CSV per hook
   ([Hooks](#hooks)). A **call hook** makes the game call one of its own functions on its own thread, as a script
   binding would: that is how a fight is started on a pedestrian (`GoalFight`'s `0x002b2b90`) for the AI checks.
-- **Leave the quick-save slots alone.** Never save a state to a slot number (PINE's save writes a quick-save slot):
-  load existing slots read-only (they may hold someone else's test spots), and keep your own states as files in your
-  scratch folder, made as above.
+- **Leave the quick-save slots alone.** Load existing slots read-only (they may hold someone else's test spots), and
+  keep your own states as files in your scratch folder, made as above. PINE can only save to a slot number: when a
+  state must be saved from a running game, save it to an empty slot above 10 and move the file to your scratch folder
+  at once. A state saved from a patched copy still holds the patches; put each patched word back to the original that
+  `patches.toml` lists before using it as a scenario's `state`, or the copy is refused.
 - **Hygiene.** Save states, screenshots and logs contain game data: keep them in your scratch folder (move the
   `.p2s` files out of `pcsx2/sstates/` afterwards) and close PCSX2 when done. Screenshots are measured, never
   committed; a claim quotes the numbers.
@@ -347,14 +349,14 @@ are measurements of the game and stay in your scratch folder.
 uv run --project python coney-tools pcsx2 record research/traces/scenarios/walk60.toml --out ../../scratch/walk60-original.csv
 ```
 
-`record` copies the scenario's quick-save slot (read only) to `<scratch_dir>/pcsx2/<scenario>.p2s` with the patches
-applied, starts PCSX2 on the copy with `-fastboot -statefile` (through a hard link to the disc when its path has
-commas or parentheses), waits until the patched state runs, plays the script and samples every update, then closes
-PCSX2 and warns if a file appeared in its `sstates/` folder. The folders come from `coney.local.toml` (`pcsx2_dir`,
-`game_dir`, `scratch_dir`) or from `--pcsx2-dir`, `--iso` and `--scratch`; PINE must be on in PCSX2's ini. `--state`
-records from another state file (or `slot:N`), `--attach` records a PCSX2 you started yourself on a patched copy
-(`coney-tools pcsx2 prepare-state`, then `pcsx2 launch`), and `--keep-open` leaves it running. It prints the number of
-updates, how many reads each poll made, the time per poll and the updates it missed.
+`record` copies the scenario's quick-save slot (read only), or the state file it names under `scratch_dir`, to
+`<scratch_dir>/pcsx2/<scenario>.p2s` with the patches applied, starts PCSX2 on the copy with `-fastboot -statefile`
+(through a hard link to the disc when its path has commas or parentheses), waits until the patched state runs, plays the
+script and samples every update, then closes PCSX2 and warns if a file appeared in its `sstates/` folder. The folders
+come from `coney.local.toml` (`pcsx2_dir`, `game_dir`, `scratch_dir`) or from `--pcsx2-dir`, `--iso` and `--scratch`;
+PINE must be on in PCSX2's ini. `--state` records from another state file (or `slot:N`), `--attach` records a PCSX2 you
+started yourself on a patched copy (`coney-tools pcsx2 prepare-state`, then `pcsx2 launch`), and `--keep-open` leaves it
+running. It prints the number of updates, how many reads each poll made, the time per poll and the updates it missed.
 
 **Timing.** Step 0 is the first sample, before any input. After the sample of step N the recorder writes the pad for
 frame N of the script, which the update of step N + 1 reads: the numbering of Coney's `--trace`, where frame N of an
@@ -377,6 +379,7 @@ fields = ["player", "camera"]     # field sets of research/traces/fields.toml
 
 [original]
 slot = 1                          # the quick-save slot to copy, never written
+# state = "states/x.p2s"          # or a state file of your own, relative to scratch_dir (never committed)
 patches = ["scripted-pad", "right-stick"]
 let = { puppet = 'human("PoizoCiv")' }       # names resolved once, before the first update
 setup = [ { address = "prec(puppet) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 } ]

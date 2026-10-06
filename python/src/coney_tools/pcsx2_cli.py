@@ -27,7 +27,7 @@ from coney_tools.hooks import Hook, HookError
 from coney_tools.pcsx2_state import Patch, StateError
 from coney_tools.pine import DEFAULT_PORT, PineClient, PineError, Read
 from coney_tools.recorder import Recorder, RecordError
-from coney_tools.scenario import PATCHES_FILE, ScenarioError, load_scenario
+from coney_tools.scenario import PATCHES_FILE, Scenario, ScenarioError, load_scenario
 from coney_tools.wad import refuse_inside_repo
 
 #: Seconds to wait for PCSX2 to boot, load the state and run the game.
@@ -214,6 +214,24 @@ def _source_state(source: str, pcsx2_dir: Path | None) -> Path:
     return path
 
 
+def _scenario_state(scenario: Scenario, state: str | None, scratch: Path) -> str:
+    """The state a recording copies: `--state` when given, else the scenario's slot or its state file (a path under
+    the scratch folder, made by hand as its research page says). Raises ConfigError when there is none."""
+    if state is not None:
+        return state
+    if scenario.slot is not None:
+        return f"slot:{scenario.slot}"
+    if scenario.state is not None:
+        path = scratch / scenario.state
+        if not path.is_file():
+            raise ConfigError(
+                f"{scenario.path}: its state {path} does not exist; make it as the scenario's research page says, "
+                "or pass --state"
+            )
+        return str(path)
+    raise ConfigError(f"{scenario.path}: names no slot or state; pass --state")
+
+
 def _patches(names: list[str]) -> tuple[list[Patch], list[Hook]]:
     """The named patches and hooks of research/traces/patches.toml: the patches, with one more installing the hooks
     (ids in the order named), and the hooks."""
@@ -282,9 +300,7 @@ def run_record(
             client = PineClient(pine_port(pcsx2) if pcsx2 else DEFAULT_PORT)
         else:
             paths = resolve_paths(*flags)
-            if state is None and scenario.slot is None:
-                raise ConfigError(f"{scenario_path}: names no slot; pass --state")
-            source = _source_state(state or f"slot:{scenario.slot}", paths.pcsx2_dir)
+            source = _source_state(_scenario_state(scenario, state, paths.scratch), paths.pcsx2_dir)
             copy = paths.scratch / f"{scenario_path.stem}.p2s"
             _make_copy(source, copy, patches, paths.pcsx2_dir)
             emulator = Emulator(paths, copy, patches)

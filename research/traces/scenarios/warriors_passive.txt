@@ -1,0 +1,2 @@
+# The player does nothing: the three sparring Warriors of level99's tutorial fight him on their own.
+# Frames are character updates of 1/30 s.

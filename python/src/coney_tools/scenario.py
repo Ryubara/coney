@@ -11,7 +11,8 @@ updates = 160                        # character updates to record (Coney: --fra
 fields = ["player", "camera"]        # field sets of research/traces/fields.toml
 
 [original]
-slot = 1                             # the quick-save slot to copy (read only)
+slot = 1                             # the quick-save slot to copy (read only), or:
+# state = "states/my-save.p2s"       # a state file of your own, under scratch_dir (never committed)
 patches = ["scripted-pad", "right-stick"]
 let = { puppet = 'human("PoizoCiv")' }   # names resolved once, before the first update
 setup = [ { address = "prec(puppet) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 } ]
@@ -114,6 +115,7 @@ class Scenario:
     updates: int
     fields: tuple[Field, ...]
     slot: int | None
+    state: str | None
     patches: tuple[str, ...]
     let: tuple[tuple[str, Expression], ...]
     setup: tuple[SetupWrite, ...]
@@ -293,6 +295,11 @@ def load_scenario(path: Path, root: Path) -> Scenario:
     slot = original.get("slot")
     if slot is not None and (not isinstance(slot, int) or slot < 0):
         raise ScenarioError(f"{where}: [original] slot must be a whole number")
+    state = original.get("state")
+    if state is not None and (not isinstance(state, str) or not state or Path(state).anchor):
+        raise ScenarioError(f"{where}: [original] state must be a path relative to scratch_dir")
+    if state is not None and slot is not None:
+        raise ScenarioError(f"{where}: [original] names both a slot and a state; give one")
     let = tuple((str(k), _expression(v, f"{where} let {k}")) for k, v in original.get("let", {}).items())
     setup = tuple(_setup(item, f"{where} setup {i + 1}") for i, item in enumerate(original.get("setup", [])))
     calls = tuple(_call(item, f"{where} call {i + 1}") for i, item in enumerate(original.get("calls", [])))
@@ -307,6 +314,7 @@ def load_scenario(path: Path, root: Path) -> Scenario:
         updates=data["updates"],
         fields=tuple(fields),
         slot=slot,
+        state=state,
         patches=tuple(str(p) for p in original.get("patches", [])),
         let=let,
         setup=setup,
