@@ -1261,6 +1261,43 @@ Confirmed (runtime). **Car window** (slots 2 and 5): square plays 662 on the win
 `LOW`, above → 662 `MID` (663 `HIGH` is never chosen); below the feet → 194. It first approaches when the object is
 between reach × 0.5 and far × 1.5 of the clip's range. Confirmed (code).
 
+**The store's cabinets** (mission 1's store, `level99`). A cabinet is no object: it is two or three type-1 glass panes
+that `level99.lua`'s `AddGlass` places (a top at z 2.02 and a front or side, z 1.23-1.95; [Glass
+types](../references/glass-types.md#glass-1)), around loose items from the level's object list, which this page's
+breakables do not spawn: `level99_objs.txt` ([World objects](objects.md#objs-file)) puts 3 `dyn_pwatch` behind the front
+panes at x 50.25-52.26, y 56.99, 3 `dyn_ringdmnd` in the next cabinet (x 48.16-50.17) and 4 `dyn_ring` in the side one
+(x 48.13), all in object zone 26, which `BNESetup` (`global.lua`) enables. The items are `pickup_item`s of
+`TYPE_SPECIAL` (12). Confirmed (runtime, the spawn records read at slot 4) and from the disc's list.
+
+- **Breaking.** The square's hit breaks the struck pane only (`Glass_Break` from `Strike_Contact`, `0x0021b290`, the
+  breaker the player; [a pane's life](objects.md#pane)); the cabinet's other panes stay whole and the items do not
+  move. At slot 4 one square broke the front pane centred at (51.26, 56.99, 1.59), 11 updates after the press.
+  Confirmed (runtime).
+- **Triangle with nothing held** reaches the pick-up search `0x0024d810` ([Crimes: triangle](crimes.md#triangle), step
+  5; `ContextAction_Use` ran with no context record each press). It gathers objects within **1.5 m** of the human (and
+  of a second point, his position + human `+0x4e0`), and keeps one that is pickable (object flags `0x8000`), not the
+  class `powerup_item` (walked over instead), and **in sight**: `0x0021c570` casts a ray from the feet + 1 m and, if
+  that hits, from the feet + 2 m to the object, and rejects it when both hit. Each candidate is scored by the direction
+  to it from a point 0.1 m behind the human, dotted with his facing: 3 at 0.38 or more, 2 from 0 to 0.38, 1 behind; the
+  first of the best wins. Confirmed (code). An intact pane blocks the rays: a triangle before the square did nothing
+  (confirmed (runtime); that the glass is what the ray hits is inferred).
+- **The pick-up.** For a `TYPE_SPECIAL` item the search pins its record and sends it message 0; the human's message
+  `0x14` (`0x0025e5a8`) then picks the clip by the type's pick-up animation (`CfgObj` argument 14, 5 for all four
+  jewellery types): **463** at or below 0.8 m above the feet, **464** above (the cabinets' items are 1.32 m up), with a
+  0.2 s blend, and hands `0x00275d10` the time to the clip's first event. Confirmed (code); that the item sends `0x14`,
+  and that `0x00275d10` steers like `Attack_SteerToTarget` ([Target selection](#targets)), are inferred. At runtime 464
+  ran 20 updates; the player turned 4.6° and moved up to 0.07 m per update for the first 5, and the clip's event
+  (message 3) ran `Human_PickUpObject` (`0x0023bf00`) on the 5th update.
+- **The take.** `Human_PickUpObject`, for a `TYPE_SPECIAL` whose model hash is not one of the named mission items, adds
+  item **10** (loot) ×1 with the notify flag, then money: the type's `CfgObj` argument 4 × the float at game state
+  `+0x380` (1.0 here), without notify ($7 a watch, $10 a diamond ring, $8 a ring, $15 a necklace), and plays item 10's
+  pickup sound; the record is removed for good (spawn record bit `0x40000`). Confirmed (code), and at runtime: three
+  presses took the three watches, each adding item 10 ×1 with notify, then $7 without; a fourth press played nothing
+  (the next cabinet's rings are behind its whole pane). [Inventory](player-state.md#pickup-callback) covers the
+  callback.
+
+Scenario `store_loot` (`repo:research/traces/scenarios/store_loot.toml`) replays this with the hooks that log it.
+
 ### The stereo theft {#stereo-theft}
 
 **Triangle** at a car's open window with a radio (slot 5) plays 683 `STEREO_STEAL_INTRO` (0.55 s), then the loop 684,

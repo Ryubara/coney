@@ -181,3 +181,43 @@ log = [
     { value = "[[s1 + 0xd4] + 0x178]", name = "run" },
     { value = "f28", name = "speed" },
 ]
+
+[hook.inventory-add]
+description = "Each call of Inventory_AddItem (0x0041e5b0): the caller, the inventory, the player, the item, the amount and the notify flag (1 calls the CfgInventoryCallback function)."
+research = "docs/research/player-state.md#inventory"
+address = 0x0041e5b0
+# addiu sp,sp,-0x70; sq s3,0x30(sp)
+original = [0x27bdff90, 0x7fb30030]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "player" }, { value = "a2", name = "item" }, { value = "a3", name = "amount" }, { value = "t0", name = "notify" }]
+
+[hook.pick-up]
+description = "Each call of Human_PickUpObject (0x0023bf00): the object, its position, its object-type index and its model hash (+0xc4)."
+research = "docs/research/combat.md#breakables"
+address = 0x0023bf00
+# addiu sp,sp,-0xa0; sq s2,0x70(sp)
+original = [0x27bdff60, 0x7fb20070]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  { value = "a1", name = "object" },
+  { value = "[a1 + 0x10]", name = "x", type = "f32" },
+  { value = "[a1 + 0x14]", name = "y", type = "f32" },
+  { value = "[a1 + 0x18]", name = "z", type = "f32" },
+  { value = "[a1 + 0x112]", name = "type_index", type = "u16" },
+  { value = "[a1 + 0xc4]", name = "hash" },
+]
+
+[hook.context-use]
+description = "Each call of ContextAction_Use (0x0024d530, triangle with nothing grabbed): the human and its context record (+0x660)."
+research = "docs/research/combat.md#breakables"
+address = 0x0024d530
+# addiu sp,sp,-0xa0; sq s1,0x80(sp)
+original = [0x27bdff60, 0x7fb10080]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "[a0 + 0x660]", name = "context" }]
+
+[hook.glass-break]
+description = "Each call of Glass_Break (0x0038f378): the pane, the breaker and the object."
+research = "docs/research/objects.md#pane"
+address = 0x0038f378
+# addiu sp,sp,-0xb0; sq s0,0xa0(sp)
+original = [0x27bdff50, 0x7fb000a0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "pane" }, { value = "a1", name = "breaker" }, { value = "a2", name = "object" }]

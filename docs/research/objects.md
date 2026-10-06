@@ -283,6 +283,18 @@ resources are in memory, then whatever moves it.
 `level100.lua` the 29 Wonder Wheel objects are spawned when `WonderWheelAnim:startScene` binds them to the scene
 (`SceneAddObject` resolves each handle). Inferred from the paths above.
 
+#### The level's placed objects (`_objs.txt`) {#objs-file}
+
+`InitLevel`'s step 7 ([Level loading](level-loading.md#initlevel)), after the level script's main chunk, reads
+`<level>_objs.txt` (`0x00398598`): a count (`%d`), then one line per object, `{name {x,y,z}, {qx,qy,qz,qw}, -1, zone,
+flags, tint, flagName )` (format at `0x005811f0`), the arguments `ObjSpawn` takes. A name starting `part` (`0x00581228`)
+makes a particle emitter task by that name at the pose instead; every other line goes to `ObjRecord_Add` directly (no
+unlockable checks). Confirmed (code); that the fields mean what `ObjSpawn`'s do is inferred from their order.
+`level99_objs.txt` holds 112 lines: 14 emitters and 98 objects; 89 lines name zone 0 (the emitters among them) and 23
+zone 26 (the two stores' jewellery and a cash register, flags 2), a zone `BNESetup` (`global.lua`, called by
+`level99.lua`'s `RegisterObjects`) enables, as it does each of zones 21-32 the level defines. Disc check (NTSC-U,
+2026-10-06, counts only); the store's items at runtime on [Combat: breakables](combat.md#breakables).
+
 #### Streaming {#streaming}
 
 `ObjectTaskManager_UpdateSpawns` (`0x00399d88`, called from `TaskManager_TickGame`) walks up to 512 records a call,

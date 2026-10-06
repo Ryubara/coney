@@ -1,7 +1,8 @@
 # Inventory, unlockables and statistics
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
-(Ghidra, and the disc's compiled scripts read with `coney-tools`' Lua walker). No runtime claims.
+(Ghidra, and the disc's compiled scripts read with `coney-tools`' Lua walker); the pickup callback also at runtime
+(PCSX2 2.9.94, 2026-10-06, scenario `store_loot`, [Combat: breakables](combat.md#breakables)).
 
 ## Purpose
 
@@ -19,6 +20,7 @@ are listed in [Inventory items](../references/inventory.md), [Unlockables](../re
 | --- | --- | --- | --- |
 | `0x0041e250` | `Inventory_SetItem` | `CfgInventoryItem`'s writer, for both players | confirmed (code) |
 | `0x0041e420` | `Inventory_Count(inv, player, item)` | an item's count; 0 outside players 0-1 and items 0-22 | confirmed (code) |
+| `0x0041e5b0` | `Inventory_AddItem(inv, player, item, amount, notify)` | every count change, and the callbacks ([below](#pickup-callback)) | confirmed (code), runtime |
 | `0x00423718` | `Unlocks_SetRecord` | `UM_SetUnlockable`'s writer | confirmed (code) |
 | `0x00424130` | `Unlocks_IsDataUnlocked(mgr, type, data)` | the code's test, as `UM_IsDataUnlocked` | confirmed (code) |
 | `0x004211d8` | `Stats_CategoryPoints(stats, group)` | the sum of counts × points of a category | confirmed (code) |
@@ -37,6 +39,33 @@ The code uses five of them by number: 1 the flash (a revive), 2 money, 3 spray-p
 6 handcuff keys, and 10 for stolen loot (the pickup and drop code, `0x00232c60`, `0x002334d0`, `0x0023bf00`;
 confirmed (code)). A human's **pocket** is one item id (`+0x250`) and a count (`+0x254`), set by `HuPutItemInPocket`
 (`0x00238190`; confirmed (code)); that it holds the same ids is inferred from the scripts' calls.
+
+### Adding an item and the callbacks {#pickup-callback}
+
+`Inventory_AddItem(inv, player, item, amount, notify)` (`0x0041e5b0`) does nothing outside players 0-1 and items
+0-22; it adds `amount` to the count, floors it at 0 and keeps it within the item's limits (the table at
+`0x0058b300`, with the flash's raised by upgrade (6, 7)). A positive amount of item 3 raises the spray-paint hint
+flags. Then, in this order, synchronously, after the count has changed. Confirmed (code):
+
+1. **Item 2 (money)**, whatever `notify`: when inventory `+0x1034` names a Lua function that exists, it is called
+   with **(player, amount)**.
+2. **`notify` = 1** only: the `CfgInventoryCallback` function (`+0xfd4`), if it exists, is called with **(item)**, one
+   argument; then the `CfgHuInventoryCallback` one (`+0xff4`) with **(player, item)**. The sign of `amount` does not
+   matter; both players' changes call the same functions.
+
+A world pick-up (`Human_PickUpObject`, `0x0023bf00`) passes `notify` = 1 for the item it gives and 0 for the money
+that comes with loot. A store's jewellery gives item **10** ×1 (notify) and then its value in money (no notify)
+([Combat: breakables](combat.md#breakables)). Confirmed (runtime): at the store each of three pick-ups called
+`Inventory_AddItem(player 0, 10, 1, 1)` then `(0, 2, 7, 0)`.
+
+**Mission 1's store** (`level99_lesson1.lua`): a player entering the box `vInsideStore` (message 3) runs
+`P2.InsideStore`; while `objectives.Stores` is false it sends Vermin to `fVerminCar`, shows tutorial text `TT_6`, makes
+a HUD counter (label `LBL_1`, value `lootCount` of 3) and sets `objectives.Stores`;
+`CfgInventoryCallback("P2.UpdateLootCount")` was set before. `P2.UpdateLootCount(item)` counts only item 10: it adds 1
+to `lootCount` and updates the counter; at 3 it releases the counter, clears the callback, the tutorial text, the box's
+handlers (3 and 4) and the announcement, sets `objectives.Stolen` and schedules `P2.SetupCars` in 3,000 ms, which
+teleports the player to `fStoreFront` for the car lesson. Confirmed (runtime): the teleport came 91 updates after the
+third pick-up.
 
 ### Unlockables {#unlockables}
 
@@ -133,4 +162,5 @@ Coney's choices, where the page is silent:
 - Whether scripts other than the four found set events 1/0-1/2 and 2/4.
 - The item limits at `0x0058b300`, and what each item's duration (`+0x28`) does.
 - The score formula of `0x00422998`, and which category `StatGetTotal`'s statistic id picks.
-- Which binding sets the money-changed callback (inventory `+0x1034`), and what the pickup callback is called with.
+- Which binding sets the money-changed callback (inventory `+0x1034`).
+- What the money multiplier at game state `+0x380` (1.0 in mission 1) is.

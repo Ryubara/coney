@@ -1,0 +1,8 @@
+# Triangle with the cabinet whole (nothing), square to break its front, then triangle four times: three items, one a
+# press, and nothing on the fourth. Frames are updates of 1/30 s; the stick stays at rest.
+10 tap triangle
+40 tap square
+100 tap triangle
+130 tap triangle
+160 tap triangle
+190 tap triangle

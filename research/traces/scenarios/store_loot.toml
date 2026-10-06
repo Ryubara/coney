@@ -1,0 +1,22 @@
+# The store's loot (mission 1, level99 checkpoint 2, P2.InsideStore): slot 4 stands Rembrandt facing the glass cabinet
+# that holds three dyn_pwatch. Research: docs/research/combat.md#breakables, docs/research/player-state.md#pickup-callback.
+# The hooks log the glass pane breaking, each triangle's ContextAction_Use, each Human_PickUpObject and each
+# Inventory_AddItem (item 10 with notify, then money without), and P2.SetupCars teleports him out 3 s after the third.
+description = "level99 store: triangle at the whole cabinet, square to break it, then triangle four times"
+research = "docs/research/combat.md#breakables"
+input = "store_loot.txt"
+updates = 230
+fields = ["player"]
+
+[original]
+slot = 4
+patches = ["scripted-pad", "right-stick", "inventory-add", "pick-up", "context-use", "glass-break"]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "2", "--start", "50.9557,56.5163,0.2174,0.396"]
+
+[diff]
+start_frame = true
+columns = ["clip", "command", "gait", "heading"]
+tolerance = { clip = 0, command = 0, gait = 0, heading = 1.0 }
