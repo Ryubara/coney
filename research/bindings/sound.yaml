@@ -952,20 +952,25 @@
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of a radio (boom box) world object; not checked, so another handle corrupts that object's record."}
     - {name: onPickUp, lua: string, desc: "Name of a Lua function called with the player's handle when the player picks the radio up (message 0x1b); nil for none."}
-    - {name: track, lua: number, ctype: int, desc: "Music track to start with: an index into the radio's track table (0x00512cd8, about 18 entries); 0 or less starts the radio switched off."}
+    - {name: track, lua: number, ctype: int, desc: "Track to start with: an index 1-20 into the radio's 21-track table (0x00512cd8; names on [Sound, Radios](../../research/sound.md#radios)); 0 or less starts the radio switched off."}
     - {name: onSegment, lua: string, desc: "Name of a Lua function called (no arguments) each time the radio moves on: a DJ link starts, it retunes or the next track starts; nil for none."}
-    - {name: djLine, lua: number, ctype: int, desc: "When not 0, an index into a table of special DJ clips (0x00512d30) played once, before `track`, when the player first comes within 5 m; the scripts pass the checkpoint, so each chapter has its own announcement. 0 for none."}
+    - {name: djLine, lua: number, ctype: int, desc: "When not 0, an index 1-12 into the announcement table (0x00512d30: `vags/music/djlady_01` ... `_12`) played once when the player first comes within 5 m, cutting the track short; the scripts pass the checkpoint, so each chapter has its own announcement. 0 for none."}
   description: >-
-    Makes a world object a working radio: it plays its music track, positioned at itself, while the player is
-    within 40 m, then a random DJ link and a random next track, and so on; the volume halves while a scene plays.
-    With `djLine` the first thing it plays when the player walks up is that DJ clip. The object is pinned
-    (`ObjRecord_SetPinned`) so it is not recycled.
+    Makes a world object a working radio. Everything it plays is a streamed sound started at the radio's position
+    (`PlaySound3D`, a positional sound task, not the music player), heard while the player is within 40 m, at half
+    volume while a scene plays: its track, then a random DJ link (70% one of 15 kind-1 clips, 20% kind 0, 10% a
+    `dj_rumble` clip), then a random next track, and so on; `onSegment` runs at each change. With `djLine` the
+    announcement plays when the player first comes within 5 m. Holding R1 while carrying the radio retunes it (a
+    retune sound, then a random track); smashing it silences it for good. The object is pinned
+    (`ObjRecord_SetPinned`) so it is not recycled. State machine, tables and names:
+    [Sound, Radios](../../research/sound.md#radios).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Record fields (object record via vtable `+0x18c`): `+0x24` sound, `+0x28` track, `+0x2c` next track or DJ
-    line, `+0x30` state (1 play, 9 off, 3 retune, 0xb pause), `+0x34` clip kind, `+0x36` DJ line armed, `+0x38` /
-    `+0x3c` the callbacks. Track 0 counts as off; the random pool grows from 12 to 18 tracks with a progress flag
-    (0x004241d8(0x6fe998, 0x54), not traced). What turns it on, off or retunes it (Radio_SetMode, 0x003ac600) is not
-    traced.
+    Record fields (object record via vtable `+0x18c`): `+0x24` sound, `+0x28` track, `+0x2c` next track or
+    announcement, `+0x30` state (1 play, 9 off, 3 retune, 0xb pause), `+0x34` clip table, `+0x36` announcement
+    armed, `+0x38` / `+0x3c` the callbacks. Random next tracks come from the first 12 tracks, 18 once level 84 is
+    complete; after a DJ link a drawn track above 11 plays track 0. `Radio_SetMode` (0x003ac600) is called only
+    with mode 1 (retune): by `Player_UpdateActions` (R1 held, carried weapon type 6) and by the smash message. The
+    names of the two DJ-link kinds and of five tracks were not recovered (hashes on the research page).
   usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false, levels: [87, 95, 11]}

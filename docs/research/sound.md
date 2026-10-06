@@ -294,6 +294,74 @@ are not traced.
   `0x0010c100` from the manager's update. Confirmed (code) for the slot store; the emitters' timing is inferred.
 - The `small_loops` sounds (class flag `0x20`) take the stream channels 10-12, so they never steal from effects.
 
+### Radios {#radios}
+
+`SetupRadio` (`Radio_Setup`, `0x003ac4d0`) makes a world object (a boom box) a radio run by `Radio_Update`
+(`0x003ad440`, every update interval of the object) and `Radio_HandleMessage` (`0x003ac7e8`). Everything a radio
+plays is a **streamed** sound of the sound list (stream flags, `BFW.SND`) started with `PlaySound3D` (`0x0010fdd0`,
+volume and pitch 1) **at the radio's position**: an ordinary positional sound task, not the music player; each
+update moves the task to the radio and stops it once the player is more than 40 m away. While a scene plays
+(`0x0051489c` `+0x410`) the task's volume is 0.5, otherwise 1. Confirmed (code).
+
+**The tables** (hashes of the sound list; names found by the CRC-32 of candidate names and checked against the
+position of the sound in `BFW.SND`, which keeps each folder's files in upper-case alphabetical order; *inferred*
+where the match is one word pair among many tried; none are runtime-checked):
+
+| Table | Entries | Names |
+| --- | --- | --- |
+| Tracks `0x00512cd8` | 21 (0-20) | 0 `echoes_in_my_mind`, 1 `last_of_an_ancient_breed`, 2 `love_is_a_fire`, 3 `nowhere_to_run`, 4 `you_re_movin_too_slow`, 5 `0x60b5c0c3`, 6 `get_down_radio` (*inferred*), 7 `0x73f3d710`, 8 `0x3be47458`, 9 `0xf33104cd`, 10 `remember`, 11 `0x46b4f271`, 12 `in_the_city`, 13 `baseball_furies_chase`, 14 `the_fight`, 15 `theme_from_the_warriors`, 16 `sho_radioloop_01`, 17 `alberto`, 18 `punkemitter` (*inferred*), 19 `spanish_killer_loop`, 20 `tna_funk` |
+| Announcements `0x00512d30` | 13 (0-12) | 0 is track 13 again (never played: `djLine` 0 means none); 1-12 `djlady_01` ... `djlady_12` (`djlady_13` exists and is in no table) |
+| DJ links, kind 0 `0x00512d68` | 18 | no names recovered; class 134 |
+| DJ links, kind 1 `0x00512db0` | 15 | no names recovered; class 134 |
+| DJ links, kind 2 `0x00512df0` | 9 | `dj_rumble_01` ... `dj_rumble_09` in order, except entry 6 is `_08`, 7 `_09`, 8 `_07` |
+| Retune | `0x09a4be6a` | one sound, class 72 (1-15 m) |
+| Switch | `0x5b601235` | one click, class 49 (1-10 m) |
+
+Every name is `vags/music/<name>`. The tracks use classes 106 (5-50 m), 210 (track 16) and 214 (tracks 18-20); the
+announcements class 213 (1-40 m). Confirmed (code) for the tables, sizes and classes (the sound list).
+
+**The record** (via vtable `+0x18c`): `+0x24` the sound task, `+0x28` the current track or clip index, `+0x2c` the
+next track (or the announcement), `+0x30` the state, `+0x34` the clip table (0, 1, 2 the DJ link kinds, 3
+announcements), `+0x36` the announcement armed, `+0x38` `onPickUp`, `+0x3c` `onSegment`. `SetupRadio` with
+`djLine` stores it in `+0x2c`, arms `+0x36` and starts in state 1 with `track`; without, a `track` above 0 starts
+state 1 and 0 or less state 9 (off). Confirmed (code).
+
+**The update.** First, an announcement armed and the player within **5 m**: it is disarmed, the sound stopped, the
+announcement becomes the clip (kind 3), a random next track is drawn and the state becomes 5. Then by state
+(confirmed (code); "draws a track" is `0x00335498(rng, n)`, `Random % n`, with n = **18** once level 84 is complete
+and 12 before):
+
+| State | Does |
+| --- | --- |
+| 1 | player within 40 m and track ≥ 0: play the track, state 2; else stop |
+| 2 | track playing: follow the radio. Track ended (within 40 m): an armed announcement plays next; otherwise pick a DJ link with `Random_Int(9)` (0-9): 0-6 kind 1 (one of 15), 7-8 kind 0 (one of 14-18, below), 9 kind 2 (one of 9, or 8 once level 93 is complete); draw the next track; state 5 |
+| 5 | play the clip from its kind's table (within 40 m), call `onSegment`; state 6 |
+| 6 | clip playing: follow the radio; ended, or a scene running (stops it): state 8 |
+| 8 | the next track becomes current (**above 11 it becomes 0**), state 1, call `onSegment` |
+| 3 | stop, play the retune sound, call `onSegment`, state 4 |
+| 4 | retune sound ended: state 7 |
+| 7 | draw a track (not limited to 11), state 1, call `onSegment` |
+| 9 | keep the track as next, track −1, play the switch click; state 10 |
+| 10 | off: stop any sound |
+| 11 / 12 | play the click; when it ends the next track (above 11: 0) plays, state 1 |
+
+The kind-0 pool is 14 entries once level 84 is complete, else 15 once level 31 is, 16 once level 93 is, 17 once
+level 81 is, and all 18 before. "Complete" is `0x004241d8(0x006fe998, level)`: the level's `(level, 0, 0)`
+[unlockable](player-state.md#unlockables) is unlocked. Confirmed (code); why later missions shrink the pool (stale
+news, inferred) is not known. Tracks 18-20 are reached only through `SetupRadio`'s `track`.
+
+**Turning it** (`Radio_SetMode`, `0x003ac600`, which stops the current sound whenever it changes the state): mode 1
+retunes (state 3) a radio in state 1, 2, 11 or 12 and does nothing otherwise; 0 and 2 switch it off (state 9); 3
+pauses (state 11); 4-9 step to the next track (above 20: 0) and 10 + n selects track n, both through state 3.
+Only mode 1 is used: by the player holding **R1** (command 4) while carrying an item of weapon type 6
+(`Player_UpdateActions`, `0x0027c624`), and when the radio is smashed (message 1, which also throws debris and marks
+the object dead so the next update stops the sound and ends the task). Confirmed (code); that weapon type 6 is the
+carried boom box is inferred.
+
+**Messages**: `0x12` plays the current track if nothing is playing and the player is within 40 m; `0x20` stops the
+sound; 10 with 0 stops it and leaves the radio off (state 10); `0x1b` (picked up) calls `onPickUp` with the player's
+handle and queues hint text `0x11`. Confirmed (code).
+
 ### Interface sounds
 
 `SoundCfgInterfaceSound(n, name)` fills a numbered cue table in the sound matrix; `0x0010fc30` plays cue `n` as a 2D
