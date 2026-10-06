@@ -315,23 +315,28 @@ WorldView PlayLevelMode::view(const human::PlayerSnapshot& snapshot, float drawD
     anim::Vec3 right = anim::cross(forward, worldUp);
     right = anim::length(right) > 1e-6F ? anim::normalise(right) : anim::Vec3{-1.0F, 0.0F, 0.0F};
     const anim::Vec3 up = anim::cross(right, forward);
+    // Through the current camera's lens (a locked camera's is narrower), its far clip capping the draw distance
+    // (docs/research/world.md#a-frame).
+    const camera::CameraLens lens{
+        .fieldOfView = snapshot.fieldOfView, .nearClip = snapshot.nearClip, .farClip = snapshot.farClip};
     return viewFrom(world::CameraPose{.position = position,
                                       .forward = world::Vec3{forward.x, forward.y, forward.z},
                                       .up = world::Vec3{up.x, up.y, up.z},
                                       .right = world::Vec3{right.x, right.y, right.z}},
-                    drawDistance);
+                    std::min(drawDistance, snapshot.farClip), lens);
 }
 
-WorldView PlayLevelMode::viewFrom(const world::CameraPose& pose, float drawDistance) const {
-    // Through the player camera's lens; a window of another shape keeps the view's height (as the world viewer does).
-    const camera::ViewWindow window = camera::viewWindow(camera::kPlayerCameraLens);
+WorldView PlayLevelMode::viewFrom(const world::CameraPose& pose, float drawDistance,
+                                  const camera::CameraLens& lens) const {
+    // A window of another shape keeps the view's height (as the world viewer does).
+    const camera::ViewWindow window = camera::viewWindow(lens);
     const graphics::Extent size = m_engine.frameSize();
     const float aspect =
         size.height > 0 ? static_cast<float>(size.width) / static_cast<float>(size.height) : 4.0F / 3.0F;
     return WorldView{.pose = pose,
                      .halfWidth = window.halfHeight * aspect,
                      .halfHeight = window.halfHeight,
-                     .nearClip = camera::kPlayerCameraLens.nearClip,
+                     .nearClip = lens.nearClip,
                      .drawDistance = drawDistance};
 }
 
@@ -430,7 +435,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     const std::optional<WorldView> sceneView = m_stage->cameraView(1.0F, m_engine.frameSize());
     const world::Vec3 eye = sceneView      ? sceneView->pose.position
                             : m_freeCamera ? m_freeCamera->current().position()
-                                           : toRenderWare(m_player->camera().position());
+                                           : toRenderWare(m_player->current().cameraEye);
     m_scenery->step(eye, frame);
     m_drawDistance.current() = m_scenery->drawDistance();
     m_scenery->findVisible(sceneView      ? *sceneView
@@ -611,9 +616,9 @@ void PlayLevelMode::teleportPlayer(const world_objects::Placement& placement) {
                                                    .headingDegrees = placement.headingDegrees});
 }
 
-anim::Vec3 PlayLevelMode::cameraEye() const { return m_player->camera().position(); }
+anim::Vec3 PlayLevelMode::cameraEye() const { return m_player->current().cameraEye; }
 
-anim::Vec3 PlayLevelMode::cameraTarget() const { return m_player->camera().lookAt(); }
+anim::Vec3 PlayLevelMode::cameraTarget() const { return m_player->current().cameraTarget; }
 
 void PlayLevelMode::setFreeCamera(bool on) {
     if (!on) {

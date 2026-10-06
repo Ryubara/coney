@@ -11,6 +11,7 @@
 
 #include "ai/brains.h"
 #include "ai/scripted_brains.h"
+#include "camera/cameras.h"
 #include "core/error.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/level_start.h"
@@ -41,9 +42,9 @@ class ScriptedPlayer {
     virtual void teleportPlayer(const world_objects::Placement& placement) = 0;
 };
 
-/// What a level's scripts drive, which gameplay gives the level it loads: the humans the scripts create and the brains
-/// and gangs they give goals to. The scripts' hold on the brains holds their calls until the level makes the humans
-/// (ai::ScriptedBrains::release()). Everything is gameplay's, valid until the level is unloaded.
+/// What a level's scripts drive, which gameplay gives the level it loads: the humans the scripts create, the brains
+/// and gangs they give goals to, and player 1's cameras. The scripts' hold on the brains holds their calls until the
+/// level makes the humans (ai::ScriptedBrains::release()). Everything is gameplay's, valid until the level is unloaded.
 ///
 /// Research: docs/research/ai.md#coney, docs/research/characters.md#creation
 struct ScriptedCast {
@@ -51,6 +52,7 @@ struct ScriptedCast {
     const script::RecordedCalls* recorded = nullptr; ///< The configuration the scripts recorded (the classes).
     ai::Brains* brains = nullptr;                    ///< The level's brains, gangs and formations.
     ai::ScriptedBrains* scripted = nullptr;          ///< The scripts' hold on them.
+    camera::Cameras* cameras = nullptr;              ///< Player 1's cameras, which the level hands its player.
 };
 
 /// Game mode 1, gameplay: one loaded level. The level flow (mode 8) selects a level and pushes it; its enter runs
@@ -69,6 +71,9 @@ struct ScriptedCast {
 ///   (setMoviePlayer(); FrontEndServices skips it until Coney plays movies).
 /// - The level's brains and gangs are made before its script (the AI host of `context`), but the humans the script
 ///   creates are made, and the calls on them run, only once the level has loaded its characters (ScriptedCast).
+/// - So are player 1's cameras (`context`'s cameras), which the script's camera calls set up before the player exists
+///   (camera::Cameras holds them until his follow camera is attached); the level hands them to its player. They find
+///   the human `CamSetSecondary` names through the scripts' hold on the brains (its live position).
 /// - Each frame after the level's step: the animation callbacks of the anims the scripts' humans started, then the
 ///   volume boxes' trigger update over those humans (their messages to the objects' handlers in `context`), then the
 ///   scripts' frame (scheduled calls and the stopwatch).
@@ -137,9 +142,12 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] const std::optional<LevelStart>& start() const { return m_start; }
     /// The level's brains and gangs; null while no level is entered.
     [[nodiscard]] const ai::Brains* brains() const { return m_brains.get(); }
+    /// Player 1's cameras for the level; null while no level is entered.
+    [[nodiscard]] camera::Cameras* cameras() const { return m_cameras.get(); }
 
   private:
-    // Drops the level, then the scripts' hold on its brains (no longer the AI host), then the brains.
+    // Drops the level, then player 1's cameras, then the scripts' hold on its brains (no longer the AI host), then the
+    // brains.
     void endLevel();
     // The volume boxes' trigger update over the scripts' humans, their messages going to the objects' handlers
     // (docs/research/scripting.md#triggers). In the original the boxes update with the other tasks in the world step.
@@ -160,6 +168,7 @@ class GameplayMode final : public GameMode {
     // The level's brains and the scripts' hold on them, before the level, whose humans they refer to.
     std::unique_ptr<ai::Brains> m_brains;
     std::unique_ptr<ai::ScriptedBrains> m_scripted;
+    std::unique_ptr<camera::Cameras> m_cameras; // player 1's; declared before the level, whose player holds them
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0; // player 1's teleports the level has been told of
 };

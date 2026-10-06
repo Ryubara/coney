@@ -11,7 +11,6 @@
 
 #include "camera/cameras.h"
 #include "scripting/binding_args.h"
-#include "warriors/created_humans.h"
 
 namespace coney::script {
 
@@ -38,10 +37,11 @@ double handleArg(std::span<const Value> args, std::size_t i) {
     return static_cast<double>(static_cast<std::uint32_t>(std::trunc(binding::number(args, i))));
 }
 
-// A binding that hands its arguments to the cameras when there are some and returns nothing.
+// A binding that hands its arguments to the cameras when there are some and returns nothing. The cameras are read at
+// each call: gameplay sets them per level, after the state's bindings were made.
 template <typename Body> NativeFunction camerasCall(const BindingContext& context, Body body) {
-    return [cameras = context.cameras, body](std::span<const Value> args) {
-        if (cameras != nullptr) {
+    return [context = &context, body](std::span<const Value> args) {
+        if (camera::Cameras* cameras = context->cameras; cameras != nullptr) {
             body(*cameras, args);
         }
         return binding::none();
@@ -52,7 +52,8 @@ template <typename Body> NativeFunction camerasCall(const BindingContext& contex
 // time). Coney's follow camera is player 1's, whatever the target.
 // @orig 0x00365a48 CamSetupFollow (unknown)
 NativeFunction makeCamSetupFollow(const BindingContext& context, std::function<double()> nextHandle) {
-    return [cameras = context.cameras, nextHandle = std::move(nextHandle)](std::span<const Value> /*args*/) {
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> /*args*/) {
+        camera::Cameras* cameras = context->cameras;
         if (cameras == nullptr) {
             return binding::number(nextHandle());
         }
@@ -83,9 +84,9 @@ NativeFunction makeCfgFollowCamera(const BindingContext& context) {
 // `CameraCreateLocked(name, pos, fov, heading, pitch, roll, near, far)`: a new locked camera's handle.
 // @orig 0x00365d38 CameraCreateLocked (unknown)
 NativeFunction makeCameraCreateLocked(const BindingContext& context, std::function<double()> nextHandle) {
-    return [cameras = context.cameras, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
         const double handle = nextHandle();
-        if (cameras != nullptr) {
+        if (camera::Cameras* cameras = context->cameras; cameras != nullptr) {
             const std::array<float, 3> p = binding::position(args, 1).value_or(std::array<float, 3>{});
             cameras->createLocked(handle, camera::LockedCamera{.position = anim::Vec3{p[0], p[1], p[2]},
                                                                .headingDegrees = floatArg(args, 3),
@@ -155,7 +156,8 @@ NativeFunction makeCamEnable(const BindingContext& context) {
 // `CamTarget(mode, camera, human)`: whether the shared list changed; the camera is read and not used.
 // @orig 0x00365ad8 CamTarget (unknown)
 NativeFunction makeCamTarget(const BindingContext& context) {
-    return [cameras = context.cameras](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        camera::Cameras* cameras = context->cameras;
         if (cameras == nullptr) {
             return binding::boolean(false);
         }
@@ -166,15 +168,6 @@ NativeFunction makeCamTarget(const BindingContext& context) {
 } // namespace
 
 void addCameraBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
-    if (context.cameras != nullptr && context.humans != nullptr) {
-        context.cameras->setLocator([humans = context.humans](double handle) -> std::optional<anim::Vec3> {
-            const std::optional<world_objects::Placement> placement = humans->placement(handle);
-            if (!placement) {
-                return std::nullopt;
-            }
-            return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
-        });
-    }
     vm.registerFunction("CamEnable", makeCamEnable(context));
     vm.registerFunction("CameraCreateLocked", makeCameraCreateLocked(context, nextHandle));
     vm.registerFunction("CameraMakeActive", makeCameraMakeActive(context));

@@ -134,7 +134,8 @@ class Player {
     Player& operator=(const Player&) = delete;
     Player(Player&&) = delete;
     Player& operator=(Player&&) = delete;
-    ~Player() = default;
+    /// Hands the follow camera back: cameras given with setCameras() no longer refer to it.
+    ~Player();
 
     /// One update of 1/30 s from `pad` (port 1): the buttons turned into a command (combat::CommandMatcher with the
     /// street's tables) and written with the left stick and the camera's view into the human's per-player record, the

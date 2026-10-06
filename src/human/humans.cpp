@@ -50,7 +50,11 @@ void Humans::gatherTargets(std::size_t slot, std::span<Combatant* const> targets
     }
 }
 
-void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets) {
+void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets, float stepSeconds) {
+    // The step every human advances by this time.
+    for (Human* human : m_humans) {
+        human->setStepSeconds(stepSeconds);
+    }
     // 1. The records: one no pad drives has its command cleared, so only what a brain writes this step is read, and no
     // buttons, which only a pad gives.
     for (std::size_t i = 0; i < m_humans.size(); ++i) {

@@ -17,10 +17,10 @@ inline constexpr std::array<std::string_view, 10> kCameraBindings{
     "CamEnable",        "CameraCreateLocked", "CameraMakeActive", "CameraReset", "CamSetFollowAngle",
     "CamSetFollowZoom", "CamSetSecondary",    "CamSetupFollow",   "CamTarget",   "CfgFollowCamera"};
 
-/// Registers kCameraBindings in `vm`, working on `context.cameras` (null keeps no cameras: the making bindings still
-/// return new handles, the rest do nothing). `nextHandle` gives each new camera its handle, from the counter the other
-/// world objects' handles come from. Sets the cameras' locator to the context's humans, so `CamSetSecondary` can
-/// find the human it keeps in view.
+/// Registers kCameraBindings in `vm`, working on `context.cameras` as it is at each call (null keeps no cameras: the
+/// making bindings still return new handles, the rest do nothing); `context` must outlive the state. `nextHandle`
+/// gives each new camera its handle, from the counter the other world objects' handles come from. The cameras' owner
+/// gives them the locator `CamSetSecondary` finds its human with (camera::Cameras::setLocator()).
 ///
 /// Research: docs/research/camera.md#script-calls, docs/references/bindings/camera.md
 void addCameraBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle);

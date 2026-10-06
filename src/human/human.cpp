@@ -208,7 +208,7 @@ void Human::locomote(bool gated) {
                              : targetSpeed(m_intent.magnitude, speeds, m_sprinting && m_stamina.value() != 0);
     const float wanted = m_intent.angle - kPi / 2.0F; // the stick's heading
     const Gait gaitNow = gaitOfSpeed(current, speeds);
-    float newSpeed = approachSpeed(current, target, kStepSeconds);
+    float newSpeed = approachSpeed(current, target, m_stepSeconds);
 
     // A run stopped hard or turned back at or above the run speed skids: the velocity is zeroed and the run stop plays
     // (always after a sprint, rarely after a steady run, docs/research/characters.md#run-stop). The run stop's 0x80000
@@ -274,7 +274,7 @@ void Human::applyRootMotion(const anim::Pose& pose) {
     m_velocity.x += world.x;
     m_velocity.y += world.y;
     // The turn is per 1/30 s.
-    m_heading = wrapAngle(m_heading + root.turn * 30.0F * kStepSeconds);
+    m_heading = wrapAngle(m_heading + root.turn * 30.0F * m_stepSeconds);
 }
 
 std::span<const std::uint8_t> Human::passThrough() const {
@@ -345,7 +345,7 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
     // downhill alike.
     m_velocity.z = 0.0F;
     const float factor = slopeFactor(m_groundNormal.z);
-    const anim::Vec3 displacement{m_velocity.x * factor * kStepSeconds, m_velocity.y * factor * kStepSeconds, 0.0F};
+    const anim::Vec3 displacement{m_velocity.x * factor * m_stepSeconds, m_velocity.y * factor * m_stepSeconds, 0.0F};
     anim::Vec3 feet = m_position;
     if (const auto moved = sweep(mesh, m_position, displacement); moved) {
         feet = *moved;
@@ -368,7 +368,7 @@ void Human::keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float fac
         return;
     }
     const float before = std::hypot(m_velocity.x, m_velocity.y);
-    anim::Vec3 velocity{slid.x / (factor * kStepSeconds), slid.y / (factor * kStepSeconds), 0.0F};
+    anim::Vec3 velocity{slid.x / (factor * m_stepSeconds), slid.y / (factor * m_stepSeconds), 0.0F};
     if (const float after = anim::length(velocity); after > before && after > 0.0F) {
         velocity = anim::scale(velocity, before / after);
     }
@@ -377,7 +377,7 @@ void Human::keepSlidVelocity(anim::Vec3 slid, anim::Vec3 displacement, float fac
 }
 
 void Human::moveInAir(const raycast::CollisionMesh& mesh) {
-    const anim::Vec3 displacement = anim::scale(m_velocity, kStepSeconds);
+    const anim::Vec3 displacement = anim::scale(m_velocity, m_stepSeconds);
     anim::Vec3 feet = anim::add(m_position, displacement);
     // Walls still push the airborne body: move across, push out, then fall straight.
     const anim::Vec3 across{m_position.x + displacement.x, m_position.y + displacement.y, m_position.z};
@@ -477,7 +477,8 @@ void Human::fight(std::span<Combatant* const> targets) {
                                   .position = m_position,
                                   .heading = m_heading,
                                   .nowMs = nowMs,
-                                  .targets = targets},
+                                  .targets = targets,
+                                  .stepSeconds = m_stepSeconds},
                      m_animator, m_heading);
 }
 
@@ -486,10 +487,10 @@ void Human::updateMeters(bool sprintHeld) {
     // refill otherwise; then the sprint flag, cleared and set again while L2 is held and stamina lasts.
     const Gait gaitNow = gait();
     const bool busy = m_animator.drivingClipPlaying() || m_climbRun.has_value();
-    if (m_stamina.drain(gaitNow, busy, kStepSeconds)) {
+    if (m_stamina.drain(gaitNow, busy, m_stepSeconds)) {
         m_sprinting = false;
     }
-    m_stamina.refill(RefillBlocks{.gait = gaitNow, .airborne = m_airborne, .sprintHeld = sprintHeld}, kStepSeconds);
+    m_stamina.refill(RefillBlocks{.gait = gaitNow, .airborne = m_airborne, .sprintHeld = sprintHeld}, m_stepSeconds);
     m_sprinting = sprintAsked(sprintHeld, m_stamina.value());
 }
 
@@ -640,7 +641,7 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     const anim::AnimTask* before = m_animator.tasks().top();
     const std::uint32_t beforeId = before != nullptr ? before->animId() : 0;
     const float beforeTime = before != nullptr ? before->time() : 0.0F;
-    m_animator.advance(kStepSeconds);
+    m_animator.advance(m_stepSeconds);
     followClimb(mesh);
     sendWarnings(before, beforeId, beforeTime);
     noteSlowMotion(before, beforeId, beforeTime);
@@ -726,7 +727,7 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     if (m_climbRun && m_climbRun->moveUpdates > 0) {
         const anim::Vec3 left = anim::subtract(m_climbRun->start, m_position);
         const auto updates = static_cast<float>(m_climbRun->moveUpdates);
-        m_velocity = anim::Vec3{left.x / (updates * kStepSeconds), left.y / (updates * kStepSeconds), 0.0F};
+        m_velocity = anim::Vec3{left.x / (updates * m_stepSeconds), left.y / (updates * m_stepSeconds), 0.0F};
         --m_climbRun->moveUpdates;
     } else if (m_climbRun) {
         // The update the chain goes on to its next clip moves nothing: at runtime the first update of 441 and of 442
@@ -753,7 +754,7 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     // An attack's steer onto its target (its turn and slide at a constant rate, `0x0023f5e0` from the state update)
     // on top of what the state function set; the clip's root motion is added after it.
     if (!m_airborne && !m_climbRun) {
-        const TurnAndSlideStep steer = m_fighter.takeSteer(kStepSeconds);
+        const TurnAndSlideStep steer = m_fighter.takeSteer(m_stepSeconds);
         m_heading = wrapAngle(m_heading + steer.turn);
         m_velocity.x += steer.velocity.x;
         m_velocity.y += steer.velocity.y;
@@ -772,7 +773,7 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
     if (m_airborne) {
         ++m_airborneUpdates;
         if (m_airborneUpdates >= 2) {
-            m_velocity.z = std::max(m_velocity.z - kGravity * kStepSeconds, -kMaxFallSpeed);
+            m_velocity.z = std::max(m_velocity.z - kGravity * m_stepSeconds, -kMaxFallSpeed);
         }
     } else {
         m_airborneUpdates = 0;
@@ -793,7 +794,7 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
             moveOnGround(*mesh);
         }
     } else {
-        m_position = anim::add(m_position, anim::scale(m_velocity, kStepSeconds));
+        m_position = anim::add(m_position, anim::scale(m_velocity, m_stepSeconds));
     }
     // A climb whose ground went away is over: the human falls.
     if (m_climbRun && m_airborne) {

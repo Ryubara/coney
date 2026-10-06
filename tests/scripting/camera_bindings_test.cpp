@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <expected>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -72,6 +73,14 @@ struct Harness {
             cameras.attachFollow(&follow);
             context.cameras = &cameras;
         }
+        // Gameplay gives the locator; here the humans' placements stand in for their live positions.
+        cameras.setLocator([this](double handle) -> std::optional<coney::anim::Vec3> {
+            const std::optional<coney::world_objects::Placement> placement = humans.placement(handle);
+            if (!placement) {
+                return std::nullopt;
+            }
+            return coney::anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
+        });
         scripts.create();
     }
 
@@ -167,4 +176,18 @@ TEST_CASE("with no cameras the making bindings still return handles and the rest
     h.call("CameraMakeActive", {Value(cut), Value(1.0)});
     h.call("CfgFollowCamera", {Value(3.0), Value(6.6), Value(4.8)});
     CHECK(h.call("CamTarget", {Value(0.0), Value(follow), Value(5.0)}).isNil());
+}
+
+TEST_CASE("cameras given after the state was made are the ones the bindings drive", "[camera_bindings]") {
+    // Gameplay makes each level's cameras after the scripts' state, and drops them when the level ends.
+    Harness h(false);
+    h.cameras.attachFollow(&h.follow);
+    h.context.cameras = &h.cameras;
+    const double follow = h.call("CamSetupFollow", {str("follow"), Value(1.0)}).number().value_or(0.0);
+    CHECK(h.cameras.followHandle() == follow);
+    h.call("CamSetFollowZoom", {Value(1.0)});
+    CHECK(h.follow.bandNear() == Approx(4.8F));
+    h.context.cameras = nullptr;
+    h.call("CamSetFollowZoom", {Value(2.0)});
+    CHECK(h.follow.bandNear() == Approx(4.8F));
 }

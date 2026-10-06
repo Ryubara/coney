@@ -127,6 +127,7 @@ struct StoryRun {
     std::vector<std::string> log;
     std::map<std::string, std::vector<std::byte>, std::less<>> files;
     std::vector<coney::LevelStart> starts;
+    coney::camera::Cameras* castCameras = nullptr; // the cameras the last load was given
     int levelUpdates = 0;
     std::unique_ptr<coney::StartUpFlow> flow;
     std::unique_ptr<coney::ScriptedInput> input;
@@ -154,9 +155,10 @@ struct StoryRun {
                 }
                 return found->second;
             },
-            [this](const coney::LevelStart& start, const coney::ScriptedCast& /*cast*/)
-                -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+            [this](const coney::LevelStart& start,
+                   const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
                 starts.push_back(start);
+                castCameras = cast.cameras;
                 return std::make_unique<FakeLevel>(levelUpdates);
             },
             profiles);
@@ -239,6 +241,9 @@ TEST_CASE("story: the level flow pushes gameplay, whose level script places play
     CHECK(player.position == std::optional(std::array<float, 3>{2.0F, 20.0F, 30.0F}));
     CHECK(run.flow->humans().all().size() == 2);
     CHECK(run.flow->gameplay().level() != nullptr);
+    // Player 1's cameras for the level, which its script's camera calls drive, handed to the level for its player.
+    CHECK(run.castCameras != nullptr);
+    CHECK(run.flow->gameplay().cameras() == run.castCameras);
     CHECK(run.levelUpdates == 1);
     // And it keeps playing: the level updates every frame.
     run.frames(10);

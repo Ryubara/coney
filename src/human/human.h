@@ -233,6 +233,11 @@ class Human final : public Combatant {
     /// The slow-motion event (type `0x2e` on, `0x2f` off) the clip playing passed in the last update, if any; the
     /// later of the two when both did (docs/research/camera.md#slow-motion).
     [[nodiscard]] std::optional<std::uint16_t> slowMotionEvent() const { return m_slowMotionEvent; }
+    /// Sets the characters' step its next updates advance by: kStepSeconds, or less in slow motion
+    /// (docs/research/camera.md#slow-motion; Humans::update() sets it for every human).
+    void setStepSeconds(float seconds) { m_stepSeconds = seconds; }
+    /// The characters' step its updates advance by.
+    [[nodiscard]] float stepSeconds() const { return m_stepSeconds; }
     /// Another human's grab catches this one (Fighter::catchInGrab()).
     void catchInGrab(const GrabCatch& grab) { m_fighter.catchInGrab(grab); }
     /// The grabber's numbers this update, while held (Fighter::updateGrabber()).
@@ -331,6 +336,7 @@ class Human final : public Combatant {
     Fighter m_fighter;
     std::vector<anim::Vec3> m_announced;            // attacks announced since the brain last looked (event 0x10)
     std::optional<std::uint16_t> m_slowMotionEvent; // the last update's slow-motion event (0x2e / 0x2f)
+    float m_stepSeconds = kStepSeconds;             // the characters' step (slow motion shortens it)
     std::uint64_t m_updates = 0;                    // updates stepped: combat's game time
     std::array<anim::Quat, anim::kPoseBones> m_bindRotations{};
     float m_scale = 1.0F;

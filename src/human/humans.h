@@ -55,9 +55,11 @@ class Humans {
     /// drives lose their command; the brains write theirs; every human's animation; every human's state update (the
     /// locomotion); every human's actions (the dispatcher from its record, against the passive `targets` and the
     /// humans it is opposed to, as add() and setOpposition() say), the order alternating between first-to-last and
-    /// last-to-first from one step to the next. `mesh` is what they stand on (may be null).
+    /// last-to-first from one step to the next. `mesh` is what they stand on (may be null). Every human advances by
+    /// `stepSeconds`, the characters' step, which slow motion shortens (docs/research/camera.md#slow-motion).
     /// @orig 0x00249108 Humans_Update (unknown)
-    void update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {});
+    void update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {},
+                float stepSeconds = kStepSeconds);
 
     /// The humans, in slot order.
     [[nodiscard]] std::span<Human* const> humans() const { return m_humans; }

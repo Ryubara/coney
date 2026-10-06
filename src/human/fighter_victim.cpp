@@ -141,6 +141,9 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     m_steer.clear();
     m_victim.react(hit, here, animator, kAnimFightIdle, input.nowMs);
     m_reacting = true;
+    // The reaction shakes the players' cameras at the hit code's strength (docs/research/camera.md#shake).
+    m_reactionShake =
+        ReactionShake{.level = combat::decodeHitCode(hit.code).strength, .attackerIsPlayer = hit.attackerIsPlayer};
 }
 
 bool Fighter::stepVictim(const FighterInput& input, HumanAnimator& animator) {

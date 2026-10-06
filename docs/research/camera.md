@@ -757,8 +757,17 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
   point (position + half its velocity) is turned toward 27° off the view's centre (0.455 of the excess, at most
   640°/s beyond 29°), and on release the saved band comes back while the pitch stays;
 - the **shake** ([Shake](#shake)) at the three strengths, 0.66 in combat, its time counted with the characters' step,
-  and the rumble byte it drives; **slow motion** ([Slow motion](#slow-motion)): the player's clip events `0x2e` /
-  `0x2f` set the characters' step `SlowMotion::stepSeconds()` to `CfgFollowCamera`'s factor of 1/30 s and back;
+  and the rumble byte it drives. Player 1's camera shakes when a reaction plays to his hit (at the hit code's strength
+  bits), when he reacts himself from strength 2, and at level 1 when his rage starts (`Fighter::reactionShake()`,
+  `Fighter::rageStarted()`, read by `human::Player` after the step);
+- **slow motion** ([Slow motion](#slow-motion)): the player's clip events `0x2e` / `0x2f` set the characters' step
+  `SlowMotion::stepSeconds()` to `CfgFollowCamera`'s factor of 1/30 s and back, and every human of the step
+  (`Humans::update()`) advances by it: animation, motion, stamina, gravity, an attack's steer and a grab's alignment;
+- **in play** (`--play-level`, the story): gameplay (`GameplayMode`) makes player 1's cameras before each level's
+  script, gives them to the bindings (`BindingContext::cameras`, read at each call) and to the level (`ScriptedCast`),
+  whose player steps them (`Player::setCameras()`); `CamSetSecondary` finds its human at its live position (the
+  scripts' brains). The level streams round the current camera and draws through its lens, the far clip capping the
+  draw distance;
 - `--trace FILE` writes the camera's position, look-at point, wanted position, distance, angles, band and
   auto-follow turn after every step, with the player's state ([Building](../guides/building.md#tracing)).
 
@@ -779,9 +788,11 @@ The world viewer keeps its own free camera with the player camera's lens
   activation places it on him.
 - **The shake**: one shake on the manager, applied to whichever camera is current; the view offset (form not traced) is
   a random share in [-1, 1] of the amplitude × 0.05 m on each axis; after its time the amplitude eases back to 0 at the
-  same 65 %. The hit, rage and animation-event starts are not wired yet (`Cameras::shake()` is the hook).
-- **Slow motion** is computed but the humans still step by the fixed 1/30 s (`kStepSeconds`): the characters' step does
-  not read `SlowMotion::stepSeconds()` yet.
+  same 65 %. Coney has one player camera, so a player's hit shakes player 1's. The animation event that starts a shake
+  is not wired: its type is not traced.
+- **Slow motion**: the combat timers (stun, ground and game time, `nowMs`) still count whole updates of 1/30 s, and the
+  cameras update by the frame's 1/30 s; whether the original's game time follows the step is not traced. A locked
+  camera's roll is not drawn yet: the play mode builds its view from the eye and look-at point with the world's up.
 - **The sprint time** `+0x36c` counts only at the sprint gait and is zeroed off it, so every sprint arms the zoom (a
   run before the sprint, as in the street's runs, would otherwise keep it from arming). A sprint that starts while
   the band is still going back saves the band it was going back to, so a quick second sprint does not keep a band
@@ -857,7 +868,8 @@ The world viewer keeps its own free camera with the player camera's lens
   fractions, what
   `0x0012f3e0` changes after the height ray, and what `+0x10a`-`+0x10c` (side angle history) feed.
 - **Slow motion**: which clips carry the events `0x2e` / `0x2f` ([Slow motion](#slow-motion)).
-- **Shake**: the view offset's form, and the anim event that starts one.
+- **Shake**: the view offset's form, and the type of the anim event (`0x00101dd8`) that starts one.
+- **Slow motion's game time**: whether the combat timers (stun, ground) count the shorter step or the frames.
 - **Locked cameras**: the conventions of `CameraCreateLocked`'s heading, pitch and roll.
 - **The combat camera's 0.4 keep-in-view** (`0x0012e170(0.4)` in the update's one-target case): which human it keeps.
 - **Scenes**: the scene camera's own update (type 4) and the "a scene is playing" flag at `0x0051489c + 0x410` (see

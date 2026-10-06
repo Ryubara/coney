@@ -28,6 +28,7 @@ struct IncomingHit {
     bool react = true;               ///< False for a move inside a hold, whose victim clips the attacker plays.
     bool ignoresArmour = false;      ///< The attacker is a player, raging, or has flag `0x200000` or `0x4000`.
     bool attackerFlag200000 = false; ///< The attacker's flag `0x200000` (strength + 1).
+    bool attackerIsPlayer = false;   ///< A player's hit: its reaction shakes the attacker's camera.
 };
 
 /// What a human taking hits is, for its reaction (docs/research/combat.md#hit-codes).

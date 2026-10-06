@@ -168,6 +168,8 @@ PlayerSnapshot Player::capture() const {
     return snapshot;
 }
 
+Player::~Player() { setCameras(nullptr); }
+
 void Player::setCameras(camera::Cameras* cameras) {
     if (m_cameras != nullptr) {
         m_cameras->attachFollow(nullptr);
@@ -226,7 +228,21 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     } else {
         m_human.record() = PlayerRecord{.cameraForward = cameraForward, .move = m_human.record().move};
     }
-    m_humans.update(mesh, targets);
+    // The characters' step: 1/30 s, or slow motion's share of it while a slow-motion event holds it.
+    m_humans.update(mesh, targets, m_cameras != nullptr ? m_cameras->slowMotion().stepSeconds() : kStepSeconds);
+    // The step's shakes on player 1's camera (docs/research/camera.md#shake): a reaction to his hit, a reaction of his
+    // own from strength 2, and his rage starting (level 1).
+    if (m_cameras != nullptr) {
+        for (const Human* human : m_humans.humans()) {
+            const std::optional<ReactionShake>& shake = human->fighter().reactionShake();
+            if (shake && (shake->attackerIsPlayer || (human == &m_human && shake->level >= 2))) {
+                m_cameras->shake(shake->level);
+            }
+        }
+        if (m_human.fighter().rageStarted()) {
+            m_cameras->shake(1);
+        }
+    }
     // A slow-motion event on the player's clip (docs/research/camera.md#slow-motion).
     if (const std::optional<std::uint16_t> event = m_human.slowMotionEvent(); event && m_cameras != nullptr) {
         m_cameras->slowMotion().event(*event, 0);

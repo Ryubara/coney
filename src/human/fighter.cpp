@@ -117,6 +117,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     const combat::CombatTuning& tuning = combat::combatTuning();
     const combat::CombatMode before = m_combat.mode();
     m_report = GrabbedReport{};
+    m_reactionShake.reset();
+    m_rageStarted = false;
     m_l1Held = (input.buttons & pad::kL1) != 0;
     // The power meter's maximum follows the hurt state; the throw bonus lasts only while grabbing from the front or
     // throwing.
@@ -189,7 +191,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
                              .position = input.position,
                              .heading = heading,
                              .nowMs = input.nowMs,
-                             .targets = input.targets});
+                             .targets = input.targets,
+                             .stepSeconds = input.stepSeconds});
     noteClip(animator);
 }
 
@@ -261,6 +264,7 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
     // What the dispatcher started.
     bool consumed = false;
     if (out.rageStarted) {
+        m_rageStarted = true;
         animator.playCombat(clips::one(id::kRageStart), kAnimFightIdle, AnimState::Attack, kCombatFade,
                             clips::kAttackHolds);
         consumed = true;
@@ -437,7 +441,8 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input) {
                             .attacker = input.position,
                             .react = !heldMove,
                             .ignoresArmour = m_player,
-                            .attackerFlag200000 = false});
+                            .attackerFlag200000 = false,
+                            .attackerIsPlayer = m_player});
     ++m_hitsLanded;
     m_damageDealt += damage;
     // The hit earns its rage (**Coney choice**: never the blocked award, as a blocked hit is not reported back to the

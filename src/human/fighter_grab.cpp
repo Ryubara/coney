@@ -65,7 +65,7 @@ void Fighter::startHold(TargetHuman& victim, const FighterInput& input, float& h
     const auto intro = static_cast<std::uint32_t>(id::kGrabPlayerIntro);
     const anim::AnimClip* introClip = animator.anims().clip(intro);
     const float introSeconds = introClip != nullptr ? introClip->duration / animator.anims().rate(intro) : 0.0F;
-    m_turnUpdates = std::max(1, static_cast<int>(std::lround(introSeconds / kStepSeconds)));
+    m_turnUpdates = std::max(1, static_cast<int>(std::lround(introSeconds / input.stepSeconds)));
     m_turnStep = wrapAngle(toVictim - heading) / static_cast<float>(m_turnUpdates);
     m_victimTurnStep = 0.0F;
     victim.play(clips::kNoClips, clips::kIdle, AnimState::Hold, TargetState::Held);
@@ -139,7 +139,7 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
     // Over the alignment's time the grabber turns to the victim and slides to the clip's reach, the victim turns.
     const anim::AnimClip* connecting = animator.anims().clip(clip);
     const float seconds = connecting != nullptr ? alignSeconds(*connecting, animator.anims().rate(clip)) : 0.0F;
-    m_turnUpdates = std::max(1, static_cast<int>(std::lround(seconds / kStepSeconds)));
+    m_turnUpdates = std::max(1, static_cast<int>(std::lround(seconds / input.stepSeconds)));
     const auto updates = static_cast<float>(m_turnUpdates);
     const float turn = wrapAngle(align.grabberHeading - heading);
     m_turnStep = std::fabs(turn) < kAlignMinTurn ? 0.0F : turn / updates;
@@ -147,10 +147,10 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
     m_victimTurnStep = std::fabs(victimTurn) < kAlignMinTurn ? 0.0F : victimTurn / updates;
     const anim::Vec3 slide{align.grabberFeet.x - input.position.x, align.grabberFeet.y - input.position.y, 0.0F};
     const float distance = anim::length(slide);
-    const float speed = distance / (updates * kStepSeconds);
+    const float speed = distance / (updates * input.stepSeconds);
     m_slideUpdates = 0;
     if (distance >= kAlignMinSlide && distance < kAlignMaxSlide && speed <= kAlignMaxSpeed) {
-        m_slide = anim::scale(slide, 1.0F / (updates * kStepSeconds));
+        m_slide = anim::scale(slide, 1.0F / (updates * input.stepSeconds));
         m_slideUpdates = m_turnUpdates;
     }
     // Both humans switch on the same update: the victim plays the grabber's set's reaction, then its own hold.

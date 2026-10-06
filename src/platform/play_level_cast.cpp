@@ -18,6 +18,10 @@ namespace coney::platform {
 
 void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fighters) {
     m_cast = cast;
+    // Player 1's cameras, which the level script set up: the player steps them and draws through the current one.
+    if (cast.cameras != nullptr) {
+        m_player->setCameras(cast.cameras);
+    }
     // The AI on the level's brains, whose gangs the scripts made, planning on the level's routes.
     m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, fighters, *cast.brains);
     m_ai->brains().setPlanner(m_planner.get());

@@ -17,6 +17,7 @@
 #include "ai/ai_humans.h"
 #include "ai/route_planner.h"
 #include "animation/anim_math.h"
+#include "camera/camera_lens.h"
 #include "characters/character_types.h"
 #include "core/error.h"
 #include "core/interpolation.h"
@@ -279,7 +280,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Draws the character: its lights, the render states, the atomic.
     void drawCharacter() const;
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
-    [[nodiscard]] WorldView viewFrom(const world::CameraPose& pose, float drawDistance) const;
+    [[nodiscard]] WorldView viewFrom(const world::CameraPose& pose, float drawDistance,
+                                     const camera::CameraLens& lens = camera::kPlayerCameraLens) const;
     // The free camera `camera` between its last two steps, `alpha` of the way.
     [[nodiscard]] static world::DebugCamera blendedFreeCamera(const Interpolated<world::DebugCamera>& camera,
                                                               float alpha);

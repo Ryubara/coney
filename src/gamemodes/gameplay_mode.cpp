@@ -3,9 +3,11 @@
 
 #include <array>
 #include <format>
+#include <optional>
 #include <utility>
 #include <vector>
 
+#include "animation/anim_math.h"
 #include "core/game_timer.h"
 #include "scripting/anim_callbacks.h"
 
@@ -21,8 +23,13 @@ GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem&
 GameplayMode::~GameplayMode() { endLevel(); }
 
 void GameplayMode::endLevel() {
-    // The level first: its humans are what the brains refer to. Then the scripts' hold, then the brains it holds.
+    // The level first: its humans are what the brains refer to, its player what the cameras follow. Then the cameras,
+    // whose locator reads the scripts' hold, then the hold, then the brains it holds.
     m_level.reset();
+    if (m_context.cameras == m_cameras.get()) {
+        m_context.cameras = nullptr;
+    }
+    m_cameras.reset();
     if (m_context.ai == m_scripted.get()) {
         m_context.ai = nullptr;
     }
@@ -52,6 +59,16 @@ void GameplayMode::enter() {
         m_context.boxes->clear();
     }
     m_context.ai = m_scripted.get();
+    // Player 1's cameras, which the script sets up before the level makes him; CamSetSecondary finds its human live.
+    m_cameras = std::make_unique<camera::Cameras>();
+    m_cameras->setLocator([scripted = m_scripted.get()](double handle) -> std::optional<anim::Vec3> {
+        const std::optional<world_objects::Placement> placement = scripted->humanPlacement(handle);
+        if (!placement) {
+            return std::nullopt;
+        }
+        return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
+    });
+    m_context.cameras = m_cameras.get();
 
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
     const LevelStart& start = m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName));
@@ -78,7 +95,8 @@ void GameplayMode::enter() {
         level = m_loader(start, ScriptedCast{.humans = &m_humans,
                                              .recorded = &m_recorded,
                                              .brains = m_brains.get(),
-                                             .scripted = m_scripted.get()});
+                                             .scripted = m_scripted.get(),
+                                             .cameras = m_cameras.get()});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));

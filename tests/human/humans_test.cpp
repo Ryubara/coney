@@ -3,9 +3,12 @@
 
 #include <cstdint>
 #include <memory>
+#include <numbers>
+#include <optional>
 #include <span>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "combat/anim_ids.h"
@@ -119,4 +122,46 @@ TEST_CASE("the step animates every human, then moves every one, then runs their 
     }
     CHECK(walker.other.position().y > 40.5F);
     CHECK(walker.player.position().y == 40.0F);
+}
+
+TEST_CASE("the step every human advances by is the one given: slow motion's 1/150 s plays a fifth as far",
+          "[human][humans]") {
+    // The same attack started on both pairs, then one step at 1/30 s and one at 1/150 s
+    // (docs/research/camera.md#slow-motion).
+    Pair normal;
+    Pair slow;
+    for (Pair* pair : {&normal, &slow}) {
+        pair->player.record().command = command::kSquarePressed;
+        pair->humans.update(pair->mesh.get());
+        pair->player.record().command = command::kNone;
+    }
+    normal.humans.update(normal.mesh.get(), {}, coney::human::kStepSeconds);
+    slow.humans.update(slow.mesh.get(), {}, coney::human::kStepSeconds / 5.0F);
+    CHECK(slow.player.stepSeconds() == coney::human::kStepSeconds / 5.0F);
+    CHECK(slow.other.stepSeconds() == coney::human::kStepSeconds / 5.0F);
+    REQUIRE(normal.player.animator().tasks().top() != nullptr);
+    REQUIRE(slow.player.animator().tasks().top() != nullptr);
+    CHECK(slow.player.animator().tasks().top()->time() * 5.0F ==
+          Catch::Approx(normal.player.animator().tasks().top()->time()));
+}
+
+TEST_CASE("a reaction to a player's hit asks for a shake at the hit code's strength", "[human][humans]") {
+    // The other human 1 m in front of the player, facing him; the player's square lands on it
+    // (docs/research/camera.md#shake).
+    Pair pair;
+    pair.other.spawn(pair.mesh.get(), coney::anim::Vec3{40.0F, 41.0F, 0.0F}, std::numbers::pi_v<float>);
+    std::optional<coney::human::ReactionShake> seen;
+    for (int k = 0; k < 30 && !seen; ++k) {
+        pair.player.record().command = k == 0 ? command::kSquarePressed : command::kNone;
+        pair.humans.update(pair.mesh.get());
+        seen = pair.other.fighter().reactionShake();
+        CHECK_FALSE(pair.player.fighter().reactionShake().has_value());
+    }
+    REQUIRE(seen.has_value());
+    CHECK(seen.value_or(coney::human::ReactionShake{}).attackerIsPlayer);
+    // S1's hit code 0x09: strength 0, which stops a shake.
+    CHECK(seen.value_or(coney::human::ReactionShake{.level = -1}).level == 0);
+    // The next update asks for nothing more.
+    pair.humans.update(pair.mesh.get());
+    CHECK_FALSE(pair.other.fighter().reactionShake().has_value());
 }

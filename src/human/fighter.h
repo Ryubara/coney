@@ -71,6 +71,14 @@ struct FighterInput {
     float heading = 0.0F;                ///< The player's heading, radians.
     std::uint64_t nowMs = 0;             ///< Game time, whole milliseconds.
     std::span<Combatant* const> targets; ///< The humans that can be fought.
+    float stepSeconds = kStepSeconds;    ///< The characters' step: 1/30 s, less in slow motion.
+};
+
+/// The camera shake a reaction asks for (docs/research/camera.md#shake): on the attacker's camera when a player hit,
+/// and from level 2 on the victim's when it is a player.
+struct ReactionShake {
+    int level = 0;                 ///< The hit code's strength bits, 0-3 (0 stops a shake).
+    bool attackerIsPlayer = false; ///< A player's hit.
 };
 
 /// What kind of fighter a human is: the rules that differ between a player and a human no player controls.
@@ -180,6 +188,10 @@ class Fighter {
     void releaseFromGrab(HumanAnimator& animator);
     /// What the player did to its grabber in the last update.
     [[nodiscard]] const GrabbedReport& grabbedReport() const { return m_report; }
+    /// The shake the reaction played in the last update asks for; none when it played none.
+    [[nodiscard]] const std::optional<ReactionShake>& reactionShake() const { return m_reactionShake; }
+    /// Whether rage started in the last update (a level-1 shake on the player's camera).
+    [[nodiscard]] bool rageStarted() const { return m_rageStarted; }
     /// Held in another human's grab.
     [[nodiscard]] bool grabbed() const { return m_grabbed.has_value(); }
     /// The player's health (record `+0x144`).
@@ -337,9 +349,11 @@ class Fighter {
     std::optional<GrabCatch> m_catch;
     std::optional<GrabCatch> m_grabbed; // the grab holding the player, its grabber's numbers kept up to date
     GrabbedReport m_report;
-    bool m_counterAsked = false;  // the duck's counter was asked for (record +0x14 = 0xe)
-    anim::Vec3 m_duckAttacker;    // where the attacker that made the player duck stood
-    std::uint32_t m_clipSeen = 0; // the clip playing at the end of the last update, and its time
+    std::optional<ReactionShake> m_reactionShake; // the last update's reaction's shake
+    bool m_rageStarted = false;                   // rage started in the last update
+    bool m_counterAsked = false;                  // the duck's counter was asked for (record +0x14 = 0xe)
+    anim::Vec3 m_duckAttacker;                    // where the attacker that made the player duck stood
+    std::uint32_t m_clipSeen = 0;                 // the clip playing at the end of the last update, and its time
     float m_clipTimeSeen = 0.0F;
     combat::CombatRandom m_grabbedRandom;
     combat::RepeatTracker m_repeat; // halves the rage of a long run of one kind; the throw bonus
