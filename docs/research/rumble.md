@@ -141,6 +141,18 @@ ends it: everyone's movement locked, an air horn, `X.GameOver` 4 s later, which 
 The five-minute stopwatch (`X.SetupStopWatch`, `TIME_LIMIT` 300,000 ms) and the extra gangs `NP1`-`NP4` are defined but
 never started.
 
+**After `GameOver`.** `vTopTier` keeps running: nothing disables it or clears its handlers, the teleport does not
+touch its occupant list, and `W_GameState + 0x14c` stays 0 (none of the bindings `GameOver` and `RumbleOver` call
+ends a level; `GoToMenu` runs 3 s later). So on the box's next update every fighter `GameOver` teleported off the
+top, alive or not, gets **message 4** and `X.OffTopTier` runs for it: `HuGetGang` gives its gang, still one of the
+two keys of `X.tKingHill` (`X.CleanupGangs` removes the gangs only 7 s later), and that gang's `NumOnTop` drops by
+one; the scores are already final, so nothing comes of it. The fighters `CreateWinCam` deletes (`HuDelete`) also
+leave with message 4 while their handles still resolve; once a handle no longer resolves the box skips it with no
+message ([Scripts: triggers](scripting.md#triggers)). The winner, put on `fWin` at the top in the same Lua call,
+never leaves. No path gives `OffTopTier` a human whose gang is not a key, so the original raises no nil-index
+error here. Confirmed (code) at `0x00415378`, `0x00385db0`, `0x00235438` and from `kinghill.lua`'s and the arena's
+calls; that no binding they call sets `+0x14c` is inferred.
+
 **Battle royal.** The arena has the ring box `vRing`, the top flag `fTop` and fixed cameras with their boxes.
 `StartRumble` adds the death handlers and indicators as Brawl, `SetMsgHandler(vRing, 4, "OutOfRing")` and `fWin[1..2]`
 at `fTop`. `StartIt`: both gangs `TacticDomination(gang, fTop, 40)`; War Commands off; every fighter god-mode, no rage,
@@ -377,8 +389,9 @@ wheelchair's locomotion and the give-way action.
 - What brain the human left behind by `HuSwitchPlayer` runs, and whether he keeps the player's fighter profile
   (Coney: his class's brain type, the profile unchanged).
 - The playback rate of a dynamic clip played by `HuUseAnim` (Coney: 1).
-- Coney bug: King of the hill's `X.OffTopTier` runs for members still on top after `X.GameOver`'s teleport and
-  indexes a nil (2 script errors in the disc test); the original's order of leave events and clean-up.
+- Coney bug: King of the hill's `X.OffTopTier` indexes a nil after `X.GameOver` (2 script errors in the disc test);
+  the original raises none (King of the hill, "After GameOver"): Coney must keep `HuGetGang` giving a deleted but
+  still-resolving human's gang, and skip box occupants whose handles no longer resolve.
 - How a spawner picks from its ten types, and where `0x001673b8` puts a human out of the camera's sight (Coney: the
   types in turn; a level flag out of the view whose distance from the player is nearest the value).
 - The range beyond which `GoalEngageEnemy`'s goal gives up its enemy (Coney: none).

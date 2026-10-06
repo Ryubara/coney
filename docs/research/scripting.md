@@ -255,8 +255,15 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
     - inside and new: added to the occupants, message **3** (entered);
     - inside and already an occupant: message **5**, at most once per repeat period (next time at `+0x1e0`);
     - an occupant no longer inside, or dead: removed, message **4** (left).
+    - an occupant whose handle no longer resolves (`0x00390268`): skipped, with no message 4, and its entry stays.
+      "Dead" here (`0x00227eb0`) is no brain or state flag `0x100000000`; a human taken out by `HuDelete` (flag
+      `0x200000000`) is neither, so while it still resolves it leaves like anyone else (message 4). When the deleted
+      human stops resolving is not traced.
 - **Disabling** a box (`EnableVolumeBox(box, false)`, `0x004152e0`) empties its occupant list without sending
   message 4, so a human still inside when it is enabled again gets a fresh message 3.
+- **Teleporting** (`TeleportToFlag`, `0x00385db0`) only sets the object's position (and calls a human's slot
+  `+0x14c`); it does not touch any box, so a teleported occupant gets message 4 on the box's next update. Messages
+  still reach Lua only while `W_GameState + 0x14c` is 0 ([delivery](#message-handlers)).
 - **Inside** (`0x00412a18`): within the bounding sphere, between the box's lowest and highest `z` (`+0x18`, `+0x28`),
   and inside the four corners rotated about the centre by the 2 × 2 matrix at `+0x48`-`+0x54`
   (`x' = m00 dx + m01 dy`, `y' = m10 dx + m11 dy`, [`RotateVolumeBox`](../references/bindings/world.md#rotatevolumebox)).
