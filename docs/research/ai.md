@@ -315,8 +315,12 @@ callers.
 2. Every 30 updates `0x002221b0`; once a second, re-target.
 3. **The block try** (`Goal_TryBlock`, [below](#block)).
 4. While actions are queued, wait.
-5. **Pacing**: the goal's attack timer (`+0x24`, a random 750-1000 ms plus a parameter at start) and two tokens
-   (`0x002911a8`, `0x00290ea8`) must allow an attack.
+5. **The deadline**: `FightGoal_Init` sets `+0x20` = now + a random 750-1000 ms and `+0x24` = now + its duration
+   argument. Once `+0x24` has passed, the goal ends unless the fighter is still one of the target's active
+   attackers (`0x002911a8`), the target's byte `+0x11f` is set (`0x00290ea8`) and the fighter has no goal `0x35`;
+   a class-13 fighter without `+0x29` ends at once ([GoalRiot](#riot) for the 8 s case). `GoalFight` passes −1, so
+   its deadline (now − 1, unsigned) is already past and these checks run from the first update. This corrects the
+   earlier reading of these checks as attack pacing.
 6. **Pick the attack** (`Brain_PickAttack`, `0x0028e708`): a weighted random choice over the 45 kinds. The weights
    are `Brain_GetAttackWeight` (`0x002911f8`: the brain's `+0x298`, or the override at `+0x208`), filtered by what
    the human can do now (`0x002240e8`) and adjusted for the number of attackers and the grab chance.
@@ -826,6 +830,98 @@ the constructor), `+0x42` dealing.
     - state 1 with the player within 1.5 m: state 3, dealing, human `+0x1b2` = 1 (inferred: the player may now buy).
 - The run and dirty chances are not read by Process (open question).
 
+#### GoalRiot {#riot}
+
+Type 84 (`Goal_Riot` `0x002d0e98`, `RiotGoal_Init` `0x002d0f68`, vtable `0x005414d0`, Process `RiotGoal_Process`
+`0x002d1c38`); the binding's arguments are on [`GoalRiot`](../references/bindings/ai.md#goalriot). Confirmed (code)
+unless marked. Fields: `+0x10` the wander vector, `+0x20` the move deadline, `+0x24` the next shout, `+0x2c` radius,
+`+0x32` act chance, `+0x33` acts left, `+0x34` fight chance, `+0x35` the player-fight chance, `+0x36` **state** (0
+roam, 1 smash, 2 loot, 3 leave), `+0x37` decided (set at the first decision, never cleared), `+0x38` failed moves,
+`+0x39` the roam counter (starts at 26), `+0x3a` shout. Init: the wander vector (0, 2.5, 0.2), and with
+`Random_Int(100)` < 51 (0-100 inclusive) the state starts at 1 or 2 (a second draw < 50: loot).
+
+**The turf gate** (`0x0028ff58(brain, human)` → `0x001652a0`): whether a human's position is inside the turf of
+the rioter's gang (brain `+0x20c`; `Gang_IsPointInTurf`, `0x001652e8`, true for a gang with no turf). The riot asks
+it of the **nearest player's human**. Its sibling `0x0028ff38(brain, point)` asks it of a point, and every target
+below must pass it.
+
+**Each update** (Process): nothing while the human's actions are blocked; the fight stance is dropped; nothing when
+there is no player (`GameState_FindNearestPlayer` gives the nearest and its squared distance *d²*). Then by state:
+
+- **0, roam.** With *g* the turf gate: the rioter **decides** when *g* is false, or when *d²* < radius², the brain's
+  update counter (`+0x34`) is a multiple of 60 and `Random_Int(100)` < 50; otherwise it roams.
+    - **Deciding**: `+0x37` = 1; one draw *r* = `Random_Int(100)`. If *r* < fight chance and *g*: try a fight
+      (below); started → state 3. Then if *r* < act chance and *g*: state 1 or 2 (a new draw < 50: loot). Otherwise
+      **state 3**. So a decision that neither fights nor acts ends the riot, and a player outside the gang's turf
+      ends it at once.
+    - **Roaming**: when the move deadline `+0x20` has passed it becomes now + 1000 + 1000 × human `+0x333` ms (the
+      roll-over is what lets a new destination replace a running move); when `+0x24` has passed it becomes now + a
+      random 4000-4500 ms and, with shout, the rioter says speech command `0x59` (`0x002205e0`); every 90 brain updates
+      a random head glance (`0x00231cd0`, 750 ms, 22.5°-67.5° to a side, inferred from its maths). While a move is
+      running and the deadline has not rolled over, nothing more. With no failed move (brain `+0x284` = 0) it picks
+      a destination (below) and gives a move action to it (`MoveAction_Init`, arrival 0.5 m, gait 4), retargeting a
+      running move action instead when there is one. After a failed move, `+0x38` counts up: at 30 → state 3; every
+      5th clears `+0x284` so the next update tries again.
+- **1, smash.** The target is a **world object within 20 m** (`0x0029d5f0`, the object search `0x0039a850`, up to
+  384, sorted by `0x003868d0` (inferred: by distance), the first that passes): not broken (object `+0x54` bit
+  `0x10`), class flags
+  (vtable `+0x54`) without bit 26 or `0x800000`, **vandalisable** (`Object_IsVandalisable` `0x00394f30`: object kind,
+  `CfgObj` `+0x86`, not 30 `TYPE_BREAKANDENTER_DOOR`, 40 `TYPE_EXPLOSIVE` or 42 `TYPE_FIREBARREL`; not of class
+  `dyn_masks` when type byte `+0x5a` < 1; not in the excluded vandalize zone (`CfgExcludedVandalizeZone`,
+  `0x005148bc`, object `+0x114`); then true when its vtable `+0xf4` record has `+0x40` & `0x30`, or its anim set
+  `+0x87` is 4 or 5), not claimed by the rioter's own gang in the last 5 s (object `+0xec` gang, `+0xf0` time), for
+  an AI rioter not within 1 m of a player, and with a stand point at the type's reach (the larger of `+0x78` and
+  `+0x7c`) on the rioter's side (`0x00252410`) that the rioter reaches in a straight line. The search claims it for
+  the gang for 5 s. If its position passes the turf gate, the rioter gets a **VandalizeItem** goal (type 47,
+  `0x002dd630` → `0x002dd6b8`, cheer flag 1) on it.
+- **2, loot.** The nearest **store flag** (activity 14, `storeJewelry` / `storeFront`, [Flags](flags.md)) within
+  20 m; its group (`+0xd8`) must still have objects (`0x0039a580`), and the rioter must reach the flag in a straight
+  line (`0x0024e078`). The target is then the nearest object of that object zone (`0x0039a2c0` mode 2) spawned with
+  `ObjSpawn` flag 2 (record bit `0x80000`), not removed, live, not broken, without class bit 26 and not claimed by any
+  gang within 5 s. If it is a world object whose position passes the turf gate: claimed for the rioter's gang for 5
+  s, and `Goal_GetItem(rioter, gait 4, object)` sends him to pick it up ([`GoalGetItem`](../references/bindings/ai.md#goalgetitem)).
+- **After 1 or 2** (target found or not): with `+0x37` set, acts left − 1, and at 0 state 3; else (only the free act
+  from Init) back to 0. With acts left > 0 the state **stays** 1 or 2, so the next update looks for another target.
+- **3, leave.** The nearest enabled exit flag (activity 8) whose position passes the turf gate (`0x00416f08`); none:
+  try again next update. Found: push `GoalMoveToExitFlag` (`0x002da8f8`, gait 4, speech `0x59` when shout) on top.
+
+**The roam destination** (`0x002d18b8`), confirmed (code):
+
+1. The roam counter `+0x39` + 1. A multiple of 27 (so the first call, from 26): **toward the player**
+   (`0x002d1498`) when the nearest player is 15 m or more away: a random point 15 m from him (`0x0029f3c8`, below)
+   that the rioter reaches in a straight line; deadline now + 10 s. A multiple of 79: **somewhere in the turf**
+   (`0x002d15d0`): a random one of the gang's turf boxes, a point at a random angle and (box radius `+0x40` − 5) ×
+   a random 0.5-1 from its centre `+0x30`, up to 3 tries for a point on an area, then it must pass the turf gate
+   and be reached in a straight line from the rioter's polygon; deadline now + 10 s. Either one succeeding is the
+   destination.
+2. Otherwise a **wander**: the vector `+0x10` gets a random (−1..1, −1..1, 0) added and is scaled back to 2.5 m;
+   the destination is the human's position + his rotation (position table `+0x10`) applied to (vector + (0, 10, 0)),
+   that is 10 m ahead plus the 2.5 m wander circle, dropped to the ground from up to 5 m (`0x0034f950`). It must pass
+   the turf gate and the straight-line test (`0x002221e0`).
+3. Failing that, the vector resets to (0, 2.5, 0.2) and the destination is a random point 5 m from the rioter
+   (`0x0029f3c8`: a uniform direction about the vertical, up to 5 tries for a point on an area, connected to the
+   start (`0x0024dee8`), dropped up to 2 m). None: no move this update.
+
+**The fight** (`RiotGoal_TryPickFight`, `0x002d1288`): only a rioter whose brain is type 2 (gang soldiers and thugs,
+[Types](#types)); any other never fights. One draw: *p* = `Random_Int(100)` < the player-fight chance `+0x35`. The
+candidates are the humans within 15 m (`0x002274a8`, up to 60, in human-slot order) and the first that passes is
+taken: brain not type 3 (an ally Warrior); no player controls him (human `+0x1b0` = −1) unless *p*; not friendly
+(`0x00290230`: same brain or `Gang_AreFriends`); no fight goal; nobody in his attack-slot list (brain `+0x1a4`);
+reached from the rioter in a straight line. Then threat response `+0x21c` = 2, `Brain_Fight(rioter, him, 8000, 1)`
+and the taunt `0x11` (`0x002205e0`). So the binding's sixth argument is the chance that **the player** may be picked,
+not a gang member.
+
+**How the 8 s fight ends.** `Brain_Fight` → `Brain_PushFightGoal(brain, 8000)` pushes `Goal_Melee` (goals `0x41`
+and 8, each given the 8000) and then the fight goal (15) with **its deadline `+0x24` = now + 8000 ms**
+(`FightGoal_Init`, `0x002b2c20`; `+0x20` is the separate 750-1000 ms first-attack timer). The fight goal's usual
+ends apply (no target, no attack slot, out of range, [The fight goal](#fight)). Past the deadline, at each update
+with no actions queued, it **ends** (returns 2) when any of these holds: the fighter's class `+0x11b` is 13 and goal
+`+0x29` is 0; the fighter is not among the target's four active attackers (target brain `+0x1f0`, `0x002911a8`);
+the target brain's byte `+0x11f` is 0 (`Brain_IsAttackableBy(target, nil)`, not traced); the fighter has a goal
+`0x35` (FollowAndDefend). Otherwise it goes on attacking. Confirmed (code) at `0x002b3d0c`-`0x002b3d6c`. Under the
+fight goal the riot goal is in state 3, so when the fight (and the melee goals beneath it) are done, the rioter
+leaves.
+
 ### Gangs, tactics and formations {#gangs}
 
 #### The gang {#gang-record}
@@ -1063,7 +1159,8 @@ uses are in [Spawner states](../references/spawner-states.md). Confirmed (code):
 3. **Gates**, in order; any one failing skips the spawner this update: player 1 at least `+0x88` away (when non-zero);
    when `+0x8c` is set, [no camera sees the spot](#spawner-unseen); `+0x5c` under the limit (or state 11); the next
    spawn time reached.
-4. **Dispatch** (4 and 9, decided in step 1; neither is ready itself): when a queued entry is due (`0x0016dda8`) and a gang slot is free (`0x0016d458`), a new gang
+4. **Dispatch** (4 and 9, decided in step 1; neither is ready itself): when a queued entry is due (`0x0016dda8`)
+   and a gang slot is free (`0x0016d458`), a new gang
    `Responder<n>` is made: of type 1 for 4, only while the game's count `+0x324` is under `+0x326`, of the spawner's own
    type for 9, which also takes its owner's friend and enemy masks. The state becomes 6 (from 4) or 10 (from 9), and
    returns once the entry's squad is complete; an entry whose byte `+0x17` is 3 may also start `Tactic_RiotCop`.

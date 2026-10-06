@@ -2695,19 +2695,21 @@ GoalRiot(human, radius, actChance, acts, fightChance, gangFightChance, shout)
 | 3 | `actChance` | number, truncated to an unsigned integer; default 30 | Percentage chance, at each decision, to smash something or loot (goal `+0x32`, one byte). |
 | 4 | `acts` | number, truncated to an unsigned integer; default 1 | How many smash-or-loot acts before the rioter leaves (goal `+0x33`, counted down). |
 | 5 | `fightChance` | number, truncated to an unsigned integer; default 20 | Percentage chance, at each decision, to pick a fight with a nearby human (goal `+0x34`); scripts use 0 and 75. |
-| 6 | `gangFightChance` | number, truncated to an unsigned integer; default 10 | For a gang-member rioter, percentage chance that the fight may be with a gang member too, not only a civilian (goal `+0x35`); scripts use 0 and 25. |
+| 6 | `gangFightChance` | number, truncated to an unsigned integer; default 10 | Percentage chance, rolled once per fight attempt, that a human a player controls may be picked as the opponent too (goal `+0x35`; otherwise only humans no player controls); scripts use 0 and 25. |
 | 7 | `shout` | boolean (nil or 0 is false); default true | true: the rioter shouts (speech command 0x59) every 4-4.5 s while roaming and when leaving (goal `+0x3a`). |
 
 **Returns** nothing.
 
-Pushes a riot goal (type 84) on the human: it roams, and when a decision comes (about half the time, every 60th update)
-it may pick a fight with a human within 15 m for 8 s (speech 0x11), smash a nearby breakable object within 20 m, or loot
-an item lying within 20 m. After `acts` acts, or when a fight starts, it heads for the nearest flag of type 8 and
-leaves. A rioter starts with a 51% chance to smash or loot straight away.
+Pushes a riot goal (type 84) on the human: it wanders inside its gang's turf, and when a decision comes (the nearest
+player within `radius`, every 60th update, about half the time) it may pick a fight with a human within 15 m (8 s,
+speech 0x11), smash a vandalisable object within 20 m or loot an item from a store within 20 m; a decision that does
+neither, a started fight, `acts` acts or the nearest player leaving the gang's turf sends it to the nearest exit flag
+(activity 8) to leave. A rioter starts with a 51% chance to smash or loot straight away.
 
 **Notes.** States at goal `+0x36`: 0 roam, 1 smash, 2 loot, 3 leave (RiotGoal_Process 0x002d1c38). Fight choice:
-RiotGoal_TryPickFight 0x002d1288 (only for a gang-member brain, `+0x04` = 2). The test that gates the decision
-(0x0028ff58 on the brain's gang) is not traced; the leave goal is 0x002da8f8.
+RiotGoal_TryPickFight 0x002d1288 (only for a gang-soldier brain, type 2). The gate 0x0028ff58 is whether the nearest
+player stands in the rioter's gang's turf. Roaming, targets and the fight's end: [AI:
+GoalRiot](../../research/ai.md#riot).
 
 - **Evidence:** confirmed (code) at `0x002d0e98`, `0x002d0f68`; detail: traced
 - **Wrapper** `0x00363268` (registered by `RegisterBindings`); **calls** `0x002d0e98` `Goal_Riot`, `0x002d0f68`
