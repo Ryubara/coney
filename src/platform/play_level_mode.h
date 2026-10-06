@@ -14,6 +14,7 @@
 
 #include "ai/ai_config.h"
 #include "ai/ai_humans.h"
+#include "ai/route_planner.h"
 #include "animation/anim_math.h"
 #include "characters/character_types.h"
 #include "core/error.h"
@@ -271,6 +272,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::vector<Target> m_targets;
     std::vector<human::TargetHuman*> m_targetPointers;
     std::vector<human::Combatant*> m_combatants; // the targets, as the player's step takes them
+    // The level's route planner (null without path data), before the AI so it outlives the brains that use it.
+    std::unique_ptr<ai::RoutePlanner> m_planner;
     // The AI fighters, and a mesh each (in the fighters' order).
     std::unique_ptr<ai::AiHumans> m_ai;
     struct FighterMesh {

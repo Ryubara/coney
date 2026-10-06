@@ -23,6 +23,7 @@
 #include "platform/world_viewer_mode.h"
 #include "raycast/collision_mesh.h"
 #include "sandbox/sandbox_world.h"
+#include "world/path_map.h"
 #include "world/sector_budget.h"
 
 namespace coney::platform {
@@ -75,6 +76,9 @@ class PlayScenery {
     [[nodiscard]] virtual std::vector<sandbox::TargetPoint> targets() const { return {}; }
     /// The AI humans that fight the player: a sandbox layout's `fighter` lines; none in a level.
     [[nodiscard]] virtual std::vector<sandbox::FighterPoint> fighters() const { return {}; }
+    /// The level's path data, decoded, for the AI's route planner; null where there is none (a sandbox, or a level
+    /// whose path data does not decode).
+    [[nodiscard]] virtual const world::PathMap* pathMap() const { return nullptr; }
     /// Whether the debug menus' Spawner can add objects (a sandbox can).
     [[nodiscard]] virtual bool canSpawn() const { return false; }
     /// Rebuilds the scenery with `extra` objects added to what it was made with (none: as made). Fails with
@@ -109,6 +113,7 @@ class LevelPlayScenery final : public PlayScenery {
     [[nodiscard]] anim::Vec3 lightDirection() const override;
     [[nodiscard]] std::string summary() const override;
     [[nodiscard]] std::string name() const override { return m_name; }
+    [[nodiscard]] const world::PathMap* pathMap() const override { return m_paths ? &*m_paths : nullptr; }
 
   private:
     LevelPlayScenery(LevelScenery scenery, world::SectorBudget& budget, const human::PlayerStart& start,
@@ -120,7 +125,8 @@ class LevelPlayScenery final : public PlayScenery {
     std::string m_startSource; // where m_start comes from, for the player's line
     WorldRenderer m_renderer;
     std::function<void(std::string_view)> m_print;
-    std::string m_name; // the level's name
+    std::string m_name;                    // the level's name
+    std::optional<world::PathMap> m_paths; // the level file's path data, decoded
     float m_drawDistance;
     float m_pending = 0.0F; // the nearest missing scenery after the last step
     std::uint32_t m_loads = 0;

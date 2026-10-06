@@ -205,6 +205,11 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     makeTargets(m_texture);
     // The AI fighters, in the player's step, and the layout's.
     m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, setup.ai);
+    // The brains plan their moves on the level's routes, when it has path data.
+    if (const world::PathMap* paths = m_scenery->pathMap(); paths != nullptr) {
+        m_planner = std::make_unique<ai::RoutePlanner>(*paths);
+        m_ai->brains().setPlanner(m_planner.get());
+    }
     for (const sandbox::FighterPoint& point : m_scenery->fighters()) {
         addFighter(point.position, point.headingDegrees);
     }

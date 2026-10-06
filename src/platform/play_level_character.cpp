@@ -128,6 +128,10 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     // The fighters again, as the scene's character.
     m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, aiConfig);
     m_ai->setEngaging(engaging);
+    // The new brains plan on the level's routes like the old ones did.
+    if (m_planner) {
+        m_ai->brains().setPlanner(m_planner.get());
+    }
     for (const human::PlayerStart& fighter : fighters) {
         addFighter(fighter.position, fighter.headingDegrees);
     }

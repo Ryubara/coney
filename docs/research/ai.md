@@ -1127,7 +1127,8 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   inside test, the walkable-line test, the request (the human's polygon, the straight line, the ends' nodes within 30
   tries), A\* from the destination's node with the edge costs and the 65000 cap, the retry with `0x8c` and the jump
   detour, and routes from a pool of 32 with the leading, shortcut (4 ahead) and trailing cuts and the nodes' use
-  counts. A brain gets the level's planner from `Brains::setPlanner`; with none, every move goes straight.
+  counts. A brain gets the level's planner from `Brains::setPlanner` (the play mode gives one from the level file's
+  path data, `PlayScenery::pathMap`); with none, every move goes straight.
 - **Moving** (`MoveAction`, `RouteFollower`): straight when the line is walkable, else the route's waypoints (0.25 m,
   moving on when reached and every 6th call, skipping what is in a straight line); the straight re-check every 30
   updates; the turn on the spot beyond 30° while standing; the corner speed; the stuck test; brain `+0x284`
@@ -1207,12 +1208,12 @@ the per-kind time `0x00231590` and the spacing bytes; the pick's adjustments; li
 the steering round humans, choke points and the waypoint queues; the dynamic obstacles; the legs of edges 8, `0x10`,
 `0x40` and `0x80` (taken as plain walking, with `+0x284` 2 and 4 never set); the move's object to face; the turn clip
 (398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off, message 8 (Coney's flags take none)
-and the gang's notice; the play mode gives no planner yet, and the level scripts run alone before play and their humans
-are not AI humans yet, so `level99`'s goals reach no brain in play; the scene system, the dynamic clip slot and clips by
-id; the head look-ats; a human's own message handlers (`SetMsgHandler`); the gang's alert state, bounds, return to calm,
-neutral rule and spawners; the anim substitutions; the crowd's cheer idles; the formation's ground ray, line of sight
-and assignment mode `+0x275`; the dealer's run to a flag, gestures, buy clip and icons; the other tactics; the attack's
-steer, the post-block pause and the run-stop.
+and the gang's notice; the level scripts run alone before play and their humans are not AI humans yet, so `level99`'s
+goals reach no brain in play; the scene system, the dynamic clip slot and clips by id; the head look-ats; a human's own
+message handlers (`SetMsgHandler`); the gang's alert state, bounds, return to calm, neutral rule and spawners; the anim
+substitutions; the crowd's cheer idles; the formation's ground ray, line of sight and assignment mode `+0x275`; the
+dealer's run to a flag, gestures, buy clip and icons; the other tactics; the attack's steer, the post-block pause and
+the run-stop.
 
 ## Open questions {#open-questions}
 

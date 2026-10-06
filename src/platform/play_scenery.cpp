@@ -65,6 +65,12 @@ LevelPlayScenery::load(RenderEngine& engine, const io::Wad& wad, std::string_vie
     std::unique_ptr<LevelPlayScenery> made(
         new LevelPlayScenery(std::move(*scenery), budget, start, std::move(source), std::move(print)));
     made->m_name = std::string(name);
+    // The path data for the AI's routes; a level whose data does not decode plays with straight moves.
+    if (auto paths = world::PathMap::decode(made->m_scenery.level->pathData); paths) {
+        made->m_paths = std::move(*paths);
+    } else {
+        made->m_print(std::format("path data: {}; AI moves go straight\n", paths.error().message));
+    }
     return made;
 }
 
