@@ -805,6 +805,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("UM_GetUnlockablesByType"),
     // The story's fourth mission, level34 (mission4_bindings.h).
     real("BrSetPedType"),
+    real("CarExplode"),
     real("CfgChanceToGetHelp"),
     real("ChangeBlocker"),
     real("ForceCrimeLevel"),
@@ -813,6 +814,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("GetRTTI"),
     real("HuSetWounded"),
     real("ObjGetIndex"),
+    real("SetGeneralCarMsgHandler"),
     // The story's second and third missions (story_bindings.h).
     real("TacticAvoidEnemies"),
     real("TacticDefend"),
@@ -1320,7 +1322,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addWorldBindings(vm, context);
     addHubBindings(scripts, vm, context);
     addHubWorldBindings(scripts, vm, context);
-    addMission4Bindings(vm, context);
+    addMission4Bindings(scripts, vm, context);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

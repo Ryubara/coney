@@ -801,6 +801,7 @@
     (5 m, 300); 0x002936a8 sends AI event 0x17 within 30 m; 0x003963b8 is World_BreakGlassInRadius. What is drawn
     and who hears the message: [Cars: explosion](../../research/cars.md#explode).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [34, 52]}
+  coney: implemented
 
 - name: CarRemovePart
   wrapper: 0x00378700

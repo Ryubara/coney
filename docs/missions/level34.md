@@ -27,7 +27,7 @@ streets, the Savage Huns rob a shop and run, and the Baseball Furies turn up nea
 
 ## What it needs {#needs}
 
-Its scripts can call 204 script bindings. 17 of them are new, which no earlier level of the story calls: 13 are
+Its scripts can call 204 script bindings. 17 of them are new, which no earlier level of the story calls: 15 are
 implemented in Coney and 17 are traced. The full list is on [the coverage
 page](../references/bindings/story.md#level34).
 
@@ -36,10 +36,10 @@ page](../references/bindings/story.md#level34).
 | [Characters](../references/bindings/character.md) | 1 | 1 |
 | [AI](../references/bindings/ai.md) | 3 | 1 |
 | [Gangs](../references/bindings/gang.md) | 2 | 2 |
-| [World and objects](../references/bindings/world.md) | 4 | 3 |
+| [World and objects](../references/bindings/world.md) | 4 | 4 |
 | [Effects and lighting](../references/bindings/effects.md) | 2 | 2 |
 | [Levels and game state](../references/bindings/level.md) | 2 | 2 |
-| [Script flow](../references/bindings/script.md) | 1 | 0 |
+| [Script flow](../references/bindings/script.md) | 1 | 1 |
 | [Configuration (Cfg)](../references/bindings/config.md) | 1 | 1 |
 | [Utilities](../references/bindings/util.md) | 1 | 1 |
 

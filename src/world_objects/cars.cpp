@@ -172,6 +172,18 @@ bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool inst
     return true;
 }
 
+bool Cars::explode(double handle) {
+    Car* car = find(handle);
+    if (car == nullptr || car->exploded) {
+        return false;
+    }
+    for (std::uint32_t part = 0; part < kCarParts; ++part) {
+        static_cast<void>(damagePart(handle, part, 1.0F, true));
+    }
+    car->exploded = true;
+    return true;
+}
+
 anim::Vec3 Cars::bootPosition(const Car& car) {
     constexpr anim::Vec3 kBootOffset{0.0F, -2.5F, 0.8F};
     return anim::add(car.position,

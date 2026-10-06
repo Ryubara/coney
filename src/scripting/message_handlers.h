@@ -33,10 +33,11 @@ class MessageHandlers {
     void setPrompt(double object, std::string_view callback, std::string_view prompt);
     /// The objects with a kind-1 context record, and their prompts.
     [[nodiscard]] const std::map<double, std::string>& prompts() const { return m_prompts; }
-    /// Forgets every handler and prompt: a level's objects are gone.
+    /// Forgets every handler and prompt, the cars' general handlers too: a level's objects are gone.
     void clear() {
         m_handlers.clear();
         m_prompts.clear();
+        m_generalCar.clear();
     }
     /// Handlers kept.
     [[nodiscard]] std::size_t size() const { return m_handlers.size(); }
@@ -50,9 +51,25 @@ class MessageHandlers {
     /// @orig 0x00384ce0 MessageHandler_Marshal (unknown)
     bool deliver(ScriptSystem& scripts, double object, int message, double subject, double other, double value) const;
 
+    /// `SetGeneralCarMsgHandler(message, callback)`: the car manager's handler of `message` from any car (`+0x18 + 4 ×
+    /// message`); an empty one removes it, a message outside 0-25 is ignored (**Coney choice**, as set()).
+    /// @orig 0x0038e538 CarManager_SetMsgHandler (unknown)
+    void setGeneralCar(int message, std::string callback);
+    /// The cars' general handler of `message`; empty for none.
+    [[nodiscard]] std::string_view generalCarHandler(int message) const;
+    /// Delivers message `message` from car `car` as deliver() does: to the car's own handler, then to the cars'
+    /// general one. **Coney choice**: both are called, the car's first (the reader of the manager's slots is not on
+    /// the page). Returns whether either took it.
+    bool deliverFromCar(ScriptSystem& scripts, double car, int message, double other, double value) const;
+
   private:
+    // Calls `function` with message `message`'s arguments, marshalled as deliver() describes.
+    static bool call(ScriptSystem& scripts, std::string_view function, double object, int message, double subject,
+                     double other, double value);
+
     std::map<std::pair<double, int>, std::string> m_handlers;
     std::map<double, std::string> m_prompts; // the objects' kind-1 context records
+    std::map<int, std::string> m_generalCar; // the car manager's handlers, by message
 };
 
 } // namespace coney::script

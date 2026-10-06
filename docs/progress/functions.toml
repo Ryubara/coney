@@ -7222,6 +7222,12 @@ subsystem = "Scripting"
 size = 112
 
 [[function]]
+address = 0x00386340
+name = "Script_SetGeneralCarMsgHandler"
+subsystem = "Scripting"
+size = 48
+
+[[function]]
 address = 0x00386370
 name = "gc"
 subsystem = "Scripting"
@@ -7268,6 +7274,18 @@ name = "Car_DamagePart"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x0038ab18
+name = "Car_TryExplode"
+subsystem = "TaskEngine"
+size = 56
+
+[[function]]
+address = 0x0038ab50
+name = "Car_DoExplode"
+subsystem = "TaskEngine"
+size = 1432
+
+[[function]]
 address = 0x0038c7d8
 name = "Car_RemovePartBits"
 subsystem = "TaskEngine"
@@ -7309,6 +7327,12 @@ name = "Car_SetColour"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x0038dfa0
+name = "Car_Explode"
+subsystem = "TaskEngine"
+size = 64
+
+[[function]]
 address = 0x0038e068
 name = "Car_Repair"
 subsystem = "TaskEngine"
@@ -7317,6 +7341,12 @@ subsystem = "TaskEngine"
 address = 0x0038e0f0
 name = "Car_PlaceInTrunkOnDetach"
 subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038e538
+name = "CarManager_SetMsgHandler"
+subsystem = "TaskEngine"
+size = 88
 
 [[function]]
 address = 0x0038f378

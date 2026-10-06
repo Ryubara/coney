@@ -7,9 +7,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <memory>
+#include <span>
 #include <string>
 #include <string_view>
-#include <memory>
 #include <utility>
 #include <vector>
 
@@ -18,8 +19,10 @@
 #include "core/error.h"
 #include "gui/global_strings.h"
 #include "scripting/ai_bindings.h"
+#include "scripting/binding_args.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
+#include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "scripting/story_bindings.h"
@@ -27,6 +30,7 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world/path_map.h"
+#include "world_objects/cars.h"
 #include "world_objects/flags.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/object_types.h"
@@ -90,6 +94,9 @@ struct Harness {
     coney::world_objects::ObjectTypes types;
     coney::world_objects::LevelObjects objects;
     coney::world::PathMap paths;
+    coney::world_objects::Cars cars;
+    coney::script::MessageHandlers messages;
+    std::vector<std::vector<Value>> recordedArgs;
     StoryAi ai;
     coney::script::BindingContext context{&state, &strings, &host, &recorded};
     ScriptSystem scripts;
@@ -108,7 +115,13 @@ struct Harness {
         objects.world.paths = &paths;
         context.objects = &objects;
         context.ai = &ai;
+        context.cars = &cars;
+        context.messages = &messages;
         scripts.create();
+        scripts.vm().registerFunction("Record", [this](std::span<const Value> args) -> coney::script::binding::Results {
+            recordedArgs.emplace_back(args.begin(), args.end());
+            return std::vector<Value>{};
+        });
     }
 
     // Calls the binding `name` with `args`; REQUIREs success and returns its results.
@@ -201,6 +214,31 @@ TEST_CASE("The spawner limits reach the story host, and gang -1 does nothing", "
     h.call("GangSetSpawnerMustBeOffScreen", {Value(2.0), Value(std::string("Door")), Value(1.0)});
     h.call("GangSetSpawnerMustBeOffScreen", {Value(2.0), Value(std::string("Door"))});
     CHECK(h.ai.keeping.offScreen == std::vector<std::string>{"2:Door:on", "2:Door:off"});
+}
+
+TEST_CASE(
+    "CarExplode wrecks a car once, and the full blast sends message 0x19 to its handler and the cars' general one",
+    "[mission4_bindings]") {
+    Harness h(overlapping());
+    REQUIRE(h.cars.spawn("car_coupe", coney::anim::Vec3{1, 2, 0}, coney::anim::Quat{}, 40.0) != nullptr);
+    REQUIRE(h.cars.spawn("car_coupe", coney::anim::Vec3{9, 2, 0}, coney::anim::Quat{}, 41.0) != nullptr);
+    h.call("SetGeneralCarMsgHandler", {Value(25.0), Value(std::string("Record"))});
+    CHECK(h.messages.generalCarHandler(25) == "Record");
+    h.messages.set(41.0, 25, "Record");
+    // Quiet: wrecked, no message.
+    h.call("CarExplode", {Value(40.0), Value(1.0)});
+    CHECK(h.cars.find(40.0)->exploded);
+    CHECK(h.recordedArgs.empty());
+    // The full blast: the car's own handler, then the general one, each with the car as self.
+    h.call("CarExplode", {Value(41.0)});
+    REQUIRE(h.recordedArgs.size() == 2);
+    CHECK(h.recordedArgs[0].front().number() == 41.0);
+    CHECK(h.recordedArgs[1].front().number() == 41.0);
+    // Exploded already: nothing more.
+    h.call("CarExplode", {Value(41.0)});
+    CHECK(h.recordedArgs.size() == 2);
+    h.call("SetGeneralCarMsgHandler", {Value(25.0), Value()});
+    CHECK(h.messages.generalCarHandler(25).empty());
 }
 
 TEST_CASE("ChangeBlocker blocks the area whose centre is nearest the point, and opens it again",

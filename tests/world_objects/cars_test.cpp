@@ -11,6 +11,7 @@
 
 #include "core/name_hash.h"
 #include "effects/particles.h"
+#include "world_objects/car_types.h"
 #include "world_objects/spawn_records.h"
 
 using coney::anim::Quat;
@@ -137,4 +138,22 @@ TEST_CASE("a boot's item is released when the boot is knocked off, not when remo
     cars.placeInTrunk(2, 0, 5);
     CHECK(cars.damagePart(2, 4, 0.0F, true));
     CHECK(records.all().size() == 2);
+}
+
+TEST_CASE("an explosion knocks every part off once and loses a loaded boot's item", "[cars]") {
+    Cars cars;
+    coney::world_objects::SpawnRecords records;
+    double next = 100;
+    cars.setObjects(&records, [&next] { return next++; });
+    REQUIRE(cars.spawn("car_coupe", Vec3{10, 20, 0}, Quat{}, 1) != nullptr);
+    cars.placeInTrunk(1, 0, 5);
+    CHECK(cars.explode(1));
+    const coney::world_objects::Car& car = *cars.find(1);
+    CHECK(car.exploded);
+    CHECK(car.removedKept == (1U << coney::world_objects::kCarParts) - 1U);
+    // Blown off, the boot's money is lost: no pickup is made.
+    CHECK(records.all().empty());
+    // Once only; an unknown car does nothing.
+    CHECK_FALSE(cars.explode(1));
+    CHECK_FALSE(cars.explode(9));
 }

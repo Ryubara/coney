@@ -21,11 +21,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 14.0%](https://img.shields.io/badge/reimplemented-14.0%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 14.1%](https://img.shields.io/badge/reimplemented-14.1%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (470,644 of 3,354,776 bytes, 1,522 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.1% of the game's own code (472,332 of 3,354,776 bytes, 1,527 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -70,9 +70,9 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 201 | 197,192 |
+| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 202 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 90 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.8% | 94 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -1362,6 +1362,7 @@ at the top of the repository's `README.md`.
 | `0x003860b8` | `MessageHandler_Set` | `Scripting` | 176 |
 | `0x00386168` | `SetMsgHandlerEx` | `Scripting` | 304 |
 | `0x00386298` | `SetMsgHandler` | `Scripting` | 112 |
+| `0x00386340` | `Script_SetGeneralCarMsgHandler` | `Scripting` | 48 |
 | `0x00386370` | `gc` | `Scripting` | 48 |
 | `0x003863d8` | `ScheduleFunc` | `Scripting` | 56 |
 | `0x00386410` | `ScheduleFuncArg1` | `Scripting` | 64 |
@@ -1370,6 +1371,8 @@ at the top of the repository's `README.md`.
 | `0x00387ad8` | `Car_Release` | `TaskEngine` | 240 |
 | `0x00387bc8` | `Car_Init` | `TaskEngine` | not filled in |
 | `0x0038a4d8` | `Car_DamagePart` | `TaskEngine` | not filled in |
+| `0x0038ab18` | `Car_TryExplode` | `TaskEngine` | 56 |
+| `0x0038ab50` | `Car_DoExplode` | `TaskEngine` | 1,432 |
 | `0x0038c7d8` | `Car_RemovePartBits` | `TaskEngine` | not filled in |
 | `0x0038d188` | `Car_ReleaseTrunkItem` | `TaskEngine` | not filled in |
 | `0x0038d528` | `Car_SetTrunkItemKind` | `TaskEngine` | not filled in |
@@ -1378,8 +1381,10 @@ at the top of the repository's `README.md`.
 | `0x0038dde8` | `Car_Spawn` | `TaskEngine` | not filled in |
 | `0x0038dea8` | `Car_Destroy` | `TaskEngine` | 64 |
 | `0x0038df38` | `Car_SetColour` | `TaskEngine` | not filled in |
+| `0x0038dfa0` | `Car_Explode` | `TaskEngine` | 64 |
 | `0x0038e068` | `Car_Repair` | `TaskEngine` | not filled in |
 | `0x0038e0f0` | `Car_PlaceInTrunkOnDetach` | `TaskEngine` | not filled in |
+| `0x0038e538` | `CarManager_SetMsgHandler` | `TaskEngine` | 88 |
 | `0x0038f378` | `Glass_Break` | `TaskEngine` | 496 |
 | `0x0038f8a8` | `GlassManager_Create` | `TaskEngine` | 424 |
 | `0x0038fab8` | `GlassTypes_Set` | `TaskEngine` | 40 |

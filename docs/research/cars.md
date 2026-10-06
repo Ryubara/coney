@@ -325,6 +325,10 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   call moves the pinned boot object there, or adds a `dyn_money` spawn record holding the boot's dollars; an instant
   call loses the item, and `CarRemovePart` releases nothing. Nothing in Coney hits cars yet (the hit handler's zones,
   `0x0038bea0`, are not built), so in play the item stays in the boot.
+- **Explosion** (`CarExplode`, `repo:src/scripting/mission4_bindings.h`, `Cars::explode()`): a car not yet exploded
+  takes instant damage on every part (so a boot item is lost) and is marked exploded; without `quiet` its message
+  `0x19` goes to its own handler and then to the cars' general one (`SetGeneralCarMsgHandler`,
+  `MessageHandlers::setGeneralCar()`), with the car as self.
 - `platform::ParkedCars` (`repo:src/platform/parked_cars.h`) draws each car's first 26 atomics, less its removed parts,
   from the type's Object List model, and gives each car a box (12 triangles) that joins the level's collision mesh.
 
@@ -338,6 +342,10 @@ Coney's stand-ins, where this page is silent:
 - A boot item is released 2.5 m behind the car's middle at 0.8 m (the type record's boot offset is not on the page);
   the money pickup's 15 s life is not applied.
 - A name that is not one of the six types still makes a car, which draws nothing.
+- The explosion's look (the car is drawn as before, its parts' kept bits set), effects, sound, 300 damage within 5 m,
+  statistic and alert to the AI are not built; its message carries 0 as the other object and the number, and both
+  the car's handler and the general one are called (which the manager's slots reach, and in which order, is not on
+  the page). A car with `+0x1200` set is not skipped.
 
 ## Open questions
 

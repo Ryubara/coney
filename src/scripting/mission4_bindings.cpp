@@ -14,9 +14,11 @@
 #include "animation/anim_math.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
+#include "scripting/message_handlers.h"
 #include "scripting/story_bindings.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
+#include "world_objects/cars.h"
 #include "world_objects/flags.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/nav_links.h"
@@ -27,6 +29,8 @@ namespace coney::script {
 
 namespace {
 
+// The message a car sends when it explodes.
+constexpr int kCarExploded = 0x19;
 // The most a call-for-help chance can be, percent.
 constexpr std::uint32_t kMaxChance = 100;
 
@@ -105,13 +109,35 @@ binding::Results changeBlocker(const BindingContext& context, std::span<const Va
 
 } // namespace
 
-void addMission4Bindings(LuaVm& vm, const BindingContext& context) {
+void addMission4Bindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context) {
     // ---- The objects.
     vm.registerFunction("ObjGetIndex",
                         [context = &context](std::span<const Value> args) { return objGetIndex(*context, args); });
     vm.registerFunction("GetRTTI", [context = &context](std::span<const Value> args) { return getRtti(*context, args); });
     vm.registerFunction("ChangeBlocker",
                         [context = &context](std::span<const Value> args) { return changeBlocker(*context, args); });
+
+    // ---- The cars.
+    // `CarExplode(car, quiet)`: the wreck, and without `quiet` the car's message 0x19 to its own handler and the
+    // cars' general one. Coney stand-ins: the blast's effects and sound, its 300 damage to the humans within 5 m, the
+    // statistic and the alert to the AI nearby are not built, and the message's other object and number are 0.
+    // @orig 0x0038dfa0 Car_Explode (unknown)
+    vm.registerFunction("CarExplode", [context = &context, scripts = &scripts](std::span<const Value> args) {
+        const double car = handleArg(args, 0);
+        if (context->cars != nullptr && context->cars->explode(car) && !boolArg(args, 1) &&
+            context->messages != nullptr) {
+            static_cast<void>(context->messages->deliverFromCar(*scripts, car, kCarExploded, 0.0, 0.0));
+        }
+        return binding::none();
+    });
+    // `SetGeneralCarMsgHandler(message, fn)`: nil removes it.
+    // @orig 0x00386340 Script_SetGeneralCarMsgHandler (unknown)
+    vm.registerFunction("SetGeneralCarMsgHandler", [context = &context](std::span<const Value> args) {
+        if (context->messages != nullptr) {
+            context->messages->setGeneralCar(static_cast<int>(wholeArg(args, 0)), stringArg(args, 1));
+        }
+        return binding::none();
+    });
 
     // ---- The game state.
     // `CfgChanceToGetHelp(percent)`: above 100 is 100.

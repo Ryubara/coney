@@ -294,7 +294,7 @@ marshaller with the stored reference when the slot is set ([Cars: explosion](../
   `0x0038e538` `CarManager_SetMsgHandler`
 - **Used by** 10 of 467 script chunks (20 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetHatCallBack {#sethatcallback}
 

@@ -308,7 +308,7 @@ the message: [Cars: explosion](../../research/cars.md#explode).
   `Car_TryExplode`, `0x0038ab50` `Car_DoExplode`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CarMakeGoodAsNew {#carmakegoodasnew}
 

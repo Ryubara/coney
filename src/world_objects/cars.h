@@ -56,6 +56,7 @@ struct Car {
     bool trunkLoaded = false;               ///< `+0x12e4`: something waits in the boot.
     double trunkObject = 0;                 ///< `+0x120c`: the object in the boot, 0 for none.
     std::uint8_t trunkMoney = 0;            ///< `+0x12e5`: else the dollars a `dyn_money` pickup will hold.
+    bool exploded = false;                  ///< `+0x12d5`: it has blown up.
 };
 
 /// What `Car_UpdateRender` makes of a paint word for the model: `CarSetColor`'s `{c1, c2, c3, c4}` stored in that
@@ -145,6 +146,12 @@ class Cars {
     /// one (the car exploding) loses it. A part already off takes nothing. Returns whether the part came off now.
     /// @orig 0x0038a4d8 Car_DamagePart (unknown)
     bool damagePart(double handle, std::uint32_t part, float amount, bool instant);
+    /// `CarExplode`'s wreck: a car not yet exploded has every part not already off knocked off (instant damage, so a
+    /// loaded boot's item is lost) and is marked exploded. Returns whether it exploded now (false for an unknown car or
+    /// one exploded already).
+    /// @orig 0x0038ab18 Car_TryExplode (unknown)
+    /// @orig 0x0038ab50 Car_DoExplode (unknown)
+    bool explode(double handle);
     /// Where a car's boot item is released (game axes). **Coney's stand-in**: the boot's offset in the type record
     /// (`0x0057e4b0`) is not on the page, so 2.5 m behind the car's middle at 0.8 m, turned with the car.
     [[nodiscard]] static anim::Vec3 bootPosition(const Car& car);

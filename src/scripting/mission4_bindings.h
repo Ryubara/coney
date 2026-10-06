@@ -7,10 +7,11 @@
 
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
+#include "scripting/script_system.h"
 
 // The bindings the story's fourth mission (`level34`) adds: the object type index and run-time type bits, the
 // civilians' call-for-help chance, the forced crime level, a brain's pedestrian type, a human's wound, the gangs'
-// spawner limits and the blocking of a walkable area.
+// spawner limits, the blocking of a walkable area, a car's explosion and the cars' general message handler.
 // Research: docs/references/bindings/story.md#level34, docs/references/bindings/world.md,
 // docs/references/bindings/util.md, docs/references/bindings/config.md, docs/references/bindings/level.md,
 // docs/references/bindings/ai.md, docs/references/bindings/character.md
@@ -18,15 +19,17 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addMission4Bindings().
-inline constexpr std::array<std::string_view, 9> kMission4Bindings{"BrSetPedType",
-                                                                  "CfgChanceToGetHelp",
-                                                                  "ChangeBlocker",
-                                                                  "ForceCrimeLevel",
-                                                                  "GangSetMaxConcurrent",
-                                                                  "GangSetSpawnerMustBeOffScreen",
-                                                                  "GetRTTI",
-                                                                  "HuSetWounded",
-                                                                  "ObjGetIndex"};
+inline constexpr std::array<std::string_view, 11> kMission4Bindings{"BrSetPedType",
+                                                                   "CarExplode",
+                                                                   "CfgChanceToGetHelp",
+                                                                   "ChangeBlocker",
+                                                                   "ForceCrimeLevel",
+                                                                   "GangSetMaxConcurrent",
+                                                                   "GangSetSpawnerMustBeOffScreen",
+                                                                   "GetRTTI",
+                                                                   "HuSetWounded",
+                                                                   "ObjGetIndex",
+                                                                   "SetGeneralCarMsgHandler"};
 
 /// The run-time type bits `GetRTTI` gives (docs/references/bindings/util.md#getrtti).
 namespace rtti {
@@ -40,6 +43,6 @@ inline constexpr std::uint32_t kFlag = 0x80;  ///< A world flag.
 /// level objects and story host).
 ///
 /// Research: docs/references/bindings/story.md#level34
-void addMission4Bindings(LuaVm& vm, const BindingContext& context);
+void addMission4Bindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context);
 
 } // namespace coney::script

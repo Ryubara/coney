@@ -34,12 +34,40 @@ std::string_view MessageHandlers::handler(double object, int message) const {
     return found == m_handlers.end() ? std::string_view{} : std::string_view(found->second);
 }
 
+void MessageHandlers::setGeneralCar(int message, std::string callback) {
+    if (message < 0 || message >= kMessages) {
+        return;
+    }
+    if (callback.empty()) {
+        m_generalCar.erase(message);
+        return;
+    }
+    m_generalCar[message] = std::move(callback);
+}
+
+std::string_view MessageHandlers::generalCarHandler(int message) const {
+    const auto found = m_generalCar.find(message);
+    return found == m_generalCar.end() ? std::string_view{} : std::string_view(found->second);
+}
+
+bool MessageHandlers::deliverFromCar(ScriptSystem& scripts, double car, int message, double other, double value) const {
+    const bool own = deliver(scripts, car, message, car, other, value);
+    const std::string_view general = generalCarHandler(message);
+    const bool any = !general.empty() && call(scripts, general, car, message, car, other, value);
+    return own || any;
+}
+
 bool MessageHandlers::deliver(ScriptSystem& scripts, double object, int message, double subject, double other,
                               double value) const {
     const std::string_view function = handler(object, message);
     if (function.empty()) {
         return false;
     }
+    return call(scripts, function, object, message, subject, other, value);
+}
+
+bool MessageHandlers::call(ScriptSystem& scripts, std::string_view function, double object, int message, double subject,
+                           double other, double value) {
     // The arguments by number (docs/research/scripting.md#message-handlers).
     std::vector<Value> args;
     bool asksResult = false;

@@ -69,6 +69,7 @@
     car's message slot (vtable 0x00544c08 `+0x44`, 0x00389700) forwards every message to 0x0038ebf8, which calls
     the marshaller with the stored reference when the slot is set ([Cars: explosion](../../research/cars.md#explode)).
   usage: {chunks: 10, calls: 20, boot: false, mission1: false, result_used: false, levels: [34, 2, 3, 5, 93, 14, 82, 92]}
+  coney: implemented
 
 - name: SetMsgHandlerEx
   wrapper: 0x0036d348
