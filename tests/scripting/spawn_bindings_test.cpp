@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The object database and the dynamic objects' spawn records (docs/research/objects.md#dynamic-objects): CfgObj's
 // types and their model hashes, ObjSpawn's records and handles, the suppressed keys, the pool CfgSetDatabaseSizes
-// makes, resolving and pinning a record, and a fresh state's empty database.
+// makes, resolving and pinning a record, and a fresh state's empty records but kept types.
 #include "scripting/spawn_bindings.h"
 
 #include <array>
@@ -198,13 +198,14 @@ TEST_CASE("resolving a record makes it live, pinning keeps it, a removed one sta
     CHECK(records.resolve(99) == nullptr);
 }
 
-TEST_CASE("a fresh script state starts with no types and no records", "[spawn_bindings]") {
+TEST_CASE("a fresh script state starts with no records but keeps the types", "[spawn_bindings]") {
     Harness h;
     h.first("CfgObj", {str("crate"), str("simple_object"), Value(0.0)});
     h.first("ObjSpawn", {str("crate"), list({0, 0, 0}), list({0, 0, 0, 1})});
     REQUIRE(h.types.all().size() == 1);
     REQUIRE(h.records.all().size() == 1);
     h.scripts.create();
-    CHECK(h.types.all().empty());
+    // The preloads' types outlive the state that ran them: a level's state never configures them again.
+    CHECK(h.types.all().size() == 1);
     CHECK(h.records.all().empty());
 }

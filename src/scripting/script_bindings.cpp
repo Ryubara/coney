@@ -1228,11 +1228,9 @@ std::size_t RecordedCalls::total() const {
 void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context) {
     CONEY_ASSERT(context.state != nullptr && context.strings != nullptr && context.host != nullptr);
     const Factory factory{&scripts, &context, std::make_shared<HandleCounter>()};
-    // A fresh state configures the object types again and spawns its level's objects anew; the last state's handles
-    // name nothing in it.
-    if (context.objectTypes != nullptr) {
-        context.objectTypes->clear();
-    }
+    // A fresh state spawns its level's objects anew; the last state's handles name nothing in it. The object types
+    // stay: the legal screen's preloads configure them once (`config_preload3.lua`), and no later state runs them
+    // again (scripting.md, "Life of the Lua state").
     if (context.spawnRecords != nullptr) {
         context.spawnRecords->clear();
     }

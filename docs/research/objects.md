@@ -613,7 +613,8 @@ the bindings in `src/scripting/spawn_bindings.h`): `CfgObj` adds a type (name, c
 CRC-32 of the name) and still records its arguments for what reads the rest; `ObjSpawn` adds a spawn record (type,
 position, rotation, zone, flags, tint, flag name) and returns its handle; `CfgSetDatabaseSizes` makes the pool (its
 object count plus 500). Resolving a handle marks its record live and pinning keeps it. A fresh script state starts
-with neither.
+with no records but keeps the types, which the legal screen's preloads configure once
+([Scripting](scripting.md#life-of-the-lua-state)).
 **Coney's choices:** a record's handle comes from the counter every world object's handle comes from, not the record
 index << 16 (record 0 would be `NilHandle`); the rotation is kept as given rather than packed into s16 × 4,096; there
 are no object tasks yet, so "live" marks a record a consumer draws; and the keys and the power cuffs are always
