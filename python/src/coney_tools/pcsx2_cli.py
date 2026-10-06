@@ -265,6 +265,20 @@ def run_prepare_state(source: str, out: Path, patch_names: list[str], pcsx2_dir:
     return 0
 
 
+def run_repack_state(source: str, out: Path, pcsx2_dir: Path | None) -> int:
+    """`pcsx2 repack-state`: copy a state with plain deflate in place of zstd."""
+    refuse_inside_repo(out)
+    try:
+        pcsx2 = pcsx2_dir or _config_paths().get("pcsx2_dir")
+        state = _source_state(source, pcsx2)
+        forbidden = [pcsx2 / "sstates"] if pcsx2 is not None else []
+        count = pcsx2_state.repack(state, out, forbidden)
+    except StateError as error:
+        raise ConfigError(str(error)) from error
+    print(f"{out}: {count} entries rewritten with deflate ({out.stat().st_size:,} bytes)")
+    return 0
+
+
 def run_launch(state: Path, pcsx2_dir: Path | None, iso: Path | None, scratch: Path | None) -> int:
     """`pcsx2 launch`: start PCSX2 on a state file, wait for its game, and leave it running."""
     paths = resolve_paths(pcsx2_dir, iso, scratch)

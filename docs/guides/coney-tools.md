@@ -257,6 +257,16 @@ PCSX2's `sstates/` folder, and refuses the copy when the state does not hold a p
 PCSX2 saves states with zstd, which Python reads from 3.14 (uv installs it).
 
 ```sh
+uv run --project python coney-tools pcsx2 repack-state SOURCE OUT
+```
+
+Copies a save state (a `.p2s` file or `slot:N`, only read) to `OUT` with every compressed entry rewritten with plain
+deflate, the same contents byte for byte. Ghidra's zip reader, which the EE extension's `PCSX2SaveStateImporter.java`
+script uses, cannot read PCSX2's zstd, and Python cannot write PCSX2's other choice, Deflate64; plain deflate is read
+by all three, so PCSX2's own compression setting stays as it is. The same refusals as `prepare-state` apply. Why we
+do not usually load states into Ghidra: [Tools](research-workflow.md#tools).
+
+```sh
 uv run --project python coney-tools pcsx2 launch STATE
 ```
 

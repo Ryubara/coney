@@ -253,6 +253,45 @@ def test_a_copy_never_goes_into_sstates_or_over_its_source(tmp_path: Path) -> No
         pcsx2_state.prepare(source, source, _patches(tmp_path), [])
 
 
+def test_a_repacked_copy_has_the_same_entries_in_deflate(tmp_path: Path) -> None:
+    source = tmp_path / "source.p2s"
+    with zipfile.ZipFile(source, "w") as state:
+        state.writestr("PCSX2 Savestate Version.id", b"made up")
+        state.writestr(zipfile.ZipInfo(pcsx2_state.EE_MEMORY), b"" * 4096, zipfile.ZIP_BZIP2)
+        state.writestr(zipfile.ZipInfo("Screenshot.png"), b"not a png", zipfile.ZIP_STORED)
+    before = source.read_bytes()
+    count = pcsx2_state.repack(source, tmp_path / "out" / "copy.p2s", [])
+    assert count == 1
+    assert source.read_bytes() == before
+    with zipfile.ZipFile(source) as original, zipfile.ZipFile(tmp_path / "out" / "copy.p2s") as copy:
+        assert copy.namelist() == original.namelist()
+        methods = {info.filename: info.compress_type for info in copy.infolist()}
+        for name in original.namelist():
+            assert copy.read(name) == original.read(name)
+    assert methods[pcsx2_state.EE_MEMORY] == zipfile.ZIP_DEFLATED
+    assert methods["Screenshot.png"] == zipfile.ZIP_STORED
+    assert not (tmp_path / "out" / "copy.p2s.partial").exists()
+
+
+def test_a_repacked_copy_never_goes_into_sstates_or_over_its_source(tmp_path: Path) -> None:
+    source = _state(tmp_path / "source.p2s", 0x92220002)
+    slots = tmp_path / "pcsx2" / "sstates"
+    with pytest.raises(pcsx2_state.StateError, match="quick-save"):
+        pcsx2_state.repack(source, slots / "copy.p2s", [slots])
+    with pytest.raises(pcsx2_state.StateError, match="source"):
+        pcsx2_state.repack(source, source, [])
+    assert not slots.exists()
+
+
+def test_a_repack_refuses_a_zip_that_is_not_a_state(tmp_path: Path) -> None:
+    source = tmp_path / "other.zip"
+    with zipfile.ZipFile(source, "w") as other:
+        other.writestr("readme.txt", b"hello")
+    with pytest.raises(pcsx2_state.StateError, match="not a PCSX2 save state"):
+        pcsx2_state.repack(source, tmp_path / "copy.p2s", [])
+    assert not (tmp_path / "copy.p2s").exists()
+
+
 def test_bad_patch_files_are_named(tmp_path: Path) -> None:
     file = tmp_path / "patches.toml"
     file.write_text("[patch.x]\nedits = [{ address = 0x10, original = [1], replacement = [1, 2] }]\n", encoding="utf-8")

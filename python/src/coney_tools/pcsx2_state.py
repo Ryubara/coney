@@ -22,6 +22,9 @@ edits = [
 `original` there, which catches a state of another version or a patch at the wrong address. `bytes` writes data
 without a check (spare memory with no known content).
 
+A repacked copy (`repack`) has the same contents with plain deflate instead of zstd, for readers that cannot read
+zstd, such as Ghidra's.
+
 The source state is only read: copies go wherever the caller says, never over the source and never into PCSX2's
 `sstates/` folder, where the quick-save slots live.
 """
@@ -149,20 +152,23 @@ def slot_path(pcsx2_dir: Path, slot: int) -> Path:
     return pcsx2_dir / "sstates" / SLOT_NAME.format(slot=slot)
 
 
-def prepare(source: Path, destination: Path, patches: list[Patch], forbidden: list[Path]) -> int:
-    """Copy the state `source` to `destination` with `patches` applied to its EE memory; returns the edit count.
-
-    The source is only read. Raises StateError when the destination is the source or lies in one of the `forbidden`
-    folders (PCSX2's `sstates/`), when a state cannot be read, or when an edit's original bytes are not there.
-    """
+def _check_destination(source: Path, destination: Path, forbidden: list[Path]) -> Path:
+    """The resolved `destination` of a copy of `source`. Raises StateError when it is the source or lies in one of
+    the `forbidden` folders (PCSX2's `sstates/`)."""
     target = destination.resolve()
     if target == source.resolve():
-        raise StateError(f"{destination}: is the source state; a patched state is always a copy")
+        raise StateError(f"{destination}: is the source state; a patched or repacked state is always a copy")
     for folder in forbidden:
         if target.is_relative_to(folder.resolve()):
             raise StateError(
                 f"{destination}: is in {folder}, where the quick-save slots live; write the copy elsewhere"
             )
+    return target
+
+
+def read_state(source: Path) -> list[tuple[zipfile.ZipInfo, bytes]]:
+    """Every entry of the state `source`, header and contents, in order. Raises StateError when it cannot be read or
+    has no EE memory."""
     try:
         with zipfile.ZipFile(source) as state:
             entries = [(info, state.read(info.filename)) for info in state.infolist()]
@@ -170,20 +176,60 @@ def prepare(source: Path, destination: Path, patches: list[Patch], forbidden: li
         raise StateError(f"{source}: {error}; PCSX2 states use zstd, which Python reads from 3.14") from error
     except (OSError, zipfile.BadZipFile) as error:
         raise StateError(f"{source}: not a readable PCSX2 save state ({error})") from error
-    found = [i for i, (info, _) in enumerate(entries) if info.filename == EE_MEMORY]
-    if not found:
+    if not any(info.filename == EE_MEMORY for info, _ in entries):
         raise StateError(f"{source}: has no {EE_MEMORY}; not a PCSX2 save state")
-    # Patch first, so a refused edit leaves no file behind.
-    memory = bytearray(entries[found[0]][1])
-    if len(memory) != EE_MEMORY_SIZE:
-        raise StateError(f"{source}: its {EE_MEMORY} is {len(memory)} bytes, not the EE's 32 MB")
-    count = apply(memory, patches)
-    entries[found[0]] = (entries[found[0]][0], bytes(memory))
+    return entries
+
+
+def _write_state(target: Path, entries: list[tuple[zipfile.ZipInfo, bytes]]) -> None:
+    """Write `entries` as a zip at `target`, through a `.partial` file so that a failed write leaves nothing there."""
     target.parent.mkdir(parents=True, exist_ok=True)
     partial = target.with_name(target.name + ".partial")
     with zipfile.ZipFile(partial, "w") as copy:
         for info, data in entries:
-            # The entry's own header (name, date, method) is kept, so PCSX2 reads the copy as it reads the original.
             copy.writestr(info, data)
     partial.replace(target)
+
+
+def prepare(source: Path, destination: Path, patches: list[Patch], forbidden: list[Path]) -> int:
+    """Copy the state `source` to `destination` with `patches` applied to its EE memory; returns the edit count.
+
+    The source is only read. Raises StateError when the destination is the source or lies in one of the `forbidden`
+    folders (PCSX2's `sstates/`), when a state cannot be read, or when an edit's original bytes are not there.
+    """
+    target = _check_destination(source, destination, forbidden)
+    entries = read_state(source)
+    found = next(i for i, (info, _) in enumerate(entries) if info.filename == EE_MEMORY)
+    # Patch first, so a refused edit leaves no file behind.
+    memory = bytearray(entries[found][1])
+    if len(memory) != EE_MEMORY_SIZE:
+        raise StateError(f"{source}: its {EE_MEMORY} is {len(memory)} bytes, not the EE's 32 MB")
+    count = apply(memory, patches)
+    entries[found] = (entries[found][0], bytes(memory))
+    # The entry's own header (name, date, method) is kept, so PCSX2 reads the copy as it reads the original.
+    _write_state(target, entries)
+    return count
+
+
+def repack(source: Path, destination: Path, forbidden: list[Path]) -> int:
+    """Copy the state `source` to `destination` with every compressed entry rewritten with plain deflate; returns the
+    number of entries rewritten.
+
+    Ghidra's zip reader (which the EE extension's `PCSX2SaveStateImporter` script uses) cannot read zstd, PCSX2's
+    default, and Python cannot write Deflate64, the other method PCSX2 offers; plain deflate is read by Ghidra, PCSX2
+    and Python alike. Stored entries stay stored. The source is only read; the same refusals as `prepare` apply.
+    """
+    target = _check_destination(source, destination, forbidden)
+    entries = read_state(source)
+    rewritten: list[tuple[zipfile.ZipInfo, bytes]] = []
+    count = 0
+    for info, data in entries:
+        # A fresh header, so nothing of the zstd entry (its method's version number, flags) carries over.
+        header = zipfile.ZipInfo(info.filename, info.date_time)
+        header.external_attr = info.external_attr
+        if info.compress_type != zipfile.ZIP_STORED:
+            header.compress_type = zipfile.ZIP_DEFLATED
+            count += 1
+        rewritten.append((header, data))
+    _write_state(target, rewritten)
     return count

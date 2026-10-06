@@ -197,6 +197,10 @@ def _add_pcsx2_commands(groups: Any) -> None:
         "--patch", nargs="+", default=[], metavar="NAME", help="patches of research/traces/patches.toml"
     )
     prepare.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
+    repack = commands.add_parser("repack-state", help="copy a save state with plain deflate in place of zstd")
+    repack.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")
+    repack.add_argument("out", type=Path, help="the repacked copy (outside the repository and sstates/)")
+    repack.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
     launch = commands.add_parser("launch", help="start PCSX2 on a state file and wait until its game runs")
     launch.add_argument("state", type=Path, help="a .p2s file (a patched copy)")
     _add_pcsx2_flags(launch)
@@ -272,6 +276,8 @@ def _run_pcsx2(args: argparse.Namespace) -> int:
     """Dispatch a `pcsx2` command."""
     if args.command == "prepare-state":
         return pcsx2_cli.run_prepare_state(args.source, args.out, args.patch, args.pcsx2_dir)
+    if args.command == "repack-state":
+        return pcsx2_cli.run_repack_state(args.source, args.out, args.pcsx2_dir)
     if args.command == "launch":
         return pcsx2_cli.run_launch(args.state, args.pcsx2_dir, args.iso, args.scratch)
     flags = (args.pcsx2_dir, args.iso, args.scratch)
