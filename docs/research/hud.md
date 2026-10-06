@@ -625,8 +625,8 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
 the counter slots' `x0` 0 and lines at y 0.104 and 0.154, the count 0.022 right of its icon; handcuff and key icons
 `part_page0` 31 and 34; the money's icon a `$`; the popups' places; the money cue once per count; the built-in
 announcements' texts from `GSTRING.ANNOUNCE` by kind; a `<FREEZE>` hint shown for its time (at least 2 s) as the game
-timer does not freeze yet; the prompt's text set by the game code or the debug menu, not chosen by `HUD_Update`, and no
-letterbox state given by the play mode yet; the counter panels' texts right-aligned on x 0.96; the radar disc
+timer does not freeze yet; the prompt's text set by the game code or the debug menu, not chosen by `HUD_Update`;
+the counter panels' texts right-aligned on x 0.96; the radar disc
 `big_font` 256 sized from the measurement, a dark disc for the map, the player's icon 362 at the centre and no other
 blips drawn; the arrow turned only by half turns (no rotated sprites yet); player 1's other parts 0.09 right of player
 0's; the HUD shown at start.

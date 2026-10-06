@@ -13,6 +13,7 @@
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
 #include "gui/rumble_mode_gui/rumble_menu.h"
+#include "scripting/hud_bindings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_bindings.h"
 
@@ -71,6 +72,9 @@ LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view 
           source,
           [this](script::ScriptSystem& system, script::LuaVm& vm) { script::installBindings(system, vm, m_context); },
           log) {
+    // The HUD the scripts' HUD bindings act on, before the first Lua state (below).
+    m_context.hud = &m_hud;
+    m_hud.setServices(script::hudServicesOf(m_context));
     if (options.randomTable.size() == GameRandom::kTableSize) {
         m_state.random.setTable(options.randomTable);
     }

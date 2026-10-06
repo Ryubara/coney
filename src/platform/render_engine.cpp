@@ -367,8 +367,10 @@ void RenderEngine::drawWindowRects(std::span<const graphics::LogicalQuad> quads)
 
 void RenderEngine::present() {
     CONEY_ASSERT(m_inFrame);
-    if (m_frameOverlay) {
-        std::exchange(m_frameOverlay, {})(*this);
+    // The modes' 2D layers for this frame first, taken out first so that a layer may add the next frame's; then the
+    // debug menus over them.
+    for (const std::function<void(RenderEngine&)>& overlay : std::exchange(m_frameOverlays, {})) {
+        overlay(*this);
     }
     if (m_presentOverlay) {
         m_presentOverlay(*this);

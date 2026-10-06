@@ -511,6 +511,17 @@ int main(int argc, char** argv) {
     };
     // The story level `--play-level` names, made once the sound exists so its scripts' preloads configure the sound.
     std::optional<std::string> commandLineLevel;
+    // The HUD's sound output (docs/research/hud.md#coneys-implementation): the game-facing SoundPlayer's play, set once
+    // the sound output starts (below) and empty without sound. Every HUD a play mode or the story holds plays through
+    // it.
+    std::function<void(std::string_view)> hudPlay;
+    const auto hudSound = [&hudPlay]() -> std::function<void(std::string_view)> {
+        return [&hudPlay](std::string_view name) {
+            if (hudPlay) {
+                hudPlay(name);
+            }
+        };
+    };
     // A level played on its own (`--play-level NAME`, the Levels page): gameplay (mode 1) over the level's scripts as
     // the story reaches them, its level loaded as the play mode. The scripts outlive the gameplay that runs them.
     std::unique_ptr<coney::LevelScripts> levelScripts;
@@ -534,6 +545,7 @@ int main(int argc, char** argv) {
             }
             (*mode)->setDebugDraw(storyDebugDraw);
             (*mode)->setSounds(playSounds);
+            (*mode)->useHud(scripts.hud());
             if (commandLine) {
                 // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's start.
                 if (const std::optional<coney::StartPlace> place = options->start; place) {
@@ -559,6 +571,7 @@ int main(int argc, char** argv) {
         levelGameplay->setLevel(name);
         levelGameplay->setSceneMaker(sceneMaker);
         levelGameplay->setObjectSounds(&objectSounds);
+        scripts.hud().setSoundOutput(hudSound());
     };
     // The play mode of a level played on its own; null when none is loaded.
     const auto levelPlayMode = [&levelGameplay]() -> coney::platform::PlayLevelMode* {
@@ -689,7 +702,7 @@ int main(int argc, char** argv) {
         // Gameplay (mode 1) loads the chosen level as the play mode, with player 1 where the level script made him.
         const coney::io::Wad& gameWad = *wad;
         coney::GameplayMode::LevelLoader loadLevel =
-            [&renderer, &gameWad, &sectorBudget, &storyDebugDraw, &playSounds](
+            [&renderer, &gameWad, &sectorBudget, &storyDebugDraw, &playSounds, &startUp](
                 const coney::LevelStart& start,
                 const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
             // The fighters as the flow's scripts configured them.
@@ -699,6 +712,10 @@ int main(int argc, char** argv) {
             }
             (*mode)->setDebugDraw(storyDebugDraw);
             (*mode)->setSounds(playSounds);
+            // The game's HUD, which the scripts' bindings act on.
+            if (startUp) {
+                (*mode)->useHud(startUp->hud());
+            }
             return std::unique_ptr<coney::GameMode>(std::move(*mode));
         };
         // The saved profiles: the player's folder, or none in test mode (docs/research/save.md#coney).
@@ -844,6 +861,12 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "coney: %s; running without sound\n", started.error().message.c_str());
         }
     }
+    if (audio) {
+        hudPlay = [&audio](std::string_view name) { audio->sounds().play(name); };
+    }
+    if (startUp) {
+        startUp->hud().setSoundOutput(hudSound());
+    }
     // The front end's banks, music and cues, and the scripts' sound bindings, go to the game's sound.
     if (startUp && gameSound != nullptr) {
         connectSound(startUp->scripts(), startUp->context());
@@ -943,6 +966,7 @@ int main(int argc, char** argv) {
     if (playLevel) {
         playLevel->setDebugDraw(&debugSession.debugDraw());
         playLevel->setSounds(audio ? &audio->sounds() : nullptr);
+        playLevel->hud()->setSoundOutput(hudSound());
     }
     storyDebugDraw = &debugSession.debugDraw();
     // The mode a sandbox or level the Levels page plays replaces: the play mode, the level's gameplay or the sandbox
@@ -985,6 +1009,7 @@ int main(int argc, char** argv) {
             playLevel = std::move(*mode);
             playLevel->setDebugDraw(&debugSession.debugDraw());
             playLevel->setSounds(audio ? &audio->sounds() : nullptr);
+            playLevel->hud()->setSoundOutput(hudSound());
             modes.push(*playLevel);
             return;
         }

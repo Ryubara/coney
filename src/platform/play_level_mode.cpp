@@ -242,6 +242,9 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
                                 m_ai->config().callsRead));
         }
     }
+    // The HUD, with the player on panel 0 (docs/research/hud.md#the-player-panel).
+    m_hud = HudLayer::create(wad, engine.drawsPixels(), m_print);
+    m_hud->hud().attachPlayer(0, m_type);
     makeStage();
     // A scene's camera is player 1's scene camera, pushed over the camera shown and popped back at its end.
     if (cast != nullptr) {
@@ -253,6 +256,11 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         attachScenes(cast->scenes, player != nullptr ? player->handle : 0.0);
     }
     m_levelEffects = std::move(levelEffects);
+}
+
+void PlayLevelMode::useHud(hud::Hud& shared) {
+    m_hud->useHud(shared);
+    shared.attachPlayer(0, m_type);
 }
 
 PlayLevelMode::~PlayLevelMode() {
@@ -483,6 +491,18 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     m_lights->step(stepView, m_scenery->collision(), m_player->human().position(),
                    static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
     m_scenery->findVisible(stepView);
+    // The HUD's step (docs/research/hud.md#the-huds-frame), with the player's rage on panel 0.
+    hud::HudFrame hudFrame;
+    hudFrame.nowMs = millisecondsOf(frame.gameTicks);
+    hudFrame.pads.at(0) = &playerPad;
+    hudFrame.levelNumber = m_levelNumber;
+    // A scene's letterbox in or moving hides the HUD.
+    hudFrame.letterbox = m_stage->barHeight(hudFrame.nowMs) > 0.0F;
+    const combat::RageMeter& rage = m_player->human().fighter().combat().rage();
+    hudFrame.players.at(0).rage = rage.value();
+    hudFrame.players.at(0).rageMax = rage.maximum();
+    hudFrame.players.at(0).raging = rage.raging();
+    m_hud->step(hudFrame);
     ++m_stats.frames;
     return ModeResult::Stay;
 }
@@ -540,14 +560,15 @@ void PlayLevelMode::render(const RenderTime& time) {
             m_lights->addShadow(ground, pose.feet);
         }
     }
-    // The scenery draws itself through the blended view, with the character and the debug lines among its objects;
-    // the scene's letterbox and fade go over it.
-    m_engine.setFrameOverlay([this, nowMs = millisecondsOf(time.gameTicks)](RenderEngine& engine) {
-        if (m_levelEffects) {
-            m_levelEffects->drawOverlay(engine);
-        }
-        m_stage->drawOverlay(engine, nowMs);
-    });
+    // Over the frame, before its present: the level's screen effects, the HUD's sprites of the newest step, then the
+    // scene's letterbox and fade. The scenery draws itself through the blended view, with the character and the debug
+    // lines among its objects.
+    if (m_levelEffects) {
+        m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawOverlay(engine); });
+    }
+    m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hud->draw(engine); });
+    m_engine.addFrameOverlay(
+        [this, nowMs = millisecondsOf(time.gameTicks)](RenderEngine& engine) { m_stage->drawOverlay(engine, nowMs); });
     m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot, &blended] {
         // The parked cars, lit as the level lights humans (**Coney's stand-in**: how cars are lit is not traced).
         if (m_levelEffects) {

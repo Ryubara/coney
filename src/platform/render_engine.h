@@ -9,6 +9,7 @@
 #include <span>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "core/error.h"
 #include "graphics/frame_stats.h"
@@ -103,9 +104,14 @@ class RenderEngine final : public graphics::RenderDevice {
     /// states. Only between beginFrame() and present() (checked by CONEY_ASSERT); draws nothing with the NULL backend.
     void drawWindowRects(std::span<const graphics::LogicalQuad> quads);
 
-    /// Sets what present() draws over this frame only, before the present overlay: a mode's 2D over its own 3D pass
-    /// (a cinematic's letterbox and fades), when something else presents the frame. present() clears it.
-    void setFrameOverlay(std::function<void(RenderEngine&)> overlay) { m_frameOverlay = std::move(overlay); }
+    /// Adds a layer present() draws over this frame only, before the present overlay: a mode's 2D over its own 3D pass
+    /// when something else presents the frame (the play mode's HUD, then a cinematic's letterbox and fades, then what
+    /// goes over them, such as the pause menu). The layers draw in the order they were added; present() clears them.
+    void addFrameOverlay(std::function<void(RenderEngine&)> overlay) {
+        if (overlay) {
+            m_frameOverlays.push_back(std::move(overlay));
+        }
+    }
 
     /// Draws `texture` stretched over `rect` (screen pixels, from the top left), blended by its alpha. Only between
     /// beginFrame() and present(), and only with the OpenGL backend (both checked by CONEY_ASSERT); the texture's
@@ -170,8 +176,8 @@ class RenderEngine final : public graphics::RenderDevice {
     std::optional<std::uint64_t> m_captureFrame;
     std::string m_capturePath;
     std::optional<std::expected<CapturedFrame, Error>> m_capture;
-    std::function<void(graphics::RenderDevice&)> m_presentOverlay; // drawn at the end of every frame
-    std::function<void(RenderEngine&)> m_frameOverlay;             // drawn at the end of this frame only
+    std::function<void(graphics::RenderDevice&)> m_presentOverlay;   // drawn at the end of every frame
+    std::vector<std::function<void(RenderEngine&)>> m_frameOverlays; // drawn at the end of this frame only, in order
 };
 
 } // namespace coney::platform

@@ -11,6 +11,7 @@
 
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
+#include "hud/hud.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
@@ -119,6 +120,8 @@ class LevelScripts {
     [[nodiscard]] world_objects::ObjectTypes& objectTypes() { return m_objectTypes; }
     [[nodiscard]] world_objects::SpawnRecords& spawnRecords() { return m_spawnRecords; }
     [[nodiscard]] script::RecordedCalls& recorded() { return m_recorded; }
+    /// The HUD the scripts' HUD bindings act on, for the play mode to draw (PlayLevelMode::useHud()).
+    [[nodiscard]] hud::Hud& hud() { return m_hud; }
 
   private:
     GameState m_state;
@@ -133,6 +136,7 @@ class LevelScripts {
     world_objects::SpawnRecords m_spawnRecords;
     QuietBindingHost m_host;
     gui::RumbleData m_rumbleData;
+    hud::Hud m_hud;
     script::BindingContext m_context;
     script::ScriptSystem m_scripts; // after everything its bindings refer to
 };

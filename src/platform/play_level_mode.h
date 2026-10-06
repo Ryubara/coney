@@ -30,6 +30,7 @@
 #include "human/player.h"
 #include "human/target_human.h"
 #include "platform/character_mesh.h"
+#include "platform/hud_layer.h"
 #include "platform/play_lighting.h"
 #include "platform/play_scenery.h"
 #include "platform/render_engine.h"
@@ -226,6 +227,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// The model the player is drawn as.
     [[nodiscard]] const std::string& model() const { return m_model; }
 
+    /// The HUD the mode steps and draws (its own until useHud()), for the HUD page and the scripts.
+    [[nodiscard]] hud::Hud* hud() override { return &m_hud->hud(); }
+    /// Steps and draws `shared` (the game's HUD, which the scripts' bindings act on; it must outlive the mode) instead
+    /// of the mode's own, with the player attached to its panel 0.
+    void useHud(hud::Hud& shared);
+
   private:
     // A character's resources and its texture dictionaries, ready to draw.
     struct LoadedCharacter {
@@ -377,6 +384,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::uint64_t m_traceSteps = 0;
     // The level's parked cars, particles and motion blur (play_level_effects.h), when gameplay brought them.
     std::unique_ptr<PlayLevelEffects> m_levelEffects;
+    std::unique_ptr<HudLayer> m_hud; // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
 };
 
 } // namespace coney::platform
