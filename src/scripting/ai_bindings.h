@@ -83,6 +83,15 @@ struct DealerCall {
     bool option = true;  ///< true when omitted.
 };
 
+/// `FlagNetTraverse(human, mode, chance, flagA, flagB)`, or its short form (the defaults).
+struct FlagNetTraverseCall {
+    double human = 0;
+    int mode = 0;       ///< 0 keeps the pace; 1 and 6-9 walk; 2 faster; 3 a third pace.
+    int chance = 0;     ///< 0-100.
+    bool flagA = false; ///< Meaning not traced.
+    bool flagB = false; ///< Meaning not traced.
+};
+
 class HumanBindingHost;
 
 /// `TacticConfront(gang, targetGang, approachRange, criticalRange, confrontation, slotSet, callback, anim1-5,
@@ -182,6 +191,8 @@ class AiBindingHost {
     /// `GangGetHeadCount(gang, living)` and `GangGetStandingCount(gang)`.
     [[nodiscard]] virtual int gangHeadCount(int /*gang*/, bool /*living*/) { return 0; }
     [[nodiscard]] virtual int gangStandingCount(int /*gang*/) { return 0; }
+    /// `FlagNetTraverse`: the human (not a player's) wanders the level's flag network.
+    virtual void flagNetTraverse(const FlagNetTraverseCall& /*call*/) {}
 
     /// `HuCreate` made `human` (kept in the context's CreatedHumans): from now on its handle names it.
     virtual void humanCreated(const HumanCreation& /*human*/) {}

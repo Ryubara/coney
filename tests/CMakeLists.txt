@@ -110,6 +110,7 @@ add_executable(coney_tests
     scripting/effects_bindings_test.cpp
     scripting/spawn_bindings_test.cpp
     scripting/trigger_bindings_test.cpp
+    scripting/world_bindings_test.cpp
     warriors/disk_profile_store_test.cpp
     warriors/level_table_test.cpp
     warriors/player_state_test.cpp
@@ -131,7 +132,9 @@ add_executable(coney_tests
     world_objects/lock_pick_test.cpp
     world_objects/nav_links_test.cpp
     world_objects/object_list_test.cpp
-    world_objects/volume_boxes_test.cpp)
+    world_objects/volume_boxes_test.cpp
+    world_objects/trigger_spheres_test.cpp
+    world_objects/flag_net_test.cpp)
 # Characters: the animation format and player, and the character resources.
 target_sources(coney_tests PRIVATE
     animation/anim_clip_test.cpp

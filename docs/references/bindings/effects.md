@@ -168,7 +168,7 @@ effect.
 - **Wrapper** `0x0037c748` (registered by `RegisterBindings`); **calls** `0x0017f270` `Shadow_Enable_Stub`
 - **Used by** 4 of 467 script chunks (23 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level52`](story.md#level52) (mission 15)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## End3DFog {#end3dfog}
 

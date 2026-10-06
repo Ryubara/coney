@@ -2811,7 +2811,7 @@ state's reset turns it on for every language but English.
 - **Wrapper** `0x0035e7b0` (registered by `RegisterBindings`); **calls** `0x0041da30` `Cfg_SetSubtitles`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgTagSettings {#cfgtagsettings}
 

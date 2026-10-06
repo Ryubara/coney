@@ -45,6 +45,22 @@ void SpawnRecords::setPinned(double handle, bool pinned) {
     }
 }
 
+bool SpawnRecords::destroy(double handle) {
+    SpawnRecord* record = find(handle);
+    if (record == nullptr || record->removed) {
+        return false;
+    }
+    record->removed = true;
+    record->live = false;
+    return true;
+}
+
+void SpawnRecords::setZoneEnabled(std::uint32_t zone, bool enabled) {
+    if (zone < kZones) {
+        m_zones.set(zone, enabled);
+    }
+}
+
 bool spawnAllowed(std::string_view typeName) {
     // The two names the original checks (0x00581010 compares 7 characters, 0x00581018 the whole name).
     return !typeName.starts_with("dyn_key") && typeName != "dyn_powercuffs";

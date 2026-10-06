@@ -1334,6 +1334,10 @@ ones; `GangSetTargetable` sets each member's targetable byte, kept on the human.
 spawners per gang that do not spawn; `GangClearWanted` has no wanted state to clear; `GangClearResponders` deletes
 non-police gangs named `Responder<n>`. `BrSetThugWantsWeapon` and `SetInterrogateParam` are kept only.
 `CfgSetDefaultFollowSlotSet` writes its sets into every formation, those made later too.
+`FlagNetAddLink` builds the level's flag network (`src/world_objects/flag_net.h`, 128 nodes) and `FlagNetTraverse`
+pushes `PedestrianGoal` (`0x69`) on a human that is not a player's; **stand-in** for its untraced Process: walk
+(mode 2 jog, 3 run) to the node nearest the human, then on to a random linked node within 1 m, for ever, standing at a
+node with no links; the variant `chance` picks and the two flags are kept, not used.
 
 **Open in Coney.** The dispatcher's answer to an AI's command 3 (76 against a grab, 9 against a tackle, as paired moves)
 is not built, nor are an AI's own grabs and tackles (the player grabs and tackles an AI's human,
@@ -1350,8 +1354,9 @@ the run-stop.
 
 ## Open questions {#open-questions}
 
-- What `GoalBackoff`, `GoalBumLogic` and `GoalMoveToUseFlag` do each update (Process), and the use-flag goal's two
-  floats; what `GangInvincible` sets on a member (`0x0016a000`).
+- What `GoalBackoff`, `GoalBumLogic`, `GoalMoveToUseFlag` and the pedestrian goal (`0x69`, with its two variants
+  and `FlagNetTraverse`'s flags) do each update (Process), and the use-flag goal's two floats; what
+  `GangInvincible` sets on a member (`0x0016a000`).
 
 - The per-kind time `0x00231590` that sets the target's `+0x1ec`, and the spacing bytes `+0x14a`, `+0x14b`.
 - The attack pick's adjustments in detail (`0x002240e8` and the attacker-count terms), and the two tokens.

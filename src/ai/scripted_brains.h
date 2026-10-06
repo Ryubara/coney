@@ -20,6 +20,7 @@
 #include "animation/anim_math.h"
 #include "scripting/ai_bindings.h"
 #include "warriors/created_humans.h"
+#include "world_objects/flag_net.h"
 #include "world_objects/flags.h"
 #include "world_objects/volume_boxes.h"
 
@@ -56,6 +57,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// Sets the objects' message handlers (`SetMsgHandler`) the humans' events and the flags' arrivals go to (null for
     /// none). It must outlive this, or be replaced.
     void setMessages(const script::MessageHandlers* messages) { m_messages = messages; }
+    /// Walks `FlagNetTraverse`'s pedestrians on `net` (null: there is none, and they stand); it must outlive them.
+    void setFlagNet(const world_objects::FlagNet* net) { m_flagNet = net; }
     /// Sets the scripts' animation callbacks (null for none), which then resolve handles to the bound humans; it must
     /// outlive this, or be replaced. A bound human's anim starts are kept for runAnimCallbacks().
     void setAnimCallbacks(script::AnimCallbacks* callbacks);
@@ -171,6 +174,9 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void gangMakeFriends(int a, int b) override;
     void gangSetMsgHandler(int gang, int message, std::string_view handler) override;
     void gangSuspend(int gang, bool suspended) override;
+    /// Pushes the pedestrian goal on a human that is not a player's.
+    /// @orig 0x002a78c8 FlagNet_StartTraverse (unknown)
+    void flagNetTraverse(const script::FlagNetTraverseCall& call) override;
     /// The gang's members (only the living with `living`: health left); 0 for no gang. While holding, the humans
     /// created for it count too: **Coney choice**, as Coney runs the start callback before the humans exist.
     [[nodiscard]] int gangHeadCount(int gang, bool living) override;
@@ -228,6 +234,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     world_objects::ObjectLocator m_locate;
     script::ScriptSystem* m_scripts = nullptr;
     const script::MessageHandlers* m_messages = nullptr;
+    const world_objects::FlagNet* m_flagNet = nullptr;
     script::AnimCallbacks* m_animCallbacks = nullptr;
     std::vector<std::pair<double, std::uint32_t>> m_animStarts; // (human, anim id) since runAnimCallbacks()
     Brain* m_player = nullptr;

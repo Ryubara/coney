@@ -12,6 +12,7 @@
 
 #include "ai/address_person_goal.h"
 #include "ai/dealer_goal.h"
+#include "ai/pedestrian_goal.h"
 #include "ai/play_dyn_animation_goal.h"
 #include "ai/tactic_attack.h"
 #include "ai/tactic_confront.h"
@@ -219,6 +220,20 @@ void ScriptedBrains::goalDealer(const script::DealerCall& call) {
         found->pushGoal(std::make_unique<DealerGoal>(*this, dealerTypeFor(found->characterClass(), call.type),
                                                      call.range, call.runChance, call.dirtyChance, call.option));
     }
+}
+
+void ScriptedBrains::flagNetTraverse(const script::FlagNetTraverseCall& call) {
+    if (held([this, call] { flagNetTraverse(call); })) {
+        return;
+    }
+    // The player's own character is not sent wandering; without a network there is nowhere to go.
+    Brain* found = named(call.human);
+    if (found == nullptr || found->type() == BrainType::Player || m_flagNet == nullptr) {
+        return;
+    }
+    found->pushGoal(std::make_unique<PedestrianGoal>(
+        PedestrianOrder{.mode = call.mode, .chance = call.chance, .flagA = call.flagA, .flagB = call.flagB}, *m_flagNet,
+        *this));
 }
 
 void ScriptedBrains::brSetNumFollowSlots(double leader, int count, int allowed) {

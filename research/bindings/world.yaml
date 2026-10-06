@@ -152,6 +152,7 @@
     Stores and the update are confirmed (code) at 0x00414bc0 and 0x004146e0 (scripting.md#triggers). The sphere's
     own message-5 period is its +0x164 (1000 by default); that `interval` reaches it is not traced.
   usage: {chunks: 70, calls: 172, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 63]}
+  coney: implemented
 
 - name: ObjScriptArgStart
   wrapper: 0x0036daf0
@@ -496,6 +497,7 @@
     That the dirty flag (+0x67e8) causes spawning or removal is inferred from the names; the bit operation is
     confirmed (code) at 0x00398348.
   usage: {chunks: 95, calls: 305, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: ObjIsZoneEnabled
   wrapper: 0x00377b80
@@ -603,6 +605,7 @@
     The release path chooses by the object type's class byte (+0x65): 6 and 5 call different release routines
     (0x00258330, 0x0024ce40), others 0x00257f38.
   usage: {chunks: 93, calls: 265, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 63]}
+  coney: implemented
 
 - name: ObjEnablePhysics
   wrapper: 0x00377f78
@@ -642,6 +645,7 @@
   notes: >-
     That +0x138 is a fade distance in metres is inferred from the scripts' field name.
   usage: {chunks: 70, calls: 181, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11, 61, 64]}
+  coney: implemented
 
 - name: ObjHide
   wrapper: 0x00378050
@@ -654,6 +658,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 50, calls: 154, boot: true, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11, 61, 64]}
+  coney: implemented
 
 - name: ObjColor
   wrapper: 0x00378088
@@ -1298,6 +1303,7 @@
     Nodes are 20-byte records at 0x006e9440 (flag plus four links), with a 16-bit field per node at 0x006e9e40 and the
     last index at 0x006e9f40.
   usage: {chunks: 29, calls: 774, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: FlagNetTraverse
   wrapper: 0x0037a968
@@ -1329,6 +1335,7 @@
     Both forms release the human's current goal (0x0028d758). The mode-to-speed reading is inferred from the stored
     values.
   usage: {chunks: 27, calls: 60, boot: true, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 9, 51, 52, 54, 82, 92, 83, 20, 11]}
+  coney: implemented
 
 - name: FlagNetValidate
   wrapper: 0x0037aaf8

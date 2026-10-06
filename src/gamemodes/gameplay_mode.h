@@ -30,8 +30,10 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world_objects/cars.h"
+#include "world_objects/flag_net.h"
 #include "world_objects/flags.h"
 #include "world_objects/level_objects.h"
+#include "world_objects/trigger_spheres.h"
 #include "world_objects/volume_boxes.h"
 
 namespace coney {
@@ -118,6 +120,8 @@ class PauseMode;
 ///   the human `CamSetSecondary` names through the scripts' hold on the brains (its live position).
 /// - Each frame after the level's step: the animation callbacks of the anims the scripts' humans started, then the
 ///   volume boxes' trigger update over those humans (their messages to the objects' handlers in `context`), then the
+///   trigger spheres' (each checked every fifth frame; a sphere's object found among the humans, flags and spawn
+///   records, its clear-line test against the level's collision mesh), then the
 ///   players' frame (runPlayerFrame(): the Lua pad handlers, the stopwatch, the wanted timers), then the scripts'
 ///   frame (scheduled calls).
 /// - The level's scenes (setSceneMaker()) are made before its script, as `context`'s scene system, and handed to the
@@ -255,6 +259,8 @@ class GameplayMode final : public GameMode {
     // The volume boxes' trigger update over the scripts' humans, their messages going to the objects' handlers
     // (docs/research/scripting.md#triggers). In the original the boxes update with the other tasks in the world step.
     void updateBoxes(std::uint64_t nowMs);
+    // Where a trigger sphere's object is: a human the scripts made, a flag or a spawn record; nothing when gone.
+    [[nodiscard]] std::optional<std::array<float, 3>> objectPosition(double handle) const;
 
     graphics::RenderDevice& m_device;
     script::ScriptSystem& m_scripts;
@@ -285,6 +291,8 @@ class GameplayMode final : public GameMode {
     std::unique_ptr<graphics::LevelLighting> m_lighting; // the level's, fresh for each (its scripts' lighting bindings)
     std::unique_ptr<effects::LevelEffects> m_effects;    // before the level, which draws them
     std::unique_ptr<world_objects::Cars> m_cars;         // the level's parked cars; before the level, which draws them
+    world_objects::TriggerSpheres m_spheres;             // the level's trigger spheres (TriggerSphereCfg)
+    world_objects::FlagNet m_flagNet;                    // the level's flag network (FlagNetAddLink)
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of
     PauseMode* m_pause = nullptr;         // what START pauses through; not owned

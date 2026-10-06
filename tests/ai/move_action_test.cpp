@@ -19,6 +19,7 @@
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/move_to_flag_goal.h"
+#include "ai/pedestrian_goal.h"
 #include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
 #include "ai/turn_action.h"
@@ -409,4 +410,45 @@ TEST_CASE("the scripts' brains hold calls until the level makes the humans, then
     // Once released, calls run at once.
     scripted.brSuspend(7.0, false);
     CHECK_FALSE(brain->suspended());
+}
+
+namespace {
+
+// Two flags 5 m apart along the U's bottom corridor, found by handle.
+class TwoFlags final : public coney::ai::FlagServices {
+  public:
+    [[nodiscard]] std::optional<coney::world_objects::Placement> flag(double handle) const override {
+        if (handle == 1) {
+            return coney::world_objects::Placement{.position = {44.0F, 41.0F, 0.0F}};
+        }
+        if (handle == 2) {
+            return coney::world_objects::Placement{.position = {49.0F, 41.0F, 0.0F}};
+        }
+        return std::nullopt;
+    }
+};
+
+} // namespace
+
+TEST_CASE("a pedestrian walks to the nearest network node, then on along its links", "[ai][move]") {
+    MoveScene scene;
+    TwoFlags flags;
+    coney::world_objects::FlagNet net;
+    REQUIRE(net.add({.flag = 2, .links = {1, 0, 0, 0}}));
+    REQUIRE(net.add({.flag = 1, .links = {2, 0, 0, 0}}));
+    Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, -90.0F);
+    REQUIRE(
+        brain.pushGoal(std::make_unique<coney::ai::PedestrianGoal>(coney::ai::PedestrianOrder{.mode = 1}, net, flags)));
+    scene.run(2);
+    const auto* goal = dynamic_cast<const coney::ai::PedestrianGoal*>(brain.topGoal());
+    REQUIRE(goal != nullptr);
+    CHECK(goal->heading() == std::optional<double>{1.0});
+    // It reaches flag 1, then heads for flag 2 (its only link), and back.
+    const int steps = scene.runUntil(900, [&] { return goal->heading() == std::optional<double>{2.0}; }, [] {});
+    CHECK(steps < 900);
+    CHECK(planDistance(brain.human().position(), {44.0F, 41.0F, 0.0F}) < 1.2F);
+    scene.runUntil(900, [&] { return goal->heading() == std::optional<double>{1.0}; }, [] {});
+    CHECK(planDistance(brain.human().position(), {49.0F, 41.0F, 0.0F}) < 1.2F);
+    CHECK(coney::ai::pedestrianGait(2) == 3);
+    CHECK(coney::ai::pedestrianGait(7) == 2);
 }

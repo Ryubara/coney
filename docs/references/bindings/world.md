@@ -877,7 +877,7 @@ and the last index at 0x006e9f40.
 - **Wrapper** `0x0037a7e0` (registered by `RegisterBindings`); **calls** `0x002a7458` `FlagNet_AddNode`
 - **Used by** 29 of 467 script chunks (774 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## FlagNetClear {#flagnetclear}
 
@@ -945,7 +945,7 @@ Wrapper `0x0037a8d0`; calls `0x002a7810`.
 - **Wrapper** `0x0037a968` (registered by `RegisterBindings`); **calls** `0x002a78c8` `FlagNet_StartTraverse`
 - **Used by** 27 of 467 script chunks (60 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 19 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## FlagNetValidate {#flagnetvalidate}
 
@@ -1237,7 +1237,7 @@ Removes a game object. If a human is holding it, the human first lets go of it.
 - **Wrapper** `0x00377f18` (registered by `RegisterBindings`); **calls** `0x00396c58` `Obj_Destroy`
 - **Used by** 93 of 467 script chunks (265 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjectChangeState {#objectchangestate}
 
@@ -1320,7 +1320,7 @@ confirmed (code) at 0x00398348.
 - **Wrapper** `0x00377b20` (registered by `RegisterBindings`); **calls** `0x00396778` `ObjZone_Enable`
 - **Used by** 95 of 467 script chunks (305 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjGetIndex {#objgetindex}
 
@@ -1390,7 +1390,7 @@ Hides a game object without destroying it (show/hide message 0x0a with 0).
 - **Wrapper** `0x00378050` (registered by `RegisterBindings`); **calls** `0x00396b68` `Obj_Hide`
 - **Used by** 50 of 467 script chunks (154 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjIsA {#objisa}
 
@@ -1639,7 +1639,7 @@ Makes a hidden game object visible again (show/hide message 0x0a with 1).
 - **Wrapper** `0x00377fd8` (registered by `RegisterBindings`); **calls** `0x00396a08` `Obj_Show`
 - **Used by** 70 of 467 script chunks (181 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 24 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjSpawn {#objspawn}
 
@@ -2055,7 +2055,7 @@ own message-5 period is its +0x164 (1000 by default); that `interval` reaches it
 - **Wrapper** `0x0036d0e0` (registered by `RegisterBindings`); **calls** `0x00414bc0` `TriggerSphere_Configure`
 - **Used by** 70 of 467 script chunks (172 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 26 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TriggerSphereEnable {#triggersphereenable}
 

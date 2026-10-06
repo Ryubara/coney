@@ -11,7 +11,7 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 206 implemented, 0 partial, 9 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 215 implemented, 0 partial, 0 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -122,18 +122,18 @@ leave part of its effect open; its notes say which.
 | [`CarSpawnRadio`](world.md#carspawnradio) | World and objects | traced | confirmed (code) | implemented |
 | [`CloseDoor`](world.md#closedoor) | World and objects | traced | confirmed (code) | implemented |
 | [`DoorOpenDegree`](world.md#dooropendegree) | World and objects | traced | confirmed (code) | implemented |
-| [`FlagNetAddLink`](world.md#flagnetaddlink) | World and objects | traced | confirmed (code) | not implemented |
-| [`FlagNetTraverse`](world.md#flagnettraverse) | World and objects | traced | confirmed (code) | not implemented |
+| [`FlagNetAddLink`](world.md#flagnetaddlink) | World and objects | traced | confirmed (code) | implemented |
+| [`FlagNetTraverse`](world.md#flagnettraverse) | World and objects | traced | confirmed (code) | implemented |
 | [`GetLeftDoorHandle`](world.md#getleftdoorhandle) | World and objects | traced | confirmed (code) | implemented |
-| [`ObjDestroy`](world.md#objdestroy) | World and objects | traced | confirmed (code) | not implemented |
-| [`ObjEnableZone`](world.md#objenablezone) | World and objects | traced | confirmed (code) | not implemented |
-| [`ObjShow`](world.md#objshow) | World and objects | traced | confirmed (code) | not implemented |
+| [`ObjDestroy`](world.md#objdestroy) | World and objects | traced | confirmed (code) | implemented |
+| [`ObjEnableZone`](world.md#objenablezone) | World and objects | traced | confirmed (code) | implemented |
+| [`ObjShow`](world.md#objshow) | World and objects | traced | confirmed (code) | implemented |
 | [`ObjSpawn`](world.md#objspawn) | World and objects | traced | confirmed (code) | implemented |
 | [`RotateVolumeBox`](world.md#rotatevolumebox) | World and objects | traced | confirmed (code) | implemented |
 | [`SpawnBreakableGlass`](world.md#spawnbreakableglass) | World and objects | traced | confirmed (code) | implemented |
 | [`SpawnDoor`](world.md#spawndoor) | World and objects | traced | confirmed (code) | implemented |
-| [`TriggerSphereCfg`](world.md#triggerspherecfg) | World and objects | traced | confirmed (code) | not implemented |
-| [`EnableShadow`](effects.md#enableshadow) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`TriggerSphereCfg`](world.md#triggerspherecfg) | World and objects | traced | confirmed (code) | implemented |
+| [`EnableShadow`](effects.md#enableshadow) | Effects and lighting | traced | confirmed (code) | implemented |
 | [`QueueMotionBlurEffect`](effects.md#queuemotionblureffect) | Effects and lighting | traced | confirmed (code) | implemented |
 | [`ScreenQueueEffect`](effects.md#screenqueueeffect) | Effects and lighting | traced | confirmed (code) | implemented |
 | [`SetFogColor`](effects.md#setfogcolor) | Effects and lighting | traced | confirmed (code) | implemented |
@@ -227,7 +227,7 @@ leave part of its effect open; its notes say which.
 | [`CfgSetStatValue`](config.md#cfgsetstatvalue) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgSetSteroTheftHandler`](config.md#cfgsetsterothefthandler) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`CfgSetWarriorSpotting`](config.md#cfgsetwarriorspotting) | Configuration (Cfg) | traced | confirmed (code) | implemented |
-| [`CfgSubtitles`](config.md#cfgsubtitles) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
+| [`CfgSubtitles`](config.md#cfgsubtitles) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 | [`random`](util.md#random) | Utilities | traced | confirmed (code) | implemented |
 | [`ToInt`](util.md#toint) | Utilities | traced | confirmed (code) | implemented |
-| [`DoorCRCCheck`](debug.md#doorcrccheck) | Debug | traced | confirmed (code) | not implemented |
+| [`DoorCRCCheck`](debug.md#doorcrccheck) | Debug | traced | confirmed (code) | implemented |

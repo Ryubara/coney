@@ -31,6 +31,7 @@ enum class GoalType : std::uint8_t {
     TrackHuman = 0x30,       ///< TrackHumanGoal.
     BumLogic = 0x4f,         ///< BumLogicGoal.
     AddressPerson = 0x57,    ///< AddressPersonGoal.
+    Pedestrian = 0x69,       ///< PedestrianGoal: wanders the flag network (`FlagNetTraverse`).
     Dealer = 0x80,           ///< DealerGoal.
     Backoff = 0x9b,          ///< BackoffGoal.
 };

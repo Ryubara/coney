@@ -567,7 +567,11 @@ with neither.
 **Coney's choices:** a record's handle comes from the counter every world object's handle comes from, not the record
 index << 16 (record 0 would be `NilHandle`); the rotation is kept as given rather than packed into s16 × 4,096; there
 are no object tasks yet, so "live" marks a record a consumer draws; and the keys and the power cuffs are always
-suppressed, as a fresh profile has neither unlockable. Disc check (NTSC-U, 2026-10-06, counts only): at the front end
+suppressed, as a fresh profile has neither unlockable. `ObjEnableZone` sets or clears a zone's bit of the records'
+zone mask (zone 0 on at a level's start, the rest off); `ObjShow` and `ObjHide` resolve the handle and mark the record
+shown or hidden (`ObjShow`'s distance kept); `ObjDestroy` makes a human holding the object let go, then removes the
+record for good, by either of its paths (`src/scripting/world_bindings.h`). Nothing streams by zone or draws the
+hidden mark in play yet: Coney has no object tasks there. Disc check (NTSC-U, 2026-10-06, counts only): at the front end
 `level100.lua` leaves 29 Wonder Wheel records, each of a configured type, the wheel tinted `0x474542FF`.
 
 **Models** (`src/platform/object_models.h`, `src/platform/placed_objects.h`): an object's model is its type's Object

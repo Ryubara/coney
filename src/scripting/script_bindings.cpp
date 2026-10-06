@@ -33,6 +33,7 @@
 #include "scripting/sound_bindings.h"
 #include "scripting/spawn_bindings.h"
 #include "scripting/trigger_bindings.h"
+#include "scripting/world_bindings.h"
 #include "world_objects/object_types.h"
 #include "world_objects/spawn_records.h"
 
@@ -816,6 +817,18 @@ constexpr std::array kBindings{
     real("CarSetColor"),
     real("CarMakeGoodAsNew"),
     real("CarSpawnRadio"),
+    // The dynamic objects' show, hide, destroy and zones, the trigger spheres, the flag network, the subtitle switch
+    // and two empty ones (world_bindings.h).
+    real("CfgSubtitles"),
+    real("DoorCRCCheck"),
+    real("EnableShadow"),
+    real("FlagNetAddLink"),
+    real("FlagNetTraverse"),
+    real("ObjDestroy"),
+    real("ObjEnableZone"),
+    real("ObjHide"),
+    real("ObjShow"),
+    real("TriggerSphereCfg"),
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
     // The four the script system's constructor registers itself: configuration kept for later.
@@ -1044,7 +1057,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kHumanBindings, info.name) != kHumanBindings.end() ||
                      std::ranges::find(kEffectsBindings, info.name) != kEffectsBindings.end() ||
                      std::ranges::find(kCarBindings, info.name) != kCarBindings.end() ||
-                     std::ranges::find(kHudBindings, info.name) != kHudBindings.end());
+                     std::ranges::find(kHudBindings, info.name) != kHudBindings.end() ||
+                     std::ranges::find(kWorldBindings, info.name) != kWorldBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -1075,6 +1089,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addHumanBindings(vm, context, nextHandle);
     addEffectsBindings(vm, context, nextHandle);
     addCarBindings(vm, context, nextHandle);
+    addWorldBindings(vm, context);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

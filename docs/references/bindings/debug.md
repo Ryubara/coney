@@ -76,7 +76,7 @@ presumably a checksum of the level's door data in development builds.
 - **Wrapper** `0x00379978` (registered by `RegisterBindings`); **calls** `0x00397330`
 - **Used by** 62 of 467 script chunks (62 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetBugstarIP {#setbugstarip}
 

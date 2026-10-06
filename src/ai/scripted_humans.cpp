@@ -185,6 +185,20 @@ void ScriptedHumans::dropWeapon(double human) {
     });
 }
 
+void ScriptedHumans::releaseObject(double object) {
+    if (m_scripted->defer([this, object] { releaseObject(object); })) {
+        return;
+    }
+    // Whoever holds it lets go, as HuDropWeapon does (the class-specific release routines are not modelled).
+    for (const auto& [handle, brain] : m_scripted->bound()) {
+        human::ScriptState& script = brain->human().script();
+        if (script.heldObject == object) {
+            script.heldObject = kNilHandle;
+            script.heldObjectName.clear();
+        }
+    }
+}
+
 double ScriptedHumans::placeItemInHand(double human, std::string_view object,
                                        const std::function<double()>& nextHandle) {
     // Put the object in a free hand; a human that holds something already takes nothing.

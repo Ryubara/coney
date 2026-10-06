@@ -208,6 +208,8 @@ class HumanBindingHost {
     virtual void setIcon(double /*human*/, std::string_view /*object*/, int /*param*/) {}
     /// `HuDropWeapon`.
     virtual void dropWeapon(double /*human*/) {}
+    /// `ObjDestroy` of `object`: a human holding it lets go of it first.
+    virtual void releaseObject(double /*object*/) {}
     /// `HuPlaceItemInHand`: makes the object `object` (its handle from `nextHandle`) in the human's hand; returns the
     /// handle, or NilHandle (0) when the human is missing or holds something.
     virtual double placeItemInHand(double /*human*/, std::string_view /*object*/,

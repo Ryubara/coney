@@ -118,6 +118,7 @@ add_library(coney_core STATIC
     scripting/sound_bindings.cpp
     scripting/spawn_bindings.cpp
     scripting/trigger_bindings.cpp
+    scripting/world_bindings.cpp
     warriors/created_humans.cpp
     warriors/crime_reports.cpp
     warriors/disk_profile_store.cpp
@@ -147,6 +148,8 @@ add_library(coney_core STATIC
     world_objects/object_list.cpp
     world_objects/object_types.cpp
     world_objects/spawn_records.cpp
+    world_objects/flag_net.cpp
+    world_objects/trigger_spheres.cpp
     world_objects/object_services.cpp
     world_objects/volume_boxes.cpp)
 # Effects: the particle systems and the motion blur (docs/research/particles.md, docs/research/graphics.md#looks).
@@ -219,6 +222,7 @@ target_sources(coney_core PRIVATE
     ai/brain.cpp
     ai/brains.cpp
     ai/dealer_goal.cpp
+    ai/pedestrian_goal.cpp
     ai/fight_goal.cpp
     ai/formations.cpp
     ai/gangs.cpp

@@ -31,8 +31,10 @@ class Cars;
 } // namespace coney::world_objects
 
 namespace coney::world_objects {
+class FlagNet;
 class ObjectTypes;
 class SpawnRecords;
+class TriggerSpheres;
 class LevelObjects;
 class VolumeBoxes;
 } // namespace coney::world_objects
@@ -181,6 +183,8 @@ struct BindingContext {
     SoundHost* sound = nullptr;                  ///< The game's sound (sound_bindings.h); null plays nothing.
     world_objects::Cars* cars = nullptr;         ///< The level's parked cars (`CarSpawn`); null keeps none.
     hud::Hud* hud = nullptr;                     ///< The HUD the HUD bindings act on; null acts on none.
+    world_objects::TriggerSpheres* spheres = nullptr; ///< The level's trigger spheres (`TriggerSphereCfg`); null: none.
+    world_objects::FlagNet* flagNet = nullptr;        ///< The level's flag network (`FlagNetAddLink`); null: none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

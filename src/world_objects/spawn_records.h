@@ -2,6 +2,7 @@
 #pragma once
 
 #include <array>
+#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -25,6 +26,8 @@ struct SpawnRecord {
     bool live = false;                         ///< `+0x24` bit `0x20000`: its object exists.
     bool pinned = false;                       ///< `+0x24` bit `0x10000`: never stored (a scene holds it).
     bool removed = false;                      ///< `+0x24` bit `0x40000`: gone for good, never spawned again.
+    bool hidden = false;                       ///< Its object is hidden (`ObjHide`) until shown again (`ObjShow`).
+    float fadeInDistance = 0.0F;               ///< `+0x138`: what `ObjShow` was given (inferred: a fade-in distance).
 };
 
 /// The `ObjectTaskManager`'s spawn records: `ObjSpawn` adds one and returns its handle; resolving the handle (a binding
@@ -60,13 +63,34 @@ class SpawnRecords {
     /// @orig 0x00398df8 ObjRecord_SetPinned (unknown)
     void setPinned(double handle, bool pinned);
 
+    /// `ObjDestroy(handle)`: the record's object is gone for good (removed, not live, never spawned again). Returns
+    /// whether the handle named a record that was not removed already.
+    /// @orig 0x00396c58 Obj_Destroy (unknown)
+    bool destroy(double handle);
+
+    /// Zones the mask holds: the zone is the top 10 bits of a record's `+0x20`.
+    static constexpr std::size_t kZones = 1024;
+    /// `ObjEnableZone(zone, enable)`: sets or clears the zone's bit of the mask (manager `+0x20`), so streaming spawns
+    /// or stores that zone's objects. A zone outside the mask is ignored (**Coney choice**: the original does not
+    /// check).
+    /// @orig 0x00396778 ObjZone_Enable (unknown)
+    /// @orig 0x00398348 ObjZoneMask_Set (unknown)
+    void setZoneEnabled(std::uint32_t zone, bool enabled);
+    /// Whether the zone's objects are wanted: zone 0 is on at a level's start, every other off.
+    [[nodiscard]] bool zoneEnabled(std::uint32_t zone) const { return zone < kZones && m_zones.test(zone); }
+
     /// Every record, oldest first.
     [[nodiscard]] const std::vector<SpawnRecord>& all() const { return m_records; }
-    /// Forgets every record: the level is unloaded.
-    void clear() { m_records.clear(); }
+    /// Forgets every record and puts the zone mask back to zone 0 alone: the level is unloaded.
+    void clear() {
+        m_records.clear();
+        m_zones.reset();
+        m_zones.set(0);
+    }
 
   private:
     std::vector<SpawnRecord> m_records;
+    std::bitset<kZones> m_zones{1};        // zone 0 on, 1-254 off at a level's start (0x00397a48)
     std::optional<std::size_t> m_capacity; // none until CfgSetDatabaseSizes
 };
 

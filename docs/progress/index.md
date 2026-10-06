@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 12.5%](https://img.shields.io/badge/reimplemented-12.5%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 12.6%](https://img.shields.io/badge/reimplemented-12.6%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▌░░░░░░░░░░░░░░░░░` | 12.5% of the game's own code (420,540 of 3,354,776 bytes, 1,150 functions) |
+| **Reimplemented** | `██▌░░░░░░░░░░░░░░░░░` | 12.6% of the game's own code (424,132 of 3,354,776 bytes, 1,167 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -60,21 +60,21 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 25 | 62,808 |
 | `FileIO` | `██▋░░░░░░░░░░░░░░░░░` | 13.0% | 7 | 7,120 |
 | `GameModes` | `█████▏░░░░░░░░░░░░░░` | 25.8% | 66 | 100,440 |
-| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 54 | 195,624 |
+| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 175 | 497,416 |
-| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.2% | 306 | 1,096,672 |
+| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.3% | 309 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████▊░░░░░░░░░░░░░░` | 28.8% | 179 | 197,192 |
+| `Scripting` | `█████▉░░░░░░░░░░░░░░` | 29.2% | 182 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 49 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 55 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▎░░░░░░░░░░░░░░░░░░░` | 1.1% | 28 | 24,344 |
-| `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
-| `Warriors` | `███▎░░░░░░░░░░░░░░░░` | 16.4% | 71 | 54,264 |
+| `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 17 | 22,008 |
+| `Warriors` | `███▎░░░░░░░░░░░░░░░░` | 16.4% | 72 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -354,6 +354,7 @@ at the top of the repository's `README.md`.
 | `0x0017f160` | `Light_SetState` | `Graphics` | 88 |
 | `0x0017f1b8` | `Light_SetFlicker` | `Graphics` | 96 |
 | `0x0017f218` | `LightManager_SetWorldAmbient` | `Graphics` | 72 |
+| `0x0017f270` | `Shadow_Enable_Stub` | `Graphics` | 8 |
 | `0x0017f2c0` | `ChunkReader_PreinstanceObject` | `Graphics` | not filled in |
 | `0x00181170` | `ObjectList_OnLoaded` | `Graphics` | 56 |
 | `0x001811b0` | `ObjectList_FindByHash` | `Graphics` | not filled in |
@@ -777,6 +778,9 @@ at the top of the repository's `README.md`.
 | `0x0029eea0` | `Goal_Suspend` | `Human` | 56 |
 | `0x0029eed8` | `Goal_Process` | `Human` | 168 |
 | `0x0029f098` | `Goal_TryBlock` | `Human` | 408 |
+| `0x002a7458` | `FlagNet_AddNode` | `Human` | 224 |
+| `0x002a78c8` | `FlagNet_StartTraverse` | `Human` | 376 |
+| `0x002aae30` | `PedestrianGoal_Init` | `Human` | 232 |
 | `0x002abd38` | `Goal_Bum` | `Human` | 208 |
 | `0x002abef8` | `BumLogicGoal_Init` | `Human` | 264 |
 | `0x002b2b90` | `Brain_StartFight` | `Human` | 144 |
@@ -998,6 +1002,7 @@ at the top of the repository's `README.md`.
 | `0x0036bb10` | `CfgSetDatabaseSizes` | `Scripting` | 424 |
 | `0x0036ca18` | `GetPosition` | `Scripting` | 112 |
 | `0x0036cdc0` | `TeleportToFlag` | `Scripting` | 152 |
+| `0x0036d0e0` | `TriggerSphereCfg` | `Scripting` | 232 |
 | `0x0036d938` | `ToInt` | `Scripting` | not filled in |
 | `0x0036de50` | `CarSpawnRadio` | `Scripting` | not filled in |
 | `0x0036df48` | `MenuLoadLevel` | `Scripting` | not filled in |
@@ -1068,6 +1073,8 @@ at the top of the repository's `README.md`.
 | `0x00379fd0` | `AddFlag` | `Scripting` | 384 |
 | `0x0037a288` | `GetFlagPos` | `Scripting` | 112 |
 | `0x0037a770` | `FindFlag` | `Scripting` | 112 |
+| `0x0037a8d0` | `FlagNetTraverse_Short` | `Scripting` | 152 |
+| `0x0037a968` | `FlagNetTraverse` | `Scripting` | 400 |
 | `0x0037b6c8` | `SSMC_StartLoadSequence_Binding` | `Scripting` | 32 |
 | `0x0037b6e8` | `SSMC_StartDeleteSequence_Binding` | `Scripting` | 32 |
 | `0x0037b7d8` | `SetLUASaveDataFloat` | `Scripting` | 120 |
@@ -1103,9 +1110,15 @@ at the top of the repository's `README.md`.
 | `0x00396390` | `BreakObjectsInRadius` | `TaskEngine` | 40 |
 | `0x003963b8` | `World_BreakGlassInRadius` | `TaskEngine` | 784 |
 | `0x003966c8` | `BreakGlassInRadius` | `TaskEngine` | 72 |
+| `0x00396778` | `ObjZone_Enable` | `TaskEngine` | 48 |
 | `0x00396858` | `Obj_Spawn` | `TaskEngine` | not filled in |
+| `0x00396a08` | `Obj_Show` | `TaskEngine` | 136 |
+| `0x00396b68` | `Obj_Hide` | `TaskEngine` | 104 |
+| `0x00396c58` | `Obj_Destroy` | `TaskEngine` | 288 |
 | `0x00397078` | `Door_SetPickable` | `TaskEngine` | 336 |
 | `0x00397230` | `Door_Spawn` | `TaskEngine` | 256 |
+| `0x00397330` | `DoorCRCCheck` | `TaskEngine` | 8 |
+| `0x00398348` | `ObjZoneMask_Set` | `TaskEngine` | 104 |
 | `0x00398940` | `ObjRecord_Add` | `TaskEngine` | not filled in |
 | `0x00398df8` | `ObjRecord_SetPinned` | `TaskEngine` | not filled in |
 | `0x00398fe0` | `ObjRecord_GetHandle` | `TaskEngine` | not filled in |
@@ -1167,6 +1180,9 @@ at the top of the repository's `README.md`.
 | `0x004125b8` | `VolumeBox_Add` | `WorldObjects` | 520 |
 | `0x00412a18` | `VolumeBox_IsInside` | `WorldObjects` | 480 |
 | `0x00412c40` | `VolumeBox_SetRotation` | `WorldObjects` | 96 |
+| `0x00414398` | `TriggerSpheres_Update` | `WorldObjects` | 160 |
+| `0x004146e0` | `TriggerSphere_Update` | `WorldObjects` | 840 |
+| `0x00414bc0` | `TriggerSphere_Configure` | `WorldObjects` | 264 |
 | `0x00415378` | `VolumeBox_Update` | `WorldObjects` | 792 |
 | `0x004158f8` | `FlagPool_Create` | `WorldObjects` | 320 |
 | `0x00415a38` | `FlagPool_Destroy` | `WorldObjects` | 184 |
@@ -1200,6 +1216,7 @@ at the top of the repository's `README.md`.
 | `0x0041d800` | `GetDifficulty` | `Warriors` | 16 |
 | `0x0041d820` | `GetProfileDifficulty` | `Warriors` | 16 |
 | `0x0041da08` | `Cfg_SetMultiplayerJoin` | `Warriors` | 40 |
+| `0x0041da30` | `Cfg_SetSubtitles` | `Warriors` | 16 |
 | `0x0041daf8` | `Cfg_SetPlayerMugging` | `Warriors` | 16 |
 | `0x0041db08` | `GameState_EnableAllWarriorCommands` | `Warriors` | 224 |
 | `0x0041dc80` | `GameState_IssueWarriorCommandFor` | `Warriors` | 112 |

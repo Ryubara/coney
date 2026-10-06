@@ -1430,6 +1430,12 @@ subsystem = "Graphics"
 size = 72
 
 [[function]]
+address = 0x0017f270
+name = "Shadow_Enable_Stub"
+subsystem = "Graphics"
+size = 8
+
+[[function]]
 address = 0x0017f2c0
 name = "ChunkReader_PreinstanceObject"
 subsystem = "Graphics"
@@ -3884,6 +3890,24 @@ subsystem = "Human"
 size = 408
 
 [[function]]
+address = 0x002a7458
+name = "FlagNet_AddNode"
+subsystem = "Human"
+size = 224
+
+[[function]]
+address = 0x002a78c8
+name = "FlagNet_StartTraverse"
+subsystem = "Human"
+size = 376
+
+[[function]]
+address = 0x002aae30
+name = "PedestrianGoal_Init"
+subsystem = "Human"
+size = 232
+
+[[function]]
 address = 0x002abd38
 name = "Goal_Bum"
 subsystem = "Human"
@@ -5181,6 +5205,12 @@ subsystem = "Scripting"
 size = 152
 
 [[function]]
+address = 0x0036d0e0
+name = "TriggerSphereCfg"
+subsystem = "Scripting"
+size = 232
+
+[[function]]
 address = 0x0036d938
 name = "ToInt"
 subsystem = "Scripting"
@@ -5591,6 +5621,18 @@ subsystem = "Scripting"
 size = 112
 
 [[function]]
+address = 0x0037a8d0
+name = "FlagNetTraverse_Short"
+subsystem = "Scripting"
+size = 152
+
+[[function]]
+address = 0x0037a968
+name = "FlagNetTraverse"
+subsystem = "Scripting"
+size = 400
+
+[[function]]
 address = 0x0037b6c8
 name = "SSMC_StartLoadSequence_Binding"
 subsystem = "Scripting"
@@ -5791,9 +5833,33 @@ subsystem = "TaskEngine"
 size = 72
 
 [[function]]
+address = 0x00396778
+name = "ObjZone_Enable"
+subsystem = "TaskEngine"
+size = 48
+
+[[function]]
 address = 0x00396858
 name = "Obj_Spawn"
 subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00396a08
+name = "Obj_Show"
+subsystem = "TaskEngine"
+size = 136
+
+[[function]]
+address = 0x00396b68
+name = "Obj_Hide"
+subsystem = "TaskEngine"
+size = 104
+
+[[function]]
+address = 0x00396c58
+name = "Obj_Destroy"
+subsystem = "TaskEngine"
+size = 288
 
 [[function]]
 address = 0x00397078
@@ -5806,6 +5872,18 @@ address = 0x00397230
 name = "Door_Spawn"
 subsystem = "TaskEngine"
 size = 256
+
+[[function]]
+address = 0x00397330
+name = "DoorCRCCheck"
+subsystem = "TaskEngine"
+size = 8
+
+[[function]]
+address = 0x00398348
+name = "ObjZoneMask_Set"
+subsystem = "TaskEngine"
+size = 104
 
 [[function]]
 address = 0x00398940
@@ -6144,6 +6222,24 @@ subsystem = "WorldObjects"
 size = 96
 
 [[function]]
+address = 0x00414398
+name = "TriggerSpheres_Update"
+subsystem = "WorldObjects"
+size = 160
+
+[[function]]
+address = 0x004146e0
+name = "TriggerSphere_Update"
+subsystem = "WorldObjects"
+size = 840
+
+[[function]]
+address = 0x00414bc0
+name = "TriggerSphere_Configure"
+subsystem = "WorldObjects"
+size = 264
+
+[[function]]
 address = 0x00415378
 name = "VolumeBox_Update"
 subsystem = "WorldObjects"
@@ -6335,6 +6431,12 @@ address = 0x0041da08
 name = "Cfg_SetMultiplayerJoin"
 subsystem = "Warriors"
 size = 40
+
+[[function]]
+address = 0x0041da30
+name = "Cfg_SetSubtitles"
+subsystem = "Warriors"
+size = 16
 
 [[function]]
 address = 0x0041daf8

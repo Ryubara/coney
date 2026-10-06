@@ -730,6 +730,12 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   [table above](#message-handlers); the volume boxes with their turn and the kind-0 trigger update (3, 5 once per
   1000 ms, 4) over the scripts' humans, run by gameplay every frame before the scripts' frame. A human's events reach
   its own handlers through its brain, a flag arrival is message 8 ([AI](ai.md#coney)).
+- **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):
+  a pool of 100, one per object, each checked every fifth frame (index modulo 5) with the boxes' rules, 3, 5 once per
+  the sphere's 1000 ms and 4 going to the object's handler; gameplay finds the object among the scripts' humans, the
+  flags and the spawn records. **Coney's choices:** the sphere's own object is never its occupant; the clear-line test
+  of modes 1 and 2 is a collision-mesh ray from the centre (mode 2: raised 1 m) to 1 m above the human's feet;
+  `TriggerSphereCfg`'s interval is kept as the handler's period but not used.
 - **Play** (`src/gamemodes/gameplay_mode.h`): the scripts keep running in a level, stepped every frame after the
   level's step; `--play-level LEVEL` enters a level the same way, after the preloads and a fresh state
   (`LevelScripts`, `src/gamemodes/level_start.h`). In `level99` at checkpoint 1 the tutorial runs from the intro
@@ -786,8 +792,9 @@ of the original).
 
 - **The first mission:** what a restart (failure or pause menu) restores from `SetCheckPoint`'s copies, and who
   reads the object manager's 35-word list; whether `TriggerSphereCfg`'s interval reaches the sphere's period
-  (`+0x164`); who writes the stopwatch's rate (`+0x10`); what commands 37, 38 and 40 (d-pad down, up, right), which
-  the tutorial switches with `EnableCommand`, do ([Commands](../references/commands.md)).
+  (`+0x164`); whether a sphere's own object can be its occupant, and what the clear-line tests `0x0024dee8` and
+  `0x0024df40` test between; who writes the stopwatch's rate (`+0x10`); what commands 37, 38 and 40 (d-pad down,
+  up, right), which the tutorial switches with `EnableCommand`, do ([Commands](../references/commands.md)).
 - What a level loaded after an unload (a fresh state without the preloads) does when it needs `PHYS`, `MATERIAL` or
   `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them? (For the front end,
   `global.lua` and `level100.lua` run without errors in Coney's fresh state, and so do `level99.lua` with

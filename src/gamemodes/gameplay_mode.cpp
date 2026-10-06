@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <format>
 #include <optional>
 #include <utility>
@@ -13,9 +14,11 @@
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/player_frame.h"
+#include "raycast/collision_mesh.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
+#include "world_objects/spawn_records.h"
 
 namespace coney {
 
@@ -57,6 +60,15 @@ void GameplayMode::endLevel() {
     }
     m_cars.reset();
     m_effects.reset();
+    // The trigger spheres and the flag network go with the level's objects.
+    if (m_context.spheres == &m_spheres) {
+        m_context.spheres = nullptr;
+    }
+    if (m_context.flagNet == &m_flagNet) {
+        m_context.flagNet = nullptr;
+    }
+    m_spheres.clear();
+    m_flagNet.clear();
     if (m_context.ai == m_scripted.get()) {
         m_context.ai = nullptr;
     }
@@ -114,6 +126,26 @@ void GameplayMode::enter() {
         m_context.boxes->clear();
     }
     m_context.ai = m_scripted.get();
+    // The level's trigger spheres, round the objects the scripts name, and its flag network for the pedestrians.
+    m_spheres.setLocate([this](double handle) { return objectPosition(handle); });
+    m_spheres.setClearLine([this](const std::array<float, 3>& from, const std::array<float, 3>& to) {
+        const raycast::CollisionMesh* mesh = m_objects.world.collision;
+        if (mesh == nullptr) {
+            return true;
+        }
+        const raycast::Vec3 d{to[0] - from[0], to[1] - from[1], to[2] - from[2]};
+        const float length = std::sqrt((d.x * d.x) + (d.y * d.y) + (d.z * d.z));
+        if (length < 1e-4F) {
+            return true;
+        }
+        const raycast::Ray ray{.origin = {from[0], from[1], from[2]},
+                               .direction = {d.x / length, d.y / length, d.z / length},
+                               .length = length};
+        return !mesh->rayCast(ray, {}, 0).has_value();
+    });
+    m_context.spheres = &m_spheres;
+    m_context.flagNet = &m_flagNet;
+    m_scripted->setFlagNet(&m_flagNet);
     // Player 1's cameras, which the script sets up before the level makes him; CamSetSecondary finds its human live.
     m_cameras = std::make_unique<camera::Cameras>();
     m_cameras->setLocator([scripted = m_scripted.get()](double handle) -> std::optional<anim::Vec3> {
@@ -317,6 +349,12 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_scripted->humanHost().runRageHandlers();
     }
     updateBoxes(nowMs);
+    if (m_scripted && m_context.messages != nullptr) {
+        const std::vector<world_objects::BoxSubject> subjects = m_scripted->boxSubjects();
+        m_spheres.update(subjects, nowMs, [this](double object, int message, double human) {
+            m_context.messages->deliver(m_scripts, object, message, human, 0.0, 0.0);
+        });
+    }
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
     m_scripts.update(nowMs, frame.seconds);
     if (m_effects) {
@@ -349,6 +387,25 @@ void GameplayMode::updateBoxes(std::uint64_t nowMs) {
     m_context.boxes->update(subjects, nowMs, [this](double box, int message, double human) {
         m_context.messages->deliver(m_scripts, box, message, human, 0.0, 0.0);
     });
+}
+
+std::optional<std::array<float, 3>> GameplayMode::objectPosition(double handle) const {
+    if (m_scripted) {
+        if (const std::optional<world_objects::Placement> human = m_scripted->humanPlacement(handle)) {
+            return human->position;
+        }
+    }
+    if (const world_objects::WorldFlag* flag = m_flags.find(handle); flag != nullptr) {
+        return world_objects::WorldFlags::position(
+            *flag, [this](double parent) { return m_scripted ? m_scripted->humanPlacement(parent) : std::nullopt; });
+    }
+    if (m_context.spawnRecords != nullptr) {
+        if (const world_objects::SpawnRecord* record = m_context.spawnRecords->find(handle);
+            record != nullptr && !record->removed) {
+            return record->position;
+        }
+    }
+    return std::nullopt;
 }
 
 void GameplayMode::render(const RenderTime& time) {

@@ -59,6 +59,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void setIcon(double human, std::string_view object, int param) override;
     /// **Coney stand-in**: Coney's objects have no weapon class yet, so whatever it holds is let go.
     void dropWeapon(double human) override;
+    void releaseObject(double object) override;
     /// While calls are held the handle is given at once and the object put in the hand when the human is made.
     double placeItemInHand(double human, std::string_view object, const std::function<double()>& nextHandle) override;
     /// Keeps the clip in the slot when `loaded`; slot 0 makes the human unpushable while it is set. While calls are
