@@ -135,9 +135,9 @@ class ScriptedStory final : public script::StoryBindingHost {
   private:
     // Runs `body` on the brain named by `handle` now, or when the level makes it while calls are held; nothing when
     // no brain has the handle.
-    void onBrain(double handle, std::function<void(Brain&)> body);
+    void onBrain(double handle, const std::function<void(Brain&)>& body);
     // Runs `body` on the gang with `id` now, or once the calls held are replayed; nothing when no gang has it.
-    void onGang(int id, std::function<void(Gang&)> body);
+    void onGang(int id, const std::function<void(Gang&)>& body);
     // The nearest enabled exit flag to `from` other than `exclude`.
     [[nodiscard]] std::optional<double> nearestExit(anim::Vec3 from, double exclude) const;
     // Pushes the exit goal toward `flag` on `brain`.

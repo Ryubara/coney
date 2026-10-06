@@ -184,6 +184,7 @@ void ScriptedBrains::brSetThreatResponse(double human, int response) {
 }
 
 void ScriptedBrains::goalPlayDynAnimation(const script::DynAnimationCall& call) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     if (held([this, call] { goalPlayDynAnimation(call); })) {
         return;
     }
@@ -193,6 +194,7 @@ void ScriptedBrains::goalPlayDynAnimation(const script::DynAnimationCall& call) 
 }
 
 void ScriptedBrains::goalAddressPerson(const script::AddressPersonCall& call) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     if (held([this, call] { goalAddressPerson(call); })) {
         return;
     }
@@ -362,6 +364,7 @@ std::optional<int> ScriptedBrains::gangOf(double human) const {
 }
 
 void ScriptedBrains::tacticConfront(const script::ConfrontCall& call) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     if (held([this, call] { tacticConfront(call); })) {
         return;
     }
@@ -544,6 +547,7 @@ void ScriptedBrains::release(Spawner spawner) {
 }
 
 void ScriptedBrains::humanCreated(const HumanCreation& human) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     if (held([this, human] { humanCreated(human); })) {
         // Counted in its gang until the hold ends, so the start callback's head counts see it.
         m_heldHumans[human.handle] = HeldHuman{.gang = human.gang, .playerIndex = human.playerIndex};

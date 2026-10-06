@@ -55,7 +55,7 @@ bool isAi(const Brain& brain) { return brain.type() != BrainType::Player; }
 
 } // namespace
 
-void ScriptedStory::onBrain(double handle, std::function<void(Brain&)> body) {
+void ScriptedStory::onBrain(double handle, const std::function<void(Brain&)>& body) {
     if (m_scripted->defer([this, handle, body] { onBrain(handle, body); })) {
         return;
     }
@@ -64,7 +64,7 @@ void ScriptedStory::onBrain(double handle, std::function<void(Brain&)> body) {
     }
 }
 
-void ScriptedStory::onGang(int id, std::function<void(Gang&)> body) {
+void ScriptedStory::onGang(int id, const std::function<void(Gang&)>& body) {
     if (m_scripted->defer([this, id, body] { onGang(id, body); })) {
         return;
     }
@@ -121,11 +121,12 @@ std::optional<float> ScriptedStory::walkingDistance(double from, double to) {
     if (!plan->route) {
         return anim::distance(*a, *b);
     }
+    const Route& route = *plan->route;
     // Along the route: the start, each node, the end.
     const std::span<const world::PathNode> nodes = planner->map().nodes();
     float length = 0.0F;
     anim::Vec3 at = *a;
-    for (const std::uint32_t node : plan->route->nodes()) {
+    for (const std::uint32_t node : route.nodes()) {
         const anim::Vec3 next = nodes[node].position;
         length += anim::distance(at, next);
         at = next;
@@ -322,6 +323,7 @@ void ScriptedStory::goalMelee(double human, double target) {
 }
 
 void ScriptedStory::goalThrowObject(const script::ThrowObjectCall& call) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     onBrain(call.human, [this, call](Brain& brain) {
         brain.pushGoal(std::make_unique<ThrowObjectGoal>([this](double handle) { return m_scripted->locate(handle); },
                                                          call.target, call.range, call.gait, call.callback,
@@ -330,6 +332,7 @@ void ScriptedStory::goalThrowObject(const script::ThrowObjectCall& call) {
 }
 
 void ScriptedStory::goalPlayDynIdle(const script::DynIdleCall& call) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     onBrain(call.human, [this, call](Brain& brain) {
         brain.pushGoal(std::make_unique<PlayDynIdleGoal>(
             call.flag, std::vector<std::string>{call.startAnim, call.loopAnim, call.endAnim}, call.timeMs,
@@ -367,7 +370,7 @@ void ScriptedStory::engageEnemy(int gang, double target) {
             return;
         }
         // A copy: a fight may change the members' list through the events it sends.
-        const std::vector<Brain*> members = found.members();
+        const std::vector<Brain*> members(found.members().begin(), found.members().end());
         for (Brain* member : members) {
             if (isAi(*member) && member != enemy) {
                 static_cast<void>(member->fight(*enemy));

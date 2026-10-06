@@ -108,7 +108,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
   private:
     // Runs `body` on the brain named by `handle` now, or when the level makes it while calls are held; nothing when
     // no brain has the handle.
-    void onBrain(double handle, std::function<void(Brain&)> body);
+    void onBrain(double handle, const std::function<void(Brain&)>& body);
     // The rage meter as runRageHandlers() last saw it on one human.
     struct RageSeen {
         bool full = false;

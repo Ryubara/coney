@@ -75,8 +75,8 @@ class AmbientEmitters {
     // One emitter: its setup and where it is in its cycle.
     struct Emitter {
         AmbientEmitterSetup setup;
-        std::vector<SoundVec> positions;
-        SoundHandle playing;
+        std::vector<SoundVec> positions{};
+        SoundHandle playing{};
         bool waiting = false; // the pause before the next sound is running
         double nextMs = 0.0;
     };

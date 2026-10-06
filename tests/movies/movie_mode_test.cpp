@@ -169,7 +169,7 @@ TEST_CASE("movie player: pushes itself over the caller, plays to the last frame,
     CHECK(h.player->counts().framesShown == 19);
     CHECK(h.player->counts().framesDecoded == 19);
     CHECK(h.screen.uploads == 19);
-    CHECK(h.screen.last == std::vector<std::uint8_t>(4 * 2 * 4, 18));
+    CHECK(h.screen.last == std::vector<std::uint8_t>(std::size_t{4} * 2 * 4, 18));
     CHECK(h.below.updates == 0); // the caller waited
     CHECK(h.log.back() == "movie: PLOGO ended after 19 frames\n");
     // The frame is drawn unscaled, centred on the 640 x 448 screen.

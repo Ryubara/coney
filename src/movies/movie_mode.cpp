@@ -91,8 +91,9 @@ const CaptionRecord* MovieMode::caption() const {
     if (!m_current || !m_current->captions) {
         return nullptr;
     }
+    const MovieCaptions& captions = *m_current->captions;
     const bool subtitles = m_settings.subtitlesOn ? m_settings.subtitlesOn() : false;
-    return m_current->captions->captions.visible(subtitles);
+    return captions.captions.visible(subtitles);
 }
 
 bool MovieMode::start(std::string name) {

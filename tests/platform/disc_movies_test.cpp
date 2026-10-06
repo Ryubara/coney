@@ -81,19 +81,20 @@ TEST_CASE("L99_IN's captions come from level99 and l99_in_sub", "[disc][movies]"
     REQUIRE(wad.has_value());
     const coney::movies::CaptionSource source =
         coney::movies::wadCaptionSource(*wad, [] { return coney::Language::English; });
-    auto captions = source("L99_IN");
-    REQUIRE(captions.has_value());
+    const auto loaded = source("L99_IN");
+    REQUIRE(loaded.has_value());
+    auto captions = loaded.value_or(coney::movies::MovieCaptions{});
     // Six captions, each shown by an event and hidden by another; walk the whole movie.
     int shows = 0;
-    for (double t = 0.0; t < 100.0; t += 1.0 / 30.0) {
-        for (const int command : captions->timeline.advance(t)) {
-            captions->captions.command(command);
-            if (command == 0 && captions->captions.visible(true) != nullptr) {
+    for (int frame = 0; frame < 100 * 30; ++frame) {
+        for (const int command : captions.timeline.advance(frame / 30.0)) {
+            captions.captions.command(command);
+            if (command == 0 && captions.captions.visible(true) != nullptr) {
                 ++shows;
             }
         }
     }
     CHECK(shows == 6);
     CHECK_FALSE(source("LOGO").has_value());
-    std::printf("L99_IN: %zu caption events, %d captions shown\n", captions->timeline.size(), shows);
+    std::printf("L99_IN: %zu caption events, %d captions shown\n", captions.timeline.size(), shows);
 }

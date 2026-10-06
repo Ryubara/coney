@@ -32,6 +32,7 @@ namespace {
 
 // An archive holding exactly `names`.
 std::function<bool(std::string_view)> archive(std::set<std::string, std::less<>> names) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     return [held = std::move(names)](std::string_view name) { return held.contains(name); };
 }
 

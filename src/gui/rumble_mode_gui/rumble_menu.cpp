@@ -31,9 +31,6 @@ constexpr std::array<std::uint16_t, RumbleModeEntry::kPlayerOptions> kPlayersOfE
 constexpr std::array<graphics::Rgba, 3> kBackgroundColours{
     graphics::Rgba{150, 50, 50, 255}, graphics::Rgba{50, 150, 50, 255}, graphics::Rgba{50, 50, 150, 255}};
 
-// The background's depth (its own batch, `0x001f1c08`).
-constexpr float kBackgroundDepth = 8000.0F;
-
 // A Game Mode entry's text (`0x00557880`): the title large in big_font, the description under it.
 std::string modeEntryText(const RumbleModeEntry& mode) {
     return "<SIZE 1.6><BIGFONT>" + mode.title + "</BIGFONT><SIZE 1.3><CR><SIZE 1.0>" + mode.description;

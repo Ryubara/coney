@@ -39,7 +39,7 @@ float bodyRadius(const human::Human& human) {
 
 } // namespace
 
-void ScriptedHumans::onBrain(double handle, std::function<void(Brain&)> body) {
+void ScriptedHumans::onBrain(double handle, const std::function<void(Brain&)>& body) {
     if (m_scripted->defer([this, handle, body] { onBrain(handle, body); })) {
         return;
     }
@@ -213,6 +213,7 @@ double ScriptedHumans::placeItemInHand(double human, std::string_view object,
     };
     if (m_scripted->holding()) {
         const double handle = nextHandle();
+        // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
         onBrain(human, [place, handle](Brain& brain) { static_cast<void>(place(brain, handle)); });
         return handle;
     }
@@ -287,6 +288,7 @@ void ScriptedHumans::goalBackoff(const script::BackoffCall& call) {
 }
 
 void ScriptedHumans::goalBumLogic(const script::BumLogicCall& call) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     onBrain(call.human, [call](Brain& brain) {
         static_cast<void>(brain.pushGoal(std::make_unique<BumLogicGoal>(BumOrder{.type = call.type,
                                                                                  .option = call.option,
