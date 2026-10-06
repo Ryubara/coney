@@ -136,6 +136,10 @@ std::pair<Value, Value> ScriptSystem::resolve(std::string_view name) const {
     }
 }
 
+bool ScriptSystem::hasFunction(std::string_view name) const {
+    return m_vm != nullptr && resolve(name).first.function() != nullptr;
+}
+
 bool ScriptSystem::call(std::string_view name, std::span<const Value> args) {
     if (!m_vm) {
         return false;

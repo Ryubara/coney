@@ -150,8 +150,10 @@ Coney's choices, where the page is silent:
 - Items other than revives have no upper limit (the table at `0x0058b300` is not described).
 - `StatGetScore` is the five scoring categories' points less harmony's, not below 0 (`0x00422998` is not traced).
 - An event index past its table is ignored; `StatGetTotal` is not registered.
-- The pickup callback (`CfgInventoryCallback`) and the money callback are kept, but Coney has no pickups to call the
-  first, and no binding named here sets the second.
+- `Inventory_AddItem` is `script::addInventoryItem` (`src/scripting/player_bindings.h`), with the money,
+  `CfgInventoryCallback` and `CfgHuInventoryCallback` calls in the order above; `CfgMoneyCallback`
+  ([config](../references/bindings/config.md#cfgmoneycallback)) sets the money callback. The give bindings keep their
+  own paths (`GiveMoney` calls the money callback; the others call none), as their notify flags are not traced.
 
 ## Open questions
 
@@ -162,5 +164,5 @@ Coney's choices, where the page is silent:
 - Whether scripts other than the four found set events 1/0-1/2 and 2/4.
 - The item limits at `0x0058b300`, and what each item's duration (`+0x28`) does.
 - The score formula of `0x00422998`, and which category `StatGetTotal`'s statistic id picks.
-- Which binding sets the money-changed callback (inventory `+0x1034`).
+- Which notify flag `InvGiveItem`, `InvGiveRevive` and the other give bindings pass to `Inventory_AddItem`.
 - What the money multiplier at game state `+0x380` (1.0 in mission 1) is.

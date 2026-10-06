@@ -7461,10 +7461,25 @@ subsystem = "Warriors"
 size = 64
 
 [[function]]
+address = 0x0041e5b0
+name = "Inventory_AddItem"
+subsystem = "Warriors"
+
+[[function]]
 address = 0x0041ece8
 name = "Cfg_SetInventoryCallback"
 subsystem = "Warriors"
 size = 40
+
+[[function]]
+address = 0x0041ed10
+name = "Cfg_SetHuInventoryCallback"
+subsystem = "Warriors"
+
+[[function]]
+address = 0x0041ed60
+name = "Cfg_SetMoneyCallback"
+subsystem = "Warriors"
 
 [[function]]
 address = 0x0041ed88

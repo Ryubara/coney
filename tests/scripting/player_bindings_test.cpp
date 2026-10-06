@@ -138,6 +138,42 @@ TEST_CASE("GiveMoney runs the money callback with the 0-based player and the amo
     CHECK(h.recordedArgs[0][1].number() == 5.0);
 }
 
+TEST_CASE("an item added with notify calls the money, item and human callbacks, in that order", "[player_bindings]") {
+    Harness h;
+    h.scripts.vm().registerFunction("Money", [&h](std::span<const Value> args) -> coney::script::binding::Results {
+        h.recordedArgs.push_back({str("money"), args[0], args[1]});
+        return std::vector<Value>{};
+    });
+    h.scripts.vm().registerFunction("Item", [&h](std::span<const Value> args) -> coney::script::binding::Results {
+        h.recordedArgs.push_back({str("item"), args[0]});
+        return std::vector<Value>{};
+    });
+    h.first("CfgMoneyCallback", {str("Money")});
+    h.first("CfgInventoryCallback", {str("Item")});
+    h.first("CfgHuInventoryCallback", {str("Record")});
+    // Loot with notify: the item callbacks; then its money without: the money callback alone.
+    coney::script::addInventoryItem(h.scripts, h.state, 0, item::kStolenLoot, 1, true);
+    coney::script::addInventoryItem(h.scripts, h.state, 0, item::kMoney, 7, false);
+    REQUIRE(h.recordedArgs.size() == 3);
+    CHECK(h.recordedArgs[0][0].string() == "item");
+    CHECK(h.recordedArgs[0][1].number() == item::kStolenLoot);
+    CHECK(h.recordedArgs[1][0].number() == 0.0); // Record(player, item)
+    CHECK(h.recordedArgs[1][1].number() == item::kStolenLoot);
+    CHECK(h.recordedArgs[2][0].string() == "money");
+    CHECK(h.recordedArgs[2][2].number() == 7.0);
+    CHECK(h.state.player.inventory.count(0, item::kStolenLoot) == 1);
+    CHECK(h.state.player.inventory.count(0, item::kMoney) == 7);
+    // A bad player or item changes nothing and calls nothing; a callback naming no function is skipped.
+    coney::script::addInventoryItem(h.scripts, h.state, 2, item::kMoney, 7, true);
+    coney::script::addInventoryItem(h.scripts, h.state, 0, 23, 1, true);
+    h.first("CfgInventoryCallback", {str("NoSuchFunction")});
+    h.first("CfgHuInventoryCallback", {str("NoSuchFunction")});
+    coney::script::addInventoryItem(h.scripts, h.state, 1, item::kSprayPaint, 2, true);
+    CHECK(h.recordedArgs.size() == 3);
+    CHECK(h.state.player.inventory.count(1, item::kSprayPaint) == 2);
+    CHECK(h.scripts.errors() == 0);
+}
+
 TEST_CASE("items, revives, keys and spray paint", "[player_bindings]") {
     Harness h;
     h.first("CfgInventoryItem",

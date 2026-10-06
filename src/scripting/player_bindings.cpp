@@ -91,6 +91,35 @@ void giveMoney(ScriptSystem& scripts, GameState& state, int player, int amount) 
     }
 }
 
+} // namespace
+
+void addInventoryItem(ScriptSystem& scripts, GameState& state, int player, int item, int amount, bool notify) {
+    if (player < 0 || player >= Inventory::kPlayers || item < 0 || item >= Inventory::kItems) {
+        return;
+    }
+    state.player.inventory.give(player, item, amount);
+    // Calls `name` with `args` when it names a function.
+    const auto callback = [&scripts](const std::string& name, std::span<const Value> args) {
+        if (!name.empty() && scripts.hasFunction(name)) {
+            scripts.call(name, args);
+        }
+    };
+    const Value who(static_cast<double>(player));
+    const Value what(static_cast<double>(item));
+    if (item == item::kMoney) {
+        const std::array<Value, 2> args{who, Value(static_cast<double>(amount))};
+        callback(state.player.moneyCallback, args);
+    }
+    if (notify) {
+        const std::array<Value, 1> itemOnly{what};
+        callback(state.player.pickupCallback, itemOnly);
+        const std::array<Value, 2> both{who, what};
+        callback(state.player.huInventoryCallback, both);
+    }
+}
+
+namespace {
+
 // Registers one binding that reads the state through `state`.
 template <typename Body> void add(LuaVm& vm, std::string_view name, Body body) {
     vm.registerFunction(name, NativeFunction(std::move(body)));
@@ -109,6 +138,18 @@ void addInventoryBindings(ScriptSystem& scripts, LuaVm& vm, GameState& state) {
     // @orig 0x0041ece8 Cfg_SetInventoryCallback (unknown)
     add(vm, "CfgInventoryCallback", [&state](std::span<const Value> args) {
         state.player.pickupCallback = binding::string(args, 0);
+        return binding::none();
+    });
+    // `CfgHuInventoryCallback(fn)`: the second pickup callback's name, called with (player, item).
+    // @orig 0x0041ed10 Cfg_SetHuInventoryCallback (unknown)
+    add(vm, "CfgHuInventoryCallback", [&state](std::span<const Value> args) {
+        state.player.huInventoryCallback = binding::string(args, 0);
+        return binding::none();
+    });
+    // `CfgMoneyCallback(fn)`: the money-changed callback's name, called with (player, amount).
+    // @orig 0x0041ed60 Cfg_SetMoneyCallback (unknown)
+    add(vm, "CfgMoneyCallback", [&state](std::span<const Value> args) {
+        state.player.moneyCallback = binding::string(args, 0);
         return binding::none();
     });
     add(vm, "GiveMoney", [&scripts, &state](std::span<const Value> args) {

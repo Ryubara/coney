@@ -1819,6 +1819,7 @@
     Despite the name it is per player, not per human: other humans' pickups do not call it. Called for any change
     with the notify flag, whatever its sign. Which pickups set the flag is not traced here.
   usage: {chunks: 12, calls: 30, boot: false, mission1: false, result_used: false, levels: [3, 14, 82, 83, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: CfgHuInventoryCallback2
   wrapper: 0x0036c098
@@ -1850,6 +1851,7 @@
     Called for every change, notify flag or not; the call happens after the count is clamped, but passes the
     requested change, not the clamped one.
   usage: {chunks: 6, calls: 15, boot: false, mission1: false, result_used: false, levels: [95, 34, 31, 11]}
+  coney: implemented
 
 - name: CfgBreakAndEnterDelay
   wrapper: 0x0036c0f8

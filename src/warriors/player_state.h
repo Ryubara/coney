@@ -49,8 +49,9 @@ struct PlayerState {
 
     /// `CfgInventoryCallback(fn)` (inventory `+0xfd4`): called when a player picks up an inventory item.
     std::string pickupCallback;
-    /// The money-changed callback (inventory `+0x1034`), which `GiveMoney` calls with (player index, amount). No
-    /// binding the research names sets it.
+    /// `CfgHuInventoryCallback(fn)` (inventory `+0xff4`): called with (player index, item) after pickupCallback.
+    std::string huInventoryCallback;
+    /// `CfgMoneyCallback(fn)` (inventory `+0x1034`): called with (player index, amount) whenever money changes.
     std::string moneyCallback;
     /// `CfgSetSteroTheftHandler(fn)` (`0x0051027c`): called with the human and the car when a stereo is stolen.
     std::string stereoTheftHandler;

@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 13.2% of the game's own code (442,212 of 3,354,776 bytes, 1,354 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 13.2% of the game's own code (442,212 of 3,354,776 bytes, 1,357 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-373 reimplemented function(s) have no size yet and add no bytes.
+376 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -74,7 +74,7 @@ at the top of the repository's `README.md`.
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▍░░░░░░░░░░░░░░░░░░░` | 2.1% | 31 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 23 | 22,008 |
-| `Warriors` | `███▌░░░░░░░░░░░░░░░░` | 17.4% | 93 | 54,264 |
+| `Warriors` | `███▌░░░░░░░░░░░░░░░░` | 17.4% | 96 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -1407,7 +1407,10 @@ at the top of the repository's `README.md`.
 | `0x0041dd68` | `GameState_SetAutoSwitch` | `Warriors` | 16 |
 | `0x0041e250` | `Inventory_SetItem` | `Warriors` | 208 |
 | `0x0041e420` | `Inventory_Count` | `Warriors` | 64 |
+| `0x0041e5b0` | `Inventory_AddItem` | `Warriors` | not filled in |
 | `0x0041ece8` | `Cfg_SetInventoryCallback` | `Warriors` | 40 |
+| `0x0041ed10` | `Cfg_SetHuInventoryCallback` | `Warriors` | not filled in |
+| `0x0041ed60` | `Cfg_SetMoneyCallback` | `Warriors` | not filled in |
 | `0x0041ed88` | `InvPlayerHasItem` | `Warriors` | 48 |
 | `0x0041edb8` | `InvGiveRevive` | `Warriors` | 56 |
 | `0x0041edf0` | `InvNumberRevives` | `Warriors` | 48 |

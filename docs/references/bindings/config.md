@@ -1219,7 +1219,7 @@ with the notify flag, whatever its sign. Which pickups set the flag is not trace
   `0x0041e490` `Inventory_SetHuCallback`, `0x0041e5b0` `Inventory_AddItem`
 - **Used by** 12 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgHuInventoryCallback2 {#cfghuinventorycallback2}
 
@@ -1438,7 +1438,7 @@ requested change, not the clamped one.
   `0x0041e4f0` `Inventory_SetMoneyCallback`, `0x0041e5b0` `Inventory_AddItem`
 - **Used by** 6 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgMultiplayerJoin {#cfgmultiplayerjoin}
 

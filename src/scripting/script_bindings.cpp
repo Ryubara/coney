@@ -565,8 +565,10 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("GetRumbleModeGangName"),
     // The players' inventory, statistics, unlockables, stopwatch, crime reporting and pad handlers
     // (player_bindings.h).
+    real("CfgHuInventoryCallback"),
     real("CfgInventoryCallback"),
     real("CfgInventoryItem"),
+    real("CfgMoneyCallback"),
     real("CfgMultiplayerJoin"),
     real("CfgSetStatTypeMax"),
     real("CfgSetStatValue"),
