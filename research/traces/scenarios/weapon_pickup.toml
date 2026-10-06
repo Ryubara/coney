@@ -1,0 +1,44 @@
+# Lesson 9's bat pick-up (mission 1, level99 checkpoint 3 save): slot 1 has the three dyn_bat_tuff on the ground near
+# the pen; the setup stands the player 1 m behind the first (its record index 0x21, handle 0x210000) and, at update 40,
+# calls SetMsgHandlerEx (0x00386168) on it with message 0, a callback name (Probe, not defined) and a prompt
+# (Take), as the lesson's setup does with its own. Research: docs/research/scripting.md#message-handlers, docs/research/combat.md#bat.
+# The hooks log the kind-1 context record, triangle's ContextAction_Use and message 0 to the bat, the pick-up clip
+# (461, set 3) and Human_PickUpObject; the second triangle drops the bat (no clip).
+description = "level99 lesson 9: a bat given a script prompt, triangle to take it, triangle to drop it"
+research = "docs/research/combat.md#bat"
+input = "weapon_pickup.txt"
+updates = 300
+fields = ["player"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "call-brains", "object-handler", "context-register", "context-use", "pick-up", "pickup-clip"]
+setup = [
+  { address = "0x000c0000", type = "u32", value = "0x626f7250", frame = 0, until = 0 },
+  { address = "0x000c0004", type = "u32", value = "0x00000065", frame = 0, until = 0 },
+  { address = "0x000c0010", type = "u32", value = "0x656b6154", frame = 0, until = 0 },
+  { address = "0x000c0014", type = "u32", value = "0x00000000", frame = 0, until = 0 },
+  { address = "tf(player) + 0x0", type = "f32", value = "-286.62", frame = 0, until = 2 },
+  { address = "tf(player) + 0x4", type = "f32", value = "120.9", frame = 0, until = 2 },
+  { address = "tf(player) + 0x8", type = "f32", value = "0.3", frame = 0, until = 2 },
+  { address = "tf(player) + 0x10", type = "f32", value = "0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x14", type = "f32", value = "0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x18", type = "f32", value = "0", frame = 0, until = 2 },
+  { address = "tf(player) + 0x1c", type = "f32", value = "1", frame = 0, until = 2 },
+]
+calls = [
+  { function = "0x00386168", args = ["2162688", "0", "0x000c0000", "0x000c0010", "0"], frame = 40 },
+]
+
+[coney]
+level = "level99"
+
+[[field]]
+name = "held"
+address = "player + 0x338"
+type = "u32"
+
+[[field]]
+name = "context"
+address = "player + 0x660"
+type = "u32"

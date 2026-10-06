@@ -222,7 +222,7 @@ message was consumed. Confirmed (code); the meanings in the last column are from
 
 | Message | Callback arguments | Result asked |
 | --- | --- | --- |
-| 0 | `(self, subject)` | no |
+| 0 | `(self, subject)`: the interaction (triangle), the subject the human | yes: true consumes the press |
 | 1 | `(self, other, n)`: `other` is the record's `+0x04`, `n` the byte `+0x11` | no |
 | 2 | `(self, other or NilHandle)` from `+0x00` | no |
 | 3, 4, 5 | `(self, subject)`: entered, left, still inside (below) | no |
@@ -243,6 +243,22 @@ message was consumed. Confirmed (code); the meanings in the last column are from
 `self` is the object the handler belongs to; `subject` is the record's `+0x24`; `other` is `+0x00` unless the row
 says otherwise. A gang's handlers
 (`GangSetMsgHandler`) use their own marshalling for 18, `0x11` and 2 ([AI: gang events](ai.md#gang-events)).
+
+**World objects** (props, weapons, pick-ups; the shared vtable `0x005453a0`) take a message through their `+0x44`
+(`0x00392520`): it first offers it to the object zone's handler (`ObjZone_DispatchMessage`, `0x003982a0`, whose result
+is ignored), then to the handler component at object `+0xfc` (its `+0x5c` is `0x00384c38`, the delivery above), and
+returns that result. Confirmed (code).
+
+**The interaction prompt.** [`SetMsgHandlerEx`](../references/bindings/script.md#setmsghandlerex) (`0x00386168`)
+with message 0 and a non-empty prompt also calls the object's `+0x124`; a world object's (`0x00391c98`) registers,
+when it has none yet (`+0x130`), a **kind-1 context record** holding the prompt (`+0x10`) and the second text
+(`+0x14`), reach 1.1 m ([Crimes: context records](crimes.md#context-records)). A nil callback or an empty prompt
+calls `+0x12c` (`0x00391ce8` → `0x00417df8`), which unregisters the record and clears any player's current record
+(`+0x660`) that pointed at it. Triangle by the object then sends it message 0 with the human as the subject
+([Crimes: triangle](crimes.md#triangle), step 4); a true result ends the press, anything else lets the game's own
+pick-up go on. Confirmed (code), and at runtime (slot 1, a bat 1 m ahead of the player given a handler by a call):
+the call registered a kind-1 record, the player's `+0x660` took it the next update, and triangle delivered message 0
+(three calls in the one press, from steps 4 and 5) before the bat's pick-up clip started.
 
 ### Trigger boxes and spheres {#triggers}
 
@@ -676,7 +692,7 @@ disassembly of the script (ids and counts only); the moves themselves are confir
 | 6 | power moves | 57; then 59 | in a front grab, cross + square, then square or cross in its window | [Power strike](combat.md#grabbing) |
 | 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave closes in) | three hits of 25, 27 or 29 | square with the stick past 0.95, more than 45° off the facing, at a target there | [Attacks](combat.md#attacks) |
 | 8 | throws | two hits of 147, 149, 151 or 153; then zone 1 is enabled | circle with the stick in a grab | [Throws](combat.md#throws) |
-| 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 | triangle at a bat; square, cross | [A bat in hand](combat.md#bat), pick-up [inferred](combat.md#breakables) |
+| 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 | triangle at a bat; square, cross | [A bat in hand](combat.md#bat), [the prompt](#message-handlers) |
 | 10 | rage | the meter set to half and locked; the full callback; L1 + R1 (every other command off); then 645 or 647; then 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat.md#rage); 65 and 233 inferred |
 | 11 | finish the second wave | the gang's message 18 with none standing | any | [AI](ai.md#level99) |
 | 12 | the Warriors (after the scene `l99_c5`) | the 50-second stopwatch; a hint the first time the player holds a grab (anim callback on 82 / 84) | any | [Stopwatch](#stopwatch), [anim callbacks](characters.md#anim-callbacks) |
@@ -687,6 +703,15 @@ Then the scene `l99_c6` and `P1.Cleanup` (checkpoint 2). Points an implementer n
 - **10**: the rage special is cross + square while raging (645 / 647); the last step wants the extension of the rage
   power strike in a grab (63 → 65) or of the rage power strike in the mount (231 → 233); both use the + 2 of
   `Player_UpdatePowerMove` (inferred for the mount). The callbacks are re-armed 3.5 s after each step.
+- **9**: the scene's return function schedules the setup 50 ms later. The setup gives each of the three bats a
+  message-0 handler with the lesson's prompt, places the players in the pen, sets up the fence's enemies and starts a
+  check that runs every 250 ms. The handler, on the first bat taken, removes the handler and prompt from all three,
+  arms the tutorial callback and returns nothing, so the game's own pick-up puts the bat in hand ([A bat in
+  hand](combat.md#bat)); no binding does it. The check asks `HuGetHeldObject`: holding, it shows the lesson's current
+  text once; empty-handed after holding, it shows a "pick it up again" text; it stops rescheduling once the lesson is
+  done. The callback wants 34, then 36, then two more of either (the fifth hit ends the lesson). A dropped bat has no
+  prompt any more, but triangle's plain search still takes it (bats are [pickable](objects.md#pickable)). Inferred
+  from the disassembly of the script; the game side is confirmed where linked.
 - **2, 6, 8**: a plain grab scores nothing; strikes, throws and power moves are scored with their own ids when they
   start, since a grab move applies its damage on its first update.
 

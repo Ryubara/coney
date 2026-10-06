@@ -52,7 +52,7 @@ Confirmed (code) at `0x00417ca0`:
 | Kind | What | Prompt (`GSTRING.HUD` id) | Reach (`CfgActionDistance`) | Evidence |
 | --- | --- | --- | --- | --- |
 | 0 | a handcuffed human | 2 (uncuff), or 3 (uncuff yourself) for a player who owns upgrade (6, 15) and holds a key | 2 m in `global.lua` | confirmed (code) |
-| 1 | an object or flag with its own text | the caller's text, and a second value at `+0x14` | 1.1 m | confirmed (code); who registers it is not traced |
+| 1 | an object or flag with its own text: `SetMsgHandlerEx` with message 0 on a world object ([Scripts](scripting.md#message-handlers)) | the caller's text, and a second value at `+0x14` | 1.1 m | confirmed (code), runtime |
 | 2 | a pickable lock (a door) | 15 (pick lock) | 2 m | confirmed (code) |
 | 3 | a car stereo | 16 (steal) | 2 m | confirmed (code) |
 | 4, 5 | objects with their own text | the caller's text | 1.75 m, 1.5 m | confirmed (code); who registers them is not traced |
@@ -115,15 +115,19 @@ tried, confirmed (code) at `0x0027c120`, `0x002811f0`:
 4. `ContextAction_Use` (`0x0024d530`) by the record's kind: **0** frees the cuffed human (`0x00260ca8`, the mash of
    mode 1; with a key, at once); **2** sets mode 2 and plays 687 `ANIM_LOCKPICK_INTRO`; **3** sets mode 3 and plays
    683 `STEREO_STEAL_INTRO` (both through `0x002789d0`, which turns the human to the object and starts the
-   mini-game); any other kind hands the press to the object's message handler.
-5. Otherwise the pick-up search (`0x0024d810`, objects within 1.5 m).
+   mini-game); any other kind hands the press to the object's message handler (its `+0x44`, message 0 with the human
+   as the subject); a true result ends the press. Confirmed (code), and at runtime for a kind-1 bat.
+5. Otherwise the pick-up search (`0x0024d810`, objects within 1.5 m; only while `0x005109a0` is set). It too sends
+   message 0 to every object it gathers, before its filters, and a true result ends it; then it takes one
+   ([Breakables](combat.md#breakables), [A bat in hand](combat.md#bat)), or, with something in hand and nothing to
+   take, drops it (`0x00257f38`).
 
 **The prompt** (two text widgets per player at HUD `+0x6b40`, `0x590` each; [HUD](hud.md#announcements-and-other-messages))
 is chosen every frame by `HUD_Update` (`0x001af010`), confirmed (code): nothing while the player is mugging, mugged,
 tagging, in a mini-game of mode 2 or 3, in a hold (`0x18000000000`), uncuffing (action `0x15`) or a few other
 states, or when command `0xa` is not available (`0x00147738`). Otherwise, in order: holding a human who can be
 mugged → `GSTRING.HUD` 1 (mug), or 0 (interrogate) when the human has an interrogation set; a partner who can be
-revived while either holds a flash → 4 (revive); a context record → its text; else a nearby human's own talk prompt
+revived while either holds a flash → 4 (revive); a context record → its text (`+0x10`; whether the second text is ever shown is not traced); else a nearby human's own talk prompt
 (`0x001acd60`). The panel's activity test then matches the prompt's text against the dealer prompts
 ([HUD](hud.md#the-player-panel)). The prompt sits 0.04 above its place in the default video mode (0.02 in the others) and
 rises with a scroll-in message (`0x0019f430`).

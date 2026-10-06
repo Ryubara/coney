@@ -1,0 +1,3 @@
+# Update 90: take the bat; update 200: drop it.
+90 tap triangle
+200 tap triangle

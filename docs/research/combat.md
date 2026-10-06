@@ -967,10 +967,51 @@ called on the game's thread, the civilian 1.3 m ahead):
 | cross (on its release) | 36 `BAT_COMBO_X1` | 292, then down | 64 | 36 |
 | square or cross at a grounded victim | 37 `BAT_COMBO_GROUNDED_STRIKE_01` | | none here (the victim was getting up) | |
 
-So every standing bat hit knocks the victim down, and the next one must wait for it to stand. Which code maps square
-and cross to the bat's ids is not traced (the cross path `0x002880d8` serves weapon types 4-6 only). Picking a bat up
-from the ground goes through the triangle pick-up search ([Breakables](#breakables)); that a weapon gets message 0
-there as a `TYPE_SPECIAL` item does is inferred.
+So every standing bat hit knocks the victim down, and the next one must wait for it to stand.
+
+**Picking it up.** A bat (`dyn_bat_tuff`, class `melee_weapon`, `TYPE_BAT` 3) is [pickable](objects.md#pickable), so
+triangle's pick-up search takes it ([Breakables](#breakables) has the search; a script's prompt on it comes first,
+[Crimes: triangle](crimes.md#triangle)). Confirmed (code) at `0x0024d810`, `0x003fead0`, `0x0023bf00`:
+
+1. A type other than 12 (`TYPE_SPECIAL`) or 24 is taken by a player only with empty hands (human `+0x338` Nil). With
+   something in hand the search instead sets human `+0x5b8` = 1 and drops the held object (`0x00257f38`).
+2. The winner's record is pinned and it gets message 0. The weapon's handler (`0x003fead0`), while its state (data
+   `+0x10`) is 0, sets it to 3 and sends the human message `0x14`, which plays the pick-up clip (`0x0025e5a8`: the
+   type's pick-up animation and the item's height choose it, as for [loot](#breakables)).
+3. The clip's event (message 3) applies the object's anim set (object type `+0x87`, 3 for a bat) when the human's
+   differs (`0x00221ed0`); `Human_PickUpObject` has no case for type 3 and returns 0, so `0x00227010` puts the bat
+   in the hand (`+0x338`).
+
+At runtime (slot 1, a bat 1 m ahead): triangle started clip **461** with set 3, `Human_PickUpObject` ran 9 updates
+later and the hand held the bat the update after. Confirmed (runtime). `Human_PlaceItemInHand` (`0x00238540`,
+`HuPlaceItemInHand`) is the scripted way to arm a human; the pick-up does not use it.
+
+**The anim set.** A human keeps a stack of up to 3 anim sets (record `+0x0c` the depth, the sets as bytes at `+0x10`;
+push `0x00253ed0`, pop `0x00253f28`). Applying one (`0x00253688`) resets the clip slots (record `+0x28` + slot × 4)
+from the defaults at `0x005105d8` (a player's slot `0xe` is always 380) and then writes the set's overrides. Square
+and cross read slots `0x10` and `0x11`, which is how the bat's 34 and 36 replace 12 and 11. Confirmed (code):
+
+| Slot | Default | Set 3 (bat) |
+| --- | --- | --- |
+| 0 (idle) | 388 | not changed |
+| `0xb` (fight idle), `0xe` (fight walk) | 358, 372 | not changed |
+| `0x10` (square) | 12 `ATTACK_S1` | 34 |
+| `0x11` (cross) | 11 `ATTACK_X1` | 36 |
+| `0x12` (mounting strike) | 212 | 38 |
+| `0x13` (grounded strike) | 193 | 37 |
+| `0x15`, `0x16`, `0x17`, `0x18` (block start, high front, sustain, shuffle) | 605, 608, 606, 607 | 621, 624, 622, 623 |
+
+So a bat has **no carrying or idle clip** of its own: the human idles and walks as usual with the bat in his hand.
+Set 1 overrides with 45, 47, 49, 50, 48 and set 2 with 39, 41, 43, 44, 42 (the same slots in that order: square,
+cross, grounded, mounting, `0x14`); which weapons use them is not traced. At runtime the stack's depth was 1 with a
+bat placed. Confirmed (runtime).
+
+**Losing it.** Triangle with nothing to take drops the held bat at once, with no clip (`0x00257f38`); confirmed
+(runtime). A weapon **breaks** only on its message 1 (`0x003fd600`): shatter particles, hidden (`0x100000`), message 7
+to its holder (data `+0x18`; the human's message 7 pops sets 1-5), and state −5 deletes it on its next update.
+Confirmed (code); what sends message 1 is not traced. At runtime 12 bat hits on a civilian (64 damage each, 34 and 37
+alternating) never broke it and its handler saw no message 1, so hits alone do not wear a bat out; whether its
+hitpoints (object `+0x128`, the `CfgObj` value 50) ever count down is open.
 
 ### Mugging {#mugging}
 

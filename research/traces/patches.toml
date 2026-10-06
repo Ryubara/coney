@@ -191,17 +191,17 @@ original = [0x27bdff90, 0x7fb30030]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "player" }, { value = "a2", name = "item" }, { value = "a3", name = "amount" }, { value = "t0", name = "notify" }]
 
 [hook.pick-up]
-description = "Each call of Human_PickUpObject (0x0023bf00): the object, its position, its object-type index and its model hash (+0xc4)."
+description = "Each call of Human_PickUpObject (0x0023bf00): the caller, the object, its x and y, its object-type index and its model hash (+0xc4)."
 research = "docs/research/combat.md#breakables"
 address = 0x0023bf00
 # addiu sp,sp,-0xa0; sq s2,0x70(sp)
 original = [0x27bdff60, 0x7fb20070]
 log = [
   { value = "[0x005104f4]", name = "ticks" },
+  "ra",
   { value = "a1", name = "object" },
   { value = "[a1 + 0x10]", name = "x", type = "f32" },
   { value = "[a1 + 0x14]", name = "y", type = "f32" },
-  { value = "[a1 + 0x18]", name = "z", type = "f32" },
   { value = "[a1 + 0x112]", name = "type_index", type = "u16" },
   { value = "[a1 + 0xc4]", name = "hash" },
 ]
@@ -294,3 +294,35 @@ address = 0x001ce9a8
 # addiu sp,sp,-0x30; sq s1,0x10(sp)
 original = [0x27bdffd0, 0x7fb10010]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "anim" }, { value = "[a0 + 0x3a0]", name = "name" }]
+
+[hook.object-handler]
+description = "Each call of the script handler component's message entry (0x00384c38, a world object's vtable +0x44 and Human_OnEvent reach it): the component, the message number and its subject (+0x24)."
+research = "docs/research/scripting.md#message-handlers"
+address = 0x00384c38
+# addiu sp,sp,-0x40; sq s0,0x30(sp)
+original = [0x27bdffc0, 0x7fb00030]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "component" }, { value = "[a1 + 0x20]", name = "message" }, { value = "[a1 + 0x24]", name = "subject" }]
+
+[hook.context-register]
+description = "Each call of ContextActions_Register (0x00417ca0): the object, the kind and the prompt text's address."
+research = "docs/research/crimes.md#triangle"
+address = 0x00417ca0
+# addiu sp,sp,-0x70; sq s5,0x10(sp)
+original = [0x27bdff90, 0x7fb50010]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a1", name = "object" }, { value = "a2", name = "kind" }, { value = "a3", name = "prompt" }]
+
+[hook.pickup-clip]
+description = "Each call of the pick-up clip starter (0x0025e5a8, the human's message 0x14): the human, the type's pick-up animation and its animation set."
+research = "docs/research/combat.md#breakables"
+address = 0x0025e5a8
+# addiu sp,sp,-0xd0; sq s1,0xb0(sp)
+original = [0x27bdff30, 0x7fb100b0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "a1", name = "anim" }, { value = "a2", name = "set" }]
+
+[hook.melee-message]
+description = "Each message a melee_weapon gets (its class handler 0x003fead0): the weapon, the message number and the caller."
+research = "docs/research/combat.md#bat"
+address = 0x003fead0
+# addiu sp,sp,-0x90; sq s0,0x80(sp)
+original = [0x27bdff70, 0x7fb00080]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "weapon" }, { value = "a1", name = "message" }, { value = "[a0 + 0x128]", name = "hitpoints", type = "s16" }]

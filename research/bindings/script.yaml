@@ -78,7 +78,7 @@
     - {name: message, lua: number, ctype: int, desc: "Message number; 0 is the interaction (the scripts pass 0)."}
     - {name: callback, lua: string, desc: "Lua function name to call, or nil."}
     - {name: prompt, lua: string, desc: "Text of the on-screen prompt shown when the player can interact (a string, often a `GSTRING` entry); nil or empty for none."}
-    - {name: prompt2, lua: string, desc: "Second prompt text, used when the first is empty."}
+    - {name: prompt2, lua: string, desc: "A second text, kept in the context record's `+0x14`; what reads it is not traced."}
   description: >-
     Like SetMsgHandler but also gives the object an interaction prompt, the 'press to talk' text shown when the player
     is close; used for doors, bouncers and tags.
@@ -86,7 +86,8 @@
   depth: thorough
   notes: >-
     With message 0 and a non-empty prompt the object's prompt is set (vtable `+0x124`); otherwise its prompt is
-    cleared (`+0x12c`).
+    cleared (`+0x12c`). On a world object the prompt is a kind-1 context record (1.1 m), which triangle hands to the
+    message-0 callback ([Scripts](../../research/scripting.md#message-handlers)).
   usage: {chunks: 43, calls: 212, boot: true, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 55, 82, 92, 83, 20, 11]}
   coney: implemented
 

@@ -405,6 +405,24 @@ bound object's transform from its track: positions linear, rotations slerped bet
 When the scene stops (`SceneStop`, a movie, a level start) the objects are released where they stand; playing it
 again restarts every track from frame 0. Inferred from [Scenes: ending](scenes.md#ending).
 
+### Pickable objects {#pickable}
+
+Triangle's pick-up search ([Breakables](combat.md#breakables)) and `Human_PickUpObject` take only objects with flag
+`0x8000` (object `+0x54`). Each class's `init` sets the flags, confirmed (code):
+
+| Class | Init (`+0x54`) | Pickable | Exceptions |
+| --- | --- | --- | --- |
+| `melee_weapon` (`0x003fd420`) | `0x218081` | yes | bit `0x80` cleared for model hash `0x13ff8ee4`; its message `0x19` sets or clears `0x8000` |
+| `thrown_weapon` (`0x00403090`) | `0x228081` | yes | |
+| `overhead_weapon` (`0x003ff6c8`) | `0x228001` | yes | not for model hash `0x8fc6ac30` |
+| `pickup_item` (`0x003f17e0`) | `0x208081` | yes | not for model hash `0x2fd690d6` (also cleared in `0x003f23f8`) |
+| `powerup_item` (`0x003f2700`) | `0x808081` | yes, but the search skips the class: it is walked over instead | |
+| `simple_object` | 1 (or `0x11`) | no | `0x8080` added for model hash `0xfcbe9fbb` |
+
+The search also refuses bit `0x10`, bit `0x4000000`, an object whose type value (`CfgObj` field `+0x62`, read through
+vtable `+0xdc`) is 75 or more unless the human's record `+0x11b` is 13, the model hash `0xd2cfcd44` for a non-player,
+and anything out of sight. At runtime (slot 1) `dyn_masks`, the cash register and the swinging doors had no `0x8000`.
+
 ### How they get into a level {#placement}
 
 Glass and doors come from level scripts: `SpawnBreakableGlass` (929 calls in 32 chunks) and `SpawnDoor` (484 in

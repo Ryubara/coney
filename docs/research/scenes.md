@@ -387,7 +387,14 @@ State 7 (all clips done, or a part ended with no roles) calls the end (`0x0039f4
 1. Cinematic: scene state `0x410` = 0; the game-mode switch of step 6 restored.
 2. Each bound human: when skipped, `+0x280` = −1 and it is **placed at its role's end pose** (in the scene's space);
    its join goal (types `0x27`-`0x2a`) is popped, which gives a player back control ([Humans](#humans)); unbound.
-3. Each object: when skipped, placed at its end pose; released. Each light: released.
+3. Each object: when skipped, placed at its end pose; then its scene slot (`+0x110`) is −1 again, its sound
+   stopped, its body flagged (`0x80000000`) and added back to the world, and its record unpinned (`SceneAddObject`
+   pinned it and refuses an object already in a scene). The object stays where the scene left it; its **spawn
+   record's pose** is written only when the object is stored (streamed out or its zone turned off), so it keeps the
+   `ObjSpawn` pose until then. The abort (`0x0039ec60`) does the same, always placing at the end pose. Each
+   light: released. Confirmed (code); at runtime (slot 1, after lesson 9) the three bats' records, no longer live,
+   held poses on the ground near the pen, not their spawn poses 2.16 m below it, so storing wrote the objects' last
+   places (where the player left them, which may not be the scene's end poses).
 4. **The camera**: popped and made current over `BlendCam` seconds, the scene camera released and the cameras updated
    once with 0.17 s ([Camera](camera.md#scenes)).
 5. Cinematic: **letterbox out** on every player's view (type 3, 1.5 s); player 1's gang command reset
