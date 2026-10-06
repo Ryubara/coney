@@ -148,7 +148,9 @@ target_sources(coney_core PRIVATE
     effects/motion_blur.cpp
     effects/particle_types.cpp
     effects/particles.cpp
-    scripting/effects_bindings.cpp)
+    scripting/effects_bindings.cpp
+    scripting/car_bindings.cpp
+    world_objects/cars.cpp)
 # Characters: the animation format and player, and the character resources (docs/research/characters.md).
 target_sources(coney_core PRIVATE
     animation/anim_clip.cpp

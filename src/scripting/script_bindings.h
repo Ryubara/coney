@@ -27,6 +27,10 @@ struct LevelEffects;
 } // namespace coney::effects
 
 namespace coney::world_objects {
+class Cars;
+} // namespace coney::world_objects
+
+namespace coney::world_objects {
 class ObjectTypes;
 class SpawnRecords;
 class LevelObjects;
@@ -161,6 +165,7 @@ struct BindingContext {
     graphics::LevelLighting* lighting = nullptr; ///< The lights and fog the lighting bindings set; null keeps none.
     effects::LevelEffects* effects = nullptr;    ///< The level's particles and motion blur; null: none drawn.
     SoundHost* sound = nullptr;                  ///< The game's sound (sound_bindings.h); null plays nothing.
+    world_objects::Cars* cars = nullptr;         ///< The level's parked cars (`CarSpawn`); null keeps none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

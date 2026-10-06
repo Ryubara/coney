@@ -50,6 +50,11 @@ void GameplayMode::endLevel() {
         m_context.effects = nullptr;
     }
     m_objectServices.setParticles(nullptr, {});
+    m_objectServices.setCars(nullptr);
+    if (m_context.cars == m_cars.get()) {
+        m_context.cars = nullptr;
+    }
+    m_cars.reset();
     m_effects.reset();
     if (m_context.ai == m_scripted.get()) {
         m_context.ai = nullptr;
@@ -135,6 +140,11 @@ void GameplayMode::enter() {
         return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
     });
     m_context.effects = m_effects.get();
+    // The level's parked cars; the police car's lights are particles.
+    m_cars = std::make_unique<world_objects::Cars>();
+    m_cars->setParticles(&m_effects->particles);
+    m_context.cars = m_cars.get();
+    m_objectServices.setCars(m_cars.get());
     // The panes' shards and the objects' dust go to the level's particles, culled round player 1.
     m_objectServices.setParticles(&m_effects->particles, [this]() -> std::optional<anim::Vec3> {
         const HumanCreation* player = m_humans.player(1);
@@ -186,6 +196,12 @@ void GameplayMode::loadLevel() {
         m_log(std::format("gameplay: {} checkpoint {}: the level script made no player 1 with a position\n",
                           start.level, start.checkpoint));
     }
+    // The parked cars the script made, one line each.
+    for (const world_objects::Car& car : m_cars->all()) {
+        m_log(std::format("gameplay: car {} at ({:.2f}, {:.2f}, {:.2f})\n",
+                          car.type ? world_objects::kCarTypeNames.at(*car.type) : std::string_view("of no type"),
+                          car.position.x, car.position.y, car.position.z));
+    }
 
     // The level itself, with the player at that start; entering it preloads the world around him.
     std::expected<std::unique_ptr<GameMode>, Error> level = fail(ErrorCode::NotFound, "no level loader");
@@ -198,7 +214,8 @@ void GameplayMode::loadLevel() {
                                              .scenes = m_scenes.get(),
                                              .objects = &m_objects,
                                              .lighting = m_lighting.get(),
-                                             .effects = m_effects.get()});
+                                             .effects = m_effects.get(),
+                                             .cars = m_cars.get()});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));

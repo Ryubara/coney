@@ -307,6 +307,7 @@
     The 'stealable radio' meaning is inferred from the name and the game's car-radio theft; the call chain is
     confirmed (code).
   usage: {chunks: 15, calls: 37, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 93, 31, 14, 82, 11]}
+  coney: implemented
 
 - name: ObjIsAlive
   wrapper: 0x0036de88
@@ -706,6 +707,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 26, calls: 118, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 51, 52, 82, 92, 20, 11, 60, 62]}
+  coney: implemented
 
 - name: CarDestroy
   wrapper: 0x003784f0
@@ -753,6 +755,7 @@
   notes: >-
     Component order is read from the scripts' calls; the packing (0x0017aca8) is confirmed (code).
   usage: {chunks: 15, calls: 23, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 86, 93, 31, 14, 52, 54, 82, 92, 11]}
+  coney: implemented
 
 - name: CarExplode
   wrapper: 0x003786a0
@@ -822,6 +825,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 2, calls: 2, boot: false, mission1: true, result_used: false, levels: [14]}
+  coney: implemented
 
 - name: CarPlaceInTrunk
   wrapper: 0x00378840

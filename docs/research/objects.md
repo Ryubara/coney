@@ -621,6 +621,10 @@ Coney's stand-ins, where this page is silent:
 - Sounds: a name hash plays on the effects bus at its recorded volume, with no 3D attenuation or pan; a material
   pair's sound and the lock pick's click are counted, not played (no sound matrix or interface cues yet). Shards,
   crimes beyond the `CrimeScene` flag, statistics, loose objects and models do nothing yet.
+- Shards (`gamemodes/level_object_services.h`, with [Particles](particles.md)): the culling step's two distance tests
+  are one in Coney, player 1 within 10 m of the pane, and the budget is 158 particles left in the pool; dust and bursts
+  are a `sub_shack_puff`. A broken pane also frees the stereo of a parked car within 2 m of it
+  ([Cars](cars.md#coneys-implementation)).
 
 ## Open questions
 

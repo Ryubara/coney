@@ -1,0 +1,145 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+#include "world_objects/cars.h"
+
+#include <algorithm>
+#include <cmath>
+
+#include "core/name_hash.h"
+#include "effects/particles.h"
+
+namespace coney::world_objects {
+
+namespace {
+
+// The highest part id: parts are 0-25.
+constexpr std::uint32_t kLastPart = kCarParts - 1;
+// Where Coney puts a car's stereo, above its origin (metres): **Coney's stand-in**, dashboard height.
+constexpr float kStereoHeight = 0.8F;
+
+// One component 0-1 as a byte: × 255, kept to 0-255. **Coney's choice**: truncated, as the page does not say whether
+// `0x0017aca8` rounds.
+std::uint32_t componentByte(float component) {
+    const float scaled = std::clamp(component, 0.0F, 1.0F) * 255.0F;
+    return static_cast<std::uint32_t>(scaled);
+}
+
+} // namespace
+
+std::uint32_t packCarColour(const std::array<float, 4>& components) {
+    return componentByte(components[0]) | (componentByte(components[1]) << 8U) | (componentByte(components[2]) << 16U) |
+           (componentByte(components[3]) << 24U);
+}
+
+CarPaint paintOf(std::uint32_t word) {
+    // Bytes reversed: the last component (the word's top byte) is red, the first alpha.
+    return CarPaint{static_cast<std::uint8_t>(word >> 24U), static_cast<std::uint8_t>(word >> 16U),
+                    static_cast<std::uint8_t>(word >> 8U), static_cast<std::uint8_t>(word)};
+}
+
+std::optional<std::uint32_t> linkedCarPart(std::uint32_t part) {
+    switch (part) {
+    case 14:
+    case 16:
+    case 18:
+    case 20:
+        return part + 1;
+    default:
+        return std::nullopt;
+    }
+}
+
+Car* Cars::spawn(std::string_view typeName, anim::Vec3 position, anim::Quat rotation, double handle) {
+    if (m_cars.size() >= kPool) {
+        return nullptr;
+    }
+    Car& car = m_cars.emplace_back();
+    car.handle = handle;
+    car.position = position;
+    car.rotation = rotation;
+    // The type is the first of the six names that matches (strcmp, so exact).
+    if (const auto found = std::ranges::find(kCarTypeNames, typeName); found != kCarTypeNames.end()) {
+        car.type = static_cast<std::uint8_t>(found - kCarTypeNames.begin());
+    }
+    car.nameHash = crc32(typeName);
+    // The police car brings its lights, attached to it.
+    if (car.type == kPoliceCarType && m_particles != nullptr) {
+        car.lights = m_particles->spawn("part_copcar_lights", position, rotation, handle) != nullptr;
+    }
+    return &car;
+}
+
+Car* Cars::find(double handle) {
+    const auto found = std::ranges::find(m_cars, handle, &Car::handle);
+    return handle != 0 && found != m_cars.end() ? &*found : nullptr;
+}
+
+const Car* Cars::find(double handle) const {
+    const auto found = std::ranges::find(m_cars, handle, &Car::handle);
+    return handle != 0 && found != m_cars.end() ? &*found : nullptr;
+}
+
+void Cars::setColour(double handle, const std::array<float, 4>& components) {
+    if (Car* car = find(handle); car != nullptr) {
+        const std::uint32_t word = packCarColour(components);
+        car->paint = {word, word};
+        car->painted = true;
+        car->dirty = true;
+    }
+}
+
+void Cars::repair(double handle) {
+    if (Car* car = find(handle); car != nullptr) {
+        car->removedParts = 0;
+        car->openParts = 0;
+        car->damagedParts = 0;
+        car->dirty = true;
+    }
+}
+
+void Cars::removePart(double handle, std::uint32_t part, bool on) {
+    Car* car = find(handle);
+    if (car == nullptr || part > kLastPart) {
+        return;
+    }
+    const std::uint32_t bit = 1U << part;
+    if (!on) {
+        car->removedParts &= ~bit;
+    } else {
+        car->removedParts |= bit;
+        car->removedKept |= bit;
+        if (const std::optional<std::uint32_t> linked = linkedCarPart(part)) {
+            car->removedParts |= 1U << *linked;
+        }
+    }
+    car->dirty = true;
+}
+
+void Cars::spawnRadio(double handle) {
+    if (Car* car = find(handle); car != nullptr && car->stereo == StereoState::None) {
+        car->stereo = StereoState::InCar;
+    }
+}
+
+bool Cars::freeStereo(double handle) {
+    Car* car = find(handle);
+    if (car == nullptr || car->stereo != StereoState::InCar) {
+        return false;
+    }
+    car->stereo = StereoState::Freed;
+    return true;
+}
+
+bool Cars::takeStereo(double handle) {
+    Car* car = find(handle);
+    if (car == nullptr || car->stereo != StereoState::Freed) {
+        return false;
+    }
+    car->stereo = StereoState::Taken;
+    return true;
+}
+
+anim::Vec3 Cars::stereoPosition(const Car& car) {
+    return anim::Vec3{car.position.x, car.position.y, car.position.z + kStereoHeight};
+}
+
+} // namespace coney::world_objects

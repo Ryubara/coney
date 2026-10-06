@@ -133,9 +133,32 @@ clump of several atomics as a `LevelClumpObject` (`world::extractClumpModels`), 
 first 26 atomics of each car, each at its frame and given the dictionary's first texture, for
 [Cars](../references/cars.md) ([Building](../guides/building.md#reference-images)).
 
+**Parked cars in play** (2026-10-06), written from this page and [Crimes](crimes.md#stereo):
+
+- `world_objects::Cars` (`repo:src/world_objects/cars.h`) is the level's pool of 18 cars: `CarSpawn` takes the type
+  index of its name and its CRC-32, `car_copcar` spawns `part_copcar_lights` ([Particles](particles.md)),
+  `CarSetColor` packs its four numbers as [Colour](#colour) says and marks the car dirty, `CarMakeGoodAsNew` clears
+  the removed and open parts, and removing door or window part 14, 16, 18 or 20 also removes the next.
+  `CarSpawnRadio` puts a stereo in the car; a broken pane frees it and a theft takes it once.
+- The bindings (`repo:src/scripting/car_bindings.h`) are `CarSpawn`, `CarSetColor`, `CarMakeGoodAsNew` and
+  `CarSpawnRadio`; `CarSpawn` returns `NilHandle` when the pool is full.
+- `platform::ParkedCars` (`repo:src/platform/parked_cars.h`) draws each car's first 26 atomics, less its removed parts,
+  from the type's Object List model, and gives each car a box (12 triangles) that joins the level's collision mesh.
+
+Coney's stand-ins, where this page is silent:
+
+- The paint tints every part but the glass, lights and wheels (8, 9, 15, 17, 19, 21, 22-25).
+- Cars are lit as the level lights its humans.
+- A car's obstacle is one box around its undamaged atomics, not the type record's boxes; the rebuilt collision mesh
+  uses a 4 m grid.
+- The stereo sits 0.8 m above the car's origin; a pane frees it within 2 m.
+- A name that is not one of the six types still makes a car, which draws nothing.
+
 ## Open questions
 
 - What swaps a part's atomic `p` for its damaged form `p + 25` (`CarSetPartDamage`), and how the game hides the
   damaged atomics of an undamaged car.
 - Who sets `+0x11f4`, and what the part record's `+0x01` byte and `+0x20` float are.
 - The lookup that takes a car to its Object List record.
+- Which atomics the paint tints, how cars are lit, and how the type record's boxes make a car's collision.
+- Where a car's stereo sits.

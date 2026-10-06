@@ -186,13 +186,24 @@ PlayLevelMode::createWith(RenderEngine& engine, const io::Wad& wad, std::unique_
                       model, start.position.x, start.position.y, start.position.z, start.headingDegrees,
                       scenery->startSource(), setup.snapToGround ? "" : ", not snapped", speeds.walk, speeds.jog,
                       speeds.run, speeds.sprint));
+    // The level's cars, particles and motion blur, when gameplay brought them; the cars' boxes join the level's
+    // collision before anything takes the mesh.
+    std::unique_ptr<PlayLevelEffects> levelEffects;
+    if (cast != nullptr && (cast->effects != nullptr || cast->cars != nullptr)) {
+        levelEffects = std::make_unique<PlayLevelEffects>(engine, wad, cast->effects, cast->cars, print);
+        if (auto added = scenery->addObstacles(levelEffects->carObstacles()); !added) {
+            print(std::format("cars: no collision for the parked cars: {}\n", added.error().message));
+        }
+    }
     return std::unique_ptr<PlayLevelMode>(new PlayLevelMode(engine, wad, std::move(scenery), std::move(*loaded),
-                                                            std::move(print), std::move(model), used, cast));
+                                                            std::move(print), std::move(model), used, cast,
+                                                            std::move(levelEffects)));
 }
 
 PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
                              LoadedCharacter loaded, std::function<void(std::string_view)> print, std::string model,
-                             const PlayerSetup& setup, const ScriptedCast* cast)
+                             const PlayerSetup& setup, const ScriptedCast* cast,
+                             std::unique_ptr<PlayLevelEffects> levelEffects)
     : m_engine(engine), m_wad(wad), m_scenery(std::move(scenery)), m_character(std::move(loaded.character)),
       m_dictionaries(std::move(loaded.dictionaries)), m_types(setup.types), m_type(setup.type),
       m_levelNumber(levelNumberOf(m_scenery->name())),
@@ -241,9 +252,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         const HumanCreation* player = cast->humans != nullptr ? cast->humans->player(1) : nullptr;
         attachScenes(cast->scenes, player != nullptr ? player->handle : 0.0);
     }
-    if (cast != nullptr && cast->effects != nullptr) {
-        m_levelEffects = std::make_unique<PlayLevelEffects>(m_engine, m_wad, *cast->effects, m_print);
-    }
+    m_levelEffects = std::move(levelEffects);
 }
 
 PlayLevelMode::~PlayLevelMode() {
@@ -540,6 +549,10 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_stage->drawOverlay(engine, nowMs);
     });
     m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot, &blended] {
+        // The parked cars, lit as the level lights humans (**Coney's stand-in**: how cars are lit is not traced).
+        if (m_levelEffects) {
+            m_levelEffects->drawCars([this](rw::Atomic* atomic) { m_lights->drawHuman(atomic, false); });
+        }
         drawCharacter();
         drawDebugLines(snapshot);
         if (m_levelEffects) {

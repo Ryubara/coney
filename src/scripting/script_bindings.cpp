@@ -17,6 +17,7 @@
 #include "scripting/anim_callbacks.h"
 #include "scripting/binding_args.h"
 #include "scripting/camera_bindings.h"
+#include "scripting/car_bindings.h"
 #include "scripting/config_strings.h"
 #include "scripting/effects_bindings.h"
 #include "scripting/gang_bindings.h"
@@ -764,6 +765,11 @@ constexpr std::array kBindings{
     real("HuSpeakNI"),
     real("HuShutUp"),
     real("SoundPlayCommand"),
+    // The parked cars (car_bindings.h).
+    real("CarSpawn"),
+    real("CarSetColor"),
+    real("CarMakeGoodAsNew"),
+    real("CarSpawnRadio"),
     routed("ShowRumbleModeInterface"),
     routed("PlayMovie"),
     // The four the script system's constructor registers itself: configuration kept for later.
@@ -989,7 +995,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kLightingBindings, info.name) != kLightingBindings.end() ||
                      std::ranges::find(kPlayerBindings, info.name) != kPlayerBindings.end() ||
                      std::ranges::find(kHumanBindings, info.name) != kHumanBindings.end() ||
-                     std::ranges::find(kEffectsBindings, info.name) != kEffectsBindings.end());
+                     std::ranges::find(kEffectsBindings, info.name) != kEffectsBindings.end() ||
+                     std::ranges::find(kCarBindings, info.name) != kCarBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -1017,6 +1024,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addObjectBindings(vm, context, nextHandle);
     addHumanBindings(vm, context, nextHandle);
     addEffectsBindings(vm, context, nextHandle);
+    addCarBindings(vm, context, nextHandle);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

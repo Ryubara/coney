@@ -317,6 +317,10 @@ callback, the `CrimeScene` flag and which humans are players; Coney's gangs, spa
 it yet). `ReportCrime` switches reporting. `EnterStore` / `ExitStore` keep the store colour and preset
 (`StoreTint`) for a renderer, and `CfgSetSteroTheftHandler` keeps its callback's name.
 
+**Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car, a broken
+pane frees it (`ObjectServices::freeCarStereos`, within 2 m of the pane) and `Cars::takeStereo` takes it once; the
+theft itself, the kind-3 record and the stick game are not in Coney yet ([Cars](cars.md#coneys-implementation)).
+
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
 the assault statistic is scored once per victim through the service.
 

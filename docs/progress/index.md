@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▎░░░░░░░░░░░░░░░░░` | 11.2% of the game's own code (375,388 of 3,354,776 bytes, 1,033 functions) |
+| **Reimplemented** | `██▎░░░░░░░░░░░░░░░░░` | 11.2% of the game's own code (375,388 of 3,354,776 bytes, 1,043 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-245 reimplemented function(s) have no size yet and add no bytes.
+255 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -68,9 +68,9 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 134 | 197,192 |
+| `Scripting` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 138 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 43 | 531,312 |
+| `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 49 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▎░░░░░░░░░░░░░░░░░░░` | 1.1% | 28 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
@@ -925,6 +925,7 @@ at the top of the repository's `README.md`.
 | `0x0036ca18` | `GetPosition` | `Scripting` | 112 |
 | `0x0036cdc0` | `TeleportToFlag` | `Scripting` | 152 |
 | `0x0036d938` | `ToInt` | `Scripting` | not filled in |
+| `0x0036de50` | `CarSpawnRadio` | `Scripting` | not filled in |
 | `0x0036df48` | `MenuLoadLevel` | `Scripting` | not filled in |
 | `0x0036df98` | `SetStartGameCallback` | `Scripting` | 48 |
 | `0x0036e050` | `GetGameTime` | `Scripting` | 96 |
@@ -953,6 +954,9 @@ at the top of the repository's `README.md`.
 | `0x00375648` | `TacticCrowd` | `Scripting` | 128 |
 | `0x00377a10` | `TacticTrigger` | `Scripting` | 160 |
 | `0x00377cc8` | `ObjSpawn` | `Scripting` | not filled in |
+| `0x00378320` | `CarSpawn` | `Scripting` | not filled in |
+| `0x003785c8` | `CarSetColor` | `Scripting` | not filled in |
+| `0x00378808` | `CarMakeGoodAsNew` | `Scripting` | not filled in |
 | `0x00378958` | `SpawnParticle` | `Scripting` | not filled in |
 | `0x00379fd0` | `AddFlag` | `Scripting` | 384 |
 | `0x0037a288` | `GetFlagPos` | `Scripting` | 112 |
@@ -976,6 +980,12 @@ at the top of the repository's `README.md`.
 | `0x00386410` | `ScheduleFuncArg1` | `Scripting` | 64 |
 | `0x00386450` | `FlushScheduledFuncs` | `Scripting` | 56 |
 | `0x00386488` | `random` | `Scripting` | 40 |
+| `0x00387bc8` | `Car_Init` | `TaskEngine` | not filled in |
+| `0x0038c7d8` | `Car_RemovePartBits` | `TaskEngine` | not filled in |
+| `0x0038d690` | `Car_SpawnRadio` | `TaskEngine` | not filled in |
+| `0x0038dde8` | `Car_Spawn` | `TaskEngine` | not filled in |
+| `0x0038df38` | `Car_SetColour` | `TaskEngine` | not filled in |
+| `0x0038e068` | `Car_Repair` | `TaskEngine` | not filled in |
 | `0x0038f378` | `Glass_Break` | `TaskEngine` | 496 |
 | `0x0038f8a8` | `GlassManager_Create` | `TaskEngine` | 424 |
 | `0x0038fab8` | `GlassTypes_Set` | `TaskEngine` | 40 |

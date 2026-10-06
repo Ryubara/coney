@@ -4742,6 +4742,11 @@ name = "ToInt"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x0036de50
+name = "CarSpawnRadio"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x0036df48
 name = "MenuLoadLevel"
 subsystem = "Scripting"
@@ -4906,6 +4911,21 @@ name = "ObjSpawn"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x00378320
+name = "CarSpawn"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x003785c8
+name = "CarSetColor"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00378808
+name = "CarMakeGoodAsNew"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x00378958
 name = "SpawnParticle"
 subsystem = "Scripting"
@@ -5039,6 +5059,36 @@ address = 0x00386488
 name = "random"
 subsystem = "Scripting"
 size = 40
+
+[[function]]
+address = 0x00387bc8
+name = "Car_Init"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038c7d8
+name = "Car_RemovePartBits"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038d690
+name = "Car_SpawnRadio"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038dde8
+name = "Car_Spawn"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038df38
+name = "Car_SetColour"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038e068
+name = "Car_Repair"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x0038f378

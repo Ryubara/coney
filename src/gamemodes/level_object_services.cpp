@@ -99,6 +99,17 @@ void LevelObjectServices::spawnShard(anim::Vec3 at, float size, std::uint32_t co
     }
 }
 
+void LevelObjectServices::freeCarStereos(anim::Vec3 at, float radius) {
+    if (m_cars == nullptr) {
+        return;
+    }
+    for (const world_objects::Car& car : m_cars->all()) {
+        if (anim::distance(world_objects::Cars::stereoPosition(car), at) <= radius) {
+            m_cars->freeStereo(car.handle);
+        }
+    }
+}
+
 void LevelObjectServices::dust(anim::Vec3 at, float /*radius*/) {
     if (m_particles != nullptr) {
         m_particles->spawn("sub_shack_puff", at);

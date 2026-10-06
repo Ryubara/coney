@@ -11,7 +11,7 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 176 implemented, 0 partial, 39 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 180 implemented, 0 partial, 35 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -116,10 +116,10 @@ leave part of its effect open; its notes say which.
 | [`CamTarget`](camera.md#camtarget) | Cameras | traced | confirmed (code) | implemented |
 | [`AddFlag`](world.md#addflag) | World and objects | traced | confirmed (code) | implemented |
 | [`AddVolumeBox`](world.md#addvolumebox) | World and objects | traced | confirmed (code) | implemented |
-| [`CarMakeGoodAsNew`](world.md#carmakegoodasnew) | World and objects | traced | confirmed (code) | not implemented |
-| [`CarSetColor`](world.md#carsetcolor) | World and objects | traced | confirmed (code) | not implemented |
-| [`CarSpawn`](world.md#carspawn) | World and objects | traced | confirmed (code) | not implemented |
-| [`CarSpawnRadio`](world.md#carspawnradio) | World and objects | traced | confirmed (code) | not implemented |
+| [`CarMakeGoodAsNew`](world.md#carmakegoodasnew) | World and objects | traced | confirmed (code) | implemented |
+| [`CarSetColor`](world.md#carsetcolor) | World and objects | traced | confirmed (code) | implemented |
+| [`CarSpawn`](world.md#carspawn) | World and objects | traced | confirmed (code) | implemented |
+| [`CarSpawnRadio`](world.md#carspawnradio) | World and objects | traced | confirmed (code) | implemented |
 | [`CloseDoor`](world.md#closedoor) | World and objects | traced | confirmed (code) | implemented |
 | [`DoorOpenDegree`](world.md#dooropendegree) | World and objects | traced | confirmed (code) | implemented |
 | [`FlagNetAddLink`](world.md#flagnetaddlink) | World and objects | traced | confirmed (code) | not implemented |

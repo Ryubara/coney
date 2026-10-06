@@ -235,7 +235,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
 
     PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::unique_ptr<PlayScenery> scenery,
                   LoadedCharacter loaded, std::function<void(std::string_view)> print, std::string model,
-                  const PlayerSetup& setup, const ScriptedCast* cast);
+                  const PlayerSetup& setup, const ScriptedCast* cast, std::unique_ptr<PlayLevelEffects> levelEffects);
 
     // The character and its texture from `wad`, then the mode round `scenery`: what both create functions share.
     [[nodiscard]] static std::expected<std::unique_ptr<PlayLevelMode>, Error>
@@ -375,7 +375,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;
-    // The level's particles and motion blur (play_level_effects.h), drawn when gameplay brought them.
+    // The level's parked cars, particles and motion blur (play_level_effects.h), when gameplay brought them.
     std::unique_ptr<PlayLevelEffects> m_levelEffects;
 };
 

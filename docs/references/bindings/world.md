@@ -324,7 +324,7 @@ flags are cleared (0x003875e8). A handle that is not a car does nothing.
 - **Wrapper** `0x00378808` (registered by `RegisterBindings`); **calls** `0x0038e068` `Car_Repair`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CarPlaceInTrunk {#carplaceintrunk}
 
@@ -425,7 +425,7 @@ Sets a car's paint colour (stored at +0x12e8 / +0x12ec, with a 'colour set' flag
 - **Wrapper** `0x003785c8` (registered by `RegisterBindings`); **calls** `0x0038df38` `Car_SetColour`
 - **Used by** 15 of 467 script chunks (23 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 14 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CarSetPartDamage {#carsetpartdamage}
 
@@ -498,7 +498,7 @@ Creates a parked car of a given type from the car pool (object manager +0x844), 
 - **Wrapper** `0x00378320` (registered by `RegisterBindings`); **calls** `0x0038dde8` `Car_Spawn`
 - **Used by** 26 of 467 script chunks (118 references); boot to menu: no; mission 1: yes; result used: yes
 - **Later in the story:** 19 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CarSpawnRadio {#carspawnradio}
 
@@ -522,7 +522,7 @@ confirmed (code).
 - **Wrapper** `0x0036de50` (registered by `RegisterBindings`); **calls** `0x0038d690` `Car_SpawnRadio`
 - **Used by** 15 of 467 script chunks (37 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 10 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ChangeBlocker {#changeblocker}
 

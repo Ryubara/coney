@@ -12,6 +12,7 @@
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
+#include "world_objects/cars.h"
 #include "world_objects/flags.h"
 #include "world_objects/object_services.h"
 
@@ -41,6 +42,8 @@ class LevelObjectServices final : public world_objects::ObjectServices {
 
     /// Sounds go to `sounds` from now on (null: none).
     void setSounds(world_objects::ObjectServices* sounds) { m_sounds = sounds; }
+    /// Car stereos are freed in `cars` from now on (null: none).
+    void setCars(world_objects::Cars* cars) { m_cars = cars; }
     /// Shards, dust and bursts go to `particles` from now on (null: none), culled round where `player` says player 1
     /// is (empty: not culled by distance).
     void setParticles(effects::ParticleSystems* particles, std::function<std::optional<anim::Vec3>()> player) {
@@ -67,6 +70,9 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     [[nodiscard]] bool shardsWanted(anim::Vec3 centre) override;
     /// A `glasstest` shard (effects::ParticleSystems::spawnShard()).
     void spawnShard(anim::Vec3 at, float size, std::uint32_t colour) override;
+    /// Frees the stereo of every car within `radius` of `at` whose stereo sits there (a car window broken).
+    /// **Coney's stand-in** for where a stereo sits: world_objects::Cars::stereoPosition().
+    void freeCarStereos(anim::Vec3 at, float radius) override;
     /// Dust: a `sub_shack_puff`. **Coney's stand-in**: which types `0x003c57d8` makes is not traced; `radius` is not
     /// used.
     void dust(anim::Vec3 at, float radius) override;
@@ -85,6 +91,7 @@ class LevelObjectServices final : public world_objects::ObjectServices {
 
     // The 0-based player whose human is `human`; -1 for none.
     [[nodiscard]] int playerOf(double human) const;
+    world_objects::Cars* m_cars = nullptr;
 };
 
 } // namespace coney
