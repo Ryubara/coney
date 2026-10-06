@@ -302,13 +302,16 @@
   calls:
     - {addr: 0x0040c908, name: Level_SetFogDistance}
   args:
-    - {name: distance, lua: number, ctype: float, desc: "Fraction of the far clip distance where fog begins (the scripts pass 0 or 0.5)."}
+    - {name: distance, lua: number, ctype: float, desc: "Fraction of the draw distance at which fog begins: 0 starts the fog at the camera (thick haze), 1 at the draw distance (almost none); the scripts pass 0 or 0.5, and 0.5 is the default."}
   description: >-
-    Sets where the world fog starts, as a fraction of the far clip distance (the device's fog start, 0.5 by default).
+    Sets where the world fog starts: the graphics device's fog start (device `+0x444`, through its slot `+0x54`), a
+    fraction of the draw distance. Each frame the world renderer sets the fog distance to draw distance × this value
+    (halved for one object list), and the fog fades to the colour set with `SetFogColor`.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Behaviour: [The streamed world](../../research/world.md#fog).
+    Not range-checked. Not reset by the level code that was read, so the value stays until a script sets it again
+    (inferred). Draw distance and fog: [The streamed world](../../research/world.md#fog).
   usage: {chunks: 14, calls: 14, boot: false, mission1: false, result_used: false, levels: [80, 3, 5, 86, 93, 9, 51, 52, 55, 84, 82, 92, 83, 11]}
   coney: implemented
 
@@ -447,11 +450,16 @@
   calls:
     - {addr: 0x003975c0, name: Particle_Start}
   args:
-    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of a particle object (or an object with an effect, such as a disco light)."}
+    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of a particle system or another script-typed object (from `SpawnParticle`, `ObjSpawn` or a level's object table)."}
   description: >-
-    Starts a particle object's emission (message 0x12).
+    Sends message `0x12` ("on") to the object's task with an empty message scratch. What it does depends on the
+    object's script type: a particle system starts emitting (the fire types set their on flag and start their flame,
+    0x003c8b28), and a plain object (`simple_object`) is shown again.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Each type's message handler decides; types that do not handle `0x12` ignore it. Messages: [World
+    objects](../../research/objects.md), types: [Particles](../../research/particles.md).
   usage: {chunks: 20, calls: 48, boot: false, mission1: false, result_used: false, levels: [80, 3, 5, 81, 93, 31, 14, 9, 51, 52, 54, 84, 11]}
 
 - name: EndParticle
@@ -459,11 +467,16 @@
   calls:
     - {addr: 0x00397610, name: Particle_End}
   args:
-    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of the particle object."}
+    - {name: particle, lua: number, ctype: unsigned, desc: "Handle of the particle system or script-typed object."}
   description: >-
-    Stops a particle object's emission, letting live particles die out (message 0x13).
+    Sends message `0x13` ("off") to the object's task: a particle system stops emitting (the fire types clear their
+    on flag and stop, 0x003c9f78), and a plain object (`simple_object`) is hidden. The object itself is not
+    destroyed, so `StartParticle` can start it again.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Each type's message handler decides; types that do not handle `0x13` ignore it. Whether particles already in
+    flight finish their life is up to each type (not traced in general).
   usage: {chunks: 16, calls: 39, boot: false, mission1: false, result_used: false, levels: [80, 5, 81, 51, 52, 54, 84, 11]}
 
 - name: ParticleChangeState

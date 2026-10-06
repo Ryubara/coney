@@ -15,7 +15,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 | Level | Story | Bindings | New | New, traced | New, in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [`level80`](#level80) | mission 2 | 178 | 50 | 15 | 4 |
+| [`level80`](#level80) | mission 2 | 178 | 50 | 50 | 4 |
 | [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 9 |
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 3 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 3 | 0 |
@@ -46,60 +46,60 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level80: mission 2 {#level80}
 
-178 bindings, 50 new: 15 traced, 4 implemented in Coney (53 of all 178).
+178 bindings, 50 new: 50 traced, 4 implemented in Coney (53 of all 178).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
 | [`GetDistanceTweenHumans`](character.md#getdistancetweenhumans) | Characters | traced | confirmed (code) | not implemented |
-| [`HuBlockLook`](character.md#hublocklook) | Characters | brief | confirmed (code) | not implemented |
+| [`HuBlockLook`](character.md#hublocklook) | Characters | traced | confirmed (code) | not implemented |
 | [`HuDelete`](character.md#hudelete) | Characters | traced | confirmed (code) | not implemented |
-| [`HuForceLook`](character.md#huforcelook) | Characters | brief | speculative | not implemented |
-| [`HuGetControlName`](character.md#hugetcontrolname) | Characters | brief | speculative | not implemented |
-| [`HuIsAimingAt`](character.md#huisaimingat) | Characters | brief | confirmed (code) | not implemented |
-| [`HuLockPadMovement`](character.md#hulockpadmovement) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetAutoEscape`](character.md#husetautoescape) | Characters | brief | inferred | not implemented |
-| [`HuSetHealth`](character.md#husethealth) | Characters | brief | confirmed (code) | not implemented |
-| [`HuSetKeepHat`](character.md#husetkeephat) | Characters | brief | inferred | not implemented |
-| [`HuSetRevivable`](character.md#husetrevivable) | Characters | brief | inferred | not implemented |
-| [`HuShadow`](character.md#hushadow) | Characters | brief | confirmed (code) | not implemented |
-| [`HuWhatAmIHolding`](character.md#huwhatamiholding) | Characters | brief | inferred | not implemented |
-| [`IssueWarriorCommand`](character.md#issuewarriorcommand) | Characters | brief | confirmed (code) | not implemented |
-| [`WCEnableCommand`](character.md#wcenablecommand) | Characters | brief | confirmed (code) | not implemented |
-| [`WCLockCommands`](character.md#wclockcommands) | Characters | brief | inferred | not implemented |
-| [`WCSetCallback`](character.md#wcsetcallback) | Characters | brief | inferred | not implemented |
-| [`GoalMoveToExitFlag`](ai.md#goalmovetoexitflag) | AI | brief | confirmed (code) | not implemented |
-| [`GoalTravelPath`](ai.md#goaltravelpath) | AI | brief | confirmed (code) | not implemented |
+| [`HuForceLook`](character.md#huforcelook) | Characters | traced | confirmed (code) | not implemented |
+| [`HuGetControlName`](character.md#hugetcontrolname) | Characters | traced | confirmed (code) | not implemented |
+| [`HuIsAimingAt`](character.md#huisaimingat) | Characters | traced | confirmed (code) | not implemented |
+| [`HuLockPadMovement`](character.md#hulockpadmovement) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetAutoEscape`](character.md#husetautoescape) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetHealth`](character.md#husethealth) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetKeepHat`](character.md#husetkeephat) | Characters | traced | confirmed (code) | not implemented |
+| [`HuSetRevivable`](character.md#husetrevivable) | Characters | traced | confirmed (code) | not implemented |
+| [`HuShadow`](character.md#hushadow) | Characters | traced | confirmed (code) | not implemented |
+| [`HuWhatAmIHolding`](character.md#huwhatamiholding) | Characters | traced | confirmed (code) | not implemented |
+| [`IssueWarriorCommand`](character.md#issuewarriorcommand) | Characters | traced | confirmed (code) | not implemented |
+| [`WCEnableCommand`](character.md#wcenablecommand) | Characters | traced | confirmed (code) | not implemented |
+| [`WCLockCommands`](character.md#wclockcommands) | Characters | traced | confirmed (code) | not implemented |
+| [`WCSetCallback`](character.md#wcsetcallback) | Characters | traced | confirmed (code) | not implemented |
+| [`GoalMoveToExitFlag`](ai.md#goalmovetoexitflag) | AI | traced | confirmed (code) | not implemented |
+| [`GoalTravelPath`](ai.md#goaltravelpath) | AI | traced | confirmed (code) | not implemented |
 | [`TacticUseFlag`](ai.md#tacticuseflag) | AI | traced | confirmed (code) | not implemented |
-| [`GangAddMember`](gang.md#gangaddmember) | Gangs | brief | confirmed (code) | implemented |
+| [`GangAddMember`](gang.md#gangaddmember) | Gangs | traced | confirmed (code) | implemented |
 | [`GangAddTurfBox`](gang.md#gangaddturfbox) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangEngageEnemy`](gang.md#gangengageenemy) | Gangs | brief | confirmed (code) | not implemented |
-| [`GangGetStandingCount`](gang.md#ganggetstandingcount) | Gangs | brief | confirmed (code) | implemented |
+| [`GangEngageEnemy`](gang.md#gangengageenemy) | Gangs | traced | confirmed (code) | not implemented |
+| [`GangGetStandingCount`](gang.md#ganggetstandingcount) | Gangs | traced | confirmed (code) | implemented |
 | [`GangIsWanted`](gang.md#gangiswanted) | Gangs | traced | confirmed (code) | not implemented |
-| [`GangRemoveTurfBox`](gang.md#gangremoveturfbox) | Gangs | brief | confirmed (code) | not implemented |
-| [`CameraSetClipping`](camera.md#camerasetclipping) | Cameras | brief | confirmed (code) | not implemented |
-| [`CamSetFollowHeading`](camera.md#camsetfollowheading) | Cameras | brief | confirmed (code) | not implemented |
-| [`AddPath`](world.md#addpath) | World and objects | brief | confirmed (code) | not implemented |
+| [`GangRemoveTurfBox`](gang.md#gangremoveturfbox) | Gangs | traced | confirmed (code) | not implemented |
+| [`CameraSetClipping`](camera.md#camerasetclipping) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamSetFollowHeading`](camera.md#camsetfollowheading) | Cameras | traced | confirmed (code) | not implemented |
+| [`AddPath`](world.md#addpath) | World and objects | traced | confirmed (code) | not implemented |
 | [`BreakGlassInRadius`](world.md#breakglassinradius) | World and objects | traced | confirmed (code) | not implemented |
-| [`BreakObjectsInRadius`](world.md#breakobjectsinradius) | World and objects | brief | confirmed (code) | not implemented |
-| [`GetRightDoorHandle`](world.md#getrightdoorhandle) | World and objects | brief | confirmed (code) | not implemented |
+| [`BreakObjectsInRadius`](world.md#breakobjectsinradius) | World and objects | traced | confirmed (code) | not implemented |
+| [`GetRightDoorHandle`](world.md#getrightdoorhandle) | World and objects | traced | confirmed (code) | not implemented |
 | [`IsInsideBox`](world.md#isinsidebox) | World and objects | traced | confirmed (code) | not implemented |
 | [`ObjHide`](world.md#objhide) | World and objects | traced | confirmed (code) | not implemented |
-| [`SetDoorPickable`](world.md#setdoorpickable) | World and objects | brief | confirmed (code) | not implemented |
-| [`EndParticle`](effects.md#endparticle) | Effects and lighting | brief | confirmed (code) | not implemented |
-| [`SetFogDistance`](effects.md#setfogdistance) | Effects and lighting | brief | confirmed (code) | not implemented |
-| [`StartParticle`](effects.md#startparticle) | Effects and lighting | brief | confirmed (code) | not implemented |
+| [`SetDoorPickable`](world.md#setdoorpickable) | World and objects | traced | confirmed (code) | not implemented |
+| [`EndParticle`](effects.md#endparticle) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`SetFogDistance`](effects.md#setfogdistance) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`StartParticle`](effects.md#startparticle) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`SoundEnableEffects`](sound.md#soundenableeffects) | Sound and music | traced | confirmed (code) | not implemented |
-| [`SoundEnableSystemMusic`](sound.md#soundenablesystemmusic) | Sound and music | brief | inferred | not implemented |
+| [`SoundEnableSystemMusic`](sound.md#soundenablesystemmusic) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SoundSetEffect`](sound.md#soundseteffect) | Sound and music | traced | confirmed (code) | not implemented |
-| [`SoundSetMusicTrack`](sound.md#soundsetmusictrack) | Sound and music | brief | confirmed (code) | not implemented |
-| [`SceneTerminate`](scene.md#sceneterminate) | Scenes and movies | brief | confirmed (code) | implemented |
+| [`SoundSetMusicTrack`](sound.md#soundsetmusictrack) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SceneTerminate`](scene.md#sceneterminate) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`CfgDisableMusicForScenes`](config.md#cfgdisablemusicforscenes) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgSetLockPickHandler`](config.md#cfgsetlockpickhandler) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`CfgSetOutdoorMode`](config.md#cfgsetoutdoormode) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 | [`GetPosition`](util.md#getposition) | Utilities | traced | confirmed (code) | implemented |
 | [`TestDistance`](util.md#testdistance) | Utilities | traced | confirmed (code) | not implemented |
-| [`clearDetailFlag`](debug.md#cleardetailflag) | Debug | brief | confirmed (code) | not implemented |
-| [`setDetailFlag`](debug.md#setdetailflag) | Debug | brief | confirmed (code) | not implemented |
+| [`clearDetailFlag`](debug.md#cleardetailflag) | Debug | traced | confirmed (code) | not implemented |
+| [`setDetailFlag`](debug.md#setdetailflag) | Debug | traced | confirmed (code) | not implemented |
 
 ## level87: mission 3 {#level87}
 

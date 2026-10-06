@@ -39,7 +39,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`SoundCfgInterfaceSound`](#soundcfginterfacesound) | - | 1 | yes | no | confirmed (code) |
 | [`SoundDisableCombatMusic`](#sounddisablecombatmusic) | - | 1 | no | no | confirmed (code) |
 | [`SoundEnableEffects`](#soundenableeffects) | - | 14 | yes | no | confirmed (code) |
-| [`SoundEnableSystemMusic`](#soundenablesystemmusic) | - | 89 | no | no | inferred |
+| [`SoundEnableSystemMusic`](#soundenablesystemmusic) | - | 89 | no | no | confirmed (code) |
 | [`SoundLoopMusicTrack`](#soundloopmusictrack) | - | 87 | yes | yes | confirmed (code) |
 | [`SoundPauseSound`](#soundpausesound) | - | 36 | no | no | confirmed (code) |
 | [`SoundPlay`](#soundplay) | number | 17 | no | no | confirmed (code) |
@@ -815,14 +815,20 @@ SoundEnableSystemMusic(on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false) | true lets the game choose music automatically by the situation (ambient, tension, fight); false turns that off so the script controls the music. |
+| 1 | `on` | boolean (nil or 0 is false) | true lets the game choose the music by the situation (calm, fight, hunted); false stops it so the script controls the music. |
 
 **Returns** nothing.
 
-Turns the system music, the game's automatic mood music, on or off (0x0041a008).
+Turns the system music, the game's automatic mood music, on or off (game state `+0x3f8`, 0x0041a008). On a change it
+forces a fresh choice of track and at once works out the mood from the player's surroundings (0x0041a060): 1 when an
+enemy gang near the player's gang is fighting it, 2 when an enemy gang's member is hunting it (goals `0xc`, `0x75`,
+`0x76`, 0x001696e0), else 0. Turning it off fades out the music (0x0010d9a0).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00371470` (registered by `RegisterBindings`); **calls** `0x00113ea8`
+**Notes.** Setting the value it already has only clears game state `+0x3f4` (not traced). `SoundSetMusicTrack` turns it
+on too. Tracks per mood and the fades: [Sound](../../research/sound.md#music-player).
+
+- **Evidence:** confirmed (code) at `0x00113ea8`; detail: traced
+- **Wrapper** `0x00371470` (registered by `RegisterBindings`); **calls** `0x00113ea8` `Sound_EnableSystemMusic`
 - **Used by** 89 of 467 script chunks (154 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 23 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
@@ -1133,19 +1139,24 @@ SoundSetMusicTrack(slot, track1, track2, track3)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `slot` | number, truncated to an integer | Which system-music mood the tracks are for: 0, 1 and 2 (inferred: ambient, tension and fight). |
-| 2 | `track1` | string | Track name, or nil/empty for none. |
+| 1 | `slot` | number, truncated to an integer | The system-music mood the tracks are for: 0 calm, 1 fight, 2 hunted (the moods 0x0041a060 picks); not range-checked. |
+| 2 | `track1` | string | Name of a music track, or nil or an empty string for none. |
 | 3 | `track2` | string | A second track for the same mood, or nil. |
 | 4 | `track3` | string | A third track, or nil. |
 
 **Returns** nothing.
 
-Sets up to three music tracks for one mood of the system music and turns the system music on.
+Sets the tracks the system music picks from for one mood and turns the system music on. The non-empty names are hashed
+(CRC-32, table 0x005d91e0) and stored in order, up to three, in the music player's mood table (0x0010e9e0); when the
+mood is the one playing, a new pick is forced. Each time the mood changes the player plays a random one of the mood's
+tracks, looping.
 
-**Notes.** 0x00113ed0; what the three slots mean is inferred from the scripts' track names.
+**Notes.** Empty names are skipped, so the tracks pack to the front; a mood given no tracks stops the music when chosen.
+The names are not checked against the loaded track list. Also sets audio manager `+0xcc` = 1 (not traced). The mood
+names are inferred from 0x0041a060's tests. [Sound](../../research/sound.md#music-player).
 
-- **Evidence:** confirmed (code) at `0x00113ed0`; detail: brief
-- **Wrapper** `0x003714a0` (registered by `RegisterBindings`); **calls** `0x00113ed0`
+- **Evidence:** confirmed (code) at `0x00113ed0`; detail: traced
+- **Wrapper** `0x003714a0` (registered by `RegisterBindings`); **calls** `0x00113ed0` `Sound_SetMusicTrack`
 - **Used by** 73 of 467 script chunks (275 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 21 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented

@@ -419,16 +419,22 @@ CameraSetClipping(camera, near, far)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `camera` | number, truncated to an unsigned integer | Camera handle. |
-| 2 | `near` | number (single precision) | Near clip distance in metres (not applied to the player's follow camera). |
-| 3 | `far` | number (single precision) | Far clip (draw) distance in metres, at most 150. |
+| 1 | `camera` | number, truncated to an unsigned integer | Camera handle (from `CamSetupFollow`, `CameraCreate...` or `CameraGet...`). |
+| 2 | `near` | number (single precision) | Near clip distance in metres; ignored for a follow camera (type 2), which keeps its 0.1. |
+| 3 | `far` | number (single precision) | The camera's own far clip in metres, capped at 150 (the player camera's default is 115). |
 
 **Returns** nothing.
 
-Sets a camera's near and far clip distances; levels use it to set their draw distance.
+Sets a camera's near clip (`+0x50`) and its own far clip (`+0x54`). The far clip is the ceiling of the draw distance,
+which the world renderer moves each frame between `60 - 10 × views` and it as the scenery streams in, so levels use it
+to set how far the player can see; fog starts at a fraction of the draw distance (`SetFogDistance`).
 
-- **Evidence:** confirmed (code) at `0x0011bb98`; detail: brief
-- **Wrapper** `0x00365600` (registered by `RegisterBindings`); **calls** `0x0011bb98`
+**Notes.** Setters are camera slots `+0x1a4` (near) and `+0x1ac` (far). The camera's type (slot `+0x1ec`) is read before
+the handle is checked, so an invalid handle crashes. Draw distance: [The streamed
+world](../../research/world.md#a-frame).
+
+- **Evidence:** confirmed (code) at `0x0011bb98`; detail: traced
+- **Wrapper** `0x00365600` (registered by `RegisterBindings`); **calls** `0x0011bb98` `Camera_SetClipping`
 - **Used by** 19 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
@@ -699,15 +705,22 @@ CamSetFollowHeading(degrees)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `degrees` | number (single precision) | Heading in degrees for the follow cameras. |
+| 1 | `degrees` | number (single precision) | Heading of the camera in degrees about the followed character, measured from the character's facing (as `CameraReset` uses 180 to put the camera behind). |
 
 **Returns** nothing.
 
-Swings every player's follow camera round to the given heading at once (the level scripts set the starting view with
-it).
+Snaps every player's follow camera round its target to the given heading with no blend: player 1's camera is snapped
+(its previous look-at points set to the current one) and each follow camera is then placed at that heading at a distance
+chosen from the zoom band, the same placement as `CameraReset` (0x00124f38). Level scripts use it to set the opening
+view.
 
-- **Evidence:** confirmed (code) at `0x0011c2f0`; detail: brief
-- **Wrapper** `0x00365b80` (registered by `RegisterBindings`); **calls** `0x0011c2f0`
+**Notes.** Does nothing when player 1 has no follow camera yet (0x0011f9e0(0, 0)). Players 2 and up (count `W_GameState
++ 0x224`) are placed without the snap. With no target the heading is measured from the world's forward axis. The "from
+the character's facing" reading is inferred from 0x001250a8; distance rule and pitch reset:
+[Camera](../../research/camera.md#setting-up).
+
+- **Evidence:** confirmed (code) at `0x0011c2f0`; detail: traced
+- **Wrapper** `0x00365b80` (registered by `RegisterBindings`); **calls** `0x0011c2f0` `Camera_SetFollowHeading`
 - **Used by** 68 of 467 script chunks (85 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented

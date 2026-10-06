@@ -242,13 +242,18 @@ EndParticle(particle)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `particle` | number, truncated to an unsigned integer | Handle of the particle object. |
+| 1 | `particle` | number, truncated to an unsigned integer | Handle of the particle system or script-typed object. |
 
 **Returns** nothing.
 
-Stops a particle object's emission, letting live particles die out (message 0x13).
+Sends message `0x13` ("off") to the object's task: a particle system stops emitting (the fire types clear their on flag
+and stop, 0x003c9f78), and a plain object (`simple_object`) is hidden. The object itself is not destroyed, so
+`StartParticle` can start it again.
 
-- **Evidence:** confirmed (code) at `0x00397610`; detail: brief
+**Notes.** Each type's message handler decides; types that do not handle `0x13` ignore it. Whether particles already in
+flight finish their life is up to each type (not traced in general).
+
+- **Evidence:** confirmed (code) at `0x00397610`; detail: traced
 - **Wrapper** `0x00379160` (registered by `RegisterBindings`); **calls** `0x00397610` `Particle_End`
 - **Used by** 16 of 467 script chunks (39 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -496,15 +501,18 @@ SetFogDistance(distance)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `distance` | number (single precision) | Fraction of the far clip distance where fog begins (the scripts pass 0 or 0.5). |
+| 1 | `distance` | number (single precision) | Fraction of the draw distance at which fog begins: 0 starts the fog at the camera (thick haze), 1 at the draw distance (almost none); the scripts pass 0 or 0.5, and 0.5 is the default. |
 
 **Returns** nothing.
 
-Sets where the world fog starts, as a fraction of the far clip distance (the device's fog start, 0.5 by default).
+Sets where the world fog starts: the graphics device's fog start (device `+0x444`, through its slot `+0x54`), a fraction
+of the draw distance. Each frame the world renderer sets the fog distance to draw distance × this value (halved for one
+object list), and the fog fades to the colour set with `SetFogColor`.
 
-**Notes.** Behaviour: [The streamed world](../../research/world.md#fog).
+**Notes.** Not range-checked. Not reset by the level code that was read, so the value stays until a script sets it again
+(inferred). Draw distance and fog: [The streamed world](../../research/world.md#fog).
 
-- **Evidence:** confirmed (code) at `0x0040c908`; detail: brief
+- **Evidence:** confirmed (code) at `0x0040c908`; detail: traced
 - **Wrapper** `0x0036e5f8` (registered by `RegisterBindings`); **calls** `0x0040c908` `Level_SetFogDistance`
 - **Used by** 14 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 14 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -959,13 +967,18 @@ StartParticle(particle)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `particle` | number, truncated to an unsigned integer | Handle of a particle object (or an object with an effect, such as a disco light). |
+| 1 | `particle` | number, truncated to an unsigned integer | Handle of a particle system or another script-typed object (from `SpawnParticle`, `ObjSpawn` or a level's object table). |
 
 **Returns** nothing.
 
-Starts a particle object's emission (message 0x12).
+Sends message `0x12` ("on") to the object's task with an empty message scratch. What it does depends on the object's
+script type: a particle system starts emitting (the fire types set their on flag and start their flame, 0x003c8b28), and
+a plain object (`simple_object`) is shown again.
 
-- **Evidence:** confirmed (code) at `0x003975c0`; detail: brief
+**Notes.** Each type's message handler decides; types that do not handle `0x12` ignore it. Messages: [World
+objects](../../research/objects.md), types: [Particles](../../research/particles.md).
+
+- **Evidence:** confirmed (code) at `0x003975c0`; detail: traced
 - **Wrapper** `0x00379128` (registered by `RegisterBindings`); **calls** `0x003975c0` `Particle_Start`
 - **Used by** 20 of 467 script chunks (48 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)

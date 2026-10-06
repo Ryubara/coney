@@ -122,23 +122,25 @@ NilHandle as parent). A full pool is not checked: the constructor then runs on a
 ## AddPath {#addpath}
 
 ```lua
-AddPath(name, flags) -> usertype
+AddPath(name, flags) -> WorldPath
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `name` | string | Path name (such as `WheelChairRace`). |
-| 2 | `flags` | table of 8 numbers (t[1]..t[8]) | Exactly eight flag handles `{f1, ..., f8}` in order; NilHandle entries are skipped. Written back unchanged. |
+| 1 | `name` | string | Path name (such as `WheelChairRace`); 15 characters are kept. |
+| 2 | `flags` | table of 8 numbers (t[1]..t[8]) | Up to eight flag (or object) handles `{f1, ..., f8}` in order; missing entries read as 0 and invalid handles are skipped. Written back unchanged (a missing entry comes back as 0). |
 
-**Returns** tolua object (nil for none): The path object (a tolua usertype); 0/nil when all 32 path slots are taken.
+**Returns** `WorldPath` object (nil for none): The path object, or nil when all 32 path slots are taken.
 
-Creates a named path through up to eight flags, used for races and scripted walks. At most 32 paths exist at once (slots
-at 0x006fd870).
+Creates a named path through up to eight flags: a 0x38-byte record (name, the flags' objects at `+0x10` in order, count
+`+0x32`, slot `+0x30`, next-path link `+0x34` empty) in the first free of 32 slots at 0x006fd870. The path is handed to
+`GoalTravelPath`, `GoalTravelPath2` and `TacticTravelPath` for walks, chases and races.
 
-**Notes.** The result is pushed as a usertype; what scripts can do with it (it is passed to goal bindings) belongs to
-the AI slice.
+**Notes.** Paths last until the level's flag manager is torn down (0x00415a38, which frees all 32; 0x004158f8 clears the
+slots at the next level). A path can be found again by name (0x00415878). No binding removes one, so a script that adds
+paths repeatedly runs out of slots.
 
-- **Evidence:** confirmed (code) at `0x00415740`; detail: brief
+- **Evidence:** confirmed (code) at `0x00415740`; detail: traced
 - **Wrapper** `0x0037ab38` (registered by `RegisterBindings`); **calls** `0x00415740` `Path_Add`
 - **Used by** 15 of 467 script chunks (42 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 10 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -209,20 +211,21 @@ BreakObjectsInRadius(centre, radius)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `centre` | number, truncated to an unsigned integer | Handle of a flag or object giving the centre. |
+| 1 | `centre` | number, truncated to an unsigned integer | Handle of a flag or object whose position is the centre; an invalid handle does nothing. |
 | 2 | `radius` | number (single precision) | Radius in metres (scripts use 0.5-1). |
 
 **Returns** nothing.
 
-Breaks every breakable object within `radius` of a flag or object, the centre included (a molotov's blast, a scripted
-smash): every world object in range gets the destroy message 0x15 (0x003961d0). When the centre object is of kind 30
-(`TYPE_BREAKANDENTER_DOOR`), a break-in crime (type 1, severity 10) is reported at it first.
+Breaks every world object within `radius` of a flag or object, the centre object included (a molotov's blast, a scripted
+smash): up to 384 objects found by the object search (0x0039a850) each get the destroy message `0x15` (0x003961d0). When
+the centre object is of type 30 (`TYPE_BREAKANDENTER_DOOR`), a break-in crime (type 1, severity 10) is first reported at
+its position.
 
-**Notes.** The search (0x0039a850) takes up to 384 objects. Crime reports: [AI](../../research/ai.md#crimes). What 0x15
-does depends on the object; a swinging door sends itself a hit two updates later ([World
-objects](../../research/objects.md#door-states)).
+**Notes.** Objects that do not handle `0x15` ignore it: glass shatters, a swinging door sends itself a hit two updates
+later ([World objects](../../research/objects.md#door-states)). Humans are not world objects and are not hurt. Crime
+reports: [Crimes](../../research/crimes.md).
 
-- **Evidence:** confirmed (code) at `0x00396390`; detail: brief
+- **Evidence:** confirmed (code) at `0x00396390`; detail: traced
 - **Wrapper** `0x0036dc90` (registered by `RegisterBindings`); **calls** `0x00396390` `World_BreakObjectsInRadius`
 - **Used by** 12 of 467 script chunks (22 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -1071,13 +1074,18 @@ GetRightDoorHandle(door) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `door` | number, truncated to an unsigned integer | Handle of a door made with `SpawnDoor`. |
+| 1 | `door` | number, truncated to an unsigned integer | Handle of a swinging door (`dyn_door_*`, made with `SpawnDoor` or from the level). |
 
-**Returns** number: Handle of the door's right leaf object, or NilHandle when there is none.
+**Returns** number: Handle of the door's right leaf object (data `+0x18`), or NilHandle when the door has one leaf, the
+handle is invalid or the object is not a door.
 
-Returns the right leaf of a double door.
+Asks a swinging door for its right leaf: message `0x10` makes the door put its leaf in the message scratch, which is
+read back (0x003a50d0). Scripts use the leaf handle to break, hide or test one half of a double door; a single-leaf door
+has only a left leaf (`GetLeftDoorHandle`).
 
-- **Evidence:** confirmed (code) at `0x00397478`; detail: brief
+**Notes.** Door data and leaves: [World objects](../../research/objects.md#doors).
+
+- **Evidence:** confirmed (code) at `0x00397478`; detail: traced
 - **Wrapper** `0x00379dc8` (registered by `RegisterBindings`); **calls** `0x00397478` `Door_GetRightLeaf`
 - **Used by** 29 of 467 script chunks (47 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 12 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -1788,19 +1796,20 @@ SetDoorPickable(door, pickable)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `door` | number, truncated to an unsigned integer | Handle of the door. |
-| 2 | `pickable` | boolean (nil or 0 is false); default true | True (the default) lets the player pick the lock (state command 10); false makes it unpickable (state 11) and first stops any human currently picking it. |
+| 1 | `door` | number, truncated to an unsigned integer | Handle of the swinging door; an invalid handle does nothing. |
+| 2 | `pickable` | boolean (nil or 0 is false); default true | true (the default) makes the lock pickable (state command 10); false makes it unpickable (state command 11), first ending the lock-pick game of any player picking it. |
 
 **Returns** nothing.
 
-Sets whether the player can pick a door's lock.
+Sets whether the player can pick a door's lock. Pickable (only while the door is shut) shows a glint on it, removes its
+collision body, offers the lock-pick action and refuses `OpenDoor`, `DoorOpen` and `DoorOpenDegree`. Unpickable removes
+the glint and restores the collision body; any player whose object target is the door has the mini-game ended
+(`MiniGame_End`) and state flag `0x20000000` cleared first.
 
-**Notes.** Lock picking is confirmed (code): a pickable door offers kind-2 context actions, and a pick in progress on it
-is ended when it is made unpickable ([Crimes: lock picking](../../research/crimes.md#lockpick)). A pickable door shows a
-`sub_triglint` glint and refuses OpenDoor, DoorOpen and DoorOpenDegree ([World objects: lock
-picking](../../research/objects.md#lock-pick)).
+**Notes.** The command goes as message `0x22`. Three door types start pickable. Door side: [World objects: lock
+picking](../../research/objects.md#lock-pick); the game: [Crimes: lock picking](../../research/crimes.md#lockpick).
 
-- **Evidence:** confirmed (code) at `0x00397078`; detail: brief
+- **Evidence:** confirmed (code) at `0x00397078`; detail: traced
 - **Wrapper** `0x00379e40` (registered by `RegisterBindings`); **calls** `0x00397078` `Door_SetPickable`
 - **Used by** 16 of 467 script chunks (24 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level80`](story.md#level80) (mission 2)

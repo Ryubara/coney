@@ -5,15 +5,22 @@
 - name: CameraSetClipping
   wrapper: 0x00365600
   calls:
-    - {addr: 0x0011bb98}
+    - {addr: 0x0011bb98, name: Camera_SetClipping}
   args:
-    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
-    - {name: near, lua: number, ctype: float, desc: "Near clip distance in metres (not applied to the player's follow camera)."}
-    - {name: far, lua: number, ctype: float, desc: "Far clip (draw) distance in metres, at most 150."}
+    - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle (from `CamSetupFollow`, `CameraCreate...` or `CameraGet...`)."}
+    - {name: near, lua: number, ctype: float, desc: "Near clip distance in metres; ignored for a follow camera (type 2), which keeps its 0.1."}
+    - {name: far, lua: number, ctype: float, desc: "The camera's own far clip in metres, capped at 150 (the player camera's default is 115)."}
   description: >-
-    Sets a camera's near and far clip distances; levels use it to set their draw distance.
+    Sets a camera's near clip (`+0x50`) and its own far clip (`+0x54`). The far clip is the ceiling of the draw
+    distance, which the world renderer moves each frame between `60 - 10 × views` and it as the scenery streams in,
+    so levels use it to set how far the player can see; fog starts at a fraction of the draw distance
+    (`SetFogDistance`).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Setters are camera slots `+0x1a4` (near) and `+0x1ac` (far). The camera's type (slot `+0x1ec`) is read before
+    the handle is checked, so an invalid handle crashes. Draw distance: [The streamed
+    world](../../research/world.md#a-frame).
   usage: {chunks: 19, calls: 23, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 2, 81, 86, 93, 14, 9, 51, 52]}
 
 - name: CameraMakeActive
@@ -168,14 +175,21 @@
 - name: CamSetFollowHeading
   wrapper: 0x00365b80
   calls:
-    - {addr: 0x0011c2f0}
+    - {addr: 0x0011c2f0, name: Camera_SetFollowHeading}
   args:
-    - {name: degrees, lua: number, ctype: float, desc: "Heading in degrees for the follow cameras."}
+    - {name: degrees, lua: number, ctype: float, desc: "Heading of the camera in degrees about the followed character, measured from the character's facing (as `CameraReset` uses 180 to put the camera behind)."}
   description: >-
-    Swings every player's follow camera round to the given heading at once (the level scripts set the starting view
-    with it).
+    Snaps every player's follow camera round its target to the given heading with no blend: player 1's camera is
+    snapped (its previous look-at points set to the current one) and each follow camera is then placed at that
+    heading at a distance chosen from the zoom band, the same placement as `CameraReset` (0x00124f38). Level scripts
+    use it to set the opening view.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Does nothing when player 1 has no follow camera yet (0x0011f9e0(0, 0)). Players 2 and up (count `W_GameState +
+    0x224`) are placed without the snap. With no target the heading is measured from the world's forward axis. The
+    "from the character's facing" reading is inferred from 0x001250a8; distance rule and pitch reset:
+    [Camera](../../research/camera.md#setting-up).
   usage: {chunks: 68, calls: 85, boot: false, mission1: false, result_used: false, levels: [80, 87, 5, 81, 93, 51, 52, 55, 82, 92, 83, 20, 11]}
 
 - name: CamSetFollowAngle

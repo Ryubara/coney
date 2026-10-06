@@ -77,18 +77,23 @@ GangAddMember(gang, index, human)
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
 | 2 | `index` | number, truncated to an integer | Read but not used by the C++ side; the scripts pass 0 or -1. |
-| 3 | `human` | number, truncated to an unsigned integer | Handle of the human to add. |
+| 3 | `human` | number, truncated to an unsigned integer | Handle of the human to add; an invalid handle does nothing. |
 
 **Returns** nothing.
 
-Moves a human into a gang: it leaves its previous gang (its goals and actions are flushed), takes the gang's
-invincibility setting and may become its leader. If the gang is full (10 members, 16 for police) a member is dropped
-first.
+Moves a human into a gang (0x00166308). It first leaves its previous gang: its actions, target and goals are cleared and
+it is taken off that gang's member list (and attack slot, and as leader), which gets a membership event (0x16). Then its
+brain's gang (`+0x20c`) becomes the new gang, the brain is refreshed for it (0x0028aa18), it is set invincible (human
+flag `0x10`) if the gang is (`GangInvincible`), its handle goes into the first free of the 16 member slots (`+0x48`), a
+war chief becomes the gang's leader (`+0x44`), and the gang gets event 0x16.
 
-**Notes.** 0x00166308.
+**Notes.** The member limit (10, or 16 for gang kinds 1 and `0x17`) only triggers 0x0016d0e0, which has no effect (a
+stripped diagnostic): no member is dropped, and with all 16 slots taken the handle is silently not stored while the
+brain still points at the gang. Human type 237 also installs a gang anim substitution (0x00164178). This corrects the
+earlier "a member is dropped first".
 
-- **Evidence:** confirmed (code) at `0x0016a3f8`; detail: brief
-- **Wrapper** `0x00373528` (registered by `RegisterBindings`); **calls** `0x0016a3f8`
+- **Evidence:** confirmed (code) at `0x0016a3f8`; detail: traced
+- **Wrapper** `0x00373528` (registered by `RegisterBindings`); **calls** `0x0016a3f8` `Gang_AddMemberByHandle`
 - **Used by** 39 of 467 script chunks (128 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 19 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
@@ -501,16 +506,18 @@ GangEngageEnemy(gang, target)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `target` | number, truncated to an unsigned integer | Handle of the human (or object) to attack. |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of the human to attack (usually a player). |
 
 **Returns** nothing.
 
-Gives every current member of the gang an `EngageEnemy` goal (type 11) against the target.
+Sets the whole gang on one target: every current member gets an `EngageEnemy` goal (type 11, `Goal_EngageEnemy`) pushed
+on its brain against the target, so each walks up to it and fights it with the usual fight goal until the target is out
+of range or gone, or a newer goal replaces it.
 
-**Notes.** The target handle is not checked. The goal's behaviour (Process 0x002afa48) is a fight sub-goal
-([AI](../../research/ai.md#fight)).
+**Notes.** The target handle is not checked. The goal's constructor is 0x002af5b0 and its behaviour (Process 0x002afa48)
+a fight sub-goal ([AI](../../research/ai.md#fight)). The gang's tactic is left as it is.
 
-- **Evidence:** confirmed (code) at `0x0016a870`; detail: brief
+- **Evidence:** confirmed (code) at `0x0016a870`; detail: traced
 - **Wrapper** `0x00373930` (registered by `RegisterBindings`); **calls** `0x0016a870` `Gang_EngageEnemy`
 - **Used by** 10 of 467 script chunks (18 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -596,15 +603,19 @@ GangGetStandingCount(gang) -> number
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31). |
+| 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 gives 0. |
 
-**Returns** number: The number of members still on their feet: not knocked down, not dead and not in a third disabled
-state (0x00227dd8, 0x00227eb0, 0x00227d98); 0 for gang id -1.
+**Returns** number: How many of the gang's (up to 16) members are still on their feet: alive handles that are not
+knocked down (0x00227dd8), dead (0x00227eb0) or in a third disabled state (0x00227d98).
 
-Counts the gang's members that are still standing.
+Counts the gang's members that are still standing (0x00166220). Level scripts poll it to tell when a fight is won: the
+mission moves on once an enemy gang's count reaches 0.
 
-- **Evidence:** confirmed (code) at `0x0016a4a8`; detail: brief
-- **Wrapper** `0x00373648` (registered by `RegisterBindings`); **calls** `0x0016a4a8`
+**Notes.** Members whose handle no longer resolves (removed humans) are skipped. A knocked-down member who gets up
+counts again.
+
+- **Evidence:** confirmed (code) at `0x0016a4a8`; detail: traced
+- **Wrapper** `0x00373648` (registered by `RegisterBindings`); **calls** `0x0016a4a8` `Gang_GetStandingCount`
 - **Used by** 29 of 467 script chunks (133 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented
@@ -888,16 +899,20 @@ GangRemoveTurfBox(gang, box)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `box` | number, truncated to an unsigned integer | Handle of a volume box previously added with GangAddTurfBox. |
+| 2 | `box` | number, truncated to an unsigned integer | Handle of a volume box previously added with `GangAddTurfBox`; any other handle changes nothing. |
 
 **Returns** nothing.
 
-Removes a volume box from the gang's turf: the gang keeps up to eight turf box handles at `+0x15c` with their count at
-`+0x17c`, and the first entry equal to the box is cleared and the count lowered.
+Takes a volume box out of the gang's turf: of the eight turf slots at gang `+0x15c` the first holding that box is
+cleared and the count at `+0x17c` lowered (0x00165260). The turf tests then ignore the box: 0x001652e8 (is a point
+inside the turf) and 0x00165368 (is a standing member of another gang inside it), used by the gang's tactics and its
+members' brains to decide where they go and whom they chase.
 
-**Notes.** 0x00165260 does the removal. What the turf boxes are used for is in `GangAddTurfBox`.
+**Notes.** With no boxes left (count 0) both tests answer yes, so a gang without turf treats everywhere as its turf.
+`GangAddTurfBox` fills the first empty slot, so removed slots are reused. The callers of the tests (0x0028ff38,
+0x0031fdc0, 0x003200c8, 0x0030eec0 ...) are not traced one by one.
 
-- **Evidence:** confirmed (code) at `0x0016a3a8`; detail: brief
+- **Evidence:** confirmed (code) at `0x0016a3a8`; detail: traced
 - **Wrapper** `0x003734b0` (registered by `RegisterBindings`); **calls** `0x0016a3a8` `Gang_RemoveTurfBox`
 - **Used by** 5 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)

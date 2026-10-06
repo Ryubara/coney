@@ -244,7 +244,7 @@ constexpr std::array<NativeResultType, 1> kResults_HuWhatAmIHolding{R::Number};
 constexpr std::array<NativeArg, 7> kArgs_HuWorkout{{{"human", A::Handle, "", 0}, {"equipment", A::Handle, "", 0}, {"startAnim", A::String, "", 0}, {"endAnim", A::String, "", 0}, {"loop1", A::String, "", 0}, {"loop2", A::String, "", 0}, {"loop3", A::String, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_IsAHuman{{{"handle", A::Handle, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_IsAHuman{R::Boolean};
-constexpr std::array<NativeArg, 2> kArgs_IssueWarriorCommand{{{"command", A::Integer, "", 0}, {"on", A::Boolean, "", 0}}};
+constexpr std::array<NativeArg, 2> kArgs_IssueWarriorCommand{{{"command", A::Integer, "", 0}, {"forced", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_KillHumans{{{"seconds", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_LoadBumAnims{{{"on", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_SetCharacterModel{{{"type", A::Integer, "", 0}, {"release", A::Boolean, "", 0}}};
@@ -369,7 +369,7 @@ constexpr std::array<NativeArg, 4> kArgs_GoalTag{{{"human", A::Handle, "", 0}, {
 constexpr std::array<NativeArg, 5> kArgs_GoalTagEx{{{"human", A::Handle, "", 0}, {"flag", A::Handle, "", 0}, {"tag", A::Handle, "", 0}, {"extra", A::Handle, "", 0}, {"extra2", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 5> kArgs_GoalThrowObject{{{"human", A::Handle, "", 0}, {"target", A::Handle, "", 0}, {"range", A::Number, "16", 0}, {"gait", A::Integer, "2", 0}, {"callback", A::String, "", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_GoalTrackHuman{{{"human", A::Handle, "", 0}, {"target", A::Handle, "", 0}, {"distance", A::Number, "", 0}}};
-constexpr std::array<NativeArg, 6> kArgs_GoalTravelPath{{{"human", A::Handle, "", 0}, {"path", A::Userdata, "", 0}, {"start", A::Integer, "", 0}, {"reverse", A::Boolean, "", 0}, {"gait", A::Integer, "", 0}, {"radius", A::Number, "", 0}}};
+constexpr std::array<NativeArg, 6> kArgs_GoalTravelPath{{{"human", A::Handle, "", 0}, {"path", A::Userdata, "", 0}, {"mode", A::Integer, "", 0}, {"reverse", A::Boolean, "", 0}, {"gait", A::Integer, "", 0}, {"radius", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 7> kArgs_GoalTravelPath2{{{"human", A::Handle, "", 0}, {"path", A::Userdata, "", 0}, {"start", A::Integer, "", 0}, {"reverse", A::Boolean, "", 0}, {"gait", A::Integer, "", 0}, {"radius", A::Number, "", 0}, {"endPoint", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 12> kArgs_SetGlobalPedRules{{{"rule1A", A::Integer, "", 0}, {"rule1Range", A::Integer, "", 0}, {"rule1B", A::Integer, "", 0}, {"rule2A", A::Integer, "", 0}, {"rule2Range", A::Integer, "", 0}, {"rule2B", A::Integer, "", 0}, {"rule3A", A::Integer, "", 0}, {"rule3Range", A::Integer, "", 0}, {"rule3B", A::Integer, "", 0}, {"rule4A", A::Integer, "", 0}, {"rule4Range", A::Integer, "", 0}, {"rule4B", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 11> kArgs_SetInterrogateParam{{{"valueA", A::Integer, "", 0}, {"valueB", A::Integer, "", 0}, {"valueC", A::Integer, "", 0}, {"timeA", A::Integer, "", 0}, {"timeB", A::Integer, "", 0}, {"timeC", A::Integer, "", 0}, {"angleA", A::Number, "", 0}, {"angleB", A::Number, "", 0}, {"timeD", A::Integer, "", 0}, {"flag", A::Integer, "", 0}, {"set", A::Integer, "", 0}}};

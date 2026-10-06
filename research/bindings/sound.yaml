@@ -258,30 +258,41 @@
 - name: SoundEnableSystemMusic
   wrapper: 0x00371470
   calls:
-    - {addr: 0x00113ea8}
+    - {addr: 0x00113ea8, name: Sound_EnableSystemMusic}
   args:
-    - {name: "on", lua: boolean, desc: "true lets the game choose music automatically by the situation (ambient, tension, fight); false turns that off so the script controls the music."}
+    - {name: "on", lua: boolean, desc: "true lets the game choose the music by the situation (calm, fight, hunted); false stops it so the script controls the music."}
   description: >-
-    Turns the system music, the game's automatic mood music, on or off (0x0041a008).
-  evidence: inferred
-  depth: brief
+    Turns the system music, the game's automatic mood music, on or off (game state `+0x3f8`, 0x0041a008). On a
+    change it forces a fresh choice of track and at once works out the mood from the player's surroundings
+    (0x0041a060): 1 when an enemy gang near the player's gang is fighting it, 2 when an enemy gang's member is
+    hunting it (goals `0xc`, `0x75`, `0x76`, 0x001696e0), else 0. Turning it off fades out the music (0x0010d9a0).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Setting the value it already has only clears game state `+0x3f4` (not traced). `SoundSetMusicTrack` turns it on
+    too. Tracks per mood and the fades: [Sound](../../research/sound.md#music-player).
   usage: {chunks: 89, calls: 154, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
 
 - name: SoundSetMusicTrack
   wrapper: 0x003714a0
   calls:
-    - {addr: 0x00113ed0}
+    - {addr: 0x00113ed0, name: Sound_SetMusicTrack}
   args:
-    - {name: slot, lua: number, ctype: int, desc: "Which system-music mood the tracks are for: 0, 1 and 2 (inferred: ambient, tension and fight)."}
-    - {name: track1, lua: string, desc: "Track name, or nil/empty for none."}
+    - {name: slot, lua: number, ctype: int, desc: "The system-music mood the tracks are for: 0 calm, 1 fight, 2 hunted (the moods 0x0041a060 picks); not range-checked."}
+    - {name: track1, lua: string, desc: "Name of a music track, or nil or an empty string for none."}
     - {name: track2, lua: string, desc: "A second track for the same mood, or nil."}
     - {name: track3, lua: string, desc: "A third track, or nil."}
   description: >-
-    Sets up to three music tracks for one mood of the system music and turns the system music on.
+    Sets the tracks the system music picks from for one mood and turns the system music on. The non-empty names are
+    hashed (CRC-32, table 0x005d91e0) and stored in order, up to three, in the music player's mood table
+    (0x0010e9e0); when the mood is the one playing, a new pick is forced. Each time the mood changes the player
+    plays a random one of the mood's tracks, looping.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    0x00113ed0; what the three slots mean is inferred from the scripts' track names.
+    Empty names are skipped, so the tracks pack to the front; a mood given no tracks stops the music when chosen.
+    The names are not checked against the loaded track list. Also sets audio manager `+0xcc` = 1 (not traced). The
+    mood names are inferred from 0x0041a060's tests. [Sound](../../research/sound.md#music-player).
   usage: {chunks: 73, calls: 275, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
 
 - name: SoundSetMusicStateCallback

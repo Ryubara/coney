@@ -52,8 +52,8 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; not checked, so pass a live handle."}
   description: >-
-    Kills a human through the damage path: unless it is already dead or flagged `0x80000000`, it drops what it holds
-    (0x00258330), its health is set to 1 and 100 damage is left pending (record `+0x118`, human `+0x5d2`), so the
+    Kills a human through the damage path: unless it is already dead or flagged `0x80000000`, its hat is knocked
+    off (`Human_KnockOffHat` 0x00258330), its health is set to 1 and 100 damage is left pending (record `+0x118`, human `+0x5d2`), so the
     next damage update finishes it with the usual death.
   evidence: confirmed-code
   depth: thorough
@@ -198,14 +198,16 @@
     - {addr: 0x00238030, name: Human_SetShadow}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: "on", lua: boolean, desc: "true draws the human's shadow, false hides it."}
+    - {name: "on", lua: boolean, desc: "true draws the human's blob shadow, false hides it."}
   description: >-
-    Turns the human's blob shadow on or off: writes the value to `+0x2b4` of its character instance (human
-    `+0xd8`), which nothing changes otherwise (docs/research/lighting.md#humans).
+    Turns the human's blob shadow on or off: the value goes to `+0x2b4` of its character instance (human `+0xd8`),
+    which the human's draw reads before it puts the shadow sprite on the ground under it. Scripts hide it for
+    characters placed where a shadow would look wrong.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    That `+0x2b4` gates the shadow draw is inferred from the name; the draw is not traced.
+    Nothing happens for an invalid handle or a human with no instance. The shadow and its other conditions:
+    [Lighting](../../research/lighting.md#humans). The default value of `+0x2b4` is not traced.
   usage: {chunks: 10, calls: 38, boot: false, mission1: false, result_used: false, levels: [80, 87, 81, 86, 93, 31, 52, 55, 84, 83]}
 
 - name: HuRubberNeck
@@ -224,27 +226,39 @@
 - name: HuBlockLook
   wrapper: 0x00358b98
   calls:
-    - {addr: 0x0023a2c0}
+    - {addr: 0x0023a2c0, name: Human_SetBlockLook}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: block, lua: boolean, desc: "True stops the human turning its head to look at things."}
+    - {name: block, lua: boolean, desc: "true stops the human turning its head toward things; false lets it again."}
   description: >-
-    Blocks or allows the human's head-look behaviour (flag 0x1000 at +0xe0).
+    Sets or clears flag `0x1000` of the human's flag word (`+0xe0`). Each update the head-look (0x00248428) turns
+    the head toward the current look-at target (up to 55° sideways, 90° for some requests, and 45° up or down) only
+    when 0x002482e0 allows it, and that refuses while `0x1000` is set, so the head is left as it is. Scripts set it
+    on characters posed for a scene or a conversation.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    `HuForceLook` (`0x10000`) overrides it: the check is skipped. A dead human and two other states (0x00228070,
+    0x00228090) never turn the head either way.
   usage: {chunks: 46, calls: 127, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 86, 93, 82, 92]}
 
 - name: HuForceLook
   wrapper: 0x00358bf8
   calls:
-    - {addr: 0x0023a328}
+    - {addr: 0x0023a328, name: Human_SetForceLook}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: force, lua: boolean, desc: "True sets the force-look flag."}
+    - {name: force, lua: boolean, desc: "true lets the head turn to look whatever the human is doing; false restores the usual checks."}
   description: >-
-    Sets or clears the human's force-look flag (0x10000 at +0xe0).
-  evidence: speculative
-  depth: brief
+    Sets or clears flag `0x10000` of the human's flag word (`+0xe0`). While it is set the head-look check
+    (0x002482e0) skips its usual refusals (action and fight states, a player's busy states, `HuBlockLook`), so the
+    head keeps turning toward its look-at target even mid-animation; only death and two other states (0x00228070,
+    0x00228090) still stop it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    `GoalPlayDynAnimation` sets and clears the same bit around its clip ([AI](../../research/ai.md#dyn-animation)),
+    so the end of such a goal also clears a forced look.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [80, 5]}
 
 - name: HuClearLook
@@ -334,30 +348,42 @@
 - name: HuIsAimingAt
   wrapper: 0x00358f50
   calls:
-    - {addr: 0x0023a468}
+    - {addr: 0x0023a468, name: Human_IsAimingAt}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
-    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the object or human to test."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the object (or human) to test."}
   results:
-    - {lua: boolean, desc: "True when the player is targeting exactly that object (+0x634)."}
+    - {lua: boolean, desc: "true when the human is a player and the target is the object its throw aim last landed on (human `+0x634`); nil otherwise."}
   description: >-
-    Tells whether a player is aiming at the given target.
+    Tells whether a player aiming a throw would hit the given object. While a player is in the throw control
+    (0x00244770) the aim trace 0x0018fee0 follows the throw's arc and stores the first object it meets at human
+    `+0x634`; this compares that with `target`. Level scripts use it to react when the player lines up a throw at a
+    particular object.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Always false for a non-player (`+0x1b0` = -1) or an invalid target. `+0x634` is written only by the aim trace
+    (and cleared by `Human_Init`), so it keeps the last aimed object after the aim ends.
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: true, levels: [80]}
 
 - name: HuGetControlName
   wrapper: 0x00358fd0
   calls:
-    - {addr: 0x002380c0}
+    - {addr: 0x002380c0, name: Human_GetControlName}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
   results:
-    - {lua: string, desc: "A name string from the human (0x0023fb00), or nil for an invalid handle."}
+    - {lua: string, desc: "Name of the human's current control handler: nullControl, aiControl, screenRelativeControl, lockOnControl, grabbingControl, grabbedControl, throwControl, aiStepControl, jumpingControl, wheelchairControl, buttonTapControl or INVALID_CONTROL; nil for an invalid handle."}
   description: >-
-    Returns the name of the human's current controller.
-  evidence: speculative
-  depth: brief
+    Returns the name of the control handler driving the human (the member function held at human `+0x1bc`-`+0x1c0`,
+    named by 0x0023fb00): how its movement is currently produced, for example screenRelativeControl for a player
+    walking with the stick, throwControl while aiming a throw, grabbingControl while holding someone, or aiControl
+    for a brain-driven human.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    A handler not in the list (or a virtual one) gives INVALID_CONTROL. The names are the game's own strings at
+    0x00510328-0x00510488.
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: true, levels: [80]}
 
 - name: HuBlockJump
@@ -491,14 +517,19 @@
 - name: HuSetAutoEscape
   wrapper: 0x00359380
   calls:
-    - {addr: 0x00235200}
+    - {addr: 0x00235200, name: Human_SetAutoEscape}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: enable, lua: boolean, desc: "True lets the human break free on its own."}
+    - {name: enable, lua: boolean, desc: "true lets the human break out of grabs; false clears it."}
   description: >-
-    Lets the human escape grabs automatically (flag 0x20000 at +0xe0).
-  evidence: inferred
-  depth: brief
+    Sets or clears flag `0x20000` of the human's flag word (`+0xe0`). A human with it escapes a grab when the
+    grabber's power runs out (instead of both letting go), and can counter a grab attempt at the end of the
+    grabber's intro, so the player cannot simply hold it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Readers: the power-out escape in `Human_UpdateMeters` (0x002562d0) and the grab intro's end (0x0026c1d8),
+    [Combat](../../research/combat.md#human-flags).
   usage: {chunks: 8, calls: 13, boot: false, mission1: false, result_used: false, levels: [80, 54, 82]}
 
 - name: HuMakeBeatUp
@@ -642,11 +673,16 @@
     - {addr: 0x00237388, name: Human_SetKeepHat}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+    - {name: "on", lua: boolean, desc: "true keeps the human's hat on; false lets it be knocked off again."}
   description: >-
-    Sets or clears flag bit 0x10000000000 of the human's flag word; from the name, the human's hat is not knocked off.
-  evidence: inferred
-  depth: brief
+    Sets (true) or clears bit `0x10000000000` of the human's flag word (`+0xe0`). The hat knock-off 0x00258330,
+    called when a human is hit hard, killed or removed, returns at once while the bit is set, so the hat (the object
+    at human `+0x364`, see `HuHasHat`) stays on; otherwise the hat is detached and tossed away from the blow.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Only exactly true sets the bit. A riot hat (`TYPE_RIOT_HAT`) never comes off. A knocked-off hat may be given a
+    timer (0x00395d20, 8 s or game state `+0x26c`) whose meaning is not traced.
   usage: {chunks: 7, calls: 9, boot: false, mission1: false, result_used: false, levels: [80, 81, 54]}
 
 - name: HuSetKeepWeapon
@@ -922,14 +958,16 @@
     - {addr: 0x00235db0, name: Human_SetRevivable}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
+    - {name: "on", lua: boolean, desc: "true lets the human be revived when down; false stops it."}
   description: >-
-    Sets (true) or clears bit `0x4` of the human's flag word (human `+0xe0`); from the name, a downed human with it
-    can be revived, as fallen Warriors are.
-  evidence: inferred
-  depth: brief
+    Sets (true) or clears bit `0x4` of the human's flag word (`+0xe0`). The revive search (0x00279078, test
+    0x00278fa0) accepts only a knocked-down human with the bit, in the reviver's gang, not dead and not in a few
+    excluded states, within 3 m; such a human gets the revive prompt and can be brought back with a flash.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    The store is confirmed (code) at 0x00235db0; the revive code that reads `0x4` is not traced.
+    Only exactly true sets the bit. `Human_MakePlayer` sets it on every player, so scripts clear it to keep a
+    character down or set it on allies. The same-gang test is skipped for some revivers (0x00222a90).
   usage: {chunks: 56, calls: 107, boot: false, mission1: false, result_used: false, levels: [80, 95, 31, 54, 92, 20, 60, 61, 62, 63, 64]}
 
 - name: HuLockMovement
@@ -1494,11 +1532,16 @@
     - {addr: 0x00237848, name: Human_SetHealth}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: health, lua: number, ctype: int, desc: "New health in hit points (a 16-bit value); anything above the human's maximum gives full health."}
+    - {name: health, lua: number, ctype: int, desc: "New health in hit points, truncated to 16 bits; anything above the human's maximum gives full health."}
   description: >-
-    Sets the human's current health (+0x144 of its 0x180-byte record), capped at its maximum (+0x146).
+    Sets the human's current health (`+0x144` of its record at human `+0xd4`) to `health`, or to its maximum
+    (`+0x146`) when `health` is larger. Nothing else is started: no damage, reaction or death, and the health bar
+    simply shows the new value.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    No lower bound: 0 or a negative value is stored as given; what the damage code then does with it is not traced
+    (`HuKill` is the way to kill). Health scale: [Combat](../../research/combat.md#damage).
   usage: {chunks: 23, calls: 57, boot: false, mission1: false, result_used: false, levels: [80, 5, 93, 31, 51, 55, 84, 92, 83, 11, 60, 61, 62, 63, 64]}
 
 - name: HuSetHealthPercent
@@ -1649,11 +1692,14 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
   results:
-    - {lua: number, desc: "Type number of the object the human holds (a byte from the object's type record, +0x86), or 0 when it holds nothing."}
+    - {lua: number, desc: "The `TYPE_*` object type of what the human holds (byte `+0x86` of the object's type record: 3 `TYPE_BAT`, 4 `TYPE_BOTTLE`, 8 `TYPE_MOLOTOV`, 16 `TYPE_SPRAYCAN` ...), or 0 (`TYPE_NOTHING`) when it holds nothing or the handle is invalid."}
   description: >-
-    Tells a script what kind of object (weapon, bottle, bag) the human is holding.
-  evidence: inferred
-  depth: brief
+    Tells a script what kind of object the human is holding, as one of the `TYPE_*` script constants: the held
+    object comes from 0x00226ff0 and its type record from the object-type table (0x00391330).
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The constants are on the [enums](../enums.md) list.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: true, levels: [80, 86, 93]}
 
 - name: HuGetHeldObject
@@ -2803,17 +2849,19 @@
 - name: HuLockPadMovement
   wrapper: 0x003655a0
   calls:
-    - {addr: 0x0023ae90}
+    - {addr: 0x0023ae90, name: Human_LockPadMovement}
   args:
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human."}
-    - {name: lock, lua: boolean, desc: "True locks movement from the left analog stick."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of a player's human; a human no player controls is ignored."}
+    - {name: lock, lua: boolean, desc: "true locks the left stick; false frees it."}
   description: >-
-    Locks the stick movement of the player controlling this human: while set, the stick reads as centred, so the
-    character stands still but can still act.
+    Locks the left-stick movement of the player controlling this human (byte `+0x1f` of the player record): while
+    set, the player record's update reads the stick as centred (angle π/2, length 0), so the character stands still
+    but its buttons (attacks, commands, actions) still work.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Player record +0x1f (Characters, per-player record).
+    Reader: `PlayerRecord_Update` (0x00146078), [Characters](../../research/characters.md#input). The lock stays
+    until cleared.
   usage: {chunks: 10, calls: 28, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 3, 9]}
 
 - name: AddCommand
@@ -3100,15 +3148,20 @@
   calls:
     - {addr: 0x0041c2d0, name: GameState_IssueWarriorCommand}
   args:
-    - {name: command, lua: number, ctype: int, desc: "Warrior command number (0-6, the entries of the command menu)."}
-    - {name: "on", lua: boolean, desc: "true issues the command; passed on as for WCIssueCommand."}
+    - {name: command, lua: number, ctype: int, desc: "Warrior command number: 0 follow, 1 attack, 2 defend, 3 hold, 4 scatter, 5 wreck, 6 none ([Commands](../commands.md#warrior-command))."}
+    - {name: forced, lua: boolean, desc: "true restarts the command even if it is the current one; false behaves as the menu does (giving the current command again only repeats the chief's line)."}
   description: >-
-    Issues a Warrior command as player 1's chief: player 1's human (game state `+0x228`) is passed with the command
-    to the dispatcher `WCIssueCommand` uses.
+    Issues a Warrior command as player 1's war chief: player 1's human (handle at game state `+0x228`) is passed
+    with the command to the dispatcher 0x0041c4e0, the same path as `WCIssueCommand` and the command menu. Unless
+    refused, the crew's gang tactic is replaced by the command's tactic, the chief says the command's line, and the
+    `WCSetCallback` function is called.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    0x0041c2d0 → 0x0041c4e0. What each command starts: [AI](../../research/ai.md#warrior-commands).
+    0x0041c2d0 → `GameState_IssueWarriorCommandFor` 0x0041dc80 → 0x0041c4e0. Refused while a scene camera (type 4)
+    is player 1's, while commands are locked (`+0x411`), the player's menu is locked (`+0x42e`), the command is
+    disabled (`WCEnableCommand`) or the human is not a war chief. The command number is not range-checked. What each
+    command starts: [AI](../../research/ai.md#warrior-commands).
   usage: {chunks: 7, calls: 15, boot: false, mission1: false, result_used: false, levels: [80, 87, 93, 82]}
 
 - name: WCEnableAllCommands
@@ -3129,14 +3182,19 @@
   calls:
     - {addr: 0x0041dbe8, name: GameState_EnableWarriorCommand}
   args:
-    - {name: player, lua: number, ctype: unsigned, desc: "Handle of a player human."}
-    - {name: command, lua: number, ctype: int, desc: "Warrior command number 0-6."}
+    - {name: player, lua: number, ctype: unsigned, desc: "Handle of a player's human (the war chief)."}
+    - {name: command, lua: number, ctype: int, desc: "Warrior command number 0-6 (0 follow, 1 attack, 2 defend, 3 hold, 4 scatter, 5 wreck)."}
     - {name: "on", lua: boolean, desc: "true enables the command, false disables it."}
   description: >-
-    Enables or disables one Warrior command for the player who controls `player`, and refreshes that player's command
-    HUD when enabling.
+    Enables or disables one Warrior command for the player who controls `player`: the byte at game state `+0x41e` +
+    player × 7 + command, which the dispatcher checks before it starts a command from the menu, `WCIssueCommand` or
+    `IssueWarriorCommand`. Enabling also tells that player's command HUD (`WarCommandDisplay_SetAllowed`) so the
+    entry shows as available.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Every command is enabled again at a level reset (0x00418c68). Disabling does not touch the HUD. A non-player
+    human (`+0x1b0` = -1) or an out-of-range command writes outside the table.
   usage: {chunks: 25, calls: 133, boot: false, mission1: false, result_used: false, levels: [80, 87, 2, 3, 5, 81, 93, 31, 51, 84, 11]}
 
 - name: WCIssueCommand
@@ -3165,12 +3223,20 @@
   calls:
     - {addr: 0x0041dcf0, name: GameState_LockWarriorCommands}
   args:
-    - {name: player, lua: number, ctype: unsigned, desc: "Handle of a player human."}
-    - {name: locked, lua: boolean, desc: "true locks the command menu, false unlocks it (byte at game state +0x418 + player index)."}
+    - {name: player, lua: number, ctype: unsigned, desc: "Handle of a player's human (the war chief)."}
+    - {name: locked, lua: boolean, desc: "true sets the byte (the crew no longer turns on its chief); false clears it."}
   description: >-
-    Locks or unlocks the Warrior command menu for the player who controls `player`.
-  evidence: inferred
-  depth: brief
+    Writes the byte at game state `+0x418` + the player's index. Its only reader is the Warrior brain's reaction to
+    being hit by its chief (0x00306190): while the byte is clear, a Warrior hit by the chief four times within 10 s
+    turns on him for 20 s, his current command is forced back to follow and his command menu is locked (`+0x42e`).
+    Setting the byte switches that reaction off; it does not itself lock the command menu.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The name suggests a menu lock, but no code reads the byte for the menu. Cleared at a level reset (0x00418c68).
+    The 20 s retaliation is 0x002aeda0 (inferred: a fight goal against the chief). A non-player handle writes
+    outside the two bytes. The second hit is enough when the chief's brain byte `+0x2e4` is set; a Warrior already
+    fighting ignores the hits.
   usage: {chunks: 10, calls: 16, boot: false, mission1: false, result_used: false, levels: [80, 93, 55]}
 
 - name: WCSetCallback
@@ -3178,11 +3244,16 @@
   calls:
     - {addr: 0x0041dd40, name: GameState_SetWarriorCommandCallback}
   args:
-    - {name: callback, lua: string, desc: "Name of a Lua function (up to 31 characters), or nil to clear it."}
+    - {name: callback, lua: string, desc: "Name of a global Lua function (at most 31 characters kept), or nil to clear it."}
   description: >-
-    Stores the name of a Lua function to call when the player issues a Warrior command (game state +0x2fc).
-  evidence: inferred
-  depth: brief
+    Stores the name of a Lua function (game state `+0x2fc`) that the command dispatcher calls after every Warrior
+    command it starts, from the menu or a script: the function gets the chief's handle and the command number
+    (0x0041b5e0). Level scripts use it to react when the player orders the crew.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Not called for a refused command or when an unforced repeat only repeats the line. Nothing happens if no such
+    global function exists. Cleared at a level reset (0x00418c68). One callback for both players.
   usage: {chunks: 4, calls: 12, boot: false, mission1: false, result_used: false, levels: [80, 31]}
 
 - name: WCEnableAutomaticSwitching

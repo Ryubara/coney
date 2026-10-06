@@ -40,15 +40,16 @@ clearDetailFlag(index, mask)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `index` | number, truncated to an integer | Which flag byte. |
-| 2 | `mask` | number, truncated to an unsigned integer | Bits to clear. |
+| 1 | `index` | number, truncated to an integer | Which flag byte, 0-3; not range-checked. |
+| 2 | `mask` | number, truncated to an unsigned integer | Bits to clear (only the low byte is used). |
 
 **Returns** nothing.
 
-Clears bits in a detail-flag byte (the reverse of setDetailFlag).
+Clears the `mask` bits in one of the four detail-flag bytes at `W_GameState + 0x3e8` (0x0041cf58), the reverse of
+`setDetailFlag`. Like it, it has no visible effect: nothing reads the bytes.
 
-- **Evidence:** confirmed (code) at `0x0041d860`; detail: brief
-- **Wrapper** `0x0036c698` (registered by `RegisterBindings`); **calls** `0x0041d860`
+- **Evidence:** confirmed (code) at `0x0041d860`; detail: traced
+- **Wrapper** `0x0036c698` (registered by `RegisterBindings`); **calls** `0x0041d860` `GameState_ClearDetailFlag`
 - **Used by** 8 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
@@ -104,18 +105,20 @@ setDetailFlag(index, mask)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `index` | number, truncated to an integer | Which flag byte (0-3 in the scripts). |
-| 2 | `mask` | number, truncated to an unsigned integer | Bits to set (a byte). |
+| 1 | `index` | number, truncated to an integer | Which flag byte, 0-3 (`W_GameState + 0x3e8 + index`); not range-checked. |
+| 2 | `mask` | number, truncated to an unsigned integer | Bits to set (only the low byte is used). |
 
 **Returns** nothing.
 
-Sets bits in one of the game state's detail-flag bytes (`W_GameState + 0x3e8 + index`), switching optional level details
-on.
+ORs `mask` into one of four game-state bytes at `W_GameState + 0x3e8` (0x0041cf40). The bytes are cleared to 0 when a
+level starts or resets (0x00418588, 0x00418c68), but no code in the executable reads them, so the call has no visible
+effect in the shipped game.
 
-**Notes.** What reads the bytes is not traced; the 'level details' reading is speculative.
+**Notes.** No load of `W_GameState + 0x3e8`-`0x3eb` was found (every `0x3e8`-`0x3eb` offset access in the program
+belongs to another object); the scripts' use (indices 0-3) suggests a leftover development switch.
 
-- **Evidence:** confirmed (code) at `0x0041d830`; detail: brief
-- **Wrapper** `0x0036c620` (registered by `RegisterBindings`); **calls** `0x0041d830`
+- **Evidence:** confirmed (code) at `0x0041d830`; detail: traced
+- **Wrapper** `0x0036c620` (registered by `RegisterBindings`); **calls** `0x0041d830` `GameState_SetDetailFlag`
 - **Used by** 18 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 13 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented

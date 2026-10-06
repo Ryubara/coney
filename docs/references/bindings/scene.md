@@ -403,14 +403,18 @@ SceneTerminate(scene)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `scene` | number, truncated to an unsigned integer | Scene id. |
+| 1 | `scene` | number, truncated to an unsigned integer | Scene id (as given to `ScenePlay`). |
 
 **Returns** nothing.
 
-Stops a scene without forcing it: the same as SceneStop(scene, false).
+Stops a scene without forcing it, exactly `SceneStop(scene, false)` (`Scene_Stop` 0x00353a10): a starting scene ends at
+once, a playing one with roles has its clips ended (waiting while a role is in a paired move), and a looping one only
+stops looping and ends after its current pass. Once ended the scene's humans are released and its slot unloaded.
 
-- **Evidence:** confirmed (code) at `0x00354c48`; detail: brief
-- **Wrapper** `0x00368240` (registered by `RegisterBindings`); **calls** `0x00354c48`
+**Notes.** States and unloading: [Scenes](../../research/scenes.md).
+
+- **Evidence:** confirmed (code) at `0x00354c48`; detail: traced
+- **Wrapper** `0x00368240` (registered by `RegisterBindings`); **calls** `0x00354c48` `Scene_Terminate`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented

@@ -280,13 +280,18 @@
 - name: SceneTerminate
   wrapper: 0x00368240
   calls:
-    - {addr: 0x00354c48}
+    - {addr: 0x00354c48, name: Scene_Terminate}
   args:
-    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
+    - {name: scene, lua: number, ctype: unsigned, desc: "Scene id (as given to `ScenePlay`)."}
   description: >-
-    Stops a scene without forcing it: the same as SceneStop(scene, false).
+    Stops a scene without forcing it, exactly `SceneStop(scene, false)` (`Scene_Stop` 0x00353a10): a starting scene
+    ends at once, a playing one with roles has its clips ended (waiting while a role is in a paired move), and a
+    looping one only stops looping and ends after its current pass. Once ended the scene's humans are released and
+    its slot unloaded.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    States and unloading: [Scenes](../../research/scenes.md).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [80]}
   coney: implemented
 

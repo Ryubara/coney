@@ -2107,23 +2107,31 @@ GoalMoveToExitFlag(human, flag, gait, angle, distance, radius)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of the human (a pedestrian or vendor leaving the scene). |
-| 2 | `flag` | number, truncated to an unsigned integer | Handle of the exit flag to go to. |
-| 3 | `gait` | number, truncated to an integer | Gait id: 2 walk, 3 jog, 4 run, 5 sprint. |
-| 4 | `angle` | number (single precision) | Direction in degrees of an offset from the flag (0). |
-| 5 | `distance` | number (single precision) | Length of the offset in metres (0). |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of the human (a pedestrian, vendor or extra leaving the scene). |
+| 2 | `flag` | number, truncated to an unsigned integer | Handle of the exit flag to head for (a flag with activity 8); the goal may switch to another exit flag on the way. |
+| 3 | `gait` | number, truncated to an integer | Gait id: 2 walk, 3 jog, 4 run, 5 sprint ([Characters](../../research/characters.md#locomotion)). |
+| 4 | `angle` | number (single precision) | Direction in degrees of an offset from the flag's point; used only when it or `distance` is above 0. |
+| 5 | `distance` | number (single precision) | Length of the offset in metres (0 for the flag itself). |
 | 6 | `radius` | number (single precision) | Arrival radius in metres (scripts use 0.3). |
 
 **Returns** nothing.
 
-Sends a human to an exit flag to leave the scene: unless its brain is of type 1 the brain is first switched off
-(0x0028ced8 with 1, as `BrDead`), then a `MoveToExitFlag` goal (type 2) takes it to the flag, and on arrival the human
-is removed.
+Sends a human off the scene through an exit flag. Unless its brain is of type 1 (a player) the brain's off flag is set
+first (brain `+9`, as `BrDead` does), then a `MoveToExitFlag` goal (type 2) walks it to the flag (or the offset point)
+at `gait`. If the way to the flag is blocked, or the human reaches it while a player camera can see it or within 8 m of
+one, it picks the nearest other exit flag it can reach and goes on; once it arrives unseen it is removed. If, at a check
+every 8 seconds, it is more than 60 m from every player camera and off screen, it is instead killed out of sight (as
+`HuKill`) and the goal ends.
 
-**Notes.** Goal_MoveToExitFlag 0x002da810, constructor 0x002da8f8. Removal at an exit flag (activity 8): 0x00416b18,
-[World flags](../../research/flags.md#activities). `HuExitWorld` finds the flag itself.
+**Notes.** Constructor 0x002da8f8 (vtable 0x005420d0; it also sets brain `+0x2d7`, cleared when the goal ends), Start
+0x002da960 (offset point by angle and distance, 0x003376c0), Process 0x002dacf8, end 0x002daa20 (posts gang event 8 when
+the human left). Exit flags are found by 0x004177d8 (nearest flag of an activity, with a line-of-sight test). The
+removal at an exit flag (activity 8) is 0x00416b18, [World flags](../../research/flags.md#activities); the out-of-sight
+kill is 0x002302a8 (the body of `HuKill`). A pedestrian (brain type 4 or 5) seen at the flag may first wait 1.5 s (3 s
+for one kind) before it gives up the flag. A panicking human (brain `+0x2e` above 0) may switch to sprint when more than
+15 m away. `HuExitWorld` finds the flag itself.
 
-- **Evidence:** confirmed (code) at `0x002da810`; detail: brief
+- **Evidence:** confirmed (code) at `0x002da810`; detail: traced
 - **Wrapper** `0x00360090` (registered by `RegisterBindings`); **calls** `0x002da810` `Goal_MoveToExitFlag`
 - **Used by** 10 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -2740,27 +2748,30 @@ refreshes its actions every 40 updates). Behaviour: [AI](../../research/ai.md#fo
 ## GoalTravelPath {#goaltravelpath}
 
 ```lua
-GoalTravelPath(human, path, start, reverse, gait, radius)
+GoalTravelPath(human, path, mode, reverse, gait, radius)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `path` | userdata (only read when given) | The path object (a `Path_...` value from the level's path table). |
-| 3 | `start` | number, truncated to an integer | Index of the path point to start from (scripts use 0 and 1). |
-| 4 | `reverse` | boolean (nil or 0 is false) | true to walk the path backwards (inferred). |
-| 5 | `gait` | number, truncated to an integer | Gait id: 2 walk ... 5 sprint. |
+| 2 | `path` | userdata (only read when given) | The path object returned by `AddPath` (read only when a second argument is given; nil leaves the goal with no path). |
+| 3 | `mode` | number, truncated to an integer | What happens at the end of the path: 0 stop (or carry on along a linked path), 1 loop back to the first point, 2 turn round and walk it back (ping-pong). Scripts use 0 and 1. |
+| 4 | `reverse` | boolean (nil or 0 is false) | true starts at the last point and walks the path backwards; false starts at the first point. |
+| 5 | `gait` | number, truncated to an integer | Gait id: 2 walk, 3 jog, 4 run, 5 sprint. |
 | 6 | `radius` | number (single precision) | Arrival radius at each point in metres (scripts use 0.5-1). |
 
 **Returns** nothing.
 
-Pushes a `TravelPath` goal (type 56): from the start point the human is sent to each path point in turn with a
-`MoveToFlag` goal at `gait`, and the goal ends when the path runs out.
+Pushes a `TravelPath` goal (type 56) that walks the human along a path's flags in order: for each point it pushes a
+`MoveToFlag` goal at `gait` and `radius`, and when that is reached it takes the next point. With mode 0 the goal ends
+after the last point; with 1 or 2 it runs until replaced.
 
-**Notes.** Goal_TravelPath 0x002e05a8 builds it with constructor 0x002e0748 (no loop, no wait); Process 0x002e0968 picks
-the next point (0x002e07d0). The tactic `TacticTravelPath` uses the same goal with a loop mode and a wait.
+**Notes.** Constructor 0x002e0748 (vtable 0x00541bf0; current point -1, no wait), Process 0x002e0968, next point
+0x002e07d0. Points advance only while the brain has no pending sub-goal (brain `+0x2e` below 1). Mode 0 follows the
+path's next-path link (`+0x34`), which `AddPath` leaves empty. The third argument was listed as a start index before; it
+is the end mode, as `TacticTravelPath`'s `loop` sets it. A nil path is not checked (crash).
 
-- **Evidence:** confirmed (code) at `0x002e05a8`; detail: brief
+- **Evidence:** confirmed (code) at `0x002e05a8`; detail: traced
 - **Wrapper** `0x00360870` (registered by `RegisterBindings`); **calls** `0x002e05a8` `Goal_TravelPath`
 - **Used by** 6 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)

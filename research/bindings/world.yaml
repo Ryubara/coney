@@ -229,18 +229,19 @@
   calls:
     - {addr: 0x00396390, name: World_BreakObjectsInRadius}
   args:
-    - {name: centre, lua: number, ctype: unsigned, desc: "Handle of a flag or object giving the centre."}
+    - {name: centre, lua: number, ctype: unsigned, desc: "Handle of a flag or object whose position is the centre; an invalid handle does nothing."}
     - {name: radius, lua: number, ctype: float, desc: "Radius in metres (scripts use 0.5-1)."}
   description: >-
-    Breaks every breakable object within `radius` of a flag or object, the centre included (a molotov's blast, a
-    scripted smash): every world object in range gets the destroy message 0x15 (0x003961d0). When the centre object is
-    of kind 30 (`TYPE_BREAKANDENTER_DOOR`), a break-in crime (type 1, severity 10) is reported at it first.
+    Breaks every world object within `radius` of a flag or object, the centre object included (a molotov's blast, a
+    scripted smash): up to 384 objects found by the object search (0x0039a850) each get the destroy message `0x15`
+    (0x003961d0). When the centre object is of type 30 (`TYPE_BREAKANDENTER_DOOR`), a break-in crime (type 1,
+    severity 10) is first reported at its position.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    The search (0x0039a850) takes up to 384 objects. Crime reports: [AI](../../research/ai.md#crimes). What 0x15 does
-    depends on the object; a swinging door sends itself a hit two updates later
-    ([World objects](../../research/objects.md#door-states)).
+    Objects that do not handle `0x15` ignore it: glass shatters, a swinging door sends itself a hit two updates
+    later ([World objects](../../research/objects.md#door-states)). Humans are not world objects and are not hurt.
+    Crime reports: [Crimes](../../research/crimes.md).
   usage: {chunks: 12, calls: 22, boot: false, mission1: false, result_used: false, levels: [80, 5, 86, 93, 52, 55, 20]}
   coney: implemented
 
@@ -1031,13 +1032,17 @@
   calls:
     - {addr: 0x00397478, name: Door_GetRightLeaf}
   args:
-    - {name: door, lua: number, ctype: unsigned, desc: "Handle of a door made with `SpawnDoor`."}
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of a swinging door (`dyn_door_*`, made with `SpawnDoor` or from the level)."}
   results:
-    - {lua: number, desc: "Handle of the door's right leaf object, or NilHandle when there is none."}
+    - {lua: number, desc: "Handle of the door's right leaf object (data `+0x18`), or NilHandle when the door has one leaf, the handle is invalid or the object is not a door."}
   description: >-
-    Returns the right leaf of a double door.
+    Asks a swinging door for its right leaf: message `0x10` makes the door put its leaf in the message scratch,
+    which is read back (0x003a50d0). Scripts use the leaf handle to break, hide or test one half of a double door; a
+    single-leaf door has only a left leaf (`GetLeftDoorHandle`).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Door data and leaves: [World objects](../../research/objects.md#doors).
   usage: {chunks: 29, calls: 47, boot: false, mission1: false, result_used: true, levels: [80, 95, 2, 81, 86, 93, 31, 9, 55, 82, 92, 20]}
   coney: implemented
 
@@ -1046,17 +1051,19 @@
   calls:
     - {addr: 0x00397078, name: Door_SetPickable}
   args:
-    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the door."}
-    - {name: pickable, lua: boolean, default: true, desc: "True (the default) lets the player pick the lock (state command 10); false makes it unpickable (state 11) and first stops any human currently picking it."}
+    - {name: door, lua: number, ctype: unsigned, desc: "Handle of the swinging door; an invalid handle does nothing."}
+    - {name: pickable, lua: boolean, default: true, desc: "true (the default) makes the lock pickable (state command 10); false makes it unpickable (state command 11), first ending the lock-pick game of any player picking it."}
   description: >-
-    Sets whether the player can pick a door's lock.
+    Sets whether the player can pick a door's lock. Pickable (only while the door is shut) shows a glint on it,
+    removes its collision body, offers the lock-pick action and refuses `OpenDoor`, `DoorOpen` and `DoorOpenDegree`.
+    Unpickable removes the glint and restores the collision body; any player whose object target is the door has the
+    mini-game ended (`MiniGame_End`) and state flag `0x20000000` cleared first.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Lock picking is confirmed (code): a pickable door offers kind-2 context actions, and a pick in progress on it is
-    ended when it is made unpickable ([Crimes: lock picking](../../research/crimes.md#lockpick)). A pickable door
-    shows a `sub_triglint` glint and refuses OpenDoor, DoorOpen and DoorOpenDegree
-    ([World objects: lock picking](../../research/objects.md#lock-pick)).
+    The command goes as message `0x22`. Three door types start pickable. Door side: [World objects: lock
+    picking](../../research/objects.md#lock-pick); the game: [Crimes: lock
+    picking](../../research/crimes.md#lockpick).
   usage: {chunks: 16, calls: 24, boot: false, mission1: false, result_used: false, levels: [80, 95, 93, 9, 51, 52, 54, 83, 20]}
   coney: implemented
 
@@ -1243,18 +1250,20 @@
   calls:
     - {addr: 0x00415740, name: Path_Add}
   args:
-    - {name: name, lua: string, desc: "Path name (such as `WheelChairRace`)."}
-    - {name: flags, lua: table, elem: number, count: 8, written_back: true, desc: "Exactly eight flag handles `{f1, ..., f8}` in order; NilHandle entries are skipped. Written back unchanged."}
+    - {name: name, lua: string, desc: "Path name (such as `WheelChairRace`); 15 characters are kept."}
+    - {name: flags, lua: table, elem: number, count: 8, written_back: true, desc: "Up to eight flag (or object) handles `{f1, ..., f8}` in order; missing entries read as 0 and invalid handles are skipped. Written back unchanged (a missing entry comes back as 0)."}
   results:
-    - {lua: usertype, desc: "The path object (a tolua usertype); 0/nil when all 32 path slots are taken."}
+    - {lua: usertype, type: WorldPath, desc: "The path object, or nil when all 32 path slots are taken."}
   description: >-
-    Creates a named path through up to eight flags, used for races and scripted walks. At most 32 paths exist at once
-    (slots at 0x006fd870).
+    Creates a named path through up to eight flags: a 0x38-byte record (name, the flags' objects at `+0x10` in
+    order, count `+0x32`, slot `+0x30`, next-path link `+0x34` empty) in the first free of 32 slots at 0x006fd870.
+    The path is handed to `GoalTravelPath`, `GoalTravelPath2` and `TacticTravelPath` for walks, chases and races.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    The result is pushed as a usertype; what scripts can do with it (it is passed to goal bindings) belongs to the AI
-    slice.
+    Paths last until the level's flag manager is torn down (0x00415a38, which frees all 32; 0x004158f8 clears the
+    slots at the next level). A path can be found again by name (0x00415878). No binding removes one, so a script
+    that adds paths repeatedly runs out of slots.
   usage: {chunks: 15, calls: 42, boot: false, mission1: false, result_used: true, levels: [80, 2, 3, 5, 93, 51, 52, 54, 84, 20]}
 
 - name: AddVolumeBox

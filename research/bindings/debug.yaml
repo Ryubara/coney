@@ -17,30 +17,33 @@
 - name: setDetailFlag
   wrapper: 0x0036c620
   calls:
-    - {addr: 0x0041d830}
+    - {addr: 0x0041d830, name: GameState_SetDetailFlag}
   args:
-    - {name: index, lua: number, ctype: int, desc: "Which flag byte (0-3 in the scripts)."}
-    - {name: mask, lua: number, ctype: unsigned, desc: "Bits to set (a byte)."}
+    - {name: index, lua: number, ctype: int, desc: "Which flag byte, 0-3 (`W_GameState + 0x3e8 + index`); not range-checked."}
+    - {name: mask, lua: number, ctype: unsigned, desc: "Bits to set (only the low byte is used)."}
   description: >-
-    Sets bits in one of the game state's detail-flag bytes (`W_GameState + 0x3e8 + index`), switching optional level
-    details on.
+    ORs `mask` into one of four game-state bytes at `W_GameState + 0x3e8` (0x0041cf40). The bytes are cleared to 0
+    when a level starts or resets (0x00418588, 0x00418c68), but no code in the executable reads them, so the call
+    has no visible effect in the shipped game.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    What reads the bytes is not traced; the 'level details' reading is speculative.
+    No load of `W_GameState + 0x3e8`-`0x3eb` was found (every `0x3e8`-`0x3eb` offset access in the program belongs
+    to another object); the scripts' use (indices 0-3) suggests a leftover development switch.
   usage: {chunks: 18, calls: 26, boot: false, mission1: false, result_used: false, levels: [80, 95, 34, 3, 93, 51, 84, 82, 60, 61, 62, 63, 64]}
 
 - name: clearDetailFlag
   wrapper: 0x0036c698
   calls:
-    - {addr: 0x0041d860}
+    - {addr: 0x0041d860, name: GameState_ClearDetailFlag}
   args:
-    - {name: index, lua: number, ctype: int, desc: "Which flag byte."}
-    - {name: mask, lua: number, ctype: unsigned, desc: "Bits to clear."}
+    - {name: index, lua: number, ctype: int, desc: "Which flag byte, 0-3; not range-checked."}
+    - {name: mask, lua: number, ctype: unsigned, desc: "Bits to clear (only the low byte is used)."}
   description: >-
-    Clears bits in a detail-flag byte (the reverse of setDetailFlag).
+    Clears the `mask` bits in one of the four detail-flag bytes at `W_GameState + 0x3e8` (0x0041cf58), the reverse
+    of `setDetailFlag`. Like it, it has no visible effect: nothing reads the bytes.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false, levels: [80, 95, 34, 3, 51, 82]}
 
 - name: CapturePVSSamplePoint

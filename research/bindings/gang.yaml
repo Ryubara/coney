@@ -437,32 +437,41 @@
     - {addr: 0x0016a3a8, name: Gang_RemoveTurfBox}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
-    - {name: box, lua: number, ctype: unsigned, desc: "Handle of a volume box previously added with GangAddTurfBox."}
+    - {name: box, lua: number, ctype: unsigned, desc: "Handle of a volume box previously added with `GangAddTurfBox`; any other handle changes nothing."}
   description: >-
-    Removes a volume box from the gang's turf: the gang keeps up to eight turf box handles at `+0x15c` with their
-    count at `+0x17c`, and the first entry equal to the box is cleared and the count lowered.
+    Takes a volume box out of the gang's turf: of the eight turf slots at gang `+0x15c` the first holding that box
+    is cleared and the count at `+0x17c` lowered (0x00165260). The turf tests then ignore the box: 0x001652e8 (is a
+    point inside the turf) and 0x00165368 (is a standing member of another gang inside it), used by the gang's
+    tactics and its members' brains to decide where they go and whom they chase.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    0x00165260 does the removal. What the turf boxes are used for is in `GangAddTurfBox`.
+    With no boxes left (count 0) both tests answer yes, so a gang without turf treats everywhere as its turf.
+    `GangAddTurfBox` fills the first empty slot, so removed slots are reused. The callers of the tests (0x0028ff38,
+    0x0031fdc0, 0x003200c8, 0x0030eec0 ...) are not traced one by one.
   usage: {chunks: 5, calls: 23, boot: false, mission1: false, result_used: false, levels: [80, 34, 93, 31]}
 
 - name: GangAddMember
   wrapper: 0x00373528
   calls:
-    - {addr: 0x0016a3f8}
+    - {addr: 0x0016a3f8, name: Gang_AddMemberByHandle}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
     - {name: index, lua: number, ctype: int, desc: "Read but not used by the C++ side; the scripts pass 0 or -1."}
-    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to add."}
+    - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to add; an invalid handle does nothing."}
   description: >-
-    Moves a human into a gang: it leaves its previous gang (its goals and actions are flushed), takes the gang's
-    invincibility setting and may become its leader. If the gang is full (10 members, 16 for police) a member is
-    dropped first.
+    Moves a human into a gang (0x00166308). It first leaves its previous gang: its actions, target and goals are
+    cleared and it is taken off that gang's member list (and attack slot, and as leader), which gets a membership
+    event (0x16). Then its brain's gang (`+0x20c`) becomes the new gang, the brain is refreshed for it (0x0028aa18),
+    it is set invincible (human flag `0x10`) if the gang is (`GangInvincible`), its handle goes into the first free
+    of the 16 member slots (`+0x48`), a war chief becomes the gang's leader (`+0x44`), and the gang gets event 0x16.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    0x00166308.
+    The member limit (10, or 16 for gang kinds 1 and `0x17`) only triggers 0x0016d0e0, which has no effect (a
+    stripped diagnostic): no member is dropped, and with all 16 slots taken the handle is silently not stored while
+    the brain still points at the gang. Human type 237 also installs a gang anim substitution (0x00164178). This
+    corrects the earlier "a member is dropped first".
   usage: {chunks: 39, calls: 128, boot: false, mission1: false, result_used: false, levels: [80, 87, 95, 2, 5, 81, 86, 93, 31, 9, 51, 52, 54, 55, 84, 92, 83, 11, 64]}
   coney: implemented
 
@@ -488,15 +497,19 @@
 - name: GangGetStandingCount
   wrapper: 0x00373648
   calls:
-    - {addr: 0x0016a4a8}
+    - {addr: 0x0016a4a8, name: Gang_GetStandingCount}
   args:
-    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31)."}
+    - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 gives 0."}
   results:
-    - {lua: number, desc: "The number of members still on their feet: not knocked down, not dead and not in a third disabled state (0x00227dd8, 0x00227eb0, 0x00227d98); 0 for gang id -1."}
+    - {lua: number, desc: "How many of the gang's (up to 16) members are still on their feet: alive handles that are not knocked down (0x00227dd8), dead (0x00227eb0) or in a third disabled state (0x00227d98)."}
   description: >-
-    Counts the gang's members that are still standing.
+    Counts the gang's members that are still standing (0x00166220). Level scripts poll it to tell when a fight is
+    won: the mission moves on once an enemy gang's count reaches 0.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
+  notes: >-
+    Members whose handle no longer resolves (removed humans) are skipped. A knocked-down member who gets up counts
+    again.
   usage: {chunks: 29, calls: 133, boot: false, mission1: false, result_used: true, levels: [80, 87, 95, 81, 93, 9, 52, 54, 92, 83, 60, 61, 62, 63, 64]}
   coney: implemented
 
@@ -595,14 +608,16 @@
     - {addr: 0x0016a870, name: Gang_EngageEnemy}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
-    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human (or object) to attack."}
+    - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to attack (usually a player)."}
   description: >-
-    Gives every current member of the gang an `EngageEnemy` goal (type 11) against the target.
+    Sets the whole gang on one target: every current member gets an `EngageEnemy` goal (type 11, `Goal_EngageEnemy`)
+    pushed on its brain against the target, so each walks up to it and fights it with the usual fight goal until the
+    target is out of range or gone, or a newer goal replaces it.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    The target handle is not checked. The goal's behaviour (Process 0x002afa48) is a fight sub-goal
-    ([AI](../../research/ai.md#fight)).
+    The target handle is not checked. The goal's constructor is 0x002af5b0 and its behaviour (Process 0x002afa48) a
+    fight sub-goal ([AI](../../research/ai.md#fight)). The gang's tactic is left as it is.
   usage: {chunks: 10, calls: 18, boot: false, mission1: false, result_used: false, levels: [80, 86, 93, 52, 92, 20]}
 
 - name: GangLookAt

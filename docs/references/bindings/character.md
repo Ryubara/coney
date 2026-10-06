@@ -50,10 +50,10 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuExitWorld`](#huexitworld) | - | 41 | no | no | confirmed (code) |
 | [`HuFind`](#hufind) | number | 0 | no | no | confirmed (code) |
 | [`HuForceEnableReticule`](#huforceenablereticule) | - | 3 | no | no | confirmed (code) |
-| [`HuForceLook`](#huforcelook) | - | 3 | no | no | speculative |
+| [`HuForceLook`](#huforcelook) | - | 3 | no | no | confirmed (code) |
 | [`HuGet`](#huget) | number | 0 | no | no | confirmed (code) |
 | [`HuGetCharType`](#hugetchartype) | number | 7 | no | no | confirmed (code) |
-| [`HuGetControlName`](#hugetcontrolname) | string | 1 | no | no | speculative |
+| [`HuGetControlName`](#hugetcontrolname) | string | 1 | no | no | confirmed (code) |
 | [`HuGetGang`](#hugetgang) | number | 104 | yes | no | confirmed (code) |
 | [`HuGetGangType`](#hugetgangtype) | number | 35 | yes | yes | confirmed (code) |
 | [`HuGetHeading`](#hugetheading) | number | 0 | no | no | confirmed (code) |
@@ -102,7 +102,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetAccurate`](#husetaccurate) | - | 0 | no | no | speculative |
 | [`HuSetArrested`](#husetarrested) | - | 51 | yes | yes | confirmed (code) |
 | [`HuSetAutoCombat`](#husetautocombat) | - | 4 | no | no | inferred |
-| [`HuSetAutoEscape`](#husetautoescape) | - | 8 | no | no | inferred |
+| [`HuSetAutoEscape`](#husetautoescape) | - | 8 | no | no | confirmed (code) |
 | [`HuSetBlockFromReact`](#husetblockfromreact) | - | 0 | no | no | inferred |
 | [`HuSetBlurMode`](#husetblurmode) | - | 2 | no | no | inferred |
 | [`HuSetButtonTapControl`](#husetbuttontapcontrol) | - | 3 | no | no | inferred |
@@ -126,7 +126,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetIdleDialogMaxIter`](#husetidledialogmaxiter) | - | 2 | no | no | inferred |
 | [`HuSetIncreasedReact`](#husetincreasedreact) | - | 2 | yes | yes | confirmed (code) |
 | [`HuSetInterrogation`](#husetinterrogation) | boolean | 5 | no | no | inferred |
-| [`HuSetKeepHat`](#husetkeephat) | - | 7 | no | no | inferred |
+| [`HuSetKeepHat`](#husetkeephat) | - | 7 | no | no | confirmed (code) |
 | [`HuSetKeepWeapon`](#husetkeepweapon) | - | 12 | yes | yes | confirmed (code) |
 | [`HuSetKillerMode`](#husetkillermode) | - | 4 | no | no | inferred |
 | [`HuSetLockedRage`](#husetlockedrage) | - | 3 | yes | yes | confirmed (code) |
@@ -154,7 +154,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetRageFrac`](#husetragefrac) | - | 1 | no | yes | confirmed (code) |
 | [`HuSetRageMode`](#husetragemode) | - | 9 | no | no | confirmed (code) |
 | [`HuSetReducedReact`](#husetreducedreact) | - | 7 | yes | yes | confirmed (code) |
-| [`HuSetRevivable`](#husetrevivable) | - | 56 | no | no | inferred |
+| [`HuSetRevivable`](#husetrevivable) | - | 56 | no | no | confirmed (code) |
 | [`HuSetScale`](#husetscale) | - | 17 | no | no | confirmed (code) |
 | [`HuSetSlowMo`](#husetslowmo) | - | 2 | no | no | confirmed (code) |
 | [`HuSetSpecialCallbacks`](#husetspecialcallbacks) | - | 0 | no | no | inferred |
@@ -192,7 +192,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuTeleportNearHuman`](#huteleportnearhuman) | - | 7 | no | yes | confirmed (code) |
 | [`HuUseAnim`](#huuseanim) | boolean | 103 | no | yes | confirmed (code) |
 | [`HuUseAnyAnim`](#huuseanyanim) | boolean | 4 | no | no | confirmed (code) |
-| [`HuWhatAmIHolding`](#huwhatamiholding) | number | 3 | no | no | inferred |
+| [`HuWhatAmIHolding`](#huwhatamiholding) | number | 3 | no | no | confirmed (code) |
 | [`HuWorkout`](#huworkout) | - | 1 | no | no | confirmed (code) |
 | [`IsAHuman`](#isahuman) | boolean | 1 | no | no | confirmed (code) |
 | [`IssueWarriorCommand`](#issuewarriorcommand) | - | 7 | no | no | confirmed (code) |
@@ -211,8 +211,8 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`WCEnableAutomaticSwitching`](#wcenableautomaticswitching) | - | 5 | no | no | inferred |
 | [`WCEnableCommand`](#wcenablecommand) | - | 25 | no | no | confirmed (code) |
 | [`WCIssueCommand`](#wcissuecommand) | - | 25 | no | yes | confirmed (code) |
-| [`WCLockCommands`](#wclockcommands) | - | 10 | no | no | inferred |
-| [`WCSetCallback`](#wcsetcallback) | - | 4 | no | no | inferred |
+| [`WCLockCommands`](#wclockcommands) | - | 10 | no | no | confirmed (code) |
+| [`WCSetCallback`](#wcsetcallback) | - | 4 | no | no | confirmed (code) |
 
 ## AddAllAnimCallback {#addallanimcallback}
 
@@ -706,14 +706,20 @@ HuBlockLook(human, block)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `block` | boolean (nil or 0 is false) | True stops the human turning its head to look at things. |
+| 2 | `block` | boolean (nil or 0 is false) | true stops the human turning its head toward things; false lets it again. |
 
 **Returns** nothing.
 
-Blocks or allows the human's head-look behaviour (flag 0x1000 at +0xe0).
+Sets or clears flag `0x1000` of the human's flag word (`+0xe0`). Each update the head-look (0x00248428) turns the head
+toward the current look-at target (up to 55° sideways, 90° for some requests, and 45° up or down) only when 0x002482e0
+allows it, and that refuses while `0x1000` is set, so the head is left as it is. Scripts set it on characters posed for
+a scene or a conversation.
 
-- **Evidence:** confirmed (code) at `0x0023a2c0`; detail: brief
-- **Wrapper** `0x00358b98` (registered by `RegisterBindings`); **calls** `0x0023a2c0`
+**Notes.** `HuForceLook` (`0x10000`) overrides it: the check is skipped. A dead human and two other states (0x00228070,
+0x00228090) never turn the head either way.
+
+- **Evidence:** confirmed (code) at `0x0023a2c0`; detail: traced
+- **Wrapper** `0x00358b98` (registered by `RegisterBindings`); **calls** `0x0023a2c0` `Human_SetBlockLook`
 - **Used by** 46 of 467 script chunks (127 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
@@ -1191,14 +1197,19 @@ HuForceLook(human, force)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `force` | boolean (nil or 0 is false) | True sets the force-look flag. |
+| 2 | `force` | boolean (nil or 0 is false) | true lets the head turn to look whatever the human is doing; false restores the usual checks. |
 
 **Returns** nothing.
 
-Sets or clears the human's force-look flag (0x10000 at +0xe0).
+Sets or clears flag `0x10000` of the human's flag word (`+0xe0`). While it is set the head-look check (0x002482e0) skips
+its usual refusals (action and fight states, a player's busy states, `HuBlockLook`), so the head keeps turning toward
+its look-at target even mid-animation; only death and two other states (0x00228070, 0x00228090) still stop it.
 
-- **Evidence:** speculative; detail: brief
-- **Wrapper** `0x00358bf8` (registered by `RegisterBindings`); **calls** `0x0023a328`
+**Notes.** `GoalPlayDynAnimation` sets and clears the same bit around its clip
+([AI](../../research/ai.md#dyn-animation)), so the end of such a goal also clears a forced look.
+
+- **Evidence:** confirmed (code) at `0x0023a328`; detail: traced
+- **Wrapper** `0x00358bf8` (registered by `RegisterBindings`); **calls** `0x0023a328` `Human_SetForceLook`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
@@ -1255,12 +1266,19 @@ HuGetControlName(human) -> string
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** string (nil for none): A name string from the human (0x0023fb00), or nil for an invalid handle.
+**Returns** string (nil for none): Name of the human's current control handler: nullControl, aiControl,
+screenRelativeControl, lockOnControl, grabbingControl, grabbedControl, throwControl, aiStepControl, jumpingControl,
+wheelchairControl, buttonTapControl or INVALID_CONTROL; nil for an invalid handle.
 
-Returns the name of the human's current controller.
+Returns the name of the control handler driving the human (the member function held at human `+0x1bc`-`+0x1c0`, named by
+0x0023fb00): how its movement is currently produced, for example screenRelativeControl for a player walking with the
+stick, throwControl while aiming a throw, grabbingControl while holding someone, or aiControl for a brain-driven human.
 
-- **Evidence:** speculative; detail: brief
-- **Wrapper** `0x00358fd0` (registered by `RegisterBindings`); **calls** `0x002380c0`
+**Notes.** A handler not in the list (or a virtual one) gives INVALID_CONTROL. The names are the game's own strings at
+0x00510328-0x00510488.
+
+- **Evidence:** confirmed (code) at `0x002380c0`; detail: traced
+- **Wrapper** `0x00358fd0` (registered by `RegisterBindings`); **calls** `0x002380c0` `Human_GetControlName`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
@@ -1582,14 +1600,20 @@ HuIsAimingAt(human, target) -> boolean
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of a player's human. |
-| 2 | `target` | number, truncated to an unsigned integer | Handle of the object or human to test. |
+| 2 | `target` | number, truncated to an unsigned integer | Handle of the object (or human) to test. |
 
-**Returns** boolean (1 for true, nil for false): True when the player is targeting exactly that object (+0x634).
+**Returns** boolean (1 for true, nil for false): true when the human is a player and the target is the object its throw
+aim last landed on (human `+0x634`); nil otherwise.
 
-Tells whether a player is aiming at the given target.
+Tells whether a player aiming a throw would hit the given object. While a player is in the throw control (0x00244770)
+the aim trace 0x0018fee0 follows the throw's arc and stores the first object it meets at human `+0x634`; this compares
+that with `target`. Level scripts use it to react when the player lines up a throw at a particular object.
 
-- **Evidence:** confirmed (code) at `0x0023a468`; detail: brief
-- **Wrapper** `0x00358f50` (registered by `RegisterBindings`); **calls** `0x0023a468`
+**Notes.** Always false for a non-player (`+0x1b0` = -1) or an invalid target. `+0x634` is written only by the aim trace
+(and cleared by `Human_Init`), so it keeps the last aimed object after the aim ends.
+
+- **Evidence:** confirmed (code) at `0x0023a468`; detail: traced
+- **Wrapper** `0x00358f50` (registered by `RegisterBindings`); **calls** `0x0023a468` `Human_IsAimingAt`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
@@ -1834,9 +1858,9 @@ HuKill(human)
 
 **Returns** nothing.
 
-Kills a human through the damage path: unless it is already dead or flagged `0x80000000`, it drops what it holds
-(0x00258330), its health is set to 1 and 100 damage is left pending (record `+0x118`, human `+0x5d2`), so the next
-damage update finishes it with the usual death.
+Kills a human through the damage path: unless it is already dead or flagged `0x80000000`, its hat is knocked off
+(`Human_KnockOffHat` 0x00258330), its health is set to 1 and 100 damage is left pending (record `+0x118`, human
+`+0x5d2`), so the next damage update finishes it with the usual death.
 
 **Notes.** The handle is not checked for being a human. That the pending damage is applied on the next update is from
 the damage page ([Combat](../../research/combat.md#damage)); the outcome (knock-out or death) follows the usual rules
@@ -1901,18 +1925,20 @@ HuLockPadMovement(human, lock)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `human` | number, truncated to an unsigned integer | Handle of a player's human. |
-| 2 | `lock` | boolean (nil or 0 is false) | True locks movement from the left analog stick. |
+| 1 | `human` | number, truncated to an unsigned integer | Handle of a player's human; a human no player controls is ignored. |
+| 2 | `lock` | boolean (nil or 0 is false) | true locks the left stick; false frees it. |
 
 **Returns** nothing.
 
-Locks the stick movement of the player controlling this human: while set, the stick reads as centred, so the character
-stands still but can still act.
+Locks the left-stick movement of the player controlling this human (byte `+0x1f` of the player record): while set, the
+player record's update reads the stick as centred (angle π/2, length 0), so the character stands still but its buttons
+(attacks, commands, actions) still work.
 
-**Notes.** Player record +0x1f (Characters, per-player record).
+**Notes.** Reader: `PlayerRecord_Update` (0x00146078), [Characters](../../research/characters.md#input). The lock stays
+until cleared.
 
-- **Evidence:** confirmed (code) at `0x0023ae90`; detail: brief
-- **Wrapper** `0x003655a0` (registered by `RegisterBindings`); **calls** `0x0023ae90`
+- **Evidence:** confirmed (code) at `0x0023ae90`; detail: traced
+- **Wrapper** `0x003655a0` (registered by `RegisterBindings`); **calls** `0x0023ae90` `Human_LockPadMovement`
 - **Used by** 10 of 467 script chunks (28 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
@@ -2320,14 +2346,19 @@ HuSetAutoEscape(human, enable)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `enable` | boolean (nil or 0 is false) | True lets the human break free on its own. |
+| 2 | `enable` | boolean (nil or 0 is false) | true lets the human break out of grabs; false clears it. |
 
 **Returns** nothing.
 
-Lets the human escape grabs automatically (flag 0x20000 at +0xe0).
+Sets or clears flag `0x20000` of the human's flag word (`+0xe0`). A human with it escapes a grab when the grabber's
+power runs out (instead of both letting go), and can counter a grab attempt at the end of the grabber's intro, so the
+player cannot simply hold it.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00359380` (registered by `RegisterBindings`); **calls** `0x00235200`
+**Notes.** Readers: the power-out escape in `Human_UpdateMeters` (0x002562d0) and the grab intro's end (0x0026c1d8),
+[Combat](../../research/combat.md#human-flags).
+
+- **Evidence:** confirmed (code) at `0x00235200`; detail: traced
+- **Wrapper** `0x00359380` (registered by `RegisterBindings`); **calls** `0x00235200` `Human_SetAutoEscape`
 - **Used by** 8 of 467 script chunks (13 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** not implemented
@@ -2683,13 +2714,18 @@ HuSetHealth(human, health)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `health` | number, truncated to an integer | New health in hit points (a 16-bit value); anything above the human's maximum gives full health. |
+| 2 | `health` | number, truncated to an integer | New health in hit points, truncated to 16 bits; anything above the human's maximum gives full health. |
 
 **Returns** nothing.
 
-Sets the human's current health (+0x144 of its 0x180-byte record), capped at its maximum (+0x146).
+Sets the human's current health (`+0x144` of its record at human `+0xd4`) to `health`, or to its maximum (`+0x146`) when
+`health` is larger. Nothing else is started: no damage, reaction or death, and the health bar simply shows the new
+value.
 
-- **Evidence:** confirmed (code) at `0x00237848`; detail: brief
+**Notes.** No lower bound: 0 or a negative value is stored as given; what the damage code then does with it is not
+traced (`HuKill` is the way to kill). Health scale: [Combat](../../research/combat.md#damage).
+
+- **Evidence:** confirmed (code) at `0x00237848`; detail: traced
 - **Wrapper** `0x0035bad8` (registered by `RegisterBindings`); **calls** `0x00237848` `Human_SetHealth`
 - **Used by** 23 of 467 script chunks (57 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -2866,13 +2902,18 @@ HuSetKeepHat(human, on)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `on` | boolean (nil or 0 is false) | true sets the flag, false clears it. |
+| 2 | `on` | boolean (nil or 0 is false) | true keeps the human's hat on; false lets it be knocked off again. |
 
 **Returns** nothing.
 
-Sets or clears flag bit 0x10000000000 of the human's flag word; from the name, the human's hat is not knocked off.
+Sets (true) or clears bit `0x10000000000` of the human's flag word (`+0xe0`). The hat knock-off 0x00258330, called when
+a human is hit hard, killed or removed, returns at once while the bit is set, so the hat (the object at human `+0x364`,
+see `HuHasHat`) stays on; otherwise the hat is detached and tossed away from the blow.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Only exactly true sets the bit. A riot hat (`TYPE_RIOT_HAT`) never comes off. A knocked-off hat may be given
+a timer (0x00395d20, 8 s or game state `+0x26c`) whose meaning is not traced.
+
+- **Evidence:** confirmed (code) at `0x00237388`; detail: traced
 - **Wrapper** `0x00359780` (registered by `RegisterBindings`); **calls** `0x00237388` `Human_SetKeepHat`
 - **Used by** 7 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -3518,16 +3559,18 @@ HuSetRevivable(human, on)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `on` | boolean (nil or 0 is false) | true sets the flag, false clears it. |
+| 2 | `on` | boolean (nil or 0 is false) | true lets the human be revived when down; false stops it. |
 
 **Returns** nothing.
 
-Sets (true) or clears bit `0x4` of the human's flag word (human `+0xe0`); from the name, a downed human with it can be
-revived, as fallen Warriors are.
+Sets (true) or clears bit `0x4` of the human's flag word (`+0xe0`). The revive search (0x00279078, test 0x00278fa0)
+accepts only a knocked-down human with the bit, in the reviver's gang, not dead and not in a few excluded states, within
+3 m; such a human gets the revive prompt and can be brought back with a flash.
 
-**Notes.** The store is confirmed (code) at 0x00235db0; the revive code that reads `0x4` is not traced.
+**Notes.** Only exactly true sets the bit. `Human_MakePlayer` sets it on every player, so scripts clear it to keep a
+character down or set it on allies. The same-gang test is skipped for some revivers (0x00222a90).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00235db0`; detail: traced
 - **Wrapper** `0x0035ab60` (registered by `RegisterBindings`); **calls** `0x00235db0` `Human_SetRevivable`
 - **Used by** 56 of 467 script chunks (107 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -4022,16 +4065,18 @@ HuShadow(human, on)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `on` | boolean (nil or 0 is false) | true draws the human's shadow, false hides it. |
+| 2 | `on` | boolean (nil or 0 is false) | true draws the human's blob shadow, false hides it. |
 
 **Returns** nothing.
 
-Turns the human's blob shadow on or off: writes the value to `+0x2b4` of its character instance (human `+0xd8`), which
-nothing changes otherwise (docs/research/lighting.md#humans).
+Turns the human's blob shadow on or off: the value goes to `+0x2b4` of its character instance (human `+0xd8`), which the
+human's draw reads before it puts the shadow sprite on the ground under it. Scripts hide it for characters placed where
+a shadow would look wrong.
 
-**Notes.** That `+0x2b4` gates the shadow draw is inferred from the name; the draw is not traced.
+**Notes.** Nothing happens for an invalid handle or a human with no instance. The shadow and its other conditions:
+[Lighting](../../research/lighting.md#humans). The default value of `+0x2b4` is not traced.
 
-- **Evidence:** confirmed (code) at `0x00238030`; detail: brief
+- **Evidence:** confirmed (code) at `0x00238030`; detail: traced
 - **Wrapper** `0x00358ad8` (registered by `RegisterBindings`); **calls** `0x00238030` `Human_SetShadow`
 - **Used by** 10 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 10 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -4408,12 +4453,16 @@ HuWhatAmIHolding(human) -> number
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** number: Type number of the object the human holds (a byte from the object's type record, +0x86), or 0 when
-it holds nothing.
+**Returns** number: The `TYPE_*` object type of what the human holds (byte `+0x86` of the object's type record: 3
+`TYPE_BAT`, 4 `TYPE_BOTTLE`, 8 `TYPE_MOLOTOV`, 16 `TYPE_SPRAYCAN` ...), or 0 (`TYPE_NOTHING`) when it holds nothing or
+the handle is invalid.
 
-Tells a script what kind of object (weapon, bottle, bag) the human is holding.
+Tells a script what kind of object the human is holding, as one of the `TYPE_*` script constants: the held object comes
+from 0x00226ff0 and its type record from the object-type table (0x00391330).
 
-- **Evidence:** inferred; detail: brief
+**Notes.** The constants are on the [enums](../enums.md) list.
+
+- **Evidence:** confirmed (code) at `0x00237d08`; detail: traced
 - **Wrapper** `0x0035bf10` (registered by `RegisterBindings`); **calls** `0x00237d08` `Human_GetHeldObjectType`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -4479,22 +4528,27 @@ Tests whether a handle is a human's.
 ## IssueWarriorCommand {#issuewarriorcommand}
 
 ```lua
-IssueWarriorCommand(command, on)
+IssueWarriorCommand(command, forced)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `command` | number, truncated to an integer | Warrior command number (0-6, the entries of the command menu). |
-| 2 | `on` | boolean (nil or 0 is false) | true issues the command; passed on as for WCIssueCommand. |
+| 1 | `command` | number, truncated to an integer | Warrior command number: 0 follow, 1 attack, 2 defend, 3 hold, 4 scatter, 5 wreck, 6 none ([Commands](../commands.md#warrior-command)). |
+| 2 | `forced` | boolean (nil or 0 is false) | true restarts the command even if it is the current one; false behaves as the menu does (giving the current command again only repeats the chief's line). |
 
 **Returns** nothing.
 
-Issues a Warrior command as player 1's chief: player 1's human (game state `+0x228`) is passed with the command to the
-dispatcher `WCIssueCommand` uses.
+Issues a Warrior command as player 1's war chief: player 1's human (handle at game state `+0x228`) is passed with the
+command to the dispatcher 0x0041c4e0, the same path as `WCIssueCommand` and the command menu. Unless refused, the crew's
+gang tactic is replaced by the command's tactic, the chief says the command's line, and the `WCSetCallback` function is
+called.
 
-**Notes.** 0x0041c2d0 → 0x0041c4e0. What each command starts: [AI](../../research/ai.md#warrior-commands).
+**Notes.** 0x0041c2d0 → `GameState_IssueWarriorCommandFor` 0x0041dc80 → 0x0041c4e0. Refused while a scene camera (type
+4) is player 1's, while commands are locked (`+0x411`), the player's menu is locked (`+0x42e`), the command is disabled
+(`WCEnableCommand`) or the human is not a war chief. The command number is not range-checked. What each command starts:
+[AI](../../research/ai.md#warrior-commands).
 
-- **Evidence:** confirmed (code) at `0x0041c2d0`; detail: brief
+- **Evidence:** confirmed (code) at `0x0041c2d0`; detail: traced
 - **Wrapper** `0x003747b8` (registered by `RegisterBindings`); **calls** `0x0041c2d0` `GameState_IssueWarriorCommand`
 - **Used by** 7 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -4815,16 +4869,21 @@ WCEnableCommand(player, command, on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `player` | number, truncated to an unsigned integer | Handle of a player human. |
-| 2 | `command` | number, truncated to an integer | Warrior command number 0-6. |
+| 1 | `player` | number, truncated to an unsigned integer | Handle of a player's human (the war chief). |
+| 2 | `command` | number, truncated to an integer | Warrior command number 0-6 (0 follow, 1 attack, 2 defend, 3 hold, 4 scatter, 5 wreck). |
 | 3 | `on` | boolean (nil or 0 is false) | true enables the command, false disables it. |
 
 **Returns** nothing.
 
-Enables or disables one Warrior command for the player who controls `player`, and refreshes that player's command HUD
-when enabling.
+Enables or disables one Warrior command for the player who controls `player`: the byte at game state `+0x41e` + player ×
+7 + command, which the dispatcher checks before it starts a command from the menu, `WCIssueCommand` or
+`IssueWarriorCommand`. Enabling also tells that player's command HUD (`WarCommandDisplay_SetAllowed`) so the entry shows
+as available.
 
-- **Evidence:** confirmed (code) at `0x0041dbe8`; detail: brief
+**Notes.** Every command is enabled again at a level reset (0x00418c68). Disabling does not touch the HUD. A non-player
+human (`+0x1b0` = -1) or an out-of-range command writes outside the table.
+
+- **Evidence:** confirmed (code) at `0x0041dbe8`; detail: traced
 - **Wrapper** `0x00374850` (registered by `RegisterBindings`); **calls** `0x0041dbe8` `GameState_EnableWarriorCommand`
 - **Used by** 25 of 467 script chunks (133 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 11 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -4867,14 +4926,22 @@ WCLockCommands(player, locked)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `player` | number, truncated to an unsigned integer | Handle of a player human. |
-| 2 | `locked` | boolean (nil or 0 is false) | true locks the command menu, false unlocks it (byte at game state +0x418 + player index). |
+| 1 | `player` | number, truncated to an unsigned integer | Handle of a player's human (the war chief). |
+| 2 | `locked` | boolean (nil or 0 is false) | true sets the byte (the crew no longer turns on its chief); false clears it. |
 
 **Returns** nothing.
 
-Locks or unlocks the Warrior command menu for the player who controls `player`.
+Writes the byte at game state `+0x418` + the player's index. Its only reader is the Warrior brain's reaction to being
+hit by its chief (0x00306190): while the byte is clear, a Warrior hit by the chief four times within 10 s turns on him
+for 20 s, his current command is forced back to follow and his command menu is locked (`+0x42e`). Setting the byte
+switches that reaction off; it does not itself lock the command menu.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** The name suggests a menu lock, but no code reads the byte for the menu. Cleared at a level reset
+(0x00418c68). The 20 s retaliation is 0x002aeda0 (inferred: a fight goal against the chief). A non-player handle writes
+outside the two bytes. The second hit is enough when the chief's brain byte `+0x2e4` is set; a Warrior already fighting
+ignores the hits.
+
+- **Evidence:** confirmed (code) at `0x0041dcf0`; detail: traced
 - **Wrapper** `0x00374970` (registered by `RegisterBindings`); **calls** `0x0041dcf0` `GameState_LockWarriorCommands`
 - **Used by** 10 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level80`](story.md#level80) (mission 2)
@@ -4888,13 +4955,18 @@ WCSetCallback(callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `callback` | string | Name of a Lua function (up to 31 characters), or nil to clear it. |
+| 1 | `callback` | string | Name of a global Lua function (at most 31 characters kept), or nil to clear it. |
 
 **Returns** nothing.
 
-Stores the name of a Lua function to call when the player issues a Warrior command (game state +0x2fc).
+Stores the name of a Lua function (game state `+0x2fc`) that the command dispatcher calls after every Warrior command it
+starts, from the menu or a script: the function gets the chief's handle and the command number (0x0041b5e0). Level
+scripts use it to react when the player orders the crew.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Not called for a refused command or when an unforced repeat only repeats the line. Nothing happens if no such
+global function exists. Cleared at a level reset (0x00418c68). One callback for both players.
+
+- **Evidence:** confirmed (code) at `0x0041dd40`; detail: traced
 - **Wrapper** `0x003749d0` (registered by `RegisterBindings`); **calls** `0x0041dd40`
   `GameState_SetWarriorCommandCallback`
 - **Used by** 4 of 467 script chunks (12 references); boot to menu: no; mission 1: no; result used: no
