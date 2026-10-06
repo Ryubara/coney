@@ -2,7 +2,8 @@
 """Claims on the portable PCSX2 copies, so several agents never share one.
 
 Each copy (a `pcsx2*` folder with its own `PCSX2.ini` and PINE port) is held through a claim: a folder
-`<claims dir>/<copy>.claim/` made with `os.mkdir`, which succeeds for exactly one caller, holding `owner.json`. The
+`<claims dir>/<copy>.claim/` holding `owner.json`, built complete in a private folder and renamed into place, which
+succeeds for exactly one caller and never shows a half-made claim. The
 claims dir is one shared place every worktree sees (docs/guides/research-workflow.md#several-at-once). Everything
 reported (`status`) is rebuilt from the claim folders and the live processes each time; no cached state file exists
 to go stale, and nobody maintains one by hand.
@@ -35,6 +36,12 @@ from coney_tools.pine import DEFAULT_PORT
 DEFAULT_MAX_AGE = 4 * 3600.0
 #: A claim folder without its owner file is a claim being made; after this many seconds it was abandoned.
 INCOMPLETE_SECONDS = 10.0
+
+#: How long a takeover lock may stand before it counts as abandoned.
+TAKEOVER_LOCK_SECONDS = 30.0
+
+#: How often a takeover looks again after losing a step to a racer.
+TAKEOVER_ATTEMPTS = 200
 OWNER_FILE = "owner.json"
 AGENT_NAME = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
@@ -291,33 +298,6 @@ class Registry:
         self.claims_dir.mkdir(parents=True, exist_ok=True)
         folder = self._folder(copy.name)
         took_over: Claim | None = None
-        for _ in range(3):
-            try:
-                folder.mkdir()
-                break
-            except FileExistsError:
-                seen = self.read(copy.name)
-                if seen is None:
-                    continue
-                if not (row.stale and seen == row.claim):
-                    return None
-                # The stale folder is renamed (atomic: one racer wins), then checked to still be the one we judged
-                # stale, so a fresh claim made in between is put back, never deleted.
-                grave = folder.with_name(f"{folder.name}.stale-{uuid.uuid4().hex[:8]}")
-                try:
-                    folder.rename(grave)
-                except OSError:
-                    return None
-                if self._owner_at(grave) != seen:
-                    try:
-                        grave.rename(folder)
-                    except OSError:
-                        shutil.rmtree(grave, ignore_errors=True)
-                    return None
-                shutil.rmtree(grave, ignore_errors=True)
-                took_over = seen
-        else:
-            return None
         claim = Claim(
             copy.name,
             agent,
@@ -326,8 +306,67 @@ class Registry:
             port,
             holder_pid,
         )
-        self._write(claim)
-        return claim, took_over
+        for _ in range(TAKEOVER_ATTEMPTS):
+            if self._publish(claim):
+                return claim, took_over
+            seen = self.read(copy.name)
+            if seen is None:
+                continue
+            if not (row.stale and seen == row.claim):
+                return None
+            # Takeovers are serialised by a lock folder (mkdir succeeds for one racer), and the claim is looked at
+            # again under it: only a lock holder removes a stale claim, so a fresh claim a racer made meanwhile is
+            # never moved or deleted (renaming it away and back let two agents win).
+            lock = folder.with_name(f".{folder.name}.takeover")
+            try:
+                lock.mkdir()
+            except OSError:
+                # Another racer takes over (or Windows is still deleting its lock): wait, then look again, so
+                # a holder that fails does not leave every racer empty-handed.
+                self._break_old_lock(lock)
+                time.sleep(0.01)
+                continue
+            try:
+                if self.read(copy.name) != seen:
+                    return None
+                grave = folder.with_name(f"{folder.name}.stale-{uuid.uuid4().hex[:8]}")
+                folder.rename(grave)
+                shutil.rmtree(grave, ignore_errors=True)
+                took_over = seen
+            except OSError:
+                time.sleep(0.01)  # Windows refuses to move a folder someone is reading; try again
+                continue
+            finally:
+                shutil.rmtree(lock, ignore_errors=True)
+        return None
+
+    @staticmethod
+    def _break_old_lock(lock: Path) -> None:
+        """Remove a takeover lock its owner abandoned (a crash between making and removing it, seconds apart)."""
+        try:
+            if time.time() - lock.stat().st_mtime > TAKEOVER_LOCK_SECONDS:
+                shutil.rmtree(lock, ignore_errors=True)
+        except OSError:
+            pass
+
+    def _publish(self, claim: Claim) -> bool:
+        """Create the claim folder complete and atomically: the owner file is written in a private folder that is
+        then renamed to the claim's name. A claim is thus never visible half-made (an owner-less folder reads as an
+        abandoned one, which a racer may take over; that once let two agents win). The rename cannot replace an
+        existing claim, which always holds an owner file. False when the copy is already claimed."""
+        folder = self._folder(claim.copy)
+        staging = folder.with_name(f".{folder.name}.new-{uuid.uuid4().hex[:8]}")
+        staging.mkdir()
+        try:
+            (staging / OWNER_FILE).write_text(json.dumps(asdict(claim), indent=1), encoding="utf-8")
+            staging.rename(folder)
+            return True
+        except (FileExistsError, PermissionError):
+            # The name is taken (Windows may say PermissionError too), or is being moved away for a takeover; the
+            # caller looks again.
+            return False
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
 
     def _owner_at(self, folder: Path) -> Claim | None:
         """The claim stored in a (moved) claim folder."""
