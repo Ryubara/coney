@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 #include "scripting/lua_vm.h"
@@ -10,9 +11,25 @@
 
 namespace coney::script {
 
-/// The AI bindings Coney implements: the goals and actions the level scripts give a human's brain. All real;
-/// installBindings() registers them.
-inline constexpr std::array<std::string_view, 2> kAiBindings{"ActLookAt", "GoalMoveToFlag"};
+/// The AI bindings Coney implements: the goals and actions the level scripts give a human's brain, its switches, its
+/// follow slots and the gang tactics. All real; installBindings() registers them.
+inline constexpr std::array<std::string_view, 17> kAiBindings{"ActLookAt",
+                                                              "BrDead",
+                                                              "BrFlush",
+                                                              "BrSetFollowSlot",
+                                                              "BrSetFollowSlotSet",
+                                                              "BrSetNumFollowSlots",
+                                                              "BrSetThreatResponse",
+                                                              "BrSuspend",
+                                                              "GoalAddressPerson",
+                                                              "GoalDealer",
+                                                              "GoalFight",
+                                                              "GoalMoveToFlag",
+                                                              "GoalPlayDynAnimation",
+                                                              "GoalTrackHuman",
+                                                              "TacticClear",
+                                                              "TacticCrowd",
+                                                              "TacticTrigger"};
 
 /// `GoalMoveToFlag(human, flag, gait, angle, distance, radius, intervalMs, faceFlag, option)` as the binding reads it
 /// (docs/references/bindings/ai.md#goalmovetoflag).
@@ -36,8 +53,38 @@ struct LookAtCall {
     std::int16_t delayMs = -1; ///< The start delay; -1 (the default) is a random 0-500 ms.
 };
 
-/// What the AI bindings ask of the game: the brains of the humans the scripts name by handle. A handle that names no
-/// brain is the host's to ignore, as the original's wrappers do with a handle that is not a human.
+/// `GoalPlayDynAnimation(human, anim, callback, option)` (docs/references/bindings/ai.md#goalplaydynanimation).
+struct DynAnimationCall {
+    double human = 0;     ///< The human's handle.
+    std::string anim;     ///< The clip's file name; empty does nothing.
+    std::string callback; ///< The Lua function called back; empty for none.
+    bool option = true;   ///< nil and 0 are false; true when omitted.
+};
+
+/// `GoalAddressPerson(human, target, approach, range, speech, callback)`
+/// (docs/references/bindings/ai.md#goaladdressperson).
+struct AddressPersonCall {
+    double human = 0;      ///< Who speaks.
+    double target = 0;     ///< Who is addressed.
+    float approach = 0.0F; ///< Metres.
+    float range = 0.0F;    ///< Metres.
+    int speech = -1;       ///< A scene id; negative for none (the default).
+    std::string callback;  ///< Empty for none.
+};
+
+/// `GoalDealer(human, dealerType, range, runChance, dirtyChance, option)` (docs/references/bindings/ai.md#goaldealer).
+struct DealerCall {
+    double human = 0;    ///< The dealer.
+    int type = 0;        ///< 0, 1 or 2.
+    float range = 10.0F; ///< Metres; 10 when omitted.
+    int runChance = 50;  ///< Percent; 50 when omitted.
+    int dirtyChance = 0; ///< Percent.
+    bool option = true;  ///< true when omitted.
+};
+
+/// What the AI and gang bindings ask of the game: the brains of the humans the scripts name by handle, and the gangs
+/// by id. A handle that names no brain, or an id no gang, is the host's to ignore, as the original's wrappers do with a
+/// handle that is not a human. Every hook but the first two does nothing (or answers 0) by default.
 class AiBindingHost {
   public:
     AiBindingHost() = default;
@@ -51,6 +98,60 @@ class AiBindingHost {
     virtual void goalMoveToFlag(const MoveToFlagCall& call) = 0;
     /// Queues the look-at turn action on the human.
     virtual void actLookAt(const LookAtCall& call) = 0;
+
+    /// `GoalFight(human, target, unused)`: the human fights the target.
+    virtual void goalFight(double /*human*/, double /*target*/) {}
+    /// `BrFlush(human)`: the goals, then the actions, cleared.
+    virtual void brFlush(double /*human*/) {}
+    /// `BrDead(human, dead)`.
+    virtual void brDead(double /*human*/, bool /*dead*/) {}
+    /// `BrSuspend(human, suspended)`.
+    virtual void brSuspend(double /*human*/, bool /*suspended*/) {}
+    /// `BrSetThreatResponse(human, response)`.
+    virtual void brSetThreatResponse(double /*human*/, int /*response*/) {}
+    /// `GoalPlayDynAnimation`.
+    virtual void goalPlayDynAnimation(const DynAnimationCall& /*call*/) {}
+    /// `GoalAddressPerson`.
+    virtual void goalAddressPerson(const AddressPersonCall& /*call*/) {}
+    /// `GoalTrackHuman(human, target, distance)`.
+    virtual void goalTrackHuman(double /*human*/, double /*target*/, float /*distance*/) {}
+    /// `GoalDealer`.
+    virtual void goalDealer(const DealerCall& /*call*/) {}
+    /// `BrSetNumFollowSlots(leader, count, allowed)`; `allowed` -1 takes `count`.
+    virtual void brSetNumFollowSlots(double /*leader*/, int /*count*/, int /*allowed*/) {}
+    /// `BrSetFollowSlot(leader, slot, {x, y}, set)`.
+    virtual void brSetFollowSlot(double /*leader*/, int /*slot*/, float /*x*/, float /*y*/, int /*set*/) {}
+    /// `BrSetFollowSlotSet(leader, set)`.
+    virtual void brSetFollowSlotSet(double /*leader*/, int /*set*/) {}
+    /// `TacticCrowd(gang, callback, cheering)`.
+    virtual void tacticCrowd(int /*gang*/, std::string_view /*callback*/, bool /*cheering*/) {}
+    /// `TacticTrigger(gang, what, on)`.
+    virtual void tacticTrigger(int /*gang*/, int /*what*/, bool /*on*/) {}
+    /// `TacticClear(gang)`.
+    virtual void tacticClear(int /*gang*/) {}
+
+    /// `GangCreate(kind, name)`: the new gang's id, or -1.
+    [[nodiscard]] virtual int gangCreate(int /*kind*/, std::string_view /*name*/) { return -1; }
+    /// `GangDelete(gang)`.
+    virtual void gangDelete(int /*gang*/) {}
+    /// `GangAddMember(gang, index, human)`.
+    virtual void gangAddMember(int /*gang*/, double /*human*/) {}
+    /// `GangBrDead(gang, dead)`.
+    virtual void gangBrDead(int /*gang*/, bool /*dead*/) {}
+    /// `GangBrFlush(gang)`.
+    virtual void gangBrFlush(int /*gang*/) {}
+    /// `GangSetThreatResponse(gang, response)`.
+    virtual void gangSetThreatResponse(int /*gang*/, int /*response*/) {}
+    /// `GangMakeEnemies(a, b)` and `GangMakeFriends(a, b)`.
+    virtual void gangMakeEnemies(int /*a*/, int /*b*/) {}
+    virtual void gangMakeFriends(int /*a*/, int /*b*/) {}
+    /// `GangSetMsgHandler(gang, message, handler)`; an empty handler clears it.
+    virtual void gangSetMsgHandler(int /*gang*/, int /*message*/, std::string_view /*handler*/) {}
+    /// `GangSuspend(gang, suspended)`.
+    virtual void gangSuspend(int /*gang*/, bool /*suspended*/) {}
+    /// `GangGetHeadCount(gang, living)` and `GangGetStandingCount(gang)`.
+    [[nodiscard]] virtual int gangHeadCount(int /*gang*/, bool /*living*/) { return 0; }
+    [[nodiscard]] virtual int gangStandingCount(int /*gang*/) { return 0; }
 };
 
 /// Registers kAiBindings in `vm`, handing each call to `context.ai` (a null one does nothing). They return nothing.

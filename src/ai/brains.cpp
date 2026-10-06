@@ -20,6 +20,8 @@ void Brains::remove(const human::Human& human) {
     if (found == m_brains.end()) {
         return;
     }
+    m_gangs.removeMember(**found);
+    m_formations.forget(**found);
     for (const std::unique_ptr<Brain>& other : m_brains) {
         other->forget(**found);
     }
@@ -45,6 +47,8 @@ void Brains::setPlanner(RoutePlanner* planner) {
 void Brains::update() {
     ++m_steps;
     const std::uint64_t now = nowMs();
+    m_formations.update(now);
+    m_gangs.update(now);
     for (std::size_t index = 0; index < m_brains.size(); ++index) {
         Brain& brain = *m_brains[index];
         if (!brain.enabled() || brain.human().outOfWorld()) {
@@ -58,6 +62,19 @@ void Brains::update() {
     for (const std::unique_ptr<Brain>& brain : m_brains) {
         if (brain->type() == BrainType::Player) {
             keepBooks(*brain);
+        }
+    }
+    reportDowns();
+}
+
+void Brains::reportDowns() {
+    for (const std::unique_ptr<Brain>& brain : m_brains) {
+        const bool down = brain->human().fighter().health().depleted();
+        if (down && !brain->downReported()) {
+            brain->setDownReported(true);
+            deliverEvent(*brain, BrainEvent{.id = kEventDown});
+        } else if (!down) {
+            brain->setDownReported(false);
         }
     }
 }

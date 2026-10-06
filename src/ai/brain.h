@@ -4,7 +4,9 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "ai/action.h"
@@ -22,6 +24,10 @@
 // Research: docs/research/ai.md#brain, docs/research/ai.md#update-goals, docs/research/ai.md#targets
 
 namespace coney::ai {
+
+class Brain;
+class Formation;
+class Gang;
 
 /// A brain's type (`+0x04`), from its character class's behaviour byte (docs/research/ai.md#types).
 enum class BrainType : std::uint8_t {
@@ -73,6 +79,20 @@ inline constexpr int kDefaultAttackDelayMs = 200;
 /// The base chance to block (`CfgBaseChanceToBlock`, `0x00510ac8`, percent), 60 at runtime.
 inline constexpr int kDefaultBaseBlockChance = 60;
 
+/// The events Coney delivers to a human (`Human_OnEvent`, docs/research/ai.md#events): an enemy added to its brain
+/// (`0xb`, for the gang's tactic), an attack started on it within its brain's range and field of view (`0x10`), and its
+/// health run out (18, for its gang's message handler).
+inline constexpr int kEventEnemyAdded = 0x0b;
+inline constexpr int kEventAttackWarning = 0x10;
+inline constexpr int kEventDown = 18;
+
+/// One event to a human: its id, the other human it is about (null for none) and a value.
+struct BrainEvent {
+    int id = 0;
+    Brain* other = nullptr;
+    int value = 0;
+};
+
 /// The configuration a brain fights by: what the configuration scripts set (docs/research/ai.md#fight).
 struct FightSettings {
     AttackWeights attackWeights = attNormal(); ///< The class's `Att_*` table (`+0x298`).
@@ -101,17 +121,56 @@ class Brain {
     [[nodiscard]] bool enabled() const { return m_enabled; }
     void setEnabled(bool enabled) { m_enabled = enabled; }
 
+    // --- The scripts' hold (docs/research/ai.md#scripted, docs/research/ai.md#handlers).
+
+    /// The script handle of its human (human vtable `+0x2c`): what its goals' callbacks and its gang's handlers pass;
+    /// 0 (Coney's `NilHandle`) until the scripts name it.
+    [[nodiscard]] double handle() const { return m_handle; }
+    void setHandle(double handle) { m_handle = handle; }
+    /// Its human's character class (`HuCreate`'s type, which `GoalDealer` reads); -1 when not known.
+    [[nodiscard]] int characterClass() const { return m_characterClass; }
+    void setCharacterClass(int characterClass) { m_characterClass = characterClass; }
+    /// "Dead" to the AI (`+0x09`, `BrDead`): the actions are cleared (the goals stay) and the handlers installed
+    /// again. A dead brain runs only the goals and actions it is given: its think and its event handler do nothing,
+    /// so it counts no attack warnings, and a dead player's brain runs them too. A player's brain set dead gives up the
+    /// pad and set alive takes it back (per-player `+0x1b`), through the pad control hook.
+    /// @orig 0x00292330 Brain_SetDead (unknown)
+    /// @orig 0x0028c1a8 Brain_InstallHandlers (unknown)
+    void setDead(bool dead);
+    [[nodiscard]] bool dead() const { return m_dead; }
+    /// What a player's brain calls when it gives up the pad (false) or takes it back (true).
+    using PadControl = std::function<void(bool padControlled)>;
+    void setPadControl(PadControl control) { m_padControl = std::move(control); }
+    /// Suspended (`+0x0a`, `BrSuspend`): its update keeps only the time.
+    [[nodiscard]] bool suspended() const { return m_suspended; }
+    void setSuspended(bool suspended) { m_suspended = suspended; }
+    /// Its human's gang (`+0x20c`); null for none. ai::Gangs sets it.
+    [[nodiscard]] Gang* gang() const { return m_gang; }
+    void setGang(Gang* gang) { m_gang = gang; }
+    /// The formation it follows in (`+0x212`); null for none. ai::Formation sets it.
+    [[nodiscard]] Formation* following() const { return m_following; }
+    void setFollowing(Formation* formation) { m_following = formation; }
+    /// Its human's event once the gang has passed on it (handler C of `Brain_OnEvent`): an attack warning is counted
+    /// (`+0x200`) unless the brain is dead. Returns whether it was used.
+    /// @orig 0x0028f928 Brain_OnEvent (unknown)
+    bool onEvent(const BrainEvent& event);
+    /// Whether its human's health running out has been told (event 18).
+    [[nodiscard]] bool downReported() const { return m_downReported; }
+    void setDownReported(bool reported) { m_downReported = reported; }
+
     // --- The update (docs/research/ai.md#update-goals).
 
-    /// One update at game time `nowMs`: for a type-0 brain (the player's) only its books; for every other type
-    /// Brain_UpdateGoals: skipped while the human is airborne; the reaction goal when the human's state calls for one,
-    /// else the goal stack; then the actions. The attack warnings (`+0x200`) are counted from the human's
-    /// announcements at the start and cleared at the end.
+    /// One update at game time `nowMs`: for a type-0 brain (the player's) only its books, unless it is dead; for every
+    /// other type, and a dead player's, Brain_UpdateGoals: skipped while the human is airborne, out of health, its gang
+    /// is suspended or the brain is; the reaction goal when the human's state calls for one, else the goal stack; then
+    /// the actions. The human's attack announcements within the range and field of view are delivered at the start
+    /// as events `0x10` (deliverEvent()), which count the warnings (`+0x200`); the count is cleared at the end.
     /// @orig 0x0028f8b8 Brain_Update (unknown)
     /// @orig 0x0028fbb0 Brain_UpdateGoals (unknown)
     void update(std::uint64_t nowMs);
-    /// One think (handler B), one update in five. **Coney choice**: the types' think handlers are not traced, so a
-    /// think only counts; a fight is started by its caller (GoalFight, ai::AiHumans).
+    /// One think (handler B), one update in five; nothing for a dead brain, whose handler B is a stub. **Coney
+    /// choice**: the types' think handlers are not traced, so a think only counts; a fight is started by its caller
+    /// (GoalFight, ai::AiHumans).
     /// @orig 0x0028f6c0 Brain_Think (unknown)
     void think(std::uint64_t nowMs);
     /// Updates and thinks so far (`+0x34`, `+0x38`).
@@ -172,12 +231,15 @@ class Brain {
     /// @orig 0x002b2b90 Brain_StartFight (unknown)
     void startFight(Brain& target);
     /// Fights `target` when the threat response allows it: adds it to the enemies, takes it as the target (claiming an
-    /// attack slot on it) and pushes the fight goal, popping nothing Coney builds (goals 8 and `0x41`). Returns false
-    /// when the threat response is 0.
+    /// attack slot on it) and pushes the fight goal, except while its gang has a tactic (the tactic fights), for a
+    /// human down or out of health, or when the fight goal is on top already; it pops nothing Coney builds (goals 8
+    /// and `0x41`). Returns false when the threat response is 0.
     /// @orig 0x0028d2e8 Brain_Fight (unknown)
     /// @orig 0x0028d190 Brain_PushFightGoal (unknown)
     bool fight(Brain& target);
-    /// Adds `enemy` to the enemy list (`+0x164`, up to 16); nothing when it is there or the list is full.
+    /// Adds `enemy` to the enemy list (`+0x164`, up to 16), and this brain to `enemy`'s unless both are players'; when
+    /// its gang's tactic does not leave the members their own goals, the tactic hears of it (event `0xb`). Nothing when
+    /// `enemy` is listed already or the list is full.
     /// @orig 0x0028d538 Brain_AddEnemy (unknown)
     void addEnemy(Brain& enemy);
     /// The enemy list.
@@ -308,6 +370,8 @@ class Brain {
     bool claimSlot(Brain& attacker);
     // Releases `attacker`'s slot on this brain's human.
     void releaseSlot(const Brain& attacker);
+    // Adds `enemy` to the list only; returns whether it was added.
+    bool listEnemy(Brain& enemy);
 
     human::Human* m_human;
     BrainType m_type;
@@ -341,6 +405,20 @@ class Brain {
     anim::Vec3 m_moveAim;                          // +0x90
     float m_moveAimRadius = 0.0F;                  // +0x118
     std::size_t m_slot = 0;
+    double m_handle = 0;              // the human's script handle
+    int m_characterClass = -1;        // the human's class
+    bool m_dead = false;              // +0x09
+    bool m_suspended = false;         // +0x0a
+    Gang* m_gang = nullptr;           // +0x20c
+    Formation* m_following = nullptr; // +0x212
+    PadControl m_padControl;
+    bool m_downReported = false;
 };
+
+/// Delivers `event` to `brain`'s human as `Human_OnEvent` does: its gang first (`Gang_OnEvent`), then, unless the gang
+/// used it, its brain (Brain::onEvent()). Returns whether either used it. **Coney choice**: a human's own script
+/// handlers (`SetMsgHandler`), which come first in the original, are not built.
+/// @orig 0x0021d4e8 Human_OnEvent (unknown)
+bool deliverEvent(Brain& brain, const BrainEvent& event);
 
 } // namespace coney::ai

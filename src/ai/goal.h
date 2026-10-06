@@ -14,8 +14,10 @@ class Brain;
 
 /// The goal types Coney builds, by the original's type ids (the vtable's `+0x0c`, docs/research/ai.md#goals).
 enum class GoalType : std::uint8_t {
+    Idle = 0x00,             ///< IdleGoal: stands in place.
     MoveToFlag = 0x01,       ///< MoveToFlagGoal.
     Fight = 0x0f,            ///< FightGoal.
+    Spectate = 0x10,         ///< SpectateGoal: stands and watches for a while.
     ReactGrabbing = 0x12,    ///< Reaction: grabbing (state `0xc0`).
     ReactTackling = 0x13,    ///< Reaction: tackling (`0x400`).
     ReactGrabbed = 0x14,     ///< Reaction: grabbed (`0x30`) or mugged (`0x200`).
@@ -23,6 +25,11 @@ enum class GoalType : std::uint8_t {
     ReactKnockedDown = 0x17, ///< Reaction: knocked down (`0x80000`).
     ReactStunned = 0x18,     ///< Reaction: stunned (`0x100000`) and not down.
     Block = 0x1b,            ///< BlockGoal.
+    PlayAnimation = 0x21,    ///< PlayAnimationGoal: a scene.
+    PlayDynAnimation = 0x22, ///< PlayDynAnimationGoal.
+    TrackHuman = 0x30,       ///< TrackHumanGoal.
+    AddressPerson = 0x57,    ///< AddressPersonGoal.
+    Dealer = 0x80,           ///< DealerGoal.
 };
 
 /// What a goal's process() returns (`Goal_Process`): stop for this update, process the stack's top again in the same

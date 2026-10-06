@@ -22,6 +22,7 @@ struct HumanCreation {
     std::optional<std::array<float, 3>> position;
     float headingDegrees = 0.0F; ///< The facing, degrees about the vertical axis.
     int playerIndex = 0;         ///< 0 for an AI human, 1 for player 1, 2 for player 2.
+    int gang = -1;               ///< The gang it joins (`GangCreate`'s id); -1 for none.
     double handle = 0;           ///< The handle the binding returned.
     /// The character model the type is drawn as (characters::modelNameFor(): `warr_cl` for Cleon); empty when the
     /// type has no `CfgChar` record.

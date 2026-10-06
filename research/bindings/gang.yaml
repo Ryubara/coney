@@ -47,6 +47,7 @@
     Only members present at the call are changed (a loop over the 16 member slots); the meaning of each mode value is
     inferred from the scripts' use.
   usage: {chunks: 20, calls: 43, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GangSetDamageResponse
   wrapper: 0x0035f2f0
@@ -180,6 +181,7 @@
   notes: >-
     Per member it calls 0x0028d910 (pop every goal) and 0x0028db20 (pop every action).
   usage: {chunks: 35, calls: 82, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GangSetTargetable
   wrapper: 0x0035f728
@@ -284,6 +286,7 @@
   notes: >-
     0x0016cdf0. A gang holds at most 10 members, or 16 for police (type 1) and type 0x17 (0x00166308).
   usage: {chunks: 119, calls: 1391, boot: false, mission1: true, result_used: true}
+  coney: implemented
 
 - name: GangDelete
   wrapper: 0x00373200
@@ -298,6 +301,7 @@
   notes: >-
     What happens to members still in the world (0x00164738) is not traced.
   usage: {chunks: 49, calls: 146, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: GangSuspend
   wrapper: 0x00373238
@@ -314,6 +318,7 @@
   notes: >-
     Only the flag write is confirmed; what the gang update skips while it is set is inferred.
   usage: {chunks: 75, calls: 357, boot: true, mission1: true, result_used: true}
+  coney: implemented
 
 - name: GangInvincible
   wrapper: 0x003732a0
@@ -365,6 +370,7 @@
     returns true. The message ids' meanings are inferred from the scripts' handler names. Behaviour:
     [AI](../../research/ai.md#gang-events).
   usage: {chunks: 140, calls: 1155, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GangClearHandlers
   wrapper: 0x00373400
@@ -423,6 +429,7 @@
   notes: >-
     0x00166308.
   usage: {chunks: 39, calls: 128, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: GangGetHeadCount
   wrapper: 0x003735d0
@@ -441,6 +448,7 @@
   notes: >-
     0x00166158.
   usage: {chunks: 63, calls: 160, boot: true, mission1: false, result_used: true}
+  coney: implemented
 
 - name: GangGetStandingCount
   wrapper: 0x00373648
@@ -455,6 +463,7 @@
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 29, calls: 133, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: GangGoodToGo
   wrapper: 0x003736a0
@@ -575,6 +584,7 @@
   notes: >-
     Per member 0x00292330: flush actions (0x0028db20) and set the brain's off flag (+0x09, 0x0028ced8).
   usage: {chunks: 76, calls: 325, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GangSetFriend
   wrapper: 0x00373a88
@@ -622,6 +632,7 @@
   notes: >-
     GangSetEnemy in both directions (0x001690c8).
   usage: {chunks: 119, calls: 355, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GangMakeFriends
   wrapper: 0x00373bf0
@@ -637,6 +648,7 @@
   notes: >-
     GangSetFriend in both directions (0x00169060).
   usage: {chunks: 37, calls: 135, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GangMakeEnemiesOfType
   wrapper: 0x00373c68

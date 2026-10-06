@@ -90,7 +90,7 @@ first.
 - **Evidence:** confirmed (code) at `0x0016a3f8`; detail: brief
 - **Wrapper** `0x00373528` (registered by `RegisterBindings`); **calls** `0x0016a3f8`
 - **Used by** 39 of 467 script chunks (128 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangAddSpawner {#gangaddspawner}
 
@@ -199,7 +199,7 @@ gangs off during cutscenes and set-ups.
 - **Evidence:** confirmed (code) at `0x0016aa98`; detail: traced
 - **Wrapper** `0x00373a20` (registered by `RegisterBindings`); **calls** `0x0016aa98`
 - **Used by** 76 of 467 script chunks (325 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangBrFlush {#gangbrflush}
 
@@ -221,7 +221,7 @@ given new goals.
 - **Evidence:** confirmed (code) at `0x0016ba18`; detail: traced
 - **Wrapper** `0x0035f6f0` (registered by `RegisterBindings`); **calls** `0x0016ba18`
 - **Used by** 35 of 467 script chunks (82 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangCallForHelp {#gangcallforhelp}
 
@@ -414,7 +414,7 @@ default animation and response tables. Members are added afterwards (HuCreate's 
 - **Evidence:** confirmed (code) at `0x0016a1c8`; detail: traced
 - **Wrapper** `0x00373148` (registered by `RegisterBindings`); **calls** `0x0016a1c8`
 - **Used by** 119 of 467 script chunks (1391 references); boot to menu: no; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangDelete {#gangdelete}
 
@@ -435,7 +435,7 @@ Deletes a gang: every other gang stops treating it as friend or enemy, and the s
 - **Evidence:** confirmed (code) at `0x0016a1e8`; detail: traced
 - **Wrapper** `0x00373200` (registered by `RegisterBindings`); **calls** `0x0016a1e8`
 - **Used by** 49 of 467 script chunks (146 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangEnableAttackStrategies {#gangenableattackstrategies}
 
@@ -525,7 +525,7 @@ beaten.
 - **Evidence:** confirmed (code) at `0x0016a458`; detail: traced
 - **Wrapper** `0x003735d0` (registered by `RegisterBindings`); **calls** `0x0016a458`
 - **Used by** 63 of 467 script chunks (160 references); boot to menu: yes; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangGetLeader {#ganggetleader}
 
@@ -566,7 +566,7 @@ Counts the gang's members that are still standing.
 - **Evidence:** confirmed (code) at `0x0016a4a8`; detail: brief
 - **Wrapper** `0x00373648` (registered by `RegisterBindings`); **calls** `0x0016a4a8`
 - **Used by** 29 of 467 script chunks (133 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangGoodToGo {#ganggoodtogo}
 
@@ -699,7 +699,7 @@ Makes two gangs enemies of each other, both ways, so their members fight on sigh
 - **Evidence:** confirmed (code) at `0x0016acf0`; detail: traced
 - **Wrapper** `0x00373b78` (registered by `RegisterBindings`); **calls** `0x0016acf0`
 - **Used by** 119 of 467 script chunks (355 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangMakeEnemiesOfType {#gangmakeenemiesoftype}
 
@@ -741,7 +741,7 @@ Makes two gangs friends of each other, both ways.
 - **Evidence:** confirmed (code) at `0x0016ad80`; detail: traced
 - **Wrapper** `0x00373bf0` (registered by `RegisterBindings`); **calls** `0x0016ad80`
 - **Used by** 37 of 467 script chunks (135 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangMakeNeutralOfType {#gangmakeneutraloftype}
 
@@ -1130,7 +1130,7 @@ true. The message ids' meanings are inferred from the scripts' handler names. Be
 - **Evidence:** confirmed (code) at `0x0016ab38`; detail: traced
 - **Wrapper** `0x00373370` (registered by `RegisterBindings`); **calls** `0x0016ab38`
 - **Used by** 140 of 467 script chunks (1155 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetNeutral {#gangsetneutral}
 
@@ -1280,7 +1280,7 @@ value is inferred from the scripts' use.
 - **Evidence:** confirmed (code) at `0x0016b3d0`; detail: traced
 - **Wrapper** `0x0035f1f8` (registered by `RegisterBindings`); **calls** `0x0016b3d0`
 - **Used by** 20 of 467 script chunks (43 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangStartSpawner {#gangstartspawner}
 
@@ -1327,4 +1327,4 @@ example GangWarriors around cutscenes.
 - **Evidence:** confirmed (code) at `0x0016a220`; detail: traced
 - **Wrapper** `0x00373238` (registered by `RegisterBindings`); **calls** `0x0016a220`
 - **Used by** 75 of 467 script chunks (357 references); boot to menu: yes; mission 1: yes; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented

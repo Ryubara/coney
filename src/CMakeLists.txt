@@ -67,6 +67,7 @@ add_library(coney_core STATIC
     gui/widget.cpp
     scripting/ai_bindings.cpp
     scripting/config_strings.cpp
+    scripting/gang_bindings.cpp
     scripting/level_bindings.cpp
     scripting/lua_chunk.cpp
     scripting/lua_libraries.cpp
@@ -132,6 +133,7 @@ target_sources(coney_core PRIVATE
     human/victim.cpp)
 # The AI: brains, goals and actions, and the AI humans of a scene (docs/research/ai.md).
 target_sources(coney_core PRIVATE
+    ai/address_person_goal.cpp
     ai/ai_config.cpp
     ai/ai_humans.cpp
     ai/attack_action.cpp
@@ -139,14 +141,23 @@ target_sources(coney_core PRIVATE
     ai/block_goal.cpp
     ai/brain.cpp
     ai/brains.cpp
+    ai/dealer_goal.cpp
     ai/fight_goal.cpp
+    ai/formations.cpp
+    ai/gangs.cpp
+    ai/idle_goals.cpp
     ai/move_action.cpp
     ai/move_to_flag_goal.cpp
     ai/move_to_human_action.cpp
+    ai/play_anim_action.cpp
+    ai/play_dyn_animation_goal.cpp
     ai/reaction_goals.cpp
     ai/route_follower.cpp
     ai/route_planner.cpp
     ai/scripted_brains.cpp
+    ai/tactic.cpp
+    ai/tactic_crowd.cpp
+    ai/track_human_goal.cpp
     ai/turn_action.cpp)
 # Combat: the player's commands, attack chains, damage, grabs and meters (docs/research/combat.md).
 target_sources(coney_core PRIVATE

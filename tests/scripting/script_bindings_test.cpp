@@ -263,6 +263,7 @@ TEST_CASE("HuCreate keeps the human it makes and returns a handle; player 1 is f
     CHECK(player->name == "Rembrandt");
     CHECK(player->type == 32);
     CHECK(player->handle == rembrandt);
+    CHECK(player->gang == 1); // the seventh argument
     REQUIRE(player->position.has_value());
     CHECK(player->position.value_or(std::array<float, 3>{}) == std::array<float, 3>{-284.4F, 120.4F, 0.3F});
     CHECK(h.humans.player(2)->headingDegrees == 235.0F);
@@ -271,6 +272,7 @@ TEST_CASE("HuCreate keeps the human it makes and returns a handle; player 1 is f
     h.call("HuCreate", {str("P11"), Value(1.0), Value(), Value(270.0), Value(), Value(1.0)});
     CHECK(h.humans.all().back().name == "P11");
     CHECK(!h.humans.all().back().position.has_value());
+    CHECK(h.humans.all().back().gang == -1); // no gang given
 }
 
 TEST_CASE("HuCreate returns NilHandle once every human slot is taken", "[script_bindings]") {

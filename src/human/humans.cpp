@@ -7,10 +7,24 @@
 
 namespace coney::human {
 
-void Humans::add(Human& human, bool padControlled, int side) {
+void Humans::add(Human& human, bool padControlled) {
     m_humans.push_back(&human);
     m_padControlled.push_back(padControlled);
-    m_sides.push_back(side);
+    m_fightsTargets.push_back(padControlled);
+}
+
+void Humans::setPadControlled(const Human& human, bool padControlled) {
+    const auto found = std::ranges::find(m_humans, &human);
+    if (found != m_humans.end()) {
+        m_padControlled[static_cast<std::size_t>(std::distance(m_humans.begin(), found))] = padControlled;
+    }
+}
+
+bool Humans::opposed(std::size_t slot, std::size_t other) const {
+    if (m_opposition) {
+        return m_opposition(*m_humans[slot], *m_humans[other]);
+    }
+    return m_fightsTargets[slot] != m_fightsTargets[other];
 }
 
 void Humans::remove(const Human& human) {
@@ -21,16 +35,16 @@ void Humans::remove(const Human& human) {
     const auto slot = std::distance(m_humans.begin(), found);
     m_humans.erase(found);
     m_padControlled.erase(m_padControlled.begin() + slot);
-    m_sides.erase(m_sides.begin() + slot);
+    m_fightsTargets.erase(m_fightsTargets.begin() + slot);
 }
 
 void Humans::gatherTargets(std::size_t slot, std::span<Combatant* const> targets) {
     m_scratch.clear();
-    if (m_sides[slot] == 0) {
+    if (m_fightsTargets[slot]) {
         m_scratch.assign(targets.begin(), targets.end());
     }
     for (std::size_t other = 0; other < m_humans.size(); ++other) {
-        if (m_sides[other] != m_sides[slot]) {
+        if (other != slot && opposed(slot, other)) {
             m_scratch.push_back(m_humans[other]);
         }
     }

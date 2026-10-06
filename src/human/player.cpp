@@ -154,6 +154,11 @@ PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot&
                           .cameraTarget = anim::lerp(previous.cameraTarget, current.cameraTarget, alpha)};
 }
 
+void Player::setPadControlled(bool padControlled) {
+    m_padControlled = padControlled;
+    m_humans.setPadControlled(m_human, padControlled);
+}
+
 void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets) {
     // The command for this sample (docs/research/combat.md#commands).
     const combat::CommandId command =
@@ -161,14 +166,19 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     // The pad into the human's per-player record, its stick turned by the camera as it stood after the last update;
     // L2 held asks for a sprint; triangle pressed (command 10) climbs or jumps (docs/research/characters.md#buttons).
     // Then the characters' step, and the cameras last.
-    m_human.record() = PlayerRecord{.stickX = pad.leftX(),
-                                    .stickY = pad.leftY(),
-                                    .cameraForward = m_camera.forward(),
-                                    .sprintHeld = pad.held(pad::kL2),
-                                    .actionPressed = pad.pressed(pad::kTriangle),
-                                    .command = command,
-                                    .buttons = pad.buttons(),
-                                    .move = std::nullopt};
+    // Without the pad the record keeps only the brain's move, which the brains write in the step.
+    if (m_padControlled) {
+        m_human.record() = PlayerRecord{.stickX = pad.leftX(),
+                                        .stickY = pad.leftY(),
+                                        .cameraForward = m_camera.forward(),
+                                        .sprintHeld = pad.held(pad::kL2),
+                                        .actionPressed = pad.pressed(pad::kTriangle),
+                                        .command = command,
+                                        .buttons = pad.buttons(),
+                                        .move = std::nullopt};
+    } else {
+        m_human.record() = PlayerRecord{.cameraForward = m_camera.forward(), .move = m_human.record().move};
+    }
     m_humans.update(mesh, targets);
     if (m_human.outOfWorld()) {
         m_human.spawn(mesh, m_start.position, m_start.headingDegrees);

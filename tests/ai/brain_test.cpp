@@ -119,7 +119,7 @@ struct Scene {
         made.setFighterProfile(coney::human::FighterProfile{
             .player = player, .powerClass = coney::ai::kWarriorPowerClass, .health = 1400});
         made.spawn(mesh.get(), feet, headingDegrees);
-        step.add(made, player, player ? 0 : 1);
+        step.add(made, player);
         return brains.add(made, type, coney::ai::FightSettings{}, static_cast<std::uint32_t>(humans.size()));
     }
 

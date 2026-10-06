@@ -582,15 +582,17 @@ What `level99`'s scripts give a brain directly. Confirmed (code) at the addresse
 and defaults are on [AI bindings](../references/bindings/ai.md).
 
 - **Lua callbacks.** A goal that takes a callback name interns it through the script system (`*(0x00512b04)`, vtable
-  `+0xcc`; 0 for none) and calls it in its **End** through vtable `+0xa4` with four values: the id, the human's handle,
-  a "completed" flag and the goal type. A goal cut short (popped, flushed) still calls back, with "completed" 0
-  (`0x002d2f98`).
+  `+0xcc`; 0 for none) and calls back in its **End** through vtable `+0xa4`, which is `ScheduleFuncArg2`
+  (`0x00357430`): the callback is **scheduled 33 ms later** with two values, the human's handle and a "completed" flag
+  (`0x002d2f98` passes the interned name, the handle, the flag and 33). A goal cut short (popped, flushed) still calls
+  back, with "completed" 0. This corrects an earlier reading of the fourth value as the goal type.
 - **`GoalFight`** is `Brain_StartFight` (`0x002b2b90`): clear the actions, then `Brain_Fight(brain, target, -1, 0)`
   ([Starting a fight](#targets)). Its third argument is read and never used.
 - **`BrFlush`** (`0x00292530`): `Brain_ClearGoals`, then `Brain_ClearActions`. Each goal is ended, so its callback
   fires; an action that refuses to abort stays ([Actions](#actions)).
 - **`BrDead` / `GangBrDead`** (`Brain_SetDead`, `0x00292330`): clear the **actions only** (the goals stay), set brain
-  `+0x09` and reinstall the handlers ([Handlers](#handlers)).
+  `+0x09` and reinstall the handlers ([Handlers](#handlers)). Inferred: a dead player brain no longer leaves the
+  record to the pad, as `level99` sets its Warriors dead (`GangBrDead`) while it walks them through a scene.
 
 #### GoalMoveToFlag {#move-to-flag}
 
@@ -653,7 +655,10 @@ range, `+0x1c` speech (a **scene id**; negative for none, flagged at `+0x24`), `
     4. State 1: with a scene, state 2 and done; with none it stays, facing the target, until removed.
 - **`Goal_PlayAnimation`** (vtable `0x00542370`) plays a **scene**, not a clip: Start (`0x002e49f8`) starts it
   (`0x003541a0`, `Scene_PlayAnimation`), Process (`0x002e4a70`) is done when the human is gone or the scene has
-  finished (`0x00354058`), End stops it. The scene system calls the callback (inferred: at the scene's end).
+  finished (`0x00354058`), End stops it. Start hands the callback to the scene (`0x00353f40`); the scene system calls
+  it (inferred: at the scene's end; what it passes is not traced). AddressPerson's own End is the base's empty one
+  (vtable `0x00541830`, `0x004ee038`), so the scene is its only callback. In Process step 2 the turn is led by the
+  target's velocity when it moves (`0x00223a20`).
 
 #### GoalPlayDynAnimation {#dyn-animation}
 
@@ -735,7 +740,8 @@ the constructor), `+0x42` dealing.
 ([Events](#events)). Confirmed (code).
 
 - `GangSetMsgHandler(gang, msg, name)` (`0x0016ab38` → `0x00164bb8`) stores the interned name at `+0xe4 + msg × 4`.
-- `Gang_OnEvent` calls that handler only while scripting runs (`0x00512b28` = 1). Event **18** (a human died or was
+- `Gang_OnEvent` calls that handler only while scripting runs (`0x00512b28` = 1), through script-system `+0x8c` with
+  three values. Event **18** (a human died or was
   knocked out, [Script events](../references/script-events.md)) calls `handler(member, other, standing)`, where
   `other` is the attacker (the null handle when none) and `standing` the members not dead or knocked out
   (`0x00166220`); event `0x11` passes the event's `+4`, event 2 the headcount; any other id goes through the generic
@@ -755,6 +761,8 @@ members, confirmed (code):
    (`0x00169d30`: a gang of kind `0x17` / `0x18` whose members all have threat response 0 is made neutral with the
    kind-0 gangs).
 4. `0x00306630` frees the tactics queued for freeing (up to 32, `0x006eb290`).
+5. A gang with flag `+0xd3` and no living members calls the handler at `+0x158` with its id and is freed
+   (`0x0016a1e8`).
 
 #### Tactics {#tactics}
 
@@ -765,8 +773,11 @@ A pool of 30 tactics of 0x90 at `0x006ea1b0` (mask `0x006ea1a0`; alloc `0x003065
 (code).
 
 - **Setting one** (`0x00165640`) ends and frees the old tactic. **`Tactic_Start`** (`0x00306690`): the time limit made
-  absolute, the gang's alert state set from the `+0x3c` answer, every AI member flushed (`0x0028d8a0`) and
-  `0x00226f70`, then Start. **`TacticClear`** ends and frees it.
+  absolute, the gang's alert state set from the `+0x3c` answer (types `0x16`-`0x18` and `0x21` also set gang
+  `+0xd1` / `+0xd2`), every member that is not a player (`+0x1b0` = −1) flushed (`0x0028d8a0`) and `0x00226f70`,
+  then Start, then started. **`Tactic_Process`** (`0x003067d8`) starts it when needed, returns 2 past the time limit,
+  else the class's Process. **Firing the callback** (`0x00306938`) calls the Lua function at once with two values:
+  the gang's id (`+0x30`) and the code. **`TacticClear`** ends and frees it.
 - **Fights under a tactic**: `Brain_PushFightGoal` (`0x0028d190`) returns at once when the gang has a tactic, so
   `GoalFight` picks the target but **pushes no fight goal**; the tactic fights. It also does nothing for a knocked-down
   or dead human, or a type-3 brain already holding goal 9; otherwise it pops goals 8 and `0x41`, pushes the melee
@@ -783,11 +794,17 @@ no time limit, `+0x28` the option.
   and 668 are substituted by cheers; without (**watching**), `0x25c`.
 - **Process** (`0x0030fe78`, always 0): every 1-2 s, a watcher with record `+0x08` clear plays `0x25c` at 51 %; a
   cheering crowd sends, every 2 s, the next member in turn into one of three cheer idles (state `0x20000000`).
-- **Event** (`0x00310100`): `0x10` (a member warned of an attack) fires the callback with event 6; `0x14` (violence
-  nearby, its strength at `+8`, cheering crowds only, above 29) makes idle members look at the fight for 20 s and, at
-  min(strength, 100) %, queue a move and a cheer clip; `0x13` and `0x16` re-seat the crowd.
-- **`TacticTrigger(gang, what, on)`** (`0x00316fa0`), crowd tactics only: what 0 switches the periodic reactions;
-  what 1 sends every free member to move and cheer at once.
+- **Event** (`0x00310100`): `0x10` (a member warned of an attack) fires the callback with event 6 and is not used;
+  `0x14` (violence nearby, its strength at `+8`, cheering crowds only, above 29) makes idle members look at the fight
+  for 20 s and, at min(strength, 100) %, queue a reaction, and is used (`0x0030fa18`); `0x13` and `0x16` re-seat the
+  crowd.
+- **The reaction** (`0x0030fc48(what, on)`), run when the periodic switch `+0x2a` is on or `what` is non-zero: each
+  free member with no actions queues two actions, a clip action (`0x002fb868`, vtable `0x00542d20`) with anim `0x8f`
+  (`0x10` at rand100 < 50 when `what` is 0; `0xb1` when `what` is 1 and `on` is 0) after 0-750 ms, then a second clip
+  action (`0x002fa300`, vtable `0x00542be0`) with the cheer `0x256` in one of three variants. A cheering crowd's
+  Process calls it with (0, 1) on each tick.
+- **`TacticTrigger(gang, what, on)`** (`0x00316fa0`), crowd tactics only: what 0 sets the periodic switch to `on`;
+  what 1 runs the reaction at once (`0x0030fe58`).
 
 #### Spawners {#spawners}
 
@@ -895,16 +912,22 @@ attack-slot list. A pool of 42 formations of 0x280 at `0x006ceaf0`; `Formations_
 - **Joining** (`0x00295f28`) takes a free follower entry and sets the follower's brain `+0x212` = the formation's
   index; leaving (`0x00296028`) sets it to −1.
 - **Planning** (`0x002956d0`), when the leader has just stopped, at the plan time, or once he is 1 m from the planned
-  spot: next plan in 1000 ms at gait 2, else 2000; the plan point is the leader's position, 2 m ahead while he runs;
-  the slots' world points are worked out (`0x00294f38`, `0x00294e98`); each usable slot takes its nearest unassigned
+  spot: next plan in 1000 ms at gait 2, else 2000; the plan point is the leader's position, 2 m ahead while he runs
+  (`0x00223c10`); the slots' world points are worked out (`0x00294f38`: the offset in 1/16 m, turned by the leader's
+  orientation (`0x004dacc0`, so x is to his right and y ahead), added to the plan point and dropped to the ground
+  with a ray from 1.9 m above to 5.9 m below; a slot is usable when the leader sees its point (`0x002221e0`), up to
+  `+0x272` of them); followers whose human is gone leave (`0x00294e98`); each usable slot takes its nearest unassigned
   follower; followers left over queue nearest-first behind the slotted ones (or the leader); up to 3 passes swap
   pairs whose paths cross.
 
-**GoalTrackHuman** (vtable `0x00541d10`, constructor `0x002df250`: `+0x10` target, `+0x14` distance): Start joins the
-target's formation, End leaves it. Process (`0x002df3c0`): no target → done; every 30 updates a 1.5 s head look-at,
-every 40 the actions cleared; the goal point is its slot's world point, or **its own position when it has no slot**
-(so it never walks); beyond `distance`, a move action to it (gait 2, arrival radius `distance`); otherwise a
-turn-to-point when more than 15° off the target. Confirmed (code); this corrects the binding's "walks to the target
+**GoalTrackHuman** (vtable `0x00541d10`, constructor `0x002df250`: `+0x10` target, `+0x14` distance, `+0x18` a retry
+counter): Start (`0x002df288`) joins the target's formation (`0x0021d428`, `0x00295f28`) and turns the fight stance
+on, End leaves it. Process (`0x002df3c0`): no target → done; every 30 updates a 1.5 s head look-at, every 40 the
+actions cleared; with no actions, a failed move (brain `+0x284`) counts up the retry counter; the goal point is its
+slot's world point (`0x00296358`, `0x00296410`), or **its own position when it has no slot** (so it never walks);
+beyond `distance`, once the counter reaches 31 it and `+0x284` are reset, and with the counter at 0 a move action to
+the point (gait 2, arrival radius `distance`, option 1, no delay, facing the target); otherwise a turn-to-point when
+more than 15° off the target. Confirmed (code); this corrects the binding's "walks to the target
 when it has no slot".
 
 ### The first mission's cast {#level99}
@@ -1010,7 +1033,7 @@ Build in this order; each step is testable without the game.
        re-planning when a move ends short, flag message 8 and the gang notice in End.
     4. **The turn actions** and `ActLookAt` ([Turning](#look-at)): heading to brain `+0x110`, done within 15° or
        after 3 s; the fourth argument is a start delay.
-    5. **Lua callbacks** from a goal's End with (id, handle, completed, type) ([Scripted goals](#scripted)), then
+    5. **Lua callbacks** scheduled 33 ms after a goal's End with (handle, completed) ([Scripted goals](#scripted)), then
        `GoalPlayDynAnimation` (slot 668) and `GoalAddressPerson` with its scene goal `0x21`.
     6. **`GoalFight`, `BrFlush`, `BrDead`**: flush ends goals (callbacks fire); dead clears actions only.
     7. **Gangs** ([Gangs](#gangs)): records, enemy and friend masks, `GangBrDead`, `GangSetThreatResponse` on the
@@ -1075,7 +1098,7 @@ read from each goal vtable's `+0x0c` function, confirmed (code) at the construct
 
 ## Coney's implementation {#coney}
 
-Steps 3-7 and step 8's sub-steps 1-4 of [What an implementer needs](#implementer) are in `repo:src/ai/` (the path data
+Steps 3-8 of [What an implementer needs](#implementer) are in `repo:src/ai/` (the path data
 in `repo:src/world/path_map.h`), each original function tagged with `@orig` in the code; tests in `repo:tests/ai/` and
 `repo:tests/world/path_map_test.cpp`.
 
@@ -1111,23 +1134,46 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   (`Brain::moveFailure`). The human's locomotion turns it to a brain's heading at speed 0 (`human::Human::locomote`).
 - **Scripted goals**: `MoveToFlagGoal` (offset target, radius, the face-the-flag turn, a new move each time one ends
   short, message 8 and the gang's notice through `FlagServices`), `TurnAction` (look-at, to a point, to a heading;
-  15°, 3 s) and the bindings `GoalMoveToFlag` and `ActLookAt` (`repo:src/scripting/ai_bindings.h`), which hand
-  their calls to the binding context's AI host; `ScriptedBrains` is that host, naming brains by handle and finding
-  flags and look-at targets.
+  15°, 3 s), `PlayDynAnimationGoal` with `PlayAnimAction` (slot 668), `AddressPersonGoal` with `PlayAnimationGoal`
+  (its scene), `TrackHumanGoal` and `DealerGoal`. A goal's callback is scheduled 33 ms after its End with (handle,
+  completed) (`scheduleGoalCallback`). `Brain::flush` ends the goals (their callbacks fire) and clears the actions;
+  `Brain::setDead` clears the actions only, stops the think and the attack warnings, and hands a player's pad over
+  (`Brain::setPadControl`, `human::Player::setPadControlled`), after which the player's brain runs goals like an AI's.
+- **Bindings**: the AI bindings (`repo:src/scripting/ai_bindings.h`) and the gang bindings
+  (`repo:src/scripting/gang_bindings.h`, `GangCreate` in `repo:src/scripting/script_bindings.cpp`) hand their calls to
+  the binding context's AI host. `ScriptedBrains` is that host and the goals' `ScriptServices`: it names brains by
+  handle (`bind`, with `HuCreate`'s gang), finds flags and look-at targets, and runs the callbacks, message handlers
+  and tactic callbacks in a `ScriptSystem`.
+- **Gangs** (`Gangs`, `Gang`, in `Brains`): 32 records with kind, name, enemy and friend masks, members (10, 16 for
+  the police kinds), suspension, message handlers and a tactic; `Gangs::friends` and `enemies`; the whole-gang
+  switches (`GangBrDead`, `GangBrFlush`, `GangSetThreatResponse` on the current members, `GangSuspend`). An event goes
+  to the human's gang before its brain (`deliverEvent`): the handler for 18, 2 and `0x11` with (member, other, value),
+  any other id used when the call returns true, then the tactic. `Brains::update` sends event 18 once when a member's
+  health runs out, so `level99`'s `P1.BumDied` gets the count still standing (`Gang::standing`).
+- **Formations** (`Formations`, `Formation`, stepped before the gangs): sets of 9 slots in 1/16 m turned by the
+  leader's heading, the plan when he stops, every 1 or 2 s or 1 m from the plan point, the nearest follower per
+  usable slot, the rest queued nearest-first behind, and the crossing-paths swap.
+- **Tactics** (`Tactic`, stepped by the gangs): started on the first update with the AI members flushed, 2 past the
+  time limit, the callback with (gang id, code); a gang with a tactic gets no fight goal from `GoalFight`.
+  `TacticCrowd` seats its members (idle and fightless when cheering, spectating 4-6 s when watching), gestures,
+  cheers in turn and reacts (a clip, then the cheer) on its tick, on `TacticTrigger` and on violence nearby.
 - **Disc check (NTSC-U, counts only):** `coney_tests "[disc][routes]"` decodes all 64 levels' path data; 42,373 of the
   43,234 route nodes lie inside the polygon that owns them. Of 500 seeded pairs of `level99`'s 415 nodes, 101 are a
   straight line, 52 routed (200 route nodes), 34 refused (a polygon off the graph), 151 linked only over flag `0x10`
   edges, which a move does not ask for, and 162 not linked at all.
 
 **Coney choices.** A fighter is class 58 (brain type 2, 1400 health) with the sparring Warriors' runtime brain values (4
-attack slots, melee 3 / 5 m, sight 30 m, field of view 1.92 rad), drawn and animated as the player's character; sides
-stand in for gangs and an "engaging" toggle for the script's `GoalFight` (an idle fighter takes the player on within its
-far melee range). A target is in reach within 0.9 × its first attack's far range; a move runs beyond 4 m, lasts 1000 or
-2000 ms (2000 beyond twice the reach) and stops at 0.9 × the reach. The pacing timer resets only after an attack; with
-nothing else to do a fighter stands still. The target's `+0x1ec` takes the kind's unscaled `CfgAttackDelay`, whether or
-not either human is busy. Command `0x11` chains as square. A reaction goal clears the actions and the move. A block ends
-when its target is not on its feet (Coney has no state word); the counter test leaves out the face-to-face and class
-gates. Each brain's generator is seeded by its slot. A think only counts (the types' think handlers are not traced).
+attack slots, melee 3 / 5 m, sight 30 m, field of view 1.92 rad), drawn and animated as the player's character, in a
+gang of kind 19 made the enemy of the player's (the Warriors' kind), and an "engaging" toggle stands in for the script's
+`GoalFight` (an idle fighter takes the player on within its far melee range). Who fights whom in the characters' step is
+whoever's gangs are not friends (`Humans::setOpposition`); without gangs, the humans added pad-controlled and the others
+fight each other, and only the former fight the sandbox's passive targets. A target is in reach within 0.9 × its first
+attack's far range; a move runs beyond 4 m, lasts 1000 or 2000 ms (2000 beyond twice the reach) and stops at 0.9 × the
+reach. The pacing timer resets only after an attack; with nothing else to do a fighter stands still. The target's
+`+0x1ec` takes the kind's unscaled `CfgAttackDelay`, whether or not either human is busy. Command `0x11` chains as
+square. A reaction goal clears the actions and the move. A block ends when its target is not on its feet (Coney has no
+state word); the counter test leaves out the face-to-face and class gates. Each brain's generator is seeded by its slot.
+A think only counts (the types' think handlers are not traced).
 
 **Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
 nodes lie in their polygons; the clockwise polygons then contain nothing). A polygon's A record takes the next nodes
@@ -1143,15 +1189,30 @@ the slower of the two corners' speeds is used. A move clears `+0x284` at its sta
 (`Human_IsBusy`). The look-at's turn value is kept, not read; no turn is ever refused its abort. GoalMoveToFlag's
 angle is a world direction (the headings' convention).
 
-**Open in Coney.** The dispatcher's answer to an AI's command 3 (76 against a grab, 9 against a tackle, as paired
-moves) is not built, and neither are grabs and tackles between two humans that would call for it; the pattern read
-at Start; the per-kind time `0x00231590` and the spacing bytes; the pick's adjustments; line of sight (the move's
-sight checks); the steering round humans, choke points and the waypoint queues; the dynamic obstacles; the legs of
-edges 8, `0x10`, `0x40` and `0x80` (taken as plain walking, with `+0x284` 2 and 4 never set); the move's object to
-face; the turn clip (398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off, message 8
-(Coney's flags take none) and the gang's notice (a hook until gangs exist); the play mode gives no planner yet, and the
-scripts' humans are not AI humans yet, so `level99`'s `GoalMoveToFlag` and `ActLookAt` reach no brain in play; the rest
-of step 8 (callbacks, gangs, tactics, follow slots); the attack's steer, the post-block pause and the run-stop.
+**Coney choices for the scripted goals, gangs and tactics.** With no scene system a scene ends at once and its callback
+is scheduled with (handle, 1) after 33 ms; with no clip by id from outside the dispatcher (`ScriptServices::playClip`)
+a play-anim action ends at once, so `GoalPlayDynAnimation` still completes. "Not on its feet" stands in for the state
+words (PlayDyn's `0x7bf9e9f7ff0`, the crowd's free test, the standing count's three tests); the headcount's "living" is
+health left. AddressPerson's turn leads the target by one second of its velocity. `BrSuspend` clears the actions,
+then suspends. A full gang drops its first member; a human with no gang is no one's friend. A handler's call counts as
+returning true when it runs (Coney's script system does not hand back the result). Event 18 is sent at the brains'
+next step after the health runs out, with no attacker. A formation slot is usable when the leader's planner finds the
+line to it walkable (always without a planner) and keeps the leader's height. The idle and spectate goals stand
+still (their Process is not traced). Both of a crowd reaction's clip actions are `PlayAnimAction`. The dealer rolls
+dirty at Start; his wary scan looks for members of enemy gangs.
+
+**Open in Coney.** The dispatcher's answer to an AI's command 3 (76 against a grab, 9 against a tackle, as paired moves)
+is not built, and neither are grabs and tackles between two humans that would call for it; the pattern read at Start;
+the per-kind time `0x00231590` and the spacing bytes; the pick's adjustments; line of sight (the move's sight checks);
+the steering round humans, choke points and the waypoint queues; the dynamic obstacles; the legs of edges 8, `0x10`,
+`0x40` and `0x80` (taken as plain walking, with `+0x284` 2 and 4 never set); the move's object to face; the turn clip
+(398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off, message 8 (Coney's flags take none)
+and the gang's notice; the play mode gives no planner yet, and the level scripts run alone before play and their humans
+are not AI humans yet, so `level99`'s goals reach no brain in play; the scene system, the dynamic clip slot and clips by
+id; the head look-ats; a human's own message handlers (`SetMsgHandler`); the gang's alert state, bounds, return to calm,
+neutral rule and spawners; the anim substitutions; the crowd's cheer idles; the formation's ground ray, line of sight
+and assignment mode `+0x275`; the dealer's run to a flag, gestures, buy clip and icons; the other tactics; the attack's
+steer, the post-block pause and the run-stop.
 
 ## Open questions {#open-questions}
 
@@ -1168,11 +1229,13 @@ of step 8 (callbacks, gangs, tactics, follow slots); the attack's steer, the pos
 - The move action's braking distance `+0x48` (how it is worked out) and how a corner's arc is predicted
   (`0x0022aae8`, `0x002fbef0`).
 - GoalMoveToFlag's offset (`0x003376c0`): is the angle a world direction or turned by the flag's heading?
-- The slot transform (`0x00294f38`): is the offset turned by the leader's heading, with y forward?
 - `GoalFollowPlayer`'s Process (vtable `0x00541d70`) and the formation's assignment mode `+0x275`.
 - What reads the turn action's `+0x10` (`ActLookAt`'s turn value) and the play-anim action's flag (loop or hold?).
-- What drives the dealer's run and dirty chances, and goal `0x002b4098` (the dealer's wary goal, the crowd's timed
-  goal).
+- What drives the dealer's run and dirty chances, and what goal `0x002b4098` (type `0x10`, Spectate; the dealer's wary
+  goal, the crowd's timed goal) does beyond waiting.
+- Who sends a gang's event 18 (a member down or dead), and with which attacker: `Gang_OnEvent` reads it, but its
+  sender was not found (`0x0022dd98` and `0x0022e020` are the arrest's).
+- What a scene's end passes to the callback `Goal_PlayAnimation` hands it (`0x00353f40`).
 - The tactic event codes (`TacticGetString`, `0x00315c58`) passed to a tactic's callback.
 - What the player gang's type-3 tactic (vtable `0x005439e0`) is called and does, and what `0x0041c4e0` decides.
 - The perception struct (`+0xf8`).

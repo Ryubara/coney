@@ -385,7 +385,7 @@ clears the player record's control byte (+0x1b); on reads the handlers from the 
 - **Evidence:** confirmed (code) at `0x00292330`; detail: traced
 - **Wrapper** `0x0035eb78` (registered by `RegisterBindings`); **calls** `0x00292330` `Brain_SetDead`
 - **Used by** 120 of 467 script chunks (894 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrEnable {#brenable}
 
@@ -430,7 +430,7 @@ queued actions (`+0x2e` count, ring at `+0x68`).
 - **Evidence:** confirmed (code) at `0x00292530`; detail: traced
 - **Wrapper** `0x0035ede0` (registered by `RegisterBindings`); **calls** `0x00292530` `Brain_FlushAll`
 - **Used by** 124 of 467 script chunks (520 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrFlushActions {#brflushactions}
 
@@ -658,7 +658,7 @@ forward direction is inferred.
 - **Evidence:** confirmed (code) at `0x00292b10`; detail: traced
 - **Wrapper** `0x0035fd90` (registered by `RegisterBindings`); **calls** `0x00292b10` `Follow_SetSlotOffset`
 - **Used by** 2 of 467 script chunks (12 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetFollowSlotSet {#brsetfollowslotset}
 
@@ -678,7 +678,7 @@ Chooses which of the leader's formation layouts the followers take up, and makes
 - **Evidence:** confirmed (code) at `0x00292ac0`; detail: traced
 - **Wrapper** `0x0035fd18` (registered by `RegisterBindings`); **calls** `0x00292ac0` `Follow_SelectSlotSet`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetFOV {#brsetfov}
 
@@ -792,7 +792,7 @@ take one (`+0x272`); the rest queue behind them. Behaviour: [AI](../../research/
 - **Evidence:** confirmed (code) at `0x00292a60`; detail: traced
 - **Wrapper** `0x0035fc80` (registered by `RegisterBindings`); **calls** `0x00292a60` `Follow_SetSlotCount`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetPedType {#brsetpedtype}
 
@@ -881,7 +881,7 @@ other values are inferred.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035ef48` (registered by `RegisterBindings`); **calls** `0x00292708` `Brain_SetThreatResponse`
 - **Used by** 43 of 467 script chunks (116 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrSetThugWantsHat {#brsetthugwantshat}
 
@@ -971,7 +971,7 @@ him afterwards.
 - **Evidence:** confirmed (code) at `0x002923a0`; detail: traced
 - **Wrapper** `0x0035ebd8` (registered by `RegisterBindings`); **calls** `0x002923a0` `Brain_SetSuspended`
 - **Used by** 11 of 467 script chunks (22 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalAddressPerson {#goaladdressperson}
 
@@ -999,7 +999,7 @@ speaker without checking it is a human. Process 0x002cc588. Behaviour: [AI](../.
 - **Evidence:** confirmed (code) at `0x002cc348`; detail: traced
 - **Wrapper** `0x003603a8` (registered by `RegisterBindings`); **calls** `0x002cc348` `Goal_AddressPerson`
 - **Used by** 9 of 467 script chunks (15 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalAreaWalker {#goalareawalker}
 
@@ -1481,7 +1481,7 @@ roll against `dirtyChance` when the goal is made. Levels use it for the flash de
 - **Evidence:** confirmed (code) at `0x002c6c88`; detail: traced
 - **Wrapper** `0x00363018` (registered by `RegisterBindings`); **calls** `0x002c6c88` `Goal_Dealer`
 - **Used by** 21 of 467 script chunks (27 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalDevilRun {#goaldevilrun}
 
@@ -1554,7 +1554,7 @@ Not a goal on the stack despite its name. It does nothing when the human's threa
 - **Evidence:** confirmed (code) at `0x002b2b90`; detail: traced
 - **Wrapper** `0x003610a8` (registered by `RegisterBindings`); **calls** `0x002b2b90` `Brain_StartFight`
 - **Used by** 15 of 467 script chunks (33 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalFollowFormation {#goalfollowformation}
 
@@ -2281,7 +2281,7 @@ into the human (`+0x468`) for the animation system to pick up. Mission 1 uses it
 - **Evidence:** confirmed (code) at `0x002d2df8`; detail: traced
 - **Wrapper** `0x00363530` (registered by `RegisterBindings`); **calls** `0x002d2df8` `Goal_PlayDynamicAnimation`
 - **Used by** 22 of 467 script chunks (49 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalPlayDynIdle {#goalplaydynidle}
 
@@ -2565,7 +2565,7 @@ refreshes its actions every 40 updates). Behaviour: [AI](../../research/ai.md#fo
 - **Evidence:** confirmed (code) at `0x002df1a8`; detail: traced
 - **Wrapper** `0x00360690` (registered by `RegisterBindings`); **calls** `0x002df1a8` `Goal_TrackHuman`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalTravelPath {#goaltravelpath}
 
@@ -3004,7 +3004,7 @@ tactic is kept at gang `+0xdd`.
 - **Evidence:** confirmed (code) at `0x00315d70`; detail: traced
 - **Wrapper** `0x00374a80` (registered by `RegisterBindings`); **calls** `0x00315d70` `Gang_ClearTactic`
 - **Used by** 92 of 467 script chunks (208 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticConfront {#tacticconfront}
 
@@ -3060,7 +3060,7 @@ reactions. The crowd tactic is type 0x1b.
 - **Evidence:** confirmed (code) at `0x00316450`; detail: traced
 - **Wrapper** `0x00375648` (registered by `RegisterBindings`); **calls** `0x00316450` `Tactic_Crowd`
 - **Used by** 31 of 467 script chunks (50 references); boot to menu: no; mission 1: yes; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticDefend {#tacticdefend}
 
@@ -3544,7 +3544,7 @@ Switches a reaction of a gang running a crowd tactic (`TacticCrowd`, type 0x1b);
 - **Evidence:** confirmed (code) at `0x00316fa0`; detail: brief
 - **Wrapper** `0x00377a10` (registered by `RegisterBindings`); **calls** `0x00316fa0` `Tactic_TriggerCrowd`
 - **Used by** 3 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticUseFlag {#tacticuseflag}
 

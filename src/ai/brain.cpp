@@ -7,7 +7,9 @@
 #include <utility>
 
 #include "ai/fight_goal.h"
+#include "ai/gangs.h"
 #include "ai/reaction_goals.h"
+#include "ai/tactic.h"
 #include "human/locomotion.h"
 
 namespace coney::ai {
@@ -35,7 +37,8 @@ Brain::~Brain() = default;
 
 void Brain::update(std::uint64_t nowMs) {
     m_nowMs = nowMs;
-    // The attacks announced since the last update that this brain's range and field of view take in (+0x200).
+    // The attacks announced since the last update that this brain's range and field of view take in: events 0x10,
+    // which count the warnings (+0x200) unless the gang's tactic takes them or the brain is dead.
     m_attackWarnings = 0;
     for (const anim::Vec3 attacker : m_human->takeAttackAnnouncements()) {
         const anim::Vec3 to = anim::subtract(attacker, m_human->position());
@@ -43,11 +46,14 @@ void Brain::update(std::uint64_t nowMs) {
         const float off =
             distance > 1e-4F ? std::fabs(human::wrapAngle(human::headingOf(to) - m_human->heading())) : 0.0F;
         if (distance <= m_sightRange && off <= m_fieldOfView) {
-            ++m_attackWarnings;
+            deliverEvent(*this, BrainEvent{.id = kEventAttackWarning});
         }
     }
-    // The player's brain only keeps books (Brains does them for every player brain at once).
-    if (m_type != BrainType::Player && !m_human->airborne() && !m_human->fighter().health().depleted()) {
+    // The player's brain only keeps books (Brains does them for every player brain at once), unless it is dead; a
+    // suspended brain or gang keeps only the time.
+    const bool runsGoals = m_type != BrainType::Player || m_dead;
+    const bool held = m_suspended || (m_gang != nullptr && m_gang->suspended());
+    if (runsGoals && !held && !m_human->airborne() && !m_human->fighter().health().depleted()) {
         // The reaction goal, else the goal stack; then the actions.
         if (!updateReactionGoal()) {
             processGoals();
@@ -61,7 +67,30 @@ void Brain::update(std::uint64_t nowMs) {
 
 void Brain::think(std::uint64_t nowMs) {
     m_nowMs = nowMs;
-    ++m_thinks;
+    if (!m_dead) {
+        ++m_thinks;
+    }
+}
+
+void Brain::setDead(bool dead) {
+    clearActions();
+    m_dead = dead;
+    // A player's brain gives up the pad while dead.
+    if (m_type == BrainType::Player && m_padControl) {
+        m_padControl(!dead);
+    }
+}
+
+bool Brain::onEvent(const BrainEvent& event) {
+    // A dead brain's handler C is a stub.
+    if (m_dead) {
+        return false;
+    }
+    if (event.id == kEventAttackWarning) {
+        ++m_attackWarnings;
+        return true;
+    }
+    return false;
 }
 
 bool Brain::pushGoal(std::unique_ptr<Goal> goal) {
@@ -228,7 +257,14 @@ bool Brain::fight(Brain& target) {
     }
     addEnemy(target);
     setTarget(&target);
-    // The fight goal, unless one is already on top.
+    // The fight goal: not under a tactic, which fights for the gang, nor for a human down or out of health, nor when
+    // one is on top already.
+    if (m_gang != nullptr && m_gang->tactic() != nullptr) {
+        return true;
+    }
+    if (m_human->fighter().health().depleted() || m_human->state() == human::TargetState::Grounded) {
+        return true;
+    }
     const Goal* top = topGoal();
     if (top == nullptr || top->type() != GoalType::Fight) {
         pushGoal(std::make_unique<FightGoal>());
@@ -236,11 +272,26 @@ bool Brain::fight(Brain& target) {
     return true;
 }
 
-void Brain::addEnemy(Brain& enemy) {
-    if (m_enemies.size() >= kMaxEnemies || std::ranges::find(m_enemies, &enemy) != m_enemies.end()) {
-        return;
+bool Brain::listEnemy(Brain& enemy) {
+    if (&enemy == this || m_enemies.size() >= kMaxEnemies || std::ranges::find(m_enemies, &enemy) != m_enemies.end()) {
+        return false;
     }
     m_enemies.push_back(&enemy);
+    return true;
+}
+
+void Brain::addEnemy(Brain& enemy) {
+    if (!listEnemy(enemy)) {
+        return;
+    }
+    // The enemy takes this human as its enemy too, unless both are players.
+    if (m_type != BrainType::Player || enemy.m_type != BrainType::Player) {
+        enemy.listEnemy(*this);
+    }
+    // A tactic that runs its members hears of the new enemy.
+    if (m_gang != nullptr && m_gang->tactic() != nullptr && !m_gang->tactic()->keepsOwnGoals()) {
+        m_gang->tactic()->event(*m_gang, *this, BrainEvent{.id = kEventEnemyAdded, .other = &enemy});
+    }
 }
 
 void Brain::setTarget(Brain* target) {
@@ -378,6 +429,13 @@ float Brain::distanceTo(const Brain& other) const {
 }
 
 bool Brain::fightable(const Brain& other) { return !other.human().fighter().health().depleted(); }
+
+bool deliverEvent(Brain& brain, const BrainEvent& event) {
+    if (brain.gang() != nullptr && brain.gang()->onEvent(brain, event)) {
+        return true;
+    }
+    return brain.onEvent(event);
+}
 
 void Brain::forget(const Brain& other) {
     if (m_target == &other) {

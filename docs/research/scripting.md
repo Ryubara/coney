@@ -472,13 +472,14 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   which keeps the humans a level script makes, [Level loading](level-loading.md#coneys-implementation), and the level
   bindings of `src/scripting/level_bindings.h`: the flags, `GetPosition`, the saved script numbers,
   `SetStartGameCallback`, `GetRumbleModeData`, `GetRumbleModeGangName` and `CfgSetDatabaseSizes`,
-  [World flags](flags.md#coneys-implementation)),
+  [World flags](flags.md#coneys-implementation), and the AI and gang bindings, which hand their calls to the AI host,
+  [AI](ai.md#coney)),
   **routed** (handed to a
   Coney stand-in that logs it: `PlayMovie`, the three music bindings, `ShowRumbleModeInterface`) or a **stub** (returns
-  its documented default: nothing, a new handle for `ScenePreload`, `GetPTank`, `ObjSpawn`, `CameraCreateLocked` and
-  `GangCreate`, 0 for `GangGetHeadCount` and `InvNumberOf`,
+  its documented default: nothing, a new handle for `ScenePreload`, `GetPTank`, `ObjSpawn` and `CameraCreateLocked`,
+  0 for `InvNumberOf`,
   false for `SceneIsPreloaded` and `UM_IsTypeDirty`). The configuration stubs (the `Cfg*` bindings, `CfgObj`, sound, unlockables
-  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 41 real, 5 routed and 111
+  and commands) keep their arguments (`RecordedCalls`) for the subsystems that will need them. 74 real, 5 routed and 109
   stubs (72 of them recording): every binding the front-end path calls, and what the level scripts need for their
   starts.
 - **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
@@ -503,8 +504,8 @@ Coney's choices, where the page is silent or Coney differs:
 - `tolua`, `M_Vector4` and `M_Quat` are empty tables and `NilHandle` and `NilSoundHandle` are 0, below the first handle
   a stub gives out.
 - `preLoadFile` runs its file at once (Coney's reads are synchronous), then calls its callback by name.
-- `GangCreate` returns a new handle and `GangGetHeadCount` and `InvNumberOf` return 0 until gangs and inventories
-  exist, so the hub's and `level5`'s start functions run to their end.
+- Without an AI host (a level script run on its own) `GangCreate` returns a new handle and the gang counts 0, and
+  `InvNumberOf` returns 0 until inventories exist, so the hub's and `level5`'s start functions run to their end.
 - A runtime error's message names the last call of a missing binding skipped before it, the likely cause
   (`...; last skipped call HuTagPattern`).
 - `GetLUASaveDataFloat` and `SetLUASaveDataFloat` outside slots 1 to 8 read 0 and write nothing (the original does not

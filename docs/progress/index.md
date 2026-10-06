@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 6.4%](https://img.shields.io/badge/reimplemented-6.4%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 7.1%](https://img.shields.io/badge/reimplemented-7.1%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.4% of the game's own code (214,948 of 3,342,936 bytes, 472 functions) |
+| **Reimplemented** | `█▍░░░░░░░░░░░░░░░░░░` | 7.1% of the game's own code (237,764 of 3,342,936 bytes, 564 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,12 +62,12 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 30 | 189,024 |
 | `GUI` | `█▋░░░░░░░░░░░░░░░░░░` | 7.9% | 53 | 481,192 |
-| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 79 | 358,360 |
+| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 81 | 358,360 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
 | `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,800 |
-| `Scripting` | `███▉░░░░░░░░░░░░░░░░` | 19.1% | 53 | 197,192 |
+| `Scripting` | `████▎░░░░░░░░░░░░░░░` | 21.0% | 80 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -76,7 +76,7 @@ at the top of the repository's `README.md`.
 | `Warriors` | `▍░░░░░░░░░░░░░░░░░░░` | 1.8% | 12 | 54,232 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 134 | 1,524,752 |
+| Unattributed | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 197 | 1,524,752 |
 
 ## Research coverage
 
@@ -196,6 +196,19 @@ at the top of the repository's `README.md`.
 | `0x0015fe90` | `InitLevel` | `GameModes` | 2,344 |
 | `0x00160d78` | `MenuLoadLevel_Choose` | `GameModes` | 56 |
 | `0x00161218` | `RunPreloadScripts` | `GameModes` | 152 |
+| `0x00164bb8` | `Gang_SetMessageHandler` | `unattributed` | 88 |
+| `0x00164c20` | `Gang_OnEvent` | `unattributed` | 1,432 |
+| `0x00165640` | `Gang_SetTactic` | `unattributed` | 56 |
+| `0x00166220` | `Gang_StandingCount` | `unattributed` | 232 |
+| `0x00166308` | `Gang_AddMember` | `unattributed` | 464 |
+| `0x00168f58` | `Gang_AreFriends` | `unattributed` | 136 |
+| `0x0016a220` | `Gang_Suspend` | `unattributed` | 64 |
+| `0x0016aa98` | `Gang_SetBrainsDead` | `unattributed` | 160 |
+| `0x0016acf0` | `GangMakeEnemies` | `unattributed` | 144 |
+| `0x0016ad80` | `GangMakeFriends` | `unattributed` | 144 |
+| `0x0016b3d0` | `Gang_SetThreatResponse` | `unattributed` | 144 |
+| `0x0016cdf0` | `Gang_Create` | `unattributed` | 632 |
+| `0x0016d170` | `Gangs_Update` | `unattributed` | 672 |
 | `0x0016e258` | `CharacterData_OnLoaded` | `unattributed` | 304 |
 | `0x0016e8f0` | `ResourceManager_LoadCharacterData` | `Graphics` | 304 |
 | `0x00175080` | `CharacterInstance_GetAnim` | `Graphics` | 160 |
@@ -286,6 +299,8 @@ at the top of the repository's `README.md`.
 | `0x00218008` | `Human_Init` | `unattributed` | not filled in |
 | `0x0021a490` | `Human_PushOutInAir` | `unattributed` | not filled in |
 | `0x0021b290` | `Strike_Contact` | `unattributed` | 3,488 |
+| `0x0021d428` | `Human_GetFormation` | `Human` | 80 |
+| `0x0021d4e8` | `Human_OnEvent` | `Human` | 72 |
 | `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
@@ -392,6 +407,7 @@ at the top of the repository's `README.md`.
 | `0x002856b8` | `Player_UpdateMugging` | `unattributed` | 3,736 |
 | `0x00286cc8` | `Player_Square` | `unattributed` | 2,664 |
 | `0x00287a18` | `Player_Cross` | `unattributed` | 1,480 |
+| `0x0028c1a8` | `Brain_InstallHandlers` | `unattributed` | 440 |
 | `0x0028cfe0` | `Brain_SetTarget` | `unattributed` | 432 |
 | `0x0028d190` | `Brain_PushFightGoal` | `unattributed` | 344 |
 | `0x0028d2e8` | `Brain_Fight` | `unattributed` | 112 |
@@ -411,11 +427,23 @@ at the top of the repository's `README.md`.
 | `0x0028f2b0` | `Brain_UpdateReactionGoal` | `unattributed` | 1,040 |
 | `0x0028f6c0` | `Brain_Think` | `unattributed` | 504 |
 | `0x0028f8b8` | `Brain_Update` | `unattributed` | 112 |
+| `0x0028f928` | `Brain_OnEvent` | `unattributed` | 96 |
 | `0x0028fbb0` | `Brain_UpdateGoals` | `unattributed` | 632 |
 | `0x0028fe28` | `Brain_RunActions` | `unattributed` | 104 |
 | `0x002911f8` | `Brain_GetAttackWeight` | `unattributed` | 32 |
+| `0x00292330` | `Brain_SetDead` | `unattributed` | 112 |
 | `0x00292530` | `Brain_FlushAll` | `unattributed` | 96 |
+| `0x00292ac0` | `Follow_SelectSlotSet` | `unattributed` | 80 |
 | `0x00293b28` | `Brains_Update` | `unattributed` | 320 |
+| `0x00293c68` | `Formations_Update` | `unattributed` | 104 |
+| `0x00294ad8` | `Formation_Init` | `unattributed` | 136 |
+| `0x00294f38` | `Formation_PlaceSlots` | `unattributed` | 792 |
+| `0x002953c8` | `Formation_AssignSlots` | `unattributed` | 368 |
+| `0x002956d0` | `Formation_Plan` | `unattributed` | 1,592 |
+| `0x00295dd8` | `Formation_SetSlotCount` | `unattributed` | 40 |
+| `0x00295ec8` | `Formation_SetSlot` | `unattributed` | 96 |
+| `0x00295f28` | `Formation_Join` | `unattributed` | 256 |
+| `0x00296028` | `Formation_Leave` | `unattributed` | 160 |
 | `0x0029a8c0` | `Route_Request` | `unattributed` | 352 |
 | `0x0029aa88` | `Route_Follow` | `unattributed` | 856 |
 | `0x0029b4b8` | `Route_CanSkip` | `unattributed` | 544 |
@@ -429,15 +457,41 @@ at the top of the repository's `README.md`.
 | `0x002b2b90` | `Brain_StartFight` | `unattributed` | 144 |
 | `0x002b2c20` | `FightGoal_Init` | `unattributed` | 184 |
 | `0x002b3ab0` | `FightGoal_Process` | `unattributed` | 1,512 |
+| `0x002b4098` | `SpectateGoal_Init` | `unattributed` | 192 |
 | `0x002b54d8` | `BlockGoal_Init` | `unattributed` | 72 |
 | `0x002b5520` | `BlockGoal_Start` | `unattributed` | 328 |
 | `0x002b5808` | `BlockGoal_Process` | `unattributed` | 656 |
+| `0x002c6c88` | `Goal_Dealer` | `unattributed` | 264 |
+| `0x002c6d90` | `DealerGoal_Init` | `unattributed` | 232 |
+| `0x002c6e78` | `DealerGoal_Start` | `unattributed` | 288 |
+| `0x002c70a0` | `DealerGoal_End` | `unattributed` | 184 |
+| `0x002c7fd8` | `DealerGoal_Process` | `unattributed` | 2,256 |
+| `0x002caf78` | `IdleGoal_Init` | `unattributed` | 160 |
+| `0x002cc348` | `Goal_AddressPerson` | `unattributed` | 192 |
+| `0x002cc408` | `AddressPersonGoal_Init` | `unattributed` | 128 |
+| `0x002cc488` | `AddressPersonGoal_Start` | `unattributed` | 256 |
+| `0x002cc588` | `AddressPersonGoal_Process` | `unattributed` | 800 |
+| `0x002d2df8` | `Goal_PlayDynamicAnimation` | `unattributed` | 184 |
+| `0x002d2eb0` | `PlayDynAnimationGoal_Init` | `unattributed` | 176 |
+| `0x002d2f60` | `PlayDynAnimationGoal_Start` | `unattributed` | 32 |
+| `0x002d2f88` | `PlayDynAnimationGoal_Suspend` | `unattributed` | 16 |
+| `0x002d2f98` | `PlayDynAnimationGoal_End` | `unattributed` | 160 |
+| `0x002d3060` | `PlayDynAnimationGoal_Process` | `unattributed` | 240 |
 | `0x002da2c0` | `Goal_MoveToFlag` | `unattributed` | 240 |
 | `0x002da3b0` | `MoveToFlagGoal_Init` | `unattributed` | 88 |
 | `0x002da408` | `MoveToFlagGoal_Start` | `unattributed` | 152 |
 | `0x002da4a0` | `MoveToFlagGoal_End` | `unattributed` | 176 |
 | `0x002da550` | `MoveToFlagGoal_Resume` | `unattributed` | 56 |
 | `0x002da588` | `MoveToFlagGoal_Process` | `unattributed` | 648 |
+| `0x002df1a8` | `Goal_TrackHuman` | `unattributed` | 168 |
+| `0x002df250` | `TrackHumanGoal_Init` | `unattributed` | 56 |
+| `0x002df288` | `TrackHumanGoal_Start` | `unattributed` | 152 |
+| `0x002df3c0` | `TrackHumanGoal_Process` | `unattributed` | 768 |
+| `0x002e4980` | `PlayAnimationGoal_Init` | `unattributed` | 120 |
+| `0x002e49f8` | `PlayAnimationGoal_Start` | `unattributed` | 88 |
+| `0x002e4a50` | `PlayAnimationGoal_End` | `unattributed` | 32 |
+| `0x002e4a70` | `PlayAnimationGoal_Process` | `unattributed` | 72 |
+| `0x002fa5a0` | `PlayAnimAction_Init` | `unattributed` | 64 |
 | `0x002fa918` | `AttackAction_Init` | `unattributed` | 144 |
 | `0x002fa9a8` | `AttackAction_Start` | `unattributed` | 904 |
 | `0x002fad30` | `AttackAction_Abort` | `unattributed` | 64 |
@@ -457,6 +511,17 @@ at the top of the repository's `README.md`.
 | `0x002fe0c8` | `Action_LookAt` | `unattributed` | 152 |
 | `0x002fe160` | `LookAtAction_Init` | `unattributed` | 80 |
 | `0x002fe1b0` | `LookAtAction_Update` | `unattributed` | 152 |
+| `0x00306690` | `Tactic_Start` | `unattributed` | 328 |
+| `0x003067d8` | `Tactic_Process` | `unattributed` | 120 |
+| `0x003068f8` | `Tactic_SetCallback` | `unattributed` | 64 |
+| `0x00306938` | `Tactic_FireCallback` | `unattributed` | 184 |
+| `0x0030f4d0` | `TacticCrowd_Init` | `unattributed` | 160 |
+| `0x0030f570` | `TacticCrowd_Seat` | `unattributed` | 320 |
+| `0x0030f6b0` | `TacticCrowd_Start` | `unattributed` | 304 |
+| `0x0030fc48` | `TacticCrowd_React` | `unattributed` | 528 |
+| `0x0030fe78` | `TacticCrowd_Process` | `unattributed` | 648 |
+| `0x00310100` | `TacticCrowd_Event` | `unattributed` | 216 |
+| `0x00316fa0` | `Tactic_TriggerCrowd` | `unattributed` | 176 |
 | `0x00336a00` | `QuaternionSlerp` | `unattributed` | 440 |
 | `0x00336bb8` | `VectorLerp` | `unattributed` | 64 |
 | `0x00336bf8` | `QuaternionNlerp` | `unattributed` | 160 |
@@ -498,7 +563,21 @@ at the top of the repository's `README.md`.
 | `0x00357a68` | `preLoadFile` | `Scripting` | 312 |
 | `0x00358428` | `HuCreate` | `Scripting` | 480 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
+| `0x0035eb78` | `BrDead` | `Scripting` | 96 |
+| `0x0035ebd8` | `BrSuspend` | `Scripting` | 96 |
+| `0x0035ede0` | `BrFlush` | `Scripting` | 56 |
+| `0x0035ef48` | `BrSetThreatResponse` | `Scripting` | 120 |
+| `0x0035f1f8` | `GangSetThreatResponse` | `Scripting` | 128 |
+| `0x0035f6f0` | `GangBrFlush` | `Scripting` | 56 |
+| `0x0035fc80` | `BrSetNumFollowSlots` | `Scripting` | 152 |
+| `0x0035fd18` | `BrSetFollowSlotSet` | `Scripting` | 120 |
+| `0x0035fd90` | `BrSetFollowSlot` | `Scripting` | 296 |
 | `0x0035ff18` | `GoalMoveToFlag` | `Scripting` | 376 |
+| `0x003603a8` | `GoalAddressPerson` | `Scripting` | 264 |
+| `0x00360690` | `GoalTrackHuman` | `Scripting` | 160 |
+| `0x003610a8` | `GoalFight` | `Scripting` | 168 |
+| `0x00363018` | `GoalDealer` | `Scripting` | 272 |
+| `0x00363530` | `GoalPlayDynAnimation` | `Scripting` | 160 |
 | `0x003647d8` | `ActLookAt` | `Scripting` | 200 |
 | `0x0036b220` | `CfgLevelName` | `Scripting` | not filled in |
 | `0x0036b4f0` | `CfgRumbleGame` | `Scripting` | 384 |
@@ -516,6 +595,19 @@ at the top of the repository's `README.md`.
 | `0x0036e050` | `GetGameTime` | `Scripting` | 96 |
 | `0x0036eef8` | `ShowProfileManager_Binding` | `Scripting` | not filled in |
 | `0x0036f218` | `HUDLaunchMissionComplete` | `Scripting` | 56 |
+| `0x00373148` | `GangCreate` | `Scripting` | 184 |
+| `0x00373200` | `GangDelete` | `Scripting` | 56 |
+| `0x00373238` | `GangSuspend` | `Scripting` | 104 |
+| `0x00373370` | `GangSetMsgHandler` | `Scripting` | 144 |
+| `0x00373528` | `GangAddMember` | `Scripting` | 168 |
+| `0x003735d0` | `GangGetHeadCount` | `Scripting` | 120 |
+| `0x00373648` | `GangGetStandingCount` | `Scripting` | 88 |
+| `0x00373a20` | `GangBrDead` | `Scripting` | 104 |
+| `0x00373b78` | `GangMakeEnemies` | `Scripting` | 120 |
+| `0x00373bf0` | `GangMakeFriends` | `Scripting` | 120 |
+| `0x00374a80` | `TacticClear` | `Scripting` | 56 |
+| `0x00375648` | `TacticCrowd` | `Scripting` | 128 |
+| `0x00377a10` | `TacticTrigger` | `Scripting` | 160 |
 | `0x00379fd0` | `AddFlag` | `Scripting` | 384 |
 | `0x0037a288` | `GetFlagPos` | `Scripting` | 112 |
 | `0x0037a770` | `FindFlag` | `Scripting` | 112 |

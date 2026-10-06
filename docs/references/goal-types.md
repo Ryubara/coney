@@ -4,7 +4,8 @@
 
 Every goal class a brain can have on its goal stack, by the type id the class reports, with the script
 bindings that push it ([AI: goals](../research/ai.md#goals), [AI bindings](bindings/ai.md)). A goal binding's
-callback is called with the goal type as its fourth value ([scripted goals](../research/ai.md#scripted)).
+callback is called 33 ms after the goal ends with the human's handle and whether the goal completed
+([scripted goals](../research/ai.md#scripted)).
 
 !!! info "What is complete"
 

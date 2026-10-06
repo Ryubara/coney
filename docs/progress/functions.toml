@@ -556,6 +556,84 @@ subsystem = "GameModes"
 size = 152
 
 [[function]]
+address = 0x00164bb8
+name = "Gang_SetMessageHandler"
+subsystem = "unattributed"
+size = 88
+
+[[function]]
+address = 0x00164c20
+name = "Gang_OnEvent"
+subsystem = "unattributed"
+size = 1432
+
+[[function]]
+address = 0x00165640
+name = "Gang_SetTactic"
+subsystem = "unattributed"
+size = 56
+
+[[function]]
+address = 0x00166220
+name = "Gang_StandingCount"
+subsystem = "unattributed"
+size = 232
+
+[[function]]
+address = 0x00166308
+name = "Gang_AddMember"
+subsystem = "unattributed"
+size = 464
+
+[[function]]
+address = 0x00168f58
+name = "Gang_AreFriends"
+subsystem = "unattributed"
+size = 136
+
+[[function]]
+address = 0x0016a220
+name = "Gang_Suspend"
+subsystem = "unattributed"
+size = 64
+
+[[function]]
+address = 0x0016aa98
+name = "Gang_SetBrainsDead"
+subsystem = "unattributed"
+size = 160
+
+[[function]]
+address = 0x0016acf0
+name = "GangMakeEnemies"
+subsystem = "unattributed"
+size = 144
+
+[[function]]
+address = 0x0016ad80
+name = "GangMakeFriends"
+subsystem = "unattributed"
+size = 144
+
+[[function]]
+address = 0x0016b3d0
+name = "Gang_SetThreatResponse"
+subsystem = "unattributed"
+size = 144
+
+[[function]]
+address = 0x0016cdf0
+name = "Gang_Create"
+subsystem = "unattributed"
+size = 632
+
+[[function]]
+address = 0x0016d170
+name = "Gangs_Update"
+subsystem = "unattributed"
+size = 672
+
+[[function]]
 address = 0x0016e258
 name = "CharacterData_OnLoaded"
 subsystem = "unattributed"
@@ -1085,6 +1163,18 @@ address = 0x0021b290
 name = "Strike_Contact"
 subsystem = "unattributed"
 size = 3488
+
+[[function]]
+address = 0x0021d428
+name = "Human_GetFormation"
+subsystem = "Human"
+size = 80
+
+[[function]]
+address = 0x0021d4e8
+name = "Human_OnEvent"
+subsystem = "Human"
+size = 72
 
 [[function]]
 address = 0x002213d8
@@ -1650,6 +1740,12 @@ subsystem = "unattributed"
 size = 1480
 
 [[function]]
+address = 0x0028c1a8
+name = "Brain_InstallHandlers"
+subsystem = "unattributed"
+size = 440
+
+[[function]]
 address = 0x0028cfe0
 name = "Brain_SetTarget"
 subsystem = "unattributed"
@@ -1764,6 +1860,12 @@ subsystem = "unattributed"
 size = 112
 
 [[function]]
+address = 0x0028f928
+name = "Brain_OnEvent"
+subsystem = "unattributed"
+size = 96
+
+[[function]]
 address = 0x0028fbb0
 name = "Brain_UpdateGoals"
 subsystem = "unattributed"
@@ -1782,16 +1884,82 @@ subsystem = "unattributed"
 size = 32
 
 [[function]]
+address = 0x00292330
+name = "Brain_SetDead"
+subsystem = "unattributed"
+size = 112
+
+[[function]]
 address = 0x00292530
 name = "Brain_FlushAll"
 subsystem = "unattributed"
 size = 96
 
 [[function]]
+address = 0x00292ac0
+name = "Follow_SelectSlotSet"
+subsystem = "unattributed"
+size = 80
+
+[[function]]
 address = 0x00293b28
 name = "Brains_Update"
 subsystem = "unattributed"
 size = 320
+
+[[function]]
+address = 0x00293c68
+name = "Formations_Update"
+subsystem = "unattributed"
+size = 104
+
+[[function]]
+address = 0x00294ad8
+name = "Formation_Init"
+subsystem = "unattributed"
+size = 136
+
+[[function]]
+address = 0x00294f38
+name = "Formation_PlaceSlots"
+subsystem = "unattributed"
+size = 792
+
+[[function]]
+address = 0x002953c8
+name = "Formation_AssignSlots"
+subsystem = "unattributed"
+size = 368
+
+[[function]]
+address = 0x002956d0
+name = "Formation_Plan"
+subsystem = "unattributed"
+size = 1592
+
+[[function]]
+address = 0x00295dd8
+name = "Formation_SetSlotCount"
+subsystem = "unattributed"
+size = 40
+
+[[function]]
+address = 0x00295ec8
+name = "Formation_SetSlot"
+subsystem = "unattributed"
+size = 96
+
+[[function]]
+address = 0x00295f28
+name = "Formation_Join"
+subsystem = "unattributed"
+size = 256
+
+[[function]]
+address = 0x00296028
+name = "Formation_Leave"
+subsystem = "unattributed"
+size = 160
 
 [[function]]
 address = 0x0029a8c0
@@ -1872,6 +2040,12 @@ subsystem = "unattributed"
 size = 1512
 
 [[function]]
+address = 0x002b4098
+name = "SpectateGoal_Init"
+subsystem = "unattributed"
+size = 192
+
+[[function]]
 address = 0x002b54d8
 name = "BlockGoal_Init"
 subsystem = "unattributed"
@@ -1888,6 +2062,102 @@ address = 0x002b5808
 name = "BlockGoal_Process"
 subsystem = "unattributed"
 size = 656
+
+[[function]]
+address = 0x002c6c88
+name = "Goal_Dealer"
+subsystem = "unattributed"
+size = 264
+
+[[function]]
+address = 0x002c6d90
+name = "DealerGoal_Init"
+subsystem = "unattributed"
+size = 232
+
+[[function]]
+address = 0x002c6e78
+name = "DealerGoal_Start"
+subsystem = "unattributed"
+size = 288
+
+[[function]]
+address = 0x002c70a0
+name = "DealerGoal_End"
+subsystem = "unattributed"
+size = 184
+
+[[function]]
+address = 0x002c7fd8
+name = "DealerGoal_Process"
+subsystem = "unattributed"
+size = 2256
+
+[[function]]
+address = 0x002caf78
+name = "IdleGoal_Init"
+subsystem = "unattributed"
+size = 160
+
+[[function]]
+address = 0x002cc348
+name = "Goal_AddressPerson"
+subsystem = "unattributed"
+size = 192
+
+[[function]]
+address = 0x002cc408
+name = "AddressPersonGoal_Init"
+subsystem = "unattributed"
+size = 128
+
+[[function]]
+address = 0x002cc488
+name = "AddressPersonGoal_Start"
+subsystem = "unattributed"
+size = 256
+
+[[function]]
+address = 0x002cc588
+name = "AddressPersonGoal_Process"
+subsystem = "unattributed"
+size = 800
+
+[[function]]
+address = 0x002d2df8
+name = "Goal_PlayDynamicAnimation"
+subsystem = "unattributed"
+size = 184
+
+[[function]]
+address = 0x002d2eb0
+name = "PlayDynAnimationGoal_Init"
+subsystem = "unattributed"
+size = 176
+
+[[function]]
+address = 0x002d2f60
+name = "PlayDynAnimationGoal_Start"
+subsystem = "unattributed"
+size = 32
+
+[[function]]
+address = 0x002d2f88
+name = "PlayDynAnimationGoal_Suspend"
+subsystem = "unattributed"
+size = 16
+
+[[function]]
+address = 0x002d2f98
+name = "PlayDynAnimationGoal_End"
+subsystem = "unattributed"
+size = 160
+
+[[function]]
+address = 0x002d3060
+name = "PlayDynAnimationGoal_Process"
+subsystem = "unattributed"
+size = 240
 
 [[function]]
 address = 0x002da2c0
@@ -1924,6 +2194,60 @@ address = 0x002da588
 name = "MoveToFlagGoal_Process"
 subsystem = "unattributed"
 size = 648
+
+[[function]]
+address = 0x002df1a8
+name = "Goal_TrackHuman"
+subsystem = "unattributed"
+size = 168
+
+[[function]]
+address = 0x002df250
+name = "TrackHumanGoal_Init"
+subsystem = "unattributed"
+size = 56
+
+[[function]]
+address = 0x002df288
+name = "TrackHumanGoal_Start"
+subsystem = "unattributed"
+size = 152
+
+[[function]]
+address = 0x002df3c0
+name = "TrackHumanGoal_Process"
+subsystem = "unattributed"
+size = 768
+
+[[function]]
+address = 0x002e4980
+name = "PlayAnimationGoal_Init"
+subsystem = "unattributed"
+size = 120
+
+[[function]]
+address = 0x002e49f8
+name = "PlayAnimationGoal_Start"
+subsystem = "unattributed"
+size = 88
+
+[[function]]
+address = 0x002e4a50
+name = "PlayAnimationGoal_End"
+subsystem = "unattributed"
+size = 32
+
+[[function]]
+address = 0x002e4a70
+name = "PlayAnimationGoal_Process"
+subsystem = "unattributed"
+size = 72
+
+[[function]]
+address = 0x002fa5a0
+name = "PlayAnimAction_Init"
+subsystem = "unattributed"
+size = 64
 
 [[function]]
 address = 0x002fa918
@@ -2038,6 +2362,72 @@ address = 0x002fe1b0
 name = "LookAtAction_Update"
 subsystem = "unattributed"
 size = 152
+
+[[function]]
+address = 0x00306690
+name = "Tactic_Start"
+subsystem = "unattributed"
+size = 328
+
+[[function]]
+address = 0x003067d8
+name = "Tactic_Process"
+subsystem = "unattributed"
+size = 120
+
+[[function]]
+address = 0x003068f8
+name = "Tactic_SetCallback"
+subsystem = "unattributed"
+size = 64
+
+[[function]]
+address = 0x00306938
+name = "Tactic_FireCallback"
+subsystem = "unattributed"
+size = 184
+
+[[function]]
+address = 0x0030f4d0
+name = "TacticCrowd_Init"
+subsystem = "unattributed"
+size = 160
+
+[[function]]
+address = 0x0030f570
+name = "TacticCrowd_Seat"
+subsystem = "unattributed"
+size = 320
+
+[[function]]
+address = 0x0030f6b0
+name = "TacticCrowd_Start"
+subsystem = "unattributed"
+size = 304
+
+[[function]]
+address = 0x0030fc48
+name = "TacticCrowd_React"
+subsystem = "unattributed"
+size = 528
+
+[[function]]
+address = 0x0030fe78
+name = "TacticCrowd_Process"
+subsystem = "unattributed"
+size = 648
+
+[[function]]
+address = 0x00310100
+name = "TacticCrowd_Event"
+subsystem = "unattributed"
+size = 216
+
+[[function]]
+address = 0x00316fa0
+name = "Tactic_TriggerCrowd"
+subsystem = "unattributed"
+size = 176
 
 [[function]]
 address = 0x00336a00
@@ -2269,10 +2659,94 @@ name = "CfgHUDMessage"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x0035eb78
+name = "BrDead"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x0035ebd8
+name = "BrSuspend"
+subsystem = "Scripting"
+size = 96
+
+[[function]]
+address = 0x0035ede0
+name = "BrFlush"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x0035ef48
+name = "BrSetThreatResponse"
+subsystem = "Scripting"
+size = 120
+
+[[function]]
+address = 0x0035f1f8
+name = "GangSetThreatResponse"
+subsystem = "Scripting"
+size = 128
+
+[[function]]
+address = 0x0035f6f0
+name = "GangBrFlush"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x0035fc80
+name = "BrSetNumFollowSlots"
+subsystem = "Scripting"
+size = 152
+
+[[function]]
+address = 0x0035fd18
+name = "BrSetFollowSlotSet"
+subsystem = "Scripting"
+size = 120
+
+[[function]]
+address = 0x0035fd90
+name = "BrSetFollowSlot"
+subsystem = "Scripting"
+size = 296
+
+[[function]]
 address = 0x0035ff18
 name = "GoalMoveToFlag"
 subsystem = "Scripting"
 size = 376
+
+[[function]]
+address = 0x003603a8
+name = "GoalAddressPerson"
+subsystem = "Scripting"
+size = 264
+
+[[function]]
+address = 0x00360690
+name = "GoalTrackHuman"
+subsystem = "Scripting"
+size = 160
+
+[[function]]
+address = 0x003610a8
+name = "GoalFight"
+subsystem = "Scripting"
+size = 168
+
+[[function]]
+address = 0x00363018
+name = "GoalDealer"
+subsystem = "Scripting"
+size = 272
+
+[[function]]
+address = 0x00363530
+name = "GoalPlayDynAnimation"
+subsystem = "Scripting"
+size = 160
 
 [[function]]
 address = 0x003647d8
@@ -2371,6 +2845,84 @@ address = 0x0036f218
 name = "HUDLaunchMissionComplete"
 subsystem = "Scripting"
 size = 56
+
+[[function]]
+address = 0x00373148
+name = "GangCreate"
+subsystem = "Scripting"
+size = 184
+
+[[function]]
+address = 0x00373200
+name = "GangDelete"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00373238
+name = "GangSuspend"
+subsystem = "Scripting"
+size = 104
+
+[[function]]
+address = 0x00373370
+name = "GangSetMsgHandler"
+subsystem = "Scripting"
+size = 144
+
+[[function]]
+address = 0x00373528
+name = "GangAddMember"
+subsystem = "Scripting"
+size = 168
+
+[[function]]
+address = 0x003735d0
+name = "GangGetHeadCount"
+subsystem = "Scripting"
+size = 120
+
+[[function]]
+address = 0x00373648
+name = "GangGetStandingCount"
+subsystem = "Scripting"
+size = 88
+
+[[function]]
+address = 0x00373a20
+name = "GangBrDead"
+subsystem = "Scripting"
+size = 104
+
+[[function]]
+address = 0x00373b78
+name = "GangMakeEnemies"
+subsystem = "Scripting"
+size = 120
+
+[[function]]
+address = 0x00373bf0
+name = "GangMakeFriends"
+subsystem = "Scripting"
+size = 120
+
+[[function]]
+address = 0x00374a80
+name = "TacticClear"
+subsystem = "Scripting"
+size = 56
+
+[[function]]
+address = 0x00375648
+name = "TacticCrowd"
+subsystem = "Scripting"
+size = 128
+
+[[function]]
+address = 0x00377a10
+name = "TacticTrigger"
+subsystem = "Scripting"
+size = 160
 
 [[function]]
 address = 0x00379fd0

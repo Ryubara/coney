@@ -79,6 +79,7 @@
     the player record's control byte (+0x1b); on reads the handlers from the per-type tables at
     0x00715530/0x00715568/0x007155a0 (seven types) and, for type 0, sets control again.
   usage: {chunks: 120, calls: 894, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: BrSuspend
   wrapper: 0x0035ebd8
@@ -96,6 +97,7 @@
   notes: >-
     Unlike `BrDead` it does not swap the brain's handlers or touch the pad.
   usage: {chunks: 11, calls: 22, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: BrSetType
   wrapper: 0x0035ec38
@@ -173,6 +175,7 @@
     Goals: 0x0028d910 pops until the stack index (`+0x2c`) is -1. Actions: 0x0028db20 removes the up to eight queued
     actions (`+0x2e` count, ring at `+0x68`).
   usage: {chunks: 124, calls: 520, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: BrFlushActions
   wrapper: 0x0035ee18
@@ -254,6 +257,7 @@
     Storage confirmed (code) at 0x00292708; the 0 case is confirmed by `GoalFight` (0x0028d2e8). Meanings of the other
     values are inferred.
   usage: {chunks: 43, calls: 116, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: BrCanUseWorldFlags
   wrapper: 0x0035efc0
@@ -465,6 +469,7 @@
     Confirmed (code) at 0x00295dd8: `count` is the number of slots (`+0x271`), `count2` how many followers may
     take one (`+0x272`); the rest queue behind them. Behaviour: [AI](../../research/ai.md#formations).
   usage: {chunks: 3, calls: 4, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: BrSetFollowSlotSet
   wrapper: 0x0035fd18
@@ -478,6 +483,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: BrSetFollowSlot
   wrapper: 0x0035fd90
@@ -497,6 +503,7 @@
     Confirmed (code) at 0x00292b10 and 0x00295ec8 (nine slots of 12 bytes per set). Whether +y is the leader's forward
     direction is inferred.
   usage: {chunks: 2, calls: 12, boot: true, mission1: true, result_used: false}
+  coney: implemented
 
 - name: BrSetReactToViolence
   wrapper: 0x0035feb8
@@ -620,6 +627,7 @@
     Constructor 0x002cc408 interns the callback name through the script system (slot +0xcc). It resolves the speaker
     without checking it is a human. Process 0x002cc588. Behaviour: [AI](../../research/ai.md#address-person).
   usage: {chunks: 9, calls: 15, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GoalGetItem
   wrapper: 0x003604b0
@@ -686,6 +694,7 @@
     Constructor 0x002df250, start 0x002df288 (joins the formation), update 0x002df3c0 (walks at gait 2; also refreshes
     its actions every 40 updates). Behaviour: [AI](../../research/ai.md#formations).
   usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GoalFollowObject
   wrapper: 0x00360730
@@ -856,6 +865,7 @@
   notes: >-
     0x002b2b90 calls 0x0028d2e8, which returns at once when brain `+0x21c` is 0.
   usage: {chunks: 15, calls: 33, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GoalMelee
   wrapper: 0x00361150
@@ -1341,6 +1351,7 @@
     Wrapper 0x002c6c88 remaps the type by class; constructor 0x002c6d90 rolls `random(100) < dirtyChance` into
     `+0x41`. The other arguments' roles are inferred from the scripts' field names.
   usage: {chunks: 21, calls: 27, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GoalShopkeeper
   wrapper: 0x00363128
@@ -1430,6 +1441,7 @@
   notes: >-
     Constructor 0x002d2eb0. The flag's effect is inferred.
   usage: {chunks: 22, calls: 49, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: GoalPlayDynIdle
   wrapper: 0x003635d0
@@ -1820,6 +1832,7 @@
     0x001655e0 shuts the tactic down, returns it to the pool and clears gang `+0x40`; a status byte from the tactic is
     kept at gang `+0xdd`.
   usage: {chunks: 92, calls: 208, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: TacticHoldTheLine
   wrapper: 0x00374ab8
@@ -2018,6 +2031,7 @@
   notes: >-
     Constructor 0x0030f4d0 (vtable 0x005437a0, a timer 2 s ahead).
   usage: {chunks: 31, calls: 50, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: TacticVandalize
   wrapper: 0x003756c8
@@ -2488,3 +2502,4 @@
   notes: >-
     Confirmed (code) at 0x00316fa0. What the two switches do is inferred (cheering, joining in).
   usage: {chunks: 3, calls: 15, boot: false, mission1: false, result_used: false}
+  coney: implemented

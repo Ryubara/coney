@@ -5,7 +5,8 @@ title: "AI goal types"
 about: |
   Every goal class a brain can have on its goal stack, by the type id the class reports, with the script
   bindings that push it ([AI: goals](../research/ai.md#goals), [AI bindings](bindings/ai.md)). A goal binding's
-  callback is called with the goal type as its fourth value ([scripted goals](../research/ai.md#scripted)).
+  callback is called 33 ms after the goal ends with the human's handle and whether the goal completed
+  ([scripted goals](../research/ai.md#scripted)).
 complete: |
   All 149 goal classes are listed, read from their vtables in the executable: type ids 0-158, with 10, 30,
   76, 77, 81, 97, 98, 106, 139 and 151 unused. 67 have a binding that makes them (found by following each binding's

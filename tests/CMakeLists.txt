@@ -169,8 +169,12 @@ target_sources(coney_tests PRIVATE
     ai/brain_test.cpp
     ai/disc_ai_config_test.cpp
     ai/disc_route_test.cpp
+    ai/formations_test.cpp
+    ai/gangs_test.cpp
     ai/move_action_test.cpp
-    ai/route_planner_test.cpp)
+    ai/route_planner_test.cpp
+    ai/scripted_goals_test.cpp
+    ai/tactics_test.cpp)
 # A failed runtime check fails the run on stderr instead of opening a dialog (platform/error_dialogs.h).
 target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
 coney_target_defaults(coney_tests)

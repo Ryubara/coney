@@ -29,12 +29,18 @@ struct AiHuman {
     human::TargetSnapshot current;  ///< The last step.
 };
 
+/// The kind of the sandbox fighters' gang: the level scripts' combat gangs' kind (`GangCreate(19, ...)` in
+/// `level99_combat.lua`, docs/research/ai.md#level99).
+inline constexpr int kFighterGangKind = 19;
+
 /// The AI humans of a scene.
 class AiHumans {
   public:
     /// AI humans in `player`'s characters' step (both must outlive this), playing `character`'s clips (**Coney
     /// choice**: Coney loads one character, so a fighter looks and moves as the player's character does), fighting by
-    /// `config`. Installs the brains in the player's step and gives the player a type-0 brain.
+    /// `config`. Installs the brains in the player's step and gives the player a type-0 brain in a gang of the
+    /// Warriors' kind; the fighters join a gang of kind kFighterGangKind, its enemy. Who fights whom in the step
+    /// follows the gangs: humans whose gangs are not friends (ai::Gangs::friends()).
     AiHumans(human::Player& player, const human::PlayerCharacter& character, AiConfig config);
     AiHumans(const AiHumans&) = delete;
     AiHumans& operator=(const AiHumans&) = delete;
@@ -71,6 +77,9 @@ class AiHumans {
     /// `human`'s brain (null for a human that is not one of these, or the player's).
     [[nodiscard]] Brain* brainOf(const human::Human& human) { return m_brains.find(human); }
     [[nodiscard]] const AiConfig& config() const { return m_config; }
+    /// The player's gang and the fighters' (ids in brains().gangs()).
+    [[nodiscard]] int playerGang() const { return m_playerGang; }
+    [[nodiscard]] int fighterGang() const { return m_fighterGang; }
 
   private:
     // The brains' place in the step: the engaging stand-in, the brains, then the player's nearest enemy.
@@ -85,6 +94,8 @@ class AiHumans {
     Brain* m_playerBrain = nullptr;
     std::vector<AiHuman> m_humans;
     bool m_engaging = true;
+    int m_playerGang = -1;
+    int m_fighterGang = -1;
 };
 
 } // namespace coney::ai

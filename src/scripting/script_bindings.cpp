@@ -14,6 +14,7 @@
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
 #include "scripting/config_strings.h"
+#include "scripting/gang_bindings.h"
 #include "scripting/level_bindings.h"
 #include "scripting/rumble_bindings.h"
 
@@ -277,9 +278,10 @@ int currentLevelNumber(const GameState& state) {
 // `NilHandle` when every slot is taken. Coney has no characters as game objects yet, so the human is kept in the
 // context's CreatedHumans, where the play mode takes player 1 from. Coney's choices: the position is not snapped to
 // the ground here (no collision is loaded while the script runs) and so not written back into the table; the play mode
-// snaps the player the same way when it places him (docs/research/characters.md#creation). The gang, the unused string
-// and the flag are not kept. The model the type is drawn as is resolved here from the recorded `CfgChar` calls
-// (characters::modelNameFor(), docs/research/characters.md#type-to-model); the play mode loads it.
+// snaps the player the same way when it places him (docs/research/characters.md#creation). The gang is kept for
+// the AI (nil is none); the unused string and the flag are not. The model the type is drawn as is resolved here from
+// the recorded `CfgChar` calls (characters::modelNameFor(), docs/research/characters.md#type-to-model); the play mode
+// loads it.
 // @orig 0x00358428 HuCreate (unknown)
 // @orig 0x00233d60 Human_Create (unknown)
 NativeFunction makeHuCreate(const Factory& factory) {
@@ -290,6 +292,7 @@ NativeFunction makeHuCreate(const Factory& factory) {
         human.position = binding::position(args, 2);
         human.headingDegrees = static_cast<float>(binding::number(args, 3));
         human.playerIndex = static_cast<int>(std::trunc(binding::number(args, 5)));
+        human.gang = args.size() > 6 && !args[6].isNil() ? static_cast<int>(std::trunc(binding::number(args, 6))) : -1;
         human.model =
             characters::modelNameFor(human.type, human.playerIndex, currentLevelNumber(*context->state),
                                      [context](int type) { return recordedCfgCharModel(context->recorded, type); })
@@ -301,6 +304,22 @@ NativeFunction makeHuCreate(const Factory& factory) {
         }
         handles->next += 1;
         return binding::number(human.handle);
+    };
+}
+
+// `GangCreate(kind, name)`: the new gang's id from the AI host, or -1 when it has no free slot or the name is taken.
+// Without a host (a level script run on its own) the stubs' next handle, as before gangs were real, so the scripts'
+// later handles stay the same.
+// @orig 0x00373148 GangCreate (unknown)
+NativeFunction makeGangCreate(const Factory& factory) {
+    return [host = factory.context->ai, handles = factory.handles](std::span<const Value> args) {
+        if (host != nullptr) {
+            return binding::number(
+                host->gangCreate(static_cast<int>(std::trunc(binding::number(args, 0))), binding::string(args, 1)));
+        }
+        const double handle = handles->next;
+        handles->next += 1;
+        return binding::number(handle);
     };
 }
 
@@ -355,6 +374,7 @@ struct Maker {
 constexpr std::array kMakers{
     Maker{"CfgLevelName", makeCfgLevelName},
     Maker{"FlushScheduledFuncs", makeFlushScheduledFuncs},
+    Maker{"GangCreate", makeGangCreate},
     Maker{"GetCheckPoint", makeGetCheckPoint},
     Maker{"GetCurrentLevelIndex", makeGetCurrentLevelIndex},
     Maker{"GetDifficulty", makeGetDifficulty},
@@ -455,6 +475,34 @@ constexpr std::array kBindings{
     // The level scripts' goals and actions for a human's brain (ai_bindings.h).
     real("GoalMoveToFlag"),
     real("ActLookAt"),
+    real("GoalFight"),
+    real("BrFlush"),
+    real("BrDead"),
+    real("BrSuspend"),
+    real("BrSetThreatResponse"),
+    real("GoalPlayDynAnimation"),
+    real("GoalAddressPerson"),
+    real("GoalTrackHuman"),
+    real("GoalDealer"),
+    real("BrSetNumFollowSlots"),
+    real("BrSetFollowSlot"),
+    real("BrSetFollowSlotSet"),
+    real("TacticCrowd"),
+    real("TacticTrigger"),
+    real("TacticClear"),
+    // The gangs (gang_bindings.h, and GangCreate above).
+    real("GangCreate"),
+    real("GangDelete"),
+    real("GangAddMember"),
+    real("GangBrDead"),
+    real("GangBrFlush"),
+    real("GangSetThreatResponse"),
+    real("GangMakeEnemies"),
+    real("GangMakeFriends"),
+    real("GangSetMsgHandler"),
+    real("GangSuspend"),
+    real("GangGetHeadCount"),
+    real("GangGetStandingCount"),
     // The Rumble menu's lists, which its chunks build (rumble_bindings.h).
     real("CfgRumbleGame"),
     real("CfgRumbleGang"),
@@ -585,8 +633,6 @@ constexpr std::array kBindings{
     stub("CameraCreateLocked", StubResult::Handle),
     stub("CameraMakeActive"),
     stub("CameraReset"),
-    stub("GangCreate", StubResult::Handle),
-    stub("GangGetHeadCount", StubResult::Zero),
     stub("GetPTank", StubResult::Handle),
     stub("ObjSpawn", StubResult::Handle),
     stub("ReleasePTank"),
@@ -688,15 +734,17 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
             vm.registerFunction(info.name, maker->make(factory));
             continue;
         }
-        // Every real binding has a maker or is a string, level, Rumble or AI binding (CONEY_ASSERT).
+        // Every real binding has a maker or is a string, level, Rumble, AI or gang binding (CONEY_ASSERT).
         CONEY_ASSERT(std::ranges::find(kStringBindings, info.name) != kStringBindings.end() ||
                      std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end() ||
                      std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end() ||
-                     std::ranges::find(kAiBindings, info.name) != kAiBindings.end());
+                     std::ranges::find(kAiBindings, info.name) != kAiBindings.end() ||
+                     std::ranges::find(kGangBindings, info.name) != kGangBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
     addAiBindings(vm, context);
+    addGangBindings(vm, context);
     // The level bindings make world objects, so they take their handles from the same counter as the stubs.
     addLevelBindings(vm, context, [handles = factory.handles] {
         const double handle = handles->next;

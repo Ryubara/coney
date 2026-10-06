@@ -151,6 +151,11 @@ class Player {
     /// The enemy query the camera's sprint zoom asks the player's brain (`0x0021d408`): the distance to his nearest
     /// enemy, or none when he has none. Coney has no brains yet, so whatever owns the enemies sets it; none until then.
     void setNearestEnemy(std::optional<float> distance) { m_nearestEnemy = distance; }
+    /// Takes the pad away from the human or gives it back: while it is away update() leaves the stick centred and no
+    /// command in the record, so only the brain moves him (a player's brain set dead, docs/research/ai.md#scripted).
+    void setPadControlled(bool padControlled);
+    /// Whether the pad drives the human (true until setPadControlled(false)).
+    [[nodiscard]] bool padControlled() const { return m_padControlled; }
 
     [[nodiscard]] const Human& human() const { return m_human; }
     [[nodiscard]] Human& human() { return m_human; }
@@ -178,6 +183,7 @@ class Player {
     Humans m_humans; // holds m_human, which is why the player is neither copied nor moved
     camera::FollowCamera m_camera;
     std::uint32_t m_respawns = 0;
+    bool m_padControlled = true;
     std::optional<float> m_nearestEnemy; // the distance to the nearest enemy, none with no enemies
     PlayerSnapshot m_previous;
     PlayerSnapshot m_current;

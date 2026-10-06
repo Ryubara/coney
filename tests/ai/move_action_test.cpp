@@ -71,7 +71,7 @@ struct MoveScene {
         made.setFighterProfile(
             coney::human::FighterProfile{.player = false, .powerClass = coney::ai::kWarriorPowerClass, .health = 1400});
         made.spawn(mesh.get(), feet, headingDegrees);
-        step.add(made, false, 1);
+        step.add(made, false);
         return brains.add(made, coney::ai::BrainType::Gang, coney::ai::FightSettings{},
                           static_cast<std::uint32_t>(humans.size()));
     }
@@ -296,7 +296,7 @@ TEST_CASE("GoalMoveToFlag walks to the flag, turns to its heading, arrives and t
     coney::world_objects::WorldFlags flags;
     flags.createPool(4);
     const double flag = flags.add(100.0, "Spot", {48.0F, 41.0F, 0.0F}, 90.0F).handle;
-    coney::ai::ScriptedBrains scripted(flags);
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
     Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, 0.0F);
     scripted.bind(1.0, brain);
     scripted.goalMoveToFlag(moveToFlagCall(1.0, flag, 0.4F, true));
@@ -315,7 +315,7 @@ TEST_CASE("GoalMoveToFlag aims at an offset from the flag, ends when its flag go
     coney::world_objects::WorldFlags flags;
     flags.createPool(4);
     const double flag = flags.add(100.0, "Spot", {42.0F, 41.0F, 0.0F}, 0.0F).handle;
-    coney::ai::ScriptedBrains scripted(flags);
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
     Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, 0.0F);
     // 2 m towards -90 degrees (+x).
     coney::ai::goalMoveToFlag(brain, flagOrder(flag, 0.3F, -90.0F, 2.0F), scripted);
@@ -342,7 +342,7 @@ TEST_CASE("the scripts' brains take GoalMoveToFlag and ActLookAt by handle and i
     coney::world_objects::WorldFlags flags;
     flags.createPool(4);
     const double flag = flags.add(100.0, "Spot", {45.0F, 41.0F, 0.0F}, 0.0F).handle;
-    coney::ai::ScriptedBrains scripted(flags);
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
     Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, 0.0F);
     Brain& other = scene.add({43.0F, 41.0F, 0.0F}, 0.0F);
     scripted.bind(1.0, brain);

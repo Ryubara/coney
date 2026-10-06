@@ -31,13 +31,21 @@ class Humans {
     /// records, as `Brains_Update` writes their commands (docs/research/ai.md#update); ai::Brains::hook() gives one.
     using BrainsHook = std::function<void(std::span<Human* const> humans)>;
 
+    /// Whether one human fights another: `opposed(attacker, victim)`. The gangs give it (ai::Gangs::friends(), whose
+    /// friends do not fight each other).
+    using Opposition = std::function<bool(const Human& attacker, const Human& victim)>;
+
     /// Adds `human` (not owned; it must outlive the step, or be removed) as the next slot. With `padControlled` a pad
     /// writes its record before each step; otherwise its command and buttons are cleared at the step's start, as the
-    /// original clears the command of a record no pad drives, and only a brain gives it one. `side` is who it fights:
-    /// a human on side 0 (the player's) fights the step's passive targets and every human of another side, a human on
-    /// another side every human not on its own. **Coney choice**, standing in for the gangs and their enemies
-    /// (`GangMakeEnemies`, docs/research/ai.md#level99), which are not built.
-    void add(Human& human, bool padControlled, int side = 0);
+    /// original clears the command of a record no pad drives, and only a brain gives it one. A human added
+    /// pad-controlled also fights the step's passive targets (the sandbox's dummies, which have no gang).
+    void add(Human& human, bool padControlled);
+    /// Takes the pad from `human` or gives it back (a player's brain set dead takes it, `BrDead`); nothing when it is
+    /// not in the step.
+    void setPadControlled(const Human& human, bool padControlled);
+    /// Sets who fights whom. Without one (the default) the humans added pad-controlled and the others fight each other,
+    /// as the player and the AI humans of a scene without gangs do.
+    void setOpposition(Opposition opposition) { m_opposition = std::move(opposition); }
     /// Takes `human` out of the step (a spawned AI cleared away); nothing when it is not in it.
     void remove(const Human& human);
     /// Sets what runs at the brains' place.
@@ -46,8 +54,8 @@ class Humans {
     /// One characters' step, in the original's order (docs/research/tasks.md#humans-update): the records no pad
     /// drives lose their command; the brains write theirs; every human's animation; every human's state update (the
     /// locomotion); every human's actions (the dispatcher from its record, against the passive `targets` and the
-    /// humans of the other sides, as add() says), the order alternating between first-to-last and last-to-first from
-    /// one step to the next. `mesh` is what they stand on (may be null).
+    /// humans it is opposed to, as add() and setOpposition() say), the order alternating between first-to-last and
+    /// last-to-first from one step to the next. `mesh` is what they stand on (may be null).
     /// @orig 0x00249108 Humans_Update (unknown)
     void update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {});
 
@@ -57,12 +65,16 @@ class Humans {
     [[nodiscard]] std::uint64_t steps() const { return m_steps; }
 
   private:
-    // Who slot `slot` fights this step: the passive `targets` on side 0, and the humans of the other sides.
+    // Who slot `slot` fights this step: the passive `targets` for a human added pad-controlled, and the humans it is
+    // opposed to.
     void gatherTargets(std::size_t slot, std::span<Combatant* const> targets);
+    // Whether slot `slot` fights slot `other`.
+    [[nodiscard]] bool opposed(std::size_t slot, std::size_t other) const;
 
     std::vector<Human*> m_humans;      // not owned
     std::vector<bool> m_padControlled; // per slot
-    std::vector<int> m_sides;          // per slot
+    std::vector<bool> m_fightsTargets; // per slot: added pad-controlled
+    Opposition m_opposition;
     std::vector<Combatant*> m_scratch; // gatherTargets()'s list
     BrainsHook m_brains;
     std::uint64_t m_steps = 0;
