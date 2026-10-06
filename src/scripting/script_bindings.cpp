@@ -728,6 +728,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("EndGarbage"),
     real("EndParticle"),
     real("MaxFogParticles"),
+    real("SetupRadio"),
     real("SoundEnableSystemMusic"),
     real("SoundSetMusicTrack"),
     real("Start3DFog"),

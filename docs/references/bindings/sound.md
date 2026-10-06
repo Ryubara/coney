@@ -529,7 +529,7 @@ of five tracks were not recovered (hashes on the research page).
   `Radio_Update`, `0x003ac7e8` `Radio_HandleMessage`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SndAllocateCharacterVoices {#sndallocatecharactervoices}
 

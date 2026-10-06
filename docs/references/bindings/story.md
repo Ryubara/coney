@@ -16,7 +16,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | Level | Story | Bindings | New | New, traced | New, in Coney |
 | --- | --- | --- | --- | --- | --- |
 | [`level80`](#level80) | mission 2 | 178 | 50 | 50 | 50 |
-| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 83 |
+| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 84 |
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 90 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 3 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 1 |
@@ -103,7 +103,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level87: mission 3 {#level87}
 
-261 bindings, 87 new: 87 traced, 83 implemented in Coney (257 of all 261).
+261 bindings, 87 new: 87 traced, 84 implemented in Coney (258 of all 261).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -173,7 +173,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`StartGarbage`](effects.md#startgarbage) | Effects and lighting | traced | confirmed (code) | implemented |
 | [`HUDLaunchMissionFailed`](hud.md#hudlaunchmissionfailed) | HUD and menus | traced | confirmed (code) | implemented |
 | [`HUDShowWarCommand`](hud.md#hudshowwarcommand) | HUD and menus | traced | confirmed (code) | implemented |
-| [`SetupRadio`](sound.md#setupradio) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SetupRadio`](sound.md#setupradio) | Sound and music | traced | confirmed (code) | implemented |
 | [`SoundPlayCommand`](sound.md#soundplaycommand) | Sound and music | traced | confirmed (code) | implemented |
 | [`SceneIsPreloaded`](scene.md#sceneispreloaded) | Scenes and movies | traced | confirmed (code) | implemented |
 | [`SceneStop`](scene.md#scenestop) | Scenes and movies | traced | confirmed (code) | implemented |
@@ -197,7 +197,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level95: the hub {#level95}
 
-323 bindings, 91 new: 91 traced, 90 implemented in Coney (318 of all 323).
+323 bindings, 91 new: 91 traced, 90 implemented in Coney (319 of all 323).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -641,7 +641,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level11: flashback 5 {#level11}
 
-260 bindings, 7 new: 7 traced, 1 implemented in Coney (231 of all 260).
+260 bindings, 7 new: 7 traced, 1 implemented in Coney (232 of all 260).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

@@ -172,6 +172,16 @@ void GameplayMode::endLevel() {
     if (m_context.spheres == &m_spheres) {
         m_context.spheres = nullptr;
     }
+    if (m_context.radios == &m_radios) {
+        m_context.radios = nullptr;
+    }
+    // A radio's sound stops with the level.
+    if (m_context.sound != nullptr) {
+        for (const world_objects::Radio& radio : m_radios.all()) {
+            m_context.sound->stopSound(radio.sound);
+        }
+    }
+    m_radios.clear();
     if (m_context.flagNet == &m_flagNet) {
         m_context.flagNet = nullptr;
     }
@@ -262,6 +272,8 @@ void GameplayMode::enter() {
         return !mesh->rayCast(ray, {}, 0).has_value();
     });
     m_context.spheres = &m_spheres;
+    m_radios.clear();
+    m_context.radios = &m_radios;
     m_context.flagNet = &m_flagNet;
     m_scripted->setFlagNet(&m_flagNet);
     // Player 1's cameras, which the script sets up before the level makes him; CamSetSecondary finds its human live.
@@ -492,6 +504,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
             m_context.messages->deliver(m_scripts, object, message, human, 0.0, 0.0);
         });
     }
+    updateRadios();
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
     m_scripts.update(nowMs, frame.seconds);
     if (m_effects) {
@@ -520,6 +533,50 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         overlay->playFrame(frame, stack.pads());
     }
     return result;
+}
+
+void GameplayMode::updateRadios() {
+    if (m_radios.all().empty()) {
+        return;
+    }
+    // The radios' sounds go to the game's sound (none: nothing plays, and every track ends at once).
+    class HostSound final : public world_objects::RadioSound {
+      public:
+        explicit HostSound(script::SoundHost* host) : m_host(host) {}
+        double play(std::uint32_t hash, const std::array<float, 3>& position) override {
+            return m_host != nullptr && hash != 0 ? m_host->play3D(hash, position) : 0.0;
+        }
+        [[nodiscard]] bool playing(double handle) const override {
+            return m_host != nullptr && m_host->soundPlaying(handle);
+        }
+        void stop(double handle) override {
+            if (m_host != nullptr) {
+                m_host->stopSound(handle);
+            }
+        }
+        void follow(double handle, const std::array<float, 3>& position, float volume) override {
+            if (m_host != nullptr) {
+                m_host->moveSound(handle, position, volume);
+            }
+        }
+
+      private:
+        script::SoundHost* m_host;
+    };
+    HostSound sound(m_context.sound);
+    world_objects::RadioWorld world;
+    if (const HumanCreation* player = m_humans.player(1); player != nullptr && m_scripted) {
+        world.playerHandle = player->handle;
+        if (const std::optional<world_objects::Placement> placement = m_scripted->humanPlacement(player->handle)) {
+            world.player = placement->position;
+        }
+    }
+    world.scene = m_scenes && m_scenes->playing();
+    world.levelComplete = [this](int level) {
+        return m_state.player.unlocks.isLevelComplete(m_state.saved, static_cast<std::uint8_t>(level));
+    };
+    m_radios.update([this](double object) { return objectPosition(object); }, world, sound, m_state.random,
+                    [this](const std::string& function) { m_scripts.call(function, std::vector<script::Value>{}); });
 }
 
 void GameplayMode::updateBoxes(std::uint64_t nowMs) {

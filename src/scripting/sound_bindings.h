@@ -99,6 +99,15 @@ class SoundHost {
     virtual void enableAmbientEmitter(int /*emitter*/, bool /*on*/) {}
     /// `SoundStopAmbientTrack()`.
     virtual void stopAmbientTrack() = 0;
+    /// `PlaySound3D(sound, position)` (`0x0010fdd0`, volume and pitch 1), as a radio plays its streams: a handle, 0
+    /// when it did not start. A host with no positional sound plays nothing (the default).
+    virtual double play3D(std::uint32_t /*sound*/, const std::array<float, 3>& /*position*/) { return 0.0; }
+    /// Whether the sound `handle` (from play2D() or play3D()) still plays.
+    [[nodiscard]] virtual bool soundPlaying(double /*handle*/) const { return false; }
+    /// Stops the sound `handle`.
+    virtual void stopSound(double /*handle*/) {}
+    /// Moves the positional sound `handle` and sets its volume (0-1).
+    virtual void moveSound(double /*handle*/, const std::array<float, 3>& /*position*/, float /*volume*/) {}
     /// `SoundPauseSound(on)`: pauses every sound playing now where it is (`on`), or resumes them.
     virtual void pauseSound(bool on) = 0;
     /// `SetAmbientTrackVolume(volume)`, 0-1.

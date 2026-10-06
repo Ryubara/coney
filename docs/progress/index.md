@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,478 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,482 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-400 reimplemented function(s) have no size yet and add no bytes.
+404 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -68,9 +68,9 @@ at the top of the repository's `README.md`.
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 199 | 197,192 |
+| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 200 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 77 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 80 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -1305,6 +1305,7 @@ at the top of the repository's `README.md`.
 | `0x00378808` | `CarMakeGoodAsNew` | `Scripting` | not filled in |
 | `0x003788b8` | `CarPlaceInTrunkOnDetach` | `Scripting` | not filled in |
 | `0x00378958` | `SpawnParticle` | `Scripting` | not filled in |
+| `0x00379ea0` | `SetupRadio` | `Scripting` | not filled in |
 | `0x00379fd0` | `AddFlag` | `Scripting` | 384 |
 | `0x0037a288` | `GetFlagPos` | `Scripting` | 112 |
 | `0x0037a770` | `FindFlag` | `Scripting` | 112 |
@@ -1396,6 +1397,9 @@ at the top of the repository's `README.md`.
 | `0x003a13d0` | `SceneTask_Create` | `TaskEngine` | 280 |
 | `0x003a2e00` | `Task_SendMessage` | `TaskEngine` | 32 |
 | `0x003a4768` | `Triangle_MakeTwoSided` | `TaskEngine` | 88 |
+| `0x003ac4d0` | `Radio_Setup` | `TaskEngine` | not filled in |
+| `0x003ac600` | `Radio_SetMode` | `TaskEngine` | not filled in |
+| `0x003ad440` | `Radio_Update` | `TaskEngine` | not filled in |
 | `0x003b2180` | `DoorFence_Hit` | `TaskEngine` | 3,520 |
 | `0x003b2f40` | `DoorFence_Init` | `TaskEngine` | 536 |
 | `0x003c55e8` | `ScriptType_Find` | `TaskEngine` | not filled in |

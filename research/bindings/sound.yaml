@@ -977,3 +977,4 @@
     with mode 1 (retune): by `Player_UpdateActions` (R1 held, carried weapon type 6) and by the smash message. The
     names of the two DJ-link kinds and of five tracks were not recovered (hashes on the research page).
   usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false, levels: [87, 95, 11]}
+  coney: implemented

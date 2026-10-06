@@ -153,6 +153,7 @@ add_library(coney_core STATIC
     world_objects/nav_links.cpp
     world_objects/object_list.cpp
     world_objects/object_types.cpp
+    world_objects/radios.cpp
     world_objects/spawn_records.cpp
     world_objects/flag_net.cpp
     world_objects/trigger_spheres.cpp

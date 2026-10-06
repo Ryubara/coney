@@ -6911,6 +6911,11 @@ name = "SpawnParticle"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x00379ea0
+name = "SetupRadio"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x00379fd0
 name = "AddFlag"
 subsystem = "Scripting"
@@ -7427,6 +7432,21 @@ address = 0x003a4768
 name = "Triangle_MakeTwoSided"
 subsystem = "TaskEngine"
 size = 88
+
+[[function]]
+address = 0x003ac4d0
+name = "Radio_Setup"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003ac600
+name = "Radio_SetMode"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003ad440
+name = "Radio_Update"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x003b2180

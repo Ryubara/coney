@@ -460,6 +460,13 @@ also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/7
 - `VoiceTable` (`voice_table.cpp`, [The voice table](#voice-table)), `AmbientEmitters` (`ambient_emitters.cpp`,
   [Ambience](#ambience)) and `Speech` (`speech.cpp`, [Saying a speech command](#speech)): one line per human at a
   time, positional and directional at him, cut off by an interrupting one.
+- **Radios** (`world_objects::Radios`, `repo:src/world_objects/radios.h`; [Radios](#radios)): `SetupRadio` pins the
+  object and makes it a radio; gameplay updates each radio every frame through `GameSound::play3D` (a positional
+  sound at the radio, half volume during a scene), with player 1's place, the game's random draws and the levels'
+  completion, running the states, tables and DJ link picks above and calling `onSegment`. **Coney's stand-ins**: a
+  sound stopped because the player went beyond 40 m starts its track again when he comes back; the DJ links of kinds
+  0 and 1 have no names, so they play nothing and end at once; `Radio_SetMode`'s modes 4 and up, the pick-up
+  (`onPickUp`), the smash and the R1 retune are not built (Coney has no carried boom box).
 
 Coney's stand-ins where this page is open, each marked in the code: the directional table is 1 (as loud behind as in
 front); the `+0x268` state factors, the `+0x5b7` owner duck and level 82's ambient swap are not applied; a stereo

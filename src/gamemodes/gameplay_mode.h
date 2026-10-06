@@ -33,6 +33,7 @@
 #include "world_objects/flag_net.h"
 #include "world_objects/flags.h"
 #include "world_objects/level_objects.h"
+#include "world_objects/radios.h"
 #include "world_objects/trigger_spheres.h"
 #include "world_objects/volume_boxes.h"
 
@@ -259,6 +260,8 @@ class GameplayMode final : public GameMode {
     // The volume boxes' trigger update over the scripts' humans, their messages going to the objects' handlers
     // (docs/research/scripting.md#triggers). In the original the boxes update with the other tasks in the world step.
     void updateBoxes(std::uint64_t nowMs);
+    // The radios' update (Radio_Update): their sounds through the game's sound, the player's place and the progress.
+    void updateRadios();
     // The combat tutorial's callback (`HUDSetTutorialCallback`) with the anim id of each hit player 1 struck in the
     // level's step, landed or blocked (docs/research/hud.md#tutorial-callback). The original calls it from the damage
     // step itself; Coney calls it right after the step.
@@ -306,6 +309,7 @@ class GameplayMode final : public GameMode {
     std::unique_ptr<effects::LevelEffects> m_effects;    // before the level, which draws them
     std::unique_ptr<world_objects::Cars> m_cars;         // the level's parked cars; before the level, which draws them
     world_objects::TriggerSpheres m_spheres;             // the level's trigger spheres (TriggerSphereCfg)
+    world_objects::Radios m_radios;                      // the level's radios (SetupRadio)
     world_objects::FlagNet m_flagNet;                    // the level's flag network (FlagNetAddLink)
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of

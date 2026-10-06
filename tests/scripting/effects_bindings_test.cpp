@@ -25,6 +25,7 @@
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
+#include "world_objects/radios.h"
 
 using coney::script::LuaVm;
 using coney::script::ScriptSystem;
@@ -52,6 +53,7 @@ struct Harness {
     coney::gui::GlobalStrings strings;
     QuietHost host;
     coney::effects::LevelEffects effects;
+    coney::world_objects::Radios radios;
     coney::script::BindingContext context;
     ScriptSystem scripts;
 
@@ -65,6 +67,7 @@ struct Harness {
         context.strings = &strings;
         context.host = &host;
         context.effects = &effects;
+        context.radios = &radios;
         scripts.create();
     }
 
@@ -163,4 +166,16 @@ TEST_CASE("CfgSteam configures a steam vent with the colour packed r, g, b, a", 
     CHECK(steam.dragH == 0.0F);
     CHECK(steam.dragV == 0.5F);
     CHECK(steam.still);
+}
+
+TEST_CASE("SetupRadio makes the object a radio with its callbacks, track and announcement", "[effects_bindings]") {
+    Harness h;
+    h.first("SetupRadio", {Value(12.0), str("PickUp"), Value(3.0), str("Segment"), Value(2.0)});
+    const coney::world_objects::Radio* radio = h.radios.find(12.0);
+    REQUIRE(radio != nullptr);
+    CHECK(radio->onPickUp == "PickUp");
+    CHECK(radio->onSegment == "Segment");
+    CHECK(radio->track == 3);
+    CHECK(radio->announcementArmed);
+    CHECK(radio->next == 2);
 }

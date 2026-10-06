@@ -139,6 +139,7 @@ add_executable(coney_tests
     world_objects/nav_links_test.cpp
     world_objects/object_list_test.cpp
     world_objects/volume_boxes_test.cpp
+    world_objects/radios_test.cpp
     world_objects/trigger_spheres_test.cpp
     world_objects/flag_net_test.cpp)
 # Characters: the animation format and player, and the character resources.

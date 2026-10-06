@@ -23,6 +23,7 @@
 #include "scripting/lua_value.h"
 #include "scripting/sound_bindings.h"
 #include "warriors/game_state.h"
+#include "world_objects/radios.h"
 #include "world_objects/spawn_records.h"
 
 namespace coney::script {
@@ -329,6 +330,23 @@ NativeFunction makeCfgSteam(const BindingContext& context) {
     };
 }
 
+// `SetupRadio(object, onPickUp, track, onSegment, djLine)`: the object made a radio and pinned.
+// @orig 0x00379ea0 SetupRadio (unknown)
+NativeFunction makeSetupRadio(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->radios == nullptr) {
+            return binding::none();
+        }
+        const double object = handleArg(args, 0);
+        if (context->spawnRecords != nullptr) {
+            context->spawnRecords->setPinned(object, true);
+        }
+        context->radios->setup(object, nameArg(args, 1), static_cast<int>(wholeArg(args, 2)), nameArg(args, 3),
+                               static_cast<int>(wholeArg(args, 4)));
+        return binding::none();
+    };
+}
+
 } // namespace
 
 void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
@@ -349,6 +367,7 @@ void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::func
     vm.registerFunction("SoundEnableSystemMusic", makeSoundEnableSystemMusic(context));
     vm.registerFunction("SoundSetEffect", makeSoundSetEffect(context));
     vm.registerFunction("SoundSetMusicTrack", makeSoundSetMusicTrack(context));
+    vm.registerFunction("SetupRadio", makeSetupRadio(context));
     vm.registerFunction("StartParticle", makeParticleSwitch(context, true));
 }
 
