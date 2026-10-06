@@ -113,13 +113,17 @@ class CommandMatcher {
   public:
     /// Takes one sample's held buttons and returns its command (command::kNone when nothing matches); call it once
     /// per update. `historyHoldSamples` is CombatTuning::historyHoldSamples. A command whose bit is set in `disabled`
-    /// (bit n for id n, `EnableCommand`'s per-pad mask) is never matched.
+    /// (bit n for id n, `EnableCommand`'s per-pad mask) is not returned: it is kept as the pending command instead
+    /// (per-player `+0x24`), which the human does not act on (docs/references/bindings/input.md#padsethandlerex).
     /// @orig 0x00147940 Commands_Match (unknown)
     CommandId update(std::uint16_t buttons, const CommandTables& tables, int historyHoldSamples,
                      std::uint64_t disabled = 0);
 
     /// The last update's command.
     [[nodiscard]] CommandId command() const { return m_command; }
+    /// The last update's disabled match (per-player `+0x24`): what would have been the command but for
+    /// `EnableCommand`; command::kNone when none.
+    [[nodiscard]] CommandId pending() const { return m_pending; }
     /// The held buttons of the last sample.
     [[nodiscard]] std::uint16_t buttons() const { return m_buttons; }
     /// The buttons that went down with the last sample.
@@ -143,6 +147,7 @@ class CommandMatcher {
     std::array<int, 16> m_holdCounts{};    // samples each bit has been held, this one included
     std::array<int, 16> m_releasedAfter{}; // for a bit that came up this sample, how long it had been held
     CommandId m_command = command::kNone;
+    CommandId m_pending = command::kNone;
 };
 
 } // namespace coney::combat

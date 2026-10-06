@@ -302,9 +302,28 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
     case command::kCircleHeld:
         grabOrTackle(input, out);
         break;
+    case command::kCrossSquare:
+        special(input, tuning, out);
+        break;
     default:
         break;
     }
+}
+
+void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
+    // Refused while a move holds square's bits (**Coney choice**: Player_Special's own test is not traced).
+    if ((phaseFlags(input) & kAttackRefusingPhases) != 0) {
+        return;
+    }
+    // Not paired, it needs and spends the endurance fraction of the meter; rage plays its own and spends nothing.
+    const bool raging = m_rage.raging();
+    if (!raging) {
+        if (m_power.fraction() < tuning.powerEndurance) {
+            return;
+        }
+        m_power.spend(tuning.powerEndurance);
+    }
+    startAttack(raging ? anim_id::kSpecialRage : anim_id::kSpecial, tuning, out);
 }
 
 } // namespace coney::combat

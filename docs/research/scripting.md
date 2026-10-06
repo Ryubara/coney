@@ -742,8 +742,10 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   through the two markers (`vMark01`, `vMark03`), the `l99_t1` scene and `P1.SetupBasicAttacks`; the basic-attacks
   lesson then waits for the tutorial callback (`HUDSetTutorialCallback`, [HUD](hud.md#tutorial-callback)), which the
   play mode calls with each hit player 1 strikes. The lessons run through the light and heavy attacks, the grab and
-  its strikes, the mount and its strikes ([Combat](combat.md#mount)) and the L2 let-go, then stop at the targeting
-  lesson, which waits for the `PadSetHandlerEx` handler that nothing calls yet.
+  its strikes, the mount and its strikes ([Combat](combat.md#mount)), the L2 let-go, the targeting lesson (L1 held
+  2 s, heard through the `PadSetHandlerEx` handler, which the play mode calls after the level's step with each
+  human's pad command, [PadSetHandlerEx](../references/bindings/input.md#padsethandlerex)), the combos and the strong
+  attack, then stop at the strong grapple (circle + cross), whose research is under way.
 - **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
   `GetLevelId` and the level flow (record 0 is `level100`).
 - **The front end** runs the preloads at the legal screen and `global.lua` and `level100.lua` in the same state when the
@@ -797,8 +799,6 @@ of the original).
   (`+0x164`); whether a sphere's own object can be its occupant, and what the clear-line tests `0x0024dee8` and
   `0x0024df40` test between; who writes the stopwatch's rate (`+0x10`); what commands 37, 38 and 40 (d-pad down,
   up, right), which the tutorial switches with `EnableCommand`, do ([Commands](../references/commands.md)).
-- **The targeting lesson's handler:** when `0x001480e0` calls the `PadSetHandlerEx` handler (`level99`'s
-  `P1.Target`), with which three arguments, and what commands 6 and 8 (`EnableCommand`) are.
 - What a level loaded after an unload (a fresh state without the preloads) does when it needs `PHYS`, `MATERIAL` or
   `GSTRING`: does the level flow run the preloads again, or do the level scripts not need them? (For the front end,
   `global.lua` and `level100.lua` run without errors in Coney's fresh state, and so do `level99.lua` with

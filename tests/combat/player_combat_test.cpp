@@ -367,3 +367,20 @@ TEST_CASE("an R1 press fails the stereo theft and plays its fail clip", "[combat
     CHECK(frames[4].out.startAnim == anim_id::kStereoStealFail);
     CHECK(runner.combat().mode() == CombatMode::Free);
 }
+
+TEST_CASE("cross held and square pressed outside a hold is the special 653, spending a quarter of the power",
+          "[combat]") {
+    Runner runner(nullptr);
+    const auto frames = runner.run("10 press cross\n12 tap square\n14 release cross\n", 20);
+    CHECK(frames[12].command == command::kCrossSquare);
+    CHECK(frames[12].out.startAnim == anim_id::kSpecial);
+    // 100 of 400 spent (and refilling since).
+    CHECK(runner.combat().power().value() <= 320);
+    CHECK(runner.combat().power().value() >= 300);
+
+    // Short of a quarter of the meter, nothing plays.
+    Runner weak(nullptr);
+    weak.combat().power().set(40);
+    const auto none = weak.run("10 press cross\n12 tap square\n14 release cross\n", 20);
+    CHECK(none[12].out.startAnim == anim_id::kNone);
+}

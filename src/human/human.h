@@ -69,8 +69,12 @@ struct PlayerRecord {
     anim::Vec3 cameraForward;   ///< The view the stick is turned by (a brain gives the world's axes).
     bool sprintHeld = false;    ///< L2 held.
     bool actionPressed = false; ///< Triangle pressed this update.
-    combat::CommandId command = combat::command::kNone; ///< The command (`+0x20`).
-    std::uint16_t buttons = 0;                          ///< The held buttons.
+    combat::CommandId command = combat::command::kNone; ///< The command the human acts on (`+0x20`).
+    /// The pad's command whether or not the human may act on it: the one matched (`+0x20`), kept under a pad lock, or
+    /// else the disabled one pending (`+0x24`). What the `PadSetHandlerEx` handler is given
+    /// (docs/references/bindings/input.md#padsethandlerex).
+    combat::CommandId padCommand = combat::command::kNone;
+    std::uint16_t buttons = 0; ///< The held buttons.
     /// The brain's move, which replaces the stick while set. **Coney choice**: kept beside the record, as Coney's
     /// locomotion reads only the record; the original keeps it in the brain.
     std::optional<BrainMove> move;

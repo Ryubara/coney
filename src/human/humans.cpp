@@ -60,6 +60,7 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
     for (std::size_t i = 0; i < m_humans.size(); ++i) {
         if (!m_padControlled[i]) {
             m_humans[i]->record().command = combat::command::kNone;
+            m_humans[i]->record().padCommand = combat::command::kNone;
             m_humans[i]->record().buttons = 0;
         }
     }

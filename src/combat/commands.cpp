@@ -85,14 +85,17 @@ CommandId CommandMatcher::update(std::uint16_t buttons, const CommandTables& tab
         m_holdCounts.at(bit) = held ? m_holdCounts.at(bit) + 1 : 0;
     }
 
-    // Match the tables in order; every match overwrites the command so far. A disabled command's entries are skipped.
+    // Match the tables in order; every match overwrites the command so far. A disabled command's match goes to the
+    // pending command instead.
     m_command = command::kNone;
+    m_pending = command::kNone;
     for (const Trigger trigger : kMatchOrder) {
         for (const CommandEntry& entry : tables.table(trigger)) {
-            const bool off = entry.command < 64 && ((disabled >> entry.command) & 1U) != 0;
-            if (!off && matches(trigger, entry, historyHoldSamples)) {
-                m_command = entry.command;
+            if (!matches(trigger, entry, historyHoldSamples)) {
+                continue;
             }
+            const bool off = entry.command < 64 && ((disabled >> entry.command) & 1U) != 0;
+            (off ? m_pending : m_command) = entry.command;
         }
     }
     return m_command;

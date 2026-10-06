@@ -1548,6 +1548,13 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   there over 0.1 s; the mount's moves take square's mask, so one plays out before the next; the mount's power strike
   spends the endurance fraction, as the grab's does (the page names only its need); triangle in the mount (the
   mugging) is not built, nor flag `0x20000`'s getting off at once.
+- The pad's buttons are matched even while the pad is locked (`HuLockPad`), and a command disabled with
+  `EnableCommand` is kept pending; the human acts on neither, but the `PadSetHandlerEx` handler hears both
+  ([PadSetHandlerEx](../references/bindings/input.md#padsethandlerex)). Only the pad-driven humans carry a pad command:
+  Coney's brains write their commands straight to the record.
+- The special (cross + square outside a hold, [Specials](#attacks)) is always 653 (645 in rage): the variant and side
+  offsets of `0x00263c90` are not built, nor circle + cross (657) and circle + triangle (the tag). It takes square's
+  mask.
 - A grab plays one move at a time; a throw lets go at once; the rear power strike's spin plays in front of the strike,
   whose timing starts with it; the release with too little power goes straight to the idles, and the grab
   broken at 0 power plays the let-go. A tackle also ends when the power meter is empty, and any hold when the victim

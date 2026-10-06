@@ -264,6 +264,12 @@ class GameplayMode final : public GameMode {
     // step itself; Coney calls it right after the step.
     // @orig 0x001ce9a8 Tutorial_CallCallback (unknown)
     void callTutorialCallback();
+    // The `PadSetHandlerEx` handler, once per human with a pad command this step (its handle, the command, 1),
+    // whether or not the pad is locked or the command disabled (docs/references/bindings/input.md#padsethandlerex).
+    // **Coney choices**: called after the level's step, not before each human acts; only the pad-driven humans
+    // carry a pad command, as Coney's brains write their commands straight to the record.
+    // @orig 0x001480e0 Pad_CallLuaHandlerEx (unknown)
+    void callPadHandler();
     // Where a trigger sphere's object is: a human the scripts made, a flag or a spawn record; nothing when gone.
     [[nodiscard]] std::optional<std::array<float, 3>> objectPosition(double handle) const;
 

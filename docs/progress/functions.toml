@@ -875,6 +875,12 @@ subsystem = "Device/ps2"
 size = 8
 
 [[function]]
+address = 0x001480e0
+name = "Pad_CallLuaHandlerEx"
+subsystem = "Device/ps2"
+size = 304
+
+[[function]]
 address = 0x00148210
 name = "Pad_SetLuaHandlerEx"
 subsystem = "Device/ps2"
@@ -3956,6 +3962,12 @@ address = 0x00286cc8
 name = "Player_Square"
 subsystem = "Human"
 size = 2664
+
+[[function]]
+address = 0x00287730
+name = "Player_Special"
+subsystem = "Human"
+size = 392
 
 [[function]]
 address = 0x002878b8

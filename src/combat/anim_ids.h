@@ -64,6 +64,8 @@ inline constexpr int kMountRelease = 244; ///< `MOUNT_RELEASE`: L2 gets off (vic
 inline constexpr int kMountPickup = 248;  ///< `MOUNT_PICKUP`: circle back to the front hold (victim 249).
 
 inline constexpr int kRageStart = 643;
+inline constexpr int kSpecialRage = 645; ///< Cross + square outside a grab in rage (`RAGE_SPECIAL`).
+inline constexpr int kSpecial = 653;     ///< Cross + square outside a grab: the strong attack.
 inline constexpr int kBreakObjectLow = 661;
 inline constexpr int kBreakObjectMid = 662;
 inline constexpr int kStereoStealEnd = 685;

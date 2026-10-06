@@ -244,7 +244,7 @@ TEST_CASE("the rage meter's script operations: full with a hold, a fraction, and
     CHECK(power.fraction() == 1.0F);
 }
 
-TEST_CASE("a disabled command is never matched; the others are", "[human][script]") {
+TEST_CASE("a disabled command is not acted on but kept pending; the others are matched", "[human][script]") {
     const combat::CommandTables tables = combat::CommandTables::street();
     combat::CommandMatcher matcher;
     const std::uint64_t dpadOff = (std::uint64_t{1} << combat::command::kDpadDown);
@@ -252,7 +252,10 @@ TEST_CASE("a disabled command is never matched; the others are", "[human][script
     CHECK(matcher.update(0x4000, tables, 7) == combat::command::kDpadDown);
     static_cast<void>(matcher.update(0, tables, 7));
     CHECK(matcher.update(0x4000, tables, 7, dpadOff) == combat::command::kNone);
+    // Pending (+0x24): what the pad handler still hears.
+    CHECK(matcher.pending() == combat::command::kDpadDown);
     static_cast<void>(matcher.update(0, tables, 7));
+    CHECK(matcher.pending() == combat::command::kNone);
     CHECK(matcher.update(0x0080, tables, 7, dpadOff) == combat::command::kSquarePressed);
 }
 

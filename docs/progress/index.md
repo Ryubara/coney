@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.9% of the game's own code (432,748 of 3,354,776 bytes, 1,327 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.9% of the game's own code (433,444 of 3,354,776 bytes, 1,329 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -57,12 +57,12 @@ at the top of the repository's `README.md`.
 | `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 50 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `Device/ps2` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 25 | 62,808 |
+| `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `██▋░░░░░░░░░░░░░░░░░` | 13.0% | 7 | 7,120 |
 | `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 85 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
-| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 387 | 1,096,672 |
+| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 388 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -261,6 +261,7 @@ at the top of the repository's `README.md`.
 | `0x00147430` | `AddCommand` | `Device/ps2` | 528 |
 | `0x00147940` | `Commands_Match` | `Device/ps2` | 1,456 |
 | `0x00147ef0` | `PlayerRecord_SetCommand` | `Device/ps2` | 8 |
+| `0x001480e0` | `Pad_CallLuaHandlerEx` | `Device/ps2` | 304 |
 | `0x00148210` | `Pad_SetLuaHandlerEx` | `Device/ps2` | 32 |
 | `0x00148aa0` | `PS2StreamFileSys::Open` | `Device/ps2` | 264 |
 | `0x001490b8` | `DVDWadIndex::Find` | `Device/ps2` | 168 |
@@ -798,6 +799,7 @@ at the top of the repository's `README.md`.
 | `0x002854b0` | `Brain_SetInterrogateOverride` | `Human` | 112 |
 | `0x002856b8` | `Player_UpdateMugging` | `Human` | 3,736 |
 | `0x00286cc8` | `Player_Square` | `Human` | 2,664 |
+| `0x00287730` | `Player_Special` | `Human` | 392 |
 | `0x002878b8` | `LockPick_JudgePress` | `Human` | 352 |
 | `0x00287a18` | `Player_Cross` | `Human` | 1,480 |
 | `0x0028c1a8` | `Brain_InstallHandlers` | `Human` | 440 |

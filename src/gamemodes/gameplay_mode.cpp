@@ -356,6 +356,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     m_scripts.setTime(nowMs);
     callTutorialCallback();
+    callPadHandler();
     // The path camera's functions reached in the step.
     if (m_cameras) {
         for (const std::string& function : m_cameras->takeFired()) {
@@ -420,6 +421,23 @@ void GameplayMode::callTutorialCallback() {
     for (const int animId : strikes) {
         const std::array<script::Value, 1> args{script::Value(static_cast<double>(animId))};
         m_scripts.call(callback, args);
+    }
+}
+
+void GameplayMode::callPadHandler() {
+    if (m_context.state == nullptr || m_context.state->player.pads.targetHandler().empty() || !m_scripted) {
+        return;
+    }
+    // Copied: the handler may set another (or none) while it runs.
+    const std::string handler = m_context.state->player.pads.targetHandler();
+    for (const auto& [handle, brain] : m_scripted->bound()) {
+        const combat::CommandId command = brain->human().record().padCommand;
+        if (command == combat::command::kNone) {
+            continue;
+        }
+        const std::array<script::Value, 3> args{script::Value(handle), script::Value(static_cast<double>(command)),
+                                                script::Value(1.0)};
+        m_scripts.call(handler, args);
     }
 }
 

@@ -122,6 +122,12 @@ class PlayerCombat {
     void startAttack(int animId, const CombatTuning& tuning, CombatOutput& out);
     // The grabbing route.
     void updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
+    // Cross + square outside a hold: the special 653 (645 in rage), which needs and spends a quarter of the power meter
+    // (docs/research/combat.md#attacks). **Coney choices**: the variant and side offsets (+ 4 × variant, + 0 / 2 by
+    // side, `0x00263c90`) are not built, so it is always 653; circle + cross (657) and circle + triangle (the tag) are
+    // not built.
+    // @orig 0x00287730 Player_Special (unknown)
+    void special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // The mounted route (after a tackle or a grab's mount): updateMount's move, played through the chain or the mode.
     void updateMounting(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // The theft route.
