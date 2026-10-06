@@ -63,6 +63,7 @@ add_executable(coney_tests
     platform/world_set_test.cpp
     raycast/collision_mesh_test.cpp
     raycast/disc_collision_test.cpp
+    scripting/ai_bindings_test.cpp
     scripting/config_strings_test.cpp
     scripting/disc_script_system_test.cpp
     scripting/disc_strings_test.cpp
@@ -75,6 +76,7 @@ add_executable(coney_tests
     warriors/level_table_test.cpp
     world/debug_camera_test.cpp
     world/level_object_test.cpp
+    world/path_map_test.cpp
     world/streamed_world_test.cpp
     world/view_frustum_test.cpp
     world/world_manifest_test.cpp
@@ -157,7 +159,10 @@ target_sources(coney_tests PRIVATE
 # The AI humans' brains (docs/research/ai.md).
 target_sources(coney_tests PRIVATE
     ai/brain_test.cpp
-    ai/disc_ai_config_test.cpp)
+    ai/disc_ai_config_test.cpp
+    ai/disc_route_test.cpp
+    ai/move_action_test.cpp
+    ai/route_planner_test.cpp)
 # A failed runtime check fails the run on stderr instead of opening a dialog (platform/error_dialogs.h).
 target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
 coney_target_defaults(coney_tests)
