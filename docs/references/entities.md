@@ -14,9 +14,9 @@ icon of at most 64 × 64 that Coney renders from the disc), **swatch** (a colour
 
 | Kind | What it is | Made with | Refer by | Limit | Lists | Bindings | Image |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| <span id="human"></span>Human | Every person, the player included (GTA's ped) | `HuCreate`, a gang's spawner (`GangAddSpawner`, [Spawner states](spawner-states.md)) | handle | 60 | [Characters](characters.md), [Character models](character-models.md), [Speed classes](speed-classes.md), [Anim ids](anim-ids.md), [Speech](speech.md) | [Characters](bindings/character.md) | model render (done) |
+| <span id="human"></span>Human | Every person, the player included (GTA's ped) | `HuCreate`, a gang's spawner (`GangAddSpawner`, [Spawner states](spawner-states.md)) | handle | 60 | [Characters](characters.md), [Character models](character-models.md), [Speed classes](speed-classes.md), [Power classes](power-classes.md), [Warrior classes](warrior-classes.md), [Attack kinds and tables](attacks.md), [Hat fittings](hats.md), [Anim ids](anim-ids.md), [Speech](speech.md) | [Characters](bindings/character.md) | model render (done) |
 | <span id="brain"></span>Brain | A human's AI: goal stack, action queue, target | with its human | the human's handle | 60 | [AI goal types](goal-types.md) | [AI](bindings/ai.md) | none |
-| <span id="gang"></span>Gang | A group of humans with relations to other gangs | `GangCreate` | gang id, the slot 0-31 | 32 | [Gangs](gangs.md), [Spawner states](spawner-states.md), [Commands](commands.md#warrior-command), [Script events](script-events.md) | [Gangs](bindings/gang.md) | none |
+| <span id="gang"></span>Gang | A group of humans with relations to other gangs | `GangCreate` | gang id, the slot 0-31 | 32 | [Gangs](gangs.md), [Spawner states](spawner-states.md), [Commands](commands.md#warrior-command), [Script events](script-events.md), [Rumble roster](rumble.md) | [Gangs](bindings/gang.md) | none |
 | <span id="object"></span>World object | Props, weapons, hats, pick-ups, doors, icons: one class, its kind a `CfgObj` type | `ObjSpawn`, `SpawnDoor`; placed by the level | handle; its type by name or `ObjGetIndex` | 384 live | [Objects and weapons](objects.md), [Object groups](object-groups.md), [Doors](doors.md), [Object tints](tints.md), [Script enums](enums.md) | [World and objects](bindings/world.md) | model render (coming) |
 | <span id="car"></span>Car | A parked car that can be damaged or wrecked | `CarSpawn` | handle | 18 | [Cars](cars.md) | [World and objects](bindings/world.md) | model render: Coney must load the `<type>_geo` clump (chunk `0x47`, no skin) and its dictionary through the Object List ([Cars](../research/cars.md#model)) |
 | <span id="glass"></span>Glass pane | A breakable window pane | `SpawnBreakableGlass` | handle | 100 | [Glass types](glass-types.md) | [World and objects](bindings/world.md) | none |
@@ -114,7 +114,7 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 | Object | [world object](#object) | [Objects and weapons](objects.md) | [World and objects](bindings/world.md) |
 | Vehicle | [car](#car), parked; trains and moving vehicles are world objects (`ObjStartTrain`) | [Cars](cars.md) | [World and objects](bindings/world.md) |
 | Weapon | a world object of a weapon class, held (`HuPlaceItemInHand`, `HuGiveWeapon`) | [Objects and weapons](objects.md) | [Characters](bindings/character.md) |
-| Pickup | a world object of class `pickup_item` or `powerup_item`; inventory items | [Objects and weapons](objects.md); inventory still to list | [Levels and game state](bindings/level.md) |
+| Pickup | a world object of class `pickup_item` or `powerup_item`; inventory items | [Objects and weapons](objects.md), [Inventory items](inventory.md) | [Levels and game state](bindings/level.md) |
 | Door | a world object (`SpawnDoor`, `DoorOpen`) | [Doors](doors.md), [Objects and weapons](objects.md) | [World and objects](bindings/world.md) |
 | Blip | [radar blip](#blip) | [Radar icons and blips](radar-icons.md) | [HUD and menus](bindings/hud.md) |
 | Marker | [spinning icon](#icon); the HUD's tutorial arrow (`HUDEnableInstArrow`) | [Objects and weapons](objects.md) | [Characters](bindings/character.md), [HUD and menus](bindings/hud.md) |
@@ -127,6 +127,8 @@ objects whose behaviour comes from their `CfgObj` class and type, not from subcl
 | Sound | [sound and emitter](#sound) | [Sound and music](sound.md), [Speech](speech.md) | [Sound and music](bindings/sound.md) |
 | Weather | [weather and screen effects](#weather) | | [Effects and lighting](bindings/effects.md) |
 | HUD colour | the `CL` colours | [HUD colours](hud-colours.md) | [HUD and menus](bindings/hud.md) |
+| Ped combat attributes | a character type's power class, Warrior class and attack, damage and range tables | [Power classes](power-classes.md), [Warrior classes](warrior-classes.md), [Attack kinds and tables](attacks.md) | [Configuration (Cfg)](bindings/config.md), [AI](bindings/ai.md) |
+| Stat | the mission score's categories and events; the unlockable records progress sets | [Statistics](statistics.md), [Unlockables](unlockables.md) | [Levels and game state](bindings/level.md) |
 | Text label | a string table key | [Text labels](text-labels.md) | [HUD and menus](bindings/hud.md) |
 | Animation dictionary, clip | anim ids and clips | [Anim ids](anim-ids.md), [Animation clips](animations.md) | [Characters](bindings/character.md) |
 | Wanted level, dispatch | [crime](#crime): police responders from dispatch spawners | [Crime types](crime-types.md), [Spawner states](spawner-states.md) | [Levels and game state](bindings/level.md) |

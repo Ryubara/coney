@@ -83,6 +83,7 @@ nav:
           - Scripts (Lua): research/scripting.md
           - World flags: research/flags.md
           - Characters: research/characters.md
+          - Inventory, unlockables and statistics: research/player-state.md
           - Combat: research/combat.md
           - Tasks (the TaskEngine): research/tasks.md
           - "World objects: tint, glass, doors": research/objects.md
@@ -128,6 +129,14 @@ nav:
       - Crime types: references/crime-types.md
       - Camera types and switches: references/cameras.md
       - Screen effects: references/screen-effects.md
+      - Inventory items: references/inventory.md
+      - Unlockables: references/unlockables.md
+      - Power classes: references/power-classes.md
+      - Warrior classes: references/warrior-classes.md
+      - Attack kinds and tables: references/attacks.md
+      - Hat fittings: references/hats.md
+      - Rumble roster: references/rumble.md
+      - Statistics: references/statistics.md
       - Animation clips: references/animations.md
       - Anim ids: references/anim-ids.md
       - Controls: references/controls.md

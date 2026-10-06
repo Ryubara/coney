@@ -28,7 +28,7 @@ from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
-from coney_tools import lua4, refs_engine, refs_env, refs_scripts, refs_world, wad
+from coney_tools import lua4, refs_engine, refs_env, refs_play, refs_scripts, refs_world, wad
 from coney_tools.chunks import looks_like_container, parse_container
 from coney_tools.disc import Disc
 from coney_tools.elf import Elf, read_elf
@@ -1477,6 +1477,7 @@ EXTRACTORS: dict[str, Callable[[DiscFacts, Path | None], list[dict[str, Any]]]] 
     "scenes": refs_world.topic_scenes,
     "cameras": refs_engine.topic_cameras,
     "screen-effects": refs_engine.topic_screen_effects,
+    **refs_play.EXTRACTORS,
     "animations": topic_animations,
     "anim-ids": topic_anim_ids,
     "controls": topic_controls,

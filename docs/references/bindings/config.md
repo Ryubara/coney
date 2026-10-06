@@ -539,7 +539,7 @@ CfgChar(charType, v2, v3, speedClass, v5, v6, damage, attacks, damageScale, mode
 | 2 | `v2` | number, truncated to an integer | Byte at +0x11a (3 for the Warriors). |
 | 3 | `v3` | number, truncated to an integer | Byte at +0x11b (14). |
 | 4 | `speedClass` | number, truncated to an integer | Speed class (see CfgSpeedClass), byte at +0x11c. |
-| 5 | `v5` | number, truncated to an integer | Byte at +0x11d (7). |
+| 5 | `v5` | number, truncated to an integer | Byte at +0x11d: the power class an AI human of the type gets (human +0x1b8; a player's +0x1b9 unless a Warriors type gets its Warrior's, 0x00218008). |
 | 6 | `v6` | number, truncated to an integer | 16-bit value at +0x116 (1800: probably hit points). |
 | 7 | `damage` | table of 45 numbers (t[1]..t[45]) | Table of 45 numbers (a damage table such as DamageWarriors), each multiplied by damageScale and stored as 16 bits from +0xb8. |
 | 8 | `attacks` | table of 45 numbers (t[1]..t[45]) | Table of 45 numbers (an attack table such as Att_Warrior), stored as bytes from +0x11e. |
@@ -1082,7 +1082,7 @@ CfgHat(set, owner, hat, pos, rot)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `set` | number, truncated to an integer | Hat-fit set index (1-48): selects a 0xa90-byte record at 0x00662b70 + set x 0xa90, one per head shape. |
-| 2 | `owner` | number, truncated to an integer | Number stored once per set at record +0xa80 (a character type or model number, inferred). |
+| 2 | `owner` | number, truncated to an integer | The character type the set belongs to (record +0xa80): a Warriors human finds its hat by the type it was created as, else by its class (0x003a3ba0). |
 | 3 | `hat` | string | Hat object name (as given to CfgObj, e.g. a 'dyn_' name); put into the first free slot of the set's 48 name slots. |
 | 4 | `pos` | table of 3 numbers (t[1]..t[3]) | Offset {x, y, z} in metres of the hat relative to the head. |
 | 5 | `rot` | table of 4 numbers (t[1]..t[4]) | Rotation quaternion {i, j, k, r} of the hat. |
@@ -1633,7 +1633,7 @@ CfgPowerClass(classId, p2, p3, p4, p5, p6, p7, p8, f9, f10, f11, f12, f13, f14, 
 | 12 | `f12` | number (single precision) | Float at +0x0c. |
 | 13 | `f13` | number (single precision) | Float at +0x10: the stun time's factor while hurt, 0x0022f658. |
 | 14 | `f14` | number (single precision) | Float at +0x14: the ground time's factor while hurt, 0x0022f100. |
-| 15 | `f15` | number (single precision) | Float at +0x18. |
+| 15 | `f15` | number (single precision) | Float at +0x18: the power meter maximum's factor while hurt, 0x00223068. |
 | 16 | `f16` | number (single precision) | Float at +0x1c: the AI attack delay's factor (CfgAttackDelay), 0x00223800. |
 | 17 | `f17` | number (single precision) | Float at +0x20: the AI attack delay's factor when the target is down, 0x00223800. |
 | 18 | `n18` | number, truncated to an integer | Byte at +0x36, at least 1: grab struggle divisor; a grabbed human's strike costs the grabber 1/n of its power, 0x0027fd68. |
@@ -2856,17 +2856,18 @@ CfgWarriorUpgrade(u1, u2, u3, u4)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `u1` | number, truncated to an unsigned integer | Byte at 0x006b6650 (10). |
-| 2 | `u2` | number, truncated to an unsigned integer | Byte at 0x006b6651 (20). |
-| 3 | `u3` | number, truncated to an unsigned integer | Byte at 0x006b6652 (10). |
-| 4 | `u4` | number, truncated to an unsigned integer | Byte at 0x006b6653 (20). |
+| 1 | `u1` | number, truncated to an unsigned integer | Byte at 0x006b6650 (10): the punch damage bonus in percent with unlockable (6, 5), brass knuckles. |
+| 2 | `u2` | number, truncated to an unsigned integer | Byte at 0x006b6651 (20): the kick damage bonus with (6, 6), steel toe caps. |
+| 3 | `u3` | number, truncated to an unsigned integer | Byte at 0x006b6652 (10): the power meter maximum bonus with (6, 11). |
+| 4 | `u4` | number, truncated to an unsigned integer | Byte at 0x006b6653 (20): the stamina maximum bonus with (6, 12). |
 
 **Returns** nothing.
 
 Stores four upgrade amounts (bytes at 0x006b6650-0x006b6653), read through the getter 0x00228860; config_preload2.lua
 sets 10, 20, 10, 20.
 
-**Notes.** Which stat each upgrade raises is not traced.
+**Notes.** Read at 0x0021b518, 0x0021b570, 0x00223068 and 0x00223188, each only while its unlockable is unlocked
+([Inventory, unlockables and statistics](../../research/player-state.md#unlockables)).
 
 - **Evidence:** confirmed (code) at `0x00228ad8`; detail: traced
 - **Wrapper** `0x00369f38` (registered by `RegisterBindings`); **calls** `0x00228ad8` `Cfg_SetWarriorUpgrade`

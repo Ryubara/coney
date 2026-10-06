@@ -9,7 +9,7 @@ Research: docs/guides/research-workflow.md#reference-lists
 
 from __future__ import annotations
 
-from coney_tools import refs_env
+from coney_tools import refs_env, refs_play
 from coney_tools.refs import Field, Topic
 from coney_tools.refs_engine import CAMERAS, GOAL_TYPES, SCREEN_EFFECTS
 
@@ -44,7 +44,12 @@ CHARACTERS = Topic(
             "Speed class",
             link="speed-classes.md#speed",
         ),
-        F("v11d", "int", "Byte `+0x11d`, copied to the human (`+0x1b8`); meaning not traced."),
+        F(
+            "v11d",
+            "int",
+            "Byte `+0x11d`: the [power class](power-classes.md) (human `+0x1b8`, and `+0x1b9` for a player unless a "
+            "Warriors type gets its Warrior's).",
+        ),
         F("health", "int", "16-bit `+0x116`, copied to the human's maximum and current health.", "Health"),
         F("damage_table", "str", "The 45-entry damage table (a global of `config_preload2.lua`)."),
         F("attack_table", "str", "The 45-entry attack table."),
@@ -793,6 +798,7 @@ TOPICS: tuple[Topic, ...] = (
     *refs_env.TOPICS,
     CAMERAS,
     SCREEN_EFFECTS,
+    *refs_play.TOPICS,
     ANIMATIONS,
     ANIM_IDS,
     CONTROLS,

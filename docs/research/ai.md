@@ -213,6 +213,8 @@ turns it into the command id written to the per-player record ([Commands](combat
 inside the chain window as a player would: kind 2 queues kinds 0 then 2 (`X1`, `XX2`), kind 6 or 8 queues 1, 5 and 6
 or 8. The kinds follow the [damage table](combat.md#damage-table)'s indices (0 `X1`, 1 `S1`, 2 `XX2`, 3 `SX2`, 4
 `XS2`, 5 `SS2`, 6 `SSX3`, 7-9 `SSS3` and its holds, 10 the snap); inferred from the commands and the queued chains.
+Every kind with its delay, command and anim ids, and every attack table: [Attack kinds and
+tables](../references/attacks.md).
 
 ## Behaviour
 

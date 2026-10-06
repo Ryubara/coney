@@ -3,49 +3,7 @@
 # docs/references/index.md, in this order (most useful to a script author first). Counts come from a survey of the
 # NTSC-U disc's 467 compiled scripts (names and counts only). When a family gets its own list, remove its entry.
 # Schema and rules: docs/guides/research-workflow.md#reference-lists.
-families:
-  - family: Inventory and pocket items
-    what: The item ids of the inventory bindings (`InvGiveItem`, `InvNumberOf`) and of a human's pocket.
-    source: "`CfgInventoryItem` (18 calls, `config_preload2.lua`); ids 0-22; `HuPutItemInPocket`"
-    count: "23 ids"
-    image: "model render of the item's object: Coney renders characters only so far"
-    needs: "Disc extraction; RE for the id-to-item order"
-  - family: Unlockables
-    what: The records scripts unlock and test (levels, items, extras).
-    source: "`UM_Unlock`, `UM_IsDataUnlocked`: a record type byte (7 used) and a data id; the unlock manager `0x006fe998`"
-    count: not counted
-    image: none
-    needs: "RE: the record table and its types"
-  - family: Power and Warrior classes
-    what: The combat-strength profiles character types refer to, and the playable Warriors' stats per difficulty.
-    source: "`CfgPowerClass` (311 calls, 31 arguments) and `CfgWarriorClass` (55 calls) in the difficulty configs ([Characters](../research/characters.md#power-classes))"
-    count: "51 power class ids; 9 Warriors"
-    image: none
-    needs: "Disc extraction; argument meanings partly traced"
-  - family: Attack delays and weights
-    what: Each attack kind's delay and the per-class weights the AI picks attacks by.
-    source: "`CfgAttackDelay` (44 indices), the `Att_*` tables and `BrSetAttackWeight` (`config_preload2.lua`)"
-    count: "45 attack kinds"
-    image: none
-    needs: Disc extraction
-  - family: Hat fittings
-    what: Where each hat sits on each head shape.
-    source: "`CfgHat` (908 calls, `config_preload2.lua`; 41 hats per set)"
-    count: "908 fittings"
-    image: "model render: the hats are objects (Coney renders characters only so far)"
-    needs: Disc extraction
-  - family: Rumble roster
-    what: The characters, gangs, arenas and rules of Rumble mode.
-    source: "`CfgRumbleChar` (732 calls), `CfgRumbleGang` (46), `CfgRumbleArena` (29), `CfgRumbleGame` (9), the `rumble_*.lua` scripts"
-    count: "366 character ids, 46 gangs, 29 arenas"
-    image: none
-    needs: Disc extraction
-  - family: Statistics
-    what: The stat tables the end-of-level screens score.
-    source: "`CfgSetStatValue` (tables 0-5, 46 calls), `CfgSetStatTypeMax`"
-    count: "6 tables"
-    image: none
-    needs: RE
+families: []
 excluded: >-
   Not to be listed: the credits (`CfgCredits`) and the text of any string table, which are game text; boss
   portraits (`HUDSetANBossTexture`), loading screens and other artwork.

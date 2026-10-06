@@ -190,8 +190,8 @@ The three airborne bits (`0x1c00000000`) are cleared on landing.
 player and `+0x1b8` otherwise (`0x00222b78`). Confirmed (code) for the reads at the cited addresses; Rembrandt's
 values confirmed (runtime). A street civilian (class 2) had a 0.35 hurt threshold, stun 750 ms, ground time 2000 ms,
 power 200, byte `+0x36` 4 (confirmed (runtime)). The AI's fields `+0x08` (block chance), `+0x0c` (block chance while
-hurt), `+0x24` (counter chance) and `+0x37` (the pattern-reading threshold) are on [AI](ai.md#block); `+0x18`, `+0x32`
-and the bytes after `+0x37` are not traced. The sparring Warriors' class 40 is on [AI](ai.md#level99):
+hurt), `+0x24` (counter chance) and `+0x37` (the pattern-reading threshold) are on [AI](ai.md#block); `+0x32` and
+the bytes after `+0x37` are not traced. The sparring Warriors' class 40 is on [AI](ai.md#level99):
 
 | Field | Rembrandt (class 64) | Use |
 | --- | --- | --- |
@@ -207,9 +207,19 @@ and the bytes after `+0x37` are not traced. The sparring Warriors' class 40 is o
 | `+0x34` | 2750 | the time a knocked-down human stays **down**, ms (`0x0022f100`) |
 | `+0x36` | 3 | in a grab struggle, the grabbed human's strike costs the grabber 1 / this of its power (`0x0027fd68`) |
 
-`Human_StaminaMax` (`0x00223188`) returns `+0x2c`; for a player, when the flag `0x00424130(0x6fe998, 6, 0xc)` is set,
-it returns `+0x2c × (1 + b × 0.01)` rounded, where `b` is byte 3 of the record `0x00228860` returns (an upgrade,
-inferred).
+`Human_StaminaMax` (`0x00223188`) returns `+0x2c`; for a player, when unlockable `(6, 12)` is unlocked, it returns
+`+0x2c × (1 + b × 0.01)` rounded, where `b` is byte 3 of `CfgWarriorUpgrade`'s record (`0x006b6650`). The power
+meter's maximum (`0x00223068`) is `+0x28`, likewise raised by byte 2 with `(6, 11)`, then times `+0x18` while the
+human is hurt. Confirmed (code); the unlocks: [Unlockables](player-state.md#unlockables).
+
+**Which class a human has** (`Human_Init`, `0x00218008`; confirmed (code)): `+0x1b8` and `+0x1b9` both take the
+type's `CfgChar` byte `+0x11d`; for a type of category 14 (the Warriors) `+0x1b9`, the class it plays with as a
+player, is then replaced by `0x00222ba8`'s by type: 58 Ajax (types 11-14), 59 Cleon (1-4, 189), 60 Cochise (15-17),
+61 Cowboy (18-20, 188), 62 Fox (21-25), 63 Vermin (26-29, 191), 64 Rembrandt and Ash (30-32, 38-40), 65 Snow (33-37,
+190), 66 Swan (5-10), 7 for any other. The **Warrior class** (`+0x1ba`, `0x00222c20`) follows the same groups: 0
+Ajax, 1 Cleon, 2 Cochise, 3 Cowboy, 4 Fox, 5 Vermin, 6 Rembrandt and Ash, 7 Snow, 8 Swan, 9 anyone else. Each
+difficulty script sets every class again and re-runs `CfgChar` for 63 types. Every value:
+[Power classes](../references/power-classes.md), [Warrior classes](../references/warrior-classes.md).
 
 ### Character classes {#classes}
 
@@ -221,6 +231,18 @@ levels 60-64), the speed class byte at `+0x11c`, and four strings (32 bytes each
 
 `Human_Init` remaps the type: 32 becomes behaviour class 30 (`0x1e`) with a variant flag (confirmed (code) at
 `0x00218008`, runtime `+0xcc` = `0x1e`, `+0xd0` = `0x20`).
+
+### Hats {#hats}
+
+`CfgHat(set, type, hat, {x, y, z}, {i, j, k, r})` (`Cfg_AddHatFit`, `0x00228d70`) fills a **hat-fit set**: a record of
+0xa90 bytes at `0x00662b70 + set × 0xa90` with 48 slots of a 32-byte transform (the offset with w = 1, then the
+rotation) from `+0x00`, the 48 hat names (24 bytes each) from `+0x600`, and the owning character type at `+0xa80`; a
+hat goes into the first slot still named `none`. Placing a worn hat (`0x003a3ba0`): for a human whose class has brain
+kind 3 (`+0x11a`, the Warriors), the set owned by the type it was created as (`+0xd0`) if there is one, else by its
+class (`+0xcc`), and in it the slot named as the hat's object type (`0x00228f40` for the offset, `0x00229028` for the
+rotation); a hat in no slot of the set gets a default transform (`0x005116c0`). Every other human uses the hat
+model's own attach point (`0x00391828`, `0x00391880`). Confirmed (code). The 908 fittings:
+[Hat fittings](../references/hats.md).
 
 ### From a type to a model {#type-to-model}
 

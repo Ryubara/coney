@@ -1,0 +1,91 @@
+# Statistics: a Coney game reference list. The page docs/references/statistics.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: Statistics
+about: |
+  How a mission is scored. The game counts events per player in six **categories** (`StatAdd(human, group, index, n)`
+  from scripts; the code adds the same way): each event's count times its **points** (`CfgSetStatValue(group, index,
+  points)`) makes the category's score, shown as a percentage of the category's **maximum** (`CfgSetStatTypeMax`,
+  which `global.lua` sets per level from `PointsMatrix`). Harmony counts against the player: its score is the maximum
+  minus the points ([Inventory, unlockables and statistics](../research/player-state.md#statistics)).
+complete: |
+  All six categories, all 45 event slots and every level row of `PointsMatrix` are listed. Each event's meaning is
+  read from the code that counts it (confirmed (code), one inferred); six slots have no engine caller. How
+  `global.lua` turns a level's mission and bonus values into maxima is not traced.
+defaults: {source: "config_preload2.lua, CfgSetStatValue and CfgSetStatTypeMax; global.lua, PointsMatrix", evidence: confirmed-code}
+entries:
+  - {id: mission, kind: category, group: 0, category: mission, max: 10000}
+  - {id: bonus, kind: category, group: 1, category: bonus}
+  - {id: style, kind: category, group: 2, category: style, max: 2000}
+  - {id: combat, kind: category, group: 3, category: combat, max: 5000}
+  - {id: crime, kind: category, group: 4, category: crime, max: 3000}
+  - {id: harmony, kind: category, group: 5, category: harmony, max: 4000}
+  - {id: "0-0", kind: event, group: 0, category: mission, index: 0, meaning: "No engine caller found", points: 1000, set_by: [level99.lua]}
+  - {id: "0-1", kind: event, group: 0, category: mission, index: 1, meaning: "A player knocks out an enemy gang member of category 13", points: 1000}
+  - {id: "0-2", kind: event, group: 0, category: mission, index: 2, meaning: "No engine caller found", points: 500}
+  - {id: "1-0", kind: event, group: 1, category: bonus, index: 0, meaning: "No engine caller found", points: 100}
+  - {id: "1-1", kind: event, group: 1, category: bonus, index: 1, meaning: "No engine caller found", points: 250}
+  - {id: "1-2", kind: event, group: 1, category: bonus, index: 2, meaning: "No engine caller found", points: 500}
+  - {id: "1-3", kind: event, group: 1, category: bonus, index: 3, meaning: "A flawless break-in or a spray tag finished cleanly", points: 1000}
+  - {id: "2-0", kind: event, group: 2, category: style, index: 0, meaning: "A counter (tackle, grab or block counter)", points: 75}
+  - {id: "2-1", kind: event, group: 2, category: style, index: 1, meaning: "A hat picked up for the first time (hat byte `+0x10b` = 1)", points: 200, added_by: [level11_chapter6.lua]}
+  - {id: "2-2", kind: event, group: 2, category: style, index: 2, meaning: "The same, hat byte `+0x10b` = 2", points: 150}
+  - {id: "2-3", kind: event, group: 2, category: style, index: 3, meaning: "A thrown human damages a car or breaks an object; a knife throw adds 5", points: 60}
+  - {id: "2-4", kind: event, group: 2, category: style, index: 4, meaning: "No engine caller found", points: 150}
+  - {id: "2-5", kind: event, group: 2, category: style, index: 5, meaning: "A thrown human falls far (anims 422, 425, 428; inferred)", points: 150}
+  - {id: "2-6", kind: event, group: 2, category: style, index: 6, meaning: "A tandem attack", points: 100}
+  - {id: "2-7", kind: event, group: 2, category: style, index: 7, meaning: "A thrown human is knocked out by a moving vehicle", points: 150}
+  - {id: "2-8", kind: event, group: 2, category: style, index: 8, meaning: "A thrown human smashes a glass pane", points: 100}
+  - {id: "2-9", kind: event, group: 2, category: style, index: 9, meaning: "A wall throw", points: 150}
+  - {id: "2-10", kind: event, group: 2, category: style, index: 10, meaning: "A stealth kill", points: 100}
+  - {id: "2-11", kind: event, group: 2, category: style, index: 11, meaning: "A bottle smashed on someone", points: 75}
+  - {id: "2-12", kind: event, group: 2, category: style, index: 12, meaning: "A grabbed human handcuffed", points: 30}
+  - {id: "3-0", kind: event, group: 3, category: combat, index: 0, meaning: "A running charge or dive that lands", points: 6}
+  - {id: "3-1", kind: event, group: 3, category: combat, index: 1, meaning: "A cross strike, a grounded or mounting strike, a rage or special attack", points: 4}
+  - {id: "3-2", kind: event, group: 3, category: combat, index: 2, meaning: "A square strike, a grab or mount combo strike, an object throw", points: 1}
+  - {id: "3-3", kind: event, group: 3, category: combat, index: 3, meaning: "A power strike in a grab or mount, a weapon finisher", points: 7}
+  - {id: "3-4", kind: event, group: 3, category: combat, index: 4, meaning: "A grab or mount reversal", points: 20}
+  - {id: "3-5", kind: event, group: 3, category: combat, index: 5, meaning: "A snap attack", points: 3}
+  - {id: "3-6", kind: event, group: 3, category: combat, index: 6, meaning: "A throw, or a thrown human hitting someone; a molotov hit", points: 5}
+  - {id: "3-7", kind: event, group: 3, category: combat, index: 7, meaning: "A player knocks out an enemy gang member", points: 5}
+  - {id: "4-0", kind: event, group: 4, category: crime, index: 0, meaning: "The first assault on a civilian, bum or dealer", points: 50}
+  - {id: "4-1", kind: event, group: 4, category: crime, index: 1, meaning: "A store break-in (once per store)", points: 300}
+  - {id: "4-2", kind: event, group: 4, category: crime, index: 2, meaning: "A civilian, bum or dealer knocked out", points: 5}
+  - {id: "4-3", kind: event, group: 4, category: crime, index: 3, meaning: "The first assault on a cop", points: 25}
+  - {id: "4-4", kind: event, group: 4, category: crime, index: 4, meaning: "A cop knocked out", points: 250}
+  - {id: "4-5", kind: event, group: 4, category: crime, index: 5, meaning: "A civilian, bum or dealer mugged", points: 100}
+  - {id: "4-6", kind: event, group: 4, category: crime, index: 6, meaning: "A cop mugged", points: 300}
+  - {id: "4-7", kind: event, group: 4, category: crime, index: 7, meaning: "A gang member mugged", points: 200}
+  - {id: "4-8", kind: event, group: 4, category: crime, index: 8, meaning: "An owned item picked up (shoplifting)", points: 100}
+  - {id: "4-9", kind: event, group: 4, category: crime, index: 9, meaning: "A breakable object broken", points: 5}
+  - {id: "4-10", kind: event, group: 4, category: crime, index: 10, meaning: "A glass pane smashed", points: 50}
+  - {id: "4-11", kind: event, group: 4, category: crime, index: 11, meaning: "Car parts newly damaged", points: 10}
+  - {id: "5-0", kind: event, group: 5, category: harmony, index: 0, meaning: "An AI Warrior handcuffed", points: 100}
+  - {id: "5-1", kind: event, group: 5, category: harmony, index: 1, meaning: "Every 2 s, each AI Warrior still cuffed", points: 5}
+  - {id: "5-2", kind: event, group: 5, category: harmony, index: 2, meaning: "An AI Warrior knocked out", points: 200}
+  - {id: "5-3", kind: event, group: 5, category: harmony, index: 3, meaning: "Every 2 s, each AI Warrior still down", points: 10}
+  - {id: "5-4", kind: event, group: 5, category: harmony, index: 4, meaning: "Scripts only (`StatAdd(player, 5, 4, 1)`)", points: 50, added_by: [global.lua, level11_chapter3.lua, level60.lua]}
+  - {id: level-0, kind: level, level: 0, mission: 10, bonus: 0, style: 5000, combat: 10000, crime: 5000, harmony: 5000}
+  - {id: level-2, kind: level, level: 2, mission: 11, bonus: 3.5, style: 2000, combat: 15000, crime: 2000, harmony: 10000}
+  - {id: level-3, kind: level, level: 3, mission: 9, bonus: 0, style: 5000, combat: 15000, crime: 2000, harmony: 5000}
+  - {id: level-5, kind: level, level: 5, mission: 15, bonus: 4, style: 10000, combat: 10000, crime: 2000, harmony: 5000}
+  - {id: level-9, kind: level, level: 9, mission: 10, bonus: 0, style: 10000, combat: 5000, crime: 5000, harmony: 5000}
+  - {id: level-11, kind: level, level: 11, mission: 13, bonus: 7, style: 10000, combat: 15000, crime: 5000, harmony: 2000}
+  - {id: level-14, kind: level, level: 14, mission: 6, bonus: 5.5, style: 10000, combat: 5000, crime: 10000, harmony: 2000}
+  - {id: level-20, kind: level, level: 20, mission: 18, bonus: 3.5, style: 10000, combat: 10000, crime: 5000, harmony: 2000}
+  - {id: level-31, kind: level, level: 31, mission: 17, bonus: 1, style: 10000, combat: 10000, crime: 2000, harmony: 5000}
+  - {id: level-34, kind: level, level: 34, mission: 6, bonus: 3.5, style: 2000, combat: 5000, crime: 10000, harmony: 5000}
+  - {id: level-51, kind: level, level: 51, mission: 20, bonus: 6, style: 10000, combat: 20000, crime: 2000, harmony: 10000}
+  - {id: level-52, kind: level, level: 52, mission: 9, bonus: 3, style: 10000, combat: 15000, crime: 2000, harmony: 10000}
+  - {id: level-54, kind: level, level: 54, mission: 10, bonus: 0, style: 2000, combat: 5000, crime: 2000, harmony: 10000}
+  - {id: level-55, kind: level, level: 55, mission: 5, bonus: 0, style: 2000, combat: 5000, crime: 2000, harmony: 10000}
+  - {id: level-80, kind: level, level: 80, mission: 5, bonus: 0, style: 2000, combat: 5000, crime: 2000, harmony: 2000}
+  - {id: level-81, kind: level, level: 81, mission: 5, bonus: 0, style: 5000, combat: 15000, crime: 2000, harmony: 10000}
+  - {id: level-82, kind: level, level: 82, mission: 11, bonus: 0, style: 5000, combat: 10000, crime: 10000, harmony: 2000}
+  - {id: level-83, kind: level, level: 83, mission: 10, bonus: 0, style: 5000, combat: 10000, crime: 5000, harmony: 2000}
+  - {id: level-84, kind: level, level: 84, mission: 6, bonus: 0, style: 10000, combat: 10000, crime: 2000, harmony: 10000}
+  - {id: level-86, kind: level, level: 86, mission: 10, bonus: 0, style: 5000, combat: 15000, crime: 2000, harmony: 5000}
+  - {id: level-87, kind: level, level: 87, mission: 8, bonus: 0, style: 2000, combat: 10000, crime: 5000, harmony: 5000}
+  - {id: level-92, kind: level, level: 92, mission: 7, bonus: 2.5, style: 5000, combat: 15000, crime: 10000, harmony: 2000}
+  - {id: level-93, kind: level, level: 93, mission: 11, bonus: 0, style: 5000, combat: 15000, crime: 10000, harmony: 10000}
+  - {id: level-99, kind: level, level: 99, mission: 6, bonus: 0, style: 2000, combat: 5000, crime: 2000, harmony: 2000}

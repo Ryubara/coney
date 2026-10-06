@@ -12,7 +12,7 @@ about: |
   its own). The [speed class](speed-classes.md) is only a fallback.
 complete: |
   Every type `CfgChar` configures (449) is listed with every argument. The labels (who a type is)
-  are hand-written and still sparse; the meaning of `v11d` and `flag_14b` is not traced.
+  are hand-written and still sparse; the meaning of `flag_14b` is not traced.
 defaults: {source: "config_preload2.lua, CfgChar", evidence: inferred}
 entries:
   - id: 1

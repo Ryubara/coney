@@ -299,6 +299,11 @@ def test_index_links_entities_and_lists_the_gaps() -> None:
     assert "entities.md" not in plain and "Still to list" not in plain
 
 
+def test_index_says_so_when_nothing_is_left_to_list() -> None:
+    text = refs_render.index([], bindings_page=True, gaps=refs.Gaps((), ""))
+    assert "Every family the scripts use has a list now." in text and "| Family |" not in text
+
+
 def test_merge_keeps_hand_written_fields_and_entries() -> None:
     old = _things(
         [

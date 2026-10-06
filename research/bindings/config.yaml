@@ -1091,7 +1091,7 @@
     - {name: f12, lua: number, ctype: float, desc: "Float at +0x0c."}
     - {name: f13, lua: number, ctype: float, desc: "Float at +0x10: the stun time's factor while hurt, 0x0022f658."}
     - {name: f14, lua: number, ctype: float, desc: "Float at +0x14: the ground time's factor while hurt, 0x0022f100."}
-    - {name: f15, lua: number, ctype: float, desc: "Float at +0x18."}
+    - {name: f15, lua: number, ctype: float, desc: "Float at +0x18: the power meter maximum's factor while hurt, 0x00223068."}
     - {name: f16, lua: number, ctype: float, desc: "Float at +0x1c: the AI attack delay's factor (CfgAttackDelay), 0x00223800."}
     - {name: f17, lua: number, ctype: float, desc: "Float at +0x20: the AI attack delay's factor when the target is down, 0x00223800."}
     - {name: n18, lua: number, ctype: int, desc: "Byte at +0x36, at least 1: grab struggle divisor; a grabbed human's strike costs the grabber 1/n of its power, 0x0027fd68."}
@@ -1154,17 +1154,18 @@
   calls:
     - {addr: 0x00228ad8, name: Cfg_SetWarriorUpgrade}
   args:
-    - {name: u1, lua: number, ctype: unsigned, desc: "Byte at 0x006b6650 (10)."}
-    - {name: u2, lua: number, ctype: unsigned, desc: "Byte at 0x006b6651 (20)."}
-    - {name: u3, lua: number, ctype: unsigned, desc: "Byte at 0x006b6652 (10)."}
-    - {name: u4, lua: number, ctype: unsigned, desc: "Byte at 0x006b6653 (20)."}
+    - {name: u1, lua: number, ctype: unsigned, desc: "Byte at 0x006b6650 (10): the punch damage bonus in percent with unlockable (6, 5), brass knuckles."}
+    - {name: u2, lua: number, ctype: unsigned, desc: "Byte at 0x006b6651 (20): the kick damage bonus with (6, 6), steel toe caps."}
+    - {name: u3, lua: number, ctype: unsigned, desc: "Byte at 0x006b6652 (10): the power meter maximum bonus with (6, 11)."}
+    - {name: u4, lua: number, ctype: unsigned, desc: "Byte at 0x006b6653 (20): the stamina maximum bonus with (6, 12)."}
   description: >-
     Stores four upgrade amounts (bytes at 0x006b6650-0x006b6653), read through the getter 0x00228860;
     config_preload2.lua sets 10, 20, 10, 20.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Which stat each upgrade raises is not traced.
+    Read at 0x0021b518, 0x0021b570, 0x00223068 and 0x00223188, each only while its unlockable is unlocked
+    ([Inventory, unlockables and statistics](../../research/player-state.md#unlockables)).
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
 
 - name: CfgHat
@@ -1173,7 +1174,7 @@
     - {addr: 0x00228d70, name: Cfg_AddHatFit}
   args:
     - {name: set, lua: number, ctype: int, desc: "Hat-fit set index (1-48): selects a 0xa90-byte record at 0x00662b70 + set x 0xa90, one per head shape."}
-    - {name: owner, lua: number, ctype: int, desc: "Number stored once per set at record +0xa80 (a character type or model number, inferred)."}
+    - {name: owner, lua: number, ctype: int, desc: "The character type the set belongs to (record +0xa80): a Warriors human finds its hat by the type it was created as, else by its class (0x003a3ba0)."}
     - {name: hat, lua: string, desc: "Hat object name (as given to CfgObj, e.g. a 'dyn_' name); put into the first free slot of the set's 48 name slots."}
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Offset {x, y, z} in metres of the hat relative to the head."}
     - {name: rot, lua: table, elem: number, count: 4, written_back: true, desc: "Rotation quaternion {i, j, k, r} of the hat."}
@@ -1908,7 +1909,7 @@
     - {name: v2, lua: number, ctype: int, desc: "Byte at +0x11a (3 for the Warriors)."}
     - {name: v3, lua: number, ctype: int, desc: "Byte at +0x11b (14)."}
     - {name: speedClass, lua: number, ctype: int, desc: "Speed class (see CfgSpeedClass), byte at +0x11c."}
-    - {name: v5, lua: number, ctype: int, desc: "Byte at +0x11d (7)."}
+    - {name: v5, lua: number, ctype: int, desc: "Byte at +0x11d: the power class an AI human of the type gets (human +0x1b8; a player's +0x1b9 unless a Warriors type gets its Warrior's, 0x00218008)."}
     - {name: v6, lua: number, ctype: int, desc: "16-bit value at +0x116 (1800: probably hit points)."}
     - {name: damage, lua: table, elem: number, count: 45, written_back: true, desc: "Table of 45 numbers (a damage table such as DamageWarriors), each multiplied by damageScale and stored as 16 bits from +0xb8."}
     - {name: attacks, lua: table, elem: number, count: 45, written_back: true, desc: "Table of 45 numbers (an attack table such as Att_Warrior), stored as bytes from +0x11e."}

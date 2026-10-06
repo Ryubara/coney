@@ -242,11 +242,11 @@ def index(
         "",
         GENERATED.format(key="*"),
         "",
-        "Lists of the things in *The Warriors* that scripts, mods and Coney's own code refer to: characters,",
-        "gangs, objects and weapons, levels and where they start the player, animations, controls and commands,",
-        "colours, text tags and labels, script constants, sounds, speech, script events and the names of the files in",
-        "the game's archive. They play the",
-        "part FiveM's",
+        "Lists of the things in *The Warriors* that scripts, mods and Coney's own code refer to: characters and",
+        "their classes, attacks and hats, gangs and the Rumble roster, objects, weapons, items and cars, levels and",
+        "what they place (flags, zones, doors, glass, lights), cameras and screen effects, AI goals, unlockables and",
+        "statistics, animations, controls and commands, colours, text tags and labels, script constants, sounds,",
+        "speech, script events and the names of the files in the game's archive. They play the part FiveM's",
         "[game references](https://docs.fivem.net/docs/game-references/) play for GTA V: a modder looks up the id or",
         "name to pass, an implementer the value to expect.",
         "",
@@ -340,10 +340,13 @@ def _gaps_section(gaps: Gaps) -> list[str]:
         "or **none**. The list is `research/references/still-to-list.yaml`; a family that gets its own list leaves",
         "it.",
         "",
-        _row([headings[name] for name in GAP_FIELDS]),
-        _row(["---" for _ in GAP_FIELDS]),
     ]
-    lines += [_row([_escape(family[name]) for name in GAP_FIELDS]) for family in gaps.families]
+    # Once every family has its own list the table would be empty: say so instead.
+    if gaps.families:
+        lines += [_row([headings[name] for name in GAP_FIELDS]), _row(["---" for _ in GAP_FIELDS])]
+        lines += [_row([_escape(family[name]) for name in GAP_FIELDS]) for family in gaps.families]
+    else:
+        lines.append("Every family the scripts use has a list now.")
     if gaps.excluded:
         lines += ["", *textwrap.wrap(_escape(gaps.excluded), width=120, break_on_hyphens=False)]
     return lines

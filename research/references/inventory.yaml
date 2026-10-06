@@ -1,0 +1,153 @@
+# Inventory items: a Coney game reference list. The page docs/references/inventory.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Inventory items"
+about: |
+  The 23 item slots of each player's inventory, ids 0-22 (`0x0041e420`). `CfgInventoryItem(object,
+  id, count, sound, ms)` gives a slot its object, pickup sound and duration in both players'
+  inventories; `InvGiveItem(id, n)` adds to a player's count, `InvNumberOf(id)` reads it and
+  `HuPutItemInPocket(human, id, n)` puts an item in a human's pocket (human `+0x250`, the count at
+  `+0x254`), to be taken when the human is beaten or mugged.
+complete: |
+  All 23 slots are listed; 15 have an object in `config_preload2.lua` and `level20` reconfigures three. Slots 0 and
+  16-22 have no object and no script names them. What an item is comes from its object's name and its bindings
+  (inferred); what the duration does for each item is not traced.
+defaults: {source: "config_preload2.lua, CfgInventoryItem; the Inv bindings", evidence: confirmed-code}
+entries:
+  - id: 0
+  - id: 1
+    object: dyn_revival
+    meaning: "A flash: a revive (`InvGiveRevive`); the flash command spends one to heal ([Combat](../research/combat.md))"
+    count: 0
+    sound: vags/interface/powerup
+    ms: 30000
+    bindings: [InvGiveRevive, InvNumberRevives]
+    given: 6
+    tested: 9
+    pocketed: 63
+    scripts: ["972fed2e", level20_bossfight.lua, level54_park.lua, level54_popsicle.lua, level55_lizziesattack.lua, level60_destroyers.lua, "... 20 more"]
+  - id: 2
+    meaning: "Money, in dollars (no object)"
+    count: 0
+    sound: vags/interface/powerup
+    ms: 10000
+    bindings: [InvGetMoney, InvSetMoney, GiveMoney, TakeMoney]
+    given: 6
+    tested: 4
+    scripts: [level95_coney.lua]
+  - id: 3
+    object: dyn_spraycan
+    meaning: "Spray-paint charges, spent by tagging"
+    count: 0
+    sound: vags/interface/powerup
+    ms: 20000
+    bindings: [InvGetSpraycanCharges, InvSetSpraycanCharges]
+    given: 6
+    tested: 4
+    pocketed: 7
+    scripts: [level9.lua, level95_coney.lua, level9_chap1_radio.lua, level9_chap2_tags.lua]
+  - id: 4
+    object: dyn_swhbld_super
+    meaning: "A switchblade power-up (from the object's name)"
+    count: 0
+    sound: vags/interface/powerup
+    ms: 20000
+    pocketed: 1
+    scripts: [level84_final.lua]
+  - id: 5
+    object: dyn_powercuffs
+    meaning: Handcuffs
+    count: 0
+    sound: vags/interface/powerup
+    ms: 30000
+    given: 12
+    tested: 7
+    scripts: [global.lua, level95.lua, level95_clubhouse.lua, level95_coney.lua]
+  - id: 6
+    object: dyn_key
+    meaning: "Handcuff (skeleton) keys"
+    count: 0
+    sound: vags/interface/powerup
+    ms: 30000
+    bindings: [InvGiveSkeletonKey, InvNumberSkeletonKeys]
+    given: 6
+    tested: 4
+    scripts: [level95_coney.lua]
+  - id: 7
+    object: dyn_pass
+    meaning: "A pass (mission item, level 11)"
+    count: 0
+    sound: vags/interface/mission_item
+    ms: 10000
+    given: 2
+    tested: 2
+    pocketed: 1
+    scripts: [level11_chapter5.lua]
+  - id: 8
+    object: dyn_boltcutter
+    meaning: "Bolt cutters (mission item)"
+    count: 0
+    sound: vags/interface/mission_item
+    ms: 10000
+  - id: 9
+    object: dyn_special_key
+    meaning: "A special key (mission item)"
+    count: 0
+    sound: vags/interface/mission_item
+    ms: 10000
+    given: 6
+    tested: 4
+    pocketed: 1
+    scripts: [level83_c5_apartment.lua, level95_coney.lua]
+  - id: 10
+    object: dyn_store_item
+    meaning: "Loot from a store"
+    count: 0
+    sound: vags/interface/powerup
+    ms: 10000
+  - id: 11
+    object: dyn_carstereo
+    meaning: "A car stereo (loot)"
+    count: 0
+    sound: vags/interface/powerup
+    ms: 10000
+    given: 2
+    scripts: [level14_dirtycop.lua]
+  - id: 12
+    object: dyn_ledger
+    meaning: "A ledger (mission item)"
+    count: 0
+    sound: vags/interface/mission_item
+    ms: 10000
+    overrides: ["level20: dyn_ledger"]
+    pocketed: 1
+    scripts: [level20_marketplace.lua]
+  - id: 13
+    object: dyn_dragon
+    meaning: "A dragon statue (mission item; level 20 uses its own object)"
+    count: 0
+    sound: vags/interface/mission_item
+    ms: 10000
+    overrides: ["level20: dyn_special_dragon"]
+  - id: 14
+    object: dyn_bagcoins
+    meaning: "A bag of coins (mission item)"
+    count: 0
+    sound: vags/interface/mission_item
+    ms: 10000
+    overrides: ["level20: dyn_bagcoins"]
+    pocketed: 2
+    scripts: [level20_backalley.lua, level20_bossfight.lua]
+  - id: 15
+    object: dyn_brownbag
+    meaning: "A brown bag (mission item)"
+    count: 0
+    sound: vags/interface/mission_item
+    ms: 10000
+  - id: 16
+  - id: 17
+  - id: 18
+  - id: 19
+  - id: 20
+  - id: 21
+  - id: 22

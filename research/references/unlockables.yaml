@@ -1,0 +1,629 @@
+# Unlockables: a Coney game reference list. The page docs/references/unlockables.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: Unlockables
+about: |
+  The records of the unlockables manager (`0x006fe998`): `global.lua` builds its `Unlockables` table of 610 records
+  `{level, group, item, type, extra, data}` and loads them with `UM_SetUnlockable`, index = position − 1. A record is
+  **unlocked** by `UM_Unlock(level, group, item)`, which unlocks every record with those three bytes (completing a
+  level unlocks its `(level, 0, 0)` records, the hub's clubhouse unlocks are `(95, 1, n)`), and **tested** by its type
+  and data: `UM_IsDataUnlocked(type, data)` in scripts, `0x00424130` in the code. The type says what the data is: the
+  next story level, a Rumble mode, arena, gang or character, an upgrade, a hint ([Inventory, unlockables and
+  statistics](../research/player-state.md#unlockables)).
+complete: |
+  All 610 records are listed with every field, grouped by type. *Unlocked by* lists only calls with constant
+  arguments; `global.lua` unlocks a completed level's records with the level's number in a variable. The meanings of
+  types 0-4, 6 (ids 3-15) and 11 are confirmed by the code that tests them; types 5, 7, 8, 9 and 10 are tested only by
+  scripts and named from them (inferred). What `extra` is for is not traced: no engine code reads it.
+defaults: {source: "global.lua, Unlockables", evidence: inferred}
+entries:
+  - {index: 0, kind: "story level", type: 0, level: 0, group: 0, item: 0, extra: 0, data: 99, unlocked_by: [global.lua]}
+  - {index: 1, kind: "story level", type: 0, level: 99, group: 0, item: 0, extra: 0, data: 80}
+  - {index: 2, kind: "story level", type: 0, level: 80, group: 0, item: 0, extra: 0, data: 87}
+  - {index: 3, kind: "story level", type: 0, level: 87, group: 0, item: 0, extra: 0, data: 34}
+  - {index: 4, kind: "story level", type: 0, level: 34, group: 0, item: 0, extra: 0, data: 2}
+  - {index: 6, kind: "story level", type: 0, level: 2, group: 0, item: 0, extra: 0, data: 3}
+  - {index: 8, kind: "story level", type: 0, level: 3, group: 0, item: 0, extra: 0, data: 5}
+  - {index: 9, kind: "story level", type: 0, level: 5, group: 0, item: 0, extra: 0, data: 81}
+  - {index: 11, kind: "story level", type: 0, level: 81, group: 0, item: 0, extra: 0, data: 86}
+  - {index: 13, kind: "story level", type: 0, level: 86, group: 0, item: 0, extra: 0, data: 93}
+  - {index: 14, kind: "story level", type: 0, level: 93, group: 0, item: 0, extra: 0, data: 31, tested_by: [level95_coney.lua]}
+  - {index: 15, kind: "story level", type: 0, level: 31, group: 0, item: 0, extra: 0, data: 14}
+  - {index: 17, kind: "story level", type: 0, level: 14, group: 0, item: 0, extra: 0, data: 9}
+  - {index: 18, kind: "story level", type: 0, level: 9, group: 0, item: 0, extra: 0, data: 51}
+  - {index: 19, kind: "story level", type: 0, level: 51, group: 0, item: 0, extra: 0, data: 52}
+  - {index: 20, kind: "story level", type: 0, level: 52, group: 0, item: 0, extra: 0, data: 54}
+  - {index: 21, kind: "story level", type: 0, level: 54, group: 0, item: 0, extra: 0, data: 55}
+  - {index: 22, kind: "story level", type: 0, level: 55, group: 0, item: 0, extra: 0, data: 84, tested_by: [level95_coney.lua]}
+  - {index: 161, kind: "Rumble mode", type: 1, level: 0, group: 0, item: 0, extra: 35, data: 12, mode: RM_Brawl1, unlocked_by: [global.lua]}
+  - {index: 162, kind: "Rumble mode", type: 1, level: 0, group: 0, item: 0, extra: 37, data: 14, mode: RM_Brawl5, unlocked_by: [global.lua]}
+  - {index: 163, kind: "Rumble mode", type: 1, level: 87, group: 0, item: 0, extra: 39, data: 1, mode: RM_Brawl}
+  - {index: 164, kind: "Rumble mode", type: 1, level: 34, group: 0, item: 0, extra: 41, data: 9, mode: RM_Surv}
+  - {index: 165, kind: "Rumble mode", type: 1, level: 2, group: 0, item: 0, extra: 43, data: 23, mode: RM_Mercy}
+  - {index: 166, kind: "Rumble mode", type: 1, level: 3, group: 0, item: 0, extra: 45, data: 19, mode: RM_TagBt}
+  - {index: 167, kind: "Rumble mode", type: 1, level: 5, group: 0, item: 0, extra: 47, data: 3, mode: RM_Royal}
+  - {index: 168, kind: "Rumble mode", type: 1, level: 31, group: 0, item: 0, extra: 49, data: 24, mode: RM_Wchair}
+  - {index: 169, kind: "Rumble mode", type: 1, level: 92, group: 0, item: 0, extra: 51, data: 2, mode: RM_Koth}
+  - {index: 581, kind: "Rumble arena", type: 2, level: 92, group: 0, item: 0, extra: 1, data: 101}
+  - {index: 582, kind: "Rumble arena", type: 2, level: 0, group: 0, item: 0, extra: 1, data: 102, unlocked_by: [global.lua]}
+  - {index: 583, kind: "Rumble arena", type: 2, level: 54, group: 0, item: 0, extra: 1, data: 104}
+  - {index: 584, kind: "Rumble arena", type: 2, level: 31, group: 0, item: 0, extra: 1, data: 105}
+  - {index: 585, kind: "Rumble arena", type: 2, level: 3, group: 0, item: 0, extra: 1, data: 107}
+  - {index: 586, kind: "Rumble arena", type: 2, level: 31, group: 0, item: 0, extra: 1, data: 108}
+  - {index: 587, kind: "Rumble arena", type: 2, level: 20, group: 0, item: 0, extra: 1, data: 109}
+  - {index: 588, kind: "Rumble arena", type: 2, level: 11, group: 0, item: 0, extra: 1, data: 110}
+  - {index: 589, kind: "Rumble arena", type: 2, level: 14, group: 0, item: 15, extra: 1, data: 111}
+  - {index: 590, kind: "Rumble arena", type: 2, level: 83, group: 0, item: 0, extra: 1, data: 113}
+  - {index: 591, kind: "Rumble arena", type: 2, level: 20, group: 0, item: 0, extra: 1, data: 114}
+  - {index: 592, kind: "Rumble arena", type: 2, level: 31, group: 0, item: 9, extra: 1, data: 115}
+  - {index: 593, kind: "Rumble arena", type: 2, level: 93, group: 0, item: 0, extra: 1, data: 116}
+  - {index: 594, kind: "Rumble arena", type: 2, level: 82, group: 0, item: 0, extra: 1, data: 118}
+  - {index: 595, kind: "Rumble arena", type: 2, level: 64, group: 0, item: 0, extra: 1, data: 119}
+  - {index: 596, kind: "Rumble arena", type: 2, level: 64, group: 0, item: 0, extra: 1, data: 120}
+  - {index: 597, kind: "Rumble arena", type: 2, level: 2, group: 0, item: 0, extra: 1, data: 121}
+  - {index: 598, kind: "Rumble arena", type: 2, level: 5, group: 0, item: 7, extra: 1, data: 122}
+  - {index: 599, kind: "Rumble arena", type: 2, level: 55, group: 0, item: 0, extra: 1, data: 123}
+  - {index: 600, kind: "Rumble arena", type: 2, level: 5, group: 0, item: 0, extra: 1, data: 124}
+  - {index: 601, kind: "Rumble arena", type: 2, level: 81, group: 0, item: 0, extra: 1, data: 126}
+  - {index: 602, kind: "Rumble arena", type: 2, level: 34, group: 0, item: 0, extra: 1, data: 127}
+  - {index: 603, kind: "Rumble arena", type: 2, level: 51, group: 0, item: 0, extra: 1, data: 128}
+  - {index: 604, kind: "Rumble arena", type: 2, level: 86, group: 0, item: 0, extra: 1, data: 129}
+  - {index: 605, kind: "Rumble arena", type: 2, level: 64, group: 0, item: 0, extra: 1, data: 130}
+  - {index: 606, kind: "Rumble arena", type: 2, level: 5, group: 0, item: 0, extra: 1, data: 131}
+  - {index: 607, kind: "Rumble arena", type: 2, level: 5, group: 0, item: 0, extra: 1, data: 132}
+  - {index: 608, kind: "Rumble arena", type: 2, level: 9, group: 0, item: 0, extra: 1, data: 133}
+  - {index: 609, kind: "Rumble arena", type: 2, level: 2, group: 0, item: 7, extra: 1, data: 134}
+  - {index: 170, kind: "Rumble gang", type: 3, level: 0, group: 0, item: 0, extra: 1, data: 5, unlocked_by: [global.lua]}
+  - {index: 171, kind: "Rumble gang", type: 3, level: 11, group: 0, item: 0, extra: 2, data: 13}
+  - {index: 172, kind: "Rumble gang", type: 3, level: 14, group: 1, item: 3, extra: 3, data: 21}
+  - {index: 173, kind: "Rumble gang", type: 3, level: 87, group: 0, item: 0, extra: 4, data: 2}
+  - {index: 174, kind: "Rumble gang", type: 3, level: 3, group: 0, item: 8, extra: 5, data: 19}
+  - {index: 175, kind: "Rumble gang", type: 3, level: 3, group: 0, item: 0, extra: 6, data: 10}
+  - {index: 176, kind: "Rumble gang", type: 3, level: 5, group: 0, item: 0, extra: 7, data: 14}
+  - {index: 177, kind: "Rumble gang", type: 3, level: 14, group: 0, item: 0, extra: 8, data: 16}
+  - {index: 178, kind: "Rumble gang", type: 3, level: 55, group: 0, item: 0, extra: 9, data: 7}
+  - {index: 179, kind: "Rumble gang", type: 3, level: 84, group: 0, item: 0, extra: 10, data: 9}
+  - {index: 180, kind: "Rumble gang", type: 3, level: 55, group: 0, item: 0, extra: 11, data: 6}
+  - {index: 181, kind: "Rumble gang", type: 3, level: 9, group: 0, item: 0, extra: 12, data: 20}
+  - {index: 182, kind: "Rumble gang", type: 3, level: 0, group: 0, item: 0, extra: 13, data: 3, unlocked_by: [global.lua]}
+  - {index: 183, kind: "Rumble gang", type: 3, level: 3, group: 0, item: 8, extra: 14, data: 17}
+  - {index: 184, kind: "Rumble gang", type: 3, level: 84, group: 0, item: 0, extra: 15, data: 8}
+  - {index: 185, kind: "Rumble gang", type: 3, level: 14, group: 1, item: 1, extra: 16, data: 15}
+  - {index: 186, kind: "Rumble gang", type: 3, level: 82, group: 0, item: 0, extra: 17, data: 12}
+  - {index: 187, kind: "Rumble gang", type: 3, level: 20, group: 0, item: 0, extra: 18, data: 11}
+  - {index: 188, kind: "Rumble gang", type: 3, level: 0, group: 0, item: 0, extra: 19, data: 4, unlocked_by: [global.lua]}
+  - {index: 189, kind: "Rumble gang", type: 3, level: 34, group: 0, item: 0, extra: 20, data: 18}
+  - {index: 190, kind: "Rumble gang", type: 3, level: 0, group: 0, item: 0, extra: 21, data: 1, unlocked_by: [global.lua]}
+  - {index: 191, kind: "Rumble gang", type: 3, level: 80, group: 0, item: 2, extra: 22, data: 35}
+  - {index: 192, kind: "Rumble gang", type: 3, level: 84, group: 0, item: 2, extra: 23, data: 37}
+  - {index: 193, kind: "Rumble gang", type: 3, level: 51, group: 0, item: 0, extra: 24, data: 32}
+  - {index: 194, kind: "Rumble gang", type: 3, level: 51, group: 1, item: 1, extra: 25, data: 43}
+  - {index: 195, kind: "Rumble gang", type: 3, level: 9, group: 0, item: 15, extra: 26, data: 49}
+  - {index: 196, kind: "Rumble gang", type: 3, level: 52, group: 0, item: 8, extra: 27, data: 39}
+  - {index: 197, kind: "Rumble gang", type: 3, level: 14, group: 0, item: 0, extra: 28, data: 27}
+  - {index: 198, kind: "Rumble gang", type: 3, level: 83, group: 0, item: 0, extra: 29, data: 40}
+  - {index: 199, kind: "Rumble gang", type: 3, level: 87, group: 1, item: 2, extra: 30, data: 22}
+  - {index: 200, kind: "Rumble gang", type: 3, level: 51, group: 0, item: 7, extra: 31, data: 47}
+  - {index: 201, kind: "Rumble gang", type: 3, level: 20, group: 0, item: 0, extra: 32, data: 30}
+  - {index: 202, kind: "Rumble gang", type: 3, level: 20, group: 0, item: 0, extra: 33, data: 44}
+  - {index: 203, kind: "Rumble gang", type: 3, level: 34, group: 0, item: 12, extra: 34, data: 41}
+  - {index: 204, kind: "Rumble gang", type: 3, level: 86, group: 0, item: 1, extra: 35, data: 23}
+  - {index: 205, kind: "Rumble gang", type: 3, level: 86, group: 0, item: 0, extra: 36, data: 31}
+  - {index: 206, kind: "Rumble gang", type: 3, level: 11, group: 0, item: 0, extra: 37, data: 25}
+  - {index: 207, kind: "Rumble gang", type: 3, level: 11, group: 0, item: 0, extra: 38, data: 48}
+  - {index: 208, kind: "Rumble gang", type: 3, level: 31, group: 0, item: 0, extra: 39, data: 26}
+  - {index: 209, kind: "Rumble gang", type: 3, level: 87, group: 1, item: 3, extra: 40, data: 33}
+  - {index: 210, kind: "Rumble gang", type: 3, level: 34, group: 1, item: 2, extra: 41, data: 34, unlocked_by: [level34.lua]}
+  - {index: 211, kind: "Rumble gang", type: 3, level: 9, group: 0, item: 0, extra: 42, data: 45}
+  - {index: 212, kind: "Rumble gang", type: 3, level: 5, group: 0, item: 0, extra: 43, data: 28}
+  - {index: 213, kind: "Rumble gang", type: 3, level: 11, group: 0, item: 11, extra: 44, data: 24}
+  - {index: 214, kind: "Rumble gang", type: 3, level: 2, group: 0, item: 0, extra: 45, data: 29}
+  - {index: 215, kind: "Rumble gang", type: 3, level: 82, group: 0, item: 0, extra: 46, data: 46}
+  - {index: 216, kind: "Rumble character", type: 4, level: 0, group: 0, item: 0, extra: 1, data: 2, character: 2, model: warr_cl_gen, unlocked_by: [global.lua]}
+  - {index: 217, kind: "Rumble character", type: 4, level: 0, group: 0, item: 0, extra: 2, data: 6, character: 6, model: warr_sw_gen, unlocked_by: [global.lua]}
+  - {index: 218, kind: "Rumble character", type: 4, level: 0, group: 0, item: 0, extra: 3, data: 27, character: 27, model: warr_ve_gen, unlocked_by: [global.lua]}
+  - {index: 219, kind: "Rumble character", type: 4, level: 0, group: 0, item: 0, extra: 4, data: 34, character: 34, model: warr_sn_gen, unlocked_by: [global.lua]}
+  - {index: 220, kind: "Rumble character", type: 4, level: 0, group: 0, item: 0, extra: 5, data: 16, character: 16, model: warr_co_gen, unlocked_by: [global.lua]}
+  - {index: 221, kind: "Rumble character", type: 4, level: 0, group: 0, item: 0, extra: 6, data: 22, character: 22, model: warr_fo_gen, unlocked_by: [global.lua]}
+  - {index: 222, kind: "Rumble character", type: 4, level: 0, group: 0, item: 0, extra: 7, data: 12, character: 12, model: warr_aj_gen, unlocked_by: [global.lua]}
+  - {index: 223, kind: "Rumble character", type: 4, level: 0, group: 0, item: 0, extra: 8, data: 31, character: 31, model: warr_re_gen, unlocked_by: [global.lua]}
+  - {index: 224, kind: "Rumble character", type: 4, level: 0, group: 0, item: 0, extra: 9, data: 19, character: 19, model: warr_cb_gen, unlocked_by: [global.lua]}
+  - {index: 225, kind: "Rumble character", type: 4, level: 2, group: 1, item: 1, extra: 10, data: 220, character: 220, model: orph_bo_va1}
+  - {index: 226, kind: "Rumble character", type: 4, level: 2, group: 1, item: 2, extra: 11, data: 223, character: 223, model: orph_lt_va, unlocked_by: [level2.lua]}
+  - {index: 227, kind: "Rumble character", type: 4, level: 2, group: 0, item: 0, extra: 12, data: 394, character: 394, model: civl_tr_ma2}
+  - {index: 228, kind: "Rumble character", type: 4, level: 2, group: 0, item: 0, extra: 13, data: 396, character: 396, model: civl_tr_ma4}
+  - {index: 229, kind: "Rumble character", type: 4, level: 2, group: 0, item: 0, extra: 14, data: 391, character: 391, model: civl_tr_fa3}
+  - {index: 230, kind: "Rumble character", type: 4, level: 2, group: 0, item: 0, extra: 15, data: 389, character: 389, model: civl_tr_fa1}
+  - {index: 231, kind: "Rumble character", type: 4, level: 2, group: 0, item: 0, extra: 16, data: 397, character: 397, model: civl_tr_ma5}
+  - {index: 232, kind: "Rumble character", type: 4, level: 2, group: 0, item: 0, extra: 17, data: 395, character: 395, model: civl_tr_ma3}
+  - {index: 233, kind: "Rumble character", type: 4, level: 2, group: 0, item: 0, extra: 18, data: 390, character: 390, model: civl_tr_fa2}
+  - {index: 234, kind: "Rumble character", type: 4, level: 2, group: 0, item: 0, extra: 19, data: 393, character: 393, model: civl_tr_ma1}
+  - {index: 235, kind: "Rumble character", type: 4, level: 2, group: 0, item: 0, extra: 20, data: 392, character: 392, model: civl_tr_fa4}
+  - {index: 236, kind: "Rumble character", type: 4, level: 2, group: 0, item: 0, extra: 21, data: 40, character: 40, model: warr_ty_cv}
+  - {index: 237, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 22, data: 172, character: 172, model: elec_bo}
+  - {index: 238, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 23, data: 175, character: 175, model: elec_so2}
+  - {index: 239, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 24, data: 177, character: 177, model: elec_so4}
+  - {index: 240, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 25, data: 174, character: 174, model: elec_so1}
+  - {index: 241, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 26, data: 176, character: 176, model: elec_so3}
+  - {index: 242, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 27, data: 173, character: 173, model: elec_lt}
+  - {index: 243, kind: "Rumble character", type: 4, level: 3, group: 0, item: 0, extra: 28, data: 141, character: 141, model: hiha_so_vb2}
+  - {index: 244, kind: "Rumble character", type: 4, level: 3, group: 0, item: 0, extra: 29, data: 138, character: 138, model: hiha_so_va1}
+  - {index: 245, kind: "Rumble character", type: 4, level: 3, group: 0, item: 0, extra: 30, data: 140, character: 140, model: hiha_so_vb1}
+  - {index: 246, kind: "Rumble character", type: 4, level: 3, group: 0, item: 0, extra: 31, data: 139, character: 139, model: hiha_so_va2}
+  - {index: 247, kind: "Rumble character", type: 4, level: 3, group: 0, item: 0, extra: 32, data: 136, character: 136, model: hiha_lt}
+  - {index: 248, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 33, data: 148, character: 148, model: panz_bo}
+  - {index: 249, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 34, data: 151, character: 151, model: panz_so_va2}
+  - {index: 250, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 35, data: 152, character: 152, model: panz_so_vb1}
+  - {index: 251, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 36, data: 153, character: 153, model: panz_so_vb2}
+  - {index: 252, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 37, data: 150, character: 150, model: panz_so_va1}
+  - {index: 253, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 38, data: 149, character: 149, model: panz_lt}
+  - {index: 254, kind: "Rumble character", type: 4, level: 3, group: 0, item: 8, extra: 39, data: 307, character: 307, model: civl_sp_ju}
+  - {index: 255, kind: "Rumble character", type: 4, level: 5, group: 1, item: 1, extra: 40, data: 119, character: 119, model: hurr_va}
+  - {index: 256, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 41, data: 124, character: 124, model: hurr_so1a}
+  - {index: 257, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 42, data: 127, character: 127, model: hurr_so2b}
+  - {index: 258, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 43, data: 126, character: 126, model: hurr_so2a}
+  - {index: 259, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 44, data: 125, character: 125, model: hurr_so1b}
+  - {index: 260, kind: "Rumble character", type: 4, level: 5, group: 1, item: 2, extra: 45, data: 123, character: 123, model: hurr_lt, unlocked_by: [level5_chapter1.lua]}
+  - {index: 261, kind: "Rumble character", type: 4, level: 5, group: 1, item: 2, extra: 46, data: 122, character: 122, model: hurr_sa, unlocked_by: [level5_chapter1.lua]}
+  - {index: 262, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 47, data: 386, character: 386, model: civl_eh_ma4}
+  - {index: 263, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 48, data: 384, character: 384, model: civl_eh_ma2}
+  - {index: 264, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 49, data: 385, character: 385, model: civl_eh_ma3}
+  - {index: 265, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 50, data: 380, character: 380, model: civl_eh_fa1}
+  - {index: 266, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 51, data: 381, character: 381, model: civl_eh_fa2}
+  - {index: 267, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 52, data: 382, character: 382, model: civl_eh_fa3}
+  - {index: 268, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 53, data: 387, character: 387, model: civl_eh_ma5}
+  - {index: 269, kind: "Rumble character", type: 4, level: 5, group: 0, item: 0, extra: 54, data: 383, character: 383, model: civl_eh_ma1}
+  - {index: 270, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 55, data: 91, character: 91, model: fury_so1, unlocked_by: [global.lua]}
+  - {index: 271, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 56, data: 93, character: 93, model: fury_so3, unlocked_by: [global.lua]}
+  - {index: 272, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 57, data: 92, character: 92, model: fury_so2, unlocked_by: [global.lua]}
+  - {index: 273, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 58, data: 94, character: 94, model: fury_so4, unlocked_by: [global.lua]}
+  - {index: 274, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 59, data: 226, character: 226, model: orph_so_va2, unlocked_by: [global.lua]}
+  - {index: 275, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 60, data: 228, character: 228, model: orph_so_vb2, unlocked_by: [global.lua]}
+  - {index: 276, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 61, data: 227, character: 227, model: orph_so_vb1, unlocked_by: [global.lua]}
+  - {index: 277, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 62, data: 225, character: 225, model: orph_so_va1, unlocked_by: [global.lua]}
+  - {index: 278, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 63, data: 224, character: 224, model: orph_lt_vb, unlocked_by: [global.lua]}
+  - {index: 279, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 64, data: 103, character: 103, model: turn_so3, unlocked_by: [global.lua]}
+  - {index: 280, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 65, data: 105, character: 105, model: turn_so5, unlocked_by: [global.lua]}
+  - {index: 281, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 66, data: 104, character: 104, model: turn_so4, unlocked_by: [global.lua]}
+  - {index: 282, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 67, data: 101, character: 101, model: turn_so1, unlocked_by: [global.lua]}
+  - {index: 283, kind: "Rumble character", type: 4, level: 8, group: 0, item: 0, extra: 68, data: 102, character: 102, model: turn_so2, unlocked_by: [global.lua]}
+  - {index: 284, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 69, data: 214, character: 214, model: moon_bo}
+  - {index: 285, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 70, data: 219, character: 219, model: moon_so2b}
+  - {index: 286, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 71, data: 217, character: 217, model: moon_so1b}
+  - {index: 287, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 72, data: 218, character: 218, model: moon_so2a}
+  - {index: 288, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 73, data: 216, character: 216, model: moon_so1a}
+  - {index: 289, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 74, data: 215, character: 215, model: moon_lt}
+  - {index: 290, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 75, data: 247, character: 247, model: cops_ty_vb1}
+  - {index: 291, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 76, data: 248, character: 248, model: cops_ty_vb2}
+  - {index: 292, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 77, data: 245, character: 245, model: cops_ty_va1}
+  - {index: 293, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 78, data: 358, character: 358, model: civl_sg1}
+  - {index: 294, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 79, data: 246, character: 246, model: cops_ty_va2}
+  - {index: 295, kind: "Rumble character", type: 4, level: 9, group: 0, item: 0, extra: 80, data: 359, character: 359, model: civl_sg2}
+  - {index: 296, kind: "Rumble character", type: 4, level: 9, group: 1, item: 1, extra: 81, data: 425, character: 425, model: civl_scps}
+  - {index: 297, kind: "Rumble character", type: 4, level: 9, group: 0, item: 15, extra: 82, data: 432, character: 432, model: civl_sp_ma1}
+  - {index: 298, kind: "Rumble character", type: 4, level: 9, group: 0, item: 15, extra: 83, data: 431, character: 431, model: civl_sp_ma5}
+  - {index: 299, kind: "Rumble character", type: 4, level: 9, group: 0, item: 15, extra: 84, data: 434, character: 434, model: civl_sp_ma2}
+  - {index: 300, kind: "Rumble character", type: 4, level: 9, group: 0, item: 15, extra: 85, data: 435, character: 435, model: civl_sp_ma4}
+  - {index: 301, kind: "Rumble character", type: 4, level: 9, group: 0, item: 15, extra: 86, data: 433, character: 433, model: civl_sp_ma3}
+  - {index: 302, kind: "Rumble character", type: 4, level: 11, group: 1, item: 1, extra: 87, data: 128, character: 128, model: bopp_bo}
+  - {index: 303, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 88, data: 133, character: 133, model: bopp_so1d}
+  - {index: 304, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 89, data: 130, character: 130, model: bopp_so1a}
+  - {index: 305, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 90, data: 132, character: 132, model: bopp_so1c}
+  - {index: 306, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 91, data: 134, character: 134, model: bopp_so2a}
+  - {index: 307, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 92, data: 131, character: 131, model: bopp_so1b}
+  - {index: 308, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 93, data: 129, character: 129, model: bopp_lt}
+  - {index: 309, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 94, data: 313, character: 313, model: bopp_fa1}
+  - {index: 310, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 95, data: 314, character: 314, model: bopp_fa1}
+  - {index: 311, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 96, data: 337, character: 337, model: civl_hl_tr}
+  - {index: 312, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 97, data: 342, character: 342, model: civl_hl_fc5}
+  - {index: 313, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 98, data: 338, character: 338, model: civl_hl_fc1}
+  - {index: 314, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 99, data: 339, character: 339, model: civl_hl_fc2}
+  - {index: 315, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 100, data: 340, character: 340, model: civl_hl_fc3}
+  - {index: 316, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 101, data: 341, character: 341, model: civl_hl_fc4}
+  - {index: 317, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 102, data: 324, character: 324, model: civl_hl_ma1}
+  - {index: 318, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 103, data: 326, character: 326, model: civl_hl_ma3}
+  - {index: 319, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 104, data: 328, character: 328, model: civl_hl_ma5}
+  - {index: 320, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 105, data: 327, character: 327, model: civl_hl_ma4}
+  - {index: 321, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 106, data: 325, character: 325, model: civl_hl_ma2}
+  - {index: 322, kind: "Rumble character", type: 4, level: 11, group: 0, item: 0, extra: 107, data: 17, character: 17, model: warr_co_cv}
+  - {index: 323, kind: "Rumble character", type: 4, level: 11, group: 0, item: 11, extra: 108, data: 268, character: 268, model: char_db1}
+  - {index: 324, kind: "Rumble character", type: 4, level: 11, group: 0, item: 11, extra: 109, data: 269, character: 269, model: char_db2}
+  - {index: 325, kind: "Rumble character", type: 4, level: 11, group: 0, item: 11, extra: 110, data: 357, character: 357, model: civl_hl_st3a}
+  - {index: 326, kind: "Rumble character", type: 4, level: 11, group: 0, item: 11, extra: 111, data: 354, character: 354, model: civl_hl_st1b}
+  - {index: 327, kind: "Rumble character", type: 4, level: 11, group: 0, item: 11, extra: 112, data: 353, character: 353, model: civl_hl_st1a}
+  - {index: 328, kind: "Rumble character", type: 4, level: 11, group: 0, item: 11, extra: 113, data: 355, character: 355, model: civl_hl_st2a}
+  - {index: 329, kind: "Rumble character", type: 4, level: 11, group: 0, item: 11, extra: 114, data: 356, character: 356, model: civl_hl_st2b}
+  - {index: 330, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 115, data: 373, character: 373, model: civl_bn_ma2}
+  - {index: 331, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 116, data: 370, character: 370, model: civl_bn_fa3}
+  - {index: 332, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 117, data: 371, character: 371, model: civl_bn_fa4}
+  - {index: 333, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 118, data: 372, character: 372, model: civl_bn_ma1}
+  - {index: 334, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 119, data: 376, character: 376, model: civl_bn_mb1}
+  - {index: 335, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 120, data: 375, character: 375, model: civl_bn_ma4}
+  - {index: 336, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 121, data: 374, character: 374, model: civl_bn_ma3}
+  - {index: 337, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 122, data: 369, character: 369, model: civl_bn_fa2}
+  - {index: 338, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 123, data: 368, character: 368, model: civl_bn_fa1}
+  - {index: 339, kind: "Rumble character", type: 4, level: 14, group: 1, item: 3, extra: 124, data: 253, character: 253, model: cops_va1}
+  - {index: 340, kind: "Rumble character", type: 4, level: 14, group: 1, item: 3, extra: 125, data: 255, character: 255, model: cops_va3}
+  - {index: 341, kind: "Rumble character", type: 4, level: 14, group: 1, item: 3, extra: 126, data: 254, character: 254, model: cops_va2}
+  - {index: 342, kind: "Rumble character", type: 4, level: 14, group: 1, item: 3, extra: 127, data: 264, character: 264, model: cops_vd2}
+  - {index: 343, kind: "Rumble character", type: 4, level: 14, group: 1, item: 3, extra: 128, data: 256, character: 256, model: cops_vb1}
+  - {index: 344, kind: "Rumble character", type: 4, level: 14, group: 1, item: 3, extra: 129, data: 263, character: 263, model: cops_vd1}
+  - {index: 345, kind: "Rumble character", type: 4, level: 14, group: 1, item: 3, extra: 130, data: 258, character: 258, model: cops_vb3}
+  - {index: 346, kind: "Rumble character", type: 4, level: 14, group: 1, item: 3, extra: 131, data: 257, character: 257, model: cops_vb2}
+  - {index: 347, kind: "Rumble character", type: 4, level: 14, group: 1, item: 2, extra: 132, data: 154, character: 154, model: jsbs_bo, unlocked_by: [level14_jsb.lua]}
+  - {index: 348, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 133, data: 158, character: 158, model: jsbs_so3}
+  - {index: 349, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 134, data: 156, character: 156, model: jsbs_so1}
+  - {index: 350, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 135, data: 159, character: 159, model: jsbs_so4}
+  - {index: 351, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 136, data: 157, character: 157, model: jsbs_so2}
+  - {index: 352, kind: "Rumble character", type: 4, level: 14, group: 0, item: 0, extra: 137, data: 155, character: 155, model: jsbs_lt}
+  - {index: 353, kind: "Rumble character", type: 4, level: 14, group: 1, item: 1, extra: 138, data: 142, character: 142, model: sara_bo}
+  - {index: 354, kind: "Rumble character", type: 4, level: 14, group: 1, item: 1, extra: 139, data: 147, character: 147, model: sara_so2b}
+  - {index: 355, kind: "Rumble character", type: 4, level: 14, group: 1, item: 1, extra: 140, data: 145, character: 145, model: sara_so1b}
+  - {index: 356, kind: "Rumble character", type: 4, level: 14, group: 1, item: 1, extra: 141, data: 144, character: 144, model: sara_so1a}
+  - {index: 357, kind: "Rumble character", type: 4, level: 14, group: 1, item: 1, extra: 142, data: 146, character: 146, model: sara_so2a}
+  - {index: 358, kind: "Rumble character", type: 4, level: 14, group: 1, item: 1, extra: 143, data: 143, character: 143, model: sara_lt}
+  - {index: 359, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 144, data: 405, character: 405, model: civl_ct_ma2}
+  - {index: 360, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 145, data: 406, character: 406, model: civl_ct_fa3}
+  - {index: 361, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 146, data: 407, character: 407, model: civl_ct_ma3}
+  - {index: 362, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 147, data: 404, character: 404, model: civl_ct_fa2}
+  - {index: 363, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 148, data: 408, character: 408, model: civl_ct_fa4}
+  - {index: 364, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 149, data: 410, character: 410, model: civl_ct_ma5}
+  - {index: 365, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 150, data: 402, character: 402, model: civl_ct_fa1}
+  - {index: 366, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 151, data: 403, character: 403, model: civl_ct_ma1}
+  - {index: 367, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 152, data: 409, character: 409, model: civl_ct_ma4}
+  - {index: 368, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 153, data: 415, character: 415, model: civl_ct_ac}
+  - {index: 369, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 154, data: 115, character: 115, model: civl_monk2}
+  - {index: 370, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 155, data: 117, character: 117, model: civl_monk_bo2}
+  - {index: 371, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 156, data: 116, character: 116, model: civl_monk_bo1}
+  - {index: 372, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 157, data: 414, character: 414, model: civl_ct_eb}
+  - {index: 373, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 158, data: 114, character: 114, model: civl_monk1}
+  - {index: 374, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 159, data: 411, character: 411, model: civl_ct_ck1}
+  - {index: 375, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 160, data: 412, character: 412, model: civl_ct_ck2}
+  - {index: 376, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 161, data: 413, character: 413, model: civl_ct_ck3}
+  - {index: 377, kind: "Rumble character", type: 4, level: 20, group: 0, item: 9, extra: 162, data: 24, character: 24, model: warr_fo_cv2}
+  - {index: 378, kind: "Rumble character", type: 4, level: 20, group: 1, item: 1, extra: 163, data: 106, character: 106, model: sava_bo}
+  - {index: 379, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 164, data: 111, character: 111, model: sava_so1b}
+  - {index: 380, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 165, data: 112, character: 112, model: sava_so2a}
+  - {index: 381, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 166, data: 110, character: 110, model: sava_so1a}
+  - {index: 382, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 167, data: 113, character: 113, model: sava_so2b}
+  - {index: 383, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 168, data: 107, character: 107, model: sava_lt}
+  - {index: 384, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 169, data: 108, character: 108, model: sava_lt1}
+  - {index: 385, kind: "Rumble character", type: 4, level: 20, group: 0, item: 0, extra: 170, data: 109, character: 109, model: sava_lt2}
+  - {index: 386, kind: "Rumble character", type: 4, level: 20, group: 0, item: 9, extra: 171, data: 29, character: 29, model: warr_ve_cv}
+  - {index: 387, kind: "Rumble character", type: 4, level: 20, group: 1, item: 1, extra: 172, data: 23, character: 23, model: warr_fo_cv1}
+  - {index: 388, kind: "Rumble character", type: 4, level: 31, group: 1, item: 1, extra: 173, data: 259, character: 259, model: cops_vc1}
+  - {index: 389, kind: "Rumble character", type: 4, level: 31, group: 0, item: 0, extra: 174, data: 360, character: 360, model: civl_pl_ma1}
+  - {index: 390, kind: "Rumble character", type: 4, level: 31, group: 0, item: 0, extra: 175, data: 362, character: 362, model: civl_pl_ma3}
+  - {index: 391, kind: "Rumble character", type: 4, level: 31, group: 0, item: 0, extra: 176, data: 364, character: 364, model: civl_pl_ma6}
+  - {index: 392, kind: "Rumble character", type: 4, level: 31, group: 0, item: 0, extra: 177, data: 361, character: 361, model: civl_pl_ma2}
+  - {index: 393, kind: "Rumble character", type: 4, level: 31, group: 0, item: 0, extra: 178, data: 363, character: 363, model: civl_pl_ma5}
+  - {index: 394, kind: "Rumble character", type: 4, level: 31, group: 0, item: 0, extra: 179, data: 330, character: 330, model: civl_hl_fb2}
+  - {index: 395, kind: "Rumble character", type: 4, level: 31, group: 0, item: 0, extra: 180, data: 329, character: 329, model: civl_hl_fb1}
+  - {index: 396, kind: "Rumble character", type: 4, level: 31, group: 0, item: 0, extra: 181, data: 365, character: 365, model: civl_pl_ma8}
+  - {index: 397, kind: "Rumble character", type: 4, level: 31, group: 0, item: 0, extra: 182, data: 367, character: 367, model: civl_pl_fa2}
+  - {index: 398, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 183, data: 288, character: 288, model: civl_gk}
+  - {index: 399, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 184, data: 296, character: 296, model: civl_cw_ma1}
+  - {index: 400, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 185, data: 299, character: 299, model: civl_cw_mb2}
+  - {index: 401, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 186, data: 298, character: 298, model: civl_cw_mb1}
+  - {index: 402, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 187, data: 297, character: 297, model: civl_cw_ma2}
+  - {index: 403, kind: "Rumble character", type: 4, level: 34, group: 1, item: 1, extra: 188, data: 90, character: 90, model: fury_lt}
+  - {index: 404, kind: "Rumble character", type: 4, level: 34, group: 0, item: 0, extra: 189, data: 166, character: 166, model: juda_bo}
+  - {index: 405, kind: "Rumble character", type: 4, level: 34, group: 0, item: 0, extra: 190, data: 167, character: 167, model: juda_lt}
+  - {index: 406, kind: "Rumble character", type: 4, level: 34, group: 0, item: 0, extra: 191, data: 171, character: 171, model: juda_so_vb2}
+  - {index: 407, kind: "Rumble character", type: 4, level: 34, group: 0, item: 0, extra: 192, data: 170, character: 170, model: juda_so_vb1}
+  - {index: 408, kind: "Rumble character", type: 4, level: 34, group: 0, item: 0, extra: 193, data: 168, character: 168, model: juda_so_va1}
+  - {index: 409, kind: "Rumble character", type: 4, level: 34, group: 0, item: 0, extra: 194, data: 169, character: 169, model: juda_so_va2}
+  - {index: 410, kind: "Rumble character", type: 4, level: 34, group: 1, item: 2, extra: 195, data: 452, character: 452, model: civl_rs_fa2, unlocked_by: [level34.lua]}
+  - {index: 411, kind: "Rumble character", type: 4, level: 34, group: 1, item: 2, extra: 196, data: 450, character: 450, model: civl_rs_ma5, unlocked_by: [level34.lua]}
+  - {index: 412, kind: "Rumble character", type: 4, level: 34, group: 1, item: 2, extra: 197, data: 449, character: 449, model: civl_rs_ma4, unlocked_by: [level34.lua]}
+  - {index: 413, kind: "Rumble character", type: 4, level: 34, group: 1, item: 2, extra: 198, data: 448, character: 448, model: civl_rs_ma3, unlocked_by: [level34.lua]}
+  - {index: 414, kind: "Rumble character", type: 4, level: 34, group: 1, item: 2, extra: 199, data: 446, character: 446, model: civl_rs_ma1, unlocked_by: [level34.lua]}
+  - {index: 415, kind: "Rumble character", type: 4, level: 34, group: 1, item: 2, extra: 200, data: 453, character: 453, model: civl_rs_fa3, unlocked_by: [level34.lua]}
+  - {index: 416, kind: "Rumble character", type: 4, level: 34, group: 1, item: 2, extra: 201, data: 451, character: 451, model: civl_rs_fa1, unlocked_by: [level34.lua]}
+  - {index: 417, kind: "Rumble character", type: 4, level: 34, group: 1, item: 2, extra: 202, data: 447, character: 447, model: civl_rs_ma2, unlocked_by: [level34.lua]}
+  - {index: 418, kind: "Rumble character", type: 4, level: 34, group: 0, item: 12, extra: 203, data: 294, character: 294, model: civl_hl_b2}
+  - {index: 419, kind: "Rumble character", type: 4, level: 34, group: 0, item: 12, extra: 204, data: 295, character: 295, model: civl_hl_b3}
+  - {index: 420, kind: "Rumble character", type: 4, level: 34, group: 0, item: 12, extra: 205, data: 424, character: 424, model: civl_pl_st3}
+  - {index: 421, kind: "Rumble character", type: 4, level: 34, group: 0, item: 12, extra: 206, data: 423, character: 423, model: civl_pl_st2}
+  - {index: 422, kind: "Rumble character", type: 4, level: 34, group: 0, item: 12, extra: 207, data: 422, character: 422, model: civl_pl_st1}
+  - {index: 423, kind: "Rumble character", type: 4, level: 34, group: 0, item: 12, extra: 208, data: 293, character: 293, model: civl_hl_b1}
+  - {index: 424, kind: "Rumble character", type: 4, level: 34, group: 0, item: 12, extra: 209, data: 366, character: 366, model: civl_pl_fa1}
+  - {index: 425, kind: "Rumble character", type: 4, level: 34, group: 0, item: 12, extra: 210, data: 420, character: 420, model: civl_co_ma4}
+  - {index: 426, kind: "Rumble character", type: 4, level: 34, group: 0, item: 12, extra: 211, data: 321, character: 321, model: civl_gc_bt}
+  - {index: 427, kind: "Rumble character", type: 4, level: 51, group: 0, item: 7, extra: 212, data: 275, character: 275, model: civl_bm_vb4}
+  - {index: 428, kind: "Rumble character", type: 4, level: 51, group: 0, item: 7, extra: 213, data: 273, character: 273, model: civl_bm_vb2}
+  - {index: 429, kind: "Rumble character", type: 4, level: 51, group: 0, item: 7, extra: 214, data: 280, character: 280, model: civl_bm_vb9}
+  - {index: 430, kind: "Rumble character", type: 4, level: 51, group: 0, item: 7, extra: 215, data: 279, character: 279, model: civl_bm_vb8}
+  - {index: 431, kind: "Rumble character", type: 4, level: 51, group: 0, item: 7, extra: 216, data: 277, character: 277, model: civl_bm_vb6}
+  - {index: 432, kind: "Rumble character", type: 4, level: 51, group: 0, item: 7, extra: 217, data: 271, character: 271, model: civl_bm_va2}
+  - {index: 433, kind: "Rumble character", type: 4, level: 51, group: 0, item: 0, extra: 218, data: 428, character: 428, model: civl_dr_ma4}
+  - {index: 434, kind: "Rumble character", type: 4, level: 51, group: 0, item: 0, extra: 219, data: 427, character: 427, model: civl_dr_ma2}
+  - {index: 435, kind: "Rumble character", type: 4, level: 51, group: 0, item: 0, extra: 220, data: 426, character: 426, model: civl_dr_ma1}
+  - {index: 436, kind: "Rumble character", type: 4, level: 51, group: 0, item: 0, extra: 221, data: 430, character: 430, model: civl_dr_ma5}
+  - {index: 437, kind: "Rumble character", type: 4, level: 51, group: 0, item: 0, extra: 222, data: 429, character: 429, model: civl_dr_ma3}
+  - {index: 438, kind: "Rumble character", type: 4, level: 51, group: 1, item: 1, extra: 223, data: 437, character: 437, model: civl_we_ma1}
+  - {index: 439, kind: "Rumble character", type: 4, level: 51, group: 1, item: 1, extra: 224, data: 436, character: 436, model: civl_we_ma2}
+  - {index: 440, kind: "Rumble character", type: 4, level: 51, group: 1, item: 1, extra: 225, data: 439, character: 439, model: civl_we_ma4}
+  - {index: 441, kind: "Rumble character", type: 4, level: 51, group: 1, item: 1, extra: 226, data: 440, character: 440, model: civl_we_ma5}
+  - {index: 442, kind: "Rumble character", type: 4, level: 51, group: 1, item: 1, extra: 227, data: 438, character: 438, model: civl_we_ma3}
+  - {index: 443, kind: "Rumble character", type: 4, level: 51, group: 1, item: 2, extra: 228, data: 99, character: 99, model: turn_bo, unlocked_by: [level51_chapter3.lua]}
+  - {index: 444, kind: "Rumble character", type: 4, level: 51, group: 1, item: 2, extra: 229, data: 100, character: 100, model: turn_lt, unlocked_by: [level51_chapter3.lua]}
+  - {index: 445, kind: "Rumble character", type: 4, level: 52, group: 0, item: 8, extra: 230, data: 344, character: 344, model: civl_hl_bt1}
+  - {index: 446, kind: "Rumble character", type: 4, level: 52, group: 0, item: 8, extra: 231, data: 346, character: 346, model: civl_hl_bt3}
+  - {index: 447, kind: "Rumble character", type: 4, level: 52, group: 0, item: 8, extra: 232, data: 348, character: 348, model: civl_hl_bt5}
+  - {index: 448, kind: "Rumble character", type: 4, level: 52, group: 0, item: 8, extra: 233, data: 347, character: 347, model: civl_hl_bt4}
+  - {index: 449, kind: "Rumble character", type: 4, level: 52, group: 0, item: 8, extra: 234, data: 345, character: 345, model: civl_hl_bt2}
+  - {index: 450, kind: "Rumble character", type: 4, level: 52, group: 0, item: 8, extra: 235, data: 343, character: 343, model: civl_bt1}
+  - {index: 451, kind: "Rumble character", type: 4, level: 52, group: 1, item: 1, extra: 236, data: 221, character: 221, model: orph_me}
+  - {index: 452, kind: "Rumble character", type: 4, level: 54, group: 0, item: 2, extra: 237, data: 89, character: 89, model: fury_bo}
+  - {index: 453, kind: "Rumble character", type: 4, level: 55, group: 0, item: 2, extra: 238, data: 237, character: 237, model: lizz_bo}
+  - {index: 454, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 239, data: 243, character: 243, model: lizz_so_vb2}
+  - {index: 455, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 240, data: 240, character: 240, model: lizz_so_va2}
+  - {index: 456, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 241, data: 239, character: 239, model: lizz_so_va1}
+  - {index: 457, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 242, data: 241, character: 241, model: lizz_so_va3}
+  - {index: 458, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 243, data: 242, character: 242, model: lizz_so_vb1}
+  - {index: 459, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 244, data: 238, character: 238, model: lizz_lt}
+  - {index: 460, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 245, data: 235, character: 235, model: punk_so2a}
+  - {index: 461, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 246, data: 234, character: 234, model: punk_so1b}
+  - {index: 462, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 247, data: 233, character: 233, model: punk_so1a}
+  - {index: 463, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 248, data: 236, character: 236, model: punk_so2b}
+  - {index: 464, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 249, data: 231, character: 231, model: punk_lt}
+  - {index: 465, kind: "Rumble character", type: 4, level: 55, group: 0, item: 0, extra: 250, data: 229, character: 229, model: punk_bo}
+  - {index: 466, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 251, data: 73, character: 73, model: riff_so_vc1}
+  - {index: 467, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 252, data: 74, character: 74, model: riff_so_vc2}
+  - {index: 468, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 253, data: 75, character: 75, model: riff_so_vc3}
+  - {index: 469, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 254, data: 76, character: 76, model: riff_so_vc4}
+  - {index: 470, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 255, data: 66, character: 66, model: riff_lt}
+  - {index: 471, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 256, data: 67, character: 67, model: riff_em}
+  - {index: 472, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 257, data: 350, character: 350, model: civl_hl_dj1}
+  - {index: 473, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 258, data: 63, character: 63, model: riff_cy_ghost}
+  - {index: 474, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 259, data: 25, character: 25, model: warr_fo_ghost}
+  - {index: 475, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 260, data: 3, character: 3, model: warr_cl_ghost}
+  - {index: 476, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 261, data: 8, character: 8, model: warr_sw_ghost}
+  - {index: 477, kind: "Rumble character", type: 4, level: 64, group: 0, item: 0, extra: 262, data: 14, character: 14, model: warr_aj_ghost}
+  - {index: 478, kind: "Rumble character", type: 4, level: 80, group: 0, item: 2, extra: 263, data: 51, character: 51, model: warr_so_va3}
+  - {index: 479, kind: "Rumble character", type: 4, level: 80, group: 0, item: 2, extra: 264, data: 50, character: 50, model: warr_so_va2}
+  - {index: 480, kind: "Rumble character", type: 4, level: 80, group: 0, item: 2, extra: 265, data: 52, character: 52, model: warr_so_vb1}
+  - {index: 481, kind: "Rumble character", type: 4, level: 80, group: 0, item: 2, extra: 266, data: 49, character: 49, model: warr_so_va1}
+  - {index: 482, kind: "Rumble character", type: 4, level: 80, group: 0, item: 2, extra: 267, data: 53, character: 53, model: warr_so_vb2}
+  - {index: 483, kind: "Rumble character", type: 4, level: 80, group: 0, item: 2, extra: 268, data: 54, character: 54, model: warr_so_vb3}
+  - {index: 484, kind: "Rumble character", type: 4, level: 80, group: 0, item: 2, extra: 269, data: 43, character: 43, model: warr_ma}
+  - {index: 485, kind: "Rumble character", type: 4, level: 80, group: 0, item: 2, extra: 270, data: 41, character: 41, model: warr_jn}
+  - {index: 486, kind: "Rumble character", type: 4, level: 80, group: 0, item: 2, extra: 271, data: 38, character: 38, model: warr_ty}
+  - {index: 487, kind: "Rumble character", type: 4, level: 80, group: 0, item: 2, extra: 272, data: 45, character: 45, model: warr_ly}
+  - {index: 488, kind: "Rumble character", type: 4, level: 81, group: 0, item: 0, extra: 273, data: 135, character: 135, model: hiha_bo}
+  - {index: 489, kind: "Rumble character", type: 4, level: 81, group: 0, item: 2, extra: 274, data: 137, character: 137, model: hiha_lt_ft}
+  - {index: 490, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 275, data: 261, character: 261, model: cops_ia1}
+  - {index: 491, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 276, data: 262, character: 262, model: cops_ia2}
+  - {index: 492, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 277, data: 189, character: 189, model: dest_cl}
+  - {index: 493, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 278, data: 191, character: 191, model: dest_ve}
+  - {index: 494, kind: "Rumble character", type: 4, level: 82, group: 0, item: 9, extra: 279, data: 161, character: 161, model: samo_lt}
+  - {index: 495, kind: "Rumble character", type: 4, level: 82, group: 0, item: 9, extra: 280, data: 160, character: 160, model: samo_bo}
+  - {index: 496, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 281, data: 162, character: 162, model: samo_so_va1}
+  - {index: 497, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 282, data: 164, character: 164, model: samo_so_va3}
+  - {index: 498, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 283, data: 163, character: 163, model: samo_so_va2}
+  - {index: 499, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 284, data: 165, character: 165, model: samo_so_va4}
+  - {index: 500, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 285, data: 300, character: 300, model: civl_co_lf1}
+  - {index: 501, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 286, data: 301, character: 301, model: civl_co_lf2}
+  - {index: 502, kind: "Rumble character", type: 4, level: 82, group: 0, item: 0, extra: 287, data: 302, character: 302, model: civl_co_lf3}
+  - {index: 503, kind: "Rumble character", type: 4, level: 83, group: 0, item: 0, extra: 288, data: 317, character: 317, model: civl_hl_br2}
+  - {index: 504, kind: "Rumble character", type: 4, level: 83, group: 0, item: 0, extra: 289, data: 319, character: 319, model: civl_hl_br4}
+  - {index: 505, kind: "Rumble character", type: 4, level: 83, group: 0, item: 0, extra: 290, data: 320, character: 320, model: civl_hl_br5}
+  - {index: 506, kind: "Rumble character", type: 4, level: 83, group: 0, item: 0, extra: 291, data: 322, character: 322, model: civl_hl_dm1}
+  - {index: 507, kind: "Rumble character", type: 4, level: 83, group: 0, item: 0, extra: 292, data: 318, character: 318, model: civl_hl_br3}
+  - {index: 508, kind: "Rumble character", type: 4, level: 83, group: 0, item: 0, extra: 293, data: 323, character: 323, model: civl_hl_dm2}
+  - {index: 509, kind: "Rumble character", type: 4, level: 83, group: 0, item: 0, extra: 294, data: 316, character: 316, model: civl_hl_br1}
+  - {index: 510, kind: "Rumble character", type: 4, level: 83, group: 1, item: 3, extra: 295, data: 13, character: 13, model: warr_aj_cv, unlocked_by: [level83_c6_chase.lua]}
+  - {index: 511, kind: "Rumble character", type: 4, level: 83, group: 1, item: 2, extra: 296, data: 35, character: 35, model: warr_sn_cv, unlocked_by: [level83_c6_chase.lua]}
+  - {index: 512, kind: "Rumble character", type: 4, level: 83, group: 0, item: 0, extra: 297, data: 187, character: 187, model: dest_le_bare}
+  - {index: 513, kind: "Rumble character", type: 4, level: 83, group: 0, item: 7, extra: 298, data: 61, character: 61, model: warr_dest_le}
+  - {index: 514, kind: "Rumble character", type: 4, level: 83, group: 0, item: 0, extra: 299, data: 206, character: 206, model: char_lcgf_vest}
+  - {index: 515, kind: "Rumble character", type: 4, level: 83, group: 0, item: 7, extra: 300, data: 205, character: 205, model: char_lcgf}
+  - {index: 516, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 301, data: 62, character: 62, model: riff_cy}
+  - {index: 517, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 302, data: 64, character: 64, model: riff_bo_va1}
+  - {index: 518, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 303, data: 68, character: 68, model: riff_so_va1}
+  - {index: 519, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 304, data: 69, character: 69, model: riff_so_va2}
+  - {index: 520, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 305, data: 70, character: 70, model: riff_so_va1}
+  - {index: 521, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 306, data: 71, character: 71, model: riff_so_vb1}
+  - {index: 522, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 307, data: 72, character: 72, model: riff_so_vb2}
+  - {index: 523, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 308, data: 77, character: 77, model: rogu_bo}
+  - {index: 524, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 309, data: 83, character: 83, model: rogu_so_vb1}
+  - {index: 525, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 310, data: 82, character: 82, model: rogu_so_va2}
+  - {index: 526, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 311, data: 84, character: 84, model: rogu_so_vb2}
+  - {index: 527, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 312, data: 81, character: 81, model: rogu_so_va1}
+  - {index: 528, kind: "Rumble character", type: 4, level: 84, group: 0, item: 0, extra: 313, data: 80, character: 80, model: rogu_lt}
+  - {index: 529, kind: "Rumble character", type: 4, level: 84, group: 0, item: 2, extra: 314, data: 260, character: 260, model: cops_uc1}
+  - {index: 530, kind: "Rumble character", type: 4, level: 84, group: 0, item: 2, extra: 315, data: 310, character: 310, model: civl_prom_fa}
+  - {index: 531, kind: "Rumble character", type: 4, level: 84, group: 0, item: 2, extra: 316, data: 311, character: 311, model: civl_prom_fb}
+  - {index: 532, kind: "Rumble character", type: 4, level: 84, group: 0, item: 2, extra: 317, data: 222, character: 222, model: orph_me_vb}
+  - {index: 533, kind: "Rumble character", type: 4, level: 84, group: 0, item: 2, extra: 318, data: 308, character: 308, model: civl_prom_ma}
+  - {index: 534, kind: "Rumble character", type: 4, level: 84, group: 0, item: 2, extra: 319, data: 309, character: 309, model: civl_prom_mb}
+  - {index: 535, kind: "Rumble character", type: 4, level: 84, group: 0, item: 2, extra: 320, data: 306, character: 306, model: civl_csg}
+  - {index: 536, kind: "Rumble character", type: 4, level: 86, group: 0, item: 1, extra: 321, data: 290, character: 290, model: civl_co_sh}
+  - {index: 537, kind: "Rumble character", type: 4, level: 86, group: 0, item: 1, extra: 322, data: 292, character: 292, model: civl_co_do}
+  - {index: 538, kind: "Rumble character", type: 4, level: 86, group: 0, item: 1, extra: 323, data: 388, character: 388, model: civl_tr_cw}
+  - {index: 539, kind: "Rumble character", type: 4, level: 86, group: 0, item: 1, extra: 324, data: 289, character: 289, model: civl_co_ic}
+  - {index: 540, kind: "Rumble character", type: 4, level: 86, group: 0, item: 1, extra: 325, data: 441, character: 441, model: civl_co_di}
+  - {index: 541, kind: "Rumble character", type: 4, level: 86, group: 0, item: 1, extra: 326, data: 419, character: 419, model: civl_co_ma3}
+  - {index: 542, kind: "Rumble character", type: 4, level: 86, group: 0, item: 0, extra: 327, data: 416, character: 416, model: civl_st}
+  - {index: 543, kind: "Rumble character", type: 4, level: 86, group: 0, item: 0, extra: 328, data: 417, character: 417, model: civl_co_ma1}
+  - {index: 544, kind: "Rumble character", type: 4, level: 86, group: 0, item: 0, extra: 329, data: 418, character: 418, model: civl_co_ma2}
+  - {index: 545, kind: "Rumble character", type: 4, level: 86, group: 0, item: 0, extra: 330, data: 315, character: 315, model: civl_hd}
+  - {index: 546, kind: "Rumble character", type: 4, level: 86, group: 0, item: 0, extra: 331, data: 304, character: 304, model: civl_sk_pe}
+  - {index: 547, kind: "Rumble character", type: 4, level: 86, group: 0, item: 0, extra: 332, data: 303, character: 303, model: civl_ch}
+  - {index: 548, kind: "Rumble character", type: 4, level: 86, group: 0, item: 0, extra: 333, data: 305, character: 305, model: civl_tw}
+  - {index: 549, kind: "Rumble character", type: 4, level: 86, group: 0, item: 0, extra: 334, data: 312, character: 312, model: civl_gypsy}
+  - {index: 550, kind: "Rumble character", type: 4, level: 87, group: 1, item: 2, extra: 335, data: 281, character: 281, model: civl_bm_vb11}
+  - {index: 551, kind: "Rumble character", type: 4, level: 87, group: 1, item: 2, extra: 336, data: 276, character: 276, model: civl_bm_vb5}
+  - {index: 552, kind: "Rumble character", type: 4, level: 87, group: 1, item: 2, extra: 337, data: 274, character: 274, model: civl_bm_vb3}
+  - {index: 553, kind: "Rumble character", type: 4, level: 87, group: 1, item: 2, extra: 338, data: 278, character: 278, model: civl_bm_vb7}
+  - {index: 554, kind: "Rumble character", type: 4, level: 87, group: 1, item: 2, extra: 339, data: 272, character: 272, model: civl_bm_vb1}
+  - {index: 555, kind: "Rumble character", type: 4, level: 87, group: 1, item: 2, extra: 340, data: 270, character: 270, model: civl_bm_va1}
+  - {index: 556, kind: "Rumble character", type: 4, level: 87, group: 0, item: 0, extra: 341, data: 192, character: 192, model: dest_so1a}
+  - {index: 557, kind: "Rumble character", type: 4, level: 87, group: 0, item: 0, extra: 342, data: 194, character: 194, model: dest_so1b}
+  - {index: 558, kind: "Rumble character", type: 4, level: 87, group: 0, item: 0, extra: 343, data: 197, character: 197, model: dest_so2a}
+  - {index: 559, kind: "Rumble character", type: 4, level: 87, group: 0, item: 0, extra: 344, data: 199, character: 199, model: dest_so2b}
+  - {index: 560, kind: "Rumble character", type: 4, level: 87, group: 0, item: 17, extra: 345, data: 186, character: 186, model: dest_lt_le}
+  - {index: 561, kind: "Rumble character", type: 4, level: 87, group: 1, item: 3, extra: 346, data: 331, character: 331, model: civl_hl_ho1}
+  - {index: 562, kind: "Rumble character", type: 4, level: 87, group: 1, item: 3, extra: 347, data: 333, character: 333, model: hook_01}
+  - {index: 563, kind: "Rumble character", type: 4, level: 87, group: 1, item: 3, extra: 348, data: 334, character: 334, model: hook_03}
+  - {index: 564, kind: "Rumble character", type: 4, level: 87, group: 1, item: 3, extra: 349, data: 332, character: 332, model: civl_hl_ho2}
+  - {index: 565, kind: "Rumble character", type: 4, level: 87, group: 1, item: 3, extra: 350, data: 443, character: 443, model: civl_pimp2}
+  - {index: 566, kind: "Rumble character", type: 4, level: 87, group: 1, item: 3, extra: 351, data: 445, character: 445, model: civl_pl_pm}
+  - {index: 567, kind: "Rumble character", type: 4, level: 87, group: 1, item: 3, extra: 352, data: 442, character: 442, model: civl_pimp1}
+  - {index: 568, kind: "Rumble character", type: 4, level: 87, group: 1, item: 4, extra: 353, data: 179, character: 179, model: dest_bo_tg}
+  - {index: 569, kind: "Rumble character", type: 4, level: 87, group: 0, item: 17, extra: 354, data: 182, character: 182, model: dest_lt_v1}
+  - {index: 570, kind: "Rumble character", type: 4, level: 87, group: 0, item: 17, extra: 355, data: 183, character: 183, model: dest_lt_v2}
+  - {index: 571, kind: "Rumble character", type: 4, level: 87, group: 0, item: 17, extra: 356, data: 184, character: 184, model: dest_lt_v3}
+  - {index: 572, kind: "Rumble character", type: 4, level: 92, group: 0, item: 6, extra: 357, data: 20, character: 20, model: warr_cb_cv}
+  - {index: 573, kind: "Rumble character", type: 4, level: 92, group: 1, item: 1, extra: 358, data: 7, character: 7, model: warr_sw_cv}
+  - {index: 574, kind: "Rumble character", type: 4, level: 93, group: 0, item: 8, extra: 359, data: 178, character: 178, model: dest_bo}
+  - {index: 575, kind: "Rumble character", type: 4, level: 93, group: 1, item: 2, extra: 360, data: 185, character: 185, model: dest_lt_be, unlocked_by: [level93_chapter2.lua]}
+  - {index: 576, kind: "Rumble character", type: 4, level: 93, group: 0, item: 0, extra: 361, data: 180, character: 180, model: dest_lt}
+  - {index: 577, kind: "Rumble character", type: 4, level: 93, group: 0, item: 0, extra: 362, data: 196, character: 196, model: dest_so1c}
+  - {index: 578, kind: "Rumble character", type: 4, level: 95, group: 1, item: 27, extra: 363, data: 421, character: 421, model: civl_co_ma5, unlocked_by: [global.lua]}
+  - {index: 579, kind: "Rumble character", type: 4, level: 95, group: 1, item: 7, extra: 364, data: 121, character: 121, model: civl_abe}
+  - {index: 580, kind: "Rumble character", type: 4, level: 99, group: 0, item: 5, extra: 365, data: 32, character: 32, model: warr_re_cv}
+  - {index: 155, kind: "clubhouse display", type: 5, level: 34, group: 0, item: 0, extra: 29, data: 1}
+  - {index: 156, kind: "clubhouse display", type: 5, level: 2, group: 0, item: 0, extra: 30, data: 2}
+  - {index: 157, kind: "clubhouse display", type: 5, level: 5, group: 0, item: 0, extra: 31, data: 3}
+  - {index: 158, kind: "clubhouse display", type: 5, level: 81, group: 0, item: 0, extra: 32, data: 4}
+  - {index: 159, kind: "clubhouse display", type: 5, level: 31, group: 0, item: 0, extra: 33, data: 5}
+  - {index: 160, kind: "clubhouse display", type: 5, level: 84, group: 0, item: 0, extra: 34, data: 6}
+  - {index: 28, kind: "upgrade or feature", type: 6, level: 1, group: 0, item: 2, extra: 1, data: 1, unlocked_by: [global.lua, level95_coney.lua], tested_by: [level95_coney.lua, level95_invasion.lua]}
+  - {index: 29, kind: "upgrade or feature", type: 6, level: 3, group: 0, item: 0, extra: 2, data: 2, tested_by: [level95.lua, level95_coney.lua, level95_invasion.lua]}
+  - {index: 30, kind: "upgrade or feature", type: 6, level: 1, group: 0, item: 0, extra: 3, data: 3, meaning: "The hub's quick map instead of the door walk ([World flags](../research/flags.md))", tested_by: [level95.lua], evidence: confirmed-code}
+  - {index: 31, kind: "upgrade or feature", type: 6, level: 1, group: 0, item: 1, extra: 4, data: 4, meaning: "The tutorial is done", unlocked_by: [level95.lua, level95_clubhouse.lua], tested_by: [level95.lua, level95_clubhouse.lua], evidence: confirmed-code}
+  - {index: 32, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 3, extra: 5, data: 5, meaning: "Brass knuckles: punches deal more damage (`0x0021b518`) and the model wears them", unlocked_by: [global.lua], evidence: confirmed-code}
+  - {index: 33, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 6, extra: 6, data: 6, meaning: "Steel toe caps: kicks deal more damage (`0x0021b570`) and the model wears them", unlocked_by: [global.lua], tested_by: [level95_coney.lua], evidence: confirmed-code}
+  - {index: 34, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 26, extra: 7, data: 7, meaning: "One more flash carried (3 to 4) and sold by dealers", unlocked_by: [global.lua], evidence: confirmed-code}
+  - {index: 35, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 28, extra: 8, data: 8, meaning: "A flash at full health fills rage and starts it (`0x00284830`)", unlocked_by: [global.lua], evidence: confirmed-code}
+  - {index: 36, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 23, extra: 9, data: 9, meaning: "Paying a bum $1 also marks the dealers on the radar (`0x002acb60`)", unlocked_by: [global.lua], evidence: confirmed-code}
+  - {index: 37, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 25, extra: 10, data: 10, meaning: "After four $1 payments a bum takes $10 and joins the gang (`0x002ac728`; joining inferred)", unlocked_by: [global.lua], evidence: confirmed-code}
+  - {index: 38, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 9, extra: 11, data: 11, meaning: "A larger power meter (`0x00223068`)", unlocked_by: [global.lua, level95_workout.lua], tested_by: [level95_workout.lua], evidence: confirmed-code}
+  - {index: 39, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 10, extra: 12, data: 12, meaning: "More stamina (`0x00223188`)", unlocked_by: [global.lua, level95_workout.lua], tested_by: [level95_workout.lua], evidence: confirmed-code}
+  - {index: 40, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 22, extra: 13, data: 13, meaning: "Knocked-out cops drop handcuff keys (`0x00233260`)", unlocked_by: [global.lua], tested_by: [global.lua], evidence: confirmed-code}
+  - {index: 41, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 27, extra: 14, data: 14, meaning: "Knocked-out humans may drop power cuffs (`0x00232ed4`)", unlocked_by: [global.lua], tested_by: [global.lua], evidence: confirmed-code}
+  - {index: 42, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 21, extra: 15, data: 15, meaning: "A cuffed player can spend a key to free himself (`0x00284488`)", unlocked_by: [global.lua], evidence: confirmed-code}
+  - {index: 43, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 30, extra: 16, data: 16, unlocked_by: [global.lua], tested_by: [level86.lua]}
+  - {index: 44, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 7, extra: 17, data: 18}
+  - {index: 45, kind: "upgrade or feature", type: 6, level: 4, group: 0, item: 1, extra: 18, data: 21, unlocked_by: [global.lua, level95.lua, level95_clubhouse.lua], tested_by: [level95.lua, level95_clubhouse.lua]}
+  - {index: 46, kind: "upgrade or feature", type: 6, level: 4, group: 0, item: 2, extra: 19, data: 22, unlocked_by: [level95.lua, level95_clubhouse.lua], tested_by: [level95.lua, level95_clubhouse.lua]}
+  - {index: 47, kind: "upgrade or feature", type: 6, level: 4, group: 0, item: 3, extra: 20, data: 20, unlocked_by: [level95.lua, level95_clubhouse.lua], tested_by: [level95.lua, level95_clubhouse.lua]}
+  - {index: 48, kind: "upgrade or feature", type: 6, level: 4, group: 0, item: 4, extra: 21, data: 17, unlocked_by: [level95.lua], tested_by: [level95.lua, level95_clubhouse.lua]}
+  - {index: 49, kind: "upgrade or feature", type: 6, level: 4, group: 0, item: 5, extra: 22, data: 19, unlocked_by: [level95.lua, level95_clubhouse.lua], tested_by: [level95.lua, level95_clubhouse.lua]}
+  - {index: 56, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 1, extra: 23, data: 23}
+  - {index: 57, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 2, extra: 24, data: 24}
+  - {index: 58, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 3, extra: 25, data: 25, unlocked_by: [global.lua]}
+  - {index: 59, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 4, extra: 26, data: 26}
+  - {index: 60, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 5, extra: 27, data: 27}
+  - {index: 61, kind: "upgrade or feature", type: 6, level: 95, group: 1, item: 6, extra: 28, data: 28, unlocked_by: [global.lua]}
+  - {index: 5, kind: "flashback mission", type: 7, level: 34, group: 0, item: 0, extra: 0, data: 82, tested_by: [level95.lua]}
+  - {index: 7, kind: "flashback mission", type: 7, level: 2, group: 0, item: 0, extra: 0, data: 92, tested_by: [level95.lua]}
+  - {index: 10, kind: "flashback mission", type: 7, level: 5, group: 0, item: 0, extra: 0, data: 83, tested_by: [level95.lua]}
+  - {index: 12, kind: "flashback mission", type: 7, level: 81, group: 0, item: 0, extra: 0, data: 20, tested_by: [level95.lua]}
+  - {index: 16, kind: "flashback mission", type: 7, level: 31, group: 0, item: 0, extra: 0, data: 11, tested_by: [level95.lua]}
+  - {index: 50, kind: "Coney Island shop", type: 8, level: 0, group: 0, item: 0, extra: 22, data: 1, unlocked_by: [global.lua]}
+  - {index: 51, kind: "Coney Island shop", type: 8, level: 34, group: 0, item: 0, extra: 22, data: 2}
+  - {index: 52, kind: "Coney Island shop", type: 8, level: 2, group: 0, item: 0, extra: 22, data: 3}
+  - {index: 53, kind: "Coney Island shop", type: 8, level: 93, group: 0, item: 0, extra: 22, data: 4}
+  - {index: 54, kind: "Coney Island shop", type: 8, level: 31, group: 0, item: 0, extra: 22, data: 5}
+  - {index: 55, kind: "Coney Island shop", type: 8, level: 9, group: 0, item: 0, extra: 22, data: 6}
+  - {index: 62, kind: "Coney Island shop", type: 8, level: 81, group: 0, item: 0, extra: 28, data: 7}
+  - {index: 73, kind: "Coney Island shop", type: 8, level: 84, group: 0, item: 0, extra: 28, data: 21}
+  - {index: 74, kind: "Coney Island shop", type: 8, level: 34, group: 0, item: 0, extra: 28, data: 22}
+  - {index: 75, kind: "Coney Island shop", type: 8, level: 87, group: 0, item: 0, extra: 28, data: 23}
+  - {index: 76, kind: "Coney Island shop", type: 8, level: 31, group: 0, item: 0, extra: 28, data: 25}
+  - {index: 77, kind: "Coney Island shop", type: 8, level: 3, group: 0, item: 0, extra: 28, data: 26}
+  - {index: 78, kind: "Coney Island shop", type: 8, level: 81, group: 0, item: 0, extra: 28, data: 27}
+  - {index: 79, kind: "Coney Island shop", type: 8, level: 84, group: 0, item: 0, extra: 28, data: 28}
+  - {index: 80, kind: "Coney Island shop", type: 8, level: 81, group: 0, item: 0, extra: 28, data: 29}
+  - {index: 81, kind: "Coney Island shop", type: 8, level: 3, group: 0, item: 0, extra: 28, data: 30}
+  - {index: 116, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 81, extra: 28, data: 81}
+  - {index: 117, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 84, extra: 28, data: 84}
+  - {index: 118, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 87, extra: 28, data: 87}
+  - {index: 119, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 90, extra: 28, data: 90}
+  - {index: 120, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 82, extra: 28, data: 82}
+  - {index: 121, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 85, extra: 28, data: 85}
+  - {index: 122, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 88, extra: 28, data: 88}
+  - {index: 123, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 91, extra: 28, data: 91}
+  - {index: 124, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 83, extra: 28, data: 83}
+  - {index: 125, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 86, extra: 28, data: 86}
+  - {index: 126, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 89, extra: 28, data: 89}
+  - {index: 127, kind: "Coney Island shop", type: 8, level: 95, group: 1, item: 92, extra: 28, data: 92}
+  - {index: 23, kind: "Armies of the Night level", type: 9, level: 84, group: 0, item: 0, extra: 0, data: 60, tested_by: [level95.lua]}
+  - {index: 24, kind: "Armies of the Night level", type: 9, level: 60, group: 0, item: 0, extra: 0, data: 61}
+  - {index: 25, kind: "Armies of the Night level", type: 9, level: 61, group: 0, item: 0, extra: 0, data: 62}
+  - {index: 26, kind: "Armies of the Night level", type: 9, level: 62, group: 0, item: 0, extra: 0, data: 63}
+  - {index: 27, kind: "Armies of the Night level", type: 9, level: 63, group: 0, item: 0, extra: 0, data: 64}
+  - {index: 63, kind: "workout move", type: 10, level: 0, group: 0, item: 0, extra: 28, data: 11, unlocked_by: [global.lua]}
+  - {index: 64, kind: "workout move", type: 10, level: 95, group: 1, item: 11, extra: 28, data: 12}
+  - {index: 65, kind: "workout move", type: 10, level: 95, group: 1, item: 12, extra: 28, data: 13}
+  - {index: 66, kind: "workout move", type: 10, level: 95, group: 1, item: 13, extra: 28, data: 14}
+  - {index: 67, kind: "workout move", type: 10, level: 95, group: 1, item: 14, extra: 28, data: 15}
+  - {index: 68, kind: "workout move", type: 10, level: 95, group: 1, item: 15, extra: 28, data: 16, tested_by: [level95_workout.lua]}
+  - {index: 69, kind: "workout move", type: 10, level: 95, group: 1, item: 16, extra: 28, data: 17}
+  - {index: 70, kind: "workout move", type: 10, level: 95, group: 1, item: 17, extra: 28, data: 18}
+  - {index: 71, kind: "workout move", type: 10, level: 95, group: 1, item: 18, extra: 28, data: 19}
+  - {index: 72, kind: "workout move", type: 10, level: 95, group: 1, item: 19, extra: 28, data: 20}
+  - {index: 82, kind: "workout move", type: 10, level: 0, group: 0, item: 0, extra: 28, data: 31, unlocked_by: [global.lua]}
+  - {index: 83, kind: "workout move", type: 10, level: 95, group: 1, item: 31, extra: 28, data: 32}
+  - {index: 84, kind: "workout move", type: 10, level: 95, group: 1, item: 32, extra: 28, data: 33}
+  - {index: 85, kind: "workout move", type: 10, level: 95, group: 1, item: 33, extra: 28, data: 34}
+  - {index: 86, kind: "workout move", type: 10, level: 95, group: 1, item: 34, extra: 28, data: 35}
+  - {index: 87, kind: "workout move", type: 10, level: 95, group: 1, item: 35, extra: 28, data: 36, tested_by: [level95_workout.lua]}
+  - {index: 88, kind: "workout move", type: 10, level: 95, group: 1, item: 36, extra: 28, data: 37}
+  - {index: 89, kind: "workout move", type: 10, level: 95, group: 1, item: 37, extra: 28, data: 38}
+  - {index: 90, kind: "workout move", type: 10, level: 95, group: 1, item: 38, extra: 28, data: 39}
+  - {index: 91, kind: "workout move", type: 10, level: 95, group: 1, item: 39, extra: 28, data: 40}
+  - {index: 92, kind: "workout move", type: 10, level: 0, group: 0, item: 0, extra: 28, data: 41, unlocked_by: [global.lua]}
+  - {index: 93, kind: "workout move", type: 10, level: 95, group: 1, item: 41, extra: 28, data: 42}
+  - {index: 94, kind: "workout move", type: 10, level: 95, group: 1, item: 42, extra: 28, data: 43}
+  - {index: 95, kind: "workout move", type: 10, level: 95, group: 1, item: 43, extra: 28, data: 44}
+  - {index: 96, kind: "workout move", type: 10, level: 95, group: 1, item: 44, extra: 28, data: 45}
+  - {index: 97, kind: "workout move", type: 10, level: 95, group: 1, item: 45, extra: 28, data: 46, tested_by: [level95_workout.lua]}
+  - {index: 98, kind: "workout move", type: 10, level: 95, group: 1, item: 46, extra: 28, data: 47}
+  - {index: 99, kind: "workout move", type: 10, level: 95, group: 1, item: 47, extra: 28, data: 48}
+  - {index: 100, kind: "workout move", type: 10, level: 95, group: 1, item: 48, extra: 28, data: 49}
+  - {index: 101, kind: "workout move", type: 10, level: 95, group: 1, item: 49, extra: 28, data: 50}
+  - {index: 102, kind: "workout move", type: 10, level: 0, group: 0, item: 0, extra: 28, data: 51, unlocked_by: [global.lua]}
+  - {index: 103, kind: "workout move", type: 10, level: 95, group: 1, item: 51, extra: 28, data: 52}
+  - {index: 104, kind: "workout move", type: 10, level: 95, group: 1, item: 52, extra: 28, data: 53}
+  - {index: 105, kind: "workout move", type: 10, level: 95, group: 1, item: 53, extra: 28, data: 54}
+  - {index: 106, kind: "workout move", type: 10, level: 95, group: 1, item: 54, extra: 28, data: 55}
+  - {index: 107, kind: "workout move", type: 10, level: 95, group: 1, item: 55, extra: 28, data: 56, tested_by: [level95_workout.lua]}
+  - {index: 108, kind: "workout move", type: 10, level: 95, group: 1, item: 56, extra: 28, data: 57}
+  - {index: 109, kind: "workout move", type: 10, level: 95, group: 1, item: 57, extra: 28, data: 58}
+  - {index: 110, kind: "workout move", type: 10, level: 95, group: 1, item: 58, extra: 28, data: 59}
+  - {index: 111, kind: "workout move", type: 10, level: 95, group: 1, item: 59, extra: 28, data: 60}
+  - {index: 112, kind: "workout move", type: 10, level: 95, group: 1, item: 60, extra: 28, data: 71, tested_by: [level95_workout.lua]}
+  - {index: 113, kind: "workout move", type: 10, level: 95, group: 1, item: 40, extra: 28, data: 72, tested_by: [level95_workout.lua]}
+  - {index: 114, kind: "workout move", type: 10, level: 95, group: 1, item: 50, extra: 28, data: 73, tested_by: [level95_workout.lua]}
+  - {index: 115, kind: "workout move", type: 10, level: 95, group: 1, item: 20, extra: 28, data: 74, tested_by: [level95_workout.lua]}
+  - {index: 128, kind: hint, type: 11, level: 0, group: 0, item: 0, extra: 28, data: 0, unlocked_by: [global.lua]}
+  - {index: 129, kind: hint, type: 11, level: 34, group: 0, item: 0, extra: 28, data: 1}
+  - {index: 130, kind: hint, type: 11, level: 80, group: 0, item: 0, extra: 28, data: 2}
+  - {index: 131, kind: hint, type: 11, level: 80, group: 0, item: 0, extra: 28, data: 3}
+  - {index: 132, kind: hint, type: 11, level: 0, group: 0, item: 0, extra: 28, data: 4, unlocked_by: [global.lua]}
+  - {index: 133, kind: hint, type: 11, level: 0, group: 0, item: 0, extra: 28, data: 5, unlocked_by: [global.lua]}
+  - {index: 134, kind: hint, type: 11, level: 80, group: 0, item: 0, extra: 28, data: 6}
+  - {index: 135, kind: hint, type: 11, level: 34, group: 0, item: 0, extra: 28, data: 7}
+  - {index: 136, kind: hint, type: 11, level: 80, group: 0, item: 0, extra: 28, data: 8}
+  - {index: 137, kind: hint, type: 11, level: 34, group: 0, item: 0, extra: 28, data: 9}
+  - {index: 138, kind: hint, type: 11, level: 87, group: 0, item: 0, extra: 28, data: 10}
+  - {index: 139, kind: hint, type: 11, level: 93, group: 0, item: 0, extra: 28, data: 11}
+  - {index: 140, kind: hint, type: 11, level: 80, group: 0, item: 0, extra: 28, data: 12}
+  - {index: 141, kind: hint, type: 11, level: 80, group: 0, item: 0, extra: 28, data: 13}
+  - {index: 142, kind: hint, type: 11, level: 34, group: 0, item: 0, extra: 28, data: 14}
+  - {index: 143, kind: hint, type: 11, level: 5, group: 0, item: 0, extra: 28, data: 15}
+  - {index: 144, kind: hint, type: 11, level: 80, group: 0, item: 0, extra: 28, data: 16}
+  - {index: 145, kind: hint, type: 11, level: 80, group: 0, item: 0, extra: 28, data: 17}
+  - {index: 146, kind: hint, type: 11, level: 0, group: 0, item: 0, extra: 28, data: 18, unlocked_by: [global.lua]}
+  - {index: 147, kind: hint, type: 11, level: 99, group: 0, item: 0, extra: 28, data: 19}
+  - {index: 148, kind: hint, type: 11, level: 99, group: 0, item: 0, extra: 28, data: 20}
+  - {index: 149, kind: hint, type: 11, level: 87, group: 0, item: 0, extra: 28, data: 21}
+  - {index: 150, kind: hint, type: 11, level: 80, group: 0, item: 0, extra: 28, data: 22}
+  - {index: 151, kind: hint, type: 11, level: 3, group: 0, item: 0, extra: 28, data: 23}
+  - {index: 152, kind: hint, type: 11, level: 80, group: 0, item: 0, extra: 28, data: 24}
+  - {index: 153, kind: hint, type: 11, level: 87, group: 0, item: 0, extra: 28, data: 25}
+  - {index: 154, kind: hint, type: 11, level: 2, group: 0, item: 0, extra: 28, data: 26}

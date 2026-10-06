@@ -848,7 +848,8 @@ and by the disc test); `--play-level` of an arena computes the same set-up by ru
 **The unlocks** (`src/warriors/unlockables.h`, `Unlockables`, kept in the game state): Coney has no unlockables manager
 or saves yet, so the check answers from a set that a fresh profile fills with what a fresh boot shows: modes 12 and 14,
 arena 102, gangs 5 and 3, and no character type (so every type in the stand-in table is replaced, as the runtime
-defaults show). Which ids the story unlocks is open ([Open questions](#open-questions)).
+defaults show). Which records the story unlocks: [Unlockables](../references/unlockables.md); every mode, arena, gang
+and character: [Rumble roster](../references/rumble.md).
 
 Coney's choices: the screens' titles are their names on this page; an arena's label is its level record's fifth
 `CfgLevelName` argument (`level102`'s is "Fight Pen"), since the page does not say where the Choose Area screen's text
@@ -970,7 +971,7 @@ What the implementer still needs:
   PARTY and the "vs" title, [Where the Rumble data lives](#rumble-data)). The Game Type entries `0x35` / `0x36` read
   "Co-op" and "Vs." and message `0x77` asks player 2 to press START (confirmed (runtime): the English
   `config_strings` run in Coney's script system). Still open: what screen 4 shows, where the Choose Area screen's
-  text comes from, and which unlock ids the story sets for the other modes, gangs and arenas.
+  text comes from.
 - **Global string ids** (answered for the front end: `GSTRING.HUD` entries are set with explicit indices, so the
   disassembly gives each id's text; the texts are quoted above). Originally: the text behind `0x76`, `0x78`, `0x79`,
   `0x8a`, `0x1f` and the memory-card ids needs a

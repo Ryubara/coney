@@ -13,7 +13,7 @@ its own). The [speed class](speed-classes.md) is only a fallback.
 !!! info "What is complete"
 
     Every type `CfgChar` configures (449) is listed with every argument. The labels (who a type is)
-    are hand-written and still sparse; the meaning of `v11d` and `flag_14b` is not traced.
+    are hand-written and still sparse; the meaning of `flag_14b` is not traced.
 
 449 entries. Data: `research/references/characters.yaml`.
 
@@ -489,7 +489,7 @@ Evidence levels used: inferred.
 | `behaviour` | int | | Byte `+0x11a`: the brain kind given to the human's AI (3 the Warriors, 4 civilians). |
 | `category` | int | | Byte `+0x11b`: role category; picks the cash range and civilian reactions (14 Warriors). |
 | `speed_class` | int | | Byte `+0x11c`: the [speed class](speed-classes.md) used when no clip speeds exist. |
-| `v11d` | int | | Byte `+0x11d`, copied to the human (`+0x1b8`); meaning not traced. |
+| `v11d` | int | | Byte `+0x11d`: the [power class](power-classes.md) (human `+0x1b8`, and `+0x1b9` for a player unless a Warriors type gets its Warrior's). |
 | `health` | int | | 16-bit `+0x116`, copied to the human's maximum and current health. |
 | `damage_table` | str | | The 45-entry damage table (a global of `config_preload2.lua`). |
 | `attack_table` | str | | The 45-entry attack table. |

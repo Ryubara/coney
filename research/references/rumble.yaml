@@ -1,0 +1,467 @@
+# Rumble roster: a Coney game reference list. The page docs/references/rumble.md is generated
+# from this file by `coney-tools refs render`; `coney-tools refs extract` refreshes the fields read from the
+# disc and keeps the hand-written ones. Schema and rules: docs/guides/research-workflow.md#reference-lists.
+title: "Rumble roster"
+about: |
+  What Rumble mode offers: its **modes** (`CfgRumbleGame`), **arenas** (`CfgRumbleArena`, each with the modes it
+  allows), **gangs** (`CfgRumbleGang`, nine character types each) and **characters** (`CfgRumbleChar`: a type's gang,
+  rank and strength). Each is offered only while its [unlockable](unlockables.md) record is unlocked (a mode type 1,
+  an arena 2, a gang 3); a gang member whose character record (type 4) is still locked is replaced by a fixed stand-in
+  (`0x001ec490`). How the menus use them: [Front end: the Rumble data](../research/frontend.md#rumble-data). The
+  names, titles and descriptions are the game's text and are not listed.
+complete: |
+  All 9 modes, 29 arenas, 46 gangs and 366 characters are listed (the characters are set in four scripts, in two
+  copies; both agree). A gang with a negative id is always offered. What an arena's second number does, and the
+  characters' `+0x0e`, are not traced.
+defaults: {source: "rumble_data.lua, rumble_arena.lua, rumble_gang.lua and the Rumble character scripts", evidence: confirmed-code}
+entries:
+  - {id: mode-RM_Brawl, kind: mode, number: 1, name: RM_Brawl, one_player: true, coop: true, versus: true, fighters: 9, unlock: 163}
+  - {id: mode-RM_Koth, kind: mode, number: 2, name: RM_Koth, one_player: true, coop: true, versus: true, fighters: 3, unlock: 169}
+  - {id: mode-RM_Royal, kind: mode, number: 3, name: RM_Royal, one_player: true, coop: true, versus: true, fighters: 9, unlock: 167}
+  - {id: mode-RM_Surv, kind: mode, number: 9, name: RM_Surv, one_player: true, coop: false, versus: true, fighters: 1, unlock: 164}
+  - {id: mode-RM_Brawl1, kind: mode, number: 12, name: RM_Brawl1, one_player: true, coop: false, versus: true, fighters: 1, unlock: 161}
+  - {id: mode-RM_Brawl5, kind: mode, number: 14, name: RM_Brawl5, one_player: true, coop: true, versus: true, fighters: 5, unlock: 162}
+  - {id: mode-RM_TagBt, kind: mode, number: 19, name: RM_TagBt, one_player: true, coop: false, versus: true, fighters: 1, unlock: 166}
+  - {id: mode-RM_Mercy, kind: mode, number: 23, name: RM_Mercy, one_player: false, coop: false, versus: true, fighters: 1, unlock: 165}
+  - {id: mode-RM_Wchair, kind: mode, number: 24, name: RM_Wchair, one_player: true, coop: false, versus: true, fighters: 1, presets: [458, 459], unlock: 168}
+  - {id: arena-101, kind: arena, number: 101, value: 9, modes: [RM_Koth], unlock: 581}
+  - {id: arena-102, kind: arena, number: 102, value: 9, modes: [RM_Brawl1, RM_Brawl5, RM_Brawl], unlock: 582}
+  - {id: arena-104, kind: arena, number: 104, value: 9, modes: [RM_Wchair, RM_Brawl5, RM_Brawl1, RM_Brawl], unlock: 583}
+  - {id: arena-105, kind: arena, number: 105, value: 9, modes: [RM_Brawl5, RM_Brawl, RM_Brawl1], unlock: 584}
+  - {id: arena-107, kind: arena, number: 107, value: 9, modes: [RM_TagBt], unlock: 585}
+  - {id: arena-108, kind: arena, number: 108, value: 9, modes: [RM_Wchair], unlock: 586}
+  - {id: arena-109, kind: arena, number: 109, value: 9, modes: [RM_Brawl5, RM_Brawl, RM_Brawl1], unlock: 587}
+  - {id: arena-110, kind: arena, number: 110, value: 9, modes: [RM_Brawl1, RM_Brawl5], unlock: 588}
+  - {id: arena-111, kind: arena, number: 111, value: 9, modes: [RM_Mercy], unlock: 589}
+  - {id: arena-113, kind: arena, number: 113, value: 9, modes: [RM_Brawl1, RM_Brawl5], unlock: 590}
+  - {id: arena-114, kind: arena, number: 114, value: 9, modes: [RM_Wchair], unlock: 591}
+  - {id: arena-115, kind: arena, number: 115, value: 9, modes: [RM_Brawl1, RM_Brawl5, RM_Brawl], unlock: 592}
+  - {id: arena-116, kind: arena, number: 116, value: 9, modes: [RM_Brawl5, RM_Brawl1], unlock: 593}
+  - {id: arena-118, kind: arena, number: 118, value: 9, modes: [RM_Brawl5, RM_Brawl1], unlock: 594}
+  - {id: arena-119, kind: arena, number: 119, value: 9, modes: [RM_Brawl5, RM_Brawl1], unlock: 595}
+  - {id: arena-120, kind: arena, number: 120, value: 9, modes: [RM_Brawl5, RM_Mercy, RM_Brawl, RM_Brawl1], unlock: 596}
+  - {id: arena-121, kind: arena, number: 121, value: 9, modes: [RM_Mercy, RM_Brawl1, RM_Brawl5, RM_Brawl], unlock: 597}
+  - {id: arena-122, kind: arena, number: 122, value: 9, modes: [RM_Surv, RM_Brawl5, RM_TagBt, RM_Brawl1], unlock: 598}
+  - {id: arena-123, kind: arena, number: 123, value: 9, modes: [RM_Brawl5, RM_Brawl1], unlock: 599}
+  - {id: arena-124, kind: arena, number: 124, value: 9, modes: [RM_Brawl5, RM_Brawl, RM_Brawl1], unlock: 600}
+  - {id: arena-126, kind: arena, number: 126, value: 9, modes: [RM_Brawl5, RM_Brawl, RM_Brawl1], unlock: 601}
+  - {id: arena-127, kind: arena, number: 127, value: 9, modes: [RM_Brawl, RM_Surv, RM_Brawl5, RM_Brawl1], unlock: 602}
+  - {id: arena-128, kind: arena, number: 128, value: 9, modes: [RM_Brawl, RM_Surv, RM_Brawl5, RM_Brawl1], unlock: 603}
+  - {id: arena-129, kind: arena, number: 129, value: 9, modes: [RM_Koth], unlock: 604}
+  - {id: arena-130, kind: arena, number: 130, value: 9, modes: [RM_Koth, RM_Surv, RM_Brawl], unlock: 605}
+  - {id: arena-131, kind: arena, number: 131, value: 9, modes: [RM_Royal], unlock: 606}
+  - {id: arena-132, kind: arena, number: 132, value: 9, modes: [RM_Royal], unlock: 607}
+  - {id: arena-133, kind: arena, number: 133, value: 9, modes: [RM_Royal], unlock: 608}
+  - {id: arena-134, kind: arena, number: 134, value: 9, modes: [RM_Surv, RM_Brawl, RM_Brawl5, RM_Brawl1], unlock: 609}
+  - {id: gang-1, kind: gang, number: 1, members: [2, 6, 12, 16, 34, 22, 19, 27, 31], unlock: 190}
+  - {id: gang-2, kind: gang, number: 2, members: [178, 186, 185, 196, 180, 192, 196, 194, 197], unlock: 173}
+  - {id: gang-3, kind: gang, number: 3, members: [220, 223, 224, 225, 226, 227, 228, 225, 226], unlock: 182}
+  - {id: gang-4, kind: gang, number: 4, members: [100, 99, 101, 102, 103, 104, 105, 101, 102], unlock: 188}
+  - {id: gang-5, kind: gang, number: 5, members: [89, 90, 91, 92, 93, 94, 91, 92, 93], unlock: 170}
+  - {id: gang-6, kind: gang, number: 6, members: [237, 238, 239, 240, 241, 242, 243, 239, 240], unlock: 180}
+  - {id: gang-7, kind: gang, number: 7, members: [229, 231, 233, 234, 235, 236, 233, 234, 235], unlock: 178}
+  - {id: gang-8, kind: gang, number: 8, members: [77, 80, 81, 82, 83, 84, 81, 82, 83], unlock: 184}
+  - {id: gang-9, kind: gang, number: 9, members: [62, 64, 67, 66, 68, 69, 70, 71, 72], unlock: 179}
+  - {id: gang-10, kind: gang, number: 10, members: [135, 137, 136, 138, 139, 140, 141, 138, 139], unlock: 175}
+  - {id: gang-11, kind: gang, number: 11, members: [106, 107, 108, 109, 110, 111, 112, 113, 110], unlock: 187}
+  - {id: gang-12, kind: gang, number: 12, members: [161, 160, 163, 164, 165, 162, 163, 164, 165], unlock: 186}
+  - {id: gang-13, kind: gang, number: 13, members: [128, 129, 134, 130, 131, 132, 133, 313, 314], unlock: 171}
+  - {id: gang-14, kind: gang, number: 14, members: [119, 122, 123, 125, 126, 127, 124, 125, 126], unlock: 176}
+  - {id: gang-15, kind: gang, number: 15, members: [142, 143, 144, 145, 146, 147, 144, 145, 146], unlock: 185}
+  - {id: gang-16, kind: gang, number: 16, members: [154, 155, 156, 157, 158, 159, 156, 157, 158], unlock: 177}
+  - {id: gang-17, kind: gang, number: 17, members: [148, 149, 150, 151, 152, 153, 150, 151, 152], unlock: 183}
+  - {id: gang-18, kind: gang, number: 18, members: [166, 167, 168, 169, 170, 171, 168, 169, 170], unlock: 189}
+  - {id: gang-19, kind: gang, number: 19, members: [172, 173, 174, 175, 176, 177, 174, 175, 176], unlock: 174}
+  - {id: gang-20, kind: gang, number: 20, members: [214, 215, 216, 217, 218, 219, 216, 217, 218], unlock: 181}
+  - {id: gang-21, kind: gang, number: 21, members: [259, 262, 261, 263, 264, 253, 254, 256, 257], unlock: 172}
+  - {id: gang-22, kind: gang, number: 22, members: [281, 270, 272, 274, 276, 278, 272, 274, 276], unlock: 199}
+  - {id: gang-23, kind: gang, number: 23, members: [388, 289, 292, 419, 441, 290, 292, 315, 441], unlock: 204}
+  - {id: gang-24, kind: gang, number: 24, members: [268, 269, 353, 354, 355, 356, 357, 353, 354], unlock: 213}
+  - {id: gang-25, kind: gang, number: 25, members: [337, 338, 339, 340, 341, 342, 339, 340, 341], unlock: 206}
+  - {id: gang-26, kind: gang, number: 26, members: [360, 361, 362, 363, 364, 367, 365, 329, 330], unlock: 208}
+  - {id: gang-27, kind: gang, number: 27, members: [368, 369, 370, 371, 372, 373, 374, 375, 376], unlock: 197}
+  - {id: gang-28, kind: gang, number: 28, members: [380, 381, 382, 383, 384, 385, 386, 387, 382], unlock: 212}
+  - {id: gang-29, kind: gang, number: 29, members: [389, 390, 391, 392, 393, 394, 395, 396, 397], unlock: 214}
+  - {id: gang-30, kind: gang, number: 30, members: [402, 403, 404, 405, 406, 407, 408, 409, 410], unlock: 201}
+  - {id: gang-31, kind: gang, number: 31, members: [121, 421, 416, 304, 303, 305, 315, 420, 312], unlock: 205}
+  - {id: gang-32, kind: gang, number: 32, members: [426, 427, 428, 429, 430, 428, 429, 430, 428], unlock: 193}
+  - {id: gang-33, kind: gang, number: 33, members: [442, 443, 445, 331, 332, 333, 334, 331, 332], unlock: 209}
+  - {id: gang-34, kind: gang, number: 34, members: [446, 447, 448, 449, 450, 451, 452, 453, 448], unlock: 210}
+  - {id: gang-35, kind: gang, number: 35, members: [38, 43, 45, 41, 49, 50, 51, 52, 53], unlock: 191}
+  - {id: gang-37, kind: gang, number: 37, members: [221, 308, 310, 309, 311, 260, 222, 306, 309], unlock: 192}
+  - {id: gang-39, kind: gang, number: 39, members: [343, 344, 345, 346, 347, 348, 345, 346, 347], unlock: 196}
+  - {id: gang-40, kind: gang, number: 40, members: [316, 317, 318, 319, 320, 319, 322, 323, 318], unlock: 198}
+  - {id: gang-41, kind: gang, number: 41, members: [293, 294, 295, 422, 423, 424, 366, 420, 424], unlock: 203}
+  - {id: gang-43, kind: gang, number: 43, members: [436, 437, 438, 439, 440, 438, 439, 440, 438], unlock: 194}
+  - {id: gang-44, kind: gang, number: 44, members: [415, 414, 114, 115, 116, 117, 411, 412, 413], unlock: 202}
+  - {id: gang-45, kind: gang, number: 45, members: [358, 359, 245, 246, 247, 248, 245, 246, 247], unlock: 211}
+  - {id: gang-46, kind: gang, number: 46, members: [288, 296, 297, 298, 299, 297, 300, 301, 302], unlock: 215}
+  - {id: gang-47, kind: gang, number: 47, members: [275, 271, 273, 277, 279, 280, 273, 277, 279], unlock: 200}
+  - {id: gang-48, kind: gang, number: 48, members: [324, 325, 326, 327, 328, 326, 327, 328, 326], unlock: 207}
+  - {id: gang-49, kind: gang, number: 49, members: [431, 432, 433, 434, 435, 433, 434, 435, 433], unlock: 195}
+  - {id: char-2, kind: character, number: 2, character: 2, model: warr_cl_gen, gang: 21, rank: RM_WARCHIEF, v0e: 0, strength: 80, unlock: 216}
+  - {id: char-3, kind: character, number: 3, character: 3, model: warr_cl_ghost, gang: 51, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 475}
+  - {id: char-6, kind: character, number: 6, character: 6, model: warr_sw_gen, gang: 21, rank: RM_LT, v0e: 0, strength: 70, unlock: 217}
+  - {id: char-7, kind: character, number: 7, character: 7, model: warr_sw_cv, gang: 49, rank: RM_LT, v0e: 0, strength: 75, unlock: 573}
+  - {id: char-8, kind: character, number: 8, character: 8, model: warr_sw_ghost, gang: 51, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 476}
+  - {id: char-12, kind: character, number: 12, character: 12, model: warr_aj_gen, gang: 21, rank: RM_LT, v0e: 0, strength: 80, unlock: 222}
+  - {id: char-13, kind: character, number: 13, character: 13, model: warr_aj_cv, gang: 49, rank: RM_LT, v0e: 0, strength: 80, unlock: 510}
+  - {id: char-14, kind: character, number: 14, character: 14, model: warr_aj_ghost, gang: 51, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 477}
+  - {id: char-16, kind: character, number: 16, character: 16, model: warr_co_gen, gang: 21, rank: RM_LT, v0e: 0, strength: 75, unlock: 220}
+  - {id: char-17, kind: character, number: 17, character: 17, model: warr_co_cv, gang: 49, rank: RM_LT, v0e: 0, strength: 70, unlock: 322}
+  - {id: char-19, kind: character, number: 19, character: 19, model: warr_cb_gen, gang: 21, rank: RM_LT, v0e: 0, strength: 50, unlock: 224}
+  - {id: char-20, kind: character, number: 20, character: 20, model: warr_cb_cv, gang: 49, rank: RM_LT, v0e: 0, strength: 45, unlock: 572}
+  - {id: char-22, kind: character, number: 22, character: 22, model: warr_fo_gen, gang: 21, rank: RM_LT, v0e: 0, strength: 45, unlock: 221}
+  - {id: char-23, kind: character, number: 23, character: 23, model: warr_fo_cv1, gang: 47, rank: RM_LT, v0e: 0, strength: 50, unlock: 387}
+  - {id: char-24, kind: character, number: 24, character: 24, model: warr_fo_cv2, gang: 49, rank: RM_LT, v0e: 0, strength: 45, unlock: 377}
+  - {id: char-25, kind: character, number: 25, character: 25, model: warr_fo_ghost, gang: 51, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 474}
+  - {id: char-27, kind: character, number: 27, character: 27, model: warr_ve_gen, gang: 21, rank: RM_LT, v0e: 0, strength: 45, unlock: 218}
+  - {id: char-29, kind: character, number: 29, character: 29, model: warr_ve_cv, gang: 47, rank: RM_LT, v0e: 0, strength: 45, unlock: 386}
+  - {id: char-31, kind: character, number: 31, character: 31, model: warr_re_gen, gang: 21, rank: RM_LT, v0e: 0, strength: 40, unlock: 223}
+  - {id: char-32, kind: character, number: 32, character: 32, model: warr_re_cv, gang: 49, rank: RM_LT, v0e: 0, strength: 40, unlock: 580}
+  - {id: char-34, kind: character, number: 34, character: 34, model: warr_sn_gen, gang: 21, rank: RM_LT, v0e: 0, strength: 65, unlock: 219}
+  - {id: char-35, kind: character, number: 35, character: 35, model: warr_sn_cv, gang: 49, rank: RM_LT, v0e: 0, strength: 65, unlock: 511}
+  - {id: char-38, kind: character, number: 38, character: 38, model: warr_ty, gang: 22, rank: RM_LT, v0e: 0, strength: 40, unlock: 486}
+  - {id: char-40, kind: character, number: 40, character: 40, model: warr_ty_cv, gang: 47, rank: RM_LT, v0e: 0, strength: 40, unlock: 236}
+  - {id: char-41, kind: character, number: 41, character: 41, model: warr_jn, gang: 22, rank: RM_LT, v0e: 0, strength: 40, unlock: 485}
+  - {id: char-43, kind: character, number: 43, character: 43, model: warr_ma, gang: 22, rank: RM_LT, v0e: 0, strength: 40, unlock: 484}
+  - {id: char-45, kind: character, number: 45, character: 45, model: warr_ly, gang: 22, rank: RM_LT, v0e: 0, strength: 40, unlock: 487}
+  - {id: char-49, kind: character, number: 49, character: 49, model: warr_so_va1, gang: 22, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 481}
+  - {id: char-50, kind: character, number: 50, character: 50, model: warr_so_va2, gang: 22, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 479}
+  - {id: char-51, kind: character, number: 51, character: 51, model: warr_so_va3, gang: 22, rank: RM_SOLDIER, v0e: 0, strength: 35, unlock: 478}
+  - {id: char-52, kind: character, number: 52, character: 52, model: warr_so_vb1, gang: 22, rank: RM_SOLDIER, v0e: 0, strength: 35, unlock: 480}
+  - {id: char-53, kind: character, number: 53, character: 53, model: warr_so_vb2, gang: 22, rank: RM_SOLDIER, v0e: 0, strength: 35, unlock: 482}
+  - {id: char-54, kind: character, number: 54, character: 54, model: warr_so_vb3, gang: 47, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 483}
+  - {id: char-61, kind: character, number: 61, character: 61, model: warr_dest_le, gang: 48, rank: RM_LT, v0e: 0, strength: 30, unlock: 513}
+  - {id: char-62, kind: character, number: 62, character: 62, model: riff_cy, gang: 10, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 516}
+  - {id: char-63, kind: character, number: 63, character: 63, model: riff_cy_ghost, gang: 51, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 473}
+  - {id: char-64, kind: character, number: 64, character: 64, model: riff_bo_va1, gang: 10, rank: RM_WARCHIEF, v0e: 0, strength: 85, unlock: 517}
+  - {id: char-66, kind: character, number: 66, character: 66, model: riff_lt, gang: 50, rank: RM_LT, v0e: 0, strength: 85, unlock: 470}
+  - {id: char-67, kind: character, number: 67, character: 67, model: riff_em, gang: 50, rank: RM_LT, v0e: 0, strength: 80, unlock: 471}
+  - {id: char-68, kind: character, number: 68, character: 68, model: riff_so_va1, gang: 10, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 518}
+  - {id: char-69, kind: character, number: 69, character: 69, model: riff_so_va2, gang: 10, rank: RM_SOLDIER, v0e: 0, strength: 75, unlock: 519}
+  - {id: char-70, kind: character, number: 70, character: 70, model: riff_so_va1, gang: 10, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 520}
+  - {id: char-71, kind: character, number: 71, character: 71, model: riff_so_vb1, gang: 10, rank: RM_SOLDIER, v0e: 0, strength: 70, unlock: 521}
+  - {id: char-72, kind: character, number: 72, character: 72, model: riff_so_vb2, gang: 10, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 522}
+  - {id: char-73, kind: character, number: 73, character: 73, model: riff_so_vc1, gang: 50, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 466}
+  - {id: char-74, kind: character, number: 74, character: 74, model: riff_so_vc2, gang: 50, rank: RM_SOLDIER, v0e: 0, strength: 75, unlock: 467}
+  - {id: char-75, kind: character, number: 75, character: 75, model: riff_so_vc3, gang: 50, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 468}
+  - {id: char-76, kind: character, number: 76, character: 76, model: riff_so_vc4, gang: 50, rank: RM_SOLDIER, v0e: 0, strength: 70, unlock: 469}
+  - {id: char-77, kind: character, number: 77, character: 77, model: rogu_bo, gang: 15, rank: RM_WARCHIEF, v0e: 0, strength: 90, unlock: 523}
+  - {id: char-80, kind: character, number: 80, character: 80, model: rogu_lt, gang: 15, rank: RM_LT, v0e: 0, strength: 45, unlock: 528}
+  - {id: char-81, kind: character, number: 81, character: 81, model: rogu_so_va1, gang: 15, rank: RM_SOLDIER, v0e: 0, strength: 50, unlock: 527}
+  - {id: char-82, kind: character, number: 82, character: 82, model: rogu_so_va2, gang: 15, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 525}
+  - {id: char-83, kind: character, number: 83, character: 83, model: rogu_so_vb1, gang: 15, rank: RM_SOLDIER, v0e: 0, strength: 65, unlock: 524}
+  - {id: char-84, kind: character, number: 84, character: 84, model: rogu_so_vb2, gang: 15, rank: RM_SOLDIER, v0e: 0, strength: 55, unlock: 526}
+  - {id: char-89, kind: character, number: 89, character: 89, model: fury_bo, gang: 1, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 452}
+  - {id: char-90, kind: character, number: 90, character: 90, model: fury_lt, gang: 1, rank: RM_LT, v0e: 0, strength: 80, unlock: 403}
+  - {id: char-91, kind: character, number: 91, character: 91, model: fury_so1, gang: 1, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 270}
+  - {id: char-92, kind: character, number: 92, character: 92, model: fury_so2, gang: 1, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 272}
+  - {id: char-93, kind: character, number: 93, character: 93, model: fury_so3, gang: 1, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 271}
+  - {id: char-94, kind: character, number: 94, character: 94, model: fury_so4, gang: 1, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 273}
+  - {id: char-99, kind: character, number: 99, character: 99, model: turn_bo, gang: 19, rank: RM_WARCHIEF, v0e: 0, strength: 85, unlock: 443}
+  - {id: char-100, kind: character, number: 100, character: 100, model: turn_lt, gang: 19, rank: RM_LT, v0e: 0, strength: 80, unlock: 444}
+  - {id: char-101, kind: character, number: 101, character: 101, model: turn_so1, gang: 19, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 282}
+  - {id: char-102, kind: character, number: 102, character: 102, model: turn_so2, gang: 19, rank: RM_SOLDIER, v0e: 0, strength: 70, unlock: 283}
+  - {id: char-103, kind: character, number: 103, character: 103, model: turn_so3, gang: 19, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 279}
+  - {id: char-104, kind: character, number: 104, character: 104, model: turn_so4, gang: 19, rank: RM_SOLDIER, v0e: 0, strength: 75, unlock: 281}
+  - {id: char-105, kind: character, number: 105, character: 105, model: turn_so5, gang: 19, rank: RM_SOLDIER, v0e: 0, strength: 80, unlock: 280}
+  - {id: char-106, kind: character, number: 106, character: 106, model: sava_bo, gang: 18, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 378}
+  - {id: char-107, kind: character, number: 107, character: 107, model: sava_lt, gang: 18, rank: RM_LT, v0e: 0, strength: 70, unlock: 383}
+  - {id: char-108, kind: character, number: 108, character: 108, model: sava_lt1, gang: 18, rank: RM_LT, v0e: 0, strength: 70, unlock: 384}
+  - {id: char-109, kind: character, number: 109, character: 109, model: sava_lt2, gang: 18, rank: RM_LT, v0e: 0, strength: 70, unlock: 385}
+  - {id: char-110, kind: character, number: 110, character: 110, model: sava_so1a, gang: 18, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 381}
+  - {id: char-111, kind: character, number: 111, character: 111, model: sava_so1b, gang: 18, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 379}
+  - {id: char-112, kind: character, number: 112, character: 112, model: sava_so2a, gang: 18, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 380}
+  - {id: char-113, kind: character, number: 113, character: 113, model: sava_so2b, gang: 18, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 382}
+  - {id: char-114, kind: character, number: 114, character: 114, model: civl_monk1, gang: 33, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 373}
+  - {id: char-115, kind: character, number: 115, character: 115, model: civl_monk2, gang: 33, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 369}
+  - {id: char-116, kind: character, number: 116, character: 116, model: civl_monk_bo1, gang: 33, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 371}
+  - {id: char-117, kind: character, number: 117, character: 117, model: civl_monk_bo2, gang: 33, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 370}
+  - {id: char-119, kind: character, number: 119, character: 119, model: hurr_va, gang: 7, rank: RM_SOLDIER, v0e: 0, strength: 65, unlock: 255}
+  - {id: char-121, kind: character, number: 121, character: 121, model: civl_abe, gang: 36, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 579}
+  - {id: char-122, kind: character, number: 122, character: 122, model: hurr_sa, gang: 7, rank: RM_LT, v0e: 0, strength: 55, unlock: 261}
+  - {id: char-123, kind: character, number: 123, character: 123, model: hurr_lt, gang: 7, rank: RM_LT, v0e: 0, strength: 55, unlock: 260}
+  - {id: char-124, kind: character, number: 124, character: 124, model: hurr_so1a, gang: 7, rank: RM_SOLDIER, v0e: 0, strength: 65, unlock: 256}
+  - {id: char-125, kind: character, number: 125, character: 125, model: hurr_so1b, gang: 7, rank: RM_SOLDIER, v0e: 0, strength: 65, unlock: 259}
+  - {id: char-126, kind: character, number: 126, character: 126, model: hurr_so2a, gang: 7, rank: RM_SOLDIER, v0e: 0, strength: 65, unlock: 258}
+  - {id: char-127, kind: character, number: 127, character: 127, model: hurr_so2b, gang: 7, rank: RM_SOLDIER, v0e: 0, strength: 65, unlock: 257}
+  - {id: char-128, kind: character, number: 128, character: 128, model: bopp_bo, gang: 2, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 302}
+  - {id: char-129, kind: character, number: 129, character: 129, model: bopp_lt, gang: 2, rank: RM_LT, v0e: 0, strength: 40, unlock: 308}
+  - {id: char-130, kind: character, number: 130, character: 130, model: bopp_so1a, gang: 2, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 304}
+  - {id: char-131, kind: character, number: 131, character: 131, model: bopp_so1b, gang: 2, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 307}
+  - {id: char-132, kind: character, number: 132, character: 132, model: bopp_so1c, gang: 2, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 305}
+  - {id: char-133, kind: character, number: 133, character: 133, model: bopp_so1d, gang: 2, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 303}
+  - {id: char-134, kind: character, number: 134, character: 134, model: bopp_so2a, gang: 2, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 306}
+  - {id: char-135, kind: character, number: 135, character: 135, model: hiha_bo, gang: 6, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 488}
+  - {id: char-136, kind: character, number: 136, character: 136, model: hiha_lt, gang: 6, rank: RM_LT, v0e: 0, strength: 70, unlock: 247}
+  - {id: char-137, kind: character, number: 137, character: 137, model: hiha_lt_ft, gang: 6, rank: RM_LT, v0e: 0, strength: 70, unlock: 489}
+  - {id: char-138, kind: character, number: 138, character: 138, model: hiha_so_va1, gang: 6, rank: RM_SOLDIER, v0e: 0, strength: 55, unlock: 244}
+  - {id: char-139, kind: character, number: 139, character: 139, model: hiha_so_va2, gang: 6, rank: RM_SOLDIER, v0e: 0, strength: 55, unlock: 246}
+  - {id: char-140, kind: character, number: 140, character: 140, model: hiha_so_vb1, gang: 6, rank: RM_SOLDIER, v0e: 0, strength: 55, unlock: 245}
+  - {id: char-141, kind: character, number: 141, character: 141, model: hiha_so_vb2, gang: 6, rank: RM_SOLDIER, v0e: 0, strength: 55, unlock: 243}
+  - {id: char-142, kind: character, number: 142, character: 142, model: sara_bo, gang: 16, rank: RM_WARCHIEF, v0e: 0, strength: 65, unlock: 353}
+  - {id: char-143, kind: character, number: 143, character: 143, model: sara_lt, gang: 16, rank: RM_LT, v0e: 0, strength: 55, unlock: 358}
+  - {id: char-144, kind: character, number: 144, character: 144, model: sara_so1a, gang: 16, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 356}
+  - {id: char-145, kind: character, number: 145, character: 145, model: sara_so1b, gang: 16, rank: RM_SOLDIER, v0e: 0, strength: 35, unlock: 355}
+  - {id: char-146, kind: character, number: 146, character: 146, model: sara_so2a, gang: 16, rank: RM_SOLDIER, v0e: 0, strength: 50, unlock: 357}
+  - {id: char-147, kind: character, number: 147, character: 147, model: sara_so2b, gang: 16, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 354}
+  - {id: char-148, kind: character, number: 148, character: 148, model: panz_bo, gang: 14, rank: RM_WARCHIEF, v0e: 0, strength: 65, unlock: 248}
+  - {id: char-149, kind: character, number: 149, character: 149, model: panz_lt, gang: 14, rank: RM_LT, v0e: 0, strength: 60, unlock: 253}
+  - {id: char-150, kind: character, number: 150, character: 150, model: panz_so_va1, gang: 14, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 252}
+  - {id: char-151, kind: character, number: 151, character: 151, model: panz_so_va2, gang: 14, rank: RM_SOLDIER, v0e: 0, strength: 55, unlock: 249}
+  - {id: char-152, kind: character, number: 152, character: 152, model: panz_so_vb1, gang: 14, rank: RM_SOLDIER, v0e: 0, strength: 55, unlock: 250}
+  - {id: char-153, kind: character, number: 153, character: 153, model: panz_so_vb2, gang: 14, rank: RM_SOLDIER, v0e: 0, strength: 50, unlock: 251}
+  - {id: char-154, kind: character, number: 154, character: 154, model: jsbs_bo, gang: 8, rank: RM_WARCHIEF, v0e: 0, strength: 60, unlock: 347}
+  - {id: char-155, kind: character, number: 155, character: 155, model: jsbs_lt, gang: 8, rank: RM_LT, v0e: 0, strength: 50, unlock: 352}
+  - {id: char-156, kind: character, number: 156, character: 156, model: jsbs_so1, gang: 8, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 349}
+  - {id: char-157, kind: character, number: 157, character: 157, model: jsbs_so2, gang: 8, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 351}
+  - {id: char-158, kind: character, number: 158, character: 158, model: jsbs_so3, gang: 8, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 348}
+  - {id: char-159, kind: character, number: 159, character: 159, model: jsbs_so4, gang: 8, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 350}
+  - {id: char-160, kind: character, number: 160, character: 160, model: samo_bo, gang: 17, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 495}
+  - {id: char-161, kind: character, number: 161, character: 161, model: samo_lt, gang: 17, rank: RM_WARCHIEF, v0e: 0, strength: 100, unlock: 494}
+  - {id: char-162, kind: character, number: 162, character: 162, model: samo_so_va1, gang: 17, rank: RM_SOLDIER, v0e: 0, strength: 70, unlock: 496}
+  - {id: char-163, kind: character, number: 163, character: 163, model: samo_so_va2, gang: 17, rank: RM_SOLDIER, v0e: 0, strength: 70, unlock: 498}
+  - {id: char-164, kind: character, number: 164, character: 164, model: samo_so_va3, gang: 17, rank: RM_SOLDIER, v0e: 0, strength: 70, unlock: 497}
+  - {id: char-165, kind: character, number: 165, character: 165, model: samo_so_va4, gang: 17, rank: RM_SOLDIER, v0e: 0, strength: 70, unlock: 499}
+  - {id: char-166, kind: character, number: 166, character: 166, model: juda_bo, gang: 20, rank: RM_WARCHIEF, v0e: 0, strength: 60, unlock: 404}
+  - {id: char-167, kind: character, number: 167, character: 167, model: juda_lt, gang: 20, rank: RM_LT, v0e: 0, strength: 50, unlock: 405}
+  - {id: char-168, kind: character, number: 168, character: 168, model: juda_so_va1, gang: 20, rank: RM_SOLDIER, v0e: 0, strength: 35, unlock: 408}
+  - {id: char-169, kind: character, number: 169, character: 169, model: juda_so_va2, gang: 20, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 409}
+  - {id: char-170, kind: character, number: 170, character: 170, model: juda_so_vb1, gang: 20, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 407}
+  - {id: char-171, kind: character, number: 171, character: 171, model: juda_so_vb2, gang: 20, rank: RM_SOLDIER, v0e: 0, strength: 35, unlock: 406}
+  - {id: char-172, kind: character, number: 172, character: 172, model: elec_bo, gang: 5, rank: RM_WARCHIEF, v0e: 0, strength: 45, unlock: 237}
+  - {id: char-173, kind: character, number: 173, character: 173, model: elec_lt, gang: 5, rank: RM_LT, v0e: 0, strength: 40, unlock: 242}
+  - {id: char-174, kind: character, number: 174, character: 174, model: elec_so1, gang: 5, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 240}
+  - {id: char-175, kind: character, number: 175, character: 175, model: elec_so2, gang: 5, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 238}
+  - {id: char-176, kind: character, number: 176, character: 176, model: elec_so3, gang: 5, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 241}
+  - {id: char-177, kind: character, number: 177, character: 177, model: elec_so4, gang: 5, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 239}
+  - {id: char-178, kind: character, number: 178, character: 178, model: dest_bo, gang: 4, rank: RM_WARCHIEF, v0e: 0, strength: 70, unlock: 574}
+  - {id: char-179, kind: character, number: 179, character: 179, model: dest_bo_tg, gang: 48, rank: RM_WARCHIEF, v0e: 0, strength: 50, unlock: 568}
+  - {id: char-180, kind: character, number: 180, character: 180, model: dest_lt, gang: 4, rank: RM_LT, v0e: 0, strength: 60, unlock: 576}
+  - {id: char-182, kind: character, number: 182, character: 182, model: dest_lt_v1, gang: 52, rank: RM_LT, v0e: 0, strength: 30, unlock: 569}
+  - {id: char-183, kind: character, number: 183, character: 183, model: dest_lt_v2, gang: 52, rank: RM_LT, v0e: 0, strength: 30, unlock: 570}
+  - {id: char-184, kind: character, number: 184, character: 184, model: dest_lt_v3, gang: 52, rank: RM_LT, v0e: 0, strength: 30, unlock: 571}
+  - {id: char-185, kind: character, number: 185, character: 185, model: dest_lt_be, gang: 4, rank: RM_LT, v0e: 0, strength: 60, unlock: 575}
+  - {id: char-186, kind: character, number: 186, character: 186, model: dest_lt_le, gang: 4, rank: RM_LT, v0e: 0, strength: 60, unlock: 560}
+  - {id: char-187, kind: character, number: 187, character: 187, model: dest_le_bare, gang: 48, rank: RM_LT, v0e: 0, strength: 30, unlock: 512}
+  - {id: char-189, kind: character, number: 189, character: 189, model: dest_cl, gang: 49, rank: RM_WARCHIEF, v0e: 0, strength: 80, unlock: 492}
+  - {id: char-191, kind: character, number: 191, character: 191, model: dest_ve, gang: 49, rank: RM_LT, v0e: 0, strength: 45, unlock: 493}
+  - {id: char-192, kind: character, number: 192, character: 192, model: dest_so1a, gang: 4, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 556}
+  - {id: char-194, kind: character, number: 194, character: 194, model: dest_so1b, gang: 4, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 557}
+  - {id: char-196, kind: character, number: 196, character: 196, model: dest_so1c, gang: 4, rank: RM_LT, v0e: 0, strength: 50, unlock: 577}
+  - {id: char-197, kind: character, number: 197, character: 197, model: dest_so2a, gang: 4, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 558}
+  - {id: char-199, kind: character, number: 199, character: 199, model: dest_so2b, gang: 4, rank: RM_SOLDIER, v0e: 0, strength: 45, unlock: 559}
+  - {id: char-205, kind: character, number: 205, character: 205, model: char_lcgf, gang: 48, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 515}
+  - {id: char-206, kind: character, number: 206, character: 206, model: char_lcgf_vest, gang: 48, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 514}
+  - {id: char-214, kind: character, number: 214, character: 214, model: moon_bo, gang: 12, rank: RM_WARCHIEF, v0e: 0, strength: 55, unlock: 284}
+  - {id: char-215, kind: character, number: 215, character: 215, model: moon_lt, gang: 12, rank: RM_LT, v0e: 0, strength: 50, unlock: 289}
+  - {id: char-216, kind: character, number: 216, character: 216, model: moon_so1a, gang: 12, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 288}
+  - {id: char-217, kind: character, number: 217, character: 217, model: moon_so1b, gang: 12, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 286}
+  - {id: char-218, kind: character, number: 218, character: 218, model: moon_so2a, gang: 12, rank: RM_SOLDIER, v0e: 0, strength: 35, unlock: 287}
+  - {id: char-219, kind: character, number: 219, character: 219, model: moon_so2b, gang: 12, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 285}
+  - {id: char-220, kind: character, number: 220, character: 220, model: orph_bo_va1, gang: 13, rank: RM_WARCHIEF, v0e: 0, strength: 45, unlock: 225}
+  - {id: char-221, kind: character, number: 221, character: 221, model: orph_me, gang: 23, rank: RM_WARCHIEF, v0e: 0, strength: 30, unlock: 451}
+  - {id: char-222, kind: character, number: 222, character: 222, model: orph_me_vb, gang: 23, rank: RM_LT, v0e: 0, strength: 30, unlock: 532}
+  - {id: char-223, kind: character, number: 223, character: 223, model: orph_lt_va, gang: 13, rank: RM_LT, v0e: 0, strength: 40, unlock: 226}
+  - {id: char-224, kind: character, number: 224, character: 224, model: orph_lt_vb, gang: 13, rank: RM_LT, v0e: 0, strength: 35, unlock: 278}
+  - {id: char-225, kind: character, number: 225, character: 225, model: orph_so_va1, gang: 13, rank: RM_SOLDIER, v0e: 0, strength: 35, unlock: 277}
+  - {id: char-226, kind: character, number: 226, character: 226, model: orph_so_va2, gang: 13, rank: RM_SOLDIER, v0e: 0, strength: 30, unlock: 274}
+  - {id: char-227, kind: character, number: 227, character: 227, model: orph_so_vb1, gang: 13, rank: RM_SOLDIER, v0e: 0, strength: 30, unlock: 276}
+  - {id: char-228, kind: character, number: 228, character: 228, model: orph_so_vb2, gang: 13, rank: RM_SOLDIER, v0e: 0, strength: 35, unlock: 275}
+  - {id: char-229, kind: character, number: 229, character: 229, model: punk_bo, gang: 9, rank: RM_LT, v0e: 0, strength: 75, unlock: 465}
+  - {id: char-231, kind: character, number: 231, character: 231, model: punk_lt, gang: 9, rank: RM_LT, v0e: 0, strength: 75, unlock: 464}
+  - {id: char-233, kind: character, number: 233, character: 233, model: punk_so1a, gang: 9, rank: RM_SOLDIER, v0e: 0, strength: 60, unlock: 462}
+  - {id: char-234, kind: character, number: 234, character: 234, model: punk_so1b, gang: 9, rank: RM_SOLDIER, v0e: 0, strength: 65, unlock: 461}
+  - {id: char-235, kind: character, number: 235, character: 235, model: punk_so2a, gang: 9, rank: RM_SOLDIER, v0e: 0, strength: 70, unlock: 460}
+  - {id: char-236, kind: character, number: 236, character: 236, model: punk_so2b, gang: 9, rank: RM_SOLDIER, v0e: 0, strength: 55, unlock: 463}
+  - {id: char-237, kind: character, number: 237, character: 237, model: lizz_bo, gang: 11, rank: RM_WARCHIEF, v0e: 0, strength: 50, unlock: 453}
+  - {id: char-238, kind: character, number: 238, character: 238, model: lizz_lt, gang: 11, rank: RM_LT, v0e: 0, strength: 40, unlock: 459}
+  - {id: char-239, kind: character, number: 239, character: 239, model: lizz_so_va1, gang: 11, rank: RM_SOLDIER, v0e: 0, strength: 20, unlock: 456}
+  - {id: char-240, kind: character, number: 240, character: 240, model: lizz_so_va2, gang: 11, rank: RM_SOLDIER, v0e: 0, strength: 30, unlock: 455}
+  - {id: char-241, kind: character, number: 241, character: 241, model: lizz_so_va3, gang: 11, rank: RM_SOLDIER, v0e: 0, strength: 25, unlock: 457}
+  - {id: char-242, kind: character, number: 242, character: 242, model: lizz_so_vb1, gang: 11, rank: RM_SOLDIER, v0e: 0, strength: 35, unlock: 458}
+  - {id: char-243, kind: character, number: 243, character: 243, model: lizz_so_vb2, gang: 11, rank: RM_SOLDIER, v0e: 0, strength: 40, unlock: 454}
+  - {id: char-245, kind: character, number: 245, character: 245, model: cops_ty_va1, gang: 42, rank: RM_CIVILIAN, v0e: 0, strength: 45, unlock: 292}
+  - {id: char-246, kind: character, number: 246, character: 246, model: cops_ty_va2, gang: 42, rank: RM_CIVILIAN, v0e: 0, strength: 40, unlock: 294}
+  - {id: char-247, kind: character, number: 247, character: 247, model: cops_ty_vb1, gang: 42, rank: RM_CIVILIAN, v0e: 0, strength: 40, unlock: 290}
+  - {id: char-248, kind: character, number: 248, character: 248, model: cops_ty_vb2, gang: 42, rank: RM_CIVILIAN, v0e: 0, strength: 40, unlock: 291}
+  - {id: char-253, kind: character, number: 253, character: 253, model: cops_va1, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 60, unlock: 339}
+  - {id: char-254, kind: character, number: 254, character: 254, model: cops_va2, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 60, unlock: 341}
+  - {id: char-255, kind: character, number: 255, character: 255, model: cops_va3, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 60, unlock: 340}
+  - {id: char-256, kind: character, number: 256, character: 256, model: cops_vb1, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 60, unlock: 343}
+  - {id: char-257, kind: character, number: 257, character: 257, model: cops_vb2, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 60, unlock: 346}
+  - {id: char-258, kind: character, number: 258, character: 258, model: cops_vb3, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 50, unlock: 345}
+  - {id: char-259, kind: character, number: 259, character: 259, model: cops_vc1, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 70, unlock: 388}
+  - {id: char-260, kind: character, number: 260, character: 260, model: cops_uc1, gang: 23, rank: RM_WARCHIEF, v0e: 0, strength: 35, unlock: 529}
+  - {id: char-261, kind: character, number: 261, character: 261, model: cops_ia1, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 70, unlock: 490}
+  - {id: char-262, kind: character, number: 262, character: 262, model: cops_ia2, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 40, unlock: 491}
+  - {id: char-263, kind: character, number: 263, character: 263, model: cops_vd1, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 344}
+  - {id: char-264, kind: character, number: 264, character: 264, model: cops_vd2, gang: 3, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 342}
+  - {id: char-268, kind: character, number: 268, character: 268, model: char_db1, gang: 44, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 323}
+  - {id: char-269, kind: character, number: 269, character: 269, model: char_db2, gang: 44, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 324}
+  - {id: char-270, kind: character, number: 270, character: 270, model: civl_bm_va1, gang: 30, rank: RM_BUM, v0e: 0, strength: 15, unlock: 555}
+  - {id: char-271, kind: character, number: 271, character: 271, model: civl_bm_va2, gang: 31, rank: RM_BUM, v0e: 0, strength: 20, unlock: 432}
+  - {id: char-272, kind: character, number: 272, character: 272, model: civl_bm_vb1, gang: 30, rank: RM_BUM, v0e: 0, strength: 15, unlock: 554}
+  - {id: char-273, kind: character, number: 273, character: 273, model: civl_bm_vb2, gang: 31, rank: RM_BUM, v0e: 0, strength: 15, unlock: 428}
+  - {id: char-274, kind: character, number: 274, character: 274, model: civl_bm_vb3, gang: 30, rank: RM_BUM, v0e: 0, strength: 15, unlock: 552}
+  - {id: char-275, kind: character, number: 275, character: 275, model: civl_bm_vb4, gang: 31, rank: RM_BUM, v0e: 0, strength: 30, unlock: 427}
+  - {id: char-276, kind: character, number: 276, character: 276, model: civl_bm_vb5, gang: 30, rank: RM_BUM, v0e: 0, strength: 15, unlock: 551}
+  - {id: char-277, kind: character, number: 277, character: 277, model: civl_bm_vb6, gang: 31, rank: RM_BUM, v0e: 0, strength: 15, unlock: 431}
+  - {id: char-278, kind: character, number: 278, character: 278, model: civl_bm_vb7, gang: 30, rank: RM_BUM, v0e: 0, strength: 15, unlock: 553}
+  - {id: char-279, kind: character, number: 279, character: 279, model: civl_bm_vb8, gang: 31, rank: RM_BUM, v0e: 0, strength: 15, unlock: 430}
+  - {id: char-280, kind: character, number: 280, character: 280, model: civl_bm_vb9, gang: 31, rank: RM_BUM, v0e: 0, strength: 15, unlock: 429}
+  - {id: char-281, kind: character, number: 281, character: 281, model: civl_bm_vb11, gang: 30, rank: RM_BUM, v0e: 0, strength: 30, unlock: 550}
+  - {id: char-288, kind: character, number: 288, character: 288, model: civl_gk, gang: 46, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 398}
+  - {id: char-289, kind: character, number: 289, character: 289, model: civl_co_ic, gang: 35, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 539}
+  - {id: char-290, kind: character, number: 290, character: 290, model: civl_co_sh, gang: 35, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 536}
+  - {id: char-292, kind: character, number: 292, character: 292, model: civl_co_do, gang: 35, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 537}
+  - {id: char-293, kind: character, number: 293, character: 293, model: civl_hl_b1, gang: 34, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 423}
+  - {id: char-294, kind: character, number: 294, character: 294, model: civl_hl_b2, gang: 34, rank: RM_CIVILIAN, v0e: 0, strength: 10, unlock: 418}
+  - {id: char-295, kind: character, number: 295, character: 295, model: civl_hl_b3, gang: 34, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 419}
+  - {id: char-296, kind: character, number: 296, character: 296, model: civl_cw_ma1, gang: 46, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 399}
+  - {id: char-297, kind: character, number: 297, character: 297, model: civl_cw_ma2, gang: 46, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 402}
+  - {id: char-298, kind: character, number: 298, character: 298, model: civl_cw_mb1, gang: 46, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 401}
+  - {id: char-299, kind: character, number: 299, character: 299, model: civl_cw_mb2, gang: 46, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 400}
+  - {id: char-300, kind: character, number: 300, character: 300, model: civl_co_lf1, gang: 46, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 500}
+  - {id: char-301, kind: character, number: 301, character: 301, model: civl_co_lf2, gang: 46, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 501}
+  - {id: char-302, kind: character, number: 302, character: 302, model: civl_co_lf3, gang: 46, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 502}
+  - {id: char-303, kind: character, number: 303, character: 303, model: civl_ch, gang: 36, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 547}
+  - {id: char-304, kind: character, number: 304, character: 304, model: civl_sk_pe, gang: 36, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 546}
+  - {id: char-305, kind: character, number: 305, character: 305, model: civl_tw, gang: 36, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 548}
+  - {id: char-306, kind: character, number: 306, character: 306, model: civl_csg, gang: 23, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 535}
+  - {id: char-307, kind: character, number: 307, character: 307, model: civl_sp_ju, gang: 48, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 254}
+  - {id: char-308, kind: character, number: 308, character: 308, model: civl_prom_ma, gang: 23, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 533}
+  - {id: char-309, kind: character, number: 309, character: 309, model: civl_prom_mb, gang: 23, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 534}
+  - {id: char-310, kind: character, number: 310, character: 310, model: civl_prom_fa, gang: 23, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 530}
+  - {id: char-311, kind: character, number: 311, character: 311, model: civl_prom_fb, gang: 23, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 531}
+  - {id: char-312, kind: character, number: 312, character: 312, model: civl_gypsy, gang: 36, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 549}
+  - {id: char-313, kind: character, number: 313, character: 313, model: bopp_fa1, gang: 2, rank: RM_SOLDIER, v0e: 0, strength: 20, unlock: 309}
+  - {id: char-314, kind: character, number: 314, character: 314, model: bopp_fa1, gang: 2, rank: RM_SOLDIER, v0e: 0, strength: 20, unlock: 310}
+  - {id: char-315, kind: character, number: 315, character: 315, model: civl_hd, gang: 36, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 545}
+  - {id: char-316, kind: character, number: 316, character: 316, model: civl_hl_br1, gang: 29, rank: RM_CIVILIAN, v0e: 0, strength: 65, unlock: 509}
+  - {id: char-317, kind: character, number: 317, character: 317, model: civl_hl_br2, gang: 29, rank: RM_CIVILIAN, v0e: 0, strength: 65, unlock: 503}
+  - {id: char-318, kind: character, number: 318, character: 318, model: civl_hl_br3, gang: 29, rank: RM_CIVILIAN, v0e: 0, strength: 65, unlock: 507}
+  - {id: char-319, kind: character, number: 319, character: 319, model: civl_hl_br4, gang: 29, rank: RM_CIVILIAN, v0e: 0, strength: 65, unlock: 504}
+  - {id: char-320, kind: character, number: 320, character: 320, model: civl_hl_br5, gang: 29, rank: RM_CIVILIAN, v0e: 0, strength: 65, unlock: 505}
+  - {id: char-321, kind: character, number: 321, character: 321, model: civl_gc_bt, gang: 34, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 426}
+  - {id: char-322, kind: character, number: 322, character: 322, model: civl_hl_dm1, gang: 29, rank: RM_CIVILIAN, v0e: 0, strength: 65, unlock: 506}
+  - {id: char-323, kind: character, number: 323, character: 323, model: civl_hl_dm2, gang: 29, rank: RM_CIVILIAN, v0e: 0, strength: 65, unlock: 508}
+  - {id: char-324, kind: character, number: 324, character: 324, model: civl_hl_ma1, gang: 38, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 317}
+  - {id: char-325, kind: character, number: 325, character: 325, model: civl_hl_ma2, gang: 38, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 321}
+  - {id: char-326, kind: character, number: 326, character: 326, model: civl_hl_ma3, gang: 38, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 318}
+  - {id: char-327, kind: character, number: 327, character: 327, model: civl_hl_ma4, gang: 38, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 320}
+  - {id: char-328, kind: character, number: 328, character: 328, model: civl_hl_ma5, gang: 38, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 319}
+  - {id: char-329, kind: character, number: 329, character: 329, model: civl_hl_fb1, gang: 39, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 395}
+  - {id: char-330, kind: character, number: 330, character: 330, model: civl_hl_fb2, gang: 39, rank: RM_CIVILIAN, v0e: 0, strength: 10, unlock: 394}
+  - {id: char-331, kind: character, number: 331, character: 331, model: civl_hl_ho1, gang: 40, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 561}
+  - {id: char-332, kind: character, number: 332, character: 332, model: civl_hl_ho2, gang: 40, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 564}
+  - {id: char-333, kind: character, number: 333, character: 333, model: hook_01, gang: 40, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 562}
+  - {id: char-334, kind: character, number: 334, character: 334, model: hook_03, gang: 40, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 563}
+  - {id: char-337, kind: character, number: 337, character: 337, model: civl_hl_tr, gang: 37, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 311}
+  - {id: char-338, kind: character, number: 338, character: 338, model: civl_hl_fc1, gang: 37, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 313}
+  - {id: char-339, kind: character, number: 339, character: 339, model: civl_hl_fc2, gang: 37, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 314}
+  - {id: char-340, kind: character, number: 340, character: 340, model: civl_hl_fc3, gang: 37, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 315}
+  - {id: char-341, kind: character, number: 341, character: 341, model: civl_hl_fc4, gang: 37, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 316}
+  - {id: char-342, kind: character, number: 342, character: 342, model: civl_hl_fc5, gang: 37, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 312}
+  - {id: char-343, kind: character, number: 343, character: 343, model: civl_bt1, gang: 27, rank: RM_CIVILIAN, v0e: 0, strength: 50, unlock: 450}
+  - {id: char-344, kind: character, number: 344, character: 344, model: civl_hl_bt1, gang: 27, rank: RM_CIVILIAN, v0e: 0, strength: 55, unlock: 445}
+  - {id: char-345, kind: character, number: 345, character: 345, model: civl_hl_bt2, gang: 27, rank: RM_CIVILIAN, v0e: 0, strength: 40, unlock: 449}
+  - {id: char-346, kind: character, number: 346, character: 346, model: civl_hl_bt3, gang: 27, rank: RM_CIVILIAN, v0e: 0, strength: 50, unlock: 446}
+  - {id: char-347, kind: character, number: 347, character: 347, model: civl_hl_bt4, gang: 27, rank: RM_CIVILIAN, v0e: 0, strength: 45, unlock: 448}
+  - {id: char-348, kind: character, number: 348, character: 348, model: civl_hl_bt5, gang: 27, rank: RM_CIVILIAN, v0e: 0, strength: 50, unlock: 447}
+  - {id: char-350, kind: character, number: 350, character: 350, model: civl_hl_dj1, gang: 48, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 472}
+  - {id: char-352, kind: character, number: 352, character: 352, model: civl_hud, gang: 53, rank: RM_SOLDIER, v0e: 0, strength: 0}
+  - {id: char-353, kind: character, number: 353, character: 353, model: civl_hl_st1a, gang: 44, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 327}
+  - {id: char-354, kind: character, number: 354, character: 354, model: civl_hl_st1b, gang: 44, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 326}
+  - {id: char-355, kind: character, number: 355, character: 355, model: civl_hl_st2a, gang: 44, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 328}
+  - {id: char-356, kind: character, number: 356, character: 356, model: civl_hl_st2b, gang: 44, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 329}
+  - {id: char-357, kind: character, number: 357, character: 357, model: civl_hl_st3a, gang: 44, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 325}
+  - {id: char-358, kind: character, number: 358, character: 358, model: civl_sg1, gang: 42, rank: RM_CIVILIAN, v0e: 0, strength: 50, unlock: 293}
+  - {id: char-359, kind: character, number: 359, character: 359, model: civl_sg2, gang: 42, rank: RM_CIVILIAN, v0e: 0, strength: 40, unlock: 295}
+  - {id: char-360, kind: character, number: 360, character: 360, model: civl_pl_ma1, gang: 39, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 389}
+  - {id: char-361, kind: character, number: 361, character: 361, model: civl_pl_ma2, gang: 39, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 392}
+  - {id: char-362, kind: character, number: 362, character: 362, model: civl_pl_ma3, gang: 39, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 390}
+  - {id: char-363, kind: character, number: 363, character: 363, model: civl_pl_ma5, gang: 39, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 393}
+  - {id: char-364, kind: character, number: 364, character: 364, model: civl_pl_ma6, gang: 39, rank: RM_CIVILIAN, v0e: 0, strength: 15, unlock: 391}
+  - {id: char-365, kind: character, number: 365, character: 365, model: civl_pl_ma8, gang: 39, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 396}
+  - {id: char-366, kind: character, number: 366, character: 366, model: civl_pl_fa1, gang: 34, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 424}
+  - {id: char-367, kind: character, number: 367, character: 367, model: civl_pl_fa2, gang: 39, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 397}
+  - {id: char-368, kind: character, number: 368, character: 368, model: civl_bn_fa1, gang: 28, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 338}
+  - {id: char-369, kind: character, number: 369, character: 369, model: civl_bn_fa2, gang: 28, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 337}
+  - {id: char-370, kind: character, number: 370, character: 370, model: civl_bn_fa3, gang: 28, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 331}
+  - {id: char-371, kind: character, number: 371, character: 371, model: civl_bn_fa4, gang: 28, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 332}
+  - {id: char-372, kind: character, number: 372, character: 372, model: civl_bn_ma1, gang: 28, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 333}
+  - {id: char-373, kind: character, number: 373, character: 373, model: civl_bn_ma2, gang: 28, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 330}
+  - {id: char-374, kind: character, number: 374, character: 374, model: civl_bn_ma3, gang: 28, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 336}
+  - {id: char-375, kind: character, number: 375, character: 375, model: civl_bn_ma4, gang: 28, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 335}
+  - {id: char-376, kind: character, number: 376, character: 376, model: civl_bn_mb1, gang: 28, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 334}
+  - {id: char-380, kind: character, number: 380, character: 380, model: civl_eh_fa1, gang: 43, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 265}
+  - {id: char-381, kind: character, number: 381, character: 381, model: civl_eh_fa2, gang: 43, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 266}
+  - {id: char-382, kind: character, number: 382, character: 382, model: civl_eh_fa3, gang: 43, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 267}
+  - {id: char-383, kind: character, number: 383, character: 383, model: civl_eh_ma1, gang: 43, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 269}
+  - {id: char-384, kind: character, number: 384, character: 384, model: civl_eh_ma2, gang: 43, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 263}
+  - {id: char-385, kind: character, number: 385, character: 385, model: civl_eh_ma3, gang: 43, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 264}
+  - {id: char-386, kind: character, number: 386, character: 386, model: civl_eh_ma4, gang: 43, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 262}
+  - {id: char-387, kind: character, number: 387, character: 387, model: civl_eh_ma5, gang: 43, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 268}
+  - {id: char-388, kind: character, number: 388, character: 388, model: civl_tr_cw, gang: 35, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 538}
+  - {id: char-389, kind: character, number: 389, character: 389, model: civl_tr_fa1, gang: 45, rank: RM_SOLDIER, v0e: 0, strength: 15, unlock: 230}
+  - {id: char-390, kind: character, number: 390, character: 390, model: civl_tr_fa2, gang: 45, rank: RM_SOLDIER, v0e: 0, strength: 25, unlock: 233}
+  - {id: char-391, kind: character, number: 391, character: 391, model: civl_tr_fa3, gang: 45, rank: RM_SOLDIER, v0e: 0, strength: 15, unlock: 229}
+  - {id: char-392, kind: character, number: 392, character: 392, model: civl_tr_fa4, gang: 45, rank: RM_SOLDIER, v0e: 0, strength: 30, unlock: 235}
+  - {id: char-393, kind: character, number: 393, character: 393, model: civl_tr_ma1, gang: 45, rank: RM_SOLDIER, v0e: 0, strength: 25, unlock: 234}
+  - {id: char-394, kind: character, number: 394, character: 394, model: civl_tr_ma2, gang: 45, rank: RM_SOLDIER, v0e: 0, strength: 20, unlock: 227}
+  - {id: char-395, kind: character, number: 395, character: 395, model: civl_tr_ma3, gang: 45, rank: RM_SOLDIER, v0e: 0, strength: 20, unlock: 232}
+  - {id: char-396, kind: character, number: 396, character: 396, model: civl_tr_ma4, gang: 45, rank: RM_SOLDIER, v0e: 0, strength: 20, unlock: 228}
+  - {id: char-397, kind: character, number: 397, character: 397, model: civl_tr_ma5, gang: 45, rank: RM_SOLDIER, v0e: 0, strength: 15, unlock: 231}
+  - {id: char-402, kind: character, number: 402, character: 402, model: civl_ct_fa1, gang: 32, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 365}
+  - {id: char-403, kind: character, number: 403, character: 403, model: civl_ct_ma1, gang: 32, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 366}
+  - {id: char-404, kind: character, number: 404, character: 404, model: civl_ct_fa2, gang: 32, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 362}
+  - {id: char-405, kind: character, number: 405, character: 405, model: civl_ct_ma2, gang: 32, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 359}
+  - {id: char-406, kind: character, number: 406, character: 406, model: civl_ct_fa3, gang: 32, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 360}
+  - {id: char-407, kind: character, number: 407, character: 407, model: civl_ct_ma3, gang: 32, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 361}
+  - {id: char-408, kind: character, number: 408, character: 408, model: civl_ct_fa4, gang: 32, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 363}
+  - {id: char-409, kind: character, number: 409, character: 409, model: civl_ct_ma4, gang: 32, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 367}
+  - {id: char-410, kind: character, number: 410, character: 410, model: civl_ct_ma5, gang: 32, rank: RM_CIVILIAN, v0e: 0, strength: 35, unlock: 364}
+  - {id: char-411, kind: character, number: 411, character: 411, model: civl_ct_ck1, gang: 33, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 374}
+  - {id: char-412, kind: character, number: 412, character: 412, model: civl_ct_ck2, gang: 33, rank: RM_CIVILIAN, v0e: 0, strength: 15, unlock: 375}
+  - {id: char-413, kind: character, number: 413, character: 413, model: civl_ct_ck3, gang: 33, rank: RM_CIVILIAN, v0e: 0, strength: 15, unlock: 376}
+  - {id: char-414, kind: character, number: 414, character: 414, model: civl_ct_eb, gang: 33, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 372}
+  - {id: char-415, kind: character, number: 415, character: 415, model: civl_ct_ac, gang: 33, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 368}
+  - {id: char-416, kind: character, number: 416, character: 416, model: civl_st, gang: 36, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 542}
+  - {id: char-417, kind: character, number: 417, character: 417, model: civl_co_ma1, gang: 36, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 543}
+  - {id: char-418, kind: character, number: 418, character: 418, model: civl_co_ma2, gang: 36, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 544}
+  - {id: char-419, kind: character, number: 419, character: 419, model: civl_co_ma3, gang: 35, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 541}
+  - {id: char-420, kind: character, number: 420, character: 420, model: civl_co_ma4, gang: 34, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 425}
+  - {id: char-421, kind: character, number: 421, character: 421, model: civl_co_ma5, gang: 36, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 578}
+  - {id: char-422, kind: character, number: 422, character: 422, model: civl_pl_st1, gang: 34, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 422}
+  - {id: char-423, kind: character, number: 423, character: 423, model: civl_pl_st2, gang: 34, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 421}
+  - {id: char-424, kind: character, number: 424, character: 424, model: civl_pl_st3, gang: 34, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 420}
+  - {id: char-425, kind: character, number: 425, character: 425, model: civl_scps, gang: 48, rank: RM_CIVILIAN, v0e: 0, strength: 40, unlock: 296}
+  - {id: char-426, kind: character, number: 426, character: 426, model: civl_dr_ma1, gang: 24, rank: RM_CIVILIAN, v0e: 0, strength: 80, unlock: 435}
+  - {id: char-427, kind: character, number: 427, character: 427, model: civl_dr_ma2, gang: 24, rank: RM_CIVILIAN, v0e: 0, strength: 80, unlock: 434}
+  - {id: char-428, kind: character, number: 428, character: 428, model: civl_dr_ma4, gang: 24, rank: RM_CIVILIAN, v0e: 0, strength: 80, unlock: 433}
+  - {id: char-429, kind: character, number: 429, character: 429, model: civl_dr_ma3, gang: 24, rank: RM_CIVILIAN, v0e: 0, strength: 80, unlock: 437}
+  - {id: char-430, kind: character, number: 430, character: 430, model: civl_dr_ma5, gang: 24, rank: RM_CIVILIAN, v0e: 0, strength: 80, unlock: 436}
+  - {id: char-431, kind: character, number: 431, character: 431, model: civl_sp_ma5, gang: 26, rank: RM_CIVILIAN, v0e: 0, strength: 75, unlock: 298}
+  - {id: char-432, kind: character, number: 432, character: 432, model: civl_sp_ma1, gang: 26, rank: RM_CIVILIAN, v0e: 0, strength: 70, unlock: 297}
+  - {id: char-433, kind: character, number: 433, character: 433, model: civl_sp_ma3, gang: 26, rank: RM_CIVILIAN, v0e: 0, strength: 70, unlock: 301}
+  - {id: char-434, kind: character, number: 434, character: 434, model: civl_sp_ma2, gang: 26, rank: RM_CIVILIAN, v0e: 0, strength: 70, unlock: 299}
+  - {id: char-435, kind: character, number: 435, character: 435, model: civl_sp_ma4, gang: 26, rank: RM_CIVILIAN, v0e: 0, strength: 80, unlock: 300}
+  - {id: char-436, kind: character, number: 436, character: 436, model: civl_we_ma2, gang: 25, rank: RM_CIVILIAN, v0e: 0, strength: 80, unlock: 439}
+  - {id: char-437, kind: character, number: 437, character: 437, model: civl_we_ma1, gang: 25, rank: RM_CIVILIAN, v0e: 0, strength: 75, unlock: 438}
+  - {id: char-438, kind: character, number: 438, character: 438, model: civl_we_ma3, gang: 25, rank: RM_CIVILIAN, v0e: 0, strength: 75, unlock: 442}
+  - {id: char-439, kind: character, number: 439, character: 439, model: civl_we_ma4, gang: 25, rank: RM_CIVILIAN, v0e: 0, strength: 70, unlock: 440}
+  - {id: char-440, kind: character, number: 440, character: 440, model: civl_we_ma5, gang: 25, rank: RM_CIVILIAN, v0e: 0, strength: 70, unlock: 441}
+  - {id: char-441, kind: character, number: 441, character: 441, model: civl_co_di, gang: 35, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 540}
+  - {id: char-442, kind: character, number: 442, character: 442, model: civl_pimp1, gang: 40, rank: RM_CIVILIAN, v0e: 0, strength: 50, unlock: 567}
+  - {id: char-443, kind: character, number: 443, character: 443, model: civl_pimp2, gang: 40, rank: RM_CIVILIAN, v0e: 0, strength: 40, unlock: 565}
+  - {id: char-445, kind: character, number: 445, character: 445, model: civl_pl_pm, gang: 40, rank: RM_CIVILIAN, v0e: 0, strength: 40, unlock: 566}
+  - {id: char-446, kind: character, number: 446, character: 446, model: civl_rs_ma1, gang: 41, rank: RM_CIVILIAN, v0e: 0, strength: 15, unlock: 414}
+  - {id: char-447, kind: character, number: 447, character: 447, model: civl_rs_ma2, gang: 41, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 417}
+  - {id: char-448, kind: character, number: 448, character: 448, model: civl_rs_ma3, gang: 41, rank: RM_CIVILIAN, v0e: 0, strength: 30, unlock: 413}
+  - {id: char-449, kind: character, number: 449, character: 449, model: civl_rs_ma4, gang: 41, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 412}
+  - {id: char-450, kind: character, number: 450, character: 450, model: civl_rs_ma5, gang: 41, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 411}
+  - {id: char-451, kind: character, number: 451, character: 451, model: civl_rs_fa1, gang: 41, rank: RM_CIVILIAN, v0e: 0, strength: 25, unlock: 416}
+  - {id: char-452, kind: character, number: 452, character: 452, model: civl_rs_fa2, gang: 41, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 410}
+  - {id: char-453, kind: character, number: 453, character: 453, model: civl_rs_fa3, gang: 41, rank: RM_CIVILIAN, v0e: 0, strength: 20, unlock: 415}
