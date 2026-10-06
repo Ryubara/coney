@@ -255,7 +255,12 @@ Effects bit 0 spawns `part_light_bugs` at the light when it is made (`0x0017c508
   **blob** sprite: rectangle 40 of `part_page1` (resource instances 9 and 10), colour (10, 10, 10, 128), on the ground
   found by a ray from 0.25 m above the human, 4 m down (`WorldManager_RayCast`), turned to the ground's normal and
   scaled by the human's `+0x580`-`+0x588`, 0.05 m above it. No projected or light-dependent shadows; `SetShadowColor`,
-  `SetShadowLightOffset` and `EnableShadow` are empty ([bindings](../references/bindings/effects.md)).
+  `SetShadowLightOffset` and `EnableShadow` are empty ([bindings](../references/bindings/effects.md)). The sprite goes
+  through `Instance_AddSprite`, so its colour is on RenderWare's 0-255 scale ([GUI](gui.md#sprite-colours)): alpha
+  128 is **half transparent**, and the shadow is faint (confirmed (runtime), PCSX2 2.9.94, `level99`: a soft, barely
+  darker patch under Rembrandt's feet). Rembrandt's `+0x580`-`+0x588` read 1.195, 1.097, 1.0 (confirmed (runtime)).
+  The reticule update turns a player's shadow on every update and the Rumble team disc turns it off
+  ([HUD: the health rings](hud.md#the-health-rings)), which are drawn after it, over it.
 
 ### The glow {#glow}
 
@@ -307,6 +312,9 @@ checks `level99`'s values against the table above (all match). Coney's choices:
 - Sprite colours are on the GS's scale (0x80 = 1.0) and doubled for librw, as the prelighting is; coronas and shadows
   are drawn with Z test and no Z write after the world.
 - The blob shadow is 1 m square (`+0x580` is not researched); the shadow-ground check uses the shadow's ray.
+  **Known gap**: its colour goes through the doubling above, so its alpha 128 becomes 255 and the shadow draws as an
+  opaque black shade; the original's is half transparent ([Humans](#humans)). This shade is what shows under Coney's
+  humans; the health rings are not built ([HUD](hud.md#the-health-rings)).
 - A light with radius 0 given `SetLightFlicker` keeps its corona and flickers (no `sub_flashing_light` particle);
   light bugs are not spawned. No object uses the pulse or the glow yet.
 - A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background draws with the
@@ -320,4 +328,5 @@ checks `level99`'s values against the table above (all match). Coney's choices:
 - What object flag `0x80` (the pulse, light B) marks.
 - Mode 4's flicker: the RpLight's colour is not updated by it; whether another step applies the base.
 - The value passed with rectangles 1-4 of the coronas (`distSq / 640`).
-- The blob shadow's size (the human's `+0x580`-`+0x588`).
+- The blob shadow's size: the sprite's base size and what sets the human's `+0x580`-`+0x588` (Rembrandt 1.195, 1.097,
+  1.0).

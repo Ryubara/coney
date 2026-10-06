@@ -663,7 +663,7 @@ every viewport before the next step starts:
    world, water, translucent objects ([The streamed world](world.md#a-frame)).
 4. Resources (`0x00185b38`).
 
-Then `0x0017b2e0` and device slot `+0x118` (heat distortion) once.
+Then the ground rings (`0x0017b2e0`, [HUD](hud.md#the-health-rings)) and device slot `+0x118` (heat distortion) once.
 
 **The background** (`0x0040d0a8(level, viewport)`), confirmed (code):
 

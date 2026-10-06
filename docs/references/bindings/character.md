@@ -1254,14 +1254,13 @@ HuForceEnableReticule(human, enable)
 
 **Returns** nothing.
 
-Sets one global (0x005104f8), not a per-human flag. The reticule update (0x0024b780) draws a marker at each player who
-is not down or in a scene: normally only while a pad button (mask 0x100) is held, health is at or below 20 %, or the
-player was recently involved (kept 4 s, then fading over 0.5 s); with the global set, every such player's marker is
-drawn every frame at full strength. Markers on the players' locked targets are not affected.
+Sets one global (0x005104f8), not a per-human flag. The reticule update (0x0024b780) draws each player's health and
+power rings at its feet ([HUD: the health rings](../../research/hud.md#the-health-rings)) while the HUD shows and the
+player is not down, airborne, climbing or in a scene: normally only after SELECT is pressed or a flash used (held 4 s,
+then fading over 0.5 s), in a fight stance, or at 20 % health or below; with the global set, every such player's rings
+are drawn every frame at full strength. The rings of the players' targets are not affected.
 
-**Notes.** The setting persists until changed, across humans. Which button mask 0x100 is, and what the "recently
-involved" list at 0x006c72d8 records, are not traced (inferred: the target-lock button and recent hits). Rumble turns it
-on for every fighter.
+**Notes.** The setting persists until changed, across humans. Rumble turns it on for every fighter.
 
 - **Evidence:** confirmed (code) at `0x00236978`, `0x0024b780`; detail: traced
 - **Wrapper** `0x0035ada0` (registered by `RegisterBindings`); **calls** `0x00236978` `Human_ForceEnableReticule`,

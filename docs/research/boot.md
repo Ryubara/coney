@@ -362,7 +362,7 @@ files they belong to.
 6. Characters (`0x00249b98`), resource streaming (`0x0018a980`), render device slot `+0x18` (flush the render
    queue), world update (`0x0040f8a0`), resource manager (`0x00186068`).
 7. **Render each viewport** (`0x00156408`, one or two): device begin-viewport (slot `+0x88`), lights, world sectors,
-   resources, particles (`0x0017b2e0`), device slot `+0x118`.
+   resources, the queued ground rings (`0x0017b2e0`, [HUD](hud.md#the-health-rings)), device slot `+0x118`.
 8. **Overlays** (`0x00156658`): HUD (`0x001b1688`), subtitles, the front-end layers when active, screen effects with
    `dt` (device slot `+0x128`).
 9. **Scripts**: `scriptSystem.Update(dt)` (slot `+0x14`; [Scripts](scripting.md#vtable-slots)).

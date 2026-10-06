@@ -14,12 +14,15 @@ text machinery underneath (widgets, sprite sheets, fonts, markup, draw order) is
 and icons are on [GUI: the radar](gui.md#radar-icons); the script bindings are in the
 [HUD bindings](../references/bindings/hud.md).
 
-In short: **there is no health bar.** The player panel at the top left is the character's **name banner**, tinted with
-the rage colour, a thin **rage meter** under it, the **score** and the **money**, with up to four **item counters**
-(flash, spray paint, handcuffs, keys) beside the money. It shows when something on it changes (or SELECT is pressed),
-stays 2 s and fades out over 1 s. Hints sit in a dark box at the bottom left; objective and announcement messages
-appear at the same place and hide the hint box while they show. The radar is a disc of the level's map at the bottom
-right; there is no full-screen map. START opens the pause menu ([Pause menu](pause.md)).
+In short: **health is not on the screen's edge but on the ground**: two flat rings at the player's feet, the outer one
+showing health and the inner one power (or rage while raging), shown on SELECT, in a fight stance, at low health and
+after a flash ([The health rings](#the-health-rings)); the player's current target gets a health ring too. The player
+panel at the top left is the character's **name banner**, tinted with the rage colour, a thin **rage meter** under it,
+the **score** and the **money**, with up to four **item counters** (flash, spray paint, handcuffs, keys) beside the
+money. It shows when something on it changes (or SELECT is pressed), stays 2 s and fades out over 1 s. Hints sit in a
+dark box at the bottom left; objective and announcement messages appear at the same place and hide the hint box while
+they show. The radar is a disc of the level's map at the bottom right; there is no full-screen map. START opens the
+pause menu ([Pause menu](pause.md)).
 
 ## Original structure
 
@@ -62,6 +65,10 @@ the profile-manager screens, in a file not yet named ([Source map](source-map.md
 | `0x0017bc28` / `0x0017b8a8` | `Im2D_DrawTexturedDisc` / `_Ring` | a textured disc, and a ring with a fading edge | confirmed (code) |
 | `0x0020e6f8` | `TargetPanel_Update` | the target's name and bar | confirmed (code) |
 | `0x00221108` | `Human_ReportBarsToHUD` | sends health and power fractions to the HUD, which ignores them | confirmed (code) |
+| `0x0024b780` | `Reticules_Update` | per update: who gets a health ring, with what alpha ([The health rings](#the-health-rings)) | confirmed (code), runtime |
+| `0x0024a230` | `Reticule_QueueHealthRings(yaw, lift, human, alpha, view)` | one human's two rings: values, colours, size | confirmed (code), runtime |
+| `0x0017b1e0` / `0x0017b2e0` | `GroundRing_Queue` / `GroundRing_DrawQueued` | the ring queue (`0x005fd330`, `0xc0` bytes each, count `0x0050ccd4`) and its draw | confirmed (code), runtime |
+| `0x0024af78` / `0x00249cb0` | `Reticule_AddTargetMarker` / `Reticule_AddRumbleTeamDisc` | the locked target's marker; the Rumble team disc | confirmed (code) |
 
 ## Data
 
@@ -292,10 +299,10 @@ attached yet, it runs its `Init` once (`0x00212840`), attaches it, sets the bann
 when the HUD is hidden (`+0x177a0` = 0); it returns the slot, or -1. The panel index is kept at human
 `+0x380`. Confirmed (code).
 
-**Health and power are not shown.** Each frame `0x00221108` passes the player's health fraction (record `+0x144` /
-`+0x146`) and power fraction (`+0x148` or `+0x14a` over their maxima) to `0x001b2430` / `0x001b2460`, which call
-`0x0020dfd0`, a function that returns at once. Confirmed (code); confirmed (runtime): health 314 and 900 of 900 left
-the panel unchanged.
+**Health and power are not shown on the panel** (they are on the ground: [The health rings](#the-health-rings)). Each
+frame `0x00221108` passes the player's health fraction (record `+0x144` / `+0x146`) and power fraction (`+0x148` or
+`+0x14a` over their maxima) to `0x001b2430` / `0x001b2460`, which call `0x0020dfd0`, a function that returns at once.
+Confirmed (code); confirmed (runtime): health 314 and 900 of 900 left the panel unchanged.
 
 **Visibility.** The panel draws when attached (`+0x40f8`) and shown (`+0x40fc`). Its **fade**: `+0x411c` holds the
 time of the last activity; 0 means "now" and is stamped on the next render. For 2,000 ms after it (`0x00510070`) the
@@ -573,13 +580,115 @@ free slot or the older one, so the last two targets can show side by side. Confi
 - **Fade:** each slot keeps its last update time; 2,000 ms after it (`0x0050f9e4`) the slot fades out over 1,000 ms
   (`0x0050f9e8`) and is freed below 10 % alpha, or at once when the target dies or its fill drops under 0.01.
 
-### The ring under the player
+### The health rings {#the-health-rings}
 
-**Confirmed (runtime):** while the player panel shows (after SELECT, and for its 2 s + 1 s fade), a flat dark ring lies
-on the ground around the player's feet, with a short orange-red arc at its front edge; with the panel hidden it is
-gone. What draws it, and what the arc measures (health, power or rage), is not traced: it is not drawn by the player
-panel's `Render` (`0x00213290`) nor by the radar, and the HUD's health and power entry points (`0x001b2430`,
-`0x001b2460`) return at once ([The player panel](#the-player-panel)).
+The game's health display: two flat rings on the ground around a human's feet, drawn in the world (not by the HUD's
+`Render`), the **outer ring showing health** and the **inner ring power**, or **rage** while raging. The source calls
+them reticules (`HuForceEnableReticule`). Confirmed (code) at the functions below; confirmed (runtime), PCSX2 2.9.94,
+on copies of quick-save slots 1 and 6 (`level99`), writing health, power, rage, the raging flag and `0x005104f8` over
+PINE, reading the queued rings at `0x005fd330` and taking screenshots. The player stood still (no stick input) except
+for one walk at stick magnitude 0.5 straight up; the camera was turned with the right stick at 0.7 right.
+
+**Who gets one.** `Reticules_Update` (`0x0024b780`) runs every update from the task manager (`0x003a31a8`). It does
+nothing in an Armies of the Night level (`0x0041d110`) or while the HUD is hidden (HUD `+0x177a0`, `0x00617fe0`), so
+`HideHud` and a scene's letterbox take the rings away with the rest. Then, for each player (game state `+0x228` + 4 ×
+i, `+0x224` players):
+
+- **The player's own rings**, when the player is not airborne (state `0x1c00000000`), not in a scene, not climbing
+  over (record `+0x08` `0x40`) and not down or dead. Each frame this also turns the player's blob shadow on (render
+  instance `+0x2b4` = 1, [Lighting](lighting.md#humans)).
+- **The player's current target's rings** (the human its `+0xc8` names), with the same tests and not in state `0x1cc`;
+  for a non-player target only the outer (health) ring. A new target fades in over 500 ms (alpha = elapsed × 0.51),
+  and leaves at once when it stops being the target.
+
+**When the player's rings show** (each player keeps an entry `{handle, first seen, last trigger}` in a list of up to
+four at `0x006c72d8`, `0x0024b190`):
+
+- a **trigger** sets the last trigger to now: **SELECT newly pressed** (`0x00144bf0(pad, 0x100)`, pad record by the
+  per-player `+0x19`) while the per-player record's `+0x1b` is set (1 for the player in `level99`), or the HUD's
+  per-panel request byte (HUD `+0x225d0` + panel, `0x001b28a0`), which **using a flash** sets (`0x00284280`) and the
+  update clears;
+- **in a fight stance** (record `+0x00` & 3, [Combat](combat.md#state-flags)) or with **health at or below 20 %**
+  the last trigger is renewed every update, so the rings stay;
+- otherwise the rings are drawn only while the player is in the list and within 4,500 ms of the last trigger: they
+  fade in over 500 ms after first appearing, hold, and from **4,000 ms after the last trigger** fade out linearly over
+  500 ms (alpha = (500 − (t − 4000)) × 0.51);
+- `HuForceEnableReticule` (`0x005104f8`) draws every player's rings at alpha 255 every update instead.
+
+Confirmed (runtime): at 90 % health with no trigger no ring showed; SELECT pressed over PINE brought them up about a
+second later and they were gone some 5.5 s after; with `0x005104f8` set they stayed.
+
+**What they measure** (`Reticule_QueueHealthRings`, `0x0024a230`). Each ring is a circle of 64 segments
+(`0x00510500`) split into three arcs, in this order from the start angle: the **fill** (colour A), the **lost** part
+(colour B) and the part **beyond the capacity** (colour C). Two numbers on a 0-100 scale set them: the fill ends at
+`value` % of the circle and the lost part at `capacity` %. Both rings scale by the human's power class byte `+0x40`
+([Power classes](characters.md#power-classes)) as `k` = byte / 100 (35 for Rembrandt's class 64, confirmed (runtime);
+the field is otherwise untraced):
+
+| Ring | value | capacity | A | B | C |
+| --- | --- | --- | --- | --- | --- |
+| outer, health | health % (record `+0x144` / maximum × 100, clamped 0-100) × `k` | 100 × `k` | by health, below | black | `(60, 60, 60)` |
+| inner, power (players only) | power % (record `+0x148` / its maximum `0x00223068` × 100, clamped) × `k` | 100 × `k` | `(100, 100, 100)` | black | `(60, 60, 60)` |
+| inner while raging (human `+0xe0` `0x80000`) | rage (human `+0x650`, raw, not divided by its maximum) × `k` | 100 × `k` | `(217, 158, 12)` | black | `(60, 60, 60)` |
+
+All colours take the ring's alpha. So for Rembrandt at 35 % health a short orange arc fills 12 % of the outer circle,
+black runs on to 35 % and the rest is dark grey (confirmed (runtime)); with the class byte set to 100 the arcs reached
+25, 50 and 90 % of the circle at those healths (confirmed (runtime)).
+
+**The health colour** (A of the outer ring): above 75 % green `(76, 122, 27)`; at or below 0.1 % `(16, 16, 16)`;
+otherwise `(158, 24 + int(h × 1.1571), 24)` with `h` the health % (`h × 0.0133 × 87`), orange at 75 %, red near 0
+(runtime: `(158, 81, 24)` at 50 %). For a player:
+
+- **low health**: above 0.1 % and at or below 25 % (`0x00510514`) the fill **blinks**: black for 232 ms
+  (`0x00510510`), its colour for the next 232 ms, and again (one clock for all players, read from the clock at
+  `0x0050b8b8`, inferred: the real-time clock); seen at runtime at 25 %;
+- **rage full**: when rage reaches the Warrior class's maximum (`0x00223260`, [Combat](combat.md#rage)) after being
+  below it, the whole outer ring turns gold `(128, 100, 0, 255)` for 200 ms (`0x00510528`), then shows normally for
+  200 ms, three times;
+- **raging**, once those flashes are done: the fill is light grey `(191, 191, 191)` (runtime: confirmed).
+
+**Bosses**: for a target of class `+0x11b` 13 (`0x00223e20`) outside Rumble the outer ring shows three bands like the
+[target panel's bar](#the-target-panel): from 70 % `(76, 122, 27)` over `(128, 100, 0)`, from 40 % `(128, 100, 0)`
+over `(134, 26, 0)`, below that `(134, 26, 0)` over black, each band filling over its range (× 3.33, or × 2.5 for the
+last); the value is the band's fill, not the health. Not seen at runtime.
+
+**Shape and placement** (confirmed (code); the numbers confirmed (runtime) from the queued records):
+
+- Both rings are fans of 64 triangles from the centre, radius 0.6 × `s` in the ring's own units, then scaled by **0.6
+  (inner) and 0.9 (outer)**: 0.36 × `s` and 0.54 × `s` metres to the rim. The visible band is the texture's.
+- `s` is the **hit pulse**: min(1 + `p` / 100, 1.15). Each hit sets the target `p` (human `+0x5d2`) to the damage
+  (`Human_AddPendingDamage`, `0x00264bd8`); `p` (human `+0x5d4`, clamped 0-100) moves toward it by 45 (`0x0051051c`)
+  per update while the ring is drawn, and when it arrives the target goes back to 0, so a hit swells the rings by up
+  to 15 % and shrinks them back.
+- They lie **flat** in the horizontal plane (not turned to the ground's normal), centred on the human's position, its
+  height + 0.055 m (`0x00510518`) + 0.001 m for each human's rings drawn before them this update (`0x00510558`, so
+  rings do not fight in depth); the inner and outer of one human share that height. Runtime: player at z 0.2231, rings
+  at 0.2791.
+- **Start angle** = the player camera's heading + 2.5 rad (`0x00510520`); the heading is `atan2(x, y)` of the camera's
+  orientation quaternion turned on +y (`0x00335f48`). Segment `k` (0-64) is at start + `k` × 2π / 64, at
+  (r cos, r sin) on the game's x and y. So the arcs **turn with the camera, not the human**: on screen the fill starts
+  at the front right of the feet (about half past four on a clock face) and grows clockwise, through the front, then
+  the left; the same place after the camera turned half round (confirmed (runtime)).
+- **Texture**: `part_page1` (resource instance 9, or 10 in the second view, the blob shadow's sheet), centred on the
+  middle of rectangle 1; each rim vertex takes u = centre u + 0.062 cos, v = centre v − 0.124 sin (whole-sheet units),
+  the centre vertex the middle. Runtime: the middle is (0.6973, 0.3789).
+- **Colours per vertex**: the centre has colour A; each rim vertex k has C when 64 − k ≤ floor(64 × (100 − capacity) /
+  100) (and that is above 0), else B when 64 − k ≤ floor(64 × (100 − value) / 100), else A (or black when blinking).
+  Drawn with **flat shading**, so each segment takes one vertex's colour and the arcs end on hard edges.
+- **Drawing** (`GroundRing_DrawQueued`, `0x0017b2e0`, from the viewport pass `0x00156408` after the world and the
+  sprite batches, so after the blob shadows, [Boot](boot.md#one-frame)): the queue is drawn and emptied once a frame,
+  each ring as an `RwIm3D` triangle fan (`0x00196b58`) in every viewport, with the shade mode flat, the ring's raster,
+  fog off, and the blend and Z states as the world pass left them; the legs hid the ring behind them at runtime (Z
+  test on).
+
+**Markers on targets** (confirmed (code)): while a player holds L1 (record `+0x00` `0x8`, [Combat](combat.md#targets))
+at a non-player target, a sprite of `part_page1` rectangle 0 lies under the target at 0.041 m, size 0.9 × `s`, white
+at the ring's alpha (black in Rumble), human `+0x66c` = 1 (only while the per-player `+0x1b` is set). With two players
+on one screen (not Rumble), each player also gets an icon above the head (`0x0024b2a8`, `Human_AttachSpinningIcon`).
+In **Rumble** (a level numbered 100 or more, `0x0041d160`) a third part is drawn first (`0x00249cb0`): a disc of
+rectangle 64 at 0.038 m in the fighter's gang colour (player 1's gang `(134, 26, 26)`, player 2's `(128, 100, 0)`,
+others `(35, 83, 188)`), which turns the fighter's blob shadow off, and for a player a pointer (rectangle 65 or 66)
+along the camera's view; in Rumble the inner ring is not drawn and even a class-13 target gets the plain health ring.
 
 ### Showing and hiding {#showing-and-hiding}
 
@@ -700,6 +809,12 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   `level99` checkpoint 1 through `l99_c1` unskipped: hidden and nothing drawn under the bars, then shown, drawn and
   the first hint up, and a pause hiding and showing it. The debug menus' HUD page sets its values ([Debug menu](../guides/debug-menu.md#pages)).
 
+**Not built yet: [the health rings](#the-health-rings).** Coney draws no rings; `HuForceEnableReticule` is only kept
+(`GameState::forceReticules`, `repo:src/warriors/game_state.h`). The dark shade under Coney's humans is the blob shadow
+(`repo:src/platform/scene_lighting.cpp`, [Lighting](lighting.md#coneys-implementation)), not a partial ring. The
+rings belong in the world pass after the blob shadows (`repo:src/platform/play_lighting.cpp` draws those), fed from
+the play mode's humans, and hidden with the HUD.
+
 **Coney's stand-ins** (marked in the code): text sizes read as the glyph height (`(0.04, 0.05)` as w × h, 0.05 as h);
 the counter slots' `x0` 0 and lines at y 0.104 and 0.154, the count 0.022 right of its icon; handcuff and key icons
 `part_page0` 31 and 34; the money's icon a `$`; the popups' places; the money cue once per count; the built-in
@@ -725,7 +840,9 @@ animation (`HUDTurnOnActionCycleAnim`) is kept per player but not drawn yet (the
 - Who sets HUD `+0x177a8` (the centred announcement while hidden).
 - The radar: which file holds each world's map sheet; the active camera's slot `+0xc4` third value (inferred: the
   overlay width); what the player stands on for the blue disc colour.
-- What draws the ring under the player (and its arc), and when it shows.
+- The health rings: the shape of `part_page1` rectangle 1 (the ring's band), what the power class byte `+0x40` is
+  meant as, the blend state the world pass leaves, and a runtime look at a target's ring, the rage-full flashes and a
+  boss's bands.
 - The target panel's two sprites and the caller `0x00210e48`'s conditions; a runtime look at the panel.
 - Human state flag `0x200000`, which turns the banner blue-grey.
 - The layouts of the other video modes (16:9, progressive, PAL) that `0x00211ef8`, `0x001af010` and `0x001cdc80` apply
