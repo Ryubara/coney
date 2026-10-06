@@ -102,6 +102,7 @@ void PlayerCombat::startTheft(TheftKind kind, std::uint64_t nowMs, float stageTu
 void PlayerCombat::release() {
     m_mode = CombatMode::Free;
     m_mugging.reset();
+    m_powerMove = anim_id::kNone;
 }
 
 void PlayerCombat::interrupt() {
@@ -150,6 +151,21 @@ void PlayerCombat::startAttack(int animId, const CombatTuning& tuning, CombatOut
     }
 }
 
+bool PlayerCombat::extendPowerMove(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
+    // Square's press or cross's 0x10 while the power move playing has its window open (a press in the wind-up is
+    // dropped), at most twice: the next part, at no further cost.
+    const bool press = input.command == command::kSquarePressed || input.command == command::kCrossLongHold;
+    if (m_powerMove == anim_id::kNone || m_chain.animId() != m_powerMove || !press ||
+        (phaseFlags(input) & kPhaseChainWindow) == 0 || m_powerExtensions >= kMaxPowerExtensions) {
+        return false;
+    }
+    ++m_powerExtensions;
+    m_powerMove += 2;
+    out.grabAction = GrabAction::PowerStrike;
+    startAttack(m_powerMove, tuning, out);
+    return true;
+}
+
 void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
     // The grab breaks when the power meter runs out.
     if (m_power.value() == 0) {
@@ -158,6 +174,9 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
         out.startAnim = anim_id::kGrabLetGo;
         out.grabPowerOut = true;
         m_mode = CombatMode::Free;
+        return;
+    }
+    if (extendPowerMove(input, tuning, out)) {
         return;
     }
     // One grab move at a time: a move's clip (a strike, a spin, the mugging's end) and the grab's own intro and
@@ -176,8 +195,12 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
     const GrabOutcome outcome = updateGrab(grab, m_power, tuning, m_random);
     out.grabAction = outcome.action;
     switch (outcome.action) {
-    case GrabAction::Strike:
     case GrabAction::PowerStrike:
+        m_powerMove = outcome.animId;
+        m_powerExtensions = 0;
+        startAttack(outcome.animId, tuning, out);
+        break;
+    case GrabAction::Strike:
     case GrabAction::Throw:
         // The moves with a hit run through the chain for their timing. **Coney choice**: a rear power strike's spin
         // is played by the caller in front of the strike, whose timing starts with it.

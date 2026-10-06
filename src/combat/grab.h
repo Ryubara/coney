@@ -79,7 +79,7 @@ inline constexpr float kGrabbableHeight = 0.25F;
 enum class GrabAction : std::uint8_t {
     None,        ///< Nothing.
     Strike,      ///< Square (51 or 53) or cross (55).
-    PowerStrike, ///< Cross held and square pressed (57, 63 in rage), or circle + cross (63).
+    PowerStrike, ///< Cross held and square pressed (57, 63 in rage), or its extension (59, 65).
     Throw,       ///< Circle with the stick beyond kThrowStick.
     Mug,         ///< Triangle at a victim that can be mugged: the mugging starts.
     Spin,        ///< R1 pressed, or circle without the stick from the rear: the hold turns front to rear or back.
@@ -111,8 +111,8 @@ struct GrabOutcome {
 /// One update of a grab:
 /// - square strikes with 51 or 53 at random, cross (its 0x10) with 55, each spending CombatTuning::grabStrikeCost ×
 ///   0.5 of the meter (40 of 400) at any level;
-/// - cross held and square pressed (0x22) is the power strike 57 (63 in rage), circle + cross (0x23) is 63; from the
-///   rear the spin to the front plays first;
+/// - cross held and square pressed (0x22) is the power strike 57 (63 in rage); from the rear the spin to the front
+///   plays first; circle + cross (0x23) does nothing in a player's grab (63 is an AI grabber's);
 /// - circle (its press, 0x1e) with the stick beyond kThrowStick throws by the stick's side; without the stick, from
 ///   the rear, it spins to the front;
 /// - the power strikes and the throws need more than CombatTuning::powerEndurance of the meter and spend it (100 of

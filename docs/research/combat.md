@@ -1661,6 +1661,9 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   connect and 658 / 660 on the victim, searched with anim 1's range within 54° of the stick, the clear line to the
   target (`0x0021c0a8`) not tested. Its damage is dealt on the snap to the hold, reported to the tutorial as 82 / 84;
   the paired, tackle and solo paths for other clip flags are not built.
+- The power strike's extension (57 → 59, 63 → 65) takes square's press or cross's `0x10` only on an update with the
+  window open, and the grab ends when the last part's clip gives way to 389: the victim, attached until then, is put
+  on the ground (196) to get up after its time. The rear power strike's hit is scored as 57, not the spin's 80.
 - A grab plays one move at a time; a throw lets go at once; the rear power strike's spin plays in front of the strike,
   whose timing starts with it; the release with too little power goes straight to the idles, and the grab
   broken at 0 power plays the let-go. A tackle also ends when the power meter is empty, and any hold when the victim

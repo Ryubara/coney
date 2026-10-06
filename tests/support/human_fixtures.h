@@ -172,8 +172,13 @@ inline std::vector<LocomotionClip> combatClips() {
          {76U, 77U, 90U, 91U, 92U, 93U, 96U, 97U, 100U, 101U, 104U, 105U, 108U, 109U, 112U, 113U, 116U, 117U}) {
         still(id, 0.5F);
     }
-    for (std::uint32_t id = 51; id <= 58; ++id) {
+    for (std::uint32_t id = 51; id <= 60; ++id) {
         still(id, 0.5F);
+        // The power strike opens its window (0x2c) at frame 5 for its extension and ends it (0x2d) at 12.
+        if (id == 57U) {
+            clips.back().markers.push_back({5, 0x2c});
+            clips.back().markers.push_back({12, 0x2d});
+        }
     }
     for (const std::uint32_t id :
          {78U,  79U,  80U,  81U,  94U,  95U,  2U,   4U,   5U,   6U,   195U, 199U, 212U, 357U, 389U,

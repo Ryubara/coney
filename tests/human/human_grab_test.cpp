@@ -256,3 +256,28 @@ TEST_CASE("circle + cross grabs with the strike 657, deals its 60 as the hold st
     CHECK(fight.other().state() == TargetState::Held);
     CHECK(fight.player().animator().animId() == 82U);
 }
+
+TEST_CASE("the power strike ends the grab with the victim down, unless square in its window extends it to 59",
+          "[human][combat]") {
+    const FightCharacter character;
+    // Without the extension: 57 lands its 57, then the victim falls and the player is free.
+    HumanFight plain(character, 1.0F);
+    plain.run("5 tap circle\n30 press cross\n32 tap square\n34 release cross\n", 60);
+    CHECK(plain.damageTaken() == 57);
+    CHECK(plain.other().state() == TargetState::Grounded);
+    CHECK(plain.player().fighter().held() == nullptr);
+    CHECK(plain.player().fighter().combat().mode() == combat::CombatMode::Free);
+
+    // A square press in the wind-up is dropped; one in the window plays 59 for 79 more, then the grab ends alike.
+    HumanFight extended(character, 1.0F);
+    std::vector<int> struck;
+    extended.run("5 tap circle\n30 press cross\n32 tap square\n34 release cross\n35 tap square\n40 tap square\n", 80,
+                 [&](std::uint64_t /*frame*/) {
+                     const std::vector<int>& strikes = extended.player().fighter().strikes();
+                     struck.insert(struck.end(), strikes.begin(), strikes.end());
+                 });
+    CHECK(struck == std::vector<int>{57, 59});
+    CHECK(extended.damageTaken() == 57 + 79);
+    CHECK(extended.other().state() == TargetState::Grounded);
+    CHECK(extended.player().fighter().combat().mode() == combat::CombatMode::Free);
+}

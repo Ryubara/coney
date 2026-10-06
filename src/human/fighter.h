@@ -307,6 +307,9 @@ class Fighter {
     // A strong grapple's connect has ended in the hold: the victim takes the strike's damage, reported as the hold's
     // id (docs/research/combat.md#strong-grapple).
     void landGrapple(const FighterInput& input);
+    // A power move in a grab (57, 63 and their extensions) has played out: the grab ends, the grabber settling through
+    // 389 as queued, the victim on the ground, to get up after its time (docs/research/combat.md#grabbing).
+    void endPowerMove();
     // The pair's moments, read from the grabber's clip at the start of an update: the connecting clip starting (the
     // alignment and the victim's paired clip), a connecting clip or a spin ending (the gate and the snap), and a spin
     // starting (detachForSpin()).

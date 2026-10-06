@@ -23,6 +23,9 @@
 
 namespace coney::combat {
 
+/// A power move in a grab extends at most this many times (record `+0xbc` < 2).
+inline constexpr int kMaxPowerExtensions = 2;
+
 /// What the player is doing, as far as combat's routes go (the state flags `0x40`/`0x80`, `0x400`, `0x100`,
 /// `0x4000000`).
 enum class CombatMode : std::uint8_t { Free, Grabbing, Tackling, Mugging, Theft };
@@ -112,6 +115,8 @@ class PlayerCombat {
     [[nodiscard]] const RageMeter& rage() const { return m_rage; }
     [[nodiscard]] const std::optional<MuggingGame>& mugging() const { return m_mugging; }
     [[nodiscard]] const std::optional<StereoTheft>& theft() const { return m_theft; }
+    /// The grab's power move playing (57, 63 or an extension), or anim_id::kNone.
+    [[nodiscard]] int powerMove() const { return m_powerMove; }
 
   private:
     // The record's +0x08 for this update.
@@ -135,6 +140,10 @@ class PlayerCombat {
     void strongGrapple(const CombatInput& input, CombatOutput& out);
     // The mounted route (after a tackle or a grab's mount): updateMount's move, played through the chain or the mode.
     void updateMounting(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
+    // In a grab, square or cross in the power move's window plays its next part, id + 2 (57 → 59, 63 → 65). Returns
+    // whether it did. Research: docs/research/combat.md#grabbing
+    // @orig 0x0027df38 Player_UpdatePowerMove (unknown)
+    bool extendPowerMove(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // The theft route.
     void updateTheft(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     /// Circle tapped or held: a grab or a tackle, or a miss.
@@ -154,6 +163,8 @@ class PlayerCombat {
     std::optional<StereoTheft> m_theft;
     std::optional<ButtonMash> m_mash;
     float m_mashFactor = 1.5F;
+    int m_powerMove = anim_id::kNone; // the grab's power move playing (57, 63 or an extension), else kNone
+    int m_powerExtensions = 0;        // its extensions so far (record +0xbc)
 };
 
 } // namespace coney::combat

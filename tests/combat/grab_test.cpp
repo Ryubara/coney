@@ -131,9 +131,9 @@ TEST_CASE("in a grab, strikes cost 40, a throw 100, and the power strike needs a
     // A strike still spends at any level.
     power.set(30);
     CHECK(grabWith(command::kSquarePressed, {}, power, random).powerSpent == 30);
-    // Circle + cross is 63.
+    // Circle + cross does nothing in a player's grab.
     power.set(400);
-    CHECK(grabWith(command::kCircleCross, {}, power, random).animId == anim_id::kGrabPower2Strike1);
+    CHECK(grabWith(command::kCircleCross, {}, power, random).action == GrabAction::None);
 
     // Triangle mugs only a victim that qualifies.
     GrabInput mug;

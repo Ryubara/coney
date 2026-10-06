@@ -76,6 +76,14 @@ inline constexpr std::array<std::uint32_t, 0> kNoClips{};
     return clip == clipOf(combat::anim_id::kGrabSpinToRear) || clip == clipOf(combat::anim_id::kGrabSpinToFront);
 }
 
+/// Whether grabber clip `clip` is a grab's power move: 57 or 63 and their extensions, + 2 and + 4.
+[[nodiscard]] inline bool isPowerMove(std::uint32_t clip) {
+    const auto first = clipOf(combat::anim_id::kGrabPower1Strike1);
+    const auto rage = clipOf(combat::anim_id::kGrabPower2Strike1);
+    return clip == first || clip == first + 2 || clip == first + 4 || clip == rage || clip == rage + 2 ||
+           clip == rage + 4;
+}
+
 /// Whether `animId` is one of the throws.
 [[nodiscard]] inline bool isThrow(int animId) {
     return animId >= combat::anim_id::kThrow1Front && animId <= combat::anim_id::kThrow2Left;

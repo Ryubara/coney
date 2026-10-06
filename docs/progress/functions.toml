@@ -3927,6 +3927,11 @@ subsystem = "Human"
 size = 272
 
 [[function]]
+address = 0x0027df38
+name = "Player_UpdatePowerMove"
+subsystem = "Human"
+
+[[function]]
 address = 0x0027e6d8
 name = "Player_UpdateTheft"
 subsystem = "Human"

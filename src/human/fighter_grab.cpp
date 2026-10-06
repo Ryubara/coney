@@ -122,6 +122,11 @@ void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator
         return;
     }
     const std::uint32_t clip = animator.animId();
+    // A power move has ended with no extension after it: the grab is over.
+    if (clips::isPowerMove(m_lastClip) && clip != m_lastClip && !clips::isPowerMove(clip)) {
+        endPowerMove();
+        return;
+    }
     // The intro has handed over to the connecting clip.
     if (m_pair == PairStage::Intro && clip == connectClip()) {
         connect(input, animator, heading);
@@ -281,21 +286,22 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
         }
         break;
     case combat::GrabAction::PowerStrike: {
-        // From the rear the victim is spun to the front first; both end in the front hold.
+        // From the rear the victim is spun to the front first. The power move ends the grab: the grabber settles
+        // through 389, the victim falls (endPowerMove()), unless an extension takes over.
         const std::uint32_t strike = clips::clipOf(out.startAnim);
         if (m_rear) {
-            const std::array<std::uint32_t, 2> moves{id::kGrabSpinToFront, strike};
+            const std::array<std::uint32_t, 3> moves{id::kGrabSpinToFront, strike, clips::kNormalFromFight};
             const std::array<std::uint32_t, 2> reacts{id::kGrabSpinToFront + 1, strike + 1};
-            animator.playCombat(moves, clips::kGrabHold, AnimState::Hold, clips::kPairFade, clips::kAttackHolds);
+            animator.playCombat(moves, clips::kIdle, AnimState::Attack, clips::kPairFade, clips::kAttackHolds);
             if (m_held != nullptr) {
-                m_held->playPaired(reacts, animator.anims(), clips::kGrabHeld, AnimState::Hold, TargetState::Held);
+                m_held->playPaired(reacts, animator.anims(), clips::kGroundedIdle, AnimState::Hold, TargetState::Held);
             }
             m_rear = false;
         } else {
-            animator.playCombat(clips::one(strike), clips::kGrabHold, AnimState::Hold, clips::kPairFade,
-                                clips::kAttackHolds);
+            const std::array<std::uint32_t, 2> moves{strike, clips::kNormalFromFight};
+            animator.playCombat(moves, clips::kIdle, AnimState::Attack, clips::kPairFade, clips::kAttackHolds);
             if (m_held != nullptr) {
-                m_held->playPaired(clips::one(strike + 1), animator.anims(), clips::kGrabHeld, AnimState::Hold,
+                m_held->playPaired(clips::one(strike + 1), animator.anims(), clips::kGroundedIdle, AnimState::Hold,
                                    TargetState::Held);
             }
         }
@@ -452,6 +458,19 @@ void Fighter::victimEscapes(const FighterInput& input, HumanAnimator& animator) 
     animator.playPaired(clips::one(clips::clipOf(escape) + 1), victim.anims(), clips::kGroundedIdle, AnimState::Hold);
     m_victim.knockDown(input.nowMs, true);
     m_reacting = true;
+}
+
+void Fighter::endPowerMove() {
+    m_held->setAttached(false);
+    m_pair = PairStage::None;
+    m_turnUpdates = 0;
+    m_grabTurn = 0.0F;
+    m_combat.release();
+    if (!m_held->health().depleted()) {
+        m_held->play(clips::kNoClips, clips::kGroundedIdle, AnimState::Hold, TargetState::Grounded);
+    }
+    m_held = nullptr;
+    m_rear = false;
 }
 
 void Fighter::releaseHold(HumanAnimator& animator, bool letGo) {

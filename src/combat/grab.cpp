@@ -120,13 +120,12 @@ GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTu
         outcome.animId = anim_id::kGrabComboStrike3;
         outcome.powerSpent = spend(tuning.grabStrikeCost * kPlayerStrikeCostShare);
         break;
-    case command::kCrossSquare:
-    case command::kCircleCross: {
+    case command::kCrossSquare: {
+        // (Circle + cross is 63 for an AI grabber only: a player's grab has no branch for it.)
         if (!placed) {
             break;
         }
-        const bool rageStrike = input.raging || input.command == command::kCircleCross;
-        powerMove(GrabAction::PowerStrike, rageStrike ? anim_id::kGrabPower2Strike1 : anim_id::kGrabPower1Strike1);
+        powerMove(GrabAction::PowerStrike, input.raging ? anim_id::kGrabPower2Strike1 : anim_id::kGrabPower1Strike1);
         outcome.spinFirst = outcome.action == GrabAction::PowerStrike && input.fromRear;
         break;
     }
