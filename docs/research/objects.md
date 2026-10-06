@@ -631,6 +631,13 @@ line, each with a handle from the world objects' counter; the `part` lines are s
 yet). A missing file adds nothing. Disc check (NTSC-U, 2026-10-06, counts only): `level99` places 98 records of its
 112 lines.
 
+**Pickable objects and objects in a scene** (`src/world_objects/pickups.h`, `src/gamemodes/level_pickups.h`): triangle
+takes the [pickable](#pickable) classes (`world_objects::pickable()`, the model-hash exceptions included); `CfgObj`'s
+20th argument is kept as the type's anim set (`+0x87`; inferred from the field order and a bat's 3). A scene's moves
+of a bound object go to its spawn record (`SceneStage::setObjectMover`): with no object tasks, the record's pose stands
+for the object's, so the bats `l99_c8` lays down are where the pick-up finds them. **Coney's reading**; the original
+writes the record only when the object is stored.
+
 **Models** (`src/platform/object_models.h`, `src/platform/placed_objects.h`): an object's model is its type's Object
 List record (`ObjectList::findByHash`, the type's model hash), its `0x47` model read as the level file's and its
 dictionary's first texture on the first material, loaded once per type and shared. An object is drawn at its pose

@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <span>
@@ -26,9 +27,12 @@ inline constexpr float kPickupSightHigh = 2.0F;
 inline constexpr float kPickupAhead = 0.38F;
 /// An object up to this far above the feet is picked up low (463), higher high (464).
 inline constexpr float kPickupLowHeight = 0.8F;
-/// The pick-up clips: one-handed, low and high.
+/// The pick-up clips: one-handed, low and high (a type's pick-up animation 5), and a weapon's from the ground.
 inline constexpr int kPickupLowClip = 463;
 inline constexpr int kPickupHighClip = 464;
+inline constexpr int kPickupGroundClip = 461;
+/// The pick-up animation (`CfgObj` argument 14) of the one-handed clips.
+inline constexpr int kPickupOneHanded = 5;
 /// The pick-up's blend into its clip, seconds.
 inline constexpr float kPickupBlend = 0.2F;
 
@@ -36,15 +40,20 @@ inline constexpr float kPickupBlend = 0.2F;
 struct PickupCandidate {
     double handle = 0;     ///< The object's (its spawn record's) handle.
     anim::Vec3 position{}; ///< Where it is.
-    bool pickable = false; ///< It may be picked up by triangle (object flag `0x8000`, and not a `powerup_item`).
+    bool pickable = false; ///< It may be picked up by triangle (pickable(), and not a `powerup_item`).
 };
 
 /// Whether a ray from `from` to `to` meets something solid.
 using SightBlocked = std::function<bool(anim::Vec3 from, anim::Vec3 to)>;
 
-/// Whether a class's objects are picked up by triangle. **Coney stand-in** for the object flag `0x8000` (which classes
-/// set it is not traced): a `pickup_item`. A `powerup_item` is walked over instead, never taken by triangle.
-[[nodiscard]] bool pickableClass(std::string_view className);
+/// Whether triangle picks up an object of class `className` whose model hash is `modelHash`: the classes whose init
+/// sets flag `0x8000` (docs/research/objects.md#pickable), `melee_weapon`, `thrown_weapon`, `overhead_weapon` and
+/// `pickup_item`, but for the hashes they exclude, and a `simple_object` whose hash adds it. A `powerup_item` has the
+/// flag but is walked over instead, never taken by triangle. **Coney's reading**: the messages that set or clear the
+/// flag later (`0x19`) are not modelled.
+/// @orig 0x003fd420 MeleeWeapon_Init (unknown)
+/// @orig 0x003f17e0 PickupItem_Init (unknown)
+[[nodiscard]] bool pickable(std::string_view className, std::uint32_t modelHash);
 
 /// The search for a human whose feet are at `feet`, facing `facing` (a unit vector in plan): of the pickable
 /// candidates within kPickupReach, those in sight (a ray from the feet + kPickupSightLow to the object, or, when that
@@ -57,8 +66,10 @@ using SightBlocked = std::function<bool(anim::Vec3 from, anim::Vec3 to)>;
                                                       std::span<const PickupCandidate> candidates,
                                                       const SightBlocked& blocked);
 
-/// The pick-up clip for an object `height` metres above the feet: kPickupLowClip up to kPickupLowHeight, else
-/// kPickupHighClip.
-[[nodiscard]] int pickupClip(float height);
+/// The pick-up clip for an object of pick-up animation `pickupAnim` `height` metres above the feet: the one-handed
+/// pair (kPickupOneHanded) kPickupLowClip up to kPickupLowHeight, else kPickupHighClip. **Coney stand-in**: any other
+/// animation plays kPickupGroundClip, as a bat (animation 1) on the ground did at runtime; how the others choose is
+/// not traced.
+[[nodiscard]] int pickupClip(int pickupAnim, float height);
 
 } // namespace coney::world_objects

@@ -9,15 +9,15 @@ finale that hands over to the second mission. Coney starts it from a new game at
 | --- | --- |
 | Status | 🚧 In Progress |
 | Level | `level99` (story mission 1) |
-| Checkpoints | 0 of 3 built, 0 approved |
+| Checkpoints | 1 of 3 built, 0 approved |
 
 ## Checkpoints {#checkpoints}
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | 🚧 In Progress | The intro and the combat lessons; the later lessons are still being built. |
-| 2 | 🚧 In Progress | The store's loot and the pick-up are in; the rest of the checkpoint is being built. |
-| 3 | 🚧 In Progress | The fence climbs and the mission's end (the cinematic, the hand-over to level80) are being built. |
+| 1 | 🎮 Pending Gameplay Approval | Plays from the intro through all twelve lessons (bats picked up with triangle, rage, the second wave, the Warriors' 50-second stopwatch) to scene l99_c6 and checkpoint 2, driven by the pad. In the last lesson the three sparring Warriors given GoalFight stand still. |
+| 2 | 🚧 In Progress | The store's door is hit open, the watch cabinet broken and its watches taken with triangle, which schedules the car lesson; the car lesson and the rest of the checkpoint are being built. |
+| 3 | ⬜ Not Started | Not yet played in Coney: the fence climbs and the mission's end (the cinematic, the hand-over to level80). |
 
 ## What it needs {#needs}
 

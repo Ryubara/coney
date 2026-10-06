@@ -555,8 +555,8 @@ void Human::updateMeters(bool sprintHeld) {
 }
 
 bool Human::tryContextAction() {
-    // Only with nothing in hand; the level decides what the press does.
-    if (!m_contextAction || m_script.heldObject != 0.0 || m_pickUp) {
+    // The level decides what the press does, whatever is in hand; not during a pick-up.
+    if (!m_contextAction || m_pickUp) {
         return false;
     }
     return m_contextAction(*this);

@@ -4070,6 +4070,11 @@ subsystem = "Human"
 size = 992
 
 [[function]]
+address = 0x00253688
+name = "Human_ApplyAnimSet"
+subsystem = "Human"
+
+[[function]]
 address = 0x00254078
 name = "Human_ComputeSpeeds"
 subsystem = "Human"
@@ -4105,6 +4110,11 @@ subsystem = "Human"
 [[function]]
 address = 0x00256a60
 name = "Human_RefillMeters"
+subsystem = "Human"
+
+[[function]]
+address = 0x00257f38
+name = "Human_DropHeld"
 subsystem = "Human"
 
 [[function]]
@@ -7264,6 +7274,11 @@ name = "ObjectDb_FindByName"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x00391c98
+name = "WorldObject_RegisterContext"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x00393538
 name = "Thrown_HitObject"
 subsystem = "TaskEngine"
@@ -7587,6 +7602,11 @@ subsystem = "TaskEngine"
 size = 984
 
 [[function]]
+address = 0x003f17e0
+name = "PickupItem_Init"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x003f6b40
 name = "Steam_HandleMessage"
 subsystem = "TaskEngine"
@@ -7647,6 +7667,11 @@ subsystem = "TaskEngine"
 [[function]]
 address = 0x003fca68
 name = "SprayTag_Update"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003fd420
+name = "MeleeWeapon_Init"
 subsystem = "TaskEngine"
 
 [[function]]

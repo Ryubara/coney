@@ -195,3 +195,18 @@ TEST_CASE("each attack hits at its measured update: X1 at 8, XX2 at 10, the powe
     AttackChain power;
     CHECK(power.start(anim_id::kGrabPower1Strike1, tuning));
 }
+
+TEST_CASE("an anim set's square, cross and strikes, and the defaults for set 0", "[combat]") {
+    const AnimSetClips none = animSetClips(0);
+    CHECK(none.square == anim_id::kAttackS1);
+    CHECK(none.cross == anim_id::kAttackX1);
+    CHECK(none.grounded == anim_id::kGroundedStrike1);
+    CHECK(none.mounting == anim_id::kMountingStrike);
+    const AnimSetClips bat = animSetClips(3);
+    CHECK(bat.square == 34);
+    CHECK(bat.cross == 36);
+    CHECK(bat.mounting == 38);
+    CHECK(bat.grounded == 37);
+    CHECK(animSetClips(1).square == 45);
+    CHECK(animSetClips(2).cross == 41);
+}

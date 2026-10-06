@@ -399,6 +399,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     double m_playerHandle = 0.0;
     // The level's glass panes and doors (gameplay's; null without them), the lock pick under way, and its difficulty.
     world_objects::LevelObjects* m_objects = nullptr;
+    double m_heldObject = 0.0;         // what player 1 held at the last step (world_objects::kNoObject for nothing)
     LevelPickups* m_pickups = nullptr; // the level's loose objects for the pick-up; not owned
     std::optional<world_objects::LockPick> m_lockPick;
     int m_lockPickDifficulty = 0;

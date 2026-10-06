@@ -148,13 +148,17 @@ bool ScriptSystem::hasFunction(std::string_view name) const {
 }
 
 bool ScriptSystem::call(std::string_view name, std::span<const Value> args) {
+    return callResults(name, args).has_value();
+}
+
+std::optional<std::vector<Value>> ScriptSystem::callResults(std::string_view name, std::span<const Value> args) {
     if (!m_vm) {
-        return false;
+        return std::nullopt;
     }
     const auto [function, self] = resolve(name);
     if (!function.function()) {
         log(std::format("script: {} is not a function; not called", name));
-        return false;
+        return std::nullopt;
     }
     std::vector<Value> callArgs;
     if (!self.isNil()) {
@@ -165,9 +169,9 @@ bool ScriptSystem::call(std::string_view name, std::span<const Value> args) {
     noteSkippedCalls();
     if (!result) {
         reportError(name, result.error());
-        return false;
+        return std::nullopt;
     }
-    return true;
+    return std::move(*result);
 }
 
 void ScriptSystem::schedule(std::string name, std::uint64_t delayMs, std::span<const double> args) {

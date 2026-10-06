@@ -224,6 +224,12 @@ void SceneStage::humanPose(double human, const scenes::RoleFrame& frame) {
 
 void SceneStage::humanExitScene(double /*human*/) {}
 
+void SceneStage::objectPose(double object, const scenes::ScenePose& pose) {
+    if (m_onObjectPose) {
+        m_onObjectPose(object, pose.position);
+    }
+}
+
 void SceneStage::humanRelease(double human, const std::optional<scenes::ScenePose>& endPose) {
     const auto found = m_bound.find(human);
     if (found == m_bound.end()) {

@@ -9,6 +9,7 @@
 #include <string_view>
 #include <utility>
 
+#include "gamemodes/level_pickups.h"
 #include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "scenes/scene_disc.h"
@@ -71,6 +72,12 @@ void PlayLevelMode::makeStage() {
         m_print);
     // Placed at the release, before the scene's end function can move them on.
     m_stage->setReleaseHandler([this](const SceneStage::Release& release) { placeReleased(release); });
+    // A bound object stays where the scene leaves it (scenes.md#ending): its record keeps the place.
+    m_stage->setObjectMover([this](double object, anim::Vec3 position) {
+        if (m_pickups != nullptr) {
+            m_pickups->placeObject(object, position);
+        }
+    });
 }
 
 void PlayLevelMode::attachScenes(scenes::SceneSystem* scenes, double playerHandle) {

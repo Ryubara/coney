@@ -21,6 +21,7 @@ struct ObjectType {
     int objectKind = 0;          ///< `+0x86`: the kind (`TYPE_BAT`, `TYPE_SPECIAL`...), `CfgObj`'s 19th argument.
     int value = 0;               ///< `+0x5a`, `CfgObj`'s 4th argument: a `TYPE_SPECIAL` pick-up's worth in dollars.
     int pickupAnim = 0;          ///< `+0x65`, `CfgObj`'s 14th argument: the pick-up animation (5 for jewellery).
+    int animSet = 0; ///< `+0x87`, `CfgObj`'s 20th argument: the anim set the object applies in hand (3 for a bat).
 };
 
 /// `TYPE_SPECIAL`: a store's jewellery and other loose loot (docs/research/combat.md#breakables).

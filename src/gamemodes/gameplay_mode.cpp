@@ -442,7 +442,7 @@ void GameplayMode::loadLevel() {
     // The loose objects a player may pick up: the spawn records the scripts and the placed objects filled.
     m_pickups.reset();
     if (m_context.spawnRecords != nullptr && m_context.objectTypes != nullptr) {
-        m_pickups.emplace(m_scripts, m_state, *m_context.spawnRecords, *m_context.objectTypes);
+        m_pickups.emplace(m_scripts, m_state, *m_context.spawnRecords, *m_context.objectTypes, m_context.messages);
     }
 
     // The level itself, with the player at that start; entering it preloads the world around him.

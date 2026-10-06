@@ -79,6 +79,19 @@ int squareAttack(const SquareInput& input) {
 
 int crossAttack() { return anim_id::kAttackX1; }
 
+AnimSetClips animSetClips(int set) {
+    switch (set) {
+    case 1:
+        return AnimSetClips{.square = 45, .cross = 47, .mounting = 50, .grounded = 49};
+    case 2:
+        return AnimSetClips{.square = 39, .cross = 41, .mounting = 44, .grounded = 43};
+    case 3:
+        return AnimSetClips{.square = 34, .cross = 36, .mounting = 38, .grounded = 37};
+    default:
+        return AnimSetClips{};
+    }
+}
+
 int objectAttack(float height) {
     if (height < 0.0F) {
         return anim_id::kGroundedStrike2;

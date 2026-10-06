@@ -182,6 +182,9 @@ class Fighter {
     [[nodiscard]] const std::vector<int>& strikes() const { return m_strikes; }
     /// The object an object attack's hit struck this update (its handle); nothing otherwise.
     [[nodiscard]] std::optional<double> objectHit() const { return m_objectHit; }
+    /// The anim set a held weapon applies from now on (combat::animSetClips(); 0 for none): square's and cross's clips.
+    void setAnimSet(int set) { m_animSet = set; }
+    [[nodiscard]] int animSet() const { return m_animSet; }
 
     /// The target kept (human `+0xc8`); null when none.
     [[nodiscard]] const Combatant* target() const { return m_target; }
@@ -392,7 +395,6 @@ class Fighter {
     void escapeGrab(int clip, HumanAnimator& animator);
 
     const combat::AnimRangeList* m_ranges;
-    bool m_player = true;      // FighterProfile::player
     std::uint64_t m_flags = 0; // the human flag word (+0xe0)
     combat::PlayerCombat m_combat;
     combat::CombatOutput m_last;
@@ -400,25 +402,20 @@ class Fighter {
     Holdable* m_thrown = nullptr;    // the victim of the throw whose hit has not landed yet
     Holdable* m_candidate = nullptr; // what the grab or tackle search found this update
     Combatant* m_target = nullptr;   // the target kept (human +0xc8)
-    bool m_l1Held = false;           // L1 held this update (record +0x00 0x8)
-    bool m_tacklePending = false;    // the tackle's intro plays; the victim reacts when its hit clip starts
-    bool m_mountPending = false;     // the grab's mount (118) plays; the victim moves to the mount's point at 210
-    bool m_mugOnTarget = false;
-    bool m_rear = false;    // the hold is from the victim's rear
-    int m_connect = 72;     // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
-    anim::Vec3 m_slide;     // a grab's alignment's slide velocity, m/s
-    int m_slideUpdates = 0; // updates of slide left
-    TurnAndSlide m_steer;   // an attack start's turn and slide onto its target
-    PairStage m_pair = PairStage::None;
-    anim::Vec3 m_holdOffset;       // the attached victim's place in the grabber's frame
-    float m_holdTurn = 0.0F;       // the attached victim's heading less the grabber's
-    std::uint32_t m_lastClip = 0;  // the grabber's clip at the end of the last update
-    float m_turnStep = 0.0F;       // the grabber's alignment turn per update, radians
-    float m_victimTurnStep = 0.0F; // the victim's
-    int m_turnUpdates = 0;         // updates of turn left
-    float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
-    int m_duckCounters = 0;        // the duck counters played
+    int m_connect = 72;              // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
+    anim::Vec3 m_slide;              // a grab's alignment's slide velocity, m/s
+    int m_slideUpdates = 0;          // updates of slide left
+    TurnAndSlide m_steer;            // an attack start's turn and slide onto its target
+    anim::Vec3 m_holdOffset;         // the attached victim's place in the grabber's frame
+    float m_holdTurn = 0.0F;         // the attached victim's heading less the grabber's
+    std::uint32_t m_lastClip = 0;    // the grabber's clip at the end of the last update
+    float m_turnStep = 0.0F;         // the grabber's alignment turn per update, radians
+    float m_victimTurnStep = 0.0F;   // the victim's
+    int m_turnUpdates = 0;           // updates of turn left
+    float m_grabTurn = 0.0F;         // the grab's stick turn of the last update, radians
+    int m_duckCounters = 0;          // the duck counters played
     int m_hitsLanded = 0;
+    int m_animSet = 0;                    // the anim set a held weapon applied (record +0x10's top)
     std::vector<int> m_strikes;           // a player's struck hits' anim ids in the last update
     std::optional<double> m_objectTarget; // the object square's object attack aims at
     std::optional<double> m_objectHit;    // the object an object attack struck this update
@@ -427,17 +424,12 @@ class Fighter {
     // The victim side.
     combat::Health m_health;
     Victim m_victim;
-    bool m_reacting = false;   // a hit's reaction (or an escape, a let-go) holds the player until it is over
-    bool m_justCaught = false; // the grab caught the player this update
     std::optional<AttackNotice> m_notice;
     std::optional<GrabCatch> m_catch;
     std::optional<GrabCatch> m_grabbed;     // the grab holding the player, its grabber's numbers kept up to date
     std::optional<TargetState> m_holdState; // held or mounted by a grabber that drives it (enterHold())
-    bool m_holdAttached = false;            // placed by that grabber each update
     GrabbedReport m_report;
     std::optional<ReactionShake> m_reactionShake; // the last update's reaction's shake
-    bool m_rageStarted = false;                   // rage started in the last update
-    bool m_counterAsked = false;                  // the duck's counter was asked for (record +0x14 = 0xe)
     anim::Vec3 m_duckAttacker;                    // where the attacker that made the player duck stood
     std::uint32_t m_clipSeen = 0;                 // the clip playing at the end of the last update, and its time
     float m_clipTimeSeen = 0.0F;
@@ -447,6 +439,19 @@ class Fighter {
     int m_hitsBlocked = 0;
     int m_hitsDucked = 0;
     int m_hitsArmoured = 0;
+    // The flags, together so the class packs.
+    bool m_player = true;         // FighterProfile::player
+    bool m_l1Held = false;        // L1 held this update (record +0x00 0x8)
+    bool m_tacklePending = false; // the tackle's intro plays; the victim reacts when its hit clip starts
+    bool m_mountPending = false;  // the grab's mount (118) plays; the victim moves to the mount's point at 210
+    bool m_mugOnTarget = false;
+    bool m_rear = false; // the hold is from the victim's rear
+    PairStage m_pair = PairStage::None;
+    bool m_reacting = false;        // a hit's reaction (or an escape, a let-go) holds the player until it is over
+    bool m_justCaught = false;      // the grab caught the player this update
+    bool m_holdAttached = false;    // placed by that grabber each update
+    bool m_rageStarted = false;     // rage started in the last update
+    bool m_counterAsked = false;    // the duck's counter was asked for (record +0x14 = 0xe)
     bool m_hitReactionsOff = false; // human +0xe0 0x800
 };
 

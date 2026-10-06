@@ -336,7 +336,8 @@ class Human final : public Holdable {
     // Triangle's context action and the pick-up (docs/research/crimes.md#triangle, docs/research/combat.md#breakables).
 
     /// What triangle tries after a climb (step 4 and 5 of `Player_TriangleAction`): the level's search for a context
-    /// record or a loose object, which starts what it found on the human and returns true. None: nothing.
+    /// record or a loose object, which starts what it found on the human (or drops what he holds) and returns true.
+    /// None: nothing.
     using ContextAction = std::function<bool(Human& human)>;
     void setContextAction(ContextAction action) { m_contextAction = std::move(action); }
     /// The breakable objects square may strike from now on (the level's whole panes), given each step.
@@ -426,8 +427,8 @@ class Human final : public Holdable {
     // Triangle: a climb (stick above the dead zone), then the context action, then a jump.
     // @orig 0x0027c120 Player_UpdateActions (unknown)
     void tryActions(const raycast::CollisionMesh* mesh, bool sprintHeld);
-    // The context action triangle tries after a climb: the level's (setContextAction()), with nothing in hand. Returns
-    // whether it did something.
+    // The context action triangle tries after a climb: the level's (setContextAction()), which also drops what is in
+    // hand when there is nothing to take. Returns whether it did something.
     [[nodiscard]] bool tryContextAction();
     // A pick-up's step after the animation's: the turn, and the take at the clip's event; a clip replaced ends it.
     void followPickUp();

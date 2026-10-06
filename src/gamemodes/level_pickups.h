@@ -2,17 +2,22 @@
 #pragma once
 
 #include <optional>
-#include <vector>
+#include <set>
+#include <string>
+#include <string_view>
 
 #include "animation/anim_math.h"
+#include "scripting/message_handlers.h"
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
 #include "world_objects/object_types.h"
 #include "world_objects/pickups.h"
 #include "world_objects/spawn_records.h"
 
-// A level's loose objects as a player picks them up: the triangle search over the spawn records, and the take.
-// Research: docs/research/combat.md#breakables, docs/research/player-state.md#pickup-callback
+// A level's loose objects as a player uses them with triangle: an object's interaction prompt, the pick-up search over
+// the spawn records, the take (loot into the inventory, a weapon into the hand) and the drop.
+// Research: docs/research/crimes.md#triangle, docs/research/combat.md#breakables, docs/research/combat.md#bat,
+// docs/research/player-state.md#pickup-callback
 
 namespace coney {
 
@@ -20,38 +25,98 @@ namespace coney {
 struct PickupChoice {
     double handle = 0;
     anim::Vec3 position{};
-    int clip = 0; ///< The pick-up clip for its height above the feet (world_objects::pickupClip()).
+    int clip = 0; ///< The pick-up clip (world_objects::pickupClip()).
 };
 
-/// The pick-up over a level's spawn records, its object types, its scripts and the players' state, all of which must
-/// outlive it.
+/// What one triangle press came to (TriangleOutcome).
+enum class TriangleResult : std::uint8_t {
+    Nothing,  ///< Nothing to take and nothing in hand.
+    Consumed, ///< An object's message 0 handler took the press.
+    PickUp,   ///< Pick up TriangleOutcome::choice.
+    Drop,     ///< Drop what is in hand.
+};
+
+/// What one triangle press came to, and the object to pick up.
+struct TriangleOutcome {
+    TriangleResult result = TriangleResult::Nothing;
+    PickupChoice choice{};
+};
+
+/// What a take did.
+enum class TakeResult : std::uint8_t {
+    Gone,   ///< The handle names no record still there.
+    Loot,   ///< A `TYPE_SPECIAL`: loot and money, the record removed.
+    InHand, ///< Any other kind: the human holds it now.
+};
+
+/// The pick-up over a level's spawn records, its object types, its scripts, their message handlers (may be null) and
+/// the players' state, all of which must outlive it.
 class LevelPickups {
   public:
     /// The game's money multiplier for loot (game state `+0x380`, 1.0 in mission 1; what sets it is open).
     static constexpr float kLootMoneyFactor = 1.0F;
+    /// A kind-1 context record's reach in the ground plane (`CfgActionDistance`'s default, 1.1 m), and how far from
+    /// the feet + 1 m its object may be in height.
+    static constexpr float kPromptReach = 1.1F;
+    static constexpr float kPromptHeight = 1.5F;
+    /// The kinds a player takes whatever he holds: `TYPE_SPECIAL` (12) and 24.
+    static constexpr int kKindAnyHands = 24;
 
     LevelPickups(script::ScriptSystem& scripts, GameState& state, world_objects::SpawnRecords& records,
-                 const world_objects::ObjectTypes& types)
-        : m_scripts(scripts), m_state(state), m_records(records), m_types(types) {}
+                 const world_objects::ObjectTypes& types, const script::MessageHandlers* messages = nullptr)
+        : m_scripts(scripts), m_state(state), m_records(records), m_types(types), m_messages(messages) {}
 
     /// The triangle search (world_objects::searchPickup()) for a human at `feet` facing `facing`, over the records that
-    /// are not removed, hidden or in a disabled zone, whose type's class is pickable. Nothing when none qualifies.
+    /// are not removed, hidden, held or in a disabled zone, whose type is pickable. Nothing when none qualifies.
     [[nodiscard]] std::optional<PickupChoice> search(anim::Vec3 feet, anim::Vec3 facing,
                                                      const world_objects::SightBlocked& blocked) const;
 
+    /// Steps 4 and 5 of triangle for human `human` at `feet` facing `facing`, `holding` whether something is in hand:
+    /// the nearest object with an interaction prompt within kPromptReach gets message 0, and a true result ends the
+    /// press; then every object within the search's reach gets message 0 in turn, the same way; then the search. Its
+    /// choice is picked up unless the human holds something and it is a kind other than 12 or 24; with something in
+    /// hand and nothing taken, the press drops it. **Coney's reading**: the nearest prompt's object is the human's
+    /// current record (`+0x660`; how it is chosen is not traced).
+    /// @orig 0x0024d810 Pickup_Search (unknown)
+    TriangleOutcome triangle(double human, anim::Vec3 feet, anim::Vec3 facing, bool holding,
+                             const world_objects::SightBlocked& blocked);
+
     /// Player `player` (0 or 1) takes object `handle`, at its pick-up clip's event. A `TYPE_SPECIAL` adds item 10
     /// (loot) ×1 with notify, then its value × kLootMoneyFactor in money without, and the record is removed for good.
-    /// Returns whether the handle named a record still there. **Coney choices**: the named mission items (model hashes
-    /// the original checks first) are not listed, so every `TYPE_SPECIAL` is loot; item 10's pickup sound is not
-    /// played; any other kind is only removed.
+    /// Any other kind (a bat's 3 among them) is one `Human_PickUpObject` has no case for, so it goes into the hand
+    /// (`0x00227010`): its record stays, held. **Coney choices**: the named mission items (model hashes the original
+    /// checks first) are not listed, so every `TYPE_SPECIAL` is loot; item 10's pickup sound is not played.
     /// @orig 0x0023bf00 Human_PickUpObject (unknown)
-    bool take(double handle, int player);
+    TakeResult take(double handle, int player);
+
+    /// The object `handle` leaves the hand at `at` (a dropped weapon). **Coney stand-in**: it lands where it is put,
+    /// with no physics.
+    /// @orig 0x00257f38 Human_DropHeld (unknown)
+    void drop(double handle, anim::Vec3 at);
+
+    /// The anim set the type named `typeName` applies in hand (ObjectType::animSet); 0 for none or an unknown type.
+    [[nodiscard]] int animSetOf(std::string_view typeName) const;
+    /// The type name of object `handle`'s record; empty for none.
+    [[nodiscard]] std::string typeOf(double handle) const;
+    /// Whether `handle` is an object in a hand.
+    [[nodiscard]] bool inHand(double handle) const { return m_inHand.contains(handle); }
+
+    /// A scene moved object `handle` to `position`: its record keeps the place. **Coney's reading**: with no object
+    /// tasks, the record's pose stands for the object's (the original writes it when the object is stored).
+    void placeObject(double handle, anim::Vec3 position);
 
   private:
+    // The object with an interaction prompt nearest `feet` within the prompt's reach; nothing for none.
+    [[nodiscard]] std::optional<double> promptObject(anim::Vec3 feet) const;
+    // Delivers message 0 from `human` to `object`; whether its handler took the press.
+    bool interact(double object, double human);
+
     script::ScriptSystem& m_scripts;
     GameState& m_state;
     world_objects::SpawnRecords& m_records;
     const world_objects::ObjectTypes& m_types;
+    const script::MessageHandlers* m_messages;
+    std::set<double> m_inHand; // the objects held, whose records stay
 };
 
 } // namespace coney

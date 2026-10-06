@@ -38,9 +38,9 @@ float flatDistance(const anim::Vec3& a, const anim::Vec3& b) { return std::hypot
 } // namespace
 
 Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed, const FighterProfile& profile)
-    : m_ranges(ranges), m_player(profile.player), m_flags(profile.player ? flag::kPlayerFlags : 0),
-      m_combat(ranges, 0, seed), m_health(profile.health > 0 ? profile.health : kPlayerHealth),
-      m_victim(profile.powerClass, seed), m_grabbedRandom(seed + 1U) {}
+    : m_ranges(ranges), m_flags(profile.player ? flag::kPlayerFlags : 0), m_combat(ranges, 0, seed),
+      m_health(profile.health > 0 ? profile.health : kPlayerHealth), m_victim(profile.powerClass, seed),
+      m_grabbedRandom(seed + 1U), m_player(profile.player) {}
 
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
     return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || m_holdState.has_value() ||
@@ -255,6 +255,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     in.gait = input.gait;
     in.nowMs = input.nowMs;
     in.helpless = helpless;
+    in.animSet = m_animSet;
     if (helpless) {
         return in;
     }

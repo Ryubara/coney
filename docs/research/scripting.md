@@ -858,7 +858,9 @@ Coney's choices, where the page is silent or Coney differs:
   its load function with it at the next script update; the three play bindings return true and call their end
   function (third argument) with the scene at the next update, so a scene ends at once. `SceneAddObject` is a stub.
 - A message is delivered whatever the level-end state (`W_GameState + 0x14c`), which Coney does not keep yet; a
-  message that asks for a result counts as taken when its call runs. `SetMsgHandlerEx`'s prompts are not kept.
+  message that asks for a result counts as taken when its call runs, but for message 0 (the interaction), which is
+  taken when its callback returns anything but nil. `SetMsgHandlerEx` with message 0 keeps the object's prompt as its
+  kind-1 context record (`script::MessageHandlers::setPrompt`); the second text is not kept and no prompt is shown.
 - `ScheduleFuncArg1(name, n, ms)` takes the number before the delay, as the original does; the hub's chat events
   (`events.ChatEvent`) run without errors since (`coney_tests "[disc][story]"` runs `level95` for 20 seconds of
   script frames).

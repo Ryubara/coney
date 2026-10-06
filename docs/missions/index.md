@@ -21,7 +21,7 @@ to run it.
 
 | Mission | Level | Status | Checkpoints built | Approved | New bindings in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [Mission 1 (level99)](level99.md) | `level99` | 🚧 In Progress | 0 of 3 | 0 | 215 of 215 |
+| [Mission 1 (level99)](level99.md) | `level99` | 🚧 In Progress | 1 of 3 | 0 | 215 of 215 |
 | [Mission 2 (level80)](level80.md) | `level80` | 🎮 Pending Gameplay Approval | 4 of 4 | 0 | 50 of 50 |
 | [Mission 3 (level87)](level87.md) | `level87` | 🎮 Pending Gameplay Approval | 5 of 5 | 0 | 87 of 87 |
 | [Mission 4 (level34)](level34.md) | `level34` | 🚧 In Progress | 0 of 5 | 0 | 3 of 17 |

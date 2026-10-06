@@ -7,6 +7,7 @@
 #include <expected>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <set>
 #include <span>
 #include <string>
@@ -106,6 +107,8 @@ class ScriptSystem {
     /// @orig 0x00356e08 ScriptSystem::FindFunction (ScriptLua.cpp)
     /// @orig 0x00357188 ScriptSystem::Call (ScriptLua.cpp)
     bool call(std::string_view name, std::span<const Value> args = {});
+    /// call(), returning the function's results; nothing when call() would return false.
+    std::optional<std::vector<Value>> callResults(std::string_view name, std::span<const Value> args = {});
     /// Whether `name` (dotted as call() takes it) names a function in the current state.
     [[nodiscard]] bool hasFunction(std::string_view name) const;
 

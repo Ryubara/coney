@@ -5,6 +5,27 @@
 
 namespace coney::combat {
 
+namespace {
+
+// The attack `animId` as anim set `set` plays it: `S1`, `X1` and the two strikes take the set's clips.
+int withAnimSet(int animId, int set) {
+    const AnimSetClips clips = animSetClips(set);
+    switch (animId) {
+    case anim_id::kAttackS1:
+        return clips.square;
+    case anim_id::kAttackX1:
+        return clips.cross;
+    case anim_id::kGroundedStrike1:
+        return clips.grounded;
+    case anim_id::kMountingStrike:
+        return clips.mounting;
+    default:
+        return animId;
+    }
+}
+
+} // namespace
+
 PlayerCombat::PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed)
     : m_ranges(ranges), m_random(seed), m_power(kPlayerPowerMax, kPlayerPowerRefillPerSecond, startMs),
       m_rage(kPlayerRageMax, kPlayerRageGainPercent, startMs) {}
@@ -312,13 +333,14 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
             square.stick = input.stick;
             square.gait = input.gait;
             square.snapAttacks = tuning.snapAttacks;
-            startAttack(input.target == TargetKind::Breakable ? objectAttack(input.objectHeight) : squareAttack(square),
+            startAttack(input.target == TargetKind::Breakable ? objectAttack(input.objectHeight)
+                                                              : withAnimSet(squareAttack(square), input.animSet),
                         tuning, out);
         }
         break;
     case command::kCrossLongHold:
         if ((phaseFlags(input) & kAttackRefusingPhases) == 0) {
-            startAttack(crossAttack(), tuning, out);
+            startAttack(withAnimSet(crossAttack(), input.animSet), tuning, out);
         }
         break;
     case command::kCircleTapped:

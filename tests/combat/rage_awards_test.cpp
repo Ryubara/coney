@@ -8,6 +8,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "combat/anim_ids.h"
 #include "combat/combat_tuning.h"
 #include "combat/meters.h"
 
@@ -115,4 +116,11 @@ TEST_CASE("each grab strike raises the throw bonus by 0.27, up to 2.0", "[combat
     CHECK(repeatKind(147) == RepeatKind::Other);
     tracker.resetBonus();
     CHECK(tracker.bonus() == Catch::Approx(1.0F));
+}
+
+TEST_CASE("a bat's square and cross award as S1 and X1 (Coney's stand-in)", "[combat]") {
+    CHECK(rageCounts(34).event2 == rageCounts(anim_id::kAttackS1).event2);
+    CHECK(rageCounts(34).event1 == rageCounts(anim_id::kAttackS1).event1);
+    CHECK(rageCounts(36).event1 == rageCounts(anim_id::kAttackX1).event1);
+    CHECK(rageCounts(37).event1 == 0);
 }

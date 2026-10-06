@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (468,380 of 3,354,776 bytes, 1,503 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (468,380 of 3,354,776 bytes, 1,508 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-422 reimplemented function(s) have no size yet and add no bytes.
+427 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -64,7 +64,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.3% | 99 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 60 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
-| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 14.0% | 469 | 1,096,672 |
+| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 14.0% | 471 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -72,7 +72,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 200 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 86 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 89 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -817,6 +817,7 @@ at the top of the repository's `README.md`.
 | `0x00251890` | `Route_EdgeCost` | `Human` | 368 |
 | `0x00251a70` | `Route_AStar` | `Human` | 696 |
 | `0x00251d28` | `Route_SearchOutward` | `Human` | 992 |
+| `0x00253688` | `Human_ApplyAnimSet` | `Human` | not filled in |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
 | `0x002542e8` | `AnimRange_Damage` | `Human` | 40 |
 | `0x002548f0` | `AnimRange_ApplyClassDamage` | `Human` | not filled in |
@@ -824,6 +825,7 @@ at the top of the repository's `README.md`.
 | `0x00255540` | `Human_UpdateWorkout` | `Human` | 1,976 |
 | `0x002562d0` | `Human_DrainMeters` | `Human` | not filled in |
 | `0x00256a60` | `Human_RefillMeters` | `Human` | not filled in |
+| `0x00257f38` | `Human_DropHeld` | `Human` | not filled in |
 | `0x00259578` | `Human_ChooseAnimState` | `Human` | not filled in |
 | `0x0025b200` | `Human_BuildMoveTasks` | `Human` | not filled in |
 | `0x0025cf30` | `Human_BuildJumpTasks` | `Human` | not filled in |
@@ -1371,6 +1373,7 @@ at the top of the repository's `README.md`.
 | `0x0038fab8` | `GlassTypes_Set` | `TaskEngine` | 40 |
 | `0x00390f18` | `Cfg_AddObjectType` | `TaskEngine` | not filled in |
 | `0x003913d8` | `ObjectDb_FindByName` | `TaskEngine` | not filled in |
+| `0x00391c98` | `WorldObject_RegisterContext` | `TaskEngine` | not filled in |
 | `0x00393538` | `Thrown_HitObject` | `TaskEngine` | 1,136 |
 | `0x003961d0` | `World_BreakObjectsInRadius` | `TaskEngine` | 448 |
 | `0x00396390` | `BreakObjectsInRadius` | `TaskEngine` | 40 |
@@ -1428,6 +1431,7 @@ at the top of the repository's `README.md`.
 | `0x003e29e8` | `GlassScript_Init` | `TaskEngine` | 936 |
 | `0x003e2d90` | `GlassScript_Message` | `TaskEngine` | 712 |
 | `0x003e4cb8` | `SubGlass_Update` | `TaskEngine` | 984 |
+| `0x003f17e0` | `PickupItem_Init` | `TaskEngine` | not filled in |
 | `0x003f6b40` | `Steam_HandleMessage` | `TaskEngine` | not filled in |
 | `0x003f80f0` | `DoorSwing_SetUpType` | `TaskEngine` | 3,656 |
 | `0x003f9770` | `DoorSwing_StateCommand` | `TaskEngine` | 416 |
@@ -1439,6 +1443,7 @@ at the top of the repository's `README.md`.
 | `0x003fbba0` | `DoorSwing_Update` | `TaskEngine` | 760 |
 | `0x003fc8d8` | `SprayTag_HandleMessage` | `TaskEngine` | not filled in |
 | `0x003fca68` | `SprayTag_Update` | `TaskEngine` | not filled in |
+| `0x003fd420` | `MeleeWeapon_Init` | `TaskEngine` | not filled in |
 | `0x0040c868` | `Level_SetFogColour` | `World` | 160 |
 | `0x0040c908` | `Level_SetFogDistance` | `World` | 48 |
 | `0x0040c948` | `World_Precache` | `World` | 208 |

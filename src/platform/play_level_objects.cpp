@@ -23,6 +23,8 @@ namespace {
 // long as the attack's reach. The original strikes the object its target picker chose (`Player_ObjectAttack`,
 // docs/research/combat.md#breakables), which Coney's picker does not offer yet.
 constexpr float kStrikeHeight = 1.0F;
+// A dropped object lands this far ahead of the feet (Coney's stand-in for its fall from the hand).
+constexpr float kDropAhead = 0.3F;
 // **Coney's stand-in** for the reach of the pickable door's kind-2 record (not traced): triangle within this many
 // metres of the door's position starts a pick.
 constexpr float kLockPickReach = 1.5F;
@@ -70,12 +72,33 @@ void PlayLevelMode::bindPickups(LevelPickups* pickups) {
                                                      : &m_scenery->collision();
             return mesh->rayCast(ray, {}, 0).has_value();
         };
-        const std::optional<PickupChoice> choice =
-            m_pickups->search(human.position(), human::facing(human.heading()), blocked);
-        if (!choice || !human.startPickUp(choice->handle, choice->position, static_cast<std::uint32_t>(choice->clip))) {
+        human::ScriptState& script = human.script();
+        const anim::Vec3 feet = human.position();
+        const TriangleOutcome outcome = m_pickups->triangle(playerHandle(), feet, human::facing(human.heading()),
+                                                            script.heldObject != world_objects::kNoObject, blocked);
+        switch (outcome.result) {
+        case TriangleResult::Nothing:
+            return false;
+        case TriangleResult::Consumed:
+            m_print("pickup: the object's handler took the press\n");
+            return true;
+        case TriangleResult::Drop: {
+            // At once, with no clip: it lands a little ahead of the feet (Coney's stand-in for its fall).
+            const anim::Vec3 ahead = human::facing(human.heading());
+            const double held = std::exchange(script.heldObject, world_objects::kNoObject);
+            script.heldObjectName.clear();
+            m_pickups->drop(held, anim::Vec3{feet.x + (ahead.x * kDropAhead), feet.y + (ahead.y * kDropAhead), feet.z});
+            m_print(std::format("pickup: dropped object {:.0f}\n", held));
+            return true;
+        }
+        case TriangleResult::PickUp:
+            break;
+        }
+        const PickupChoice& choice = outcome.choice;
+        if (!human.startPickUp(choice.handle, choice.position, static_cast<std::uint32_t>(choice.clip))) {
             return false;
         }
-        m_print(std::format("pickup: object {:.0f} with clip {}\n", choice->handle, choice->clip));
+        m_print(std::format("pickup: object {:.0f} with clip {}\n", choice.handle, choice.clip));
         return true;
     });
 }
@@ -97,10 +120,25 @@ void PlayLevelMode::stepPickups() {
     if (m_pickups == nullptr) {
         return;
     }
-    if (const std::optional<double> taken = m_player->human().takePickedUp()) {
-        const bool took = m_pickups->take(*taken, 0);
-        m_print(std::format("pickup: took object {:.0f}{}\n", *taken, took ? "" : " (gone)"));
+    human::Human& human = m_player->human();
+    human::ScriptState& script = human.script();
+    if (const std::optional<double> taken = human.takePickedUp()) {
+        const TakeResult result = m_pickups->take(*taken, 0);
+        if (result == TakeResult::InHand) {
+            script.heldObject = *taken;
+            script.heldObjectName = m_pickups->typeOf(*taken);
+        }
+        m_print(std::format("pickup: took object {:.0f}{}\n", *taken,
+                            result == TakeResult::Gone     ? " (gone)"
+                            : result == TakeResult::InHand ? " in hand"
+                                                           : ""));
     }
+    // An object let go some other way (HuDropWeapon, ObjDestroy) lands at the feet; the anim set follows the hand.
+    if (m_heldObject != world_objects::kNoObject && m_heldObject != script.heldObject) {
+        m_pickups->drop(m_heldObject, human.position());
+    }
+    m_heldObject = script.heldObject;
+    human.fighter().setAnimSet(m_pickups->animSetOf(script.heldObjectName));
 }
 
 double PlayLevelMode::playerHandle() const {

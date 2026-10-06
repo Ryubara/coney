@@ -1538,7 +1538,7 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | `combat/player_combat.*` | the dispatcher: block, chain, meters, the routes (grabbing, tackling, mugging, theft) and the commands, in the original's order; the grab breaks at 0 power |
 | `combat/combat_tuning.*`, `debug/combat_tunables.*` | the values above as tunables, category **Combat**, registered at start-up beside the game's |
 | `human/fighter.*`, `human/fighter_grab.cpp`, `human/fighter_victim.cpp`, `human/fighter_clips.h` | the player's combat inside the human (split as the attacker, the grab and the victim side): builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front and the grab search), plays its clips, turns and slides into an attack, poses a grab (the alignment, the connect, the gate, the snap and the attachment), turns and walks the grab by the stick, lands the hits with their rage, locks onto a target and combat-walks round it; and the player hit (a duck and its counter, the block, the health floor, the hit armour, the reaction, stun, knockdown and mash) and held in a grab (the counter at the catch, the struggle, the strike back, the escape and the reversal) |
-| `world_objects/pickups.*`, `gamemodes/level_pickups.*` | triangle's pick-up ([Breakables](#breakables)): the search (reach, the two sight rays, the score by the direction from behind the feet), the clip by height, and the take, which adds a `TYPE_SPECIAL`'s loot with notify and its value in money without and removes the record; the human plays the clip with a 0.2 s blend and takes the object at its first event (`Human::startPickUp`) |
+| `world_objects/pickups.*`, `gamemodes/level_pickups.*` | triangle with the objects of a level ([Crimes: triangle](crimes.md#triangle), steps 4 and 5): message 0 to the nearest object with a prompt (`SetMsgHandlerEx`), then to each object in reach, a true result taking the press; the search (the [pickable](objects.md#pickable) classes, reach, the two sight rays, the score by the direction from behind the feet) and the clip; the take, which adds a `TYPE_SPECIAL`'s loot with notify and its value in money without and removes the record, or puts any other kind in the hand ([A bat in hand](#bat)); with something in hand and nothing taken, the drop. The human plays the clip with a 0.2 s blend and takes the object at its first event (`Human::startPickUp`); the play mode gives the fighter the held type's anim set, whose square, cross and two strikes `combat::animSetClips()` gives |
 | `human/human_flags.h`, `human/fighter_script.cpp` | the [human flags](#human-flags) as the fighter keeps and reads them: god mode drops a hit's damage (**Coney's reading**: the reaction still plays), the demi-god floor (`HuSetDemiGodMode`'s fraction, one global) sets god mode when reached, `0x80`, `0x100`, `0x200`, `0x400` and `0x200000` shape the reaction, `0x2000000` gates every rage gain, `0x100000` freezes the meter's drain and decay, `0x4000000` spends no power, `0x100000000000` and an untargetable gang are skipped by the target search; `HuRevive` and `HuSetNormalMode`. The rage handlers (`CfgRageHandlers`) are called after the characters' step with the human's handle (**Coney choice** of the arguments) |
 | `human/turn_and_slide.*` | the attack's steer ([Target selection](#targets)): a turn and a slide at a constant rate over a time, the last update only for the time left; the time to a clip's first steer-ending event; and the goal, the target led by its velocity and short of it by the reach |
 | `human/victim.*` | what the player and the target share as victims: the update's largest hit, the reaction it plays, the stun (its exit waits for the clip playing to end), the knockdown, the ground time, the rise and the mash |
@@ -1670,10 +1670,15 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   within the object attack's far range, within 54° of the heading, else within 135° (the original's × 0.8 is not
   applied there); its centre is the target point. The original approaches from up to far × 1.5; Coney does not.
   Doors and loose objects are not object targets yet.
-- **The pick-up** ([Breakables](#breakables)): an object is pickable when its class is `pickup_item` (a stand-in for
-  object flag `0x8000`); the reach is measured in plan from the feet, and the second point the search goes round
-  (human `+0x4e0`) is left out. The human does not steer during the clip. Every `TYPE_SPECIAL` is loot (the named
-  mission items are not listed), item 10's pickup sound is not played, and any other kind is only removed.
+- **The pick-up** ([Breakables](#breakables)): the reach is measured in plan from the feet, and the second point the
+  search goes round (human `+0x4e0`) is left out; the flag messages (`0x19`) that change what is pickable are not
+  modelled. The human does not steer during the clip. Every `TYPE_SPECIAL` is loot (the named mission items are not
+  listed) and item 10's pickup sound is not played. The human's current context record is the nearest object with a
+  prompt in reach. A pick-up animation other than 5 plays 461 (as the bat did at runtime). A dropped object lands
+  0.3 m ahead of the feet, with no fall.
+- **A weapon in hand** ([A bat in hand](#bat)): of an anim set only square's, cross's and the two strikes' clips are
+  applied (not the blocks', nor the walk and run attacks' or snaps', whose slots are not traced); an anim set's square
+  and cross award rage as `S1` and `X1` do (the events of the weapon ids are not traced); a bat never breaks.
 - **The held flags** ([Tasks](tasks.md#held-flags)): the bits each move holds where the research names none. Every
   attack the dispatcher starts (the walk attack, the snaps, the grounded and mounted strikes, the grab strikes, power
   strikes and throws) is built as `Attack_Start`'s (holds `0x7`, sets `0x1`); the charge and dive hold the run attack's
@@ -1800,6 +1805,10 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   ([Target selection](#targets)). Still open: what slows those 5 updates.
 - **Class 13**: which character class it is (it gets hit armour and adds 2 s to a knockdown).
 - **The rage events**: the meaning of the events beyond the chain attacks' (`0x002653d8`, `0x00264fa0`).
+- **A weapon's rage**: what a bat's 34 and 36 award (ids `0x22`-`0x2c` map to events not traced); Coney gives
+  them `S1`'s and `X1`'s.
+- **The pick-up clip**: how a type's pick-up animation other than 5 chooses its clip (a bat's 1 played 461 from
+  the ground), and whether such an item held high takes another.
 - **Commands `0x30`-`0x39`**: which scripts or weapons make them; `0x36`-`0x38` and the d-pad (`0x27`).
 - **Mini-game mode 2 at runtime** (answered from the code: modes 1 and 2 are uncuffing and lock picking,
   [Crimes](crimes.md#mini-game-record)).

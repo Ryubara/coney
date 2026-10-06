@@ -30,10 +30,17 @@ wo::PickupCandidate item(double handle, Vec3 position) {
 
 } // namespace
 
-TEST_CASE("only pickup items are picked up by triangle", "[pickups]") {
-    CHECK(wo::pickableClass("pickup_item"));
-    CHECK_FALSE(wo::pickableClass("powerup_item"));
-    CHECK_FALSE(wo::pickableClass("simple_object"));
+TEST_CASE("weapons and pickup items are picked up by triangle, power-ups and most props not", "[pickups]") {
+    CHECK(wo::pickable("pickup_item", 1));
+    CHECK(wo::pickable("melee_weapon", 1));
+    CHECK(wo::pickable("thrown_weapon", 1));
+    CHECK(wo::pickable("overhead_weapon", 1));
+    CHECK_FALSE(wo::pickable("powerup_item", 1));
+    CHECK_FALSE(wo::pickable("simple_object", 1));
+    // The hashes the classes' inits treat apart.
+    CHECK_FALSE(wo::pickable("overhead_weapon", 0x8fc6ac30U));
+    CHECK_FALSE(wo::pickable("pickup_item", 0x2fd690d6U));
+    CHECK(wo::pickable("simple_object", 0xfcbe9fbbU));
 }
 
 TEST_CASE("the search prefers an item ahead, then beside, then behind; the first among equals", "[pickups]") {
@@ -67,10 +74,12 @@ TEST_CASE("the search skips what is out of reach, not pickable or out of sight f
     CHECK_FALSE(wo::searchPickup(kFeet, kFacingY, candidates, allBlocked).has_value());
 }
 
-TEST_CASE("an item up to 0.8 m above the feet is picked up low, higher high", "[pickups]") {
-    CHECK(wo::pickupClip(0.3F) == wo::kPickupLowClip);
-    CHECK(wo::pickupClip(0.8F) == wo::kPickupLowClip);
-    CHECK(wo::pickupClip(1.54F) == wo::kPickupHighClip);
+TEST_CASE("a one-handed item up to 0.8 m above the feet is picked up low, higher high", "[pickups]") {
+    CHECK(wo::pickupClip(wo::kPickupOneHanded, 0.3F) == wo::kPickupLowClip);
+    CHECK(wo::pickupClip(wo::kPickupOneHanded, 0.8F) == wo::kPickupLowClip);
+    CHECK(wo::pickupClip(wo::kPickupOneHanded, 1.54F) == wo::kPickupHighClip);
+    // A bat (pick-up animation 1) from the ground.
+    CHECK(wo::pickupClip(1, 0.05F) == wo::kPickupGroundClip);
 }
 
 TEST_CASE("a placed objects file reads into records, emitters left out", "[pickups][placed_objects]") {
@@ -95,7 +104,8 @@ TEST_CASE("a placed objects file reads into records, emitters left out", "[picku
 
     wo::SpawnRecords records;
     double next = 100;
-    CHECK(wo::addPlacedObjects(*objects, records, [&next] { return next++; }) == 2);
+    const std::size_t added = wo::addPlacedObjects(*objects, records, [&next] { return next++; });
+    CHECK(added == 2);
     REQUIRE(records.all().size() == 2);
     CHECK(records.all()[0].handle == 100);
     CHECK(records.all()[0].typeName == "dyn_watch");

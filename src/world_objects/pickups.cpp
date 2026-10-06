@@ -5,7 +5,25 @@
 
 namespace coney::world_objects {
 
-bool pickableClass(std::string_view className) { return className == "pickup_item"; }
+bool pickable(std::string_view className, std::uint32_t modelHash) {
+    // The model hashes a class's init treats apart (docs/research/objects.md#pickable).
+    constexpr std::uint32_t kNotPickableOverhead = 0x8fc6ac30U;
+    constexpr std::uint32_t kNotPickableItem = 0x2fd690d6U;
+    constexpr std::uint32_t kPickableSimpleObject = 0xfcbe9fbbU;
+    if (className == "melee_weapon" || className == "thrown_weapon") {
+        return true;
+    }
+    if (className == "overhead_weapon") {
+        return modelHash != kNotPickableOverhead;
+    }
+    if (className == "pickup_item") {
+        return modelHash != kNotPickableItem;
+    }
+    if (className == "simple_object") {
+        return modelHash == kPickableSimpleObject;
+    }
+    return false;
+}
 
 std::optional<std::size_t> searchPickup(anim::Vec3 feet, anim::Vec3 facing, std::span<const PickupCandidate> candidates,
                                         const SightBlocked& blocked) {
@@ -41,6 +59,11 @@ std::optional<std::size_t> searchPickup(anim::Vec3 feet, anim::Vec3 facing, std:
     return best;
 }
 
-int pickupClip(float height) { return height <= kPickupLowHeight ? kPickupLowClip : kPickupHighClip; }
+int pickupClip(int pickupAnim, float height) {
+    if (pickupAnim != kPickupOneHanded) {
+        return kPickupGroundClip;
+    }
+    return height <= kPickupLowHeight ? kPickupLowClip : kPickupHighClip;
+}
 
 } // namespace coney::world_objects

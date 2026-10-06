@@ -84,6 +84,21 @@ struct SquareInput {
 /// @orig 0x00287a18 Player_Cross (unknown)
 [[nodiscard]] int crossAttack();
 
+/// The clips an anim set puts in the slots square and cross read (docs/research/combat.md#bat): `S1`, `X1`, the
+/// grounded strike and the mounting strike. Set 0 is the defaults.
+struct AnimSetClips {
+    int square = anim_id::kAttackS1;          ///< Slot `0x10`.
+    int cross = anim_id::kAttackX1;           ///< Slot `0x11`.
+    int mounting = anim_id::kMountingStrike;  ///< Slot `0x12`.
+    int grounded = anim_id::kGroundedStrike1; ///< Slot `0x13`.
+};
+
+/// The clips of anim set `set`: 1 (45, 47, 50, 49), 2 (39, 41, 44, 43) and 3, a bat's (34, 36, 38, 37); any other
+/// set keeps the defaults. **Coney's reading**: of the overrides only `S1`'s, `X1`'s and the two strikes' are
+/// applied; the walk and run attacks and the snaps stay as they are (which slots they read is not traced).
+/// @orig 0x00253688 Human_ApplyAnimSet (unknown)
+[[nodiscard]] AnimSetClips animSetClips(int set);
+
 /// The break clip for an object point `height` metres above the feet: below the feet 194, up to 0.8 m 661 `LOW`,
 /// above 662 `MID` (663 `HIGH` is never chosen).
 /// @orig 0x00264178 Player_ObjectAttack (unknown)

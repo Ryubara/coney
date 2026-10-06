@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "scripting/message_handlers.h"
 
+#include <optional>
 #include <vector>
 
 #include "scripting/lua_value.h"
@@ -19,6 +20,15 @@ void MessageHandlers::set(double object, int message, std::string callback) {
     m_handlers[{object, message}] = std::move(callback);
 }
 
+void MessageHandlers::setPrompt(double object, std::string_view callback, std::string_view prompt) {
+    if (callback.empty() || prompt.empty()) {
+        m_prompts.erase(object);
+        return;
+    }
+    // One record per object: a second registration keeps the first's text.
+    m_prompts.try_emplace(object, prompt);
+}
+
 std::string_view MessageHandlers::handler(double object, int message) const {
     const auto found = m_handlers.find({object, message});
     return found == m_handlers.end() ? std::string_view{} : std::string_view(found->second);
@@ -35,6 +45,9 @@ bool MessageHandlers::deliver(ScriptSystem& scripts, double object, int message,
     bool asksResult = false;
     switch (message) {
     case 0:
+        args = {Value(object), Value(subject)};
+        asksResult = true;
+        break;
     case 3:
     case 4:
     case 5:
@@ -85,6 +98,11 @@ bool MessageHandlers::deliver(ScriptSystem& scripts, double object, int message,
     default:
         args = {Value(object), Value(other)};
         break;
+    }
+    if (message == 0) {
+        // The interaction asks one result: anything but nil takes the press.
+        const std::optional<std::vector<Value>> results = scripts.callResults(function, args);
+        return results.has_value() && !results->empty() && !results->front().isNil();
     }
     const bool ran = scripts.call(function, args);
     return asksResult && ran;

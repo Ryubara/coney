@@ -406,3 +406,18 @@ TEST_CASE("circle + cross outside a hold is the strong grapple: a grab connectin
     CHECK(none[10].out.startAnim == anim_id::kNone);
     CHECK(alone.combat().mode() == CombatMode::Free);
 }
+
+TEST_CASE("a bat's anim set plays 34 for square and 36 for cross, with no chain after them", "[combat]") {
+    Runner runner(nullptr);
+    const auto set = [](std::uint64_t, CombatInput& input) { input.animSet = 3; };
+    const auto frames = runner.run("10 tap square\n16 tap square\n40 tap cross\n", 80, set);
+    // The second square, in 34's window, finds no chain attack after it.
+    CHECK(starts(frames) == Starts{{10, 34}, {41, 36}});
+    // At a grounded target: 37.
+    Runner grounded(nullptr);
+    const auto down = grounded.run("10 tap square\n", 20, [](std::uint64_t, CombatInput& input) {
+        input.animSet = 3;
+        input.target = TargetKind::Grounded;
+    });
+    CHECK(starts(down) == Starts{{10, 37}});
+}

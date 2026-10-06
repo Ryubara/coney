@@ -5,6 +5,7 @@
 #include <array>
 
 #include "combat/anim_ids.h"
+#include "combat/attacks.h"
 
 namespace coney::combat {
 
@@ -46,6 +47,20 @@ constexpr float kThrowBonusMax = 2.0F;
 } // namespace
 
 RageCounts rageCounts(int animId) {
+    // **Coney stand-in**: an anim set's square and cross (a bat's 34 and 36, sets 1 and 2's) award as S1 and X1 do;
+    // the events the weapon ids map to (0x22-0x2c among them) are not traced.
+    const auto setAttack = [animId](int set) {
+        const AnimSetClips clips = animSetClips(set);
+        return animId == clips.square  ? anim_id::kAttackS1
+               : animId == clips.cross ? anim_id::kAttackX1
+                                       : anim_id::kNone;
+    };
+    for (const int set : {1, 2, 3}) {
+        if (const int as = setAttack(set); as != anim_id::kNone) {
+            animId = as;
+            break;
+        }
+    }
     for (const CountRow& row : kCounts) {
         if (row.animId == animId) {
             return row.counts;

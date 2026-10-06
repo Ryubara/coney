@@ -47,11 +47,12 @@ NativeFunction makeCfgObj(const BindingContext& context) {
             recorded->add("CfgObj", args);
         }
         if (types != nullptr) {
-            // The arguments by their place (0-based): 3 the byte `+0x5a`, 13 the pick-up animation `+0x65` and 18
-            // the kind `+0x86`, each kept as a byte.
+            // The arguments by their place (0-based): 3 the byte `+0x5a`, 13 the pick-up animation `+0x65`, 18 the
+            // kind `+0x86` and 19 the anim set `+0x87`, each kept as a byte.
             constexpr std::size_t kValueArg = 3;
             constexpr std::size_t kPickupAnimArg = 13;
             constexpr std::size_t kObjectKindArg = 18;
+            constexpr std::size_t kAnimSetArg = 19;
             const auto byte = [&args](std::size_t i) {
                 return static_cast<int>(static_cast<std::uint32_t>(std::trunc(binding::number(args, i))) & 0xffU);
             };
@@ -62,6 +63,7 @@ NativeFunction makeCfgObj(const BindingContext& context) {
             type.value = byte(kValueArg);
             type.pickupAnim = byte(kPickupAnimArg);
             type.objectKind = byte(kObjectKindArg);
+            type.animSet = byte(kAnimSetArg);
             types->add(std::move(type));
         }
         return binding::none();

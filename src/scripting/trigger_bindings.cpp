@@ -67,15 +67,31 @@ NativeFunction makeRotateVolumeBox(const BindingContext& context) {
     };
 }
 
-// `SetMsgHandler(object, message, callback)` and `SetMsgHandlerEx(object, message, callback, prompt, prompt2)`: the
-// callback for one message of the object. Coney has no interaction prompts yet, so the Ex form's prompts are not kept.
+// `SetMsgHandler(object, message, callback)`: the callback for one message of the object.
 // @orig 0x00386298 SetMsgHandler (unknown)
-// @orig 0x00386168 SetMsgHandlerEx (unknown)
 NativeFunction makeSetMsgHandler(const BindingContext& context) {
     return [messages = context.messages](std::span<const Value> args) {
         if (messages != nullptr) {
             messages->set(handleArg(args, 0), static_cast<int>(std::trunc(binding::number(args, 1))),
                           binding::string(args, 2));
+        }
+        return binding::none();
+    };
+}
+
+// `SetMsgHandlerEx(object, message, callback, prompt, prompt2)`: SetMsgHandler, and for message 0 the object's
+// interaction prompt (a kind-1 context record), registered with a callback and a prompt and dropped without either.
+// **Coney's reading**: the second text is not kept (whether it is shown is not traced).
+// @orig 0x00386168 SetMsgHandlerEx (unknown)
+NativeFunction makeSetMsgHandlerEx(const BindingContext& context) {
+    return [messages = context.messages](std::span<const Value> args) {
+        if (messages != nullptr) {
+            const double object = handleArg(args, 0);
+            const int message = static_cast<int>(std::trunc(binding::number(args, 1)));
+            messages->set(object, message, binding::string(args, 2));
+            if (message == 0) {
+                messages->setPrompt(object, binding::string(args, 2), binding::string(args, 3));
+            }
         }
         return binding::none();
     };
@@ -87,7 +103,7 @@ void addTriggerBindings(LuaVm& vm, const BindingContext& context, std::function<
     vm.registerFunction("AddVolumeBox", makeAddVolumeBox(context, std::move(nextHandle)));
     vm.registerFunction("RotateVolumeBox", makeRotateVolumeBox(context));
     vm.registerFunction("SetMsgHandler", makeSetMsgHandler(context));
-    vm.registerFunction("SetMsgHandlerEx", makeSetMsgHandler(context));
+    vm.registerFunction("SetMsgHandlerEx", makeSetMsgHandlerEx(context));
 }
 
 } // namespace coney::script
