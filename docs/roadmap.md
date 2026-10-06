@@ -22,6 +22,7 @@ This page is kept current: a milestone's status changes in the same commit as th
 | [Script mods](#script-mods) | not started |
 | [Xbox assets (optional)](#xbox-assets-optional) | not started |
 | [The whole game](#the-whole-game) | not started |
+| [Online multiplayer](#online-multiplayer) | not started |
 
 ## Foundations
 
@@ -215,3 +216,36 @@ runs the same with or without the Xbox disc.
 ## The whole game
 
 Every mission and mode, checked against the original running in PCSX2, then a first release.
+
+## Online multiplayer {#online-multiplayer}
+
+After the whole game: online play, from a few friends to large brawls with dozens of players on one server. Nothing
+in the faithful game changes for it, but the engine is built so that it stays possible. The direction below is the
+current thinking, decided only when the milestone starts.
+
+- **Client and server.** The server runs the one true simulation at a fixed tick and never waits for a slow or
+  lagging client. Clients send inputs, which are exactly what a pad or a brain writes to a human's per-player record
+  ([Tasks](research/tasks.md#humans-update)); each predicts its own character and replays its inputs when the
+  server disagrees, and shows the others slightly in the past, interpolated; hits are checked against what the
+  attacker saw. Lockstep or rollback between peers, where every machine waits for the slowest, suits two to four
+  players, not a server full.
+- **Tick rate.** The original steps characters at 30 Hz and runs physics and scheduled objects on a 60 Hz tick
+  ([The play tick](research/tasks.md#tick)). 30 Hz halves bandwidth and re-simulation; 60 Hz halves the delay of
+  reading input (about 17 ms on average at 30 Hz, 8 ms at 60 Hz) and is the norm today. The delay used to hide latency
+  depends on the latency, not the tick rate. A 60 Hz mode must rescale every duration counted in steps, which the
+  code names as such ([Update and render](guides/conventions.md#update-and-render)).
+- **Frame rate never matters.** Steps are fixed, so a client at 13 fps simulates the same steps as one at 240 fps,
+  with fewer pictures. Offline, Coney stops catching up below 7.5 fps and skips the time lost in a hitch; online, a
+  client must instead catch up to the server.
+- **Physics.** The 60 Hz physics step doubles the cost of re-simulating whatever it moves. If it only moves props and
+  debris, they can stay out of the network game; if it moves anything that decides a fight, every machine must compute
+  the same floats. What it simulates is an open question ([Tasks](research/tasks.md#open-questions)).
+- **Limits.** The original's pools (brains, gangs) are sized for one player's levels; raising them is a change for
+  this milestone, not before.
+
+What the engine keeps now so that this stays possible: a deterministic fixed step with seeded randomness, one input
+path for pads and brains, game time derived from the step count, simulation state that can be copied and restored,
+and durations named as steps or as time.
+
+**Done when** two clients and a server play a level together, a client at a low frame rate or with added latency
+stays in step with the server, and the game offline runs the same as before.

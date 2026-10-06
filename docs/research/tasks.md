@@ -150,6 +150,20 @@ and each frame runs exactly **two** `Humans_Update` calls, the body on the first
 Because a frame (two 59.94 Hz fields) is slightly longer than two ticks, the clock gains on the game: one frame in
 about 1000 (every ~33 s) runs **four** ticks, so two character steps. No frame ran none.
 
+A tick is not 1/60 s of real time: it is a burst of work that moves the world on by 1/60 s, and a pair runs back to
+back on the one CPU thread before the frame is drawn. After a pair every system has advanced exactly 1/30 s: the
+characters in one step (the first tick), the wheel and physics in two halves. The bus clock works like a bucket that
+real time fills and each pair empties by `0x960000` (33.3 ms). Worked example (arithmetic from the rule above, not a
+measurement): frames of 77 ms (13 fps) run 2, 2, 2, then 3 pairs as the remainder builds up (77, 87.3, 97.6, 107.9 ms
+in the bucket), on average 2.3, so the world keeps real-time speed and only the pictures are fewer. Whether
+`0x003a2ea0` caps the pairs of one frame is not traced ([Open questions](#open-questions)).
+
+Inferred, from the two confirmed pieces: game time in a level is real time clamped to 40 ms a frame
+([Boot: timers](boot.md#timers)), while the pairs catch up without that clamp. Below 25 fps, timers in milliseconds
+of game time (an AI's attack delay, a block's length) would therefore fall behind the movement, which counts steps.
+On a PS2 that rarely dropped frames this did not show; Coney derives game time from the step count, so the two
+cannot disagree ([Update and render](../guides/conventions.md#update-and-render)).
+
 Phase 1 (`0x003a3000`) runs one tick on the UI clock and calls `Humans_Update` only when `0x005104f4` is 1, else just
 the pads and the camera. `TaskManager_UpdateManagers` (`0x003a31a8`) runs the sub-managers of the phase: for play the
 object manager (`0x003980c8`), the cars (`0x0038e590`), `0x00390e20`, the particles and the scenes.
@@ -325,3 +339,7 @@ dispatcher](#humans-update). None is left.
 - What the sub-managers at `+0x844`-`+0x850` and `0x00390e20` update, and the `SceneTask` (`WarMoveInstance`).
 - The anim events `0x3e`, `0x3f` and the one that sets `0x2000`; what state code 6 is.
 - The event types `0`, `1`, `7` and `0x17` (`0x10` is the attack warning, [AI](ai.md#block)).
+- Does `TaskManager_TickGame` cap the pairs it runs in one frame, and do millisecond timers lag the steps below 25 fps
+  as inferred in [The play tick](#tick)?
+- What the physics step `0x00340918` simulates (props and debris only, or anything a character touches); online play
+  depends on it ([Roadmap](../roadmap.md#online-multiplayer)).

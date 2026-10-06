@@ -25,7 +25,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- |
 | **Reimplemented** | `█▎░░░░░░░░░░░░░░░░░░` | 6.0% of the game's own code (201,132 of 3,342,936 bytes, 428 functions) |
 | **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
-| **[Milestones](../roadmap.md)** | `██████▏░░░░░░░░░░░░░` | 4 of 13 done |
+| **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
 115 reimplemented function(s) have no size yet and add no bytes.
 
@@ -46,6 +46,7 @@ at the top of the repository's `README.md`.
 | [Script mods](../roadmap.md#script-mods) | not started |
 | [Xbox assets (optional)](../roadmap.md#xbox-assets-optional) | not started |
 | [The whole game](../roadmap.md#the-whole-game) | not started |
+| [Online multiplayer](../roadmap.md#online-multiplayer) | not started |
 
 ## By subsystem
 

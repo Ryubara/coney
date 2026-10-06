@@ -391,6 +391,11 @@ code keeps to these rules:
   happen in a game mode's `update()`, which is always exactly one fixed step and is handed the step's length and the
   game time. Nothing in the simulation measures time itself or assumes how many steps a real frame runs (0 to 4).
   Every gameplay constant in the research assumes this step.
+- **Say whether a duration counts steps or time.** The original times some things in steps (the 5 updates after a
+  block, a think every fifth step) and others in milliseconds of game time (an attack delay, a block's length). Name a
+  step count `...Steps` (`kBlockPauseSteps = 5`) and a time `...Ms` or `...Seconds`, and never convert one into the
+  other to "simplify". Times carry over to any step length; step counts are the list a different tick rate (a 60 Hz
+  mode, a server, [Roadmap](../roadmap.md#online-multiplayer)) would have to rescale.
 - **`render()` only draws.** It runs once per real frame, after the frame's steps, with `RenderTime::alpha`: where
   between the last two steps the frame falls. It may read the simulation's state and blend the last two steps; it
   never changes anything `update()` reads. A mode never draws or presents in `update()`.
