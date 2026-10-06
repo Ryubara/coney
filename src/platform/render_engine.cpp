@@ -351,8 +351,19 @@ void RenderEngine::drawTexture(rw::Texture* texture, graphics::ScreenRect rect) 
                                      indices.data(), static_cast<rw::int32>(indices.size()));
 }
 
+void RenderEngine::drawWindowRects(std::span<const graphics::LogicalQuad> quads) {
+    CONEY_ASSERT(m_inFrame);
+    if (m_camera == nullptr || quads.empty()) {
+        return; // NULL backend: nothing to draw
+    }
+    drawWindowQuads(nullptr, quads);
+}
+
 void RenderEngine::present() {
     CONEY_ASSERT(m_inFrame);
+    if (m_frameOverlay) {
+        std::exchange(m_frameOverlay, {})(*this);
+    }
     if (m_presentOverlay) {
         m_presentOverlay(*this);
     }

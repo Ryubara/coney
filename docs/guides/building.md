@@ -148,7 +148,8 @@ allows and centred; a window of another shape gets black bars at the sides or at
 coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [--frames N] [--screenshot PATH]
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
-      [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--trace FILE]]
+      [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--trace FILE]
+                   [--scene NAME]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE] [--no-audio | --audio-test]
       [--dev-overlay N]
@@ -547,6 +548,15 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 feet (dropped onto the ground below) and heading in degrees, and with the last two puts the follow camera DISTANCE
 metres from him with its view facing YAW degrees. It is a test aid: a trace scenario starts Coney where the
 original's save state stands, as `walk60` and `run_circle` do from slot 1's first trace row.
+
+`--scene NAME` (with `--play-level`) plays the in-engine scene NAME at once, after any `--start`, as a level99
+cinematic: player 1 takes the role named `warrrecv` and the other roles are played by stand-ins drawn from the role's
+model, letterboxed and skippable with cross or START ([Scenes](../research/scenes.md)). It is a test aid, until the
+level's scripts run their scenes themselves:
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --scene l99_c5 --headless --frames 560 --screenshot ../../scratch/l99_c5.png
+```
 
 The original's trace, recorded in PCSX2 by `coney-tools pcsx2 record`, uses the same names and units for the columns
 both have, and `coney-tools trace coney` runs a scenario's script on Coney with `--trace`; `coney-tools trace diff`

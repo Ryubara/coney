@@ -99,6 +99,14 @@ class RenderEngine final : public graphics::RenderDevice {
     /// CONEY_ASSERT); draws nothing with the NULL backend.
     void drawQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) override;
 
+    /// Draws flat-coloured `quads` given in window pixels (from the top left), blended by their alpha, in the 2D
+    /// states. Only between beginFrame() and present() (checked by CONEY_ASSERT); draws nothing with the NULL backend.
+    void drawWindowRects(std::span<const graphics::LogicalQuad> quads);
+
+    /// Sets what present() draws over this frame only, before the present overlay: a mode's 2D over its own 3D pass
+    /// (a cinematic's letterbox and fades), when something else presents the frame. present() clears it.
+    void setFrameOverlay(std::function<void(RenderEngine&)> overlay) { m_frameOverlay = std::move(overlay); }
+
     /// Draws `texture` stretched over `rect` (screen pixels, from the top left), blended by its alpha. Only between
     /// beginFrame() and present(), and only with the OpenGL backend (both checked by CONEY_ASSERT); the texture's
     /// raster must have been converted for the current platform.
@@ -163,6 +171,7 @@ class RenderEngine final : public graphics::RenderDevice {
     std::string m_capturePath;
     std::optional<std::expected<CapturedFrame, Error>> m_capture;
     std::function<void(graphics::RenderDevice&)> m_presentOverlay; // drawn at the end of every frame
+    std::function<void(RenderEngine&)> m_frameOverlay;             // drawn at the end of this frame only
 };
 
 } // namespace coney::platform

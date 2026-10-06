@@ -32,6 +32,7 @@
 #include "platform/character_mesh.h"
 #include "platform/play_scenery.h"
 #include "platform/render_engine.h"
+#include "platform/scene_stage.h"
 #include "platform/texture_dictionary.h"
 #include "platform/world_renderer.h"
 #include "sandbox/sandbox_world.h"
@@ -42,6 +43,11 @@
 namespace rw {
 struct Texture;
 }
+
+namespace coney::scenes {
+class SceneList;
+class SceneSystem;
+} // namespace coney::scenes
 
 namespace coney::platform {
 
@@ -191,6 +197,25 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// fighters are made again where they stand, at full health, since their brains hold the player they fought.
     std::expected<void, Error> changeCharacter(int type) override;
 
+    /// Plays the game's scenes in this mode (src/platform/play_level_scene.cpp): `scenes` is stepped with every step
+    /// and drawn through the mode's SceneStage (its camera, letterbox, fades and the bound humans), `playerHandle` is
+    /// player 1's script handle, whom a scene drives as the mode's own player. Null detaches. `scenes` must outlive the
+    /// attachment.
+    void attachScenes(scenes::SceneSystem* scenes, double playerHandle);
+    /// `--scene NAME`, Coney's test aid: plays the scene at once as a cinematic, as global.lua's gPlayCutScene would,
+    /// with stand-ins of its roles' characters bound to its roles and player 1 to his (a role named for Rembrandt).
+    /// Fails when the scene list cannot be read or the scene does not load.
+    std::expected<void, Error> playScene(std::string_view name);
+    /// Plays the scenes' sounds through `sounds` (null: none); it must outlive the mode's use of it.
+    void setSounds(audio::SoundPlayer* sounds) { m_stage->setSounds(sounds); }
+    /// The scene stage: what the playing scene shows.
+    [[nodiscard]] const SceneStage& stage() const { return *m_stage; }
+
+    /// Skins `character` in `pose`, leaned by `lean` and turned to `heading` at `feet`, into `positions` and `normals`
+    /// in the world (RenderWare's axes) for drawing.
+    static void skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet, float heading,
+                     float lean, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals);
+
     /// ScriptedPlayer: a script's `TeleportToFlag` on player 1 during play; no ground snap.
     void teleportPlayer(const world_objects::Placement& placement) override;
     /// The model the player is drawn as.
@@ -225,10 +250,13 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
 
     // The camera of `snapshot` as the scenery draws it, in RenderWare's axes, with `drawDistance` as its far clip.
     [[nodiscard]] WorldView view(const human::PlayerSnapshot& snapshot, float drawDistance) const;
-    // Skins `character` in `pose`, leaned by `lean` and turned to `heading` at `feet`, into `positions` and `normals`
-    // in the world (RenderWare's axes) for drawing.
-    static void skin(const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet, float heading,
-                     float lean, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals);
+    // Makes the scene stage (play_level_scene.cpp).
+    void makeStage();
+    // One step of the scenes at `nowMs` with pad 1's and 2's buttons: the scenes' update, then player 1 placed where a
+    // scene let him go.
+    void stepScenes(std::uint64_t nowMs, std::uint16_t buttons);
+    // Whether a scene holds player 1 now: his pad does nothing and he is drawn as the scene poses him.
+    [[nodiscard]] bool sceneHoldsPlayer() const;
     // Makes the layout's targets, dropped onto the ground, with a mesh each.
     void makeTargets(rw::Texture* texture);
     // Spawns a fighter dropped onto the ground below `spot`, with its mesh.
@@ -311,6 +339,13 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::vector<FighterMesh> m_fighterMeshes;
     rw::Texture* m_texture = nullptr; // the character's texture, for new meshes
     std::string m_model;              // the Character List model the player is
+    // The scenes: the stage drawn and stepped with them, the system attached (or the test aid's own) and player 1's
+    // handle in them.
+    std::unique_ptr<SceneStage> m_stage;
+    scenes::SceneSystem* m_scenes = nullptr;
+    std::unique_ptr<scenes::SceneList> m_ownSceneList;
+    std::unique_ptr<scenes::SceneSystem> m_ownScenes;
+    double m_playerHandle = 0.0;
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;

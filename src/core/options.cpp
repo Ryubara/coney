@@ -24,7 +24,7 @@ constexpr std::string_view kUsage =
     "             [--input-script FILE] [--view-text FONT TEXT] [--language CODE] [--tunables FILE]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
     "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
-    "             [--trace FILE]] [--sandbox [NAME]]\n"
+    "             [--trace FILE] [--scene NAME]] [--sandbox [NAME]]\n"
     "             [--assets DIR]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
@@ -58,6 +58,8 @@ constexpr std::string_view kUsage =
     "                     him with its view facing YAW degrees; a test aid for trace scenarios\n"
     "  --trace FILE       with --play-level: write the player's and the camera's state after every\n"
     "                     step to FILE, one CSV line per step\n"
+    "  --scene NAME       with --play-level levelN: play the in-engine scene NAME (such as l99_c1) at\n"
+    "                     once, with stand-ins in its roles and the player in his; a test aid\n"
     "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
     "                     .layout file; needs no disc\n"
     "  --assets DIR       the folder of Coney's own assets (sandbox layouts and textures), in place\n"
@@ -176,6 +178,9 @@ std::expected<void, Error> checkPlayLevel(const Options& options) {
 std::expected<void, Error> checkSandbox(const Options& options) {
     if (options.spawn.has_value() && !(options.playLevel && sandboxOfPlayLevel(*options.playLevel))) {
         return invalidArgument("--spawn needs --play-level sandbox:NAME: it names a sandbox layout's spawn point");
+    }
+    if (options.scene.has_value() && !(options.playLevel && !sandboxOfPlayLevel(*options.playLevel))) {
+        return invalidArgument("--scene needs --play-level with a level: the scene plays in it");
     }
     if (options.checkpoint.has_value() && !(options.playLevel && !sandboxOfPlayLevel(*options.playLevel))) {
         return invalidArgument("--checkpoint needs --play-level with a level: it names the level's checkpoint");
@@ -440,6 +445,10 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             }
         } else if (arg == "--trace") {
             if (auto value = takeValue(args, i, options.traceFile, "--trace", "the path of a CSV file"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--scene") {
+            if (auto value = takeValue(args, i, options.scene, "--scene", "a scene's name"); !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--spawn") {

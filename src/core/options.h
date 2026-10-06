@@ -86,6 +86,9 @@ struct Options {
     /// `--checkpoint`: the checkpoint a level played with `--play-level` starts at, as `SetCheckPoint` sets it before
     /// the level loads; 1 when unset. Requires playLevel to name a level, not a sandbox.
     std::optional<int> checkpoint;
+    /// `--scene`: an in-engine scene (`l99_c1`) the play mode plays at once, with stand-ins bound to its roles and
+    /// player 1 to his: Coney's test aid. Requires playLevel to name a level.
+    std::optional<std::string> scene;
     /// `--start X,Y,Z,HEADING[,DISTANCE,YAW]`: put player 1 (and the camera) there once the level or layout has
     /// started (StartPlace). Requires playLevel.
     std::optional<StartPlace> start;

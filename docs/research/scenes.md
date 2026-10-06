@@ -511,6 +511,17 @@ each.
 - A track's events fire against the scene's frame (the part's start frame plus its time), the header's and the
   current part's alike.
 
+**The play mode's stage** (`repo:src/platform/scene_stage.*`, `repo:src/platform/play_level_scene.cpp`) is the
+`SceneHost` the play mode gives the scene system. It draws the scene camera's view (interpolated between steps, cut
+when it jumps more than 1 m), the letterbox (two bars 0.125 of the screen high, Coney's choice) and the fades over the
+frame; the player is posed from his role's frames and, when let go, stands where the scene left him; other bound
+humans are drawn as puppets of their characters. Sounds go through the sound player ([Sound](sound.md#scene-sound)):
+the soundtrack starts on its event on the speech bus, music is ducked to 0.75 while the cinematic plays, and the
+soundtrack stops when it ends (Coney's choice, so a skip silences it); events 14 and 71 play unplaced on the effects
+bus. **Coney stand-ins:** captions, particles and rumble are counted; a puppet's model follows its role's name
+(`warrcl` is Cleon's `warr_cl`, and so on), as the game's bound humans would bring their own. `--scene NAME` with
+`--play-level` plays one scene at once ([Building](../guides/building.md#playing-a-level)).
+
 ## Open questions
 
 - Which human state the start resets (`0x0023e6e8`, `0x00227388`, `0x002266a8`) and what messages 10, `0x95`, `0x96`

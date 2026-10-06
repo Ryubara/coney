@@ -452,6 +452,8 @@ int main(int argc, char** argv) {
     std::unique_ptr<coney::platform::SandboxViewerMode> sandboxViewer;
     // The debug lines a story level's play mode draws: the debug session's, once it exists (below).
     const coney::debug::DebugDrawOptions* storyDebugDraw = nullptr;
+    // The sound player a level's play mode plays its scenes through: the sound output's, once it exists (below).
+    coney::audio::SoundPlayer* playSounds = nullptr;
     // A level played on its own (`--play-level NAME`, the Levels page): gameplay (mode 1) over the level's scripts as
     // the story reaches them, its level loaded as the play mode. The scripts outlive the gameplay that runs them.
     std::unique_ptr<coney::LevelScripts> levelScripts;
@@ -463,7 +465,7 @@ int main(int argc, char** argv) {
         levelScripts = levelScriptsFor(*wad, name, checkpoint);
         coney::LevelScripts& scripts = *levelScripts;
         coney::GameplayMode::LevelLoader loader =
-            [&renderer, &wad, &sectorBudget, &storyDebugDraw, &scripts, &options, commandLine](
+            [&renderer, &wad, &sectorBudget, &storyDebugDraw, &playSounds, &scripts, &options, commandLine](
                 const coney::LevelStart& start,
                 const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
             auto mode = playModeFor(renderer, *wad, sectorBudget, start, cast, scripts.recorded());
@@ -471,6 +473,7 @@ int main(int argc, char** argv) {
                 return std::unexpected(std::move(mode.error()));
             }
             (*mode)->setDebugDraw(storyDebugDraw);
+            (*mode)->setSounds(playSounds);
             if (commandLine) {
                 // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's start.
                 if (const std::optional<coney::StartPlace> place = options->start; place) {
@@ -479,6 +482,12 @@ int main(int argc, char** argv) {
                 if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
                     if (auto traced = (*mode)->traceTo(*tracePath); !traced) {
                         return std::unexpected(std::move(traced.error()));
+                    }
+                }
+                // `--scene`: a scene plays at once, a test aid.
+                if (const std::optional<std::string> scene = options->scene; scene) {
+                    if (auto played = (*mode)->playScene(*scene); !played) {
+                        return std::unexpected(std::move(played.error()));
                     }
                 }
             }
@@ -619,7 +628,7 @@ int main(int argc, char** argv) {
         // Gameplay (mode 1) loads the chosen level as the play mode, with player 1 where the level script made him.
         const coney::io::Wad& gameWad = *wad;
         coney::GameplayMode::LevelLoader loadLevel =
-            [&renderer, &gameWad, &sectorBudget, &storyDebugDraw](
+            [&renderer, &gameWad, &sectorBudget, &storyDebugDraw, &playSounds](
                 const coney::LevelStart& start,
                 const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
             // The fighters as the flow's scripts configured them.
@@ -628,6 +637,7 @@ int main(int argc, char** argv) {
                 return std::unexpected(std::move(mode.error()));
             }
             (*mode)->setDebugDraw(storyDebugDraw);
+            (*mode)->setSounds(playSounds);
             return std::unique_ptr<coney::GameMode>(std::move(*mode));
         };
         startUp.emplace(renderer, modes, loadSheet, strings, legal, printText, coney::script::wadScriptSource(*wad),
@@ -711,6 +721,7 @@ int main(int argc, char** argv) {
                                                                     : coney::platform::AudioSink::Device);
         if (started) {
             audio = std::move(*started);
+            playSounds = &audio->sounds();
             if (!testMode) {
                 printText(audio->startLine());
             }
@@ -789,6 +800,7 @@ int main(int argc, char** argv) {
     coney::platform::PadMenuOverlay padMenu(debugSession, std::move(debugFont));
     if (playLevel) {
         playLevel->setDebugDraw(&debugSession.debugDraw());
+        playLevel->setSounds(audio ? &audio->sounds() : nullptr);
     }
     storyDebugDraw = &debugSession.debugDraw();
     // The mode a sandbox or level the Levels page plays replaces: the play mode, the level's gameplay or the sandbox
@@ -830,6 +842,7 @@ int main(int argc, char** argv) {
             levelGameplay.reset();
             playLevel = std::move(*mode);
             playLevel->setDebugDraw(&debugSession.debugDraw());
+            playLevel->setSounds(audio ? &audio->sounds() : nullptr);
             modes.push(*playLevel);
             return;
         }

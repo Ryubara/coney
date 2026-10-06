@@ -21,6 +21,8 @@
 #include "human/human_animator.h"
 #include "human/player_trace.h"
 #include "raycast/collision_mesh.h"
+#include "scenes/scene_list.h"
+#include "scenes/scene_player.h"
 
 namespace coney::platform {
 
@@ -222,6 +224,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
                                 m_ai->config().callsRead));
         }
     }
+    makeStage();
 }
 
 PlayLevelMode::~PlayLevelMode() {
@@ -383,6 +386,7 @@ void PlayLevelMode::drawCharacter() const {
     for (const FighterMesh& fighter : m_fighterMeshes) {
         fighter.mesh->atomic()->render();
     }
+    m_stage->drawPuppets();
 }
 
 ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
@@ -396,7 +400,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_freeCamera->current().update(pad, static_cast<float>(frame.seconds));
     }
     static const Pad kStill;
-    const Pad& playerPad = m_frozen || m_freeCamera ? kStill : pad;
+    const Pad& playerPad = m_frozen || m_freeCamera || sceneHoldsPlayer() ? kStill : pad;
 
     // The characters' update, then the cameras' (human::Player keeps that order).
     const anim::Vec3 before = m_player->human().position();
@@ -414,17 +418,24 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_print(std::format("frame {}: clip {}\n", frame.index, id));
         m_lastAnimId = id;
     }
+    // The scenes, with any player's skip buttons.
+    stepScenes(millisecondsOf(frame.gameTicks),
+               static_cast<std::uint16_t>(pad.buttons() | stack.pads().port(1).buttons()));
 
     // The scenery's step around the camera (for a level: one streaming decision and the draw distance), then its
     // visibility pass from the newest step's camera: the next step's streaming reads it, so it belongs to the
     // simulation, not to the blended render.
     // With the free camera on, the scenery streams and culls round it instead.
-    const world::Vec3 eye =
-        m_freeCamera ? m_freeCamera->current().position() : toRenderWare(m_player->camera().position());
+    // A scene camera, while one is current, likewise.
+    const std::optional<WorldView> sceneView = m_stage->cameraView(1.0F, m_engine.frameSize());
+    const world::Vec3 eye = sceneView      ? sceneView->pose.position
+                            : m_freeCamera ? m_freeCamera->current().position()
+                                           : toRenderWare(m_player->camera().position());
     m_scenery->step(eye, frame);
     m_drawDistance.current() = m_scenery->drawDistance();
-    m_scenery->findVisible(m_freeCamera ? viewFrom(m_freeCamera->current().pose(), m_drawDistance.current())
-                                        : view(m_player->current(), m_drawDistance.current()));
+    m_scenery->findVisible(sceneView      ? *sceneView
+                           : m_freeCamera ? viewFrom(m_freeCamera->current().pose(), m_drawDistance.current())
+                                          : view(m_player->current(), m_drawDistance.current()));
     ++m_stats.frames;
     return ModeResult::Stay;
 }
@@ -432,11 +443,27 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
 void PlayLevelMode::render(const RenderTime& time) {
     // Everything drawn comes from the player's snapshots and the draw distance, `alpha` of the way from the step before
     // to the newest one.
-    const human::PlayerSnapshot snapshot = human::interpolate(m_player->previous(), m_player->current(), time.alpha);
+    human::PlayerSnapshot snapshot = human::interpolate(m_player->previous(), m_player->current(), time.alpha);
     const float drawDistance = lerp(m_drawDistance.previous(), m_drawDistance.current(), time.alpha);
-    const WorldView blended = m_freeCamera ? viewFrom(blendedFreeCamera(*m_freeCamera, time.alpha).pose(), drawDistance)
-                                           : view(snapshot, drawDistance);
+    // The scene camera while one is current; and player 1 as a scene poses him while it holds him.
+    const std::optional<WorldView> sceneView = m_stage->cameraView(time.alpha, m_engine.frameSize());
+    const WorldView blended = sceneView ? *sceneView
+                              : m_freeCamera
+                                  ? viewFrom(blendedFreeCamera(*m_freeCamera, time.alpha).pose(), drawDistance)
+                                  : view(snapshot, drawDistance);
+    if (const std::optional<scenes::RoleFrame> posed =
+            sceneHoldsPlayer() ? m_stage->frameOf(m_playerHandle, time.alpha) : std::nullopt) {
+        snapshot.pose = posed->pose;
+        snapshot.feet = posed->feet;
+        snapshot.heading = posed->heading;
+        snapshot.lean = 0.0F;
+    }
     if (m_engine.drawsPixels()) {
+        m_stage->skinPuppets(time.alpha,
+                             [](const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
+                                float heading, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals) {
+                                 skin(character, pose, feet, heading, 0.0F, positions, normals);
+                             });
         skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, m_positions, m_normals);
         m_mesh->update(m_positions, m_normals);
         for (Target& target : m_targets) {
@@ -454,7 +481,10 @@ void PlayLevelMode::render(const RenderTime& time) {
             mesh.mesh->update(mesh.positions, mesh.normals);
         }
     }
-    // The scenery draws itself through the blended view, with the character and the debug lines among its objects.
+    // The scenery draws itself through the blended view, with the character and the debug lines among its objects;
+    // the scene's letterbox and fade go over it.
+    m_engine.setFrameOverlay(
+        [this, nowMs = millisecondsOf(time.gameTicks)](RenderEngine& engine) { m_stage->drawOverlay(engine, nowMs); });
     m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot] {
         drawCharacter();
         drawDebugLines(snapshot);
@@ -657,11 +687,12 @@ std::string PlayLevelMode::summary() const {
     }
     return std::format(
         "play: {} frames, player at ({:.2f}, {:.2f}, {:.2f}) heading {:.1f} speed {:.2f} gait {} clip {} "
-        "{} {} stamina {}, travelled {:.2f} m, respawns {}; camera {:.2f} m away{}{}\n",
+        "{} {} stamina {}, travelled {:.2f} m, respawns {}; camera {:.2f} m away{}{}{}\n",
         m_stats.frames, p.x, p.y, p.z, human.heading() * 180.0F / std::numbers::pi_v<float>, human.speed(),
         gaitName(human.gait()), human.animator().animId(), human.airborne() ? "airborne" : "grounded",
         human::traversalName(human.traversal()), human.stamina().value(), m_stats.travelled, m_player->respawns(),
-        anim::distance(c, m_player->camera().lookAt()), fight, m_scenery->summary());
+        anim::distance(c, m_player->camera().lookAt()), fight, m_scenery->summary(),
+        m_scenes != nullptr ? m_stage->summary() : std::string{});
 }
 
 } // namespace coney::platform
