@@ -136,6 +136,10 @@ class SceneSystem {
     /// `SceneAddObject(id, object, slot)`: binds `object` to object slot `slot`; ignored past the scene's objects.
     /// @orig 0x00354280 Scene_BindObject (SceneCache.cpp)
     void addObject(std::uint32_t id, double object, std::size_t slot);
+    /// `ScreenQueueEffect(type, seconds)` in play: the screen effect handed to the host, which owns player 1's view's
+    /// effects (types 0 to 3 and 5; others are not passed on). **Coney's glue**: the original's effect managers are
+    /// the views', which the scene events use too (docs/research/graphics.md).
+    void queueScreenEffect(int type, float seconds);
 
     // ---- The game's frame ----
 

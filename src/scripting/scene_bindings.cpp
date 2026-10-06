@@ -7,6 +7,7 @@
 #include <numbers>
 #include <span>
 #include <string>
+#include <utility>
 
 #include "scenes/scene_player.h"
 #include "scripting/binding_args.h"
@@ -45,26 +46,27 @@ std::string nameArg(std::span<const Value> args, std::size_t i) {
     return i >= args.size() || args[i].isNil() ? std::string{} : binding::string(args, i);
 }
 
-// A binding that works on the scene system when there is one; `none` is its result without one.
-template <typename Body> NativeFunction withScenes(const BindingContext& context, Body body) {
-    return [scenes = context.scenes, body](std::span<const Value> args) -> binding::Results {
-        if (scenes == nullptr) {
-            return binding::none();
+// A binding that works on the context's scene system as it is at the call (gameplay makes one per level); without
+// one it is `fallback`'s, or does nothing and returns nil when there is no fallback.
+template <typename Body>
+NativeFunction withScenes(const BindingContext& context, Body body, NativeFunction fallback = {}) {
+    return [context = &context, body, fallback = std::move(fallback)](std::span<const Value> args) -> binding::Results {
+        if (context->scenes == nullptr) {
+            return fallback ? fallback(args) : binding::none();
         }
-        return body(*scenes, args);
+        return body(*context->scenes, args);
     };
 }
 
-// `ScenePreload(name, onLoaded)`: the id; the callback is called with it when the record arrives. Without a scene
-// system, 0 (the first scene), as for an unknown name.
+// `ScenePreload(name, onLoaded)`: the id; the callback is called with it when the record arrives.
 // @orig 0x00367448 ScenePreload (unknown)
-NativeFunction makeScenePreload(const BindingContext& context) {
-    return [scenes = context.scenes](std::span<const Value> args) {
-        if (scenes == nullptr) {
-            return binding::number(0.0);
-        }
-        return binding::number(scenes->preload(binding::string(args, 0), nameArg(args, 1)));
-    };
+NativeFunction makeScenePreload(const BindingContext& context, NativeFunction fallback) {
+    return withScenes(
+        context,
+        [](scenes::SceneSystem& scenes, std::span<const Value> args) {
+            return binding::number(scenes.preload(binding::string(args, 0), nameArg(args, 1)));
+        },
+        std::move(fallback));
 }
 
 // `SceneIsPreloaded(name)`.
@@ -97,37 +99,43 @@ NativeFunction makeSceneSetCallback(const BindingContext& context) {
 // no rotation; freeze is true only when omitted.
 // @orig 0x00367580 ScenePlayCinematic (unknown)
 // @orig 0x00353c68 Scene_PlayCinematic (SceneCache.cpp)
-NativeFunction makeScenePlayCinematic(const BindingContext& context) {
-    return withScenes(context, [](scenes::SceneSystem& scenes, std::span<const Value> args) {
-        const scenes::PlayRequest request{.kind = scenes::PlayKind::Cinematic,
-                                          .delay = unsignedArg(args, 1),
-                                          .onEnd = nameArg(args, 2),
-                                          .cinematic = boolArg(args, 3),
-                                          .skippable = boolArg(args, 4),
-                                          .looping = boolArg(args, 5),
-                                          .freeze = boolArgOr(args, 6, true),
-                                          .final = boolArg(args, 8),
-                                          .chain = boolArg(args, 9),
-                                          .blendCam = floatArg(args, 7),
-                                          .place = {}};
-        return binding::boolean(scenes.play(unsignedArg(args, 0), request));
-    });
+NativeFunction makeScenePlayCinematic(const BindingContext& context, NativeFunction fallback) {
+    return withScenes(
+        context,
+        [](scenes::SceneSystem& scenes, std::span<const Value> args) {
+            const scenes::PlayRequest request{.kind = scenes::PlayKind::Cinematic,
+                                              .delay = unsignedArg(args, 1),
+                                              .onEnd = nameArg(args, 2),
+                                              .cinematic = boolArg(args, 3),
+                                              .skippable = boolArg(args, 4),
+                                              .looping = boolArg(args, 5),
+                                              .freeze = boolArgOr(args, 6, true),
+                                              .final = boolArg(args, 8),
+                                              .chain = boolArg(args, 9),
+                                              .blendCam = floatArg(args, 7),
+                                              .place = {}};
+            return binding::boolean(scenes.play(unsignedArg(args, 0), request));
+        },
+        std::move(fallback));
 }
 
 // `ScenePlayFixedScene(id, delay, onEnd, looping, freeze, blendCam)`: not a cinematic and not skippable.
 // @orig 0x00367708 ScenePlayFixedScene (unknown)
 // @orig 0x00353d60 Scene_PlayFixed (SceneCache.cpp)
-NativeFunction makeScenePlayFixedScene(const BindingContext& context) {
-    return withScenes(context, [](scenes::SceneSystem& scenes, std::span<const Value> args) {
-        const scenes::PlayRequest request{.kind = scenes::PlayKind::Fixed,
-                                          .delay = unsignedArg(args, 1),
-                                          .onEnd = nameArg(args, 2),
-                                          .looping = boolArg(args, 3),
-                                          .freeze = boolArg(args, 4),
-                                          .blendCam = floatArg(args, 5),
-                                          .place = {}};
-        return binding::boolean(scenes.play(unsignedArg(args, 0), request));
-    });
+NativeFunction makeScenePlayFixedScene(const BindingContext& context, NativeFunction fallback) {
+    return withScenes(
+        context,
+        [](scenes::SceneSystem& scenes, std::span<const Value> args) {
+            const scenes::PlayRequest request{.kind = scenes::PlayKind::Fixed,
+                                              .delay = unsignedArg(args, 1),
+                                              .onEnd = nameArg(args, 2),
+                                              .looping = boolArg(args, 3),
+                                              .freeze = boolArg(args, 4),
+                                              .blendCam = floatArg(args, 5),
+                                              .place = {}};
+            return binding::boolean(scenes.play(unsignedArg(args, 0), request));
+        },
+        std::move(fallback));
 }
 
 // `ScenePlay(id, {x, y, z}, heading | {i, j, k, r}, delay, onEnd, looping, freeze, blendCam)`: at the script's
@@ -167,17 +175,20 @@ NativeFunction makeScenePlay(const BindingContext& context) {
 // authored (the fit to its humans, 0x003547e8, is not traced either).
 // @orig 0x00367cd8 ScenePlayAnimation (unknown)
 // @orig 0x00353f40 Scene_PlayAnimation (SceneCache.cpp)
-NativeFunction makeScenePlayAnimation(const BindingContext& context) {
-    return withScenes(context, [](scenes::SceneSystem& scenes, std::span<const Value> args) {
-        const scenes::PlayRequest request{.kind = scenes::PlayKind::Animation,
-                                          .delay = unsignedArg(args, 4),
-                                          .onEnd = nameArg(args, 1),
-                                          .looping = boolArg(args, 2),
-                                          .freeze = boolArg(args, 6),
-                                          .blendCam = floatArg(args, 7),
-                                          .place = {}};
-        return binding::boolean(scenes.play(unsignedArg(args, 0), request));
-    });
+NativeFunction makeScenePlayAnimation(const BindingContext& context, NativeFunction fallback) {
+    return withScenes(
+        context,
+        [](scenes::SceneSystem& scenes, std::span<const Value> args) {
+            const scenes::PlayRequest request{.kind = scenes::PlayKind::Animation,
+                                              .delay = unsignedArg(args, 4),
+                                              .onEnd = nameArg(args, 1),
+                                              .looping = boolArg(args, 2),
+                                              .freeze = boolArg(args, 6),
+                                              .blendCam = floatArg(args, 7),
+                                              .place = {}};
+            return binding::boolean(scenes.play(unsignedArg(args, 0), request));
+        },
+        std::move(fallback));
 }
 
 // `SceneStop(id, force)`.
@@ -238,15 +249,15 @@ NativeFunction makeGoalJoin(const BindingContext& context) {
 
 } // namespace
 
-void addSceneBindings(LuaVm& vm, const BindingContext& context) {
-    vm.registerFunction("ScenePreload", makeScenePreload(context));
+void addSceneBindings(LuaVm& vm, const BindingContext& context, const SceneStandIn& standIn) {
+    vm.registerFunction("ScenePreload", makeScenePreload(context, standIn.preload));
     vm.registerFunction("SceneIsPreloaded", makeSceneIsPreloaded(context));
     vm.registerFunction("SceneUnload", makeSceneUnload(context));
     vm.registerFunction("SceneSetCallback", makeSceneSetCallback(context));
-    vm.registerFunction("ScenePlayCinematic", makeScenePlayCinematic(context));
-    vm.registerFunction("ScenePlayFixedScene", makeScenePlayFixedScene(context));
+    vm.registerFunction("ScenePlayCinematic", makeScenePlayCinematic(context, standIn.play));
+    vm.registerFunction("ScenePlayFixedScene", makeScenePlayFixedScene(context, standIn.play));
     vm.registerFunction("ScenePlay", makeScenePlay(context));
-    vm.registerFunction("ScenePlayAnimation", makeScenePlayAnimation(context));
+    vm.registerFunction("ScenePlayAnimation", makeScenePlayAnimation(context, standIn.play));
     vm.registerFunction("SceneStop", makeSceneStop(context));
     vm.registerFunction("SceneTerminate", makeSceneTerminate(context));
     vm.registerFunction("SceneDone", makeSceneDone(context));

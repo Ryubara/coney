@@ -23,8 +23,12 @@
 #include "platform/world_renderer.h"
 #include "scenes/letterbox.h"
 #include "scenes/scene_host.h"
+#include "scenes/scene_player.h"
 
 namespace coney::platform {
+
+/// One line of a scene system's counts for the play mode's summary (`; scenes: ...`).
+[[nodiscard]] std::string scenesSummary(const scenes::SceneStats& stats);
 
 /// A character the stage draws a bound human as: its resources and texture dictionaries.
 struct StageCharacter {

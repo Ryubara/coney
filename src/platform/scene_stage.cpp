@@ -157,6 +157,12 @@ void SceneStage::drawOverlay(RenderEngine& engine, std::uint64_t nowMs) const {
     }
 }
 
+std::string scenesSummary(const scenes::SceneStats& stats) {
+    return std::format("; scenes: preloads {}, started {}, ended {} (skipped {}, aborted {}), events {}, Lua calls {}",
+                       stats.preloads, stats.started, stats.ended, stats.skipped, stats.aborted, stats.events,
+                       stats.callbacks);
+}
+
 std::string SceneStage::summary() const {
     return std::format("; scene stage: {} bound, {} puppets, camera {}, captions {}, soundtracks {}, sounds {}, "
                        "particles {}, rumbles {}",

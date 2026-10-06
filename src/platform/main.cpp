@@ -74,6 +74,8 @@
 #include "platform/world_set.h"
 #include "platform/world_viewer_mode.h"
 #include "sandbox/sandbox_world.h"
+#include "scenes/scene_disc.h"
+#include "scenes/scene_player.h"
 #include "scripting/config_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_bindings.h"
@@ -463,6 +465,27 @@ int main(int argc, char** argv) {
     const coney::debug::DebugDrawOptions* storyDebugDraw = nullptr;
     // The sound player a level's play mode plays its scenes through: the sound output's, once it exists (below).
     coney::audio::SoundPlayer* playSounds = nullptr;
+    // The disc's scene list, read once (as the original's boot does), and the scene system each level's gameplay
+    // makes over it. A list that cannot be read leaves the scene bindings to Coney's stand-in.
+    std::optional<coney::scenes::SceneList> sceneList;
+    bool sceneListFailed = false;
+    const coney::GameplayMode::SceneMaker sceneMaker =
+        [&wad, &sceneList, &sceneListFailed]() -> std::unique_ptr<coney::scenes::SceneSystem> {
+        if (!wad || sceneListFailed) {
+            return nullptr;
+        }
+        if (!sceneList) {
+            auto list = coney::scenes::loadSceneList(*wad);
+            if (!list) {
+                sceneListFailed = true;
+                printText(std::format("scenes: {}; the scene bindings stand in\n", list.error().message));
+                return nullptr;
+            }
+            sceneList = std::move(*list);
+        }
+        return std::make_unique<coney::scenes::SceneSystem>(*sceneList, coney::scenes::wadSceneSource(*wad),
+                                                            coney::scenes::SceneSystem::ScriptCall{});
+    };
     // A level played on its own (`--play-level NAME`, the Levels page): gameplay (mode 1) over the level's scripts as
     // the story reaches them, its level loaded as the play mode. The scripts outlive the gameplay that runs them.
     std::unique_ptr<coney::LevelScripts> levelScripts;
@@ -506,6 +529,7 @@ int main(int argc, char** argv) {
                                                               scripts.state(), scripts.humans(), scripts.flags(),
                                                               scripts.recorded(), std::move(loader), printText);
         levelGameplay->setLevel(name);
+        levelGameplay->setSceneMaker(sceneMaker);
     };
     // The play mode of a level played on its own; null when none is loaded.
     const auto levelPlayMode = [&levelGameplay]() -> coney::platform::PlayLevelMode* {
@@ -673,6 +697,7 @@ int main(int argc, char** argv) {
         if (levelScriptOptions(*wad, {}, table).randomTable.size() == coney::GameRandom::kTableSize) {
             startUp->state().random.setTable(table);
         }
+        startUp->gameplay().setSceneMaker(sceneMaker);
         startUp->start();
     } else {
         // No disc: no game to run, only the idle screen.

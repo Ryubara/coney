@@ -35,6 +35,7 @@
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
+#include "scenes/scene_player.h"
 #include "scripting/script_system.h"
 #include "support/fixtures.h"
 #include "support/font_fixtures.h"
@@ -130,6 +131,7 @@ struct StoryRun {
     std::map<std::string, std::vector<std::byte>, std::less<>> files;
     std::vector<coney::LevelStart> starts;
     coney::camera::Cameras* castCameras = nullptr; // the cameras the last load was given
+    std::vector<const coney::scenes::SceneSystem*> castScenes; // each load's ScriptedCast::scenes
     int levelUpdates = 0;
     std::unique_ptr<coney::StartUpFlow> flow;
     std::unique_ptr<coney::ScriptedInput> input;
@@ -161,6 +163,7 @@ struct StoryRun {
                    const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
                 starts.push_back(start);
                 castCameras = cast.cameras;
+                castScenes.push_back(cast.scenes);
                 return std::make_unique<FakeLevel>(levelUpdates);
             },
             profiles);
@@ -252,6 +255,34 @@ TEST_CASE("story: the level flow pushes gameplay, whose level script places play
     CHECK(run.levelUpdates == 11);
     CHECK(run.flow->scripts().errors() == 0);
     CHECK(run.flow->scripts().skippedCalls() == 0);
+}
+
+TEST_CASE("story: gameplay makes each level's scene system and hands it to the level", "[story_start][scenes]") {
+    StoryRun run(storyScript(), true);
+    const coney::scenes::SceneList list;
+    int made = 0;
+    run.flow->gameplay().setSceneMaker([&list, &made] {
+        ++made;
+        return std::make_unique<coney::scenes::SceneSystem>(
+            list,
+            [](std::string_view) -> std::expected<std::vector<std::byte>, coney::Error> {
+                return coney::fail(coney::ErrorCode::NotFound, "no scenes in this test");
+            },
+            coney::scenes::SceneSystem::ScriptCall{});
+    });
+    run.frames(420);
+    run.untilTopLeaves(coney::ProfileManagerMode::kId);
+    run.frames(3);
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    CHECK(made == 1);
+    REQUIRE(run.castScenes.size() == 1);
+    CHECK(run.castScenes.front() != nullptr);
+
+    // The level ends (mission complete, kind 1) and its scenes with it; the next level makes its own.
+    run.flow->missionComplete().launch(MissionCompleteMode::kKindCheckpointOne);
+    run.frames(1);
+    CHECK(run.flow->gameplay().level() == nullptr);
+    CHECK(made == 1);
 }
 
 TEST_CASE("mission complete: kind 1 puts the checkpoint back and ends gameplay below it", "[story_start]") {

@@ -11,6 +11,7 @@
 
 #include "characters/character_class.h"
 #include "core/assert.h"
+#include "scenes/scene_player.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/binding_args.h"
@@ -219,8 +220,14 @@ NativeFunction makeMenuLoadLevel(const Factory& factory) {
 
 // `ScreenQueueEffect(type, seconds)`: queues a fade (0 in, 1 out).
 NativeFunction makeScreenQueueEffect(const Factory& factory) {
-    return [host = factory.context->host](std::span<const Value> args) {
-        host->queueScreenEffect(static_cast<int>(binding::number(args, 0)), binding::number(args, 1));
+    return [context = factory.context](std::span<const Value> args) {
+        const int type = static_cast<int>(binding::number(args, 0));
+        const double seconds = binding::number(args, 1);
+        context->host->queueScreenEffect(type, seconds);
+        // In play the screen's effects are the scenes' host's (the play mode's stage), whose fades a scene's own use.
+        if (context->scenes != nullptr) {
+            context->scenes->queueScreenEffect(type, static_cast<float>(seconds));
+        }
         return binding::none();
     };
 }
@@ -834,14 +841,10 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addAiBindings(vm, context);
     addGangBindings(vm, context);
     addAnimCallbackBindings(vm, context);
-    addSceneBindings(vm, context);
-    if (context.scenes == nullptr) {
-        // No scene system (a test, or a mode that plays no scenes): the stand-in keeps the scripts' scene flow moving.
-        vm.registerFunction("ScenePreload", makeStandInScenePreload(factory));
-        for (const std::string_view name : {"ScenePlayCinematic", "ScenePlayAnimation", "ScenePlayFixedScene"}) {
-            vm.registerFunction(name, makeStandInScenePlay(factory));
-        }
-    }
+    // With no scene system at the call (a test, the menus, a mode that plays no scenes), the stand-in keeps the
+    // scripts' scene flow moving.
+    addSceneBindings(vm, context,
+                     SceneStandIn{.preload = makeStandInScenePreload(factory), .play = makeStandInScenePlay(factory)});
     // The level, trigger and camera bindings make world objects, so they take their handles from the same counter as
     // the stubs.
     const auto nextHandle = [handles = factory.handles] {

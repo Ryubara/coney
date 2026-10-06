@@ -225,9 +225,15 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         }
     }
     makeStage();
+    // The level's scenes play on the stage, player 1 being the human the level's scripts made him.
+    if (cast != nullptr && cast->scenes != nullptr) {
+        const HumanCreation* player = cast->humans != nullptr ? cast->humans->player(1) : nullptr;
+        attachScenes(cast->scenes, player != nullptr ? player->handle : 0.0);
+    }
 }
 
 PlayLevelMode::~PlayLevelMode() {
+    attachScenes(nullptr, 0.0); // the scenes may outlive the stage they were hosted by
     m_lights.reset();
     m_ai.reset(); // out of the player's step before he goes
     m_fighterMeshes.clear();
@@ -479,8 +485,16 @@ void PlayLevelMode::render(const RenderTime& time) {
         }
         const std::vector<ai::AiHuman>& fighters = m_ai->humans();
         for (std::size_t i = 0; i < fighters.size() && i < m_fighterMeshes.size(); ++i) {
-            const human::TargetSnapshot pose =
-                human::interpolate(fighters[i].previous, fighters[i].current, time.alpha);
+            human::TargetSnapshot pose = human::interpolate(fighters[i].previous, fighters[i].current, time.alpha);
+            // A cast human a scene holds is drawn as the scene poses it.
+            if (const double handle = m_scenes != nullptr ? castHandleOf(fighters[i]) : 0.0;
+                handle != 0.0 && m_stage->holds(handle)) {
+                if (const std::optional<scenes::RoleFrame> posed = m_stage->frameOf(handle, time.alpha)) {
+                    pose.pose = posed->pose;
+                    pose.feet = posed->feet;
+                    pose.heading = posed->heading;
+                }
+            }
             FighterMesh& mesh = m_fighterMeshes[i];
             skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
             mesh.mesh->update(mesh.positions, mesh.normals);
@@ -697,7 +711,7 @@ std::string PlayLevelMode::summary() const {
         gaitName(human.gait()), human.animator().animId(), human.airborne() ? "airborne" : "grounded",
         human::traversalName(human.traversal()), human.stamina().value(), m_stats.travelled, m_player->respawns(),
         anim::distance(c, m_player->camera().lookAt()), fight, m_scenery->summary(),
-        m_scenes != nullptr ? m_stage->summary() : std::string{});
+        m_scenes != nullptr ? m_stage->summary() + scenesSummary(m_scenes->stats()) : std::string{});
 }
 
 } // namespace coney::platform

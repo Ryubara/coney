@@ -498,9 +498,14 @@ each.
 **Coney choices** where the page is silent:
 
 - A record arrives on the update after `ScenePreload` (Coney's reads are synchronous); a play binding reads it at once.
-- With no scene system (a test, or a mode that plays no scenes) `ScenePreload` and the three play bindings are a
-  stand-in that keeps the scripts' scene flow moving: a scene loads and ends at once, its load and end functions
-  called with its id at the scripts' next update.
+- The bindings work on the scene system the binding context holds at each call. Gameplay makes one per level, over
+  the disc's scene list (read once), before the level script runs, and drops it when the level ends. With none (a
+  test, the menus) `ScenePreload` and the three play bindings are a stand-in that keeps the scripts' scene flow
+  moving: a scene loads and ends at once, its load and end functions called with its id at the scripts' next update.
+- Coney runs a level's start callback before it loads the level (`StartAmbient` binds `l99_c1`'s roles then), so a
+  host attached later is told of the humans already joined, at their roles' start marks.
+- `ScreenQueueEffect` also goes to the scenes' host in play: the stage owns player 1's view's fades and letterbox,
+  which the scene events use too (the original's effect managers are the views', [Graphics](graphics.md)).
 - A role is driven from its clip alone: root motion (section A turned by the heading, all three axes; the host may
   settle the feet on the ground) and the 21/22 marks, which the data shows hold `f32` positions and headings. Clip
   events other than 13, 21 and 22 are not acted on.
@@ -514,13 +519,19 @@ each.
 **The play mode's stage** (`repo:src/platform/scene_stage.*`, `repo:src/platform/play_level_scene.cpp`) is the
 `SceneHost` the play mode gives the scene system. It draws the scene camera's view (interpolated between steps, cut
 when it jumps more than 1 m), the letterbox (two bars 0.125 of the screen high, Coney's choice) and the fades over the
-frame; the player is posed from his role's frames and, when let go, stands where the scene left him; other bound
-humans are drawn as puppets of their characters. Sounds go through the sound player ([Sound](sound.md#scene-sound)):
+frame; the player and the level's cast (the humans its scripts made) are posed from their roles' frames and, when
+let go, stand where the scene left them (a cast human placed as a spawn places it); other bound humans are drawn as
+puppets of their characters. Sounds go through the sound player ([Sound](sound.md#scene-sound)):
 the soundtrack starts on its event on the speech bus, music is ducked to 0.75 while the cinematic plays, and the
 soundtrack stops when it ends (Coney's choice, so a skip silences it); events 14 and 71 play unplaced on the effects
 bus. **Coney stand-ins:** captions, particles and rumble are counted; a puppet's model follows its role's name
-(`warrcl` is Cleon's `warr_cl`, and so on), as the game's bound humans would bring their own. `--scene NAME` with
-`--play-level` plays one scene at once ([Building](../guides/building.md#playing-a-level)).
+(`warrcl` is Cleon's `warr_cl`, and so on); a cast human keeps running its brain while a scene poses it.
+`--scene NAME` with `--play-level` plays one scene at once ([Building](../guides/building.md#playing-a-level)).
+
+**In play** (`--play-level level99`, headless): at checkpoint 1 `StartAmbient` runs `SuperRunScene(IntroScene)`, and
+`l99_c1` plays through the scripts with its seven bound humans posed on the stage; it ends after 2,026 frames, calls
+`P1.StartTraining`, whose fade-in reaches the stage, and Rembrandt stands at (−289.03, 120.29), as in the runtime
+trace above.
 
 ## Open questions
 

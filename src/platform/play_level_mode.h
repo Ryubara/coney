@@ -258,6 +258,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void stepScenes(std::uint64_t nowMs, std::uint16_t buttons);
     // Whether a scene holds player 1 now: his pad does nothing and he is drawn as the scene poses him.
     [[nodiscard]] bool sceneHoldsPlayer() const;
+    // The handle the scripts name a cast AI human by (its brain's); 0 for one with no brain.
+    [[nodiscard]] double castHandleOf(const ai::AiHuman& fighter);
+    // The cast AI human the scripts name `handle`; null when none is.
+    [[nodiscard]] const ai::AiHuman* castHumanOf(double handle);
     // Makes the layout's targets, dropped onto the ground, with a mesh each.
     void makeTargets(rw::Texture* texture);
     // Spawns a fighter dropped onto the ground below `spot`, with its mesh.

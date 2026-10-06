@@ -57,6 +57,9 @@ class JoinHost final : public scenes::SceneHost {
         log.push_back(std::format("release {}", human));
     }
     void suspendBrains(bool suspended) override { log.push_back(std::format("brains {}", suspended)); }
+    void screenEffect(scenes::ScreenEffect type, float seconds) override {
+        log.push_back(std::format("screen {} {}", static_cast<int>(type), seconds));
+    }
 };
 
 // A script system with Coney's bindings and a scene system over one synthetic scene, `tst_c1`, and its segment.
@@ -151,8 +154,47 @@ TEST_CASE("SuperRunScene's bindings preload, join, play and end a scene with cal
     }
     CHECK(h.calls == std::vector<std::string>{"gPlayCutScene(1)", "PreCashTheWorld(1)"});
     CHECK(h.value("SceneDone", {id}).number() == 1.0);
-    CHECK(h.sceneHost.log.back() == "release 13");
+    CHECK(std::ranges::find(h.sceneHost.log, "release 13") != h.sceneHost.log.end());
     CHECK(h.system.stats().ended == 1);
+}
+
+TEST_CASE("the scene bindings follow the context's scene system at each call, the stand-in without one",
+          "[scripting][scenes]") {
+    Harness h;
+    // No scene system: the stand-in's preload gives a handle of its own and calls back at the scripts' next update.
+    h.context.scenes = nullptr;
+    const double standIn = h.value("ScenePreload", {Value("tst_c1"), Value("gPlayCutScene")}).number().value_or(0.0);
+    CHECK(standIn >= 1.0);
+    CHECK(h.value("SceneLength", {Value(standIn)}).isNil());
+    h.scripts.update(10, 1.0 / 30.0);
+    CHECK(h.calls == std::vector<std::string>{std::format("gPlayCutScene({})", standIn)});
+    CHECK(h.system.stats().preloads == 0);
+
+    // The scene system back (as gameplay sets it for a level): the same bindings now load the scene.
+    h.context.scenes = &h.system;
+    CHECK(h.value("ScenePreload", {Value("tst_c1"), Value()}).number() == 1.0);
+    CHECK(h.system.stats().preloads == 1);
+}
+
+TEST_CASE("ScreenQueueEffect reaches the scenes' host, which owns the screen's effects in play",
+          "[scripting][scenes]") {
+    Harness h;
+    h.value("ScreenQueueEffect", {Value(0.0), Value(0.5)});
+    h.value("ScreenQueueEffect", {Value(2.0), Value(1.0)});
+    h.value("ScreenQueueEffect", {Value(4.0), Value(1.0)}); // not one a host is given
+    CHECK(h.sceneHost.log == std::vector<std::string>{"screen 0 0.5", "screen 2 1"});
+}
+
+TEST_CASE("a host attached late is told of the humans already joined", "[scripting][scenes]") {
+    Harness h;
+    // A level's start callback binds the roles before the level, the scenes' host, exists.
+    h.system.setHost(nullptr);
+    const Value id = h.value("ScenePreload", {Value("tst_c1"), Value()});
+    h.system.update(33, 0);
+    h.value("GoalJoinCinematic", {Value(12.0), id, Value(1.0), Value(0.0), Value(1.0)});
+    CHECK(h.sceneHost.log.empty());
+    h.system.setHost(&h.sceneHost);
+    CHECK(h.sceneHost.log == std::vector<std::string>{"join 12 1 1 0"});
 }
 
 TEST_CASE("ScenePlayCinematic's freeze is true only when the argument is absent", "[scripting][scenes]") {

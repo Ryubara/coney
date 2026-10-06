@@ -35,6 +35,10 @@ void GameplayMode::endLevel() {
     }
     m_scripted.reset();
     m_brains.reset();
+    if (m_scenes && m_context.scenes == m_scenes.get()) {
+        m_context.scenes = m_scenesBefore; // the front end's, say, again
+    }
+    m_scenes.reset();
 }
 
 void GameplayMode::enter() {
@@ -51,6 +55,18 @@ void GameplayMode::enter() {
     }
     m_scripted->setAnimCallbacks(m_context.animCallbacks);
     m_scripted->hold();
+    // The level's scenes, which the script preloads and plays; their end functions and preload callbacks call it.
+    if (m_sceneMaker) {
+        m_scenes = m_sceneMaker();
+    }
+    if (m_scenes) {
+        m_scenes->setScriptCall([this](std::string_view function, std::span<const double> args) {
+            std::vector<script::Value> values(args.begin(), args.end());
+            m_scripts.call(function, values);
+        });
+        m_scenesBefore = m_context.scenes;
+        m_context.scenes = m_scenes.get();
+    }
     // The last level's objects are gone, and their handlers and boxes with them.
     if (m_context.messages != nullptr) {
         m_context.messages->clear();
@@ -96,7 +112,8 @@ void GameplayMode::enter() {
                                              .recorded = &m_recorded,
                                              .brains = m_brains.get(),
                                              .scripted = m_scripted.get(),
-                                             .cameras = m_cameras.get()});
+                                             .cameras = m_cameras.get(),
+                                             .scenes = m_scenes.get()});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));

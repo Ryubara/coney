@@ -823,7 +823,38 @@ SceneSystem::SceneSystem(const SceneList& list, SceneRecordSource source, Script
 
 SceneSystem::~SceneSystem() = default;
 
-void SceneSystem::setHost(SceneHost* host) { m_host = host; }
+void SceneSystem::setHost(SceneHost* host) {
+    m_host = host;
+    // **Coney's glue**: the humans joined before this host came (a level's start callback binds a scene's roles
+    // before Coney has loaded the level) are joined to it now, at their roles' start marks.
+    if (m_host == nullptr) {
+        return;
+    }
+    for (const SceneSlot& slot : m_cache.slots()) {
+        if (slot.header == nullptr) {
+            continue;
+        }
+        for (std::size_t role = 0; role < slot.roleHandles.size() && role < slot.header->roles.size(); ++role) {
+            if (const double human = slot.roleHandles[role]; human != 0.0) {
+                m_host->humanJoin(human, slot.id, role, slot.header->roles[role].start, 0);
+            }
+        }
+    }
+}
+
+void SceneSystem::queueScreenEffect(int type, float seconds) {
+    switch (type) {
+    case static_cast<int>(ScreenEffect::FadeIn):
+    case static_cast<int>(ScreenEffect::FadeOut):
+    case static_cast<int>(ScreenEffect::LetterboxIn):
+    case static_cast<int>(ScreenEffect::LetterboxOut):
+    case static_cast<int>(ScreenEffect::EndBlurPulse):
+        host().screenEffect(static_cast<ScreenEffect>(type), seconds);
+        return;
+    default:
+        return;
+    }
+}
 
 void SceneSystem::callLua(std::string_view function, std::span<const double> args) {
     if (function.empty()) {

@@ -62,8 +62,8 @@ void PlayLevelMode::makeStage() {
                                   .dictionaries = std::move(loaded->dictionaries)};
         },
         [this](double human, std::size_t /*role*/, std::string_view roleName) -> std::string {
-            if (human == m_playerHandle) {
-                return {}; // the mode draws its own player
+            if (human == m_playerHandle || castHumanOf(human) != nullptr) {
+                return {}; // the mode draws its own player and the level's cast
             }
             std::string model = standInModelOf(roleName);
             return model.empty() ? m_model : model;
@@ -84,6 +84,23 @@ void PlayLevelMode::attachScenes(scenes::SceneSystem* scenes, double playerHandl
 
 bool PlayLevelMode::sceneHoldsPlayer() const { return m_scenes != nullptr && m_stage->holds(m_playerHandle); }
 
+double PlayLevelMode::castHandleOf(const ai::AiHuman& fighter) {
+    const ai::Brain* brain = m_cast.scripted != nullptr ? m_ai->brainOf(*fighter.human) : nullptr;
+    return brain != nullptr ? brain->handle() : 0.0;
+}
+
+const ai::AiHuman* PlayLevelMode::castHumanOf(double handle) {
+    if (handle == 0.0 || m_cast.scripted == nullptr) {
+        return nullptr;
+    }
+    for (const ai::AiHuman& fighter : m_ai->humans()) {
+        if (castHandleOf(fighter) == handle) {
+            return &fighter;
+        }
+    }
+    return nullptr;
+}
+
 void PlayLevelMode::stepScenes(std::uint64_t nowMs, std::uint16_t buttons) {
     if (m_scenes == nullptr) {
         return;
@@ -91,30 +108,35 @@ void PlayLevelMode::stepScenes(std::uint64_t nowMs, std::uint16_t buttons) {
     m_stage->beginStep(nowMs);
     m_scenes->update(nowMs, buttons);
     m_stage->setCinematic(m_scenes->cinematicActive());
-    // Player 1, let go, stands where the scene left him (his end mark after a skip), on the ground.
+    // Player 1 and the cast, let go, stand where the scene left them (their end marks after a skip), on the ground.
+    // **Coney's choice** for a cast human: placed as a spawn places it (Human_Init), its stamina full again.
     for (const SceneStage::Release& release : m_stage->takeReleases()) {
+        const float headingDegrees = release.heading * 180.0F / std::numbers::pi_v<float>;
         if (release.human == m_playerHandle) {
-            m_player->teleport(
-                &m_scenery->collision(),
-                human::PlayerStart{.position = release.feet,
-                                   .headingDegrees = release.heading * 180.0F / std::numbers::pi_v<float>});
+            m_player->teleport(&m_scenery->collision(),
+                               human::PlayerStart{.position = release.feet, .headingDegrees = headingDegrees});
+        } else if (const ai::AiHuman* fighter = castHumanOf(release.human); fighter != nullptr) {
+            fighter->human->spawn(&m_scenery->collision(), release.feet, headingDegrees);
         }
     }
 }
 
 std::expected<void, Error> PlayLevelMode::playScene(std::string_view name) {
-    // The test aid's own scene system, over the disc's scene list.
-    auto list = scenes::loadSceneList(m_wad);
-    if (!list) {
-        return std::unexpected(std::move(list.error()));
+    // The level's scenes when its scripts have them, else the test aid's own system over the disc's scene list.
+    if (m_scenes == nullptr) {
+        auto list = scenes::loadSceneList(m_wad);
+        if (!list) {
+            return std::unexpected(std::move(list.error()));
+        }
+        m_ownSceneList = std::make_unique<scenes::SceneList>(std::move(*list));
+        m_ownScenes = std::make_unique<scenes::SceneSystem>(*m_ownSceneList, scenes::wadSceneSource(m_wad),
+                                                            scenes::SceneSystem::ScriptCall{});
+        attachScenes(m_ownScenes.get(), m_playerHandle != 0.0 ? m_playerHandle : kTestPlayerHandle);
     }
-    m_ownSceneList = std::make_unique<scenes::SceneList>(std::move(*list));
-    m_ownScenes = std::make_unique<scenes::SceneSystem>(*m_ownSceneList, scenes::wadSceneSource(m_wad),
-                                                        scenes::SceneSystem::ScriptCall{});
-    attachScenes(m_ownScenes.get(), m_playerHandle != 0.0 ? m_playerHandle : kTestPlayerHandle);
+    scenes::SceneSystem& system = *m_scenes;
     // Loaded now, then bound as gPlayCutScene binds a scene table's humans, and played as a level99 cinematic.
-    const std::uint32_t id = m_ownScenes->preload(name, "");
-    auto slot = m_ownScenes->cache().loadNow(id, 0);
+    const std::uint32_t id = system.preload(name, "");
+    auto slot = system.cache().loadNow(id, 0);
     if (!slot) {
         return std::unexpected(std::move(slot.error()));
     }
@@ -128,9 +150,9 @@ std::expected<void, Error> PlayLevelMode::playScene(std::string_view name) {
     for (std::size_t role = 0; role < roleNames.size(); ++role) {
         const double human =
             roleNames[role] == kPlayerRole ? m_playerHandle : kStandInHandle + static_cast<double>(role);
-        m_ownScenes->joinHuman(human, id, role, 0);
+        system.joinHuman(human, id, role, 0);
     }
-    if (!m_ownScenes->play(
+    if (!system.play(
             id, scenes::PlayRequest{
                     .kind = scenes::PlayKind::Cinematic, .cinematic = true, .skippable = true, .blendCam = -1.0F})) {
         return fail(ErrorCode::Invalid, std::format("scene {} did not start", name));

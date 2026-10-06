@@ -17,6 +17,7 @@
 #include "gamemodes/level_start.h"
 #include "gamemodes/movie_player.h"
 #include "graphics/render_device.h"
+#include "scenes/scene_player.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
@@ -53,6 +54,7 @@ struct ScriptedCast {
     ai::Brains* brains = nullptr;                    ///< The level's brains, gangs and formations.
     ai::ScriptedBrains* scripted = nullptr;          ///< The scripts' hold on them.
     camera::Cameras* cameras = nullptr;              ///< Player 1's cameras, which the level hands its player.
+    scenes::SceneSystem* scenes = nullptr;           ///< The level's scenes, for the level to host; null for none.
 };
 
 /// Game mode 1, gameplay: one loaded level. The level flow (mode 8) selects a level and pushes it; its enter runs
@@ -77,6 +79,9 @@ struct ScriptedCast {
 /// - Each frame after the level's step: the animation callbacks of the anims the scripts' humans started, then the
 ///   volume boxes' trigger update over those humans (their messages to the objects' handlers in `context`), then the
 ///   scripts' frame (scheduled calls and the stopwatch).
+/// - The level's scenes (setSceneMaker()) are made before its script, as `context`'s scene system, and handed to the
+///   level in its ScriptedCast, which hosts and steps them; their callbacks call the scripts. Without a maker the
+///   scene bindings run Coney's stand-in (docs/research/scenes.md#coneys-implementation).
 /// - A teleport of player 1 by a script during play (HumanCreation::teleports changes) is handed to the level when it
 ///   is a ScriptedPlayer.
 /// - A level that fails to load leaves the frame black, with the error logged.
@@ -113,6 +118,9 @@ class GameplayMode final : public GameMode {
     void setLevel(std::string level) { m_levelName = std::move(level); }
     /// Plays the level's intro movie through `player` (null: none); it must outlive its use here.
     void setMoviePlayer(MoviePlayer* player) { m_moviePlayer = player; }
+    /// Makes each level's scene system (over the disc's scene list); null or empty: no scenes.
+    using SceneMaker = std::function<std::unique_ptr<scenes::SceneSystem>()>;
+    void setSceneMaker(SceneMaker maker) { m_sceneMaker = std::move(maker); }
 
     /// `InitLevel`: the level's brains, the level script, then the level from the loader, entered (its preload).
     /// @orig 0x001582e0 Mode1::Enter (unknown)
@@ -162,6 +170,7 @@ class GameplayMode final : public GameMode {
     const script::RecordedCalls& m_recorded;
     LevelLoader m_loader;
     MoviePlayer* m_moviePlayer = nullptr; // the intro movie's player; not owned
+    SceneMaker m_sceneMaker;
     std::function<void(std::string_view)> m_log;
     std::string m_levelName;
     std::optional<LevelStart> m_start;
@@ -169,6 +178,8 @@ class GameplayMode final : public GameMode {
     std::unique_ptr<ai::Brains> m_brains;
     std::unique_ptr<ai::ScriptedBrains> m_scripted;
     std::unique_ptr<camera::Cameras> m_cameras; // player 1's; declared before the level, whose player holds them
+    std::unique_ptr<scenes::SceneSystem> m_scenes; // the level's scenes, which outlive the level that hosts them
+    scenes::SceneSystem* m_scenesBefore = nullptr; // the context's scene system before the level's, put back after
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0; // player 1's teleports the level has been told of
 };
