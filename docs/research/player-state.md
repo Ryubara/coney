@@ -60,7 +60,10 @@ What each type's data is:
 | 10 | a workout move | `level95_workout` | inferred |
 | 11 | a hint, shown once its record is unlocked (`0x001cea38`, then `0x001ce1e8`) | the code | confirmed (code) |
 
-No engine code reads `extra`; only `UM_GetRecordData` returns it. A counter at `0x004245d8` counts the unlocked
+Which records are **new** (not yet seen in a menu) is a separate bit set at `0x006fe948` (`Unlockables_IsDirty` /
+`Unlockables_ClearDirty`). `UM_GetUnlockablesByType` fills the unused entries of its result with 65535 and does not
+check the 32-entry bound (`0x00423eb0`). Confirmed (code). No engine code reads `extra`; only `UM_GetRecordData`
+returns it. A counter at `0x004245d8` counts the unlocked
 records of types 1-4 and 6 only (a completion count, inferred).
 
 Type 6, by data id (confirmed (code) at the tests cited; ids 1, 2 and 16-28 are tested only by scripts, 3 and 4 by

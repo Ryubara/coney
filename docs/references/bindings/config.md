@@ -1409,8 +1409,8 @@ CfgMoneyCallback(fn)
 **Returns** nothing.
 
 Stores the money callback's name in the inventory block (game state `+0x480 + 0x1034`). Whenever money (item 2) is added
-to or taken from a player's inventory, Inventory_AddItem calls the function, if it exists, with the player index (0 or
-1) and the signed change in dollars.
+to or taken from a player's inventory, Inventory_AddItem calls the function, if it exists, with the player index, 0 or
+1, and the signed change in dollars.
 
 **Notes.** Called for every change, notify flag or not; the call happens after the count is clamped, but passes the
 requested change, not the clamped one.
@@ -1437,7 +1437,9 @@ CfgMultiplayerJoin(enabled)
 Sets the game state's 'second player may join' flag (+0x56e8); when it changes to true it also calls 0x0041a460 with -1
 to reset the join state. The tutorial and most missions switch it per section.
 
-**Notes.** What 0x0041a460 resets is not traced.
+**Notes.** 0x0041a460 (`GameState_SyncPlayers`) is the two-player sync CheckMultiplayer also runs: it makes a gang
+Warrior player 2, or drops player 2 back to the AI, to match the two-player flag, and calls the SetMultiplayerCallback
+function with (human, joined).
 
 - **Evidence:** confirmed (code) at `0x0041da08`; detail: traced
 - **Wrapper** `0x0035e818` (registered by `RegisterBindings`); **calls** `0x0041da08` `Cfg_SetMultiplayerJoin`

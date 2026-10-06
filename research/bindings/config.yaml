@@ -966,7 +966,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    What 0x0041a460 resets is not traced.
+    0x0041a460 (`GameState_SyncPlayers`) is the two-player sync CheckMultiplayer also runs: it makes a gang Warrior
+    player 2, or drops player 2 back to the AI, to match the two-player flag, and calls the SetMultiplayerCallback
+    function with (human, joined).
   usage: {chunks: 52, calls: 69, boot: false, mission1: true, result_used: false, levels: [80, 95, 81, 31, 51, 84, 60, 61, 62, 63, 64]}
   coney: implemented
 
@@ -1773,7 +1775,7 @@
   description: >-
     Stores the money callback's name in the inventory block (game state `+0x480 + 0x1034`). Whenever money (item 2) is
     added to or taken from a player's inventory, Inventory_AddItem calls the function, if it exists, with the player
-    index (0 or 1) and the signed change in dollars.
+    index, 0 or 1, and the signed change in dollars.
   evidence: confirmed-code
   depth: thorough
   notes: >-

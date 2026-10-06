@@ -639,8 +639,17 @@ the new one is not itself a blend (`0x0011ee08` → `0x00143078`). Its update (`
 
 A locked camera (type 1, `CameraCreateLocked`) stays where it was put, looking along its heading and pitch. Its update
 (`0x00135680`) places it, aims it at a point 3 m ahead along its forward, keeps it out of walls with a line-of-sight
-test from its position, runs `0x00135ca8` (the humans `CamLockLocked` gives it, none in `level99`) and applies the
-[shake](#shake). Confirmed (code); the tracking step is not traced.
+test from its position, runs `0x00135ca8` and applies the [shake](#shake). Confirmed (code). `0x00135ca8` does not
+track: each human `CamLockLocked` lists (none in `level99`) that comes within 0.3 m of the view's left or right edge
+is pushed back inside, an invisible wall at the frame's sides (confirmed (code)).
+
+### Path cameras {#path-cameras}
+
+A path camera (`CamSetupPoizo`, points added with `CamAddPoizoPoint` / `CamAddPoizoPointCam`) holds at most 8 points
+and moves along a Catmull-Rom curve through them, slerping between the points' orientations; a point's time is the
+time to the **next** point. Its update (`PoizoCam_Update`, `0x001426c0`) runs only while it is player 0's current
+camera, so a script makes it active itself. Confirmed (code); details per call on
+[Cameras](../references/bindings/camera.md#camsetuppoizo).
 
 ### Combat camera {#combat-camera}
 

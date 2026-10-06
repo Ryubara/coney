@@ -714,9 +714,9 @@ Snaps every player's follow camera round its target to the given heading with no
 chosen from the zoom band, the same placement as `CameraReset` (0x00124f38). Level scripts use it to set the opening
 view.
 
-**Notes.** Does nothing when player 1 has no follow camera yet (0x0011f9e0(0, 0)). Players 2 and up (count `W_GameState
-+ 0x224`) are placed without the snap. With no target the heading is measured from the world's forward axis. The "from
-the character's facing" reading is inferred from 0x001250a8; distance rule and pitch reset:
+**Notes.** Does nothing when player 1 has no follow camera yet (0x0011f9e0(0, 0)). Players 2 and up (count
+`W_GameState+0x224`) are placed without the snap. With no target the heading is measured from the world's forward axis.
+The "from the character's facing" reading is inferred from 0x001250a8; distance rule and pitch reset:
 [Camera](../../research/camera.md#setting-up).
 
 - **Evidence:** confirmed (code) at `0x0011c2f0`; detail: traced

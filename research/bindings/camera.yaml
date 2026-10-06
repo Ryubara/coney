@@ -186,8 +186,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Does nothing when player 1 has no follow camera yet (0x0011f9e0(0, 0)). Players 2 and up (count `W_GameState +
-    0x224`) are placed without the snap. With no target the heading is measured from the world's forward axis. The
+    Does nothing when player 1 has no follow camera yet (0x0011f9e0(0, 0)). Players 2 and up (count `W_GameState+0x224`)
+    are placed without the snap. With no target the heading is measured from the world's forward axis. The
     "from the character's facing" reading is inferred from 0x001250a8; distance rule and pitch reset:
     [Camera](../../research/camera.md#setting-up).
   usage: {chunks: 68, calls: 85, boot: false, mission1: false, result_used: false, levels: [80, 87, 5, 81, 93, 51, 52, 55, 82, 92, 83, 20, 11]}

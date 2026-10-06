@@ -111,7 +111,7 @@ tried, confirmed (code) at `0x0027c120`, `0x002811f0`:
 1. Nothing while a move or a state blocks it (state mask `0x7bf9e9f7ff0`, record `+0x08` mask `0x2fefefff`).
 2. A human with no player number standing by a cuffed player uses a key (item 6) if either holds one
    (`0x00260fd0`).
-3. A tag in progress (an object at `+0x36c` with class bit `0x10`) keeps the press.
+3. A tag in progress (a tag spot, a particle object with class bit `0x10`, at `+0x36c`) keeps the press.
 4. `ContextAction_Use` (`0x0024d530`) by the record's kind: **0** frees the cuffed human (`0x00260ca8`, the mash of
    mode 1; with a key, at once); **2** sets mode 2 and plays 687 `ANIM_LOCKPICK_INTRO`; **3** sets mode 3 and plays
    683 `STEREO_STEAL_INTRO` (both through `0x002789d0`, which turns the human to the object and starts the
@@ -211,7 +211,8 @@ records ([AI: crimes](ai.md#crimes)).
 
 ### Tagging {#tagging}
 
-A level's tag spots are tag objects (class bit `0x10`, configured by `CfgTagSettings`) with flags of activity 12
+A level's tag spots are `part_spray_tag` particle objects (class bit `0x10` marks a particle system; configured by
+`CfgTagSettings`) with flags of activity 12
 ([World flags](flags.md)); `global.lua`'s helper loads a **pattern** (`HuTagPattern`) and calls `HuTag`.
 Circle + triangle (`0x24`) also sprays where the player has paint ([Combat](combat.md#dispatch)).
 
@@ -268,8 +269,9 @@ perfect, or a third abandoned pick. The report ([AI: crimes](ai.md#crimes)), con
 10 m the store front is marked robbed (bit 16 of its group word, the offender's gang in bits 18-22), the store's
 buyers and browsers are switched off, the nearest `strobe` within 6 m gets message `0x12`, and responders are queued
 with a delay of `CfgBreakAndEnterDelay` (15, 10 or 7 by difficulty). The first gang to rob a store scores crime event
-4-1 for its leader when he is a player. `ResetStore` clears the robbed bit and restocks the store when the player is
-within 7 m; `EnterStore` / `ExitStore` only change the screen colour.
+4-1 for its leader when he is a player. `ResetStore` (`0x0041ddd8`) clears the robbed bit, sets the group word's bits
+8-15 to `0xff` and the gang bits to 31, and restocks the store; its 7 m test is a strobe's distance from the store's
+flag, not the player's (confirmed (code)). `EnterStore` / `ExitStore` only change the screen colour.
 
 ### Wanted and the crime level {#wanted}
 

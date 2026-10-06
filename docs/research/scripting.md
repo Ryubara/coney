@@ -255,6 +255,8 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
     - inside and new: added to the occupants, message **3** (entered);
     - inside and already an occupant: message **5**, at most once per repeat period (next time at `+0x1e0`);
     - an occupant no longer inside, or dead: removed, message **4** (left).
+- **Disabling** a box (`EnableVolumeBox(box, false)`, `0x004152e0`) empties its occupant list without sending
+  message 4, so a human still inside when it is enabled again gets a fresh message 3.
 - **Inside** (`0x00412a18`): within the bounding sphere, between the box's lowest and highest `z` (`+0x18`, `+0x28`),
   and inside the four corners rotated about the centre by the 2 × 2 matrix at `+0x48`-`+0x54`
   (`x' = m00 dx + m01 dy`, `y' = m10 dx + m11 dy`, [`RotateVolumeBox`](../references/bindings/world.md#rotatevolumebox)).
