@@ -86,6 +86,7 @@ nav:
           - World flags: research/flags.md
           - Characters: research/characters.md
           - Inventory, unlockables and statistics: research/player-state.md
+          - Profiles, options and saving: research/save.md
           - Combat: research/combat.md
           - Tasks (the TaskEngine): research/tasks.md
           - "World objects: tint, glass, doors": research/objects.md

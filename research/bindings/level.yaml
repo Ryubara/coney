@@ -36,7 +36,9 @@
     - {lua: number, desc: "The profile's difficulty byte (`W_GameState + 0x43c`): 0 easy, 1 normal, 2 hard, 3 fury, 4 rumble, as for `SetDifficulty`; 1 at the front end."}
   description: >-
     Returns the difficulty stored with the player's profile, as opposed to the one currently in force
-    (`GetDifficulty`). `global.lua` reads it to pick which `config_<difficulty>` file to run.
+    (`GetDifficulty`). `global.lua` reads it to pick which `config_<difficulty>` file to run. `PM_Difficulty` writes
+    it (the menu's cursor index) and the profile record saves it at `0x4ec`; see
+    [Saving](../../research/save.md#story-screens).
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: true}
@@ -849,10 +851,11 @@
   calls:
     - {addr: 0x00155308}
   description: >-
-    Opens the memory-card save screens (pushes game mode `0x005e5810`), if the save system is ready, the player is in
-    a level other than the front end (or another check passes) and the save screens are not already up.
+    Asks for an autosave (`0x00155308`): pushes game mode 6 (`0x005e5810`) in save kind when saving is enabled
+    (save system `+0x124`, set by the profile screens), the level index is not 0 or a new game was just started, and
+    mode 6 is not already on top. See [Saving](../../research/save.md#mode-6).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
     The hub (`level95.lua`) calls it.
   usage: {chunks: 3, calls: 8, boot: false, mission1: false, result_used: false}
@@ -862,8 +865,9 @@
   calls:
     - {addr: 0x00155378}
   description: >-
-    Opens the memory-card load screens (pushes game mode `0x005e5810` in load mode) unless they are already up. The
-    front end's menu calls it.
+    Opens the memory-card load screens (pushes game mode `0x005e5810` in load kind, the same as the boot's card check,
+    with the reload confirmation flag `0x0050c6fc` set) unless they are already up. The front end's menu calls it. See
+    [Saving](../../research/save.md#mode-6).
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
@@ -873,8 +877,8 @@
   calls:
     - {addr: 0x001553c0}
   description: >-
-    Opens the memory-card delete screens (game mode `0x005e5810` in delete mode) unless they are already up. Called
-    from the front end's menu.
+    Opens the memory-card delete screens (game mode `0x005e5810` in save kind with the delete flag `0x0050c700` set)
+    unless they are already up: the profiles marked deleted are written out. Called from the front end's menu.
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 2, boot: true, mission1: false, result_used: false}
@@ -884,7 +888,8 @@
   calls:
     - {addr: 0x00422380}
   description: >-
-    Asks the PS2 save system to detect memory cards (save-system vtable slot `+0xf4`). No shipped script calls it.
+    Asks the PS2 save system to detect memory cards (save-system vtable slot `+0xf4`: card state 2). No shipped script
+    calls it.
   evidence: confirmed-code
   depth: brief
   notes: >-
@@ -896,7 +901,7 @@
   calls:
     - {addr: 0x004223b0}
   results:
-    - {lua: boolean, desc: "The save system's answer to a format request (slot `+0x11c`), true on success (inferred)."}
+    - {lua: boolean, desc: "The save system's answer to a format request (slot `+0x11c`): true when a card is present and the format was started (card state 3)."}
   description: >-
     Asks the PS2 save system to format the memory card. No shipped script calls it.
   evidence: confirmed-code
@@ -946,8 +951,9 @@
     - {name: slot, lua: number, ctype: int, desc: "Slot number, 1-8."}
     - {name: value, lua: number, ctype: float, desc: "Number to store (as a 32-bit float)."}
   description: >-
-    Stores a number in the saved script data (eight float slots at `W_GameState + 0x570c`), which goes into the save
-    game so scripts keep progress between sessions.
+    Stores a number in the script data (eight float slots at `W_GameState + 0x570c`). Despite the name these slots are
+    **not** in the profile record written to the memory card ([Saving](../../research/save.md#record)); they last
+    while the game runs, across checkpoints and levels.
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -981,12 +987,12 @@
     - {name: flag, lua: number, ctype: int, desc: "Flag number, 1 upwards (the scripts use up to about 130: 100 + n for tags)."}
     - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
   description: >-
-    Sets or clears a saved script flag: bit `flag - 1` of the bit array at `W_GameState + 0x572c`, saved with the
-    game.
+    Sets or clears a saved script flag: bit `flag - 1` of the bit array at `W_GameState + 0x572c`. Flags 1-128 (four
+    words) are saved in the profile record at `0x4f4` ([Saving](../../research/save.md#record)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The size of the bit array is not traced.
+    Flags above 128 are written beyond the saved words and are not saved.
   usage: {chunks: 1, calls: 3, boot: true, mission1: false, result_used: false}
 
 - name: GetLUASaveDataBool
@@ -1239,7 +1245,8 @@
     - {name: item, lua: number, ctype: unsigned, desc: "Record byte 2 (0: the level itself)."}
   description: >-
     Unlocks every record whose first three bytes match, and marks the newly unlocked ones as new ('dirty') so menus
-    can highlight them. `global.lua` uses it when a level is completed.
+    can highlight them. `global.lua` uses it when a level is completed. Both bit sets are saved with the profile
+    ([Saving](../../research/save.md#record)), which is how story progress is kept.
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 28, calls: 71, boot: true, mission1: true, result_used: false}

@@ -564,7 +564,8 @@ No arguments.
 as for `SetDifficulty`; 1 at the front end.
 
 Returns the difficulty stored with the player's profile, as opposed to the one currently in force (`GetDifficulty`).
-`global.lua` reads it to pick which `config_<difficulty>` file to run.
+`global.lua` reads it to pick which `config_<difficulty>` file to run. `PM_Difficulty` writes it (the menu's cursor
+index) and the profile record saves it at `0x4ec`; see [Saving](../../research/save.md#story-screens).
 
 - **Evidence:** confirmed (code) at `0x0041d820`; detail: traced
 - **Wrapper** `0x0035c770` (registered by `RegisterBindings`); **calls** `0x0041d820`
@@ -1280,9 +1281,10 @@ SetLUASaveDataBool(flag, on)
 
 **Returns** nothing.
 
-Sets or clears a saved script flag: bit `flag - 1` of the bit array at `W_GameState + 0x572c`, saved with the game.
+Sets or clears a saved script flag: bit `flag - 1` of the bit array at `W_GameState + 0x572c`. Flags 1-128 (four words)
+are saved in the profile record at `0x4f4` ([Saving](../../research/save.md#record)).
 
-**Notes.** The size of the bit array is not traced.
+**Notes.** Flags above 128 are written beyond the saved words and are not saved.
 
 - **Evidence:** confirmed (code) at `0x0041ad28`; detail: traced
 - **Wrapper** `0x0037b8a8` (registered by `RegisterBindings`); **calls** `0x0041ad28`
@@ -1302,8 +1304,9 @@ SetLUASaveDataFloat(slot, value)
 
 **Returns** nothing.
 
-Stores a number in the saved script data (eight float slots at `W_GameState + 0x570c`), which goes into the save game so
-scripts keep progress between sessions.
+Stores a number in the script data (eight float slots at `W_GameState + 0x570c`). Despite the name these slots are
+**not** in the profile record written to the memory card ([Saving](../../research/save.md#record)); they last while the
+game runs, across checkpoints and levels.
 
 **Notes.** No bounds check: slots outside 1-8 overwrite the neighbouring game-state fields (slot 9 is the first word of
 the saved flags).
@@ -1368,7 +1371,8 @@ No arguments.
 
 **Returns** nothing.
 
-Asks the PS2 save system to detect memory cards (save-system vtable slot `+0xf4`). No shipped script calls it.
+Asks the PS2 save system to detect memory cards (save-system vtable slot `+0xf4`: card state 2). No shipped script calls
+it.
 
 **Notes.** The binding pushes nothing even though detection presumably has a result.
 
@@ -1385,8 +1389,8 @@ SSMC_format() -> boolean
 
 No arguments.
 
-**Returns** boolean (1 for true, nil for false): The save system's answer to a format request (slot `+0x11c`), true on
-success (inferred).
+**Returns** boolean (1 for true, nil for false): The save system's answer to a format request (slot `+0x11c`): true when
+a card is present and the format was started (card state 3).
 
 Asks the PS2 save system to format the memory card. No shipped script calls it.
 
@@ -1405,8 +1409,8 @@ No arguments.
 
 **Returns** nothing.
 
-Opens the memory-card delete screens (game mode `0x005e5810` in delete mode) unless they are already up. Called from the
-front end's menu.
+Opens the memory-card delete screens (game mode `0x005e5810` in save kind with the delete flag `0x0050c700` set) unless
+they are already up: the profiles marked deleted are written out. Called from the front end's menu.
 
 - **Evidence:** confirmed (code) at `0x001553c0`; detail: traced
 - **Wrapper** `0x0037b6e8` (registered by `RegisterBindings`); **calls** `0x001553c0`
@@ -1423,8 +1427,9 @@ No arguments.
 
 **Returns** nothing.
 
-Opens the memory-card load screens (pushes game mode `0x005e5810` in load mode) unless they are already up. The front
-end's menu calls it.
+Opens the memory-card load screens (pushes game mode `0x005e5810` in load kind, the same as the boot's card check, with
+the reload confirmation flag `0x0050c6fc` set) unless they are already up. The front end's menu calls it. See
+[Saving](../../research/save.md#mode-6).
 
 - **Evidence:** confirmed (code) at `0x00155378`; detail: traced
 - **Wrapper** `0x0037b6c8` (registered by `RegisterBindings`); **calls** `0x00155378`
@@ -1441,12 +1446,13 @@ No arguments.
 
 **Returns** nothing.
 
-Opens the memory-card save screens (pushes game mode `0x005e5810`), if the save system is ready, the player is in a
-level other than the front end (or another check passes) and the save screens are not already up.
+Asks for an autosave (`0x00155308`): pushes game mode 6 (`0x005e5810`) in save kind when saving is enabled (save system
+`+0x124`, set by the profile screens), the level index is not 0 or a new game was just started, and mode 6 is not
+already on top. See [Saving](../../research/save.md#mode-6).
 
 **Notes.** The hub (`level95.lua`) calls it.
 
-- **Evidence:** confirmed (code) at `0x00155308`; detail: brief
+- **Evidence:** confirmed (code) at `0x00155308`; detail: traced
 - **Wrapper** `0x0037b6a8` (registered by `RegisterBindings`); **calls** `0x00155308`
 - **Used by** 3 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -1878,7 +1884,8 @@ UM_Unlock(level, group, item)
 **Returns** nothing.
 
 Unlocks every record whose first three bytes match, and marks the newly unlocked ones as new ('dirty') so menus can
-highlight them. `global.lua` uses it when a level is completed.
+highlight them. `global.lua` uses it when a level is completed. Both bit sets are saved with the profile
+([Saving](../../research/save.md#record)), which is how story progress is kept.
 
 - **Evidence:** confirmed (code) at `0x004237e8`; detail: traced
 - **Wrapper** `0x0037d050` (registered by `RegisterBindings`); **calls** `0x004237e8`

@@ -2674,9 +2674,10 @@ CfgSubtitles(enabled)
 
 **Returns** nothing.
 
-Stores the subtitle switch in the game state (+0x438). It decides whether ordinary captions (cutscenes and movies) are
-drawn; emphasised kind-2 captions always are ([Movies](../../research/movies.md#caption-drawing)). The game state's
-reset turns it on for every language but English.
+Stores the subtitle switch in the game state (+0x438), the field `PM_Subtitles` and the options menu write and the
+profile saves ([Saving](../../research/save.md#story-screens)). It decides whether ordinary captions (cutscenes and
+movies) are drawn; emphasised kind-2 captions always are ([Movies](../../research/movies.md#caption-drawing)). The game
+state's reset turns it on for every language but English.
 
 - **Evidence:** confirmed (code) at `0x0041da30`; detail: traced
 - **Wrapper** `0x0035e7b0` (registered by `RegisterBindings`); **calls** `0x0041da30` `Cfg_SetSubtitles`

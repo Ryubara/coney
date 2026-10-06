@@ -263,7 +263,7 @@ the first frame of mode 1 ([Level loading](level-loading.md#mode-1)):
    controller, calls `Menu.startGame` (the second `ShowProfileManager` callback, `0x005e6694`) when Rumble mode was
    not chosen, and applies the 16:9 choice. Confirmed (code). With an unformatted card the profile's save then asks
    to format the card (string `0xac`, choices `0xba` Yes and `0xc0` continue without saving, the second selected;
-   `0x0015af20`), over black, before the level loads: confirmed (runtime).
+   `0x0015af20`), over black, before the level loads: confirmed (runtime). What each screen writes: [Saving](save.md#story-screens).
 1. `Menu.startGame` stops the music and the Wonder Wheel scene and calls `runNextMission(1)` (`global.lua`), which
    finds the last level completed (none on a new profile), looks up the next mission, **`level99` with checkpoint 1**,
    and calls `SetCheckPoint(1)` (`0x0037b760`: `W_GameState + 0x33a` = 1, the checkpoint and section),
@@ -284,9 +284,9 @@ the first frame of mode 1 ([Level loading](level-loading.md#mode-1)):
    `Present`), sees `+0x24` ≠ 0, clears mode 8's `+0x28` because mode 8 is the mode below, and pops itself; 4 is none
    of the kinds it acts on (1: checkpoint 1; 2: reload the current level; 3: the next record), so it only services the
    save system, pops mode 1 as well **when mode 1 is now on top** (the end of a mission: mode 1's `Exit` unloads the
-   level), rebuilds the two inventories (`0x0041e420` / `0x0041e398`) and asks for an **autosave** (`0x00155308`:
-   pushes mode 6 when the save system is on and the level index is not 0 or `0x00204008` says so). Confirmed (code) for
-   the C++ side; the Lua side inferred.
+   level), banks both players' money (`0x0041e420` / `0x0041e398`, [Saving](save.md#record)) and asks for an
+   **autosave** (`0x00155308`: pushes mode 6 when the save system is on and the level index is not 0 or `0x00204008`
+   says so). Confirmed (code) for the C++ side; the Lua side inferred.
 4. Mode 8 is on top again (`Resume`; it does not reload the front end, since `+0x28` is 0, and sets it to 1 again).
    Its next `Update`
    (`0x0015c858`) sees `+0x20` ≥ 0, calls `LevelFlow_FinishFrontEnd` (because `+0x24` is 1: `Menu.onFinish`,

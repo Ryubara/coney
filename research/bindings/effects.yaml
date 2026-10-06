@@ -490,9 +490,11 @@
   args:
     - {name: level, lua: number, ctype: unsigned, desc: "Brightness 0-255 (larger values are clamped to 255; the profile screen uses 0-100, 40 by default); stored in the game state (+0x57a4) and added as level/255 to every ambient and directional light."}
   description: >-
-    Sets the display brightness from the options screen.
+    Sets the brightness: the byte `W_GameState + 0x57a4` (saved with the profile) and the light manager's brightness
+    offset `+0x90` = level / 255 on every ambient and directional light. `PM_Light` and the options menu call the same
+    function with 0-100 (40 by default). See [Saving](../../research/save.md#brightness).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   usage: {chunks: 1, calls: 5, boot: false, mission1: false, result_used: false}
 
 - name: GetGamma

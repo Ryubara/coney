@@ -374,9 +374,10 @@ files they belong to.
 12. Push the error mode if needed (`0x0015e7e8`).
 13. Debug FPS counter (`0x001569c0`; prints frames per second, free memory and draw distance to a buffer).
 14. If the mode was asked to leave (`+0x24` holds a reason, non-zero): pop it; for reason 2 select a level by name
-    in mode 8 (`0x0015c7b0`), for reason 3 select the next level; call save-system slot `+0xb0`; pop once more if
-    the new top is mode 1; update two per-player records in `W_GameState + 0x480`; push the memory-card mode if a
-    save is due (`0x00155308`). The meaning of each reason value is inferred from these calls only.
+    in mode 8 (`0x0015c7b0`), for reason 3 select the next level; call save-system slot `+0xb4` (the fourth-difficulty
+    unlock, [Saving](save.md#slots)); pop once more if the new top is mode 1; add both players' money to the bank at
+    `W_GameState + 0x480`; push the memory-card mode if a save is due (`0x00155308`). The meaning of each reason
+    value is inferred from these calls only.
 15. Return 1 (stay).
 
 **Timing:** game logic steps 1/30 s per frame, and the RenderWare PS2 driver's vertical-blank handler shows a new

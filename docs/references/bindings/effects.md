@@ -501,9 +501,11 @@ SetGamma(level)
 
 **Returns** nothing.
 
-Sets the display brightness from the options screen.
+Sets the brightness: the byte `W_GameState + 0x57a4` (saved with the profile) and the light manager's brightness offset
+`+0x90` = level / 255 on every ambient and directional light. `PM_Light` and the options menu call the same function
+with 0-100 (40 by default). See [Saving](../../research/save.md#brightness).
 
-- **Evidence:** confirmed (code) at `0x001b4838`; detail: brief
+- **Evidence:** confirmed (code) at `0x001b4838`; detail: traced
 - **Wrapper** `0x0037bc98` (registered by `RegisterBindings`); **calls** `0x001b4838` `Gamma_Set`
 - **Used by** 1 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

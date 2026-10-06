@@ -551,8 +551,8 @@ at or below the fraction). Confirmed (code); [Combat](combat.md#damage-table) ha
    `+0x14c` = 3 and mode 8's next level), then `HUDLaunchMissionComplete(4)`, which only stores kind 4 since mode 0xb
    is on top.
 5. Mode 0xb's `Update` (`0x0015d160`) runs one world frame, sees the kind (4, none of 1-3 it acts on), pops itself,
-   calls the save system's slot `+0xb4`, **pops mode 1** (now on top: its `Exit` unloads `level99`), rebuilds the two
-   inventories and asks for the **autosave** (`0x00155308`, mode 6). Mode 8 then loads `level80`
+   calls the save system's slot `+0xb4`, **pops mode 1** (now on top: its `Exit` unloads `level99`), banks both players'
+   money and asks for the **autosave** (`0x00155308`, mode 6). Mode 8 then loads `level80`
    ([Front end](frontend.md#story-start) describes the same modes on the new-game path).
 
 The level-end countdown (mode 1 `+0x28`, `W_GameState + 0x14c` = 1 or 2) is therefore not used by this ending; it
