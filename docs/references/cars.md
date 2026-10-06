@@ -17,14 +17,14 @@ give cars ([Cars](../research/cars.md)).
 
 6 entries.
 
-| Number | Model | Textures | Atomics | Size (m) | Calls | Scripts | What |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| <span id="car-car-osedan"></span>0 | `car_osedan_geo` | `car_osedan_tex` | 47 | 2.399, 6.05, 1.084 | 64 | `level11.lua`, `level111.lua`, `level14.lua`, `level14_jsb.lua`, `level34.lua`, `level34_gate.lua` | Sedan, the commonest parked car |
-| <span id="car-car-coupe"></span>1 | `car_coupe_geo` | `car_osedan_tex` | 47 | 2.14, 5.27, 1.05 | 22 | `level111.lua`, `level2.lua`, `level31.lua`, `level34.lua`, `level5.lua`, `level87.lua` | Coupe |
-| <span id="car-car-wagon"></span>2 | `car_wagon_geo` | `car_osedan_tex` | 47 | 2.27, 6.08, 1.08 | 3 | `level111.lua`, `level51.lua` | Estate car |
-| <span id="car-car-copcar"></span>3 | `car_copcar_geo` | `car_copcar_tex` | 47 | 2.48, 5.98, 1.11 | 18 | `level14.lua`, `level14_jsb.lua`, `level3.lua`, `level31.lua`, `level34.lua`, `level52.lua` | Police car; makes a `part_copcar_lights` particle system |
-| <span id="car-car-van"></span>4 | `car_van_geo` | `5230bc4b` | 47 | 2.48, 5.43, 1.52 | 9 | `level107.lua`, `level111.lua`, `level20.lua`, `level3.lua`, `level34.lua`, `level80.lua` | Van |
-| <span id="car-car-sullycar"></span>5 | `car_sullycar_geo` | `3827d44a` | 47 | 2, 5.224, 1.101 | 2 | `level2_junkyard.lua`, `level60.lua` | A story car (two levels) |
+| Number | Image | Model | Textures | Atomics | Size (m) | Calls | Scripts | What |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| <span id="car-car-osedan"></span>0 | ![cars/car_osedan.png](images/cars/car_osedan.png){ width="96" } | `car_osedan_geo` | `car_osedan_tex` | 47 | 2.399, 6.05, 1.084 | 64 | `level11.lua`, `level111.lua`, `level14.lua`, `level14_jsb.lua`, `level34.lua`, `level34_gate.lua` | Sedan, the commonest parked car |
+| <span id="car-car-coupe"></span>1 | ![cars/car_coupe.png](images/cars/car_coupe.png){ width="96" } | `car_coupe_geo` | `car_osedan_tex` | 47 | 2.14, 5.27, 1.05 | 22 | `level111.lua`, `level2.lua`, `level31.lua`, `level34.lua`, `level5.lua`, `level87.lua` | Coupe |
+| <span id="car-car-wagon"></span>2 | ![cars/car_wagon.png](images/cars/car_wagon.png){ width="96" } | `car_wagon_geo` | `car_osedan_tex` | 47 | 2.27, 6.08, 1.08 | 3 | `level111.lua`, `level51.lua` | Estate car |
+| <span id="car-car-copcar"></span>3 | ![cars/car_copcar.png](images/cars/car_copcar.png){ width="96" } | `car_copcar_geo` | `car_copcar_tex` | 47 | 2.48, 5.98, 1.11 | 18 | `level14.lua`, `level14_jsb.lua`, `level3.lua`, `level31.lua`, `level34.lua`, `level52.lua` | Police car; makes a `part_copcar_lights` particle system |
+| <span id="car-car-van"></span>4 | ![cars/car_van.png](images/cars/car_van.png){ width="96" } | `car_van_geo` | `5230bc4b` | 47 | 2.48, 5.43, 1.52 | 9 | `level107.lua`, `level111.lua`, `level20.lua`, `level3.lua`, `level34.lua`, `level80.lua` | Van |
+| <span id="car-car-sullycar"></span>5 | ![cars/car_sullycar.png](images/cars/car_sullycar.png){ width="96" } | `car_sullycar_geo` | `3827d44a` | 47 | 2, 5.224, 1.101 | 2 | `level2_junkyard.lua`, `level60.lua` | A story car (two levels) |
 
 ## part {#part}
 

@@ -10,19 +10,19 @@ complete: |
 defaults: {source: "SLUS_212.15, script type table 0x00512f28", evidence: confirmed-code}
 entries:
   - {name: glass_script, index: 61, kind: glass, flags: 0x0400, init: 0x003e29e8}
-  - {name: blo_splat, index: 0, kind: "particle system", flags: 0x0010, init: 0x003adcc0, sheet: part_page1, rect: 5, size: [32, 32]}
-  - {name: blood_drop, index: 1, kind: "particle system", flags: 0x0010, init: 0x003af280, sheet: part_page1, rect: 52, size: [16, 16]}
+  - {name: blo_splat, index: 0, kind: "particle system", flags: 0x0010, init: 0x003adcc0, sheet: part_page1, rect: 5, size: [32, 32], image: particles/blo_splat.png}
+  - {name: blood_drop, index: 1, kind: "particle system", flags: 0x0010, init: 0x003af280, sheet: part_page1, rect: 52, size: [16, 16], image: particles/blood_drop.png}
   - {name: blood_mist, index: 2, kind: "particle system", flags: 0x0010, init: 0x003ae328}
   - {name: blood_splat_ground, index: 3, kind: "particle system", flags: 0x0010, init: 0x003ae708}
   - {name: blood_splatter, index: 4, kind: "particle system", flags: 0x0010, init: 0x003ae990}
-  - {name: blood_spray, index: 5, kind: "particle system", flags: 0x0010, init: 0x003af590, sheet: part_page1, rect: 52, size: [16, 16]}
-  - {name: bloosh, index: 6, kind: "particle system", flags: 0x0010, init: 0x003ae180, sheet: part_page1, rect: 46, size: [40, 40]}
-  - {name: coplights_glow, index: 7, kind: "particle system", flags: 0x0010, init: 0x003d5618, sheet: lighting, rect: 2, size: [120, 120]}
-  - {name: coplights_lens_flare, index: 8, kind: "particle system", flags: 0x0010, init: 0x003d53c0, sheet: lighting, rect: 2, size: [120, 120]}
+  - {name: blood_spray, index: 5, kind: "particle system", flags: 0x0010, init: 0x003af590, sheet: part_page1, rect: 52, size: [16, 16], image: particles/blood_spray.png}
+  - {name: bloosh, index: 6, kind: "particle system", flags: 0x0010, init: 0x003ae180, sheet: part_page1, rect: 46, size: [40, 40], image: particles/bloosh.png}
+  - {name: coplights_glow, index: 7, kind: "particle system", flags: 0x0010, init: 0x003d5618, sheet: lighting, rect: 2, size: [120, 120], image: particles/coplights_glow.png}
+  - {name: coplights_lens_flare, index: 8, kind: "particle system", flags: 0x0010, init: 0x003d53c0, sheet: lighting, rect: 2, size: [120, 120], image: particles/coplights_lens_flare.png}
   - {name: fir, index: 59, kind: "particle system", flags: 0x0010, init: 0x003b1c48}
   - {name: fir_group, index: 60, kind: "particle system", flags: 0x0010, init: 0x003b1ef8, spawns: [fir]}
   - {name: glasstest, index: 62, kind: "particle system", flags: 0x0010, init: 0x003e44e0}
-  - {name: hud_radar_dot, index: 65, kind: "particle system", flags: 0x0010, init: 0x003e5bf8, sheet: part_page0, rect: 69, size: [10, 10]}
+  - {name: hud_radar_dot, index: 65, kind: "particle system", flags: 0x0010, init: 0x003e5bf8, sheet: part_page0, rect: 69, size: [10, 10], image: particles/hud_radar_dot.png}
   - {name: hud_text_widget, index: 66, kind: "particle system", flags: 0x0010, init: 0x003e61d8}
   - {name: hud_widget, index: 67, kind: "particle system", flags: 0x0010, init: 0x003e66c8}
   - {name: hud_widget_angled, index: 68, kind: "particle system", flags: 0x0010, init: 0x003e6e90}
@@ -31,28 +31,28 @@ entries:
   - {name: paint_splat, index: 75, kind: "particle system", flags: 0x0010, init: 0x003ec158}
   - {name: part_blood_spray, index: 76, kind: "particle system", flags: 0x0010, init: 0x003d4f60}
   - {name: part_coke_machine, index: 77, kind: "particle system", flags: 0x0010, init: 0x003d5310}
-  - {name: part_copcar_lights, index: 78, kind: "particle system", flags: 0x0010, init: 0x003d5af0, sheet: lighting, rect: 2, size: [120, 120]}
-  - {name: part_explosion, index: 79, kind: "particle system", flags: 0x0010, init: 0x003c3448, sheet: part_page1, rect: 6, size: [64, 64], calls: 4, scripts: [level93_chapter6.lua]}
+  - {name: part_copcar_lights, index: 78, kind: "particle system", flags: 0x0010, init: 0x003d5af0, sheet: lighting, rect: 2, size: [120, 120], image: particles/part_copcar_lights.png}
+  - {name: part_explosion, index: 79, kind: "particle system", flags: 0x0010, init: 0x003c3448, sheet: part_page1, rect: 6, size: [64, 64], calls: 4, scripts: [level93_chapter6.lua], image: particles/part_explosion.png}
   - {name: part_explosion_screen_shake, index: 80, kind: "particle system", flags: 0x0010, init: 0x003d70e8, calls: 2, scripts: [level93_chapter6.lua]}
   - {name: part_fear, index: 81, kind: "particle system", flags: 0x0010, init: 0x003d7230, calls: 71, scripts: [level115.lua, level31.lua, level61.lua, level63_orphans.lua, level81.lua, level93_chapter6.lua]}
-  - {name: part_fire, index: 82, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], calls: 7, scripts: [level93_chapter6.lua]}
-  - {name: part_fire_large, index: 83, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], calls: 2, scripts: [level34.lua]}
-  - {name: part_fire_large_ns, index: 84, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], calls: 2, scripts: [level52_chapter1.lua]}
+  - {name: part_fire, index: 82, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], calls: 7, scripts: [level93_chapter6.lua], image: particles/part_fire.png}
+  - {name: part_fire_large, index: 83, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], calls: 2, scripts: [level34.lua], image: particles/part_fire_large.png}
+  - {name: part_fire_large_ns, index: 84, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], calls: 2, scripts: [level52_chapter1.lua], image: particles/part_fire_large_ns.png}
   - {name: part_fire_light_large, index: 85, kind: "particle system", flags: 0x0010, init: 0x003c8808, calls: 1, scripts: [level93_chapter6.lua]}
   - {name: part_fire_light_medium, index: 86, kind: "particle system", flags: 0x0010, init: 0x003c8808, calls: 7, scripts: [level52_chapter1.lua, level93_chapter6.lua]}
-  - {name: part_fire_ns, index: 87, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], calls: 2, scripts: [level52_chapter1.lua]}
-  - {name: part_fire_plume, index: 88, kind: "particle system", flags: 0x0010, init: 0x003d7b38, sheet: "39640d4c", rect: 0, size: [10, 30], calls: 1, scripts: [level80.lua]}
-  - {name: part_fire_tiki, index: 89, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40]}
-  - {name: part_firebarrel, index: 90, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40]}
-  - {name: part_firebarrel_ns, index: 91, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40]}
-  - {name: part_firetruck_lights, index: 92, kind: "particle system", flags: 0x0010, init: 0x003d7678, sheet: lighting, rect: 2, size: [120, 120], calls: 1, scripts: [level52.lua]}
+  - {name: part_fire_ns, index: 87, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], calls: 2, scripts: [level52_chapter1.lua], image: particles/part_fire_ns.png}
+  - {name: part_fire_plume, index: 88, kind: "particle system", flags: 0x0010, init: 0x003d7b38, sheet: "39640d4c", rect: 0, size: [10, 30], calls: 1, scripts: [level80.lua], image: particles/part_fire_plume.png}
+  - {name: part_fire_tiki, index: 89, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], image: particles/part_fire_tiki.png}
+  - {name: part_firebarrel, index: 90, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], image: particles/part_firebarrel.png}
+  - {name: part_firebarrel_ns, index: 91, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], image: particles/part_firebarrel_ns.png}
+  - {name: part_firetruck_lights, index: 92, kind: "particle system", flags: 0x0010, init: 0x003d7678, sheet: lighting, rect: 2, size: [120, 120], calls: 1, scripts: [level52.lua], image: particles/part_firetruck_lights.png}
   - {name: part_fog, index: 93, kind: "particle system", flags: 0x0010, init: 0x003cadd8}
   - {name: part_garbage_flies, index: 94, kind: "particle system", flags: 0x0010, init: 0x003d7e30}
   - {name: part_garbage_flies_ns, index: 95, kind: "particle system", flags: 0x0010, init: 0x003d8180}
   - {name: part_gasmeter, index: 96, kind: "particle system", flags: 0x0010, init: 0x003d8240}
   - {name: part_generator_sparks, index: 97, kind: "particle system", flags: 0x0010, init: 0x003d82f0}
   - {name: part_ghost_light, index: 98, kind: "particle system", flags: 0x0010, init: 0x003d8818}
-  - {name: part_gun_flash, index: 99, kind: "particle system", flags: 0x0010, init: 0x003d8bd8, sheet: lighting, rect: 2, size: [120, 120], spawns: [sub_shack_puff]}
+  - {name: part_gun_flash, index: 99, kind: "particle system", flags: 0x0010, init: 0x003d8bd8, sheet: lighting, rect: 2, size: [120, 120], spawns: [sub_shack_puff], image: particles/part_gun_flash.png}
   - {name: part_large_ac, index: 100, kind: "particle system", flags: 0x0010, init: 0x003d9178}
   - {name: part_large_ac_two, index: 101, kind: "particle system", flags: 0x0010, init: 0x003d9228}
   - {name: part_lava_light, index: 102, kind: "particle system", flags: 0x0010, init: 0x003d9508}
@@ -60,7 +60,7 @@ entries:
   - {name: part_light_bugs, index: 104, kind: "particle system", flags: 0x0010, init: 0x003d9ca0}
   - {name: part_motorbike_gang, index: 105, kind: "particle system", flags: 0x0010, init: 0x003d9fc8}
   - {name: part_multi_strobe, index: 106, kind: "particle system", flags: 0x0010, init: 0x003eac30, calls: 3, scripts: [level11.lua, level110.lua]}
-  - {name: part_narrowflame, index: 107, kind: "particle system", flags: 0x0010, init: 0x003c84f0, sheet: "5e5e43c6", rect: 0, size: [40, 40], calls: 56, scripts: [level52_chapter1.lua, level93_chapter6.lua]}
+  - {name: part_narrowflame, index: 107, kind: "particle system", flags: 0x0010, init: 0x003c84f0, sheet: "5e5e43c6", rect: 0, size: [40, 40], calls: 56, scripts: [level52_chapter1.lua, level93_chapter6.lua], image: particles/part_narrowflame.png}
   - {name: part_ominous_smoke, index: 108, kind: "particle system", flags: 0x0010, init: 0x003f7c78, calls: 36, scripts: [level51.lua, level52_chapter1.lua, level61.lua, level61_huns.lua, level64.lua, level81.lua]}
   - {name: part_open_air_vent, index: 109, kind: "particle system", flags: 0x0010, init: 0x003da278}
   - {name: part_orange_neon, index: 110, kind: "particle system", flags: 0x0010, init: 0x003da328}
@@ -71,60 +71,60 @@ entries:
   - {name: part_raindrops, index: 115, kind: "particle system", flags: 0x0010, init: 0x003f30d8, spawns: [sub_ripple, sub_splash]}
   - {name: part_ridecart_sound, index: 116, kind: "particle system", flags: 0x0010, init: 0x003da940}
   - {name: part_rotate_vent, index: 117, kind: "particle system", flags: 0x0010, init: 0x003dab08}
-  - {name: part_s_fire, index: 118, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40]}
+  - {name: part_s_fire, index: 118, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], image: particles/part_s_fire.png}
   - {name: part_s_shack_dust_puff, index: 119, kind: "particle system", flags: 0x0010, init: 0x003dac68, spawns: [sub_shack_puff]}
   - {name: part_s_subway_sparks, index: 120, kind: "particle system", flags: 0x0010, init: 0x003db298, sheet: part_page1, rect: 54, size: [32, 32]}
   - {name: part_small_ac, index: 121, kind: "particle system", flags: 0x0010, init: 0x003dabb8}
   - {name: part_small_light, index: 122, kind: "particle system", flags: 0x0010, init: 0x003e81e0, calls: 6, scripts: [level14.lua, level81.lua]}
   - {name: part_smaller_light, index: 123, kind: "particle system", flags: 0x0010, init: 0x003e8e10}
   - {name: part_spray_tag, index: 124, kind: "particle system", flags: 0x0010, init: 0x003fc600, calls: 230, scripts: [level107.lua, level11.lua, level122.lua, level14.lua, level2.lua, level20.lua]}
-  - {name: part_squareflame_lrg, index: 125, kind: "particle system", flags: 0x0010, init: 0x003c84f0, sheet: "5e5e43c6", rect: 0, size: [40, 40], calls: 54, scripts: [level93_chapter6.lua]}
-  - {name: part_squareflame_med, index: 126, kind: "particle system", flags: 0x0010, init: 0x003c84f0, sheet: "5e5e43c6", rect: 0, size: [40, 40], calls: 27, scripts: [level52_chapter1.lua, level93_chapter6.lua]}
-  - {name: part_squareflame_sml, index: 127, kind: "particle system", flags: 0x0010, init: 0x003c84f0, sheet: "5e5e43c6", rect: 0, size: [40, 40], calls: 1, scripts: [level52_chapter1.lua]}
+  - {name: part_squareflame_lrg, index: 125, kind: "particle system", flags: 0x0010, init: 0x003c84f0, sheet: "5e5e43c6", rect: 0, size: [40, 40], calls: 54, scripts: [level93_chapter6.lua], image: particles/part_squareflame_lrg.png}
+  - {name: part_squareflame_med, index: 126, kind: "particle system", flags: 0x0010, init: 0x003c84f0, sheet: "5e5e43c6", rect: 0, size: [40, 40], calls: 27, scripts: [level52_chapter1.lua, level93_chapter6.lua], image: particles/part_squareflame_med.png}
+  - {name: part_squareflame_sml, index: 127, kind: "particle system", flags: 0x0010, init: 0x003c84f0, sheet: "5e5e43c6", rect: 0, size: [40, 40], calls: 1, scripts: [level52_chapter1.lua], image: particles/part_squareflame_sml.png}
   - {name: part_steam, index: 128, kind: "particle system", flags: 0x0010, init: 0x003f69b8, calls: 18, scripts: [level11.lua, level110.lua, level52.lua, level87.lua]}
   - {name: part_steam_huge, index: 129, kind: "particle system", flags: 0x0010, init: 0x003f6d70, calls: 1, scripts: [level52.lua]}
   - {name: part_steam_large, index: 130, kind: "particle system", flags: 0x0010, init: 0x003f7138, calls: 17, scripts: [level52.lua]}
   - {name: part_strobe, index: 131, kind: "particle system", flags: 0x0010, init: 0x003ed718, calls: 8, scripts: [level11.lua, level110.lua, level81.lua]}
   - {name: part_strobe_red, index: 132, kind: "particle system", flags: 0x0010, init: 0x003e85b8, calls: 2, scripts: [level93.lua]}
   - {name: part_subway_light, index: 133, kind: "particle system", flags: 0x0010, init: 0x003e8bb8}
-  - {name: part_torch_flame, index: 134, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], calls: 3, scripts: [level86_chapter2_reg.lua]}
-  - {name: part_torch_flame_ns, index: 135, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40]}
+  - {name: part_torch_flame, index: 134, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], calls: 3, scripts: [level86_chapter2_reg.lua], image: particles/part_torch_flame.png}
+  - {name: part_torch_flame_ns, index: 135, kind: "particle system", flags: 0x0010, init: 0x003ca050, sheet: part_fire, rect: 0, size: [40, 40], image: particles/part_torch_flame_ns.png}
   - {name: part_truck_sound, index: 136, kind: "particle system", flags: 0x0010, init: 0x003fcbe0, calls: 1, scripts: [level51.lua]}
   - {name: part_truck_humans, index: 137, kind: "particle system", flags: 0x0010, init: 0x003fd0c0, calls: 1, scripts: [level51.lua]}
   - {name: part_train_sound, index: 138, kind: "particle system", flags: 0x0010, init: 0x003db518, calls: 16, scripts: [level115.lua, level14.lua, level2.lua, level31.lua, level5.lua, level55_subway.lua]}
-  - {name: part_train_splat, index: 139, kind: "particle system", flags: 0x0010, init: 0x003dc658, sheet: part_page1, rect: 6, size: [64, 64]}
+  - {name: part_train_splat, index: 139, kind: "particle system", flags: 0x0010, init: 0x003dc658, sheet: part_page1, rect: 6, size: [64, 64], image: particles/part_train_splat.png}
   - {name: part_trans_five, index: 140, kind: "particle system", flags: 0x0010, init: 0x003dcb68}
   - {name: part_trans_four, index: 141, kind: "particle system", flags: 0x0010, init: 0x003dcc18}
   - {name: part_trans_one, index: 142, kind: "particle system", flags: 0x0010, init: 0x003dccc8}
   - {name: part_trans_three, index: 143, kind: "particle system", flags: 0x0010, init: 0x003dcd78}
   - {name: part_trans_two, index: 144, kind: "particle system", flags: 0x0010, init: 0x003dce28}
-  - {name: part_tv, index: 145, kind: "particle system", flags: 0x0010, init: 0x003dced8, sheet: part_tv, rect: 0, size: [30, 30]}
+  - {name: part_tv, index: 145, kind: "particle system", flags: 0x0010, init: 0x003dced8, sheet: part_tv, rect: 0, size: [30, 30], image: particles/part_tv.png}
   - {name: part_tv_light, index: 146, kind: "particle system", flags: 0x0010, init: 0x003dd538}
   - {name: part_urine_spray, index: 147, kind: "particle system", flags: 0x0010, init: 0x003dd808}
-  - {name: part_urine_stain2, index: 148, kind: "particle system", flags: 0x0010, init: 0x003ddb88, sheet: part_page1, rect: 6, size: [64, 64]}
+  - {name: part_urine_stain2, index: 148, kind: "particle system", flags: 0x0010, init: 0x003ddb88, sheet: part_page1, rect: 6, size: [64, 64], image: particles/part_urine_stain2.png}
   - {name: part_water, index: 149, kind: "particle system", flags: 0x0010, init: 0x003c2ab8}
   - {name: pee_pee, index: 150, kind: "particle system", flags: 0x0010, init: 0x003aa3e0}
   - {name: pee_tracer, index: 151, kind: "particle system", flags: 0x0010, init: 0x003aa0b0}
   - {name: power_mist, index: 153, kind: "particle system", flags: 0x0010, init: 0x003ab110}
   - {name: puk_splat, index: 156, kind: "particle system", flags: 0x0010, init: 0x003a9910}
   - {name: rubble, index: 158, kind: "particle system", flags: 0x0010, init: 0x003f3f58, spawns: [sub_shack_puff]}
-  - {name: spark, index: 161, kind: "particle system", flags: 0x0010, init: 0x003e0f50, sheet: part_page1, rect: 41, size: [30, 30]}
+  - {name: spark, index: 161, kind: "particle system", flags: 0x0010, init: 0x003e0f50, sheet: part_page1, rect: 41, size: [30, 30], image: particles/spark.png}
   - {name: spawn_delayed, index: 163, kind: "particle system", flags: 0x0010, init: 0x003c1e58}
   - {name: spray_mist, index: 164, kind: "particle system", flags: 0x0010, init: 0x003aad68}
   - {name: sub_anim_notes, index: 167, kind: "particle system", flags: 0x0010, init: 0x003ab980, spawns: [glasstest, sub_wood_splinter]}
-  - {name: sub_anim_spark, index: 168, kind: "particle system", flags: 0x0010, init: 0x003ac148, sheet: part_page1, rect: 50, size: [16, 16]}
-  - {name: sub_barlamp_glow, index: 169, kind: "particle system", flags: 0x0010, init: 0x003cc680, sheet: lighting, rect: 3, size: [120, 120]}
-  - {name: sub_blight_glow, index: 171, kind: "particle system", flags: 0x0010, init: 0x003de638, sheet: lighting, rect: 3, size: [120, 120]}
+  - {name: sub_anim_spark, index: 168, kind: "particle system", flags: 0x0010, init: 0x003ac148, sheet: part_page1, rect: 50, size: [16, 16], image: particles/sub_anim_spark.png}
+  - {name: sub_barlamp_glow, index: 169, kind: "particle system", flags: 0x0010, init: 0x003cc680, sheet: lighting, rect: 3, size: [120, 120], image: particles/sub_barlamp_glow.png}
+  - {name: sub_blight_glow, index: 171, kind: "particle system", flags: 0x0010, init: 0x003de638, sheet: lighting, rect: 3, size: [120, 120], image: particles/sub_blight_glow.png}
   - {name: sub_blo, index: 172, kind: "particle system", flags: 0x0010, init: 0x003a9090}
   - {name: sub_blood_effect, index: 173, kind: "particle system", flags: 0x0010, init: 0x003af7a0}
-  - {name: sub_blood_gout, index: 174, kind: "particle system", flags: 0x0010, init: 0x003dc018, sheet: part_page1, rect: 2, size: [32, 32]}
+  - {name: sub_blood_gout, index: 174, kind: "particle system", flags: 0x0010, init: 0x003dc018, sheet: part_page1, rect: 2, size: [32, 32], image: particles/sub_blood_gout.png}
   - {name: sub_blood_gush, index: 175, kind: "particle system", flags: 0x0010, init: 0x003b00c8}
-  - {name: sub_blood_spray, index: 176, kind: "particle system", flags: 0x0010, init: 0x003d4c10, sheet: part_page1, rect: 6, size: [64, 64]}
+  - {name: sub_blood_spray, index: 176, kind: "particle system", flags: 0x0010, init: 0x003d4c10, sheet: part_page1, rect: 6, size: [64, 64], image: particles/sub_blood_spray.png}
   - {name: sub_burn, index: 177, kind: "particle system", flags: 0x0010, init: 0x003c40a0}
   - {name: sub_car_damage, index: 178, kind: "particle system", flags: 0x0010, init: 0x003df698, spawns: [sub_shack_puff]}
-  - {name: sub_car_rubble, index: 179, kind: "particle system", flags: 0x0010, init: 0x003ded88, sheet: part_page1, rect: 24, size: [32, 32]}
+  - {name: sub_car_rubble, index: 179, kind: "particle system", flags: 0x0010, init: 0x003ded88, sheet: part_page1, rect: 24, size: [32, 32], image: particles/sub_car_rubble.png}
   - {name: sub_car_spark_emitter, index: 180, kind: "particle system", flags: 0x0010, init: 0x003df228}
-  - {name: sub_car_sparks, index: 181, kind: "particle system", flags: 0x0010, init: 0x003df038, sheet: part_page1, rect: 45, size: [16, 3]}
+  - {name: sub_car_sparks, index: 181, kind: "particle system", flags: 0x0010, init: 0x003df038, sheet: part_page1, rect: 45, size: [16, 3], image: particles/sub_car_sparks.png}
   - {name: sub_car_steam, index: 182, kind: "particle system", flags: 0x0010, init: 0x003f7780}
   - {name: sub_car_steam_emitter, index: 183, kind: "particle system", flags: 0x0010, init: 0x003debd0}
   - {name: sub_coloured_glass, index: 184, kind: "particle system", flags: 0x0010, init: 0x003e30e0}
@@ -132,59 +132,59 @@ entries:
   - {name: sub_debris, index: 186, kind: "particle system", flags: 0x0010, init: 0x003c21a8}
   - {name: sub_detergent, index: 187, kind: "particle system", flags: 0x0010, init: 0x003ff150, spawns: [sub_debris, sub_paint_splat, sub_shack_puff]}
   - {name: sub_dus, index: 188, kind: "particle system", flags: 0x0010, init: 0x003a9c78, spawns: [sub_shack_puff]}
-  - {name: sub_embers, index: 189, kind: "particle system", flags: 0x0010, init: 0x003c72d8, sheet: part_page1, rect: 20, size: [64, 64]}
-  - {name: sub_explode, index: 190, kind: "particle system", flags: 0x0010, init: 0x003c5350, sheet: part_page1, rect: 17, size: [64, 64]}
+  - {name: sub_embers, index: 189, kind: "particle system", flags: 0x0010, init: 0x003c72d8, sheet: part_page1, rect: 20, size: [64, 64], image: particles/sub_embers.png}
+  - {name: sub_explode, index: 190, kind: "particle system", flags: 0x0010, init: 0x003c5350, sheet: part_page1, rect: 17, size: [64, 64], image: particles/sub_explode.png}
   - {name: sub_explosion_embers, index: 191, kind: "particle system", flags: 0x0010, init: 0x003c3c08}
   - {name: sub_explosion_group, index: 193, kind: "particle system", flags: 0x0010, init: 0x003d64d8}
-  - {name: sub_fade_flame, index: 194, kind: "particle system", flags: 0x0010, init: 0x003c7de0, sheet: part_fire, rect: 0, size: [40, 40]}
+  - {name: sub_fade_flame, index: 194, kind: "particle system", flags: 0x0010, init: 0x003c7de0, sheet: part_fire, rect: 0, size: [40, 40], image: particles/sub_fade_flame.png}
   - {name: sub_fire, index: 195, kind: "particle system", flags: 0x0010, init: 0x003c7840}
-  - {name: sub_fire_smoke, index: 197, kind: "particle system", flags: 0x0010, init: 0x003dffc0, sheet: part_page1, rect: 42, size: [64, 64]}
+  - {name: sub_fire_smoke, index: 197, kind: "particle system", flags: 0x0010, init: 0x003dffc0, sheet: part_page1, rect: 42, size: [64, 64], image: particles/sub_fire_smoke.png}
   - {name: sub_fire2, index: 198, kind: "particle system", flags: 0x0010, init: 0x003c7840}
   - {name: sub_fire2_smoke, index: 200, kind: "particle system", flags: 0x0010, init: 0x003c7578}
   - {name: sub_fireball, index: 201, kind: "particle system", flags: 0x0010, init: 0x003c4a58}
   - {name: sub_fireball_emitter, index: 202, kind: "particle system", flags: 0x0010, init: 0x003c4580, calls: 1, scripts: [level93_chapter6.lua]}
-  - {name: sub_flame_reflect, index: 204, kind: "particle system", flags: 0x0010, init: 0x003bfa08, sheet: part_fire, rect: 0, size: [40, 40]}
+  - {name: sub_flame_reflect, index: 204, kind: "particle system", flags: 0x0010, init: 0x003bfa08, sheet: part_fire, rect: 0, size: [40, 40], image: particles/sub_flame_reflect.png}
   - {name: sub_flames, index: 205, kind: "particle system", flags: 0x0010, init: 0x003c4db0}
-  - {name: sub_flaming_debris, index: 206, kind: "particle system", flags: 0x0010, init: 0x003de8f8, sheet: part_fire, rect: 0, size: [40, 40]}
+  - {name: sub_flaming_debris, index: 206, kind: "particle system", flags: 0x0010, init: 0x003de8f8, sheet: part_fire, rect: 0, size: [40, 40], image: particles/sub_flaming_debris.png}
   - {name: sub_flashing_light, index: 207, kind: "particle system", flags: 0x0010, init: 0x003eca88}
   - {name: sub_fog, index: 208, kind: "particle system", flags: 0x0010, init: 0x003ca658}
   - {name: sub_glass, index: 210, kind: "particle system", flags: 0x0010, init: 0x003e4be0}
-  - {name: sub_glint, index: 211, kind: "particle system", flags: 0x0010, init: 0x003e9560, sheet: part_page1, rect: 41, size: [30, 30]}
+  - {name: sub_glint, index: 211, kind: "particle system", flags: 0x0010, init: 0x003e9560, sheet: part_page1, rect: 41, size: [30, 30], image: particles/sub_glint.png}
   - {name: sub_glt, index: 212, kind: "particle system", flags: 0x0010, init: 0x003a8e58}
   - {name: sub_gun, index: 213, kind: "particle system", flags: 0x0010, init: 0x003a8c60}
   - {name: sub_hood_smoke, index: 214, kind: "particle system", flags: 0x0010, init: 0x003f74f8}
   - {name: sub_molotv_flame, index: 216, kind: "particle system", flags: 0x0010, init: 0x00405e78}
-  - {name: sub_muzzle_flash, index: 219, kind: "particle system", flags: 0x0010, init: 0x003d8ab8, sheet: part_page1, rect: 35, size: [16, 8]}
-  - {name: sub_objective_glow, index: 223, kind: "particle system", flags: 0x0010, init: 0x003ea0b0, sheet: lighting, rect: 3, size: [120, 120]}
+  - {name: sub_muzzle_flash, index: 219, kind: "particle system", flags: 0x0010, init: 0x003d8ab8, sheet: part_page1, rect: 35, size: [16, 8], image: particles/sub_muzzle_flash.png}
+  - {name: sub_objective_glow, index: 223, kind: "particle system", flags: 0x0010, init: 0x003ea0b0, sheet: lighting, rect: 3, size: [120, 120], image: particles/sub_objective_glow.png}
   - {name: sub_paint_splat, index: 225, kind: "particle system", flags: 0x0010, init: 0x003ebed8}
   - {name: sub_pch, index: 226, kind: "particle system", flags: 0x0010, init: 0x003b17f8}
   - {name: sub_pee, index: 227, kind: "particle system", flags: 0x0010, init: 0x003a9da0}
   - {name: sub_pla, index: 228, kind: "particle system", flags: 0x0010, init: 0x003aa6a0}
   - {name: sub_plaster_drop, index: 229, kind: "particle system", flags: 0x0010, init: 0x003ec500}
-  - {name: sub_polar_bugs, index: 230, kind: "particle system", flags: 0x0010, init: 0x003e07a0, sheet: part_page1, rect: 19, size: [16, 16]}
-  - {name: sub_powerup_glow, index: 232, kind: "particle system", flags: 0x0010, init: 0x003f2270, sheet: part_page1, rect: 29, size: [64, 64]}
+  - {name: sub_polar_bugs, index: 230, kind: "particle system", flags: 0x0010, init: 0x003e07a0, sheet: part_page1, rect: 19, size: [16, 16], image: particles/sub_polar_bugs.png}
+  - {name: sub_powerup_glow, index: 232, kind: "particle system", flags: 0x0010, init: 0x003f2270, sheet: part_page1, rect: 29, size: [64, 64], image: particles/sub_powerup_glow.png}
   - {name: sub_puk, index: 233, kind: "particle system", flags: 0x0010, init: 0x003a9410}
   - {name: sub_punch_flash, index: 234, kind: "particle system", flags: 0x0010, init: 0x003b1460}
   - {name: sub_ripple, index: 235, kind: "particle system", flags: 0x0010, init: 0x003f2d70}
   - {name: sub_rubble, index: 236, kind: "particle system", flags: 0x0010, init: 0x003f45e8, spawns: [rubble]}
-  - {name: sub_shack_puff, index: 237, kind: "particle system", flags: 0x0010, init: 0x00408860, sheet: part_page1, rect: 42, size: [64, 64]}
-  - {name: sub_shack_puff_aligned, index: 238, kind: "particle system", flags: 0x0010, init: 0x00408610, sheet: part_page1, rect: 42, size: [64, 64]}
+  - {name: sub_shack_puff, index: 237, kind: "particle system", flags: 0x0010, init: 0x00408860, sheet: part_page1, rect: 42, size: [64, 64], image: particles/sub_shack_puff.png}
+  - {name: sub_shack_puff_aligned, index: 238, kind: "particle system", flags: 0x0010, init: 0x00408610, sheet: part_page1, rect: 42, size: [64, 64], image: particles/sub_shack_puff_aligned.png}
   - {name: sub_shk, index: 239, kind: "particle system", flags: 0x0010, init: 0x003a8698}
   - {name: sub_smk, index: 241, kind: "particle system", flags: 0x0010, init: 0x003ab3e0}
   - {name: sub_smoke, index: 242, kind: "particle system", flags: 0x0010, init: 0x003f61d8}
   - {name: sub_spark_effect, index: 243, kind: "particle system", flags: 0x0010, init: 0x003e1578}
   - {name: sub_spk, index: 244, kind: "particle system", flags: 0x0010, init: 0x003abd10}
-  - {name: sub_splash, index: 245, kind: "particle system", flags: 0x0010, init: 0x003f2f40, sheet: part_page1, rect: 51, size: [16, 8]}
+  - {name: sub_splash, index: 245, kind: "particle system", flags: 0x0010, init: 0x003f2f40, sheet: part_page1, rect: 51, size: [16, 8], image: particles/sub_splash.png}
   - {name: sub_spr, index: 246, kind: "particle system", flags: 0x0010, init: 0x003aa900}
   - {name: sub_stained_glass, index: 247, kind: "particle system", flags: 0x0010, init: 0x003e5090}
   - {name: sub_sweat_effect, index: 248, kind: "particle system", flags: 0x0010, init: 0x003b0f68}
-  - {name: sub_thrown_dust_puff, index: 251, kind: "particle system", flags: 0x0010, init: 0x003e1ee0, sheet: part_page1, rect: 42, size: [64, 64]}
-  - {name: sub_train_splat, index: 252, kind: "particle system", flags: 0x0010, init: 0x003dbb48, sheet: part_page1, rect: 2, size: [32, 32]}
-  - {name: sub_train_splat_mist, index: 253, kind: "particle system", flags: 0x0010, init: 0x003dc370, sheet: part_page1, rect: 6, size: [64, 64]}
+  - {name: sub_thrown_dust_puff, index: 251, kind: "particle system", flags: 0x0010, init: 0x003e1ee0, sheet: part_page1, rect: 42, size: [64, 64], image: particles/sub_thrown_dust_puff.png}
+  - {name: sub_train_splat, index: 252, kind: "particle system", flags: 0x0010, init: 0x003dbb48, sheet: part_page1, rect: 2, size: [32, 32], image: particles/sub_train_splat.png}
+  - {name: sub_train_splat_mist, index: 253, kind: "particle system", flags: 0x0010, init: 0x003dc370, sheet: part_page1, rect: 6, size: [64, 64], image: particles/sub_train_splat_mist.png}
   - {name: sub_triglint, index: 254, kind: "particle system", flags: 0x0010, init: 0x003eaf98}
   - {name: sub_water, index: 256, kind: "particle system", flags: 0x0010, init: 0x003c3078}
   - {name: sub_wood_splinter, index: 257, kind: "particle system", flags: 0x0010, init: 0x00407d78, spawns: [wood_splinter_bit]}
-  - {name: subway_lensflare, index: 258, kind: "particle system", flags: 0x0010, init: 0x003e8890, sheet: cf4c87d3, rect: 0, size: [102, 50]}
+  - {name: subway_lensflare, index: 258, kind: "particle system", flags: 0x0010, init: 0x003e8890, sheet: cf4c87d3, rect: 0, size: [102, 50], image: particles/subway_lensflare.png}
   - {name: subway_loop, index: 260, kind: "particle system", flags: 0x0010, init: 0x003d9698}
   - {name: subway_spark, index: 261, kind: "particle system", flags: 0x0010, init: 0x003dadc0, sheet: part_page1, rect: 54, size: [32, 32]}
   - {name: sweat_drop, index: 263, kind: "particle system", flags: 0x0010, init: 0x003b0cd0}

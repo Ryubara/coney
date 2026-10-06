@@ -18,31 +18,31 @@ inventories; `InvGiveItem(id, n)` adds to a player's count, `InvNumberOf(id)` re
 
 ## Entries
 
-| Item | Object | What | Pickup sound | Duration (ms) | Own bindings | Reconfigured by | Given | Tested | Pocketed | Scripts |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| <span id="item-0"></span>0 | | | | | | | | | | |
-| <span id="item-1"></span>1 | `dyn_revival` | A flash: a revive (`InvGiveRevive`); the flash command spends one to heal ([Combat](../research/combat.md)) | `vags/interface/powerup` | 30000 | `InvGiveRevive`, `InvNumberRevives` | | 6 | 9 | 63 | `972fed2e`, `level20_bossfight.lua`, `level54_park.lua`, `level54_popsicle.lua`, `level55_lizziesattack.lua`, `level60_destroyers.lua`, `... 20 more` |
-| <span id="item-2"></span>2 | | Money, in dollars (no object) | `vags/interface/powerup` | 10000 | `InvGetMoney`, `InvSetMoney`, `GiveMoney`, `TakeMoney` | | 6 | 4 | | `level95_coney.lua` |
-| <span id="item-3"></span>3 | `dyn_spraycan` | Spray-paint charges, spent by tagging | `vags/interface/powerup` | 20000 | `InvGetSpraycanCharges`, `InvSetSpraycanCharges` | | 6 | 4 | 7 | `level9.lua`, `level95_coney.lua`, `level9_chap1_radio.lua`, `level9_chap2_tags.lua` |
-| <span id="item-4"></span>4 | `dyn_swhbld_super` | A switchblade power-up (from the object's name) | `vags/interface/powerup` | 20000 | | | | | 1 | `level84_final.lua` |
-| <span id="item-5"></span>5 | `dyn_powercuffs` | Handcuffs | `vags/interface/powerup` | 30000 | | | 12 | 7 | | `global.lua`, `level95.lua`, `level95_clubhouse.lua`, `level95_coney.lua` |
-| <span id="item-6"></span>6 | `dyn_key` | Handcuff (skeleton) keys | `vags/interface/powerup` | 30000 | `InvGiveSkeletonKey`, `InvNumberSkeletonKeys` | | 6 | 4 | | `level95_coney.lua` |
-| <span id="item-7"></span>7 | `dyn_pass` | A pass (mission item, level 11) | `vags/interface/mission_item` | 10000 | | | 2 | 2 | 1 | `level11_chapter5.lua` |
-| <span id="item-8"></span>8 | `dyn_boltcutter` | Bolt cutters (mission item) | `vags/interface/mission_item` | 10000 | | | | | | |
-| <span id="item-9"></span>9 | `dyn_special_key` | A special key (mission item) | `vags/interface/mission_item` | 10000 | | | 6 | 4 | 1 | `level83_c5_apartment.lua`, `level95_coney.lua` |
-| <span id="item-10"></span>10 | `dyn_store_item` | Loot from a store | `vags/interface/powerup` | 10000 | | | | | | |
-| <span id="item-11"></span>11 | `dyn_carstereo` | A car stereo (loot) | `vags/interface/powerup` | 10000 | | | 2 | | | `level14_dirtycop.lua` |
-| <span id="item-12"></span>12 | `dyn_ledger` | A ledger (mission item) | `vags/interface/mission_item` | 10000 | | `level20: dyn_ledger` | | | 1 | `level20_marketplace.lua` |
-| <span id="item-13"></span>13 | `dyn_dragon` | A dragon statue (mission item; level 20 uses its own object) | `vags/interface/mission_item` | 10000 | | `level20: dyn_special_dragon` | | | | |
-| <span id="item-14"></span>14 | `dyn_bagcoins` | A bag of coins (mission item) | `vags/interface/mission_item` | 10000 | | `level20: dyn_bagcoins` | | | 2 | `level20_backalley.lua`, `level20_bossfight.lua` |
-| <span id="item-15"></span>15 | `dyn_brownbag` | A brown bag (mission item) | `vags/interface/mission_item` | 10000 | | | | | | |
-| <span id="item-16"></span>16 | | | | | | | | | | |
-| <span id="item-17"></span>17 | | | | | | | | | | |
-| <span id="item-18"></span>18 | | | | | | | | | | |
-| <span id="item-19"></span>19 | | | | | | | | | | |
-| <span id="item-20"></span>20 | | | | | | | | | | |
-| <span id="item-21"></span>21 | | | | | | | | | | |
-| <span id="item-22"></span>22 | | | | | | | | | | |
+| Item | Image | Object | What | Pickup sound | Duration (ms) | Own bindings | Reconfigured by | Given | Tested | Pocketed | Scripts |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| <span id="item-0"></span>0 | | | | | | | | | | | |
+| <span id="item-1"></span>1 | ![objects/dyn_revival.png](images/objects/dyn_revival.png){ width="96" } | `dyn_revival` | A flash: a revive (`InvGiveRevive`); the flash command spends one to heal ([Combat](../research/combat.md)) | `vags/interface/powerup` | 30000 | `InvGiveRevive`, `InvNumberRevives` | | 6 | 9 | 63 | `972fed2e`, `level20_bossfight.lua`, `level54_park.lua`, `level54_popsicle.lua`, `level55_lizziesattack.lua`, `level60_destroyers.lua`, `... 20 more` |
+| <span id="item-2"></span>2 | | | Money, in dollars (no object) | `vags/interface/powerup` | 10000 | `InvGetMoney`, `InvSetMoney`, `GiveMoney`, `TakeMoney` | | 6 | 4 | | `level95_coney.lua` |
+| <span id="item-3"></span>3 | ![objects/dyn_spraycan.png](images/objects/dyn_spraycan.png){ width="96" } | `dyn_spraycan` | Spray-paint charges, spent by tagging | `vags/interface/powerup` | 20000 | `InvGetSpraycanCharges`, `InvSetSpraycanCharges` | | 6 | 4 | 7 | `level9.lua`, `level95_coney.lua`, `level9_chap1_radio.lua`, `level9_chap2_tags.lua` |
+| <span id="item-4"></span>4 | ![objects/dyn_swhbld_super.png](images/objects/dyn_swhbld_super.png){ width="96" } | `dyn_swhbld_super` | A switchblade power-up (from the object's name) | `vags/interface/powerup` | 20000 | | | | | 1 | `level84_final.lua` |
+| <span id="item-5"></span>5 | ![objects/dyn_powercuffs.png](images/objects/dyn_powercuffs.png){ width="96" } | `dyn_powercuffs` | Handcuffs | `vags/interface/powerup` | 30000 | | | 12 | 7 | | `global.lua`, `level95.lua`, `level95_clubhouse.lua`, `level95_coney.lua` |
+| <span id="item-6"></span>6 | ![objects/dyn_key.png](images/objects/dyn_key.png){ width="96" } | `dyn_key` | Handcuff (skeleton) keys | `vags/interface/powerup` | 30000 | `InvGiveSkeletonKey`, `InvNumberSkeletonKeys` | | 6 | 4 | | `level95_coney.lua` |
+| <span id="item-7"></span>7 | ![objects/dyn_pass.png](images/objects/dyn_pass.png){ width="96" } | `dyn_pass` | A pass (mission item, level 11) | `vags/interface/mission_item` | 10000 | | | 2 | 2 | 1 | `level11_chapter5.lua` |
+| <span id="item-8"></span>8 | ![objects/dyn_boltcutter.png](images/objects/dyn_boltcutter.png){ width="96" } | `dyn_boltcutter` | Bolt cutters (mission item) | `vags/interface/mission_item` | 10000 | | | | | | |
+| <span id="item-9"></span>9 | ![objects/dyn_special_key.png](images/objects/dyn_special_key.png){ width="96" } | `dyn_special_key` | A special key (mission item) | `vags/interface/mission_item` | 10000 | | | 6 | 4 | 1 | `level83_c5_apartment.lua`, `level95_coney.lua` |
+| <span id="item-10"></span>10 | | `dyn_store_item` | Loot from a store | `vags/interface/powerup` | 10000 | | | | | | |
+| <span id="item-11"></span>11 | ![objects/dyn_carstereo.png](images/objects/dyn_carstereo.png){ width="96" } | `dyn_carstereo` | A car stereo (loot) | `vags/interface/powerup` | 10000 | | | 2 | | | `level14_dirtycop.lua` |
+| <span id="item-12"></span>12 | ![objects/dyn_ledger.png](images/objects/dyn_ledger.png){ width="96" } | `dyn_ledger` | A ledger (mission item) | `vags/interface/mission_item` | 10000 | | `level20: dyn_ledger` | | | 1 | `level20_marketplace.lua` |
+| <span id="item-13"></span>13 | | `dyn_dragon` | A dragon statue (mission item; level 20 uses its own object) | `vags/interface/mission_item` | 10000 | | `level20: dyn_special_dragon` | | | | |
+| <span id="item-14"></span>14 | ![objects/dyn_bagcoins.png](images/objects/dyn_bagcoins.png){ width="96" } | `dyn_bagcoins` | A bag of coins (mission item) | `vags/interface/mission_item` | 10000 | | `level20: dyn_bagcoins` | | | 2 | `level20_backalley.lua`, `level20_bossfight.lua` |
+| <span id="item-15"></span>15 | ![objects/dyn_brownbag.png](images/objects/dyn_brownbag.png){ width="96" } | `dyn_brownbag` | A brown bag (mission item) | `vags/interface/mission_item` | 10000 | | | | | | |
+| <span id="item-16"></span>16 | | | | | | | | | | | |
+| <span id="item-17"></span>17 | | | | | | | | | | | |
+| <span id="item-18"></span>18 | | | | | | | | | | | |
+| <span id="item-19"></span>19 | | | | | | | | | | | |
+| <span id="item-20"></span>20 | | | | | | | | | | | |
+| <span id="item-21"></span>21 | | | | | | | | | | | |
+| <span id="item-22"></span>22 | | | | | | | | | | | |
 
 ## Sources and evidence
 

@@ -17,29 +17,29 @@ The icon ids `HUDSetRadarItemTexture` takes and the code sets, and the radar's b
 
 21 entries.
 
-| Number | Sheet | Rect | Size (px) | Set by | Tint | Calls | Scripts | Marks |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| <span id="radar-icon-22"></span>22 | `part_page0` | 22 | 24, 27 | `HUD_RadarSetIcon` draws it at 0.7 | | 11 | `level93_chapter2.lua`, `level95_busted.lua`, `level95_coney.lua`, `level95_flashhead.lua`, `level95_homeless.lua`, `level95_robinhood.lua` | A target in the hub's side jobs and two story levels |
-| <span id="radar-icon-27"></span>27 | `part_page0` | 27 | 12, 13 | | | 31 | `36763710`, `global.lua`, `level20_mainstreet.lua`, `level2_clinic.lua`, `level2_clubhouse.lua`, `level31_reddevil.lua` | Mission objective (the second marker) |
-| <span id="radar-icon-28"></span>28 | `part_page0` | 28 | 12, 13 | | | 84 | `36763710`, `global.lua`, `level11_chapter2.lua`, `level11_chapter4.lua`, `level11_chapter5.lua`, `level14_dirtycop.lua` | Mission objective, the commonest marker (`HUD_WAR` in level 5) |
-| <span id="radar-icon-29"></span>29 | `part_page0` | 29 | 14, 23 | dealer type 0's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it | <span style="display:inline-block;width:2em;height:1em;background:#63DB4B"></span> | 2 | `level99_lesson2.lua` | Flash dealer |
-| <span id="radar-icon-30"></span>30 | `part_page0` | 30 | 18, 23 | dealer type 2's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it | <span style="display:inline-block;width:2em;height:1em;background:#63DB4B"></span> | 3 | `level87_chap2_street1.lua`, `level95_coney.lua` | Dealer of type 2 |
-| <span id="radar-icon-31"></span>31 | `part_page0` | 31 | 18, 23 | dealer type 1's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it | <span style="display:inline-block;width:2em;height:1em;background:#63DB4B"></span> | | | Weapon dealer |
-| <span id="radar-icon-32"></span>32 | `part_page0` | 32 | 20, 21 | blip mode 3's ring, layer 1 (`0x001b32e0`) | | | | Ring over a human in blip mode 3 |
-| <span id="radar-icon-33"></span>33 | `part_page0` | 33 | 20, 21 | blip mode 4's ring, layer 1 (`0x001b32e0`) | | | | Ring over a human in blip mode 4 |
-| <span id="radar-icon-34"></span>34 | `part_page0` | 34 | 34, 34 | | | 1 | `caps.lua` | The item in the `caps` Rumble mode |
-| <span id="radar-icon-69"></span>69 | `part_page0` | 69 | 10, 10 | every particle blip's first icon (`hud_radar_dot`, `0x003e5bf8`) | | | | Plain dot: a blip with no icon of its own |
-| <span id="radar-icon-350"></span>350 | `part_page0` | 350 | 6, 12 | | | 3 | `tagbt.lua`, `wchair.lua` | Team marker in the `tagbt` and `wchair` Rumble modes |
-| <span id="radar-icon-351"></span>351 | `part_page0` | 351 | 8, 12 | | | 4 | `tagbt.lua`, `wchair.lua` | Team marker in the `tagbt` and `wchair` Rumble modes |
-| <span id="radar-icon-352"></span>352 | `part_page0` | 352 | 12, 13 | blip type 6, layer 0; blip modes 1 and 2 (`0x001b2990`, `0x001b32e0`) | | | | Hostile human |
-| <span id="radar-icon-353"></span>353 | `part_page0` | 353 | 20, 21 | blip modes 3 and 4, layer 0 (`0x001b32e0`) | | | | Under the ring of blip modes 3 and 4 |
-| <span id="radar-icon-355"></span>355 | `part_page0` | 355 | 10, 11 | | | 1 | `level95_invasion.lua` | A target in the hub's invasion job |
-| <span id="radar-icon-356"></span>356 | `part_page0` | 356 | 10, 11 | blip type 8, both layers (`HUD_RadarAddHuman`) | | | | Police officer |
-| <span id="radar-icon-359"></span>359 | `part_page0` | 359 | 10, 11 | blip type 6, layer 1 (`0x001b2990`) | | 4 | `level51_chapter2a.lua`, `level51_chapter3.lua`, `level82_chapter4.lua` | Hostile human (second layer); scripts mark single enemies with it |
-| <span id="radar-icon-360"></span>360 | `part_page0` | 360 | 16, 12 | | | 3 | `tagbt.lua`, `wchair.lua` | Team marker in the `tagbt` and `wchair` Rumble modes |
-| <span id="radar-icon-361"></span>361 | `part_page0` | 361 | 18, 12 | | | 4 | `tagbt.lua`, `wchair.lua` | Team marker in the `tagbt` and `wchair` Rumble modes |
-| <span id="radar-icon-362"></span>362 | `part_page0` | 362 | 10, 11 | blip type 9, a sprite widget (`0x001b2ee8`, `0x001c4d00`) | | 2 | `level83.lua`, `level9_chap3_escape.lua` | The player; two levels give it to another human |
-| <span id="radar-icon-365"></span>365 | `part_page0` | 365 | 10, 11 | blip type 7 (`0x001b2ee8`) | | | | A Warrior other than the player |
+| Number | Image | Sheet | Rect | Size (px) | Set by | Tint | Calls | Scripts | Marks |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| <span id="radar-icon-22"></span>22 | ![radar/icon-22.png](images/radar/icon-22.png){ width="96" } | `part_page0` | 22 | 25, 27 | `HUD_RadarSetIcon` draws it at 0.7 | | 11 | `level93_chapter2.lua`, `level95_busted.lua`, `level95_coney.lua`, `level95_flashhead.lua`, `level95_homeless.lua`, `level95_robinhood.lua` | A target in the hub's side jobs and two story levels |
+| <span id="radar-icon-27"></span>27 | ![radar/icon-27.png](images/radar/icon-27.png){ width="96" } | `part_page0` | 27 | 13, 13 | | | 31 | `36763710`, `global.lua`, `level20_mainstreet.lua`, `level2_clinic.lua`, `level2_clubhouse.lua`, `level31_reddevil.lua` | Mission objective (the second marker) |
+| <span id="radar-icon-28"></span>28 | ![radar/icon-28.png](images/radar/icon-28.png){ width="96" } | `part_page0` | 28 | 13, 13 | | | 84 | `36763710`, `global.lua`, `level11_chapter2.lua`, `level11_chapter4.lua`, `level11_chapter5.lua`, `level14_dirtycop.lua` | Mission objective, the commonest marker (`HUD_WAR` in level 5) |
+| <span id="radar-icon-29"></span>29 | ![radar/icon-29.png](images/radar/icon-29.png){ width="96" } | `part_page0` | 29 | 15, 23 | dealer type 0's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it | <span style="display:inline-block;width:2em;height:1em;background:#63DB4B"></span> | 2 | `level99_lesson2.lua` | Flash dealer |
+| <span id="radar-icon-30"></span>30 | ![radar/icon-30.png](images/radar/icon-30.png){ width="96" } | `part_page0` | 30 | 18, 23 | dealer type 2's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it | <span style="display:inline-block;width:2em;height:1em;background:#63DB4B"></span> | 3 | `level87_chap2_street1.lua`, `level95_coney.lua` | Dealer of type 2 |
+| <span id="radar-icon-31"></span>31 | ![radar/icon-31.png](images/radar/icon-31.png){ width="96" } | `part_page0` | 31 | 19, 23 | dealer type 1's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it | <span style="display:inline-block;width:2em;height:1em;background:#63DB4B"></span> | | | Weapon dealer |
+| <span id="radar-icon-32"></span>32 | ![radar/icon-32.png](images/radar/icon-32.png){ width="96" } | `part_page0` | 32 | 21, 21 | blip mode 3's ring, layer 1 (`0x001b32e0`) | | | | Ring over a human in blip mode 3 |
+| <span id="radar-icon-33"></span>33 | ![radar/icon-33.png](images/radar/icon-33.png){ width="96" } | `part_page0` | 33 | 21, 21 | blip mode 4's ring, layer 1 (`0x001b32e0`) | | | | Ring over a human in blip mode 4 |
+| <span id="radar-icon-34"></span>34 | | `part_page0` | 34 | 34, 34 | | | 1 | `caps.lua` | The item in the `caps` Rumble mode |
+| <span id="radar-icon-69"></span>69 | ![radar/icon-69.png](images/radar/icon-69.png){ width="96" } | `part_page0` | 69 | 10, 10 | every particle blip's first icon (`hud_radar_dot`, `0x003e5bf8`) | | | | Plain dot: a blip with no icon of its own |
+| <span id="radar-icon-350"></span>350 | ![radar/icon-350.png](images/radar/icon-350.png){ width="96" } | `part_page0` | 350 | 7, 12 | | | 3 | `tagbt.lua`, `wchair.lua` | Team marker in the `tagbt` and `wchair` Rumble modes |
+| <span id="radar-icon-351"></span>351 | ![radar/icon-351.png](images/radar/icon-351.png){ width="96" } | `part_page0` | 351 | 9, 12 | | | 4 | `tagbt.lua`, `wchair.lua` | Team marker in the `tagbt` and `wchair` Rumble modes |
+| <span id="radar-icon-352"></span>352 | ![radar/icon-352.png](images/radar/icon-352.png){ width="96" } | `part_page0` | 352 | 13, 13 | blip type 6, layer 0; blip modes 1 and 2 (`0x001b2990`, `0x001b32e0`) | | | | Hostile human |
+| <span id="radar-icon-353"></span>353 | ![radar/icon-353.png](images/radar/icon-353.png){ width="96" } | `part_page0` | 353 | 21, 21 | blip modes 3 and 4, layer 0 (`0x001b32e0`) | | | | Under the ring of blip modes 3 and 4 |
+| <span id="radar-icon-355"></span>355 | ![radar/icon-355.png](images/radar/icon-355.png){ width="96" } | `part_page0` | 355 | 11, 11 | | | 1 | `level95_invasion.lua` | A target in the hub's invasion job |
+| <span id="radar-icon-356"></span>356 | ![radar/icon-356.png](images/radar/icon-356.png){ width="96" } | `part_page0` | 356 | 11, 11 | blip type 8, both layers (`HUD_RadarAddHuman`) | | | | Police officer |
+| <span id="radar-icon-359"></span>359 | ![radar/icon-359.png](images/radar/icon-359.png){ width="96" } | `part_page0` | 359 | 11, 11 | blip type 6, layer 1 (`0x001b2990`) | | 4 | `level51_chapter2a.lua`, `level51_chapter3.lua`, `level82_chapter4.lua` | Hostile human (second layer); scripts mark single enemies with it |
+| <span id="radar-icon-360"></span>360 | ![radar/icon-360.png](images/radar/icon-360.png){ width="96" } | `part_page0` | 360 | 16, 12 | | | 3 | `tagbt.lua`, `wchair.lua` | Team marker in the `tagbt` and `wchair` Rumble modes |
+| <span id="radar-icon-361"></span>361 | ![radar/icon-361.png](images/radar/icon-361.png){ width="96" } | `part_page0` | 361 | 19, 12 | | | 4 | `tagbt.lua`, `wchair.lua` | Team marker in the `tagbt` and `wchair` Rumble modes |
+| <span id="radar-icon-362"></span>362 | ![radar/icon-362.png](images/radar/icon-362.png){ width="96" } | `part_page0` | 362 | 11, 11 | blip type 9, a sprite widget (`0x001b2ee8`, `0x001c4d00`) | | 2 | `level83.lua`, `level9_chap3_escape.lua` | The player; two levels give it to another human |
+| <span id="radar-icon-365"></span>365 | ![radar/icon-365.png](images/radar/icon-365.png){ width="96" } | `part_page0` | 365 | 11, 11 | blip type 7 (`0x001b2ee8`) | | | | A Warrior other than the player |
 
 ## blip type {#blip-type}
 

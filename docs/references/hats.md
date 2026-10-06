@@ -12,7 +12,7 @@ uses the hat model's own attach point (`0x003a3ba0`). The hats are [objects](obj
 !!! info "What is complete"
 
     All 908 fittings of `config_preload2.lua` are listed: 28 sets, one per Warriors model, 14 to 43 hats each. A hat that
-    is in no slot of a wearer's set gets a default transform. No hat thumbnails are rendered yet.
+    is in no slot of a wearer's set gets a default transform. Each hat shows its object's image where it has one.
 
 908 entries. Data: `research/references/hats.yaml`.
 
@@ -20,1105 +20,1105 @@ uses the hat model's own attach point (`0x003a3ba0`). The hats are [objects](obj
 
 41 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-1-dyn-abe"></span>`1:dyn_abe` | 1 | [1](characters.md#char-1) | `dyn_abe` | 0.0681, -0.0019, 0.0175 | 0.5438, -0.5438, 0.452, -0.452 |
-| <span id="hat-1-dyn-bm-vb3"></span>`1:dyn_bm_vb3` | 1 | [1](characters.md#char-1) | `dyn_bm_vb3` | 0.181, 0.0136, 0.0304 | 0.4339, 0.5857, 0.4741, 0.4938 |
-| <span id="hat-1-dyn-bm-vb5"></span>`1:dyn_bm_vb5` | 1 | [1](characters.md#char-1) | `dyn_bm_vb5` | 0.1338, -0.0009, 0.0324 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-1-dyn-bm-vb6"></span>`1:dyn_bm_vb6` | 1 | [1](characters.md#char-1) | `dyn_bm_vb6` | 0.1993, -0.0147, -0.0162 | 0.6171, 0.5425, 0.3618, 0.4405 |
-| <span id="hat-1-dyn-bm-vb7"></span>`1:dyn_bm_vb7` | 1 | [1](characters.md#char-1) | `dyn_bm_vb7` | 0.1455, 0, 0.0155 | 0.5339, 0.5339, 0.4637, 0.4637 |
-| <span id="hat-1-dyn-bopp-bo"></span>`1:dyn_bopp_bo` | 1 | [1](characters.md#char-1) | `dyn_bopp_bo` | 0.1362, -0.0009, 0.0226 | 0.4997, -0.5302, 0.5003, -0.4679 |
-| <span id="hat-1-dyn-bopp-lt"></span>`1:dyn_bopp_lt` | 1 | [1](characters.md#char-1) | `dyn_bopp_lt` | 0.1783, 0.0024, -0.0023 | 0.5803, -0.5658, 0.42, -0.4083 |
-| <span id="hat-1-dyn-bopp-so"></span>`1:dyn_bopp_so` | 1 | [1](characters.md#char-1) | `dyn_bopp_so` | 0.1772, 0.0018, 0.0079 | 0.5433, -0.5589, 0.4355, -0.4504 |
-| <span id="hat-1-dyn-butcher"></span>`1:dyn_butcher` | 1 | [1](characters.md#char-1) | `dyn_butcher` | 0.1867, 0, -0.0033 | 0.5733, -0.5733, 0.4139, -0.4139 |
-| <span id="hat-1-dyn-ch"></span>`1:dyn_ch` | 1 | [1](characters.md#char-1) | `dyn_ch` | 0.1831, -0.0025, 0.0399 | 0.5439, -0.536, 0.4896, -0.4208 |
-| <span id="hat-1-dyn-civl-a"></span>`1:dyn_civl_a` | 1 | [1](characters.md#char-1) | `dyn_civl_a` | 0.1813, -0.0017, -0.0103 | 0.5714, 0.5979, 0.3884, 0.4064 |
-| <span id="hat-1-dyn-civl-hl-ho"></span>`1:dyn_civl_hl_ho` | 1 | [1](characters.md#char-1) | `dyn_civl_hl_ho` | 0.1933, 0.0123, 0.0148 | 0.5226, 0.5505, 0.4627, 0.458 |
-| <span id="hat-1-dyn-civl-pl-sp"></span>`1:dyn_civl_pl_sp` | 1 | [1](characters.md#char-1) | `dyn_civl_pl_sp` | 0.1788, 0.0318, 0.0222 | 0.5977, 0.5193, 0.4514, 0.4115 |
-| <span id="hat-1-dyn-co-ma3"></span>`1:dyn_co_ma3` | 1 | [1](characters.md#char-1) | `dyn_co_ma3` | 0.1648, -0.0083, 0.0133 | 0.5579, 0.4982, 0.4392, 0.4977 |
-| <span id="hat-1-dyn-cops-va"></span>`1:dyn_cops_va` | 1 | [1](characters.md#char-1) | `dyn_cops_va` | 0.1918, -0.0055, -0.0003 | 0.5548, -0.5582, 0.4488, -0.4233 |
-| <span id="hat-1-dyn-ct-act"></span>`1:dyn_ct_act` | 1 | [1](characters.md#char-1) | `dyn_ct_act` | 0.1648, -0.0083, 0.0133 | 0.5579, 0.4982, 0.4392, 0.4977 |
-| <span id="hat-1-dyn-ct-ma2"></span>`1:dyn_ct_ma2` | 1 | [1](characters.md#char-1) | `dyn_ct_ma2` | 0.1453, 0, 0.0246 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-1-dyn-cw-m1"></span>`1:dyn_cw_m1` | 1 | [1](characters.md#char-1) | `dyn_cw_m1` | 0.1453, 0, 0.0246 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-1-dyn-cw-m2"></span>`1:dyn_cw_m2` | 1 | [1](characters.md#char-1) | `dyn_cw_m2` | 0.1453, 0, 0.0246 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-1-dyn-dest-lt"></span>`1:dyn_dest_lt` | 1 | [1](characters.md#char-1) | `dyn_dest_lt` | 0.1703, -0.0023, -0.0013 | 0.594, 0.5749, 0.4037, 0.3919 |
-| <span id="hat-1-dyn-dest-lta"></span>`1:dyn_dest_lta` | 1 | [1](characters.md#char-1) | `dyn_dest_lta` | 0.1788, 0.0318, 0.0222 | 0.5977, 0.5193, 0.4514, 0.4115 |
-| <span id="hat-1-dyn-dest-ltb"></span>`1:dyn_dest_ltb` | 1 | [1](characters.md#char-1) | `dyn_dest_ltb` | 0.1753, 0, 0.0384 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-1-dyn-eh-ma2"></span>`1:dyn_eh_ma2` | 1 | [1](characters.md#char-1) | `dyn_eh_ma2` | 0.1742, 0.0002, 0.0028 | 0.5846, 0.5448, 0.4292, 0.4211 |
-| <span id="hat-1-dyn-hiha-lt"></span>`1:dyn_hiha_lt` | 1 | [1](characters.md#char-1) | `dyn_hiha_lt` | 0.2087, -0.0012, -0.0217 | 0.586, -0.5885, 0.404, -0.3835 |
-| <span id="hat-1-dyn-hiha-lt-ft"></span>`1:dyn_hiha_lt_ft` | 1 | [1](characters.md#char-1) | `dyn_hiha_lt_ft` | 0.2087, -0.0012, -0.0217 | 0.586, -0.5885, 0.404, -0.3835 |
-| <span id="hat-1-dyn-hiha-so"></span>`1:dyn_hiha_so` | 1 | [1](characters.md#char-1) | `dyn_hiha_so` | 0.2113, -0.0033, -0.0246 | 0.5857, -0.5885, 0.4114, -0.376 |
-| <span id="hat-1-dyn-hurr-lt"></span>`1:dyn_hurr_lt` | 1 | [1](characters.md#char-1) | `dyn_hurr_lt` | 0.1648, -0.0083, 0.0133 | 0.5579, 0.4982, 0.4392, 0.4977 |
-| <span id="hat-1-dyn-hurr-so"></span>`1:dyn_hurr_so` | 1 | [1](characters.md#char-1) | `dyn_hurr_so` | 0.1828, -0.0111, 0.0081 | 0.5411, -0.5585, 0.4545, -0.4345 |
-| <span id="hat-1-dyn-panz-lt"></span>`1:dyn_panz_lt` | 1 | [1](characters.md#char-1) | `dyn_panz_lt` | 0.1901, -0.0215, -0.008 | 0.4802, -0.652, 0.4157, -0.4141 |
-| <span id="hat-1-dyn-panz-so"></span>`1:dyn_panz_so` | 1 | [1](characters.md#char-1) | `dyn_panz_so` | 0.1901, -0.0215, -0.008 | 0.4802, -0.652, 0.4157, -0.4141 |
-| <span id="hat-1-dyn-pimp-va"></span>`1:dyn_pimp_va` | 1 | [1](characters.md#char-1) | `dyn_pimp_va` | 0.183, -0.0139, 0.0254 | 0.5264, -0.5441, 0.4842, -0.4386 |
-| <span id="hat-1-dyn-pimp-vb"></span>`1:dyn_pimp_vb` | 1 | [1](characters.md#char-1) | `dyn_pimp_vb` | 0.183, -0.0139, 0.0254 | 0.5264, -0.5441, 0.4842, -0.4386 |
-| <span id="hat-1-dyn-pl-ma9"></span>`1:dyn_pl_ma9` | 1 | [1](characters.md#char-1) | `dyn_pl_ma9` | 0.1744, -0.0028, 0.0459 | 0.5151, 0.5221, 0.4806, 0.4807 |
-| <span id="hat-1-dyn-pl-pm"></span>`1:dyn_pl_pm` | 1 | [1](characters.md#char-1) | `dyn_pl_pm` | 0.1774, -0.0008, 0.0206 | 0.5342, 0.4953, 0.4633, 0.5046 |
-| <span id="hat-1-dyn-rogu-lt"></span>`1:dyn_rogu_lt` | 1 | [1](characters.md#char-1) | `dyn_rogu_lt` | 0.2, -0.0022, 0.0281 | 0.5074, -0.5136, 0.4947, -0.4837 |
-| <span id="hat-1-dyn-rogu-so"></span>`1:dyn_rogu_so` | 1 | [1](characters.md#char-1) | `dyn_rogu_so` | 0.1999, -0.0017, 0.0162 | 0.5229, -0.5499, 0.4511, -0.4698 |
-| <span id="hat-1-dyn-sata-bo"></span>`1:dyn_sata_bo` | 1 | [1](characters.md#char-1) | `dyn_sata_bo` | 0.1978, 0, -0.0224 | 0.5799, -0.5799, 0.4046, -0.4046 |
-| <span id="hat-1-dyn-sk-pe"></span>`1:dyn_sk_pe` | 1 | [1](characters.md#char-1) | `dyn_sk_pe` | 0.2149, -0.0023, -0.021 | 0.5978, 0.5628, 0.4108, 0.3964 |
-| <span id="hat-1-dyn-tr-fa4"></span>`1:dyn_tr_fa4` | 1 | [1](characters.md#char-1) | `dyn_tr_fa4` | 0.1987, -0.0074, 0.0174 | 0.5621, 0.502, 0.4528, 0.4765 |
-| <span id="hat-1-dyn-tr-ma2"></span>`1:dyn_tr_ma2` | 1 | [1](characters.md#char-1) | `dyn_tr_ma2` | 0.1753, 0, 0.0384 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-1-dyn-warr-cb"></span>`1:dyn_warr_cb` | 1 | [1](characters.md#char-1) | `dyn_warr_cb` | 0.1536, -0.0025, 0.0019 | 0.5685, -0.5676, 0.4207, -0.4215 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-1-dyn-abe"></span>`1:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_abe` | 0.0681, -0.0019, 0.0175 | 0.5438, -0.5438, 0.452, -0.452 |
+| <span id="hat-1-dyn-bm-vb3"></span>`1:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_bm_vb3` | 0.181, 0.0136, 0.0304 | 0.4339, 0.5857, 0.4741, 0.4938 |
+| <span id="hat-1-dyn-bm-vb5"></span>`1:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_bm_vb5` | 0.1338, -0.0009, 0.0324 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-1-dyn-bm-vb6"></span>`1:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_bm_vb6` | 0.1993, -0.0147, -0.0162 | 0.6171, 0.5425, 0.3618, 0.4405 |
+| <span id="hat-1-dyn-bm-vb7"></span>`1:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_bm_vb7` | 0.1455, 0, 0.0155 | 0.5339, 0.5339, 0.4637, 0.4637 |
+| <span id="hat-1-dyn-bopp-bo"></span>`1:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_bopp_bo` | 0.1362, -0.0009, 0.0226 | 0.4997, -0.5302, 0.5003, -0.4679 |
+| <span id="hat-1-dyn-bopp-lt"></span>`1:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_bopp_lt` | 0.1783, 0.0024, -0.0023 | 0.5803, -0.5658, 0.42, -0.4083 |
+| <span id="hat-1-dyn-bopp-so"></span>`1:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_bopp_so` | 0.1772, 0.0018, 0.0079 | 0.5433, -0.5589, 0.4355, -0.4504 |
+| <span id="hat-1-dyn-butcher"></span>`1:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_butcher` | 0.1867, 0, -0.0033 | 0.5733, -0.5733, 0.4139, -0.4139 |
+| <span id="hat-1-dyn-ch"></span>`1:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_ch` | 0.1831, -0.0025, 0.0399 | 0.5439, -0.536, 0.4896, -0.4208 |
+| <span id="hat-1-dyn-civl-a"></span>`1:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_civl_a` | 0.1813, -0.0017, -0.0103 | 0.5714, 0.5979, 0.3884, 0.4064 |
+| <span id="hat-1-dyn-civl-hl-ho"></span>`1:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_civl_hl_ho` | 0.1933, 0.0123, 0.0148 | 0.5226, 0.5505, 0.4627, 0.458 |
+| <span id="hat-1-dyn-civl-pl-sp"></span>`1:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_civl_pl_sp` | 0.1788, 0.0318, 0.0222 | 0.5977, 0.5193, 0.4514, 0.4115 |
+| <span id="hat-1-dyn-co-ma3"></span>`1:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_co_ma3` | 0.1648, -0.0083, 0.0133 | 0.5579, 0.4982, 0.4392, 0.4977 |
+| <span id="hat-1-dyn-cops-va"></span>`1:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_cops_va` | 0.1918, -0.0055, -0.0003 | 0.5548, -0.5582, 0.4488, -0.4233 |
+| <span id="hat-1-dyn-ct-act"></span>`1:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_ct_act` | 0.1648, -0.0083, 0.0133 | 0.5579, 0.4982, 0.4392, 0.4977 |
+| <span id="hat-1-dyn-ct-ma2"></span>`1:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_ct_ma2` | 0.1453, 0, 0.0246 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-1-dyn-cw-m1"></span>`1:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_cw_m1` | 0.1453, 0, 0.0246 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-1-dyn-cw-m2"></span>`1:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_cw_m2` | 0.1453, 0, 0.0246 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-1-dyn-dest-lt"></span>`1:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_dest_lt` | 0.1703, -0.0023, -0.0013 | 0.594, 0.5749, 0.4037, 0.3919 |
+| <span id="hat-1-dyn-dest-lta"></span>`1:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_dest_lta` | 0.1788, 0.0318, 0.0222 | 0.5977, 0.5193, 0.4514, 0.4115 |
+| <span id="hat-1-dyn-dest-ltb"></span>`1:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_dest_ltb` | 0.1753, 0, 0.0384 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-1-dyn-eh-ma2"></span>`1:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_eh_ma2` | 0.1742, 0.0002, 0.0028 | 0.5846, 0.5448, 0.4292, 0.4211 |
+| <span id="hat-1-dyn-hiha-lt"></span>`1:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_hiha_lt` | 0.2087, -0.0012, -0.0217 | 0.586, -0.5885, 0.404, -0.3835 |
+| <span id="hat-1-dyn-hiha-lt-ft"></span>`1:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_hiha_lt_ft` | 0.2087, -0.0012, -0.0217 | 0.586, -0.5885, 0.404, -0.3835 |
+| <span id="hat-1-dyn-hiha-so"></span>`1:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_hiha_so` | 0.2113, -0.0033, -0.0246 | 0.5857, -0.5885, 0.4114, -0.376 |
+| <span id="hat-1-dyn-hurr-lt"></span>`1:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_hurr_lt` | 0.1648, -0.0083, 0.0133 | 0.5579, 0.4982, 0.4392, 0.4977 |
+| <span id="hat-1-dyn-hurr-so"></span>`1:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_hurr_so` | 0.1828, -0.0111, 0.0081 | 0.5411, -0.5585, 0.4545, -0.4345 |
+| <span id="hat-1-dyn-panz-lt"></span>`1:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_panz_lt` | 0.1901, -0.0215, -0.008 | 0.4802, -0.652, 0.4157, -0.4141 |
+| <span id="hat-1-dyn-panz-so"></span>`1:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_panz_so` | 0.1901, -0.0215, -0.008 | 0.4802, -0.652, 0.4157, -0.4141 |
+| <span id="hat-1-dyn-pimp-va"></span>`1:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_pimp_va` | 0.183, -0.0139, 0.0254 | 0.5264, -0.5441, 0.4842, -0.4386 |
+| <span id="hat-1-dyn-pimp-vb"></span>`1:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_pimp_vb` | 0.183, -0.0139, 0.0254 | 0.5264, -0.5441, 0.4842, -0.4386 |
+| <span id="hat-1-dyn-pl-ma9"></span>`1:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_pl_ma9` | 0.1744, -0.0028, 0.0459 | 0.5151, 0.5221, 0.4806, 0.4807 |
+| <span id="hat-1-dyn-pl-pm"></span>`1:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_pl_pm` | 0.1774, -0.0008, 0.0206 | 0.5342, 0.4953, 0.4633, 0.5046 |
+| <span id="hat-1-dyn-rogu-lt"></span>`1:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_rogu_lt` | 0.2, -0.0022, 0.0281 | 0.5074, -0.5136, 0.4947, -0.4837 |
+| <span id="hat-1-dyn-rogu-so"></span>`1:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_rogu_so` | 0.1999, -0.0017, 0.0162 | 0.5229, -0.5499, 0.4511, -0.4698 |
+| <span id="hat-1-dyn-sata-bo"></span>`1:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_sata_bo` | 0.1978, 0, -0.0224 | 0.5799, -0.5799, 0.4046, -0.4046 |
+| <span id="hat-1-dyn-sk-pe"></span>`1:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_sk_pe` | 0.2149, -0.0023, -0.021 | 0.5978, 0.5628, 0.4108, 0.3964 |
+| <span id="hat-1-dyn-tr-fa4"></span>`1:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_tr_fa4` | 0.1987, -0.0074, 0.0174 | 0.5621, 0.502, 0.4528, 0.4765 |
+| <span id="hat-1-dyn-tr-ma2"></span>`1:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_tr_ma2` | 0.1753, 0, 0.0384 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-1-dyn-warr-cb"></span>`1:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 1 | [1](characters.md#char-1) | `dyn_warr_cb` | 0.1536, -0.0025, 0.0019 | 0.5685, -0.5676, 0.4207, -0.4215 |
 
 ## 5 warr_sw {#5-warr-sw}
 
 41 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-5-dyn-abe"></span>`5:dyn_abe` | 5 | [5](characters.md#char-5) | `dyn_abe` | 0.0569, 0.0017, 0.045 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-5-dyn-bm-vb3"></span>`5:dyn_bm_vb3` | 5 | [5](characters.md#char-5) | `dyn_bm_vb3` | 0.2016, -0.005, 0.0155 | 0.542, 0.506, 0.4556, 0.4925 |
-| <span id="hat-5-dyn-bm-vb5"></span>`5:dyn_bm_vb5` | 5 | [5](characters.md#char-5) | `dyn_bm_vb5` | 0.1574, 0.0007, 0.0254 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-5-dyn-bm-vb6"></span>`5:dyn_bm_vb6` | 5 | [5](characters.md#char-5) | `dyn_bm_vb6` | 0.2115, 0.0007, -0.0115 | 0.5587, 0.5701, 0.4401, 0.4113 |
-| <span id="hat-5-dyn-bm-vb7"></span>`5:dyn_bm_vb7` | 5 | [5](characters.md#char-5) | `dyn_bm_vb7` | 0.1655, 0.0003, 0.0011 | 0.5699, 0.566, 0.4236, 0.4189 |
-| <span id="hat-5-dyn-bopp-bo"></span>`5:dyn_bopp_bo` | 5 | [5](characters.md#char-5) | `dyn_bopp_bo` | 0.1406, -0.0017, 0.0017 | 0.5463, -0.5815, 0.4389, -0.4133 |
-| <span id="hat-5-dyn-bopp-lt"></span>`5:dyn_bopp_lt` | 5 | [5](characters.md#char-5) | `dyn_bopp_lt` | 0.1945, -0.0015, -0.0163 | 0.5863, -0.5711, 0.4253, -0.3863 |
-| <span id="hat-5-dyn-bopp-so"></span>`5:dyn_bopp_so` | 5 | [5](characters.md#char-5) | `dyn_bopp_so` | 0.1936, 0.0001, -0.015 | 0.5746, -0.5859, 0.4122, -0.3957 |
-| <span id="hat-5-dyn-butcher"></span>`5:dyn_butcher` | 5 | [5](characters.md#char-5) | `dyn_butcher` | 0.1984, 0.0021, -0.0095 | 0.5684, -0.5682, 0.4025, -0.4383 |
-| <span id="hat-5-dyn-ch"></span>`5:dyn_ch` | 5 | [5](characters.md#char-5) | `dyn_ch` | 0.1969, -0.0061, 0.0354 | 0.533, -0.5467, 0.4991, -0.4097 |
-| <span id="hat-5-dyn-civl-a"></span>`5:dyn_civl_a` | 5 | [5](characters.md#char-5) | `dyn_civl_a` | 0.1901, -0.0028, -0.0273 | 0.6127, 0.5881, 0.3813, 0.3651 |
-| <span id="hat-5-dyn-civl-hl-ho"></span>`5:dyn_civl_hl_ho` | 5 | [5](characters.md#char-5) | `dyn_civl_hl_ho` | 0.2019, -0.0084, -0.0027 | 0.5924, 0.5385, 0.3499, 0.4864 |
-| <span id="hat-5-dyn-civl-pl-sp"></span>`5:dyn_civl_pl_sp` | 5 | [5](characters.md#char-5) | `dyn_civl_pl_sp` | 0.1619, -0.0323, -0.0375 | 0.5624, -0.6676, 0.313, -0.3742 |
-| <span id="hat-5-dyn-co-ma3"></span>`5:dyn_co_ma3` | 5 | [5](characters.md#char-5) | `dyn_co_ma3` | 0.182, -0.0109, -0.0082 | 0.5972, 0.5433, 0.384, 0.4479 |
-| <span id="hat-5-dyn-cops-va"></span>`5:dyn_cops_va` | 5 | [5](characters.md#char-5) | `dyn_cops_va` | 0.2115, -0.0101, 0.002 | 0.5291, -0.5692, 0.4609, -0.4286 |
-| <span id="hat-5-dyn-ct-act"></span>`5:dyn_ct_act` | 5 | [5](characters.md#char-5) | `dyn_ct_act` | 0.182, -0.0109, -0.0082 | 0.5972, 0.5433, 0.384, 0.4479 |
-| <span id="hat-5-dyn-ct-ma2"></span>`5:dyn_ct_ma2` | 5 | [5](characters.md#char-5) | `dyn_ct_ma2` | 0.1685, 0.001, 0.0139 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-5-dyn-cw-m1"></span>`5:dyn_cw_m1` | 5 | [5](characters.md#char-5) | `dyn_cw_m1` | 0.1685, 0.001, 0.0139 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-5-dyn-cw-m2"></span>`5:dyn_cw_m2` | 5 | [5](characters.md#char-5) | `dyn_cw_m2` | 0.1685, 0.001, 0.0139 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-5-dyn-dest-lt"></span>`5:dyn_dest_lt` | 5 | [5](characters.md#char-5) | `dyn_dest_lt` | 0.1788, -0.0074, -0.0169 | 0.6024, 0.5892, 0.3584, 0.4019 |
-| <span id="hat-5-dyn-dest-lta"></span>`5:dyn_dest_lta` | 5 | [5](characters.md#char-5) | `dyn_dest_lta` | 0.1619, -0.0323, -0.0375 | 0.5624, -0.6676, 0.313, -0.3742 |
-| <span id="hat-5-dyn-dest-ltb"></span>`5:dyn_dest_ltb` | 5 | [5](characters.md#char-5) | `dyn_dest_ltb` | 0.186, 0, 0.0142 | 0.5569, 0.5569, 0.4358, 0.4358 |
-| <span id="hat-5-dyn-eh-ma2"></span>`5:dyn_eh_ma2` | 5 | [5](characters.md#char-5) | `dyn_eh_ma2` | 0.1768, -0.0046, -0.0017 | 0.5992, 0.5572, 0.4089, 0.4042 |
-| <span id="hat-5-dyn-hiha-lt"></span>`5:dyn_hiha_lt` | 5 | [5](characters.md#char-5) | `dyn_hiha_lt` | 0.2257, -0.0009, 0.002 | 0.534, -0.5578, 0.4517, -0.447 |
-| <span id="hat-5-dyn-hiha-lt-ft"></span>`5:dyn_hiha_lt_ft` | 5 | [5](characters.md#char-5) | `dyn_hiha_lt_ft` | 0.2257, -0.0009, 0.002 | 0.534, -0.5578, 0.4517, -0.447 |
-| <span id="hat-5-dyn-hiha-so"></span>`5:dyn_hiha_so` | 5 | [5](characters.md#char-5) | `dyn_hiha_so` | 0.2285, -0.0236, -0.0022 | 0.4924, -0.5935, 0.4881, -0.4087 |
-| <span id="hat-5-dyn-hurr-lt"></span>`5:dyn_hurr_lt` | 5 | [5](characters.md#char-5) | `dyn_hurr_lt` | 0.182, -0.0109, -0.0082 | 0.5972, 0.5433, 0.384, 0.4479 |
-| <span id="hat-5-dyn-hurr-so"></span>`5:dyn_hurr_so` | 5 | [5](characters.md#char-5) | `dyn_hurr_so` | 0.1953, -0.0199, -0.0015 | 0.5303, -0.6096, 0.4431, -0.3884 |
-| <span id="hat-5-dyn-panz-lt"></span>`5:dyn_panz_lt` | 5 | [5](characters.md#char-5) | `dyn_panz_lt` | 0.195, -0.0194, -0.0034 | 0.5037, -0.5941, 0.4963, -0.3835 |
-| <span id="hat-5-dyn-panz-so"></span>`5:dyn_panz_so` | 5 | [5](characters.md#char-5) | `dyn_panz_so` | 0.195, -0.0194, -0.0034 | 0.5037, -0.5941, 0.4963, -0.3835 |
-| <span id="hat-5-dyn-pimp-va"></span>`5:dyn_pimp_va` | 5 | [5](characters.md#char-5) | `dyn_pimp_va` | 0.1984, -0.0174, 0.0068 | 0.5263, -0.5903, 0.4409, -0.4244 |
-| <span id="hat-5-dyn-pimp-vb"></span>`5:dyn_pimp_vb` | 5 | [5](characters.md#char-5) | `dyn_pimp_vb` | 0.1984, -0.0174, 0.0068 | 0.5263, -0.5903, 0.4409, -0.4244 |
-| <span id="hat-5-dyn-pl-ma9"></span>`5:dyn_pl_ma9` | 5 | [5](characters.md#char-5) | `dyn_pl_ma9` | 0.2046, -0.0053, 0.0392 | 0.5381, 0.5281, 0.4559, 0.473 |
-| <span id="hat-5-dyn-pl-pm"></span>`5:dyn_pl_pm` | 5 | [5](characters.md#char-5) | `dyn_pl_pm` | 0.1828, -0.0018, -0.0044 | 0.5867, 0.5691, 0.3899, 0.4241 |
-| <span id="hat-5-dyn-rogu-lt"></span>`5:dyn_rogu_lt` | 5 | [5](characters.md#char-5) | `dyn_rogu_lt` | 0.2044, 0.0035, -0.0088 | 0.6097, -0.5424, 0.411, -0.4064 |
-| <span id="hat-5-dyn-rogu-so"></span>`5:dyn_rogu_so` | 5 | [5](characters.md#char-5) | `dyn_rogu_so` | 0.2109, -0.0112, -0.0094 | 0.554, -0.5907, 0.4384, -0.3899 |
-| <span id="hat-5-dyn-sata-bo"></span>`5:dyn_sata_bo` | 5 | [5](characters.md#char-5) | `dyn_sata_bo` | 0.2107, -0.0016, -0.0101 | 0.5522, -0.5522, 0.4416, -0.4416 |
-| <span id="hat-5-dyn-sk-pe"></span>`5:dyn_sk_pe` | 5 | [5](characters.md#char-5) | `dyn_sk_pe` | 0.2268, -0.0068, -0.02 | 0.5901, 0.5637, 0.3964, 0.4206 |
-| <span id="hat-5-dyn-tr-fa4"></span>`5:dyn_tr_fa4` | 5 | [5](characters.md#char-5) | `dyn_tr_fa4` | 0.2104, -0.0061, -0.005 | 0.5599, 0.574, 0.3933, 0.4499 |
-| <span id="hat-5-dyn-tr-ma2"></span>`5:dyn_tr_ma2` | 5 | [5](characters.md#char-5) | `dyn_tr_ma2` | 0.186, 0, 0.0142 | 0.5569, 0.5569, 0.4358, 0.4358 |
-| <span id="hat-5-dyn-warr-cb"></span>`5:dyn_warr_cb` | 5 | [5](characters.md#char-5) | `dyn_warr_cb` | 0.1673, -0.0016, -0.0091 | 0.5875, -0.5878, 0.3934, -0.3932 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-5-dyn-abe"></span>`5:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_abe` | 0.0569, 0.0017, 0.045 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-5-dyn-bm-vb3"></span>`5:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_bm_vb3` | 0.2016, -0.005, 0.0155 | 0.542, 0.506, 0.4556, 0.4925 |
+| <span id="hat-5-dyn-bm-vb5"></span>`5:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_bm_vb5` | 0.1574, 0.0007, 0.0254 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-5-dyn-bm-vb6"></span>`5:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_bm_vb6` | 0.2115, 0.0007, -0.0115 | 0.5587, 0.5701, 0.4401, 0.4113 |
+| <span id="hat-5-dyn-bm-vb7"></span>`5:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_bm_vb7` | 0.1655, 0.0003, 0.0011 | 0.5699, 0.566, 0.4236, 0.4189 |
+| <span id="hat-5-dyn-bopp-bo"></span>`5:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_bopp_bo` | 0.1406, -0.0017, 0.0017 | 0.5463, -0.5815, 0.4389, -0.4133 |
+| <span id="hat-5-dyn-bopp-lt"></span>`5:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_bopp_lt` | 0.1945, -0.0015, -0.0163 | 0.5863, -0.5711, 0.4253, -0.3863 |
+| <span id="hat-5-dyn-bopp-so"></span>`5:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_bopp_so` | 0.1936, 0.0001, -0.015 | 0.5746, -0.5859, 0.4122, -0.3957 |
+| <span id="hat-5-dyn-butcher"></span>`5:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_butcher` | 0.1984, 0.0021, -0.0095 | 0.5684, -0.5682, 0.4025, -0.4383 |
+| <span id="hat-5-dyn-ch"></span>`5:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_ch` | 0.1969, -0.0061, 0.0354 | 0.533, -0.5467, 0.4991, -0.4097 |
+| <span id="hat-5-dyn-civl-a"></span>`5:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_civl_a` | 0.1901, -0.0028, -0.0273 | 0.6127, 0.5881, 0.3813, 0.3651 |
+| <span id="hat-5-dyn-civl-hl-ho"></span>`5:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_civl_hl_ho` | 0.2019, -0.0084, -0.0027 | 0.5924, 0.5385, 0.3499, 0.4864 |
+| <span id="hat-5-dyn-civl-pl-sp"></span>`5:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_civl_pl_sp` | 0.1619, -0.0323, -0.0375 | 0.5624, -0.6676, 0.313, -0.3742 |
+| <span id="hat-5-dyn-co-ma3"></span>`5:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_co_ma3` | 0.182, -0.0109, -0.0082 | 0.5972, 0.5433, 0.384, 0.4479 |
+| <span id="hat-5-dyn-cops-va"></span>`5:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_cops_va` | 0.2115, -0.0101, 0.002 | 0.5291, -0.5692, 0.4609, -0.4286 |
+| <span id="hat-5-dyn-ct-act"></span>`5:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_ct_act` | 0.182, -0.0109, -0.0082 | 0.5972, 0.5433, 0.384, 0.4479 |
+| <span id="hat-5-dyn-ct-ma2"></span>`5:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_ct_ma2` | 0.1685, 0.001, 0.0139 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-5-dyn-cw-m1"></span>`5:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_cw_m1` | 0.1685, 0.001, 0.0139 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-5-dyn-cw-m2"></span>`5:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_cw_m2` | 0.1685, 0.001, 0.0139 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-5-dyn-dest-lt"></span>`5:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_dest_lt` | 0.1788, -0.0074, -0.0169 | 0.6024, 0.5892, 0.3584, 0.4019 |
+| <span id="hat-5-dyn-dest-lta"></span>`5:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_dest_lta` | 0.1619, -0.0323, -0.0375 | 0.5624, -0.6676, 0.313, -0.3742 |
+| <span id="hat-5-dyn-dest-ltb"></span>`5:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_dest_ltb` | 0.186, 0, 0.0142 | 0.5569, 0.5569, 0.4358, 0.4358 |
+| <span id="hat-5-dyn-eh-ma2"></span>`5:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_eh_ma2` | 0.1768, -0.0046, -0.0017 | 0.5992, 0.5572, 0.4089, 0.4042 |
+| <span id="hat-5-dyn-hiha-lt"></span>`5:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_hiha_lt` | 0.2257, -0.0009, 0.002 | 0.534, -0.5578, 0.4517, -0.447 |
+| <span id="hat-5-dyn-hiha-lt-ft"></span>`5:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_hiha_lt_ft` | 0.2257, -0.0009, 0.002 | 0.534, -0.5578, 0.4517, -0.447 |
+| <span id="hat-5-dyn-hiha-so"></span>`5:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_hiha_so` | 0.2285, -0.0236, -0.0022 | 0.4924, -0.5935, 0.4881, -0.4087 |
+| <span id="hat-5-dyn-hurr-lt"></span>`5:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_hurr_lt` | 0.182, -0.0109, -0.0082 | 0.5972, 0.5433, 0.384, 0.4479 |
+| <span id="hat-5-dyn-hurr-so"></span>`5:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_hurr_so` | 0.1953, -0.0199, -0.0015 | 0.5303, -0.6096, 0.4431, -0.3884 |
+| <span id="hat-5-dyn-panz-lt"></span>`5:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_panz_lt` | 0.195, -0.0194, -0.0034 | 0.5037, -0.5941, 0.4963, -0.3835 |
+| <span id="hat-5-dyn-panz-so"></span>`5:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_panz_so` | 0.195, -0.0194, -0.0034 | 0.5037, -0.5941, 0.4963, -0.3835 |
+| <span id="hat-5-dyn-pimp-va"></span>`5:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_pimp_va` | 0.1984, -0.0174, 0.0068 | 0.5263, -0.5903, 0.4409, -0.4244 |
+| <span id="hat-5-dyn-pimp-vb"></span>`5:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_pimp_vb` | 0.1984, -0.0174, 0.0068 | 0.5263, -0.5903, 0.4409, -0.4244 |
+| <span id="hat-5-dyn-pl-ma9"></span>`5:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_pl_ma9` | 0.2046, -0.0053, 0.0392 | 0.5381, 0.5281, 0.4559, 0.473 |
+| <span id="hat-5-dyn-pl-pm"></span>`5:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_pl_pm` | 0.1828, -0.0018, -0.0044 | 0.5867, 0.5691, 0.3899, 0.4241 |
+| <span id="hat-5-dyn-rogu-lt"></span>`5:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_rogu_lt` | 0.2044, 0.0035, -0.0088 | 0.6097, -0.5424, 0.411, -0.4064 |
+| <span id="hat-5-dyn-rogu-so"></span>`5:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_rogu_so` | 0.2109, -0.0112, -0.0094 | 0.554, -0.5907, 0.4384, -0.3899 |
+| <span id="hat-5-dyn-sata-bo"></span>`5:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_sata_bo` | 0.2107, -0.0016, -0.0101 | 0.5522, -0.5522, 0.4416, -0.4416 |
+| <span id="hat-5-dyn-sk-pe"></span>`5:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_sk_pe` | 0.2268, -0.0068, -0.02 | 0.5901, 0.5637, 0.3964, 0.4206 |
+| <span id="hat-5-dyn-tr-fa4"></span>`5:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_tr_fa4` | 0.2104, -0.0061, -0.005 | 0.5599, 0.574, 0.3933, 0.4499 |
+| <span id="hat-5-dyn-tr-ma2"></span>`5:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_tr_ma2` | 0.186, 0, 0.0142 | 0.5569, 0.5569, 0.4358, 0.4358 |
+| <span id="hat-5-dyn-warr-cb"></span>`5:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 5 | [5](characters.md#char-5) | `dyn_warr_cb` | 0.1673, -0.0016, -0.0091 | 0.5875, -0.5878, 0.3934, -0.3932 |
 
 ## 7 warr_sw_cv {#7-warr-sw-cv}
 
 40 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-7-dyn-abe"></span>`7:dyn_abe` | 7 | [7](characters.md#char-7) | `dyn_abe` | 0.0553, 0.0017, 0.0505 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-7-dyn-bm-vb3"></span>`7:dyn_bm_vb3` | 7 | [7](characters.md#char-7) | `dyn_bm_vb3` | 0.2011, -0.005, 0.021 | 0.542, 0.506, 0.4556, 0.4925 |
-| <span id="hat-7-dyn-bm-vb5"></span>`7:dyn_bm_vb5` | 7 | [7](characters.md#char-7) | `dyn_bm_vb5` | 0.1559, 0.0007, 0.0309 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-7-dyn-bm-vb6"></span>`7:dyn_bm_vb6` | 7 | [7](characters.md#char-7) | `dyn_bm_vb6` | 0.2099, 0.0007, -0.006 | 0.5587, 0.5701, 0.4401, 0.4113 |
-| <span id="hat-7-dyn-bm-vb7"></span>`7:dyn_bm_vb7` | 7 | [7](characters.md#char-7) | `dyn_bm_vb7` | 0.1639, 0.0003, 0.0066 | 0.5699, 0.566, 0.4236, 0.4189 |
-| <span id="hat-7-dyn-bopp-bo"></span>`7:dyn_bopp_bo` | 7 | [7](characters.md#char-7) | `dyn_bopp_bo` | 0.1406, -0.0017, 0.0075 | 0.5463, -0.5815, 0.4389, -0.4133 |
-| <span id="hat-7-dyn-bopp-lt"></span>`7:dyn_bopp_lt` | 7 | [7](characters.md#char-7) | `dyn_bopp_lt` | 0.193, -0.0015, -0.0108 | 0.5863, -0.5711, 0.4253, -0.3863 |
-| <span id="hat-7-dyn-bopp-so"></span>`7:dyn_bopp_so` | 7 | [7](characters.md#char-7) | `dyn_bopp_so` | 0.1921, 0.0001, -0.0095 | 0.5746, -0.5859, 0.4122, -0.3957 |
-| <span id="hat-7-dyn-butcher"></span>`7:dyn_butcher` | 7 | [7](characters.md#char-7) | `dyn_butcher` | 0.1969, 0.0021, -0.003 | 0.5684, -0.5682, 0.4025, -0.4383 |
-| <span id="hat-7-dyn-ch"></span>`7:dyn_ch` | 7 | [7](characters.md#char-7) | `dyn_ch` | 0.1964, -0.0061, 0.0409 | 0.533, -0.5467, 0.4991, -0.4097 |
-| <span id="hat-7-dyn-civl-a"></span>`7:dyn_civl_a` | 7 | [7](characters.md#char-7) | `dyn_civl_a` | 0.1886, -0.0028, -0.0218 | 0.6127, 0.5881, 0.3813, 0.3651 |
-| <span id="hat-7-dyn-civl-hl-ho"></span>`7:dyn_civl_hl_ho` | 7 | [7](characters.md#char-7) | `dyn_civl_hl_ho` | 0.2014, -0.0084, 0.0028 | 0.5924, 0.5385, 0.3499, 0.4864 |
-| <span id="hat-7-dyn-civl-pl-sp"></span>`7:dyn_civl_pl_sp` | 7 | [7](characters.md#char-7) | `dyn_civl_pl_sp` | 0.1604, -0.0323, -0.032 | 0.5624, -0.6676, 0.313, -0.3742 |
-| <span id="hat-7-dyn-co-ma3"></span>`7:dyn_co_ma3` | 7 | [7](characters.md#char-7) | `dyn_co_ma3` | 0.1805, -0.0109, -0.0027 | 0.5972, 0.5433, 0.384, 0.4479 |
-| <span id="hat-7-dyn-ct-act"></span>`7:dyn_ct_act` | 7 | [7](characters.md#char-7) | `dyn_ct_act` | 0.1805, -0.0109, -0.0027 | 0.5972, 0.5433, 0.384, 0.4479 |
-| <span id="hat-7-dyn-ct-ma2"></span>`7:dyn_ct_ma2` | 7 | [7](characters.md#char-7) | `dyn_ct_ma2` | 0.167, 0.001, 0.0194 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-7-dyn-cw-m1"></span>`7:dyn_cw_m1` | 7 | [7](characters.md#char-7) | `dyn_cw_m1` | 0.167, 0.001, 0.0194 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-7-dyn-cw-m2"></span>`7:dyn_cw_m2` | 7 | [7](characters.md#char-7) | `dyn_cw_m2` | 0.167, 0.001, 0.0194 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-7-dyn-dest-lt"></span>`7:dyn_dest_lt` | 7 | [7](characters.md#char-7) | `dyn_dest_lt` | 0.1773, -0.0074, -0.0114 | 0.6024, 0.5892, 0.3584, 0.4019 |
-| <span id="hat-7-dyn-dest-lta"></span>`7:dyn_dest_lta` | 7 | [7](characters.md#char-7) | `dyn_dest_lta` | 0.1604, -0.0323, -0.032 | 0.5624, -0.6676, 0.313, -0.3742 |
-| <span id="hat-7-dyn-dest-ltb"></span>`7:dyn_dest_ltb` | 7 | [7](characters.md#char-7) | `dyn_dest_ltb` | 0.1844, 0.001, 0.0197 | 0.5569, 0.5569, 0.4358, 0.4358 |
-| <span id="hat-7-dyn-eh-ma2"></span>`7:dyn_eh_ma2` | 7 | [7](characters.md#char-7) | `dyn_eh_ma2` | 0.1753, -0.0046, 0.0039 | 0.5992, 0.5572, 0.4089, 0.4042 |
-| <span id="hat-7-dyn-hiha-lt"></span>`7:dyn_hiha_lt` | 7 | [7](characters.md#char-7) | `dyn_hiha_lt` | 0.2242, -0.0009, 0.0075 | 0.534, -0.5578, 0.4517, -0.447 |
-| <span id="hat-7-dyn-hiha-lt-ft"></span>`7:dyn_hiha_lt_ft` | 7 | [7](characters.md#char-7) | `dyn_hiha_lt_ft` | 0.2242, -0.0009, 0.0075 | 0.534, -0.5578, 0.4517, -0.447 |
-| <span id="hat-7-dyn-hiha-so"></span>`7:dyn_hiha_so` | 7 | [7](characters.md#char-7) | `dyn_hiha_so` | 0.227, -0.0236, 0.0034 | 0.4924, -0.5935, 0.4881, -0.4087 |
-| <span id="hat-7-dyn-hurr-lt"></span>`7:dyn_hurr_lt` | 7 | [7](characters.md#char-7) | `dyn_hurr_lt` | 0.1805, -0.0109, -0.0027 | 0.5972, 0.5433, 0.384, 0.4479 |
-| <span id="hat-7-dyn-hurr-so"></span>`7:dyn_hurr_so` | 7 | [7](characters.md#char-7) | `dyn_hurr_so` | 0.1937, -0.0199, 0.004 | 0.5303, -0.6096, 0.4431, -0.3884 |
-| <span id="hat-7-dyn-panz-lt"></span>`7:dyn_panz_lt` | 7 | [7](characters.md#char-7) | `dyn_panz_lt` | 0.1934, -0.0194, 0.0041 | 0.5037, -0.5941, 0.4963, -0.3835 |
-| <span id="hat-7-dyn-panz-so"></span>`7:dyn_panz_so` | 7 | [7](characters.md#char-7) | `dyn_panz_so` | 0.1934, -0.0194, 0.0041 | 0.5037, -0.5941, 0.4963, -0.3835 |
-| <span id="hat-7-dyn-pimp-va"></span>`7:dyn_pimp_va` | 7 | [7](characters.md#char-7) | `dyn_pimp_va` | 0.1968, -0.0174, 0.0123 | 0.5263, -0.5903, 0.4409, -0.4244 |
-| <span id="hat-7-dyn-pimp-vb"></span>`7:dyn_pimp_vb` | 7 | [7](characters.md#char-7) | `dyn_pimp_vb` | 0.1968, -0.0174, 0.0123 | 0.5263, -0.5903, 0.4409, -0.4244 |
-| <span id="hat-7-dyn-pl-ma9"></span>`7:dyn_pl_ma9` | 7 | [7](characters.md#char-7) | `dyn_pl_ma9` | 0.2031, -0.0053, 0.0447 | 0.5381, 0.5281, 0.4559, 0.473 |
-| <span id="hat-7-dyn-pl-pm"></span>`7:dyn_pl_pm` | 7 | [7](characters.md#char-7) | `dyn_pl_pm` | 0.1823, -0.0018, 0.0011 | 0.5867, 0.5691, 0.3899, 0.4241 |
-| <span id="hat-7-dyn-rogu-lt"></span>`7:dyn_rogu_lt` | 7 | [7](characters.md#char-7) | `dyn_rogu_lt` | 0.2039, 0.0035, -0.0033 | 0.6097, -0.5424, 0.411, -0.4064 |
-| <span id="hat-7-dyn-rogu-so"></span>`7:dyn_rogu_so` | 7 | [7](characters.md#char-7) | `dyn_rogu_so` | 0.2093, -0.0112, -0.0039 | 0.554, -0.5907, 0.4384, -0.3899 |
-| <span id="hat-7-dyn-sata-bo"></span>`7:dyn_sata_bo` | 7 | [7](characters.md#char-7) | `dyn_sata_bo` | 0.2092, -0.0016, -0.0036 | 0.5522, -0.5522, 0.4416, -0.4416 |
-| <span id="hat-7-dyn-sk-pe"></span>`7:dyn_sk_pe` | 7 | [7](characters.md#char-7) | `dyn_sk_pe` | 0.2252, -0.0068, -0.0145 | 0.5901, 0.5637, 0.3964, 0.4206 |
-| <span id="hat-7-dyn-tr-fa4"></span>`7:dyn_tr_fa4` | 7 | [7](characters.md#char-7) | `dyn_tr_fa4` | 0.2088, -0.0061, 0.0006 | 0.5599, 0.574, 0.3933, 0.4499 |
-| <span id="hat-7-dyn-tr-ma2"></span>`7:dyn_tr_ma2` | 7 | [7](characters.md#char-7) | `dyn_tr_ma2` | 0.1844, 0.001, 0.0197 | 0.5569, 0.5569, 0.4358, 0.4358 |
-| <span id="hat-7-dyn-warr-cb"></span>`7:dyn_warr_cb` | 7 | [7](characters.md#char-7) | `dyn_warr_cb` | 0.1658, -0.0016, -0.0036 | 0.5875, -0.5878, 0.3934, -0.3932 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-7-dyn-abe"></span>`7:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_abe` | 0.0553, 0.0017, 0.0505 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-7-dyn-bm-vb3"></span>`7:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_bm_vb3` | 0.2011, -0.005, 0.021 | 0.542, 0.506, 0.4556, 0.4925 |
+| <span id="hat-7-dyn-bm-vb5"></span>`7:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_bm_vb5` | 0.1559, 0.0007, 0.0309 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-7-dyn-bm-vb6"></span>`7:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_bm_vb6` | 0.2099, 0.0007, -0.006 | 0.5587, 0.5701, 0.4401, 0.4113 |
+| <span id="hat-7-dyn-bm-vb7"></span>`7:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_bm_vb7` | 0.1639, 0.0003, 0.0066 | 0.5699, 0.566, 0.4236, 0.4189 |
+| <span id="hat-7-dyn-bopp-bo"></span>`7:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_bopp_bo` | 0.1406, -0.0017, 0.0075 | 0.5463, -0.5815, 0.4389, -0.4133 |
+| <span id="hat-7-dyn-bopp-lt"></span>`7:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_bopp_lt` | 0.193, -0.0015, -0.0108 | 0.5863, -0.5711, 0.4253, -0.3863 |
+| <span id="hat-7-dyn-bopp-so"></span>`7:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_bopp_so` | 0.1921, 0.0001, -0.0095 | 0.5746, -0.5859, 0.4122, -0.3957 |
+| <span id="hat-7-dyn-butcher"></span>`7:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_butcher` | 0.1969, 0.0021, -0.003 | 0.5684, -0.5682, 0.4025, -0.4383 |
+| <span id="hat-7-dyn-ch"></span>`7:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_ch` | 0.1964, -0.0061, 0.0409 | 0.533, -0.5467, 0.4991, -0.4097 |
+| <span id="hat-7-dyn-civl-a"></span>`7:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_civl_a` | 0.1886, -0.0028, -0.0218 | 0.6127, 0.5881, 0.3813, 0.3651 |
+| <span id="hat-7-dyn-civl-hl-ho"></span>`7:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_civl_hl_ho` | 0.2014, -0.0084, 0.0028 | 0.5924, 0.5385, 0.3499, 0.4864 |
+| <span id="hat-7-dyn-civl-pl-sp"></span>`7:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_civl_pl_sp` | 0.1604, -0.0323, -0.032 | 0.5624, -0.6676, 0.313, -0.3742 |
+| <span id="hat-7-dyn-co-ma3"></span>`7:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_co_ma3` | 0.1805, -0.0109, -0.0027 | 0.5972, 0.5433, 0.384, 0.4479 |
+| <span id="hat-7-dyn-ct-act"></span>`7:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_ct_act` | 0.1805, -0.0109, -0.0027 | 0.5972, 0.5433, 0.384, 0.4479 |
+| <span id="hat-7-dyn-ct-ma2"></span>`7:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_ct_ma2` | 0.167, 0.001, 0.0194 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-7-dyn-cw-m1"></span>`7:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_cw_m1` | 0.167, 0.001, 0.0194 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-7-dyn-cw-m2"></span>`7:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_cw_m2` | 0.167, 0.001, 0.0194 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-7-dyn-dest-lt"></span>`7:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_dest_lt` | 0.1773, -0.0074, -0.0114 | 0.6024, 0.5892, 0.3584, 0.4019 |
+| <span id="hat-7-dyn-dest-lta"></span>`7:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_dest_lta` | 0.1604, -0.0323, -0.032 | 0.5624, -0.6676, 0.313, -0.3742 |
+| <span id="hat-7-dyn-dest-ltb"></span>`7:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_dest_ltb` | 0.1844, 0.001, 0.0197 | 0.5569, 0.5569, 0.4358, 0.4358 |
+| <span id="hat-7-dyn-eh-ma2"></span>`7:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_eh_ma2` | 0.1753, -0.0046, 0.0039 | 0.5992, 0.5572, 0.4089, 0.4042 |
+| <span id="hat-7-dyn-hiha-lt"></span>`7:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_hiha_lt` | 0.2242, -0.0009, 0.0075 | 0.534, -0.5578, 0.4517, -0.447 |
+| <span id="hat-7-dyn-hiha-lt-ft"></span>`7:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_hiha_lt_ft` | 0.2242, -0.0009, 0.0075 | 0.534, -0.5578, 0.4517, -0.447 |
+| <span id="hat-7-dyn-hiha-so"></span>`7:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_hiha_so` | 0.227, -0.0236, 0.0034 | 0.4924, -0.5935, 0.4881, -0.4087 |
+| <span id="hat-7-dyn-hurr-lt"></span>`7:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_hurr_lt` | 0.1805, -0.0109, -0.0027 | 0.5972, 0.5433, 0.384, 0.4479 |
+| <span id="hat-7-dyn-hurr-so"></span>`7:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_hurr_so` | 0.1937, -0.0199, 0.004 | 0.5303, -0.6096, 0.4431, -0.3884 |
+| <span id="hat-7-dyn-panz-lt"></span>`7:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_panz_lt` | 0.1934, -0.0194, 0.0041 | 0.5037, -0.5941, 0.4963, -0.3835 |
+| <span id="hat-7-dyn-panz-so"></span>`7:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_panz_so` | 0.1934, -0.0194, 0.0041 | 0.5037, -0.5941, 0.4963, -0.3835 |
+| <span id="hat-7-dyn-pimp-va"></span>`7:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_pimp_va` | 0.1968, -0.0174, 0.0123 | 0.5263, -0.5903, 0.4409, -0.4244 |
+| <span id="hat-7-dyn-pimp-vb"></span>`7:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_pimp_vb` | 0.1968, -0.0174, 0.0123 | 0.5263, -0.5903, 0.4409, -0.4244 |
+| <span id="hat-7-dyn-pl-ma9"></span>`7:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_pl_ma9` | 0.2031, -0.0053, 0.0447 | 0.5381, 0.5281, 0.4559, 0.473 |
+| <span id="hat-7-dyn-pl-pm"></span>`7:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_pl_pm` | 0.1823, -0.0018, 0.0011 | 0.5867, 0.5691, 0.3899, 0.4241 |
+| <span id="hat-7-dyn-rogu-lt"></span>`7:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_rogu_lt` | 0.2039, 0.0035, -0.0033 | 0.6097, -0.5424, 0.411, -0.4064 |
+| <span id="hat-7-dyn-rogu-so"></span>`7:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_rogu_so` | 0.2093, -0.0112, -0.0039 | 0.554, -0.5907, 0.4384, -0.3899 |
+| <span id="hat-7-dyn-sata-bo"></span>`7:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_sata_bo` | 0.2092, -0.0016, -0.0036 | 0.5522, -0.5522, 0.4416, -0.4416 |
+| <span id="hat-7-dyn-sk-pe"></span>`7:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_sk_pe` | 0.2252, -0.0068, -0.0145 | 0.5901, 0.5637, 0.3964, 0.4206 |
+| <span id="hat-7-dyn-tr-fa4"></span>`7:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_tr_fa4` | 0.2088, -0.0061, 0.0006 | 0.5599, 0.574, 0.3933, 0.4499 |
+| <span id="hat-7-dyn-tr-ma2"></span>`7:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_tr_ma2` | 0.1844, 0.001, 0.0197 | 0.5569, 0.5569, 0.4358, 0.4358 |
+| <span id="hat-7-dyn-warr-cb"></span>`7:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 7 | [7](characters.md#char-7) | `dyn_warr_cb` | 0.1658, -0.0016, -0.0036 | 0.5875, -0.5878, 0.3934, -0.3932 |
 
 ## 11 warr_aj {#11-warr-aj}
 
 41 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-11-dyn-abe"></span>`11:dyn_abe` | 10 | [11](characters.md#char-11) | `dyn_abe` | 0.0534, 0.0017, 0.0565 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-11-dyn-bm-vb3"></span>`11:dyn_bm_vb3` | 10 | [11](characters.md#char-11) | `dyn_bm_vb3` | 0.1796, -0.007, 0.0152 | 0.5552, 0.4914, 0.4407, 0.5061 |
-| <span id="hat-11-dyn-bm-vb5"></span>`11:dyn_bm_vb5` | 10 | [11](characters.md#char-11) | `dyn_bm_vb5` | 0.127, -0.0009, 0.0195 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-11-dyn-bm-vb6"></span>`11:dyn_bm_vb6` | 10 | [11](characters.md#char-11) | `dyn_bm_vb6` | 0.1996, -0.0156, -0.0214 | 0.6017, 0.5239, 0.3869, 0.4625 |
-| <span id="hat-11-dyn-bm-vb7"></span>`11:dyn_bm_vb7` | 10 | [11](characters.md#char-11) | `dyn_bm_vb7` | 0.1452, 0, 0.0081 | 0.5339, 0.5339, 0.4637, 0.4637 |
-| <span id="hat-11-dyn-bopp-bo"></span>`11:dyn_bopp_bo` | 10 | [11](characters.md#char-11) | `dyn_bopp_bo` | 0.1276, -0.0009, 0.0155 | 0.4997, -0.5302, 0.5003, -0.4679 |
-| <span id="hat-11-dyn-bopp-lt"></span>`11:dyn_bopp_lt` | 10 | [11](characters.md#char-11) | `dyn_bopp_lt` | 0.1829, -0.0091, -0.0059 | 0.5293, -0.5796, 0.4784, -0.3938 |
-| <span id="hat-11-dyn-bopp-so"></span>`11:dyn_bopp_so` | 10 | [11](characters.md#char-11) | `dyn_bopp_so` | 0.1852, -0.0116, -0.0028 | 0.4992, -0.5982, 0.4728, -0.4116 |
-| <span id="hat-11-dyn-butcher"></span>`11:dyn_butcher` | 10 | [11](characters.md#char-11) | `dyn_butcher` | 0.1813, 0, -0.0134 | 0.5707, -0.5707, 0.4174, -0.4174 |
-| <span id="hat-11-dyn-ch"></span>`11:dyn_ch` | 10 | [11](characters.md#char-11) | `dyn_ch` | 0.1941, -0.012, 0.0343 | 0.5179, -0.5608, 0.5115, -0.3944 |
-| <span id="hat-11-dyn-civl-a"></span>`11:dyn_civl_a` | 10 | [11](characters.md#char-11) | `dyn_civl_a` | 0.179, -0.0116, -0.0196 | 0.5624, 0.5945, 0.3236, 0.4748 |
-| <span id="hat-11-dyn-civl-hl-ho"></span>`11:dyn_civl_hl_ho` | 10 | [11](characters.md#char-11) | `dyn_civl_hl_ho` | 0.1876, -0.0081, 0.0153 | 0.567, 0.4763, 0.4011, 0.5392 |
-| <span id="hat-11-dyn-civl-pl-sp"></span>`11:dyn_civl_pl_sp` | 10 | [11](characters.md#char-11) | `dyn_civl_pl_sp` | 0.1586, -0.0344, -0.0324 | 0.5955, -0.5997, 0.389, -0.3667 |
-| <span id="hat-11-dyn-co-ma3"></span>`11:dyn_co_ma3` | 10 | [11](characters.md#char-11) | `dyn_co_ma3` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
-| <span id="hat-11-dyn-cops-va"></span>`11:dyn_cops_va` | 10 | [11](characters.md#char-11) | `dyn_cops_va` | 0.184, -0.0121, 0.0087 | 0.5096, -0.5824, 0.4902, -0.4011 |
-| <span id="hat-11-dyn-ct-act"></span>`11:dyn_ct_act` | 10 | [11](characters.md#char-11) | `dyn_ct_act` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
-| <span id="hat-11-dyn-ct-ma2"></span>`11:dyn_ct_ma2` | 10 | [11](characters.md#char-11) | `dyn_ct_ma2` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-11-dyn-cw-m1"></span>`11:dyn_cw_m1` | 10 | [11](characters.md#char-11) | `dyn_cw_m1` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-11-dyn-cw-m2"></span>`11:dyn_cw_m2` | 10 | [11](characters.md#char-11) | `dyn_cw_m2` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-11-dyn-dest-lt"></span>`11:dyn_dest_lt` | 10 | [11](characters.md#char-11) | `dyn_dest_lt` | 0.1678, -0.0077, -0.0129 | 0.6034, 0.5646, 0.3672, 0.427 |
-| <span id="hat-11-dyn-dest-lta"></span>`11:dyn_dest_lta` | 10 | [11](characters.md#char-11) | `dyn_dest_lta` | 0.1586, -0.0344, -0.0324 | 0.5955, -0.5997, 0.389, -0.3667 |
-| <span id="hat-11-dyn-dest-ltb"></span>`11:dyn_dest_ltb` | 10 | [11](characters.md#char-11) | `dyn_dest_ltb` | 0.1693, 0, 0.0315 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-11-dyn-eh-ma2"></span>`11:dyn_eh_ma2` | 10 | [11](characters.md#char-11) | `dyn_eh_ma2` | 0.1694, -0.012, -0.0062 | 0.6132, 0.5191, 0.4015, 0.4397 |
-| <span id="hat-11-dyn-hiha-lt"></span>`11:dyn_hiha_lt` | 10 | [11](characters.md#char-11) | `dyn_hiha_lt` | 0.2052, -0.0223, -0.0316 | 0.5389, -0.6315, 0.4362, -0.347 |
-| <span id="hat-11-dyn-hiha-lt-ft"></span>`11:dyn_hiha_lt_ft` | 10 | [11](characters.md#char-11) | `dyn_hiha_lt_ft` | 0.2052, -0.0223, -0.0316 | 0.5389, -0.6315, 0.4362, -0.347 |
-| <span id="hat-11-dyn-hiha-so"></span>`11:dyn_hiha_so` | 10 | [11](characters.md#char-11) | `dyn_hiha_so` | 0.2081, -0.0221, -0.0337 | 0.5389, -0.6315, 0.4362, -0.347 |
-| <span id="hat-11-dyn-hurr-lt"></span>`11:dyn_hurr_lt` | 10 | [11](characters.md#char-11) | `dyn_hurr_lt` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
-| <span id="hat-11-dyn-hurr-so"></span>`11:dyn_hurr_so` | 10 | [11](characters.md#char-11) | `dyn_hurr_so` | 0.1804, -0.016, 0.0019 | 0.5357, -0.587, 0.4552, -0.4016 |
-| <span id="hat-11-dyn-panz-lt"></span>`11:dyn_panz_lt` | 10 | [11](characters.md#char-11) | `dyn_panz_lt` | 0.1833, -0.0242, -0.0009 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-11-dyn-panz-so"></span>`11:dyn_panz_so` | 10 | [11](characters.md#char-11) | `dyn_panz_so` | 0.1833, -0.0242, -0.0009 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-11-dyn-pimp-va"></span>`11:dyn_pimp_va` | 10 | [11](characters.md#char-11) | `dyn_pimp_va` | 0.1782, -0.0209, 0.0205 | 0.4826, -0.5831, 0.4691, -0.455 |
-| <span id="hat-11-dyn-pimp-vb"></span>`11:dyn_pimp_vb` | 10 | [11](characters.md#char-11) | `dyn_pimp_vb` | 0.1782, -0.0209, 0.0205 | 0.4826, -0.5831, 0.4691, -0.455 |
-| <span id="hat-11-dyn-pl-ma9"></span>`11:dyn_pl_ma9` | 10 | [11](characters.md#char-11) | `dyn_pl_ma9` | 0.1955, -0.0294, 0.0357 | 0.5981, 0.4566, 0.3866, 0.5332 |
-| <span id="hat-11-dyn-pl-pm"></span>`11:dyn_pl_pm` | 10 | [11](characters.md#char-11) | `dyn_pl_pm` | 0.1812, -0.0008, 0.0099 | 0.5342, 0.4953, 0.4633, 0.5046 |
-| <span id="hat-11-dyn-rogu-lt"></span>`11:dyn_rogu_lt` | 10 | [11](characters.md#char-11) | `dyn_rogu_lt` | 0.196, -0.0136, 0.0004 | 0.5438, -0.5552, 0.5106, -0.3679 |
-| <span id="hat-11-dyn-rogu-so"></span>`11:dyn_rogu_so` | 10 | [11](characters.md#char-11) | `dyn_rogu_so` | 0.2031, -0.019, 0.0055 | 0.5337, -0.5647, 0.5181, -0.3576 |
-| <span id="hat-11-dyn-sata-bo"></span>`11:dyn_sata_bo` | 10 | [11](characters.md#char-11) | `dyn_sata_bo` | 0.1966, 0, -0.0445 | 0.5871, -0.5871, 0.394, -0.394 |
-| <span id="hat-11-dyn-sk-pe"></span>`11:dyn_sk_pe` | 10 | [11](characters.md#char-11) | `dyn_sk_pe` | 0.2231, -0.0073, -0.0345 | 0.5901, 0.5637, 0.3964, 0.4206 |
-| <span id="hat-11-dyn-tr-fa4"></span>`11:dyn_tr_fa4` | 10 | [11](characters.md#char-11) | `dyn_tr_fa4` | 0.2019, -0.019, 0.0053 | 0.5594, 0.5375, 0.3527, 0.5233 |
-| <span id="hat-11-dyn-tr-ma2"></span>`11:dyn_tr_ma2` | 10 | [11](characters.md#char-11) | `dyn_tr_ma2` | 0.1693, 0, 0.0315 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-11-dyn-warr-cb"></span>`11:dyn_warr_cb` | 10 | [11](characters.md#char-11) | `dyn_warr_cb` | 0.1606, -0.0064, -0.0065 | 0.5437, -0.5912, 0.4407, -0.4007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-11-dyn-abe"></span>`11:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_abe` | 0.0534, 0.0017, 0.0565 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-11-dyn-bm-vb3"></span>`11:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_bm_vb3` | 0.1796, -0.007, 0.0152 | 0.5552, 0.4914, 0.4407, 0.5061 |
+| <span id="hat-11-dyn-bm-vb5"></span>`11:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_bm_vb5` | 0.127, -0.0009, 0.0195 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-11-dyn-bm-vb6"></span>`11:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_bm_vb6` | 0.1996, -0.0156, -0.0214 | 0.6017, 0.5239, 0.3869, 0.4625 |
+| <span id="hat-11-dyn-bm-vb7"></span>`11:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_bm_vb7` | 0.1452, 0, 0.0081 | 0.5339, 0.5339, 0.4637, 0.4637 |
+| <span id="hat-11-dyn-bopp-bo"></span>`11:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_bopp_bo` | 0.1276, -0.0009, 0.0155 | 0.4997, -0.5302, 0.5003, -0.4679 |
+| <span id="hat-11-dyn-bopp-lt"></span>`11:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_bopp_lt` | 0.1829, -0.0091, -0.0059 | 0.5293, -0.5796, 0.4784, -0.3938 |
+| <span id="hat-11-dyn-bopp-so"></span>`11:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_bopp_so` | 0.1852, -0.0116, -0.0028 | 0.4992, -0.5982, 0.4728, -0.4116 |
+| <span id="hat-11-dyn-butcher"></span>`11:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_butcher` | 0.1813, 0, -0.0134 | 0.5707, -0.5707, 0.4174, -0.4174 |
+| <span id="hat-11-dyn-ch"></span>`11:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_ch` | 0.1941, -0.012, 0.0343 | 0.5179, -0.5608, 0.5115, -0.3944 |
+| <span id="hat-11-dyn-civl-a"></span>`11:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_civl_a` | 0.179, -0.0116, -0.0196 | 0.5624, 0.5945, 0.3236, 0.4748 |
+| <span id="hat-11-dyn-civl-hl-ho"></span>`11:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_civl_hl_ho` | 0.1876, -0.0081, 0.0153 | 0.567, 0.4763, 0.4011, 0.5392 |
+| <span id="hat-11-dyn-civl-pl-sp"></span>`11:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_civl_pl_sp` | 0.1586, -0.0344, -0.0324 | 0.5955, -0.5997, 0.389, -0.3667 |
+| <span id="hat-11-dyn-co-ma3"></span>`11:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_co_ma3` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
+| <span id="hat-11-dyn-cops-va"></span>`11:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_cops_va` | 0.184, -0.0121, 0.0087 | 0.5096, -0.5824, 0.4902, -0.4011 |
+| <span id="hat-11-dyn-ct-act"></span>`11:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_ct_act` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
+| <span id="hat-11-dyn-ct-ma2"></span>`11:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_ct_ma2` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-11-dyn-cw-m1"></span>`11:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_cw_m1` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-11-dyn-cw-m2"></span>`11:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_cw_m2` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-11-dyn-dest-lt"></span>`11:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_dest_lt` | 0.1678, -0.0077, -0.0129 | 0.6034, 0.5646, 0.3672, 0.427 |
+| <span id="hat-11-dyn-dest-lta"></span>`11:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_dest_lta` | 0.1586, -0.0344, -0.0324 | 0.5955, -0.5997, 0.389, -0.3667 |
+| <span id="hat-11-dyn-dest-ltb"></span>`11:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_dest_ltb` | 0.1693, 0, 0.0315 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-11-dyn-eh-ma2"></span>`11:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_eh_ma2` | 0.1694, -0.012, -0.0062 | 0.6132, 0.5191, 0.4015, 0.4397 |
+| <span id="hat-11-dyn-hiha-lt"></span>`11:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_hiha_lt` | 0.2052, -0.0223, -0.0316 | 0.5389, -0.6315, 0.4362, -0.347 |
+| <span id="hat-11-dyn-hiha-lt-ft"></span>`11:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_hiha_lt_ft` | 0.2052, -0.0223, -0.0316 | 0.5389, -0.6315, 0.4362, -0.347 |
+| <span id="hat-11-dyn-hiha-so"></span>`11:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_hiha_so` | 0.2081, -0.0221, -0.0337 | 0.5389, -0.6315, 0.4362, -0.347 |
+| <span id="hat-11-dyn-hurr-lt"></span>`11:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_hurr_lt` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
+| <span id="hat-11-dyn-hurr-so"></span>`11:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_hurr_so` | 0.1804, -0.016, 0.0019 | 0.5357, -0.587, 0.4552, -0.4016 |
+| <span id="hat-11-dyn-panz-lt"></span>`11:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_panz_lt` | 0.1833, -0.0242, -0.0009 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-11-dyn-panz-so"></span>`11:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_panz_so` | 0.1833, -0.0242, -0.0009 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-11-dyn-pimp-va"></span>`11:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_pimp_va` | 0.1782, -0.0209, 0.0205 | 0.4826, -0.5831, 0.4691, -0.455 |
+| <span id="hat-11-dyn-pimp-vb"></span>`11:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_pimp_vb` | 0.1782, -0.0209, 0.0205 | 0.4826, -0.5831, 0.4691, -0.455 |
+| <span id="hat-11-dyn-pl-ma9"></span>`11:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_pl_ma9` | 0.1955, -0.0294, 0.0357 | 0.5981, 0.4566, 0.3866, 0.5332 |
+| <span id="hat-11-dyn-pl-pm"></span>`11:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_pl_pm` | 0.1812, -0.0008, 0.0099 | 0.5342, 0.4953, 0.4633, 0.5046 |
+| <span id="hat-11-dyn-rogu-lt"></span>`11:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_rogu_lt` | 0.196, -0.0136, 0.0004 | 0.5438, -0.5552, 0.5106, -0.3679 |
+| <span id="hat-11-dyn-rogu-so"></span>`11:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_rogu_so` | 0.2031, -0.019, 0.0055 | 0.5337, -0.5647, 0.5181, -0.3576 |
+| <span id="hat-11-dyn-sata-bo"></span>`11:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_sata_bo` | 0.1966, 0, -0.0445 | 0.5871, -0.5871, 0.394, -0.394 |
+| <span id="hat-11-dyn-sk-pe"></span>`11:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_sk_pe` | 0.2231, -0.0073, -0.0345 | 0.5901, 0.5637, 0.3964, 0.4206 |
+| <span id="hat-11-dyn-tr-fa4"></span>`11:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_tr_fa4` | 0.2019, -0.019, 0.0053 | 0.5594, 0.5375, 0.3527, 0.5233 |
+| <span id="hat-11-dyn-tr-ma2"></span>`11:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_tr_ma2` | 0.1693, 0, 0.0315 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-11-dyn-warr-cb"></span>`11:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 10 | [11](characters.md#char-11) | `dyn_warr_cb` | 0.1606, -0.0064, -0.0065 | 0.5437, -0.5912, 0.4407, -0.4007 |
 
 ## 13 warr_aj_cv {#13-warr-aj-cv}
 
 41 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-13-dyn-abe"></span>`13:dyn_abe` | 12 | [13](characters.md#char-13) | `dyn_abe` | 0.0534, 0.0017, 0.0565 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-13-dyn-bm-vb3"></span>`13:dyn_bm_vb3` | 12 | [13](characters.md#char-13) | `dyn_bm_vb3` | 0.1796, -0.007, 0.0152 | 0.5552, 0.4914, 0.4407, 0.5061 |
-| <span id="hat-13-dyn-bm-vb5"></span>`13:dyn_bm_vb5` | 12 | [13](characters.md#char-13) | `dyn_bm_vb5` | 0.127, -0.0009, 0.0195 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-13-dyn-bm-vb6"></span>`13:dyn_bm_vb6` | 12 | [13](characters.md#char-13) | `dyn_bm_vb6` | 0.1996, -0.0156, -0.0214 | 0.6017, 0.5239, 0.3869, 0.4625 |
-| <span id="hat-13-dyn-bm-vb7"></span>`13:dyn_bm_vb7` | 12 | [13](characters.md#char-13) | `dyn_bm_vb7` | 0.1452, 0, 0.0081 | 0.5339, 0.5339, 0.4637, 0.4637 |
-| <span id="hat-13-dyn-bopp-bo"></span>`13:dyn_bopp_bo` | 12 | [13](characters.md#char-13) | `dyn_bopp_bo` | 0.1206, -0.0009, 0.0135 | 0.4997, -0.5302, 0.5003, -0.4679 |
-| <span id="hat-13-dyn-bopp-lt"></span>`13:dyn_bopp_lt` | 12 | [13](characters.md#char-13) | `dyn_bopp_lt` | 0.1829, -0.0091, -0.0059 | 0.5293, -0.5796, 0.4784, -0.3938 |
-| <span id="hat-13-dyn-bopp-so"></span>`13:dyn_bopp_so` | 12 | [13](characters.md#char-13) | `dyn_bopp_so` | 0.1852, -0.0116, -0.0028 | 0.4992, -0.5982, 0.4728, -0.4116 |
-| <span id="hat-13-dyn-butcher"></span>`13:dyn_butcher` | 12 | [13](characters.md#char-13) | `dyn_butcher` | 0.1813, 0, -0.0134 | 0.5707, -0.5707, 0.4174, -0.4174 |
-| <span id="hat-13-dyn-ch"></span>`13:dyn_ch` | 12 | [13](characters.md#char-13) | `dyn_ch` | 0.1941, -0.012, 0.0343 | 0.5179, -0.5608, 0.5115, -0.3944 |
-| <span id="hat-13-dyn-civl-a"></span>`13:dyn_civl_a` | 12 | [13](characters.md#char-13) | `dyn_civl_a` | 0.179, -0.0116, -0.0196 | 0.5624, 0.5945, 0.3236, 0.4748 |
-| <span id="hat-13-dyn-civl-hl-ho"></span>`13:dyn_civl_hl_ho` | 12 | [13](characters.md#char-13) | `dyn_civl_hl_ho` | 0.1876, -0.0081, 0.0153 | 0.567, 0.4763, 0.4011, 0.5392 |
-| <span id="hat-13-dyn-civl-pl-sp"></span>`13:dyn_civl_pl_sp` | 12 | [13](characters.md#char-13) | `dyn_civl_pl_sp` | 0.1586, -0.0344, -0.0324 | 0.5955, -0.5997, 0.389, -0.3667 |
-| <span id="hat-13-dyn-co-ma3"></span>`13:dyn_co_ma3` | 12 | [13](characters.md#char-13) | `dyn_co_ma3` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
-| <span id="hat-13-dyn-cops-va"></span>`13:dyn_cops_va` | 12 | [13](characters.md#char-13) | `dyn_cops_va` | 0.184, -0.0121, 0.0087 | 0.5096, -0.5824, 0.4902, -0.4011 |
-| <span id="hat-13-dyn-ct-act"></span>`13:dyn_ct_act` | 12 | [13](characters.md#char-13) | `dyn_ct_act` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
-| <span id="hat-13-dyn-ct-ma2"></span>`13:dyn_ct_ma2` | 12 | [13](characters.md#char-13) | `dyn_ct_ma2` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-13-dyn-cw-m1"></span>`13:dyn_cw_m1` | 12 | [13](characters.md#char-13) | `dyn_cw_m1` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-13-dyn-cw-m2"></span>`13:dyn_cw_m2` | 12 | [13](characters.md#char-13) | `dyn_cw_m2` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-13-dyn-dest-lt"></span>`13:dyn_dest_lt` | 12 | [13](characters.md#char-13) | `dyn_dest_lt` | 0.1678, -0.0077, -0.0129 | 0.6034, 0.5646, 0.3672, 0.427 |
-| <span id="hat-13-dyn-dest-lta"></span>`13:dyn_dest_lta` | 12 | [13](characters.md#char-13) | `dyn_dest_lta` | 0.1586, -0.0344, -0.0324 | 0.5955, -0.5997, 0.389, -0.3667 |
-| <span id="hat-13-dyn-dest-ltb"></span>`13:dyn_dest_ltb` | 12 | [13](characters.md#char-13) | `dyn_dest_ltb` | 0.1693, 0, 0.0315 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-13-dyn-eh-ma2"></span>`13:dyn_eh_ma2` | 12 | [13](characters.md#char-13) | `dyn_eh_ma2` | 0.1694, -0.012, -0.0062 | 0.6132, 0.5191, 0.4015, 0.4397 |
-| <span id="hat-13-dyn-hiha-lt"></span>`13:dyn_hiha_lt` | 12 | [13](characters.md#char-13) | `dyn_hiha_lt` | 0.2052, -0.0223, -0.0316 | 0.5389, -0.6315, 0.4362, -0.347 |
-| <span id="hat-13-dyn-hiha-lt-ft"></span>`13:dyn_hiha_lt_ft` | 12 | [13](characters.md#char-13) | `dyn_hiha_lt_ft` | 0.2052, -0.0223, -0.0316 | 0.5389, -0.6315, 0.4362, -0.347 |
-| <span id="hat-13-dyn-hiha-so"></span>`13:dyn_hiha_so` | 12 | [13](characters.md#char-13) | `dyn_hiha_so` | 0.2081, -0.0221, -0.0337 | 0.5389, -0.6315, 0.4362, -0.347 |
-| <span id="hat-13-dyn-hurr-lt"></span>`13:dyn_hurr_lt` | 12 | [13](characters.md#char-13) | `dyn_hurr_lt` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
-| <span id="hat-13-dyn-hurr-so"></span>`13:dyn_hurr_so` | 12 | [13](characters.md#char-13) | `dyn_hurr_so` | 0.1804, -0.016, 0.0019 | 0.5357, -0.587, 0.4552, -0.4016 |
-| <span id="hat-13-dyn-panz-lt"></span>`13:dyn_panz_lt` | 12 | [13](characters.md#char-13) | `dyn_panz_lt` | 0.1833, -0.0242, -0.0009 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-13-dyn-panz-so"></span>`13:dyn_panz_so` | 12 | [13](characters.md#char-13) | `dyn_panz_so` | 0.1833, -0.0242, -0.0009 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-13-dyn-pimp-va"></span>`13:dyn_pimp_va` | 12 | [13](characters.md#char-13) | `dyn_pimp_va` | 0.1782, -0.0209, 0.0205 | 0.4826, -0.5831, 0.4691, -0.455 |
-| <span id="hat-13-dyn-pimp-vb"></span>`13:dyn_pimp_vb` | 12 | [13](characters.md#char-13) | `dyn_pimp_vb` | 0.1782, -0.0209, 0.0205 | 0.4826, -0.5831, 0.4691, -0.455 |
-| <span id="hat-13-dyn-pl-ma9"></span>`13:dyn_pl_ma9` | 12 | [13](characters.md#char-13) | `dyn_pl_ma9` | 0.1955, -0.0294, 0.0357 | 0.5981, 0.4566, 0.3866, 0.5332 |
-| <span id="hat-13-dyn-pl-pm"></span>`13:dyn_pl_pm` | 12 | [13](characters.md#char-13) | `dyn_pl_pm` | 0.1812, -0.0008, 0.0099 | 0.5342, 0.4953, 0.4633, 0.5046 |
-| <span id="hat-13-dyn-rogu-lt"></span>`13:dyn_rogu_lt` | 12 | [13](characters.md#char-13) | `dyn_rogu_lt` | 0.196, -0.0136, 0.0004 | 0.5438, -0.5552, 0.5106, -0.3679 |
-| <span id="hat-13-dyn-rogu-so"></span>`13:dyn_rogu_so` | 12 | [13](characters.md#char-13) | `dyn_rogu_so` | 0.2031, -0.019, 0.0055 | 0.5337, -0.5647, 0.5181, -0.3576 |
-| <span id="hat-13-dyn-sata-bo"></span>`13:dyn_sata_bo` | 12 | [13](characters.md#char-13) | `dyn_sata_bo` | 0.1966, 0, -0.0445 | 0.5871, -0.5871, 0.394, -0.394 |
-| <span id="hat-13-dyn-sk-pe"></span>`13:dyn_sk_pe` | 12 | [13](characters.md#char-13) | `dyn_sk_pe` | 0.2231, -0.0073, -0.0345 | 0.5901, 0.5637, 0.3964, 0.4206 |
-| <span id="hat-13-dyn-tr-fa4"></span>`13:dyn_tr_fa4` | 12 | [13](characters.md#char-13) | `dyn_tr_fa4` | 0.2019, -0.019, 0.0053 | 0.5594, 0.5375, 0.3527, 0.5233 |
-| <span id="hat-13-dyn-tr-ma2"></span>`13:dyn_tr_ma2` | 12 | [13](characters.md#char-13) | `dyn_tr_ma2` | 0.1693, 0, 0.0315 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-13-dyn-warr-cb"></span>`13:dyn_warr_cb` | 12 | [13](characters.md#char-13) | `dyn_warr_cb` | 0.1606, -0.0064, -0.0065 | 0.5437, -0.5912, 0.4407, -0.4007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-13-dyn-abe"></span>`13:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_abe` | 0.0534, 0.0017, 0.0565 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-13-dyn-bm-vb3"></span>`13:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_bm_vb3` | 0.1796, -0.007, 0.0152 | 0.5552, 0.4914, 0.4407, 0.5061 |
+| <span id="hat-13-dyn-bm-vb5"></span>`13:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_bm_vb5` | 0.127, -0.0009, 0.0195 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-13-dyn-bm-vb6"></span>`13:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_bm_vb6` | 0.1996, -0.0156, -0.0214 | 0.6017, 0.5239, 0.3869, 0.4625 |
+| <span id="hat-13-dyn-bm-vb7"></span>`13:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_bm_vb7` | 0.1452, 0, 0.0081 | 0.5339, 0.5339, 0.4637, 0.4637 |
+| <span id="hat-13-dyn-bopp-bo"></span>`13:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_bopp_bo` | 0.1206, -0.0009, 0.0135 | 0.4997, -0.5302, 0.5003, -0.4679 |
+| <span id="hat-13-dyn-bopp-lt"></span>`13:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_bopp_lt` | 0.1829, -0.0091, -0.0059 | 0.5293, -0.5796, 0.4784, -0.3938 |
+| <span id="hat-13-dyn-bopp-so"></span>`13:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_bopp_so` | 0.1852, -0.0116, -0.0028 | 0.4992, -0.5982, 0.4728, -0.4116 |
+| <span id="hat-13-dyn-butcher"></span>`13:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_butcher` | 0.1813, 0, -0.0134 | 0.5707, -0.5707, 0.4174, -0.4174 |
+| <span id="hat-13-dyn-ch"></span>`13:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_ch` | 0.1941, -0.012, 0.0343 | 0.5179, -0.5608, 0.5115, -0.3944 |
+| <span id="hat-13-dyn-civl-a"></span>`13:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_civl_a` | 0.179, -0.0116, -0.0196 | 0.5624, 0.5945, 0.3236, 0.4748 |
+| <span id="hat-13-dyn-civl-hl-ho"></span>`13:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_civl_hl_ho` | 0.1876, -0.0081, 0.0153 | 0.567, 0.4763, 0.4011, 0.5392 |
+| <span id="hat-13-dyn-civl-pl-sp"></span>`13:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_civl_pl_sp` | 0.1586, -0.0344, -0.0324 | 0.5955, -0.5997, 0.389, -0.3667 |
+| <span id="hat-13-dyn-co-ma3"></span>`13:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_co_ma3` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
+| <span id="hat-13-dyn-cops-va"></span>`13:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_cops_va` | 0.184, -0.0121, 0.0087 | 0.5096, -0.5824, 0.4902, -0.4011 |
+| <span id="hat-13-dyn-ct-act"></span>`13:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_ct_act` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
+| <span id="hat-13-dyn-ct-ma2"></span>`13:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_ct_ma2` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-13-dyn-cw-m1"></span>`13:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_cw_m1` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-13-dyn-cw-m2"></span>`13:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_cw_m2` | 0.1394, 0, 0.0174 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-13-dyn-dest-lt"></span>`13:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_dest_lt` | 0.1678, -0.0077, -0.0129 | 0.6034, 0.5646, 0.3672, 0.427 |
+| <span id="hat-13-dyn-dest-lta"></span>`13:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_dest_lta` | 0.1586, -0.0344, -0.0324 | 0.5955, -0.5997, 0.389, -0.3667 |
+| <span id="hat-13-dyn-dest-ltb"></span>`13:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_dest_ltb` | 0.1693, 0, 0.0315 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-13-dyn-eh-ma2"></span>`13:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_eh_ma2` | 0.1694, -0.012, -0.0062 | 0.6132, 0.5191, 0.4015, 0.4397 |
+| <span id="hat-13-dyn-hiha-lt"></span>`13:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_hiha_lt` | 0.2052, -0.0223, -0.0316 | 0.5389, -0.6315, 0.4362, -0.347 |
+| <span id="hat-13-dyn-hiha-lt-ft"></span>`13:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_hiha_lt_ft` | 0.2052, -0.0223, -0.0316 | 0.5389, -0.6315, 0.4362, -0.347 |
+| <span id="hat-13-dyn-hiha-so"></span>`13:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_hiha_so` | 0.2081, -0.0221, -0.0337 | 0.5389, -0.6315, 0.4362, -0.347 |
+| <span id="hat-13-dyn-hurr-lt"></span>`13:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_hurr_lt` | 0.1682, -0.0097, 0.0037 | 0.5679, 0.5096, 0.4261, 0.486 |
+| <span id="hat-13-dyn-hurr-so"></span>`13:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_hurr_so` | 0.1804, -0.016, 0.0019 | 0.5357, -0.587, 0.4552, -0.4016 |
+| <span id="hat-13-dyn-panz-lt"></span>`13:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_panz_lt` | 0.1833, -0.0242, -0.0009 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-13-dyn-panz-so"></span>`13:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_panz_so` | 0.1833, -0.0242, -0.0009 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-13-dyn-pimp-va"></span>`13:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_pimp_va` | 0.1782, -0.0209, 0.0205 | 0.4826, -0.5831, 0.4691, -0.455 |
+| <span id="hat-13-dyn-pimp-vb"></span>`13:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_pimp_vb` | 0.1782, -0.0209, 0.0205 | 0.4826, -0.5831, 0.4691, -0.455 |
+| <span id="hat-13-dyn-pl-ma9"></span>`13:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_pl_ma9` | 0.1955, -0.0294, 0.0357 | 0.5981, 0.4566, 0.3866, 0.5332 |
+| <span id="hat-13-dyn-pl-pm"></span>`13:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_pl_pm` | 0.1812, -0.0008, 0.0099 | 0.5342, 0.4953, 0.4633, 0.5046 |
+| <span id="hat-13-dyn-rogu-lt"></span>`13:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_rogu_lt` | 0.196, -0.0136, 0.0004 | 0.5438, -0.5552, 0.5106, -0.3679 |
+| <span id="hat-13-dyn-rogu-so"></span>`13:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_rogu_so` | 0.2031, -0.019, 0.0055 | 0.5337, -0.5647, 0.5181, -0.3576 |
+| <span id="hat-13-dyn-sata-bo"></span>`13:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_sata_bo` | 0.1966, 0, -0.0445 | 0.5871, -0.5871, 0.394, -0.394 |
+| <span id="hat-13-dyn-sk-pe"></span>`13:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_sk_pe` | 0.2231, -0.0073, -0.0345 | 0.5901, 0.5637, 0.3964, 0.4206 |
+| <span id="hat-13-dyn-tr-fa4"></span>`13:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_tr_fa4` | 0.2019, -0.019, 0.0053 | 0.5594, 0.5375, 0.3527, 0.5233 |
+| <span id="hat-13-dyn-tr-ma2"></span>`13:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_tr_ma2` | 0.1693, 0, 0.0315 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-13-dyn-warr-cb"></span>`13:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 12 | [13](characters.md#char-13) | `dyn_warr_cb` | 0.1606, -0.0064, -0.0065 | 0.5437, -0.5912, 0.4407, -0.4007 |
 
 ## 15 warr_co {#15-warr-co}
 
 41 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-15-dyn-abe"></span>`15:dyn_abe` | 14 | [15](characters.md#char-15) | `dyn_abe` | 0.0576, -0.001, 0.0209 | 0.5347, -0.5347, 0.4627, -0.4627 |
-| <span id="hat-15-dyn-bm-vb3"></span>`15:dyn_bm_vb3` | 14 | [15](characters.md#char-15) | `dyn_bm_vb3` | 0.2648, 0.0196, -0.0179 | 0.4521, 0.5843, 0.4704, 0.4826 |
-| <span id="hat-15-dyn-bm-vb5"></span>`15:dyn_bm_vb5` | 14 | [15](characters.md#char-15) | `dyn_bm_vb5` | 0.2372, 0.0005, -0.0163 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-15-dyn-bm-vb6"></span>`15:dyn_bm_vb6` | 14 | [15](characters.md#char-15) | `dyn_bm_vb6` | 0.2602, 0.0277, -0.0652 | 0.5527, 0.6153, 0.449, 0.3382 |
-| <span id="hat-15-dyn-bm-vb7"></span>`15:dyn_bm_vb7` | 14 | [15](characters.md#char-15) | `dyn_bm_vb7` | 0.2236, 0.0139, -0.0359 | 0.5286, 0.6026, 0.4529, 0.3903 |
-| <span id="hat-15-dyn-bopp-bo"></span>`15:dyn_bopp_bo` | 14 | [15](characters.md#char-15) | `dyn_bopp_bo` | 0.1962, 0.0116, -0.0119 | 0.5539, -0.4729, 0.4396, -0.5257 |
-| <span id="hat-15-dyn-bopp-lt"></span>`15:dyn_bopp_lt` | 14 | [15](characters.md#char-15) | `dyn_bopp_lt` | 0.2542, -0.0157, -0.0313 | 0.5293, -0.5796, 0.4784, -0.3938 |
-| <span id="hat-15-dyn-bopp-so"></span>`15:dyn_bopp_so` | 14 | [15](characters.md#char-15) | `dyn_bopp_so` | 0.2558, 0.0279, -0.0167 | 0.5925, -0.4697, 0.4317, -0.4919 |
-| <span id="hat-15-dyn-butcher"></span>`15:dyn_butcher` | 14 | [15](characters.md#char-15) | `dyn_butcher` | 0.2437, 0, -0.0454 | 0.5707, -0.5707, 0.4174, -0.4174 |
-| <span id="hat-15-dyn-ch"></span>`15:dyn_ch` | 14 | [15](characters.md#char-15) | `dyn_ch` | 0.2634, -0.0165, 0.0069 | 0.523, -0.5562, 0.5075, -0.3995 |
-| <span id="hat-15-dyn-civl-a"></span>`15:dyn_civl_a` | 14 | [15](characters.md#char-15) | `dyn_civl_a` | 0.2519, -0.0233, -0.0505 | 0.6185, 0.5311, 0.3792, 0.4377 |
-| <span id="hat-15-dyn-civl-hl-ho"></span>`15:dyn_civl_hl_ho` | 14 | [15](characters.md#char-15) | `dyn_civl_hl_ho` | 0.2613, -0.0081, -0.0098 | 0.55, 0.4963, 0.4222, 0.5224 |
-| <span id="hat-15-dyn-civl-pl-sp"></span>`15:dyn_civl_pl_sp` | 14 | [15](characters.md#char-15) | `dyn_civl_pl_sp` | 0.2508, 0.0332, -0.0315 | 0.5176, 0.5844, 0.3733, 0.5013 |
-| <span id="hat-15-dyn-co-ma3"></span>`15:dyn_co_ma3` | 14 | [15](characters.md#char-15) | `dyn_co_ma3` | 0.2485, -0.0156, -0.029 | 0.5679, 0.5096, 0.4261, 0.486 |
-| <span id="hat-15-dyn-cops-va"></span>`15:dyn_cops_va` | 14 | [15](characters.md#char-15) | `dyn_cops_va` | 0.2605, 0.0194, -0.0216 | 0.5659, -0.4989, 0.4452, -0.4824 |
-| <span id="hat-15-dyn-ct-act"></span>`15:dyn_ct_act` | 14 | [15](characters.md#char-15) | `dyn_ct_act` | 0.2485, -0.0156, -0.029 | 0.5679, 0.5096, 0.4261, 0.486 |
-| <span id="hat-15-dyn-ct-ma2"></span>`15:dyn_ct_ma2` | 14 | [15](characters.md#char-15) | `dyn_ct_ma2` | 0.2466, -0, -0.0166 | 0.5481, 0.5481, 0.4467, 0.4467 |
-| <span id="hat-15-dyn-cw-m1"></span>`15:dyn_cw_m1` | 14 | [15](characters.md#char-15) | `dyn_cw_m1` | 0.2466, -0, -0.0166 | 0.5481, 0.5481, 0.4467, 0.4467 |
-| <span id="hat-15-dyn-cw-m2"></span>`15:dyn_cw_m2` | 14 | [15](characters.md#char-15) | `dyn_cw_m2` | 0.2466, -0, -0.0166 | 0.5481, 0.5481, 0.4467, 0.4467 |
-| <span id="hat-15-dyn-dest-lt"></span>`15:dyn_dest_lt` | 14 | [15](characters.md#char-15) | `dyn_dest_lt` | 0.2485, -0.0127, -0.0517 | 0.6034, 0.5646, 0.3672, 0.427 |
-| <span id="hat-15-dyn-dest-lta"></span>`15:dyn_dest_lta` | 14 | [15](characters.md#char-15) | `dyn_dest_lta` | 0.2508, 0.0332, -0.0315 | 0.5176, 0.5844, 0.3733, 0.5013 |
-| <span id="hat-15-dyn-dest-ltb"></span>`15:dyn_dest_ltb` | 14 | [15](characters.md#char-15) | `dyn_dest_ltb` | 0.251, 0.0015, -0.0216 | 0.5613, 0.5613, 0.43, 0.43 |
-| <span id="hat-15-dyn-eh-ma2"></span>`15:dyn_eh_ma2` | 14 | [15](characters.md#char-15) | `dyn_eh_ma2` | 0.2362, -0.0176, -0.0394 | 0.6132, 0.5191, 0.4015, 0.4397 |
-| <span id="hat-15-dyn-hiha-lt"></span>`15:dyn_hiha_lt` | 14 | [15](characters.md#char-15) | `dyn_hiha_lt` | 0.2639, 0.0347, -0.056 | 0.6415, -0.4971, 0.3685, -0.4534 |
-| <span id="hat-15-dyn-hiha-lt-ft"></span>`15:dyn_hiha_lt_ft` | 14 | [15](characters.md#char-15) | `dyn_hiha_lt_ft` | 0.2639, 0.0347, -0.056 | 0.6415, -0.4971, 0.3685, -0.4534 |
-| <span id="hat-15-dyn-hiha-so"></span>`15:dyn_hiha_so` | 14 | [15](characters.md#char-15) | `dyn_hiha_so` | 0.269, -0.0269, -0.048 | 0.5069, -0.6055, 0.4731, -0.3907 |
-| <span id="hat-15-dyn-hurr-lt"></span>`15:dyn_hurr_lt` | 14 | [15](characters.md#char-15) | `dyn_hurr_lt` | 0.2485, -0.0156, -0.029 | 0.5679, 0.5096, 0.4261, 0.486 |
-| <span id="hat-15-dyn-hurr-so"></span>`15:dyn_hurr_so` | 14 | [15](characters.md#char-15) | `dyn_hurr_so` | 0.253, 0.0214, -0.0333 | 0.6234, -0.4975, 0.3916, -0.4589 |
-| <span id="hat-15-dyn-panz-lt"></span>`15:dyn_panz_lt` | 14 | [15](characters.md#char-15) | `dyn_panz_lt` | 0.2361, -0.0326, -0.0218 | 0.4944, -0.6067, 0.5019, -0.3682 |
-| <span id="hat-15-dyn-panz-so"></span>`15:dyn_panz_so` | 14 | [15](characters.md#char-15) | `dyn_panz_so` | 0.2361, -0.0326, -0.0218 | 0.4944, -0.6067, 0.5019, -0.3682 |
-| <span id="hat-15-dyn-pimp-va"></span>`15:dyn_pimp_va` | 14 | [15](characters.md#char-15) | `dyn_pimp_va` | 0.2544, 0.0069, -0.0161 | 0.5386, -0.5318, 0.4145, -0.5052 |
-| <span id="hat-15-dyn-pimp-vb"></span>`15:dyn_pimp_vb` | 14 | [15](characters.md#char-15) | `dyn_pimp_vb` | 0.2544, 0.0069, -0.0161 | 0.5386, -0.5318, 0.4145, -0.5052 |
-| <span id="hat-15-dyn-pl-ma9"></span>`15:dyn_pl_ma9` | 14 | [15](characters.md#char-15) | `dyn_pl_ma9` | 0.2637, 0.0042, 0.0164 | 0.5059, 0.5246, 0.4892, 0.4791 |
-| <span id="hat-15-dyn-pl-pm"></span>`15:dyn_pl_pm` | 14 | [15](characters.md#char-15) | `dyn_pl_pm` | 0.253, -0.0073, -0.0219 | 0.5485, 0.511, 0.4462, 0.4888 |
-| <span id="hat-15-dyn-rogu-lt"></span>`15:dyn_rogu_lt` | 14 | [15](characters.md#char-15) | `dyn_rogu_lt` | 0.2694, 0.0105, -0.0161 | 0.6174, -0.435, 0.5118, -0.4095 |
-| <span id="hat-15-dyn-rogu-so"></span>`15:dyn_rogu_so` | 14 | [15](characters.md#char-15) | `dyn_rogu_so` | 0.2632, -0.0248, -0.0348 | 0.4891, -0.6199, 0.4577, -0.4087 |
-| <span id="hat-15-dyn-sata-bo"></span>`15:dyn_sata_bo` | 14 | [15](characters.md#char-15) | `dyn_sata_bo` | 0.2827, 0, -0.0374 | 0.5246, -0.5246, 0.4741, -0.4741 |
-| <span id="hat-15-dyn-sk-pe"></span>`15:dyn_sk_pe` | 14 | [15](characters.md#char-15) | `dyn_sk_pe` | 0.2871, -0.0085, -0.0579 | 0.5837, 0.557, 0.4057, 0.4295 |
-| <span id="hat-15-dyn-tr-fa4"></span>`15:dyn_tr_fa4` | 14 | [15](characters.md#char-15) | `dyn_tr_fa4` | 0.2634, -0.0055, -0.0323 | 0.5961, 0.5102, 0.4534, 0.4228 |
-| <span id="hat-15-dyn-tr-ma2"></span>`15:dyn_tr_ma2` | 14 | [15](characters.md#char-15) | `dyn_tr_ma2` | 0.251, 0.0015, -0.0216 | 0.5613, 0.5613, 0.43, 0.43 |
-| <span id="hat-15-dyn-warr-cb"></span>`15:dyn_warr_cb` | 14 | [15](characters.md#char-15) | `dyn_warr_cb` | 0.2256, -0.0084, -0.0414 | 0.5437, -0.5912, 0.4407, -0.4007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-15-dyn-abe"></span>`15:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_abe` | 0.0576, -0.001, 0.0209 | 0.5347, -0.5347, 0.4627, -0.4627 |
+| <span id="hat-15-dyn-bm-vb3"></span>`15:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_bm_vb3` | 0.2648, 0.0196, -0.0179 | 0.4521, 0.5843, 0.4704, 0.4826 |
+| <span id="hat-15-dyn-bm-vb5"></span>`15:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_bm_vb5` | 0.2372, 0.0005, -0.0163 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-15-dyn-bm-vb6"></span>`15:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_bm_vb6` | 0.2602, 0.0277, -0.0652 | 0.5527, 0.6153, 0.449, 0.3382 |
+| <span id="hat-15-dyn-bm-vb7"></span>`15:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_bm_vb7` | 0.2236, 0.0139, -0.0359 | 0.5286, 0.6026, 0.4529, 0.3903 |
+| <span id="hat-15-dyn-bopp-bo"></span>`15:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_bopp_bo` | 0.1962, 0.0116, -0.0119 | 0.5539, -0.4729, 0.4396, -0.5257 |
+| <span id="hat-15-dyn-bopp-lt"></span>`15:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_bopp_lt` | 0.2542, -0.0157, -0.0313 | 0.5293, -0.5796, 0.4784, -0.3938 |
+| <span id="hat-15-dyn-bopp-so"></span>`15:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_bopp_so` | 0.2558, 0.0279, -0.0167 | 0.5925, -0.4697, 0.4317, -0.4919 |
+| <span id="hat-15-dyn-butcher"></span>`15:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_butcher` | 0.2437, 0, -0.0454 | 0.5707, -0.5707, 0.4174, -0.4174 |
+| <span id="hat-15-dyn-ch"></span>`15:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_ch` | 0.2634, -0.0165, 0.0069 | 0.523, -0.5562, 0.5075, -0.3995 |
+| <span id="hat-15-dyn-civl-a"></span>`15:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_civl_a` | 0.2519, -0.0233, -0.0505 | 0.6185, 0.5311, 0.3792, 0.4377 |
+| <span id="hat-15-dyn-civl-hl-ho"></span>`15:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_civl_hl_ho` | 0.2613, -0.0081, -0.0098 | 0.55, 0.4963, 0.4222, 0.5224 |
+| <span id="hat-15-dyn-civl-pl-sp"></span>`15:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_civl_pl_sp` | 0.2508, 0.0332, -0.0315 | 0.5176, 0.5844, 0.3733, 0.5013 |
+| <span id="hat-15-dyn-co-ma3"></span>`15:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_co_ma3` | 0.2485, -0.0156, -0.029 | 0.5679, 0.5096, 0.4261, 0.486 |
+| <span id="hat-15-dyn-cops-va"></span>`15:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_cops_va` | 0.2605, 0.0194, -0.0216 | 0.5659, -0.4989, 0.4452, -0.4824 |
+| <span id="hat-15-dyn-ct-act"></span>`15:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_ct_act` | 0.2485, -0.0156, -0.029 | 0.5679, 0.5096, 0.4261, 0.486 |
+| <span id="hat-15-dyn-ct-ma2"></span>`15:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_ct_ma2` | 0.2466, -0, -0.0166 | 0.5481, 0.5481, 0.4467, 0.4467 |
+| <span id="hat-15-dyn-cw-m1"></span>`15:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_cw_m1` | 0.2466, -0, -0.0166 | 0.5481, 0.5481, 0.4467, 0.4467 |
+| <span id="hat-15-dyn-cw-m2"></span>`15:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_cw_m2` | 0.2466, -0, -0.0166 | 0.5481, 0.5481, 0.4467, 0.4467 |
+| <span id="hat-15-dyn-dest-lt"></span>`15:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_dest_lt` | 0.2485, -0.0127, -0.0517 | 0.6034, 0.5646, 0.3672, 0.427 |
+| <span id="hat-15-dyn-dest-lta"></span>`15:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_dest_lta` | 0.2508, 0.0332, -0.0315 | 0.5176, 0.5844, 0.3733, 0.5013 |
+| <span id="hat-15-dyn-dest-ltb"></span>`15:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_dest_ltb` | 0.251, 0.0015, -0.0216 | 0.5613, 0.5613, 0.43, 0.43 |
+| <span id="hat-15-dyn-eh-ma2"></span>`15:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_eh_ma2` | 0.2362, -0.0176, -0.0394 | 0.6132, 0.5191, 0.4015, 0.4397 |
+| <span id="hat-15-dyn-hiha-lt"></span>`15:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_hiha_lt` | 0.2639, 0.0347, -0.056 | 0.6415, -0.4971, 0.3685, -0.4534 |
+| <span id="hat-15-dyn-hiha-lt-ft"></span>`15:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_hiha_lt_ft` | 0.2639, 0.0347, -0.056 | 0.6415, -0.4971, 0.3685, -0.4534 |
+| <span id="hat-15-dyn-hiha-so"></span>`15:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_hiha_so` | 0.269, -0.0269, -0.048 | 0.5069, -0.6055, 0.4731, -0.3907 |
+| <span id="hat-15-dyn-hurr-lt"></span>`15:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_hurr_lt` | 0.2485, -0.0156, -0.029 | 0.5679, 0.5096, 0.4261, 0.486 |
+| <span id="hat-15-dyn-hurr-so"></span>`15:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_hurr_so` | 0.253, 0.0214, -0.0333 | 0.6234, -0.4975, 0.3916, -0.4589 |
+| <span id="hat-15-dyn-panz-lt"></span>`15:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_panz_lt` | 0.2361, -0.0326, -0.0218 | 0.4944, -0.6067, 0.5019, -0.3682 |
+| <span id="hat-15-dyn-panz-so"></span>`15:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_panz_so` | 0.2361, -0.0326, -0.0218 | 0.4944, -0.6067, 0.5019, -0.3682 |
+| <span id="hat-15-dyn-pimp-va"></span>`15:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_pimp_va` | 0.2544, 0.0069, -0.0161 | 0.5386, -0.5318, 0.4145, -0.5052 |
+| <span id="hat-15-dyn-pimp-vb"></span>`15:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_pimp_vb` | 0.2544, 0.0069, -0.0161 | 0.5386, -0.5318, 0.4145, -0.5052 |
+| <span id="hat-15-dyn-pl-ma9"></span>`15:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_pl_ma9` | 0.2637, 0.0042, 0.0164 | 0.5059, 0.5246, 0.4892, 0.4791 |
+| <span id="hat-15-dyn-pl-pm"></span>`15:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_pl_pm` | 0.253, -0.0073, -0.0219 | 0.5485, 0.511, 0.4462, 0.4888 |
+| <span id="hat-15-dyn-rogu-lt"></span>`15:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_rogu_lt` | 0.2694, 0.0105, -0.0161 | 0.6174, -0.435, 0.5118, -0.4095 |
+| <span id="hat-15-dyn-rogu-so"></span>`15:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_rogu_so` | 0.2632, -0.0248, -0.0348 | 0.4891, -0.6199, 0.4577, -0.4087 |
+| <span id="hat-15-dyn-sata-bo"></span>`15:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_sata_bo` | 0.2827, 0, -0.0374 | 0.5246, -0.5246, 0.4741, -0.4741 |
+| <span id="hat-15-dyn-sk-pe"></span>`15:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_sk_pe` | 0.2871, -0.0085, -0.0579 | 0.5837, 0.557, 0.4057, 0.4295 |
+| <span id="hat-15-dyn-tr-fa4"></span>`15:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_tr_fa4` | 0.2634, -0.0055, -0.0323 | 0.5961, 0.5102, 0.4534, 0.4228 |
+| <span id="hat-15-dyn-tr-ma2"></span>`15:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_tr_ma2` | 0.251, 0.0015, -0.0216 | 0.5613, 0.5613, 0.43, 0.43 |
+| <span id="hat-15-dyn-warr-cb"></span>`15:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 14 | [15](characters.md#char-15) | `dyn_warr_cb` | 0.2256, -0.0084, -0.0414 | 0.5437, -0.5912, 0.4407, -0.4007 |
 
 ## 17 warr_co_cv {#17-warr-co-cv}
 
 40 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-17-dyn-abe"></span>`17:dyn_abe` | 16 | [17](characters.md#char-17) | `dyn_abe` | 0.0532, 0.0017, 0.056 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-17-dyn-bm-vb3"></span>`17:dyn_bm_vb3` | 16 | [17](characters.md#char-17) | `dyn_bm_vb3` | 0.1664, 0.0043, 0.0144 | 0.5204, 0.5283, 0.4784, 0.4703 |
-| <span id="hat-17-dyn-bm-vb5"></span>`17:dyn_bm_vb5` | 16 | [17](characters.md#char-17) | `dyn_bm_vb5` | 0.1174, -0.0009, 0.033 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-17-dyn-bm-vb6"></span>`17:dyn_bm_vb6` | 16 | [17](characters.md#char-17) | `dyn_bm_vb6` | 0.1711, -0.003, 0.0051 | 0.5538, 0.5239, 0.4417, 0.4731 |
-| <span id="hat-17-dyn-bm-vb7"></span>`17:dyn_bm_vb7` | 16 | [17](characters.md#char-17) | `dyn_bm_vb7` | 0.1318, 0, 0.0043 | 0.5659, 0.5659, 0.424, 0.424 |
-| <span id="hat-17-dyn-bopp-bo"></span>`17:dyn_bopp_bo` | 16 | [17](characters.md#char-17) | `dyn_bopp_bo` | 0.1207, 0.004, 0.0372 | 0.5116, -0.4852, 0.5145, -0.488 |
-| <span id="hat-17-dyn-bopp-lt"></span>`17:dyn_bopp_lt` | 16 | [17](characters.md#char-17) | `dyn_bopp_lt` | 0.1671, 0.0003, -0.006 | 0.5768, -0.5939, 0.4034, -0.3896 |
-| <span id="hat-17-dyn-bopp-so"></span>`17:dyn_bopp_so` | 16 | [17](characters.md#char-17) | `dyn_bopp_so` | 0.1633, 0.0016, 0.0026 | 0.5752, -0.5923, 0.4058, -0.392 |
-| <span id="hat-17-dyn-butcher"></span>`17:dyn_butcher` | 16 | [17](characters.md#char-17) | `dyn_butcher` | 0.1536, 0, -0.0032 | 0.5707, -0.5707, 0.4174, -0.4174 |
-| <span id="hat-17-dyn-ch"></span>`17:dyn_ch` | 16 | [17](characters.md#char-17) | `dyn_ch` | 0.1624, -0.0012, 0.0457 | 0.5314, -0.5477, 0.4428, -0.4706 |
-| <span id="hat-17-dyn-civl-a"></span>`17:dyn_civl_a` | 16 | [17](characters.md#char-17) | `dyn_civl_a` | 0.174, 0.0005, -0.0188 | 0.5875, 0.5919, 0.3943, 0.386 |
-| <span id="hat-17-dyn-civl-hl-ho"></span>`17:dyn_civl_hl_ho` | 16 | [17](characters.md#char-17) | `dyn_civl_hl_ho` | 0.1761, -0.0035, 0.0225 | 0.5665, 0.4793, 0.4239, 0.5192 |
-| <span id="hat-17-dyn-civl-pl-sp"></span>`17:dyn_civl_pl_sp` | 16 | [17](characters.md#char-17) | `dyn_civl_pl_sp` | 0.1348, 0.0282, 0.0502 | 0.5503, 0.4415, 0.5264, 0.4746 |
-| <span id="hat-17-dyn-co-ma3"></span>`17:dyn_co_ma3` | 16 | [17](characters.md#char-17) | `dyn_co_ma3` | 0.1486, -0.0069, 0.0093 | 0.5602, 0.5183, 0.4344, 0.4784 |
-| <span id="hat-17-dyn-ct-act"></span>`17:dyn_ct_act` | 16 | [17](characters.md#char-17) | `dyn_ct_act` | 0.1486, -0.0069, 0.0093 | 0.5602, 0.5183, 0.4344, 0.4784 |
-| <span id="hat-17-dyn-ct-ma2"></span>`17:dyn_ct_ma2` | 16 | [17](characters.md#char-17) | `dyn_ct_ma2` | 0.1317, 0, 0.0281 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-17-dyn-cw-m1"></span>`17:dyn_cw_m1` | 16 | [17](characters.md#char-17) | `dyn_cw_m1` | 0.1317, 0, 0.0281 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-17-dyn-cw-m2"></span>`17:dyn_cw_m2` | 16 | [17](characters.md#char-17) | `dyn_cw_m2` | 0.1317, 0, 0.0281 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-17-dyn-dest-lt"></span>`17:dyn_dest_lt` | 16 | [17](characters.md#char-17) | `dyn_dest_lt` | 0.1327, -0.0024, 0.004 | 0.5772, 0.5915, 0.3887, 0.4073 |
-| <span id="hat-17-dyn-dest-lta"></span>`17:dyn_dest_lta` | 16 | [17](characters.md#char-17) | `dyn_dest_lta` | 0.1348, 0.0282, 0.0502 | 0.5503, 0.4415, 0.5264, 0.4746 |
-| <span id="hat-17-dyn-dest-ltb"></span>`17:dyn_dest_ltb` | 16 | [17](characters.md#char-17) | `dyn_dest_ltb` | 0.1528, 0.001, 0.0288 | 0.5355, 0.5355, 0.4617, 0.4617 |
-| <span id="hat-17-dyn-eh-ma2"></span>`17:dyn_eh_ma2` | 16 | [17](characters.md#char-17) | `dyn_eh_ma2` | 0.1403, -0.0003, 0.0109 | 0.5834, 0.5525, 0.4284, 0.4133 |
-| <span id="hat-17-dyn-hiha-lt"></span>`17:dyn_hiha_lt` | 16 | [17](characters.md#char-17) | `dyn_hiha_lt` | 0.188, -0.0004, -0.0415 | 0.6257, -0.6131, 0.3457, -0.3365 |
-| <span id="hat-17-dyn-hiha-lt-ft"></span>`17:dyn_hiha_lt_ft` | 16 | [17](characters.md#char-17) | `dyn_hiha_lt_ft` | 0.188, -0.0004, -0.0415 | 0.6257, -0.6131, 0.3457, -0.3365 |
-| <span id="hat-17-dyn-hiha-so"></span>`17:dyn_hiha_so` | 16 | [17](characters.md#char-17) | `dyn_hiha_so` | 0.1984, -0.0134, 0.0366 | 0.4368, -0.4888, 0.5658, -0.5002 |
-| <span id="hat-17-dyn-hurr-lt"></span>`17:dyn_hurr_lt` | 16 | [17](characters.md#char-17) | `dyn_hurr_lt` | 0.1486, -0.0069, 0.0093 | 0.5602, 0.5183, 0.4344, 0.4784 |
-| <span id="hat-17-dyn-hurr-so"></span>`17:dyn_hurr_so` | 16 | [17](characters.md#char-17) | `dyn_hurr_so` | 0.1459, -0.0119, 0.0209 | 0.5001, -0.5552, 0.4941, -0.4445 |
-| <span id="hat-17-dyn-panz-lt"></span>`17:dyn_panz_lt` | 16 | [17](characters.md#char-17) | `dyn_panz_lt` | 0.1744, -0.0219, -0.0076 | 0.5074, -0.5969, 0.4925, -0.379 |
-| <span id="hat-17-dyn-panz-so"></span>`17:dyn_panz_so` | 16 | [17](characters.md#char-17) | `dyn_panz_so` | 0.1744, -0.0219, -0.0076 | 0.5074, -0.5969, 0.4925, -0.379 |
-| <span id="hat-17-dyn-pimp-va"></span>`17:dyn_pimp_va` | 16 | [17](characters.md#char-17) | `dyn_pimp_va` | 0.1545, -0.0164, 0.0299 | 0.4968, -0.5682, 0.4852, -0.4415 |
-| <span id="hat-17-dyn-pimp-vb"></span>`17:dyn_pimp_vb` | 16 | [17](characters.md#char-17) | `dyn_pimp_vb` | 0.1545, -0.0164, 0.0299 | 0.4968, -0.5682, 0.4852, -0.4415 |
-| <span id="hat-17-dyn-pl-ma9"></span>`17:dyn_pl_ma9` | 16 | [17](characters.md#char-17) | `dyn_pl_ma9` | 0.1469, -0.0032, 0.0467 | 0.5555, 0.5371, 0.4537, 0.4439 |
-| <span id="hat-17-dyn-pl-pm"></span>`17:dyn_pl_pm` | 16 | [17](characters.md#char-17) | `dyn_pl_pm` | 0.1512, 0.0004, 0.0176 | 0.5342, 0.4953, 0.4633, 0.5046 |
-| <span id="hat-17-dyn-rogu-lt"></span>`17:dyn_rogu_lt` | 16 | [17](characters.md#char-17) | `dyn_rogu_lt` | 0.1769, 0.0013, 0.0074 | 0.5658, -0.5567, 0.422, -0.4381 |
-| <span id="hat-17-dyn-rogu-so"></span>`17:dyn_rogu_so` | 16 | [17](characters.md#char-17) | `dyn_rogu_so` | 0.1906, 0.0004, -0.0005 | 0.5742, -0.5711, 0.4202, -0.4094 |
-| <span id="hat-17-dyn-sata-bo"></span>`17:dyn_sata_bo` | 16 | [17](characters.md#char-17) | `dyn_sata_bo` | 0.1747, 0, -0.0148 | 0.5871, -0.5871, 0.394, -0.394 |
-| <span id="hat-17-dyn-sk-pe"></span>`17:dyn_sk_pe` | 16 | [17](characters.md#char-17) | `dyn_sk_pe` | 0.1978, -0.0048, -0.02 | 0.5883, 0.5656, 0.3979, 0.4191 |
-| <span id="hat-17-dyn-tr-fa4"></span>`17:dyn_tr_fa4` | 16 | [17](characters.md#char-17) | `dyn_tr_fa4` | 0.1952, 0.0027, 0.0121 | 0.5513, 0.5465, 0.4747, 0.4149 |
-| <span id="hat-17-dyn-tr-ma2"></span>`17:dyn_tr_ma2` | 16 | [17](characters.md#char-17) | `dyn_tr_ma2` | 0.1528, 0.001, 0.0288 | 0.5355, 0.5355, 0.4617, 0.4617 |
-| <span id="hat-17-dyn-warr-cb"></span>`17:dyn_warr_cb` | 16 | [17](characters.md#char-17) | `dyn_warr_cb` | 0.1441, -0.0043, 0.0011 | 0.5437, -0.5912, 0.4407, -0.4007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-17-dyn-abe"></span>`17:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_abe` | 0.0532, 0.0017, 0.056 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-17-dyn-bm-vb3"></span>`17:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_bm_vb3` | 0.1664, 0.0043, 0.0144 | 0.5204, 0.5283, 0.4784, 0.4703 |
+| <span id="hat-17-dyn-bm-vb5"></span>`17:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_bm_vb5` | 0.1174, -0.0009, 0.033 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-17-dyn-bm-vb6"></span>`17:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_bm_vb6` | 0.1711, -0.003, 0.0051 | 0.5538, 0.5239, 0.4417, 0.4731 |
+| <span id="hat-17-dyn-bm-vb7"></span>`17:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_bm_vb7` | 0.1318, 0, 0.0043 | 0.5659, 0.5659, 0.424, 0.424 |
+| <span id="hat-17-dyn-bopp-bo"></span>`17:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_bopp_bo` | 0.1207, 0.004, 0.0372 | 0.5116, -0.4852, 0.5145, -0.488 |
+| <span id="hat-17-dyn-bopp-lt"></span>`17:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_bopp_lt` | 0.1671, 0.0003, -0.006 | 0.5768, -0.5939, 0.4034, -0.3896 |
+| <span id="hat-17-dyn-bopp-so"></span>`17:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_bopp_so` | 0.1633, 0.0016, 0.0026 | 0.5752, -0.5923, 0.4058, -0.392 |
+| <span id="hat-17-dyn-butcher"></span>`17:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_butcher` | 0.1536, 0, -0.0032 | 0.5707, -0.5707, 0.4174, -0.4174 |
+| <span id="hat-17-dyn-ch"></span>`17:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_ch` | 0.1624, -0.0012, 0.0457 | 0.5314, -0.5477, 0.4428, -0.4706 |
+| <span id="hat-17-dyn-civl-a"></span>`17:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_civl_a` | 0.174, 0.0005, -0.0188 | 0.5875, 0.5919, 0.3943, 0.386 |
+| <span id="hat-17-dyn-civl-hl-ho"></span>`17:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_civl_hl_ho` | 0.1761, -0.0035, 0.0225 | 0.5665, 0.4793, 0.4239, 0.5192 |
+| <span id="hat-17-dyn-civl-pl-sp"></span>`17:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_civl_pl_sp` | 0.1348, 0.0282, 0.0502 | 0.5503, 0.4415, 0.5264, 0.4746 |
+| <span id="hat-17-dyn-co-ma3"></span>`17:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_co_ma3` | 0.1486, -0.0069, 0.0093 | 0.5602, 0.5183, 0.4344, 0.4784 |
+| <span id="hat-17-dyn-ct-act"></span>`17:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_ct_act` | 0.1486, -0.0069, 0.0093 | 0.5602, 0.5183, 0.4344, 0.4784 |
+| <span id="hat-17-dyn-ct-ma2"></span>`17:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_ct_ma2` | 0.1317, 0, 0.0281 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-17-dyn-cw-m1"></span>`17:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_cw_m1` | 0.1317, 0, 0.0281 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-17-dyn-cw-m2"></span>`17:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_cw_m2` | 0.1317, 0, 0.0281 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-17-dyn-dest-lt"></span>`17:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_dest_lt` | 0.1327, -0.0024, 0.004 | 0.5772, 0.5915, 0.3887, 0.4073 |
+| <span id="hat-17-dyn-dest-lta"></span>`17:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_dest_lta` | 0.1348, 0.0282, 0.0502 | 0.5503, 0.4415, 0.5264, 0.4746 |
+| <span id="hat-17-dyn-dest-ltb"></span>`17:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_dest_ltb` | 0.1528, 0.001, 0.0288 | 0.5355, 0.5355, 0.4617, 0.4617 |
+| <span id="hat-17-dyn-eh-ma2"></span>`17:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_eh_ma2` | 0.1403, -0.0003, 0.0109 | 0.5834, 0.5525, 0.4284, 0.4133 |
+| <span id="hat-17-dyn-hiha-lt"></span>`17:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_hiha_lt` | 0.188, -0.0004, -0.0415 | 0.6257, -0.6131, 0.3457, -0.3365 |
+| <span id="hat-17-dyn-hiha-lt-ft"></span>`17:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_hiha_lt_ft` | 0.188, -0.0004, -0.0415 | 0.6257, -0.6131, 0.3457, -0.3365 |
+| <span id="hat-17-dyn-hiha-so"></span>`17:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_hiha_so` | 0.1984, -0.0134, 0.0366 | 0.4368, -0.4888, 0.5658, -0.5002 |
+| <span id="hat-17-dyn-hurr-lt"></span>`17:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_hurr_lt` | 0.1486, -0.0069, 0.0093 | 0.5602, 0.5183, 0.4344, 0.4784 |
+| <span id="hat-17-dyn-hurr-so"></span>`17:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_hurr_so` | 0.1459, -0.0119, 0.0209 | 0.5001, -0.5552, 0.4941, -0.4445 |
+| <span id="hat-17-dyn-panz-lt"></span>`17:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_panz_lt` | 0.1744, -0.0219, -0.0076 | 0.5074, -0.5969, 0.4925, -0.379 |
+| <span id="hat-17-dyn-panz-so"></span>`17:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_panz_so` | 0.1744, -0.0219, -0.0076 | 0.5074, -0.5969, 0.4925, -0.379 |
+| <span id="hat-17-dyn-pimp-va"></span>`17:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_pimp_va` | 0.1545, -0.0164, 0.0299 | 0.4968, -0.5682, 0.4852, -0.4415 |
+| <span id="hat-17-dyn-pimp-vb"></span>`17:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_pimp_vb` | 0.1545, -0.0164, 0.0299 | 0.4968, -0.5682, 0.4852, -0.4415 |
+| <span id="hat-17-dyn-pl-ma9"></span>`17:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_pl_ma9` | 0.1469, -0.0032, 0.0467 | 0.5555, 0.5371, 0.4537, 0.4439 |
+| <span id="hat-17-dyn-pl-pm"></span>`17:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_pl_pm` | 0.1512, 0.0004, 0.0176 | 0.5342, 0.4953, 0.4633, 0.5046 |
+| <span id="hat-17-dyn-rogu-lt"></span>`17:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_rogu_lt` | 0.1769, 0.0013, 0.0074 | 0.5658, -0.5567, 0.422, -0.4381 |
+| <span id="hat-17-dyn-rogu-so"></span>`17:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_rogu_so` | 0.1906, 0.0004, -0.0005 | 0.5742, -0.5711, 0.4202, -0.4094 |
+| <span id="hat-17-dyn-sata-bo"></span>`17:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_sata_bo` | 0.1747, 0, -0.0148 | 0.5871, -0.5871, 0.394, -0.394 |
+| <span id="hat-17-dyn-sk-pe"></span>`17:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_sk_pe` | 0.1978, -0.0048, -0.02 | 0.5883, 0.5656, 0.3979, 0.4191 |
+| <span id="hat-17-dyn-tr-fa4"></span>`17:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_tr_fa4` | 0.1952, 0.0027, 0.0121 | 0.5513, 0.5465, 0.4747, 0.4149 |
+| <span id="hat-17-dyn-tr-ma2"></span>`17:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_tr_ma2` | 0.1528, 0.001, 0.0288 | 0.5355, 0.5355, 0.4617, 0.4617 |
+| <span id="hat-17-dyn-warr-cb"></span>`17:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 16 | [17](characters.md#char-17) | `dyn_warr_cb` | 0.1441, -0.0043, 0.0011 | 0.5437, -0.5912, 0.4407, -0.4007 |
 
 ## 18 warr_cb {#18-warr-cb}
 
 41 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-18-dyn-abe"></span>`18:dyn_abe` | 17 | [18](characters.md#char-18) | `dyn_abe` | 0.0535, 0.0017, 0.0589 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-18-dyn-bm-vb3"></span>`18:dyn_bm_vb3` | 17 | [18](characters.md#char-18) | `dyn_bm_vb3` | 0.1751, 0.0043, 0.0248 | 0.5204, 0.5283, 0.4784, 0.4703 |
-| <span id="hat-18-dyn-bm-vb5"></span>`18:dyn_bm_vb5` | 17 | [18](characters.md#char-18) | `dyn_bm_vb5` | 0.1176, -0.0009, 0.0343 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-18-dyn-bm-vb6"></span>`18:dyn_bm_vb6` | 17 | [18](characters.md#char-18) | `dyn_bm_vb6` | 0.169, -0.0046, 0.0087 | 0.5538, 0.5239, 0.4417, 0.4731 |
-| <span id="hat-18-dyn-bm-vb7"></span>`18:dyn_bm_vb7` | 17 | [18](characters.md#char-18) | `dyn_bm_vb7` | 0.1335, 0, 0.0068 | 0.5659, 0.5659, 0.424, 0.424 |
-| <span id="hat-18-dyn-bopp-bo"></span>`18:dyn_bopp_bo` | 17 | [18](characters.md#char-18) | `dyn_bopp_bo` | 0.117, -0.0009, 0.0402 | 0.4997, -0.5302, 0.5003, -0.4679 |
-| <span id="hat-18-dyn-bopp-lt"></span>`18:dyn_bopp_lt` | 17 | [18](characters.md#char-18) | `dyn_bopp_lt` | 0.1679, 0.0016, 0.0056 | 0.5711, -0.5582, 0.4396, -0.4111 |
-| <span id="hat-18-dyn-bopp-so"></span>`18:dyn_bopp_so` | 17 | [18](characters.md#char-18) | `dyn_bopp_so` | 0.1688, 0.0005, 0.0013 | 0.5571, -0.5841, 0.4294, -0.4052 |
-| <span id="hat-18-dyn-butcher"></span>`18:dyn_butcher` | 17 | [18](characters.md#char-18) | `dyn_butcher` | 0.16, 0, 0.0035 | 0.5707, -0.5707, 0.4174, -0.4174 |
-| <span id="hat-18-dyn-ch"></span>`18:dyn_ch` | 17 | [18](characters.md#char-18) | `dyn_ch` | 0.1654, -0.0001, 0.0499 | 0.5303, -0.5466, 0.4441, -0.472 |
-| <span id="hat-18-dyn-civl-a"></span>`18:dyn_civl_a` | 17 | [18](characters.md#char-18) | `dyn_civl_a` | 0.1735, -0, 0.0033 | 0.5577, 0.5616, 0.4365, 0.4279 |
-| <span id="hat-18-dyn-civl-hl-ho"></span>`18:dyn_civl_hl_ho` | 17 | [18](characters.md#char-18) | `dyn_civl_hl_ho` | 0.1764, -0.004, 0.0261 | 0.5665, 0.4793, 0.4239, 0.5192 |
-| <span id="hat-18-dyn-civl-pl-sp"></span>`18:dyn_civl_pl_sp` | 17 | [18](characters.md#char-18) | `dyn_civl_pl_sp` | 0.1417, 0.0295, 0.0525 | 0.5503, 0.4415, 0.5264, 0.4746 |
-| <span id="hat-18-dyn-co-ma3"></span>`18:dyn_co_ma3` | 17 | [18](characters.md#char-18) | `dyn_co_ma3` | 0.1489, -0.0069, 0.012 | 0.5602, 0.5183, 0.4344, 0.4784 |
-| <span id="hat-18-dyn-cops-va"></span>`18:dyn_cops_va` | 17 | [18](characters.md#char-18) | `dyn_cops_va` | 0.1848, -0.0009, 0.0166 | 0.5437, -0.5386, 0.4635, -0.4466 |
-| <span id="hat-18-dyn-ct-act"></span>`18:dyn_ct_act` | 17 | [18](characters.md#char-18) | `dyn_ct_act` | 0.1489, -0.0069, 0.012 | 0.5602, 0.5183, 0.4344, 0.4784 |
-| <span id="hat-18-dyn-ct-ma2"></span>`18:dyn_ct_ma2` | 17 | [18](characters.md#char-18) | `dyn_ct_ma2` | 0.1396, 0, 0.0215 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-18-dyn-cw-m1"></span>`18:dyn_cw_m1` | 17 | [18](characters.md#char-18) | `dyn_cw_m1` | 0.1396, 0, 0.0215 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-18-dyn-cw-m2"></span>`18:dyn_cw_m2` | 17 | [18](characters.md#char-18) | `dyn_cw_m2` | 0.1396, 0, 0.0215 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-18-dyn-dest-lt"></span>`18:dyn_dest_lt` | 17 | [18](characters.md#char-18) | `dyn_dest_lt` | 0.1404, -0.0024, 0.0043 | 0.5772, 0.5915, 0.3887, 0.4073 |
-| <span id="hat-18-dyn-dest-lta"></span>`18:dyn_dest_lta` | 17 | [18](characters.md#char-18) | `dyn_dest_lta` | 0.1417, 0.0295, 0.0525 | 0.5503, 0.4415, 0.5264, 0.4746 |
-| <span id="hat-18-dyn-dest-ltb"></span>`18:dyn_dest_ltb` | 17 | [18](characters.md#char-18) | `dyn_dest_ltb` | 0.1583, 0.001, 0.0394 | 0.5355, 0.5355, 0.4617, 0.4617 |
-| <span id="hat-18-dyn-eh-ma2"></span>`18:dyn_eh_ma2` | 17 | [18](characters.md#char-18) | `dyn_eh_ma2` | 0.1437, -0.0003, 0.0079 | 0.5834, 0.5525, 0.4284, 0.4133 |
-| <span id="hat-18-dyn-hiha-lt"></span>`18:dyn_hiha_lt` | 17 | [18](characters.md#char-18) | `dyn_hiha_lt` | 0.1834, -0.0018, -0.0401 | 0.6278, -0.6151, 0.3418, -0.3327 |
-| <span id="hat-18-dyn-hiha-lt-ft"></span>`18:dyn_hiha_lt_ft` | 17 | [18](characters.md#char-18) | `dyn_hiha_lt_ft` | 0.1834, -0.0018, -0.0401 | 0.6278, -0.6151, 0.3418, -0.3327 |
-| <span id="hat-18-dyn-hiha-so"></span>`18:dyn_hiha_so` | 17 | [18](characters.md#char-18) | `dyn_hiha_so` | 0.1963, -0.0114, -0.0196 | 0.5557, -0.617, 0.4253, -0.36 |
-| <span id="hat-18-dyn-hurr-lt"></span>`18:dyn_hurr_lt` | 17 | [18](characters.md#char-18) | `dyn_hurr_lt` | 0.1489, -0.0069, 0.012 | 0.5602, 0.5183, 0.4344, 0.4784 |
-| <span id="hat-18-dyn-hurr-so"></span>`18:dyn_hurr_so` | 17 | [18](characters.md#char-18) | `dyn_hurr_so` | 0.1596, -0.0145, 0.0226 | 0.5001, -0.5552, 0.4941, -0.4445 |
-| <span id="hat-18-dyn-panz-lt"></span>`18:dyn_panz_lt` | 17 | [18](characters.md#char-18) | `dyn_panz_lt` | 0.1694, -0.0221, 0.0094 | 0.4992, -0.5906, 0.5008, -0.3888 |
-| <span id="hat-18-dyn-panz-so"></span>`18:dyn_panz_so` | 17 | [18](characters.md#char-18) | `dyn_panz_so` | 0.1694, -0.0221, 0.0094 | 0.4992, -0.5906, 0.5008, -0.3888 |
-| <span id="hat-18-dyn-pimp-va"></span>`18:dyn_pimp_va` | 17 | [18](characters.md#char-18) | `dyn_pimp_va` | 0.1596, -0.0147, 0.0276 | 0.4968, -0.5682, 0.4852, -0.4415 |
-| <span id="hat-18-dyn-pimp-vb"></span>`18:dyn_pimp_vb` | 17 | [18](characters.md#char-18) | `dyn_pimp_vb` | 0.1596, -0.0147, 0.0276 | 0.4968, -0.5682, 0.4852, -0.4415 |
-| <span id="hat-18-dyn-pl-ma9"></span>`18:dyn_pl_ma9` | 17 | [18](characters.md#char-18) | `dyn_pl_ma9` | 0.1731, -0.0032, 0.0383 | 0.5555, 0.5371, 0.4537, 0.4439 |
-| <span id="hat-18-dyn-pl-pm"></span>`18:dyn_pl_pm` | 17 | [18](characters.md#char-18) | `dyn_pl_pm` | 0.1618, -0.0008, 0.0227 | 0.5342, 0.4953, 0.4633, 0.5046 |
-| <span id="hat-18-dyn-rogu-lt"></span>`18:dyn_rogu_lt` | 17 | [18](characters.md#char-18) | `dyn_rogu_lt` | 0.1792, 0.0013, 0.0093 | 0.5838, -0.5385, 0.4422, -0.4168 |
-| <span id="hat-18-dyn-rogu-so"></span>`18:dyn_rogu_so` | 17 | [18](characters.md#char-18) | `dyn_rogu_so` | 0.1843, 0.0013, 0.0042 | 0.5838, -0.5385, 0.4422, -0.4168 |
-| <span id="hat-18-dyn-sata-bo"></span>`18:dyn_sata_bo` | 17 | [18](characters.md#char-18) | `dyn_sata_bo` | 0.1739, 0, -0.0146 | 0.5871, -0.5871, 0.394, -0.394 |
-| <span id="hat-18-dyn-sk-pe"></span>`18:dyn_sk_pe` | 17 | [18](characters.md#char-18) | `dyn_sk_pe` | 0.198, -0.0053, -0.0188 | 0.5883, 0.5656, 0.3979, 0.4191 |
-| <span id="hat-18-dyn-tr-fa4"></span>`18:dyn_tr_fa4` | 17 | [18](characters.md#char-18) | `dyn_tr_fa4` | 0.1946, 0.0149, 0.0163 | 0.5157, 0.5941, 0.4775, 0.3912 |
-| <span id="hat-18-dyn-tr-ma2"></span>`18:dyn_tr_ma2` | 17 | [18](characters.md#char-18) | `dyn_tr_ma2` | 0.1583, 0.001, 0.0394 | 0.5355, 0.5355, 0.4617, 0.4617 |
-| <span id="hat-18-dyn-warr-cb"></span>`18:dyn_warr_cb` | 17 | [18](characters.md#char-18) | `dyn_warr_cb` | 0.1297, 0, -0.0162 | 0.6256, -0.6256, 0.3296, -0.3296 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-18-dyn-abe"></span>`18:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_abe` | 0.0535, 0.0017, 0.0589 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-18-dyn-bm-vb3"></span>`18:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_bm_vb3` | 0.1751, 0.0043, 0.0248 | 0.5204, 0.5283, 0.4784, 0.4703 |
+| <span id="hat-18-dyn-bm-vb5"></span>`18:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_bm_vb5` | 0.1176, -0.0009, 0.0343 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-18-dyn-bm-vb6"></span>`18:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_bm_vb6` | 0.169, -0.0046, 0.0087 | 0.5538, 0.5239, 0.4417, 0.4731 |
+| <span id="hat-18-dyn-bm-vb7"></span>`18:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_bm_vb7` | 0.1335, 0, 0.0068 | 0.5659, 0.5659, 0.424, 0.424 |
+| <span id="hat-18-dyn-bopp-bo"></span>`18:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_bopp_bo` | 0.117, -0.0009, 0.0402 | 0.4997, -0.5302, 0.5003, -0.4679 |
+| <span id="hat-18-dyn-bopp-lt"></span>`18:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_bopp_lt` | 0.1679, 0.0016, 0.0056 | 0.5711, -0.5582, 0.4396, -0.4111 |
+| <span id="hat-18-dyn-bopp-so"></span>`18:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_bopp_so` | 0.1688, 0.0005, 0.0013 | 0.5571, -0.5841, 0.4294, -0.4052 |
+| <span id="hat-18-dyn-butcher"></span>`18:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_butcher` | 0.16, 0, 0.0035 | 0.5707, -0.5707, 0.4174, -0.4174 |
+| <span id="hat-18-dyn-ch"></span>`18:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_ch` | 0.1654, -0.0001, 0.0499 | 0.5303, -0.5466, 0.4441, -0.472 |
+| <span id="hat-18-dyn-civl-a"></span>`18:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_civl_a` | 0.1735, -0, 0.0033 | 0.5577, 0.5616, 0.4365, 0.4279 |
+| <span id="hat-18-dyn-civl-hl-ho"></span>`18:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_civl_hl_ho` | 0.1764, -0.004, 0.0261 | 0.5665, 0.4793, 0.4239, 0.5192 |
+| <span id="hat-18-dyn-civl-pl-sp"></span>`18:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_civl_pl_sp` | 0.1417, 0.0295, 0.0525 | 0.5503, 0.4415, 0.5264, 0.4746 |
+| <span id="hat-18-dyn-co-ma3"></span>`18:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_co_ma3` | 0.1489, -0.0069, 0.012 | 0.5602, 0.5183, 0.4344, 0.4784 |
+| <span id="hat-18-dyn-cops-va"></span>`18:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_cops_va` | 0.1848, -0.0009, 0.0166 | 0.5437, -0.5386, 0.4635, -0.4466 |
+| <span id="hat-18-dyn-ct-act"></span>`18:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_ct_act` | 0.1489, -0.0069, 0.012 | 0.5602, 0.5183, 0.4344, 0.4784 |
+| <span id="hat-18-dyn-ct-ma2"></span>`18:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_ct_ma2` | 0.1396, 0, 0.0215 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-18-dyn-cw-m1"></span>`18:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_cw_m1` | 0.1396, 0, 0.0215 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-18-dyn-cw-m2"></span>`18:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_cw_m2` | 0.1396, 0, 0.0215 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-18-dyn-dest-lt"></span>`18:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_dest_lt` | 0.1404, -0.0024, 0.0043 | 0.5772, 0.5915, 0.3887, 0.4073 |
+| <span id="hat-18-dyn-dest-lta"></span>`18:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_dest_lta` | 0.1417, 0.0295, 0.0525 | 0.5503, 0.4415, 0.5264, 0.4746 |
+| <span id="hat-18-dyn-dest-ltb"></span>`18:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_dest_ltb` | 0.1583, 0.001, 0.0394 | 0.5355, 0.5355, 0.4617, 0.4617 |
+| <span id="hat-18-dyn-eh-ma2"></span>`18:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_eh_ma2` | 0.1437, -0.0003, 0.0079 | 0.5834, 0.5525, 0.4284, 0.4133 |
+| <span id="hat-18-dyn-hiha-lt"></span>`18:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_hiha_lt` | 0.1834, -0.0018, -0.0401 | 0.6278, -0.6151, 0.3418, -0.3327 |
+| <span id="hat-18-dyn-hiha-lt-ft"></span>`18:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_hiha_lt_ft` | 0.1834, -0.0018, -0.0401 | 0.6278, -0.6151, 0.3418, -0.3327 |
+| <span id="hat-18-dyn-hiha-so"></span>`18:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_hiha_so` | 0.1963, -0.0114, -0.0196 | 0.5557, -0.617, 0.4253, -0.36 |
+| <span id="hat-18-dyn-hurr-lt"></span>`18:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_hurr_lt` | 0.1489, -0.0069, 0.012 | 0.5602, 0.5183, 0.4344, 0.4784 |
+| <span id="hat-18-dyn-hurr-so"></span>`18:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_hurr_so` | 0.1596, -0.0145, 0.0226 | 0.5001, -0.5552, 0.4941, -0.4445 |
+| <span id="hat-18-dyn-panz-lt"></span>`18:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_panz_lt` | 0.1694, -0.0221, 0.0094 | 0.4992, -0.5906, 0.5008, -0.3888 |
+| <span id="hat-18-dyn-panz-so"></span>`18:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_panz_so` | 0.1694, -0.0221, 0.0094 | 0.4992, -0.5906, 0.5008, -0.3888 |
+| <span id="hat-18-dyn-pimp-va"></span>`18:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_pimp_va` | 0.1596, -0.0147, 0.0276 | 0.4968, -0.5682, 0.4852, -0.4415 |
+| <span id="hat-18-dyn-pimp-vb"></span>`18:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_pimp_vb` | 0.1596, -0.0147, 0.0276 | 0.4968, -0.5682, 0.4852, -0.4415 |
+| <span id="hat-18-dyn-pl-ma9"></span>`18:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_pl_ma9` | 0.1731, -0.0032, 0.0383 | 0.5555, 0.5371, 0.4537, 0.4439 |
+| <span id="hat-18-dyn-pl-pm"></span>`18:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_pl_pm` | 0.1618, -0.0008, 0.0227 | 0.5342, 0.4953, 0.4633, 0.5046 |
+| <span id="hat-18-dyn-rogu-lt"></span>`18:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_rogu_lt` | 0.1792, 0.0013, 0.0093 | 0.5838, -0.5385, 0.4422, -0.4168 |
+| <span id="hat-18-dyn-rogu-so"></span>`18:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_rogu_so` | 0.1843, 0.0013, 0.0042 | 0.5838, -0.5385, 0.4422, -0.4168 |
+| <span id="hat-18-dyn-sata-bo"></span>`18:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_sata_bo` | 0.1739, 0, -0.0146 | 0.5871, -0.5871, 0.394, -0.394 |
+| <span id="hat-18-dyn-sk-pe"></span>`18:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_sk_pe` | 0.198, -0.0053, -0.0188 | 0.5883, 0.5656, 0.3979, 0.4191 |
+| <span id="hat-18-dyn-tr-fa4"></span>`18:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_tr_fa4` | 0.1946, 0.0149, 0.0163 | 0.5157, 0.5941, 0.4775, 0.3912 |
+| <span id="hat-18-dyn-tr-ma2"></span>`18:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_tr_ma2` | 0.1583, 0.001, 0.0394 | 0.5355, 0.5355, 0.4617, 0.4617 |
+| <span id="hat-18-dyn-warr-cb"></span>`18:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 17 | [18](characters.md#char-18) | `dyn_warr_cb` | 0.1297, 0, -0.0162 | 0.6256, -0.6256, 0.3296, -0.3296 |
 
 ## 21 warr_fo {#21-warr-fo}
 
 43 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-21-dyn-abe"></span>`21:dyn_abe` | 20 | [21](characters.md#char-21) | `dyn_abe` | 0.0536, 0.0017, 0.0594 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-21-dyn-bm-vb3"></span>`21:dyn_bm_vb3` | 20 | [21](characters.md#char-21) | `dyn_bm_vb3` | 0.2234, -0.0121, 0.0219 | 0.5473, 0.4823, 0.4505, 0.5147 |
-| <span id="hat-21-dyn-bm-vb5"></span>`21:dyn_bm_vb5` | 20 | [21](characters.md#char-21) | `dyn_bm_vb5` | 0.1987, -0.0009, 0.0076 | 0.5334, 0.5334, 0.4642, 0.4642 |
-| <span id="hat-21-dyn-bm-vb6"></span>`21:dyn_bm_vb6` | 20 | [21](characters.md#char-21) | `dyn_bm_vb6` | 0.2354, -0.0215, -0.0166 | 0.5935, 0.5141, 0.3993, 0.4733 |
-| <span id="hat-21-dyn-bm-vb7"></span>`21:dyn_bm_vb7` | 20 | [21](characters.md#char-21) | `dyn_bm_vb7` | 0.1832, 0.0101, -0.0149 | 0.5422, 0.6058, 0.4368, 0.385 |
-| <span id="hat-21-dyn-bopp-bo"></span>`21:dyn_bopp_bo` | 20 | [21](characters.md#char-21) | `dyn_bopp_bo` | 0.1486, 0, 0.005 | 0.5573, -0.5835, 0.4353, -0.3994 |
-| <span id="hat-21-dyn-bopp-lt"></span>`21:dyn_bopp_lt` | 20 | [21](characters.md#char-21) | `dyn_bopp_lt` | 0.2157, 0.0281, -0.0175 | 0.6257, -0.5153, 0.3796, -0.446 |
-| <span id="hat-21-dyn-bopp-so"></span>`21:dyn_bopp_so` | 20 | [21](characters.md#char-21) | `dyn_bopp_so` | 0.2117, 0.0004, -0.0286 | 0.5722, -0.6009, 0.3943, -0.395 |
-| <span id="hat-21-dyn-butcher"></span>`21:dyn_butcher` | 20 | [21](characters.md#char-21) | `dyn_butcher` | 0.2132, 0, -0.0186 | 0.5698, -0.5698, 0.4187, -0.4187 |
-| <span id="hat-21-dyn-ch"></span>`21:dyn_ch` | 20 | [21](characters.md#char-21) | `dyn_ch` | 0.2249, -0.0076, 0.0324 | 0.5354, -0.5445, 0.4971, -0.4121 |
-| <span id="hat-21-dyn-civl-a"></span>`21:dyn_civl_a` | 20 | [21](characters.md#char-21) | `dyn_civl_a` | 0.2201, 0.0077, -0.0302 | 0.556, 0.6103, 0.406, 0.392 |
-| <span id="hat-21-dyn-civl-hl-ho"></span>`21:dyn_civl_hl_ho` | 20 | [21](characters.md#char-21) | `dyn_civl_hl_ho` | 0.2244, -0.0116, 0.0172 | 0.567, 0.4763, 0.4011, 0.5392 |
-| <span id="hat-21-dyn-civl-pl-sp"></span>`21:dyn_civl_pl_sp` | 20 | [21](characters.md#char-21) | `dyn_civl_pl_sp` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-21-dyn-co-ma3"></span>`21:dyn_co_ma3` | 20 | [21](characters.md#char-21) | `dyn_co_ma3` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-21-dyn-cops-va"></span>`21:dyn_cops_va` | 20 | [21](characters.md#char-21) | `dyn_cops_va` | 0.2327, -0.0147, 0.0092 | 0.5196, -0.5642, 0.4836, -0.4216 |
-| <span id="hat-21-dyn-ct-act"></span>`21:dyn_ct_act` | 20 | [21](characters.md#char-21) | `dyn_ct_act` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-21-dyn-ct-ma2"></span>`21:dyn_ct_ma2` | 20 | [21](characters.md#char-21) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-21-dyn-ct-ma2-2"></span>`21:dyn_ct_ma2#2` | 20 | [21](characters.md#char-21) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-21-dyn-cw-m1"></span>`21:dyn_cw_m1` | 20 | [21](characters.md#char-21) | `dyn_cw_m1` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-21-dyn-cw-m2"></span>`21:dyn_cw_m2` | 20 | [21](characters.md#char-21) | `dyn_cw_m2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-21-dyn-dest-lt"></span>`21:dyn_dest_lt` | 20 | [21](characters.md#char-21) | `dyn_dest_lt` | 0.2114, -0.0073, -0.015 | 0.5916, 0.5615, 0.3827, 0.4338 |
-| <span id="hat-21-dyn-dest-lta"></span>`21:dyn_dest_lta` | 20 | [21](characters.md#char-21) | `dyn_dest_lta` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-21-dyn-dest-ltb"></span>`21:dyn_dest_ltb` | 20 | [21](characters.md#char-21) | `dyn_dest_ltb` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-21-dyn-eh-ma2"></span>`21:dyn_eh_ma2` | 20 | [21](characters.md#char-21) | `dyn_eh_ma2` | 0.2026, 0.0173, -0.0262 | 0.5616, 0.6186, 0.4292, 0.343 |
-| <span id="hat-21-dyn-hiha-lt"></span>`21:dyn_hiha_lt` | 20 | [21](characters.md#char-21) | `dyn_hiha_lt` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
-| <span id="hat-21-dyn-hiha-lt-ft"></span>`21:dyn_hiha_lt_ft` | 20 | [21](characters.md#char-21) | `dyn_hiha_lt_ft` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
-| <span id="hat-21-dyn-hiha-so"></span>`21:dyn_hiha_so` | 20 | [21](characters.md#char-21) | `dyn_hiha_so` | 0.2467, -0.0054, -0.0059 | 0.5339, -0.5532, 0.4554, -0.4489 |
-| <span id="hat-21-dyn-hurr-lt"></span>`21:dyn_hurr_lt` | 20 | [21](characters.md#char-21) | `dyn_hurr_lt` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-21-dyn-hurr-so"></span>`21:dyn_hurr_so` | 20 | [21](characters.md#char-21) | `dyn_hurr_so` | 0.2235, -0.0151, 0.0007 | 0.5448, -0.5627, 0.4504, -0.4287 |
-| <span id="hat-21-dyn-panz-lt"></span>`21:dyn_panz_lt` | 20 | [21](characters.md#char-21) | `dyn_panz_lt` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-21-dyn-panz-so"></span>`21:dyn_panz_so` | 20 | [21](characters.md#char-21) | `dyn_panz_so` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-21-dyn-pimp-va"></span>`21:dyn_pimp_va` | 20 | [21](characters.md#char-21) | `dyn_pimp_va` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
-| <span id="hat-21-dyn-pimp-vb"></span>`21:dyn_pimp_vb` | 20 | [21](characters.md#char-21) | `dyn_pimp_vb` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
-| <span id="hat-21-dyn-pl-ma9"></span>`21:dyn_pl_ma9` | 20 | [21](characters.md#char-21) | `dyn_pl_ma9` | 0.2258, -0.0083, 0.0284 | 0.5448, 0.5211, 0.449, 0.4797 |
-| <span id="hat-21-dyn-pl-pm"></span>`21:dyn_pl_pm` | 20 | [21](characters.md#char-21) | `dyn_pl_pm` | 0.2198, -0.0021, -0.007 | 0.5751, 0.5403, 0.4114, 0.4562 |
-| <span id="hat-21-dyn-rogu-lt"></span>`21:dyn_rogu_lt` | 20 | [21](characters.md#char-21) | `dyn_rogu_lt` | 0.2286, 0.0185, -0.0034 | 0.5817, -0.5067, 0.4227, -0.4757 |
-| <span id="hat-21-dyn-rogu-so"></span>`21:dyn_rogu_so` | 20 | [21](characters.md#char-21) | `dyn_rogu_so` | 0.2295, -0.014, -0.005 | 0.5577, -0.5415, 0.4998, -0.3821 |
-| <span id="hat-21-dyn-sata-bo"></span>`21:dyn_sata_bo` | 20 | [21](characters.md#char-21) | `dyn_sata_bo` | 0.2435, 0, -0.0207 | 0.5367, -0.5367, 0.4604, -0.4604 |
-| <span id="hat-21-dyn-sk-pe"></span>`21:dyn_sk_pe` | 20 | [21](characters.md#char-21) | `dyn_sk_pe` | 0.2597, -0.009, -0.0169 | 0.5706, 0.5431, 0.424, 0.4469 |
-| <span id="hat-21-dyn-tr-fa4"></span>`21:dyn_tr_fa4` | 20 | [21](characters.md#char-21) | `dyn_tr_fa4` | 0.2303, -0.006, 0.0089 | 0.5291, 0.5463, 0.4228, 0.4928 |
-| <span id="hat-21-dyn-tr-ma2"></span>`21:dyn_tr_ma2` | 20 | [21](characters.md#char-21) | `dyn_tr_ma2` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-21-dyn-warr-cb"></span>`21:dyn_warr_cb` | 20 | [21](characters.md#char-21) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
-| <span id="hat-21-dyn-warr-cb-2"></span>`21:dyn_warr_cb#2` | 20 | [21](characters.md#char-21) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-21-dyn-abe"></span>`21:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_abe` | 0.0536, 0.0017, 0.0594 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-21-dyn-bm-vb3"></span>`21:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_bm_vb3` | 0.2234, -0.0121, 0.0219 | 0.5473, 0.4823, 0.4505, 0.5147 |
+| <span id="hat-21-dyn-bm-vb5"></span>`21:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_bm_vb5` | 0.1987, -0.0009, 0.0076 | 0.5334, 0.5334, 0.4642, 0.4642 |
+| <span id="hat-21-dyn-bm-vb6"></span>`21:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_bm_vb6` | 0.2354, -0.0215, -0.0166 | 0.5935, 0.5141, 0.3993, 0.4733 |
+| <span id="hat-21-dyn-bm-vb7"></span>`21:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_bm_vb7` | 0.1832, 0.0101, -0.0149 | 0.5422, 0.6058, 0.4368, 0.385 |
+| <span id="hat-21-dyn-bopp-bo"></span>`21:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_bopp_bo` | 0.1486, 0, 0.005 | 0.5573, -0.5835, 0.4353, -0.3994 |
+| <span id="hat-21-dyn-bopp-lt"></span>`21:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_bopp_lt` | 0.2157, 0.0281, -0.0175 | 0.6257, -0.5153, 0.3796, -0.446 |
+| <span id="hat-21-dyn-bopp-so"></span>`21:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_bopp_so` | 0.2117, 0.0004, -0.0286 | 0.5722, -0.6009, 0.3943, -0.395 |
+| <span id="hat-21-dyn-butcher"></span>`21:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_butcher` | 0.2132, 0, -0.0186 | 0.5698, -0.5698, 0.4187, -0.4187 |
+| <span id="hat-21-dyn-ch"></span>`21:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_ch` | 0.2249, -0.0076, 0.0324 | 0.5354, -0.5445, 0.4971, -0.4121 |
+| <span id="hat-21-dyn-civl-a"></span>`21:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_civl_a` | 0.2201, 0.0077, -0.0302 | 0.556, 0.6103, 0.406, 0.392 |
+| <span id="hat-21-dyn-civl-hl-ho"></span>`21:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_civl_hl_ho` | 0.2244, -0.0116, 0.0172 | 0.567, 0.4763, 0.4011, 0.5392 |
+| <span id="hat-21-dyn-civl-pl-sp"></span>`21:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_civl_pl_sp` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-21-dyn-co-ma3"></span>`21:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_co_ma3` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-21-dyn-cops-va"></span>`21:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_cops_va` | 0.2327, -0.0147, 0.0092 | 0.5196, -0.5642, 0.4836, -0.4216 |
+| <span id="hat-21-dyn-ct-act"></span>`21:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_ct_act` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-21-dyn-ct-ma2"></span>`21:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-21-dyn-ct-ma2-2"></span>`21:dyn_ct_ma2#2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-21-dyn-cw-m1"></span>`21:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_cw_m1` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-21-dyn-cw-m2"></span>`21:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_cw_m2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-21-dyn-dest-lt"></span>`21:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_dest_lt` | 0.2114, -0.0073, -0.015 | 0.5916, 0.5615, 0.3827, 0.4338 |
+| <span id="hat-21-dyn-dest-lta"></span>`21:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_dest_lta` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-21-dyn-dest-ltb"></span>`21:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_dest_ltb` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-21-dyn-eh-ma2"></span>`21:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_eh_ma2` | 0.2026, 0.0173, -0.0262 | 0.5616, 0.6186, 0.4292, 0.343 |
+| <span id="hat-21-dyn-hiha-lt"></span>`21:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_hiha_lt` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
+| <span id="hat-21-dyn-hiha-lt-ft"></span>`21:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_hiha_lt_ft` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
+| <span id="hat-21-dyn-hiha-so"></span>`21:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_hiha_so` | 0.2467, -0.0054, -0.0059 | 0.5339, -0.5532, 0.4554, -0.4489 |
+| <span id="hat-21-dyn-hurr-lt"></span>`21:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_hurr_lt` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-21-dyn-hurr-so"></span>`21:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_hurr_so` | 0.2235, -0.0151, 0.0007 | 0.5448, -0.5627, 0.4504, -0.4287 |
+| <span id="hat-21-dyn-panz-lt"></span>`21:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_panz_lt` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-21-dyn-panz-so"></span>`21:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_panz_so` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-21-dyn-pimp-va"></span>`21:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_pimp_va` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
+| <span id="hat-21-dyn-pimp-vb"></span>`21:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_pimp_vb` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
+| <span id="hat-21-dyn-pl-ma9"></span>`21:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_pl_ma9` | 0.2258, -0.0083, 0.0284 | 0.5448, 0.5211, 0.449, 0.4797 |
+| <span id="hat-21-dyn-pl-pm"></span>`21:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_pl_pm` | 0.2198, -0.0021, -0.007 | 0.5751, 0.5403, 0.4114, 0.4562 |
+| <span id="hat-21-dyn-rogu-lt"></span>`21:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_rogu_lt` | 0.2286, 0.0185, -0.0034 | 0.5817, -0.5067, 0.4227, -0.4757 |
+| <span id="hat-21-dyn-rogu-so"></span>`21:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_rogu_so` | 0.2295, -0.014, -0.005 | 0.5577, -0.5415, 0.4998, -0.3821 |
+| <span id="hat-21-dyn-sata-bo"></span>`21:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_sata_bo` | 0.2435, 0, -0.0207 | 0.5367, -0.5367, 0.4604, -0.4604 |
+| <span id="hat-21-dyn-sk-pe"></span>`21:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_sk_pe` | 0.2597, -0.009, -0.0169 | 0.5706, 0.5431, 0.424, 0.4469 |
+| <span id="hat-21-dyn-tr-fa4"></span>`21:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_tr_fa4` | 0.2303, -0.006, 0.0089 | 0.5291, 0.5463, 0.4228, 0.4928 |
+| <span id="hat-21-dyn-tr-ma2"></span>`21:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_tr_ma2` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-21-dyn-warr-cb"></span>`21:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
+| <span id="hat-21-dyn-warr-cb-2"></span>`21:dyn_warr_cb#2` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 20 | [21](characters.md#char-21) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
 
 ## 23 warr_fo_cv1 {#23-warr-fo-cv1}
 
 43 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-23-dyn-abe"></span>`23:dyn_abe` | 22 | [23](characters.md#char-23) | `dyn_abe` | 0.0536, 0.0017, 0.0594 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-23-dyn-bm-vb3"></span>`23:dyn_bm_vb3` | 22 | [23](characters.md#char-23) | `dyn_bm_vb3` | 0.2234, -0.0121, 0.0219 | 0.5473, 0.4823, 0.4505, 0.5147 |
-| <span id="hat-23-dyn-bm-vb5"></span>`23:dyn_bm_vb5` | 22 | [23](characters.md#char-23) | `dyn_bm_vb5` | 0.1987, -0.0009, 0.0076 | 0.5334, 0.5334, 0.4642, 0.4642 |
-| <span id="hat-23-dyn-bm-vb6"></span>`23:dyn_bm_vb6` | 22 | [23](characters.md#char-23) | `dyn_bm_vb6` | 0.2354, -0.0215, -0.0166 | 0.5935, 0.5141, 0.3993, 0.4733 |
-| <span id="hat-23-dyn-bm-vb7"></span>`23:dyn_bm_vb7` | 22 | [23](characters.md#char-23) | `dyn_bm_vb7` | 0.1832, 0.0101, -0.0149 | 0.5422, 0.6058, 0.4368, 0.385 |
-| <span id="hat-23-dyn-bopp-bo"></span>`23:dyn_bopp_bo` | 22 | [23](characters.md#char-23) | `dyn_bopp_bo` | 0.1486, 0, 0.005 | 0.5573, -0.5835, 0.4353, -0.3994 |
-| <span id="hat-23-dyn-bopp-lt"></span>`23:dyn_bopp_lt` | 22 | [23](characters.md#char-23) | `dyn_bopp_lt` | 0.2157, 0.0281, -0.0175 | 0.6257, -0.5153, 0.3796, -0.446 |
-| <span id="hat-23-dyn-bopp-so"></span>`23:dyn_bopp_so` | 22 | [23](characters.md#char-23) | `dyn_bopp_so` | 0.2117, 0.0004, -0.0286 | 0.5722, -0.6009, 0.3943, -0.395 |
-| <span id="hat-23-dyn-butcher"></span>`23:dyn_butcher` | 22 | [23](characters.md#char-23) | `dyn_butcher` | 0.2132, 0, -0.0186 | 0.5698, -0.5698, 0.4187, -0.4187 |
-| <span id="hat-23-dyn-ch"></span>`23:dyn_ch` | 22 | [23](characters.md#char-23) | `dyn_ch` | 0.2249, -0.0076, 0.0324 | 0.5354, -0.5445, 0.4971, -0.4121 |
-| <span id="hat-23-dyn-civl-a"></span>`23:dyn_civl_a` | 22 | [23](characters.md#char-23) | `dyn_civl_a` | 0.2201, 0.0077, -0.0302 | 0.556, 0.6103, 0.406, 0.392 |
-| <span id="hat-23-dyn-civl-hl-ho"></span>`23:dyn_civl_hl_ho` | 22 | [23](characters.md#char-23) | `dyn_civl_hl_ho` | 0.2244, -0.0116, 0.0172 | 0.567, 0.4763, 0.4011, 0.5392 |
-| <span id="hat-23-dyn-civl-pl-sp"></span>`23:dyn_civl_pl_sp` | 22 | [23](characters.md#char-23) | `dyn_civl_pl_sp` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-23-dyn-co-ma3"></span>`23:dyn_co_ma3` | 22 | [23](characters.md#char-23) | `dyn_co_ma3` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-23-dyn-cops-va"></span>`23:dyn_cops_va` | 22 | [23](characters.md#char-23) | `dyn_cops_va` | 0.2327, -0.0147, 0.0092 | 0.5196, -0.5642, 0.4836, -0.4216 |
-| <span id="hat-23-dyn-ct-act"></span>`23:dyn_ct_act` | 22 | [23](characters.md#char-23) | `dyn_ct_act` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-23-dyn-ct-ma2"></span>`23:dyn_ct_ma2` | 22 | [23](characters.md#char-23) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-23-dyn-ct-ma2-2"></span>`23:dyn_ct_ma2#2` | 22 | [23](characters.md#char-23) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-23-dyn-cw-m1"></span>`23:dyn_cw_m1` | 22 | [23](characters.md#char-23) | `dyn_cw_m1` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-23-dyn-cw-m2"></span>`23:dyn_cw_m2` | 22 | [23](characters.md#char-23) | `dyn_cw_m2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-23-dyn-dest-lt"></span>`23:dyn_dest_lt` | 22 | [23](characters.md#char-23) | `dyn_dest_lt` | 0.2114, -0.0073, -0.015 | 0.5916, 0.5615, 0.3827, 0.4338 |
-| <span id="hat-23-dyn-dest-lta"></span>`23:dyn_dest_lta` | 22 | [23](characters.md#char-23) | `dyn_dest_lta` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-23-dyn-dest-ltb"></span>`23:dyn_dest_ltb` | 22 | [23](characters.md#char-23) | `dyn_dest_ltb` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-23-dyn-eh-ma2"></span>`23:dyn_eh_ma2` | 22 | [23](characters.md#char-23) | `dyn_eh_ma2` | 0.2026, 0.0173, -0.0262 | 0.5616, 0.6186, 0.4292, 0.343 |
-| <span id="hat-23-dyn-hiha-lt"></span>`23:dyn_hiha_lt` | 22 | [23](characters.md#char-23) | `dyn_hiha_lt` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
-| <span id="hat-23-dyn-hiha-lt-ft"></span>`23:dyn_hiha_lt_ft` | 22 | [23](characters.md#char-23) | `dyn_hiha_lt_ft` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
-| <span id="hat-23-dyn-hiha-so"></span>`23:dyn_hiha_so` | 22 | [23](characters.md#char-23) | `dyn_hiha_so` | 0.2467, -0.0054, -0.0059 | 0.5339, -0.5532, 0.4554, -0.4489 |
-| <span id="hat-23-dyn-hurr-lt"></span>`23:dyn_hurr_lt` | 22 | [23](characters.md#char-23) | `dyn_hurr_lt` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-23-dyn-hurr-so"></span>`23:dyn_hurr_so` | 22 | [23](characters.md#char-23) | `dyn_hurr_so` | 0.2235, -0.0151, 0.0007 | 0.5448, -0.5627, 0.4504, -0.4287 |
-| <span id="hat-23-dyn-panz-lt"></span>`23:dyn_panz_lt` | 22 | [23](characters.md#char-23) | `dyn_panz_lt` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-23-dyn-panz-so"></span>`23:dyn_panz_so` | 22 | [23](characters.md#char-23) | `dyn_panz_so` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-23-dyn-pimp-va"></span>`23:dyn_pimp_va` | 22 | [23](characters.md#char-23) | `dyn_pimp_va` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
-| <span id="hat-23-dyn-pimp-vb"></span>`23:dyn_pimp_vb` | 22 | [23](characters.md#char-23) | `dyn_pimp_vb` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
-| <span id="hat-23-dyn-pl-ma9"></span>`23:dyn_pl_ma9` | 22 | [23](characters.md#char-23) | `dyn_pl_ma9` | 0.2258, -0.0083, 0.0284 | 0.5448, 0.5211, 0.449, 0.4797 |
-| <span id="hat-23-dyn-pl-pm"></span>`23:dyn_pl_pm` | 22 | [23](characters.md#char-23) | `dyn_pl_pm` | 0.2198, -0.0021, -0.007 | 0.5751, 0.5403, 0.4114, 0.4562 |
-| <span id="hat-23-dyn-rogu-lt"></span>`23:dyn_rogu_lt` | 22 | [23](characters.md#char-23) | `dyn_rogu_lt` | 0.2286, 0.0185, -0.0034 | 0.5817, -0.5067, 0.4227, -0.4757 |
-| <span id="hat-23-dyn-rogu-so"></span>`23:dyn_rogu_so` | 22 | [23](characters.md#char-23) | `dyn_rogu_so` | 0.2295, -0.014, -0.005 | 0.5577, -0.5415, 0.4998, -0.3821 |
-| <span id="hat-23-dyn-sata-bo"></span>`23:dyn_sata_bo` | 22 | [23](characters.md#char-23) | `dyn_sata_bo` | 0.2435, 0, -0.0207 | 0.5367, -0.5367, 0.4604, -0.4604 |
-| <span id="hat-23-dyn-sk-pe"></span>`23:dyn_sk_pe` | 22 | [23](characters.md#char-23) | `dyn_sk_pe` | 0.2597, -0.009, -0.0169 | 0.5706, 0.5431, 0.424, 0.4469 |
-| <span id="hat-23-dyn-tr-fa4"></span>`23:dyn_tr_fa4` | 22 | [23](characters.md#char-23) | `dyn_tr_fa4` | 0.2303, -0.006, 0.0089 | 0.5291, 0.5463, 0.4228, 0.4928 |
-| <span id="hat-23-dyn-tr-ma2"></span>`23:dyn_tr_ma2` | 22 | [23](characters.md#char-23) | `dyn_tr_ma2` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-23-dyn-warr-cb"></span>`23:dyn_warr_cb` | 22 | [23](characters.md#char-23) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
-| <span id="hat-23-dyn-warr-cb-2"></span>`23:dyn_warr_cb#2` | 22 | [23](characters.md#char-23) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-23-dyn-abe"></span>`23:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_abe` | 0.0536, 0.0017, 0.0594 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-23-dyn-bm-vb3"></span>`23:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_bm_vb3` | 0.2234, -0.0121, 0.0219 | 0.5473, 0.4823, 0.4505, 0.5147 |
+| <span id="hat-23-dyn-bm-vb5"></span>`23:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_bm_vb5` | 0.1987, -0.0009, 0.0076 | 0.5334, 0.5334, 0.4642, 0.4642 |
+| <span id="hat-23-dyn-bm-vb6"></span>`23:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_bm_vb6` | 0.2354, -0.0215, -0.0166 | 0.5935, 0.5141, 0.3993, 0.4733 |
+| <span id="hat-23-dyn-bm-vb7"></span>`23:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_bm_vb7` | 0.1832, 0.0101, -0.0149 | 0.5422, 0.6058, 0.4368, 0.385 |
+| <span id="hat-23-dyn-bopp-bo"></span>`23:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_bopp_bo` | 0.1486, 0, 0.005 | 0.5573, -0.5835, 0.4353, -0.3994 |
+| <span id="hat-23-dyn-bopp-lt"></span>`23:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_bopp_lt` | 0.2157, 0.0281, -0.0175 | 0.6257, -0.5153, 0.3796, -0.446 |
+| <span id="hat-23-dyn-bopp-so"></span>`23:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_bopp_so` | 0.2117, 0.0004, -0.0286 | 0.5722, -0.6009, 0.3943, -0.395 |
+| <span id="hat-23-dyn-butcher"></span>`23:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_butcher` | 0.2132, 0, -0.0186 | 0.5698, -0.5698, 0.4187, -0.4187 |
+| <span id="hat-23-dyn-ch"></span>`23:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_ch` | 0.2249, -0.0076, 0.0324 | 0.5354, -0.5445, 0.4971, -0.4121 |
+| <span id="hat-23-dyn-civl-a"></span>`23:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_civl_a` | 0.2201, 0.0077, -0.0302 | 0.556, 0.6103, 0.406, 0.392 |
+| <span id="hat-23-dyn-civl-hl-ho"></span>`23:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_civl_hl_ho` | 0.2244, -0.0116, 0.0172 | 0.567, 0.4763, 0.4011, 0.5392 |
+| <span id="hat-23-dyn-civl-pl-sp"></span>`23:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_civl_pl_sp` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-23-dyn-co-ma3"></span>`23:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_co_ma3` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-23-dyn-cops-va"></span>`23:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_cops_va` | 0.2327, -0.0147, 0.0092 | 0.5196, -0.5642, 0.4836, -0.4216 |
+| <span id="hat-23-dyn-ct-act"></span>`23:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_ct_act` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-23-dyn-ct-ma2"></span>`23:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-23-dyn-ct-ma2-2"></span>`23:dyn_ct_ma2#2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-23-dyn-cw-m1"></span>`23:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_cw_m1` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-23-dyn-cw-m2"></span>`23:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_cw_m2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-23-dyn-dest-lt"></span>`23:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_dest_lt` | 0.2114, -0.0073, -0.015 | 0.5916, 0.5615, 0.3827, 0.4338 |
+| <span id="hat-23-dyn-dest-lta"></span>`23:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_dest_lta` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-23-dyn-dest-ltb"></span>`23:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_dest_ltb` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-23-dyn-eh-ma2"></span>`23:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_eh_ma2` | 0.2026, 0.0173, -0.0262 | 0.5616, 0.6186, 0.4292, 0.343 |
+| <span id="hat-23-dyn-hiha-lt"></span>`23:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_hiha_lt` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
+| <span id="hat-23-dyn-hiha-lt-ft"></span>`23:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_hiha_lt_ft` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
+| <span id="hat-23-dyn-hiha-so"></span>`23:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_hiha_so` | 0.2467, -0.0054, -0.0059 | 0.5339, -0.5532, 0.4554, -0.4489 |
+| <span id="hat-23-dyn-hurr-lt"></span>`23:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_hurr_lt` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-23-dyn-hurr-so"></span>`23:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_hurr_so` | 0.2235, -0.0151, 0.0007 | 0.5448, -0.5627, 0.4504, -0.4287 |
+| <span id="hat-23-dyn-panz-lt"></span>`23:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_panz_lt` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-23-dyn-panz-so"></span>`23:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_panz_so` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-23-dyn-pimp-va"></span>`23:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_pimp_va` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
+| <span id="hat-23-dyn-pimp-vb"></span>`23:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_pimp_vb` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
+| <span id="hat-23-dyn-pl-ma9"></span>`23:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_pl_ma9` | 0.2258, -0.0083, 0.0284 | 0.5448, 0.5211, 0.449, 0.4797 |
+| <span id="hat-23-dyn-pl-pm"></span>`23:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_pl_pm` | 0.2198, -0.0021, -0.007 | 0.5751, 0.5403, 0.4114, 0.4562 |
+| <span id="hat-23-dyn-rogu-lt"></span>`23:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_rogu_lt` | 0.2286, 0.0185, -0.0034 | 0.5817, -0.5067, 0.4227, -0.4757 |
+| <span id="hat-23-dyn-rogu-so"></span>`23:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_rogu_so` | 0.2295, -0.014, -0.005 | 0.5577, -0.5415, 0.4998, -0.3821 |
+| <span id="hat-23-dyn-sata-bo"></span>`23:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_sata_bo` | 0.2435, 0, -0.0207 | 0.5367, -0.5367, 0.4604, -0.4604 |
+| <span id="hat-23-dyn-sk-pe"></span>`23:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_sk_pe` | 0.2597, -0.009, -0.0169 | 0.5706, 0.5431, 0.424, 0.4469 |
+| <span id="hat-23-dyn-tr-fa4"></span>`23:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_tr_fa4` | 0.2303, -0.006, 0.0089 | 0.5291, 0.5463, 0.4228, 0.4928 |
+| <span id="hat-23-dyn-tr-ma2"></span>`23:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_tr_ma2` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-23-dyn-warr-cb"></span>`23:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
+| <span id="hat-23-dyn-warr-cb-2"></span>`23:dyn_warr_cb#2` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 22 | [23](characters.md#char-23) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
 
 ## 24 warr_fo_cv2 {#24-warr-fo-cv2}
 
 43 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-24-dyn-abe"></span>`24:dyn_abe` | 23 | [24](characters.md#char-24) | `dyn_abe` | 0.0536, 0.0017, 0.0594 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-24-dyn-bm-vb3"></span>`24:dyn_bm_vb3` | 23 | [24](characters.md#char-24) | `dyn_bm_vb3` | 0.2234, -0.0121, 0.0219 | 0.5473, 0.4823, 0.4505, 0.5147 |
-| <span id="hat-24-dyn-bm-vb5"></span>`24:dyn_bm_vb5` | 23 | [24](characters.md#char-24) | `dyn_bm_vb5` | 0.1987, -0.0009, 0.0076 | 0.5334, 0.5334, 0.4642, 0.4642 |
-| <span id="hat-24-dyn-bm-vb6"></span>`24:dyn_bm_vb6` | 23 | [24](characters.md#char-24) | `dyn_bm_vb6` | 0.2354, -0.0215, -0.0166 | 0.5935, 0.5141, 0.3993, 0.4733 |
-| <span id="hat-24-dyn-bm-vb7"></span>`24:dyn_bm_vb7` | 23 | [24](characters.md#char-24) | `dyn_bm_vb7` | 0.1832, 0.0101, -0.0149 | 0.5422, 0.6058, 0.4368, 0.385 |
-| <span id="hat-24-dyn-bopp-bo"></span>`24:dyn_bopp_bo` | 23 | [24](characters.md#char-24) | `dyn_bopp_bo` | 0.1486, 0, 0.005 | 0.5573, -0.5835, 0.4353, -0.3994 |
-| <span id="hat-24-dyn-bopp-lt"></span>`24:dyn_bopp_lt` | 23 | [24](characters.md#char-24) | `dyn_bopp_lt` | 0.2157, 0.0281, -0.0175 | 0.6257, -0.5153, 0.3796, -0.446 |
-| <span id="hat-24-dyn-bopp-so"></span>`24:dyn_bopp_so` | 23 | [24](characters.md#char-24) | `dyn_bopp_so` | 0.2117, 0.0004, -0.0286 | 0.5722, -0.6009, 0.3943, -0.395 |
-| <span id="hat-24-dyn-butcher"></span>`24:dyn_butcher` | 23 | [24](characters.md#char-24) | `dyn_butcher` | 0.2132, 0, -0.0186 | 0.5698, -0.5698, 0.4187, -0.4187 |
-| <span id="hat-24-dyn-ch"></span>`24:dyn_ch` | 23 | [24](characters.md#char-24) | `dyn_ch` | 0.2249, -0.0076, 0.0324 | 0.5354, -0.5445, 0.4971, -0.4121 |
-| <span id="hat-24-dyn-civl-a"></span>`24:dyn_civl_a` | 23 | [24](characters.md#char-24) | `dyn_civl_a` | 0.2201, 0.0077, -0.0302 | 0.556, 0.6103, 0.406, 0.392 |
-| <span id="hat-24-dyn-civl-hl-ho"></span>`24:dyn_civl_hl_ho` | 23 | [24](characters.md#char-24) | `dyn_civl_hl_ho` | 0.2244, -0.0116, 0.0172 | 0.567, 0.4763, 0.4011, 0.5392 |
-| <span id="hat-24-dyn-civl-pl-sp"></span>`24:dyn_civl_pl_sp` | 23 | [24](characters.md#char-24) | `dyn_civl_pl_sp` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-24-dyn-co-ma3"></span>`24:dyn_co_ma3` | 23 | [24](characters.md#char-24) | `dyn_co_ma3` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-24-dyn-cops-va"></span>`24:dyn_cops_va` | 23 | [24](characters.md#char-24) | `dyn_cops_va` | 0.2327, -0.0147, 0.0092 | 0.5196, -0.5642, 0.4836, -0.4216 |
-| <span id="hat-24-dyn-ct-act"></span>`24:dyn_ct_act` | 23 | [24](characters.md#char-24) | `dyn_ct_act` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-24-dyn-ct-ma2"></span>`24:dyn_ct_ma2` | 23 | [24](characters.md#char-24) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-24-dyn-ct-ma2-2"></span>`24:dyn_ct_ma2#2` | 23 | [24](characters.md#char-24) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-24-dyn-cw-m1"></span>`24:dyn_cw_m1` | 23 | [24](characters.md#char-24) | `dyn_cw_m1` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-24-dyn-cw-m2"></span>`24:dyn_cw_m2` | 23 | [24](characters.md#char-24) | `dyn_cw_m2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
-| <span id="hat-24-dyn-dest-lt"></span>`24:dyn_dest_lt` | 23 | [24](characters.md#char-24) | `dyn_dest_lt` | 0.2114, -0.0073, -0.015 | 0.5916, 0.5615, 0.3827, 0.4338 |
-| <span id="hat-24-dyn-dest-lta"></span>`24:dyn_dest_lta` | 23 | [24](characters.md#char-24) | `dyn_dest_lta` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-24-dyn-dest-ltb"></span>`24:dyn_dest_ltb` | 23 | [24](characters.md#char-24) | `dyn_dest_ltb` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-24-dyn-eh-ma2"></span>`24:dyn_eh_ma2` | 23 | [24](characters.md#char-24) | `dyn_eh_ma2` | 0.2026, 0.0173, -0.0262 | 0.5616, 0.6186, 0.4292, 0.343 |
-| <span id="hat-24-dyn-hiha-lt"></span>`24:dyn_hiha_lt` | 23 | [24](characters.md#char-24) | `dyn_hiha_lt` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
-| <span id="hat-24-dyn-hiha-lt-ft"></span>`24:dyn_hiha_lt_ft` | 23 | [24](characters.md#char-24) | `dyn_hiha_lt_ft` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
-| <span id="hat-24-dyn-hiha-so"></span>`24:dyn_hiha_so` | 23 | [24](characters.md#char-24) | `dyn_hiha_so` | 0.2467, -0.0054, -0.0059 | 0.5339, -0.5532, 0.4554, -0.4489 |
-| <span id="hat-24-dyn-hurr-lt"></span>`24:dyn_hurr_lt` | 23 | [24](characters.md#char-24) | `dyn_hurr_lt` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-24-dyn-hurr-so"></span>`24:dyn_hurr_so` | 23 | [24](characters.md#char-24) | `dyn_hurr_so` | 0.2235, -0.0151, 0.0007 | 0.5448, -0.5627, 0.4504, -0.4287 |
-| <span id="hat-24-dyn-panz-lt"></span>`24:dyn_panz_lt` | 23 | [24](characters.md#char-24) | `dyn_panz_lt` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-24-dyn-panz-so"></span>`24:dyn_panz_so` | 23 | [24](characters.md#char-24) | `dyn_panz_so` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-24-dyn-pimp-va"></span>`24:dyn_pimp_va` | 23 | [24](characters.md#char-24) | `dyn_pimp_va` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
-| <span id="hat-24-dyn-pimp-vb"></span>`24:dyn_pimp_vb` | 23 | [24](characters.md#char-24) | `dyn_pimp_vb` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
-| <span id="hat-24-dyn-pl-ma9"></span>`24:dyn_pl_ma9` | 23 | [24](characters.md#char-24) | `dyn_pl_ma9` | 0.2258, -0.0083, 0.0284 | 0.5448, 0.5211, 0.449, 0.4797 |
-| <span id="hat-24-dyn-pl-pm"></span>`24:dyn_pl_pm` | 23 | [24](characters.md#char-24) | `dyn_pl_pm` | 0.2198, -0.0021, -0.007 | 0.5751, 0.5403, 0.4114, 0.4562 |
-| <span id="hat-24-dyn-rogu-lt"></span>`24:dyn_rogu_lt` | 23 | [24](characters.md#char-24) | `dyn_rogu_lt` | 0.2286, 0.0185, -0.0034 | 0.5817, -0.5067, 0.4227, -0.4757 |
-| <span id="hat-24-dyn-rogu-so"></span>`24:dyn_rogu_so` | 23 | [24](characters.md#char-24) | `dyn_rogu_so` | 0.2295, -0.014, -0.005 | 0.5577, -0.5415, 0.4998, -0.3821 |
-| <span id="hat-24-dyn-sata-bo"></span>`24:dyn_sata_bo` | 23 | [24](characters.md#char-24) | `dyn_sata_bo` | 0.2435, 0, -0.0207 | 0.5367, -0.5367, 0.4604, -0.4604 |
-| <span id="hat-24-dyn-sk-pe"></span>`24:dyn_sk_pe` | 23 | [24](characters.md#char-24) | `dyn_sk_pe` | 0.2597, -0.009, -0.0169 | 0.5706, 0.5431, 0.424, 0.4469 |
-| <span id="hat-24-dyn-tr-fa4"></span>`24:dyn_tr_fa4` | 23 | [24](characters.md#char-24) | `dyn_tr_fa4` | 0.2303, -0.006, 0.0089 | 0.5291, 0.5463, 0.4228, 0.4928 |
-| <span id="hat-24-dyn-tr-ma2"></span>`24:dyn_tr_ma2` | 23 | [24](characters.md#char-24) | `dyn_tr_ma2` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
-| <span id="hat-24-dyn-warr-cb"></span>`24:dyn_warr_cb` | 23 | [24](characters.md#char-24) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
-| <span id="hat-24-dyn-warr-cb-2"></span>`24:dyn_warr_cb#2` | 23 | [24](characters.md#char-24) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-24-dyn-abe"></span>`24:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_abe` | 0.0536, 0.0017, 0.0594 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-24-dyn-bm-vb3"></span>`24:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_bm_vb3` | 0.2234, -0.0121, 0.0219 | 0.5473, 0.4823, 0.4505, 0.5147 |
+| <span id="hat-24-dyn-bm-vb5"></span>`24:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_bm_vb5` | 0.1987, -0.0009, 0.0076 | 0.5334, 0.5334, 0.4642, 0.4642 |
+| <span id="hat-24-dyn-bm-vb6"></span>`24:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_bm_vb6` | 0.2354, -0.0215, -0.0166 | 0.5935, 0.5141, 0.3993, 0.4733 |
+| <span id="hat-24-dyn-bm-vb7"></span>`24:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_bm_vb7` | 0.1832, 0.0101, -0.0149 | 0.5422, 0.6058, 0.4368, 0.385 |
+| <span id="hat-24-dyn-bopp-bo"></span>`24:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_bopp_bo` | 0.1486, 0, 0.005 | 0.5573, -0.5835, 0.4353, -0.3994 |
+| <span id="hat-24-dyn-bopp-lt"></span>`24:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_bopp_lt` | 0.2157, 0.0281, -0.0175 | 0.6257, -0.5153, 0.3796, -0.446 |
+| <span id="hat-24-dyn-bopp-so"></span>`24:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_bopp_so` | 0.2117, 0.0004, -0.0286 | 0.5722, -0.6009, 0.3943, -0.395 |
+| <span id="hat-24-dyn-butcher"></span>`24:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_butcher` | 0.2132, 0, -0.0186 | 0.5698, -0.5698, 0.4187, -0.4187 |
+| <span id="hat-24-dyn-ch"></span>`24:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_ch` | 0.2249, -0.0076, 0.0324 | 0.5354, -0.5445, 0.4971, -0.4121 |
+| <span id="hat-24-dyn-civl-a"></span>`24:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_civl_a` | 0.2201, 0.0077, -0.0302 | 0.556, 0.6103, 0.406, 0.392 |
+| <span id="hat-24-dyn-civl-hl-ho"></span>`24:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_civl_hl_ho` | 0.2244, -0.0116, 0.0172 | 0.567, 0.4763, 0.4011, 0.5392 |
+| <span id="hat-24-dyn-civl-pl-sp"></span>`24:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_civl_pl_sp` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-24-dyn-co-ma3"></span>`24:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_co_ma3` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-24-dyn-cops-va"></span>`24:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_cops_va` | 0.2327, -0.0147, 0.0092 | 0.5196, -0.5642, 0.4836, -0.4216 |
+| <span id="hat-24-dyn-ct-act"></span>`24:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_ct_act` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-24-dyn-ct-ma2"></span>`24:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-24-dyn-ct-ma2-2"></span>`24:dyn_ct_ma2#2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_ct_ma2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-24-dyn-cw-m1"></span>`24:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_cw_m1` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-24-dyn-cw-m2"></span>`24:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_cw_m2` | 0.2014, 0, 0.0126 | 0.5414, 0.5414, 0.4548, 0.4548 |
+| <span id="hat-24-dyn-dest-lt"></span>`24:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_dest_lt` | 0.2114, -0.0073, -0.015 | 0.5916, 0.5615, 0.3827, 0.4338 |
+| <span id="hat-24-dyn-dest-lta"></span>`24:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_dest_lta` | 0.2148, 0.0209, 0.0534 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-24-dyn-dest-ltb"></span>`24:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_dest_ltb` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-24-dyn-eh-ma2"></span>`24:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_eh_ma2` | 0.2026, 0.0173, -0.0262 | 0.5616, 0.6186, 0.4292, 0.343 |
+| <span id="hat-24-dyn-hiha-lt"></span>`24:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_hiha_lt` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
+| <span id="hat-24-dyn-hiha-lt-ft"></span>`24:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_hiha_lt_ft` | 0.2368, -0.0198, -0.032 | 0.5491, -0.6125, 0.4328, -0.3688 |
+| <span id="hat-24-dyn-hiha-so"></span>`24:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_hiha_so` | 0.2467, -0.0054, -0.0059 | 0.5339, -0.5532, 0.4554, -0.4489 |
+| <span id="hat-24-dyn-hurr-lt"></span>`24:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_hurr_lt` | 0.2064, -0.0138, -0.019 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-24-dyn-hurr-so"></span>`24:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_hurr_so` | 0.2235, -0.0151, 0.0007 | 0.5448, -0.5627, 0.4504, -0.4287 |
+| <span id="hat-24-dyn-panz-lt"></span>`24:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_panz_lt` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-24-dyn-panz-so"></span>`24:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_panz_so` | 0.2059, -0.0254, -0.001 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-24-dyn-pimp-va"></span>`24:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_pimp_va` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
+| <span id="hat-24-dyn-pimp-vb"></span>`24:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_pimp_vb` | 0.2187, -0.0177, 0.0052 | 0.5327, -0.5816, 0.4532, -0.4154 |
+| <span id="hat-24-dyn-pl-ma9"></span>`24:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_pl_ma9` | 0.2258, -0.0083, 0.0284 | 0.5448, 0.5211, 0.449, 0.4797 |
+| <span id="hat-24-dyn-pl-pm"></span>`24:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_pl_pm` | 0.2198, -0.0021, -0.007 | 0.5751, 0.5403, 0.4114, 0.4562 |
+| <span id="hat-24-dyn-rogu-lt"></span>`24:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_rogu_lt` | 0.2286, 0.0185, -0.0034 | 0.5817, -0.5067, 0.4227, -0.4757 |
+| <span id="hat-24-dyn-rogu-so"></span>`24:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_rogu_so` | 0.2295, -0.014, -0.005 | 0.5577, -0.5415, 0.4998, -0.3821 |
+| <span id="hat-24-dyn-sata-bo"></span>`24:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_sata_bo` | 0.2435, 0, -0.0207 | 0.5367, -0.5367, 0.4604, -0.4604 |
+| <span id="hat-24-dyn-sk-pe"></span>`24:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_sk_pe` | 0.2597, -0.009, -0.0169 | 0.5706, 0.5431, 0.424, 0.4469 |
+| <span id="hat-24-dyn-tr-fa4"></span>`24:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_tr_fa4` | 0.2303, -0.006, 0.0089 | 0.5291, 0.5463, 0.4228, 0.4928 |
+| <span id="hat-24-dyn-tr-ma2"></span>`24:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_tr_ma2` | 0.209, 0, 0.0318 | 0.5152, 0.5152, 0.4843, 0.4843 |
+| <span id="hat-24-dyn-warr-cb"></span>`24:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
+| <span id="hat-24-dyn-warr-cb-2"></span>`24:dyn_warr_cb#2` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 23 | [24](characters.md#char-24) | `dyn_warr_cb` | 0.1897, -0.0096, -0.0186 | 0.5532, -0.5998, 0.4288, -0.3878 |
 
 ## 26 warr_ve {#26-warr-ve}
 
 41 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-26-dyn-abe"></span>`26:dyn_abe` | 25 | [26](characters.md#char-26) | `dyn_abe` | 0.0456, 0.0017, 0.0624 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-26-dyn-bm-vb3"></span>`26:dyn_bm_vb3` | 25 | [26](characters.md#char-26) | `dyn_bm_vb3` | 0.1954, -0.005, 0.0186 | 0.542, 0.506, 0.4556, 0.4925 |
-| <span id="hat-26-dyn-bm-vb5"></span>`26:dyn_bm_vb5` | 25 | [26](characters.md#char-26) | `dyn_bm_vb5` | 0.1336, 0.0006, 0.0314 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-26-dyn-bm-vb6"></span>`26:dyn_bm_vb6` | 25 | [26](characters.md#char-26) | `dyn_bm_vb6` | 0.192, 0.0067, -0.0085 | 0.5816, 0.5915, 0.4093, 0.3799 |
-| <span id="hat-26-dyn-bm-vb7"></span>`26:dyn_bm_vb7` | 25 | [26](characters.md#char-26) | `dyn_bm_vb7` | 0.1603, 0.0003, -0.0042 | 0.5823, 0.5785, 0.4063, 0.4016 |
-| <span id="hat-26-dyn-bopp-bo"></span>`26:dyn_bopp_bo` | 25 | [26](characters.md#char-26) | `dyn_bopp_bo` | 0.126, -0.0034, 0.0165 | 0.5515, -0.5864, 0.4323, -0.4063 |
-| <span id="hat-26-dyn-bopp-lt"></span>`26:dyn_bopp_lt` | 25 | [26](characters.md#char-26) | `dyn_bopp_lt` | 0.1806, -0.0015, -0.0037 | 0.5863, -0.5711, 0.4253, -0.3863 |
-| <span id="hat-26-dyn-bopp-so"></span>`26:dyn_bopp_so` | 25 | [26](characters.md#char-26) | `dyn_bopp_so` | 0.1796, 0.0001, 0.0002 | 0.5746, -0.5859, 0.4122, -0.3957 |
-| <span id="hat-26-dyn-butcher"></span>`26:dyn_butcher` | 25 | [26](characters.md#char-26) | `dyn_butcher` | 0.1866, 0.0022, 0.0049 | 0.5684, -0.5682, 0.4025, -0.4383 |
-| <span id="hat-26-dyn-ch"></span>`26:dyn_ch` | 25 | [26](characters.md#char-26) | `dyn_ch` | 0.1838, -0.0052, 0.0512 | 0.533, -0.5467, 0.4991, -0.4097 |
-| <span id="hat-26-dyn-civl-a"></span>`26:dyn_civl_a` | 25 | [26](characters.md#char-26) | `dyn_civl_a` | 0.1788, -0.0028, -0.0139 | 0.6127, 0.5881, 0.3813, 0.3651 |
-| <span id="hat-26-dyn-civl-hl-ho"></span>`26:dyn_civl_hl_ho` | 25 | [26](characters.md#char-26) | `dyn_civl_hl_ho` | 0.1944, -0.0019, 0.0133 | 0.5897, 0.5298, 0.3843, 0.4731 |
-| <span id="hat-26-dyn-civl-pl-sp"></span>`26:dyn_civl_pl_sp` | 25 | [26](characters.md#char-26) | `dyn_civl_pl_sp` | 0.1781, 0.0362, 0.0203 | 0.5979, 0.5486, 0.4181, 0.4083 |
-| <span id="hat-26-dyn-co-ma3"></span>`26:dyn_co_ma3` | 25 | [26](characters.md#char-26) | `dyn_co_ma3` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
-| <span id="hat-26-dyn-cops-va"></span>`26:dyn_cops_va` | 25 | [26](characters.md#char-26) | `dyn_cops_va` | 0.1917, -0.0062, 0.0124 | 0.5291, -0.5692, 0.4609, -0.4286 |
-| <span id="hat-26-dyn-ct-act"></span>`26:dyn_ct_act` | 25 | [26](characters.md#char-26) | `dyn_ct_act` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
-| <span id="hat-26-dyn-ct-ma2"></span>`26:dyn_ct_ma2` | 25 | [26](characters.md#char-26) | `dyn_ct_ma2` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-26-dyn-cw-m1"></span>`26:dyn_cw_m1` | 25 | [26](characters.md#char-26) | `dyn_cw_m1` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-26-dyn-cw-m2"></span>`26:dyn_cw_m2` | 25 | [26](characters.md#char-26) | `dyn_cw_m2` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-26-dyn-dest-lt"></span>`26:dyn_dest_lt` | 25 | [26](characters.md#char-26) | `dyn_dest_lt` | 0.1728, -0.0013, -0.0092 | 0.5924, 0.5993, 0.366, 0.3949 |
-| <span id="hat-26-dyn-dest-lta"></span>`26:dyn_dest_lta` | 25 | [26](characters.md#char-26) | `dyn_dest_lta` | 0.1781, 0.0362, 0.0203 | 0.5979, 0.5486, 0.4181, 0.4083 |
-| <span id="hat-26-dyn-dest-ltb"></span>`26:dyn_dest_ltb` | 25 | [26](characters.md#char-26) | `dyn_dest_ltb` | 0.1638, -0.0007, 0.0286 | 0.5476, 0.5476, 0.4474, 0.4474 |
-| <span id="hat-26-dyn-eh-ma2"></span>`26:dyn_eh_ma2` | 25 | [26](characters.md#char-26) | `dyn_eh_ma2` | 0.1701, -0.0034, -0.0024 | 0.6093, 0.5672, 0.3936, 0.3899 |
-| <span id="hat-26-dyn-hiha-lt"></span>`26:dyn_hiha_lt` | 25 | [26](characters.md#char-26) | `dyn_hiha_lt` | 0.212, -0.0009, 0.0056 | 0.5511, -0.5657, 0.4324, -0.435 |
-| <span id="hat-26-dyn-hiha-lt-ft"></span>`26:dyn_hiha_lt_ft` | 25 | [26](characters.md#char-26) | `dyn_hiha_lt_ft` | 0.212, -0.0009, 0.0056 | 0.5511, -0.5657, 0.4324, -0.435 |
-| <span id="hat-26-dyn-hiha-so"></span>`26:dyn_hiha_so` | 25 | [26](characters.md#char-26) | `dyn_hiha_so` | 0.2144, -0.0129, 0.0029 | 0.5242, -0.5847, 0.4592, -0.4154 |
-| <span id="hat-26-dyn-hurr-lt"></span>`26:dyn_hurr_lt` | 25 | [26](characters.md#char-26) | `dyn_hurr_lt` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
-| <span id="hat-26-dyn-hurr-so"></span>`26:dyn_hurr_so` | 25 | [26](characters.md#char-26) | `dyn_hurr_so` | 0.1887, -0.0169, 0.0056 | 0.5348, -0.6136, 0.4376, -0.3821 |
-| <span id="hat-26-dyn-panz-lt"></span>`26:dyn_panz_lt` | 25 | [26](characters.md#char-26) | `dyn_panz_lt` | 0.1816, -0.0212, 0.0019 | 0.5037, -0.5941, 0.4963, -0.3835 |
-| <span id="hat-26-dyn-panz-so"></span>`26:dyn_panz_so` | 25 | [26](characters.md#char-26) | `dyn_panz_so` | 0.1816, -0.0212, 0.0019 | 0.5037, -0.5941, 0.4963, -0.3835 |
-| <span id="hat-26-dyn-pimp-va"></span>`26:dyn_pimp_va` | 25 | [26](characters.md#char-26) | `dyn_pimp_va` | 0.1835, -0.015, 0.0124 | 0.5436, -0.6069, 0.4194, -0.4003 |
-| <span id="hat-26-dyn-pimp-vb"></span>`26:dyn_pimp_vb` | 25 | [26](characters.md#char-26) | `dyn_pimp_vb` | 0.1835, -0.015, 0.0124 | 0.5436, -0.6069, 0.4194, -0.4003 |
-| <span id="hat-26-dyn-pl-ma9"></span>`26:dyn_pl_ma9` | 25 | [26](characters.md#char-26) | `dyn_pl_ma9` | 0.1896, -0.0039, 0.0476 | 0.5512, 0.5417, 0.44, 0.4573 |
-| <span id="hat-26-dyn-pl-pm"></span>`26:dyn_pl_pm` | 25 | [26](characters.md#char-26) | `dyn_pl_pm` | 0.1743, -0.0018, -0.0073 | 0.6012, 0.585, 0.367, 0.4019 |
-| <span id="hat-26-dyn-rogu-lt"></span>`26:dyn_rogu_lt` | 25 | [26](characters.md#char-26) | `dyn_rogu_lt` | 0.2004, 0.0035, -0.0058 | 0.6097, -0.5424, 0.411, -0.4064 |
-| <span id="hat-26-dyn-rogu-so"></span>`26:dyn_rogu_so` | 25 | [26](characters.md#char-26) | `dyn_rogu_so` | 0.191, -0.0075, -0 | 0.5607, -0.5966, 0.4298, -0.3807 |
-| <span id="hat-26-dyn-sata-bo"></span>`26:dyn_sata_bo` | 25 | [26](characters.md#char-26) | `dyn_sata_bo` | 0.199, -0.0016, -0.0027 | 0.5522, -0.5522, 0.4416, -0.4416 |
-| <span id="hat-26-dyn-sk-pe"></span>`26:dyn_sk_pe` | 25 | [26](characters.md#char-26) | `dyn_sk_pe` | 0.2117, -0.0052, -0.0202 | 0.605, 0.5795, 0.3733, 0.3985 |
-| <span id="hat-26-dyn-tr-fa4"></span>`26:dyn_tr_fa4` | 25 | [26](characters.md#char-26) | `dyn_tr_fa4` | 0.1922, -0.0037, 0.0029 | 0.568, 0.5967, 0.3646, 0.4341 |
-| <span id="hat-26-dyn-tr-ma2"></span>`26:dyn_tr_ma2` | 25 | [26](characters.md#char-26) | `dyn_tr_ma2` | 0.1638, -0.0007, 0.0286 | 0.5476, 0.5476, 0.4474, 0.4474 |
-| <span id="hat-26-dyn-warr-cb"></span>`26:dyn_warr_cb` | 25 | [26](characters.md#char-26) | `dyn_warr_cb` | 0.1558, -0.0016, -0.0149 | 0.5949, -0.5953, 0.382, -0.3818 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-26-dyn-abe"></span>`26:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_abe` | 0.0456, 0.0017, 0.0624 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-26-dyn-bm-vb3"></span>`26:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_bm_vb3` | 0.1954, -0.005, 0.0186 | 0.542, 0.506, 0.4556, 0.4925 |
+| <span id="hat-26-dyn-bm-vb5"></span>`26:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_bm_vb5` | 0.1336, 0.0006, 0.0314 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-26-dyn-bm-vb6"></span>`26:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_bm_vb6` | 0.192, 0.0067, -0.0085 | 0.5816, 0.5915, 0.4093, 0.3799 |
+| <span id="hat-26-dyn-bm-vb7"></span>`26:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_bm_vb7` | 0.1603, 0.0003, -0.0042 | 0.5823, 0.5785, 0.4063, 0.4016 |
+| <span id="hat-26-dyn-bopp-bo"></span>`26:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_bopp_bo` | 0.126, -0.0034, 0.0165 | 0.5515, -0.5864, 0.4323, -0.4063 |
+| <span id="hat-26-dyn-bopp-lt"></span>`26:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_bopp_lt` | 0.1806, -0.0015, -0.0037 | 0.5863, -0.5711, 0.4253, -0.3863 |
+| <span id="hat-26-dyn-bopp-so"></span>`26:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_bopp_so` | 0.1796, 0.0001, 0.0002 | 0.5746, -0.5859, 0.4122, -0.3957 |
+| <span id="hat-26-dyn-butcher"></span>`26:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_butcher` | 0.1866, 0.0022, 0.0049 | 0.5684, -0.5682, 0.4025, -0.4383 |
+| <span id="hat-26-dyn-ch"></span>`26:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_ch` | 0.1838, -0.0052, 0.0512 | 0.533, -0.5467, 0.4991, -0.4097 |
+| <span id="hat-26-dyn-civl-a"></span>`26:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_civl_a` | 0.1788, -0.0028, -0.0139 | 0.6127, 0.5881, 0.3813, 0.3651 |
+| <span id="hat-26-dyn-civl-hl-ho"></span>`26:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_civl_hl_ho` | 0.1944, -0.0019, 0.0133 | 0.5897, 0.5298, 0.3843, 0.4731 |
+| <span id="hat-26-dyn-civl-pl-sp"></span>`26:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_civl_pl_sp` | 0.1781, 0.0362, 0.0203 | 0.5979, 0.5486, 0.4181, 0.4083 |
+| <span id="hat-26-dyn-co-ma3"></span>`26:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_co_ma3` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
+| <span id="hat-26-dyn-cops-va"></span>`26:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_cops_va` | 0.1917, -0.0062, 0.0124 | 0.5291, -0.5692, 0.4609, -0.4286 |
+| <span id="hat-26-dyn-ct-act"></span>`26:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_ct_act` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
+| <span id="hat-26-dyn-ct-ma2"></span>`26:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_ct_ma2` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-26-dyn-cw-m1"></span>`26:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_cw_m1` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-26-dyn-cw-m2"></span>`26:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_cw_m2` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-26-dyn-dest-lt"></span>`26:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_dest_lt` | 0.1728, -0.0013, -0.0092 | 0.5924, 0.5993, 0.366, 0.3949 |
+| <span id="hat-26-dyn-dest-lta"></span>`26:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_dest_lta` | 0.1781, 0.0362, 0.0203 | 0.5979, 0.5486, 0.4181, 0.4083 |
+| <span id="hat-26-dyn-dest-ltb"></span>`26:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_dest_ltb` | 0.1638, -0.0007, 0.0286 | 0.5476, 0.5476, 0.4474, 0.4474 |
+| <span id="hat-26-dyn-eh-ma2"></span>`26:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_eh_ma2` | 0.1701, -0.0034, -0.0024 | 0.6093, 0.5672, 0.3936, 0.3899 |
+| <span id="hat-26-dyn-hiha-lt"></span>`26:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_hiha_lt` | 0.212, -0.0009, 0.0056 | 0.5511, -0.5657, 0.4324, -0.435 |
+| <span id="hat-26-dyn-hiha-lt-ft"></span>`26:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_hiha_lt_ft` | 0.212, -0.0009, 0.0056 | 0.5511, -0.5657, 0.4324, -0.435 |
+| <span id="hat-26-dyn-hiha-so"></span>`26:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_hiha_so` | 0.2144, -0.0129, 0.0029 | 0.5242, -0.5847, 0.4592, -0.4154 |
+| <span id="hat-26-dyn-hurr-lt"></span>`26:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_hurr_lt` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
+| <span id="hat-26-dyn-hurr-so"></span>`26:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_hurr_so` | 0.1887, -0.0169, 0.0056 | 0.5348, -0.6136, 0.4376, -0.3821 |
+| <span id="hat-26-dyn-panz-lt"></span>`26:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_panz_lt` | 0.1816, -0.0212, 0.0019 | 0.5037, -0.5941, 0.4963, -0.3835 |
+| <span id="hat-26-dyn-panz-so"></span>`26:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_panz_so` | 0.1816, -0.0212, 0.0019 | 0.5037, -0.5941, 0.4963, -0.3835 |
+| <span id="hat-26-dyn-pimp-va"></span>`26:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_pimp_va` | 0.1835, -0.015, 0.0124 | 0.5436, -0.6069, 0.4194, -0.4003 |
+| <span id="hat-26-dyn-pimp-vb"></span>`26:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_pimp_vb` | 0.1835, -0.015, 0.0124 | 0.5436, -0.6069, 0.4194, -0.4003 |
+| <span id="hat-26-dyn-pl-ma9"></span>`26:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_pl_ma9` | 0.1896, -0.0039, 0.0476 | 0.5512, 0.5417, 0.44, 0.4573 |
+| <span id="hat-26-dyn-pl-pm"></span>`26:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_pl_pm` | 0.1743, -0.0018, -0.0073 | 0.6012, 0.585, 0.367, 0.4019 |
+| <span id="hat-26-dyn-rogu-lt"></span>`26:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_rogu_lt` | 0.2004, 0.0035, -0.0058 | 0.6097, -0.5424, 0.411, -0.4064 |
+| <span id="hat-26-dyn-rogu-so"></span>`26:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_rogu_so` | 0.191, -0.0075, -0 | 0.5607, -0.5966, 0.4298, -0.3807 |
+| <span id="hat-26-dyn-sata-bo"></span>`26:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_sata_bo` | 0.199, -0.0016, -0.0027 | 0.5522, -0.5522, 0.4416, -0.4416 |
+| <span id="hat-26-dyn-sk-pe"></span>`26:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_sk_pe` | 0.2117, -0.0052, -0.0202 | 0.605, 0.5795, 0.3733, 0.3985 |
+| <span id="hat-26-dyn-tr-fa4"></span>`26:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_tr_fa4` | 0.1922, -0.0037, 0.0029 | 0.568, 0.5967, 0.3646, 0.4341 |
+| <span id="hat-26-dyn-tr-ma2"></span>`26:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_tr_ma2` | 0.1638, -0.0007, 0.0286 | 0.5476, 0.5476, 0.4474, 0.4474 |
+| <span id="hat-26-dyn-warr-cb"></span>`26:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 25 | [26](characters.md#char-26) | `dyn_warr_cb` | 0.1558, -0.0016, -0.0149 | 0.5949, -0.5953, 0.382, -0.3818 |
 
 ## 30 warr_re {#30-warr-re}
 
 41 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-30-dyn-abe"></span>`30:dyn_abe` | 29 | [30](characters.md#char-30) | `dyn_abe` | 0.0592, -0.0007, 0.0168 | 0.5542, -0.5542, 0.4392, -0.4392 |
-| <span id="hat-30-dyn-bm-vb3"></span>`30:dyn_bm_vb3` | 29 | [30](characters.md#char-30) | `dyn_bm_vb3` | 0.2432, -0.0121, 0.0157 | 0.5376, 0.4931, 0.4619, 0.5044 |
-| <span id="hat-30-dyn-bm-vb5"></span>`30:dyn_bm_vb5` | 29 | [30](characters.md#char-30) | `dyn_bm_vb5` | 0.2101, -0.0009, 0.0069 | 0.5334, 0.5334, 0.4642, 0.4642 |
-| <span id="hat-30-dyn-bm-vb6"></span>`30:dyn_bm_vb6` | 29 | [30](characters.md#char-30) | `dyn_bm_vb6` | 0.2425, 0.017, -0.0171 | 0.5218, 0.5872, 0.4643, 0.409 |
-| <span id="hat-30-dyn-bm-vb7"></span>`30:dyn_bm_vb7` | 29 | [30](characters.md#char-30) | `dyn_bm_vb7` | 0.1983, 0.0111, -0.0209 | 0.5422, 0.6058, 0.4368, 0.385 |
-| <span id="hat-30-dyn-bopp-bo"></span>`30:dyn_bopp_bo` | 29 | [30](characters.md#char-30) | `dyn_bopp_bo` | 0.1787, 0.0003, -0.0058 | 0.5573, -0.5835, 0.4353, -0.3994 |
-| <span id="hat-30-dyn-bopp-lt"></span>`30:dyn_bopp_lt` | 29 | [30](characters.md#char-30) | `dyn_bopp_lt` | 0.2231, 0.0228, -0.0195 | 0.6257, -0.5153, 0.3796, -0.446 |
-| <span id="hat-30-dyn-bopp-so"></span>`30:dyn_bopp_so` | 29 | [30](characters.md#char-30) | `dyn_bopp_so` | 0.2192, 0.0004, -0.0315 | 0.5722, -0.6009, 0.3943, -0.395 |
-| <span id="hat-30-dyn-butcher"></span>`30:dyn_butcher` | 29 | [30](characters.md#char-30) | `dyn_butcher` | 0.2233, 0, -0.0209 | 0.5698, -0.5698, 0.4187, -0.4187 |
-| <span id="hat-30-dyn-ch"></span>`30:dyn_ch` | 29 | [30](characters.md#char-30) | `dyn_ch` | 0.2398, -0.0076, 0.0315 | 0.5354, -0.5445, 0.4971, -0.4121 |
-| <span id="hat-30-dyn-civl-a"></span>`30:dyn_civl_a` | 29 | [30](characters.md#char-30) | `dyn_civl_a` | 0.2321, 0.0077, -0.031 | 0.5513, 0.6057, 0.4124, 0.399 |
-| <span id="hat-30-dyn-civl-hl-ho"></span>`30:dyn_civl_hl_ho` | 29 | [30](characters.md#char-30) | `dyn_civl_hl_ho` | 0.242, -0.0075, 0.0198 | 0.5547, 0.4909, 0.4165, 0.5271 |
-| <span id="hat-30-dyn-civl-pl-sp"></span>`30:dyn_civl_pl_sp` | 29 | [30](characters.md#char-30) | `dyn_civl_pl_sp` | 0.2295, 0.0191, 0.0559 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-30-dyn-co-ma3"></span>`30:dyn_co_ma3` | 29 | [30](characters.md#char-30) | `dyn_co_ma3` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-30-dyn-cops-va"></span>`30:dyn_cops_va` | 29 | [30](characters.md#char-30) | `dyn_cops_va` | 0.2382, -0.0147, 0.0089 | 0.5321, -0.5638, 0.4714, -0.4206 |
-| <span id="hat-30-dyn-ct-act"></span>`30:dyn_ct_act` | 29 | [30](characters.md#char-30) | `dyn_ct_act` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-30-dyn-ct-ma2"></span>`30:dyn_ct_ma2` | 29 | [30](characters.md#char-30) | `dyn_ct_ma2` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
-| <span id="hat-30-dyn-cw-m1"></span>`30:dyn_cw_m1` | 29 | [30](characters.md#char-30) | `dyn_cw_m1` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
-| <span id="hat-30-dyn-cw-m2"></span>`30:dyn_cw_m2` | 29 | [30](characters.md#char-30) | `dyn_cw_m2` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
-| <span id="hat-30-dyn-dest-lt"></span>`30:dyn_dest_lt` | 29 | [30](characters.md#char-30) | `dyn_dest_lt` | 0.2205, -0.0073, -0.0405 | 0.6064, 0.5873, 0.3696, 0.3882 |
-| <span id="hat-30-dyn-dest-lta"></span>`30:dyn_dest_lta` | 29 | [30](characters.md#char-30) | `dyn_dest_lta` | 0.2295, 0.0191, 0.0559 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-30-dyn-dest-ltb"></span>`30:dyn_dest_ltb` | 29 | [30](characters.md#char-30) | `dyn_dest_ltb` | 0.2229, 0, -0.0018 | 0.5532, 0.5532, 0.4404, 0.4404 |
-| <span id="hat-30-dyn-eh-ma2"></span>`30:dyn_eh_ma2` | 29 | [30](characters.md#char-30) | `dyn_eh_ma2` | 0.2113, 0.0199, -0.0187 | 0.5437, 0.6042, 0.4517, 0.3678 |
-| <span id="hat-30-dyn-hiha-lt"></span>`30:dyn_hiha_lt` | 29 | [30](characters.md#char-30) | `dyn_hiha_lt` | 0.2395, -0.0198, -0.0374 | 0.5491, -0.6125, 0.4328, -0.3688 |
-| <span id="hat-30-dyn-hiha-lt-ft"></span>`30:dyn_hiha_lt_ft` | 29 | [30](characters.md#char-30) | `dyn_hiha_lt_ft` | 0.2395, -0.0198, -0.0374 | 0.5491, -0.6125, 0.4328, -0.3688 |
-| <span id="hat-30-dyn-hiha-so"></span>`30:dyn_hiha_so` | 29 | [30](characters.md#char-30) | `dyn_hiha_so` | 0.2512, 0.0138, -0.0086 | 0.5608, -0.5252, 0.4294, -0.4746 |
-| <span id="hat-30-dyn-hurr-lt"></span>`30:dyn_hurr_lt` | 29 | [30](characters.md#char-30) | `dyn_hurr_lt` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-30-dyn-hurr-so"></span>`30:dyn_hurr_so` | 29 | [30](characters.md#char-30) | `dyn_hurr_so` | 0.2311, -0.0151, -0.0182 | 0.5582, -0.5755, 0.4335, -0.4114 |
-| <span id="hat-30-dyn-panz-lt"></span>`30:dyn_panz_lt` | 29 | [30](characters.md#char-30) | `dyn_panz_lt` | 0.2125, -0.0254, -0.0014 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-30-dyn-panz-so"></span>`30:dyn_panz_so` | 29 | [30](characters.md#char-30) | `dyn_panz_so` | 0.2125, -0.0254, -0.0014 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-30-dyn-pimp-va"></span>`30:dyn_pimp_va` | 29 | [30](characters.md#char-30) | `dyn_pimp_va` | 0.2291, -0.0177, 0 | 0.5244, -0.5741, 0.4627, -0.4258 |
-| <span id="hat-30-dyn-pimp-vb"></span>`30:dyn_pimp_vb` | 29 | [30](characters.md#char-30) | `dyn_pimp_vb` | 0.2291, -0.0177, 0 | 0.5244, -0.5741, 0.4627, -0.4258 |
-| <span id="hat-30-dyn-pl-ma9"></span>`30:dyn_pl_ma9` | 29 | [30](characters.md#char-30) | `dyn_pl_ma9` | 0.2331, -0.0083, 0.0232 | 0.5448, 0.5211, 0.449, 0.4797 |
-| <span id="hat-30-dyn-pl-pm"></span>`30:dyn_pl_pm` | 29 | [30](characters.md#char-30) | `dyn_pl_pm` | 0.2262, -0.0047, -0.0172 | 0.5751, 0.5403, 0.4114, 0.4562 |
-| <span id="hat-30-dyn-rogu-lt"></span>`30:dyn_rogu_lt` | 29 | [30](characters.md#char-30) | `dyn_rogu_lt` | 0.2418, 0.0185, -0.0016 | 0.5817, -0.5067, 0.4227, -0.4757 |
-| <span id="hat-30-dyn-rogu-so"></span>`30:dyn_rogu_so` | 29 | [30](characters.md#char-30) | `dyn_rogu_so` | 0.2383, -0.0077, -0.0168 | 0.5531, -0.5776, 0.4493, -0.3983 |
-| <span id="hat-30-dyn-sata-bo"></span>`30:dyn_sata_bo` | 29 | [30](characters.md#char-30) | `dyn_sata_bo` | 0.254, 0, -0.0213 | 0.5367, -0.5367, 0.4604, -0.4604 |
-| <span id="hat-30-dyn-sk-pe"></span>`30:dyn_sk_pe` | 29 | [30](characters.md#char-30) | `dyn_sk_pe` | 0.2577, -0.0105, -0.0423 | 0.5888, 0.5623, 0.3983, 0.4224 |
-| <span id="hat-30-dyn-tr-fa4"></span>`30:dyn_tr_fa4` | 29 | [30](characters.md#char-30) | `dyn_tr_fa4` | 0.2434, -0.006, 0.008 | 0.5175, 0.5573, 0.4344, 0.4826 |
-| <span id="hat-30-dyn-tr-ma2"></span>`30:dyn_tr_ma2` | 29 | [30](characters.md#char-30) | `dyn_tr_ma2` | 0.2229, 0, -0.0018 | 0.5532, 0.5532, 0.4404, 0.4404 |
-| <span id="hat-30-dyn-warr-cb"></span>`30:dyn_warr_cb` | 29 | [30](characters.md#char-30) | `dyn_warr_cb` | 0.2007, -0.0118, -0.026 | 0.5532, -0.5998, 0.4288, -0.3878 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-30-dyn-abe"></span>`30:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_abe` | 0.0592, -0.0007, 0.0168 | 0.5542, -0.5542, 0.4392, -0.4392 |
+| <span id="hat-30-dyn-bm-vb3"></span>`30:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_bm_vb3` | 0.2432, -0.0121, 0.0157 | 0.5376, 0.4931, 0.4619, 0.5044 |
+| <span id="hat-30-dyn-bm-vb5"></span>`30:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_bm_vb5` | 0.2101, -0.0009, 0.0069 | 0.5334, 0.5334, 0.4642, 0.4642 |
+| <span id="hat-30-dyn-bm-vb6"></span>`30:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_bm_vb6` | 0.2425, 0.017, -0.0171 | 0.5218, 0.5872, 0.4643, 0.409 |
+| <span id="hat-30-dyn-bm-vb7"></span>`30:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_bm_vb7` | 0.1983, 0.0111, -0.0209 | 0.5422, 0.6058, 0.4368, 0.385 |
+| <span id="hat-30-dyn-bopp-bo"></span>`30:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_bopp_bo` | 0.1787, 0.0003, -0.0058 | 0.5573, -0.5835, 0.4353, -0.3994 |
+| <span id="hat-30-dyn-bopp-lt"></span>`30:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_bopp_lt` | 0.2231, 0.0228, -0.0195 | 0.6257, -0.5153, 0.3796, -0.446 |
+| <span id="hat-30-dyn-bopp-so"></span>`30:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_bopp_so` | 0.2192, 0.0004, -0.0315 | 0.5722, -0.6009, 0.3943, -0.395 |
+| <span id="hat-30-dyn-butcher"></span>`30:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_butcher` | 0.2233, 0, -0.0209 | 0.5698, -0.5698, 0.4187, -0.4187 |
+| <span id="hat-30-dyn-ch"></span>`30:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_ch` | 0.2398, -0.0076, 0.0315 | 0.5354, -0.5445, 0.4971, -0.4121 |
+| <span id="hat-30-dyn-civl-a"></span>`30:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_civl_a` | 0.2321, 0.0077, -0.031 | 0.5513, 0.6057, 0.4124, 0.399 |
+| <span id="hat-30-dyn-civl-hl-ho"></span>`30:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_civl_hl_ho` | 0.242, -0.0075, 0.0198 | 0.5547, 0.4909, 0.4165, 0.5271 |
+| <span id="hat-30-dyn-civl-pl-sp"></span>`30:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_civl_pl_sp` | 0.2295, 0.0191, 0.0559 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-30-dyn-co-ma3"></span>`30:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_co_ma3` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-30-dyn-cops-va"></span>`30:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_cops_va` | 0.2382, -0.0147, 0.0089 | 0.5321, -0.5638, 0.4714, -0.4206 |
+| <span id="hat-30-dyn-ct-act"></span>`30:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_ct_act` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-30-dyn-ct-ma2"></span>`30:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_ct_ma2` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
+| <span id="hat-30-dyn-cw-m1"></span>`30:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_cw_m1` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
+| <span id="hat-30-dyn-cw-m2"></span>`30:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_cw_m2` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
+| <span id="hat-30-dyn-dest-lt"></span>`30:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_dest_lt` | 0.2205, -0.0073, -0.0405 | 0.6064, 0.5873, 0.3696, 0.3882 |
+| <span id="hat-30-dyn-dest-lta"></span>`30:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_dest_lta` | 0.2295, 0.0191, 0.0559 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-30-dyn-dest-ltb"></span>`30:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_dest_ltb` | 0.2229, 0, -0.0018 | 0.5532, 0.5532, 0.4404, 0.4404 |
+| <span id="hat-30-dyn-eh-ma2"></span>`30:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_eh_ma2` | 0.2113, 0.0199, -0.0187 | 0.5437, 0.6042, 0.4517, 0.3678 |
+| <span id="hat-30-dyn-hiha-lt"></span>`30:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_hiha_lt` | 0.2395, -0.0198, -0.0374 | 0.5491, -0.6125, 0.4328, -0.3688 |
+| <span id="hat-30-dyn-hiha-lt-ft"></span>`30:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_hiha_lt_ft` | 0.2395, -0.0198, -0.0374 | 0.5491, -0.6125, 0.4328, -0.3688 |
+| <span id="hat-30-dyn-hiha-so"></span>`30:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_hiha_so` | 0.2512, 0.0138, -0.0086 | 0.5608, -0.5252, 0.4294, -0.4746 |
+| <span id="hat-30-dyn-hurr-lt"></span>`30:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_hurr_lt` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-30-dyn-hurr-so"></span>`30:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_hurr_so` | 0.2311, -0.0151, -0.0182 | 0.5582, -0.5755, 0.4335, -0.4114 |
+| <span id="hat-30-dyn-panz-lt"></span>`30:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_panz_lt` | 0.2125, -0.0254, -0.0014 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-30-dyn-panz-so"></span>`30:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_panz_so` | 0.2125, -0.0254, -0.0014 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-30-dyn-pimp-va"></span>`30:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_pimp_va` | 0.2291, -0.0177, 0 | 0.5244, -0.5741, 0.4627, -0.4258 |
+| <span id="hat-30-dyn-pimp-vb"></span>`30:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_pimp_vb` | 0.2291, -0.0177, 0 | 0.5244, -0.5741, 0.4627, -0.4258 |
+| <span id="hat-30-dyn-pl-ma9"></span>`30:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_pl_ma9` | 0.2331, -0.0083, 0.0232 | 0.5448, 0.5211, 0.449, 0.4797 |
+| <span id="hat-30-dyn-pl-pm"></span>`30:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_pl_pm` | 0.2262, -0.0047, -0.0172 | 0.5751, 0.5403, 0.4114, 0.4562 |
+| <span id="hat-30-dyn-rogu-lt"></span>`30:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_rogu_lt` | 0.2418, 0.0185, -0.0016 | 0.5817, -0.5067, 0.4227, -0.4757 |
+| <span id="hat-30-dyn-rogu-so"></span>`30:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_rogu_so` | 0.2383, -0.0077, -0.0168 | 0.5531, -0.5776, 0.4493, -0.3983 |
+| <span id="hat-30-dyn-sata-bo"></span>`30:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_sata_bo` | 0.254, 0, -0.0213 | 0.5367, -0.5367, 0.4604, -0.4604 |
+| <span id="hat-30-dyn-sk-pe"></span>`30:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_sk_pe` | 0.2577, -0.0105, -0.0423 | 0.5888, 0.5623, 0.3983, 0.4224 |
+| <span id="hat-30-dyn-tr-fa4"></span>`30:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_tr_fa4` | 0.2434, -0.006, 0.008 | 0.5175, 0.5573, 0.4344, 0.4826 |
+| <span id="hat-30-dyn-tr-ma2"></span>`30:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_tr_ma2` | 0.2229, 0, -0.0018 | 0.5532, 0.5532, 0.4404, 0.4404 |
+| <span id="hat-30-dyn-warr-cb"></span>`30:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 29 | [30](characters.md#char-30) | `dyn_warr_cb` | 0.2007, -0.0118, -0.026 | 0.5532, -0.5998, 0.4288, -0.3878 |
 
 ## 32 warr_re_cv {#32-warr-re-cv}
 
 41 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-32-dyn-abe"></span>`32:dyn_abe` | 31 | [32](characters.md#char-32) | `dyn_abe` | 0.0592, -0.0007, 0.0168 | 0.5542, -0.5542, 0.4392, -0.4392 |
-| <span id="hat-32-dyn-bm-vb3"></span>`32:dyn_bm_vb3` | 31 | [32](characters.md#char-32) | `dyn_bm_vb3` | 0.2432, -0.0121, 0.0157 | 0.5376, 0.4931, 0.4619, 0.5044 |
-| <span id="hat-32-dyn-bm-vb5"></span>`32:dyn_bm_vb5` | 31 | [32](characters.md#char-32) | `dyn_bm_vb5` | 0.2101, -0.0009, 0.0069 | 0.5334, 0.5334, 0.4642, 0.4642 |
-| <span id="hat-32-dyn-bm-vb6"></span>`32:dyn_bm_vb6` | 31 | [32](characters.md#char-32) | `dyn_bm_vb6` | 0.2425, 0.017, -0.0171 | 0.5218, 0.5872, 0.4643, 0.409 |
-| <span id="hat-32-dyn-bm-vb7"></span>`32:dyn_bm_vb7` | 31 | [32](characters.md#char-32) | `dyn_bm_vb7` | 0.1983, 0.0111, -0.0209 | 0.5422, 0.6058, 0.4368, 0.385 |
-| <span id="hat-32-dyn-bopp-bo"></span>`32:dyn_bopp_bo` | 31 | [32](characters.md#char-32) | `dyn_bopp_bo` | 0.1787, 0.0003, -0.0058 | 0.5573, -0.5835, 0.4353, -0.3994 |
-| <span id="hat-32-dyn-bopp-lt"></span>`32:dyn_bopp_lt` | 31 | [32](characters.md#char-32) | `dyn_bopp_lt` | 0.2231, 0.0228, -0.0195 | 0.6257, -0.5153, 0.3796, -0.446 |
-| <span id="hat-32-dyn-bopp-so"></span>`32:dyn_bopp_so` | 31 | [32](characters.md#char-32) | `dyn_bopp_so` | 0.2192, 0.0004, -0.0315 | 0.5722, -0.6009, 0.3943, -0.395 |
-| <span id="hat-32-dyn-butcher"></span>`32:dyn_butcher` | 31 | [32](characters.md#char-32) | `dyn_butcher` | 0.2233, 0, -0.0209 | 0.5698, -0.5698, 0.4187, -0.4187 |
-| <span id="hat-32-dyn-ch"></span>`32:dyn_ch` | 31 | [32](characters.md#char-32) | `dyn_ch` | 0.2398, -0.0076, 0.0315 | 0.5354, -0.5445, 0.4971, -0.4121 |
-| <span id="hat-32-dyn-civl-a"></span>`32:dyn_civl_a` | 31 | [32](characters.md#char-32) | `dyn_civl_a` | 0.2321, 0.0077, -0.031 | 0.5513, 0.6057, 0.4124, 0.399 |
-| <span id="hat-32-dyn-civl-hl-ho"></span>`32:dyn_civl_hl_ho` | 31 | [32](characters.md#char-32) | `dyn_civl_hl_ho` | 0.242, -0.0075, 0.0198 | 0.5547, 0.4909, 0.4165, 0.5271 |
-| <span id="hat-32-dyn-civl-pl-sp"></span>`32:dyn_civl_pl_sp` | 31 | [32](characters.md#char-32) | `dyn_civl_pl_sp` | 0.2295, 0.0191, 0.0559 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-32-dyn-co-ma3"></span>`32:dyn_co_ma3` | 31 | [32](characters.md#char-32) | `dyn_co_ma3` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-32-dyn-cops-va"></span>`32:dyn_cops_va` | 31 | [32](characters.md#char-32) | `dyn_cops_va` | 0.2382, -0.0147, 0.0089 | 0.5321, -0.5638, 0.4714, -0.4206 |
-| <span id="hat-32-dyn-ct-act"></span>`32:dyn_ct_act` | 31 | [32](characters.md#char-32) | `dyn_ct_act` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-32-dyn-ct-ma2"></span>`32:dyn_ct_ma2` | 31 | [32](characters.md#char-32) | `dyn_ct_ma2` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
-| <span id="hat-32-dyn-cw-m1"></span>`32:dyn_cw_m1` | 31 | [32](characters.md#char-32) | `dyn_cw_m1` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
-| <span id="hat-32-dyn-cw-m2"></span>`32:dyn_cw_m2` | 31 | [32](characters.md#char-32) | `dyn_cw_m2` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
-| <span id="hat-32-dyn-dest-lt"></span>`32:dyn_dest_lt` | 31 | [32](characters.md#char-32) | `dyn_dest_lt` | 0.2205, -0.0073, -0.0405 | 0.6064, 0.5873, 0.3696, 0.3882 |
-| <span id="hat-32-dyn-dest-lta"></span>`32:dyn_dest_lta` | 31 | [32](characters.md#char-32) | `dyn_dest_lta` | 0.2295, 0.0191, 0.0559 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-32-dyn-dest-ltb"></span>`32:dyn_dest_ltb` | 31 | [32](characters.md#char-32) | `dyn_dest_ltb` | 0.2229, 0, -0.0018 | 0.5532, 0.5532, 0.4404, 0.4404 |
-| <span id="hat-32-dyn-eh-ma2"></span>`32:dyn_eh_ma2` | 31 | [32](characters.md#char-32) | `dyn_eh_ma2` | 0.2113, 0.0199, -0.0187 | 0.5437, 0.6042, 0.4517, 0.3678 |
-| <span id="hat-32-dyn-hiha-lt"></span>`32:dyn_hiha_lt` | 31 | [32](characters.md#char-32) | `dyn_hiha_lt` | 0.2395, -0.0198, -0.0374 | 0.5491, -0.6125, 0.4328, -0.3688 |
-| <span id="hat-32-dyn-hiha-lt-ft"></span>`32:dyn_hiha_lt_ft` | 31 | [32](characters.md#char-32) | `dyn_hiha_lt_ft` | 0.2395, -0.0198, -0.0374 | 0.5491, -0.6125, 0.4328, -0.3688 |
-| <span id="hat-32-dyn-hiha-so"></span>`32:dyn_hiha_so` | 31 | [32](characters.md#char-32) | `dyn_hiha_so` | 0.2512, 0.0138, -0.0086 | 0.5608, -0.5252, 0.4294, -0.4746 |
-| <span id="hat-32-dyn-hurr-lt"></span>`32:dyn_hurr_lt` | 31 | [32](characters.md#char-32) | `dyn_hurr_lt` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
-| <span id="hat-32-dyn-hurr-so"></span>`32:dyn_hurr_so` | 31 | [32](characters.md#char-32) | `dyn_hurr_so` | 0.2311, -0.0151, -0.0182 | 0.5582, -0.5755, 0.4335, -0.4114 |
-| <span id="hat-32-dyn-panz-lt"></span>`32:dyn_panz_lt` | 31 | [32](characters.md#char-32) | `dyn_panz_lt` | 0.2125, -0.0254, -0.0014 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-32-dyn-panz-so"></span>`32:dyn_panz_so` | 31 | [32](characters.md#char-32) | `dyn_panz_so` | 0.2125, -0.0254, -0.0014 | 0.5069, -0.5966, 0.493, -0.3796 |
-| <span id="hat-32-dyn-pimp-va"></span>`32:dyn_pimp_va` | 31 | [32](characters.md#char-32) | `dyn_pimp_va` | 0.2291, -0.0177, 0 | 0.5244, -0.5741, 0.4627, -0.4258 |
-| <span id="hat-32-dyn-pimp-vb"></span>`32:dyn_pimp_vb` | 31 | [32](characters.md#char-32) | `dyn_pimp_vb` | 0.2291, -0.0177, 0 | 0.5244, -0.5741, 0.4627, -0.4258 |
-| <span id="hat-32-dyn-pl-ma9"></span>`32:dyn_pl_ma9` | 31 | [32](characters.md#char-32) | `dyn_pl_ma9` | 0.2331, -0.0083, 0.0232 | 0.5448, 0.5211, 0.449, 0.4797 |
-| <span id="hat-32-dyn-pl-pm"></span>`32:dyn_pl_pm` | 31 | [32](characters.md#char-32) | `dyn_pl_pm` | 0.2262, -0.0047, -0.0172 | 0.5751, 0.5403, 0.4114, 0.4562 |
-| <span id="hat-32-dyn-rogu-lt"></span>`32:dyn_rogu_lt` | 31 | [32](characters.md#char-32) | `dyn_rogu_lt` | 0.2418, 0.0185, -0.0016 | 0.5817, -0.5067, 0.4227, -0.4757 |
-| <span id="hat-32-dyn-rogu-so"></span>`32:dyn_rogu_so` | 31 | [32](characters.md#char-32) | `dyn_rogu_so` | 0.2383, -0.0077, -0.0168 | 0.5531, -0.5776, 0.4493, -0.3983 |
-| <span id="hat-32-dyn-sata-bo"></span>`32:dyn_sata_bo` | 31 | [32](characters.md#char-32) | `dyn_sata_bo` | 0.254, 0, -0.0213 | 0.5367, -0.5367, 0.4604, -0.4604 |
-| <span id="hat-32-dyn-sk-pe"></span>`32:dyn_sk_pe` | 31 | [32](characters.md#char-32) | `dyn_sk_pe` | 0.2577, -0.0105, -0.0423 | 0.5888, 0.5623, 0.3983, 0.4224 |
-| <span id="hat-32-dyn-tr-fa4"></span>`32:dyn_tr_fa4` | 31 | [32](characters.md#char-32) | `dyn_tr_fa4` | 0.2434, -0.006, 0.008 | 0.5175, 0.5573, 0.4344, 0.4826 |
-| <span id="hat-32-dyn-tr-ma2"></span>`32:dyn_tr_ma2` | 31 | [32](characters.md#char-32) | `dyn_tr_ma2` | 0.2229, 0, -0.0018 | 0.5532, 0.5532, 0.4404, 0.4404 |
-| <span id="hat-32-dyn-warr-cb"></span>`32:dyn_warr_cb` | 31 | [32](characters.md#char-32) | `dyn_warr_cb` | 0.2007, -0.0118, -0.026 | 0.5532, -0.5998, 0.4288, -0.3878 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-32-dyn-abe"></span>`32:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_abe` | 0.0592, -0.0007, 0.0168 | 0.5542, -0.5542, 0.4392, -0.4392 |
+| <span id="hat-32-dyn-bm-vb3"></span>`32:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_bm_vb3` | 0.2432, -0.0121, 0.0157 | 0.5376, 0.4931, 0.4619, 0.5044 |
+| <span id="hat-32-dyn-bm-vb5"></span>`32:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_bm_vb5` | 0.2101, -0.0009, 0.0069 | 0.5334, 0.5334, 0.4642, 0.4642 |
+| <span id="hat-32-dyn-bm-vb6"></span>`32:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_bm_vb6` | 0.2425, 0.017, -0.0171 | 0.5218, 0.5872, 0.4643, 0.409 |
+| <span id="hat-32-dyn-bm-vb7"></span>`32:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_bm_vb7` | 0.1983, 0.0111, -0.0209 | 0.5422, 0.6058, 0.4368, 0.385 |
+| <span id="hat-32-dyn-bopp-bo"></span>`32:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_bopp_bo` | 0.1787, 0.0003, -0.0058 | 0.5573, -0.5835, 0.4353, -0.3994 |
+| <span id="hat-32-dyn-bopp-lt"></span>`32:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_bopp_lt` | 0.2231, 0.0228, -0.0195 | 0.6257, -0.5153, 0.3796, -0.446 |
+| <span id="hat-32-dyn-bopp-so"></span>`32:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_bopp_so` | 0.2192, 0.0004, -0.0315 | 0.5722, -0.6009, 0.3943, -0.395 |
+| <span id="hat-32-dyn-butcher"></span>`32:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_butcher` | 0.2233, 0, -0.0209 | 0.5698, -0.5698, 0.4187, -0.4187 |
+| <span id="hat-32-dyn-ch"></span>`32:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_ch` | 0.2398, -0.0076, 0.0315 | 0.5354, -0.5445, 0.4971, -0.4121 |
+| <span id="hat-32-dyn-civl-a"></span>`32:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_civl_a` | 0.2321, 0.0077, -0.031 | 0.5513, 0.6057, 0.4124, 0.399 |
+| <span id="hat-32-dyn-civl-hl-ho"></span>`32:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_civl_hl_ho` | 0.242, -0.0075, 0.0198 | 0.5547, 0.4909, 0.4165, 0.5271 |
+| <span id="hat-32-dyn-civl-pl-sp"></span>`32:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_civl_pl_sp` | 0.2295, 0.0191, 0.0559 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-32-dyn-co-ma3"></span>`32:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_co_ma3` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-32-dyn-cops-va"></span>`32:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_cops_va` | 0.2382, -0.0147, 0.0089 | 0.5321, -0.5638, 0.4714, -0.4206 |
+| <span id="hat-32-dyn-ct-act"></span>`32:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_ct_act` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-32-dyn-ct-ma2"></span>`32:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_ct_ma2` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
+| <span id="hat-32-dyn-cw-m1"></span>`32:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_cw_m1` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
+| <span id="hat-32-dyn-cw-m2"></span>`32:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_cw_m2` | 0.2318, 0, 0.0161 | 0.538, 0.538, 0.4589, 0.4589 |
+| <span id="hat-32-dyn-dest-lt"></span>`32:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_dest_lt` | 0.2205, -0.0073, -0.0405 | 0.6064, 0.5873, 0.3696, 0.3882 |
+| <span id="hat-32-dyn-dest-lta"></span>`32:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_dest_lta` | 0.2295, 0.0191, 0.0559 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-32-dyn-dest-ltb"></span>`32:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_dest_ltb` | 0.2229, 0, -0.0018 | 0.5532, 0.5532, 0.4404, 0.4404 |
+| <span id="hat-32-dyn-eh-ma2"></span>`32:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_eh_ma2` | 0.2113, 0.0199, -0.0187 | 0.5437, 0.6042, 0.4517, 0.3678 |
+| <span id="hat-32-dyn-hiha-lt"></span>`32:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_hiha_lt` | 0.2395, -0.0198, -0.0374 | 0.5491, -0.6125, 0.4328, -0.3688 |
+| <span id="hat-32-dyn-hiha-lt-ft"></span>`32:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_hiha_lt_ft` | 0.2395, -0.0198, -0.0374 | 0.5491, -0.6125, 0.4328, -0.3688 |
+| <span id="hat-32-dyn-hiha-so"></span>`32:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_hiha_so` | 0.2512, 0.0138, -0.0086 | 0.5608, -0.5252, 0.4294, -0.4746 |
+| <span id="hat-32-dyn-hurr-lt"></span>`32:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_hurr_lt` | 0.2172, -0.0138, -0.0197 | 0.5982, 0.5445, 0.3824, 0.4465 |
+| <span id="hat-32-dyn-hurr-so"></span>`32:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_hurr_so` | 0.2311, -0.0151, -0.0182 | 0.5582, -0.5755, 0.4335, -0.4114 |
+| <span id="hat-32-dyn-panz-lt"></span>`32:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_panz_lt` | 0.2125, -0.0254, -0.0014 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-32-dyn-panz-so"></span>`32:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_panz_so` | 0.2125, -0.0254, -0.0014 | 0.5069, -0.5966, 0.493, -0.3796 |
+| <span id="hat-32-dyn-pimp-va"></span>`32:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_pimp_va` | 0.2291, -0.0177, 0 | 0.5244, -0.5741, 0.4627, -0.4258 |
+| <span id="hat-32-dyn-pimp-vb"></span>`32:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_pimp_vb` | 0.2291, -0.0177, 0 | 0.5244, -0.5741, 0.4627, -0.4258 |
+| <span id="hat-32-dyn-pl-ma9"></span>`32:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_pl_ma9` | 0.2331, -0.0083, 0.0232 | 0.5448, 0.5211, 0.449, 0.4797 |
+| <span id="hat-32-dyn-pl-pm"></span>`32:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_pl_pm` | 0.2262, -0.0047, -0.0172 | 0.5751, 0.5403, 0.4114, 0.4562 |
+| <span id="hat-32-dyn-rogu-lt"></span>`32:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_rogu_lt` | 0.2418, 0.0185, -0.0016 | 0.5817, -0.5067, 0.4227, -0.4757 |
+| <span id="hat-32-dyn-rogu-so"></span>`32:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_rogu_so` | 0.2383, -0.0077, -0.0168 | 0.5531, -0.5776, 0.4493, -0.3983 |
+| <span id="hat-32-dyn-sata-bo"></span>`32:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_sata_bo` | 0.254, 0, -0.0213 | 0.5367, -0.5367, 0.4604, -0.4604 |
+| <span id="hat-32-dyn-sk-pe"></span>`32:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_sk_pe` | 0.2577, -0.0105, -0.0423 | 0.5888, 0.5623, 0.3983, 0.4224 |
+| <span id="hat-32-dyn-tr-fa4"></span>`32:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_tr_fa4` | 0.2434, -0.006, 0.008 | 0.5175, 0.5573, 0.4344, 0.4826 |
+| <span id="hat-32-dyn-tr-ma2"></span>`32:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_tr_ma2` | 0.2229, 0, -0.0018 | 0.5532, 0.5532, 0.4404, 0.4404 |
+| <span id="hat-32-dyn-warr-cb"></span>`32:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 31 | [32](characters.md#char-32) | `dyn_warr_cb` | 0.2007, -0.0118, -0.026 | 0.5532, -0.5998, 0.4288, -0.3878 |
 
 ## 33 warr_sn {#33-warr-sn}
 
 40 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-33-dyn-abe"></span>`33:dyn_abe` | 32 | [33](characters.md#char-33) | `dyn_abe` | 0.0589, -0.0007, 0.0253 | 0.5462, -0.5462, 0.449, -0.449 |
-| <span id="hat-33-dyn-bm-vb3"></span>`33:dyn_bm_vb3` | 32 | [33](characters.md#char-33) | `dyn_bm_vb3` | 0.2409, -0.0121, -0.0069 | 0.5376, 0.4931, 0.4619, 0.5044 |
-| <span id="hat-33-dyn-bm-vb5"></span>`33:dyn_bm_vb5` | 32 | [33](characters.md#char-33) | `dyn_bm_vb5` | 0.2317, -0.0009, 0.0098 | 0.4861, 0.4861, 0.5136, 0.5136 |
-| <span id="hat-33-dyn-bm-vb6"></span>`33:dyn_bm_vb6` | 32 | [33](characters.md#char-33) | `dyn_bm_vb6` | 0.2465, 0.0237, -0.0384 | 0.5147, 0.581, 0.4722, 0.4178 |
-| <span id="hat-33-dyn-bm-vb7"></span>`33:dyn_bm_vb7` | 32 | [33](characters.md#char-33) | `dyn_bm_vb7` | 0.2078, 0.0151, -0.0419 | 0.5422, 0.6058, 0.4368, 0.385 |
-| <span id="hat-33-dyn-bopp-bo"></span>`33:dyn_bopp_bo` | 32 | [33](characters.md#char-33) | `dyn_bopp_bo` | 0.207, 0.0094, -0.0331 | 0.5916, -0.5625, 0.4045, -0.4122 |
-| <span id="hat-33-dyn-bopp-lt"></span>`33:dyn_bopp_lt` | 32 | [33](characters.md#char-33) | `dyn_bopp_lt` | 0.2279, 0.0302, -0.0441 | 0.6216, -0.5105, 0.3862, -0.4515 |
-| <span id="hat-33-dyn-bopp-so"></span>`33:dyn_bopp_so` | 32 | [33](characters.md#char-33) | `dyn_bopp_so` | 0.2356, -0.0021, -0.0261 | 0.5312, -0.5597, 0.448, -0.4515 |
-| <span id="hat-33-dyn-butcher"></span>`33:dyn_butcher` | 32 | [33](characters.md#char-33) | `dyn_butcher` | 0.2325, 0, -0.0204 | 0.5344, -0.5344, 0.4631, -0.4631 |
-| <span id="hat-33-dyn-ch"></span>`33:dyn_ch` | 32 | [33](characters.md#char-33) | `dyn_ch` | 0.2418, -0.0076, 0.0151 | 0.5359, -0.523, 0.4982, -0.4372 |
-| <span id="hat-33-dyn-civl-a"></span>`33:dyn_civl_a` | 32 | [33](characters.md#char-33) | `dyn_civl_a` | 0.2504, 0.0103, -0.0163 | 0.505, 0.5605, 0.4679, 0.4603 |
-| <span id="hat-33-dyn-civl-hl-ho"></span>`33:dyn_civl_hl_ho` | 32 | [33](characters.md#char-33) | `dyn_civl_hl_ho` | 0.2393, -0.0075, -0.0104 | 0.5511, 0.491, 0.4211, 0.5271 |
-| <span id="hat-33-dyn-civl-pl-sp"></span>`33:dyn_civl_pl_sp` | 32 | [33](characters.md#char-33) | `dyn_civl_pl_sp` | 0.2309, 0.0191, 0.0296 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-33-dyn-co-ma3"></span>`33:dyn_co_ma3` | 32 | [33](characters.md#char-33) | `dyn_co_ma3` | 0.2274, -0.0138, -0.0293 | 0.5737, 0.5162, 0.4183, 0.479 |
-| <span id="hat-33-dyn-ct-act"></span>`33:dyn_ct_act` | 32 | [33](characters.md#char-33) | `dyn_ct_act` | 0.2274, -0.0138, -0.0293 | 0.5737, 0.5162, 0.4183, 0.479 |
-| <span id="hat-33-dyn-ct-ma2"></span>`33:dyn_ct_ma2` | 32 | [33](characters.md#char-33) | `dyn_ct_ma2` | 0.2328, 0.0011, -0.0066 | 0.538, 0.538, 0.4589, 0.4589 |
-| <span id="hat-33-dyn-cw-m1"></span>`33:dyn_cw_m1` | 32 | [33](characters.md#char-33) | `dyn_cw_m1` | 0.2328, 0.0011, -0.0066 | 0.538, 0.538, 0.4589, 0.4589 |
-| <span id="hat-33-dyn-cw-m2"></span>`33:dyn_cw_m2` | 32 | [33](characters.md#char-33) | `dyn_cw_m2` | 0.2328, 0.0011, -0.0066 | 0.538, 0.538, 0.4589, 0.4589 |
-| <span id="hat-33-dyn-dest-lt"></span>`33:dyn_dest_lt` | 32 | [33](characters.md#char-33) | `dyn_dest_lt` | 0.2454, -0.0073, -0.0172 | 0.5494, 0.5279, 0.4501, 0.4658 |
-| <span id="hat-33-dyn-dest-lta"></span>`33:dyn_dest_lta` | 32 | [33](characters.md#char-33) | `dyn_dest_lta` | 0.2309, 0.0191, 0.0296 | 0.5689, 0.3701, 0.5732, 0.4592 |
-| <span id="hat-33-dyn-dest-ltb"></span>`33:dyn_dest_ltb` | 32 | [33](characters.md#char-33) | `dyn_dest_ltb` | 0.2225, 0.0007, -0.0203 | 0.5532, 0.5532, 0.4404, 0.4404 |
-| <span id="hat-33-dyn-eh-ma2"></span>`33:dyn_eh_ma2` | 32 | [33](characters.md#char-33) | `dyn_eh_ma2` | 0.2292, 0.0237, -0.0273 | 0.5214, 0.5836, 0.4779, 0.399 |
-| <span id="hat-33-dyn-hiha-lt"></span>`33:dyn_hiha_lt` | 32 | [33](characters.md#char-33) | `dyn_hiha_lt` | 0.2516, -0.0163, -0.0263 | 0.5133, -0.565, 0.4724, -0.4406 |
-| <span id="hat-33-dyn-hiha-lt-ft"></span>`33:dyn_hiha_lt_ft` | 32 | [33](characters.md#char-33) | `dyn_hiha_lt_ft` | 0.2516, -0.0163, -0.0263 | 0.5133, -0.565, 0.4724, -0.4406 |
-| <span id="hat-33-dyn-hiha-so"></span>`33:dyn_hiha_so` | 32 | [33](characters.md#char-33) | `dyn_hiha_so` | 0.2562, 0.0226, -0.0043 | 0.5396, -0.4935, 0.4539, -0.5092 |
-| <span id="hat-33-dyn-hurr-lt"></span>`33:dyn_hurr_lt` | 32 | [33](characters.md#char-33) | `dyn_hurr_lt` | 0.2274, -0.0138, -0.0293 | 0.5737, 0.5162, 0.4183, 0.479 |
-| <span id="hat-33-dyn-hurr-so"></span>`33:dyn_hurr_so` | 32 | [33](characters.md#char-33) | `dyn_hurr_so` | 0.2446, -0.0147, -0.0084 | 0.5102, -0.5366, 0.4887, -0.4615 |
-| <span id="hat-33-dyn-panz-lt"></span>`33:dyn_panz_lt` | 32 | [33](characters.md#char-33) | `dyn_panz_lt` | 0.2032, -0.0254, -0.0294 | 0.4932, -0.5859, 0.5067, -0.3959 |
-| <span id="hat-33-dyn-panz-so"></span>`33:dyn_panz_so` | 32 | [33](characters.md#char-33) | `dyn_panz_so` | 0.2032, -0.0254, -0.0294 | 0.4932, -0.5859, 0.5067, -0.3959 |
-| <span id="hat-33-dyn-pimp-va"></span>`33:dyn_pimp_va` | 32 | [33](characters.md#char-33) | `dyn_pimp_va` | 0.2379, -0.0197, 0.0021 | 0.4956, -0.5474, 0.4934, -0.4596 |
-| <span id="hat-33-dyn-pimp-vb"></span>`33:dyn_pimp_vb` | 32 | [33](characters.md#char-33) | `dyn_pimp_vb` | 0.2379, -0.0197, 0.0021 | 0.4956, -0.5474, 0.4934, -0.4596 |
-| <span id="hat-33-dyn-pl-ma9"></span>`33:dyn_pl_ma9` | 32 | [33](characters.md#char-33) | `dyn_pl_ma9` | 0.2353, -0.0083, 0.0159 | 0.5178, 0.5034, 0.4802, 0.4979 |
-| <span id="hat-33-dyn-pl-pm"></span>`33:dyn_pl_pm` | 32 | [33](characters.md#char-33) | `dyn_pl_pm` | 0.2295, -0.0086, -0.0124 | 0.5426, 0.5137, 0.4527, 0.4865 |
-| <span id="hat-33-dyn-rogu-lt"></span>`33:dyn_rogu_lt` | 32 | [33](characters.md#char-33) | `dyn_rogu_lt` | 0.2443, 0.0238, 0.0009 | 0.546, -0.4679, 0.4679, -0.5138 |
-| <span id="hat-33-dyn-rogu-so"></span>`33:dyn_rogu_so` | 32 | [33](characters.md#char-33) | `dyn_rogu_so` | 0.2462, -0.0138, -0.0067 | 0.5032, -0.5328, 0.5045, -0.4564 |
-| <span id="hat-33-dyn-sata-bo"></span>`33:dyn_sata_bo` | 32 | [33](characters.md#char-33) | `dyn_sata_bo` | 0.2792, 0, 0.0039 | 0.4753, -0.4753, 0.5235, -0.5235 |
-| <span id="hat-33-dyn-sk-pe"></span>`33:dyn_sk_pe` | 32 | [33](characters.md#char-33) | `dyn_sk_pe` | 0.2764, -0.0126, -0.0202 | 0.5473, 0.5187, 0.4536, 0.475 |
-| <span id="hat-33-dyn-tr-fa4"></span>`33:dyn_tr_fa4` | 32 | [33](characters.md#char-33) | `dyn_tr_fa4` | 0.2472, 0.0026, 0.0104 | 0.501, 0.5078, 0.4949, 0.4962 |
-| <span id="hat-33-dyn-tr-ma2"></span>`33:dyn_tr_ma2` | 32 | [33](characters.md#char-33) | `dyn_tr_ma2` | 0.2225, 0.0007, -0.0203 | 0.5532, 0.5532, 0.4404, 0.4404 |
-| <span id="hat-33-dyn-warr-cb"></span>`33:dyn_warr_cb` | 32 | [33](characters.md#char-33) | `dyn_warr_cb` | 0.2112, -0.0103, -0.0453 | 0.5532, -0.5998, 0.4288, -0.3878 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-33-dyn-abe"></span>`33:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_abe` | 0.0589, -0.0007, 0.0253 | 0.5462, -0.5462, 0.449, -0.449 |
+| <span id="hat-33-dyn-bm-vb3"></span>`33:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_bm_vb3` | 0.2409, -0.0121, -0.0069 | 0.5376, 0.4931, 0.4619, 0.5044 |
+| <span id="hat-33-dyn-bm-vb5"></span>`33:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_bm_vb5` | 0.2317, -0.0009, 0.0098 | 0.4861, 0.4861, 0.5136, 0.5136 |
+| <span id="hat-33-dyn-bm-vb6"></span>`33:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_bm_vb6` | 0.2465, 0.0237, -0.0384 | 0.5147, 0.581, 0.4722, 0.4178 |
+| <span id="hat-33-dyn-bm-vb7"></span>`33:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_bm_vb7` | 0.2078, 0.0151, -0.0419 | 0.5422, 0.6058, 0.4368, 0.385 |
+| <span id="hat-33-dyn-bopp-bo"></span>`33:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_bopp_bo` | 0.207, 0.0094, -0.0331 | 0.5916, -0.5625, 0.4045, -0.4122 |
+| <span id="hat-33-dyn-bopp-lt"></span>`33:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_bopp_lt` | 0.2279, 0.0302, -0.0441 | 0.6216, -0.5105, 0.3862, -0.4515 |
+| <span id="hat-33-dyn-bopp-so"></span>`33:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_bopp_so` | 0.2356, -0.0021, -0.0261 | 0.5312, -0.5597, 0.448, -0.4515 |
+| <span id="hat-33-dyn-butcher"></span>`33:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_butcher` | 0.2325, 0, -0.0204 | 0.5344, -0.5344, 0.4631, -0.4631 |
+| <span id="hat-33-dyn-ch"></span>`33:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_ch` | 0.2418, -0.0076, 0.0151 | 0.5359, -0.523, 0.4982, -0.4372 |
+| <span id="hat-33-dyn-civl-a"></span>`33:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_civl_a` | 0.2504, 0.0103, -0.0163 | 0.505, 0.5605, 0.4679, 0.4603 |
+| <span id="hat-33-dyn-civl-hl-ho"></span>`33:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_civl_hl_ho` | 0.2393, -0.0075, -0.0104 | 0.5511, 0.491, 0.4211, 0.5271 |
+| <span id="hat-33-dyn-civl-pl-sp"></span>`33:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_civl_pl_sp` | 0.2309, 0.0191, 0.0296 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-33-dyn-co-ma3"></span>`33:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_co_ma3` | 0.2274, -0.0138, -0.0293 | 0.5737, 0.5162, 0.4183, 0.479 |
+| <span id="hat-33-dyn-ct-act"></span>`33:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_ct_act` | 0.2274, -0.0138, -0.0293 | 0.5737, 0.5162, 0.4183, 0.479 |
+| <span id="hat-33-dyn-ct-ma2"></span>`33:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_ct_ma2` | 0.2328, 0.0011, -0.0066 | 0.538, 0.538, 0.4589, 0.4589 |
+| <span id="hat-33-dyn-cw-m1"></span>`33:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_cw_m1` | 0.2328, 0.0011, -0.0066 | 0.538, 0.538, 0.4589, 0.4589 |
+| <span id="hat-33-dyn-cw-m2"></span>`33:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_cw_m2` | 0.2328, 0.0011, -0.0066 | 0.538, 0.538, 0.4589, 0.4589 |
+| <span id="hat-33-dyn-dest-lt"></span>`33:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_dest_lt` | 0.2454, -0.0073, -0.0172 | 0.5494, 0.5279, 0.4501, 0.4658 |
+| <span id="hat-33-dyn-dest-lta"></span>`33:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_dest_lta` | 0.2309, 0.0191, 0.0296 | 0.5689, 0.3701, 0.5732, 0.4592 |
+| <span id="hat-33-dyn-dest-ltb"></span>`33:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_dest_ltb` | 0.2225, 0.0007, -0.0203 | 0.5532, 0.5532, 0.4404, 0.4404 |
+| <span id="hat-33-dyn-eh-ma2"></span>`33:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_eh_ma2` | 0.2292, 0.0237, -0.0273 | 0.5214, 0.5836, 0.4779, 0.399 |
+| <span id="hat-33-dyn-hiha-lt"></span>`33:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_hiha_lt` | 0.2516, -0.0163, -0.0263 | 0.5133, -0.565, 0.4724, -0.4406 |
+| <span id="hat-33-dyn-hiha-lt-ft"></span>`33:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_hiha_lt_ft` | 0.2516, -0.0163, -0.0263 | 0.5133, -0.565, 0.4724, -0.4406 |
+| <span id="hat-33-dyn-hiha-so"></span>`33:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_hiha_so` | 0.2562, 0.0226, -0.0043 | 0.5396, -0.4935, 0.4539, -0.5092 |
+| <span id="hat-33-dyn-hurr-lt"></span>`33:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_hurr_lt` | 0.2274, -0.0138, -0.0293 | 0.5737, 0.5162, 0.4183, 0.479 |
+| <span id="hat-33-dyn-hurr-so"></span>`33:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_hurr_so` | 0.2446, -0.0147, -0.0084 | 0.5102, -0.5366, 0.4887, -0.4615 |
+| <span id="hat-33-dyn-panz-lt"></span>`33:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_panz_lt` | 0.2032, -0.0254, -0.0294 | 0.4932, -0.5859, 0.5067, -0.3959 |
+| <span id="hat-33-dyn-panz-so"></span>`33:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_panz_so` | 0.2032, -0.0254, -0.0294 | 0.4932, -0.5859, 0.5067, -0.3959 |
+| <span id="hat-33-dyn-pimp-va"></span>`33:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_pimp_va` | 0.2379, -0.0197, 0.0021 | 0.4956, -0.5474, 0.4934, -0.4596 |
+| <span id="hat-33-dyn-pimp-vb"></span>`33:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_pimp_vb` | 0.2379, -0.0197, 0.0021 | 0.4956, -0.5474, 0.4934, -0.4596 |
+| <span id="hat-33-dyn-pl-ma9"></span>`33:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_pl_ma9` | 0.2353, -0.0083, 0.0159 | 0.5178, 0.5034, 0.4802, 0.4979 |
+| <span id="hat-33-dyn-pl-pm"></span>`33:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_pl_pm` | 0.2295, -0.0086, -0.0124 | 0.5426, 0.5137, 0.4527, 0.4865 |
+| <span id="hat-33-dyn-rogu-lt"></span>`33:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_rogu_lt` | 0.2443, 0.0238, 0.0009 | 0.546, -0.4679, 0.4679, -0.5138 |
+| <span id="hat-33-dyn-rogu-so"></span>`33:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_rogu_so` | 0.2462, -0.0138, -0.0067 | 0.5032, -0.5328, 0.5045, -0.4564 |
+| <span id="hat-33-dyn-sata-bo"></span>`33:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_sata_bo` | 0.2792, 0, 0.0039 | 0.4753, -0.4753, 0.5235, -0.5235 |
+| <span id="hat-33-dyn-sk-pe"></span>`33:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_sk_pe` | 0.2764, -0.0126, -0.0202 | 0.5473, 0.5187, 0.4536, 0.475 |
+| <span id="hat-33-dyn-tr-fa4"></span>`33:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_tr_fa4` | 0.2472, 0.0026, 0.0104 | 0.501, 0.5078, 0.4949, 0.4962 |
+| <span id="hat-33-dyn-tr-ma2"></span>`33:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_tr_ma2` | 0.2225, 0.0007, -0.0203 | 0.5532, 0.5532, 0.4404, 0.4404 |
+| <span id="hat-33-dyn-warr-cb"></span>`33:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 32 | [33](characters.md#char-33) | `dyn_warr_cb` | 0.2112, -0.0103, -0.0453 | 0.5532, -0.5998, 0.4288, -0.3878 |
 
 ## 38 warr_ty {#38-warr-ty}
 
 40 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-38-dyn-abe"></span>`38:dyn_abe` | 36 | [38](characters.md#char-38) | `dyn_abe` | 0.0526, 0.0017, 0.0567 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-38-dyn-bm-vb3"></span>`38:dyn_bm_vb3` | 36 | [38](characters.md#char-38) | `dyn_bm_vb3` | 0.158, 0.0043, 0.0157 | 0.5204, 0.5283, 0.4784, 0.4703 |
-| <span id="hat-38-dyn-bm-vb5"></span>`38:dyn_bm_vb5` | 36 | [38](characters.md#char-38) | `dyn_bm_vb5` | 0.1195, -0.0009, 0.0289 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-38-dyn-bm-vb6"></span>`38:dyn_bm_vb6` | 36 | [38](characters.md#char-38) | `dyn_bm_vb6` | 0.1602, -0.0042, 0.0055 | 0.5538, 0.5239, 0.4417, 0.4731 |
-| <span id="hat-38-dyn-bm-vb7"></span>`38:dyn_bm_vb7` | 36 | [38](characters.md#char-38) | `dyn_bm_vb7` | 0.1432, 0, 0.0035 | 0.5539, 0.5539, 0.4396, 0.4396 |
-| <span id="hat-38-dyn-bopp-bo"></span>`38:dyn_bopp_bo` | 36 | [38](characters.md#char-38) | `dyn_bopp_bo` | 0.1293, 0.0033, 0.0091 | 0.5284, -0.5569, 0.4698, -0.4357 |
-| <span id="hat-38-dyn-bopp-lt"></span>`38:dyn_bopp_lt` | 36 | [38](characters.md#char-38) | `dyn_bopp_lt` | 0.1731, -0.0012, 0.0105 | 0.4964, -0.5256, 0.5137, -0.462 |
-| <span id="hat-38-dyn-bopp-so"></span>`38:dyn_bopp_so` | 36 | [38](characters.md#char-38) | `dyn_bopp_so` | 0.1685, 0.0042, 0.0103 | 0.5122, -0.5034, 0.482, -0.502 |
-| <span id="hat-38-dyn-butcher"></span>`38:dyn_butcher` | 36 | [38](characters.md#char-38) | `dyn_butcher` | 0.1664, 0, -0.0097 | 0.5632, -0.5632, 0.4276, -0.4276 |
-| <span id="hat-38-dyn-ch"></span>`38:dyn_ch` | 36 | [38](characters.md#char-38) | `dyn_ch` | 0.1564, -0.0012, 0.0467 | 0.5314, -0.5477, 0.4428, -0.4706 |
-| <span id="hat-38-dyn-civl-a"></span>`38:dyn_civl_a` | 36 | [38](characters.md#char-38) | `dyn_civl_a` | 0.1852, 0.0013, -0.0047 | 0.5455, 0.5492, 0.4519, 0.4433 |
-| <span id="hat-38-dyn-civl-hl-ho"></span>`38:dyn_civl_hl_ho` | 36 | [38](characters.md#char-38) | `dyn_civl_hl_ho` | 0.1642, -0.003, 0.0185 | 0.5665, 0.4793, 0.4239, 0.5192 |
-| <span id="hat-38-dyn-civl-pl-sp"></span>`38:dyn_civl_pl_sp` | 36 | [38](characters.md#char-38) | `dyn_civl_pl_sp` | 0.1379, 0.0287, 0.0423 | 0.5503, 0.4415, 0.5264, 0.4746 |
-| <span id="hat-38-dyn-co-ma3"></span>`38:dyn_co_ma3` | 36 | [38](characters.md#char-38) | `dyn_co_ma3` | 0.1513, -0.0033, 0.0119 | 0.5308, 0.4896, 0.4695, 0.5081 |
-| <span id="hat-38-dyn-ct-act"></span>`38:dyn_ct_act` | 36 | [38](characters.md#char-38) | `dyn_ct_act` | 0.1513, -0.0033, 0.0119 | 0.5308, 0.4896, 0.4695, 0.5081 |
-| <span id="hat-38-dyn-ct-ma2"></span>`38:dyn_ct_ma2` | 36 | [38](characters.md#char-38) | `dyn_ct_ma2` | 0.1375, 0, 0.0244 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-38-dyn-cw-m1"></span>`38:dyn_cw_m1` | 36 | [38](characters.md#char-38) | `dyn_cw_m1` | 0.1375, 0, 0.0244 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-38-dyn-cw-m2"></span>`38:dyn_cw_m2` | 36 | [38](characters.md#char-38) | `dyn_cw_m2` | 0.1375, 0, 0.0244 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-38-dyn-dest-lt"></span>`38:dyn_dest_lt` | 36 | [38](characters.md#char-38) | `dyn_dest_lt` | 0.1411, -0.0024, -0.0017 | 0.5772, 0.5915, 0.3887, 0.4073 |
-| <span id="hat-38-dyn-dest-lta"></span>`38:dyn_dest_lta` | 36 | [38](characters.md#char-38) | `dyn_dest_lta` | 0.1379, 0.0287, 0.0423 | 0.5503, 0.4415, 0.5264, 0.4746 |
-| <span id="hat-38-dyn-dest-ltb"></span>`38:dyn_dest_ltb` | 36 | [38](characters.md#char-38) | `dyn_dest_ltb` | 0.1609, 0.001, 0.029 | 0.5355, 0.5355, 0.4617, 0.4617 |
-| <span id="hat-38-dyn-eh-ma2"></span>`38:dyn_eh_ma2` | 36 | [38](characters.md#char-38) | `dyn_eh_ma2` | 0.14, 0.0003, 0.0032 | 0.5736, 0.5624, 0.4169, 0.4252 |
-| <span id="hat-38-dyn-hiha-lt"></span>`38:dyn_hiha_lt` | 36 | [38](characters.md#char-38) | `dyn_hiha_lt` | 0.211, -0.0095, -0.0074 | 0.5329, -0.5584, 0.4811, -0.4157 |
-| <span id="hat-38-dyn-hiha-lt-ft"></span>`38:dyn_hiha_lt_ft` | 36 | [38](characters.md#char-38) | `dyn_hiha_lt_ft` | 0.211, -0.0095, -0.0074 | 0.5329, -0.5584, 0.4811, -0.4157 |
-| <span id="hat-38-dyn-hiha-so"></span>`38:dyn_hiha_so` | 36 | [38](characters.md#char-38) | `dyn_hiha_so` | 0.2136, -0.008, -0.0051 | 0.5313, -0.5568, 0.48, -0.4209 |
-| <span id="hat-38-dyn-hurr-lt"></span>`38:dyn_hurr_lt` | 36 | [38](characters.md#char-38) | `dyn_hurr_lt` | 0.1513, -0.0033, 0.0119 | 0.5308, 0.4896, 0.4695, 0.5081 |
-| <span id="hat-38-dyn-hurr-so"></span>`38:dyn_hurr_so` | 36 | [38](characters.md#char-38) | `dyn_hurr_so` | 0.1551, -0.0079, 0.0177 | 0.5085, -0.5218, 0.4864, -0.4823 |
-| <span id="hat-38-dyn-panz-lt"></span>`38:dyn_panz_lt` | 36 | [38](characters.md#char-38) | `dyn_panz_lt` | 0.1799, -0.0202, -0.0163 | 0.5273, -0.6121, 0.4711, -0.354 |
-| <span id="hat-38-dyn-panz-so"></span>`38:dyn_panz_so` | 36 | [38](characters.md#char-38) | `dyn_panz_so` | 0.1799, -0.0202, -0.0163 | 0.5273, -0.6121, 0.4711, -0.354 |
-| <span id="hat-38-dyn-pimp-va"></span>`38:dyn_pimp_va` | 36 | [38](characters.md#char-38) | `dyn_pimp_va` | 0.1595, -0.0156, 0.0266 | 0.4829, -0.5402, 0.4987, -0.4756 |
-| <span id="hat-38-dyn-pimp-vb"></span>`38:dyn_pimp_vb` | 36 | [38](characters.md#char-38) | `dyn_pimp_vb` | 0.1595, -0.0156, 0.0266 | 0.4829, -0.5402, 0.4987, -0.4756 |
-| <span id="hat-38-dyn-pl-ma9"></span>`38:dyn_pl_ma9` | 36 | [38](characters.md#char-38) | `dyn_pl_ma9` | 0.1471, -0.0032, 0.0539 | 0.5126, 0.4951, 0.5017, 0.4903 |
-| <span id="hat-38-dyn-pl-pm"></span>`38:dyn_pl_pm` | 36 | [38](characters.md#char-38) | `dyn_pl_pm` | 0.1594, 0.0011, 0.0154 | 0.5187, 0.4985, 0.4805, 0.5015 |
-| <span id="hat-38-dyn-rogu-lt"></span>`38:dyn_rogu_lt` | 36 | [38](characters.md#char-38) | `dyn_rogu_lt` | 0.1581, 0.0013, 0.0182 | 0.539, -0.5289, 0.4557, -0.4713 |
-| <span id="hat-38-dyn-rogu-so"></span>`38:dyn_rogu_so` | 36 | [38](characters.md#char-38) | `dyn_rogu_so` | 0.1727, 0.0004, 0.0193 | 0.5271, -0.5199, 0.4782, -0.4726 |
-| <span id="hat-38-dyn-sata-bo"></span>`38:dyn_sata_bo` | 36 | [38](characters.md#char-38) | `dyn_sata_bo` | 0.1718, 0, -0.0149 | 0.581, -0.581, 0.4031, -0.4031 |
-| <span id="hat-38-dyn-sk-pe"></span>`38:dyn_sk_pe` | 36 | [38](characters.md#char-38) | `dyn_sk_pe` | 0.1658, -0.0048, -0.0043 | 0.5733, 0.5498, 0.4193, 0.4396 |
-| <span id="hat-38-dyn-tr-fa4"></span>`38:dyn_tr_fa4` | 36 | [38](characters.md#char-38) | `dyn_tr_fa4` | 0.1731, 0.0015, 0.0159 | 0.5279, 0.5345, 0.4801, 0.4529 |
-| <span id="hat-38-dyn-tr-ma2"></span>`38:dyn_tr_ma2` | 36 | [38](characters.md#char-38) | `dyn_tr_ma2` | 0.1609, 0.001, 0.029 | 0.5355, 0.5355, 0.4617, 0.4617 |
-| <span id="hat-38-dyn-warr-cb"></span>`38:dyn_warr_cb` | 36 | [38](characters.md#char-38) | `dyn_warr_cb` | 0.1571, -0.001, 0.0006 | 0.5462, -0.5557, 0.4469, -0.4395 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-38-dyn-abe"></span>`38:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_abe` | 0.0526, 0.0017, 0.0567 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-38-dyn-bm-vb3"></span>`38:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_bm_vb3` | 0.158, 0.0043, 0.0157 | 0.5204, 0.5283, 0.4784, 0.4703 |
+| <span id="hat-38-dyn-bm-vb5"></span>`38:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_bm_vb5` | 0.1195, -0.0009, 0.0289 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-38-dyn-bm-vb6"></span>`38:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_bm_vb6` | 0.1602, -0.0042, 0.0055 | 0.5538, 0.5239, 0.4417, 0.4731 |
+| <span id="hat-38-dyn-bm-vb7"></span>`38:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_bm_vb7` | 0.1432, 0, 0.0035 | 0.5539, 0.5539, 0.4396, 0.4396 |
+| <span id="hat-38-dyn-bopp-bo"></span>`38:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_bopp_bo` | 0.1293, 0.0033, 0.0091 | 0.5284, -0.5569, 0.4698, -0.4357 |
+| <span id="hat-38-dyn-bopp-lt"></span>`38:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_bopp_lt` | 0.1731, -0.0012, 0.0105 | 0.4964, -0.5256, 0.5137, -0.462 |
+| <span id="hat-38-dyn-bopp-so"></span>`38:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_bopp_so` | 0.1685, 0.0042, 0.0103 | 0.5122, -0.5034, 0.482, -0.502 |
+| <span id="hat-38-dyn-butcher"></span>`38:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_butcher` | 0.1664, 0, -0.0097 | 0.5632, -0.5632, 0.4276, -0.4276 |
+| <span id="hat-38-dyn-ch"></span>`38:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_ch` | 0.1564, -0.0012, 0.0467 | 0.5314, -0.5477, 0.4428, -0.4706 |
+| <span id="hat-38-dyn-civl-a"></span>`38:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_civl_a` | 0.1852, 0.0013, -0.0047 | 0.5455, 0.5492, 0.4519, 0.4433 |
+| <span id="hat-38-dyn-civl-hl-ho"></span>`38:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_civl_hl_ho` | 0.1642, -0.003, 0.0185 | 0.5665, 0.4793, 0.4239, 0.5192 |
+| <span id="hat-38-dyn-civl-pl-sp"></span>`38:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_civl_pl_sp` | 0.1379, 0.0287, 0.0423 | 0.5503, 0.4415, 0.5264, 0.4746 |
+| <span id="hat-38-dyn-co-ma3"></span>`38:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_co_ma3` | 0.1513, -0.0033, 0.0119 | 0.5308, 0.4896, 0.4695, 0.5081 |
+| <span id="hat-38-dyn-ct-act"></span>`38:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_ct_act` | 0.1513, -0.0033, 0.0119 | 0.5308, 0.4896, 0.4695, 0.5081 |
+| <span id="hat-38-dyn-ct-ma2"></span>`38:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_ct_ma2` | 0.1375, 0, 0.0244 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-38-dyn-cw-m1"></span>`38:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_cw_m1` | 0.1375, 0, 0.0244 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-38-dyn-cw-m2"></span>`38:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_cw_m2` | 0.1375, 0, 0.0244 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-38-dyn-dest-lt"></span>`38:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_dest_lt` | 0.1411, -0.0024, -0.0017 | 0.5772, 0.5915, 0.3887, 0.4073 |
+| <span id="hat-38-dyn-dest-lta"></span>`38:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_dest_lta` | 0.1379, 0.0287, 0.0423 | 0.5503, 0.4415, 0.5264, 0.4746 |
+| <span id="hat-38-dyn-dest-ltb"></span>`38:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_dest_ltb` | 0.1609, 0.001, 0.029 | 0.5355, 0.5355, 0.4617, 0.4617 |
+| <span id="hat-38-dyn-eh-ma2"></span>`38:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_eh_ma2` | 0.14, 0.0003, 0.0032 | 0.5736, 0.5624, 0.4169, 0.4252 |
+| <span id="hat-38-dyn-hiha-lt"></span>`38:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_hiha_lt` | 0.211, -0.0095, -0.0074 | 0.5329, -0.5584, 0.4811, -0.4157 |
+| <span id="hat-38-dyn-hiha-lt-ft"></span>`38:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_hiha_lt_ft` | 0.211, -0.0095, -0.0074 | 0.5329, -0.5584, 0.4811, -0.4157 |
+| <span id="hat-38-dyn-hiha-so"></span>`38:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_hiha_so` | 0.2136, -0.008, -0.0051 | 0.5313, -0.5568, 0.48, -0.4209 |
+| <span id="hat-38-dyn-hurr-lt"></span>`38:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_hurr_lt` | 0.1513, -0.0033, 0.0119 | 0.5308, 0.4896, 0.4695, 0.5081 |
+| <span id="hat-38-dyn-hurr-so"></span>`38:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_hurr_so` | 0.1551, -0.0079, 0.0177 | 0.5085, -0.5218, 0.4864, -0.4823 |
+| <span id="hat-38-dyn-panz-lt"></span>`38:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_panz_lt` | 0.1799, -0.0202, -0.0163 | 0.5273, -0.6121, 0.4711, -0.354 |
+| <span id="hat-38-dyn-panz-so"></span>`38:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_panz_so` | 0.1799, -0.0202, -0.0163 | 0.5273, -0.6121, 0.4711, -0.354 |
+| <span id="hat-38-dyn-pimp-va"></span>`38:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_pimp_va` | 0.1595, -0.0156, 0.0266 | 0.4829, -0.5402, 0.4987, -0.4756 |
+| <span id="hat-38-dyn-pimp-vb"></span>`38:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_pimp_vb` | 0.1595, -0.0156, 0.0266 | 0.4829, -0.5402, 0.4987, -0.4756 |
+| <span id="hat-38-dyn-pl-ma9"></span>`38:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_pl_ma9` | 0.1471, -0.0032, 0.0539 | 0.5126, 0.4951, 0.5017, 0.4903 |
+| <span id="hat-38-dyn-pl-pm"></span>`38:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_pl_pm` | 0.1594, 0.0011, 0.0154 | 0.5187, 0.4985, 0.4805, 0.5015 |
+| <span id="hat-38-dyn-rogu-lt"></span>`38:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_rogu_lt` | 0.1581, 0.0013, 0.0182 | 0.539, -0.5289, 0.4557, -0.4713 |
+| <span id="hat-38-dyn-rogu-so"></span>`38:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_rogu_so` | 0.1727, 0.0004, 0.0193 | 0.5271, -0.5199, 0.4782, -0.4726 |
+| <span id="hat-38-dyn-sata-bo"></span>`38:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_sata_bo` | 0.1718, 0, -0.0149 | 0.581, -0.581, 0.4031, -0.4031 |
+| <span id="hat-38-dyn-sk-pe"></span>`38:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_sk_pe` | 0.1658, -0.0048, -0.0043 | 0.5733, 0.5498, 0.4193, 0.4396 |
+| <span id="hat-38-dyn-tr-fa4"></span>`38:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_tr_fa4` | 0.1731, 0.0015, 0.0159 | 0.5279, 0.5345, 0.4801, 0.4529 |
+| <span id="hat-38-dyn-tr-ma2"></span>`38:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_tr_ma2` | 0.1609, 0.001, 0.029 | 0.5355, 0.5355, 0.4617, 0.4617 |
+| <span id="hat-38-dyn-warr-cb"></span>`38:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 36 | [38](characters.md#char-38) | `dyn_warr_cb` | 0.1571, -0.001, 0.0006 | 0.5462, -0.5557, 0.4469, -0.4395 |
 
 ## 40 warr_ty_cv {#40-warr-ty-cv}
 
 40 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-40-dyn-abe"></span>`40:dyn_abe` | 37 | [40](characters.md#char-40) | `dyn_abe` | 0.0503, 0.0017, 0.0536 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-40-dyn-bm-vb3"></span>`40:dyn_bm_vb3` | 37 | [40](characters.md#char-40) | `dyn_bm_vb3` | 0.1557, 0.0043, 0.0126 | 0.5204, 0.5283, 0.4784, 0.4703 |
-| <span id="hat-40-dyn-bm-vb5"></span>`40:dyn_bm_vb5` | 37 | [40](characters.md#char-40) | `dyn_bm_vb5` | 0.1172, -0.0009, 0.0258 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-40-dyn-bm-vb6"></span>`40:dyn_bm_vb6` | 37 | [40](characters.md#char-40) | `dyn_bm_vb6` | 0.1579, -0.0042, 0.0024 | 0.5538, 0.5239, 0.4417, 0.4731 |
-| <span id="hat-40-dyn-bm-vb7"></span>`40:dyn_bm_vb7` | 37 | [40](characters.md#char-40) | `dyn_bm_vb7` | 0.141, `1e-06`, 0.0004 | 0.5539, 0.5539, 0.4396, 0.4396 |
-| <span id="hat-40-dyn-bopp-bo"></span>`40:dyn_bopp_bo` | 37 | [40](characters.md#char-40) | `dyn_bopp_bo` | 0.1271, 0.0033, 0.0059 | 0.5284, -0.5569, 0.4698, -0.4357 |
-| <span id="hat-40-dyn-bopp-lt"></span>`40:dyn_bopp_lt` | 37 | [40](characters.md#char-40) | `dyn_bopp_lt` | 0.1708, -0.0012, 0.0074 | 0.4964, -0.5256, 0.5137, -0.462 |
-| <span id="hat-40-dyn-bopp-so"></span>`40:dyn_bopp_so` | 37 | [40](characters.md#char-40) | `dyn_bopp_so` | 0.1662, 0.0042, 0.0072 | 0.5122, -0.5034, 0.482, -0.502 |
-| <span id="hat-40-dyn-butcher"></span>`40:dyn_butcher` | 37 | [40](characters.md#char-40) | `dyn_butcher` | 0.1641, `1e-06`, -0.0128 | 0.5632, -0.5632, 0.4276, -0.4276 |
-| <span id="hat-40-dyn-ch"></span>`40:dyn_ch` | 37 | [40](characters.md#char-40) | `dyn_ch` | 0.1541, -0.0012, 0.0436 | 0.5314, -0.5477, 0.4428, -0.4706 |
-| <span id="hat-40-dyn-civl-a"></span>`40:dyn_civl_a` | 37 | [40](characters.md#char-40) | `dyn_civl_a` | 0.1829, 0.0013, -0.0079 | 0.5455, 0.5492, 0.4519, 0.4433 |
-| <span id="hat-40-dyn-civl-hl-ho"></span>`40:dyn_civl_hl_ho` | 37 | [40](characters.md#char-40) | `dyn_civl_hl_ho` | 0.1619, -0.003, 0.0154 | 0.5665, 0.4793, 0.4239, 0.5192 |
-| <span id="hat-40-dyn-civl-pl-sp"></span>`40:dyn_civl_pl_sp` | 37 | [40](characters.md#char-40) | `dyn_civl_pl_sp` | 0.1356, 0.0287, 0.0392 | 0.5503, 0.4415, 0.5264, 0.4746 |
-| <span id="hat-40-dyn-co-ma3"></span>`40:dyn_co_ma3` | 37 | [40](characters.md#char-40) | `dyn_co_ma3` | 0.149, -0.0033, 0.0088 | 0.5308, 0.4896, 0.4695, 0.5081 |
-| <span id="hat-40-dyn-ct-act"></span>`40:dyn_ct_act` | 37 | [40](characters.md#char-40) | `dyn_ct_act` | 0.149, -0.0033, 0.0088 | 0.5308, 0.4896, 0.4695, 0.5081 |
-| <span id="hat-40-dyn-ct-ma2"></span>`40:dyn_ct_ma2` | 37 | [40](characters.md#char-40) | `dyn_ct_ma2` | 0.1353, `1e-06`, 0.0213 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-40-dyn-cw-m1"></span>`40:dyn_cw_m1` | 37 | [40](characters.md#char-40) | `dyn_cw_m1` | 0.1353, `1e-06`, 0.0213 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-40-dyn-cw-m2"></span>`40:dyn_cw_m2` | 37 | [40](characters.md#char-40) | `dyn_cw_m2` | 0.1353, `1e-06`, 0.0213 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-40-dyn-dest-lt"></span>`40:dyn_dest_lt` | 37 | [40](characters.md#char-40) | `dyn_dest_lt` | 0.1388, -0.0024, -0.0048 | 0.5772, 0.5915, 0.3887, 0.4073 |
-| <span id="hat-40-dyn-dest-lta"></span>`40:dyn_dest_lta` | 37 | [40](characters.md#char-40) | `dyn_dest_lta` | 0.1356, 0.0287, 0.0392 | 0.5503, 0.4415, 0.5264, 0.4746 |
-| <span id="hat-40-dyn-dest-ltb"></span>`40:dyn_dest_ltb` | 37 | [40](characters.md#char-40) | `dyn_dest_ltb` | 0.1586, 0.001, 0.0259 | 0.5355, 0.5355, 0.4617, 0.4617 |
-| <span id="hat-40-dyn-eh-ma2"></span>`40:dyn_eh_ma2` | 37 | [40](characters.md#char-40) | `dyn_eh_ma2` | 0.1378, 0.0003, 0 | 0.5736, 0.5624, 0.4169, 0.4252 |
-| <span id="hat-40-dyn-hiha-lt"></span>`40:dyn_hiha_lt` | 37 | [40](characters.md#char-40) | `dyn_hiha_lt` | 0.2087, -0.0095, -0.0105 | 0.5329, -0.5584, 0.4811, -0.4157 |
-| <span id="hat-40-dyn-hiha-lt-ft"></span>`40:dyn_hiha_lt_ft` | 37 | [40](characters.md#char-40) | `dyn_hiha_lt_ft` | 0.2087, -0.0095, -0.0105 | 0.5329, -0.5584, 0.4811, -0.4157 |
-| <span id="hat-40-dyn-hiha-so"></span>`40:dyn_hiha_so` | 37 | [40](characters.md#char-40) | `dyn_hiha_so` | 0.2114, -0.008, -0.0082 | 0.5313, -0.5568, 0.48, -0.4209 |
-| <span id="hat-40-dyn-hurr-lt"></span>`40:dyn_hurr_lt` | 37 | [40](characters.md#char-40) | `dyn_hurr_lt` | 0.149, -0.0033, 0.0088 | 0.5308, 0.4896, 0.4695, 0.5081 |
-| <span id="hat-40-dyn-hurr-so"></span>`40:dyn_hurr_so` | 37 | [40](characters.md#char-40) | `dyn_hurr_so` | 0.1528, -0.0079, 0.0146 | 0.5085, -0.5218, 0.4864, -0.4823 |
-| <span id="hat-40-dyn-panz-lt"></span>`40:dyn_panz_lt` | 37 | [40](characters.md#char-40) | `dyn_panz_lt` | 0.1776, -0.0202, -0.0194 | 0.5273, -0.6121, 0.4711, -0.354 |
-| <span id="hat-40-dyn-panz-so"></span>`40:dyn_panz_so` | 37 | [40](characters.md#char-40) | `dyn_panz_so` | 0.1776, -0.0202, -0.0194 | 0.5273, -0.6121, 0.4711, -0.354 |
-| <span id="hat-40-dyn-pimp-va"></span>`40:dyn_pimp_va` | 37 | [40](characters.md#char-40) | `dyn_pimp_va` | 0.1572, -0.0156, 0.0235 | 0.4829, -0.5402, 0.4987, -0.4756 |
-| <span id="hat-40-dyn-pimp-vb"></span>`40:dyn_pimp_vb` | 37 | [40](characters.md#char-40) | `dyn_pimp_vb` | 0.1572, -0.0156, 0.0235 | 0.4829, -0.5402, 0.4987, -0.4756 |
-| <span id="hat-40-dyn-pl-ma9"></span>`40:dyn_pl_ma9` | 37 | [40](characters.md#char-40) | `dyn_pl_ma9` | 0.1448, -0.0032, 0.0508 | 0.5126, 0.4951, 0.5017, 0.4903 |
-| <span id="hat-40-dyn-pl-pm"></span>`40:dyn_pl_pm` | 37 | [40](characters.md#char-40) | `dyn_pl_pm` | 0.1571, 0.0011, 0.0123 | 0.5187, 0.4985, 0.4805, 0.5015 |
-| <span id="hat-40-dyn-rogu-lt"></span>`40:dyn_rogu_lt` | 37 | [40](characters.md#char-40) | `dyn_rogu_lt` | 0.1558, 0.0013, 0.0151 | 0.539, -0.5289, 0.4557, -0.4713 |
-| <span id="hat-40-dyn-rogu-so"></span>`40:dyn_rogu_so` | 37 | [40](characters.md#char-40) | `dyn_rogu_so` | 0.1704, 0.0004, 0.0161 | 0.5271, -0.5199, 0.4782, -0.4726 |
-| <span id="hat-40-dyn-sata-bo"></span>`40:dyn_sata_bo` | 37 | [40](characters.md#char-40) | `dyn_sata_bo` | 0.1695, `1e-06`, -0.018 | 0.581, -0.581, 0.4031, -0.4031 |
-| <span id="hat-40-dyn-sk-pe"></span>`40:dyn_sk_pe` | 37 | [40](characters.md#char-40) | `dyn_sk_pe` | 0.1635, -0.0048, -0.0074 | 0.5733, 0.5498, 0.4193, 0.4396 |
-| <span id="hat-40-dyn-tr-fa4"></span>`40:dyn_tr_fa4` | 37 | [40](characters.md#char-40) | `dyn_tr_fa4` | 0.1708, 0.0015, 0.0128 | 0.5279, 0.5345, 0.4801, 0.4529 |
-| <span id="hat-40-dyn-tr-ma2"></span>`40:dyn_tr_ma2` | 37 | [40](characters.md#char-40) | `dyn_tr_ma2` | 0.1586, 0.001, 0.0259 | 0.5355, 0.5355, 0.4617, 0.4617 |
-| <span id="hat-40-dyn-warr-cb"></span>`40:dyn_warr_cb` | 37 | [40](characters.md#char-40) | `dyn_warr_cb` | 0.1549, -0.001, -0.0025 | 0.5462, -0.5557, 0.4469, -0.4395 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-40-dyn-abe"></span>`40:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_abe` | 0.0503, 0.0017, 0.0536 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-40-dyn-bm-vb3"></span>`40:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_bm_vb3` | 0.1557, 0.0043, 0.0126 | 0.5204, 0.5283, 0.4784, 0.4703 |
+| <span id="hat-40-dyn-bm-vb5"></span>`40:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_bm_vb5` | 0.1172, -0.0009, 0.0258 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-40-dyn-bm-vb6"></span>`40:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_bm_vb6` | 0.1579, -0.0042, 0.0024 | 0.5538, 0.5239, 0.4417, 0.4731 |
+| <span id="hat-40-dyn-bm-vb7"></span>`40:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_bm_vb7` | 0.141, `1e-06`, 0.0004 | 0.5539, 0.5539, 0.4396, 0.4396 |
+| <span id="hat-40-dyn-bopp-bo"></span>`40:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_bopp_bo` | 0.1271, 0.0033, 0.0059 | 0.5284, -0.5569, 0.4698, -0.4357 |
+| <span id="hat-40-dyn-bopp-lt"></span>`40:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_bopp_lt` | 0.1708, -0.0012, 0.0074 | 0.4964, -0.5256, 0.5137, -0.462 |
+| <span id="hat-40-dyn-bopp-so"></span>`40:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_bopp_so` | 0.1662, 0.0042, 0.0072 | 0.5122, -0.5034, 0.482, -0.502 |
+| <span id="hat-40-dyn-butcher"></span>`40:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_butcher` | 0.1641, `1e-06`, -0.0128 | 0.5632, -0.5632, 0.4276, -0.4276 |
+| <span id="hat-40-dyn-ch"></span>`40:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_ch` | 0.1541, -0.0012, 0.0436 | 0.5314, -0.5477, 0.4428, -0.4706 |
+| <span id="hat-40-dyn-civl-a"></span>`40:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_civl_a` | 0.1829, 0.0013, -0.0079 | 0.5455, 0.5492, 0.4519, 0.4433 |
+| <span id="hat-40-dyn-civl-hl-ho"></span>`40:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_civl_hl_ho` | 0.1619, -0.003, 0.0154 | 0.5665, 0.4793, 0.4239, 0.5192 |
+| <span id="hat-40-dyn-civl-pl-sp"></span>`40:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_civl_pl_sp` | 0.1356, 0.0287, 0.0392 | 0.5503, 0.4415, 0.5264, 0.4746 |
+| <span id="hat-40-dyn-co-ma3"></span>`40:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_co_ma3` | 0.149, -0.0033, 0.0088 | 0.5308, 0.4896, 0.4695, 0.5081 |
+| <span id="hat-40-dyn-ct-act"></span>`40:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_ct_act` | 0.149, -0.0033, 0.0088 | 0.5308, 0.4896, 0.4695, 0.5081 |
+| <span id="hat-40-dyn-ct-ma2"></span>`40:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_ct_ma2` | 0.1353, `1e-06`, 0.0213 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-40-dyn-cw-m1"></span>`40:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_cw_m1` | 0.1353, `1e-06`, 0.0213 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-40-dyn-cw-m2"></span>`40:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_cw_m2` | 0.1353, `1e-06`, 0.0213 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-40-dyn-dest-lt"></span>`40:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_dest_lt` | 0.1388, -0.0024, -0.0048 | 0.5772, 0.5915, 0.3887, 0.4073 |
+| <span id="hat-40-dyn-dest-lta"></span>`40:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_dest_lta` | 0.1356, 0.0287, 0.0392 | 0.5503, 0.4415, 0.5264, 0.4746 |
+| <span id="hat-40-dyn-dest-ltb"></span>`40:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_dest_ltb` | 0.1586, 0.001, 0.0259 | 0.5355, 0.5355, 0.4617, 0.4617 |
+| <span id="hat-40-dyn-eh-ma2"></span>`40:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_eh_ma2` | 0.1378, 0.0003, 0 | 0.5736, 0.5624, 0.4169, 0.4252 |
+| <span id="hat-40-dyn-hiha-lt"></span>`40:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_hiha_lt` | 0.2087, -0.0095, -0.0105 | 0.5329, -0.5584, 0.4811, -0.4157 |
+| <span id="hat-40-dyn-hiha-lt-ft"></span>`40:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_hiha_lt_ft` | 0.2087, -0.0095, -0.0105 | 0.5329, -0.5584, 0.4811, -0.4157 |
+| <span id="hat-40-dyn-hiha-so"></span>`40:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_hiha_so` | 0.2114, -0.008, -0.0082 | 0.5313, -0.5568, 0.48, -0.4209 |
+| <span id="hat-40-dyn-hurr-lt"></span>`40:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_hurr_lt` | 0.149, -0.0033, 0.0088 | 0.5308, 0.4896, 0.4695, 0.5081 |
+| <span id="hat-40-dyn-hurr-so"></span>`40:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_hurr_so` | 0.1528, -0.0079, 0.0146 | 0.5085, -0.5218, 0.4864, -0.4823 |
+| <span id="hat-40-dyn-panz-lt"></span>`40:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_panz_lt` | 0.1776, -0.0202, -0.0194 | 0.5273, -0.6121, 0.4711, -0.354 |
+| <span id="hat-40-dyn-panz-so"></span>`40:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_panz_so` | 0.1776, -0.0202, -0.0194 | 0.5273, -0.6121, 0.4711, -0.354 |
+| <span id="hat-40-dyn-pimp-va"></span>`40:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_pimp_va` | 0.1572, -0.0156, 0.0235 | 0.4829, -0.5402, 0.4987, -0.4756 |
+| <span id="hat-40-dyn-pimp-vb"></span>`40:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_pimp_vb` | 0.1572, -0.0156, 0.0235 | 0.4829, -0.5402, 0.4987, -0.4756 |
+| <span id="hat-40-dyn-pl-ma9"></span>`40:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_pl_ma9` | 0.1448, -0.0032, 0.0508 | 0.5126, 0.4951, 0.5017, 0.4903 |
+| <span id="hat-40-dyn-pl-pm"></span>`40:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_pl_pm` | 0.1571, 0.0011, 0.0123 | 0.5187, 0.4985, 0.4805, 0.5015 |
+| <span id="hat-40-dyn-rogu-lt"></span>`40:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_rogu_lt` | 0.1558, 0.0013, 0.0151 | 0.539, -0.5289, 0.4557, -0.4713 |
+| <span id="hat-40-dyn-rogu-so"></span>`40:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_rogu_so` | 0.1704, 0.0004, 0.0161 | 0.5271, -0.5199, 0.4782, -0.4726 |
+| <span id="hat-40-dyn-sata-bo"></span>`40:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_sata_bo` | 0.1695, `1e-06`, -0.018 | 0.581, -0.581, 0.4031, -0.4031 |
+| <span id="hat-40-dyn-sk-pe"></span>`40:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_sk_pe` | 0.1635, -0.0048, -0.0074 | 0.5733, 0.5498, 0.4193, 0.4396 |
+| <span id="hat-40-dyn-tr-fa4"></span>`40:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_tr_fa4` | 0.1708, 0.0015, 0.0128 | 0.5279, 0.5345, 0.4801, 0.4529 |
+| <span id="hat-40-dyn-tr-ma2"></span>`40:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_tr_ma2` | 0.1586, 0.001, 0.0259 | 0.5355, 0.5355, 0.4617, 0.4617 |
+| <span id="hat-40-dyn-warr-cb"></span>`40:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 37 | [40](characters.md#char-40) | `dyn_warr_cb` | 0.1549, -0.001, -0.0025 | 0.5462, -0.5557, 0.4469, -0.4395 |
 
 ## 41 warr_jn {#41-warr-jn}
 
 14 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-41-dyn-bopp-bo"></span>`41:dyn_bopp_bo` | 38 | [41](characters.md#char-41) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
-| <span id="hat-41-dyn-bopp-lt"></span>`41:dyn_bopp_lt` | 38 | [41](characters.md#char-41) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
-| <span id="hat-41-dyn-bopp-so"></span>`41:dyn_bopp_so` | 38 | [41](characters.md#char-41) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
-| <span id="hat-41-dyn-civl-a"></span>`41:dyn_civl_a` | 38 | [41](characters.md#char-41) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
-| <span id="hat-41-dyn-cops-va"></span>`41:dyn_cops_va` | 38 | [41](characters.md#char-41) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
-| <span id="hat-41-dyn-cops-vb"></span>`41:dyn_cops_vb` | 38 | [41](characters.md#char-41) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
-| <span id="hat-41-dyn-hiha-lt"></span>`41:dyn_hiha_lt` | 38 | [41](characters.md#char-41) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
-| <span id="hat-41-dyn-hiha-so"></span>`41:dyn_hiha_so` | 38 | [41](characters.md#char-41) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
-| <span id="hat-41-dyn-panz-so"></span>`41:dyn_panz_so` | 38 | [41](characters.md#char-41) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
-| <span id="hat-41-dyn-pimp-va"></span>`41:dyn_pimp_va` | 38 | [41](characters.md#char-41) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
-| <span id="hat-41-dyn-rogu-so"></span>`41:dyn_rogu_so` | 38 | [41](characters.md#char-41) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
-| <span id="hat-41-dyn-roug-lt"></span>`41:dyn_roug_lt` | 38 | [41](characters.md#char-41) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
-| <span id="hat-41-dyn-sata-bo"></span>`41:dyn_sata_bo` | 38 | [41](characters.md#char-41) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
-| <span id="hat-41-dyn-warr-cb"></span>`41:dyn_warr_cb` | 38 | [41](characters.md#char-41) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-41-dyn-bopp-bo"></span>`41:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
+| <span id="hat-41-dyn-bopp-lt"></span>`41:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
+| <span id="hat-41-dyn-bopp-so"></span>`41:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
+| <span id="hat-41-dyn-civl-a"></span>`41:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
+| <span id="hat-41-dyn-cops-va"></span>`41:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
+| <span id="hat-41-dyn-cops-vb"></span>`41:dyn_cops_vb` | ![objects/dyn_cops_vb.png](images/objects/dyn_cops_vb.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
+| <span id="hat-41-dyn-hiha-lt"></span>`41:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
+| <span id="hat-41-dyn-hiha-so"></span>`41:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
+| <span id="hat-41-dyn-panz-so"></span>`41:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
+| <span id="hat-41-dyn-pimp-va"></span>`41:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
+| <span id="hat-41-dyn-rogu-so"></span>`41:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
+| <span id="hat-41-dyn-roug-lt"></span>`41:dyn_roug_lt` | | 38 | [41](characters.md#char-41) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
+| <span id="hat-41-dyn-sata-bo"></span>`41:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
+| <span id="hat-41-dyn-warr-cb"></span>`41:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 38 | [41](characters.md#char-41) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
 
 ## 43 warr_ma {#43-warr-ma}
 
 15 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-43-dyn-bopp-bo"></span>`43:dyn_bopp_bo` | 39 | [43](characters.md#char-43) | `dyn_bopp_bo` | 0.1612, 0.0016, -0.0104 | 0.6275, -0.5554, 0.4205, -0.3478 |
-| <span id="hat-43-dyn-bopp-lt"></span>`43:dyn_bopp_lt` | 39 | [43](characters.md#char-43) | `dyn_bopp_lt` | 0.1817, 0.0008, -0.0136 | 0.5768, -0.5939, 0.4034, -0.3896 |
-| <span id="hat-43-dyn-bopp-so"></span>`43:dyn_bopp_so` | 39 | [43](characters.md#char-43) | `dyn_bopp_so` | 0.1749, 0.0004, -0.0244 | 0.6052, -0.6233, 0.3563, -0.3439 |
-| <span id="hat-43-dyn-civl-a"></span>`43:dyn_civl_a` | 39 | [43](characters.md#char-43) | `dyn_civl_a` | 0.1442, -0.0024, -0.0238 | 0.6017, -0.6107, 0.3796, -0.3476 |
-| <span id="hat-43-dyn-cops-va"></span>`43:dyn_cops_va` | 39 | [43](characters.md#char-43) | `dyn_cops_va` | 0.1776, -0.0018, 0.0122 | 0.5484, -0.5645, 0.4436, -0.4287 |
-| <span id="hat-43-dyn-cops-vb"></span>`43:dyn_cops_vb` | 39 | [43](characters.md#char-43) | `dyn_cops_vb` | 0.175, 0.0024, 0.0072 | 0.5914, -0.5527, 0.4059, -0.4243 |
-| <span id="hat-43-dyn-hiha-lt"></span>`43:dyn_hiha_lt` | 39 | [43](characters.md#char-43) | `dyn_hiha_lt` | 0.2187, -0.0003, -0.0032 | 0.5211, -0.567, 0.43, -0.4712 |
-| <span id="hat-43-dyn-hiha-so"></span>`43:dyn_hiha_so` | 39 | [43](characters.md#char-43) | `dyn_hiha_so` | 0.2171, -0.0044, -0.0125 | 0.5589, -0.5625, 0.4435, -0.4179 |
-| <span id="hat-43-dyn-panz-so"></span>`43:dyn_panz_so` | 39 | [43](characters.md#char-43) | `dyn_panz_so` | 0.1778, 0.0238, 0.009 | 0.5961, -0.4025, 0.4588, -0.5217 |
-| <span id="hat-43-dyn-pimp-va"></span>`43:dyn_pimp_va` | 39 | [43](characters.md#char-43) | `dyn_pimp_va` | 0.1904, -0.0083, 0.0062 | 0.5623, -0.5616, 0.4248, -0.4335 |
-| <span id="hat-43-dyn-riot-visor"></span>`43:dyn_riot_visor` | 39 | [43](characters.md#char-43) | `dyn_riot_visor` | 0.0125, 0.0005, 0.1262 | 0.3228, 0.2834, 0.63, 0.647 |
-| <span id="hat-43-dyn-rogu-so"></span>`43:dyn_rogu_so` | 39 | [43](characters.md#char-43) | `dyn_rogu_so` | 0.1978, -0.0019, 0.0028 | 0.5637, -0.5804, 0.4227, -0.4083 |
-| <span id="hat-43-dyn-roug-lt"></span>`43:dyn_roug_lt` | 39 | [43](characters.md#char-43) | `dyn_roug_lt` | 0.1915, -0.0003, 0.0039 | 0.5462, -0.5622, 0.4466, -0.4315 |
-| <span id="hat-43-dyn-sata-bo"></span>`43:dyn_sata_bo` | 39 | [43](characters.md#char-43) | `dyn_sata_bo` | 0.1912, -0.0016, -0.0311 | 0.5436, -0.6296, 0.3583, -0.4239 |
-| <span id="hat-43-dyn-warr-cb"></span>`43:dyn_warr_cb` | 39 | [43](characters.md#char-43) | `dyn_warr_cb` | 0.1545, 0, -0.0087 | 0.5959, -0.5959, 0.3806, -0.3806 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-43-dyn-bopp-bo"></span>`43:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_bopp_bo` | 0.1612, 0.0016, -0.0104 | 0.6275, -0.5554, 0.4205, -0.3478 |
+| <span id="hat-43-dyn-bopp-lt"></span>`43:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_bopp_lt` | 0.1817, 0.0008, -0.0136 | 0.5768, -0.5939, 0.4034, -0.3896 |
+| <span id="hat-43-dyn-bopp-so"></span>`43:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_bopp_so` | 0.1749, 0.0004, -0.0244 | 0.6052, -0.6233, 0.3563, -0.3439 |
+| <span id="hat-43-dyn-civl-a"></span>`43:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_civl_a` | 0.1442, -0.0024, -0.0238 | 0.6017, -0.6107, 0.3796, -0.3476 |
+| <span id="hat-43-dyn-cops-va"></span>`43:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_cops_va` | 0.1776, -0.0018, 0.0122 | 0.5484, -0.5645, 0.4436, -0.4287 |
+| <span id="hat-43-dyn-cops-vb"></span>`43:dyn_cops_vb` | ![objects/dyn_cops_vb.png](images/objects/dyn_cops_vb.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_cops_vb` | 0.175, 0.0024, 0.0072 | 0.5914, -0.5527, 0.4059, -0.4243 |
+| <span id="hat-43-dyn-hiha-lt"></span>`43:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_hiha_lt` | 0.2187, -0.0003, -0.0032 | 0.5211, -0.567, 0.43, -0.4712 |
+| <span id="hat-43-dyn-hiha-so"></span>`43:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_hiha_so` | 0.2171, -0.0044, -0.0125 | 0.5589, -0.5625, 0.4435, -0.4179 |
+| <span id="hat-43-dyn-panz-so"></span>`43:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_panz_so` | 0.1778, 0.0238, 0.009 | 0.5961, -0.4025, 0.4588, -0.5217 |
+| <span id="hat-43-dyn-pimp-va"></span>`43:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_pimp_va` | 0.1904, -0.0083, 0.0062 | 0.5623, -0.5616, 0.4248, -0.4335 |
+| <span id="hat-43-dyn-riot-visor"></span>`43:dyn_riot_visor` | ![objects/dyn_riot_visor.png](images/objects/dyn_riot_visor.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_riot_visor` | 0.0125, 0.0005, 0.1262 | 0.3228, 0.2834, 0.63, 0.647 |
+| <span id="hat-43-dyn-rogu-so"></span>`43:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_rogu_so` | 0.1978, -0.0019, 0.0028 | 0.5637, -0.5804, 0.4227, -0.4083 |
+| <span id="hat-43-dyn-roug-lt"></span>`43:dyn_roug_lt` | | 39 | [43](characters.md#char-43) | `dyn_roug_lt` | 0.1915, -0.0003, 0.0039 | 0.5462, -0.5622, 0.4466, -0.4315 |
+| <span id="hat-43-dyn-sata-bo"></span>`43:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_sata_bo` | 0.1912, -0.0016, -0.0311 | 0.5436, -0.6296, 0.3583, -0.4239 |
+| <span id="hat-43-dyn-warr-cb"></span>`43:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 39 | [43](characters.md#char-43) | `dyn_warr_cb` | 0.1545, 0, -0.0087 | 0.5959, -0.5959, 0.3806, -0.3806 |
 
 ## 45 warr_ly {#45-warr-ly}
 
 14 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-45-dyn-bopp-bo"></span>`45:dyn_bopp_bo` | 40 | [45](characters.md#char-45) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
-| <span id="hat-45-dyn-bopp-lt"></span>`45:dyn_bopp_lt` | 40 | [45](characters.md#char-45) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
-| <span id="hat-45-dyn-bopp-so"></span>`45:dyn_bopp_so` | 40 | [45](characters.md#char-45) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
-| <span id="hat-45-dyn-civl-a"></span>`45:dyn_civl_a` | 40 | [45](characters.md#char-45) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
-| <span id="hat-45-dyn-cops-va"></span>`45:dyn_cops_va` | 40 | [45](characters.md#char-45) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
-| <span id="hat-45-dyn-cops-vb"></span>`45:dyn_cops_vb` | 40 | [45](characters.md#char-45) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
-| <span id="hat-45-dyn-hiha-lt"></span>`45:dyn_hiha_lt` | 40 | [45](characters.md#char-45) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
-| <span id="hat-45-dyn-hiha-so"></span>`45:dyn_hiha_so` | 40 | [45](characters.md#char-45) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
-| <span id="hat-45-dyn-panz-so"></span>`45:dyn_panz_so` | 40 | [45](characters.md#char-45) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
-| <span id="hat-45-dyn-pimp-va"></span>`45:dyn_pimp_va` | 40 | [45](characters.md#char-45) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
-| <span id="hat-45-dyn-rogu-so"></span>`45:dyn_rogu_so` | 40 | [45](characters.md#char-45) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
-| <span id="hat-45-dyn-roug-lt"></span>`45:dyn_roug_lt` | 40 | [45](characters.md#char-45) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
-| <span id="hat-45-dyn-sata-bo"></span>`45:dyn_sata_bo` | 40 | [45](characters.md#char-45) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
-| <span id="hat-45-dyn-warr-cb"></span>`45:dyn_warr_cb` | 40 | [45](characters.md#char-45) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-45-dyn-bopp-bo"></span>`45:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
+| <span id="hat-45-dyn-bopp-lt"></span>`45:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
+| <span id="hat-45-dyn-bopp-so"></span>`45:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
+| <span id="hat-45-dyn-civl-a"></span>`45:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
+| <span id="hat-45-dyn-cops-va"></span>`45:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
+| <span id="hat-45-dyn-cops-vb"></span>`45:dyn_cops_vb` | ![objects/dyn_cops_vb.png](images/objects/dyn_cops_vb.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
+| <span id="hat-45-dyn-hiha-lt"></span>`45:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
+| <span id="hat-45-dyn-hiha-so"></span>`45:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
+| <span id="hat-45-dyn-panz-so"></span>`45:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
+| <span id="hat-45-dyn-pimp-va"></span>`45:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
+| <span id="hat-45-dyn-rogu-so"></span>`45:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
+| <span id="hat-45-dyn-roug-lt"></span>`45:dyn_roug_lt` | | 40 | [45](characters.md#char-45) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
+| <span id="hat-45-dyn-sata-bo"></span>`45:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
+| <span id="hat-45-dyn-warr-cb"></span>`45:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 40 | [45](characters.md#char-45) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
 
 ## 49 warr_so_va1 {#49-warr-so-va1}
 
 14 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-49-dyn-bopp-bo"></span>`49:dyn_bopp_bo` | 43 | [49](characters.md#char-49) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
-| <span id="hat-49-dyn-bopp-lt"></span>`49:dyn_bopp_lt` | 43 | [49](characters.md#char-49) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
-| <span id="hat-49-dyn-bopp-so"></span>`49:dyn_bopp_so` | 43 | [49](characters.md#char-49) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
-| <span id="hat-49-dyn-civl-a"></span>`49:dyn_civl_a` | 43 | [49](characters.md#char-49) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
-| <span id="hat-49-dyn-cops-va"></span>`49:dyn_cops_va` | 43 | [49](characters.md#char-49) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
-| <span id="hat-49-dyn-cops-vb"></span>`49:dyn_cops_vb` | 43 | [49](characters.md#char-49) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
-| <span id="hat-49-dyn-hiha-lt"></span>`49:dyn_hiha_lt` | 43 | [49](characters.md#char-49) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
-| <span id="hat-49-dyn-hiha-so"></span>`49:dyn_hiha_so` | 43 | [49](characters.md#char-49) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
-| <span id="hat-49-dyn-panz-so"></span>`49:dyn_panz_so` | 43 | [49](characters.md#char-49) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
-| <span id="hat-49-dyn-pimp-va"></span>`49:dyn_pimp_va` | 43 | [49](characters.md#char-49) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
-| <span id="hat-49-dyn-rogu-so"></span>`49:dyn_rogu_so` | 43 | [49](characters.md#char-49) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
-| <span id="hat-49-dyn-roug-lt"></span>`49:dyn_roug_lt` | 43 | [49](characters.md#char-49) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
-| <span id="hat-49-dyn-sata-bo"></span>`49:dyn_sata_bo` | 43 | [49](characters.md#char-49) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
-| <span id="hat-49-dyn-warr-cb"></span>`49:dyn_warr_cb` | 43 | [49](characters.md#char-49) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-49-dyn-bopp-bo"></span>`49:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
+| <span id="hat-49-dyn-bopp-lt"></span>`49:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
+| <span id="hat-49-dyn-bopp-so"></span>`49:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
+| <span id="hat-49-dyn-civl-a"></span>`49:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
+| <span id="hat-49-dyn-cops-va"></span>`49:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
+| <span id="hat-49-dyn-cops-vb"></span>`49:dyn_cops_vb` | ![objects/dyn_cops_vb.png](images/objects/dyn_cops_vb.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
+| <span id="hat-49-dyn-hiha-lt"></span>`49:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
+| <span id="hat-49-dyn-hiha-so"></span>`49:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
+| <span id="hat-49-dyn-panz-so"></span>`49:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
+| <span id="hat-49-dyn-pimp-va"></span>`49:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
+| <span id="hat-49-dyn-rogu-so"></span>`49:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
+| <span id="hat-49-dyn-roug-lt"></span>`49:dyn_roug_lt` | | 43 | [49](characters.md#char-49) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
+| <span id="hat-49-dyn-sata-bo"></span>`49:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
+| <span id="hat-49-dyn-warr-cb"></span>`49:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 43 | [49](characters.md#char-49) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
 
 ## 50 warr_so_va2 {#50-warr-so-va2}
 
 14 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-50-dyn-bopp-bo"></span>`50:dyn_bopp_bo` | 44 | [50](characters.md#char-50) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
-| <span id="hat-50-dyn-bopp-lt"></span>`50:dyn_bopp_lt` | 44 | [50](characters.md#char-50) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
-| <span id="hat-50-dyn-bopp-so"></span>`50:dyn_bopp_so` | 44 | [50](characters.md#char-50) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
-| <span id="hat-50-dyn-civl-a"></span>`50:dyn_civl_a` | 44 | [50](characters.md#char-50) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
-| <span id="hat-50-dyn-cops-va"></span>`50:dyn_cops_va` | 44 | [50](characters.md#char-50) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
-| <span id="hat-50-dyn-cops-vb"></span>`50:dyn_cops_vb` | 44 | [50](characters.md#char-50) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
-| <span id="hat-50-dyn-hiha-lt"></span>`50:dyn_hiha_lt` | 44 | [50](characters.md#char-50) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
-| <span id="hat-50-dyn-hiha-so"></span>`50:dyn_hiha_so` | 44 | [50](characters.md#char-50) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
-| <span id="hat-50-dyn-panz-so"></span>`50:dyn_panz_so` | 44 | [50](characters.md#char-50) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
-| <span id="hat-50-dyn-pimp-va"></span>`50:dyn_pimp_va` | 44 | [50](characters.md#char-50) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
-| <span id="hat-50-dyn-rogu-so"></span>`50:dyn_rogu_so` | 44 | [50](characters.md#char-50) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
-| <span id="hat-50-dyn-roug-lt"></span>`50:dyn_roug_lt` | 44 | [50](characters.md#char-50) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
-| <span id="hat-50-dyn-sata-bo"></span>`50:dyn_sata_bo` | 44 | [50](characters.md#char-50) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
-| <span id="hat-50-dyn-warr-cb"></span>`50:dyn_warr_cb` | 44 | [50](characters.md#char-50) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-50-dyn-bopp-bo"></span>`50:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
+| <span id="hat-50-dyn-bopp-lt"></span>`50:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
+| <span id="hat-50-dyn-bopp-so"></span>`50:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
+| <span id="hat-50-dyn-civl-a"></span>`50:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
+| <span id="hat-50-dyn-cops-va"></span>`50:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
+| <span id="hat-50-dyn-cops-vb"></span>`50:dyn_cops_vb` | ![objects/dyn_cops_vb.png](images/objects/dyn_cops_vb.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
+| <span id="hat-50-dyn-hiha-lt"></span>`50:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
+| <span id="hat-50-dyn-hiha-so"></span>`50:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
+| <span id="hat-50-dyn-panz-so"></span>`50:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
+| <span id="hat-50-dyn-pimp-va"></span>`50:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
+| <span id="hat-50-dyn-rogu-so"></span>`50:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
+| <span id="hat-50-dyn-roug-lt"></span>`50:dyn_roug_lt` | | 44 | [50](characters.md#char-50) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
+| <span id="hat-50-dyn-sata-bo"></span>`50:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
+| <span id="hat-50-dyn-warr-cb"></span>`50:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 44 | [50](characters.md#char-50) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
 
 ## 51 warr_so_va3 {#51-warr-so-va3}
 
 14 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-51-dyn-bopp-bo"></span>`51:dyn_bopp_bo` | 45 | [51](characters.md#char-51) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
-| <span id="hat-51-dyn-bopp-lt"></span>`51:dyn_bopp_lt` | 45 | [51](characters.md#char-51) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
-| <span id="hat-51-dyn-bopp-so"></span>`51:dyn_bopp_so` | 45 | [51](characters.md#char-51) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
-| <span id="hat-51-dyn-civl-a"></span>`51:dyn_civl_a` | 45 | [51](characters.md#char-51) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
-| <span id="hat-51-dyn-cops-va"></span>`51:dyn_cops_va` | 45 | [51](characters.md#char-51) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
-| <span id="hat-51-dyn-cops-vb"></span>`51:dyn_cops_vb` | 45 | [51](characters.md#char-51) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
-| <span id="hat-51-dyn-hiha-lt"></span>`51:dyn_hiha_lt` | 45 | [51](characters.md#char-51) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
-| <span id="hat-51-dyn-hiha-so"></span>`51:dyn_hiha_so` | 45 | [51](characters.md#char-51) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
-| <span id="hat-51-dyn-panz-so"></span>`51:dyn_panz_so` | 45 | [51](characters.md#char-51) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
-| <span id="hat-51-dyn-pimp-va"></span>`51:dyn_pimp_va` | 45 | [51](characters.md#char-51) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
-| <span id="hat-51-dyn-rogu-so"></span>`51:dyn_rogu_so` | 45 | [51](characters.md#char-51) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
-| <span id="hat-51-dyn-roug-lt"></span>`51:dyn_roug_lt` | 45 | [51](characters.md#char-51) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
-| <span id="hat-51-dyn-sata-bo"></span>`51:dyn_sata_bo` | 45 | [51](characters.md#char-51) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
-| <span id="hat-51-dyn-warr-cb"></span>`51:dyn_warr_cb` | 45 | [51](characters.md#char-51) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-51-dyn-bopp-bo"></span>`51:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
+| <span id="hat-51-dyn-bopp-lt"></span>`51:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
+| <span id="hat-51-dyn-bopp-so"></span>`51:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
+| <span id="hat-51-dyn-civl-a"></span>`51:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
+| <span id="hat-51-dyn-cops-va"></span>`51:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
+| <span id="hat-51-dyn-cops-vb"></span>`51:dyn_cops_vb` | ![objects/dyn_cops_vb.png](images/objects/dyn_cops_vb.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
+| <span id="hat-51-dyn-hiha-lt"></span>`51:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
+| <span id="hat-51-dyn-hiha-so"></span>`51:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
+| <span id="hat-51-dyn-panz-so"></span>`51:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
+| <span id="hat-51-dyn-pimp-va"></span>`51:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
+| <span id="hat-51-dyn-rogu-so"></span>`51:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
+| <span id="hat-51-dyn-roug-lt"></span>`51:dyn_roug_lt` | | 45 | [51](characters.md#char-51) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
+| <span id="hat-51-dyn-sata-bo"></span>`51:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
+| <span id="hat-51-dyn-warr-cb"></span>`51:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 45 | [51](characters.md#char-51) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
 
 ## 52 warr_so_vb1 {#52-warr-so-vb1}
 
 14 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-52-dyn-bopp-bo"></span>`52:dyn_bopp_bo` | 46 | [52](characters.md#char-52) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
-| <span id="hat-52-dyn-bopp-lt"></span>`52:dyn_bopp_lt` | 46 | [52](characters.md#char-52) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
-| <span id="hat-52-dyn-bopp-so"></span>`52:dyn_bopp_so` | 46 | [52](characters.md#char-52) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
-| <span id="hat-52-dyn-civl-a"></span>`52:dyn_civl_a` | 46 | [52](characters.md#char-52) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
-| <span id="hat-52-dyn-cops-va"></span>`52:dyn_cops_va` | 46 | [52](characters.md#char-52) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
-| <span id="hat-52-dyn-cops-vb"></span>`52:dyn_cops_vb` | 46 | [52](characters.md#char-52) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
-| <span id="hat-52-dyn-hiha-lt"></span>`52:dyn_hiha_lt` | 46 | [52](characters.md#char-52) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
-| <span id="hat-52-dyn-hiha-so"></span>`52:dyn_hiha_so` | 46 | [52](characters.md#char-52) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
-| <span id="hat-52-dyn-panz-so"></span>`52:dyn_panz_so` | 46 | [52](characters.md#char-52) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
-| <span id="hat-52-dyn-pimp-va"></span>`52:dyn_pimp_va` | 46 | [52](characters.md#char-52) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
-| <span id="hat-52-dyn-rogu-so"></span>`52:dyn_rogu_so` | 46 | [52](characters.md#char-52) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
-| <span id="hat-52-dyn-roug-lt"></span>`52:dyn_roug_lt` | 46 | [52](characters.md#char-52) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
-| <span id="hat-52-dyn-sata-bo"></span>`52:dyn_sata_bo` | 46 | [52](characters.md#char-52) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
-| <span id="hat-52-dyn-warr-cb"></span>`52:dyn_warr_cb` | 46 | [52](characters.md#char-52) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-52-dyn-bopp-bo"></span>`52:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
+| <span id="hat-52-dyn-bopp-lt"></span>`52:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
+| <span id="hat-52-dyn-bopp-so"></span>`52:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
+| <span id="hat-52-dyn-civl-a"></span>`52:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
+| <span id="hat-52-dyn-cops-va"></span>`52:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
+| <span id="hat-52-dyn-cops-vb"></span>`52:dyn_cops_vb` | ![objects/dyn_cops_vb.png](images/objects/dyn_cops_vb.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
+| <span id="hat-52-dyn-hiha-lt"></span>`52:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
+| <span id="hat-52-dyn-hiha-so"></span>`52:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
+| <span id="hat-52-dyn-panz-so"></span>`52:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
+| <span id="hat-52-dyn-pimp-va"></span>`52:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
+| <span id="hat-52-dyn-rogu-so"></span>`52:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
+| <span id="hat-52-dyn-roug-lt"></span>`52:dyn_roug_lt` | | 46 | [52](characters.md#char-52) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
+| <span id="hat-52-dyn-sata-bo"></span>`52:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
+| <span id="hat-52-dyn-warr-cb"></span>`52:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 46 | [52](characters.md#char-52) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
 
 ## 53 warr_so_vb2 {#53-warr-so-vb2}
 
 14 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-53-dyn-bopp-bo"></span>`53:dyn_bopp_bo` | 47 | [53](characters.md#char-53) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
-| <span id="hat-53-dyn-bopp-lt"></span>`53:dyn_bopp_lt` | 47 | [53](characters.md#char-53) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
-| <span id="hat-53-dyn-bopp-so"></span>`53:dyn_bopp_so` | 47 | [53](characters.md#char-53) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
-| <span id="hat-53-dyn-civl-a"></span>`53:dyn_civl_a` | 47 | [53](characters.md#char-53) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
-| <span id="hat-53-dyn-cops-va"></span>`53:dyn_cops_va` | 47 | [53](characters.md#char-53) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
-| <span id="hat-53-dyn-cops-vb"></span>`53:dyn_cops_vb` | 47 | [53](characters.md#char-53) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
-| <span id="hat-53-dyn-hiha-lt"></span>`53:dyn_hiha_lt` | 47 | [53](characters.md#char-53) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
-| <span id="hat-53-dyn-hiha-so"></span>`53:dyn_hiha_so` | 47 | [53](characters.md#char-53) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
-| <span id="hat-53-dyn-panz-so"></span>`53:dyn_panz_so` | 47 | [53](characters.md#char-53) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
-| <span id="hat-53-dyn-pimp-va"></span>`53:dyn_pimp_va` | 47 | [53](characters.md#char-53) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
-| <span id="hat-53-dyn-rogu-so"></span>`53:dyn_rogu_so` | 47 | [53](characters.md#char-53) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
-| <span id="hat-53-dyn-roug-lt"></span>`53:dyn_roug_lt` | 47 | [53](characters.md#char-53) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
-| <span id="hat-53-dyn-sata-bo"></span>`53:dyn_sata_bo` | 47 | [53](characters.md#char-53) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
-| <span id="hat-53-dyn-warr-cb"></span>`53:dyn_warr_cb` | 47 | [53](characters.md#char-53) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-53-dyn-bopp-bo"></span>`53:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
+| <span id="hat-53-dyn-bopp-lt"></span>`53:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
+| <span id="hat-53-dyn-bopp-so"></span>`53:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
+| <span id="hat-53-dyn-civl-a"></span>`53:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
+| <span id="hat-53-dyn-cops-va"></span>`53:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
+| <span id="hat-53-dyn-cops-vb"></span>`53:dyn_cops_vb` | ![objects/dyn_cops_vb.png](images/objects/dyn_cops_vb.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
+| <span id="hat-53-dyn-hiha-lt"></span>`53:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
+| <span id="hat-53-dyn-hiha-so"></span>`53:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
+| <span id="hat-53-dyn-panz-so"></span>`53:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
+| <span id="hat-53-dyn-pimp-va"></span>`53:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
+| <span id="hat-53-dyn-rogu-so"></span>`53:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
+| <span id="hat-53-dyn-roug-lt"></span>`53:dyn_roug_lt` | | 47 | [53](characters.md#char-53) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
+| <span id="hat-53-dyn-sata-bo"></span>`53:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
+| <span id="hat-53-dyn-warr-cb"></span>`53:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 47 | [53](characters.md#char-53) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
 
 ## 54 warr_so_vb3 {#54-warr-so-vb3}
 
 14 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-54-dyn-bopp-bo"></span>`54:dyn_bopp_bo` | 48 | [54](characters.md#char-54) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
-| <span id="hat-54-dyn-bopp-lt"></span>`54:dyn_bopp_lt` | 48 | [54](characters.md#char-54) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
-| <span id="hat-54-dyn-bopp-so"></span>`54:dyn_bopp_so` | 48 | [54](characters.md#char-54) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
-| <span id="hat-54-dyn-civl-a"></span>`54:dyn_civl_a` | 48 | [54](characters.md#char-54) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
-| <span id="hat-54-dyn-cops-va"></span>`54:dyn_cops_va` | 48 | [54](characters.md#char-54) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
-| <span id="hat-54-dyn-cops-vb"></span>`54:dyn_cops_vb` | 48 | [54](characters.md#char-54) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
-| <span id="hat-54-dyn-hiha-lt"></span>`54:dyn_hiha_lt` | 48 | [54](characters.md#char-54) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
-| <span id="hat-54-dyn-hiha-so"></span>`54:dyn_hiha_so` | 48 | [54](characters.md#char-54) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
-| <span id="hat-54-dyn-panz-so"></span>`54:dyn_panz_so` | 48 | [54](characters.md#char-54) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
-| <span id="hat-54-dyn-pimp-va"></span>`54:dyn_pimp_va` | 48 | [54](characters.md#char-54) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
-| <span id="hat-54-dyn-rogu-so"></span>`54:dyn_rogu_so` | 48 | [54](characters.md#char-54) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
-| <span id="hat-54-dyn-roug-lt"></span>`54:dyn_roug_lt` | 48 | [54](characters.md#char-54) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
-| <span id="hat-54-dyn-sata-bo"></span>`54:dyn_sata_bo` | 48 | [54](characters.md#char-54) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
-| <span id="hat-54-dyn-warr-cb"></span>`54:dyn_warr_cb` | 48 | [54](characters.md#char-54) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-54-dyn-bopp-bo"></span>`54:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_bopp_bo` | 0.2277, 0.0032, -0.0416 | 0.5894, -0.5885, 0.387, -0.3956 |
+| <span id="hat-54-dyn-bopp-lt"></span>`54:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_bopp_lt` | 0.2458, 0.0014, -0.0585 | 0.5887, -0.6058, 0.3852, -0.3715 |
+| <span id="hat-54-dyn-bopp-so"></span>`54:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_bopp_so` | 0.2515, 0.0023, -0.0493 | 0.5719, -0.5884, 0.4113, -0.3969 |
+| <span id="hat-54-dyn-civl-a"></span>`54:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_civl_a` | 0.2123, 0.0005, -0.0408 | 0.5774, -0.5834, 0.4198, -0.3871 |
+| <span id="hat-54-dyn-cops-va"></span>`54:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_cops_va` | 0.2644, -0.0047, -0.033 | 0.554, -0.5699, 0.4366, -0.4214 |
+| <span id="hat-54-dyn-cops-vb"></span>`54:dyn_cops_vb` | ![objects/dyn_cops_vb.png](images/objects/dyn_cops_vb.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_cops_vb` | 0.2501, 0.0066, -0.0174 | 0.562, -0.5251, 0.4408, -0.4628 |
+| <span id="hat-54-dyn-hiha-lt"></span>`54:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_hiha_lt` | 0.2805, 0, -0.0276 | 0.5175, -0.5648, 0.4343, -0.4739 |
+| <span id="hat-54-dyn-hiha-so"></span>`54:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_hiha_so` | 0.2799, -0.0023, -0.0366 | 0.5591, -0.5621, 0.4436, -0.4179 |
+| <span id="hat-54-dyn-panz-so"></span>`54:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_panz_so` | 0.2494, 0.0251, -0.047 | 0.6294, -0.5289, 0.3159, -0.4737 |
+| <span id="hat-54-dyn-pimp-va"></span>`54:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_pimp_va` | 0.2537, -0.0095, -0.0291 | 0.5716, -0.571, 0.4123, -0.421 |
+| <span id="hat-54-dyn-rogu-so"></span>`54:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_rogu_so` | 0.2639, -0.0064, -0.0407 | 0.573, -0.5896, 0.4096, -0.3952 |
+| <span id="hat-54-dyn-roug-lt"></span>`54:dyn_roug_lt` | | 48 | [54](characters.md#char-54) | `dyn_roug_lt` | 0.2661, -0.0048, -0.0229 | 0.5366, -0.5519, 0.4591, -0.4434 |
+| <span id="hat-54-dyn-sata-bo"></span>`54:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_sata_bo` | 0.2652, -0.0054, -0.0582 | 0.5332, -0.6223, 0.3734, -0.4348 |
+| <span id="hat-54-dyn-warr-cb"></span>`54:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 48 | [54](characters.md#char-54) | `dyn_warr_cb` | 0.2157, -0.0052, -0.0564 | 0.6107, -0.6406, 0.3553, -0.3007 |
 
 ## 189 dest_cl {#189-dest-cl}
 
 42 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-189-dyn-abe"></span>`189:dyn_abe` | 41 | [189](characters.md#char-189) | `dyn_abe` | 0.0532, 0.0017, 0.0554 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-189-dyn-bm-vb3"></span>`189:dyn_bm_vb3` | 41 | [189](characters.md#char-189) | `dyn_bm_vb3` | 0.1701, 0.0008, 0.0199 | 0.543, 0.5046, 0.4811, 0.468 |
-| <span id="hat-189-dyn-bm-vb5"></span>`189:dyn_bm_vb5` | 41 | [189](characters.md#char-189) | `dyn_bm_vb5` | 0.1233, 0.0005, 0.0323 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-189-dyn-bm-vb6"></span>`189:dyn_bm_vb6` | 41 | [189](characters.md#char-189) | `dyn_bm_vb6` | 0.1685, -0.0034, 0.0027 | 0.5538, 0.5239, 0.4417, 0.4731 |
-| <span id="hat-189-dyn-bm-vb7"></span>`189:dyn_bm_vb7` | 41 | [189](characters.md#char-189) | `dyn_bm_vb7` | 0.1424, 0, -0.0031 | 0.57, 0.57, 0.4184, 0.4184 |
-| <span id="hat-189-dyn-bopp-bo"></span>`189:dyn_bopp_bo` | 41 | [189](characters.md#char-189) | `dyn_bopp_bo` | 0.1293, 0.001, 0.03 | 0.4997, -0.5302, 0.5003, -0.4679 |
-| <span id="hat-189-dyn-bopp-lt"></span>`189:dyn_bopp_lt` | 41 | [189](characters.md#char-189) | `dyn_bopp_lt` | 0.1776, 0.0049, 0.0187 | 0.5055, -0.4706, 0.5079, -0.5148 |
-| <span id="hat-189-dyn-bopp-so"></span>`189:dyn_bopp_so` | 41 | [189](characters.md#char-189) | `dyn_bopp_so` | 0.1735, 0.0057, 0.0189 | 0.4898, -0.4812, 0.4996, -0.5281 |
-| <span id="hat-189-dyn-butcher"></span>`189:dyn_butcher` | 41 | [189](characters.md#char-189) | `dyn_butcher` | 0.1683, 0, -0.0217 | 0.6097, -0.6097, 0.3581, -0.3581 |
-| <span id="hat-189-dyn-ch"></span>`189:dyn_ch` | 41 | [189](characters.md#char-189) | `dyn_ch` | 0.1559, -0.0006, 0.0472 | 0.5137, -0.5289, 0.4633, -0.4917 |
-| <span id="hat-189-dyn-civl-a"></span>`189:dyn_civl_a` | 41 | [189](characters.md#char-189) | `dyn_civl_a` | 0.1878, -0, -0.0043 | 0.5537, 0.5575, 0.4416, 0.433 |
-| <span id="hat-189-dyn-civl-hl-ho"></span>`189:dyn_civl_hl_ho` | 41 | [189](characters.md#char-189) | `dyn_civl_hl_ho` | 0.1807, -0.0033, 0.019 | 0.5598, 0.4874, 0.4321, 0.5122 |
-| <span id="hat-189-dyn-civl-pl-sp"></span>`189:dyn_civl_pl_sp` | 41 | [189](characters.md#char-189) | `dyn_civl_pl_sp` | 0.1531, 0.039, 0.0332 | 0.4699, 0.5227, 0.4605, 0.5422 |
-| <span id="hat-189-dyn-co-ma3"></span>`189:dyn_co_ma3` | 41 | [189](characters.md#char-189) | `dyn_co_ma3` | 0.1528, -0.0033, 0.0051 | 0.5602, 0.5183, 0.4344, 0.4784 |
-| <span id="hat-189-dyn-ct-act"></span>`189:dyn_ct_act` | 41 | [189](characters.md#char-189) | `dyn_ct_act` | 0.1528, -0.0033, 0.0051 | 0.5602, 0.5183, 0.4344, 0.4784 |
-| <span id="hat-189-dyn-ct-ma2"></span>`189:dyn_ct_ma2` | 41 | [189](characters.md#char-189) | `dyn_ct_ma2` | 0.1396, 0, 0.0235 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-189-dyn-cw-m1"></span>`189:dyn_cw_m1` | 41 | [189](characters.md#char-189) | `dyn_cw_m1` | 0.1396, 0, 0.0235 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-189-dyn-cw-m2"></span>`189:dyn_cw_m2` | 41 | [189](characters.md#char-189) | `dyn_cw_m2` | 0.1396, 0, 0.0235 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-189-dyn-dest-lt"></span>`189:dyn_dest_lt` | 41 | [189](characters.md#char-189) | `dyn_dest_lt` | 0.1345, `5e-06`, 0.0073 | 0.5622, 0.5622, 0.4289, 0.4289 |
-| <span id="hat-189-dyn-dest-lta"></span>`189:dyn_dest_lta` | 41 | [189](characters.md#char-189) | `dyn_dest_lta` | 0.1531, 0.039, 0.0332 | 0.4699, 0.5227, 0.4605, 0.5422 |
-| <span id="hat-189-dyn-dest-ltb"></span>`189:dyn_dest_ltb` | 41 | [189](characters.md#char-189) | `dyn_dest_ltb` | 0.1618, 0.001, 0.0254 | 0.5355, 0.5355, 0.4617, 0.4617 |
-| <span id="hat-189-dyn-eh-ma2"></span>`189:dyn_eh_ma2` | 41 | [189](characters.md#char-189) | `dyn_eh_ma2` | 0.1495, -0.0009, 0.0074 | 0.5692, 0.5506, 0.4446, 0.4185 |
-| <span id="hat-189-dyn-hiha-lt"></span>`189:dyn_hiha_lt` | 41 | [189](characters.md#char-189) | `dyn_hiha_lt` | 0.2096, 0.0207, 0.0339 | 0.5183, -0.4181, 0.4854, -0.5666 |
-| <span id="hat-189-dyn-hiha-lt-ft"></span>`189:dyn_hiha_lt_ft` | 41 | [189](characters.md#char-189) | `dyn_hiha_lt_ft` | 0.2096, 0.0207, 0.0339 | 0.5183, -0.4181, 0.4854, -0.5666 |
-| <span id="hat-189-dyn-hiha-so"></span>`189:dyn_hiha_so` | 41 | [189](characters.md#char-189) | `dyn_hiha_so` | 0.2071, -0.0132, -0.0287 | 0.5557, -0.617, 0.4253, -0.36 |
-| <span id="hat-189-dyn-hiha-so-2"></span>`189:dyn_hiha_so#2` | 41 | [189](characters.md#char-189) | `dyn_hiha_so` | 0.2071, -0.0132, -0.0287 | 0.5557, -0.617, 0.4253, -0.36 |
-| <span id="hat-189-dyn-hurr-lt"></span>`189:dyn_hurr_lt` | 41 | [189](characters.md#char-189) | `dyn_hurr_lt` | 0.1528, -0.0033, 0.0051 | 0.5602, 0.5183, 0.4344, 0.4784 |
-| <span id="hat-189-dyn-hurr-lt-2"></span>`189:dyn_hurr_lt#2` | 41 | [189](characters.md#char-189) | `dyn_hurr_lt` | 0.1528, -0.0033, 0.0051 | 0.5602, 0.5183, 0.4344, 0.4784 |
-| <span id="hat-189-dyn-hurr-so"></span>`189:dyn_hurr_so` | 41 | [189](characters.md#char-189) | `dyn_hurr_so` | 0.155, -0.0113, 0.0153 | 0.5001, -0.5552, 0.4941, -0.4445 |
-| <span id="hat-189-dyn-panz-lt"></span>`189:dyn_panz_lt` | 41 | [189](characters.md#char-189) | `dyn_panz_lt` | 0.1799, -0.0202, -0.0059 | 0.4992, -0.5906, 0.5008, -0.3888 |
-| <span id="hat-189-dyn-panz-so"></span>`189:dyn_panz_so` | 41 | [189](characters.md#char-189) | `dyn_panz_so` | 0.1799, -0.0202, -0.0059 | 0.4992, -0.5906, 0.5008, -0.3888 |
-| <span id="hat-189-dyn-pimp-va"></span>`189:dyn_pimp_va` | 41 | [189](characters.md#char-189) | `dyn_pimp_va` | 0.1646, -0.0149, 0.03 | 0.4573, -0.5319, 0.5225, -0.4846 |
-| <span id="hat-189-dyn-pimp-vb"></span>`189:dyn_pimp_vb` | 41 | [189](characters.md#char-189) | `dyn_pimp_vb` | 0.1646, -0.0149, 0.03 | 0.4573, -0.5319, 0.5225, -0.4846 |
-| <span id="hat-189-dyn-pl-ma9"></span>`189:dyn_pl_ma9` | 41 | [189](characters.md#char-189) | `dyn_pl_ma9` | 0.1749, -0.0032, 0.0468 | 0.5308, 0.513, 0.4824, 0.4716 |
-| <span id="hat-189-dyn-pl-pm"></span>`189:dyn_pl_pm` | 41 | [189](characters.md#char-189) | `dyn_pl_pm` | 0.1641, 0.0009, 0.0132 | 0.5342, 0.4953, 0.4633, 0.5046 |
-| <span id="hat-189-dyn-rogu-lt"></span>`189:dyn_rogu_lt` | 41 | [189](characters.md#char-189) | `dyn_rogu_lt` | 0.1845, 0.0013, 0.0027 | 0.5838, -0.5385, 0.4422, -0.4168 |
-| <span id="hat-189-dyn-rogu-so"></span>`189:dyn_rogu_so` | 41 | [189](characters.md#char-189) | `dyn_rogu_so` | 0.1889, 0.0012, -0.0017 | 0.5829, -0.5581, 0.4183, -0.417 |
-| <span id="hat-189-dyn-sata-bo"></span>`189:dyn_sata_bo` | 41 | [189](characters.md#char-189) | `dyn_sata_bo` | 0.1868, 0, -0 | 0.5427, -0.5427, 0.4532, -0.4532 |
-| <span id="hat-189-dyn-sk-pe"></span>`189:dyn_sk_pe` | 41 | [189](characters.md#char-189) | `dyn_sk_pe` | 0.1762, -0.004, -0.0154 | 0.5883, 0.5656, 0.3979, 0.4191 |
-| <span id="hat-189-dyn-tr-fa4"></span>`189:dyn_tr_fa4` | 41 | [189](characters.md#char-189) | `dyn_tr_fa4` | 0.1958, 0.0083, 0.0077 | 0.5328, 0.579, 0.4643, 0.4065 |
-| <span id="hat-189-dyn-tr-ma2"></span>`189:dyn_tr_ma2` | 41 | [189](characters.md#char-189) | `dyn_tr_ma2` | 0.1618, 0.001, 0.0254 | 0.5355, 0.5355, 0.4617, 0.4617 |
-| <span id="hat-189-dyn-warr-cb"></span>`189:dyn_warr_cb` | 41 | [189](characters.md#char-189) | `dyn_warr_cb` | 0.1535, -0.0003, -0.0137 | 0.5918, -0.5908, 0.3874, -0.3881 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-189-dyn-abe"></span>`189:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_abe` | 0.0532, 0.0017, 0.0554 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-189-dyn-bm-vb3"></span>`189:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_bm_vb3` | 0.1701, 0.0008, 0.0199 | 0.543, 0.5046, 0.4811, 0.468 |
+| <span id="hat-189-dyn-bm-vb5"></span>`189:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_bm_vb5` | 0.1233, 0.0005, 0.0323 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-189-dyn-bm-vb6"></span>`189:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_bm_vb6` | 0.1685, -0.0034, 0.0027 | 0.5538, 0.5239, 0.4417, 0.4731 |
+| <span id="hat-189-dyn-bm-vb7"></span>`189:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_bm_vb7` | 0.1424, 0, -0.0031 | 0.57, 0.57, 0.4184, 0.4184 |
+| <span id="hat-189-dyn-bopp-bo"></span>`189:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_bopp_bo` | 0.1293, 0.001, 0.03 | 0.4997, -0.5302, 0.5003, -0.4679 |
+| <span id="hat-189-dyn-bopp-lt"></span>`189:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_bopp_lt` | 0.1776, 0.0049, 0.0187 | 0.5055, -0.4706, 0.5079, -0.5148 |
+| <span id="hat-189-dyn-bopp-so"></span>`189:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_bopp_so` | 0.1735, 0.0057, 0.0189 | 0.4898, -0.4812, 0.4996, -0.5281 |
+| <span id="hat-189-dyn-butcher"></span>`189:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_butcher` | 0.1683, 0, -0.0217 | 0.6097, -0.6097, 0.3581, -0.3581 |
+| <span id="hat-189-dyn-ch"></span>`189:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_ch` | 0.1559, -0.0006, 0.0472 | 0.5137, -0.5289, 0.4633, -0.4917 |
+| <span id="hat-189-dyn-civl-a"></span>`189:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_civl_a` | 0.1878, -0, -0.0043 | 0.5537, 0.5575, 0.4416, 0.433 |
+| <span id="hat-189-dyn-civl-hl-ho"></span>`189:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_civl_hl_ho` | 0.1807, -0.0033, 0.019 | 0.5598, 0.4874, 0.4321, 0.5122 |
+| <span id="hat-189-dyn-civl-pl-sp"></span>`189:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_civl_pl_sp` | 0.1531, 0.039, 0.0332 | 0.4699, 0.5227, 0.4605, 0.5422 |
+| <span id="hat-189-dyn-co-ma3"></span>`189:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_co_ma3` | 0.1528, -0.0033, 0.0051 | 0.5602, 0.5183, 0.4344, 0.4784 |
+| <span id="hat-189-dyn-ct-act"></span>`189:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_ct_act` | 0.1528, -0.0033, 0.0051 | 0.5602, 0.5183, 0.4344, 0.4784 |
+| <span id="hat-189-dyn-ct-ma2"></span>`189:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_ct_ma2` | 0.1396, 0, 0.0235 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-189-dyn-cw-m1"></span>`189:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_cw_m1` | 0.1396, 0, 0.0235 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-189-dyn-cw-m2"></span>`189:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_cw_m2` | 0.1396, 0, 0.0235 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-189-dyn-dest-lt"></span>`189:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_dest_lt` | 0.1345, `5e-06`, 0.0073 | 0.5622, 0.5622, 0.4289, 0.4289 |
+| <span id="hat-189-dyn-dest-lta"></span>`189:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_dest_lta` | 0.1531, 0.039, 0.0332 | 0.4699, 0.5227, 0.4605, 0.5422 |
+| <span id="hat-189-dyn-dest-ltb"></span>`189:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_dest_ltb` | 0.1618, 0.001, 0.0254 | 0.5355, 0.5355, 0.4617, 0.4617 |
+| <span id="hat-189-dyn-eh-ma2"></span>`189:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_eh_ma2` | 0.1495, -0.0009, 0.0074 | 0.5692, 0.5506, 0.4446, 0.4185 |
+| <span id="hat-189-dyn-hiha-lt"></span>`189:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_hiha_lt` | 0.2096, 0.0207, 0.0339 | 0.5183, -0.4181, 0.4854, -0.5666 |
+| <span id="hat-189-dyn-hiha-lt-ft"></span>`189:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_hiha_lt_ft` | 0.2096, 0.0207, 0.0339 | 0.5183, -0.4181, 0.4854, -0.5666 |
+| <span id="hat-189-dyn-hiha-so"></span>`189:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_hiha_so` | 0.2071, -0.0132, -0.0287 | 0.5557, -0.617, 0.4253, -0.36 |
+| <span id="hat-189-dyn-hiha-so-2"></span>`189:dyn_hiha_so#2` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_hiha_so` | 0.2071, -0.0132, -0.0287 | 0.5557, -0.617, 0.4253, -0.36 |
+| <span id="hat-189-dyn-hurr-lt"></span>`189:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_hurr_lt` | 0.1528, -0.0033, 0.0051 | 0.5602, 0.5183, 0.4344, 0.4784 |
+| <span id="hat-189-dyn-hurr-lt-2"></span>`189:dyn_hurr_lt#2` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_hurr_lt` | 0.1528, -0.0033, 0.0051 | 0.5602, 0.5183, 0.4344, 0.4784 |
+| <span id="hat-189-dyn-hurr-so"></span>`189:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_hurr_so` | 0.155, -0.0113, 0.0153 | 0.5001, -0.5552, 0.4941, -0.4445 |
+| <span id="hat-189-dyn-panz-lt"></span>`189:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_panz_lt` | 0.1799, -0.0202, -0.0059 | 0.4992, -0.5906, 0.5008, -0.3888 |
+| <span id="hat-189-dyn-panz-so"></span>`189:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_panz_so` | 0.1799, -0.0202, -0.0059 | 0.4992, -0.5906, 0.5008, -0.3888 |
+| <span id="hat-189-dyn-pimp-va"></span>`189:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_pimp_va` | 0.1646, -0.0149, 0.03 | 0.4573, -0.5319, 0.5225, -0.4846 |
+| <span id="hat-189-dyn-pimp-vb"></span>`189:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_pimp_vb` | 0.1646, -0.0149, 0.03 | 0.4573, -0.5319, 0.5225, -0.4846 |
+| <span id="hat-189-dyn-pl-ma9"></span>`189:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_pl_ma9` | 0.1749, -0.0032, 0.0468 | 0.5308, 0.513, 0.4824, 0.4716 |
+| <span id="hat-189-dyn-pl-pm"></span>`189:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_pl_pm` | 0.1641, 0.0009, 0.0132 | 0.5342, 0.4953, 0.4633, 0.5046 |
+| <span id="hat-189-dyn-rogu-lt"></span>`189:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_rogu_lt` | 0.1845, 0.0013, 0.0027 | 0.5838, -0.5385, 0.4422, -0.4168 |
+| <span id="hat-189-dyn-rogu-so"></span>`189:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_rogu_so` | 0.1889, 0.0012, -0.0017 | 0.5829, -0.5581, 0.4183, -0.417 |
+| <span id="hat-189-dyn-sata-bo"></span>`189:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_sata_bo` | 0.1868, 0, -0 | 0.5427, -0.5427, 0.4532, -0.4532 |
+| <span id="hat-189-dyn-sk-pe"></span>`189:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_sk_pe` | 0.1762, -0.004, -0.0154 | 0.5883, 0.5656, 0.3979, 0.4191 |
+| <span id="hat-189-dyn-tr-fa4"></span>`189:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_tr_fa4` | 0.1958, 0.0083, 0.0077 | 0.5328, 0.579, 0.4643, 0.4065 |
+| <span id="hat-189-dyn-tr-ma2"></span>`189:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_tr_ma2` | 0.1618, 0.001, 0.0254 | 0.5355, 0.5355, 0.4617, 0.4617 |
+| <span id="hat-189-dyn-warr-cb"></span>`189:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 41 | [189](characters.md#char-189) | `dyn_warr_cb` | 0.1535, -0.0003, -0.0137 | 0.5918, -0.5908, 0.3874, -0.3881 |
 
 ## 191 dest_ve {#191-dest-ve}
 
 41 entries.
 
-| Id | Set | Type | Hat | Offset | Rotation |
-| --- | --- | --- | --- | --- | --- |
-| <span id="hat-191-dyn-abe"></span>`191:dyn_abe` | 42 | [191](characters.md#char-191) | `dyn_abe` | 0.0456, 0.0017, 0.0624 | 0.5152, -0.5152, 0.4843, -0.4843 |
-| <span id="hat-191-dyn-bm-vb3"></span>`191:dyn_bm_vb3` | 42 | [191](characters.md#char-191) | `dyn_bm_vb3` | 0.1954, -0.005, 0.0186 | 0.542, 0.506, 0.4556, 0.4925 |
-| <span id="hat-191-dyn-bm-vb5"></span>`191:dyn_bm_vb5` | 42 | [191](characters.md#char-191) | `dyn_bm_vb5` | 0.1336, 0.0006, 0.0314 | 0.528, 0.528, 0.4703, 0.4703 |
-| <span id="hat-191-dyn-bm-vb6"></span>`191:dyn_bm_vb6` | 42 | [191](characters.md#char-191) | `dyn_bm_vb6` | 0.192, 0.0067, -0.0085 | 0.5816, 0.5915, 0.4093, 0.3799 |
-| <span id="hat-191-dyn-bm-vb7"></span>`191:dyn_bm_vb7` | 42 | [191](characters.md#char-191) | `dyn_bm_vb7` | 0.1603, 0.0003, -0.0042 | 0.5823, 0.5785, 0.4063, 0.4016 |
-| <span id="hat-191-dyn-bopp-bo"></span>`191:dyn_bopp_bo` | 42 | [191](characters.md#char-191) | `dyn_bopp_bo` | 0.126, -0.0034, 0.0165 | 0.5515, -0.5864, 0.4323, -0.4063 |
-| <span id="hat-191-dyn-bopp-lt"></span>`191:dyn_bopp_lt` | 42 | [191](characters.md#char-191) | `dyn_bopp_lt` | 0.1806, -0.0015, -0.0037 | 0.5863, -0.5711, 0.4253, -0.3863 |
-| <span id="hat-191-dyn-bopp-so"></span>`191:dyn_bopp_so` | 42 | [191](characters.md#char-191) | `dyn_bopp_so` | 0.1796, 0.0001, 0.0002 | 0.5746, -0.5859, 0.4122, -0.3957 |
-| <span id="hat-191-dyn-butcher"></span>`191:dyn_butcher` | 42 | [191](characters.md#char-191) | `dyn_butcher` | 0.1866, 0.0022, 0.0049 | 0.5684, -0.5682, 0.4025, -0.4383 |
-| <span id="hat-191-dyn-ch"></span>`191:dyn_ch` | 42 | [191](characters.md#char-191) | `dyn_ch` | 0.1838, -0.0052, 0.0512 | 0.533, -0.5467, 0.4991, -0.4097 |
-| <span id="hat-191-dyn-civl-a"></span>`191:dyn_civl_a` | 42 | [191](characters.md#char-191) | `dyn_civl_a` | 0.1788, -0.0028, -0.0139 | 0.6127, 0.5881, 0.3813, 0.3651 |
-| <span id="hat-191-dyn-civl-hl-ho"></span>`191:dyn_civl_hl_ho` | 42 | [191](characters.md#char-191) | `dyn_civl_hl_ho` | 0.1944, -0.0019, 0.0133 | 0.5897, 0.5298, 0.3843, 0.4731 |
-| <span id="hat-191-dyn-civl-pl-sp"></span>`191:dyn_civl_pl_sp` | 42 | [191](characters.md#char-191) | `dyn_civl_pl_sp` | 0.1781, 0.0362, 0.0203 | 0.5979, 0.5486, 0.4181, 0.4083 |
-| <span id="hat-191-dyn-co-ma3"></span>`191:dyn_co_ma3` | 42 | [191](characters.md#char-191) | `dyn_co_ma3` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
-| <span id="hat-191-dyn-cops-va"></span>`191:dyn_cops_va` | 42 | [191](characters.md#char-191) | `dyn_cops_va` | 0.1917, -0.0062, 0.0124 | 0.5291, -0.5692, 0.4609, -0.4286 |
-| <span id="hat-191-dyn-ct-act"></span>`191:dyn_ct_act` | 42 | [191](characters.md#char-191) | `dyn_ct_act` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
-| <span id="hat-191-dyn-ct-ma2"></span>`191:dyn_ct_ma2` | 42 | [191](characters.md#char-191) | `dyn_ct_ma2` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-191-dyn-cw-m1"></span>`191:dyn_cw_m1` | 42 | [191](characters.md#char-191) | `dyn_cw_m1` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-191-dyn-cw-m2"></span>`191:dyn_cw_m2` | 42 | [191](characters.md#char-191) | `dyn_cw_m2` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
-| <span id="hat-191-dyn-dest-lt"></span>`191:dyn_dest_lt` | 42 | [191](characters.md#char-191) | `dyn_dest_lt` | 0.1728, -0.0013, -0.0092 | 0.5924, 0.5993, 0.366, 0.3949 |
-| <span id="hat-191-dyn-dest-lta"></span>`191:dyn_dest_lta` | 42 | [191](characters.md#char-191) | `dyn_dest_lta` | 0.1781, 0.0362, 0.0203 | 0.5979, 0.5486, 0.4181, 0.4083 |
-| <span id="hat-191-dyn-dest-ltb"></span>`191:dyn_dest_ltb` | 42 | [191](characters.md#char-191) | `dyn_dest_ltb` | 0.1638, -0.0007, 0.0286 | 0.5476, 0.5476, 0.4474, 0.4474 |
-| <span id="hat-191-dyn-eh-ma2"></span>`191:dyn_eh_ma2` | 42 | [191](characters.md#char-191) | `dyn_eh_ma2` | 0.1701, -0.0034, -0.0024 | 0.6093, 0.5672, 0.3936, 0.3899 |
-| <span id="hat-191-dyn-hiha-lt"></span>`191:dyn_hiha_lt` | 42 | [191](characters.md#char-191) | `dyn_hiha_lt` | 0.212, -0.0009, 0.0056 | 0.5511, -0.5657, 0.4324, -0.435 |
-| <span id="hat-191-dyn-hiha-lt-ft"></span>`191:dyn_hiha_lt_ft` | 42 | [191](characters.md#char-191) | `dyn_hiha_lt_ft` | 0.212, -0.0009, 0.0056 | 0.5511, -0.5657, 0.4324, -0.435 |
-| <span id="hat-191-dyn-hiha-so"></span>`191:dyn_hiha_so` | 42 | [191](characters.md#char-191) | `dyn_hiha_so` | 0.2144, -0.0129, 0.0029 | 0.5242, -0.5847, 0.4592, -0.4154 |
-| <span id="hat-191-dyn-hurr-lt"></span>`191:dyn_hurr_lt` | 42 | [191](characters.md#char-191) | `dyn_hurr_lt` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
-| <span id="hat-191-dyn-hurr-so"></span>`191:dyn_hurr_so` | 42 | [191](characters.md#char-191) | `dyn_hurr_so` | 0.1887, -0.0169, 0.0056 | 0.5348, -0.6136, 0.4376, -0.3821 |
-| <span id="hat-191-dyn-panz-lt"></span>`191:dyn_panz_lt` | 42 | [191](characters.md#char-191) | `dyn_panz_lt` | 0.1816, -0.0212, 0.0019 | 0.5037, -0.5941, 0.4963, -0.3835 |
-| <span id="hat-191-dyn-panz-so"></span>`191:dyn_panz_so` | 42 | [191](characters.md#char-191) | `dyn_panz_so` | 0.1816, -0.0212, 0.0019 | 0.5037, -0.5941, 0.4963, -0.3835 |
-| <span id="hat-191-dyn-pimp-va"></span>`191:dyn_pimp_va` | 42 | [191](characters.md#char-191) | `dyn_pimp_va` | 0.1835, -0.015, 0.0124 | 0.5436, -0.6069, 0.4194, -0.4003 |
-| <span id="hat-191-dyn-pimp-vb"></span>`191:dyn_pimp_vb` | 42 | [191](characters.md#char-191) | `dyn_pimp_vb` | 0.1835, -0.015, 0.0124 | 0.5436, -0.6069, 0.4194, -0.4003 |
-| <span id="hat-191-dyn-pl-ma9"></span>`191:dyn_pl_ma9` | 42 | [191](characters.md#char-191) | `dyn_pl_ma9` | 0.1896, -0.0039, 0.0476 | 0.5512, 0.5417, 0.44, 0.4573 |
-| <span id="hat-191-dyn-pl-pm"></span>`191:dyn_pl_pm` | 42 | [191](characters.md#char-191) | `dyn_pl_pm` | 0.1743, -0.0018, -0.0073 | 0.6012, 0.585, 0.367, 0.4019 |
-| <span id="hat-191-dyn-rogu-lt"></span>`191:dyn_rogu_lt` | 42 | [191](characters.md#char-191) | `dyn_rogu_lt` | 0.2004, 0.0035, -0.0058 | 0.6097, -0.5424, 0.411, -0.4064 |
-| <span id="hat-191-dyn-rogu-so"></span>`191:dyn_rogu_so` | 42 | [191](characters.md#char-191) | `dyn_rogu_so` | 0.191, -0.0075, -0 | 0.5607, -0.5966, 0.4298, -0.3807 |
-| <span id="hat-191-dyn-sata-bo"></span>`191:dyn_sata_bo` | 42 | [191](characters.md#char-191) | `dyn_sata_bo` | 0.199, -0.0016, -0.0027 | 0.5522, -0.5522, 0.4416, -0.4416 |
-| <span id="hat-191-dyn-sk-pe"></span>`191:dyn_sk_pe` | 42 | [191](characters.md#char-191) | `dyn_sk_pe` | 0.2117, -0.0052, -0.0202 | 0.605, 0.5795, 0.3733, 0.3985 |
-| <span id="hat-191-dyn-tr-fa4"></span>`191:dyn_tr_fa4` | 42 | [191](characters.md#char-191) | `dyn_tr_fa4` | 0.1922, -0.0037, 0.0029 | 0.568, 0.5967, 0.3646, 0.4341 |
-| <span id="hat-191-dyn-tr-ma2"></span>`191:dyn_tr_ma2` | 42 | [191](characters.md#char-191) | `dyn_tr_ma2` | 0.1638, -0.0007, 0.0286 | 0.5476, 0.5476, 0.4474, 0.4474 |
-| <span id="hat-191-dyn-warr-cb"></span>`191:dyn_warr_cb` | 42 | [191](characters.md#char-191) | `dyn_warr_cb` | 0.1558, -0.0016, -0.0149 | 0.5949, -0.5953, 0.382, -0.3818 |
+| Id | Image | Set | Type | Hat | Offset | Rotation |
+| --- | --- | --- | --- | --- | --- | --- |
+| <span id="hat-191-dyn-abe"></span>`191:dyn_abe` | ![objects/dyn_abe.png](images/objects/dyn_abe.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_abe` | 0.0456, 0.0017, 0.0624 | 0.5152, -0.5152, 0.4843, -0.4843 |
+| <span id="hat-191-dyn-bm-vb3"></span>`191:dyn_bm_vb3` | ![objects/dyn_bm_vb3.png](images/objects/dyn_bm_vb3.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_bm_vb3` | 0.1954, -0.005, 0.0186 | 0.542, 0.506, 0.4556, 0.4925 |
+| <span id="hat-191-dyn-bm-vb5"></span>`191:dyn_bm_vb5` | ![objects/dyn_bm_vb5.png](images/objects/dyn_bm_vb5.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_bm_vb5` | 0.1336, 0.0006, 0.0314 | 0.528, 0.528, 0.4703, 0.4703 |
+| <span id="hat-191-dyn-bm-vb6"></span>`191:dyn_bm_vb6` | ![objects/dyn_bm_vb6.png](images/objects/dyn_bm_vb6.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_bm_vb6` | 0.192, 0.0067, -0.0085 | 0.5816, 0.5915, 0.4093, 0.3799 |
+| <span id="hat-191-dyn-bm-vb7"></span>`191:dyn_bm_vb7` | ![objects/dyn_bm_vb7.png](images/objects/dyn_bm_vb7.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_bm_vb7` | 0.1603, 0.0003, -0.0042 | 0.5823, 0.5785, 0.4063, 0.4016 |
+| <span id="hat-191-dyn-bopp-bo"></span>`191:dyn_bopp_bo` | ![objects/dyn_bopp_bo.png](images/objects/dyn_bopp_bo.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_bopp_bo` | 0.126, -0.0034, 0.0165 | 0.5515, -0.5864, 0.4323, -0.4063 |
+| <span id="hat-191-dyn-bopp-lt"></span>`191:dyn_bopp_lt` | ![objects/dyn_bopp_lt.png](images/objects/dyn_bopp_lt.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_bopp_lt` | 0.1806, -0.0015, -0.0037 | 0.5863, -0.5711, 0.4253, -0.3863 |
+| <span id="hat-191-dyn-bopp-so"></span>`191:dyn_bopp_so` | ![objects/dyn_bopp_so.png](images/objects/dyn_bopp_so.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_bopp_so` | 0.1796, 0.0001, 0.0002 | 0.5746, -0.5859, 0.4122, -0.3957 |
+| <span id="hat-191-dyn-butcher"></span>`191:dyn_butcher` | ![objects/dyn_butcher.png](images/objects/dyn_butcher.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_butcher` | 0.1866, 0.0022, 0.0049 | 0.5684, -0.5682, 0.4025, -0.4383 |
+| <span id="hat-191-dyn-ch"></span>`191:dyn_ch` | ![objects/dyn_ch.png](images/objects/dyn_ch.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_ch` | 0.1838, -0.0052, 0.0512 | 0.533, -0.5467, 0.4991, -0.4097 |
+| <span id="hat-191-dyn-civl-a"></span>`191:dyn_civl_a` | ![objects/dyn_civl_a.png](images/objects/dyn_civl_a.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_civl_a` | 0.1788, -0.0028, -0.0139 | 0.6127, 0.5881, 0.3813, 0.3651 |
+| <span id="hat-191-dyn-civl-hl-ho"></span>`191:dyn_civl_hl_ho` | ![objects/dyn_civl_hl_ho.png](images/objects/dyn_civl_hl_ho.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_civl_hl_ho` | 0.1944, -0.0019, 0.0133 | 0.5897, 0.5298, 0.3843, 0.4731 |
+| <span id="hat-191-dyn-civl-pl-sp"></span>`191:dyn_civl_pl_sp` | ![objects/dyn_civl_pl_sp.png](images/objects/dyn_civl_pl_sp.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_civl_pl_sp` | 0.1781, 0.0362, 0.0203 | 0.5979, 0.5486, 0.4181, 0.4083 |
+| <span id="hat-191-dyn-co-ma3"></span>`191:dyn_co_ma3` | ![objects/dyn_co_ma3.png](images/objects/dyn_co_ma3.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_co_ma3` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
+| <span id="hat-191-dyn-cops-va"></span>`191:dyn_cops_va` | ![objects/dyn_cops_va.png](images/objects/dyn_cops_va.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_cops_va` | 0.1917, -0.0062, 0.0124 | 0.5291, -0.5692, 0.4609, -0.4286 |
+| <span id="hat-191-dyn-ct-act"></span>`191:dyn_ct_act` | ![objects/dyn_ct_act.png](images/objects/dyn_ct_act.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_ct_act` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
+| <span id="hat-191-dyn-ct-ma2"></span>`191:dyn_ct_ma2` | ![objects/dyn_ct_ma2.png](images/objects/dyn_ct_ma2.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_ct_ma2` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-191-dyn-cw-m1"></span>`191:dyn_cw_m1` | ![objects/dyn_cw_m1.png](images/objects/dyn_cw_m1.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_cw_m1` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-191-dyn-cw-m2"></span>`191:dyn_cw_m2` | ![objects/dyn_cw_m2.png](images/objects/dyn_cw_m2.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_cw_m2` | 0.1581, 0.001, 0.0202 | 0.5582, 0.5582, 0.4341, 0.4341 |
+| <span id="hat-191-dyn-dest-lt"></span>`191:dyn_dest_lt` | ![objects/dyn_dest_lt.png](images/objects/dyn_dest_lt.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_dest_lt` | 0.1728, -0.0013, -0.0092 | 0.5924, 0.5993, 0.366, 0.3949 |
+| <span id="hat-191-dyn-dest-lta"></span>`191:dyn_dest_lta` | ![objects/dyn_dest_lta.png](images/objects/dyn_dest_lta.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_dest_lta` | 0.1781, 0.0362, 0.0203 | 0.5979, 0.5486, 0.4181, 0.4083 |
+| <span id="hat-191-dyn-dest-ltb"></span>`191:dyn_dest_ltb` | ![objects/dyn_dest_ltb.png](images/objects/dyn_dest_ltb.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_dest_ltb` | 0.1638, -0.0007, 0.0286 | 0.5476, 0.5476, 0.4474, 0.4474 |
+| <span id="hat-191-dyn-eh-ma2"></span>`191:dyn_eh_ma2` | ![objects/dyn_eh_ma2.png](images/objects/dyn_eh_ma2.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_eh_ma2` | 0.1701, -0.0034, -0.0024 | 0.6093, 0.5672, 0.3936, 0.3899 |
+| <span id="hat-191-dyn-hiha-lt"></span>`191:dyn_hiha_lt` | ![objects/dyn_hiha_lt.png](images/objects/dyn_hiha_lt.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_hiha_lt` | 0.212, -0.0009, 0.0056 | 0.5511, -0.5657, 0.4324, -0.435 |
+| <span id="hat-191-dyn-hiha-lt-ft"></span>`191:dyn_hiha_lt_ft` | ![objects/dyn_hiha_lt_ft.png](images/objects/dyn_hiha_lt_ft.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_hiha_lt_ft` | 0.212, -0.0009, 0.0056 | 0.5511, -0.5657, 0.4324, -0.435 |
+| <span id="hat-191-dyn-hiha-so"></span>`191:dyn_hiha_so` | ![objects/dyn_hiha_so.png](images/objects/dyn_hiha_so.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_hiha_so` | 0.2144, -0.0129, 0.0029 | 0.5242, -0.5847, 0.4592, -0.4154 |
+| <span id="hat-191-dyn-hurr-lt"></span>`191:dyn_hurr_lt` | ![objects/dyn_hurr_lt.png](images/objects/dyn_hurr_lt.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_hurr_lt` | 0.1711, -0.008, -0.0098 | 0.6053, 0.5684, 0.3666, 0.4197 |
+| <span id="hat-191-dyn-hurr-so"></span>`191:dyn_hurr_so` | ![objects/dyn_hurr_so.png](images/objects/dyn_hurr_so.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_hurr_so` | 0.1887, -0.0169, 0.0056 | 0.5348, -0.6136, 0.4376, -0.3821 |
+| <span id="hat-191-dyn-panz-lt"></span>`191:dyn_panz_lt` | ![objects/dyn_panz_lt.png](images/objects/dyn_panz_lt.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_panz_lt` | 0.1816, -0.0212, 0.0019 | 0.5037, -0.5941, 0.4963, -0.3835 |
+| <span id="hat-191-dyn-panz-so"></span>`191:dyn_panz_so` | ![objects/dyn_panz_so.png](images/objects/dyn_panz_so.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_panz_so` | 0.1816, -0.0212, 0.0019 | 0.5037, -0.5941, 0.4963, -0.3835 |
+| <span id="hat-191-dyn-pimp-va"></span>`191:dyn_pimp_va` | ![objects/dyn_pimp_va.png](images/objects/dyn_pimp_va.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_pimp_va` | 0.1835, -0.015, 0.0124 | 0.5436, -0.6069, 0.4194, -0.4003 |
+| <span id="hat-191-dyn-pimp-vb"></span>`191:dyn_pimp_vb` | ![objects/dyn_pimp_vb.png](images/objects/dyn_pimp_vb.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_pimp_vb` | 0.1835, -0.015, 0.0124 | 0.5436, -0.6069, 0.4194, -0.4003 |
+| <span id="hat-191-dyn-pl-ma9"></span>`191:dyn_pl_ma9` | ![objects/dyn_pl_ma9.png](images/objects/dyn_pl_ma9.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_pl_ma9` | 0.1896, -0.0039, 0.0476 | 0.5512, 0.5417, 0.44, 0.4573 |
+| <span id="hat-191-dyn-pl-pm"></span>`191:dyn_pl_pm` | ![objects/dyn_pl_pm.png](images/objects/dyn_pl_pm.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_pl_pm` | 0.1743, -0.0018, -0.0073 | 0.6012, 0.585, 0.367, 0.4019 |
+| <span id="hat-191-dyn-rogu-lt"></span>`191:dyn_rogu_lt` | ![objects/dyn_rogu_lt.png](images/objects/dyn_rogu_lt.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_rogu_lt` | 0.2004, 0.0035, -0.0058 | 0.6097, -0.5424, 0.411, -0.4064 |
+| <span id="hat-191-dyn-rogu-so"></span>`191:dyn_rogu_so` | ![objects/dyn_rogu_so.png](images/objects/dyn_rogu_so.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_rogu_so` | 0.191, -0.0075, -0 | 0.5607, -0.5966, 0.4298, -0.3807 |
+| <span id="hat-191-dyn-sata-bo"></span>`191:dyn_sata_bo` | ![objects/dyn_sata_bo.png](images/objects/dyn_sata_bo.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_sata_bo` | 0.199, -0.0016, -0.0027 | 0.5522, -0.5522, 0.4416, -0.4416 |
+| <span id="hat-191-dyn-sk-pe"></span>`191:dyn_sk_pe` | ![objects/dyn_sk_pe.png](images/objects/dyn_sk_pe.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_sk_pe` | 0.2117, -0.0052, -0.0202 | 0.605, 0.5795, 0.3733, 0.3985 |
+| <span id="hat-191-dyn-tr-fa4"></span>`191:dyn_tr_fa4` | ![objects/dyn_tr_fa4.png](images/objects/dyn_tr_fa4.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_tr_fa4` | 0.1922, -0.0037, 0.0029 | 0.568, 0.5967, 0.3646, 0.4341 |
+| <span id="hat-191-dyn-tr-ma2"></span>`191:dyn_tr_ma2` | ![objects/dyn_tr_ma2.png](images/objects/dyn_tr_ma2.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_tr_ma2` | 0.1638, -0.0007, 0.0286 | 0.5476, 0.5476, 0.4474, 0.4474 |
+| <span id="hat-191-dyn-warr-cb"></span>`191:dyn_warr_cb` | ![objects/dyn_warr_cb.png](images/objects/dyn_warr_cb.png){ width="96" } | 42 | [191](characters.md#char-191) | `dyn_warr_cb` | 0.1558, -0.0016, -0.0149 | 0.5949, -0.5953, 0.382, -0.3818 |
 
 ## Sources and evidence
 

@@ -16,36 +16,39 @@ entries:
     number: 22
     sheet: part_page0
     rect: 22
-    size: [24, 27]
+    size: [25, 27]
     set_by: "`HUD_RadarSetIcon` draws it at 0.7"
     scale: 0.7
     calls: 11
     scripts: [level93_chapter2.lua, level95_busted.lua, level95_coney.lua, level95_flashhead.lua, level95_homeless.lua, level95_robinhood.lua]
     meaning: "A target in the hub's side jobs and two story levels"
+    image: radar/icon-22.png
   - id: icon-27
     kind: icon
     number: 27
     sheet: part_page0
     rect: 27
-    size: [12, 13]
+    size: [13, 13]
     calls: 31
     scripts: ["36763710", global.lua, level20_mainstreet.lua, level2_clinic.lua, level2_clubhouse.lua, level31_reddevil.lua]
     meaning: "Mission objective (the second marker)"
+    image: radar/icon-27.png
   - id: icon-28
     kind: icon
     number: 28
     sheet: part_page0
     rect: 28
-    size: [12, 13]
+    size: [13, 13]
     calls: 84
     scripts: ["36763710", global.lua, level11_chapter2.lua, level11_chapter4.lua, level11_chapter5.lua, level14_dirtycop.lua]
     meaning: "Mission objective, the commonest marker (`HUD_WAR` in level 5)"
+    image: radar/icon-28.png
   - id: icon-29
     kind: icon
     number: 29
     sheet: part_page0
     rect: 29
-    size: [14, 23]
+    size: [15, 23]
     set_by: "dealer type 0's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it"
     scale: 0.8
     tint: "63DB4BFF"
@@ -53,6 +56,7 @@ entries:
     calls: 2
     scripts: [level99_lesson2.lua]
     meaning: "Flash dealer"
+    image: radar/icon-29.png
   - id: icon-30
     kind: icon
     number: 30
@@ -66,35 +70,39 @@ entries:
     calls: 3
     scripts: [level87_chap2_street1.lua, level95_coney.lua]
     meaning: "Dealer of type 2"
+    image: radar/icon-30.png
   - id: icon-31
     kind: icon
     number: 31
     sheet: part_page0
     rect: 31
-    size: [18, 23]
+    size: [19, 23]
     set_by: "dealer type 1's blip (`0x002c7ee0`); `HUD_RadarSetIcon` tints it"
     scale: 0.8
     tint: "63DB4BFF"
     swatch: "63DB4BFF"
     meaning: "Weapon dealer"
+    image: radar/icon-31.png
   - id: icon-32
     kind: icon
     number: 32
     sheet: part_page0
     rect: 32
-    size: [20, 21]
+    size: [21, 21]
     set_by: "blip mode 3's ring, layer 1 (`0x001b32e0`)"
     scale: 0.75
     meaning: "Ring over a human in blip mode 3"
+    image: radar/icon-32.png
   - id: icon-33
     kind: icon
     number: 33
     sheet: part_page0
     rect: 33
-    size: [20, 21]
+    size: [21, 21]
     set_by: "blip mode 4's ring, layer 1 (`0x001b32e0`)"
     scale: 0.75
     meaning: "Ring over a human in blip mode 4"
+    image: radar/icon-33.png
   - id: icon-34
     kind: icon
     number: 34
@@ -112,68 +120,76 @@ entries:
     size: [10, 10]
     set_by: "every particle blip's first icon (`hud_radar_dot`, `0x003e5bf8`)"
     meaning: "Plain dot: a blip with no icon of its own"
+    image: radar/icon-69.png
   - id: icon-350
     kind: icon
     number: 350
     sheet: part_page0
     rect: 350
-    size: [6, 12]
+    size: [7, 12]
     calls: 3
     scripts: [tagbt.lua, wchair.lua]
     meaning: "Team marker in the `tagbt` and `wchair` Rumble modes"
+    image: radar/icon-350.png
   - id: icon-351
     kind: icon
     number: 351
     sheet: part_page0
     rect: 351
-    size: [8, 12]
+    size: [9, 12]
     calls: 4
     scripts: [tagbt.lua, wchair.lua]
     meaning: "Team marker in the `tagbt` and `wchair` Rumble modes"
+    image: radar/icon-351.png
   - id: icon-352
     kind: icon
     number: 352
     sheet: part_page0
     rect: 352
-    size: [12, 13]
+    size: [13, 13]
     set_by: "blip type 6, layer 0; blip modes 1 and 2 (`0x001b2990`, `0x001b32e0`)"
     meaning: "Hostile human"
+    image: radar/icon-352.png
   - id: icon-353
     kind: icon
     number: 353
     sheet: part_page0
     rect: 353
-    size: [20, 21]
+    size: [21, 21]
     set_by: "blip modes 3 and 4, layer 0 (`0x001b32e0`)"
     scale: 0.8
     meaning: "Under the ring of blip modes 3 and 4"
+    image: radar/icon-353.png
   - id: icon-355
     kind: icon
     number: 355
     sheet: part_page0
     rect: 355
-    size: [10, 11]
+    size: [11, 11]
     calls: 1
     scripts: [level95_invasion.lua]
     meaning: "A target in the hub's invasion job"
+    image: radar/icon-355.png
   - id: icon-356
     kind: icon
     number: 356
     sheet: part_page0
     rect: 356
-    size: [10, 11]
+    size: [11, 11]
     set_by: "blip type 8, both layers (`HUD_RadarAddHuman`)"
     meaning: "Police officer"
+    image: radar/icon-356.png
   - id: icon-359
     kind: icon
     number: 359
     sheet: part_page0
     rect: 359
-    size: [10, 11]
+    size: [11, 11]
     set_by: "blip type 6, layer 1 (`0x001b2990`)"
     calls: 4
     scripts: [level51_chapter2a.lua, level51_chapter3.lua, level82_chapter4.lua]
     meaning: "Hostile human (second layer); scripts mark single enemies with it"
+    image: radar/icon-359.png
   - id: icon-360
     kind: icon
     number: 360
@@ -183,33 +199,37 @@ entries:
     calls: 3
     scripts: [tagbt.lua, wchair.lua]
     meaning: "Team marker in the `tagbt` and `wchair` Rumble modes"
+    image: radar/icon-360.png
   - id: icon-361
     kind: icon
     number: 361
     sheet: part_page0
     rect: 361
-    size: [18, 12]
+    size: [19, 12]
     calls: 4
     scripts: [tagbt.lua, wchair.lua]
     meaning: "Team marker in the `tagbt` and `wchair` Rumble modes"
+    image: radar/icon-361.png
   - id: icon-362
     kind: icon
     number: 362
     sheet: part_page0
     rect: 362
-    size: [10, 11]
+    size: [11, 11]
     set_by: "blip type 9, a sprite widget (`0x001b2ee8`, `0x001c4d00`)"
     calls: 2
     scripts: [level83.lua, level9_chap3_escape.lua]
     meaning: "The player; two levels give it to another human"
+    image: radar/icon-362.png
   - id: icon-365
     kind: icon
     number: 365
     sheet: part_page0
     rect: 365
-    size: [10, 11]
+    size: [11, 11]
     set_by: "blip type 7 (`0x001b2ee8`)"
     meaning: "A Warrior other than the player"
+    image: radar/icon-365.png
   - id: blip-1
     kind: "blip type"
     number: 1

@@ -26,6 +26,7 @@ entries:
     tested: 9
     pocketed: 63
     scripts: ["972fed2e", level20_bossfight.lua, level54_park.lua, level54_popsicle.lua, level55_lizziesattack.lua, level60_destroyers.lua, "... 20 more"]
+    image: objects/dyn_revival.png
   - id: 2
     meaning: "Money, in dollars (no object)"
     count: 0
@@ -46,6 +47,7 @@ entries:
     tested: 4
     pocketed: 7
     scripts: [level9.lua, level95_coney.lua, level9_chap1_radio.lua, level9_chap2_tags.lua]
+    image: objects/dyn_spraycan.png
   - id: 4
     object: dyn_swhbld_super
     meaning: "A switchblade power-up (from the object's name)"
@@ -54,6 +56,7 @@ entries:
     ms: 20000
     pocketed: 1
     scripts: [level84_final.lua]
+    image: objects/dyn_swhbld_super.png
   - id: 5
     object: dyn_powercuffs
     meaning: Handcuffs
@@ -63,6 +66,7 @@ entries:
     given: 12
     tested: 7
     scripts: [global.lua, level95.lua, level95_clubhouse.lua, level95_coney.lua]
+    image: objects/dyn_powercuffs.png
   - id: 6
     object: dyn_key
     meaning: "Handcuff (skeleton) keys"
@@ -73,6 +77,7 @@ entries:
     given: 6
     tested: 4
     scripts: [level95_coney.lua]
+    image: objects/dyn_key.png
   - id: 7
     object: dyn_pass
     meaning: "A pass (mission item, level 11)"
@@ -83,12 +88,14 @@ entries:
     tested: 2
     pocketed: 1
     scripts: [level11_chapter5.lua]
+    image: objects/dyn_pass.png
   - id: 8
     object: dyn_boltcutter
     meaning: "Bolt cutters (mission item)"
     count: 0
     sound: vags/interface/mission_item
     ms: 10000
+    image: objects/dyn_boltcutter.png
   - id: 9
     object: dyn_special_key
     meaning: "A special key (mission item)"
@@ -99,6 +106,7 @@ entries:
     tested: 4
     pocketed: 1
     scripts: [level83_c5_apartment.lua, level95_coney.lua]
+    image: objects/dyn_special_key.png
   - id: 10
     object: dyn_store_item
     meaning: "Loot from a store"
@@ -113,6 +121,7 @@ entries:
     ms: 10000
     given: 2
     scripts: [level14_dirtycop.lua]
+    image: objects/dyn_carstereo.png
   - id: 12
     object: dyn_ledger
     meaning: "A ledger (mission item)"
@@ -122,6 +131,7 @@ entries:
     overrides: ["level20: dyn_ledger"]
     pocketed: 1
     scripts: [level20_marketplace.lua]
+    image: objects/dyn_ledger.png
   - id: 13
     object: dyn_dragon
     meaning: "A dragon statue (mission item; level 20 uses its own object)"
@@ -138,12 +148,14 @@ entries:
     overrides: ["level20: dyn_bagcoins"]
     pocketed: 2
     scripts: [level20_backalley.lua, level20_bossfight.lua]
+    image: objects/dyn_bagcoins.png
   - id: 15
     object: dyn_brownbag
     meaning: "A brown bag (mission item)"
     count: 0
     sound: vags/interface/mission_item
     ms: 10000
+    image: objects/dyn_brownbag.png
   - id: 16
   - id: 17
   - id: 18

@@ -22,6 +22,7 @@ entries:
     calls: 64
     scripts: [level11.lua, level111.lua, level14.lua, level14_jsb.lua, level34.lua, level34_gate.lua]
     meaning: "Sedan, the commonest parked car"
+    image: cars/car_osedan.png
   - id: car_coupe
     kind: type
     number: 1
@@ -33,6 +34,7 @@ entries:
     calls: 22
     scripts: [level111.lua, level2.lua, level31.lua, level34.lua, level5.lua, level87.lua]
     meaning: Coupe
+    image: cars/car_coupe.png
   - id: car_wagon
     kind: type
     number: 2
@@ -44,6 +46,7 @@ entries:
     calls: 3
     scripts: [level111.lua, level51.lua]
     meaning: "Estate car"
+    image: cars/car_wagon.png
   - id: car_copcar
     kind: type
     number: 3
@@ -55,6 +58,7 @@ entries:
     calls: 18
     scripts: [level14.lua, level14_jsb.lua, level3.lua, level31.lua, level34.lua, level52.lua]
     meaning: "Police car; makes a `part_copcar_lights` particle system"
+    image: cars/car_copcar.png
   - id: car_van
     kind: type
     number: 4
@@ -66,6 +70,7 @@ entries:
     calls: 9
     scripts: [level107.lua, level111.lua, level20.lua, level3.lua, level34.lua, level80.lua]
     meaning: Van
+    image: cars/car_van.png
   - id: car_sullycar
     kind: type
     number: 5
@@ -77,6 +82,7 @@ entries:
     calls: 2
     scripts: [level2_junkyard.lua, level60.lua]
     meaning: "A story car (two levels)"
+    image: cars/car_sullycar.png
   - id: part-0
     kind: part
     number: 0

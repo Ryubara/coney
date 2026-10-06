@@ -91,18 +91,19 @@ Not to be listed: the credits (`CfgCredits`) and the text of any string table, w
 
 ## Images
 
-Characters and objects may show a thumbnail. Coney renders them itself from the player's disc
-(`coney --render-references DIR --names FILE`, [Building](../guides/building.md)): 256 x 256 transparent
-PNGs in `docs/references/images/`, named after the entry's stable reference name, so the renderer and
-these lists agree without a lookup table:
+Characters, objects, cars, radar icons, particle effects and the lists that name an object (hats, inventory)
+may show a thumbnail. Coney renders them itself from the player's disc (`coney --render-references DIR
+--names FILE`, [Building](../guides/building.md#reference-images)) as transparent PNGs in
+`docs/references/images/`, named after the entry's stable reference name, so the renderer and these lists
+agree without a lookup table. Models are 256 x 256; 2D icons and sprites are at most 64 x 64:
 
-| Lists | File name | Example |
-| --- | --- | --- |
-| Characters, Character models | `characters/<model name>.png`, or `<name hash>.png` for a model with no recovered name | `characters/warr_re_cv.png` |
-| Objects | `objects/<name>.png`, the object type name | `objects/dyn_bat.png` |
-| Cars (types; not rendered yet) | `cars/<type name>.png` | `cars/car_osedan.png` |
-| Radar icons (2D, at most 64 x 64; not rendered yet) | `radar/icon-<n>.png` | `radar/icon-28.png` |
-| Particle effects (2D sprite, at most 64 x 64; not rendered yet) | `particles/<name>.png` | `particles/part_fire.png` |
+| Lists | Image | File name | Example |
+| --- | --- | --- | --- |
+| Characters, Character models | the model standing | `characters/<model name>.png`, or `<name hash>.png` for a model with no recovered name | `characters/warr_re_cv.png` |
+| Objects, Hats, Inventory | the object's model | `objects/<name>.png`, the object type name | `objects/dyn_bat.png` |
+| Cars (types) | the undamaged car | `cars/<type name>.png` | `cars/car_osedan.png` |
+| Radar icons | the icon at its own size | `radar/icon-<n>.png` | `radar/icon-28.png` |
+| Particle effects (traced sprites) | the sprite scaled to fit 64 x 64 | `particles/<name>.png` | `particles/part_fire.png` |
 
 `coney-tools refs extract` fills an entry's `image` field when its file exists; a missing image is simply
 left out of the table.
