@@ -286,6 +286,11 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
 - **Several at once.** A portable PCSX2 keeps its settings, states and memory cards in its own folder, so each copy of
   the folder is an independent instance. Give each copy its own `PINESlot` (28011, 28012, ...) and point a run at it
   with `--pcsx2-dir`; `coney-tools pcsx2` reads the port from that copy's `PCSX2.ini`. One person or agent per copy.
+  Keyboard events go to whichever window has focus, so with several instances running, drive the game over PINE
+  only (scripted pad input and the stick table, below) and capture screenshots of your own window by its
+  handle, not with F8. When a key is unavoidable (Space to pause), hold a lock for the whole focus-and-keys
+  sequence: create the directory `pcsx2-input.lock` in the shared scratch folder (`mkdir` fails while someone else
+  holds it: wait and retry), send the keys, then remove it.
 - **What PINE gives.** Memory reads and writes, game info and save/load state slots. No breakpoints, registers,
   pause or frame capture. PCSX2 serves one PINE client at a time, so a second client (a script of your own) blocks
   while the MCP server is connected.
