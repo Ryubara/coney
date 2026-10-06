@@ -293,6 +293,17 @@ TEST_CASE("circle held 7 samples tackles; mounted, square strikes", "[combat]") 
     CHECK(runner.combat().mode() == CombatMode::Free);
 }
 
+TEST_CASE("circle without the stick in a front grab mounts (Coney's stand-in); mounted, square strikes", "[combat]") {
+    Runner runner(nullptr);
+    const auto frames = runner.run("1 tap circle\n40 tap circle\n80 tap square\n", 90,
+                                   [](std::uint64_t, CombatInput& input) { input.grabTargetInReach = true; });
+    REQUIRE(frames[2].out.grabStarted);
+    CHECK(frames[40].out.grabAction == GrabAction::Mount);
+    CHECK(frames[40].out.startAnim == anim_id::kGrabMount);
+    CHECK(frames[80].out.startAnim == anim_id::kMountingStrike);
+    CHECK(runner.combat().mode() == CombatMode::Tackling);
+}
+
 TEST_CASE("circle with nobody in reach plays the grab and misses; during an attack it is refused", "[combat]") {
     Runner runner(nullptr);
     const auto frames = runner.run("5 tap circle\n30 tap square\n32 tap circle\n", 40);

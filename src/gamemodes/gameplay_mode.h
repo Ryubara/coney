@@ -259,6 +259,11 @@ class GameplayMode final : public GameMode {
     // The volume boxes' trigger update over the scripts' humans, their messages going to the objects' handlers
     // (docs/research/scripting.md#triggers). In the original the boxes update with the other tasks in the world step.
     void updateBoxes(std::uint64_t nowMs);
+    // The combat tutorial's callback (`HUDSetTutorialCallback`) with the anim id of each hit player 1 struck in the
+    // level's step, landed or blocked (docs/research/hud.md#tutorial-callback). The original calls it from the damage
+    // step itself; Coney calls it right after the step.
+    // @orig 0x001ce9a8 Tutorial_CallCallback (unknown)
+    void callTutorialCallback();
     // Where a trigger sphere's object is: a human the scripts made, a flag or a spawn record; nothing when gone.
     [[nodiscard]] std::optional<std::array<float, 3>> objectPosition(double handle) const;
 

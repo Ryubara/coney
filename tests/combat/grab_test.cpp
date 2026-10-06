@@ -102,13 +102,20 @@ TEST_CASE("in a grab, strikes cost 40, a throw 100, and the power strike needs a
     CHECK(grabWith(command::kCrossLongHold, {}, power, random).animId == anim_id::kGrabComboStrike3);
     CHECK(power.value() == 360);
 
-    // Circle with the stick at 0.6 ahead: the front throw, 100 of the meter. A stick of 0.2 from the front does
-    // nothing.
+    // Circle with the stick at 0.6 ahead: the front throw, 100 of the meter. A stick of 0.2 from the front is no
+    // stick: Coney's stand-in mount (118), costing nothing; with the victim out of its place, nothing.
     const GrabOutcome thrown = grabWith(command::kCirclePressed, {0.0F, 0.6F}, power, random);
     CHECK(thrown.action == GrabAction::Throw);
     CHECK(thrown.animId == anim_id::kThrow1Front);
     CHECK(thrown.powerSpent == 100);
-    CHECK(grabWith(command::kCirclePressed, {0.1F, 0.17F}, power, random).action == GrabAction::None);
+    const GrabOutcome mount = grabWith(command::kCirclePressed, {0.1F, 0.17F}, power, random);
+    CHECK(mount.action == GrabAction::Mount);
+    CHECK(mount.animId == anim_id::kGrabMount);
+    CHECK(mount.powerSpent == 0);
+    GrabInput away;
+    away.command = command::kCirclePressed;
+    away.victimInPlace = false;
+    CHECK(updateGrab(away, power, CombatTuning{}, random).action == GrabAction::None);
 
     // The power strike: above 0.25 of the meter it plays and spends 100; at or below it the grab is released.
     power.set(101);

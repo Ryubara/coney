@@ -63,6 +63,7 @@ void Fighter::dropLostHold(const FighterInput& input, HumanAnimator& animator) {
     m_grabTurn = 0.0F;
     m_rear = false;
     m_tacklePending = false;
+    m_mountPending = false;
     m_combat.release();
     animator.playCombat(clips::kNoClips, kAnimFightIdle, AnimState::Attack);
 }
@@ -293,6 +294,17 @@ void Fighter::playGrabAction(const combat::CombatOutput& out, HumanAnimator& ani
         }
         break;
     }
+    case combat::GrabAction::Mount:
+        // Both go down together (118 / 119, paired), then sit in the mount: the player 210 on the victim's 207.
+        animator.playCombat(clips::one(clips::clipOf(out.startAnim)), clips::kMountingIdle, AnimState::Hold,
+                            clips::kPairFade, clips::kGrabHolds);
+        if (m_held != nullptr) {
+            m_held->playPaired(clips::one(clips::clipOf(out.startAnim) + 1), animator.anims(), clips::kMountedIdle,
+                               AnimState::Hold, TargetState::Mounted);
+        }
+        m_rear = false;
+        m_mountPending = true;
+        break;
     case combat::GrabAction::Mug: {
         // The victim is spun to a rear hold (unless it is there already), then the mugging loop.
         if (m_rear) {
@@ -338,8 +350,15 @@ void Fighter::mountVictim(const FighterInput& input, const HumanAnimator& animat
     // The victim goes down under the player (the attacker's clip, a paired task), mounted, and stays at clip 210's
     // pair event: 0.120 m to the mounter's left and 0.032 m ahead, facing the other way.
     m_tacklePending = false;
+    m_mountPending = false;
     m_held->playPaired(clips::one(clips::kTackleReact), animator.anims(), clips::kMountedIdle, AnimState::Hold,
                        TargetState::Mounted);
+    snapAttach(input, heading, pairEventPoint(animator.anims().clip(clips::kMountingIdle), kMountOffset), kPi);
+}
+
+void Fighter::seatMount(const FighterInput& input, const HumanAnimator& animator, float heading) {
+    // The victim already plays 119 into 207; only its place changes, to clip 210's pair event.
+    m_mountPending = false;
     snapAttach(input, heading, pairEventPoint(animator.anims().clip(clips::kMountingIdle), kMountOffset), kPi);
 }
 
@@ -387,6 +406,7 @@ void Fighter::releaseHold(HumanAnimator& animator, bool letGo) {
     m_held = nullptr;
     m_rear = false;
     m_tacklePending = false;
+    m_mountPending = false;
 }
 
 } // namespace coney::human

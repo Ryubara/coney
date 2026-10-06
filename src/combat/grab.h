@@ -66,6 +66,7 @@ enum class GrabAction : std::uint8_t {
     Throw,       ///< Circle with the stick beyond kThrowStick.
     Mug,         ///< Triangle at a victim that can be mugged: the mugging starts.
     Spin,        ///< R1 pressed, or circle without the stick from the rear: the hold turns front to rear or back.
+    Mount,       ///< Circle without the stick from the front: the pair goes down, the player mounted (118, 210).
     Release,     ///< A power strike or throw asked for with too little power: the grab is released.
     LetGo,       ///< L2 held, or the power meter ran out: the player lets go (95, victim 94).
 };
@@ -105,8 +106,10 @@ struct GrabOutcome {
 ///   (`0x00277958`, docs/research/combat.md#grab-posing).
 ///
 /// In rage nothing is spent or needed.
-/// **Coney choices**: circle without the stick from the front does nothing (its routine `0x0026f008` is not traced);
-/// cross strikes on 0x10, not on its press (which would fire before a power strike's square).
+/// **Coney stand-in**: circle without the stick from the front takes the pair to the ground (118, victim 119), then
+/// the tackle's mount (210 on 207), costing nothing: its routine `0x0026f008` is not traced; the chain is what an AI
+/// grabber's circle did at runtime (docs/research/combat.md#grab). **Coney choice**: cross strikes on 0x10, not on its
+/// press (which would fire before a power strike's square).
 /// @orig 0x0027f3b0 Player_UpdateGrabbing (unknown)
 [[nodiscard]] GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTuning& tuning,
                                      CombatRandom& random);

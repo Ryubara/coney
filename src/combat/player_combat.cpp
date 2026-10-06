@@ -187,6 +187,11 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
     case GrabAction::Spin:
         out.startAnim = outcome.animId;
         break;
+    case GrabAction::Mount:
+        // Mounted, the player is in the tackle's state: square strikes the victim on the ground.
+        out.startAnim = outcome.animId;
+        m_mode = CombatMode::Tackling;
+        break;
     case GrabAction::Mug:
         m_mugging.emplace(input.nowMs, m_random);
         m_mode = CombatMode::Mugging;

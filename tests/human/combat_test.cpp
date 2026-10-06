@@ -50,8 +50,12 @@ TEST_CASE("square three times plays S1, SS2 and SSS3 on a target, which reacts a
     Fight fight(character);
     std::vector<std::uint32_t> played;
     std::vector<int> reactions;
+    std::vector<std::uint32_t> struck; // the anim ids the tutorial callback is given, update by update
     // A press every 6 updates, the stick at rest (pushed, square would play the walk attack 23).
     fight.run("10 tap square\n16 tap square\n22 tap square\n", 80, [&](std::uint64_t) {
+        for (const int strike : fight.human().fighter().strikes()) {
+            struck.push_back(static_cast<std::uint32_t>(strike));
+        }
         const std::uint32_t now = fight.human().animator().animId();
         if (played.empty() || played.back() != now) {
             played.push_back(now);
@@ -73,6 +77,7 @@ TEST_CASE("square three times plays S1, SS2 and SSS3 on a target, which reacts a
     CHECK(fight.target().damageTaken() == 106);
     CHECK(fight.target().hitsTaken() == 3);
     CHECK(fight.human().fighter().hitsLanded() == 3);
+    CHECK(struck == std::vector<std::uint32_t>{id::kAttackS1, id::kAttackSS2, id::kAttackSSS3});
     // From in front: S1 272, SS2 273 (a combo id, strength 0), SSS3 276 (a strength lighter), and its 0x400 stuns.
     CHECK(reactions == std::vector<int>{-1, 272, 273, 276});
     CHECK(fight.target().stuns() == 1);

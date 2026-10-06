@@ -15,6 +15,7 @@
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/pause_mode.h"
 #include "gamemodes/player_frame.h"
+#include "hud/hud.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/object_bindings.h"
@@ -353,6 +354,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     }
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     m_scripts.setTime(nowMs);
+    callTutorialCallback();
     if (m_scripted) {
         m_scripted->runAnimCallbacks();
         m_scripted->humanHost().runRageHandlers();
@@ -397,6 +399,20 @@ void GameplayMode::updateBoxes(std::uint64_t nowMs) {
     m_context.boxes->update(subjects, nowMs, [this](double box, int message, double human) {
         m_context.messages->deliver(m_scripts, box, message, human, 0.0, 0.0);
     });
+}
+
+void GameplayMode::callTutorialCallback() {
+    if (m_context.hud == nullptr || m_context.hud->tutorialCallback().empty() || !m_scripted ||
+        m_scripted->player() == nullptr) {
+        return;
+    }
+    // Copied: the callback may set another (or none) while it runs.
+    const std::string callback = m_context.hud->tutorialCallback();
+    const std::vector<int> strikes = m_scripted->player()->human().fighter().strikes();
+    for (const int animId : strikes) {
+        const std::array<script::Value, 1> args{script::Value(static_cast<double>(animId))};
+        m_scripts.call(callback, args);
+    }
 }
 
 std::optional<std::array<float, 3>> GameplayMode::objectPosition(double handle) const {

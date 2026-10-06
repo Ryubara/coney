@@ -615,7 +615,9 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   each replaced at once and timed by its markup; player 0's [prompt](#action-prompts) at (0.5, 0.86) raised over the
   hint box or message. Nothing draws while `HudFrame::letterbox` is set.
 - **The bindings** (`src/scripting/hud_bindings.h`): every HUD binding `level99` calls, through `BindingContext::hud`.
-  `HUDSetTutorialCallback` keeps the name for combat to call.
+  `HUDSetTutorialCallback` keeps the name; the play mode calls that function after the level's step with the anim
+  id of each hit player 1 struck in it, landed or blocked (`Fighter::strikes`). **Coney's choice**: called after the
+  step, not from inside the damage step.
 - **Sound**: the cues by the table `SoundCfgInterfaceSound` fills, and the named sounds, play through
   `audio::SoundPlayer` ([Sound](sound.md#interface-sounds)); silent without sound.
 - **In play**: the play mode steps the HUD with player 1's rage and draws it over the frame; the story shares the

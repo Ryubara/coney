@@ -23,6 +23,7 @@ void Fighter::setNormal(HumanAnimator& animator, bool full) {
     m_holdState.reset();
     m_holdAttached = false;
     m_tacklePending = false;
+    m_mountPending = false;
     // The stun, the ground and rage end; whatever it was doing is lost.
     m_victim.endStun();
     m_combat.rage().stop();

@@ -2093,6 +2093,12 @@ subsystem = "GUI"
 size = 240
 
 [[function]]
+address = 0x001ce9a8
+name = "Tutorial_CallCallback"
+subsystem = "GUI"
+size = 144
+
+[[function]]
 address = 0x001cea70
 name = "UsageInfo::UsageInfo"
 subsystem = "GUI"

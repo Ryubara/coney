@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▌░░░░░░░░░░░░░░░░░` | 12.7% of the game's own code (426,740 of 3,354,776 bytes, 1,269 functions) |
+| **Reimplemented** | `██▌░░░░░░░░░░░░░░░░░` | 12.7% of the game's own code (426,884 of 3,354,776 bytes, 1,270 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -61,7 +61,7 @@ at the top of the repository's `README.md`.
 | `FileIO` | `██▋░░░░░░░░░░░░░░░░░` | 13.0% | 7 | 7,120 |
 | `GameModes` | `█████▎░░░░░░░░░░░░░░` | 25.9% | 82 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
-| `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 177 | 497,416 |
+| `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 178 | 497,416 |
 | `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.4% | 358 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
@@ -470,6 +470,7 @@ at the top of the repository's `README.md`.
 | `0x001ce5c0` | `HintBox_Withdraw` | `GUI` | 344 |
 | `0x001ce748` | `HintBox_FlushPriority` | `GUI` | 368 |
 | `0x001ce8b8` | `HintBox_Draw` | `GUI` | 240 |
+| `0x001ce9a8` | `Tutorial_CallCallback` | `GUI` | 144 |
 | `0x001cea70` | `UsageInfo::UsageInfo` | `GUI` | 64 |
 | `0x001ceb40` | `UsageInfo_Setup` | `GUI` | not filled in |
 | `0x001cec28` | `UsageInfo_SetText` | `GUI` | 80 |

@@ -741,7 +741,9 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   (`LevelScripts`, `src/gamemodes/level_start.h`). In `level99` at checkpoint 1 the tutorial runs from the intro
   through the two markers (`vMark01`, `vMark03`), the `l99_t1` scene and `P1.SetupBasicAttacks`; the basic-attacks
   lesson then waits for the tutorial callback (`HUDSetTutorialCallback`, [HUD](hud.md#tutorial-callback)), which the
-  HUD work brings, called when player 1 lands or has blocked a hit.
+  play mode calls with each hit player 1 strikes. The lessons run through the light and heavy attacks, the grab and
+  its strikes, and the mount from a grab ([Combat](combat.md#coneys-implementation)); the mounted lesson waits on the
+  research of the mounted strikes.
 - **The level table** (`src/warriors/level_table.h`, `GameState`): `CfgLevelName`'s records by index, read by
   `GetLevelId` and the level flow (record 0 is `level100`).
 - **The front end** runs the preloads at the legal screen and `global.lua` and `level100.lua` in the same state when the

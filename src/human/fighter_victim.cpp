@@ -381,6 +381,7 @@ void Fighter::enterHold(TargetState targetState, HumanAnimator& animator, std::u
             m_catch.reset();
             m_grabbed.reset();
             m_tacklePending = false;
+            m_mountPending = false;
             m_combat.interrupt();
             m_combat.release();
             m_notice.reset();

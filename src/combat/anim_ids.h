@@ -40,6 +40,7 @@ inline constexpr int kGrabPlayerIntro = 71;   ///< A grab starts.
 inline constexpr int kGrabSpinToRear = 78;    ///< The spin from a front hold to a rear one (victim 79).
 inline constexpr int kGrabSpinToFront = 80;   ///< The spin from a rear hold to a front one (victim 81).
 inline constexpr int kGrabLetGo = 95;         ///< The player lets go of a grab (victim 94).
+inline constexpr int kGrabMount = 118;        ///< `GRAB_MOUNT`: from a front hold to the mount (victim 119).
 inline constexpr int kGrabFrontStrike = 120;  ///< Square at a grabbed target.
 
 inline constexpr int kThrow1Front = 147;

@@ -115,6 +115,7 @@ const Combatant* Fighter::lockTarget() const {
 }
 
 void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& heading) {
+    m_strikes.clear();
     const combat::CombatTuning& tuning = combat::combatTuning();
     const combat::CombatMode before = m_combat.mode();
     m_report = GrabbedReport{};
@@ -172,6 +173,9 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     if (m_tacklePending && m_held != nullptr &&
         (animator.animId() == clips::kTackleHit || animator.animId() == clips::kMountingIdle)) {
         mountVictim(input, animator, heading);
+    }
+    if (m_mountPending && m_held != nullptr && animator.animId() == clips::kMountingIdle) {
+        seatMount(input, animator, heading);
     }
     if (out.hitAnim != id::kNone) {
         landHit(out.hitAnim, out.hitDamage, input);
@@ -455,6 +459,9 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input) {
                             .attackerIsPlayer = m_player});
     ++m_hitsLanded;
     m_damageDealt += damage;
+    if (m_player) {
+        m_strikes.push_back(animId);
+    }
     // The hit earns its rage (**Coney choice**: never the blocked award, as a blocked hit is not reported back to the
     // attacker), then goes into the repeat tracker; a throw takes the bonus its grab strikes built.
     earnRage(animId, input.nowMs, clips::isThrow(animId));

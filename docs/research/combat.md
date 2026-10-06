@@ -1461,10 +1461,13 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   `S1`; the dive takes the charge's conditions; a buffered snap plays where a square would continue the chain.
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
   1.5 m.
-- Circle without the stick from the front hold does nothing (`0x0026f008` is not traced); a grab plays one move at a
-  time; a throw lets go at once; the rear power strike's spin plays in front of the strike, whose timing starts with
-  it; the release with too little power goes straight to the idles, and the grab broken at 0 power plays the let-go.
-  A tackle also ends when the power meter is empty, and any hold when the victim has no health left.
+- **Stand-in**: circle without the stick from the front hold (`0x0026f008`, not traced) takes the pair to the ground as
+  an AI grabber's circle did ([Grabbed](#grabbed)): 118 `GRAB_MOUNT` on the victim's 119, then the tackle's mount (210
+  on 207, the victim placed at 210's pair event when 210 starts), costing nothing; mounted, square strikes with 212 as
+  after a tackle. Level99's combat tutorial asks for it ("Hold circle to get on your opponent"). A grab plays one move
+  at a time; a throw lets go at once; the rear power strike's spin plays in front of the strike, whose timing starts
+  with it; the release with too little power goes straight to the idles, and the grab broken at 0 power plays the
+  let-go. A tackle also ends when the power meter is empty, and any hold when the victim has no health left.
 - The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone. The attack's
   target search uses the attack's far range in `Player_PickTarget`'s first two passes (the third finds no human the
   second missed); beyond the far range the attacker turns at most 8° at once (read as degrees). Within it the steer
@@ -1550,7 +1553,10 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **Commands `0x30`-`0x39`**: which scripts or weapons make them; `0x36`-`0x38` and the d-pad (`0x27`).
 - **Mini-game mode 2 at runtime** (answered from the code: modes 1 and 2 are uncuffing and lock picking,
   [Crimes](crimes.md#mini-game-record)).
-- **The grab's front circle** `0x0026f008`, the `0x00510980` table and the further grab state of `0x005101f0`.
+- **The grab's front circle** `0x0026f008` (Coney's stand-in mounts, see above): its clips, checks, cost and which
+  input it takes; and the player's moves once mounted (square, cross, the power combo: 212, or 219-223 and 225+).
+  Level99's tutorial does not move on from the mount with 212. Also the `0x00510980` table and the further grab state
+  of `0x005101f0`.
 - **Square at a sprint** at runtime, and the moving attacks' hit timing (the victim was out of reach in the tests).
 - **The mugging's angle frame** (world or camera).
 - **The fence break** in slot 10: which script reacts to the charge.

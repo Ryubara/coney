@@ -112,6 +112,10 @@ GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTu
         } else if (input.fromRear) {
             outcome.action = GrabAction::Spin;
             outcome.animId = anim_id::kGrabSpinToFront;
+        } else if (placed) {
+            // **Coney stand-in** for the untraced `0x0026f008`: the front hold goes down to the mount.
+            outcome.action = GrabAction::Mount;
+            outcome.animId = anim_id::kGrabMount;
         }
         break;
     case command::kR1Pressed:

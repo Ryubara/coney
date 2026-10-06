@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <vector>
 
 #include "animation/anim_math.h"
 #include "characters/anim_set.h"
@@ -156,6 +157,10 @@ class Fighter {
     /// Hits that reached a target, and the damage they did.
     [[nodiscard]] int hitsLanded() const { return m_hitsLanded; }
     [[nodiscard]] int damageDealt() const { return m_damageDealt; }
+    /// The anim ids of the hits this player's human struck a victim with in its last update (landed or met by a
+    /// block alike), oldest first: what the combat tutorial's callback hears (docs/research/hud.md#tutorial-callback).
+    /// An AI's hits are not kept.
+    [[nodiscard]] const std::vector<int>& strikes() const { return m_strikes; }
 
     /// The target kept (human `+0xc8`); null when none.
     [[nodiscard]] const Combatant* target() const { return m_target; }
@@ -313,6 +318,8 @@ class Fighter {
     void playGrabAction(const combat::CombatOutput& out, HumanAnimator& animator);
     // The tackle's hit clip has started: the victim goes down under the player at the mount's offset.
     void mountVictim(const FighterInput& input, const HumanAnimator& animator, float heading);
+    // The grab's mount has played (210 started): the victim is placed at the mount's point, as after a tackle.
+    void seatMount(const FighterInput& input, const HumanAnimator& animator, float heading);
     // The grab broke at 0 power with the player hurt: the victim escapes (100 / 112), the player is knocked down and
     // stunned (101 / 113 from the victim's set).
     // @orig 0x0026cc18 Grab_Escape (unknown)
@@ -361,6 +368,7 @@ class Fighter {
     Combatant* m_target = nullptr;   // the target kept (human +0xc8)
     bool m_l1Held = false;           // L1 held this update (record +0x00 0x8)
     bool m_tacklePending = false;    // the tackle's intro plays; the victim reacts when its hit clip starts
+    bool m_mountPending = false;     // the grab's mount (118) plays; the victim moves to the mount's point at 210
     bool m_mugOnTarget = false;
     bool m_rear = false;    // the hold is from the victim's rear
     anim::Vec3 m_slide;     // a grab's alignment's slide velocity, m/s
@@ -376,6 +384,7 @@ class Fighter {
     float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
     int m_duckCounters = 0;        // the duck counters played
     int m_hitsLanded = 0;
+    std::vector<int> m_strikes; // a player's struck hits' anim ids in the last update
     int m_damageDealt = 0;
 
     // The victim side.
