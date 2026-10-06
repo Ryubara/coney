@@ -204,16 +204,17 @@ is at least -50.0 (`0x0050ccc4`; which coordinate that is was not traced). The w
 ### Path data (chunk `0x40`) {#path-data}
 
 `0x0024e720` fixes the chunk up in place; `0x0024eef0`, `0x0024ea60`, `0x0024f290` and `0x0024f718` read it.
-Confirmed (code) for the layout; what the areas are used for (AI, triggers) is not traced. In order:
+Confirmed (code) for the layout. The AI walks the polygons and plans routes over the C records (nodes) and D
+records (edges) ([AI, Path planning](ai.md#path-planning)). In order:
 
 | Part | Size | Contents |
 | --- | --- | --- |
 | Header | 0x20 | `+0x00` path count P, `+0x04` vertex count, `+0x08` `s16` C count, `+0x0a` `s16` A count, `+0x0c` D count; `0x00510584` = chunk + 0x10, and `+0x14` is overwritten with a pointer to the C records |
-| A records | 16 each | pointed to by the paths that have one (`+0x4c`) |
+| A records | 16 each | pointed to by the paths that have one (`+0x4c`): `+0x00` the polygon's node count, `+0x08` the index of its first C record |
 | Vertices ("B") | 16 each | x, y at `+0x00`, `+0x04`; each path owns the next `+0x00` of them |
 | Paths | 0x50 each | below |
-| C records | 32 each | `+0x10` pointer to its D records, `+0x14` `s16` their count, `+0x1f` a byte cleared at load |
-| D records | 8 each | `+0x00` an index into the C records, turned into a pointer |
+| C records | 32 each | route **nodes**: `+0x00` position (vec4), `+0x10` pointer to its D records, `+0x14` `s16` their count, `+0x16` / `+0x18` / `+0x1a` the search's f / g / h (`u16`), `+0x1c` its parent, `+0x1f` the routes using it (cleared at load) |
+| D records | 8 each | route **edges**: `+0x00` an index into the C records, turned into a pointer; `+0x04` a word whose low 16 bits are the edge's flags and bit 31 an "avoid" bit |
 | Edge lists | `s16` | below; the global `0x006ca220` points at their start |
 | Tail | 4 to 18 bytes | at least 4 bytes, then padding to a multiple of 16 (below) |
 

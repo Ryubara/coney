@@ -208,16 +208,17 @@ ActLookAt(human, target, turnSpeed, timeMs)
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human who turns. |
 | 2 | `target` | number, truncated to an unsigned integer | Handle of the object or human to face (any valid handle; only the first must be a human). |
-| 3 | `turnSpeed` | number (single precision) | Largest turn per update, the same quantity the game's own movement gets from the human's turn limit (`Human_MaxTurn`, 0x002213d8); scripts use 0.1 (slow) to 1. |
-| 4 | `timeMs` | number, truncated to an integer; default -1 | Passed to the turn action as its last value; -1 (the default) in all scripts (inferred: no time limit). |
+| 3 | `turnSpeed` | number (single precision) | A turn value stored in the action (`+0x10`); its update does not read it, and what does is not traced. Scripts use 0.1 to 1. |
+| 4 | `timeMs` | number, truncated to an integer; default -1 | The action's start delay in ms (action `+0x04`); -1 (the default, in all scripts) is a random 0-500 ms. |
 
 **Returns** nothing.
 
-Queues an action that turns the human to face another object or human and keeps it facing it. Scripts use it to make
-extras look at the player while they talk.
+Queues an action that turns the human towards another object or human until it faces it within 15 degrees (or 3 s pass),
+then ends; it does not keep facing it. Scripts use it to make extras look at the player while they talk.
 
 **Notes.** Wrapper 0x002fe0c8, action set-up 0x002fe160 (a turn action, 0x002fdc28, with the target kept at `+0x1c`,
-vtable 0x005430a0). The unit of `turnSpeed` and the role of `timeMs` are inferred.
+vtable 0x005430a0); update 0x002fe1b0 / 0x002fdd08 writes the heading to the target into brain `+0x110` each update.
+Behaviour: [AI](../../research/ai.md#look-at).
 
 - **Evidence:** confirmed (code) at `0x002fe0c8`; detail: traced
 - **Wrapper** `0x003647d8` (registered by `RegisterBindings`); **calls** `0x002fe0c8` `Action_LookAt`
@@ -783,9 +784,10 @@ BrSetNumFollowSlots(leader, count, count2)
 **Returns** nothing.
 
 Sets how many formation slots a leader has for followers such as the player's gang. The slots belong to the leader's
-follow formation, made on first use (`+0x1a4`).
+follow formation, made on first use (human `+0x1a4`, not the brain's).
 
-**Notes.** Confirmed (code) at 0x00295dd8 (`+0x271`, `+0x272`). Why there are two counts is an open question.
+**Notes.** Confirmed (code) at 0x00295dd8: `count` is the number of slots (`+0x271`), `count2` how many followers may
+take one (`+0x272`); the rest queue behind them. Behaviour: [AI](../../research/ai.md#formations).
 
 - **Evidence:** confirmed (code) at `0x00292a60`; detail: traced
 - **Wrapper** `0x0035fc80` (registered by `RegisterBindings`); **calls** `0x00292a60` `Follow_SetSlotCount`
@@ -981,17 +983,18 @@ GoalAddressPerson(human, target, approach, range, speech, callback)
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human who speaks. |
 | 2 | `target` | number, truncated to an unsigned integer | Handle of the human addressed (usually the player). |
-| 3 | `approach` | number (single precision) | A distance in metres (scripts use 0-100; inferred: how far the human will walk to reach the target, 0 to stay put). |
-| 4 | `range` | number (single precision) | A distance in metres (scripts use 15-50; inferred: the range within which the human starts talking). |
-| 5 | `speech` | number, truncated to an integer; default -1 | A speech or line id; -1 (the default) for the human's default line (inferred). |
+| 3 | `approach` | number (single precision) | Metres: the speech starts once the target is this close (the human never walks to it). |
+| 4 | `range` | number (single precision) | Metres: within this the human keeps turning its head and body to the target. |
+| 5 | `speech` | number, truncated to an integer; default -1 | A scene id played (goal 0x21) when the target comes within `approach`; negative for none, and the goal then only faces the target until removed. |
 | 6 | `callback` | string | Name of a Lua function to call when the goal ends, or nil. |
 
 **Returns** nothing.
 
-Makes a human turn to and address another human, typically to call out to the player, then call back the script.
+Makes a human face another human, typically the player, and play a scene when it comes close enough, then call back the
+script. The human turns but never walks.
 
 **Notes.** Constructor 0x002cc408 interns the callback name through the script system (slot +0xcc). It resolves the
-speaker without checking it is a human. Argument roles beyond the handles and callback are inferred.
+speaker without checking it is a human. Process 0x002cc588. Behaviour: [AI](../../research/ai.md#address-person).
 
 - **Evidence:** confirmed (code) at `0x002cc348`; detail: traced
 - **Wrapper** `0x003603a8` (registered by `RegisterBindings`); **calls** `0x002cc348` `Goal_AddressPerson`
@@ -2552,12 +2555,12 @@ GoalTrackHuman(human, target, distance)
 **Returns** nothing.
 
 Makes a human stay with another human and keep facing it: it takes a slot in the target's follow formation (see
-`BrSetFollowSlot`), walks back to that slot (or to the target when it has none) whenever it is more than `distance`
-metres away, and otherwise turns to face the target when it is more than 15 degrees off. The goal ends when the target
-is gone. The mission-1 combat tutorial uses it for a sparring partner.
+`BrSetFollowSlot`), walks back to that slot whenever it is more than `distance` metres away, and otherwise turns to face
+the target when it is more than 15 degrees off. Without a slot it stays where it is and only turns. The goal ends when
+the target is gone. The mission-1 combat tutorial uses it for a sparring partner.
 
 **Notes.** Constructor 0x002df250, start 0x002df288 (joins the formation), update 0x002df3c0 (walks at gait 2; also
-refreshes its actions every 40 updates).
+refreshes its actions every 40 updates). Behaviour: [AI](../../research/ai.md#formations).
 
 - **Evidence:** confirmed (code) at `0x002df1a8`; detail: traced
 - **Wrapper** `0x00360690` (registered by `RegisterBindings`); **calls** `0x002df1a8` `Goal_TrackHuman`

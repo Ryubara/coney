@@ -1121,8 +1121,11 @@ GangSetMsgHandler(gang, message, handler)
 Registers the Lua function the gang calls when the given event happens to it or its members. The name is interned and
 looked up when the event fires, so the function can be defined or replaced later.
 
-**Notes.** 0x00164bb8 stores the interned name (script-system slot +0xcc). The message ids are inferred from the
-scripts' handler names.
+**Notes.** 0x00164bb8 stores the interned name (script-system slot +0xcc). `Gang_OnEvent` (0x00164c20) calls it with
+(member, other, value): for message 18 the attacker and the members still standing, for 2 the headcount, for 17 the
+event's value; other ids pass the event through a generic marshaller and count as handled when the function returns
+true. The message ids' meanings are inferred from the scripts' handler names. Behaviour:
+[AI](../../research/ai.md#gang-events).
 
 - **Evidence:** confirmed (code) at `0x0016ab38`; detail: traced
 - **Wrapper** `0x00373370` (registered by `RegisterBindings`); **calls** `0x0016ab38`

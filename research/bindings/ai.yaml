@@ -458,11 +458,12 @@
     - {name: count2, lua: number, ctype: int, default: -1, desc: "A second slot count; -1 (the default) uses `count` for it too."}
   description: >-
     Sets how many formation slots a leader has for followers such as the player's gang. The slots belong to the
-    leader's follow formation, made on first use (`+0x1a4`).
+    leader's follow formation, made on first use (human `+0x1a4`, not the brain's).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Confirmed (code) at 0x00295dd8 (`+0x271`, `+0x272`). Why there are two counts is an open question.
+    Confirmed (code) at 0x00295dd8: `count` is the number of slots (`+0x271`), `count2` how many followers may
+    take one (`+0x272`); the rest queue behind them. Behaviour: [AI](../../research/ai.md#formations).
   usage: {chunks: 3, calls: 4, boot: true, mission1: true, result_used: false}
 
 - name: BrSetFollowSlotSet
@@ -605,17 +606,18 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who speaks."}
     - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human addressed (usually the player)."}
-    - {name: approach, lua: number, ctype: float, desc: "A distance in metres (scripts use 0-100; inferred: how far the human will walk to reach the target, 0 to stay put)."}
-    - {name: range, lua: number, ctype: float, desc: "A distance in metres (scripts use 15-50; inferred: the range within which the human starts talking)."}
-    - {name: speech, lua: number, ctype: int, default: -1, desc: "A speech or line id; -1 (the default) for the human's default line (inferred)."}
+    - {name: approach, lua: number, ctype: float, desc: "Metres: the speech starts once the target is this close (the human never walks to it)."}
+    - {name: range, lua: number, ctype: float, desc: "Metres: within this the human keeps turning its head and body to the target."}
+    - {name: speech, lua: number, ctype: int, default: -1, desc: "A scene id played (goal 0x21) when the target comes within `approach`; negative for none, and the goal then only faces the target until removed."}
     - {name: callback, lua: string, desc: "Name of a Lua function to call when the goal ends, or nil."}
   description: >-
-    Makes a human turn to and address another human, typically to call out to the player, then call back the script.
+    Makes a human face another human, typically the player, and play a scene when it comes close enough, then call back
+    the script. The human turns but never walks.
   evidence: confirmed-code
   depth: thorough
   notes: >-
     Constructor 0x002cc408 interns the callback name through the script system (slot +0xcc). It resolves the speaker
-    without checking it is a human. Argument roles beyond the handles and callback are inferred.
+    without checking it is a human. Process 0x002cc588. Behaviour: [AI](../../research/ai.md#address-person).
   usage: {chunks: 9, calls: 15, boot: false, mission1: true, result_used: false}
 
 - name: GoalGetItem
@@ -674,14 +676,14 @@
     - {name: distance, lua: number, ctype: float, desc: "How far, in metres, the human may drift from its place before walking back to it (the tutorial passes 0.5)."}
   description: >-
     Makes a human stay with another human and keep facing it: it takes a slot in the target's follow formation (see
-    `BrSetFollowSlot`), walks back to that slot (or to the target when it has none) whenever it is more than
-    `distance` metres away, and otherwise turns to face the target when it is more than 15 degrees off. The goal ends
-    when the target is gone. The mission-1 combat tutorial uses it for a sparring partner.
+    `BrSetFollowSlot`), walks back to that slot whenever it is more than `distance` metres away, and otherwise turns
+    to face the target when it is more than 15 degrees off. Without a slot it stays where it is and only turns. The
+    goal ends when the target is gone. The mission-1 combat tutorial uses it for a sparring partner.
   evidence: confirmed-code
   depth: thorough
   notes: >-
     Constructor 0x002df250, start 0x002df288 (joins the formation), update 0x002df3c0 (walks at gait 2; also refreshes
-    its actions every 40 updates).
+    its actions every 40 updates). Behaviour: [AI](../../research/ai.md#formations).
   usage: {chunks: 1, calls: 1, boot: false, mission1: true, result_used: false}
 
 - name: GoalFollowObject
@@ -1729,16 +1731,17 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who turns."}
     - {name: target, lua: number, ctype: unsigned, desc: "Handle of the object or human to face (any valid handle; only the first must be a human)."}
-    - {name: turnSpeed, lua: number, ctype: float, desc: "Largest turn per update, the same quantity the game's own movement gets from the human's turn limit (`Human_MaxTurn`, 0x002213d8); scripts use 0.1 (slow) to 1."}
-    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "Passed to the turn action as its last value; -1 (the default) in all scripts (inferred: no time limit)."}
+    - {name: turnSpeed, lua: number, ctype: float, desc: "A turn value stored in the action (`+0x10`); its update does not read it, and what does is not traced. Scripts use 0.1 to 1."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "The action's start delay in ms (action `+0x04`); -1 (the default, in all scripts) is a random 0-500 ms."}
   description: >-
-    Queues an action that turns the human to face another object or human and keeps it facing it. Scripts use it to
-    make extras look at the player while they talk.
+    Queues an action that turns the human towards another object or human until it faces it within 15 degrees (or 3 s
+    pass), then ends; it does not keep facing it. Scripts use it to make extras look at the player while they talk.
   evidence: confirmed-code
   depth: thorough
   notes: >-
     Wrapper 0x002fe0c8, action set-up 0x002fe160 (a turn action, 0x002fdc28, with the target kept at `+0x1c`, vtable
-    0x005430a0). The unit of `turnSpeed` and the role of `timeMs` are inferred.
+    0x005430a0); update 0x002fe1b0 / 0x002fdd08 writes the heading to the target into brain `+0x110` each update.
+    Behaviour: [AI](../../research/ai.md#look-at).
   usage: {chunks: 37, calls: 112, boot: false, mission1: true, result_used: false}
 
 - name: ActGiveWay

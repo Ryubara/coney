@@ -359,8 +359,11 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    0x00164bb8 stores the interned name (script-system slot +0xcc). The message ids are inferred from the scripts'
-    handler names.
+    0x00164bb8 stores the interned name (script-system slot +0xcc). `Gang_OnEvent` (0x00164c20) calls it with
+    (member, other, value): for message 18 the attacker and the members still standing, for 2 the headcount, for 17
+    the event's value; other ids pass the event through a generic marshaller and count as handled when the function
+    returns true. The message ids' meanings are inferred from the scripts' handler names. Behaviour:
+    [AI](../../research/ai.md#gang-events).
   usage: {chunks: 140, calls: 1155, boot: true, mission1: true, result_used: false}
 
 - name: GangClearHandlers
