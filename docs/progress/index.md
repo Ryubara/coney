@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% of the game's own code (293,644 of 3,354,776 bytes, 736 functions) |
+| **Reimplemented** | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% of the game's own code (293,644 of 3,354,776 bytes, 765 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-182 reimplemented function(s) have no size yet and add no bytes.
+211 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -53,15 +53,15 @@ at the top of the repository's `README.md`.
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
 | `Animation` | `█████▌░░░░░░░░░░░░░░` | 27.2% | 21 | 54,616 |
-| `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 24 | 57,368 |
+| `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 25 | 57,368 |
 | `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 34 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█▏░░░░░░░░░░░░░░░░░░` | 5.7% | 21 | 62,808 |
 | `FileIO` | `█░░░░░░░░░░░░░░░░░░░` | 4.9% | 3 | 7,120 |
-| `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 45 | 100,440 |
-| `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 30 | 195,624 |
-| `GUI` | `██▏░░░░░░░░░░░░░░░░░` | 10.8% | 86 | 497,416 |
+| `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 48 | 100,440 |
+| `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 32 | 195,624 |
+| `GUI` | `██▏░░░░░░░░░░░░░░░░░` | 10.8% | 109 | 497,416 |
 | `Human` | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% | 232 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
@@ -137,6 +137,7 @@ at the top of the repository's `README.md`.
 | `0x0010f9d8` | `MusicList_Load` | `Audio` | not filled in |
 | `0x0010fa50` | `AudioManager_LoadBank` | `Audio` | not filled in |
 | `0x0010fb20` | `SoundPauseSound` | `Audio` | not filled in |
+| `0x0010fc30` | `AudioManager_PlayFrontEndSound` | `Audio` | not filled in |
 | `0x0010ff68` | `SceneSound_Preload` | `Audio` | not filled in |
 | `0x00110018` | `SceneSound_Start` | `Audio` | not filled in |
 | `0x00110b60` | `AmbientTrack_Play` | `Audio` | not filled in |
@@ -225,6 +226,8 @@ at the top of the repository's `README.md`.
 | `0x00159ae0` | `Mode5::Update` | `GameModes` | 296 |
 | `0x00159c08` | `StartupScreen_Draw` | `GameModes` | 1,536 |
 | `0x0015a270` | `MemoryCard_SetBootCheck` | `GameModes` | 16 |
+| `0x0015baa0` | `Mode6::Enter` | `GameModes` | not filled in |
+| `0x0015be00` | `Mode6::Update` | `GameModes` | not filled in |
 | `0x0015c2c0` | `Mode6::Exit` | `GameModes` | 320 |
 | `0x0015c4b0` | `LevelFlow_StartFrontEnd` | `GameModes` | 328 |
 | `0x0015c5f8` | `LevelFlow_FinishFrontEnd` | `GameModes` | 136 |
@@ -245,6 +248,7 @@ at the top of the repository's `README.md`.
 | `0x0015e748` | `GameModeStack_TopId` | `GameModes` | 72 |
 | `0x0015e8b0` | `Mode11::Enter` | `GameModes` | 344 |
 | `0x0015ea40` | `Mode11::Exit` | `GameModes` | 608 |
+| `0x0015eca0` | `Mode11::Update` | `GameModes` | not filled in |
 | `0x0015fe50` | `InitLevel_SetStartCallback` | `GameModes` | 64 |
 | `0x0015fe90` | `InitLevel` | `GameModes` | 2,344 |
 | `0x00160d78` | `MenuLoadLevel_Choose` | `GameModes` | 56 |
@@ -273,6 +277,7 @@ at the top of the repository's `README.md`.
 | `0x00179958` | `Font_Measure` | `Graphics` | 728 |
 | `0x00179c30` | `Font_Draw` | `Graphics` | 1,408 |
 | `0x0017a560` | `Occluders_Load` | `Graphics` | not filled in |
+| `0x0017ae38` | `ColourTable_Init` | `Graphics` | not filled in |
 | `0x0017f2c0` | `ChunkReader_PreinstanceObject` | `Graphics` | not filled in |
 | `0x00181170` | `ObjectList_OnLoaded` | `Graphics` | 56 |
 | `0x00181b20` | `ChunkLoaded_ParticlePage` | `Graphics` | 72 |
@@ -285,6 +290,7 @@ at the top of the repository's `README.md`.
 | `0x00185cc8` | `ResourceMgr_EmptyInstances` | `Graphics` | 88 |
 | `0x00185d20` | `ResourceMgr_RenderOverlay` | `Graphics` | 840 |
 | `0x0018cc60` | `ScreenQueueEffect` | `Graphics` | 504 |
+| `0x0018ce58` | `ScreenEffects_UpdateFade` | `Graphics` | not filled in |
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
 | `0x00190770` | `ChunkReader_RenderwareTextureDic` | `Graphics` | 160 |
 | `0x00192688` | `AtomicPlugin_StreamRead` | `Graphics` | not filled in |
@@ -295,10 +301,19 @@ at the top of the repository's `README.md`.
 | `0x00198e20` | `SectorPlugin_StreamRead` | `Graphics` | not filled in |
 | `0x0019ee70` | `GlobalString_Get` | `GUI` | 48 |
 | `0x0019eea0` | `GlobalString_Set` | `GUI` | 64 |
+| `0x001a0fd0` | `Bar::Bar` | `GUI` | not filled in |
+| `0x001a1138` | `Bar_Render` | `GUI` | not filled in |
 | `0x001a1bf8` | `BaseWidget::BaseWidget` | `GUI` | 56 |
+| `0x001a1db8` | `BaseWidget_Setup` | `GUI` | not filled in |
 | `0x001a2690` | `BaseWidget_AddSprite` | `GUI` | 640 |
 | `0x001a8e30` | `Widget::Widget` | `GUI` | 72 |
+| `0x001b8f98` | `MessageHUD::MessageHUD` | `GUI` | not filled in |
 | `0x001b9600` | `TextWidget_Layout` | `GUI` | 5,664 |
+| `0x001c6a20` | `MessageBox::MessageBox` | `GUI` | not filled in |
+| `0x001c6fc8` | `MessageBox_ShowTimed` | `GUI` | not filled in |
+| `0x001c7128` | `MessageBox_ShowChoice` | `GUI` | not filled in |
+| `0x001c7630` | `MessageBox_Update` | `GUI` | not filled in |
+| `0x001c76a8` | `MessageBox_Render` | `GUI` | not filled in |
 | `0x001c7e80` | `ScreenFlowController::ScreenFlowController` | `GUI` | 400 |
 | `0x001c8010` | `ScreenFlowController_AddTransition` | `GUI` | 184 |
 | `0x001c80e8` | `ScreenFlowController_Push` | `GUI` | 256 |
@@ -308,13 +323,22 @@ at the top of the repository's `README.md`.
 | `0x001cc1a0` | `NameKeyboard::NameKeyboard` | `GUI` | 112 |
 | `0x001cca80` | `NameKeyboard::HandleCommand` | `GUI` | 648 |
 | `0x001ccf88` | `TextWidget::TextWidget` | `GUI` | 56 |
+| `0x001cd060` | `TextWidget_Setup` | `GUI` | not filled in |
 | `0x001cd1e0` | `TextWidget_SetText` | `GUI` | 160 |
 | `0x001cea70` | `UsageInfo::UsageInfo` | `GUI` | 64 |
+| `0x001ceb40` | `UsageInfo_Setup` | `GUI` | not filled in |
 | `0x001cec28` | `UsageInfo_SetText` | `GUI` | 80 |
 | `0x001d3ef0` | `OptionGrid::OptionGrid` | `GUI` | 136 |
 | `0x001d4110` | `OptionGrid_Setup` | `GUI` | 240 |
 | `0x001d4230` | `OptionGrid_AddItem` | `GUI` | 440 |
+| `0x001d43f0` | `OptionGrid_Code` | `GUI` | not filled in |
+| `0x001d4b88` | `OptionGrid_Select` | `GUI` | not filled in |
+| `0x001d4c40` | `OptionGrid_HandleCommand` | `GUI` | not filled in |
 | `0x001d4d28` | `OptionGrid_TakeFocus` | `GUI` | 144 |
+| `0x001d4db8` | `OptionGrid_LoseFocus` | `GUI` | not filled in |
+| `0x001d52c8` | `OptionGrid_Render` | `GUI` | not filled in |
+| `0x001e1338` | `ScrollingMenu::ScrollingMenu` | `GUI` | not filled in |
+| `0x001e1e48` | `ScrollingMenu_HandleCommand` | `GUI` | not filled in |
 | `0x001e95c0` | `MenuInput_Dispatch` | `GUI` | 1,080 |
 | `0x001eaa30` | `RM_ChooseArea_AddArena` | `GUI` | 392 |
 | `0x001eb0c8` | `RM_ChooseArea_Init` | `GUI` | 1,872 |
@@ -327,6 +351,8 @@ at the top of the repository's `README.md`.
 | `0x001ecae0` | `RM_ChooseGangs_Init` | `GUI` | 8,672 |
 | `0x001ef7c0` | `RM_ChooseGangs_OnInput` | `GUI` | 1,480 |
 | `0x001f0e60` | `RM_CharData_Add` | `GUI` | 416 |
+| `0x001f1e00` | `RumbleController_Init` | `GUI` | not filled in |
+| `0x001f2468` | `RumbleController_CycleBackground` | `GUI` | not filled in |
 | `0x001f26a8` | `RumbleMode_GetGangName` | `GUI` | 56 |
 | `0x001f26e0` | `RumbleMode_GetData` | `GUI` | 64 |
 | `0x001f8110` | `RM_GameMode_AddGame` | `GUI` | 432 |
@@ -341,6 +367,7 @@ at the top of the repository's `README.md`.
 | `0x00203110` | `PM_Continue::PM_Continue` | `GUI` | 128 |
 | `0x00203300` | `PM_Continue::Init` | `GUI` | 984 |
 | `0x00203800` | `PM_Continue::HandleCommand` | `GUI` | 272 |
+| `0x00203b98` | `PM_PickLayout` | `GUI` | not filled in |
 | `0x002040f0` | `PM_Controller::PM_Controller` | `GUI` | 2,400 |
 | `0x00204a78` | `PM_Controller_Start` | `GUI` | 296 |
 | `0x00204ba0` | `PM_Controller_Update` | `GUI` | 128 |
@@ -354,6 +381,8 @@ at the top of the repository's `README.md`.
 | `0x002065f0` | `PM_Difficulty::PM_Difficulty` | `GUI` | 264 |
 | `0x002067d8` | `PM_Difficulty::Init` | `GUI` | 888 |
 | `0x00206d88` | `PM_Difficulty::HandleCommand` | `GUI` | 128 |
+| `0x002071d8` | `PM_Extras::Init` | `GUI` | not filled in |
+| `0x002074f8` | `PM_Extras::HandleCommand` | `GUI` | not filled in |
 | `0x002079a0` | `PM_Greet::Init` | `GUI` | 792 |
 | `0x00207d48` | `PM_Greet_Enter` | `GUI` | 88 |
 | `0x00207da0` | `PM_Greet_Exit` | `GUI` | 48 |

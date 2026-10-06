@@ -35,7 +35,7 @@ class ScreenFade {
     static constexpr double kFadeOutShortening = 0.2;
 
     /// Starts a fade of `type` lasting `seconds`, asked for at game time `nowMs`.
-    /// @orig 0x0018cc60 ScreenEffects_StartFade (ScreenEffectsManager.cpp)
+    /// @orig 0x0018cc60 ScreenQueueEffect (ScreenEffectsManager.cpp)
     void queue(int type, double seconds, std::uint64_t nowMs);
 
     /// Advances the fade to game time `nowMs`: once a frame, before the fade is drawn.

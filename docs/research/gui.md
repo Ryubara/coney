@@ -574,21 +574,21 @@ runs about 42,600 Lua instructions and skips 1,796 binding calls.
   splits a text at `<` ... `>`. A tag name compares exactly; a `<` with no `>` after it is text; a name not in the
   table (and the nine HUD icon tags 23-31, whose names are not on this page) is skipped and counted.
 - **Layout** (`src/gui/text_layout.h`, `layoutText`, `TextWidget_Layout` `0x001b9600`): measures each line's runs,
-  grows the box to the widest line, places each line by its alignment and draws each run with `Font::draw` into
-  sprites tagged with their font slot; `addTextSprites` hands them to each slot's batch. It implements `COLOR` (alpha ×
-  the widget's fade), `SIZE`, `PULSE`, `DISPLAYTIME` (hidden after, fading over the last second), `BIGFONT` (slot 6),
-  `MONEYPLUS`/`MINUS`, the alignments, `CR`, `CR2`, `CR3 f`, `CRM`, every glyph tag and the closing tags; `SOUND`
-  names and the largest `FREEZE` are reported for the audio layer and the timer; `BOLD`, `MONEYFONT`, `BGFONT`,
-  `AUTOINDENT` and the animated stick tags have no effect yet. Lines break at the `CR` tags and, for a multi-line widget
-  given a wrap width (the message box, `RM_No2ndController`'s 0.6), before a word that would pass it; how the original
-  breaks is not researched, so Coney breaks only at spaces. Coney's choices: a closing tag restores the value before
-  its opening tag; a line takes the alignment in effect at its first character, centring and right-aligning inside the
-  box (`CCENTER` and `RRIGHT` act as `CENTER` and `RIGHT`); `CR2` and `CRM` always break; `PULSE ms` scales the colour by 1 + 0.5 × sin(2π t / ms);
-  the style's y is the first line's centre line. **The text font:** a text starts in slot 2, a `part_page0` instance,
-  and `<BIGFONT>` switches to slot 6, `big_font` (Coney's choice, from the data: in `part_page0`, first glyph 94,
-  characters `0x91`-`0xa0` are exactly the button pictures of the tag table, while in `big_font` they are empty but for
-  a triangle at `0x9c`; `big_font`'s rectangles 256-261 hold a circle and five d-pad pictures. Inferred from viewing
-  the sheets with `--view-sheet`).
+  grows the box to the widest line, places each line by its alignment and draws each run with `Font::draw` into sprites
+  tagged with their font slot; `addTextSprites` hands them to each slot's batch. It implements `COLOR` (alpha × the
+  widget's fade), `SIZE`, `PULSE`, `DISPLAYTIME` (hidden after, fading over the last second), `BIGFONT` (slot 6),
+  `MONEYPLUS`/`MINUS`, the alignments, `CR`, `CR2`, `CR3 f`, `CRM`, every glyph tag and the closing tags; `SOUND` names
+  and the largest `FREEZE` are reported for the audio layer and the timer; `BOLD`, `MONEYFONT`, `BGFONT`, `AUTOINDENT`
+  and the animated stick tags have no effect yet. Lines break at the `CR` tags and, for a multi-line widget given a
+  wrap width (the message box, `RM_No2ndController`'s 0.6), before a word that would pass it; how the original breaks
+  is not researched, so Coney breaks only at spaces. Coney's choices: a closing tag restores the value before its
+  opening tag; a line takes the alignment in effect at its first character, centring and right-aligning inside the box
+  (`CCENTER` and `RRIGHT` act as `CENTER` and `RIGHT`); `CR2` and `CRM` always break; `PULSE ms` scales the colour by
+  1 + 0.5 × sin(2π t / ms); the style's y is the first line's centre line. **The text font:** a text starts in slot 2,
+  a `part_page0` instance, and `<BIGFONT>` switches to slot 6, `big_font` (Coney's choice, from the data: in
+  `part_page0`, first glyph 94, characters `0x91`-`0xa0` are exactly the button pictures of the tag table, while in
+  `big_font` they are empty but for a triangle at `0x9c`; `big_font`'s rectangles 256-261 hold a circle and five d-pad
+  pictures. Inferred from viewing the sheets with `--view-sheet`).
 - **The screen flow** (`src/gui/screen_flow_controller.h`, `ScreenFlowController`, `ScreenFlowState`), as
   [above](#screen-flow): per-screen transitions (`0x001c8010`), push (`0x001c80e8`), pop (`0x001c82e8`), unwind
   (`0x001c81e8`) and update (`0x001c83c8`) with the results "stay" (`-0x100`) and "back" (`-0xff`); a code without a

@@ -193,6 +193,11 @@ name = "SoundPauseSound"
 subsystem = "Audio"
 
 [[function]]
+address = 0x0010fc30
+name = "AudioManager_PlayFrontEndSound"
+subsystem = "Audio"
+
+[[function]]
 address = 0x0010ff68
 name = "SceneSound_Preload"
 subsystem = "Audio"
@@ -668,6 +673,16 @@ subsystem = "GameModes"
 size = 16
 
 [[function]]
+address = 0x0015baa0
+name = "Mode6::Enter"
+subsystem = "GameModes"
+
+[[function]]
+address = 0x0015be00
+name = "Mode6::Update"
+subsystem = "GameModes"
+
+[[function]]
 address = 0x0015c2c0
 name = "Mode6::Exit"
 subsystem = "GameModes"
@@ -786,6 +801,11 @@ address = 0x0015ea40
 name = "Mode11::Exit"
 subsystem = "GameModes"
 size = 608
+
+[[function]]
+address = 0x0015eca0
+name = "Mode11::Update"
+subsystem = "GameModes"
 
 [[function]]
 address = 0x0015fe50
@@ -953,6 +973,11 @@ name = "Occluders_Load"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0017ae38
+name = "ColourTable_Init"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x0017f2c0
 name = "ChunkReader_PreinstanceObject"
 subsystem = "Graphics"
@@ -1024,6 +1049,11 @@ subsystem = "Graphics"
 size = 504
 
 [[function]]
+address = 0x0018ce58
+name = "ScreenEffects_UpdateFade"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x001906e8
 name = "ChunkReader_TextureDictionaryTid"
 subsystem = "Graphics"
@@ -1081,10 +1111,25 @@ subsystem = "GUI"
 size = 64
 
 [[function]]
+address = 0x001a0fd0
+name = "Bar::Bar"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001a1138
+name = "Bar_Render"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001a1bf8
 name = "BaseWidget::BaseWidget"
 subsystem = "GUI"
 size = 56
+
+[[function]]
+address = 0x001a1db8
+name = "BaseWidget_Setup"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001a2690
@@ -1099,10 +1144,40 @@ subsystem = "GUI"
 size = 72
 
 [[function]]
+address = 0x001b8f98
+name = "MessageHUD::MessageHUD"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001b9600
 name = "TextWidget_Layout"
 subsystem = "GUI"
 size = 5664
+
+[[function]]
+address = 0x001c6a20
+name = "MessageBox::MessageBox"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001c6fc8
+name = "MessageBox_ShowTimed"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001c7128
+name = "MessageBox_ShowChoice"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001c7630
+name = "MessageBox_Update"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001c76a8
+name = "MessageBox_Render"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001c7e80
@@ -1159,6 +1234,11 @@ subsystem = "GUI"
 size = 56
 
 [[function]]
+address = 0x001cd060
+name = "TextWidget_Setup"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001cd1e0
 name = "TextWidget_SetText"
 subsystem = "GUI"
@@ -1169,6 +1249,11 @@ address = 0x001cea70
 name = "UsageInfo::UsageInfo"
 subsystem = "GUI"
 size = 64
+
+[[function]]
+address = 0x001ceb40
+name = "UsageInfo_Setup"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001cec28
@@ -1195,10 +1280,45 @@ subsystem = "GUI"
 size = 440
 
 [[function]]
+address = 0x001d43f0
+name = "OptionGrid_Code"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001d4b88
+name = "OptionGrid_Select"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001d4c40
+name = "OptionGrid_HandleCommand"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001d4d28
 name = "OptionGrid_TakeFocus"
 subsystem = "GUI"
 size = 144
+
+[[function]]
+address = 0x001d4db8
+name = "OptionGrid_LoseFocus"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001d52c8
+name = "OptionGrid_Render"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001e1338
+name = "ScrollingMenu::ScrollingMenu"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001e1e48
+name = "ScrollingMenu_HandleCommand"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001e95c0
@@ -1271,6 +1391,16 @@ address = 0x001f0e60
 name = "RM_CharData_Add"
 subsystem = "GUI"
 size = 416
+
+[[function]]
+address = 0x001f1e00
+name = "RumbleController_Init"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001f2468
+name = "RumbleController_CycleBackground"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001f26a8
@@ -1357,6 +1487,11 @@ subsystem = "GUI"
 size = 272
 
 [[function]]
+address = 0x00203b98
+name = "PM_PickLayout"
+subsystem = "GUI"
+
+[[function]]
 address = 0x002040f0
 name = "PM_Controller::PM_Controller"
 subsystem = "GUI"
@@ -1433,6 +1568,16 @@ address = 0x00206d88
 name = "PM_Difficulty::HandleCommand"
 subsystem = "GUI"
 size = 128
+
+[[function]]
+address = 0x002071d8
+name = "PM_Extras::Init"
+subsystem = "GUI"
+
+[[function]]
+address = 0x002074f8
+name = "PM_Extras::HandleCommand"
+subsystem = "GUI"
 
 [[function]]
 address = 0x002079a0

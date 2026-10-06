@@ -67,7 +67,7 @@ class BaseWidget : public Widget {
 
     /// Adds the shadow (when set up with one), then the sprite, to the batch. Draws nothing when hidden, without a
     /// batch, or when the sheet has no rectangle `rect`.
-    /// @orig 0x001a2690 BaseWidget_Render (BaseWidget.cpp)
+    /// @orig 0x001a2690 BaseWidget_AddSprite (BaseWidget.cpp)
     void render(const GuiCanvas& canvas) const override;
 
     /// The set-up.
