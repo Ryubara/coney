@@ -33,7 +33,9 @@ double tableNumber(std::span<const Value> args, std::size_t i, std::size_t k) {
 // `SpawnParticle(typeName, pos, rot, attachTo)`: a particle system and its handle.
 // @orig 0x00378958 SpawnParticle (unknown)
 NativeFunction makeSpawnParticle(const BindingContext& context, std::function<double()> nextHandle) {
-    return [effects = context.effects, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+    // The context's effects are read at each call: gameplay sets them when a level is entered, after the bindings.
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+        effects::LevelEffects* effects = context->effects;
         const double handle = nextHandle();
         if (effects == nullptr) {
             return binding::number(handle);
@@ -54,7 +56,8 @@ NativeFunction makeSpawnParticle(const BindingContext& context, std::function<do
 // @orig 0x0037be90 QueueMotionBlurEffect (unknown)
 // @orig 0x0037be18 QueueMotionBlurEffect_Alpha (unknown)
 NativeFunction makeQueueMotionBlurEffect(const BindingContext& context) {
-    return [effects = context.effects](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        effects::LevelEffects* effects = context->effects;
         if (effects == nullptr) {
             return binding::none();
         }
