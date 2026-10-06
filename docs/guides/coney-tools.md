@@ -170,12 +170,13 @@ The script-binding reference (`docs/references/bindings/`, under Game references
 uv run --project python coney-tools natives render [--check]
 ```
 
-Checks the YAML and writes `docs/references/bindings/`: `index.md` and one page per category, each binding under an
-anchor of its name in lower case (`hud.md#hudsetobjective`). A page left over from a removed category is deleted. Run it
-after editing the YAML and commit the pages with the change. With `--check` it writes nothing and exits with 1 when a
-page is stale; CI runs it that way. Either way it refuses to go on while the YAML has problems, and lists them: an
-unknown key, a file that is not a category, a missing description on a described entry, a thorough entry with an
-argument left unexplained, an argument name used twice, usage counts that contradict each other, a name listed twice.
+Checks the YAML and writes `docs/references/bindings/`: `index.md`, one page per category, each binding under an anchor
+of its name in lower case (`hud.md#hudsetobjective`), and `mission1.md` (the first mission's coverage). A page left over
+from a removed category is deleted. Run it after editing the YAML and commit the pages with the change. With `--check`
+it writes nothing and exits with 1 when a page is stale; CI runs it that way. Either way it refuses to go on while the
+YAML has problems, and lists them: an unknown key, a file that is not a category, a missing description on a described
+entry, a thorough entry with an argument left unexplained, an argument name used twice, usage counts that contradict
+each other, a name listed twice.
 
 ```sh
 uv run --project python coney-tools natives coney [--check]
@@ -198,6 +199,19 @@ table of numbers or strings with its fixed count, userdata) with its default, an
 argument whose description says it is a handle gets the handle editor. Only names, types and defaults go in, never a
 description. Run it after editing the YAML and commit the file with the change; with `--check` it writes nothing and
 exits with 1 when the file is stale, as CI runs it.
+
+```sh
+uv run --project python coney-tools natives mission1 [DISC] [--check]
+```
+
+Reads the first mission's compiled scripts (`level99.lua` and its three chapter scripts) and `global.lua` from your
+disc (the `game_dir` of `coney.local.toml` when no disc is given), and sets every entry's `usage.mission1`: true when
+those scripts name the binding, or a `global.lua` helper they reach does (followed by name, as a `Table.field` or as a
+callback string), or one of the two helpers the engine calls when a mission ends (`UnlockAndLoad`, `runNextMission`).
+It prints the coverage (bindings, traced, Coney status), which `natives render` also publishes as
+[Mission 1 coverage](../references/bindings/mission1.md). Only names are read; nothing from the disc is written. Run
+`natives render` after it. With `--check` it writes nothing and exits with 1 when a marker is stale; it needs the disc,
+so CI does not run it.
 
 ```sh
 uv run --project python coney-tools natives stats

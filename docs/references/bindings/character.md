@@ -55,7 +55,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuGetCharType`](#hugetchartype) | number | 7 | no | no | confirmed (code) |
 | [`HuGetControlName`](#hugetcontrolname) | string | 1 | no | no | speculative |
 | [`HuGetGang`](#hugetgang) | number | 104 | yes | no | confirmed (code) |
-| [`HuGetGangType`](#hugetgangtype) | number | 35 | yes | no | confirmed (code) |
+| [`HuGetGangType`](#hugetgangtype) | number | 35 | yes | yes | confirmed (code) |
 | [`HuGetHeading`](#hugetheading) | number | 0 | no | no | confirmed (code) |
 | [`HuGetHealthPercent`](#hugethealthpercent) | number | 25 | no | yes | confirmed (code) |
 | [`HuGetHeldObject`](#hugetheldobject) | number | 23 | no | yes | confirmed (code) |
@@ -69,9 +69,9 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuHasHat`](#huhashat) | number | 8 | no | no | confirmed (code) |
 | [`HuInCombat`](#huincombat) | boolean | 1 | no | no | inferred |
 | [`HuIsAimingAt`](#huisaimingat) | boolean | 1 | no | no | confirmed (code) |
-| [`HuIsAlive`](#huisalive) | boolean | 157 | yes | no | confirmed (code) |
+| [`HuIsAlive`](#huisalive) | boolean | 157 | yes | yes | confirmed (code) |
 | [`HuIsAPlayer`](#huisaplayer) | boolean | 167 | yes | yes | confirmed (code) |
-| [`HuIsArrested`](#huisarrested) | boolean | 13 | yes | no | confirmed (code) |
+| [`HuIsArrested`](#huisarrested) | boolean | 13 | yes | yes | confirmed (code) |
 | [`HuIsDead`](#huisdead) | boolean | 3 | yes | no | confirmed (code) |
 | [`HuIsGrabbed`](#huisgrabbed) | boolean | 2 | no | no | confirmed (code) |
 | [`HuIsHidden`](#huishidden) | boolean | 4 | no | no | inferred |
@@ -96,11 +96,11 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuRemoveItemInPocket`](#huremoveiteminpocket) | - | 36 | no | no | confirmed (code) |
 | [`HuRemoveSpinningIcon`](#huremovespinningicon) | - | 55 | no | yes | confirmed (code) |
 | [`HuRender`](#hurender) | - | 0 | no | no | speculative |
-| [`HuRevive`](#hurevive) | - | 55 | yes | no | confirmed (code) |
+| [`HuRevive`](#hurevive) | - | 55 | yes | yes | confirmed (code) |
 | [`HuRubberNeck`](#hurubberneck) | - | 2 | no | no | inferred |
 | [`HuSay`](#husay) | - | 3 | no | no | inferred |
 | [`HuSetAccurate`](#husetaccurate) | - | 0 | no | no | speculative |
-| [`HuSetArrested`](#husetarrested) | - | 51 | yes | no | confirmed (code) |
+| [`HuSetArrested`](#husetarrested) | - | 51 | yes | yes | confirmed (code) |
 | [`HuSetAutoCombat`](#husetautocombat) | - | 4 | no | no | inferred |
 | [`HuSetAutoEscape`](#husetautoescape) | - | 8 | no | no | inferred |
 | [`HuSetBlockFromReact`](#husetblockfromreact) | - | 0 | no | no | inferred |
@@ -115,7 +115,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetDoubleDamage`](#husetdoubledamage) | - | 1 | no | no | inferred |
 | [`HuSetFastClimber`](#husetfastclimber) | - | 12 | no | yes | confirmed (code) |
 | [`HuSetFireProof`](#husetfireproof) | - | 8 | no | no | confirmed (code) |
-| [`HuSetFullRage`](#husetfullrage) | - | 1 | yes | no | confirmed (code) |
+| [`HuSetFullRage`](#husetfullrage) | - | 1 | yes | yes | confirmed (code) |
 | [`HuSetGodMode`](#husetgodmode) | - | 81 | yes | yes | confirmed (code) |
 | [`HuSetHardToStun`](#husethardtostun) | - | 0 | no | no | inferred |
 | [`HuSetHealth`](#husethealth) | - | 23 | no | no | confirmed (code) |
@@ -1235,7 +1235,7 @@ of the particular gang.
 
 - **Evidence:** confirmed (code) at `0x00235478`; detail: traced
 - **Wrapper** `0x0035b3f0` (registered by `RegisterBindings`); **calls** `0x00235478` `Human_GetGangType`
-- **Used by** 35 of 467 script chunks (75 references); boot to menu: yes; mission 1: no; result used: yes
+- **Used by** 35 of 467 script chunks (75 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Coney:** not implemented
 
 ## HuGetHeading {#hugetheading}
@@ -1516,7 +1516,7 @@ arrested and similar, flags 0x180050000).
 
 - **Evidence:** confirmed (code) at `0x00235628`; detail: traced
 - **Wrapper** `0x0035b5c8` (registered by `RegisterBindings`); **calls** `0x00235628` `Human_IsAlive`
-- **Used by** 157 of 467 script chunks (1535 references); boot to menu: yes; mission 1: no; result used: yes
+- **Used by** 157 of 467 script chunks (1535 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Coney:** not implemented
 
 ## HuIsAPlayer {#huisaplayer}
@@ -1555,7 +1555,7 @@ Tells whether the police have arrested (cuffed) the human.
 
 - **Evidence:** confirmed (code) at `0x00235718`; detail: traced
 - **Wrapper** `0x0035b6b8` (registered by `RegisterBindings`); **calls** `0x00235718` `Human_IsArrested`
-- **Used by** 13 of 467 script chunks (51 references); boot to menu: yes; mission 1: no; result used: yes
+- **Used by** 13 of 467 script chunks (51 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Coney:** not implemented
 
 ## HuIsDead {#huisdead}
@@ -2061,7 +2061,7 @@ Brings a downed human back: ends the knocked-out or beaten state, restores full 
 
 - **Evidence:** confirmed (code) at `0x002377f8`; detail: traced
 - **Wrapper** `0x0035bc98` (registered by `RegisterBindings`); **calls** `0x002377f8` `Human_Revive`
-- **Used by** 55 of 467 script chunks (73 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 55 of 467 script chunks (73 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## HuRubberNeck {#hurubberneck}
@@ -2141,7 +2141,7 @@ Arrests or releases the human, as the police do; a released human gets back up.
 
 - **Evidence:** confirmed (code) at `0x00237700`; detail: traced
 - **Wrapper** `0x0035ad40` (registered by `RegisterBindings`); **calls** `0x00237700` `Human_SetArrested`
-- **Used by** 51 of 467 script chunks (60 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 51 of 467 script chunks (60 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## HuSetAutoCombat {#husetautocombat}
@@ -2461,7 +2461,7 @@ to fill both players' meters.
 
 - **Evidence:** confirmed (code) at `0x00236a68`; detail: traced
 - **Wrapper** `0x003596a8` (registered by `RegisterBindings`); **calls** `0x00236a68` `Human_SetFullRage`
-- **Used by** 1 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 1 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## HuSetGodMode {#husetgodmode}

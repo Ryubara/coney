@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Rendering the script-binding masterlist into docs/references/bindings/: an index page and one page per category."""
+"""Rendering the script-binding masterlist into docs/references/bindings/: an index page, one page per category and
+the first mission's coverage page."""
 
 from __future__ import annotations
 
@@ -351,8 +352,12 @@ def index_page(masterlist: Masterlist) -> str:
         f" {used} of the {len(game)} bindings are used somewhere and {len(game) - used} never. The **boot-to-menu"
         " path** is `enum_preload.lua`, the three `config_preload*.lua`, `config_strings_en.lua`, `global.lua` and"
         f" `level100.lua` ({boot} bindings); **mission 1** is `level99.lua`, `level99_combat.lua`,"
-        f" `level99_lesson1.lua` and `level99_lesson2.lua` ({mission} bindings). A binding no script uses still"
-        " works if a mod calls it, but nothing in the game has exercised it, so its description is less certain."
+        " `level99_lesson1.lua` and `level99_lesson2.lua`, the `global.lua` helpers they reach (by name, as a"
+        " `Table.field` or as a callback string, transitively) and the two helpers the engine calls when a mission"
+        f" ends, `UnlockAndLoad` and `runNextMission` ({mission} bindings, listed with their status on"
+        " [Mission 1 coverage](mission1.md); `coney-tools natives mission1` sets the marker from the disc). A binding"
+        " no script uses still works if a mod calls it, but nothing in the game has exercised it, so its description"
+        " is less certain."
     )
     out += ["", "## Coney status {#coney-status}", ""]
     out += _wrap(
@@ -380,10 +385,47 @@ def index_page(masterlist: Masterlist) -> str:
     return "\n".join(out).rstrip("\n") + "\n"
 
 
+def mission_page(masterlist: Masterlist) -> str:
+    """The first mission's coverage page: every binding its scripts can call, with how far each is researched and
+    whether Coney implements it."""
+    rows = sorted(
+        (b for b in masterlist.bindings if b.usage and b.usage.mission1),
+        key=lambda b: (list(CATEGORIES).index(b.category), b.name.lower()),
+    )
+    traced = _count(rows, lambda b: b.depth == "thorough")
+    done = _count(rows, lambda b: b.coney == "implemented")
+    partial = _count(rows, lambda b: b.coney == "partial")
+    out = [GENERATED, "", "# Script bindings: mission 1 coverage", "", VERIFIED, ""]
+    out += _wrap(
+        f'The {len(rows)} bindings the first mission can call, for the milestone "the first mission playable from the'
+        ' title screen to its end": the scripts `level99.lua`, `level99_combat.lua`, `level99_lesson1.lua` and'
+        " `level99_lesson2.lua`, the `global.lua` helpers they reach, and the helpers the engine calls when the"
+        " mission ends (`UnlockAndLoad`, `runNextMission`). The set is an upper bound (a branch the mission never takes"
+        " still counts); how it is found is under [Usage counts](index.md#usage), and the mission's flow is on"
+        " [Scripts (Lua)](../../research/scripting.md#level99)."
+    )
+    out.append("")
+    out += _wrap(
+        f"**Researched:** {traced} of {len(rows)} are traced (the function behind the wrapper followed far enough to"
+        f" describe every argument). **Coney:** {done} implemented, {partial} partial,"
+        f" {len(rows) - done - partial} not yet ([Coney status](index.md#coney-status)). A traced binding can still"
+        " leave part of its effect open; its notes say which."
+    )
+    out += ["", "| Binding | Category | Detail | Evidence | Coney |", "| --- | --- | --- | --- | --- |"]
+    for b in rows:
+        detail = "traced" if b.depth == "thorough" else b.depth
+        out.append(
+            f"| [`{b.name}`]({b.category}.md#{b.anchor}) | {CATEGORIES[b.category][0]} | {detail}"
+            f" | {EVIDENCE[b.evidence]} | {b.coney} |"
+        )
+    return "\n".join(out) + "\n"
+
+
 def render(masterlist: Masterlist) -> dict[str, str]:
     """Every page, by file name inside docs/references/bindings/."""
     pages = {"index.md": index_page(masterlist)}
     # Every category gets a page, even an empty one, so the navigation in mkdocs.yml never points at a missing file.
     for category in CATEGORIES:
         pages[f"{category}.md"] = category_page(masterlist, category)
+    pages["mission1.md"] = mission_page(masterlist)
     return pages

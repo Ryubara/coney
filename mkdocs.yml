@@ -152,6 +152,7 @@ nav:
       - WAD entry names: references/wad-names.md
       - Script bindings:
           - Overview: references/bindings/index.md
+          - Mission 1 coverage: references/bindings/mission1.md
           - Characters: references/bindings/character.md
           - AI: references/bindings/ai.md
           - Gangs: references/bindings/gang.md

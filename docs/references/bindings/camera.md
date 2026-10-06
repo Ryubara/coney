@@ -44,7 +44,7 @@ entry are on the [masterlist](index.md).
 | [`CamSetHUDScale`](#camsethudscale) | - | 0 | no | no | confirmed (code) |
 | [`CamSetSecondary`](#camsetsecondary) | - | 7 | no | yes | confirmed (code) |
 | [`CamSetSplitMode`](#camsetsplitmode) | - | 3 | no | no | confirmed (code) |
-| [`CamSetupFollow`](#camsetupfollow) | number | 1 | yes | no | confirmed (code) |
+| [`CamSetupFollow`](#camsetupfollow) | number | 1 | yes | yes | confirmed (code) |
 | [`CamSetupHood`](#camsetuphood) | number | 2 | no | no | confirmed (code) |
 | [`CamSetupPoizo`](#camsetuppoizo) | number | 7 | no | no | confirmed (code) |
 | [`CamSetupRail`](#camsetuprail) | number | 27 | no | no | confirmed (code) |
@@ -813,7 +813,7 @@ global.lua's CameraCreateFollow. See [Camera](../../research/camera.md#setting-u
 
 - **Evidence:** confirmed (code) at `0x0011bfa8`; detail: traced
 - **Wrapper** `0x00365a48` (registered by `RegisterBindings`); **calls** `0x0011bfa8` `Camera_SetupFollow`
-- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: yes
+- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: yes
 - **Coney:** not implemented
 
 ## CamSetupHood {#camsetuphood}

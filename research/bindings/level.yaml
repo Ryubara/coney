@@ -76,7 +76,7 @@
   notes: >-
     The code is confirmed (code) at `0x0018e6b8`; that the two controllers are the players' screen tint is inferred
     from the 0.25 s colour blend and their being indexed per player.
-  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
 
 - name: ExitStore
   wrapper: 0x00368530
@@ -89,7 +89,7 @@
   depth: thorough
   notes: >-
     Code confirmed at `0x0018e780`; the screen-tint reading is inferred, as for EnterStore.
-  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}
 
 - name: GetRumbleModeData
   wrapper: 0x0036b9f0
@@ -354,7 +354,7 @@
   notes: >-
     The level unload remakes the Lua state (scripting.md), so code after this call in the same script runs only until
     the change happens.
-  usage: {chunks: 44, calls: 81, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 44, calls: 81, boot: true, mission1: true, result_used: false}
   coney: implemented
 
 - name: Quit
@@ -640,7 +640,7 @@
   notes: >-
     Inventory: two players of 23 item slots (0-22) at `W_GameState + 0x480`; a player number other than 1 or 2 returns
     0.
-  usage: {chunks: 9, calls: 18, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 9, calls: 18, boot: true, mission1: true, result_used: true}
 
 - name: InvPlayerHasItem
   wrapper: 0x0037b090
@@ -669,7 +669,7 @@
     amount the first time sets a game-state flag that later triggers a one-off HUD hint.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 10, calls: 19, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 19, boot: true, mission1: true, result_used: false}
 
 - name: InvGiveRevive
   wrapper: 0x0037b178
@@ -683,7 +683,7 @@
     data 7) the cap is 4. Runs the inventory's item-added Lua callbacks when they are set.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 12, calls: 43, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 12, calls: 43, boot: true, mission1: true, result_used: false}
 
 - name: InvNumberRevives
   wrapper: 0x0037b1e8
@@ -697,7 +697,7 @@
     Returns a player's revive count.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 4, calls: 4, boot: true, mission1: true, result_used: true}
 
 - name: InvGiveSkeletonKey
   wrapper: 0x0037b268
@@ -710,7 +710,7 @@
     Adds handcuff (skeleton) keys, item 6, to a player's inventory, clamped to the item's limits.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 4, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 4, boot: true, mission1: true, result_used: false}
 
 - name: InvNumberSkeletonKeys
   wrapper: 0x0037b2d8
@@ -724,7 +724,7 @@
     Returns a player's handcuff-key count.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: true}
 
 - name: InvGetMoney
   wrapper: 0x0037b358
@@ -826,7 +826,7 @@
     bindings.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 6, calls: 46, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 6, calls: 46, boot: true, mission1: true, result_used: false}
 
 - name: GameIsOver
   wrapper: 0x0037b670
@@ -1049,7 +1049,7 @@
   depth: thorough
   notes: >-
     Group meanings are not traced; nothing happens if the handle is not a human.
-  usage: {chunks: 4, calls: 7, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 4, calls: 7, boot: true, mission1: true, result_used: false}
 
 - name: StatGetRank
   wrapper: 0x0037ca20
@@ -1094,7 +1094,7 @@
   depth: thorough
   notes: >-
     Computed by `0x00422998`; the formula is not traced.
-  usage: {chunks: 6, calls: 12, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 6, calls: 12, boot: true, mission1: true, result_used: true}
 
 - name: StatGetPreviousHiScore
   wrapper: 0x0037cb98
@@ -1130,7 +1130,7 @@
     Clears one player's statistics.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}
 
 - name: StatGetHighScore
   wrapper: 0x0037cc68
@@ -1234,7 +1234,7 @@
     can highlight them. `global.lua` uses it when a level is completed.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 28, calls: 71, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 28, calls: 71, boot: true, mission1: true, result_used: false}
 
 - name: UM_IsUnlocked
   wrapper: 0x0037d0f0
@@ -1279,7 +1279,7 @@
     stands.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 3, calls: 33, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 3, calls: 33, boot: true, mission1: true, result_used: true}
   coney: implemented
 
 - name: UM_IsTypeDirty

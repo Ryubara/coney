@@ -102,7 +102,7 @@
     Converts a number to an integer by truncation.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 6, calls: 7, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 6, calls: 7, boot: true, mission1: true, result_used: true}
   coney: implemented
 
 - name: random

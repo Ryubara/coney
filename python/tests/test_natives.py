@@ -162,8 +162,12 @@ def test_pages_cover_every_category() -> None:
     """Every category gets a page, the index counts each, and no prose line passes 120 characters."""
     masterlist = natives.parse(GOOD)
     pages = natives_render.render(masterlist)
-    assert set(pages) == {"index.md"} | {f"{c}.md" for c in natives.CATEGORIES}
+    assert set(pages) == {"index.md", "mission1.md"} | {f"{c}.md" for c in natives.CATEGORIES}
     assert "[`MakeThing`](#makething)" in pages["world.md"]
+    # The mission page lists only PlayIt, the one entry marked mission1, with its detail and Coney status.
+    row = "| [`PlayIt`](sound.md#playit) | Sound and music | brief | inferred | not implemented |"
+    assert row in pages["mission1.md"]
+    assert "MakeThing" not in pages["mission1.md"]
     assert "| **All** | **3** | **2** | **1** | **1** | **1** |" in pages["index.md"]
     assert "../../roadmap.md#script-mods" in pages["index.md"]
     for name, text in pages.items():

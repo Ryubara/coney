@@ -86,7 +86,7 @@
   notes: >-
     Argument names follow global.lua's scene-table fields; their exact effects inside the scene player (0x00353818 →
     0x003a13d0) are inferred.
-  usage: {chunks: 9, calls: 14, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 9, calls: 14, boot: true, mission1: true, result_used: false}
 
 - name: ScenePlayFixedScene
   wrapper: 0x00367708
@@ -166,7 +166,7 @@
     Plays a loaded scene as an animation only (no position or orientation override), for global.lua's scene helpers.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 2, calls: 2, boot: true, mission1: true, result_used: false}
 
 - name: SceneStop
   wrapper: 0x00367e20

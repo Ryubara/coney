@@ -42,7 +42,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`HUDFlushTutorialText`](#hudflushtutorialtext) | - | 13 | yes | yes | confirmed (code) |
 | [`HUDGetNewPH`](#hudgetnewph) | number | 20 | yes | yes | confirmed (code) |
 | [`HUDLaunchANGameOver`](#hudlaunchangameover) | - | 5 | no | no | confirmed (code) |
-| [`HUDLaunchMissionComplete`](#hudlaunchmissioncomplete) | - | 10 | yes | no | confirmed (code) |
+| [`HUDLaunchMissionComplete`](#hudlaunchmissioncomplete) | - | 10 | yes | yes | confirmed (code) |
 | [`HUDLaunchMissionFailed`](#hudlaunchmissionfailed) | - | 24 | no | no | confirmed (code) |
 | [`HUDLaunchRumbleWin`](#hudlaunchrumblewin) | - | 33 | no | no | confirmed (code) |
 | [`HUDRadarSetRange`](#hudradarsetrange) | - | 1 | no | no | inferred |
@@ -71,7 +71,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`HUDSetTutorialCallback`](#hudsettutorialcallback) | - | 2 | no | yes | confirmed (code) |
 | [`HUDSetTutorialText`](#hudsettutorialtext) | - | 53 | yes | yes | confirmed (code) |
 | [`HUDShowMissionSelect`](#hudshowmissionselect) | - | 2 | no | no | confirmed (code) |
-| [`HUDShowMissionSummaryText`](#hudshowmissionsummarytext) | - | 3 | yes | no | confirmed (code) |
+| [`HUDShowMissionSummaryText`](#hudshowmissionsummarytext) | - | 3 | yes | yes | confirmed (code) |
 | [`HUDShowWarCommand`](#hudshowwarcommand) | - | 9 | no | no | confirmed (code) |
 | [`HUDTurnOffActionCycleAnim`](#hudturnoffactioncycleanim) | - | 8 | no | no | inferred |
 | [`HUDTurnOffRadar`](#hudturnoffradar) | - | 67 | no | yes | confirmed (code) |
@@ -781,7 +781,7 @@ before calling UnlockAndLoad, whose runNextMission(1) launches 4; the shipped sc
 
 - **Evidence:** confirmed (code) at `0x0015d420`; detail: traced
 - **Wrapper** `0x0036f218` (registered by `RegisterBindings`); **calls** `0x0015d420` `MissionComplete_Launch`
-- **Used by** 10 of 467 script chunks (12 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 10 of 467 script chunks (12 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** implemented
 
 ## HUDLaunchMissionFailed {#hudlaunchmissionfailed}
@@ -1401,7 +1401,7 @@ Does nothing in this build: the function it calls (0x001b3878) returns at once.
 
 - **Evidence:** confirmed (code) at `0x001b4768`; detail: traced
 - **Wrapper** `0x0036f0d0` (registered by `RegisterBindings`); **calls** `0x001b4768`
-- **Used by** 3 of 467 script chunks (3 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 3 of 467 script chunks (3 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## HUDShowWarCommand {#hudshowwarcommand}

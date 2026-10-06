@@ -126,7 +126,7 @@
     global.lua's CameraCreateFollow. See [Camera](../../research/camera.md#setting-up).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: true}
 
 - name: CamTarget
   wrapper: 0x00365ad8

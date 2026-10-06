@@ -161,6 +161,11 @@ def _add_natives_commands(groups: Any) -> None:
     cpp = commands.add_parser("cpp", help="write the debug menus' C++ signature table, src/debug/native_signatures.cpp")
     cpp.add_argument("--check", action="store_true", help="change nothing; exit 1 when the table is stale")
     commands.add_parser("stats", help="print the counts by category, evidence level and usage")
+    mission = commands.add_parser("mission1", help="set usage.mission1 from the first mission's scripts on your disc")
+    mission.add_argument(
+        "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
+    )
+    mission.add_argument("--check", action="store_true", help="change nothing; exit 1 when a marker is stale")
 
 
 def _add_refs_commands(groups: Any) -> None:
@@ -297,6 +302,8 @@ def _run(args: argparse.Namespace) -> int:
             return natives_cli.run_render(args.check)
         if args.command == "cpp":
             return natives_cli.run_cpp(args.check)
+        if args.command == "mission1":
+            return natives_cli.run_mission1(args.disc, args.check)
         return natives_cli.run_coney(args.check) if args.command == "coney" else natives_cli.run_stats()
     if args.group == "refs":
         if args.command == "render":

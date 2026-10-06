@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools natives ...` commands: render, coney and cpp (all with --check), and stats."""
+"""The `coney-tools natives ...` commands: render, coney and cpp (all with --check), stats, and mission1 (reads the
+disc)."""
 
 from __future__ import annotations
 
@@ -142,4 +143,53 @@ def run_coney(check_only: bool) -> int:
     counts = collections.Counter(table.values())
     summary = ", ".join(f"{status} {counts[status]}" for status in ("implemented", "partial", "not implemented"))
     print(f"natives: {'updated ' + ', '.join(stale) if stale else 'up to date'} (table: {summary})")
+    return 0
+
+
+def run_mission1(disc_arg: str | None, check_only: bool) -> int:
+    """Set each entry's `usage.mission1` from the first mission's scripts on the player's disc; with `check_only`,
+    write nothing and return 1 when one differs. Prints the coverage counts either way."""
+    from coney_tools import natives_mission, refs_extract  # the disc readers are only needed here
+    from coney_tools.wad_cli import open_disc
+
+    root = find_repo_root(Path.cwd())
+    masterlist = _load_checked(root)
+    if masterlist is None:
+        return 1
+    disc = refs_extract.DiscFacts(open_disc(disc_arg))
+    chunks: dict[str, bytes] = {}
+    for name in (*natives_mission.MISSION1_SCRIPTS, natives_mission.HELPERS_SCRIPT):
+        entry = disc.by_name(name)
+        if entry is None:
+            raise ConfigError(f"{name} is not on this disc")
+        chunks[name] = disc.read(entry)
+    scripts, helpers = natives_mission.scripts_from(chunks)
+    names = natives_mission.reached_names(scripts, helpers)
+    used = natives_mission.mission_bindings(names, (b.name for b in masterlist.bindings))
+    stale: list[str] = []
+    for path in sorted((root / natives.DATA_DIR).glob("*.yaml")):
+        try:
+            text = path.read_bytes().decode("utf-8").replace("\r\n", "\n")
+        except (OSError, UnicodeDecodeError) as error:
+            raise ConfigError(f"{path}: cannot be read ({error})") from error
+        updated = natives_mission.set_mission1(text, used)
+        if updated == text:
+            continue
+        stale.append(path.name)
+        if not check_only:
+            path.write_bytes(updated.encode("utf-8"))
+    rows = [b for b in masterlist.bindings if b.name in used]
+    traced = sum(1 for b in rows if b.depth == "thorough")
+    implemented = collections.Counter(b.coney for b in rows)
+    print(
+        f"mission 1: {len(rows)} bindings; traced {traced}; Coney: implemented {implemented['implemented']},"
+        f" partial {implemented['partial']}, not implemented {implemented['not implemented']}"
+    )
+    if check_only and stale:
+        print(
+            f"natives: mission1 stale in {', '.join(stale)}; run `uv run --project python coney-tools natives mission1`"
+        )
+        return 1
+    state = f"updated {', '.join(stale)}; run `natives render`" if stale else "mission1 up to date"
+    print(f"natives: {state}")
     return 0

@@ -926,7 +926,7 @@
     Stores the subtitle switch in the game state (+0x438).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 1, boot: true, mission1: true, result_used: false}
 
 - name: CfgLanguage
   wrapper: 0x0035e7e0
@@ -1349,7 +1349,7 @@
     global.lua's CameraCreateFollow and CameraNormal.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 13, calls: 28, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 13, calls: 28, boot: true, mission1: true, result_used: false}
 
 - name: CfgSetOutdoorMode
   wrapper: 0x0036ad50
@@ -1587,7 +1587,7 @@
     Stores the enemy-spotting switch in the game state (+0x56f8).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 24, calls: 44, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 24, calls: 44, boot: true, mission1: true, result_used: false}
 
 - name: CfgSetWarriorSpotting
   wrapper: 0x0036bdc0
@@ -1602,7 +1602,7 @@
   depth: thorough
   notes: >-
     Bug in the original: 0x0041d748 ignores its parameter. Scripts call it with both true and false.
-  usage: {chunks: 25, calls: 45, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 25, calls: 45, boot: true, mission1: true, result_used: false}
 
 - name: CfgSetWarriorVandalize
   wrapper: 0x0036bdf0

@@ -24,22 +24,22 @@ YAML, never these pages. CI runs `coney-tools natives render --check`, which fai
 
 | Category | Bindings | Used by scripts | Boot to menu | Mission 1 | Traced |
 | --- | --- | --- | --- | --- | --- |
-| [Characters](character.md): one human: creation, state, health, animation, commands, the player's crew | 204 | 172 | 29 | 45 | 61 |
+| [Characters](character.md): one human: creation, state, health, animation, commands, the player's crew | 204 | 172 | 29 | 51 | 61 |
 | [AI](ai.md): goals, actions, brains and gang tactics that drive non-player characters | 146 | 114 | 16 | 18 | 30 |
 | [Gangs](gang.md): gangs: creation, membership, spawners, relations | 57 | 53 | 18 | 11 | 23 |
-| [Cameras](camera.md): creating, switching and moving cameras | 41 | 34 | 4 | 8 | 9 |
+| [Cameras](camera.md): creating, switching and moving cameras | 41 | 34 | 4 | 9 | 9 |
 | [World and objects](world.md): objects, cars, doors, flags, paths, volume boxes and triggers | 80 | 69 | 12 | 19 | 25 |
 | [Effects and lighting](effects.md): particles, weather, fog, lights, shadows, gamma and screen effects | 43 | 35 | 15 | 6 | 18 |
-| [HUD and menus](hud.md): the in-game HUD, radar, objectives, messages and front-end menus | 78 | 66 | 18 | 25 | 31 |
+| [HUD and menus](hud.md): the in-game HUD, radar, objectives, messages and front-end menus | 78 | 66 | 18 | 27 | 31 |
 | [Sound and music](sound.md): sound effects, ambient emitters, music tracks and sound configuration | 51 | 45 | 20 | 8 | 24 |
-| [Scenes and movies](scene.md): in-engine cutscenes and full-motion movies | 16 | 12 | 9 | 3 | 9 |
-| [Levels and game state](level.md): level flow, checkpoints, difficulty, unlockables, stats, money and police | 90 | 75 | 38 | 11 | 44 |
+| [Scenes and movies](scene.md): in-engine cutscenes and full-motion movies | 16 | 12 | 9 | 5 | 9 |
+| [Levels and game state](level.md): level flow, checkpoints, difficulty, unlockables, stats, money and police | 90 | 75 | 38 | 26 | 44 |
 | [Script flow](script.md): running scripts, scheduled calls, callbacks and message handlers | 18 | 15 | 10 | 8 | 11 |
 | [Pad input](input.md): the gamepad: button handlers | 2 | 2 | 1 | 2 | 2 |
-| [Configuration (Cfg)](config.md): the Cfg* tables the config scripts fill: characters, objects, levels, sounds | 117 | 100 | 70 | 9 | 74 |
-| [Utilities](util.md): numbers, platform queries and generic object queries | 8 | 7 | 6 | 1 | 6 |
+| [Configuration (Cfg)](config.md): the Cfg* tables the config scripts fill: characters, objects, levels, sounds | 117 | 100 | 70 | 13 | 74 |
+| [Utilities](util.md): numbers, platform queries and generic object queries | 8 | 7 | 6 | 2 | 6 |
 | [Debug](debug.md): developer leftovers: network debugging, sample capture, detail flags | 5 | 3 | 0 | 1 | 1 |
-| **All** | **956** | **802** | **266** | **175** | **368** |
+| **All** | **956** | **802** | **266** | **206** | **368** |
 
 ## Conventions {#conventions}
 
@@ -103,9 +103,11 @@ The counts come from a survey of the NTSC-U disc's 467 compiled Lua chunks, repo
 inside a loop, which is why references, not traced calls, are counted). *Result used* is a lower bound: it says a traced
 call was seen to keep the binding's result. 802 of the 956 bindings are used somewhere and 154 never. The **boot-to-menu
 path** is `enum_preload.lua`, the three `config_preload*.lua`, `config_strings_en.lua`, `global.lua` and `level100.lua`
-(266 bindings); **mission 1** is `level99.lua`, `level99_combat.lua`, `level99_lesson1.lua` and `level99_lesson2.lua`
-(175 bindings). A binding no script uses still works if a mod calls it, but nothing in the game has exercised it, so its
-description is less certain.
+(266 bindings); **mission 1** is `level99.lua`, `level99_combat.lua`, `level99_lesson1.lua` and `level99_lesson2.lua`,
+the `global.lua` helpers they reach (by name, as a `Table.field` or as a callback string, transitively) and the two
+helpers the engine calls when a mission ends, `UnlockAndLoad` and `runNextMission` (206 bindings, listed with their
+status on [Mission 1 coverage](mission1.md); `coney-tools natives mission1` sets the marker from the disc). A binding no
+script uses still works if a mod calls it, but nothing in the game has exercised it, so its description is less certain.
 
 ## Coney status {#coney-status}
 

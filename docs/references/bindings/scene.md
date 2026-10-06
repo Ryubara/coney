@@ -17,8 +17,8 @@ entry are on the [masterlist](index.md).
 | [`SceneIsPreloaded`](#sceneispreloaded) | boolean | 3 | yes | no | confirmed (code) |
 | [`SceneLength`](#scenelength) | number | 0 | no | no | confirmed (code) |
 | [`ScenePlay`](#sceneplay) | boolean | 1 | no | no | confirmed (code) |
-| [`ScenePlayAnimation`](#sceneplayanimation) | boolean | 2 | yes | no | confirmed (code) |
-| [`ScenePlayCinematic`](#sceneplaycinematic) | boolean | 9 | yes | no | confirmed (code) |
+| [`ScenePlayAnimation`](#sceneplayanimation) | boolean | 2 | yes | yes | confirmed (code) |
+| [`ScenePlayCinematic`](#sceneplaycinematic) | boolean | 9 | yes | yes | confirmed (code) |
 | [`ScenePlayFixedScene`](#sceneplayfixedscene) | boolean | 4 | yes | yes | confirmed (code) |
 | [`ScenePreload`](#scenepreload) | number | 110 | yes | yes | confirmed (code) |
 | [`SceneSetCallback`](#scenesetcallback) | - | 6 | no | no | confirmed (code) |
@@ -245,7 +245,7 @@ Plays a loaded scene as an animation only (no position or orientation override),
 
 - **Evidence:** confirmed (code) at `0x00353f40`; detail: traced
 - **Wrapper** `0x00367cd8` (registered by `RegisterBindings`); **calls** `0x00353f40` `Scene_PlayAnimation`
-- **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## ScenePlayCinematic {#sceneplaycinematic}
@@ -277,7 +277,7 @@ until it ends or is skipped.
 
 - **Evidence:** confirmed (code) at `0x00353c68`; detail: traced
 - **Wrapper** `0x00367580` (registered by `RegisterBindings`); **calls** `0x00353c68` `Scene_PlayCinematic`
-- **Used by** 9 of 467 script chunks (14 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 9 of 467 script chunks (14 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## ScenePlayFixedScene {#sceneplayfixedscene}

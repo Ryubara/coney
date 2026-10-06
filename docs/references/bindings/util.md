@@ -16,7 +16,7 @@ to read an entry are on the [masterlist](index.md).
 | [`isRelease`](#isrelease) | boolean | 36 | yes | no | confirmed (code) |
 | [`random`](#random) | number | 111 | yes | yes | confirmed (code) |
 | [`TestDistance`](#testdistance) | boolean | 16 | yes | no | confirmed (code) |
-| [`ToInt`](#toint) | number | 6 | yes | no | confirmed (code) |
+| [`ToInt`](#toint) | number | 6 | yes | yes | confirmed (code) |
 
 ## GetName {#getname}
 
@@ -179,5 +179,5 @@ Converts a number to an integer by truncation.
 
 - **Evidence:** confirmed (code) at `0x0036d938`; detail: traced
 - **Wrapper** `0x0036d938` (registered by `RegisterBindings`); **calls** nothing (the wrapper does the work itself)
-- **Used by** 6 of 467 script chunks (7 references); boot to menu: yes; mission 1: no; result used: yes
+- **Used by** 6 of 467 script chunks (7 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Coney:** implemented

@@ -16,8 +16,8 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CreateDongleChallengeKey`](#createdonglechallengekey) | number | 1 | no | no | confirmed (code) |
 | [`CrimeIsHappening`](#crimeishappening) | - | 12 | yes | no | confirmed (code) |
 | [`EnableGameOverCheck`](#enablegameovercheck) | - | 3 | no | no | inferred |
-| [`EnterStore`](#enterstore) | - | 2 | yes | no | confirmed (code) |
-| [`ExitStore`](#exitstore) | - | 1 | yes | no | confirmed (code) |
+| [`EnterStore`](#enterstore) | - | 2 | yes | yes | confirmed (code) |
+| [`ExitStore`](#exitstore) | - | 1 | yes | yes | confirmed (code) |
 | [`ForceCrimeLevel`](#forcecrimelevel) | - | 9 | no | no | inferred |
 | [`GameIsOver`](#gameisover) | boolean | 2 | no | no | confirmed (code) |
 | [`GetCheckPoint`](#getcheckpoint) | number | 32 | yes | yes | confirmed (code) |
@@ -36,18 +36,18 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GetRumbleModeGangName`](#getrumblemodegangname) | string | 33 | no | no | confirmed (code) |
 | [`GiveMoney`](#givemoney) | - | 3 | no | yes | confirmed (code) |
 | [`InvGetMoney`](#invgetmoney) | number | 12 | no | yes | confirmed (code) |
-| [`InvGetSpraycanCharges`](#invgetspraycancharges) | number | 9 | yes | no | confirmed (code) |
-| [`InvGiveItem`](#invgiveitem) | - | 6 | yes | no | confirmed (code) |
-| [`InvGiveRevive`](#invgiverevive) | - | 12 | yes | no | confirmed (code) |
-| [`InvGiveSkeletonKey`](#invgiveskeletonkey) | - | 1 | yes | no | confirmed (code) |
+| [`InvGetSpraycanCharges`](#invgetspraycancharges) | number | 9 | yes | yes | confirmed (code) |
+| [`InvGiveItem`](#invgiveitem) | - | 6 | yes | yes | confirmed (code) |
+| [`InvGiveRevive`](#invgiverevive) | - | 12 | yes | yes | confirmed (code) |
+| [`InvGiveSkeletonKey`](#invgiveskeletonkey) | - | 1 | yes | yes | confirmed (code) |
 | [`InvNumberOf`](#invnumberof) | number | 7 | yes | yes | confirmed (code) |
-| [`InvNumberRevives`](#invnumberrevives) | number | 4 | yes | no | confirmed (code) |
-| [`InvNumberSkeletonKeys`](#invnumberskeletonkeys) | number | 1 | yes | no | confirmed (code) |
+| [`InvNumberRevives`](#invnumberrevives) | number | 4 | yes | yes | confirmed (code) |
+| [`InvNumberSkeletonKeys`](#invnumberskeletonkeys) | number | 1 | yes | yes | confirmed (code) |
 | [`InvPlayerHasItem`](#invplayerhasitem) | boolean | 1 | no | no | confirmed (code) |
 | [`InvSetMoney`](#invsetmoney) | - | 7 | yes | yes | confirmed (code) |
-| [`InvSetSpraycanCharges`](#invsetspraycancharges) | - | 10 | yes | no | confirmed (code) |
+| [`InvSetSpraycanCharges`](#invsetspraycancharges) | - | 10 | yes | yes | confirmed (code) |
 | [`IsDongleValid`](#isdonglevalid) | boolean | 1 | no | no | confirmed (code) |
-| [`MenuLoadLevel`](#menuloadlevel) | - | 44 | yes | no | confirmed (code) |
+| [`MenuLoadLevel`](#menuloadlevel) | - | 44 | yes | yes | confirmed (code) |
 | [`MissionComplete`](#missioncomplete) | - | 0 | no | no | confirmed (code) |
 | [`PrecacheWorld`](#precacheworld) | - | 36 | no | no | inferred |
 | [`ProcessTag`](#processtag) | - | 10 | yes | no | confirmed (code) |
@@ -73,27 +73,27 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`SSMC_StartDeleteSequence`](#ssmc_startdeletesequence) | - | 1 | yes | no | confirmed (code) |
 | [`SSMC_StartLoadSequence`](#ssmc_startloadsequence) | - | 1 | yes | no | confirmed (code) |
 | [`SSMC_StartSaveSequence`](#ssmc_startsavesequence) | - | 3 | no | no | confirmed (code) |
-| [`StatAdd`](#statadd) | - | 4 | yes | no | confirmed (code) |
+| [`StatAdd`](#statadd) | - | 4 | yes | yes | confirmed (code) |
 | [`StatGetHighScore`](#statgethighscore) | number | 0 | no | no | confirmed (code) |
 | [`StatGetPreviousHiScore`](#statgetprevioushiscore) | number | 0 | no | no | inferred |
 | [`StatGetRank`](#statgetrank) | number | 0 | no | no | inferred |
-| [`StatGetScore`](#statgetscore) | number | 6 | yes | no | confirmed (code) |
+| [`StatGetScore`](#statgetscore) | number | 6 | yes | yes | confirmed (code) |
 | [`StatGetTotal`](#statgettotal) | number | 0 | no | no | confirmed (code) |
 | [`StatReset`](#statreset) | - | 1 | no | no | confirmed (code) |
-| [`StatResetPlayer`](#statresetplayer) | - | 1 | yes | no | confirmed (code) |
+| [`StatResetPlayer`](#statresetplayer) | - | 1 | yes | yes | confirmed (code) |
 | [`TakeMoney`](#takemoney) | - | 5 | no | no | confirmed (code) |
 | [`UM_GetRecordData`](#um_getrecorddata) | number | 4 | no | no | confirmed (code) |
 | [`UM_GetUnlockables`](#um_getunlockables) | - | 1 | no | no | confirmed (code) |
 | [`UM_GetUnlockablesByType`](#um_getunlockablesbytype) | - | 3 | no | no | confirmed (code) |
 | [`UM_IsDataDirty`](#um_isdatadirty) | boolean | 2 | no | no | confirmed (code) |
 | [`UM_IsDataUnlocked`](#um_isdataunlocked) | boolean | 22 | yes | no | confirmed (code) |
-| [`UM_IsLevelComplete`](#um_islevelcomplete) | boolean | 3 | yes | no | confirmed (code) |
+| [`UM_IsLevelComplete`](#um_islevelcomplete) | boolean | 3 | yes | yes | confirmed (code) |
 | [`UM_IsTypeDirty`](#um_istypedirty) | boolean | 2 | yes | no | confirmed (code) |
 | [`UM_IsUnlocked`](#um_isunlocked) | boolean | 1 | no | no | confirmed (code) |
 | [`UM_Reset`](#um_reset) | - | 1 | yes | no | confirmed (code) |
 | [`UM_SetNumUnlockables`](#um_setnumunlockables) | - | 1 | yes | no | confirmed (code) |
 | [`UM_SetUnlockable`](#um_setunlockable) | - | 1 | yes | no | confirmed (code) |
-| [`UM_Unlock`](#um_unlock) | - | 28 | yes | no | confirmed (code) |
+| [`UM_Unlock`](#um_unlock) | - | 28 | yes | yes | confirmed (code) |
 | [`UM_UnlockAll`](#um_unlockall) | - | 1 | no | no | confirmed (code) |
 | [`W_GetStopWatchTime`](#w_getstopwatchtime) | number | 5 | no | no | confirmed (code) |
 | [`W_SetStopWatch`](#w_setstopwatch) | - | 32 | no | yes | confirmed (code) |
@@ -275,7 +275,7 @@ inferred from the 0.25 s colour blend and their being indexed per player.
 
 - **Evidence:** confirmed (code) at `0x0018e6b8`; detail: traced
 - **Wrapper** `0x00368480` (registered by `RegisterBindings`); **calls** `0x0018e6b8`
-- **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## ExitStore {#exitstore}
@@ -295,7 +295,7 @@ a 0.25 s blend, undoing `EnterStore`.
 
 - **Evidence:** confirmed (code) at `0x0018e780`; detail: traced
 - **Wrapper** `0x00368530` (registered by `RegisterBindings`); **calls** `0x0018e780`
-- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## ForceCrimeLevel {#forcecrimelevel}
@@ -679,7 +679,7 @@ returns 0.
 
 - **Evidence:** confirmed (code) at `0x0041f000`; detail: traced
 - **Wrapper** `0x0037b038` (registered by `RegisterBindings`); **calls** `0x0041f000`
-- **Used by** 9 of 467 script chunks (18 references); boot to menu: yes; mission 1: no; result used: yes
+- **Used by** 9 of 467 script chunks (18 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Coney:** not implemented
 
 ## InvGiveItem {#invgiveitem}
@@ -701,7 +701,7 @@ bindings.
 
 - **Evidence:** confirmed (code) at `0x0041ef98`; detail: traced
 - **Wrapper** `0x0037b5d8` (registered by `RegisterBindings`); **calls** `0x0041ef98`
-- **Used by** 6 of 467 script chunks (46 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 6 of 467 script chunks (46 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## InvGiveRevive {#invgiverevive}
@@ -722,7 +722,7 @@ the cap is 4. Runs the inventory's item-added Lua callbacks when they are set.
 
 - **Evidence:** confirmed (code) at `0x0041edb8`; detail: traced
 - **Wrapper** `0x0037b178` (registered by `RegisterBindings`); **calls** `0x0041edb8`
-- **Used by** 12 of 467 script chunks (43 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 12 of 467 script chunks (43 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## InvGiveSkeletonKey {#invgiveskeletonkey}
@@ -742,7 +742,7 @@ Adds handcuff (skeleton) keys, item 6, to a player's inventory, clamped to the i
 
 - **Evidence:** confirmed (code) at `0x0041ee20`; detail: traced
 - **Wrapper** `0x0037b268` (registered by `RegisterBindings`); **calls** `0x0041ee20`
-- **Used by** 1 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 1 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## InvNumberOf {#invnumberof}
@@ -781,7 +781,7 @@ Returns a player's revive count.
 
 - **Evidence:** confirmed (code) at `0x0041edf0`; detail: traced
 - **Wrapper** `0x0037b1e8` (registered by `RegisterBindings`); **calls** `0x0041edf0`
-- **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: yes
+- **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Coney:** not implemented
 
 ## InvNumberSkeletonKeys {#invnumberskeletonkeys}
@@ -800,7 +800,7 @@ Returns a player's handcuff-key count.
 
 - **Evidence:** confirmed (code) at `0x0041ee58`; detail: traced
 - **Wrapper** `0x0037b2d8` (registered by `RegisterBindings`); **calls** `0x0041ee58`
-- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: yes
+- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: yes
 - **Coney:** not implemented
 
 ## InvPlayerHasItem {#invplayerhasitem}
@@ -862,7 +862,7 @@ first time sets a game-state flag that later triggers a one-off HUD hint.
 
 - **Evidence:** confirmed (code) at `0x0041f030`; detail: traced
 - **Wrapper** `0x0037b108` (registered by `RegisterBindings`); **calls** `0x0041f030`
-- **Used by** 10 of 467 script chunks (19 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 10 of 467 script chunks (19 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## IsDongleValid {#isdonglevalid}
@@ -903,7 +903,7 @@ until the change happens.
 
 - **Evidence:** confirmed (code) at `0x00160d78`; detail: traced
 - **Wrapper** `0x0036df48` (registered by `RegisterBindings`); **calls** `0x00160d78`
-- **Used by** 44 of 467 script chunks (81 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 44 of 467 script chunks (81 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** implemented
 
 ## MissionComplete {#missioncomplete}
@@ -1467,7 +1467,7 @@ Adds to one of a player's statistics (the stats object at `0x006fe490`), for the
 
 - **Evidence:** confirmed (code) at `0x004224d8`; detail: traced
 - **Wrapper** `0x0037c960` (registered by `RegisterBindings`); **calls** `0x004224d8`
-- **Used by** 4 of 467 script chunks (7 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 4 of 467 script chunks (7 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## StatGetHighScore {#statgethighscore}
@@ -1545,7 +1545,7 @@ Returns a player's score from the stats object; `global.lua` reads it for the en
 
 - **Evidence:** confirmed (code) at `0x00422630`; detail: traced
 - **Wrapper** `0x0037cb20` (registered by `RegisterBindings`); **calls** `0x00422630`
-- **Used by** 6 of 467 script chunks (12 references); boot to menu: yes; mission 1: no; result used: yes
+- **Used by** 6 of 467 script chunks (12 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Coney:** not implemented
 
 ## StatGetTotal {#statgettotal}
@@ -1601,7 +1601,7 @@ Clears one player's statistics.
 
 - **Evidence:** confirmed (code) at `0x00422718`; detail: traced
 - **Wrapper** `0x0037cc30` (registered by `RegisterBindings`); **calls** `0x00422718`
-- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## TakeMoney {#takemoney}
@@ -1746,7 +1746,7 @@ stands.
 
 - **Evidence:** confirmed (code) at `0x004238a8`; detail: traced
 - **Wrapper** `0x0037d1c0` (registered by `RegisterBindings`); **calls** `0x004238a8`
-- **Used by** 3 of 467 script chunks (33 references); boot to menu: yes; mission 1: no; result used: yes
+- **Used by** 3 of 467 script chunks (33 references); boot to menu: yes; mission 1: yes; result used: yes
 - **Coney:** implemented
 
 ## UM_IsTypeDirty {#um_istypedirty}
@@ -1876,7 +1876,7 @@ highlight them. `global.lua` uses it when a level is completed.
 
 - **Evidence:** confirmed (code) at `0x004237e8`; detail: traced
 - **Wrapper** `0x0037d050` (registered by `RegisterBindings`); **calls** `0x004237e8`
-- **Used by** 28 of 467 script chunks (71 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 28 of 467 script chunks (71 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## UM_UnlockAll {#um_unlockall}

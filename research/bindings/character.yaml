@@ -580,7 +580,7 @@
     `global.lua` uses it to fill both players' meters.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 1, calls: 2, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 1, calls: 2, boot: true, mission1: true, result_used: false}
 
 - name: HuDrop
   wrapper: 0x003596e0
@@ -948,7 +948,7 @@
     Arrests or releases the human, as the police do; a released human gets back up.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 51, calls: 60, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 51, calls: 60, boot: true, mission1: true, result_used: false}
 
 - name: HuForceEnableReticule
   wrapper: 0x0035ada0
@@ -1167,7 +1167,7 @@
   depth: thorough
   notes: >-
     The values come from the gang's configuration; the list of types is with the gang bindings.
-  usage: {chunks: 35, calls: 75, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 35, calls: 75, boot: true, mission1: true, result_used: true}
 
 - name: HuTeleportFollowers
   wrapper: 0x0035b448
@@ -1239,7 +1239,7 @@
     arrested and similar, flags 0x180050000).
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 157, calls: 1535, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 157, calls: 1535, boot: true, mission1: true, result_used: true}
 
 - name: HuIsDead
   wrapper: 0x0035b618
@@ -1281,7 +1281,7 @@
     Tells whether the police have arrested (cuffed) the human.
   evidence: confirmed-code
   depth: thorough
-  usage: {chunks: 13, calls: 51, boot: true, mission1: false, result_used: true}
+  usage: {chunks: 13, calls: 51, boot: true, mission1: true, result_used: true}
 
 - name: HuIsAPlayer
   wrapper: 0x0035b708
@@ -1487,7 +1487,7 @@
   depth: thorough
   notes: >-
     Calls 0x0022eb40 with full=1: health (record +0x144) set to the maximum.
-  usage: {chunks: 55, calls: 73, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 55, calls: 73, boot: true, mission1: true, result_used: false}
 
 - name: HuSetStrong
   wrapper: 0x0035bcd0

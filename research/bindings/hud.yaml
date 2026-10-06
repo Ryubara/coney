@@ -314,7 +314,7 @@
   depth: thorough
   notes: >-
     global.lua still calls it after scenes; Coney can implement it as a no-op.
-  usage: {chunks: 3, calls: 3, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 3, calls: 3, boot: true, mission1: true, result_used: false}
 
 - name: HUDLaunchMissionFailed
   wrapper: 0x0036f130
@@ -382,7 +382,7 @@
     The kind is stored on every call, also when mode 0xb is already on top and nothing is pushed; 0x0050c754 (the
     level-change flag mode 1's Exit reads) is set only when it pushes with kind 0. Mode 0xb's Enter sets the kind back
     to 0 before calling UnlockAndLoad, whose runNextMission(1) launches 4; the shipped scripts pass only 0 and 4.
-  usage: {chunks: 10, calls: 12, boot: true, mission1: false, result_used: false}
+  usage: {chunks: 10, calls: 12, boot: true, mission1: true, result_used: false}
   coney: implemented
 
 - name: HUDEnableFixedCamIcon

@@ -44,7 +44,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgEnableGrappleCounters`](#cfgenablegrapplecounters) | - | 1 | no | no | confirmed (code) |
 | [`CfgEnableTurfInvasion`](#cfgenableturfinvasion) | - | 2 | yes | no | confirmed (code) |
 | [`CfgExcludedVandalizeZone`](#cfgexcludedvandalizezone) | - | 1 | no | no | inferred |
-| [`CfgFollowCamera`](#cfgfollowcamera) | - | 13 | yes | no | confirmed (code) |
+| [`CfgFollowCamera`](#cfgfollowcamera) | - | 13 | yes | yes | confirmed (code) |
 | [`CfgGang`](#cfggang) | - | 1 | yes | no | confirmed (code) |
 | [`CfgGangMusic`](#cfggangmusic) | - | 1 | yes | no | confirmed (code) |
 | [`CfgGangSizeForCombatMusic`](#cfggangsizeforcombatmusic) | - | 5 | no | no | inferred |
@@ -92,7 +92,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgSetCrimeCallback`](#cfgsetcrimecallback) | - | 2 | no | no | confirmed (code) |
 | [`CfgSetDatabaseSizes`](#cfgsetdatabasesizes) | - | 90 | yes | yes | confirmed (code) |
 | [`CfgSetDefaultFollowSlotSet`](#cfgsetdefaultfollowslotset) | - | 2 | yes | yes | confirmed (code) |
-| [`CfgSetEnemySpotting`](#cfgsetenemyspotting) | - | 24 | yes | no | confirmed (code) |
+| [`CfgSetEnemySpotting`](#cfgsetenemyspotting) | - | 24 | yes | yes | confirmed (code) |
 | [`CfgSetGlassProperties`](#cfgsetglassproperties) | - | 1 | yes | no | confirmed (code) |
 | [`CfgSetGlobalTimeToLive`](#cfgsetglobaltimetolive) | - | 2 | yes | yes | confirmed (code) |
 | [`CfgSetLockPickHandler`](#cfgsetlockpickhandler) | - | 7 | no | no | inferred |
@@ -107,7 +107,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgSetTargetingPointsEx`](#cfgsettargetingpointsex) | - | 1 | yes | no | confirmed (code) |
 | [`CfgSetTimeScale`](#cfgsettimescale) | - | 0 | no | no | inferred |
 | [`CfgSetTurnRates`](#cfgsetturnrates) | - | 1 | yes | no | confirmed (code) |
-| [`CfgSetWarriorSpotting`](#cfgsetwarriorspotting) | - | 25 | yes | no | confirmed (code) |
+| [`CfgSetWarriorSpotting`](#cfgsetwarriorspotting) | - | 25 | yes | yes | confirmed (code) |
 | [`CfgSetWarriorVandalize`](#cfgsetwarriorvandalize) | - | 1 | no | no | confirmed (code) |
 | [`CfgSnap`](#cfgsnap) | - | 1 | yes | no | confirmed (code) |
 | [`CfgSpeedClass`](#cfgspeedclass) | - | 1 | yes | no | confirmed (code) |
@@ -115,7 +115,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgStickDeflection`](#cfgstickdeflection) | - | 4 | yes | no | confirmed (code) |
 | [`CfgStrafe`](#cfgstrafe) | - | 0 | no | no | inferred |
 | [`CfgStrafeRStick`](#cfgstraferstick) | - | 0 | no | no | inferred |
-| [`CfgSubtitles`](#cfgsubtitles) | - | 1 | yes | no | confirmed (code) |
+| [`CfgSubtitles`](#cfgsubtitles) | - | 1 | yes | yes | confirmed (code) |
 | [`CfgTagSettings`](#cfgtagsettings) | - | 9 | no | no | confirmed (code) |
 | [`CfgTagStartCallback`](#cfgtagstartcallback) | - | 6 | yes | no | confirmed (code) |
 | [`CfgTurnRate`](#cfgturnrate) | - | 1 | yes | no | confirmed (code) |
@@ -943,7 +943,7 @@ CameraCreateFollow and CameraNormal.
 
 - **Evidence:** confirmed (code) at `0x0011c0b8`; detail: traced
 - **Wrapper** `0x0036ab88` (registered by `RegisterBindings`); **calls** `0x0011c0b8` `Cam_ConfigureFollow`
-- **Used by** 13 of 467 script chunks (28 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 13 of 467 script chunks (28 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## CfgGang {#cfggang}
@@ -2137,7 +2137,7 @@ Stores the enemy-spotting switch in the game state (+0x56f8).
 
 - **Evidence:** confirmed (code) at `0x0041d738`; detail: traced
 - **Wrapper** `0x0036bd90` (registered by `RegisterBindings`); **calls** `0x0041d738` `Cfg_SetEnemySpotting`
-- **Used by** 24 of 467 script chunks (44 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 24 of 467 script chunks (44 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## CfgSetGlassProperties {#cfgsetglassproperties}
@@ -2498,7 +2498,7 @@ can only turn the feature off.
 
 - **Evidence:** confirmed (code) at `0x0041d748`; detail: traced
 - **Wrapper** `0x0036bdc0` (registered by `RegisterBindings`); **calls** `0x0041d748` `Cfg_SetWarriorSpotting`
-- **Used by** 25 of 467 script chunks (45 references); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 25 of 467 script chunks (45 references); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## CfgSetWarriorVandalize {#cfgsetwarriorvandalize}
@@ -2678,7 +2678,7 @@ Stores the subtitle switch in the game state (+0x438).
 
 - **Evidence:** confirmed (code) at `0x0041da30`; detail: traced
 - **Wrapper** `0x0035e7b0` (registered by `RegisterBindings`); **calls** `0x0041da30` `Cfg_SetSubtitles`
-- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: no; result used: no
+- **Used by** 1 of 467 script chunks (1 reference); boot to menu: yes; mission 1: yes; result used: no
 - **Coney:** not implemented
 
 ## CfgTagSettings {#cfgtagsettings}
