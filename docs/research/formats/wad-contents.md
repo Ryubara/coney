@@ -244,18 +244,9 @@ formats; names and counts from the disc.
 
 ### Scene records {#scene-records}
 
-2,765 entries (`.scn`) are not chunked. They start with `u32 size` (equal to the entry size) and a name of up to
-16 characters that equals the WAD name without `.scn` (2,740 exactly, 20 more truncated at 16 characters), in two
-layouts:
-
-- **Header** (1,239): `{u32 size, u32 0, char name[16], char firstSegment[8], ...}`. 179 name a first segment,
-  and every one of those (`name + firstSegment + ".scn"`) exists.
-- **Segment** (1,526): `{u32 size, char name[16], char nextSuffix[4], ...}`, named `<scene>aa`, `<scene>ab`, ...
-  and chained: 1,180 name a next segment, and 1,158 of those resolve to an existing entry (the rest are
-  truncated names). Segments carry animation descriptors much like chunk `0x02`, with names of camera and lip-sync tracks.
-
-So a long scene is stored as a header plus a chain of segments of about 100 KB each on average, which suggests the scene
-system streams them. **Evidence:** inferred.
+2,765 entries (`.scn`) are not chunked: 1,240 scene headers and 1,525 segments of long scenes, which the game
+streams while the scene plays. Both start with `u32 size` (the entry's size). Their layout (roles, objects, camera,
+lights, clip and keyed tracks, events), confirmed (code), is on [Scenes](../scenes.md#data).
 
 ### Lua
 

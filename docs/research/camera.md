@@ -488,6 +488,8 @@ rule) and `0x0050b19c` was 1. Confirmed (runtime) unless marked:
 
 ### Scenes take the camera and give it back {#scenes}
 
+The rest of scene playback (records, roles, letterbox, skipping) is on [Scenes](scenes.md).
+
 `level99` starts with `SuperRunScene(IntroScene)` at checkpoint 1 ([Scripts](scripting.md)); `IntroScene` is a table
 (`SceneId` `l99_c1`, the humans and objects that take part, `ReturnFunc` = `P1.StartTraining`). The `global.lua`
 helpers fill in defaults and call the engine. Confirmed (code) for the script (`global.lua`, read as bytecode) and the

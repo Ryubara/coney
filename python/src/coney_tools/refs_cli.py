@@ -353,7 +353,8 @@ STARTERS: dict[str, dict[str, Any]] = {
         "about": "The in-engine scenes (cutscenes and animation sets, `.scn` records) and the full-motion movies\n"
         "(`PSS/<name>.BIK`). `ScenePreload(name)` returns a scene id, the record's index in the global\n"
         "scene list `scene_list.cnk`, which the other scene bindings take; `PlayMovie(name)` plays a\n"
-        "movie. How both work: [Scripts](../research/scripting.md#scenes-and-movies).",
+        "movie. How scenes play: [Scenes](../research/scenes.md); movies:\n"
+        "[Scripts](../research/scripting.md#scenes-and-movies).",
         "complete": "All 16 movies, and every scene of `scene_list.cnk` except the 1,525 segments that continue a\n"
         "longer scene: 1,240 scenes, 24 of them under names cut to 16 characters. A scene's levels and\n"
         "scripts are those that preload it by name; scenes that C++ code or a computed name loads show\n"

@@ -427,8 +427,8 @@ and 0.2**; `CameraNormal()` applies them again to `MainCam`. Inferred from the d
 - **The scene list.** Boot step 13 (`0x003535e8`, [Boot](boot.md#main)) loads `scene_list.cnk`, and `0x00353460`
   copies its Scene List chunk (type `0x43`): a u32 count, then 24-byte records `{u32 id, u32 size, char name[16]}`,
   to `0x006eba10`, the count to `0x00512aec`. Confirmed (code). On the NTSC-U disc there are 2,765 records, each id
-  its own index, one per `.scn` record ([Scene records](formats/wad-contents.md#scene-records)): 1,216 scene headers,
-  1,525 segments of long scenes and 24 whose names are cut to 16 characters.
+  its own index, one per `.scn` record: 1,240 scene headers (24 of them under names cut to 16 characters) and 1,525
+  segments of long scenes. The records, the slots and playback are on [Scenes](scenes.md).
 - **`ScenePreload(name)`** (`0x00353f88`) takes the id `0x00353698` finds: the **first** record whose name
   *contains* `name` (`0x00435d30` is a case-sensitive `strstr`), or 0 when none does; then `0x00353af0` loads it into
   a free slot of the 12 unless it is loaded or loading already. Confirmed (code). The scene id is global, not per
@@ -677,8 +677,7 @@ of the original).
   `level99_combat.lua`, `level2.lua` and `level3.lua` at the checkpoints tried.) The two errors Coney met are
   answered below ([Errors in a fresh state](#errors-in-a-fresh-state)): both are bindings Coney lacks, not missing
   preloads or globals.
-- The scene system (`SuperRunScene`): how a scripted scene takes the player's control and gives it back. The camera
-  side is on [Camera](camera.md#scenes).
+- The scene system (`SuperRunScene`). (Answered on [Scenes](scenes.md#superrunscene).)
 - `RegisterUpdate`. (Answered: `preLoadFile`'s completion routine `0x00356d00` runs the loaded chunk through slot
   `+0x3c`, then, when a callback name was given, finds it (slot `+0x4c`) and calls it with no arguments (slot `+0x8c`);
   confirmed (code).) Still open: whether the checkpoint scripts arrive during `InitLevel`'s preload, which services the

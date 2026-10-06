@@ -8,7 +8,7 @@
     - {addr: 0x00353f88, name: Scene_Preload}
   args:
     - {name: name, lua: string, desc: "Scene name (for example `l11_c2`); the first record of `scene_list.cnk` whose name contains it is loaded."}
-    - {name: onLoaded, lua: string, desc: "Optional name of a Lua function called when the scene has loaded."}
+    - {name: onLoaded, lua: string, desc: "Optional name of a Lua function called with the scene id when the scene has loaded (0x003531c8)."}
   results:
     - {lua: number, desc: "The scene's id (its index in the global scene list `scene_list.cnk`, [Scenes and movies](../scenes.md)), used by the other Scene bindings. An unknown name gives 0, the first scene."}
   description: >-
@@ -17,7 +17,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Scene table at 0x006eba10 (0x18-byte entries, count at 0x00512aec); slots at 0x006eba18 (0x40 bytes each).
+    Scene table at 0x006eba10 (0x18-byte entries, count at 0x00512aec); slots at 0x006eba18 (0x40 bytes each). A slot
+    is unloaded when its scene has played (0x00353bf0), so a scene is preloaded again before its next play. Research:
+    docs/research/scenes.md#loading.
   usage: {chunks: 110, calls: 256, boot: true, mission1: true, result_used: true}
 
 - name: SceneIsPreloaded
@@ -53,12 +55,12 @@
   args:
     - {name: name, lua: string, desc: "Name of a Lua function; nil or an empty string clears it."}
   description: >-
-    Sets a global scene callback name (interned, at 0x00512af4) that scenes call at a scripted point (used for bus and
-    chase set-ups and the credits).
+    Sets a global scene callback name (interned, at 0x00512af4) that every scene calls, with no arguments, at the
+    moment it actually starts (used for bus and chase set-ups and the credits).
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    When the scene system calls it is not traced.
+    Called from the scene start 0x0039d870 once everything is loaded, before the camera and tracks start.
   usage: {chunks: 6, calls: 14, boot: false, mission1: false, result_used: false}
 
 - name: ScenePlayCinematic
@@ -67,15 +69,15 @@
     - {addr: 0x00353c68, name: Scene_PlayCinematic}
   args:
     - {name: scene, lua: number, ctype: unsigned, desc: "Scene id from ScenePreload."}
-    - {name: delay, lua: number, ctype: unsigned, desc: "Delay before it starts (global.lua passes the scene table's Delay; level scripts 0)."}
-    - {name: onEnd, lua: string, desc: "Name of the Lua function called when the scene ends, or nil."}
-    - {name: bars, lua: boolean, desc: "true shows the letterbox bars."}
-    - {name: skippable, lua: boolean, desc: "true lets the player skip it (global.lua passes `not NoSkip`)."}
-    - {name: looping, lua: boolean, desc: "true loops the scene."}
-    - {name: freeze, lua: boolean, default: true, desc: "true (default) freezes the world while the scene plays."}
-    - {name: blendCam, lua: number, ctype: float, desc: "Camera blend time when the scene starts and ends (seconds, inferred)."}
-    - {name: final, lua: boolean, desc: "global.lua passes the scene table's Final flag; when true it sets a global (0x00510174), inferred to mark the level's last scene."}
-    - {name: chain, lua: boolean, desc: "global.lua passes the scene table's Chain field; its use is not traced."}
+    - {name: delay, lua: number, ctype: unsigned, desc: "The longest the start waits for the bound humans to walk to their marks: delay × 60 scene updates (30 a second). 0 (global.lua's default) does not wait."}
+    - {name: onEnd, lua: string, desc: "Name of the Lua function called with the scene id when the scene ends, or nil."}
+    - {name: bars, lua: boolean, desc: "true makes it a full cinematic: letterbox in and out over 1.5 s, the world preloaded around the scene camera, the player handed back at the end. false plays the tracks only."}
+    - {name: skippable, lua: boolean, desc: "true lets cross or START skip it after 2 s (global.lua passes `not NoSkip`); also sets the flag 0x00510174."}
+    - {name: looping, lua: boolean, desc: "true loops the scene (from a loop-point event when it has one)."}
+    - {name: freeze, lua: boolean, default: true, desc: "true suspends every brain while it plays and resumes them all after. Defaults to true only when omitted; an explicit nil is false, which is what global.lua passes."}
+    - {name: blendCam, lua: number, ctype: float, desc: "Seconds of camera blend when the scene camera hands back (0 or below is a cut); after a skip, also the fade-in time when above 0."}
+    - {name: final, lua: boolean, desc: "true skips preloading `<scene>_end.pak` around the camera at the end (global.lua passes the scene table's Final)."}
+    - {name: chain, lua: boolean, desc: "true letterboxes in at once and keeps a START skip going into this scene; false clears it (global.lua passes the scene table's Chain)."}
   results:
     - {lua: boolean, desc: "true (1) when the scene started, nil when it could not."}
   description: >-
@@ -84,8 +86,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Argument names follow global.lua's scene-table fields; their exact effects inside the scene player (0x00353818 →
-    0x003a13d0) are inferred.
+    Plays at the world origin with no rotation, so the record's coordinates are world coordinates. Task flags +0xed
+    bars, +0xe5 skippable, +0xeb looping, +0xef freeze, +0xe7 final, +0xe8 chain, BlendCam at +0x94 (0x003a13d0,
+    0x00353818). Research: docs/research/scenes.md#playing.
   usage: {chunks: 9, calls: 14, boot: true, mission1: true, result_used: false}
 
 - name: ScenePlayFixedScene
@@ -102,8 +105,9 @@
   results:
     - {lua: boolean, desc: "true (1) when the scene started."}
   description: >-
-    Plays a loaded scene at its authored position without the cinematic extras (no bars, not skippable); level99 uses
-    it for its intro.
+    Plays a loaded scene at its authored position without the cinematic extras (no letterbox, preload or player
+    hand-over). level99 runs its Wonder Wheel with it (`WonderWheel_99`, 29 objects, looping, not
+    frozen); global.lua's helpers use it for scene tables whose Animation field is a value other than 1.
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 4, calls: 4, boot: true, mission1: true, result_used: false}
@@ -174,13 +178,14 @@
     - {addr: 0x00354038, name: Scene_Stop}
   args:
     - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
-    - {name: force, lua: boolean, desc: "true stops it at once; false lets a scene marked to finish its current part do so."}
+    - {name: force, lua: boolean, desc: "true ends it at once; false, on a looping scene, only stops the looping so it ends after the current pass."}
   description: >-
     Stops a playing scene (state 4 or 5); nothing happens when it is not playing.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The non-forced path for such scenes calls 0x003a0be8; what it waits for is not traced.
+    A starting scene goes to its end at once; a playing one has its roles' clips ended (0x003a0a68) and then ends as
+    usual (docs/research/scenes.md#ending). The non-forced path on a looping scene is 0x003a0be8.
   usage: {chunks: 53, calls: 62, boot: true, mission1: false, result_used: false}
 
 - name: SceneDone
@@ -204,7 +209,7 @@
   args:
     - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
   results:
-    - {lua: number, desc: "The scene's length in milliseconds, or 0 when it has none."}
+    - {lua: number, desc: "The first part's length in milliseconds (its first track's duration), not the whole of a scene with segments; 0 when it has no tracks."}
   description: >-
     Returns a scene's length. No script calls it.
   evidence: confirmed-code

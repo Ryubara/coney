@@ -164,7 +164,8 @@ SceneLength(scene) -> number
 | --- | --- | --- | --- |
 | 1 | `scene` | number, truncated to an unsigned integer | Scene id. |
 
-**Returns** number: The scene's length in milliseconds, or 0 when it has none.
+**Returns** number: The first part's length in milliseconds (its first track's duration), not the whole of a scene with
+segments; 0 when it has no tracks.
 
 Returns a scene's length. No script calls it.
 
@@ -257,23 +258,24 @@ ScenePlayCinematic(scene, delay, onEnd, bars, skippable, looping, freeze, blendC
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `scene` | number, truncated to an unsigned integer | Scene id from ScenePreload. |
-| 2 | `delay` | number, truncated to an unsigned integer | Delay before it starts (global.lua passes the scene table's Delay; level scripts 0). |
-| 3 | `onEnd` | string | Name of the Lua function called when the scene ends, or nil. |
-| 4 | `bars` | boolean (nil or 0 is false) | true shows the letterbox bars. |
-| 5 | `skippable` | boolean (nil or 0 is false) | true lets the player skip it (global.lua passes `not NoSkip`). |
-| 6 | `looping` | boolean (nil or 0 is false) | true loops the scene. |
-| 7 | `freeze` | boolean (nil or 0 is false); default true | true (default) freezes the world while the scene plays. |
-| 8 | `blendCam` | number (single precision) | Camera blend time when the scene starts and ends (seconds, inferred). |
-| 9 | `final` | boolean (nil or 0 is false) | global.lua passes the scene table's Final flag; when true it sets a global (0x00510174), inferred to mark the level's last scene. |
-| 10 | `chain` | boolean (nil or 0 is false) | global.lua passes the scene table's Chain field; its use is not traced. |
+| 2 | `delay` | number, truncated to an unsigned integer | The longest the start waits for the bound humans to walk to their marks: delay × 60 scene updates (30 a second). 0 (global.lua's default) does not wait. |
+| 3 | `onEnd` | string | Name of the Lua function called with the scene id when the scene ends, or nil. |
+| 4 | `bars` | boolean (nil or 0 is false) | true makes it a full cinematic: letterbox in and out over 1.5 s, the world preloaded around the scene camera, the player handed back at the end. false plays the tracks only. |
+| 5 | `skippable` | boolean (nil or 0 is false) | true lets cross or START skip it after 2 s (global.lua passes `not NoSkip`); also sets the flag 0x00510174. |
+| 6 | `looping` | boolean (nil or 0 is false) | true loops the scene (from a loop-point event when it has one). |
+| 7 | `freeze` | boolean (nil or 0 is false); default true | true suspends every brain while it plays and resumes them all after. Defaults to true only when omitted; an explicit nil is false, which is what global.lua passes. |
+| 8 | `blendCam` | number (single precision) | Seconds of camera blend when the scene camera hands back (0 or below is a cut); after a skip, also the fade-in time when above 0. |
+| 9 | `final` | boolean (nil or 0 is false) | true skips preloading `<scene>_end.pak` around the camera at the end (global.lua passes the scene table's Final). |
+| 10 | `chain` | boolean (nil or 0 is false) | true letterboxes in at once and keeps a START skip going into this scene; false clears it (global.lua passes the scene table's Chain). |
 
 **Returns** boolean (1 for true, nil for false): true (1) when the scene started, nil when it could not.
 
 Plays a loaded scene as a cinematic at its authored position, taking over the camera and optionally the player's control
 until it ends or is skipped.
 
-**Notes.** Argument names follow global.lua's scene-table fields; their exact effects inside the scene player
-(0x00353818 → 0x003a13d0) are inferred.
+**Notes.** Plays at the world origin with no rotation, so the record's coordinates are world coordinates. Task flags
++0xed bars, +0xe5 skippable, +0xeb looping, +0xef freeze, +0xe7 final, +0xe8 chain, BlendCam at +0x94 (0x003a13d0,
+0x00353818). Research: docs/research/scenes.md#playing.
 
 - **Evidence:** confirmed (code) at `0x00353c68`; detail: traced
 - **Wrapper** `0x00367580` (registered by `RegisterBindings`); **calls** `0x00353c68` `Scene_PlayCinematic`
@@ -297,8 +299,9 @@ ScenePlayFixedScene(scene, delay, onEnd, looping, freeze, blendCam) -> boolean
 
 **Returns** boolean (1 for true, nil for false): true (1) when the scene started.
 
-Plays a loaded scene at its authored position without the cinematic extras (no bars, not skippable); level99 uses it for
-its intro.
+Plays a loaded scene at its authored position without the cinematic extras (no letterbox, preload or player hand-over).
+level99 runs its Wonder Wheel with it (`WonderWheel_99`, 29 objects, looping, not frozen); global.lua's helpers use it
+for scene tables whose Animation field is a value other than 1.
 
 - **Evidence:** confirmed (code) at `0x00353d60`; detail: traced
 - **Wrapper** `0x00367708` (registered by `RegisterBindings`); **calls** `0x00353d60` `Scene_PlayFixed`
@@ -314,7 +317,7 @@ ScenePreload(name, onLoaded) -> number
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `name` | string | Scene name (for example `l11_c2`); the first record of `scene_list.cnk` whose name contains it is loaded. |
-| 2 | `onLoaded` | string | Optional name of a Lua function called when the scene has loaded. |
+| 2 | `onLoaded` | string | Optional name of a Lua function called with the scene id when the scene has loaded (0x003531c8). |
 
 **Returns** number: The scene's id (its index in the global scene list `scene_list.cnk`, [Scenes and
 movies](../scenes.md)), used by the other Scene bindings. An unknown name gives 0, the first scene.
@@ -322,7 +325,9 @@ movies](../scenes.md)), used by the other Scene bindings. An unknown name gives 
 Starts loading a scripted scene (in-engine cutscene or animation set) into one of 12 scene slots and returns its id; a
 scene already loaded or loading is not loaded again.
 
-**Notes.** Scene table at 0x006eba10 (0x18-byte entries, count at 0x00512aec); slots at 0x006eba18 (0x40 bytes each).
+**Notes.** Scene table at 0x006eba10 (0x18-byte entries, count at 0x00512aec); slots at 0x006eba18 (0x40 bytes each). A
+slot is unloaded when its scene has played (0x00353bf0), so a scene is preloaded again before its next play. Research:
+docs/research/scenes.md#loading.
 
 - **Evidence:** confirmed (code) at `0x00353f88`; detail: traced
 - **Wrapper** `0x00367448` (registered by `RegisterBindings`); **calls** `0x00353f88` `Scene_Preload`
@@ -341,12 +346,12 @@ SceneSetCallback(name)
 
 **Returns** nothing.
 
-Sets a global scene callback name (interned, at 0x00512af4) that scenes call at a scripted point (used for bus and chase
-set-ups and the credits).
+Sets a global scene callback name (interned, at 0x00512af4) that every scene calls, with no arguments, at the moment it
+actually starts (used for bus and chase set-ups and the credits).
 
-**Notes.** When the scene system calls it is not traced.
+**Notes.** Called from the scene start 0x0039d870 once everything is loaded, before the camera and tracks start.
 
-- **Evidence:** confirmed (code) at `0x00354710`; detail: brief
+- **Evidence:** confirmed (code) at `0x00354710`; detail: traced
 - **Wrapper** `0x00367550` (registered by `RegisterBindings`); **calls** `0x00354710`
 - **Used by** 6 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -360,13 +365,14 @@ SceneStop(scene, force)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `scene` | number, truncated to an unsigned integer | Scene id. |
-| 2 | `force` | boolean (nil or 0 is false) | true stops it at once; false lets a scene marked to finish its current part do so. |
+| 2 | `force` | boolean (nil or 0 is false) | true ends it at once; false, on a looping scene, only stops the looping so it ends after the current pass. |
 
 **Returns** nothing.
 
 Stops a playing scene (state 4 or 5); nothing happens when it is not playing.
 
-**Notes.** The non-forced path for such scenes calls 0x003a0be8; what it waits for is not traced.
+**Notes.** A starting scene goes to its end at once; a playing one has its roles' clips ended (0x003a0a68) and then ends
+as usual (docs/research/scenes.md#ending). The non-forced path on a looping scene is 0x003a0be8.
 
 - **Evidence:** confirmed (code) at `0x00354038`; detail: traced
 - **Wrapper** `0x00367e20` (registered by `RegisterBindings`); **calls** `0x00354038` `Scene_Stop`
