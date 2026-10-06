@@ -110,7 +110,7 @@ used.
 | `+0x208` | ptr | an attack-weight table that overrides `+0x298` |
 | `+0x20c` | ptr | the human's **gang** ([Gangs](#gangs)) |
 | `+0x212` | s8 | the formation this human follows in, −1 none ([Formations](#formations)) |
-| `+0x21c` | int | **threat response** (`GangSetThreatResponse`): 0 never fights |
+| `+0x21c` | int | **threat response** (`GangSetThreatResponse`): 0 never fights; **2** when the brain is made (`0x0028a570`, from `Human_Init`, the store at `0x0028a878`) |
 | `+0x220` | int | damage response |
 | `+0x265` / `+0x266` / `+0x267` | u8 | wants a weapon / a hat / reacts to violence |
 | `+0x26c` | int | ped type |
@@ -1546,6 +1546,30 @@ The scenarios `warriors_passive` (no input) and `warriors_block` (square every 1
 recording, 481 updates (16.0 s) after the saved state, which was taken just after `P1.SetupWarriors` started the
 16.7 s scene ([Scenes](scenes.md#humans)). Results: [the attack delay](#attack-action), [the block](#block) and
 [the cast's numbers](#level99).
+
+**Who fights in lesson 12.** `P1.SendWarriors` (the scene's return function), in order: `GangBrDead(false)` for
+the sparring gang and the first fence gang; `HuUseAnim(…, 0, nil)` on each `FenceWarriors1` and
+`HuSetNoTarget(true)` on each `FenceWarriors2`; **`TacticCrowd(fence gang, nil, true)`** (cheering) for the two
+fence gangs only; the tutorial text; `GangMakeEnemies(Warriors, CombatWarriors)`; then for each of the three
+`CombatWarriors`: `HuSetPushable(true)`, `HuSetNoTarget(false)`, `HuSetDemiGodMode(true, 0.25)` and
+`GoalFight(warrior, player, 0)`; then the 50 s stopwatch (`P1.TimesUp`) and the grab hint's anim callbacks
+(inferred from the disassembly of `level99_combat.lua`). The gangs are made in this order, so their ids are 0
+`Warriors`, 1 `CombatEnemy`, 2 `CombatEnemy2`, 3 `CombatTeacher`, 4 `CombatWarriors`, 5 and 6 the fence
+Warriors, as read at runtime ([the cast while the scene plays](#level99-scene-state)). So:
+
+- The sparring Warriors' gang (4) has **no tactic**, and no script sets its threat response: it keeps the **2**
+  every brain gets when it is made (`0x0028a570`). The scripts set 0 only on `CombatEnemy`, `CombatEnemy2` and
+  `CombatTeacher` (and 2 on `CombatEnemy2` when its fight starts). Their `GoalFight` therefore runs in full:
+  `Brain_Fight` adds the player as an enemy, takes him as the target and `Brain_PushFightGoal` pushes the melee
+  goal and the fight goal ([Starting a fight](#targets)). The three take the player on together (the player's brain
+  allows 4 attack slots), demi-gods at a quarter of their health, until the stopwatch ends the lesson. Confirmed
+  (runtime): they fought in the `warriors_*` recordings.
+- The fence gangs (5, 6) get the **crowd tactic** and no `GoalFight`: they cheer from the fence
+  ([TacticCrowd](#tactics)). They are friends of the Warriors' gang.
+- **Which wins**, confirmed (code) at `0x0028d2e8` and `0x0028d190`: a threat response of 0 stops `GoalFight`
+  completely (`Brain_Fight` returns at once: no enemy, no target, no goal); under a gang tactic it adds the enemy
+  and takes the target, but **pushes no fight goal**, and the tactic decides what the members do. A scripted
+  `GoalFight` never overrides either. Neither applies to the sparring Warriors.
 
 #### Reaching the fight without a playthrough {#level99-save}
 
