@@ -356,6 +356,12 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     m_scripts.setTime(nowMs);
     callTutorialCallback();
+    // The path camera's functions reached in the step.
+    if (m_cameras) {
+        for (const std::string& function : m_cameras->takeFired()) {
+            m_scripts.call(function, std::vector<script::Value>{});
+        }
+    }
     if (m_scripted) {
         m_scripted->runAnimCallbacks();
         m_scripted->humanHost().runRageHandlers();

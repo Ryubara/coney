@@ -16,7 +16,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | Level | Story | Bindings | New | New, traced | New, in Coney |
 | --- | --- | --- | --- | --- | --- |
 | [`level80`](#level80) | mission 2 | 178 | 50 | 50 | 50 |
-| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 72 |
+| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 75 |
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 24 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 1 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 1 |
@@ -103,7 +103,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level87: mission 3 {#level87}
 
-261 bindings, 87 new: 87 traced, 72 implemented in Coney (246 of all 261).
+261 bindings, 87 new: 87 traced, 75 implemented in Coney (249 of all 261).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -154,14 +154,14 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`GangSetLeader`](gang.md#gangsetleader) | Gangs | traced | confirmed (code) | implemented |
 | [`GangSetRespondPercentage`](gang.md#gangsetrespondpercentage) | Gangs | traced | confirmed (code) | implemented |
 | [`GangStartSpawner`](gang.md#gangstartspawner) | Gangs | traced | confirmed (code) | implemented |
-| [`CamAddPoizoPoint`](camera.md#camaddpoizopoint) | Cameras | traced | confirmed (code) | not implemented |
-| [`CamAddPoizoPointCam`](camera.md#camaddpoizopointcam) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamAddPoizoPoint`](camera.md#camaddpoizopoint) | Cameras | traced | confirmed (code) | implemented |
+| [`CamAddPoizoPointCam`](camera.md#camaddpoizopointcam) | Cameras | traced | confirmed (code) | implemented |
 | [`CamDelete`](camera.md#camdelete) | Cameras | traced | confirmed (code) | implemented |
 | [`CameraGetActive`](camera.md#cameragetactive) | Cameras | traced | confirmed (code) | implemented |
 | [`CamGetPos`](camera.md#camgetpos) | Cameras | traced | confirmed (code) | implemented |
 | [`CamLockLocked`](camera.md#camlocklocked) | Cameras | traced | confirmed (code) | not implemented |
 | [`CamSetFollowPos`](camera.md#camsetfollowpos) | Cameras | traced | confirmed (code) | implemented |
-| [`CamSetupPoizo`](camera.md#camsetuppoizo) | Cameras | traced | confirmed (code) | not implemented |
+| [`CamSetupPoizo`](camera.md#camsetuppoizo) | Cameras | traced | confirmed (code) | implemented |
 | [`CarPlaceInTrunkOnDetach`](world.md#carplaceintrunkondetach) | World and objects | traced | confirmed (code) | not implemented |
 | [`EnableVolumeBox`](world.md#enablevolumebox) | World and objects | traced | confirmed (code) | implemented |
 | [`FlagGetOwner`](world.md#flaggetowner) | World and objects | traced | confirmed (code) | implemented |
@@ -345,7 +345,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level3: mission 6 {#level3}
 
-259 bindings, 22 new: 22 traced, 2 implemented in Coney (215 of all 259).
+259 bindings, 22 new: 22 traced, 2 implemented in Coney (217 of all 259).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -495,7 +495,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level14: mission 12 {#level14}
 
-226 bindings, 6 new: 6 traced, 1 implemented in Coney (201 of all 226).
+226 bindings, 6 new: 6 traced, 1 implemented in Coney (203 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -508,7 +508,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level9: mission 13 {#level9}
 
-225 bindings, 6 new: 6 traced, 1 implemented in Coney (199 of all 225).
+225 bindings, 6 new: 6 traced, 1 implemented in Coney (201 of all 225).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -559,7 +559,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level55: mission 17 {#level55}
 
-226 bindings, 8 new: 8 traced, 1 implemented in Coney (195 of all 226).
+226 bindings, 8 new: 8 traced, 1 implemented in Coney (197 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -615,7 +615,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level83: flashback 3 {#level83}
 
-250 bindings, 1 new: 1 traced, 0 implemented in Coney (219 of all 250).
+250 bindings, 1 new: 1 traced, 0 implemented in Coney (221 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

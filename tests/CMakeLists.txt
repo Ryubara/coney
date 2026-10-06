@@ -160,6 +160,7 @@ target_sources(coney_tests PRIVATE
     animation/anim_task_test.cpp
     animation/held_flags_test.cpp
     camera/cameras_test.cpp
+    camera/path_camera_test.cpp
     camera/win_camera_test.cpp
     camera/follow_camera_test.cpp
     camera/follow_collision_test.cpp

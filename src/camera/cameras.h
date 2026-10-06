@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -17,6 +18,7 @@
 #include "camera/camera_view.h"
 #include "camera/follow_camera.h"
 #include "camera/locked_camera.h"
+#include "camera/path_camera.h"
 #include "camera/slow_motion.h"
 #include "camera/win_camera.h"
 #include "raycast/collision_mesh.h"
@@ -36,6 +38,7 @@ enum class CameraKind : std::uint8_t {
     Locked, ///< A locked camera (type 1).
     Scene,  ///< A scene's camera (type 4), which the scene player moves.
     Win,    ///< The Rumble win camera (`Cam_Win`), which circles the winner.
+    Path,   ///< The scripts' path camera (type 3, `Cam_Spline`), which flies through its points.
 };
 
 /// A camera the manager knows: its kind and, for a locked one, its handle.
@@ -127,6 +130,24 @@ class Cameras {
     [[nodiscard]] std::optional<anim::Vec3> positionOf(double handle) const;
     /// `CamSetFollowPos`: the follow camera put at `position` at once (FollowCamera::placeAt()); nothing without one.
     void setFollowPosition(anim::Vec3 position);
+
+    /// `CamSetupPoizo`: the one path camera started over from the view of the camera `start` names
+    /// (PathCamera::setup()) and its handle, `handle` the first time and the same one after; nothing when `start` names
+    /// no camera.
+    [[nodiscard]] std::optional<double> setupPath(double handle, double start, float seconds, std::string onEnd,
+                                                  float fieldOfView, float farClip);
+    /// `CamAddPoizoPoint`: a point appended to the path; false without a path camera.
+    /// @orig 0x0011cbb0 Camera_AddPoizoPoint (unknown)
+    bool addPathPoint(const PathPoint& point);
+    /// `CamAddPoizoPointCam`: the view of the camera `camera` names now, appended as a point; false without a path
+    /// camera or for a handle that names no camera.
+    /// @orig 0x0011cc68 Camera_AddPoizoPointCam (unknown)
+    bool addPathPointFrom(double camera, float seconds, std::string onReach);
+    /// The path camera, once made.
+    [[nodiscard]] const PathCamera* path() const { return m_path ? &*m_path : nullptr; }
+    /// The script functions the path camera reached since the last call (its points' and its end's), in order: the
+    /// gameplay calls them after the step.
+    [[nodiscard]] std::vector<std::string> takeFired() { return std::exchange(m_fired, {}); }
 
     /// `CameraMakeActive(camera, seconds)`: makes the camera with `handle` current, at once with 0 seconds or no
     /// current camera (which runs the follow camera's activation), otherwise through a blend from the view shown now.
@@ -227,7 +248,10 @@ class Cameras {
     std::map<double, LockedCamera> m_locked;
     float m_followFarClip = kPlayerCameraLens.farClip;
     std::optional<WinCamera> m_win;
-    double m_winHandle = 0.0; // the win camera's handle once made
+    std::optional<PathCamera> m_path;
+    double m_pathHandle = 0.0;
+    std::vector<std::string> m_fired; // the path camera's functions reached, for takeFired()
+    double m_winHandle = 0.0;         // the win camera's handle once made
     double m_winTarget = 0.0;
     WinCameraSettings m_winSettings;
     Placer m_place;

@@ -192,6 +192,7 @@ target_sources(coney_core PRIVATE
     camera/follow_camera.cpp
     camera/follow_collision.cpp
     camera/locked_camera.cpp
+    camera/path_camera.cpp
     camera/slow_motion.cpp
     camera/win_camera.cpp
     characters/anim_set.cpp

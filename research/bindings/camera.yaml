@@ -547,6 +547,7 @@
     (`+0x33c`); it does not return to another camera by itself (only a reversed path, CamReversePoizo, blends back to
     the start camera). At most 8 points (`PoizoCam_AddPoint` 0x00142a58); further points overwrite the last.
   usage: {chunks: 7, calls: 7, boot: false, mission1: false, result_used: true, levels: [87, 3, 14, 9, 55, 83]}
+  coney: implemented
 
 - name: CamReversePoizo
   wrapper: 0x00366dd0
@@ -594,6 +595,7 @@
     The path holds 8 points including the start view; when full, each new point overwrites the last. Adding points
     while the path plays changes it from the next update.
   usage: {chunks: 6, calls: 10, boot: false, mission1: false, result_used: false, levels: [87, 3, 14, 9, 55, 83]}
+  coney: implemented
 
 - name: CamAddPoizoPointCam
   wrapper: 0x00366f90
@@ -615,6 +617,7 @@
     The view is copied when the call is made; later moves of that camera do not change the point. Lens values are not
     taken from it.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [87]}
+  coney: implemented
 
 - name: CamLockLocked
   wrapper: 0x00367030

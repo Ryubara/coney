@@ -761,6 +761,11 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
   the view shown when it began to the destination's live view, linear in time, the far clip never growing; at the end
   the destination becomes current directly, which runs the follow camera's activation (`FollowCamera::activate()`).
   A **locked camera** looks along its angles at a point 3 m ahead, its far clip at most 150;
+- the **path camera** ([Path cameras](#path-cameras), `repo:src/camera/path_camera.h`): `CamSetupPoizo` starts it
+  from a camera's view, `CamAddPoizoPoint` / `CamAddPoizoPointCam` append up to 8 points, and while it is current it
+  flies the Catmull-Rom curve (each end point's neighbour standing in for the missing one), slerping the
+  orientations, and gameplay calls each point's function as it is reached and the end function at the last, where
+  it stays. **Coney's choices**: a point's angles are read as a locked camera's, and the look-at point is 3 m ahead;
 - the **combat camera** ([Combat camera](#combat-camera)): with L1 held while the player has a fight target (`Fighter::target()`)
   the band's wanted near edge goes to 2.4 m (4.8, 4.44, 4.134, ... at 4.5/s) and the target pitch to 15°, the enemy's
   point (position + half its velocity) is turned toward 27° off the view's centre (0.455 of the excess, at most

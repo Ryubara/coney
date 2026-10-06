@@ -521,6 +521,21 @@ subsystem = "Camera"
 size = 392
 
 [[function]]
+address = 0x0011c9e0
+name = "Camera_SetupPoizo"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011cbb0
+name = "Camera_AddPoizoPoint"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011cc68
+name = "Camera_AddPoizoPointCam"
+subsystem = "Camera"
+
+[[function]]
 address = 0x0011dcf0
 name = "Camera_SetFollowSecondary"
 subsystem = "Camera"
@@ -667,6 +682,16 @@ subsystem = "Camera"
 [[function]]
 address = 0x00135680
 name = "Cam_Locked_Update"
+subsystem = "Camera"
+
+[[function]]
+address = 0x001426c0
+name = "PoizoCam_Update"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00142a58
+name = "PoizoCam_AddPoint"
 subsystem = "Camera"
 
 [[function]]

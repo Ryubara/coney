@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "scripting/story_effects_bindings.h"
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <span>
@@ -12,6 +14,7 @@
 #include <vector>
 
 #include "camera/cameras.h"
+#include "camera/path_camera.h"
 #include "core/name_hash.h"
 #include "effects/level_effects.h"
 #include "scripting/binding_args.h"
@@ -99,6 +102,55 @@ NativeFunction makeCamSetFollowPos(const BindingContext& context) {
             context->cameras->setFollowPosition(anim::Vec3{(*at)[0], (*at)[1], (*at)[2]});
         }
         return binding::none();
+    };
+}
+
+// Argument `i` as a function name: empty for nil or a missing argument.
+std::string nameArg(std::span<const Value> args, std::size_t i) {
+    return absent(args, i) ? std::string() : binding::string(args, i);
+}
+
+// `CamSetupPoizo(camera, seconds, onEnd, fov, far, human) -> camera`: the path camera started from `camera`'s view;
+// NilHandle when `camera` names none. **Coney choice**: Coney has one player, so `human` (another player's camera of
+// the same kind) is not read.
+// @orig 0x0011c9e0 Camera_SetupPoizo (unknown)
+NativeFunction makeCamSetupPoizo(const BindingContext& context, std::function<double()> nextHandle) {
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+        if (context->cameras == nullptr) {
+            return binding::number(kNilHandle);
+        }
+        const std::optional<double> path = context->cameras->setupPath(
+            context->cameras->path() == nullptr ? nextHandle() : 0.0, handleArg(args, 0),
+            static_cast<float>(binding::number(args, 1)), nameArg(args, 2),
+            static_cast<float>(binding::number(args, 3)), static_cast<float>(binding::number(args, 4)));
+        return binding::number(path.value_or(kNilHandle));
+    };
+}
+
+// `CamAddPoizoPoint(pos, heading, pitch, roll, seconds, onReach) -> boolean`; the table is left as it is.
+// @orig 0x0011cbb0 Camera_AddPoizoPoint (unknown)
+NativeFunction makeCamAddPoizoPoint(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const std::array<float, 3> at = binding::position(args, 0).value_or(std::array<float, 3>{});
+        const camera::PathPoint point{.position = anim::Vec3{at[0], at[1], at[2]},
+                                      .orientation =
+                                          camera::orientationOf(static_cast<float>(binding::number(args, 1)),
+                                                                static_cast<float>(binding::number(args, 2)),
+                                                                static_cast<float>(binding::number(args, 3))),
+                                      .seconds = static_cast<float>(binding::number(args, 4)),
+                                      .onReach = nameArg(args, 5)};
+        return binding::boolean(context->cameras != nullptr && context->cameras->addPathPoint(point));
+    };
+}
+
+// `CamAddPoizoPointCam(camera, seconds, onReach) -> boolean`.
+// @orig 0x0011cc68 Camera_AddPoizoPointCam (unknown)
+NativeFunction makeCamAddPoizoPointCam(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        return binding::boolean(context->cameras != nullptr &&
+                                context->cameras->addPathPointFrom(handleArg(args, 0),
+                                                                   static_cast<float>(binding::number(args, 1)),
+                                                                   nameArg(args, 2)));
     };
 }
 
@@ -190,11 +242,14 @@ NativeFunction makeSoundEnableEffects(const BindingContext& context) {
 
 } // namespace
 
-void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context) {
+void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
+    vm.registerFunction("CamAddPoizoPoint", makeCamAddPoizoPoint(context));
+    vm.registerFunction("CamAddPoizoPointCam", makeCamAddPoizoPointCam(context));
     vm.registerFunction("CameraGetActive", makeCameraGetActive(context));
     vm.registerFunction("CameraSetClipping", makeCameraSetClipping(context));
     vm.registerFunction("CamGetPos", makeCamGetPos(context));
     vm.registerFunction("CamSetFollowPos", makeCamSetFollowPos(context));
+    vm.registerFunction("CamSetupPoizo", makeCamSetupPoizo(context, std::move(nextHandle)));
     vm.registerFunction("EndParticle", makeParticleSwitch(context, false));
     vm.registerFunction("SoundEnableEffects", makeSoundEnableEffects(context));
     vm.registerFunction("SoundEnableSystemMusic", makeSoundEnableSystemMusic(context));

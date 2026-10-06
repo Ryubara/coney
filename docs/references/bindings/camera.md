@@ -80,7 +80,7 @@ points while the path plays changes it from the next update.
   `0x00142ac8`, `0x00142a58` `PoizoCam_AddPoint`
 - **Used by** 6 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamAddPoizoPointCam {#camaddpoizopointcam}
 
@@ -108,7 +108,7 @@ not taken from it.
   `0x00142d28`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamAddRailPoint {#camaddrailpoint}
 
@@ -1033,7 +1033,7 @@ to the start camera). At most 8 points (`PoizoCam_AddPoint` 0x00142a58); further
 - **Wrapper** `0x00366c80` (registered by `RegisterBindings`); **calls** `0x0011c9e0` `Camera_SetupPoizo`, `0x00142368`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamSetupRail {#camsetuprail}
 

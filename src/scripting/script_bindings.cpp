@@ -708,6 +708,9 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("WCEnableAllCommands"),
     real("WCIssueCommand"),
     // The story missions' cameras, particles and sound (story_effects_bindings.h).
+    real("CamAddPoizoPoint"),
+    real("CamAddPoizoPointCam"),
+    real("CamSetupPoizo"),
     real("CameraGetActive"),
     real("CameraSetClipping"),
     real("CamGetPos"),
@@ -1211,7 +1214,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addRumbleMatchBindings(vm, context, nextHandle);
     addHumanBindings(vm, context, nextHandle);
     addStoryBindings(scripts, vm, context, nextHandle);
-    addStoryEffectsBindings(vm, context);
+    addStoryEffectsBindings(vm, context, nextHandle);
     addEffectsBindings(vm, context, nextHandle);
     addCarBindings(vm, context, nextHandle);
     addArenaBindings(vm, context);

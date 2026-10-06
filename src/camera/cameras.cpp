@@ -120,6 +120,9 @@ std::optional<CameraRef> Cameras::find(double handle) const {
     if (m_win && m_winHandle != 0.0 && handle == m_winHandle) {
         return CameraRef{.kind = CameraKind::Win, .handle = handle};
     }
+    if (m_path && m_pathHandle != 0.0 && handle == m_pathHandle) {
+        return CameraRef{.kind = CameraKind::Path, .handle = handle};
+    }
     return std::nullopt;
 }
 
@@ -140,12 +143,49 @@ void Cameras::setClipping(double handle, float nearClip, float farClip) {
     }
 }
 
+std::optional<double> Cameras::setupPath(double handle, double start, float seconds, std::string onEnd,
+                                         float fieldOfView, float farClip) {
+    const std::optional<CameraRef> from = find(start);
+    if (!from) {
+        return std::nullopt;
+    }
+    const CameraView view = viewOf(*from);
+    if (m_pathHandle == 0.0) {
+        m_pathHandle = handle;
+    }
+    if (!m_path) {
+        m_path.emplace();
+    }
+    m_path->setup(view, seconds, std::move(onEnd), fieldOfView, farClip);
+    return m_pathHandle;
+}
+
+bool Cameras::addPathPoint(const PathPoint& point) {
+    if (!m_path) {
+        return false;
+    }
+    m_path->addPoint(point);
+    return true;
+}
+
+bool Cameras::addPathPointFrom(double camera, float seconds, std::string onReach) {
+    const std::optional<CameraRef> ref = find(camera);
+    if (!m_path || !ref) {
+        return false;
+    }
+    const CameraView view = viewOf(*ref);
+    m_path->addPoint(PathPoint{
+        .position = view.position, .orientation = view.orientation, .seconds = seconds, .onReach = std::move(onReach)});
+    return true;
+}
+
 std::optional<double> Cameras::activeHandle() const {
     switch (m_current.kind) {
     case CameraKind::Follow:
         return m_followHandle;
     case CameraKind::Locked:
     case CameraKind::Win:
+    case CameraKind::Path:
         return m_current.handle;
     default:
         return std::nullopt;
@@ -179,6 +219,8 @@ CameraView Cameras::viewOf(CameraRef ref) const {
         return m_sceneView;
     case CameraKind::Win:
         return m_win ? m_win->view() : m_view;
+    case CameraKind::Path:
+        return m_path ? m_path->view() : m_view;
     case CameraKind::None:
         break;
     }
@@ -190,6 +232,9 @@ void Cameras::setCurrent(CameraRef ref) {
     m_current = ref;
     if (ref.kind == CameraKind::Follow && m_follow != nullptr) {
         m_follow->activate();
+    }
+    if (ref.kind == CameraKind::Path && m_path) {
+        m_path->activate();
     }
     m_view = viewOf(ref);
 }
@@ -211,6 +256,9 @@ void Cameras::makeActive(double handle, float seconds) {
     }
     if (ref->kind == CameraKind::Win) {
         startWin();
+    }
+    if (ref->kind == CameraKind::Path && m_path) {
+        m_path->activate();
     }
     // A scene camera keeps the screen: the script changes what the scene returns to.
     if (m_current.kind == CameraKind::Scene) {
@@ -353,9 +401,12 @@ void Cameras::update(const FollowTarget& target, std::uint8_t rawRightX, std::ui
             m_follow->observe(target);
         }
     }
-    // The win camera orbits while it is shown.
+    // The win camera orbits while it is shown; the path camera flies while it is current (`+0x33c`).
     if (m_win && m_current.kind == CameraKind::Win) {
         m_win->update(seconds);
+    }
+    if (m_path && m_current.kind == CameraKind::Path) {
+        m_path->update(seconds, m_fired);
     }
     // The blend toward the destination's live view; at the end the destination becomes current directly.
     CameraView view = viewOf(m_current);

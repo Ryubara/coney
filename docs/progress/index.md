@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.8% of the game's own code (430,988 of 3,354,776 bytes, 1,316 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.8% of the game's own code (430,988 of 3,354,776 bytes, 1,321 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-363 reimplemented function(s) have no size yet and add no bytes.
+368 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -54,7 +54,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
 | `Audio` | `█▍░░░░░░░░░░░░░░░░░░` | 6.7% | 54 | 57,368 |
-| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 45 | 165,680 |
+| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 50 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 25 | 62,808 |
@@ -196,6 +196,9 @@ at the top of the repository's `README.md`.
 | `0x0011c470` | `Camera_SetFollowZoom` | `Camera` | not filled in |
 | `0x0011c638` | `Camera_SetFollowPosition` | `Camera` | not filled in |
 | `0x0011c858` | `Camera_CreateWin` | `Camera` | 392 |
+| `0x0011c9e0` | `Camera_SetupPoizo` | `Camera` | not filled in |
+| `0x0011cbb0` | `Camera_AddPoizoPoint` | `Camera` | not filled in |
+| `0x0011cc68` | `Camera_AddPoizoPointCam` | `Camera` | not filled in |
 | `0x0011dcf0` | `Camera_SetFollowSecondary` | `Camera` | not filled in |
 | `0x0011de58` | `Camera_EnableFeature` | `Camera` | not filled in |
 | `0x0011e0a8` | `Camera_SetSplitMode` | `Camera` | 56 |
@@ -224,6 +227,8 @@ at the top of the repository's `README.md`.
 | `0x0012e9a8` | `Cam_Follow_FrameEnemy` | `Camera` | not filled in |
 | `0x00130990` | `Cam_Follow_Collide` | `Camera` | not filled in |
 | `0x00135680` | `Cam_Locked_Update` | `Camera` | not filled in |
+| `0x001426c0` | `PoizoCam_Update` | `Camera` | not filled in |
+| `0x00142a58` | `PoizoCam_AddPoint` | `Camera` | not filled in |
 | `0x00143078` | `Cam_Blend_Start` | `Camera` | not filled in |
 | `0x00143590` | `Cam_Blend_Update` | `Camera` | not filled in |
 | `0x001439d8` | `Cam_Win_Start` | `Camera` | 632 |
