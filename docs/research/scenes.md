@@ -168,7 +168,7 @@ at `0x00355e98`, `0x00355ab8`.
 | --- | ---: | --- |
 | 13 | 8 | preloads (at load) and plays a sound by hash (`+8`) on the sound manager `0x0050aa84` (inferred: dialogue) |
 | 14, 71 | 29, 2 | a sound by hash on the track's human or object; on a car, also its horn or engine (`0x0038d6d8`) |
-| 24, 25 | 203, 212 | sends message `0x12` / `0x13` to the track's object (meaning not traced) |
+| 24, 25 | 203, 212 | sends message `0x12` / `0x13` to the track's object; for a `simple_object`, **show** / **hide** ([Objects: the Wonder Wheel](objects.md#wonder-wheel)); other classes not traced |
 | 26 | 41,408 | the scene camera's lens: field of view `+8` (degrees), near `+0xc`, far `+0x10` |
 | 27 | 300 | fade out over `+8` seconds (`ScreenQueueEffect` type 1 on player 1's view); stops the caption |
 | 28 | 380 | fade in over `+8` seconds (type 0) |

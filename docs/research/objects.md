@@ -335,6 +335,44 @@ update `0x003ef840`, message `0x003ef188`, flags 8). Confirmed (code):
 
 That flag 4 stops the draw is inferred (it is a glass pane's hidden bit too, [Glass types](#glass)).
 
+#### What moves them: the Wonder Wheel {#wonder-wheel}
+
+No object code turns the wheel, swings a cart or flickers a neon: `simple_object` does not move, and the 29 types
+have no class of their own. A **scene** moves them. `level100.lua` binds them to `WonderWheel_100` (scene id 34; slots
+0-7 `_a` carts, 8-15 `_b`, 16 the wheel, 17-24 `_c`, 25-28 `neon_a`-`d`, [Scripts](scripting.md#level100lua-the-front-end))
+and plays it looping in world coordinates; `level99.lua` does the same with `WonderWheel_99`, the same tracks without
+a camera ([Scenes](scenes.md#superrunscene)). Each update (every 2 ticks, 30 a second) the scene's runner sets every
+bound object's transform from its track: positions linear, rotations slerped between keys
+([Scenes: objects](scenes.md#camera)). Confirmed (code) for the mechanism; the motion below is read from the disc
+(counts and values, 2026-10-06):
+
+- **The loop**: 600 frames (20 s). Every object ends where another starts, so the loop is seamless: the wheel and the
+  four neons each end turned **45°** from their start (one rim car's spacing), every rim car ends on the next one's
+  start, and the sliding cars end on another sliding car's start.
+- **The wheel** (slot 16) and **the neons** (25-28): fixed at the hub (515.51, −68.89, −188.67), four rotation keys
+  (frames 0, 255, 508/510, 600) turning them 45° about the axle: about **2.25° a second**, a turn in 160 s. The neons
+  turn with the wheel (their own start angles differ).
+- **The rim cars** (`_c`, slots 17-24): on a ring 21.55 m from the hub, 20 position keys and about 45 rotation keys
+  each; they keep hanging level, swinging at most 6.6° about it.
+- **The sliding cars** (`_a`, `_b`, slots 0-15): between 12.6 m and 22.2 m from the hub, 16-372 position keys each:
+  the cars that run along curved tracks between the rim and the inner ring, tipping up to about 60° on the way.
+- **The neon flicker**: scene events on the neon tracks, type **24** (message `0x12`, **show**) and **25** (message
+  `0x13`, **hide**), confirmed (code) at `0x00354d98` and `0x003ef188`. Frames (30 a second), from the start of the
+  loop:
+
+    | Neon | Hidden | Shown |
+    | --- | --- | --- |
+    | `neon_a` | 0-60, 120-210, 270-360, 420-510, 570-600 | 60-120, 210-270, 360-420, 510-570 |
+    | `neon_b` | 0-30, 60-180, 210-330, 360-480, 510-600 | 30-60, 180-210, 330-360, 480-510 |
+    | `neon_c` | 30-150, 180-300, 330-450, 480-600 | 0-30, 150-180, 300-330, 450-480 |
+    | `neon_d` | never | always |
+
+    So the signs take turns (c, b, a every 5 s, each lit for 1-2 s) over the always-lit `neon_d`.
+- **The camera**: the scene's own, fixed at (462.60, −122.35, −187.93) for the whole loop ([Front end](frontend.md#background)).
+
+When the scene stops (`SceneStop`, a movie, a level start) the objects are released where they stand; playing it
+again restarts every track from frame 0. Inferred from [Scenes: ending](scenes.md#ending).
+
 ### How they get into a level {#placement}
 
 Glass and doors come from level scripts: `SpawnBreakableGlass` (929 calls in 32 chunks) and `SpawnDoor` (484 in

@@ -1316,7 +1316,8 @@ What the implementer still needs:
 - **Fade speed:** the frame-time argument of `0x0018ce58`; a 1.0 s fade out went black in about 0.35 s at runtime.
 - **Rumble draw order:** how the gang screen's 3D fighters end up over the opaque 2D background (depth 8,000).
 - **Sheet-table records 12 and 28** (the Rumble background and sprites): their resource names and rectangles.
-- **The `WonderWheel_100` tracks:** the camera path, the wheel's speed and the loop length ([Scenes](scenes.md)).
+- **The `WonderWheel_100` tracks** (answered): a fixed camera, a 20 s loop turning the wheel 45° (2.25° a
+  second), the neons shown and hidden by events ([Objects: the Wonder Wheel](objects.md#wonder-wheel)).
 - **`0x005147cc`**, set to 10.0 while the Rumble menu is open, and `0x0040c938`.
 - **PM_Difficulty's fourth item:** what the save-system query that unlocks it reports.
 - **The music at PM_Greet:** `menu` or `wonderwheel_132b` (mode 0x12 `Enter` replays `menu` when the names differ;
