@@ -298,8 +298,11 @@ its speed per step in the difficulty's direction and judges a press against the 
 both counters and every pin); `LockPick` runs the start, stage-fail, success and stop callbacks, plays the click on a
 miss, unlocks and opens the door on success (a break-in unless all three presses were perfect, which score bonus event
 1-3) and counts an abandoned pick at the door (the third reports a break-in). The door side is on
-[World objects](objects.md#coneys-implementation). Not yet wired into play: the context record, the triangle press,
-the input that abandons, the animations and the HUD dial belong to play mode and the HUD.
+[World objects](objects.md#coneys-implementation). In play (`repo:src/platform/play_level_objects.cpp`), triangle
+within 1.5 m of a pickable door (**Coney's stand-in** for the kind-2 record's reach, not traced) starts a pick at the
+difficulty of the player's `CfgWarriorClass` byte `+0x0a` less 1; the pick takes the pad until it ends, the dial
+turning each step, cross judging and any button but cross, L1, R2, the d-pad and SELECT abandoning. Not yet: the
+lock-pick animations (689, 690), the hint and the HUD dial.
 
 ## Open questions
 

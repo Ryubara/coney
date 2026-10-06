@@ -40,6 +40,8 @@
 #include "warriors/created_humans.h"
 #include "world/debug_camera.h"
 #include "world/sector_budget.h"
+#include "world_objects/level_objects.h"
+#include "world_objects/lock_pick.h"
 
 namespace rw {
 struct Texture;
@@ -98,6 +100,10 @@ struct PlayStats {
 /// layout's `fighter` lines, or spawned from the debug menus), humans with a brain stepped in the player's characters'
 /// step; both are drawn with the player's model. The parts follow docs/research/characters.md, docs/research/combat.md,
 /// docs/research/ai.md and docs/research/camera.md; the mode is Coney's own glue.
+///
+/// A level entered through gameplay also brings its glass panes and doors (ScriptedCast::objects,
+/// play_level_objects.cpp): they get the level's collision mesh and path data, tick twice a step, take player 1's
+/// landed hits, and triangle at a pickable door starts a lock pick that takes the pad until it ends.
 ///
 /// It is also the debug menus' way into the game (debug::PlayControls, docs/guides/debug-menu.md): the Player, Camera
 /// and Spawner pages act on it between steps, and render() draws the Debug draw page's lines into the scene.
@@ -281,6 +287,18 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The character `model` names, loaded once for every human of it; the scene's character when it is empty or fails
     // to load.
     CastLook castCharacter(const std::string& model);
+    // --- play_level_objects.cpp: the level's glass panes and doors.
+
+    // Points `objects` (the scripts' cast's, may be null) at the scenery's collision mesh and path data.
+    void bindObjects(world_objects::LevelObjects* objects, const script::RecordedCalls* recorded);
+    // The lock pick before the player's step: triangle at a pickable door starts one; while one runs the dial turns,
+    // cross judges a pin and triangle or another button abandons. Returns whether it holds the pad this step.
+    bool stepLockPick(const Pad& pad);
+    // After the player's step: his landed hit sent to the pane or door it struck, then the objects' two 60 Hz ticks.
+    void stepObjects();
+    // Player 1's handle, as the scripts know him; the nil handle without a cast.
+    [[nodiscard]] double playerHandle() const;
+
     // Draws the character: its lights, the render states, the atomic.
     void drawCharacter() const;
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
@@ -352,6 +370,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::unique_ptr<scenes::SceneList> m_ownSceneList;
     std::unique_ptr<scenes::SceneSystem> m_ownScenes;
     double m_playerHandle = 0.0;
+    // The level's glass panes and doors (gameplay's; null without them), the lock pick under way, and its difficulty.
+    world_objects::LevelObjects* m_objects = nullptr;
+    std::optional<world_objects::LockPick> m_lockPick;
+    int m_lockPickDifficulty = 0;
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;

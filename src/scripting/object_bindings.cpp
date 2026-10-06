@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "scripting/object_bindings.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -28,6 +29,8 @@ constexpr std::size_t kCfgObjHitpoints = 2;
 constexpr std::size_t kCfgObjSize = 7;
 constexpr std::size_t kCfgObjMaterial = 12;
 constexpr std::size_t kCfgObjType = 18;
+// `CfgWarriorClass`'s argument (0-based) that sets the record's byte `+0x0a`, the lock pick's difficulty plus 1.
+constexpr std::size_t kCfgWarriorClassLockPick = 10;
 
 // Argument `i` truncated to a whole number, as tolua reads an integer.
 int intArg(std::span<const Value> args, std::size_t i) {
@@ -80,7 +83,8 @@ std::optional<anim::Vec3> positionOf(const BindingContext& context, double handl
 // `SpawnBreakableGlass(type, corner, cornerU, cornerV, uv0, uv1, flag, triangle1, triangle2)`: a pane; its handle.
 // @orig 0x0039c0e0 Glass_Spawn (unknown)
 NativeFunction makeSpawnBreakableGlass(const BindingContext& context, std::function<double()> nextHandle) {
-    return [objects = context.objects, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         const double handle = nextHandle();
         if (objects != nullptr) {
             const world_objects::GlassSpawn spawn{.type = intArg(args, 0),
@@ -101,8 +105,9 @@ NativeFunction makeSpawnBreakableGlass(const BindingContext& context, std::funct
 // `SpawnDoor(type, pos, rot, {triangle1, triangle2}, number)`: a door or barrier, by its type's CfgObj; its handle.
 // @orig 0x00397230 Door_Spawn (unknown)
 NativeFunction makeSpawnDoor(const BindingContext& context, std::function<double()> nextHandle) {
-    return [objects = context.objects, recorded = context.recorded,
+    return [context = &context, recorded = context.recorded,
             nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         const double handle = nextHandle();
         if (objects != nullptr) {
             const std::array<float, 4> q = numbersArg<4>(args, 2);
@@ -120,19 +125,25 @@ NativeFunction makeSpawnDoor(const BindingContext& context, std::function<double
     };
 }
 
+// Sets the glass type `CfgSetGlassProperties(type, windowLink, alarm, sprite, brokenSprite)` names in `glass`.
+void setGlassType(world_objects::GlassPanes& glass, std::span<const Value> args) {
+    glass.setType(intArg(args, 0),
+                  world_objects::GlassType{.windowLink = boolArg(args, 1, false),
+                                           .alarm = boolArg(args, 2, false),
+                                           .sprite = static_cast<std::uint32_t>(intArg(args, 3)),
+                                           .brokenSprite = static_cast<std::uint32_t>(intArg(args, 4))});
+}
+
 // `CfgSetGlassProperties(type, windowLink, alarm, sprite, brokenSprite)`: one glass type; also recorded.
 // @orig 0x0038fab8 GlassTypes_Set (unknown)
 NativeFunction makeCfgSetGlassProperties(const BindingContext& context) {
-    return [objects = context.objects, recorded = context.recorded](std::span<const Value> args) {
+    return [context = &context, recorded = context.recorded](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         if (recorded != nullptr) {
             recorded->add("CfgSetGlassProperties", args);
         }
         if (objects != nullptr) {
-            objects->glass.setType(
-                intArg(args, 0), world_objects::GlassType{.windowLink = boolArg(args, 1, false),
-                                                          .alarm = boolArg(args, 2, false),
-                                                          .sprite = static_cast<std::uint32_t>(intArg(args, 3)),
-                                                          .brokenSprite = static_cast<std::uint32_t>(intArg(args, 4))});
+            setGlassType(objects->glass, args);
         }
         return binding::none();
     };
@@ -141,7 +152,8 @@ NativeFunction makeCfgSetGlassProperties(const BindingContext& context) {
 // A binding that sends the door its first argument names the state command `command` (`OpenDoor`, `CloseDoor`,
 // `DisableDoorCollision`).
 NativeFunction makeDoorCommand(const BindingContext& context, int command) {
-    return [objects = context.objects, command](std::span<const Value> args) {
+    return [context = &context, command](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         if (objects != nullptr) {
             objects->doors.command(binding::number(args, 0), command, objects->world);
         }
@@ -151,7 +163,8 @@ NativeFunction makeDoorCommand(const BindingContext& context, int command) {
 
 // `ObjectChangeState(object, state)`: message 0x22 with the state.
 NativeFunction makeObjectChangeState(const BindingContext& context) {
-    return [objects = context.objects](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         if (objects != nullptr) {
             objects->doors.command(binding::number(args, 0), intArg(args, 1), objects->world);
         }
@@ -162,7 +175,8 @@ NativeFunction makeObjectChangeState(const BindingContext& context) {
 // `SetDoorPickable(door, pickable)`: pickable on (the default) or off.
 // @orig 0x00397078 Door_SetPickable (unknown)
 NativeFunction makeSetDoorPickable(const BindingContext& context) {
-    return [objects = context.objects](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         if (objects != nullptr) {
             objects->doors.setPickable(binding::number(args, 0), boolArg(args, 1, true), objects->world);
         }
@@ -174,11 +188,11 @@ NativeFunction makeSetDoorPickable(const BindingContext& context) {
 // traced): swings the door open away from the human; from the door itself when the human is unknown.
 // @orig 0x003f9910 DoorSwing_OpenBy (unknown)
 NativeFunction makeDoorOpen(const BindingContext& context) {
-    return [context](std::span<const Value> args) {
-        if (LevelObjects* objects = context.objects) {
+    return [context = &context](std::span<const Value> args) {
+        if (LevelObjects* objects = context->objects) {
             const double door = binding::number(args, 0);
             const std::optional<anim::Vec3> doorAt = objects->positionOf(door);
-            const std::optional<anim::Vec3> humanAt = positionOf(context, binding::number(args, 1));
+            const std::optional<anim::Vec3> humanAt = positionOf(*context, binding::number(args, 1));
             objects->doors.openBy(door, humanAt.value_or(doorAt.value_or(anim::Vec3{})), objects->world);
         }
         return binding::none();
@@ -187,7 +201,8 @@ NativeFunction makeDoorOpen(const BindingContext& context) {
 
 // `DoorOpenDegree(door, degrees)`: message 0x42.
 NativeFunction makeDoorOpenDegree(const BindingContext& context) {
-    return [objects = context.objects](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         if (objects != nullptr) {
             objects->doors.openToDegree(binding::number(args, 0), static_cast<float>(intArg(args, 1)), objects->world);
         }
@@ -197,21 +212,24 @@ NativeFunction makeDoorOpenDegree(const BindingContext& context) {
 
 // `IsDoorOpen(door)`: message 0x0c, true only in state 5.
 NativeFunction makeIsDoorOpen(const BindingContext& context) {
-    return [objects = context.objects](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         return binding::boolean(objects != nullptr && objects->doors.isOpen(binding::number(args, 0)));
     };
 }
 
 // `GetHitpoints(object)`: a door's or barrier's hitpoints; 0 for anything else.
 NativeFunction makeGetHitpoints(const BindingContext& context) {
-    return [objects = context.objects](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         return binding::number(objects != nullptr ? objects->doors.hitpoints(binding::number(args, 0)) : 0);
     };
 }
 
 // `GetLeftDoorHandle(door)` / `GetRightDoorHandle(door)` (message 0x10): a leaf's handle, NilHandle without one.
 NativeFunction makeLeafHandle(const BindingContext& context, std::size_t leaf) {
-    return [objects = context.objects, leaf](std::span<const Value> args) {
+    return [context = &context, leaf](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         const world_objects::Door* door = objects != nullptr ? objects->doors.find(binding::number(args, 0)) : nullptr;
         if (door == nullptr || leaf >= door->leaves.size()) {
             return binding::number(kNilHandle);
@@ -223,9 +241,9 @@ NativeFunction makeLeafHandle(const BindingContext& context, std::size_t leaf) {
 // `BreakGlassInRadius(centre, radius)`: every pane within the radius of the object `centre`, and the glass objects.
 // @orig 0x003966c8 BreakGlassInRadius (unknown)
 NativeFunction makeBreakGlassInRadius(const BindingContext& context) {
-    return [context](std::span<const Value> args) {
-        if (LevelObjects* objects = context.objects) {
-            if (const std::optional<anim::Vec3> centre = positionOf(context, binding::number(args, 0))) {
+    return [context = &context](std::span<const Value> args) {
+        if (LevelObjects* objects = context->objects) {
+            if (const std::optional<anim::Vec3> centre = positionOf(*context, binding::number(args, 0))) {
                 objects->glass.breakInRadius(*centre, static_cast<float>(binding::number(args, 1)), objects->world);
             }
         }
@@ -236,9 +254,9 @@ NativeFunction makeBreakGlassInRadius(const BindingContext& context) {
 // `BreakObjectsInRadius(centre, radius)`: message 0x15 to every door within the radius of the object `centre`.
 // @orig 0x00396390 BreakObjectsInRadius (unknown)
 NativeFunction makeBreakObjectsInRadius(const BindingContext& context) {
-    return [context](std::span<const Value> args) {
-        if (LevelObjects* objects = context.objects) {
-            if (const std::optional<anim::Vec3> centre = positionOf(context, binding::number(args, 0))) {
+    return [context = &context](std::span<const Value> args) {
+        if (LevelObjects* objects = context->objects) {
+            if (const std::optional<anim::Vec3> centre = positionOf(*context, binding::number(args, 0))) {
                 objects->doors.destroyInRadius(*centre, static_cast<float>(binding::number(args, 1)));
             }
         }
@@ -248,7 +266,8 @@ NativeFunction makeBreakObjectsInRadius(const BindingContext& context) {
 
 // `DisableDoorLink(pos)`, `EnableDoorLink(pos)`, `ConvertJumpToDoor(pos)`: the nearest link within 5 m and its reverse.
 NativeFunction makeLinkByPosition(const BindingContext& context, void (world_objects::NavLinks::*change)(anim::Vec3)) {
-    return [objects = context.objects, change](std::span<const Value> args) {
+    return [context = &context, change](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         if (objects != nullptr) {
             world_objects::NavLinks links(objects->world.paths);
             (links.*change)(pointArg(args, 0));
@@ -259,7 +278,8 @@ NativeFunction makeLinkByPosition(const BindingContext& context, void (world_obj
 
 // `CfgSetLockPickHandler(start, stop, success)`: the lock pick's three callbacks.
 NativeFunction makeCfgSetLockPickHandler(const BindingContext& context) {
-    return [objects = context.objects](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         if (objects != nullptr) {
             objects->lockPick.start = binding::string(args, 0);
             objects->lockPick.stop = binding::string(args, 1);
@@ -271,7 +291,8 @@ NativeFunction makeCfgSetLockPickHandler(const BindingContext& context) {
 
 // `CfgSetLockPickStageFailHandler(fn)`: the callback of a missed press.
 NativeFunction makeCfgSetLockPickStageFailHandler(const BindingContext& context) {
-    return [objects = context.objects](std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
+        world_objects::LevelObjects* const objects = context->objects;
         if (objects != nullptr) {
             objects->lockPick.stageFail = binding::string(args, 0);
         }
@@ -301,6 +322,27 @@ std::optional<world_objects::ObjectTypeInfo> objectTypeFromCfgObj(const Recorded
         return info;
     }
     return std::nullopt;
+}
+
+void applyRecordedGlassTypes(const RecordedCalls& recorded, world_objects::GlassPanes& glass) {
+    for (const std::vector<Value>& call : recorded.calls("CfgSetGlassProperties")) {
+        setGlassType(glass, std::span<const Value>(call));
+    }
+}
+
+int lockPickDifficulty(const RecordedCalls* recorded, int warriorClass) {
+    if (recorded == nullptr) {
+        return 0;
+    }
+    // The record keeps the last write, so the last call for the class wins.
+    int difficulty = 0;
+    for (const std::vector<Value>& call : recorded->calls("CfgWarriorClass")) {
+        const std::span<const Value> args(call);
+        if (intArg(args, 0) == warriorClass) {
+            difficulty = std::clamp(intArg(args, kCfgWarriorClassLockPick) - 1, 0, 2);
+        }
+    }
+    return difficulty;
 }
 
 void addObjectBindings(LuaVm& vm, const BindingContext& context, const std::function<double()>& nextHandle) {

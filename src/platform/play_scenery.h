@@ -79,6 +79,10 @@ class PlayScenery {
     /// The level's path data, decoded, for the AI's route planner; null where there is none (a sandbox, or a level
     /// whose path data does not decode).
     [[nodiscard]] virtual const world::PathMap* pathMap() const { return nullptr; }
+    /// The collision mesh and path data the level's glass panes and doors switch on and off and retag
+    /// (world_objects::ObjectWorld); null where the scenery has no such objects (a sandbox).
+    [[nodiscard]] virtual raycast::CollisionMesh* objectCollision() { return nullptr; }
+    [[nodiscard]] virtual world::PathMap* objectPaths() { return nullptr; }
     /// Whether the debug menus' Spawner can add objects (a sandbox can).
     [[nodiscard]] virtual bool canSpawn() const { return false; }
     /// Rebuilds the scenery with `extra` objects added to what it was made with (none: as made). Fails with
@@ -114,6 +118,8 @@ class LevelPlayScenery final : public PlayScenery {
     [[nodiscard]] std::string summary() const override;
     [[nodiscard]] std::string name() const override { return m_name; }
     [[nodiscard]] const world::PathMap* pathMap() const override { return m_paths ? &*m_paths : nullptr; }
+    [[nodiscard]] raycast::CollisionMesh* objectCollision() override { return m_scenery.level->collision.get(); }
+    [[nodiscard]] world::PathMap* objectPaths() override { return m_paths ? &*m_paths : nullptr; }
 
   private:
     LevelPlayScenery(LevelScenery scenery, world::SectorBudget& budget, const human::PlayerStart& start,

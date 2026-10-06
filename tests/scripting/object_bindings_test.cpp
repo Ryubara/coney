@@ -24,6 +24,7 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
+#include "world_objects/glass.h"
 #include "world_objects/level_objects.h"
 
 using coney::script::LuaVm;
@@ -189,4 +190,38 @@ TEST_CASE("with no level objects the spawns still give handles", "[object_bindin
     CHECK(second == first + 1.0);
     CHECK(h.first("IsDoorOpen", {Value(first)}).isNil());
     CHECK(h.first("GetHitpoints", {Value(first)}).number() == 0.0);
+}
+
+TEST_CASE("the recorded glass types are applied to a level's objects", "[object_bindings]") {
+    Harness h(false);
+    h.first("CfgSetGlassProperties", {Value(2.0), Value(1.0), Value(), Value(5.0), Value(6.0)});
+    h.first("CfgSetGlassProperties", {Value(2.0), Value(), Value(1.0), Value(7.0), Value(8.0)});
+    coney::world_objects::GlassPanes glass;
+    coney::script::applyRecordedGlassTypes(h.recorded, glass);
+    const coney::world_objects::GlassType* type = glass.type(2);
+    REQUIRE(type != nullptr);
+    // The later call wins, as the table keeps the last write.
+    CHECK_FALSE(type->windowLink);
+    CHECK(type->alarm);
+    CHECK(type->sprite == 7);
+    CHECK(type->brokenSprite == 8);
+}
+
+TEST_CASE("the lock pick's difficulty is the Warrior class's byte +0x0a less 1", "[object_bindings]") {
+    Harness h;
+    const auto warriorClass = [&h](double classId, double lockPick) {
+        std::vector<Value> args(14, Value(1.0));
+        args[0] = Value(classId);
+        args[10] = Value(lockPick);
+        h.first("CfgWarriorClass", args);
+    };
+    warriorClass(3, 2.0);
+    warriorClass(4, 9.0);
+    warriorClass(5, 0.0);
+    warriorClass(5, 3.0);
+    CHECK(coney::script::lockPickDifficulty(&h.recorded, 3) == 1);
+    CHECK(coney::script::lockPickDifficulty(&h.recorded, 4) == 2); // kept to 0-2
+    CHECK(coney::script::lockPickDifficulty(&h.recorded, 5) == 2); // the last call wins
+    CHECK(coney::script::lockPickDifficulty(&h.recorded, 6) == 0); // none recorded
+    CHECK(coney::script::lockPickDifficulty(nullptr, 3) == 0);
 }

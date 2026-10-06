@@ -27,6 +27,7 @@ add_library(coney_core STATIC
     gamemodes/gameplay_mode.cpp
     gamemodes/legal_screen_mode.cpp
     gamemodes/level_flow_mode.cpp
+    gamemodes/level_object_services.cpp
     gamemodes/level_start.cpp
     gamemodes/load_entry_mode.cpp
     gamemodes/memory_card_mode.cpp
@@ -254,6 +255,7 @@ add_library(
     audio/adpcm.cpp
     audio/mixer.cpp
     audio/music_player.cpp
+    audio/object_sounds.cpp
     audio/offline_device.cpp
     audio/pcm_sound.cpp
     audio/pcm_stream.cpp

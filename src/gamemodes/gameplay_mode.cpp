@@ -10,6 +10,7 @@
 #include "animation/anim_math.h"
 #include "core/game_timer.h"
 #include "scripting/anim_callbacks.h"
+#include "scripting/object_bindings.h"
 
 namespace coney {
 
@@ -18,9 +19,15 @@ GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem&
                            world_objects::WorldFlags& flags, const script::RecordedCalls& recorded, LevelLoader loader,
                            std::function<void(std::string_view)> log)
     : m_device(device), m_scripts(scripts), m_context(context), m_state(state), m_humans(humans), m_flags(flags),
-      m_recorded(recorded), m_loader(std::move(loader)), m_log(std::move(log)) {}
+      m_recorded(recorded), m_loader(std::move(loader)), m_log(std::move(log)),
+      m_objectServices(scripts, flags, nullptr) {}
 
-GameplayMode::~GameplayMode() { endLevel(); }
+GameplayMode::~GameplayMode() {
+    endLevel();
+    if (m_context.objects == &m_objects) {
+        m_context.objects = nullptr;
+    }
+}
 
 void GameplayMode::endLevel() {
     // The level first: its humans are what the brains refer to, its player what the cameras follow. Then the cameras,
@@ -30,6 +37,9 @@ void GameplayMode::endLevel() {
         m_context.cameras = nullptr;
     }
     m_cameras.reset();
+    // The level's objects go with it, and with them the level's collision mesh and path data they pointed at.
+    m_objects.clear();
+    m_objects.world = world_objects::ObjectWorld{.services = &m_objectServices, .random = &m_state.random};
     if (m_context.ai == m_scripted.get()) {
         m_context.ai = nullptr;
     }
@@ -85,6 +95,10 @@ void GameplayMode::enter() {
         return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
     });
     m_context.cameras = m_cameras.get();
+    // The level script spawns the level's panes and doors into gameplay's objects, typed by what the boot scripts'
+    // `CfgSetGlassProperties` calls recorded.
+    script::applyRecordedGlassTypes(m_recorded, m_objects.glass);
+    m_context.objects = &m_objects;
 
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
     const LevelStart& start = m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName));
@@ -113,7 +127,8 @@ void GameplayMode::enter() {
                                              .brains = m_brains.get(),
                                              .scripted = m_scripted.get(),
                                              .cameras = m_cameras.get(),
-                                             .scenes = m_scenes.get()});
+                                             .scenes = m_scenes.get(),
+                                             .objects = &m_objects});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));

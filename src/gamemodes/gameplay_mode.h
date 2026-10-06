@@ -14,6 +14,7 @@
 #include "camera/cameras.h"
 #include "core/error.h"
 #include "gamemodes/game_mode.h"
+#include "gamemodes/level_object_services.h"
 #include "gamemodes/level_start.h"
 #include "gamemodes/movie_player.h"
 #include "graphics/render_device.h"
@@ -24,6 +25,7 @@
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
+#include "world_objects/level_objects.h"
 #include "world_objects/volume_boxes.h"
 
 namespace coney {
@@ -55,6 +57,9 @@ struct ScriptedCast {
     ai::ScriptedBrains* scripted = nullptr;          ///< The scripts' hold on them.
     camera::Cameras* cameras = nullptr;              ///< Player 1's cameras, which the level hands its player.
     scenes::SceneSystem* scenes = nullptr;           ///< The level's scenes, for the level to host; null for none.
+    /// The level's glass panes and doors the scripts spawned; the level gives them its collision mesh and path data
+    /// (LevelObjects::world), steps them and sends them its hits.
+    world_objects::LevelObjects* objects = nullptr;
 };
 
 /// Game mode 1, gameplay: one loaded level. The level flow (mode 8) selects a level and pushes it; its enter runs
@@ -84,6 +89,10 @@ struct ScriptedCast {
 ///   scene bindings run Coney's stand-in (docs/research/scenes.md#coneys-implementation).
 /// - A teleport of player 1 by a script during play (HumanCreation::teleports changes) is handed to the level when it
 ///   is a ScriptedPlayer.
+/// - The level's glass panes and doors (world_objects::LevelObjects, docs/research/objects.md) are gameplay's: the
+///   bindings in `context` spawn them while the level script runs, with the glass types the boot scripts recorded
+///   applied first; the level gives them its collision mesh and path data and steps them (ScriptedCast::objects).
+///   Their script callbacks, the `CrimeScene` flag and their sounds go through LevelObjectServices.
 /// - A level that fails to load leaves the frame black, with the error logged.
 /// - Leaving (exit) is `UnloadLevel`'s script part only: a fresh Lua state.
 ///
@@ -121,6 +130,9 @@ class GameplayMode final : public GameMode {
     /// Makes each level's scene system (over the disc's scene list); null or empty: no scenes.
     using SceneMaker = std::function<std::unique_ptr<scenes::SceneSystem>()>;
     void setSceneMaker(SceneMaker maker) { m_sceneMaker = std::move(maker); }
+    /// Plays the glass panes' and doors' sounds through `sounds` (the audio's ObjectSounds; null: none), which must
+    /// outlive the mode or be replaced first.
+    void setObjectSounds(world_objects::ObjectServices* sounds) { m_objectServices.setSounds(sounds); }
 
     /// `InitLevel`: the level's brains, the level script, then the level from the loader, entered (its preload).
     /// @orig 0x001582e0 Mode1::Enter (unknown)
@@ -152,6 +164,8 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] const ai::Brains* brains() const { return m_brains.get(); }
     /// Player 1's cameras for the level; null while no level is entered.
     [[nodiscard]] camera::Cameras* cameras() const { return m_cameras.get(); }
+    /// The level's glass panes and doors (empty while no level is entered).
+    [[nodiscard]] world_objects::LevelObjects& objects() { return m_objects; }
 
   private:
     // Drops the level, then player 1's cameras, then the scripts' hold on its brains (no longer the AI host), then the
@@ -180,6 +194,10 @@ class GameplayMode final : public GameMode {
     std::unique_ptr<camera::Cameras> m_cameras;    // player 1's; declared before the level, whose player holds them
     std::unique_ptr<scenes::SceneSystem> m_scenes; // the level's scenes, which outlive the level that hosts them
     scenes::SceneSystem* m_scenesBefore = nullptr; // the context's scene system before the level's, put back after
+    // The level's glass panes and doors and what they ask of the world, before the level, which points them at its
+    // collision mesh and path data.
+    LevelObjectServices m_objectServices;
+    world_objects::LevelObjects m_objects;
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0; // player 1's teleports the level has been told of
 };

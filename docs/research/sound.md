@@ -378,6 +378,8 @@ also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/7
   48 kHz; SDL3's device or, in test mode, offline ([Building](../guides/building.md#sound)).
 - `SoundPlayer`: what game code calls (play by name hash, 2D or at a position, stop, pause); `engine()` for banks,
   music, the load screen and scenes. Main gives it the engine when a disc is given.
+- `ObjectSounds` (`repo:src/audio/object_sounds.h`): the glass panes' and doors' name-hash sounds, played through
+  `SoundPlayer` ([World objects](objects.md#coneys-implementation)).
 
 Coney's stand-ins where this page is open, each marked in the code: the directional table is 1 (as loud behind as in
 front); the `+0x268` state factors, the `+0x5b7` owner duck and level 82's ambient swap are not applied; a stereo

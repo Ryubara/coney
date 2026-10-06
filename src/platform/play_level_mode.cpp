@@ -210,6 +210,9 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     if (const world::PathMap* paths = m_scenery->pathMap(); paths != nullptr) {
         m_planner = std::make_unique<ai::RoutePlanner>(*paths);
     }
+    if (cast != nullptr) {
+        bindObjects(cast->objects, cast->recorded);
+    }
     // The AI humans in the player's step: the level's scripts' humans, or the layout's fighters.
     if (cast != nullptr && cast->brains != nullptr && cast->scripted != nullptr) {
         makeCast(*cast, setup.ai);
@@ -243,6 +246,11 @@ PlayLevelMode::~PlayLevelMode() {
     m_fighterMeshes.clear();
     m_targets.clear(); // their meshes too hold the texture
     m_mesh.reset();    // before the dictionaries, whose texture it holds
+    // The level's objects outlive the mode (they are gameplay's), its collision mesh and path data do not.
+    if (m_objects != nullptr) {
+        m_objects->world.collision = nullptr;
+        m_objects->world.paths = nullptr;
+    }
 }
 
 void PlayLevelMode::makeTargets(rw::Texture* texture) {
@@ -415,7 +423,8 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         m_freeCamera->current().update(pad, static_cast<float>(frame.seconds));
     }
     static const Pad kStill;
-    const Pad& playerPad = m_frozen || m_freeCamera || sceneHoldsPlayer() ? kStill : pad;
+    const bool picking = !m_frozen && !m_freeCamera && !sceneHoldsPlayer() && stepLockPick(pad);
+    const Pad& playerPad = m_frozen || m_freeCamera || sceneHoldsPlayer() || picking ? kStill : pad;
 
     // The characters' update, then the cameras' (human::Player keeps that order).
     const anim::Vec3 before = m_player->human().position();
@@ -424,6 +433,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
         target.human->step();
     }
     m_ai->capture();
+    stepObjects();
     const anim::Vec3 after = m_player->human().position();
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);
     if (m_trace) {

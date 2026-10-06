@@ -3,10 +3,12 @@
 
 #include <array>
 #include <functional>
+#include <optional>
 #include <string_view>
 
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
+#include "world_objects/glass.h"
 #include "world_objects/object_services.h"
 
 namespace coney::script {
@@ -42,10 +44,21 @@ inline constexpr std::array<std::string_view, 22> kObjectBindings{"BreakGlassInR
 [[nodiscard]] std::optional<world_objects::ObjectTypeInfo> objectTypeFromCfgObj(const RecordedCalls* recorded,
                                                                                 std::string_view name);
 
-/// Registers kObjectBindings in `vm`, working on `context.objects` (a null one places nothing: the spawns still return
-/// a new handle each, so a script keeps working) and reading the object types from `context.recorded`'s `CfgObj`
-/// calls. `nextHandle` gives the panes, doors and leaves their handles, from the counter the other world objects'
-/// handles come from.
+/// Sets in `glass` every glass type the `CfgSetGlassProperties` calls in `recorded` set, in their order: the types are
+/// set by a boot script (`config_preload2.lua`), before any level's objects exist, so gameplay applies them to each
+/// level's objects from what the binding recorded.
+void applyRecordedGlassTypes(const RecordedCalls& recorded, world_objects::GlassPanes& glass);
+
+/// The lock pick's difficulty for a player of Warrior class `warriorClass` (`+0x1ba`): his `CfgWarriorClass` record's
+/// byte `+0x0a` (its 11th argument) less 1, kept to 0-2, from the last such call in `recorded`; 0 when none was
+/// recorded or `recorded` is null (docs/research/crimes.md#lockpick).
+[[nodiscard]] int lockPickDifficulty(const RecordedCalls* recorded, int warriorClass);
+
+/// Registers kObjectBindings in `vm`, working on `context.objects` as it is at each call (gameplay sets it as a level
+/// enters, after the bindings were installed; a null one places nothing: the spawns still return a new handle each, so
+/// a script keeps working) and reading the object types from `context.recorded`'s `CfgObj` calls; `context` must
+/// outlive `vm`. `nextHandle` gives the panes, doors and leaves their handles, from the counter the other world
+/// objects' handles come from.
 ///
 /// Research: docs/research/objects.md, docs/research/crimes.md#lockpick
 void addObjectBindings(LuaVm& vm, const BindingContext& context, const std::function<double()>& nextHandle);

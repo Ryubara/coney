@@ -24,6 +24,7 @@
 #include <SDL3/SDL_main.h>
 
 #include "ai/ai_config.h"
+#include "audio/object_sounds.h"
 #include "characters/character_types.h"
 #include "core/chunk_system.h"
 #include "core/error.h"
@@ -490,6 +491,8 @@ int main(int argc, char** argv) {
     // the story reaches them, its level loaded as the play mode. The scripts outlive the gameplay that runs them.
     std::unique_ptr<coney::LevelScripts> levelScripts;
     std::unique_ptr<coney::GameplayMode> levelGameplay;
+    // The glass panes' and doors' sounds, for every gameplay: silent until the sound output starts (below).
+    coney::audio::ObjectSounds objectSounds;
     // Makes that gameplay for level `name` at `checkpoint`, replacing any before (which must be off the stack); with
     // `commandLine`, its play mode takes the command line's --start and --trace.
     const auto makeLevelGameplay = [&](const std::string& name, int checkpoint, bool commandLine) {
@@ -530,6 +533,7 @@ int main(int argc, char** argv) {
                                                               scripts.recorded(), std::move(loader), printText);
         levelGameplay->setLevel(name);
         levelGameplay->setSceneMaker(sceneMaker);
+        levelGameplay->setObjectSounds(&objectSounds);
     };
     // The play mode of a level played on its own; null when none is loaded.
     const auto levelPlayMode = [&levelGameplay]() -> coney::platform::PlayLevelMode* {
@@ -692,6 +696,7 @@ int main(int argc, char** argv) {
                 }
                 return std::unique_ptr<coney::FrontEndScene>(std::move(*scene));
             });
+        startUp->gameplay().setObjectSounds(&objectSounds);
         // The game's random table, from the disc's own executable (docs/research/flags.md#player-starts).
         std::vector<std::uint32_t> table;
         if (levelScriptOptions(*wad, {}, table).randomTable.size() == coney::GameRandom::kTableSize) {
@@ -773,6 +778,7 @@ int main(int argc, char** argv) {
         if (started) {
             audio = std::move(*started);
             playSounds = &audio->sounds();
+            objectSounds.setPlayer(&audio->sounds());
             if (!testMode) {
                 printText(audio->startLine());
             }
