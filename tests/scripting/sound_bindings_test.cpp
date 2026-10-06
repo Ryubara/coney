@@ -83,6 +83,10 @@ class RecordingSound final : public coney::script::SoundHost {
         positions.assign(points.begin(), points.end());
     }
     void playAmbientTrack(std::uint32_t sound) override { calls.push_back(std::format("track {:#x}", sound)); }
+    double play2D(std::uint32_t sound) override {
+        calls.push_back(std::format("2d {:#x}", sound));
+        return 7.0;
+    }
     void stopAmbientTrack() override { calls.emplace_back("track stop"); }
     void setAmbientTrackVolume(float volume) override { calls.push_back(std::format("track volume {}", volume)); }
     void playMusic(std::uint32_t track, bool loop, std::string_view callback) override {
@@ -185,6 +189,15 @@ TEST_CASE("without a sound host the music bindings go to the binding host", "[so
     CHECK(h.host.music == std::vector<std::string>{"music/wonderwheel_132b", "stop"});
     // An emitter is no one's without the sound: id 0.
     CHECK(h.call("AddAmbientSoundEmitter2", {str("tGulls01")}).number() == 0.0);
+}
+
+TEST_CASE("SoundPlay2D plays a sound by its name's hash and answers its handle; NilSoundHandle without sound",
+          "[sound_bindings]") {
+    Harness h;
+    CHECK(h.call("SoundPlay2D", {str("vags/test/cue_21")}).number() == 7.0);
+    CHECK(h.sound.calls == std::vector<std::string>{std::format("2d {:#x}", coney::crc32("vags/test/cue_21"))});
+    Harness quiet(false);
+    CHECK(quiet.call("SoundPlay2D", {str("vags/test/cue_21")}).number() == 0.0);
 }
 
 TEST_CASE("an emitter's twelve arguments and its positions reach the sound host", "[sound_bindings]") {

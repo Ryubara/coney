@@ -129,19 +129,19 @@ Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* m
 }
 
 void Player::teleport(const raycast::CollisionMesh* mesh, const PlayerStart& start) {
-    m_human.spawn(mesh, start.position, start.headingDegrees);
+    m_driven->spawn(mesh, start.position, start.headingDegrees);
     resetCamera();
 }
 
 void Player::resetCamera() {
-    m_camera = camera::FollowCamera(m_human.position(), m_human.heading());
+    m_camera = camera::FollowCamera(m_driven->position(), m_driven->heading());
     // A jump, not a move: both snapshots hold the new state, so a render does not blend across it.
     m_current = capture();
     m_previous = m_current;
 }
 
 void Player::placeCamera(float distance, float viewHeading) {
-    m_camera.place(m_human.position(), distance, viewHeading);
+    m_camera.place(m_driven->position(), distance, viewHeading);
     m_current = capture();
     m_previous = m_current;
 }
@@ -205,13 +205,26 @@ PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot&
 
 void Player::setPadControlled(bool padControlled) {
     m_padControlled = padControlled;
-    m_humans.setPadControlled(m_human, padControlled);
+    m_humans.setPadControlled(*m_driven, padControlled);
+}
+
+void Player::drive(Human& human) {
+    if (&human == m_driven) {
+        return;
+    }
+    // The human left behind keeps only what its brain writes; the new one takes the pad as it stands, with no
+    // command history carried over.
+    m_humans.setPadControlled(*m_driven, false);
+    m_driven->record() = PlayerRecord{.cameraForward = m_driven->record().cameraForward};
+    m_driven = &human;
+    m_humans.setPadControlled(*m_driven, m_padControlled);
+    m_matcher = combat::CommandMatcher{};
 }
 
 void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets) {
     // The command for this sample (docs/research/combat.md#commands).
     // A locked pad gives no buttons (HuLockPad); the commands disabled for it are not matched (EnableCommand).
-    const ScriptState& script = m_human.script();
+    const ScriptState& script = m_driven->script();
     const std::uint16_t buttons = script.padLocked ? std::uint16_t{0} : pad.buttons();
     const combat::CommandId command =
         m_matcher.update(buttons, m_tables, combat::combatTuning().historyHoldSamples, script.disabledCommands);
@@ -223,16 +236,16 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     if (m_padControlled) {
         // A locked stick reads as centred (HuLockPadMovement); the buttons still act.
         const bool stickFree = !script.movementLocked;
-        m_human.record() = PlayerRecord{.stickX = stickFree ? pad.leftX() : 0.0F,
-                                        .stickY = stickFree ? pad.leftY() : 0.0F,
-                                        .cameraForward = cameraForward,
-                                        .sprintHeld = !script.padLocked && pad.held(pad::kL2),
-                                        .actionPressed = !script.padLocked && pad.pressed(pad::kTriangle),
-                                        .command = command,
-                                        .buttons = buttons,
-                                        .move = std::nullopt};
+        m_driven->record() = PlayerRecord{.stickX = stickFree ? pad.leftX() : 0.0F,
+                                          .stickY = stickFree ? pad.leftY() : 0.0F,
+                                          .cameraForward = cameraForward,
+                                          .sprintHeld = !script.padLocked && pad.held(pad::kL2),
+                                          .actionPressed = !script.padLocked && pad.pressed(pad::kTriangle),
+                                          .command = command,
+                                          .buttons = buttons,
+                                          .move = std::nullopt};
     } else {
-        m_human.record() = PlayerRecord{.cameraForward = cameraForward, .move = m_human.record().move};
+        m_driven->record() = PlayerRecord{.cameraForward = cameraForward, .move = m_driven->record().move};
     }
     // The characters' step: 1/30 s, or slow motion's share of it while a slow-motion event holds it.
     m_humans.update(mesh, targets, m_cameras != nullptr ? m_cameras->slowMotion().stepSeconds() : kStepSeconds);
@@ -241,27 +254,27 @@ void Player::update(const Pad& pad, const raycast::CollisionMesh* mesh, std::spa
     if (m_cameras != nullptr) {
         for (const Human* human : m_humans.humans()) {
             const std::optional<ReactionShake>& shake = human->fighter().reactionShake();
-            if (shake && (shake->attackerIsPlayer || (human == &m_human && shake->level >= 2))) {
+            if (shake && (shake->attackerIsPlayer || (human == m_driven && shake->level >= 2))) {
                 m_cameras->shake(shake->level);
             }
         }
-        if (m_human.fighter().rageStarted()) {
+        if (m_driven->fighter().rageStarted()) {
             m_cameras->shake(1);
         }
     }
     // A slow-motion event on the player's clip (docs/research/camera.md#slow-motion).
-    if (const std::optional<std::uint16_t> event = m_human.slowMotionEvent(); event && m_cameras != nullptr) {
+    if (const std::optional<std::uint16_t> event = m_driven->slowMotionEvent(); event && m_cameras != nullptr) {
         m_cameras->slowMotion().event(*event, 0);
     }
-    if (m_human.outOfWorld()) {
+    if (m_driven->outOfWorld()) {
         // Put back, the camera reset behind him with its configuration kept.
-        m_human.spawn(mesh, m_start.position, m_start.headingDegrees);
-        m_camera.observe(followTargetOf(m_human, pad, m_nearestEnemy, m_padControlled));
+        m_driven->spawn(mesh, m_start.position, m_start.headingDegrees);
+        m_camera.observe(followTargetOf(*m_driven, pad, m_nearestEnemy, m_padControlled));
         m_camera.reset();
         ++m_respawns;
     }
     const auto& raw = pad.rawSticks(); // right x, right y, left x, left y
-    const camera::FollowTarget after = followTargetOf(m_human, pad, m_nearestEnemy, m_padControlled);
+    const camera::FollowTarget after = followTargetOf(*m_driven, pad, m_nearestEnemy, m_padControlled);
     if (m_cameras != nullptr) {
         m_cameras->update(after, raw[0], raw[1], mesh, kStepSeconds);
     } else {

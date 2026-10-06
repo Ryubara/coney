@@ -334,10 +334,12 @@ twice on Choose Gangs, then on the intro's prompt):
 1020 tap cross
 ```
 
-Left at that, the Orphan beats the Fury and the result screen names the Orphans (about frame 6100). Add `tap square`
-every 12 frames from 1100 to 2000 and the Orphan goes down instead; the result screen takes input from
-about frame 2400 (`2400 tap cross` replays). The run logs each step (`rumble intro: done, calling FinishCountdown`,
-`rumble result: winner ...`, `rumble result: choice 0`).
+Left at that, the Orphan beats the Fury, cheers on the win camera, and the result screen names the Orphans (about frame
+6100). With the stick down most of the way on Game Mode (`500 stick left 0 -70`, `502 stick left 0 0`) the match is a
+WAR PARTY, five a side; when the player goes down with team-mates standing, the pad passes to one of them (`player: the
+pad passes from human ... to human ...`). Add `tap square` every 12 frames from 1100 to 2000 and the Orphan goes down
+instead; the result screen takes input from about frame 2400 (`2400 tap cross` replays). The run logs each step (`rumble
+intro: done, calling FinishCountdown`, `rumble result: winner ...`, `rumble result: choice 0`).
 
 `--load ENTRY` loads one WAD entry through the reimplemented chunk system and prints a summary of it. `ENTRY` is a
 file name such as `level1.lev` (any letter case) or a name hash written `0x` and up to 8 hex digits, such as

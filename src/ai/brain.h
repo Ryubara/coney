@@ -138,6 +138,11 @@ class Brain {
     [[nodiscard]] human::Human& human() { return *m_human; }
     [[nodiscard]] const human::Human& human() const { return *m_human; }
     [[nodiscard]] BrainType type() const { return m_type; }
+    /// `HuSwitchPlayer`: the brain becomes a player's (BrainType::Player) or, with another `type`, an AI brain of that
+    /// type that has lost the pad (its pad hook dropped). **Coney's**: the
+    /// original marks the player on the human (`+0x380`) and the player record; Coney's brain type is that mark.
+    /// Research: docs/research/rumble.md#switch-player
+    void setType(BrainType type);
     /// Enabled (`+0x08`): Brains skips a brain that is not.
     [[nodiscard]] bool enabled() const { return m_enabled; }
     void setEnabled(bool enabled) { m_enabled = enabled; }

@@ -166,8 +166,17 @@ class Player {
     /// camera's view, the snapshots show it, and the player's slow-motion events reach it.
     void setCameras(camera::Cameras* cameras);
 
-    [[nodiscard]] const Human& human() const { return m_human; }
-    [[nodiscard]] Human& human() { return m_human; }
+    /// `HuSwitchPlayer`'s hand-over: the pad drives `human` (in the step; it must outlive its use, or be handed back)
+    /// from now on, as player 1, and the follow camera follows it; the human driven before keeps only its brain's
+    /// commands. The player's own human (body()) stays in the step and is still drawn from the snapshots.
+    /// Research: docs/research/rumble.md#switch-player
+    void drive(Human& human);
+    /// The human the pad drives: body() until drive() hands it on.
+    [[nodiscard]] const Human& human() const { return *m_driven; }
+    [[nodiscard]] Human& human() { return *m_driven; }
+    /// The human the player was made with, which the snapshots show whoever the pad drives.
+    [[nodiscard]] const Human& body() const { return m_human; }
+    [[nodiscard]] Human& body() { return m_human; }
     /// The characters' step the player's human is slot 0 of; other humans (and the brains' hook) join it here.
     [[nodiscard]] Humans& humans() { return m_humans; }
     /// The last update's command.
@@ -190,7 +199,8 @@ class Player {
     combat::CommandTables m_tables = combat::CommandTables::street();
     combat::CommandMatcher m_matcher;
     Human m_human;
-    Humans m_humans; // holds m_human, which is why the player is neither copied nor moved
+    Humans m_humans;            // holds m_human, which is why the player is neither copied nor moved
+    Human* m_driven = &m_human; // the human the pad drives (drive())
     camera::FollowCamera m_camera;
     camera::Cameras* m_cameras = nullptr; // the manager the follow camera belongs to; null steps it alone
     std::uint32_t m_respawns = 0;

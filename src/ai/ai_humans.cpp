@@ -27,9 +27,8 @@ AiHumans::AiHumans(human::Player& player, const human::PlayerCharacter& characte
 
 void AiHumans::install() {
     // The player's brain is the first slot, as the player is the first human.
-    m_playerBrain = &m_brains->add(m_player.human(), BrainType::Player, m_config.settings, 1);
-    // A dead player brain takes the pad away (`GangBrDead` on the Warriors).
-    m_playerBrain->setPadControl([this](bool padControlled) { m_player.setPadControlled(padControlled); });
+    m_playerBrain = &m_brains->add(m_player.body(), BrainType::Player, m_config.settings, 1);
+    givePad(*m_playerBrain);
     m_player.humans().setOpposition([this](const human::Human& attacker, const human::Human& victim) {
         const Brain* a = m_brains->find(attacker);
         const Brain* b = m_brains->find(victim);
@@ -38,11 +37,31 @@ void AiHumans::install() {
     m_player.humans().setBrains([this](std::span<human::Human* const> /*humans*/) { step(); });
 }
 
+void AiHumans::givePad(Brain& brain) {
+    // A dead player brain takes the pad away (`GangBrDead` on the Warriors).
+    brain.setPadControl([this](bool padControlled) { m_player.setPadControlled(padControlled); });
+}
+
+void AiHumans::switchPlayer(Brain& to, BrainType leftAs) {
+    if (&to == m_playerBrain) {
+        return;
+    }
+    m_playerBrain->setType(leftAs);
+    to.setType(BrainType::Player);
+    givePad(to);
+    m_playerBrain = &to;
+    m_player.drive(to.human());
+    // A brain set dead before the hand-over keeps the pad away from its new human too.
+    m_player.setPadControlled(!to.dead());
+}
+
 AiHumans::~AiHumans() {
+    // The pad back on the player's own human before the AI humans go.
+    m_player.drive(m_player.body());
     clear();
     // Brains that outlive this forget the player too.
     if (!m_ownBrains) {
-        m_brains->remove(m_player.human());
+        m_brains->remove(m_player.body());
     }
     m_player.humans().setBrains({});
     m_player.humans().setOpposition({});

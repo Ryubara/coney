@@ -85,6 +85,15 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// Takes a deleted human (`HuDelete`) out of the world: its brain, then its human. Empty: nothing is removed.
     using Remover = std::function<void(Brain& brain)>;
     void setRemover(Remover remover) { m_remover = std::move(remover); }
+    /// Hands the pad from the player's brain `from` to the brain `to` (`HuSwitchPlayer`), which the play mode does
+    /// (ai::AiHumans::switchPlayer()). Empty: no switch is made.
+    using Switcher = std::function<void(Brain& from, Brain& to)>;
+    /// Sets the switcher, and whether a switch with no team-mate standing may take a human of a kind-0 gang (outside
+    /// `level99`, docs/research/rumble.md#switch-player).
+    void setSwitcher(Switcher switcher, bool anyKindZero) {
+        m_switcher = std::move(switcher);
+        m_switchToKindZero = anyKindZero;
+    }
     /// Whether calls are being held.
     [[nodiscard]] bool holding() const { return m_holding; }
     /// A human `HuCreate` made while holding, not deleted since: its gang and player index.
@@ -169,6 +178,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void humanDelete(double human) override;
     /// The id of the gang of the brain named by `human`, or of the gang a human created while holding will join.
     [[nodiscard]] std::optional<int> gangOf(double human) const override;
+    /// The player's team-mate (switchTarget()) takes the pad through the switcher and becomes player 1 (setPlayer());
+    /// its handle, or NilHandle when `human` is not the player's or no one can take over.
+    /// @orig 0x0041a8c0 Human_SwitchPlayer (unknown)
+    double switchPlayer(double human) override;
     /// The gang calls: Gangs' members of the same names.
     [[nodiscard]] int gangCreate(int kind, std::string_view name) override;
     void gangDelete(int gang) override;
@@ -236,6 +249,11 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] int heldMembers(int gang) const;
     // Keeps `call` for release() while holding (true); false when it should run now.
     bool held(std::function<void()> call);
+    // Who takes the pad from `from`: a member of its gang in slot order that no pad drives and that is not down (the
+    // first found: **Coney's**, as no binding Coney has sets the priority byte `+0x1b1` the original prefers); with
+    // none, and when allowed, such a human of a kind-0 gang. Null when there is none.
+    // @orig 0x0022a770 Gang_PickSwitchMember (unknown)
+    [[nodiscard]] Brain* switchTarget(const Brain& from) const;
 
     Brains* m_owner;
     const world_objects::WorldFlags* m_flags;
@@ -250,6 +268,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     std::size_t m_arrivals = 0;
     Spawner m_spawner;
     Remover m_remover;
+    Switcher m_switcher;
+    bool m_switchToKindZero = false;
     bool m_holding = false;
     std::vector<std::function<void()>> m_held; // the calls held, oldest first
     std::unique_ptr<ScriptedHumans> m_humans;

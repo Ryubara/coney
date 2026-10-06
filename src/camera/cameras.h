@@ -134,6 +134,10 @@ class Cameras {
     /// The shared target list. The follow camera follows player 1 whatever it holds, as the original does with one
     /// player (it falls back to its last target).
     [[nodiscard]] const std::vector<double>& targets() const { return m_targets; }
+    /// `HuSwitchPlayer`: the cameras that followed human `from` follow `to`: its place in the shared target list and
+    /// the kept-in-view human (the follow camera follows player 1, whoever the pad drives).
+    /// @orig 0x00122248 Camera_SwitchTarget (unknown)
+    void switchTarget(double from, double to);
     /// `CamSetSecondary(object, range)`: a human to keep in view in place of auto-follow; NilHandle (0) ends it.
     /// @orig 0x0011dcf0 Camera_SetFollowSecondary (unknown)
     void setSecondary(double human, float range);

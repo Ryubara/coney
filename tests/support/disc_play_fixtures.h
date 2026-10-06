@@ -7,6 +7,7 @@
 
 #include <array>
 #include <expected>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -57,11 +58,12 @@ inline std::optional<io::Wad> openDisc() {
 
 /// Gameplay's level loader as main sets it up: the play mode with player 1 where the scripts left him, as the
 /// character his type names, not snapped after a teleport, with the fighters and character types the scripts
-/// configured.
+/// configured; the play mode's lines go to `print` (none when empty).
 inline GameplayMode::LevelLoader playLoader(platform::RenderEngine& renderer, const io::Wad& wad,
-                                            world::SectorBudget& budget) {
-    return [&renderer, &wad, &budget](const LevelStart& start,
-                                      const ScriptedCast& cast) -> std::expected<std::unique_ptr<GameMode>, Error> {
+                                            world::SectorBudget& budget,
+                                            std::function<void(std::string_view)> print = {}) {
+    return [&renderer, &wad, &budget, print = std::move(print)](
+               const LevelStart& start, const ScriptedCast& cast) -> std::expected<std::unique_ptr<GameMode>, Error> {
         std::optional<human::PlayerStart> playerStart;
         platform::PlayerSetup setup;
         if (start.player) {
@@ -79,7 +81,13 @@ inline GameplayMode::LevelLoader playLoader(platform::RenderEngine& renderer, co
             setup.types = characters::CharacterTypes::fromRecorded(*cast.recorded);
         }
         auto mode = platform::PlayLevelMode::create(
-            renderer, wad, start.level, budget, [](std::string_view) {}, playerStart, setup, &cast);
+            renderer, wad, start.level, budget,
+            [print](std::string_view line) {
+                if (print) {
+                    print(line);
+                }
+            },
+            playerStart, setup, &cast);
         if (!mode) {
             return std::unexpected(std::move(mode.error()));
         }
@@ -128,7 +136,8 @@ class DiscGame {
                 return platform::loadSpriteSheetResource(m_wad, m_handlers, name, false);
             },
             m_strings, LegalScreenSettings{}, [this](std::string_view line) { m_log.emplace_back(line); },
-            script::wadScriptSource(m_wad), playLoader(*m_engine, m_wad, m_budget));
+            script::wadScriptSource(m_wad),
+            playLoader(*m_engine, m_wad, m_budget, [this](std::string_view line) { m_log.emplace_back(line); }));
         m_flow->start();
         m_timer.setFixedStep(true);
     }

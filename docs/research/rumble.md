@@ -284,10 +284,10 @@ less the bindings [Coney's implementation](#coney) has since. Each links to its
   `HUDSetObjective`, `HUDSetPHValue`, `HUDTurnOffRadar`, `HUDTurnOnRadar`, `HideHud`, `HidePlayerHud`, `HuBlockLook`,
   `HuEnableSoundCommands`, `HuLockMovement`, `HuLockPad`,
   `HuRemoveItemInPocket`, `HuRemoveSpinningIcon`, `HuRevive`, `HuSetArrested`, `HuSetCarriedItem`, `HuSetMoney`,
-  `HuSetNormalMode`, `HuSetPreventRage`, `HuSetRevivable`, `HuSetTireless`, `HuSetUnstunnable`, `HuSwitchPlayer`,
+  `HuSetNormalMode`, `HuSetPreventRage`, `HuSetRevivable`, `HuSetTireless`, `HuSetUnstunnable`,
   `HuUseAnim`, `IsInsideBox`, `ObjEnableZone`, `PrecacheWorld`, `QueueFileToPrecache`, `RestoreHud`,
   `SetDynamicAnimation`, `SetFogColor`, `SetGameMode`, `SetLight`, `SetSpawnMax`,
-  `SoundPauseSound`, `SoundPlay2D`, `SoundPlayCommand`, `SoundSetMusicVolume`, `Teleport`; partial:
+  `SoundPauseSound`, `SoundPlayCommand`, `SoundSetMusicVolume`, `Teleport`; partial:
   `ShowRumbleModeInterface`, `SoundLoopMusicTrack`, `SoundStopMusicTrack`.
 - **Brawl** (with the Fight Pen's flag chunk): `BrSetReactToViolence`, `EndGarbage`, `GangSetDamageResponse`,
   `GangSetInvestigateResponse`, `HUDSetNumIndicator`, `HUDShowWarCommand`, `HuDropWeapon`,
@@ -322,9 +322,10 @@ less the bindings [Coney's implementation](#coney) has since. Each links to its
 
 ## Coney's implementation {#coney}
 
-A Brawl (1 ON 1) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the set-up menus,
-the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the win camera and the
-result screen with its three paths. The other game types are not built yet.
+A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the
+set-up menus, the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the
+player's revival and hand-over, the winner's cheer, the win camera and the result screen with its three paths. The
+other game types are not built yet.
 
 - **Intro** (`repo:src/gui/rumble_mode_gui/rumble_intro.h`, drawn over play by
   `repo:src/gamemodes/rumble_intro_layer.h`): `ShowRumbleModeIntro` is held until the level's first frame, because
@@ -333,6 +334,13 @@ result screen with its three paths. The other game types are not built yet.
   with stand-in confront and melee goals; `HuSetMaxHealth`, `HuDelete`, `HuGetGang`, `BrFlushGoals` and
   `BrFlushActions` (`repo:src/scripting/rumble_match_bindings.h`). The humans the start callback creates are counted
   in their gangs and answer `HuIsAlive` until the level makes them, so `AddBrawlGang1`/`2` set the down handler.
+- **A player down** ([above](#player-down)): `HuSwitchPlayer` (`repo:src/ai/scripted_brains.h`) picks the
+  team-mate, and the play mode hands him the pad (`repo:src/ai/ai_humans.h`, `repo:src/human/player.h`): the pad and
+  the follow camera drive him, his brain becomes the player's, and the human left behind fights as his class; the
+  shared camera targets follow. The revival (`HuRevive` after 4 s) and the new player's cue (`SoundPlay2D`) are the
+  scripts' own.
+- **The cheer**: `HuUseAnim`'s idle replacement (slot 0) plays: its `.anm` resource is loaded from the disc when first
+  named (`repo:src/characters/dynamic_clips.h`) and plays wherever the idle would.
 - **Win camera** (`repo:src/camera/win_camera.h`): `CameraCreateWin`, `CamDelete` and `CamSetFollowHeading`; it
   starts on activation, from where the winner was teleported.
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
@@ -341,7 +349,7 @@ result screen with its three paths. The other game types are not built yet.
 
 Coney's stand-ins, each an open question below where the page is silent: the intro's layout, separator text and
 voice lengths; the result lines' look and the grids' rows; the melee and confront goals; the confront tactic's radii
-and route test.
+and route test; the switch's choice and the brain left behind; a dynamic clip's rate.
 
 ## Open questions {#open-questions}
 
@@ -359,3 +367,8 @@ and route test.
   member closes in (Coney: the nearest gang enemy, run to and fight; close to the critical range).
 - The confront tactic's gang radii and route test between the leaders (Coney: radii 0, always a route, so
   code 9 never fires).
+- Who sets the member priority byte `+0x1b1` that `HuSwitchPlayer` prefers, and what `W_GameState + 0x158` is (Coney:
+  the first member found; the kind-0 fallback outside `level99` always allowed).
+- What brain the human left behind by `HuSwitchPlayer` runs, and whether he keeps the player's fighter profile
+  (Coney: his class's brain type, the profile unchanged).
+- The playback rate of a dynamic clip played by `HuUseAnim` (Coney: 1).

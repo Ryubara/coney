@@ -170,6 +170,21 @@ NativeFunction makeHuGetGang(const BindingContext& context) {
     };
 }
 
+// `HuSwitchPlayer(human)`: the new player's handle, NilHandle when the pad stays; the cameras that followed the old
+// player follow the new one.
+// @orig 0x0035d218 HuSwitchPlayer (unknown)
+NativeFunction makeHuSwitchPlayer(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        AiBindingHost* ai = context->ai;
+        const double from = handleArg(args, 0);
+        const double to = ai != nullptr ? ai->switchPlayer(from) : kNilHandle;
+        if (camera::Cameras* cameras = context->cameras; cameras != nullptr && to != kNilHandle) {
+            cameras->switchTarget(from, to);
+        }
+        return binding::number(to);
+    };
+}
+
 // `CameraCreateWin(name, target, fov, distance, angle, speed, height, far, direction)`: the win camera set up on the
 // target; its handle, or NilHandle when there are no cameras.
 // @orig 0x00366360 CameraCreateWin (unknown)
@@ -226,6 +241,7 @@ void addRumbleMatchBindings(LuaVm& vm, const BindingContext& context, const std:
     vm.registerFunction("HuDelete", makeHuDelete(context));
     vm.registerFunction("HuGetGang", makeHuGetGang(context));
     vm.registerFunction("HuSetMaxHealth", makeHuSetMaxHealth(context));
+    vm.registerFunction("HuSwitchPlayer", makeHuSwitchPlayer(context));
     vm.registerFunction("ShowRumbleModeIntro", makeShowRumbleModeIntro(context));
     vm.registerFunction("TacticAttack", makeTacticAttack(context));
     vm.registerFunction("TacticConfront", makeTacticConfront(context));

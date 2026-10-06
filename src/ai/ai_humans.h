@@ -75,6 +75,12 @@ class AiHumans {
     /// not one of these.
     void fightPlayer(const human::Human& fighter);
 
+    /// `HuSwitchPlayer`'s hand-over to `to` (an AI human's brain, one of these): the pad drives its human
+    /// (human::Player::drive()), its brain becomes the player's, and the brain of the human driven before becomes an
+    /// AI brain of type `leftAs`. Nothing when `to` is the player's brain already.
+    /// Research: docs/research/rumble.md#switch-player
+    void switchPlayer(Brain& to, BrainType leftAs);
+
     /// Whether an idle fighter starts a fight with the player when he is within its far melee range: Coney's stand-in
     /// for the level scripts' `GoalFight` calls (`level99_combat.lua`, docs/research/ai.md#level99), which a scene
     /// without its script needs. On by default.
@@ -90,6 +96,7 @@ class AiHumans {
     [[nodiscard]] const std::vector<AiHuman>& humans() const { return m_humans; }
     [[nodiscard]] Brains& brains() { return *m_brains; }
     [[nodiscard]] const Brains& brains() const { return *m_brains; }
+    /// The brain of the human the pad drives (the player's own until switchPlayer()).
     [[nodiscard]] Brain& playerBrain() { return *m_playerBrain; }
     /// `human`'s brain (null for a human that is not one of these, or the player's).
     [[nodiscard]] Brain* brainOf(const human::Human& human) { return m_brains->find(human); }
@@ -101,6 +108,8 @@ class AiHumans {
   private:
     // The player's brain in the brains, and the hooks into his step: what both constructors share.
     void install();
+    // Hands `brain` the player's pad switch, which BrDead turns.
+    void givePad(Brain& brain);
     // Takes the humans remove() asked for out of the step and the brains.
     void takeOutRemoved();
     // The fighters' gang, made the first time a fighter is spawned in a scripted level (the enemy of the player's).

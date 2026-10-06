@@ -222,6 +222,13 @@ bool Cameras::target(int mode, double human) {
     }
 }
 
+void Cameras::switchTarget(double from, double to) {
+    std::ranges::replace(m_targets, from, to);
+    if (m_secondary == from) {
+        m_secondary = to;
+    }
+}
+
 void Cameras::setSecondary(double human, float range) {
     m_secondary = human;
     m_secondaryRange = human == 0.0 ? 0.0F : range;

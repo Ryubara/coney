@@ -219,3 +219,52 @@ TEST_CASE("humans created while the level is held count in their gangs and answe
     CHECK(level.call("GangGetHeadCount", {gangId, Value(1.0)}).number() == 1.0);
     CHECK(level.call("HuIsAlive", {Value(7.0)}).isNil());
 }
+
+TEST_CASE("HuSwitchPlayer hands the pad to the player's first standing team-mate and makes him player 1",
+          "[scripting][rumble]") {
+    Level level;
+    Brain& downed = level.add({44.0F, 40.0F, 0.0F});
+    Brain& mate = level.add({46.0F, 40.0F, 0.0F});
+    Brain& rival = level.add({50.0F, 40.0F, 0.0F});
+    Brain& stranger = level.add({60.0F, 40.0F, 0.0F});
+    coney::ai::Gangs& gangs = level.scene.brains.gangs();
+    const int ours = gangs.create(3, "Gang1");
+    const int theirs = gangs.create(19, "Gang2");
+    const int bystanders = gangs.create(0, "Gang0");
+    gangs.addMember(ours, level.scene.player());
+    gangs.addMember(ours, downed);
+    gangs.addMember(ours, mate);
+    gangs.addMember(theirs, rival);
+    gangs.addMember(bystanders, stranger);
+    downed.human().fighter().health().set(0);
+    // The switcher swaps the brain types, as the play mode's does.
+    std::vector<std::pair<const Brain*, const Brain*>> switches;
+    level.scripted->setSwitcher(
+        [&switches](Brain& from, Brain& to) {
+            switches.emplace_back(&from, &to);
+            from.setType(coney::ai::BrainType::Gang);
+            to.setType(coney::ai::BrainType::Player);
+        },
+        false);
+
+    // Not a player: no switch.
+    CHECK(level.call("HuSwitchPlayer", {Value(mate.handle())}).number() == 0.0);
+    CHECK(switches.empty());
+    // The player: the down member is passed over.
+    CHECK(level.call("HuSwitchPlayer", {Value(1.0)}).number() == mate.handle());
+    REQUIRE(switches.size() == 1);
+    CHECK(switches[0].first == &level.scene.player());
+    CHECK(switches[0].second == &mate);
+    CHECK(level.scripted->player() == &mate);
+    CHECK_FALSE(level.call("HuIsAPlayer", {Value(mate.handle())}).isNil());
+    CHECK(level.call("HuIsAPlayer", {Value(1.0)}).isNil());
+
+    // The new player down too, the old one (now AI) still standing: back to him; then nobody standing in the gang,
+    // and a kind-0 gang's human only outside level99.
+    mate.human().fighter().health().set(0);
+    CHECK(level.call("HuSwitchPlayer", {Value(mate.handle())}).number() == 1.0);
+    level.scene.player().human().fighter().health().set(0);
+    CHECK(level.call("HuSwitchPlayer", {Value(1.0)}).number() == 0.0);
+    level.scripted->setSwitcher([](Brain& /*from*/, Brain& to) { to.setType(coney::ai::BrainType::Player); }, true);
+    CHECK(level.call("HuSwitchPlayer", {Value(1.0)}).number() == stranger.handle());
+}

@@ -82,6 +82,17 @@ void Brain::setDead(bool dead) {
     }
 }
 
+void Brain::setType(BrainType type) {
+    if (type == m_type) {
+        return;
+    }
+    m_type = type;
+    // An AI brain has no pad to hand back while dead (the scripts flush the goals of a new player themselves).
+    if (type != BrainType::Player) {
+        m_padControl = {};
+    }
+}
+
 bool Brain::onEvent(const BrainEvent& event) {
     // A dead brain's handler C is a stub.
     if (m_dead) {

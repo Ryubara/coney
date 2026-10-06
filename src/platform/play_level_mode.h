@@ -19,6 +19,7 @@
 #include "animation/anim_math.h"
 #include "camera/camera_lens.h"
 #include "characters/character_types.h"
+#include "characters/dynamic_clips.h"
 #include "core/error.h"
 #include "core/interpolation.h"
 #include "core/options.h"
@@ -288,6 +289,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // with a position an AI human of its type's class, drawn as its model, snapped as `HuCreate` snaps. Returns its
     // brain; null for a creation with no position.
     ai::Brain* castHuman(const HumanCreation& human);
+    // The brain type a human of character type `type` fights as: its class's, as castHuman() makes it.
+    [[nodiscard]] ai::BrainType castBrainType(int type) const;
     // A character to draw and animate a human as, and its texture.
     struct CastLook {
         const human::PlayerCharacter* character = nullptr;
@@ -313,6 +316,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
     [[nodiscard]] WorldView viewFrom(const world::CameraPose& pose, float drawDistance,
                                      const camera::CameraLens& lens = camera::kPlayerCameraLens) const;
+    // Gives each human in the step the idle replacement its script state names (`HuUseAnim` slot 0), when it changed.
+    void applyIdleClips();
     // The free camera `camera` between its last two steps, `alpha` of the way.
     [[nodiscard]] static world::DebugCamera blendedFreeCamera(const Interpolated<world::DebugCamera>& camera,
                                                               float alpha);
@@ -321,6 +326,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
 
     RenderEngine& m_engine;
     const io::Wad& m_wad;
+    // The scripts' dynamic clips (HuUseAnim's idle replacements), loaded from the disc when first named.
+    characters::DynamicClips m_dynamicClips{
+        [this](std::string_view name) { return characters::loadAnimResource(m_wad, name); }};
     std::unique_ptr<PlayScenery> m_scenery;
     std::unique_ptr<human::PlayerCharacter> m_character; // the scene's: the targets and fighters play it
     std::vector<TextureDictionary> m_dictionaries;       // before the mesh, which holds a reference to their texture

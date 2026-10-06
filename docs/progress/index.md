@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 12.6%](https://img.shields.io/badge/reimplemented-12.6%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 12.7%](https://img.shields.io/badge/reimplemented-12.7%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▌░░░░░░░░░░░░░░░░░` | 12.6% of the game's own code (424,132 of 3,354,776 bytes, 1,248 functions) |
+| **Reimplemented** | `██▌░░░░░░░░░░░░░░░░░` | 12.7% of the game's own code (425,204 of 3,354,776 bytes, 1,253 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -53,8 +53,8 @@ at the top of the repository's `README.md`.
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
-| `Audio` | `█▎░░░░░░░░░░░░░░░░░░` | 6.5% | 48 | 57,368 |
-| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 3.9% | 39 | 165,680 |
+| `Audio` | `█▍░░░░░░░░░░░░░░░░░░` | 6.6% | 49 | 57,368 |
+| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 3.9% | 40 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 25 | 62,808 |
@@ -62,19 +62,19 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▏░░░░░░░░░░░░░░` | 25.8% | 81 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 176 | 497,416 |
-| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.3% | 351 | 1,096,672 |
+| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.3% | 352 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████▉░░░░░░░░░░░░░░` | 29.2% | 185 | 197,192 |
+| `Scripting` | `█████▉░░░░░░░░░░░░░░` | 29.3% | 186 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 55 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▎░░░░░░░░░░░░░░░░░░░` | 1.1% | 29 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 23 | 22,008 |
-| `Warriors` | `███▎░░░░░░░░░░░░░░░░` | 16.4% | 85 | 54,264 |
+| `Warriors` | `███▍░░░░░░░░░░░░░░░░` | 16.9% | 86 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -165,6 +165,7 @@ at the top of the repository's `README.md`.
 | `0x00113608` | `Sound_PlayAmbientTrack` | `Audio` | 40 |
 | `0x00113630` | `Sound_StopAmbientTrack` | `Audio` | 40 |
 | `0x00113658` | `Sound_SetAmbientTrackVolume` | `Audio` | 40 |
+| `0x001137a8` | `Sound_Play2D` | `Audio` | 64 |
 | `0x00113810` | `Ambient_AddSound` | `Audio` | 48 |
 | `0x00113920` | `Ambient_AddEmitter2` | `Audio` | 232 |
 | `0x00113a58` | `Ambient_SetEmitterPositions` | `Audio` | 208 |
@@ -192,6 +193,7 @@ at the top of the repository's `README.md`.
 | `0x0011ee08` | `Camera_MakeActive` | `Camera` | not filled in |
 | `0x001210f8` | `Cam_StartShake` | `Camera` | not filled in |
 | `0x00121298` | `Cam_UpdateShake` | `Camera` | not filled in |
+| `0x00122248` | `Camera_SwitchTarget` | `Camera` | 104 |
 | `0x00124d00` | `Cam_Follow_Reset` | `Camera` | not filled in |
 | `0x00124f38` | `Cam_Follow_PlaceBehind` | `Camera` | not filled in |
 | `0x001254f0` | `Cam_Follow_StepZoom` | `Camera` | 152 |
@@ -593,6 +595,7 @@ at the top of the repository's `README.md`.
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
 | `0x00229570` | `Human_BannerKind` | `Human` | 176 |
+| `0x0022a770` | `Gang_PickSwitchMember` | `Human` | 528 |
 | `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
 | `0x0022d790` | `LockPick_Start` | `Human` | 376 |
@@ -994,6 +997,7 @@ at the top of the repository's `README.md`.
 | `0x00358608` | `HuDelete` | `Scripting` | 56 |
 | `0x0035b398` | `HuGetGang` | `Scripting` | 88 |
 | `0x0035bbc8` | `HuSetMaxHealth` | `Scripting` | 120 |
+| `0x0035d218` | `HuSwitchPlayer` | `Scripting` | 120 |
 | `0x0035e5d0` | `CfgHUDMessage` | `Scripting` | not filled in |
 | `0x0035eb78` | `BrDead` | `Scripting` | 96 |
 | `0x0035ebd8` | `BrSuspend` | `Scripting` | 96 |
@@ -1263,6 +1267,7 @@ at the top of the repository's `README.md`.
 | `0x00416bb8` | `Flag_GetPosition` | `WorldObjects` | 40 |
 | `0x00416ed0` | `Flag_GetOwner` | `WorldObjects` | not filled in |
 | `0x00418428` | `RepeatTracker_Note` | `Warriors` | 240 |
+| `0x0041a8c0` | `Human_SwitchPlayer` | `Warriors` | 256 |
 | `0x0041ab30` | `SlowMotion_On` | `Warriors` | not filled in |
 | `0x0041ab60` | `SlowMotion_Off` | `Warriors` | not filled in |
 | `0x0041abe8` | `GetCheckPoint` | `Warriors` | 16 |

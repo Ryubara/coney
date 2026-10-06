@@ -455,6 +455,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     const Pad& playerPad = m_frozen || m_freeCamera || sceneHoldsPlayer() || picking ? kStill : pad;
 
     // The characters' update, then the cameras' (human::Player keeps that order).
+    applyIdleClips();
     const anim::Vec3 before = m_player->human().position();
     m_player->update(playerPad, &m_scenery->collision(), m_combatants);
     for (Target& target : m_targets) {
@@ -507,6 +508,20 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     m_hud->step(hudFrame);
     ++m_stats.frames;
     return ModeResult::Stay;
+}
+
+void PlayLevelMode::applyIdleClips() {
+    for (human::Human* human : m_player->humans().humans()) {
+        const std::string& wanted = human->script().animOverrides.front();
+        if (wanted != human->idleClipName()) {
+            const anim::AnimClip* clip = m_dynamicClips.find(wanted);
+            if (!wanted.empty()) {
+                m_print(clip != nullptr ? std::format("anim: {} replaces a human's idle\n", wanted)
+                                        : std::format("anim: {} not loaded; the idle plays\n", wanted));
+            }
+            human->setIdleClip(wanted, clip);
+        }
+    }
 }
 
 void PlayLevelMode::render(const RenderTime& time) {

@@ -1447,9 +1447,10 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   `0x20000000000`. The rest of what the scripts set (arrest, pad lock, disabled commands, money, carried item,
   callbacks, icon, held object, head-look, animation overrides) is `human::ScriptState` (`src/human/script_state.h`);
   the bindings are `src/scripting/human_bindings.*`, acting through `ai::ScriptedHumans`. **Stand-ins**: an arrested
-  human only stands still; the icon, the object in the hand, the head-look and `HuUseAnim`'s clip are kept, not
-  drawn or played; `HuSetPushable` is kept (bodies do not push each other); `HuDropWeapon` lets go of any object;
-  `HuChangePlayerGang` and `WCIssueCommand` only note the gang and command.
+  human only stands still; the icon, the object in the hand, the head-look and `HuUseAnim`'s clips other than the
+  idle's (slot 0, which plays: [Rumble](rumble.md#coney)) are kept, not drawn or played; `HuSetPushable` is kept
+  (bodies do not push each other); `HuDropWeapon` lets go of any object; `HuChangePlayerGang` and `WCIssueCommand` only
+  note the gang and command.
 - **Names**: `@orig` names for addresses the research describes but does not name (such as `Human_SnapToGround`,
   `GaitBlend_Advance`, `PhysicsBody_PushOutOfWalls`) are Coney's.
 

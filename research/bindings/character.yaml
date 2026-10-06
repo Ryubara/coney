@@ -2508,6 +2508,7 @@
     0x0041a8c0; the member is chosen by 0x0022a770 (also used by other player hand-overs). Behaviour:
     [Rumble](../../research/rumble.md#switch-player).
   usage: {chunks: 34, calls: 266, boot: false, mission1: false, result_used: true}
+  coney: implemented
 
 - name: HuSetVoiceIndex
   wrapper: 0x0035d290

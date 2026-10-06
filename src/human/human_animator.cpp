@@ -103,8 +103,21 @@ std::unique_ptr<anim::GaitBlendTask> HumanAnimator::gaitBlend(float value, float
     return std::make_unique<anim::GaitBlendTask>(clips, value, kGaitValueSpeed, 1.0F, anim::kGaitBlendFlags, phase);
 }
 
+void HumanAnimator::setIdleClip(const anim::AnimClip* clip) {
+    if (clip == m_idleClip) {
+        return;
+    }
+    m_idleClip = clip;
+    if (m_state == AnimState::Idle) {
+        m_tasks.change(idleLoop(), kIdleFade);
+    }
+}
+
 std::unique_ptr<anim::AnimTask> HumanAnimator::idleLoop() const {
     const anim::GaitClip idle = slotClip(kSlotIdle);
+    if (m_idleClip != nullptr) {
+        return std::make_unique<anim::LoopTask>(*m_idleClip, idle.animId, 1.0F, 0U);
+    }
     return std::make_unique<anim::LoopTask>(*idle.clip, idle.animId, m_anims->rate(idle.animId), 0U);
 }
 

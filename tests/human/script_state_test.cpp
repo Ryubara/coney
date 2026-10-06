@@ -11,12 +11,15 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_clip.h"
+#include "animation/anim_task.h"
 #include "combat/combat_tuning.h"
 #include "combat/commands.h"
 #include "combat/meters.h"
 #include "combat/power_class.h"
 #include "human/fighter.h"
 #include "human/human.h"
+#include "human/human_animator.h"
 #include "human/human_flags.h"
 #include "support/collision_fixtures.h"
 #include "support/fight_fixtures.h"
@@ -254,4 +257,29 @@ TEST_CASE("the target search skips a human with the no-target flag", "[human][sc
     near.setFlag(flag::kNoTarget, false);
     near.script().targetable = false;
     CHECK(coney::human::Fighter::pickTarget(input, 2.0F) == nullptr);
+}
+
+TEST_CASE("HuUseAnim's idle replacement plays in the idle's place, under the idle's id, until taken away",
+          "[human][script]") {
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    const coney::human::AnimSlots& slots = coney::human::AnimSlots::player();
+    const std::uint32_t idleId = slots.ids[coney::human::kSlotIdle];
+    // A clip of the set standing in for a dynamic one.
+    const coney::anim::AnimClip* cheer = character.anims.clip(slots.ids[coney::human::kSlotWalk]);
+    REQUIRE(cheer != nullptr);
+    const auto playing = [&fight] { return fight.human().animator().tasks().top()->eventClip(); };
+    fight.run("", 1);
+    const coney::anim::AnimClip* own = playing();
+    CHECK(own != cheer);
+
+    fight.human().setIdleClip("test_cheer.anm", cheer);
+    CHECK(fight.human().idleClipName() == "test_cheer.anm");
+    fight.run("", 10);
+    CHECK(playing() == cheer);
+    CHECK(fight.human().animator().animId() == idleId);
+
+    fight.human().setIdleClip("", nullptr);
+    fight.run("", 10);
+    CHECK(playing() == own);
 }

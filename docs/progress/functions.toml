@@ -350,6 +350,12 @@ subsystem = "Audio"
 size = 40
 
 [[function]]
+address = 0x001137a8
+name = "Sound_Play2D"
+subsystem = "Audio"
+size = 64
+
+[[function]]
 address = 0x00113810
 name = "Ambient_AddSound"
 subsystem = "Audio"
@@ -497,6 +503,12 @@ subsystem = "Camera"
 address = 0x00121298
 name = "Cam_UpdateShake"
 subsystem = "Camera"
+
+[[function]]
+address = 0x00122248
+name = "Camera_SwitchTarget"
+subsystem = "Camera"
+size = 104
 
 [[function]]
 address = 0x00124d00
@@ -2802,6 +2814,12 @@ address = 0x00229570
 name = "Human_BannerKind"
 subsystem = "Human"
 size = 176
+
+[[function]]
+address = 0x0022a770
+name = "Gang_PickSwitchMember"
+subsystem = "Human"
+size = 528
 
 [[function]]
 address = 0x0022ae40
@@ -5112,6 +5130,12 @@ subsystem = "Scripting"
 size = 120
 
 [[function]]
+address = 0x0035d218
+name = "HuSwitchPlayer"
+subsystem = "Scripting"
+size = 120
+
+[[function]]
 address = 0x0035e5d0
 name = "CfgHUDMessage"
 subsystem = "Scripting"
@@ -6650,6 +6674,12 @@ address = 0x00418428
 name = "RepeatTracker_Note"
 subsystem = "Warriors"
 size = 240
+
+[[function]]
+address = 0x0041a8c0
+name = "Human_SwitchPlayer"
+subsystem = "Warriors"
+size = 256
 
 [[function]]
 address = 0x0041ab30

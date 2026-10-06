@@ -131,6 +131,11 @@ void GameSound::playAmbientTrack(std::uint32_t sound) {
     }
 }
 
+double GameSound::play2D(std::uint32_t sound) {
+    SoundEngine* engine = m_sounds.engine();
+    return engine != nullptr ? static_cast<double>(engine->play(sound).id) : 0.0;
+}
+
 void GameSound::stopAmbientTrack() {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->stopAmbientTrack();

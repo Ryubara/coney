@@ -302,6 +302,12 @@ void addSoundBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
     vm.registerFunction("SoundPlayAmbientTrack", soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
                             sound.playAmbientTrack(crc32(binding::string(args, 0)));
                         }));
+    // `SoundPlay2D(name)`: the handle, NilSoundHandle (0) when nothing plays or there is no sound.
+    // @orig 0x001137a8 Sound_Play2D (unknown)
+    vm.registerFunction("SoundPlay2D", [context = &context](std::span<const Value> args) {
+        SoundHost* sound = context->sound;
+        return binding::number(sound != nullptr ? sound->play2D(crc32(binding::string(args, 0))) : 0.0);
+    });
     // @orig 0x00113630 Sound_StopAmbientTrack (unknown)
     vm.registerFunction("SoundStopAmbientTrack",
                         soundCall(context, [](SoundHost& sound, std::span<const Value>) { sound.stopAmbientTrack(); }));

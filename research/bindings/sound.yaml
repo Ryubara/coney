@@ -433,6 +433,7 @@
   notes: >-
     0x001137a8 → 0x0010fcd8.
   usage: {chunks: 50, calls: 233, boot: true, mission1: false, result_used: false, levels: [95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 92, 83, 20, 11, 61, 64]}
+  coney: implemented
 
 - name: SoundPreLoad
   wrapper: 0x00371768

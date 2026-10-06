@@ -29,6 +29,14 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
     const std::size_t held = cast.scripted->held();
     // A human the scripts delete leaves the world (its brain unbound by then).
     cast.scripted->setRemover([this](ai::Brain& brain) { m_ai->remove(brain.human()); });
+    // HuSwitchPlayer hands the pad to a team-mate; the human left behind fights as its class's brain. Outside level99
+    // a kind-0 gang's human may take over too.
+    cast.scripted->setSwitcher(
+        [this](ai::Brain& from, ai::Brain& to) {
+            m_ai->switchPlayer(to, castBrainType(from.characterClass()));
+            m_print(std::format("player: the pad passes from human {} to human {}\n", from.handle(), to.handle()));
+        },
+        sceneName() != "level99");
     cast.scripted->release([this](const HumanCreation& human) { return castHuman(human); });
     m_print(std::format("cast: {} humans from the level's scripts, {} AI ({} models); {} calls held for them run\n",
                         cast.humans != nullptr ? cast.humans->all().size() : 0, m_ai->count(), m_castCharacters.size(),
@@ -63,6 +71,13 @@ ai::Brain* PlayLevelMode::castHuman(const HumanCreation& human) {
     mesh.normals.resize(mesh.positions.size());
     m_fighterMeshes.push_back(std::move(mesh));
     return &brain;
+}
+
+ai::BrainType PlayLevelMode::castBrainType(int type) const {
+    const characters::CharacterType* found = m_types.find(type);
+    const int powerClass = found != nullptr && found->powerClass ? *found->powerClass : ai::kFighterPowerClass;
+    return m_cast.recorded != nullptr ? ai::aiConfigFrom(*m_cast.recorded, type, powerClass).fighter.brain
+                                      : ai::AiConfig{}.fighter.brain;
 }
 
 PlayLevelMode::CastLook PlayLevelMode::castCharacter(const std::string& model) {

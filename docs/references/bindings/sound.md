@@ -976,7 +976,7 @@ Plays a sound once without a position (2D, same volume in both speakers), for me
 - **Wrapper** `0x003716f8` (registered by `RegisterBindings`); **calls** `0x001137a8`
 - **Used by** 50 of 467 script chunks (233 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundPlayAmbientTrack {#soundplayambienttrack}
 

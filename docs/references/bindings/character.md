@@ -4515,7 +4515,7 @@ character is out.
 - **Evidence:** confirmed (code) at `0x00239e08`; detail: brief
 - **Wrapper** `0x0035d218` (registered by `RegisterBindings`); **calls** `0x00239e08` `GameState_SwitchPlayer`
 - **Used by** 34 of 467 script chunks (266 references); boot to menu: no; mission 1: no; result used: yes
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuTag {#hutag}
 

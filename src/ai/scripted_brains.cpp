@@ -350,6 +350,53 @@ void ScriptedBrains::humanDelete(double human) {
     }
 }
 
+Brain* ScriptedBrains::switchTarget(const Brain& from) const {
+    // Not driven by a pad, and on its feet with health left.
+    const auto canTake = [&from](const Brain* member) {
+        return member != &from && member->type() != BrainType::Player &&
+               !member->human().fighter().health().depleted() &&
+               member->human().state() != human::TargetState::Grounded;
+    };
+    if (const Gang* gang = from.gang(); gang != nullptr) {
+        for (Brain* member : gang->members()) {
+            if (canTake(member)) {
+                return member;
+            }
+        }
+    }
+    if (!m_switchToKindZero) {
+        return nullptr;
+    }
+    for (std::size_t id = 0; id < kGangSlots; ++id) {
+        const Gang* other = m_owner->gangs().find(static_cast<int>(id));
+        if (other == nullptr || other->kind() != 0) {
+            continue;
+        }
+        for (Brain* member : other->members()) {
+            if (canTake(member)) {
+                return member;
+            }
+        }
+    }
+    return nullptr;
+}
+
+double ScriptedBrains::switchPlayer(double human) {
+    Brain* from = named(human);
+    if (from == nullptr || from->type() != BrainType::Player || !m_switcher) {
+        return 0.0;
+    }
+    Brain* to = switchTarget(*from);
+    if (to == nullptr) {
+        return 0.0;
+    }
+    m_switcher(*from, *to);
+    if (m_player == from) {
+        m_player = to;
+    }
+    return to->handle();
+}
+
 std::optional<int> ScriptedBrains::gangOf(double human) const {
     const Brain* brain = named(human);
     if (brain == nullptr) {

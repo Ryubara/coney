@@ -7,6 +7,8 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -191,6 +193,14 @@ class Human final : public Holdable {
     /// The last stick intent, after the camera's turn.
     [[nodiscard]] const StickIntent& intent() const { return m_intent; }
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
+    /// `HuUseAnim`'s idle replacement, `name` loaded as `clip` (null for none: the own idle);
+    /// HumanAnimator::setIdleClip(). The play mode applies ScriptState::animOverrides[0] through it.
+    void setIdleClip(std::string_view name, const anim::AnimClip* clip) {
+        m_idleClipName = std::string(name);
+        m_animator.setIdleClip(clip);
+    }
+    /// The name of the idle replacement applied (empty for none).
+    [[nodiscard]] const std::string& idleClipName() const { return m_idleClipName; }
     /// Called with each anim id the human starts playing, for the scripts' animation callbacks
     /// (docs/research/characters.md#anim-callbacks); empty for none.
     void setAnimStartHook(std::function<void(std::uint32_t animId)> hook) { m_animator.setStartHook(std::move(hook)); }
@@ -394,6 +404,7 @@ class Human final : public Holdable {
     PlayerRecord m_record;
     ScriptState m_script;
     HumanAnimator m_animator;
+    std::string m_idleClipName;                         // setIdleClip()
     std::unique_ptr<combat::AnimRangeList> m_ownRanges; // the list with the class's damage, when it has one
     const combat::AnimRangeList* m_ranges;
     FighterProfile m_profile;

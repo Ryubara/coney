@@ -204,6 +204,12 @@ class HumanAnimator {
     /// Called with each anim id the human starts playing (anim::AnimTaskStack::setStartHook()).
     void setStartHook(std::function<void(std::uint32_t animId)> hook) { m_tasks.setStartHook(std::move(hook)); }
     [[nodiscard]] AnimState state() const { return m_state; }
+    /// `HuUseAnim`'s replacement for the idle (anim kUseAnimIds[0], human `+0x3c8`): `clip` (which must outlive its
+    /// use; null puts the character's own idle back) plays wherever the idle would, under the idle's anim id, and at
+    /// once with the idle's fade when the human stands idle now. **Coney stand-in**: a dynamic clip plays at rate 1
+    /// (its rate flags are not traced).
+    /// Research: docs/research/characters.md#scripts-hold, docs/research/rumble.md#match-end
+    void setIdleClip(const anim::AnimClip* clip);
     /// The anim id playing (record `+0x20`): the newest task's.
     [[nodiscard]] std::uint32_t animId() const;
     /// The newest task's gait blend value, or -1 when it is not a gait blend.
@@ -241,6 +247,7 @@ class HumanAnimator {
     [[nodiscard]] anim::GaitClip slotClip(std::size_t slot) const;
 
     const characters::AnimSet* m_anims;
+    const anim::AnimClip* m_idleClip = nullptr; // setIdleClip()
     AnimSlots m_slots;
     Speeds m_speeds;
     anim::AnimTaskStack m_tasks;
