@@ -5,13 +5,16 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <functional>
+#include <limits>
 #include <numbers>
 #include <queue>
 #include <ranges>
 #include <utility>
+#include <vector>
 
 namespace coney::ai {
 
@@ -27,81 +30,6 @@ constexpr float kOffScreenRadius = 0.3F;
 // Milliseconds in a second, for state 2's value.
 constexpr std::uint64_t kMsPerSecond = 1000;
 
-// The angle between `forward` (length 1) and the direction from the camera to `point`, radians.
-float angleFrom(const PlacementCamera& camera, anim::Vec3 point) {
-    const anim::Vec3 toPoint = anim::subtract(point, camera.eye);
-    const float distance = anim::length(toPoint);
-    if (distance <= 0.0F) {
-        return 0.0F;
-    }
-    return std::acos(std::clamp(anim::dot(toPoint, camera.forward) / distance, -1.0F, 1.0F));
-}
-
-// Whether a human on `point` is out of the camera's sight: beyond kOutOfSightFar, or beyond `value` and outside the
-// cone. Coney choice: the distance and the angle are taken in 3D (the page does not say).
-bool unseen(const PlacementCamera& camera, float value, anim::Vec3 point) {
-    const float distance = anim::distance(point, camera.eye);
-    return distance > kOutOfSightFar ||
-           (distance > value && angleFrom(camera, point) > camera.halfFovRadians + kConeMarginRadians);
-}
-
-// The node the search starts from: Coney stand-in for the player's route node (not on the page), the nearest node of
-// the polygon under `player`, or the map's nearest node when that polygon has none.
-std::optional<std::uint32_t> startNode(const world::PathMap& map, anim::Vec3 player) {
-    const auto nodes = map.nodes();
-    std::uint32_t first = 0;
-    auto count = static_cast<std::uint32_t>(nodes.size());
-    if (const std::optional<std::uint32_t> polygon = map.polygonAt(player.x, player.y)) {
-        const world::PathPolygon& under = map.polygons()[*polygon];
-        if (under.hasNodes && under.nodeCount > 0) {
-            first = under.firstNode;
-            count = under.nodeCount;
-        }
-    }
-    std::optional<std::uint32_t> nearest;
-    float best = 0.0F;
-    for (std::uint32_t node = first; node < first + count && node < nodes.size(); ++node) {
-        const float distance = anim::distance(nodes[node].position, player);
-        if (!nearest || distance < best) {
-            nearest = node;
-            best = distance;
-        }
-    }
-    return nearest;
-}
-
-// One best-first search from `start` toward `goal`: the first node taken off the open list that is unseen.
-// Coney choice: the open list is ordered by the straight distance to the goal, and the search fails once it would
-// hold more than kMaxSearchNodes (the route planner's limit), the page giving no limit.
-std::optional<std::uint32_t> searchOutward(const world::PathMap& map, std::uint32_t start, anim::Vec3 goal,
-                                           const PlacementCamera& camera, float value) {
-    const auto nodes = map.nodes();
-    using Entry = std::pair<float, std::uint32_t>;
-    std::priority_queue<Entry, std::vector<Entry>, std::greater<>> open;
-    std::vector<bool> reached(nodes.size(), false);
-    open.emplace(anim::distance(nodes[start].position, goal), start);
-    reached[start] = true;
-    while (!open.empty()) {
-        const std::uint32_t node = open.top().second;
-        open.pop();
-        if (unseen(camera, value, nodes[node].position)) {
-            return node;
-        }
-        for (const world::PathEdge& edge : map.edgesOf(node)) {
-            // An edge with the avoid bit is not taken (ai.md#path-planning).
-            if (edge.avoid || edge.to >= nodes.size() || reached[edge.to]) {
-                continue;
-            }
-            reached[edge.to] = true;
-            open.emplace(anim::distance(nodes[edge.to].position, goal), edge.to);
-        }
-        if (open.size() > kMaxSearchNodes) {
-            return std::nullopt;
-        }
-    }
-    return std::nullopt;
-}
-
 // `direction` turned about the vertical (z) axis by `radians`.
 anim::Vec3 turned(anim::Vec3 direction, float radians) {
     const float c = std::cos(radians);
@@ -109,25 +37,89 @@ anim::Vec3 turned(anim::Vec3 direction, float radians) {
     return anim::Vec3{(direction.x * c) - (direction.y * s), (direction.x * s) + (direction.y * c), direction.z};
 }
 
+// The outward search's units: 1/16 m.
+constexpr float kSearchUnitsPerMetre = 16.0F;
+
 } // namespace
 
-std::optional<anim::Vec3> outOfSightNode(const world::PathMap& map, anim::Vec3 player, const PlacementCamera& camera,
+std::optional<std::uint32_t> searchOutward(const RoutePlanner& planner, std::uint32_t start, anim::Vec3 origin,
+                                           anim::Vec3 goal, anim::Vec3 coneAxis, float halfAngle, float value) {
+    const world::PathMap& map = planner.map();
+    const auto nodes = map.nodes();
+    if (start >= nodes.size()) {
+        return std::nullopt;
+    }
+    const float cosHalf = std::cos(halfAngle);
+    // Whether a node is out of sight: far, or beyond the value outside the cone.
+    const auto found = [&](anim::Vec3 at) {
+        const anim::Vec3 toNode = anim::subtract(at, origin);
+        const float distance = anim::length(toNode);
+        if (distance > kOutOfSightFar) {
+            return true;
+        }
+        return distance > value && distance > 0.0F &&
+               anim::dot(anim::scale(toNode, 1.0F / distance), coneAxis) < cosHalf;
+    };
+    // h: 16 x the 3D distance to the goal.
+    const auto heuristic = [&](std::uint32_t node) {
+        return static_cast<std::uint32_t>(anim::distance(nodes[node].position, goal) * kSearchUnitsPerMetre);
+    };
+    // The open list by f, then node; g per node; the closed marks.
+    using Entry = std::pair<std::uint32_t, std::uint32_t>;
+    std::priority_queue<Entry, std::vector<Entry>, std::greater<>> open;
+    std::vector<std::uint32_t> g(nodes.size(), std::numeric_limits<std::uint32_t>::max());
+    std::vector<bool> closed(nodes.size(), false);
+    std::size_t closedCount = 0;
+    g[start] = 0;
+    open.emplace(heuristic(start), start);
+    while (!open.empty()) {
+        const std::uint32_t node = open.top().second;
+        open.pop();
+        // An older entry of a node opened again with a lower g.
+        if (closed[node]) {
+            continue;
+        }
+        closed[node] = true;
+        if (found(nodes[node].position)) {
+            return node;
+        }
+        if (++closedCount >= kSearchClosedMax) {
+            return std::nullopt;
+        }
+        for (const world::PathEdge& edge : map.edgesOf(node)) {
+            if (edge.avoid || edge.to >= nodes.size() || closed[edge.to]) {
+                continue;
+            }
+            const std::uint32_t cost = g[node] + planner.edgeCost(node, edge, edge_flag::kDefaultMask);
+            if (cost >= g[edge.to]) {
+                continue;
+            }
+            if (open.size() >= kSearchOpenMax) {
+                return std::nullopt;
+            }
+            g[edge.to] = cost;
+            open.emplace(cost + heuristic(edge.to), edge.to);
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<anim::Vec3> outOfSightNode(const RoutePlanner& planner, anim::Vec3 player, const PlacementCamera& camera,
                                          float value, const PlacementRandom& random) {
-    const std::optional<std::uint32_t> start = startNode(map, player);
+    const std::optional<std::uint32_t> start = planner.startNode(player);
     if (!start) {
         return std::nullopt;
     }
-    // The first goal straight ahead; then a direction outside the cone, the goal at twice the value. Coney choice:
-    // the angle is drawn evenly over the turns outside the cone, about the vertical axis.
-    const float cone = std::min(camera.halfFovRadians + kConeMarginRadians, std::numbers::pi_v<float>);
+    const anim::Vec3 origin{camera.eye.x, camera.eye.y, player.z};
+    const anim::Vec3 axis{camera.forward.x, camera.forward.y, 0.0F};
+    const float half = std::min(camera.halfFovRadians + kConeMarginRadians, std::numbers::pi_v<float>);
     for (int attempt = 0; attempt < kPlacementTries; ++attempt) {
-        anim::Vec3 goal = anim::add(camera.eye, anim::scale(camera.forward, kFirstGoalAhead));
-        if (attempt > 0) {
-            const float angle = cone + (random() * 2.0F * (std::numbers::pi_v<float> - cone));
-            goal = anim::add(camera.eye, anim::scale(turned(camera.forward, angle), 2.0F * value));
-        }
-        if (const std::optional<std::uint32_t> node = searchOutward(map, *start, goal, camera, value)) {
-            return map.nodes()[*node].position;
+        // A draw before every search; the first search's is unused.
+        const float theta = half + (random() * ((2.0F * std::numbers::pi_v<float>)-(2.0F * half)));
+        const anim::Vec3 goal = attempt == 0 ? anim::add(origin, anim::scale(camera.forward, kFirstGoalAhead))
+                                             : anim::add(origin, anim::scale(turned(axis, theta), 2.0F * value));
+        if (const std::optional<std::uint32_t> node = searchOutward(planner, *start, origin, goal, axis, half, value)) {
+            return planner.map().nodes()[*node].position;
         }
     }
     return std::nullopt;
@@ -142,9 +134,10 @@ void Spawners::add(const script::SpawnerCall& call) {
     spawner.call = call;
     spawner.state = call.state;
     spawner.value = call.value;
-    // Coney choice: GangAddSpawner's limit is the field GangSetMaxConcurrent writes, so a negative one makes waves
-    // too (the page does not say whether its setter also sets the wave flag).
+    // GangAddSpawner's limit is the field GangSetMaxConcurrent writes: a negative one makes waves too.
     spawner.maxConcurrent = call.maxConcurrent;
+    // GangAddSpawner sets the off-screen switch for state 11 only.
+    spawner.offScreen = call.state == static_cast<int>(SpawnerState::KeepUpNumbers);
     spawner.nextSpawnMs = m_nowMs;
     spawner.deadlineMs = m_nowMs + static_cast<std::uint64_t>(std::max(call.value, 0)) * kMsPerSecond;
     spawners.push_back(std::move(spawner));
@@ -180,7 +173,18 @@ void Spawners::update(std::uint64_t nowMs, SpawnerWorld& world) {
             }
             // Its humans that went down or were deleted no longer count against its limit.
             std::erase_if(spawner.humans, [&world](double handle) { return !world.alive(handle); });
-            // An off-screen spawner first checks that no camera sees its spot.
+            // Ready by its state, or (in any state) while a wave runs.
+            if (!spawner.waveRunning && !ready(spawner, nowMs, world)) {
+                continue;
+            }
+            // Waves: with none running, the next starts once every human of the last is gone.
+            if (spawner.maxConcurrent < 0 && !spawner.waveRunning) {
+                if (!spawner.humans.empty()) {
+                    continue;
+                }
+                spawner.waveRunning = true;
+            }
+            // The gates: an off-screen spawner's spot unseen, room under the limit, the next spawn time reached.
             if (spawner.offScreen) {
                 const anim::Vec3 spot{spawner.call.position[0], spawner.call.position[1],
                                       spawner.call.position[2] + kOffScreenHeight};
@@ -188,30 +192,25 @@ void Spawners::update(std::uint64_t nowMs, SpawnerWorld& world) {
                     continue;
                 }
             }
-            if (!ready(spawner, nowMs, world) || nowMs < spawner.nextSpawnMs || !roomFor(spawner)) {
+            if (!roomFor(spawner) || nowMs < spawner.nextSpawnMs) {
                 continue;
             }
             spawnOne(spawner, nowMs, world);
-            // A wave is complete once as many are alive as the limit allows.
-            if (spawner.maxConcurrent < 0 && std::cmp_greater_equal(spawner.humans.size(), -spawner.maxConcurrent)) {
-                spawner.waveFull = true;
+            // A wave ends on the spawn that fills it.
+            if (spawner.waveRunning && std::cmp_greater_equal(spawner.humans.size(), -spawner.maxConcurrent)) {
+                spawner.waveRunning = false;
             }
         }
     }
 }
 
-bool Spawners::roomFor(Spawner& spawner) {
-    if (spawner.maxConcurrent >= 0) {
-        return std::cmp_less(spawner.humans.size(), spawner.maxConcurrent);
+bool Spawners::roomFor(const Spawner& spawner) {
+    // State 11 ignores the limit; a negative limit -n is a wave's n.
+    if (spawner.state == static_cast<int>(SpawnerState::KeepUpNumbers)) {
+        return true;
     }
-    // A wave waits for all of its humans to die, then the next fills up again.
-    if (spawner.waveFull) {
-        if (!spawner.humans.empty()) {
-            return false;
-        }
-        spawner.waveFull = false;
-    }
-    return std::cmp_less(spawner.humans.size(), -spawner.maxConcurrent);
+    const int limit = spawner.maxConcurrent < 0 ? -spawner.maxConcurrent : spawner.maxConcurrent;
+    return std::cmp_less(spawner.humans.size(), limit);
 }
 
 Spawner* Spawners::named(int gang, std::string_view name) {

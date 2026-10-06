@@ -25,7 +25,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.2% of the game's own code (476,660 of 3,354,776 bytes, 1,534 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.2% of the game's own code (477,292 of 3,354,776 bytes, 1,536 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -56,7 +56,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
 | `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 59 | 57,368 |
-| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 4.0% | 55 | 165,680 |
+| `Camera` | `▉░░░░░░░░░░░░░░░░░░░` | 4.4% | 57 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
@@ -213,9 +213,11 @@ at the top of the repository's `README.md`.
 | `0x0011e198` | `Camera_AssignReverseButton` | `Camera` | 24 |
 | `0x0011e878` | `Cameras_Update` | `Camera` | not filled in |
 | `0x0011ee08` | `Camera_MakeActive` | `Camera` | not filled in |
+| `0x001202e8` | `Camera_AnyPlayerCanSeePoint` | `Camera` | 152 |
 | `0x001210f8` | `Cam_StartShake` | `Camera` | not filled in |
 | `0x00121298` | `Cam_UpdateShake` | `Camera` | not filled in |
 | `0x00122248` | `Camera_SwitchTarget` | `Camera` | 104 |
+| `0x00122548` | `Camera_CanSeePoint` | `Camera` | 480 |
 | `0x00124d00` | `Cam_Follow_Reset` | `Camera` | not filled in |
 | `0x00124f38` | `Cam_Follow_PlaceBehind` | `Camera` | not filled in |
 | `0x001254f0` | `Cam_Follow_StepZoom` | `Camera` | 152 |

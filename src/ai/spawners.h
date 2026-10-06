@@ -12,9 +12,9 @@
 #include <string_view>
 #include <vector>
 
+#include "ai/route_planner.h"
 #include "animation/anim_math.h"
 #include "scripting/human_bindings.h"
-#include "world/path_map.h"
 
 // The gangs' spawners: points that make gang members over time (`GangAddSpawner`, switched by `GangStartSpawner`).
 // Each update runs every spawner in use against its state: when the state says it is ready, the delay since its last
@@ -82,7 +82,8 @@ class SpawnerWorld {
     SpawnerWorld& operator=(SpawnerWorld&&) = default;
 };
 
-/// The camera a placement hides from: where it is, its forward (length 1) and half its field of view.
+/// The camera a placement hides from: where it is, its forward (length 1; its orientation's y axis) and half its field
+/// of view.
 struct PlacementCamera {
     anim::Vec3 eye;
     anim::Vec3 forward{0.0F, 1.0F, 0.0F};
@@ -97,21 +98,36 @@ inline constexpr float kFirstGoalAhead = 100.0F;
 inline constexpr float kConeMarginRadians = 10.0F * std::numbers::pi_v<float> / 180.0F;
 /// The searches a placement makes before it gives up for this update: the first ahead and 16 turned.
 inline constexpr int kPlacementTries = 17;
+/// The outward search fails once its open list would hold more than this (`0x002531c0`)...
+inline constexpr std::size_t kSearchOpenMax = 1000;
+/// ...or it has closed this many nodes (`0x002534d0`).
+inline constexpr std::size_t kSearchClosedMax = 3000;
 
-/// A number in [0, 1) for the turned tries' angles.
+/// A uniform number in [0, 1) for the turned tries' angles (the original's `Random_Float`, `0x00335420`).
 using PlacementRandom = std::function<float()>;
 
-/// The node of `map`'s route graph a human placed out of `camera`'s sight stands on: from the node nearest `player`,
-/// a best-first search over the graph (edges with the avoid bit skipped) toward a goal point, which takes the first
-/// node more than kOutOfSightFar from the camera, or more than `value` metres from it and outside the cone of half
-/// its field of view + kConeMarginRadians around its forward. The first goal is kFirstGoalAhead ahead of the
-/// camera; each later try turns the forward by an angle outside that cone (from `random`) and puts the goal at
-/// 2 × `value`. Nothing when no try finds one, or when the map has no nodes.
+/// The route node a human placed out of `camera`'s sight stands on (docs/research/ai.md#spawner-placement). Distances
+/// are from the origin, the camera's eye at `player`'s height, in 3D. The search starts at the node `player` would
+/// leave a route from (RoutePlanner::startNode(); none: nothing). The cone's axis is the camera's forward with its z
+/// cleared, not normalised again, and its half-angle half the field of view + kConeMarginRadians. Each of
+/// kPlacementTries draws an angle in [h, 2 pi - h] from `random` and searches (searchOutward()): the first toward the
+/// origin + kFirstGoalAhead x the forward (its draw unused), each later toward the origin + 2 x `value` x the
+/// flattened forward turned by the angle about the vertical. Nothing when no try finds a node.
 /// @orig 0x001673b8 Gang_PlaceOutOfSight (unknown)
-/// @orig 0x00251d28 Route_SearchOutward (unknown)
-[[nodiscard]] std::optional<anim::Vec3> outOfSightNode(const world::PathMap& map, anim::Vec3 player,
+[[nodiscard]] std::optional<anim::Vec3> outOfSightNode(const RoutePlanner& planner, anim::Vec3 player,
                                                        const PlacementCamera& camera, float value,
                                                        const PlacementRandom& random);
+
+/// One outward search over `planner`'s graph from node `start` toward `goal`: A* (g the route edge costs with mask
+/// `0xff`, h 16 x the 3D distance to the goal, a node already open taken again only for a lower g), skipping the
+/// links with the avoid bit; each node popped (the start too) is found when its distance from `origin` exceeds
+/// kOutOfSightFar, or exceeds `value` with the unit direction from `origin` having a dot product below cos
+/// `halfAngle` with `coneAxis`. Nothing when the open list empties or outgrows kSearchOpenMax, or kSearchClosedMax
+/// nodes close.
+/// @orig 0x00251d28 Route_SearchOutward (unknown)
+[[nodiscard]] std::optional<std::uint32_t> searchOutward(const RoutePlanner& planner, std::uint32_t start,
+                                                         anim::Vec3 origin, anim::Vec3 goal, anim::Vec3 coneAxis,
+                                                         float halfAngle, float value);
 
 /// One spawner: what `GangAddSpawner` gave it and what it has done since.
 struct Spawner {
@@ -125,8 +141,8 @@ struct Spawner {
     std::vector<double> humans;    ///< The handles of the humans it made that may still be alive.
     std::size_t typeIndex = 0;     ///< `+0x4c`: the type list's entry made last (0 for a new spawner).
     int maxConcurrent = 0;         ///< `+0x5a`: its humans alive at once; negative -n makes waves of n.
-    bool waveFull = false;         ///< `+0x51`: a wave is complete, and waits for all of it to die.
-    bool offScreen = false;        ///< `+0x8c`: it spawns only while no camera sees its spot.
+    bool waveRunning = false;      ///< `+0x51`: a wave is running (ready in any state until it fills).
+    bool offScreen = false;        ///< `+0x8c`: it spawns only while no camera sees its spot (state 11 sets it).
 };
 
 /// The level's spawners, by gang.
@@ -170,9 +186,8 @@ class Spawners {
     [[nodiscard]] static int pickType(Spawner& spawner);
     // The gang's spawner named `name`; null when none is.
     [[nodiscard]] Spawner* named(int gang, std::string_view name);
-    // Whether `spawner` may make another human now: under its limit alive, and (for waves) not waiting for one to
-    // die out.
-    [[nodiscard]] static bool roomFor(Spawner& spawner);
+    // Whether `spawner` has room for another human: fewer alive than its limit (a wave's n), or state 11.
+    [[nodiscard]] static bool roomFor(const Spawner& spawner);
     // Makes one human from `spawner`, counts it and calls its callback.
     void spawnOne(Spawner& spawner, std::uint64_t nowMs, SpawnerWorld& world);
 

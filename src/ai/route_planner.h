@@ -154,6 +154,11 @@ class RoutePlanner {
     [[nodiscard]] std::optional<RouteSearch> search(std::uint32_t start, std::uint32_t goal, std::uint16_t mask,
                                                     std::uint32_t cap = 0xffff) const;
 
+    /// The node a route starting at `point` would leave from: of the polygon under it (or the nearest within
+    /// kPolygonReach), the nearest of up to kEndNodeTries of its nodes that `point` reaches in a straight line;
+    /// nothing when there is none.
+    [[nodiscard]] std::optional<std::uint32_t> startNode(anim::Vec3 point) const;
+
   private:
     friend class Route;
 

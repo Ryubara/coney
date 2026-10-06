@@ -381,8 +381,8 @@ lengths; the result lines' look and the grids' rows; the melee and confront goal
 test; the switch's choice and the brain left behind; a dynamic clip's rate; a locked human's movement (neither stick nor
 brain moves it); the number indicator, kept but not drawn; `PrecacheWorld`, which only empties the queue; the
 scoreboard's and the stopwatch's places; the hold-flag goal's type ids, taunt and fight; a knock-out without its clips
-or its wake-up after 14 s; state 7's placement and the out-of-sight search's start node, limit and draws
-([AI: Coney](ai.md#coney)); the engage goal's range; the wheelchair's clips and the give-way action.
+or its wake-up after 14 s; spawner state 7's placement ([AI: Coney](ai.md#coney)); the engage goal's range; the
+wheelchair's clips and the give-way action.
 
 ## Open questions {#open-questions}
 
@@ -412,8 +412,8 @@ or its wake-up after 14 s; state 7's placement and the out-of-sight search's sta
   (Coney: his class's brain type, the profile unchanged).
 - The playback rate of a dynamic clip played by `HuUseAnim` (Coney: 1).
 - The range beyond which `GoalEngageEnemy`'s goal gives up its enemy (Coney: none).
-- Where spawner state 7 places its human (`0x001679e8`). The out-of-sight search itself is answered in
-  [AI: the search](ai.md#spawner-search).
+- Where spawner state 7 places its human (`0x001679e8`; Coney: as state 8 with a value of 0). The out-of-sight search
+  itself is answered in [AI: the search](ai.md#spawner-search).
 - The wheelchair's clips and start (state code 5), and whether the update is 1/30 s or 1/60 s (Coney: no clips, the
   constants per 1/30 s step).
 - What `ActGiveWay`'s action (`0x002fe4b0`) does (Coney: nothing).

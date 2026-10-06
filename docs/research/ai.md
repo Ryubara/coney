@@ -1778,21 +1778,17 @@ human once its delay has passed, while fewer of its humans are alive than its li
 (-1 none). The human is made through the scripts' own `HuCreate` (named `<spawner><count>`, the spawner's model string
 as the fifth argument, in its gang), of the next type in turn (the index moved on first, as `0x0016d810` does), then
 the callback, when it names a function, is called with its handle, the gang's id and the spawner's name.
-6, 8 and 10 place the human out of sight as [above](#spawner-placement): from player 1's camera
-(Coney has one player, so no second camera refuses a node), 17 best-first searches of the route graph, the node then
-checked against the gang's turf boxes; no node, no spawn this update. **Coney choices** where the page is silent: the
-start is the nearest node of the polygon under the player (else of the map); the open list is ordered by the straight
-distance to the goal and fails past 128 nodes, as the route planner's; distances and the cone are taken in 3D; the
-turned tries turn the forward about the vertical, the angle drawn evenly outside the cone from the game's random
-numbers; with no camera the player is the eye, looking along +y. **Stand-ins**: 7 is placed as 8 with a value of 0
-(`0x001679e8` is not on the page) and does not send its human to the gang's first live member; the others stand at the
-spawner; no door opens; the dispatch states 4 and 9 (no crimes are routed) and the top-up 11 (no gang limits kept)
-never spawn; `SetSpawnMax` is not read. `GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns
-waves of n, the next once the last has all died; **Coney choice**: `GangAddSpawner`'s limit, the same field, makes
-waves too when negative). `GangSetSpawnerMustBeOffScreen` skips an update while a camera sees the 0.3 m sphere 1.6 m
-above the spawner; **stand-ins** for the untraced visibility test (`0x001202e8`): 0.3 m is taken as the radius, and
-the sphere is seen when it reaches into player 1's camera's cone (half its field of view) within the far clip, with
-nothing hiding it.
+6, 8 and 10 place the human out of sight as [above](#spawner-placement) and [the search](#spawner-search) say:
+from player 1's camera (Coney has one player, so no second camera refuses a node), the start node the planner's
+route ends use, 17 outward searches, the node then checked against the gang's turf boxes; no node, no spawn this
+update. **Stand-ins**: 7 is placed as 8 with a value of 0 (`0x001679e8` is not on the page) and does not send its
+human to the gang's first live member; the others stand at the spawner; no door opens; the dispatch states 4 and 9
+(no crimes are routed) and the top-up 11 (no gang limits kept) never spawn; `SetSpawnMax` is not read.
+`GangSetMaxConcurrent` changes the limit (16 bits; a negative -n spawns waves of n as [above](#spawners) says, from
+`GangAddSpawner`'s limit too). An off-screen spawner (`GangSetSpawnerMustBeOffScreen`, or added in state 11) skips an
+update while player 1's camera sees the 0.3 m sphere 1.6 m above it ([Off screen](#spawner-unseen)): within the far
+clip, in view and with no wall of the collision mesh on the ray to its centre; **stand-in**: the six-plane frustum is
+taken as a cone of half the field of view widened by the sphere.
 
 **The scripts' goals at one human** (`src/ai/engage_goals.*`). `GoalMoveToHuman` (6) drops and re-issues a move
 (`MoveAction`, its gait and radius) to where the target is every second, waits 30 updates after a failed route, and
@@ -1905,8 +1901,6 @@ when `GangCanFlee` turns it on.
 - The perception struct (`+0xf8`).
 - The riot goal's roam (where a rioter walks between decisions), its smash and loot targets in Coney's objects,
   how the 8 s fight ends, and the gang test `0x0028ff58`.
-- The camera visibility test `0x001202e8` an off-screen spawner (and state 11) uses: is 0.3 m the radius, and does
-  anything hide the sphere? Does `GangAddSpawner`'s negative limit make waves (Coney: yes)?
 - The hold's damage (`0x00510acc`) of `GoalGrabTarget` and the boxing attack weights (`0x00511120`) of
   `GoalBoxer`.
 - Which sound each hub goal line plays (`beckon`, `store_greet`, `phone_gang`, `dead_meat`, `cower`, `mug_grunt`).

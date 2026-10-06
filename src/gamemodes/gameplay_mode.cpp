@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <format>
 #include <map>
 #include <memory>
@@ -49,14 +50,22 @@ namespace coney {
 
 namespace {
 
+// The materials a camera sees through: 30 `LOW_FENCE`, 2 `GLASS`, 122 `RAILING` and 107 `CHAINLINK_NOCLIMB`
+// (docs/research/ai.md#spawner-unseen).
+constexpr std::array<std::uint8_t, 4> kSeeThroughMaterials{30, 2, 122, 107};
+// The largest float below 1, so a draw stays in [0, 1).
+constexpr float kBelowOne = 0.99999994F;
+
 // The level as the gangs' spawners see it: player 1 and the bound humans from the scripts' hold, the route graph and
 // player 1's camera for the spots out of sight, the gangs' turf boxes, and a new human made by the scripts' own
 // `HuCreate`, so it is kept, numbered and made in the world as a script's would be.
 class ScriptSpawnerWorld final : public ai::SpawnerWorld {
   public:
     ScriptSpawnerWorld(ai::ScriptedBrains& scripted, script::ScriptSystem& scripts, const camera::Cameras* cameras,
-                       const world_objects::VolumeBoxes* boxes, GameRandom& random)
-        : m_scripted(&scripted), m_scripts(&scripts), m_cameras(cameras), m_boxes(boxes), m_random(&random) {}
+                       const world_objects::VolumeBoxes* boxes, const raycast::CollisionMesh* collision,
+                       GameRandom& random)
+        : m_scripted(&scripted), m_scripts(&scripts), m_cameras(cameras), m_boxes(boxes), m_collision(collision),
+          m_random(&random) {}
 
     [[nodiscard]] std::optional<anim::Vec3> outOfSight(float value, int gang) override {
         const std::optional<anim::Vec3> player = playerPosition();
@@ -74,9 +83,12 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
                                     .forward = anim::normalise(anim::subtract(view.lookAt, view.position)),
                                     .halfFovRadians = view.fieldOfView * 0.5F * std::numbers::pi_v<float> / 180.0F};
         }
-        // Coney choice: an angle's draw is a whole number in [0, 9999] from the game's random numbers, over 10,000.
-        const ai::PlacementRandom random = [this] { return static_cast<float>(m_random->range(0, 9999)) / 10000.0F; };
-        const std::optional<anim::Vec3> spot = ai::outOfSightNode(planner->map(), *player, camera, value, random);
+        // `Random_Float`: the game's next random number over 2^32.
+        const ai::PlacementRandom random = [this] {
+            constexpr double kRange = 4294967296.0;
+            return std::min(static_cast<float>(static_cast<double>(m_random->next()) / kRange), kBelowOne);
+        };
+        const std::optional<anim::Vec3> spot = ai::outOfSightNode(*planner, *player, camera, value, random);
         if (!spot || !inTurf(gang, *spot)) {
             return std::nullopt;
         }
@@ -88,8 +100,12 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         return player != nullptr ? std::optional(player->human().position()) : std::nullopt;
     }
 
-    // Coney stand-in for the visibility test (0x001202e8, not on the page): the sphere is seen when it reaches into
-    // player 1's camera's cone (half its field of view) within the far clip; nothing hides it. No camera sees nothing.
+    // `Camera_AnyPlayerCanSeePoint` with player 1's camera (Coney has one): the sphere is seen when it lies within the
+    // view distance, reaches into the view and no wall of the collision mesh stands between the eye and its centre
+    // (low fences, glass, railings and unclimbable chain-link do not hide it). Coney stand-in for the six-plane
+    // frustum test: a cone of half the field of view, widened by the sphere. No camera sees nothing.
+    // @orig 0x001202e8 Camera_AnyPlayerCanSeePoint (unknown)
+    // @orig 0x00122548 Camera_CanSeePoint (unknown)
     [[nodiscard]] bool seen(anim::Vec3 centre, float radius) const override {
         if (m_cameras == nullptr) {
             return false;
@@ -97,16 +113,28 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
         const camera::CameraView& view = m_cameras->view();
         const anim::Vec3 toCentre = anim::subtract(centre, view.position);
         const float distance = anim::length(toCentre);
-        if (distance <= radius) {
-            return true;
-        }
         if (distance - radius > view.farClip) {
             return false;
         }
-        const anim::Vec3 forward = anim::normalise(anim::subtract(view.lookAt, view.position));
-        const float angle = std::acos(std::clamp(anim::dot(toCentre, forward) / distance, -1.0F, 1.0F));
-        const float halfFov = view.fieldOfView * 0.5F * std::numbers::pi_v<float> / 180.0F;
-        return angle <= halfFov + std::asin(radius / distance);
+        if (distance > radius) {
+            const anim::Vec3 forward = anim::normalise(anim::subtract(view.lookAt, view.position));
+            const float angle = std::acos(std::clamp(anim::dot(toCentre, forward) / distance, -1.0F, 1.0F));
+            const float halfFov = view.fieldOfView * 0.5F * std::numbers::pi_v<float> / 180.0F;
+            if (angle > halfFov + std::asin(radius / distance)) {
+                return false;
+            }
+        }
+        // The occlusion ray to the centre, as long as the distance less the radius.
+        constexpr float kRayShort = 1e-5F;
+        const float length = distance - radius - kRayShort;
+        if (m_collision == nullptr || length <= 0.0F) {
+            return true;
+        }
+        const anim::Vec3 direction = anim::scale(toCentre, 1.0F / distance);
+        const raycast::Ray ray{.origin = {view.position.x, view.position.y, view.position.z},
+                               .direction = {direction.x, direction.y, direction.z},
+                               .length = length};
+        return !m_collision->rayCast(ray, kSeeThroughMaterials, 0).has_value();
     }
 
     [[nodiscard]] bool alive(double handle) const override {
@@ -165,6 +193,7 @@ class ScriptSpawnerWorld final : public ai::SpawnerWorld {
     script::ScriptSystem* m_scripts;
     const camera::Cameras* m_cameras;
     const world_objects::VolumeBoxes* m_boxes;
+    const raycast::CollisionMesh* m_collision;
     GameRandom* m_random;
 };
 
@@ -572,7 +601,8 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         m_scripted->runAnimCallbacks();
         m_scripted->humanHost().runRageHandlers();
         m_scripted->storyHost().update();
-        ScriptSpawnerWorld spawnerWorld(*m_scripted, m_scripts, m_cameras.get(), m_context.boxes, m_state.random);
+        ScriptSpawnerWorld spawnerWorld(*m_scripted, m_scripts, m_cameras.get(), m_context.boxes,
+                                        m_objects.world.collision, m_state.random);
         m_scripted->humanHost().spawners().update(nowMs, spawnerWorld);
         m_scripted->hubHost().update(nowMs);
         stepSystemMusic(m_state.story, m_context.sound, m_state.random, m_scripted->storyHost().musicMood());

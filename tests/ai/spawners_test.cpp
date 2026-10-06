@@ -16,6 +16,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "ai/route_planner.h"
 #include "ai/spawners.h"
 #include "support/path_fixtures.h"
 #include "world/path_map.h"
@@ -238,37 +239,41 @@ TEST_CASE("a spawner whose second type is 0 makes its first type every time", "[
 
 TEST_CASE("the out-of-sight search heads for the goal ahead and takes the first node beyond 70 m", "[ai][spawners]") {
     const coney::world::PathMap map = lineOfNodes(false);
+    const coney::ai::RoutePlanner planner(map);
     int draws = 0;
     const coney::ai::PlacementRandom random = [&draws] {
         ++draws;
         return 0.5F;
     };
     // Toward the goal 100 m ahead the search walks the line ahead, all seen, to node 4 at 80 m.
-    CHECK(coney::ai::outOfSightNode(map, {0.0F, 5.0F, 0.0F}, kCamera, 15.0F, random) ==
+    CHECK(coney::ai::outOfSightNode(planner, {0.0F, 5.0F, 0.0F}, kCamera, 15.0F, random) ==
           coney::anim::Vec3{0.0F, 80.0F, 0.0F});
-    CHECK(draws == 0);
+    // One draw before the first search, unused.
+    CHECK(draws == 1);
 }
 
 TEST_CASE("the out-of-sight search skips avoided links and takes a node beyond the value outside the cone",
           "[ai][spawners]") {
     const coney::world::PathMap map = lineOfNodes(true);
+    const coney::ai::RoutePlanner planner(map);
     const coney::ai::PlacementRandom random = [] { return 0.5F; };
     // Node 4 is cut off, so the search falls back behind: node 5 is only 10 m away, node 6 30 m and behind.
-    CHECK(coney::ai::outOfSightNode(map, {0.0F, 5.0F, 0.0F}, kCamera, 15.0F, random) ==
+    CHECK(coney::ai::outOfSightNode(planner, {0.0F, 5.0F, 0.0F}, kCamera, 15.0F, random) ==
           coney::anim::Vec3{0.0F, -30.0F, 0.0F});
     // A value of 40 leaves no node beyond it outside the cone.
-    CHECK_FALSE(coney::ai::outOfSightNode(map, {0.0F, 5.0F, 0.0F}, kCamera, 40.0F, random).has_value());
+    CHECK_FALSE(coney::ai::outOfSightNode(planner, {0.0F, 5.0F, 0.0F}, kCamera, 40.0F, random).has_value());
 }
 
-TEST_CASE("the out-of-sight search gives up after 17 tries, 16 of them turned", "[ai][spawners]") {
+TEST_CASE("the out-of-sight search gives up after 17 tries, an angle drawn before each", "[ai][spawners]") {
     const coney::world::PathMap map = lineOfNodes(true, false);
+    const coney::ai::RoutePlanner planner(map);
     int draws = 0;
     const coney::ai::PlacementRandom random = [&draws] {
         ++draws;
         return 0.25F;
     };
-    CHECK_FALSE(coney::ai::outOfSightNode(map, {0.0F, 5.0F, 0.0F}, kCamera, 15.0F, random).has_value());
-    CHECK(draws == coney::ai::kPlacementTries - 1);
+    CHECK_FALSE(coney::ai::outOfSightNode(planner, {0.0F, 5.0F, 0.0F}, kCamera, 15.0F, random).has_value());
+    CHECK(draws == coney::ai::kPlacementTries);
 }
 
 TEST_CASE("a spawner with a negative limit spawns in waves, each once the last has all died", "[ai][spawners]") {
@@ -315,4 +320,17 @@ TEST_CASE("an off-screen spawner waits while a camera sees the sphere above its 
     spawners.update(600, world);
     CHECK(world.made.size() == 2);
     CHECK(world.looked.size() == 2);
+}
+
+TEST_CASE("the out-of-sight search makes no try when the player has no start node", "[ai][spawners]") {
+    const coney::world::PathMap map = lineOfNodes(false);
+    const coney::ai::RoutePlanner planner(map);
+    int draws = 0;
+    const coney::ai::PlacementRandom random = [&draws] {
+        ++draws;
+        return 0.5F;
+    };
+    // Far off every polygon: no node to start from.
+    CHECK_FALSE(coney::ai::outOfSightNode(planner, {500.0F, 500.0F, 0.0F}, kCamera, 15.0F, random).has_value());
+    CHECK(draws == 0);
 }

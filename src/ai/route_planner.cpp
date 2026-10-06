@@ -255,6 +255,11 @@ std::optional<std::uint32_t> RoutePlanner::endNode(std::uint32_t polygon, anim::
     return std::nullopt;
 }
 
+std::optional<std::uint32_t> RoutePlanner::startNode(anim::Vec3 point) const {
+    const std::optional<std::uint32_t> polygon = polygonUnder(point);
+    return polygon ? endNode(*polygon, point, true) : std::nullopt;
+}
+
 bool RoutePlanner::linked(std::uint32_t from, std::uint32_t to) const {
     return std::ranges::any_of(m_map->edgesOf(from), [to](const world::PathEdge& edge) { return edge.to == to; });
 }

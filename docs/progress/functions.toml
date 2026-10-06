@@ -603,6 +603,12 @@ name = "Camera_MakeActive"
 subsystem = "Camera"
 
 [[function]]
+address = 0x001202e8
+name = "Camera_AnyPlayerCanSeePoint"
+subsystem = "Camera"
+size = 152
+
+[[function]]
 address = 0x001210f8
 name = "Cam_StartShake"
 subsystem = "Camera"
@@ -617,6 +623,12 @@ address = 0x00122248
 name = "Camera_SwitchTarget"
 subsystem = "Camera"
 size = 104
+
+[[function]]
+address = 0x00122548
+name = "Camera_CanSeePoint"
+subsystem = "Camera"
+size = 480
 
 [[function]]
 address = 0x00124d00
