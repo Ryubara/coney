@@ -12,11 +12,13 @@ namespace coney {
 
 ProfileManagerMode::ProfileManagerMode(graphics::RenderDevice& device, SheetLoader loadSheet,
                                        const gui::GlobalStrings& strings, FrontEndServices& services,
-                                       graphics::ScreenFade& fade, script::ScriptSystem& scripts, bool europe,
-                                       std::function<void(std::string_view)> log)
+                                       graphics::ScreenFade& fade, script::ScriptSystem& scripts, GameState& state,
+                                       ProfileStore& profiles, bool europe, std::function<void(std::string_view)> log)
     : m_device(device), m_loadSheet(std::move(loadSheet)), m_services(services), m_fade(fade), m_scripts(scripts),
-      m_log(std::move(log)), m_controller(m_shared) {
+      m_profiles(profiles), m_log(std::move(log)), m_controller(m_shared) {
     m_shared.strings = &strings;
+    m_shared.state = &state;
+    m_shared.profiles = &profiles;
     m_shared.europe = europe;
     m_shared.fade = &m_fade;
     m_shared.playSound = [this](int cue) { m_services.playCue(cue); };
@@ -48,6 +50,7 @@ void ProfileManagerMode::enter() {
     // Nothing to blend from a time the menus were not up.
     m_fadeLevel.reset(m_fade.level());
     m_finished = false;
+    m_fadingOut = false;
 
     m_lastScreen.clear();
     m_startPending = true;
@@ -59,6 +62,7 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
     const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     m_shared.frame = gui::GuiFrame{nowMs, &stack.pads().port(0)};
     m_shared.connectedPads = stack.pads().connectedCount();
+    m_shared.secondPad = &stack.pads().port(1);
     m_scripts.setTime(nowMs);
     m_fade.update(nowMs);
     m_fadeLevel.commit();
@@ -74,7 +78,7 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
 
     // The menus list their sprites for the 2D pass; the fade's level is taken where the original draws it, before
     // the scripts run.
-    m_finished = m_controller.update();
+    m_finished = m_controller.update() || m_finished;
     for (std::optional<graphics::SpriteBatch>* batch : {&m_menuBatch, &m_textBatch, &m_bigBatch}) {
         if (*batch) {
             m_pass.queue(**batch);
@@ -89,6 +93,17 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
         m_lastScreen = screen;
         m_log(std::format("profile manager: {}\n", screen.empty() ? "done" : screen));
     }
+    // Done: fade out over 1.0 s, then leave. A flow that emptied without the flag (no screen of the original's does)
+    // leaves at once.
+    if (m_finished && m_shared.session.done && !m_fadingOut) {
+        m_fadingOut = true;
+        m_shared.finishing = true;
+        m_fade.queue(graphics::ScreenFade::kFadeOut, kDoneFadeSeconds, nowMs);
+        m_log("profile manager: done; fading out\n");
+    }
+    if (m_fadingOut) {
+        return m_fade.running() ? ModeResult::Stay : ModeResult::Leave;
+    }
     return m_finished ? ModeResult::Leave : ModeResult::Stay;
 }
 
@@ -101,6 +116,18 @@ void ProfileManagerMode::render(const RenderTime& time) {
 }
 
 void ProfileManagerMode::exit() {
+    // A new profile from PM_Subtitles goes to the save system, with the choices the screens made.
+    const gui::PmSession& session = m_shared.session;
+    if (session.createOnExit && session.slot && m_shared.state != nullptr) {
+        const GameState& state = *m_shared.state;
+        const Profile profile{.name = session.name,
+                              .difficulty = static_cast<int>(state.profileDifficulty),
+                              .brightness = state.brightness,
+                              .subtitles = state.subtitles};
+        const bool created = m_profiles.create(*session.slot, profile);
+        m_log(std::format("profile manager: profile \"{}\" {} in slot {}\n", session.name,
+                          created ? "created" : "not created", *session.slot));
+    }
     m_controller.stop();
     // The queue points at the batches released below.
     m_pass.empty();

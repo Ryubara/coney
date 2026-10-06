@@ -86,6 +86,14 @@ void GameplayMode::enter() {
     }
     m_level = std::move(*level);
     m_level->enter();
+
+    // InitLevel step 12, after the preload: the intro movie (`L99_IN` for level99 at checkpoint 1).
+    if (const LevelRecord* record = m_state.levels.at(m_state.currentLevel);
+        record != nullptr && m_moviePlayer != nullptr) {
+        if (const std::optional<std::string> movie = levelIntroMovie(*record, m_state.checkPoint)) {
+            m_moviePlayer->playMovie(*movie);
+        }
+    }
 }
 
 ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {

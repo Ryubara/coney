@@ -24,6 +24,7 @@
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
+#include "warriors/profile_store.h"
 #include "world_objects/volume_boxes.h"
 
 namespace coney {
@@ -65,6 +66,8 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] GameState& state() { return m_state; }
     /// The configuration the stub bindings recorded.
     [[nodiscard]] const script::RecordedCalls& recorded() const { return m_recorded; }
+    /// The profiles (Coney's session-only stand-in for the save system).
+    [[nodiscard]] SessionProfileStore& profiles() { return m_profiles; }
     /// The screen fade.
     [[nodiscard]] const graphics::ScreenFade& fade() const { return m_fade; }
     /// Mode 5.
@@ -107,6 +110,7 @@ class StartUpFlow final : public script::BindingHost {
     script::AnimCallbacks m_animCallbacks;
     gui::RumbleData m_rumbleData; // the Rumble menu's lists, which its chunks build
     FrontEndServices m_services;
+    SessionProfileStore m_profiles;
     graphics::ScreenFade m_fade;
     script::BindingContext m_context;
     bool m_hasScripts;

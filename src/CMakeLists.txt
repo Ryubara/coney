@@ -31,6 +31,7 @@ add_library(coney_core STATIC
     gamemodes/load_entry_mode.cpp
     gamemodes/memory_card_mode.cpp
     gamemodes/mission_complete_mode.cpp
+    gamemodes/movie_player.cpp
     gamemodes/profile_manager_mode.cpp
     gamemodes/rumble_menu_mode.cpp
     gamemodes/sheet_viewer_mode.cpp
@@ -55,8 +56,13 @@ add_library(coney_core STATIC
     gui/option_grid.cpp
     gui/profile_management_gui/pm_controller.cpp
     gui/profile_management_gui/pm_greet.cpp
+    gui/profile_management_gui/pm_list_screen.cpp
+    gui/profile_management_gui/pm_look.cpp
     gui/profile_management_gui/pm_mode.cpp
+    gui/profile_management_gui/pm_new_game_screens.cpp
     gui/profile_management_gui/pm_placeholder.cpp
+    gui/profile_management_gui/pm_profile_screens.cpp
+    gui/profile_management_gui/pm_screen.cpp
     gui/rumble_mode_gui/rumble_data.cpp
     gui/rumble_mode_gui/rumble_gang_chooser.cpp
     gui/rumble_mode_gui/rumble_menu.cpp
@@ -81,6 +87,7 @@ add_library(coney_core STATIC
     scripting/trigger_bindings.cpp
     warriors/created_humans.cpp
     warriors/level_table.cpp
+    warriors/profile_store.cpp
     warriors/unlockables.cpp
     world/debug_camera.cpp
     world/level_object.cpp

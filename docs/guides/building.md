@@ -221,8 +221,8 @@ against `WARRIORS.WAD`, and prints how many entries it lists.
 With `--disc` and no viewer or `--load`, Coney runs the game's start-up as far as it goes: the legal screen for five
 seconds (150 frames; no button skips it, as in the original), then the menus' first screen, the game's logo and a
 blinking "press START" (from frame 152). START leads to the main menu (story, extras, quick rumble); the d-pad or the
-left stick moves, cross chooses and triangle or circle goes back. The menus' other screens are placeholders that show
-their name, and there is no 3D scene behind the menus, no sound and no movie yet: Coney prints a line for each movie,
+left stick moves, cross chooses and triangle or circle goes back. EXTRAS is a placeholder that shows its name, and
+there is no 3D scene behind the menus, no sound and no movie yet: Coney prints a line for each movie,
 music and sound it skips, and one for each screen it reaches
 ([Front end](../research/frontend.md#coneys-implementation)). `--language CODE` picks the strings and the legal
 screen.
@@ -234,23 +234,23 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 22
 
 The second line runs to the main menu without a window: its last line is `profile manager: PM_Mode`.
 
-**STORY** starts a new game as the original does: cross on STORY, then cross on the profile screen (a placeholder for
-now, standing in for the new-profile screens), and the game's own scripts take it from there (`Menu.startGame`,
+**STORY** starts a new game as the original does, through the profile screens: (with two pads, how many players),
+the profile manager (CREATE NEW PROFILE when there is none), the name keyboard (cross types the key under the cursor,
+OK accepts), the difficulty, the brightness (left and right) and the subtitles. Profiles last for the run only (Coney
+has no saves yet). The menus fade out and the game's own scripts take it from there (`Menu.startGame`,
 `runNextMission(1)`, the mission-complete mode, `UnlockAndLoad`), to `level99` at checkpoint 1. Its level script
 creates Rembrandt, and Coney loads the level with him where the script put him, under your control
-([Playing a level](#playing-a-level)). There is no loading screen, intro movie, intro scene, tutorial or other
-character yet. The log shows the way: `script: Menu.startGame()`, `mission complete: kind 4`, `level flow: starting
-level99`, then `gameplay: level99 checkpoint 1: player 1 Rembrandt (type 32) at (-284.40, 120.40, 0.30) heading 0`.
-In a script, with STORY selected first:
+([Playing a level](#playing-a-level)). There is no loading screen, intro movie (it is skipped), intro scene, tutorial or
+other character yet. The log shows the way: `profile manager: PM_Create` and the other screens, `profile manager:
+profile "A" created in slot 0`, `script: Menu.startGame()`, `mission complete: kind 4`, `level flow: starting
+level99`, `gameplay: level99 checkpoint 1: player 1 Rembrandt ...`, then `movie: L99_IN skipped`. The scripted way
+(`tests/support/story_new_profile.txt`: a one-letter name, the defaults, the cursor moved with the left stick at 70 %):
 
-```text
-200 tap start
-235 tap cross
-265 tap cross
-330 stick left 0 35
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --headless --frames 380 --input-script tests/support/story_new_profile.txt
 ```
 
-Level99 is up by frame 270; the last line walks Rembrandt forward at 35 % of the stick's travel.
+Level99 is up by frame 370.
 
 **QUICK RUMBLE** follows the original's path too: the menu's scripts call `ShowRumbleModeInterface`, which opens the
 Rumble menu (mode 0x11) and its four screens, as a fresh boot offers them: **Game Mode** (1 ON 1 or WAR PARTY),

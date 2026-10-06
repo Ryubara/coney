@@ -81,6 +81,13 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 220
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/start_menu.txt")
     set_tests_properties(coney.reaches_main_menu PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "profile manager: PM_Mode")
+    # STORY with a new profile through the profile screens into level99 at checkpoint 1, headless
+    # (docs/guides/building.md#input-scripts). States only.
+    add_test(NAME coney.story_reaches_level99
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 380
+                     --input-script "${PROJECT_SOURCE_DIR}/tests/support/story_new_profile.txt")
+    set_tests_properties(coney.story_reaches_level99 PROPERTIES TIMEOUT 120
+                         PASS_REGULAR_EXPRESSION "movie: L99_IN")
     # The character viewer headless: Rembrandt loaded through the Character List, the orbit camera driven by partial
     # stick deflections and a clip change, 90 frames (docs/guides/building.md#the-character-viewer). Counts only.
     add_test(NAME coney.views_character

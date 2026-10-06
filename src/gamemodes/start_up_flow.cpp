@@ -18,7 +18,8 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
           std::move(scripts),
           [this](script::ScriptSystem& system, script::LuaVm& vm) { script::installBindings(system, vm, m_context); },
           log),
-      m_profileManager(device, loadSheet, strings, m_services, m_fade, m_scripts, legal.europe, log),
+      m_profileManager(device, loadSheet, strings, m_services, m_fade, m_scripts, m_state, m_profiles, legal.europe,
+                       log),
       m_gameplay(device, m_scripts, m_context, m_state, m_humans, m_flags, m_recorded, std::move(loadLevel), log),
       m_levelFlow(device, stack, m_profileManager, m_services, m_scripts, m_state, log,
                   m_gameplay.loads() ? &m_gameplay : nullptr),
@@ -27,6 +28,7 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
       m_memoryCard(device, stack, m_levelFlow), m_legal(device, loadSheet, legal, log, &m_scripts) {
     m_state.language = legal.language;
     m_services.attachScripts(&m_scripts);
+    m_gameplay.setMoviePlayer(&m_services);
 }
 
 void StartUpFlow::start() {

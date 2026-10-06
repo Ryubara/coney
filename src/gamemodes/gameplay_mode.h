@@ -14,6 +14,7 @@
 #include "core/error.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/level_start.h"
+#include "gamemodes/movie_player.h"
 #include "graphics/render_device.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_bindings.h"
@@ -62,9 +63,10 @@ struct ScriptedCast {
 /// in its place (Coney's play mode, `src/platform/play_level_mode.h`).
 ///
 /// Coney's stand-ins (docs/research/level-loading.md#coneys-implementation):
-/// - The rest of `InitLevel` (the object list, the dependency list, the music, the intro movie `L99_IN`) and of mode
-///   1's enter (audio, the level-end countdown) is not there yet: the player has control on the first frame. The
-///   start callback runs before the level loads (runLevelScript()).
+/// - The rest of `InitLevel` (the object list, the dependency list, the music) and of mode 1's enter (audio, the
+///   level-end countdown) is not there yet: the player has control on the first frame. The start callback runs before
+///   the level loads (runLevelScript()). The intro movie (`L99_IN`) goes to the movie player after the level loaded
+///   (setMoviePlayer(); FrontEndServices skips it until Coney plays movies).
 /// - The level's brains and gangs are made before its script (the AI host of `context`), but the humans the script
 ///   creates are made, and the calls on them run, only once the level has loaded its characters (ScriptedCast).
 /// - Each frame after the level's step: the animation callbacks of the anims the scripts' humans started, then the
@@ -104,6 +106,8 @@ class GameplayMode final : public GameMode {
 
     /// Sets the level the next enter loads (the level flow's selection).
     void setLevel(std::string level) { m_levelName = std::move(level); }
+    /// Plays the level's intro movie through `player` (null: none); it must outlive its use here.
+    void setMoviePlayer(MoviePlayer* player) { m_moviePlayer = player; }
 
     /// `InitLevel`: the level's brains, the level script, then the level from the loader, entered (its preload).
     /// @orig 0x001582e0 Mode1::Enter (unknown)
@@ -149,6 +153,7 @@ class GameplayMode final : public GameMode {
     world_objects::WorldFlags& m_flags;
     const script::RecordedCalls& m_recorded;
     LevelLoader m_loader;
+    MoviePlayer* m_moviePlayer = nullptr; // the intro movie's player; not owned
     std::function<void(std::string_view)> m_log;
     std::string m_levelName;
     std::optional<LevelStart> m_start;

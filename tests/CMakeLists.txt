@@ -25,6 +25,7 @@ add_executable(coney_tests
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
     gamemodes/load_entry_mode_test.cpp
+    gamemodes/movie_player_test.cpp
     gamemodes/sheet_viewer_mode_test.cpp
     gamemodes/start_up_flow_test.cpp
     gamemodes/rumble_start_test.cpp

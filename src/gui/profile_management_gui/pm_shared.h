@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -13,6 +14,8 @@
 #include "gui/global_strings.h"
 #include "gui/menu_input.h"
 #include "gui/widget.h"
+#include "warriors/game_state.h"
+#include "warriors/profile_store.h"
 
 namespace coney::gui {
 
@@ -31,6 +34,19 @@ struct PmLayout {
     float textScale = 1.0F;    ///< Font scale of prompts and items.
 };
 
+/// The profile manager's globals that its screens set for the mode and the save system to read (`0x0050f584`-
+/// `0x0050f5c0` and the name at `0x0063f1d8`), reset when the controller starts. Meanings are inferred from their
+/// uses (docs/research/frontend.md#profile-manager).
+struct PmSession {
+    std::optional<std::size_t> slot; ///< `0x0050f594`: the chosen profile slot.
+    bool createOnExit = false;       ///< `0x0050f598`: the mode's exit creates the profile `name` in `slot`.
+    bool deleteMode = false;         ///< `0x0050f5a0`: PM_Load lists profiles to delete.
+    bool done = false;               ///< `0x0050f5b0`: the menus are done; the story starts.
+    bool newGame = false;            ///< `0x0050f5b4`: a new game was started (the autosave check reads it).
+    bool widescreen = false;         ///< `0x0050f5c0`: the 16:9 choice the mode's exit applies.
+    std::string name;                ///< `0x0063f1d8`: the profile name being made.
+};
+
 /// What every screen of the profile manager shares (the original's flow keeps an `SFC_SharedData`): the strings, the
 /// canvas and the menu sprite batch, the HUD player's input, the frame being run, the screen fade, and the profile
 /// manager's ways out to sound and to the scripts (gamemodes/front_end_services.h).
@@ -45,11 +61,12 @@ struct PmShared {
     PmLayout layout;                              ///< Where things go.
     bool europe = false;                          ///< The device flag 0x02, which hides PM_Extras.
     bool finishing = false;                       ///< The profile manager is finishing (ends PM_Greet's blink).
-    /// A screen asks to end the profile manager: the controller empties the flow after this frame (Coney's stand-in
-    /// screens on the story path, PmPlaceholder).
-    bool finishRequested = false;
-    const graphics::ScreenFade* fade = nullptr; ///< The screen fade the menus wait for; null for none.
-    std::size_t connectedPads = 1;              ///< Pads plugged in (PM_Mode's story goes to PM_NumPlayers from 2).
+    PmSession session;                            ///< The globals the screens set.
+    GameState* state = nullptr;                   ///< The game state the screens write; null writes nothing.
+    ProfileStore* profiles = nullptr;             ///< The save system's profiles; null: no profile and no room.
+    const Pad* secondPad = nullptr;               ///< Port 2's pad (PM_NumPlayers' player 2); may be null.
+    const graphics::ScreenFade* fade = nullptr;   ///< The screen fade the menus wait for; null for none.
+    std::size_t connectedPads = 1;                ///< Pads plugged in (PM_Mode's story goes to PM_NumPlayers from 2).
     std::string onRumble; ///< The first Lua callback the controller was started with (`Menu.fadeToRMI`).
     std::function<void(int cue)> playSound; ///< Plays a front-end sound cue; may be empty.
     /// Calls a Lua function by name with number arguments; may be empty.

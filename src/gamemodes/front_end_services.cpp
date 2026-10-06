@@ -31,7 +31,12 @@ void FrontEndServices::playCue(int cue) {
 
 void FrontEndServices::playMovie(std::string_view name) {
     m_movies.emplace_back(name);
-    write(std::format("movie: {} skipped (no video decoder yet)\n", name));
+    if (m_moviePlayer != nullptr) {
+        write(std::format("movie: {}\n", name));
+        m_moviePlayer->playMovie(name);
+        return;
+    }
+    write(std::format("movie: {} skipped (no movie player yet)\n", name));
 }
 
 void FrontEndServices::callScript(std::string_view function, std::span<const double> args) {

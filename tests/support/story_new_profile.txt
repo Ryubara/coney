@@ -1,0 +1,31 @@
+# STORY with a new profile, from the legal screen into level99 at checkpoint 1: START on PM_Greet (up from frame
+# 152), cross on STORY, cross on CREATE NEW PROFILE, cross on the keyboard's first key (one character), the left stick
+# at 70 % right eight times (to key 8) and 70 % up once (key 8's jump to OK), cross on OK, then cross on the defaults
+# of PM_Difficulty, PM_Light and PM_Subtitles. The menus then fade out for 1 s and the story starts.
+# Format: docs/guides/building.md#input-scripts
+200 tap start
+215 tap cross
+225 tap cross
+235 tap cross
+240 stick left 70 0
+242 stick left 0 0
+246 stick left 70 0
+248 stick left 0 0
+252 stick left 70 0
+254 stick left 0 0
+258 stick left 70 0
+260 stick left 0 0
+264 stick left 70 0
+266 stick left 0 0
+270 stick left 70 0
+272 stick left 0 0
+276 stick left 70 0
+278 stick left 0 0
+282 stick left 70 0
+284 stick left 0 0
+290 stick left 0 70
+292 stick left 0 0
+298 tap cross
+308 tap cross
+318 tap cross
+328 tap cross

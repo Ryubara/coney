@@ -186,16 +186,20 @@ TEST_CASE("the disc's STORY reaches Rembrandt standing in level99 under the pad'
     coney::gui::GlobalStrings strings;
     coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
 
-    // START, cross on STORY (selected first), cross on the PM_Profile stand-in; then, in level99, the left stick at
-    // 35 % forward for two seconds and at a 30/65 diagonal for two more, then let go.
-    auto script = coney::parseInputScript("200 tap start\n"
-                                          "235 tap cross\n"
-                                          "265 tap cross\n"
-                                          "330 stick left 0 35\n"
-                                          "390 stick left 30 65\n"
-                                          "450 stick left 0 0\n");
+    // STORY with a new profile through the real screens (tests/support/story_new_profile.txt, as `coney --input-script`
+    // plays it); then, in level99, the left stick at 35 % forward for two seconds and at a 30/65 diagonal for two more,
+    // then let go.
+    auto script = coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt");
+    auto walk = coney::parseInputScript("400 stick left 0 35\n"
+                                        "460 stick left 30 65\n"
+                                        "520 stick left 0 0\n");
     REQUIRE(script.has_value());
-    coney::ScriptedInput input(std::move(*script));
+    REQUIRE(walk.has_value());
+    std::vector<coney::InputEvent> events = script.value_or(std::vector<coney::InputEvent>{});
+    for (const coney::InputEvent& event : walk.value_or(std::vector<coney::InputEvent>{})) {
+        events.push_back(event);
+    }
+    coney::ScriptedInput input(std::move(events));
     coney::GameModeStack stack;
     stack.setInput(&input);
     std::vector<std::string> log;
@@ -225,14 +229,18 @@ TEST_CASE("the disc's STORY reaches Rembrandt standing in level99 under the pad'
     coney::GameTimer timer;
     timer.setFixedStep(true);
 
-    // Through the menus into the level: by frame 300 gameplay is on top with level99 loaded.
-    stack.runUntilEmpty(timer, {}, 300);
+    // Through the menus into the level: the profile screens, a new profile, and by frame 370 gameplay is on top with
+    // level99 loaded and its intro movie asked for (skipped: no movie player yet).
+    stack.runUntilEmpty(timer, {}, 370);
     for (const std::string& line : log) {
         UNSCOPED_INFO(line);
     }
     REQUIRE(stack.topId() == coney::GameplayMode::kId);
     CHECK(flow.missionComplete().launches() == 2);
     CHECK(flow.state().checkPoint == 1.0);
+    CHECK(flow.profiles().count() == 1);
+    CHECK(flow.profileManager().session().newGame);
+    CHECK(std::ranges::count(flow.services().movies(), std::string("L99_IN")) == 1);
     const auto* play = dynamic_cast<const coney::platform::PlayLevelMode*>(flow.gameplay().level());
     REQUIRE(play != nullptr);
     if (play == nullptr) {

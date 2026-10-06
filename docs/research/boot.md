@@ -420,12 +420,12 @@ Written from this page:
   per frame, with no clock.
 
 - `coney` builds the stack in `main` (`src/platform/main.cpp`): it opens the WAD when given `--disc`, creates the
-  chunk handler table, then runs the start-up flow: with a disc it loads the UI strings, skips the three movies (no
-  video decoder yet), pushes mode 8, asks for the memory-card boot check, pushes mode 6 and then the legal screen
-  (mode 5), which runs first ([Front end](frontend.md#coneys-implementation)); without one, an idle mode alone. The
-  front end later pushes modes 0x12, 0xb (the mission-complete mode, `src/gamemodes/mission_complete_mode.h`) and 1
-  (gameplay, `src/gamemodes/gameplay_mode.h`), which plays the chosen level
-  ([Level loading](level-loading.md#coneys-implementation)).
+  chunk handler table, then runs the start-up flow: with a disc it loads the UI strings, hands the three movies to the
+  movie player hook (skipped: no video decoder yet), pushes mode 8, asks for the memory-card boot check, pushes mode 6
+  and then the legal screen (mode 5), which runs first ([Front end](frontend.md#coneys-implementation)); without one,
+  an idle mode alone. The front end later pushes modes 0x12, 0xb (the mission-complete mode,
+  `src/gamemodes/mission_complete_mode.h`) and 1 (gameplay, `src/gamemodes/gameplay_mode.h`), which plays the chosen
+  level ([Level loading](level-loading.md#coneys-implementation)).
   `--load` and `--view-txd` run their own tool modes instead
   ([Building and testing](../guides/building.md#run-coney)). The rest of the initialisation order, level 1's header
   load, the controller check and its error mode, and the bugstar check are not done.

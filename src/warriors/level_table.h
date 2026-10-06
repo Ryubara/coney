@@ -40,6 +40,12 @@ struct LevelRecord {
     /// `+0x0d` (bit 1 plays the intro movie, bit 2 an outro movie), `+0x10` and the values at `+0x6c`-`+0x80`, in an
     /// order not yet known.
     std::array<double, kOtherValues> values{};
+
+    /// Where in `values` the intro-movie switch is (`LT_PLAY` or `LT_NONE`; the flag `0x02` at `+0x0d`). Inferred: the
+    /// twelve numbers are a `levelNames` row's sections, order, three switches (bits `0x01`, `0x02`, `0x04`, the page's
+    /// "three booleans"), lock, map position, two values, subway and one more, in that order
+    /// (docs/references/levels.md lists them).
+    static constexpr std::size_t kIntroValue = 3;
 };
 
 /// The game state's level table: up to 128 records by index, filled by `CfgLevelName` (`config_preload3.lua` sets

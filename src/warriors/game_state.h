@@ -57,7 +57,12 @@ struct GameState {
 
     Language language = Language::English; ///< `+0x120`: 0 on the NTSC-U disc.
     double difficulty = 1;                 ///< `+0x154` (`GetDifficulty`): 1 at the front end.
-    double profileDifficulty = 1;          ///< `+0x43c` (`GetProfileDifficulty`): 1 at the front end.
+    double profileDifficulty = 1;          ///< `+0x43c` (`GetProfileDifficulty`): 1 at the front end; PM_Difficulty.
+    bool subtitles = false;                ///< `+0x438`: subtitles on, PM_Subtitles' choice.
+    /// `+0x57a4`: the brightness `Gamma_Set` keeps, 0-100; PM_Light changes it. Coney's start value is PM_Light's 40.
+    int brightness = 40;
+    /// Two players: what PM_NumPlayers passes to `0x00419ac0` (the field it sets is not on the page).
+    bool twoPlayers = false;
     double checkPoint =
         1; ///< `+0x33a` (`GetCheckPoint`, `SetCheckPoint`): the level's section; 1 from the constructor.
     std::size_t currentLevel = 0; ///< `+0x56dc` (`GetCurrentLevelIndex`): 0, the front end, at start-up.

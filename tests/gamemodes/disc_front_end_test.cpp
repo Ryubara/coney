@@ -30,6 +30,7 @@
 #include "gamemodes/profile_manager_mode.h"
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
+#include "gui/profile_management_gui/pm_new_game_screens.h"
 #include "platform/render_engine.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
@@ -68,7 +69,8 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
     // START on frame 200, well after PM_Greet is up (frame 152) and Menu.onStart's 1.5 s fade in is over. Then the
     // stick pushed up most of the way (wrapping to quick rumble) and cross; triangle backs out of the Rumble menu's
     // first screen; once the menu has faded back in, the stick down a little past half (wrapping to story), cross, and
-    // cross again on the PM_Profile stand-in.
+    // a new profile: cross on CREATE NEW PROFILE, one character, the stick right eight times and up to OK, cross, and
+    // cross on the defaults of PM_Difficulty, PM_Light and PM_Subtitles.
     auto script = coney::parseInputScript("200 tap start\n"
                                           "212 stick left 0 70\n"
                                           "214 stick left 0 0\n"
@@ -77,7 +79,30 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
                                           "320 stick left 0 -60\n"
                                           "322 stick left 0 0\n"
                                           "335 tap cross\n"
-                                          "355 tap cross\n");
+                                          "355 tap cross\n"
+                                          "365 tap cross\n"
+                                          "370 stick left 70 0\n"
+                                          "372 stick left 0 0\n"
+                                          "376 stick left 70 0\n"
+                                          "378 stick left 0 0\n"
+                                          "382 stick left 70 0\n"
+                                          "384 stick left 0 0\n"
+                                          "388 stick left 70 0\n"
+                                          "390 stick left 0 0\n"
+                                          "394 stick left 70 0\n"
+                                          "396 stick left 0 0\n"
+                                          "400 stick left 70 0\n"
+                                          "402 stick left 0 0\n"
+                                          "406 stick left 70 0\n"
+                                          "408 stick left 0 0\n"
+                                          "412 stick left 70 0\n"
+                                          "414 stick left 0 0\n"
+                                          "420 stick left 0 70\n"
+                                          "422 stick left 0 0\n"
+                                          "428 tap cross\n"
+                                          "438 tap cross\n"
+                                          "448 tap cross\n"
+                                          "458 tap cross\n");
     REQUIRE(script.has_value());
     coney::ScriptedInput input(std::move(*script));
     coney::GameModeStack stack;
@@ -124,9 +149,18 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
     CHECK(flow.rumbleMenu().cancelled());
     CHECK(menus.controller().currentName() == "PM_Mode");
     CHECK(flow.fade().level() == 0.0F);
-    // Story: PM_Profile, whose stand-in ends the profile manager; Menu.startGame asks for a level; the front end comes
-    // back in a fresh Lua state.
-    run(60);
+    // Story with a new profile: the screens, the fade out, the profile created; Menu.startGame asks for a level; the
+    // front end comes back in a fresh Lua state.
+    run(200);
+    for (const std::string_view screen : {"PM_Profile", "PM_Create", "PM_Difficulty", "PM_Light", "PM_Subtitles"}) {
+        CHECK(logged(std::string("profile manager: ") + std::string(screen)));
+    }
+    CHECK(flow.profiles().count() == 1);
+    CHECK(flow.state().profileDifficulty == 1.0);
+    CHECK(flow.state().brightness == 40);
+    CHECK_FALSE(flow.state().subtitles);
+    const coney::gui::NameKeyboard& keys = menus.controller().create().keyboard();
+    CHECK(keys.rows() == std::vector<std::size_t>{12, 12, 12, 11});
     CHECK(logged("script: Menu.startGame"));
     CHECK(logged("level start requested"));
     // Menu.startGame asks once, and the mission-complete mode's UnlockAndLoad asks again (runNextMission(1) twice).
@@ -143,10 +177,10 @@ TEST_CASE("the disc's start-up path reaches PM_Greet, and START the main menu", 
     CHECK(flow.scripts().skippedCalls() == 0);
     CHECK(!logged("did not show the menus"));
     std::printf("  start-up: %zu movies skipped, %zu log lines; PM_Mode with %zu items; %zu level records; "
-                "%llu script errors, %llu skipped calls, %llu Lua states; %zu level requests; screen %s\n",
+                "%llu script errors, %llu skipped calls, %llu Lua states; %zu level requests; screen %s; %zu keys\n",
                 flow.services().movies().size(), log.size(), items, flow.state().levels.count(),
                 static_cast<unsigned long long>(flow.scripts().errors()),
                 static_cast<unsigned long long>(flow.scripts().skippedCalls()),
                 static_cast<unsigned long long>(flow.scripts().generation()), flow.levelFlow().levelRequests().size(),
-                std::string(menus.controller().currentName()).c_str());
+                std::string(menus.controller().currentName()).c_str(), keys.cells().size());
 }

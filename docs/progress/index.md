@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 7.3%](https://img.shields.io/badge/reimplemented-7.3%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 7.8%](https://img.shields.io/badge/reimplemented-7.8%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% of the game's own code (245,020 of 3,354,776 bytes, 583 functions) |
+| **Reimplemented** | `█▋░░░░░░░░░░░░░░░░░░` | 7.8% of the game's own code (262,156 of 3,354,776 bytes, 614 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -61,7 +61,7 @@ at the top of the repository's `README.md`.
 | `FileIO` | `█░░░░░░░░░░░░░░░░░░░` | 4.9% | 3 | 7,120 |
 | `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 45 | 100,440 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 30 | 195,624 |
-| `GUI` | `█▌░░░░░░░░░░░░░░░░░░` | 7.7% | 56 | 497,416 |
+| `GUI` | `██▏░░░░░░░░░░░░░░░░░` | 10.8% | 86 | 497,416 |
 | `Human` | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% | 231 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
@@ -75,7 +75,7 @@ at the top of the repository's `README.md`.
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
 | `Warriors` | `▍░░░░░░░░░░░░░░░░░░░` | 1.8% | 12 | 54,264 |
-| `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
+| `Movie` | `██████▊░░░░░░░░░░░░░` | 33.9% | 1 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
 
@@ -255,6 +255,8 @@ at the top of the repository's `README.md`.
 | `0x001c81e8` | `ScreenFlowController_Unwind` | `GUI` | 256 |
 | `0x001c82e8` | `ScreenFlowController_Pop` | `GUI` | 224 |
 | `0x001c83c8` | `ScreenFlowController_Update` | `GUI` | 456 |
+| `0x001cc1a0` | `NameKeyboard::NameKeyboard` | `GUI` | 112 |
+| `0x001cca80` | `NameKeyboard::HandleCommand` | `GUI` | 648 |
 | `0x001ccf88` | `TextWidget::TextWidget` | `GUI` | 56 |
 | `0x001cd1e0` | `TextWidget_SetText` | `GUI` | 160 |
 | `0x001cea70` | `UsageInfo::UsageInfo` | `GUI` | 64 |
@@ -286,19 +288,47 @@ at the top of the repository's `README.md`.
 | `0x001fe070` | `RumbleMode_SetGang1Name` | `GUI` | 88 |
 | `0x001fe0c8` | `RumbleMode_GetGang2Name` | `GUI` | 16 |
 | `0x001fe0d8` | `RumbleMode_SetGang2Name` | `GUI` | 88 |
+| `0x00203110` | `PM_Continue::PM_Continue` | `GUI` | 128 |
+| `0x00203300` | `PM_Continue::Init` | `GUI` | 984 |
+| `0x00203800` | `PM_Continue::HandleCommand` | `GUI` | 272 |
 | `0x002040f0` | `PM_Controller::PM_Controller` | `GUI` | 2,400 |
 | `0x00204a78` | `PM_Controller_Start` | `GUI` | 296 |
 | `0x00204ba0` | `PM_Controller_Update` | `GUI` | 128 |
 | `0x00204c20` | `PM_Controller_Stop` | `GUI` | 48 |
+| `0x00204f08` | `PM_Create::PM_Create` | `GUI` | 264 |
+| `0x002050f0` | `PM_Create::Init` | `GUI` | 416 |
+| `0x002056d8` | `PM_Create::HandleCommand` | `GUI` | 144 |
+| `0x00205950` | `PM_Delete::PM_Delete` | `GUI` | 264 |
+| `0x00205b38` | `PM_Delete::Init` | `GUI` | 1,456 |
+| `0x00206238` | `PM_Delete::HandleCommand` | `GUI` | 216 |
+| `0x002065f0` | `PM_Difficulty::PM_Difficulty` | `GUI` | 264 |
+| `0x002067d8` | `PM_Difficulty::Init` | `GUI` | 888 |
+| `0x00206d88` | `PM_Difficulty::HandleCommand` | `GUI` | 128 |
 | `0x002079a0` | `PM_Greet::Init` | `GUI` | 792 |
 | `0x00207d48` | `PM_Greet_Enter` | `GUI` | 88 |
 | `0x00207da0` | `PM_Greet_Exit` | `GUI` | 48 |
 | `0x00207dd0` | `PM_Greet_Update` | `GUI` | 88 |
 | `0x00207e28` | `PM_Greet::Update` | `GUI` | 1,120 |
 | `0x00208288` | `PM_Greet::Render` | `GUI` | 152 |
+| `0x00208320` | `PM_Light::PM_Light` | `GUI` | 272 |
+| `0x00208510` | `PM_Light::Init` | `GUI` | 1,584 |
+| `0x00208c18` | `PM_Light::SetValue` | `GUI` | 168 |
+| `0x00208cc0` | `PM_Light::HandleCommand` | `GUI` | 320 |
+| `0x00209068` | `PM_Load::PM_Load` | `GUI` | 264 |
+| `0x00209250` | `PM_Load::Init` | `GUI` | 1,336 |
+| `0x002098b0` | `PM_Load::HandleCommand` | `GUI` | 296 |
 | `0x00209da8` | `PM_Mode::Init` | `GUI` | 944 |
 | `0x0020a268` | `PM_Mode::HandleCommand` | `GUI` | 416 |
 | `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
+| `0x0020b020` | `PM_NumPlayers::PM_NumPlayers` | `GUI` | 264 |
+| `0x0020b208` | `PM_NumPlayers::Init` | `GUI` | 992 |
+| `0x0020b710` | `PM_NumPlayers::HandleCommand` | `GUI` | 304 |
+| `0x0020bc80` | `PM_Profile::PM_Profile` | `GUI` | 264 |
+| `0x0020be68` | `PM_Profile::Init` | `GUI` | 1,528 |
+| `0x0020c588` | `PM_Profile::HandleCommand` | `GUI` | 320 |
+| `0x0020c8d0` | `PM_Subtitles::PM_Subtitles` | `GUI` | 264 |
+| `0x0020cab8` | `PM_Subtitles::Init` | `GUI` | 848 |
+| `0x0020cf30` | `PM_Subtitles::HandleCommand` | `GUI` | 160 |
 | `0x00218008` | `Human_Init` | `Human` | not filled in |
 | `0x0021a490` | `Human_PushOutInAir` | `Human` | not filled in |
 | `0x0021b290` | `Strike_Contact` | `Human` | 3,488 |
@@ -687,6 +717,7 @@ at the top of the repository's `README.md`.
 | `0x0041d820` | `GetProfileDifficulty` | `Warriors` | 16 |
 | `0x0041f118` | `W_GameState_SetLevelRecord` | `Warriors` | 384 |
 | `0x004238a8` | `UM_IsLevelComplete` | `Warriors` | 64 |
+| `0x0042a938` | `Movie_Play` | `Movie` | 1,768 |
 <!-- progress:end -->
 
 ## How it is measured

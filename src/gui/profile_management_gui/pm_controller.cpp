@@ -2,17 +2,18 @@
 #include "gui/profile_management_gui/pm_controller.h"
 
 #include <algorithm>
+#include <initializer_list>
 #include <utility>
 
 #include "core/assert.h"
 
 namespace coney::gui {
 
-PmController::PmController(PmShared& shared) : m_shared(shared), m_greet(shared), m_mode(shared) {
+PmController::PmController(PmShared& shared)
+    : m_shared(shared), m_greet(shared), m_mode(shared), m_numPlayers(shared), m_profile(shared), m_create(shared),
+      m_load(shared), m_continue(shared), m_delete(shared), m_difficulty(shared), m_light(shared), m_subtitles(shared) {
     for (std::size_t i = 0; i < kPlaceholderNames.size(); ++i) {
-        const std::string_view name = kPlaceholderNames.at(i);
-        const bool storyPath = std::ranges::find(kStoryPathNames, name) != kStoryPathNames.end();
-        m_placeholders.at(i) = std::make_unique<PmPlaceholder>(name, shared, storyPath);
+        m_placeholders.at(i) = std::make_unique<PmPlaceholder>(kPlaceholderNames.at(i), shared);
     }
 
     // The transition table, screen by screen as the controller's constructor adds them.
@@ -50,13 +51,14 @@ PmController::PmController(PmShared& shared) : m_shared(shared), m_greet(shared)
         Transition{"PM_Difficulty", 0, "PM_Light"},
         Transition{"PM_Light", 0, "PM_Subtitles"},
     };
-    // A screen by its name: the two written ones, else a stand-in.
+    // A screen by its name: a written one, else a stand-in.
     const auto screen = [this](std::string_view name) -> ScreenFlowState& {
-        if (name == m_greet.name()) {
-            return m_greet;
-        }
-        if (name == m_mode.name()) {
-            return m_mode;
+        for (ScreenFlowState* written :
+             std::initializer_list<ScreenFlowState*>{&m_greet, &m_mode, &m_numPlayers, &m_profile, &m_create, &m_load,
+                                                     &m_continue, &m_delete, &m_difficulty, &m_light, &m_subtitles}) {
+            if (name == written->name()) {
+                return *written;
+            }
         }
         return placeholder(name);
     };
@@ -70,19 +72,18 @@ void PmController::start(std::string onRumble) {
     m_shared.onRumble = onRumble;
     m_onRumble = std::move(onRumble);
     m_shared.finishing = false;
-    m_shared.finishRequested = false;
+    // The globals `0x0050f584`-`0x0050f5c0` and the save system's "profile in use" start cleared.
+    m_shared.session = PmSession{};
+    if (m_shared.profiles != nullptr) {
+        m_shared.profiles->setInUse(false);
+    }
     m_flow.push(m_greet);
 }
 
 bool PmController::update() {
-    const bool done = m_flow.update();
-    // A stand-in screen on the story path ends the profile manager as the screens it replaces would.
-    if (m_shared.finishRequested) {
-        m_shared.finishRequested = false;
-        m_flow.clear();
-        return true;
-    }
-    return done;
+    // The update returns the done flag a screen sets; an empty flow is done too.
+    const bool empty = m_flow.update();
+    return m_shared.session.done || empty;
 }
 
 void PmController::stop() { m_flow.clear(); }

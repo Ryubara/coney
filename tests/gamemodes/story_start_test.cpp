@@ -33,6 +33,7 @@
 #include "gamemodes/profile_manager_mode.h"
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
+#include "gui/profile_management_gui/pm_new_game_screens.h"
 #include "scripting/script_system.h"
 #include "support/font_fixtures.h"
 #include "support/lua_fixtures.h"
@@ -128,8 +129,10 @@ struct StoryRun {
     std::unique_ptr<coney::ScriptedInput> input;
     coney::GameTimer timer;
 
-    StoryRun(std::string_view script, bool unlockAndLoad) : files(storyScripts(unlockAndLoad)) {
-        input = std::make_unique<coney::ScriptedInput>(coney::parseInputScript(script).value());
+    StoryRun(std::vector<coney::InputEvent> script, bool unlockAndLoad) : files(storyScripts(unlockAndLoad)) {
+        // PM_Create's keyboard (global string 0x97); the synthetic preloads set no strings.
+        strings.set(coney::gui::PmCreate::kCharactersString, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.  !?#&");
+        input = std::make_unique<coney::ScriptedInput>(std::move(script));
         stack.setInput(input.get());
         timer.setFixedStep(true);
         flow = std::make_unique<coney::StartUpFlow>(
@@ -153,10 +156,10 @@ struct StoryRun {
         flow->start();
     }
 
-    // Runs frames one at a time until the mode on top is no longer `id` (at most a second), so a check can start on the
-    // frame a mode left.
+    // Runs frames one at a time until the mode on top is no longer `id` (at most two seconds), so a check can start on
+    // the frame a mode left.
     void untilTopLeaves(std::uint32_t id) {
-        for (int i = 0; i < 30 && stack.topId() == id; ++i) {
+        for (int i = 0; i < 60 && stack.topId() == id; ++i) {
             frames(1);
         }
     }
@@ -170,14 +173,17 @@ struct StoryRun {
     }
 };
 
-// START, then cross on STORY (PM_Profile), then cross on the stand-in, which ends the profile manager on frame 235.
-constexpr std::string_view kStory = "200 tap start\n215 tap cross\n235 tap cross\n";
+// STORY with a new profile (tests/support/story_new_profile.txt, which `coney --input-script` plays too): the menus
+// are done on frame 329 and fade out for a second.
+std::vector<coney::InputEvent> storyScript() {
+    return coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt").value();
+}
 
 } // namespace
 
 TEST_CASE("story: the profile manager's exit launches the mission-complete mode over the level flow", "[story_start]") {
-    StoryRun run(kStory, true);
-    run.frames(235);
+    StoryRun run(storyScript(), true);
+    run.frames(330);
     run.untilTopLeaves(coney::ProfileManagerMode::kId);
     // Menu.startGame ran in the profile manager's exit: checkpoint 2, level1 chosen, mode 0xb pushed over mode 8.
     CHECK(run.logged("script: Menu.startGame"));
@@ -199,8 +205,8 @@ TEST_CASE("story: the profile manager's exit launches the mission-complete mode 
 
 TEST_CASE("story: the level flow pushes gameplay, whose level script places player 1 for the checkpoint",
           "[story_start]") {
-    StoryRun run(kStory, true);
-    run.frames(235);
+    StoryRun run(storyScript(), true);
+    run.frames(330);
     run.untilTopLeaves(coney::ProfileManagerMode::kId);
     run.frames(2);
     // The level flow finished the front end (a fresh Lua state) and pushed gameplay with level1 selected.
@@ -236,8 +242,8 @@ TEST_CASE("story: the level flow pushes gameplay, whose level script places play
 
 TEST_CASE("mission complete: kind 1 puts the checkpoint back and ends gameplay below it", "[story_start]") {
     // Without UnlockAndLoad, the launch's own kind stands.
-    StoryRun run(kStory, false);
-    run.frames(235);
+    StoryRun run(storyScript(), false);
+    run.frames(330);
     run.untilTopLeaves(coney::ProfileManagerMode::kId);
     run.frames(3);
     REQUIRE(run.stack.topId() == GameplayMode::kId);
@@ -260,8 +266,8 @@ TEST_CASE("mission complete: kind 1 puts the checkpoint back and ends gameplay b
 }
 
 TEST_CASE("mission complete: kind 2 reloads the current level", "[story_start]") {
-    StoryRun run(kStory, false);
-    run.frames(235);
+    StoryRun run(storyScript(), false);
+    run.frames(330);
     run.untilTopLeaves(coney::ProfileManagerMode::kId);
     run.frames(3);
     REQUIRE(run.starts.size() == 1);

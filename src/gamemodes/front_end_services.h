@@ -8,6 +8,8 @@
 #include <string_view>
 #include <vector>
 
+#include "gamemodes/movie_player.h"
+
 namespace coney {
 
 namespace script {
@@ -23,13 +25,13 @@ inline constexpr std::array<std::string_view, 3> kStartUpMovies{"LOGO", "PLOGO",
 ///
 /// - **Music and cues** are not played: there is no audio yet. The current track is remembered, so "play `menu` if it
 ///   is not already playing" behaves as in the original.
-/// - **Movies** are skipped, as if each had ended at once: Coney has no video decoder (Coney's choice; the original
-///   blocks until the movie ends).
+/// - **Movies** go to the movie player attached with attachMoviePlayer(); without one each is skipped, as if it had
+///   ended at once: Coney has no video decoder yet (Coney's choice; the original blocks until the movie ends).
 /// - **Lua calls** go to the script system attached with attachScripts(); without one (or before its state exists)
 ///   they are skipped.
 ///
 /// Nothing in the original corresponds; every request names the original's call in the caller's comments.
-class FrontEndServices {
+class FrontEndServices final : public MoviePlayer {
   public:
     /// Writes one line per request to `log`; an empty log writes nothing.
     explicit FrontEndServices(std::function<void(std::string_view)> log = {});
@@ -48,8 +50,10 @@ class FrontEndServices {
     /// The cues asked for, in order.
     [[nodiscard]] const std::vector<int>& cues() const { return m_cues; }
 
-    /// Plays the movie `name` (`LOGO`, `L1_IN`): skipped.
-    void playMovie(std::string_view name);
+    /// Plays the movie `name` (`LOGO`, `L1_IN`, `L99_IN`) through the attached movie player, or skips it.
+    void playMovie(std::string_view name) override;
+    /// Sends movies to `player` (null: skip them). The player must outlive its use here.
+    void attachMoviePlayer(MoviePlayer* player) { m_moviePlayer = player; }
     /// The movies asked for, in order.
     [[nodiscard]] const std::vector<std::string>& movies() const { return m_movies; }
 
@@ -71,6 +75,7 @@ class FrontEndServices {
     std::vector<std::string> m_movies;
     std::vector<std::string> m_scriptCalls;
     script::ScriptSystem* m_scripts = nullptr; // where Lua calls go; not owned
+    MoviePlayer* m_moviePlayer = nullptr;      // where movies go; not owned
 };
 
 } // namespace coney

@@ -955,7 +955,7 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | Done | Screen or feature | Coney today | Needed to match |
 | --- | --- | --- | --- |
 | [x] | Legal screen | the picture, overfilled, 5 s | nothing |
-| [ ] | Start-up movies | skipped | a player for `LOGO`, `PLOGO`, `L1_IN`, START skipping ([Movies](#movies)) |
+| [ ] | Start-up movies | the `MoviePlayer` hook; skipped | a player for `LOGO`, `PLOGO`, `L1_IN`, START skipping ([Movies](#movies)) |
 | [ ] | Mode 6 at boot | one black frame | the card scan, `0xb5` for 3 s, the dialogs and their layout ([message box](#message-box)) |
 | [ ] | 3D background | black | `level100` loaded, the script's objects, the `WonderWheel_100` scene and its camera, lights ([Background](#background)) |
 | [ ] | Menu music | recorded and logged | `menu`, then `wonderwheel_132b` ([Sound](sound.md)) |
@@ -965,14 +965,14 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | [ ] | PM_Mode | one centred column, white / grey 160, wrap | rows {2, 1} "STORY : EXTRAS" / QUICK RUMBLE at (0, 0.76), red items, grey (178) selection, size 1.15 for all, the red `" : "`, cues 5 / `0xe`, left / right / up / down rules |
 | [ ] | Usage line | centred text | left at (0, 0.87), two lines ([geometry](#pm-layout)) |
 | [ ] | PM_Extras | placeholder | TRAILER at (0, 0.81); accept → `Menu.playMovie(1)` |
-| [ ] | PM_NumPlayers | placeholder (ends the menus) | rows {2}, the blinking `0x77`, pad 2's START |
-| [ ] | PM_Profile | placeholder (ends the menus) | title `0x7b` and up to four items placed by count; reload |
-| [ ] | PM_Create | placeholder | the 12-12-12-11 keyboard, the 8-character name, its cues and the duplicate check |
-| [ ] | PM_Difficulty | placeholder | three or four items, default index 1 (3), `W_GameState + 0x43c` |
-| [ ] | PM_Light | placeholder | square, bar and hint; value 40, step 5, `Gamma_Set` |
-| [ ] | PM_Subtitles | placeholder | ON : OFF, default by language; sets done |
-| [ ] | PM_Load / PM_Delete | placeholders | needs Coney's saves first |
-| [ ] | Leaving the menus | the profile manager ends at once | done flag, 1.0 s fade out, the profile create, 16:9 apply, then `Menu.startGame` |
+| [x] | PM_NumPlayers | rows {2}, the blinking `0x77`, pad 2's START | nothing known |
+| [x] | PM_Profile | title `0x7b`, up to four items placed by count; reload | nothing known |
+| [x] | PM_Create | the 12-12-12-11 keyboard, the 8-character name, its cues and the duplicate check | the keyboard's moves and the "name used" text's lifetime are Coney's |
+| [x] | PM_Difficulty | three or four items, default index 1 (3), `W_GameState + 0x43c` | the fourth item's query |
+| [ ] | PM_Light | square, bar and hint; value 40, step 5 | the brightness applied (`0x0017ec38`), the bar's exact width |
+| [x] | PM_Subtitles | ON : OFF, default by language; sets done | nothing known |
+| [ ] | PM_Load / PM_Continue / PM_Delete | written over Coney's session-only profiles | Coney's saves (save research) |
+| [ ] | Leaving the menus | done flag, 1.0 s fade out, the profile created, `Menu.startGame` | the 16:9 apply, the card dialogs, the fade's arithmetic |
 | [ ] | Rumble menu frame | PM_Mode's style on black, lines of text | the cycling background, centred titles (size 2.23, y 0.08), usage at 0.91, `RM_Camera`, fades 0.7 / 1.5 s ([Rumble screens](#rumble-screens)) |
 | [ ] | Game Mode | a list of titles | three-row `ScrollingMenu` of title and description, arrows, no wrap |
 | [ ] | Game Type | text entries | centred one-row grid, the P1 / P2 / CPU badges by language, the blinking `0x77` |
@@ -1088,8 +1088,10 @@ save-system call, inventories or autosave (Coney has no saves); the frame is bla
 **Mode 0x12, the profile manager** (`src/gamemodes/profile_manager_mode.h`, `ProfileManagerMode`): `show` is
 `ShowProfileManager` (`0x001552b0`: keep the two callbacks, push unless on top); `enter` plays `menu` unless it is
 playing and loads `menu_system` (a batch of 50 sprites at depth 8,500); `update` runs the controller with the HUD
-player's pad (port 1) and the frame's game time, then the 2D pass and the present, and leaves when the flow is done;
-`exit` stops the controller and calls `Menu.startGame` when the flow finished. Coney's choices: the controller starts at
+player's pad (port 1) and the frame's game time, then the 2D pass and the present; once a screen sets the done flag
+(`0x0050f5b0`) it fades out over 1.0 s ([Fades](#fades)) and leaves when the fade has run; `exit` creates the new
+profile when PM_Subtitles asked for it (`0x0050f598`, with the name, difficulty, brightness and subtitles chosen), stops
+the controller and calls `Menu.startGame` when the menus finished. Coney's choices: the controller starts at
 the top of the first update instead of in `enter` (same step), so PM_Greet's blink is timed from that frame; the two
 fonts are loaded here (`part_page0` for slot 2, `big_font` for slot 6, depth 9,000); the screen is cleared to black (no
 world); each change of screen is logged (`profile manager: PM_Greet`), which is what a headless run shows. Each frame
@@ -1097,12 +1099,14 @@ also advances the screen fade (`ScreenQueueEffect`, `src/graphics/screen_fade.h`
 and runs the scripts' frame (the scheduled calls, such as `Menu.launchRMI` 500 ms after `Menu.fadeToRMI`). The Lua
 callbacks reach the script system. Coney's choices for the fade (the page gives the fields' roles only): its level
 runs linearly from 1 (black) to 0 for a fade in and from 0 to 1 for a fade out, over the given time of game time; a new
-fade replaces a running one.
+fade replaces a running one. The 16:9 choice is not applied (no device setting yet), and no "format the card?"
+dialog follows a new profile: Coney has no memory card.
 
 **The profile manager's screens** (`src/gui/profile_management_gui/`): `PmController` builds all fourteen screens and
 the [transition table](#profile-manager) on the screen flow ([GUI](gui.md#coneys-implementation)) and starts at
-PM_Greet; PM_Greet and PM_Mode are written, the twelve others are Coney's `PmPlaceholder` (it shows the screen's name
-and goes back on the back command), so the table can be followed today.
+PM_Greet. The menus end when a screen sets the done flag (`PmSession`, the controller's globals `0x0050f584`-
+`0x0050f5c0` and the name `0x0063f1d8`, reset at start). PM_Extras and the two Xbox screens are still Coney's
+`PmPlaceholder` (it shows the screen's name and goes back on the back command).
 
 - **PM_Greet** (`PmGreet`): the logo (`menu_system` rectangle 0, keeping its shape) and global string `0x76` centred
   under it; the text's alpha ramps 0 → 255 → 0 in 1,500 ms halves from the screen's entry; START (the auto-repeating
@@ -1113,12 +1117,23 @@ and goes back on the back command), so the table can be followed today.
   is the original's: no input while the fade level is not 0; back returns 8 with cue `0xf`; accept plays cue 9, then
   story returns 0 (6 with two or more pads connected), extras 5, code 7 calls `Menu.reloadProfiles`, and quick rumble
   calls the first callback (`Menu.fadeToRMI`) and stays.
+- **The story screens** (`pm_profile_screens.h`: PM_NumPlayers, PM_Profile, PM_Load, PM_Continue, PM_Delete;
+  `pm_new_game_screens.h`: PM_Create with its `NameKeyboard`, PM_Difficulty, PM_Light, PM_Subtitles), written from
+  [the screens](#pm-screens) and [the geometry](#pm-layout): each screen's logic (`handle`, over `PmChoices`, the grid's
+  rows and selection) is apart from its look (its `open` and `draw`, with the shared placements and colours in
+  `pm_look.h`), so the look can move to the shared widgets without touching the logic. They write the game state (the
+  two-player flag, `+0x43c`, `+0x57a4`, `+0x438`) and ask the save system through `ProfileStore`
+  (`src/warriors/profile_store.h`). **Coney's stand-ins:** the profile record is `Profile` (name, difficulty,
+  brightness, subtitles, damaged) until the save research lands; `SessionProfileStore` keeps profiles in memory for
+  the run only, so every run starts with no profile (PM_Profile offers create and reload) and the fourth difficulty is
+  locked. Coney's choices where the page is silent: a grid move that cannot leave its item never wraps; the keyboard's
+  left and right stay in their row and skip blank cells, up and down keep the column (then the nearest selectable cell
+  to its left), DEL is drawn after OK's word; PM_Light steps on the menu commands' left and right and plays nothing past
+  either end, and its brightness is only stored; PM_Create's "name used" text shows until the screen is left.
 - Coney's choices: the layout (every position and size: `PmLayout`; the ten layout floats above are not used yet);
   the logo is rectangle 0 (it is the game's logo, from viewing the sheet); "a fade in progress" for PM_Greet is a fade
-  running or a screen not fully clear; unselected items are grey (160), the selected one white. **The story path's
-  stand-ins** (PM_NumPlayers, PM_Profile, PM_Create, PM_Load, PM_Continue, PM_Difficulty, PM_Light, PM_Subtitles) end
-  the profile manager on accept, so story reaches `Menu.startGame` (the profile manager's `Exit`) before the profile
-  screens exist: STORY, then cross on the PM_Profile stand-in. **Quick rumble**: `Menu.fadeToRMI` fades out and
+  running or a screen not fully clear; unselected items are grey (160), the selected one white. **Quick rumble**:
+  `Menu.fadeToRMI` fades out and
   schedules `Menu.launchRMI`, whose `ShowRumbleModeInterface` opens the Rumble menu (below).
 
 **Mode 0x11, the Rumble menu** (`src/gamemodes/rumble_menu_mode.h`, `RumbleMenuMode`), from
@@ -1171,23 +1186,27 @@ blocks the d-pad for 20 ms. Coney's reading: at most one command a frame, in the
 command refused by the gap is dropped (a release too soon after a move is lost); the stick's up or down wins over left
 or right.
 
-**The front end's other requests** (`src/gamemodes/front_end_services.h`, `FrontEndServices`): music, sound cues and
-movies are recorded, logged and skipped; Lua calls are logged and handed to the script system. **Coney's choice for
-movies:** Coney has no video decoder, so each movie (`LOGO`, `PLOGO`, `L1_IN` at start-up, the attract movie) is skipped
-as if it had ended at once; the original blocks until it ends.
+**The front end's other requests** (`src/gamemodes/front_end_services.h`, `FrontEndServices`): music and sound cues
+are recorded, logged and not played; Lua calls are logged and handed to the script system; movies (`LOGO`, `PLOGO`,
+`L1_IN` at start-up, the attract movie, a level's intro) go to the `MoviePlayer` attached to it
+(`src/gamemodes/movie_player.h`, `Movie_Play`). **Coney's choice for movies:** no player is attached yet (Coney has no
+video decoder), so each movie is skipped as if it had ended at once; the original blocks until it ends.
 
 **Disc check (NTSC-U, 2026-10-04, states only):** `coney_tests "[disc][frontend]"` with `CONEY_DISC` set runs the
 start-up path headless with the disc's sheets and the game's own scripts: PM_Greet is on top by frame 160 with every
 sheet loaded, and START on frame 200 reaches PM_Mode with three items and cue 9; quick rumble (chosen with the analog
-stick) opens the Rumble menu at its Game Mode screen, and triangle there fades back to PM_Mode; story, then cross on the
-PM_Profile stand-in, calls `Menu.startGame`, which asks for a level (`runNextMission(1)`) and launches the
+stick) opens the Rumble menu at its Game Mode screen, and triangle there fades back to PM_Mode; story with a new
+profile (PM_Profile, PM_Create with the disc's 47-cell keyboard in rows of 12, 12, 12 and 11, PM_Difficulty, PM_Light,
+PM_Subtitles), after the fade out, creates the profile and calls `Menu.startGame`, which asks for a level
+(`runNextMission(1)`) and launches the
 mission-complete mode, whose `UnlockAndLoad` asks again (two requests, two launches), and, with no level loader in this
 test, the front end comes back at PM_Greet in a second Lua state. 111 level records, no script error and no call of a
 missing binding in either state. With `CONEY_DISC` set when CMake configures, the smoke test `coney.reaches_main_menu`
 runs `coney --disc` the same way.
 
 **Disc check (NTSC-U, 2026-10-05, states only):** `coney_tests "[disc][story]"` runs STORY with the play mode as the
-level loader: gameplay is on top by frame 300 with `level99` loaded, the checkpoint is 1, Rembrandt stands at
+level loader, through the new-profile screens (`tests/support/story_new_profile.txt`, since 2026-10-06): gameplay is
+on top by frame 370 with `level99` loaded, one profile, `L99_IN` asked for once, the checkpoint is 1, Rembrandt stands at
 (-284.4, 120.4) on the ground (z 0.25, the height seen at run time) and not airborne; the stick then moves him
 (6.12 m in 200 frames at 35 % and a 30/65 diagonal) and he stands again on release. No script error; the level's
 scripts call 29 bindings Coney lacks (177 calls skipped). `coney --disc` with STORY chosen does the same in a window.
@@ -1258,7 +1277,8 @@ TODO for the analysts, found while implementing:
 What the implementer still needs:
 
 - Mode 6's real card check once Coney has saves, and the autosave the mission-complete mode asks for.
-- The profile manager's other twelve screens, and the message box mode 6 uses ([GUI](gui.md#open-questions)).
+- PM_Extras, the profile record and Coney's saves for PM_Load / PM_Delete, and the message box mode 6 uses
+  ([GUI](gui.md#open-questions)).
 - The Rumble menu's other entries: the mode list's and the gang records' addresses (so their names and values can be
   read from the player's executable), the other gangs and arenas, the warchief choice, the screens' layout, titles,
   usage lines and sounds, and `ShowRumbleModeIntro`.
@@ -1320,6 +1340,10 @@ What the implementer still needs:
   second), the neons shown and hidden by events ([Objects: the Wonder Wheel](objects.md#wonder-wheel)).
 - **`0x005147cc`**, set to 10.0 while the Rumble menu is open, and `0x0040c938`.
 - **PM_Difficulty's fourth item:** what the save-system query that unlocks it reports.
+- **The profile record:** its fields and how `+0xcc(slot)` (load) applies them to the game state (Coney's `Profile`
+  stand-in keeps name, difficulty, brightness and subtitles).
+- **The level loading screen** ("1 Coney" / "New Blood" with a progress bar): which code draws it and when, so mode 1
+  can show it (Coney shows none).
 - **The music at PM_Greet:** `menu` or `wonderwheel_132b` (mode 0x12 `Enter` replays `menu` when the names differ;
   [Sound](sound.md)).
 - **PM_Light's colour** (answered): the light manager's brightness, added to every ambient and directional light

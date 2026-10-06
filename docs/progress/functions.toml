@@ -890,6 +890,18 @@ subsystem = "GUI"
 size = 456
 
 [[function]]
+address = 0x001cc1a0
+name = "NameKeyboard::NameKeyboard"
+subsystem = "GUI"
+size = 112
+
+[[function]]
+address = 0x001cca80
+name = "NameKeyboard::HandleCommand"
+subsystem = "GUI"
+size = 648
+
+[[function]]
 address = 0x001ccf88
 name = "TextWidget::TextWidget"
 subsystem = "GUI"
@@ -1076,6 +1088,24 @@ subsystem = "GUI"
 size = 88
 
 [[function]]
+address = 0x00203110
+name = "PM_Continue::PM_Continue"
+subsystem = "GUI"
+size = 128
+
+[[function]]
+address = 0x00203300
+name = "PM_Continue::Init"
+subsystem = "GUI"
+size = 984
+
+[[function]]
+address = 0x00203800
+name = "PM_Continue::HandleCommand"
+subsystem = "GUI"
+size = 272
+
+[[function]]
 address = 0x002040f0
 name = "PM_Controller::PM_Controller"
 subsystem = "GUI"
@@ -1098,6 +1128,60 @@ address = 0x00204c20
 name = "PM_Controller_Stop"
 subsystem = "GUI"
 size = 48
+
+[[function]]
+address = 0x00204f08
+name = "PM_Create::PM_Create"
+subsystem = "GUI"
+size = 264
+
+[[function]]
+address = 0x002050f0
+name = "PM_Create::Init"
+subsystem = "GUI"
+size = 416
+
+[[function]]
+address = 0x002056d8
+name = "PM_Create::HandleCommand"
+subsystem = "GUI"
+size = 144
+
+[[function]]
+address = 0x00205950
+name = "PM_Delete::PM_Delete"
+subsystem = "GUI"
+size = 264
+
+[[function]]
+address = 0x00205b38
+name = "PM_Delete::Init"
+subsystem = "GUI"
+size = 1456
+
+[[function]]
+address = 0x00206238
+name = "PM_Delete::HandleCommand"
+subsystem = "GUI"
+size = 216
+
+[[function]]
+address = 0x002065f0
+name = "PM_Difficulty::PM_Difficulty"
+subsystem = "GUI"
+size = 264
+
+[[function]]
+address = 0x002067d8
+name = "PM_Difficulty::Init"
+subsystem = "GUI"
+size = 888
+
+[[function]]
+address = 0x00206d88
+name = "PM_Difficulty::HandleCommand"
+subsystem = "GUI"
+size = 128
 
 [[function]]
 address = 0x002079a0
@@ -1136,6 +1220,48 @@ subsystem = "GUI"
 size = 152
 
 [[function]]
+address = 0x00208320
+name = "PM_Light::PM_Light"
+subsystem = "GUI"
+size = 272
+
+[[function]]
+address = 0x00208510
+name = "PM_Light::Init"
+subsystem = "GUI"
+size = 1584
+
+[[function]]
+address = 0x00208c18
+name = "PM_Light::SetValue"
+subsystem = "GUI"
+size = 168
+
+[[function]]
+address = 0x00208cc0
+name = "PM_Light::HandleCommand"
+subsystem = "GUI"
+size = 320
+
+[[function]]
+address = 0x00209068
+name = "PM_Load::PM_Load"
+subsystem = "GUI"
+size = 264
+
+[[function]]
+address = 0x00209250
+name = "PM_Load::Init"
+subsystem = "GUI"
+size = 1336
+
+[[function]]
+address = 0x002098b0
+name = "PM_Load::HandleCommand"
+subsystem = "GUI"
+size = 296
+
+[[function]]
 address = 0x00209da8
 name = "PM_Mode::Init"
 subsystem = "GUI"
@@ -1152,6 +1278,60 @@ address = 0x0020a4b8
 name = "PM_Mode::Update"
 subsystem = "GUI"
 size = 88
+
+[[function]]
+address = 0x0020b020
+name = "PM_NumPlayers::PM_NumPlayers"
+subsystem = "GUI"
+size = 264
+
+[[function]]
+address = 0x0020b208
+name = "PM_NumPlayers::Init"
+subsystem = "GUI"
+size = 992
+
+[[function]]
+address = 0x0020b710
+name = "PM_NumPlayers::HandleCommand"
+subsystem = "GUI"
+size = 304
+
+[[function]]
+address = 0x0020bc80
+name = "PM_Profile::PM_Profile"
+subsystem = "GUI"
+size = 264
+
+[[function]]
+address = 0x0020be68
+name = "PM_Profile::Init"
+subsystem = "GUI"
+size = 1528
+
+[[function]]
+address = 0x0020c588
+name = "PM_Profile::HandleCommand"
+subsystem = "GUI"
+size = 320
+
+[[function]]
+address = 0x0020c8d0
+name = "PM_Subtitles::PM_Subtitles"
+subsystem = "GUI"
+size = 264
+
+[[function]]
+address = 0x0020cab8
+name = "PM_Subtitles::Init"
+subsystem = "GUI"
+size = 848
+
+[[function]]
+address = 0x0020cf30
+name = "PM_Subtitles::HandleCommand"
+subsystem = "GUI"
+size = 160
 
 [[function]]
 address = 0x00218008
@@ -3391,3 +3571,9 @@ subsystem = "Human"
 address = 0x0027a6c0
 name = "Player_PickTarget"
 subsystem = "Human"
+
+[[function]]
+address = 0x0042a938
+name = "Movie_Play"
+subsystem = "Movie"
+size = 1768

@@ -23,6 +23,8 @@
 #include "gui/profile_management_gui/pm_controller.h"
 #include "gui/profile_management_gui/pm_shared.h"
 #include "scripting/script_system.h"
+#include "warriors/game_state.h"
+#include "warriors/profile_store.h"
 
 namespace coney {
 
@@ -39,12 +41,18 @@ class GameModeStack;
 ///   sprites), the 2D pass, the screen fade, then the scripts (scheduled calls) and the present. It leaves when the
 ///   flow is done. Coney splits it: update() runs the controller, lists the step's sprites and runs the scripts;
 ///   render() draws the 2D pass and the fade and presents, blending the fade's level between the last two steps.
-/// - `Exit` stops the controller and, when the flow finished, calls the second Lua callback (`Menu.startGame`).
+///   Once a screen sets the done flag (PM_Subtitles, PM_Load), the update fades the screen out over 1.0 s and the mode
+///   leaves when the fade has run (docs/research/frontend.md#fades).
+/// - `Exit` creates the new profile when PM_Subtitles asked for it (save-system `+0x4c(slot, name)`), stops the
+///   controller, calls the second Lua callback (`Menu.startGame`) when the menus finished, and applies the 16:9
+///   choice.
 ///
 /// Coney's choices: there is no front-end world yet (`level100`'s world is not loaded), so the screen is cleared to
 /// black where the original draws the Wonder Wheel scene; the fonts are loaded here (`part_page0` for font slot 2,
 /// `big_font` for slot 6; the original makes them once at start-up) and drawn at depth 9,000; the Rumble-mode flag the
-/// original's `Exit` reads is always clear; the fade is drawn over the menus as a black quad.
+/// original's `Exit` reads is always clear; the fade is drawn over the menus as a black quad; the 16:9 choice has no
+/// device to go to yet; Coney has no memory card, so no "format the card?" dialog follows a new profile (the save
+/// system is ProfileStore's stand-in).
 ///
 /// Research: docs/research/frontend.md#mode-flow, docs/research/frontend.md#profile-manager
 class ProfileManagerMode final : public GameMode {
@@ -60,17 +68,20 @@ class ProfileManagerMode final : public GameMode {
     static constexpr float kTextDepth = 9000.0F;
     /// The music the front end plays.
     static constexpr std::string_view kMusic = "menu";
+    /// The fade out when the menus are done, seconds.
+    static constexpr double kDoneFadeSeconds = 1.0;
 
     /// Loads a sprite sheet by its resource name; the platform layer reads it from the disc.
     using SheetLoader = std::function<std::expected<graphics::SpriteSheet, Error>(std::string_view resourceName)>;
 
     /// Draws through `device` with sheets from `loadSheet`, shows `strings`, sends sound, movies and Lua calls to
-    /// `services`, waits for `fade` and runs `scripts` once a frame; `europe` is the device flag 0x02 (hides
-    /// PM_Extras). A sheet that fails to load is passed to `log` and its sprites or text are not drawn. Every reference
-    /// must outlive the mode.
+    /// `services`, waits for `fade` and runs `scripts` once a frame; the screens write their choices to `state` and
+    /// ask `profiles` about profiles; `europe` is the device flag 0x02 (hides PM_Extras). A sheet that fails to load
+    /// is passed to `log` and its sprites or text are not drawn. Every reference must outlive the mode.
     ProfileManagerMode(graphics::RenderDevice& device, SheetLoader loadSheet, const gui::GlobalStrings& strings,
                        FrontEndServices& services, graphics::ScreenFade& fade, script::ScriptSystem& scripts,
-                       bool europe, std::function<void(std::string_view)> log);
+                       GameState& state, ProfileStore& profiles, bool europe,
+                       std::function<void(std::string_view)> log);
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
 
@@ -100,6 +111,8 @@ class ProfileManagerMode final : public GameMode {
     [[nodiscard]] const std::string& onRumble() const { return m_onRumble; }
     /// The second Lua callback show() kept (`Menu.startGame`).
     [[nodiscard]] const std::string& onStartGame() const { return m_onStartGame; }
+    /// The profile manager's globals as the screens left them.
+    [[nodiscard]] const gui::PmSession& session() const { return m_shared.session; }
 
   private:
     // Loads the menu sheet and the fonts, building their batches; logs what fails.
@@ -114,6 +127,7 @@ class ProfileManagerMode final : public GameMode {
     FrontEndServices& m_services;
     graphics::ScreenFade& m_fade;
     script::ScriptSystem& m_scripts;
+    ProfileStore& m_profiles;
     std::function<void(std::string_view)> m_log;
     gui::PmShared m_shared;
     gui::PmController m_controller; // after m_shared, which it refers to
@@ -129,7 +143,8 @@ class ProfileManagerMode final : public GameMode {
     std::string m_onRumble;
     std::string m_onStartGame;
     std::string m_lastScreen;    // the screen logged last, so each change is logged once
-    bool m_finished = false;     // the flow emptied (the controller reported done)
+    bool m_finished = false;     // the controller reported done
+    bool m_fadingOut = false;    // done, and the fade out runs before the mode leaves
     bool m_startPending = false; // enter() ran; the controller starts on the next update
 };
 

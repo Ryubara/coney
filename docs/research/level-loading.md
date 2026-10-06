@@ -580,8 +580,12 @@ and [Characters](characters.md#level-starts):
 
 Coney's choices and stand-ins for mode 1:
 
-- The rest of `InitLevel` (the object and dependency lists, the music, the intro movie `L99_IN`, the pending Lua call)
-  and of mode 1's `Enter` (the audio, the level-end countdown) is not done. Its flags step (`CrimeScene`, `GangCall`)
+- The rest of `InitLevel` (the object and dependency lists, the music, the pending Lua call) and of mode 1's `Enter`
+  (the audio, the level-end countdown) is not done. The intro movie is asked for after the level has loaded
+  (`levelIntroMovie`, `src/gamemodes/movie_player.h`: `L<n>_IN` when the record's intro switch is set and the section
+  is below 2, so `L99_IN` for `level99` at checkpoint 1) and skipped until Coney plays movies. Which of the twelve
+  `CfgLevelName` numbers is the intro switch is inferred (the fourth, `LevelRecord::kIntroValue`); the STORY disc
+  check sees `L99_IN` asked for once. Its flags step (`CrimeScene`, `GangCall`)
   and its start callback are ([World flags](flags.md#coneys-implementation)); the callback runs before the level
   loads, and `preLoadFile` runs the checkpoint's script at once and then calls its callback by name. A teleport of
   player 1 by the scripts, at the start or later, moves the player. The player has control on the first frame.

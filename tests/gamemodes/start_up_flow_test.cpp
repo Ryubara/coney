@@ -25,6 +25,7 @@
 #include "gamemodes/memory_card_mode.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "gui/global_strings.h"
+#include "gui/profile_management_gui/pm_new_game_screens.h"
 #include "support/font_fixtures.h"
 #include "support/lua_fixtures.h"
 #include "support/recording_device.h"
@@ -191,8 +192,13 @@ struct ScriptedRun {
     std::unique_ptr<coney::ScriptedInput> input;
     GameTimer timer;
 
-    explicit ScriptedRun(std::string_view script) {
-        input = std::make_unique<coney::ScriptedInput>(coney::parseInputScript(script).value());
+    explicit ScriptedRun(std::string_view script)
+        : ScriptedRun(coney::parseInputScript(script).value_or(std::vector<coney::InputEvent>{})) {}
+
+    explicit ScriptedRun(std::vector<coney::InputEvent> script) {
+        // PM_Create's keyboard (global string 0x97); the synthetic preloads set no strings.
+        strings.set(coney::gui::PmCreate::kCharactersString, "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.  !?#&");
+        input = std::make_unique<coney::ScriptedInput>(std::move(script));
         stack.setInput(input.get());
         timer.setFixedStep(true);
         flow = std::make_unique<StartUpFlow>(
@@ -237,9 +243,14 @@ TEST_CASE("start-up with scripts: preloads at the legal screen, Menu.onStart sho
 
 TEST_CASE("start-up with scripts: story reaches Menu.startGame, the level request, and back to the menus",
           "[start_up]") {
-    // START, then cross on story (PM_Profile), then cross on the stand-in, which ends the profile manager.
-    ScriptedRun run("200 tap start\n215 tap cross\n235 tap cross\n");
-    run.frames(240);
+    // STORY with a new profile (tests/support/story_new_profile.txt): the menus are done on frame 329, then fade out.
+    ScriptedRun run(coney::loadInputScript(std::string(CONEY_TEST_SUPPORT_DIR) + "/story_new_profile.txt").value());
+    run.frames(330);
+    CHECK(run.flow->profileManager().session().done);
+    CHECK(run.flow->levelFlow().levelRequests().empty());
+    run.frames(31);
+    CHECK(run.logged("profile manager: profile \"A\" created in slot 0"));
+    CHECK(run.flow->profiles().profile(0) != nullptr);
     CHECK(run.flow->levelFlow().levelRequests() == std::vector<std::string>{"level1"});
     CHECK(run.logged("level start requested: level1"));
     // The front-end level was unloaded (a fresh Lua state) and started again: the menus are back at PM_Greet.
