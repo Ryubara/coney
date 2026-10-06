@@ -450,7 +450,8 @@ collision mesh that stand for them. Confirmed (code) for the spawns, counts from
 5. **Hit** (message 1, `0x003e2d90`), once, while not broken: the broken sprite (or the pane hidden when it is 0),
    a `sub_glass` shatter at the pane's centre with the pane's rotation and size (`sub_stained_glass` for type 14), the
    triangles disabled, its collision body removed (`0x003a5340`), the pane marked broken. Type 12 also frees every
-   `dyn_carstereo` within 2 m (`0x003a5870`): a car window. Message 0 is a shatter without the broken flag (the
+   `dyn_carstereo` within 2 m (`0x003a5870`), for a pane a script places at a car; a parked car's own windows are
+   its parts, not panes ([Cars: windows](cars.md#windows)). Message 0 is a shatter without the broken flag (the
    effect and the triangles only). Confirmed (code).
 6. **Break** (`0x0038f378`, called by the human and thrown-object paths, not by `BreakGlassInRadius`):
     - with the alarm (`+0xf8` both bits): the `CrimeScene` flag moves to the pane and a break-in (crime type 1) is

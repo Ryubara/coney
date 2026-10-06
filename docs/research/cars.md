@@ -190,6 +190,111 @@ returns 0 and `+0x34` (set) does nothing, so [`SetMsgHandler`](../references/bin
 car takes a component from the pool, keeps the name in it and is never called. Only the general handler hears a car's
 messages. Confirmed (code) at `0x00389700`, `0x003860b8`, `0x004da1a8`.
 
+### Windows, hits and the stereo {#windows}
+
+A car's windows are **its parts 15, 17, 19 and 21**, not glass panes: no code makes a pane for a car (the only
+caller of the pane spawn `0x0039c0e0` is `SpawnBreakableGlass`, `0x00378fa0`), and `level99` places no type-12 pane.
+Glass type 12's stereo rule ([A pane's life](objects.md#pane)) only serves panes a script places itself. Confirmed
+(code) at the functions cited.
+
+**The windows.** Each window part's record (`+0x01` = `0x18`) has bit `0x10`, which makes any non-instant damage set
+the part's damage to 1 at once (`0x0038a4d8`): **one hit breaks a window**. Parts 14, 15, 18 and 19 have side bits
+`0x10` and lie on the car's **−x** side (left, with the front at +y); 16, 17, 20, 21 have `0x01` and lie on +x. The
+zone tables below put 14/15 and 18/19 at x ≤ −0.6, and the burst of a breaking window 15 or 19 is aimed along −x of
+its frame (`0x0038a830`). The sedan's window boxes (part `+0x10`) are 0.44 × 0.96 × 0.25 m (15, 17) and 0.44 × 0.89 ×
+0.32 m (19, 21); where each sits is its atomic's frame in the model ([Model](#model)).
+
+**Hit zones.** Which parts a hit reaches comes from where the hitter stands, in the car's frame (x across, y along,
+from the car's position `+0x10` and quaternion `+0x20`). Two tables per type, both read at `0x0038b8d0` and
+`0x0038b520`; offsets are from the type record:
+
+- **Body**: the band of y among the five falling thresholds at `+0x40` (0 above the first ... 5 below the last) and
+  the column of x against `+0x54` = −0.6 and `+0x58` = 0.6 (0 at x ≤ −0.6, 1 up to 0.6, 2 beyond) pick a u32 part
+  mask at `+0x74 + 4 × (3 × band + column)`.
+- **Cabin**, only while |y| < half the second box's length (`+0x24`): the band among the five thresholds at `+0x5c`
+  and the column against `+0x70` = 0 (0 at x ≤ 0, else 1) pick a mask at `+0xbc + 4 × (2 × band + column)`; it is
+  ORed in.
+- Bit 1 (the roof) is always dropped.
+
+The sedan (`car_osedan`, type 0), as parts per band, x ≤ −0.6 / middle / x > 0.6 (confirmed (code) from the data):
+
+| Body band (y) | Parts |
+| --- | --- |
+| ≥ 2.716 | 2, 8, 10, 26 / 2, 4, 8, 9 / 2, 9, 11, 27 |
+| 1.028 to 2.716 | 10 / 4 / 11 |
+| −0.034 to 1.028 | **14, 15** / 14-17 / **16, 17** |
+| −1.597 to −0.034 | **18, 19** / 18-21 / **20, 21** |
+| −2.778 to −1.597 | 12 / 5 / 13 |
+| below | 3, 12, 28 / 3, 5 / 3, 13, 29 |
+
+| Cabin band (y) | x ≤ 0 | x > 0 |
+| --- | --- | --- |
+| ≥ 1.207 | 6 | 6 |
+| 1.007 to 1.207 | 6, **15** | 6, **17** |
+| 0 to 1.007 | **15** | **17** |
+| −1.007 to 0 | **19** | **21** |
+| −1.207 to −1.007 | 7, **19** | 7, **21** |
+| below | 7 | 7 |
+
+Bits 26-29 have no part record (the hit handler only marks them removed); 6 and 7 are hit only from the cabin table,
+which reads as the windscreen and the rear window (inferred). The other types share the masks with their own
+thresholds (`+0x40` / `+0x5c`): the coupe's rear body band repeats its two doors (14-17), the wagon adds 12 and 13 at
+the back, and the van's masks differ more; dump them by type when needed. The sedan's box is 2.40 × 6.05 m (`+0x00`),
+the cabin 2.61 m long (`+0x24`).
+
+**Targeting a car** (`Player_PickTarget`, `0x0027a6c0`, [Combat](combat.md#targets)). The car pass (world `+0x844`,
+`0x0038e860` with reach 1.0 and filter `0x00279f50`) comes after the human passes and before the objects (`+0x840`)
+and glass (`+0x84c`). Confirmed (code):
+
+1. A car is a candidate when the human is less than **1 m** outside its box along both its x and y (|x| − half
+   width < 1 and |y| − half length < 1), scored by the smaller of the two, squared.
+2. The filter `0x00279f50`: a human standing within the box's footprint (`0x00279e00`, i.e. on the car) needs the car
+   0-2 m below; any other needs the car within 3 × 54° of the search heading (`0x002790a8`) and within 2 m in height
+   (`0x00510970`).
+3. The **aim point** (`0x0038c990`): when the car's position is below the human's feet, the feet − 0.25 m; otherwise
+   the parts the human can hit from where he stands (`0x0038b520`), less the removed ones (`+0x11f0`, `+0x11f8`,
+   `+0x11f4`), must be non-empty, and the point is **1 m ahead of the human** (his facing × (0, 1, 0)), at his feet
+   **+ 1.5 m** when those parts include a window or 6 / 7 (mask `0x2a80c0`), + 1.0 m for the bonnet or boot (`0x30`),
+   else at the feet. So a window target sits 1.5 m up, and `Player_ObjectAttack` plays 662 for it
+   ([Breakables](combat.md#breakables)).
+4. `0x0038b520` takes the nearest face of the box from outside it (±x beside the car, ±y before or behind it, the
+   corner's direction diagonally) and returns parts only when the human faces that face (his forward · the face's
+   outward normal ≤ −0.7); then the zone tables above, from his position.
+
+**The hit.** A human's strike that touches a car does not send message 1. `Strike_Contact` (`0x0021b290`) finds the
+struck object is a car (`0x00389848`: its type word has `0x100000`) and calls the car's hit handler directly (vtable
+`0x00544c08`, {delta, fn} at `+0x100` / `+0x104`: `0x0038bea0`), which returns the parts it hit. Confirmed (code).
+The handler:
+
+1. Ignores the hit while the car is exploding (`+0x12d5`, `+0x1200`); a car whose s16 `+0x12d8` is not `0x19` takes
+   hits only from members of the gang with that id (gang `+0x2c`).
+2. Picks the parts: for a plain human hit (record `+0x08` without `0x400000`), from **where the attacker stands**
+   (`0x0038b8d0`, the tables above, no facing test; a player above the car's position skips the cabin table for
+   the inner bands); for a human with `0x400000` (the charge, inferred) and for thrown objects, from the contact
+   point (`+0x60`) in the body or cabin table by the physics box struck. Thrown objects drop the windows from body
+   hits (`0xffd57fff`) and the doors from cabin hits (`0xffeabfff`).
+3. For a plain or object hit, an intact window protects its door: with 15, 17, 19 or 21 in the mask and not yet
+   broken (kept bits `+0x11f8`), its door (14, 16, 18, 20) is dropped from this hit. So the **first square at the
+   front-left door breaks window 15 only**; later ones dent door 14.
+4. Damages each part (0.115 a plain human hit, 0.51 a `0x400000` hit, 0.34 an object; the windows break at once),
+   broadcasts message `0x19` per part, plays a part's first-hit effect (`0x0038a830`: windows 15/19 effect 4 along
+   −x, 17/21 along +x) and reports to `0x002936a8` (30 m) and `0x00413018` (not traced).
+
+`Strike_Contact` then counts a player's car hit (statistic event `0xb`) when it reached a part not already broken.
+
+**The stereo** (`CarSpawnRadio` → `0x0038c868`, once per car, handle at `+0x1204`). The `dyn_carstereo` record is
+added to the world objects (`+0x840`) at the **car's position + its rotation × (−0.75, 0.25, 0.1)**: the vec4 at
+`0x0057e4a0 + 0x5f0 × type`, the same for all six types. Its object flag `0x8000` (pickable) is **cleared**, so it
+cannot be taken yet. When part **15** reaches damage 1 (`0x0038a4d8`), the stereo gets `0x8000` back and its
+virtual at `+0x124` with (3, 0, 0), the world object's context registration (`0x00391c98`, the only vtable holding
+it), which registers it as a **kind-3 context record** ([Crimes](crimes.md#context-records)): triangle within 2 m now
+offers the theft. Only window 15 frees it, the window beside the stereo. Confirmed (code); that the slot is
+`0x00391c98` for the stereo's class is inferred (one vtable holds it). The car's transform update (`0x0038bb48`)
+moves the stereo to the same offset, and the boot item to the vec4 at `0x0057e4b0 + 0x5f0 × type` (sedan and Sully's
+car (0.00, −2.34, −0.01), police car (0.00, −2.26, −0.02), wagon and van 0, the coupe (0.00, −2.34, −0.05)) while
+the boot is shut. Both vectors are 0x20 and 0x10 bytes before the type record as this page counts it. The cars of
+`level99` stand at z 1.04-1.09, so the origin is about 1 m above the ground and the stereo about 1.15 m up.
+
 ### Colour {#colour}
 
 `CarSetColor(car, {c1, c2, c3, c4})` turns each number into a byte (× 255, `0x0017aca8`) in the order given and stores
@@ -241,4 +346,5 @@ Coney's stand-ins, where this page is silent:
 - What the object a car holds at `+0x1204` is (released when it explodes; part 15 coming off makes it pickable).
 - The lookup that takes a car to its Object List record.
 - Which atomics the paint tints, how cars are lit, and how the type record's boxes make a car's collision.
-- Where a car's stereo sits.
+- Where a car's stereo sits (answered: [Windows, hits and the stereo](#windows)). Still open: the effect kinds of
+  message `0x3f` (`0x0038a830`) and what `0x002936a8` and `0x00413018` report for a car hit.
