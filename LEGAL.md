@@ -23,7 +23,10 @@ the game may be committed and published in `docs/` and `research/`: names and id
 levels, animation clips, WAD entry names, script bindings), numeric values and short descriptions written by us. They
 are facts that let players and modders interoperate with the game, in the way FiveM documents GTA V. They may be
 illustrated with **reference screenshots**: small images Coney renders or captures of a model, object or screen
-(thumbnails, transparent or plain background) to identify it on its reference page, as FiveM's references do. They
+(thumbnails, transparent or plain background) to identify it on its reference page, as FiveM's references do.
+Decided 2026-10-06: they may also show **2D icons** (map, radar, HUD and pick-up icons, particle sprites), one icon
+per image at no more than 64 x 64 pixels, rendered by Coney from the player's disc to identify a list entry, as FiveM
+shows its blip icons. Never a whole texture or sheet, artwork, a loading screen or a font. They
 never include the assets themselves (model, texture, sound or movie files, or textures exported as images), the game's
 text (subtitles, dialogue, menu strings beyond short labels) or script source, and they are never a file copied out of
 the disc.
