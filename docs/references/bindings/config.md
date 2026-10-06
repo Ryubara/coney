@@ -2694,28 +2694,30 @@ CfgSteam(object, colour, interval, puffInterval, size, growth, life, speed, rise
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `object` | number, truncated to an unsigned integer | Handle of a steam emitter (a `part_steam` particle object from the level's Objects table); no type check. |
-| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Puff colour {r, g, b, a}, each 0-255; alpha is each puff's starting opacity, which fades to 0 over its life. Written back unchanged. |
-| 3 | `interval` | number, truncated to an unsigned integer | Frames between puffs (the emitter's update interval). |
-| 4 | `puffInterval` | number, truncated to an unsigned integer | Each puff's update interval in frames; must not be 0 (it divides). |
+| 2 | `colour` | table of 4 numbers (t[1]..t[4]) | Puff colour {r, g, b, a}, each 0-255; alpha is each puff's peak opacity: it fades in over the first update and out linearly over the life. Written back unchanged. |
+| 3 | `interval` | number, truncated to an unsigned integer | 60 Hz ticks between puffs (the emitter's update interval). |
+| 4 | `puffInterval` | number, truncated to an unsigned integer | Each puff's update interval in 60 Hz ticks; must not be 0 (it divides). |
 | 5 | `size` | number (single precision) | Puff start size (each puff takes 0.8-1.2 times it). |
-| 6 | `growth` | number (single precision) | Puff size growth per update (scaled 0.8-1.2 at random). |
-| 7 | `life` | number (single precision) | Puff lifetime in seconds (× 60 / puffInterval gives its update count). |
-| 8 | `speed` | number (single precision) | Horizontal speed along the emitter's facing. |
-| 9 | `rise` | number (single precision) | Vertical speed (z). |
-| 10 | `dragH` | number (single precision) | How much the horizontal speed falls off over the puff's life (0 none). |
-| 11 | `dragV` | number (single precision) | How much the vertical speed falls off over the puff's life. |
-| 12 | `still` | boolean (nil or 0 is false) | true stops the puffs drifting with the global vector at 0x006f31a0 (inferred: wind). |
+| 6 | `growth` | number (single precision) | Size added at each puff update (every `puffInterval` ticks), times a random 0.8-1.2: per update, not per second. |
+| 7 | `life` | number (single precision) | Puff lifetime in seconds: round(life × 60) / puffInterval updates. |
+| 8 | `speed` | number (single precision) | Start speed along the emitter's −x axis, metres per second (the velocity is integrated with elapsed time). |
+| 9 | `rise` | number (single precision) | Start vertical speed (z), metres per second, times a random 0.8-1.2 per puff. |
+| 10 | `dragH` | number (single precision) | Horizontal drag: at each update the start velocity's x and y lose start × (age / life) × dragH, so 1 brings them to 0 at the end of the life and 0 keeps them. |
+| 11 | `dragV` | number (single precision) | The same for the vertical speed. |
+| 12 | `still` | boolean (nil or 0 is false) | true gives the puffs no wind: otherwise each drifts with the vector at 0x006f31a0 times a factor of 0.005-0.015 times its current size (inferred: wind). |
 
 **Returns** nothing.
 
 Configures a steam vent: sends the emitter message 0x27 with the colour (packed r, g, b, a), the two intervals and two
-vectors (dragH, dragV, size, growth) and (speed, rise, life, 1). While enabled and near the camera (a 30 m and a 20 m
-test), the emitter spawns a `sub_smoke` puff every `interval` frames that moves along the emitter's facing at `speed`,
-rises at `rise`, grows, slows and fades out over `life` seconds.
+vectors (dragH, dragV, size, growth) and (speed, rise, life, 1). While enabled and within 30 m and 20 m of the tests'
+points and the particle budget allows, the emitter spawns a `sub_smoke` puff every `interval` ticks (`part_page1`
+rectangle 42-44). Each puff update sets the velocity to start + wind − start × (age / life) × drag, times a random
+0.75-1.15, grows the size by `growth` and fades the alpha linearly. Details: [Particles, Steam
+vents](../../research/particles.md#steam).
 
-**Notes.** Traced for `part_steam` (message handler 0x003f6b40, puff 0x003f61d8 / 0x003f6460); `part_steam_huge` and
-`part_steam_large` have their own handlers, not read. Which near-camera test (0x003a5280, 0x003a51f8) is distance and
-which visibility is inferred. Arguments renamed from n3, n4, f5-f11, flag.
+**Notes.** Traced for `part_steam` (update 0x003f6bf0, message handler 0x003f6b40, puff 0x003f61d8 / 0x003f6460);
+`part_steam_huge` and `part_steam_large` have their own handlers, not read. The wind vector's source and that the draw
+blends the size and colour over each update are inferred. Arguments renamed from n3, n4, f5-f11, flag.
 
 - **Evidence:** confirmed (code) at `0x0039be28`, `0x003f6720`; detail: traced
 - **Wrapper** `0x003792c0` (registered by `RegisterBindings`); **calls** `0x0039be28` `Steam_Configure`, `0x003f6720`

@@ -97,8 +97,9 @@ Both are confirmed (code). The start-up batches and the sheet records they draw:
 
 Types write their sprite as constants such as `0x80002` (`part_gun_flash`: `PTank_New(1.0, 0x80002, ...)` at
 `0x003d8bd8`, sheet record 8 `lighting`, rectangle 2), `0x10000 | 0x2a` (`sub_shack_puff`, `0x00408860`: batch 1
-`part_page1`, rectangle 42 plus a random 0-1) or `0xc0000` (the fire types: batch 12 `part_fire`). Some take the
-rectangle from their creator instead (`spark`, `0x003e0f50`, pops it as its first argument).
+`part_page1`, rectangle 42 plus a random 0-2, since `Random_Int(n)` at `0x003353b8` returns 0 to n inclusive) or
+`0xc0000` (the fire types: batch 12 `part_fire`). Some take the rectangle from their creator instead (`spark`,
+`0x003e0f50`, pops it as its first argument).
 
 Sheet records 0-15 on the disc (counts of rectangles): 0 `part_page0` 371 (512 × 256), 1 `part_page1` 67
 (512 × 256), 3 `menu_system` 6, 4 `part_tv` 4, 7 `part_fire` 36 (256 × 256), 8 `lighting` 6 (256 × 256),
@@ -133,6 +134,42 @@ name (the table has `part_ominous_smoke`). What the task then does is not traced
 from its sheet's texture and scaled to fit 64 × 64 (the `lighting` glows are 120 × 120), without the type's colour.
 Three types traced to rectangle 54 of `part_page1` (`part_s_subway_sparks`, `subway_spark`, `urine_spray`) show a
 grey box there, not a spark or a spray (checked on the images), so their trace is in doubt.
+
+### Steam vents {#steam}
+
+`part_steam` (init `0x003f69b8`, update `0x003f6bf0`, messages `0x003f6b40`) is a vent that `CfgSteam` configures
+(message `0x27`, `0x003f6720`) and that spawns `sub_smoke` puffs (init `0x003f61d8`, update `0x003f6460`).
+Confirmed (code) unless marked.
+
+**The vent.** `CfgSteam` stores the puff colour, the drag vector (dragH, dragV, size, growth), the puff update
+interval, the vent's own interval and the puff life in updates, `round(life × 60) / puffInterval` (60 Hz ticks, so
+`life` is in seconds); the start velocity is the vent's −x axis (its rotation applied to (−1, 0, 0)) times `speed`,
+with z replaced by `rise`. `still` makes the life count negative, which the puff reads as "no wind". Enabled vents
+(message 10) run every `interval` ticks while the vent is within 30 m (`0x003a5280`) and 20 m (`0x003a51f8`) of the
+tests' points and the [particle budget](objects.md#shatter) (`0x003a5a50`) allows, and every 60 ticks otherwise;
+each run spawns one `sub_smoke` at the vent with the colour, the velocity, the drag vector, a spin of 0, the puff
+interval and the life.
+
+**A puff** (init): position the vent's; velocity the start velocity with z × 0.8-1.2, set once on the task and
+integrated by `Task_Integrate` (position += velocity × elapsed seconds), so **`speed` and `rise` are metres per
+second**; update interval `puffInterval`; size `size × 0.8-1.2`; colour the given one, alpha starting at 0; a wind
+factor of 0.005-0.015 (0 when `still`). Sprite: `part_page1` (batch 1) rectangle 42, 43 or 44 (`0x1002a +
+Random_Int(2)`, which returns 0-2); a puff given a spin would use batch 4 and turn at a random rate up to it, but the
+vent passes 0.
+
+**Each puff update** (every `puffInterval` ticks), with `age` counting updates up to `life` (then the puff ends) and
+`f = age / life`:
+
+- velocity = `v0 + wind − v0 × f × (dragH, dragH, dragV)`, then × a random 0.75-1.15, where `v0` is the start
+  velocity and `wind` is the vector at `0x006f31a0` × the wind factor × the current size. So **drag scales linearly
+  with the life**: 0 keeps the speed, 1 brings the start velocity to 0 at the end of the life (more than 1
+  reverses it); the wind part is not dragged. The wind vector's source is not traced (inferred: the level's wind).
+- size = current size + `growth × 0.8-1.2`: **growth is per puff update**, not per second.
+- alpha = `start alpha × (life − age) / life`, 0 on the last update or when the particle budget is short.
+
+The task keeps each value twice (`+0xb0`/`+0xb4` colour, `+0xbc`/`+0xc0` size): the update writes the second, and
+the size it grows from is the first; that the draw blends from the first to the second over the update is inferred.
+`part_steam_huge` (`0x003f6d70`) and `part_steam_large` (`0x003f7138`) have their own code, not read.
 
 ## Coney's implementation {#coneys-implementation}
 
