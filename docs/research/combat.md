@@ -377,10 +377,20 @@ confirmed (code) at the functions below.
 
 - a grounded target → 193 (`0x00261a08`); a tackled one → 212; a grabbed one → 120;
 - a breakable object → `Player_ObjectAttack` ([Breakables](#breakables));
-- the stick above 0.95 and more than 45° from the facing, with `CfgSnap` on → a **snap** attack, 25 right, 27 left,
-  29 back (`0x00264460`);
 - at gait 4 (run) with record `+0x08` clear and the stick above 0.95 → 24, from a run; at gait 1-3 with the stick at
-  0.12 or more → 23, from a walk;
+  0.12 or more → 23, from a walk. These come **before** the snap (gait tests `0x00223a30`-`0x00223a60`), unless
+  `0x0051031c` is set for a pad-controlled human (0 in the executable's data), so a snap comes from a standing (or
+  sprinting) player: the stick pushed from rest and square pressed while he has not yet started to walk;
+- the stick above 0.95 (the per-player record's buffered magnitude) and more than 45° from the facing → a **snap**
+  attack, 25 right, 27 left, 29 back (`0x00264460`), but only **with a target there**: `0x0027aa38(h, 0x80)` takes
+  the nearest human within **2.0 m** (`0x00227598`) and within **45° of the stick's direction** (π/4 written to
+  `0x0051096c`), height difference at most 2.0 (`0x00510970`), the line to it clear (`0x00222a90`), of another gang,
+  not down, not grabbed or tackled, targetable (filter `0x00279410`). With `CfgSnap` on (`0x005102b4` = 1, the
+  default), none found, or the one found being the current target (`0x00226e60`), means no snap: square goes on
+  down this list (usually `S1` at the current target). With one, `0x00264460` turns the player onto it over 0.1 s
+  (`Attack_SteerToTarget`) when it is within the snap's far range. Confirmed (code); confirmed (runtime) in
+  `level99`'s lesson 7 with the stick at full deflection one update before square: 27, 29 and 25 started and hit bums
+  0.8-1.4 m away, and a square with the stick at the bum in front (the current target) gave 12;
 - otherwise 12, `S1`. Strafe ids 31-33 come from the combat-walk path (not tested).
 
 **Cross** (`0x00287a18`) starts 11, `X1`, on command `0x10`.
@@ -1778,6 +1788,10 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   command or the human is busy.
 - `SS2`, square is always `SSS3` (19), never 20; a grounded target takes 193, never 194; at a sprint (gait 5) square is
   `S1`; the dive takes the charge's conditions; a buffered snap plays where a square would continue the chain.
+- **Gap** (the snap, `squareAttack` in `repo:src/combat/attacks.cpp`): Coney snaps on the stick alone, ahead of the
+  run and walk attacks, with no target search and no turn onto a target, so a snap with nobody within its clip's
+  reach hits nothing. The original needs a target in the 2 m, ±45° cone that is not the current target, tests the run
+  and walk attacks first, and steers onto the target ([Attacks](#attacks)).
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
   1.5 m.
 - The mount ([The mount](#mount)): the victim is placed at clip 210's pair event when 210 starts rather than slid

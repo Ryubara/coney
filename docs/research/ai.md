@@ -1597,6 +1597,29 @@ Warriors, as read at runtime ([the cast while the scene plays](#level99-scene-st
   and takes the target, but **pushes no fight goal**, and the tactic decides what the members do. A scripted
   `GoalFight` never overrides either. Neither applies to the sparring Warriors.
 
+#### The second wave in the snap lesson {#level99-snaps}
+
+The second wave (`CombatEnemy2`'s `SecondWave01`-`04`, bum models) is never sent to fight in lesson 7: it **surrounds
+the player and stands there**, so that whichever way he snaps, a bum is there to hit
+([the lesson](scripting.md#level99-lessons)).
+
+- **Set-up** (`P1.SetupSnapAttacks`, the return function of the scene `l99_c7`), inferred from the disassembly of
+  `level99_combat.lua`: `BrDead(player, false)`; `GangSetTargetable(CombatEnemy2, true)`; the player's follow slots:
+  `BrSetFollowSlotSet(player, 0)`, `BrSetNumFollowSlots(player, 4)` and slots 0-3 of set 0 at **(0, 1), (1, 0),
+  (0, −1), (−1, 0)** m (ahead, right, behind, left); Rudy (`GenWarrior`) gets a bottle and walks to `fRudyStand`,
+  whose message 8 (`P1.RudyAtFence`) plays his drink and a line; then for each `CombatEnemy2` member
+  `HuSetNoTarget(false)` and **`GoalTrackHuman(member, player, 0.5)`**; then `EnableAllButtons()`,
+  `EnableCommand(player, 1, 0)` and `EnableCommand(player, 40, 0)`, the lesson's text, and `P1.StartSnaps` 5 s later.
+  No `GangBrDead(false)`, `GangSetThreatResponse` or `GoalFight` touches the gang, so its members stay dead to the AI
+  with threat response 0 (as set up, [the cast](#level99)) and never attack; `GoalTrackHuman` still runs.
+- **Confirmed (runtime)**, PCSX2 2.9.94, `level99` checkpoint 1 with `P1.PowerMovesDone` scheduled from lesson 2
+  (call hook): during the scene the four hold `JoinCinematic` (`0x29`); when it ends each has **TrackHuman** (`0x30`)
+  on top, brain `+0x09` still 1, and they stand **1.0-1.4 m** from the player at about 0°, +104°, −95° and −175°
+  from his facing, without actions. With the stick at 0.6 straight up for 3 s the player walked off; they followed
+  and stood within 1.3 m of him again 3 s after he stopped. None attacked.
+- So the four slots and `GoalTrackHuman`'s 0.5 m are what put a bum within the snap's 2 m
+  ([Attacks](combat.md#attacks)) on every side.
+
 #### Reaching the fight without a playthrough {#level99-save}
 
 The state is not a quick-save slot; it is made once and named by the scenarios' `state`
@@ -1798,7 +1821,15 @@ fight goal within it, ending when the enemy is gone or down. **Stand-ins**: the 
 range (the original's limit is not on the page) and leaves out its `+0x34` flag; the valid-target test `0x0028d4b0` is
 taken as alive and in the world. `BrSetType` sets types 1-6 (0 and past 6 are ignored, **stand-in**: 0's pad hand-over
 is not built), `BrSetAttackWeight` one kind's weight.
-`CfgSetDefaultFollowSlotSet` writes its sets into every formation, those made later too.
+`CfgSetDefaultFollowSlotSet` writes its sets into every formation, those made later too. **Gap** (lesson 7): every
+rules binding (`rulesCall` in `repo:src/scripting/human_bindings.cpp`, among them `WCEnableAllCommands`, which
+`EnableAllButtons` calls) runs `ScriptedHumans::applyRules`, whose `Formations::setDefaults` writes the default sets
+again into every live formation. `P1.SetupSnapAttacks` sets the player's four slots and then calls
+`EnableAllButtons`, so the defaults (−1.25, −1), (1.25, −1), (−2.75, −1), (2.75, −1) replace them: in a local
+build traced at lesson 7 the bums stood 2.1-2.8 m away, behind and to the sides, and no snap hit. With that
+re-write skipped they stood about 1 m away on four sides and three snaps scored. The defaults should reach only
+formations made later (and existing ones only when `CfgSetDefaultFollowSlotSet` itself runs, which is not
+traced), never on a rules call that has nothing to do with them ([the second wave](#level99-snaps)).
 `FlagNetAddLink` builds the level's flag network (`src/world_objects/flag_net.h`, 128 nodes) and `FlagNetTraverse`
 pushes `PedestrianGoal` (`0x69`) on a human that is not a player's; **stand-in** for its untraced Process: walk
 (mode 2 jog, 3 run) to the node nearest the human, then on to a random linked node within 1 m, for ever, standing at a

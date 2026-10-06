@@ -696,7 +696,7 @@ disassembly of the script (ids and counts only); the moves themselves are confir
 | 4 | light, then heavy combos | 12, 16, then 19 or 20; 12, 15; 11, 13; 12, 16, then 17 or 18 | chains | [Attacks](combat.md#attacks) |
 | 5 | strong attacks | 653 or 655; then **82 or 84** | cross + square; circle + cross | [Specials](combat.md#run-attacks), [Strong grapple](combat.md#strong-grapple) |
 | 6 | power moves | 57; then 59 | in a front grab, cross + square, then square or cross in its window | [Power strike](combat.md#grabbing) |
-| 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave closes in) | three hits of 25, 27 or 29 | square with the stick past 0.95, more than 45° off the facing, at a target there | [Attacks](combat.md#attacks) |
+| 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave surrounds the player) | three hits of 25, 27 or 29 | square, standing, with the stick past 0.95 more than 45° off the facing, at a bum within 2 m there | [Attacks](combat.md#attacks), [the second wave](ai.md#level99-snaps) |
 | 8 | throws | two hits of 147, 149, 151 or 153; then zone 1 is enabled | circle with the stick in a grab | [Throws](combat.md#throws) |
 | 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 | triangle at a bat; square, cross | [A bat in hand](combat.md#bat), [the prompt](#message-handlers) |
 | 10 | rage | the meter set to half and locked; the full callback; L1 + R1 (every other command off); then 645 or 647; then 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat.md#rage); 65 and 233 inferred |
@@ -718,6 +718,11 @@ Then the scene `l99_c6` and `P1.Cleanup` (checkpoint 2). Points an implementer n
   done. The callback wants 34, then 36, then two more of either (the fifth hit ends the lesson). A dropped bat has no
   prompt any more, but triangle's plain search still takes it (bats are [pickable](objects.md#pickable)). Inferred
   from the disassembly of the script; the game side is confirmed where linked.
+- **7**: `P1.StartSnaps` (5 s after the set-up) arms `P1.Snaps` with `ANIM_SNAP_RIGHT_01`, `_LEFT_01` and
+  `_BACK_01` (25, 27, 29). Any of the three counts, in any order and on any bum; any other id (an `S1`, 12) is ignored.
+  The first two update the text and give Rudy a line; the third calls `P1.SnapsDone`. Confirmed (runtime):
+  snaps 27, 29 and 25 that landed on the bums each reached the callback once, with that id. What fails in Coney:
+  [the second wave](ai.md#coney) stands too far off for a snap to reach.
 - **2, 6, 8**: a plain grab scores nothing; strikes, throws and power moves are scored with their own ids when they
   start, since a grab move applies its damage on its first update.
 
