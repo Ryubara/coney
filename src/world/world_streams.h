@@ -179,13 +179,17 @@ struct ClumpModel {
     FrameMatrix frame;                    ///< The atomic's frame in the world: its frame times every parent's.
 };
 
-/// Reads a RenderWare clump (section 0x10) of one atomic and one geometry, as the level file's skyline, sky box and
-/// cloud box are, and rearranges it as a standalone atomic section (inspectAtomicSection()'s input), with the
-/// atomic's frame composed with its parents' (the disc's root frames place and turn the models). Fails with
-/// ErrorCode::Truncated or ErrorCode::Invalid for a clump of another shape: not exactly one atomic and one geometry,
-/// a frame index out of range or frames that loop.
+/// Reads a RenderWare clump (section 0x10) and rearranges each of its atomics, in the clump's order, as a standalone
+/// atomic section (inspectAtomicSection()'s input) holding the geometry the atomic names, with the atomic's frame
+/// composed with its parents' (the disc's root frames place and turn the models). A car's model is one clump of 47
+/// atomics (docs/research/cars.md#model). Fails with ErrorCode::Truncated or ErrorCode::Invalid for a clump with no
+/// atomic, a geometry or frame index out of range, or frames that loop.
 ///
 /// Research: docs/research/level-loading.md#the-level-object
+[[nodiscard]] std::expected<std::vector<ClumpModel>, Error> extractClumpModels(std::span<const std::byte> clump);
+
+/// extractClumpModels() for a clump of exactly one atomic, as the level file's skyline, sky box and cloud box are;
+/// fails with ErrorCode::Invalid for any other count.
 [[nodiscard]] std::expected<ClumpModel, Error> extractClumpModel(std::span<const std::byte> clump);
 
 /// The level file's world (chunk 0x15), rearranged for the part atomics' reader.

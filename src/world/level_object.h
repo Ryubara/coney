@@ -26,7 +26,7 @@ namespace coney::world {
 
 /// Chunk types of the level file that its handlers name (docs/research/level-loading.md#the-level-file).
 inline constexpr std::uint32_t kOccludersChunk = 0x53;
-inline constexpr std::uint32_t kPreinstanceObjectChunk = 0x47; ///< A clump of one atomic; read as kLevelModelResult.
+inline constexpr std::uint32_t kPreinstanceObjectChunk = 0x47; ///< A model clump; read as kLevelModelResult.
 inline constexpr std::uint32_t kSectorBspDataChunk = 0x15;     ///< A RenderWare world; read as kLevelWorldResult.
 inline constexpr std::uint32_t kPathDataChunk = 0x40;
 inline constexpr std::uint32_t kLevelHeaderChunk = 0x17;

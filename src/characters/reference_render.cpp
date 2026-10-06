@@ -2,6 +2,7 @@
 #include "characters/reference_render.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cmath>
 #include <cstddef>
@@ -119,7 +120,11 @@ anim::Mat34 objectReferenceTransform(const anim::Mat34& modelFrame) {
 }
 
 std::string_view referenceFolder(ReferenceList list) {
-    return list == ReferenceList::Characters ? "characters" : "objects";
+    // In the enum's order.
+    constexpr std::array<std::string_view, 5> kFolders{"characters", "objects", "cars", "radar", "particles"};
+    const auto index = static_cast<std::size_t>(list);
+    CONEY_ASSERT(index < kFolders.size());
+    return kFolders[index];
 }
 
 std::uint32_t referenceRequestHash(std::string_view request) {

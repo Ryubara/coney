@@ -1,8 +1,8 @@
 # Cars
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
-(Ghidra), and a disc check (2026-10-06) of the car models and the Object List, reported as counts and sizes. No
-runtime claims.
+(Ghidra), and a disc check (2026-10-06) of the car models and the Object List, reported as counts, sizes and frame
+positions, with Coney's renders of the models. No runtime claims.
 
 ## Purpose
 
@@ -91,6 +91,19 @@ names are not recovered (hashes `0x5230bc4b`, `0x3827d44a`). Each model is in on
 That the car uses this Object List record is inferred (the record's name and model hashes match; the lookup is not
 traced).
 
+**The atomics** (disc check of all six, the same layout in each): every atomic has its own geometry (47 geometries) of
+one untextured material, and its own frame; frame 0 is the root, frame 1 (the body's) sits on it at the origin, the
+parts' frames hang from frame 1, and each window's frame hangs from its door's. The models stand with z up and their
+front towards +y (the bumper of part 2 and the headlights at y ≈ +2.8 m on the sedan).
+
+| Atomics | What | Evidence |
+| --- | --- | --- |
+| 0-25 | part `p` is atomic `p`: the undamaged car | confirmed (code) for the wheels: `Car_UpdateRender` places atomics 22-25 (`0x16 + i`) from the car's four wheel matrices at `+0x70`; inferred for the rest (each frame sits where the part's side bits put it) |
+| 26-46 | the damaged form of part `p` (1-21) is atomic `p + 25`, on a frame at almost the same place | inferred: `Car_OpenPart` turns atomics `p` and `p + 25` together (`0x0038cb70`, a hinge turn of ±45° about an axis the low four bits of the part record's `+0x03` byte pick); drawn alone they are the crumpled car |
+
+The body (part 0) and the wheels have no damaged form; `Car_OpenPart` only acts on parts 4, 5, 14, 16, 18 and 20, so
+`p + 25` never reaches a wheel.
+
 ## Behaviour
 
 ### Parts {#parts}
@@ -100,8 +113,8 @@ traced).
   (code).
 - **Open** (`CarSetPartOpen(car, n, open)` → `0x0038d5b8`): `n` 0-5 names parts 5, 4, 14, 16, 18, 20.
   `Car_OpenPart` does nothing for any other part, for a removed one or one marked in `+0x11f4`; it sets bit 2 of the
-  part state and, once the model is loaded, calls `0x0038cb70` (not traced) for atomic `p` and, when `p` ≤ 21,
-  `p + 25`. Confirmed (code).
+  part state and, once the model is loaded, calls `0x0038cb70` (a hinge turn, [the atomics](#model)) for atomic `p`
+  and, when `p` ≤ 21, `p + 25`. Confirmed (code).
 
 ### Colour {#colour}
 
@@ -111,13 +124,17 @@ the four bytes as one word in `+0x12e8` and `+0x12ec`, marking the car dirty. `C
 the render object (`+0x24`). So `c1` is alpha and `c4` red (inferred from the reversal; the scripts always pass 1 as
 `c1`). Confirmed (code) for the packing and the reversal.
 
-**To render a car** for the list: read the Object List record of the type, load `<type>_geo` (chunk `0x47`: a
-RenderWare clump with PS2 native geometry, the chunk type of the characters' bodies that Coney's character renderer
-reads, here with no skin or bone chunk `0x28`) and
-its texture dictionary, and draw it closed and undamaged. Which of the 47 atomics make the undamaged car is open.
+## Coney's implementation
+
+`world_objects::kCarTypeNames` and `kCarParts` (`src/world_objects/car_types.h`) hold the six names and the 26
+undamaged atomics. The level file's `0x47` reader (`readPreinstanceObjectChunk`, `src/platform/level_file.h`) reads a
+clump of several atomics as a `LevelClumpObject` (`world::extractClumpModels`), and the reference renderer draws the
+first 26 atomics of each car, each at its frame and given the dictionary's first texture, for
+[Cars](../references/cars.md) ([Building](../guides/building.md#reference-images)).
 
 ## Open questions
 
-- How the 47 atomics map to the 26 parts (intact and damaged versions are likely; wheel 25 would collide with `p + 25`).
+- What swaps a part's atomic `p` for its damaged form `p + 25` (`CarSetPartDamage`), and how the game hides the
+  damaged atomics of an undamaged car.
 - Who sets `+0x11f4`, and what the part record's `+0x01` byte and `+0x20` float are.
 - The lookup that takes a car to its Object List record.

@@ -2,12 +2,14 @@
 
 // A check against the player's own disc: the Object List of warriors.glr parses, every record names a model and a
 // texture dictionary that are WAD entries, and every model goes through the level file's 0x47 reader (librw on its
-// NULL device), which takes the clumps of one atomic and refuses the rest. The results are in
-// docs/research/level-loading.md#the-object-list. It runs only when the environment variable CONEY_DISC names the
-// disc and skips otherwise, so CI never needs the game. It prints counts only, never data (LEGAL.md).
+// NULL device): a clump of one atomic as a model, a car's clump of 47 as several. The results are in
+// docs/research/level-loading.md#the-object-list and docs/research/cars.md#model. It runs only when the environment
+// variable CONEY_DISC names the disc and skips otherwise, so CI never needs the game. It prints counts only, never data
+// (LEGAL.md).
 
 #include <cstdint>
 #include <cstdio>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -22,9 +24,10 @@
 #include "platform/level_file.h"
 #include "platform/render_engine.h"
 #include "world/level_object.h"
+#include "world_objects/car_types.h"
 #include "world_objects/object_list.h"
 
-TEST_CASE("every Object List record names a model and textures, and the one-atomic models load",
+TEST_CASE("every Object List record names a model and textures, and every model loads, the cars' as 47 atomics",
           "[disc][object_list]") {
     const char* discPath = SDL_getenv("CONEY_DISC");
     if (discPath == nullptr || *discPath == '\0') {
@@ -46,6 +49,7 @@ TEST_CASE("every Object List record names a model and textures, and the one-atom
     std::uint64_t texturesFound = 0;
     std::uint64_t modelsFound = 0;
     std::uint64_t loaded = 0;
+    std::uint64_t clumps = 0;
     std::uint64_t refused = 0;
     for (const coney::world_objects::ObjectRecord& record : list->records()) {
         texturesFound += wad->lookup(coney::characters::resourceFileName(record.texturesHash)).has_value() ? 1 : 0;
@@ -55,20 +59,32 @@ TEST_CASE("every Object List record names a model and textures, and the one-atom
         }
         ++modelsFound;
         auto load = coney::loadWadEntry(*wad, **entry, table);
-        if (load && !load->stacks.takeChunks(coney::world::kLevelModelResult).empty()) {
-            ++loaded;
-        } else {
+        const auto models =
+            load ? load->stacks.takeChunks(coney::world::kLevelModelResult) : std::vector<coney::chunk::ChunkData>{};
+        if (models.empty()) {
             ++refused;
+            continue;
+        }
+        ++loaded;
+        // A car's model: one atomic per part and per damaged part.
+        if (const auto* clump = dynamic_cast<const coney::platform::LevelClumpObject*>(models.front().object.get());
+            clump != nullptr && clump->parts().size() == 47) {
+            ++clumps;
         }
     }
-    std::printf("Object List: %zu records, %llu models and %llu dictionaries found, %llu models loaded, %llu refused\n",
+    std::printf("Object List: %zu records, %llu models and %llu dictionaries found, %llu models loaded (%llu clumps of "
+                "47 atomics), %llu refused\n",
                 list->records().size(), static_cast<unsigned long long>(modelsFound),
                 static_cast<unsigned long long>(texturesFound), static_cast<unsigned long long>(loaded),
-                static_cast<unsigned long long>(refused));
+                static_cast<unsigned long long>(clumps), static_cast<unsigned long long>(refused));
     CHECK(list->records().size() == 1406);
     CHECK(modelsFound == list->records().size());
     CHECK(texturesFound == list->records().size());
-    CHECK(loaded == 1400);
-    CHECK(refused == 6);
+    CHECK(loaded == 1406);
+    CHECK(clumps == coney::world_objects::kCarTypeNames.size());
+    CHECK(refused == 0);
     CHECK(list->find("dyn_bat") != nullptr);
+    for (const std::string_view car : coney::world_objects::kCarTypeNames) {
+        CHECK(list->find(car) != nullptr);
+    }
 }

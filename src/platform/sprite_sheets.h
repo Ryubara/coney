@@ -41,6 +41,10 @@ class SheetTexture final : public graphics::Texture {
     /// The librw texture, for the renderer.
     [[nodiscard]] rw::Texture* rwTexture() const { return m_texture; }
 
+    /// The texture as RGBA pixels, as TextureDictionary::toImages() gives it; on either backend, before
+    /// convertForDrawing(). Fails as toImages() does.
+    [[nodiscard]] std::expected<RgbaImage, Error> toImage() const;
+
     /// Converts the texture for drawing, as TextureDictionary::convertForDrawing() does (OpenGL backend only).
     [[nodiscard]] std::expected<void, Error> convertForDrawing() { return m_dictionary.convertForDrawing(); }
 

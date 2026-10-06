@@ -554,41 +554,58 @@ build/dev/src/platform/coney --frames 60 --dev-overlay 30 --screenshot ../../scr
 
 ### Reference images {#reference-images}
 
-`--render-references DIR` writes one 256x256 PNG per character into `DIR/characters` and one per object into
-`DIR/objects` (made if missing) and exits: the small reference screenshots of models that `LEGAL.md` allows for the
-docs, laid out as [the references' images](../references/index.md#images) are. Every Character List record is
-rendered once, standing as the character viewer's first frame shows it (its default clip, id 408 or else its first
-clip, at time 0), textured ([Characters](../research/characters.md#coneys-implementation)); every Object List record
-once, its model read as the level file's models are, stood up and turned to face the camera
-([The Object List](../research/level-loading.md#the-object-list)). Both are drawn under the character viewer's fixed
-lights, from the same fixed three-quarter front camera framed on the model, on a transparent background. It draws
-offscreen with OpenGL, so it needs a display and a GPU, but the window stays hidden; `--headless` is refused.
+`--render-references DIR` writes the reference images [the references' images](../references/index.md#images) show
+and exits, one folder per list below `DIR` (made if missing): the small reference screenshots of models and the 2D
+icons of at most 64 x 64 that `LEGAL.md` allows for the docs.
 
-- `--kind KIND` renders only `characters` or only `objects`; `all`, the default, renders both.
-- `--only NAME` renders just that character or object: a model or object type name, or a `0x` name hash; repeatable.
-- `--names FILE` names the images: a text file of model and object type names, one per line (`#` starts a comment).
-  An image is named after its name when that name is in the file or given to `--only`, otherwise after its name hash
-  (`cbe1bfc3.png`).
+- **Characters** (`characters/`, 256x256): every Character List record once, standing as the character viewer's first
+  frame shows it (its default clip, id 408 or else its first clip, at time 0), textured
+  ([Characters](../research/characters.md#coneys-implementation)).
+- **Objects** (`objects/`, 256x256): every Object List record once, its model read as the level file's models are,
+  stood up and turned to face the camera ([The Object List](../research/level-loading.md#the-object-list)).
+- **Cars** (`cars/`, 256x256): the six car types, each its Object List record's 47-atomic model with only the first 26
+  atomics drawn, the undamaged car ([Cars](../research/cars.md#model)).
+- **Radar icons** (`radar/icon-<n>.png`): rectangle `n` of `part_page0` for every icon id the scripts and the code use,
+  at its own size ([GUI: radar](../research/gui.md#radar-icons)).
+- **Particle effects** (`particles/`): the first sprite of each of the 58 traced types, scaled to fit 64x64
+  ([Particles](../research/particles.md#sprite-words)).
+
+The models are drawn under the character viewer's fixed lights, from the same fixed three-quarter front camera framed
+on the model, on a transparent background. The sprites are cut from their sheet's texture, every texel a rectangle's
+corners fall in ([Sprite sheet](../research/gui.md#particle-page)), and scaled by area averaging, which repeats each
+texel when a 16-texel sprite becomes 64 pixels. Models are drawn offscreen with OpenGL, so it needs a display and a
+GPU, but the window stays hidden; `--headless` is refused.
+
+- `--kind KIND` renders only one list: `characters`, `objects`, `cars`, `radar` or `particles`; `all`, the default,
+  renders every one.
+- `--only NAME` renders just that entry: a model, object, car or particle type name, `icon-<n>` for a radar icon, or a
+  `0x` name hash; repeatable.
+- `--names FILE` names the character and object images: a text file of model and object type names, one per line (`#`
+  starts a comment). An image is named after its name when that name is in the file or given to `--only`, otherwise
+  after its name hash (`cbe1bfc3.png`).
 
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ../../scratch/refs
 build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ../../scratch/refs --only warr_re_cv --only dyn_bat
 build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ../../scratch/refs --kind objects --names ../../scratch/names.txt
+build/dev/src/platform/coney --disc /path/to/warriors.iso --render-references ../../scratch/refs --kind radar --only icon-28
 ```
 
 To refresh the docs' thumbnails, render with a names file holding the `name` of every entry of
 `research/references/character-models.yaml` and `objects.yaml`, copy the named images (and the characters' hash-named
-ones, which the character models list uses) into `docs/references/images/`, run `coney-tools refs compress-images`
-and then `coney-tools refs extract` ([coney-tools](coney-tools.md#refs)), which links every image that exists.
+ones, which the character models list uses) and the `cars`, `radar` and `particles` folders into
+`docs/references/images/`, run `coney-tools refs compress-images` and then `coney-tools refs extract`
+([coney-tools](coney-tools.md#refs)), which links every image that exists, in the hats and inventory lists too.
 
 The images are deterministic: no clock or randomness, a fixed camera and 4x4 supersampling averaged with integer
-arithmetic, so a re-render on the same machine and driver gives byte-identical files (a different GPU driver may
-differ by a few pixel values). Coney prints one line per image (hashes and file names only). On the US disc it
-renders 541 character images and 1,399 object images in one to two minutes. The Character List has 543 records, and
-one name hash appears three times; the Object List has 1,406, and one name hash appears twice; the first record's
-image is kept and the repeats are reported. Six objects, whose models hold several atomics, get no image: Coney's model
-reader takes one atomic only, so they are reported and counted, and the batch goes on. Any other record that fails is
-reported and counted, the batch goes on, and the exit status is 1.
+arithmetic, and sprites scaled with integer arithmetic, so a re-render on the same machine and driver gives
+byte-identical files (a different GPU driver may differ by a few model pixel values). Coney prints one line per image
+(hashes, file names and sizes only). On the US disc it renders 541 character, 1,399 object, 6 car, 21 radar icon and
+58 particle images in one to two minutes. The Character List has 543 records, and one name hash appears three times;
+the Object List has 1,406, and one name hash appears twice; the first record's image is kept and the repeats are
+reported. The six car models are not objects' models: the objects pass reports them as models of several atomics and
+counts them, and the cars pass draws them. Any other record that fails is reported and counted, the batch goes on, and
+the exit status is 1.
 
 ### Controls {#controls}
 

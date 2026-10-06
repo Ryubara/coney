@@ -400,7 +400,7 @@ int main(int argc, char** argv) {
         return loader.failures() == 0 ? 0 : 1;
     }
 
-    // --render-references: one image per character and object, then exit
+    // --render-references: one image per character, object, car, radar icon and traced particle effect, then exit
     // (docs/guides/building.md#reference-images).
     if (const std::optional<std::string> outDir = options->renderReferences; outDir) {
         if (!wad) {
@@ -409,8 +409,14 @@ int main(int argc, char** argv) {
         const coney::ReferenceKind kind = options->referenceKind.value_or(coney::ReferenceKind::All);
         coney::platform::ReferenceRenderSettings settings;
         settings.outDir = *outDir;
-        settings.characters = kind != coney::ReferenceKind::Objects;
-        settings.objects = kind != coney::ReferenceKind::Characters;
+        const auto renders = [kind](coney::ReferenceKind list) {
+            return kind == coney::ReferenceKind::All || kind == list;
+        };
+        settings.characters = renders(coney::ReferenceKind::Characters);
+        settings.objects = renders(coney::ReferenceKind::Objects);
+        settings.cars = renders(coney::ReferenceKind::Cars);
+        settings.radar = renders(coney::ReferenceKind::Radar);
+        settings.particles = renders(coney::ReferenceKind::Particles);
         settings.only = options->only;
         settings.namesFile = options->namesFile.value_or(std::string{});
         auto report = coney::platform::renderReferences(renderer, *wad, settings, printText);
@@ -418,9 +424,10 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "coney: %s\n", report.error().message.c_str());
             return 1;
         }
-        std::printf("reference images: %zu characters and %zu objects rendered, %zu objects without a model Coney "
-                    "can load, %zu failed\n",
-                    report->characters, report->objects, report->noModel, report->failed);
+        std::printf("reference images: %zu characters, %zu objects, %zu cars, %zu radar icons and %zu particle "
+                    "effects written, %zu objects without a model Coney can load as one, %zu failed\n",
+                    report->characters, report->objects, report->cars, report->radar, report->particles,
+                    report->noModel, report->failed);
         return report->failed == 0 ? 0 : 1;
     }
 

@@ -2,8 +2,9 @@
 
 // A check against the player's own disc: every sprite sheet (chunk 0x4C) in WARRIORS.WAD loaded through the chunk
 // handlers and bound to its texture, and the sheet table (chunk 0x4D) of warriors.glr read, with the counts compared to
-// docs/research/gui.md. It runs only when the environment variable CONEY_DISC names the disc and skips otherwise, so
-// CI never needs the game. It prints counts only, never data (LEGAL.md).
+// docs/research/gui.md, and every sprite the reference images cut found in its sheet. It runs only when the
+// environment variable CONEY_DISC names the disc and skips otherwise, so CI never needs the game. It prints counts
+// only, never data (LEGAL.md).
 
 #include <cstddef>
 #include <cstdint>
@@ -16,6 +17,8 @@
 #include <SDL3/SDL_stdinc.h>
 #include <catch2/catch_test_macros.hpp>
 
+#include "characters/character_list.h"
+#include "characters/reference_render.h"
 #include "core/chunk_system.h"
 #include "core/chunk_types.h"
 #include "core/name_hash.h"
@@ -24,6 +27,7 @@
 #include "gamemodes/load_entry_mode.h"
 #include "graphics/font.h"
 #include "graphics/particle_page.h"
+#include "graphics/reference_sprites.h"
 #include "platform/render_engine.h"
 #include "platform/sprite_sheets.h"
 #include "platform/texture_dictionary.h"
@@ -199,4 +203,58 @@ TEST_CASE("every sprite sheet on the disc loads and the sheet table matches", "[
         INFO("record " << index << " is " << name);
         CHECK(sheetTable.record(index).nameHash == coney::crc32(name));
     }
+}
+
+TEST_CASE("every reference sprite is a rectangle of its sheet and fits 64 x 64", "[disc][sprite_sheets]") {
+    const char* discPath = SDL_getenv("CONEY_DISC");
+    if (discPath == nullptr || *discPath == '\0') {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto disc = coney::io::Disc::open(discPath);
+    REQUIRE(disc.has_value());
+    auto wad = coney::io::Wad::open(std::move(*disc));
+    REQUIRE(wad.has_value());
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    coney::chunk::ChunkHandlerTable table = coney::chunk::ChunkHandlerTable::withDefaults();
+    coney::platform::addTextureDictionaryHandlers(table);
+    coney::platform::addSpriteSheetHandlers(table);
+
+    // Each sprite: its sheet loaded by name or name hash, the rectangle's texels, the image's size.
+    std::vector<coney::graphics::ReferenceSprite> sprites;
+    for (const std::uint32_t id : coney::graphics::radarIconIds()) {
+        sprites.push_back({"radar", coney::graphics::kRadarSheet, id});
+    }
+    for (const coney::graphics::ReferenceSprite& sprite : coney::graphics::particleSprites()) {
+        sprites.push_back(sprite);
+    }
+    std::size_t found = 0;
+    std::size_t withinLimit = 0;
+    for (const coney::graphics::ReferenceSprite& sprite : sprites) {
+        auto entry =
+            wad->lookup(coney::characters::resourceFileName(coney::characters::referenceRequestHash(sprite.sheet)));
+        if (!entry) {
+            continue;
+        }
+        auto sheets = coney::platform::loadSpriteSheets(*wad, **entry, table);
+        if (!sheets || sprite.rect >= sheets->front()->page().rects.size()) {
+            continue;
+        }
+        ++found;
+        const auto& texture = *sheets->front()->texture();
+        const coney::graphics::TexelBox box =
+            coney::graphics::rectTexels(sheets->front()->page().rect(sprite.rect), texture.width(), texture.height());
+        const bool particle = sprite.name != "radar";
+        const coney::graphics::ImageSize size =
+            coney::graphics::fitWithin(box.width, box.height, coney::graphics::kReferenceIconLimit, particle);
+        withinLimit +=
+            size.width <= coney::graphics::kReferenceIconLimit && size.height <= coney::graphics::kReferenceIconLimit
+                ? 1
+                : 0;
+    }
+    std::printf("reference sprites: %zu listed, %zu found in their sheets, %zu within 64 x 64\n", sprites.size(), found,
+                withinLimit);
+    CHECK(sprites.size() == 79);
+    CHECK(found == sprites.size());
+    CHECK(withinLimit == sprites.size());
 }

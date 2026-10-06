@@ -273,6 +273,67 @@ TEST_CASE("a clump of one atomic becomes a standalone atomic with its frames com
     CHECK(!coney::world::extractClumpModel(two.span()).has_value());
 }
 
+TEST_CASE("a clump of several atomics gives each its geometry and frame, in order", "[level_object]") {
+    coney::test::AtomicFields fields;
+    fields.meshChains.push_back(Bytes{}.fill(32, 0));
+    fields.meshCounts.push_back(3);
+    fields.triangles = 1;
+    const Bytes standalone = coney::test::nativeAtomic(fields);
+    auto parts = coney::world::inspectAtomicSection(standalone.span());
+    REQUIRE(parts.has_value());
+
+    // Two frames, the second under the first at (0, 2, 0), as a car's parts hang under its body; two geometries; two
+    // atomics, the first on frame 1 with geometry 1, the second on frame 0 with geometry 0.
+    Bytes frames;
+    frames.u32(2);
+    for (const float v : {1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 5.0F}) {
+        f32(frames, v);
+    }
+    frames.u32(0xFFFFFFFF).u32(0);
+    for (const float v : {1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 2.0F, 0.0F}) {
+        f32(frames, v);
+    }
+    frames.u32(0).u32(0);
+    Bytes frameList = rwSection(0x01, frames);
+    frameList.append(coney::test::rwEmptyExtension().span()).append(coney::test::rwEmptyExtension().span());
+    Bytes geometryList = rwSection(0x01, Bytes{}.u32(2));
+    geometryList.append(parts->geometry).append(parts->geometry);
+    const auto atomic = [&parts](std::uint32_t frame, std::uint32_t geometry) {
+        Bytes body = rwSection(0x01, Bytes{}.u32(frame).u32(geometry).u32(5).u32(0));
+        body.append(parts->extension);
+        return rwSection(0x14, body);
+    };
+    Bytes clump = rwSection(0x01, Bytes{}.u32(2).u32(0).u32(0));
+    clump.append(rwSection(0x0E, frameList).span())
+        .append(rwSection(0x1A, geometryList).span())
+        .append(atomic(1, 1).span())
+        .append(atomic(0, 0).span())
+        .append(coney::test::rwEmptyExtension().span());
+    const Bytes rwClump = rwSection(0x10, clump);
+
+    auto models = coney::world::extractClumpModels(rwClump.span());
+    REQUIRE(models.has_value());
+    REQUIRE(models->size() == 2);
+    CHECK((*models)[0].frame.position.y == 2.0F);
+    CHECK((*models)[0].frame.position.z == 5.0F);
+    CHECK((*models)[1].frame.position.y == 0.0F);
+    for (const coney::world::ClumpModel& model : *models) {
+        auto rearranged = coney::world::inspectAtomicSection(model.atomicSection);
+        REQUIRE(rearranged.has_value());
+        CHECK(rearranged->triangleCount == 1);
+    }
+    // The one-atomic reader refuses it.
+    CHECK(coney::world::extractClumpModel(rwClump.span()).error().code == ErrorCode::Invalid);
+
+    // A geometry index past the list is refused.
+    Bytes badGeometry = rwSection(0x01, Bytes{}.u32(1).u32(0).u32(0));
+    badGeometry.append(rwSection(0x0E, frameList).span())
+        .append(rwSection(0x1A, geometryList).span())
+        .append(atomic(0, 2).span())
+        .append(coney::test::rwEmptyExtension().span());
+    CHECK(coney::world::extractClumpModels(rwSection(0x10, badGeometry).span()).error().code == ErrorCode::Invalid);
+}
+
 TEST_CASE("a world of one sector becomes a standalone atomic with no pipeline", "[level_object]") {
     // Material list: one material with no texture (as the part atomics' fixture has).
     Bytes materialStruct;

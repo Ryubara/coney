@@ -77,6 +77,13 @@ as `0x4C`. **Disc check (corroboration):** all 1,335 `0x4C` chunks have exactly 
 `v1 >= v0`. `firstGlyph` is -1 in 1,328 pages; the 7 others are fonts or carry a font (`big_font` 0, `part_page0`
 94, `part_page1` 20 among them).
 
+**The rectangles are inset by a quarter texel.** Disc check (2026-10-06, the 1,547 rectangles of the 576 sheet-table
+records with a texture): every `u0` is a quarter texel past a texel edge and every `u1` a quarter texel short of one,
+and `v0`, `v1` the same distance in texture coordinates (a quarter texel of the width: an eighth of a texel down a
+512 × 256 texture). So the sprite is the whole texels from `floor(u0 × width)` to `ceil(u1 × width)`, and a radar
+icon listed 12.5 texels wide is 13; the inset keeps bilinear filtering from reaching the neighbouring sprite
+(inferred). Coney's reference images cut sprites this way (`graphics::rectTexels`, `src/graphics/reference_sprites.h`).
+
 **How a sprite refers to its texture:** by sheet and rectangle index only. The sheet's texture is the first (only)
 texture of its dictionary (`instance + 0x14` = the dictionary's texture list head − 8, `0x00181b68`); its raster's
 width (`+0x0c`) and height (`+0x10`) turn a rectangle into pixels (`0x00181e18`, `0x00181e28`).
@@ -358,7 +365,7 @@ dot's handler (`0x003e5f20` → `0x0039bb18`) replaces the low half:
 ```
 
 So an **icon id is a rectangle index of `part_page0`** (371 rectangles, a 512 × 256 texture); the icons scripts and
-code use are 6-34 texels a side (disc check). `HUD_RadarSetIcon` (`0x001b2ca0`) draws icon 22 at 0.7 and tints icons
+code use are 7-34 texels a side (disc check). `HUD_RadarSetIcon` (`0x001b2ca0`) draws icon 22 at 0.7 and tints icons
 29-31 `0x63db4bff` (green; colours here are `0xRRGGBBAA`, as `HUDAddRadarObject` packs them at `0x001b40f8`).
 
 | Radar field | Batch | Blip types |

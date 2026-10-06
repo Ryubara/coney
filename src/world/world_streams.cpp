@@ -729,7 +729,7 @@ FrameMatrix combine(const FrameMatrix& matrix, const FrameMatrix& parent) {
 
 } // namespace
 
-std::expected<ClumpModel, Error> extractClumpModel(std::span<const std::byte> clump) {
+std::expected<std::vector<ClumpModel>, Error> extractClumpModels(std::span<const std::byte> clump) {
     io::Reader outer(clump);
     auto rwClump = expectSection(outer, clump, kRwClump, "clump");
     if (!rwClump) {
@@ -740,9 +740,10 @@ std::expected<ClumpModel, Error> extractClumpModel(std::span<const std::byte> cl
     if (!info) {
         return std::unexpected(std::move(info.error()));
     }
-    if (info->data.size() < 4 || io::loadU32Le(info->data) != 1) {
-        return fail(ErrorCode::Invalid, "the clump does not hold exactly one atomic");
+    if (info->data.size() < 4 || io::loadU32Le(info->data) == 0) {
+        return fail(ErrorCode::Invalid, "the clump holds no atomic");
     }
+    const std::uint32_t atomicCount = io::loadU32Le(info->data);
 
     // The frame list: each frame's matrix and parent.
     auto frameList = expectSection(reader, rwClump->data, kRwFrameList, "frame list");
@@ -773,67 +774,92 @@ std::expected<ClumpModel, Error> extractClumpModel(std::span<const std::byte> cl
         }
     }
 
-    // The geometry list: exactly one geometry.
+    // The geometry list: the geometries the atomics name by index.
     auto geometryList = expectSection(reader, rwClump->data, kRwGeometryList, "geometry list");
     if (!geometryList) {
         return std::unexpected(std::move(geometryList.error()));
     }
-    io::Reader geometries(geometryList->data);
-    auto listStruct = expectSection(geometries, geometryList->data, graphics::kRwStruct, "geometry list struct");
+    io::Reader geometryReader(geometryList->data);
+    auto listStruct = expectSection(geometryReader, geometryList->data, graphics::kRwStruct, "geometry list struct");
     if (!listStruct) {
         return std::unexpected(std::move(listStruct.error()));
     }
-    if (listStruct->data.size() < 4 || io::loadU32Le(listStruct->data) != 1) {
-        return fail(ErrorCode::Invalid, "the clump does not hold exactly one geometry");
+    if (listStruct->data.size() < 4) {
+        return fail(ErrorCode::Truncated, "the geometry list struct has no count");
     }
-    auto geometry = expectSection(geometries, geometryList->data, kRwGeometry, "clump geometry");
-    if (!geometry) {
-        return std::unexpected(std::move(geometry.error()));
-    }
-
-    // The atomic: its struct names its frame; its extension carries the right to render and the game's plugin.
-    auto atomic = expectSection(reader, rwClump->data, kRwAtomic, "clump atomic");
-    if (!atomic) {
-        return std::unexpected(std::move(atomic.error()));
-    }
-    io::Reader atomicReader(atomic->data);
-    auto atomicStruct = expectSection(atomicReader, atomic->data, graphics::kRwStruct, "clump atomic struct");
-    if (!atomicStruct) {
-        return std::unexpected(std::move(atomicStruct.error()));
-    }
-    if (atomicStruct->data.size() != kAtomicStructBytes) {
-        return fail(ErrorCode::Invalid, std::format("clump atomic struct of {} bytes", atomicStruct->data.size()));
-    }
-    auto extension = expectSection(atomicReader, atomic->data, graphics::kRwExtension, "clump atomic extension");
-    if (!extension) {
-        return std::unexpected(std::move(extension.error()));
-    }
-
-    // The atomic's frame in the world: its own matrix, then each parent's, up to the root (parent -1).
-    ClumpModel model;
-    std::int64_t index = static_cast<std::int32_t>(io::loadU32Le(atomicStruct->data));
-    if (index < 0 || index >= static_cast<std::int64_t>(frames.size())) {
-        return fail(ErrorCode::Invalid, std::format("the clump atomic names frame {} of {}", index, frames.size()));
-    }
-    model.frame = frames[static_cast<std::size_t>(index)];
-    for (std::size_t steps = 0;; ++steps) {
-        index = parents[static_cast<std::size_t>(index)];
-        if (index < 0) {
-            break;
+    std::vector<std::span<const std::byte>> geometries;
+    for (std::uint32_t i = 0, count = io::loadU32Le(listStruct->data); i < count; ++i) {
+        auto geometry = expectSection(geometryReader, geometryList->data, kRwGeometry, "clump geometry");
+        if (!geometry) {
+            return std::unexpected(std::move(geometry.error()));
         }
-        if (index >= static_cast<std::int64_t>(frames.size()) || steps >= frames.size()) {
-            return fail(ErrorCode::Invalid, "the clump's frame parents are out of range or loop");
-        }
-        model.frame = combine(model.frame, frames[static_cast<std::size_t>(index)]);
+        geometries.push_back(geometry->whole);
     }
 
-    // The standalone atomic section: the struct, the geometry and the extension, in that order.
-    std::vector<std::byte> body;
-    appendSection(body, graphics::kRwStruct, atomicStruct->data, atomicStruct->header.libraryStamp);
-    body.insert(body.end(), geometry->whole.begin(), geometry->whole.end());
-    body.insert(body.end(), extension->whole.begin(), extension->whole.end());
-    appendSection(model.atomicSection, kRwAtomic, body, atomic->header.libraryStamp);
-    return model;
+    // The atomics, in the clump's order: each struct names its frame and geometry; the extension carries the right
+    // to render and the game's plugin.
+    std::vector<ClumpModel> models;
+    for (std::uint32_t a = 0; a < atomicCount; ++a) {
+        auto atomic = expectSection(reader, rwClump->data, kRwAtomic, "clump atomic");
+        if (!atomic) {
+            return std::unexpected(std::move(atomic.error()));
+        }
+        io::Reader atomicReader(atomic->data);
+        auto atomicStruct = expectSection(atomicReader, atomic->data, graphics::kRwStruct, "clump atomic struct");
+        if (!atomicStruct) {
+            return std::unexpected(std::move(atomicStruct.error()));
+        }
+        if (atomicStruct->data.size() != kAtomicStructBytes) {
+            return fail(ErrorCode::Invalid, std::format("clump atomic struct of {} bytes", atomicStruct->data.size()));
+        }
+        auto extension = expectSection(atomicReader, atomic->data, graphics::kRwExtension, "clump atomic extension");
+        if (!extension) {
+            return std::unexpected(std::move(extension.error()));
+        }
+        const std::uint32_t geometryIndex = io::loadU32Le(atomicStruct->data.subspan(4));
+        if (geometryIndex >= geometries.size()) {
+            return fail(ErrorCode::Invalid,
+                        std::format("clump atomic {} names geometry {} of {}", a, geometryIndex, geometries.size()));
+        }
+
+        // The atomic's frame in the world: its own matrix, then each parent's, up to the root (parent -1).
+        ClumpModel model;
+        std::int64_t index = static_cast<std::int32_t>(io::loadU32Le(atomicStruct->data));
+        if (index < 0 || index >= static_cast<std::int64_t>(frames.size())) {
+            return fail(ErrorCode::Invalid, std::format("the clump atomic names frame {} of {}", index, frames.size()));
+        }
+        model.frame = frames[static_cast<std::size_t>(index)];
+        for (std::size_t steps = 0;; ++steps) {
+            index = parents[static_cast<std::size_t>(index)];
+            if (index < 0) {
+                break;
+            }
+            if (index >= static_cast<std::int64_t>(frames.size()) || steps >= frames.size()) {
+                return fail(ErrorCode::Invalid, "the clump's frame parents are out of range or loop");
+            }
+            model.frame = combine(model.frame, frames[static_cast<std::size_t>(index)]);
+        }
+
+        // The standalone atomic section: the struct, the geometry and the extension, in that order.
+        std::vector<std::byte> body;
+        appendSection(body, graphics::kRwStruct, atomicStruct->data, atomicStruct->header.libraryStamp);
+        body.insert(body.end(), geometries[geometryIndex].begin(), geometries[geometryIndex].end());
+        body.insert(body.end(), extension->whole.begin(), extension->whole.end());
+        appendSection(model.atomicSection, kRwAtomic, body, atomic->header.libraryStamp);
+        models.push_back(std::move(model));
+    }
+    return models;
+}
+
+std::expected<ClumpModel, Error> extractClumpModel(std::span<const std::byte> clump) {
+    auto models = extractClumpModels(clump);
+    if (!models) {
+        return std::unexpected(std::move(models.error()));
+    }
+    if (models->size() != 1) {
+        return fail(ErrorCode::Invalid, "the clump does not hold exactly one atomic");
+    }
+    return std::move(models->front());
 }
 
 std::expected<LevelWorldModel, Error> extractLevelWorld(std::span<const std::byte> world) {

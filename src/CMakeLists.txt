@@ -40,6 +40,7 @@ add_library(coney_core STATIC
     graphics/overlay_camera.cpp
     graphics/ps2_world_mesh.cpp
     graphics/particle_page.cpp
+    graphics/reference_sprites.cpp
     graphics/rw_stream.cpp
     graphics/screen.cpp
     graphics/screen_fade.cpp

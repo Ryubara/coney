@@ -281,14 +281,14 @@ The **Object List** of `warriors.glr` finds an object type's model and texture d
 [Character List](characters.md#files) does for characters; its record layout is on
 [WAD contents](formats/wad-contents.md#object-list).
 
-**The models** (all 1,406, disc check): 1,400 are clumps of one atomic and one geometry, like the level
-file's [preinstanced models](#the-level-object), drawn by the game's world pipeline `0x30083` with the atomic plugin
-`0x3F0`; the six cars' hold 47 ([Cars](cars.md#model)). Every geometry has one material, untextured (no texture
-section), and every dictionary is one `0x2a` chunk. How the game binds the dictionary's texture to the material is not
-traced; Coney's renderer gives the material the dictionary's first texture, as the level file's models are linked, and
-the images look right. Read in RenderWare's axes, the models stand with **y up and their front towards +z**: chairs,
-carts, amps and doors stand upright and face the camera when y is turned to z and z to y (with x to -x), which is the
-turn Coney's reference images use (`kObjectToPose`, Coney's choice checked by eye).
+**The models** (all 1,406, disc check): 1,400 are clumps of one atomic and one geometry, like the level file's
+[preinstanced models](#the-level-object), drawn by the game's world pipeline `0x30083` with the atomic plugin `0x3F0`;
+the six cars' hold 47, one per part and damaged part ([Cars](cars.md#model)). Every geometry has one material,
+untextured (no texture section), and every dictionary is one `0x2a` chunk. How the game binds the dictionary's texture
+to the material is not traced; Coney's renderer gives the material the dictionary's first texture, as the level file's
+models are linked, and the images look right. Read in RenderWare's axes, the models stand with **y up and their front
+towards +z**: chairs, carts, amps and doors stand upright and face the camera when y is turned to z and z to y (with x
+to -x), which is the turn Coney's reference images use (`kObjectToPose`, Coney's choice checked by eye).
 
 ### The world manager (0x60 bytes) {#world-manager}
 
@@ -604,8 +604,9 @@ Coney's choices and stand-ins for mode 1:
 - **The level file** (`src/world/level_object.h`, platform-neutral; `src/platform/level_file.h`, the RenderWare parts):
   `loadLevel` reads `<level>.lev` through the chunk system with a handler for every chunk of
   [the table above](#the-level-file) but the subtitles. `0x03` builds the [collision mesh](collision.md#coneys-implementation);
-  `0x40` checks the path data's header and pushes it as an object; `0x47` rearranges its clump into a standalone
-  atomic (`extractClumpModel`), reads it as a game-pipeline atomic, places it by its frames and unpacks it; `0x15`
+  `0x40` checks the path data's header and pushes it as an object; `0x47` rearranges each atomic of its clump into a
+  standalone atomic with the geometry it names (`extractClumpModels`), reads it as a game-pipeline atomic, places it
+  by its frames and unpacks it, and pushes one atomic as a model, several (a car's) as a `LevelClumpObject`; `0x15`
   rearranges its world's one sector the same way (`extractLevelWorld`) and reads it in RenderWare's own default PS2
   layout (`decodePs2DefaultMesh`: float positions and texture coordinates), with the glow dictionary just below it
   registered for the texture lookup during the read; `0x17` pops everything in the original's order into a
@@ -670,8 +671,8 @@ and finds a record by name ([The Object List](#the-object-list)); Coney's refere
 (`coney --render-references`, [Building](../guides/building.md#reference-images)) loads every record's model with the
 level file's `0x47` reader and draws the thumbnails of [Objects](../references/objects.md). Disc check (NTSC-U,
 2026-10-06, counts only; `coney_tests "[disc][object_list]"` and the renderer): every record's model and dictionary
-is a WAD entry, 1,400 of the 1,406 models load and 1,399 images are drawn (one name hash is listed twice); the six
-with several atomics are refused by the one-atomic reader.
+is a WAD entry, all 1,406 models load, and 1,399 object images are drawn (one name hash is listed twice); the six
+with several atomics are the cars, drawn as [Cars](../references/cars.md) instead.
 
 ## Open questions
 

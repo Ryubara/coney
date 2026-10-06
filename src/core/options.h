@@ -36,9 +36,12 @@ struct StartPlace {
 
 /// Which lists `--render-references` renders (`--kind`).
 enum class ReferenceKind : std::uint8_t {
-    All,        ///< Characters and objects (the default).
+    All,        ///< Every kind below (the default).
     Characters, ///< Only the Character List's records.
     Objects,    ///< Only the Object List's records.
+    Cars,       ///< Only the six car types.
+    Radar,      ///< Only the radar icons.
+    Particles,  ///< Only the particle effects whose sprite is traced.
 };
 
 /// Settings taken from the command line.
@@ -111,8 +114,9 @@ struct Options {
     std::optional<int> devOverlayFrames;
     /// `--language`: the language of the UI strings (`en`, `es`, `fr`, `it`, `de`); English by default.
     Language language = Language::English;
-    /// `--render-references`: the folder to write a reference image of every character and object into (in its
-    /// `characters` and `objects` folders), then exit. Requires discPath and a window (not headless); cannot be
+    /// `--render-references`: the folder to write a reference image of every character, object, car, radar icon and
+    /// traced particle effect into (in its `characters`, `objects`, `cars`, `radar` and `particles` folders), then
+    /// exit. Requires discPath and a window (not headless); cannot be
     /// combined with `--load`, the viewers, `--frames`, `--screenshot` or `--input-script`.
     std::optional<std::string> renderReferences;
     /// `--only`, in the order given: the characters and objects `--render-references` renders, each a model or
@@ -129,7 +133,7 @@ struct Options {
     bool vsync = true;
     /// `--show-fps`: print the frame and step rates once a second, and their totals at the end. Not in test mode.
     bool showFps = false;
-    /// `--kind`: the lists `--render-references` renders; unset renders both. Requires renderReferences.
+    /// `--kind`: the lists `--render-references` renders; unset renders all of them. Requires renderReferences.
     std::optional<ReferenceKind> referenceKind;
 };
 

@@ -129,9 +129,10 @@ calls to `0x003a2e40`, `0x003a4160` or `0x001e99f8` with a constant name). The c
 A name that is not in the table finds no record: `part_ominoussmoke`, which one script spawns six times, is such a
 name (the table has `part_ominous_smoke`). What the task then does is not traced.
 
-**To render a type's icon** for the list: load the sheet of its sheet record (the WAD file named by the record's hash
-in decimal), cut the rectangle, scale it to fit 64 × 64 (the `lighting` glows are 120 × 120) and draw it with the
-type's colour where known; Coney's sheet reader does the loading.
+**The list's images** (Coney, [Building](../guides/building.md#reference-images)): each traced type's rectangle, cut
+from its sheet's texture and scaled to fit 64 × 64 (the `lighting` glows are 120 × 120), without the type's colour.
+Three types traced to rectangle 54 of `part_page1` (`part_s_subway_sparks`, `subway_spark`, `urine_spray`) show a
+grey box there, not a spark or a spray (checked on the images), so their trace is in doubt.
 
 ## Open questions
 
@@ -139,3 +140,5 @@ type's colour where known; Coney's sheet reader does the loading.
   none of which is on the disc).
 - What happens when `SpawnParticle` names a type the table does not have.
 - The sprites of the 212 types with no constant sprite word, and what sheet records 2, 9, 27 and 409 are called.
+- What `part_s_subway_sparks`, `subway_spark` and `urine_spray` really draw: rectangle 54 of `part_page1` does not look
+  like either.

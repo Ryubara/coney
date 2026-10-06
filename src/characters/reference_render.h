@@ -10,7 +10,7 @@
 #include "animation/anim_math.h"
 #include "characters/character_model.h"
 
-// The platform-neutral half of Coney's reference renders of characters and objects (`coney --render-references`,
+// The platform-neutral half of Coney's reference renders of models (`coney --render-references`,
 // docs/guides/building.md#reference-images): where the fixed camera stands for a model, how an object's model is
 // turned to face it, how a supersampled frame is reduced to the image, and what the image file is called. Pure and
 // deterministic, so the same disc gives byte-identical images on every run; the renderer in src/platform/ only loads,
@@ -67,10 +67,13 @@ void bindPoseVertices(const CharacterModel& model, std::span<anim::Vec3> positio
 enum class ReferenceList : std::uint8_t {
     Characters, ///< The Character List's records, by model name.
     Objects,    ///< The Object List's records, by object type name.
+    Cars,       ///< The car types, by type name.
+    Radar,      ///< The radar icons, by icon id.
+    Particles,  ///< The particle effects with a traced sprite, by type name.
 };
 
-/// The folder a list's images go into, below the output folder: `characters` or `objects`, as
-/// docs/references/index.md names them.
+/// The folder a list's images go into, below the output folder: `characters`, `objects`, `cars`, `radar` or
+/// `particles`, as docs/references/index.md names them.
 [[nodiscard]] std::string_view referenceFolder(ReferenceList list);
 
 /// The name hash an `--only` request stands for: `0x` and hex digits as given, otherwise the CRC-32 of the name in

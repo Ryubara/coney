@@ -278,13 +278,14 @@ TEST_CASE("the reference renderer takes a folder, characters to render and a nam
     CHECK(coney::usageText().find("--render-references DIR") != std::string_view::npos);
 }
 
-TEST_CASE("the reference renderer's --kind picks characters, objects or both, once", "[options]") {
+TEST_CASE("the reference renderer's --kind picks one list or all, once", "[options]") {
     auto unset = parse(std::array<std::string_view, 4>{"--disc", "x", "--render-references", "out"});
     REQUIRE(unset.has_value());
     CHECK_FALSE(unset->referenceKind.has_value());
     for (const auto& [text, kind] :
          {std::pair{"all", coney::ReferenceKind::All}, std::pair{"characters", coney::ReferenceKind::Characters},
-          std::pair{"objects", coney::ReferenceKind::Objects}}) {
+          std::pair{"objects", coney::ReferenceKind::Objects}, std::pair{"cars", coney::ReferenceKind::Cars},
+          std::pair{"radar", coney::ReferenceKind::Radar}, std::pair{"particles", coney::ReferenceKind::Particles}}) {
         auto picked =
             parse(std::array<std::string_view, 6>{"--disc", "x", "--render-references", "out", "--kind", text});
         REQUIRE(picked.has_value());

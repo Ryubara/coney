@@ -147,6 +147,9 @@ TEST_CASE("an object's model is stood up and turned to face the reference camera
 TEST_CASE("reference lists go into the folders the references index names", "[reference_render]") {
     CHECK(characters::referenceFolder(characters::ReferenceList::Characters) == "characters");
     CHECK(characters::referenceFolder(characters::ReferenceList::Objects) == "objects");
+    CHECK(characters::referenceFolder(characters::ReferenceList::Cars) == "cars");
+    CHECK(characters::referenceFolder(characters::ReferenceList::Radar) == "radar");
+    CHECK(characters::referenceFolder(characters::ReferenceList::Particles) == "particles");
     CHECK(characters::referenceFileName(coney::crc32("dyn_bat"), "dyn_bat") == "dyn_bat.png");
 }
 

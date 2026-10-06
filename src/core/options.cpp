@@ -63,12 +63,14 @@ constexpr std::string_view kUsage =
     "  --assets DIR       the folder of Coney's own assets (sandbox layouts and textures), in place\n"
     "                     of the assets folder beside the executable\n"
     "  --render-references DIR\n"
-    "                     write a 256x256 PNG of every character (standing) and object into\n"
-    "                     DIR/characters and DIR/objects and exit; needs --disc and a display (the\n"
-    "                     window stays hidden)\n"
-    "  --kind KIND        with --render-references: characters, objects or all (the default)\n"
-    "  --only NAME        with --render-references: render only this character or object (a model\n"
-    "                     or object type name, or a 0x name hash); repeatable\n"
+    "                     write a 256x256 PNG of every character (standing), object and car, and a\n"
+    "                     PNG of at most 64x64 of every radar icon and traced particle sprite, into\n"
+    "                     DIR/characters, objects, cars, radar and particles, and exit; needs --disc\n"
+    "                     and a display (the window stays hidden)\n"
+    "  --kind KIND        with --render-references: characters, objects, cars, radar, particles or\n"
+    "                     all (the default)\n"
+    "  --only NAME        with --render-references: render only this entry (a model, object, car or\n"
+    "                     particle type name, icon-N for a radar icon, or a 0x name hash); repeatable\n"
     "  --names FILE       with --render-references: model and object type names, one per line, to\n"
     "                     name the images by\n"
     "  --fps-cap N        draw at most N frames a second (0, the default: no cap); the game runs at\n"
@@ -466,7 +468,9 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--kind") {
-            if (auto value = takeValue(args, i, kindArg, "--kind", "characters, objects or all"); !value) {
+            if (auto value =
+                    takeValue(args, i, kindArg, "--kind", "characters, objects, cars, radar, particles or all");
+                !value) {
                 return std::unexpected(std::move(value.error()));
             }
             // takeValue filled kindArg; value_or keeps the access checked.
@@ -477,8 +481,15 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 options.referenceKind = ReferenceKind::Characters;
             } else if (kind == "objects") {
                 options.referenceKind = ReferenceKind::Objects;
+            } else if (kind == "cars") {
+                options.referenceKind = ReferenceKind::Cars;
+            } else if (kind == "radar") {
+                options.referenceKind = ReferenceKind::Radar;
+            } else if (kind == "particles") {
+                options.referenceKind = ReferenceKind::Particles;
             } else {
-                return invalidArgument(std::format("--kind needs characters, objects or all, got \"{}\"", kind));
+                return invalidArgument(
+                    std::format("--kind needs characters, objects, cars, radar, particles or all, got \"{}\"", kind));
             }
         } else if (arg == "--only") {
             if (i + 1 == args.size() || args[i + 1].empty()) {

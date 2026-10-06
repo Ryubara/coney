@@ -44,21 +44,29 @@ std::expected<void, Error> readPreinstanceObjectChunk(io::Stream& chunk, const c
     if (!bytes) {
         return std::unexpected(std::move(bytes.error()));
     }
-    auto model = world::extractClumpModel(*bytes);
-    if (!model) {
-        return std::unexpected(std::move(model.error()));
+    auto models = world::extractClumpModels(*bytes);
+    if (!models) {
+        return std::unexpected(std::move(models.error()));
     }
-    auto atomic = WorldAtomic::read(model->atomicSection, world::Vec3{});
-    if (!atomic) {
-        return std::unexpected(std::move(atomic.error()));
+    std::vector<LevelClumpObject::Part> parts;
+    for (const world::ClumpModel& model : *models) {
+        auto atomic = WorldAtomic::read(model.atomicSection, world::Vec3{});
+        if (!atomic) {
+            return std::unexpected(std::move(atomic.error()));
+        }
+        atomic->setTransform(model.frame);
+        atomic->unpack();
+        parts.push_back(LevelClumpObject::Part{std::move(*atomic), model.frame});
     }
-    atomic->setTransform(model->frame);
-    atomic->unpack();
-    stacks.pushChunk(chunk::ChunkData{
-        .type = world::kLevelModelResult,
-        .id = header.id,
-        .bytes = {},
-        .object = std::make_unique<LevelAtomicObject>(std::move(*atomic), model->frame, "level model")});
+    std::unique_ptr<chunk::LoadedObject> object;
+    if (parts.size() == 1) {
+        object =
+            std::make_unique<LevelAtomicObject>(std::move(parts.front().atomic), parts.front().frame, "level model");
+    } else {
+        object = std::make_unique<LevelClumpObject>(std::move(parts));
+    }
+    stacks.pushChunk(
+        chunk::ChunkData{.type = world::kLevelModelResult, .id = header.id, .bytes = {}, .object = std::move(object)});
     return {};
 }
 

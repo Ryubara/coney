@@ -3,7 +3,10 @@
 
 #include <expected>
 #include <memory>
+#include <span>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "core/chunk_stacks.h"
 #include "core/chunk_system.h"
@@ -44,12 +47,32 @@ class LevelAtomicObject final : public chunk::LoadedObject {
     std::string_view m_what;
 };
 
+/// A model of several atomics on the chunk stack, as a car's is (docs/research/cars.md#model): each atomic read
+/// with librw and unpacked, in the clump's order, with the frame it was placed at. The level file holds none.
+class LevelClumpObject final : public chunk::LoadedObject {
+  public:
+    /// One atomic and the frame it was placed at.
+    struct Part {
+        WorldAtomic atomic;
+        world::FrameMatrix frame;
+    };
+
+    explicit LevelClumpObject(std::vector<Part> parts) : m_parts(std::move(parts)) {}
+    [[nodiscard]] std::string_view describe() const override { return "level clump"; }
+    /// The atomics, in the clump's order. Valid as long as this object.
+    [[nodiscard]] std::span<const Part> parts() const { return m_parts; }
+
+  private:
+    std::vector<Part> m_parts;
+};
+
 /// The librw atomic of a level object's model or level world, or null when `object` is not a LevelAtomicObject.
 [[nodiscard]] rw::Atomic* levelAtomic(const chunk::LoadedObject* object);
 
-/// The stream reader of chunk 0x47 (Preinstance Object): a clump of one atomic, rearranged by
-/// world::extractClumpModel(), read as a game-pipeline atomic, placed by its frames and unpacked; pushed as a
-/// LevelAtomicObject under type 0x41. Fails as those steps do.
+/// The stream reader of chunk 0x47 (Preinstance Object): a clump, rearranged by world::extractClumpModels(), each
+/// atomic read as a game-pipeline atomic, placed by its frames and unpacked; pushed under type 0x41 as a
+/// LevelAtomicObject for a clump of one atomic, as a LevelClumpObject for one of several (a car). Fails as those
+/// steps do.
 /// @orig 0x0017f2c0 ChunkReader_PreinstanceObject (unknown)
 [[nodiscard]] std::expected<void, Error> readPreinstanceObjectChunk(io::Stream& chunk, const chunk::ChunkHeader& header,
                                                                     chunk::ChunkStacks& stacks);

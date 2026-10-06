@@ -27,6 +27,15 @@ int SheetTexture::width() const { return m_texture->raster != nullptr ? m_textur
 
 int SheetTexture::height() const { return m_texture->raster != nullptr ? m_texture->raster->height : 0; }
 
+std::expected<RgbaImage, Error> SheetTexture::toImage() const {
+    auto images = m_dictionary.toImages();
+    if (!images) {
+        return std::unexpected(std::move(images.error()));
+    }
+    // create() refused a dictionary without a texture, and the sheet's is the first.
+    return std::move(images->front());
+}
+
 std::expected<void, Error> onParticlePageLoaded(chunk::ChunkStacks& stacks, std::uint32_t type) {
     // The page first, then the dictionary written before it, as the original pops them.
     auto pageChunk = stacks.popChunk(type);
