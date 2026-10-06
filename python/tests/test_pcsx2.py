@@ -307,7 +307,7 @@ def test_the_repository_patches_load_and_check_their_words() -> None:
     for patch in patches.values():
         assert patch.research.startswith("docs/")
         for edit in patch.edits:
-            # Code edits only change an lbu's offset or turn a store into a nop: never more than one word each.
+            # Code edits change one word each (an lbu's offset, a store or load made a nop, a branch).
             assert edit.expected is None or len(edit.expected) == len(edit.data) == 4
 
 

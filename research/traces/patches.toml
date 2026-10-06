@@ -221,3 +221,28 @@ address = 0x0038f378
 # addiu sp,sp,-0xb0; sq s0,0xa0(sp)
 original = [0x27bdff50, 0x7fb000a0]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "pane" }, { value = "a1", name = "breaker" }, { value = "a2", name = "object" }]
+
+[hook.pad-handler]
+description = "The PadSetHandlerEx dispatch in 0x001480e0, after its checks (a handler is set, the per-player record has a command in +0x20 or +0x24) and before the handler is looked up: the per-player record, the human's handle, the command it passes, the pad lock (+0x1e) and both command words."
+research = "docs/references/bindings/input.md#padsethandlerex"
+address = 0x00148130
+# lw a2,0x2b04(s2); lw v1,0x0(a2)
+original = [0x8e462b04, 0x8cc30000]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  { value = "s5", name = "prec" },
+  { value = "[s3 + 0x90]", name = "handle" },
+  { value = "s4", name = "command" },
+  { value = "[s5 + 0x1e]", name = "locked", type = "u8" },
+  { value = "[s5 + 0x20]", name = "now" },
+  { value = "[s5 + 0x24]", name = "pending" },
+]
+
+[patch.pad-handler-skip]
+description = "With pad-handler: the dispatch returns after the hook instead of calling Lua, so a scenario can set the handler word 0x0050b73c to any non-zero value without a script function behind it."
+research = "docs/references/bindings/input.md#padsethandlerex"
+edits = [
+  # lh a0,0x48(v1) becomes b 0x001481e0 (the function's return); lw v0,0x4c(v1), its delay slot, a nop.
+  { address = 0x00148138, original = [0x84640048], replacement = [0x10000029] },
+  { address = 0x0014813c, original = [0x8c62004c], replacement = [0x00000000] },
+]

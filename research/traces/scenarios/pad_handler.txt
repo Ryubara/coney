@@ -1,0 +1,7 @@
+# L1 held for 30 updates three times; the stick at rest. Frames are character updates of 1/30 s.
+20 press l1
+50 release l1
+80 press l1
+100 release l1
+130 press l1
+160 release l1

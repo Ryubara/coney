@@ -123,6 +123,12 @@ long hold, released. Confirmed (code) at `0x00147940`. So:
 These buttons are the pad word's bits ([Pad record](frontend.md#pad-record)); the earlier reading on
 [Characters](characters.md#buttons) took square (`0x80`) for left (`0x8000`) and cross (`0x40`) for down (`0x4000`).
 
+**Disabled commands** (`EnableCommand(player, id, 0)` clears the pad's bit in the entry's mask) are still matched:
+the matcher stores them in the per-player record's pending `+0x24` instead of `+0x20`, so the human does not act on
+them, but the `PadSetHandlerEx` handler, which reads `+0x20` and else `+0x24`, still receives them. Confirmed (code)
+at `0x00147940` and `0x001480e0`; confirmed (runtime) for L1 (6) with pad 0's bit cleared
+([PadSetHandlerEx](../references/bindings/input.md#padsethandlerex)).
+
 ### State flags {#state-flags}
 
 The 0x180 record's `+0x00` flags ([Characters](characters.md#the-record)) that combat uses. Confirmed (code) where a

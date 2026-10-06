@@ -3263,8 +3263,11 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Sets or clears the pad's bit in the per-binding pad mask; a disabled command is not given to the human when its
-    buttons are used. Has no effect while the human is AI-controlled (player record +0x1b clear).
+    Sets or clears the pad's bit in the per-binding pad mask. A disabled command is still matched, but the matcher
+    (`0x00147940`) stores it in the per-player record's pending +0x24 instead of +0x20, so the human does not act on
+    it; the PadSetHandlerEx handler still receives it ([PadSetHandlerEx](input.md#padsethandlerex), confirmed
+    (runtime) for command 6). Command ids: [Commands](../commands.md#pad-command) (6 is L1 held, 8 L1 released). Has
+    no effect while the human is AI-controlled (player record +0x1b clear).
   usage: {chunks: 19, calls: 96, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 93, 83, 60, 61, 62, 63, 64]}
   coney: implemented
 

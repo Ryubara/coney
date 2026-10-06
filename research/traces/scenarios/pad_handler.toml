@@ -1,0 +1,23 @@
+# Which updates call the PadSetHandlerEx handler, with which command: L1 held 30 updates three times, at a pedestrian
+# in front of the player (slot 6): free, with the pad locked (HuLockPad: per-player +0x1e = 1), and with command 6
+# disabled for pad 0 (EnableCommand(player, 6, 0): the held table's first entry, command 6, mask 0xfe). The handler
+# word is set to 1 and pad-handler-skip returns before the Lua call; the pad-handler hook logs each dispatch.
+# Research: docs/references/bindings/input.md#padsethandlerex.
+description = "slot 6: L1 held three times (free, pad locked, command 6 disabled); each PadSetHandlerEx dispatch"
+research = "docs/references/bindings/input.md#padsethandlerex"
+input = "pad_handler.txt"
+updates = 200
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "pad-handler", "pad-handler-skip"]
+setup = [
+  { address = "0x0050b73c", type = "u32", value = "1", frame = 0 },
+  { address = "prec(player) + 0x1e", type = "u8", value = "1", frame = 70, until = 110 },
+  { address = "prec(player) + 0x1e", type = "u8", value = "0", frame = 111 },
+  { address = "0x005ddd10", type = "u16", value = "0xfe", frame = 120 },
+]
+
+[coney]
+level = "level99"

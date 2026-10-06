@@ -49,11 +49,31 @@ PadSetHandlerEx(callback)
 
 **Returns** nothing.
 
-Sets one global Lua handler (kept at `0x0050b73c`) that a player-input routine (`0x001480e0`) calls with three arguments
-when the player acts on a target; the tutorial uses it to notice targeting and flash moves.
+Sets one global Lua handler (the interned name at `0x0050b73c`, written by `0x001480a0`) that is called once per human
+update with that human's pad command, whatever the command and whether or not the pad is locked or the command disabled.
+The tutorial uses it to wait for L1 (targeting) and for the flash move.
 
-**Notes.** The store and the call are confirmed (code); the event that triggers it is inferred from the scripts' handler
-names.
+**Notes.** **Where.** `Human_UpdateActions` (`0x00254e78`) calls `0x001480e0` (at `0x00254f74`) every update of every
+live human, before the human acts. When a handler is set and the human's per-player record (`0x00660f50` + index ×
+`0x2c`) holds a command, `+0x20` (this update's) or else `+0x24` (the pending one; `0x00147f00`), it finds the function
+by name (script-system slot `+0x4c`) and calls it with three arguments and no results (slot `+0x8c`). Nothing else is
+checked: not a target, not the pad-controlled flag `+0x1b`, not the pad lock `+0x1e`, which only makes `0x001480e0`
+return true so that the human's own actions are skipped. Confirmed (code) at `0x001480e0`. **Arguments.** 1: the human's
+handle (`+0x90`, pushed by slot `+0x5c` as the number scripts use for humans); 2: the command id
+([Commands](../commands.md#pad-command)), unsigned; 3: always 1. Confirmed (code); the handlers on the disc read only
+the second. **Which updates** (confirmed (runtime), slot 6 copy, L1 held 30 updates with the stick at rest, scenario
+`pad_handler`): the press update passes 7 (L1 pressed), each following update 6 (L1 held), the release update 8 (L1
+released); one call per update, from the player only (the pedestrian in front made none). The same calls came with the
+pad locked (`+0x1e` = 1, as `HuLockPad(player, true)`) and with command 6 disabled for pad 0 (`EnableCommand(player, 6,
+0)`): the matcher then stores 6 in the pending `+0x24` instead of `+0x20`, and the handler still gets 6. So neither a
+pad lock nor `EnableCommand` gates the handler; disabling only keeps the human from acting on the command. An AI human
+with a command in `+0x20` would reach the handler too (inferred: the routine does not check `+0x1b`). **The scripts'
+handlers.** The combat tutorial (`level99_combat`, `P1.EnableTarget`, set while the pad is locked) waits for command 6:
+on the first 6 it unlocks the pad, disables grab and tackle (13, 14), flushes the scheduled calls and schedules a check
+2 s later; on 8 it schedules a re-lock of the pad and, unless the check has passed, cancels it. The check passes when L1
+is still held after those 2 s: it removes the handler, unlocks the pad, re-enables 13 and 14 and starts the next lesson.
+So the lesson needs L1 held for 2 s, at a target or not. The flash lesson (`level99_lesson2`, `P3.UseFlash`) waits for
+command 40 (d-pad right, the flash), which it enables first; `level55_punkfight` also sets one.
 
 - **Evidence:** confirmed (code) at `0x00148210`; detail: traced
 - **Wrapper** `0x0036d908` (registered by `RegisterBindings`); **calls** `0x00148210`

@@ -417,8 +417,11 @@ EnableCommand(human, command, enable)
 Enables or disables one player command for the pad that controls this human. The first mission turns two commands (37
 and 38) off for its tutorial.
 
-**Notes.** Sets or clears the pad's bit in the per-binding pad mask; a disabled command is not given to the human when
-its buttons are used. Has no effect while the human is AI-controlled (player record +0x1b clear).
+**Notes.** Sets or clears the pad's bit in the per-binding pad mask. A disabled command is still matched, but the
+matcher (`0x00147940`) stores it in the per-player record's pending +0x24 instead of +0x20, so the human does not act on
+it; the PadSetHandlerEx handler still receives it ([PadSetHandlerEx](input.md#padsethandlerex), confirmed (runtime) for
+command 6). Command ids: [Commands](../commands.md#pad-command) (6 is L1 held, 8 L1 released). Has no effect while the
+human is AI-controlled (player record +0x1b clear).
 
 - **Evidence:** confirmed (code) at `0x001467a8`; detail: traced
 - **Wrapper** `0x00369638` (registered by `RegisterBindings`); **calls** `0x001467a8` `PlayerCommand_EnableForHuman`
