@@ -405,19 +405,49 @@ mission, the mission-complete mode (0xb, `MissionComplete_Launch` `0x0015d420` p
 (`0x00155408`, `0x00155648`, `0x001557f8`: the name at `0x0054e798`, one number argument 0 or 1; confirmed (code)).
 
 **The story order**, from this table and the hub's `fRunMission` ([The hub](#the-hub)); inferred from the
-disassembly, and it matches the level records' `+0x0c` (`order` 1-18 in [Levels](../references/levels.md)):
+disassembly, and it matches the level records' `+0x0c` (`order` 1-18 in [Levels](../references/levels.md)). Every
+level is entered at checkpoint 1 except the hub, whose checkpoint picks its chapter and its next mission:
 
-| # | Level | # | Level | # | Level |
-| --- | --- | --- | --- | --- | --- |
-| 1 | `level99` | 7 | `level5` | 13 | `level9` |
-| 2 | `level80` | 8 | `level81` | 14 | `level51` |
-| 3 | `level87` | 9 | `level86` | 15 | `level52` |
-| 4 | `level34` | 10 | `level93` | 16 | `level54` |
-| 5 | `level2` | 11 | `level31` | 17 | `level55` |
-| 6 | `level3` | 12 | `level14` | 18 | `level84` |
+| Mission | Level | Loaded by |
+| --- | --- | --- |
+| 1 | `level99` | a new game: `Menu.startGame`'s `runNextMission(1)` with nothing complete |
+| 2 | `level80` | `runNextMission` after 99 |
+| 3 | `level87` | `runNextMission` after 80 |
+| hub | `level95` checkpoint 1 | `runNextMission` after 87 |
+| 4 | `level34` | the hub, checkpoint 1 |
+| hub | `level95` checkpoint 2 | `runNextMission` after 34 |
+| 5 | `level2` | the hub, checkpoint 2 |
+| hub | `level95` checkpoint 3 | `runNextMission` after 2 |
+| 6 | `level3` | the hub, checkpoint 3 |
+| hub | `level95` checkpoint 4 | `runNextMission` after 3 |
+| 7 | `level5` | the hub, checkpoint 4 |
+| hub | `level95` checkpoint 5 | `runNextMission` after 5 |
+| 8 | `level81` | the hub, checkpoint 5 |
+| hub | `level95` checkpoint 6 | `runNextMission` after 81 |
+| 9 | `level86` | the hub, checkpoint 6 |
+| 10 | `level93` | `runNextMission` after 86 |
+| hub | `level95` checkpoint 7 | `runNextMission` after 93 |
+| 11 | `level31` | the hub, checkpoint 7 |
+| hub | `level95` checkpoint 8 | `runNextMission` after 31 |
+| 12 | `level14` | the hub, checkpoint 8 |
+| hub | `level95` checkpoint 9 | `runNextMission` after 14 |
+| 13 | `level9` | the hub, checkpoint 9 |
+| hub | `level95` checkpoint 10 | `runNextMission` after 9 |
+| 14 | `level51` | the hub, checkpoint 10 |
+| 15 | `level52` | `runNextMission` after 51 |
+| 16 | `level54` | `runNextMission` after 52 |
+| 17 | `level55` | `runNextMission` after 54 |
+| 18 | `level84` | `runNextMission` after 55 |
+| hub | `level95` checkpoint 11 | `runNextMission` after 84; the hub offers no next mission |
 
-`level95` (the hub) comes between missions 3-4, 4-5, 5-6, 6-7, 7-8, 8-9, 10-11, 11-12, 12-13 and 13-14 (its
-checkpoints 1-10) and after mission 18 (11); its checkpoint 12 follows `level64`.
+Outside this chain, the hub's trophies load the five flashback missions and the Armies of the Night levels
+([The hub](#the-hub)), and `level64`, their last, returns to the hub at checkpoint 12. Since `MissionCompleteUnlocks`
+ends with `LastLevel = findLastMission()` (inferred from the disassembly of `global.lua` function 60), the level
+`runNextMission` looks up after any completion is the **latest story mission complete**, not the level just played:
+finishing a flashback, or a story mission replayed from the hub's mission menu, returns to the hub at the story's
+current checkpoint. Once `level64` is complete it is the first `findLastMission` finds, so from then on every
+completion leads to hub checkpoint 12 (inferred, not observed). Which bindings each of these levels needs:
+[Story coverage](../references/bindings/story.md).
 
 #### Missions coverage {#missions-coverage}
 
@@ -460,7 +490,10 @@ girls at their spots, workouts, the trophies that start flashbacks, the mission 
 disassembly. Its `Main` loads **`level95_chapter<checkpoint>.lua`** (12 files, names recovered by their CRC) with
 the callback `RunLevel`; each chapter sets the numbers of Warriors and girls, the radio track, the Warchief's type
 (`WarchiefTable`) and the chapter's **mission actions** (`MissionAction`: red circles, cut-scenes, `MA_MISSION`
-errands, ending in `MA_LOADLEVEL`). `MA_LOADLEVEL` calls `story.LoadLevel(fRunMission[checkpoint].level)`:
+errands, ending in `MA_LOADLEVEL`). `MA_LOADLEVEL` calls `story.LoadLevel(fRunMission[checkpoint].level)`
+(`level95.lua` function 55), which stops the music, banks a live player's assets (`LiquidizeAssets(player, true,
+true, true, true)`), sets checkpoint 1, starts a save (`SSMC_StartSaveSequence()`) and calls
+`MenuLoadLevel("level" .. level)` (inferred from the disassembly):
 
 | Hub checkpoint | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
