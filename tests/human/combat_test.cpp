@@ -168,7 +168,7 @@ TEST_CASE("circle held tackles: the target is mounted and square strikes it", "[
     Fight fight(character, 2.0F);
     fight.run("5 press circle\n15 release circle\n50 tap square\n", 70);
     CHECK(fight.target().state() == TargetState::Mounted);
-    CHECK(fight.target().damageTaken() == 30);
+    CHECK(fight.target().damageTaken() == 61); // 219 or 221
 }
 
 TEST_CASE("an attack turns to a target off to the side within its range", "[human][combat]") {

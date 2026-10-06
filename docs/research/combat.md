@@ -1478,7 +1478,9 @@ still at a run; the block 606, or the shuffle 607 with the stick pushed; rage 64
 the tackle's miss 4, 2, 389; the grab strikes and power strikes with the victim's next id (52, 54, 56, 58, 64); the spins
 78 / 79 to the rear hold 84 / 85 and 80 / 81 back to 82 / 83; the throws with the victim's next id, then 196; the
 let-go 95 / 94; the mugging 78, 338, 340 (victim 79, 339, 341) with 342 / 343 while the stick is on target and 344 /
-345, 80 / 81 on success; the mounted strike 212 back to 210.
+345, 80 / 81 on success; the mount from the front hold 118 (victim 119) into 210 / 207, and in the mount the strikes
+219 / 221 and 223 and the power strike 225 (231 in rage) back to 210 (victims 220, 222, 224, 226, 232 back to 207),
+the pick-up 248 / 249 back to the front hold, and the release 244 / 245, the victim rising with 199.
 
 **The target** (`human::TargetHuman`, Coney's own, placed only by a sandbox layout's `target` line,
 [Sandbox](../guides/sandbox.md)): it takes the hit with the attacker's hit code and flags, and picks its reaction with
@@ -1542,11 +1544,12 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   `S1`; the dive takes the charge's conditions; a buffered snap plays where a square would continue the chain.
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
   1.5 m.
-- **Stand-in** until [The mount](#mount) is written: circle without the stick from the front hold takes the pair to
-  the ground with 118 `GRAB_MOUNT` on the victim's 119, then the tackle's mount (210 on 207, the victim placed at 210's
-  pair event when 210 starts), costing nothing; mounted, square strikes with 212 (the original plays 219 or 221, and
-  cross 223). A grab plays one move at a time; a throw lets go at once; the rear power strike's spin plays in front of
-  the strike, whose timing starts with it; the release with too little power goes straight to the idles, and the grab
+- The mount ([The mount](#mount)): the victim is placed at clip 210's pair event when 210 starts rather than slid
+  there over 0.1 s; the mount's moves take square's mask, so one plays out before the next; the mount's power strike
+  spends the endurance fraction, as the grab's does (the page names only its need); triangle in the mount (the
+  mugging) is not built, nor flag `0x20000`'s getting off at once.
+- A grab plays one move at a time; a throw lets go at once; the rear power strike's spin plays in front of the strike,
+  whose timing starts with it; the release with too little power goes straight to the idles, and the grab
   broken at 0 power plays the let-go. A tackle also ends when the power meter is empty, and any hold when the victim
   has no health left.
 - The grab and tackle search takes the nearest candidate by straight-line distance with no facing cone. The attack's

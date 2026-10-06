@@ -74,10 +74,9 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
         updateGrabbing(input, tuning, out);
         break;
     case CombatMode::Tackling:
-        // Mounted on the victim, square strikes it once the tackle's clips and the last strike have given back their
-        // bits (square's own mask).
-        if (input.command == command::kSquarePressed && (phase & kAttackRefusingPhases) == 0) {
-            startAttack(anim_id::kMountingStrike, tuning, out);
+        // Mounted on the victim, once the mount's clips and the last move have given back their bits (square's mask).
+        if ((phase & kAttackRefusingPhases) == 0) {
+            updateMounting(input, tuning, out);
         }
         break;
     case CombatMode::Free:
@@ -209,6 +208,29 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
     if (outcome.action == GrabAction::Throw) {
         // **Coney choice**: the throw lets go at once; its hit still lands through the attack's timing.
         m_mode = CombatMode::Free;
+    }
+}
+
+void PlayerCombat::updateMounting(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
+    const MountOutcome outcome =
+        updateMount(MountInput{.command = input.command, .raging = m_rage.raging()}, m_power, tuning, m_random);
+    out.mountAction = outcome.action;
+    switch (outcome.action) {
+    case MountAction::Strike:
+    case MountAction::PowerStrike:
+        // The strikes run through the chain for their hit's timing.
+        startAttack(outcome.animId, tuning, out);
+        break;
+    case MountAction::ToHold:
+        out.startAnim = outcome.animId;
+        m_mode = CombatMode::Grabbing;
+        break;
+    case MountAction::GetOff:
+        out.startAnim = outcome.animId;
+        m_mode = CombatMode::Free;
+        break;
+    case MountAction::None:
+        break;
     }
 }
 

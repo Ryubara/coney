@@ -23,7 +23,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.9% of the game's own code (431,340 of 3,354,776 bytes, 1,326 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.9% of the game's own code (432,748 of 3,354,776 bytes, 1,327 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 85 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
-| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.6% | 386 | 1,096,672 |
+| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 387 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -781,6 +781,7 @@ at the top of the repository's `README.md`.
 | `0x0027d800` | `Player_Charge` | `Human` | 256 |
 | `0x0027d900` | `Player_Dive` | `Human` | 272 |
 | `0x0027e6d8` | `Player_UpdateTheft` | `Human` | 560 |
+| `0x0027ec20` | `Player_UpdateMounting` | `Human` | 1,408 |
 | `0x0027f3b0` | `Player_UpdateGrabbing` | `Human` | 2,488 |
 | `0x0027fd68` | `Player_UpdateGrabbed` | `Human` | 568 |
 | `0x002802a0` | `Pair_Attach` | `Human` | 680 |

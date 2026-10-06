@@ -318,6 +318,9 @@ class Fighter {
     void playGrabAction(const combat::CombatOutput& out, HumanAnimator& animator);
     // The tackle's hit clip has started: the victim goes down under the player at the mount's offset.
     void mountVictim(const FighterInput& input, const HumanAnimator& animator, float heading);
+    // Plays the mount's move the dispatcher decided: a strike and the victim's reaction (the next id), back to the
+    // mount; the pick-up to the front hold; or getting off, the victim rising.
+    void playMountAction(const combat::CombatOutput& out, HumanAnimator& animator);
     // The grab's mount has played (210 started): the victim is placed at the mount's point, as after a tackle.
     void seatMount(const FighterInput& input, const HumanAnimator& animator, float heading);
     // The grab broke at 0 power with the player hurt: the victim escapes (100 / 112), the player is knocked down and

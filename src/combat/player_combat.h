@@ -63,6 +63,7 @@ struct CombatOutput {
     bool tackleStarted = false;
     bool grabMissed = false; ///< Circle with nobody in reach: the intro, then the miss clip.
     GrabAction grabAction = GrabAction::None;
+    MountAction mountAction = MountAction::None; ///< What the player did in the mount (startAnim is its clip).
     bool grabPowerOut = false;             ///< The grab broke because the power meter ran out (grabAction is LetGo).
     GameResult game = GameResult::Running; ///< A minigame's result this update (mugging or theft).
 };
@@ -121,6 +122,8 @@ class PlayerCombat {
     void startAttack(int animId, const CombatTuning& tuning, CombatOutput& out);
     // The grabbing route.
     void updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
+    // The mounted route (after a tackle or a grab's mount): updateMount's move, played through the chain or the mode.
+    void updateMounting(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // The theft route.
     void updateTheft(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     /// Circle tapped or held: a grab or a tackle, or a miss.

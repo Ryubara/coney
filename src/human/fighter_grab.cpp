@@ -127,10 +127,12 @@ void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator
         connect(input, animator, heading);
         return;
     }
-    // A connecting clip or a spin has ended: the victim is snapped to the hold of the side the grab is now on (a
-    // spin set the side as it started). At a connecting clip's end the gate may release the grab instead.
+    // A connecting clip, a spin or the mount's pick-up has ended: the victim is snapped to the hold of the side the
+    // grab is now on (a spin set the side as it started). At a connecting clip's end the gate may release the grab
+    // instead.
     const bool connectEnded = m_lastClip == clips::kGrabFrontEnd || m_lastClip == clips::kGrabRearEnd;
-    if (clip != m_lastClip && m_pair == PairStage::Moving && (connectEnded || clips::isSpin(m_lastClip))) {
+    const bool pickedUp = m_lastClip == clips::clipOf(combat::anim_id::kMountPickup);
+    if (clip != m_lastClip && m_pair == PairStage::Moving && (connectEnded || pickedUp || clips::isSpin(m_lastClip))) {
         const anim::Vec3 offset = pairPoint(m_ranges, m_rear ? clips::kGrabRearHold : clips::kGrabHold,
                                             m_rear ? kRearHoldOffset : kFrontHoldOffset);
         if (connectEnded && !holdGatePasses(input.position, m_held->position(), anim::length(offset))) {
@@ -354,6 +356,51 @@ void Fighter::mountVictim(const FighterInput& input, const HumanAnimator& animat
     m_held->playPaired(clips::one(clips::kTackleReact), animator.anims(), clips::kMountedIdle, AnimState::Hold,
                        TargetState::Mounted);
     snapAttach(input, heading, pairEventPoint(animator.anims().clip(clips::kMountingIdle), kMountOffset), kPi);
+}
+
+void Fighter::playMountAction(const combat::CombatOutput& out, HumanAnimator& animator) {
+    const std::uint32_t clip = clips::clipOf(out.startAnim);
+    switch (out.mountAction) {
+    case combat::MountAction::Strike:
+    case combat::MountAction::PowerStrike:
+        // The strike and its reaction, both back to the mount's idles.
+        animator.playCombat(clips::one(clip), clips::kMountingIdle, AnimState::Hold, clips::kPairFade,
+                            clips::kAttackHolds);
+        if (m_held != nullptr) {
+            m_held->playPaired(clips::one(clip + 1), animator.anims(), clips::kMountedIdle, AnimState::Hold,
+                               TargetState::Mounted);
+        }
+        break;
+    case combat::MountAction::ToHold:
+        // Both rise to the front hold (248 / 249, then 82 / 83); the victim leaves the mount's offset until the
+        // pick-up's end snaps it to the hold, as after a spin.
+        animator.playCombat(clips::one(clip), clips::kGrabHold, AnimState::Hold, clips::kPairFade, clips::kGrabHolds);
+        if (m_held != nullptr) {
+            m_held->playPaired(clips::one(clip + 1), animator.anims(), clips::kGrabHeld, AnimState::Hold,
+                               TargetState::Held);
+            m_held->setAttached(false);
+            m_pair = PairStage::Moving;
+        }
+        m_rear = false;
+        break;
+    case combat::MountAction::GetOff:
+        // The player gets off (244); the victim plays 245, then rises with 199.
+        if (m_held != nullptr) {
+            Holdable& victim = *m_held;
+            m_held->setAttached(false);
+            m_held = nullptr;
+            m_pair = PairStage::None;
+            m_tacklePending = false;
+            m_mountPending = false;
+            const std::array<std::uint32_t, 2> rise{clip + 1, clips::kGroundedRise};
+            victim.play(rise, clips::kIdle, AnimState::Attack, TargetState::Standing);
+        }
+        animator.playCombat(clips::one(clip), kAnimFightIdle, AnimState::Attack, kCombatFade, clips::kGrabHolds);
+        m_rear = false;
+        break;
+    case combat::MountAction::None:
+        break;
+    }
 }
 
 void Fighter::seatMount(const FighterInput& input, const HumanAnimator& animator, float heading) {

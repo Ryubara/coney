@@ -151,6 +151,8 @@ std::vector<coney::test::LocomotionClip> timingClips() {
         timed(148, 30.67F),
         timed(199, 28.0F),
         timed(212, 25.33F),
+        timed(219, 25.33F),
+        timed(221, 25.33F),
         timed(338, 20.0F),
         timed(339, 20.0F),
         timed(357, 24.0F),
@@ -739,12 +741,16 @@ TEST_CASE("a tackle plays its intro and hit in full under square spam; mounted, 
     checkPlayedFully(line, kTackleHit, hit, 45.33F);
     const int mounted = line.endOf(kTackleHit, hit);
     CHECK(line.at(mounted).clip == kMounted);
-    // The first square once mounted strikes (212), then each after the last has ended.
-    const std::vector<int> strikes = line.startsOf(id::kMountingStrike);
+    // The first square once mounted strikes (219 or 221 at random), then each after the last has ended.
+    std::vector<int> strikes = line.startsOf(id::kMountStrike1);
+    const std::vector<int> others = line.startsOf(id::kMountStrike2);
+    strikes.insert(strikes.end(), others.begin(), others.end());
+    std::ranges::sort(strikes);
     REQUIRE(strikes.size() >= 2);
     CHECK(strikes.front() == nextCommand(mounted, 21, 140, 3, 0));
-    checkPlayedFully(line, id::kMountingStrike, strikes[0], 25.33F);
-    CHECK(strikes[1] == nextCommand(line.endOf(id::kMountingStrike, strikes[0]), 21, 140, 3, 0));
+    const int first = line.at(strikes[0]).clip;
+    checkPlayedFully(line, first, strikes[0], 25.33F);
+    CHECK(strikes[1] == nextCommand(line.endOf(first, strikes[0]), 21, 140, 3, 0));
 }
 
 TEST_CASE("triangle spammed in a hold mugs once: the spin and the intro play to their ends",

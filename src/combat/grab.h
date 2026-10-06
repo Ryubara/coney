@@ -106,12 +106,47 @@ struct GrabOutcome {
 ///   (`0x00277958`, docs/research/combat.md#grab-posing).
 ///
 /// In rage nothing is spent or needed.
-/// **Coney stand-in**: circle without the stick from the front takes the pair to the ground (118, victim 119), then
-/// the tackle's mount (210 on 207), costing nothing: its routine `0x0026f008` is not traced; the chain is what an AI
-/// grabber's circle did at runtime (docs/research/combat.md#grab). **Coney choice**: cross strikes on 0x10, not on its
-/// press (which would fire before a power strike's square).
+/// - circle (its press) with the stick at kThrowStick or less from the front mounts the victim (118, victim 119, then
+///   210 on 207), with no power check and no cost (`Grab_StartMountFromFront`, docs/research/combat.md#mount);
+///
+/// **Coney choice**: cross strikes on 0x10, not on its press (which would fire before a power strike's square).
 /// @orig 0x0027f3b0 Player_UpdateGrabbing (unknown)
 [[nodiscard]] GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTuning& tuning,
                                      CombatRandom& random);
+
+/// What the player did in the mount this update.
+enum class MountAction : std::uint8_t {
+    None,        ///< Nothing.
+    Strike,      ///< Square (219 or 221) or cross (223).
+    PowerStrike, ///< Cross held and square pressed: 225 (231 in rage).
+    ToHold,      ///< Circle: back to the front hold (248, victim 249, then 82 / 83).
+    GetOff,      ///< L2 held, or a power strike asked for with too little power: 244, victim 245, then it rises.
+};
+
+/// What a mount update needs to know.
+struct MountInput {
+    CommandId command = command::kNone;
+    bool raging = false; ///< The player is raging.
+};
+
+/// What a mount update did.
+struct MountOutcome {
+    MountAction action = MountAction::None;
+    int animId = anim_id::kNone; ///< The player's clip it starts; the victim plays the next id.
+    int powerSpent = 0;          ///< Taken from the power meter.
+};
+
+/// One update of the mount, the same after a tackle or a grab (docs/research/combat.md#mount):
+/// - square (0xf) strikes with 219 or 221 at random, cross (0x10) with 223, each spending CombatTuning::grabStrikeCost
+///   × 0.5 of the meter (40 of 400) at any level;
+/// - cross held and square pressed (0x22) is the power strike 225 (231 in rage), which needs more than
+///   CombatTuning::powerEndurance of the meter; with that much or less the player gets off instead;
+/// - circle (0x1e, 0xd or 0xe) goes back to the front hold; L2 held (5) gets off.
+///
+/// In rage nothing is spent or needed. **Coney's reading**: the power strike spends the endurance fraction, as the
+/// grab's does (the page names only its need). Triangle (the mugging from the mount) is not built.
+/// @orig 0x0027ec20 Player_UpdateMounting (unknown)
+[[nodiscard]] MountOutcome updateMount(const MountInput& input, PowerMeter& power, const CombatTuning& tuning,
+                                       CombatRandom& random);
 
 } // namespace coney::combat

@@ -253,8 +253,9 @@ TEST_CASE("on the disc, a tackle mounts the target and square strikes it", "[san
     }
     const Yard yard = loadYard(path);
     const Fight fight = runFight(yard, "tackle", "combat_tackle.txt", 120);
-    CHECK(inOrder(fight.playerClips, {4, 5, 212, 210}));
-    CHECK(inOrder(fight.targetClips, {6, 207}));
+    // Mounted, square strikes with 219 or 221 at random (the victim 220 or 222) and returns to 210.
+    CHECK((inOrder(fight.playerClips, {4, 5, 219, 210}) || inOrder(fight.playerClips, {4, 5, 221, 210})));
+    CHECK((inOrder(fight.targetClips, {6, 207, 220}) || inOrder(fight.targetClips, {6, 207, 222})));
     CHECK(std::ranges::find(fight.targetStates, TargetState::Mounted) != fight.targetStates.end());
     CHECK(fight.hits == 1);
 }

@@ -305,6 +305,9 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
     } else if (out.grabAction != combat::GrabAction::None) {
         playGrabAction(out, animator);
         consumed = true;
+    } else if (out.mountAction != combat::MountAction::None) {
+        playMountAction(out, animator);
+        consumed = true;
     }
     if (before == combat::CombatMode::Mugging && out.game != combat::GameResult::Running && m_held != nullptr) {
         // The mugging is over: on success the money is taken and the victim spun back to the front hold.

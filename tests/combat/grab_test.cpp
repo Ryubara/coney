@@ -103,7 +103,7 @@ TEST_CASE("in a grab, strikes cost 40, a throw 100, and the power strike needs a
     CHECK(power.value() == 360);
 
     // Circle with the stick at 0.6 ahead: the front throw, 100 of the meter. A stick of 0.2 from the front is no
-    // stick: Coney's stand-in mount (118), costing nothing; with the victim out of its place, nothing.
+    // stick: the mount (118), costing nothing, wherever the victim stands.
     const GrabOutcome thrown = grabWith(command::kCirclePressed, {0.0F, 0.6F}, power, random);
     CHECK(thrown.action == GrabAction::Throw);
     CHECK(thrown.animId == anim_id::kThrow1Front);
@@ -115,7 +115,7 @@ TEST_CASE("in a grab, strikes cost 40, a throw 100, and the power strike needs a
     GrabInput away;
     away.command = command::kCirclePressed;
     away.victimInPlace = false;
-    CHECK(updateGrab(away, power, CombatTuning{}, random).action == GrabAction::None);
+    CHECK(updateGrab(away, power, CombatTuning{}, random).action == GrabAction::Mount);
 
     // The power strike: above 0.25 of the meter it plays and spends 100; at or below it the grab is released.
     power.set(101);
@@ -196,4 +196,45 @@ TEST_CASE("a strike, power strike or throw is refused while the victim is out of
     // The spin needs no place.
     input.command = command::kR1Pressed;
     CHECK(updateGrab(input, power, CombatTuning{}, random).action == GrabAction::Spin);
+}
+
+TEST_CASE("the mount: square 219 or 221, cross 223, the power strike, circle back to the hold, L2 off", "[combat]") {
+    PowerMeter power;
+    CombatRandom random(7);
+    const auto mountWith = [&](CommandId command, bool raging = false) {
+        return updateMount(MountInput{.command = command, .raging = raging}, power, CombatTuning{}, random);
+    };
+    // Square: 219 or 221 at random, 40 of the meter each.
+    bool sawFirst = false;
+    bool sawSecond = false;
+    for (int i = 0; i < 32; ++i) {
+        power.set(400);
+        const MountOutcome strike = mountWith(command::kSquarePressed);
+        CHECK(strike.action == MountAction::Strike);
+        CHECK(strike.powerSpent == 40);
+        sawFirst = sawFirst || strike.animId == anim_id::kMountStrike1;
+        sawSecond = sawSecond || strike.animId == anim_id::kMountStrike2;
+    }
+    CHECK(sawFirst);
+    CHECK(sawSecond);
+    // Cross (0x10): 223.
+    CHECK(mountWith(command::kCrossLongHold).animId == anim_id::kMountStrike3);
+    // The power strike: 225 above 0.25 of the meter (231 in rage, free); at or below it the player gets off.
+    power.set(101);
+    const MountOutcome strong = mountWith(command::kCrossSquare);
+    CHECK(strong.action == MountAction::PowerStrike);
+    CHECK(strong.animId == anim_id::kMountPower1);
+    CHECK(mountWith(command::kCrossSquare).action == MountAction::GetOff);
+    const MountOutcome raging = mountWith(command::kCrossSquare, true);
+    CHECK(raging.animId == anim_id::kMountPower2);
+    CHECK(raging.powerSpent == 0);
+    // Circle on any of its commands goes back to the hold; L2 gets off.
+    for (const CommandId circle : {command::kCirclePressed, command::kCircleTapped, command::kCircleHeld}) {
+        const MountOutcome back = mountWith(circle);
+        CHECK(back.action == MountAction::ToHold);
+        CHECK(back.animId == anim_id::kMountPickup);
+    }
+    const MountOutcome off = mountWith(command::kL2Held);
+    CHECK(off.action == MountAction::GetOff);
+    CHECK(off.animId == anim_id::kMountRelease);
 }

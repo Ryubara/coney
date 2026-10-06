@@ -184,7 +184,7 @@ TEST_CASE("circle held tackles another human: it is mounted and its reaction goa
     fight.run("5 press circle\n15 release circle\n50 tap square\n", 70);
     CHECK(fight.other().state() == TargetState::Mounted);
     CHECK(reactsWith(fight.other(), coney::ai::GoalType::ReactTackled));
-    CHECK(fight.damageTaken() == 30);
+    CHECK(fight.damageTaken() == 61); // the mount's square, 219 or 221
 }
 
 TEST_CASE("a human with flag 0x40 cannot be grabbed: the grab misses", "[human][combat]") {

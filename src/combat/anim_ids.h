@@ -55,6 +55,13 @@ inline constexpr int kThrow2Left = 161;
 inline constexpr int kGroundedStrike1 = 193;
 inline constexpr int kGroundedStrike2 = 194;
 inline constexpr int kMountingStrike = 212;
+inline constexpr int kMountStrike1 = 219; ///< `MOUNT_COMBO_STRIKE_01`: square in the mount (victim 220).
+inline constexpr int kMountStrike2 = 221; ///< `MOUNT_COMBO_STRIKE_02`: square in the mount (victim 222).
+inline constexpr int kMountStrike3 = 223; ///< `MOUNT_COMBO_STRIKE_03`: cross in the mount (victim 224).
+inline constexpr int kMountPower1 = 225;  ///< The mount's power strike (victim 226).
+inline constexpr int kMountPower2 = 231;  ///< The mount's power strike in rage (victim 232).
+inline constexpr int kMountRelease = 244; ///< `MOUNT_RELEASE`: L2 gets off (victim 245, then it rises).
+inline constexpr int kMountPickup = 248;  ///< `MOUNT_PICKUP`: circle back to the front hold (victim 249).
 
 inline constexpr int kRageStart = 643;
 inline constexpr int kBreakObjectLow = 661;

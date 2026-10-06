@@ -3862,6 +3862,12 @@ subsystem = "Human"
 size = 560
 
 [[function]]
+address = 0x0027ec20
+name = "Player_UpdateMounting"
+subsystem = "Human"
+size = 1408
+
+[[function]]
 address = 0x0027f3b0
 name = "Player_UpdateGrabbing"
 subsystem = "Human"

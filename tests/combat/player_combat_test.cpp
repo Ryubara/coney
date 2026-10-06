@@ -287,21 +287,38 @@ TEST_CASE("circle held 7 samples tackles; mounted, square strikes", "[combat]") 
     CHECK(frames[191].out.tackleStarted);
     CHECK(frames[191].out.startAnim == anim_id::kTacklePlayerIntro);
     CHECK_FALSE(frames[195].out.grabStarted); // the long press's release is no tap
-    CHECK(frames[200].out.startAnim == anim_id::kMountingStrike);
+    CHECK((frames[200].out.startAnim == anim_id::kMountStrike1 || frames[200].out.startAnim == anim_id::kMountStrike2));
     CHECK(runner.combat().mode() == CombatMode::Tackling);
     runner.combat().release();
     CHECK(runner.combat().mode() == CombatMode::Free);
 }
 
-TEST_CASE("circle without the stick in a front grab mounts (Coney's stand-in); mounted, square strikes", "[combat]") {
+TEST_CASE("circle in a front grab mounts; mounted, square, cross, circle back to the hold and L2 off", "[combat]") {
     Runner runner(nullptr);
-    const auto frames = runner.run("1 tap circle\n40 tap circle\n80 tap square\n", 90,
-                                   [](std::uint64_t, CombatInput& input) { input.grabTargetInReach = true; });
+    // Grab, mount, square, cross; circle back to the hold; mount again and get off with L2.
+    const auto frames = runner.run("1 tap circle\n40 tap circle\n80 tap square\n120 tap cross\n160 tap circle\n"
+                                   "200 tap circle\n240 press l2\n242 release l2\n",
+                                   260, [](std::uint64_t, CombatInput& input) { input.grabTargetInReach = true; });
     REQUIRE(frames[2].out.grabStarted);
     CHECK(frames[40].out.grabAction == GrabAction::Mount);
     CHECK(frames[40].out.startAnim == anim_id::kGrabMount);
-    CHECK(frames[80].out.startAnim == anim_id::kMountingStrike);
-    CHECK(runner.combat().mode() == CombatMode::Tackling);
+    CHECK((frames[80].out.startAnim == anim_id::kMountStrike1 || frames[80].out.startAnim == anim_id::kMountStrike2));
+    CHECK(frames[80].out.mountAction == MountAction::Strike);
+    // Cross strikes on its release (0x10).
+    bool crossStrike = false;
+    for (std::size_t f = 120; f < 125; ++f) {
+        crossStrike = crossStrike || frames[f].out.startAnim == anim_id::kMountStrike3;
+    }
+    CHECK(crossStrike);
+    CHECK(frames[160].out.mountAction == MountAction::ToHold);
+    CHECK(frames[160].out.startAnim == anim_id::kMountPickup);
+    CHECK(frames[200].out.grabAction == GrabAction::Mount);
+    bool off = false;
+    for (std::size_t f = 240; f < 245; ++f) {
+        off = off || frames[f].out.mountAction == MountAction::GetOff;
+    }
+    CHECK(off);
+    CHECK(runner.combat().mode() == CombatMode::Free);
 }
 
 TEST_CASE("circle with nobody in reach plays the grab and misses; during an attack it is refused", "[combat]") {
