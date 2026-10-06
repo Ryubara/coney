@@ -119,6 +119,14 @@ gang 1; outside versus, gang 2's AI is **`TacticConfront(gang2, gang1, 10, 2, 0,
 callback switches to `TacticAttack(gang2)` on results 1, 5 or 6 ([AI: tactic kinds](ai.md#tactic-kinds)). In versus
 there is no AI.
 
+**How a brawl ends** (inferred from `brawl.lua` and `level102.lua`). `AddBrawlGang1` / `2` set the per-member message
+18 handler (`StandardGang1Dead` / `2Dead`) only on members for which `HuIsAlive(h)` returns non-nil; at that point
+(before the intro, brains off, nobody down) that is every member. Only these handlers end a brawl: side 1's last
+member down → `RumbleOver(2, ...)`, side 2's → `RumbleOver(1, ...)`, `RumbleOver(3)` when the other side has nobody
+standing either. They run before the gang's `CheckPlayerDead` ([AI: gang events](ai.md#gang-events)), so the
+player's 4 s revival only fires during the win sequence. A CPU fighter is never revived: `CheckPlayerDead` handles
+only `Rumble.player1` / `player2`, gang 2 gets it only in versus, and every fighter is made not revivable.
+
 **King of the hill.** The arena has `fTopTier`, the box `vTopTier` and a referee (character 350, `civl_hl_dj1`).
 `StartRumble`: the two sides, the referee, `fWin[1..2]` made at the top flag, the box's enter/leave handlers (messages
 3 and 4) counting each gang's members on top, `X.Update` first after **4 s**, the top flag on the radar, a split
