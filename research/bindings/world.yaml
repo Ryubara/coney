@@ -967,8 +967,8 @@
   evidence: confirmed-code
   depth: brief
   notes: >-
-    The 'lock picking' reading is inferred from the name; the human loop over the game state's human list (+0x224
-    count, +0x228 handles) is confirmed (code).
+    Lock picking is confirmed (code): a pickable door offers kind-2 context actions, and a pick in progress on it is
+    ended when it is made unpickable ([Crimes: lock picking](../../research/crimes.md#lockpick)).
   usage: {chunks: 16, calls: 24, boot: false, mission1: false, result_used: false}
 
 - name: IsDoorOpen

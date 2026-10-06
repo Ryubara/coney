@@ -18,7 +18,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`EnableGameOverCheck`](#enablegameovercheck) | - | 3 | no | no | inferred |
 | [`EnterStore`](#enterstore) | - | 2 | yes | yes | confirmed (code) |
 | [`ExitStore`](#exitstore) | - | 1 | yes | yes | confirmed (code) |
-| [`ForceCrimeLevel`](#forcecrimelevel) | - | 9 | no | no | inferred |
+| [`ForceCrimeLevel`](#forcecrimelevel) | - | 9 | no | no | confirmed (code) |
 | [`GameIsOver`](#gameisover) | boolean | 2 | no | no | confirmed (code) |
 | [`GetCheckPoint`](#getcheckpoint) | number | 32 | yes | yes | confirmed (code) |
 | [`GetCurrentLevelIndex`](#getcurrentlevelindex) | number | 3 | yes | no | confirmed (code) |
@@ -215,10 +215,10 @@ CrimeIsHappening(pos, kind, radius, severity, offender, victim, flags)
 | 1 | `pos` | table of 3 numbers (t[1]..t[3]) | Table {x, y, z}, the crime's position in world units (metres); written back unchanged. |
 | 2 | `kind` | number, truncated to an integer | [Crime type](../crime-types.md) (16-bit); the scripts pass 1, 5, 7 and 12. |
 | 3 | `radius` | number (single precision) | A number read as a float but not passed on (the callee ignores it). |
-| 4 | `severity` | number, truncated to an integer | A value the scripts pass 0 or 100 (inferred: how much heat the crime adds). |
+| 4 | `severity` | number, truncated to an integer | A value the scripts pass 0 or 100; never read (0x0041b6e0 takes it as an argument it does not use). |
 | 5 | `offender` | number, truncated to an unsigned integer | Handle of the human committing the crime. |
 | 6 | `victim` | number, truncated to an unsigned integer | Handle of the victim, or NilHandle. |
-| 7 | `flags` | number, truncated to an integer | A 16-bit value the scripts pass 0. |
+| 7 | `flags` | number, truncated to an integer | A 16-bit value the scripts pass 0; passed to the report as its severity argument, which is never read. |
 
 **Returns** nothing.
 
@@ -226,7 +226,8 @@ Reports a crime at a position so police and witnesses react (`0x0041b8b0` on the
 such as a mugging.
 
 **Notes.** The position is transformed (`0x00252ae0`) before being passed on to the crime report 0x0041b8b0, which asks
-for responders; what each type does: [AI: crimes](../../research/ai.md#crimes). The severity value's use is not traced.
+for responders; what each type does: [AI: crimes](../../research/ai.md#crimes). Severity, radius and flags are never
+read, confirmed (code) at 0x0037a2f8, 0x0041b6e0 and 0x0041b8b0 ([Crimes: wanted](../../research/crimes.md#wanted)).
 
 - **Evidence:** confirmed (code) at `0x0041b6e0`; detail: traced
 - **Wrapper** `0x0037a2f8` (registered by `RegisterBindings`); **calls** `0x0041b6e0`
@@ -310,9 +311,11 @@ ForceCrimeLevel(on)
 
 **Returns** nothing.
 
-Sets the forced-crime-level flag (`W_GameState + 0x28c`).
+Sets the forced flag (`W_GameState + 0x28c`): while on, a wanted gang's timer is held at 10 s from now
+(Gang_UpdateWanted, 0x001698f0) and the crime level does not drop to 0 ([Crimes:
+wanted](../../research/crimes.md#wanted)).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x0041d8d0`; detail: brief
 - **Wrapper** `0x0037a630` (registered by `RegisterBindings`); **calls** `0x0041d8d0`
 - **Used by** 9 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -1176,7 +1179,8 @@ SetCrimeLevel(level, seconds)
 **Returns** nothing.
 
 Sets the police heat level, optionally expiring after a number of seconds (the expiry time, game time plus `seconds ×
-1000`, goes to `+0x2a8`). No shipped script calls it.
+1000`, goes to `+0x2a8`). The level then steps down at each expiry (0x0041c028) and selects a police station's settings;
+no shipped script calls it, so it stays 0 ([Crimes: wanted](../../research/crimes.md#wanted)).
 
 - **Evidence:** confirmed (code) at `0x0041ad90`; detail: brief
 - **Wrapper** `0x003702f0` (registered by `RegisterBindings`); **calls** `0x0041ad90`

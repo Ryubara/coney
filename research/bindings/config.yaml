@@ -312,17 +312,15 @@
   calls:
     - {addr: 0x002365f0}
   args:
-    - {name: startFn, lua: string, desc: "Name of a Lua function (dotted names allowed) called when lock-picking starts, or nil."}
-    - {name: stopFn, lua: string, desc: "Name of a Lua function called when lock-picking stops or is abandoned, or nil."}
-    - {name: successFn, lua: string, desc: "Name of a Lua function called when the lock is picked, or nil."}
+    - {name: startFn, lua: string, desc: "Name of a Lua function (dotted names allowed) called with the human's and the door's handles when lock picking starts, or nil."}
+    - {name: stopFn, lua: string, desc: "Name of a Lua function called with the human and the door when a pick is abandoned, or nil."}
+    - {name: successFn, lua: string, desc: "Name of a Lua function called with the human and the door when the lock is picked, or nil."}
   description: >-
     Registers three script callbacks for the lock-picking minigame; the names are interned (script-system slot +0xcc)
-    and kept in globals 0x00510288, 0x00510284 and 0x00510280.
-  evidence: inferred
-  depth: brief
-  notes: >-
-    Storage confirmed (code) at 0x002365f0; which moment fires each callback is inferred from the names the levels
-    pass (e.g. a 'picked' function as the third).
+    and kept in globals 0x00510288, 0x00510284 and 0x00510280. The start one runs from LockPick_Start (0x0022d790), the
+    other two from LockPick_End (0x0022d908) ([Crimes: lock picking](../../research/crimes.md#lockpick)).
+  evidence: confirmed-code
+  depth: thorough
   usage: {chunks: 7, calls: 12, boot: false, mission1: false, result_used: false}
 
 - name: CfgSetLockPickStageFailHandler
@@ -330,13 +328,13 @@
   calls:
     - {addr: 0x00236698}
   args:
-    - {name: fn, lua: string, desc: "Name of a Lua function called when a lock-picking stage fails, or nil."}
+    - {name: fn, lua: string, desc: "Name of a Lua function called with the human's and the door's handles on a missed press, or nil."}
   description: >-
-    Registers a script callback (interned name at 0x0051028c) for a failed lock-picking stage; no script calls it.
-  evidence: inferred
-  depth: brief
-  notes: >-
-    Storage confirmed (code) at 0x00236698.
+    Registers a script callback (interned name at 0x0051028c) run on every missed press of the lock-picking dial
+    (0x002366d8 from LockPick_JudgePress, 0x002878b8), which resets the pins; no script calls it ([Crimes: lock
+    picking](../../research/crimes.md#lockpick)).
+  evidence: confirmed-code
+  depth: thorough
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 
 - name: CfgSetSteroTheftHandler
@@ -514,14 +512,14 @@
     - {name: pressGain, lua: number, ctype: int, desc: "Integer at 0x005102c0 (250): halved, then scaled by 1.5 or 0.7 by the Warrior class, it is what one alternating press adds, 0x0027e6d8."}
     - {name: target, lua: number, ctype: int, desc: "Integer at 0x005102b8: the meter total that completes the mash (1000); 0x00255f08 compares a counter with it and draws the fraction."}
   description: >-
-    Configures the button-mash theft game (alternate L1 and R1, theft mode 1): the value the mash meter must reach and
-    two tuning integers. Its only game reader is the theft update 0x0027e6d8; the grabbed player's struggle does not
-    use it.
+    Configures the button mash of mini-game mode 1, freeing a handcuffed partner without a key (alternate L1 and R1):
+    the value the mash meter must reach and two tuning integers; the stereo theft and mode 4 start their meter at twice
+    the gain. The grabbed player's struggle does not use it ([Crimes](../../research/crimes.md#mini-game-record)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The target's use is confirmed (code); the decay and the press gain are confirmed (code) at 0x0027e6d8, the stereo
-    theft's mash mode (L1 and R1 held alternately), docs/research/combat.md.
+    The target's use is confirmed (code); the decay and the press gain are confirmed (code) at 0x0027e6d8, mode 1
+    (L1 and R1 held alternately).
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
 
 - name: CfgStrafe
@@ -1036,9 +1034,13 @@
   calls:
     - {addr: 0x0041daf8, name: Cfg_SetPlayerMugging}
   args:
-    - {name: enabled, lua: boolean, default: true, desc: "true (the default) lets the player mug civilians; false disables it (the first mission turns it off)."}
+    - {name: enabled, lua: boolean, default: true, desc: "true (the default) lets a player mug the other player's human; false prevents it (the first mission turns it off). Humans no player controls are not affected."}
   description: >-
-    Stores the player-mugging switch in the game state (+0x5708).
+    Stores the player-mugging switch in the game state (+0x5708). Mug_CanMugVictim (0x00225ff0) reads it only for a
+    victim with a player number, who must also hold one of items 0-6; such a mugging hands over all of them
+    ([Crimes: mugging](../../research/crimes.md#mugging)). Mug_CanMugVictim (0x00225ff0) reads it only for a
+    victim with a player number, who must also hold one of items 0-6; such a mugging hands over all of them
+    ([Crimes: mugging](../../research/crimes.md#mugging)).
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 9, calls: 9, boot: false, mission1: true, result_used: false}
@@ -1768,7 +1770,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Which action each index is is not traced.
+    The kinds, confirmed (code) at 0x00417ca0: 0 a handcuffed human, 1 an object or flag with its own text, 2 a
+    pickable lock, 3 a car stereo, 4 and 5 objects with their own text ([Crimes: context records](../../research/crimes.md#context-records)).
   usage: {chunks: 6, calls: 30, boot: true, mission1: false, result_used: false}
 
 - name: CfgEnableTurfInvasion

@@ -49,7 +49,7 @@ The registry (`0x0059719c`, made at `0x00417b10`) keeps six lists, one per **kin
 humans register through a virtual slot (objects keep the record at `+0x130`, flags at `+0xe0`, humans at `+0x664`).
 Confirmed (code) at `0x00417ca0`:
 
-| Kind | What | Prompt (`GSTRING.HUD` id) | Reach (`CfgSetActionDistance`) | Evidence |
+| Kind | What | Prompt (`GSTRING.HUD` id) | Reach (`CfgActionDistance`) | Evidence |
 | --- | --- | --- | --- | --- |
 | 0 | a handcuffed human | 2 (uncuff), or 3 (uncuff yourself) for a player who owns upgrade (6, 15) and holds a key | 2 m in `global.lua` | confirmed (code) |
 | 1 | an object or flag with its own text | the caller's text, and a second value at `+0x14` | 1.1 m | confirmed (code); who registers it is not traced |
@@ -57,7 +57,7 @@ Confirmed (code) at `0x00417ca0`:
 | 3 | a car stereo | 16 (steal) | 2 m | confirmed (code) |
 | 4, 5 | objects with their own text | the caller's text | 1.75 m, 1.5 m | confirmed (code); who registers them is not traced |
 
-The reaches are stored squared at `0x00514878 + kind × 4` (`CfgSetActionDistance`); the executable's defaults are
+The reaches are stored squared at `0x00514878 + kind × 4` (`CfgActionDistance`); the executable's defaults are
 2, 1.1, 2, 1.5, 1.5, 1.5 m. The prompt texts are `GSTRING.HUD` strings ([Text labels](../references/text-labels.md#gstring)),
 fetched by number through `0x0019ee70`.
 

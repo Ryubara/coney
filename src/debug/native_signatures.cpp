@@ -231,7 +231,7 @@ constexpr std::array<NativeArg, 1> kArgs_HuSwitchPlayer{{{"human", A::Handle, ""
 constexpr std::array<NativeResultType, 1> kResults_HuSwitchPlayer{R::Number};
 constexpr std::array<NativeArg, 3> kArgs_HuTag{{{"human", A::Handle, "", 0}, {"tag", A::Handle, "", 0}, {"flag", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HuTagColor{{{"human", A::Handle, "", 0}, {"colour", A::NumberTable, "", 4}}};
-constexpr std::array<NativeArg, 3> kArgs_HuTagDifficulty{{{"a", A::Integer, "15000", 0}, {"b", A::Integer, "1000", 0}, {"tolerance", A::Number, "0.06", 0}}};
+constexpr std::array<NativeArg, 3> kArgs_HuTagDifficulty{{{"chargeMs", A::Integer, "15000", 0}, {"pauseMs", A::Integer, "1000", 0}, {"speed", A::Number, "0.06", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HuTagPattern{{{"count", A::Integer, "", 0}, {"points", A::NumberTable, "", 256}}};
 constexpr std::array<NativeArg, 1> kArgs_HuTeleportFollowers{{{"human", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HuTeleportNearHuman{{{"human", A::Handle, "", 0}, {"near", A::Handle, "", 0}}};

@@ -45,8 +45,8 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuEnableOnFire`](#huenableonfire) | - | 1 | no | no | inferred |
 | [`HuEnableSoundCommands`](#huenablesoundcommands) | - | 57 | no | no | inferred |
 | [`HuEnableSpeaking`](#huenablespeaking) | - | 21 | no | no | inferred |
-| [`HuEnableTagCheer`](#huenabletagcheer) | - | 1 | no | no | speculative |
-| [`HuEnableTagDone`](#huenabletagdone) | - | 3 | no | no | speculative |
+| [`HuEnableTagCheer`](#huenabletagcheer) | - | 1 | no | no | confirmed (code) |
+| [`HuEnableTagDone`](#huenabletagdone) | - | 3 | no | no | confirmed (code) |
 | [`HuExitWorld`](#huexitworld) | - | 41 | no | no | confirmed (code) |
 | [`HuFind`](#hufind) | number | 0 | no | no | confirmed (code) |
 | [`HuForceEnableReticule`](#huforceenablereticule) | - | 3 | no | no | confirmed (code) |
@@ -76,10 +76,10 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuIsGrabbed`](#huisgrabbed) | boolean | 2 | no | no | confirmed (code) |
 | [`HuIsHidden`](#huishidden) | boolean | 4 | no | no | inferred |
 | [`HuIsInScene`](#huisinscene) | boolean | 1 | no | no | inferred |
-| [`HuIsMugged`](#huismugged) | boolean | 0 | no | no | inferred |
+| [`HuIsMugged`](#huismugged) | boolean | 0 | no | no | confirmed (code) |
 | [`HuIsOnFire`](#huisonfire) | boolean | 2 | no | no | inferred |
 | [`HuIsProne`](#huisprone) | boolean | 0 | no | no | inferred |
-| [`HuIsTagging`](#huistagging) | boolean | 3 | no | no | inferred |
+| [`HuIsTagging`](#huistagging) | boolean | 3 | no | no | confirmed (code) |
 | [`HuKill`](#hukill) | - | 29 | no | no | confirmed (code) |
 | [`HuLockMovement`](#hulockmovement) | - | 35 | no | no | confirmed (code) |
 | [`HuLockPad`](#hulockpad) | - | 37 | no | yes | confirmed (code) |
@@ -138,7 +138,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetMass`](#husetmass) | - | 0 | no | no | confirmed (code) |
 | [`HuSetMaxHealth`](#husetmaxhealth) | - | 39 | no | no | confirmed (code) |
 | [`HuSetMoney`](#husetmoney) | - | 55 | no | yes | confirmed (code) |
-| [`HuSetMug`](#husetmug) | - | 18 | no | no | inferred |
+| [`HuSetMug`](#husetmug) | - | 18 | no | no | confirmed (code) |
 | [`HuSetMugCallback`](#husetmugcallback) | - | 6 | no | yes | confirmed (code) |
 | [`HuSetName`](#husetname) | - | 1 | no | no | inferred |
 | [`HuSetNoAutoLock`](#husetnoautolock) | - | 4 | no | no | inferred |
@@ -186,7 +186,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSwitchPlayer`](#huswitchplayer) | number | 34 | no | no | inferred |
 | [`HuTag`](#hutag) | - | 10 | yes | no | confirmed (code) |
 | [`HuTagColor`](#hutagcolor) | - | 9 | no | no | confirmed (code) |
-| [`HuTagDifficulty`](#hutagdifficulty) | - | 0 | no | no | speculative |
+| [`HuTagDifficulty`](#hutagdifficulty) | - | 0 | no | no | confirmed (code) |
 | [`HuTagPattern`](#hutagpattern) | - | 7 | yes | no | confirmed (code) |
 | [`HuTeleportFollowers`](#huteleportfollowers) | - | 0 | no | no | inferred |
 | [`HuTeleportNearHuman`](#huteleportnearhuman) | - | 7 | no | yes | confirmed (code) |
@@ -752,7 +752,8 @@ HuButtonMiniGame(human, buttons, startMs, endMs, callback, successAnim, failAnim
 **Returns** nothing.
 
 Starts a timed button-press mini-game (the dance contests): the player must press the given button inside the window,
-and the matching animation plays.
+and the matching animation plays. It is mini-game mode 5 of the shared record
+([Crimes](../../research/crimes.md#mini-game-record)).
 
 **Notes.** Inferred from the callee 0x0023aee0 and the scripts' calls; the outcome passed to the callback is not traced.
 
@@ -1038,9 +1039,10 @@ HuEnableTagCheer(human, enable)
 
 **Returns** nothing.
 
-Enables or disables the human's cheer after tagging (byte +0x19c).
+Makes the tagger's crew comment on his slips (byte +0x19c, read by TagGame_Update 0x002748a8; speech command 80
+tagcheer) ([Crimes: tagging](../../research/crimes.md#tagging)).
 
-- **Evidence:** speculative; detail: brief
+- **Evidence:** confirmed (code) at `0x00239300`; detail: brief
 - **Wrapper** `0x00364d88` (registered by `RegisterBindings`); **calls** `0x00239300`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -1058,9 +1060,11 @@ HuEnableTagDone(human, enable)
 
 **Returns** nothing.
 
-Enables or disables the human's tag-finished reaction (byte +0x19a).
+Lets the human comment on a crew mate's tag (byte +0x19a): 0x00273a68 picks a random gang member in range with it set to
+say tagdone (83) when a tag is finished or tagcheer (80) on a slip ([Crimes:
+tagging](../../research/crimes.md#tagging)).
 
-- **Evidence:** speculative; detail: brief
+- **Evidence:** confirmed (code) at `0x002392c0`; detail: brief
 - **Wrapper** `0x00364d28` (registered by `RegisterBindings`); **calls** `0x002392c0`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -1654,11 +1658,11 @@ HuIsMugged(human) -> boolean
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
 
-**Returns** boolean (1 for true, nil for false): True when the human is being (or has been) mugged.
+**Returns** boolean (1 for true, nil for false): True while the human is being mugged (state 0x200).
 
-Tells whether the human has been mugged.
+Tells whether the human is being mugged now (state bit 0x200, 0x00228090); it says nothing of earlier muggings.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x002357d8`; detail: brief
 - **Wrapper** `0x0035b7a8` (registered by `RegisterBindings`); **calls** `0x002357d8`
 - **Used by** no script on the disc
 - **Coney:** not implemented
@@ -1713,9 +1717,9 @@ HuIsTagging(human) -> boolean
 
 **Returns** boolean (1 for true, nil for false): True while the human sprays a tag.
 
-Tells whether the human is tagging (spraying graffiti).
+Tells whether the human is tagging (state bit 0x2000000, 0x002238c0).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x002387e8`; detail: brief
 - **Wrapper** `0x003654f0` (registered by `RegisterBindings`); **calls** `0x002387e8`
 - **Used by** 3 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: yes
 - **Coney:** not implemented
@@ -2978,13 +2982,14 @@ HuSetMug(human, on)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `on` | boolean (nil or 0 is false) | Stored as given: true lets the human be mugged, false (or nil) prevents it (inferred from the name; the scripts pass false for bosses). |
+| 2 | `on` | boolean (nil or 0 is false) | Stored as given: true lets the human be mugged, false (or nil) prevents it (the scripts pass false for bosses). |
 
 **Returns** nothing.
 
-Stores whether the human can be mugged (+0x5b0).
+Stores whether the human can be mugged (+0x5b0); Mug_CanMugVictim (0x00225ff0) needs it unless the human is set up for
+interrogation ([Crimes: mugging](../../research/crimes.md#mugging)).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00239ee0`; detail: brief
 - **Wrapper** `0x0035d438` (registered by `RegisterBindings`); **calls** `0x00239ee0` `Human_SetMug`
 - **Used by** 18 of 467 script chunks (111 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -4029,21 +4034,22 @@ g, r order) and stored at human `+0x640`.
 ## HuTagDifficulty {#hutagdifficulty}
 
 ```lua
-HuTagDifficulty(a, b, tolerance)
+HuTagDifficulty(chargeMs, pauseMs, speed)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `a` | number, truncated to an unsigned integer; default 15000 | Default 15000; most likely a time in milliseconds. |
-| 2 | `b` | number, truncated to an unsigned integer; default 1000 | Default 1000; most likely a time in milliseconds. |
-| 3 | `tolerance` | number (single precision); default 0.06 | Default 0.06. |
+| 1 | `chargeMs` | number, truncated to an unsigned integer; default 15000 | How long one spray-paint charge lasts while tagging, in ms (0x0051093c). |
+| 2 | `pauseMs` | number, truncated to an unsigned integer; default 1000 | The pause after a slip or a new charge, in ms (0x00510940); non-zero makes these values replace the class table. |
+| 3 | `speed` | number (single precision); default 0.06 | The cursor's speed, grid cells per ms at full stick (0x00510944). |
 
 **Returns** nothing.
 
-Stores three tagging-minigame tuning values in globals (0x0051093c-0x00510944). No script calls it, so the defaults are
-what the game uses.
+Sets the tagging game's tuning for every tagger. Unset (no script calls it), TagGame_Difficulty (0x002739d8) takes a row
+of the table at 0x00510918 by the Warrior class's byte +0x09 instead ([Crimes:
+tagging](../../research/crimes.md#tagging)).
 
-- **Evidence:** speculative; detail: brief
+- **Evidence:** confirmed (code) at `0x002391a8`; detail: brief
 - **Wrapper** `0x0035cea0` (registered by `RegisterBindings`); **calls** `0x002391a8` `Human_SetTagDifficulty`
 - **Used by** no script on the disc
 - **Coney:** not implemented

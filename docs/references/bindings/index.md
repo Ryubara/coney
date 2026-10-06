@@ -36,10 +36,10 @@ YAML, never these pages. CI runs `coney-tools natives render --check`, which fai
 | [Levels and game state](level.md): level flow, checkpoints, difficulty, unlockables, stats, money and police | 90 | 75 | 38 | 26 | 45 |
 | [Script flow](script.md): running scripts, scheduled calls, callbacks and message handlers | 18 | 15 | 10 | 8 | 11 |
 | [Pad input](input.md): the gamepad: button handlers | 2 | 2 | 1 | 2 | 2 |
-| [Configuration (Cfg)](config.md): the Cfg* tables the config scripts fill: characters, objects, levels, sounds | 117 | 100 | 70 | 13 | 75 |
+| [Configuration (Cfg)](config.md): the Cfg* tables the config scripts fill: characters, objects, levels, sounds | 117 | 100 | 70 | 13 | 77 |
 | [Utilities](util.md): numbers, platform queries and generic object queries | 8 | 7 | 6 | 2 | 6 |
 | [Debug](debug.md): developer leftovers: network debugging, sample capture, detail flags | 5 | 3 | 0 | 1 | 1 |
-| **All** | **956** | **802** | **266** | **215** | **398** |
+| **All** | **956** | **802** | **266** | **215** | **400** |
 
 ## Conventions {#conventions}
 
@@ -124,9 +124,9 @@ have no wrapper address or usage counts. There are none yet.
 
 | | Bindings |
 | --- | --- |
-| confirmed (code) | 685 |
+| confirmed (code) | 694 |
 | confirmed (runtime) | 0 |
-| inferred | 236 |
-| speculative | 35 |
-| detail: traced | 398 |
-| detail: brief | 558 |
+| inferred | 230 |
+| speculative | 32 |
+| detail: traced | 400 |
+| detail: brief | 556 |

@@ -1657,8 +1657,8 @@ SetDoorPickable(door, pickable)
 
 Sets whether the player can pick a door's lock.
 
-**Notes.** The 'lock picking' reading is inferred from the name; the human loop over the game state's human list (+0x224
-count, +0x228 handles) is confirmed (code).
+**Notes.** Lock picking is confirmed (code): a pickable door offers kind-2 context actions, and a pick in progress on it
+is ended when it is made unpickable ([Crimes: lock picking](../../research/crimes.md#lockpick)).
 
 - **Evidence:** confirmed (code) at `0x00397078`; detail: brief
 - **Wrapper** `0x00379e40` (registered by `RegisterBindings`); **calls** `0x00397078` `Door_SetPickable`

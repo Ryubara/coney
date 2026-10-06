@@ -424,7 +424,8 @@
     - {name: seconds, lua: number, ctype: unsigned, desc: "How long it lasts, in seconds; 0 for no time limit."}
   description: >-
     Sets the police heat level, optionally expiring after a number of seconds (the expiry time, game time plus
-    `seconds × 1000`, goes to `+0x2a8`). No shipped script calls it.
+    `seconds × 1000`, goes to `+0x2a8`). The level then steps down at each expiry (0x0041c028) and selects a police
+    station's settings; no shipped script calls it, so it stays 0 ([Crimes: wanted](../../research/crimes.md#wanted)).
   evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
@@ -547,10 +548,10 @@
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z}, the crime's position in world units (metres); written back unchanged."}
     - {name: kind, lua: number, ctype: int, desc: "[Crime type](../crime-types.md) (16-bit); the scripts pass 1, 5, 7 and 12."}
     - {name: radius, lua: number, ctype: float, desc: "A number read as a float but not passed on (the callee ignores it)."}
-    - {name: severity, lua: number, ctype: int, desc: "A value the scripts pass 0 or 100 (inferred: how much heat the crime adds)."}
+    - {name: severity, lua: number, ctype: int, desc: "A value the scripts pass 0 or 100; never read (0x0041b6e0 takes it as an argument it does not use)."}
     - {name: offender, lua: number, ctype: unsigned, desc: "Handle of the human committing the crime."}
     - {name: victim, lua: number, ctype: unsigned, desc: "Handle of the victim, or NilHandle."}
-    - {name: flags, lua: number, ctype: int, desc: "A 16-bit value the scripts pass 0."}
+    - {name: flags, lua: number, ctype: int, desc: "A 16-bit value the scripts pass 0; passed to the report as its severity argument, which is never read."}
   description: >-
     Reports a crime at a position so police and witnesses react (`0x0041b8b0` on the game state). Used for scripted
     crimes such as a mugging.
@@ -558,8 +559,8 @@
   depth: thorough
   notes: >-
     The position is transformed (`0x00252ae0`) before being passed on to the crime report 0x0041b8b0, which asks for
-    responders; what each type does: [AI: crimes](../../research/ai.md#crimes). The severity value's use is
-    not traced.
+    responders; what each type does: [AI: crimes](../../research/ai.md#crimes). Severity, radius and flags
+    are never read, confirmed (code) at 0x0037a2f8, 0x0041b6e0 and 0x0041b8b0 ([Crimes: wanted](../../research/crimes.md#wanted)).
   usage: {chunks: 12, calls: 18, boot: true, mission1: false, result_used: false}
 
 - name: SpawnCustomCrime
@@ -612,8 +613,9 @@
   args:
     - {name: "on", lua: boolean, default: true, desc: "true (default) to hold the crime level where it is, false to release it."}
   description: >-
-    Sets the forced-crime-level flag (`W_GameState + 0x28c`).
-  evidence: inferred
+    Sets the forced flag (`W_GameState + 0x28c`): while on, a wanted gang's timer is held at 10 s from now
+    (Gang_UpdateWanted, 0x001698f0) and the crime level does not drop to 0 ([Crimes: wanted](../../research/crimes.md#wanted)).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 9, calls: 9, boot: false, mission1: false, result_used: false}
 

@@ -1343,10 +1343,10 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
   results:
-    - {lua: boolean, desc: "True when the human is being (or has been) mugged."}
+    - {lua: boolean, desc: "True while the human is being mugged (state 0x200)."}
   description: >-
-    Tells whether the human has been mugged.
-  evidence: inferred
+    Tells whether the human is being mugged now (state bit 0x200, 0x00228090); it says nothing of earlier muggings.
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 
@@ -2008,13 +2008,13 @@
   calls:
     - {addr: 0x002391a8, name: Human_SetTagDifficulty}
   args:
-    - {name: a, lua: number, ctype: unsigned, default: 15000, desc: "Default 15000; most likely a time in milliseconds."}
-    - {name: b, lua: number, ctype: unsigned, default: 1000, desc: "Default 1000; most likely a time in milliseconds."}
-    - {name: tolerance, lua: number, ctype: float, default: 0.06, desc: "Default 0.06."}
+    - {name: chargeMs, lua: number, ctype: unsigned, default: 15000, desc: "How long one spray-paint charge lasts while tagging, in ms (0x0051093c)."}
+    - {name: pauseMs, lua: number, ctype: unsigned, default: 1000, desc: "The pause after a slip or a new charge, in ms (0x00510940); non-zero makes these values replace the class table."}
+    - {name: speed, lua: number, ctype: float, default: 0.06, desc: "The cursor's speed, grid cells per ms at full stick (0x00510944)."}
   description: >-
-    Stores three tagging-minigame tuning values in globals (0x0051093c-0x00510944). No script calls it, so the
-    defaults are what the game uses.
-  evidence: speculative
+    Sets the tagging game's tuning for every tagger. Unset (no script calls it), TagGame_Difficulty (0x002739d8) takes
+    a row of the table at 0x00510918 by the Warrior class's byte +0x09 instead ([Crimes: tagging](../../research/crimes.md#tagging)).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 
@@ -2199,10 +2199,11 @@
     - {addr: 0x00239ee0, name: Human_SetMug}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: "on", lua: boolean, desc: "Stored as given: true lets the human be mugged, false (or nil) prevents it (inferred from the name; the scripts pass false for bosses)."}
+    - {name: "on", lua: boolean, desc: "Stored as given: true lets the human be mugged, false (or nil) prevents it (the scripts pass false for bosses)."}
   description: >-
-    Stores whether the human can be mugged (+0x5b0).
-  evidence: inferred
+    Stores whether the human can be mugged (+0x5b0); Mug_CanMugVictim (0x00225ff0) needs it unless the human is set up
+    for interrogation ([Crimes: mugging](../../research/crimes.md#mugging)).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 18, calls: 111, boot: false, mission1: false, result_used: false}
 
@@ -2258,7 +2259,7 @@
     - {name: failAnim, lua: string, desc: "Dynamic animation played on failure."}
   description: >-
     Starts a timed button-press mini-game (the dance contests): the player must press the given button inside the
-    window, and the matching animation plays.
+    window, and the matching animation plays. It is mini-game mode 5 of the shared record ([Crimes](../../research/crimes.md#mini-game-record)).
   evidence: inferred
   depth: brief
   notes: >-
@@ -2447,8 +2448,9 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: enable, lua: boolean, default: true, desc: "True (the default) enables it."}
   description: >-
-    Enables or disables the human's tag-finished reaction (byte +0x19a).
-  evidence: speculative
+    Lets the human comment on a crew mate's tag (byte +0x19a): 0x00273a68 picks a random gang member in range with it
+    set to say tagdone (83) when a tag is finished or tagcheer (80) on a slip ([Crimes: tagging](../../research/crimes.md#tagging)).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false}
 
@@ -2460,8 +2462,9 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: enable, lua: boolean, default: true, desc: "True (the default) enables it."}
   description: >-
-    Enables or disables the human's cheer after tagging (byte +0x19c).
-  evidence: speculative
+    Makes the tagger's crew comment on his slips (byte +0x19c, read by TagGame_Update 0x002748a8; speech command 80
+    tagcheer) ([Crimes: tagging](../../research/crimes.md#tagging)).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false}
 
@@ -2654,8 +2657,8 @@
   results:
     - {lua: boolean, desc: "True while the human sprays a tag."}
   description: >-
-    Tells whether the human is tagging (spraying graffiti).
-  evidence: inferred
+    Tells whether the human is tagging (state bit 0x2000000, 0x002238c0).
+  evidence: confirmed-code
   depth: brief
   usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: true}
 

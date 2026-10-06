@@ -95,8 +95,8 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`CfgSetEnemySpotting`](#cfgsetenemyspotting) | - | 24 | yes | yes | confirmed (code) |
 | [`CfgSetGlassProperties`](#cfgsetglassproperties) | - | 1 | yes | no | confirmed (code) |
 | [`CfgSetGlobalTimeToLive`](#cfgsetglobaltimetolive) | - | 2 | yes | yes | confirmed (code) |
-| [`CfgSetLockPickHandler`](#cfgsetlockpickhandler) | - | 7 | no | no | inferred |
-| [`CfgSetLockPickStageFailHandler`](#cfgsetlockpickstagefailhandler) | - | 0 | no | no | inferred |
+| [`CfgSetLockPickHandler`](#cfgsetlockpickhandler) | - | 7 | no | no | confirmed (code) |
+| [`CfgSetLockPickStageFailHandler`](#cfgsetlockpickstagefailhandler) | - | 0 | no | no | confirmed (code) |
 | [`CfgSetMaxThrowError`](#cfgsetmaxthrowerror) | - | 1 | no | no | inferred |
 | [`CfgSetMeleeRange`](#cfgsetmeleerange) | - | 1 | yes | no | confirmed (code) |
 | [`CfgSetOutdoorMode`](#cfgsetoutdoormode) | - | 15 | yes | no | confirmed (code) |
@@ -143,7 +143,9 @@ CfgActionDistance(action, metres)
 Sets the reach of one context action (stored squared at 0x00514878 + action x 4). global.lua sets kinds 0-5 (2, 1.1, 2,
 2, 1.75, 1.5 m) and levels widen kind 1.
 
-**Notes.** Which action each index is is not traced.
+**Notes.** The kinds, confirmed (code) at 0x00417ca0: 0 a handcuffed human, 1 an object or flag with its own text, 2 a
+pickable lock, 3 a car stereo, 4 and 5 objects with their own text ([Crimes: context
+records](../../research/crimes.md#context-records)).
 
 - **Evidence:** confirmed (code) at `0x00417af0`; detail: traced
 - **Wrapper** `0x0036c130` (registered by `RegisterBindings`); **calls** `0x00417af0` `Cfg_SetActionDistance`
@@ -475,11 +477,12 @@ CfgButtonMash(decay, pressGain, target)
 
 **Returns** nothing.
 
-Configures the button-mash theft game (alternate L1 and R1, theft mode 1): the value the mash meter must reach and two
-tuning integers. Its only game reader is the theft update 0x0027e6d8; the grabbed player's struggle does not use it.
+Configures the button mash of mini-game mode 1, freeing a handcuffed partner without a key (alternate L1 and R1): the
+value the mash meter must reach and two tuning integers; the stereo theft and mode 4 start their meter at twice the
+gain. The grabbed player's struggle does not use it ([Crimes](../../research/crimes.md#mini-game-record)).
 
-**Notes.** The target's use is confirmed (code); the decay and the press gain are confirmed (code) at 0x0027e6d8, the
-stereo theft's mash mode (L1 and R1 held alternately), docs/research/combat.md.
+**Notes.** The target's use is confirmed (code); the decay and the press gain are confirmed (code) at 0x0027e6d8, mode 1
+(L1 and R1 held alternately).
 
 - **Evidence:** confirmed (code) at `0x0023a560`; detail: traced
 - **Wrapper** `0x0035ddf0` (registered by `RegisterBindings`); **calls** `0x0023a560` `Cfg_SetButtonMash`
@@ -1580,11 +1583,15 @@ CfgPlayerMugging(enabled)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `enabled` | boolean (nil or 0 is false); default true | true (the default) lets the player mug civilians; false disables it (the first mission turns it off). |
+| 1 | `enabled` | boolean (nil or 0 is false); default true | true (the default) lets a player mug the other player's human; false prevents it (the first mission turns it off). Humans no player controls are not affected. |
 
 **Returns** nothing.
 
-Stores the player-mugging switch in the game state (+0x5708).
+Stores the player-mugging switch in the game state (+0x5708). Mug_CanMugVictim (0x00225ff0) reads it only for a victim
+with a player number, who must also hold one of items 0-6; such a mugging hands over all of them ([Crimes:
+mugging](../../research/crimes.md#mugging)). Mug_CanMugVictim (0x00225ff0) reads it only for a victim with a player
+number, who must also hold one of items 0-6; such a mugging hands over all of them ([Crimes:
+mugging](../../research/crimes.md#mugging)).
 
 - **Evidence:** confirmed (code) at `0x0041daf8`; detail: traced
 - **Wrapper** `0x0035e9c8` (registered by `RegisterBindings`); **calls** `0x0041daf8` `Cfg_SetPlayerMugging`
@@ -2197,19 +2204,17 @@ CfgSetLockPickHandler(startFn, stopFn, successFn)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `startFn` | string | Name of a Lua function (dotted names allowed) called when lock-picking starts, or nil. |
-| 2 | `stopFn` | string | Name of a Lua function called when lock-picking stops or is abandoned, or nil. |
-| 3 | `successFn` | string | Name of a Lua function called when the lock is picked, or nil. |
+| 1 | `startFn` | string | Name of a Lua function (dotted names allowed) called with the human's and the door's handles when lock picking starts, or nil. |
+| 2 | `stopFn` | string | Name of a Lua function called with the human and the door when a pick is abandoned, or nil. |
+| 3 | `successFn` | string | Name of a Lua function called with the human and the door when the lock is picked, or nil. |
 
 **Returns** nothing.
 
 Registers three script callbacks for the lock-picking minigame; the names are interned (script-system slot +0xcc) and
-kept in globals 0x00510288, 0x00510284 and 0x00510280.
+kept in globals 0x00510288, 0x00510284 and 0x00510280. The start one runs from LockPick_Start (0x0022d790), the other
+two from LockPick_End (0x0022d908) ([Crimes: lock picking](../../research/crimes.md#lockpick)).
 
-**Notes.** Storage confirmed (code) at 0x002365f0; which moment fires each callback is inferred from the names the
-levels pass (e.g. a 'picked' function as the third).
-
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x002365f0`; detail: traced
 - **Wrapper** `0x0035a6e8` (registered by `RegisterBindings`); **calls** `0x002365f0`
 - **Used by** 7 of 467 script chunks (12 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -2222,15 +2227,15 @@ CfgSetLockPickStageFailHandler(fn)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `fn` | string | Name of a Lua function called when a lock-picking stage fails, or nil. |
+| 1 | `fn` | string | Name of a Lua function called with the human's and the door's handles on a missed press, or nil. |
 
 **Returns** nothing.
 
-Registers a script callback (interned name at 0x0051028c) for a failed lock-picking stage; no script calls it.
+Registers a script callback (interned name at 0x0051028c) run on every missed press of the lock-picking dial (0x002366d8
+from LockPick_JudgePress, 0x002878b8), which resets the pins; no script calls it ([Crimes: lock
+picking](../../research/crimes.md#lockpick)).
 
-**Notes.** Storage confirmed (code) at 0x00236698.
-
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00236698`; detail: traced
 - **Wrapper** `0x0035a760` (registered by `RegisterBindings`); **calls** `0x00236698`
 - **Used by** no script on the disc
 - **Coney:** not implemented
