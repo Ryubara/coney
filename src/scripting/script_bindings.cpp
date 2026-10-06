@@ -370,6 +370,15 @@ NativeFunction makeStartDeleteSequence(const Factory& factory) {
     };
 }
 
+// `HUDLaunchMissionFailed(reason)`: shows the mission-failed mode with the failure text.
+// @orig 0x0036f130 HUDLaunchMissionFailed (unknown)
+NativeFunction makeHudLaunchMissionFailed(const Factory& factory) {
+    return [host = factory.context->host](std::span<const Value> args) {
+        host->launchMissionFailed(binding::string(args, 0));
+        return binding::none();
+    };
+}
+
 // ---- Coney's scene stand-in (docs/research/scenes.md): with no scene system, a scene loads and ends at once ----
 
 // Schedules the Lua function named by string argument `i` (none for nil or a number) with the scene id, to run at the
@@ -456,6 +465,7 @@ constexpr std::array kMakers{
     Maker{"GetPlatform", makeGetPlatform},
     Maker{"GetProfileDifficulty", makeGetProfileDifficulty},
     Maker{"HUDLaunchMissionComplete", makeHudLaunchMissionComplete},
+    Maker{"HUDLaunchMissionFailed", makeHudLaunchMissionFailed},
     Maker{"HuCreate", makeHuCreate},
     Maker{"MenuLoadLevel", makeMenuLoadLevel},
     Maker{"PlayMovie", makePlayMovie},
@@ -533,6 +543,7 @@ constexpr std::array kBindings{
     real("MenuLoadLevel"),
     real("ScreenQueueEffect"),
     real("HUDLaunchMissionComplete"),
+    real("HUDLaunchMissionFailed"),
     real("SSMC_StartDeleteSequence"),
     real("SSMC_StartLoadSequence"),
     // The level scripts' humans, flags, saved numbers, start callback and Rumble set-up (level_bindings.h).

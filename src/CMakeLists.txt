@@ -32,7 +32,9 @@ add_library(coney_core STATIC
     gamemodes/load_entry_mode.cpp
     gamemodes/memory_card_mode.cpp
     gamemodes/mission_complete_mode.cpp
+    gamemodes/mission_failed_mode.cpp
     gamemodes/movie_player.cpp
+    gamemodes/pause_mode.cpp
     gamemodes/profile_manager_mode.cpp
     gamemodes/rumble_menu_mode.cpp
     gamemodes/sheet_viewer_mode.cpp
@@ -57,6 +59,10 @@ add_library(coney_core STATIC
     gui/menu_input.cpp
     gui/message_box.cpp
     gui/option_grid.cpp
+    gui/pause_menu/mission_failed_menu.cpp
+    gui/pause_menu/pause_items.cpp
+    gui/pause_menu/pause_menu.cpp
+    gui/pause_menu/yes_no_box.cpp
     gui/profile_management_gui/pm_controller.cpp
     gui/profile_management_gui/pm_extras.cpp
     gui/profile_management_gui/pm_greet.cpp

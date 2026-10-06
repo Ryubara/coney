@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% of the game's own code (322,644 of 3,354,776 bytes, 813 functions) |
+| **Reimplemented** | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% of the game's own code (322,644 of 3,354,776 bytes, 831 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-220 reimplemented function(s) have no size yet and add no bytes.
+238 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -58,23 +58,23 @@ at the top of the repository's `README.md`.
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `█▏░░░░░░░░░░░░░░░░░░` | 5.7% | 21 | 62,808 |
-| `FileIO` | `█▍░░░░░░░░░░░░░░░░░░` | 7.0% | 5 | 7,120 |
-| `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 48 | 100,440 |
+| `FileIO` | `█▍░░░░░░░░░░░░░░░░░░` | 7.0% | 6 | 7,120 |
+| `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 52 | 100,440 |
 | `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 33 | 195,624 |
-| `GUI` | `██▎░░░░░░░░░░░░░░░░░` | 11.3% | 112 | 497,416 |
+| `GUI` | `██▎░░░░░░░░░░░░░░░░░` | 11.3% | 121 | 497,416 |
 | `Human` | `██░░░░░░░░░░░░░░░░░░` | 9.9% | 239 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `█████░░░░░░░░░░░░░░░` | 24.8% | 116 | 197,192 |
+| `Scripting` | `█████░░░░░░░░░░░░░░░` | 24.8% | 117 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 41 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
-| `Warriors` | `█▎░░░░░░░░░░░░░░░░░░` | 6.2% | 21 | 54,264 |
+| `Warriors` | `█▎░░░░░░░░░░░░░░░░░░` | 6.2% | 24 | 54,264 |
 | `Movie` | `██████▊░░░░░░░░░░░░░` | 33.9% | 1 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -217,6 +217,7 @@ at the top of the repository's `README.md`.
 | `0x0014d2d8` | `AudioDevice_Duration` | `Device/ps2` | not filled in |
 | `0x00150078` | `RateToPitch` | `Device/ps2` | not filled in |
 | `0x00154440` | `Stream_SkipBytes` | `FileIO` | 128 |
+| `0x00154f28` | `PauseMenu_Toggle` | `FileIO` | not filled in |
 | `0x00155228` | `RumbleMenu_Show` | `FileIO` | 136 |
 | `0x001552b0` | `ShowProfileManager` | `FileIO` | 88 |
 | `0x00155378` | `SSMC_StartLoadSequence` | `FileIO` | 72 |
@@ -237,9 +238,13 @@ at the top of the repository's `README.md`.
 | `0x0015c6f8` | `Mode8::Resume` | `GameModes` | 136 |
 | `0x0015c7b0` | `LevelFlow_ChooseLevel` | `GameModes` | 168 |
 | `0x0015c858` | `Mode8::Update` | `GameModes` | 568 |
+| `0x0015cae0` | `ModeC_Enter` | `GameModes` | not filled in |
 | `0x0015cf70` | `ModeB::Enter` | `GameModes` | 384 |
 | `0x0015d160` | `ModeB::Update` | `GameModes` | 704 |
 | `0x0015d420` | `MissionComplete_Launch` | `GameModes` | 96 |
+| `0x0015dbb8` | `PauseMode_Enter` | `GameModes` | not filled in |
+| `0x0015dd38` | `PauseMode_Exit` | `GameModes` | not filled in |
+| `0x0015dd98` | `PauseMode_Update` | `GameModes` | not filled in |
 | `0x0015e048` | `Mode12::Enter` | `GameModes` | 176 |
 | `0x0015e130` | `Mode12::Exit` | `GameModes` | 264 |
 | `0x0015e238` | `Mode12::Update` | `GameModes` | 760 |
@@ -334,6 +339,9 @@ at the top of the repository's `README.md`.
 | `0x001cea70` | `UsageInfo::UsageInfo` | `GUI` | 64 |
 | `0x001ceb40` | `UsageInfo_Setup` | `GUI` | not filled in |
 | `0x001cec28` | `UsageInfo_SetText` | `GUI` | 80 |
+| `0x001d1f88` | `MissionFailed_Launch` | `GUI` | not filled in |
+| `0x001d23d0` | `MissionFailedMenu_Open` | `GUI` | not filled in |
+| `0x001d2b90` | `MissionFailedMenu_Update` | `GUI` | not filled in |
 | `0x001d3ef0` | `OptionGrid::OptionGrid` | `GUI` | 136 |
 | `0x001d4110` | `OptionGrid_Setup` | `GUI` | 240 |
 | `0x001d4230` | `OptionGrid_AddItem` | `GUI` | 440 |
@@ -343,6 +351,12 @@ at the top of the repository's `README.md`.
 | `0x001d4d28` | `OptionGrid_TakeFocus` | `GUI` | 144 |
 | `0x001d4db8` | `OptionGrid_LoseFocus` | `GUI` | not filled in |
 | `0x001d52c8` | `OptionGrid_Render` | `GUI` | not filled in |
+| `0x001d6738` | `YesNoBox_Setup` | `GUI` | not filled in |
+| `0x001d6c10` | `YesNoBox_OnCommand` | `GUI` | not filled in |
+| `0x001db3c0` | `PauseMenu_Construct` | `GUI` | not filled in |
+| `0x001dbee0` | `PauseMenu_Open` | `GUI` | not filled in |
+| `0x001ddcf8` | `PauseMenu_Update` | `GUI` | not filled in |
+| `0x001df700` | `PauseMenu_Render` | `GUI` | not filled in |
 | `0x001e1338` | `ScrollingMenu::ScrollingMenu` | `GUI` | not filled in |
 | `0x001e1e48` | `ScrollingMenu_HandleCommand` | `GUI` | not filled in |
 | `0x001e95c0` | `MenuInput_Dispatch` | `GUI` | 1,080 |
@@ -782,6 +796,7 @@ at the top of the repository's `README.md`.
 | `0x0036df98` | `SetStartGameCallback` | `Scripting` | 48 |
 | `0x0036e050` | `GetGameTime` | `Scripting` | 96 |
 | `0x0036eef8` | `ShowProfileManager_Binding` | `Scripting` | not filled in |
+| `0x0036f130` | `HUDLaunchMissionFailed` | `Scripting` | not filled in |
 | `0x0036f218` | `HUDLaunchMissionComplete` | `Scripting` | 56 |
 | `0x00373148` | `GangCreate` | `Scripting` | 184 |
 | `0x00373200` | `GangDelete` | `Scripting` | 56 |
@@ -901,6 +916,9 @@ at the top of the repository's `README.md`.
 | `0x0041abe8` | `GetCheckPoint` | `Warriors` | 16 |
 | `0x0041acd8` | `GameState_SetLuaSaveFloat` | `Warriors` | 40 |
 | `0x0041ad00` | `GameState_GetLuaSaveFloat` | `Warriors` | 40 |
+| `0x0041d110` | `Level_IsArmies` | `Warriors` | not filled in |
+| `0x0041d160` | `Level_IsRumble` | `Warriors` | not filled in |
+| `0x0041d1b0` | `Level_OffersHangout` | `Warriors` | not filled in |
 | `0x0041d628` | `Cfg_SetDatabaseSizes` | `Warriors` | 104 |
 | `0x0041d6f0` | `GetLevelId` | `Warriors` | 40 |
 | `0x0041d718` | `GetCurrentLevelIndex` | `Warriors` | 16 |

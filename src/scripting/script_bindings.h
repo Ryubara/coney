@@ -72,6 +72,9 @@ class BindingHost {
     /// `SSMC_StartDeleteSequence()`: write the deleted profiles out (the memory-card mode after PM_Delete). Does
     /// nothing by default, for a host without game modes.
     virtual void startDeleteSequence() {}
+    /// `HUDLaunchMissionFailed(reason)`: show the mission-failed mode (0xc) with `reason`. Does nothing by default, for
+    /// a host without game modes.
+    virtual void launchMissionFailed(std::string_view /*reason*/) {}
 };
 
 /// How far Coney implements a binding.

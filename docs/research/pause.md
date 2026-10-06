@@ -282,7 +282,30 @@ the per-item actions (`0x001d2018`, vtable `0x0053b598`) are not traced here.
 
 ## Coney's implementation
 
-None yet.
+Written from this page: `repo:src/gui/pause_menu/` (`PauseMenu`, `YesNoBox`, `MissionFailedMenu`, the item table
+`pauseGrid` and `offersHangout`) on the menu widgets ([GUI](gui.md#widget-classes)), and the modes
+`repo:src/gamemodes/pause_mode.h` (`PauseMode`, 0xa, with `applyPauseOutcome`, `PauseMenu_Toggle`'s second half) and
+`repo:src/gamemodes/mission_failed_mode.h` (`MissionFailedMode`, 0xc, pushed by the binding `HUDLaunchMissionFailed`).
+Gameplay (mode 1) ends each frame of play with `PauseMode::playFrame` (START on a connected pad, then the cool-down);
+while mode 0xa or 0xc is on top gameplay does not update at all, and the paused level is drawn at its last step with
+the menu's layer over it (`GameplayMode::renderWithOverlay`). Timings, positions, string ids, cues, the item grids,
+the Yes/No box and the leaving actions follow this page; tests in `repo:tests/gui/pause_menu_test.cpp` and
+`repo:tests/gamemodes/pause_mode_test.cpp` drive them with scripted START, d-pad, cross and triangle.
+
+Coney stand-ins, each an open question below:
+
+- The headers (`CircledTextHeader`), the objective lists and the Restart and Quit screens are centred texts at Coney's
+  positions and colours; the Options and Controls screens are lists of their entries' names that do nothing on accept.
+- The Stats screen is never available (Coney has no character stats), so Stats opens nothing.
+- The menu does not wait for its last cue to end before it pops.
+- The tint is a black quad rising to opaque over 1.4 s, under the menu; the mission-failed fade is the mode's own.
+- Leaving pops mode 1 directly instead of setting `W_GameState + 0x14c` = 3; the game state's `+0x11c`, `+0x118` and
+  `+0x56e0`, the save on close, the pad vibration and the co-op quit (Player 2 / All) are not modelled.
+- The Armies of the Night levels use the story menu; the Rumble quit picks `PauseGoToRMIQuick` (or
+  `PauseGoToRMIHangout` when the caller says the Rumble came from the hangout) and offers To Main Menu.
+- The mission-failed items: Last checkpoint, Restart level and To Hangout end the menu at once as the pause menu's
+  restart and hangout outcomes, Yes to Quit as its main-menu outcome; back does nothing.
+- "Saving the sound state" is remembering the sound bank, which exit loads again.
 
 ## Open questions
 
@@ -293,3 +316,7 @@ None yet.
   0x14, `HUDLaunchRumbleWin`).
 - What the menu's write to the screen-effects managers' `+0x214` does on close.
 - The Armies of the Night pause menu's items (`0x001cfec0`-`0x001d0a38`).
+- The mission title's choice between `0xe7` and `0xe8` (which one `<ROBJ_N>` selects), and the fonts, scales and
+  colours of the headers, the item screens, the Yes/No box's texts and the objective lists' gold and purple.
+- Which Rumble quit `0x001fe1a8` picks, and when the Rumble Quit screen offers To Hangout rather than To Main Menu.
+- What the tint `0x0018c988` reaches (Coney: opaque black), and whether the HUD is drawn under the paused menu.

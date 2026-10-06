@@ -15,6 +15,8 @@
 #include "gamemodes/level_flow_mode.h"
 #include "gamemodes/memory_card_mode.h"
 #include "gamemodes/mission_complete_mode.h"
+#include "gamemodes/mission_failed_mode.h"
+#include "gamemodes/pause_mode.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "gamemodes/rumble_menu_mode.h"
 #include "graphics/render_device.h"
@@ -94,6 +96,15 @@ class StartUpFlow final : public script::BindingHost {
     [[nodiscard]] MissionCompleteMode& missionComplete() { return m_missionComplete; }
     /// Mode 1.
     [[nodiscard]] GameplayMode& gameplay() { return m_gameplay; }
+    /// Mode 0xa.
+    [[nodiscard]] PauseMode& pause() { return m_pause; }
+    /// Mode 0xc.
+    [[nodiscard]] MissionFailedMode& missionFailed() { return m_missionFailed; }
+    /// Loads the sheets of sprite-sheet table records (the pause menu's background, the mission-failed title) through
+    /// `loadRecord` from now on; until then they are not drawn.
+    void setSheetRecordLoader(PauseRecordLoader loadRecord) { m_loadRecord = std::move(loadRecord); }
+    /// Gives the pause and mission-failed modes the game's hooks (sound, objectives, radars).
+    void setPauseHooks(const PauseHooks& hooks);
     /// Mode 0x11.
     [[nodiscard]] RumbleMenuMode& rumbleMenu() { return m_rumbleMenu; }
     /// The humans the level scripts created.
@@ -116,8 +127,12 @@ class StartUpFlow final : public script::BindingHost {
     void launchMissionComplete(int kind) override;
     void startLoadSequence() override;
     void startDeleteSequence() override;
+    void launchMissionFailed(std::string_view reason) override;
 
   private:
+    // The sheet of sprite-sheet table record `record`, through the loader set, or an error without one.
+    [[nodiscard]] std::expected<graphics::SpriteSheet, Error> loadRecord(std::uint32_t record) const;
+
     GameModeStack& m_stack;
     std::function<void(std::string_view)> m_log;
     GameState m_state;
@@ -140,6 +155,9 @@ class StartUpFlow final : public script::BindingHost {
     GameplayMode m_gameplay;
     LevelFlowMode m_levelFlow;
     MissionCompleteMode m_missionComplete;
+    PauseRecordLoader m_loadRecord; // the sheet-table records' loader, which the two modes below call through
+    PauseMode m_pause;
+    MissionFailedMode m_missionFailed;
     RumbleMenuMode m_rumbleMenu;
     MemoryCardMode m_memoryCard;
     LegalScreenMode m_legal;

@@ -39,6 +39,12 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
       m_levelFlow(device, stack, m_profileManager, m_services, m_scripts, m_state, log,
                   m_gameplay.loads() ? &m_gameplay : nullptr),
       m_missionComplete(device, stack, m_levelFlow, m_scripts, m_state, log),
+      m_pause(
+          device, loadSheet, [this](std::uint32_t record) { return loadRecord(record); }, strings, m_services, m_state,
+          m_levelFlow, log),
+      m_missionFailed(
+          device, loadSheet, [this](std::uint32_t record) { return loadRecord(record); }, strings, m_services, m_state,
+          m_levelFlow, stack, log),
       m_rumbleMenu(device, loadSheet, stack, m_scripts, m_state, strings, m_rumbleData, m_services, m_fade,
                    legal.europe, log),
       m_memoryCard(device, stack, m_levelFlow, loadSheet, strings, cardCheckingMs, log),
@@ -49,6 +55,10 @@ StartUpFlow::StartUpFlow(graphics::RenderDevice& device, GameModeStack& stack,
     m_missionComplete.setProfiles(m_profiles.get());
     m_memoryCard.setProfiles(m_profiles.get());
     m_memoryCard.setProfileManager(&m_profileManager);
+    // START pauses a level; the pause and the mission-failed screen draw the level under them.
+    m_gameplay.setPause(&m_pause);
+    m_pause.setWorld(&m_gameplay);
+    m_missionFailed.setWorld(&m_gameplay);
 }
 
 void StartUpFlow::start() {
@@ -92,5 +102,19 @@ void StartUpFlow::launchMissionComplete(int kind) { m_missionComplete.launch(kin
 void StartUpFlow::startLoadSequence() { m_memoryCard.startLoadSequence(); }
 
 void StartUpFlow::startDeleteSequence() { m_memoryCard.startDeleteSequence(); }
+
+void StartUpFlow::launchMissionFailed(std::string_view reason) { m_missionFailed.launch(reason); }
+
+void StartUpFlow::setPauseHooks(const PauseHooks& hooks) {
+    m_pause.setHooks(hooks);
+    m_missionFailed.setHooks(hooks);
+}
+
+std::expected<graphics::SpriteSheet, Error> StartUpFlow::loadRecord(std::uint32_t record) const {
+    if (!m_loadRecord) {
+        return fail(ErrorCode::NotFound, "no sheet-table loader");
+    }
+    return m_loadRecord(record);
+}
 
 } // namespace coney

@@ -25,6 +25,7 @@ add_executable(coney_tests
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
+    gamemodes/pause_mode_test.cpp
     gamemodes/load_entry_mode_test.cpp
     gamemodes/movie_player_test.cpp
     gamemodes/sheet_viewer_mode_test.cpp
@@ -47,6 +48,7 @@ add_executable(coney_tests
     gui/disc_text_test.cpp
     gui/markup_test.cpp
     gui/menu_input_test.cpp
+    gui/pause_menu_test.cpp
     gui/profile_management_gui/pm_controller_test.cpp
     gui/rumble_mode_gui/rumble_menu_test.cpp
     gui/screen_flow_controller_test.cpp

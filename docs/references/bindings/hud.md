@@ -806,7 +806,7 @@ screen and pushes it (game mode 0xc).
 - **Evidence:** confirmed (code) at `0x001d1f88`; detail: brief
 - **Wrapper** `0x0036f130` (registered by `RegisterBindings`); **calls** `0x001d1f88` `MissionFailed_Launch`
 - **Used by** 24 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDLaunchRumbleWin {#hudlaunchrumblewin}
 

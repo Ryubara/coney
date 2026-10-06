@@ -9,6 +9,8 @@
 
 #include "animation/anim_math.h"
 #include "core/game_timer.h"
+#include "gamemodes/game_mode_stack.h"
+#include "gamemodes/pause_mode.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/object_bindings.h"
 
@@ -172,6 +174,10 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
             scripted->teleportPlayer(to);
         }
     }
+    // START pauses the game (PauseMenu_Toggle), last in the frame of play.
+    if (m_pause != nullptr) {
+        m_pause->playFrame(stack, stack.pads());
+    }
     return result;
 }
 
@@ -191,6 +197,21 @@ void GameplayMode::render(const RenderTime& time) {
         return;
     }
     m_device.beginFrame(graphics::kBlack);
+    m_device.present();
+}
+
+void GameplayMode::renderWithOverlay(const RenderTime& time,
+                                     const std::function<void(graphics::RenderDevice&)>& overlay) {
+    if (auto* overlaid = dynamic_cast<OverlaidLevel*>(m_level.get())) {
+        overlaid->renderWithOverlay(time, overlay);
+        return;
+    }
+    if (m_level) {
+        m_level->render(time);
+        return;
+    }
+    m_device.beginFrame(graphics::kBlack);
+    overlay(m_device);
     m_device.present();
 }
 

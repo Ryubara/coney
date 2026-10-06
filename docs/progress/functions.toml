@@ -619,6 +619,11 @@ subsystem = "FileIO"
 size = 128
 
 [[function]]
+address = 0x00154f28
+name = "PauseMenu_Toggle"
+subsystem = "FileIO"
+
+[[function]]
 address = 0x00155228
 name = "RumbleMenu_Show"
 subsystem = "FileIO"
@@ -737,6 +742,11 @@ subsystem = "GameModes"
 size = 568
 
 [[function]]
+address = 0x0015cae0
+name = "ModeC_Enter"
+subsystem = "GameModes"
+
+[[function]]
 address = 0x0015cf70
 name = "ModeB::Enter"
 subsystem = "GameModes"
@@ -753,6 +763,21 @@ address = 0x0015d420
 name = "MissionComplete_Launch"
 subsystem = "GameModes"
 size = 96
+
+[[function]]
+address = 0x0015dbb8
+name = "PauseMode_Enter"
+subsystem = "GameModes"
+
+[[function]]
+address = 0x0015dd38
+name = "PauseMode_Exit"
+subsystem = "GameModes"
+
+[[function]]
+address = 0x0015dd98
+name = "PauseMode_Update"
+subsystem = "GameModes"
 
 [[function]]
 address = 0x0015e048
@@ -1297,6 +1322,21 @@ subsystem = "GUI"
 size = 80
 
 [[function]]
+address = 0x001d1f88
+name = "MissionFailed_Launch"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001d23d0
+name = "MissionFailedMenu_Open"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001d2b90
+name = "MissionFailedMenu_Update"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001d3ef0
 name = "OptionGrid::OptionGrid"
 subsystem = "GUI"
@@ -1343,6 +1383,36 @@ subsystem = "GUI"
 [[function]]
 address = 0x001d52c8
 name = "OptionGrid_Render"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001d6738
+name = "YesNoBox_Setup"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001d6c10
+name = "YesNoBox_OnCommand"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001db3c0
+name = "PauseMenu_Construct"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001dbee0
+name = "PauseMenu_Open"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001ddcf8
+name = "PauseMenu_Update"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001df700
+name = "PauseMenu_Render"
 subsystem = "GUI"
 
 [[function]]
@@ -3896,6 +3966,11 @@ name = "ShowProfileManager_Binding"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x0036f130
+name = "HUDLaunchMissionFailed"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x0036f218
 name = "HUDLaunchMissionComplete"
 subsystem = "Scripting"
@@ -4576,6 +4651,21 @@ address = 0x0041ad00
 name = "GameState_GetLuaSaveFloat"
 subsystem = "Warriors"
 size = 40
+
+[[function]]
+address = 0x0041d110
+name = "Level_IsArmies"
+subsystem = "Warriors"
+
+[[function]]
+address = 0x0041d160
+name = "Level_IsRumble"
+subsystem = "Warriors"
+
+[[function]]
+address = 0x0041d1b0
+name = "Level_OffersHangout"
+subsystem = "Warriors"
 
 [[function]]
 address = 0x0041d628

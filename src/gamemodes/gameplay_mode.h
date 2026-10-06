@@ -62,6 +62,25 @@ struct ScriptedCast {
     world_objects::LevelObjects* objects = nullptr;
 };
 
+/// A loaded level that can draw a 2D layer over its frame just before the frame is presented: the pause menu over the
+/// paused world (docs/research/pause.md). The play mode implements it.
+class OverlaidLevel {
+  public:
+    virtual ~OverlaidLevel() = default;
+    OverlaidLevel() = default;
+    OverlaidLevel(const OverlaidLevel&) = delete;
+    OverlaidLevel& operator=(const OverlaidLevel&) = delete;
+    OverlaidLevel(OverlaidLevel&&) = delete;
+    OverlaidLevel& operator=(OverlaidLevel&&) = delete;
+
+    /// Draws the level's frame for `time` as render() does, with `overlay` drawn over everything else (the HUD
+    /// included) before the present.
+    virtual void renderWithOverlay(const RenderTime& time,
+                                   const std::function<void(graphics::RenderDevice&)>& overlay) = 0;
+};
+
+class PauseMode;
+
 /// Game mode 1, gameplay: one loaded level. The level flow (mode 8) selects a level and pushes it; its enter runs
 /// `InitLevel`, and each update is a frame of play.
 ///
@@ -147,6 +166,15 @@ class GameplayMode final : public GameMode {
     /// The level's frame, or black while none is loaded.
     void render(const RenderTime& time) override;
 
+    /// The level's frame with `overlay` drawn over it before the present (the paused world under the pause menu):
+    /// through the level when it is an OverlaidLevel; otherwise the level's frame without the overlay, or black with
+    /// it while no level is loaded.
+    void renderWithOverlay(const RenderTime& time, const std::function<void(graphics::RenderDevice&)>& overlay);
+
+    /// Lets START pause the game through `pause` (not owned; null: no pause): each frame of play ends with
+    /// PauseMode::playFrame().
+    void setPause(PauseMode* pause) { m_pause = pause; }
+
     /// Ends the level, its brains and gangs, and makes a fresh Lua state (`UnloadLevel`'s script part).
     void exit() override;
 
@@ -200,6 +228,7 @@ class GameplayMode final : public GameMode {
     world_objects::LevelObjects m_objects;
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0; // player 1's teleports the level has been told of
+    PauseMode* m_pause = nullptr;        // what START pauses through; not owned
 };
 
 } // namespace coney
