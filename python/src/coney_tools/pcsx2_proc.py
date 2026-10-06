@@ -219,6 +219,8 @@ def _user32() -> Any:
     lib.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
     lib.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
     lib.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    lib.SetProcessDpiAwarenessContext.argtypes = [ctypes.c_void_p]
+    lib.SetProcessDpiAwarenessContext.restype = wintypes.BOOL
     lib.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
     lib.IsWindowVisible.argtypes = [wintypes.HWND]
     lib.IsIconic.argtypes = [wintypes.HWND]
@@ -400,6 +402,21 @@ class _BitmapInfo(ctypes.Structure):
     )
 
 
+@lru_cache(maxsize=1)
+def ensure_dpi_aware() -> bool:
+    """Make this process per-monitor DPI aware (v2), once; True when the call took effect. Without it Windows hands a
+    DPI-scaled process virtualised window sizes, so GetClientRect and the PrintWindow bitmap disagree and screenshots
+    come out cropped. A no-op off Windows; a failure (the awareness is already set, by a manifest or an earlier call)
+    is ignored, since the existing setting is then what the rectangles are measured in."""
+    if sys.platform != "win32":
+        return False
+    try:
+        # DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 is the pseudo-handle -4.
+        return bool(_user32().SetProcessDpiAwarenessContext(ctypes.c_void_p(-4)))
+    except (OSError, AttributeError):
+        return False
+
+
 def capture(hwnd: int, out: Path) -> tuple[int, int, bool]:
     """Write the client area of a window to a PNG (PrintWindow into a memory bitmap: the window is not focused, moved
     or raised). Returns the width, the height and whether the picture is not all black. Raises ConfigError when the
@@ -407,6 +424,7 @@ def capture(hwnd: int, out: Path) -> tuple[int, int, bool]:
     _need_windows("pcsx2 screenshot")
     from PIL import Image
 
+    ensure_dpi_aware()  # before any rectangle is read
     user, gdi = _user32(), _gdi32()
     if user.IsIconic(hwnd):
         raise ConfigError("the window is minimised, so it has nothing to draw")

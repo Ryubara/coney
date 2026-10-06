@@ -3,6 +3,7 @@
 status, the commands that start PCSX2 refusing without a claim, and key parsing. No PCSX2 and no Win32 calls: the
 process layer is replaced by a fake."""
 
+import ctypes
 import json
 import threading
 from datetime import UTC, datetime
@@ -334,3 +335,23 @@ def test_keys_post_to_the_window_without_focusing(
     assert pcsx2_claims_cli.run_keys("alice", "pcsx2", ["space"], 100, 100) == 0
     assert sent == [([1234], [[0x20]])]
     assert "no focus changed" in capsys.readouterr().out
+
+
+def test_dpi_awareness_is_set_once_on_windows_and_never_elsewhere(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[int] = []
+
+    class FakeUser32:
+        def SetProcessDpiAwarenessContext(self, context: object) -> bool:
+            calls.append(getattr(context, "value", None) or 0)
+            return True
+
+    monkeypatch.setattr(pcsx2_proc, "_user32", lambda: FakeUser32())
+    pcsx2_proc.ensure_dpi_aware.cache_clear()
+    monkeypatch.setattr(pcsx2_proc.sys, "platform", "linux")
+    assert pcsx2_proc.ensure_dpi_aware() is False and calls == []
+    pcsx2_proc.ensure_dpi_aware.cache_clear()
+    monkeypatch.setattr(pcsx2_proc.sys, "platform", "win32")
+    assert pcsx2_proc.ensure_dpi_aware() is True
+    assert pcsx2_proc.ensure_dpi_aware() is True
+    assert calls == [ctypes.c_void_p(-4).value]
+    pcsx2_proc.ensure_dpi_aware.cache_clear()
