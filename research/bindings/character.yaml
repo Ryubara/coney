@@ -2838,6 +2838,7 @@
     Requesting fills 13 of the 64 dynamic-animation list entries. Releasing also drops files another script
     requested separately by the same name. Confirmed (code) unless marked.
   usage: {chunks: 8, calls: 9, boot: false, mission1: false, result_used: false, levels: [87, 5, 51, 11]}
+  coney: implemented
 
 - name: HuSetLookAtTarget
   wrapper: 0x00364b30

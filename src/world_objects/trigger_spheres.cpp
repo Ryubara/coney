@@ -35,6 +35,31 @@ bool TriggerSpheres::configure(double object, bool armed, float radius, int mode
     return true;
 }
 
+bool TriggerSpheres::arm(double object, bool armed) {
+    TriggerSphere* sphere = find(object);
+    if (!armed) {
+        if (sphere != nullptr) {
+            sphere->armed = false;
+            sphere->occupants.clear();
+        }
+        return true;
+    }
+    if (sphere == nullptr) {
+        if (m_spheres.size() >= kCapacity) {
+            return false;
+        }
+        // The defaults of 0x00414480.
+        sphere = &m_spheres.emplace_back();
+        sphere->object = object;
+        sphere->radius = 0.0F;
+        sphere->mode = 1;
+        sphere->stayPeriodMs = kDefaultStayPeriodMs;
+        sphere->nextStayMs = 0;
+    }
+    sphere->armed = true;
+    return true;
+}
+
 TriggerSphere* TriggerSpheres::find(double object) {
     const auto found = std::ranges::find(m_spheres, object, &TriggerSphere::object);
     return found == m_spheres.end() ? nullptr : &*found;

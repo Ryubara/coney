@@ -2,6 +2,7 @@
 #include "scripting/human_bindings.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -9,7 +10,9 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 #include "combat/combat_tuning.h"
 #include "human/human_flags.h"
@@ -396,28 +399,50 @@ NativeFunction makeUseAnim(const BindingContext& context) {
     };
 }
 
-// `SetDynamicAnimation(anim, release)`: adds the file to the level's list (64 entries) or, releasing, removes it.
-// **Coney choice**: a full list replaces its last entry (the original replaces the largest loaded one; Coney keeps no
-// sizes).
+// Adds `anim` to the level's dynamic-animation list (64 entries) or, releasing, removes it. **Coney choice**: a full
+// list replaces its last entry (the original replaces the largest loaded one; Coney keeps no sizes).
 // @orig 0x0040cd78 ResourceManager_SetDynamicAnimation (unknown)
+void setDynamicAnimation(std::vector<std::string>& list, const std::string& anim, bool release) {
+    const auto found = std::ranges::find(list, anim);
+    if (anim.empty()) {
+        return;
+    }
+    if (release) {
+        if (found != list.end()) {
+            list.erase(found);
+        }
+    } else if (found == list.end()) {
+        if (list.size() >= kDynamicAnimations) {
+            list.back() = anim;
+        } else {
+            list.push_back(anim);
+        }
+    }
+}
+
+// `SetDynamicAnimation(anim, release)`.
 NativeFunction makeSetDynamicAnimation(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
-        std::vector<std::string>& list = context->state->characters.dynamicAnimations;
-        const std::string anim = nameArg(args, 0);
-        const auto found = std::ranges::find(list, anim);
-        if (anim.empty()) {
-            return binding::none();
-        }
-        if (boolArg(args, 1)) {
-            if (found != list.end()) {
-                list.erase(found);
-            }
-        } else if (found == list.end()) {
-            if (list.size() >= kDynamicAnimations) {
-                list.back() = anim;
-            } else {
-                list.push_back(anim);
-            }
+        setDynamicAnimation(context->state->characters.dynamicAnimations, nameArg(args, 0), boolArg(args, 1));
+        return binding::none();
+    };
+}
+
+// The bum animations' table (`0x00510ff8`), in order: one file is listed twice
+// (docs/references/bindings/character.md#loadbumanims).
+constexpr std::array<std::string_view, 13> kBumAnimations{
+    "puke_fidget.anm",  "puke_idle.anm",      "puke_hit_react.anm", "puke_hit_die.anm",  "puke_hit_dead.anm",
+    "puke_big.anm",     "puke_hit_react.anm", "bm_sleep_itch.anm",  "bm_sleep_idle.anm", "bm_hit_grd_idle.anm",
+    "bum_beg_itch.anm", "bum_beg_idle.anm",   "bum_beg_hit.anm"};
+
+// `LoadBumAnims(on)`: each of the bum animations requested (or, off, released) as SetDynamicAnimation does; the file
+// listed twice is one entry, as a second request of a listed name changes nothing.
+// @orig 0x002abe98 LoadBumAnims (unknown)
+NativeFunction makeLoadBumAnims(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const bool release = !boolArg(args, 0);
+        for (const std::string_view anim : kBumAnimations) {
+            setDynamicAnimation(context->state->characters.dynamicAnimations, std::string(anim), release);
         }
         return binding::none();
     };
@@ -719,6 +744,7 @@ void addHumanBindings(LuaVm& vm, const BindingContext& context, std::function<do
     vm.registerFunction("HuPlaceItemInHand", makePlaceItemInHand(context, std::move(nextHandle)));
     vm.registerFunction("HuUseAnim", makeUseAnim(context));
     vm.registerFunction("SetDynamicAnimation", makeSetDynamicAnimation(context));
+    vm.registerFunction("LoadBumAnims", makeLoadBumAnims(context));
     vm.registerFunction("HuChangePlayerGang", makeChangePlayerGang(context));
     vm.registerFunction("WCEnableAllCommands", makeWcEnableAllCommands(context));
     vm.registerFunction("BrClearBackoff", makeClearBackoff(context));

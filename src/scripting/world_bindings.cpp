@@ -160,6 +160,17 @@ NativeFunction makeTriggerSphereCfg(const BindingContext& context) {
     };
 }
 
+// `TriggerSphereEnable(object, enable)`: the object's trigger sphere armed (made when it has none) or disarmed.
+// @orig 0x0036d008 TriggerSphereEnable (unknown)
+NativeFunction makeTriggerSphereEnable(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->spheres != nullptr) {
+            static_cast<void>(context->spheres->arm(handleArg(args, 0), booleanArg(args, 1, false)));
+        }
+        return binding::none();
+    };
+}
+
 } // namespace
 
 void addWorldBindings(LuaVm& vm, const BindingContext& context) {
@@ -173,6 +184,7 @@ void addWorldBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("ObjHide", makeObjShowHide(context, false));
     vm.registerFunction("ObjShow", makeObjShowHide(context, true));
     vm.registerFunction("TriggerSphereCfg", makeTriggerSphereCfg(context));
+    vm.registerFunction("TriggerSphereEnable", makeTriggerSphereEnable(context));
 }
 
 } // namespace coney::script

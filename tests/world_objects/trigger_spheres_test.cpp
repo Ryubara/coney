@@ -119,3 +119,31 @@ TEST_CASE("modes 1 and 2 also need a clear line, mode 2 from a raised centre", "
     CHECK(starts[0][2] == 0.0F);
     CHECK(starts.back()[2] == TriggerSpheres::kLineRaise);
 }
+
+TEST_CASE("TriggerSphereEnable arms a sphere, making one of radius 0 and mode 1; off forgets who is inside",
+          "[trigger_spheres]") {
+    TriggerSpheres spheres;
+    spheres.setLocate(locate);
+    // A new sphere of radius 0 accepts nobody.
+    REQUIRE(spheres.arm(7, true));
+    REQUIRE(spheres.find(7) != nullptr);
+    CHECK(spheres.find(7)->radius == 0.0F);
+    CHECK(spheres.find(7)->mode == 1);
+    CHECK(spheres.find(7)->stayPeriodMs == 1000);
+    std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 0, 0}, .alive = true}};
+    CHECK(checkAll(spheres, humans, 0).empty());
+    // Configured, a human inside enters; disarmed, he is forgotten without message 4 and the sphere stays.
+    REQUIRE(spheres.configure(7, true, 4.0F, 0, 500));
+    CHECK(checkAll(spheres, humans, 100) == Sent{{7, VolumeBoxes::kEntered, 100}});
+    REQUIRE(spheres.arm(7, false));
+    CHECK(checkAll(spheres, humans, 200).empty());
+    REQUIRE(spheres.find(7) != nullptr);
+    CHECK(spheres.find(7)->occupants.empty());
+    CHECK(spheres.find(7)->radius == 4.0F);
+    // Armed again, he gets a fresh message 3.
+    REQUIRE(spheres.arm(7, true));
+    CHECK(checkAll(spheres, humans, 300) == Sent{{7, VolumeBoxes::kEntered, 100}});
+    // Off for an object with no sphere does nothing.
+    CHECK(spheres.arm(8, false));
+    CHECK(spheres.find(8) == nullptr);
+}

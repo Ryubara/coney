@@ -4897,7 +4897,7 @@ marked.
 - **Wrapper** `0x00363500` (registered by `RegisterBindings`); **calls** `0x002abe98` `LoadBumAnims`
 - **Used by** 8 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ResetCommands {#resetcommands}
 

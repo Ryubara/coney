@@ -381,6 +381,12 @@ void addWorldBindings(ScriptSystem& scripts, LuaVm& vm, GameState& state) {
         player.multiplayerJoin = booleanArg(args, 0, false);
         return binding::none();
     });
+    // `SetMultiplayerCallback(fn)`: the two-player sync's function; nil clears it.
+    // @orig 0x0041b0f0 GameState_SetMultiplayerCallback (unknown)
+    add(vm, "SetMultiplayerCallback", [&player](std::span<const Value> args) {
+        player.multiplayerCallback = !args.empty() && !args[0].isNil() ? binding::string(args, 0) : std::string();
+        return binding::none();
+    });
     // `PadSetHandler(player, button, callback)`: player 0 is port 1's record, any other port 2's.
     add(vm, "PadSetHandler", [&player](std::span<const Value> args) {
         const std::size_t port = unsignedArg(args, 0) == 0 ? 0 : 1;

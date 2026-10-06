@@ -11,6 +11,7 @@
 
 #include "core/name_hash.h"
 #include "effects/particles.h"
+#include "world_objects/spawn_records.h"
 
 using coney::anim::Quat;
 using coney::anim::Vec3;
@@ -98,4 +99,42 @@ TEST_CASE("a stereo is put in, freed by a broken window, then taken once", "[car
     CHECK(cars.find(4)->stereo == StereoState::Taken);
     CHECK_FALSE(cars.takeStereo(4));
     CHECK(Cars::stereoPosition(*cars.find(4)).z > 0.0F);
+}
+
+TEST_CASE("a boot's item is released when the boot is knocked off, not when removed or blown off", "[cars]") {
+    Cars cars;
+    coney::world_objects::SpawnRecords records;
+    double next = 100;
+    cars.setObjects(&records, [&next] { return next++; });
+    REQUIRE(cars.spawn("car_coupe", Vec3{10, 20, 0}, Quat{}, 1) != nullptr);
+    REQUIRE(cars.spawn("car_coupe", Vec3{30, 20, 0}, Quat{}, 2) != nullptr);
+    REQUIRE(cars.spawn("car_coupe", Vec3{50, 20, 0}, Quat{}, 3) != nullptr);
+    // Car 1 hides a pipe: the record is pinned and moved to the boot on the third weapon hit (0.34 each).
+    REQUIRE(records.add(coney::world_objects::SpawnRecord{.handle = 50, .typeName = "dyn_pipe_a"}) != nullptr);
+    cars.placeInTrunk(1, 50, 0);
+    CHECK(records.find(50)->pinned);
+    CHECK(cars.find(1)->trunkLoaded);
+    CHECK_FALSE(cars.damagePart(1, coney::world_objects::kBootPart, 0.34F, false));
+    CHECK_FALSE(cars.damagePart(1, coney::world_objects::kBootPart, 0.34F, false));
+    CHECK(cars.damagePart(1, coney::world_objects::kBootPart, 0.34F, false));
+    CHECK_FALSE(cars.find(1)->trunkLoaded);
+    const Vec3 boot = Cars::bootPosition(*cars.find(1));
+    CHECK(records.find(50)->position == std::array<float, 3>{boot.x, boot.y, boot.z});
+    // Off already: no more damage.
+    CHECK_FALSE(cars.damagePart(1, coney::world_objects::kBootPart, 1.0F, false));
+    // Car 2 hides $5: knocked off, a dyn_money record holding it appears at the boot.
+    cars.placeInTrunk(2, 0, 5);
+    CHECK(cars.damagePart(2, coney::world_objects::kBootPart, 0.0F, false) == false);
+    CHECK(cars.damagePart(2, coney::world_objects::kBootPart, 1.0F, false));
+    REQUIRE(records.find(100) != nullptr);
+    CHECK(records.find(100)->typeName == coney::world_objects::kMoneyPickup);
+    CHECK(records.find(100)->money == 5);
+    // Car 3's $5 is lost when the car blows up (instant), and CarRemovePart releases nothing.
+    cars.placeInTrunk(3, 0, 5);
+    cars.removePart(3, coney::world_objects::kBootPart, true);
+    CHECK(cars.find(3)->trunkLoaded);
+    CHECK_FALSE(cars.damagePart(3, coney::world_objects::kBootPart, 1.0F, false)); // gone already: hits skip it
+    cars.placeInTrunk(2, 0, 5);
+    CHECK(cars.damagePart(2, 4, 0.0F, true));
+    CHECK(records.all().size() == 2);
 }

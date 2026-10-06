@@ -12,9 +12,9 @@ namespace coney::script {
 /// The world bindings the first mission still needed: the dynamic objects' show, hide, destroy and zones, the trigger
 /// spheres, the flag network, the subtitle switch, and two that do nothing in this build (`DoorCRCCheck`,
 /// `EnableShadow`).
-inline constexpr std::array<std::string_view, 10> kWorldBindings{
-    "CfgSubtitles", "DoorCRCCheck",  "EnableShadow", "FlagNetAddLink", "FlagNetTraverse",
-    "ObjDestroy",   "ObjEnableZone", "ObjHide",      "ObjShow",        "TriggerSphereCfg"};
+inline constexpr std::array<std::string_view, 11> kWorldBindings{
+    "CfgSubtitles",  "DoorCRCCheck", "EnableShadow", "FlagNetAddLink",   "FlagNetTraverse",    "ObjDestroy",
+    "ObjEnableZone", "ObjHide",      "ObjShow",      "TriggerSphereCfg", "TriggerSphereEnable"};
 
 /// Registers kWorldBindings in `vm`, working on `context` as each call finds it (a level sets its spheres and flag
 /// network after the Lua state was made; a null part does nothing).

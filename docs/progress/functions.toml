@@ -4794,6 +4794,11 @@ name = "Goal_BumTrigger"
 subsystem = "Human"
 
 [[function]]
+address = 0x002abe98
+name = "LoadBumAnims"
+subsystem = "Human"
+
+[[function]]
 address = 0x002abef8
 name = "BumLogicGoal_Init"
 subsystem = "Human"
@@ -6474,6 +6479,11 @@ subsystem = "Scripting"
 size = 152
 
 [[function]]
+address = 0x0036d008
+name = "TriggerSphereEnable"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x0036d0e0
 name = "TriggerSphereCfg"
 subsystem = "Scripting"
@@ -6891,6 +6901,11 @@ name = "CarMakeGoodAsNew"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x003788b8
+name = "CarPlaceInTrunkOnDetach"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x00378958
 name = "SpawnParticle"
 subsystem = "Scripting"
@@ -7082,8 +7097,28 @@ name = "Car_Init"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x0038a4d8
+name = "Car_DamagePart"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x0038c7d8
 name = "Car_RemovePartBits"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038d188
+name = "Car_ReleaseTrunkItem"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038d528
+name = "Car_SetTrunkItemKind"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038d538
+name = "Car_SetTrunkObject"
 subsystem = "TaskEngine"
 
 [[function]]
@@ -7110,6 +7145,11 @@ subsystem = "TaskEngine"
 [[function]]
 address = 0x0038e068
 name = "Car_Repair"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038e0f0
+name = "Car_PlaceInTrunkOnDetach"
 subsystem = "TaskEngine"
 
 [[function]]
@@ -7682,10 +7722,25 @@ subsystem = "WorldObjects"
 size = 160
 
 [[function]]
+address = 0x00414480
+name = "TriggerSphere_Init"
+subsystem = "WorldObjects"
+
+[[function]]
+address = 0x004144d0
+name = "TriggerSphere_Disarm"
+subsystem = "WorldObjects"
+
+[[function]]
 address = 0x004146e0
 name = "TriggerSphere_Update"
 subsystem = "WorldObjects"
 size = 840
+
+[[function]]
+address = 0x00414ae0
+name = "TriggerSphere_Enable"
+subsystem = "WorldObjects"
 
 [[function]]
 address = 0x00414bc0
@@ -7841,6 +7896,11 @@ address = 0x0041ad60
 name = "GameState_GetLuaSaveBool"
 subsystem = "Warriors"
 size = 48
+
+[[function]]
+address = 0x0041b0f0
+name = "GameState_SetMultiplayerCallback"
+subsystem = "Warriors"
 
 [[function]]
 address = 0x0041b6a8

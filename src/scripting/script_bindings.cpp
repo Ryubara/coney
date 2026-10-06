@@ -572,6 +572,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("CfgInventoryItem"),
     real("CfgMoneyCallback"),
     real("CfgMultiplayerJoin"),
+    real("SetMultiplayerCallback"),
     real("CfgSetStatTypeMax"),
     real("CfgSetStatValue"),
     real("CfgSetSteroTheftHandler"),
@@ -711,6 +712,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("HuTeleportNearHuman"),
     real("HuUseAnim"),
     real("SetDynamicAnimation"),
+    real("LoadBumAnims"),
     real("SetInterrogateParam"),
     real("WCEnableAllCommands"),
     real("WCIssueCommand"),
@@ -998,6 +1000,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("CarSetColor"),
     real("CarMakeGoodAsNew"),
     real("CarSpawnRadio"),
+    real("CarPlaceInTrunkOnDetach"),
     // The dynamic objects' show, hide, destroy and zones, the trigger spheres, the flag network, the subtitle switch
     // and two empty ones (world_bindings.h).
     real("CfgSubtitles"),
@@ -1010,6 +1013,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("ObjHide"),
     real("ObjShow"),
     real("TriggerSphereCfg"),
+    real("TriggerSphereEnable"),
     // The Rumble arenas' game mode, precache queue and switches, and the humans' movement lock, speech switch,
     // pocket, damage response and teleport (arena_bindings.h).
     real("ActGiveWay"),

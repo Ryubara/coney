@@ -21,7 +21,7 @@ struct TriggerSphere {
     float radius = 0.0F;               ///< `+0x174`, metres.
     int mode = 0;                      ///< `+0x17c`: 0 distance only, 1 and 2 also a clear line (see TriggerSpheres).
     bool armed = false;                ///< `+0x180`.
-    std::uint64_t stayPeriodMs = 1000; ///< `+0x164`: the period of message 5 (1000 from `0x00414480`).
+    std::uint64_t stayPeriodMs = 1000; ///< `+0x164`: the period of message 5 (TriggerSpheres::kDefaultStayPeriodMs).
     std::uint32_t handlerPeriodMs = 1000; ///< `TriggerSphereCfg`'s last argument, the handler component's `+0x74`.
     std::vector<double> occupants;        ///< The humans inside, at most VolumeBoxes::kMaxOccupants.
     std::uint64_t nextStayMs = 0;         ///< When message 5 may be sent again.
@@ -40,6 +40,8 @@ class TriggerSpheres {
   public:
     /// Spheres the pool holds (`0x006f3f50`).
     static constexpr std::size_t kCapacity = 100;
+    /// A new sphere's message-5 period (`0x00414480`).
+    static constexpr std::uint64_t kDefaultStayPeriodMs = 1000;
     /// Frames between two checks of one sphere.
     static constexpr std::uint32_t kFramesPerCheck = 5;
     /// The height above the feet (and, in mode 2, above the centre) of the clear-line tests' ends: Coney's choice.
@@ -54,6 +56,16 @@ class TriggerSpheres {
     /// false, when the pool is full), then configured. Occupants are kept across a reconfiguration.
     /// @orig 0x00414bc0 TriggerSphere_Configure (unknown)
     bool configure(double object, bool armed, float radius, int mode, std::uint32_t intervalMs);
+    /// `TriggerSphereEnable(object, on)`: on arms the object's sphere, first making one with the defaults of
+    /// `0x00414480` when it has none (radius 0, so it accepts nobody until a radius is set; mode 1; period 1000 ms;
+    /// refused, false, when the pool is full); off disarms it and forgets who is inside without message 4, keeping
+    /// the sphere and its settings, so a human still inside gets a fresh message 3 when it is armed again. Off does
+    /// nothing for an object with no sphere. **Coney choice**: the original also does nothing for an object without a
+    /// handler component; Coney keeps no components, so any object counts as having one.
+    /// @orig 0x00414ae0 TriggerSphere_Enable (unknown)
+    /// @orig 0x00414480 TriggerSphere_Init (unknown)
+    /// @orig 0x004144d0 TriggerSphere_Disarm (unknown)
+    bool arm(double object, bool armed);
     /// The sphere round `object`; null when it has none.
     [[nodiscard]] TriggerSphere* find(double object);
     [[nodiscard]] const TriggerSphere* find(double object) const;

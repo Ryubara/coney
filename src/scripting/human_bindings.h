@@ -23,7 +23,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addHumanBindings().
-inline constexpr std::array<std::string_view, 60> kHumanBindings{"BrClearBackoff",
+inline constexpr std::array<std::string_view, 61> kHumanBindings{"BrClearBackoff",
                                                                  "BrSetThugWantsWeapon",
                                                                  "CfgPlayerMugging",
                                                                  "CfgRageHandlers",
@@ -80,6 +80,7 @@ inline constexpr std::array<std::string_view, 60> kHumanBindings{"BrClearBackoff
                                                                  "HuSetUnstunnable",
                                                                  "HuTeleportNearHuman",
                                                                  "HuUseAnim",
+                                                                 "LoadBumAnims",
                                                                  "SetDynamicAnimation",
                                                                  "SetInterrogateParam",
                                                                  "WCEnableAllCommands"};

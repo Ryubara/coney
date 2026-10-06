@@ -28,6 +28,7 @@ struct SpawnRecord {
     bool removed = false;                      ///< `+0x24` bit `0x40000`: gone for good, never spawned again.
     bool hidden = false;                       ///< Its object is hidden (`ObjHide`) until shown again (`ObjShow`).
     float fadeInDistance = 0.0F;               ///< `+0x138`: what `ObjShow` was given (inferred: a fade-in distance).
+    std::uint32_t money = 0;                   ///< A `dyn_money` pickup's dollars (its object's `+0x124`).
 };
 
 /// The `ObjectTaskManager`'s spawn records: `ObjSpawn` adds one and returns its handle; resolving the handle (a binding

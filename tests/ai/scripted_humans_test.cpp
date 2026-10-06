@@ -326,6 +326,19 @@ TEST_CASE("SetDynamicAnimation lists the clips HuUseAnim may use", "[ai][scripte
     CHECK(level.state.characters.dynamicAnimations.empty());
 }
 
+TEST_CASE("LoadBumAnims requests the bum animations as one set and releases them", "[ai][scripted]") {
+    Level level;
+    level.call("SetDynamicAnimation", {Value("point_left.anm")});
+    level.call("LoadBumAnims", {Value(1.0)});
+    const std::vector<std::string>& list = level.state.characters.dynamicAnimations;
+    // Thirteen requests, one of them a name already listed: twelve files beside the script's own.
+    CHECK(list.size() == 13);
+    CHECK(list[1] == "puke_fidget.anm");
+    CHECK(list.back() == "bum_beg_hit.anm");
+    level.call("LoadBumAnims", {Value()});
+    CHECK(list == std::vector<std::string>{"point_left.anm"});
+}
+
 TEST_CASE("WCIssueCommand reaches a player's crew only while the command is enabled", "[ai][scripted]") {
     Level level;
     level.call("WCIssueCommand", {Value(1.0), Value(3.0), Value(1.0)});

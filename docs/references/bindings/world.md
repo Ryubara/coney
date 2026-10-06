@@ -384,7 +384,7 @@ vanishes after 15 s). All confirmed (code) unless marked.
   `0x0038d538` `Car_SetTrunkObject`, `0x0038d528` `Car_SetTrunkItemKind`, `0x0038d188` `Car_ReleaseTrunkItem`
 - **Used by** 12 of 467 script chunks (34 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 12 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CarRemovePart {#carremovepart}
 
@@ -2098,7 +2098,7 @@ without a handler component. All confirmed (code).
 - **Wrapper** `0x0036d008` (registered by `RegisterBindings`); **calls** `0x00414ae0` `TriggerSphere_Enable`
 - **Used by** 30 of 467 script chunks (58 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TriggerSphereSetRadius {#triggerspheresetradius}
 

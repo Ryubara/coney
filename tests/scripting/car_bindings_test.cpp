@@ -122,3 +122,16 @@ TEST_CASE("the car bindings paint, repair and put a stereo in the car they name"
     CHECK(h.cars.find(car)->stereo == coney::world_objects::StereoState::InCar);
     h.first("CarSpawnRadio", {Value(car + 50)}); // not a car: ignored
 }
+
+TEST_CASE("CarPlaceInTrunkOnDetach puts an object, or with a kind that many dollars, in the boot", "[car_bindings]") {
+    Harness h;
+    const double car =
+        h.first("CarSpawn", {str("car_coupe"), list({0, 0, 0}), list({0, 0, 0, 1})}).number().value_or(0);
+    h.first("CarPlaceInTrunkOnDetach", {Value(car), Value(405.0)});
+    REQUIRE(h.cars.find(car) != nullptr);
+    CHECK(h.cars.find(car)->trunkLoaded);
+    CHECK(h.cars.find(car)->trunkObject == 405.0);
+    h.first("CarPlaceInTrunkOnDetach", {Value(car), Value(0.0), Value(261.0)}); // the low 8 bits: $5
+    CHECK(h.cars.find(car)->trunkObject == 0.0);
+    CHECK(h.cars.find(car)->trunkMoney == 5);
+}

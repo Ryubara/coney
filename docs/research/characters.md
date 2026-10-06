@@ -1487,7 +1487,8 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   human only stands still; the icon, the object in the hand, the head-look and `HuUseAnim`'s clips other than the
   idle's (slot 0, which plays: [Rumble](rumble.md#coney)) are kept, not drawn or played; `HuSetPushable` is kept
   (bodies do not push each other); `HuDropWeapon` lets go of any object; `HuChangePlayerGang` and `WCIssueCommand` only
-  note the gang and command.
+  note the gang and command. `LoadBumAnims` requests or releases the bum animations' table, in order, as
+  `SetDynamicAnimation` does each: the file listed twice is one entry, so twelve files are listed.
 - **The hub's hold on a human** (`level95`; `src/scripting/hub_bindings.*`, acting through `ai::ScriptedHub`): money,
   death, character class and voice set are read; the scale, name, cuffs, muggable, pedestrian reaction,
   unarrestable, combat mode, gear and tackle block are set. **Workouts** (`HuWorkout`): the human faces the equipment

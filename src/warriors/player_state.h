@@ -57,6 +57,10 @@ struct PlayerState {
     std::string stereoTheftHandler;
     /// `CfgMultiplayerJoin(on)` (game state `+0x56e8`): a second player may join.
     bool multiplayerJoin = false;
+    /// `SetMultiplayerCallback(fn)` (game state `+0x3a4`): called with (human, joined) when the two-player sync
+    /// (`0x0041a460`) makes a Warrior player 2 or drops him; empty for none. **Coney stand-in**: Coney has one player,
+    /// so the sync never runs and the function is kept, not called.
+    std::string multiplayerCallback;
 
     /// Takes the checkpoint copy of the inventories and the statistics.
     void saveCheckpoint() {

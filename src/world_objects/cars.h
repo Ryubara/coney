@@ -4,18 +4,25 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string_view>
 #include <vector>
 
 #include "animation/anim_math.h"
 #include "world_objects/car_types.h"
+#include "world_objects/spawn_records.h"
 
 namespace coney::effects {
 class ParticleSystems;
 } // namespace coney::effects
 
 namespace coney::world_objects {
+
+/// The boot's part id (docs/research/cars.md#parts).
+inline constexpr std::uint32_t kBootPart = 5;
+/// The pickup a boot's dollars become (type 0x1c: picking it up gives a player that much money).
+inline constexpr std::string_view kMoneyPickup = "dyn_money";
 
 /// The type index of the police car (`car_copcar`), which brings its lights.
 inline constexpr std::uint8_t kPoliceCarType = 3;
@@ -45,6 +52,10 @@ struct Car {
     bool dirty = true;                      ///< `+0x1308`: the model needs its colour and transform again.
     bool lights = false;                    ///< `+0x1210`: whether it made the police car's `part_copcar_lights`.
     StereoState stereo = StereoState::None; ///< `CarSpawnRadio`'s stereo.
+    std::array<float, kCarParts> damage{};  ///< `+0x230 + part × 0xa0`: each part's damage; at 1 it comes off.
+    bool trunkLoaded = false;               ///< `+0x12e4`: something waits in the boot.
+    double trunkObject = 0;                 ///< `+0x120c`: the object in the boot, 0 for none.
+    std::uint8_t trunkMoney = 0;            ///< `+0x12e5`: else the dollars a `dyn_money` pickup will hold.
 };
 
 /// What `Car_UpdateRender` makes of a paint word for the model: `CarSetColor`'s `{c1, c2, c3, c4}` stored in that
@@ -113,6 +124,31 @@ class Cars {
     /// @orig 0x0038c7d8 Car_RemovePartBits (unknown)
     void removePart(double handle, std::uint32_t part, bool on);
 
+    /// What a boot's release makes: a `dyn_money` pickup's spawn record (Cars::setObjects()).
+    using NextHandle = std::function<double()>;
+    /// Sets the spawn records a boot's item is moved in or added to, and where a new record's handle comes from (null:
+    /// a release changes no record).
+    void setObjects(SpawnRecords* records, NextHandle nextHandle) {
+        m_records = records;
+        m_nextHandle = std::move(nextHandle);
+    }
+
+    /// `CarPlaceInTrunkOnDetach(car, object, itemKind)`: with `itemKind` 0 the object is pinned and put in the boot,
+    /// otherwise the low 8 bits of `itemKind` are dollars for a `dyn_money` pickup; the boot is marked loaded. A later
+    /// call replaces the earlier item; an unknown car does nothing.
+    /// @orig 0x0038e0f0 Car_PlaceInTrunkOnDetach (unknown)
+    /// @orig 0x0038d538 Car_SetTrunkObject (unknown)
+    /// @orig 0x0038d528 Car_SetTrunkItemKind (unknown)
+    void placeInTrunk(double handle, double object, std::uint32_t itemKind);
+    /// A part takes `amount` of damage (`instant`: set to 1 at once); at 1 it comes off (its bit in the kept removed
+    /// parts, `+0x11f8`). The boot (part 5) coming off a non-instant call releases a loaded boot's item; an instant
+    /// one (the car exploding) loses it. A part already off takes nothing. Returns whether the part came off now.
+    /// @orig 0x0038a4d8 Car_DamagePart (unknown)
+    bool damagePart(double handle, std::uint32_t part, float amount, bool instant);
+    /// Where a car's boot item is released (game axes). **Coney's stand-in**: the boot's offset in the type record
+    /// (`0x0057e4b0`) is not on the page, so 2.5 m behind the car's middle at 0.8 m, turned with the car.
+    [[nodiscard]] static anim::Vec3 bootPosition(const Car& car);
+
     /// `CarSpawnRadio`: puts a stereo in the car. An unknown handle is ignored.
     /// @orig 0x0038d690 Car_SpawnRadio (unknown)
     void spawnRadio(double handle);
@@ -130,8 +166,14 @@ class Cars {
     void clear() { m_cars.clear(); }
 
   private:
+    // `Car_ReleaseTrunkItem`: the boot's object moved to the boot, or a `dyn_money` pickup of its dollars made there.
+    // @orig 0x0038d188 Car_ReleaseTrunkItem (unknown)
+    void releaseTrunk(Car& car);
+
     std::vector<Car> m_cars;
     effects::ParticleSystems* m_particles = nullptr;
+    SpawnRecords* m_records = nullptr;
+    NextHandle m_nextHandle;
 };
 
 /// The part removed with `part` (a door's window), or nothing: doors 14, 16, 18, 20 take windows 15, 17, 19, 21

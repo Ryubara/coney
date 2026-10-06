@@ -13,8 +13,8 @@ namespace coney::script {
 /// The parked cars' bindings (docs/research/cars.md): `CarSpawn` makes a car, `CarSetColor` paints it,
 /// `CarMakeGoodAsNew` repairs it and `CarSpawnRadio` puts a stealable stereo in it. All real; installBindings()
 /// registers them.
-inline constexpr std::array<std::string_view, 4> kCarBindings{"CarMakeGoodAsNew", "CarSetColor", "CarSpawn",
-                                                              "CarSpawnRadio"};
+inline constexpr std::array<std::string_view, 5> kCarBindings{"CarMakeGoodAsNew", "CarPlaceInTrunkOnDetach",
+                                                              "CarSetColor", "CarSpawn", "CarSpawnRadio"};
 
 /// Registers kCarBindings in `vm`, working on `context.cars` (null: `CarSpawn` still gives a handle, and nothing is
 /// kept). `nextHandle` gives each car its handle, from the counter every world object's handle comes from.

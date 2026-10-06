@@ -38,6 +38,7 @@ inline constexpr std::array<std::string_view, 43> kPlayerBindings{
     "PadSetHandler",
     "PadSetHandlerEx",
     "ReportCrime",
+    "SetMultiplayerCallback",
     "StatAdd",
     "StatGetScore",
     "StatReset",

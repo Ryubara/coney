@@ -270,6 +270,10 @@ TEST_CASE("crime reporting, the stereo handler, joining and the store colour", "
     CHECK(h.state.player.stereoTheftHandler == "P2.StereoStolen");
     h.first("CfgMultiplayerJoin", {Value(1.0)});
     CHECK(h.state.player.multiplayerJoin);
+    h.first("SetMultiplayerCallback", {str("InventoryPlayer2")});
+    CHECK(h.state.player.multiplayerCallback == "InventoryPlayer2");
+    h.first("SetMultiplayerCallback", {Value()});
+    CHECK(h.state.player.multiplayerCallback.empty());
 
     auto colour = std::make_shared<Table>();
     for (int i = 1; i <= 4; ++i) {

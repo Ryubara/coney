@@ -289,6 +289,7 @@
   notes: >-
     The store is confirmed; the trigger is inferred from the scripts' handler names.
   usage: {chunks: 6, calls: 7, boot: true, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: SetArmiesMultiplayerCallback
   wrapper: 0x00370660

@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,466 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,478 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-388 reimplemented function(s) have no size yet and add no bytes.
+400 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -62,19 +62,19 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▏░░░░░░░░░░░░░` | 30.6% | 97 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 57 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
-| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 13.9% | 458 | 1,096,672 |
+| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 13.9% | 459 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
-| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 197 | 197,192 |
+| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 199 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 72 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 77 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
-| `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 23 | 22,008 |
-| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 106 | 54,264 |
+| `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
+| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 107 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -940,6 +940,7 @@ at the top of the repository's `README.md`.
 | `0x002aae30` | `PedestrianGoal_Init` | `Human` | 232 |
 | `0x002abd38` | `Goal_Bum` | `Human` | 208 |
 | `0x002abe08` | `Goal_BumTrigger` | `Human` | not filled in |
+| `0x002abe98` | `LoadBumAnims` | `Human` | not filled in |
 | `0x002abef8` | `BumLogicGoal_Init` | `Human` | 264 |
 | `0x002ad2c0` | `Goal_Peddler` | `Human` | 184 |
 | `0x002ad378` | `PeddlerGoal_Init` | `Human` | 280 |
@@ -1230,6 +1231,7 @@ at the top of the repository's `README.md`.
 | `0x0036bb10` | `CfgSetDatabaseSizes` | `Scripting` | 424 |
 | `0x0036ca18` | `GetPosition` | `Scripting` | 112 |
 | `0x0036cdc0` | `TeleportToFlag` | `Scripting` | 152 |
+| `0x0036d008` | `TriggerSphereEnable` | `Scripting` | not filled in |
 | `0x0036d0e0` | `TriggerSphereCfg` | `Scripting` | 232 |
 | `0x0036d938` | `ToInt` | `Scripting` | not filled in |
 | `0x0036de50` | `CarSpawnRadio` | `Scripting` | not filled in |
@@ -1301,6 +1303,7 @@ at the top of the repository's `README.md`.
 | `0x00378320` | `CarSpawn` | `Scripting` | not filled in |
 | `0x003785c8` | `CarSetColor` | `Scripting` | not filled in |
 | `0x00378808` | `CarMakeGoodAsNew` | `Scripting` | not filled in |
+| `0x003788b8` | `CarPlaceInTrunkOnDetach` | `Scripting` | not filled in |
 | `0x00378958` | `SpawnParticle` | `Scripting` | not filled in |
 | `0x00379fd0` | `AddFlag` | `Scripting` | 384 |
 | `0x0037a288` | `GetFlagPos` | `Scripting` | 112 |
@@ -1334,12 +1337,17 @@ at the top of the repository's `README.md`.
 | `0x00386488` | `random` | `Scripting` | 40 |
 | `0x00387ad8` | `Car_Release` | `TaskEngine` | 240 |
 | `0x00387bc8` | `Car_Init` | `TaskEngine` | not filled in |
+| `0x0038a4d8` | `Car_DamagePart` | `TaskEngine` | not filled in |
 | `0x0038c7d8` | `Car_RemovePartBits` | `TaskEngine` | not filled in |
+| `0x0038d188` | `Car_ReleaseTrunkItem` | `TaskEngine` | not filled in |
+| `0x0038d528` | `Car_SetTrunkItemKind` | `TaskEngine` | not filled in |
+| `0x0038d538` | `Car_SetTrunkObject` | `TaskEngine` | not filled in |
 | `0x0038d690` | `Car_SpawnRadio` | `TaskEngine` | not filled in |
 | `0x0038dde8` | `Car_Spawn` | `TaskEngine` | not filled in |
 | `0x0038dea8` | `Car_Destroy` | `TaskEngine` | 64 |
 | `0x0038df38` | `Car_SetColour` | `TaskEngine` | not filled in |
 | `0x0038e068` | `Car_Repair` | `TaskEngine` | not filled in |
+| `0x0038e0f0` | `Car_PlaceInTrunkOnDetach` | `TaskEngine` | not filled in |
 | `0x0038f378` | `Glass_Break` | `TaskEngine` | 496 |
 | `0x0038f8a8` | `GlassManager_Create` | `TaskEngine` | 424 |
 | `0x0038fab8` | `GlassTypes_Set` | `TaskEngine` | 40 |
@@ -1442,7 +1450,10 @@ at the top of the repository's `README.md`.
 | `0x00412c40` | `VolumeBox_SetRotation` | `WorldObjects` | 96 |
 | `0x00413198` | `VolumeBox_ContainsObject` | `WorldObjects` | not filled in |
 | `0x00414398` | `TriggerSpheres_Update` | `WorldObjects` | 160 |
+| `0x00414480` | `TriggerSphere_Init` | `WorldObjects` | not filled in |
+| `0x004144d0` | `TriggerSphere_Disarm` | `WorldObjects` | not filled in |
 | `0x004146e0` | `TriggerSphere_Update` | `WorldObjects` | 840 |
+| `0x00414ae0` | `TriggerSphere_Enable` | `WorldObjects` | not filled in |
 | `0x00414bc0` | `TriggerSphere_Configure` | `WorldObjects` | 264 |
 | `0x004152e0` | `VolumeBox_SetEnabled` | `WorldObjects` | not filled in |
 | `0x00415378` | `VolumeBox_Update` | `WorldObjects` | 792 |
@@ -1470,6 +1481,7 @@ at the top of the repository's `README.md`.
 | `0x0041ad00` | `GameState_GetLuaSaveFloat` | `Warriors` | 40 |
 | `0x0041ad28` | `GameState_SetLuaSaveBool` | `Warriors` | 56 |
 | `0x0041ad60` | `GameState_GetLuaSaveBool` | `Warriors` | 48 |
+| `0x0041b0f0` | `GameState_SetMultiplayerCallback` | `Warriors` | not filled in |
 | `0x0041b6a8` | `ReportCrime` | `Warriors` | 16 |
 | `0x0041b6e0` | `Crime_IsHappening` | `Warriors` | not filled in |
 | `0x0041b8b0` | `Crime_Report` | `Warriors` | 1,560 |

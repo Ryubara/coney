@@ -150,8 +150,13 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   `CarSetColor` packs its four numbers as [Colour](#colour) says and marks the car dirty, `CarMakeGoodAsNew` clears
   the removed and open parts, and removing door or window part 14, 16, 18 or 20 also removes the next.
   `CarSpawnRadio` puts a stereo in the car; a broken pane frees it and a theft takes it once.
-- The bindings (`repo:src/scripting/car_bindings.h`) are `CarSpawn`, `CarSetColor`, `CarMakeGoodAsNew` and
-  `CarSpawnRadio`; `CarSpawn` returns `NilHandle` when the pool is full.
+- The bindings (`repo:src/scripting/car_bindings.h`) are `CarSpawn`, `CarSetColor`, `CarMakeGoodAsNew`,
+  `CarSpawnRadio` and `CarPlaceInTrunkOnDetach`; `CarSpawn` returns `NilHandle` when the pool is full.
+- **Part damage and the boot item** (`Cars::damagePart()`, `Cars::placeInTrunk()`): a part's damage adds up (an
+  instant call sets it to 1) and at 1 the part comes off (its kept removed bit); the boot coming off a non-instant
+  call moves the pinned boot object there, or adds a `dyn_money` spawn record holding the boot's dollars; an instant
+  call loses the item, and `CarRemovePart` releases nothing. Nothing in Coney hits cars yet (the hit handler's zones,
+  `0x0038bea0`, are not built), so in play the item stays in the boot.
 - `platform::ParkedCars` (`repo:src/platform/parked_cars.h`) draws each car's first 26 atomics, less its removed parts,
   from the type's Object List model, and gives each car a box (12 triangles) that joins the level's collision mesh.
 
@@ -162,6 +167,8 @@ Coney's stand-ins, where this page is silent:
 - A car's obstacle is one box around its undamaged atomics, not the type record's boxes; the rebuilt collision mesh
   uses a 4 m grid.
 - The stereo sits 0.8 m above the car's origin; a pane frees it within 2 m.
+- A boot item is released 2.5 m behind the car's middle at 0.8 m (the type record's boot offset is not on the page);
+  the money pickup's 15 s life is not applied.
 - A name that is not one of the six types still makes a car, which draws nothing.
 
 ## Open questions

@@ -2,7 +2,10 @@
 #include "world_objects/cars.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <string>
+#include <utility>
 
 #include "core/name_hash.h"
 #include "effects/particles.h"
@@ -124,6 +127,75 @@ void Cars::removePart(double handle, std::uint32_t part, bool on) {
         }
     }
     car->dirty = true;
+}
+
+void Cars::placeInTrunk(double handle, double object, std::uint32_t itemKind) {
+    Car* car = find(handle);
+    if (car == nullptr) {
+        return;
+    }
+    const auto dollars = static_cast<std::uint8_t>(itemKind & 0xffU);
+    if (itemKind != 0) {
+        car->trunkObject = 0;
+        car->trunkMoney = dollars;
+    } else {
+        // The object is pinned, so streaming never stores it while it waits.
+        if (m_records != nullptr) {
+            m_records->setPinned(object, true);
+        }
+        car->trunkObject = object;
+        car->trunkMoney = 0;
+    }
+    car->trunkLoaded = true;
+}
+
+bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool instant) {
+    Car* car = find(handle);
+    if (car == nullptr || part >= car->damage.size()) {
+        return false;
+    }
+    const std::uint32_t bit = 1U << part;
+    if ((car->removedKept & bit) != 0) {
+        return false;
+    }
+    float& damage = car->damage.at(part);
+    damage = instant ? 1.0F : damage + amount;
+    if (damage < 1.0F) {
+        return false;
+    }
+    car->removedKept |= bit;
+    car->dirty = true;
+    if (part == kBootPart && !instant && car->trunkLoaded) {
+        car->trunkLoaded = false;
+        releaseTrunk(*car);
+    }
+    return true;
+}
+
+anim::Vec3 Cars::bootPosition(const Car& car) {
+    constexpr anim::Vec3 kBootOffset{0.0F, -2.5F, 0.8F};
+    return anim::add(car.position,
+                     anim::transformDirection(anim::matrixFromQuat(anim::normalise(car.rotation)), kBootOffset));
+}
+
+void Cars::releaseTrunk(Car& car) {
+    if (m_records == nullptr) {
+        return;
+    }
+    const anim::Vec3 at = bootPosition(car);
+    const std::array<float, 3> position{at.x, at.y, at.z};
+    if (car.trunkObject != 0) {
+        if (SpawnRecord* record = m_records->find(car.trunkObject); record != nullptr) {
+            record->position = position;
+        }
+        return;
+    }
+    if (car.trunkMoney != 0 && m_nextHandle) {
+        static_cast<void>(m_records->add(SpawnRecord{.handle = m_nextHandle(),
+                                                     .typeName = std::string(kMoneyPickup),
+                                                     .position = position,
+                                                     .money = car.trunkMoney}));
+    }
 }
 
 void Cars::spawnRadio(double handle) {

@@ -401,7 +401,7 @@ new player an inventory.
 - **Wrapper** `0x00370630` (registered by `RegisterBindings`); **calls** `0x0041b0f0`
 - **Used by** 6 of 467 script chunks (7 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetObjZoneMsgHandler {#setobjzonemsghandler}
 

@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <utility>
 
 #include "scripting/binding_args.h"
@@ -86,11 +87,27 @@ NativeFunction makeCarSpawnRadio(const BindingContext& context) {
     };
 }
 
+// `CarPlaceInTrunkOnDetach(car, object, itemKind)`: an item hidden in the boot until it comes off; the release moves
+// the object or adds a `dyn_money` record (its handle from the world objects' counter) in the level's records.
+// @orig 0x003788b8 CarPlaceInTrunkOnDetach (unknown)
+NativeFunction makeCarPlaceInTrunkOnDetach(const BindingContext& context, std::function<double()> nextHandle) {
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+        if (world_objects::Cars* cars = context->cars; cars != nullptr) {
+            cars->setObjects(context->spawnRecords, nextHandle);
+            cars->placeInTrunk(
+                handleArg(args, 0), handleArg(args, 1),
+                static_cast<std::uint32_t>(static_cast<std::int64_t>(std::trunc(binding::number(args, 2)))));
+        }
+        return binding::none();
+    };
+}
+
 } // namespace
 
 void addCarBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     vm.registerFunction("CarMakeGoodAsNew", makeCarMakeGoodAsNew(context));
     vm.registerFunction("CarSetColor", makeCarSetColor(context));
+    vm.registerFunction("CarPlaceInTrunkOnDetach", makeCarPlaceInTrunkOnDetach(context, nextHandle));
     vm.registerFunction("CarSpawn", makeCarSpawn(context, std::move(nextHandle)));
     vm.registerFunction("CarSpawnRadio", makeCarSpawnRadio(context));
 }

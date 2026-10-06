@@ -808,7 +808,9 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   the sphere's 1000 ms and 4 going to the object's handler; gameplay finds the object among the scripts' humans, the
   flags and the spawn records. **Coney's choices:** the sphere's own object is never its occupant; the clear-line test
   of modes 1 and 2 is a collision-mesh ray from the centre (mode 2: raised 1 m) to 1 m above the human's feet;
-  `TriggerSphereCfg`'s interval is kept as the handler's period but not used.
+  `TriggerSphereCfg`'s interval is kept as the handler's period but not used. `TriggerSphereEnable` arms a sphere
+  (making one with radius 0, mode 1 and a 1000 ms period when the object has none) or disarms it, forgetting who is
+  inside without message 4; Coney has no handler components, so it acts on any object.
 - **Play** (`src/gamemodes/gameplay_mode.h`): the scripts keep running in a level, stepped every frame after the
   level's step; `--play-level LEVEL` enters a level the same way, after the preloads and a fresh state
   (`LevelScripts`, `src/gamemodes/level_start.h`). In `level99` at checkpoint 1 the tutorial runs from the intro

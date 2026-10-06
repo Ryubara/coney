@@ -186,6 +186,8 @@ Coney's choices, where the page is silent:
   `CfgInventoryCallback` and `CfgHuInventoryCallback` calls in the order above; `CfgMoneyCallback`
   ([config](../references/bindings/config.md#cfgmoneycallback)) sets the money callback. The give bindings keep their
   own paths (`GiveMoney` calls the money callback; the others call none), as their notify flags are not traced.
+- `SetMultiplayerCallback`'s function is kept (`PlayerState::multiplayerCallback`); Coney has one player, so the
+  two-player sync that calls it never runs.
 
 ## Open questions
 
