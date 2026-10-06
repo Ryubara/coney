@@ -269,9 +269,11 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] WorldView view(const human::PlayerSnapshot& snapshot, float drawDistance) const;
     // Makes the scene stage (play_level_scene.cpp).
     void makeStage();
-    // One step of the scenes at `nowMs` with pad 1's and 2's buttons: the scenes' update, then player 1 placed where a
-    // scene let him go.
+    // One step of the scenes at `nowMs` with pad 1's and 2's buttons (a released human is placed as it is let go,
+    // by placeReleased).
     void stepScenes(std::uint64_t nowMs, std::uint16_t buttons);
+    // Places a human the scene has let go, where the scene left it.
+    void placeReleased(const SceneStage::Release& release);
     // Whether a scene holds player 1 now: his pad does nothing and he is drawn as the scene poses him.
     [[nodiscard]] bool sceneHoldsPlayer() const;
     // The handle the scripts name a cast AI human by (its brain's); 0 for one with no brain.

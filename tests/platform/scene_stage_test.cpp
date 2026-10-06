@@ -6,8 +6,10 @@
 
 #include <cmath>
 #include <expected>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -98,4 +100,21 @@ TEST_CASE("without player 1's cameras the stage keeps the scene camera alone", "
     CHECK(stage.cameraActive());
     stage.cameraEnd(1.0F);
     CHECK_FALSE(stage.cameraActive());
+}
+
+TEST_CASE("a released human is handed to the play mode at the release, at its end pose after a skip", "[scene_stage]") {
+    SceneStage stage = quietStage();
+    std::vector<SceneStage::Release> released;
+    stage.setReleaseHandler([&released](const SceneStage::Release& release) { released.push_back(release); });
+    stage.humanJoin(5.0, 1, 0, ScenePose{}, 0);
+    CHECK(stage.holds(5.0));
+    // Called at once, before anything the scene's end function then does to the human.
+    stage.humanRelease(5.0, ScenePose{.position = Vec3{4.0F, 5.0F, 6.0F}, .rotation = Quat{}});
+    REQUIRE(released.size() == 1);
+    CHECK(released[0].human == 5.0);
+    CHECK(near(released[0].feet, Vec3{4.0F, 5.0F, 6.0F}));
+    CHECK_FALSE(stage.holds(5.0));
+    // A human the scene does not hold is not handed over.
+    stage.humanRelease(6.0, std::nullopt);
+    CHECK(released.size() == 1);
 }

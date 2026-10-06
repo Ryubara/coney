@@ -10,6 +10,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "audio/sound_player.h"
@@ -92,13 +93,15 @@ class SceneStage final : public scenes::SceneHost {
     [[nodiscard]] bool holds(double human) const;
     /// The newest frame the scene gave `human`, blended `alpha` of the way from the one before; nothing when none.
     [[nodiscard]] std::optional<scenes::RoleFrame> frameOf(double human, float alpha) const;
-    /// A human the scene has given back since the last call, and where it stands now.
+    /// A human the scene gives back, and where it stands then.
     struct Release {
         double human = 0.0;
         anim::Vec3 feet{};
         float heading = 0.0F;
     };
-    [[nodiscard]] std::vector<Release> takeReleases();
+    /// Sets what places a released human. It is called at the release itself, before the scene's end function
+    /// runs (scenes.md#ending), so the end function's own moves (a teleport to a flag) win over the placement.
+    void setReleaseHandler(std::function<void(const Release&)> handler) { m_onRelease = std::move(handler); }
 
     /// Skins the puppets for the frame between the last two steps, `alpha` of the way, with `skin` (the play mode's
     /// skinning: character, pose, feet, heading into positions and normals).
@@ -167,7 +170,7 @@ class SceneStage final : public scenes::SceneHost {
     std::vector<std::string> m_roleNames;
     std::map<double, Bound> m_bound;
     std::map<double, Puppet> m_puppets;
-    std::vector<Release> m_releases;
+    std::function<void(const Release&)> m_onRelease;
     std::optional<Interpolated<CameraState>> m_camera;
     graphics::ScreenFade m_fade;
     scenes::Letterbox m_letterbox;

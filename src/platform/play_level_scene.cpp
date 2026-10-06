@@ -69,6 +69,8 @@ void PlayLevelMode::makeStage() {
             return model.empty() ? m_model : model;
         },
         m_print);
+    // Placed at the release, before the scene's end function can move them on.
+    m_stage->setReleaseHandler([this](const SceneStage::Release& release) { placeReleased(release); });
 }
 
 void PlayLevelMode::attachScenes(scenes::SceneSystem* scenes, double playerHandle) {
@@ -108,16 +110,17 @@ void PlayLevelMode::stepScenes(std::uint64_t nowMs, std::uint16_t buttons) {
     m_stage->beginStep(nowMs);
     m_scenes->update(nowMs, buttons);
     m_stage->setCinematic(m_scenes->cinematicActive());
+}
+
+void PlayLevelMode::placeReleased(const SceneStage::Release& release) {
     // Player 1 and the cast, let go, stand where the scene left them (their end marks after a skip), on the ground.
     // **Coney's choice** for a cast human: placed as a spawn places it (Human_Init), its stamina full again.
-    for (const SceneStage::Release& release : m_stage->takeReleases()) {
-        const float headingDegrees = release.heading * 180.0F / std::numbers::pi_v<float>;
-        if (release.human == m_playerHandle) {
-            m_player->teleport(&m_scenery->collision(),
-                               human::PlayerStart{.position = release.feet, .headingDegrees = headingDegrees});
-        } else if (const ai::AiHuman* fighter = castHumanOf(release.human); fighter != nullptr) {
-            fighter->human->spawn(&m_scenery->collision(), release.feet, headingDegrees);
-        }
+    const float headingDegrees = release.heading * 180.0F / std::numbers::pi_v<float>;
+    if (release.human == m_playerHandle) {
+        m_player->teleport(&m_scenery->collision(),
+                           human::PlayerStart{.position = release.feet, .headingDegrees = headingDegrees});
+    } else if (const ai::AiHuman* fighter = castHumanOf(release.human); fighter != nullptr) {
+        fighter->human->spawn(&m_scenery->collision(), release.feet, headingDegrees);
     }
 }
 

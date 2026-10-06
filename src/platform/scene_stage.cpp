@@ -119,8 +119,6 @@ std::optional<scenes::RoleFrame> SceneStage::frameOf(double human, float alpha) 
     return blend(frame->previous(), frame->current(), alpha);
 }
 
-std::vector<SceneStage::Release> SceneStage::takeReleases() { return std::exchange(m_releases, {}); }
-
 void SceneStage::skinPuppets(float alpha, const Skin& skin) {
     for (auto& [human, puppet] : m_puppets) {
         const auto bound = m_bound.find(human);
@@ -241,7 +239,9 @@ void SceneStage::humanRelease(double human, const std::optional<scenes::ScenePos
         release.feet = frame->current().feet;
         release.heading = frame->current().heading;
     }
-    m_releases.push_back(release);
+    if (m_onRelease) {
+        m_onRelease(release);
+    }
     if (found->second.model.empty()) {
         m_bound.erase(found); // the play mode's own human goes back to it
         return;

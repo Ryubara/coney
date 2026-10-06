@@ -522,7 +522,8 @@ when it jumps more than 1 m), the letterbox (two bars 0.125 of the screen high, 
 frame. In a level the scene camera is player 1's ([Camera](camera.md#scenes)): the scene's start pushes the camera
 shown, its keys set the scene camera's view and its end pops the camera back over `BlendCam` seconds (in the sandbox,
 with no cameras, the end is a cut). The player and the level's cast (the humans its scripts made) are posed from
-their roles' frames and, when let go, stand where the scene left them (a cast human placed as a spawn places it);
+their roles' frames and, when let go, stand where the scene left them (a cast human placed as a spawn places it),
+placed at the release itself so the end function's own moves (`level87`'s `TeleportToFlag`) win ([Ending](#ending));
 other bound humans are drawn as puppets of their characters. Sounds go through the sound engine
 ([Sound](sound.md#scene-sound)): the soundtrack is prepared on the scene's load and starts on its event, the engine
 ducking the music to 0.75 while it plays, and it stops when the cinematic ends (Coney's choice, so a skip silences
