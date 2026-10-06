@@ -32,6 +32,10 @@ namespace coney::scenes {
 class SceneSystem;
 } // namespace coney::scenes
 
+namespace coney::graphics {
+struct LevelLighting;
+} // namespace coney::graphics
+
 namespace coney::script {
 
 class AiBindingHost;
@@ -148,7 +152,8 @@ struct BindingContext {
         nullptr; ///< The dynamic objects' spawn records (`ObjSpawn`); null keeps none.
     world_objects::LevelObjects* objects = nullptr; ///< The level's glass and doors; null places none.
     scenes::SceneSystem* scenes = nullptr;          ///< The scenes the bindings play; null: Coney's stand-in.
-    camera::Cameras* cameras = nullptr; ///< Player 1's cameras, which the camera bindings drive; null: none.
+    camera::Cameras* cameras = nullptr;          ///< Player 1's cameras, which the camera bindings drive; null: none.
+    graphics::LevelLighting* lighting = nullptr; ///< The lights and fog the lighting bindings set; null keeps none.
 };
 
 /// Registers every binding of bindingTable() in `vm`, a fresh state of `scripts`: the real ones working on `context`,

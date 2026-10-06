@@ -35,6 +35,8 @@ add_executable(coney_tests
     gamemodes/text_viewer_mode_test.cpp
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
+    graphics/human_lighting_test.cpp
+    graphics/light_manager_test.cpp
     graphics/overlay_camera_test.cpp
     graphics/particle_page_test.cpp
     graphics/ps2_world_mesh_test.cpp
@@ -82,6 +84,7 @@ add_executable(coney_tests
     scripting/disc_strings_test.cpp
     scripting/camera_bindings_test.cpp
     scripting/level_bindings_test.cpp
+    scripting/lighting_bindings_test.cpp
     scripting/lua_chunk_test.cpp
     scripting/lua_libraries_test.cpp
     scripting/lua_vm_test.cpp

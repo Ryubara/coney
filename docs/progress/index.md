@@ -19,11 +19,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 9.6%](https://img.shields.io/badge/reimplemented-9.6%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 10.0%](https://img.shields.io/badge/reimplemented-10.0%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▉░░░░░░░░░░░░░░░░░░` | 9.6% of the game's own code (322,644 of 3,354,776 bytes, 831 functions) |
+| **Reimplemented** | `██░░░░░░░░░░░░░░░░░░` | 10.0% of the game's own code (333,940 of 3,354,776 bytes, 852 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -60,8 +60,8 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `█▏░░░░░░░░░░░░░░░░░░` | 5.7% | 21 | 62,808 |
 | `FileIO` | `█▍░░░░░░░░░░░░░░░░░░` | 7.0% | 6 | 7,120 |
 | `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 52 | 100,440 |
-| `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 33 | 195,624 |
-| `GUI` | `██▎░░░░░░░░░░░░░░░░░` | 11.3% | 121 | 497,416 |
+| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.1% | 51 | 195,624 |
+| `GUI` | `██▎░░░░░░░░░░░░░░░░░` | 11.4% | 122 | 497,416 |
 | `Human` | `██░░░░░░░░░░░░░░░░░░` | 9.9% | 239 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
@@ -72,7 +72,7 @@ at the top of the repository's `README.md`.
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 41 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
+| `World` | `▏░░░░░░░░░░░░░░░░░░░` | 0.9% | 25 | 24,344 |
 | `WorldObjects` | `███▏░░░░░░░░░░░░░░░░` | 15.7% | 14 | 22,008 |
 | `Warriors` | `█▎░░░░░░░░░░░░░░░░░░` | 6.2% | 24 | 54,264 |
 | `Movie` | `██████▊░░░░░░░░░░░░░` | 33.9% | 1 | 5,208 |
@@ -275,6 +275,7 @@ at the top of the repository's `README.md`.
 | `0x0016d170` | `Gangs_Update` | `GameModes` | 672 |
 | `0x0016e258` | `CharacterData_OnLoaded` | `GameModes` | 304 |
 | `0x0016e8f0` | `ResourceManager_LoadCharacterData` | `Graphics` | 304 |
+| `0x00174320` | `HumanRender_Draw` | `Graphics` | 2,008 |
 | `0x00175080` | `CharacterInstance_GetAnim` | `Graphics` | 160 |
 | `0x00175210` | `CharacterInstance_TopTask` | `Graphics` | not filled in |
 | `0x001754e8` | `CharacterInstance_InsertTask` | `Graphics` | not filled in |
@@ -285,6 +286,23 @@ at the top of the repository's `README.md`.
 | `0x00179c30` | `Font_Draw` | `Graphics` | 1,408 |
 | `0x0017a560` | `Occluders_Load` | `Graphics` | not filled in |
 | `0x0017ae38` | `ColourTable_Init` | `Graphics` | not filled in |
+| `0x0017c508` | `Light_InitFromDescriptor` | `Graphics` | 392 |
+| `0x0017c840` | `Light_ApplyDescriptor` | `Graphics` | 592 |
+| `0x0017caa8` | `Light_UpdateFlickerAndCorona` | `Graphics` | 1,544 |
+| `0x0017d0b0` | `Light_SetFlickerTiming` | `Graphics` | 648 |
+| `0x0017d338` | `LightManager_Init` | `Graphics` | 472 |
+| `0x0017d510` | `LightManager_AddLight` | `Graphics` | 104 |
+| `0x0017d598` | `LightManager_RemoveLight` | `Graphics` | 168 |
+| `0x0017d640` | `LightManager_Construct` | `Graphics` | 576 |
+| `0x0017d880` | `LightManager_CullForViewport` | `Graphics` | 1,424 |
+| `0x0017de10` | `LightManager_SelectLights` | `Graphics` | 1,664 |
+| `0x0017ea60` | `LightManager_BeginViewport` | `Graphics` | 472 |
+| `0x0017ec38` | `LightManager_SetBrightness` | `Graphics` | 64 |
+| `0x0017ec80` | `LightManager_SetOffset` | `Graphics` | 64 |
+| `0x0017ef20` | `Light_SetFromScript` | `Graphics` | 576 |
+| `0x0017f160` | `Light_SetState` | `Graphics` | 88 |
+| `0x0017f1b8` | `Light_SetFlicker` | `Graphics` | 96 |
+| `0x0017f218` | `LightManager_SetWorldAmbient` | `Graphics` | 72 |
 | `0x0017f2c0` | `ChunkReader_PreinstanceObject` | `Graphics` | not filled in |
 | `0x00181170` | `ObjectList_OnLoaded` | `Graphics` | 56 |
 | `0x001811b0` | `ObjectList_FindByHash` | `Graphics` | not filled in |
@@ -315,6 +333,7 @@ at the top of the repository's `README.md`.
 | `0x001a1db8` | `BaseWidget_Setup` | `GUI` | not filled in |
 | `0x001a2690` | `BaseWidget_AddSprite` | `GUI` | 640 |
 | `0x001a8e30` | `Widget::Widget` | `GUI` | 72 |
+| `0x001b4908` | `LightManager_SetColourOffset` | `GUI` | 64 |
 | `0x001b7a18` | `LockPickDial_SetDifficulty` | `GUI` | 336 |
 | `0x001b8530` | `LockPickDial_Draw` | `GUI` | 2,056 |
 | `0x001b8d38` | `LockPickDial_Judge` | `GUI` | 408 |
@@ -873,6 +892,8 @@ at the top of the repository's `README.md`.
 | `0x003fb5a0` | `SubSwingingDoor_Update` | `TaskEngine` | 88 |
 | `0x003fb5f8` | `DoorSwing_Init` | `TaskEngine` | 728 |
 | `0x003fbba0` | `DoorSwing_Update` | `TaskEngine` | 760 |
+| `0x0040c868` | `Level_SetFogColour` | `World` | 160 |
+| `0x0040c908` | `Level_SetFogDistance` | `World` | 48 |
 | `0x0040cdd8` | `LevelObject_LinkModel` | `World` | not filled in |
 | `0x0040ce30` | `LevelObject_OnLoaded` | `World` | not filled in |
 | `0x0040d0a8` | `LevelObject_RenderBackground` | `World` | not filled in |

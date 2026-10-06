@@ -42,6 +42,9 @@ add_library(coney_core STATIC
     gamemodes/text_viewer_mode.cpp
     graphics/font.cpp
     graphics/frame_stats.cpp
+    graphics/human_lighting.cpp
+    graphics/level_lighting.cpp
+    graphics/light_manager.cpp
     graphics/overlay_camera.cpp
     graphics/ps2_world_mesh.cpp
     graphics/particle_page.cpp
@@ -89,6 +92,7 @@ add_library(coney_core STATIC
     scripting/config_strings.cpp
     scripting/gang_bindings.cpp
     scripting/level_bindings.cpp
+    scripting/lighting_bindings.cpp
     scripting/lua_chunk.cpp
     scripting/lua_libraries.cpp
     scripting/lua_value.cpp

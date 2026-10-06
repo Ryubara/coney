@@ -11,7 +11,7 @@ is an upper bound (a branch the mission never takes still counts); how it is fou
 counts](index.md#usage), and the mission's flow is on [Scripts (Lua)](../../research/scripting.md#level99).
 
 **Researched:** 215 of 215 are traced (the function behind the wrapper followed far enough to describe every argument).
-**Coney:** 74 implemented, 2 partial, 139 not yet ([Coney status](index.md#coney-status)). A traced binding can still
+**Coney:** 76 implemented, 2 partial, 137 not yet ([Coney status](index.md#coney-status)). A traced binding can still
 leave part of its effect open; its notes say which.
 
 | Binding | Category | Detail | Evidence | Coney |
@@ -136,8 +136,8 @@ leave part of its effect open; its notes say which.
 | [`EnableShadow`](effects.md#enableshadow) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`QueueMotionBlurEffect`](effects.md#queuemotionblureffect) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`ScreenQueueEffect`](effects.md#screenqueueeffect) | Effects and lighting | traced | confirmed (code) | implemented |
-| [`SetFogColor`](effects.md#setfogcolor) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`SetLight`](effects.md#setlight) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`SetFogColor`](effects.md#setfogcolor) | Effects and lighting | traced | confirmed (code) | implemented |
+| [`SetLight`](effects.md#setlight) | Effects and lighting | traced | confirmed (code) | implemented |
 | [`SpawnParticle`](effects.md#spawnparticle) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`FlashRageBar`](hud.md#flashragebar) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`ForceShowPlayerHud`](hud.md#forceshowplayerhud) | HUD and menus | traced | confirmed (code) | not implemented |

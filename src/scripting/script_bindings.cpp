@@ -20,6 +20,7 @@
 #include "scripting/config_strings.h"
 #include "scripting/gang_bindings.h"
 #include "scripting/level_bindings.h"
+#include "scripting/lighting_bindings.h"
 #include "scripting/object_bindings.h"
 #include "scripting/rumble_bindings.h"
 #include "scripting/scene_bindings.h"
@@ -760,18 +761,22 @@ constexpr std::array kBindings{
     stub("SetDeathTimer"),
     stub("SetDifficulty"),
     stub("SetGlobalPedRules"),
+    // The level's lights and fog (scripting/lighting_bindings.h).
+    real("SetFogColor"),
+    real("SetFogDistance"),
+    real("SetGammaOffset"),
+    real("SetLight"),
+    real("SetLightFlicker"),
+    real("SetWorldAmbient"),
     // Lighting, weather and screen effects of the level.
     stub("End3DFog"),
     stub("EndFog"),
     stub("EndRain"),
     stub("EndRoomSmoke"),
-    stub("SetGammaOffset"),
     stub("SetLevelColour"),
-    stub("SetLight"),
     stub("SetMotionAlpha"),
     stub("SetShadowColor"),
     stub("SetShadowLightOffset"),
-    stub("SetWorldAmbient"),
     // The HUD.
     stub("HUDEnableClubActionText"),
     // Scenes, objects and particles: the ones that make something return a handle.
@@ -881,7 +886,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
             vm.registerFunction(info.name, maker->make(factory));
             continue;
         }
-        // Every real binding has a maker or is a string, level, Rumble, AI, gang or scene binding (CONEY_ASSERT).
+        // Every real binding has a maker or is a string, level, Rumble, AI, gang, scene or lighting binding
+        // (CONEY_ASSERT).
         CONEY_ASSERT(std::ranges::find(kStringBindings, info.name) != kStringBindings.end() ||
                      std::ranges::find(kLevelBindings, info.name) != kLevelBindings.end() ||
                      std::ranges::find(kRumbleBindings, info.name) != kRumbleBindings.end() ||
@@ -892,13 +898,15 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kAnimCallbackBindings, info.name) != kAnimCallbackBindings.end() ||
                      std::ranges::find(kSceneBindings, info.name) != kSceneBindings.end() ||
                      std::ranges::find(kSpawnBindings, info.name) != kSpawnBindings.end() ||
-                     std::ranges::find(kObjectBindings, info.name) != kObjectBindings.end());
+                     std::ranges::find(kObjectBindings, info.name) != kObjectBindings.end() ||
+                     std::ranges::find(kLightingBindings, info.name) != kLightingBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
     addAiBindings(vm, context);
     addGangBindings(vm, context);
     addAnimCallbackBindings(vm, context);
+    addLightingBindings(vm, context);
     // With no scene system at the call (a test, the menus, a mode that plays no scenes), the stand-in keeps the
     // scripts' scene flow moving.
     addSceneBindings(vm, context,

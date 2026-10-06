@@ -959,6 +959,12 @@ subsystem = "Graphics"
 size = 304
 
 [[function]]
+address = 0x00174320
+name = "HumanRender_Draw"
+subsystem = "Graphics"
+size = 2008
+
+[[function]]
 address = 0x00175080
 name = "CharacterInstance_GetAnim"
 subsystem = "Graphics"
@@ -1013,6 +1019,108 @@ subsystem = "Graphics"
 address = 0x0017ae38
 name = "ColourTable_Init"
 subsystem = "Graphics"
+
+[[function]]
+address = 0x0017c508
+name = "Light_InitFromDescriptor"
+subsystem = "Graphics"
+size = 392
+
+[[function]]
+address = 0x0017c840
+name = "Light_ApplyDescriptor"
+subsystem = "Graphics"
+size = 592
+
+[[function]]
+address = 0x0017caa8
+name = "Light_UpdateFlickerAndCorona"
+subsystem = "Graphics"
+size = 1544
+
+[[function]]
+address = 0x0017d0b0
+name = "Light_SetFlickerTiming"
+subsystem = "Graphics"
+size = 648
+
+[[function]]
+address = 0x0017d338
+name = "LightManager_Init"
+subsystem = "Graphics"
+size = 472
+
+[[function]]
+address = 0x0017d510
+name = "LightManager_AddLight"
+subsystem = "Graphics"
+size = 104
+
+[[function]]
+address = 0x0017d598
+name = "LightManager_RemoveLight"
+subsystem = "Graphics"
+size = 168
+
+[[function]]
+address = 0x0017d640
+name = "LightManager_Construct"
+subsystem = "Graphics"
+size = 576
+
+[[function]]
+address = 0x0017d880
+name = "LightManager_CullForViewport"
+subsystem = "Graphics"
+size = 1424
+
+[[function]]
+address = 0x0017de10
+name = "LightManager_SelectLights"
+subsystem = "Graphics"
+size = 1664
+
+[[function]]
+address = 0x0017ea60
+name = "LightManager_BeginViewport"
+subsystem = "Graphics"
+size = 472
+
+[[function]]
+address = 0x0017ec38
+name = "LightManager_SetBrightness"
+subsystem = "Graphics"
+size = 64
+
+[[function]]
+address = 0x0017ec80
+name = "LightManager_SetOffset"
+subsystem = "Graphics"
+size = 64
+
+[[function]]
+address = 0x0017ef20
+name = "Light_SetFromScript"
+subsystem = "Graphics"
+size = 576
+
+[[function]]
+address = 0x0017f160
+name = "Light_SetState"
+subsystem = "Graphics"
+size = 88
+
+[[function]]
+address = 0x0017f1b8
+name = "Light_SetFlicker"
+subsystem = "Graphics"
+size = 96
+
+[[function]]
+address = 0x0017f218
+name = "LightManager_SetWorldAmbient"
+subsystem = "Graphics"
+size = 72
 
 [[function]]
 address = 0x0017f2c0
@@ -1184,6 +1292,12 @@ address = 0x001a8e30
 name = "Widget::Widget"
 subsystem = "GUI"
 size = 72
+
+[[function]]
+address = 0x001b4908
+name = "LightManager_SetColourOffset"
+subsystem = "GUI"
+size = 64
 
 [[function]]
 address = 0x001b7a18
@@ -4418,6 +4532,18 @@ address = 0x003fbba0
 name = "DoorSwing_Update"
 subsystem = "TaskEngine"
 size = 760
+
+[[function]]
+address = 0x0040c868
+name = "Level_SetFogColour"
+subsystem = "World"
+size = 160
+
+[[function]]
+address = 0x0040c908
+name = "Level_SetFogDistance"
+subsystem = "World"
+size = 48
 
 [[function]]
 address = 0x0040cdd8

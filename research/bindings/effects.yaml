@@ -274,6 +274,7 @@
   notes: >-
     Stored in the light manager (0x0050cce4) at +0x50..+0x5c.
   usage: {chunks: 3, calls: 3, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SetFogColor
   wrapper: 0x0036e558
@@ -289,6 +290,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 66, calls: 67, boot: false, mission1: true, result_used: false}
+  coney: implemented
 
 - name: SetFogDistance
   wrapper: 0x0036e5f8
@@ -303,6 +305,7 @@
   notes: >-
     Behaviour: [The streamed world](../../research/world.md#fog).
   usage: {chunks: 14, calls: 14, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: AddStatRespEmitter
   wrapper: 0x00371938
@@ -523,6 +526,7 @@
   notes: >-
     docs/research/lighting.md#colour.
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SetMotionAlpha
   wrapper: 0x0037bde0
@@ -610,6 +614,7 @@
     corona, lights and effects arguments (0x0017c508, 0x0017caa8, 0x0017d880; confirmed (runtime) in level99). See
     docs/research/lighting.md#record.
   usage: {chunks: 61, calls: 5301, boot: true, mission1: true, result_used: true}
+  coney: implemented
 
 - name: SetLightFlicker
   wrapper: 0x0037c438
@@ -635,6 +640,7 @@
   notes: >-
     The modes and timings are on docs/research/lighting.md#flicker.
   usage: {chunks: 9, calls: 163, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SetShadowColor
   wrapper: 0x0037c608
