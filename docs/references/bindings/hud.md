@@ -821,7 +821,11 @@ HUDLaunchRumbleWin(winner, reason)
 
 **Returns** nothing.
 
-Shows the Rumble result screen (game mode 0x14) with the two lines of text.
+Shows the Rumble result screen (game mode 0x14) with the two lines of text; its choices replay the arena, reopen the
+Rumble menu or quit.
+
+**Notes.** 0x001dfe20 pushes mode 0x14 (0x00155648) and copies the texts into the result screen at 0x00635390.
+Behaviour: [Rumble](../../research/rumble.md#result-screen).
 
 - **Evidence:** confirmed (code) at `0x001dfe20`; detail: brief
 - **Wrapper** `0x0036f160` (registered by `RegisterBindings`); **calls** `0x001dfe20`
@@ -1714,7 +1718,11 @@ ShowRumbleModeIntro(onDone, names)
 
 **Returns** nothing.
 
-Shows the Rumble match introduction with the competing gangs' names.
+Shows the Rumble match introduction: the names one by one with the announcer, a prompt the player confirms, then a 3-2-1
+countdown, after which `onDone` is called.
+
+**Notes.** Opens the HUD's RM_Intro screen (0x001f9418, 0x001f9558; update 0x001fad40). Behaviour:
+[Rumble](../../research/rumble.md#intro).
 
 - **Evidence:** confirmed (code) at `0x001b5f88`; detail: brief
 - **Wrapper** `0x0036ed48` (registered by `RegisterBindings`); **calls** `0x001b5f88`

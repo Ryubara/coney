@@ -235,9 +235,13 @@
     - {name: onDone, lua: string, desc: "Name of the Lua function called when the intro finishes."}
     - {name: names, lua: table, elem: string, count: 10, written_back: true, desc: "Table of up to 10 strings (the two gang names first, the rest empty in the scripts)."}
   description: >-
-    Shows the Rumble match introduction with the competing gangs' names.
+    Shows the Rumble match introduction: the names one by one with the announcer, a prompt the player confirms, then
+    a 3-2-1 countdown, after which `onDone` is called.
   evidence: confirmed-code
   depth: brief
+  notes: >-
+    Opens the HUD's RM_Intro screen (0x001f9418, 0x001f9558; update 0x001fad40). Behaviour:
+    [Rumble](../../research/rumble.md#intro).
   usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: false}
 
 - name: PreloadCredits
@@ -344,9 +348,13 @@
     - {name: winner, lua: string, desc: "Text naming the winner."}
     - {name: reason, lua: string, desc: "Second line (how the match was won, or the survival time)."}
   description: >-
-    Shows the Rumble result screen (game mode 0x14) with the two lines of text.
+    Shows the Rumble result screen (game mode 0x14) with the two lines of text; its choices replay the arena, reopen
+    the Rumble menu or quit.
   evidence: confirmed-code
   depth: brief
+  notes: >-
+    0x001dfe20 pushes mode 0x14 (0x00155648) and copies the texts into the result screen at 0x00635390. Behaviour:
+    [Rumble](../../research/rumble.md#result-screen).
   usage: {chunks: 33, calls: 66, boot: false, mission1: false, result_used: false}
 
 - name: HUDLaunchANGameOver

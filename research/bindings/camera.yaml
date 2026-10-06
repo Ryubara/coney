@@ -290,18 +290,21 @@
     - {name: name, lua: string, desc: "Camera name."}
     - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to frame."}
     - {name: fov, lua: number, ctype: float, desc: "Field of view in degrees."}
-    - {name: a, lua: number, ctype: float, desc: "Camera parameter (level101 passes 3)."}
-    - {name: b, lua: number, ctype: float, desc: "Camera parameter (level101 passes -19)."}
-    - {name: c, lua: number, ctype: float, desc: "Camera parameter (level101 passes 40)."}
-    - {name: d, lua: number, ctype: float, desc: "Camera parameter (level101 passes 1.1)."}
+    - {name: a, lua: number, ctype: float, desc: "Distance from the target along its facing, in metres (the arenas pass 3)."}
+    - {name: b, lua: number, ctype: float, desc: "Start angle about the vertical, in degrees (the arenas pass -19)."}
+    - {name: c, lua: number, ctype: float, desc: "Orbit speed in degrees per second (the arenas pass 40)."}
+    - {name: d, lua: number, ctype: float, desc: "Height of the look-at point above the target, in metres (the arenas pass 1.1)."}
     - {name: far, lua: number, ctype: float, desc: "Far clip distance, at most 150."}
     - {name: direction, lua: number, ctype: int, default: 1, desc: "1 (default) or less: sets the orbit direction to +1 or -1 (inferred)."}
   results:
     - {lua: number, desc: "The camera's handle, or NilHandle."}
   description: >-
     Sets up the win camera that circles the winner at the end of a Rumble match.
-  evidence: inferred
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    One shared camera object, `Cam_Win` (0x00120188, constructor 0x00143918), set up by 0x0011c858; start 0x001439d8,
+    orbit 0x00143c78. Behaviour: [Rumble](../../research/rumble.md#win-camera).
   usage: {chunks: 33, calls: 33, boot: false, mission1: false, result_used: true}
 
 - name: CamSetupRail

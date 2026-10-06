@@ -19,7 +19,7 @@ entry are on the [masterlist](index.md).
 | [`CameraCreateFixed`](#cameracreatefixed) | number | 9 | no | no | confirmed (code) |
 | [`CameraCreateLocked`](#cameracreatelocked) | number | 86 | yes | yes | confirmed (code) |
 | [`CameraCreateThird`](#cameracreatethird) | number | 2 | no | no | inferred |
-| [`CameraCreateWin`](#cameracreatewin) | number | 33 | no | no | inferred |
+| [`CameraCreateWin`](#cameracreatewin) | number | 33 | no | no | confirmed (code) |
 | [`CameraGetActive`](#cameragetactive) | number | 5 | no | no | confirmed (code) |
 | [`CameraMakeActive`](#cameramakeactive) | - | 193 | yes | yes | confirmed (code) |
 | [`CameraReset`](#camerareset) | - | 167 | yes | yes | confirmed (code) |
@@ -292,10 +292,10 @@ CameraCreateWin(name, target, fov, a, b, c, d, far, direction) -> number
 | 1 | `name` | string | Camera name. |
 | 2 | `target` | number, truncated to an unsigned integer | Handle of the human to frame. |
 | 3 | `fov` | number (single precision) | Field of view in degrees. |
-| 4 | `a` | number (single precision) | Camera parameter (level101 passes 3). |
-| 5 | `b` | number (single precision) | Camera parameter (level101 passes -19). |
-| 6 | `c` | number (single precision) | Camera parameter (level101 passes 40). |
-| 7 | `d` | number (single precision) | Camera parameter (level101 passes 1.1). |
+| 4 | `a` | number (single precision) | Distance from the target along its facing, in metres (the arenas pass 3). |
+| 5 | `b` | number (single precision) | Start angle about the vertical, in degrees (the arenas pass -19). |
+| 6 | `c` | number (single precision) | Orbit speed in degrees per second (the arenas pass 40). |
+| 7 | `d` | number (single precision) | Height of the look-at point above the target, in metres (the arenas pass 1.1). |
 | 8 | `far` | number (single precision) | Far clip distance, at most 150. |
 | 9 | `direction` | number, truncated to an integer; default 1 | 1 (default) or less: sets the orbit direction to +1 or -1 (inferred). |
 
@@ -303,7 +303,10 @@ CameraCreateWin(name, target, fov, a, b, c, d, far, direction) -> number
 
 Sets up the win camera that circles the winner at the end of a Rumble match.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** One shared camera object, `Cam_Win` (0x00120188, constructor 0x00143918), set up by 0x0011c858; start
+0x001439d8, orbit 0x00143c78. Behaviour: [Rumble](../../research/rumble.md#win-camera).
+
+- **Evidence:** confirmed (code) at `0x0011c858`; detail: brief
 - **Wrapper** `0x00366360` (registered by `RegisterBindings`); **calls** `0x0011c858`
 - **Used by** 33 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: yes
 - **Coney:** not implemented
