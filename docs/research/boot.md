@@ -204,13 +204,14 @@ step. Confirmed (code) at those addresses; confirmed (runtime), PCSX2 2.9.94: in
 1.0, not paused. Mode 0xb's `Update` (`0x0015d160`), which switches the fixed step on every frame, was not on the stack
 in that fight.
 
-**The caption system** at `0x00619570` (`0x001ca950`-`0x001cb400`) shows the subtitles of a movie (`0x001cad38`,
-from `0x0042a938`; during the intro movie it held the name `l1_in_sub`) and other captions. Each caption record
-starts with a kind (0-6, larger values become 3); setting a caption (`0x001cb010`) sets `+0x58` to 1 only for kind
-2, which is drawn centred, at 1.2 times the text size, in red (`0xff1a1a86`), and `0x001cae58` returns `+0x58`.
-Confirmed (code) at `0x001cb010`, `0x001cae58`. So a kind-2 caption keeps a frozen game frozen until its time runs
-out: the player cannot skip it with the button. Read at runtime (PCSX2 2.9.94): `+0x58` was 0 in the intro movie and
-in a fight. The single-step request `+0x58` of `GameTimer` (a different object) has no writer found.
+**The caption system** at `0x00619570` (`0x001ca950`-`0x001cb400`) shows the subtitles of a movie (`0x001cad38`, from
+`0x0042a938`; during the intro movie it held the name `l1_in_sub`) and other captions ([Movies](movies.md#captions) has
+the data and drawing). Each caption record starts with a kind (0-6, larger values become 3); setting a caption
+(`0x001cb010`) sets `+0x58` to 1 only for kind 2, which is drawn centred, at 1.2 times the text size, in red
+(`0xff1a1a86`), and `0x001cae58` returns `+0x58`. Confirmed (code) at `0x001cb010`, `0x001cae58`. So a kind-2 caption
+keeps a frozen game frozen until its time runs out: the player cannot skip it with the button. Read at runtime (PCSX2
+2.9.94): `+0x58` was 0 in the intro movie and in a fight. The single-step request `+0x58` of `GameTimer` (a different
+object) has no writer found.
 
 ## Behaviour
 
@@ -240,7 +241,7 @@ Confirmed (code) at `0x001446d0`, in this order:
 6. With the `Level Dynamic & LUA Pool` heap current: subtitle system setup (`0x001cabc0` on the object at
    `0x00619570`).
 7. **Movies**: `PlayMovie("LOGO", 0)`, `PlayMovie("PLOGO", 1)`, `PlayMovie("L1_IN", 1)` (`0x0042a938`; the second
-   argument's meaning is open). Each movie blocks until it ends.
+   argument lets a button skip the movie, [Movies](movies.md#skipping)). Each movie blocks until it ends.
 8. **Unload level 1** (`0x0040f5b8(world, 0)`).
 9. **Game modes**: push mode 8 (`0x005e5d90`); set the memory-card mode's "boot check" flag (`0x0015a270(1)`);
    push mode 6 (memory card, `0x005e5810`).

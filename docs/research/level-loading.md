@@ -129,7 +129,7 @@ over the 64 files.
 | 15 | `0x06` Collision Strings | raw; popped by `0x03` | triangle index lists (`u16`) | | mesh `+0x80` | 48-54,592 |
 | 16 | `0x03` Collision Mesh | `0x00350580` | 160-byte header | the mesh, as an object | level `+0x04` | 160 |
 | 17 | `0x17` Level Header | `0x0040ce30` (installed at run time) | 48 bytes of stale tool pointers, overwritten | the level object, as an object | world manager `+0x40` | 48 |
-| 18 | `0x51` Subtitles | `0x001cab90` | not decoded here | | `0x0050ea74` | 16-30,128 |
+| 18 | `0x51` Subtitles | `0x001cab90` | caption text by language and scene ([Movies](movies.md#caption-text)) | | `0x0050ea74` | 16-30,128 |
 
 The collision chunks and their queries: [Collision](collision.md).
 
@@ -691,8 +691,8 @@ with several atomics are the cars, drawn as [Cars](../references/cars.md) instea
   world ([The level in a frame](#render-order)). The "shadow" model is a skyline backdrop (inferred).
 - **The level object's destructor** (`0x0040cf80`): no caller on the unload path was found; is it called through the
   vtable from elsewhere, or does the pool's destruction alone end the level's RenderWare objects?
-- **The subtitles chunk** (`0x51`); the A record's `+0x08`, and what the clockwise paths and the path flags are for
-  ([Path data](#path-data)).
+- **The subtitles chunk** (answered): [Movies](movies.md#caption-text). Still open: the A record's `+0x08`, and what
+  the clockwise paths and the path flags are for ([Path data](#path-data)).
 - **The path data's size** (answered): the header is 0x20 bytes, and the chunk ends with the paths' edge lists and a
   4- to 18-byte tail; the 79,472 bytes Coney's disc test left uncounted were the header's second 16 bytes, the lists and
   the tails ([Path data](#path-data)). Still open: whether the tail's first 4 bytes mean anything (no reader found).

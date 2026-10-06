@@ -467,7 +467,8 @@ and 0.2**; `CameraNormal()` applies them again to `MainCam`. Inferred from the d
 - **Movies.** `PlayMovie(name, flag)` → `Movie_Play` (`0x0042a938`) opens `PSS\<name>.BIK` (format `0x0058bfe0`),
   confirmed (code). Who names them: the boot (`LOGO`, `PLOGO`, `L1_IN`), a level record's intro `L%d_IN`
   (`0x00550160`) and outro `L%d_OUT` (`0x0054ed20`) ([Level loading](level-loading.md#the-level-record)), and the
-  front end's `Menu.movies` (`TRAILER`, `L1_IN`). The disc's `PSS` folder holds exactly those 16 movies.
+  front end's `Menu.movies` (`TRAILER`, `L1_IN`). The disc's `PSS` folder holds exactly those 16 movies. How a
+  movie plays: [Movies](movies.md).
 
 Both are listed in [Scenes and movies](../references/scenes.md).
 

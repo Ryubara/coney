@@ -6,7 +6,7 @@ The in-engine scenes (cutscenes and animation sets, `.scn` records) and the full
 (`PSS/<name>.BIK`). `ScenePreload(name)` returns a scene id, the record's index in the global scene
 list `scene_list.cnk`, which the other scene bindings take; `PlayMovie(name)` plays a movie.
 How scenes play: [Scenes](../research/scenes.md); movies:
-[Scripts](../research/scripting.md#scenes-and-movies).
+[Movies](../research/movies.md).
 
 !!! info "What is complete"
 

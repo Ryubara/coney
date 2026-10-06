@@ -175,7 +175,7 @@ at `0x00355e98`, `0x00355ab8`.
 | 30 | 72 | a light's colour (`+8`), range (`+0x14`) and cone (`+0x10`, degrees) |
 | 31 | 33 | calls the scene's end function now |
 | 33 | 333 | a particle effect at a position and rotation (s16 values, scaled as clip keys) named by `+0x14` with a prefix |
-| 41 | 1,422 | caption control: `+4` = 0 shows the next caption, 4 or 5 clear it, 6 sets a flag first (inferred from `0x001cb190`, `0x001cb010`; [Boot](boot.md#timers) has the caption system) |
+| 41 | 1,422 | caption control: `+4` = 0 shows the next caption, 4 or 5 set that kind (4 hides it), 6 sets a flag first (confirmed (code) at `0x00354d98`; [Movies](movies.md#caption-timing)) |
 | 69 | 0 | an object or car action (`0x00396048`, `0x0038d798`) |
 | 73 | 23 | holds object `+4` in front of the camera for `+8` seconds (`0x003a0e48`) |
 | 74 | 0 | a coloured fade: type in bit 31 of `+4`, colour in its low 24 bits, `+8` seconds |
@@ -430,4 +430,5 @@ None yet. The reader for the disc check is `repo:python/src/coney_tools/scenes.p
 - Who shows the HUD again after `SuperRunScene`'s `HideHud` (not `global.lua`).
 - What the camera definition's `+0x50`, `+0x5c`, `+0x68` and the header's `+0x30` name are for.
 - Track events 24/25 (messages `0x12`/`0x13`), and most clip event types besides 9, 11, 21, 22.
-- Where a scene's captions come from (the caption system is keyed by the scene's name).
+- Where a scene's captions come from (answered): the level's Subtitles chunk, by the scene's name
+  ([Movies](movies.md#caption-text)).
