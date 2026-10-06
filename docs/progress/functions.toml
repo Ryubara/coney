@@ -18,43 +18,43 @@
 [[function]]
 address = 0x00100200
 name = "Pose_InitReference"
-subsystem = "unattributed"
+subsystem = "Animation"
 size = 2172
 
 [[function]]
 address = 0x00101120
 name = "Skeleton_InitParents"
-subsystem = "unattributed"
+subsystem = "Animation"
 size = 304
 
 [[function]]
 address = 0x00101658
 name = "Anim_FirstContactTime"
-subsystem = "unattributed"
+subsystem = "Animation"
 size = 328
 
 [[function]]
 address = 0x00101dd8
 name = "Anim_FireEvents"
-subsystem = "unattributed"
+subsystem = "Animation"
 size = 8376
 
 [[function]]
 address = 0x001041f8
 name = "AnimCursor_Init"
-subsystem = "unattributed"
+subsystem = "Animation"
 size = 536
 
 [[function]]
 address = 0x001044a0
 name = "AnimCursor_Advance"
-subsystem = "unattributed"
+subsystem = "Animation"
 size = 208
 
 [[function]]
 address = 0x001045e0
 name = "AnimData_OnLoaded"
-subsystem = "unattributed"
+subsystem = "Animation"
 size = 80
 
 [[function]]
@@ -262,47 +262,47 @@ size = 824
 [[function]]
 address = 0x00144a08
 name = "Pad_ButtonsBack"
-subsystem = "unattributed"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x00144a30
 name = "Pad_Released"
-subsystem = "unattributed"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x00144a80
 name = "Pad_Pressed"
-subsystem = "unattributed"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x00144ad0
 name = "Pad_PressedRepeat"
-subsystem = "unattributed"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x00144b88
 name = "Pad_Held"
-subsystem = "unattributed"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x00144ba8
 name = "Pad_ReleasedMask"
-subsystem = "unattributed"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x00144bf0
 name = "Pad_PressedMask"
-subsystem = "unattributed"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x00144fb0
 name = "Pad_Update"
-subsystem = "unattributed"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x001454a8
 name = "Pads_Update"
-subsystem = "unattributed"
+subsystem = "Device/ps2"
 
 [[function]]
 address = 0x00145a10
@@ -558,85 +558,85 @@ size = 152
 [[function]]
 address = 0x00164bb8
 name = "Gang_SetMessageHandler"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 88
 
 [[function]]
 address = 0x00164c20
 name = "Gang_OnEvent"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 1432
 
 [[function]]
 address = 0x00165640
 name = "Gang_SetTactic"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 56
 
 [[function]]
 address = 0x00166220
 name = "Gang_StandingCount"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 232
 
 [[function]]
 address = 0x00166308
 name = "Gang_AddMember"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 464
 
 [[function]]
 address = 0x00168f58
 name = "Gang_AreFriends"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 136
 
 [[function]]
 address = 0x0016a220
 name = "Gang_Suspend"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 64
 
 [[function]]
 address = 0x0016aa98
 name = "Gang_SetBrainsDead"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 160
 
 [[function]]
 address = 0x0016acf0
 name = "GangMakeEnemies"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 144
 
 [[function]]
 address = 0x0016ad80
 name = "GangMakeFriends"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 144
 
 [[function]]
 address = 0x0016b3d0
 name = "Gang_SetThreatResponse"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 144
 
 [[function]]
 address = 0x0016cdf0
 name = "Gang_Create"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 632
 
 [[function]]
 address = 0x0016d170
 name = "Gangs_Update"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 672
 
 [[function]]
 address = 0x0016e258
 name = "CharacterData_OnLoaded"
-subsystem = "unattributed"
+subsystem = "GameModes"
 size = 304
 
 [[function]]
@@ -815,19 +815,19 @@ subsystem = "Graphics"
 [[function]]
 address = 0x0019ee70
 name = "GlobalString_Get"
-subsystem = "unattributed"
+subsystem = "GUI"
 size = 48
 
 [[function]]
 address = 0x0019eea0
 name = "GlobalString_Set"
-subsystem = "unattributed"
+subsystem = "GUI"
 size = 64
 
 [[function]]
 address = 0x001a1bf8
 name = "BaseWidget::BaseWidget"
-subsystem = "unattributed"
+subsystem = "GUI"
 size = 56
 
 [[function]]
@@ -1151,17 +1151,17 @@ size = 88
 [[function]]
 address = 0x00218008
 name = "Human_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x0021a490
 name = "Human_PushOutInAir"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x0021b290
 name = "Strike_Contact"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 3488
 
 [[function]]
@@ -1565,77 +1565,77 @@ size = 1120
 [[function]]
 address = 0x00276008
 name = "Attack_TurnToTarget"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x002761c8
 name = "Attack_SteerToTarget"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x00276998
 name = "Pair_AlignStart"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 1024
 
 [[function]]
 address = 0x00276d98
 name = "Pair_SnapAttach"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 600
 
 [[function]]
 address = 0x00277958
 name = "Pair_CheckPlace"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 456
 
 [[function]]
 address = 0x0027ce90
 name = "Player_UpdateSprint"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x0027fd68
 name = "Player_UpdateGrabbed"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 568
 
 [[function]]
 address = 0x002802a0
 name = "Pair_Attach"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 680
 
 [[function]]
 address = 0x00281450
 name = "Climb_RunningClipEnd"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x00281838
 name = "Climb_StandingClipEnd"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x00281c20
 name = "Climb_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x00282370
 name = "Climb_ProbeTop"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x002826f0
 name = "Climb_TryStart"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x002829e8
 name = "Player_TryJump"
-subsystem = "unattributed"
+subsystem = "Human"
 
 [[function]]
 address = 0x002625a8
@@ -1670,862 +1670,862 @@ size = 2288
 [[function]]
 address = 0x0027c120
 name = "Player_UpdateActions"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 3120
 
 [[function]]
 address = 0x0027d800
 name = "Player_Charge"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 256
 
 [[function]]
 address = 0x0027d900
 name = "Player_Dive"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 272
 
 [[function]]
 address = 0x0027e6d8
 name = "Player_UpdateTheft"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 560
 
 [[function]]
 address = 0x0027f3b0
 name = "Player_UpdateGrabbing"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 2488
 
 [[function]]
 address = 0x00280630
 name = "Player_UpdateChain"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 216
 
 [[function]]
 address = 0x00280708
 name = "Player_UpdateChain"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 1560
 
 [[function]]
 address = 0x002843f8
 name = "Player_StartRage"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 1320
 
 [[function]]
 address = 0x00284920
 name = "Player_GrabOrTackle"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 896
 
 [[function]]
 address = 0x002856b8
 name = "Player_UpdateMugging"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 3736
 
 [[function]]
 address = 0x00286cc8
 name = "Player_Square"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 2664
 
 [[function]]
 address = 0x00287a18
 name = "Player_Cross"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 1480
 
 [[function]]
 address = 0x0028c1a8
 name = "Brain_InstallHandlers"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 440
 
 [[function]]
 address = 0x0028cfe0
 name = "Brain_SetTarget"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 432
 
 [[function]]
 address = 0x0028d190
 name = "Brain_PushFightGoal"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 344
 
 [[function]]
 address = 0x0028d2e8
 name = "Brain_Fight"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 112
 
 [[function]]
 address = 0x0028d538
 name = "Brain_AddEnemy"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 360
 
 [[function]]
 address = 0x0028d758
 name = "Brain_PushGoal"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 128
 
 [[function]]
 address = 0x0028d7d8
 name = "Brain_PopGoal"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 200
 
 [[function]]
 address = 0x0028d910
 name = "Brain_ClearGoals"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 80
 
 [[function]]
 address = 0x0028d960
 name = "Brain_FindGoal"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 128
 
 [[function]]
 address = 0x0028d9f0
 name = "Brain_AllocAction"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 112
 
 [[function]]
 address = 0x0028da60
 name = "Brain_PopAction"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 168
 
 [[function]]
 address = 0x0028db20
 name = "Brain_ClearActions"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 104
 
 [[function]]
 address = 0x0028de48
 name = "Brain_HasAttackSlot"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 80
 
 [[function]]
 address = 0x0028df30
 name = "Brain_ClaimAttackSlot"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 688
 
 [[function]]
 address = 0x0028e248
 name = "Brain_QueueAttack"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 1216
 
 [[function]]
 address = 0x0028e708
 name = "Brain_PickAttack"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 1920
 
 [[function]]
 address = 0x0028f240
 name = "Brain_EndReactionGoal"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 112
 
 [[function]]
 address = 0x0028f2b0
 name = "Brain_UpdateReactionGoal"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 1040
 
 [[function]]
 address = 0x0028f6c0
 name = "Brain_Think"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 504
 
 [[function]]
 address = 0x0028f8b8
 name = "Brain_Update"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 112
 
 [[function]]
 address = 0x0028f928
 name = "Brain_OnEvent"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 96
 
 [[function]]
 address = 0x0028fbb0
 name = "Brain_UpdateGoals"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 632
 
 [[function]]
 address = 0x0028fe28
 name = "Brain_RunActions"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 104
 
 [[function]]
 address = 0x002911f8
 name = "Brain_GetAttackWeight"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 32
 
 [[function]]
 address = 0x00292330
 name = "Brain_SetDead"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 112
 
 [[function]]
 address = 0x00292530
 name = "Brain_FlushAll"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 96
 
 [[function]]
 address = 0x00292ac0
 name = "Follow_SelectSlotSet"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 80
 
 [[function]]
 address = 0x00293b28
 name = "Brains_Update"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 320
 
 [[function]]
 address = 0x00293c68
 name = "Formations_Update"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 104
 
 [[function]]
 address = 0x00294ad8
 name = "Formation_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 136
 
 [[function]]
 address = 0x00294f38
 name = "Formation_PlaceSlots"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 792
 
 [[function]]
 address = 0x002953c8
 name = "Formation_AssignSlots"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 368
 
 [[function]]
 address = 0x002956d0
 name = "Formation_Plan"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 1592
 
 [[function]]
 address = 0x00295dd8
 name = "Formation_SetSlotCount"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 40
 
 [[function]]
 address = 0x00295ec8
 name = "Formation_SetSlot"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 96
 
 [[function]]
 address = 0x00295f28
 name = "Formation_Join"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 256
 
 [[function]]
 address = 0x00296028
 name = "Formation_Leave"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 160
 
 [[function]]
 address = 0x0029a8c0
 name = "Route_Request"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 352
 
 [[function]]
 address = 0x0029aa88
 name = "Route_Follow"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 856
 
 [[function]]
 address = 0x0029b4b8
 name = "Route_CanSkip"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 544
 
 [[function]]
 address = 0x0029b6d8
 name = "Route_MoveOn"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 368
 
 [[function]]
 address = 0x0029ed58
 name = "Goal_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 128
 
 [[function]]
 address = 0x0029edd8
 name = "Goal_End"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 88
 
 [[function]]
 address = 0x0029ee30
 name = "Goal_Resume"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 112
 
 [[function]]
 address = 0x0029eea0
 name = "Goal_Suspend"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 56
 
 [[function]]
 address = 0x0029eed8
 name = "Goal_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 168
 
 [[function]]
 address = 0x0029f098
 name = "Goal_TryBlock"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 408
 
 [[function]]
 address = 0x002b2b90
 name = "Brain_StartFight"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 144
 
 [[function]]
 address = 0x002b2c20
 name = "FightGoal_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 184
 
 [[function]]
 address = 0x002b3ab0
 name = "FightGoal_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 1512
 
 [[function]]
 address = 0x002b4098
 name = "SpectateGoal_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 192
 
 [[function]]
 address = 0x002b54d8
 name = "BlockGoal_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 72
 
 [[function]]
 address = 0x002b5520
 name = "BlockGoal_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 328
 
 [[function]]
 address = 0x002b5808
 name = "BlockGoal_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 656
 
 [[function]]
 address = 0x002c6c88
 name = "Goal_Dealer"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 264
 
 [[function]]
 address = 0x002c6d90
 name = "DealerGoal_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 232
 
 [[function]]
 address = 0x002c6e78
 name = "DealerGoal_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 288
 
 [[function]]
 address = 0x002c70a0
 name = "DealerGoal_End"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 184
 
 [[function]]
 address = 0x002c7fd8
 name = "DealerGoal_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 2256
 
 [[function]]
 address = 0x002caf78
 name = "IdleGoal_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 160
 
 [[function]]
 address = 0x002cc348
 name = "Goal_AddressPerson"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 192
 
 [[function]]
 address = 0x002cc408
 name = "AddressPersonGoal_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 128
 
 [[function]]
 address = 0x002cc488
 name = "AddressPersonGoal_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 256
 
 [[function]]
 address = 0x002cc588
 name = "AddressPersonGoal_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 800
 
 [[function]]
 address = 0x002d2df8
 name = "Goal_PlayDynamicAnimation"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 184
 
 [[function]]
 address = 0x002d2eb0
 name = "PlayDynAnimationGoal_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 176
 
 [[function]]
 address = 0x002d2f60
 name = "PlayDynAnimationGoal_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 32
 
 [[function]]
 address = 0x002d2f88
 name = "PlayDynAnimationGoal_Suspend"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 16
 
 [[function]]
 address = 0x002d2f98
 name = "PlayDynAnimationGoal_End"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 160
 
 [[function]]
 address = 0x002d3060
 name = "PlayDynAnimationGoal_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 240
 
 [[function]]
 address = 0x002da2c0
 name = "Goal_MoveToFlag"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 240
 
 [[function]]
 address = 0x002da3b0
 name = "MoveToFlagGoal_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 88
 
 [[function]]
 address = 0x002da408
 name = "MoveToFlagGoal_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 152
 
 [[function]]
 address = 0x002da4a0
 name = "MoveToFlagGoal_End"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 176
 
 [[function]]
 address = 0x002da550
 name = "MoveToFlagGoal_Resume"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 56
 
 [[function]]
 address = 0x002da588
 name = "MoveToFlagGoal_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 648
 
 [[function]]
 address = 0x002df1a8
 name = "Goal_TrackHuman"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 168
 
 [[function]]
 address = 0x002df250
 name = "TrackHumanGoal_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 56
 
 [[function]]
 address = 0x002df288
 name = "TrackHumanGoal_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 152
 
 [[function]]
 address = 0x002df3c0
 name = "TrackHumanGoal_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 768
 
 [[function]]
 address = 0x002e4980
 name = "PlayAnimationGoal_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 120
 
 [[function]]
 address = 0x002e49f8
 name = "PlayAnimationGoal_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 88
 
 [[function]]
 address = 0x002e4a50
 name = "PlayAnimationGoal_End"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 32
 
 [[function]]
 address = 0x002e4a70
 name = "PlayAnimationGoal_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 72
 
 [[function]]
 address = 0x002fa5a0
 name = "PlayAnimAction_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 64
 
 [[function]]
 address = 0x002fa918
 name = "AttackAction_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 144
 
 [[function]]
 address = 0x002fa9a8
 name = "AttackAction_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 904
 
 [[function]]
 address = 0x002fad30
 name = "AttackAction_Abort"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 64
 
 [[function]]
 address = 0x002fad70
 name = "AttackAction_Update"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 320
 
 [[function]]
 address = 0x002fb9e8
 name = "MoveAction_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 248
 
 [[function]]
 address = 0x002fbd18
 name = "MoveAction_CornerTrial"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 472
 
 [[function]]
 address = 0x002fc158
 name = "MoveAction_CornerSpeed"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 472
 
 [[function]]
 address = 0x002fc330
 name = "MoveAction_Stuck"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 184
 
 [[function]]
 address = 0x002fc420
 name = "MoveAction_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 320
 
 [[function]]
 address = 0x002fc5c0
 name = "MoveAction_Update"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 2000
 
 [[function]]
 address = 0x002fcf50
 name = "MoveToHumanAction_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 160
 
 [[function]]
 address = 0x002fdc28
 name = "TurnAction_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 64
 
 [[function]]
 address = 0x002fdc68
 name = "TurnAction_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 96
 
 [[function]]
 address = 0x002fdcc8
 name = "TurnAction_Abort"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 64
 
 [[function]]
 address = 0x002fdd08
 name = "TurnAction_Update"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 224
 
 [[function]]
 address = 0x002fe000
 name = "TurnToPointAction_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 88
 
 [[function]]
 address = 0x002fe0c8
 name = "Action_LookAt"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 152
 
 [[function]]
 address = 0x002fe160
 name = "LookAtAction_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 80
 
 [[function]]
 address = 0x002fe1b0
 name = "LookAtAction_Update"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 152
 
 [[function]]
 address = 0x00306690
 name = "Tactic_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 328
 
 [[function]]
 address = 0x003067d8
 name = "Tactic_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 120
 
 [[function]]
 address = 0x003068f8
 name = "Tactic_SetCallback"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 64
 
 [[function]]
 address = 0x00306938
 name = "Tactic_FireCallback"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 184
 
 [[function]]
 address = 0x0030f4d0
 name = "TacticCrowd_Init"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 160
 
 [[function]]
 address = 0x0030f570
 name = "TacticCrowd_Seat"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 320
 
 [[function]]
 address = 0x0030f6b0
 name = "TacticCrowd_Start"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 304
 
 [[function]]
 address = 0x0030fc48
 name = "TacticCrowd_React"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 528
 
 [[function]]
 address = 0x0030fe78
 name = "TacticCrowd_Process"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 648
 
 [[function]]
 address = 0x00310100
 name = "TacticCrowd_Event"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 216
 
 [[function]]
 address = 0x00316fa0
 name = "Tactic_TriggerCrowd"
-subsystem = "unattributed"
+subsystem = "Human"
 size = 176
 
 [[function]]
 address = 0x00336a00
 name = "QuaternionSlerp"
-subsystem = "unattributed"
+subsystem = "Maths (unnamed)"
 size = 440
 
 [[function]]
 address = 0x00336bb8
 name = "VectorLerp"
-subsystem = "unattributed"
+subsystem = "Maths (unnamed)"
 size = 64
 
 [[function]]
 address = 0x00336bf8
 name = "QuaternionNlerp"
-subsystem = "unattributed"
+subsystem = "Maths (unnamed)"
 size = 160
 
 [[function]]
 address = 0x00337920
 name = "RayTriangle_OneSided"
-subsystem = "unattributed"
+subsystem = "Maths (unnamed)"
 
 [[function]]
 address = 0x00337a60
 name = "RayTriangle_TwoSided"
-subsystem = "unattributed"
+subsystem = "Maths (unnamed)"
 
 [[function]]
 address = 0x0033e278
 name = "PhysicsBody_Sweep"
-subsystem = "unattributed"
+subsystem = "Physics"
 
 [[function]]
 address = 0x003477c0
 name = "PhysicsBody_PushOutOfWalls"
-subsystem = "unattributed"
+subsystem = "Physics"
 
 [[function]]
 address = 0x00347c08
 name = "PhysicsMesh_SweepCapsule"
-subsystem = "unattributed"
+subsystem = "Physics"
 
 [[function]]
 address = 0x0034f740
 name = "Collision_MarchRay"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x0034f950
 name = "Collision_DropToGround"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x0034fa28
 name = "Collision_DropToMarkedGround"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x00350538
 name = "CollisionTri_PassesMaterialFilter"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x00350580
 name = "CollisionMesh_OnLoaded"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x00350778
 name = "CollisionMesh_RayTestCell"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x00350aa0
 name = "CollisionMesh_SetEnabledInBoxCell"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x00350cd8
 name = "CollisionMesh_RayCast"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x00351160
 name = "CollisionMesh_SetEnabledInBox"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x00351468
 name = "CollisionMesh_SphereTestCell"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x003519f8
 name = "CollisionMesh_SpherePush"
-subsystem = "unattributed"
+subsystem = "RayCast"
 
 [[function]]
 address = 0x00356390
@@ -3277,4 +3277,4 @@ subsystem = "Human"
 [[function]]
 address = 0x0027a6c0
 name = "Player_PickTarget"
-subsystem = "unattributed"
+subsystem = "Human"

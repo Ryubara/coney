@@ -27,9 +27,9 @@ the class's 45-entry attack table (`Att_*` in `config_preload2.lua`).
 
 ## Original structure
 
-The brain, goal and action code lies in the 711 KB stretch after `Human/cns/cnsplayertag.cpp`
-(`0x0028a360`-`0x00306630` at least, [Source map](source-map.md)); no path string names its files. The script
-bindings are on [AI bindings](../references/bindings/ai.md). Names are ours.
+The brain, goal and action code lies in `Human/`, in the stretch after `cns/cnsplayertag.cpp`
+(`0x0028a360`-`0x00306630` at least, [Source map](source-map.md#position), inferred); no path string names its
+files. The script bindings are on [AI bindings](../references/bindings/ai.md). Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |

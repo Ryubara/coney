@@ -20,9 +20,9 @@ Everything here is in **game axes, z up**: the mesh is not converted to RenderWa
 
 The file is `c:/Warriors/Source/RayCast/CollisionMesh.cpp` (path string `0x005788f8`, anchor `0x00350688` on the
 [Source map](source-map.md#raycast)). The mesh functions below sit around the anchor, from `0x00350538` to the end of
-`0x003519f8` at `0x00351da0`, where `Scene/` begins (inferred: one file; the source map still attributes only the
-anchor). The ground-height helpers and the material names (`0x0034f740`-`0x0034fc08`) lie just before, in the
-unattributed block between `Physics/` and `RayCast/`. Names are ours.
+`0x003519f8` at `0x00351da0`, where `Scene/` begins (inferred: one file). The ground-height helpers and the
+material names (`0x0034f740`-`0x0034fc08`) lie just before, after `Physics/`'s last static-initialiser stub, so in
+`RayCast/` too ([Source map](source-map.md#position), inferred). Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |

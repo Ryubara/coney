@@ -19,12 +19,12 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 7.1%](https://img.shields.io/badge/reimplemented-7.1%25-red) ![Researched: 51.1%](https://img.shields.io/badge/researched-51.1%25-yellow)
+![Reimplemented: 7.1%](https://img.shields.io/badge/reimplemented-7.1%25-red) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `█▍░░░░░░░░░░░░░░░░░░` | 7.1% of the game's own code (237,764 of 3,342,936 bytes, 564 functions) |
-| **Researched** | `██████████▎░░░░░░░░░` | 51.1% placed in a source file or directory (1,708,960 bytes) |
+| **Reimplemented** | `█▍░░░░░░░░░░░░░░░░░░` | 7.1% of the game's own code (237,764 of 3,354,776 bytes, 564 functions) |
+| **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
 120 reimplemented function(s) have no size yet and add no bytes.
@@ -52,49 +52,51 @@ at the top of the repository's `README.md`.
 
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
-| `Animation` | `█▌░░░░░░░░░░░░░░░░░░` | 7.3% | 13 | 37,160 |
-| `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 31,208 |
-| `Camera` | `▊░░░░░░░░░░░░░░░░░░░` | 3.8% | 12 | 118,632 |
+| `Animation` | `█████▍░░░░░░░░░░░░░░` | 26.9% | 20 | 54,616 |
+| `Audio` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 57,368 |
+| `Camera` | `▌░░░░░░░░░░░░░░░░░░░` | 2.7% | 12 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
-| `Device/ps2` | `██▎░░░░░░░░░░░░░░░░░` | 11.2% | 8 | 32,152 |
-| `FileIO` | `█▏░░░░░░░░░░░░░░░░░░` | 5.4% | 3 | 6,480 |
-| `GameModes` | `█████▍░░░░░░░░░░░░░░` | 26.8% | 31 | 51,816 |
-| `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.6% | 30 | 189,024 |
-| `GUI` | `█▋░░░░░░░░░░░░░░░░░░` | 7.9% | 53 | 481,192 |
-| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 81 | 358,360 |
-| `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,648 |
-| `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 368 |
-| `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 240 |
-| `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 11,800 |
+| `Device/ps2` | `█▏░░░░░░░░░░░░░░░░░░` | 5.7% | 17 | 62,808 |
+| `FileIO` | `█░░░░░░░░░░░░░░░░░░░` | 4.9% | 3 | 7,120 |
+| `GameModes` | `███▊░░░░░░░░░░░░░░░░` | 18.5% | 45 | 100,440 |
+| `Graphics` | `▊░░░░░░░░░░░░░░░░░░░` | 3.5% | 30 | 195,624 |
+| `GUI` | `█▌░░░░░░░░░░░░░░░░░░` | 7.7% | 56 | 497,416 |
+| `Human` | `█▉░░░░░░░░░░░░░░░░░░` | 9.5% | 226 | 1,096,672 |
+| `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
+| `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
+| `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
+| `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
+| `Scene` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 17,904 |
 | `Scripting` | `████▎░░░░░░░░░░░░░░░` | 21.0% | 80 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 68,688 |
+| `TaskEngine` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 23 | 24,344 |
-| `WorldObjects` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 10 | 18,648 |
-| `Warriors` | `▍░░░░░░░░░░░░░░░░░░░` | 1.8% | 12 | 54,232 |
+| `WorldObjects` | `█▍░░░░░░░░░░░░░░░░░░` | 7.2% | 10 | 22,008 |
+| `Warriors` | `▍░░░░░░░░░░░░░░░░░░░` | 1.8% | 12 | 54,264 |
 | `Movie` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
-| Unattributed | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 197 | 1,524,752 |
+| Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
 
 ## Research coverage
 
 | Category | Share of `.text` | | Bytes |
 | --- | --- | --- | --- |
 | File confirmed (code): anchors | `█░░░░░░░░░░░░░░░░░░░` | 5.0% | 208,296 |
-| File inferred | `██░░░░░░░░░░░░░░░░░░` | 10.2% | 423,752 |
+| File inferred | `██▏░░░░░░░░░░░░░░░░░` | 10.3% | 429,792 |
 | Directory inferred | `█████▏░░░░░░░░░░░░░░` | 25.9% | 1,076,912 |
+| Directory inferred from position and calls | `███████▎░░░░░░░░░░░░` | 36.2% | 1,502,920 |
 | Game link-once code (templates, inlines) | `▌░░░░░░░░░░░░░░░░░░░` | 2.8% | 115,808 |
-| Unknown | `███████▎░░░░░░░░░░░░` | 36.5% | 1,518,168 |
-| Middleware: Lua 4.0.1 and tolua | `▌░░░░░░░░░░░░░░░░░░░` | 2.3% | 94,280 |
+| Unknown | `▏░░░░░░░░░░░░░░░░░░░` | 0.5% | 21,048 |
+| Middleware: Lua 4.0.1 and tolua | `▍░░░░░░░░░░░░░░░░░░░` | 2.0% | 82,440 |
 | Middleware: C/C++ runtimes, SCE, RenderWare, Bink, crt0 | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 717,520 |
 
 ## Middleware: replaced, not reimplemented
 
 | Library | Share of `.text` | Bytes | Replaced by |
 | --- | --- | --- | --- |
-| Lua 4.0.1 and tolua | 2.3% | 94,280 | a Lua 4.0 interpreter (roadmap: Scripts) |
+| Lua 4.0.1 and tolua | 2.0% | 82,440 | a Lua 4.0 interpreter (roadmap: Scripts) |
 | RenderWare Graphics | 9.1% | 376,960 | librw |
 | SCE libraries, C/C++ runtimes, Bink, crt0 | 8.2% | 340,560 | SDL3 and the C++ standard library; Bink movies not decided yet |
 
@@ -102,13 +104,13 @@ at the top of the repository's `README.md`.
 
 | Address | Original name | Subsystem | Bytes |
 | --- | --- | --- | --- |
-| `0x00100200` | `Pose_InitReference` | `unattributed` | 2,172 |
-| `0x00101120` | `Skeleton_InitParents` | `unattributed` | 304 |
-| `0x00101658` | `Anim_FirstContactTime` | `unattributed` | 328 |
-| `0x00101dd8` | `Anim_FireEvents` | `unattributed` | 8,376 |
-| `0x001041f8` | `AnimCursor_Init` | `unattributed` | 536 |
-| `0x001044a0` | `AnimCursor_Advance` | `unattributed` | 208 |
-| `0x001045e0` | `AnimData_OnLoaded` | `unattributed` | 80 |
+| `0x00100200` | `Pose_InitReference` | `Animation` | 2,172 |
+| `0x00101120` | `Skeleton_InitParents` | `Animation` | 304 |
+| `0x00101658` | `Anim_FirstContactTime` | `Animation` | 328 |
+| `0x00101dd8` | `Anim_FireEvents` | `Animation` | 8,376 |
+| `0x001041f8` | `AnimCursor_Init` | `Animation` | 536 |
+| `0x001044a0` | `AnimCursor_Advance` | `Animation` | 208 |
+| `0x001045e0` | `AnimData_OnLoaded` | `Animation` | 80 |
 | `0x00104630` | `Instance_BuildBoneMatrices` | `Animation` | 416 |
 | `0x00104a38` | `Anim_RateMultiplier` | `Animation` | not filled in |
 | `0x00104ce0` | `AnimCursor_SamplePose` | `Animation` | 1,144 |
@@ -145,15 +147,15 @@ at the top of the repository's `README.md`.
 | `0x00144348` | `ChunkSystem_SetHandlers` | `Core` | 40 |
 | `0x00144370` | `ChunkSystem_RetagAsNullPointer` | `Core` | 40 |
 | `0x00144398` | `ChunkSystem_LoadGroupedContainer` | `Core` | 824 |
-| `0x00144a08` | `Pad_ButtonsBack` | `unattributed` | not filled in |
-| `0x00144a30` | `Pad_Released` | `unattributed` | not filled in |
-| `0x00144a80` | `Pad_Pressed` | `unattributed` | not filled in |
-| `0x00144ad0` | `Pad_PressedRepeat` | `unattributed` | not filled in |
-| `0x00144b88` | `Pad_Held` | `unattributed` | not filled in |
-| `0x00144ba8` | `Pad_ReleasedMask` | `unattributed` | not filled in |
-| `0x00144bf0` | `Pad_PressedMask` | `unattributed` | not filled in |
-| `0x00144fb0` | `Pad_Update` | `unattributed` | not filled in |
-| `0x001454a8` | `Pads_Update` | `unattributed` | not filled in |
+| `0x00144a08` | `Pad_ButtonsBack` | `Device/ps2` | not filled in |
+| `0x00144a30` | `Pad_Released` | `Device/ps2` | not filled in |
+| `0x00144a80` | `Pad_Pressed` | `Device/ps2` | not filled in |
+| `0x00144ad0` | `Pad_PressedRepeat` | `Device/ps2` | not filled in |
+| `0x00144b88` | `Pad_Held` | `Device/ps2` | not filled in |
+| `0x00144ba8` | `Pad_ReleasedMask` | `Device/ps2` | not filled in |
+| `0x00144bf0` | `Pad_PressedMask` | `Device/ps2` | not filled in |
+| `0x00144fb0` | `Pad_Update` | `Device/ps2` | not filled in |
+| `0x001454a8` | `Pads_Update` | `Device/ps2` | not filled in |
 | `0x00145a10` | `GameTimer::Update` | `Device/ps2` | 952 |
 | `0x00146078` | `PlayerRecord_Update` | `Device/ps2` | not filled in |
 | `0x00147430` | `AddCommand` | `Device/ps2` | 528 |
@@ -196,20 +198,20 @@ at the top of the repository's `README.md`.
 | `0x0015fe90` | `InitLevel` | `GameModes` | 2,344 |
 | `0x00160d78` | `MenuLoadLevel_Choose` | `GameModes` | 56 |
 | `0x00161218` | `RunPreloadScripts` | `GameModes` | 152 |
-| `0x00164bb8` | `Gang_SetMessageHandler` | `unattributed` | 88 |
-| `0x00164c20` | `Gang_OnEvent` | `unattributed` | 1,432 |
-| `0x00165640` | `Gang_SetTactic` | `unattributed` | 56 |
-| `0x00166220` | `Gang_StandingCount` | `unattributed` | 232 |
-| `0x00166308` | `Gang_AddMember` | `unattributed` | 464 |
-| `0x00168f58` | `Gang_AreFriends` | `unattributed` | 136 |
-| `0x0016a220` | `Gang_Suspend` | `unattributed` | 64 |
-| `0x0016aa98` | `Gang_SetBrainsDead` | `unattributed` | 160 |
-| `0x0016acf0` | `GangMakeEnemies` | `unattributed` | 144 |
-| `0x0016ad80` | `GangMakeFriends` | `unattributed` | 144 |
-| `0x0016b3d0` | `Gang_SetThreatResponse` | `unattributed` | 144 |
-| `0x0016cdf0` | `Gang_Create` | `unattributed` | 632 |
-| `0x0016d170` | `Gangs_Update` | `unattributed` | 672 |
-| `0x0016e258` | `CharacterData_OnLoaded` | `unattributed` | 304 |
+| `0x00164bb8` | `Gang_SetMessageHandler` | `GameModes` | 88 |
+| `0x00164c20` | `Gang_OnEvent` | `GameModes` | 1,432 |
+| `0x00165640` | `Gang_SetTactic` | `GameModes` | 56 |
+| `0x00166220` | `Gang_StandingCount` | `GameModes` | 232 |
+| `0x00166308` | `Gang_AddMember` | `GameModes` | 464 |
+| `0x00168f58` | `Gang_AreFriends` | `GameModes` | 136 |
+| `0x0016a220` | `Gang_Suspend` | `GameModes` | 64 |
+| `0x0016aa98` | `Gang_SetBrainsDead` | `GameModes` | 160 |
+| `0x0016acf0` | `GangMakeEnemies` | `GameModes` | 144 |
+| `0x0016ad80` | `GangMakeFriends` | `GameModes` | 144 |
+| `0x0016b3d0` | `Gang_SetThreatResponse` | `GameModes` | 144 |
+| `0x0016cdf0` | `Gang_Create` | `GameModes` | 632 |
+| `0x0016d170` | `Gangs_Update` | `GameModes` | 672 |
+| `0x0016e258` | `CharacterData_OnLoaded` | `GameModes` | 304 |
 | `0x0016e8f0` | `ResourceManager_LoadCharacterData` | `Graphics` | 304 |
 | `0x00175080` | `CharacterInstance_GetAnim` | `Graphics` | 160 |
 | `0x00175210` | `CharacterInstance_TopTask` | `Graphics` | not filled in |
@@ -240,9 +242,9 @@ at the top of the repository's `README.md`.
 | `0x00197168` | `Instance_Render` | `Graphics` | 328 |
 | `0x00197b30` | `ChunkReader_SectorBspData` | `Graphics` | not filled in |
 | `0x00198e20` | `SectorPlugin_StreamRead` | `Graphics` | not filled in |
-| `0x0019ee70` | `GlobalString_Get` | `unattributed` | 48 |
-| `0x0019eea0` | `GlobalString_Set` | `unattributed` | 64 |
-| `0x001a1bf8` | `BaseWidget::BaseWidget` | `unattributed` | 56 |
+| `0x0019ee70` | `GlobalString_Get` | `GUI` | 48 |
+| `0x0019eea0` | `GlobalString_Set` | `GUI` | 64 |
+| `0x001a1bf8` | `BaseWidget::BaseWidget` | `GUI` | 56 |
 | `0x001a2690` | `BaseWidget_AddSprite` | `GUI` | 640 |
 | `0x001a8e30` | `Widget::Widget` | `GUI` | 72 |
 | `0x001b9600` | `TextWidget_Layout` | `GUI` | 5,664 |
@@ -296,9 +298,9 @@ at the top of the repository's `README.md`.
 | `0x00209da8` | `PM_Mode::Init` | `GUI` | 944 |
 | `0x0020a268` | `PM_Mode::HandleCommand` | `GUI` | 416 |
 | `0x0020a4b8` | `PM_Mode::Update` | `GUI` | 88 |
-| `0x00218008` | `Human_Init` | `unattributed` | not filled in |
-| `0x0021a490` | `Human_PushOutInAir` | `unattributed` | not filled in |
-| `0x0021b290` | `Strike_Contact` | `unattributed` | 3,488 |
+| `0x00218008` | `Human_Init` | `Human` | not filled in |
+| `0x0021a490` | `Human_PushOutInAir` | `Human` | not filled in |
+| `0x0021b290` | `Strike_Contact` | `Human` | 3,488 |
 | `0x0021d428` | `Human_GetFormation` | `Human` | 80 |
 | `0x0021d4e8` | `Human_OnEvent` | `Human` | 72 |
 | `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
@@ -380,167 +382,167 @@ at the top of the repository's `README.md`.
 | `0x0026c1d8` | `Grab_IntroEnd` | `Human` | 880 |
 | `0x0026cc18` | `Grab_Escape` | `Human` | 1,120 |
 | `0x0026dd08` | `Player_Throw` | `Human` | 2,288 |
-| `0x00276008` | `Attack_TurnToTarget` | `unattributed` | not filled in |
-| `0x002761c8` | `Attack_SteerToTarget` | `unattributed` | not filled in |
-| `0x00276998` | `Pair_AlignStart` | `unattributed` | 1,024 |
-| `0x00276d98` | `Pair_SnapAttach` | `unattributed` | 600 |
-| `0x00277958` | `Pair_CheckPlace` | `unattributed` | 456 |
-| `0x0027a6c0` | `Player_PickTarget` | `unattributed` | not filled in |
-| `0x0027c120` | `Player_UpdateActions` | `unattributed` | 3,120 |
-| `0x0027ce90` | `Player_UpdateSprint` | `unattributed` | not filled in |
-| `0x0027d800` | `Player_Charge` | `unattributed` | 256 |
-| `0x0027d900` | `Player_Dive` | `unattributed` | 272 |
-| `0x0027e6d8` | `Player_UpdateTheft` | `unattributed` | 560 |
-| `0x0027f3b0` | `Player_UpdateGrabbing` | `unattributed` | 2,488 |
-| `0x0027fd68` | `Player_UpdateGrabbed` | `unattributed` | 568 |
-| `0x002802a0` | `Pair_Attach` | `unattributed` | 680 |
-| `0x00280630` | `Player_UpdateChain` | `unattributed` | 216 |
-| `0x00280708` | `Player_UpdateChain` | `unattributed` | 1,560 |
-| `0x00281450` | `Climb_RunningClipEnd` | `unattributed` | not filled in |
-| `0x00281838` | `Climb_StandingClipEnd` | `unattributed` | not filled in |
-| `0x00281c20` | `Climb_Start` | `unattributed` | not filled in |
-| `0x00282370` | `Climb_ProbeTop` | `unattributed` | not filled in |
-| `0x002826f0` | `Climb_TryStart` | `unattributed` | not filled in |
-| `0x002829e8` | `Player_TryJump` | `unattributed` | not filled in |
-| `0x002843f8` | `Player_StartRage` | `unattributed` | 1,320 |
-| `0x00284920` | `Player_GrabOrTackle` | `unattributed` | 896 |
-| `0x002856b8` | `Player_UpdateMugging` | `unattributed` | 3,736 |
-| `0x00286cc8` | `Player_Square` | `unattributed` | 2,664 |
-| `0x00287a18` | `Player_Cross` | `unattributed` | 1,480 |
-| `0x0028c1a8` | `Brain_InstallHandlers` | `unattributed` | 440 |
-| `0x0028cfe0` | `Brain_SetTarget` | `unattributed` | 432 |
-| `0x0028d190` | `Brain_PushFightGoal` | `unattributed` | 344 |
-| `0x0028d2e8` | `Brain_Fight` | `unattributed` | 112 |
-| `0x0028d538` | `Brain_AddEnemy` | `unattributed` | 360 |
-| `0x0028d758` | `Brain_PushGoal` | `unattributed` | 128 |
-| `0x0028d7d8` | `Brain_PopGoal` | `unattributed` | 200 |
-| `0x0028d910` | `Brain_ClearGoals` | `unattributed` | 80 |
-| `0x0028d960` | `Brain_FindGoal` | `unattributed` | 128 |
-| `0x0028d9f0` | `Brain_AllocAction` | `unattributed` | 112 |
-| `0x0028da60` | `Brain_PopAction` | `unattributed` | 168 |
-| `0x0028db20` | `Brain_ClearActions` | `unattributed` | 104 |
-| `0x0028de48` | `Brain_HasAttackSlot` | `unattributed` | 80 |
-| `0x0028df30` | `Brain_ClaimAttackSlot` | `unattributed` | 688 |
-| `0x0028e248` | `Brain_QueueAttack` | `unattributed` | 1,216 |
-| `0x0028e708` | `Brain_PickAttack` | `unattributed` | 1,920 |
-| `0x0028f240` | `Brain_EndReactionGoal` | `unattributed` | 112 |
-| `0x0028f2b0` | `Brain_UpdateReactionGoal` | `unattributed` | 1,040 |
-| `0x0028f6c0` | `Brain_Think` | `unattributed` | 504 |
-| `0x0028f8b8` | `Brain_Update` | `unattributed` | 112 |
-| `0x0028f928` | `Brain_OnEvent` | `unattributed` | 96 |
-| `0x0028fbb0` | `Brain_UpdateGoals` | `unattributed` | 632 |
-| `0x0028fe28` | `Brain_RunActions` | `unattributed` | 104 |
-| `0x002911f8` | `Brain_GetAttackWeight` | `unattributed` | 32 |
-| `0x00292330` | `Brain_SetDead` | `unattributed` | 112 |
-| `0x00292530` | `Brain_FlushAll` | `unattributed` | 96 |
-| `0x00292ac0` | `Follow_SelectSlotSet` | `unattributed` | 80 |
-| `0x00293b28` | `Brains_Update` | `unattributed` | 320 |
-| `0x00293c68` | `Formations_Update` | `unattributed` | 104 |
-| `0x00294ad8` | `Formation_Init` | `unattributed` | 136 |
-| `0x00294f38` | `Formation_PlaceSlots` | `unattributed` | 792 |
-| `0x002953c8` | `Formation_AssignSlots` | `unattributed` | 368 |
-| `0x002956d0` | `Formation_Plan` | `unattributed` | 1,592 |
-| `0x00295dd8` | `Formation_SetSlotCount` | `unattributed` | 40 |
-| `0x00295ec8` | `Formation_SetSlot` | `unattributed` | 96 |
-| `0x00295f28` | `Formation_Join` | `unattributed` | 256 |
-| `0x00296028` | `Formation_Leave` | `unattributed` | 160 |
-| `0x0029a8c0` | `Route_Request` | `unattributed` | 352 |
-| `0x0029aa88` | `Route_Follow` | `unattributed` | 856 |
-| `0x0029b4b8` | `Route_CanSkip` | `unattributed` | 544 |
-| `0x0029b6d8` | `Route_MoveOn` | `unattributed` | 368 |
-| `0x0029ed58` | `Goal_Start` | `unattributed` | 128 |
-| `0x0029edd8` | `Goal_End` | `unattributed` | 88 |
-| `0x0029ee30` | `Goal_Resume` | `unattributed` | 112 |
-| `0x0029eea0` | `Goal_Suspend` | `unattributed` | 56 |
-| `0x0029eed8` | `Goal_Process` | `unattributed` | 168 |
-| `0x0029f098` | `Goal_TryBlock` | `unattributed` | 408 |
-| `0x002b2b90` | `Brain_StartFight` | `unattributed` | 144 |
-| `0x002b2c20` | `FightGoal_Init` | `unattributed` | 184 |
-| `0x002b3ab0` | `FightGoal_Process` | `unattributed` | 1,512 |
-| `0x002b4098` | `SpectateGoal_Init` | `unattributed` | 192 |
-| `0x002b54d8` | `BlockGoal_Init` | `unattributed` | 72 |
-| `0x002b5520` | `BlockGoal_Start` | `unattributed` | 328 |
-| `0x002b5808` | `BlockGoal_Process` | `unattributed` | 656 |
-| `0x002c6c88` | `Goal_Dealer` | `unattributed` | 264 |
-| `0x002c6d90` | `DealerGoal_Init` | `unattributed` | 232 |
-| `0x002c6e78` | `DealerGoal_Start` | `unattributed` | 288 |
-| `0x002c70a0` | `DealerGoal_End` | `unattributed` | 184 |
-| `0x002c7fd8` | `DealerGoal_Process` | `unattributed` | 2,256 |
-| `0x002caf78` | `IdleGoal_Init` | `unattributed` | 160 |
-| `0x002cc348` | `Goal_AddressPerson` | `unattributed` | 192 |
-| `0x002cc408` | `AddressPersonGoal_Init` | `unattributed` | 128 |
-| `0x002cc488` | `AddressPersonGoal_Start` | `unattributed` | 256 |
-| `0x002cc588` | `AddressPersonGoal_Process` | `unattributed` | 800 |
-| `0x002d2df8` | `Goal_PlayDynamicAnimation` | `unattributed` | 184 |
-| `0x002d2eb0` | `PlayDynAnimationGoal_Init` | `unattributed` | 176 |
-| `0x002d2f60` | `PlayDynAnimationGoal_Start` | `unattributed` | 32 |
-| `0x002d2f88` | `PlayDynAnimationGoal_Suspend` | `unattributed` | 16 |
-| `0x002d2f98` | `PlayDynAnimationGoal_End` | `unattributed` | 160 |
-| `0x002d3060` | `PlayDynAnimationGoal_Process` | `unattributed` | 240 |
-| `0x002da2c0` | `Goal_MoveToFlag` | `unattributed` | 240 |
-| `0x002da3b0` | `MoveToFlagGoal_Init` | `unattributed` | 88 |
-| `0x002da408` | `MoveToFlagGoal_Start` | `unattributed` | 152 |
-| `0x002da4a0` | `MoveToFlagGoal_End` | `unattributed` | 176 |
-| `0x002da550` | `MoveToFlagGoal_Resume` | `unattributed` | 56 |
-| `0x002da588` | `MoveToFlagGoal_Process` | `unattributed` | 648 |
-| `0x002df1a8` | `Goal_TrackHuman` | `unattributed` | 168 |
-| `0x002df250` | `TrackHumanGoal_Init` | `unattributed` | 56 |
-| `0x002df288` | `TrackHumanGoal_Start` | `unattributed` | 152 |
-| `0x002df3c0` | `TrackHumanGoal_Process` | `unattributed` | 768 |
-| `0x002e4980` | `PlayAnimationGoal_Init` | `unattributed` | 120 |
-| `0x002e49f8` | `PlayAnimationGoal_Start` | `unattributed` | 88 |
-| `0x002e4a50` | `PlayAnimationGoal_End` | `unattributed` | 32 |
-| `0x002e4a70` | `PlayAnimationGoal_Process` | `unattributed` | 72 |
-| `0x002fa5a0` | `PlayAnimAction_Init` | `unattributed` | 64 |
-| `0x002fa918` | `AttackAction_Init` | `unattributed` | 144 |
-| `0x002fa9a8` | `AttackAction_Start` | `unattributed` | 904 |
-| `0x002fad30` | `AttackAction_Abort` | `unattributed` | 64 |
-| `0x002fad70` | `AttackAction_Update` | `unattributed` | 320 |
-| `0x002fb9e8` | `MoveAction_Init` | `unattributed` | 248 |
-| `0x002fbd18` | `MoveAction_CornerTrial` | `unattributed` | 472 |
-| `0x002fc158` | `MoveAction_CornerSpeed` | `unattributed` | 472 |
-| `0x002fc330` | `MoveAction_Stuck` | `unattributed` | 184 |
-| `0x002fc420` | `MoveAction_Start` | `unattributed` | 320 |
-| `0x002fc5c0` | `MoveAction_Update` | `unattributed` | 2,000 |
-| `0x002fcf50` | `MoveToHumanAction_Init` | `unattributed` | 160 |
-| `0x002fdc28` | `TurnAction_Init` | `unattributed` | 64 |
-| `0x002fdc68` | `TurnAction_Start` | `unattributed` | 96 |
-| `0x002fdcc8` | `TurnAction_Abort` | `unattributed` | 64 |
-| `0x002fdd08` | `TurnAction_Update` | `unattributed` | 224 |
-| `0x002fe000` | `TurnToPointAction_Init` | `unattributed` | 88 |
-| `0x002fe0c8` | `Action_LookAt` | `unattributed` | 152 |
-| `0x002fe160` | `LookAtAction_Init` | `unattributed` | 80 |
-| `0x002fe1b0` | `LookAtAction_Update` | `unattributed` | 152 |
-| `0x00306690` | `Tactic_Start` | `unattributed` | 328 |
-| `0x003067d8` | `Tactic_Process` | `unattributed` | 120 |
-| `0x003068f8` | `Tactic_SetCallback` | `unattributed` | 64 |
-| `0x00306938` | `Tactic_FireCallback` | `unattributed` | 184 |
-| `0x0030f4d0` | `TacticCrowd_Init` | `unattributed` | 160 |
-| `0x0030f570` | `TacticCrowd_Seat` | `unattributed` | 320 |
-| `0x0030f6b0` | `TacticCrowd_Start` | `unattributed` | 304 |
-| `0x0030fc48` | `TacticCrowd_React` | `unattributed` | 528 |
-| `0x0030fe78` | `TacticCrowd_Process` | `unattributed` | 648 |
-| `0x00310100` | `TacticCrowd_Event` | `unattributed` | 216 |
-| `0x00316fa0` | `Tactic_TriggerCrowd` | `unattributed` | 176 |
-| `0x00336a00` | `QuaternionSlerp` | `unattributed` | 440 |
-| `0x00336bb8` | `VectorLerp` | `unattributed` | 64 |
-| `0x00336bf8` | `QuaternionNlerp` | `unattributed` | 160 |
-| `0x00337920` | `RayTriangle_OneSided` | `unattributed` | not filled in |
-| `0x00337a60` | `RayTriangle_TwoSided` | `unattributed` | not filled in |
-| `0x0033e278` | `PhysicsBody_Sweep` | `unattributed` | not filled in |
-| `0x003477c0` | `PhysicsBody_PushOutOfWalls` | `unattributed` | not filled in |
-| `0x00347c08` | `PhysicsMesh_SweepCapsule` | `unattributed` | not filled in |
-| `0x0034f740` | `Collision_MarchRay` | `unattributed` | not filled in |
-| `0x0034f950` | `Collision_DropToGround` | `unattributed` | not filled in |
-| `0x0034fa28` | `Collision_DropToMarkedGround` | `unattributed` | not filled in |
-| `0x00350538` | `CollisionTri_PassesMaterialFilter` | `unattributed` | not filled in |
-| `0x00350580` | `CollisionMesh_OnLoaded` | `unattributed` | not filled in |
-| `0x00350778` | `CollisionMesh_RayTestCell` | `unattributed` | not filled in |
-| `0x00350aa0` | `CollisionMesh_SetEnabledInBoxCell` | `unattributed` | not filled in |
-| `0x00350cd8` | `CollisionMesh_RayCast` | `unattributed` | not filled in |
-| `0x00351160` | `CollisionMesh_SetEnabledInBox` | `unattributed` | not filled in |
-| `0x00351468` | `CollisionMesh_SphereTestCell` | `unattributed` | not filled in |
-| `0x003519f8` | `CollisionMesh_SpherePush` | `unattributed` | not filled in |
+| `0x00276008` | `Attack_TurnToTarget` | `Human` | not filled in |
+| `0x002761c8` | `Attack_SteerToTarget` | `Human` | not filled in |
+| `0x00276998` | `Pair_AlignStart` | `Human` | 1,024 |
+| `0x00276d98` | `Pair_SnapAttach` | `Human` | 600 |
+| `0x00277958` | `Pair_CheckPlace` | `Human` | 456 |
+| `0x0027a6c0` | `Player_PickTarget` | `Human` | not filled in |
+| `0x0027c120` | `Player_UpdateActions` | `Human` | 3,120 |
+| `0x0027ce90` | `Player_UpdateSprint` | `Human` | not filled in |
+| `0x0027d800` | `Player_Charge` | `Human` | 256 |
+| `0x0027d900` | `Player_Dive` | `Human` | 272 |
+| `0x0027e6d8` | `Player_UpdateTheft` | `Human` | 560 |
+| `0x0027f3b0` | `Player_UpdateGrabbing` | `Human` | 2,488 |
+| `0x0027fd68` | `Player_UpdateGrabbed` | `Human` | 568 |
+| `0x002802a0` | `Pair_Attach` | `Human` | 680 |
+| `0x00280630` | `Player_UpdateChain` | `Human` | 216 |
+| `0x00280708` | `Player_UpdateChain` | `Human` | 1,560 |
+| `0x00281450` | `Climb_RunningClipEnd` | `Human` | not filled in |
+| `0x00281838` | `Climb_StandingClipEnd` | `Human` | not filled in |
+| `0x00281c20` | `Climb_Start` | `Human` | not filled in |
+| `0x00282370` | `Climb_ProbeTop` | `Human` | not filled in |
+| `0x002826f0` | `Climb_TryStart` | `Human` | not filled in |
+| `0x002829e8` | `Player_TryJump` | `Human` | not filled in |
+| `0x002843f8` | `Player_StartRage` | `Human` | 1,320 |
+| `0x00284920` | `Player_GrabOrTackle` | `Human` | 896 |
+| `0x002856b8` | `Player_UpdateMugging` | `Human` | 3,736 |
+| `0x00286cc8` | `Player_Square` | `Human` | 2,664 |
+| `0x00287a18` | `Player_Cross` | `Human` | 1,480 |
+| `0x0028c1a8` | `Brain_InstallHandlers` | `Human` | 440 |
+| `0x0028cfe0` | `Brain_SetTarget` | `Human` | 432 |
+| `0x0028d190` | `Brain_PushFightGoal` | `Human` | 344 |
+| `0x0028d2e8` | `Brain_Fight` | `Human` | 112 |
+| `0x0028d538` | `Brain_AddEnemy` | `Human` | 360 |
+| `0x0028d758` | `Brain_PushGoal` | `Human` | 128 |
+| `0x0028d7d8` | `Brain_PopGoal` | `Human` | 200 |
+| `0x0028d910` | `Brain_ClearGoals` | `Human` | 80 |
+| `0x0028d960` | `Brain_FindGoal` | `Human` | 128 |
+| `0x0028d9f0` | `Brain_AllocAction` | `Human` | 112 |
+| `0x0028da60` | `Brain_PopAction` | `Human` | 168 |
+| `0x0028db20` | `Brain_ClearActions` | `Human` | 104 |
+| `0x0028de48` | `Brain_HasAttackSlot` | `Human` | 80 |
+| `0x0028df30` | `Brain_ClaimAttackSlot` | `Human` | 688 |
+| `0x0028e248` | `Brain_QueueAttack` | `Human` | 1,216 |
+| `0x0028e708` | `Brain_PickAttack` | `Human` | 1,920 |
+| `0x0028f240` | `Brain_EndReactionGoal` | `Human` | 112 |
+| `0x0028f2b0` | `Brain_UpdateReactionGoal` | `Human` | 1,040 |
+| `0x0028f6c0` | `Brain_Think` | `Human` | 504 |
+| `0x0028f8b8` | `Brain_Update` | `Human` | 112 |
+| `0x0028f928` | `Brain_OnEvent` | `Human` | 96 |
+| `0x0028fbb0` | `Brain_UpdateGoals` | `Human` | 632 |
+| `0x0028fe28` | `Brain_RunActions` | `Human` | 104 |
+| `0x002911f8` | `Brain_GetAttackWeight` | `Human` | 32 |
+| `0x00292330` | `Brain_SetDead` | `Human` | 112 |
+| `0x00292530` | `Brain_FlushAll` | `Human` | 96 |
+| `0x00292ac0` | `Follow_SelectSlotSet` | `Human` | 80 |
+| `0x00293b28` | `Brains_Update` | `Human` | 320 |
+| `0x00293c68` | `Formations_Update` | `Human` | 104 |
+| `0x00294ad8` | `Formation_Init` | `Human` | 136 |
+| `0x00294f38` | `Formation_PlaceSlots` | `Human` | 792 |
+| `0x002953c8` | `Formation_AssignSlots` | `Human` | 368 |
+| `0x002956d0` | `Formation_Plan` | `Human` | 1,592 |
+| `0x00295dd8` | `Formation_SetSlotCount` | `Human` | 40 |
+| `0x00295ec8` | `Formation_SetSlot` | `Human` | 96 |
+| `0x00295f28` | `Formation_Join` | `Human` | 256 |
+| `0x00296028` | `Formation_Leave` | `Human` | 160 |
+| `0x0029a8c0` | `Route_Request` | `Human` | 352 |
+| `0x0029aa88` | `Route_Follow` | `Human` | 856 |
+| `0x0029b4b8` | `Route_CanSkip` | `Human` | 544 |
+| `0x0029b6d8` | `Route_MoveOn` | `Human` | 368 |
+| `0x0029ed58` | `Goal_Start` | `Human` | 128 |
+| `0x0029edd8` | `Goal_End` | `Human` | 88 |
+| `0x0029ee30` | `Goal_Resume` | `Human` | 112 |
+| `0x0029eea0` | `Goal_Suspend` | `Human` | 56 |
+| `0x0029eed8` | `Goal_Process` | `Human` | 168 |
+| `0x0029f098` | `Goal_TryBlock` | `Human` | 408 |
+| `0x002b2b90` | `Brain_StartFight` | `Human` | 144 |
+| `0x002b2c20` | `FightGoal_Init` | `Human` | 184 |
+| `0x002b3ab0` | `FightGoal_Process` | `Human` | 1,512 |
+| `0x002b4098` | `SpectateGoal_Init` | `Human` | 192 |
+| `0x002b54d8` | `BlockGoal_Init` | `Human` | 72 |
+| `0x002b5520` | `BlockGoal_Start` | `Human` | 328 |
+| `0x002b5808` | `BlockGoal_Process` | `Human` | 656 |
+| `0x002c6c88` | `Goal_Dealer` | `Human` | 264 |
+| `0x002c6d90` | `DealerGoal_Init` | `Human` | 232 |
+| `0x002c6e78` | `DealerGoal_Start` | `Human` | 288 |
+| `0x002c70a0` | `DealerGoal_End` | `Human` | 184 |
+| `0x002c7fd8` | `DealerGoal_Process` | `Human` | 2,256 |
+| `0x002caf78` | `IdleGoal_Init` | `Human` | 160 |
+| `0x002cc348` | `Goal_AddressPerson` | `Human` | 192 |
+| `0x002cc408` | `AddressPersonGoal_Init` | `Human` | 128 |
+| `0x002cc488` | `AddressPersonGoal_Start` | `Human` | 256 |
+| `0x002cc588` | `AddressPersonGoal_Process` | `Human` | 800 |
+| `0x002d2df8` | `Goal_PlayDynamicAnimation` | `Human` | 184 |
+| `0x002d2eb0` | `PlayDynAnimationGoal_Init` | `Human` | 176 |
+| `0x002d2f60` | `PlayDynAnimationGoal_Start` | `Human` | 32 |
+| `0x002d2f88` | `PlayDynAnimationGoal_Suspend` | `Human` | 16 |
+| `0x002d2f98` | `PlayDynAnimationGoal_End` | `Human` | 160 |
+| `0x002d3060` | `PlayDynAnimationGoal_Process` | `Human` | 240 |
+| `0x002da2c0` | `Goal_MoveToFlag` | `Human` | 240 |
+| `0x002da3b0` | `MoveToFlagGoal_Init` | `Human` | 88 |
+| `0x002da408` | `MoveToFlagGoal_Start` | `Human` | 152 |
+| `0x002da4a0` | `MoveToFlagGoal_End` | `Human` | 176 |
+| `0x002da550` | `MoveToFlagGoal_Resume` | `Human` | 56 |
+| `0x002da588` | `MoveToFlagGoal_Process` | `Human` | 648 |
+| `0x002df1a8` | `Goal_TrackHuman` | `Human` | 168 |
+| `0x002df250` | `TrackHumanGoal_Init` | `Human` | 56 |
+| `0x002df288` | `TrackHumanGoal_Start` | `Human` | 152 |
+| `0x002df3c0` | `TrackHumanGoal_Process` | `Human` | 768 |
+| `0x002e4980` | `PlayAnimationGoal_Init` | `Human` | 120 |
+| `0x002e49f8` | `PlayAnimationGoal_Start` | `Human` | 88 |
+| `0x002e4a50` | `PlayAnimationGoal_End` | `Human` | 32 |
+| `0x002e4a70` | `PlayAnimationGoal_Process` | `Human` | 72 |
+| `0x002fa5a0` | `PlayAnimAction_Init` | `Human` | 64 |
+| `0x002fa918` | `AttackAction_Init` | `Human` | 144 |
+| `0x002fa9a8` | `AttackAction_Start` | `Human` | 904 |
+| `0x002fad30` | `AttackAction_Abort` | `Human` | 64 |
+| `0x002fad70` | `AttackAction_Update` | `Human` | 320 |
+| `0x002fb9e8` | `MoveAction_Init` | `Human` | 248 |
+| `0x002fbd18` | `MoveAction_CornerTrial` | `Human` | 472 |
+| `0x002fc158` | `MoveAction_CornerSpeed` | `Human` | 472 |
+| `0x002fc330` | `MoveAction_Stuck` | `Human` | 184 |
+| `0x002fc420` | `MoveAction_Start` | `Human` | 320 |
+| `0x002fc5c0` | `MoveAction_Update` | `Human` | 2,000 |
+| `0x002fcf50` | `MoveToHumanAction_Init` | `Human` | 160 |
+| `0x002fdc28` | `TurnAction_Init` | `Human` | 64 |
+| `0x002fdc68` | `TurnAction_Start` | `Human` | 96 |
+| `0x002fdcc8` | `TurnAction_Abort` | `Human` | 64 |
+| `0x002fdd08` | `TurnAction_Update` | `Human` | 224 |
+| `0x002fe000` | `TurnToPointAction_Init` | `Human` | 88 |
+| `0x002fe0c8` | `Action_LookAt` | `Human` | 152 |
+| `0x002fe160` | `LookAtAction_Init` | `Human` | 80 |
+| `0x002fe1b0` | `LookAtAction_Update` | `Human` | 152 |
+| `0x00306690` | `Tactic_Start` | `Human` | 328 |
+| `0x003067d8` | `Tactic_Process` | `Human` | 120 |
+| `0x003068f8` | `Tactic_SetCallback` | `Human` | 64 |
+| `0x00306938` | `Tactic_FireCallback` | `Human` | 184 |
+| `0x0030f4d0` | `TacticCrowd_Init` | `Human` | 160 |
+| `0x0030f570` | `TacticCrowd_Seat` | `Human` | 320 |
+| `0x0030f6b0` | `TacticCrowd_Start` | `Human` | 304 |
+| `0x0030fc48` | `TacticCrowd_React` | `Human` | 528 |
+| `0x0030fe78` | `TacticCrowd_Process` | `Human` | 648 |
+| `0x00310100` | `TacticCrowd_Event` | `Human` | 216 |
+| `0x00316fa0` | `Tactic_TriggerCrowd` | `Human` | 176 |
+| `0x00336a00` | `QuaternionSlerp` | `Maths (unnamed)` | 440 |
+| `0x00336bb8` | `VectorLerp` | `Maths (unnamed)` | 64 |
+| `0x00336bf8` | `QuaternionNlerp` | `Maths (unnamed)` | 160 |
+| `0x00337920` | `RayTriangle_OneSided` | `Maths (unnamed)` | not filled in |
+| `0x00337a60` | `RayTriangle_TwoSided` | `Maths (unnamed)` | not filled in |
+| `0x0033e278` | `PhysicsBody_Sweep` | `Physics` | not filled in |
+| `0x003477c0` | `PhysicsBody_PushOutOfWalls` | `Physics` | not filled in |
+| `0x00347c08` | `PhysicsMesh_SweepCapsule` | `Physics` | not filled in |
+| `0x0034f740` | `Collision_MarchRay` | `RayCast` | not filled in |
+| `0x0034f950` | `Collision_DropToGround` | `RayCast` | not filled in |
+| `0x0034fa28` | `Collision_DropToMarkedGround` | `RayCast` | not filled in |
+| `0x00350538` | `CollisionTri_PassesMaterialFilter` | `RayCast` | not filled in |
+| `0x00350580` | `CollisionMesh_OnLoaded` | `RayCast` | not filled in |
+| `0x00350778` | `CollisionMesh_RayTestCell` | `RayCast` | not filled in |
+| `0x00350aa0` | `CollisionMesh_SetEnabledInBoxCell` | `RayCast` | not filled in |
+| `0x00350cd8` | `CollisionMesh_RayCast` | `RayCast` | not filled in |
+| `0x00351160` | `CollisionMesh_SetEnabledInBox` | `RayCast` | not filled in |
+| `0x00351468` | `CollisionMesh_SphereTestCell` | `RayCast` | not filled in |
+| `0x003519f8` | `CollisionMesh_SpherePush` | `RayCast` | not filled in |
 | `0x00356390` | `ScriptSystem_Create` | `Scripting` | 192 |
 | `0x00356450` | `ScriptSystem_Destroy` | `Scripting` | 136 |
 | `0x003564d8` | `ScriptSystem::ScriptSystem` | `Scripting` | 312 |

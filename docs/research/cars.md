@@ -20,7 +20,8 @@ opened, damaged and removed, and removing a door removes its window. The model i
 ## Original structure
 
 `Car.cpp` holds only four functions at `0x00173170`-`0x00173928` (`CarInstance`, [Source map](source-map.md)); the car
-task's code is at `0x00387498`-`0x0038e0f0`, in the unattributed `TaskEngine` stretch. Names are ours.
+task's code is at `0x00387498`-`0x0038e0f0`, in `TaskEngine/` ([Source map](source-map.md#position), inferred).
+Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |

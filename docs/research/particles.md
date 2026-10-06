@@ -20,8 +20,8 @@ rectangle), colour, size and update interval. The same table serves world object
 
 ## Original structure
 
-The type functions sit in `0x003a8698`-`0x00407798`, the unattributed stretch after `TaskEngine/`
-([Source map](source-map.md)). Names are ours.
+The type functions sit in `0x003a8698`-`0x00408ac8`, the stretch of `TaskEngine/` after `TaskManager.cpp`
+([Source map](source-map.md#position), inferred). Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |

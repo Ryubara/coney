@@ -45,6 +45,13 @@ The steps, so that anyone with the executable and Ghidra can repeat or extend th
    inside a directory.
 8. **Middleware** is placed by its strings, by the libraries' own globals and by where calls stop crossing (see
    [Middleware](#middleware)).
+9. **Position and calls.** A stretch left between the last file of one directory and the first file of the next is
+   given the directory its code works with, when (a) the `.rodata` it alone uses lies between those two files' path
+   strings, so link order puts it there, and (b) its calls go mostly to that directory's code (for example 3,580
+   calls from the stretch after `Human/cns/cnsplayertag.cpp` into `Human/`, 2,667 from the one after
+   `TaskEngine/TaskManager.cpp` into `TaskEngine/`). **Inferred.** It cannot rule out a directory with no path
+   string that sorts between the two (the directories link in nearly alphabetical order); the
+   [table](#position) names the cases where one is plausible.
 
 TU boundaries are aligned only to 8 bytes, like functions, so padding gives no extra signal. The analysis was run
 with throwaway scripts over the ELF and Ghidra's function list (13,789 functions in `.text`). In the local Ghidra
@@ -58,7 +65,8 @@ named and the chunk type table is labelled `ChunkTypeNameTable`.
   Its ends are the first and last attributed functions, not necessarily the TU's real ends: the TU may extend a little
   either way.
 - A **static-init stub** is confirmed (code) as a stub; reading it as the end of that file's TU is **inferred**.
-- Directory ranges and middleware ranges are **inferred**; ends written `~` are approximate.
+- Directory ranges, stretches placed by position and calls (step 9) and middleware ranges are **inferred**; ends
+  written `~` are approximate.
 
 ## Layout of `.text`
 
@@ -67,10 +75,9 @@ named and the chunk type table is labelled `ChunkTypeNameTable`.
 | Range | Contents | Evidence |
 | --- | --- | --- |
 | `0x00100008`-`0x00100200` | crt0: `entry` (`0x00100008`) calls `main` (`0x001446d0`), `FlushCache` and the exit call | confirmed (code) |
-| `0x00100200`-`0x00104630` | game code before `Animation/` with no path string; its rodata holds the `bip_sw_*` bone names | inferred |
-| `0x00104630`-`0x0042af70` | game code, one TU after another, in the order of the tables below | inferred |
-| `~0x00321ab8`-`~0x00335670` | Lua 4.0.1, built as C++ (`lua-4.0.1/src/lmem.cpp`), between `Human/` and `Memory/` | inferred |
-| `~0x004077b8`-`0x0040c5e0` | tolua, between `TaskEngine/` and `World/` | inferred |
+| `0x00100200`-`0x0042af70` | game code, one TU after another, in the order of the tables below (the first 17 KB, before `Animation/`'s first path string, is placed by [position](#position)) | inferred |
+| `0x00323298`-`~0x00335320` | Lua 4.0.1, built as C++ (`lua-4.0.1/src/lmem.cpp`), between `Human/` and `Memory/` | inferred |
+| `~0x00408ac8`-`0x0040c5e0` | tolua, between `TaskEngine/` and `World/` | inferred |
 | `0x0042b040`-`~0x004da118` | libraries: C++ runtime, C library, SCE SDK, RenderWare, Bink (see [Middleware](#middleware)) | inferred |
 | `~0x004da118`-`0x004f6578` | game code from link-once sections: template and inline functions, with `MemoryStl.h`/`FreeList.h` asserts and class tags such as `DS_PS2Device` and `MemoryPoolClump` | inferred |
 
@@ -91,17 +98,60 @@ The top-level directories in `.text` order (from the path strings' order, inferr
 | `GameModes` | `0x00155b30`-`0x00162598` | 221 | starts with mode 0xd's and the game-mode base's units (no path strings); about 8 more TUs with no path string sit between `Gm_MemoryCard.cpp` and `Gm_XboxSaveSystem.cpp` (stubs `0x0015cac0` to `0x0015f540`) |
 | `Graphics` | `0x0016e388`-`0x0019c5e8` | 605 | |
 | `GUI` | `0x001a1f10`-`0x002176b8` | 1,662 | |
-| `Human` | `0x0021c7c8`-`0x00273fa0` | 1,075 | the next 711 KB, up to Lua, is probably more `Human/` (AI behaviour names fill its rodata) but has no anchor |
+| `Human` | `0x0021c7c8`-`0x00273fa0` | 1,075 | the 718 KB after it, up to Lua, is placed by [position](#position) |
 | `Memory` | `0x00338420`-`0x0033b1a0` | 70 | |
-| `Physics`, `RayCast` | `0x003418f8`-`0x00350778` | 4 | one anchor each; the 60 KB between them is unattributed |
+| `Physics`, `RayCast` | `0x003418f8`-`0x00350778` | 4 | one anchor each; the 60 KB between them is placed by [position](#position) |
 | `Scene` | `0x00351da0`-`0x00354bb8` | 44 | |
 | `Scripting` | `0x00356390`-`0x003865d8` | 1,064 | mostly the Lua bindings around `ScriptLua.inl` |
 | `StringTable` | `0x00386b30`-`0x00386f58` | 2 | |
-| `TaskEngine` | `0x00397a48`-`0x003a8698` | 279 | the 389 KB after it, up to tolua, is unattributed |
+| `TaskEngine` | `0x00397a48`-`0x003a8698` | 279 | the 68 KB before it and the 394 KB after it, up to tolua, are placed by [position](#position) |
 | `World` | `0x0040c5e0`-`0x004124f8` | 61 | the first 5 (the WAD object and `WorldLevel_Load`) are placed by their callers, below |
 | `WorldObjects` | `0x00413218`-`0x00417af0` | 107 | |
 | `Warriors` | `0x00417b10`-`0x00424ee8` | 389 | |
 | `Movie` | `0x00429b18`-`0x0042af70` | 10 | |
+
+### Placed by position and calls {#position}
+
+The stretches between directories, placed by [step 9](#method) (inferred unless a column says otherwise). "Calls"
+counts calls from the stretch into the directory's attributed code; the contents are confirmed (code) on the linked
+pages. Names are ours.
+
+| Range | Size | Placed in | Contents | Why there |
+| --- | --- | --- | --- | --- |
+| `0x00100200`-`0x00104630` | 17 KB | `Animation/` | the reference pose and skeleton (`Pose_InitReference`, `0x00100200`), animation cursors (`0x00104110`) and their frame events (`0x00101dd8`), [Animation format](formats/animation.md) | before `Animation.cpp`'s path string; called from `Animation/` 61 times, `Human/` 50 |
+| `0x0010d758`-`0x0010edd0` | 6 KB | `Audio/` | the music player (`Music_Play`, `0x0010d8e8`; stream state names at `0x0010eab0`), [Sound](sound.md) | rodata between `AnimationMgr.cpp` and `MusicList.cpp`; called from `Audio/` |
+| `0x001167b8`-`0x0011b770` | 20 KB | `Audio/` | sound tasks (`SoundTask_Update`, `0x0011a170`), the DJ's failure lines, alarm emitters | rodata between `SoundMatrix.cpp` and `Cam_ICamera.cpp`; calls `Audio/` 30 times, `Camera/` never |
+| `0x0011b770`-`0x0011e1b0` | 11 KB | `Camera/` | the camera helpers behind the script bindings (`Camera_MakeActiveByHandle`, `0x0011b770`), [Camera](camera.md) | calls `Camera/` 80 times |
+| `0x0013b118`-`0x00143ea0` | 36 KB | `Camera/` | more camera code, up to the CRC unit that opens `Core/` | rodata between `Cam_Power.cpp` and `ChunkSystem.cpp`; calls `Camera/` 55 times |
+| `0x00144a08`-`0x00145790` | 3 KB | `Device/ps2/` | the pads (`Pads_Update`, `0x001454a8`; `Pad_Update`, `0x00144fb0`; the button history), [Front end](frontend.md#input) | reads `libpad`; called from `Device/ps2/` 22 times. `Debug/DebugStream.cpp` (no code) would also sort here |
+| `0x0014d528`-`0x00153f60` | 27 KB | `Device/ps2/` | Sony's MultiStream library and the IOP command layer (`MUSIC.SND`, the WAD stream), [Sound](sound.md), [File I/O](file-io.md); then a recursive directory walker over `/%s%s%s/*` paths (`0x00153118`, reached only through a pointer) | rodata between `sound/msaudiodevice.cpp` and `Shell/Core/shellMemory.cpp`, both `Device/ps2/` |
+| `0x00153f60`-`0x001541e0` | 1 KB | `FileIO/` | `FS_FSToStreamFSFileSys` and its file, [File I/O](file-io.md) | its allocation tag; before `FS_MemoryFile.cpp` |
+| `0x00162598`-`0x0016e388` | 49 KB | `GameModes/` | loading-screen texture names (`%s_ls_%d` with language suffixes, `0x00163270`, to the stub `0x00163c48`); the cheat codes (`Cheat_CheckSequence`, `0x00163c68`, [Debug](debug.md)); the gangs (`Gangs_Update`, `0x0016d170`, to the stub `0x0016d630`) and the responders (`0x0016df68`), [AI](ai.md#gangs) | rodata between `Initialize.cpp` and `Graphics/Animations.cpp`. The gangs are called from the AI 443 times; a directory of their own that sorts between `GameModes/` and `Graphics/` (say `Gang/`) would fit as well (speculative) |
+| `0x0019c5e8`-`0x0019dfb0` | 6 KB | `Graphics/` | the heat-distortion effects' methods | called only from `DistortionEffectManager.cpp` (`0x0019c070`-`0x0019c438`) |
+| `0x0019dfb0`-`0x001a1f10` | 16 KB | `GUI/` | `GlobalString_Get`/`_Set` (`0x0019ee70`, `0x0019eea0`), `Bar` (`0x001a0fd0`), the HUD meter (`0x001a1008`), soldier messages, [GUI](gui.md), [HUD](hud.md) | before `BaseWidget.cpp`'s path string; called from `GUI/` 232 times |
+| `0x002176b8`-`0x0021c7c8` | 21 KB | `Human/` | the human's set-up and contacts (`Human_Init`, `0x00218008`; `Human_OnContact`, `0x00219d50`; `Strike_Contact`, `0x0021b290`), [Characters](characters.md) | before `Human.cpp`'s path string; calls `Human/` 115 times and is called from it 123 |
+| `0x00273fa0`-`0x00323298` | 718 KB | `Human/` | the player's moves and combat (to `0x00287a18`, [Combat](combat.md)), then the AI: brains, goals, actions, tactics, formations ([AI](ai.md)); 8 static-init stubs | rodata between `cns/cnsplayertag.cpp` and Lua's; calls `Human/` 3,580 times. More `Human/` subdirectories like `cns/` would fit; a directory of its own between `Human/` and `lua-4.0.1/` cannot be ruled out |
+| `0x00335320`-`0x00338420` | 13 KB | (unnamed directory) | maths: random numbers (a table of 1,024, `Random_Int` `0x003353b8`), quaternions (`Quat_Slerp`, `0x00336a00`, [Physics](physics.md)), ray-triangle tests (`0x00337920`) | between Lua and `Memory/` (stubs `0x00335670`, `0x003383e0`); called from every directory, calls neither; a `Math/` directory would sort there (speculative) |
+| `0x0033b1a0`-`0x0033c288` | 4 KB | `Memory/` | the heaps' block allocator, [Memory](memory.md) | called only from `Memory/` |
+| `0x0033c288`-`0x003418f8`, `0x00341a68`-`0x0034f740` | 82 KB | `Physics/` | `IPhysics`, bodies, sweeps, settling, [Physics](physics.md) | rodata between `physics.cpp` and `CollisionMesh.cpp`; ends at the stub `0x0034f718` |
+| `0x0034f740`-`0x00350538` | 3 KB | `RayCast/` | ground-height helpers and the material names (`Collision_MarchRay`, `0x0034f740`), [Collision](collision.md) | after `Physics/`'s last stub; uses the level's mesh |
+| `0x00350538`-`0x00351da0` | 6 KB | `RayCast/CollisionMesh.cpp` (file) | the mesh tests around the anchor, [Collision](collision.md) | file inferred on that page: nothing ends the unit before `Scene/` |
+| `0x00354bb8`-`0x00356390` | 6 KB | `Scene/` | scene tracks (`SceneTrack_Events`, `0x00354d98`) and the `WarMoveInstance` tasks, [Scenes](scenes.md); probably `WarMovement.cpp`, whose path string has no code reference (speculative) | rodata between `SceneCache.cpp`'s and `WarMovement.cpp`'s path strings |
+| `0x00386f58`-`0x00397a48` | 68 KB | `TaskEngine/` | the task classes before `ObjectTaskManager.cpp`: cars, glass, lights, world objects, doors (`Car_Spawn`, `Obj_Spawn`, `Door_Open`), [Cars](cars.md), [Objects](objects.md) | rodata between `StringTableCache.cpp` and `ObjectTaskManager.cpp`, with four `FreeListContainer.h` copies; calls `TaskEngine/` 235 times |
+| `0x003a8698`-`0x00408ac8` | 394 KB | `TaskEngine/` | the script types: every particle system, object behaviour and light (`ScriptType_Find`, `0x003c55e8`), [Particles](particles.md), [Objects](objects.md); stubs `0x003e29c8`, `0x003ee318`, `0x00407798` | rodata between `TaskManager.cpp` and `tolua_tm.cpp`; calls `TaskEngine/` 2,667 times |
+| `0x004124f8`-`0x00413218` | 3 KB | `WorldObjects/` | the boxes' shared code (a chunk reader, `0x004124f8`; `VolumeBox_Add`, `0x004125b8`; `0x004127c0`, called by the player, turf and volume boxes) | before `PlayerBox.cpp`; its callers |
+| `0x00417af0`-`0x00417b10` | 32 B | `Warriors/W_ActionableManager.cpp` (file) | `Cfg_SetActionDistance` | the first function after `flags.cpp`'s stub, just before the anchor `0x00417b10` |
+
+The middleware ends moved with this: Lua starts at `0x00323298` (its API's first function, called from `Scripting/`),
+not at `~0x00321ab8`, whose next 6 KB is AI code (`0x00322740` works on brains and goals); it ends at `~0x00335320`,
+before the maths unit. tolua starts at `~0x00408ac8`: `0x004077b8`-`0x00408ac8` holds script types
+(`sub_shack_puff`'s at `0x00408860`, [Particles](particles.md)).
+
+Still unplaced (21 KB): `0x003865d8`-`0x00386b30` (seven functions between `Scripting/ScriptUtilities.cpp` and
+`StringTable/StringTableCache.cpp`, called from the AI), `0x00424ee8`-`0x00429b18` (the game's RenderWare pipelines,
+`Atomic_AssignGamePipelines` `0x00426c78`, [The streamed world](world.md#pipelines), and the Bink raster set-up
+`0x00429a98`; linked between `Warriors/` and `Movie/`, which come out of alphabetical order, so position says
+nothing) and `0x0042af70` (176 bytes, no callers).
 
 ## Files by subsystem
 
@@ -417,8 +467,8 @@ functions.
 
 | Range | Library | How it was placed |
 | --- | --- | --- |
-| `~0x00321ab8`-`~0x00335670` | **Lua 4.0.1** core and libraries, compiled as C++ | path `lua-4.0.1/src/lmem.cpp` (anchor `0x0032c758`); Lua's own messages (`_ERRORMESSAGE` at `0x00325800`, `syntax error` at `0x0032e6d0`, `` `for' limit must be a number`` at `0x00334478`) are loaded by 137 functions from `0x00322ba8` to `0x00334478` |
-| `~0x004077b8`-`0x0040c5e0` | **tolua** (`c:/Warriors/System/tolua/src/lib/`) | anchor `0x0040a5b0` (`tolua_tm.cpp`); the `tolua_tbl_*`/`tolua_tag_*` registry names are loaded by 27 functions from `0x00408e98` to `0x0040c3a8`; the last function that calls the Lua API is `0x0040c538` |
+| `0x00323298`-`~0x00335320` | **Lua 4.0.1** core and libraries, compiled as C++ | path `lua-4.0.1/src/lmem.cpp` (anchor `0x0032c758`); Lua's own messages (`_ERRORMESSAGE` at `0x00325800`, `syntax error` at `0x0032e6d0`, `` `for' limit must be a number`` at `0x00334478`) are loaded by functions from `0x003234e8` to `0x00334478`; the first function, `0x00323298`, is called from `Scripting/` and the code before it from the AI ([position](#position)) |
+| `~0x00408ac8`-`0x0040c5e0` | **tolua** (`c:/Warriors/System/tolua/src/lib/`) | anchor `0x0040a5b0` (`tolua_tm.cpp`); the `tolua_tbl_*`/`tolua_tag_*` registry names are loaded by 27 functions from `0x00408e98` to `0x0040c3a8`; the last function that calls the Lua API is `0x0040c538` |
 | `0x0042b040`-`~0x00432000` | GCC 2.x C++ runtime (exceptions, `type_info` and its `__si_type_info`/`__class_type_info` family) | its type-name strings, the only RTTI names in the executable |
 | `~0x00432000`-`~0x0043a000` | C library (locale tables `C-SJIS`/`C-EUCJP`, `printf` family) | strings |
 | `~0x0043a000`-`~0x00446000` | SCE: `libcdvd` (`SceCdNcmdSema`, `0x0043bca0`), `libkernel` (named syscall stubs `0x0043cca0`-`0x0043d510`), SIF RPC, stdio, `libmc` (`sceMc_sema_regs`, `0x00444ea0`) | strings and Ghidra's syscall names |
@@ -439,27 +489,19 @@ Bytes of `.text` (4,154,744) and functions (13,789), each counted once, in the f
 | Category | Functions | Bytes | Share of `.text` |
 | --- | --- | --- | --- |
 | Anchors: file confirmed (code) | 302 | 208,296 | 5.0% |
-| File inferred (steps 4 to 6) | 1,752 | 423,752 | 10.2% |
+| File inferred (steps 4 to 6, and two [by position](#position)) | 1,762 | 429,792 | 10.3% |
 | Directory inferred (step 7) | 4,395 | 1,076,912 | 25.9% |
-| Lua 4.0.1 and tolua | 538 | 94,280 | 2.3% |
+| Directory inferred from position and calls (step 9) | 4,183 | 1,502,920 | 36.2% |
+| Lua 4.0.1 and tolua | 493 | 82,440 | 2.0% |
 | Other middleware and crt0 (C/C++ runtime, SCE, RenderWare, Bink) | 2,016 | 717,520 | 17.3% |
 | Game link-once code (templates, inlines) | 603 | 115,808 | 2.8% |
-| Unknown | 4,183 | 1,518,168 | 36.5% |
+| Unknown | 35 | 21,048 | 0.5% |
 
-So 15.2% of `.text` is tied to a named file, 41.1% to at least a directory, and 19.5% is middleware or runtime. Of
+So 15.4% of `.text` is tied to a named file, 77.5% to at least a directory, and 19.3% is middleware or runtime. Of
 the file-level share, 5.1% comes from extending files to their static-init stubs (step 6); without it the attributed
 ranges in the tables cover 418,984 bytes (10.1%). RenderWare alone is 376,960 bytes (9.1%).
 
-Most of the unknown share is in a few large stretches between anchored files:
-
-| Range | Size | Between | Likely contents |
-| --- | --- | --- | --- |
-| `0x00273fa0`-`0x00321ab8` | 711 KB | `Human/cns/cnsplayertag.cpp` and Lua | more `Human/`: the combat paths (to `0x00287a18` at least), then the AI's brains, goals and actions from `0x0028a360` to at least `0x00306630` ([AI](ai.md)); contents confirmed (code), directory speculative |
-| `0x003a8698`-`0x00407798` | 389 KB | `TaskEngine/TaskManager.cpp` and tolua | more `TaskEngine/` or a directory without path strings; unknown |
-| `0x00386f58`-`0x00397a48` | 68 KB | `StringTable/` and `TaskEngine/ObjectTaskManager.cpp` | unknown |
-| `0x00341a68`-`0x00350688` | 60 KB | `Physics/physics.cpp` and `RayCast/CollisionMesh.cpp` | the rest of `Physics/` (rodata between them lists `MATERIAL_*` names); inferred |
-| `0x00162598`-`0x0016e388` | 49 KB | `GameModes/Initialize.cpp` and `Graphics/Animations.cpp` | unknown |
-| `0x0013b118`-`0x00143ea0` | 35 KB | `Camera/Cam_Power.cpp` and the CRC unit that starts `Core/` | more `Camera/` (camera code runs up to it, e.g. `0x00143c78`) |
+The unknown share left is the three stretches at the end of [Placed by position and calls](#position).
 
 The full anchor list and every attributed function are reproducible with the [method](#method).
 
@@ -525,9 +567,14 @@ What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it 
   The stub at `0x00144080` ends the unit *before* `ChunkSystem.cpp`, and no stub separates `ChunkSystem.cpp`'s
   functions from `main`, so `main` is in `ChunkSystem.cpp` unless a unit without global constructors sits between
   them (inferred).
-- **Unknown stretches:** the 711 KB after `Human/cns/cnsplayertag.cpp` and the 389 KB after
-  `TaskEngine/TaskManager.cpp` have no path strings. Splitting them needs other per-TU markers: the `MemoryStl.h`
-  copies in `.rodata`, vtables in `.data`, or class tags passed to the allocator.
+- **Files inside the stretches placed by position:** the 718 KB of `Human/` after `cns/cnsplayertag.cpp` and the
+  394 KB of script types in `TaskEngine/` have no path strings. Splitting them into files needs other per-TU
+  markers: the `MemoryStl.h` copies in `.rodata`, vtables in `.data`, or class tags passed to the allocator.
+- **Gangs' directory:** `GameModes/`, or a directory of their own between it and `Graphics/`?
+- **Maths unit** (`0x00335320`-`0x00338420`): random numbers, quaternions, ray-triangle tests; no page covers it.
+- **Pipelines' directory** (`0x00424ee8`-`0x00429b18`): `Warriors/`, `Movie/` or a directory of their own?
+- **Directory walker** (`0x00153118`, `/%s%s%s/*`, in `Device/ps2/`): what calls it through which pointer, and
+  for which device.
 - **Middleware boundaries** are good to a few functions only. FLIRT-style signatures for the SCE SDK 3.0.0
   libraries, and a RenderWare build with symbols, would pin them and name the functions.
 - **Bink and RenderWare:** functions at `0x004be000`-`0x004c1000`, inside the Bink block, call into RenderWare. Are

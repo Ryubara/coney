@@ -283,12 +283,12 @@ manager's current pool at the time. Confirmed (code) for the order and sizes; ro
 | 15 | `0x00104818` | `AnimationSystem` (0x88); registers the `Anim Data` chunk handler |
 | 16 | alloc `TaskManager` (0x878) | → `0x00512c7c` |
 | 17 | alloc `ObjectAttribs` (`0x34e0c`) | → `0x00512c04` |
-| 18 | `0x00306520`, `0x00321828` | reset two tables in the unattributed `Human/` region |
+| 18 | `0x00306520`, `0x00321828` | reset two tables in `Human/`'s AI stretch |
 | 19 | `0x0018ba10` | `ScreenEffectsManager` |
 | 20 | `0x00417b10` | `W_ActionableManager` |
 | 21 | `0x0040d688` | **sector heaps**: `Sector Pool` = the largest free block minus 128 KB, then `Sector Pool 2` = what is left minus 128 KB (at least 4 KB); every level's data lives in the `Sector Pool` ([Level loading](level-loading.md#memory)) |
 | 22 | `0x00184918` | `ResourceManager` (`global.pak`) → `0x0050cd4c` |
-| 23 | `0x00293840` | resets AI/character tables in the unattributed `Human/` region |
+| 23 | `0x00293840` | resets AI/character tables in `Human/`'s AI stretch |
 | 24 | alloc `W_GameState` (0x57c0) | → `0x0051489c` |
 | 25 | `0x0017d640` | `LightManager` → `0x0050cce4` |
 | 26 | alloc `WorldManager` (0x60), constructor `0x0040d900` | creates the `Global Data` heap (101% of `warriors.glr`'s size) and loads `warriors.glr` into it through the chunk system → `0x005147c4` |

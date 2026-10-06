@@ -30,8 +30,8 @@ the attacker's rage; L1 + R1 with a full meter starts rage, which makes grabs un
 
 ## Original structure
 
-No source file names this code: it lies in the unnamed stretch after `Human/cns/cnsplayertag.cpp`
-([Source map](source-map.md)), and in `Human/` for the shared human calls. Names are ours.
+No source file names this code: it lies in `Human/`, in the stretch after `cns/cnsplayertag.cpp`
+([Source map](source-map.md#position), inferred), and in `Human/` for the shared human calls. Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |

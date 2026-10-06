@@ -12,7 +12,7 @@ Three things level scripts set on the world they build: an object's **tint**, th
 
 ## Original structure
 
-The code sits in the unattributed `TaskEngine` stretch ([Source map](source-map.md)). Names are ours.
+The code sits in `TaskEngine/`, in the stretches placed by position ([Source map](source-map.md#position)). Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |

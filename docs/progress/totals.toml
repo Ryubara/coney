@@ -27,13 +27,19 @@ bytes = 208296
 key = "inferred-file"
 label = "File inferred"
 kind = "researched"
-bytes = 423752
+bytes = 429792
 
 [[coverage]]
 key = "directory"
 label = "Directory inferred"
 kind = "researched"
 bytes = 1076912
+
+[[coverage]]
+key = "position"
+label = "Directory inferred from position and calls"
+kind = "researched"
+bytes = 1502920
 
 [[coverage]]
 key = "link-once"
@@ -45,13 +51,13 @@ bytes = 115808
 key = "unknown"
 label = "Unknown"
 kind = "game"
-bytes = 1518168
+bytes = 21048
 
 [[coverage]]
 key = "lua-tolua"
 label = "Middleware: Lua 4.0.1 and tolua"
 kind = "middleware"
-bytes = 94280
+bytes = 82440
 
 [[coverage]]
 key = "middleware"
@@ -60,22 +66,23 @@ kind = "middleware"
 bytes = 717520
 
 # The game's top-level source directories in `.text` order, each with the range from its first to its last
-# attributed function (source-map.md, the directory table; Physics and RayCast split at their own files). A
-# directory with no attributed function has no ranges yet. `link-once` is the game's template and inline code linked
+# attributed function (source-map.md, the directory table; Physics and RayCast split at their own files), widened by
+# the stretches placed by position and calls (source-map.md#position). A directory with no attributed function has
+# no ranges yet. `link-once` is the game's template and inline code linked
 # after the libraries. Game code inside no range (the unknown stretches between directories) counts as
 # "unattributed", which the tracker computes as the rest of the game's code. A reimplemented function's `subsystem`
 # in functions.toml is the entry here whose range holds its address, or "unattributed".
 [[subsystem]]
 name = "Animation"
-ranges = [[0x00104630, 0x0010d758]]
+ranges = [[0x00100200, 0x0010d758]]
 
 [[subsystem]]
 name = "Audio"
-ranges = [[0x0010edd0, 0x001167b8]]
+ranges = [[0x0010d758, 0x0011b770]]
 
 [[subsystem]]
 name = "Camera"
-ranges = [[0x0011e1b0, 0x0013b118]]
+ranges = [[0x0011b770, 0x00143ea0]]
 
 [[subsystem]]
 name = "Core"
@@ -87,43 +94,48 @@ ranges = []
 
 [[subsystem]]
 name = "Device/ps2"
-ranges = [[0x00145790, 0x0014d528]]
+ranges = [[0x00144a08, 0x00153f60]]
 
 [[subsystem]]
 name = "FileIO"
-ranges = [[0x001541e0, 0x00155b30]]
+ranges = [[0x00153f60, 0x00155b30]]
 
 [[subsystem]]
 name = "GameModes"
-ranges = [[0x00155b30, 0x00162598]]
+ranges = [[0x00155b30, 0x0016e388]]
 
 [[subsystem]]
 name = "Graphics"
-ranges = [[0x0016e388, 0x0019c5e8]]
+ranges = [[0x0016e388, 0x0019dfb0]]
 
 [[subsystem]]
 name = "GUI"
-ranges = [[0x001a1f10, 0x002176b8]]
+ranges = [[0x0019dfb0, 0x002176b8]]
 
 [[subsystem]]
 name = "Human"
-ranges = [[0x0021c7c8, 0x00273fa0]]
+ranges = [[0x002176b8, 0x00323298]]
+
+# Maths: a directory with no path string between lua-4.0.1/ and Memory/ (source-map.md#position).
+[[subsystem]]
+name = "Maths (unnamed)"
+ranges = [[0x00335320, 0x00338420]]
 
 [[subsystem]]
 name = "Memory"
-ranges = [[0x00338420, 0x0033b1a0]]
+ranges = [[0x00338420, 0x0033c288]]
 
 [[subsystem]]
 name = "Physics"
-ranges = [[0x003418f8, 0x00341a68]]
+ranges = [[0x0033c288, 0x0034f740]]
 
 [[subsystem]]
 name = "RayCast"
-ranges = [[0x00350688, 0x00350778]]
+ranges = [[0x0034f740, 0x00351da0]]
 
 [[subsystem]]
 name = "Scene"
-ranges = [[0x00351da0, 0x00354bb8]]
+ranges = [[0x00351da0, 0x00356390]]
 
 [[subsystem]]
 name = "Scripting"
@@ -135,7 +147,7 @@ ranges = [[0x00386b30, 0x00386f58]]
 
 [[subsystem]]
 name = "TaskEngine"
-ranges = [[0x00397a48, 0x003a8698]]
+ranges = [[0x00386f58, 0x00408ac8]]
 
 [[subsystem]]
 name = "Utils"
@@ -147,11 +159,11 @@ ranges = [[0x0040c5e0, 0x004124f8]]
 
 [[subsystem]]
 name = "WorldObjects"
-ranges = [[0x00413218, 0x00417af0]]
+ranges = [[0x004124f8, 0x00417af0]]
 
 [[subsystem]]
 name = "Warriors"
-ranges = [[0x00417b10, 0x00424ee8]]
+ranges = [[0x00417af0, 0x00424ee8]]
 
 [[subsystem]]
 name = "Movie"
@@ -165,9 +177,9 @@ ranges = [[0x004da118, 0x004f6578]]
 # the ranges are approximate (the map's `~` ends) and only stop a middleware address being listed as reimplemented.
 [[middleware]]
 name = "Lua 4.0.1 and tolua"
-bytes = 94280
+bytes = 82440
 replaced_by = "a Lua 4.0 interpreter (roadmap: Scripts)"
-ranges = [[0x00321ab8, 0x00335670], [0x004077b8, 0x0040c5e0]]
+ranges = [[0x00323298, 0x00335320], [0x00408ac8, 0x0040c5e0]]
 
 [[middleware]]
 name = "RenderWare Graphics"

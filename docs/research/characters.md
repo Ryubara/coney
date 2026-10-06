@@ -28,7 +28,7 @@ Triangle climbs a fence or wall in front of the player or, at a run, jumps.
 
 ## Original structure
 
-`Human/` (`0x0021c7c8`-`0x00273fa0` and probably beyond, [Source map](source-map.md)) holds the human; the model side
+`Human/` (`0x002176b8`-`0x00323298`, [Source map](source-map.md)) holds the human; the model side
 is in `Graphics/Character.cpp`, `CharacterModel.cpp` and `Animations.cpp`. Names are ours unless a path or class
 string gives them.
 
