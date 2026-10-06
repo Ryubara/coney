@@ -261,7 +261,11 @@ drawn as it was left. Confirmed (code) at `0x0015d160`.
 effects have the letterbox fully out: state `+0x1e8` = 0 and level `+0x1ec` = 0 ([Graphics](graphics.md#screen-effects)).
 So no HUD part, text or prompt shows while a cinematic scene's bars are in or moving, whatever `HideHud` says; the
 scene's subtitles are drawn by the caption system after the HUD ([Scenes: subtitles](scenes.md#subtitles)). Confirmed
-(code) at `0x001b1688`.
+(code) at `0x001b1688`. `HUD_Update` likewise does its work only while the HUD is active (`+0x177a4`) and player 1's
+letterbox is fully out; otherwise it only turns the radars off. So the hint box, the scroll-in queue, the
+announcements and the panels neither advance nor expire while a scene's bars are up, but do while the HUD is merely
+hidden. Confirmed (code) at `0x001af010`. What shows the HUD again after a scene:
+[Who shows the HUD again](#who-shows-the-hud-again).
 
 **Render order** (`0x001b1688`), when the HUD is shown (`+0x177a0` = 1, set by `RestoreHud`): the radars and their
 frames, the instruction arrow and two other widgets, the counter panels, the bars of `HUDEnableBar`, each **player
@@ -577,15 +581,76 @@ gone. What draws it, and what the arc measures (health, power or rage), is not t
 panel's `Render` (`0x00213290`) nor by the radar, and the HUD's health and power entry points (`0x001b2430`,
 `0x001b2460`) return at once ([The player panel](#the-player-panel)).
 
-### Showing and hiding
+### Showing and hiding {#showing-and-hiding}
 
-- **`HideHud`** (`0x001b1f38`): unless in an Armies of the Night level whose game state `+0x14c` is 1, hides both
-  player panels, the widget at `+0x15b0`, both radars, the score board `+0x8960` and both radar frames, and clears
-  `+0x177a0`. **`RestoreHud`** (`0x001b20f8`) shows them all and sets `+0x177a0`. Confirmed (code).
-- **`ShowHud`** does nothing ([binding](../references/bindings/hud.md#showhud)); `level99`'s `Main` calls
-  `ShowHud(0)` then `RestoreHud()` ([Scripts](scripting.md#level99)).
-- **`HidePlayerHud` / `ShowPlayerHud`** clear or set each panel's "may show" flag `+0x4108` and hide or show it; a
-  panel shows (`0x0020e028`) only if attached and `+0x4108` is set. Confirmed (code).
+The HUD's **shown** flag is `+0x177a0`. Nothing is saved when it is hidden: each part keeps its own flags, and
+`RestoreHud` shows a part only if those still allow it. The HUD's per-level set-up (`0x001ad588`) sets `+0x177a4`
+(the HUD is active), `+0x177ac` (the radars come back on their own, below) and ends with `HideHud`, so **a level
+starts with the HUD hidden** until something below shows it. Confirmed (code).
+
+| Part | `HideHud` (`0x001b1f38`) | `RestoreHud` (`0x001b20f8`) |
+| --- | --- | --- |
+| each player panel | hidden (`+0x40fc` = 0), when attached | shown (`0x0020e028`) only if attached and its "may show" flag `+0x4108` is set |
+| the widget at `+0x15b0` | `+0x08` = 1 | `+0x08` = 0 |
+| each radar (`+0x15d0`, `+0x3f10`) | blips off, "hidden by the HUD" `+0x0c` = 1 | only a radar that is **on** (`+0x04`, set by `HUDTurnOnRadar`): blips on, `+0x0c` = 0, `+0x08` = 1; a radar that is off stays off |
+| the score board `+0x8960` | hidden, `+0xac` = 1 | `+0xac` = 0; shown only when enabled (`+0xa8`) and both `+0xa0` and `+0xa4` are set |
+| both radar frames (`+0x177d0`, `+0x18280`) | their parts off | their parts on (when set up, `+0xa98`) |
+| hint box, objectives and scroll-in messages, announcements, counter panels, bars, arrow, prompts | untouched | untouched |
+
+The parts in the last row are simply not drawn while `+0x177a0` is 0 ([The HUD's frame](#the-huds-frame)); a hint
+or objective queued while hidden (`HUDSetTutorialText`, `HUDSetObjective`) is kept, and `HUD_Update` keeps stepping
+it while no letterbox is up. `HideHud` does nothing in an Armies of the Night level whose game state `+0x14c` is 1.
+Confirmed (code).
+
+- **`ShowHud`** does nothing: its function (`0x001b3ec8`) is a bare return
+  ([binding](../references/bindings/hud.md#showhud)); `level99`'s `Main` calls `ShowHud(0)` then `RestoreHud()`
+  ([Scripts](scripting.md#level99)). Confirmed (code).
+- **`HidePlayerHud` / `ShowPlayerHud`** clear or set each panel's "may show" flag `+0x4108` and hide or show it.
+  Confirmed (code).
+
+#### Who shows the HUD again {#who-shows-the-hud-again}
+
+Besides a script's `RestoreHud`, three engine paths call it. Confirmed (code) unless marked.
+
+1. **The letterbox going out** (`0x0018d910`, the letterbox step of each view's screen effects, run in the overlay
+   pass). Starting a letterbox move (in or out, state 1) sets the record's `+0x1f4` to 0; when the bars reach level
+   0 the time is stamped there; the next step that finds the bars out (state 0, level 0) with `+0x1f4` not −1 shows
+   both player panels (`0x001b2330`), calls `RestoreHud`, and sets `+0x1f4` = −1. So **every cinematic scene shows
+   the HUD as its bars finish going out**, 1.5 s after its end ([Scenes: ending](scenes.md#ending)), whatever hid it
+   (`SuperRunScene`'s `HideHud`, the scene start's own `HideHud`); a script's `ScreenQueueEffect` type 2 or 3 does
+   the same. A skipped scene ends the same way ([Scenes: skipping](scenes.md#skipping)). Bars that only go in
+   restore nothing until they go out, and a scene played without bars (`Bars` = false) leaves `SuperRunScene`'s
+   `HideHud` in force until a script's `RestoreHud`. This is how `level99`'s HUD returns after
+   `l99_c1`: `P1.StartTraining` calls no `RestoreHud`. Confirmed (runtime) on a copy of slot 1: with `+0x177a0` and
+   the panel's shown flag cleared by PINE writes and a letterbox put in and out by writing the screen-effects record
+   (1.5 s each way), both stayed 0 until `+0x1f4` was stamped as the bars reached 0, and on the next frame the panel
+   showed, `+0x177a0` became 1 and `+0x1f4` −1. A real scene's end was not watched.
+2. **Play resuming** (mode 1 `Resume`, `0x00158580`, when a mode pushed over play is popped, such as the pause menu,
+   mode 0xa): `RestoreHud` when the HUD is active (`+0x177a4`) and hidden, game state `+0x14c` is 0, and player 1 is
+   not in a scene (`Human_IsInSceneState`, `0x00227d28`: human `+0x280` ≠ −1 or human flag `0x800000`). Its
+   `Suspend` (`0x00158660`) calls `HideHud` unless `0x005e5580` is set (not traced) or in an Armies of the Night
+   level. So pausing hides the HUD under the menu, and **closing the menu shows it even if a script had hidden it**,
+   unless player 1 is in a scene.
+3. **After wasted or busted.** The death camera's start (`0x0011daa8`, and the same steps in mode 1 `Update`,
+   `0x00158728`) keeps `+0x177a0` in player 1's camera record (`+0x1fc`) and calls `HideHud`; mode 0xc's handler
+   (`0x00155408`) calls `RestoreHud` if it was shown, when player 1's camera is still that type-0xc camera.
+
+The other hides: a cinematic scene's start calls `HideHud` (and hides the panels, `0x001b2380`) when the global scene
+state `0x0051489c + 0x410` is 0 ([Scenes: starting](scenes.md#starting), step 4, at `0x0039da90`); `HUD_Render` draws
+nothing while a letterbox is up ([The HUD's frame](#the-huds-frame)). The Armies of the Night end screen
+(`HUD_ANLaunchEndScreen`) hides and later restores it. Confirmed (code).
+
+#### The radars across a scene {#radars-across-a-scene}
+
+While a letterbox is in or moving, `HUD_Render` and `HUD_Update` turn **both radars off** every frame
+(`0x001b2658`, which clears each radar's on flag `+0x04` and `+0x177b0`), so the `RestoreHud` at the end finds them
+off and leaves them off. `HUD_Update` brings them back on its own: when the letterbox and the fade (screen effects
+`+0x1d4`, `+0x1d8`) are both at 0, `+0x177ac` is set and `+0x177b0` is 0, it turns both on (`0x001b2610`); while a
+fade runs it turns them off. `+0x177ac` is set by the level's set-up and by `HUDTurnOnRadar` (`0x001b4328`, for one
+player or both) and cleared by `HUDTurnOffRadar` (`0x001b43a8`). So after a scene the radars return only if the last
+radar call was "on": `level99`'s `P1.SetupCombat` calls `HUDTurnOffRadar` before `l99_c1`, so its radars stay off
+after the intro. Confirmed (code); confirmed (runtime) with the letterbox writes above: with `+0x177ac` 0 radar 0
+stayed off after the bars went out, with it 1 both radars came on in the frame `+0x177a0` became 1.
 
 ### What `level99` uses
 
@@ -648,7 +713,7 @@ animation (`HUDTurnOnActionCycleAnim`) is kept per player but not drawn yet (the
   checks of `0x001af010` test; a runtime look at a shown prompt.
 - Which event raises each of the game's own hints (the 19 callers of `HintBox_QueueGameHint`).
 - What the input object at HUD `+0x18e60` is, whose message 1 shows the next caption (`0x001cb340`).
-- Who sets HUD `+0x177ac` (the radar's automatic return) and `+0x177a8` (the centred announcement while hidden).
+- Who sets HUD `+0x177a8` (the centred announcement while hidden).
 - The radar: which file holds each world's map sheet; the active camera's slot `+0xc4` third value (inferred: the
   overlay width); what the player stands on for the blue disc colour.
 - What draws the ring under the player (and its arc), and when it shows.

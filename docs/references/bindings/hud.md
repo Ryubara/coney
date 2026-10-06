@@ -1654,8 +1654,9 @@ HUDTurnOffRadar(player)
 
 Hides the radar for one or both players.
 
-**Notes.** HUD_Update turns both radars back on when no screen fade runs, HUD +0x177ac is set and +0x177b0 is 0; who
-sets +0x177ac is not traced. Behaviour: [The in-game HUD](../../research/hud.md#the-radar-on-screen).
+**Notes.** Also clears HUD +0x177ac, so the radars do not come back on their own after a scene's letterbox; HUD_Update
+turns both back on when no letterbox or fade runs, +0x177ac is set and +0x177b0 is 0. Behaviour: [The in-game
+HUD](../../research/hud.md#radars-across-a-scene).
 
 - **Evidence:** confirmed (code) at `0x001b43a8`; detail: traced
 - **Wrapper** `0x00370100` (registered by `RegisterBindings`); **calls** `0x001b43a8` `HUD_RadarOff`
@@ -1710,7 +1711,8 @@ HUDTurnOnRadar(player)
 
 Shows the radar (minimap) for one or both players.
 
-**Notes.** Also sets the radar-on global 0x00617fec and the HUD manager's flag +0x177b0.
+**Notes.** Also sets HUD +0x177ac (0x00617fec, the radars come back on their own after a letterbox) and +0x177b0, for
+both players whichever one is named. Behaviour: [The in-game HUD](../../research/hud.md#radars-across-a-scene).
 
 - **Evidence:** confirmed (code) at `0x001b4328`; detail: traced
 - **Wrapper** `0x003700c8` (registered by `RegisterBindings`); **calls** `0x001b4328` `HUD_RadarOn`
@@ -1752,7 +1754,12 @@ No arguments.
 
 **Returns** nothing.
 
-Shows the whole HUD again after HideHud.
+Shows the whole HUD again after HideHud: each player panel that may show, each radar that is on, the score board when
+enabled; a radar turned off stays off.
+
+**Notes.** The engine also calls it when a letterbox finishes going out (so after every cinematic scene), when play
+resumes after the pause menu, and after the wasted/busted camera. Behaviour: [The in-game
+HUD](../../research/hud.md#who-shows-the-hud-again).
 
 - **Evidence:** confirmed (code) at `0x001b3f78`; detail: traced
 - **Wrapper** `0x00370cc0` (registered by `RegisterBindings`); **calls** `0x001b3f78` `HUD_ShowAll`

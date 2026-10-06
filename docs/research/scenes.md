@@ -222,7 +222,8 @@ helper. Confirmed (code) for `global.lua`, read as bytecode (functions at its li
    DelayFadeIn)`); `tblScene[id] = nil`. With `Final`: black at once, `ReturnFunc(NumCallBacks)`, `tblScene[id] =
    nil`, `HUDLaunchMissionComplete()`. Then `bSuppressHud = nil`.
 
-Nothing in these helpers shows the HUD again; that is left to `ReturnFunc`.
+Nothing in these helpers shows the HUD again, and `level99`'s `ReturnFunc`s do not either: the cinematic end's
+letterbox-out does, as its bars finish going out ([HUD: who shows the HUD again](hud.md#who-shows-the-hud-again)).
 
 **`level99`'s two scenes** (`level99_combat.lua`, [Scripts](scripting.md#level99)):
 
@@ -303,12 +304,14 @@ The task's update (`0x0039cbf0`) runs every **2 ticks** (30 a second, `Task_SetU
    the blur pulse) at once.
 3. Mark every bound human in-scene (human flag `0x800000`); a human not yet ready waits.
 4. **Cinematic only**, steps of the global scene state `0x0051489c + 0x410` (one per update): 0 → 1 (an action on
-   some of the player gang's members, `0x0016b8d0`, not traced); 1 → 2: player 1's camera (the camera inside a
+   some of the player gang's members, `0x0016b8d0`, not traced; the player panels hidden, `0x001b2380`, and
+   **`HideHud`**, [HUD](hud.md#who-shows-the-hud-again)); 1 → 2: player 1's camera (the camera inside a
    wrapper of types 5-8) saves its place in the task and moves to the scene camera's start position, and **the world
    around it is preloaded** with a 10 s budget and the camera definition's radius, loading `<scene>.pak` when it
    exists (`WorldManager_Preload`, [Level loading](level-loading.md#preload)); 3 comes in step 6.
 5. Wait until every bound human's character instance and model are loaded (requesting them), then every bound object.
-6. Cinematic: a game-mode switch (`0x0041a008(0)`, restored at the end; not traced); state 3; wait one more update;
+6. Cinematic: **system music off** (`0x0041a008(0)`, game state `+0x3f8` = 0, [Sound](sound.md); whether it was on
+   is kept in the task's `+0xf0`, and the end turns it back on only then); state 3; wait one more update;
    then clear pad flags `0x40` and `0x800` on every player, and unless `chain`, clear the chain-skip flag
    (`0x0051489c + 0x56e4`).
 7. While the delay has not run out, step every bound human toward its start mark (`0x0039d618`, 0.1); wait until all
@@ -384,7 +387,7 @@ Only a skippable scene (`+0xe5`), confirmed (code) at `0x0039cbf0`:
 
 State 7 (all clips done, or a part ended with no roles) calls the end (`0x0039f450`). Confirmed (code):
 
-1. Cinematic: scene state `0x410` = 0; the game-mode switch of step 6 restored.
+1. Cinematic: scene state `0x410` = 0; system music back on when step 6 turned it off.
 2. Each bound human: when skipped, `+0x280` = −1 and it is **placed at its role's end pose** (in the scene's space);
    its join goal (types `0x27`-`0x2a`) is popped, which gives a player back control ([Humans](#humans)); unbound.
 3. Each object: when skipped, placed at its end pose; then its scene slot (`+0x110`) is −1 again, its sound
@@ -397,7 +400,8 @@ State 7 (all clips done, or a part ended with no roles) calls the end (`0x0039f4
    places (where the player left them, which may not be the scene's end poses).
 4. **The camera**: popped and made current over `BlendCam` seconds, the scene camera released and the cameras updated
    once with 0.17 s ([Camera](camera.md#scenes)).
-5. Cinematic: **letterbox out** on every player's view (type 3, 1.5 s); player 1's gang command reset
+5. Cinematic: **letterbox out** on every player's view (type 3, 1.5 s), which **shows the HUD again** once the bars
+   are out ([HUD](hud.md#who-shows-the-hud-again)); player 1's gang command reset
    (`0x0041c4e0(…, 0, 1, 0, 1)`) and its gang's alert cleared (`0x00166708`).
 6. With `freeze`, **every brain is resumed**, including any a script had suspended.
 7. State 8; **the end function is called with the scene id** (`0x003a0da8`, only while scripting runs, `0x00512b28`
@@ -548,9 +552,7 @@ trace above.
 
 - Which human state the start resets (`0x0023e6e8`, `0x00227388`, `0x002266a8`) and what messages 10, `0x95`, `0x96`
   do in the human's handler; the 21/22 warp is inferred from the data.
-- The game-mode switch `0x0041a008` (`W_GameState +0x3f8`) a cinematic turns off and back on.
 - How `ScenePlayAnimation` fits the scene to its humans (`0x003547e8`), and the 0.1 at `0x0039d618`.
-- Who shows the HUD again after `SuperRunScene`'s `HideHud` (not `global.lua`).
 - What the camera definition's `+0x50`, `+0x5c`, `+0x68` and the header's `+0x30` name are for.
 - Track events 24/25 (messages `0x12`/`0x13`), and most clip event types besides 9, 11, 21, 22.
 - Where a scene's captions come from (answered): the level's Subtitles chunk, by the scene's name

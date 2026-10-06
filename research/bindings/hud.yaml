@@ -908,7 +908,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Also sets the radar-on global 0x00617fec and the HUD manager's flag +0x177b0.
+    Also sets HUD +0x177ac (0x00617fec, the radars come back on their own after a letterbox) and +0x177b0, for both
+    players whichever one is named. Behaviour: [The in-game HUD](../../research/hud.md#radars-across-a-scene).
   usage: {chunks: 52, calls: 87, boot: false, mission1: true, result_used: false, levels: [80, 95, 34, 2, 3, 5, 86, 31, 14, 55, 84, 82, 92, 83, 20]}
   coney: implemented
 
@@ -923,8 +924,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    HUD_Update turns both radars back on when no screen fade runs, HUD +0x177ac is set and +0x177b0 is 0; who sets
-    +0x177ac is not traced. Behaviour: [The in-game HUD](../../research/hud.md#the-radar-on-screen).
+    Also clears HUD +0x177ac, so the radars do not come back on their own after a scene's letterbox; HUD_Update
+    turns both back on when no letterbox or fade runs, +0x177ac is set and +0x177b0 is 0. Behaviour: [The in-game
+    HUD](../../research/hud.md#radars-across-a-scene).
   usage: {chunks: 67, calls: 121, boot: false, mission1: true, result_used: false, levels: [95, 3, 5, 81, 51, 55, 84, 92, 83, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
@@ -1246,9 +1248,14 @@
   calls:
     - {addr: 0x001b3f78, name: HUD_ShowAll}
   description: >-
-    Shows the whole HUD again after HideHud.
+    Shows the whole HUD again after HideHud: each player panel that may show, each radar that is on, the score board
+    when enabled; a radar turned off stays off.
   evidence: confirmed-code
   depth: thorough
+  notes: >-
+    The engine also calls it when a letterbox finishes going out (so after every cinematic scene), when play resumes
+    after the pause menu, and after the wasted/busted camera. Behaviour: [The in-game
+    HUD](../../research/hud.md#who-shows-the-hud-again).
   usage: {chunks: 82, calls: 199, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 51, 52, 54, 55, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
