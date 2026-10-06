@@ -16,6 +16,7 @@
 #include "ai/scripted_brains.h"
 #include "ai/scripted_goals.h"
 #include "ai/story_goals.h"
+#include "ai/story_tactics.h"
 #include "ai/track_human_goal.h"
 #include "combat/meters.h"
 #include "human/human.h"
@@ -312,11 +313,9 @@ void ScriptedStory::goalMelee(double human, double target) {
         if (brain.human().state() != human::TargetState::Standing || brain.human().fighter().health().depleted()) {
             return;
         }
-        if (target == 0.0) {
-            brain.pushGoal(std::make_unique<FindEnemyGoal>());
-            return;
-        }
-        if (Brain* enemy = m_scripted->brain(target); enemy != nullptr && enemy != &brain) {
+        // The finding goal underneath, then the fight with the target over it when one is named.
+        brain.pushGoal(std::make_unique<FindEnemyGoal>());
+        if (Brain* enemy = target != 0.0 ? m_scripted->brain(target) : nullptr; enemy != nullptr && enemy != &brain) {
             static_cast<void>(brain.fight(*enemy));
         }
     });
@@ -418,11 +417,12 @@ double ScriptedStory::leader(int gang) const {
 }
 
 void ScriptedStory::gangExitWorld(int gang, double exit, std::string_view callback, bool deleteGang) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
     onGang(gang, [this, exit, name = std::string(callback), deleteGang](Gang& found) {
         found.orders().exiting = true;
         found.orders().exitCallback = name;
         found.orders().keepWhenEmpty = !deleteGang;
-        const std::vector<Brain*> members = found.members();
+        const std::vector<Brain*> members(found.members().begin(), found.members().end());
         for (Brain* member : members) {
             if (isAi(*member)) {
                 leave(*member, exit, kExitGait, 0.0F, 0.0F, kExitRadius);
@@ -449,6 +449,24 @@ void ScriptedStory::canUseWorldFlags(int gang, bool on, int percent) {
     });
 }
 
+void ScriptedStory::setTactic(const script::TacticCall& call) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
+    if (m_scripted->defer([this, call] { setTactic(call); })) {
+        return;
+    }
+    std::vector<double> points;
+    if (call.kind == script::TacticKind::TravelPath) {
+        if (const WorldPath* found = path(call.flags.at(0)); found != nullptr) {
+            points = found->points;
+        }
+    }
+    const TacticServices services{
+        .flags = m_scripted, .scripts = m_scripted, .formations = &m_scripted->owner().formations()};
+    if (std::unique_ptr<Tactic> tactic = makeStoryTactic(call, std::move(points), services); tactic != nullptr) {
+        m_scripted->owner().gangs().setTactic(call.gang, std::move(tactic));
+    }
+}
+
 bool ScriptedStory::startWarriorCommand(double chief, int command, bool /*forced*/) {
     Brain* lead = m_scripted->brain(chief);
     if (lead == nullptr) {
@@ -461,7 +479,7 @@ bool ScriptedStory::startWarriorCommand(double chief, int command, bool /*forced
     }
     // The crew's last orders end, then each AI member takes the command's.
     m_scripted->owner().gangs().setTactic(crew->id(), nullptr);
-    const std::vector<Brain*> members = crew->members();
+    const std::vector<Brain*> members(crew->members().begin(), crew->members().end());
     for (Brain* member : members) {
         if (member == lead || !isAi(*member)) {
             continue;

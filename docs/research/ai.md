@@ -1368,6 +1368,20 @@ attack strategies are kept for readers not built. **Warrior commands, stand-in**
 tactic is cleared and its AI members flushed, then 0 follow and 2 defend track the chief (2 m), 1 attack finds
 enemies, 3 hold stands; 4, 5 and 6 start nothing; the lines are not said. `GangStartSpawner` is kept only.
 
+**The story's tactics** (`src/ai/story_tactics.*`; Attack and Confront are the Rumble's above). Group moves give the
+leader the moving goal and have the others track him (3, 1, 0.75 and 4 m; **stand-in** for `Goal_FollowPlayer` in
+the formation): MoveToFlag and WalkinTall fire 8 once the leader's walk ends, WalkinTall returns 7 while a member is
+within `range` of a hostile, TravelPath walks the `AddPath` path (mode 1 looping, else 2); Wander's leader and a
+pathless TravelPath's stand. HanginOut and UseFlag walk the members to the flag (HanginOut narrowing view and sight
+unless fully aware); UseFlag returns 7 once player 1 is within `range` of the flag and sends them off. Idle holds
+places, and with `dynIdle` breaks the dynamic idles off on events 1, 11 and 16, returning 15 when none is left.
+Defend tracks the human at `range`: 11 once he is gone or out of health, else 9 with no enemy. HoldTheLine sends
+min(line length, 60 % of the members) to the line's two flags in turn, the rest to the third: 9 with no enemy.
+Pursue makes the target gang's leader an enemy and melees: 9 once that gang is gone or leaderless, 7 while a member is
+within `range` of one of it. Scout melees with members that have enemies. **Stand-ins**: ManWeaponPile, Vandalize,
+Steal, AvoidEnemies and Scout hold their places, their goals not traced; banter, answering violence, the anim
+substitutions, HoldTheLine's 12 and 14 and Pursue's search time are not built.
+
 **Open in Coney.** The dispatcher's answer to an AI's command 3 (76 against a grab, 9 against a tackle, as paired moves)
 is not built, nor are an AI's own grabs and tackles (the player grabs and tackles an AI's human,
 [Combat](combat.md#grab)); the pattern read at Start; the per-kind time `0x00231590` and the spacing bytes; the pick's

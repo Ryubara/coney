@@ -4846,16 +4846,91 @@ subsystem = "Human"
 size = 136
 
 [[function]]
+address = 0x00313e30
+name = "Tactic_HoldTheLine"
+subsystem = "Human"
+
+[[function]]
+address = 0x00315d98
+name = "Tactic_Defend"
+subsystem = "Human"
+
+[[function]]
+address = 0x00315e48
+name = "Tactic_WalkinTall"
+subsystem = "Human"
+
+[[function]]
+address = 0x00315ee8
+name = "Tactic_Pursue"
+subsystem = "Human"
+
+[[function]]
+address = 0x00315fc8
+name = "Tactic_HanginOut"
+subsystem = "Human"
+
+[[function]]
+address = 0x003160a8
+name = "Tactic_Wander"
+subsystem = "Human"
+
+[[function]]
+address = 0x003161a0
+name = "Tactic_TravelPath"
+subsystem = "Human"
+
+[[function]]
+address = 0x00316298
+name = "Tactic_MoveToFlag"
+subsystem = "Human"
+
+[[function]]
+address = 0x003164e0
+name = "Tactic_Vandalize"
+subsystem = "Human"
+
+[[function]]
+address = 0x00316638
+name = "Tactic_Steal"
+subsystem = "Human"
+
+[[function]]
+address = 0x00316988
+name = "Tactic_AvoidEnemies"
+subsystem = "Human"
+
+[[function]]
+address = 0x00316a68
+name = "Tactic_ManWeaponPile"
+subsystem = "Human"
+
+[[function]]
 address = 0x00316b30
 name = "Tactic_Domination"
 subsystem = "Human"
 size = 160
 
 [[function]]
+address = 0x00316ca0
+name = "Tactic_UseFlag"
+subsystem = "Human"
+
+[[function]]
+address = 0x00316ee8
+name = "Tactic_Idle"
+subsystem = "Human"
+
+[[function]]
 address = 0x00316fa0
 name = "Tactic_TriggerCrowd"
 subsystem = "Human"
 size = 176
+
+[[function]]
+address = 0x0031a268
+name = "Tactic_Scout"
+subsystem = "Human"
 
 [[function]]
 address = 0x00336a00

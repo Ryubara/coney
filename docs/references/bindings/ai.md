@@ -3195,7 +3195,7 @@ at gait 5 (4 when the human is tired) unless `gait` is given. Behaviour: [AI](..
 - **Wrapper** `0x00375d98` (registered by `RegisterBindings`); **calls** `0x00316988` `Tactic_AvoidEnemies`
 - **Used by** 25 of 467 script chunks (32 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticBoss {#tacticboss}
 
@@ -3632,7 +3632,7 @@ callback gets 11 `TacHumanToDefendDead` when he dies and 9 `TacNoEnemies` when n
 - **Wrapper** `0x00374c18` (registered by `RegisterBindings`); **calls** `0x00315d98` `Tactic_Defend`
 - **Used by** 23 of 467 script chunks (25 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticDomination {#tacticdomination}
 
@@ -3719,7 +3719,7 @@ also substitutes anim 0x25b with eight hang-out idles (0x00511480). Behaviour: [
 - **Wrapper** `0x00374f00` (registered by `RegisterBindings`); **calls** `0x00315fc8` `Tactic_HanginOut`
 - **Used by** 28 of 467 script chunks (72 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticHoldTheLine {#tacticholdtheline}
 
@@ -3752,7 +3752,7 @@ after `hits` hits on members within `window` seconds, 13 when a defender falls a
 - **Wrapper** `0x00374ab8` (registered by `RegisterBindings`); **calls** `0x00313e30` `Tactic_HoldTheLine`
 - **Used by** 18 of 467 script chunks (18 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticIdle {#tacticidle}
 
@@ -3782,7 +3782,7 @@ Behaviour: [AI](../../research/ai.md#tactic-kinds).
 - **Wrapper** `0x00376718` (registered by `RegisterBindings`); **calls** `0x00316ee8` `Tactic_Idle`
 - **Used by** 21 of 467 script chunks (22 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 19 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticInfo {#tacticinfo}
 
@@ -3838,7 +3838,7 @@ behaviour (0x002a3320, goal type 82) is not traced here. Behaviour: [AI](../../r
 - **Wrapper** `0x00375ef8` (registered by `RegisterBindings`); **calls** `0x00316a68` `Tactic_ManWeaponPile`
 - **Used by** 20 of 467 script chunks (20 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticMoveToFlag {#tacticmovetoflag}
 
@@ -3867,7 +3867,7 @@ formation 3 m apart; the callback gets 8 `TacArrived` when the leader arrives, a
 - **Wrapper** `0x003753d0` (registered by `RegisterBindings`); **calls** `0x00316298` `Tactic_MoveToFlag`
 - **Used by** 28 of 467 script chunks (69 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 20 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticPathScout {#tacticpathscout}
 
@@ -3934,7 +3934,7 @@ target gang is gone or the search after losing it runs out.
 - **Wrapper** `0x00374d90` (registered by `RegisterBindings`); **calls** `0x00315ee8` `Tactic_Pursue`
 - **Used by** 22 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 21 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticRing {#tacticring}
 
@@ -4011,7 +4011,7 @@ whether any member is fighting (checked every 200 ms). No code is sent from Proc
 - **Wrapper** `0x003776d8` (registered by `RegisterBindings`); **calls** `0x0031a268` `Tactic_Scout`
 - **Used by** 7 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticShadow {#tacticshadow}
 
@@ -4097,7 +4097,7 @@ and sighting codes.
 - **Wrapper** `0x00375930` (registered by `RegisterBindings`); **calls** `0x00316638` `Tactic_Steal`
 - **Used by** 19 of 467 script chunks (19 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticTaunt {#tactictaunt}
 
@@ -4157,7 +4157,7 @@ member near the leader may stop to use a nearby usable flag (inferred). Behaviou
 - **Wrapper** `0x003751d0` (registered by `RegisterBindings`); **calls** `0x003161a0` `Tactic_TravelPath`
 - **Used by** 20 of 467 script chunks (38 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 19 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticTrigger {#tactictrigger}
 
@@ -4216,7 +4216,7 @@ nearest player comes within `range` of the flag they leave it and the callback g
 - **Wrapper** `0x003761e8` (registered by `RegisterBindings`); **calls** `0x00316ca0` `Tactic_UseFlag`
 - **Used by** 21 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 18 of 28 levels, first [`level80`](story.md#level80) (mission 2)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticVandalize {#tacticvandalize}
 
@@ -4246,7 +4246,7 @@ constructor can also take up to four objects instead of a zone; the binding neve
 - **Wrapper** `0x003756c8` (registered by `RegisterBindings`); **calls** `0x003164e0` `Tactic_Vandalize`
 - **Used by** 20 of 467 script chunks (31 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticVandalizeCars {#tacticvandalizecars}
 
@@ -4305,7 +4305,7 @@ substitutes anim 0x253 with four swagger anims (0x00511620) and says the `shadow
 - **Wrapper** `0x00374cd0` (registered by `RegisterBindings`); **calls** `0x00315e48` `Tactic_WalkinTall`
 - **Used by** 18 of 467 script chunks (36 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticWander {#tacticwander}
 
@@ -4340,4 +4340,4 @@ shared hit and sighting codes.
 - **Wrapper** `0x00375038` (registered by `RegisterBindings`); **calls** `0x003160a8` `Tactic_Wander`
 - **Used by** 19 of 467 script chunks (20 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 18 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented

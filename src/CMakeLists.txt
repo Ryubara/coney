@@ -243,6 +243,7 @@ target_sources(coney_core PRIVATE
     ai/scripted_humans.cpp
     ai/scripted_story.cpp
     ai/story_goals.cpp
+    ai/story_tactics.cpp
     ai/tactic.cpp
     ai/tactic_attack.cpp
     ai/tactic_confront.cpp

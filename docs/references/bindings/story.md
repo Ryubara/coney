@@ -15,8 +15,8 @@ missions` sets each entry's `usage.levels` from the disc.
 
 | Level | Story | Bindings | New | New, traced | New, in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [`level80`](#level80) | mission 2 | 178 | 50 | 50 | 42 |
-| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 55 |
+| [`level80`](#level80) | mission 2 | 178 | 50 | 50 | 43 |
+| [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 69 |
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 24 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 1 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 1 |
@@ -46,7 +46,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level80: mission 2 {#level80}
 
-178 bindings, 50 new: 50 traced, 42 implemented in Coney (170 of all 178).
+178 bindings, 50 new: 50 traced, 43 implemented in Coney (171 of all 178).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -69,7 +69,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`WCSetCallback`](character.md#wcsetcallback) | Characters | traced | confirmed (code) | implemented |
 | [`GoalMoveToExitFlag`](ai.md#goalmovetoexitflag) | AI | traced | confirmed (code) | implemented |
 | [`GoalTravelPath`](ai.md#goaltravelpath) | AI | traced | confirmed (code) | implemented |
-| [`TacticUseFlag`](ai.md#tacticuseflag) | AI | traced | confirmed (code) | not implemented |
+| [`TacticUseFlag`](ai.md#tacticuseflag) | AI | traced | confirmed (code) | implemented |
 | [`GangAddMember`](gang.md#gangaddmember) | Gangs | traced | confirmed (code) | implemented |
 | [`GangAddTurfBox`](gang.md#gangaddturfbox) | Gangs | traced | confirmed (code) | implemented |
 | [`GangEngageEnemy`](gang.md#gangengageenemy) | Gangs | traced | confirmed (code) | implemented |
@@ -103,7 +103,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level87: mission 3 {#level87}
 
-261 bindings, 87 new: 87 traced, 55 implemented in Coney (225 of all 261).
+261 bindings, 87 new: 87 traced, 69 implemented in Coney (240 of all 261).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -129,21 +129,21 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`GoalPlayDynIdle`](ai.md#goalplaydynidle) | AI | traced | confirmed (code) | implemented |
 | [`GoalThrowObject`](ai.md#goalthrowobject) | AI | traced | confirmed (code) | implemented |
 | [`TacticAttack`](ai.md#tacticattack) | AI | traced | confirmed (code) | implemented |
-| [`TacticAvoidEnemies`](ai.md#tacticavoidenemies) | AI | traced | confirmed (code) | not implemented |
+| [`TacticAvoidEnemies`](ai.md#tacticavoidenemies) | AI | traced | confirmed (code) | implemented |
 | [`TacticConfront`](ai.md#tacticconfront) | AI | traced | confirmed (code) | implemented |
-| [`TacticDefend`](ai.md#tacticdefend) | AI | traced | confirmed (code) | not implemented |
-| [`TacticHanginOut`](ai.md#tactichanginout) | AI | traced | confirmed (code) | not implemented |
-| [`TacticHoldTheLine`](ai.md#tacticholdtheline) | AI | traced | confirmed (code) | not implemented |
-| [`TacticIdle`](ai.md#tacticidle) | AI | traced | confirmed (code) | not implemented |
-| [`TacticManWeaponPile`](ai.md#tacticmanweaponpile) | AI | traced | confirmed (code) | not implemented |
-| [`TacticMoveToFlag`](ai.md#tacticmovetoflag) | AI | traced | confirmed (code) | not implemented |
-| [`TacticPursue`](ai.md#tacticpursue) | AI | traced | confirmed (code) | not implemented |
-| [`TacticScout`](ai.md#tacticscout) | AI | traced | confirmed (code) | not implemented |
-| [`TacticSteal`](ai.md#tacticsteal) | AI | traced | confirmed (code) | not implemented |
-| [`TacticTravelPath`](ai.md#tactictravelpath) | AI | traced | confirmed (code) | not implemented |
-| [`TacticVandalize`](ai.md#tacticvandalize) | AI | traced | confirmed (code) | not implemented |
-| [`TacticWalkinTall`](ai.md#tacticwalkintall) | AI | traced | confirmed (code) | not implemented |
-| [`TacticWander`](ai.md#tacticwander) | AI | traced | confirmed (code) | not implemented |
+| [`TacticDefend`](ai.md#tacticdefend) | AI | traced | confirmed (code) | implemented |
+| [`TacticHanginOut`](ai.md#tactichanginout) | AI | traced | confirmed (code) | implemented |
+| [`TacticHoldTheLine`](ai.md#tacticholdtheline) | AI | traced | confirmed (code) | implemented |
+| [`TacticIdle`](ai.md#tacticidle) | AI | traced | confirmed (code) | implemented |
+| [`TacticManWeaponPile`](ai.md#tacticmanweaponpile) | AI | traced | confirmed (code) | implemented |
+| [`TacticMoveToFlag`](ai.md#tacticmovetoflag) | AI | traced | confirmed (code) | implemented |
+| [`TacticPursue`](ai.md#tacticpursue) | AI | traced | confirmed (code) | implemented |
+| [`TacticScout`](ai.md#tacticscout) | AI | traced | confirmed (code) | implemented |
+| [`TacticSteal`](ai.md#tacticsteal) | AI | traced | confirmed (code) | implemented |
+| [`TacticTravelPath`](ai.md#tactictravelpath) | AI | traced | confirmed (code) | implemented |
+| [`TacticVandalize`](ai.md#tacticvandalize) | AI | traced | confirmed (code) | implemented |
+| [`TacticWalkinTall`](ai.md#tacticwalkintall) | AI | traced | confirmed (code) | implemented |
+| [`TacticWander`](ai.md#tacticwander) | AI | traced | confirmed (code) | implemented |
 | [`GangCanUseWorldFlags`](gang.md#gangcanuseworldflags) | Gangs | traced | confirmed (code) | implemented |
 | [`GangEnableAttackStrategies`](gang.md#gangenableattackstrategies) | Gangs | traced | confirmed (code) | implemented |
 | [`GangExitWorld`](gang.md#gangexitworld) | Gangs | traced | confirmed (code) | implemented |
@@ -197,7 +197,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level95: the hub {#level95}
 
-323 bindings, 91 new: 91 traced, 24 implemented in Coney (242 of all 323).
+323 bindings, 91 new: 91 traced, 24 implemented in Coney (246 of all 323).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -295,7 +295,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level34: mission 4 {#level34}
 
-204 bindings, 17 new: 17 traced, 1 implemented in Coney (171 of all 204).
+204 bindings, 17 new: 17 traced, 1 implemented in Coney (173 of all 204).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -319,7 +319,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level2: mission 5 {#level2}
 
-243 bindings, 19 new: 19 traced, 1 implemented in Coney (197 of all 243).
+243 bindings, 19 new: 19 traced, 1 implemented in Coney (211 of all 243).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -345,7 +345,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level3: mission 6 {#level3}
 
-259 bindings, 22 new: 22 traced, 2 implemented in Coney (196 of all 259).
+259 bindings, 22 new: 22 traced, 2 implemented in Coney (210 of all 259).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -374,7 +374,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level5: mission 7 {#level5}
 
-274 bindings, 16 new: 16 traced, 2 implemented in Coney (213 of all 274).
+274 bindings, 16 new: 16 traced, 2 implemented in Coney (227 of all 274).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -397,7 +397,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level81: mission 8 {#level81}
 
-236 bindings, 20 new: 20 traced, 4 implemented in Coney (172 of all 236).
+236 bindings, 20 new: 20 traced, 4 implemented in Coney (187 of all 236).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -424,7 +424,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level86: mission 9 {#level86}
 
-245 bindings, 17 new: 17 traced, 3 implemented in Coney (191 of all 245).
+245 bindings, 17 new: 17 traced, 3 implemented in Coney (205 of all 245).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -448,7 +448,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level93: mission 10 {#level93}
 
-295 bindings, 24 new: 24 traced, 2 implemented in Coney (216 of all 295).
+295 bindings, 24 new: 24 traced, 2 implemented in Coney (230 of all 295).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -479,7 +479,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level31: mission 11 {#level31}
 
-266 bindings, 9 new: 9 traced, 2 implemented in Coney (210 of all 266).
+266 bindings, 9 new: 9 traced, 2 implemented in Coney (224 of all 266).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -495,7 +495,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level14: mission 12 {#level14}
 
-226 bindings, 6 new: 6 traced, 1 implemented in Coney (180 of all 226).
+226 bindings, 6 new: 6 traced, 1 implemented in Coney (195 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -508,7 +508,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level9: mission 13 {#level9}
 
-225 bindings, 6 new: 6 traced, 1 implemented in Coney (179 of all 225).
+225 bindings, 6 new: 6 traced, 1 implemented in Coney (193 of all 225).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -521,7 +521,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level51: mission 14 {#level51}
 
-256 bindings, 6 new: 6 traced, 1 implemented in Coney (204 of all 256).
+256 bindings, 6 new: 6 traced, 1 implemented in Coney (208 of all 256).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -534,7 +534,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level52: mission 15 {#level52}
 
-235 bindings, 4 new: 4 traced, 0 implemented in Coney (191 of all 235).
+235 bindings, 4 new: 4 traced, 0 implemented in Coney (205 of all 235).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -545,7 +545,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level54: mission 16 {#level54}
 
-241 bindings, 7 new: 7 traced, 0 implemented in Coney (187 of all 241).
+241 bindings, 7 new: 7 traced, 0 implemented in Coney (201 of all 241).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -559,7 +559,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level55: mission 17 {#level55}
 
-226 bindings, 8 new: 8 traced, 1 implemented in Coney (179 of all 226).
+226 bindings, 8 new: 8 traced, 1 implemented in Coney (193 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -574,7 +574,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level84: mission 18 {#level84}
 
-219 bindings, 8 new: 8 traced, 0 implemented in Coney (164 of all 219).
+219 bindings, 8 new: 8 traced, 0 implemented in Coney (178 of all 219).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -589,7 +589,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level82: flashback 1 {#level82}
 
-250 bindings, 4 new: 4 traced, 0 implemented in Coney (184 of all 250).
+250 bindings, 4 new: 4 traced, 0 implemented in Coney (199 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -600,7 +600,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level92: flashback 2 {#level92}
 
-237 bindings, 8 new: 8 traced, 4 implemented in Coney (198 of all 237).
+237 bindings, 8 new: 8 traced, 4 implemented in Coney (212 of all 237).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -615,7 +615,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level83: flashback 3 {#level83}
 
-250 bindings, 1 new: 1 traced, 0 implemented in Coney (209 of all 250).
+250 bindings, 1 new: 1 traced, 0 implemented in Coney (215 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -623,7 +623,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level20: flashback 4 {#level20}
 
-258 bindings, 11 new: 11 traced, 3 implemented in Coney (203 of all 258).
+258 bindings, 11 new: 11 traced, 3 implemented in Coney (217 of all 258).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -641,7 +641,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level11: flashback 5 {#level11}
 
-260 bindings, 7 new: 7 traced, 1 implemented in Coney (207 of all 260).
+260 bindings, 7 new: 7 traced, 1 implemented in Coney (211 of all 260).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -681,7 +681,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level62: Armies of the Night 3 {#level62}
 
-127 bindings, 1 new: 1 traced, 0 implemented in Coney (96 of all 127).
+127 bindings, 1 new: 1 traced, 0 implemented in Coney (97 of all 127).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

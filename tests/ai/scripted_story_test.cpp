@@ -231,3 +231,41 @@ TEST_CASE("The story's configuration reaches the game state", "[ai][story]") {
     CHECK(level.state.story.civilianAggression[0] == 30);
     CHECK(level.state.story.civilianAggression[1] == 40);
 }
+
+TEST_CASE("A group move gives the leader the flag and the others the leader", "[ai][story]") {
+    Level level;
+    Brain& lead = level.add({44.0F, 40.0F, 0.0F});
+    Brain& follower = level.add({46.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(19, "Riffs");
+    level.scripted->gangAddMember(gang, 2.0);
+    level.scripted->gangAddMember(gang, 3.0);
+    level.flags.add(100.0, "spot", {60.0F, 40.0F, 0.0F}, 0.0F);
+    level.call("GangSetLeader", {Value(static_cast<double>(gang)), Value(2.0)});
+    level.call("TacticMoveToFlag",
+               {Value(static_cast<double>(gang)), Value(100.0), Value(3.0), Value(), Value("Note")});
+    level.scene.brains.gangs().update(0);
+    REQUIRE(lead.findGoal(GoalType::MoveToFlag) != nullptr);
+    REQUIRE(follower.topGoal() != nullptr);
+    CHECK(follower.topGoal()->type() == GoalType::TrackHuman);
+    // Once the leader's walk is over the callback hears 8.
+    lead.clearGoals();
+    level.scene.brains.gangs().update(33);
+    REQUIRE(level.notes.size() == 1);
+    CHECK(level.notes[0] == std::vector<double>{static_cast<double>(gang), 8.0});
+}
+
+TEST_CASE("A defending gang reports the human it defends gone", "[ai][story]") {
+    Level level;
+    Brain& guard = level.add({44.0F, 40.0F, 0.0F});
+    Brain& defended = level.add({46.0F, 40.0F, 0.0F});
+    const int gang = level.scripted->gangCreate(19, "Orphans");
+    level.scripted->gangAddMember(gang, 2.0);
+    level.call("TacticDefend", {Value(static_cast<double>(gang)), Value(3.0), Value(2.0), Value("Note")});
+    level.scene.brains.gangs().update(0);
+    REQUIRE(guard.topGoal() != nullptr);
+    CHECK(guard.topGoal()->type() == GoalType::TrackHuman);
+    defended.human().fighter().health().set(0);
+    level.scene.brains.gangs().update(2000);
+    REQUIRE_FALSE(level.notes.empty());
+    CHECK(level.notes.back() == std::vector<double>{static_cast<double>(gang), 11.0});
+}

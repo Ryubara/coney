@@ -95,8 +95,8 @@ class ScriptedStory final : public script::StoryBindingHost {
     /// exit flag (`HuExitWorld`), and with none nothing happens.
     void goalMoveToExitFlag(const script::ExitFlagCall& call) override;
     void goalTravelPath(const script::TravelPathCall& call) override;
-    /// A target: the human fights it (Brain::fight()); none: a FindEnemyGoal. Nothing for a human down or out of
-    /// health.
+    /// A FindEnemyGoal, and over it a fight with the target when one is named (Brain::fight(); **Coney stand-in** for
+    /// the melee goal 8 with its 4000 ms). Nothing for a human down or out of health.
     void goalMelee(double human, double target) override;
     void goalThrowObject(const script::ThrowObjectCall& call) override;
     void goalPlayDynIdle(const script::DynIdleCall& call) override;
@@ -120,6 +120,9 @@ class ScriptedStory final : public script::StoryBindingHost {
     /// **Coney stand-in**: spawners do not spawn yet, so only the state and the value are kept.
     void startSpawner(int gang, std::string_view name, int mode, int value) override;
     void canUseWorldFlags(int gang, bool on, int percent) override;
+    /// The gang takes the story tactic of the call's kind (ai/story_tactics.h); a TravelPath walks the path the call
+    /// names. Attack and Confront are the AI host's (ScriptedBrains::tacticAttack(), tacticConfront()).
+    void setTactic(const script::TacticCall& call) override;
 
     /// **Coney stand-in** for the commands' tactics (not traced): the crew's tactic is cleared and its AI members
     /// flushed, then 0 follow and 2 defend have them track the chief, 1 attack look for enemies to fight, 3 hold

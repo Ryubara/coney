@@ -598,6 +598,153 @@ NativeFunction makeCrimeIsHappening(ScriptSystem& scripts, const BindingContext&
     };
 }
 
+// ---- The tactics ----
+
+// The tactic `kind` for gang argument 0, read by `read` from the rest of the arguments.
+template <typename Read> NativeFunction tacticCall(const BindingContext& context, TacticKind kind, Read read) {
+    return storyCall(context, [kind, read](StoryBindingHost& host, std::span<const Value> args) {
+        TacticCall call;
+        call.gang = intArg(args, 0);
+        call.kind = kind;
+        read(call, args);
+        host.setTactic(call);
+    });
+}
+
+// The tactic bindings, each with its arguments and defaults (docs/references/bindings/ai.md); TacticAttack and
+// TacticConfront are the Rumble's (rumble_match_bindings.h).
+// @orig 0x00315d98 Tactic_Defend (unknown)
+// @orig 0x00313e30 Tactic_HoldTheLine (unknown)
+// @orig 0x00316a68 Tactic_ManWeaponPile (unknown)
+// @orig 0x00315ee8 Tactic_Pursue (unknown)
+// @orig 0x00315e48 Tactic_WalkinTall (unknown)
+// @orig 0x003160a8 Tactic_Wander (unknown)
+// @orig 0x003161a0 Tactic_TravelPath (unknown)
+// @orig 0x00315fc8 Tactic_HanginOut (unknown)
+// @orig 0x00316298 Tactic_MoveToFlag (unknown)
+// @orig 0x003164e0 Tactic_Vandalize (unknown)
+// @orig 0x00316638 Tactic_Steal (unknown)
+// @orig 0x00316988 Tactic_AvoidEnemies (unknown)
+// @orig 0x00316ca0 Tactic_UseFlag (unknown)
+// @orig 0x00316ee8 Tactic_Idle (unknown)
+// @orig 0x0031a268 Tactic_Scout (unknown)
+void addTacticBindings(LuaVm& vm, const BindingContext& context) {
+    using A = std::span<const Value>;
+    vm.registerFunction("TacticDefend", tacticCall(context, TacticKind::Defend, [](TacticCall& c, A a) {
+                            c.flags.at(0) = handleArg(a, 1);
+                            c.range = floatArgOr(a, 2, 2.25F);
+                            c.callback = nameArg(a, 3);
+                        }));
+    vm.registerFunction("TacticHoldTheLine", tacticCall(context, TacticKind::HoldTheLine, [](TacticCall& c, A a) {
+                            c.flags = {handleArg(a, 1), handleArg(a, 2), handleArg(a, 3)};
+                            c.count = unsignedArgOr(a, 4, 5);
+                            c.delayMs = unsignedArgOr(a, 5, 20) * 1000U;
+                            c.range2 = floatArgOr(a, 6, 10.0F);
+                            c.callback = nameArg(a, 7);
+                        }));
+    vm.registerFunction("TacticManWeaponPile", tacticCall(context, TacticKind::ManWeaponPile, [](TacticCall& c, A a) {
+                            c.range = floatArg(a, 1);
+                            c.range2 = floatArg(a, 2);
+                            c.count = static_cast<std::uint16_t>(intArg(a, 3));
+                            c.count2 = static_cast<std::uint16_t>(intArg(a, 4));
+                            c.callback = nameArg(a, 5);
+                        }));
+    vm.registerFunction("TacticPursue", tacticCall(context, TacticKind::Pursue, [](TacticCall& c, A a) {
+                            c.targetGang = intArgOr(a, 1, -1);
+                            c.range = floatArgOr(a, 2, 5.0F);
+                            c.gait = intArgOr(a, 3, 2);
+                            c.range2 = floatArgOr(a, 4, 90.0F);
+                            c.range3 = floatArgOr(a, 5, 45.0F);
+                            c.callback = nameArg(a, 6);
+                            c.delayMs = unsignedArgOr(a, 7, 30000);
+                        }));
+    vm.registerFunction("TacticWalkinTall", tacticCall(context, TacticKind::WalkinTall, [](TacticCall& c, A a) {
+                            c.flags.at(0) = handleArg(a, 1);
+                            c.range = floatArg(a, 2);
+                            c.callback = nameArg(a, 3);
+                        }));
+    vm.registerFunction("TacticWander", tacticCall(context, TacticKind::Wander, [](TacticCall& c, A a) {
+                            c.gait = intArgOr(a, 1, 2);
+                            c.delayMs = unsignedArgOr(a, 2, 0);
+                            c.callback = nameArg(a, 3);
+                            c.range2 = floatArgOr(a, 4, 10.0F);
+                            c.slotSet = intArgOr(a, 5, -1);
+                            c.options.at(kTacticBanter) = boolArgOr(a, 6, true);
+                            c.options.at(kTacticLoop) = boolArgOr(a, 7, true);
+                            c.options.at(kTacticReverse) = boolArg(a, 8) || boolArg(a, 9);
+                        }));
+    vm.registerFunction("TacticTravelPath", tacticCall(context, TacticKind::TravelPath, [](TacticCall& c, A a) {
+                            c.flags.at(0) = absent(a, 1) ? kNilHandle : handleArg(a, 1);
+                            c.options.at(kTacticReverse) = boolArg(a, 2);
+                            c.gait = intArgOr(a, 3, 2);
+                            c.delayMs = unsignedArgOr(a, 4, 0) * 1000U;
+                            c.slotSet = intArgOr(a, 5, -1);
+                            c.startPoint = intArgOr(a, 6, -1);
+                            c.callback = nameArg(a, 7);
+                            c.options.at(kTacticBanter) = boolArgOr(a, 8, true);
+                            c.options.at(kTacticLoop) = boolArgOr(a, 9, true);
+                        }));
+    vm.registerFunction("TacticHanginOut", tacticCall(context, TacticKind::HanginOut, [](TacticCall& c, A a) {
+                            c.flags.at(0) = handleArg(a, 1);
+                            c.callback = nameArg(a, 2);
+                            c.range = floatArgOr(a, 3, 6.0F);
+                            c.options.at(kTacticBanter) = boolArgOr(a, 4, true);
+                            c.options.at(kTacticRespond) = boolArg(a, 5);
+                            c.options.at(kTacticAware) = boolArg(a, 6);
+                            c.options.at(kTacticHarass) = boolArgOr(a, 7, true);
+                        }));
+    vm.registerFunction("TacticMoveToFlag", tacticCall(context, TacticKind::MoveToFlag, [](TacticCall& c, A a) {
+                            c.flags.at(0) = handleArg(a, 1);
+                            c.gait = intArgOr(a, 2, 2);
+                            c.slotSet = intArgOr(a, 3, -1);
+                            c.callback = nameArg(a, 4);
+                            c.options.at(kTacticBanter) = boolArg(a, 5);
+                        }));
+    vm.registerFunction("TacticVandalize", tacticCall(context, TacticKind::Vandalize, [](TacticCall& c, A a) {
+                            c.zone = static_cast<std::uint32_t>(wholeArg(a, 1));
+                            c.delayMs = unsignedArgOr(a, 2, 3000);
+                            c.callback = nameArg(a, 3);
+                            c.range = floatArgOr(a, 4, -1.0F);
+                        }));
+    vm.registerFunction("TacticSteal", tacticCall(context, TacticKind::Steal, [](TacticCall& c, A a) {
+                            c.zone = static_cast<std::uint32_t>(wholeArg(a, 1));
+                            c.delayMs = unsignedArgOr(a, 2, 1000);
+                            c.callback = nameArg(a, 3);
+                            c.range = floatArgOr(a, 4, -1.0F);
+                        }));
+    vm.registerFunction("TacticAvoidEnemies", tacticCall(context, TacticKind::AvoidEnemies, [](TacticCall& c, A a) {
+                            c.callback = nameArg(a, 1);
+                            c.options.at(kTacticHarass) = boolArg(a, 2);
+                            c.range = floatArgOr(a, 3, 7.0F);
+                            c.range2 = floatArgOr(a, 4, 14.0F);
+                            c.range3 = floatArg(a, 5);
+                            c.range4 = floatArg(a, 6);
+                            c.gait = static_cast<int>(unsignedArgOr(a, 7, 0));
+                        }));
+    vm.registerFunction("TacticUseFlag", tacticCall(context, TacticKind::UseFlag, [](TacticCall& c, A a) {
+                            c.flags.at(0) = handleArg(a, 1);
+                            c.range = floatArgOr(a, 2, 4.0F);
+                            c.range2 = floatArgOr(a, 3, 10.0F);
+                            c.callback = nameArg(a, 4);
+                            c.options.at(kTacticBanter) = boolArg(a, 5);
+                        }));
+    vm.registerFunction("TacticIdle", tacticCall(context, TacticKind::Idle, [](TacticCall& c, A a) {
+                            c.options.at(kTacticBanter) = boolArgOr(a, 1, true);
+                            c.options.at(kTacticRespond) = boolArg(a, 2);
+                            c.options.at(kTacticAware) = boolArg(a, 3);
+                            c.callback = nameArg(a, 4);
+                            c.options.at(kTacticLoop) = boolArg(a, 5);
+                        }));
+    vm.registerFunction("TacticScout", tacticCall(context, TacticKind::Scout, [](TacticCall& c, A a) {
+                            c.count = static_cast<std::uint32_t>(intArg(a, 1));
+                            c.count2 = static_cast<std::uint32_t>(intArg(a, 2));
+                            c.range = floatArgOr(a, 3, 40.0F);
+                            c.range2 = floatArgOr(a, 4, 10.0F);
+                            c.range3 = floatArgOr(a, 5, 30.0F);
+                            c.callback = nameArg(a, 6);
+                        }));
+}
+
 } // namespace
 
 void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context,
@@ -810,6 +957,8 @@ void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
                                     static_cast<std::uint8_t>(~static_cast<std::uint32_t>(wholeArg(a, 1)) & 0xffU);
                             }
                         }));
+
+    addTacticBindings(vm, context);
 }
 
 } // namespace coney::script

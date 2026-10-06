@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.8% of the game's own code (430,988 of 3,354,776 bytes, 1,289 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.8% of the game's own code (430,988 of 3,354,776 bytes, 1,304 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-336 reimplemented function(s) have no size yet and add no bytes.
+351 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 84 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
-| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.5% | 367 | 1,096,672 |
+| `Human` | `██▎░░░░░░░░░░░░░░░░░` | 11.5% | 382 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -947,8 +947,23 @@ at the top of the repository's `README.md`.
 | `0x00310be0` | `DominationTactic_Init` | `Human` | 136 |
 | `0x00310c68` | `DominationTactic_AssignGoals` | `Human` | 224 |
 | `0x00310d78` | `DominationTactic_OnEvent` | `Human` | 136 |
+| `0x00313e30` | `Tactic_HoldTheLine` | `Human` | not filled in |
+| `0x00315d98` | `Tactic_Defend` | `Human` | not filled in |
+| `0x00315e48` | `Tactic_WalkinTall` | `Human` | not filled in |
+| `0x00315ee8` | `Tactic_Pursue` | `Human` | not filled in |
+| `0x00315fc8` | `Tactic_HanginOut` | `Human` | not filled in |
+| `0x003160a8` | `Tactic_Wander` | `Human` | not filled in |
+| `0x003161a0` | `Tactic_TravelPath` | `Human` | not filled in |
+| `0x00316298` | `Tactic_MoveToFlag` | `Human` | not filled in |
+| `0x003164e0` | `Tactic_Vandalize` | `Human` | not filled in |
+| `0x00316638` | `Tactic_Steal` | `Human` | not filled in |
+| `0x00316988` | `Tactic_AvoidEnemies` | `Human` | not filled in |
+| `0x00316a68` | `Tactic_ManWeaponPile` | `Human` | not filled in |
 | `0x00316b30` | `Tactic_Domination` | `Human` | 160 |
+| `0x00316ca0` | `Tactic_UseFlag` | `Human` | not filled in |
+| `0x00316ee8` | `Tactic_Idle` | `Human` | not filled in |
 | `0x00316fa0` | `Tactic_TriggerCrowd` | `Human` | 176 |
+| `0x0031a268` | `Tactic_Scout` | `Human` | not filled in |
 | `0x00336a00` | `QuaternionSlerp` | `Maths (unnamed)` | 440 |
 | `0x00336bb8` | `VectorLerp` | `Maths (unnamed)` | 64 |
 | `0x00336bf8` | `QuaternionNlerp` | `Maths (unnamed)` | 160 |
