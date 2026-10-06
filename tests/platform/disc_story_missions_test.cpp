@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that the story's second and third missions (`level80`, `level87`) play as
-// `--play-level NAME --checkpoint 1` plays them: the level's scripts run for a while in gameplay over the play mode,
-// headless, with no script error, and player 1 stands under the pad's control, moving when the stick is pushed. They
-// run only when the environment variable CONEY_DISC names the disc and skip otherwise; they print counts only
-// (LEGAL.md).
+// `--play-level NAME --checkpoint N` plays them, at every checkpoint: the level's scripts run for a while in gameplay
+// over the play mode, headless, with no script error, and player 1 stands under the pad's control, moving when the
+// stick is pushed. They run only when the environment variable CONEY_DISC names the disc and skip otherwise; they print
+// counts only (LEGAL.md).
 
 #include <array>
 #include <cstddef>
@@ -63,11 +63,12 @@ struct MissionRun {
     bool standing = false;
     float travelled = 0.0F;
     std::size_t humans = 0;
+    std::vector<std::string> errors; // the scripts' error lines
 };
 
-// Plays `level` at checkpoint 1 as `--play-level` does (the preloads, the level's script, gameplay over the play mode
+// Plays `level` at `checkpoint` as `--play-level` does (the preloads, the level's script, gameplay over the play mode
 // with the scripts' AI and character configuration) for 20 s, the stick pushed forward for the last 2 s.
-MissionRun playMission(const coney::io::Wad& wad, std::string_view level) {
+MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int checkpoint) {
     MissionRun run;
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
     REQUIRE(engine.has_value());
@@ -87,7 +88,7 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level) {
         table = std::move(*words);
         options.randomTable = table;
     }
-    coney::LevelScripts scripts(coney::script::wadScriptSource(wad), level, 1, print, options);
+    coney::LevelScripts scripts(coney::script::wadScriptSource(wad), level, checkpoint, print, options);
     coney::GameplayMode::LevelLoader loader =
         [&renderer, &wad, &budget, &scripts,
          &print](const coney::LevelStart& start,
@@ -144,6 +145,9 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level) {
     run.scriptErrors = scripts.scripts().errors();
     run.humans = scripts.humans().all().size();
     for (const std::string& line : log) {
+        if (line.starts_with("script error")) {
+            run.errors.push_back(line);
+        }
         if (line.find("is not a binding Coney has") != std::string::npos) {
             UNSCOPED_INFO(line);
             ++run.missingBindings;
@@ -154,20 +158,28 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level) {
 
 } // namespace
 
-TEST_CASE("the disc's level80 and level87 play their first checkpoint without a script error", "[disc][story]") {
+TEST_CASE("the disc's level80 and level87 play each checkpoint without a script error", "[disc][story]") {
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    for (const std::string_view level : {std::string_view("level80"), std::string_view("level87")}) {
-        INFO(level);
-        const MissionRun run = playMission(*wad, level);
-        REQUIRE(run.loaded);
-        CHECK(run.scriptErrors == 0);
-        CHECK(run.standing);
-        CHECK(run.travelled > 1.0F);
-        std::printf("  %.*s: %zu humans created, %llu script errors, %zu missing bindings, %.1f m walked\n",
-                    static_cast<int>(level.size()), level.data(), run.humans,
-                    static_cast<unsigned long long>(run.scriptErrors), run.missingBindings, run.travelled);
+    // level80 has four checkpoints, level87 five.
+    for (const auto& [level, checkpoints] :
+         {std::pair{std::string_view("level80"), 4}, std::pair{std::string_view("level87"), 5}}) {
+        for (int checkpoint = 1; checkpoint <= checkpoints; ++checkpoint) {
+            INFO(level << " checkpoint " << checkpoint);
+            const MissionRun run = playMission(*wad, level, checkpoint);
+            REQUIRE(run.loaded);
+            for (const std::string& error : run.errors) {
+                UNSCOPED_INFO(error);
+            }
+            CHECK(run.scriptErrors == 0);
+            CHECK(run.standing);
+            CHECK(run.travelled > 1.0F);
+            std::printf("  %.*s checkpoint %d: %zu humans created, %llu script errors, %zu missing bindings, %.1f m "
+                        "walked\n",
+                        static_cast<int>(level.size()), level.data(), checkpoint, run.humans,
+                        static_cast<unsigned long long>(run.scriptErrors), run.missingBindings, run.travelled);
+        }
     }
 }
