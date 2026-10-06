@@ -11,7 +11,7 @@ The static collision of a level: the triangles that characters, cameras and the 
 against. It lives in the level file ([Level loading](level-loading.md#the-level-file)) as six chunks that the chunk
 system joins into one **collision mesh**, held by the level object at `+0x04`. This page gives the format and the
 queries (ray casts, the sphere push-out walls use, ground height, switching triangles on and off) closely enough to
-reimplement them. Moving objects' collision (`Physics/`) is not on this page.
+reimplement them. Moving objects' bodies and shapes (`Physics/`) are on [Physics](physics.md).
 
 Everything here is in **game axes, z up**: the mesh is not converted to RenderWare's axes (confirmed by the disc: see
 [Disc counts](#disc-counts)).

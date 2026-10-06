@@ -69,7 +69,8 @@ The leading word of a chunk container is its chunk (or group) count, not a type.
    on [File I/O](file-io.md); how it draws (the RenderWare device, textures, 2D, the first screen), on
    [Graphics device and textures](graphics.md).
    How the game schedules its objects and steps its characters, and how a move's clip decides when control comes
-   back, is on [Tasks](tasks.md); how the other humans think, fight and move, on [AI humans](ai.md).
+   back, is on [Tasks](tasks.md); how the other humans think, fight and move, on [AI humans](ai.md); the physics
+   world and its 60 Hz step, on [Physics](physics.md).
 6. The Xbox version is an optional asset source, never a behaviour reference: it shares the chunk container, the
    scripts and the scenes byte for byte but uses its own graphics formats instead of RenderWare. What it could
    supply (sharper textures, 720p movies) and how: [Xbox assets](xbox-assets.md). Its executable is no easier to

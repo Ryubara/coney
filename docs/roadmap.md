@@ -238,9 +238,9 @@ current thinking, decided only when the milestone starts.
   with fewer pictures, so a duration counted in steps lasts as long on both. What every machine must share is the
   tick rate, never the frame rate. Offline, Coney stops catching up below 7.5 fps and skips the time lost in a
   hitch; online, a client must instead catch up to the server.
-- **Physics.** The 60 Hz physics step doubles the cost of re-simulating whatever it moves. If it only moves props and
-  debris, they can stay out of the network game; if it moves anything that decides a fight, every machine must compute
-  the same floats. What it simulates is an open question ([Tasks](research/tasks.md#open-questions)).
+- **Physics.** The 60 Hz physics step moves no human and decides no hit: it only turns landed objects to rest, a
+  short cosmetic tween a client can play itself. What decides a fight (humans, thrown objects in flight) moves at
+  30 Hz in their own updates, all in the game's own code ([Physics](research/physics.md#tick-rate)).
 - **Limits.** The original's pools (brains, gangs) are sized for one player's levels; raising them is a change for
   this milestone, not before.
 

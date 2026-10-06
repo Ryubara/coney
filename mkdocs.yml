@@ -84,6 +84,7 @@ nav:
           - Camera: research/camera.md
           - Feel comparison: research/feel.md
           - Collision: research/collision.md
+          - Physics: research/physics.md
           - The streamed world: research/world.md
           - Memory: research/memory.md
           - Debug features and leftovers: research/debug.md

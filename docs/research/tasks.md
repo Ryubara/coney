@@ -42,7 +42,7 @@ which file each belongs to is inferred from the range only. Names are ours.
 | `0x003a2b48` | `TaskManager_Reset` | flushes the seven per-manager lists, resets the clocks | confirmed (code) |
 | `0x003a2c80` | `TaskManager_SetPhase` | selects the wheel and the per-phase manager for phase 0 (play) or 1 (pause) | confirmed (code) |
 | `0x003a3148` | `TaskManager_Tick(mgr, phase)` | the frame's task step: phase 0 → `0x003a2ea0`, phase 1 → `0x003a3000` | confirmed (code) |
-| `0x003a2ea0` | `TaskManager_TickGame` | play: up to two 60 Hz ticks of `Humans_Update`, the wheel bucket and physics | confirmed (code) |
+| `0x003a2ea0` | `TaskManager_TickGame` | play: up to two 60 Hz ticks of `Humans_Update`, the wheel bucket and the [physics step](physics.md#step) | confirmed (code) |
 | `0x003a3000` | `TaskManager_TickPaused` | pause and menus: one tick on the UI clock | confirmed (code) |
 | `0x003a31a8` | `TaskManager_UpdateManagers` | the sub-managers' updates for a phase | confirmed (code) |
 | `0x003a32f0` / `0x003a3368` | `TaskManager_Schedule` / `TaskManager_Unschedule` | put an object on, or take it off, its phase's wheel | confirmed (code) |
@@ -140,7 +140,8 @@ Event types seen: `0xb` a new enemy (to the gang's tactic), `0xd` the brain's go
    **two** 60 Hz ticks and take `0x960000` off; with less, run **none** this frame (the time carries over). So the
    ticks always come in pairs.
 2. Each 60 Hz tick: set the phase's time, call **`Humans_Update`** (`0x00249108`), run the wheel's current bucket
-   (`TaskWheel_RunBucket`), then the physics step (`0x00340918`).
+   (`TaskWheel_RunBucket`), then the physics step (`0x00340918`), which only turns landed objects to rest and
+   refreshes a broad-phase bound ([Physics](physics.md#step)).
 3. After the ticks: the game state (`0x0041a370`) and the object spawns (`ObjectTaskManager_UpdateSpawns`, objects
    within 70 m of a player, 4900 = 70²).
 
@@ -360,5 +361,5 @@ dispatcher](#humans-update). None is left.
 - The event types `0`, `1`, `7` and `0x17` (`0x10` is the attack warning, [AI](ai.md#block)).
 - Does `TaskManager_TickGame` cap the pairs it runs in one frame, and do millisecond timers lag the steps below 25 fps
   as inferred in [The play tick](#tick)?
-- What the physics step `0x00340918` simulates (props and debris only, or anything a character touches); online play
-  depends on it ([Roadmap](../roadmap.md#online-multiplayer)).
+- Resolved: the physics step `0x00340918` moves no human and decides no hit; it settles landed objects
+  ([Physics](physics.md#tick-rate)).

@@ -495,6 +495,8 @@ What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it 
   (`0x001906e8`, `0x00190770`) close the stretch after `Graphics/Texture.cpp`, probably `Graphics/WarTexture.cpp`
   (speculative; [Chunk system](chunk-system.md#open-questions)); `Stream_SkipBytes` (`0x00154440`) is the last
   function of `FileIO/FS_MemoryFile.cpp`.
+- **Physics:** [Physics](physics.md). `IPhysics` starts at its constructor `0x0033c288`, right after the heaps' block
+  allocator, so `0x0033c288`-`0x003418f8` is taken as `Physics/` too (inferred).
 - **Level loading:** [Level loading](level-loading.md) and [The streamed world](world.md).
   `World/ps2/WorldManagerPS2.cpp` (`0x0040d688`: `Sector Pool`; `0x0040d900`: `warriors.glr`, `Global Data`;
   `0x0040dbb8`: `%s.lev`; `0x0040f8a0`: the streaming update) and `World/ps2/WorldPS2.cpp` (`0x00410648`:
