@@ -26,6 +26,7 @@ add_library(coney_core STATIC
     gamemodes/front_end_services.cpp
     gamemodes/game_mode_stack.cpp
     gamemodes/gameplay_mode.cpp
+    gamemodes/gameplay_tag.cpp
     gamemodes/system_music.cpp
     gamemodes/legal_screen_mode.cpp
     gamemodes/level_crime_services.cpp
@@ -134,6 +135,8 @@ add_library(coney_core STATIC
     warriors/profile_record.cpp
     warriors/profile_store.cpp
     warriors/stop_watch.cpp
+    warriors/tag_game.cpp
+    warriors/tag_session.cpp
     warriors/unlock_records.cpp
     warriors/unlockables.cpp
     world/debug_camera.cpp
@@ -155,6 +158,7 @@ add_library(coney_core STATIC
     world_objects/object_types.cpp
     world_objects/radios.cpp
     world_objects/spawn_records.cpp
+    world_objects/tag_spots.cpp
     world_objects/flag_net.cpp
     world_objects/trigger_spheres.cpp
     world_objects/object_services.cpp

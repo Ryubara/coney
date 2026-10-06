@@ -604,6 +604,7 @@
     state 4 sets it to 0 and the spray mode to "paint in" (7); 0x39 sets the spray mode to 7, 0x3a to "wipe out"
     (5), without changing the look. [Crimes: tag spots](../../research/crimes.md#tag-spots) has every message.
   usage: {chunks: 10, calls: 15, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 92, 20, 11]}
+  coney: implemented
 
 - name: CrimeIsHappening
   wrapper: 0x0037a2f8

@@ -437,6 +437,14 @@ template <typename Read> NativeFunction storyQuery(const BindingContext& context
     };
 }
 
+// `HuTag(human, tag, flag)`: the human sprays the tag spot `tag` from `flag`.
+// @orig 0x00238db0 Human_Tag (unknown)
+NativeFunction makeHuTag(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        host.tag(handleArg(args, 0), handleArg(args, 1), handleArg(args, 2));
+    });
+}
+
 // `HuTagColor(human, {r, g, b, a})`: each element × 255 twice and its low byte kept (a whole 0-255 comes out as it
 // is), packed with r in the top byte.
 // @orig 0x00239080 Human_SetTagColour (unknown)
@@ -830,6 +838,7 @@ void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
     vm.registerFunction("HuAreActionsBlocked", storyQuery(context, [](const StoryBindingHost& h, A a) {
                             return h.actionsBlocked(handleArg(a, 0));
                         }));
+    vm.registerFunction("HuTag", makeHuTag(context));
     vm.registerFunction("HuTagColor", makeHuTagColor(context));
     vm.registerFunction("HuTagPattern", makeHuTagPattern(context));
 

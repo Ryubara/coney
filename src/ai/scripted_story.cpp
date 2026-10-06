@@ -248,6 +248,12 @@ void ScriptedStory::setTagColour(double human, std::uint32_t rgba) {
     onBrain(human, [rgba](Brain& brain) { brain.human().script().tagColour = rgba; });
 }
 
+void ScriptedStory::tag(double human, double tag, double flag) {
+    if (m_tagHandler) {
+        m_tagHandler(human, tag, flag);
+    }
+}
+
 std::optional<double> ScriptedStory::nearestExit(anim::Vec3 from, double exclude) const {
     std::optional<double> best;
     float bestDistance = std::numeric_limits<float>::max();

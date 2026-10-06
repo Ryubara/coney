@@ -25,10 +25,15 @@
 #include "warriors/game_state.h"
 #include "world_objects/radios.h"
 #include "world_objects/spawn_records.h"
+#include "world_objects/tag_spots.h"
 
 namespace coney::script {
 
 namespace {
+
+// ProcessTag's states (message 0x19): fully painted, and blank with paint-in next.
+constexpr int kTagPainted = 6;
+constexpr int kTagBlank = 4;
 
 // `NilHandle`'s value.
 constexpr double kNilHandle = 0.0;
@@ -347,6 +352,49 @@ NativeFunction makeSetupRadio(const BindingContext& context) {
     };
 }
 
+// Whether `object` can be a tag spot: with the level's particles known, it must be one of their systems (a class-bit
+// 0x10 object); without them any handle is taken.
+bool tagObject(const BindingContext& context, double object) {
+    return context.tagSpots != nullptr &&
+           (context.effects == nullptr || context.effects->particles.find(object) != nullptr);
+}
+
+// `CfgTagSettings(object, sprite, start, fade, depth)`: a particle system's tag spot configured; others ignored.
+// @orig 0x0039bc28 Tag_Configure (unknown)
+NativeFunction makeCfgTagSettings(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const double object = handleArg(args, 0);
+        if (!tagObject(*context, object)) {
+            return binding::none();
+        }
+        const auto f = [&args](std::size_t i, double fallback) {
+            return static_cast<float>(absent(args, i) ? fallback : binding::number(args, i));
+        };
+        context->tagSpots->configure(object, static_cast<std::uint32_t>(wholeArg(args, 1)), f(2, 0.5), f(3, 0.005),
+                                     f(4, 1.0));
+        return binding::none();
+    };
+}
+
+// `ProcessTag(tag, second, instant)`: instant false sets the look (state 6 painted, 4 blank); true only chooses what
+// the next spray does (message 0x39 paint in, 0x3a wipe out). Only a particle system's spot is told.
+// @orig 0x0039bd50 ProcessTag (unknown)
+NativeFunction makeProcessTag(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        const double tag = handleArg(args, 0);
+        if (!tagObject(*context, tag)) {
+            return binding::none();
+        }
+        const bool second = boolArg(args, 1);
+        if (boolArg(args, 2)) {
+            context->tagSpots->setSprayMode(tag, second);
+        } else {
+            context->tagSpots->setState(tag, second ? kTagPainted : kTagBlank);
+        }
+        return binding::none();
+    };
+}
+
 } // namespace
 
 void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
@@ -355,6 +403,8 @@ void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::func
     vm.registerFunction("CameraGetActive", makeCameraGetActive(context));
     vm.registerFunction("CameraSetClipping", makeCameraSetClipping(context));
     vm.registerFunction("CfgSteam", makeCfgSteam(context));
+    vm.registerFunction("CfgTagSettings", makeCfgTagSettings(context));
+    vm.registerFunction("ProcessTag", makeProcessTag(context));
     vm.registerFunction("EndGarbage", makeGarbage(context, false));
     vm.registerFunction("MaxFogParticles", makeMaxFogParticles(context));
     vm.registerFunction("Start3DFog", makeStart3DFog(context));

@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -83,6 +84,12 @@ class ScriptedStory final : public script::StoryBindingHost {
     void setInvestigateResponse(double human, int response) override;
     void setReactToViolence(double human, bool reacts) override;
     void setTagColour(double human, std::uint32_t rgba) override;
+    /// What `HuTag` starts: the human, the tag spot and the flag he sprays from.
+    using TagHandler = std::function<void(double human, double tag, double flag)>;
+    /// The tagging `HuTag` hands its calls to (the play mode's, which runs the player's stick game).
+    void setTagHandler(TagHandler handler) { m_tagHandler = std::move(handler); }
+    /// Hands the call to the tag handler; without one nothing happens.
+    void tag(double human, double tag, double flag) override;
 
     /// The brain's off flag set (as `BrDead`) unless it is a player's, then the exit goal; flag 0 takes the nearest
     /// exit flag (`HuExitWorld`), and with none nothing happens.
@@ -145,6 +152,7 @@ class ScriptedStory final : public script::StoryBindingHost {
     ScriptedBrains* m_scripted;
     std::map<double, WorldPath> m_paths;
     int m_warriorCommand = -1;
+    TagHandler m_tagHandler;
 };
 
 } // namespace coney::ai

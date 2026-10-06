@@ -25,7 +25,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addStoryBindings().
-inline constexpr std::array<std::string_view, 83> kStoryBindings{"AddPath",
+inline constexpr std::array<std::string_view, 84> kStoryBindings{"AddPath",
                                                                  "BrSetFOV",
                                                                  "BrSetInvestigateResponse",
                                                                  "BrSetReactToViolence",
@@ -77,6 +77,7 @@ inline constexpr std::array<std::string_view, 83> kStoryBindings{"AddPath",
                                                                  "HuSetLOSRange",
                                                                  "HuSetRevivable",
                                                                  "HuShadow",
+                                                                 "HuTag",
                                                                  "HuTagColor",
                                                                  "HuTagPattern",
                                                                  "HuWhatAmIHolding",

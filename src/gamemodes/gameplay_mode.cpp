@@ -172,6 +172,11 @@ void GameplayMode::endLevel() {
     if (m_context.spheres == &m_spheres) {
         m_context.spheres = nullptr;
     }
+    if (m_context.tagSpots == &m_tagSpots) {
+        m_context.tagSpots = nullptr;
+    }
+    m_tagSession.reset();
+    m_tagSpots.clear();
     if (m_context.radios == &m_radios) {
         m_context.radios = nullptr;
     }
@@ -274,6 +279,12 @@ void GameplayMode::enter() {
     m_context.spheres = &m_spheres;
     m_radios.clear();
     m_context.radios = &m_radios;
+    m_tagSpots.clear();
+    m_tagSession.reset();
+    m_tagTicks = 0.0;
+    m_context.tagSpots = &m_tagSpots;
+    m_scripted->storyHost().setTagHandler(
+        [this](double human, double tag, double flag) { startTag(human, tag, flag); });
     m_context.flagNet = &m_flagNet;
     m_scripted->setFlagNet(&m_flagNet);
     // Player 1's cameras, which the script sets up before the level makes him; CamSetSecondary finds its human live.
@@ -505,6 +516,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         });
     }
     updateRadios();
+    updateTagging(stack.pads(), frame.seconds);
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
     m_scripts.update(nowMs, frame.seconds);
     if (m_effects) {

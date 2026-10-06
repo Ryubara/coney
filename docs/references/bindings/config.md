@@ -2845,7 +2845,7 @@ batch depth orders drawing is inferred. Arguments renamed from n2, f3-f5.
 - **Wrapper** `0x003795c0` (registered by `RegisterBindings`); **calls** `0x0039bc28` `Tag_Configure`, `0x003fc8d8`
 - **Used by** 9 of 467 script chunks (47 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgTagStartCallback {#cfgtagstartcallback}
 

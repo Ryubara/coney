@@ -14,6 +14,7 @@
 #include "ai/scripted_brains.h"
 #include "camera/cameras.h"
 #include "core/error.h"
+#include "core/pads.h"
 #include "effects/level_effects.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/level_object_services.h"
@@ -29,11 +30,13 @@
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
+#include "warriors/tag_session.h"
 #include "world_objects/cars.h"
 #include "world_objects/flag_net.h"
 #include "world_objects/flags.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/radios.h"
+#include "world_objects/tag_spots.h"
 #include "world_objects/trigger_spheres.h"
 #include "world_objects/volume_boxes.h"
 
@@ -262,6 +265,12 @@ class GameplayMode final : public GameMode {
     void updateBoxes(std::uint64_t nowMs);
     // The radios' update (Radio_Update): their sounds through the game's sound, the player's place and the progress.
     void updateRadios();
+    // HuTag (docs/research/crimes.md#tagging): player 1 with paint starts the stick game at the spot, without paint
+    // says 37 `nopaint`; another human is the spot's tagger at once (Coney's stand-in for the walk to the flag).
+    void startTag(double human, double tag, double flag);
+    // The tag spots' update every second 60 Hz tick, and player 1's stick game on pad 1's left stick; its end frees
+    // the pad, has him say 83 `tagdone` on a finish and sends him event 14 (Tag_End).
+    void updateTagging(const Pads& pads, double seconds);
     // The combat tutorial's callback (`HUDSetTutorialCallback`) with the anim id of each hit player 1 struck in the
     // level's step, landed or blocked (docs/research/hud.md#tutorial-callback). The original calls it from the damage
     // step itself; Coney calls it right after the step.
@@ -310,6 +319,9 @@ class GameplayMode final : public GameMode {
     std::unique_ptr<world_objects::Cars> m_cars;         // the level's parked cars; before the level, which draws them
     world_objects::TriggerSpheres m_spheres;             // the level's trigger spheres (TriggerSphereCfg)
     world_objects::Radios m_radios;                      // the level's radios (SetupRadio)
+    world_objects::TagSpots m_tagSpots;                  // the level's tag spots (CfgTagSettings)
+    std::optional<TagSession> m_tagSession;              // player 1's spray under way (HuTag)
+    double m_tagTicks = 0.0;                             // 60 Hz ticks not yet given to the tag spots
     world_objects::FlagNet m_flagNet;                    // the level's flag network (FlagNetAddLink)
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of

@@ -356,6 +356,23 @@ callback, the `CrimeScene` flag and which humans are players; Coney's gangs, spa
 it yet). `ReportCrime` switches reporting. `EnterStore` / `ExitStore` keep the store colour and preset
 (`StoreTint`) for a renderer, and `CfgSetSteroTheftHandler` keeps its callback's name.
 
+**Tagging** (`repo:src/warriors/tag_game.h`, `repo:src/warriors/tag_session.h`, `repo:src/world_objects/tag_spots.h`,
+2026-10-06): `tagPath()` samples `HuTagPattern`'s points along the Catmull-Rom curve into grid cells and `TagGame` is
+the [stick game](#tagging) on it (cursor, ramp, painting, track window, slips, charges, finish), tuned by
+`tagTuning()` from the Warrior class's byte `+0x09` (`script::tagDifficulty()`). `TagSpots` keeps each spot's record
+and answers its messages ([Tag spots](#tag-spots)): `CfgTagSettings` and `ProcessTag` reach it for a particle system's
+handle only, the fade runs every second 60 Hz tick, and `spray()` is a CPU tagger's step (Rumble's Tag battle).
+`TagSession` is one player's spray: the paint from inventory item 3, the fraction sent to the spot (message `0x41`)
+as the game goes, and `Tag_End`'s spot side and wasted charge. In gameplay (`repo:src/gamemodes/gameplay_tag.cpp`)
+`HuTag` for player 1 with paint runs a session on pad 1's left stick with his movement locked and calls
+`CfgTagStartCallback` (with no arguments; what the original passes is not traced); without paint he says 37
+`nopaint`. At the end the pad is freed, a finish has him say 83 `tagdone` and the tagger gets event 14 (the tag and
+whether it was finished). **Coney's stand-ins**: the player sprays where he stands (no walk onto the flag), the
+tagger rather than a crew member says `tagdone`, an AI human given `HuTag` becomes the spot's tagger at once (its
+fade in) without walking to the flag. Not yet: the slip's rumble and speech 80, the bonus event on a clean finish,
+the spray particles and the tag's drawing, the HUD grid, hint `0x10`, and buttons other than the stick ending a
+session.
+
 **Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car, a broken
 pane frees it (`ObjectServices::freeCarStereos`, within 2 m of the pane) and `Cars::takeStereo` takes it once; the
 theft itself, the kind-3 record and the stick game are not in Coney yet ([Cars](cars.md#coneys-implementation)).

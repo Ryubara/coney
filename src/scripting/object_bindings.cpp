@@ -31,6 +31,8 @@ constexpr std::size_t kCfgObjMaterial = 12;
 constexpr std::size_t kCfgObjType = 18;
 // `CfgWarriorClass`'s argument (0-based) that sets the record's byte `+0x0a`, the lock pick's difficulty plus 1.
 constexpr std::size_t kCfgWarriorClassLockPick = 10;
+// Its argument that sets byte `+0x09`, the tagging difficulty (1-3).
+constexpr std::size_t kCfgWarriorClassTag = 9;
 
 // Argument `i` truncated to a whole number, as tolua reads an integer.
 int intArg(std::span<const Value> args, std::size_t i) {
@@ -340,6 +342,21 @@ int lockPickDifficulty(const RecordedCalls* recorded, int warriorClass) {
         const std::span<const Value> args(call);
         if (intArg(args, 0) == warriorClass) {
             difficulty = std::clamp(intArg(args, kCfgWarriorClassLockPick) - 1, 0, 2);
+        }
+    }
+    return difficulty;
+}
+
+int tagDifficulty(const RecordedCalls* recorded, int warriorClass) {
+    if (recorded == nullptr) {
+        return 0;
+    }
+    // The record keeps the last write, so the last call for the class wins.
+    int difficulty = 0;
+    for (const std::vector<Value>& call : recorded->calls("CfgWarriorClass")) {
+        const std::span<const Value> args(call);
+        if (intArg(args, 0) == warriorClass) {
+            difficulty = intArg(args, kCfgWarriorClassTag);
         }
     }
     return difficulty;

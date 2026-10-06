@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The effects bindings (docs/references/bindings/effects.md): SpawnParticle's handle, place, rotation and parent, and
-// both forms of QueueMotionBlurEffect.
+// both forms of QueueMotionBlurEffect, and the tag spots' CfgTagSettings and ProcessTag.
 #include "scripting/effects_bindings.h"
 
 #include <array>
@@ -26,6 +26,7 @@
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
 #include "world_objects/radios.h"
+#include "world_objects/tag_spots.h"
 
 using coney::script::LuaVm;
 using coney::script::ScriptSystem;
@@ -54,6 +55,7 @@ struct Harness {
     QuietHost host;
     coney::effects::LevelEffects effects;
     coney::world_objects::Radios radios;
+    coney::world_objects::TagSpots tagSpots;
     coney::script::BindingContext context;
     ScriptSystem scripts;
 
@@ -68,6 +70,7 @@ struct Harness {
         context.host = &host;
         context.effects = &effects;
         context.radios = &radios;
+        context.tagSpots = &tagSpots;
         scripts.create();
     }
 
@@ -178,4 +181,32 @@ TEST_CASE("SetupRadio makes the object a radio with its callbacks, track and ann
     CHECK(radio->track == 3);
     CHECK(radio->announcementArmed);
     CHECK(radio->next == 2);
+}
+
+TEST_CASE("CfgTagSettings and ProcessTag act on a particle system's tag spot only", "[effects_bindings]") {
+    Harness h;
+    const double tag =
+        h.first("SpawnParticle", {str("part_spray_tag"), list({1, 2, 3}), list({0, 0, 0, 1}), Value(0.0)})
+            .number()
+            .value_or(0);
+    h.first("CfgTagSettings", {Value(tag), Value(0x60000), Value(0.25), Value(0.01)});
+    const coney::world_objects::TagSpot* spot = h.tagSpots.find(tag);
+    REQUIRE(spot != nullptr);
+    CHECK(spot->sprite == 0x60000U);
+    CHECK(spot->start == 0.25F);
+    CHECK(spot->fadeStep == 0.01F);
+    CHECK(spot->depth == 1.0F); // the default
+    // Not instant: the look now (painted, blank).
+    h.first("ProcessTag", {Value(tag), Value(true), Value(false)});
+    CHECK(spot->fraction == 1.0F);
+    h.first("ProcessTag", {Value(tag), Value(false)});
+    CHECK(spot->fraction == 0.0F);
+    // Instant: only the next spray's mode.
+    h.first("ProcessTag", {Value(tag), Value(false), Value(true)});
+    CHECK(spot->sprayMode == coney::world_objects::TagSpot::kWipeOut);
+    CHECK(spot->fraction == 0.0F);
+    // Not a particle system: nothing.
+    h.first("CfgTagSettings", {Value(999.0), Value(1.0)});
+    h.first("ProcessTag", {Value(999.0), Value(true)});
+    CHECK(h.tagSpots.find(999.0) == nullptr);
 }

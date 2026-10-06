@@ -3179,6 +3179,11 @@ subsystem = "Human"
 size = 824
 
 [[function]]
+address = 0x0022e848
+name = "Tag_End"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022f100
 name = "Human_KnockDown"
 subsystem = "Human"
@@ -3633,6 +3638,11 @@ address = 0x00238d30
 name = "Human_StopWorkout"
 subsystem = "Human"
 size = 128
+
+[[function]]
+address = 0x00238db0
+name = "Human_Tag"
+subsystem = "Human"
 
 [[function]]
 address = 0x00238f10
@@ -4186,6 +4196,26 @@ address = 0x0026dd08
 name = "Player_Throw"
 subsystem = "Human"
 size = 2288
+
+[[function]]
+address = 0x00273ff0
+name = "TagGame_CatmullRom"
+subsystem = "Human"
+
+[[function]]
+address = 0x002741d8
+name = "TagGame_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x00274710
+name = "TagGame_Track"
+subsystem = "Human"
+
+[[function]]
+address = 0x002748a8
+name = "TagGame_Update"
+subsystem = "Human"
 
 [[function]]
 address = 0x00276008
@@ -7334,6 +7364,16 @@ name = "ObjRecord_GetHandle"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x0039bc28
+name = "Tag_Configure"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0039bd50
+name = "ProcessTag"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x0039be28
 name = "Steam_Configure"
 subsystem = "TaskEngine"
@@ -7540,6 +7580,16 @@ address = 0x003fbba0
 name = "DoorSwing_Update"
 subsystem = "TaskEngine"
 size = 760
+
+[[function]]
+address = 0x003fc8d8
+name = "SprayTag_HandleMessage"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003fca68
+name = "SprayTag_Update"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x0040c868

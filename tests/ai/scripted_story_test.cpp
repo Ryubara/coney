@@ -269,3 +269,12 @@ TEST_CASE("A defending gang reports the human it defends gone", "[ai][story]") {
     REQUIRE_FALSE(level.notes.empty());
     CHECK(level.notes.back() == std::vector<double>{static_cast<double>(gang), 11.0});
 }
+
+TEST_CASE("HuTag hands the human, the tag and the flag to the tag handler", "[ai][story]") {
+    Level level;
+    std::vector<double> got;
+    level.scripted->storyHost().setTagHandler(
+        [&got](double human, double tag, double flag) { got = {human, tag, flag}; });
+    level.call("HuTag", {Value(1.0), Value(40.0), Value(100.0)});
+    CHECK(got == std::vector<double>{1.0, 40.0, 100.0});
+}

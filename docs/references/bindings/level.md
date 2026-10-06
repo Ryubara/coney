@@ -1042,7 +1042,7 @@ the look. [Crimes: tag spots](../../research/crimes.md#tag-spots) has every mess
 - **Wrapper** `0x00379540` (registered by `RegisterBindings`); **calls** `0x0039bd50`
 - **Used by** 10 of 467 script chunks (15 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## QueueFileToPrecache {#queuefiletoprecache}
 

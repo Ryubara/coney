@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,482 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 13.9% of the game's own code (465,676 of 3,354,776 bytes, 1,492 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-404 reimplemented function(s) have no size yet and add no bytes.
+414 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▏░░░░░░░░░░░░░` | 30.6% | 97 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 57 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
-| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 13.9% | 459 | 1,096,672 |
+| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 13.9% | 465 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -70,7 +70,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 200 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 80 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 84 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -659,6 +659,7 @@ at the top of the repository's `README.md`.
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
 | `0x0022d790` | `LockPick_Start` | `Human` | 376 |
 | `0x0022d908` | `LockPick_End` | `Human` | 824 |
+| `0x0022e848` | `Tag_End` | `Human` | not filled in |
 | `0x0022f100` | `Human_KnockDown` | `Human` | 712 |
 | `0x0022f658` | `Human_Stun` | `Human` | 640 |
 | `0x0022f8d8` | `Human_EndStun` | `Human` | 264 |
@@ -737,6 +738,7 @@ at the top of the repository's `README.md`.
 | `0x00238bd8` | `Human_StartWorkout` | `Human` | 256 |
 | `0x00238cd8` | `Human_SetWorkoutBlend` | `Human` | 88 |
 | `0x00238d30` | `Human_StopWorkout` | `Human` | 128 |
+| `0x00238db0` | `Human_Tag` | `Human` | not filled in |
 | `0x00238f10` | `Cfg_SetTagStartCallback` | `Human` | not filled in |
 | `0x00239080` | `Human_SetTagColour` | `Human` | not filled in |
 | `0x00239188` | `Tag_SetPattern` | `Human` | not filled in |
@@ -836,6 +838,10 @@ at the top of the repository's `README.md`.
 | `0x0026c1d8` | `Grab_IntroEnd` | `Human` | 880 |
 | `0x0026cc18` | `Grab_Escape` | `Human` | 1,120 |
 | `0x0026dd08` | `Player_Throw` | `Human` | 2,288 |
+| `0x00273ff0` | `TagGame_CatmullRom` | `Human` | not filled in |
+| `0x002741d8` | `TagGame_Init` | `Human` | not filled in |
+| `0x00274710` | `TagGame_Track` | `Human` | not filled in |
+| `0x002748a8` | `TagGame_Update` | `Human` | not filled in |
 | `0x00276008` | `Attack_TurnToTarget` | `Human` | not filled in |
 | `0x002761c8` | `Attack_SteerToTarget` | `Human` | not filled in |
 | `0x00276998` | `Pair_AlignStart` | `Human` | 1,024 |
@@ -1380,6 +1386,8 @@ at the top of the repository's `README.md`.
 | `0x00398940` | `ObjRecord_Add` | `TaskEngine` | not filled in |
 | `0x00398df8` | `ObjRecord_SetPinned` | `TaskEngine` | not filled in |
 | `0x00398fe0` | `ObjRecord_GetHandle` | `TaskEngine` | not filled in |
+| `0x0039bc28` | `Tag_Configure` | `TaskEngine` | not filled in |
+| `0x0039bd50` | `ProcessTag` | `TaskEngine` | not filled in |
 | `0x0039be28` | `Steam_Configure` | `TaskEngine` | not filled in |
 | `0x0039bfb0` | `Particle_Spawn` | `TaskEngine` | not filled in |
 | `0x0039c0e0` | `Glass_Spawn` | `TaskEngine` | 432 |
@@ -1416,6 +1424,8 @@ at the top of the repository's `README.md`.
 | `0x003fb5a0` | `SubSwingingDoor_Update` | `TaskEngine` | 88 |
 | `0x003fb5f8` | `DoorSwing_Init` | `TaskEngine` | 728 |
 | `0x003fbba0` | `DoorSwing_Update` | `TaskEngine` | 760 |
+| `0x003fc8d8` | `SprayTag_HandleMessage` | `TaskEngine` | not filled in |
+| `0x003fca68` | `SprayTag_Update` | `TaskEngine` | not filled in |
 | `0x0040c868` | `Level_SetFogColour` | `World` | 160 |
 | `0x0040c908` | `Level_SetFogDistance` | `World` | 48 |
 | `0x0040c948` | `World_Precache` | `World` | 208 |

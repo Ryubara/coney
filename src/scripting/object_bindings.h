@@ -54,6 +54,11 @@ void applyRecordedGlassTypes(const RecordedCalls& recorded, world_objects::Glass
 /// recorded or `recorded` is null (docs/research/crimes.md#lockpick).
 [[nodiscard]] int lockPickDifficulty(const RecordedCalls* recorded, int warriorClass);
 
+/// The tagging difficulty for a player of Warrior class `warriorClass`: his `CfgWarriorClass` record's byte `+0x09`
+/// (its 10th argument), 1-3, from the last such call in `recorded`; 0 (counted as 1 by tagTuning()) when none was
+/// recorded or `recorded` is null (docs/research/crimes.md#tagging).
+[[nodiscard]] int tagDifficulty(const RecordedCalls* recorded, int warriorClass);
+
 /// Registers kObjectBindings in `vm`, working on `context.objects` as it is at each call (gameplay sets it as a level
 /// enters, after the bindings were installed; a null one places nothing: the spawns still return a new handle each, so
 /// a script keeps working) and reading the object types from `context.recorded`'s `CfgObj` calls; `context` must

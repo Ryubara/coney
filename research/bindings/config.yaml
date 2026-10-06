@@ -2011,6 +2011,7 @@
     The fade runs while the spot fades in or out after a spray ([Crimes: tag spots](../../research/crimes.md#tag-spots)).
     That the batch depth orders drawing is inferred. Arguments renamed from n2, f3-f5.
   usage: {chunks: 9, calls: 47, boot: false, mission1: false, result_used: false, levels: [87, 95, 3, 86, 9]}
+  coney: implemented
 
 - name: CfgSetStatTypeMax
   wrapper: 0x0037c7a8

@@ -2352,6 +2352,7 @@
   notes: >-
     The inventory check (0x0041e420 on item 3) is confirmed (code); that item 3 is the spray can is inferred.
   usage: {chunks: 10, calls: 12, boot: true, mission1: false, result_used: false, levels: [87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 92, 20, 11]}
+  coney: implemented
 
 - name: HuTagColor
   wrapper: 0x0035ccf0

@@ -17,7 +17,8 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addStoryEffectsBindings().
-inline constexpr std::array<std::string_view, 19> kStoryEffectsBindings{"CamAddPoizoPoint",   "CamAddPoizoPointCam",
+inline constexpr std::array<std::string_view, 21> kStoryEffectsBindings{"CamAddPoizoPoint",   "CamAddPoizoPointCam",
+                                                                        "CfgTagSettings",     "ProcessTag",
                                                                         "CameraGetActive",    "CameraSetClipping",
                                                                         "CamGetPos",          "CamSetFollowPos",
                                                                         "CamSetupPoizo",      "CfgSteam",
@@ -29,7 +30,8 @@ inline constexpr std::array<std::string_view, 19> kStoryEffectsBindings{"CamAddP
                                                                         "StartParticle"};
 
 /// Registers kStoryEffectsBindings in `vm`: the cameras on `context.cameras`, the particles, steam vents, fog and
-/// litter on `context.effects` (and a plain object's record on `context.spawnRecords`), the music and reverb on
+/// litter on `context.effects` (and a plain object's record on `context.spawnRecords`), the tag spots on
+/// `context.tagSpots`, the radios on `context.radios`, the music and reverb on
 /// `context.state` and `context.sound`. Each does nothing (or answers nil) without what it acts on. `nextHandle` gives
 /// the path camera its handle.
 ///

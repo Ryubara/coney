@@ -29,6 +29,7 @@ struct LevelEffects;
 namespace coney::world_objects {
 class Cars;
 class Radios;
+class TagSpots;
 } // namespace coney::world_objects
 
 namespace coney::world_objects {
@@ -198,6 +199,7 @@ struct BindingContext {
     SoundHost* sound = nullptr;                  ///< The game's sound (sound_bindings.h); null plays nothing.
     world_objects::Cars* cars = nullptr;         ///< The level's parked cars (`CarSpawn`); null keeps none.
     world_objects::Radios* radios = nullptr;     ///< The level's radios (`SetupRadio`); null keeps none.
+    world_objects::TagSpots* tagSpots = nullptr; ///< The level's tag spots (`CfgTagSettings`); null keeps none.
     hud::Hud* hud = nullptr;                     ///< The HUD the HUD bindings act on; null acts on none.
     world_objects::TriggerSpheres* spheres = nullptr; ///< The level's trigger spheres (`TriggerSphereCfg`); null: none.
     world_objects::FlagNet* flagNet = nullptr;        ///< The level's flag network (`FlagNetAddLink`); null: none.

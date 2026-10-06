@@ -4550,7 +4550,7 @@ Starts the tagging action: the human goes to the flag and sprays the tag (state 
 - **Wrapper** `0x0035cc50` (registered by `RegisterBindings`); **calls** `0x00238db0` `Human_Tag`
 - **Used by** 10 of 467 script chunks (12 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level87`](story.md#level87) (mission 3)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuTagColor {#hutagcolor}
 
