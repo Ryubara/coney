@@ -58,7 +58,8 @@ jobs:
           # shellcheck disable=SC2086 # the package list is meant to split into words
           sudo apt-get install -y ninja-build $COMPILER_PACKAGES libx11-dev libxext-dev libxrandr-dev \
             libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev \
-            libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev
+            libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev \
+            libasound2-dev libpulse-dev libpipewire-0.3-dev
       - name: Install Ninja
         if: runner.os == 'macOS'
         run: brew install ninja
@@ -95,7 +96,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build clang-19 clang-tools-19 llvm-19 libx11-dev libxext-dev \
             libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev libwayland-dev \
-            libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev
+            libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev \
+            libasound2-dev libpulse-dev libpipewire-0.3-dev
           # Clang's sanitizer runtime needs llvm-symbolizer to name the frames in a leak report; without names the
           # suppressions in tests/lsan.supp cannot match, and librw's known leak would fail the tests.
           echo "ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-19/bin/llvm-symbolizer" >> "$GITHUB_ENV"
@@ -123,7 +125,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build clang-19 clang-tools-19 clang-tidy-19 libx11-dev libxext-dev \
             libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev libwayland-dev \
-            libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev
+            libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev \
+            libasound2-dev libpulse-dev libpipewire-0.3-dev
       - name: Cache the fetched dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:

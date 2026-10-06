@@ -32,7 +32,8 @@ so it is not counted.
 | **[Milestones](docs/roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
 Working on: [Scripts](docs/roadmap.md#scripts), [Characters](docs/roadmap.md#characters),
-[Gameplay](docs/roadmap.md#gameplay), [Debug menu and test levels](docs/roadmap.md#debug-menu-and-test-levels).
+[Gameplay](docs/roadmap.md#gameplay), [Debug menu and test levels](docs/roadmap.md#debug-menu-and-test-levels), [Sound
+and video](docs/roadmap.md#sound-and-video).
 Per subsystem, the research coverage, the middleware and how it is all measured: [Progress](docs/progress/index.md).
 <!-- progress:end -->
 

@@ -470,3 +470,19 @@ TEST_CASE("the developer overlay option takes a frame count once", "[options]") 
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--dev-overlay", "1", "--dev-overlay", "2"}).has_value());
     CHECK(coney::usageText().find("--dev-overlay N") != std::string_view::npos);
 }
+
+TEST_CASE("the sound options: --no-audio and --audio-test, never together", "[options]") {
+    auto plain = parseOptions({});
+    REQUIRE(plain.has_value());
+    CHECK_FALSE(plain->noAudio);
+    CHECK_FALSE(plain->audioTest);
+    auto silent = parse(std::array<std::string_view, 1>{"--no-audio"});
+    REQUIRE(silent.has_value());
+    CHECK(silent->noAudio);
+    auto tone = parse(std::array<std::string_view, 3>{"--audio-test", "--frames", "60"});
+    REQUIRE(tone.has_value());
+    CHECK(tone->audioTest);
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--audio-test", "--no-audio"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 5>{"--audio-test", "--disc", "x", "--load", "a"}).has_value());
+    CHECK(coney::usageText().find("--audio-test") != std::string_view::npos);
+}

@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The engine pages of the debug menus: Time, Tunables, Display and Input. Coney's own tools (no @orig).
+// The engine pages of the debug menus: Time, Tunables, Display, Audio and Input. Coney's own tools (no @orig).
 #include "debug/debug_pages.h"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <functional>
 #include <memory>
 #include <string>
 #include <utility>
 
 #include "core/pad.h"
+#include "debug/audio_controls.h"
 #include "debug/debug_session.h"
 
 namespace coney::debug {
@@ -203,6 +205,61 @@ void addDisplayPage(DebugSession& session) {
                 .withHelp("The edges of the original's 640 x 448 screen.");
         },
         "Overlays over the game's screen.");
+}
+
+void addAudioPage(DebugSession& session) {
+    const std::function<AudioControls*()> audio = session.services().audio;
+    // The output, asked for at each use; null in a run without sound (--no-audio, or no device).
+    const auto controls = [audio]() -> AudioControls* { return audio ? audio() : nullptr; };
+    session.model().addChannel("Audio/Voices playing", [controls] {
+        const AudioControls* output = controls();
+        return output != nullptr ? static_cast<float>(output->status().voicesPlaying) : 0.0F;
+    });
+    session.model().addPage(
+        "Audio",
+        [controls](MenuPage& page) {
+            AudioControls* output = controls();
+            if (output == nullptr) {
+                page.add(watchItem("No audio", [] { return std::string("this run has no sound output"); }));
+                return;
+            }
+            page.add(watchItem("Output", [output] {
+                const AudioStatus status = output->status();
+                return std::format("{}, {} Hz stereo", status.device, status.sampleRate);
+            }));
+            for (std::size_t i = 0; i < output->volumeCount(); ++i) {
+                MenuItem volume = numberItem(
+                    std::string(output->volumeName(i)), [output, i] { return static_cast<double>(output->volume(i)); },
+                    [output, i](double value) { output->setVolume(i, static_cast<float>(value)); }, 0.0, 1.0, 0.05,
+                    false);
+                volume.defaultValue = 1.0;
+                volume.help = i == 0 ? "Scales every bus; linear, 1 plays sounds as recorded."
+                                     : "Scales every voice on this bus, under the master volume.";
+                page.add(std::move(volume));
+            }
+            page.add(toggleItem(
+                         "Test tone", [output] { return output->testTone(); },
+                         [output](bool on) { output->setTestTone(on); }))
+                .withHelp("A looping synthesised sweep, 220 to 880 Hz and back, on the effects bus.");
+            page.add(watchItem(
+                "Voices",
+                [output] {
+                    const AudioStatus status = output->status();
+                    return std::format("{} / {}", status.voicesPlaying, status.voiceCount);
+                },
+                "Audio/Voices playing"));
+            page.add(watchItem("Stolen / dropped",
+                               [output] {
+                                   const AudioStatus status = output->status();
+                                   return std::format("{} / {}", status.voicesStolen, status.playsDropped);
+                               }))
+                .withHelp("Plays that took a busy voice, and plays that found none to take.");
+            page.add(watchItem("Mixed", [output] {
+                const AudioStatus status = output->status();
+                return std::format("{:.1f} s", static_cast<double>(status.framesMixed) / status.sampleRate);
+            }));
+        },
+        "Sound output: master and bus volumes, a test tone, the voices.");
 }
 
 void addInputPage(DebugSession& session) {

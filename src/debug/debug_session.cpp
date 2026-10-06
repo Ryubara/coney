@@ -30,6 +30,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addFightersPage(*this);
     addDebugDrawPage(*this);
     addDisplayPage(*this);
+    addAudioPage(*this);
     addInputPage(*this);
 }
 

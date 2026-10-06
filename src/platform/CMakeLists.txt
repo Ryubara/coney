@@ -16,6 +16,8 @@ target_sources(coney_platform PRIVATE reference_renderer.cpp)
 target_sources(coney_platform PRIVATE sdl_input.cpp)
 # Real-time frame pacing: the one place that reads the clock (docs/guides/conventions.md#update-and-render).
 target_sources(coney_platform PRIVATE frame_pacer.cpp)
+# Sound output: the SDL3 audio device over the mixer, or the offline pull of test mode (docs/research/sound.md).
+target_sources(coney_platform PRIVATE audio_output.cpp sdl_audio_device.cpp)
 # Failures end the process on stderr, never in a dialog waiting for a click (test runs, CI, agents).
 target_sources(coney_platform PRIVATE error_dialogs.cpp)
 # The debug menus' platform glue: the pad menu drawn over every frame (docs/guides/debug-menu.md).
@@ -23,7 +25,7 @@ target_sources(coney_platform PRIVATE debug_menus.cpp)
 # The developer overlay over the same menus, with Dear ImGui (docs/guides/debug-menu.md#the-developer-overlay).
 target_sources(coney_platform PRIVATE imgui_model_view.cpp imgui_overlay.cpp)
 coney_target_defaults(coney_platform)
-target_link_libraries(coney_platform PUBLIC coney_core SDL3::SDL3-static librw::librw imgui)
+target_link_libraries(coney_platform PUBLIC coney_core coney_audio SDL3::SDL3-static librw::librw imgui)
 
 add_executable(coney main.cpp)
 coney_target_defaults(coney)
@@ -120,3 +122,10 @@ add_test(NAME coney.rejects_unknown_sandbox COMMAND coney --headless --frames 1 
 set_tests_properties(coney.rejects_unknown_sandbox PROPERTIES WILL_FAIL TRUE)
 add_test(NAME coney.play_sandbox_needs_disc COMMAND coney --play-level sandbox:parkour)
 set_tests_properties(coney.play_sandbox_needs_disc PROPERTIES WILL_FAIL TRUE)
+# The sound output in test mode: the tone sweep mixed offline, a step of frames per frame, with no device and no clock
+# (docs/guides/building.md#sound). Counts and a hash only.
+add_test(NAME coney.audio_test_offline COMMAND coney --headless --frames 60 --audio-test)
+set_tests_properties(coney.audio_test_offline PROPERTIES TIMEOUT 30
+                     PASS_REGULAR_EXPRESSION "audio: offline, 96000 frames mixed .2.00 s at 48000 Hz., peak [1-9]")
+add_test(NAME coney.audio_test_refuses_no_audio COMMAND coney --headless --frames 1 --audio-test --no-audio)
+set_tests_properties(coney.audio_test_refuses_no_audio PROPERTIES WILL_FAIL TRUE)

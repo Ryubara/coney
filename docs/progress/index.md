@@ -41,7 +41,7 @@ at the top of the repository's `README.md`.
 | [Characters](../roadmap.md#characters) | in progress |
 | [Gameplay](../roadmap.md#gameplay) | in progress |
 | [Debug menu and test levels](../roadmap.md#debug-menu-and-test-levels) | in progress |
-| [Sound and video](../roadmap.md#sound-and-video) | not started |
+| [Sound and video](../roadmap.md#sound-and-video) | in progress |
 | [Enhancements](../roadmap.md#enhancements) | not started |
 | [Script mods](../roadmap.md#script-mods) | not started |
 | [Xbox assets (optional)](../roadmap.md#xbox-assets-optional) | not started |

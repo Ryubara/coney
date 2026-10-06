@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "core/frame_rate_meter.h"
+#include "debug/audio_controls.h"
 #include "debug/input_gate.h"
 #include "debug/lua_console.h"
 #include "debug/menu_model.h"
@@ -71,6 +72,8 @@ struct DebugServices {
     /// Plays the sandbox layout named `name` (in place of the mode playing now); returns false when it cannot. Empty:
     /// sandboxes cannot be loaded from the menu in this run.
     std::function<bool(std::string_view name)> loadSandbox;
+    /// The sound output (its volumes and test tone, for the Audio page); null in a run without sound.
+    std::function<AudioControls*()> audio;
 };
 
 /// One debug session: the menu model with every page, the state its pages share (the time controls, the log, the Lua
@@ -78,7 +81,7 @@ struct DebugServices {
 /// its InputGate to the mode stack, and gives the model to the front ends, which only render it.
 ///
 /// The pages (src/debug/debug_pages.h): Favourites, Time, Tunables, Natives, Lua console, Cheats, Levels, Display,
-/// Input. Adding a feature is adding a page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
+/// Audio, Input. Adding a feature is adding a page or items here, once (docs/guides/debug-menu.md#adding-a-feature).
 class DebugSession {
   public:
     /// A session over `tunables` (which must outlive it) and `services`; `inner` is the input source the gate wraps

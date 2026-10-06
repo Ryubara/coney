@@ -9,6 +9,8 @@ include(FetchContent)
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
 set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+# Audio on (SDL's default, stated because Coney's sound output needs it): src/platform/sdl_audio_device.cpp.
+set(SDL_AUDIO ON CACHE BOOL "" FORCE)
 # OVERRIDE_FIND_PACKAGE: librw's GL3 backend looks SDL3 up with find_package(SDL3 CONFIG REQUIRED) and links
 # SDL3::SDL3. With this option CMake answers that find_package with this fetched copy (it writes a small
 # sdl3-config.cmake into CMAKE_FIND_PACKAGE_REDIRECTS_DIR), so librw links the same static SDL3 as Coney (SDL3::SDL3

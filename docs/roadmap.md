@@ -17,7 +17,7 @@ This page is kept current: a milestone's status changes in the same commit as th
 | [Characters](#characters) | in progress |
 | [Gameplay](#gameplay) | in progress |
 | [Debug menu and test levels](#debug-menu-and-test-levels) | in progress |
-| [Sound and video](#sound-and-video) | not started |
+| [Sound and video](#sound-and-video) | in progress |
 | [Enhancements](#enhancements) | not started |
 | [Script mods](#script-mods) | not started |
 | [Xbox assets (optional)](#xbox-assets-optional) | not started |
@@ -175,6 +175,9 @@ live and call any binding, in a story level and in a test level, from a gamepad.
 Sound banks, streamed music, speech and the Bink movies.
 
 **Done when** the first mission plays with its sound, music and cutscenes.
+
+- Done: the sound output: a deterministic mixer (voices, buses, streams) through SDL3's device, mixed offline in test
+  mode, with `--audio-test` and the debug menus' Audio page ([Sound](research/sound.md#coneys-implementation)).
 
 ## Enhancements
 

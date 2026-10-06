@@ -28,7 +28,7 @@ constexpr std::string_view kUsage =
     "             [--assets DIR]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
-    "             [--fps-cap N] [--vsync on|off] [--show-fps]\n"
+    "             [--fps-cap N] [--vsync on|off] [--show-fps] [--no-audio | --audio-test]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -77,6 +77,9 @@ constexpr std::string_view kUsage =
     "                     its fixed 30 steps a second whatever the rate; 30 draws one frame per step\n"
     "  --vsync on|off     wait for the display's vertical blank when presenting (default on)\n"
     "  --show-fps         print the frame and step rates once a second\n"
+    "  --no-audio         run with no sound output (no audio device is opened)\n"
+    "  --audio-test       play a synthesised tone sweep, looping, and print what was mixed at the end;\n"
+    "                     in test mode no device opens and the sound is mixed offline\n"
     "  --frames N         stop after N frames (1 to 1000000); used by tests and CI. Test mode: with\n"
     "                     --frames, --headless, --input-script or --screenshot each frame is one\n"
     "                     step and one render, with no clock, so a run is the same every time\n"
@@ -239,6 +242,10 @@ std::expected<void, Error> checkPacing(const Options& options) {
 std::expected<void, Error> checkCombinations(const Options& options) {
     if (auto pacing = checkPacing(options); !pacing) {
         return pacing;
+    }
+    if (options.audioTest && (options.noAudio || !options.loads.empty() || options.renderReferences.has_value())) {
+        return invalidArgument("--audio-test plays through the sound output, so it cannot be combined with "
+                               "--no-audio, --load or --render-references");
     }
     if (auto character = checkCharacterViewer(options); !character) {
         return character;
@@ -550,6 +557,10 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument(std::format("--vsync needs on or off, got \"{}\"", setting));
             }
             options.vsync = setting == "on";
+        } else if (arg == "--no-audio") {
+            options.noAudio = true;
+        } else if (arg == "--audio-test") {
+            options.audioTest = true;
         } else if (arg == "--show-fps") {
             options.showFps = true;
         } else if (arg == "--checkpoint") {

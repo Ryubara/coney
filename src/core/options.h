@@ -135,6 +135,12 @@ struct Options {
     bool showFps = false;
     /// `--kind`: the lists `--render-references` renders; unset renders all of them. Requires renderReferences.
     std::optional<ReferenceKind> referenceKind;
+    /// `--no-audio`: no sound output at all: no mixer, no device (the debug menu's Audio page says so).
+    bool noAudio = false;
+    /// `--audio-test`: play a synthesised tone sweep, looping, from the start (audio::makeToneSweep()), and print what
+    /// was mixed at the end; a check of the sound output. Cannot be combined with `--no-audio`, `--load` or
+    /// `--render-references`.
+    bool audioTest = false;
 };
 
 /// The largest `--fps-cap`.

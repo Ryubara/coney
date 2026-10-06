@@ -363,7 +363,11 @@ also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/7
 
 ## Coney's implementation
 
-None yet: Coney plays no sound. `coney-tools audio` reads and decodes the data
+The output and a mixer, none of the engine above yet. `src/audio/`: 48 voices of 16-bit PCM (any rate, mono or
+stereo) with volume, pan, pitch, loop points, priorities and stealing, effects, music and speech buses under a master
+volume, at 48 kHz stereo, and `SoundPlayer`, which plays a sound by the CRC-32 of its name. Its volume and pan laws
+and stealing policy are still Coney's, not the rules above. The device is SDL3's (`src/platform/sdl_audio_device.cpp`),
+or offline in test mode ([Building](../guides/building.md#sound)). `coney-tools audio` reads and decodes the data
 ([Audio data](formats/audio.md#coneys-implementation)).
 
 What an implementer can build from this page: an SDL3 audio stream in `src/platform` fed by a platform-neutral mixer

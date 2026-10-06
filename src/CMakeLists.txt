@@ -203,4 +203,10 @@ target_sources(coney_core PRIVATE
 target_sources(coney_core PRIVATE graphics/bitmap_font.cpp gui/debug_menu_view.cpp gui/debug_text_painter.cpp)
 coney_target_defaults(coney_core)
 target_include_directories(coney_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+# Audio: Coney's mixer, the game-facing sound calls and the offline device; no OS or SDL code here, the device is
+# in platform/ (docs/research/sound.md#coneys-implementation).
+add_library(coney_audio STATIC audio/mixer.cpp audio/offline_device.cpp audio/pcm_sound.cpp audio/pcm_stream.cpp
+                               audio/sound_player.cpp audio/test_tone.cpp)
+coney_target_defaults(coney_audio)
+target_link_libraries(coney_audio PUBLIC coney_core)
 add_subdirectory(platform)

@@ -157,6 +157,7 @@ target_sources(coney_tests PRIVATE
 target_compile_definitions(coney_tests PRIVATE CONEY_ASSETS_DIR="${PROJECT_SOURCE_DIR}/assets")
 # The debug menus (docs/guides/debug-menu.md).
 target_sources(coney_tests PRIVATE
+    debug/audio_page_test.cpp
     debug/debug_session_test.cpp
     debug/input_gate_test.cpp
     debug/menu_navigator_test.cpp
@@ -175,6 +176,8 @@ target_sources(coney_tests PRIVATE
     ai/route_planner_test.cpp
     ai/scripted_goals_test.cpp
     ai/tactics_test.cpp)
+# The audio mixer, its streams and the game-facing sound calls (docs/research/sound.md#coneys-implementation).
+target_sources(coney_tests PRIVATE audio/mixer_test.cpp)
 # A failed runtime check fails the run on stderr instead of opening a dialog (platform/error_dialogs.h).
 target_sources(coney_tests PRIVATE support/error_dialogs_off.cpp)
 coney_target_defaults(coney_tests)

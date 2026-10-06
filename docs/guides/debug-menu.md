@@ -117,6 +117,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
 | Debug draw | lines in the scene: collision near the player, the player's heading and velocity, the camera, places |
 | Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the GUI safe area, the logical screen |
+| Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
 
 **Time.** The game always advances by whole fixed 1/30 s steps. Paused, no step runs; *Step one* runs exactly one.

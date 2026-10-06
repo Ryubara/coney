@@ -45,6 +45,9 @@ void fillTunableCategory(MenuPage& page, TunableRegistry& registry, const std::s
 
 /// The Display page: the overlays of DisplayOptions.
 void addDisplayPage(DebugSession& session);
+/// The Audio page: the master and bus volumes, a test tone and the voices playing. Over AudioControls; says so when
+/// the run has no sound.
+void addAudioPage(DebugSession& session);
 /// The Input page: port 1's buttons, sticks and pressures live, with channels to plot the sticks.
 void addInputPage(DebugSession& session);
 

@@ -54,6 +54,7 @@
 #include "gui/text_layout.h"
 #include "human/locomotion.h"
 #include "human/player.h"
+#include "platform/audio_output.h"
 #include "platform/character_viewer_mode.h"
 #include "platform/debug_menus.h"
 #include "platform/error_dialogs.h"
@@ -672,6 +673,26 @@ int main(int argc, char** argv) {
         debugServices.vsync = [&renderer] { return renderer.vsync(); };
         debugServices.setVsync = [&renderer](bool on) { renderer.setVsync(on); };
     }
+    // The sound output (docs/research/sound.md#coneys-implementation): SDL's playback device, or in test mode the
+    // offline one, which opens no device and mixes a fixed step of frames per frame. A device that cannot open leaves
+    // the run silent, never stopped. Declared after the renderer, so it is destroyed before SDL stops.
+    std::unique_ptr<coney::platform::AudioOutput> audio;
+    if (!options->noAudio) {
+        auto started = coney::platform::AudioOutput::start(testMode ? coney::platform::AudioSink::Offline
+                                                                    : coney::platform::AudioSink::Device);
+        if (started) {
+            audio = std::move(*started);
+            if (!testMode) {
+                printText(audio->startLine());
+            }
+            if (options->audioTest) {
+                audio->setTestTone(true);
+            }
+            debugServices.audio = [&audio]() -> coney::debug::AudioControls* { return audio.get(); };
+        } else {
+            std::fprintf(stderr, "coney: %s; running without sound\n", started.error().message.c_str());
+        }
+    }
     if (startUp) {
         debugServices.scripts = [&startUp] { return &startUp->scripts(); };
         debugServices.recorded = [&startUp] { return &startUp->recorded(); };
@@ -878,7 +899,14 @@ int main(int argc, char** argv) {
             frameMilliseconds = static_cast<double>(nanoseconds) / 1'000'000.0;
             return nanoseconds;
         };
-        hooks.endFrame = [&paced](std::uint32_t steps) { paced.endFrame(steps); };
+        hooks.endFrame = [&paced, &audio](std::uint32_t steps) {
+            paced.endFrame(steps);
+            if (audio) {
+                audio->endFrame();
+            }
+        };
+    } else if (audio) {
+        hooks.endFrame = [&audio](std::uint32_t /*steps*/) { audio->endFrame(); };
     }
     modes.runUntilEmpty(timer, clock, hooks, frameLimit);
     if (pacer && options->showFps) {
@@ -902,6 +930,9 @@ int main(int argc, char** argv) {
     }
     if (sandboxViewer) {
         printText(sandboxViewer->summary());
+    }
+    if (audio && options->audioTest) {
+        printText(audio->summary());
     }
 
     // Report the screenshot: where it went and a summary that says whether anything was drawn.

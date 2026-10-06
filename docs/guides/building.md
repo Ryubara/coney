@@ -52,10 +52,12 @@ On Ubuntu 24.04 (other distributions have the same packages under similar names)
 ```sh
 sudo apt-get install cmake ninja-build g++-13 \
   libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
-  libwayland-dev libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev
+  libwayland-dev libxkbcommon-dev libegl1-mesa-dev libgl1-mesa-dev libdbus-1-dev libudev-dev \
+  libasound2-dev libpulse-dev libpipewire-0.3-dev
 ```
 
-The second and third lines are what SDL3 needs to build its X11 and Wayland video drivers; `libgl1-mesa-dev` is
+The second and third lines are what SDL3 needs to build its X11 and Wayland video drivers, the fourth its ALSA,
+PulseAudio and PipeWire sound output; `libgl1-mesa-dev` is
 also what librw's OpenGL renderer links against. For Clang, install
 `clang-19 clang-tools-19` in place of `g++-13`; `clang-tools-19` brings `clang-scan-deps`, which CMake runs on C++23
 sources when the compiler is Clang. Pick the compiler with `CC` and `CXX` before the first configure:
@@ -148,7 +150,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
       [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--trace FILE]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
-      [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE]
+      [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE] [--no-audio | --audio-test]
       [--dev-overlay N]
 ```
 
@@ -193,6 +195,20 @@ are refused there.
 ```sh
 build/dev/src/platform/coney --disc /path/to/warriors.iso --show-fps
 build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character --fps-cap 144 --vsync off --show-fps
+```
+
+### Sound {#sound}
+
+Coney plays through the system's default playback device at 48 kHz stereo and prints the device's name at start-up;
+when no device opens, it says why and runs silent. `--no-audio` opens no device. In test mode no device opens either:
+the sound is mixed offline, 1,600 frames (1/30 s) per frame, so a run mixes the same samples every time.
+`--audio-test` plays a synthesised tone sweep (220 to 880 Hz and back, looping) and prints at the end what was mixed;
+offline that is the frame count, the peak and a hash. The debug menus' Audio page sets the volumes and plays the same
+tone ([The debug menus](debug-menu.md#pages)).
+
+```sh
+build/dev/src/platform/coney --audio-test
+build/dev/src/platform/coney --headless --frames 60 --audio-test
 ```
 
 ### Loading entries from your disc
