@@ -960,7 +960,7 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | [ ] | Mode 6 at boot | one black frame | the card scan, `0xb5` for 3 s, the dialogs and their layout ([message box](#message-box)) |
 | [ ] | 3D background | black | `level100` loaded, the script's objects, the `WonderWheel_100` scene and its camera, lights ([Background](#background)) |
 | [ ] | Menu music | recorded and logged | `music/wonderwheel_132b` looped by `Menu.startScene`, `MenuTrack` by `launchRMI`; the `menu` bank's cues ([Sound](sound.md)) |
-| [ ] | Fades | linear black quad over the given time | fade out over `t − 0.2` s, levels clamped, the one-frame start, both managers ([Fades](#fades)) |
+| [x] | Fades | out over `t − 0.2` s, in from black, the one-frame start, clamped (one manager: one view) | the real speed (open: [Fades](#fades)) |
 | [x] | PM_Greet | as the original (`0x76`, logo, blink, 70 s attract call) | nothing (the attract movie: below) |
 | [ ] | Attract loop | `Menu.playMovie(2)` called, movie skipped | the `L1_IN` movie with the fades around it ([Movies](#movies)) |
 | [x] | PM_Mode | rows {2, 1} at (0, 0.76), red / grey 178, size 1.15, the red `" : "`, cues 5 / `0xe` | nothing |
@@ -1099,10 +1099,10 @@ fonts are loaded here (`part_page0` for slot 2, `big_font` for slot 6, depth 9,0
 world); each change of screen is logged (`profile manager: PM_Greet`), which is what a headless run shows. Each frame
 also advances the screen fade (`ScreenQueueEffect`, `src/graphics/screen_fade.h`: a black quad drawn over the menus)
 and runs the scripts' frame (the scheduled calls, such as `Menu.launchRMI` 500 ms after `Menu.fadeToRMI`). The Lua
-callbacks reach the script system. Coney's choices for the fade (the page gives the fields' roles only): its level
-runs linearly from 1 (black) to 0 for a fade in and from 0 to 1 for a fade out, over the given time of game time; a new
-fade replaces a running one. The 16:9 choice is not applied (no device setting yet), and no "format the card?"
-dialog follows a new profile: Coney has no memory card.
+callbacks reach the script system. The fade is [the original's](#fades): a fade out 0.2 s shorter than asked, a fade in
+from full black, the one frame that only marks it running, the level clamped; Coney's choices: the level follows game
+time (the frame-time argument is not traced) and a new fade replaces a running one. The 16:9 choice is not applied
+(no device setting yet), and no "format the card?" dialog follows a new profile: Coney has no memory card.
 
 **The profile manager's screens** (`src/gui/profile_management_gui/`): `PmController` builds all fourteen screens and
 the [transition table](#profile-manager) on the screen flow ([GUI](gui.md#coneys-implementation)), picks the
