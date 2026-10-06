@@ -80,15 +80,18 @@
 - name: GangSetRespondPercentage
   wrapper: 0x0035f4e0
   calls:
-    - {addr: 0x0016a2e8}
+    - {addr: 0x0016a2e8, name: Gang_SetRespondPercentage}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
-    - {name: percent, lua: number, ctype: unsigned, desc: "Chance in percent (0-100, stored as a byte at gang +0xd7) that the gang responds when called for help."}
+    - {name: percent, lua: number, ctype: unsigned, desc: "Percentage of the members (0-100) that may be helping at once before no more are sent."}
   description: >-
-    Sets how likely the gang is to respond to a call for help or an alarm; the scripts use 0 to keep a gang out of
-    responses and 100 to make it always come.
-  evidence: inferred
+    Sets the gang's respond percentage (byte `+0xd7`): tactics that answer violence (`TacticHanginOut`, `TacticIdle`
+    with `respond`) send free members to help only while the share of members already helping is below it, so 0 keeps
+    the gang out and 100 sends everyone.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai.md#tactic-kinds)); other readers may exist.
   usage: {chunks: 10, calls: 23, boot: false, mission1: false, result_used: false}
 
 - name: GangSetCustomSpotDialog
@@ -402,14 +405,17 @@
 - name: GangRemoveTurfBox
   wrapper: 0x003734b0
   calls:
-    - {addr: 0x0016a3a8}
+    - {addr: 0x0016a3a8, name: Gang_RemoveTurfBox}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
     - {name: box, lua: number, ctype: unsigned, desc: "Handle of a volume box previously added with GangAddTurfBox."}
   description: >-
-    Removes a volume box from the gang's turf.
-  evidence: inferred
+    Removes a volume box from the gang's turf: the gang keeps up to eight turf box handles at `+0x15c` with their
+    count at `+0x17c`, and the first entry equal to the box is cleared and the count lowered.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    0x00165260 does the removal. What the turf boxes are used for is in `GangAddTurfBox`.
   usage: {chunks: 5, calls: 23, boot: false, mission1: false, result_used: false}
 
 - name: GangAddMember
@@ -545,14 +551,17 @@
 - name: GangEngageEnemy
   wrapper: 0x00373930
   calls:
-    - {addr: 0x0016a870}
+    - {addr: 0x0016a870, name: Gang_EngageEnemy}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
     - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human (or object) to attack."}
   description: >-
-    Tells every current member of the gang to attack the given target.
-  evidence: inferred
+    Gives every current member of the gang an `EngageEnemy` goal (type 11) against the target.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    The target handle is not checked. The goal's behaviour (Process 0x002afa48) is a fight sub-goal
+    ([AI](../../research/ai.md#fight)).
   usage: {chunks: 10, calls: 18, boot: false, mission1: false, result_used: false}
 
 - name: GangLookAt
@@ -758,15 +767,19 @@
 - name: GangSetSpawnerMustBeOffScreen
   wrapper: 0x00374200
   calls:
-    - {addr: 0x0016b070}
+    - {addr: 0x0016b070, name: Gang_SetSpawnerMustBeOffScreen}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 does nothing."}
     - {name: spawner, lua: string, desc: "Spawner name."}
     - {name: "on", lua: boolean, desc: "true: only spawn while the spawn point is off screen; false: spawn anywhere."}
   description: >-
-    Sets whether a spawner may only create characters where the player cannot see it appear (spawner +0x8c).
+    Sets a gang spawner's off-screen flag (spawner `+0x8c`, found by name with 0x00168aa0); from the name, the
+    spawner then only places its humans where the player cannot see them appear.
   evidence: inferred
   depth: brief
+  notes: >-
+    The store is confirmed (code) at 0x00168e68; the reader of spawner `+0x8c` is not traced. Spawners:
+    [AI](../../research/ai.md#spawners).
   usage: {chunks: 12, calls: 29, boot: false, mission1: false, result_used: false}
 
 - name: GangStartSpawner
@@ -834,15 +847,16 @@
 - name: GangSetAlwaysSeen
   wrapper: 0x00374620
   calls:
-    - {addr: 0x0016bde8}
+    - {addr: 0x0016bde8, name: Gang_SetAlwaysSeen}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31); -1 or an unused slot does nothing."}
     - {name: "on", lua: boolean, desc: "true: the gang is always treated as seen; false: normal visibility."}
   description: >-
-    Sets whether the gang counts as always visible to others (a flag at gang +0xdc), for example for radar or AI
-    awareness.
+    Sets the byte at gang `+0xdc` for a gang in use; from the name, the gang counts as always seen.
   evidence: speculative
   depth: brief
+  notes: >-
+    The store is confirmed (code) at 0x0016bde8; its readers are not traced.
   usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: false}
 
 - name: GangCanUseWorldFlags

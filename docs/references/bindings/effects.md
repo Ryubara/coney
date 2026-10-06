@@ -29,7 +29,7 @@ categories and how to read an entry are on the [masterlist](index.md).
 | [`QueueMotionBlurEffect`](#queuemotionblureffect) | - | 4 | yes | yes | confirmed (code) |
 | [`ScreenQueueEffect`](#screenqueueeffect) | - | 169 | yes | yes | confirmed (code) |
 | [`SetFogColor`](#setfogcolor) | - | 66 | no | yes | confirmed (code) |
-| [`SetFogDistance`](#setfogdistance) | - | 14 | no | no | inferred |
+| [`SetFogDistance`](#setfogdistance) | - | 14 | no | no | confirmed (code) |
 | [`SetGamma`](#setgamma) | - | 1 | no | no | confirmed (code) |
 | [`SetGammaOffset`](#setgammaoffset) | - | 1 | yes | no | confirmed (code) |
 | [`SetGammaRamp`](#setgammaramp) | - | 0 | no | no | confirmed (code) |
@@ -476,15 +476,15 @@ SetFogDistance(distance)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `distance` | number (single precision) | Fog distance value (the scripts pass 0 or 0.5). |
+| 1 | `distance` | number (single precision) | Fraction of the far clip distance where fog begins (the scripts pass 0 or 0.5). |
 
 **Returns** nothing.
 
-Sets the world fog's distance parameter (0x0040c908).
+Sets where the world fog starts, as a fraction of the far clip distance (the device's fog start, 0.5 by default).
 
-**Notes.** The scale (metres or a 0-1 fraction of the far plane) is not traced.
+**Notes.** Behaviour: [The streamed world](../../research/world.md#fog).
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x0040c908`; detail: brief
 - **Wrapper** `0x0036e5f8` (registered by `RegisterBindings`); **calls** `0x0040c908` `Level_SetFogDistance`
 - **Used by** 14 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

@@ -38,7 +38,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuClearLook`](#huclearlook) | - | 5 | no | no | confirmed (code) |
 | [`HuColor`](#hucolor) | - | 6 | no | no | confirmed (code) |
 | [`HuCreate`](#hucreate) | number | 100 | no | yes | confirmed (code) |
-| [`HuDelete`](#hudelete) | - | 80 | no | no | inferred |
+| [`HuDelete`](#hudelete) | - | 80 | no | no | confirmed (code) |
 | [`HuDrop`](#hudrop) | - | 0 | no | no | speculative |
 | [`HuDropWeapon`](#hudropweapon) | - | 29 | yes | yes | confirmed (code) |
 | [`HuEnableController`](#huenablecontroller) | - | 7 | no | no | confirmed (code) |
@@ -47,7 +47,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuEnableSpeaking`](#huenablespeaking) | - | 21 | no | no | inferred |
 | [`HuEnableTagCheer`](#huenabletagcheer) | - | 1 | no | no | speculative |
 | [`HuEnableTagDone`](#huenabletagdone) | - | 3 | no | no | speculative |
-| [`HuExitWorld`](#huexitworld) | - | 41 | no | no | inferred |
+| [`HuExitWorld`](#huexitworld) | - | 41 | no | no | confirmed (code) |
 | [`HuFind`](#hufind) | number | 0 | no | no | confirmed (code) |
 | [`HuForceEnableReticule`](#huforceenablereticule) | - | 3 | no | no | confirmed (code) |
 | [`HuForceLook`](#huforcelook) | - | 3 | no | no | speculative |
@@ -80,7 +80,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuIsOnFire`](#huisonfire) | boolean | 2 | no | no | inferred |
 | [`HuIsProne`](#huisprone) | boolean | 0 | no | no | inferred |
 | [`HuIsTagging`](#huistagging) | boolean | 3 | no | no | inferred |
-| [`HuKill`](#hukill) | - | 29 | no | no | inferred |
+| [`HuKill`](#hukill) | - | 29 | no | no | confirmed (code) |
 | [`HuLockMovement`](#hulockmovement) | - | 35 | no | no | confirmed (code) |
 | [`HuLockPad`](#hulockpad) | - | 37 | no | yes | confirmed (code) |
 | [`HuLockPadMovement`](#hulockpadmovement) | - | 10 | no | no | confirmed (code) |
@@ -133,7 +133,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetLookAtTarget`](#husetlookattarget) | - | 3 | no | no | confirmed (code) |
 | [`HuSetLookPos`](#husetlookpos) | - | 0 | no | no | confirmed (code) |
 | [`HuSetLookTarget`](#husetlooktarget) | - | 41 | no | yes | confirmed (code) |
-| [`HuSetLOSRange`](#husetlosrange) | - | 27 | no | no | inferred |
+| [`HuSetLOSRange`](#husetlosrange) | - | 27 | no | no | confirmed (code) |
 | [`HuSetManualStun`](#husetmanualstun) | - | 0 | no | no | inferred |
 | [`HuSetMass`](#husetmass) | - | 0 | no | no | confirmed (code) |
 | [`HuSetMaxHealth`](#husetmaxhealth) | - | 39 | no | no | confirmed (code) |
@@ -152,10 +152,10 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetPreventRage`](#husetpreventrage) | - | 44 | no | yes | confirmed (code) |
 | [`HuSetPushable`](#husetpushable) | - | 48 | yes | yes | confirmed (code) |
 | [`HuSetRageFrac`](#husetragefrac) | - | 1 | no | yes | confirmed (code) |
-| [`HuSetRageMode`](#husetragemode) | - | 9 | no | no | inferred |
+| [`HuSetRageMode`](#husetragemode) | - | 9 | no | no | confirmed (code) |
 | [`HuSetReducedReact`](#husetreducedreact) | - | 7 | yes | yes | confirmed (code) |
 | [`HuSetRevivable`](#husetrevivable) | - | 56 | no | no | inferred |
-| [`HuSetScale`](#husetscale) | - | 17 | no | no | inferred |
+| [`HuSetScale`](#husetscale) | - | 17 | no | no | confirmed (code) |
 | [`HuSetSlowMo`](#husetslowmo) | - | 2 | no | no | confirmed (code) |
 | [`HuSetSpecialCallbacks`](#husetspecialcallbacks) | - | 0 | no | no | inferred |
 | [`HuSetSpinningIconColor`](#husetspinningiconcolor) | - | 0 | no | no | speculative |
@@ -185,7 +185,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuStopWorkout`](#hustopworkout) | - | 1 | no | no | inferred |
 | [`HuSwitchPlayer`](#huswitchplayer) | number | 34 | no | no | inferred |
 | [`HuTag`](#hutag) | - | 10 | yes | no | confirmed (code) |
-| [`HuTagColor`](#hutagcolor) | - | 9 | no | no | inferred |
+| [`HuTagColor`](#hutagcolor) | - | 9 | no | no | confirmed (code) |
 | [`HuTagDifficulty`](#hutagdifficulty) | - | 0 | no | no | speculative |
 | [`HuTagPattern`](#hutagpattern) | - | 7 | yes | no | confirmed (code) |
 | [`HuTeleportFollowers`](#huteleportfollowers) | - | 0 | no | no | inferred |
@@ -887,12 +887,15 @@ HuDelete(human)
 
 **Returns** nothing.
 
-Removes a human from the world at once and frees its slot.
+Takes a human out at once: sets its record's dead flag (`0x200000000`), clears its record `+0xcc` handle and has its
+world object run its per-slot method for all 26 slots (0x003858b8), with no death animation or event of its own.
 
-**Notes.** From the callee 0x00233ef0: marks the human for removal, releases it and frees the handle.
+**Notes.** What the object's slot method (vtable +0x0c, called with 0-25) does is not traced; that the dead flag makes
+the human update remove it is inferred. Contrast `HuKill`, which kills through the damage path. Record flags:
+[Characters](../../research/characters.md#the-record).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00358608` (registered by `RegisterBindings`); **calls** `0x00233ef0`
+- **Evidence:** confirmed (code) at `0x00233ef0`; detail: traced
+- **Wrapper** `0x00358608` (registered by `RegisterBindings`); **calls** `0x00233ef0` `Human_Delete`
 - **Used by** 80 of 467 script chunks (213 references); boot to menu: no; mission 1: no; result used: yes
 - **Coney:** not implemented
 
@@ -1074,12 +1077,14 @@ HuExitWorld(human)
 
 **Returns** nothing.
 
-Sends the human to a nearby exit point and away, the way civilians leave a scene.
+Sends a human off the map: finds the nearest enabled exit flag (activity 8) its brain accepts (0x00416f08) and gives it
+a `MoveToExitFlag` goal at gait 4 (run) with a 2 m arrival radius; a human that reaches an exit flag is removed. Nothing
+happens when there is no such flag.
 
-**Notes.** From the callee 0x00238478: it looks for a nearby flag of type 8 and gives the human a travel goal to it.
+**Notes.** Exit flags and removal on arrival: [World flags](../../research/flags.md#activities).
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035c368` (registered by `RegisterBindings`); **calls** `0x00238478`
+- **Evidence:** confirmed (code) at `0x00238478`; detail: traced
+- **Wrapper** `0x0035c368` (registered by `RegisterBindings`); **calls** `0x00238478` `Human_ExitWorld`
 - **Used by** 41 of 467 script chunks (85 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
@@ -1727,10 +1732,16 @@ HuKill(human)
 
 **Returns** nothing.
 
-Kills the human outright.
+Kills a human through the damage path: unless it is already dead or flagged `0x80000000`, it drops what it holds
+(0x00258330), its health is set to 1 and 100 damage is left pending (record `+0x118`, human `+0x5d2`), so the next
+damage update finishes it with the usual death.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00358640` (registered by `RegisterBindings`); **calls** `0x00237e70`
+**Notes.** The handle is not checked for being a human. That the pending damage is applied on the next update is from
+the damage page ([Combat](../../research/combat.md#damage)); the outcome (knock-out or death) follows the usual rules
+(inferred).
+
+- **Evidence:** confirmed (code) at `0x00237e70`; detail: traced
+- **Wrapper** `0x00358640` (registered by `RegisterBindings`); **calls** `0x00237e70` `Human_Kill`
 - **Used by** 29 of 467 script chunks (46 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
@@ -1853,10 +1864,12 @@ HuMarkReachable(human, reachable)
 
 **Returns** nothing.
 
-Marks whether other characters' AI may treat the human as reachable (a byte in its AI record).
+Writes a byte to the human's brain at `+0x11e`; from the name, whether other AI may treat it as reachable.
+
+**Notes.** The store is confirmed (code) at 0x00239e30; the readers of brain `+0x11e` are not traced.
 
 - **Evidence:** speculative; detail: brief
-- **Wrapper** `0x0035d5b0` (registered by `RegisterBindings`); **calls** `0x00239e30`
+- **Wrapper** `0x0035d5b0` (registered by `RegisterBindings`); **calls** `0x00239e30` `Human_MarkReachable`
 - **Used by** 9 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
@@ -1980,11 +1993,14 @@ HuPutItemInPocket(human, item, count)
 
 **Returns** nothing.
 
-Puts an item (such as loot or a key item) in the human's pocket, to be dropped or taken when the human is beaten or
-mugged.
+Gives a human a pocket item: the item id goes to human `+0x250` and the count to `+0x254` (0 when the item is 0); the
+pocket is what mugging or beating the human yields.
+
+**Notes.** The stores are confirmed (code) at 0x00238190; that mugging and knock-outs drop the pocket is inferred from
+the scripts' use.
 
 - **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035c4d0` (registered by `RegisterBindings`); **calls** `0x00238190`
+- **Wrapper** `0x0035c4d0` (registered by `RegisterBindings`); **calls** `0x00238190` `Human_SetPocketItem`
 - **Used by** 28 of 467 script chunks (78 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
@@ -2854,9 +2870,12 @@ HuSetLOSRange(human, range)
 
 **Returns** nothing.
 
-Sets how far the human's AI can see (+0x130 of its AI record).
+Sets how far a human's AI sees, in metres (brain `+0x130`), the range the sight checks (0x002223e8) and tactics use;
+hang-out and use-flag tactics change it too.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Storage at 0x002383a0. The AI's sight check: [AI](../../research/ai.md#tactic-kinds).
+
+- **Evidence:** confirmed (code) at `0x002383a0`; detail: traced
 - **Wrapper** `0x0035c200` (registered by `RegisterBindings`); **calls** `0x002383a0` `Human_SetLOSRange`
 - **Used by** 27 of 467 script chunks (71 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3065,7 +3084,10 @@ HuSetNoReact(human, on)
 
 **Returns** nothing.
 
-Sets or clears flag bit 0x800 of the human's flag word; from the name, the human shows no hit reactions.
+Sets or clears bit `0x800` of the human's flag word (human `+0xe0`); from the name, the human shows no hit reactions.
+
+**Notes.** The store is confirmed (code) at 0x00235198; no reader of `0x800` is in
+[Combat](../../research/combat.md#human-flags) yet.
 
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00359320` (registered by `RegisterBindings`); **calls** `0x00235198` `Human_SetNoReact`
@@ -3264,10 +3286,14 @@ HuSetRageMode(human, on)
 
 **Returns** nothing.
 
-Starts rage mode (0x00236d28, then flag bit 0x80000) or ends it (0x00236fb8). Ending looks at the player human with the
-same player index, not at `human` itself.
+Starts or ends rage for a human. On: 0x00236d28 calls a Lua function with the human, sets the raging flag (`0x80000`),
+clears the rage hold timer, shows the player's HUD rage state 2 and tells his camera; off: when the player human with
+the same player number is raging, 0x00236fb8 ends it (HUD state 3) and clears the flag.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** The Lua function's name is read from 0x006b6830 at run time (not traced). Rage itself:
+[Combat](../../research/combat.md#rage).
+
+- **Evidence:** confirmed (code) at `0x00237128`; detail: traced
 - **Wrapper** `0x00359478` (registered by `RegisterBindings`); **calls** `0x00237128` `Human_SetRageMode`
 - **Used by** 9 of 467 script chunks (18 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3307,8 +3333,10 @@ HuSetRevivable(human, on)
 
 **Returns** nothing.
 
-Sets or clears flag bit 0x4 of the human's flag word; from the name, a downed human can be revived (as fallen Warriors
-are) instead of dying.
+Sets (true) or clears bit `0x4` of the human's flag word (human `+0xe0`); from the name, a downed human with it can be
+revived, as fallen Warriors are.
+
+**Notes.** The store is confirmed (code) at 0x00235db0; the revive code that reads `0x4` is not traced.
 
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035ab60` (registered by `RegisterBindings`); **calls** `0x00235db0` `Human_SetRevivable`
@@ -3328,10 +3356,12 @@ HuSetScale(human, scale)
 
 **Returns** nothing.
 
-Stores a size factor for the human (+0x65c) and updates its physics body (0x00219608), making bosses and henchmen bigger
-or smaller.
+Scales a human: 0x00219608 stores the factor (human `+0x65c`) and resizes its physics body, making bosses and henchmen
+bigger or smaller.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Whether the drawn model scales by the same factor is not traced.
+
+- **Evidence:** confirmed (code) at `0x0023b0e0`; detail: brief
 - **Wrapper** `0x00358c90` (registered by `RegisterBindings`); **calls** `0x0023b0e0` `Human_SetScale`
 - **Used by** 17 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -3772,7 +3802,10 @@ HuShadow(human, on)
 
 **Returns** nothing.
 
-Turns the human's blob shadow on or off (+0x2b4 of its render instance; docs/research/lighting.md#humans).
+Turns the human's blob shadow on or off: writes the value to `+0x2b4` of its character instance (human `+0xd8`), which
+nothing changes otherwise (docs/research/lighting.md#humans).
+
+**Notes.** That `+0x2b4` gates the shadow draw is inferred from the name; the draw is not traced.
 
 - **Evidence:** confirmed (code) at `0x00238030`; detail: brief
 - **Wrapper** `0x00358ad8` (registered by `RegisterBindings`); **calls** `0x00238030` `Human_SetShadow`
@@ -3979,9 +4012,12 @@ HuTagColor(human, colour)
 
 **Returns** nothing.
 
-Sets the colour of the human's spray paint (packed into +0x640).
+Sets the colour a tagger sprays: the four elements are each multiplied by 255, packed into one colour (0x0017aca8, a, b,
+g, r order) and stored at human `+0x640`.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Scripts pass 0-255 values, which overflow the packing; what the packing does with them is not traced.
+
+- **Evidence:** confirmed (code) at `0x00239080`; detail: brief
 - **Wrapper** `0x0035ccf0` (registered by `RegisterBindings`); **calls** `0x00239080` `Human_SetTagColour`
 - **Used by** 9 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

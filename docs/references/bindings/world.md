@@ -13,13 +13,13 @@ and how to read an entry are on the [masterlist](index.md).
 | [`AddPath`](#addpath) | usertype | 15 | no | no | confirmed (code) |
 | [`AddVolumeBox`](#addvolumebox) | number | 53 | no | yes | confirmed (code) |
 | [`BreakGlassInRadius`](#breakglassinradius) | - | 6 | no | no | inferred |
-| [`BreakObjectsInRadius`](#breakobjectsinradius) | - | 12 | no | no | inferred |
+| [`BreakObjectsInRadius`](#breakobjectsinradius) | - | 12 | no | no | confirmed (code) |
 | [`CarCanBeDamagedBy`](#carcanbedamagedby) | - | 0 | no | no | inferred |
 | [`CarDestroy`](#cardestroy) | - | 5 | no | no | confirmed (code) |
 | [`CarExplode`](#carexplode) | - | 2 | no | no | inferred |
 | [`CarMakeGoodAsNew`](#carmakegoodasnew) | - | 2 | no | yes | confirmed (code) |
 | [`CarPlaceInTrunk`](#carplaceintrunk) | - | 0 | no | no | inferred |
-| [`CarPlaceInTrunkOnDetach`](#carplaceintrunkondetach) | - | 12 | no | no | inferred |
+| [`CarPlaceInTrunkOnDetach`](#carplaceintrunkondetach) | - | 12 | no | no | confirmed (code) |
 | [`CarRemovePart`](#carremovepart) | - | 3 | no | no | inferred |
 | [`CarSetColor`](#carsetcolor) | - | 15 | no | yes | confirmed (code) |
 | [`CarSetPartDamage`](#carsetpartdamage) | - | 0 | no | no | inferred |
@@ -206,9 +206,12 @@ BreakObjectsInRadius(centre, radius)
 
 **Returns** nothing.
 
-Breaks every breakable object within the radius of a flag or object (a molotov's blast, a scripted smash).
+Breaks every object within `radius` of the centre object, the centre included: each gets message 0x15 (0x003961d0). When
+the centre object is of kind 30, a break-in crime (type 1, severity 10) is reported at it first.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** The search (0x0039a850) takes up to 384 objects. Crime reports: [AI](../../research/ai.md#crimes).
+
+- **Evidence:** confirmed (code) at `0x00396390`; detail: brief
 - **Wrapper** `0x0036dc90` (registered by `RegisterBindings`); **calls** `0x00396390` `World_BreakObjectsInRadius`
 - **Used by** 12 of 467 script chunks (22 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -326,12 +329,13 @@ CarPlaceInTrunkOnDetach(car, object, itemKind)
 
 **Returns** nothing.
 
-Sets what a car's boot holds when the player breaks it open: a given object, or a built-in item kind.
+Sets what a car's boot holds: with `itemKind` 0 the object is disabled (0x00398df8) and its index stored at car
+`+0x120c`; otherwise the kind's low byte goes to `+0x12e5`. Either way car `+0x12e4` marks the boot as loaded.
 
-**Notes.** Both branches are confirmed (code) at 0x0038e0f0; the 'when the boot is forced open' reading is inferred from
-the name.
+**Notes.** When the boot gives the item up (the 'on detach' of the name) is not traced; inferred: when the boot is
+forced open.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x0038e0f0`; detail: brief
 - **Wrapper** `0x003788b8` (registered by `RegisterBindings`); **calls** `0x0038e0f0` `Car_PlaceInTrunkOnDetach`
 - **Used by** 12 of 467 script chunks (34 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

@@ -214,9 +214,13 @@
     - {name: centre, lua: number, ctype: unsigned, desc: "Handle of a flag or object giving the centre."}
     - {name: radius, lua: number, ctype: float, desc: "Radius in metres (scripts use 0.5-1)."}
   description: >-
-    Breaks every breakable object within the radius of a flag or object (a molotov's blast, a scripted smash).
-  evidence: inferred
+    Breaks every object within `radius` of the centre object, the centre included: each gets message 0x15
+    (0x003961d0). When the centre object is of kind 30, a break-in crime (type 1, severity 10) is reported at it
+    first.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    The search (0x0039a850) takes up to 384 objects. Crime reports: [AI](../../research/ai.md#crimes).
   usage: {chunks: 12, calls: 22, boot: false, mission1: false, result_used: false}
 
 - name: UnloadTimedObjects
@@ -705,12 +709,13 @@
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of the object (a weapon such as `dyn_pipe_a`) that appears when the boot is forced open; NilHandle when `itemKind` is used instead."}
     - {name: itemKind, lua: number, ctype: unsigned, desc: "When non-zero, a built-in item kind (low 8 bits) is stored instead of an object; the scripts pass 5 with NilHandle."}
   description: >-
-    Sets what a car's boot holds when the player breaks it open: a given object, or a built-in item kind.
-  evidence: inferred
+    Sets what a car's boot holds: with `itemKind` 0 the object is disabled (0x00398df8) and its index stored at car
+    `+0x120c`; otherwise the kind's low byte goes to `+0x12e5`. Either way car `+0x12e4` marks the boot as loaded.
+  evidence: confirmed-code
   depth: brief
   notes: >-
-    Both branches are confirmed (code) at 0x0038e0f0; the 'when the boot is forced open' reading is inferred from the
-    name.
+    When the boot gives the item up (the 'on detach' of the name) is not traced; inferred: when the boot is forced
+    open.
   usage: {chunks: 12, calls: 34, boot: false, mission1: false, result_used: false}
 
 - name: GetPTank

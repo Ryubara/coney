@@ -26,7 +26,7 @@ read an entry are on the [masterlist](index.md).
 | [`GangCreate`](#gangcreate) | number | 119 | no | yes | confirmed (code) |
 | [`GangDelete`](#gangdelete) | - | 49 | yes | yes | confirmed (code) |
 | [`GangEnableAttackStrategies`](#gangenableattackstrategies) | - | 4 | yes | no | confirmed (code) |
-| [`GangEngageEnemy`](#gangengageenemy) | - | 10 | no | no | inferred |
+| [`GangEngageEnemy`](#gangengageenemy) | - | 10 | no | no | confirmed (code) |
 | [`GangExitWorld`](#gangexitworld) | - | 24 | yes | no | confirmed (code) |
 | [`GangGetHeadCount`](#ganggetheadcount) | number | 63 | yes | no | confirmed (code) |
 | [`GangGetLeader`](#ganggetleader) | number | 6 | yes | no | confirmed (code) |
@@ -42,7 +42,7 @@ read an entry are on the [masterlist](index.md).
 | [`GangMakeNeutralOfType`](#gangmakeneutraloftype) | - | 2 | no | no | confirmed (code) |
 | [`GangQueueResponders`](#gangqueueresponders) | - | 3 | no | no | inferred |
 | [`GangRemoveSpinningIcon`](#gangremovespinningicon) | - | 1 | no | no | confirmed (code) |
-| [`GangRemoveTurfBox`](#gangremoveturfbox) | - | 5 | no | no | inferred |
+| [`GangRemoveTurfBox`](#gangremoveturfbox) | - | 5 | no | no | confirmed (code) |
 | [`GangRespond`](#gangrespond) | - | 2 | no | no | confirmed (code) |
 | [`GangSetAlwaysSeen`](#gangsetalwaysseen) | - | 8 | no | no | speculative |
 | [`GangSetAttackable`](#gangsetattackable) | - | 4 | no | no | inferred |
@@ -59,7 +59,7 @@ read an entry are on the [masterlist](index.md).
 | [`GangSetMsgHandler`](#gangsetmsghandler) | - | 140 | yes | yes | confirmed (code) |
 | [`GangSetNeutral`](#gangsetneutral) | - | 3 | no | no | confirmed (code) |
 | [`GangSetReactToViolence`](#gangsetreacttoviolence) | - | 1 | no | no | inferred |
-| [`GangSetRespondPercentage`](#gangsetrespondpercentage) | - | 10 | no | no | inferred |
+| [`GangSetRespondPercentage`](#gangsetrespondpercentage) | - | 10 | no | no | confirmed (code) |
 | [`GangSetSpawnerModel`](#gangsetspawnermodel) | - | 0 | no | no | confirmed (code) |
 | [`GangSetSpawnerMustBeOffScreen`](#gangsetspawnermustbeoffscreen) | - | 12 | no | no | inferred |
 | [`GangSetTargetable`](#gangsettargetable) | - | 4 | no | yes | confirmed (code) |
@@ -472,10 +472,13 @@ GangEngageEnemy(gang, target)
 
 **Returns** nothing.
 
-Tells every current member of the gang to attack the given target.
+Gives every current member of the gang an `EngageEnemy` goal (type 11) against the target.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00373930` (registered by `RegisterBindings`); **calls** `0x0016a870`
+**Notes.** The target handle is not checked. The goal's behaviour (Process 0x002afa48) is a fight sub-goal
+([AI](../../research/ai.md#fight)).
+
+- **Evidence:** confirmed (code) at `0x0016a870`; detail: brief
+- **Wrapper** `0x00373930` (registered by `RegisterBindings`); **calls** `0x0016a870` `Gang_EngageEnemy`
 - **Used by** 10 of 467 script chunks (18 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
@@ -818,10 +821,13 @@ GangRemoveTurfBox(gang, box)
 
 **Returns** nothing.
 
-Removes a volume box from the gang's turf.
+Removes a volume box from the gang's turf: the gang keeps up to eight turf box handles at `+0x15c` with their count at
+`+0x17c`, and the first entry equal to the box is cleared and the count lowered.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003734b0` (registered by `RegisterBindings`); **calls** `0x0016a3a8`
+**Notes.** 0x00165260 does the removal. What the turf boxes are used for is in `GangAddTurfBox`.
+
+- **Evidence:** confirmed (code) at `0x0016a3a8`; detail: brief
+- **Wrapper** `0x003734b0` (registered by `RegisterBindings`); **calls** `0x0016a3a8` `Gang_RemoveTurfBox`
 - **Used by** 5 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
@@ -860,10 +866,12 @@ GangSetAlwaysSeen(gang, on)
 
 **Returns** nothing.
 
-Sets whether the gang counts as always visible to others (a flag at gang +0xdc), for example for radar or AI awareness.
+Sets the byte at gang `+0xdc` for a gang in use; from the name, the gang counts as always seen.
+
+**Notes.** The store is confirmed (code) at 0x0016bde8; its readers are not traced.
 
 - **Evidence:** speculative; detail: brief
-- **Wrapper** `0x00374620` (registered by `RegisterBindings`); **calls** `0x0016bde8`
+- **Wrapper** `0x00374620` (registered by `RegisterBindings`); **calls** `0x0016bde8` `Gang_SetAlwaysSeen`
 - **Used by** 8 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
@@ -1181,15 +1189,18 @@ GangSetRespondPercentage(gang, percent)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31); -1 does nothing. |
-| 2 | `percent` | number, truncated to an unsigned integer | Chance in percent (0-100, stored as a byte at gang +0xd7) that the gang responds when called for help. |
+| 2 | `percent` | number, truncated to an unsigned integer | Percentage of the members (0-100) that may be helping at once before no more are sent. |
 
 **Returns** nothing.
 
-Sets how likely the gang is to respond to a call for help or an alarm; the scripts use 0 to keep a gang out of responses
-and 100 to make it always come.
+Sets the gang's respond percentage (byte `+0xd7`): tactics that answer violence (`TacticHanginOut`, `TacticIdle` with
+`respond`) send free members to help only while the share of members already helping is below it, so 0 keeps the gang
+out and 100 sends everyone.
 
-- **Evidence:** inferred; detail: brief
-- **Wrapper** `0x0035f4e0` (registered by `RegisterBindings`); **calls** `0x0016a2e8`
+**Notes.** Readers at 0x00312580 and 0x00315228 ([AI](../../research/ai.md#tactic-kinds)); other readers may exist.
+
+- **Evidence:** confirmed (code) at `0x0016a2e8`; detail: brief
+- **Wrapper** `0x0035f4e0` (registered by `RegisterBindings`); **calls** `0x0016a2e8` `Gang_SetRespondPercentage`
 - **Used by** 10 of 467 script chunks (23 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 
@@ -1230,10 +1241,14 @@ GangSetSpawnerMustBeOffScreen(gang, spawner, on)
 
 **Returns** nothing.
 
-Sets whether a spawner may only create characters where the player cannot see it appear (spawner +0x8c).
+Sets a gang spawner's off-screen flag (spawner `+0x8c`, found by name with 0x00168aa0); from the name, the spawner then
+only places its humans where the player cannot see them appear.
+
+**Notes.** The store is confirmed (code) at 0x00168e68; the reader of spawner `+0x8c` is not traced. Spawners:
+[AI](../../research/ai.md#spawners).
 
 - **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00374200` (registered by `RegisterBindings`); **calls** `0x0016b070`
+- **Wrapper** `0x00374200` (registered by `RegisterBindings`); **calls** `0x0016b070` `Gang_SetSpawnerMustBeOffScreen`
 - **Used by** 12 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
 

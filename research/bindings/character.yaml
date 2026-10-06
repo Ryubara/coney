@@ -30,27 +30,37 @@
 - name: HuDelete
   wrapper: 0x00358608
   calls:
-    - {addr: 0x00233ef0}
+    - {addr: 0x00233ef0, name: Human_Delete}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to remove."}
   description: >-
-    Removes a human from the world at once and frees its slot.
-  evidence: inferred
-  depth: brief
+    Takes a human out at once: sets its record's dead flag (`0x200000000`), clears its record `+0xcc` handle and has
+    its world object run its per-slot method for all 26 slots (0x003858b8), with no death animation or event of its
+    own.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    From the callee 0x00233ef0: marks the human for removal, releases it and frees the handle.
+    What the object's slot method (vtable +0x0c, called with 0-25) does is not traced; that the dead flag makes the
+    human update remove it is inferred. Contrast `HuKill`, which kills through the damage path. Record flags:
+    [Characters](../../research/characters.md#the-record).
   usage: {chunks: 80, calls: 213, boot: false, mission1: false, result_used: true}
 
 - name: HuKill
   wrapper: 0x00358640
   calls:
-    - {addr: 0x00237e70}
+    - {addr: 0x00237e70, name: Human_Kill}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human; not checked, so pass a live handle."}
   description: >-
-    Kills the human outright.
-  evidence: inferred
-  depth: brief
+    Kills a human through the damage path: unless it is already dead or flagged `0x80000000`, it drops what it holds
+    (0x00258330), its health is set to 1 and 100 damage is left pending (record `+0x118`, human `+0x5d2`), so the
+    next damage update finishes it with the usual death.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The handle is not checked for being a human. That the pending damage is applied on the next update is from the
+    damage page ([Combat](../../research/combat.md#damage)); the outcome (knock-out or death) follows the usual rules
+    (inferred).
   usage: {chunks: 29, calls: 46, boot: false, mission1: false, result_used: false}
 
 - name: SwapPlayerControl
@@ -190,9 +200,12 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: "on", lua: boolean, desc: "true draws the human's shadow, false hides it."}
   description: >-
-    Turns the human's blob shadow on or off (+0x2b4 of its render instance; docs/research/lighting.md#humans).
+    Turns the human's blob shadow on or off: writes the value to `+0x2b4` of its character instance (human
+    `+0xd8`), which nothing changes otherwise (docs/research/lighting.md#humans).
   evidence: confirmed-code
   depth: brief
+  notes: >-
+    That `+0x2b4` gates the shadow draw is inferred from the name; the draw is not traced.
   usage: {chunks: 10, calls: 38, boot: false, mission1: false, result_used: false}
 
 - name: HuRubberNeck
@@ -254,10 +267,12 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: scale, lua: number, ctype: float, desc: "Size factor, 1 for normal (scripts use 0.97 to 1.28)."}
   description: >-
-    Stores a size factor for the human (+0x65c) and updates its physics body (0x00219608), making bosses and henchmen
-    bigger or smaller.
-  evidence: inferred
+    Scales a human: 0x00219608 stores the factor (human `+0x65c`) and resizes its physics body, making bosses and
+    henchmen bigger or smaller.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    Whether the drawn model scales by the same factor is not traced.
   usage: {chunks: 17, calls: 29, boot: false, mission1: false, result_used: false}
 
 - name: HuSetLookPos
@@ -450,9 +465,13 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
   description: >-
-    Sets or clears flag bit 0x800 of the human's flag word; from the name, the human shows no hit reactions.
+    Sets or clears bit `0x800` of the human's flag word (human `+0xe0`); from the name, the human shows no hit
+    reactions.
   evidence: inferred
   depth: brief
+  notes: >-
+    The store is confirmed (code) at 0x00235198; no reader of `0x800` is in
+    [Combat](../../research/combat.md#human-flags) yet.
   usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: false}
 
 - name: HuSetAutoEscape
@@ -501,10 +520,14 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: "on", lua: boolean, desc: "true starts rage; false ends it if the player of that human is raging."}
   description: >-
-    Starts rage mode (0x00236d28, then flag bit 0x80000) or ends it (0x00236fb8). Ending looks at the player human
-    with the same player index, not at `human` itself.
-  evidence: inferred
-  depth: brief
+    Starts or ends rage for a human. On: 0x00236d28 calls a Lua function with the human, sets the raging flag
+    (`0x80000`), clears the rage hold timer, shows the player's HUD rage state 2 and tells his camera; off: when the
+    player human with the same player number is raging, 0x00236fb8 ends it (HUD state 3) and clears the flag.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The Lua function's name is read from 0x006b6830 at run time (not traced). Rage itself:
+    [Combat](../../research/combat.md#rage).
   usage: {chunks: 9, calls: 18, boot: false, mission1: false, result_used: false}
 
 - name: HuSetBlurMode
@@ -872,10 +895,12 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: "on", lua: boolean, desc: "true sets the flag, false clears it."}
   description: >-
-    Sets or clears flag bit 0x4 of the human's flag word; from the name, a downed human can be revived (as fallen
-    Warriors are) instead of dying.
+    Sets (true) or clears bit `0x4` of the human's flag word (human `+0xe0`); from the name, a downed human with it
+    can be revived, as fallen Warriors are.
   evidence: inferred
   depth: brief
+  notes: >-
+    The store is confirmed (code) at 0x00235db0; the revive code that reads `0x4` is not traced.
   usage: {chunks: 56, calls: 107, boot: false, mission1: false, result_used: false}
 
 - name: HuLockMovement
@@ -1679,9 +1704,12 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: range, lua: number, ctype: float, desc: "Sight distance in metres (scripts use 1 to 60)."}
   description: >-
-    Sets how far the human's AI can see (+0x130 of its AI record).
-  evidence: inferred
-  depth: brief
+    Sets how far a human's AI sees, in metres (brain `+0x130`), the range the sight checks (0x002223e8) and tactics
+    use; hang-out and use-flag tactics change it too.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Storage at 0x002383a0. The AI's sight check: [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 27, calls: 71, boot: false, mission1: false, result_used: false}
 
 - name: HuSetHearRange
@@ -1713,15 +1741,17 @@
 - name: HuExitWorld
   wrapper: 0x0035c368
   calls:
-    - {addr: 0x00238478}
+    - {addr: 0x00238478, name: Human_ExitWorld}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human to send away."}
   description: >-
-    Sends the human to a nearby exit point and away, the way civilians leave a scene.
-  evidence: inferred
-  depth: brief
+    Sends a human off the map: finds the nearest enabled exit flag (activity 8) its brain accepts (0x00416f08) and
+    gives it a `MoveToExitFlag` goal at gait 4 (run) with a 2 m arrival radius; a human that reaches an exit flag is
+    removed. Nothing happens when there is no such flag.
+  evidence: confirmed-code
+  depth: thorough
   notes: >-
-    From the callee 0x00238478: it looks for a nearby flag of type 8 and gives the human a travel goal to it.
+    Exit flags and removal on arrival: [World flags](../../research/flags.md#activities).
   usage: {chunks: 41, calls: 85, boot: false, mission1: false, result_used: false}
 
 - name: HuSetMoney
@@ -1773,16 +1803,19 @@
 - name: HuPutItemInPocket
   wrapper: 0x0035c4d0
   calls:
-    - {addr: 0x00238190}
+    - {addr: 0x00238190, name: Human_SetPocketItem}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: item, lua: number, ctype: int, desc: "Item id (0 empties the pocket)."}
     - {name: count, lua: number, ctype: int, default: 1, desc: "How many (default 1)."}
   description: >-
-    Puts an item (such as loot or a key item) in the human's pocket, to be dropped or taken when the human is beaten
-    or mugged.
+    Gives a human a pocket item: the item id goes to human `+0x250` and the count to `+0x254` (0 when the item is 0);
+    the pocket is what mugging or beating the human yields.
   evidence: inferred
   depth: brief
+  notes: >-
+    The stores are confirmed (code) at 0x00238190; that mugging and knock-outs drop the pocket is inferred from the
+    scripts' use.
   usage: {chunks: 28, calls: 78, boot: false, mission1: false, result_used: false}
 
 - name: HuRemoveItemInPocket
@@ -1941,9 +1974,12 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the tagger."}
     - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Colour {r, g, b, a}; each element is multiplied by 255 before packing, so 0-1 values are expected, though the scripts pass 0-255 values. Written back unchanged."}
   description: >-
-    Sets the colour of the human's spray paint (packed into +0x640).
-  evidence: inferred
+    Sets the colour a tagger sprays: the four elements are each multiplied by 255, packed into one colour
+    (0x0017aca8, a, b, g, r order) and stored at human `+0x640`.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    Scripts pass 0-255 values, which overflow the packing; what the packing does with them is not traced.
   usage: {chunks: 9, calls: 16, boot: false, mission1: false, result_used: false}
 
 - name: HuTagPattern
@@ -2192,14 +2228,16 @@
 - name: HuMarkReachable
   wrapper: 0x0035d5b0
   calls:
-    - {addr: 0x00239e30}
+    - {addr: 0x00239e30, name: Human_MarkReachable}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: reachable, lua: boolean, desc: "True marks it reachable."}
   description: >-
-    Marks whether other characters' AI may treat the human as reachable (a byte in its AI record).
+    Writes a byte to the human's brain at `+0x11e`; from the name, whether other AI may treat it as reachable.
   evidence: speculative
   depth: brief
+  notes: >-
+    The store is confirmed (code) at 0x00239e30; the readers of brain `+0x11e` are not traced.
   usage: {chunks: 9, calls: 29, boot: false, mission1: false, result_used: false}
 
 - name: HuButtonMiniGame

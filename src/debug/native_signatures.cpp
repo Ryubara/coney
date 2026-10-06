@@ -304,7 +304,7 @@ constexpr std::array<NativeArg, 2> kArgs_BrSetThugWantsWeapon{{{"human", A::Hand
 constexpr std::array<NativeArg, 2> kArgs_BrSetType{{{"human", A::Handle, "", 0}, {"brainType", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_BrSuspend{{{"human", A::Handle, "", 0}, {"suspended", A::Boolean, "true", 0}}};
 constexpr std::array<NativeArg, 6> kArgs_GoalAddressPerson{{{"human", A::Handle, "", 0}, {"target", A::Handle, "", 0}, {"approach", A::Number, "", 0}, {"range", A::Number, "", 0}, {"speech", A::Integer, "-1", 0}, {"callback", A::String, "", 0}}};
-constexpr std::array<NativeArg, 6> kArgs_GoalAreaWalker{{{"human", A::Handle, "", 0}, {"flag", A::Handle, "", 0}, {"radius", A::Integer, "", 0}, {"value1", A::Integer, "", 0}, {"value2", A::Handle, "", 0}, {"gait", A::Integer, "", 0}}};
+constexpr std::array<NativeArg, 6> kArgs_GoalAreaWalker{{{"human", A::Handle, "", 0}, {"flag", A::Handle, "", 0}, {"radius", A::Integer, "", 0}, {"mode", A::Integer, "", 0}, {"durationSeconds", A::Integer, "", 0}, {"pauseSeconds", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_GoalArrestHuman{{{"human", A::Handle, "", 0}, {"target", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 8> kArgs_GoalAvoidEnemies{{{"human", A::Handle, "", 0}, {"useThrowables", A::Boolean, "", 0}, {"minRange", A::Number, "7", 0}, {"maxRange", A::Number, "14", 0}, {"value1", A::Number, "", 0}, {"value2", A::Number, "", 0}, {"value3", A::Handle, "", 0}, {"value4", A::Handle, "", 0}}};
 constexpr std::array<NativeArg, 5> kArgs_GoalBackoff{{{"human", A::Handle, "", 0}, {"from", A::Handle, "", 0}, {"distance", A::Number, "", 0}, {"timeMs", A::Integer, "-1", 0}, {"option", A::Boolean, "true", 0}}};

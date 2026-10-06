@@ -41,13 +41,13 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`BrSetPedType`](#brsetpedtype) | - | 12 | no | no | inferred |
 | [`BrSetPlayerResponse`](#brsetplayerresponse) | - | 2 | no | no | inferred |
 | [`BrSetReactToViolence`](#brsetreacttoviolence) | - | 33 | yes | no | confirmed (code) |
-| [`BrSetThreatResponse`](#brsetthreatresponse) | - | 43 | no | no | inferred |
+| [`BrSetThreatResponse`](#brsetthreatresponse) | - | 43 | no | no | confirmed (code) |
 | [`BrSetThugWantsHat`](#brsetthugwantshat) | - | 1 | no | no | inferred |
 | [`BrSetThugWantsWeapon`](#brsetthugwantsweapon) | - | 37 | yes | yes | confirmed (code) |
 | [`BrSetType`](#brsettype) | - | 8 | no | no | confirmed (code) |
 | [`BrSuspend`](#brsuspend) | - | 11 | no | yes | confirmed (code) |
 | [`GoalAddressPerson`](#goaladdressperson) | - | 9 | no | yes | confirmed (code) |
-| [`GoalAreaWalker`](#goalareawalker) | - | 13 | no | no | inferred |
+| [`GoalAreaWalker`](#goalareawalker) | - | 13 | no | no | confirmed (code) |
 | [`GoalArrestHuman`](#goalarresthuman) | - | 1 | no | no | inferred |
 | [`GoalAvoidEnemies`](#goalavoidenemies) | - | 2 | no | no | inferred |
 | [`GoalBackoff`](#goalbackoff) | - | 8 | yes | yes | confirmed (code) |
@@ -99,7 +99,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalPedestrianPath`](#goalpedestrianpath) | - | 0 | no | no | inferred |
 | [`GoalPlayAnimation`](#goalplayanimation) | - | 0 | no | no | inferred |
 | [`GoalPlayDynAnimation`](#goalplaydynanimation) | - | 22 | no | yes | confirmed (code) |
-| [`GoalPlayDynIdle`](#goalplaydynidle) | - | 21 | no | no | inferred |
+| [`GoalPlayDynIdle`](#goalplaydynidle) | - | 21 | no | no | confirmed (code) |
 | [`GoalPlayGenAnim`](#goalplaygenanim) | - | 4 | no | no | inferred |
 | [`GoalRiot`](#goalriot) | - | 8 | no | no | inferred |
 | [`GoalRunCarrotRun`](#goalruncarrotrun) | - | 4 | no | no | inferred |
@@ -111,7 +111,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`GoalTagEx`](#goaltagex) | - | 0 | no | no | inferred |
 | [`GoalThrowObject`](#goalthrowobject) | - | 3 | no | no | inferred |
 | [`GoalTrackHuman`](#goaltrackhuman) | - | 1 | no | yes | confirmed (code) |
-| [`GoalTravelPath`](#goaltravelpath) | - | 6 | no | no | inferred |
+| [`GoalTravelPath`](#goaltravelpath) | - | 6 | no | no | confirmed (code) |
 | [`GoalTravelPath2`](#goaltravelpath2) | - | 1 | no | no | inferred |
 | [`SetGlobalPedRules`](#setglobalpedrules) | - | 1 | yes | no | confirmed (code) |
 | [`SetInterrogateParam`](#setinterrogateparam) | - | 1 | no | yes | confirmed (code) |
@@ -873,12 +873,13 @@ BrSetThreatResponse(human, response)
 
 **Returns** nothing.
 
-Sets how a human reacts when threatened or attacked; 0 turns fighting back off.
+Sets a human's threat response (brain `+0x21c`): 0 means it never fights back (`Brain_Fight` refuses), as for
+shopkeepers and scripted extras; tactics set their own (`TacticAttack` 2, `AvoidEnemies` 0).
 
-**Notes.** Storage confirmed (code) at 0x00292708; the 0 case is confirmed by `GoalFight` (0x0028d2e8). Meanings of the
-other values are inferred.
+**Notes.** Storage at 0x00292708; the 0 case is confirmed by `Brain_Fight` (0x0028d2e8). What 1-3 change is not traced
+(many readers of brain `+0x21c`). Gang-wide: `GangSetThreatResponse`.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x00292708`; detail: brief
 - **Wrapper** `0x0035ef48` (registered by `RegisterBindings`); **calls** `0x00292708` `Brain_SetThreatResponse`
 - **Used by** 43 of 467 script chunks (116 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** implemented
@@ -1004,23 +1005,29 @@ speaker without checking it is a human. Process 0x002cc588. Behaviour: [AI](../.
 ## GoalAreaWalker {#goalareawalker}
 
 ```lua
-GoalAreaWalker(human, flag, radius, value1, value2, gait)
+GoalAreaWalker(human, flag, radius, mode, durationSeconds, pauseSeconds)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human. |
-| 2 | `flag` | number, truncated to an unsigned integer | Handle of the flag at the centre of the area. |
-| 3 | `radius` | number, truncated to an integer | Radius of the area in metres (scripts use 20-30). |
-| 4 | `value1` | number, truncated to an integer | A number (scripts use 0). |
-| 5 | `value2` | number, truncated to an unsigned integer | A handle or number (scripts use 0). |
-| 6 | `gait` | number, truncated to an integer | A number (scripts use 3 or 5; inferred: the gait id). |
+| 2 | `flag` | number, truncated to an unsigned integer | Handle of the flag at the centre of the area; NilHandle for where the human stands. |
+| 3 | `radius` | number, truncated to an integer | Radius of the area in metres; the goal picks points within half of it (below 1: stand still). |
+| 4 | `mode` | number, truncated to an integer | Behaviour mode; 3 makes a police searcher (idles at stops, follows the `CrimeScene` flag). |
+| 5 | `durationSeconds` | number, truncated to an unsigned integer | Seconds until the goal ends; 0 for ever. |
+| 6 | `pauseSeconds` | number, truncated to an integer | Longest pause at each point in seconds (a random 0 to this). |
 
 **Returns** nothing.
 
-Makes a human walk around within an area around a flag, as cops searching do.
+Pushes an `AreaWalker` goal (type 71): the human strolls round a centre, walking (gait 2) to random reachable points
+within half of `radius` and pausing up to `pauseSeconds` at each, until `durationSeconds` pass; with a radius below 1 it
+just stands at the centre facing its first heading. Mode 3 (police) also idles at each stop and follows the `CrimeScene`
+flag, running there when the scene moved more than 5 m.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Wrapper 0x00361fa0, constructor 0x002a4dc8 (vtable 0x0053fa90), Process 0x002a4eb0. With `flag` NilHandle the
+centre is the human's own position. Mode 3's idles: anim 0x29c, or 0x29e at 25 %.
+
+- **Evidence:** confirmed (code) at `0x002a4cb8`; detail: traced
 - **Wrapper** `0x00361fa0` (registered by `RegisterBindings`); **calls** `0x002a4cb8` `Goal_AreaWalker`
 - **Used by** 13 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -2003,7 +2010,8 @@ GoalMoveToExitFlag(human, flag, gait, angle, distance, radius)
 Sends a human to an exit flag, used to clear pedestrians and vendors out of a scene; before pushing the goal it switches
 the human's brain off (as `BrDead`) unless the brain is type 1.
 
-**Notes.** That the human is removed on arrival is inferred from the name.
+**Notes.** A human that reaches an exit flag (activity 8) is removed (0x00416b18, [World
+flags](../../research/flags.md#activities)); `HuExitWorld` finds the flag itself.
 
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x00360090` (registered by `RegisterBindings`); **calls** `0x002da810` `Goal_MoveToExitFlag`
@@ -2296,13 +2304,19 @@ GoalPlayDynIdle(human, flag, startAnim, loopAnim, endAnim, timeMs)
 | 3 | `startAnim` | string | Start animation file name (`.anm`), or nil. |
 | 4 | `loopAnim` | string | Looping idle animation file name. |
 | 5 | `endAnim` | string | End animation file name, or nil. |
-| 6 | `timeMs` | number, truncated to an integer; default -1 | How long to idle in milliseconds; -1 (the default) for ever (inferred). |
+| 6 | `timeMs` | number, truncated to an integer; default -1 | How long the loop plays in milliseconds; -1 (the default) for ever. |
 
 **Returns** nothing.
 
-Makes a human go to a flag and play a start, loop and end animation there (leaning, writing on a pad, working on a car).
+Pushes a `PlayDynIdle` goal (type 35): the human walks to the flag (gait 2) until within 1 m, turns to the flag's
+heading (within 15 degrees), plays the start anim and then the loop, and after `timeMs` the end anim; nothing is pushed
+when `loopAnim` is nil or empty.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Constructor 0x002d3a18 (the three names go to dynamic anim slots read back at human +0x488, +0x4b0, +0x4d8),
+Process 0x002d3d58: states 0 start (anim 0x29f), 1 loop (until the time, -1 for ever), 2 end (anim 0x2a1 when there is
+one), 3 done. With no flag it plays where it stands. `TacticIdle`'s dynIdle option ends it early.
+
+- **Evidence:** confirmed (code) at `0x002d3940`; detail: traced
 - **Wrapper** `0x003635d0` (registered by `RegisterBindings`); **calls** `0x002d3940` `Goal_PlayDynamicIdle`
 - **Used by** 21 of 467 script chunks (99 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented
@@ -2584,9 +2598,13 @@ GoalTravelPath(human, path, start, reverse, gait, radius)
 
 **Returns** nothing.
 
-Makes a human travel along a level path from a given point.
+Pushes a `TravelPath` goal (type 56): from the start point the human is sent to each path point in turn with a
+`MoveToFlag` goal at `gait`, and the goal ends when the path runs out.
 
-- **Evidence:** inferred; detail: brief
+**Notes.** Goal_TravelPath 0x002e05a8 builds it with constructor 0x002e0748 (no loop, no wait); Process 0x002e0968 picks
+the next point (0x002e07d0). The tactic `TacticTravelPath` uses the same goal with a loop mode and a wait.
+
+- **Evidence:** confirmed (code) at `0x002e05a8`; detail: brief
 - **Wrapper** `0x00360870` (registered by `RegisterBindings`); **calls** `0x002e05a8` `Goal_TravelPath`
 - **Used by** 6 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

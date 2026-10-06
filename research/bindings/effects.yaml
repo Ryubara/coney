@@ -295,13 +295,13 @@
   calls:
     - {addr: 0x0040c908, name: Level_SetFogDistance}
   args:
-    - {name: distance, lua: number, ctype: float, desc: "Fog distance value (the scripts pass 0 or 0.5)."}
+    - {name: distance, lua: number, ctype: float, desc: "Fraction of the far clip distance where fog begins (the scripts pass 0 or 0.5)."}
   description: >-
-    Sets the world fog's distance parameter (0x0040c908).
-  evidence: inferred
+    Sets where the world fog starts, as a fraction of the far clip distance (the device's fog start, 0.5 by default).
+  evidence: confirmed-code
   depth: brief
   notes: >-
-    The scale (metres or a 0-1 fraction of the far plane) is not traced.
+    Behaviour: [The streamed world](../../research/world.md#fog).
   usage: {chunks: 14, calls: 14, boot: false, mission1: false, result_used: false}
 
 - name: AddStatRespEmitter

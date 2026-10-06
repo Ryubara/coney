@@ -250,12 +250,13 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: response, lua: number, ctype: int, desc: "Threat response mode (brain `+0x21c`). 0 means the human does not respond to threats at all (shopkeepers, bartenders, scripted extras); scripts also use 2 and 3. `GoalFight` does nothing while it is 0."}
   description: >-
-    Sets how a human reacts when threatened or attacked; 0 turns fighting back off.
-  evidence: inferred
+    Sets a human's threat response (brain `+0x21c`): 0 means it never fights back (`Brain_Fight` refuses), as for
+    shopkeepers and scripted extras; tactics set their own (`TacticAttack` 2, `AvoidEnemies` 0).
+  evidence: confirmed-code
   depth: brief
   notes: >-
-    Storage confirmed (code) at 0x00292708; the 0 case is confirmed by `GoalFight` (0x0028d2e8). Meanings of the other
-    values are inferred.
+    Storage at 0x00292708; the 0 case is confirmed by `Brain_Fight` (0x0028d2e8). What 1-3 change is not traced (many
+    readers of brain `+0x21c`). Gang-wide: `GangSetThreatResponse`.
   usage: {chunks: 43, calls: 116, boot: false, mission1: false, result_used: false}
   coney: implemented
 
@@ -564,7 +565,8 @@
   evidence: inferred
   depth: brief
   notes: >-
-    That the human is removed on arrival is inferred from the name.
+    A human that reaches an exit flag (activity 8) is removed (0x00416b18, [World
+    flags](../../research/flags.md#activities)); `HuExitWorld` finds the flag itself.
   usage: {chunks: 10, calls: 26, boot: false, mission1: false, result_used: false}
 
 - name: GoalMoveToUseFlag
@@ -736,9 +738,13 @@
     - {name: gait, lua: number, ctype: int, desc: "Gait id: 2 walk ... 5 sprint."}
     - {name: radius, lua: number, ctype: float, desc: "Arrival radius at each point in metres (scripts use 0.5-1)."}
   description: >-
-    Makes a human travel along a level path from a given point.
-  evidence: inferred
+    Pushes a `TravelPath` goal (type 56): from the start point the human is sent to each path point in turn with a
+    `MoveToFlag` goal at `gait`, and the goal ends when the path runs out.
+  evidence: confirmed-code
   depth: brief
+  notes: >-
+    Goal_TravelPath 0x002e05a8 builds it with constructor 0x002e0748 (no loop, no wait); Process 0x002e0968 picks the
+    next point (0x002e07d0). The tactic `TacticTravelPath` uses the same goal with a loop mode and a wait.
   usage: {chunks: 6, calls: 16, boot: false, mission1: false, result_used: false}
 
 - name: GoalTravelPath2
@@ -1106,15 +1112,21 @@
     - {addr: 0x002a4cb8, name: Goal_AreaWalker}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
-    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag at the centre of the area."}
-    - {name: radius, lua: number, ctype: int, desc: "Radius of the area in metres (scripts use 20-30)."}
-    - {name: value1, lua: number, ctype: int, desc: "A number (scripts use 0)."}
-    - {name: value2, lua: number, ctype: unsigned, desc: "A handle or number (scripts use 0)."}
-    - {name: gait, lua: number, ctype: int, desc: "A number (scripts use 3 or 5; inferred: the gait id)."}
+    - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag at the centre of the area; NilHandle for where the human stands."}
+    - {name: radius, lua: number, ctype: int, desc: "Radius of the area in metres; the goal picks points within half of it (below 1: stand still)."}
+    - {name: mode, lua: number, ctype: int, desc: "Behaviour mode; 3 makes a police searcher (idles at stops, follows the `CrimeScene` flag)."}
+    - {name: durationSeconds, lua: number, ctype: unsigned, desc: "Seconds until the goal ends; 0 for ever."}
+    - {name: pauseSeconds, lua: number, ctype: int, desc: "Longest pause at each point in seconds (a random 0 to this)."}
   description: >-
-    Makes a human walk around within an area around a flag, as cops searching do.
-  evidence: inferred
-  depth: brief
+    Pushes an `AreaWalker` goal (type 71): the human strolls round a centre, walking (gait 2) to random reachable
+    points within half of `radius` and pausing up to `pauseSeconds` at each, until `durationSeconds` pass; with a
+    radius below 1 it just stands at the centre facing its first heading. Mode 3 (police) also idles at each stop and
+    follows the `CrimeScene` flag, running there when the scene moved more than 5 m.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Wrapper 0x00361fa0, constructor 0x002a4dc8 (vtable 0x0053fa90), Process 0x002a4eb0. With `flag` NilHandle the
+    centre is the human's own position. Mode 3's idles: anim 0x29c, or 0x29e at 25 %.
   usage: {chunks: 13, calls: 33, boot: false, mission1: false, result_used: false}
 
 - name: GoalObjectThrower
@@ -1453,12 +1465,17 @@
     - {name: startAnim, lua: string, desc: "Start animation file name (`.anm`), or nil."}
     - {name: loopAnim, lua: string, desc: "Looping idle animation file name."}
     - {name: endAnim, lua: string, desc: "End animation file name, or nil."}
-    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "How long to idle in milliseconds; -1 (the default) for ever (inferred)."}
+    - {name: timeMs, lua: number, ctype: int, default: -1, desc: "How long the loop plays in milliseconds; -1 (the default) for ever."}
   description: >-
-    Makes a human go to a flag and play a start, loop and end animation there (leaning, writing on a pad, working on a
-    car).
-  evidence: inferred
-  depth: brief
+    Pushes a `PlayDynIdle` goal (type 35): the human walks to the flag (gait 2) until within 1 m, turns to the flag's
+    heading (within 15 degrees), plays the start anim and then the loop, and after `timeMs` the end anim; nothing is
+    pushed when `loopAnim` is nil or empty.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    Constructor 0x002d3a18 (the three names go to dynamic anim slots read back at human +0x488, +0x4b0, +0x4d8),
+    Process 0x002d3d58: states 0 start (anim 0x29f), 1 loop (until the time, -1 for ever), 2 end (anim 0x2a1 when
+    there is one), 3 done. With no flag it plays where it stands. `TacticIdle`'s dynIdle option ends it early.
   usage: {chunks: 21, calls: 99, boot: false, mission1: false, result_used: false}
 
 - name: GoalPlayGenAnim
