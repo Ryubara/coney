@@ -945,7 +945,8 @@ A **crime report**, `0x0041b8b0(state, pos, type, offender, victim, severity, mo
 crime fields, confirmed (code): `+0x270` the crime scene, `+0x288` reporting on (`ReportCrime`), `+0x290` the
 player's last crime type, `+0x294 + type` the responders per type (`CfgCrimeResponders`), `+0x2dc` the Lua callback
 (`CfgSetCrimeCallback`), `+0x32b + type` enabled (`CfgEnableCrimeType`; read only for type 12, by the police brain at
-`0x00300910` and `0x00301770`).
+`0x00300910` and `0x00301770`). The wanted timer a report starts, the crime level and the unused severity are on
+[Crimes: wanted](crimes.md#wanted).
 
 1. Nothing while reporting is off. An offender in a gang of kind 1 (police) or `0x17` is ignored.
 2. With an offender: every police gang turns hostile to his gang, and his gang to them except for types 7 and 12

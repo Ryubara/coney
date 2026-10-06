@@ -72,7 +72,7 @@ No source file names this code: it lies in `Human/`, in the stretch after `cns/c
 | `0x0027fd68` | `Player_UpdateGrabbed` | the struggle in another human's grab | confirmed (code) |
 | `0x00241b90` | `Human_FightStanceMove` | movement in a fight stance; lock-on | confirmed (code), runtime |
 | `0x00287730` | `Player_Special` | cross + square, circle + cross, circle + triangle outside a grab | confirmed (code), runtime |
-| `0x002878b8` | `Player_TheftTiming` | theft mode 2 | confirmed (code) |
+| `0x002878b8` | `LockPick_JudgePress` | mini-game mode 2, lock picking ([Crimes](crimes.md#lockpick)) | confirmed (code) |
 | `0x0026c548` | `Grab_Start` | the grab's intro: 71 (or 70), then 69 and the idle; turns towards the target | confirmed (code) |
 | `0x0026c1d8` | `Grab_IntroEnd` | end of the intro clip: grab from the front or rear, or a counter | confirmed (code) |
 | `0x0026be68` | `Grab_Connect` | aligns the pair and starts 72 / 73 (74 / 75 from the rear), then the holds | confirmed (code) |
@@ -136,7 +136,8 @@ test is cited in the behaviour below; seen at runtime unless marked.
 | `0x1000` | throwing (seen `0x1005`) |
 | `0x8000` | blocking (with `0x1`: `0x8001`) |
 | `0x1000000` | sprint asked for ([Sprint](characters.md#sprint)) |
-| `0x4000000` | in a theft minigame |
+| `0x2000000` | tagging ([Crimes](crimes.md#tagging)) |
+| `0x4000000` | in a mini-game (lock picking, the stereo, uncuffing; [Crimes](crimes.md#mini-game-record)) |
 
 Record `+0x08` holds the attack's **phase** while an attack plays: `0x1` wind-up, `0x2` the chain window, `0x4` the
 end, `0x40000` recovery. `0x10` is set at a grab or tackle start and in object attacks (it also forbids a sprint).
@@ -1228,12 +1229,10 @@ between reach × 0.5 and far × 1.5 of the clip's range. Confirmed (code).
 state `0x4000000`. `Player_UpdateTheft` (`0x0027e6d8`) runs one of three games by the mode at `+0x46` of the per-player
 record `0x0051489c + 0x168 + p × 0x5c`. Confirmed (code):
 
-- **Mode 1, mash**: alternate L1 and R1 (commands 6 and 4, held); each alternation adds 125 × 1.5 or × 0.7 (Warrior
-  byte `+0x08`), the meter loses 15 per update, and 1000 completes it (`CfgButtonMash`).
-- **Mode 2**: `0x002878b8`, a **timing game**: each cross press (`0x12`) is judged by `0x001b8d38` against a moving
-  meter (float `+0x454` of `0x0060fc60 + player × 0x540`): a press outside the band at `0x0050d6c4` / `0x0050d6c8`
-  scores 1 or 2 (the better band), a press inside it resets the count and fails the theft (`0x002366d8`); other
-  commands reset `+0x42` to -1. Confirmed (code); that the meter sweeps is inferred; not tried at runtime.
+- **Mode 1, mash** (freeing a handcuffed partner, [Crimes](crimes.md#triangle)): alternate L1 and R1 (commands 6
+  and 4, held); each alternation adds 125 × 1.5 or × 0.7 (Warrior byte `+0x08`), the meter loses 15
+  per update, and 1000 completes it (`CfgButtonMash`).
+- **Mode 2**: **lock picking**, a timing game against a dial of three turning pins ([Crimes](crimes.md#lockpick)).
 - **Mode 3, the car radio here**: `0x0027e908`. Rotate the left stick **anticlockwise**, the stick above 0.8 in this
   update and the last, turning less than 90° per update. The angle turned adds to `+0x48`; at each stage's target the
   stage (`+0x4c`) advances after a 250 ms pause; **4 stages** succeed (`0x00278628(h, 1)`, 685 `STEREO_STEAL_END`).
@@ -1539,7 +1538,8 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **Class 13**: which character class it is (it gets hit armour and adds 2 s to a knockdown).
 - **The rage events**: the meaning of the events beyond the chain attacks' (`0x002653d8`, `0x00264fa0`).
 - **Commands `0x30`-`0x39`**: which scripts or weapons make them; `0x36`-`0x38` and the d-pad (`0x27`).
-- **Theft mode 2 at runtime**, and which objects use modes 1 and 2.
+- **Mini-game mode 2 at runtime** (answered from the code: modes 1 and 2 are uncuffing and lock picking,
+  [Crimes](crimes.md#mini-game-record)).
 - **The grab's front circle** `0x0026f008`, the `0x00510980` table and the further grab state of `0x005101f0`.
 - **Square at a sprint** at runtime, and the moving attacks' hit timing (the victim was out of reach in the tests).
 - **The mugging's angle frame** (world or camera).

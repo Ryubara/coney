@@ -306,8 +306,8 @@ Confirmed (runtime): with no activity the panel was invisible; setting `+0x4104`
 **Other parts** (drawn when their state applies, not seen in `level99`'s street): nine **tally marks** (panel
 `+0x4150`, rectangles 366, every fifth 367, of `part_page0`, size 0.04, in the player's colour `+0x4148`, count
 `+0x413c`, enabled `+0x4130`); the **mini-game panel** (`+0x3480`, `0x001bf7e0`: two dark `(32, 32, 32)` bars and
-`hud_minigames` icons 5-9, shown while the player breaks into a car, a store or tags, `0x00228070`/`0x00228090`/
-`0x002280f0`); the **Warrior command display** (`+0x1ef0`, `0x001a62c0`, the d-pad pictures of `big_font` 256-261
+`hud_minigames` icons 5-9; the mugging drives it, `0x001b28b8`-`0x001b2918`, [Crimes](crimes.md#mugging));
+the **Warrior command display** (`+0x1ef0`, `0x001a62c0`, the d-pad pictures of `big_font` 256-261
 with command icons, `HUDShowWarCommand`). Confirmed (code) for the structure; their layouts are not covered here.
 
 ### Objectives (`HUDSetObjective`)
@@ -443,7 +443,8 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
   queued in the hint box **at priority 0** once (remembered at HUD `+0x177bc` per player, withdrawn by `0x001b3e20`
   when the object or its hint changes or none is in reach); else a talkable human within 1.5 m whose brain state is 0
   or 3 (`ActionPrompt_FindNearbyHuman`, `0x001acd60`): the HUD string its interface names (ids 1-388), its own text,
-  or string 9. The strings are `GSTRING.HUD` entries ([Strings](gui.md#strings)).
+  or string 9. The strings are `GSTRING.HUD` entries ([Strings](gui.md#strings)); the action objects and their kinds:
+  [Crimes](crimes.md#triangle).
 - **Showing:** no text hides the prompt (`0x001b2490`); a new or changed text restarts it (`ActionPrompt_SetText`,
   `0x0019f1b0`; a text that parses as a number goes through `0x0019f128`). A prompt naming `Spray`, `Flash`, `Blades`
   or `Give Mon...` also wakes the player panel ([Activity](#the-player-panel)). With the cycle animation on
@@ -451,6 +452,8 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
   `+0x448` (`0x0019f328`).
 - **Drawn last** in the HUD, and not while an announcement or a mini-game panel shows ([The HUD's
   frame](#the-huds-frame)).
+- **Mini-game widgets:** the lock-picking dial (HUD `+0xf420` + player × `0x540`), the stereo theft's (`+0xfea0` +
+  player × `0xb10`) and the mash meter (`+0xebc0` + player × `0x430`), [Crimes](crimes.md).
 
 ### The instruction arrow (`HUDEnableInstArrow`)
 
