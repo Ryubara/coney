@@ -1292,6 +1292,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
         handles->next += 1;
         return handle;
     };
+    scripts.setObjectHandles(nextHandle);
     addLevelBindings(vm, context, nextHandle);
     addTriggerBindings(vm, context, nextHandle);
     addCameraBindings(vm, context, nextHandle);

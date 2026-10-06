@@ -18,8 +18,13 @@ struct ObjectType {
     int hitpoints = 0;           ///< `+0x58`: a door's or barrier's hitpoints.
     std::uint32_t modelHash = 0; ///< `+0x8c`: CRC-32 of the name, the Object List key of its model.
     std::size_t index = 0;       ///< `+0x60`: the record's own index.
-    int objectKind = 0;          ///< `+0x86`: the kind (`TYPE_BAT`, `TYPE_HAT`...), `CfgObj`'s 20th argument.
+    int objectKind = 0;          ///< `+0x86`: the kind (`TYPE_BAT`, `TYPE_SPECIAL`...), `CfgObj`'s 19th argument.
+    int value = 0;               ///< `+0x5a`, `CfgObj`'s 4th argument: a `TYPE_SPECIAL` pick-up's worth in dollars.
+    int pickupAnim = 0;          ///< `+0x65`, `CfgObj`'s 14th argument: the pick-up animation (5 for jewellery).
 };
+
+/// `TYPE_SPECIAL`: a store's jewellery and other loose loot (docs/research/combat.md#breakables).
+inline constexpr int kObjectKindSpecial = 12;
 
 /// The object database (`0x00512c04`): the types `CfgObj` configures, found by name.
 ///
@@ -36,6 +41,8 @@ class ObjectTypes {
     /// but lookups keep finding the first.
     /// @orig 0x00390f18 Cfg_AddObjectType (unknown)
     const ObjectType& add(std::string_view name, std::string_view className, int hitpoints, int objectKind = 0);
+    /// Adds `type` as configured (its name and class cut to their lengths; the hash and index set here).
+    const ObjectType& add(ObjectType type);
 
     /// The type named `name`; null when none is.
     /// @orig 0x003913d8 ObjectDb_FindByName (unknown)

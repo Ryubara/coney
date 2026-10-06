@@ -49,6 +49,60 @@ void PlayLevelMode::bindObjects(world_objects::LevelObjects* objects, const scri
                         m_objects->doors.doors().size()));
 }
 
+void PlayLevelMode::bindPickups(LevelPickups* pickups) {
+    m_pickups = pickups;
+    if (m_pickups == nullptr) {
+        return;
+    }
+    m_player->human().setContextAction([this](human::Human& human) {
+        // A ray to the object blocked by the level's collision (the panes' and doors' among it).
+        const world_objects::SightBlocked blocked = [this](anim::Vec3 from, anim::Vec3 to) {
+            const raycast::Vec3 d{to.x - from.x, to.y - from.y, to.z - from.z};
+            const float length = std::sqrt((d.x * d.x) + (d.y * d.y) + (d.z * d.z));
+            if (length < 1e-4F) {
+                return false;
+            }
+            const raycast::Ray ray{.origin = {from.x, from.y, from.z},
+                                   .direction = {d.x / length, d.y / length, d.z / length},
+                                   .length = length};
+            const raycast::CollisionMesh* mesh = m_objects != nullptr && m_objects->world.collision != nullptr
+                                                     ? m_objects->world.collision
+                                                     : &m_scenery->collision();
+            return mesh->rayCast(ray, {}, 0).has_value();
+        };
+        const std::optional<PickupChoice> choice =
+            m_pickups->search(human.position(), human::facing(human.heading()), blocked);
+        if (!choice || !human.startPickUp(choice->handle, choice->position, static_cast<std::uint32_t>(choice->clip))) {
+            return false;
+        }
+        m_print(std::format("pickup: object {:.0f} with clip {}\n", choice->handle, choice->clip));
+        return true;
+    });
+}
+
+void PlayLevelMode::giveObjectTargets() {
+    if (m_objects == nullptr) {
+        return;
+    }
+    std::vector<human::ObjectTarget> objects;
+    for (const world_objects::GlassPane& pane : m_objects->glass.panes()) {
+        if (!pane.broken && !pane.hidden) {
+            objects.push_back(human::ObjectTarget{.handle = pane.handle, .point = pane.centre});
+        }
+    }
+    m_player->human().setObjectTargets(std::move(objects));
+}
+
+void PlayLevelMode::stepPickups() {
+    if (m_pickups == nullptr) {
+        return;
+    }
+    if (const std::optional<double> taken = m_player->human().takePickedUp()) {
+        const bool took = m_pickups->take(*taken, 0);
+        m_print(std::format("pickup: took object {:.0f}{}\n", *taken, took ? "" : " (gone)"));
+    }
+}
+
 double PlayLevelMode::playerHandle() const {
     const HumanCreation* player = m_cast.humans != nullptr ? m_cast.humans->player(1) : nullptr;
     return player != nullptr ? player->handle : world_objects::kNoObject;
@@ -103,10 +157,22 @@ void PlayLevelMode::stepObjects() {
     if (m_objects == nullptr) {
         return;
     }
-    // Player 1's hit that landed this step goes to the pane or door the strike meets, if any.
+    // Player 1's object attack strikes its object; any other hit that landed this step goes to the pane or door the
+    // strike meets, if any.
     const human::Human& human = m_player->human();
-    if (const int animId = human.fighter().last().hitAnim;
-        animId != combat::anim_id::kNone && m_objects->world.collision != nullptr) {
+    if (const std::optional<double> attacked = human.fighter().objectHit()) {
+        const anim::Vec3 feet = human.position();
+        const anim::Vec3 ahead = human::facing(human.heading());
+        const world_objects::GlassPane* pane = m_objects->glass.find(*attacked);
+        const bool took =
+            m_objects->humanHit(*attacked, world_objects::ObjectHit{.attacker = playerHandle(),
+                                                                    .kind = world_objects::humanHitKind(false, false),
+                                                                    .point = pane != nullptr ? pane->centre : feet,
+                                                                    .direction = ahead,
+                                                                    .attackerAt = feet});
+        m_print(std::format("objects: object attack on {:.0f}{}\n", *attacked, took ? "" : " (no effect)"));
+    } else if (const int animId = human.fighter().last().hitAnim;
+               animId != combat::anim_id::kNone && m_objects->world.collision != nullptr) {
         // The attack's reach as the fighter measures it: its far range, else the default reach.
         float reach = human::kDefaultStrikeReach;
         if (const combat::AnimRangeList* ranges = human.ranges(); ranges != nullptr && animId >= 0) {

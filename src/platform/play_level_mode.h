@@ -310,6 +310,13 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     bool stepLockPick(const Pad& pad);
     // After the player's step: his landed hit sent to the pane or door it struck, then the objects' two 60 Hz ticks.
     void stepObjects();
+    // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the
+    // level's collision, starts the pick-up on him.
+    void bindPickups(LevelPickups* pickups);
+    // Player 1's square may strike the level's whole glass panes, aiming at their centres.
+    void giveObjectTargets();
+    // Player 1's pick-up that reached its clip's event this step: the object is taken.
+    void stepPickups();
     // Player 1's handle, as the scripts know him; the nil handle without a cast.
     [[nodiscard]] double playerHandle() const;
 
@@ -392,6 +399,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     double m_playerHandle = 0.0;
     // The level's glass panes and doors (gameplay's; null without them), the lock pick under way, and its difficulty.
     world_objects::LevelObjects* m_objects = nullptr;
+    LevelPickups* m_pickups = nullptr; // the level's loose objects for the pick-up; not owned
     std::optional<world_objects::LockPick> m_lockPick;
     int m_lockPickDifficulty = 0;
     // The --trace file (closed when unset) and the steps traced.

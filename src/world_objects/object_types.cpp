@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "world_objects/object_types.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "core/name_hash.h"
@@ -9,10 +10,16 @@ namespace coney::world_objects {
 
 const ObjectType& ObjectTypes::add(std::string_view name, std::string_view className, int hitpoints, int objectKind) {
     ObjectType type;
-    type.name = std::string(name.substr(0, kMaxName));
-    type.className = std::string(className.substr(0, kMaxClassName));
+    type.name = std::string(name);
+    type.className = std::string(className);
     type.hitpoints = hitpoints;
     type.objectKind = objectKind;
+    return add(std::move(type));
+}
+
+const ObjectType& ObjectTypes::add(ObjectType type) {
+    type.name.resize(std::min(type.name.size(), kMaxName));
+    type.className.resize(std::min(type.className.size(), kMaxClassName));
     type.modelHash = crc32(type.name);
     type.index = m_types.size();
     // The original's hash table finds the first of a name; keep that one.

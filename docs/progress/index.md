@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (468,380 of 3,354,776 bytes, 1,499 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (468,380 of 3,354,776 bytes, 1,503 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-418 reimplemented function(s) have no size yet and add no bytes.
+422 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.3% | 99 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 60 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
-| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 14.0% | 466 | 1,096,672 |
+| `Human` | `██▊░░░░░░░░░░░░░░░░░` | 14.0% | 469 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -70,7 +70,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.1% | 200 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 85 | 531,312 |
+| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 86 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -775,6 +775,7 @@ at the top of the repository's `README.md`.
 | `0x0023b128` | `CNS_SetMissionInfoEnabled` | `Human` | 16 |
 | `0x0023b138` | `Human_TeleportNear` | `Human` | 1,600 |
 | `0x0023b778` | `Human_SetSlowMo` | `Human` | 192 |
+| `0x0023bf00` | `Human_PickUpObject` | `Human` | not filled in |
 | `0x0023cf88` | `Human_TurnToOver` | `Human` | not filled in |
 | `0x0023d2b8` | `Human_MoveToOver` | `Human` | not filled in |
 | `0x0023d8c8` | `Human_Move` | `Human` | not filled in |
@@ -793,6 +794,7 @@ at the top of the repository's `README.md`.
 | `0x00245920` | `Human_HandleMessage` | `Human` | 8,248 |
 | `0x00248df0` | `Human_Lean` | `Human` | not filled in |
 | `0x00249108` | `Humans_Update` | `Human` | 2,704 |
+| `0x0024d810` | `Pickup_Search` | `Human` | not filled in |
 | `0x0024e478` | `Nav_GetWalkingDistance` | `Human` | not filled in |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
 | `0x0024eef0` | `PathPolygon_Contains` | `Human` | 928 |
@@ -824,6 +826,7 @@ at the top of the repository's `README.md`.
 | `0x0025b200` | `Human_BuildMoveTasks` | `Human` | not filled in |
 | `0x0025cf30` | `Human_BuildJumpTasks` | `Human` | not filled in |
 | `0x0025d390` | `Human_BuildLandTasks` | `Human` | not filled in |
+| `0x0025e5a8` | `Human_PickUpMessage` | `Human` | not filled in |
 | `0x0025ec28` | `Gait_BlendForSpeed` | `Human` | not filled in |
 | `0x0025f770` | `Human_BuildIdleTasks` | `Human` | not filled in |
 | `0x002617f8` | `Block_DuckCounter` | `Human` | 528 |
@@ -1389,6 +1392,7 @@ at the top of the repository's `README.md`.
 | `0x003977d0` | `Garbage_End` | `TaskEngine` | not filled in |
 | `0x00398348` | `ObjZoneMask_Set` | `TaskEngine` | 104 |
 | `0x003983b0` | `ObjZone_MarkRemoved` | `TaskEngine` | 328 |
+| `0x00398598` | `ObjectList_LoadPlaced` | `TaskEngine` | not filled in |
 | `0x00398940` | `ObjRecord_Add` | `TaskEngine` | not filled in |
 | `0x00398df8` | `ObjRecord_SetPinned` | `TaskEngine` | not filled in |
 | `0x00398fe0` | `ObjRecord_GetHandle` | `TaskEngine` | not filled in |

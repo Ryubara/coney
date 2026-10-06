@@ -54,7 +54,9 @@ inline constexpr std::string_view kGangCallFlag = "GangCall";
 
 /// InitLevel's script steps for `level` in `scripts`, whose state must exist: forgets the humans and flags of the
 /// level before, runs `global.lua` then `<level>.lua` (ScriptSystem::enterLevel()), whose `HuCreate` and `AddFlag`
-/// calls fill `humans` and `flags`, adds InitLevel's two flags, then calls the start callback the script set
+/// calls fill `humans` and `flags`; with `records`, adds the level's placed objects (`<level>_objs.txt`, a missing or
+/// unreadable file logged and skipped) to them; adds InitLevel's two flags, then calls the start callback the script
+/// set
 /// (`SetStartGameCallback`, kept in `state` and cleared once called), and returns player 1's start for the checkpoint
 /// in `state` (`W_GameState + 0x33a`).
 ///
@@ -64,7 +66,8 @@ inline constexpr std::string_view kGangCallFlag = "GangCall";
 ///
 /// Research: docs/research/level-loading.md#initlevel, docs/research/flags.md#player-starts
 [[nodiscard]] LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, CreatedHumans& humans,
-                                        world_objects::WorldFlags& flags, std::string_view level);
+                                        world_objects::WorldFlags& flags, std::string_view level,
+                                        world_objects::SpawnRecords* records = nullptr);
 
 /// What a level run alone (runLevelScriptAlone()) starts with that the menus would otherwise have set.
 struct LevelScriptOptions {

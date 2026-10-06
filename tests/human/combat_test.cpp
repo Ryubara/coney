@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -325,4 +326,55 @@ TEST_CASE("a paired clip and its rate come from the attacker's anim set", "[huma
     animator.playCombat(react, 83, AnimState::Hold);
     CHECK(animator.tasks().top()->duration() == Approx(0.3F));
     CHECK(animator.tasks().top()->rate() == Approx(0.75F));
+}
+
+TEST_CASE("square with no human in front strikes a pane ahead with 661 or 662 by its height", "[human][combat]") {
+    const FightCharacter character;
+    // The target 30 m away: nobody to fight.
+    Fight fight(character, 30.0F);
+    // A pane 0.9 m ahead at 1.59 m (a cabinet's front), and one behind, nearer.
+    const std::vector<coney::human::ObjectTarget> panes{{.handle = 92, .point = Vec3{40.0F, 40.9F, 1.59F}},
+                                                        {.handle = 93, .point = Vec3{40.0F, 39.5F, 0.5F}}};
+    fight.human().setObjectTargets(panes);
+    std::vector<std::uint32_t> played;
+    std::vector<double> hits;
+    fight.run("10 tap square\n", 40, [&](std::uint64_t) {
+        const std::uint32_t now = fight.human().animator().animId();
+        if (played.empty() || played.back() != now) {
+            played.push_back(now);
+        }
+        if (const std::optional<double> hit = fight.human().fighter().objectHit()) {
+            hits.push_back(*hit);
+        }
+    });
+    CHECK(std::ranges::find(played, static_cast<std::uint32_t>(id::kBreakObjectMid)) != played.end());
+    CHECK(hits == std::vector<double>{92});
+    CHECK(fight.human().fighter().hitsLanded() == 0);
+
+    // Low, at 0.5 m: 661.
+    Fight low(character, 30.0F);
+    low.human().setObjectTargets({{.handle = 94, .point = Vec3{40.0F, 40.8F, 0.5F}}});
+    played.clear();
+    low.run("10 tap square\n", 40, [&](std::uint64_t) {
+        const std::uint32_t now = low.human().animator().animId();
+        if (played.empty() || played.back() != now) {
+            played.push_back(now);
+        }
+    });
+    CHECK(std::ranges::find(played, static_cast<std::uint32_t>(id::kBreakObjectLow)) != played.end());
+}
+
+TEST_CASE("square with no object in reach plays the chain's first attack", "[human][combat]") {
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    // Out of the object attack's range (the default reach in these ranges).
+    fight.human().setObjectTargets({{.handle = 92, .point = Vec3{40.0F, 45.0F, 1.59F}}});
+    std::vector<std::uint32_t> played;
+    bool struck = false;
+    fight.run("10 tap square\n", 40, [&](std::uint64_t) {
+        played.push_back(fight.human().animator().animId());
+        struck = struck || fight.human().fighter().objectHit().has_value();
+    });
+    CHECK(std::ranges::find(played, static_cast<std::uint32_t>(id::kAttackS1)) != played.end());
+    CHECK_FALSE(struck);
 }

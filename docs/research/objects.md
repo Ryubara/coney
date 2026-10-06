@@ -625,6 +625,12 @@ record for good, by either of its paths (`src/scripting/world_bindings.h`). Noth
 hidden mark in play yet: Coney has no object tasks there. Disc check (NTSC-U, 2026-10-06, counts only): at the front end
 `level100.lua` leaves 29 Wonder Wheel records, each of a configured type, the wheel tinted `0x474542FF`.
 
+**Placed objects** (`src/world_objects/placed_objects_file.h`, from [the objects file](#objs-file)): after the level
+script's main chunk, `runLevelScript` reads `<level>_objs.txt` through the script source and adds a spawn record per
+line, each with a handle from the world objects' counter; the `part` lines are skipped (no particle emitters from it
+yet). A missing file adds nothing. Disc check (NTSC-U, 2026-10-06, counts only): `level99` places 98 records of its
+112 lines.
+
 **Models** (`src/platform/object_models.h`, `src/platform/placed_objects.h`): an object's model is its type's Object
 List record (`ObjectList::findByHash`, the type's model hash), its `0x47` model read as the level file's and its
 dictionary's first texture on the first material, loaded once per type and shared. An object is drawn at its pose
@@ -672,9 +678,10 @@ Coney's stand-ins, where this page is silent:
   nearest vertex average wins. Wreck pieces and boards spawn at the door; a cabin door keeps
   its leaves once broken. A barrier's material pair sounds on every hit; game state bits 2 and 4 are not read. An
   object type no `CfgObj` names is a swinging door of 100 hitpoints.
-- A strike meets a pane or door along a ray 1 m above the feet, along the facing, as long as the attack's reach
-  (`Player_ObjectAttack`'s target picking, [Combat](combat.md#breakables), is not in Coney yet). Thrown objects do not
-  reach the objects yet: nothing is thrown in play.
+- Square with no human in front aims at a whole pane (its centre) as `Player_PickTarget`'s object pass does
+  ([Combat](combat.md#targets)); the object attack's hit breaks that pane. Doors are not object targets yet. Any other
+  hit meets a pane or door along a ray 1 m above the feet, along the facing, as long as the attack's reach. Thrown
+  objects do not reach the objects yet: nothing is thrown in play.
 - Sounds: a name hash plays on the effects bus at its recorded volume, with no 3D attenuation or pan; a material
   pair's sound and the lock pick's click are counted, not played (no sound matrix or interface cues yet). Shards,
   crimes beyond the `CrimeScene` flag, statistics, loose objects and models do nothing yet.

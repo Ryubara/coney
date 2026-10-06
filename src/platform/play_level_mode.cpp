@@ -227,6 +227,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     }
     if (cast != nullptr) {
         bindObjects(cast->objects, cast->recorded);
+        bindPickups(cast->pickups);
     }
     // The AI humans in the player's step: the level's scripts' humans, or the layout's fighters.
     if (cast != nullptr && cast->brains != nullptr && cast->scripted != nullptr) {
@@ -457,11 +458,13 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     // The characters' update, then the cameras' (human::Player keeps that order).
     applyIdleClips();
     const anim::Vec3 before = m_player->human().position();
+    giveObjectTargets();
     m_player->update(playerPad, &m_scenery->collision(), m_combatants);
     for (Target& target : m_targets) {
         target.human->step();
     }
     m_ai->capture();
+    stepPickups();
     stepObjects();
     const anim::Vec3 after = m_player->human().position();
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);

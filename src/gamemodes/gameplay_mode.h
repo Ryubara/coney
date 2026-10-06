@@ -18,6 +18,7 @@
 #include "effects/level_effects.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/level_object_services.h"
+#include "gamemodes/level_pickups.h"
 #include "gamemodes/level_start.h"
 #include "gamemodes/loading_screen.h"
 #include "gamemodes/movie_player.h"
@@ -75,6 +76,7 @@ struct ScriptedCast {
     graphics::LevelLighting* lighting = nullptr; ///< The level's lights and fog, as its scripts set them.
     effects::LevelEffects* effects = nullptr;    ///< The level's particles and motion blur, which it draws.
     world_objects::Cars* cars = nullptr;         ///< The level's parked cars, which it draws and stands.
+    LevelPickups* pickups = nullptr;             ///< The level's loose objects for triangle's pick-up; null for none.
 };
 
 /// A loaded level that can draw a 2D layer over its frame just before the frame is presented: the pause menu over the
@@ -323,6 +325,7 @@ class GameplayMode final : public GameMode {
     std::optional<TagSession> m_tagSession;              // player 1's spray under way (HuTag)
     double m_tagTicks = 0.0;                             // 60 Hz ticks not yet given to the tag spots
     world_objects::FlagNet m_flagNet;                    // the level's flag network (FlagNetAddLink)
+    std::optional<LevelPickups> m_pickups;               // over the context's spawn records and object types
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of
     PauseMode* m_pause = nullptr;         // what START pauses through; not owned

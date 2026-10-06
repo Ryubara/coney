@@ -3849,6 +3849,11 @@ subsystem = "Human"
 size = 192
 
 [[function]]
+address = 0x0023bf00
+name = "Human_PickUpObject"
+subsystem = "Human"
+
+[[function]]
 address = 0x0023cf88
 name = "Human_TurnToOver"
 subsystem = "Human"
@@ -3943,6 +3948,11 @@ address = 0x00249108
 name = "Humans_Update"
 subsystem = "Human"
 size = 2704
+
+[[function]]
+address = 0x0024d810
+name = "Pickup_Search"
+subsystem = "Human"
 
 [[function]]
 address = 0x0024e478
@@ -4115,6 +4125,11 @@ subsystem = "Human"
 [[function]]
 address = 0x0025d390
 name = "Human_BuildLandTasks"
+subsystem = "Human"
+
+[[function]]
+address = 0x0025e5a8
+name = "Human_PickUpMessage"
 subsystem = "Human"
 
 [[function]]
@@ -7380,6 +7395,11 @@ address = 0x003983b0
 name = "ObjZone_MarkRemoved"
 subsystem = "TaskEngine"
 size = 328
+
+[[function]]
+address = 0x00398598
+name = "ObjectList_LoadPlaced"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x00398940

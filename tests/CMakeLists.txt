@@ -29,6 +29,7 @@ add_executable(coney_tests
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
+    gamemodes/level_pickups_test.cpp
     gamemodes/loading_screen_test.cpp
     gamemodes/pause_mode_test.cpp
     gamemodes/load_entry_mode_test.cpp
@@ -139,6 +140,7 @@ add_executable(coney_tests
     world_objects/lock_pick_test.cpp
     world_objects/nav_links_test.cpp
     world_objects/object_list_test.cpp
+    world_objects/pickups_test.cpp
     world_objects/volume_boxes_test.cpp
     world_objects/radios_test.cpp
     world_objects/tag_spots_test.cpp

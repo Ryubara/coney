@@ -7,7 +7,9 @@
 #include <numbers>
 #include <optional>
 
+#include "animation/anim_clip.h"
 #include "animation/anim_task.h"
+#include "combat/attacks.h"
 #include "combat/being_hit.h"
 #include "combat/combat_tuning.h"
 #include "combat/lock_on.h"
@@ -15,12 +17,15 @@
 #include "core/ps2_float.h"
 #include "human/body.h"
 #include "human/jump.h"
+#include "world_objects/pickups.h"
 
 namespace coney::human {
 
 namespace {
 
 constexpr float kPi = std::numbers::pi_v<float>;
+// The idle a pick-up returns to (388, the plain idle).
+constexpr std::uint32_t kPickUpIdle = 388;
 // The sweep slides along what it hits up to this many times.
 constexpr int kSweepPasses = 3;
 // A push smaller than this means the body is clear of the wall.
@@ -528,7 +533,8 @@ void Human::fight(std::span<Combatant* const> targets) {
                                   .heading = m_heading,
                                   .nowMs = nowMs,
                                   .targets = targets,
-                                  .stepSeconds = m_stepSeconds},
+                                  .stepSeconds = m_stepSeconds,
+                                  .objects = m_objectTargets},
                      m_animator, m_heading);
 }
 
@@ -549,8 +555,50 @@ void Human::updateMeters(bool sprintHeld) {
 }
 
 bool Human::tryContextAction() {
-    // Doors, pick-ups and the like (0x002811f0) are not researched: nothing happens and the jump is tried next.
-    return false;
+    // Only with nothing in hand; the level decides what the press does.
+    if (!m_contextAction || m_script.heldObject != 0.0 || m_pickUp) {
+        return false;
+    }
+    return m_contextAction(*this);
+}
+
+bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
+    const anim::AnimClip* found = m_animator.anims().clip(clip);
+    if (found == nullptr) {
+        return false;
+    }
+    // The time to the clip's first event, whatever its type; with none, its whole playing time.
+    const float rate = m_animator.anims().rate(clip) > 0.0F ? m_animator.anims().rate(clip) : 1.0F;
+    float seconds = found->duration / rate;
+    for (const anim::ClipEvent& event : found->events) {
+        seconds = std::min(seconds, static_cast<float>(event.frame) / anim::kClipFrameRate / rate);
+    }
+    const int updates = std::max(1, static_cast<int>(std::lround(seconds / m_stepSeconds)));
+    const anim::Vec3 to = anim::subtract(point, m_position);
+    const float turn = std::hypot(to.x, to.y) > 1e-4F ? wrapAngle(headingOf(to) - m_heading) : 0.0F;
+    const std::array<std::uint32_t, 1> clips{clip};
+    m_animator.playCombat(clips, kPickUpIdle, AnimState::Attack, world_objects::kPickupBlend,
+                          HeldFlags{.held = combat::kPhaseGrabStart, .set = combat::kPhaseGrabStart});
+    m_velocity = anim::Vec3{};
+    m_pickUp = PickUpRun{
+        .handle = handle, .clip = clip, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
+    return true;
+}
+
+void Human::followPickUp() {
+    if (!m_pickUp) {
+        return;
+    }
+    // Something else took over the body (a hit): the pick-up is lost.
+    if (m_animator.animId() != m_pickUp->clip) {
+        m_pickUp.reset();
+        return;
+    }
+    m_heading = wrapAngle(m_heading + m_pickUp->turnStep);
+    if (--m_pickUp->updatesLeft <= 0) {
+        m_pickedUp = m_pickUp->handle;
+        m_pickUp.reset();
+    }
 }
 
 bool Human::tryClimb(const raycast::CollisionMesh& mesh, anim::Vec3 direction) {
@@ -698,6 +746,7 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     const float beforeTime = before != nullptr ? before->time() : 0.0F;
     m_animator.advance(m_stepSeconds);
     followClimb(mesh);
+    followPickUp();
     sendWarnings(before, beforeId, beforeTime);
     noteSlowMotion(before, beforeId, beforeTime);
 }

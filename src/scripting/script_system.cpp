@@ -86,6 +86,13 @@ bool ScriptSystem::runFile(std::string_view name) {
     return runChunk(*bytes, name);
 }
 
+std::expected<std::vector<std::byte>, Error> ScriptSystem::readFile(std::string_view name) const {
+    if (!m_source) {
+        return fail(ErrorCode::NotFound, "no script source");
+    }
+    return m_source(name);
+}
+
 void ScriptSystem::runFiles(std::span<const std::string_view> names) {
     for (const std::string_view name : names) {
         runFile(name);

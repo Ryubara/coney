@@ -56,6 +56,8 @@ inline constexpr float kPickAnyScale = 0.9F;
 inline constexpr float kPickStick = 0.01F;
 /// Targets more than this far above or below are skipped.
 inline constexpr float kPickHeight = 2.0F;
+/// The object search's second, wider pass: objects within this many degrees of the heading.
+inline constexpr float kObjectWideConeDegrees = 135.0F;
 /// The strong grapple's search range without an Anim Range List (Rembrandt's, **Coney's choice**).
 inline constexpr float kStrongGrappleFallbackRange = 3.0F;
 /// Beyond the attack's far range the attacker only turns, at most this much (**Coney's reading** of the research's
@@ -64,6 +66,12 @@ inline constexpr float kAttackTurnCapDegrees = 8.0F;
 /// The player's health (Rembrandt's 900 at runtime, record `+0x146`).
 inline constexpr int kPlayerHealth = 900;
 
+/// A breakable object square may strike (a glass pane): its handle and the point an attack aims at.
+struct ObjectTarget {
+    double handle = 0;
+    anim::Vec3 point{}; ///< The pane's centre.
+};
+
 /// What the fighter is given each update.
 struct FighterInput {
     combat::CommandId command = combat::command::kNone; ///< From the command matcher.
@@ -71,11 +79,12 @@ struct FighterInput {
     combat::Stick stick;                                ///< The camera-turned stick in the facing frame.
     combat::Stick padStick;                             ///< The stick as the pad reads it (the minigames').
     Gait gait = Gait::Standing;
-    anim::Vec3 position;                 ///< The player's feet.
-    float heading = 0.0F;                ///< The player's heading, radians.
-    std::uint64_t nowMs = 0;             ///< Game time, whole milliseconds.
-    std::span<Combatant* const> targets; ///< The humans that can be fought.
-    float stepSeconds = kStepSeconds;    ///< The characters' step: 1/30 s, less in slow motion.
+    anim::Vec3 position;                     ///< The player's feet.
+    float heading = 0.0F;                    ///< The player's heading, radians.
+    std::uint64_t nowMs = 0;                 ///< Game time, whole milliseconds.
+    std::span<Combatant* const> targets;     ///< The humans that can be fought.
+    float stepSeconds = kStepSeconds;        ///< The characters' step: 1/30 s, less in slow motion.
+    std::span<const ObjectTarget> objects{}; ///< The breakable objects square may strike.
 };
 
 /// The camera shake a reaction asks for (docs/research/camera.md#shake): on the attacker's camera when a player hit,
@@ -156,6 +165,11 @@ class Fighter {
     /// The target human the search would pick for an attack of `range` metres (null for none).
     /// @orig 0x0027a6c0 Player_PickTarget (unknown)
     [[nodiscard]] static Combatant* pickTarget(const FighterInput& input, float range);
+    // Square's object target, with no human in front: of `input.objects` within the object attack's far range, the
+    // nearest within 54° of the stick's heading (the facing at rest), else within 135°. Null for none.
+    // **Coney choices**: the range is the object attack's far range (the original approaches from farther, not built);
+    // the 135° pass keeps the whole range (the original's × 0.8 is not applied).
+    [[nodiscard]] const ObjectTarget* pickObjectTarget(const FighterInput& input) const;
     // Circle + cross's search (combat::nearestInCone() along the stick, combat::strongGrappleRange()): makes the human
     // found the target and returns it when it may be grabbed, else null.
     Holdable* strongGrappleTarget(const FighterInput& input);
@@ -166,6 +180,8 @@ class Fighter {
     /// block alike), oldest first: what the combat tutorial's callback hears (docs/research/hud.md#tutorial-callback).
     /// An AI's hits are not kept.
     [[nodiscard]] const std::vector<int>& strikes() const { return m_strikes; }
+    /// The object an object attack's hit struck this update (its handle); nothing otherwise.
+    [[nodiscard]] std::optional<double> objectHit() const { return m_objectHit; }
 
     /// The target kept (human `+0xc8`); null when none.
     [[nodiscard]] const Combatant* target() const { return m_target; }
@@ -403,7 +419,9 @@ class Fighter {
     float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
     int m_duckCounters = 0;        // the duck counters played
     int m_hitsLanded = 0;
-    std::vector<int> m_strikes; // a player's struck hits' anim ids in the last update
+    std::vector<int> m_strikes;           // a player's struck hits' anim ids in the last update
+    std::optional<double> m_objectTarget; // the object square's object attack aims at
+    std::optional<double> m_objectHit;    // the object an object attack struck this update
     int m_damageDealt = 0;
 
     // The victim side.

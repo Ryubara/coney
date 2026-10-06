@@ -333,6 +333,27 @@ class Human final : public Holdable {
     /// The grabber lets go (Fighter::releaseFromGrab()).
     void releaseFromGrab() { m_fighter.releaseFromGrab(m_animator); }
 
+    // Triangle's context action and the pick-up (docs/research/crimes.md#triangle, docs/research/combat.md#breakables).
+
+    /// What triangle tries after a climb (step 4 and 5 of `Player_TriangleAction`): the level's search for a context
+    /// record or a loose object, which starts what it found on the human and returns true. None: nothing.
+    using ContextAction = std::function<bool(Human& human)>;
+    void setContextAction(ContextAction action) { m_contextAction = std::move(action); }
+    /// The breakable objects square may strike from now on (the level's whole panes), given each step.
+    void setObjectTargets(std::vector<ObjectTarget> objects) { m_objectTargets = std::move(objects); }
+    /// Picks up the object `handle` at `point` with clip `clip` (world_objects::pickupClip()): the clip plays after a
+    /// world_objects::kPickupBlend blend, holding the grab bit `0x10` so the human neither moves nor acts, and the
+    /// human turns to the object over the time to the clip's first event, when the object is taken (takePickedUp()).
+    /// Returns false, doing nothing, when the anim set lacks the clip. **Coney's stand-ins**: the turn for
+    /// `0x00275d10`'s steer (inferred to be like the attack's, without its slide); the grab bit for what the clip
+    /// holds.
+    /// @orig 0x0025e5a8 Human_PickUpMessage (unknown)
+    bool startPickUp(double handle, anim::Vec3 point, std::uint32_t clip);
+    /// Whether a pick-up is under way.
+    [[nodiscard]] bool pickingUp() const { return m_pickUp.has_value(); }
+    /// The object whose pick-up reached its clip's event since the last call, once; nothing otherwise.
+    [[nodiscard]] std::optional<double> takePickedUp() { return std::exchange(m_pickedUp, std::nullopt); }
+
   private:
     // A climb under way: what it climbs, which clip of its chain plays, and the move to its start point.
     struct ClimbRun {
@@ -405,9 +426,11 @@ class Human final : public Holdable {
     // Triangle: a climb (stick above the dead zone), then the context action, then a jump.
     // @orig 0x0027c120 Player_UpdateActions (unknown)
     void tryActions(const raycast::CollisionMesh* mesh, bool sprintHeld);
-    // The context action triangle tries after a climb; a no-op hook (doors, pick-ups: not researched). Returns whether
-    // it did something.
+    // The context action triangle tries after a climb: the level's (setContextAction()), with nothing in hand. Returns
+    // whether it did something.
     [[nodiscard]] bool tryContextAction();
+    // A pick-up's step after the animation's: the turn, and the take at the clip's event; a clip replaced ends it.
+    void followPickUp();
     // Tries a climb toward `direction`; starts it and returns true on success.
     [[nodiscard]] bool tryClimb(const raycast::CollisionMesh& mesh, anim::Vec3 direction);
     // Tries a jump; launches it and returns true on success.
@@ -457,6 +480,17 @@ class Human final : public Holdable {
     float m_lean = 0.0F;
     float m_lastTurn = 0.0F; // the heading's change in the last state update, for the lean
     std::optional<ClimbRun> m_climbRun;
+    // A pick-up under way: the object, the clip, the updates to its event and the turn each takes.
+    struct PickUpRun {
+        double handle = 0;
+        std::uint32_t clip = 0;
+        int updatesLeft = 0;
+        float turnStep = 0.0F;
+    };
+    std::optional<PickUpRun> m_pickUp;
+    std::optional<double> m_pickedUp; // the object a pick-up reached, until takePickedUp()
+    ContextAction m_contextAction;
+    std::vector<ObjectTarget> m_objectTargets; // the breakable objects square may strike
     std::optional<ClimbProbe> m_climbProbe;
     std::vector<std::uint16_t> m_nearby; // scratch for the wall test
 };

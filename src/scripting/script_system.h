@@ -147,6 +147,14 @@ class ScriptSystem {
     /// Writes `line` (and a newline) to the log.
     void log(std::string_view line) const;
 
+    /// The file `name` through the script source (a level's `_objs.txt`, which InitLevel reads beside the scripts).
+    [[nodiscard]] std::expected<std::vector<std::byte>, Error> readFile(std::string_view name) const;
+    /// Sets where world objects' handles come from: the bindings' counter, which installBindings() hands over, so
+    /// what the engine adds outside a binding takes handles from the same space.
+    void setObjectHandles(std::function<double()> next) { m_objectHandles = std::move(next); }
+    /// The next world object handle; 0 (the nil handle) before setObjectHandles().
+    [[nodiscard]] double nextObjectHandle() const { return m_objectHandles ? m_objectHandles() : 0.0; }
+
   private:
     // One entry of the schedule (the original's is 0x18 bytes: due time, interned name, two flagged numbers).
     struct ScheduledCall {
@@ -167,6 +175,7 @@ class ScriptSystem {
 
     ScriptSource m_source;
     BindingInstaller m_install;
+    std::function<double()> m_objectHandles; // the bindings' world object handle counter (setObjectHandles())
     Log m_log;
     std::unique_ptr<LuaVm> m_vm;
     std::vector<ScheduledCall> m_schedule; // kept sorted by (due time, sequence)

@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cmath>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -16,6 +17,7 @@
 #include "scripting/hud_bindings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_bindings.h"
+#include "world_objects/placed_objects_file.h"
 
 namespace coney {
 
@@ -24,15 +26,41 @@ namespace {
 // The script frames runLevelScriptAlone() runs after the start: one second of the fixed 1/30 s step.
 constexpr std::uint64_t kSettleSteps = 30;
 
+// Reads `<level>_objs.txt` through the scripts' source and adds its objects to `records`, logging the count, or why
+// there were none.
+void loadPlacedObjects(script::ScriptSystem& scripts, world_objects::SpawnRecords& records, std::string_view level) {
+    const std::string name = std::format("{}_objs.txt", level);
+    const auto bytes = scripts.readFile(name);
+    if (!bytes) {
+        scripts.log(std::format("level: no {}: {}", name, bytes.error().message));
+        return;
+    }
+    const std::string_view text(reinterpret_cast<const char*>(bytes->data()), bytes->size());
+    const auto objects = world_objects::parsePlacedObjects(text);
+    if (!objects) {
+        scripts.log(std::format("level: {}: {}", name, objects.error().message));
+        return;
+    }
+    const std::size_t added =
+        world_objects::addPlacedObjects(*objects, records, [&scripts] { return scripts.nextObjectHandle(); });
+    scripts.log(std::format("level: {} placed {} objects of {} lines", name, added, objects->size()));
+}
+
 } // namespace
 
 LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, CreatedHumans& humans,
-                          world_objects::WorldFlags& flags, std::string_view level) {
+                          world_objects::WorldFlags& flags, std::string_view level,
+                          world_objects::SpawnRecords* records) {
     // The humans and flags of the level before are gone: the original's unload frees every slot and the flag pool.
     humans.clear();
     flags.clear();
     state.startGameCallback.clear();
     scripts.enterLevel(level);
+
+    // Step 7: the level's placed objects, into the spawn records.
+    if (records != nullptr) {
+        loadPlacedObjects(scripts, *records, level);
+    }
 
     // InitLevel's own two flags, at the origin facing 0, made through AddFlag so their handles come from the same
     // counter as every other world object's.
@@ -115,7 +143,7 @@ LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::stri
     CreatedHumans& humans = prepared.humans();
 
     LevelScriptRun run;
-    run.start = runLevelScript(scripts, prepared.state(), humans, prepared.flags(), level);
+    run.start = runLevelScript(scripts, prepared.state(), humans, prepared.flags(), level, &prepared.spawnRecords());
 
     // The first second of play's script frames, as gameplay would run them, so what the start schedules (the hub's
     // walk, 100 ms in) happens; player 1 is then where those calls left him.

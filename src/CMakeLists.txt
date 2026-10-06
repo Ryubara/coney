@@ -33,6 +33,7 @@ add_library(coney_core STATIC
     gamemodes/loading_screen.cpp
     gamemodes/level_flow_mode.cpp
     gamemodes/level_object_services.cpp
+    gamemodes/level_pickups.cpp
     gamemodes/level_start.cpp
     gamemodes/load_entry_mode.cpp
     gamemodes/memory_card_mode.cpp
@@ -156,6 +157,8 @@ add_library(coney_core STATIC
     world_objects/nav_links.cpp
     world_objects/object_list.cpp
     world_objects/object_types.cpp
+    world_objects/pickups.cpp
+    world_objects/placed_objects_file.cpp
     world_objects/radios.cpp
     world_objects/spawn_records.cpp
     world_objects/tag_spots.cpp

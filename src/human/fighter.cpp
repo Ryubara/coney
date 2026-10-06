@@ -5,6 +5,8 @@
 #include <array>
 #include <cmath>
 #include <numbers>
+#include <optional>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_task.h"
@@ -78,6 +80,28 @@ Combatant* Fighter::inFront(const FighterInput& input, float range, bool grounde
     return best;
 }
 
+const ObjectTarget* Fighter::pickObjectTarget(const FighterInput& input) const {
+    const float range = std::max(reachOf(id::kBreakObjectLow), reachOf(id::kBreakObjectMid));
+    const float along =
+        input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees) : input.heading;
+    // The nearest object within `range` and `cone` degrees of the heading.
+    const auto nearest = [&](float cone) -> const ObjectTarget* {
+        const ObjectTarget* best = nullptr;
+        float bestDistance = range;
+        for (const ObjectTarget& object : input.objects) {
+            const anim::Vec3 to = anim::subtract(object.point, input.position);
+            const float distance = std::hypot(to.x, to.y);
+            if (distance <= bestDistance && std::fabs(wrapAngle(headingOf(to) - along)) <= cone * kDegrees) {
+                best = &object;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    };
+    const ObjectTarget* found = nearest(kPickConeDegrees);
+    return found != nullptr ? found : nearest(kObjectWideConeDegrees);
+}
+
 Combatant* Fighter::pickTarget(const FighterInput& input, float range) {
     // The heading searched along: the stick's when it is pushed, else the facing. The stick is in the facing frame,
     // its angle positive to the right, and headings grow to the left.
@@ -116,6 +140,7 @@ const Combatant* Fighter::lockTarget() const {
 
 void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& heading) {
     m_strikes.clear();
+    m_objectHit.reset();
     const combat::CombatTuning& tuning = combat::combatTuning();
     const combat::CombatMode before = m_combat.mode();
     m_report = GrabbedReport{};
@@ -178,7 +203,11 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         seatMount(input, animator, heading);
     }
     if (out.hitAnim != id::kNone) {
-        landHit(out.hitAnim, out.hitDamage, input);
+        if ((out.hitAnim == id::kBreakObjectLow || out.hitAnim == id::kBreakObjectMid) && m_objectTarget) {
+            m_objectHit = std::exchange(m_objectTarget, std::nullopt);
+        } else {
+            landHit(out.hitAnim, out.hitDamage, input);
+        }
     }
 
     // 5. A hold ends when the victim has no health left, and a tackle when the power meter is empty (**Coney's
@@ -233,6 +262,14 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     const Combatant* front = inFront(input, reachOf(id::kAttackS1), true);
     in.target = front != nullptr && front->state() == TargetState::Grounded ? combat::TargetKind::Grounded
                                                                             : combat::TargetKind::None;
+    // With no human in front, square aims at a breakable object (Player_ObjectAttack picks the clip by its height).
+    if (front == nullptr && input.command == combat::command::kSquarePressed) {
+        if (const ObjectTarget* object = pickObjectTarget(input); object != nullptr) {
+            in.target = combat::TargetKind::Breakable;
+            in.objectHeight = object->point.z - input.position.z;
+            m_objectTarget = object->handle;
+        }
+    }
     m_candidate = nullptr;
     if (input.command == combat::command::kCircleTapped || input.command == combat::command::kCircleHeld) {
         const combat::GrabKind kind =

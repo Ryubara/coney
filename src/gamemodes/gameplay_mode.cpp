@@ -414,7 +414,8 @@ void GameplayMode::enter() {
 void GameplayMode::loadLevel() {
     startPlayerLevel(m_state);
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
-    const LevelStart& start = m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName));
+    const LevelStart& start =
+        m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName, m_context.spawnRecords));
     const HumanCreation* player = start.player ? &*start.player : nullptr;
     m_playerTeleports = player != nullptr ? player->teleports : 0;
     if (player != nullptr) {
@@ -438,6 +439,12 @@ void GameplayMode::loadLevel() {
                           car.position.x, car.position.y, car.position.z));
     }
 
+    // The loose objects a player may pick up: the spawn records the scripts and the placed objects filled.
+    m_pickups.reset();
+    if (m_context.spawnRecords != nullptr && m_context.objectTypes != nullptr) {
+        m_pickups.emplace(m_scripts, m_state, *m_context.spawnRecords, *m_context.objectTypes);
+    }
+
     // The level itself, with the player at that start; entering it preloads the world around him.
     std::expected<std::unique_ptr<GameMode>, Error> level = fail(ErrorCode::NotFound, "no level loader");
     if (m_loader) {
@@ -450,7 +457,8 @@ void GameplayMode::loadLevel() {
                                              .objects = &m_objects,
                                              .lighting = m_lighting.get(),
                                              .effects = m_effects.get(),
-                                             .cars = m_cars.get()});
+                                             .cars = m_cars.get(),
+                                             .pickups = m_pickups ? &*m_pickups : nullptr});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));
