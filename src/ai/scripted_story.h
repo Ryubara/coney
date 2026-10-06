@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "ai/riot_goals.h"
 #include "animation/anim_math.h"
 #include "scripting/story_bindings.h"
 
@@ -102,6 +103,10 @@ class ScriptedStory final : public script::StoryBindingHost {
     /// the melee goal 8 with its 4000 ms). Nothing for a human down or out of health.
     void goalMelee(double human, double target) override;
     void goalThrowObject(const script::ThrowObjectCall& call) override;
+    /// RiotGoal over the human's goals (the leaving through ScriptedStory's exits).
+    void goalRiot(const script::RiotCall& call) override;
+    /// StationaryThrowerGoal over the human's goals.
+    void goalStationaryThrower(const script::StationaryThrowerCall& call) override;
     void goalPlayDynIdle(const script::DynIdleCall& call) override;
     /// A bum in its bum goal plays its reaction clip (anim 668 for types 1 and 2, 669 for type 0).
     void bumTrigger(double human) override;
@@ -156,6 +161,7 @@ class ScriptedStory final : public script::StoryBindingHost {
 
     ScriptedBrains* m_scripted;
     std::map<double, WorldPath> m_paths;
+    RiotServices m_riot; // what every rioter asks of the level (set on the first GoalRiot)
     int m_warriorCommand = -1;
     TagHandler m_tagHandler;
 };

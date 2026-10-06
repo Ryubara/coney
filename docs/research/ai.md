@@ -1829,6 +1829,15 @@ keeps the low 16 bits at the brain (**stand-in**: neither the civilian brain nor
 `HuSetWounded` wounds once: the fight, grab or throw ends, health drops to a quarter and the brain is flushed; healing
 clears the mark (**stand-in**: no wounded clips, and nothing reads the 14 s stamp). `ChangeBlocker` sets or clears flag
 8 on the path polygon holding the point whose bounding box's middle is nearest (**Coney choice** for the centre).
+`GoalStationaryThrower` (`0x8c`, `src/ai/riot_goals.*`) walks back within 0.5 m of where the goal began, turns to the
+nearest hostile within three quarters of its sight range, plays clip `0x225` and waits 1000 × delay to 1000 × delay +
+1000 ms (**stand-ins**: nothing is thrown, the eight object types are kept; the one wait in five with another idle is
+not built). `GoalRiot` (84) roams and decides every 60 updates (**Coney choice**: half the time is an even roll); near a
+player within its radius, a gang-member rioter may pick a fight with a civilian within 15 m (or, by the gang-fight
+chance, a gang member) and then leaves through the nearest exit flag, as `GoalMoveToExitFlag` with its defaults.
+**Stand-ins**: the roam walks to random points within 8 m of the start; the smash and loot searches find nothing (no
+breakables or loot are hooked), so no act is made and a rioter leaves only after a fight; the fight is not cut at 8 s;
+the shouts are not said; the gang test `0x0028ff58` is taken as passed.
 
 **The story's tactics** (`src/ai/story_tactics.*`; Attack and Confront are the Rumble's above). Group moves give the
 leader the moving goal and have the others track him (3, 1, 0.75 and 4 m; **stand-in** for `Goal_FollowPlayer` in
@@ -1894,6 +1903,8 @@ when `GangCanFlee` turns it on.
 - The tactic event codes (`TacticGetString`, `0x00315c58`) passed to a tactic's callback.
 - What the player gang's type-3 tactic (vtable `0x005439e0`) is called and does, and what `0x0041c4e0` decides.
 - The perception struct (`+0xf8`).
+- The riot goal's roam (where a rioter walks between decisions), its smash and loot targets in Coney's objects,
+  how the 8 s fight ends, and the gang test `0x0028ff58`.
 - The camera visibility test `0x001202e8` an off-screen spawner (and state 11) uses: is 0.3 m the radius, and does
   anything hide the sphere? Does `GangAddSpawner`'s negative limit make waves (Coney: yes)?
 - The hold's damage (`0x00510acc`) of `GoalGrabTarget` and the boxing attack weights (`0x00511120`) of

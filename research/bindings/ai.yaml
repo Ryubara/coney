@@ -1689,6 +1689,7 @@
     nearest player stands in the rioter's gang's turf. Roaming, targets and the fight's end:
     [AI: GoalRiot](../../research/ai.md#riot).
   usage: {chunks: 8, calls: 14, boot: false, mission1: false, result_used: false, levels: [34, 86, 93, 31, 82]}
+  coney: implemented
 
 - name: GoalBumLogic
   wrapper: 0x003633a8
@@ -1834,6 +1835,7 @@
     Where the object list is read (the thrown object's creation) is not traced. One wait in five is a different
     idle action (0x002fb0f0).
   usage: {chunks: 5, calls: 8, boot: false, mission1: false, result_used: false, levels: [34, 31, 11]}
+  coney: implemented
 
 - name: GoalCallGang
   wrapper: 0x003638b8

@@ -7,6 +7,7 @@
 #include <memory>
 #include <numbers>
 #include <utility>
+#include <vector>
 
 #include "ai/brain.h"
 #include "ai/gangs.h"
@@ -159,8 +160,26 @@ GoalStatus TravelPathGoal::process(Brain& brain) {
 // ---- FindEnemyGoal ----
 
 Brain* nearestHostile(Brain& brain, std::span<Brain* const> candidates) {
+    return nearestHostileWithin(brain, candidates, brain.sightRange());
+}
+
+std::vector<Brain*> knownBrains(Brain& brain) {
+    std::vector<Brain*> candidates;
+    if (const Gang* own = brain.gang(); own != nullptr) {
+        Gangs& gangs = own->owner();
+        for (int id = 0; id < static_cast<int>(kGangSlots); ++id) {
+            if (const Gang* gang = gangs.find(id); gang != nullptr) {
+                candidates.insert(candidates.end(), gang->members().begin(), gang->members().end());
+            }
+        }
+    }
+    candidates.insert(candidates.end(), brain.enemies().begin(), brain.enemies().end());
+    return candidates;
+}
+
+Brain* nearestHostileWithin(Brain& brain, std::span<Brain* const> candidates, float range) {
     Brain* best = nullptr;
-    float bestDistance = brain.sightRange();
+    float bestDistance = range;
     for (Brain* other : candidates) {
         if (other == &brain || !Brain::fightable(*other) || other->human().state() != human::TargetState::Standing ||
             !other->human().targetable()) {
@@ -187,16 +206,7 @@ GoalStatus FindEnemyGoal::process(Brain& brain) {
         brain.stopMove();
     }
     // The candidates: every brain the gangs know (the members of every gang in use), and player 1's.
-    std::vector<Brain*> candidates;
-    if (const Gang* own = brain.gang(); own != nullptr) {
-        Gangs& gangs = own->owner();
-        for (int id = 0; id < static_cast<int>(kGangSlots); ++id) {
-            if (const Gang* gang = gangs.find(id); gang != nullptr) {
-                candidates.insert(candidates.end(), gang->members().begin(), gang->members().end());
-            }
-        }
-    }
-    candidates.insert(candidates.end(), brain.enemies().begin(), brain.enemies().end());
+    const std::vector<Brain*> candidates = knownBrains(brain);
     if (Brain* enemy = nearestHostile(brain, candidates); enemy != nullptr) {
         static_cast<void>(brain.fight(*enemy));
     }

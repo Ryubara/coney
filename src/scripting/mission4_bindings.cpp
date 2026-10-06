@@ -60,6 +60,16 @@ bool boolArgOr(std::span<const Value> args, std::size_t i, bool fallback) {
     return i >= args.size() ? fallback : boolArg(args, i);
 }
 
+// Argument `i` as a float that is `fallback` when omitted.
+float floatArgOr(std::span<const Value> args, std::size_t i, float fallback) {
+    return i >= args.size() ? fallback : static_cast<float>(binding::number(args, i));
+}
+
+// Argument `i` as an unsigned integer that is `fallback` when omitted.
+std::uint32_t unsignedArgOr(std::span<const Value> args, std::size_t i, std::uint32_t fallback) {
+    return i >= args.size() ? fallback : unsignedArg(args, i);
+}
+
 // Argument `i` as a string; empty for nil or a non-string.
 std::string stringArg(std::span<const Value> args, std::size_t i) {
     return i < args.size() && args[i].string() ? binding::string(args, i) : std::string();
@@ -113,7 +123,8 @@ void addMission4Bindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext&
     // ---- The objects.
     vm.registerFunction("ObjGetIndex",
                         [context = &context](std::span<const Value> args) { return objGetIndex(*context, args); });
-    vm.registerFunction("GetRTTI", [context = &context](std::span<const Value> args) { return getRtti(*context, args); });
+    vm.registerFunction("GetRTTI",
+                        [context = &context](std::span<const Value> args) { return getRtti(*context, args); });
     vm.registerFunction("ChangeBlocker",
                         [context = &context](std::span<const Value> args) { return changeBlocker(*context, args); });
 
@@ -177,6 +188,39 @@ void addMission4Bindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext&
         const int gang = static_cast<int>(wholeArg(args, 0));
         if (StoryBindingHost* host = storyOf(*context); host != nullptr && gang != -1) {
             host->setSpawnerOffScreen(gang, stringArg(args, 1), boolArg(args, 2));
+        }
+        return binding::none();
+    });
+    // `GoalRiot(human, radius, actChance, acts, fightChance, gangFightChance, shout)`: the chances and acts are
+    // bytes; an argument left out takes the binding's default.
+    vm.registerFunction("GoalRiot", [context = &context](std::span<const Value> args) {
+        constexpr RiotCall kDefaults;
+        const auto byte = [args](std::size_t i, int fallback) {
+            return static_cast<int>(unsignedArgOr(args, i, static_cast<std::uint32_t>(fallback)) & 0xffU);
+        };
+        if (StoryBindingHost* host = storyOf(*context); host != nullptr) {
+            host->goalRiot(RiotCall{.human = handleArg(args, 0),
+                                    .radius = floatArgOr(args, 1, kDefaults.radius),
+                                    .actChance = byte(2, kDefaults.actChance),
+                                    .acts = byte(3, kDefaults.acts),
+                                    .fightChance = byte(4, kDefaults.fightChance),
+                                    .gangFightChance = byte(5, kDefaults.gangFightChance),
+                                    .shout = boolArgOr(args, 6, kDefaults.shout)});
+        }
+        return binding::none();
+    });
+    // `GoalStationaryThrower(human, delay, objects)`: the delay a byte, the objects eight 16-bit type ids t[1]..t[8].
+    vm.registerFunction("GoalStationaryThrower", [context = &context](std::span<const Value> args) {
+        StationaryThrowerCall call{
+            .human = handleArg(args, 0), .delay = static_cast<int>(unsignedArg(args, 1) & 0xffU), .objects = {}};
+        if (args.size() > 2 && args[2].table() != nullptr) {
+            for (std::size_t k = 0; k < call.objects.size(); ++k) {
+                const double id = args[2].table()->get(Value(static_cast<double>(k + 1))).number().value_or(0.0);
+                call.objects.at(k) = static_cast<std::uint16_t>(static_cast<std::int64_t>(std::trunc(id)) & 0xffff);
+            }
+        }
+        if (StoryBindingHost* host = storyOf(*context); host != nullptr) {
+            host->goalStationaryThrower(call);
         }
         return binding::none();
     });

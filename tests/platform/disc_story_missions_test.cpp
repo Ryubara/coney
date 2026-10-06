@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Checks against the player's own disc that the story's second and third missions (`level80`, `level87`) play as
-// `--play-level NAME --checkpoint N` plays them, at every checkpoint: the level's scripts run for a while in gameplay
-// over the play mode, headless, with no script error, and player 1 stands under the pad's control, moving when the
-// stick is pushed. They run only when the environment variable CONEY_DISC names the disc and skip otherwise; they print
-// counts only (LEGAL.md).
+// Checks against the player's own disc that the story's second, third and fourth missions (`level80`, `level87`,
+// `level34`) play as `--play-level NAME --checkpoint N` plays them, at every checkpoint: the level's scripts run for a
+// while in gameplay over the play mode, headless, with no script error, and player 1 stands under the pad's control,
+// moving when the stick is pushed. They run only when the environment variable CONEY_DISC names the disc and skip
+// otherwise; they print counts only (LEGAL.md).
 
 #include <array>
 #include <cstddef>
@@ -181,5 +181,30 @@ TEST_CASE("the disc's level80 and level87 play each checkpoint without a script 
                         static_cast<int>(level.size()), level.data(), checkpoint, run.humans,
                         static_cast<unsigned long long>(run.scriptErrors), run.missingBindings, run.travelled);
         }
+    }
+}
+
+TEST_CASE("the disc's level34 plays each checkpoint without a script error or a missing binding", "[disc][story]") {
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // Mission 4 has five checkpoints.
+    constexpr int kCheckpoints = 5;
+    for (int checkpoint = 1; checkpoint <= kCheckpoints; ++checkpoint) {
+        INFO("level34 checkpoint " << checkpoint);
+        const MissionRun run = playMission(*wad, "level34", checkpoint);
+        REQUIRE(run.loaded);
+        for (const std::string& error : run.errors) {
+            UNSCOPED_INFO(error);
+        }
+        CHECK(run.scriptErrors == 0);
+        CHECK(run.missingBindings == 0);
+        CHECK(run.standing);
+        CHECK(run.travelled > 1.0F);
+        std::printf("  level34 checkpoint %d: %zu humans created, %llu script errors, %zu missing bindings, %.1f m "
+                    "walked\n",
+                    checkpoint, run.humans, static_cast<unsigned long long>(run.scriptErrors), run.missingBindings,
+                    run.travelled);
     }
 }

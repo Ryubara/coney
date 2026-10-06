@@ -101,16 +101,27 @@ missions:
     group: story
     slot: story mission 4
     label: "Mission 4"
-    summary: "A blackout leaves the streets rioting. Gangs such as the Moonrunners, Panzers and Rogues are seen fighting in the streets, the Savage Huns rob a shop and run, and the Baseball Furies turn up near the end."
-    summary_source: web
-    sources:
-      - "https://thewarriors.fandom.com/wiki/Missions"
+    summary: "The story's mission 4, reached from the hub: a riot in the streets, with rioters spawned in waves, bar staff throwing at enemies and wrecked cars."
+    summary_source: research
     status: in-progress
     checkpoints:
       count: 5
       default: in-progress
+      each:
+        1: {status: in-progress, note: "Every binding is in and the scripts run 20 s with no error; the bar staff's throws play their clip without a bottle."}
+        2: {status: in-progress, note: "The rioters roam and pick fights; their smashing and looting find nothing to act on yet."}
+        3: {status: in-progress, note: "The riot waves and the wrecked car run; the forced crime level holds the police's interest."}
+        4: {status: in-progress, note: "The riot waves run; how the checkpoint ends is not yet played through."}
+        5: {status: in-progress, note: "The scripts run with no error; the checkpoint is not yet played to its end."}
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "The fourth mission's brain and human calls", path: "research/ai.md#coney"}
+      - {title: "Spawners", path: "research/ai.md#spawners"}
+      - {title: "Cars", path: "research/cars.md"}
+    questions:
+      - "What the riot goal's smash and loot acts target, and how its 8 s fight ends."
+      - "What an exploded car looks like, and what its message 0x19 carries."
+    test: "coney_tests \"[disc][story]\""
   - level: 2
     group: story
     slot: story mission 5

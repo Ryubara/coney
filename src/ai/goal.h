@@ -40,12 +40,14 @@ enum class GoalType : std::uint8_t {
     AreaWalker = 0x47,         ///< AreaWalkerGoal: strolls round a centre.
     BumLogic = 0x4f,           ///< BumLogicGoal.
     Peddler = 0x50,            ///< PeddlerGoal: a vendor beckoning passers-by.
+    Riot = 0x54,               ///< RiotGoal: roams, smashes, loots and picks fights, then leaves.
     AddressPerson = 0x57,      ///< AddressPersonGoal.
     ThrowObject = 0x5d,        ///< ThrowObjectGoal.
     Pedestrian = 0x69,         ///< PedestrianGoal: wanders the flag network (`FlagNetTraverse`).
     PedestrianReaction = 0x6b, ///< PedestrianReactionGoal: a pedestrian reacting to trouble (mode 9: flight).
     Dealer = 0x80,             ///< DealerGoal.
     Shopkeeper = 0x82,         ///< ShopkeeperGoal.
+    StationaryThrower = 0x8c,  ///< StationaryThrowerGoal: throws at enemies from its spot.
     Backoff = 0x9b,            ///< BackoffGoal.
     Boxer = 0x9e,              ///< BoxerGoal: boxes a target for ever.
 };

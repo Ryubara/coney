@@ -253,6 +253,7 @@ target_sources(coney_core PRIVATE
     ai/play_anim_action.cpp
     ai/play_dyn_animation_goal.cpp
     ai/reaction_goals.cpp
+    ai/riot_goals.cpp
     ai/route_follower.cpp
     ai/route_planner.cpp
     ai/scripted_brains.cpp

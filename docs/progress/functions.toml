@@ -5179,6 +5179,30 @@ name = "ThrowObjectGoal_Process"
 subsystem = "Human"
 
 [[function]]
+address = 0x002d0e98
+name = "Goal_Riot"
+subsystem = "Human"
+size = 208
+
+[[function]]
+address = 0x002d0f68
+name = "RiotGoal_Init"
+subsystem = "Human"
+size = 280
+
+[[function]]
+address = 0x002d1288
+name = "RiotGoal_TryPickFight"
+subsystem = "Human"
+size = 528
+
+[[function]]
+address = 0x002d1c38
+name = "RiotGoal_Process"
+subsystem = "Human"
+size = 1760
+
+[[function]]
 address = 0x002d2df8
 name = "Goal_PlayDynamicAnimation"
 subsystem = "Human"
@@ -5460,6 +5484,24 @@ address = 0x002e6668
 name = "ShopkeeperGoal_Process"
 subsystem = "Human"
 size = 4000
+
+[[function]]
+address = 0x002eee50
+name = "Goal_StationaryThrower"
+subsystem = "Human"
+size = 144
+
+[[function]]
+address = 0x002eeee0
+name = "StationaryThrowerGoal_Init"
+subsystem = "Human"
+size = 152
+
+[[function]]
+address = 0x002ef2c0
+name = "StationaryThrowerGoal_Process"
+subsystem = "Human"
+size = 1256
 
 [[function]]
 address = 0x002fa5a0

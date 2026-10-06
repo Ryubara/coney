@@ -2,12 +2,8 @@
 
 # Mission 4: Blackout (level34)
 
-A blackout leaves the streets rioting. Gangs such as the Moonrunners, Panzers and Rogues are seen fighting in the
-streets, the Savage Huns rob a shop and run, and the Baseball Furies turn up near the end.
-
-*This summary is paraphrased from web sources until our own walkthrough of the mission replaces it. Sources:*
-
-- <https://thewarriors.fandom.com/wiki/Missions>
+The story's mission 4, reached from the hub: a riot in the streets, with rioters spawned in waves, bar staff throwing at
+enemies and wrecked cars.
 
 | | |
 | --- | --- |
@@ -19,22 +15,22 @@ streets, the Savage Huns rob a shop and run, and the Baseball Furies turn up nea
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | 🚧 In Progress | - |
-| 2 | 🚧 In Progress | - |
-| 3 | 🚧 In Progress | - |
-| 4 | 🚧 In Progress | - |
-| 5 | 🚧 In Progress | - |
+| 1 | 🚧 In Progress | Every binding is in and the scripts run 20 s with no error; the bar staff's throws play their clip without a bottle. |
+| 2 | 🚧 In Progress | The rioters roam and pick fights; their smashing and looting find nothing to act on yet. |
+| 3 | 🚧 In Progress | The riot waves and the wrecked car run; the forced crime level holds the police's interest. |
+| 4 | 🚧 In Progress | The riot waves run; how the checkpoint ends is not yet played through. |
+| 5 | 🚧 In Progress | The scripts run with no error; the checkpoint is not yet played to its end. |
 
 ## What it needs {#needs}
 
-Its scripts can call 204 script bindings. 17 of them are new, which no earlier level of the story calls: 15 are
+Its scripts can call 204 script bindings. 17 of them are new, which no earlier level of the story calls: 17 are
 implemented in Coney and 17 are traced. The full list is on [the coverage
 page](../references/bindings/story.md#level34).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
 | [Characters](../references/bindings/character.md) | 1 | 1 |
-| [AI](../references/bindings/ai.md) | 3 | 1 |
+| [AI](../references/bindings/ai.md) | 3 | 3 |
 | [Gangs](../references/bindings/gang.md) | 2 | 2 |
 | [World and objects](../references/bindings/world.md) | 4 | 4 |
 | [Effects and lighting](../references/bindings/effects.md) | 2 | 2 |
@@ -46,6 +42,9 @@ page](../references/bindings/story.md#level34).
 Research:
 
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
+- [The fourth mission's brain and human calls](../research/ai.md#coney)
+- [Spawners](../research/ai.md#spawners)
+- [Cars](../research/cars.md)
 
 ## Run it in Coney {#run}
 
@@ -55,5 +54,16 @@ to 5:
 ```text
 coney --disc /path/to/disc --play-level level34 --checkpoint 1
 ```
+
+Its disc test (needs `CONEY_DISC`; [Building](../guides/building.md)):
+
+```text
+coney_tests "[disc][story]"
+```
+
+## Open questions {#questions}
+
+- What the riot goal's smash and loot acts target, and how its 8 s fight ends.
+- What an exploded car looks like, and what its message 0x19 carries.
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

@@ -143,6 +143,24 @@ struct ThrowObjectCall {
     std::string callback;
 };
 
+/// `GoalRiot(human, radius, actChance, acts, fightChance, gangFightChance, shout)`, with the binding's defaults.
+struct RiotCall {
+    double human = 0;
+    float radius = 15.0F;
+    int actChance = 30;
+    int acts = 1;
+    int fightChance = 20;
+    int gangFightChance = 10;
+    bool shout = true;
+};
+
+/// `GoalStationaryThrower(human, delay, objects)`: the delay in seconds and the eight object type ids.
+struct StationaryThrowerCall {
+    double human = 0;
+    int delay = 0;
+    std::array<std::uint16_t, 8> objects{};
+};
+
 /// `GoalPlayDynIdle(human, flag, startAnim, loopAnim, endAnim, timeMs)`.
 struct DynIdleCall {
     double human = 0;
@@ -283,6 +301,10 @@ class StoryBindingHost {
     virtual void goalMelee(double /*human*/, double /*target*/) {}
     /// `GoalThrowObject`.
     virtual void goalThrowObject(const ThrowObjectCall& /*call*/) {}
+    /// `GoalRiot`.
+    virtual void goalRiot(const RiotCall& /*call*/) {}
+    /// `GoalStationaryThrower`.
+    virtual void goalStationaryThrower(const StationaryThrowerCall& /*call*/) {}
     /// `GoalPlayDynIdle`.
     virtual void goalPlayDynIdle(const DynIdleCall& /*call*/) {}
     /// `GoalBumLogicTrigger`.

@@ -8,10 +8,12 @@
 #include <memory>
 #include <numbers>
 #include <utility>
+#include <vector>
 
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/gangs.h"
+#include "ai/riot_goals.h"
 #include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_goals.h"
@@ -355,6 +357,46 @@ void ScriptedStory::goalThrowObject(const script::ThrowObjectCall& call) {
         brain.pushGoal(std::make_unique<ThrowObjectGoal>([this](double handle) { return m_scripted->locate(handle); },
                                                          call.target, call.range, call.gait, call.callback,
                                                          m_scripted));
+    });
+}
+
+void ScriptedStory::goalRiot(const script::RiotCall& call) {
+    // Coney choice for the leaving goal's walk (the riot's own values are not on the page): the exit goal's defaults.
+    constexpr script::ExitFlagCall kLeave;
+    if (!m_riot.leave) {
+        m_riot.players = [this] {
+            std::vector<anim::Vec3> players;
+            if (const Brain* player = m_scripted->player(); player != nullptr) {
+                players.push_back(player->human().position());
+            }
+            return players;
+        };
+        m_riot.candidates = [this] {
+            const Brain* player = m_scripted->player();
+            std::vector<Brain*> brains;
+            for (const auto& [handle, brain] : m_scripted->bound()) {
+                if (brain != player) {
+                    brains.push_back(brain);
+                }
+            }
+            return brains;
+        };
+        m_riot.leave = [this](Brain& brain) {
+            leave(brain, 0.0, kLeave.gait, kLeave.angle, kLeave.distance, kLeave.radius);
+        };
+    }
+    const RiotOrder order{.radius = call.radius,
+                          .actChance = call.actChance,
+                          .acts = call.acts,
+                          .fightChance = call.fightChance,
+                          .gangFightChance = call.gangFightChance,
+                          .shout = call.shout};
+    onBrain(call.human, [this, order](Brain& brain) { brain.pushGoal(std::make_unique<RiotGoal>(order, m_riot)); });
+}
+
+void ScriptedStory::goalStationaryThrower(const script::StationaryThrowerCall& call) {
+    onBrain(call.human, [this, call](Brain& brain) {
+        brain.pushGoal(std::make_unique<StationaryThrowerGoal>(call.delay, call.objects, *m_scripted));
     });
 }
 

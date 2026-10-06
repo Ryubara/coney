@@ -21,11 +21,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 14.1%](https://img.shields.io/badge/reimplemented-14.1%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 14.2%](https://img.shields.io/badge/reimplemented-14.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.1% of the game's own code (472,332 of 3,354,776 bytes, 1,527 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.2% of the game's own code (476,660 of 3,354,776 bytes, 1,534 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -64,7 +64,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 103 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.4% | 61 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
-| `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.1% | 477 | 1,096,672 |
+| `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.5% | 484 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -1009,6 +1009,10 @@ at the top of the repository's `README.md`.
 | `0x002cc588` | `AddressPersonGoal_Process` | `Human` | 800 |
 | `0x002cf480` | `Goal_ThrowObject` | `Human` | not filled in |
 | `0x002cf690` | `ThrowObjectGoal_Process` | `Human` | not filled in |
+| `0x002d0e98` | `Goal_Riot` | `Human` | 208 |
+| `0x002d0f68` | `RiotGoal_Init` | `Human` | 280 |
+| `0x002d1288` | `RiotGoal_TryPickFight` | `Human` | 528 |
+| `0x002d1c38` | `RiotGoal_Process` | `Human` | 1,760 |
 | `0x002d2df8` | `Goal_PlayDynamicAnimation` | `Human` | 184 |
 | `0x002d2eb0` | `PlayDynAnimationGoal_Init` | `Human` | 176 |
 | `0x002d2f60` | `PlayDynAnimationGoal_Start` | `Human` | 32 |
@@ -1058,6 +1062,9 @@ at the top of the repository's `README.md`.
 | `0x002e5a00` | `Goal_Shopkeeper` | `Human` | 224 |
 | `0x002e5ae0` | `ShopkeeperGoal_Init` | `Human` | 272 |
 | `0x002e6668` | `ShopkeeperGoal_Process` | `Human` | 4,000 |
+| `0x002eee50` | `Goal_StationaryThrower` | `Human` | 144 |
+| `0x002eeee0` | `StationaryThrowerGoal_Init` | `Human` | 152 |
+| `0x002ef2c0` | `StationaryThrowerGoal_Process` | `Human` | 1,256 |
 | `0x002fa5a0` | `PlayAnimAction_Init` | `Human` | 64 |
 | `0x002fa918` | `AttackAction_Init` | `Human` | 144 |
 | `0x002fa9a8` | `AttackAction_Start` | `Human` | 904 |

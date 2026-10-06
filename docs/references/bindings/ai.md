@@ -2718,7 +2718,7 @@ GoalRiot](../../research/ai.md#riot).
   `RiotGoal_Init`
 - **Used by** 8 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalRunCarrotRun {#goalruncarrotrun}
 
@@ -2868,7 +2868,7 @@ Where the object list is read (the thrown object's creation) is not traced. One 
   `0x002eeee0` `StationaryThrowerGoal_Init`
 - **Used by** 5 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalTag {#goaltag}
 

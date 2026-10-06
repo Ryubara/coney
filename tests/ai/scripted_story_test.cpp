@@ -18,6 +18,7 @@
 #include "ai/brain.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
+#include "ai/riot_goals.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_story.h"
 #include "core/error.h"
@@ -281,4 +282,30 @@ TEST_CASE("HuTag hands the human, the tag and the flag to the tag handler", "[ai
         [&got](double human, double tag, double flag) { got = {human, tag, flag}; });
     level.call("HuTag", {Value(1.0), Value(40.0), Value(100.0)});
     CHECK(got == std::vector<double>{1.0, 40.0, 100.0});
+}
+
+TEST_CASE("The fourth mission's brain calls reach the brains: pedestrian type, wound, riot and thrower goals",
+          "[ai][story]") {
+    Level level;
+    Brain& rioter = level.add({44.0F, 40.0F, 0.0F});
+    Brain& barman = level.add({30.0F, 40.0F, 0.0F});
+    level.call("BrSetPedType", {Value(2.0), Value(3.0)});
+    CHECK(rioter.senses().pedType == 3);
+    const int maximum = barman.human().fighter().health().maximum();
+    level.call("HuSetWounded", {Value(3.0), Value(1.0)});
+    CHECK(barman.human().script().wounded);
+    CHECK(barman.human().fighter().health().value() == maximum / 4);
+    level.call("GoalRiot", {Value(2.0), Value(10.0), Value(100.0), Value(2.0), Value(25.0), Value(65.0)});
+    const auto* riot = dynamic_cast<const coney::ai::RiotGoal*>(rioter.findGoal(GoalType::Riot));
+    REQUIRE(riot != nullptr);
+    CHECK(riot->order().radius == 10.0F);
+    CHECK(riot->order().acts == 2);
+    CHECK(riot->order().gangFightChance == 65);
+    // The shout left out takes its default.
+    CHECK(riot->order().shout);
+    level.call("GoalStationaryThrower", {Value(3.0), Value(5.0), array({12, 13, 14, 15, 16, 0, 0, 0})});
+    const auto* thrower =
+        dynamic_cast<const coney::ai::StationaryThrowerGoal*>(barman.findGoal(GoalType::StationaryThrower));
+    REQUIRE(thrower != nullptr);
+    CHECK(thrower->objects()[4] == 16);
 }

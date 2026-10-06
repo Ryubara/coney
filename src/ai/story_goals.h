@@ -122,6 +122,10 @@ class FindEnemyGoal final : public Goal {
 
 /// The nearest standing human hostile to `brain` among `candidates` within its sight range; null when none is.
 [[nodiscard]] Brain* nearestHostile(Brain& brain, std::span<Brain* const> candidates);
+/// The same within `range` metres.
+[[nodiscard]] Brain* nearestHostileWithin(Brain& brain, std::span<Brain* const> candidates, float range);
+/// Every brain the gangs know (the members of every gang in use, through `brain`'s gang) and `brain`'s enemies.
+[[nodiscard]] std::vector<Brain*> knownBrains(Brain& brain);
 
 /// `GoalThrowObject`'s goal (type 0x5d): beyond `range` of the target the human walks toward it; within it the human
 /// turns to it, then throws what it holds. **Coney stand-in** for the throw (Coney has no thrown objects yet): what
