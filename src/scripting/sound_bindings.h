@@ -92,16 +92,14 @@ class SoundHost {
     /// `SoundPlay2D(name)`: the sound played once without a position; its handle, or NilSoundHandle (0) when it did not
     /// start.
     virtual double play2D(std::uint32_t sound) = 0;
-    /// `SoundPlay(name, pos)`: the sound played once at a point in the world (a 3D sound, full volume, normal pitch);
-    /// its handle, or NilSoundHandle (0) when it did not start. Plays nothing by default.
+    /// `SoundPlay(name, pos)` and `PlaySound3D(sound, position)` (`0x0010fdd0`, as a radio plays its streams): the
+    /// sound played once at a point in the world (full volume, normal pitch); its handle, or NilSoundHandle (0) when
+    /// it did not start. A host with no positional sound plays nothing (the default).
     virtual double play3D(std::uint32_t /*sound*/, const std::array<float, 3>& /*position*/) { return 0.0; }
     /// `EnableAmbientEmitter(id, on)`: switches an ambient emitter on or off. Does nothing by default.
     virtual void enableAmbientEmitter(int /*emitter*/, bool /*on*/) {}
     /// `SoundStopAmbientTrack()`.
     virtual void stopAmbientTrack() = 0;
-    /// `PlaySound3D(sound, position)` (`0x0010fdd0`, volume and pitch 1), as a radio plays its streams: a handle, 0
-    /// when it did not start. A host with no positional sound plays nothing (the default).
-    virtual double play3D(std::uint32_t /*sound*/, const std::array<float, 3>& /*position*/) { return 0.0; }
     /// Whether the sound `handle` (from play2D() or play3D()) still plays.
     [[nodiscard]] virtual bool soundPlaying(double /*handle*/) const { return false; }
     /// Stops the sound `handle`.

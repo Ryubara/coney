@@ -86,7 +86,6 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     /// AmbientEmitters::setEnabled().
     void enableAmbientEmitter(int emitter, bool on) override;
     void stopAmbientTrack() override;
-    double play3D(std::uint32_t sound, const std::array<float, 3>& position) override;
     [[nodiscard]] bool soundPlaying(double handle) const override;
     void stopSound(double handle) override;
     void moveSound(double handle, const std::array<float, 3>& position, float volume) override;
