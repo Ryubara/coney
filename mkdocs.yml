@@ -60,6 +60,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Roadmap: roadmap.md
+  - Changelog: changelog.md
   - Progress: progress/index.md
   - Research:
       - Overview: research/overview.md
