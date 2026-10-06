@@ -238,6 +238,12 @@ recovered name are named by hash.
   state copies, starts PCSX2 on one and records a scripted run as a per-update trace
   ([Recording a trace](#recording-a-trace)); `coney-tools trace diff` compares it with Coney's
   ([Comparing with Coney](#comparing-with-coney)). How PCSX2 is driven underneath: [Driving PCSX2](#driving-pcsx2).
+- **The Xbox executable (optional).** For string- and float-heavy code (front end, audio cues, scripting glue,
+  camera maths), the same function in the Xbox build's `default.xbe` can read faster: string literals inline, the
+  object argument visible, library calls named. Find the twin through a string both builds share, load the XBE in
+  its own Ghidra project (never the main one), and use it only to read the logic: offsets, sizes and vtable slots
+  differ, and evidence is cited at `SLUS_212.15` addresses only. Measurements and the loader used:
+  [Xbox executable](../research/xbox-executable.md).
 - **Capture analysis.** Recording what the game sends to the graphics hardware or the sound processor and studying
   the capture. It is a later fallback, for questions that the code and the debugger answer badly (exact rendering
   state, timing). Captures contain game data: they stay in your scratch folder and never enter the repository.

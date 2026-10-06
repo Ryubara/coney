@@ -6,7 +6,8 @@ Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038e
 
 Addresses written **XBE `0x...`** are virtual addresses in that `default.xbe` (base `0x00010000`), not in
 `SLUS_212.15`. The executable was only read as far as the archive and its name hash needed (strings, headers and
-four short functions); no game logic was disassembled.
+four short functions); no game logic was disassembled here. Whether the executable helps reverse engineering is
+measured on [Xbox executable](xbox-executable.md).
 
 ## Purpose
 
@@ -75,6 +76,9 @@ The same string scan finds 152 of the PS2's 153.
 
 So everything above the platform layer (game modes, AI, scenes, scripting, the chunk system) is the same code; the
 file system, renderer, world streaming and sound are platform-specific. **Evidence:** inferred.
+
+How the executable compares with `SLUS_212.15` for reverse engineering (function counts, anchors, decompiler
+output, library signatures, mapping functions between the builds) is on [Xbox executable](xbox-executable.md).
 
 ## Data
 

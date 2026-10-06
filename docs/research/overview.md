@@ -72,7 +72,9 @@ The leading word of a chunk container is its chunk (or group) count, not a type.
    back, is on [Tasks](tasks.md); how the other humans think, fight and move, on [AI humans](ai.md).
 6. The Xbox version is an optional asset source, never a behaviour reference: it shares the chunk container, the
    scripts and the scenes byte for byte but uses its own graphics formats instead of RenderWare. What it could
-   supply (sharper textures, 720p movies) and how: [Xbox assets](xbox-assets.md).
+   supply (sharper textures, 720p movies) and how: [Xbox assets](xbox-assets.md). Its executable is no easier to
+   reverse engineer than the PS2's (no names, different layouts) but helps as a cross-reference for string- and
+   float-heavy code: [Xbox executable](xbox-executable.md).
 
 ## Status
 
