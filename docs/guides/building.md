@@ -149,7 +149,8 @@ driven by a scripted pad (`[frontend]`); STORY through the mission-complete mode
 start under the pad, QUICK RUMBLE through the Rumble menu's four screens to a Baseball Fury on the Fight Pen's flag
 under the pad, the level scripts' player starts and models for a few checkpoints, the hub's and two arenas' flag starts,
 the hub's chat events run for 20 seconds without a script error, and the game's random table read from the executable
-(`[story]`); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7
+(`[story]`); a QUICK RUMBLE Brawl left to the computer's Orphan, which beats the Fury, through the win sequence to the
+result screen naming the Orphans (`[rumble]`); every animation clip in the WAD, parsed and sampled (`[anim]`, about 7
 seconds); every Character List record with its model, textures, character data and clips, skinned (`[characters]`);
 every Object List record with its model and texture dictionary, the models of one atomic read (`[object_list]`);
 Rembrandt's Anim Range List with a damage for every attack and the grab and tackle ranges, and Rembrandt in the
@@ -333,7 +334,8 @@ twice on Choose Gangs, then on the intro's prompt):
 1020 tap cross
 ```
 
-Add `tap square` every 12 frames from 1100 to 2000 and the Orphan goes down; the result screen takes input from
+Left at that, the Orphan beats the Fury and the result screen names the Orphans (about frame 6100). Add `tap square`
+every 12 frames from 1100 to 2000 and the Orphan goes down instead; the result screen takes input from
 about frame 2400 (`2400 tap cross` replays). The run logs each step (`rumble intro: done, calling FinishCountdown`,
 `rumble result: winner ...`, `rumble result: choice 0`).
 

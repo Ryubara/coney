@@ -322,9 +322,9 @@ less the bindings [Coney's implementation](#coney) has since. Each links to its
 
 ## Coney's implementation {#coney}
 
-A Brawl (1 ON 1) plays to its end ([Building: QUICK RUMBLE](../guides/building.md)): the set-up menus, the arena
-script's sides, the intro and countdown, the other side's fighters, the knockdown, the win camera and the result
-screen with its three paths. The other game types are not built yet.
+A Brawl (1 ON 1) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the set-up menus,
+the arena script's sides, the intro and countdown, the other side's fighters, the knockdown, the win camera and the
+result screen with its three paths. The other game types are not built yet.
 
 - **Intro** (`repo:src/gui/rumble_mode_gui/rumble_intro.h`, drawn over play by
   `repo:src/gamemodes/rumble_intro_layer.h`): `ShowRumbleModeIntro` is held until the level's first frame, because

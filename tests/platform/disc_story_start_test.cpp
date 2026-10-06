@@ -58,20 +58,12 @@
 #include "world/sector_budget.h"
 #include "world_objects/flags.h"
 
+#include "support/disc_play_fixtures.h"
+
 namespace {
 
-// The disc named by CONEY_DISC, opened; nothing when it is not set.
-std::optional<coney::io::Wad> openDisc() {
-    const char* discPath = SDL_getenv("CONEY_DISC");
-    if (discPath == nullptr || *discPath == '\0') {
-        return std::nullopt;
-    }
-    auto disc = coney::io::Disc::open(discPath);
-    REQUIRE(disc.has_value());
-    auto wad = coney::io::Wad::open(std::move(*disc));
-    REQUIRE(wad.has_value());
-    return wad ? std::optional<coney::io::Wad>(std::move(*wad)) : std::nullopt;
-}
+using coney::test::openDisc;
+using coney::test::playLoader;
 
 // A binding host that ignores the menus' requests: the hub run below has no front end.
 class QuietHost final : public coney::script::BindingHost {
@@ -110,34 +102,6 @@ constexpr std::array kKnownStarts{
 // Whether `a` and `b` are the same place to a centimetre.
 bool samePlace(const std::array<float, 3>& a, const std::array<float, 3>& b) {
     return std::abs(a[0] - b[0]) < 0.01F && std::abs(a[1] - b[1]) < 0.01F && std::abs(a[2] - b[2]) < 0.01F;
-}
-
-// Gameplay's level loader as main sets it up: the play mode with player 1 where the scripts left him, as the character
-// his type names, not snapped after a teleport.
-coney::GameplayMode::LevelLoader playLoader(coney::platform::RenderEngine& renderer, const coney::io::Wad& wad,
-                                            coney::world::SectorBudget& budget) {
-    return [&renderer, &wad,
-            &budget](const coney::LevelStart& start,
-                     const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
-        std::optional<coney::human::PlayerStart> playerStart;
-        coney::platform::PlayerSetup setup;
-        if (start.player) {
-            const coney::HumanCreation& player = *start.player;
-            const std::array<float, 3> p =
-                player.teleported ? player.teleported->position : player.position.value_or(std::array<float, 3>{});
-            playerStart = coney::human::PlayerStart{
-                .position = coney::anim::Vec3{p[0], p[1], p[2]},
-                .headingDegrees = player.teleported ? player.teleported->headingDegrees : player.headingDegrees};
-            setup.model = player.model.empty() ? std::string(coney::human::kPlayerModel) : player.model;
-            setup.snapToGround = !player.teleported;
-        }
-        auto mode = coney::platform::PlayLevelMode::create(
-            renderer, wad, start.level, budget, [](std::string_view) {}, playerStart, setup, &cast);
-        if (!mode) {
-            return std::unexpected(std::move(mode.error()));
-        }
-        return std::unique_ptr<coney::GameMode>(std::move(*mode));
-    };
 }
 
 } // namespace

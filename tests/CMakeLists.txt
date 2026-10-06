@@ -67,6 +67,7 @@ add_executable(coney_tests
     hud/player_panel_test.cpp
     platform/disc_change_character_test.cpp
     platform/disc_sprite_sheets_test.cpp
+    platform/disc_rumble_test.cpp
     platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp
     platform/disc_world_test.cpp
