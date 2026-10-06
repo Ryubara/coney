@@ -187,7 +187,7 @@ it when resetting effects.
 - **Wrapper** `0x003692e8` (registered by `RegisterBindings`); **calls** `0x0018e3c8` `Fog3D_End`
 - **Used by** 40 of 467 script chunks (40 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## EndFilmGrain {#endfilmgrain}
 

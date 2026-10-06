@@ -25,7 +25,7 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (470,164 of 3,354,776 bytes, 1,517 functions) |
+| **Reimplemented** | `██▊░░░░░░░░░░░░░░░░░` | 14.0% of the game's own code (470,332 of 3,354,776 bytes, 1,518 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.3% | 99 | 100,440 |
-| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 60 | 195,624 |
+| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.4% | 61 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 185 | 497,416 |
 | `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.1% | 477 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
@@ -441,6 +441,7 @@ at the top of the repository's `README.md`.
 | `0x0018ce58` | `ScreenEffects_UpdateFade` | `Graphics` | not filled in |
 | `0x0018e148` | `Fog3D_Start` | `Graphics` | not filled in |
 | `0x0018e2f0` | `Fog3D_SetMaxParticles` | `Graphics` | not filled in |
+| `0x0018e3c8` | `Fog3D_End` | `Graphics` | 168 |
 | `0x0018e6b8` | `EnterStore` | `Graphics` | 200 |
 | `0x0018e780` | `ExitStore` | `Graphics` | 80 |
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |

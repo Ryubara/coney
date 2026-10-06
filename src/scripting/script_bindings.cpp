@@ -730,6 +730,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("ProcessTag"),
     real("EndGarbage"),
     real("EndParticle"),
+    real("End3DFog"),
     real("MaxFogParticles"),
     real("SetupRadio"),
     real("SoundEnableSystemMusic"),
@@ -1142,7 +1143,6 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("SetLightFlicker"),
     real("SetWorldAmbient"),
     // Lighting, weather and screen effects of the level.
-    stub("End3DFog"),
     stub("EndFog"),
     stub("EndRain"),
     stub("EndRoomSmoke"),

@@ -129,7 +129,8 @@ TEST_CASE("QueueMotionBlurEffect blends the strength, or the whole colour from a
     CHECK(h.effects.motionBlur.current() == coney::effects::MotionBlur::Colour{10, 20, 30, 40});
 }
 
-TEST_CASE("Start3DFog, MaxFogParticles, StartGarbage and EndGarbage reach the level's effects", "[effects_bindings]") {
+TEST_CASE("Start3DFog, MaxFogParticles, End3DFog, StartGarbage and EndGarbage reach the level's effects",
+          "[effects_bindings]") {
     Harness h;
     h.first("Start3DFog", {Value(34734080.0), list({10, 20, 30, 40}), Value(0.4), Value(0.5), Value(7.0)});
     const auto& fogSettings = h.effects.fog.settings();
@@ -145,6 +146,8 @@ TEST_CASE("Start3DFog, MaxFogParticles, StartGarbage and EndGarbage reach the le
     CHECK(fog.fadeRate == 7.0F);
     h.first("MaxFogParticles", {Value(15.0)});
     CHECK(h.effects.fog.maxWisps() == 15);
+    h.first("End3DFog");
+    CHECK_FALSE(h.effects.fog.settings().has_value());
     h.first("StartGarbage", {Value(0.0)});
     CHECK(h.effects.litter.kind() == 0U);
     h.first("EndGarbage");

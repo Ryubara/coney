@@ -279,6 +279,17 @@ NativeFunction makeStart3DFog(const BindingContext& context) {
     };
 }
 
+// `End3DFog()`: the fog's objects destroyed (message `0x15`) and their handles cleared: no emitter, no wisps.
+// @orig 0x0018e3c8 Fog3D_End (unknown)
+NativeFunction makeEnd3DFog(const BindingContext& context) {
+    return [context = &context](std::span<const Value> /*args*/) {
+        if (context->effects != nullptr) {
+            context->effects->fog.stop();
+        }
+        return binding::none();
+    };
+}
+
 // `MaxFogParticles(count)`: message `0x22` to the fog's emitter; nothing with no fog running. **Coney's reading**: the
 // emitter's handling (replacing the 20-wisp top-up) is inferred on the page.
 // @orig 0x0018e2f0 Fog3D_SetMaxParticles (unknown)
@@ -406,6 +417,7 @@ void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::func
     vm.registerFunction("CfgTagSettings", makeCfgTagSettings(context));
     vm.registerFunction("ProcessTag", makeProcessTag(context));
     vm.registerFunction("EndGarbage", makeGarbage(context, false));
+    vm.registerFunction("End3DFog", makeEnd3DFog(context));
     vm.registerFunction("MaxFogParticles", makeMaxFogParticles(context));
     vm.registerFunction("Start3DFog", makeStart3DFog(context));
     vm.registerFunction("StartGarbage", makeGarbage(context, true));

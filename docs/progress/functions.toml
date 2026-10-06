@@ -1898,6 +1898,12 @@ name = "Fog3D_SetMaxParticles"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0018e3c8
+name = "Fog3D_End"
+subsystem = "Graphics"
+size = 168
+
+[[function]]
 address = 0x0018e6b8
 name = "EnterStore"
 subsystem = "Graphics"

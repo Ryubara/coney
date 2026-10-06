@@ -274,6 +274,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 40, calls: 40, boot: true, mission1: false, result_used: false, levels: [34, 81, 93, 9, 51]}
+  coney: implemented
 
 - name: SetGammaRamp
   wrapper: 0x00369308
