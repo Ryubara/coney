@@ -356,7 +356,8 @@ set-up](#rumble-setup)). Confirmed (code) for the C++ steps; the Lua steps infer
    mode's **`StartRumble`**: for a brawl `AddBrawlGang1` → the arena's `AddRumbleGang1`, which creates player 1 with
    `HuCreate("P11", Rumble.gang1[1], FlagPos(fP1[1]), 270, nil, 1, gang, true)` and teleports it onto `fP1[1]` with
    the flag's heading (and gang 2 at `fP2`); then `DoRules` makes the gangs enemies, hides the HUD and starts the
-   intro and countdown (`ShowRumbleModeIntro("FinishCountdown", ...)`). The fight runs in mode 1.
+   intro and countdown (`ShowRumbleModeIntro("FinishCountdown", ...)`). The fight runs in mode 1; the match itself
+   (the game types' rules, the intro, the result screen and the way back) is on [Rumble](rumble.md).
 
 What Coney needs for QUICK RUMBLE to reach a fight: mode 0x11 (or a stand-in that fills the 23 set-up values and
 calls `Menu.startRumbleMode` with an arena's level number), `GetRumbleModeData`, the flag bindings, the start

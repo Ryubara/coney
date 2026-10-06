@@ -312,8 +312,8 @@ Coney stand-ins, each an open question below:
 - The Stats screen's class (`0x001e5498`, menu `+0x3bb0`): its layout and when `+0x3bb8` is unset.
 - The header widget (`CircledTextHeader`, `0x001e7f50`): its layout and the two coloured circles left of the title.
 - The Controls screen (`ControlMenuHUD.cpp`) and the Options menu (`OptionMenu.cpp`): their layouts and items.
-- The mission-failed items' actions (`0x001d2018` and the vtable `0x0053b598`) and the Rumble result screen (mode
-  0x14, `HUDLaunchRumbleWin`).
+- The mission-failed items' actions (`0x001d2018` and the vtable `0x0053b598`). The Rumble result screen (mode
+  0x14) is on [Rumble](rumble.md#result-screen).
 - What the menu's write to the screen-effects managers' `+0x214` does on close.
 - The Armies of the Night pause menu's items (`0x001cfec0`-`0x001d0a38`).
 - The mission title's choice between `0xe7` and `0xe8` (which one `<ROBJ_N>` selects), and the fonts, scales and

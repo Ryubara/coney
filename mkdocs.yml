@@ -81,6 +81,7 @@ nav:
           - GUI, sprite sheets and text: research/gui.md
           - In-game HUD: research/hud.md
           - Pause menu and mission failed: research/pause.md
+          - Rumble mode: research/rumble.md
           - Particles and script types: research/particles.md
           - Level loading: research/level-loading.md
           - Scripts (Lua): research/scripting.md
