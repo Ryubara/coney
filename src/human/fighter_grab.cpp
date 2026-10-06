@@ -68,7 +68,7 @@ void Fighter::dropLostHold(const FighterInput& input, HumanAnimator& animator) {
     animator.playCombat(clips::kNoClips, kAnimFightIdle, AnimState::Attack);
 }
 
-void Fighter::startHold(Holdable& victim, const FighterInput& input, float& heading, bool tackle,
+void Fighter::startHold(Holdable& victim, const FighterInput& input, float& heading, bool tackle, int connect,
                         HumanAnimator& animator) {
     const anim::Vec3 to = anim::subtract(victim.position(), input.position);
     const float toVictim = std::hypot(to.x, to.y) > 1e-4F ? headingOf(to) : heading;
@@ -89,8 +89,8 @@ void Fighter::startHold(Holdable& victim, const FighterInput& input, float& head
     // The grab: from the rear when the player stands on the victim's rear side, else from the front. **Coney's
     // choice**: the side is decided as the intro starts rather than at its end; a passive target does not move between.
     m_rear = combat::victimSide(victim.position(), victim.heading(), input.position) == combat::Side::Rear;
-    const std::array<std::uint32_t, 2> grabClips{id::kGrabPlayerIntro,
-                                                 m_rear ? clips::kGrabRearEnd : clips::kGrabFrontEnd};
+    m_connect = connect;
+    const std::array<std::uint32_t, 2> grabClips{id::kGrabPlayerIntro, connectClip()};
     animator.playCombat(grabClips, m_rear ? clips::kGrabRearHold : clips::kGrabHold, AnimState::Hold, kCombatFade,
                         clips::kGrabHolds);
     // The intro turns the grabber to face the victim over its playing time.
@@ -123,14 +123,14 @@ void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator
     }
     const std::uint32_t clip = animator.animId();
     // The intro has handed over to the connecting clip.
-    if (m_pair == PairStage::Intro && clip == (m_rear ? clips::kGrabRearEnd : clips::kGrabFrontEnd)) {
+    if (m_pair == PairStage::Intro && clip == connectClip()) {
         connect(input, animator, heading);
         return;
     }
     // A connecting clip, a spin or the mount's pick-up has ended: the victim is snapped to the hold of the side the
     // grab is now on (a spin set the side as it started). At a connecting clip's end the gate may release the grab
     // instead.
-    const bool connectEnded = m_lastClip == clips::kGrabFrontEnd || m_lastClip == clips::kGrabRearEnd;
+    const bool connectEnded = m_lastClip == connectClip();
     const bool pickedUp = m_lastClip == clips::clipOf(combat::anim_id::kMountPickup);
     if (clip != m_lastClip && m_pair == PairStage::Moving && (connectEnded || pickedUp || clips::isSpin(m_lastClip))) {
         const anim::Vec3 offset = pairPoint(m_ranges, m_rear ? clips::kGrabRearHold : clips::kGrabHold,
@@ -140,6 +140,9 @@ void Fighter::followPairClips(const FighterInput& input, HumanAnimator& animator
             return;
         }
         snapAttach(input, heading, offset, m_rear ? 0.0F : kPi);
+        if (connectEnded && m_connect != static_cast<int>(clips::kGrabFrontEnd)) {
+            landGrapple(input);
+        }
     }
     detachForSpin(animator);
 }
@@ -154,7 +157,7 @@ void Fighter::detachForSpin(const HumanAnimator& animator) {
 }
 
 void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float heading) {
-    const std::uint32_t clip = m_rear ? clips::kGrabRearEnd : clips::kGrabFrontEnd;
+    const std::uint32_t clip = connectClip();
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clip) : nullptr;
     const float reach =
         range != nullptr && range->reach > 0.0F ? range->reach : (m_rear ? kConnectReachRear : kConnectReachFront);
@@ -189,9 +192,35 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
         m_slideUpdates = m_turnUpdates;
     }
     // Both humans switch on the same update: the victim plays the grabber's set's reaction, then its own hold.
-    m_held->playPaired(clips::one(m_rear ? clips::kGrabReactFromRear : clips::kGrabReactFromFront), animator.anims(),
-                       m_rear ? clips::kGrabRearHeld : clips::kGrabHeld, AnimState::Hold, TargetState::Held);
+    m_held->playPaired(clips::one(clip + 1), animator.anims(), m_rear ? clips::kGrabRearHeld : clips::kGrabHeld,
+                       AnimState::Hold, TargetState::Held);
     m_pair = PairStage::Moving;
+}
+
+void Fighter::landGrapple(const FighterInput& input) {
+    // With power left, the victim takes the damage table's value of the strike (`Grab_ConnectEnd`). The hit is
+    // reported as the hold's id, which is playing when the victim applies it: the tutorial waits for 82 or 84. It
+    // scores as the strike.
+    if (m_held == nullptr || m_combat.power().value() <= 0) {
+        return;
+    }
+    const auto strike = static_cast<int>(connectClip());
+    const int damage = m_ranges != nullptr ? combat::strikeDamage(*m_ranges, strike) : 0;
+    const auto hold = static_cast<int>(m_rear ? clips::kGrabRearHold : clips::kGrabHold);
+    m_held->hit(IncomingHit{.damage = damage,
+                            .attackAnim = hold,
+                            .attacker = input.position,
+                            .react = false,
+                            .ignoresArmour = m_player || hasFlag(flag::kIncreasedReact),
+                            .attackerFlag200000 = hasFlag(flag::kIncreasedReact),
+                            .attackerIsPlayer = m_player});
+    ++m_hitsLanded;
+    m_damageDealt += damage;
+    if (m_player) {
+        m_strikes.push_back(hold);
+    }
+    earnRage(strike, input.nowMs, false);
+    m_repeat.note(strike, input.nowMs);
 }
 
 void Fighter::snapAttach(const FighterInput& input, float heading, anim::Vec3 offset, float turn) {

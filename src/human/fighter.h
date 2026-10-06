@@ -56,6 +56,8 @@ inline constexpr float kPickAnyScale = 0.9F;
 inline constexpr float kPickStick = 0.01F;
 /// Targets more than this far above or below are skipped.
 inline constexpr float kPickHeight = 2.0F;
+/// The strong grapple's search range without an Anim Range List (Rembrandt's, **Coney's choice**).
+inline constexpr float kStrongGrappleFallbackRange = 3.0F;
 /// Beyond the attack's far range the attacker only turns, at most this much (**Coney's reading** of the research's
 /// "capped at 8": degrees).
 inline constexpr float kAttackTurnCapDegrees = 8.0F;
@@ -154,6 +156,9 @@ class Fighter {
     /// The target human the search would pick for an attack of `range` metres (null for none).
     /// @orig 0x0027a6c0 Player_PickTarget (unknown)
     [[nodiscard]] static Combatant* pickTarget(const FighterInput& input, float range);
+    // Circle + cross's search (combat::nearestInCone() along the stick, combat::strongGrappleRange()): makes the human
+    // found the target and returns it when it may be grabbed, else null.
+    Holdable* strongGrappleTarget(const FighterInput& input);
     /// Hits that reached a target, and the damage they did.
     [[nodiscard]] int hitsLanded() const { return m_hitsLanded; }
     [[nodiscard]] int damageDealt() const { return m_damageDealt; }
@@ -293,8 +298,15 @@ class Fighter {
     // The victim held is gone from the targets (removed from the level), or something other than this grab freed it
     // (a script's normal mode, a hit that knocked it down): the hold ends without touching a victim that is gone.
     void dropLostHold(const FighterInput& input, HumanAnimator& animator);
-    // A grab or tackle started on `victim`: the intro plays (the player turning to face it), the victim waits.
-    void startHold(Holdable& victim, const FighterInput& input, float& heading, bool tackle, HumanAnimator& animator);
+    // A grab or tackle started on `victim`: the intro plays (the player turning to face it), the victim waits. A grab
+    // connects with front clip `connect` (72, or a strong grapple's strike), the rear one 2 on.
+    void startHold(Holdable& victim, const FighterInput& input, float& heading, bool tackle, int connect,
+                   HumanAnimator& animator);
+    // The grabber's connecting clip for the side the grab is on; the victim plays the next id.
+    [[nodiscard]] std::uint32_t connectClip() const { return static_cast<std::uint32_t>(m_connect + (m_rear ? 2 : 0)); }
+    // A strong grapple's connect has ended in the hold: the victim takes the strike's damage, reported as the hold's
+    // id (docs/research/combat.md#strong-grapple).
+    void landGrapple(const FighterInput& input);
     // The pair's moments, read from the grabber's clip at the start of an update: the connecting clip starting (the
     // alignment and the victim's paired clip), a connecting clip or a spin ending (the gate and the snap), and a spin
     // starting (detachForSpin()).
@@ -374,6 +386,7 @@ class Fighter {
     bool m_mountPending = false;     // the grab's mount (118) plays; the victim moves to the mount's point at 210
     bool m_mugOnTarget = false;
     bool m_rear = false;    // the hold is from the victim's rear
+    int m_connect = 72;     // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
     anim::Vec3 m_slide;     // a grab's alignment's slide velocity, m/s
     int m_slideUpdates = 0; // updates of slide left
     TurnAndSlide m_steer;   // an attack start's turn and slide onto its target

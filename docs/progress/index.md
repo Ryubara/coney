@@ -23,11 +23,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.9% of the game's own code (433,860 of 3,354,776 bytes, 1,331 functions) |
+| **Reimplemented** | `██▋░░░░░░░░░░░░░░░░░` | 12.9% of the game's own code (433,860 of 3,354,776 bytes, 1,332 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-370 reimplemented function(s) have no size yet and add no bytes.
+371 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `█████▎░░░░░░░░░░░░░░` | 26.2% | 85 | 100,440 |
 | `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.3% | 55 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.8% | 180 | 497,416 |
-| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.8% | 390 | 1,096,672 |
+| `Human` | `██▍░░░░░░░░░░░░░░░░░` | 11.8% | 391 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -757,6 +757,7 @@ at the top of the repository's `README.md`.
 | `0x0025f770` | `Human_BuildIdleTasks` | `Human` | not filled in |
 | `0x002617f8` | `Block_DuckCounter` | `Human` | 528 |
 | `0x002625a8` | `Attack_Start` | `Human` | 792 |
+| `0x00263c90` | `Player_SpecialAttack` | `Human` | not filled in |
 | `0x00264178` | `Player_ObjectAttack` | `Human` | 744 |
 | `0x00264bd8` | `Human_AddPendingDamage` | `Human` | 288 |
 | `0x00264cf8` | `Human_AddRage` | `Human` | 680 |

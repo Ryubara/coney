@@ -226,3 +226,33 @@ TEST_CASE("a held human taken out of the level, or freed by a script, ends the h
         CHECK(fight.other().position().x == Approx(at.x).margin(1e-4F));
     }
 }
+
+TEST_CASE("circle + cross grabs with the strike 657, deals its 60 as the hold starts and keeps holding",
+          "[human][combat]") {
+    const FightCharacter character;
+    HumanFight fight(character, 1.0F);
+    bool struck = false;
+    bool strongStrike = false;
+    std::vector<int> struckIds;
+    int damageAtStrike = 0;
+    fight.run("5 press circle cross\n9 release circle cross\n", 150, [&](std::uint64_t /*frame*/) {
+        const std::uint32_t clip = fight.player().animator().animId();
+        strongStrike = strongStrike || clip == static_cast<std::uint32_t>(combat::anim_id::kStrongGrapple);
+        const std::vector<int>& strikes = fight.player().fighter().strikes();
+        if (!strikes.empty() && !struck) {
+            struck = true;
+            struckIds = strikes;
+            damageAtStrike = fight.damageTaken();
+        }
+    });
+    CHECK(strongStrike);
+    REQUIRE(struck);
+    // The tutorial is told the hold's id, not the strike's.
+    CHECK(struckIds == std::vector<int>{82});
+    CHECK(damageAtStrike == 60);
+    CHECK(fight.damageTaken() == 60);
+    // It does not let go.
+    CHECK(fight.player().fighter().combat().mode() == combat::CombatMode::Grabbing);
+    CHECK(fight.other().state() == TargetState::Held);
+    CHECK(fight.player().animator().animId() == 82U);
+}

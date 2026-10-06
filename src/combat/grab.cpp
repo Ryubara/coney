@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "combat/grab.h"
 
+#include <algorithm>
 #include <cmath>
 
 namespace coney::combat {
@@ -36,6 +37,38 @@ std::size_t nearestTarget(const anim::Vec3& from, std::span<const TargetCandidat
             best = i;
             bestDistance = distance;
         }
+    }
+    return best;
+}
+
+float strongGrappleRange(const AnimRangeList& ranges) {
+    const auto id = static_cast<std::size_t>(anim_id::kRunningAttackDive);
+    const AnimRange* range = ranges.find(id);
+    const float scaledReach = range != nullptr ? range->reach * 1.25F : 0.0F;
+    return std::max(ranges.farRange(id), scaledReach);
+}
+
+std::size_t nearestInCone(const anim::Vec3& from, const anim::Vec3& aim, std::span<const TargetCandidate> candidates,
+                          float range, float halfAngle, float maxHeight) {
+    const float aimLength = std::hypot(aim.x, aim.y);
+    const float cosLimit = std::cos(halfAngle);
+    std::size_t best = kNoTarget;
+    float bestDistance = range;
+    for (std::size_t i = 0; i < candidates.size(); ++i) {
+        const anim::Vec3& at = candidates[i].position;
+        const float dx = at.x - from.x;
+        const float dy = at.y - from.y;
+        const float distance = std::hypot(dx, dy);
+        if (!candidates[i].available || std::fabs(at.z - from.z) > maxHeight || distance > bestDistance) {
+            continue;
+        }
+        // Within the cone: the cosine of the angle between the aim and the way to it (one standing on the player's
+        // feet is in every cone).
+        if (distance > 1e-4F && aimLength > 1e-4F && (dx * aim.x + dy * aim.y) / (distance * aimLength) < cosLimit) {
+            continue;
+        }
+        best = i;
+        bestDistance = distance;
     }
     return best;
 }

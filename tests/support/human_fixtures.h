@@ -125,6 +125,10 @@ inline std::vector<LocomotionClip> combatClips() {
     for (const std::uint32_t id : {69U, 71U, 72U, 73U, 75U}) {
         still(id, 0.3F);
     }
+    // The strong grapple's connecting strikes and their reactions (front 657 / 658, rear 659 / 660).
+    for (const std::uint32_t id : {657U, 658U, 659U, 660U}) {
+        still(id, 0.4F);
+    }
     // The rear connecting clip carries the grabber 0.8 m forward (2.65 m/s for 0.3 s of clip), closing the gap from
     // its reach (1.018 m) to the rear hold's (0.222 m) as the disc's 74 and 75 do between them.
     clips.push_back({.id = 74,

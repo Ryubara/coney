@@ -41,6 +41,9 @@ inline constexpr std::uint32_t kDispatchDroppingPhases = 0x05c7fee0;
 /// The `+0x08` bits that refuse a new square or cross attack (`0x00286cc8`, `0x00287a18`): the attack phases, the grab
 /// bit, the duck and the run attack.
 inline constexpr std::uint32_t kAttackRefusingPhases = 0x0100101f;
+/// The `+0x08` bits that refuse a special: cross + square's 653 and circle + cross's strong grapple (`Player_Special`,
+/// `0x00287730`, docs/research/combat.md#strong-grapple).
+inline constexpr std::uint32_t kSpecialRefusingPhases = 0xaeebf7ff;
 
 /// The stick length beyond which square snaps or attacks from a run.
 inline constexpr float kSnapStick = 0.95F;

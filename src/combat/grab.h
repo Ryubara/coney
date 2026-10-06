@@ -53,6 +53,23 @@ inline constexpr std::size_t kNoTarget = std::numeric_limits<std::size_t>::max()
 [[nodiscard]] std::size_t nearestTarget(const anim::Vec3& from, std::span<const TargetCandidate> candidates,
                                         float range);
 
+/// How far the strong grapple's search reaches: anim 1's far range or its reach × 1.25, whichever is larger (3.0 m for
+/// Rembrandt). The original passes its variant (1) where the search expects an anim id, so it is the dive's range.
+[[nodiscard]] float strongGrappleRange(const AnimRangeList& ranges);
+/// The strong grapple's search keeps humans within this angle of the stick's direction (radians, 54°)...
+inline constexpr float kStrongGrappleCone = 0.9425F;
+/// ... and at most this far above or below (metres).
+inline constexpr float kStrongGrappleHeight = 2.0F;
+/// A human further above or below than this may not be grabbed (`0x00225520`).
+inline constexpr float kGrabbableHeight = 0.25F;
+
+/// The index of the nearest available candidate within `range` of `from` in plan, within `halfAngle` of the direction
+/// `aim` and `maxHeight` above or below, or kNoTarget: the strong grapple's search (`0x0027a4b0`,
+/// docs/research/combat.md#strong-grapple). **Coney choice**: nearest in plan distance (`0x003868d0` is not traced).
+[[nodiscard]] std::size_t nearestInCone(const anim::Vec3& from, const anim::Vec3& aim,
+                                        std::span<const TargetCandidate> candidates, float range, float halfAngle,
+                                        float maxHeight);
+
 /// The throw for a stick on `side` of the player: the THROW_01 set (147 front, 149 right, 151 rear, 153 left), or the
 /// THROW_02 set (155, 157, 159, 161) with a wall within reach.
 /// @orig 0x0026dd08 Player_Throw (unknown)

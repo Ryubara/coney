@@ -238,3 +238,21 @@ TEST_CASE("the mount: square 219 or 221, cross 223, the power strike, circle bac
     CHECK(off.action == MountAction::GetOff);
     CHECK(off.animId == anim_id::kMountRelease);
 }
+
+TEST_CASE("the strong grapple searches anim 1's far range within 54 degrees of the aim and 2 m in height", "[combat]") {
+    // Anim 1 has reach 1.0 and no far range here: 1.25 m.
+    CHECK(strongGrappleRange(grabRanges()) == Approx(1.25F));
+    const std::array<TargetCandidate, 5> candidates{
+        TargetCandidate{{2.0F, 1.0F, 0.0F}, true},  // 63 degrees off +y: outside the cone
+        TargetCandidate{{1.0F, 2.0F, 0.0F}, true},  // 27 degrees off, 2.24 m
+        TargetCandidate{{0.0F, 1.5F, 2.5F}, true},  // straight ahead but too high
+        TargetCandidate{{0.0F, 1.0F, 0.0F}, false}, // nearest, but not available
+        TargetCandidate{{0.0F, -1.0F, 0.0F}, true}, // behind
+    };
+    const coney::anim::Vec3 player{};
+    const coney::anim::Vec3 ahead{0.0F, 1.0F, 0.0F};
+    CHECK(nearestInCone(player, ahead, candidates, 3.0F, kStrongGrappleCone, kStrongGrappleHeight) == 1);
+    CHECK(nearestInCone(player, ahead, candidates, 2.0F, kStrongGrappleCone, kStrongGrappleHeight) == kNoTarget);
+    CHECK(nearestInCone(player, {0.0F, -1.0F, 0.0F}, candidates, 3.0F, kStrongGrappleCone, kStrongGrappleHeight) == 4);
+    CHECK(nearestInCone(player, {1.0F, 0.0F, 0.0F}, candidates, 3.0F, kStrongGrappleCone, kStrongGrappleHeight) == 0);
+}

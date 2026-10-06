@@ -250,6 +250,8 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
         }
         const std::size_t found = combat::nearestTarget(input.position, candidates, range);
         m_candidate = found != combat::kNoTarget ? input.targets[found]->holdable() : nullptr;
+    } else if (input.command == combat::command::kCircleCross) {
+        m_candidate = strongGrappleTarget(input);
     }
     in.grabTargetInReach = m_candidate != nullptr;
     // The record's +0x08: the bits the clips playing hold (an attack's phases, the grab bit, the duck's).
@@ -258,6 +260,34 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     in.victimMuggable = m_held != nullptr && !m_held->health().depleted();
     in.victimInPlace = victimInPlace(input);
     return in;
+}
+
+Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
+    // Humans that can be held and fought, standing with health left, searched along the stick as pickTarget() does;
+    // the one found becomes the target.
+    std::vector<combat::TargetCandidate> candidates;
+    candidates.reserve(input.targets.size());
+    for (Combatant* target : input.targets) {
+        candidates.push_back(combat::TargetCandidate{
+            target->position(), target->holdable() != nullptr && target->targetable() &&
+                                    target->state() == TargetState::Standing && !target->health().depleted()});
+    }
+    const float along =
+        input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees) : input.heading;
+    const float range = m_ranges != nullptr ? combat::strongGrappleRange(*m_ranges) : kStrongGrappleFallbackRange;
+    const std::size_t found = combat::nearestInCone(input.position, facing(along), candidates, range,
+                                                    combat::kStrongGrappleCone, combat::kStrongGrappleHeight);
+    if (found == combat::kNoTarget) {
+        return nullptr;
+    }
+    Combatant* target = input.targets[found];
+    m_target = target;
+    // The paired clip needs one that may be grabbed: within a quarter metre in height. **Coney choice**: the clear
+    // line to it (`0x0021c0a8`) is not tested.
+    if (std::fabs(target->position().z - input.position.z) > combat::kGrabbableHeight) {
+        return nullptr;
+    }
+    return target->holdable();
 }
 
 void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode before, const FighterInput& input,
@@ -284,7 +314,8 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         consumed = true;
     }
     if ((out.grabStarted || out.tackleStarted) && m_candidate != nullptr) {
-        startHold(*m_candidate, input, heading, out.tackleStarted, animator);
+        const int connect = out.grappleAnim != id::kNone ? out.grappleAnim : static_cast<int>(clips::kGrabFrontEnd);
+        startHold(*m_candidate, input, heading, out.tackleStarted, connect, animator);
         consumed = true;
     } else if (out.grabMissed) {
         // Each miss ends in 389, then the idle (docs/research/combat.md#input-return).

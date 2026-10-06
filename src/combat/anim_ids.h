@@ -66,6 +66,9 @@ inline constexpr int kMountPickup = 248;  ///< `MOUNT_PICKUP`: circle back to th
 inline constexpr int kRageStart = 643;
 inline constexpr int kSpecialRage = 645; ///< Cross + square outside a grab in rage (`RAGE_SPECIAL`).
 inline constexpr int kSpecial = 653;     ///< Cross + square outside a grab: the strong attack.
+inline constexpr int kStrongGrappleRage =
+    649;                                   ///< `RAGE_ATTACK2_FRONT`: the strong grapple's strike in rage (rear 651).
+inline constexpr int kStrongGrapple = 657; ///< `SPECIAL_ATTACK2_FRONT`: the strong grapple's strike (rear 659).
 inline constexpr int kBreakObjectLow = 661;
 inline constexpr int kBreakObjectMid = 662;
 inline constexpr int kStereoStealEnd = 685;

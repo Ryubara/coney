@@ -305,14 +305,16 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
     case command::kCrossSquare:
         special(input, tuning, out);
         break;
+    case command::kCircleCross:
+        strongGrapple(input, out);
+        break;
     default:
         break;
     }
 }
 
 void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out) {
-    // Refused while a move holds square's bits (**Coney choice**: Player_Special's own test is not traced).
-    if ((phaseFlags(input) & kAttackRefusingPhases) != 0) {
+    if ((phaseFlags(input) & kSpecialRefusingPhases) != 0) {
         return;
     }
     // Not paired, it needs and spends the endurance fraction of the meter; rage plays its own and spends nothing.
@@ -324,6 +326,19 @@ void PlayerCombat::special(const CombatInput& input, const CombatTuning& tuning,
         m_power.spend(tuning.powerEndurance);
     }
     startAttack(raging ? anim_id::kSpecialRage : anim_id::kSpecial, tuning, out);
+}
+
+void PlayerCombat::strongGrapple(const CombatInput& input, CombatOutput& out) {
+    // The strike's clip is paired, so with nobody the search may grab nothing plays; the power meter is neither tested
+    // nor spent (the hold's drain starts with the grab, as for any).
+    if ((phaseFlags(input) & kSpecialRefusingPhases) != 0 || !input.grabTargetInReach) {
+        return;
+    }
+    m_chain.cancel();
+    m_mode = CombatMode::Grabbing;
+    out.startAnim = anim_id::kGrabPlayerIntro;
+    out.grabStarted = true;
+    out.grappleAnim = m_rage.raging() ? anim_id::kStrongGrappleRage : anim_id::kStrongGrapple;
 }
 
 } // namespace coney::combat

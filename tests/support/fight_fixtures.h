@@ -34,7 +34,7 @@ inline constexpr anim::Vec3 kAlongY{0.0F, 1.0F, 0.0F};
 
 // The range data the tests fight with: the damage measured on a civilian (combat.md#damage-table), the hit codes and
 // flags read at runtime (combat.md#hit-codes), a reach of 1 m (far 1.25 m) for every attack, and the grab's and the
-// tackle's far ranges and the grab's places.
+// tackle's far ranges and the grab's places; the strong grapple's strikes are placed as the plain grab's connects.
 inline combat::AnimRangeList fightRanges() {
     struct Move {
         std::int16_t damage;
@@ -47,7 +47,8 @@ inline combat::AnimRangeList fightRanges() {
         {51, {57, 0, 0}},         {53, {57, 0, 0}},        {55, {57, 0, 0}},         {57, {57, 0, 0}},
         {147, {66, 0x2a, 0x100}}, {193, {20, 0x0a, 0}},    {212, {30, 0x06, 0}},     {0, {31, 0x36, 0}},
         {76, {30, 0, 0}},         {96, {0, 0, 0}},         {100, {20, 0x2a, 0x100}}, {104, {20, 0x26, 0x400}},
-        {219, {61, 0, 0}},        {221, {61, 0, 0}},       {223, {61, 0, 0}},        {225, {61, 0, 0}}};
+        {219, {61, 0, 0}},        {221, {61, 0, 0}},       {223, {61, 0, 0}},        {225, {61, 0, 0}},
+        {657, {60, 0, 0}},        {659, {60, 0, 0}}};
     test::Bytes bytes;
     bytes.u32(722);
     for (int animId = 0; animId < 722; ++animId) {
@@ -66,11 +67,12 @@ inline combat::AnimRangeList fightRanges() {
             std::int16_t y;
             float reach;
         };
-        const std::map<int, Place> places{
-            {72, {0, 1000, 0.999F}}, {74, {0, 1000, 1.018F}}, {82, {351, 936, 1.081F}}, {84, {-399, 916, 0.242F}}};
+        const std::map<int, Place> places{{72, {0, 1000, 0.999F}},  {74, {0, 1000, 1.018F}},
+                                          {82, {351, 936, 1.081F}}, {84, {-399, 916, 0.242F}},
+                                          {657, {0, 1000, 0.999F}}, {659, {0, 1000, 1.018F}}};
         const auto placed = places.find(animId);
         const Place place = placed != places.end() ? placed->second : Place{0, 1000, 1.0F};
-        if (animId == 72 || animId == 74) {
+        if (animId == 72 || animId == 74 || animId == 657 || animId == 659) {
             far = 2500;
         }
         bytes.u16(static_cast<std::uint16_t>(place.x)).u16(static_cast<std::uint16_t>(place.y));

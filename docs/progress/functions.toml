@@ -3726,6 +3726,11 @@ subsystem = "Human"
 size = 792
 
 [[function]]
+address = 0x00263c90
+name = "Player_SpecialAttack"
+subsystem = "Human"
+
+[[function]]
 address = 0x00264178
 name = "Player_ObjectAttack"
 subsystem = "Human"

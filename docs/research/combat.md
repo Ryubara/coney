@@ -1582,7 +1582,8 @@ the tackle's miss 4, 2, 389; the grab strikes and power strikes with the victim'
 let-go 95 / 94; the mugging 78, 338, 340 (victim 79, 339, 341) with 342 / 343 while the stick is on target and 344 /
 345, 80 / 81 on success; the mount from the front hold 118 (victim 119) into 210 / 207, and in the mount the strikes
 219 / 221 and 223 and the power strike 225 (231 in rage) back to 210 (victims 220, 222, 224, 226, 232 back to 207),
-the pick-up 248 / 249 back to the front hold, and the release 244 / 245, the victim rising with 199.
+the pick-up 248 / 249 back to the front hold, and the release 244 / 245, the victim rising with 199; the strong
+grapple 71, 657, 82 (victim 658, 83), from the rear 71, 659, 84 (victim 660, 85).
 
 **The target** (`human::TargetHuman`, Coney's own, placed only by a sandbox layout's `target` line,
 [Sandbox](../guides/sandbox.md)): it takes the hit with the attacker's hit code and flags, and picks its reaction with
@@ -1655,8 +1656,11 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   ([PadSetHandlerEx](../references/bindings/input.md#padsethandlerex)). Only the pad-driven humans carry a pad command:
   Coney's brains write their commands straight to the record.
 - The special (cross + square outside a hold, [Specials](#attacks)) is always 653 (645 in rage): the variant and side
-  offsets of `0x00263c90` are not built, nor circle + cross (657) and circle + triangle (the tag). It takes square's
-  mask.
+  offsets of `0x00263c90` are not built, nor circle + triangle (the tag). Both specials are refused on `0xaeebf7ff`.
+- The strong grapple ([Strong grapple](#strong-grapple)) is the grab with 657 / 659 (649 / 651 in rage) as its
+  connect and 658 / 660 on the victim, searched with anim 1's range within 54° of the stick, the clear line to the
+  target (`0x0021c0a8`) not tested. Its damage is dealt on the snap to the hold, reported to the tutorial as 82 / 84;
+  the paired, tackle and solo paths for other clip flags are not built.
 - A grab plays one move at a time; a throw lets go at once; the rear power strike's spin plays in front of the strike,
   whose timing starts with it; the release with too little power goes straight to the idles, and the grab
   broken at 0 power plays the let-go. A tackle also ends when the power meter is empty, and any hold when the victim

@@ -1428,7 +1428,8 @@ takes any edge that links back. The walkable line cuts the segment at every cros
 meet none of the level's collision (`RoutePlanner::setBlockTest`), for the straight line, the end nodes and the route's
 cuts alike; without it the straight line ran through `level99`'s fence. A climb leg's climb that has ended moves the
 follower on past the leg's waypoint (the original's step there is open); the fast climber's early start within
-4.5 m, the jump legs (kind 4), the charge (`0x40`), the link's clear test and the waypoint claims are not built. A corner is the turn at the next two waypoints, simulated as an arc at the gait's turn rate
+4.5 m, the jump legs (kind 4), the charge (`0x40`), the link's clear test and the waypoint claims are not built.
+A corner is the turn at the next two waypoints, simulated as an arc at the gait's turn rate
 from the waypoint, the trial falling by 1 m/s; the braking distance is 0.5 s at the first corner's speed, within which
 the slower of the two corners' speeds is used. A move clears `+0x284` at its start and waits while the human is busy
 (`Human_IsBusy`). The look-at's turn value is kept, not read; no turn is ever refused its abort.

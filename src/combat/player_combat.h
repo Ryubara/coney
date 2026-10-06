@@ -40,7 +40,7 @@ struct CombatInput {
     bool inFight = true;                  ///< The fight test (`0x00224f28`, not researched) that lets R1 block.
     TargetKind target = TargetKind::None; ///< What square is aimed at.
     float objectHeight = 0.0F;            ///< A breakable target's point above the feet, metres.
-    bool grabTargetInReach = false;       ///< nearestTarget() found someone within grabSearchRange() for this circle.
+    bool grabTargetInReach = false;       ///< The search found someone to grab for this circle or circle + cross.
     bool fromRear = false;                ///< Holding the victim from behind.
     bool wallInReach = false;             ///< A wall within a throw's reach.
     bool victimMuggable = false;          ///< The held victim may be mugged.
@@ -60,6 +60,7 @@ struct CombatOutput {
     bool blocking = false;          ///< The block branch ran (state `0x8001`).
     bool rageStarted = false;
     bool grabStarted = false;
+    int grappleAnim = anim_id::kNone; ///< A strong grapple: its front strike (657, 649 raging), the grab's connect.
     bool tackleStarted = false;
     bool grabMissed = false; ///< Circle with nobody in reach: the intro, then the miss clip.
     GrabAction grabAction = GrabAction::None;
@@ -123,11 +124,15 @@ class PlayerCombat {
     // The grabbing route.
     void updateGrabbing(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // Cross + square outside a hold: the special 653 (645 in rage), which needs and spends a quarter of the power meter
-    // (docs/research/combat.md#attacks). **Coney choices**: the variant and side offsets (+ 4 × variant, + 0 / 2 by
-    // side, `0x00263c90`) are not built, so it is always 653; circle + cross (657) and circle + triangle (the tag) are
-    // not built.
+    // (docs/research/combat.md#attacks). Refused on kSpecialRefusingPhases. **Coney choices**: the variant and side
+    // offsets (+ 4 × variant, + 0 / 2 by side, `0x00263c90`) are not built, so it is always 653; circle + triangle
+    // (the tag) is not built.
     // @orig 0x00287730 Player_Special (unknown)
     void special(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
+    // Circle + cross outside a hold: the strong grapple, a grab whose connect is the strike 657 (649 in rage), with no
+    // power check or cost; with nobody to grab, nothing (docs/research/combat.md#strong-grapple).
+    // @orig 0x00263c90 Player_SpecialAttack (unknown)
+    void strongGrapple(const CombatInput& input, CombatOutput& out);
     // The mounted route (after a tackle or a grab's mount): updateMount's move, played through the chain or the mode.
     void updateMounting(const CombatInput& input, const CombatTuning& tuning, CombatOutput& out);
     // The theft route.

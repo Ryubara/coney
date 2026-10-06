@@ -384,3 +384,25 @@ TEST_CASE("cross held and square pressed outside a hold is the special 653, spen
     const auto none = weak.run("10 press cross\n12 tap square\n14 release cross\n", 20);
     CHECK(none[12].out.startAnim == anim_id::kNone);
 }
+
+TEST_CASE("circle + cross outside a hold is the strong grapple: a grab connecting with 657, at no power cost",
+          "[combat]") {
+    Runner runner(nullptr);
+    const auto inReach = [](std::uint64_t /*frame*/, CombatInput& input) { input.grabTargetInReach = true; };
+    const auto frames = runner.run("10 press circle cross\n14 release circle cross\n", 20, inReach);
+    CHECK(frames[10].command == command::kCircleCross);
+    CHECK(frames[10].out.grabStarted);
+    CHECK(frames[10].out.startAnim == anim_id::kGrabPlayerIntro);
+    CHECK(frames[10].out.grappleAnim == anim_id::kStrongGrapple);
+    CHECK(runner.combat().mode() == CombatMode::Grabbing);
+    // No quarter of the meter spent: the hold's drain only.
+    CHECK(runner.combat().power().value() > 300);
+
+    // With nobody the search may grab, nothing plays.
+    Runner alone(nullptr);
+    const auto none = alone.run("10 press circle cross\n14 release circle cross\n", 20);
+    CHECK(none[10].command == command::kCircleCross);
+    CHECK_FALSE(none[10].out.grabStarted);
+    CHECK(none[10].out.startAnim == anim_id::kNone);
+    CHECK(alone.combat().mode() == CombatMode::Free);
+}
