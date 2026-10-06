@@ -750,6 +750,11 @@ confirmed):
   other way round, so it called `ChatEvent` with 5001-10000 after `NumEvents` ms, and `ChatTable[n]` was nil.
   Confirmed (code) for the binding, the script side from the disassembly. (`flags.Cleanup` also sets `CClusters` to
   nil, so a chat event that fires after it would fail the same way; inferred.)
+- **`level87`, `ch3.BoozerChallenge` is not a function**: the third chapter's table at run time holds `Cleanup`,
+  `KillHandlers`, `AjaxSaysPissTank`, `DoNextChapter`, `BumScrap`, `OneBum`, `Done`, `Preloaded` and `Exit`, but no
+  `BoozerChallenge`, although a callback names it. Confirmed (runtime) in Coney's state; inferred to be a slip in the
+  original script, which would also find nothing to call. Coney logs the call ("is not a function; not called") and
+  skips it; what the original does with a missing callback is not traced.
 
 ## Notes for implementers
 
