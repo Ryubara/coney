@@ -51,6 +51,15 @@ void ScriptedHumans::onBrain(double handle, std::function<void(Brain&)> body) {
 std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
     const Brain* brain = m_scripted->brain(handle);
     if (brain == nullptr) {
+        // A human the scripts made before the level's humans exist answers as standing (ScriptedBrains::heldHuman()).
+        if (const std::optional<ScriptedBrains::HeldHuman> held = m_scripted->heldHuman(handle)) {
+            return script::HumanStatus{.alive = true,
+                                       .player = held->playerIndex > 0,
+                                       .arrested = false,
+                                       .healthPercent = 100.0F,
+                                       .gangType = 0xffff,
+                                       .heldObject = 0.0};
+        }
         return std::nullopt;
     }
     const human::Human& human = brain->human();

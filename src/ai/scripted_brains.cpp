@@ -13,9 +13,12 @@
 #include "ai/address_person_goal.h"
 #include "ai/dealer_goal.h"
 #include "ai/play_dyn_animation_goal.h"
+#include "ai/tactic_attack.h"
+#include "ai/tactic_confront.h"
 #include "ai/tactic_crowd.h"
 #include "ai/track_human_goal.h"
 #include "ai/turn_action.h"
+#include "combat/meters.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/lua_value.h"
 #include "scripting/message_handlers.h"
@@ -278,6 +281,79 @@ void ScriptedBrains::tacticClear(int gang) {
     m_owner->gangs().setTactic(gang, nullptr);
 }
 
+void ScriptedBrains::tacticAttack(int gang, std::string_view callback) {
+    if (held([this, gang, name = std::string(callback)] { tacticAttack(gang, name); })) {
+        return;
+    }
+    m_owner->gangs().setTactic(gang, std::make_unique<TacticAttack>(std::string(callback)));
+}
+
+void ScriptedBrains::brFlushActions(double human) {
+    if (held([this, human] { brFlushActions(human); })) {
+        return;
+    }
+    if (Brain* brain = named(human); brain != nullptr) {
+        brain->clearActions();
+    }
+}
+
+void ScriptedBrains::brFlushGoals(double human) {
+    if (held([this, human] { brFlushGoals(human); })) {
+        return;
+    }
+    if (Brain* brain = named(human); brain != nullptr) {
+        brain->clearGoals();
+    }
+}
+
+void ScriptedBrains::setMaxHealth(double human, int health) {
+    if (held([this, human, health] { setMaxHealth(human, health); })) {
+        return;
+    }
+    if (Brain* brain = named(human); brain != nullptr) {
+        brain->human().fighter().health() = combat::Health(std::max(health, 1));
+    }
+}
+
+void ScriptedBrains::humanDelete(double human) {
+    if (held([this, human] { humanDelete(human); })) {
+        m_heldHumans.erase(human);
+        return;
+    }
+    Brain* brain = named(human);
+    if (brain == nullptr || brain == m_player || brain->type() == BrainType::Player) {
+        return;
+    }
+    unbind(human);
+    if (m_remover) {
+        m_remover(*brain);
+    }
+}
+
+std::optional<int> ScriptedBrains::gangOf(double human) const {
+    const Brain* brain = named(human);
+    if (brain == nullptr) {
+        // A human created while holding answers with the gang it will join.
+        const std::optional<HeldHuman> held = heldHuman(human);
+        return held && held->gang >= 0 ? std::optional<int>(held->gang) : std::nullopt;
+    }
+    if (brain->gang() == nullptr) {
+        return std::nullopt;
+    }
+    return brain->gang()->id();
+}
+
+void ScriptedBrains::tacticConfront(const script::ConfrontCall& call) {
+    if (held([this, call] { tacticConfront(call); })) {
+        return;
+    }
+    const ConfrontSettings settings{.targetGang = call.targetGang,
+                                    .approachRange = call.approachRange,
+                                    .criticalRange = call.criticalRange,
+                                    .confrontation = call.confrontation};
+    m_owner->gangs().setTactic(call.gang, std::make_unique<TacticConfront>(settings, call.callback));
+}
+
 int ScriptedBrains::gangCreate(int kind, std::string_view name) { return m_owner->gangs().create(kind, name); }
 
 void ScriptedBrains::gangDelete(int gang) {
@@ -350,16 +426,18 @@ int ScriptedBrains::gangHeadCount(int gang, bool living) {
     if (found == nullptr) {
         return 0;
     }
+    const int held = heldMembers(gang);
     if (!living) {
-        return static_cast<int>(found->members().size());
+        return static_cast<int>(found->members().size()) + held;
     }
-    return static_cast<int>(std::ranges::count_if(
-        found->members(), [](const Brain* member) { return !member->human().fighter().health().depleted(); }));
+    return held + static_cast<int>(std::ranges::count_if(found->members(), [](const Brain* member) {
+               return !member->human().fighter().health().depleted();
+           }));
 }
 
 int ScriptedBrains::gangStandingCount(int gang) {
     const Gang* found = m_owner->gangs().find(gang);
-    return found != nullptr ? found->standing() : 0;
+    return found != nullptr ? found->standing() + heldMembers(gang) : 0;
 }
 
 std::optional<world_objects::Placement> ScriptedBrains::flag(double handle) const {
@@ -417,6 +495,16 @@ bool ScriptedBrains::call(std::string_view function, std::span<const double> arg
     return m_scripts->call(function, values);
 }
 
+std::optional<ScriptedBrains::HeldHuman> ScriptedBrains::heldHuman(double handle) const {
+    const auto found = m_heldHumans.find(handle);
+    return found == m_heldHumans.end() ? std::nullopt : std::optional<HeldHuman>(found->second);
+}
+
+int ScriptedBrains::heldMembers(int gang) const {
+    return static_cast<int>(
+        std::ranges::count_if(m_heldHumans, [gang](const auto& entry) { return entry.second.gang == gang; }));
+}
+
 bool ScriptedBrains::held(std::function<void()> call) {
     if (!m_holding) {
         return false;
@@ -429,6 +517,7 @@ void ScriptedBrains::release(Spawner spawner) {
     m_spawner = std::move(spawner);
     // The calls held run in their order, as they would have when the script made them; one that is held again cannot
     // happen, as the hold ends first.
+    m_heldHumans.clear();
     m_holding = false;
     std::vector<std::function<void()>> calls = std::exchange(m_held, {});
     for (const std::function<void()>& call : calls) {
@@ -438,6 +527,8 @@ void ScriptedBrains::release(Spawner spawner) {
 
 void ScriptedBrains::humanCreated(const HumanCreation& human) {
     if (held([this, human] { humanCreated(human); })) {
+        // Counted in its gang until the hold ends, so the start callback's head counts see it.
+        m_heldHumans[human.handle] = HeldHuman{.gang = human.gang, .playerIndex = human.playerIndex};
         return;
     }
     if (!m_spawner) {

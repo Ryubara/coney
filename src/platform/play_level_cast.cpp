@@ -27,6 +27,8 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
     m_ai->brains().setPlanner(m_planner.get());
     // The humans created so far, and the calls held for them, in the scripts' order; later ones as they come.
     const std::size_t held = cast.scripted->held();
+    // A human the scripts delete leaves the world (its brain unbound by then).
+    cast.scripted->setRemover([this](ai::Brain& brain) { m_ai->remove(brain.human()); });
     cast.scripted->release([this](const HumanCreation& human) { return castHuman(human); });
     m_print(std::format("cast: {} humans from the level's scripts, {} AI ({} models); {} calls held for them run\n",
                         cast.humans != nullptr ? cast.humans->all().size() : 0, m_ai->count(), m_castCharacters.size(),

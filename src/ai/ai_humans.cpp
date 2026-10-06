@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/ai_humans.h"
 
+#include <algorithm>
 #include <span>
 #include <utility>
 
@@ -85,8 +86,31 @@ int AiHumans::fighterGang() {
     return m_fighterGang;
 }
 
+void AiHumans::remove(const human::Human& human) {
+    if (std::ranges::find(m_removing, &human) == m_removing.end()) {
+        m_removing.push_back(&human);
+    }
+}
+
+void AiHumans::takeOutRemoved() {
+    for (const human::Human* human : m_removing) {
+        const auto found =
+            std::ranges::find_if(m_humans, [human](const AiHuman& entry) { return entry.human.get() == human; });
+        if (found == m_humans.end() || found->removed) {
+            continue;
+        }
+        m_player.humans().remove(*human);
+        m_brains->remove(*human);
+        found->removed = true;
+    }
+    m_removing.clear();
+}
+
 void AiHumans::clear() {
     for (const AiHuman& entry : m_humans) {
+        if (entry.removed) {
+            continue;
+        }
         m_player.humans().remove(*entry.human);
         m_brains->remove(*entry.human);
     }
@@ -115,6 +139,8 @@ void AiHumans::step() {
 }
 
 void AiHumans::capture() {
+    // The humans deleted during the step leave it now, outside the characters' step.
+    takeOutRemoved();
     for (AiHuman& entry : m_humans) {
         entry.previous = entry.current;
         entry.current = snapshotOf(*entry.human);

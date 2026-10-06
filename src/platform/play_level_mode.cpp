@@ -432,7 +432,9 @@ void PlayLevelMode::drawCharacter() const {
         m_lights->drawHuman(target.mesh->atomic(), false);
     }
     for (const FighterMesh& fighter : m_fighterMeshes) {
-        m_lights->drawHuman(fighter.mesh->atomic(), false);
+        if (!fighter.hidden) {
+            m_lights->drawHuman(fighter.mesh->atomic(), false);
+        }
     }
     m_stage->drawPuppets();
     m_lights->drawShadows();
@@ -544,6 +546,11 @@ void PlayLevelMode::render(const RenderTime& time) {
         }
         const std::vector<ai::AiHuman>& fighters = m_ai->humans();
         for (std::size_t i = 0; i < fighters.size() && i < m_fighterMeshes.size(); ++i) {
+            // A deleted human is not drawn.
+            if (fighters[i].removed) {
+                m_fighterMeshes[i].hidden = true;
+                continue;
+            }
             human::TargetSnapshot pose = human::interpolate(fighters[i].previous, fighters[i].current, time.alpha);
             // A cast human a scene holds is drawn as the scene poses it.
             if (const double handle = m_scenes != nullptr ? castHandleOf(fighters[i]) : 0.0;

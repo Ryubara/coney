@@ -77,8 +77,19 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// From now on a created human is made with `spawner` and bound to its handle (and gang); when holding, the calls
     /// held are then replayed in their order, the creations among them, and the hold ends.
     void release(Spawner spawner);
+    /// Takes a deleted human (`HuDelete`) out of the world: its brain, then its human. Empty: nothing is removed.
+    using Remover = std::function<void(Brain& brain)>;
+    void setRemover(Remover remover) { m_remover = std::move(remover); }
     /// Whether calls are being held.
     [[nodiscard]] bool holding() const { return m_holding; }
+    /// A human `HuCreate` made while holding, not deleted since: its gang and player index.
+    struct HeldHuman {
+        int gang = -1;
+        int playerIndex = 0;
+    };
+    /// The human with `handle` when it was created while holding and is not made yet; nothing otherwise. The getters
+    /// answer for it as for a standing human (**Coney choice**: Coney runs the start callback before the humans exist).
+    [[nodiscard]] std::optional<HeldHuman> heldHuman(double handle) const;
     /// Calls held so far.
     [[nodiscard]] std::size_t held() const { return m_held.size(); }
     /// Keeps `call` for release() while holding and returns true; returns false (the caller runs it now) otherwise.
@@ -134,6 +145,21 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void tacticTrigger(int gang, int what, bool on) override;
     /// Ends and drops the gang's tactic.
     void tacticClear(int gang) override;
+    /// Gives the gang a TacticAttack.
+    void tacticAttack(int gang, std::string_view callback) override;
+    /// Gives the gang a TacticConfront.
+    void tacticConfront(const script::ConfrontCall& call) override;
+    /// Brain::clearActions().
+    void brFlushActions(double human) override;
+    /// Brain::clearGoals().
+    void brFlushGoals(double human) override;
+    /// The human's health and its maximum set to `health` (at least 1).
+    void setMaxHealth(double human, int health) override;
+    /// An AI human: unbound and handed to the remover (setRemover()), which takes it out of the world. **Coney
+    /// choice**: a player's human is not deleted.
+    void humanDelete(double human) override;
+    /// The id of the gang of the brain named by `human`, or of the gang a human created while holding will join.
+    [[nodiscard]] std::optional<int> gangOf(double human) const override;
     /// The gang calls: Gangs' members of the same names.
     [[nodiscard]] int gangCreate(int kind, std::string_view name) override;
     void gangDelete(int gang) override;
@@ -145,9 +171,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void gangMakeFriends(int a, int b) override;
     void gangSetMsgHandler(int gang, int message, std::string_view handler) override;
     void gangSuspend(int gang, bool suspended) override;
-    /// The gang's members (only the living with `living`: health left); 0 for no gang.
+    /// The gang's members (only the living with `living`: health left); 0 for no gang. While holding, the humans
+    /// created for it count too: **Coney choice**, as Coney runs the start callback before the humans exist.
     [[nodiscard]] int gangHeadCount(int gang, bool living) override;
-    /// Gang::standing(); 0 for no gang.
+    /// Gang::standing(), with the humans created for it while holding; 0 for no gang.
     [[nodiscard]] int gangStandingCount(int gang) override;
     /// Makes the human with the spawner and binds its brain to the handle, in `human`'s gang, with its type as the
     /// brain's class; nothing without a spawner.
@@ -191,6 +218,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
   private:
     // The brain named by `handle`, or null.
     [[nodiscard]] Brain* named(double handle) const { return brain(handle); }
+    // The humans created while holding that will join gang `gang` (and were not deleted since): standing and alive.
+    [[nodiscard]] int heldMembers(int gang) const;
     // Keeps `call` for release() while holding (true); false when it should run now.
     bool held(std::function<void()> call);
 
@@ -205,9 +234,11 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     std::map<double, Brain*> m_brains;
     std::size_t m_arrivals = 0;
     Spawner m_spawner;
+    Remover m_remover;
     bool m_holding = false;
     std::vector<std::function<void()>> m_held; // the calls held, oldest first
     std::unique_ptr<ScriptedHumans> m_humans;
+    std::map<double, HeldHuman> m_heldHumans; // the humans created while holding, by handle
 };
 
 } // namespace coney::ai

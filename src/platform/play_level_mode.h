@@ -146,7 +146,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// Draws a frame between the last two steps and presents it.
     void render(const RenderTime& time) override;
-    /// render() with `overlay` drawn over the HUD before the present: the pause menu over the paused level.
+    /// render() with `overlay` drawn over the HUD before the present: the pause menu over the paused level, the Rumble
+    /// intro and result screen over play.
     void renderWithOverlay(const RenderTime& time,
                            const std::function<void(graphics::RenderDevice&)>& overlay) override;
     /// One line: frames, the player's position, heading, speed, gait, clip and state, then the scenery's counts.
@@ -367,6 +368,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
         std::unique_ptr<CharacterMesh> mesh;
         std::vector<anim::Vec3> positions;
         std::vector<anim::Vec3> normals;
+        bool hidden = false; // its human was deleted
     };
     std::vector<FighterMesh> m_fighterMeshes;
     rw::Texture* m_texture = nullptr; // the character's texture, for new meshes

@@ -167,7 +167,8 @@ class Gangs {
     /// `GangSetMsgHandler`: the Lua function `function` handles message `message` (empty clears it).
     /// @orig 0x00164bb8 Gang_SetMessageHandler (unknown)
     void setMessageHandler(int id, int message, std::string function);
-    /// Gives gang `id` `tactic` (null clears it): the old one ends and is freed. Nothing for an id not in use.
+    /// Gives gang `id` `tactic` (null clears it): the old one ends, and is freed at the end of the next
+    /// update(). Nothing for an id not in use.
     /// @orig 0x00165640 Gang_SetTactic (unknown)
     void setTactic(int id, std::unique_ptr<Tactic> tactic);
 
@@ -185,6 +186,7 @@ class Gangs {
 
   private:
     std::array<Gang, kGangSlots> m_gangs{};
+    std::vector<std::unique_ptr<Tactic>> m_retired; // tactics replaced, freed by the next update
     ScriptServices* m_scripts = nullptr;
     std::uint64_t m_nowMs = 0;
     combat::CombatRandom m_random;

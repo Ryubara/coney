@@ -267,6 +267,9 @@ void Gangs::setTactic(int id, std::unique_ptr<Tactic> tactic) {
     }
     if (gang->m_tactic != nullptr) {
         gang->m_tactic->end(*gang);
+        // Freed at the end of the next update, as the original queues it: a tactic may be replaced from its own
+        // callback.
+        m_retired.push_back(std::move(gang->m_tactic));
     }
     gang->m_tactic = std::move(tactic);
 }
@@ -281,6 +284,8 @@ void Gangs::update(std::uint64_t nowMs) {
             gang.m_tactic->fireCallback(gang, result);
         }
     }
+    // The tactics replaced since the last update are freed (`0x00306630`).
+    m_retired.clear();
 }
 
 } // namespace coney::ai

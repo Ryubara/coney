@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -84,6 +85,19 @@ struct DealerCall {
 
 class HumanBindingHost;
 
+/// `TacticConfront(gang, targetGang, approachRange, criticalRange, confrontation, slotSet, callback, anim1-5,
+/// spotLine)` as the binding reads it (docs/references/bindings/ai.md#tacticconfront); the anims and the spot line are
+/// not kept.
+struct ConfrontCall {
+    int gang = -1;                   ///< Truncated.
+    int targetGang = -1;             ///< −1 (the default): the first member's target's gang.
+    float approachRange = 10.0F;     ///< Metres; 10 by default.
+    float criticalRange = 2.0F;      ///< Metres; 2 by default.
+    std::uint32_t confrontation = 0; ///< Truncated to an unsigned integer.
+    int slotSet = -1;                ///< −1 by default.
+    std::string callback;            ///< Empty for none.
+};
+
 /// What the AI and gang bindings ask of the game: the brains of the humans the scripts name by handle, and the gangs
 /// by id. A handle that names no brain, or an id no gang, is the host's to ignore, as the original's wrappers do with a
 /// handle that is not a human. Every hook but the first two does nothing (or answers 0) by default.
@@ -131,6 +145,20 @@ class AiBindingHost {
     virtual void tacticTrigger(int /*gang*/, int /*what*/, bool /*on*/) {}
     /// `TacticClear(gang)`.
     virtual void tacticClear(int /*gang*/) {}
+    /// `TacticAttack(gang, callback)`.
+    virtual void tacticAttack(int /*gang*/, std::string_view /*callback*/) {}
+    /// `TacticConfront(gang, ...)`.
+    virtual void tacticConfront(const ConfrontCall& /*call*/) {}
+    /// `BrFlushActions(human)`: the actions cleared, the goals kept.
+    virtual void brFlushActions(double /*human*/) {}
+    /// `BrFlushGoals(human)`: every goal ended and popped, the actions kept.
+    virtual void brFlushGoals(double /*human*/) {}
+    /// `HuSetMaxHealth(human, health)`: the maximum and the health set to `health`.
+    virtual void setMaxHealth(double /*human*/, int /*health*/) {}
+    /// `HuDelete(human)`: the human taken out of the world at once.
+    virtual void humanDelete(double /*human*/) {}
+    /// `HuGetGang(human)`: its gang's id; nothing for no human or no gang.
+    [[nodiscard]] virtual std::optional<int> gangOf(double /*human*/) const { return std::nullopt; }
 
     /// `GangCreate(kind, name)`: the new gang's id, or -1.
     [[nodiscard]] virtual int gangCreate(int /*kind*/, std::string_view /*name*/) { return -1; }

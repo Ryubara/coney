@@ -27,6 +27,7 @@ struct AiHuman {
     std::unique_ptr<human::Human> human;
     human::TargetSnapshot previous; ///< The last step but one.
     human::TargetSnapshot current;  ///< The last step.
+    bool removed = false;           ///< Deleted (`HuDelete`): out of the step and the brains, not drawn.
 };
 
 /// The kind of the sandbox fighters' gang: the level scripts' combat gangs' kind (`GangCreate(19, ...)` in
@@ -63,6 +64,11 @@ class AiHumans {
     /// no gang. Returns its brain.
     Brain& spawn(const human::PlayerCharacter& character, const AiConfig& config, const raycast::CollisionMesh* mesh,
                  anim::Vec3 feet, float headingDegrees);
+    /// Takes `human` (one of these) out of the world at the end of the step, in capture() (a script may delete a human
+    /// from inside the brains' update): out of the player's step and the brains (its gang, its formation, the others'
+    /// books), kept as removed so the humans keep their indexes. Nothing for another human.
+    /// @orig 0x00233ef0 Human_Delete (unknown)
+    void remove(const human::Human& human);
     /// Removes every AI human.
     void clear();
     /// Makes `fighter`'s brain fight the player at once (`GoalFight(fighter, player, 0)`); nothing for a human that is
@@ -75,7 +81,8 @@ class AiHumans {
     [[nodiscard]] bool engaging() const { return m_engaging; }
     void setEngaging(bool on) { m_engaging = on; }
 
-    /// Keeps each human's snapshot of this step (after the player's update), for drawing.
+    /// Takes out the humans remove() asked for, then keeps each human's snapshot of this step (after the player's
+    /// update), for drawing.
     void capture();
 
     /// The AI humans spawned, their brains and the player's brain.
@@ -94,6 +101,8 @@ class AiHumans {
   private:
     // The player's brain in the brains, and the hooks into his step: what both constructors share.
     void install();
+    // Takes the humans remove() asked for out of the step and the brains.
+    void takeOutRemoved();
     // The fighters' gang, made the first time a fighter is spawned in a scripted level (the enemy of the player's).
     int fighterGang();
     // The brains' place in the step: the engaging stand-in, the brains, then the player's nearest enemy.
@@ -108,6 +117,7 @@ class AiHumans {
     Brains* m_brains;
     Brain* m_playerBrain = nullptr;
     std::vector<AiHuman> m_humans;
+    std::vector<const human::Human*> m_removing; // deleted, to leave at the next step
     bool m_engaging = true;
     int m_playerGang = -1;
     int m_fighterGang = -1;
