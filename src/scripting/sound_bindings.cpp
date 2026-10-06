@@ -350,6 +350,17 @@ void addSoundBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
     // The speech.
     vm.registerFunction("HuSpeak", makeHuSpeak(scripts, context, false));
     vm.registerFunction("HuSpeakNI", makeHuSpeak(scripts, context, true));
+    // `HuSay(human, line)`: HuSpeak with no callback, no argument and no listener; nil plays nothing.
+    // @orig 0x00239340 Human_Say (unknown)
+    // @orig 0x00239370 Human_Speak (unknown)
+    vm.registerFunction("HuSay", [context = &context](std::span<const Value> args) {
+        const SpeechCall call{
+            .human = handleArg(args, 0), .line = binding::string(args, 1), .interrupt = false, .lookAt = kNilHandle};
+        if (SoundHost* sound = context->sound; sound != nullptr && !call.line.empty() && !speechOff(*context)) {
+            static_cast<void>(sound->speak(call, {}, std::nullopt));
+        }
+        return binding::none();
+    });
     vm.registerFunction("HuShutUp", makeHuShutUp(context));
     vm.registerFunction("SoundPlayCommand", makeSoundPlayCommand(scripts, context));
 }

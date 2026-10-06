@@ -159,6 +159,8 @@ inline constexpr GuiPoint kCentredAnnouncePlace{0.5F, 0.25F};
 /// One player's prompt: centred on x, its base y, glyph height and colour.
 inline constexpr GuiPoint kPromptPlace{0.5F, 0.86F};
 inline constexpr float kPromptTextHeight = 0.06F;
+/// The prompt text's y in the clubhouse (`HUDEnableClubActionText(true)`, `0x00607d74`), near the top.
+inline constexpr float kClubPromptY = 0.125F;
 
 /// The text scoreboard (`HUDEnableTextProgress`) and the stopwatch. **Coney stand-ins**: the original's places (the
 /// floats at `0x0050d56c`, `0x0050d574`, `0x0050d57c`) and its text layout (`0x001ccf10`) are not on the page, so the

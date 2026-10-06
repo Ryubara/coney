@@ -231,7 +231,7 @@ the code.
   `0x0010d570` `AmbientManager_EnableEmitter`
 - **Used by** 15 of 467 script chunks (43 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 12 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## NewAnimSlots {#newanimslots}
 
@@ -674,7 +674,7 @@ script <name>_preload is run (through doFile, so <name>_preload.lua).
 - **Wrapper** `0x00371090` (registered by `RegisterBindings`); **calls** `0x00113490`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SndSetCommandSoundPercent {#sndsetcommandsoundpercent}
 
@@ -959,7 +959,7 @@ in the sound list, or no free task, gives the null handle. Converted as unsigned
 - **Wrapper** `0x003715f8` (registered by `RegisterBindings`); **calls** `0x00113680` `Audio_PlaySoundAt`, `0x0010fdd0`
 - **Used by** 17 of 467 script chunks (27 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 10 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundPlay2D {#soundplay2d}
 

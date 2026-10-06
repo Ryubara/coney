@@ -305,6 +305,11 @@ TEST_CASE("the ambient bindings fill the table and place a level's emitters", "[
     CHECK(rig.sound.emitters().emitterCount() == 2);
     rig.frames(2);
     CHECK(rig.sound.emitters().plays() == 2);
+    // EnableAmbientEmitter switches one off (it plays nothing more) and on again.
+    rig.call("EnableAmbientEmitter", {Value(1.0), Value()});
+    CHECK_FALSE(rig.sound.emitters().enabled(1));
+    rig.call("EnableAmbientEmitter", {Value(1.0)});
+    CHECK(rig.sound.emitters().enabled(1));
     // Gameplay's exit forgets the level's emitters.
     rig.sound.gameplayLeft();
     CHECK(rig.sound.emitters().emitterCount() == 0);

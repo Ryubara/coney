@@ -286,7 +286,7 @@ with +0xd9 set skips all of this; the default at gang creation is set by 0x00164
   `GangTactic_StartFlee`, `0x00307d40` `GangTactic_CheckFlee`
 - **Used by** 7 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangCanSaveAllys {#gangcansaveallys}
 
@@ -364,7 +364,7 @@ from the world, his gang and his formation. From the hub's use, this sends away 
   `Human_Destroy`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangClearHandlers {#gangclearhandlers}
 
@@ -390,7 +390,7 @@ not only those the gang installed.
   `Gang_ClearMsgHandlers`, `0x003858b8` `ScriptHandlers_ClearAll`
 - **Used by** 2 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangClearResponders {#gangclearresponders}
 
@@ -657,7 +657,7 @@ named. The bum exception is character class byte +0x11b = 6 (record 0x684620 + t
   `0x00165430` `Gang_AreMembersReady`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangInvincible {#ganginvincible}
 
@@ -709,7 +709,7 @@ spawners](../../research/ai.md#spawners)), so the answer turns false when a spaw
   `0x00168b58` `Gang_HasSpawnerNamed`
 - **Used by** 2 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangIsWanted {#gangiswanted}
 
@@ -864,7 +864,7 @@ used by this binding.
   `0x0016c470` `Gang_MakeNeutralWithType`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangQueueResponders {#gangqueueresponders}
 

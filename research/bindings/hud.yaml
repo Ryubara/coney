@@ -123,6 +123,7 @@
   notes: >-
     Writes the y fraction to 0x00607d74 and 0x006077e4; other video modes use 0.08, 0.2/0.78 or 0.15/0.8.
   usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HUDGetNewPH
   wrapper: 0x0036e998
@@ -229,6 +230,7 @@
     statistics (0x00422930, 0x00422c60) before the callback. Callbacks run through the script system by name, so dotted
     names work. The menu's list and layout are not traced.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: ShowGameStatsInterface
   wrapper: 0x0036ec98
@@ -249,6 +251,7 @@
     lists (the [statistics](../../research/player-state.md#statistics) categories, inferred) and its enter path
     (vtable 0x005384c8) are not traced.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: ShowRumbleModeInterface
   wrapper: 0x0036ecc8
@@ -788,6 +791,7 @@
     in ActionPrompt_Update ([HUD: action prompts](../../research/hud.md#action-prompts)), so it shows only while that
     player's prompt itself is shown.
   usage: {chunks: 7, calls: 13, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 51, 54, 84]}
+  coney: implemented
 
 - name: HUDTurnOffActionCycleAnim
   wrapper: 0x0036fd98
@@ -804,6 +808,7 @@
   notes: >-
     Only the flag is cleared: the icon last shown and its visibility stay until the prompt next sets them.
   usage: {chunks: 8, calls: 27, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 51, 54, 84]}
+  coney: implemented
 
 - name: HUDEnableInstArrow
   wrapper: 0x0036fdd0

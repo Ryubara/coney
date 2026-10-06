@@ -174,7 +174,7 @@ after every level load.
   `0x0041a460` `GameState_SyncPlayers`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CreateDongle {#createdongle}
 
@@ -547,7 +547,7 @@ Reads a saved script flag.
 - **Wrapper** `0x0037b910` (registered by `RegisterBindings`); **calls** `0x0041ad60`
 - **Used by** 1 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 11 of 28 levels, first [`level34`](story.md#level34) (mission 4)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetLUASaveDataFloat {#getluasavedatafloat}
 
@@ -1136,7 +1136,7 @@ back on here.
 - **Wrapper** `0x0036da10` (registered by `RegisterBindings`); **calls** `0x0041ddd8` `Store_Reset`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetCheckPoint {#setcheckpoint}
 
@@ -1381,7 +1381,7 @@ are saved in the profile record at `0x4f4` ([Saving](../../research/save.md#reco
 - **Wrapper** `0x0037b8a8` (registered by `RegisterBindings`); **calls** `0x0041ad28`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 12 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetLUASaveDataFloat {#setluasavedatafloat}
 
@@ -1559,7 +1559,7 @@ already on top. See [Saving](../../research/save.md#mode-6).
 - **Wrapper** `0x0037b6a8` (registered by `RegisterBindings`); **calls** `0x00155308`
 - **Used by** 3 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## StatAdd {#statadd}
 
@@ -1829,7 +1829,7 @@ binding's 32-entry buffer (no bound check). With no unlockables loaded every ent
   `0x00423eb0` `Unlockables_ListByType`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UM_IsDataDirty {#um_isdatadirty}
 

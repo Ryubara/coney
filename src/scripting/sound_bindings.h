@@ -92,6 +92,11 @@ class SoundHost {
     /// `SoundPlay2D(name)`: the sound played once without a position; its handle, or NilSoundHandle (0) when it did not
     /// start.
     virtual double play2D(std::uint32_t sound) = 0;
+    /// `SoundPlay(name, pos)`: the sound played once at a point in the world (a 3D sound, full volume, normal pitch);
+    /// its handle, or NilSoundHandle (0) when it did not start. Plays nothing by default.
+    virtual double play3D(std::uint32_t /*sound*/, const std::array<float, 3>& /*position*/) { return 0.0; }
+    /// `EnableAmbientEmitter(id, on)`: switches an ambient emitter on or off. Does nothing by default.
+    virtual void enableAmbientEmitter(int /*emitter*/, bool /*on*/) {}
     /// `SoundStopAmbientTrack()`.
     virtual void stopAmbientTrack() = 0;
     /// `SoundPauseSound(on)`: pauses every sound playing now where it is (`on`), or resumes them.
@@ -135,8 +140,9 @@ class SoundHost {
 
 /// The sound bindings: the configuration the preloads make, the ambience, the music, the listener, the speech lines by
 /// name and the speech commands. All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 24> kSoundBindings{"AddAmbientSound",
+inline constexpr std::array<std::string_view, 25> kSoundBindings{"AddAmbientSound",
                                                                  "AddAmbientSoundEmitter2",
+                                                                 "HuSay",
                                                                  "HuShutUp",
                                                                  "HuSpeak",
                                                                  "HuSpeakNI",

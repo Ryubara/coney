@@ -18,6 +18,7 @@
 #include "scripting/binding_args.h"
 #include "scripting/human_bindings.h"
 #include "scripting/message_handlers.h"
+#include "scripting/player_bindings.h"
 #include "scripting/sound_bindings.h"
 #include "warriors/created_humans.h"
 #include "warriors/game_state.h"
@@ -147,7 +148,6 @@ NativeFunction makeHuGetVoiceIndex(const BindingContext& context) {
 
 // `HuGiveCuffs(human, count)`: a player's inventory item 5 (with the inventory's callbacks), an AI human's own count.
 // @orig 0x002372a8 Human_GiveCuffs (unknown)
-// @orig 0x0041e5b0 Inventory_AddItem (unknown)
 NativeFunction makeHuGiveCuffs(ScriptSystem& scripts, const BindingContext& context) {
     return [scripts = &scripts, context = &context](std::span<const Value> args) {
         const double human = handleArg(args, 0);
@@ -163,12 +163,7 @@ NativeFunction makeHuGiveCuffs(ScriptSystem& scripts, const BindingContext& cont
             }
             return binding::none();
         }
-        GameState& state = *context->state;
-        state.player.inventory.give(status->playerIndex, item::kHandcuffs, count);
-        if (!state.player.pickupCallback.empty()) {
-            scripts->call(state.player.pickupCallback,
-                          std::vector<Value>{Value(static_cast<double>(item::kHandcuffs))});
-        }
+        addInventoryItem(*scripts, *context->state, status->playerIndex, item::kHandcuffs, count, true);
         return binding::none();
     };
 }

@@ -330,6 +330,7 @@
     While the human is linked to another in a grab (+0x280 set) or its move state has flag 0x800000, a scale below
     1.1 counts as 1; whether the drawn model scales too is not traced.
   usage: {chunks: 17, calls: 29, boot: false, mission1: false, result_used: false, levels: [95, 3, 51, 52, 84, 82, 83, 20]}
+  coney: implemented
 
 - name: HuSetLookPos
   wrapper: 0x00358d08
@@ -381,6 +382,7 @@
   notes: >-
     Longer names are cut silently; nothing checks that the name is unique (HuFind returns the first match).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HuIsAimingAt
   wrapper: 0x00358f50
@@ -519,6 +521,7 @@
     Only the storage is confirmed: the tackle code that reads the bit was not found (it is not tested in the tackle
     start `0x002707a8`); scripts set it on hub and level-52 bosses.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 52]}
+  coney: implemented
 
 - name: HuSetTireless
   wrapper: 0x00359260
@@ -922,6 +925,7 @@
     Registering does nothing when the human already has a context record; what else reads flag 0x8000 of +0xe0 is not
     traced.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 82]}
+  coney: implemented
 
 - name: HuIsOnFire
   wrapper: 0x00359b40
@@ -998,6 +1002,7 @@
     slots are empty. Off: 0x0024d340 deletes the four objects. Only exactly 1 attaches. global.lua calls it when a
     player is created.
   usage: {chunks: 2, calls: 4, boot: true, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HuApplyDamageModifier
   wrapper: 0x00359cb0
@@ -1037,6 +1042,7 @@
   notes: >-
     No HUD message is sent; cops always count as having cuffs (Human_GetCuffCount answers 1 for brain type 1).
   usage: {chunks: 2, calls: 7, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HuSetWounded
   wrapper: 0x0035aaa0
@@ -1531,6 +1537,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: true, levels: [95, 34]}
+  coney: implemented
 
 - name: HuIsInScene
   wrapper: 0x0035b668
@@ -1962,6 +1969,7 @@
     Fight stance: [Combat](../../research/combat.md#state-flags). An AI's brain can put it back in stance on its next
     fight decision.
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [95, 54, 55, 83]}
+  coney: implemented
 
 - name: HuSetIdleAnim
   wrapper: 0x0035c090
@@ -2126,6 +2134,7 @@
   notes: >-
     A player's own money is inventory item 2 (InvGetMoney), not this field.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: true, levels: [95]}
+  coney: implemented
 
 - name: HuSetCarriedItem
   wrapper: 0x0035c470
@@ -2215,6 +2224,7 @@
     One set for the whole game, replaced by the next call; the repetition callback is handed to the loop animation
     node (`0x002557b0`), so its exact timing is not traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HuWorkout
   wrapper: 0x0035c8f0
@@ -2243,6 +2253,7 @@
     does not bind; the button commands are 0x12 (pump) and 10 (quit) from the player's input record; which pad
     buttons they are is not traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HuStopWorkout
   wrapper: 0x0035ca00
@@ -2259,6 +2270,7 @@
   notes: >-
     A cancelled start does not call the end callback.
   usage: {chunks: 1, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HuSetWorkoutBlend
   wrapper: 0x0035ca38
@@ -2276,6 +2288,7 @@
     Not clamped; the player's own effort ranges 0-1 and is scaled by 3 before the same use, so an AI's 0-3 matches
     the player's range.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HuSpecial
   wrapper: 0x0035cab0
@@ -2442,6 +2455,7 @@
     Only the storage is confirmed; no reader of brain +0x270 was found, so what each style does is open; a pedestrian
     goal pushed later overwrites the value.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HuGetHUD
   wrapper: 0x0035d0c8
@@ -2564,6 +2578,7 @@
   notes: >-
     Voice sets: [Speech](../speech.md).
   usage: {chunks: 2, calls: 30, boot: false, mission1: false, result_used: true, levels: [95]}
+  coney: implemented
 
 - name: HuSetStateRespVoiceIndex
   wrapper: 0x0035d360
@@ -2616,6 +2631,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 18, calls: 111, boot: false, mission1: false, result_used: false, levels: [95, 83, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuSetInterrogation
   wrapper: 0x0035d498
@@ -2836,6 +2852,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HuShutUp
   wrapper: 0x00364ba8
@@ -2868,6 +2885,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95, 86, 82]}
+  coney: implemented
 
 - name: HuEnableSpeaking
   wrapper: 0x00364c68
@@ -3063,6 +3081,7 @@
     No callback; GoalPlayDynAnimation is the brain-driven, queued version; what state 16 does when the clip ends is not
     traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: HuPlayDynPair
   wrapper: 0x00365200

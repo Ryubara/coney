@@ -136,6 +136,17 @@ double GameSound::play2D(std::uint32_t sound) {
     return engine != nullptr ? static_cast<double>(engine->play(sound).id) : 0.0;
 }
 
+double GameSound::play3D(std::uint32_t sound, const std::array<float, 3>& position) {
+    SoundEngine* engine = m_sounds.engine();
+    if (engine == nullptr) {
+        return 0.0;
+    }
+    return static_cast<double>(
+        engine->play(sound, SoundPlay{.position = SoundVec{position[0], position[1], position[2]}}).id);
+}
+
+void GameSound::enableAmbientEmitter(int emitter, bool on) { m_emitters.setEnabled(emitter, on); }
+
 void GameSound::pauseSound(bool on) {
     if (on) {
         m_sounds.pauseAll();

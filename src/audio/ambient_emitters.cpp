@@ -57,6 +57,15 @@ bool AmbientEmitters::setPositions(std::string_view name, std::span<const SoundV
 void AmbientEmitters::update(SoundEngine& engine) {
     const double now = engine.now();
     for (Emitter& emitter : m_emitters) {
+        // An emitter switched off stops its sound and plays nothing.
+        if (!emitter.enabled) {
+            if (emitter.playing.valid()) {
+                engine.stop(emitter.playing);
+                emitter.playing = {};
+            }
+            emitter.waiting = false;
+            continue;
+        }
         // Coney's stand-in: one sound at a time; a looping one plays on.
         if (emitter.playing.valid() && engine.isPlaying(emitter.playing)) {
             continue;
@@ -79,6 +88,12 @@ void AmbientEmitters::update(SoundEngine& engine) {
         }
         emitter.playing = engine.play(hash, SoundPlay{.position = pickPosition(emitter, engine)});
         ++m_plays;
+    }
+}
+
+void AmbientEmitters::setEnabled(int id, bool on) {
+    if (id >= 0 && static_cast<std::size_t>(id) < m_emitters.size()) {
+        m_emitters.at(static_cast<std::size_t>(id)).enabled = on;
     }
 }
 

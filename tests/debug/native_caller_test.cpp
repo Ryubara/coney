@@ -47,7 +47,7 @@ TEST_CASE("the signature table lists all 956 bindings, once each, with their arg
 TEST_CASE("the status comes from Coney's binding table", "[debug]") {
     CHECK(coney::debug::nativeStatus("GetPlatform") == NativeStatus::Implemented);
     CHECK(coney::debug::nativeStatus("PlayMovie") == NativeStatus::Partial);
-    CHECK(coney::debug::nativeStatus("GetPTank") == NativeStatus::Stub);
+    CHECK(coney::debug::nativeStatus("SetDifficulty") == NativeStatus::Stub);
     CHECK(coney::debug::nativeStatus("GoalPathBlocker") == NativeStatus::Missing);
 }
 
@@ -79,9 +79,9 @@ TEST_CASE("a call goes through the VM: a real binding answers, a stub records, a
     REQUIRE(truncated->size() == 1);
     CHECK((*truncated)[0] == Value(3.0));
 
-    const auto handle = coney::debug::callNative(vm, "GetPTank", {});
-    REQUIRE(handle);
-    CHECK((*handle)[0] == Value(1.0)); // a stub's first handle
+    const auto stubbed = coney::debug::callNative(vm, "SetDifficulty", {});
+    REQUIRE(stubbed);
+    CHECK(stubbed->empty()); // a stub with no result
 
     const std::vector<Value> objArgs{Value(std::string("crate")), Value(2.0)};
     REQUIRE(coney::debug::callNative(vm, "CfgObj", objArgs));

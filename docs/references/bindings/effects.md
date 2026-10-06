@@ -373,7 +373,7 @@ destroyed the same way; whether a system fades out or vanishes depends on its ty
   `Task_SendMessage`
 - **Used by** 11 of 467 script chunks (297 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 8 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## MaxFogParticles {#maxfogparticles}
 
@@ -737,7 +737,7 @@ game-state check (0x0041d110) blocks it.
 - **Wrapper** `0x0037bde0` (registered by `RegisterBindings`); **calls** `0x0040cc70` `ScreenFx_SetMotionAlpha`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetShadowColor {#setshadowcolor}
 

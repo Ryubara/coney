@@ -57,6 +57,13 @@ class AmbientEmitters {
     /// @orig 0x0010d590 Ambient_SetEmitterPositions (unknown)
     bool setPositions(std::string_view name, std::span<const SoundVec> positions);
 
+    /// `EnableAmbientEmitter(id, on)`: switches emitter `id` on or off (`+0x8c`); an id with no emitter is ignored
+    /// (**Coney choice**: the original does not check it). Switched off, its sound stops at its next update.
+    ///  0x0010d570 AmbientManager_EnableEmitter (unknown)
+    void setEnabled(int id, bool on);
+    /// Whether emitter `index` is on.
+    [[nodiscard]] bool enabled(std::size_t index) const { return m_emitters.at(index).enabled; }
+
     /// Runs each emitter at the engine's clock: an emitter whose sound has ended waits its pause, then plays its next.
     /// @orig 0x0010c100 Ambient_Update (unknown)
     void update(SoundEngine& engine);
@@ -78,6 +85,7 @@ class AmbientEmitters {
         std::vector<SoundVec> positions{};
         SoundHandle playing{};
         bool waiting = false; // the pause before the next sound is running
+        bool enabled = true;  // +0x8c: switched off, it stops its sound at its next update and plays nothing more
         double nextMs = 0.0;
     };
     // The hash the emitter plays next (0: none).

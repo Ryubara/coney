@@ -152,6 +152,19 @@ bool ParticleSystems::kill(double handle) {
     return true;
 }
 
+void ParticleSystems::killFollowing(double parent) {
+    if (parent == 0) {
+        return;
+    }
+    std::erase_if(m_systems, [this, parent](const ParticleSystem& system) {
+        if (system.parent != parent) {
+            return false;
+        }
+        m_particles -= system.particles.size();
+        return true;
+    });
+}
+
 void ParticleSystems::setHidden(double handle, bool hidden) {
     const auto found = std::ranges::find(m_systems, handle, &ParticleSystem::handle);
     if (handle != 0 && found != m_systems.end()) {

@@ -587,6 +587,7 @@
     The handle is not checked to be a particle: any object that handles message 0x15 (glass, glints, objects) is
     destroyed the same way; whether a system fades out or vanishes depends on its type's handler, not traced per type.
   usage: {chunks: 11, calls: 297, boot: false, mission1: false, result_used: true, levels: [95, 3, 81, 93, 31, 54, 83, 63]}
+  coney: implemented
 
 - name: SetGamma
   wrapper: 0x0037bc98
@@ -644,6 +645,7 @@
   notes: >-
     The wrapper calls 0x0040cc70 directly.
   usage: {chunks: 3, calls: 4, boot: true, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: QueueMotionBlurEffect
   wrapper: 0x0037be90

@@ -80,6 +80,11 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void playAmbientTrack(std::uint32_t sound) override;
     /// SoundEngine::play() as a 2D sound; the engine's handle id.
     double play2D(std::uint32_t sound) override;
+    /// A positional sound at full volume and normal pitch.
+    /// @orig 0x0010fdd0 PlaySound3D (unknown)
+    double play3D(std::uint32_t sound, const std::array<float, 3>& position) override;
+    /// AmbientEmitters::setEnabled().
+    void enableAmbientEmitter(int emitter, bool on) override;
     void stopAmbientTrack() override;
     /// SoundPlayer::pauseAll() or resumeAll().
     void pauseSound(bool on) override;

@@ -78,6 +78,18 @@ const Car* Cars::find(double handle) const {
     return handle != 0 && found != m_cars.end() ? &*found : nullptr;
 }
 
+bool Cars::destroy(double handle) {
+    const auto found = std::ranges::find(m_cars, handle, &Car::handle);
+    if (handle == 0 || found == m_cars.end()) {
+        return false;
+    }
+    if (found->lights && m_particles != nullptr) {
+        m_particles->killFollowing(handle);
+    }
+    m_cars.erase(found);
+    return true;
+}
+
 void Cars::setColour(double handle, const std::array<float, 4>& components) {
     if (Car* car = find(handle); car != nullptr) {
         const std::uint32_t word = packCarColour(components);

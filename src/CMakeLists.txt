@@ -120,6 +120,7 @@ add_library(coney_core STATIC
     scripting/sound_bindings.cpp
     scripting/spawn_bindings.cpp
     scripting/hub_bindings.cpp
+    scripting/hub_world_bindings.cpp
     scripting/story_bindings.cpp
     scripting/story_effects_bindings.cpp
     scripting/trigger_bindings.cpp

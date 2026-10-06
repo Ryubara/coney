@@ -611,7 +611,7 @@ player is created.
 - **Wrapper** `0x00359c50` (registered by `RegisterBindings`); **calls** `0x00236188` `Human_SetUnlockedGear`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuAttachSpinningIcon {#huattachspinningicon}
 
@@ -804,7 +804,7 @@ tackle start `0x002707a8`); scripts set it on hub and level-52 bosses.
 - **Wrapper** `0x00359200` (registered by `RegisterBindings`); **calls** `0x00237b70` `Human_SetBlockTackle`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuButtonMiniGame {#hubuttonminigame}
 
@@ -1512,7 +1512,7 @@ Returns how much cash the human carries: the money a player takes from it by mug
 - **Wrapper** `0x0035c418` (registered by `RegisterBindings`); **calls** `0x00238158` `Human_GetMoney`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGetPlayer {#hugetplayer}
 
@@ -1581,7 +1581,7 @@ speech](../../research/sound.md#speech)).
 - **Wrapper** `0x0035d308` (registered by `RegisterBindings`); **calls** `0x0023adc8` `Human_GetVoiceIndex`
 - **Used by** 2 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGiveCuffs {#hugivecuffs}
 
@@ -1607,7 +1607,7 @@ human it adds to the human's own cuff count (byte `+0x378`), clamped to 0-9.
   `Human_AddCuffs`, `0x0041e5b0` `Inventory_AddItem`, `0x00222908` `Human_GetCuffCount`
 - **Used by** 2 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuGiveWeapon {#hugiveweapon}
 
@@ -1790,7 +1790,7 @@ Tells whether the human is dead; a deleted human also counts as dead.
 - **Wrapper** `0x0035b618` (registered by `RegisterBindings`); **calls** `0x00235688` `Human_IsDead`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuIsGrabbed {#huisgrabbed}
 
@@ -2230,7 +2230,7 @@ is not traced.
 - **Wrapper** `0x003651a0` (registered by `RegisterBindings`); **calls** `0x00238948` `Human_PlayDynAnim`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuPlayDynPair {#huplaydynpair}
 
@@ -2420,7 +2420,7 @@ unless it is already speaking, speech is off or the human does not exist.
   `Human_Speak`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetAccurate {#husetaccurate}
 
@@ -2664,7 +2664,7 @@ next fight decision.
   `0x0022fe80` `Human_EnterFightStance`, `0x0022fef0` `Human_LeaveFightStance`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetConscious {#husetconscious}
 
@@ -3223,7 +3223,7 @@ HuSetLookTarget to make a human look at something.
 - **Wrapper** `0x00364b30` (registered by `RegisterBindings`); **calls** `0x00299238` `Human_SetLookAtTarget`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetLookPos {#husetlookpos}
 
@@ -3408,7 +3408,7 @@ human is set up for interrogation ([Crimes: mugging](../../research/crimes.md#mu
 - **Wrapper** `0x0035d438` (registered by `RegisterBindings`); **calls** `0x00239ee0` `Human_SetMug`
 - **Used by** 18 of 467 script chunks (111 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetMugCallback {#husetmugcallback}
 
@@ -3458,7 +3458,7 @@ finds it under the new name.
   `Human_StoreName`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetNoAutoLock {#husetnoautolock}
 
@@ -3658,7 +3658,7 @@ pedestrian goal pushed later overwrites the value.
 - **Wrapper** `0x0035d050` (registered by `RegisterBindings`); **calls** `0x00238640` `Human_SetPedReaction`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetPreventRage {#husetpreventrage}
 
@@ -3828,7 +3828,7 @@ below 1.1 counts as 1; whether the drawn model scales too is not traced.
   `Human_StoreScale`, `0x0021d020` `Human_GetScale`, `0x00341f28` `PhysicsBody_ApplyHumanScale`
 - **Used by** 17 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetSlowMo {#husetslowmo}
 
@@ -4027,7 +4027,7 @@ not traced.
   `0x00240800` `Human_RegisterContextAction`, `0x00240850` `Human_UnregisterContextAction`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetUngrabbable {#husetungrabbable}
 
@@ -4221,7 +4221,7 @@ matches the player's range.
 - **Wrapper** `0x0035ca38` (registered by `RegisterBindings`); **calls** `0x00238cd8` `Human_SetWorkoutBlend`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetWorkoutCallbacks {#husetworkoutcallbacks}
 
@@ -4249,7 +4249,7 @@ animation node (`0x002557b0`), so its exact timing is not traced.
   `0x002346a0` `Workout_CallStart`, `0x00234768` `Workout_CallRep`, `0x00234830` `Workout_CallEnd`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetWorkoutParams {#husetworkoutparams}
 
@@ -4500,7 +4500,7 @@ code still `0x1b`) goes back to state code 0. Otherwise nothing.
 - **Wrapper** `0x0035ca00` (registered by `RegisterBindings`); **calls** `0x00238d30` `Human_StopWorkout`
 - **Used by** 1 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSwitchPlayer {#huswitchplayer}
 
@@ -4785,7 +4785,7 @@ buttons they are is not traced.
   `Human_UpdateWorkout`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## IsAHuman {#isahuman}
 

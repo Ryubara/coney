@@ -297,6 +297,32 @@ void addUnlockBindings(LuaVm& vm, GameState& state) {
         return binding::boolean(unlocks.isDataDirty(state.saved, static_cast<std::uint8_t>(unsignedArg(args, 0)),
                                                     unsignedArg(args, 1), booleanArg(args, 2, true)));
     });
+    // `UM_GetUnlockablesByType(type, out)`: out[1..32] become the indices of the records of the type, in table order,
+    // then 65535. **Coney choice**: past 32 matches the rest are dropped (the original overruns its buffer).
+    // @orig 0x004237a8 UM_GetUnlockablesByType (unknown)
+    // @orig 0x00423eb0 Unlockables_ListByType (unknown)
+    add(vm, "UM_GetUnlockablesByType", [&unlocks](std::span<const Value> args) -> binding::Results {
+        constexpr std::size_t kSlots = 32;
+        constexpr double kUnused = 65535.0;
+        if (args.size() < 2 || args[1].table() == nullptr) {
+            return binding::none();
+        }
+        const auto type = static_cast<std::uint8_t>(unsignedArg(args, 0) & 0xffU);
+        std::vector<double> indices;
+        for (std::size_t index = 0; index < unlocks.records().size() && indices.size() < kSlots; ++index) {
+            if (unlocks.records()[index].type == type) {
+                indices.push_back(static_cast<double>(index));
+            }
+        }
+        indices.resize(kSlots, kUnused);
+        Table& out = *args[1].table();
+        for (std::size_t slot = 0; slot < kSlots; ++slot) {
+            if (auto set = out.set(Value(static_cast<double>(slot + 1)), Value(indices[slot])); !set) {
+                return std::unexpected(set.error());
+            }
+        }
+        return binding::none();
+    });
     // `UM_GetRecordData(index, field)`: 0 level, 1 group, 2 item, 3 type, 4 extra, 5 data; 0 for a bad index or field.
     // @orig 0x004238e8 UM_GetRecordData (unknown)
     add(vm, "UM_GetRecordData", [&unlocks](std::span<const Value> args) {

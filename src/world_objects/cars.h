@@ -92,6 +92,12 @@ class Cars {
     [[nodiscard]] Car* find(double handle);
     [[nodiscard]] const Car* find(double handle) const;
 
+    /// `CarDestroy`: the car leaves the world at once, with no effect: its lights (a particle system of its handle)
+    /// go with it, and the car goes back to the pool. Returns whether the handle named a car.
+    /// @orig 0x0038dea8 Car_Destroy (unknown)
+    /// @orig 0x00387ad8 Car_Release (unknown)
+    bool destroy(double handle);
+
     /// `CarSetColor`: the car's paint (packCarColour()) in both copies, the car marked dirty. An unknown handle is
     /// ignored.
     /// @orig 0x0038df38 Car_SetColour (unknown)

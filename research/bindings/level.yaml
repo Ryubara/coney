@@ -362,6 +362,7 @@
     group word to 0xff and the gang bits 18-22 to 31 (no gang). The browsers and buyers a break-in switched off are not
     switched back on here.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: MissionComplete
   wrapper: 0x0036df28
@@ -443,6 +444,7 @@
     the war chief is reassigned at the end. Does nothing with no game state or no player. The same function runs with
     -1 after every level load.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: SetLoadPriority
   wrapper: 0x0036e630
@@ -968,6 +970,7 @@
   notes: >-
     The hub (`level95.lua`) calls it.
   usage: {chunks: 3, calls: 8, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: SSMC_StartLoadSequence
   wrapper: 0x0037b6c8
@@ -1105,6 +1108,7 @@
   notes: >-
     Flags above 128 are written beyond the saved words and are not saved.
   usage: {chunks: 1, calls: 3, boot: true, mission1: false, result_used: false, levels: [95, 34, 2, 5, 31, 14, 51, 52, 55, 92, 20, 11]}
+  coney: implemented
 
 - name: GetLUASaveDataBool
   wrapper: 0x0037b910
@@ -1119,6 +1123,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 1, calls: 4, boot: true, mission1: false, result_used: true, levels: [34, 2, 5, 31, 14, 9, 51, 52, 92, 20, 11]}
+  coney: implemented
 
 - name: IsDongleValid
   wrapper: 0x0037b960
@@ -1366,6 +1371,7 @@
     The 32 entries are read from the table first and then all overwritten. More than 32 matches overrun the binding's
     32-entry buffer (no bound check). With no unlockables loaded every entry is 65535.
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: UM_Unlock
   wrapper: 0x0037d050

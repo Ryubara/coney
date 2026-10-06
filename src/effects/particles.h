@@ -98,6 +98,8 @@ class ParticleSystems {
 
     /// Ends the system `handle` names; false when none does.
     bool kill(double handle);
+    /// Ends every system that follows the object `parent` (a car's lights when the car goes).
+    void killFollowing(double parent);
     /// Hides or shows the system `handle` names (messages 0x29 and 0x2a); an unknown handle is ignored.
     void setHidden(double handle, bool hidden);
 

@@ -94,6 +94,7 @@ add_executable(coney_tests
     scripting/anim_callbacks_test.cpp
     scripting/config_strings_test.cpp
     scripting/disc_script_system_test.cpp
+    scripting/hub_bindings_test.cpp
     scripting/hud_bindings_test.cpp
     scripting/disc_strings_test.cpp
     scripting/camera_bindings_test.cpp
@@ -236,6 +237,7 @@ target_sources(coney_tests PRIVATE
     ai/move_action_test.cpp
     ai/route_planner_test.cpp
     ai/scripted_goals_test.cpp
+    ai/scripted_hub_test.cpp
     ai/scripted_humans_test.cpp
     ai/scripted_story_test.cpp
     ai/spawners_test.cpp

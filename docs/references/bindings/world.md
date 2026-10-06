@@ -275,7 +275,7 @@ that class's own slot +0x4c (Task_Unschedule in the base), so pass only cars. Ni
   `Car_Release`
 - **Used by** 5 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CarExplode {#carexplode}
 
@@ -910,7 +910,7 @@ scripts need it only to rebuild a network within a level.
 - **Wrapper** `0x0037ab18` (registered by `RegisterBindings`); **calls** `0x002a7328` `FlagNet_Clear`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## FlagNetTraverse {#flagnettraverse}
 
@@ -1100,7 +1100,7 @@ spawning](../../research/objects.md#spawning)). The world-object check is 0x0039
 - **Wrapper** `0x0036c9c8` (registered by `RegisterBindings`); **calls** `0x003859f0` `Obj_GetTypeName`
 - **Used by** 8 of 467 script chunks (26 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 7 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetPTank {#getptank}
 
@@ -1128,7 +1128,7 @@ background and releases them when it finishes.
 - **Wrapper** `0x00378bf8` (registered by `RegisterBindings`); **calls** `0x0039c388` `PTank_Create`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: yes; mission 1: no; result used: yes
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetRightDoorHandle {#getrightdoorhandle}
 
@@ -1447,7 +1447,7 @@ brings it into the world) unless the record is removed ([Tasks: handles](../../r
 - **Wrapper** `0x0036de88` (registered by `RegisterBindings`); **calls** `0x00397598` `Obj_Exists`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjIsZoneEnabled {#objiszoneenabled}
 
@@ -1500,7 +1500,7 @@ bit.
 - **Wrapper** `0x00377bd0` (registered by `RegisterBindings`); **calls** `0x003967e0` `ObjZone_Mark`, `0x003983b0`
 - **Used by** 12 of 467 script chunks (27 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjScriptArgEnd {#objscriptargend}
 
@@ -1866,7 +1866,7 @@ Frees a sprite batch made by `GetPTank` (0x003a4f78 releases the resource manage
 - **Wrapper** `0x00378d78` (registered by `RegisterBindings`); **calls** `0x0039c3d0` `PTank_Release`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## RotateVolumeBox {#rotatevolumebox}
 

@@ -139,6 +139,10 @@ class StartUpFlow final : public script::BindingHost {
     void launchMissionComplete(int kind) override;
     void startLoadSequence() override;
     void startDeleteSequence() override;
+    /// SSMC_StartSaveSequence: the autosave, when a profile is in use and the level is not the front end. **Coney's
+    /// stand-in**: the save is written at once, with no memory-card mode on top, and the new-game case is not applied.
+    /// @orig 0x00155308 Autosave_Request (unknown)
+    void startSaveSequence() override;
     void launchMissionFailed(std::string_view reason) override;
     void showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) override;
     void launchRumbleWin(std::string_view winner, std::string_view reason) override;

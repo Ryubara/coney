@@ -22,6 +22,8 @@
 #include "scripting/config_strings.h"
 #include "scripting/effects_bindings.h"
 #include "scripting/gang_bindings.h"
+#include "scripting/hub_bindings.h"
+#include "scripting/hub_world_bindings.h"
 #include "scripting/hud_bindings.h"
 #include "scripting/human_bindings.h"
 #include "scripting/level_bindings.h"
@@ -723,6 +725,71 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("SoundEnableSystemMusic"),
     real("SoundSetMusicTrack"),
     real("StartParticle"),
+    // The hub, level95 (hub_bindings.h, hub_world_bindings.h), and its speech line and unlockables list
+    // (sound_bindings.h, player_bindings.h).
+    real("BrCanUseWorldFlags"),
+    real("BrHasEnemies"),
+    real("CarDestroy"),
+    real("CfgActionDistance"),
+    real("CfgEnableCrimeType"),
+    real("CfgEnableTurfInvasion"),
+    real("CfgObjectValueMod"),
+    real("CfgPlayerCombatWalkOnly"),
+    real("CfgStickDeflection"),
+    real("CfgWorkoutParams"),
+    real("CheckMultiplayer"),
+    real("EnableAmbientEmitter"),
+    real("FlagNetClear"),
+    real("GangCanFlee"),
+    real("GangClearBums"),
+    real("GangClearHandlers"),
+    real("GangGoodToGo"),
+    real("GangIsASpawner"),
+    real("GangMakeNeutralOfType"),
+    real("GetLUASaveDataBool"),
+    real("GetObjectName"),
+    real("GetPTank"),
+    real("GoalAreaWalker"),
+    real("GoalBoxer"),
+    real("GoalGrabTarget"),
+    real("GoalPeddler"),
+    real("GoalPlayGenAnim"),
+    real("GoalShopkeeper"),
+    real("HUDEnableClubActionText"),
+    real("HUDShowMissionSelect"),
+    real("HUDTurnOffActionCycleAnim"),
+    real("HUDTurnOnActionCycleAnim"),
+    real("HuAttachGear"),
+    real("HuBlockTackle"),
+    real("HuGetMoney"),
+    real("HuGetVoiceIndex"),
+    real("HuGiveCuffs"),
+    real("HuIsDead"),
+    real("HuPlayDynAnim"),
+    real("HuSay"),
+    real("HuSetCombatMode"),
+    real("HuSetLookAtTarget"),
+    real("HuSetMug"),
+    real("HuSetName"),
+    real("HuSetPedReaction"),
+    real("HuSetScale"),
+    real("HuSetUnarrestable"),
+    real("HuSetWorkoutBlend"),
+    real("HuSetWorkoutCallbacks"),
+    real("HuStopWorkout"),
+    real("HuWorkout"),
+    real("KillParticle"),
+    real("ObjIsAlive"),
+    real("ObjMarkZone"),
+    real("ReleasePTank"),
+    real("ResetStore"),
+    real("SSMC_StartSaveSequence"),
+    real("SetLUASaveDataBool"),
+    real("SetMotionAlpha"),
+    real("ShowGameStatsInterface"),
+    real("SndLoadMatrix"),
+    real("SoundPlay"),
+    real("UM_GetUnlockablesByType"),
     // The story's second and third missions (story_bindings.h).
     real("TacticAvoidEnemies"),
     real("TacticDefend"),
@@ -981,7 +1048,6 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     // does not have yet records its arguments; the rest does nothing.
     //
     // Characters, combat and the world's rules (config_preload2.lua).
-    recording("CfgActionDistance"),
     recording("CfgAnimSpeeds"),
     recording("CfgAttackDelay"),
     recording("CfgAttackFromIdle"),
@@ -998,7 +1064,6 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("CfgCivilianAggression"),
     real("CfgDisableMusicForScenes"),
     recording("CfgDistances"),
-    recording("CfgEnableTurfInvasion"),
     recording("CfgGangMusic"),
     recording("CfgGearData"),
     recording("CfgHat"),
@@ -1006,7 +1071,6 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     recording("CfgJumpIsAction"),
     recording("CfgPickupIsAction"),
     recording("CfgPickupIsGrab"),
-    recording("CfgPlayerCombatWalkOnly"),
     recording("CfgPlayerRunButton"),
     recording("CfgPowerClass"),
     recording("CfgPowerEndurance"),
@@ -1020,13 +1084,11 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     recording("CfgSetTargetingPointsEx"),
     recording("CfgSetTurnRates"),
     recording("CfgSnap"),
-    recording("CfgStickDeflection"),
     real("CfgTagStartCallback"),
     recording("CfgTurnRate"),
     real("CfgVerticalSightModifier"),
     recording("CfgWarriorClass"),
     recording("CfgWarriorUpgrade"),
-    recording("CfgWorkoutParams"),
     // World objects (config_preload3.lua: 1,279 calls).
     real("CfgObj"),
     // Sound configuration (config_preload.lua, config_preload2.lua, global.lua).
@@ -1039,12 +1101,10 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     // Unlockables and commands (global.lua).
     recording("AddCommand"),
     // Sound and music state.
-    stub("SndLoadMatrix"),
     real("SoundEnableEffects"),
     real("SoundSetEffect"),
     // Unlockables and saves: Coney has none.
     stub("ResetCommands"),
-    stub("SetLUASaveDataBool"),
     // Game rules and callbacks.
     stub("SetCheatCallback"),
     stub("SetCopGuardArrestedRange"),
@@ -1064,15 +1124,11 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     stub("EndRain"),
     stub("EndRoomSmoke"),
     stub("SetLevelColour"),
-    stub("SetMotionAlpha"),
     stub("SetShadowColor"),
     stub("SetShadowLightOffset"),
     // The HUD.
-    stub("HUDEnableClubActionText"),
     // Scenes, objects and particles: the ones that make something return a handle.
-    stub("GetPTank", StubResult::Handle),
     real("ObjSpawn"),
-    stub("ReleasePTank"),
 });
 
 // A stub's function: keeps the arguments when it records, then returns its default.
@@ -1200,7 +1256,9 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kWorldBindings, info.name) != kWorldBindings.end() ||
                      std::ranges::find(kStoryBindings, info.name) != kStoryBindings.end() ||
                      std::ranges::find(kArenaBindings, info.name) != kArenaBindings.end() ||
-                     std::ranges::find(kStoryEffectsBindings, info.name) != kStoryEffectsBindings.end());
+                     std::ranges::find(kStoryEffectsBindings, info.name) != kStoryEffectsBindings.end() ||
+                     std::ranges::find(kHubBindings, info.name) != kHubBindings.end() ||
+                     std::ranges::find(kHubWorldBindings, info.name) != kHubWorldBindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -1235,6 +1293,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addCarBindings(vm, context, nextHandle);
     addArenaBindings(vm, context);
     addWorldBindings(vm, context);
+    addHubBindings(scripts, vm, context);
+    addHubWorldBindings(scripts, vm, context);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

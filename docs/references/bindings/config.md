@@ -151,7 +151,7 @@ records](../../research/crimes.md#context-records)).
 - **Wrapper** `0x0036c130` (registered by `RegisterBindings`); **calls** `0x00417af0` `Cfg_SetActionDistance`
 - **Used by** 6 of 467 script chunks (30 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgAnimSpeeds {#cfganimspeeds}
 
@@ -860,7 +860,7 @@ differently for type 12 is not traced here.
   `0x0041d0d0` `GameState_SetCrimeTypeEnabled`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgEnableDispatcher {#cfgenabledispatcher}
 
@@ -932,7 +932,7 @@ Stores the turf-invasion switch (byte at game state +0x56e1).
 - **Wrapper** `0x0036c1a8` (registered by `RegisterBindings`); **calls** `0x0041da50` `Cfg_SetTurfInvasion`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgExcludedVandalizeZone {#cfgexcludedvandalizezone}
 
@@ -1557,7 +1557,7 @@ factor, truncated; a beaten player who drops carried loot loses the same amount.
   `0x0023bf00` `Human_PickUpObject`, `0x00232c60` `Human_DropCarried`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgPedInteractDelay {#cfgpedinteractdelay}
 
@@ -1651,7 +1651,7 @@ pad-controlled byte (+0x1b of its pad record).
 - **Wrapper** `0x0035a1f0` (registered by `RegisterBindings`); **calls** `0x00236480` `Cfg_SetPlayerCombatWalkOnly`
 - **Used by** 13 of 467 script chunks (15 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgPlayerMugging {#cfgplayermugging}
 
@@ -2748,7 +2748,7 @@ the locomotion predicates. The first argument is read from Lua but never stored.
 - **Wrapper** `0x0035a250` (registered by `RegisterBindings`); **calls** `0x00236470` `Cfg_SetStickDeflection`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgStrafe {#cfgstrafe}
 
@@ -3069,4 +3069,4 @@ the script passes is lost. Likely a bug in the binding.
 - **Wrapper** `0x0035c5a0` (registered by `RegisterBindings`); **calls** `0x00234530` `Cfg_SetWorkoutParams`
 - **Used by** 2 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented

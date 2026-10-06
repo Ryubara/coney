@@ -635,7 +635,10 @@ timer does not freeze yet; the prompt's text set by the game code or the debug m
 the counter panels' texts right-aligned on x 0.96; the radar disc
 `big_font` 256 sized from the measurement, a dark disc for the map, the player's icon 362 at the centre and no other
 blips drawn; the arrow turned only by half turns (no rotated sprites yet); player 1's other parts 0.09 right of player
-0's; the HUD shown at start.
+0's; the HUD shown at start. The hub's HUD bindings (`repo:src/scripting/hub_world_bindings.cpp`):
+`HUDEnableClubActionText` raises the prompt to y 0.125 (the other video modes' heights are not used); the action-cycle
+animation (`HUDTurnOnActionCycleAnim`) is kept per player but not drawn yet (the prompt does not swap its icon);
+`HUDShowMissionSelect` and `ShowGameStatsInterface` reach the front end, which has neither screen yet.
 
 ## Open questions
 

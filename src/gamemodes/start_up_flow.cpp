@@ -116,6 +116,13 @@ void StartUpFlow::startLoadSequence() { m_memoryCard.startLoadSequence(); }
 
 void StartUpFlow::startDeleteSequence() { m_memoryCard.startDeleteSequence(); }
 
+// The autosave the hub asks for (docs/research/save.md#mode-6).
+void StartUpFlow::startSaveSequence() {
+    if (m_profiles->inUse() && m_state.currentLevel != 0 && !m_profiles->save()) {
+        m_log("save: the autosave failed\n");
+    }
+}
+
 void StartUpFlow::launchMissionFailed(std::string_view reason) { m_missionFailed.launch(reason); }
 
 void StartUpFlow::showRumbleModeIntro(std::string_view onDone, std::span<const std::string> names) {

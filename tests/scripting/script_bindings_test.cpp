@@ -215,9 +215,9 @@ TEST_CASE("stubs return their defaults; recording stubs keep their arguments; st
           "[script_bindings]") {
     Harness h;
     const double firstHandle = h.first("ObjSpawn", {str("object")}).number().value_or(-1.0);
-    const double secondHandle = h.first("GetPTank", {str("tank")}).number().value_or(-1.0);
     CHECK(firstHandle >= 1.0);
-    CHECK(secondHandle == firstHandle + 1.0);
+    // A stub with no result gives none.
+    CHECK(h.call("SetDifficulty", {Value(1.0)}).empty());
     // Without a scene system the scene bindings outside the stand-in (below) play nothing and give nil.
     CHECK(h.first("SceneIsPreloaded", {str("scene")}).isNil());
     CHECK(h.first("SceneLength", {Value(1.0)}).isNil());

@@ -411,7 +411,8 @@ void Hud::renderPrompt(const HudCanvas& canvas) const {
     style.alignment = gui::TextAlignment::Centre;
     // The base y plus the raise; a prompt of several lines moves up a further step per line.
     const gui::TextLayout measured = gui::layoutText(text, style, canvas.text.fonts);
-    float y = kPromptPlace.y + promptRaise(canvas.text.fonts);
+    // The clubhouse puts the text near the top (HUDEnableClubActionText).
+    float y = (m_clubActionText ? kClubPromptY : kPromptPlace.y) + promptRaise(canvas.text.fonts);
     if (measured.lines > 1) {
         y -= kPromptLineRaise * static_cast<float>(measured.lines);
     }

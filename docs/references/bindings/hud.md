@@ -648,7 +648,7 @@ Moves the HUD's context action-prompt text between its normal low position and a
 - **Wrapper** `0x0036e968` (registered by `RegisterBindings`); **calls** `0x001b5ea8` `HUD_SetActionTextHigh`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDEnableFixedCamIcon {#hudenablefixedcamicon}
 
@@ -1563,7 +1563,7 @@ names work. The menu's list and layout are not traced.
   `MissionSelect_SetCallbacks`, `0x0015d728` `MissionSelect_Exit`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDShowMissionSummaryText {#hudshowmissionsummarytext}
 
@@ -1638,7 +1638,7 @@ Stops the icon cycle that HUDTurnOnActionCycleAnim started on a player's action 
   `0x0019f320` `ActionPrompt_StopCycle`
 - **Used by** 8 of 467 script chunks (27 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDTurnOffRadar {#hudturnoffradar}
 
@@ -1694,7 +1694,7 @@ player's prompt itself is shown.
   `0x0019f270` `ActionPrompt_StartCycle`, `0x0019f328` `ActionPrompt_UpdateCycle`
 - **Used by** 7 of 467 script chunks (13 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDTurnOnRadar {#hudturnonradar}
 
@@ -1808,7 +1808,7 @@ screen lists (the [statistics](../../research/player-state.md#statistics) catego
   `GameStats_SetCloseCallback`, `0x00159630` `GameStats_Exit`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ShowHud {#showhud}
 

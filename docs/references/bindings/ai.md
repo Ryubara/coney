@@ -354,7 +354,7 @@ scripts pass.
 - **Wrapper** `0x0035efc0` (registered by `RegisterBindings`); **calls** `0x00292c10` `Brain_SetWorldFlagUse`
 - **Used by** 6 of 467 script chunks (15 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 9 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrClearBackoff {#brclearbackoff}
 
@@ -569,7 +569,7 @@ members of all 32 gangs whose enemy list (brain `+0x164`, 16 slots) holds this h
   `PlayerBrain_Update`
 - **Used by** 4 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrHasGoals {#brhasgoals}
 
@@ -1127,7 +1127,7 @@ centre is the human's own position. Mode 3's idles: anim 0x29c, or 0x29e at 25 %
 - **Wrapper** `0x00361fa0` (registered by `RegisterBindings`); **calls** `0x002a4cb8` `Goal_AreaWalker`
 - **Used by** 13 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalArrestHuman {#goalarresthuman}
 
@@ -1381,7 +1381,7 @@ holds a block (606, 609 or 611) or pauses 0.5-1.5 s; out of reach he waits 2 s (
   `BoxerGoal_Init`, `0x002d9870` `BoxerGoal_Start`, `0x002d98f8` `BoxerGoal_Process`, `0x002d98b0` `BoxerGoal_End`
 - **Used by** 2 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalBumLogic {#goalbumlogic}
 
@@ -1900,7 +1900,7 @@ the saved threat response (kept in the goal).
   `GrabTargetGoal_End`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalGuardFlag {#goalguardflag}
 
@@ -2528,7 +2528,7 @@ ends (`0x002ad530`); the brain event that pushes the reaction is the civilian ty
   `PeddlerGoal_Init`, `0x002ad6c0` `PeddlerGoal_Process`, `0x002ad5a8` `PeddlerGoal_OnAttacked`
 - **Used by** 4 of 467 script chunks (9 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalPedestrianFlag {#goalpedestrianflag}
 
@@ -2680,7 +2680,7 @@ playing anything; the callback gets only the handle, no completed flag.
   `0x002d46b8` `PlayGenAnimGoal_Init`, `0x002d47d0` `PlayGenAnimGoal_Process`, `0x002d4748` `PlayGenAnimGoal_End`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalRiot {#goalriot}
 
@@ -2789,7 +2789,7 @@ offender friendly to him is only faced, not fought.
   `ShopkeeperGoal_Reset`
 - **Used by** 4 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level95`](story.md#level95) (the hub)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalStandIdle {#goalstandidle}
 

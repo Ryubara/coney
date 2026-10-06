@@ -287,6 +287,7 @@
     A gang kind with a 0 percentage never flees; only members whose class byte +0x11b is 11 run; a gang of kind 6 with
     +0xd9 set skips all of this; the default at gang creation is set by 0x00164808.
   usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false, levels: [95, 2, 52, 62, 63]}
+  coney: implemented
 
 - name: GangSetMoney
   wrapper: 0x0035f8f8
@@ -322,6 +323,7 @@
     Destroys, does not just release: the handles become invalid; does nothing when there is no player 1; player 2's
     gang is not checked.
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: GangCreate
   wrapper: 0x00373148
@@ -449,6 +451,7 @@
     Members who join later keep their own handlers; the members' handlers set with SetMsgHandler are cleared too, not
     only those the gang installed.
   usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: GangAddTurfBox
   wrapper: 0x00373438
@@ -574,6 +577,7 @@
     test is 0x002904a0 (brain attack slots +0x1a4, target +0x124). Empty member slots count as ready, so an empty
     gang answers true.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: true, levels: [95, 20]}
+  coney: implemented
 
 - name: GangSetLeader
   wrapper: 0x00373710
@@ -806,6 +810,7 @@
     traced). The callee's third argument (0 here) would also calm the members and set a 3,000 ms timer; that path is
     not used by this binding.
   usage: {chunks: 2, calls: 4, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: GangSetNeutral
   wrapper: 0x00373d58
@@ -884,6 +889,7 @@
     A spawner stops counting as in use once it has made its total number of humans
     ([AI: spawners](../../research/ai.md#spawners)), so the answer turns false when a spawner is exhausted. Plain strcmp (0x00430c4c).
   usage: {chunks: 2, calls: 7, boot: false, mission1: false, result_used: true, levels: [95]}
+  coney: implemented
 
 - name: GangSetSpawnerModel
   wrapper: 0x00374178

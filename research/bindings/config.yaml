@@ -91,6 +91,7 @@
     Readers: 0x00240e38, 0x00287a18, 0x0025f4d0, 0x00286cc8, 0x0025d390; each tests the flag with the human's
     pad-controlled byte (+0x1b of its pad record).
   usage: {chunks: 13, calls: 15, boot: true, mission1: false, result_used: false, levels: [95, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: CfgPlayerRunButton
   wrapper: 0x0035a220
@@ -123,6 +124,7 @@
     Callee 0x00236470 stores only its second float. Readers include 0x00225a50, 0x00225c10, 0x00225dc0, 0x00240e38,
     0x00259578.
   usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: CfgJumpIsAction
   wrapper: 0x0035a2c8
@@ -156,6 +158,7 @@
   notes: >-
     The factor persists in the game state until set again; with 0 loot is worth nothing.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 31, 11]}
+  coney: implemented
 
 - name: CfgCharClassAttribs
   wrapper: 0x0035a330
@@ -447,6 +450,7 @@
     The fourth argument goes through the boolean helper, so any non-nil value other than 0 becomes 1.0: the 1.8 the
     script passes is lost. Likely a bug in the binding.
   usage: {chunks: 2, calls: 4, boot: true, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: CfgTagStartCallback
   wrapper: 0x0035cc20
@@ -1748,6 +1752,7 @@
     Disabling another type has no effect: crime reports do not check the byte; what the police brain does differently
     for type 12 is not traced here.
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [95, 9]}
+  coney: implemented
 
 - name: CfgSetCrimeCallback
   wrapper: 0x0036bf28
@@ -1883,6 +1888,7 @@
     The kinds, confirmed (code) at 0x00417ca0: 0 a handcuffed human, 1 an object or flag with its own text, 2 a
     pickable lock, 3 a car stereo, 4 and 5 objects with their own text ([Crimes: context records](../../research/crimes.md#context-records)).
   usage: {chunks: 6, calls: 30, boot: true, mission1: false, result_used: false, levels: [95, 86, 11]}
+  coney: implemented
 
 - name: CfgEnableTurfInvasion
   wrapper: 0x0036c1a8
@@ -1895,6 +1901,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: CfgEnableGrappleCounters
   wrapper: 0x0036c1d8

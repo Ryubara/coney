@@ -101,6 +101,7 @@
     0x00114628: compares with the stored name (64 bytes at audio manager +0x1e0 + 0x23d64), formats "%s_preload"
     (0x00547d00) and calls 0x003579a0 (doFile's code).
   usage: {chunks: 2, calls: 3, boot: true, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: SndSetPitchMod
   wrapper: 0x003710c0
@@ -419,6 +420,7 @@
     PlaySound3D (0x0010fdd0) with volume, pitch and a third factor of 1.0 and its last flag 1; a name that is not in the
     sound list, or no free task, gives the null handle. Converted as unsigned.
   usage: {chunks: 17, calls: 27, boot: false, mission1: false, result_used: true, levels: [95, 2, 3, 5, 81, 93, 14, 82, 83, 11]}
+  coney: implemented
 
 - name: SoundPlay2D
   wrapper: 0x003716f8
@@ -662,6 +664,7 @@
     itself when the count runs out; re-enabling it then lets it play on without a limit (count byte at -1), inferred
     from the code.
   usage: {chunks: 15, calls: 43, boot: false, mission1: false, result_used: false, levels: [95, 34, 2, 3, 5, 81, 86, 93, 14, 54, 82, 11]}
+  coney: implemented
 
 - name: NewMaterialSlots
   wrapper: 0x00372700

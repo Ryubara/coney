@@ -311,6 +311,7 @@
     Storage confirmed (code) at 0x00292c10; that the chance is a percentage is inferred from the values the scripts
     pass.
   usage: {chunks: 6, calls: 15, boot: true, mission1: false, result_used: false, levels: [95, 2, 5, 93, 31, 84, 92, 20, 11]}
+  coney: implemented
 
 - name: BrHasEnemies
   wrapper: 0x0035f050
@@ -332,6 +333,7 @@
     Only the player brain (type 0) refreshes the count, so for an AI human it stays 0 (false); it can lag up to 300 brain
     updates (counter at brain `+0x34`) behind the enemy lists.
   usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: true, levels: [95, 14, 20]}
+  coney: implemented
 
 - name: BrHasAttackers
   wrapper: 0x0035f0a0
@@ -1331,6 +1333,7 @@
     Wrapper 0x00361fa0, constructor 0x002a4dc8 (vtable 0x0053fa90), Process 0x002a4eb0. With `flag` NilHandle the
     centre is the human's own position. Mode 3's idles: anim 0x29c, or 0x29e at 25 %.
   usage: {chunks: 13, calls: 33, boot: false, mission1: false, result_used: false, levels: [95, 34, 86, 31, 9, 52, 82, 92]}
+  coney: implemented
 
 - name: GoalObjectThrower
   wrapper: 0x003620c0
@@ -1654,6 +1657,7 @@
     a later state hands his money (+0x370) to the player with `collect_resp`, inferred to follow that action; an
     offender friendly to him is only faced, not fought.
   usage: {chunks: 4, calls: 5, boot: false, mission1: false, result_used: false, levels: [95, 93, 20]}
+  coney: implemented
 
 - name: GoalRiot
   wrapper: 0x00363268
@@ -1789,6 +1793,7 @@
     Only two animations are reachable (scripts use 0 and 1); an unknown number ends the goal at once without playing
     anything; the callback gets only the handle, no completed flag.
   usage: {chunks: 4, calls: 4, boot: false, mission1: false, result_used: false, levels: [95, 5, 62]}
+  coney: implemented
 
 - name: GoalStandIdle
   wrapper: 0x00363758
@@ -1908,6 +1913,7 @@
     vendor beckons only when both clips loaded; the threat response is saved in the goal (+0x2e) and restored when it
     ends (`0x002ad530`); the brain event that pushes the reaction is the civilian type's (`0x002ff898`).
   usage: {chunks: 4, calls: 9, boot: false, mission1: false, result_used: false, levels: [95, 93, 20]}
+  coney: implemented
 
 - name: GoalBigLedgeThrower
   wrapper: 0x00363b38
@@ -2013,6 +2019,7 @@
     The goal never ends by itself; the attacks are ordinary attacks, so they hit whatever the target is; the 'heavy bag'
     reading of the target is from the hub's scripts and is not checked here.
   usage: {chunks: 2, calls: 6, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: GoalBigBrawler
   wrapper: 0x00364070
@@ -2107,6 +2114,7 @@
     End restores the brain's targetable flag, two brain bytes (+0x0b, +0x0c) and the target's brain +0x11f, but not
     the saved threat response (kept in the goal).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: ActTurn
   wrapper: 0x00364578

@@ -57,6 +57,7 @@
     ([Objects: spawning](../../research/objects.md#spawning)).
     The world-object check is 0x00395f38.
   usage: {chunks: 8, calls: 26, boot: false, mission1: false, result_used: true, levels: [95, 34, 2, 31, 55, 92, 11]}
+  coney: implemented
 
 - name: OrientObject
   wrapper: 0x0036ccc0
@@ -335,6 +336,7 @@
     For an ObjSpawn record handle, resolving spawns the object when it is not live, so the call answers true (and
     brings it into the world) unless the record is removed ([Tasks: handles](../../research/tasks.md#handles)).
   usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false, levels: [95, 93, 92]}
+  coney: implemented
 
 - name: ObjGetIndex
   wrapper: 0x0036ded8
@@ -544,6 +546,7 @@
     stored-hidden bit 0x100000 and stores (0x00399428) a live record whose object has flag 0x800000. Whether marking
     removes objects already live is not traced. Different from ObjEnableZone, which switches the zone's streaming bit.
   usage: {chunks: 12, calls: 27, boot: false, mission1: false, result_used: false, levels: [95, 5, 93, 51, 84, 82]}
+  coney: implemented
 
 - name: ObjGetZone
   wrapper: 0x00377c70
@@ -741,6 +744,7 @@
     Calls the object's virtual slot +0x4c (Car_Release, car vtable 0x00544c08); any other kind of handle gets that
     class's own slot +0x4c (Task_Unschedule in the base), so pass only cars. NilHandle or a stale handle does nothing.
   usage: {chunks: 5, calls: 10, boot: false, mission1: false, result_used: false, levels: [95, 34, 5, 93]}
+  coney: implemented
 
 - name: CarSetPartDamage
   wrapper: 0x00378528
@@ -911,6 +915,7 @@
     Callee 0x0039c388 → 0x003a4e88 → 0x0018aec0 on the resource manager (0x0050cd4c). See [GUI](../../research/gui.md)
     for PTank instances. The meaning of `count` and `distance` is not traced.
   usage: {chunks: 4, calls: 7, boot: true, mission1: false, result_used: true, levels: [95]}
+  coney: implemented
 
 - name: ReleasePTank
   wrapper: 0x00378d78
@@ -923,6 +928,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 4, calls: 7, boot: true, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: SpawnBreakableGlass
   wrapper: 0x00378db0
@@ -1389,6 +1395,7 @@
   notes: >-
     What happens to humans already walking the network (FlagNetTraverse) is not traced.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [95]}
+  coney: implemented
 
 - name: AddPath
   wrapper: 0x0037ab38

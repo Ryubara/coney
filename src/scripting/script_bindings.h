@@ -108,6 +108,16 @@ class BindingHost {
     /// `HUDLaunchRumbleWin(winner, reason)`: the Rumble result mode (0x14). Does nothing by default, for a host without
     /// game modes.
     virtual void launchRumbleWin(std::string_view /*winner*/, std::string_view /*reason*/) {}
+    /// `HUDShowMissionSelect(onCancel, onChoose)`: the clubhouse's mission select (mode 0x10), `onCancel()` when the
+    /// player backs out, `onChoose(level, checkpoint)` when he picks. Does nothing by default, for a host without game
+    /// modes.
+    virtual void showMissionSelect(std::string_view /*onCancel*/, std::string_view /*onChoose*/) {}
+    /// `ShowGameStatsInterface(onClose)`: the game statistics screen (mode 0x13), `onClose()` when it closes. Does
+    /// nothing by default, for a host without game modes.
+    virtual void showGameStats(std::string_view /*onClose*/) {}
+    /// `SSMC_StartSaveSequence()`: an autosave (`Autosave_Request`: mode 6 in its save kind) when saving is enabled.
+    /// Does nothing by default, for a host without game modes.
+    virtual void startSaveSequence() {}
 };
 
 /// How far Coney implements a binding.

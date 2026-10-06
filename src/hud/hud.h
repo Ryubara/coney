@@ -108,6 +108,16 @@ struct StopWatchDisplay {
     std::string label;  ///< `+0x1c`.
 };
 
+/// A player's action-prompt icon cycle (`HUDTurnOnActionCycleAnim`, prompt `+0x440`-`+0x45c`): two button sprites, each
+/// shown `framesPerIcon` HUD updates, blinking every `blinkFrames` updates (0: no blink).
+struct ActionCycle {
+    bool on = false;                 ///< `+0x45c`.
+    std::uint32_t framesPerIcon = 0; ///< `+0x448`.
+    std::uint32_t blinkFrames = 0;   ///< `+0x458`.
+    std::uint32_t iconA = 0;         ///< `+0x440`.
+    std::uint32_t iconB = 0;         ///< `+0x444`.
+};
+
 /// The whole in-game HUD: the original's one static object at `0x00600840`. It holds the two player panels, the hint
 /// box, the objective checklist and its scroll-in messages, the announcement, the counter panels, the instruction
 /// arrow and the radars' state, and takes the HUD bindings' calls.
@@ -199,6 +209,20 @@ class Hud {
     /// @orig 0x0019f1b0 ActionPrompt_SetText (unknown)
     void setActionPrompt(std::size_t player, std::string text) { m_prompts.at(player) = std::move(text); }
     [[nodiscard]] const std::string& actionPrompt(std::size_t player) const { return m_prompts.at(player); }
+    /// `HUDEnableClubActionText(on)`: the prompt's text near the top of the screen (kClubPromptY, the clubhouse's
+    /// place) or back at its normal place (kPromptPlace).
+    /// @orig 0x001b5ea8 HUD_SetActionTextHigh (unknown)
+    void setClubActionText(bool on) { m_clubActionText = on; }
+    [[nodiscard]] bool clubActionText() const { return m_clubActionText; }
+    /// `HUDTurnOnActionCycleAnim`: player `player`'s prompt icon cycles between two button sprites as `cycle` says,
+    /// until stopActionCycle(). **Coney stand-in**: Coney's prompt draws its text only, so the cycle is kept, not
+    /// drawn.
+    /// @orig 0x0019f270 ActionPrompt_StartCycle (unknown)
+    void startActionCycle(std::size_t player, const ActionCycle& cycle) { m_cycles.at(player) = cycle; }
+    /// `HUDTurnOffActionCycleAnim`: only the cycle flag is cleared.
+    /// @orig 0x0019f320 ActionPrompt_StopCycle (unknown)
+    void stopActionCycle(std::size_t player) { m_cycles.at(player).on = false; }
+    [[nodiscard]] const ActionCycle& actionCycle(std::size_t player) const { return m_cycles.at(player); }
     /// How far player 0's prompt is raised from its base y, from the hint box or scroll-in message showing below it,
     /// with `fonts` to measure them.
     /// @orig 0x0019f430 ActionPrompt_SetRaise (unknown)
@@ -301,6 +325,8 @@ class Hud {
     std::optional<Announcement> m_announcement; // HUD +0xe340
     std::optional<Announcement> m_centred;      // HUD +0xe150
     std::array<std::string, kPlayers> m_prompts;
+    bool m_clubActionText = false;
+    std::array<ActionCycle, kPlayers> m_cycles{};
     bool m_letterbox = false;
     CounterPanels m_counters;
     InstructionArrow m_arrow;
