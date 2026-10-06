@@ -51,6 +51,10 @@ void GameplayMode::endLevel() {
         m_context.scenes = m_scenesBefore; // the front end's, say, again
     }
     m_scenes.reset();
+    if (m_context.lighting == m_lighting.get()) {
+        m_context.lighting = nullptr;
+    }
+    m_lighting.reset();
 }
 
 void GameplayMode::enter() {
@@ -101,6 +105,9 @@ void GameplayMode::enter() {
     // `CfgSetGlassProperties` calls recorded.
     script::applyRecordedGlassTypes(m_recorded, m_objects.glass);
     m_context.objects = &m_objects;
+    // A fresh light manager and fog for the level, which its scripts' SetLight and SetFogColor fill.
+    m_lighting = std::make_unique<graphics::LevelLighting>();
+    m_context.lighting = m_lighting.get();
 
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
     const LevelStart& start = m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName));
@@ -130,7 +137,8 @@ void GameplayMode::enter() {
                                              .scripted = m_scripted.get(),
                                              .cameras = m_cameras.get(),
                                              .scenes = m_scenes.get(),
-                                             .objects = &m_objects});
+                                             .objects = &m_objects,
+                                             .lighting = m_lighting.get()});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));

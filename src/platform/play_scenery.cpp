@@ -77,8 +77,7 @@ LevelPlayScenery::load(RenderEngine& engine, const io::Wad& wad, std::string_vie
 LevelPlayScenery::LevelPlayScenery(LevelScenery scenery, world::SectorBudget& budget, const human::PlayerStart& start,
                                    std::string startSource, std::function<void(std::string_view)> print)
     : m_scenery(std::move(scenery)), m_budget(budget), m_start(start), m_startSource(std::move(startSource)),
-      m_renderer(WorldViewerMode::kAmbient), m_print(std::move(print)),
-      m_drawDistance(camera::kPlayerCameraLens.farClip) {}
+      m_print(std::move(print)), m_drawDistance(camera::kPlayerCameraLens.farClip) {}
 
 void LevelPlayScenery::preload(world::Vec3 camera) {
     const std::array<world::Vec3, 1> cameras{camera};
@@ -133,8 +132,7 @@ void LevelPlayScenery::findVisible(const WorldView& newest) {
 void LevelPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
                             const std::function<void()>& drawObjects) {
     // The world draws the sectors its own view sees (WorldRenderer::render), with the characters among the objects.
-    m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, WorldViewerMode::kFogColour, m_pending,
-                      nowMs, drawObjects);
+    m_renderer.render(engine, *m_scenery.set, m_scenery.level.get(), view, m_pending, nowMs, drawObjects);
 }
 
 anim::Vec3 LevelPlayScenery::lightDirection() const { return kLevelLightDirection; }

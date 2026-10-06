@@ -129,9 +129,11 @@ bool isShortForm(std::span<const Value> args) {
 } // namespace
 
 void addLightingBindings(LuaVm& vm, const BindingContext& context) {
-    graphics::LevelLighting* lighting = context.lighting;
+    // The context, not its lighting: gameplay gives each level a fresh one after the bindings are registered.
+    const BindingContext* ctx = &context;
 
-    vm.registerFunction("SetLight", [lighting](std::span<const Value> args) -> binding::Results {
+    vm.registerFunction("SetLight", [ctx](std::span<const Value> args) -> binding::Results {
+        graphics::LevelLighting* lighting = ctx->lighting;
         if (lighting == nullptr) {
             return binding::number(0.0);
         }
@@ -140,7 +142,8 @@ void addLightingBindings(LuaVm& vm, const BindingContext& context) {
 
     // `SetLightFlicker(light, p1 ... p10)`; does nothing for light 0.
     // @orig 0x0017f1b8 Light_SetFlicker (LightManager.cpp)
-    vm.registerFunction("SetLightFlicker", [lighting](std::span<const Value> args) -> binding::Results {
+    vm.registerFunction("SetLightFlicker", [ctx](std::span<const Value> args) -> binding::Results {
+        graphics::LevelLighting* lighting = ctx->lighting;
         if (lighting != nullptr) {
             const graphics::FlickerTiming timing{
                 .onTime = unsignedArg(args, 1),
@@ -161,7 +164,8 @@ void addLightingBindings(LuaVm& vm, const BindingContext& context) {
 
     // `SetWorldAmbient(r, g, b)`.
     // @orig 0x0017f218 LightManager_SetWorldAmbient (LightManager.cpp)
-    vm.registerFunction("SetWorldAmbient", [lighting](std::span<const Value> args) -> binding::Results {
+    vm.registerFunction("SetWorldAmbient", [ctx](std::span<const Value> args) -> binding::Results {
+        graphics::LevelLighting* lighting = ctx->lighting;
         if (lighting != nullptr) {
             lighting->lights.setWorldAmbient(floatArg(args, 0), floatArg(args, 1), floatArg(args, 2));
         }
@@ -170,7 +174,8 @@ void addLightingBindings(LuaVm& vm, const BindingContext& context) {
 
     // `SetGammaOffset({r, g, b})`.
     // @orig 0x001b4908 LightManager_SetColourOffset (unknown)
-    vm.registerFunction("SetGammaOffset", [lighting](std::span<const Value> args) -> binding::Results {
+    vm.registerFunction("SetGammaOffset", [ctx](std::span<const Value> args) -> binding::Results {
+        graphics::LevelLighting* lighting = ctx->lighting;
         if (lighting != nullptr) {
             if (const auto offset = tableArg<3>(args, 0)) {
                 lighting->lights.setColourOffset((*offset)[0], (*offset)[1], (*offset)[2]);
@@ -181,7 +186,8 @@ void addLightingBindings(LuaVm& vm, const BindingContext& context) {
 
     // `SetFogColor(r, g, b)`.
     // @orig 0x0040c868 Level_SetFogColour (unknown)
-    vm.registerFunction("SetFogColor", [lighting](std::span<const Value> args) -> binding::Results {
+    vm.registerFunction("SetFogColor", [ctx](std::span<const Value> args) -> binding::Results {
+        graphics::LevelLighting* lighting = ctx->lighting;
         if (lighting != nullptr) {
             lighting->fog.colour = graphics::fogColourOf(floatArg(args, 0), floatArg(args, 1), floatArg(args, 2));
         }
@@ -190,7 +196,8 @@ void addLightingBindings(LuaVm& vm, const BindingContext& context) {
 
     // `SetFogDistance(fraction)`: where the fog starts, as a fraction of the far clip.
     // @orig 0x0040c908 Level_SetFogDistance (unknown)
-    vm.registerFunction("SetFogDistance", [lighting](std::span<const Value> args) -> binding::Results {
+    vm.registerFunction("SetFogDistance", [ctx](std::span<const Value> args) -> binding::Results {
+        graphics::LevelLighting* lighting = ctx->lighting;
         if (lighting != nullptr) {
             lighting->fog.start = floatArg(args, 0);
         }

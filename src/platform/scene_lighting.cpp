@@ -224,30 +224,34 @@ void SceneLighting::drawHumanAtomic(rw::Atomic* atomic, bool hidden) {
 
 void SceneLighting::drawCoronas() const {
     rw::Texture* texture = rwTextureOf(m_coronaSheet);
-    if (texture == nullptr) {
+    if (texture == nullptr || !m_coronaSheet) {
         return;
     }
+    const graphics::ParticlePage& page = m_coronaSheet->page;
     // Camera-facing squares: spanned by the camera's right and up axes.
     std::vector<rw::gl3::Im3DVertex> vertices;
     for (const graphics::CoronaSprite& sprite : m_lighting.lights.coronas()) {
-        if (sprite.rect < 0 || static_cast<std::size_t>(sprite.rect) >= m_coronaSheet->page.rects.size()) {
+        if (sprite.rect < 0 || static_cast<std::size_t>(sprite.rect) >= page.rects.size()) {
             continue;
         }
         const float half = sprite.size * 0.5F;
         const rw::V3d x{m_pose.right.x * half, m_pose.right.y * half, m_pose.right.z * half};
         const rw::V3d y{m_pose.up.x * half, m_pose.up.y * half, m_pose.up.z * half};
-        addQuad(vertices, toRw(sprite.position), x, y, m_coronaSheet->page.rect(static_cast<std::size_t>(sprite.rect)),
-                sprite.rgba);
+        addQuad(vertices, toRw(sprite.position), x, y, page.rect(static_cast<std::size_t>(sprite.rect)), sprite.rgba);
     }
     drawQuads(vertices, texture);
 }
 
 void SceneLighting::drawBlobShadows(std::span<const graphics::BlobShadow> shadows) const {
     rw::Texture* texture = rwTextureOf(m_shadowSheet);
-    if (texture == nullptr || static_cast<std::size_t>(graphics::kBlobShadowRect) >= m_shadowSheet->page.rects.size()) {
+    if (texture == nullptr || !m_shadowSheet) {
         return;
     }
-    const graphics::UvRect& uv = m_shadowSheet->page.rect(graphics::kBlobShadowRect);
+    const graphics::ParticlePage& page = m_shadowSheet->page;
+    if (static_cast<std::size_t>(graphics::kBlobShadowRect) >= page.rects.size()) {
+        return;
+    }
+    const graphics::UvRect& uv = page.rect(graphics::kBlobShadowRect);
     std::vector<rw::gl3::Im3DVertex> vertices;
     for (const graphics::BlobShadow& shadow : shadows) {
         // Game axes (z up) into RenderWare's (x, z, -y); the square lies across the ground's normal.

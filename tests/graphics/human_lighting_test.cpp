@@ -31,9 +31,10 @@ TEST_CASE("The blob shadow lies 0.05 m above the ground found within 4 m below")
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(2.0F, 0.0F, 20.0F, 0.0F, 20.0F));
     const auto shadow = coney::graphics::placeBlobShadow(*mesh, Vec3{5.0F, 5.0F, 3.0F});
     REQUIRE(shadow.has_value());
-    CHECK(shadow->centre.z == Approx(2.05F));
-    CHECK(shadow->normal.z == Approx(1.0F));
-    CHECK(shadow->size == Approx(coney::graphics::kBlobShadowSize));
+    const coney::graphics::BlobShadow placed = shadow.value_or(coney::graphics::BlobShadow{});
+    CHECK(placed.centre.z == Approx(2.05F));
+    CHECK(placed.normal.z == Approx(1.0F));
+    CHECK(placed.size == Approx(coney::graphics::kBlobShadowSize));
     // Ground 4.5 m below the ray's start: none.
     CHECK_FALSE(coney::graphics::placeBlobShadow(*mesh, Vec3{5.0F, 5.0F, 6.3F}).has_value());
 }

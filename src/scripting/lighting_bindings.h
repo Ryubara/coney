@@ -15,8 +15,8 @@ namespace coney::script {
 inline constexpr std::array<std::string_view, 6> kLightingBindings{"SetFogColor", "SetFogDistance",  "SetGammaOffset",
                                                                    "SetLight",    "SetLightFlicker", "SetWorldAmbient"};
 
-/// Registers kLightingBindings in `vm`, working on `context.lighting` (a null one keeps nothing: `SetLight` then
-/// returns 0).
+/// Registers kLightingBindings in `vm`, working on `context.lighting` as it is at each call (`context` must outlive
+/// the state; a null lighting keeps nothing: `SetLight` then returns 0).
 ///
 /// Research: docs/research/lighting.md, docs/references/bindings/effects.md#setlight
 void addLightingBindings(LuaVm& vm, const BindingContext& context);

@@ -37,7 +37,7 @@ void placeCamera(rw::Camera* camera, const WorldView& view, world::Vec3 position
     camera->getFrame()->transform(&matrix, rw::COMBINEREPLACE);
     camera->setNearPlane(nearClip);
     camera->setFarPlane(farClip);
-    camera->fogPlane = farClip * kFogStart;
+    camera->fogPlane = farClip * view.fogStart;
     const rw::V2d window{view.halfWidth, view.halfHeight};
     camera->setViewWindow(&window);
 }
@@ -76,8 +76,9 @@ world::FrameMatrix cloudFrame(const world::FrameMatrix& base, std::uint64_t nowM
 }
 
 void WorldRenderer::renderBackground(rw::Camera* camera, const world::LevelObject& level, const WorldView& view,
-                                     graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs) {
-    // 1-2. The background is lit as one object far away by the world's lights: Coney's one ambient, already current.
+                                     graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs) const {
+    // 1-2. The background is lit by the world's ambient and directional lights, no point lights.
+    SceneLighting& lit = lighting();
     // 3. The sky box, then the turning cloud box, round the camera with its translation zeroed: near 0.05, far 5;
     // Z write and fog off, nothing culled.
     replaceCamera(camera, view, world::Vec3{}, kSkyNearClip, kSkyFarClip);
@@ -85,18 +86,18 @@ void WorldRenderer::renderBackground(rw::Camera* camera, const world::LevelObjec
     rw::SetRenderState(rw::FOGENABLE, 0);
     rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
     if (rw::Atomic* sky = atomicOf(level.skyBox.model.get()); sky != nullptr) {
-        sky->render();
+        lit.drawBackgroundAtomic(sky);
     }
     if (auto* clouds = dynamic_cast<LevelAtomicObject*>(level.cloudBox.model.get()); clouds != nullptr) {
         clouds->place(cloudFrame(clouds->frame(), nowMs));
-        clouds->atomic()->render();
+        lit.drawBackgroundAtomic(clouds->atomic());
     }
     // 4. The skyline in place, from 39 (or the nearest missing scenery, if nearer) to 560, with Z write on and fog
     // off; then Z alone is cleared so the world, with its much shorter far clip, covers it where it has geometry.
     replaceCamera(camera, view, view.pose.position, std::min(kSkylineNearClip, pendingDistance), kSkylineFarClip);
     rw::SetRenderState(rw::ZWRITEENABLE, 1);
     if (rw::Atomic* skyline = atomicOf(level.skyline.model.get()); skyline != nullptr) {
-        skyline->render();
+        lit.drawBackgroundAtomic(skyline);
     }
     rw::SetRenderState(rw::FOGENABLE, 1);
     rw::RGBA clearColour = rw::makeRGBA(fogColour.r, fogColour.g, fogColour.b, fogColour.a); // librw takes it non-const
@@ -105,19 +106,13 @@ void WorldRenderer::renderBackground(rw::Camera* camera, const world::LevelObjec
     replaceCamera(camera, view, view.pose.position, view.nearClip, view.drawDistance);
 }
 
-WorldRenderer::WorldRenderer(float ambient)
-    : m_lights(rw::World::create()), m_ambient(rw::Light::create(rw::Light::AMBIENT)) {
-    m_ambient->setColor(ambient, ambient, ambient);
-    m_lights->addLight(m_ambient);
-}
+WorldRenderer::WorldRenderer()
+    : m_ownLevel(std::make_unique<graphics::LevelLighting>()),
+      m_ownLighting(std::make_unique<SceneLighting>(*m_ownLevel, std::nullopt, std::nullopt)) {}
 
-WorldRenderer::~WorldRenderer() {
-    m_lights->removeLight(m_ambient);
-    m_ambient->destroy();
-    m_lights->destroy();
-}
+WorldRenderer::~WorldRenderer() = default;
 
-void WorldRenderer::renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEndMs, std::uint64_t nowMs) {
+void WorldRenderer::renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEndMs, std::uint64_t nowMs) const {
     // Every material's alpha follows the fade, written only when it changes, as the original does.
     const std::uint8_t alpha = world::fadeInAlpha(fadeEndMs, nowMs);
     rw::Geometry* geometry = atomic->geometry;
@@ -127,13 +122,18 @@ void WorldRenderer::renderSectorAtomic(rw::Atomic* atomic, std::uint64_t fadeEnd
             material->color.alpha = alpha;
         }
     }
-    atomic->render();
+    lighting().drawWorldAtomic(atomic);
 }
 
 void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const world::LevelObject* level,
-                           const WorldView& view, graphics::Rgba fogColour, float pendingDistance, std::uint64_t nowMs,
+                           const WorldView& given, float pendingDistance, std::uint64_t nowMs,
                            const std::function<void()>& drawObjects, const std::function<void()>& overlay) {
     m_drawn = 0;
+    // The level's fog: its colour clears the frame, and it starts at its fraction of the draw distance.
+    SceneLighting& lit = lighting();
+    const graphics::Rgba fogColour = lit.fog().colour;
+    WorldView view = given;
+    view.fogStart = lit.fog().start;
     // 1-4. The camera, with the draw distance as its far clip and the fog from half of it. The frame is begun first:
     // a resized window gets a new camera there, which is then set up and begun again.
     engine.beginWindowFrame(fogColour);
@@ -148,8 +148,8 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     }
     placeCamera(camera, view);
     camera->beginUpdate();
-    // librw lights an atomic from the current world's lights; give it the empty one.
-    rw::engine->currentWorld = m_lights;
+    // The light manager's viewport pass: the ambients' colours, the cull and the coronas of this frame.
+    lit.beginFrame(view.pose, view.nearClip, view.drawDistance, nowMs);
 
     // The render states of the streamed worlds' passes: Z test and write, back faces culled, fog in the background
     // colour, blending by alpha for the fade.
@@ -170,7 +170,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
         // 5. The level world, the light glows: nothing culled, Z test and write and fog on.
         if (rw::Atomic* glows = atomicOf(level->levelWorld.get()); glows != nullptr) {
             rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
-            glows->render();
+            lit.drawBackgroundAtomic(glows);
             ++m_drawn;
         }
         rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
@@ -182,8 +182,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     for (std::size_t w = 0; w < worlds.size(); ++w) {
         if (w == 1 && drawObjects) {
             drawObjects();
-            // Put back what the objects may have changed: the world pass's lights and render states.
-            rw::engine->currentWorld = m_lights;
+            // Put back what the objects may have changed: the world pass's render states.
             rw::SetRenderState(rw::ZTESTENABLE, 1);
             rw::SetRenderState(rw::ZWRITEENABLE, 1);
             rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
@@ -204,6 +203,8 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     if (worlds.size() < 2 && drawObjects) {
         drawObjects();
     }
+    // The coronas of the visible lights, over the world.
+    lit.drawCoronas();
     rw::SetRenderState(rw::FOGENABLE, 0);
     // The 2D pass over the world (the menus or the HUD): no depth test, nothing culled.
     if (overlay) {

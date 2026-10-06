@@ -800,10 +800,8 @@ and the nearest missing scenery out to 560, with Z write on and fog off. Then on
 drawn before the `s` world: nothing culled, Z test and write and fog on. `coney --view-world <level>` loads the level
 file whenever the level has one.
 
-- **Coney's choices for the background:** it is lit by the viewer's one ambient light (0.157), the stand-in for the
-  world lights the original selects for a far-away sphere ([Lighting](lighting.md#select)). The PS2 driver's far-clip
-  call (`0x0048f0f8`) has no counterpart. Switching camera planes ends and begins librw's camera update, which makes
-  the camera's world current, so Coney then puts the light world back.
+- **Coney's choices for the background:** it is lit by the world's ambient and directional lights, without point
+  lights ([Lighting](lighting.md#select)). The PS2 driver's far-clip call (`0x0048f0f8`) has no counterpart.
 
 What the implementer still needs:
 

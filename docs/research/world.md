@@ -579,8 +579,8 @@ eye; none kept):
 - **Prelighting is dark**: over all of `level2s`'s vertices the colour channels average about 14 of 255 and rarely
   pass 128; alpha is always 255. Coney doubles red, green and blue (clamped) when it unpacks, reading 0x80 as full
   brightness as the GS does when it modulates a texel by a vertex colour (**Coney's choice**, inferred from the GS).
-  The viewer lights the scenery with the LightManager's default world ambient, 0.157 ([Lighting](#lighting)), as a
-  level is lit before its script runs.
+  The viewer lights the scenery with the light manager as it starts (world ambient 0.157, [Lighting](#lighting)), as
+  a level is lit before its script runs; play lights it with the level's scripted lights.
 - **Winding and culling**: in `level2s`, `level2d` and `level51s` 99.6 % of the triangles face the way their vertex
   normals point (153,453 against 525); with back-face culling, the faces that go are the backs of one-sided backdrop
   façades seen from outside the play area, as expected.
@@ -612,9 +612,8 @@ above):
 - **`0x3F0 +0x04`**: the texture-coordinate scale. The code shows both floats uploaded in one quadword; the microcode
   that applies them was not read, so the evidence stays Coney's visual check ([Atomic plugin](#atomic-plugin)).
 - **Vertex colour range**: consistent with 0x80 = 1.0, so Coney's doubling stays; the CPU halves textured material
-  colours for the same reason ([Pipelines](#pipelines)). The 0.25 ambient stand-in should become the
-  [LightManager](#lighting): 0.157 plus the script's world ambient (+ 0.07) and world lights; Coney's 0.25 is brighter
-  than the default.
+  colours for the same reason ([Pipelines](#pipelines)). The world is lit by Coney's light manager
+  ([Lighting](lighting.md#coneys-implementation)).
 - **The 5.0 margin**: squared distances. **`0x0040e100`**: no new search. **`World_PendingDistance` with nothing
   found**: `FLT_MAX` ([Camera distance](#camera-distance)).
 - **The player camera**: far clip 115, near clip 0.1, 65° ([The player camera](#player-camera)).

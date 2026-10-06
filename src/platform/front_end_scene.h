@@ -13,8 +13,10 @@
 #include "core/error.h"
 #include "fileio/wad.h"
 #include "gamemodes/front_end_scene.h"
+#include "graphics/level_lighting.h"
 #include "platform/placed_objects.h"
 #include "platform/render_engine.h"
+#include "platform/scene_lighting.h"
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
 #include "world/level_object.h"
@@ -48,7 +50,8 @@ struct FrontEndObjectSource {
 /// record becomes live when its handle is resolved (`SceneAddObject`); the 70 m streaming that would also spawn one
 /// is not Coney's yet, and the wheel stands 75 m from the camera, beyond it.
 ///
-/// Lighting is the world renderer's stand-in ambient (no LightManager yet).
+/// **Lighting** is the light manager as it starts, before any script sets it: the world ambient at the brightness
+/// alone, and the fog black (kBackground). `level100.lua`'s own lights are not run yet.
 class FrontEndWorldScene final : public FrontEndScene {
   public:
     /// The scene camera's first pose and the hub it faces, in the game's axes (z up).
@@ -112,6 +115,8 @@ class FrontEndWorldScene final : public FrontEndScene {
     world::SectorBudget m_budget{world::kSectorPoolSize}; // before the worlds charged to it
     std::unique_ptr<WorldSet> m_set;
     std::unique_ptr<world::LevelObject> m_level;
+    graphics::LevelLighting m_lighting;
+    SceneLighting m_sceneLighting; // after the lighting it reads, before the renderer that draws with it
     WorldRenderer m_renderer;
     WorldView m_view;
     float m_pendingDistance = 0.0F;

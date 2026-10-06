@@ -8,7 +8,7 @@ target_sources(coney_platform PRIVATE level_file.cpp texture_lookup.cpp world_re
 target_sources(coney_platform PRIVATE object_models.cpp placed_objects.cpp)
 # The character viewer (docs/research/characters.md#coneys-implementation).
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_viewer_mode.cpp)
-target_sources(coney_platform PRIVATE scene_lighting.cpp)
+target_sources(coney_platform PRIVATE play_lighting.cpp scene_lighting.cpp)
 # Playing a level as Rembrandt (docs/guides/building.md#playing-a-level), in a level's scenery or a sandbox's.
 target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.cpp play_level_mode.cpp play_level_objects.cpp play_level_scene.cpp
                                       play_scenery.cpp scene_stage.cpp)

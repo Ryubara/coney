@@ -67,6 +67,8 @@ class SceneLighting {
 
     /// The light manager, for the summary.
     [[nodiscard]] const graphics::LightManager& lights() const { return m_lighting.lights; }
+    /// The level's fog, which the world pass clears to and fogs with.
+    [[nodiscard]] const graphics::WorldFog& fog() const { return m_lighting.fog; }
 
   private:
     // Puts the lights of `selection` into the rig's world, mirrored from the manager's records.

@@ -100,7 +100,7 @@ WorldViewerMode::WorldViewerMode(RenderEngine& engine, std::unique_ptr<WorldSet>
                                  std::unique_ptr<world::LevelObject> level, world::SectorBudget& budget,
                                  world::Vec3 start, std::function<void(std::string_view)> print)
     : m_engine(engine), m_set(std::move(set)), m_level(std::move(level)), m_budget(budget),
-      m_camera(world::DebugCamera(start)), m_renderer(kAmbient), m_print(std::move(print)) {}
+      m_camera(world::DebugCamera(start)), m_print(std::move(print)) {}
 
 WorldView WorldViewerMode::view(const world::DebugCamera& camera, float drawDistance) const {
     // The player camera's view window on the 4:3 picture; a window of another shape keeps its height and widens or
@@ -202,7 +202,7 @@ void WorldViewerMode::render(const RenderTime& time) {
                                            lerp(from.position().z, to.position().z, time.alpha)});
     blended.setOrientation(lerpAngle(from.yaw(), to.yaw(), time.alpha), lerp(from.pitch(), to.pitch(), time.alpha));
     const float drawDistance = lerp(m_drawDistance.previous(), m_drawDistance.current(), time.alpha);
-    m_renderer.render(m_engine, *m_set, m_level.get(), view(blended, drawDistance), kFogColour, m_pendingDistance,
+    m_renderer.render(m_engine, *m_set, m_level.get(), view(blended, drawDistance), m_pendingDistance,
                       millisecondsOf(time.gameTicks));
     m_stats.maxDrawn = std::max(m_stats.maxDrawn, m_renderer.drawnAtomics());
 }

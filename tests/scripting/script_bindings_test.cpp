@@ -221,7 +221,7 @@ TEST_CASE("stubs return their defaults; recording stubs keep their arguments; st
     // Without a scene system the scene bindings outside the stand-in (below) play nothing and give nil.
     CHECK(h.first("SceneIsPreloaded", {str("scene")}).isNil());
     CHECK(h.first("SceneLength", {Value(1.0)}).isNil());
-    CHECK(h.call("SetLight").empty());
+    CHECK(h.call("SetMotionAlpha").empty());
     // A list of numbers is kept as a copy of its numbers, up to the first that is not one.
     auto list = std::make_shared<coney::script::Table>();
     REQUIRE(list->set(Value(1.0), Value(10.0)).has_value());

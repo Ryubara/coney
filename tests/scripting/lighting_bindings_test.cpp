@@ -78,7 +78,7 @@ Value list(std::initializer_list<double> values) {
     auto table = std::make_shared<Table>();
     double key = 1.0;
     for (const double v : values) {
-        (void)table->set(Value(key), Value(v));
+        REQUIRE(table->set(Value(key), Value(v)).has_value());
         key += 1.0;
     }
     return Value(table);
@@ -108,7 +108,7 @@ TEST_CASE("SetLight's long form makes a light in RenderWare's axes with its coro
     Harness h;
     const Value handle = h.call("SetLight", lampArgs());
     REQUIRE(handle.number().value_or(0) > 0);
-    const auto* light = h.lighting.lights.light(static_cast<coney::graphics::LightHandle>(*handle.number()));
+    const auto* light = h.lighting.lights.light(static_cast<coney::graphics::LightHandle>(handle.number().value_or(0)));
     REQUIRE(light != nullptr);
     CHECK(light->desc.type == coney::graphics::LightType::Point);
     CHECK(light->desc.position.x == Approx(-286.13F));
@@ -128,7 +128,7 @@ TEST_CASE("SetLight refuses bad arguments, changes, switches and removes lights"
     Harness h;
     CHECK(h.call("SetLight", lampArgs(0, 1, 4)).number().value_or(-1) == 0); // type above 3
     const Value handle = h.call("SetLight", lampArgs());
-    const double id = *handle.number();
+    const double id = handle.number().value_or(0);
     // The short form switches it off, then on.
     CHECK(h.call("SetLight", {Value(id), Value(0.0)}).number().value_or(0) == id);
     CHECK_FALSE(h.lighting.lights.light(static_cast<coney::graphics::LightHandle>(id))->desc.on);
@@ -146,7 +146,7 @@ TEST_CASE("SetLight refuses bad arguments, changes, switches and removes lights"
 
 TEST_CASE("SetLightFlicker, SetWorldAmbient, SetGammaOffset and the fog bindings set the level's lighting") {
     Harness h;
-    const double id = *h.call("SetLight", lampArgs()).number();
+    const double id = h.call("SetLight", lampArgs()).number().value_or(0);
     h.call("SetLightFlicker", {Value(id), Value(100.0), Value(0.0), Value(50.0), Value(0.0), Value(0.0), Value(0.0),
                                Value(0.0), Value(0.0), Value(0.0), Value(30.0)});
     const auto* light = h.lighting.lights.light(static_cast<coney::graphics::LightHandle>(id));

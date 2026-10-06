@@ -20,6 +20,7 @@ add_executable(coney_tests
     fileio/wad_index_test.cpp
     fileio/wad_test.cpp
     gamemodes/disc_front_end_test.cpp
+    gamemodes/disc_lighting_test.cpp
     gamemodes/frame_rate_test.cpp
     gamemodes/gameplay_objects_test.cpp
     gamemodes/game_mode_stack_test.cpp

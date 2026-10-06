@@ -29,8 +29,8 @@
 #include "graphics/render_device.h"
 #include "human/player.h"
 #include "human/target_human.h"
-#include "platform/character_lights.h"
 #include "platform/character_mesh.h"
+#include "platform/play_lighting.h"
 #include "platform/play_scenery.h"
 #include "platform/render_engine.h"
 #include "platform/scene_stage.h"
@@ -111,10 +111,6 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
   public:
     /// The mode's id, outside the original's range.
     static constexpr std::uint32_t kId = 0x106;
-    /// **Coney's choice** for the character's stand-in lights (the LightManager is not researched): an ambient light
-    /// and one white directional light (the scenery says from where).
-    static constexpr float kCharacterAmbient = 0.45F;
-    static constexpr float kCharacterDirectional = 0.7F;
 
     /// Loads level `name` (LevelPlayScenery::load()) and the player's character from `wad`, the player at `start`
     /// (player 1 as the level script created him) when given, as `setup` says. With `cast` (the level's scripts' humans
@@ -328,8 +324,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::vector<anim::Vec3> m_positions;
     std::vector<anim::Vec3> m_normals;
     std::unique_ptr<CharacterMesh> m_mesh;
-    std::unique_ptr<CharacterLights> m_lights;
-    Interpolated<float> m_drawDistance; // at the last two steps
+    std::unique_ptr<PlayLighting> m_lights; // the level's lights (the cast's), or a stand-in
+    Interpolated<float> m_drawDistance;     // at the last two steps
     PlayStats m_stats;
     std::uint32_t m_lastAnimId = 0;
     const debug::DebugDrawOptions* m_debugDraw = nullptr;

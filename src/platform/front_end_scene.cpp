@@ -17,9 +17,6 @@ namespace coney::platform {
 
 namespace {
 
-// The ambient light the world renderer lights atomics with: the LightManager's constant offset, as the world viewer.
-constexpr float kAmbient = 40.0F / 255.0F;
-
 // A point in the game's axes (z up) in RenderWare's (y up).
 world::Vec3 renderWareOf(float x, float y, float z) { return world::Vec3{x, z, -y}; }
 
@@ -88,7 +85,11 @@ FrontEndWorldScene::create(RenderEngine& engine, const io::Wad& wad, std::string
 }
 
 FrontEndWorldScene::FrontEndWorldScene(RenderEngine& engine)
-    : m_engine(engine), m_renderer(kAmbient), m_view(frontEndSceneView()) {}
+    : m_engine(engine), m_sceneLighting(m_lighting, std::nullopt, std::nullopt), m_view(frontEndSceneView()) {
+    // The light manager as it starts (the world ambient at the brightness alone), with the front end's black fog.
+    m_lighting.fog.colour = kBackground;
+    m_renderer.setLighting(&m_sceneLighting);
+}
 
 void FrontEndWorldScene::update(std::uint64_t nowMs) {
     // One streaming decision from the last step's visibility, then this step's visibility pass.
@@ -154,8 +155,7 @@ void FrontEndWorldScene::render(const RenderTime& time, const std::function<void
             m_objects->draw();
         }
     };
-    m_renderer.render(m_engine, *m_set, m_level.get(), m_view, kBackground, m_pendingDistance, nowMs, drawObjects,
-                      overlay);
+    m_renderer.render(m_engine, *m_set, m_level.get(), m_view, m_pendingDistance, nowMs, drawObjects, overlay);
 }
 
 } // namespace coney::platform

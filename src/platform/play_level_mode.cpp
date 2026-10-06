@@ -203,8 +203,11 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
       m_model(std::move(model)) {
     m_texture = textureOf(m_dictionaries);
     m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture);
-    m_lights = std::make_unique<CharacterLights>(kCharacterAmbient, kCharacterDirectional,
-                                                 directionToRenderWare(m_scenery->lightDirection()));
+    // The level's lights as its scripts set them, or a stand-in; the scenery draws with them too.
+    m_lights = std::make_unique<PlayLighting>(engine, wad, cast != nullptr ? cast->lighting : nullptr,
+                                              m_scenery->lightDirection(), m_print);
+    m_scenery->setLighting(&m_lights->scene());
+    m_print(m_lights->summary());
     makeTargets(m_texture);
     // The brains plan their moves on the level's routes, when it has path data.
     if (const world::PathMap* paths = m_scenery->pathMap(); paths != nullptr) {
@@ -241,6 +244,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
 
 PlayLevelMode::~PlayLevelMode() {
     attachScenes(nullptr, 0.0); // the scenes may outlive the stage they were hosted by
+    m_scenery->setLighting(nullptr);
     m_lights.reset();
     m_ai.reset(); // out of the player's step before he goes
     m_fighterMeshes.clear();
@@ -398,18 +402,18 @@ void PlayLevelMode::skin(const human::PlayerCharacter& character, const anim::Po
 }
 
 void PlayLevelMode::drawCharacter() const {
-    m_lights->use();
     rw::SetRenderState(rw::ZTESTENABLE, 1);
     rw::SetRenderState(rw::ZWRITEENABLE, 1);
     rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-    m_mesh->atomic()->render();
+    m_lights->drawHuman(m_mesh->atomic(), true);
     for (const Target& target : m_targets) {
-        target.mesh->atomic()->render();
+        m_lights->drawHuman(target.mesh->atomic(), false);
     }
     for (const FighterMesh& fighter : m_fighterMeshes) {
-        fighter.mesh->atomic()->render();
+        m_lights->drawHuman(fighter.mesh->atomic(), false);
     }
     m_stage->drawPuppets();
+    m_lights->drawShadows();
 }
 
 ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
@@ -458,9 +462,13 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
                                            : toRenderWare(m_player->current().cameraEye);
     m_scenery->step(eye, frame);
     m_drawDistance.current() = m_scenery->drawDistance();
-    m_scenery->findVisible(sceneView      ? *sceneView
-                           : m_freeCamera ? viewFrom(m_freeCamera->current().pose(), m_drawDistance.current())
-                                          : view(m_player->current(), m_drawDistance.current()));
+    const WorldView stepView = sceneView      ? *sceneView
+                               : m_freeCamera ? viewFrom(m_freeCamera->current().pose(), m_drawDistance.current())
+                                              : view(m_player->current(), m_drawDistance.current());
+    // The lights' flicker and the player's shadow dimming, stepped with the simulation.
+    m_lights->step(stepView, m_scenery->collision(), m_player->human().position(),
+                   static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
+    m_scenery->findVisible(stepView);
     ++m_stats.frames;
     return ModeResult::Stay;
 }
@@ -491,11 +499,14 @@ void PlayLevelMode::render(const RenderTime& time) {
                              });
         skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, m_positions, m_normals);
         m_mesh->update(m_positions, m_normals);
+        const raycast::CollisionMesh& ground = m_scenery->collision();
+        m_lights->addShadow(ground, snapshot.feet);
         for (Target& target : m_targets) {
             const human::TargetSnapshot pose =
                 human::interpolate(target.human->previous(), target.human->current(), time.alpha);
             skin(*m_character, pose.pose, pose.feet, pose.heading, 0.0F, target.positions, target.normals);
             target.mesh->update(target.positions, target.normals);
+            m_lights->addShadow(ground, pose.feet);
         }
         const std::vector<ai::AiHuman>& fighters = m_ai->humans();
         for (std::size_t i = 0; i < fighters.size() && i < m_fighterMeshes.size(); ++i) {
@@ -512,6 +523,7 @@ void PlayLevelMode::render(const RenderTime& time) {
             FighterMesh& mesh = m_fighterMeshes[i];
             skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
             mesh.mesh->update(mesh.positions, mesh.normals);
+            m_lights->addShadow(ground, pose.feet);
         }
     }
     // The scenery draws itself through the blended view, with the character and the debug lines among its objects;

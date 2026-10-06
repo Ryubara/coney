@@ -53,12 +53,6 @@ class WorldViewerMode final : public GameMode {
   public:
     /// The mode's id, outside the original's range.
     static constexpr std::uint32_t kId = 0x104;
-    /// The background and fog colour before a level script sets one: white, as the device starts
-    /// (docs/research/world.md#fog). The level scripts' SetFogColor is not run yet.
-    static constexpr graphics::Rgba kFogColour{255, 255, 255, 255};
-    /// The world's ambient light with no script call: the LightManager's constant offset, 40/255 = 0.157
-    /// (docs/research/world.md#lighting).
-    static constexpr float kAmbient = 40.0F / 255.0F;
 
     /// Loads the worlds `name` stands for (worldNamesFor()) from `wad`, charging `budget` first with the pools a
     /// running game holds before them: the `Global Data Pool` for `warriors.glr` and the `World Level Pool` for

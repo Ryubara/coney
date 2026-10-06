@@ -63,8 +63,12 @@ class PlayScenery {
     /// simulation reads.
     virtual void draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
                       const std::function<void()>& drawObjects) = 0;
-    /// The direction the character's directional light travels, in the game's axes.
+    /// The direction the character's directional light travels, in the game's axes: the stand-in lighting of a scenery
+    /// without a level's lights.
     [[nodiscard]] virtual anim::Vec3 lightDirection() const = 0;
+    /// Draws with `lighting` (the play mode's, which outlives the scenery's drawing) from now on; a scenery that lights
+    /// itself ignores it.
+    virtual void setLighting(SceneLighting* /*lighting*/) {}
     /// The scenery's counts for the play summary, starting with "; ".
     [[nodiscard]] virtual std::string summary() const = 0;
 
@@ -115,6 +119,7 @@ class LevelPlayScenery final : public PlayScenery {
     void draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
               const std::function<void()>& drawObjects) override;
     [[nodiscard]] anim::Vec3 lightDirection() const override;
+    void setLighting(SceneLighting* lighting) override { m_renderer.setLighting(lighting); }
     [[nodiscard]] std::string summary() const override;
     [[nodiscard]] std::string name() const override { return m_name; }
     [[nodiscard]] const world::PathMap* pathMap() const override { return m_paths ? &*m_paths : nullptr; }

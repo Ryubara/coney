@@ -295,11 +295,23 @@ sky, walls lit flat grey-brown, the player lit cold from above.
 
 ## Coney's implementation {#coneys-implementation}
 
-Coney lights its viewers with a stand-in (`repo:src/platform/character_lights.h`: one white ambient and one white
-directional light) and the world viewer with one 0.157 ambient ([The streamed world](world.md#coneys-implementation)).
-What matching the original needs, from this page: the manager's lights with the offsets above; the world lit by light
-A (0.227 in `level99`) plus world point lights over the prelighting; humans and objects by the object lists and the
-nearest lamps; coronas; flicker; blob shadows.
+`repo:src/graphics/light_manager.h` is the manager (pool, built-in lights, offsets, cull, selection, flicker, coronas);
+the lighting bindings (`repo:src/scripting/lighting_bindings.h`) fill a level's lights and fog, kept by gameplay;
+`repo:src/platform/scene_lighting.h` hands each atomic's selection to librw, whose GL3 lighting adds ambient,
+directional and point light to the prelighting and clamps. Sectors, the background and humans are lit as the callers
+above say; humans also get the shadow dimming and a blob shadow (`repo:src/graphics/human_lighting.h`). A disc test
+checks `level99`'s values against the table above (all match). Coney's choices:
+
+- The flicker steps with the simulation (game time per step) for the lights the cull would keep, drawing from the
+  manager's own random sequence, not the game's; a burst starts with its pause.
+- Sprite colours are on the GS's scale (0x80 = 1.0) and doubled for librw, as the prelighting is; coronas and shadows
+  are drawn with Z test and no Z write after the world.
+- The blob shadow is 1 m square (`+0x580` is not researched); the shadow-ground check uses the shadow's ray.
+- A light with radius 0 given `SetLightFlicker` keeps its corona and flickers (no `sub_flashing_light` particle);
+  light bugs are not spawned. No object uses the pulse or the glow yet.
+- A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background draws with the
+  manager as it starts and black fog, without running `level100.lua`'s lights; the character viewer and the reference
+  renders keep their fixed lights (`repo:src/platform/character_lights.h`).
 
 ## Open questions
 
@@ -308,3 +320,4 @@ nearest lamps; coronas; flicker; blob shadows.
 - What object flag `0x80` (the pulse, light B) marks.
 - Mode 4's flicker: the RpLight's colour is not updated by it; whether another step applies the base.
 - The value passed with rectangles 1-4 of the coronas (`distSq / 640`).
+- The blob shadow's size (the human's `+0x580`-`+0x588`).

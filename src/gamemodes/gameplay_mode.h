@@ -17,6 +17,7 @@
 #include "gamemodes/level_object_services.h"
 #include "gamemodes/level_start.h"
 #include "gamemodes/movie_player.h"
+#include "graphics/level_lighting.h"
 #include "graphics/render_device.h"
 #include "scenes/scene_player.h"
 #include "scripting/message_handlers.h"
@@ -60,6 +61,7 @@ struct ScriptedCast {
     /// The level's glass panes and doors the scripts spawned; the level gives them its collision mesh and path data
     /// (LevelObjects::world), steps them and sends them its hits.
     world_objects::LevelObjects* objects = nullptr;
+    graphics::LevelLighting* lighting = nullptr; ///< The level's lights and fog, as its scripts set them.
 };
 
 /// A loaded level that can draw a 2D layer over its frame just before the frame is presented: the pause menu over the
@@ -226,6 +228,7 @@ class GameplayMode final : public GameMode {
     // collision mesh and path data.
     LevelObjectServices m_objectServices;
     world_objects::LevelObjects m_objects;
+    std::unique_ptr<graphics::LevelLighting> m_lighting; // the level's, fresh for each (its scripts' lighting bindings)
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0; // player 1's teleports the level has been told of
     PauseMode* m_pause = nullptr;        // what START pauses through; not owned
