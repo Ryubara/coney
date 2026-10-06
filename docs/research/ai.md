@@ -502,7 +502,18 @@ a "flag kind `0x12`" bit.
 The route request (`0x0029a8c0`), with its state at brain `+0xe0` (`+0x04` the route, `+0x08` the waypoint radius,
 `+0x0c` a state, `+0x10` the waypoint index, `+0x14` an edge mask). Confirmed (code). It plans over the level's
 [path data](level-loading.md#path-data): the **polygons** are the walkable areas, the **C records** the graph's
-**nodes** and the **D records** its **edges**.
+**nodes** and the **D records** its **edges**. A D record on node N naming node M is the step **M → N** (A\* expands
+from the destination, and the follower reads the link from the waypoint before on the waypoint's own records,
+`0x00251070`); inferred from both readers. Most links come in pairs, but a jump down is one-way (`level99`: node 184
+on the ground holds a kind-4 link from 395 on a roof 4 m up, and 395 none back).
+
+**The edge mask** (`u16` route state `+0x14`, brain `+0xf4`) is **`0xff`** for every human: the route state's
+initialiser (`0x0029a388`) sets it, nothing in the move action or `GoalMoveToFlag` changes it, and the goals that do
+change it put `0xff` back in their End. So a scripted move admits every link kind on the disc (1, 2, 4, 8, `0x10`,
+`0x80`); only `0x100` is outside it. Confirmed (code) at the writers, and at runtime
+([Vermin's fence](#route-follow)). The other writers: `0x13` in the Start of the goals at `0x002aafd0` and
+`0x002c1470`, `0xbf` (no `0x40`) after a failed move in `0x002ab4b8`, and `| 0x100` for brain type 3 (`0x002cc908`)
+and for the formation in four levels (`FollowFormationGoal_Start`, `0x002dfe30`).
 
 1. Find the human's polygon (`0x00247958`, cached at human `+0x1b4`; fallbacks `0x002505b0`, `0x0024e218`). None →
    `+0x284` = 1, fail.
@@ -520,8 +531,10 @@ The route request (`0x0029a8c0`), with its state at brain `+0xe0` (`+0x04` the r
       8), + 320 for `0x80` and + 80 for 4 (these three
       only when `0x0051059c` = 1 and the mask lacks `0x100`), + 1600 when the word's bit 31 is set, and + (40 × routes
       already through the node − 8), saturating at `0xffff`. The last term spreads AIs over parallel routes.
-5. `0x002511c8` retries a failed search with `mask | 0x8c`; when the route uses a `0x80` edge (under the condition
-   of the extra costs) it searches again without `0x80`, capped at the first cost, and keeps the cheaper route.
+      `0x0051059c` is the script's `ClimbFilter(on)` (`Climb_SetFilter`, `0x002511b8`).
+5. `0x002511c8` retries a failed search with `mask | 0x8c` only when the mask (without `0x100`) is not `0xff`, so
+   never for the default mask; when the route uses a `0x80` edge (under the condition of the extra costs) it
+   searches again without `0x80`, capped at the first cost, and keeps the cheaper route.
 6. **Building** (`0x002513a8`; a pool of 32 routes of `0x110` bytes at `0x006ca250`, a count then `s16` node
    indices): leading nodes the start reaches directly are skipped (only when `0x005105a0` = 0), the chain is shortened
    by looking up to 4 nodes ahead for one that links back, trailing nodes are dropped while the destination is
@@ -551,15 +564,42 @@ directions, skipping bit-31 edges (inferred: for fleeing).
 `0x0029aa88` gives the current waypoint (done at state 5). Every 6th call, or when asked, `0x0029b6d8` moves on: it
 skips waypoints already reachable in a straight line (`0x0029b4b8`), for legs over 5 m only when the turn against the
 previous leg is under about 135°, and sets the waypoint radius to 0.25 m; at the end it frees the route. Confirmed
-(code). Edge flags change how a leg is taken (what each looks like is not traced):
+(code).
 
-- flag 4, a **choke point**: claimed in a table of 40 `{point, human}` at `0x006ce978` (`0x00293e40`); the nearer
-  human keeps it, and the other holds with speed 0 when under 2 m from it. A claim on a whole edge goes to one of
-  the 20 queue records at `0x006cde30` instead ([Queues](#queues));
-- flag `0x80`: passed when the gait is above 3, human `+0xe0` bit 2 is set, the waypoint is within 4.5 m and the
-  jump test `0x002826f0` passes (inferred: a jump);
-- flags 8, `0x10` and `0x40`: `0x0029b848`, `0x0029baa8` and `0x0029bca0`; an edge it cannot take sets `+0x284` = 2
-  (4 for `0x10`).
+**Link kinds.** A leg's kind is the D record that steps from the waypoint before to the current one (`0x00251070`);
+the follower reads it on the update after `0x0029b6d8` moves on (route state `+0x12` = 1), at waypoint index > 0.
+Confirmed (code) at `0x0029ad04`-`0x0029adb8`:
+
+| Leg's kind | What the follower does | Handler |
+| --- | --- | --- |
+| 8 or `0x80` | a **climb** (8 a fence or wall, `0x80` the same taken at a run) | `0x0029b848` |
+| 4 | a **jump** (`Human_BeginJump`, `0x0023db48`; route state 1), or, without the avoid bit, a run at the speed `0x003378b0` gives (state 2) when that is positive and the leg under 10 × it | `0x0029baa8` |
+| any, avoid bit (31) set, `0x40` | the **charge** at a breakable door or pane ([Objects](objects.md#nav-links)) | `0x0029bca0` |
+| any other, avoid bit set | refused: brain `+0x284` = 4 for kind `0x10` (a closed door), else 2; the move ends | |
+| 1, 2, `0x10` (an open door) | walked | |
+
+The **climb** (`0x0029b848`): each update it aims at the waypoint (brain `+0x90`, heading `+0x110`, `+0x11c` = 1),
+turns the body to it (`0x0021b100`) and calls `Climb_TryStart` (`0x002826f0`), the player's own climb
+([Characters: Climbing](characters.md#climb)): the forward probes must find a climbable face. On success the route
+state `+0x0c` = 3 (kind 8) or 4 (kind `0x80`), brain `+0x11d` = 1, and the clips play; otherwise it runs on at gait 4
+(`0x0028aac0`) and tries again, giving up (move done) after 31 failed updates (counter `+0x13`, cleared when the
+waypoint changes). When the **next** leg is 8 or `0x80`, a human with flag `0x2` (human `+0xe0`, a fast climber,
+`HuSetFastClimber`) running faster than gait 3 starts the climb early, within 4.5 m of the waypoint (`0x0029b9b0`).
+
+Before a leg of kind 4 or `0x80`, with human `+0x333` < 2, the link must be clear: another human on it
+(`0x0029a3f0`, `0x0029a6c8`) makes this one hold with speed 0 when within 2 m of the waypoint. Every waypoint is
+also claimed in a table of 40 `{node, human}` at `0x006ce978` (`0x00293e40`): the nearer human keeps it and the
+other is told to wait (`0x00294088`); a kind-4 link with a queue (`0x002510f8`) goes to one of the 20 queue records
+at `0x006cde30` instead ([Queues](#queues)). Confirmed (code); the queue's waiting is inferred.
+
+**Confirmed (runtime)**, PCSX2 2.9.94, `level99` reloaded at checkpoint 3 (call hook, [below](#level99-save)) with
+no input: Vermin (brain 5), set at (47.49, 42.97) by the script's `GoalMoveToFlag(Vermin, fVerminFencePoizo, 4, -1,
+-1, 0.5, 0, true)`, planned with mask `0xff` a route of two nodes, 205 (46.29, 25.29) then 204 (46.29, 24.29), linked
+by kind 8 (the leading nodes 137, 208 and 209 cut, the fence door 2 between 208 and 209 being open: its links'
+avoid bit, set in the file, is cleared while the level loads). He ran straight, entered route state 3 at y = 26.6,
+crossed the fence in 38 updates (route state 3, waypoint 1) and left it at y = 22.3 with the waypoint index at 2,
+then ran on to (46.31, 20.18) and stopped. Over the graph read from that state, any mask without 8 (`0x3`, `0x13`,
+`0x93`) finds no route between the two points: the yard behind the fence is reached only over its kind-8 links.
 
 #### Steering round humans {#steering}
 
@@ -610,11 +650,13 @@ and defaults are on [AI bindings](../references/bindings/ai.md).
 
 Goal type 1 (`0x002da2c0`, constructor `0x002da3b0`, vtable `0x00542130`). Fields: `+0x10` the target point, `+0x20`
 the flag, `+0x24` gait, `+0x28` angle, `+0x2c` arrival radius, `+0x30` distance, `+0x38` next tick, `u16 +0x3c`
-interval (ms), `+0x3e` arrived, `+0x3f` option, `+0x40` face the flag's heading. The order of the three floats is
-inferred from the calling convention.
+interval (ms), `+0x3e` arrived, `+0x3f` option, `+0x40` face the flag's heading. Confirmed (runtime) for Vermin's
+goal (gait 4, angle −1, radius 0.5, distance −1 read back from the goal).
 
-- **Start** (`0x002da408`): the target is the flag's position (`0x00417a60`) moved by `distance` at `angle`
-  (`0x003376c0`); with an interval, the next tick is now + interval; then Resume.
+- **Start** (`0x002da408`): the target is the flag's position (`0x00417a60`) plus `distance` × (cos `angle`, sin
+  `angle`) in world x and y, `angle` in degrees (`0x003376c0`); a negative distance is not special. Confirmed
+  (runtime): flag `fVerminFencePoizo` at (47.30, 20.20), angle −1, distance −1 → target (46.30, 20.217). With an
+  interval, the next tick is now + interval; then Resume.
 - **Resume** (`0x002da550`): clear the actions; `0x00226f70(human)`.
 - **Process** (`0x002da588`):
     1. The flag gone → done (2).
@@ -1141,7 +1183,9 @@ Build in this order; each step is testable without the game.
        with the edge costs and the 65000 cap, the retry and `0x80` detour, the route pool with its shortcuts and
        use counts.
     2. **The move action** on it ([The move action](#move-action), [Following](#route-follow)): straight when the line
-       is walkable, else waypoints with the 0.25 m radius; the corner speed; the stuck test and brain `+0x284`.
+       is walkable, else waypoints with the 0.25 m radius; the corner speed; the stuck test and brain `+0x284`. The
+       search mask is `0xff`, and a leg of kind 8 or `0x80` is a climb through the player's `Climb_TryStart`
+       ([link kinds](#route-follow)): `level99`'s Vermin crosses a fence that way.
        Steering round humans ([Steering](#steering)), choke points and [queues](#queues) can follow later: without
        them AIs only bump.
     3. **`GoalMoveToFlag`** ([GoalMoveToFlag](#move-to-flag)): offset target, arrival radius, the face-the-flag turn,
@@ -1286,7 +1330,8 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
 - **Disc check (NTSC-U, counts only):** `coney_tests "[disc][routes]"` decodes all 64 levels' path data; 42,373 of the
   43,234 route nodes lie inside the polygon that owns them. Of 500 seeded pairs of `level99`'s 415 nodes, 101 are a
   straight line, 52 routed (200 route nodes), 34 refused (a polygon off the graph), 151 linked only over flag `0x10`
-  edges, which a move does not ask for, and 162 not linked at all.
+  edges, which Coney's mask `0x3` leaves out (the original's is `0xff`, [Path planning](#path-planning)), and 162 not
+  linked at all.
 
 **Coney choices.** A fighter is class 58 (brain type 2, 1400 health) with the sparring Warriors' runtime brain values (4
 attack slots, melee 3 / 5 m, sight 30 m, field of view 1.92 rad), drawn and animated as the player's character, in a
@@ -1403,17 +1448,16 @@ the run-stop.
 
 - The per-kind time `0x00231590` that sets the target's `+0x1ec`, and the spacing bytes `+0x14a`, `+0x14b`.
 - The attack pick's adjustments in detail (`0x002240e8` and the attacker-count terms), and the two tokens.
-- What the edge flags mean in play (4, 8, `0x10`, `0x40`, `0x80`, `0x100`), polygon `+0x02`, and the
-  globals `0x0051059c`, `0x005105a0`, `0x005112b4`.
-- The edge mask a move searches with (route state `+0x14`): who sets it, and does a human that can climb ask for
-  `0x10`?
+- Link kind 2 and mask bit `0x100` in play, polygon `+0x02`, the globals `0x005105a0` and `0x005112b4`, and the
+  goals that search with the mask `0x13` (`0x002aafd0`, `0x002c1470`).
+- Which climb clips Vermin's fence plays (tall or short fence, standing or running) and how the climb's end moves
+  the follower to the next waypoint (route state 3 → 0).
 - A\*'s "fails at 128 nodes": nodes closed, or the open heap's size? And the use term: (40 × uses) − 8, or
   40 × (uses − 8), and on which node of the edge?
 - Which edge sign the inside test counts +1, and what the clockwise polygons (most of them, nearly all with polygon
   flag 1 or 2) are for if they contain nothing.
 - The move action's braking distance `+0x48` (how it is worked out) and how a corner's arc is predicted
   (`0x0022aae8`, `0x002fbef0`).
-- GoalMoveToFlag's offset (`0x003376c0`): is the angle a world direction or turned by the flag's heading?
 - `GoalFollowPlayer`'s Process (vtable `0x00541d70`) and the formation's assignment mode `+0x275`.
 - What reads the turn action's `+0x10` (`ActLookAt`'s turn value) and the play-anim action's flag (loop or hold?).
 - What drives the dealer's run and dirty chances, and what goal `0x002b4098` (type `0x10`, Spectate; the dealer's wary

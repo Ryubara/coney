@@ -237,12 +237,12 @@ boxes of the street's outline (polygon 0) and of polygon 33, a clockwise 4-verte
 
 | Kind | Who sets it | How a follower takes it ([Following a route](ai.md#route-follow)) |
 | --- | --- | --- |
-| 4 | the data | the choke point |
-| `0x10` | the data; `ConvertJumpToDoor` (4 → `0x10`) | `0x0029baa8`: faces the waypoint, then either walks or starts a jump (`Human_BeginJump`) |
+| 4 | the data | `0x0029baa8`: faces the waypoint, then either runs or starts a jump (`Human_BeginJump`) |
+| `0x10` | the data; `ConvertJumpToDoor` (4 → `0x10`) | walked while the door is open; with the avoid bit set the move fails (brain `+0x284` = 4) |
 | `0x40` | breakable doors (by number) and window-linked panes | `0x0029bca0`: faces the waypoint, sets the move action to 4, and issues the **charge** (attack kind 19, command `0x20`) |
 
-So an AI routed through a breakable door or a pane charges it. Confirmed (code); the edge mask that admits `0x40`
-edges to a search is open ([AI](ai.md#path-planning)).
+So an AI routed through a breakable door or a pane charges it. Confirmed (code) at `0x0029ad04`-`0x0029adb8`; every
+human searches with the mask `0xff`, which admits them ([AI](ai.md#path-planning)).
 
 ## Behaviour
 

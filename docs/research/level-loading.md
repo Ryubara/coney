@@ -281,7 +281,9 @@ and a one-off count):
   are clockwise, nearly all with path flag 1 or 2 (`+0x48`; no path has flag 8). Counting an edge going down as +1,
   42,373 of the 43,234 route nodes lie inside the path that owns them, and no point lies inside a clockwise path.
 - **Edges:** each has exactly one flag: 1 (238,422), 2 (2,126), 4 (5,890), 8 (982), `0x10` (746, every one with bit
-  31 set) and `0x80` (4,730); 250,963 have an edge back. Path `+0x02` is not 0 on 1,263 paths.
+  31 set) and `0x80` (4,730); 250,963 have an edge back. What a follower does with each kind (4 a jump, 8 and `0x80` a
+  climb, `0x10` a door, `0x40` a breakable door) is on [AI: Following a route](ai.md#route-follow). Path `+0x02` is
+  not 0 on 1,263 paths.
 
 ### The Object List's models {#the-object-list}
 
