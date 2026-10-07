@@ -42,7 +42,9 @@
 #include "scenes/scene_list.h"
 #include "scenes/scene_player.h"
 #include "scripting/config_strings.h"
+#include "scripting/lua_value.h"
 #include "scripting/script_system.h"
+#include "warriors/inventory.h"
 #include "world/sector_budget.h"
 #include "world_objects/flags.h"
 

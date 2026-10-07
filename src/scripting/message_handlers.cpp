@@ -20,13 +20,17 @@ void MessageHandlers::set(double object, int message, std::string callback) {
     m_handlers[{object, message}] = std::move(callback);
 }
 
-void MessageHandlers::setPrompt(double object, std::string_view callback, std::string_view prompt) {
+void MessageHandlers::setPrompt(double object, std::string_view callback, std::string_view prompt,
+                                std::string_view hint) {
     if (callback.empty() || prompt.empty()) {
         m_prompts.erase(object);
+        m_promptHints.erase(object);
         return;
     }
-    // One record per object: a second registration keeps the first's text.
-    m_prompts.try_emplace(object, prompt);
+    // One record per object: a second registration keeps the first's texts.
+    if (m_prompts.try_emplace(object, prompt).second && !hint.empty()) {
+        m_promptHints.try_emplace(object, hint);
+    }
 }
 
 std::string_view MessageHandlers::handler(double object, int message) const {

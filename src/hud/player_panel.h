@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string_view>
 
 #include "core/pad.h"
 #include "graphics/render_device.h"
@@ -26,8 +27,14 @@ struct PanelValues {
     int money = 0;          ///< Inventory item 2.
     /// The counted items' numbers, in kCounterItems order (flash, spray paint, handcuffs, keys).
     std::array<int, 4> items{};
-    bool selectShows = true; ///< The per-player record's `+0x1b`: SELECT shows the panel.
+    bool selectShows = true;  ///< The per-player record's `+0x1b`: SELECT shows the panel.
+    bool promptWakes = false; ///< The player's action prompt names a dealer's goods (promptWakesPanel()): activity.
 };
+
+/// Whether an action prompt `text` wakes the player panel: it names `Spray`, `Flash`, `Blades` or `Give Mon` (the
+/// dealers' offers and the money one). **Coney's reading**: "names" as contains, matched in any language as the
+/// English words (the research gives only these).
+[[nodiscard]] bool promptWakesPanel(std::string_view text);
 
 /// Where the four item-counter slots are (x from the panel's base, y), for a money amount `money`; nothing for 1,000
 /// or more, where the slots keep their previous places.

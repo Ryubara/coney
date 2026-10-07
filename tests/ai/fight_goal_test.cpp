@@ -164,13 +164,14 @@ TEST_CASE("the snap aims at the first attacker behind, then at a side, of the ma
     Brain& left = scene.add({39.0F, 40.0F, 0.0F}, 270.0F, BrainType::Gang, onlyKind(1));
     left.setTarget(&player);
     REQUIRE(coney::ai::snapSectorOf(player) == 2);
-    // A man behind him who does not attack him is passed over.
+    // A man behind him who does not attack him is passed over. The record is rebuilt at once rather than by running
+    // the scene past its 1 s age: over those steps the man turns to face the one behind him, which would move both
+    // of them to other sectors.
     Brain& idle = scene.add({40.0F, 39.0F, 0.0F}, 0.0F, BrainType::Gang, onlyKind(1));
-    scene.run(31); // past the record's 1 s age
+    (void)player.sectors(0);
     CHECK(coney::ai::snapSectorOf(player) == 2);
-    // Once he attacks, behind comes first.
+    // Once he attacks, behind comes first (the record is unchanged: only the attack slots are).
     idle.setTarget(&player);
-    scene.run(31);
     CHECK(coney::ai::snapSectorOf(player) == 4);
     CHECK(coney::ai::attackerViewOf(player, &left).snapTargetAside);
 }

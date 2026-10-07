@@ -28,6 +28,11 @@ constexpr float kMinigamesDepth = 10000.0F;
 // The other sheets' batches (the chase gauge's three sprites), over the rest (depth 11,000).
 constexpr std::size_t kSheetCapacity = 16;
 constexpr float kSheetDepth = 11000.0F;
+// The 2D shapes (the lock-pick dial's wedges, then its face), over every sprite batch: the original draws them after
+// the overlay's sprites (docs/research/hud.md#lock-pick-dial-layout). Two players' fans of 32 segments.
+constexpr std::size_t kShapeCapacity = 160;
+constexpr float kShapesDepth = 20000.0F;
+constexpr float kShapeFaceDepth = 20001.0F;
 
 } // namespace
 
@@ -81,11 +86,13 @@ std::unique_ptr<HudLayer> HudLayer::create(const io::Wad& wad, bool drawsPixels,
         }
     }
     if (auto sheet = layer->loadSheet("hud_minigames", print)) {
+        layer->m_shapeFace = std::make_unique<graphics::SpriteBatch>(*sheet, kShapeCapacity, kShapeFaceDepth);
         layer->m_minigames =
             std::make_unique<graphics::SpriteBatch>(std::move(*sheet), kSmallCapacity, kMinigamesDepth);
     }
     // Untextured quads: a sheet with no texture draws flat colour.
     layer->m_flat = std::make_unique<graphics::SpriteBatch>(graphics::SpriteSheet{}, kSmallCapacity, kFlatDepth);
+    layer->m_shapes = std::make_unique<graphics::SpriteBatch>(graphics::SpriteSheet{}, kShapeCapacity, kShapesDepth);
     if (layer->m_sheetHashes.empty()) {
         print("hud: no sprite sheet table in warriors.glr; no name banners\n");
     }
@@ -175,6 +182,8 @@ void HudLayer::step(const hud::HudFrame& frame) {
     canvas.minigames = m_minigames.get();
     canvas.flat = m_flat.get();
     canvas.radarMap = radarMapBatch();
+    canvas.shapes = m_shapes.get();
+    canvas.shapeFace = m_shapeFace.get();
     canvas.banner = [this](std::uint32_t record, bool shadow) -> graphics::SpriteBatch* {
         BannerBatches* batches = bannerBatches(record);
         return shadow ? batches->shadow.get() : batches->banner.get();
@@ -183,8 +192,8 @@ void HudLayer::step(const hud::HudFrame& frame) {
     m_hud->render(canvas);
     // Every batch is queued; an empty one draws nothing.
     m_spritesQueued = 0;
-    for (graphics::SpriteBatch* batch :
-         {m_flat.get(), m_radarMap.get(), m_bigText.get(), m_parts.get(), m_minigames.get()}) {
+    for (graphics::SpriteBatch* batch : {m_flat.get(), m_radarMap.get(), m_bigText.get(), m_parts.get(),
+                                         m_minigames.get(), m_shapes.get(), m_shapeFace.get()}) {
         if (batch != nullptr) {
             m_pass.queue(*batch);
             m_spritesQueued += batch->sprites().size();

@@ -125,9 +125,13 @@ void DealerGoal::end(Brain& brain) {
     }
     m_dealing = false;
     m_offering = false;
+    m_prompting = false;
 }
 
 GoalStatus DealerGoal::process(Brain& brain) {
+    // The kind-4 prompt is registered anew by each update that reaches the end (step 11); an earlier return leaves it
+    // withdrawn.
+    m_prompting = false;
     // 1. The player in range, or leaving it.
     const Brain* player = m_services->player();
     const float distance = player != nullptr ? brain.distanceTo(*player) : std::numeric_limits<float>::max();
@@ -197,6 +201,8 @@ GoalStatus DealerGoal::process(Brain& brain) {
         m_dealing = true;
         m_offering = true;
     }
+    // 11. Greeted, idle and the player in range: the offer's prompt (kind 4) is up until the next update.
+    m_prompting = true;
     return GoalStatus::Stop;
 }
 
@@ -210,12 +216,14 @@ DealOutcome DealerGoal::deal(Brain& brain, const Brain& buyer, int money, int ca
     // 2. Too little money, or carrying the most already: the offer is withdrawn.
     if (money < terms->price) {
         m_offering = false;
+        m_prompting = false;
         return DealOutcome::NoCash;
     }
     const int most = terms->mostCarried > 0 ? std::min(terms->mostCarried, itemLimit) : itemLimit;
     if (carried >= most) {
         m_atLimit = true;
         m_offering = false;
+        m_prompting = false;
         return DealOutcome::AtLimit;
     }
     // 3. A dirty dealer keeps the price and runs.
@@ -224,6 +232,7 @@ DealOutcome DealerGoal::deal(Brain& brain, const Brain& buyer, int money, int ca
     if (m_dirty) {
         m_state = DealerState::Leaving;
         m_offering = false;
+        m_prompting = false;
         return DealOutcome::RippedOff;
     }
     // 4. The sale.

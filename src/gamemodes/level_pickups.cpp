@@ -142,7 +142,8 @@ std::optional<ActionObject> LevelPickups::actionObject(anim::Vec3 feet) const {
         }
         const float distance = planDistance(feet, *at);
         if (distance <= bestDistance && std::fabs(at->z - (feet.z + 1.0F)) <= kPromptHeight) {
-            best = ActionObject{.handle = object, .prompt = prompt};
+            best =
+                ActionObject{.handle = object, .prompt = prompt, .hint = std::string(m_messages->promptHint(object))};
             bestDistance = distance;
         }
     }
@@ -178,6 +179,8 @@ void LevelPickups::objectRemoved(double object) {
 int LevelPickups::carried(int player, int item) const { return m_state.player.inventory.count(player, item); }
 
 int LevelPickups::itemLimit(int item) const { return m_state.player.inventory.limit(item); }
+
+int LevelPickups::score(int player) const { return static_cast<int>(m_state.player.stats.score(player)); }
 
 void LevelPickups::spendItem(int player, int item) { m_state.player.inventory.give(player, item, -1); }
 

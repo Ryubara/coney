@@ -60,7 +60,7 @@ to run it.
 
 | Mission | Level | Status | Checkpoints built | Approved | New bindings in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [Armies of the Night: Stage 1](level60.md) | `level60` | ⬜ Not Started | 0 of 3 | 0 | 2 of 15 |
+| [Armies of the Night: Stage 1](level60.md) | `level60` | ⬜ Not Started | 0 of 3 | 0 | 3 of 15 |
 | [Armies of the Night: Stage 2](level61.md) | `level61` | ⬜ Not Started | 0 of 3 | 0 | - |
 | [Armies of the Night: Stage 3](level62.md) | `level62` | ⬜ Not Started | 0 of 3 | 0 | 0 of 1 |
 | [Armies of the Night: Stage 4](level63.md) | `level63` | ⬜ Not Started | 0 of 3 | 0 | - |

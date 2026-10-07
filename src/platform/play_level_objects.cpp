@@ -22,6 +22,7 @@
 #include "combat/attacks.h"
 #include "combat/player_combat.h"
 #include "combat/stick_games.h"
+#include "hud/hud.h"
 #include "human/fighter.h"
 #include "human/fighter_clips.h"
 #include "human/human.h"
@@ -89,6 +90,15 @@ constexpr std::uint32_t kFlashHeld = 0x2000;
 constexpr float kFlashFade = 0.2F;
 // The 60 Hz ticks the objects take in one 1/30 s step.
 constexpr int kObjectTicksPerStep = 2;
+// The prompts' GSTRING.HUD ids (docs/research/crimes.md#context-records): a held human to mug, a pickable door, a car
+// stereo.
+constexpr std::uint32_t kMugPrompt = 1;
+constexpr std::uint32_t kLockPrompt = 15;
+constexpr std::uint32_t kStereoPrompt = 16;
+// The interface cues of the stereo theft: each stage completed, and also the fourth
+// (docs/research/hud.md#stereo-layout).
+constexpr int kStageCue = 0x22;
+constexpr int kLastStageCue = 0x23;
 
 } // namespace
 
@@ -211,6 +221,69 @@ const world_objects::Car* PlayLevelMode::stereoInReach(anim::Vec3 feet) const {
     return best;
 }
 
+const world_objects::Door* PlayLevelMode::lockInReach(anim::Vec3 feet) const {
+    if (m_objects == nullptr) {
+        return nullptr;
+    }
+    const world_objects::Door* nearest = nullptr;
+    float nearestDistance = kLockPickReach;
+    for (const world_objects::Door& door : m_objects->doors.doors()) {
+        const float distance = std::hypot(door.position.x - feet.x, door.position.y - feet.y);
+        if (door.pickable && !door.ended && distance <= nearestDistance) {
+            nearest = &door;
+            nearestDistance = distance;
+        }
+    }
+    return nearest;
+}
+
+PromptOffer PlayLevelMode::promptOffer() const {
+    PromptOffer offer;
+    const human::Human& human = m_player->human();
+    const combat::PlayerCombat& fight = human.fighter().combat();
+    // A mugging, a theft or a lock pick holds him: no prompt (HUD_Update's "free to act" test).
+    if (m_lockPick || fight.mode() == combat::CombatMode::Mugging || fight.mode() == combat::CombatMode::Theft ||
+        m_mugEnding.has_value()) {
+        offer.blocked = true;
+        return offer;
+    }
+    // Holding a human who can be mugged (Mug_CanMugVictim): one who may be mugged and has money or a pocket item.
+    // **Coney's reading**: no interrogation (`+0x5a0`) or carried object (`+0x257`) is modelled, so it is always 1.
+    if (fight.mode() == combat::CombatMode::Grabbing) {
+        if (const auto* victim = dynamic_cast<const human::Human*>(human.fighter().held());
+            victim != nullptr && !victim->health().depleted() && victim->script().muggable &&
+            (victim->script().money > 0 || victim->script().pocketCount > 0)) {
+            offer.held = kMugPrompt;
+        }
+    }
+    const anim::Vec3 feet = human.position();
+    if (lockInReach(feet) != nullptr) {
+        offer.lock = kLockPrompt;
+    }
+    if (stereoInReach(feet) != nullptr) {
+        offer.stereo = kStereoPrompt;
+    }
+    // A dealer whose offer's record is up (registered by his last update) and within its reach.
+    if (m_ai != nullptr) {
+        const ai::Brains& brains = m_ai->brains();
+        for (std::size_t i = 0; i < brains.size() && !offer.dealer; ++i) {
+            const ai::Brain& brain = brains.at(i);
+            const ai::Goal* goal = brain.topGoal();
+            if (goal == nullptr || goal->type() != ai::GoalType::Dealer) {
+                continue;
+            }
+            const auto& dealer = static_cast<const ai::DealerGoal&>(*goal);
+            const anim::Vec3 at = brain.human().position();
+            const std::optional<ai::DealTerms> terms = ai::dealTerms(dealer.type());
+            if (terms && dealer.prompting() && std::hypot(at.x - feet.x, at.y - feet.y) <= ai::kDealReach &&
+                std::fabs(at.z - (feet.z + 1.0F)) <= LevelPickups::kPromptHeight) {
+                offer.dealer = static_cast<std::uint32_t>(terms->prompt);
+            }
+        }
+    }
+    return offer;
+}
+
 bool PlayLevelMode::tryDeal(human::Human& human) {
     if (m_ai == nullptr || m_pickups == nullptr) {
         return false;
@@ -316,6 +389,7 @@ void PlayLevelMode::stepPickups() {
     }
     human::Human& human = m_player->human();
     human::ScriptState& script = human.script();
+    stepStereoPanel(human);
     // The stereo theft's outcome: the car's stereo is taken and paid for, or the theft is over.
     if (m_theftCar && human.fighter().last().game != combat::GameResult::Running) {
         if (human.fighter().last().game == combat::GameResult::Succeeded && m_cars != nullptr &&
@@ -345,6 +419,71 @@ void PlayLevelMode::stepPickups() {
     }
     m_heldObject = script.heldObject;
     human.fighter().setAnimSet(m_pickups->animSetOf(script.heldObjectName));
+}
+
+void PlayLevelMode::stepStereoPanel(const human::Human& human) {
+    hud::Hud& hud = m_hud->hud();
+    hud::StereoHud& panel = hud.stereo(0);
+    const std::optional<combat::StereoTheft>& theft = human.fighter().combat().theft();
+    if (!m_theftCar || !theft) {
+        panel.end();
+        return;
+    }
+    // Shown from the triangle press, with the intro; each completed stage plays cue 0x22.
+    if (!panel.shown()) {
+        panel.start(theft->stageTarget());
+        m_theftStage = 0;
+    }
+    const combat::GameResult result = human.fighter().last().game;
+    if (theft->stage() > m_theftStage || result == combat::GameResult::Succeeded) {
+        hud.services().sound.playCue(kStageCue);
+    }
+    m_theftStage = theft->stage();
+    panel.setProgress(theft->turned(), theft->stage());
+    // The success (with cue 0x23 for the fourth stage) or failure clip starts: the panel goes at once.
+    if (result != combat::GameResult::Running) {
+        if (result == combat::GameResult::Succeeded) {
+            hud.services().sound.playCue(kLastStageCue);
+        }
+        panel.end();
+    }
+}
+
+void PlayLevelMode::stepMugMeter(const human::Human& human, const Pad& pad) {
+    hud::MugMeter& meter = m_hud->hud().mug(0);
+    const combat::PlayerCombat& fight = human.fighter().combat();
+    const std::optional<combat::MuggingGame>& game = fight.mugging();
+    if (fight.mode() != combat::CombatMode::Mugging || !game) {
+        meter.setActive(false);
+        return;
+    }
+    meter.setActive(true);
+    meter.setMode(hud::MugMeterMode::Mugging);
+    meter.setStick(pad.leftX(), pad.leftY());
+    meter.setOnTarget(game->onTarget());
+    // Bar 2 is the time on target against the time required. Bar 1 is the time used: Coney's player mugging fails on
+    // its off-target allowance (record +0x0c), so the off-target time against it stands in for the original's time
+    // since the start against the time allowed (+0x130, +0x134).
+    const combat::MuggingParams& params = game->params();
+    const auto share = [](std::uint64_t part, int whole) {
+        return whole > 0 ? static_cast<float>(part) / static_cast<float>(whole) : 0.0F;
+    };
+    meter.setFills(share(game->offTargetMs(), params.offTargetMs), share(game->progressMs(), params.requiredMs));
+}
+
+void PlayLevelMode::stepLockPickDial() {
+    hud::LockPickHud& dial = m_hud->hud().lockPick(0);
+    if (!m_lockPick) {
+        if (dial.shown()) {
+            dial.show(false);
+        }
+        return;
+    }
+    if (!dial.shown()) {
+        dial.show(true, m_lockPick->dial().difficulty());
+    }
+    const world_objects::LockPickDial& pins = m_lockPick->dial();
+    dial.setPins(pins.pins(), std::max(pins.good(), 0));
 }
 
 void PlayLevelMode::stepMugging(human::Human& human) {
@@ -401,15 +540,7 @@ bool PlayLevelMode::stepLockPick(const Pad& pad) {
             return false;
         }
         const anim::Vec3 feet = m_player->human().position();
-        const world_objects::Door* nearest = nullptr;
-        float nearestDistance = kLockPickReach;
-        for (const world_objects::Door& door : m_objects->doors.doors()) {
-            const float distance = std::hypot(door.position.x - feet.x, door.position.y - feet.y);
-            if (door.pickable && !door.ended && distance <= nearestDistance) {
-                nearest = &door;
-                nearestDistance = distance;
-            }
-        }
+        const world_objects::Door* nearest = lockInReach(feet);
         if (nearest == nullptr) {
             return false;
         }

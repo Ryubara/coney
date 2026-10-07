@@ -111,6 +111,8 @@ class TagGame {
     /// Milliseconds left of the charge in use, and of the pause.
     [[nodiscard]] std::uint32_t chargeLeftMs() const { return m_chargeLeftMs; }
     [[nodiscard]] std::uint32_t pauseLeftMs() const { return m_pauseLeftMs; }
+    /// The difficulty's tuning.
+    [[nodiscard]] const TagTuning& tuning() const { return m_tuning; }
 
   private:
     // The cursor back on the path at the progress, and the game paused.

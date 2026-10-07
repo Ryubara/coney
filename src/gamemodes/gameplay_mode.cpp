@@ -554,6 +554,8 @@ void GameplayMode::loadLevel() {
         m_pickups->setLocator([this](double object) { return promptObjectPosition(object); });
     }
     m_shownPrompt.clear();
+    m_promptHintObject.reset();
+    m_promptHint.clear();
 
     // The level itself, with the player at that start; entering it preloads the world around him.
     std::expected<std::unique_ptr<GameMode>, Error> level = fail(ErrorCode::NotFound, "no level loader");
@@ -696,6 +698,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     }
     updateRadios();
     updateTagging(stack.pads(), frame.seconds);
+    updateTagPanel();
     updateActionPrompt();
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
     m_scripts.update(nowMs, frame.seconds);
@@ -985,13 +988,48 @@ void GameplayMode::updateActionPrompt() {
     if (m_context.hud == nullptr || !m_pickups) {
         return;
     }
-    // Nothing while he sprays or plays a part in a scene; else the action object's text.
+    // Nothing while he sprays, plays a part in a scene or a mini-game holds him; else, in HUD_Update's order, a held
+    // human to mug, then the context records by kind: the action object's own text (1), a pickable door (2), a car
+    // stereo (3), a dealer's offer (4) (docs/research/crimes.md#triangle).
+    const auto* level = dynamic_cast<const ScriptedPlayer*>(m_level.get());
+    const PromptOffer offer = level != nullptr ? level->promptOffer() : PromptOffer{};
+    const auto hudString = [this](std::uint32_t id) {
+        const auto& service = m_context.hud->services().hudString;
+        return service ? service(id) : std::string{};
+    };
     std::string text;
-    if (const std::optional<anim::Vec3> feet = playerFeet(); feet && !m_tagSession && !m_uncuff && !playerInScene()) {
-        // The kinds in order: a cuffed human (0) first, then the action object.
-        text = uncuffPrompt();
-        if (const std::optional<ActionObject> object = m_pickups->actionObject(*feet); text.empty() && object) {
+    std::optional<double> hintObject; // the action object whose hint goes in the hint box
+    std::string hint;
+    if (const std::optional<anim::Vec3> feet = playerFeet();
+        feet && !m_tagSession && !m_uncuff && !playerInScene() && !offer.blocked) {
+        if (offer.held) {
+            text = hudString(*offer.held);
+        } else if (std::string revive = revivePrompt(); !revive.empty()) {
+            // A downed partner to revive with a flash comes before the context records.
+            text = std::move(revive);
+        } else if (std::string uncuff = uncuffPrompt(); !uncuff.empty()) {
+            // A cuffed human (kind 0) comes before the other kinds.
+            text = std::move(uncuff);
+        } else if (const std::optional<ActionObject> object = m_pickups->actionObject(*feet)) {
             text = object->prompt;
+            hintObject = object->handle;
+            hint = object->hint;
+        } else if (const std::optional<std::uint32_t> id = offer.lock     ? offer.lock
+                                                           : offer.stereo ? offer.stereo
+                                                                          : offer.dealer) {
+            text = hudString(*id);
+        }
+    }
+    // The action object's hint, queued once at priority 0 while it is in reach and withdrawn when the object or its
+    // hint changes or none is in reach (HUD +0x177bc).
+    if (hintObject != m_promptHintObject || hint != m_promptHint) {
+        if (!m_promptHint.empty()) {
+            m_context.hud->hints().withdraw(m_promptHint);
+        }
+        m_promptHintObject = hintObject;
+        m_promptHint = hint;
+        if (!hint.empty()) {
+            m_context.hud->hints().queue(hint, hud::kActionHintPriority);
         }
     }
     // Only a change is written, so a prompt set some other way (the debug menu) stays until the choice changes.

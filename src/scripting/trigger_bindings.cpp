@@ -81,7 +81,7 @@ NativeFunction makeSetMsgHandler(const BindingContext& context) {
 
 // `SetMsgHandlerEx(object, message, callback, prompt, prompt2)`: SetMsgHandler, and for message 0 the object's
 // interaction prompt (a kind-1 context record), registered with a callback and a prompt and dropped without either.
-// **Coney's reading**: the second text is not kept (whether it is shown is not traced).
+// The second text is the hint the HUD queues while the record is in reach (docs/research/hud.md#action-prompts).
 // @orig 0x00386168 SetMsgHandlerEx (unknown)
 NativeFunction makeSetMsgHandlerEx(const BindingContext& context) {
     return [messages = context.messages](std::span<const Value> args) {
@@ -90,7 +90,8 @@ NativeFunction makeSetMsgHandlerEx(const BindingContext& context) {
             const int message = static_cast<int>(std::trunc(binding::number(args, 1)));
             messages->set(object, message, binding::string(args, 2));
             if (message == 0) {
-                messages->setPrompt(object, binding::string(args, 2), binding::string(args, 3));
+                messages->setPrompt(object, binding::string(args, 2), binding::string(args, 3),
+                                    binding::string(args, 4));
             }
         }
         return binding::none();

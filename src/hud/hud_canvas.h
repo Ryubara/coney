@@ -28,6 +28,10 @@ struct HudCanvas {
     graphics::SpriteBatch* minigames = nullptr; ///< `hud_minigames`: the instruction arrow.
     graphics::SpriteBatch* flat = nullptr;      ///< Untextured quads below the text: the hint box, panel bars.
     graphics::SpriteBatch* radarMap = nullptr;  ///< The level's map sheet (RadarMap::sheet): the radar's disc.
+    /// The 2D shapes, drawn after every sprite (the original's `Shape2D_DrawQueued` runs last in the overlay pass):
+    /// untextured fans (the lock-pick wedges), then fans over `hud_minigames` (the lock face).
+    graphics::SpriteBatch* shapes = nullptr;
+    graphics::SpriteBatch* shapeFace = nullptr;
     /// The batch of a banner's sheet (by sheet-table record) at the banner's depth (`shadow` false) or the shadows'
     /// (`shadow` true); null when that sheet is not loaded.
     std::function<graphics::SpriteBatch*(std::uint32_t record, bool shadow)> banner;

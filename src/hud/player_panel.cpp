@@ -2,7 +2,9 @@
 #include "hud/player_panel.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <string_view>
 
 #include "core/assert.h"
 
@@ -92,6 +94,11 @@ bool PlayerPanel::attach(int type) {
 
 void PlayerPanel::show() { m_shown = m_attached && m_mayShow; }
 
+bool promptWakesPanel(std::string_view text) {
+    return std::ranges::any_of(std::array<std::string_view, 4>{"Spray", "Flash", "Blades", "Give Mon"},
+                               [text](std::string_view word) { return text.find(word) != std::string_view::npos; });
+}
+
 void PlayerPanel::setFlashFrames(std::uint32_t frames) {
     m_flashFrames = frames;
     m_flashCounter = 0;
@@ -134,6 +141,10 @@ void PlayerPanel::update(const PanelValues& values, const Pad* pad, std::uint64_
 
     // SELECT shows the panel when the player's record allows it.
     if (pad != nullptr && values.selectShows && pad->pressed(pad::kSelect)) {
+        activity = true;
+    }
+    // A prompt naming a dealer's goods wakes it too.
+    if (values.promptWakes) {
         activity = true;
     }
     if (activity) {

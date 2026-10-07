@@ -221,6 +221,14 @@ void addPanelAndArrowBindings(LuaVm& vm, const BindingContext& context) {
                                                          unsignedArg(args, 4, hud::kCounterPanelDefaultMs),
                                                          boolArg(args, 5), hud.nowMs(), hud.services().sound);
                         }));
+    // `HUDEnableFixedCamIcon(on)`: both players' fixed-camera icons active or not, for the rest of the level.
+    // @orig 0x0036f250 HUDEnableFixedCamIcon (unknown)
+    // @orig 0x001b4740 HUD_EnableFixedCamIcon (unknown)
+    vm.registerFunction("HUDEnableFixedCamIcon", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            for (std::size_t player = 0; player < hud::kPlayers; ++player) {
+                                hud.fixedCamIcon(player).setEnabled(boolArg(args, 0));
+                            }
+                        }));
     // @orig 0x0036fdd0 HUDEnableInstArrow (unknown)
     vm.registerFunction("HUDEnableInstArrow", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             hud.enableArrow(boolArg(args, 0), floatArg(args, 1), floatArg(args, 2), floatArg(args, 3));

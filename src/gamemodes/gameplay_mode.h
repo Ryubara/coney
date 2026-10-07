@@ -47,6 +47,18 @@ namespace coney {
 
 /// A loaded level whose player 1 a script can move while it plays: a `TeleportToFlag` on player 1 after the level
 /// loaded (the hub's door walk starts 100 ms into play) reaches the level through this. The play mode implements it.
+/// What player 1 can act on this frame that only the level knows, for the action prompt
+/// (docs/research/crimes.md#triangle): each field a `GSTRING.HUD` id, or none.
+struct PromptOffer {
+    /// A mini-game, a mugging or a theft holds him: no prompt at all.
+    bool blocked = false;
+    /// He holds a human he can mug: 1 (mug), or 0 (interrogate).
+    std::optional<std::uint32_t> held;
+    std::optional<std::uint32_t> lock;   ///< A pickable door in reach (kind 2): 15.
+    std::optional<std::uint32_t> stereo; ///< A freed car stereo in reach (kind 3): 16.
+    std::optional<std::uint32_t> dealer; ///< A dealer's offer in reach (kind 4): his type's prompt.
+};
+
 class ScriptedPlayer {
   public:
     virtual ~ScriptedPlayer() = default;
@@ -66,6 +78,8 @@ class ScriptedPlayer {
     [[nodiscard]] virtual bool tagSprayPlaying() const { return true; }
     /// Player 1's spray is over: his spray clips end (Human::endTagSpray()).
     virtual void endTagSpray() {}
+    /// What player 1 can act on this frame besides the scripts' action objects (kind 1), for the action prompt.
+    [[nodiscard]] virtual PromptOffer promptOffer() const { return {}; }
 };
 
 /// What a level's scripts drive, which gameplay gives the level it loads: the humans the scripts create, the brains
@@ -322,6 +336,9 @@ class GameplayMode final : public GameMode {
     // only when he may comment on tags.
     // @orig 0x00273a68 Tag_SayNearbyLine (unknown)
     void sayTagLine(double tagger, std::uint32_t command);
+    // Player 1's tagging panel follows his stick game: the path, the painted cells, the cursor, the charge left and
+    // the paint's colour each update; hidden with no game (docs/research/hud.md#fn-after-subtitle).
+    void updateTagPanel();
     // The spray's start once its intro clip has played (0x0022e610): the stick game, message 0 to the tag, the start
     // callback.
     void beginTagSpray();
@@ -352,9 +369,10 @@ class GameplayMode final : public GameMode {
     // Player 1's feet as the scripts see them; nothing with no player 1.
     [[nodiscard]] std::optional<anim::Vec3> playerFeet() const;
     // HUD_Update's choice of player 1's action prompt (docs/research/hud.md#action-prompts), as far as Coney has it:
-    // a cuffed human to free (kind 0, uncuffPrompt()), else the action object's text; none while he sprays, frees a
-    // cuffed human or is in a scene. **Coney's stand-in**: the other sources (a held human to mug, a partner to
-    // revive, a talkable human) are not chosen yet.
+    // a held human to mug, a downed partner to revive (revivePrompt()), a cuffed human to free (kind 0,
+    // uncuffPrompt()), the action object's text (with its hint), a pickable door, a car stereo, a dealer's offer (the
+    // level's promptOffer()); none while he sprays, frees a cuffed human, is in a scene or a mini-game holds him.
+    // **Coney's stand-in**: a talkable human is not chosen yet.
     // @orig 0x001af010 HUD_Update (unknown)
     void updateActionPrompt();
     // The uncuffing (gameplay_uncuff.cpp, docs/research/crimes.md#uncuffing). An arrest or a release (the
@@ -365,6 +383,12 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] ai::Brain* cuffedInReach() const;
     // The kind-0 prompt, `GSTRING.HUD` 2, while a cuffed human is in reach and no mash runs; empty otherwise.
     [[nodiscard]] std::string uncuffPrompt() const;
+    // The knocked-out partner player 1 could revive (`Human_FindRevivableNear`): the nearest revivable human friendly
+    // to him within 3 m, not cuffed, in sight; null when none (docs/research/hud.md#action-prompts).
+    // @orig 0x00279078 Human_FindRevivableNear (unknown)
+    [[nodiscard]] ai::Brain* revivableInReach() const;
+    // The revive prompt, `GSTRING.HUD` 4, while a partner is revivable and player 1 holds a flash; empty otherwise.
+    [[nodiscard]] std::string revivePrompt() const;
     // Triangle by a cuffed human (`ContextAction_Use` kind 0): `freer` starts the mash; false when none is in reach.
     bool startUncuff(human::Human& freer);
     // Each frame after the level's step: installs the triangle hook on player 1, and ends a mash that has an outcome,
@@ -428,6 +452,8 @@ class GameplayMode final : public GameMode {
     world_objects::FlagNet m_flagNet;             // the level's flag network (FlagNetAddLink)
     std::optional<LevelPickups> m_pickups;        // over the context's spawn records and object types
     std::string m_shownPrompt;                    // the action prompt updateActionPrompt() last set
+    std::optional<double> m_promptHintObject;     // the action object whose hint updateActionPrompt() queued
+    std::string m_promptHint;                     // that hint
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of
     PauseMode* m_pause = nullptr;         // what START pauses through; not owned

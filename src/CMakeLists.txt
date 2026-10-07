@@ -358,6 +358,7 @@ target_sources(coney_core PRIVATE
     hud/war_command_display.cpp
     hud/counting_number.cpp
     hud/health_rings.cpp
+    hud/fixed_cam_icon.cpp
     hud/hint_box.cpp
     hud/hud.cpp
     hud/radar.cpp
@@ -366,6 +367,10 @@ target_sources(coney_core PRIVATE
     hud/messages.cpp
     hud/player_panel.cpp
     hud/player_panel_render.cpp
+    hud/stereo_hud.cpp
+    hud/tag_hud.cpp
+    hud/lock_pick_hud.cpp
+    hud/mug_meter.cpp
     hud/scripted_bars.cpp)
 # The pad debug menu's renderer: the in-game list in the game's font or Coney's bitmap font.
 target_sources(coney_core PRIVATE graphics/bitmap_font.cpp gui/debug_menu_view.cpp gui/debug_text_painter.cpp)

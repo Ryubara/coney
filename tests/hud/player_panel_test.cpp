@@ -283,3 +283,18 @@ TEST_CASE("the panel's sprites: banner with two shadows, the meter, the score's 
     panel.render(canvas, 99);
     CHECK(parts.sprites().empty());
 }
+
+TEST_CASE("an action prompt naming a dealer's goods wakes the panel", "[hud]") {
+    CHECK(coney::hud::promptWakesPanel("Buy Flash $20"));
+    CHECK(coney::hud::promptWakesPanel("Spray paint"));
+    CHECK_FALSE(coney::hud::promptWakesPanel("Steal"));
+    CHECK_FALSE(coney::hud::promptWakesPanel(""));
+    PlayerPanel panel(0);
+    panel.attach(32);
+    PanelValues values;
+    panel.update(values, nullptr, 10000, coney::test::kSilent);
+    CHECK(panel.fade() == 0.0F);
+    values.promptWakes = true;
+    panel.update(values, nullptr, 10033, coney::test::kSilent);
+    CHECK(panel.fade() == 1.0F);
+}

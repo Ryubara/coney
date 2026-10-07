@@ -211,7 +211,7 @@ TEST_CASE("a prompt on an object with no spawn record (a tag spot's flag) is the
     Harness h;
     coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types, &h.messages);
     h.messages.set(11, 0, "Keep");
-    h.messages.setPrompt(11, "Keep", "Tag");
+    h.messages.setPrompt(11, "Keep", "Tag", "Spray the wall");
     // Without a locator the object is nowhere: no prompt, and triangle has nothing to hand it.
     CHECK_FALSE(pickups.actionObject(kFeet).has_value());
     CHECK(pickups.triangle(100, kFeet, kFacingY, false, {}).result == coney::TriangleResult::Nothing);
@@ -223,6 +223,7 @@ TEST_CASE("a prompt on an object with no spawn record (a tag spot's flag) is the
     REQUIRE(object.has_value());
     CHECK(object.value_or(coney::ActionObject{}).handle == 11);
     CHECK(object.value_or(coney::ActionObject{}).prompt == "Tag");
+    CHECK(object.value_or(coney::ActionObject{}).hint == "Spray the wall");
     CHECK(pickups.triangle(100, kFeet, kFacingY, false, {}).result == coney::TriangleResult::Consumed);
     CHECK(h.touched == std::vector<double>{11});
     // Out of reach: 1.2 m away in the plane, or more than 1.5 m above the waist.

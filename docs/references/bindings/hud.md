@@ -674,7 +674,7 @@ are what matter. That the icon marks a fixed camera is inferred from the binding
   `0x001b2818` `HUD_SetFixedCamIconVisible`
 - **Used by** 5 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level60`](story.md#level60) (Armies of the Night 1)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDEnableGameTutorialText {#hudenablegametutorialtext}
 

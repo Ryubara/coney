@@ -90,7 +90,9 @@ class HudLayer {
     std::function<void(std::string_view)> m_print;
     std::unique_ptr<graphics::SpriteBatch> m_minigames;
     std::unique_ptr<graphics::SpriteBatch> m_flat;
-    std::map<std::uint32_t, BannerBatches> m_banners; // by record; empty batches for a sheet that failed
+    std::unique_ptr<graphics::SpriteBatch> m_shapes;    // the untextured 2D shapes, over every sprite
+    std::unique_ptr<graphics::SpriteBatch> m_shapeFace; // the 2D shapes over hud_minigames, over those
+    std::map<std::uint32_t, BannerBatches> m_banners;   // by record; empty batches for a sheet that failed
     std::map<std::uint32_t, std::unique_ptr<graphics::SpriteBatch>> m_sheets; // by record; null for a sheet that failed
     graphics::OverlayCamera m_camera;
     graphics::OverlayPass m_pass;

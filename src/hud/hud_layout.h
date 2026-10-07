@@ -174,6 +174,8 @@ inline constexpr float kPromptRaiseOverHint = 0.05F;
 inline constexpr float kPromptRaiseOverMessage = -0.02F;
 /// A prompt of more than one line moves up this much per line.
 inline constexpr float kPromptLineRaise = 0.025F;
+/// The cycle icon's size (`HUDTurnOnActionCycleAnim` passes 0.1, an overlay height).
+inline constexpr float kCycleIconSize = 0.1F;
 
 // ---- The hint box (`0x0050eb50`) ----
 

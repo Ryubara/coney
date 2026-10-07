@@ -108,6 +108,10 @@ class DealerGoal final : public Goal {
 
     /// Whether he offers a deal (state 3, human `+0x1b2` = 1): the buyer's triangle within kDealReach reaches deal().
     [[nodiscard]] bool offering() const { return m_offering && m_state == DealerState::Dealing; }
+    /// Whether his offer's prompt (context record kind 4, GSTRING.HUD DealTerms::prompt) is registered: the last update
+    /// reached its end (greeted, idle, the player in range) and no refusal withdrew it since. The HUD shows it to a
+    /// player within kDealReach.
+    [[nodiscard]] bool prompting() const { return m_prompting; }
     /// A buyer's triangle at the offer (event 0, `DealerBrain_OnEvent`), the buyer holding `money` dollars and
     /// `carried` of the item, which the inventory holds to `itemLimit`. The dealer turns to `buyer`; then, as the
     /// outcome says, the offer is withdrawn (no cash, at the limit), he takes the price and leaves (dirty), or he
@@ -153,6 +157,7 @@ class DealerGoal final : public Goal {
     bool m_sold = false;                        // +0x3f
     bool m_atLimit = false;                     // +0x40
     bool m_offering = false;                    // the dealer human's +0x1b2
+    bool m_prompting = false;                   // the kind-4 prompt registered by this update (step 11)
     std::optional<std::uint64_t> m_lastCashMs;  // when he last said `cash`
 };
 

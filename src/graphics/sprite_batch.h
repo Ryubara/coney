@@ -31,8 +31,8 @@ struct OverlayVertex {
 /// A batch of sprites over one sprite sheet, drawn with one texture: the original's resource-manager instance, whose
 /// atomic is a PTank. Game code adds sprites to it every frame; the 2D pass (OverlayPass) draws it and empties it.
 ///
-/// Only the original's format 0 (position and size) exists here; the rotated (1) and matrix (2) formats wait for a
-/// user. The blend is always source alpha over inverse source alpha, the only one the instances use.
+/// The original's formats 0 (position and size) and 1 (turned about the centre) exist here; the matrix format (2) waits
+/// for a user. The blend is always source alpha over inverse source alpha, the only one the instances use.
 ///
 /// Research: docs/research/gui.md#resource-instances
 class SpriteBatch {
@@ -44,14 +44,17 @@ class SpriteBatch {
     /// Appends `sprite` for this frame. Returns false and drops it when the batch already holds `capacity` sprites.
     /// @orig 0x00182de0 Instance_AddSprite (unknown)
     bool addSprite(const Sprite& sprite);
+    /// Appends `sprite` turned by `rotation` radians about its centre, clockwise on screen (the original's rotated
+    /// format 1). Returns false and drops it when the batch is full.
+    bool addSprite(const Sprite& sprite, float rotation);
 
     /// Appends one triangle for this frame, drawn with the sheet's texture after the sprites. A triangle with a corner
     /// at or behind the camera is dropped.
     void addTriangle(const OverlayVertex& a, const OverlayVertex& b, const OverlayVertex& c);
 
     /// Draws the batch's sprites through `camera` onto the logical screen, in the order they were added, as one
-    /// drawQuads() call with the sheet's texture, then its triangles as one drawTriangles() call. Does nothing for an
-    /// empty batch.
+    /// drawQuads() call with the sheet's texture (turned sprites as triangles through drawTriangles(), in runs
+    /// that keep the order), then its triangles as one drawTriangles() call. Does nothing for an empty batch.
     /// @orig 0x00197168 Instance_Render (unknown)
     void render(RenderDevice& device, const OverlayCamera& camera) const;
 
@@ -62,6 +65,7 @@ class SpriteBatch {
     void clear() {
         m_sprites.clear();
         m_triangles.clear();
+        m_rotations.clear();
     }
 
     /// The sheet the sprites come from.
@@ -85,6 +89,7 @@ class SpriteBatch {
     std::size_t m_capacity;
     float m_depth;
     std::vector<Sprite> m_sprites;
+    std::vector<float> m_rotations; // each sprite's turn, radians (0 unturned), by index
     std::vector<OverlayVertex> m_triangles;
     TriangleStates m_triangleStates;
     std::size_t m_mostSprites = 0;

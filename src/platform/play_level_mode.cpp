@@ -15,6 +15,7 @@
 #include "animation/anim_pose.h"
 #include "camera/camera_lens.h"
 #include "camera/camera_view.h"
+#include "camera/cameras.h"
 #include "characters/character_data.h"
 #include "characters/character_rig.h"
 #include "core/game_timer.h"
@@ -26,6 +27,7 @@
 #include "raycast/collision_mesh.h"
 #include "scenes/scene_list.h"
 #include "scenes/scene_player.h"
+#include "warriors/inventory.h"
 
 namespace coney::platform {
 
@@ -545,6 +547,8 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     }
     m_ai->capture();
     stepPickups();
+    stepMugMeter(m_player->human(), playerPad);
+    stepLockPickDial();
     stepFlash();
     stepObjects();
     stepHats();
@@ -576,6 +580,12 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     hud::HudFrame hudFrame;
     hudFrame.nowMs = millisecondsOf(frame.gameTicks);
     hudFrame.pads.at(0) = &playerPad;
+    // The fixed-camera icon: a locked camera (type 1) or switch 0 off ignores the right stick. Coney has no fixed (0),
+    // transition (5) or rail (9) camera.
+    if (const camera::Cameras* cameras = m_cast.cameras; cameras != nullptr) {
+        hudFrame.cameraIgnoresStick.at(0) =
+            cameras->current().kind == camera::CameraKind::Locked || !cameras->enabled(camera::Cameras::kSwitchStick);
+    }
     hudFrame.levelNumber = m_levelNumber;
     // A scene's letterbox in or moving hides the HUD.
     hudFrame.letterbox = m_stage->barHeight(hudFrame.nowMs) > 0.0F;
@@ -590,6 +600,16 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     hudFrame.radar.heading = m_player->human().heading();
     hudFrame.radar.speed = m_player->human().speed();
     hudFrame.radar.cameraHeading = std::atan2(-stepView.pose.forward.x, -stepView.pose.forward.z);
+    // The score, the money and the four item counters, which the original's panel reads from the stats object and the
+    // inventory itself (docs/research/hud.md#item-counters).
+    if (m_pickups != nullptr) {
+        hud::PanelValues& values = hudFrame.players.at(0);
+        values.score = m_pickups->score(0);
+        values.money = m_pickups->carried(0, item::kMoney);
+        // **Coney's stand-in** for the handcuff counter's `Human_GetCuffCount` (not traced): inventory item 5.
+        values.items = {m_pickups->carried(0, item::kRevive), m_pickups->carried(0, item::kSprayPaint),
+                        m_pickups->carried(0, item::kHandcuffs), m_pickups->carried(0, item::kHandcuffKey)};
+    }
     m_hud->step(hudFrame);
     // The health rings, after the HUD's step: hidden with it.
     stepRings(playerPad, stepView, hudFrame.nowMs);

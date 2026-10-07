@@ -15,15 +15,20 @@
 
 #include "core/pad.h"
 #include "hud/counter_panels.h"
+#include "hud/fixed_cam_icon.h"
 #include "hud/hint_box.h"
 #include "hud/hud_audio.h"
 #include "hud/hud_canvas.h"
 #include "hud/hud_layout.h"
+#include "hud/lock_pick_hud.h"
 #include "hud/mash_meter.h"
 #include "hud/messages.h"
+#include "hud/mug_meter.h"
 #include "hud/player_panel.h"
 #include "hud/radar.h"
 #include "hud/scripted_bars.h"
+#include "hud/stereo_hud.h"
+#include "hud/tag_hud.h"
 #include "hud/war_command_display.h"
 
 namespace coney::hud {
@@ -38,6 +43,9 @@ struct HudFrame {
     bool letterbox = false;    ///< Player 1's letterbox is in or moving: nothing is drawn and the radars go off.
     int levelNumber = 0;       ///< The level record's `+0x04` (99 for the first mission).
     RadarView radar;           ///< Player 0's radar: where he is, his speed and the camera's facing.
+    /// Whether each player's camera ignores the right stick: a fixed, locked, transition or rail camera, or camera
+    /// switch 0 off (the fixed-camera icon, docs/research/hud.md#hud-fixed-cam-icon).
+    std::array<bool, kPlayers> cameraIgnoresStick{};
 };
 
 /// Values the debug menus put in place of a player's own (Coney's tool, not the original's): each set field replaces
@@ -112,6 +120,15 @@ struct ActionCycle {
     std::uint32_t blinkFrames = 0;   ///< `+0x458`.
     std::uint32_t iconA = 0;         ///< `+0x440`.
     std::uint32_t iconB = 0;         ///< `+0x444`.
+    std::uint32_t counter = 0;       ///< `+0x44c`: updates since the start.
+    bool second = false;             ///< `+0x450`: iconB showing rather than iconA.
+    bool iconOn = true;              ///< `+0x488`: the blink's on half.
+    /// One update (`ActionPrompt_UpdateCycle`): the word swaps whenever the counter is a multiple of framesPerIcon (the
+    /// first update too); with blinkFrames the icon is on for that many updates, then off for as many.
+    /// @orig 0x0019f328 ActionPrompt_UpdateCycle (unknown)
+    void step();
+    /// The `part_page0` rectangle showing now.
+    [[nodiscard]] std::uint32_t icon() const { return second ? iconB : iconA; }
 };
 
 /// The whole in-game HUD: the original's one static object at `0x00600840`. It holds the two player panels, the hint
@@ -207,8 +224,14 @@ class Hud {
 
     /// Sets player `player`'s action prompt (`ActionPrompt_SetText`); empty for none. In the original `HUD_Update`
     /// picks it each frame from what the player can act on; Coney's game code (or the debug menu) sets it.
+    /// A new or changed text restarts the prompt: shown again even while its cycle hid it.
     /// @orig 0x0019f1b0 ActionPrompt_SetText (unknown)
-    void setActionPrompt(std::size_t player, std::string text) { m_prompts.at(player) = std::move(text); }
+    void setActionPrompt(std::size_t player, std::string text) {
+        if (text != m_prompts.at(player)) {
+            m_promptTextHidden.at(player) = false;
+        }
+        m_prompts.at(player) = std::move(text);
+    }
     [[nodiscard]] const std::string& actionPrompt(std::size_t player) const { return m_prompts.at(player); }
     /// `HUDEnableClubActionText(on)`: the prompt's text near the top of the screen (kClubPromptY, the clubhouse's
     /// place) or back at its normal place (kPromptPlace).
@@ -216,10 +239,12 @@ class Hud {
     void setClubActionText(bool on) { m_clubActionText = on; }
     [[nodiscard]] bool clubActionText() const { return m_clubActionText; }
     /// `HUDTurnOnActionCycleAnim`: player `player`'s prompt icon cycles between two button sprites as `cycle` says,
-    /// until stopActionCycle(). **Coney stand-in**: Coney's prompt draws its text only, so the cycle is kept, not
-    /// drawn.
+    /// until stopActionCycle(). Starting it hides the prompt's text until the text changes.
     /// @orig 0x0019f270 ActionPrompt_StartCycle (unknown)
-    void startActionCycle(std::size_t player, const ActionCycle& cycle) { m_cycles.at(player) = cycle; }
+    void startActionCycle(std::size_t player, const ActionCycle& cycle) {
+        m_cycles.at(player) = cycle;
+        m_promptTextHidden.at(player) = true;
+    }
     /// `HUDTurnOffActionCycleAnim`: only the cycle flag is cleared.
     /// @orig 0x0019f320 ActionPrompt_StopCycle (unknown)
     void stopActionCycle(std::size_t player) { m_cycles.at(player).on = false; }
@@ -228,6 +253,21 @@ class Hud {
     /// Player `player`'s mash meter (HUD `+0xebc0` + player × `0x430`, docs/research/hud.md#mash-meter-layout).
     [[nodiscard]] MashMeter& mashMeter(std::size_t player) { return m_mash.at(player); }
     [[nodiscard]] const MashMeter& mashMeter(std::size_t player) const { return m_mash.at(player); }
+    /// Player `player`'s stereo-theft panel (HUD `+0xfea0` + player × `0xb10`, docs/research/hud.md#stereo-layout).
+    [[nodiscard]] StereoHud& stereo(std::size_t player) { return m_stereo.at(player); }
+    [[nodiscard]] const StereoHud& stereo(std::size_t player) const { return m_stereo.at(player); }
+    /// Player `player`'s mug meter (player panel `+0x3480`, docs/research/hud.md#mug-meter-layout).
+    [[nodiscard]] MugMeter& mug(std::size_t player) { return m_mug.at(player); }
+    [[nodiscard]] const MugMeter& mug(std::size_t player) const { return m_mug.at(player); }
+    /// Player `player`'s lock-pick dial (HUD `+0xf420` + player × `0x540`, docs/research/hud.md#lock-pick-dial-layout).
+    [[nodiscard]] LockPickHud& lockPick(std::size_t player) { return m_lockPick.at(player); }
+    [[nodiscard]] const LockPickHud& lockPick(std::size_t player) const { return m_lockPick.at(player); }
+    /// Player `player`'s fixed-camera icon (HUD `+0x135e0` + player × `0x100`).
+    [[nodiscard]] FixedCamIcon& fixedCamIcon(std::size_t player) { return m_fixedCam.at(player); }
+    [[nodiscard]] const FixedCamIcon& fixedCamIcon(std::size_t player) const { return m_fixedCam.at(player); }
+    /// Player `player`'s tagging panel (docs/research/hud.md#fn-after-subtitle).
+    [[nodiscard]] TagHud& tagPanel(std::size_t player) { return m_tagPanels.at(player); }
+    [[nodiscard]] const TagHud& tagPanel(std::size_t player) const { return m_tagPanels.at(player); }
     /// Player `player`'s Warrior command menu (panel `+0x1ef0`, docs/research/hud.md#warrior-command-menu).
     [[nodiscard]] WarCommandDisplay& warCommands(std::size_t player) { return m_warCommands.at(player); }
     [[nodiscard]] const WarCommandDisplay& warCommands(std::size_t player) const { return m_warCommands.at(player); }
@@ -318,12 +358,15 @@ class Hud {
     /// The level number of the last step.
     [[nodiscard]] int levelNumber() const { return m_levelNumber; }
 
-    /// Whether the hint box, the prompts and the scroll-in messages are hidden now: a bottom-left announcement or a
-    /// mini-game panel (a mash meter) shows (and, for the hint box, a scroll-in message).
-    [[nodiscard]] bool scrollInHidden() const {
-        return m_announcement.has_value() ||
-               std::ranges::any_of(m_mash, [](const MashMeter& meter) { return meter.shown(); });
+    /// Whether a mini-game panel is up for any player: the one place that lists the panels that hide the bottom-left
+    /// text (a mash meter or a mug meter).
+    [[nodiscard]] bool miniGamePanelShown() const {
+        return std::ranges::any_of(m_mash, [](const MashMeter& meter) { return meter.shown(); }) ||
+               std::ranges::any_of(m_mug, [](const MugMeter& mug) { return mug.active(); });
     }
+    /// Whether the hint box, the prompts and the scroll-in messages are hidden now: a bottom-left announcement or a
+    /// mini-game panel shows (and, for the hint box, a scroll-in message).
+    [[nodiscard]] bool scrollInHidden() const { return m_announcement.has_value() || miniGamePanelShown(); }
     [[nodiscard]] bool hintsHidden() const { return scrollInHidden() || m_scrollIn.showing(); }
 
     /// Adds the newest step's sprites: nothing while hidden or letterboxed; else the radar, the arrow, the counter
@@ -368,8 +411,14 @@ class Hud {
     std::array<std::string, kPlayers> m_prompts;
     bool m_clubActionText = false;
     std::array<ActionCycle, kPlayers> m_cycles{};
+    std::array<bool, kPlayers> m_promptTextHidden{}; // the cycle's start hid the text, until it changes
     std::array<WarCommandDisplay, kPlayers> m_warCommands{};
     std::array<MashMeter, kPlayers> m_mash{};
+    std::array<StereoHud, kPlayers> m_stereo{};
+    std::array<MugMeter, kPlayers> m_mug{};
+    std::array<LockPickHud, kPlayers> m_lockPick{};
+    std::array<FixedCamIcon, kPlayers> m_fixedCam{};
+    std::array<TagHud, kPlayers> m_tagPanels{};
     bool m_letterbox = false;
     // The letterbox's "restore pending" mark (screen effects +0x1f4): armed by a letterbox move, stamped as the bars
     // reach 0, and the next step with the bars out shows the HUD.

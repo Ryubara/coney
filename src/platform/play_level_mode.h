@@ -262,6 +262,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] bool tagSprayPlaying() const override;
     /// ScriptedPlayer: player 1's spray clips end.
     void endTagSpray() override;
+    /// ScriptedPlayer: what player 1 can act on for the action prompt: nothing during a mugging, a theft or a lock
+    /// pick; else a held human to mug, a pickable door, a freed car stereo and a dealer's offer in reach.
+    [[nodiscard]] PromptOffer promptOffer() const override;
     /// The model the player is drawn as.
     [[nodiscard]] const std::string& model() const { return m_model; }
 
@@ -386,6 +389,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void bindPickups(LevelPickups* pickups);
     // The car whose freed stereo is in reach of feet at `feet` (a kind-3 context record), nearest first; null for none.
     [[nodiscard]] const world_objects::Car* stereoInReach(anim::Vec3 feet) const;
+    // The pickable door nearest feet at `feet` within reach (a kind-2 context record); null for none.
+    [[nodiscard]] const world_objects::Door* lockInReach(anim::Vec3 feet) const;
     // Player 1's triangle at a dealer offering a deal (a kind-4 context record, docs/research/ai.md#dealer): the first
     // whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's waist
     // deals. Returns whether one took the press.
@@ -402,6 +407,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void stepPickups();
     // Player 1's mugging: the scripts' record for the next one, and the end of one (the money, the mug callback).
     void stepMugging(human::Human& human);
+    // The stereo-theft panel follows player 1's theft: shown from the press, its progress each update with cue 0x22 per
+    // stage (and 0x23 for the last), gone as the end clip starts (docs/research/hud.md#stereo-layout).
+    void stepStereoPanel(const human::Human& human);
+    // The mug meter follows player 1's mugging: shown while it runs, with the raw left stick, whether it is on target
+    // and both bars' fills (docs/research/hud.md#mug-meter-layout).
+    void stepMugMeter(const human::Human& human, const Pad& pad);
+    // The lock-pick dial follows player 1's pick: shown at its difficulty while it runs, with the pins' angles and the
+    // pin the next press judges (docs/research/hud.md#lock-pick-dial-layout).
+    void stepLockPickDial();
     // The level's glass panes, after the opaque world and before the rings (docs/research/objects.md#pane-draw).
     void drawGlass() const;
     // Player 1's handle, as the scripts know him; the nil handle without a cast.
@@ -551,6 +565,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::optional<bool> m_mugEnding;                      // a decided mugging's result, until its end clip finishes
     std::uint32_t m_mugEndClip = 0;                       // that end clip
     LevelPickups* m_pickups = nullptr;                    // the level's loose objects for the pick-up; not owned
+    int m_theftStage = 0;                                 // the theft's stage the panel last showed
     std::optional<world_objects::LockPick> m_lockPick;
     int m_lockPickDifficulty = 0;
     bool m_flashRingRequest = false;      // a flash used: the HUD's ring request (docs/research/hud.md)

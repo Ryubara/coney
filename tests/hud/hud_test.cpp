@@ -481,3 +481,48 @@ TEST_CASE("a level starts with the HUD hidden and the radars' automatic return o
     CHECK(hud.visible());
     CHECK(hud.panel(0).shown());
 }
+
+TEST_CASE("the action cycle swaps its word every framesPerIcon updates and blinks on and off", "[hud]") {
+    coney::hud::ActionCycle cycle{.on = true, .framesPerIcon = 4, .blinkFrames = 6, .iconA = 79, .iconB = 73};
+    // The first update swaps already, then every fourth: B for updates 0-3, A for 4-7, B for 8-11.
+    std::vector<std::uint32_t> icons;
+    std::vector<bool> on;
+    for (int i = 0; i < 12; ++i) {
+        cycle.step();
+        icons.push_back(cycle.icon());
+        on.push_back(cycle.iconOn);
+    }
+    CHECK(icons == std::vector<std::uint32_t>{73, 73, 73, 73, 79, 79, 79, 79, 73, 73, 73, 73});
+    // On for six updates, off for six.
+    CHECK(on == std::vector<bool>{true, true, true, true, true, true, false, false, false, false, false, false});
+}
+
+TEST_CASE("the action cycle hides the prompt's text and draws its button at the prompt's anchor", "[hud]") {
+    Hud hud = makeHud(nullptr);
+    Canvas canvas;
+    coney::graphics::SpriteSheet sheet;
+    sheet.texture = std::make_shared<coney::test::FakeTexture>(512, 256);
+    for (int i = 0; i < 100; ++i) {
+        sheet.page.rects.push_back(coney::graphics::UvRect{0.0F, 0.0F, 34.0F / 512.0F, 34.0F / 256.0F});
+    }
+    coney::graphics::SpriteBatch parts(sheet, 16, 10000.0F);
+    canvas.canvas.parts = &parts;
+    hud.setActionPrompt(0, "Lift");
+    hud.startActionCycle(
+        0, coney::hud::ActionCycle{.on = true, .framesPerIcon = 4, .blinkFrames = 0, .iconA = 79, .iconB = 79});
+    step(hud, 0);
+    hud.render(canvas.canvas);
+    // The text is hidden; the button is drawn, 0.1 high, centred at x 0.5.
+    CHECK(canvas.text.sprites().empty());
+    REQUIRE(parts.sprites().size() == 1);
+    CHECK(parts.sprites()[0].height == Approx(coney::hud::kCycleIconSize));
+    CHECK(parts.sprites()[0].position.x == Approx(coney::graphics::OverlayCamera::guiToOverlay(0.5F, 0.86F).x));
+    // A new text shows again; the cycle's end leaves the text alone.
+    parts.clear();
+    hud.setActionPrompt(0, "Lift again");
+    hud.stopActionCycle(0);
+    step(hud, 33);
+    hud.render(canvas.canvas);
+    CHECK_FALSE(canvas.text.sprites().empty());
+    CHECK(parts.sprites().empty());
+}

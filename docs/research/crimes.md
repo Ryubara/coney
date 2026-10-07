@@ -139,7 +139,8 @@ uncuffing (action `0x15`) or a few other states, or when command `0xa` is not av
 order: holding a human who can be mugged → `GSTRING.HUD` 1 (mug), or 0 (interrogate) when the human has an interrogation
 set; a revivable friend or gang member knocked out within 3 m and in sight, while the player or (in co-op) the downed
 player carries a flash → 4 (revive, [HUD: the revive test](hud.md#action-prompts)); a context record → its text
-(`+0x10`; whether the second text is ever shown is not traced); else a nearby human's own talk prompt (`0x001acd60`).
+(`+0x10`; the second text `+0x14` goes in the hint box at priority 0, [HUD](hud.md#action-prompts)); else a nearby
+human's own talk prompt (`0x001acd60`).
 The panel's activity test then matches the prompt's text against the dealer prompts ([HUD](hud.md#the-player-panel)).
 The prompt sits 0.04 above its place in the default video mode (0.02 in the others) and rises with a scroll-in message
 (`0x0019f430`).
@@ -743,7 +744,8 @@ stereo not below the feet starts it (`Human::startStereoTheft`: the player turns
 684, mode 3 with 3 turns a stage, the player's class byte 2); success calls `LevelPickups::stereoStolen` ($15 and
 item 11, then the `CfgSetSteroTheftHandler` callback with the human and the car). **Coney's readings**: the turn to
 the stereo is at once, not spread over the intro; both gifts notify the inventory callback; the success and failure
-clips (685, 686), the HUD widget, the hint and the owned byte are not played or set yet.
+clips (685, 686), the hint and the owned byte are not played or set yet. The HUD panel and its cues follow the theft
+([HUD: Coney's implementation](hud.md#coneys-implementation)), as does the action prompt for kinds 2-4.
 
 **The mugging and the starting money** (2026-10-07): `HuCreate` rolls each new human's carry as
 [Starting money](#starting-money) gives (`characters::rollStartingCarry()`, `repo:src/characters/starting_money.h`)
@@ -753,7 +755,8 @@ money in the deciding update (`LevelPickups::mugPaid()`: item 2 with the money a
 `HuSetMugCallback` callback runs with (mugger, 1 or nil) when his end clip (344 or 346) finishes, or at once for a
 let-go or a hit (`LevelPickups::mugEnded()`). **Coney's stand-ins**: a `grp_` object group carries nothing and a
 rolled object is not given to the human; not yet: interrogation, the pocket items, the half-way `no_item` stop, ped
-type 5's 1.5 times, item 2's pick-up sound and the statistic.
+type 5's 1.5 times, item 2's pick-up sound and the statistic. While he mugs, the HUD's mug meter shows
+(`PlayLevelMode::stepMugMeter()`, [HUD: the mug meter](hud.md#mug-meter-layout)).
 
 **The arrest and the uncuffing** (2026-10-07): `HuSetArrested` (`ai::ScriptedHumans::setArrested()`) cuffs the human
 (`Human::setArrested()`: stopped, its fighting ended, 320 looping), resets its brain as `Brain_OnArrested` does

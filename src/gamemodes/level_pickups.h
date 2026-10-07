@@ -34,6 +34,7 @@ struct PickupChoice {
 struct ActionObject {
     double handle = 0;
     std::string prompt; ///< The text `SetMsgHandlerEx` gave it, markup and all.
+    std::string hint;   ///< Its second text (`+0x14`), the hint queued while it is in reach; empty for none.
 };
 
 /// What one triangle press came to (TriangleOutcome).
@@ -139,6 +140,8 @@ class LevelPickups {
     /// How many of item `item` player `player` (0 or 1) holds, and the most the inventory lets a player hold.
     [[nodiscard]] int carried(int player, int item) const;
     [[nodiscard]] int itemLimit(int item) const;
+    /// Player `player`'s (0 or 1) score as the HUD's panel shows it (`StatGetScore`).
+    [[nodiscard]] int score(int player) const;
     /// A dealer sold player `player` (0 or 1) `amount` of item `item` for `price` dollars: the item given and the price
     /// taken (an amount of 0: a dirty dealer kept the price). **Coney's reading**: neither notifies the inventory
     /// callbacks (the research names only the pickup sound, which Coney does not play).

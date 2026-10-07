@@ -2302,7 +2302,50 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   step, not from inside the damage step.
 - **Sound**: the cues by the table `SoundCfgInterfaceSound` fills, and the named sounds, play through
   `audio::SoundPlayer` ([Sound](sound.md#interface-sounds)); silent without sound.
-- **In play**: the play mode steps the HUD with player 1's rage and draws it over the frame; the story shares the
+- **The action prompt** (`repo:src/gamemodes/gameplay_mode.cpp`, the level's part `PlayLevelMode::promptOffer()`):
+  each frame of play player 0's text is chosen in `HUD_Update`'s order: nothing while he tags, plays a scene part,
+  mugs, steals a stereo or picks a lock; a held human with money or a pocket item who may be mugged gives
+  `GSTRING.HUD` 1; else a knocked-out partner to revive gives 4 (`GameplayMode::revivableInReach()`: the nearest
+  revivable human friendly to him within 3 m, not cuffed, in sight, while player 1 holds a flash; the states
+  `0x80000000` and `0x100000000` are not modelled); else the context records by kind: an action object's own text
+  (1), a pickable door 15 (2), a freed car stereo 16 (3), a dealer's offer (4: his type's prompt, 6 for the flash,
+  while his goal registers it, from the greeting on, within 1.75 m). A prompt naming the dealers' goods wakes the
+  player panel. Not yet: a talkable human's prompt and the interrogation (0). The action object's second text
+  (`SetMsgHandlerEx`'s `prompt2`)
+  is queued as a priority-0 hint while it is in reach and withdrawn when it changes or leaves.
+- **The stereo-theft panel** (`repo:src/hud/stereo_hud.h`, stepped by `PlayLevelMode::stepStereoPanel()`) as
+  [the stereo panel on screen](#stereo-layout) says: up from the triangle press, the arrow round the backdrop's
+  corners by stage, the gauge sized and turned by the angle turned and dropping by a doubling step while a stage is
+  complete, the stick's four pictures and the turning, flickering ring; cue `0x22` per stage and `0x23` with the
+  fourth; gone as the end clip starts. Turned sprites (the format-1 instances: this panel and the instruction arrow)
+  go through `SpriteBatch::addSprite(sprite, rotation)`, a positive angle turning clockwise on screen
+  as the original's widgets do. **Coney's stand-in**: the stick and ring are timed on the game
+  clock, not the timer `0x0050b8b8`.
+- **The mug meter** (`repo:src/hud/mug_meter.h`, stepped by `PlayLevelMode::stepMugMeter()`) as
+  [the mug meter on screen](#mug-meter-layout) says, while player 1 mugs (mode 0): the two `part_page0` bars, the
+  stick's ball and dot following the raw left stick, the three arcs rippling two updates each at the last direction
+  the stick picked while it is on target, and `GSTRING.HUD` `0x180` (`0x181` for modes 1 and 3) above; while it
+  shows, the scroll-in message, the hint box and the action prompt are hidden. **Coney's stand-ins**: bar 1 is the
+  off-target time against the allowance (record `+0x0c`, what fails a player's mugging in Coney) instead of the time
+  since the start against `+0x134`. Not yet: modes 1-3 (a player victim and
+  the hold), which need two players and the hold's states.
+- **The lock-pick dial** (`repo:src/hud/lock_pick_hud.h`, stepped by `PlayLevelMode::stepLockPickDial()`) as
+  [the dial's layout](#lock-pick-dial-layout) says, while player 1 picks a lock: the three pins turned by their
+  angles (gone once every pin is done), then over every sprite the good and perfect wedges (whole rim vertices
+  coloured, the next segment fading to clear) and the lock face, as 32-segment fans in 640 × 448 pixels. The shapes
+  go in two batches sorted above all the HUD's others, so they lie on top of the pins as `Shape2D_DrawQueued` does.
+- **The fixed-camera icon** (`repo:src/hud/fixed_cam_icon.h`) as [the icon](#hud-fixed-cam-icon) says: while player 1's
+  camera is a locked one or camera switch 0 is off, pushing the right stick (a raw byte outside 64-176) shows
+  `part_page0` rectangle 87 at (0.9, 0.64), fully opaque while held and fading over 1 s after; any other camera hides
+  it. `HUDEnableFixedCamIcon` turns both players' off until the next level's set-up. Coney has no fixed, transition
+  or rail camera, so only the locked camera and the switch show it.
+- **The tagging panel** (`repo:src/hud/tag_hud.h`, set by `GameplayMode::updateTagPanel()`) as
+  [the tagging panel](#fn-after-subtitle) says, while player 1 sprays: the path's dots but the last three, grey from
+  100 to 255, the painted cells in his `HuTagColor` at alpha 205, the cursor between cells fading white to black and
+  back over 500 ms (white while the game pauses), the charge bar shrinking down to its fixed bottom, and the frame at
+  alpha 191; gone when the spray ends.
+- **In play**: the play mode steps the HUD with player 1's rage, score, money and item counts (flash, spray paint,
+  handcuffs, keys from the inventory) and draws it over the frame; the story shares the
   flow's HUD with the scripts. A disc test (`[disc][hud]`, `repo:tests/platform/disc_level99_hud_test.cpp`) plays
   `level99` checkpoint 1 through `l99_c1` unskipped: hidden and nothing drawn under the bars, then shown, drawn and
   the first hint up, and a pause hiding and showing it. The debug menus' HUD page sets its values ([Debug menu](../guides/debug-menu.md#pages)).
@@ -2366,16 +2409,15 @@ bands, the Rumble team disc and pointer, two players' rings and icons.
 the counter slots' `x0` 0 and lines at y 0.104 and 0.154, the count 0.022 right of its icon; handcuff and key icons
 `part_page0` 31 and 34; the money's icon a `$`; the popups' places; the money cue once per count; the built-in
 announcements' texts from `GSTRING.ANNOUNCE` by kind; a `<FREEZE>` hint shown for its time (at least 2 s) as the game
-timer does not freeze yet; player 0's prompt chosen each frame of play from the action object in reach only (the
-nearest kind-1 [context record](crimes.md#context-records), none while tagging or in a scene;
-`repo:src/gamemodes/gameplay_mode.cpp`), not yet from a held human, a partner to revive or a talkable human, and
-its hint not queued;
-the counter panels' texts right-aligned on x 0.96; the arrow turned only by half turns (no rotated sprites yet);
-player 1's other parts 0.09 right of player
+timer does not freeze yet; the handcuff counter counts inventory item 5 (`Human_GetCuffCount` is not traced); a prompt
+wakes the panel when it contains `Spray`, `Flash`, `Blades` or `Give Mon` in any language;
+the counter panels' texts right-aligned on x 0.96; player 1's other parts 0.09 right of player
 0's; a HUD no level has set up (the debug pages, the tests) shown at start; no wasted/busted restore yet (Coney has
 no death camera). The hub's HUD bindings (`repo:src/scripting/hub_world_bindings.cpp`):
 `HUDEnableClubActionText` raises the prompt to y 0.125 (the other video modes' heights are not used); the action-cycle
-animation (`HUDTurnOnActionCycleAnim`) is kept per player but not drawn yet (the prompt does not swap its icon);
+animation (`HUDTurnOnActionCycleAnim`) draws player 0's button (`part_page0`, 0.1 high, grey 128, inferred: the
+prompt widget's colour) centred on the prompt's anchor, its word swapping every `framesPerIcon` updates and blinking
+`blinkFrames` on and off, and hides the text until a new or changed one;
 `HUDShowMissionSelect` and `ShowGameStatsInterface` reach the front end, which has neither screen yet.
 
 ## Open questions

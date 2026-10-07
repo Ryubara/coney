@@ -501,6 +501,7 @@
     HUD set-up writes 1 to `+0x177b4` on every level load; no reader of that field was found, so the widget calls
     are what matter. That the icon marks a fixed camera is inferred from the binding name.
   usage: {chunks: 5, calls: 5, boot: false, mission1: false, result_used: false, levels: [60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HUDSetObjective
   wrapper: 0x0036f280

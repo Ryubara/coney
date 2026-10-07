@@ -91,6 +91,8 @@ class StereoTheft {
 
     /// Stages completed (`+0x4c`).
     [[nodiscard]] int stage() const { return m_stage; }
+    /// The angle each stage takes, radians.
+    [[nodiscard]] float stageTarget() const { return m_stageTarget; }
     /// Radians turned in the current stage (`+0x48`).
     [[nodiscard]] float turned() const { return m_turned; }
 

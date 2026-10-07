@@ -68,6 +68,10 @@ int Hud::attachPlayer(int slot, int type) {
 
 void Hud::levelSetUp() {
     m_radar.scriptOn = true;
+    // The fixed-camera icons are set up active (HUD_InitLevel); only `HUDEnableFixedCamIcon(false)` turns them off.
+    for (FixedCamIcon& icon : m_fixedCam) {
+        icon.setEnabled(true);
+    }
     hideAll();
 }
 
@@ -167,6 +171,16 @@ void Hud::setAnnouncement(int kind, std::string_view text, bool flag) {
     announcement.displayMs = markupTimesOf(announcement.text).displayMs;
     m_services.sound.playCue(kCueAnnounce);
     m_announcement = std::move(announcement);
+}
+
+void ActionCycle::step() {
+    // The word swaps on every multiple of framesPerIcon, the first update included; the blink halves are blinkFrames
+    // long.
+    if (framesPerIcon > 0 && counter % framesPerIcon == 0) {
+        second = !second;
+    }
+    iconOn = blinkFrames == 0 || (counter / blinkFrames) % 2 == 0;
+    ++counter;
 }
 
 float Hud::promptRaise(const gui::FontLookup& fonts) const {
@@ -292,7 +306,14 @@ void Hud::update(const HudFrame& frame) {
         values.score = overrides.score.value_or(values.score);
         values.money = overrides.money.value_or(values.money);
         values.items = overrides.items.value_or(values.items);
+        values.promptWakes = promptWakesPanel(m_prompts.at(i));
         m_panels.at(i).update(values, frame.pads.at(i), frame.nowMs, m_services.sound);
+        m_stereo.at(i).update(frame.nowMs);
+        m_mug.at(i).update();
+        m_fixedCam.at(i).update(frame.cameraIgnoresStick.at(i), frame.pads.at(i), frame.nowMs);
+        if (m_cycles.at(i).on) {
+            m_cycles.at(i).step();
+        }
     }
     // 2. The messages, the hint box and the counter panels on their game-time clocks; an announcement ends when its
     // `<DISPLAYTIME>` has passed.
@@ -422,19 +443,13 @@ void Hud::renderArrow(const HudCanvas& canvas) const {
     if (!m_arrow.on || canvas.minigames == nullptr || kArrowRect >= canvas.minigames->sheet().page.rects.size()) {
         return;
     }
-    graphics::UvRect uv = canvas.minigames->sheet().page.rect(kArrowRect);
-    // Coney's stand-in for the rotated sprite (format 1, not implemented): the angle to the nearest half turn, a half
-    // turn drawn by flipping the rectangle both ways.
-    const float halfTurns = std::round(m_arrow.angle / std::numbers::pi_v<float>);
-    if (static_cast<long>(halfTurns) % 2 != 0) {
-        std::swap(uv.u0, uv.u1);
-        std::swap(uv.v0, uv.v1);
-    }
+    const graphics::UvRect uv = canvas.minigames->sheet().page.rect(kArrowRect);
+    // A turned sprite (the rotated format 1), bobbing along its direction.
     const GuiPoint bob = m_arrow.offset();
-    const float width =
-        squareTexelWidth(canvas.minigames->sheet(), canvas.minigames->sheet().page.rect(kArrowRect), kArrowSize);
+    const float width = squareTexelWidth(canvas.minigames->sheet(), uv, kArrowSize);
     canvas.minigames->addSprite(
-        guiSprite(m_arrow.place.x + bob.x, m_arrow.place.y + bob.y, width, kArrowSize, uv, kArrowColour));
+        guiSprite(m_arrow.place.x + bob.x, m_arrow.place.y + bob.y, width, kArrowSize, uv, kArrowColour),
+        m_arrow.angle);
 }
 
 void Hud::renderScores(const HudCanvas& canvas) const {
@@ -488,7 +503,20 @@ void Hud::render(const HudCanvas& canvas) const {
     for (const PlayerPanel& panel : m_panels) {
         panel.render(canvas, m_levelNumber);
     }
+    // Per player, the mini-game panels.
+    for (std::size_t i = 0; i < kPlayers; ++i) {
+        m_lockPick.at(i).render(canvas, i);
+        m_tagPanels.at(i).render(canvas, i, m_nowMs);
+        m_stereo.at(i).render(canvas, i);
+        if (m_mug.at(i).active()) {
+            const bool mugged = m_mug.at(i).mode() == MugMeterMode::Mugged || m_mug.at(i).mode() == MugMeterMode::Held;
+            const std::uint32_t id = mugged ? kMuggedPromptString : kMugPromptString;
+            m_mug.at(i).render(canvas, i, m_services.hudString ? m_services.hudString(id) : std::string{});
+        }
+    }
     renderWarCommands(canvas);
+    // The fixed-camera icon: player 0's place only (Coney has one view; the split-screen places are not used).
+    m_fixedCam.at(0).render(canvas, m_nowMs);
     for (std::size_t player = 0; player < kPlayers; ++player) {
         m_mash.at(player).render(canvas, player, m_nowMs);
     }
@@ -516,8 +544,19 @@ void Hud::render(const HudCanvas& canvas) const {
 }
 
 void Hud::renderPrompt(const HudCanvas& canvas) const {
+    // The cycle's icon, under the text: a `part_page0` button centred on the prompt's anchor (the base y plus the
+    // raise, without the multi-line lift), 0.1 high, during the blink's on half.
+    const ActionCycle& cycle = m_cycles.at(0);
+    if (cycle.on && cycle.iconOn && canvas.parts != nullptr && cycle.icon() < canvas.parts->sheet().page.rects.size() &&
+        canvas.text.fonts) {
+        const graphics::UvRect uv = canvas.parts->sheet().page.rect(cycle.icon());
+        const float y = (m_clubActionText ? kClubPromptY : kPromptPlace.y) + promptRaise(canvas.text.fonts);
+        canvas.parts->addSprite(guiSprite(kPromptPlace.x, y,
+                                          squareTexelWidth(canvas.parts->sheet(), uv, kCycleIconSize), kCycleIconSize,
+                                          uv, kPromptColour));
+    }
     const std::string& text = m_prompts.at(0);
-    if (text.empty() || !canvas.text.fonts) {
+    if (text.empty() || m_promptTextHidden.at(0) || !canvas.text.fonts) {
         return;
     }
     gui::TextStyle style;

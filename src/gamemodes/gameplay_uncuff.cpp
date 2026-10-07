@@ -24,6 +24,7 @@
 #include "human/human_flags.h"
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
+#include "warriors/inventory.h"
 
 namespace coney {
 
@@ -39,6 +40,9 @@ constexpr float kWaistHeight = 1.0F;
 constexpr float kHeightReach = 1.5F;
 // The kind-0 record's prompt: `GSTRING.HUD` 2 (uncuff).
 constexpr std::uint32_t kUncuffPrompt = 2;
+// The revive prompt, `GSTRING.HUD` 4, and how near a downed partner must be (3 m, in 3D).
+constexpr std::uint32_t kRevivePrompt = 4;
+constexpr float kReviveReach = 3.0F;
 
 // Whether `brain` is friendly to `player` for the kind-0 record (`Human_IsFriendly`, `0x00222a90`). **Coney's
 // stand-in**: the gangs' friendship (ai::Gangs::friends(): the same gang or kind, or the friend bit).
@@ -90,6 +94,45 @@ ai::Brain* GameplayMode::cuffedInReach() const {
         }
     }
     return best;
+}
+
+ai::Brain* GameplayMode::revivableInReach() const {
+    ai::Brain* player = m_scripted ? m_scripted->player() : nullptr;
+    if (player == nullptr) {
+        return nullptr;
+    }
+    const anim::Vec3 feet = player->human().position();
+    ai::Brain* best = nullptr;
+    float bestSquared = kReviveReach * kReviveReach;
+    ai::Brains& brains = m_scripted->owner();
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        ai::Brain& brain = brains.at(i);
+        const human::Human& human = brain.human();
+        // Human_IsRevivableBy: friendly, knocked out, not cuffed, flagged revivable (`HuSetRevivable`; every player).
+        // **Coney's reading**: the states 0x80000000 and 0x100000000 it also refuses are not modelled.
+        if (&brain == player || !human.script().knockedOut || human.script().arrested ||
+            !human.hasFlag(human::flag::kRevivable) || !friendlyTo(brain, *player)) {
+            continue;
+        }
+        const anim::Vec3 at = human.position();
+        const float squared = ((at.x - feet.x) * (at.x - feet.x)) + ((at.y - feet.y) * (at.y - feet.y)) +
+                              ((at.z - feet.z) * (at.z - feet.z));
+        if (squared < bestSquared && player->hasLineOfSight(brain)) {
+            best = &brain;
+            bestSquared = squared;
+        }
+    }
+    return best;
+}
+
+std::string GameplayMode::revivePrompt() const {
+    // The player's flash (inventory item 1); a downed AI crew member has no inventory, and a second player's is not
+    // kept, so only player 1's counts.
+    if (m_context.strings == nullptr || !m_state.player.inventory.has(0, item::kRevive) ||
+        revivableInReach() == nullptr) {
+        return {};
+    }
+    return std::string(m_context.strings->get(kRevivePrompt));
 }
 
 std::string GameplayMode::uncuffPrompt() const {

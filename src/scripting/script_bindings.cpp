@@ -1026,6 +1026,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("HUDCheckTutorialText"),
     real("HUDDeleteRadarMissionObjective"),
     real("HUDDeleteRadarObject"),
+    real("HUDEnableFixedCamIcon"),
     real("HUDEnableGameTutorialText"),
     real("HUDEnableInstArrow"),
     real("HUDFlushTutorialText"),

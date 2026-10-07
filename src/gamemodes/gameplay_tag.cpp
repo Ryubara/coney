@@ -7,6 +7,7 @@
 #include <format>
 #include <optional>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include "ai/attack_kinds.h"
@@ -16,6 +17,7 @@
 #include "animation/anim_math.h"
 #include "characters/character_class.h"
 #include "gamemodes/gameplay_mode.h"
+#include "hud/hud.h"
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
 #include "scripting/story_bindings.h"
@@ -214,6 +216,44 @@ void GameplayMode::sayTagLine(double tagger, std::uint32_t command) {
     m_log(std::format("tag: human {:.0f} says {}\n", picked->handle(), command));
     static_cast<void>(m_context.sound->sayCommand(
         script::CommandCall{.human = picked->handle(), .command = command, .interrupt = false}, {}));
+}
+
+void GameplayMode::updateTagPanel() {
+    if (m_context.hud == nullptr) {
+        return;
+    }
+    hud::TagHud& panel = m_context.hud->tagPanel(0);
+    if (!m_tagSession || m_tagSession->ended()) {
+        panel.set(std::nullopt);
+        return;
+    }
+    const TagGame& game = m_tagSession->game();
+    hud::TagPanelState state;
+    const auto cells = [](const std::vector<TagCell>& from) {
+        std::vector<hud::TagPanelCell> to;
+        to.reserve(from.size());
+        for (const TagCell& cell : from) {
+            to.push_back(hud::TagPanelCell{cell.x, cell.y});
+        }
+        return to;
+    };
+    state.path = cells(game.path());
+    state.painted = cells(game.painted());
+    state.cursorX = game.cursorX();
+    state.cursorY = game.cursorY();
+    // Tag_GetChargeLeft: the share of the current charge left; a whole charge once it has run out (the next one).
+    const std::uint32_t chargeMs = game.tuning().chargeMs;
+    state.chargeLeft = chargeMs == 0 || game.chargeLeftMs() == 0
+                           ? 1.0F
+                           : static_cast<float>(game.chargeLeftMs()) / static_cast<float>(chargeMs);
+    state.paused = game.pauseLeftMs() > 0;
+    // The paint's colour, HuTagColor's 0xRRGGBBAA on the tagger (human +0x640).
+    if (m_scripted != nullptr && m_scripted->player() != nullptr) {
+        const std::uint32_t rgba = m_scripted->player()->human().script().tagColour;
+        state.colour = graphics::Rgba{static_cast<std::uint8_t>(rgba >> 24U), static_cast<std::uint8_t>(rgba >> 16U),
+                                      static_cast<std::uint8_t>(rgba >> 8U), static_cast<std::uint8_t>(rgba)};
+    }
+    panel.set(std::move(state));
 }
 
 } // namespace coney

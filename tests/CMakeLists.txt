@@ -76,6 +76,11 @@ add_executable(coney_tests
     hud/radar_test.cpp
     hud/player_panel_test.cpp
     hud/scripted_bars_test.cpp
+    hud/stereo_hud_test.cpp
+    hud/tag_hud_test.cpp
+    hud/fixed_cam_icon_test.cpp
+    hud/lock_pick_hud_test.cpp
+    hud/mug_meter_test.cpp
     hud/war_command_display_test.cpp
     platform/disc_change_character_test.cpp
     platform/disc_sprite_sheets_test.cpp

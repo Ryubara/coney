@@ -2,6 +2,7 @@
 #include "graphics/sprite_batch.h"
 
 #include <memory>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -151,4 +152,38 @@ TEST_CASE("a batch draws its triangles after its sprites, projected, with its ad
     CHECK(device.triangles[0].vertices[0].u == Approx(1.5));
     batch.clear();
     CHECK(batch.triangles().empty());
+}
+
+TEST_CASE("a turned sprite is drawn as two triangles, turned clockwise on screen", "[sprite_batch]") {
+    SpriteBatch batch(twoRectSheet(std::make_shared<FakeTexture>(64, 64)), 4, 9000.0F);
+    const OverlayCamera camera;
+    batch.addSprite(centred(0.2F, UvRect{}), std::numbers::pi_v<float> / 2.0F);
+    RecordingDevice device;
+    batch.render(device, camera);
+    CHECK(device.draws.empty());
+    REQUIRE(device.triangles.size() == 1);
+    // Top left, top right, bottom right; top left, bottom right, bottom left (of the texture).
+    const std::vector<coney::graphics::LogicalVertex>& corners = device.triangles[0].vertices;
+    REQUIRE(corners.size() == 6);
+    CHECK(corners[3].x == corners[0].x);
+    CHECK(corners[4].y == corners[2].y);
+    // A quarter turn clockwise: the texture's top-left corner goes to the top right on screen.
+    const coney::graphics::LogicalPoint size = camera.projectSize(0.2F, 0.2F, OverlayCamera::kGuiDepth);
+    CHECK(corners[0].x == Approx(320.0 + size.x / 2));
+    CHECK(corners[0].y == Approx(224.0 - size.y / 2));
+    CHECK(corners[0].u == 0.0F);
+    CHECK(corners[1].x == Approx(320.0 + size.x / 2));
+    CHECK(corners[1].y == Approx(224.0 + size.y / 2));
+}
+
+TEST_CASE("a batch keeps the order of its turned and unturned sprites", "[sprite_batch]") {
+    SpriteBatch batch(twoRectSheet(std::make_shared<FakeTexture>(64, 64)), 4, 9000.0F);
+    batch.addSprite(centred(0.1F, UvRect{}));
+    batch.addSprite(centred(0.1F, UvRect{}), 1.0F);
+    batch.addSprite(centred(0.1F, UvRect{}));
+    RecordingDevice device;
+    batch.render(device, OverlayCamera{});
+    CHECK(device.calls == std::vector<std::string>{"draw", "triangles", "draw"});
+    batch.clear();
+    CHECK(batch.sprites().empty());
 }

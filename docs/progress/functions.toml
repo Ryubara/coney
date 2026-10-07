@@ -2345,6 +2345,11 @@ subsystem = "GUI"
 size = 8
 
 [[function]]
+address = 0x0019f328
+name = "ActionPrompt_UpdateCycle"
+subsystem = "GUI"
+
+[[function]]
 address = 0x0019f430
 name = "ActionPrompt_SetRaise"
 subsystem = "GUI"
@@ -2447,6 +2452,11 @@ name = "HUD_LevelSetUp"
 subsystem = "GUI"
 
 [[function]]
+address = 0x001aef50
+name = "HUD_IsPlayerStickPushed"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001af010
 name = "HUD_Update"
 subsystem = "GUI"
@@ -2545,6 +2555,11 @@ address = 0x001b4438
 name = "HUD_SetNumIndicator"
 subsystem = "GUI"
 size = 160
+
+[[function]]
+address = 0x001b4740
+name = "HUD_EnableFixedCamIcon"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001b4790
@@ -2684,6 +2699,18 @@ subsystem = "GUI"
 size = 336
 
 [[function]]
+address = 0x001b7eb0
+name = "LockPickDial_Init"
+subsystem = "GUI"
+size = 968
+
+[[function]]
+address = 0x001b8428
+name = "LockPickDial_Show"
+subsystem = "GUI"
+size = 264
+
+[[function]]
 address = 0x001b8530
 name = "LockPickDial_Draw"
 subsystem = "GUI"
@@ -2696,6 +2723,12 @@ subsystem = "GUI"
 size = 408
 
 [[function]]
+address = 0x001b8ed0
+name = "LockPickDial_Render"
+subsystem = "GUI"
+size = 128
+
+[[function]]
 address = 0x001b8f98
 name = "MessageHUD::MessageHUD"
 subsystem = "GUI"
@@ -2705,6 +2738,41 @@ address = 0x001b9600
 name = "TextWidget_Layout"
 subsystem = "GUI"
 size = 5664
+
+[[function]]
+address = 0x001bf7e0
+name = "MugMeter_Setup"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001bfcc0
+name = "MugMeter_SetFills"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001bfd30
+name = "MugMeter_SetStick"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001c0640
+name = "MugMeter_SetArrowsOn"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001c0648
+name = "MugMeter_SetMode"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001c09f8
+name = "MugMeter_Render"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001c0bb0
+name = "MugMeter_AnimateArrows"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001c22b0
@@ -2807,6 +2875,36 @@ subsystem = "GUI"
 size = 1184
 
 [[function]]
+address = 0x001c9818
+name = "StereoHud_Construct"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001ca118
+name = "StereoHud_Start"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001ca180
+name = "StereoHud_Shutdown"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001ca210
+name = "StereoHud_SetProgress"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001ca260
+name = "StereoHud_Render"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001ca2d0
+name = "StereoHud_Update"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001ca950
 name = "Captions_Draw"
 subsystem = "GUI"
@@ -2841,6 +2939,17 @@ address = 0x001cb190
 name = "Captions_Next"
 subsystem = "GUI"
 size = 208
+
+[[function]]
+address = 0x001cb6f0
+name = "TagHud_Setup"
+subsystem = "GUI"
+size = 136
+
+[[function]]
+address = 0x001cb798
+name = "TagHud_Render"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001cc1a0
@@ -5164,6 +5273,11 @@ size = 456
 [[function]]
 address = 0x00278018
 name = "Tag_StartSprayClips"
+subsystem = "Human"
+
+[[function]]
+address = 0x00279078
+name = "Human_FindRevivableNear"
 subsystem = "Human"
 
 [[function]]
@@ -8017,6 +8131,11 @@ address = 0x0036f218
 name = "HUDLaunchMissionComplete"
 subsystem = "Scripting"
 size = 56
+
+[[function]]
+address = 0x0036f250
+name = "HUDEnableFixedCamIcon"
+subsystem = "Scripting"
 
 [[function]]
 address = 0x0036f280
