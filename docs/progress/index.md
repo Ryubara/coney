@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.8% of the game's own code (495,164 of 3,354,776 bytes, 1,620 functions) |
+| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.8% of the game's own code (495,164 of 3,354,776 bytes, 1,627 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `██████████▉░░░░░░░░░` | 54.7% named in Ghidra and cited with evidence (1,793,468 of 3,279,736 bytes; 5,674 of 11,357 functions, 50.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-469 reimplemented function(s) have no size yet and add no bytes.
+476 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -72,8 +72,8 @@ at the top of the repository's `README.md`.
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 72 | 195,624 |
-| `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 197 | 497,416 |
-| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.1% | 512 | 1,096,672 |
+| `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 203 | 497,416 |
+| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.1% | 513 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -529,6 +529,12 @@ at the top of the repository's `README.md`.
 | `0x001a2690` | `BaseWidget_AddSprite` | `GUI` | 640 |
 | `0x001a3990` | `ChaseGauge_Update` | `GUI` | 624 |
 | `0x001a3c00` | `ChaseGauge_Render` | `GUI` | 72 |
+| `0x001a6c58` | `WarCommandDisplay_Issue` | `GUI` | not filled in |
+| `0x001a6d28` | `WarCommandDisplay_Open` | `GUI` | not filled in |
+| `0x001a7040` | `WarCommandDisplay_ReadStick` | `GUI` | not filled in |
+| `0x001a7e48` | `WarCommandDisplay_Update` | `GUI` | not filled in |
+| `0x001a8530` | `WarCommand_FromSlot` | `GUI` | not filled in |
+| `0x001a8590` | `WarCommandDisplay_Render` | `GUI` | not filled in |
 | `0x001a8e30` | `Widget::Widget` | `GUI` | 72 |
 | `0x001acee0` | `HUD::HUD` | `GUI` | 1,704 |
 | `0x001ad588` | `HUD_LevelSetUp` | `GUI` | not filled in |
@@ -954,6 +960,7 @@ at the top of the repository's `README.md`.
 | `0x00276998` | `Pair_AlignStart` | `Human` | 1,024 |
 | `0x00276d98` | `Pair_SnapAttach` | `Human` | 600 |
 | `0x00277958` | `Pair_CheckPlace` | `Human` | 456 |
+| `0x00278018` | `Tag_StartSprayClips` | `Human` | not filled in |
 | `0x00279f50` | `Player_CarTargetFilter` | `Human` | not filled in |
 | `0x0027a6c0` | `Player_PickTarget` | `Human` | not filled in |
 | `0x0027c120` | `Player_UpdateActions` | `Human` | 3,120 |

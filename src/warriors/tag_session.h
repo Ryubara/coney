@@ -30,8 +30,8 @@ class TagSession {
     };
 
     /// Player `player` (0 or 1, the human `human`) sprays `tag` along `path` with `tuning`, starting at the spot's
-    /// painted fraction. The paint comes from `inventory`'s item 3; both must outlive the session. The spot gets no
-    /// tagger (message `0x00` is an AI tagger's, whose arrival starts the spot's own fade in).
+    /// painted fraction. The paint comes from `inventory`'s item 3; both must outlive the session. The caller tells the
+    /// spot its tagger (message `0x00`) as the spray starts.
     /// @orig 0x00238db0 Human_Tag (unknown)
     TagSession(world_objects::TagSpots& spots, Inventory& inventory, int player, double human, double tag,
                std::vector<TagCell> path, TagTuning tuning);

@@ -346,7 +346,20 @@ hud::HudServices hudServicesOf(const BindingContext& context) {
         services.announceString = [strings](std::uint32_t id) {
             return std::string(strings->get(gui::StringTable::Announce, id));
         };
+        services.commandString = [strings](std::size_t entry) {
+            return std::string(strings->get(gui::StringTable::Command, static_cast<std::uint32_t>(entry)));
+        };
     }
+    services.commandEnabled = [state = context.state](std::size_t player, int command) {
+        if (state == nullptr || player >= state->characters.warriorCommands.size() || command < 0 ||
+            static_cast<std::size_t>(command) >= state->characters.warriorCommands.at(player).size()) {
+            return true;
+        }
+        return state->characters.warriorCommands.at(player).at(static_cast<std::size_t>(command));
+    };
+    services.commandsLocked = [state = context.state](std::size_t /*player*/) {
+        return state != nullptr && state->characters.warriorCommandsLocked;
+    };
     services.hudColour = [recorded = context.recorded](int slot) { return recordedHudColour(recorded, slot); };
     services.sound.cueName = [recorded = context.recorded](int cue) { return recordedInterfaceSound(recorded, cue); };
     services.stopWatchTime = [state = context.state] { return state != nullptr ? state->player.stopWatch.time() : 0; };

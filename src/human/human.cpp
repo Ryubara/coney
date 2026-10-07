@@ -16,6 +16,7 @@
 #include "core/pad.h"
 #include "core/ps2_float.h"
 #include "human/body.h"
+#include "human/fighter_clips.h"
 #include "human/jump.h"
 #include "world_objects/pickups.h"
 
@@ -602,6 +603,36 @@ bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
     return true;
 }
 
+bool Human::startTagSpray(anim::Vec3 point) {
+    const anim::AnimClip* intro = m_animator.anims().clip(clips::kTaggingIntro);
+    if (intro == nullptr) {
+        return false;
+    }
+    // The turn to the tag is spread over half the intro's playing time.
+    const float rate =
+        m_animator.anims().rate(clips::kTaggingIntro) > 0.0F ? m_animator.anims().rate(clips::kTaggingIntro) : 1.0F;
+    const int updates = std::max(1, static_cast<int>(std::lround(intro->duration / rate / 2.0F / m_stepSeconds)));
+    const anim::Vec3 to = anim::subtract(point, m_position);
+    const float turn = std::hypot(to.x, to.y) > 1e-4F ? wrapAngle(headingOf(to) - m_heading) : 0.0F;
+    m_animator.playCombat(clips::one(clips::kTaggingIntro), clips::kTaggingLoop, AnimState::Hold, kCombatFade);
+    m_velocity = anim::Vec3{};
+    m_tagTurn = TagTurn{.updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
+    return true;
+}
+
+bool Human::tagSprayLooping() const { return m_animator.animId() == clips::kTaggingLoop; }
+
+bool Human::tagSprayPlaying() const {
+    return m_animator.animId() == clips::kTaggingIntro || m_animator.animId() == clips::kTaggingLoop;
+}
+
+void Human::endTagSpray() {
+    m_tagTurn.reset();
+    if (tagSprayPlaying()) {
+        m_animator.settleToIdle();
+    }
+}
+
 void Human::startStereoTheft(anim::Vec3 point, float stageTurns) {
     const anim::Vec3 to = anim::subtract(point, m_position);
     if (std::hypot(to.x, to.y) > 1e-4F) {
@@ -789,6 +820,13 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     m_animator.advance(m_stepSeconds);
     followClimb(mesh);
     followPickUp();
+    // A spray intro's turn to the tag, a step each update.
+    if (m_tagTurn) {
+        m_heading = wrapAngle(m_heading + m_tagTurn->turnStep);
+        if (--m_tagTurn->updatesLeft <= 0 || !tagSprayPlaying()) {
+            m_tagTurn.reset();
+        }
+    }
     sendWarnings(before, beforeId, beforeTime);
     noteSlowMotion(before, beforeId, beforeTime);
 }

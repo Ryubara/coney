@@ -252,6 +252,9 @@ class FollowCamera {
 
     /// `CamEnable(0, on)`: the right stick and the zoom buttons act (on, as made) or not.
     void enableStick(bool on) { m_stickOn = on; }
+    /// The player's own switch of the right stick (`0x0050b1b0[player]`), which the Warrior command menu turns off
+    /// while it is up (docs/research/hud.md#warrior-command-menu); the stick turns the camera only with both on.
+    void enablePadStick(bool on) { m_padStickOn = on; }
 
     /// Puts the camera `distance` metres from the look-at point of a target whose feet are at `targetFeet`, at the
     /// target pitch, its view facing `viewHeading` (radians, 0 facing +y), with nothing in progress: Coney's own, for
@@ -401,6 +404,7 @@ class FollowCamera {
     float m_wantedFov;          // +0x394
     float m_fovRate = 0.0F;     // degrees a second (+0x39c)
     bool m_stickOn = true;      // CamEnable(0)
+    bool m_padStickOn = true;   // 0x0050b1b0[player]: off while the command menu is up
     bool m_combatOn = false;    // +0x46f
     float m_combatSaved = 0.0F; // the band's near edge before the combat camera (+0x3cc); 0 for none
     anim::Vec3 m_targetFeet;    // the target's latest feet and facing

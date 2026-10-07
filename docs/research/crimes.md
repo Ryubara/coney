@@ -634,18 +634,19 @@ messages ([Tag spots](#tag-spots)): `CfgTagSettings` and `ProcessTag` reach it f
 fade runs every second 60 Hz tick, and `spray()` is a CPU tagger's step (Rumble's Tag battle). `TagSession` is one
 player's spray: the paint from inventory item 3, the fraction sent to the spot (message `0x41`) as the game goes, and
 `Tag_End`'s spot side and wasted charge. In gameplay (`repo:src/gamemodes/gameplay_tag.cpp`) `HuTag` for player 1 with
-paint runs a session on pad 1's left stick with his movement locked; the spray starts at once, so
-`CfgTagStartCallback`'s function is called then with (tagger, tag, flag) and no result asked
-([above](#tag-callbacks)), for an AI tagger too. Without paint he says 37 `nopaint` and gets event 14 with the tag and
+paint locks his movement where he stands and plays 334, turning him to the tag over half its length, then the loop
+335 (`Human::startTagSpray()`); when the loop starts, the session runs on pad 1's left stick, the spot gets its tagger
+(message `0x00`, which starts its own fade in) and `CfgTagStartCallback`'s function is called with (tagger, tag,
+flag) and no result asked ([above](#tag-callbacks)); an AI tagger's starts at once. A body something else takes during
+the intro ends it unsprayed (**Coney's reading**). Without paint he says 37 `nopaint` and gets event 14 with the tag and
 0. At the end the pad is freed, a finish has him say 83 `tagdone` and the tagger gets event 14 (the tag and whether it
 was finished). The story reaches `HuTag` through the spot's flag: the script gives the flag (activity 12) a message-0
 handler and a prompt with `SetMsgHandlerEx`, a kind-1 [context record](#context-records). Coney locates such a record's
 object whether it is a spawn record, a flag or a particle system (`LevelPickups::actionObject()`), shows its text as
 player 1's [action prompt](hud.md#action-prompts) and hands it triangle, whose handler calls `HuTag`. **Coney's
-stand-ins**: the player sprays where he stands (no walk onto the flag, no spray animation before the stick game, and
-the spot is not sent message `0x00`, whose fade would fight the stick game's fraction), the tagger rather than a crew
-member says `tagdone`, an AI human given `HuTag` becomes the spot's tagger at once (its fade in) without walking to the
-flag. Not yet: the slip's rumble and speech 80, the bonus event on a clean finish, the spray particles and the tag's
+stand-ins**: the tagger rather than a crew member says `tagdone`; the spray clips stop at the end (back to the
+idle); an AI human given `HuTag` becomes the spot's tagger at once (its fade in) without walking to the flag.
+Not yet: the slip's rumble and speech 80, the bonus event on a clean finish, the spray particles and the tag's
 drawing, the HUD grid, hint `0x10`, and buttons other than the stick ending a session.
 
 **Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car;

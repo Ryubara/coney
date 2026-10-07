@@ -53,16 +53,21 @@ missions:
     summary_source: mixed
     sources:
       - "https://thewarriors.fandom.com/wiki/Mission_3:_Payback"
-    status: pending-approval
+    status: in-progress
     checkpoints:
       count: 4
-      default: pending-approval
+      default: in-progress
+      each:
+        1: {status: in-progress, note: "The intro, skipped, gives the screen back; holding R2 and pushing the right stick to Let's Go gives the follow order (CommandIssued runs). Blocked after it: Vermin and Rembrandt do not come down to the player (the crew's follow is being built)."}
+        2: {status: in-progress, note: "Driven by the pad to the arrest scene and \"Free Cowboy and Snow\"; uncuffing them is not built yet."}
+        3: {status: in-progress, note: "Reaches Fox's scene; its next step needs the Hold Up order and the crew's tactics."}
+        4: {status: in-progress, note: "Reaches Cochise and Swan's scene; the fight needs the Wreck'em All order and the crew's tactics."}
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "AI: scripted goals and actions", path: "research/ai.md#scripted"}
       - {title: "Skipping a scene", path: "research/scenes.md#skipping"}
     test: "coney_tests \"[disc][story]\""
-    notes: "All four checkpoints play headless on the disc with no script error and player 1 moving under the pad (`tests/platform/disc_story_missions_test.cpp`); the checkpoint 1 intro, skipped, fades back in and moves player 1 to where the scene leaves him (the skip makes its three pending end-function calls, as the original does); nobody has compared them with the original yet."
+    notes: "All four checkpoints play headless on the disc with no script error and player 1 moving under the pad (`tests/platform/disc_story_missions_test.cpp`); the checkpoint 1 intro, skipped, fades back in and moves player 1 to where the scene leaves him (the skip makes its three pending end-function calls, as the original does); the Warrior command menu (R2 and the right stick) gives the orders the hints ask for; nobody has played it to the end yet."
   - level: 87
     group: story
     slot: story mission 3
@@ -71,10 +76,13 @@ missions:
     summary_source: mixed
     sources:
       - "https://thewarriors.fandom.com/wiki/Mission_3:_Payback"
-    status: pending-approval
+    status: in-progress
     checkpoints:
       count: 5
-      default: pending-approval
+      default: in-progress
+      each:
+        1: {status: in-progress, note: "Plays to checkpoint 2 driven by the pad: the walk and climb to the first burner, triangle at its flag (the spray intro 334 where he stands, then the stick game as the loop 335 starts), the tag finished with the left stick, and the walk to the streets. Played on into checkpoint 2, chapter 2's set-up fails (the preLoadFile fix is being merged)."}
+        2: {status: in-progress, note: "From a checkpoint 2 start: a passer-by mugged for cash, spray bought from the dealer, the three burners tagged; the walk to the back alleys is next."}
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "World objects: doors", path: "research/objects.md"}
@@ -83,7 +91,7 @@ missions:
     questions:
       - "Chapter 3 names a callback its script never defines (`ch3.BoozerChallenge`); Coney logs and skips it, and what the original does is not traced (Scripts, errors in a fresh state)."
     test: "coney_tests \"[disc][story]\""
-    notes: "All five checkpoints play headless on the disc with no script error and player 1 moving under the pad. At checkpoint 1 the first tag spot's flag offers its prompt, triangle starts the stick game and tracing the pattern with the left stick finishes the tag (`coney_tests \"[tagging]\"`); nobody has compared them with the original yet."
+    notes: "All five checkpoints play headless on the disc with no script error and player 1 moving under the pad. At checkpoint 1 the first tag spot's flag offers its prompt, triangle plays the spray intro and starts the stick game, and tracing the pattern with the left stick finishes the tag (`coney_tests \"[tagging]\"`); nobody has played it to the end yet."
   - level: 95
     group: hub
     slot: the hub

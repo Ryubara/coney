@@ -2,7 +2,8 @@
 
 // Checks against the player's own disc that the third story mission's tagging plays end to end
 // (docs/research/crimes.md#tagging): in `level87` at checkpoint 1, player 1 put at the first tag spot sees the spot's
-// action prompt, triangle hands it to the script, which starts the stick game, and tracing the pattern with the left
+// action prompt, triangle hands it to the script, which starts the spray (the intro clip where he stands, then the
+// stick game as the loop starts), and tracing the pattern with the left
 // stick finishes the tag; the level's start callback runs without a script error
 // (docs/research/crimes.md#tag-callbacks). It runs only when the environment variable CONEY_DISC names the disc and
 // skips otherwise; it prints counts only (LEGAL.md).
@@ -187,6 +188,14 @@ TEST_CASE("the disc's level87 offers its first tag spot, starts the stick game a
     run(2);
     pad.buttons = 0;
     run(2);
+    // He plays the spray's intro (334) where he stands; the stick game goes live as its loop (335) starts.
+    CHECK(gameplay.tagSession() == nullptr);
+    CHECK(play->player().human().animator().animId() == 334);
+    constexpr int kIntroFrames = 150;
+    for (int i = 0; i < kIntroFrames && gameplay.tagSession() == nullptr; ++i) {
+        run(1);
+    }
+    CHECK(play->player().human().animator().animId() == 335);
     const coney::TagSession* session = gameplay.tagSession();
     REQUIRE(session != nullptr);
     CHECK(scripts.hud().actionPrompt(0).empty());

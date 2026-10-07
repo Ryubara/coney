@@ -351,6 +351,14 @@ class StoryBindingHost {
     [[nodiscard]] virtual double playerOne() const { return 0; }
 };
 
+/// The command menu's order: Warrior command `command` from the war chief `chief`, unforced, through the dispatcher
+/// every order goes through (0x0041c4e0 with forced, position and argument 0): refused while a scene camera is player
+/// 1's, the commands or the player's menu are locked or the command is disabled; otherwise the player's last command,
+/// the crew's tactic and the `WCSetCallback` function with (chief, command).
+///
+/// Research: docs/research/hud.md#warrior-command-menu, docs/research/ai.md#warrior-commands
+void giveWarriorCommand(ScriptSystem& scripts, const BindingContext& context, double chief, int command);
+
 /// Registers kStoryBindings in `vm`: the humans', brains', gangs' and paths' bindings act through `context.ai`'s
 /// AiBindingHost::story() as it is at each call (none without it: the getters then answer as for a missing human),
 /// the configuration on `context.state`, the boxes on `context.boxes`, the flags on `context.flags`. Callbacks run

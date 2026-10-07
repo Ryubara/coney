@@ -391,6 +391,19 @@ class Human final : public Holdable {
     /// with `stageTurns` turns of the stick a stage (combat::stereoStageTurns()). **Coney's reading**: the turn is not
     /// spread over the intro.
     void startStereoTheft(anim::Vec3 point, float stageTurns);
+    /// Starts a tag's spray clips (`Tag_StartSprayClips`): 334 `ANIM_TAGGING_INTRO`, then the loop 335, turning to face
+    /// the tag at `point` over half of 334's length (`Human_TurnToFacePoint`); the human stays where he stands.
+    /// Returns false when the intro clip is not loaded. docs/research/crimes.md#tag-callbacks
+    /// @orig 0x00278018 Tag_StartSprayClips (unknown)
+    bool startTagSpray(anim::Vec3 point);
+    /// Whether the spray's intro is over and its loop plays: the moment the stick game goes live (the intro's end hook
+    /// `0x00277ed8`).
+    [[nodiscard]] bool tagSprayLooping() const;
+    /// Whether the spray's clips still play (the intro or the loop): false once something else took the body.
+    [[nodiscard]] bool tagSprayPlaying() const;
+    /// The spray is over: a spray clip still playing leaves for the idle. **Coney's reading**: what the original
+    /// plays at Tag_End is not on the page.
+    void endTagSpray();
     /// Whether a pick-up is under way.
     [[nodiscard]] bool pickingUp() const { return m_pickUp.has_value(); }
     /// The object whose pick-up reached its clip's event since the last call, once; nothing otherwise.
@@ -533,6 +546,12 @@ class Human final : public Holdable {
         float turnStep = 0.0F;
     };
     std::optional<PickUpRun> m_pickUp;
+    // A spray intro's turn to the tag: the updates left and the turn each takes.
+    struct TagTurn {
+        int updatesLeft = 0;
+        float turnStep = 0.0F;
+    };
+    std::optional<TagTurn> m_tagTurn;
     std::optional<double> m_pickedUp; // the object a pick-up reached, until takePickedUp()
     ContextAction m_contextAction;
     const BodyContact* m_bodyContact = nullptr; // setBodyContact(), the step's

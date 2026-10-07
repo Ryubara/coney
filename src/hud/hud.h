@@ -21,6 +21,7 @@
 #include "hud/messages.h"
 #include "hud/player_panel.h"
 #include "hud/scripted_bars.h"
+#include "hud/war_command_display.h"
 
 namespace coney::hud {
 
@@ -53,6 +54,11 @@ struct HudServices {
     std::function<std::string(int slot)> hudColour;              ///< `CfgHUDColor(slot, colour)`'s colour markup.
     HudSound sound;                                              ///< The sound output and the interface cue table.
     std::function<std::int32_t()> stopWatchTime; ///< The mission stopwatch's time, ms (`W_GetStopWatchTime`).
+    std::function<std::string(std::size_t entry)> commandString; ///< `GSTRING.COMMAND[entry]` (`CfgWarriorCommand`).
+    /// Whether player `player` may give Warrior command `command` (`WCEnableCommand`); empty: every one.
+    std::function<bool(std::size_t player, int command)> commandEnabled;
+    /// Whether all of player `player`'s Warrior commands are locked (game state `+0x414` + player).
+    std::function<bool(std::size_t player)> commandsLocked;
 };
 
 /// The instruction arrow (`HUDEnableInstArrow`, HUD `+0x134a0`): a sprite pointing at something on screen, bobbing
@@ -232,6 +238,10 @@ class Hud {
     /// @orig 0x0019f320 ActionPrompt_StopCycle (unknown)
     void stopActionCycle(std::size_t player) { m_cycles.at(player).on = false; }
     [[nodiscard]] const ActionCycle& actionCycle(std::size_t player) const { return m_cycles.at(player); }
+
+    /// Player `player`'s Warrior command menu (panel `+0x1ef0`, docs/research/hud.md#warrior-command-menu).
+    [[nodiscard]] WarCommandDisplay& warCommands(std::size_t player) { return m_warCommands.at(player); }
+    [[nodiscard]] const WarCommandDisplay& warCommands(std::size_t player) const { return m_warCommands.at(player); }
     /// How far player 0's prompt is raised from its base y, from the hint box or scroll-in message showing below it,
     /// with `fonts` to measure them.
     /// @orig 0x0019f430 ActionPrompt_SetRaise (unknown)
@@ -327,6 +337,8 @@ class Hud {
     void renderArrow(const HudCanvas& canvas) const;
     // The scoreboard's rows and the stopwatch (Coney's places and sizes, hud_layout.h).
     void renderScores(const HudCanvas& canvas) const;
+    // The players' Warrior command menus, at the centre x the default layout gives one player.
+    void renderWarCommands(const HudCanvas& canvas) const;
     // Player 0's action prompt, centred and raised clear of the text below.
     void renderPrompt(const HudCanvas& canvas) const;
 
@@ -344,6 +356,7 @@ class Hud {
     std::array<std::string, kPlayers> m_prompts;
     bool m_clubActionText = false;
     std::array<ActionCycle, kPlayers> m_cycles{};
+    std::array<WarCommandDisplay, kPlayers> m_warCommands{};
     bool m_letterbox = false;
     // The letterbox's "restore pending" mark (screen effects +0x1f4): armed by a letterbox move, stamped as the bars
     // reach 0, and the next step with the bars out shows the HUD.

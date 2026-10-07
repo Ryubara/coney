@@ -619,8 +619,8 @@ void FollowCamera::update(const FollowTarget& target, std::uint8_t rawRightX, st
 
     // 3. The right stick (unless CamEnable(0) turned it off): a yaw rate and a pitch rate; any input holds the
     // automatic rules off.
-    const float yawRate = m_stickOn ? rightStickYawRate(rawRightX) : 0.0F;
-    const float pitchRate = m_stickOn ? rightStickPitchRate(rawRightY) : 0.0F;
+    const float yawRate = m_stickOn && m_padStickOn ? rightStickYawRate(rawRightX) : 0.0F;
+    const float pitchRate = m_stickOn && m_padStickOn ? rightStickPitchRate(rawRightY) : 0.0F;
     if (yawRate != 0.0F || pitchRate != 0.0F) {
         m_inputHold = kInputHold;
     }

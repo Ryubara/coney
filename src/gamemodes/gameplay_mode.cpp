@@ -602,10 +602,11 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     // The level's step (the characters, the cameras, the streaming), then the scripts' frame, as a frame of play
     // orders them.
     ModeResult result = ModeResult::Stay;
+    const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
+    updateWarCommandMenu(stack.pads(), nowMs);
     if (m_level) {
         result = m_level->update(stack, frame);
     }
-    const std::uint64_t nowMs = frame.gameTicks / (GameTimer::kTicksPerSecond / 1000);
     m_scripts.setTime(nowMs);
     callTutorialCallback();
     callPadHandler();

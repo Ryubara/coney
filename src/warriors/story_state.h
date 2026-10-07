@@ -36,8 +36,7 @@ struct StoryState {
     std::array<bool, kStoryPlayers> menuLocked{};
     /// `WCSetCallback` (`+0x2fc`): the Lua function the dispatcher calls after each command it starts; empty for none.
     std::string commandCallback;
-    /// `HUDShowWarCommand` (HUD element `+0x155c`): the command display may open. **Coney stand-in**: Coney's HUD has
-    /// no command display yet, so the flag is only kept.
+    /// `HUDShowWarCommand` (HUD element `+0x155c`): the command display may open (hud::WarCommandDisplay).
     std::array<bool, kStoryPlayers> commandDisplay{true, true};
     /// `setDetailFlag` / `clearDetailFlag` (`+0x3e8`): nothing reads them in the original.
     std::array<std::uint8_t, kDetailBytes> detailFlags{};

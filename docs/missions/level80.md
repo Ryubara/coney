@@ -11,18 +11,18 @@ Warriors' burner outside their hangout, which sets up the next mission.
 
 | | |
 | --- | --- |
-| Status | 🎮 Pending Gameplay Approval |
+| Status | 🚧 In Progress |
 | Level | `level80` (story mission 2) |
-| Checkpoints | 4 of 4 built, 0 approved |
+| Checkpoints | 0 of 4 built, 0 approved |
 
 ## Checkpoints {#checkpoints}
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | 🎮 Pending Gameplay Approval | - |
-| 2 | 🎮 Pending Gameplay Approval | - |
-| 3 | 🎮 Pending Gameplay Approval | - |
-| 4 | 🎮 Pending Gameplay Approval | - |
+| 1 | 🚧 In Progress | The intro, skipped, gives the screen back; holding R2 and pushing the right stick to Let's Go gives the follow order (CommandIssued runs). Blocked after it: Vermin and Rembrandt do not come down to the player (the crew's follow is being built). |
+| 2 | 🚧 In Progress | Driven by the pad to the arrest scene and "Free Cowboy and Snow"; uncuffing them is not built yet. |
+| 3 | 🚧 In Progress | Reaches Fox's scene; its next step needs the Hold Up order and the crew's tactics. |
+| 4 | 🚧 In Progress | Reaches Cochise and Swan's scene; the fight needs the Wreck'em All order and the crew's tactics. |
 
 ## What it needs {#needs}
 
@@ -69,7 +69,7 @@ coney_tests "[disc][story]"
 
 All four checkpoints play headless on the disc with no script error and player 1 moving under the pad
 (`tests/platform/disc_story_missions_test.cpp`); the checkpoint 1 intro, skipped, fades back in and moves player 1 to
-where the scene leaves him (the skip makes its three pending end-function calls, as the original does); nobody has
-compared them with the original yet.
+where the scene leaves him (the skip makes its three pending end-function calls, as the original does); the Warrior
+command menu (R2 and the right stick) gives the orders the hints ask for; nobody has played it to the end yet.
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

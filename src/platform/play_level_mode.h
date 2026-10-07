@@ -238,6 +238,14 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
 
     /// ScriptedPlayer: a script's `TeleportToFlag` on player 1 during play; no ground snap.
     void teleportPlayer(const world_objects::Placement& placement) override;
+    /// ScriptedPlayer: player 1's spray clips for a tag at `point`.
+    bool startTagSpray(const std::array<float, 3>& point) override;
+    /// ScriptedPlayer: whether player 1's spray loop plays.
+    [[nodiscard]] bool tagSprayLooping() const override;
+    /// ScriptedPlayer: whether player 1's spray clips still play.
+    [[nodiscard]] bool tagSprayPlaying() const override;
+    /// ScriptedPlayer: player 1's spray clips end.
+    void endTagSpray() override;
     /// The model the player is drawn as.
     [[nodiscard]] const std::string& model() const { return m_model; }
 

@@ -58,6 +58,14 @@ class ScriptedPlayer {
 
     /// Puts player 1 at `placement` (feet, heading in degrees) with no ground snap, as `TeleportToFlag` does.
     virtual void teleportPlayer(const world_objects::Placement& placement) = 0;
+    /// Player 1 starts a tag's spray clips facing the tag at `point` (Human::startTagSpray()); false when he cannot.
+    virtual bool startTagSpray(const std::array<float, 3>& /*point*/) { return false; }
+    /// Whether player 1's spray intro has ended and its loop plays: the stick game goes live.
+    [[nodiscard]] virtual bool tagSprayLooping() const { return true; }
+    /// Whether player 1's spray clips still play (false: something else took the body).
+    [[nodiscard]] virtual bool tagSprayPlaying() const { return true; }
+    /// Player 1's spray is over: his spray clips end (Human::endTagSpray()).
+    virtual void endTagSpray() {}
 };
 
 /// What a level's scripts drive, which gameplay gives the level it loads: the humans the scripts create, the brains
@@ -296,6 +304,12 @@ class GameplayMode final : public GameMode {
     // The tag spots' update every second 60 Hz tick, and player 1's stick game on pad 1's left stick; its end frees
     // the pad, has him say 83 `tagdone` on a finish and sends him event 14 (Tag_End).
     void updateTagging(const Pads& pads, double seconds);
+    // The spray's start once its intro clip has played (0x0022e610): the stick game, message 0 to the tag, the start
+    // callback.
+    void beginTagSpray();
+    // Player 1's Warrior command menu on R2 and the right stick at game time `nowMs`, before the level's step so the
+    // camera's stick is off on the frame it opens (gameplay_war_commands.cpp).
+    void updateWarCommandMenu(const Pads& pads, std::uint64_t nowMs);
     // The combat tutorial's callback (`HUDSetTutorialCallback`) with the anim id of each hit player 1 struck in the
     // level's step, landed or blocked (docs/research/hud.md#tutorial-callback). The original calls it from the damage
     // step itself; Coney calls it right after the step.
@@ -357,11 +371,18 @@ class GameplayMode final : public GameMode {
     world_objects::TriggerSpheres m_spheres;             // the level's trigger spheres (TriggerSphereCfg)
     world_objects::Radios m_radios;                      // the level's radios (SetupRadio)
     world_objects::TagSpots m_tagSpots;                  // the level's tag spots (CfgTagSettings)
-    std::optional<TagSession> m_tagSession;              // player 1's spray under way (HuTag)
-    double m_tagTicks = 0.0;                             // 60 Hz ticks not yet given to the tag spots
-    world_objects::FlagNet m_flagNet;                    // the level's flag network (FlagNetAddLink)
-    std::optional<LevelPickups> m_pickups;               // over the context's spawn records and object types
-    std::string m_shownPrompt;                           // the action prompt updateActionPrompt() last set
+    // A spray whose intro clip plays: the stick game goes live after it.
+    struct TagIntro {
+        double human = 0;
+        double tag = 0;
+        double flag = 0;
+    };
+    std::optional<TagIntro> m_tagIntro;
+    std::optional<TagSession> m_tagSession; // player 1's spray under way (HuTag)
+    double m_tagTicks = 0.0;                // 60 Hz ticks not yet given to the tag spots
+    world_objects::FlagNet m_flagNet;       // the level's flag network (FlagNetAddLink)
+    std::optional<LevelPickups> m_pickups;  // over the context's spawn records and object types
+    std::string m_shownPrompt;              // the action prompt updateActionPrompt() last set
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of
     PauseMode* m_pause = nullptr;         // what START pauses through; not owned

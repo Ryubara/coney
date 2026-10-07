@@ -762,6 +762,16 @@ void PlayLevelMode::teleportPlayer(const world_objects::Placement& placement) {
                                                    .headingDegrees = placement.headingDegrees});
 }
 
+bool PlayLevelMode::startTagSpray(const std::array<float, 3>& point) {
+    return m_player->human().startTagSpray(anim::Vec3{point[0], point[1], point[2]});
+}
+
+bool PlayLevelMode::tagSprayLooping() const { return m_player->human().tagSprayLooping(); }
+
+bool PlayLevelMode::tagSprayPlaying() const { return m_player->human().tagSprayPlaying(); }
+
+void PlayLevelMode::endTagSpray() { m_player->human().endTagSpray(); }
+
 anim::Vec3 PlayLevelMode::cameraEye() const { return m_player->current().cameraEye; }
 
 anim::Vec3 PlayLevelMode::cameraTarget() const { return m_player->current().cameraTarget; }

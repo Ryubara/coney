@@ -2179,6 +2179,36 @@ subsystem = "GUI"
 size = 72
 
 [[function]]
+address = 0x001a6c58
+name = "WarCommandDisplay_Issue"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001a6d28
+name = "WarCommandDisplay_Open"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001a7040
+name = "WarCommandDisplay_ReadStick"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001a7e48
+name = "WarCommandDisplay_Update"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001a8530
+name = "WarCommand_FromSlot"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001a8590
+name = "WarCommandDisplay_Render"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001a8e30
 name = "Widget::Widget"
 subsystem = "GUI"
@@ -4618,6 +4648,11 @@ address = 0x00277958
 name = "Pair_CheckPlace"
 subsystem = "Human"
 size = 456
+
+[[function]]
+address = 0x00278018
+name = "Tag_StartSprayClips"
+subsystem = "Human"
 
 [[function]]
 address = 0x00279f50

@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The gameplay mode's tagging (docs/research/crimes.md#tagging): HuTag's start, the tag spots' update and player 1's
 // stick game on pad 1, and its end.
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -41,7 +43,7 @@ void GameplayMode::startTag(double human, double tag, double flag) {
         callTagStart(human, tag, flag);
         return;
     }
-    if (m_tagSession) {
+    if (m_tagSession || m_tagIntro) {
         return;
     }
     // A player with no paint says so, and he himself gets event 14 with the tag, not finished.
@@ -56,16 +58,40 @@ void GameplayMode::startTag(double human, double tag, double flag) {
         }
         return;
     }
-    // The player sprays where he stands (Coney's stand-in for occupying the flag and the spray animation), held still
-    // by the game; the stick game goes live at once, and with it the start callback.
+    // The player stays where he pressed triangle, held still by the game, and his spray clips start: 334, turning to
+    // face the tag, then the loop 335. The stick game goes live when the intro ends (beginTagSpray()).
+    m_scripted->storyHost().lockMovement(human, true);
+    m_tagIntro = TagIntro{.human = human, .tag = tag, .flag = flag};
+    auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get());
+    const std::optional<anim::Vec3> at = promptObjectPosition(tag);
+    const bool clips =
+        scripted != nullptr && at.has_value() && scripted->startTagSpray(std::array<float, 3>{at->x, at->y, at->z});
+    m_log(std::format("tag: player starts spraying tag {:.0f}{}\n", tag, clips ? "" : " (no spray clips)"));
+    if (!clips) {
+        beginTagSpray();
+    }
+}
+
+void GameplayMode::beginTagSpray() {
+    if (!m_tagIntro) {
+        return;
+    }
+    const TagIntro intro = *m_tagIntro;
+    m_tagIntro.reset();
+    const HumanCreation* player = m_humans.player(1);
+    if (player == nullptr || player->handle != intro.human) {
+        return;
+    }
+    // The spray (0x0022e610): the stick game, the tag told its tagger (message 0, which starts its own fade in), and
+    // last the start callback.
     const std::span<const float> pattern(m_state.story.tagPattern);
     const int difficulty = script::tagDifficulty(&m_recorded, characters::warriorClassOf(player->type));
-    m_tagSession.emplace(m_tagSpots, m_state.player.inventory, 0, human, tag,
+    m_tagSession.emplace(m_tagSpots, m_state.player.inventory, 0, intro.human, intro.tag,
                          tagPath(pattern, m_state.story.tagPatternCount), tagTuning(difficulty));
-    m_log(std::format("tag: player sprays tag {:.0f}, {} path points, difficulty {}\n", tag,
+    m_log(std::format("tag: player sprays tag {:.0f}, {} path points, difficulty {}\n", intro.tag,
                       m_tagSession->game().path().size(), difficulty));
-    m_scripted->storyHost().lockMovement(human, true);
-    callTagStart(human, tag, flag);
+    m_tagSpots.setTagger(intro.tag, intro.human);
+    callTagStart(intro.human, intro.tag, intro.flag);
 }
 
 void GameplayMode::callTagStart(double human, double tag, double flag) {
@@ -84,6 +110,17 @@ void GameplayMode::updateTagging(const Pads& pads, double seconds) {
     while (m_tagTicks >= kTicksPerSpotUpdate) {
         m_tagTicks -= kTicksPerSpotUpdate;
         m_tagSpots.update();
+    }
+    // The spray's intro: the stick game goes live when its loop starts; a body something else took ends it unsprayed.
+    if (m_tagIntro) {
+        const auto* scripted = dynamic_cast<const ScriptedPlayer*>(m_level.get());
+        if (scripted == nullptr || scripted->tagSprayLooping()) {
+            beginTagSpray();
+        } else if (!scripted->tagSprayPlaying()) {
+            m_log(std::format("tag: the spray of tag {:.0f} was cut short\n", m_tagIntro->tag));
+            m_scripted->storyHost().lockMovement(m_tagIntro->human, false);
+            m_tagIntro.reset();
+        }
     }
     if (!m_tagSession) {
         return;
@@ -107,6 +144,9 @@ void GameplayMode::updateTagging(const Pads& pads, double seconds) {
     m_log(std::format("tag: tag {:.0f} {}\n", tag, finished ? "finished" : "left unfinished"));
     m_tagSession.reset();
     m_scripted->storyHost().lockMovement(human, false);
+    if (auto* scripted = dynamic_cast<ScriptedPlayer*>(m_level.get())) {
+        scripted->endTagSpray();
+    }
     if (finished && m_context.sound != nullptr) {
         // Coney's stand-in: the tagger says it (the original has a crew member say it).
         static_cast<void>(m_context.sound->sayCommand(

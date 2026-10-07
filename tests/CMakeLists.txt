@@ -71,6 +71,7 @@ add_executable(coney_tests
     hud/hud_test.cpp
     hud/player_panel_test.cpp
     hud/scripted_bars_test.cpp
+    hud/war_command_display_test.cpp
     platform/disc_change_character_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp

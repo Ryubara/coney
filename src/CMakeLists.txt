@@ -27,6 +27,7 @@ add_library(coney_core STATIC
     gamemodes/game_mode_stack.cpp
     gamemodes/gameplay_mode.cpp
     gamemodes/gameplay_tag.cpp
+    gamemodes/gameplay_war_commands.cpp
     gamemodes/system_music.cpp
     gamemodes/legal_screen_mode.cpp
     gamemodes/level_crime_services.cpp
@@ -330,6 +331,7 @@ target_sources(coney_core PRIVATE
 # The in-game HUD: the player panels, hints, objectives, counters, the arrow and the radar (docs/research/hud.md).
 target_sources(coney_core PRIVATE
     hud/counter_panels.cpp
+    hud/war_command_display.cpp
     hud/counting_number.cpp
     hud/health_rings.cpp
     hud/hint_box.cpp

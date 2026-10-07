@@ -1862,6 +1862,21 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   `level99` checkpoint 1 through `l99_c1` unskipped: hidden and nothing drawn under the bars, then shown, drawn and
   the first hint up, and a pause hiding and showing it. The debug menus' HUD page sets its values ([Debug menu](../guides/debug-menu.md#pages)).
 
+**The Warrior command menu** (`repo:src/hud/war_command_display.h`, stepped by
+`repo:src/gamemodes/gameplay_war_commands.cpp`), as [the menu](#warrior-command-menu) says: each frame of play, before
+the level's step, pad 1's R2 release gives the highlighted slot's command to the dispatcher (unforced, through
+`script::giveWarriorCommand`) and R2 held opens the menu for player 1 unless his menu is locked; the right stick's raw
+bytes pick the slot (the 12,100 dead zone, the one-axis angle, the sectors, 11.25° of hysteresis, cue `0x20`); a lock
+arriving while it is up ends it with no order, and a hidden HUD gives the order at once; the camera's right stick is
+off (`FollowCamera::enablePadStick`) from the opening until 10 updates after the order; then the chosen plate fades
+over 1,500 ms and the rest over 500 ms, the chosen slot blinking, until the name's `<DISPLAYTIME>` closes it. It draws
+the six slots and the highlighted slot's `GSTRING.COMMAND` name (entry 7 for a disabled command) at x 0.5.
+**Coney's readings**: player 1 is the war chief (`+0x3ac` is not kept) and his state flags do not hold the menu back; a
+stick byte of 128 or more is right or down; the backing and plate are flat squares (the sprite word `0xd0100` is not
+mapped); not built: the order on the pause menu's close, the close when the chief goes down, the two-player and 16:9
+layouts. A script drives it as a player does: `press r2`, `stick right -70 70` (up-left, attack), `release r2`
+(`repo:tests/hud/war_command_display_test.cpp`).
+
 **The health rings** (`repo:src/hud/health_rings.h`, drawn by `repo:src/platform/play_level_world.cpp`), as
 [the health rings](#the-health-rings) say: each step after the HUD's, `hud::HealthRings` takes player 1 and his target
 and queues the rings (nothing while the HUD is hidden: `HideHud`, a scene's start); the show list (SELECT newly

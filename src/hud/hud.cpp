@@ -388,6 +388,20 @@ void Hud::renderScores(const HudCanvas& canvas) const {
     }
 }
 
+void Hud::renderWarCommands(const HudCanvas& canvas) const {
+    for (std::size_t player = 0; player < kPlayers; ++player) {
+        WarCommandDisplay::Look look;
+        if (m_services.commandString) {
+            look.name = m_services.commandString;
+        }
+        if (m_services.commandEnabled) {
+            look.enabled = [this, player](int command) { return m_services.commandEnabled(player, command); };
+        }
+        look.allLocked = m_services.commandsLocked && m_services.commandsLocked(player);
+        m_warCommands.at(player).render(canvas, look, m_nowMs);
+    }
+}
+
 void Hud::render(const HudCanvas& canvas) const {
     if (!m_visible || m_letterbox) {
         return;
@@ -403,6 +417,7 @@ void Hud::render(const HudCanvas& canvas) const {
     for (const PlayerPanel& panel : m_panels) {
         panel.render(canvas, m_levelNumber);
     }
+    renderWarCommands(canvas);
     // The announcements' own `<DISPLAYTIME>` fades them, timed from when they were set.
     if (m_announcement) {
         gui::TextStyle style = messageStyle(kAnnouncePlace.x);

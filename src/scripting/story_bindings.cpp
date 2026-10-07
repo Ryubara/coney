@@ -755,6 +755,10 @@ void addTacticBindings(LuaVm& vm, const BindingContext& context) {
 
 } // namespace
 
+void giveWarriorCommand(ScriptSystem& scripts, const BindingContext& context, double chief, int command) {
+    dispatchWarriorCommand(scripts, context, chief, command, false);
+}
+
 void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& context,
                       std::function<double()> nextHandle) {
     // The Warrior commands.
