@@ -2855,13 +2855,18 @@ CfgTagStartCallback(fn)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `fn` | string | Lua function name called when the player starts spraying a tag, or nil (global.lua clears it). |
+| 1 | `fn` | string | Lua function name called as fn(tagger, tag, flag) when a human starts spraying a tag, or nil (global.lua clears it). |
 
 **Returns** nothing.
 
-Registers the script callback (interned, stored at 0x006b6870) fired when a tag (graffiti) starts.
+Registers the script callback (interned, stored at 0x006b6870) fired when a tag (graffiti) starts: 0x00238f50 calls it
+with three object handles, the tagger (the human), the tag object (human +0x36c) and the flag sprayed from (the human's
+target +0x33c), asking no result.
 
-**Notes.** When exactly it fires is inferred from the name and the levels that use it.
+**Notes.** It fires once per spray, not at HuTag: when the spray animation's hook (0x00277ed8) runs, 0x0022e610 sets the
+tagging state, tells the tag its tagger and calls 0x00238f50, which skips only a missing name or human. The tag's end
+reaches scripts as event 14 (self, tag, finished) instead. [Crimes: the script
+callbacks](../../research/crimes.md#tag-callbacks).
 
 - **Evidence:** confirmed (code) at `0x00238f10`; detail: traced
 - **Wrapper** `0x0035cc20` (registered by `RegisterBindings`); **calls** `0x00238f10` `Cfg_SetTagStartCallback`

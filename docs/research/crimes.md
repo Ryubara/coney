@@ -226,9 +226,11 @@ A level's tag spots are `part_spray_tag` particle objects (class bit `0x10` mark
 ([World flags](flags.md)); `global.lua`'s helper loads a **pattern** (`HuTagPattern`) and calls `HuTag`.
 Circle + triangle (`0x24`) also sprays where the player has paint ([Combat](combat.md#dispatch)).
 
-**`HuTag`** (`0x00238db0`), confirmed (code): a player with **no spray paint** (item 3) says 37 `nopaint` and the tag
-object is told (message `0xe`); otherwise the human's target becomes the flag, `+0x36c` the tag, its action `0x17`,
-and a player occupies the flag.
+**`HuTag`** (`0x00238db0`), confirmed (code): a player with **no spray paint** (item 3) says 37 `nopaint` and the
+**human himself** gets event `0xe` with the tag and 0 (not finished; the record goes through the human's own vtable
+`+0x44`, so a script's event-14 handler also runs for a refusal, [below](#tag-callbacks)); otherwise the human's
+target (`+0x33c`) becomes the flag, `+0x36c` the tag, its action `0x17`, and a player occupies the flag. `HuTag`
+calls no script itself.
 
 **The stick game**, confirmed (code) at `0x002741d8`, `0x002748a8`, `0x00274710`:
 
@@ -268,8 +270,48 @@ The **tuning**, by the Warrior class's byte `+0x09` (1-3, 0 counting as 1), from
 of the current charge left, one more charge is spent. The tagger's flag is freed, the **tagger** gets event `0xe`
 (the tag's handle and whether it was finished, through its own vtable `+0x44`) and the **tag object** (human
 `+0x36c`) gets message `0x13`. Hint `0x10` in level `0x57`.
-`CfgTagStartCallback` names the script function called when a tag starts. Tagging is crime type 10, which sends no
-responders ([Crime types](../references/crime-types.md)).
+Tagging is crime type 10, which sends no responders ([Crime types](../references/crime-types.md)).
+
+#### The script callbacks {#tag-callbacks}
+
+The engine calls a script at two points of a tag, and nowhere else (no progress, layer or cancel callback: the only
+reader of the start callback's name `0x006b6870` is `0x00238f50`, and `Tag_UpdatePlayer`, `TagGame_*` and `Tag_End`
+call no script). Confirmed (code) at the addresses cited.
+
+**The start callback** ([`CfgTagStartCallback`](../references/bindings/config.md#cfgtagstartcallback)), called by
+`0x00238f50`:
+
+1. **When.** Not at `HuTag`. Once the human is in action `0x17` and not yet tagging, the update
+   (`Tag_UpdatePlayer` for a player, which first makes the stick game; also `MiniGame_Update`, `0x00255fd8`) calls
+   `0x00278018`, which queues the spray animations (`0x14f`, then `0x14e` with the end hook `0x00277ed8`). When that
+   hook runs and the tag still exists, `0x0022e610` starts the spray: it sets the tagging state `0x2000000`, sends
+   the tag message `0` (the tagger, [Tag spots](#tag-spots)), and last calls `0x00238f50`. So the callback runs once
+   per spray, at the moment the stick game goes live; `0x00238f50` does not check for a player.
+2. **Arguments: three object handles, in this order** (each pushed with the script system's handle slot `+0x5c`,
+   `0x00356fc8`, as the same number a script gets from any binding returning a handle):
+   1. the **tagger** (the human's own handle, its vtable `+0x2c`);
+   2. the **tag object** being sprayed (human `+0x36c`, the `tag` given to `HuTag`);
+   3. the **flag** sprayed from (the human's target `+0x33c`, resolved by `0x00227060`: the `flag` given to
+      `HuTag`).
+
+   Snippet (`0x00238fdc`-`0x00239058`): `ori a1,sp,0x4` / `lw v0,0x36c(s2)` ... `jal 0x00227060` ...
+   `li a1,0x3` / `move a2,zero` / `jalr` slot `+0x8c`.
+3. **Result**: none asked: slot `+0x8c` (`0x00357188`) is `lua_call` with 3 arguments and 0 results, so a return
+   value is dropped. The call is immediate (not scheduled). Nothing happens when no name is set (`global.lua` sets
+   `nil`) or the human is gone.
+
+**The end event**: `Tag_End` (and `HuTag`'s refusal) give the **tagger** event `0xe` (record `+0x00` the tag object,
+`+0x04` 1 finished or 0, `+0x24` the human). The message marshaller (`0x00384ce0`, case `0xe`) calls the human's
+message handler as `(self, tag, finished)`: three handles/numbers, `finished` the number 1 or 0 (unsigned, not a
+boolean), and it **asks one result**; a non-zero number means the event was consumed
+([Message handlers](scripting.md#message-handlers)). That a human's vtable `+0x44` reaches its handler component is
+inferred from the event-14 handlers the scripts set ([Script events](../references/script-events.md#event-14)).
+
+**What the scripts do with the start callback** (our summary): every one takes three parameters. Level 87's and level
+9's look the **third** (the flag) up in their own list of tag spots to find which spray it is, lock the **first**
+(the tagger's) pad movement and turn on that spot's tag camera; level 3's first checks that the **first** is a
+player, then has a crew member comment and switches cameras. A callback called with no arguments therefore indexes a
+table with `nil`. None returns a value.
 
 ### Tag spots {#tag-spots}
 
@@ -363,20 +405,19 @@ it yet). `ReportCrime` switches reporting. `EnterStore` / `ExitStore` keep the s
 
 **Tagging** (`repo:src/warriors/tag_game.h`, `repo:src/warriors/tag_session.h`, `repo:src/world_objects/tag_spots.h`,
 2026-10-06): `tagPath()` samples `HuTagPattern`'s points along the Catmull-Rom curve into grid cells and `TagGame` is
-the [stick game](#tagging) on it (cursor, ramp, painting, track window, slips, charges, finish), tuned by
-`tagTuning()` from the Warrior class's byte `+0x09` (`script::tagDifficulty()`). `TagSpots` keeps each spot's record
-and answers its messages ([Tag spots](#tag-spots)): `CfgTagSettings` and `ProcessTag` reach it for a particle system's
-handle only, the fade runs every second 60 Hz tick, and `spray()` is a CPU tagger's step (Rumble's Tag battle).
-`TagSession` is one player's spray: the paint from inventory item 3, the fraction sent to the spot (message `0x41`)
-as the game goes, and `Tag_End`'s spot side and wasted charge. In gameplay (`repo:src/gamemodes/gameplay_tag.cpp`)
-`HuTag` for player 1 with paint runs a session on pad 1's left stick with his movement locked and calls
-`CfgTagStartCallback` (with no arguments; what the original passes is not traced); without paint he says 37
-`nopaint`. At the end the pad is freed, a finish has him say 83 `tagdone` and the tagger gets event 14 (the tag and
-whether it was finished). **Coney's stand-ins**: the player sprays where he stands (no walk onto the flag), the
-tagger rather than a crew member says `tagdone`, an AI human given `HuTag` becomes the spot's tagger at once (its
-fade in) without walking to the flag. Not yet: the slip's rumble and speech 80, the bonus event on a clean finish,
-the spray particles and the tag's drawing, the HUD grid, hint `0x10`, and buttons other than the stick ending a
-session.
+the [stick game](#tagging) on it (cursor, ramp, painting, track window, slips, charges, finish), tuned by `tagTuning()`
+from the Warrior class's byte `+0x09` (`script::tagDifficulty()`). `TagSpots` keeps each spot's record and answers its
+messages ([Tag spots](#tag-spots)): `CfgTagSettings` and `ProcessTag` reach it for a particle system's handle only, the
+fade runs every second 60 Hz tick, and `spray()` is a CPU tagger's step (Rumble's Tag battle). `TagSession` is one
+player's spray: the paint from inventory item 3, the fraction sent to the spot (message `0x41`) as the game goes, and
+`Tag_End`'s spot side and wasted charge. In gameplay (`repo:src/gamemodes/gameplay_tag.cpp`) `HuTag` for player 1 with
+paint runs a session on pad 1's left stick with his movement locked and calls `CfgTagStartCallback` with no arguments
+(the original passes the tagger, tag and flag, [above](#tag-callbacks)); without paint he says 37 `nopaint`. At the end
+the pad is freed, a finish has him say 83 `tagdone` and the tagger gets event 14 (the tag and whether it was finished).
+**Coney's stand-ins**: the player sprays where he stands (no walk onto the flag), the tagger rather than a crew member
+says `tagdone`, an AI human given `HuTag` becomes the spot's tagger at once (its fade in) without walking to the flag.
+Not yet: the slip's rumble and speech 80, the bonus event on a clean finish, the spray particles and the tag's drawing,
+the HUD grid, hint `0x10`, and buttons other than the stick ending a session.
 
 **Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car, a broken
 pane frees it (`ObjectServices::freeCarStereos`, within 2 m of the pane) and `Cars::takeStereo` takes it once; the
