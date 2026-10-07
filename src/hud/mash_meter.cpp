@@ -7,7 +7,6 @@
 
 #include "graphics/font.h"
 #include "graphics/overlay_camera.h"
-#include "hud/hud_layout.h"
 
 namespace coney::hud {
 
@@ -39,23 +38,14 @@ constexpr char kL1Glyph = static_cast<char>(0xa0);
 constexpr char kR1Glyph = static_cast<char>(0x9c);
 constexpr std::uint64_t kHalfPeriodMs = 400;
 constexpr int kGlyphFontSlot = 3;
-// The bar's sheet (`menu_system`, sheet-table record 3 of sprite word `0x30050`) and its rectangles: back, fill and
-// the end caps.
-constexpr std::uint32_t kBarRecord = 3;
+// The bar's rectangles of `part_page0` (sprite word `0x30050`: resource instance 3, which is `part_page0`): back, fill
+// and the end caps.
 constexpr std::size_t kBackRect = 80;
 constexpr std::size_t kFillRect = 81;
 constexpr std::size_t kLeftCapRect = 82;
 constexpr std::size_t kRightCapRect = 83;
 constexpr graphics::Rgba kGrey{128, 128, 128, 255};
 constexpr graphics::Rgba kFillColour{225, 186, 65, 255};
-// The batch and rectangles the bar is drawn with.
-struct BarRects {
-    graphics::SpriteBatch* batch;
-    std::size_t back;
-    std::size_t fill;
-    std::size_t leftCap;
-    std::size_t rightCap;
-};
 // A sprite word's rectangle (the low 16 bits).
 constexpr std::uint32_t kWordRectMask = 0xffffU;
 
@@ -100,27 +90,14 @@ void MashMeter::render(const HudCanvas& canvas, std::size_t player, std::uint64_
                     kButtonSize, kGrey);
         }
     }
-    // The bar from its left end: the back, the fill over it, the caps outside. **Coney's stand-in**: the loaded
-    // `menu_system` page has no rectangles 80-83, so the rage meter's `part_page0` rectangles stand in for them.
-    BarRects rects{.batch = canvas.sheet ? canvas.sheet(kBarRecord) : nullptr,
-                   .back = kBackRect,
-                   .fill = kFillRect,
-                   .leftCap = kLeftCapRect,
-                   .rightCap = kRightCapRect};
-    if (rects.batch == nullptr || kRightCapRect >= rects.batch->sheet().page.rects.size()) {
-        rects = BarRects{.batch = canvas.parts,
-                         .back = kMeterBodyRect,
-                         .fill = kMeterStripRect,
-                         .leftCap = kMeterLeftCapRect,
-                         .rightCap = kMeterRightCapRect};
-    }
-    if (graphics::SpriteBatch* bar = rects.batch; bar != nullptr) {
-        const float leftCap = capWidth(bar, rects.leftCap, kBarHeight);
-        const float rightCap = capWidth(bar, rects.rightCap, kBarHeight);
-        addRect(bar, rects.leftCap, place.barLeft - (leftCap / 2.0F), kBarY, leftCap, kBarHeight, kGrey);
-        addStrip(bar, rects.back, place.barLeft, kBarY, kBarWidth, kBarHeight, kGrey);
-        addStrip(bar, rects.fill, place.barLeft, kBarY, kBarWidth * m_fill, kBarHeight, kFillColour);
-        addRect(bar, rects.rightCap, place.barLeft + kBarWidth + (rightCap / 2.0F), kBarY, rightCap, kBarHeight, kGrey);
+    // The bar from its left end: the back, the fill over it, the caps outside.
+    if (graphics::SpriteBatch* bar = canvas.parts; bar != nullptr) {
+        const float leftCap = capWidth(bar, kLeftCapRect, kBarHeight);
+        const float rightCap = capWidth(bar, kRightCapRect, kBarHeight);
+        addRect(bar, kLeftCapRect, place.barLeft - (leftCap / 2.0F), kBarY, leftCap, kBarHeight, kGrey);
+        addStrip(bar, kBackRect, place.barLeft, kBarY, kBarWidth, kBarHeight, kGrey);
+        addStrip(bar, kFillRect, place.barLeft, kBarY, kBarWidth * m_fill, kBarHeight, kFillColour);
+        addRect(bar, kRightCapRect, place.barLeft + kBarWidth + (rightCap / 2.0F), kBarY, rightCap, kBarHeight, kGrey);
     }
     // The blinking glyph, right-aligned on its place.
     const char shownGlyph = glyph(nowMs);

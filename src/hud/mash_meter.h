@@ -14,8 +14,7 @@ namespace coney::hud {
 ///
 /// **Coney's readings**: the bar's back strip runs its whole width with the fill strip over it from the left end and
 /// the two end caps outside it (how `HudBar_Draw` places its four rectangles is not on the page); the glyphs are drawn
-/// at the text size as their height. **Coney's stand-in**: while the loaded `menu_system` page lacks rectangles 80-83,
-/// the rage meter's `part_page0` rectangles draw the bar.
+/// at the text size as their height.
 ///
 /// Research: docs/research/hud.md#mash-meter-layout
 class MashMeter {

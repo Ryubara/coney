@@ -136,6 +136,26 @@ LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view 
     m_state.currentLevel = m_state.levels.find(level).value_or(0);
 }
 
+bool LevelScripts::completeMission() {
+    m_host.clearMissionComplete();
+    m_host.setUnlocking(true);
+    const bool called = m_scripts.call("UnlockAndLoad");
+    m_host.setUnlocking(false);
+    // Both players' mission money goes to the bank (mode 0xb, `0x0041e398`).
+    for (int player = 0; player < Inventory::kPlayers; ++player) {
+        const int money = m_state.player.inventory.count(player, item::kMoney);
+        if (money > 0) {
+            m_state.saved.addToBank(static_cast<std::uint32_t>(money));
+        }
+    }
+    return called;
+}
+
+void LevelScripts::carryProgressTo(LevelScripts& next) const {
+    next.m_state.saved = m_state.saved;
+    next.m_state.luaSaveFloats = m_state.luaSaveFloats;
+}
+
 LevelScriptRun runLevelScriptAlone(const script::ScriptSource& source, std::string_view level, int checkpoint,
                                    const std::function<void(std::string_view)>& log,
                                    const LevelScriptOptions& options) {

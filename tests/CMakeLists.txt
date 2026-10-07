@@ -88,6 +88,7 @@ add_executable(coney_tests
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_world_test.cpp
+    platform/disc_story_chain_test.cpp
     platform/disc_story_missions_test.cpp
     platform/disc_tagging_test.cpp
     platform/disc_story_start_test.cpp

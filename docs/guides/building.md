@@ -668,6 +668,15 @@ The original's trace, recorded in PCSX2 by `coney-tools pcsx2 record`, uses the 
 both have, and `coney-tools trace coney` runs a scenario's script on Coney with `--trace`; `coney-tools trace diff`
 compares the two, column by column ([Comparing with Coney](research-workflow.md#comparing-with-coney)).
 
+**Going on to the next level.** A level played with `--play-level` (or from the debug menus) goes on to the next one the
+way the story does, with no flag: when a mission ends (`HUDLaunchMissionComplete`), Coney runs the scripts'
+`UnlockAndLoad` (the unlocks, then `runNextMission(1)`, [Story order](../research/scripting.md#run-next-mission)), banks
+the players' money and plays the level and checkpoint it chose (`chain: going on to level80 at checkpoint 1`); a level a
+script starts with `MenuLoadLevel` (the hub's missions) is played the same way. The unlocks, bank and saved script numbers
+carry from one level to the next, so the story's order holds: 99, 80, 87, the hub (`level95`), 34 and on. It happens
+between frames, once the level's gameplay is the mode on top (not under a pause), and only for a level with a streamed
+world: the front end (`level100`) is not played, and a mission with no next one just stays. `--frames` still ends the run.
+
 ### The debug menus {#the-debug-menus}
 
 Every run has Coney's debug menu, a trainer-style menu of its own (the original has none): press L3 and R3 together

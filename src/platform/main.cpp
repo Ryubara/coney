@@ -1132,6 +1132,47 @@ int main(int argc, char** argv) {
         modes.push(*levelGameplay);
         debugSession.print(std::format("levels: playing {} at checkpoint {}", name, checkpoint));
     };
+    // A level played on its own (`--play-level`, the Missions page) goes on to the next level when its scripts ask for
+    // one, as the story does: a mission that ends (`HUDLaunchMissionComplete`: the unlocks and `runNextMission(1)`
+    // choose the next level and checkpoint) and a level a script starts (`MenuLoadLevel`: the hub's missions). Run
+    // between frames, once the level's gameplay is the mode running; the progress (unlocks, bank) carries over.
+    const auto chainLevels = [&]() {
+        if (!levelScripts || !levelGameplay || !wad) {
+            return;
+        }
+        coney::QuietBindingHost& host = levelScripts->host();
+        if (!host.missionCompleteRequested() && !host.nextLevel()) {
+            return;
+        }
+        if (modes.top() != levelGameplay.get()) {
+            return; // a pause or another mode is on top: try again next frame
+        }
+        if (host.missionCompleteRequested()) {
+            printText("chain: mission complete\n");
+            if (!levelScripts->completeMission()) {
+                printText("chain: this level's scripts have no UnlockAndLoad\n");
+            }
+        }
+        const std::optional<std::string> next = host.nextLevel();
+        host.clearNextLevel();
+        if (!next) {
+            printText("chain: no next mission\n");
+            return;
+        }
+        // The front end is not a level to play; a name with no world cannot be.
+        if (auto worlds = coney::platform::worldNamesFor(*wad, *next); *next == "level100" || !worlds) {
+            printText(std::format("chain: not going on to {}\n", *next));
+            return;
+        }
+        const int checkpoint = static_cast<int>(levelScripts->state().checkPoint);
+        printText(std::format("chain: going on to {} at checkpoint {}\n", *next, checkpoint));
+        modes.pop();
+        std::unique_ptr<coney::LevelScripts> previous = std::move(levelScripts);
+        makeLevelGameplay(*next, checkpoint, false);
+        previous->carryProgressTo(*levelScripts);
+        modes.push(*levelGameplay);
+        previous.reset();
+    };
     // The developer overlay (F1), only with a window; without it the pad menu still works.
     std::unique_ptr<coney::platform::ImGuiOverlay> devOverlay;
     if (windowed) {
@@ -1168,7 +1209,8 @@ int main(int argc, char** argv) {
     // The window's events go past the developer overlay first; while it has the keyboard, the keyboard pad is off.
     coney::FrameHooks hooks;
     hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingLevel, &pendingCheckpoint,
-                        &playLevelNamed] {
+                        &playLevelNamed, &chainLevels] {
+        chainLevels();
         // A sandbox or level the Levels page asked for, between two frames.
         if (pendingSandbox) {
             const std::string name = *pendingSandbox;

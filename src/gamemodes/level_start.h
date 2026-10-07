@@ -85,18 +85,39 @@ struct LevelScriptOptions {
 };
 
 /// What the bindings ask of the game while a level's scripts run without the menus: there are no menus, modes or
-/// audio, so every request is dropped. A level script that asks for a level (`MenuLoadLevel`) or a movie is not acted
-/// on.
+/// audio, so most requests are dropped. The two that change the level are kept for whoever runs the level to act on
+/// between frames (`--play-level`'s chaining, docs/guides/building.md#playing-a-level): `MenuLoadLevel` (a hub
+/// mission's start, `runNextMission`) and `HUDLaunchMissionComplete` (a mission's end). A movie is not played.
 class QuietBindingHost final : public script::BindingHost {
   public:
     void showProfileManager(std::string_view /*onRumble*/, std::string_view /*onStartGame*/) override {}
     void showRumbleModeInterface(std::string_view /*onCancel*/, std::string_view /*onStart*/,
                                  double /*players*/) override {}
-    void menuLoadLevel(std::string_view /*level*/) override {}
+    void menuLoadLevel(std::string_view level) override { m_nextLevel = std::string(level); }
     void playMovie(std::string_view /*name*/) override {}
     void playMusic(std::string_view /*track*/) override {}
     void stopMusic() override {}
     void queueScreenEffect(int /*type*/, double /*seconds*/) override {}
+    void launchMissionComplete(int /*kind*/) override {
+        // runNextMission launches it again (kind 4) while the mission-complete work runs: that one is not a new end.
+        m_missionComplete = m_missionComplete || !m_unlocking;
+    }
+
+    /// Whether a script has ended the mission (`HUDLaunchMissionComplete`) since the last clearMissionComplete().
+    [[nodiscard]] bool missionCompleteRequested() const { return m_missionComplete; }
+    /// Forgets the end of the mission.
+    void clearMissionComplete() { m_missionComplete = false; }
+    /// Marks the mission-complete work (`UnlockAndLoad`) as running, so the launch it makes itself is not a new end.
+    void setUnlocking(bool on) { m_unlocking = on; }
+    /// The level a script asked for (`MenuLoadLevel`) and not yet taken; nothing when none.
+    [[nodiscard]] const std::optional<std::string>& nextLevel() const { return m_nextLevel; }
+    /// Forgets the level asked for.
+    void clearNextLevel() { m_nextLevel.reset(); }
+
+  private:
+    bool m_missionComplete = false;
+    bool m_unlocking = false;
+    std::optional<std::string> m_nextLevel;
 };
 
 /// The story's way into a level without the menus, as `--play-level` plays it: what the level's scripts work on (a
@@ -128,6 +149,18 @@ class LevelScripts {
     [[nodiscard]] script::RecordedCalls& recorded() { return m_recorded; }
     /// The HUD the scripts' HUD bindings act on, for the play mode to draw (PlayLevelMode::useHud()).
     [[nodiscard]] hud::Hud& hud() { return m_hud; }
+    /// The bindings' host: what the scripts asked of the game that the runner of the level acts on.
+    [[nodiscard]] QuietBindingHost& host() { return m_host; }
+
+    /// Ends the mission as the mission-complete mode (0xb) does: the scripts' `UnlockAndLoad` (the unlocks, then
+    /// `runNextMission(1)`, which sets the checkpoint and asks for the next level through `host()`), then both players'
+    /// mission money banked. False when the scripts have no `UnlockAndLoad` (the level's scripts did not load).
+    ///
+    /// Research: docs/research/scripting.md#run-next-mission
+    bool completeMission();
+    /// Hands what a story keeps from one level to the next (the saved progress: the unlocks, the bank, the script
+    /// flags and numbers) to `next`, a fresh LevelScripts for the next level.
+    void carryProgressTo(LevelScripts& next) const;
 
   private:
     GameState m_state;

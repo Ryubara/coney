@@ -759,7 +759,7 @@ runs the mash ([above](#uncuffing), `combat::ButtonMash`) with his class's byte 
 `combat::mashFactor()`); the cuffed human plays 326 paired, then 330. Success: he says 67 and is released (and revived
 when knocked out and revivable), the freer plays 332 and he 333; failure (a quit command, the decay below 0, the cuffed
 human gone or released some other way): 332 and back to 320. A body something else takes before the outcome (a hit)
-plays 331. Player 1's [mash meter](hud.md#fn-after-basewidget) (`hud::MashMeter`) shows from the press to the outcome,
+plays 331. Player 1's [mash meter](hud.md#mash-meter-layout) (`hud::MashMeter`) shows from the press to the outcome,
 filled by the meter over its target, and hides the prompt, the hint box and the scroll-in messages meanwhile. A disc
 test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at
 `level80` checkpoint 2 and reaches checkpoint 3. **Coney's stand-ins and readings**: friendly is the gangs'
