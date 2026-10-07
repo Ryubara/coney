@@ -101,7 +101,7 @@ their uses.
 | `+0x30` | vec4 | velocity (`Task_GetVelocity` returns zero while the flags have `0x600`) |
 | `+0x40` | vec4 | angular velocity |
 | `+0x50` | u32 | the time of its last update |
-| `+0x54` | u32 | flags: `0x200`, `0x400` static or moved by its velocity as position; `0x1000`, `0x80000` rotation modes; `0x2000` on a wheel; `0x2000000` grounded; `0x4000000` airborne (gravity 15.68 m/s² in `Task_Integrate`); `0x80000000` integrated |
+| `+0x54` | u32 | flags: `0x200`, `0x400` static or moved by its velocity as position; `0x1000` rotation eased: each update makes `+0x40` (then a target rotation) the rotation, and between updates the pose is a slerp toward it over the interval ([World objects: leaves](objects.md#leaves)); `0x80000` a rotation mode; `0x2000` on a wheel; `0x2000000` grounded; `0x4000000` airborne (gravity 15.68 m/s² in `Task_Integrate`); `0x80000000` integrated |
 | `+0x5c` | ptr | the next object in its bucket |
 | `+0x60` | s16 | its phase |
 | `+0x62` | s16 | its bucket |

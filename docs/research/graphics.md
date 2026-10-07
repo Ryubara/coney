@@ -338,7 +338,9 @@ What [one in-game frame](boot.md#one-frame) does on the screen, confirmed (code)
    sky, clouds and skyline ([Level loading](level-loading.md#render-order)); the world
    (`0x0040e8d8`: several `RwCameraBeginUpdate`/`EndUpdate` passes: the level world with culling off, the streamed
    world's sectors with back-face culling, objects, the detail world, water, translucent objects; Z test and write
-   on and fog on except where stated; the full order is on [The streamed world](world.md#a-frame)); resources;
+   on and fog on except where stated; the full order is on [The streamed world](world.md#a-frame)); the 3D sprite
+   batches (`0x00185b38`: Z write and culling off, the batches farthest first, then the glass panes near a camera,
+   [World objects: drawing a pane](objects.md#pane-draw));
    the ground rings (`0x0017b2e0`, [HUD](hud.md#the-health-rings)); slot `+0x118` (heat distortion).
 4. **Overlays** (`0x00156658`): screen effects (slot `+0x128`), the HUD, subtitles and the front-end layers, each
    followed by the overlay pass `0x00185d20` ([2D drawing](#2d-drawing)).

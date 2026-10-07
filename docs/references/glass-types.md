@@ -10,8 +10,9 @@ configures each in `config_preload2.lua`, and a level script places panes with
 !!! info "What is complete"
 
     All 19 types are listed with every argument. Any hit breaks a pane (no hitpoints); what breaking
-    does is on [World objects: a pane's life](../research/objects.md#pane). The sprite words' rectangles
-    are in the glass pane's sprite batch, whose sheet is not traced.
+    does is on [World objects: a pane's life](../research/objects.md#pane). The sprite words' low halves
+    are rectangles of `part_page1`, the sheet of sprite batch 0 that every pane but type 14 draws from; their
+    high halves are ignored ([World objects: drawing a pane](../research/objects.md#pane-draw)).
 
 19 entries. Data: `research/references/glass-types.yaml`.
 
@@ -33,11 +34,11 @@ configures each in `config_preload2.lua`, and a level script places panes with
 | <span id="glass-11"></span>11 | yes | no | `0x00010016` | `0x00010017` | | 25 | `level51`, `level82`, `level87`, `level93`, `level99`, `level128` |
 | <span id="glass-12"></span>12 | no | no | `0x00010014` | `0x00010015` | A car window: breaking it frees every `dyn_carstereo` within 2 m (`0x00396090`). | 1 | `level9` |
 | <span id="glass-13"></span>13 | yes | yes | `0x00010014` | `0x00010015` | | 142 | `d26c7832`, `level2`, `level11`, `level14`, `level20`, `level31` |
-| <span id="glass-14"></span>14 | yes | no | `0x00020000` | `0x00010015` | Stained glass: draws with a sprite batch of its own (`0x00020000`, so its sprite word is unused) and shatters as `sub_stained_glass`. | | |
-| <span id="glass-15"></span>15 | no | no | `0x00010014` | `0x00010015` | Invisible: colour 0, never drawn; still blocks until broken. | | |
+| <span id="glass-14"></span>14 | yes | no | `0x00020000` | `0x00010015` | Stained glass: draws with a one-sprite batch of its own over sheet-table record 2, rectangle 0, instead of the type's sprite words, and shatters as `sub_stained_glass`. | | |
+| <span id="glass-15"></span>15 | no | no | `0x00010014` | `0x00010015` | Invisible: colour 0, so drawn fully transparent; still blocks until broken. | | |
 | <span id="glass-16"></span>16 | no | no | `0x00010016` | `0x00010017` | | 19 | `level3`, `level60`, `level61`, `level64` |
-| <span id="glass-17"></span>17 | no | no | `0x00010015` | `0x00010015` | Placed already broken: no collision. | | |
-| <span id="glass-18"></span>18 | yes | no | `0x00010015` | `0x00010015` | Placed already broken: no collision; its path polygon's flag `0x08` is set. | | |
+| <span id="glass-17"></span>17 | no | no | `0x00010015` | `0x00010015` | Placed already broken: its triangles are off, but it draws its sprite (the broken rectangle) and has a body within 50 m like a whole pane. | | |
+| <span id="glass-18"></span>18 | yes | no | `0x00010015` | `0x00010015` | Placed already broken: its triangles are off and its path polygon's flag `0x08` is set, but it draws its sprite (the broken rectangle) and has a body within 50 m like a whole pane. | | |
 
 ## Sources and evidence
 

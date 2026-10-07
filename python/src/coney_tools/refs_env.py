@@ -241,8 +241,8 @@ STARTERS: dict[str, dict[str, Any]] = {
         "configures each in `config_preload2.lua`, and a level script places panes with\n"
         "`SpawnBreakableGlass(type, corner, cornerU, cornerV, uv0, uv1, 0, triangle1, triangle2)`\n"
         "([World objects: glass](../research/objects.md#glass)).",
-        "complete": "All 19 types are listed with every argument. The sprite words' rectangles are in the glass\n"
-        "pane's sprite batch, whose sheet is not traced.",
+        "complete": "All 19 types are listed with every argument. The sprite words' low halves are rectangles\n"
+        "of `part_page1`, the sheet of sprite batch 0 that every pane but type 14 draws from.",
     },
     "doors": {
         "title": "Doors",

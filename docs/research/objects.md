@@ -60,6 +60,12 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003e29e8` / `0x003e3058` / `0x003e2d90` | `glass_script` init / update / message | the pane | confirmed (code) |
 | `0x0038f378` | `Glass_Break(pane, breaker, object)` | the alarm, the window link, the window flags | confirmed (code) |
 | `0x003e4be0` / `0x003e4cb8` | `sub_glass` init / update | the shatter: sound and shards | confirmed (code) |
+| `0x003e44e0` / `0x003e4838` | `GlassTest_Init` / `GlassTest_Update` | a shard (`glasstest`) | confirmed (code) |
+| `0x0038f1c8` | `GlassPane_UpdateBodyByDistance` | per frame (vtable `+0x13c`): the pane's body within 50 m | confirmed (code) |
+| `0x0038ed68` / `0x0038eec0` | `GlassPane_CreateBody` / `GlassPane_RemoveBody` | the pane's collision body (`+0xe8`) | confirmed (code) |
+| `0x0038fa50` → `0x0038ef60` | `GlassManager_QueueDraws` → `GlassPane_QueueDraw` | per frame: each pane into its sprite batch or the near list | confirmed (code) |
+| `0x0038f090` → `0x001831c0` | `GlassPane_DrawNear` → `Instance_DrawOneSpriteIm3D` | a pane near a camera, drawn on its own | confirmed (code) |
+| `0x00185b38` | `ResourceMgr_Render3DSprites` | the 3D sprite pass ([Drawing a pane](#pane-draw)) | confirmed (code) |
 | `0x003966c8` → `0x003963b8` | `World_BreakGlassInRadius` | `BreakGlassInRadius` | confirmed (code) |
 | `0x00396390` → `0x003961d0` | `World_BreakObjectsInRadius` | `BreakObjectsInRadius` | confirmed (code) |
 | `0x00397230` | `Door_Spawn` | pushes the door's arguments, creates it by type name | confirmed (code) |
@@ -72,6 +78,7 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003f9588` | `DoorSwing_SetPickable` | the lock-pick glint | confirmed (code) |
 | `0x003f9ad0` / `0x003fa438` | `DoorSwing_Hit` / `DoorSwing_HitBreakable` | message 1 | confirmed (code) |
 | `0x003fb330` / `0x003fb5a0` / `0x003fb430` | `sub_swinging_door` init / update / message | a leaf | confirmed (code) |
+| `0x003a2310` / `0x00336a00` | `Task_Integrate` / `Quat_Slerp` | a leaf's rotation step and its in-between pose ([Leaves](#leaves)) | confirmed (code) |
 | `0x003b2f40` / `0x003b3158` / `0x003b2180` | `dyn_door_fence` init / message / hit | a breakable barrier | confirmed (code) |
 | `0x00250c00` | `NavLinks_SetKindByNumber(number, kind)` | retags every navigation link carrying a number | confirmed (code) |
 | `0x00250c50` / `0x00250d00` | `NavLinks_OpenByNumber` / `NavLinks_CloseByNumber` | bit 31 of every link with a number, path flag 8 of its door hole | confirmed (code) |
@@ -172,17 +179,25 @@ confirmed (code) at `0x0038fab8`, `0x0038fb00`-`0x0038fb10`:
 | Offset | Meaning |
 | --- | --- |
 | `+0x10` | centre: the first corner + half of each edge |
-| `+0x54` | flags: `0x8001` at spawn; `4` hidden, `0x800000` broken |
-| `+0x70` / `+0x80` / `+0x90` | the edge along the width, the unit normal (width × height edge), the edge along the height |
-| `+0xa0` | centre (copy) |
-| `+0xb0` | sprite word (type 14: its own sprite batch, high 16 bits only) |
-| `+0xb4` | colour, `0x808080e0` (0 for type 15) |
-| `+0xb8`-`+0xc4` | the two texture-coordinate pairs |
+| `+0x54` | flags: `0x8001` at spawn; `4` hidden (also set while no camera is within 50 m), `0x800000` broken |
+| `+0x70` | **W**, the width edge: third corner − first corner (`SpawnBreakableGlass`' `cornerV` − `corner`) |
+| `+0x80` | the unit normal, normalise(**H** × **W**) |
+| `+0x90` | **H**, the height edge: second corner − first corner (`cornerU` − `corner`) |
+| `+0xa0` | centre (copy); `+0x70`-`+0xaf` is the matrix the pane is drawn with ([Drawing a pane](#pane-draw)) |
+| `+0xb0` | sprite word: batch 0 in the high half, the type's rectangle in the low half (type 14: its own batch, rectangle 0) |
+| `+0xb4` | colour `0xRRGGBBAA`: `0x808080e0` whole (0 for type 15), `0xffffff70` once broken |
+| `+0xb8`-`+0xc4` | the script's two texture-coordinate pairs, `u0, v0, u1, v1` in push order; nothing reads them back (inferred: no reader among the pane's methods or the draw) |
 | `+0xc8` | size word: whole metres of width, height `<< 16` (truncated) |
-| `+0xcc` / `+0xd4` | width / height in metres (floats) |
+| `+0xcc` / `+0xd4` | width / height in metres (floats), \|W\| / \|H\| |
+| `+0xd0` | squared distance from the centre to the nearest player camera, refreshed each frame (`0x0038ef30`) |
 | `+0xd8` / `+0xdc` | the two collision triangles |
+| `+0xe8` | its collision body, or 0 (vtable `+0xf4` returns it) |
 | `+0xf8` | alarm bits (3 with the alarm, `0x0038ec30`) |
 | `+0xfa` | type |
+
+The order of the pops (`0x003e29e8`) against the pushes (`0x0039c0e0`) gives the corner names. The normal's order
+(`vopmula vf1, vf2` then `vopmsub vf2, vf2, vf1` with `vf1` = H, `vf2` = W, at `0x003e2b6c`) is H × W; the draw does
+not use it. Confirmed (code).
 
 The pane updates every 180 ticks (3 s, [Tasks](tasks.md#wheel)); the update only calls an empty hook for an
 unbroken type 1 within 100 m (`0x003e3058`).
@@ -207,8 +222,8 @@ number `+0xe0`, hitpoints mirror `+0x128` (what `GetHitpoints` reads). Its **dat
 | `+0x28` | **state** byte, below |
 
 **Per type** (`0x003f80f0`, by name; leaves are the `dyn_dr_*` objects). A second leaf stands at
-`position + rotation × (−2 × w, 0, 0)` turned 180° about the vertical, where `w` is the type's float property 5
-(`0x003a3898`); the leaf objects get `+0x124` = 2 (left) and 4 (right). Confirmed (code):
+`position + rotation × (−2 × w, 0, 0)` turned 180° about the vertical, where `w` is one leaf's width, `CfgObj`
+argument 15 ([Leaves](#leaves)); the leaf objects get `+0x124` = 2 (left) and 4 (right). Confirmed (code):
 
 | Door types | Leaves | Open / close sound |
 | --- | --- | --- |
@@ -667,8 +682,9 @@ collision mesh that stand for them. Confirmed (code) for the spawns, counts from
    senders are a human's landed hit (`0x0021b290`), a thrown object (`0x00393538`) and `BreakGlassInRadius`
    (`0x003963b8`: every pane whose centre is within the radius, and every `TYPE_GLASS` object). Confirmed (code).
 5. **Hit** (message 1, `0x003e2d90`), once, while not broken: the broken sprite (or the pane hidden when it is 0),
-   a `sub_glass` shatter at the pane's centre with the pane's rotation and size (`sub_stained_glass` for type 14), the
-   triangles disabled, its collision body removed (`0x003a5340`), the pane marked broken. Type 12 also frees every
+   a `sub_glass` shatter at the pane's centre with the pane's normal (`+0x80`), shard size 0.2 and size word
+   (`sub_stained_glass` for type 14), the triangles disabled, its collision body removed (`0x003a5340` →
+   `0x0038eec0`, `+0xe8` = 0), colour `0xffffff70`, the pane marked broken. Type 12 also frees every
    `dyn_carstereo` within 2 m (`0x003a5870`), for a pane a script places at a car; a parked car's own windows are
    its parts, not panes ([Cars: windows](cars.md#windows)). Message 0 is a shatter without the broken flag (the
    effect and the triangles only). Confirmed (code).
@@ -686,6 +702,78 @@ collision mesh that stand for them. Confirmed (code) for the spawns, counts from
 8. **No respawn**: nothing clears the broken flag; a pane comes back only when its level's script spawns it again.
    Inferred from the handlers (messages 0 and 1 only).
 
+### Drawing a pane {#pane-draw}
+
+A pane has no model: it is one textured quad, a **sprite** of the resource manager's sprite batches
+([GUI: sprite batches](gui.md#resource-instances)), drawn in the translucent 3D sprite pass after the world. Confirmed
+(code) unless marked.
+
+**Every frame, before the draw** (`0x0038fbe8` → `GlassPane_UpdateBodyByDistance`, `0x0038f1c8`, for each pane):
+`+0xd0` = the squared distance from the centre to the nearest player camera (`0x00120230`); then
+
+- within 50 m (`+0xd0` < 2500): a hidden pane (flag 4) is shown again; a shown pane whose colour is still
+  `0x808080e0` (whole) gets its collision body back if it has none (`0x0038ed68`: a box of the pane's width and
+  height in the collision world `0x00597198`, posed by the pane's matrix);
+- beyond 50 m: a shown pane is hidden; a hidden whole pane loses its body (`0x0038eec0`).
+
+So only whole panes within 50 m of a camera have a body. (One game state, `0x0051489c` `+0x33a` = 4 under a mode
+check not traced, skips the distance test and keeps every whole pane's body.)
+
+**Queueing** (`GlassManager_QueueDraws`, `0x0038fa50`, from `TaskManager_UpdateManagers`, once a frame): for each
+pane, `GlassPane_QueueDraw` (`0x0038ef60`):
+
+- **near**, `+0xd0` < 12 (within √12 ≈ 3.46 m): the pane goes on the resource manager's near-glass list
+  (`0x0018b008`, `+0xc54`) and is drawn on its own after the batches (below);
+- **otherwise**: when its batch (`+0xb0` high half) is resident and the pane **has a body** (vtable `+0xf4`, which
+  returns `+0xe8`), one sprite is added to the batch (`0x00183038`): the rectangle's `u0, v0, u1, v1` from the
+  batch's sheet (`0x00181e38`, rectangle = `+0xb0` low half), the colour `+0xb4` as RenderWare `{R, G, B, A}`
+  (`0x808080e0` → 128, 128, 128, 224, [GUI: sprite colours](gui.md#sprite-colours): RenderWare's 0-255, so half
+  brightness, 88 % opaque), and the matrix built from `+0x70`-`+0xaf` (`0x003368d8`).
+
+**The quad.** The matrix's rows are right = **W**, up = **H**, at = the normal, position = the centre, each turned
+into RenderWare's axes as `(x, z, −y)`. The near path (`Instance_DrawOneSpriteIm3D`, `0x001831c0`) makes the four
+corners as matrix × (±0.5, ±0.5, 0, 1) (the constants at `0x00552850`), so in game space the quad is
+
+```text
+centre − W/2 − H/2 = corner     → (u1, v1)
+centre + W/2 − H/2 = cornerV    → (u0, v1)
+centre − W/2 + H/2 = cornerU    → (u1, v0)
+centre + W/2 + H/2              → (u0, v0)
+```
+
+drawn as one 4-vertex triangle strip (`0x004a4f28` with 4 vertices, `0x004a49e8(4)`), every vertex in the pane's
+colour. The script's own texture coordinates (`+0xb8`-`+0xc4`) take no part. The batched path hands the same matrix,
+rectangle and colour to the PTank, which builds its quad itself; that it gives the same corners is inferred.
+
+**Render states.** Near path, set in `0x001831c0`: the batch's texture raster, vertex alpha on, **Z test on, Z write
+off**, source blend source alpha, destination blend inverse source alpha, fog off (RenderWare states 1, 12, 6, 8, 10,
+11, 14). Batches (`ResourceMgr_Render3DSprites`, `0x00185b38`, per viewport after the world and before the ground
+rings): **Z write off, culling off** (states 8 and 20), Z test left on; each batch blends source alpha / inverse
+source alpha with vertex alpha (`0x001972b0` writes 5, 6 and 1 into the PTank's data). Back faces are drawn either
+way: no cull state is set on the near path, and the batches turn culling off.
+
+**Order.** The batches queued this frame are sorted by their key, **farthest first** (comparator `0x00184850`: the
+camera distance² − radius²; `0x00197000`), and drawn; then `0x0018b058` draws the near list in pane order, unsorted
+(after a list of other near sprites, `0x0039b6b8`). Panes inside one batch keep the pane manager's order. So glass
+is drawn after the opaque world, back to front between batches, not sorted among themselves.
+
+**Which sheet.** Every pane but type 14 draws from **batch 0**, one of the thirteen batches the resource manager
+makes at start (`0x00184918`): sheet `part_page1` (sheet-table record 1, [Particles](particles.md#sprite-words)),
+matrix format (format 2), 640 sprites, the 3D sprite pass. The init clears `+0xb0` and sets only the low half from
+the type's table word (`Task_SetRect`), so the high half of `CfgSetGlassProperties`' words is ignored. The disc's
+words for types 0-18 are rectangles 20 (whole) / 21 (broken) of `part_page1`, or 22 / 23 for types 10, 11 and 16;
+types 17 and 18 use 21 for both ([Glass types](../references/glass-types.md)). Type 14 makes a one-sprite matrix
+batch of its own (`PTank_New(max(width, height), 0x20000, centre, …)`, `0x003e2c84`) over sheet-table record 2,
+rectangle 0, whose frame is placed at the pane's centre; no level places a type-14 pane.
+
+**A broken pane is not drawn.** The hit sets the broken rectangle and colour `0xffffff70` (white, alpha 112) but
+also removes the body, and both draw paths need the body, while `0x0038f1c8` never gives a broken pane (colour no
+longer `0x808080e0`) a body again. What the player sees is the shatter's shards and then an empty frame. Confirmed
+(code) as a chain of the reads above; not checked at runtime. The broken words matter only for types 17 and 18,
+which start with the broken rectangle as their whole sprite, keep the colour `0x808080e0` and so get a body (and
+are drawn) within 50 m although their triangles are off. Type 15 (colour 0, made with a body at spawn) is drawn,
+invisibly.
+
 ### The shatter {#shatter}
 
 `sub_glass` (`0x003e4cb8`) runs once and ends. Confirmed (code):
@@ -695,11 +783,32 @@ collision mesh that stand for them. Confirmed (code) for the spawns, counts from
    `GLASS` (2). The sound is the material pair's entry in the sound matrix ([Sound](sound.md#play)).
 2. **Culling**: no shards unless the pane is within 15 m (`0x003a5280`) and 10 m (`0x003a51f8`) of the tests' points
    and the particle budget (`0x003a5a50`) allows; game state bit `0x20` (`0x0041cf30`) forces them.
-3. **Shards**: for each of the count, two tries, each taken at 2 in 3 (`0x003353b8(rng, 2) < 2`): a `glasstest`
-   particle at a random point within ±0.571 of the half-width and half-height on the pane's plane, with the pane's
-   colour word. The count is capped by writing `0x4f` into the size word when it exceeds 79.
+3. **Shards**: for each of the count, two tries, each taken at 2 in 3 (`Random_Int(2) < 2`, `Random_Int(n)` giving
+   0 to n): a `glasstest` particle at a random point within ±4/7 of the width (whole metres) and ±4/7 of the height
+   on the pane's plane (`0.5714286`), turned by the shatter's rotation. Each gets the shard size (0.2 from a hit,
+   0.06 for a small pane), a count of `miniglass` pieces (2-4; 0-2 when the count is over 40; 0-1 over 79) and the
+   shatter's sprite word, which is 0 (batch 0, the particle default, `0x0039aef0`). Over 79 the code writes `0x4f`
+   into the data's size word, but the loop count is already taken, so every shard is still made.
 
-The shard sheet and how `glasstest` falls are not traced ([Particles](particles.md)).
+**A shard** (`glasstest`, script type 62: `GlassTest_Init` `0x003e44e0`, `GlassTest_Update` `0x003e4838`), confirmed
+(code) unless marked:
+
+- **Sprite**: rectangle 24 + `Random_Int(4)`, so 24-28, of the batch in the passed word's high half: batch 0,
+  `part_page1`.
+- **Size**: the shard size × a random 0.1-1.5 (`+0xc0`). **Colour** `+0xb0`: white with alpha 128-224
+  (`Random_Int(96) − 128` as `0xRRGGBBAA`).
+- **Motion**: flags `0x14000001` (airborne; bit `0x10000000` cleared under game state bit 1); gravity −9.8 in its data
+  block; a random rotation; an initial velocity with a random 1-2 m/s upward part (the rest, from the shatter's
+  rotation, not traced).
+- **Each update** (every 2 ticks): ended at once when it fails the 10 m and 15 m tests or the particle budget (as the
+  shatter's culling, also when its data word `+0x24`, not traced, is over 119), unless game state bit `0x20`;
+  otherwise a random ±1 m/s per axis is added to its velocity and its second colour `+0xb4` becomes a random grey
+  64-255 in all four bytes (a glitter; which colour the particle draw uses is not traced).
+- **Landing**: when its flags gain `0x20000000` (inferred: set by the particle's ground contact) it makes its count of
+  `miniglass` particles around its position (their random speeds and sizes are not summarised here) and ends. A
+  shard therefore lives from the hit until it lands, with no timer of its own.
+
+How the particle draw blends a shard is on [Particles](particles.md); `miniglass` is not traced.
 
 ### Swinging doors: states and commands {#door-states}
 
@@ -745,8 +854,59 @@ after the swing starts (inferred from the scheduling, [Tasks](tasks.md#wheel)).
 
 **Swinging**: `DoorSwing_SwingTo` (`0x003f8fd0`) sends each leaf message `0x35` with its target rotation: the door's
 rotation turned by the angle about the vertical axis (half-angle quaternion), the right leaf by the negated angle
-from its turned base. The leaf stores it and copies it to `+0x40` on its next update (`0x003fb5a0`); how the leaf
-eases there is not traced.
+from its turned base. How a leaf turns there is under [Leaves](#leaves).
+
+### Leaves: model, hinge and swing {#leaves}
+
+**The frame draws nothing.** The `dyn_door_swinging` object never calls `Obj_SetModel` (its init leaves the model
+word `+0xc4` at 0 and `DoorSwing_SetUpType` only spawns leaves) and its flags `0x405` include `4`, hidden; what is
+seen of a door is its leaves, and of a type with no leaves (`_dblwood`, `_woodbrd`, `_woodp`, `_steel`...) nothing
+but the level's own geometry around the doorway. Confirmed (code) at `0x003fb5f8`.
+
+**A leaf** (`sub_swinging_door`, `0x003fb330`) is made by `Obj_SpawnChildByName(name, position, rotation, door)`,
+which pushes the pose and the door's handle; it is not attached to the door (no flag `0x10`). Its init pops the
+door's handle (data `+0x10`), the rotation (into `+0x20` and data `+0x00`) and the position (`+0x10`), sets flags
+`0x1021`, an update every 28 ticks, and **its own type's model** (`Obj_SetModel(leaf, 0)`, the `dyn_dr_*` record's
+model, word at `+0xc4`; the model hash `0xb14109ba` also sets flag `0x80`). Confirmed (code).
+
+**The hinge is the model's origin.** A leaf only ever changes its rotation, about the vertical axis through its
+position; the position stays where `DoorSwing_SetUpType` (`0x003f80f0`) and `DoorSwing_ResetLeaves`
+(`0x003f9368`) put it:
+
+| Leaf | Position (the hinge) | Rotation when closed |
+| --- | --- | --- |
+| first (left, `+0x124` = 2) | the door's position | the door's rotation |
+| second (right, `+0x124` = 4) | door position + door rotation × (−2w, 0, 0) | the door's rotation × 180° about z |
+
+where `w` is the door type's `CfgObj` argument 15 (`f15`, type `+0x68`, read by `0x003a3898` property 5). Confirmed
+(code). On the disc `w` is one leaf's width: `dyn_door_store` 1.09 with a collision box 2.18 wide (two leaves),
+`dyn_door_chainlnk_a` 2.29 for its one 2.31 m leaf, `dyn_door_big_gate` 4.43 with an 8.86 m box and 4.43 m leaves.
+So the two hinges are a whole doorway apart, the second leaf faces back toward the first, and each leaf's model
+extends from its origin along its local −x to about −w, meeting the other at the middle: inferred from the spacing,
+from the lock-pick glint at door position + door rotation × (−w, 0, 0) + 1.3 m up (the seam of a two-leaf door, the
+latch edge of a one-leaf one, `0x003f9588`), and from
+the `dyn_dr_store` collision centre at x = −1.09; the model bounds themselves were not checked. A one-leaf door
+(`_chainlnk_*`, `_red_fence`, `_sheetmtl`, `_corr`, `_ornate_single`, `_stall`, `_woodfnce_xl`) has only the first
+leaf, hinged at the door's position.
+
+**The swing: a linear slerp over one leaf update (28 ticks, 0.467 s).** Confirmed (code):
+
+1. Message `0x35` (`0x003fb430`) stores the target in data `+0x00`-`+0x0c`, sets data `+0x14` = 1 and reschedules the
+   leaf for the next tick.
+2. On that update the integrate step runs first (`Task_Integrate`, `0x003a2310`): with flag `0x1000` it copies the
+   **previous target** `+0x40` into the rotation `+0x20` and stamps the update time `+0x50`. Then the leaf's update
+   (`0x003fb5a0`) copies the new target into `+0x40` and clears data `+0x14`.
+3. Between updates the object's pose "now" (`Obj_GetPoseNow`, `0x003a1ad8`, flag `0x1000`) is
+   `Quat_Slerp(t, +0x20, +0x40)` with t = (time since `+0x50`) / the update interval in seconds (`+0x64`, 28/60),
+   clamped to 0-1. `Quat_Slerp` (`0x00336a00`) takes the shorter arc (it negates the second quaternion's weight when
+   their dot product is negative) and falls back to a plain lerp when they are within 1e-6.
+4. The next update, 28 ticks later, makes the target the rotation, and the leaf rests.
+
+So a leaf turns at a **constant angular rate** from where it was to the target in 0.467 s: 170° at about 364° per
+second, no ease-in or ease-out, whatever the angle. A new target that arrives mid-swing starts from the previous
+target, not from the in-between pose (step 2), so the leaf jumps to the old target first. That the drawn model takes
+this pose "now" is inferred: it is the only place the slerp happens. The door's own state steps (opening, state 3 →
+4 → 5, [states](#door-states)) run on the door's 28-tick schedule independently of the leaves.
 
 ### How a human opens a door {#opening}
 
@@ -803,8 +963,8 @@ The door side, confirmed (code) at `0x003f9588`, `0x00397078`:
 
 - **Pickable on** (state command 10, `SetDoorPickable(door, true)`, and at spawn for `dyn_door_chainlnk_pick`,
   `dyn_door_storeb` and `dyn_door_templedoor`), only while its angle (data `+0x00`) is under 2: a `sub_triglint`
-  glint 1.3 m up at half the leaf width, drawn while within 30 m (`0x003eb0d0`); door object `+0x124` = 10; its
-  collision body removed (`0x003a5340`).
+  glint at door position + door rotation × (−w, 0, 0) + 1.3 m up ([Leaves](#leaves)), drawn while within 30 m
+  (`0x003eb0d0`); door object `+0x124` = 10; its collision body removed (`0x003a5340`).
 - **Pickable off** (commands 0, 11; `SetDoorPickable(door, false)`): the glint destroyed (message `0x15`), `+0x124` = 0,
   the collision body back (`0x003a52c8`). `SetDoorPickable(false)` first stops every human whose object target is
   the door (`0x0022e400`, state flag `0x20000000`).
@@ -953,8 +1113,10 @@ Coney's stand-ins, where this page is silent:
 - Which search mask admits `0x40` links.
 - What human state 26 (the animated open) plays and when it sends the door `0x0b`; what fills a player's interaction
   record (`+0x660`) for a door.
-- How a leaf eases to its target rotation (`+0x40`), and the type's float property 5 (half a leaf's width?).
-- Which sheet the glass sprite batch and the `glasstest` shards draw from.
+- Check at runtime that a broken pane is no longer drawn ([Drawing a pane](#pane-draw)), and that a leaf model
+  spans its local x from 0 to −w ([Leaves](#leaves)).
+- How the PTank builds a matrix sprite's corners and texture coordinates (inferred equal to the near path's), and
+  which of a shard's two colours the particle draw uses.
 - How the draw blends a translucent object (the column's material and vertex alpha, the PS2 blend), and where the
   instance's colour bytes are set from `+0xc8`.
 - How the instance places the model: whether its clump's atomic frame (identity, or the z-up turn with an offset) is
@@ -963,7 +1125,6 @@ Coney's stand-ins, where this page is silent:
 - How the resource manager picks the object whose model it loads next (`+0xbd4`), and whether `level100`'s packs
   hold the Wonder Wheel's models.
 - What the first camera's vtable `+0x214` returns (the streaming-out distance).
-- The shard size of a large shatter; whether `0x003353b8(rng, 2) < 2` is 2 in 3 (as read here) or always.
 - Held objects: what fills human `+0x348` / `+0x34c` (event `0x37`), what message `0x17` to the holder does, who
   sends `melee_weapon` messages `0x12` / `0x13`, and the frame of a thrown object's angular velocity.
 - `dyn_door_vargas`' second object, and the leaf models of `dyn_door_chainlnk_pick` (no `dyn_dr_chainlnk_pick` record).

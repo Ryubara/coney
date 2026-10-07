@@ -9,8 +9,9 @@ about: |
   ([World objects: glass](../research/objects.md#glass)).
 complete: |
   All 19 types are listed with every argument. Any hit breaks a pane (no hitpoints); what breaking
-  does is on [World objects: a pane's life](../research/objects.md#pane). The sprite words' rectangles
-  are in the glass pane's sprite batch, whose sheet is not traced.
+  does is on [World objects: a pane's life](../research/objects.md#pane). The sprite words' low halves
+  are rectangles of `part_page1`, the sheet of sprite batch 0 that every pane but type 14 draws from; their
+  high halves are ignored ([World objects: drawing a pane](../research/objects.md#pane-draw)).
 defaults: {source: "config_preload2.lua, CfgSetGlassProperties; SpawnBreakableGlass in the scripts", evidence: confirmed-code}
 entries:
   - id: 0
@@ -108,13 +109,13 @@ entries:
     alarm: false
     sprite: 0x00020000
     broken_sprite: 0x00010015
-    behaviour: "Stained glass: draws with a sprite batch of its own (`0x00020000`, so its sprite word is unused) and shatters as `sub_stained_glass`."
+    behaviour: "Stained glass: draws with a one-sprite batch of its own over sheet-table record 2, rectangle 0, instead of the type's sprite words, and shatters as `sub_stained_glass`."
   - id: 15
     window_link: false
     alarm: false
     sprite: 0x00010014
     broken_sprite: 0x00010015
-    behaviour: "Invisible: colour 0, never drawn; still blocks until broken."
+    behaviour: "Invisible: colour 0, so drawn fully transparent; still blocks until broken."
   - id: 16
     window_link: false
     alarm: false
@@ -127,10 +128,10 @@ entries:
     alarm: false
     sprite: 0x00010015
     broken_sprite: 0x00010015
-    behaviour: "Placed already broken: no collision."
+    behaviour: "Placed already broken: its triangles are off, but it draws its sprite (the broken rectangle) and has a body within 50 m like a whole pane."
   - id: 18
     window_link: true
     alarm: false
     sprite: 0x00010015
     broken_sprite: 0x00010015
-    behaviour: "Placed already broken: no collision; its path polygon's flag `0x08` is set."
+    behaviour: "Placed already broken: its triangles are off and its path polygon's flag `0x08` is set, but it draws its sprite (the broken rectangle) and has a body within 50 m like a whole pane."
