@@ -14,6 +14,7 @@
 #include "scripting/binding_args.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/nav_links.h"
+#include "world_objects/object_breaks.h"
 
 namespace coney::script {
 
@@ -65,11 +66,18 @@ anim::Vec3 pointArg(std::span<const Value> args, std::size_t i) {
     return anim::Vec3{p[0], p[1], p[2]};
 }
 
-// Where the object `handle` is: a pane, door or leaf, a human the scripts made, or a flag; nothing otherwise.
+// Where the object `handle` is: a pane, door or leaf, an `ObjSpawn` object, a human the scripts made, or a flag;
+// nothing otherwise.
 std::optional<anim::Vec3> positionOf(const BindingContext& context, double handle) {
     if (context.objects != nullptr) {
         if (const std::optional<anim::Vec3> at = context.objects->positionOf(handle)) {
             return at;
+        }
+    }
+    if (context.spawnRecords != nullptr) {
+        if (const world_objects::SpawnRecord* record = context.spawnRecords->find(handle);
+            record != nullptr && !record->removed) {
+            return anim::Vec3{record->position[0], record->position[1], record->position[2]};
         }
     }
     if (context.humans != nullptr) {
@@ -256,14 +264,26 @@ NativeFunction makeBreakGlassInRadius(const BindingContext& context) {
     };
 }
 
-// `BreakObjectsInRadius(centre, radius)`: message 0x15 to every door within the radius of the object `centre`.
+// `BreakObjectsInRadius(centre, radius)`: message 0x15 to every door and object-manager object within the radius of
+// the object `centre`, the centre itself included (a molotov set off this way breaks itself).
 // @orig 0x00396390 BreakObjectsInRadius (unknown)
 NativeFunction makeBreakObjectsInRadius(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
+        const double handle = binding::number(args, 0);
+        // A binding taking an object's handle makes its object.
+        if (context->spawnRecords != nullptr) {
+            static_cast<void>(context->spawnRecords->resolve(handle));
+        }
+        const std::optional<anim::Vec3> centre = positionOf(*context, handle);
+        if (!centre) {
+            return binding::none();
+        }
+        const auto radius = static_cast<float>(binding::number(args, 1));
         if (LevelObjects* objects = context->objects) {
-            if (const std::optional<anim::Vec3> centre = positionOf(*context, binding::number(args, 0))) {
-                objects->doors.destroyInRadius(*centre, static_cast<float>(binding::number(args, 1)));
-            }
+            objects->doors.destroyInRadius(*centre, radius);
+        }
+        if (context->spawnRecords != nullptr) {
+            static_cast<void>(world_objects::sendDestroyInRadius(*context->spawnRecords, *centre, radius, handle));
         }
         return binding::none();
     };

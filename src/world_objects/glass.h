@@ -134,6 +134,11 @@ class GlassPanes {
     bool hit(double handle, ObjectWorld& world);
     /// Message 0: the shatter and the triangles off, without marking it broken.
     void shatterOnly(double handle, ObjectWorld& world);
+    /// `ObjDestroy(pane)`: the pane is released, not broken: its body removed and the pane gone (no longer drawn or
+    /// found by its handle), with no shatter, sound or broken sprite. Its triangles in the level's collision are left
+    /// as they are, as the release does not touch them. Returns whether `handle` named a pane.
+    /// @orig 0x0038ed08 GlassPane_Release (unknown)
+    bool release(double handle, ObjectWorld& world);
 
     /// `Glass_Break(pane, breaker, object)`, after a human's or a thrown object's hit: the alarm (the `CrimeScene` flag
     /// moved to the pane and a break-in reported at it), the window link opened, and the window-look flags within the

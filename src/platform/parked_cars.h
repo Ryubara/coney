@@ -12,6 +12,7 @@
 #include "animation/anim_math.h"
 #include "core/chunk_system.h"
 #include "fileio/wad.h"
+#include "graphics/car_draw.h"
 #include "platform/object_models.h"
 #include "raycast/collision_builder.h"
 #include "world_objects/cars.h"
@@ -23,17 +24,18 @@ struct Atomic;
 
 namespace coney::platform {
 
-/// The parked cars (world_objects::Cars) as the play mode shows them: each drawn with its type's model, the atomics
-/// of the undamaged car (world_objects::kCarParts) at their frames, less the removed parts, in its paint; and each a
-/// box the humans walk against.
+/// The parked cars (world_objects::Cars) as the play mode shows them: each drawn with its type's model in the two
+/// passes of docs/research/graphics.md#car-draw, each part's atomic at its frame (its damaged form from half damage),
+/// less the removed parts, the paint on the painted parts; and each a box the humans walk against.
 ///
 /// A type's model is its Object List record's (found by the type name, docs/research/cars.md#model), loaded the first
 /// time a car of it is drawn or measured; one that does not load is reported once through `print` and its cars are
 /// neither drawn nor solid.
 ///
-/// **Coney's stand-ins** where the page is silent: the paint colours the body's parts (not the lights, windows or
-/// wheels) as the model's material colour; the obstacle is one box round the undamaged car's atomics, not the type
-/// record's two physics boxes (whose sizes the page gives for the sedan only), turned with the car.
+/// **Coney's stand-ins** where the page is silent: the paint is the model's material colour; the car's environment map
+/// (its second texture resource) and its first second's fade-in are not drawn; the obstacle is one box round the
+/// undamaged car's atomics, not the type record's two physics boxes (whose sizes the page gives for the sedan only),
+/// turned with the car.
 class ParkedCars {
   public:
     /// Draws `cars` (which must outlive this) with models from `wad`, their textures converted for drawing when
@@ -46,9 +48,12 @@ class ParkedCars {
     ParkedCars& operator=(ParkedCars&&) = delete;
     ~ParkedCars();
 
-    /// Draws every car whose model loaded, with the current camera and render states, each atomic placed and handed to
-    /// `render` (which lights and draws it).
-    void draw(const std::function<void(rw::Atomic*)>& render);
+    /// Draws `pass` of every car whose model loaded, through the current camera: each atomic graphics::carAtomicDraws()
+    /// picks (by part, damage and pass) placed, coloured by the paint mask and handed to `render` (which lights and
+    /// draws it). Both sides of every triangle are drawn; the opaque pass writes Z and goes through the cars in order,
+    /// the glass pass does not write Z and goes from the last car. Leaves Z write on and back faces culled.
+    /// @orig 0x00172c70 CarInstance_Render (unknown)
+    void draw(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass);
 
     /// The triangles of every car's box, facing out, in the game's axes: for the level's collision.
     [[nodiscard]] std::vector<raycast::BuildTriangle> obstacles();

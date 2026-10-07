@@ -9,6 +9,13 @@ How far Coney has come, measured three ways:
 - **Researched:** the share of the game's own code that the [source map](../research/source-map.md) places in at
   least an original source file or directory. It says how much of the executable an analyst can already find their
   way around in, not how much is understood.
+- **Understood:** the share of the game's own functions (by bytes, and by count) that are researched in full: the
+  function has a meaningful name in the shared Ghidra project (not `FUN_<address>`), and a research page cites its
+  address in a table row or paragraph that states an evidence level, or says `not needed: <reason>` (the source
+  map's citations do not count: placing is not understanding); a script binding's wrapper counts when its
+  `research/bindings` entry has an `evidence`. Names and sizes come from `docs/progress/ghidra-functions.tsv`
+  (addresses, sizes and our names only), the citations from the pages themselves, so citing a function moves the
+  bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
   Approved by the owner's play-test, with its checkpoints and the script bindings it needs.
@@ -21,17 +28,17 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 15.4%](https://img.shields.io/badge/reimplemented-15.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 15.5%](https://img.shields.io/badge/reimplemented-15.5%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.4% of the game's own code (516,704 of 3,354,776 bytes, 1,770 functions) |
+| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.5% of the game's own code (520,460 of 3,354,776 bytes, 1,795 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,096 of 3,283,904 bytes; 11,420 of 11,422 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-586 reimplemented function(s) have no size yet and add no bytes.
+600 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -64,9 +71,9 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
-| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 74 | 195,624 |
+| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 77 | 195,624 |
 | `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 210 | 497,416 |
-| `Human` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 604 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 612 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
@@ -74,7 +81,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 208 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 120 | 531,312 |
+| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% | 134 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 27 | 22,008 |
@@ -471,6 +478,9 @@ at the top of the repository's `README.md`.
 | `0x00170330` | `Garbage_Start` | `Graphics` | not filled in |
 | `0x00170528` | `Garbage_End` | `Graphics` | not filled in |
 | `0x00170c88` | `Garbage_Update` | `Graphics` | not filled in |
+| `0x001728e0` | `CarInstance_PartColour` | `Graphics` | not filled in |
+| `0x00172940` | `CarPart_RenderCallback` | `Graphics` | not filled in |
+| `0x00172c70` | `CarInstance_Render` | `Graphics` | not filled in |
 | `0x00174320` | `HumanRender_Draw` | `Graphics` | 2,008 |
 | `0x00175080` | `CharacterInstance_GetAnim` | `Graphics` | 160 |
 | `0x00175210` | `CharacterInstance_TopTask` | `Graphics` | not filled in |
@@ -772,6 +782,8 @@ at the top of the repository's `README.md`.
 | `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
+| `0x00221a00` | `Human_GetDynamicAnim` | `Human` | 156 |
+| `0x00221aa0` | `Human_SetAnimOverride` | `Human` | 332 |
 | `0x002221e0` | `Human_CanWalkStraightTo` | `Human` | not filled in |
 | `0x00222288` | `Human_HasLineOfSight` | `Human` | not filled in |
 | `0x002223e8` | `Human_CanSeeHuman` | `Human` | not filled in |
@@ -790,6 +802,7 @@ at the top of the repository's `README.md`.
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
 | `0x00227d28` | `Human_IsInSceneState` | `Human` | not filled in |
+| `0x00228d70` | `Cfg_AddHatFit` | `Human` | 244 |
 | `0x00229570` | `Human_BannerKind` | `Human` | 176 |
 | `0x00229b60` | `AttackKind_IsCharge` | `Human` | 48 |
 | `0x0022a770` | `Gang_PickSwitchMember` | `Human` | 528 |
@@ -826,6 +839,7 @@ at the top of the repository's `README.md`.
 | `0x00235268` | `Human_SetPushable` | `Human` | 72 |
 | `0x002352b0` | `HuGetPosition` | `Human` | 72 |
 | `0x00235478` | `Human_GetGangType` | `Human` | 64 |
+| `0x00235530` | `Human_GetHat` | `Human` | 108 |
 | `0x002355e0` | `Human_IsGrabbed` | `Human` | not filled in |
 | `0x00235628` | `Human_IsAlive` | `Human` | 96 |
 | `0x00235688` | `Human_IsDead` | `Human` | 64 |
@@ -879,8 +893,10 @@ at the top of the repository's `README.md`.
 | `0x002383a0` | `Human_SetLOSRange` | `Human` | not filled in |
 | `0x00238478` | `Human_ExitWorld` | `Human` | not filled in |
 | `0x00238540` | `Human_PlaceItemInHand` | `Human` | 184 |
+| `0x002385f8` | `Human_PlaceHatOnHead` | `Human` | 68 |
 | `0x00238640` | `Human_SetPedReaction` | `Human` | 80 |
 | `0x00238690` | `Human_UseAnim` | `Human` | 184 |
+| `0x00238748` | `Human_UseAnyAnim` | `Human` | 96 |
 | `0x002387a8` | `Human_AreActionsBlocked` | `Human` | not filled in |
 | `0x002387e8` | `Human_IsTagging` | `Human` | 64 |
 | `0x00238948` | `Human_PlayDynAnim` | `Human` | 160 |
@@ -952,6 +968,7 @@ at the top of the repository's `README.md`.
 | `0x00249108` | `Humans_Update` | `Human` | 2,704 |
 | `0x0024a230` | `Reticule_QueueHealthRings` | `Human` | 3,400 |
 | `0x0024b780` | `Reticules_Update` | `Human` | 2,040 |
+| `0x0024bfc0` | `Human_SpawnHat` | `Human` | 476 |
 | `0x0024d810` | `Pickup_Search` | `Human` | not filled in |
 | `0x0024df40` | `Ray_IsClear` | `Human` | not filled in |
 | `0x0024e478` | `Nav_GetWalkingDistance` | `Human` | not filled in |
@@ -986,6 +1003,7 @@ at the top of the repository's `README.md`.
 | `0x002562d0` | `Human_DrainMeters` | `Human` | not filled in |
 | `0x00256a60` | `Human_RefillMeters` | `Human` | not filled in |
 | `0x00257f38` | `Human_DropHeld` | `Human` | not filled in |
+| `0x00258330` | `Human_KnockOffHat` | `Human` | 932 |
 | `0x00258a88` | `Human_BreakPair` | `Human` | not filled in |
 | `0x00258e88` | `Human_CanCounterGrab` | `Human` | 624 |
 | `0x002590f8` | `Human_CanCounterTackle` | `Human` | 624 |
@@ -1639,6 +1657,7 @@ at the top of the repository's `README.md`.
 | `0x0038e0f0` | `Car_PlaceInTrunkOnDetach` | `TaskEngine` | not filled in |
 | `0x0038e538` | `CarManager_SetMsgHandler` | `TaskEngine` | 88 |
 | `0x0038e860` | `Cars_FindNear` | `TaskEngine` | not filled in |
+| `0x0038ed08` | `GlassPane_Release` | `TaskEngine` | not filled in |
 | `0x0038ed68` | `GlassPane_CreateBody` | `TaskEngine` | not filled in |
 | `0x0038ef60` | `GlassPane_QueueDraw` | `TaskEngine` | not filled in |
 | `0x0038f1c8` | `GlassPane_UpdateBodyByDistance` | `TaskEngine` | not filled in |
@@ -1702,19 +1721,30 @@ at the top of the repository's `README.md`.
 | `0x003a13d0` | `SceneTask_Create` | `TaskEngine` | 280 |
 | `0x003a19b0` | `Obj_GetWorldPose` | `TaskEngine` | 296 |
 | `0x003a2e00` | `Task_SendMessage` | `TaskEngine` | 32 |
+| `0x003a3ba0` | `Human_PlaceHat` | `TaskEngine` | 460 |
 | `0x003a4768` | `Triangle_MakeTwoSided` | `TaskEngine` | 88 |
+| `0x003a50e0` | `Camera_IsPointInPlayerView` | `TaskEngine` | not filled in |
+| `0x003a51f8` | `Cameras_IsPointVisibleAny` | `TaskEngine` | not filled in |
+| `0x003a5280` | `Cameras_IsWithinRange` | `TaskEngine` | not filled in |
 | `0x003ac4d0` | `Radio_Setup` | `TaskEngine` | not filled in |
 | `0x003ac600` | `Radio_SetMode` | `TaskEngine` | not filled in |
 | `0x003ad440` | `Radio_Update` | `TaskEngine` | not filled in |
 | `0x003b2180` | `DoorFence_Hit` | `TaskEngine` | 3,520 |
 | `0x003b2f40` | `DoorFence_Init` | `TaskEngine` | 536 |
 | `0x003b3220` | `DoorFence_Update` | `TaskEngine` | not filled in |
+| `0x003c3448` | `PartExplosion_Init` | `TaskEngine` | not filled in |
+| `0x003c4580` | `SubFireballEmitter_Init` | `TaskEngine` | not filled in |
+| `0x003c4a58` | `SubFireball_Init` | `TaskEngine` | not filled in |
+| `0x003c4c38` | `SubFireball_Update` | `TaskEngine` | not filled in |
+| `0x003c54b8` | `SubExplode_Update` | `TaskEngine` | not filled in |
 | `0x003c55e8` | `ScriptType_Find` | `TaskEngine` | not filled in |
 | `0x003ca658` | `Fog3D_WispInit` | `TaskEngine` | not filled in |
 | `0x003cadd8` | `Fog3D_EmitterUpdate` | `TaskEngine` | not filled in |
 | `0x003e29e8` | `GlassScript_Init` | `TaskEngine` | 936 |
 | `0x003e2d90` | `GlassScript_Message` | `TaskEngine` | 712 |
 | `0x003e4cb8` | `SubGlass_Update` | `TaskEngine` | 984 |
+| `0x003e77c0` | `HatObject_Wear` | `TaskEngine` | 404 |
+| `0x003e7958` | `HatObject_Drop` | `TaskEngine` | 480 |
 | `0x003e8fa0` | `DynIcon_Init` | `TaskEngine` | not filled in |
 | `0x003e92e0` | `DynIcon_Update` | `TaskEngine` | not filled in |
 | `0x003e9828` | `ObjectiveMarker_SetShown` | `TaskEngine` | 192 |
@@ -1734,6 +1764,8 @@ at the top of the repository's `README.md`.
 | `0x003fca68` | `SprayTag_Update` | `TaskEngine` | not filled in |
 | `0x003fd420` | `MeleeWeapon_Init` | `TaskEngine` | not filled in |
 | `0x003fe490` | `melee_weapon_HandleMessage` | `TaskEngine` | 552 |
+| `0x00404c48` | `DynMolotov_OnMessage` | `TaskEngine` | not filled in |
+| `0x00405600` | `DynMolotov_Update` | `TaskEngine` | not filled in |
 | `0x0040c868` | `Level_SetFogColour` | `World` | 160 |
 | `0x0040c908` | `Level_SetFogDistance` | `World` | 48 |
 | `0x0040c948` | `World_Precache` | `World` | 208 |

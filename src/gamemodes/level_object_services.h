@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "animation/anim_math.h"
+#include "camera/camera_view.h"
 #include "effects/particles.h"
 #include "gamemodes/level_crime_services.h"
 #include "scripting/script_system.h"
@@ -45,11 +46,11 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     void setSounds(world_objects::ObjectServices* sounds) { m_sounds = sounds; }
     /// Car stereos are freed in `cars` from now on (null: none).
     void setCars(world_objects::Cars* cars) { m_cars = cars; }
-    /// Shards, dust and bursts go to `particles` from now on (null: none), culled round where `player` says player 1
-    /// is (empty: not culled by distance).
-    void setParticles(effects::ParticleSystems* particles, std::function<std::optional<anim::Vec3>()> player) {
+    /// Shards, dust and bursts go to `particles` from now on (null: none), culled by the camera `view` gives for
+    /// player 1's view (empty, or nothing yet: not culled by the camera).
+    void setParticles(effects::ParticleSystems* particles, std::function<std::optional<camera::CameraView>()> view) {
         m_particles = particles;
-        m_player = std::move(player);
+        m_view = std::move(view);
     }
 
     /// Damage a human does goes to `damage` from now on (empty: nowhere): gameplay sends the boxes' message 6.
@@ -85,9 +86,9 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     void scoreEvent(double human, int category, int event) override;
     /// Crime statistic 4-10 for a player who broke a pane (a player's gang member is not told apart yet).
     void countPaneBroken(double breaker) override;
-    /// Whether a shatter makes shards: room in the particle budget for the most a shatter makes, and player 1 within
-    /// 10 m of `centre`. **Coney's stand-in**: the two tests' points (15 m and 10 m) are not on the page, so player 1
-    /// stands for both.
+    /// Whether a shatter makes shards: room in the particle budget for the most a shatter makes, and player 1's camera
+    /// within 15 m of `centre` with `centre` in its view by a 10 m margin (effects::effectNearView()).
+    /// @orig 0x003e4cb8 SubGlass_Update (unknown)
     [[nodiscard]] bool shardsWanted(anim::Vec3 centre) override;
     /// A `glasstest` shard (effects::ParticleSystems::spawnShard()).
     void spawnShard(anim::Vec3 at, float size, std::uint32_t colour) override;
@@ -105,7 +106,7 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     world_objects::WorldFlags& m_flags;
     world_objects::ObjectServices* m_sounds;
     effects::ParticleSystems* m_particles = nullptr;
-    std::function<std::optional<anim::Vec3>()> m_player;
+    std::function<std::optional<camera::CameraView>()> m_view;
     std::function<void(double, double)> m_damage;            // setDamageReceiver()
     std::function<void(double, double, int, bool)> m_carHit; // setCarHitReceiver()
     LevelCrimeServices m_crimes;

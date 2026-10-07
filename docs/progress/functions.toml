@@ -1860,6 +1860,21 @@ name = "Garbage_Update"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x001728e0
+name = "CarInstance_PartColour"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x00172940
+name = "CarPart_RenderCallback"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x00172c70
+name = "CarInstance_Render"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x00174320
 name = "HumanRender_Draw"
 subsystem = "Graphics"
@@ -3590,6 +3605,18 @@ name = "Human_LaunchJump"
 subsystem = "Human"
 
 [[function]]
+address = 0x00221a00
+name = "Human_GetDynamicAnim"
+subsystem = "Human"
+size = 156
+
+[[function]]
+address = 0x00221aa0
+name = "Human_SetAnimOverride"
+subsystem = "Human"
+size = 332
+
+[[function]]
 address = 0x002221e0
 name = "Human_CanWalkStraightTo"
 subsystem = "Human"
@@ -3691,6 +3718,12 @@ size = 192
 address = 0x00227d28
 name = "Human_IsInSceneState"
 subsystem = "Human"
+
+[[function]]
+address = 0x00228d70
+name = "Cfg_AddHatFit"
+subsystem = "Human"
+size = 244
 
 [[function]]
 address = 0x00229570
@@ -3897,6 +3930,12 @@ address = 0x00235478
 name = "Human_GetGangType"
 subsystem = "Human"
 size = 64
+
+[[function]]
+address = 0x00235530
+name = "Human_GetHat"
+subsystem = "Human"
+size = 108
 
 [[function]]
 address = 0x002355e0
@@ -4207,6 +4246,12 @@ subsystem = "Human"
 size = 184
 
 [[function]]
+address = 0x002385f8
+name = "Human_PlaceHatOnHead"
+subsystem = "Human"
+size = 68
+
+[[function]]
 address = 0x00238640
 name = "Human_SetPedReaction"
 subsystem = "Human"
@@ -4217,6 +4262,12 @@ address = 0x00238690
 name = "Human_UseAnim"
 subsystem = "Human"
 size = 184
+
+[[function]]
+address = 0x00238748
+name = "Human_UseAnyAnim"
+subsystem = "Human"
+size = 96
 
 [[function]]
 address = 0x002387a8
@@ -4613,6 +4664,12 @@ subsystem = "Human"
 size = 2040
 
 [[function]]
+address = 0x0024bfc0
+name = "Human_SpawnHat"
+subsystem = "Human"
+size = 476
+
+[[function]]
 address = 0x0024d810
 name = "Pickup_Search"
 subsystem = "Human"
@@ -4801,6 +4858,12 @@ subsystem = "Human"
 address = 0x00257f38
 name = "Human_DropHeld"
 subsystem = "Human"
+
+[[function]]
+address = 0x00258330
+name = "Human_KnockOffHat"
+subsystem = "Human"
+size = 932
 
 [[function]]
 address = 0x00258a88
@@ -8532,6 +8595,11 @@ name = "Cars_FindNear"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x0038ed08
+name = "GlassPane_Release"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x0038ed68
 name = "GlassPane_CreateBody"
 subsystem = "TaskEngine"
@@ -8887,10 +8955,31 @@ subsystem = "TaskEngine"
 size = 32
 
 [[function]]
+address = 0x003a3ba0
+name = "Human_PlaceHat"
+subsystem = "TaskEngine"
+size = 460
+
+[[function]]
 address = 0x003a4768
 name = "Triangle_MakeTwoSided"
 subsystem = "TaskEngine"
 size = 88
+
+[[function]]
+address = 0x003a50e0
+name = "Camera_IsPointInPlayerView"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003a51f8
+name = "Cameras_IsPointVisibleAny"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003a5280
+name = "Cameras_IsWithinRange"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x003ac4d0
@@ -8925,6 +9014,31 @@ name = "DoorFence_Update"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x003c3448
+name = "PartExplosion_Init"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003c4580
+name = "SubFireballEmitter_Init"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003c4a58
+name = "SubFireball_Init"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003c4c38
+name = "SubFireball_Update"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003c54b8
+name = "SubExplode_Update"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x003c55e8
 name = "ScriptType_Find"
 subsystem = "TaskEngine"
@@ -8956,6 +9070,18 @@ address = 0x003e4cb8
 name = "SubGlass_Update"
 subsystem = "TaskEngine"
 size = 984
+
+[[function]]
+address = 0x003e77c0
+name = "HatObject_Wear"
+subsystem = "TaskEngine"
+size = 404
+
+[[function]]
+address = 0x003e7958
+name = "HatObject_Drop"
+subsystem = "TaskEngine"
+size = 480
 
 [[function]]
 address = 0x003e8fa0
@@ -9063,6 +9189,16 @@ address = 0x003fe490
 name = "melee_weapon_HandleMessage"
 subsystem = "TaskEngine"
 size = 552
+
+[[function]]
+address = 0x00404c48
+name = "DynMolotov_OnMessage"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00405600
+name = "DynMolotov_Update"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x0040c868

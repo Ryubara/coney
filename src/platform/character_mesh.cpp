@@ -81,6 +81,10 @@ void writePose(rw::Atomic* atomic, std::span<const anim::Vec3> positions, std::s
     // The bounding sphere follows the pose, so librw's frustum test never culls a stretched limb.
     geometry->calculateBoundingSphere();
     geometry->unlock();
+    // The atomic keeps its own copy of the sphere (taken when the geometry was set) and a world copy it only redoes
+    // when marked dirty: both follow the pose, so the lights are chosen where the human stands, not at the bind pose.
+    atomic->boundingSphere = geometry->morphTargets[0].boundingSphere;
+    atomic->object.object.privateFlags |= rw::Atomic::WORLDBOUNDDIRTY;
 }
 
 } // namespace

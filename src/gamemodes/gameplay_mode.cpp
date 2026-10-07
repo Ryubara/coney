@@ -44,6 +44,7 @@
 #include "scripting/object_bindings.h"
 #include "scripting/sound_bindings.h"
 #include "warriors/crime_reports.h"
+#include "world_objects/object_breaks.h"
 #include "world_objects/spawn_records.h"
 #include "world_objects/volume_boxes.h"
 
@@ -460,15 +461,13 @@ void GameplayMode::enter() {
     m_cars->setParticles(&m_effects->particles);
     m_context.cars = m_cars.get();
     m_objectServices.setCars(m_cars.get());
-    // The panes' shards and the objects' dust go to the level's particles, culled round player 1.
-    m_objectServices.setParticles(&m_effects->particles, [this]() -> std::optional<anim::Vec3> {
-        const HumanCreation* player = m_humans.player(1);
-        const std::optional<world_objects::Placement> placement =
-            player != nullptr && m_scripted ? m_scripted->humanPlacement(player->handle) : std::nullopt;
-        if (!placement) {
+    // The panes' shards and the objects' dust go to the level's particles, culled by player 1's view (the scene
+    // camera's while a scene plays).
+    m_objectServices.setParticles(&m_effects->particles, [this]() -> std::optional<camera::CameraView> {
+        if (!m_cameras || m_cameras->current().kind == camera::CameraKind::None) {
             return std::nullopt;
         }
-        return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
+        return m_cameras->view();
     });
 
     // With a loading screen the level loads once it has faded in (updateLoadingScreen()); begun by the first update,
@@ -573,7 +572,8 @@ void GameplayMode::loadLevel() {
                                              .records = m_context.spawnRecords,
                                              .types = m_context.objectTypes,
                                              .forceReticules = &m_state.forceReticules,
-                                             .sound = m_context.sound});
+                                             .sound = m_context.sound,
+                                             .objectHandles = [this] { return m_scripts.nextObjectHandle(); }});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));
@@ -700,6 +700,13 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
     m_scripts.update(nowMs, frame.seconds);
     if (m_effects) {
+        // The objects that break themselves this step (a molotov set off by BreakObjectsInRadius) make their flash.
+        if (m_context.spawnRecords != nullptr) {
+            for (const anim::Vec3& at :
+                 world_objects::stepSelfBreaks(*m_context.spawnRecords, static_cast<float>(frame.seconds))) {
+                static_cast<void>(m_effects->particles.spawn("sub_explode", at));
+            }
+        }
         // The camera's view this frame, for the effects that follow it (the steam vents' near test, the fog).
         std::optional<effects::EffectsViewer> viewer;
         if (m_cameras && m_cameras->current().kind != camera::CameraKind::None) {

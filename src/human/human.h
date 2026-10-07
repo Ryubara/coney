@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <span>
@@ -234,7 +235,7 @@ class Human final : public Holdable {
     [[nodiscard]] const StickIntent& intent() const { return m_intent; }
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
     /// `HuUseAnim`'s idle replacement, `name` loaded as `clip` (null for none: the own idle);
-    /// HumanAnimator::setIdleClip(). The play mode applies ScriptState::animOverrides[0] through it.
+    /// HumanAnimator::setIdleClip(). The play mode applies ScriptState's override for the idle (`0x184`) through it.
     void setIdleClip(std::string_view name, const anim::AnimClip* clip) {
         m_idleClipName = std::string(name);
         m_animator.setIdleClip(clip);
@@ -245,6 +246,18 @@ class Human final : public Holdable {
     }
     /// The name of the idle replacement applied (empty for none).
     [[nodiscard]] const std::string& idleClipName() const { return m_idleClipName; }
+    /// `HuUseAnyAnim`'s replacement for anim `id` other than the idle, `name` loaded as `clip` (null: the own clip
+    /// plays); an empty `name` takes it out. HumanAnimator::setOverride().
+    void setOverrideClip(std::uint32_t id, std::string_view name, const anim::AnimClip* clip) {
+        if (name.empty()) {
+            m_overrideNames.erase(id);
+        } else {
+            m_overrideNames[id] = std::string(name);
+        }
+        m_animator.setOverride(id, clip);
+    }
+    /// The replacements applied by setOverrideClip(), by anim id.
+    [[nodiscard]] const std::map<std::uint32_t, std::string>& overrideClipNames() const { return m_overrideNames; }
     /// Called with each anim id the human starts playing, for the scripts' animation callbacks
     /// (docs/research/characters.md#anim-callbacks); empty for none.
     void setAnimStartHook(std::function<void(std::uint32_t animId)> hook) { m_animator.setStartHook(std::move(hook)); }
@@ -572,8 +585,9 @@ class Human final : public Holdable {
     PlayerRecord m_record;
     ScriptState m_script;
     HumanAnimator m_animator;
-    std::string m_idleClipName;                         // setIdleClip()
-    std::unique_ptr<combat::AnimRangeList> m_ownRanges; // the list with the class's damage, when it has one
+    std::string m_idleClipName;                           // setIdleClip()
+    std::map<std::uint32_t, std::string> m_overrideNames; // setOverrideClip()
+    std::unique_ptr<combat::AnimRangeList> m_ownRanges;   // the list with the class's damage, when it has one
     const combat::AnimRangeList* m_ranges;
     FighterProfile m_profile;
     Fighter m_fighter;

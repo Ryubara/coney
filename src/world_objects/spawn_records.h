@@ -39,6 +39,9 @@ struct SpawnRecord {
     /// script has called it. **Coney stand-in**: Coney's dynamic objects have no collision bodies yet, so it is only
     /// kept.
     std::optional<bool> physicsBody;
+    /// Seconds until its object breaks itself after a destroy message (a molotov's, world_objects::stepSelfBreaks());
+    /// nothing while none is pending.
+    std::optional<float> breakIn;
 };
 
 /// The `ObjectTaskManager`'s spawn records: `ObjSpawn` adds one and returns its handle; resolving the handle (a binding

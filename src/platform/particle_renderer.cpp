@@ -26,12 +26,17 @@ bool additive(effects::ParticleBehaviour behaviour) {
     case effects::ParticleBehaviour::Flash:
     case effects::ParticleBehaviour::Flames:
     case effects::ParticleBehaviour::Sparks:
+    case effects::ParticleBehaviour::Embers:
         return true;
     case effects::ParticleBehaviour::Inert:
     case effects::ParticleBehaviour::Puff:
     case effects::ParticleBehaviour::Steam:
     case effects::ParticleBehaviour::Spray:
     case effects::ParticleBehaviour::Shard:
+    case effects::ParticleBehaviour::Explode:
+    case effects::ParticleBehaviour::Explosion:
+    case effects::ParticleBehaviour::Fireball:
+    case effects::ParticleBehaviour::Debris:
         return false;
     }
     return false;

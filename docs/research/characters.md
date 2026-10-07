@@ -2446,6 +2446,21 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   for the run start in its first half ([Clip selection](#clip-selection)). Its clips hold their record `+0x08` bits
   while they play ([Tasks](tasks.md#held-flags)): a start clip `0x10000000`, the landing `0x1000000`, the run stop and
   the climb's first and last clips `0x80000`, the combat moves theirs ([Combat](combat.md#coneys-implementation)).
+- **Dynamic animation slots** ([Animation](animation.md#dynamic-slots)): `human::ScriptState` holds the seven
+  slots that `HuUseAnim` and `HuUseAnyAnim` both fill. An id already in a slot reuses that slot, a new id takes the
+  first free one, and an eighth id is refused. The play mode hands the idle's clip (`0x184`) to `Human::setIdleClip()`
+  and every other one to `HumanAnimator::setOverride()`, which all of the human's own clip lookups go through (a paired
+  clip taken from another human's set does not). **Stand-ins**: a clip already playing is not restarted when its slot
+  changes (the original's state flag `0x20000000`), and a dynamic clip plays at the rate of the id it replaces.
+- **Hats** ([Hats](#hats); `src/world_objects/hats.*`, `src/platform/play_level_hats.cpp`): the class's hat when the
+  human is made, and `HuPlaceHatOnHead`'s, each a pinned world object on bone 6. A Warrior wears it at his set's
+  fitting; anyone else at the hat type's own pose (`CfgObj` arguments 21 and 22). The offset is multiplied by the
+  wearer's scale. A hat comes off when a knockdown grounds its wearer (not a cop's, nor class `0x80`'s or 13's unless
+  he is out of health), when he is mounted, or when a new hat replaces it, unless he has `HuSetKeepHat` or the hat is
+  kind 27. It is thrown at 2 m/s spinning at 8 rad/s, then falls until it rests on the ground. `HuHasHat` gives the
+  handle of the hat worn. **Stand-ins**: the side of the blow is not modelled, so every hat leaves behind its wearer
+  (side 2); the fall is Coney's own (gravity 9.81 m/s², stopping where it meets the ground); a deleted human's hat goes
+  with him; the respawn timers are not applied.
 - `src/human/locomotion_gate.*` is the locomotion gate ([Tasks](tasks.md#locomotion-gate)): `stickBusy()`
   (`Human_IsBusy`'s mask `0xaeebf7ff`, in the air or held: no stick step) and `stickVelocityGated()` (`0x110c0880`, or
   state code 5 or 6: the stick turns the human but sets no velocity).

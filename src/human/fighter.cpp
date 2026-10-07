@@ -574,7 +574,7 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     // **Coney's reading** of the clamp: at runtime X1 (first event at frame 5, 0.208 s at rate 0.8) turned for 9.25
     // updates, the time to the event + 0.1 s.
     const auto clipId = static_cast<std::uint32_t>(clips::clipOf(animId));
-    const anim::AnimClip* clip = animator.anims().clip(clipId);
+    const anim::AnimClip* clip = animator.clip(clipId);
     const float toEvent = clip != nullptr ? firstContactTime(*clip, animator.anims().rate(clipId)) : 0.0F;
     const float seconds = toEvent + kSteerLeadExtraSeconds;
     const float reach = steerReach(clipId, *target, input, distance);
@@ -690,7 +690,7 @@ std::uint32_t Fighter::strikeMaterialOf(int animId, const combat::AnimRange* ran
     if ((range != nullptr && (range->flags & kStrongerHitFlags) != 0) || animId == kStrongerHitAnim) {
         ++strength;
     }
-    const anim::AnimClip* clip = animator.anims().clip(clips::clipOf(animId));
+    const anim::AnimClip* clip = animator.clip(clips::clipOf(animId));
     const StrikeLimb limb = clip != nullptr ? strikeLimbOfClip(clip->name) : StrikeLimb::Hand;
     return strikeMaterial(limb, std::min(strength, 3), m_bossClass);
 }

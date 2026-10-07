@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <span>
 #include <utility>
 
@@ -183,7 +184,7 @@ class HumanAnimator {
     /// replaces it at once.
     [[nodiscard]] bool settling() const;
     /// Whether the anim set has a clip for `id`.
-    [[nodiscard]] bool hasClip(std::uint32_t id) const { return m_anims->clip(id) != nullptr; }
+    [[nodiscard]] bool hasClip(std::uint32_t id) const { return clip(id) != nullptr; }
 
     /// The blended pose.
     [[nodiscard]] anim::Pose pose(std::span<const anim::Quat, anim::kPoseBones> bindRotations) const {
@@ -219,6 +220,14 @@ class HumanAnimator {
     /// (its rate flags are not traced).
     /// Research: docs/research/characters.md#scripts-hold, docs/research/rumble.md#match-end
     void setIdleClip(const anim::AnimClip* clip);
+    /// `HuUseAnyAnim`'s replacement for anim `id` (human `+0x3c8`) other than the idle (setIdleClip()): `clip` (which
+    /// must outlive its use; null puts the character's own back) plays wherever this human's set would give `id`.
+    /// **Coney stand-ins**: what already plays is not restarted (the original's state flag `0x20000000`), and the
+    /// clip plays at the rate of the id it stands for.
+    /// @orig 0x00221a00 Human_GetDynamicAnim (unknown)
+    void setOverride(std::uint32_t id, const anim::AnimClip* clip);
+    /// The clip this human plays for anim `id`: its override, else its set's (null when neither has one).
+    [[nodiscard]] const anim::AnimClip* clip(std::uint32_t id) const;
     /// The anim id playing (record `+0x20`): the newest task's.
     [[nodiscard]] std::uint32_t animId() const;
     /// The newest task's gait blend value, or -1 when it is not a gait blend.
@@ -256,7 +265,8 @@ class HumanAnimator {
     [[nodiscard]] anim::GaitClip slotClip(std::size_t slot) const;
 
     const characters::AnimSet* m_anims;
-    const anim::AnimClip* m_idleClip = nullptr; // setIdleClip()
+    const anim::AnimClip* m_idleClip = nullptr;                 // setIdleClip()
+    std::map<std::uint32_t, const anim::AnimClip*> m_overrides; // setOverride()
     AnimSlots m_slots;
     Speeds m_speeds;
     anim::AnimTaskStack m_tasks;

@@ -9,6 +9,7 @@
 
 #include <rw.h>
 
+#include "graphics/car_draw.h"
 #include "platform/level_file.h"
 #include "platform/texture_dictionary.h"
 #include "world/level_object.h"
@@ -19,22 +20,6 @@ namespace {
 
 // The game's axes into RenderWare's: (x, y, z) to (x, z, -y).
 constexpr anim::Mat34 kGameToRw{{1.0F, 0.0F, 0.0F}, {0.0F, 0.0F, -1.0F}, {0.0F, 1.0F, 0.0F}, {}};
-
-// The parts the paint colours: the body's, not the headlights (8, 9), the windows (15, 17, 19, 21) or the wheels
-// (22-25) (docs/research/cars.md#type-record). **Coney's stand-in**: which atomics the original tints is not traced.
-bool painted(std::size_t part) {
-    switch (part) {
-    case 8:
-    case 9:
-    case 15:
-    case 17:
-    case 19:
-    case 21:
-        return false;
-    default:
-        return part < 22;
-    }
-}
 
 // A loaded frame as our matrix.
 anim::Mat34 toMat34(const world::FrameMatrix& m) {
@@ -149,17 +134,21 @@ ParkedCars::TypeModel* ParkedCars::model(std::uint8_t type) {
     }
     auto typeModel = std::make_unique<TypeModel>(TypeModel{std::move(*loaded), {}, {}});
     const LevelClumpObject& clump = *clumpOf(typeModel->model);
-    // Every part draws with the dictionary's first texture, as the model's untextured materials are linked; and the
-    // box round the undamaged car's vertices, each placed by its part's frame.
-    constexpr float kHuge = std::numeric_limits<float>::max();
-    anim::Vec3 min{kHuge, kHuge, kHuge};
-    anim::Vec3 max{-kHuge, -kHuge, -kHuge};
-    for (const LevelClumpObject::Part& part : clump.parts().first(world_objects::kCarParts)) {
+    // Every atomic, damaged forms included, draws with the dictionary's first texture, as the model's untextured
+    // materials are linked.
+    for (const LevelClumpObject::Part& part : clump.parts()) {
         rw::Geometry* geometry = part.atomic.atomic()->geometry;
         geometry->flags |= rw::Geometry::MODULATE;
         for (rw::int32 m = 0; m < geometry->matList.numMaterials; ++m) {
             geometry->matList.materials[m]->setTexture(typeModel->model.texture.texture);
         }
+    }
+    // The box round the undamaged car's vertices, each placed by its part's frame.
+    constexpr float kHuge = std::numeric_limits<float>::max();
+    anim::Vec3 min{kHuge, kHuge, kHuge};
+    anim::Vec3 max{-kHuge, -kHuge, -kHuge};
+    for (const LevelClumpObject::Part& part : clump.parts().first(world_objects::kCarParts)) {
+        rw::Geometry* geometry = part.atomic.atomic()->geometry;
         const anim::Mat34 frame = toMat34(part.frame);
         if (geometry->numMorphTargets == 0) {
             continue;
@@ -180,12 +169,19 @@ ParkedCars::TypeModel* ParkedCars::model(std::uint8_t type) {
     return slot.get();
 }
 
-void ParkedCars::draw(const std::function<void(rw::Atomic*)>& render) {
-    m_drawn = 0;
+void ParkedCars::draw(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass) {
+    const bool glass = pass == graphics::CarPass::Glass;
+    if (!glass) {
+        m_drawn = 0;
+    }
+    // Both passes draw both sides; only the opaque one writes Z, so the glass blends over what is behind it.
     rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-    for (const world_objects::Car& car : m_cars.all()) {
+    rw::SetRenderState(rw::ZWRITEENABLE, glass ? 0 : 1);
+    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+    const std::vector<world_objects::Car>& cars = m_cars.all();
+    for (std::size_t i = 0; i < cars.size(); ++i) {
+        // The glass pass goes from the end of the list.
+        const world_objects::Car& car = cars[glass ? cars.size() - 1 - i : i];
         TypeModel* typeModel = car.type ? model(*car.type) : nullptr;
         if (typeModel == nullptr) {
             continue;
@@ -195,22 +191,29 @@ void ParkedCars::draw(const std::function<void(rw::Atomic*)>& render) {
         const anim::Mat34 pose = anim::multiply(kGameToRw, anim::transform(car.rotation, car.position));
         const world_objects::CarPaint paint =
             car.painted ? world_objects::paintOf(car.paint[0]) : world_objects::CarPaint{};
-        const auto parts = clump.parts().first(world_objects::kCarParts);
-        for (std::size_t p = 0; p < parts.size(); ++p) {
-            if ((car.removedParts & (1U << p)) != 0) {
+        // Every atomic of the model: the undamaged parts and, when the model has them, their damaged forms.
+        const auto parts = clump.parts();
+        for (std::size_t a = 0; a < parts.size(); ++a) {
+            if (!graphics::carAtomicDraws(a, car.removedParts, car.damage, pass)) {
                 continue;
             }
-            rw::Atomic* atomic = parts[p].atomic.atomic();
-            const rw::RGBA colour =
-                painted(p) ? rw::RGBA{paint.r, paint.g, paint.b, 255} : rw::RGBA{255, 255, 255, 255};
+            rw::Atomic* atomic = parts[a].atomic.atomic();
+            // The paint on the painted parts, white elsewhere so the texture shows as it is (chrome, lights, glass).
+            const rw::RGBA colour = graphics::carPartPainted(graphics::carPartOf(a))
+                                        ? rw::RGBA{paint.r, paint.g, paint.b, 255}
+                                        : rw::RGBA{255, 255, 255, 255};
             for (rw::int32 m = 0; m < atomic->geometry->matList.numMaterials; ++m) {
                 atomic->geometry->matList.materials[m]->color = colour;
             }
-            place(atomic, anim::multiply(pose, toMat34(parts[p].frame)));
+            place(atomic, anim::multiply(pose, toMat34(parts[a].frame)));
             render(atomic);
         }
-        ++m_drawn;
+        if (!glass) {
+            ++m_drawn;
+        }
     }
+    rw::SetRenderState(rw::ZWRITEENABLE, 1);
+    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
 }
 
 std::vector<raycast::BuildTriangle> ParkedCars::obstacles() {

@@ -73,9 +73,10 @@ void PlayLevelMode::stepWorldObjects(world::Vec3 eye, std::uint32_t elapsedMs) {
     view.camera = anim::Vec3{eye.x, -eye.z, eye.y};
     view.drawDistance = m_drawDistance.current();
     view.elapsedMs = elapsedMs;
-    if (m_pickups != nullptr) {
-        view.inHand = [this](double handle) { return m_pickups->inHand(handle); };
-    }
+    // An object in a hand or a hat on a head is drawn by its holder.
+    view.inHand = [this](double handle) {
+        return m_wornHats.contains(handle) || (m_pickups != nullptr && m_pickups->inHand(handle));
+    };
     m_objectTasks.step(*m_records, *m_objectTypes, view);
 }
 
@@ -199,6 +200,7 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
         m_placed->place(iconId, crc32(icon), pose.position, pose.rotation, PlacedObjects::Look{.sizeCullExempt = true});
         iconId -= 1.0;
     }
+    drawHats();
     PlacedObjects::DrawOptions options;
     const world::Vec3 eye = m_lights->scene().pose().position;
     options.camera = anim::Vec3{eye.x, eye.y, eye.z};

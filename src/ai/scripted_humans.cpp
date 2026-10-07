@@ -61,6 +61,7 @@ std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
                                        .healthPercent = 100.0F,
                                        .gangType = 0xffff,
                                        .heldObject = 0.0,
+                                       .hat = 0.0,
                                        .soundCommands = true};
         }
         return std::nullopt;
@@ -72,6 +73,7 @@ std::optional<script::HumanStatus> ScriptedHumans::status(double handle) const {
                                .healthPercent = human.healthPercent(),
                                .gangType = brain->gang() != nullptr ? brain->gang()->kind() : 0xffff,
                                .heldObject = human.script().heldObject,
+                               .hat = human.script().hat,
                                .soundCommands = human.script().soundCommands};
 }
 
@@ -290,13 +292,24 @@ double ScriptedHumans::placeItemInHand(double human, std::string_view object,
     return place(*brain, handle) ? handle : kNilHandle;
 }
 
+void ScriptedHumans::placeHatOnHead(double human, std::string_view hat, const std::function<double()>& nextHandle) {
+    // The new hat replaces any he wears; the play mode knocks the old one off when it sees the change.
+    const double handle = nextHandle();
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
+    onBrain(human, [handle, name = std::string(hat)](Brain& brain) {
+        human::ScriptState& script = brain.human().script();
+        script.hat = handle;
+        script.hatName = name;
+    });
+}
+
 bool ScriptedHumans::useAnim(double human, int slot, std::string_view anim, bool loaded) {
     if (!loaded || slot < 0 || slot >= static_cast<int>(human::kUseAnimIds.size())) {
         return false;
     }
     const auto use = [slot, clip = std::string(anim)](Brain& brain) {
         human::ScriptState& script = brain.human().script();
-        script.animOverrides.at(static_cast<std::size_t>(slot)) = clip;
+        static_cast<void>(script.setAnimOverride(human::kUseAnimIds.at(static_cast<std::size_t>(slot)), clip));
         // The idle's replacement holds the human in place while it is set.
         if (slot == 0) {
             script.pushable = clip.empty();
@@ -312,6 +325,22 @@ bool ScriptedHumans::useAnim(double human, int slot, std::string_view anim, bool
     }
     use(*brain);
     return true;
+}
+
+bool ScriptedHumans::useAnyAnim(double human, std::uint32_t animId, std::string_view anim, bool loaded) {
+    if (!loaded) {
+        return false;
+    }
+    // While the cast is held the order waits for its human, and is taken as done.
+    if (m_scripted->holding()) {
+        // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
+        onBrain(human, [animId, clip = std::string(anim)](Brain& brain) {
+            static_cast<void>(brain.human().script().setAnimOverride(animId, clip));
+        });
+        return true;
+    }
+    Brain* brain = m_scripted->brain(human);
+    return brain != nullptr && brain->human().script().setAnimOverride(animId, anim);
 }
 
 void ScriptedHumans::changePlayerGang(int gang, bool stamp) {

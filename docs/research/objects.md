@@ -1372,10 +1372,16 @@ Coney's stand-ins, where this page is silent:
 - Sounds: a name hash plays as a positional sound at the object, a material pair from the
   [sound matrix](sound.md#sound-matrix); the lock pick's click is counted, not played (its cue is not traced). Shards,
   crimes beyond the `CrimeScene` flag, statistics, loose objects and models do nothing yet.
-- Shards (`gamemodes/level_object_services.h`, with [Particles](particles.md)): the culling step's two distance tests
-  are one in Coney, player 1 within 10 m of the pane, and the budget is 158 particles left in the pool; dust and bursts
-  are a `sub_shack_puff`. A broken pane also frees the stereo of a parked car within 2 m of it
-  ([Cars](cars.md#coneys-implementation)).
+- Shards (`gamemodes/level_object_services.h`, with [Particles](particles.md)): the culling step's tests are player
+  1's camera (the scene camera while a scene plays) within 15 m of the pane and the pane within 10 m of its view's
+  frustum (`effects::effectNearView()`, `repo:src/effects/effect_culling.h`), and the budget is 158 particles left in
+  the pool; dust and bursts are a `sub_shack_puff`. A broken pane also frees the stereo of a parked car within 2 m of
+  it ([Cars](cars.md#coneys-implementation)).
+- `ObjDestroy` on a pane releases it (`GlassPanes::release()`): it vanishes with no shatter or sound, its triangles
+  left as they are. `BreakObjectsInRadius` sends its destroy message to the doors and to the `ObjSpawn` objects that
+  are live (and the centre object) within the radius (`repo:src/world_objects/object_breaks.h`): a `dyn_molotv`
+  breaks itself 22 ticks later into a `sub_explode` 0.7 m up ([Script types: the Molotov](script-types.md#molotov));
+  other types ignore it. **Coney's reading**: 22 ticks for every bottle, the page's figure for one spawned that frame.
 
 ## Open questions
 

@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <span>
 #include <string>
 #include <string_view>
@@ -47,6 +48,7 @@
 #include "world/debug_camera.h"
 #include "world/sector_budget.h"
 #include "world_objects/cars.h"
+#include "world_objects/hats.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/lock_pick.h"
 #include "world_objects/object_list.h"
@@ -419,6 +421,41 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Draws this step's health rings and L1 markers, each under where its human is drawn (`feet` by ring id).
     void drawRings(const std::map<std::uint64_t, anim::Vec3>& feet) const;
 
+    // --- play_level_hats.cpp: the hats the humans wear (docs/research/characters.md#hats).
+
+    // One human's hat as the mode keeps it: whether his class's hat was given, the hat worn (0 for none), where it sits
+    // on his head and where it was at the last step, and his state then.
+    struct Wearer {
+        bool dressed = false;
+        double hat = 0.0;
+        world_objects::HeldAttachment local;
+        world_objects::WorldPose pose;
+        human::TargetState state = human::TargetState::Standing;
+    };
+    // After the humans' step: every human's hat put on, replaced or knocked off, and the falling hats moved.
+    void stepHats();
+    // One human's part of stepHats(), made as `type` (none: no class hat) and posed at this step by `pose` of
+    // `character` at `feet` facing `heading`.
+    void stepWearer(human::Human& human, std::optional<int> type, const human::PlayerCharacter& character,
+                    const anim::Pose& pose, anim::Vec3 feet, float heading);
+    // Makes hat `hat` of type `hatName` (when its record is not there yet) and puts it on `human`'s head as `wearer`'s.
+    // @orig 0x0024bfc0 Human_SpawnHat (unknown)
+    // @orig 0x003a3ba0 Human_PlaceHat (unknown)
+    void putOnHat(const human::Human& human, std::optional<int> type, const characters::CharacterType* classRecord,
+                  double hat, const std::string& hatName, Wearer& wearer);
+    // `wearer`'s hat leaves his head (he faces `heading`) and falls.
+    // @orig 0x00258330 Human_KnockOffHat (unknown)
+    void knockOffHat(Wearer& wearer, float heading);
+    // A deleted human's hat is removed with him.
+    void removeWornHat(human::Human& human);
+    // Player 1 takes `from`'s place (takePlace()): he wears `from`'s hat, and his own is removed.
+    void takeHatOf(const human::Human& from);
+    // Notes where `human`'s hat is drawn this frame, `character` posed by `pose` at `feet` facing `heading`.
+    void poseHat(const human::Human& human, const human::PlayerCharacter& character, const anim::Pose& pose,
+                 anim::Vec3 feet, float heading);
+    // Places this frame's worn hats among the world objects (before PlacedObjects::draw()).
+    void drawHats();
+
     // Draws the humans: their lights, the render states, each mesh in its two passes; then the blob shadows.
     void drawCharacter() const;
     // The blood texture of the second pass of a human with `health`, or null when it shows none.
@@ -426,8 +463,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
     [[nodiscard]] WorldView viewFrom(const world::CameraPose& pose, float drawDistance,
                                      const camera::CameraLens& lens = camera::kPlayerCameraLens) const;
-    // Gives each human in the step the idle replacement its script state names (`HuUseAnim` slot 0), when it changed.
-    void applyIdleClips();
+    // Gives each human in the step the clip replacements its script state names (`HuUseAnim`, `HuUseAnyAnim`), when
+    // they changed: the idle's through Human::setIdleClip(), the others' through Human::setOverrideClip().
+    void applyAnimOverrides();
     // The free camera `camera` between its last two steps, `alpha` of the way.
     [[nodiscard]] static world::DebugCamera blendedFreeCamera(const Interpolated<world::DebugCamera>& camera,
                                                               float alpha);
@@ -529,6 +567,14 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     world_objects::ObjectTasks m_objectTasks;
     std::unique_ptr<world_objects::ObjectList> m_objectList; // before the models that read it
     std::unique_ptr<PlacedObjects> m_placed;
+    // The hats: the fittings (read once from the recorded `CfgHat` calls), each human's, the handles worn, those
+    // falling, and where this frame draws the worn ones.
+    world_objects::HatFits m_hatFits;
+    bool m_hatFitsRead = false;
+    std::map<const human::Human*, Wearer> m_wearers;
+    std::set<double> m_wornHats;
+    world_objects::FallingHats m_fallingHats;
+    std::vector<std::pair<double, world_objects::WorldPose>> m_hatDraws;
     hud::HealthRings m_rings;
     std::map<std::uint64_t, int> m_ringHealth; // each ringed human's health at the last step, for its hit pulse
     std::unique_ptr<HudLayer> m_hud;           // the HUD's sheets, batches and pass (src/platform/hud_layer.h)

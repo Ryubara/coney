@@ -91,6 +91,7 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
     const double oldHandle = m_ai->playerBrain().handle();
     m_player->teleport(&m_scenery->collision(), start);
     m_player->setStart(start);
+    takeHatOf(chosen);
     m_ai->remove(chosen);
     // The scenes know player 1 by the new handle from now on (level99's l99_c2 joins him by it).
     m_playerHandle = to.handle();

@@ -318,6 +318,32 @@ TEST_CASE("HuUseAnim's idle replacement plays in the idle's place, under the idl
     CHECK(playing() == own);
 }
 
+TEST_CASE("HuUseAnyAnim's replacement is the clip the human's lookups give for its id, until taken away",
+          "[human][script]") {
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    const coney::human::AnimSlots& slots = coney::human::AnimSlots::player();
+    const std::uint32_t walkId = slots.ids[coney::human::kSlotWalk];
+    const coney::anim::AnimClip* own = character.anims.clip(walkId);
+    // A clip of the set standing in for a dynamic one.
+    const coney::anim::AnimClip* stand = character.anims.clip(slots.ids[coney::human::kSlotJog]);
+    REQUIRE(own != nullptr);
+    REQUIRE(stand != nullptr);
+    REQUIRE(own != stand);
+
+    fight.human().setOverrideClip(walkId, "test_walk.anm", stand);
+    CHECK(fight.human().overrideClipNames().at(walkId) == "test_walk.anm");
+    CHECK(fight.human().animator().clip(walkId) == stand);
+    // Another id, and the set itself, are untouched.
+    CHECK(fight.human().animator().clip(slots.ids[coney::human::kSlotRun]) ==
+          character.anims.clip(slots.ids[coney::human::kSlotRun]));
+    CHECK(fight.human().anims().clip(walkId) == own);
+
+    fight.human().setOverrideClip(walkId, "", nullptr);
+    CHECK(fight.human().overrideClipNames().empty());
+    CHECK(fight.human().animator().clip(walkId) == own);
+}
+
 TEST_CASE("a pad-driven human in a wheelchair pushes with L1 and R1, turns with one, and brakes with cross",
           "[human][script]") {
     const FightCharacter character;

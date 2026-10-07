@@ -446,13 +446,17 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   flag)`, the flag 1 when this hit took it off, and the hit that leaves every part 1-25 off then sends `(car, human,
   -2, 1)`. The hit is also the human's damage done, message 6 to the volume boxes he stands in
   ([Triggers](scripting.md#triggers)).
-- `platform::ParkedCars` (`repo:src/platform/parked_cars.h`) draws each car's first 26 atomics, less its removed parts,
-  from the type's Object List model, and gives each car a box (12 triangles) that joins the level's collision mesh.
+- `platform::ParkedCars` (`repo:src/platform/parked_cars.h`) draws each car from the type's Object List model in the
+  two passes of [Drawing a car](graphics.md#car-draw) (`repo:src/graphics/car_draw.h`): both sides of every triangle,
+  the opaque parts after the humans with Z written, the glass parts (6, 7, 15, 17, 19, 21) after the glass panes
+  without, from the last car; a part's damaged form from half damage, the wheels always undamaged, the removed parts
+  not at all; the paint on the parts of the paint mask (0, 4, 5, 10-14, 16, 18, 20), white elsewhere. It gives each
+  car a box (12 triangles) that joins the level's collision mesh.
 
 Coney's stand-ins, where this page is silent:
 
-- The paint tints every part but the glass, lights and wheels (8, 9, 15, 17, 19, 21, 22-25).
-- Cars are lit as the level lights its humans.
+- Cars take the objects' lights, chosen per atomic rather than once for the car; the environment map (the car's
+  second texture resource) and the first second's fade-in are not drawn.
 - A car's obstacle is one box around its undamaged atomics, not the type record's boxes; the rebuilt collision mesh
   uses a 4 m grid.
 - Every type uses the sedan's zone tables and box (the others' are not on the page yet); the car pass's candidate
@@ -462,10 +466,10 @@ Coney's stand-ins, where this page is silent:
   effect and the statistic.
 - The money pickup's 15 s life is not applied.
 - A name that is not one of the six types still makes a car, which draws nothing.
-- The explosion's look (the car is drawn as before, its parts' kept bits set), effects, sound, 300 damage within 5 m,
-  statistic and alert to the AI are not built; its message carries 0 as the other object and the number, and both
-  the car's handler and the general one are called (which the manager's slots reach, and in which order, is not on
-  the page). A car with `+0x1200` set is not skipped.
+- The explosion's pieces flying off (the car shows every part's damaged form where it was), effects, sound, 300
+  damage within 5 m, statistic and alert to the AI are not built; its message carries 0 as the other object and the
+  number, and both the car's handler and the general one are called (which the manager's slots reach, and in which
+  order, is not on the page). A car with `+0x1200` set is not skipped.
 
 ## Open questions
 
@@ -473,7 +477,8 @@ Coney's stand-ins, where this page is silent:
   piece lasts 360 ticks before `0x00387f18` removes it; [Physics](physics.md#cars).)
 - What the object a car holds at `+0x1204` is (released when it explodes; part 15 coming off makes it pickable).
 - The lookup that takes a car to its Object List record.
-- Which atomics the paint tints and how cars are lit (the boxes of the collision: [Physics](physics.md#cars)).
+- Which lights a car takes (the objects' selection is named, not its result; the boxes of the collision:
+  [Physics](physics.md#cars)).
 - Where a car's stereo sits (answered: [Windows, hits and the stereo](#windows)) and the effect kinds of message
   `0x3f` (answered: [Hit effects](#hit-effects)). Still open: what `0x002936a8` and `0x00413018` report for a car hit,
   what clears `+0x11ec`, and which parts hit bits 26-29 stand for.

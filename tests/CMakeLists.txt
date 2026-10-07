@@ -13,6 +13,7 @@ add_executable(coney_tests
     core/ps2_float_test.cpp
     core/options_test.cpp
     core/pad_test.cpp
+    effects/effect_culling_test.cpp
     effects/ground_fog_test.cpp
     effects/motion_blur_test.cpp
     effects/particles_test.cpp
@@ -45,6 +46,7 @@ add_executable(coney_tests
     gamemodes/text_viewer_mode_test.cpp
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
+    graphics/car_draw_test.cpp
     graphics/human_blood_test.cpp
     graphics/human_lighting_test.cpp
     graphics/light_manager_test.cpp
@@ -164,6 +166,8 @@ add_executable(coney_tests
     world_objects/disc_object_list_test.cpp
     world_objects/doors_test.cpp
     world_objects/glass_test.cpp
+    world_objects/hats_test.cpp
+    world_objects/object_breaks_test.cpp
     world_objects/lock_pick_test.cpp
     world_objects/nav_links_test.cpp
     world_objects/object_list_test.cpp

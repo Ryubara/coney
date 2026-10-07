@@ -26,6 +26,8 @@ constexpr std::size_t kHealth = 5;
 constexpr std::size_t kDamage = 6;
 constexpr std::size_t kAttacks = 7;
 constexpr std::size_t kDamageScale = 8;
+constexpr std::size_t kHat = 10;        // the string at +0x14c
+constexpr std::size_t kMaxHatName = 31; // the most of it kept
 constexpr std::size_t kWarrior = 11;
 constexpr std::size_t kFemale = 12;
 
@@ -119,6 +121,11 @@ std::optional<CharacterType> parseCfgChar(std::span<const script::Value> call) {
     if (kCfgCharModelArgument < call.size()) {
         if (const std::optional<std::string_view> model = call[kCfgCharModelArgument].string()) {
             parsed.model = std::string(*model);
+        }
+    }
+    if (kHat < call.size()) {
+        if (const std::optional<std::string_view> hat = call[kHat].string()) {
+            parsed.hat = std::string(hat->substr(0, kMaxHatName));
         }
     }
     return parsed;

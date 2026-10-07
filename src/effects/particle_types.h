@@ -26,15 +26,20 @@ enum class ParticleSheet : std::uint8_t {
 /// How a system of a type behaves. **Coney's stand-in** for each type's update code, which the research has not
 /// traced: one behaviour per family of names.
 enum class ParticleBehaviour : std::uint8_t {
-    Inert,  ///< Exists (its handle answers) but draws nothing: a type whose sprite is not traced, or a sound emitter.
-    Glow,   ///< One sprite at the system, for as long as it lives (the `lighting` glows).
-    Flash,  ///< One sprite for a moment, then the system ends (a gun's muzzle flash).
-    Flames, ///< A steady stream of rising sprites stepping through the flame sheet's rectangles (the fire types).
-    Puff,   ///< A few rising, growing, fading sprites, then the system ends (dust and smoke puffs).
-    Spray,  ///< A burst of drops thrown along the system's facing and pulled down, then the system ends (blood).
-    Sparks, ///< A burst of quick, bright sprites thrown along the system's facing and pulled down (sparks).
-    Shard,  ///< One falling, spinning shard in the creator's colour (a glass shard, `glasstest`).
-    Steam,  ///< A steam vent: puffs as `CfgSteam` configures it, nothing before (ParticleSystems::configureSteam()).
+    Inert,   ///< Exists (its handle answers) but draws nothing: a type whose sprite is not traced, or a sound emitter.
+    Glow,    ///< One sprite at the system, for as long as it lives (the `lighting` glows).
+    Flash,   ///< One sprite for a moment, then the system ends (a gun's muzzle flash).
+    Flames,  ///< A steady stream of rising sprites stepping through the flame sheet's rectangles (the fire types).
+    Puff,    ///< A few rising, growing, fading sprites, then the system ends (dust and smoke puffs).
+    Spray,   ///< A burst of drops thrown along the system's facing and pulled down, then the system ends (blood).
+    Sparks,  ///< A burst of quick, bright sprites thrown along the system's facing and pulled down (sparks).
+    Shard,   ///< One falling, spinning shard in the creator's colour (a glass shard, `glasstest`).
+    Steam,   ///< A steam vent: puffs as `CfgSteam` configures it, nothing before (ParticleSystems::configureSteam()).
+    Explode, ///< `sub_explode`: one staged flash that sets off a `part_explosion` (traced).
+    Explosion, ///< `part_explosion`: its embers, fireballs and debris at once, then nothing of its own (traced).
+    Fireball,  ///< `sub_fireball`: one staged, drifting ball of fire (traced).
+    Embers,    ///< `sub_explosion_embers`: a falling fire sprite (partly traced).
+    Debris,    ///< `sub_debris`: a thrown, falling chip that fades at the end of its life (partly traced).
 };
 
 /// One particle system type Coney knows.

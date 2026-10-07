@@ -235,3 +235,38 @@ TEST_CASE("a steam vent puffs as CfgSteam configures it, faster near the camera"
     run(far, 90);
     CHECK(far.particleCount() == 0);
 }
+
+TEST_CASE("a sub_explode flash sets off a part_explosion: embers, six fireballs and debris", "[effects][particles]") {
+    ParticleSystems systems;
+    REQUIRE(systems.spawn("sub_explode", Vec3{0.0F, 0.0F, 1.0F}) != nullptr);
+    // The first step makes the flash and runs its first stage (one tick): the explosion is made as the second begins.
+    systems.step(1.0F / 30.0F);
+    std::size_t fireballs = 0;
+    std::size_t embers = 0;
+    std::size_t debris = 0;
+    for (const ParticleSystem& system : systems.systems()) {
+        fireballs += system.type->name == "sub_fireball" ? 1 : 0;
+        embers += system.type->name == "sub_explosion_embers" ? 1 : 0;
+        debris += system.type->name == "sub_debris" ? 1 : 0;
+    }
+    CHECK(fireballs == 6);
+    CHECK(embers == 6);
+    CHECK(debris == 28);
+    // The flash's three stages last 49 ticks; the fireballs at most 128; then nothing is left.
+    for (int step = 0; step < 90; ++step) {
+        systems.step(1.0F / 30.0F);
+    }
+    CHECK(systems.systems().empty());
+    CHECK(systems.particleCount() == 0);
+}
+
+TEST_CASE("a fireball grows from 3.2 m across through its stages from transparent black", "[effects][particles]") {
+    ParticleSystems systems;
+    REQUIRE(systems.spawn("sub_fireball", Vec3{}) != nullptr);
+    systems.step(1.0F / 60.0F);
+    REQUIRE(systems.systems().size() == 1);
+    const auto& ball = systems.systems()[0].particles.at(0);
+    CHECK(ball.size >= 3.2F);
+    CHECK(ball.size <= 3.52F);
+    CHECK((ball.colour & 0xffU) < 0x24U);
+}

@@ -10,7 +10,7 @@ target_sources(coney_platform PRIVATE object_models.cpp placed_objects.cpp)
 target_sources(coney_platform PRIVATE character_lights.cpp character_mesh.cpp character_viewer_mode.cpp)
 target_sources(coney_platform PRIVATE blood_textures.cpp play_lighting.cpp scene_lighting.cpp)
 # Playing a level as Rembrandt (docs/guides/building.md#playing-a-level), in a level's scenery or a sandbox's.
-target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.cpp play_level_mode.cpp play_level_objects.cpp play_level_scene.cpp
+target_sources(coney_platform PRIVATE play_level_cast.cpp play_level_character.cpp play_level_hats.cpp play_level_mode.cpp play_level_objects.cpp play_level_scene.cpp
                                       play_level_world.cpp play_scenery.cpp scene_stage.cpp)
 # The in-game HUD on screen: its sheets, batches and 2D pass (docs/research/hud.md#coneys-implementation).
 target_sources(coney_platform PRIVATE hud_layer.cpp)

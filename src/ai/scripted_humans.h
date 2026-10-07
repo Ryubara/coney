@@ -93,9 +93,11 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void releaseObject(double object) override;
     /// While calls are held the handle is given at once and the object put in the hand when the human is made.
     double placeItemInHand(double human, std::string_view object, const std::function<double()>& nextHandle) override;
+    void placeHatOnHead(double human, std::string_view hat, const std::function<double()>& nextHandle) override;
     /// Keeps the clip in the slot when `loaded`; slot 0 makes the human unpushable while it is set. While calls are
     /// held it answers `loaded` and sets the slot when the human is made.
     bool useAnim(double human, int slot, std::string_view anim, bool loaded) override;
+    bool useAnyAnim(double human, std::uint32_t animId, std::string_view anim, bool loaded) override;
     /// Nothing when player 1 is in that gang already; otherwise the gang is noted (playerGang()) and player 1 handed
     /// to its next player (ScriptedBrains::changePlayerGang()). Coney has one player, so there is no second to hand
     /// over. Research: docs/research/characters.md#players

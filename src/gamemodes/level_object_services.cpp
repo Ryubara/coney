@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <optional>
 
+#include "effects/effect_culling.h"
 #include "gamemodes/level_start.h"
 #include "scripting/lua_value.h"
 
@@ -80,8 +81,9 @@ namespace {
 
 // The most sprites a shatter makes: twice its capped count of 79 tries (docs/research/objects.md#shatter).
 constexpr std::size_t kShatterMostShards = 158;
-// How near player 1 a shatter must be for shards (the page's second test).
-constexpr float kShardReach = 10.0F;
+// The shatter's near test: a camera within 15 m of the pane, the pane in its view with a 10 m margin.
+constexpr float kShardRange = 15.0F;
+constexpr float kShardViewMargin = 10.0F;
 
 } // namespace
 
@@ -89,8 +91,8 @@ bool LevelObjectServices::shardsWanted(anim::Vec3 centre) {
     if (m_particles == nullptr || !m_particles->hasRoom(kShatterMostShards)) {
         return false;
     }
-    const std::optional<anim::Vec3> player = m_player ? m_player() : std::nullopt;
-    return !player || anim::distance(*player, centre) <= kShardReach;
+    const std::optional<camera::CameraView> view = m_view ? m_view() : std::nullopt;
+    return !view || effects::effectNearView(*view, centre, kShardRange, kShardViewMargin);
 }
 
 void LevelObjectServices::spawnShard(anim::Vec3 at, float size, std::uint32_t colour) {

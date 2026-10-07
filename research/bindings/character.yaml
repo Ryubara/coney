@@ -1327,6 +1327,7 @@
     Despite the name it returns a handle, not a boolean; compare with NilHandle. Where `+0x364` is set and cleared
     is not traced here.
   usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: true, levels: [3, 54, 11]}
+  coney: implemented
 
 - name: HuGet
   wrapper: 0x0035b110
@@ -2454,6 +2455,7 @@
   evidence: inferred
   depth: brief
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
+  coney: implemented
 
 - name: HuSetPedReaction
   wrapper: 0x0035d050
@@ -3207,6 +3209,7 @@
   notes: >-
     Unlike HuUseAnim slot 0 it does not change whether the human can be pushed.
   usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false, levels: [3, 81, 51]}
+  coney: implemented
 
 - name: HuAreActionsBlocked
   wrapper: 0x003654a0

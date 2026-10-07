@@ -11,13 +11,14 @@ namespace coney::graphics {
 
 /// The dimming of a human hiding in a shadow: while the brain's flag `+0x2d4` is set (the triangle under his feet has
 /// type bit 4), his model colour's factor falls from 1.0 to 0.5 over 250 ms and his point lights are skipped; when it
-/// is clear the factor is 1.0 at once. Stepped by the simulation with game time.
+/// clears the factor rises from 0.5 back to 1.0 over 250 ms (`f = 0.5 + t`, docs/research/graphics.md#human-draw).
+/// Stepped by the simulation with game time.
 ///
 /// Research: docs/research/lighting.md#humans
 /// @orig 0x00174320 HumanRender_Draw (HumanRender.cpp)
 class ShadowDim {
   public:
-    /// How long the fall takes, ms.
+    /// How long the fall and the rise take, ms.
     static constexpr std::uint32_t kFallMs = 250;
     /// The factor at the end of the fall.
     static constexpr float kDimmest = 0.5F;
@@ -31,7 +32,7 @@ class ShadowDim {
 
   private:
     bool m_hidden = false;
-    std::uint32_t m_hiddenMs = 0; // how long the flag has been set
+    std::uint32_t m_sinceChangeMs = kFallMs; // since the flag last changed, at most kFallMs (long ago at the start)
 };
 
 /// The collision triangle type bit that marks a shadow to hide in (`flags` bit 4).
@@ -41,6 +42,19 @@ inline constexpr std::uint16_t kTriangleShadow = 0x10;
 /// meets, within 4 m, a triangle with kTriangleShadow. **Coney's stand-in** for the original's ground check
 /// (`0x0023eab8`, docs/research/characters.md), whose ray is not on the lighting page: the blob shadow's ray.
 [[nodiscard]] bool onShadowGround(const raycast::CollisionMesh& mesh, raycast::Vec3 feet);
+
+/// The humans' draw distance, metres (`0x0050cc60`, read at runtime in `level99`; `HumanRender_SetDrawDistance` keeps
+/// it within 30-70 m).
+inline constexpr float kHumanDrawDistance = 70.0F;
+/// Over how many metres before the draw distance a human fades out (`0x0050cc68`).
+inline constexpr float kHumanFadeLength = 10.0F;
+
+/// What a human's alpha is multiplied by at `distance` metres from the camera: 1 up to the draw distance less the fade
+/// length (60 m), falling linearly to 0 at the draw distance (70 m) and beyond.
+///
+/// Research: docs/research/graphics.md#human-draw
+/// @orig 0x00174320 HumanRender_Draw (HumanRender.cpp)
+[[nodiscard]] float humanDistanceFade(float distance);
 
 /// A human's blob shadow: one sprite of `part_page1` lying on the ground under him.
 struct BlobShadow {

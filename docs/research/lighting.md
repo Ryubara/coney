@@ -378,8 +378,9 @@ that only link are described above. Names are ours. Confirmed (code) at each add
 the lighting bindings (`repo:src/scripting/lighting_bindings.h`) fill a level's lights and fog, kept by gameplay;
 `repo:src/platform/scene_lighting.h` hands each atomic's selection to librw, whose GL3 lighting adds ambient,
 directional and point light to the prelighting and clamps. Sectors, the background and humans are lit as the callers
-above say; humans also get the shadow dimming and a blob shadow (`repo:src/graphics/human_lighting.h`). A disc test
-checks `level99`'s values against the table above (all match). Coney's choices:
+above say, each human by the sphere of his posed body; humans also get the shadow dimming (its fall and its rise),
+the fade from 60 to 70 m and a blob shadow (`repo:src/graphics/human_lighting.h`). A disc test checks `level99`'s
+values against the table above (all match). Coney's choices:
 
 - The flicker steps with the simulation (game time per step) for the lights the cull would keep, drawing from the
   manager's own random sequence, not the game's; a burst starts with its pause.

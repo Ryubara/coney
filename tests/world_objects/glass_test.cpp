@@ -181,6 +181,19 @@ TEST_CASE("message 0 shatters without breaking", "[world_objects][glass]") {
     CHECK(fixture.services.pairs.size() == 1);
 }
 
+TEST_CASE("ObjDestroy releases a pane: it vanishes with no shatter or sound", "[world_objects][glass]") {
+    coney::test::ObjectWorldFixture fixture;
+    GlassPanes panes;
+    const double handle = panes.spawn(fixture.handle(), pane(1), fixture.world).handle;
+    CHECK(panes.release(handle, fixture.world));
+    CHECK(panes.find(handle) == nullptr);
+    CHECK(panes.panes().empty());
+    CHECK(fixture.services.pairs.empty());
+    // Its triangles are left as they were.
+    CHECK(fixture.enabled(2));
+    CHECK_FALSE(panes.release(handle, fixture.world));
+}
+
 TEST_CASE("the panes drawn: whole ones within 50 m as a quad of their rectangle, the near ones last",
           "[world_objects][glass]") {
     coney::test::ObjectWorldFixture fixture;

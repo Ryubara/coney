@@ -93,7 +93,7 @@ HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& 
 
 anim::GaitClip HumanAnimator::slotClip(std::size_t slot) const {
     const std::uint32_t id = m_slots.ids[slot];
-    return anim::GaitClip{.clip = m_anims->clip(id), .animId = id};
+    return anim::GaitClip{.clip = clip(id), .animId = id};
 }
 
 std::unique_ptr<anim::GaitBlendTask> HumanAnimator::gaitBlend(float value, float phase) const {
@@ -113,6 +113,21 @@ void HumanAnimator::setIdleClip(const anim::AnimClip* clip) {
     }
 }
 
+void HumanAnimator::setOverride(std::uint32_t id, const anim::AnimClip* clip) {
+    if (clip == nullptr) {
+        m_overrides.erase(id);
+    } else {
+        m_overrides[id] = clip;
+    }
+}
+
+const anim::AnimClip* HumanAnimator::clip(std::uint32_t id) const {
+    if (const auto found = m_overrides.find(id); found != m_overrides.end()) {
+        return found->second;
+    }
+    return m_anims->clip(id);
+}
+
 std::unique_ptr<anim::AnimTask> HumanAnimator::idleLoop() const {
     const anim::GaitClip idle = slotClip(kSlotIdle);
     if (m_idleClip != nullptr) {
@@ -126,7 +141,8 @@ std::unique_ptr<anim::AnimTask> HumanAnimator::clipThen(std::uint32_t id, std::u
     // Single clips have no task flags, so their root motion moves the body. A paired clip is the attacker's, at the
     // attacker's rate (the original's type 6 task); it plays on this human like any other.
     const characters::AnimSet& set = from != nullptr ? *from : *m_anims;
-    auto task = std::make_unique<anim::ClipThenNextTask>(*set.clip(id), id, set.rate(id), 0U, std::move(next));
+    const anim::AnimClip* played = from != nullptr ? from->clip(id) : clip(id);
+    auto task = std::make_unique<anim::ClipThenNextTask>(*played, id, set.rate(id), 0U, std::move(next));
     task->holdFlags(held.held, held.set);
     return task;
 }
@@ -182,7 +198,7 @@ void HumanAnimator::buildMove(bool run) {
     // From standing: the walk start (or the run start) at once, handing over to a gait blend at the walk (or run) when
     // less than an update of it is left (13 updates at runtime).
     const std::uint32_t startId = m_slots.ids[kSlotWalkStart] + (run ? kRunStartOffset : 0U);
-    auto start = std::make_unique<anim::ClipThenNextTask>(*m_anims->clip(startId), startId, m_anims->rate(startId), 0U,
+    auto start = std::make_unique<anim::ClipThenNextTask>(*clip(startId), startId, m_anims->rate(startId), 0U,
                                                           gaitBlend(run ? kRunValue : kWalkValue, 0.0F), 0.0F, true);
     start->holdFlags(kStartClipHeld.held, kStartClipHeld.set);
     m_tasks.change(std::move(start), 0.0F);
@@ -253,15 +269,14 @@ void HumanAnimator::playPaired(std::span<const std::uint32_t> clips, const chara
 void HumanAnimator::playChain(std::span<const std::uint32_t> clips, const characters::AnimSet* from, std::uint32_t loop,
                               AnimState state, float fade, HeldFlags held) {
     // The loop last (this human's own), then each clip handing over to what follows it, built from the end.
-    const characters::AnimSet& set = from != nullptr ? *from : *m_anims;
     std::unique_ptr<anim::AnimTask> chain;
-    if (const anim::AnimClip* clip = m_anims->clip(loop); clip != nullptr) {
-        chain = std::make_unique<anim::LoopTask>(*clip, loop, m_anims->rate(loop), 0U);
+    if (const anim::AnimClip* own = clip(loop); own != nullptr) {
+        chain = std::make_unique<anim::LoopTask>(*own, loop, m_anims->rate(loop), 0U);
     } else {
         chain = idleLoop();
     }
     for (auto it = clips.rbegin(); it != clips.rend(); ++it) {
-        if (set.clip(*it) != nullptr) {
+        if ((from != nullptr ? from->clip(*it) : clip(*it)) != nullptr) {
             chain = clipThen(*it, std::move(chain), from, *it == kAnimNormalFromFight ? kNormalFromFightHeld : held);
         }
     }
@@ -289,18 +304,17 @@ void HumanAnimator::playScripted(const anim::AnimClip& clip, std::uint32_t animI
     m_state = AnimState::Attack;
 }
 
-void HumanAnimator::playCombatWalk(std::uint32_t clip) {
-    std::uint32_t id = clip;
-    if (m_anims->clip(id) == nullptr) {
-        id = m_anims->clip(kAnimFightIdle) != nullptr ? kAnimFightIdle : m_slots.ids[kSlotIdle];
+void HumanAnimator::playCombatWalk(std::uint32_t walk) {
+    std::uint32_t id = walk;
+    if (clip(id) == nullptr) {
+        id = clip(kAnimFightIdle) != nullptr ? kAnimFightIdle : m_slots.ids[kSlotIdle];
     }
     if (m_state == AnimState::CombatWalk && animId() == id) {
         return;
     }
     // The velocity is the human's, so the clip's own root velocity is not sampled.
-    m_tasks.change(
-        std::make_unique<anim::LoopTask>(*m_anims->clip(id), id, m_anims->rate(id), anim::kTaskNoRootVelocity),
-        kCombatFade);
+    m_tasks.change(std::make_unique<anim::LoopTask>(*clip(id), id, m_anims->rate(id), anim::kTaskNoRootVelocity),
+                   kCombatFade);
     m_state = AnimState::CombatWalk;
 }
 
@@ -387,7 +401,7 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
     if (top != nullptr && top->type() == anim::AnimTaskType::ClipThenNext &&
         top->animId() == m_slots.ids[kSlotWalkStart] && inputs.wantsRun && top->normalisedTime() < kRunSwapLimit) {
         const std::uint32_t runId = m_slots.ids[kSlotWalkStart] + kRunStartOffset;
-        const anim::AnimClip* runStart = m_anims->clip(runId);
+        const anim::AnimClip* runStart = clip(runId);
         const float startAt = top->normalisedTime() * runStart->duration;
         const float fade = std::min(kMoveFadeMoving, top->duration());
         m_tasks.change(std::make_unique<anim::ClipThenNextTask>(*runStart, runId, m_anims->rate(runId), 0U,

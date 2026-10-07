@@ -24,16 +24,19 @@ std::optional<raycast::RayHit> groundBelow(const raycast::CollisionMesh& mesh, r
 } // namespace
 
 void ShadowDim::step(bool hidden, std::uint32_t elapsedMs) {
-    m_hiddenMs = hidden && m_hidden ? std::min(kFallMs, m_hiddenMs + elapsedMs) : 0;
+    // The brain's stamp moves when the flag changes; the time since it counts up to the 250 ms the ramp lasts.
+    m_sinceChangeMs = hidden != m_hidden ? 0 : std::min(kFallMs, m_sinceChangeMs + elapsedMs);
     m_hidden = hidden;
 }
 
 float ShadowDim::factor() const {
-    if (!m_hidden) {
-        return 1.0F;
-    }
-    const float t = static_cast<float>(m_hiddenMs) / static_cast<float>(kFallMs);
-    return 1.0F + (kDimmest - 1.0F) * t;
+    // t runs from 0 to 0.5 over the ramp: falling from 1.0 while hidden, rising from 0.5 once out of the shadow.
+    const float t = static_cast<float>(m_sinceChangeMs) / static_cast<float>(kFallMs) * (1.0F - kDimmest);
+    return m_hidden ? 1.0F - t : kDimmest + t;
+}
+
+float humanDistanceFade(float distance) {
+    return std::clamp((kHumanDrawDistance - distance) / kHumanFadeLength, 0.0F, 1.0F);
 }
 
 bool onShadowGround(const raycast::CollisionMesh& mesh, raycast::Vec3 feet) {

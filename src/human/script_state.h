@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 // What the level scripts keep on a human besides its flags (human/human_flags.h): the arrest, the pad's lock and its
 // disabled commands, the money and the item it carries, the callbacks, the marker icon, the head-look and the
@@ -24,6 +27,16 @@ struct LookOrder {
 /// The animation slots `HuUseAnim` can replace, by its slot argument: the idle (anim `0x184`), `0x198`, `0x19a` and
 /// `0x29c`.
 inline constexpr std::array<std::uint32_t, 4> kUseAnimIds{0x184, 0x198, 0x19a, 0x29c};
+
+/// How many dynamic animation slots a human has (`+0x3c8`, docs/research/animation.md#dynamic-slots).
+inline constexpr std::size_t kAnimOverrideSlots = 7;
+
+/// One dynamic animation slot (0x28 bytes at `+0x3c8`): the clip's file name, empty for a free slot, and the anim id it
+/// stands for (`+0x24`).
+struct AnimOverride {
+    std::string clip;
+    std::uint32_t animId = 0;
+};
 
 /// The scripts' state on one human.
 // The fields stay beside the bindings that set them rather than ordered by size: there is one per human, so the few
@@ -76,12 +89,16 @@ struct ScriptState {
     /// object is drawn or used in a hand yet.
     double heldObject = 0;
     std::string heldObjectName;
+    /// The hat he wears (`+0x364`) by handle, and its object type; 0 (NilHandle) for none. The play mode makes its
+    /// object (a spawn record of that handle) and draws it on his head (docs/research/characters.md#hats).
+    double hat = 0;
+    std::string hatName;
     /// The head-look asked for, if any. **Coney stand-in**: no head-look controller yet.
     bool looking = false;
     LookOrder look;
-    /// The dynamic clips replacing kUseAnimIds (`+0x3c8`, `HuUseAnim`); empty for none. The play mode plays slot 0's
-    /// in place of the idle (Human::setIdleClip()); the other slots are only kept.
-    std::array<std::string, kUseAnimIds.size()> animOverrides;
+    /// The dynamic clips replacing anim ids (`+0x3c8`, `HuUseAnim` and `HuUseAnyAnim`), set by setAnimOverride(). The
+    /// play mode plays the idle's (`0x184`) through Human::setIdleClip() and the others wherever their ids play.
+    std::array<AnimOverride, kAnimOverrideSlots> animOverrides;
     /// May say speech commands (`+0x199`, `HuEnableSoundCommands`): clear, `SoundPlayCommand` says nothing for it.
     bool soundCommands = true;
     /// The pocket (`HuPutItemInPocket`, `HuRemoveItemInPocket`): the inventory item id (`+0x250`, 0 for none) and the
@@ -108,6 +125,36 @@ struct ScriptState {
     bool combatMode = false;
     /// Working out (state flag `0x20000000000`, `HuWorkout`): the human neither moves nor acts by its stick or pad.
     bool workingOut = false;
+
+    /// The clip replacing anim `id`, empty for none (`Human_GetDynamicAnim`'s first look).
+    /// @orig 0x00221a00 Human_GetDynamicAnim (unknown)
+    [[nodiscard]] std::string_view animOverride(std::uint32_t id) const {
+        const auto found = std::ranges::find_if(
+            animOverrides, [id](const AnimOverride& slot) { return !slot.clip.empty() && slot.animId == id; });
+        return found != animOverrides.end() ? std::string_view(found->clip) : std::string_view();
+    }
+    /// Puts `clip` in the slot for anim `id`: the slot already holding `id`, else the first free one; an empty `clip`
+    /// frees that slot. False when no slot is free, or there is nothing to free.
+    /// @orig 0x00221aa0 Human_SetAnimOverride (unknown)
+    bool setAnimOverride(std::uint32_t id, std::string_view clip) {
+        auto found = std::ranges::find_if(
+            animOverrides, [id](const AnimOverride& slot) { return !slot.clip.empty() && slot.animId == id; });
+        if (clip.empty()) {
+            if (found == animOverrides.end()) {
+                return false;
+            }
+            *found = AnimOverride{};
+            return true;
+        }
+        if (found == animOverrides.end()) {
+            found = std::ranges::find_if(animOverrides, [](const AnimOverride& slot) { return slot.clip.empty(); });
+        }
+        if (found == animOverrides.end()) {
+            return false;
+        }
+        *found = AnimOverride{.clip = std::string(clip), .animId = id};
+        return true;
+    }
 };
 
 } // namespace coney::human

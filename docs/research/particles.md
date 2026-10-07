@@ -354,9 +354,19 @@ pane's [shatter](objects.md#shatter) makes its shards with `spawnShard`, and the
 (glow, flash, flame stream, puff, spray, sparks, shard, inert), with sizes, tints and lives of Coney's choosing; the
 budget is 4,096 sprites; a name Coney does not draw, or the table lacks, makes an inert system that still answers to
 its handle; an attached system keeps its spawn offset from its parent; glows, flashes, flames and sparks add to what
-is behind them, the rest blend by alpha; a shard is an untextured quad; a shatter wants player 1 within 10 m and room
-for 158 sprites. `StartParticle` and `EndParticle` switch a system's stream on and off (sprites in flight live out
-their life; each type's own answer to messages `0x12` and `0x13` is not traced), and show or hide a plain object.
+is behind them, the rest blend by alpha; a shard is an untextured quad; a shatter wants room for 158 sprites and a
+camera near ([Objects](objects.md#coneys-implementation)). `StartParticle` and `EndParticle` switch a system's stream
+on and off (sprites in flight live out their life; each type's own answer to messages `0x12` and `0x13` is not
+traced), and show or hide a plain object.
+
+**Explosions** (the molotov's `sub_explode`, `part_explosion`, `sub_fireball_emitter`, [Script
+types](script-types.md)) follow the traced recipe: the flash's three stages (1, 8 and 40 ticks to sizes 0.2, 1.0 and
+1.5, from white at alpha `0xf0` through `0xbf` to 0), the `part_explosion` it makes as its second stage begins, and
+that explosion's six embers, six fireballs (seven stages of the table's ticks plus up to as many again, through the
+table's colours from transparent black, 2.5 m/s outward) and 20 + 8 chips of debris. A sprite is drawn twice its size
+wide. **Coney's stand-ins**: sizes and colours move linearly through each stage; the flash, fireballs and debris blend
+by alpha and the embers add; an ember's random 0.6-1.5 is its size × 0.2 m; the embers' landing sparks, the
+explosion's light and the debris lying flat on landing are not built.
 
 **Steam vents** (`part_steam`, [`CfgSteam`](../references/bindings/config.md#cfgsteam)) follow [Steam
 vents](#steam): nothing before `CfgSteam`, then while on one puff every `interval` frames (60 a second) when the camera

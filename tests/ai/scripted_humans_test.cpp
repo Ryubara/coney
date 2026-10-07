@@ -3,6 +3,7 @@
 // ai/scripted_humans.h): each binding called by name in a script state whose AI host is the scripted brains over a
 // synthetic scene, then the humans, brains, gangs and the game state's rules checked. Handles: 1 the player, 2 and up
 // the AI humans the tests add.
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -384,11 +385,48 @@ TEST_CASE("SetDynamicAnimation lists the clips HuUseAnim may use", "[ai][scripte
     CHECK(level.call("HuUseAnim", {Value(2.0), Value(0.0), Value("fidget_crossarms.anm")}).isNil());
     level.call("SetDynamicAnimation", {Value("fidget_crossarms.anm")});
     CHECK(level.call("HuUseAnim", {Value(2.0), Value(0.0), Value("fidget_crossarms.anm")}).number() == 1.0);
-    CHECK(extra.human().script().animOverrides[0] == "fidget_crossarms.anm");
+    CHECK(extra.human().script().animOverride(0x184) == "fidget_crossarms.anm");
     CHECK_FALSE(extra.human().script().pushable);
     CHECK(level.call("HuUseAnim", {Value(2.0), Value(4.0), Value("fidget_crossarms.anm")}).isNil());
     level.call("SetDynamicAnimation", {Value("fidget_crossarms.anm"), Value(1.0)});
     CHECK(level.state.characters.dynamicAnimations.empty());
+}
+
+TEST_CASE("HuUseAnyAnim puts a requested clip in the slot for any anim id, and frees it", "[ai][scripted]") {
+    Level level;
+    Brain& extra = level.add({44.0F, 40.0F, 0.0F});
+    const coney::human::ScriptState& script = extra.human().script();
+    // Not requested: refused. Requested: put in for anim 666 (ANIM_SPECIAL_OPEN_DOOR), the pushable flag untouched.
+    CHECK(level.call("HuUseAnyAnim", {Value(2.0), Value(666.0), Value("open_door.anm")}).isNil());
+    level.call("SetDynamicAnimation", {Value("open_door.anm")});
+    level.call("SetDynamicAnimation", {Value("kick_door.anm")});
+    CHECK(level.call("HuUseAnyAnim", {Value(2.0), Value(666.0), Value("open_door.anm")}).number() == 1.0);
+    CHECK(script.animOverride(666) == "open_door.anm");
+    CHECK(script.pushable);
+    // The same id reuses its slot.
+    CHECK(level.call("HuUseAnyAnim", {Value(2.0), Value(666.0), Value("kick_door.anm")}).number() == 1.0);
+    CHECK(script.animOverride(666) == "kick_door.anm");
+    CHECK(std::ranges::count_if(script.animOverrides, [](const auto& slot) { return !slot.clip.empty(); }) == 1);
+    // Freed by an empty name; freeing again finds nothing.
+    CHECK(level.call("HuUseAnyAnim", {Value(2.0), Value(666.0), Value()}).number() == 1.0);
+    CHECK(script.animOverride(666).empty());
+    CHECK(level.call("HuUseAnyAnim", {Value(2.0), Value(666.0), Value()}).isNil());
+    // A human that is not there: refused.
+    CHECK(level.call("HuUseAnyAnim", {Value(99.0), Value(666.0), Value("open_door.anm")}).isNil());
+}
+
+TEST_CASE("A human's seven dynamic animation slots fill in order and refuse an eighth id", "[ai][scripted]") {
+    coney::human::ScriptState script;
+    for (std::uint32_t id = 600; id < 607; ++id) {
+        CHECK(script.setAnimOverride(id, "clip.anm"));
+    }
+    CHECK_FALSE(script.setAnimOverride(607, "clip.anm"));
+    CHECK(script.animOverride(607).empty());
+    // A freed slot is the first one taken next.
+    CHECK(script.setAnimOverride(602, {}));
+    CHECK(script.setAnimOverride(607, "other.anm"));
+    CHECK(script.animOverrides[2].animId == 607);
+    CHECK(script.animOverride(607) == "other.anm");
 }
 
 TEST_CASE("LoadBumAnims requests the bum animations as one set and releases them", "[ai][scripted]") {

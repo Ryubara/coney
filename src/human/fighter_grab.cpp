@@ -152,7 +152,7 @@ void Fighter::startHold(Holdable& victim, const FighterInput& input, float& head
                         clips::kGrabHolds);
     // The intro turns the grabber to face the victim over its playing time.
     const auto intro = static_cast<std::uint32_t>(id::kGrabPlayerIntro);
-    const anim::AnimClip* introClip = animator.anims().clip(intro);
+    const anim::AnimClip* introClip = animator.clip(intro);
     const float introSeconds = introClip != nullptr ? introClip->duration / animator.anims().rate(intro) : 0.0F;
     m_turnUpdates = std::max(1, static_cast<int>(std::lround(introSeconds / input.stepSeconds)));
     m_turnStep = wrapAngle(toVictim - heading) / static_cast<float>(m_turnUpdates);
@@ -237,7 +237,7 @@ void Fighter::connect(const FighterInput& input, HumanAnimator& animator, float 
         return;
     }
     // Over the alignment's time the grabber turns to the victim and slides to the clip's reach, the victim turns.
-    const anim::AnimClip* connecting = animator.anims().clip(clip);
+    const anim::AnimClip* connecting = animator.clip(clip);
     const float seconds = connecting != nullptr ? alignSeconds(*connecting, animator.anims().rate(clip)) : 0.0F;
     m_turnUpdates = std::max(1, static_cast<int>(std::lround(seconds / input.stepSeconds)));
     const auto updates = static_cast<float>(m_turnUpdates);
@@ -447,7 +447,7 @@ void Fighter::mountVictim(const FighterInput& input, const HumanAnimator& animat
     m_mountPending = false;
     m_held->playPaired(clips::one(clips::kTackleReact), animator.anims(), clips::kMountedIdle, AnimState::Hold,
                        TargetState::Mounted);
-    snapAttach(input, heading, pairEventPoint(animator.anims().clip(clips::kMountingIdle), kMountOffset), kPi);
+    snapAttach(input, heading, pairEventPoint(animator.clip(clips::kMountingIdle), kMountOffset), kPi);
 }
 
 void Fighter::playMountAction(const combat::CombatOutput& out, HumanAnimator& animator) {
@@ -498,7 +498,7 @@ void Fighter::playMountAction(const combat::CombatOutput& out, HumanAnimator& an
 void Fighter::seatMount(const FighterInput& input, const HumanAnimator& animator, float heading) {
     // The victim already plays 119 into 207; only its place changes, to clip 210's pair event.
     m_mountPending = false;
-    snapAttach(input, heading, pairEventPoint(animator.anims().clip(clips::kMountingIdle), kMountOffset), kPi);
+    snapAttach(input, heading, pairEventPoint(animator.clip(clips::kMountingIdle), kMountOffset), kPi);
 }
 
 void Fighter::victimEscapes(const FighterInput& input, HumanAnimator& animator) {

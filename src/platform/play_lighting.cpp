@@ -2,6 +2,7 @@
 #include "platform/play_lighting.h"
 
 #include <algorithm>
+#include <cmath>
 #include <format>
 #include <optional>
 #include <utility>
@@ -87,7 +88,7 @@ void PlayLighting::step(const WorldView& view, const raycast::CollisionMesh& mes
                      elapsedMs);
 }
 
-void PlayLighting::drawHuman(rw::Atomic* atomic, bool player) {
+bool PlayLighting::drawHuman(rw::Atomic* atomic, bool player) {
     if (player) {
         // The player's materials keep their own colours, times the dimming (HuColor is white).
         rw::Geometry* geometry = atomic->geometry;
@@ -108,12 +109,27 @@ void PlayLighting::drawHuman(rw::Atomic* atomic, bool player) {
             colour.blue = scaledChannel(base.blue, factor);
         }
     }
+    // Faded out from 60 to 70 m from the camera, and not drawn beyond. **Coney's reading**: the distance is the posed
+    // body's sphere centre's; the first second's fade-in is not drawn.
+    const rw::Sphere* sphere = atomic->getWorldBoundingSphere();
+    const world::Vec3 eye = m_scene->pose().position;
+    const float dx = sphere->center.x - eye.x;
+    const float dy = sphere->center.y - eye.y;
+    const float dz = sphere->center.z - eye.z;
+    const float fade = graphics::humanDistanceFade(std::sqrt((dx * dx) + (dy * dy) + (dz * dz)));
+    if (fade <= 0.0F) {
+        return false;
+    }
+    const auto alpha = static_cast<rw::uint8>(std::lround(255.0F * fade));
+    for (rw::int32 i = 0; i < atomic->geometry->matList.numMaterials; ++i) {
+        atomic->geometry->matList.materials[i]->color.alpha = alpha;
+    }
     m_scene->drawHumanAtomic(atomic, player && m_playerDim.hidden());
+    return true;
 }
 
 void PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) {
-    drawHuman(mesh.atomic(), player);
-    if (blood == nullptr) {
+    if (!drawHuman(mesh.atomic(), player) || blood == nullptr) {
         return;
     }
     // The dual layer takes the first pass's material colours (the player's dimming included), so both passes are lit

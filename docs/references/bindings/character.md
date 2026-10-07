@@ -1660,7 +1660,7 @@ cleared is not traced here.
 - **Wrapper** `0x0035b028` (registered by `RegisterBindings`); **calls** `0x00235530` `Human_GetHat`
 - **Used by** 8 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuInCombat {#huincombat}
 
@@ -2162,7 +2162,7 @@ Puts a hat object on the human's head.
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035cff0` (registered by `RegisterBindings`); **calls** `0x002385f8`
 - **Used by** no script on the disc
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuPlaceItemInHand {#huplaceiteminhand}
 
@@ -4758,7 +4758,7 @@ loaded clip is set or removed, the animation is restarted (state flag `0x2000000
   `Human_SetAnimOverride`
 - **Used by** 4 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuWhatAmIHolding {#huwhatamiholding}
 

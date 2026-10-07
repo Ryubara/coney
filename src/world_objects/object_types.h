@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "animation/anim_math.h"
+
 namespace coney::world_objects {
 
 /// One object type of the object database, as `CfgObj` makes it. Coney keeps the fields a spawn and a model need;
@@ -25,6 +27,10 @@ struct ObjectType {
     /// `+0x70`, `CfgObj`'s 17th argument: how far a held object is slid along its own y from the hand's offset to its
     /// grip (0.39 m for `dyn_bat_tuff`, docs/research/objects.md#held).
     float grip = 0.0F;
+    /// `CfgObj`'s 21st and 22nd arguments: the offset (metres) and rotation the object takes when held or worn; a
+    /// hat on a human who is not a Warrior sits there in his head's frame (docs/research/characters.md#hats).
+    anim::Vec3 holdPosition{};
+    anim::Quat holdRotation{};
 };
 
 /// `TYPE_SPECIAL`: a store's jewellery and other loose loot (docs/research/combat.md#breakables).

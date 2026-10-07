@@ -141,7 +141,7 @@ bool Victim::mash(const HumanAnimator& animator, std::uint64_t nowMs) {
 }
 
 bool Victim::knocksDown(const HumanAnimator& animator, int id) {
-    const anim::AnimClip* clip = id >= 0 ? animator.anims().clip(static_cast<std::size_t>(id)) : nullptr;
+    const anim::AnimClip* clip = id >= 0 ? animator.clip(static_cast<std::uint32_t>(id)) : nullptr;
     return clip != nullptr && std::ranges::any_of(clip->events, [](const anim::ClipEvent& event) {
                return event.type == kKnockdownEvent;
            });

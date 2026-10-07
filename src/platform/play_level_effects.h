@@ -32,9 +32,9 @@ class PlayLevelEffects {
 
     /// The parked cars' boxes for the level's collision (none without cars).
     [[nodiscard]] std::vector<raycast::BuildTriangle> carObstacles();
-    /// Draws the parked cars with the solid objects, through the current camera, each atomic lit and drawn by
-    /// `render`.
-    void drawCars(const std::function<void(rw::Atomic*)>& render);
+    /// Draws the parked cars' `pass` (docs/research/graphics.md#car-draw): the opaque parts with the solid objects, the
+    /// glass after the see-through ones; through the current camera, each atomic lit and drawn by `render`.
+    void drawCars(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass);
     /// Draws the particle systems through the current camera at `view` (RenderWare's axes), after everything solid.
     void drawInScene(const world::CameraPose& view);
     /// Lays the motion blur, then the room smoke, over the 3D frame, before the 2D overlays.

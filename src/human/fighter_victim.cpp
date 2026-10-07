@@ -394,7 +394,7 @@ bool Fighter::duckCounter(const FighterInput& input, HumanAnimator& animator) {
     }
     // 2. The duck's window: its own 0x25 events fire this update while square or cross is pressed or held.
     const anim::AnimTask* top = animator.tasks().top();
-    const anim::AnimClip* clip = animator.anims().clip(duck);
+    const anim::AnimClip* clip = animator.clip(duck);
     if (!ducking || m_clipSeen != duck || top == nullptr || clip == nullptr) {
         return false;
     }

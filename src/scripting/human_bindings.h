@@ -25,7 +25,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addHumanBindings().
-inline constexpr std::array<std::string_view, 61> kHumanBindings{"BrClearBackoff",
+inline constexpr std::array<std::string_view, 64> kHumanBindings{"BrClearBackoff",
                                                                  "BrSetThugWantsWeapon",
                                                                  "CfgPlayerMugging",
                                                                  "CfgRageHandlers",
@@ -49,10 +49,12 @@ inline constexpr std::array<std::string_view, 61> kHumanBindings{"BrClearBackoff
                                                                  "HuGetGangType",
                                                                  "HuGetHealthPercent",
                                                                  "HuGetHeldObject",
+                                                                 "HuHasHat",
                                                                  "HuIsAPlayer",
                                                                  "HuIsAlive",
                                                                  "HuIsArrested",
                                                                  "HuLockPad",
+                                                                 "HuPlaceHatOnHead",
                                                                  "HuPlaceItemInHand",
                                                                  "HuRemoveSpinningIcon",
                                                                  "HuRevive",
@@ -82,6 +84,7 @@ inline constexpr std::array<std::string_view, 61> kHumanBindings{"BrClearBackoff
                                                                  "HuSetUnstunnable",
                                                                  "HuTeleportNearHuman",
                                                                  "HuUseAnim",
+                                                                 "HuUseAnyAnim",
                                                                  "LoadBumAnims",
                                                                  "SetDynamicAnimation",
                                                                  "SetInterrogateParam",
@@ -95,6 +98,7 @@ struct HumanStatus {
     float healthPercent = 0.0F; ///< `HuGetHealthPercent`.
     int gangType = 0xffff;      ///< `HuGetGangType`: its gang's kind; 65535 for none.
     double heldObject = 0;      ///< `HuGetHeldObject`: NilHandle (0) for none.
+    double hat = 0;             ///< `HuHasHat`: the hat worn, NilHandle (0) for none.
     bool soundCommands = true;  ///< May say speech commands (`HuEnableSoundCommands`).
 };
 
@@ -231,9 +235,17 @@ class HumanBindingHost {
                                    const std::function<double()>& /*nextHandle*/) {
         return 0;
     }
+    /// `HuPlaceHatOnHead`: puts a new hat of type `hat` (its handle from `nextHandle`) on the human's head.
+    virtual void placeHatOnHead(double /*human*/, std::string_view /*hat*/,
+                                const std::function<double()>& /*nextHandle*/) {}
     /// `HuUseAnim`: replaces animation slot `slot` (0-3) with `anim` (empty removes it), `loaded` when the level asked
     /// for the file (`SetDynamicAnimation`). Returns whether the clip is in place.
     virtual bool useAnim(double /*human*/, int /*slot*/, std::string_view /*anim*/, bool /*loaded*/) { return false; }
+    /// `HuUseAnyAnim`: puts `anim` in the human's slot for anim `animId` (empty frees it), `loaded` when the level
+    /// asked for the file; whether it was set (or freed).
+    virtual bool useAnyAnim(double /*human*/, std::uint32_t /*animId*/, std::string_view /*anim*/, bool /*loaded*/) {
+        return false;
+    }
     /// `HuChangePlayerGang`: the players take over members of gang `gang`; with `stamp` the game time is noted.
     virtual void changePlayerGang(int /*gang*/, bool /*stamp*/) {}
     /// Who has reserved the flag with `handle` to use it (`GoalMoveToUseFlag`); 0 for no one.

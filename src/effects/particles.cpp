@@ -49,9 +49,41 @@ constexpr float kSteamSpread = 0.4F;
 constexpr float kPuffSpeedMin = 0.75F;
 constexpr float kPuffSpeedSpread = 0.4F;
 constexpr std::uint16_t kSmokeRect = 42;
+
+// The explosion family (docs/research/script-types.md#part-explosion, the molotov's `sub_explode` included). A tick is
+// a 60th of a second; a particle's drawn sprite is twice its size wide (kDrawnPerSize).
+constexpr float kTick = 1.0F / 60.0F;
+constexpr float kDrawnPerSize = 2.0F;
+// `sub_explode`: from white at alpha 0xf0, 1 tick to size 0.2, 8 ticks to 1.0 towards alpha 0xbf (setting off the
+// `part_explosion` as that stage begins), 40 ticks to 1.5 fading to alpha 0.
+constexpr std::array<float, 3> kExplodeTicks{1.0F, 8.0F, 40.0F};
+constexpr std::array<float, 3> kExplodeSizes{0.2F, 1.0F, 1.5F};
+constexpr std::array<std::uint32_t, 3> kExplodeColours{0xFFFFFFF0U, 0xFFFFFFBFU, 0xFFFFFF00U};
+constexpr std::uint32_t kExplodeStart = 0xFFFFFFF0U;
+constexpr std::size_t kExplosionStage = 1;
+// `part_explosion`: six embers (x and z ±0.05, y −3.5 to 0.05, then turned; 6-8 m/s; 25-40 ticks; a random 0.6-1.5,
+// read here as a size factor on kEmberSize), twenty large and eight small chips of debris.
+constexpr std::size_t kEmbers = 6;
+constexpr float kEmberSize = 0.2F;
+constexpr std::size_t kLargeDebris = 20;
+constexpr std::size_t kSmallDebris = 8;
+// `sub_fireball` from the emitter (scale 2.0): 1.25 × scale m/s outward, size 0.8 × scale, seven stages of the table's
+// ticks plus up to as many again, each to 0.8-0.88 × scale, through the table's colours from transparent black.
+constexpr float kFireballScale = 2.0F;
+constexpr float kFireballSpeed = 1.25F;
+constexpr float kFireballSize = 0.8F;
+constexpr std::array<float, 7> kFireballTicks{8.0F, 10.0F, 10.0F, 8.0F, 8.0F, 10.0F, 10.0F};
+constexpr std::array<std::uint32_t, 7> kFireballColours{0x1010ce24U, 0xfb780c9fU, 0xc336097fU, 0x590e0024U,
+                                                        0x33080030U, 0x33080020U, 0x34210010U};
+
 // Whether a system of `behaviour` ends once its sprites are gone (a burst), rather than living until it is killed.
 bool endsWhenEmpty(ParticleBehaviour behaviour) {
     switch (behaviour) {
+    case ParticleBehaviour::Explode:
+    case ParticleBehaviour::Explosion:
+    case ParticleBehaviour::Fireball:
+    case ParticleBehaviour::Embers:
+    case ParticleBehaviour::Debris:
     case ParticleBehaviour::Flash:
     case ParticleBehaviour::Puff:
     case ParticleBehaviour::Spray:
@@ -86,6 +118,22 @@ anim::Quat rotationTowards(anim::Vec3 direction) {
     }
     const anim::Vec3 axis = anim::cross(from, to);
     return anim::normalise(anim::Quat{axis.x, axis.y, axis.z, 1.0F + d});
+}
+
+// `direction` turned by `rotation`.
+anim::Vec3 turned(anim::Quat rotation, anim::Vec3 direction) {
+    return anim::transformDirection(anim::matrixFromQuat(anim::normalise(rotation)), direction);
+}
+
+// The colour `t` of the way from `from` to `to`, channel by channel (`0xRRGGBBAA`).
+std::uint32_t mixColour(std::uint32_t from, std::uint32_t to, float t) {
+    std::uint32_t out = 0;
+    for (unsigned shift = 0; shift < 32; shift += 8) {
+        const auto a = static_cast<float>((from >> shift) & 0xffU);
+        const auto b = static_cast<float>((to >> shift) & 0xffU);
+        out |= (static_cast<std::uint32_t>(std::lround(a + ((b - a) * t))) & 0xffU) << shift;
+    }
+    return out;
 }
 
 } // namespace
@@ -131,8 +179,123 @@ ParticleSystem* ParticleSystems::spawn(std::string_view typeName, anim::Vec3 pos
     const std::size_t index = m_systems.size() - 1;
     if (system.type->name == "part_gun_flash") {
         spawn("sub_shack_puff", position, rotation);
+    } else if (system.type->behaviour == ParticleBehaviour::Explosion) {
+        // An explosion's parts, or an emitter's fireballs, are made by its init.
+        if (system.type->name == "sub_fireball_emitter") {
+            spawnFireballs(position, rotation);
+        } else {
+            spawnExplosionParts(position, rotation);
+        }
     }
     return &m_systems[index];
+}
+
+bool ParticleSystems::spawnSprite(std::string_view typeName, anim::Vec3 at, anim::Quat rotation,
+                                  const Particle& particle) {
+    if (m_particles >= kParticleBudget) {
+        return false;
+    }
+    ParticleSystem* system = spawn(typeName, at, rotation);
+    if (system == nullptr) {
+        return false;
+    }
+    system->particles.push_back(particle);
+    system->started = true;
+    ++m_particles;
+    return true;
+}
+
+Particle ParticleSystems::makeFireball(anim::Vec3 at, anim::Vec3 direction) {
+    Particle ball;
+    ball.position = at;
+    ball.velocity = anim::scale(direction, kFireballScale * kFireballSpeed);
+    ball.size = kFireballSize * kFireballScale * kDrawnPerSize;
+    ball.colour = 0;
+    ball.rect = findParticleType("sub_fireball")->rect;
+    ball.angle = unit() * 2.0F * std::numbers::pi_v<float>;
+    ball.fades = false;
+    ball.life = 0.0F; // it ends after its last stage
+    Particle::Stages stages;
+    stages.count = kFireballTicks.size();
+    for (std::size_t i = 0; i < stages.count; ++i) {
+        const auto base = static_cast<std::uint32_t>(kFireballTicks.at(i));
+        stages.seconds.at(i) = static_cast<float>(base + draw(base)) * kTick;
+        stages.sizes.at(i) = (0.8F + (0.08F * unit())) * kFireballScale * kDrawnPerSize;
+        stages.colours.at(i) = kFireballColours.at(i);
+    }
+    stages.fromSize = ball.size;
+    stages.fromColour = ball.colour;
+    ball.stages = stages;
+    return ball;
+}
+
+void ParticleSystems::spawnFireballs(anim::Vec3 at, anim::Quat rotation) {
+    constexpr std::array<anim::Vec3, 6> kDirections{{{1.0F, 0.0F, 0.0F},
+                                                     {-1.0F, 0.0F, 0.0F},
+                                                     {0.0F, 1.0F, 0.0F},
+                                                     {0.0F, -1.0F, 0.0F},
+                                                     {0.0F, 0.0F, 1.0F},
+                                                     {0.0F, 0.0F, -1.0F}}};
+    for (const anim::Vec3& direction : kDirections) {
+        spawnSprite("sub_fireball", at, rotation, makeFireball(at, turned(rotation, direction)));
+    }
+}
+
+void ParticleSystems::spawnExplosionParts(anim::Vec3 at, anim::Quat rotation) {
+    // The embers: each thrown along a random vector turned by the explosion's rotation, falling.
+    for (std::size_t i = 0; i < kEmbers; ++i) {
+        const anim::Vec3 vector{(unit() - 0.5F) * 0.1F, -3.5F + (3.55F * unit()), (unit() - 0.5F) * 0.1F};
+        Particle ember;
+        ember.position = at;
+        ember.velocity = anim::scale(anim::normalise(turned(rotation, vector)), 6.0F + (2.0F * unit()));
+        ember.gravity = kGravity;
+        ember.life = static_cast<float>(25U + draw(15)) * kTick;
+        ember.size = kEmberSize * (0.6F + (0.9F * unit()));
+        ember.rect = findParticleType("sub_explosion_embers")->rect;
+        spawnSprite("sub_explosion_embers", at, rotation, ember);
+    }
+    spawnFireballs(at, rotation);
+    // The debris: twenty chips half a metre up, then eight smaller ones a little higher, while the budget allows.
+    const auto chip = [this](anim::Vec3 from, float spread, float rise, float riseSpread, float life, float size,
+                             float sizeSpread) {
+        const anim::Vec3 direction{(unit() - 0.5F) * 2.0F * spread, (unit() - 0.5F) * 2.0F * spread,
+                                   rise + (riseSpread * unit())};
+        Particle debris;
+        debris.position = from;
+        debris.velocity = anim::scale(anim::normalise(direction), 5.0F + (4.0F * unit()));
+        debris.gravity = kGravity;
+        debris.life = life * kTick;
+        debris.size = (size + (sizeSpread * unit())) * kDrawnPerSize;
+        debris.rect = static_cast<std::uint16_t>(findParticleType("sub_debris")->rect + draw(3));
+        debris.angle = unit() * 2.0F * std::numbers::pi_v<float>;
+        spawnSprite("sub_debris", from, {}, debris);
+    };
+    for (std::size_t i = 0; i < kLargeDebris; ++i) {
+        chip(anim::add(at, anim::Vec3{0.0F, 0.0F, 0.5F}), 0.5F, 0.25F, 0.75F, 30.0F, 0.25F, 0.1F);
+    }
+    for (std::size_t i = 0; i < kSmallDebris; ++i) {
+        chip(anim::add(at, anim::Vec3{0.0F, 0.0F, 0.55F}), 0.25F, 0.0F, 0.75F, 60.0F, 0.05F, 0.05F);
+    }
+}
+
+bool ParticleSystems::stepStages(Particle& particle, float seconds) {
+    CONEY_ASSERT(particle.stages.has_value()); // only staged sprites step through stages
+    Particle::Stages& stages = *particle.stages;
+    stages.inStage += seconds;
+    while (stages.at < stages.count && stages.inStage >= stages.seconds.at(stages.at)) {
+        stages.inStage -= stages.seconds.at(stages.at);
+        stages.fromSize = stages.sizes.at(stages.at);
+        stages.fromColour = stages.colours.at(stages.at);
+        ++stages.at;
+    }
+    if (stages.at >= stages.count) {
+        return false;
+    }
+    const float length = stages.seconds.at(stages.at);
+    const float t = length > 0.0F ? stages.inStage / length : 1.0F;
+    particle.size = stages.fromSize + ((stages.sizes.at(stages.at) - stages.fromSize) * t);
+    particle.colour = mixColour(stages.fromColour, stages.colours.at(stages.at), t);
+    return true;
 }
 
 ParticleSystem* ParticleSystems::spawnBlood(anim::Vec3 at, anim::Vec3 direction) {
@@ -195,6 +358,7 @@ const ParticleSystem* ParticleSystems::find(double handle) const {
 void ParticleSystems::clear() {
     m_systems.clear();
     m_particles = 0;
+    m_pendingExplosions.clear();
 }
 
 Particle ParticleSystems::makeParticle(ParticleSystem& system) {
@@ -209,6 +373,42 @@ Particle ParticleSystems::makeParticle(ParticleSystem& system) {
     const anim::Vec3 jitter{unit() - 0.5F, unit() - 0.5F, unit() - 0.5F};
     switch (type.behaviour) {
     case ParticleBehaviour::Inert:
+    case ParticleBehaviour::Explosion:
+        break;
+    case ParticleBehaviour::Explode: {
+        // The flash: a random roll, then its three stages.
+        particle.angle = unit() * 2.0F * std::numbers::pi_v<float>;
+        particle.fades = false;
+        particle.life = 0.0F;
+        particle.size = 0.0F;
+        particle.colour = kExplodeStart;
+        Particle::Stages stages;
+        stages.count = kExplodeTicks.size();
+        for (std::size_t i = 0; i < stages.count; ++i) {
+            stages.seconds.at(i) = kExplodeTicks.at(i) * kTick;
+            stages.sizes.at(i) = kExplodeSizes.at(i) * kDrawnPerSize;
+            stages.colours.at(i) = kExplodeColours.at(i);
+        }
+        stages.fromColour = kExplodeStart;
+        particle.stages = stages;
+        break;
+    }
+    case ParticleBehaviour::Fireball:
+        particle = makeFireball(system.position, ahead);
+        break;
+    case ParticleBehaviour::Embers:
+        // One ember alone, as the explosion throws them (spawnExplosionParts()).
+        particle.velocity = anim::scale(ahead, 6.0F + (2.0F * unit()));
+        particle.gravity = kGravity;
+        particle.life = static_cast<float>(25U + draw(15)) * kTick;
+        break;
+    case ParticleBehaviour::Debris:
+        // One large chip alone, as the explosion throws them (spawnExplosionParts()).
+        particle.velocity =
+            anim::scale(anim::normalise(anim::add(ahead, anim::scale(jitter, 1.0F))), 5.0F + (4.0F * unit()));
+        particle.gravity = kGravity;
+        particle.life = 30.0F * kTick;
+        particle.rect = static_cast<std::uint16_t>(system.rect + draw(3));
         break;
     case ParticleBehaviour::Steam:
         if (system.steam) {
@@ -353,6 +553,10 @@ bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
         case ParticleBehaviour::Glow:
         case ParticleBehaviour::Flash:
         case ParticleBehaviour::Shard:
+        case ParticleBehaviour::Explode:
+        case ParticleBehaviour::Fireball:
+        case ParticleBehaviour::Embers:
+        case ParticleBehaviour::Debris:
             emit(system, 1);
             break;
         case ParticleBehaviour::Puff:
@@ -365,6 +569,7 @@ bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
             emit(system, kSparkCount);
             break;
         case ParticleBehaviour::Inert:
+        case ParticleBehaviour::Explosion:
         case ParticleBehaviour::Flames:
         case ParticleBehaviour::Steam:
             break;
@@ -396,6 +601,15 @@ bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
         }
         particle.size = std::max(0.0F, particle.size + particle.grow * seconds);
         particle.angle += particle.spin * seconds;
+        // A staged sprite moves through its stages; the flash sets off its explosion as the second stage begins.
+        if (particle.stages) {
+            const std::size_t was = particle.stages->at;
+            static_cast<void>(stepStages(particle, seconds));
+            if (behaviour == ParticleBehaviour::Explode && was < kExplosionStage &&
+                particle.stages->at >= kExplosionStage) {
+                m_pendingExplosions.emplace_back(particle.position, system.rotation);
+            }
+        }
         if (behaviour == ParticleBehaviour::Glow) {
             particle.position = system.position;
         }
@@ -407,7 +621,8 @@ bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
     }
     const std::size_t before = system.particles.size();
     std::erase_if(system.particles, [](const Particle& p) {
-        return (p.life > 0.0F && p.age >= p.life) || (p.steam && p.steam->age >= p.steam->life);
+        return (p.life > 0.0F && p.age >= p.life) || (p.steam && p.steam->age >= p.steam->life) ||
+               (p.stages && p.stages->at >= p.stages->count);
     });
     m_particles -= before - system.particles.size();
     system.age += seconds;
@@ -422,6 +637,12 @@ void ParticleSystems::step(float seconds) {
         }
         return !lives;
     });
+    // The explosions the flashes set off this step, made now that the systems are not being walked.
+    std::vector<std::pair<anim::Vec3, anim::Quat>> pending;
+    pending.swap(m_pendingExplosions);
+    for (const auto& [at, rotation] : pending) {
+        spawn("part_explosion", at, rotation);
+    }
 }
 
 } // namespace coney::effects

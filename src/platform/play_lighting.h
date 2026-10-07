@@ -58,8 +58,9 @@ class PlayLighting {
     void step(const WorldView& view, const raycast::CollisionMesh& mesh, anim::Vec3 playerFeet,
               std::uint32_t elapsedMs);
 
-    /// Draws a human's atomic lit as the original lights humans; `player` takes the player's shadow dimming.
-    void drawHuman(rw::Atomic* atomic, bool player);
+    /// Draws a human's atomic lit as the original lights humans, faded out from 60 to 70 m from the camera
+    /// (graphics::humanDistanceFade()); `player` takes the player's shadow dimming. False when it is too far to draw.
+    bool drawHuman(rw::Atomic* atomic, bool player);
     /// Draws a human as the original does, mesh by mesh in two passes: the first with his texture (drawHuman()), then
     /// at once the dual layer with `blood` (null: no second pass), blended by the texture's alpha with no alpha test,
     /// Z tested and written, lit and fogged as the first. `player` as drawHuman()'s.

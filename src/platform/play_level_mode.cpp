@@ -536,7 +536,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     const Pad& playerPad = m_frozen || m_freeCamera || sceneHoldsPlayer() || picking ? kStill : pad;
 
     // The characters' update, then the cameras' (human::Player keeps that order).
-    applyIdleClips();
+    applyAnimOverrides();
     const anim::Vec3 before = m_player->human().position();
     giveObjectTargets();
     m_player->update(playerPad, &m_scenery->collision(), m_combatants);
@@ -547,6 +547,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     stepPickups();
     stepFlash();
     stepObjects();
+    stepHats();
     const anim::Vec3 after = m_player->human().position();
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);
     if (m_trace) {
@@ -602,9 +603,11 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     return ModeResult::Stay;
 }
 
-void PlayLevelMode::applyIdleClips() {
+void PlayLevelMode::applyAnimOverrides() {
     for (human::Human* human : m_player->humans().humans()) {
-        const std::string& wanted = human->script().animOverrides.front();
+        const human::ScriptState& script = human->script();
+        // The idle's replacement (HuUseAnim slot 0).
+        const std::string wanted(script.animOverride(human::kUseAnimIds.front()));
         if (wanted != human->idleClipName()) {
             const anim::AnimClip* clip = m_dynamicClips.find(wanted);
             if (!wanted.empty()) {
@@ -612,6 +615,28 @@ void PlayLevelMode::applyIdleClips() {
                                         : std::format("anim: {} not loaded; the idle plays\n", wanted));
             }
             human->setIdleClip(wanted, clip);
+        }
+        // Every other id's: each slot's clip put in when it changed, each one no longer in a slot taken out.
+        for (const human::AnimOverride& slot : script.animOverrides) {
+            if (slot.clip.empty() || slot.animId == human::kUseAnimIds.front()) {
+                continue;
+            }
+            const auto applied = human->overrideClipNames().find(slot.animId);
+            if (applied == human->overrideClipNames().end() || applied->second != slot.clip) {
+                const anim::AnimClip* clip = m_dynamicClips.find(slot.clip);
+                m_print(clip != nullptr ? std::format("anim: {} replaces a human's anim {}\n", slot.clip, slot.animId)
+                                        : std::format("anim: {} not loaded; anim {} plays\n", slot.clip, slot.animId));
+                human->setOverrideClip(slot.animId, slot.clip, clip);
+            }
+        }
+        std::vector<std::uint32_t> gone;
+        for (const auto& [id, name] : human->overrideClipNames()) {
+            if (script.animOverride(id).empty()) {
+                gone.push_back(id);
+            }
+        }
+        for (const std::uint32_t id : gone) {
+            human->setOverrideClip(id, {}, nullptr);
         }
     }
 }
@@ -648,6 +673,8 @@ void PlayLevelMode::render(const RenderTime& time) {
                                  skin(character, pose, feet, heading, 0.0F, positions, normals);
                              });
         skin(playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading, snapshot.lean, m_positions, m_normals);
+        m_hatDraws.clear();
+        poseHat(m_player->human(), playerCharacter(), snapshot.pose, snapshot.feet, snapshot.heading);
         m_mesh->update(m_positions, m_normals);
         const raycast::CollisionMesh& ground = m_scenery->collision();
         m_lights->addShadow(ground, snapshot.feet);
@@ -679,6 +706,7 @@ void PlayLevelMode::render(const RenderTime& time) {
             }
             FighterMesh& mesh = m_fighterMeshes[i];
             skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
+            poseHat(*fighters[i].human, *mesh.character, pose.pose, pose.feet, pose.heading);
             mesh.mesh->update(mesh.positions, mesh.normals);
             m_lights->addShadow(ground, pose.feet);
             ringFeet[ringKey(fighters[i].human.get())] = pose.feet;
@@ -697,14 +725,20 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_engine.addFrameOverlay([overlay = *m_overlay](RenderEngine& engine) { overlay(engine); });
     }
     m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot, &blended, &ringFeet] {
-        // The parked cars, lit as the level lights humans (**Coney's stand-in**: how cars are lit is not traced).
-        if (m_levelEffects) {
-            m_levelEffects->drawCars([this](rw::Atomic* atomic) { m_lights->drawHuman(atomic, false); });
-        }
-        // The world objects, then the humans and their blob shadows, then the health rings over the shadows.
-        drawWorldObjects(snapshot);
+        // The cars take the objects' lights, each atomic for its own sphere (**Coney's choice**: the original selects
+        // them once for the clump's sphere).
+        const auto drawCars = [this](graphics::CarPass pass) {
+            if (m_levelEffects) {
+                m_levelEffects->drawCars([this](rw::Atomic* atomic) { m_lights->drawObject(atomic); }, pass);
+            }
+        };
+        // The humans and their blob shadows, the cars' opaque parts, the world objects; then the see-through panes and
+        // the cars' glass; then the health rings over the shadows.
         drawCharacter();
+        drawCars(graphics::CarPass::Opaque);
+        drawWorldObjects(snapshot);
         drawGlass();
+        drawCars(graphics::CarPass::Glass);
         drawRings(ringFeet);
         drawDebugLines(snapshot);
         if (m_levelEffects) {

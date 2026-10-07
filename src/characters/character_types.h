@@ -31,7 +31,10 @@ struct CharacterType {
     std::vector<std::int16_t> damage;  ///< `+0xb8`: the damage table, times the call's damage scale, truncated.
     std::vector<std::uint8_t> attacks; ///< `+0x11e`: the attack table (an AI's attack weights), each clamped to a byte.
     std::string model;                 ///< The model name (`warr_re_cv`); empty when the call gave none.
-    std::optional<int> warrior;        ///< `+0x118`: the Warrior index of a playable character (inferred).
+    /// `+0x14c`: the type name of the hat a human of the class wears from his creation (`dyn_eh_ma2`), `none` for
+    /// most; empty when the call gave none (docs/research/characters.md#hats).
+    std::string hat;
+    std::optional<int> warrior; ///< `+0x118`: the Warrior index of a playable character (inferred).
     /// `+0x14b`, `CfgChar`'s 13th argument: 1 for the women's types, whose vocal animation sounds use the `_female`
     /// entries (docs/research/sound-events.md#players).
     std::optional<int> female;

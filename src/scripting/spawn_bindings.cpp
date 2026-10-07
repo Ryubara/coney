@@ -67,6 +67,14 @@ NativeFunction makeCfgObj(const BindingContext& context) {
             type.objectKind = byte(kObjectKindArg);
             type.animSet = byte(kAnimSetArg);
             type.grip = static_cast<float>(binding::number(args, kGripArg));
+            // 20 and 21: the pose held or worn, a missing coordinate 0 as tolua reads it.
+            constexpr std::size_t kHoldPositionArg = 20;
+            constexpr std::size_t kHoldRotationArg = 21;
+            const std::array<float, 3> hold =
+                binding::position(args, kHoldPositionArg).value_or(std::array<float, 3>{});
+            type.holdPosition = anim::Vec3{hold[0], hold[1], hold[2]};
+            const std::array<float, 4> turn = quaternionArg(args, kHoldRotationArg);
+            type.holdRotation = anim::Quat{turn[0], turn[1], turn[2], turn[3]};
             types->add(std::move(type));
         }
         return binding::none();

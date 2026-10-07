@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -40,6 +42,21 @@ struct Particle {
         std::uint8_t startAlpha = 0; ///< The colour's alpha, which fades out over the life.
     };
     std::optional<SteamPuff> steam;
+    /// A sprite that steps through a table of stages (`sub_explode`, `sub_fireball`,
+    /// docs/research/script-types.md#part-explosion): over each stage its size and colour move from the last stage's
+    /// to the stage's own; it ends after the last. Unset for every other sprite.
+    struct Stages {
+        static constexpr std::size_t kMost = 7;
+        std::array<float, kMost> seconds{};         ///< Each stage's length.
+        std::array<float, kMost> sizes{};           ///< The size (metres across) each stage ends at.
+        std::array<std::uint32_t, kMost> colours{}; ///< The colour `0xRRGGBBAA` each stage ends at.
+        std::size_t count = 0;                      ///< Stages in use.
+        std::size_t at = 0;                         ///< The stage it is in.
+        float inStage = 0.0F;                       ///< Seconds into it.
+        float fromSize = 0.0F;                      ///< The size it started the stage at.
+        std::uint32_t fromColour = 0;               ///< The colour it started the stage at.
+    };
+    std::optional<Stages> stages;
 };
 
 /// A steam vent's configuration: `CfgSteam(object, colour, interval, puffInterval, size, growth, life, speed, rise,
@@ -183,9 +200,27 @@ class ParticleSystems {
     // One update of a steam puff (`0x003f6460`): its velocity dragged, its size grown, its alpha faded.
     void updatePuff(Particle& puff);
 
+    // A system of `typeName` at `at` holding `particle` alone, made at once; false when the pool or the budget is full.
+    bool spawnSprite(std::string_view typeName, anim::Vec3 at, anim::Quat rotation, const Particle& particle);
+    // `part_explosion`'s init: its embers, its fireball emitter's six fireballs and its debris, round `at`.
+    // @orig 0x003c3448 PartExplosion_Init (unknown)
+    void spawnExplosionParts(anim::Vec3 at, anim::Quat rotation);
+    // `sub_fireball_emitter`'s init: six fireballs from `at`, one along each of ±x, ±y, ±z of `rotation`.
+    // @orig 0x003c4580 SubFireballEmitter_Init (unknown)
+    void spawnFireballs(anim::Vec3 at, anim::Quat rotation);
+    // One `sub_fireball` from `at` along the unit `direction`, at the emitter's scale.
+    // @orig 0x003c4a58 SubFireball_Init (unknown)
+    [[nodiscard]] Particle makeFireball(anim::Vec3 at, anim::Vec3 direction);
+    // Moves a staged sprite through its stages by `seconds`; false once it is past its last.
+    // @orig 0x003c54b8 SubExplode_Update (unknown)
+    // @orig 0x003c4c38 SubFireball_Update (unknown)
+    static bool stepStages(Particle& particle, float seconds);
+
     std::uint32_t m_random;
     Locator m_locator;
     std::optional<anim::Vec3> m_viewer;
+    // Systems a step asked for (a `sub_explode`'s `part_explosion`), spawned once the step is over.
+    std::vector<std::pair<anim::Vec3, anim::Quat>> m_pendingExplosions;
 };
 
 } // namespace coney::effects

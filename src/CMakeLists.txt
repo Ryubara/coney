@@ -53,6 +53,7 @@ add_library(coney_core STATIC
     gamemodes/text_viewer_mode.cpp
     graphics/font.cpp
     graphics/frame_stats.cpp
+    graphics/car_draw.cpp
     graphics/human_blood.cpp
     graphics/human_lighting.cpp
     graphics/level_lighting.cpp
@@ -157,6 +158,7 @@ add_library(coney_core STATIC
     world_objects/doors.cpp
     world_objects/flags.cpp
     world_objects/glass.cpp
+    world_objects/hats.cpp
     world_objects/level_objects.cpp
     world_objects/lock_pick.cpp
     world_objects/nav_links.cpp
@@ -167,6 +169,7 @@ add_library(coney_core STATIC
     world_objects/placed_objects_file.cpp
     world_objects/radios.cpp
     world_objects/spinning_icons.cpp
+    world_objects/object_breaks.cpp
     world_objects/spawn_records.cpp
     world_objects/tag_spots.cpp
     world_objects/flag_net.cpp
@@ -176,6 +179,7 @@ add_library(coney_core STATIC
 # Effects: the particle systems and the motion blur (docs/research/particles.md, docs/research/graphics.md#looks).
 target_sources(coney_core PRIVATE
     effects/camera_litter.cpp
+    effects/effect_culling.cpp
     effects/ground_fog.cpp
     effects/motion_blur.cpp
     effects/particle_types.cpp

@@ -383,6 +383,20 @@ NativeFunction makePlaceItemInHand(const BindingContext& context, std::function<
     };
 }
 
+// `HuPlaceHatOnHead(human, hat)`: a new hat object of type `hat` on the human's head, as his class's hat is put on
+// when he is made (docs/research/characters.md#hats).
+// @orig 0x002385f8 Human_PlaceHatOnHead (unknown)
+NativeFunction makePlaceHatOnHead(const BindingContext& context, std::function<double()> nextHandle) {
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+        HumanBindingHost* host = hostOf(*context);
+        const std::string hat = nameArg(args, 1);
+        if (host != nullptr && !hat.empty()) {
+            host->placeHatOnHead(handleArg(args, 0), hat, nextHandle);
+        }
+        return binding::none();
+    };
+}
+
 // `HuUseAnim(human, slot, anim)`: slots 0-3; true when the clip, asked for with SetDynamicAnimation, is in place.
 // @orig 0x00238690 Human_UseAnim (unknown)
 NativeFunction makeUseAnim(const BindingContext& context) {
@@ -396,6 +410,23 @@ NativeFunction makeUseAnim(const BindingContext& context) {
         const std::vector<std::string>& loaded = context->state->characters.dynamicAnimations;
         const bool requested = anim.empty() || std::ranges::find(loaded, anim) != loaded.end();
         return binding::boolean(host->useAnim(handleArg(args, 0), slot, anim, requested));
+    };
+}
+
+// `HuUseAnyAnim(human, animId, anim)`: `anim` in place of any anim id; only a file the level asked for (or none, to
+// free the slot) is taken.
+// @orig 0x00238748 Human_UseAnyAnim (unknown)
+NativeFunction makeUseAnyAnim(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        HumanBindingHost* host = hostOf(*context);
+        if (host == nullptr) {
+            return binding::boolean(false);
+        }
+        const auto animId = static_cast<std::uint32_t>(intArg(args, 1));
+        const std::string anim = nameArg(args, 2);
+        const std::vector<std::string>& loaded = context->state->characters.dynamicAnimations;
+        const bool requested = anim.empty() || std::ranges::find(loaded, anim) != loaded.end();
+        return binding::boolean(host->useAnyAnim(handleArg(args, 0), animId, anim, requested));
     };
 }
 
@@ -698,6 +729,7 @@ NativeFunction makeCfgSetGlobalTimeToLive(const BindingContext& context) {
 // @orig 0x00237c38 Human_GetHealthPercent (unknown)
 // @orig 0x00235478 Human_GetGangType (unknown)
 // @orig 0x00237d48 Human_GetHeldObject (unknown)
+// @orig 0x00235530 Human_GetHat (unknown)
 void addGetters(LuaVm& vm, const BindingContext& context) {
     using Status = std::optional<HumanStatus>;
     vm.registerFunction("HuIsAlive",
@@ -715,6 +747,8 @@ void addGetters(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("HuGetHeldObject", statusGetter(context, [](const Status& s) {
                             return binding::number(s ? s->heldObject : kNilHandle);
                         }));
+    vm.registerFunction(
+        "HuHasHat", statusGetter(context, [](const Status& s) { return binding::number(s ? s->hat : kNilHandle); }));
 }
 
 } // namespace
@@ -749,8 +783,10 @@ void addHumanBindings(LuaVm& vm, const BindingContext& context, std::function<do
     vm.registerFunction("HuAttachSpinningIcon", makeAttachSpinningIcon(context));
     vm.registerFunction("HuRemoveSpinningIcon", makeRemoveSpinningIcon(context));
     vm.registerFunction("HuDropWeapon", makeDropWeapon(context));
-    vm.registerFunction("HuPlaceItemInHand", makePlaceItemInHand(context, std::move(nextHandle)));
+    vm.registerFunction("HuPlaceItemInHand", makePlaceItemInHand(context, nextHandle));
+    vm.registerFunction("HuPlaceHatOnHead", makePlaceHatOnHead(context, std::move(nextHandle)));
     vm.registerFunction("HuUseAnim", makeUseAnim(context));
+    vm.registerFunction("HuUseAnyAnim", makeUseAnyAnim(context));
     vm.registerFunction("SetDynamicAnimation", makeSetDynamicAnimation(context));
     vm.registerFunction("LoadBumAnims", makeLoadBumAnims(context));
     vm.registerFunction("HuChangePlayerGang", makeChangePlayerGang(context));

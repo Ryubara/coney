@@ -686,7 +686,7 @@ bool Human::tryContextAction() {
 }
 
 bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
-    const anim::AnimClip* found = m_animator.anims().clip(clip);
+    const anim::AnimClip* found = m_animator.clip(clip);
     if (found == nullptr) {
         return false;
     }
@@ -709,7 +709,7 @@ bool Human::startPickUp(double handle, anim::Vec3 point, std::uint32_t clip) {
 }
 
 void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
-    const anim::AnimClip* found = m_animator.anims().clip(clip);
+    const anim::AnimClip* found = m_animator.clip(clip);
     if (found == nullptr) {
         return;
     }
@@ -721,7 +721,7 @@ void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
 }
 
 bool Human::startTagSpray(anim::Vec3 point) {
-    if (m_animator.anims().clip(clips::kTaggingIntro) == nullptr) {
+    if (m_animator.clip(clips::kTaggingIntro) == nullptr) {
         return false;
     }
     // The turn to the tag is spread over half the intro's playing time.
@@ -823,8 +823,8 @@ bool Human::tryClimb(const raycast::CollisionMesh& mesh, anim::Vec3 direction) {
     // The face must be within the clips' reach.
     const std::uint32_t standingId = climbFirstClip(probe->kind, false);
     const std::uint32_t runningId = climbFirstClip(probe->kind, true);
-    const float standingReach = clipReach(*m_animator.anims().clip(standingId));
-    const float runningReach = clipReach(*m_animator.anims().clip(runningId));
+    const float standingReach = clipReach(*m_animator.clip(standingId));
+    const float runningReach = clipReach(*m_animator.clip(runningId));
     if (!withinClimbReach(probe->distance, standingReach, runningReach, running)) {
         return false;
     }
@@ -939,7 +939,7 @@ void Human::followClimb(const raycast::CollisionMesh* mesh) {
         run.over = true;
         if (m_climbProbe && movesAtOnce(m_climbProbe->kind)) {
             // Onto the top at once: the second clip's displacement turned to the facing, and up to the top.
-            const anim::Vec3 d = m_animator.anims().clip(id)->displacement;
+            const anim::Vec3 d = m_animator.clip(id)->displacement;
             const float c = std::cos(m_heading);
             const float s = std::sin(m_heading);
             m_position = anim::add(m_position, anim::Vec3{d.x * c - d.y * s, d.x * s + d.y * c, m_climbProbe->top});

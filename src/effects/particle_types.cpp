@@ -21,10 +21,12 @@ constexpr std::uint32_t kPoliceGlow = 0xFF3020C0U;
 constexpr std::uint32_t kGlass = 0xC8E0F0B0U;
 
 // The types Coney knows, sorted by name (findParticleType() searches it in halves). Sheets and rectangles are the
-// research's traced sprites (docs/references/particles.md); behaviours, sizes and colours are Coney's stand-ins. Types
-// whose sprite is traced to a sheet Coney does not load yet (the unnamed flame sheets, `part_tv`), to the doubtful
-// rectangle 54, or that draw on the HUD, are left out and so make Inert systems. `part_steam` draws its `sub_smoke`
-// puffs, `part_page1` rectangles 42-44 (docs/research/particles.md#steam).
+// research's traced sprites (docs/references/particles.md); behaviours, sizes and colours are Coney's stand-ins, but
+// for the explosion family (`part_explosion`, `sub_explode`, `sub_fireball`, `sub_debris`, `sub_explosion_embers`),
+// whose recipe is traced (docs/research/script-types.md#part-explosion; their motion is in particles.cpp). Types whose
+// sprite is traced to a sheet Coney does not load yet (the unnamed flame sheets, `part_tv`), to the doubtful rectangle
+// 54, or that draw on the HUD, are left out and so make Inert systems. `part_steam` draws its `sub_smoke` puffs,
+// `part_page1` rectangles 42-44 (docs/research/particles.md#steam).
 constexpr std::array kTypes{
     ParticleType{"blo_splat", PartPage1, 5, Spray, kBlood, 0.12F},
     ParticleType{"blood_drop", PartPage1, 52, Spray, kBlood, 0.05F},
@@ -34,7 +36,7 @@ constexpr std::array kTypes{
     ParticleType{"coplights_lens_flare", Lighting, 2, Glow, kPoliceGlow, 1.6F},
     ParticleType{"glasstest", None, 0, Shard, kGlass, 0.06F},
     ParticleType{"part_copcar_lights", Lighting, 2, Glow, kPoliceGlow, 1.2F},
-    ParticleType{"part_explosion", PartPage1, 6, Puff, kWhite, 2.5F},
+    ParticleType{"part_explosion", PartPage1, 6, Explosion, kWhite, 0.0F},
     ParticleType{"part_fire", PartFire, 0, Flames, kWhite, 0.6F},
     ParticleType{"part_fire_large", PartFire, 0, Flames, kWhite, 1.2F},
     ParticleType{"part_fire_large_ns", PartFire, 0, Flames, kWhite, 1.2F},
@@ -55,10 +57,14 @@ constexpr std::array kTypes{
     ParticleType{"sub_blood_gout", PartPage1, 2, Spray, kBlood, 0.1F},
     ParticleType{"sub_blood_spray", PartPage1, 6, Spray, kBlood, 0.15F},
     ParticleType{"sub_car_sparks", PartPage1, 45, Sparks, kSpark, 0.1F},
+    ParticleType{"sub_debris", PartPage1, 8, Debris, kWhite, 0.6F},
     ParticleType{"sub_embers", PartPage1, 20, Sparks, kSpark, 0.1F},
-    ParticleType{"sub_explode", PartPage1, 17, Puff, kWhite, 2.0F},
+    ParticleType{"sub_explode", PartPage1, 17, Explode, kWhite, 0.4F},
+    ParticleType{"sub_explosion_embers", PartFire, 0, Embers, kWhite, 0.2F},
     ParticleType{"sub_fade_flame", PartFire, 0, Flames, kWhite, 0.4F},
     ParticleType{"sub_fire_smoke", PartPage1, 42, Puff, kSmoke, 0.8F},
+    ParticleType{"sub_fireball", PartPage1, 42, Fireball, kWhite, 3.2F},
+    ParticleType{"sub_fireball_emitter", PartPage1, 42, Explosion, kWhite, 0.0F},
     ParticleType{"sub_glint", PartPage1, 41, Flash, kWhite, 0.3F},
     ParticleType{"sub_muzzle_flash", PartPage1, 35, Flash, kWarmGlow, 0.3F},
     ParticleType{"sub_objective_glow", Lighting, 3, Glow, kWarmGlow, 1.0F},

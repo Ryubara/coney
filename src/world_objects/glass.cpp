@@ -130,6 +130,18 @@ void GlassPanes::shatterOnly(double handle, ObjectWorld& world) {
     }
 }
 
+bool GlassPanes::release(double handle, ObjectWorld& world) {
+    const auto found = std::ranges::find(m_panes, handle, &GlassPane::handle);
+    if (found == m_panes.end()) {
+        return false;
+    }
+    if (world.services != nullptr) {
+        world.services->setBody(handle, false);
+    }
+    m_panes.erase(found);
+    return true;
+}
+
 void GlassPanes::shatter(GlassPane& pane, bool markBroken, ObjectWorld& world) {
     if (markBroken) {
         // The broken sprite, or hidden when the type has none.

@@ -10,6 +10,7 @@
 #include "scripting/binding_args.h"
 #include "scripting/human_bindings.h"
 #include "world_objects/flag_net.h"
+#include "world_objects/level_objects.h"
 #include "world_objects/object_tasks.h"
 #include "world_objects/object_types.h"
 #include "world_objects/spawn_records.h"
@@ -107,6 +108,11 @@ NativeFunction makeFlagNetTraverse(const BindingContext& context) {
 NativeFunction makeObjDestroy(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         const double object = handleArg(args, 0);
+        // A pane is released: it vanishes, with no shatter (docs/research/objects.md#pane).
+        if (world_objects::LevelObjects* objects = context->objects;
+            objects != nullptr && objects->glass.release(object, objects->world)) {
+            return binding::none();
+        }
         if (context->ai != nullptr) {
             if (HumanBindingHost* humans = context->ai->humans(); humans != nullptr) {
                 humans->releaseObject(object);

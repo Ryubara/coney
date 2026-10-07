@@ -12,7 +12,7 @@ using Catch::Approx;
 using coney::graphics::ShadowDim;
 using coney::raycast::Vec3;
 
-TEST_CASE("Hiding in a shadow dims a human to half over 250 ms; leaving it is at once") {
+TEST_CASE("Hiding in a shadow dims a human to half over 250 ms; leaving it brightens him back over 250 ms") {
     ShadowDim dim;
     CHECK(dim.factor() == Approx(1.0F));
     dim.step(true, 33);
@@ -24,6 +24,10 @@ TEST_CASE("Hiding in a shadow dims a human to half over 250 ms; leaving it is at
     CHECK(dim.factor() == Approx(0.5F));
     dim.step(false, 33);
     CHECK_FALSE(dim.hidden());
+    CHECK(dim.factor() == Approx(0.5F));
+    dim.step(false, 125);
+    CHECK(dim.factor() == Approx(0.75F));
+    dim.step(false, 1000);
     CHECK(dim.factor() == Approx(1.0F));
 }
 
@@ -52,4 +56,12 @@ TEST_CASE("the blob shadow is a near-black sprite at half alpha on RenderWare's 
     CHECK(coney::graphics::kBlobShadowColour[3] == 128);
     CHECK(static_cast<float>(coney::graphics::kBlobShadowColour[3]) / 255.0F == Catch::Approx(0.5F).margin(0.01F));
     CHECK(coney::graphics::kBlobShadowColour[0] == 10);
+}
+
+TEST_CASE("A human fades out from 60 to 70 m from the camera") {
+    CHECK(coney::graphics::humanDistanceFade(10.0F) == Approx(1.0F));
+    CHECK(coney::graphics::humanDistanceFade(60.0F) == Approx(1.0F));
+    CHECK(coney::graphics::humanDistanceFade(65.0F) == Approx(0.5F));
+    CHECK(coney::graphics::humanDistanceFade(70.0F) == Approx(0.0F));
+    CHECK(coney::graphics::humanDistanceFade(90.0F) == Approx(0.0F));
 }

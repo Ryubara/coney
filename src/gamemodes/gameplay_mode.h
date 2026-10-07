@@ -94,6 +94,9 @@ struct ScriptedCast {
     const bool* forceReticules = nullptr;
     /// The game's sound, for the humans' speech commands the level says itself (a dealer's lines); null for none.
     script::SoundHost* sound = nullptr;
+    /// The world objects' handle counter (script::ScriptSystem::nextObjectHandle()), for the objects the level makes
+    /// itself (a human's hat); empty for none.
+    std::function<double()> objectHandles;
 };
 
 /// A loaded level that can draw a 2D layer over its frame just before the frame is presented: the pause menu over the
