@@ -15,7 +15,9 @@
 #include "ai/brain.h"
 #include "ai/gangs.h"
 #include "ai/reaction_goals.h"
+#include "ai/set_command_action.h"
 #include "ai/turn_action.h"
+#include "combat/commands.h"
 #include "combat/player_combat.h"
 #include "human/fighter.h"
 #include "human/human.h"
@@ -37,6 +39,8 @@ constexpr int kGetUpKind = 42;
 constexpr int kDoublePercent = 40;
 // The hand-over chance per CfgGang value 5, percent.
 constexpr int kHandOverPercent = 10;
+// The grab spin's press waits this long, ms (the set-command action's start delay `0x21`).
+constexpr std::int16_t kSpinDelayMs = 0x21;
 // The get-up attack's timing: it comes this long after going down, counted up to the cap, ms.
 constexpr int kGetUpAfterMs = 1900;
 constexpr std::uint64_t kGetUpCapMs = 2000;
@@ -145,8 +149,13 @@ GoalStatus GrabbingGoal::process(Brain& brain) {
     if (held == nullptr || brain.actionCount() > 0) {
         return GoalStatus::Stop;
     }
-    // 6. A rear grab with the flag holds him up, facing a friend who may hit him.
     const std::size_t holders = held->attackSlots().size();
+    // 5. A front grab with the flag, the man under two or more attackers: spin him into a rear hold for them.
+    if (m_handOver && !fighter.fromRear() && holders >= 2) {
+        brain.queueAction(std::make_unique<SetCommandAction>(combat::command::kGrabSpin, kSpinDelayMs));
+        return GoalStatus::Stop;
+    }
+    // 6. A rear grab with the flag holds him up, facing a friend who may hit him.
     if (m_handOver && fighter.fromRear() && holders != 1) {
         const Brain* friendHitter = nullptr;
         float best = std::numeric_limits<float>::max();

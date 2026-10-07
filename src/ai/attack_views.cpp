@@ -8,14 +8,13 @@
 
 #include "ai/attack_action.h"
 #include "ai/attack_places.h"
+#include "ai/attack_reach.h"
 #include "ai/brain.h"
 #include "ai/fight_goal.h"
 #include "ai/reaction_goals.h"
 #include "ai/sectors.h"
 #include "ai/targeting.h"
 #include "combat/attacks.h"
-#include "combat/combat_tuning.h"
-#include "combat/grab.h"
 #include "combat/reactions.h"
 #include "human/body.h"
 #include "human/human.h"
@@ -84,7 +83,12 @@ TargetView targetViewOf(const Brain& target, const Brain& attacker) {
     view.ungrabbable = t.hasFlag(human::flag::kUngrabbable);
     view.free = freeHuman(t);
     view.specialRefused = !view.free;
-    view.grabRefused = !view.free;
+    view.rearGrabbed = grabbedFromRear(target);
+    // The grab's refusing states leave out the rear hold (`0x20` is not in `0x7bfdc8f7fd0`): a man held from behind
+    // may be grabbed from in front.
+    view.grabRefused = !view.free && !view.rearGrabbed;
+    view.attackerInFront =
+        combat::victimSide(t.position(), t.heading(), attacker.human().position()) == combat::Side::Front;
     return view;
 }
 
@@ -102,20 +106,41 @@ PickContext pickContextOf(const Brain& attacker, const Brain& target) {
     return context;
 }
 
-float kindReach(const Brain& attacker, int kind) {
-    const combat::AnimRangeList* ranges = attacker.human().ranges();
-    if ((kind == 21 || kind == 22) && ranges != nullptr) {
-        return combat::grabSearchRange(*ranges, kind == 21 ? combat::GrabKind::Tackle : combat::GrabKind::Grab,
-                                       combat::combatTuning().grabSearchScale);
-    }
-    return attackReach(attacker.human(), kind);
+namespace {
+
+// What the reach of `kind` reads of A and T.
+ReachInput reachInputOf(const Brain& attacker, const Brain& target, int kind) {
+    const human::Human& a = attacker.human();
+    const human::Gait gait = a.gait();
+    const bool moving = a.speed() > 0.0F;
+    return ReachInput{.kind = kind,
+                      .running = gait >= human::Gait::Run,
+                      .walking = moving && gait > human::Gait::Standing && gait < human::Gait::Run,
+                      .targetDown = target.human().fighter().victim().grounded(),
+                      .heldSet = a.fighter().animSet(),
+                      .dealer = attacker.type() == BrainType::Dealer,
+                      .beyondNearRange = reachDistance(attacker, target) > attacker.meleeNear()};
+}
+
+} // namespace
+
+float reachDistance(const Brain& attacker, const Brain& target) {
+    return anim::distance(attacker.human().position(), target.human().position());
+}
+
+float kindReach(const Brain& attacker, const Brain& target, int kind) {
+    return nearReach(nearReachSource(reachInputOf(attacker, target, kind)), attacker.human().ranges());
+}
+
+float kindFarReach(const Brain& attacker, const Brain& target, int kind) {
+    return farReach(farReachSource(reachInputOf(attacker, target, kind)), attacker.human().ranges());
 }
 
 StartGuard startGuardOf(const Brain& attacker, const Brain& target, int kind) {
     StartGuard guard;
     guard.attackerHeldBusy = (attacker.human().animator().flags() & kAttackWaitFlags) != 0;
     guard.damagePending = attacker.human().fighter().victim().pending();
-    guard.inReach = attacker.distanceTo(target) <= kindReach(attacker, kind);
+    guard.inReach = reachDistance(attacker, target) <= kindFarReach(attacker, target, kind);
     return guard;
 }
 
@@ -129,10 +154,7 @@ bool dispatchable(int kind) {
     case 15:
     case 18:
     case 23:
-    case 34:
-    case 36:
     case 41:
-    case 44:
         return false;
     default:
         return kind >= 0 && kind < kNoAttackKind;

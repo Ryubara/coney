@@ -276,6 +276,7 @@ target_sources(coney_tests PRIVATE
 # The AI humans' brains (docs/research/ai.md).
 target_sources(coney_tests PRIVATE
     ai/attack_choice_test.cpp
+    ai/attack_reach_test.cpp
     ai/fight_goal_test.cpp
     ai/fight_reactions_test.cpp
     ai/brain_test.cpp

@@ -20,8 +20,8 @@ inline constexpr float kFightRangeScale = 1.1F;
 /// The move-to-human action's limit into the kind's reach: 2000 ms, 1000 for a class-13 fighter.
 inline constexpr int kShortMoveMs = 1000;
 inline constexpr int kLongMoveMs = 2000;
-/// A target is in reach within this share of the attack's far range: **Coney choice** standing in for `0x00230d00`
-/// (not traced): the attack's own target search finds a target at any angle within 0.9 × the far range.
+/// The share of the far melee range the Melee goal's and the tactics' stand-in runs close to (**Coney choice**; the
+/// fight goal itself walks into each kind's reach, ai::kindReach()).
 inline constexpr float kInReachShare = 0.9F;
 
 /// The fight goal.
@@ -90,9 +90,5 @@ class FightGoal final : public Goal {
 /// delay of the press before (ai::chainDelayMs() in the human's anims); the first press carries `stickHeading`.
 /// @orig 0x0028e248 Brain_QueueAttack (unknown)
 void queueAttack(Brain& brain, int kind, std::optional<float> stickHeading = std::nullopt);
-
-/// The distance within which `human` can press attack `kind` at a target: kInReachShare × the far range of the kind's
-/// first attack (ai::firstAnimOf()) in its Anim Range List, or of human::kDefaultStrikeReach without one.
-[[nodiscard]] float attackReach(const human::Human& human, int kind);
 
 } // namespace coney::ai

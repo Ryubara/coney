@@ -39,6 +39,8 @@ inline constexpr CommandId kSquareChain = 0x11;
 inline constexpr CommandId kCrossPressed = 0x12; ///< Cross pressed: what a chain buffers.
 inline constexpr CommandId kSquareHeld = 0x15;
 inline constexpr CommandId kCrossHeld = 0x16;
+/// The grab spin an AI sends (`PlayerCmd_IsGrabSpin`, read as R1 pressed in a grab; no pad table makes it).
+inline constexpr CommandId kGrabSpin = 0x19;
 inline constexpr CommandId kCirclePressed = 0x1e; ///< Circle pressed: the throw or spin in a grab.
 inline constexpr CommandId kL1R1 = 0x1f;          ///< L1 + R1: rage with a full meter.
 inline constexpr CommandId kL2Cross = 0x20;       ///< L2 held, cross pressed: the charge.

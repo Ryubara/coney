@@ -255,6 +255,7 @@ target_sources(coney_core PRIVATE
     ai/attack_choice.cpp
     ai/attack_kinds.cpp
     ai/attack_places.cpp
+    ai/attack_reach.cpp
     ai/attack_views.cpp
     ai/block_goal.cpp
     ai/brain.cpp
@@ -287,6 +288,7 @@ target_sources(coney_core PRIVATE
     ai/scripted_hub.cpp
     ai/scripted_story.cpp
     ai/sectors.cpp
+    ai/set_command_action.cpp
     ai/spawners.cpp
     ai/story_goals.cpp
     ai/story_tactics.cpp

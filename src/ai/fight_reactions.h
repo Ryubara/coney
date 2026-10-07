@@ -40,13 +40,13 @@ class GrabbingGoal final : public Goal {
     /// Rolls the hand-over flag: `Random_Int(100)` < the gang's `CfgGang` value 5 × 10.
     /// @orig 0x002b5ad0 GrabbingGoal_Start (unknown)
     void start(Brain& brain) override;
-    /// Done when no longer grabbing. The held man becomes the target; while actions are queued it waits. A rear grab
-    /// with the flag, while the man has other than one attacker, turns to face the nearest player among them (else
-    /// the nearest active attacker) and waits: holding him up for a friend to hit. Otherwise it picks a kind: kind
-    /// 24 (a strike in the grab) twice 40 % of the time, the throws 25 and 29 with the stick toward
+    /// Done when no longer grabbing. The held man becomes the target; while actions are queued it waits. A front grab
+    /// with the flag, the man under two or more attackers, spins him into a rear hold (command `0x19`, after 33 ms). A
+    /// rear grab with the flag, while the man has other than one attacker, turns to face the nearest player among them
+    /// (else the nearest active attacker) and waits: holding him up for a friend to hit. Otherwise it picks a kind:
+    /// kind 24 (a strike in the grab) twice 40 % of the time, the throws 25 and 29 with the stick toward
     /// grabMoveDirection(), the power strikes 26-28 without one. **Coney stand-ins**: no trains; the presenting to a
-    /// friendly player and the front grab's hand-over press (command `0x19`, which no Coney handler takes) are not
-    /// built; the FollowAndDefend and HoldFlag goals that clear the flag are not built.
+    /// friendly player is not built; the FollowAndDefend and HoldFlag goals that clear the flag are not built.
     /// @orig 0x002b60c0 GrabbingGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
     /// Clears the actions.

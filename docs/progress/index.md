@@ -9,13 +9,6 @@ How far Coney has come, measured three ways:
 - **Researched:** the share of the game's own code that the [source map](../research/source-map.md) places in at
   least an original source file or directory. It says how much of the executable an analyst can already find their
   way around in, not how much is understood.
-- **Understood:** the share of the game's own functions (by bytes, and by count) that are researched in full: the
-  function has a meaningful name in the shared Ghidra project (not `FUN_<address>`), and a research page cites its
-  address in a table row or paragraph that states an evidence level, or says `not needed: <reason>` (the source
-  map's citations do not count: placing is not understanding); a script binding's wrapper counts when its
-  `research/bindings` entry has an `evidence`. Names and sizes come from `docs/progress/ghidra-functions.tsv`
-  (addresses, sizes and our names only), the citations from the pages themselves, so citing a function moves the
-  bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
   Approved by the owner's play-test, with its checkpoints and the script bindings it needs.
@@ -33,12 +26,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.6% of the game's own code (521,924 of 3,354,776 bytes, 1,808 functions) |
+| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.6% of the game's own code (521,924 of 3,354,776 bytes, 1,814 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-603 reimplemented function(s) have no size yet and add no bytes.
+609 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,7 +66,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 77 | 195,624 |
 | `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 210 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 616 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 622 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
@@ -829,6 +822,8 @@ at the top of the repository's `README.md`.
 | `0x0022f8d8` | `Human_EndStun` | `Human` | 264 |
 | `0x0022fa78` | `Human_StartWounded` | `Human` | 392 |
 | `0x0022fc00` | `Human_EndWounded` | `Human` | 232 |
+| `0x00230930` | `Attack_FarReachSquared` | `Human` | not filled in |
+| `0x00230d00` | `Attack_ReachSquared` | `Human` | not filled in |
 | `0x00231090` | `AttackKind_ToCommand` | `Human` | 264 |
 | `0x00231198` | `AttackKind_ChainDelay` | `Human` | 1,016 |
 | `0x00231590` | `Attack_GetNextAttackDelay` | `Human` | 1,192 |
@@ -1004,6 +999,7 @@ at the top of the repository's `README.md`.
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
 | `0x002542e8` | `AnimRange_Damage` | `Human` | 40 |
 | `0x00254418` | `AttackTable_GetOffset` | `Human` | not filled in |
+| `0x002544a0` | `AttackTable_GetReach` | `Human` | not filled in |
 | `0x00254508` | `AttackTable_GetFarRange` | `Human` | not filled in |
 | `0x002548f0` | `AnimRange_ApplyClassDamage` | `Human` | not filled in |
 | `0x00254e78` | `Human_UpdateBlockState` | `Human` | 1,736 |
@@ -1327,6 +1323,9 @@ at the top of the repository's `README.md`.
 | `0x002fa9a8` | `AttackAction_Start` | `Human` | 904 |
 | `0x002fad30` | `AttackAction_Abort` | `Human` | 64 |
 | `0x002fad70` | `AttackAction_Update` | `Human` | 320 |
+| `0x002faeb0` | `SetCommandAction_Init` | `Human` | not filled in |
+| `0x002faee0` | `SetCommandAction_Start` | `Human` | not filled in |
+| `0x002faf20` | `SetCommandAction_Update` | `Human` | not filled in |
 | `0x002fb9e8` | `MoveAction_Init` | `Human` | 248 |
 | `0x002fbd18` | `MoveAction_CornerTrial` | `Human` | 472 |
 | `0x002fc158` | `MoveAction_CornerSpeed` | `Human` | 472 |

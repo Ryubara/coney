@@ -151,6 +151,7 @@ GrabOutcome updateGrab(const GrabInput& input, PowerMeter& power, const CombatTu
         }
         break;
     case command::kR1Pressed:
+    case command::kGrabSpin:
         outcome.action = GrabAction::Spin;
         outcome.animId = input.fromRear ? anim_id::kGrabSpinToFront : anim_id::kGrabSpinToRear;
         break;

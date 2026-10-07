@@ -31,8 +31,8 @@ namespace {
 constexpr std::uint64_t kRetargetMs = 1000;
 // The walkable-line check's period, in updates.
 constexpr std::uint32_t kLineCheckUpdates = 30;
-// The move into reach stops this share of the reach inside it, so the next update finds the target in reach.
-constexpr float kMoveStopShare = 0.9F;
+// The walk into reach holds A at least this beyond twice T's radius, m.
+constexpr float kMoveBandSlack = 0.1F;
 // The kinds the try and the pick name.
 constexpr int kX1Kind = 0;
 constexpr int kSquareKind = 1;
@@ -246,11 +246,11 @@ GoalStatus FightGoal::process(Brain& brain) {
         }
         return GoalStatus::Stop;
     }
-    // Out of the kind's reach: move in.
-    const float reach = kindReach(brain, m_kind);
-    if (distance > reach) {
+    // Out of the kind's reach (3D, feet to feet): move in, to between 2 × his radius and max(reach, that + 0.1 m).
+    const float reach = kindReach(brain, *target, m_kind);
+    if (reachDistance(brain, *target) > reach) {
         const int limit = brain.characterClass() == kBossClass ? kShortMoveMs : kLongMoveMs;
-        const float stop = std::max(reach * kMoveStopShare, 2.0F * capsuleRadius(*target));
+        const float stop = std::max(reach, 2.0F * capsuleRadius(*target) + kMoveBandSlack);
         brain.queueAction(std::make_unique<MoveToHumanAction>(static_cast<std::uint32_t>(limit), stop));
         return GoalStatus::Stop;
     }
@@ -313,7 +313,8 @@ bool FightGoal::tryGrab(Brain& brain, Brain& target) {
     if (m_kind == kGrabKind) {
         // At his side: step in while a mate holds him from behind, else an X1.
         if (atSide && rearGrabbed) {
-            const float stop = std::max(kindReach(brain, kGrabKind) * kMoveStopShare, 2.0F * capsuleRadius(target));
+            const float stop =
+                std::max(kindReach(brain, target, kGrabKind), 2.0F * capsuleRadius(target) + kMoveBandSlack);
             brain.queueAction(std::make_unique<MoveToHumanAction>(kGrabMoveMs, stop));
             return true;
         }
@@ -345,12 +346,6 @@ void queueAttack(Brain& brain, int kind, std::optional<float> stickHeading) {
         brain.queueAction(std::make_unique<AttackAction>(chain[i], static_cast<std::int16_t>(delay),
                                                          i == 0 ? stickHeading : std::nullopt));
     }
-}
-
-float attackReach(const human::Human& human, int kind) {
-    const combat::AnimRangeList* ranges = human.ranges();
-    const float far = ranges != nullptr ? ranges->farRange(firstAnimOf(kind)) : 0.0F;
-    return kInReachShare * (far > 0.0F ? far : human::kDefaultStrikeReach);
 }
 
 } // namespace coney::ai

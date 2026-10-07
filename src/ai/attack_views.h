@@ -22,22 +22,31 @@ class Brain;
 [[nodiscard]] AttackerView attackerViewOf(Brain& attacker, const Brain* target);
 
 /// T's view against `attacker`. **Coney stand-ins**: `Human_IsHighOrBusy` and held flags `0x400000` / `0x40` are
-/// false; the specials' and the grab's refusing states are "not on its feet or in a pair".
+/// false; the specials' and the grab's refusing states are "not on its feet or in a pair", the grab's leaving out a
+/// rear hold.
 [[nodiscard]] TargetView targetViewOf(const Brain& target, const Brain& attacker);
 
 /// The draw's context for A against T.
 [[nodiscard]] PickContext pickContextOf(const Brain& attacker, const Brain& target);
 
-/// The distance within which A can start `kind` at a target: the grab's or the tackle's search range for 22 and 21
-/// (the dispatcher's own, so the press finds him), else ai::attackReach().
-[[nodiscard]] float kindReach(const Brain& attacker, int kind);
+/// The distance the reaches compare: from A's feet to T's, in 3D (`Vec_DistSq` of the two transforms).
+[[nodiscard]] float reachDistance(const Brain& attacker, const Brain& target);
+
+/// How close A must be to T to press `kind` (`Attack_ReachSquared`, the fight goal's walk-in): ai::nearReach() of
+/// ai::nearReachSource() for A's gait, A's held set and T's ground. "At a walk" is moving below the run (**Coney
+/// reading**).
+[[nodiscard]] float kindReach(const Brain& attacker, const Brain& target, int kind);
+
+/// The far reach beyond which `Human_CanStartAttack` refuses `kind` (`Attack_FarReachSquared`).
+[[nodiscard]] float kindFarReach(const Brain& attacker, const Brain& target, int kind);
 
 /// `Human_CanStartAttack`'s guard for A on T with `kind`.
 [[nodiscard]] StartGuard startGuardOf(const Brain& attacker, const Brain& target, int kind);
 
 /// Whether Coney's dispatcher takes `kind`'s command from an AI. **Coney stand-in**: the kinds whose commands reach
-/// no handler yet (11 `0x36`, 12 / 13 `0x37` / `0x38`, 15 `0x24`, 23 `0x39`, 34 / 44 `0x19`, 36 `5`, 41 `0x31`) and
-/// the `SSS3` holds (8, 9: `0x14`, `0x13`) are left out of every pick.
+/// no handler yet (11 `0x36`, 12 / 13 `0x37` / `0x38`, 15 `0x24`, 23 `0x39`, 41 `0x31`) and the `SSS3`
+/// holds (8, 9: `0x14`, `0x13`) are left out of every pick. 36 (`5`, get off) and 34 / 44 (`0x19`, the grab spin,
+/// which only a grabber's update reads) are picked as the original picks them.
 [[nodiscard]] bool dispatchable(int kind);
 
 /// What filter a pick runs: `Human_CanUseAttackKind` or `Human_CanStartAttack`.

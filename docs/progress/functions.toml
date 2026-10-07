@@ -139,16 +139,34 @@ subsystem = "Animation"
 size = 2928
 
 [[function]]
+address = 0x0010ced0
+name = "AmbientManager_AddParticleEmitter"
+subsystem = "Animation"
+size = 132
+
+[[function]]
 address = 0x0010cf58
 name = "Ambient_AddEmitter"
 subsystem = "Animation"
 size = 792
 
 [[function]]
+address = 0x0010d2a0
+name = "AmbientEmitter_SetVolume"
+subsystem = "Animation"
+size = 88
+
+[[function]]
 address = 0x0010d3c8
 name = "Ambient_SetSound"
 subsystem = "Animation"
 size = 88
+
+[[function]]
+address = 0x0010d570
+name = "AmbientManager_EnableEmitter"
+subsystem = "Animation"
+size = 20
 
 [[function]]
 address = 0x0010d590
@@ -427,6 +445,12 @@ subsystem = "Audio"
 size = 48
 
 [[function]]
+address = 0x00113840
+name = "Sound_AddAmbientEmitter"
+subsystem = "Audio"
+size = 224
+
+[[function]]
 address = 0x00113920
 name = "Ambient_AddEmitter2"
 subsystem = "Audio"
@@ -443,6 +467,12 @@ address = 0x00113bc8
 name = "Audio_EnableAmbientEmitter"
 subsystem = "Audio"
 size = 56
+
+[[function]]
+address = 0x00113c00
+name = "Sound_SetAmbientEmitterVolume"
+subsystem = "Audio"
+size = 48
 
 [[function]]
 address = 0x00113c58
@@ -485,6 +515,12 @@ address = 0x00113df8
 name = "Sound_SetCommandSoundPercent"
 subsystem = "Audio"
 size = 56
+
+[[function]]
+address = 0x00113e60
+name = "Sound_SetSystemMusicState"
+subsystem = "Audio"
+size = 72
 
 [[function]]
 address = 0x00113ea8
@@ -3497,6 +3533,12 @@ name = "Human_Init"
 subsystem = "Human"
 
 [[function]]
+address = 0x002195e0
+name = "Human_SetCoverFlag5"
+subsystem = "Human"
+size = 36
+
+[[function]]
 address = 0x0021a490
 name = "Human_PushOutInAir"
 subsystem = "Human"
@@ -3830,6 +3872,16 @@ address = 0x0022fc00
 name = "Human_EndWounded"
 subsystem = "Human"
 size = 232
+
+[[function]]
+address = 0x00230930
+name = "Attack_FarReachSquared"
+subsystem = "Human"
+
+[[function]]
+address = 0x00230d00
+name = "Attack_ReachSquared"
+subsystem = "Human"
 
 [[function]]
 address = 0x00231090
@@ -4825,6 +4877,11 @@ size = 40
 [[function]]
 address = 0x00254418
 name = "AttackTable_GetOffset"
+subsystem = "Human"
+
+[[function]]
+address = 0x002544a0
+name = "AttackTable_GetReach"
 subsystem = "Human"
 
 [[function]]
@@ -6661,6 +6718,21 @@ subsystem = "Human"
 size = 320
 
 [[function]]
+address = 0x002faeb0
+name = "SetCommandAction_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002faee0
+name = "SetCommandAction_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002faf20
+name = "SetCommandAction_Update"
+subsystem = "Human"
+
+[[function]]
 address = 0x002fb9e8
 name = "MoveAction_Init"
 subsystem = "Human"
@@ -8131,6 +8203,12 @@ subsystem = "Scripting"
 size = 32
 
 [[function]]
+address = 0x00371b18
+name = "AddAmbientSoundEmitter"
+subsystem = "Scripting"
+size = 664
+
+[[function]]
 address = 0x00371db0
 name = "AddAmbientSoundEmitter2"
 subsystem = "Scripting"
@@ -8141,6 +8219,12 @@ address = 0x00372058
 name = "SetAmbientEmitterPositions"
 subsystem = "Scripting"
 size = 760
+
+[[function]]
+address = 0x003725f0
+name = "SetAmbientEmitterVolumeMod"
+subsystem = "Scripting"
+size = 116
 
 [[function]]
 address = 0x00372fe0
@@ -9551,6 +9635,12 @@ subsystem = "Warriors"
 size = 240
 
 [[function]]
+address = 0x00419fc8
+name = "GameState_SetMusicMood"
+subsystem = "Warriors"
+size = 64
+
+[[function]]
 address = 0x0041a060
 name = "GameState_UpdateSystemMusic"
 subsystem = "Warriors"
@@ -10199,63 +10289,3 @@ address = 0x0042a938
 name = "Movie_Play"
 subsystem = "Movie"
 size = 1768
-
-[[function]]
-address = 0x0010d570
-name = "AmbientManager_EnableEmitter"
-subsystem = "Animation"
-size = 20
-
-[[function]]
-address = 0x0010d2a0
-name = "AmbientEmitter_SetVolume"
-subsystem = "Animation"
-size = 88
-
-[[function]]
-address = 0x002195e0
-name = "Human_SetCoverFlag5"
-subsystem = "Human"
-size = 36
-
-[[function]]
-address = 0x00371b18
-name = "AddAmbientSoundEmitter"
-subsystem = "Scripting"
-size = 664
-
-[[function]]
-address = 0x00113840
-name = "Sound_AddAmbientEmitter"
-subsystem = "Audio"
-size = 224
-
-[[function]]
-address = 0x0010ced0
-name = "AmbientManager_AddParticleEmitter"
-subsystem = "Animation"
-size = 132
-
-[[function]]
-address = 0x003725f0
-name = "SetAmbientEmitterVolumeMod"
-subsystem = "Scripting"
-size = 116
-
-[[function]]
-address = 0x00113c00
-name = "Sound_SetAmbientEmitterVolume"
-subsystem = "Audio"
-size = 48
-
-[[function]]
-address = 0x00113e60
-name = "Sound_SetSystemMusicState"
-subsystem = "Audio"
-size = 72
-
-[[function]]
-address = 0x00419fc8
-name = "GameState_SetMusicMood"
-subsystem = "Warriors"
-size = 64

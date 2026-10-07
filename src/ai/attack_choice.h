@@ -41,6 +41,7 @@ struct AttackerView {
     bool holdMovesFree = false;
     bool holdsTarget = false;  ///< The human it holds (`+0xc4`) is T.
     bool heldByTarget = false; ///< T holds it (T's `+0xc4` is A).
+    bool held48000 = false;    ///< Held flags any of `0x48000` (the start test's grounded strikes).
     /// It holds an attack slot on the human beside or behind it (sector 2-6 of its sector record, flag bit 1, within
     /// 1.5 m): the snap's target.
     bool snapTargetAside = false;
@@ -62,6 +63,9 @@ struct TargetView {
     bool heldFlag40 = false;     ///< Held flag `0x40`.
     bool specialRefused = false; ///< State any of `0x40100f0800` (16-18).
     bool grabRefused = false;    ///< State any of `0x7bfdc8f7fd0` (22).
+    bool heldC12200 = false;     ///< Held flags any of `0xc12200` (the start test's grab).
+    bool rearGrabbed = false;    ///< State `0x20`: held from the rear.
+    bool attackerInFront = true; ///< A stands in front of T (`0x002672d0` side 0).
 };
 
 /// Whether A may use attack kind `kind` on T now (`Human_CanUseAttackKind`): the table on the page, by kind.
@@ -77,8 +81,11 @@ struct StartGuard {
     bool inReach = true;           ///< T within the kind's far reach.
 };
 
-/// Whether A may start attack kind `kind` on T now (`Human_CanStartAttack`): the guard, then canUseAttackKind().
-/// **Coney reading**: the per-kind cases were read for 10-15 only and are taken to mirror canUseAttackKind().
+/// Whether A may start attack kind `kind` on T now (`Human_CanStartAttack`): the guard, then the per-kind test of
+/// docs/research/combat.md#ai-attacks. It mirrors canUseAttackKind() but for: the snap (A free only), the grounded
+/// strikes (T high or busy, A free of `0x48000`), 14 (T knocked down), 15 (T none of `0x40100f0800`), the tackle
+/// (A's power too), the grab (T none of `0xc12200`, a rear-held T only from in front), the throw (A free) and 27, 28,
+/// 38, 39 (no free test).
 /// @orig 0x00224778 Human_CanStartAttack (unknown)
 [[nodiscard]] bool canStartAttack(const StartGuard& guard, const AttackerView& attacker, const TargetView& target,
                                   int kind);

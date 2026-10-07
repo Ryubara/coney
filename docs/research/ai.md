@@ -4664,8 +4664,9 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   every adjustment (the running rule, the hurt rule, the crowd on A, the busy target for the grab, the armed bonus,
   the rear-grabbed bonus, the pattern read). `attackerViewOf` and `targetViewOf` fill the views from Coney's fighters.
   **Stand-ins**: "free" is on its feet in no pair and not reacting; no AI holds an object, spray paint or cuffs; the
-  pattern read is not made; the kinds whose commands no Coney handler takes (8, 9, 11-13, 15, 18, 23, 34, 36, 41,
-  44) are left out of every pick.
+  pattern read is not made; the kinds whose commands no Coney handler takes (8, 9, 11-13, 15, 18, 23, 41) are left out
+  of every pick. Each kind's near reach (the walk-in) and far reach (the start test) are the anims of
+  `repo:src/ai/attack_reach.h`, read from the attacker's Anim Range List; an anim without a record reaches 2 m.
 - **Taking turns** (`repo:src/ai/attack_places.h`, `repo:src/ai/fight_book.h`, `repo:src/ai/fight_checks.h`): each
   brain keeps four active-attacker places, the two spacing bytes (raised by each slot claim to the attacker gang's
   `CfgGang` values 2 and 3, a Warrior target keeping 1 standing, back to 1 when its slot list empties) and the tackle
@@ -4804,12 +4805,11 @@ attack slots, melee 3 / 5 m, sight 30 m, field of view 1.92 rad), drawn and anim
 gang of kind 19 made the enemy of the player's (the Warriors' kind), and an "engaging" toggle stands in for the script's
 `GoalFight` (an idle fighter takes the player on within its far melee range). Who fights whom in the characters' step is
 whoever's gangs are not friends (`Humans::setOpposition`); without gangs, the humans added pad-controlled and the others
-fight each other, and only the former fight the sandbox's passive targets. A target is in reach within 0.9 × its first
-attack's far range; a move runs beyond 4 m, lasts 1000 or 2000 ms (2000 beyond twice the reach) and stops at 0.9 × the
-reach. Command `0x11` chains as
+fight each other, and only the former fight the sandbox's passive targets. A move runs beyond 4 m and lasts 1000 or 2000
+ms (2000 beyond twice the reach). Command `0x11` chains as
 square. A reaction goal clears the actions and the move. The fight reaction goals (grabbing, mounting, grabbed,
 mounted, grounded) are built in `repo:src/ai/fight_reactions.h`; their stand-ins: no trains, no presenting to a
-friendly player or front-grab hand-over press, the throw direction only the random left, ahead or right, no help call,
+friendly player, the throw direction only the random left, ahead or right, no help call,
 and a held AI's presses reach no handler (its holder drives it). A block ends when its target is not on its feet
 (Coney has no state word). Each brain's generator is seeded by its slot.
 A think only counts (the types' think handlers are not traced).

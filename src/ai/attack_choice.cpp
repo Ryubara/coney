@@ -149,7 +149,33 @@ bool canStartAttack(const StartGuard& guard, const AttackerView& attacker, const
         !guard.inReach) {
         return false;
     }
-    return canUseAttackKind(attacker, target, kind);
+    const AttackerView& a = attacker;
+    const TargetView& t = target;
+    switch (kind) {
+    case 10:
+        return a.free;
+    case 12:
+    case 13:
+        return t.isAttacker || (t.highOrBusy && a.free && !a.held48000);
+    case 14:
+        return a.free && t.knockedDown;
+    case 15:
+        return a.free && !t.specialRefused && (a.holdsSprayPaint || !a.padControlled);
+    case 21:
+        return canUseAttackKind(a, t, kind) && a.grabPower;
+    case 22:
+        return canUseAttackKind(a, t, kind) && !t.heldC12200 && (!t.rearGrabbed || t.attackerInFront);
+    case 23:
+        return a.free && a.holdsThrowable;
+    case 27:
+    case 28:
+        return a.grabbing && a.holdsTarget;
+    case 38:
+    case 39:
+        return a.tackling && a.holdsTarget;
+    default:
+        return canUseAttackKind(attacker, target, kind);
+    }
 }
 
 std::optional<int> pickAttackKind(const AttackWeights& weights, const PickContext& context,
