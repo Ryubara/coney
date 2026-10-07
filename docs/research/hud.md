@@ -263,6 +263,108 @@ triangle wave), the fill is gold while `f³ < 0.2` (`0x005100c8`) and red otherw
 and skipped for `n` frames, repeating; `n` = 0 draws it every frame. Confirmed (code) at `0x00213290`. The tutorial
 passes 5: on and off every 5 frames (1/6 s at 30 frames a second).
 
+### The Warrior command menu {#warrior-command-menu}
+
+A war chief (human `+0x3ac` = 1) orders his crew from a six-slot menu held open with **R2** and steered with the
+**right stick**; releasing R2 gives the highlighted order. Each player panel owns one (`WarCommandDisplay`, panel
+`+0x1ef0`, built by `WarCommandDisplay_Init`, `0x001a62c0`); the commands themselves are on
+[AI: Warrior commands](ai.md#warrior-commands). Confirmed (code) at the addresses given unless marked; not seen at
+runtime.
+
+**Input** (`Player_UseItemCommand`, `0x002843f8`; pad commands from [Combat](combat.md#commands): 1 is R2 held, 2 R2
+released). Nothing happens while the human has a state flag of `0x80040000`, or `0x20000` (that branch only handles
+triangle), or has no player index (human `+0x1b0` = -1), or while that player's menu is locked (game state `+0x42e` +
+player). Release is tested before hold:
+
+- **R2 held** (every frame it is down): `WarCommandDisplay_Open` (`0x001a6d28`). When the display is allowed
+  (`+0x155c`: `WCEnableCommand`, `HUDShowWarCommand`) and the human is a war chief, it is shown (`+0x1554` = 1), the
+  "issued" flag (`+0x1548`) and the after-issue counter are cleared, the eighteen sprites are shown with any fade
+  cancelled, and **the camera's right stick is switched off** for that pad (`0x0050b1b0[pad]` = 0, which
+  [Camera](camera.md#right-stick) tests). It does **not pause or slow the game**: neither function touches the game
+  timer, a time scale or the game mode, and the handler returns 0, so the rest of the frame's input (the left stick,
+  attacks) still runs. The selection (`+0x1540`) is **not** reset: the menu opens on the last highlighted slot (slot
+  0 the first time). For a human who is not a war chief the display is hidden instead.
+- **R2 released**: when the display is set up (panel `+0x1efc`), `WarCommandDisplay_Issue` (`0x001a6c58`).
+
+**Picking a slot** (`WarCommandDisplay_ReadStick`, `0x001a7040`, from `WarCommandDisplay_Update` each frame while
+the menu is shown, not yet issued and not locked) reads the right stick's raw bytes (pad record `+0x1a` x, `+0x1b` y,
+0-255, y down; [Front end](frontend.md#pad-record)):
+
+- **Dead zone:** nothing unless (x − 127)² + (y − 127)² > 12,100, a radius of 110 of 127: **about 87 % deflection**.
+  With a stick value v in [-1, 1] and raw ≈ 127.5 + 127.5 v, a push of 0.9 picks and 0.8 does not. Inside it the
+  highlight stays where it was.
+- **Angle**, clockwise from up (up 0°, right 90°, down 180°, left 270°): a quadrant base (0°, 90°, 180°, 270°) plus
+  asin(|d| / 128) of **one** axis's offset d from 128, not atan2, so it is exact only at full deflection. d is the x
+  offset in the up-right and down-left quadrants and the y offset in the down-right and up-left ones; an offset of
+  128 or more counts as 90°. A 45° push of magnitude 0.9 (offsets about 81 and 81) reads 39° up-right.
+- **Sectors** (without hysteresis):
+
+| Slot | Stick | Angle | Command |
+| --- | --- | --- | --- |
+| 0 | up | 337.5°-22.5° | 0 follow |
+| 1 | up-right | 22.5°-87.75° | 2 defend |
+| 2 | down-right | 92.25°-157.5° | 4 scatter |
+| 3 | down | 157.5°-202.5° | 3 hold |
+| 4 | down-left | 202.5°-267.75° | 5 wreck (`steal` / `vandal`) |
+| 5 | up-left | 272.25°-337.5° | 1 attack |
+
+- Straight left or right (within 2.25°, `0x0050d2b4` = π/80) selects nothing new. The slot-to-command map is the
+  jump table at `0x00553fe0` (`WarCommand_FromSlot`, `0x001a8530`; 7 for any other slot); command 6 has no slot. The
+  command names follow [AI](ai.md#warrior-commands) (read from the lines, inferred).
+- **Hysteresis:** the highlighted sector reaches π/16 = 11.25° (`0x0050d2b8`) further into each neighbour until the
+  highlight moves, so a stick resting on a boundary does not flicker.
+- **Disabled commands are not skipped**: the stick can highlight them; the text then says so (below) and issuing one
+  does nothing.
+- **Sound:** interface cue `0x20` each time the highlight changes. The stick is read every frame (the interval
+  `0x0050d280` is 0, against the timer at `0x0050b8b8`).
+
+**Issuing** (`WarCommandDisplay_Issue`, once per opening, only while shown and not yet issued): the highlighted slot is
+kept (`+0x1544`), its command stored as the player's last (game state `+0x41c` + player) and given through
+**`0x0041c4e0(gameState, chief, command, forced 0, pos 0, arg 0)`** (chief = display `+0x156c`); `0x0051480c` is set
+to `0xff`. A disabled command has its text cleared first and the dispatcher then refuses it
+([AI](ai.md#warrior-commands), step 1), though the last-command byte has already been written. **Only R2's release
+issues**: there is no flick or timeout, and releasing without touching the stick issues the highlighted slot (the
+previous choice). An open menu also issues when the pause menu closes (`PauseMenu_Close`, `0x001dcb20`) and on any
+frame the HUD is not drawn (`HUD_Render`'s hidden branch, `0x001b1688`). The chief's spoken line comes from the
+dispatcher ([Speech](../references/speech.md)).
+
+**After issuing** (`WarCommandDisplay_Update`, `0x001a7e48`): for 10 updates (`0x0050d300`) the menu stays as it is,
+then the camera's right stick is switched back on (`0x0050b1b0[pad]` = 1) and the sprites fade out: the chosen slot's
+plate over 1,500 ms (`0x0050d310`), everything else over 500 ms (`0x0050d30c`); the chosen slot blinks, hidden 2 of
+every 4 updates (`0x0050d24c` = 2, `WarCommandDisplay_BlinkSlot`, `0x001a7d10`). The display closes (`Shutdown`)
+when its text has expired (`MarkupText_IsExpired`: the text's `<DISPLAYTIME>`, inferred). It closes at once if the
+chief goes down (`0x00227dd8`), and a lock that arrives while it is open ends it as if issued, with no command.
+
+**Layout** (default video mode, GUI coordinates). The centre x is the layout record's (`0x006006a0` + player ×
+`0x80`): 0.5, set by `Open`; in a level numbered 100 or more with two players (`0x001fe198` = 1), 0.23 for player 1
+and 0.76 for player 2. Each slot is three sprites at one point, back to front: a black backing (sprite word `0xd0100`
+of instance 6, size 0.077), a plate (the same rectangle, size 0.07) and the icon (`part_page0`, instance 3, size
+0.08):
+
+| Slot | Position | Icon rectangle |
+| --- | --- | --- |
+| 0 | (x, 0.795) | `0x56` |
+| 1 | (x + 0.069, 0.795) | `0x5a` |
+| 2 | (x + 0.071, 0.93) | `0x58` |
+| 3 | (x, 0.93) | `0x55` |
+| 4 | (x − 0.071, 0.93) | `0x59` |
+| 5 | (x − 0.069, 0.795) | `0x5b` |
+
+So two rows of three, about 0.07 apart, the top row at y 0.795 and the bottom at 0.93 (`WarCommandDisplay_Place`,
+`0x001a77b0`, from base y 0.99 `0x0050d20c` and the offsets `0x0050d214`-`0x0050d23c`). Between them, at (x, 0.86)
+(`0x0050d2fc`), the **name** of the highlighted slot: a markup text (font slot 3, colour (191, 191, 191), the
+record's `+0x10`) over a box sprite (rectangle `0x4e`, colour (0, 0, 0, 143)) sized to the text plus (0.013, the
+record's `+0x64`). The text is entry *slot* of the command-text table (`0x006007c0`, filled by `CfgWarriorCommand`
+from [`GSTRING.COMMAND`](../references/text-labels.md#text-gstring-command); indexed by display slot, not command
+id); entry 6 (`0x006007d8`) replaces it while all the player's commands are locked (game state `+0x414` + player) and
+entry 7 (`0x006007dc`) while the highlighted command is disabled. **Colours** (`WarCommandDisplay_Render`,
+`0x001a8590`, values from `0x001a8b48`): the highlighted slot's icon white, plate gold (255, 183, 0), backing grey;
+the others' icon white, plate dark (35, 35, 35), backing black; a disabled command's icon (30, 30, 30). The 16:9
+and other modes overwrite the offsets and sizes (`0x001a7e48`); they are not listed here.
+
+**No d-pad path:** the player's command handler gives the menu nothing on the d-pad (d-pad right is the flash);
+scripts order the crew with `WCIssueCommand`.
+
 ### Score and money
 
 - **Score** (`0x001c7730`, panel `+0x70`): seven digits, `"%07d"`, of the player's score in the stats object
@@ -364,6 +466,8 @@ when the HUD is hidden (`+0x177a0` = 0); it returns the slot, or -1. The panel i
 **Health and power are not shown on the panel** (they are on the ground: [The health rings](#the-health-rings)). Each
 frame `0x00221108` passes the player's health fraction (record `+0x144` / `+0x146`) and power fraction (`+0x148` or
 `+0x14a` over their maxima) to `0x001b2430` / `0x001b2460`, which call `0x0020dfd0`, a function that returns at once.
+This holds for `PlayerHUD`; the Armies of the Night panel draws a power bar and a health
+bar ([`ANHud`](#fn-anhud)).
 Confirmed (code); confirmed (runtime): health 314 and 900 of 900 left the panel unchanged.
 
 **Visibility.** The panel draws when attached (`+0x40f8`) and shown (`+0x40fc`). Its **fade**: `+0x411c` holds the
@@ -704,6 +808,10 @@ While the player has a target (human `+0xc8`, the one attacks and grabs aim at) 
 not down (`0x00227dd8`), `TargetPanel_Update` (`0x0020e6f8`, called from `0x00210e48`) shows a panel for it: its name
 and a bar. Each player has two panel slots (`0x0063f240` + player × `0xd00` + slot × `0x680`); a new target takes a
 free slot or the older one, so the last two targets can show side by side. Confirmed (code); not seen at runtime.
+The target panel belongs to the **Armies of the Night panel** (`ANHud`, [its functions](#fn-anhud)): the only
+`TargetPanel` is built by `ANHud_Construct` and updated by `ANHud_Update` (`0x00210e48`), and `HUD_InitLevel`
+makes `ANHud`s only in levels 60-69, so the story HUD never shows it. Confirmed (code) at `0x0020fd80`,
+`0x00210e48`.
 
 - **Layout** (per player, `0x0050f6a0` + player × `0x80`, GUI units): base (0.085, 0.14) for player 0 and (0.81,
   0.14) for player 1; the second slot 0.22 to the right (player 0) or left (player 1, `+0x70`). The name is a markup
@@ -1084,9 +1192,9 @@ widget base ([GUI](gui.md#fn-after-checklistmessagehud)) and a small HUD toggle 
 | `0x001a62c0` | `WarCommandDisplay_Init(display, player)` | from `PlayerHUD_Init`: layout record `0x006006a0` + player × `0x80`; per command slot an icon (rectangles `0x55`-`0x5b`), a plate `(110, 110, 90)` and a black backing, set in a diamond round the centre | confirmed (code) |
 | `0x001a6b80` | `WarCommandDisplay_Shutdown` | slot `+0x68`: the eighteen sprites | confirmed (code) |
 | `0x001a6c38` | `WarCommandDisplay_SetAllowed(display, on)` | `+0x155c` (`WCEnableCommand` and friends) | confirmed (code) |
-| `0x001a6c58` | `WarCommandDisplay_Issue` | once per opening (`+0x1548`): issues the selected command through `0x0041c4e0` and stores it as the player's last (`+0x41c` + player) | confirmed (code) |
+| `0x001a6c58` | `WarCommandDisplay_Issue` | on R2's release ([Warrior command menu](#warrior-command-menu)), once per opening (`+0x1548`): issues the selected command through `0x0041c4e0` and stores it as the player's last (`+0x41c` + player) | confirmed (code) |
 | `0x001a6d28` | `WarCommandDisplay_Open` | from `0x002843f8`: for a war chief (`+0x3ac` = 1) shows the display and resets its sprites and timer | confirmed (code) |
-| `0x001a7000`, `0x001a7020` | `WarCommandDisplay_LockMenu`, `_IsReady` | `0x0050b1b0[player]` = 1; the batch is resident | confirmed (code) |
+| `0x001a7000`, `0x001a7020` | `WarCommandDisplay_ReleaseCamera`, `_IsReady` | `0x0050b1b0[pad]` = 1: the camera's right stick back on ([Warrior command menu](#warrior-command-menu)); the batch is resident | confirmed (code) |
 | `0x001a7040` | `WarCommandDisplay_ReadStick` | every `*0x0050d280` ms, with the stick (pad record bytes `+0x2a`/`+0x2b`) more than 110 from centre: the stick's angle picks one of six sectors (with hysteresis `0x0050d2b8`) as the selection `+0x1540`; interface cue `0x20` on a change | confirmed (code) |
 | `0x001a77b0`, `0x001a7d10` | `WarCommandDisplay_Place`, `_BlinkSlot` | the slot sprites round the centre; the selected slot blinks by the counter `+0x1578` | confirmed (code) |
 | `0x001a7e48` | `WarCommandDisplay_Update` | slot `+0x30`: closed when the player is down; the stick read unless the menu is locked; after an issue the sprites fade and the display closes when its text expires; text = the command's name or the locked text | confirmed (code) |
@@ -1631,6 +1739,90 @@ render), then `UsageInfo` ([GUI](gui.md#fn-usageinfo)) and the Armies of the Nig
 | `0x001ce8b8` | `HintBox_Render` | from `HUD_Render`: box alpha = 125 (`0x0050ebd4`) × the text's alpha / 255, draws the box, re-applies the text width 0.74 (0.52 split, `0x0050ebd8` / `0x0050ebd0`) and colour `0x005fd310`, draws the text | confirmed (code) |
 | `0x001ce9a8` | `Tutorial_CallCallback` | [The tutorial callback](#tutorial-callback) | confirmed (code) |
 | `0x001cea38` | `Tutorial_IsHintUnlocked(id)` | true when the unlockables manager (`0x006fe998`) has an unlocked type-11 record with data `id` ([Unlockables](player-state.md#unlockables)); the 25 callers test it before queueing a game hint | confirmed (code) |
+
+### After `PM_TooManyProfiles.cpp` (no path string): the player panel base and the target panel {#fn-player-panel-base}
+
+`0x0020db98`-`0x0020fc98`: the methods the two player panels share (interface vtable `0x0053e9c0`, whose slots
+`PlayerHUD`'s `0x0053edf8` and `ANHud`'s `0x0053ecc0` reuse or replace; the interface sits at panel `+0x4120`) and
+the **target panel** (vtable `0x0053ed60`), which only the [Armies of the Night panel](#fn-anhud) owns. The code
+after the profile-manager screen has no path string of its own, and the static initialiser at its end
+(`0x00211c80`) sets this code's colours, so it is a file of its own (inferred) that the source map counts with
+`PM_TooManyProfiles.cpp`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0020db98`, `0x0020dbc0` | `PlayerHUD_Enable`, `PlayerHUD_Disable` | slot `+0x20`: "wanted" `+0x40f8` = 1 and the money counter (`+0x400`) reset; slot `+0x28`: wanted = 0, then `PlayerHUD_Hide` | confirmed (code) |
+| `0x0020dbe0` | `PlayerHUD_ShutdownBase` | slot `+0x18` of the base, called first by both panels' shutdowns: wanted, shown and attached (`+0x40f8`, `+0x40fc`, `+0x4100`) cleared, the banner and its two shadows (`+0x3ce0`, `+0x3de0`, `+0x3ee0`) released | confirmed (code) |
+| `0x0020dc98` | `PlayerHUD_SetBanner` | slot `+0x30`: [The name banner](#the-name-banner) | confirmed (code) |
+| `0x0020dfd0`, `0x0020dfd8`, `0x0020e168` | `PlayerHUD_ReportBars`, `PlayerHUD_OnAttach`, `PlayerHUD_EmptyHook` | empty: the health and power reports (`HUD_ReportHealth` / `_ReportPower`), `HUD_AttachPlayer`'s hook, and the last call of both panels' Init. Not needed: no effect | confirmed (code) |
+| `0x0020dfe0` | `PlayerHUD_SetMayShow` | `+0x4108` = flag (`HidePlayerHud` / `ShowPlayerHud`, [Showing and hiding](#showing-and-hiding)) | confirmed (code) |
+| `0x0020dfe8`, `0x0020e008` | `PlayerHUD_HideCall`, `PlayerHUD_ShowCall` | one-line callers of hide and show (from `HUD_AttachPlayer`, `HUD_Hide`, `HUD_Restore` and the both-panels pair) | confirmed (code) |
+| `0x0020e028` | `PlayerHUD_Show` | when attached and allowed (`+0x4108`): shown `+0x40fc` = 1, the money counter (`+0x3454`) and the banner (`+0x3ce8`) visible | confirmed (code) |
+| `0x0020e058` | `PlayerHUD_Hide` | when attached, unless an Armies of the Night level with game state `+0x14c` = 1: banner and panel hidden, money counter hidden and reset; sets `0x0050b1b0[player]` when `+0x3444` is set (read by the HUD, not traced) | confirmed (code) |
+| `0x0020e0f8` | `PlayerHUD_IsLoaded` | slot `+0x90`: the three banner sprites' sheets resident | confirmed (code) |
+| `0x0020e170`, `0x0020e210` | `TargetPanel_Construct`, `TargetPanel_Destroy` | the widget base and six `{target handle, sprite word}` pairs at `+0x44` cleared (the empty handle `0x006ebd30`, word -1); destructor slot `+0x60` | confirmed (code) |
+| `0x0020e238` | `TargetPanel_Setup(panel, player)` | from `ANHud_Init`: the player's two slots (`0x0063f240` + player × `0xd00` + slot × `0x680`): picture (`0x1e001e`) and frame (`0x1e001f`, (35, 83, 188)) sprites, and a `HudGenericBar` (background (37, 37, 37), sprite word `0x30036`, label `"temp"`, gradient green to green) at the [target panel's layout](#the-target-panel) | confirmed (code) |
+| `0x0020e5b8` | `TargetPanel_Shutdown` | slot `+0x68`: both slots' sprites and bars released, the pairs cleared | confirmed (code) |
+| `0x0020e6f8` | `TargetPanel_Update` | slot `+0x30`, from `ANHud_Update` only: [The target panel](#the-target-panel) | confirmed (code) |
+| `0x0020fbc0` | `TargetPanel_Render` | slot `+0x38`, from `ANHud_Draw`: each used slot's frame, picture and bar | confirmed (code) |
+| `0x0020fc98` | `TargetPanel_SetBossTexture(panel, handle, word, on)` | on: the pair `{handle, word}` into the first free of the six; off: the handle's pair cleared. The pairs give a target its picture (inferred from the name and the sprite word) | confirmed (code) |
+
+### After `PM_TooManyProfiles.cpp` (no path string): the Armies of the Night panel {#fn-anhud}
+
+`0x0020fd40`-`0x00211c80`: **`ANHud`**, the player panel of the Armies of the Night arcade levels (60-69). It has
+`PlayerHUD`'s layout up to `+0x4120` (the same constructor calls) and its own interface vtable `0x0053ecc0`;
+`HUD_InitLevel` allocates one per player in those levels instead of using the static `PlayerHUD`s. Unlike
+`PlayerHUD` it **shows health and power** as two bars, a portrait and the [target panel](#the-target-panel).
+Values in the default mode, from the layout table `0x0050f7a0` (`0x120` bytes per player, copied from `0x00559810`
+by `ANHud_ApplyVideoMode`); positions are offsets from the panel base `+0x10`: player 0 (0.08, 0.03), player 1
+(0.80, 0.03).
+
+| Part | Offset in the table | Player 0 | What it shows |
+| --- | --- | --- | --- |
+| power bar (`HudBar` at panel `+0x00`) | `+0x60`, size `+0x70` | (-0.018, 0.078), 0.35 × 0.009 | power % (`0x00222f48`: record `+0x148` over its maximum) / 100; background (37, 37, 37), fill white |
+| health bar (`HudBar` `+0x4330`) | `+0xa0`, size `+0xb0` | (-0.018, 0.06), 0.35 × 0.024 | health / maximum (`0x00222e40`, `Human_GetMaxHealth`); background (37, 37, 37), fill green (115, 183, 11) |
+| banner and two black shadows | `+0x40`, size `+0x50` | (-0.018, 0.02), 0.055 | the [name banner](#the-name-banner): player 0 tinted (150, 30, 30), player 1 (245, 184, 0); the banner `0x210000` (100, 100, 200, 160) |
+| portrait (`+0x4130`) and its frame (`+0x4230`) | `+0x20`, sizes `+0x30`, `+0x34` | (-0.058, 0.04), 0.08 and 0.095 | sprite `0x23` (banner kind 3), `0x27` (kind 8) or `0x31`; the frame `0x1e001f` in the player's colour |
+| name (markup text `+0xb0`) and score text (`+0x2a0`) | `+0x80`, `+0x90` | (0.09, 0.02), (0.23, 0.02) | the score text in (217, 158, 12) |
+| join text (`+0x43a0`) | `+0x110` | (0.145, 0.08) | string `0xd4`, grey (191, 191, 191), centred, blinking every 500 ms (`0x0050f9f0`) while the player is not in |
+
+Bar sizes are multiplied by 1 / (0.75 × the player camera's slot `+0x1fc`) and by the scale `0x0050f9e0` (1.0;
+0.75 with device flag `0x02`; × 1.15 when the device's slot `+0xb8` is set, which also moves the base 0.035 left).
+Confirmed (code) at `0x00210e48`, `0x00211938`, `0x002102f0`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0020fd40`, `0x0020fd60` | `ANHud_Enable`, `ANHud_Disable` | slot `+0x20`: wanted = 1 and `PlayerHUD_Show`; slot `+0x28`: wanted = 0 and `PlayerHUD_Hide` | confirmed (code) |
+| `0x0020fd80`, `0x0020ffe8` | `ANHud_Construct`, `ANHud_Destroy` | the `PlayerHUD` parts, the portrait and frame, the health bar, the join text and the `TargetPanel` (`+0x4590`); the destructor (slot `+0x08`) frees them | confirmed (code) |
+| `0x002102f0` | `ANHud_ApplyVideoMode` | each update: copies the ANHud table and the target panel's (`0x00559710` → `0x0050f6a0`, `0x80` per player) and patches them for 16:9, flag `0x02` and flags `0x02` + `0x04` | confirmed (code) |
+| `0x002107e8` | `ANHud_Init(panel, player)` | slot `+0x10`: the two bars (sprite word `0x30036`, the health bar with the gradient), the score counter (`+0x70`), `TargetPanel_Setup`; then hidden | confirmed (code) |
+| `0x00210b80` | `ANHud_SetBanner` | slot `+0x30`: `PlayerHUD_SetBanner`, then the portrait (depth 14,000) and its frame | confirmed (code) |
+| `0x00210d10` | `ANHud_Shutdown` | slot `+0x18`: the base shutdown, the portrait and frame, the score counter, the join text and the target panel | confirmed (code) |
+| `0x00210dc0` | `ANHud_SetBossTexture` | slot `+0x70`: `TargetPanel_SetBossTexture` | confirmed (code) |
+| `0x00210de0` | `ANHud_IsLoaded` | slot `+0x90`: banner, portrait and frame sheets resident | confirmed (code) |
+| `0x00210e48` | `ANHud_Update` | slot `+0x40`: the join text while not wanted; once loaded and shown, the parts above each frame, then `TargetPanel_Update` | confirmed (code) |
+| `0x00211938` | `ANHud_Draw` | slot `+0x38`: when shown, wanted and loaded: score, banner, the power bar (on and off for `+0x4114` frames each when set, like [`FlashRageBar`](#the-rage-meter)), the health bar, frame, portrait and target panels; else the join text. A player who is down (`0x00227dd8`) drops wanted | confirmed (code) |
+| `0x00211a90`, `0x00211c80` | `ANHud_StaticInit`, `ANHud_StaticInitStub` | static initialiser (ctor list `0x00534148`): the colours `0x0063f1f8` (37, 37, 37), `0x0063f200` (170, 43, 43), `0x0063f208` (115, 183, 11), `0x0063f210` white, `0x0063f218` (35, 83, 188), `0x0063f220` (150, 30, 30), `0x0063f228` (245, 184, 0), `0x0063f230` (170, 43, 43), `0x0063f238` (128, 0, 0, 111), and the four target-panel slots | confirmed (code) |
+
+### The player panel (no path string) {#fn-player-panel}
+
+`0x00211ca0`-`0x00214ce8`: **`PlayerHUD`** (interface vtable `0x0053edf8` at `+0x4120`), the two static panels at HUD
+`+0x19130` ([The player panel layout](#the-player-panel-layout-0x0050fa10)); its own static initialiser
+(`0x00214ce8`) ends the file.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00211ca0` | `PlayerHUD_Construct` | from `HUD_Construct`: the panel's parts, then nine tally sprites at `+0x4150` | confirmed (code) |
+| `0x00211ef8` | `PlayerHUD_ApplyVideoMode` | patches the layout table per video mode ([Coordinates](#coordinates)) | confirmed (code) |
+| `0x00212840` | `PlayerHUD_Init(panel, player)` | slot `+0x10`: builds the panel from the layout table | confirmed (code) |
+| `0x00213060` | `PlayerHUD_SetupTallyMarks(panel, player)` | slot `+0x58`, once (`+0x4134`): the nine tally sprites (word `0x16e`, every fifth `0x16f`) from the table's `+0x1f0` and size `+0x210` | confirmed (code) |
+| `0x002131f0` | `PlayerHUD_Shutdown` | slot `+0x18`: the base shutdown, tally off (`+0x4130`), the Warrior command display, the tally sprites released | confirmed (code) |
+| `0x00213290` | `PlayerHUD_Render` | slot `+0x38`: fade, rage flashing, the parts ([The rage meter](#the-rage-meter)) | confirmed (code) |
+| `0x00213718`, `0x00213770` | `PlayerHUD_FindCounterSlot`, `PlayerHUD_UpdateCounters` | the [item counters](#item-counters): the slot (of four, `0x0050fee0` + player × `0xc0`) holding an item or the first free one; the counters' slots, places and counts | confirmed (code) |
+| `0x00213e68` | `PlayerHUD_LayoutTallyMarks` | `+0x413c` marks from the origin `+0x40e0` with the table's `+0x1f0`, `+0x200` and `+0x210`, every fifth crossing the four before (as the [gang-count indicator](#gang-count-indicator)) | confirmed (code) |
+| `0x00214138` | `PlayerHUD_Update` | slot `+0x40`: values, colours and positions each frame ([The rage meter](#the-rage-meter) and the sections after it) | confirmed (code) |
+| `0x00214bc8`, `0x00214c28` | `PlayerHUD_RefreshTallyMarks`, `PlayerHUD_RenderTallyMarks` | slot `+0x60`: when the tally is on, origin from `0x0050fa10`, count = living members of gang `+0x4140` (`0x0016a458`), laid out; slot `+0x68`: the marks drawn at full alpha. Who sets the tally on is not traced | confirmed (code) |
+| `0x00214cb0`, `0x00214ce8` | `PlayerHUD_StaticInit`, `PlayerHUD_StaticInitStub` | static initialiser (ctor list `0x0053414c`): the colour `0x00640c40` = (128, 0, 0, 111) | confirmed (code) |
 
 ## Coney's implementation
 

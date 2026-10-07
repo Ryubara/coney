@@ -29,26 +29,26 @@ the fight.
 `SoundListener.cpp` (the tasks: `FreeList<SoundTask>` at `0x00547128`), `SoundMatrix.cpp` (the voice table, the
 allocation tag `SoundVoice` and folder `vags/character/voices/` at `0x00548188`-`0x005481c8`); the music player sits
 just before (`0x0010d758`-`0x0010e7d0`, inferred; [Source map](source-map.md#position)).
-`Device/ps2/sound/msaudiodevice.cpp` (`0x0014b158`-`0x0014d508`) is the platform device over Sony's MultiStream library
-(`0x0014d528`-`0x00151ed0`, [Audio data](formats/audio.md)).
-Names are ours.
+`Device/ps2/sound/msaudiodevice.cpp` (`0x0014ba18`-`0x0014d508`) is the platform device over SCEE's MultiStream library
+(`0x0014d760`-`0x00151ed0`; [The PS2 sound device](#device), [Audio data](formats/audio.md)).
+Names are ours; every other function of the unit is in the [Function index](#function-index).
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
 | `0x0050aa84` | `g_AudioManager` | pointer to the audio manager (`0x00598aa0` at runtime) | confirmed (code), confirmed (runtime) |
 | `0x0050bce4` | `g_AudioDevice` | the MultiStream device, vtable `0x00537f88` | confirmed (code) |
-| `0x00143f68` | `Crc32(table, name)` | CRC-32 of a name as written (no case folding), table at `0x005d91e0` | confirmed (code) |
+| `0x00143f68` | `Crc32_Hash(table, name)` | CRC-32 of a name as written (no case folding), table at `0x005d91e0` | confirmed (code) |
 | `0x0010f618` | `AudioManager_Reset` | defaults (below); bank `none` | confirmed (code) |
 | `0x0010f810` | `AudioManager_Update(listeners)` | the tasks, the ambient emitters, the music, the device | confirmed (code) |
 | `0x00111de8` | `AudioManager_Play(vol, pitch, a8, mgr, owner, hash, pos, fade, p9, p10, duckable)` | start a task | confirmed (code) |
 | `0x001120c8` | `AudioManager_NewTask(hash, pos)` | admission, task, voice | confirmed (code) |
 | `0x00112560` / `0x00112700` | `Task_GetVoice` / `Task_FindVictim` | voice allocation and stealing | confirmed (code) |
-| `0x0011a170` | `Task_Update(task, listeners)` | fades, 3D volume and pan, pitch | confirmed (code) |
+| `0x0011a170` | `SoundTask_Update(task, listeners)` | fades, 3D volume and pan, pitch | confirmed (code) |
 | `0x00112b10` | `Tasks_Update` | per update: run each task, free the finished | confirmed (code) |
-| `0x0010fcd8` / `0x0010fc70` | `PlaySound2D(hash or name, flags...)` | a sound without position (`SoundPlay2D`, the interface cues) | confirmed (code) |
-| `0x0010fdd0` / `0x0010fd48` | `PlaySound3D(hash or name, pos...)` | a sound at a position (`SoundPlay`) | confirmed (code) |
+| `0x0010fcd8` / `0x0010fc70` | `PlaySound2DByHash` / `PlaySound2DByName(flags...)` | a sound without position (`SoundPlay2D`, the interface cues) | confirmed (code) |
+| `0x0010fdd0` / `0x0010fd48` | `PlaySound3DByHash` / `PlaySound3DByName(pos...)` | a sound at a position (`SoundPlay`) | confirmed (code) |
 | `0x0010fa50` | `AudioManager_LoadBank(name, partial)` | loads a bank unless it is the current one | confirmed (code) |
-| `0x00111178` | `AudioManager_StartLoadScreen` | the load-screen bank and its two sounds | confirmed (code) |
+| `0x00111178` / `0x00111428` | `AudioManager_StartLoadScreen` / `_StopLoadScreen` | the load-screen bank and its two sounds ([Banks](#banks)) | confirmed (code) |
 | `0x00110b60` / `0x00110c70` | `AmbientTrack_Play` / `_Stop` | the level's ambience bed | confirmed (code) |
 | `0x0010d8e8` | `Music_Play(hash, loop, callback, fadeBars)` | queue a music track | confirmed (code) |
 | `0x0010dfe0` | `MusicChannel_Update` | the music state machine | confirmed (code) |
@@ -58,7 +58,7 @@ Names are ours.
 | `0x00114b20` | `VoiceTable_NextLine(set, command)` | the next line's sound for a voice set and command, or none | confirmed (code) |
 | `0x00114c98` | `VoiceTable_IsBlocked` | a fixed list of lines not played in certain levels | confirmed (code) |
 | `0x002205e0` | `Human_SayCommand` | a human says a speech command (the work of `SoundPlayCommand`) | confirmed (code) |
-| `0x0021e400` / `0x0021e698` | `Human_PlaySpeech` | plays a line at the human with an end callback (the second also cuts a line off) | confirmed (code) |
+| `0x0021e400` / `0x0021e698` | `Human_PlaySpeech` / `Human_PlaySpeechCutting` | plays a line at the human with an end callback (the second also cuts a line off) | confirmed (code) |
 | `0x0041cc40` | `WarChief_SayCommand` | the line a war chief says for a Warrior command ([AI](ai.md#warrior-commands)) | confirmed (code) |
 
 ## Data
@@ -83,7 +83,7 @@ Fields used here (offsets from `*(0x0050aa84)`); defaults from `0x0010f618` and 
 | `+0x3fa28` | the next load-screen number, 0-6 (random at start-up, `0x0010f768`) |
 | `+0x3fa34` | low-priority sounds started this update (reset each update) |
 | `+0x3fa38` | the current bank's name (16 chars; *runtime* `sound`); `+0x3fa48` the bank to load after loading (`none`) |
-| `+0x3fa58` | defer `SndLoadBank` to the end of loading (set elsewhere; inferred) |
+| `+0x3fa58` | defer `SndLoadBank` to the end of loading (set by mode 1's enter, `0x00158334`) |
 | `+0x3fa5c` | global pitch factor (`SndSetPitchMod`, 1.0) |
 | `+0x3faa8` | pan mode: 0 two-ear pan (default; forced when there are two players), else an angle table (`0x005d8600`) |
 | `+0x3faac` | duck factor for directional sounds under a non-duckable one (`SndSetNIDuck`, 0.2) |
@@ -106,9 +106,13 @@ Fields used here (offsets from `*(0x0050aa84)`); defaults from `0x0010f618` and 
 | `+0x78`, `+0x7c`, `+0x80`, `+0x84` | fade level, fade mode (1 in, 2 out), fade start and length in ms |
 | `+0x8c` | distance to the listener, m |
 | `+0x94` | state (1 playing, 2 faded out, 3 stopped) |
+| `+0x9c` | started (0: prepared and primed but not started, [Scene soundtracks](#scene-sound)) |
 | `+0xa4` | duckable (the play call's last argument; 0 also marks the manager's `+0x1d8`) |
+| `+0xa8` | `a8`, the play call's third volume factor |
 | `+0xc0`, `+0xd0` | position and facing (directional sounds) |
+| `+0xe0`, `+0xe4` | the play call's ninth and tenth arguments, sent to the IOP with a bank sample's start (`0x0014e370`); `+0xe4` set also keeps a stopped real task until its voice ends (`0x00112c60`) |
 | `+0xe8` | the owner's handle (a human: its voice is cut when it speaks again) |
+| `+0xec` | the owning human's `+0x16c` flag, copied at the play (`0x0011b3f8`): a stream started with it gets IOP stream priority `0x3f` ([Saying a speech command](#speech)) |
 
 Runtime check (level99 checkpoint 3): 5-6 live tasks; a streamed loop on stream 6, streamed positional sounds on
 streams 5, 7, 8 and 9, and one bank sample on SPU2 voice 13 with stream 999.
@@ -154,6 +158,38 @@ found. The set is written in decimal and the line in two digits, inferred from t
 A human's voice set is `CfgChar`'s voice (character type `+0x118`, [Characters](characters.md)); the human keeps it
 at `+0x3b0`. `HuSetStateRespVoiceIndex` stores a second set at `+0x3b4` for its state responses (inferred).
 
+### The sound matrix {#sound-matrix}
+
+At audio manager `+0x1e0` (`SoundMatrix_Init`, `0x00114220`): the sounds that hits, footsteps and animations play,
+filled by the matrix's `<name>_preload.lua` (`SndLoadMatrix`, default `sound`, kept at `+0x23d64`; a new name resets
+the matrix first, `0x00114628`). Confirmed (code):
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x00`-`+0x0c` | pool of 3,000 sound-hash words |
+| `+0x10`-`+0x1c`, `+0x20`-`+0x2c` | pools of 1,200 material records and 150 animation records, 28 bytes each |
+| `+0x30`, `+0x34` | voice-set count and the [voice table](#voice-table) |
+| `+0x38` | the **material table**: 191 × 191 record pointers, `[m1 × 191 + m2]` (row `0x2fc` bytes) |
+| `+0x23a3c` | the **animation table**: 162 record pointers, one per animation sound event (`SA.*`) |
+| `+0x23cc4` | the [interface cues](#interface-sounds)' hashes |
+| `+0x23d64` | the matrix name (16 chars) |
+| `+0x23da4`, `+0x23f20`, `+0x24070` | the DJ's [failure-line](#dj-failure-lines) tables |
+
+A record: byte 0 the alternatives in use (`NewMaterialSlots`' count, changed by `SetNumberOfMaterialSlots`), byte 1
+the animation cursor, byte 2 the material cursor, `+0x04`/`+0x08`/`+0x0c` the three columns' volumes (the binding's
+first three floats; the last three are not read), `+0x10`/`+0x14`/`+0x18` each column's hash array (null for an
+unused column). `NewMaterialSound` / `NewAnimSound` fill one alternative's columns (`none` stores 0).
+`DuplicateSoundMaterials(a, b)` makes `[b][a]` the same record as `[a][b]`.
+
+A lookup (`0x001146c0` materials, `0x00114800` animations) returns the cursor's alternative, its three hashes and
+volumes, then moves the cursor on, wrapping at the count: **the alternatives play in turn, not at random**. For
+materials a second material of 0 or 1 means the caller's default (5 for most callers), and an empty entry falls back
+to `[m1][default]`. The players: `Sound_PlayMaterialPair` (`0x00110830`, 16 callers: contacts, objects, footsteps)
+plays column 2 then column 1 at a position, each at its column volume, the second at a random pitch factor (`× 0.2`)
+when the first material is 13; `Sound_PlayMaterialHit` plays column 1 only; `Sound_PlayAnimSound` (`0x00110a08`)
+plays an animation entry's column 1. The footstep caller first remaps materials `0x12` → `0x6a`, 6 → 5 and `0x79` →
+`0x23` (that last at half volume, `0x00110aa8`).
+
 ## Behaviour
 
 ### Starting a sound {#play}
@@ -165,8 +201,9 @@ at `+0x3b0`. `HuSetStateRespVoiceIndex` stores a second set at `+0x3b4` for its 
    sound is; a sound of priority 21 or above is refused once 5 have started this update.
 3. Take a free task, link it at the tail, give it the next id.
 4. **3D cull.** A positional sound farther than `far + 10` m from the listener that does not loop plays virtually;
-   during the load screen (`+0x24270`) every positional sound does (unless the flag at `0x00512c14` is set, not
-   traced) and every 2D sound that is not stereo. A stereo sound is never made virtual by the load screen.
+   during the load screen (`+0x24270`) every positional sound does (unless the flag at `0x00512c14` is set: only
+   `SoundPreLoad`, `0x00113700`, sets it) and every 2D sound that is not stereo. A stereo sound is never made
+   virtual by the load screen.
 5. **Voice** (`0x00112560`): a streamed stereo sound takes a stream pair, 1+2 or 3+4, shared with the music
    ([Stream pairs](#stream-pairs)), and never fails; a streamed mono sound the first free stream
    channel of 5-9 (10-12 for class flag `0x20`), or, failing that and with priority below 12, a victim's; a bank
@@ -175,13 +212,14 @@ at `+0x3b0`. `HuSetStateRespVoiceIndex` stores a second set at `+0x3b4` for its 
    priority 20 or more is given at most 500 ms.
 
 `AudioManager_Play` (`0x00111de8`) then sets the caller's volume, pitch (1 for a non-duckable sound), owner,
-position, facing and fade, runs one `Task_Update` and starts the voice (`0x0014caf8`): a bank sample by hash with
+position, facing and fade, runs one `SoundTask_Update` and starts the voice (`0x0014caf8`): a bank sample by hash with
 its volumes and pitch; a stream by pointing its channel at the record's offset and size in `BFW.SND` (a loop flag the
 inverse of class bit 0); a stereo stream as parent and child channels with the [stereo](formats/audio.md#stereo)
 interleave and end offset. Priority-21 sounds get a random volume factor of 1 ± 0-19 % (`0x00112ee0`).
 
 **Pitch.** Sent as the SPU2 pitch `rate × 4096 / 48000` (`0x00150078`) of `rate = record rate × variation ×
-caller's pitch × +0x70 × global pitch`; the variation is a random factor in `1 ± v / 100` chosen at the start.
+caller's pitch × +0x70 × global pitch`; the variation is a random factor in `1 ± v / 100` chosen at the start, drawn,
+like the priority-21 volume factor and the system music's pick, from the audio generator `0x006eb8b0`.
 Confirmed (code) at `0x0014caf8`, `0x0011a170`.
 
 ### Stealing a voice {#voice-stealing}
@@ -194,9 +232,9 @@ sound's; it is then stopped and marked state 3. Confirmed (code); the exact tie 
 
 ### Task update: fades, 3D volume and pan {#three-d}
 
-Each update `Tasks_Update` (`0x00112b10`) stores the listeners, runs `Task_Update` on every real task and frees
+Each update `Tasks_Update` (`0x00112b10`) stores the listeners, runs `SoundTask_Update` on every real task and frees
 those whose voice has finished or whose state is 2 or 3; a virtual task is freed when its length has passed (never,
-if it loops). Confirmed (code). `Task_Update` (`0x0011a170`), confirmed (code):
+if it loops). Confirmed (code). `SoundTask_Update` (`0x0011a170`), confirmed (code):
 
 - **Fade**: mode 1 raises `+0x78` from 0 to 1 over the fade length; mode 2 lowers it to 0 and then stops the sound.
   The ambient track fades in and out over 2,000 ms (`0x00110b60`).
@@ -204,11 +242,14 @@ if it loops). Confirmed (code). `Task_Update` (`0x0011a170`), confirmed (code):
   `a = 0` beyond `far`, `a = 1` within `near`, else `a = (1 − (d − near) / (far − near))²`.
 - **Directional** sounds (class flag `0x10`, the voices): a further factor from a 200-byte table of percentages at
   `0x0050a910`, indexed by `(cos θ + 1) × 100` where θ is between the sound's facing and the direction to the
-  listener; not applied within 1 m.
+  listener; not applied within 1 m. Entries 0-100 are 100; 101-199 fall about linearly to 49 (about `100 − 51 × c`
+  for `c = cos θ`); 200 and above give 0. So, inferred, a voice is at full volume anywhere ahead of its speaker's
+  side line and at about half straight behind.
 - **Pan** (pan mode 0): two ear points half a metre either side of the listener (along the listener's side axis,
   inferred) give distances `dL` and `dR`; the nearer ear gets gain 1, the farther `0.75 × a + 1 − |dL − dR|`, clamped
   to 0-1. Mode 1 reads left and right gains from tables at `0x005d8600` and `0x005d8ba4` by the angle to the
-  listener in degrees (180 + angle).
+  listener in degrees (180 + angle); `PanTables_Build` (`0x00117450`, at reset) fills their 361 entries with
+  `left[a] = cos(45° + a / 2)` and `right[a] = sin(45° + a / 2)`, a constant-power pan.
 - **Volume** per ear: `a × ear gain × record volume % × caller's volume × sound volume (+0x3fa20) × directional ×
   fade × a8 × state factor`, then the loudest over the listeners, then × the duck factor (`+0x3faac`) for a
   duckable directional sound not owned by a player while a non-duckable one plays, × 0.25 for a duckable positional
@@ -229,8 +270,19 @@ if it loops). Confirmed (code). `Task_Update` (`0x0011a170`), confirmed (code):
 
 The options' sound and music volumes default to 0.9 (`0x0010f768`, `0x001d80e0`: `0x00110638` sets `+0x3fa20` and
 mirrors it at game state `+0x57a8`; `0x001105b0` sets the music player's `+0x60`). `SoundSetSoundVolume` does
-nothing in this build. Volumes reach the device as `int(v × 16383) & 0x7fff` per side (`0x0014d188`). Reverb:
-`SoundSetEffect` on both SPU2 cores ([bindings](../references/bindings/sound.md#soundseteffect)). Confirmed (code).
+nothing in this build. Volumes reach the device as `int(v × 16383) & 0x7fff` per side (`0x0014d188`). Confirmed
+(code).
+
+#### Reverb {#reverb}
+
+`SoundSetEffect(type, depth, delay, feedback)` (`AudioManager_SetEffect`, `0x00113000`) sets
+the SPU2 effect on both cores: device slot `+0xa0` sends IOP command `0x13` (core, type, depth × 32,767 on the left
+and right, delay, feedback; a type of 10 or more is refused), then slot `+0xa8` command `0x15`, the effect's return
+volume, the depth on both sides (`0x00113118`). `SoundEnableEffects(on)` keeps the flag at `+0x1c4`; off also sends
+command `0x17` on both cores at once (`0x001130c8`). Mode 1's enter (`0x00158334`) sets the bank deferral
+`+0x3fa58` and calls `SoundSetEffect` with type 1
+([bindings](../references/bindings/sound.md#soundseteffect)). Confirmed (code); that the types are the SPU2 library's
+ten reverb presets (off, rooms, studios, hall, space, echo, delay, pipe) is inferred.
 
 **Pause** (`SoundPauseSound`, `0x0010fb20` / `0x0010fb68`): sets `+0x3fa24` and pauses or resumes every voice through
 the device (`0x0014c5e0` / `0x0014c600`). Confirmed (code).
@@ -244,8 +296,12 @@ current: the device waits for stream 0, streams `<name>.msb` into sound RAM and 
 - **Front end**: `menu` (`0x0015c4b0`, `0x0015d648`); `0x00159630` loads `sound`.
 - **Load screen** (`0x00111178`, from level loading `0x0015fe90`): bank `load_NN` (NN = `+0x3fa28`, then +1 mod 7),
   or `armload` when `0x0041d110` says so (the Armies levels, inferred), and its two sounds
-  `vags/load_screen/load_NN_l` / `_r` started as 2D sounds hard left and hard right; `0x00111428` stops both after
-  the preload ([Level loading](level-loading.md#loading-screen)).
+  `vags/load_screen/load_NN_l` / `_r` (`armload_l` / `_r`) started as 2D loops (flags `0x41`, `0x10`) hard left and
+  hard right with the load-screen flag clear; then it sets `+0x24270`, so later positional and mono 2D sounds play
+  virtually. `0x00111428` stops both after the preload and, when the left half was real, blocks (yielding and
+  updating the audio manager and the device) until its voice is idle
+  ([Level loading](level-loading.md#loading-screen)). A preload made through `SoundPreLoad` (`0x00113700`) sets
+  `0x00512c14` for its call, which spares it the virtual rule.
 - **Level** (`0x0015fe90`, after loading): the pending bank `+0x3fa48` if a script asked for one, else `sound`; then
   the pending name is reset to `none`. `SndLoadBank(name)` loads at once, or, while `+0x3fa58` is set, only records
   the name as pending (`0x001133d0`).
@@ -271,7 +327,10 @@ request, and `MusicChannel_Update` (`0x0010dfe0`) runs each channel, confirmed (
    one was given.
 4. **Fade out** to 0, then stop and free the pair.
 
-`SoundStopMusicTrack` fades out or stops each channel by its state (`0x0010d9a0`). The music volume
+`SoundStopMusicTrack` (`0x0010d9a0`) works per channel by state: a queued request is dropped; one pre-loading or
+blocked is stopped at once; one playing or waiting for the bar fades out over **one bar** of its track from now; one
+fading in turns into a fade-out from the level it has reached. The music update (`0x0010df30`) runs on every audio
+manager update. The music volume
 (`0x0010e558`) is `fade × track volume × music volume (+0x5c) × options' music volume (+0x60)`, × 0.75 while a scene
 plays (game state `+0x410`) with ducking on, × 0.5 while game state `+0x268` is positive; each channel's left volume
 goes to its left stream and its right to its right.
@@ -301,7 +360,7 @@ are not traced.
 
 `SetupRadio` (`Radio_Setup`, `0x003ac4d0`) makes a world object (a boom box) a radio run by `Radio_Update`
 (`0x003ad440`, every update interval of the object) and `Radio_HandleMessage` (`0x003ac7e8`). Everything a radio
-plays is a **streamed** sound of the sound list (stream flags, `BFW.SND`) started with `PlaySound3D` (`0x0010fdd0`,
+plays is a **streamed** sound of the sound list (stream flags, `BFW.SND`) started with `PlaySound3DByHash` (`0x0010fdd0`,
 volume and pitch 1) **at the radio's position**: an ordinary positional sound task, not the music player; each
 update moves the task to the radio and stops it once the player is more than 40 m away. While a scene plays
 (`0x0051489c` `+0x410`) the task's volume is 0.5, otherwise 1. Confirmed (code).
@@ -382,8 +441,11 @@ sound with flags `0x12` (the front end's cue 9 on START, `0xf` on back; [Front e
    when the roll is higher than the chance. With no lines it says nothing. Otherwise it takes line `next + 1`, adds
    one to `next` and wraps it to 0 at the count: **a set's lines for a command play in turn, not at random**. A line
    on the fixed list of `0x00114c98` (current level, set, command and line) is skipped; the counter still moves.
-3. Commands 1-6, `0x12`, `0x28`, `0x46`, `0x56` and `0x9e` also set human `+0x16c` (`0x001106d0`; meaning not
-   traced; the same six ids sit in the manager's table at `+0x3fa60`).
+3. Commands 1-6, `0x12`, `0x46`, `0x56` and `0x9e` (and `0x28` while `0x0041d160` is 1) set human `+0x16c`
+   (`0x001106d0`) and first stop every real, streamed, mono sound of priority 8 or more whose last volumes are both
+   0.2 or less (`0x00113258`), so a stream channel is free. The flag goes with the line to its task (`+0xec`), and
+   its stream gets IOP stream priority `0x3f` (`0x0014c8b8` → `0x00151990`; `0x100` is the default). Confirmed
+   (code); that this keeps the Warriors' orders audible over other streams is inferred.
 4. The line plays at the human (`0x0021e400`; the war chief's lines use `0x0021e698`, which can also cut a line
    off), unless a scene is playing (game state `+0x410`, read at `0x0021e400`). The **third argument is a callback
    name**: the function is called with the speaker's handle when the line ends, or at once when no line plays. With
@@ -393,6 +455,44 @@ Voice lines are streamed, positional and directional (class flags `0x1c` or `0x4
 No lip-sync data was found: the speaking human only turns to its target. Voice lines in play have no subtitles; only
 scenes and movies do ([Scenes: subtitles](scenes.md#subtitles)). Scenes play their own soundtrack
 ([Scene soundtracks](#scene-sound)).
+
+### Gang warning barks {#warning-barks}
+
+When a gang first notices a target (`0x001691a0`, from the gang brains at `0x00311928` and `0x00313d18`; once until
+the gang's `+0xd0` is cleared, and only while game state `+0x56fc` is 1), a member says a warning bark: the name is
+built by `VoiceTable_WarnLineHash` (`0x001148e8`) in the speaker's voice set (human `+0x3b0`) and played with
+`Human_PlaySpeech` at volume 1, after stopping his current line. Confirmed (code):
+
+- Target **within 12 m** (squared distance 144 or less): `vags/character/voices/<set>/warn/warn_o_<NN>`, only when
+  the caller asks for a near bark (its fourth argument 1); otherwise nothing.
+- Farther: `warn_<n|s>c_<NN>` when the target's brain `+0x04` is 1, else `warn_<n|s><o|w|t>_<NN>` by the gang's
+  living members (`Gang_CountLiving`): `w` for 2-5, `t` for more than 5, `o` otherwise.
+- `s` when one of the gang's members (`+0x48`, up to 16) already tracks (brain `+0x164`, up to 16) a human whose
+  brain `+0x20c` matches the speaker's, else `n`. That `s` means "seen again" is speculative.
+- `NN` is the gang's counter `+0x60d`, moved on after each bark and held at 1 (`0x00169630`), so a gang's first bark
+  uses its starting value and every later one `_01`.
+
+A name that is not in the sound list gives hash 0 and plays nothing. The bark's handle goes to the gang's `+0x610`.
+
+### The DJ's failure lines {#dj-failure-lines}
+
+On the mission-failed screen (mode `0xc`, update `0x0015cc78`; [Pause](pause.md#the-mission-failed-screen)) the radio
+DJ comments once: when the mode's handle is idle and nothing has played yet, `DjLines_PickFailureLine` (`0x001170e8`)
+gives a hash for the current level, checkpoint (game state `+0x33a`) and failure kind (game state `+0x118`: 0
+`wrecked`, 1 `busted`, 2 `obj`), played as a 2D sound (`PlaySound2DByHash`, duckable). The three tables are filled
+at start-up (`DjLines_Init`, `0x00116848`); names are under `vags/character/voices/dj/fail/`. Confirmed (code):
+
+1. **Per checkpoint** (`0x00116d48`): `dj_l<level>_c<cp>_<kind>_<NN>` for an entry (level, checkpoint, count, kind):
+   (20, 4, 1, obj), (20, 5, 1, obj), (3, 2, 3, obj), (5, 3, 2, obj), (5, 4, 2, wrecked), (55, 2, 3, wrecked), (55, 3,
+   3, wrecked), (80, 4, 3, obj), (81, 3, 2, obj), (82, 2, 3, obj), (82, 3, 2, wrecked), (83, 1, 3, wrecked), (86, 1-5,
+   1, obj: five entries), (92, 1, 2, obj), (93, 6, 2, wrecked).
+2. With none, kind `obj` is treated as `wrecked`, as is every kind in level 82; then **per level** (`0x00116ec0`):
+   `dj_l<level>_<kind>_<NN>`, 3 lines `wrecked` for levels 2, 3, 11, 14, 20, 31, 34, 51, 54, 81, 82, 83, 84, 87, 92
+   and 93, 2 for level 5; `busted` 3 lines for levels 9, 31 and 52 (52 has `wrecked` too).
+3. With none: level 82 plays `dj_l82_wrecked_01`; any other level a **generic** line `dj_<kind>_<NN>`, `NN` random
+   in 1-14 for `wrecked` and 1-10 for `busted` (`0x00116fe8`).
+
+In the per-checkpoint and per-level tables each entry's `NN` runs 1 to its count in turn, one step per failure.
 
 ### Speech lines by name
 
@@ -416,13 +516,13 @@ two steps, so the stream is buffering before the first frame:
    wins. Each call: stop the current soundtrack if its task is alive (`0x00110078`, which also clears `+0x2426c`),
    claim a stream pair ([Stream pairs](#stream-pairs)), then prepare the sound without starting it (`0x001100e8` →
    `0x00111f78` → `AudioManager_NewTask`, duckable, volume and pitch 1): the stream is set up and primed
-   (`0x0011b128`, device slots `0x94` and `0x74`) but not started (task `+0x9c` = 0). The task's handle goes to
+   (`0x0011b128`, device slots `+0x90` and `+0x70`) but not started (task `+0x9c` = 0). The task's handle goes to
    `+0x24268` and to the music player's `+0x08`. It goes through `NewTask`'s rules, but the load-screen flag
    (`+0x24270`) spares stereo sounds and the 3D cull does not apply to a 2D sound, so a scene loaded while the load
    screen is up is prepared on a real pair, not virtually; only the admission (more than 240 tasks) could refuse
    it. *Confirmed (code).*
 2. **Start**: scene event 13 (`0x00110018`, from the camera track at `0x00355200` and from a role's clip at
-   `0x001024ec`) starts **whatever task `+0x24268` holds** (`0x00110258` → device slot `0x7c`, task `+0x9c` = 1) and
+   `0x001024ec`) starts **whatever task `+0x24268` holds** (`0x00110258` → device slot `+0x78`, task `+0x9c` = 1) and
    sets `+0x2426c` to 1, or to 0 when the handle is dead. It reads no hash: nothing checks that the prepared sound is
    this scene's. A dead handle starts nothing, and a virtual task (no stream) is refused by the device
    (`0x0014c968`), so neither is heard. *Confirmed (code).*
@@ -430,7 +530,7 @@ two steps, so the stream is buffering before the first frame:
 Between the two, **the scene's start waits for the soundtrack** (`0x0039d870`, at `0x0039de14`, in start step 6 of
 [Scenes](scenes.md#starting)), for a cinematic (`+0xed`) or when the current level's id is `0x3c` (which level is
 not traced). It re-enters the start (state 4) while the task in `+0x24268` is alive but its stream is not yet
-primed (`0x001102a0` → device slot `0x84`, `0x0014c9c0`: a stream's status byte 1; a virtual task counts as ready),
+primed (`0x001102a0` → device slot `+0x80`, `0x0014c9c0`: a stream's status byte 1; a virtual task counts as ready),
 or while the task is dead and a hash is pending. While it waits and both stereo slots hold music (the slot bytes
 read as `0x0101`, `0x0011b760`), it turns the system music off (remembering it in the scene task's `+0xf0`) and
 stops the music (`0x00110528` → `SoundStopMusicTrack`), which frees a pair for the pending soundtrack. A dead task
@@ -529,12 +629,530 @@ also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/7
   [Sound and music](../references/sound.md); `level99_combat.lua` configures `music/155e_fight_1` and
   `music/stripped_war`. The level's script flow is on [Scripting](scripting.md#level99).
 
+### The PS2 sound device {#device}
+
+`Device/ps2/sound/msaudiodevice.cpp` (`0x0014ba18`-`0x0014d508`; the code before it, from `0x0014b158`, is the memory
+card's `mcbase.cpp`) is the audio manager's platform device: one object at `0x005df1e0` (built by its static
+initialiser `0x0014d4d8`, pointer `0x0050bce4`), vtable `0x00537f88`. A **slot** on this page is an offset into
+that vtable; each entry is 8 bytes, `{this adjustment, function}`. Below it, `0x0014d760`-`0x00151ed0` is SCEE's
+MultiStream library, named by its own error strings (`SOUND_PlayStream`, `SOUND_FlushIOPCommand` ...). Confirmed
+(code) throughout; the IOP side (`IOP.IRX`) was not read, so what a command does there is inferred from the EE
+side's arguments and callers.
+
+**Commands.** Each library call appends a command, `{id, length, 16-bit words}`, to a 2 KB EE buffer
+(`0x005dfdc0`; `SOUND_StartCommand`, `SOUND_AddData`, `SOUND_EndCommand`), under one semaphore. The buffer goes to
+the IOP in one RPC per send (`SOUND_FlushIOPCommand`, `0x0014fae8`), which also asks for the IOP's status; the
+reply (`0x0014ee88`) gives each stream's state, position and flags, the SPU2 voices' idle bits and the disc-error
+bytes, so the EE learns of a stream's end on a later send (inferred: at least a frame late). The device's update
+(slot `+0x10`, `0x0014c140`, each frame) sends without waiting; loading uses a blocking copy (`0x0014c250`). A
+buffer that fills mid-frame is sent at once, waiting for the previous send.
+
+**Start-up** (slot `+0x08`, `0x0014bbd8`): the IOP connection, a reset (command 7), the stream limit 13, the
+**fast load** thread (an EE RPC server, id `0x12344321`, that the IOP asks before it reads the disc, so the game's
+own reads and the streams share the drive), then the stream buffers from the constructor's table, in IOP memory and
+sound RAM, the sound-RAM cursor starting at `0x5010`:
+
+| Streams | Use | IOP buffer | Sound-RAM buffer |
+| --- | --- | --- | --- |
+| 0 | loading banks (`.msb` into sound RAM, `.msd` into IOP memory) | `0x60000` | none |
+| 1+2, 3+4 | the [stereo pairs](#stream-pairs): music and scene soundtracks (the child shares the parent's buffers) | `0x20000` | `0x10000` |
+| 5-9 | streamed mono sounds | `0x10000` | `0x2000` |
+| 10-12 | the small loops (class flag `0x20`) | `0x2000` | `0x2000` |
+
+The bank goes after the stream buffers (device `+0x844`); `0x1c0000` minus the buffers is left for it (`+0x834`).
+`.msd` indexes get a 4 KB IOP block (`+0x884`). Then four volume groups at full (`0x1000`), the effects cleared on
+both cores, and `cdrom0:\IOP\BFW.SND;1` opened on streams 1-12; music opens `cdrom0:\IOP\MUSIC.SND;1` on its pair
+when a track starts (slot `+0x20`). Stream state lives on the EE in `0x005e3ac8` (0 free, 2 starting, 3 reserved
+or stopped, 5 stopping); SPU2 voices 13-47 serve bank samples (slot `+0xf8`), reserved (3) when taken and free once
+the IOP reports them idle.
+
+**Per voice.** A bank sample starts by hash (command 0, or `0x39` from an offset); a stream by
+`SOUND_PlayStream` (command 1) with its file offset and size (command `0x29`). Volumes go through
+`SOUND_SetChannelVolumeSmooth` (command `0x60`) as 15-bit levels scaled by the voice's group; pitch through command
+3. A **positional** sound (class flag `0x02` or `0x08`) feeds the reverb while effects are on (slot `+0xb0`, command
+`0x18`); every other sound, and the music's streams 1-4, is kept dry (slot `+0xb8`, command `0x19`).
+
+**Disc errors** (`SOUND_HandleCDErrors`, `0x00150cf0`, each update): when the IOP reports a read error the streams
+pause (command `0x37`) and the probe file `cdrom0:\SLUS_212.15;1` is tried each update until it opens; then they
+resume (command `0x35`) and the IOP asks for the last stream again. Meanwhile the device sets `0x005e5580` to 4, 5
+or 3 by the error (-1, -3, other) for the disc-error message, or, while loading, pushes the error mode
+(`0x00157930(0x005e5560, 0, n)`). Confirmed (code); the readers' side is on [File I/O](file-io.md#disc-errors).
+
+The device's and the library's functions, by address (names ours where the library's string gives none):
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x0014ba18` | `AudioDevice_Construct` | the device's constructor (vtable `0x00537f88`): the 13 streams' buffer sizes (below) | confirmed (code) |
+| `0x0014bbb0` | `AudioDevice_SetStreamSizes` | stores one stream's four sizes at `+0x888 + 16 × stream`: mono IOP buffer, pair IOP buffer, SPU2 buffer, pair-child flag | confirmed (code) |
+| `0x0014bbd8` | `AudioDevice_Init` | slot `+0x08`: MultiStream start-up, stream buffers in IOP and sound RAM, `BFW.SND` opened on streams 1-12 ([The device](#device)) | confirmed (code) |
+| `0x0014bf80` | `AudioDevice_Nop38` | slot `+0x38`: empty | confirmed (code) |
+| `0x0014bf88` | `AudioDevice_AllocPairBuffer` | allocates a stereo pair's stream buffers (IOP `+0x88c`, SPU2 `+0x890`) and advances the SPU2 cursor `+0x840` | confirmed (code) |
+| `0x0014c020` | `AudioDevice_PrintFreeIopRam` | asks the IOP for its free memory (command `0x2d`), waits, prints and keeps it (`0x0050bcec`) | confirmed (code) |
+| `0x0014c070` | `AudioDevice_AllocMonoBuffer` | allocates a mono stream's buffers (IOP `+0x888`, SPU2 `+0x890`) | confirmed (code) |
+| `0x0014c118` | `AudioDevice_ListsLoaded` | slot `+0x160`: empty on the PS2 | confirmed (code) |
+| `0x0014c120` | `AudioDevice_Flush` | slot `+0x168`: sends the command buffer and waits (`0x0014fae8(0)`) | confirmed (code) |
+| `0x0014c140` | `AudioDevice_Update` | slot `+0x10`, each frame: deferred command `0x3f` for flagged voices, disc-error check (sets `0x005e5580` to 3, 4 or 5), command buffer sent without waiting, the debug history (slot `+0x118`) when `0x0050bce8` is 1 | confirmed (code) |
+| `0x0014c250` | `AudioDevice_UpdateBlocking` | the update used while loading: as slot `+0x10` but on a disc error pushes the error mode (`0x00157930(0x005e5560, 0, n)`) and waits for the send | confirmed (code) |
+| `0x0014c358` | `AudioDevice_Nop158` | slot `+0x158`: calls an empty function (`0x0014c378`) | confirmed (code) |
+| `0x0014c378` | `AudioDevice_Empty` | empty | confirmed (code) |
+| `0x0014c380` | `AudioDevice_DebugHistory` | slot `+0x118`: one step of the streams' debug history (`0x0014c448`, `0x0014c3b8`) | confirmed (code) |
+| `0x0014c3b8` | `AudioDevice_DebugPollStreams` | moves the history's 40-entry cursor and reads each of the 13 streams' info | confirmed (code) |
+| `0x0014c448` | `AudioDevice_DebugRecordStreams` | records each stream's state (0 idle, 2, 3) in a 40-entry history (`+0x04`) | confirmed (code) |
+| `0x0014c5c0` | `AudioDevice_Command25` | slot `+0x18`: IOP command `0x25` with one value (Init passes `0x200`); meaning not traced | confirmed (code) |
+| `0x0014c5e0` | `AudioDevice_PauseAll` | slot `+0x60`: IOP command 10, every voice paused | confirmed (code) |
+| `0x0014c600` | `AudioDevice_ResumeAll` | slot `+0x68`: IOP command 11 | confirmed (code) |
+| `0x0014c620` | `AudioDevice_LoadBank` | slot `+0x30`: waits for stream 0, then loads `<name>.msb` into sound RAM at `+0x844` and `<name>.msd` into IOP memory at `+0x884` through stream 0 (`./ee_files/%s.msb` and `.msd` in the WAD; partial: the first 64 KB of the `.msb`), running the blocking update and the loading callback `0x0050b728` while it waits; then registers the index (`0x00151dc0`) | confirmed (code) |
+| `0x0014c8b8` | `AudioDevice_SetStreamPriority` | slot `+0xd8`: for stream channels 5-9 with the flag set, IOP stream priority `0x3f` (`0x00151990`) | confirmed (code) |
+| `0x0014c8f8` | `AudioDevice_RateToPitch` | slot `+0x28`: `RateToPitch` | confirmed (code) |
+| `0x0014c918` | `AudioDevice_PrimeStream` | slot `+0x70`: for a real streamed task, preloads its stream without starting it (command `0x2f`) | confirmed (code) |
+| `0x0014c968` | `AudioDevice_StartPrimed` | slot `+0x78`: starts a primed stream (command `0x2e`); -1 for a virtual or bank task | confirmed (code) |
+| `0x0014c9c0` | `AudioDevice_IsPrimed` | slot `+0x80`: a real stream's info byte `+0x12` is 1; true for bank and virtual tasks | confirmed (code) |
+| `0x0014ca20` | `AudioDevice_IsPrimedStrict` | slot `+0x88`: as `+0x80` but false for a bank sample | confirmed (code) |
+| `0x0014ca88` | `AudioDevice_IsStreamActive` | slot `+0x140`: stream info `+0x11` is 1 | confirmed (code) |
+| `0x0014cab8` | `AudioDevice_IsStreamPlaying` | slot `+0x148`: stream info `+0x11` and `+0x12` both 1 | confirmed (code) |
+| `0x0014cfe0` | `AudioDevice_StopVoice` | slot `+0x98`: a real task's stream (both of a pair) stopped with command 5, or its SPU2 voice keyed off with command 4 | confirmed (code) |
+| `0x0014d0c8` | `AudioDevice_FindFreeVoice` | slot `+0x100`: `MS_FindFreeVoice(lo, hi)` | confirmed (code) |
+| `0x0014d0e8` | `AudioDevice_FindFreeBankVoice` | slot `+0xf8`: a free SPU2 voice of 13-47 | confirmed (code) |
+| `0x0014d108` | `AudioDevice_FindFreeStream` | slot `+0xe0`: the first free stream from 5 | confirmed (code) |
+| `0x0014d128` | `AudioDevice_FindFreeStreamIn` | slot `+0xe8`: the first free stream in a range | confirmed (code) |
+| `0x0014d148` | `AudioDevice_ReleaseVoice` | slot `+0xf0`: frees a reserved SPU2 voice (state 3 → 0) | confirmed (code) |
+| `0x0014d168` | `AudioDevice_VoiceState` | slot `+0x108`: the voice's EE-side state once the IOP reports it idle, else -1 (`Tasks_Update`'s "finished" test) | confirmed (code) |
+| `0x0014d188` | `AudioDevice_VolumeToSpu` | `int(v × 16383) & 0x7fff` | confirmed (code) |
+| `0x0014d1b0` | `AudioDevice_SetVolume` | slot `+0x50`: left and right clamped to ±1, sent with `MS_SetChannelVolumeSmooth` | confirmed (code) |
+| `0x0014d288` | `AudioDevice_SetPitch` | slot `+0x58`: command 3 (voice, pitch word) | confirmed (code) |
+| `0x0014d2b8` | `AudioDevice_PitchToRate` | slot `+0x40`: `pitch × 48000 / 4096` | confirmed (code) |
+| `0x0014d2d8` | `AudioDevice_Duration` | slot `+0x48`: `⌊⌊size × 3.5⌋ / (2 × rate)⌋ × 1000` ms | confirmed (code) |
+| `0x0014d338` | `AudioDevice_IsValidVoiceCount` | slot `+0x110`: value below `0x201` | confirmed (code) |
+| `0x0014d340` | `AudioDevice_SetEffect` | slot `+0xa0`: `MS_EnableEffects(core, type, depth L × 32767, depth R × 32767, delay, feedback)`; `+0xb88` = 1 | confirmed (code) |
+| `0x0014d398` | `AudioDevice_SetEffectVolume` | slot `+0xa8`: `MS_SetEffectMasterVolume(core, L × 32767, R × 32767)` | confirmed (code) |
+| `0x0014d3e0` | `AudioDevice_VoiceEffectOn` | slot `+0xb0`: command `0x18`: the voice feeds the reverb (for positional sounds while effects are on) | confirmed (code) |
+| `0x0014d408` | `AudioDevice_VoiceEffectOff` | slot `+0xb8`: command `0x19`: the voice is dry (other sounds, the music's streams 1-4) | confirmed (code) |
+| `0x0014d428` | `AudioDevice_DisableEffects` | slot `+0xc0`: command `0x17` on both cores | confirmed (code) |
+| `0x0014d450` | `AudioDevice_ClearEffects` | slot `+0xc8`: command `0x14` on both cores (start-up, the load screen) | confirmed (code) |
+| `0x0014d478` | `AudioDevice_VoiceRegister` | slot `+0xd0`: command `0x5c` on the task's voice (`0x00151a98`) | confirmed (code) |
+| `0x0014d498` | `AudioDevice_StreamInfoWord` | slot `+0x120`: stream info word `+0x38` | confirmed (code) |
+| `0x0014d4c0` | `AudioDevice_UpdateListeners` | slot `+0x178`: empty on the PS2 | confirmed (code) |
+| `0x0014d4c8` | `AudioDevice_Nop170` | slot `+0x170`: empty | confirmed (code) |
+| `0x0014d4d0` | `AudioDevice_Nop180` | slot `+0x180`: empty | confirmed (code) |
+| `0x0014d4d8` | `AudioDevice_StaticInit` | constructs the device at `0x005df1e0` | confirmed (code) |
+| `0x0014d508` | `AudioDevice_StaticInitStub` | static-init stub ending `msaudiodevice.cpp` | confirmed (code) |
+| `0x0014d528` | `AudioDevice_OpenMusic` | slot `+0x20`: opens `MUSIC.SND` on a stream pair (command `0x1f`) and sets the track's range (offset, interleave × blocks × channels; command `0x29`) | confirmed (code) |
+| `0x0014d590` | `AudioDevice_PrepareMusic` | slot `+0x128`: sizes the pair's buffers to the track's interleave, plays the parent stream muted (looping or once), links the child (`SOUND_SetStreamParent_Int` / `_Child_Int`), sets the last block's end and preloads (command `0x2f`) | confirmed (code) |
+| `0x0014d718` | `AudioDevice_StopMusic` | slot `+0x138`: stops a stream (command 5) | confirmed (code) |
+| `0x0014d738` | `AudioDevice_StartMusic` | slot `+0x130`: starts a preloaded stream (command `0x2e`) | confirmed (code) |
+| `0x0014d758` | `AudioDevice_Zero150` | slot `+0x150`: returns 0 | confirmed (code) |
+| `0x0014d760` | `MS_InitIOP` | `SOUND_InitIOP`: the semaphore, the library's tables cleared, the RPC bound to `IOP.IRX` | confirmed (code) |
+| `0x0014d9c8` | `MS_RpcDone` | the RPC's end callback → `MS_ReadReply` | confirmed (code) |
+| `0x0014d9e8` | `MS_CallRpc` | `sceSifCallRpc` of the command buffer (`0x005e2dc0` reply, 2 KB), no wait | confirmed (code) |
+| `0x0014da38` | `MS_StartCommand` | `SOUND_StartCommand(id)` | confirmed (code) |
+| `0x0014daa8` | `MS_EndCommand` | `SOUND_EndCommand`: appends `{id, length, data}` to the 2 KB buffer, flushing first when full | confirmed (code) |
+| `0x0014dc88` | `MS_AddShortWord` | `SOUND_AddData`: a 16-bit word | confirmed (code) |
+| `0x0014dcf8` | `MS_AddLongData` | `SOUND_AddLongData`: a 32-bit word | confirmed (code) |
+| `0x0014dd78` | `MS_AddString` | `SOUND_AddString` | confirmed (code) |
+| `0x0014de28` | `MS_PlayStream` | `SOUND_PlayStream(source, stream, voice, volL, volR, pitch, flags, ...)`: command 1; stream `0x80` any free, `0x81`/`0x82` a free one with or without a flag | confirmed (code) |
+| `0x0014e148` | `MS_LoadFile` | `SOUND_LoadFile(dest, stream, source, address)`: `0x7f` sound RAM, `0x7d` IOP memory, `0x7e` EE memory, `0x7b`; through `MS_PlayStream` | confirmed (code) |
+| `0x0014e260` | `MS_FindFreeStream` | `SOUND_FindFreeStream`: state 0 or 3 | confirmed (code) |
+| `0x0014e2d8` | `MS_FindStreamInRange` | `SOUND_FindFreeStreamRange(lo, hi)` | confirmed (code) |
+| `0x0014e370` | `MS_PlayBankSample` | a bank sample by hash on an SPU2 voice (command 0; volumes, pitch, two flags from the task's `+0xe0`/`+0xe4`) | confirmed (code) |
+| `0x0014e4b0` | `MS_PlaySampleFromOffset` | the same from an offset into the sample (command `0x39`) | confirmed (code) |
+| `0x0014e628` | `MS_SetChannelPitch` | command 3 (voice, pitch) | confirmed (code) |
+| `0x0014e6a0` | `MS_StopStream` | command 5; a value of 64 or more names a voice's stream | confirmed (code) |
+| `0x0014e770` | `MS_StopChannel` | command 4: an SPU2 voice keyed off | confirmed (code) |
+| `0x0014e7d0` | `MS_RequestStatus` | command 9 (value, 0): the status request appended to each send | confirmed (code) |
+| `0x0014e858` | `MS_PauseAll` | command 10 | confirmed (code) |
+| `0x0014e890` | `MS_ResumeAll` | command 11 | confirmed (code) |
+| `0x0014e8c8` | `MS_ResetIop` | command 7 at start-up | confirmed (code) |
+| `0x0014e900` | `MS_InitStreams` | command `0xc` (three values and the stream count limit `0x0050bd50`) at start-up | confirmed (code) |
+| `0x0014e998` | `MS_SetMaxStreamLimit` | `SOUND_SetMaxStreamLimit(n)` (0-47; 13 here) | confirmed (code) |
+| `0x0014ea28` | `MS_AllocateStreamBuffer` | `SOUND_AllocateStreamBuffer(stream, spu, size)`: command `0xd` | confirmed (code) |
+| `0x0014eb40` | `MS_ResizeStreamBuffer` | `SOUND_ResizeStreamBuffer`: command `0x47` | confirmed (code) |
+| `0x0014ec68` | `MS_ResizeSPUBuffer` | `SOUND_ResizeSPUBuffer`: command `0x52`, at least `0x400` bytes | confirmed (code) |
+| `0x0014ee30` | `MS_SetSpuLoadAddress` | command `0xe`: the sound-RAM address for a load (`0x0050bd60`) | confirmed (code) |
+| `0x0014ee88` | `MS_ReadReply` | parses the IOP's reply: each stream's state, position and flags, the voices' idle bits (`0x0050c518`, `0x0050c51c`), the disc-error bytes | confirmed (code) |
+| `0x0014f938` | `MS_FindFreeVoice` | a voice in `lo`-`hi` that is free and idle; marks it reserved (3) | confirmed (code) |
+| `0x0014fa38` | `MS_GetVoiceState` | the voice's state when the IOP reports it idle, else -1 | confirmed (code) |
+| `0x0014fac8` | `MS_FlushWait` | `MS_FlushCommands(0)` | confirmed (code) |
+| `0x0014fae8` | `MS_FlushCommands` | `SOUND_FlushIOPCommand(noWait)`: sends the buffer by RPC (waiting for the last unless `noWait`, then -1 if busy); keeps send statistics | confirmed (code) |
+| `0x0014fcd8` | `MS_EnableEffects` | `SOUND_EnableEffects(core, type, depthL, depthR, delay, feedback)`: command `0x13`; type below 10; picks one of two effect work areas | confirmed (code) |
+| `0x0014feb0` | `MS_ClearEffect` | command `0x14` (core), clearing its stored type | confirmed (code) |
+| `0x0014ff20` | `MS_SetEffectMasterVolume` | command `0x15` (core, L, R) | confirmed (code) |
+| `0x0014ff98` | `MS_ChannelEffectOn` | command `0x18` (voice) | confirmed (code) |
+| `0x0014ffe0` | `MS_ChannelEffectOff` | command `0x19` (voice) | confirmed (code) |
+| `0x00150028` | `MS_DisableEffect` | command `0x17` (core) | confirmed (code) |
+| `0x00150078` | `RateToPitch` | `rate × 4096 / 48000` | confirmed (code) |
+| `0x001500a8` | `MS_OpenStreamFile` | command `0x1f` (stream, offset, path): the IOP opens a disc file for a stream; a new id when -1 | confirmed (code) |
+| `0x00150148` | `MS_SendCommand25` | command `0x25` (value) | confirmed (code) |
+| `0x001501a8` | `MS_SetStreamRange` | command `0x29` (stream, offset, size) | confirmed (code) |
+| `0x00150218` | `MS_Command2A` | command `0x2a` (value: 2 and 4 at start-up and after a movie) | confirmed (code) |
+| `0x00150260` | `MS_Command2A6` | command `0x2a` (6) | confirmed (code) |
+| `0x001502a0` | `MS_Command3A` | command `0x3a` (before a movie) | confirmed (code) |
+| `0x001502d8` | `MS_Command3B` | command `0x3b` (before a movie) | confirmed (code) |
+| `0x00150310` | `MS_Command3C` | command `0x3c` (after a movie) | confirmed (code) |
+| `0x00150348` | `MS_GetVoiceStream` | the stream a voice is playing, or -1 | confirmed (code) |
+| `0x00150380` | `MS_SetStreamParent` | `SOUND_SetStreamParent_Int`: command `0x2b` | confirmed (code) |
+| `0x00150448` | `MS_SetStreamChild` | `SOUND_SetStreamChild_Int`: command `0x2c` | confirmed (code) |
+| `0x00150628` | `MS_RequestFreeIopRam` | command `0x2d` | confirmed (code) |
+| `0x00150660` | `MS_SetMIBEndOffset` | `SOUND_SetMIBEndOffset`: command 99 | confirmed (code) |
+| `0x00150768` | `MS_StartPreloaded` | command `0x2e`: starts a preloaded stream | confirmed (code) |
+| `0x001507d0` | `MS_PreloadStream` | command `0x2f`: fills a stream's buffer without starting it | confirmed (code) |
+| `0x00150838` | `MS_GetStreamInfo` | `SOUND_GetStreamInfo(stream, info)`: IOP free memory `+0x00`, state `+0x11` (0 idle, 1 active, 6 starting), primed `+0x12`, play time `+0x42`-`+0x48` | confirmed (code) |
+| `0x00150b48` | `MS_NextFileId` | the next stream-file id | confirmed (code) |
+| `0x00150b70` | `MS_SetEeLoadAddress` | command `0x31`: the EE address for a load | confirmed (code) |
+| `0x00150bc8` | `MS_SetIopLoadAddress` | command `0x32`: the IOP address for a load | confirmed (code) |
+| `0x00150c28` | `MS_ResumeAfterDiscError` | command `0x35` | confirmed (code) |
+| `0x00150c60` | `MS_PauseForDiscError` | command `0x37` | confirmed (code) |
+| `0x00150ca8` | `MS_SetDiscProbeFile` | keeps the file opened to test the disc (`cdrom0:\SLUS_212.15;1`) | confirmed (code) |
+| `0x00150cf0` | `MS_HandleCDErrors` | `SOUND_HandleCDErrors`: on the IOP's disc error, pauses the streams, and once the probe file opens again resumes them; returns the error | confirmed (code) |
+| `0x00150ed0` | `MS_Command3E` | command `0x3e` (1) at start-up | confirmed (code) |
+| `0x00150f18` | `MS_Command3F` | command `0x3f` (voice), sent after a bank sample's start | confirmed (code) |
+| `0x00150fc8` | `MS_SetGroupMasterVolume` | `SOUND_SetGroupMasterVolume(group, L, R)` (0-`0x1000`; four groups, full at start-up) | confirmed (code) |
+| `0x001510c8` | `MS_ApplyGroupVolume` | command 2: resends the volumes of a group's voices | confirmed (code) |
+| `0x001511a8` | `MS_SetVoiceGroup` | a voice's group | confirmed (code) |
+| `0x001511c0` | `MS_ScaleByGroup` | a voice's volumes × its group's master volume | confirmed (code) |
+| `0x00151250` | `MS_SetVoiceVolumes` | keeps a voice's volumes and scales them by its group | confirmed (code) |
+| `0x001512d8` | `MS_ScaleVolume` | `v × master / 4096`, mirrored for inverted-phase volumes | confirmed (code) |
+| `0x00151360` | `MS_FastLoadThread` | the EE RPC server thread (id `0x12344321`) the IOP asks during fast loads | confirmed (code) |
+| `0x001513d0` | `MS_InitInternalFastLoad` | `SOUND_InitINTERNALFastLoad`: creates that thread (priority 9, a 32 KB buffer); command `0x51` | confirmed (code) |
+| `0x001514a8` | `MS_FastLoadRpc` | the server's handler: 999 invalidates a cache range, otherwise asks the game's callback (`0x0050c504`) for the load mode | confirmed (code) |
+| `0x00151640` | `MS_SetInternalFastLoad` | `SOUND_SetINTERNALFastLoad(mode)`: command `0x51` | confirmed (code) |
+| `0x00151750` | `MS_SendCommand53` | command `0x53` (core) | confirmed (code) |
+| `0x00151798` | `MS_SendCommand57` | command `0x57` | confirmed (code) |
+| `0x001517f0` | `MS_SetChannelVolumeSmooth` | `SOUND_SetChannelVolumeSmooth(voice, L, R)`: command `0x60` | confirmed (code) |
+| `0x001518c0` | `MS_WriteRegister` | command `0x5c` (register, value) | confirmed (code) |
+| `0x00151930` | `MS_GetLastStatus` | `0x0050bd74` | confirmed (code) |
+| `0x00151980` | `MS_IsRpcBusy` | `0x0050bd30` | confirmed (code) |
+| `0x00151990` | `MS_SetStreamPriority` | `SOUND_SetStreamPriority(stream, priority)`: command 100; `0x100` the default | confirmed (code) |
+| `0x00151a98` | `MS_SetVoiceRegister` | a value below 32 into a voice's SPU2 register (`0x400` block) through command `0x5c` | confirmed (code) |
+| `0x00151bc0` | `MS_LockStart` | `SOUND_MultiThreadSafeCheckStart`: takes the semaphore | confirmed (code) |
+| `0x00151c70` | `MS_LockEnd` | `SOUND_MultiThreadSafeCheckEnd` | confirmed (code) |
+| `0x00151cd8` | `MS_ScanStreamsFrom` | the first stream from `n` in state 0 or 3 | confirmed (code) |
+| `0x00151d28` | `MS_ScanStreamsBetween` | the same within a range | confirmed (code) |
+| `0x00151d88` | `MS_ReleaseVoice` | state 3 → 0 | confirmed (code) |
+| `0x00151dc0` | `MS_RegisterBank` | command `0x74` (index address, size): the loaded `.msd` | confirmed (code) |
+| `0x00151e68` | `Gif_RemoveCallback` | removes a callback from the 8-entry list (`0x005e4448`, [Movies](movies.md)) | confirmed (code) |
+| `0x00151ed0` | `Gif_AddCallback` | adds a callback and its data to that list | confirmed (code) |
+
+## Function index {#function-index}
+
+The unit's other functions (`0x0010d758`-`0x0011b770`), by address; names are ours. The device layer's are under
+[The PS2 sound device](#device).
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x0010d758` | `MusicPlayer_Init` | the [music player](#music-player)'s constructor: the stream-slot bytes (`0x0011b400`), mood 3 (none) at `+0x1c` and `+0x20`, music volume 1.0, options' music volume 0.9, the empty track list, the three channels and their pointers `+0x154`-`+0x15c`, no tracks per mood | confirmed (code) |
+| `0x0010d830` | `MusicPlayer_AddTrack` | appends one track to the track list (`0x0010ed50`; `MusicList_Load`) | confirmed (code) |
+| `0x0010d850` | `MusicPlayer_AllocTracks` | allocates the track list for `n` tracks (`0x0010edd0`) | confirmed (code) |
+| `0x0010d870` | `MusicPlayer_ConfigTrack` | `SndCfgMusicInfo`: finds the track by the name's CRC-32 and stores its volume in the record and its bar length | confirmed (code) |
+| `0x0010d9a0` | `Music_StopTrack` | `SoundStopMusicTrack`, per channel by state: queued, dropped; pre-loading or blocked, stopped at once; playing or waiting for the bar, a fade-out over one bar of its track from now; fading in, the same fade-out started from the level it has reached | confirmed (code) |
+| `0x0010db18` | `MusicChannel_Start` | starts a pre-loaded channel: fade level 0 when it fades in, else 1; volumes; device slot `+0x130` (start the stream pair); play start = now | confirmed (code) |
+| `0x0010dbb0` | `MusicChannel_Preload` | state 2: stops the pair (slot `+0x138`), opens the track of `MUSIC.SND` on it (slot `+0x128`, with the loop flag), mutes both sides (slot `+0x50`), fade level 0 | confirmed (code) |
+| `0x0010dd50` | `MusicChannel_Stop` | stops an active channel's pair and frees its slot (`0x0011b740`) | confirmed (code) |
+| `0x0010ddd8` | `Music_StopAll` | clears the queued request, stops and resets both playing channels, then device slot `+0x168` | confirmed (code) |
+| `0x0010def8` | `Music_IsAnyChannelBusy` | whether any of the three channels is not idle (state `+0x11`) | confirmed (code) |
+| `0x0010df28` | `SystemMusic_GetMood` | the playing mood `+0x1c` | confirmed (code) |
+| `0x0010df30` | `Music_Update` | each music update: the pending scene soundtrack's re-preload, freeing stereo slots (`0x0011b5e8`), `SystemMusic_Update`, the three channels, the volumes; the debug check `0x0010eb40` when `0x0050a8dc` is set | confirmed (code) |
+| `0x0010e468` | `MusicChannel_FadeProgress` | `(now - fade start) / fade length`, clamped to 0-1 | confirmed (code) |
+| `0x0010e530` | `MusicChannel_FadeRemaining` | `1 - MusicChannel_FadeProgress` | confirmed (code) |
+| `0x0010e710` | `Music_SetVolume` | `SoundSetMusicVolume`: `+0x5c`, clamped to 0-1, and the "changed" flag `+0x64` | confirmed (code) |
+| `0x0010e758` | `Music_SetOptionsVolume` | the options' music volume `+0x60`, clamped to 0-1 | confirmed (code) |
+| `0x0010e798` | `MusicChannel_IsActive` | channel non-null and its `+0x00` set | confirmed (code) |
+| `0x0010e7b8` | `MusicChannel_IsActiveAt` | whether channel `i`'s `+0x00` is set | confirmed (code) |
+| `0x0010e9e0` | `SystemMusic_SetTracks` | `SoundSetMusicTrack(mood, a, b, c)`: up to three track hashes for a mood and their count; for the playing mood forces a change and turns the system music on (`0x0041d3d8`-style game-state call) | confirmed (code) |
+| `0x0010eab0` | `MusicStream_GetStateName` | the state's name (`ST_Idle` ...), for the debug check | confirmed (code) |
+| `0x0010eb40` | `Music_DebugCheck` | a debug pass: formats the channels' state names and re-checks the configured tracks, with no visible output; runs only when `0x0050a8dc` is set, which nothing writes (0 in the executable) | confirmed (code); never runs |
+| `0x0010ed20` | `MusicPlayer_FreeTracks` | releases the track list (`0x0010ee90`) | confirmed (code) |
+| `0x0010ed40` | `TrackList_Init` | empty list, owner flag 1 | confirmed (code) |
+| `0x0010ed50` | `TrackList_Append` | copies a 16-byte track into the next entry | confirmed (code) |
+| `0x0010ed90` | `TrackList_Find` | index of the track with that name hash, or -1 | confirmed (code) |
+| `0x0010edd0` | `TrackList_Alloc` | allocates `n` 16-byte tracks (tag `MusicTrack`) in the global heap; `MusicList.cpp`'s anchor | confirmed (code) |
+| `0x0010ee90` | `TrackList_Release` | tells the device to release each track (slot `+0x20`), clears the owner flag | confirmed (code) |
+| `0x0010ef18` | `MusicTrack_Init` | `{record, crc32(name at +0x28), 1, 2000}`; adds the track's size to a running total `0x0050a8f0` | confirmed (code) |
+| `0x0010ef90` | `MusicTrack_Copy` | copies a 16-byte track | confirmed (code) |
+| `0x0010efc0` | `Handle_Set` | stores a word (a sound handle) | confirmed (code) |
+| `0x0010efd0` | `Handle_Copy` | copies a sound handle | confirmed (code) |
+| `0x0010efe0` | `Sound_IsDirectional` | class flag `0x10` | confirmed (code) |
+| `0x0010f018` | `Sound_IsPositional` | class flag `0x02` or `0x08` | confirmed (code) |
+| `0x0010f050` | `Sound_UsesReservedStreams` | class flag `0x20` (stream channels 10-12) | confirmed (code) |
+| `0x0010f080` | `Sound_GetHash` | record `+0x08` | confirmed (code) |
+| `0x0010f098` | `Sound_GetStereoInterleave` | the [stereo table](formats/audio.md#stereo) record's interleave for this hash, or 0 | confirmed (code) |
+| `0x0010f0e8` | `Sound_GetStereoBlocks` | the stereo record's block count, or 0 | confirmed (code) |
+| `0x0010f138` | `Sound_GetStereoLastBlock` | the stereo record's last-block bytes, or 0 | confirmed (code) |
+| `0x0010f188` | `Sound_GetVolume` | record `+0x0d` / 100 | confirmed (code) |
+| `0x0010f1b0` | `Sound_GetNear` | class byte 0, metres | confirmed (code) |
+| `0x0010f1e8` | `Sound_GetFar` | class byte 1 × 5, metres | confirmed (code) |
+| `0x0010f228` | `Sound_GetPitchVariation` | record `+0x0c`, percent | confirmed (code) |
+| `0x0010f238` | `Sound_GetRate` | the rate table `0x0050a9e0` at record `+0x0e` | confirmed (code) |
+| `0x0010f258` | `Sound_GetSize` | record `+0x00` | confirmed (code) |
+| `0x0010f268` | `Sound_GetOffset` | record `+0x04` | confirmed (code) |
+| `0x0010f278` | `Sound_GetPriority` | class byte 3 | confirmed (code) |
+| `0x0010f2a0` | `Sound_GetChannels` | class byte 4 | confirmed (code) |
+| `0x0010f2c8` | `Sound_IsLooping` | class flag `0x01` | confirmed (code) |
+| `0x0010f2f0` | `Sound_IsStreamed` | class flag `0x04` | confirmed (code) |
+| `0x0010f320` | `SoundList_LoadChunk` | chunk `0x29` handler: keeps the chunk at `0x0059867c` and hands it to `SoundList_Load` (`0x0010f900`) | confirmed (code) |
+| `0x0010f360` | `MusicList_LoadChunk` | chunk `0x31` handler: `0x00598680`, then `MusicList_Load` (`0x0010f9d8`) | confirmed (code) |
+| `0x0010f3a0` | `SoundClasses_LoadChunk` | chunk `0x48` handler: the class table `0x00598670` | confirmed (code) |
+| `0x0010f3d8` | `StereoTable_LoadChunk` | chunk `0x49` handler: `0x00598688`, then `StereoTable_Load` (`0x0010f988`) | confirmed (code) |
+| `0x0010f410` | `SoundAnimData_LoadChunk` | chunk `0x4a` (Sound Anim Data) handler: keeps it at `0x0059868c`, which no code reads | confirmed (code); unused inferred |
+| `0x0010f450` | `SoundHandles_FindFree` | the first free slot of the 256-entry handle table `0x00598698` from a start index, or -1 | confirmed (code) |
+| `0x0010f4b0` | `SoundHandles_FirstFree` | `SoundHandles_FindFree(1)`: slot 0 is never used | confirmed (code) |
+| `0x0010f4d0` | `SoundHandle_Make` | a handle with the slot in the top 16 bits and the serial (`0x00598a98`, counting up) in the low 16 for a task, stored in the slot | confirmed (code) |
+| `0x0010f520` | `SoundHandle_Free` | clears the handle's slot | confirmed (code) |
+| `0x0010f558` | `SoundHandles_Set` | stores a task pointer in a slot | confirmed (code) |
+| `0x0010f578` | `SoundHandle_Resolve` | the task of a handle when its slot holds a task whose first word (the handle) matches, else null; -1 is no sound (154 callers) | confirmed (code) |
+| `0x0010f5c8` | `SoundHandles_StaticInit` | the unit's static initialiser: the null handle `0x00598690` = -1, which the game copies wherever it means "no sound" | confirmed (code) |
+| `0x0010f5f0` | `SoundHandles_StaticInitStub` | its stub; `MusicList.cpp`'s unit ends here | confirmed (code) |
+| `0x0010f768` | `AudioManager_InitDefaults` | seeds the audio random (`0x006eb8b0`) from the timer, picks the first load screen (`Random % 7`, `+0x3fa28`) and sets both option volumes to 0.9 | confirmed (code) |
+| `0x0010f7f8` | `AudioManager_ResetLowPriorityCount` | `+0x3fa34` = 0 | confirmed (code) |
+| `0x0010f900` | `SoundList_Load` | makes the sound list: `n` 4-byte entries, each a pointer to a 16-byte record of the chunk | confirmed (code) |
+| `0x0010f988` | `StereoTable_Load` | stores the stereo table's count `0x00598678` and records `0x00598674` | confirmed (code) |
+| `0x0010f9a0` | `AudioDevice_ListsLoaded` | device slot `+0x160` after a list is loaded; the PS2 device's is empty (`0x0014c118`) | confirmed (code) |
+| `0x0010f9d0` | `Audio_IopCommandHook` | an empty function the IOP command sender calls (`0x0014daa8`) | confirmed (code) |
+| `0x0010f9d8` | `MusicList_Load` | makes the track list: per 104-byte record a 16-byte track (`MusicTrack_Init`) | confirmed (code) |
+| `0x0010fba8` | `Sound_StopAll` | `AudioManager_StopAll` on the global manager: from `Movie_Play`, the pause menu, mode changes | confirmed (code) |
+| `0x0010fbc8` | `AudioManager_Play2DFadeIn` | plays a 2D sound at volume and pitch 1 with fade mode 1 (in), duckable; returns its handle or the null handle (the ambient track) | confirmed (code) |
+| `0x0010fc30` | `Sound_PlayInterfaceCue` | plays interface cue `n` of the sound matrix (`0x00111130` → `0x00116828`) as a 2D sound with flags `0x12` | confirmed (code) |
+| `0x0010fe30` | `AudioManager_PlayAt` | plays a sound by hash at a position with the default owner (`0x006ebd30`), no fade; returns the handle | confirmed (code) |
+| `0x0010fe90` | `AudioManager_PlayOwned` | plays a sound for an owner at a copy of a position (the human speech and grunt calls); returns the handle | confirmed (code) |
+| `0x0010fee8` | `SoundTask_SetFadeLevel` | the task of a handle: fade level `+0x78` | confirmed (code) |
+| `0x0010ff28` | `SoundTask_SetVolume` | the task of a handle: caller's volume `+0x74` (`SetAmbientTrackVolume` and others) | confirmed (code) |
+| `0x0010ff68` | `Scene_PreloadSoundtrack` | stops a live soundtrack, claims a stream pair or falls back (`0x00112d60`), prepares the sound and keeps its handle in `+0x24268` and the music player's `+0x08` ([Scene soundtracks](#scene-sound)) | confirmed (code) |
+| `0x00110018` | `Scene_StartSoundtrack` | scene event 13: starts whatever task `+0x24268` holds and sets `+0x2426c` to whether it is alive | confirmed (code) |
+| `0x00110078` | `Scene_StopSoundtrack` | stops the soundtrack's task and clears `+0x2426c` | confirmed (code) |
+| `0x001100b0` | `Sound_Prepare2DByName` | `Sound_Prepare2D` with the name's CRC-32 (the lock-pick dial, Rumble screens) | confirmed (code) |
+| `0x001100e8` | `Sound_Prepare2D` | makes a 2D task at volume and pitch 1, duckable, without starting it (`0x00111f78`); returns the handle | confirmed (code) |
+| `0x00110138` | `Sound_PrepareAt` | the same at a position the task keeps a pointer to | confirmed (code) |
+| `0x00110188` | `Sound_PrepareFull` | `AudioManager_Prepare` with every argument passed through (`Human_PlaySpeech`) | confirmed (code) |
+| `0x001101b8` | `Sound_PrepareAtCopy` | the same as `Sound_PrepareAt` with a copy of the position | confirmed (code) |
+| `0x00110210` | `Sound_PrepareAtByName` | `Sound_PrepareAtCopy` with the name's CRC-32 (`WorldObject_PreloadSound`) | confirmed (code) |
+| `0x00110258` | `Sound_StartPrepared` | starts a prepared task by handle (`0x00111f40` → `0x0011b298`, device slot `+0x78`); 0 for a dead handle | confirmed (code) |
+| `0x001102a0` | `Sound_IsPrepared` | a prepared task's stream is primed (device slot `+0x80`); a bank sound counts as ready, a dead handle as not | confirmed (code) |
+| `0x00110318` | `Sound_Stop` | stops the task of a handle (`AudioManager_StopTask`, `0x00112c60`), with the "free its stream" flag | confirmed (code) |
+| `0x00110370` | `Sound_FadeOut` | starts a fade-out of the given length on a task not already fading out (`0x0011b1b0`) | confirmed (code) |
+| `0x001103d0` | `Sound_SetPositionAndFacing` | copies a position and facing into a task (`+0xc0`, `+0xd0`); false for a dead handle | confirmed (code) |
+| `0x00110430` | `Sound_SetPosition` | copies a position into a task (`+0xc0`) | confirmed (code) |
+| `0x00110488` | `Sound_Nop` | calls an empty function (`0x001120c0`) | confirmed (code) |
+| `0x001104a8` | `Sound_CfgMusicInfo` | `MusicPlayer_ConfigTrack` on the global manager (`SndCfgMusicInfo`) | confirmed (code) |
+| `0x001104c8` | `Sound_SetMusicTrack` | `SystemMusic_SetTracks` on the global manager (`SoundSetMusicTrack`; mode 1's enter clears three moods with it) | confirmed (code) |
+| `0x001104e8` | `Sound_LoopMusicTrack` | `Music_Play(track, loop 1, no callback, fade bars)` | confirmed (code) |
+| `0x00110508` | `Sound_PlayMusicTrack` | `Music_Play(track, loop 0, callback, fade bars)` | confirmed (code) |
+| `0x00110528` | `Sound_StopMusicTrack` | `SoundStopMusicTrack` (`0x0010d9a0`) | confirmed (code) |
+| `0x00110548` | `Sound_StopAllMusic` | `Music_StopAll` | confirmed (code) |
+| `0x00110570` | `Sound_GetMusicVolume` | the music volume (music player `+0x5c`) | confirmed (code) |
+| `0x00110590` | `Sound_SetMusicVolume` | `Music_SetVolume` | confirmed (code) |
+| `0x001105b0` | `Sound_SetOptionsMusicVolume` | the options' music volume, clamped to 0-1, into the music player (`0x00112ec0`) and game state `+0x57ac` | confirmed (code) |
+| `0x00110618` | `Sound_GetOptionsMusicVolume` | the options' music volume (`0x00112eb8`) | confirmed (code) |
+| `0x00110638` | `Sound_SetEffectsVolume` | the options' sound-effect volume `+0x3fa20`, clamped, mirrored at game state `+0x57a8` | confirmed (code) |
+| `0x00110690` | `Sound_LoadMatrix` | `SndLoadMatrix` on the global manager (`SoundMatrix_Load`, `0x00114628`) | confirmed (code) |
+| `0x001106b0` | `Sound_VoiceNextLine` | `VoiceTable_NextLine` through the matrix (`0x00114b00`) | confirmed (code) |
+| `0x001106d0` | `Sound_MarkCommandSaid` | for commands 1-6, `0x12`, `0x46`, `0x56` and `0x9e` (and `0x28` while `0x0041d160` is 1): calls `0x00111688` and sets human `+0x16c` | confirmed (code) |
+| `0x00110790` | `Sound_PlayMaterialHit` | plays the first sound of a material pair's [matrix](#sound-matrix) entry at a position, volume × the entry's first column volume (`0x0021f700`) | confirmed (code) |
+| `0x00110830` | `Sound_PlayMaterialPair` | plays columns 2 and 1 of a material pair's entry at a position, each with its column volume; for first material 13 the second plays at pitch `0x003354e0() × 0.2` (16 callers: contacts, objects, footsteps) | confirmed (code) |
+| `0x00110940` | `Sound_PlayMaterialPairPlain` | the same without the material-13 pitch (`0x0021f290`) | confirmed (code) |
+| `0x00110a08` | `Sound_PlayAnimSound` | plays column 1 of an [animation sound](#sound-matrix) entry at a position with its column volume | confirmed (code) |
+| `0x00110aa8` | `Sound_RemapFootMaterial` | for the footstep caller (`0x0021f290`): material `0x12` → `0x6a`, 6 → 5, `0x79` → `0x23` at half volume, else unchanged at 1 | confirmed (code) |
+| `0x00110b18` | `AmbientTrack_PlayByName` | `AmbientTrack_Play` with the name's CRC-32; returns `+0x24274` | confirmed (code) |
+| `0x00110cc0` | `AmbientTrack_SetVolume` | `SetAmbientTrackVolume`: the bed task's caller volume, clamped | confirmed (code) |
+| `0x00110d50` | `Ambient_TryPlay` | forwards to `AmbientEmitter_TryPlay` (`0x0010d480`) on the ambient manager `+0x24280` | confirmed (code) |
+| `0x00110d78` | `Sound_FindByName` | `Sound_Find` with the name's CRC-32 | confirmed (code) |
+| `0x00110db0` | `Sound_Find` | the sound list record for a hash, or null (`0x00111c80`); the matrix and voice-table builders use it to skip missing sounds | confirmed (code) |
+| `0x00110dd0` | `Sound_GetFarByName` | `AudioManager_GetFarByHash` with the name's CRC-32 | confirmed (code) |
+| `0x00110e08` | `Sound_GetFarByHash` | `AudioManager_GetFarByHash` on the global manager | confirmed (code) |
+| `0x00110e28` | `Ambient_AddSphereEmitter` | forwards to `AmbientManager_AddSphereEmitter` (`0x0010cd68`) | confirmed (code) |
+| `0x00110e58` | `Ambient_AddParticleEmitter` | forwards to `AmbientManager_AddParticleEmitter` (`0x0010ced0`) | confirmed (code) |
+| `0x00110e98` | `Ambient_AddEmitter` | forwards to `AmbientManager_AddEmitter` (`0x0010cf58`) | confirmed (code) |
+| `0x00110ee0` | `Ambient_SetEmitterPoints` | forwards to `AmbientEmitter_SetPoints` (`0x0010d590`) | confirmed (code) |
+| `0x00110f08` | `Ambient_SetEmitterEnabled` | forwards to `AmbientEmitter_SetEnabled` (`0x0010d270`) | confirmed (code) |
+| `0x00110f30` | `Ambient_SetTableSlot` | forwards to `AmbientTable_Set` (`0x0010d3c8`): `AddAmbientSound` | confirmed (code) |
+| `0x00110f58` | `Ambient_Reset` | forwards to `AmbientManager_Reset` (`0x0010bf40`) | confirmed (code) |
+| `0x00110f80` | `Sound_NewMaterialSlots` | forwards to `SoundMatrix_NewMaterialSlots` (`0x00115cb0`) | confirmed (code) |
+| `0x00110fa0` | `Sound_NewMaterialSound` | forwards to `SoundMatrix_NewMaterialSound` (`0x00115ee8`) | confirmed (code) |
+| `0x00110fc0` | `Sound_SetNumberOfMaterialSlots` | forwards to `0x00116480` | confirmed (code) |
+| `0x00110fe0` | `Sound_DuplicateSoundMaterials` | forwards to `0x00116438` | confirmed (code) |
+| `0x00111000` | `Sound_NewAnimSlots` | forwards to `0x00116080` | confirmed (code) |
+| `0x00111020` | `Sound_NewAnimSound` | forwards to `0x001162a0` | confirmed (code) |
+| `0x00111040` | `Sound_AllocateCharacterVoices` | forwards to `VoiceTable_Build` | confirmed (code) |
+| `0x00111060` | `Sound_SetCommandSoundPercent` | forwards to `0x00115bb0` | confirmed (code) |
+| `0x00111080` | `Sound_WarnLineHash` | forwards to `VoiceTable_WarnLineHash` (`0x001148e8`), for the gangs' warning barks | confirmed (code) |
+| `0x001110a8` | `Sound_VoiceLineHash` | forwards to `VoiceTable_LineHash` (`0x00114a38`) | confirmed (code) |
+| `0x001110c8` | `Sound_SetEffect` | `SoundSetEffect`: forwards to `AudioManager_SetEffect` (`0x00113000`); mode 1's enter also calls it | confirmed (code) |
+| `0x001110e8` | `Sound_EnableEffects` | `SoundEnableEffects`: forwards to `AudioManager_EnableEffects` (`0x001130c8`) | confirmed (code) |
+| `0x00111110` | `Sound_CfgInterfaceSound` | forwards to `SoundMatrix_SetCue` (`0x001167b8`) | confirmed (code) |
+| `0x00111130` | `AudioManager_GetCueTable` | the sound matrix's interface-cue lookup (`0x00116828`) | confirmed (code) |
+| `0x00111150` | `Sound_SetListenerCopy` | copies a 16-byte vector and calls `0x00113188` | confirmed (code) |
+| `0x00111428` | `AudioManager_StopLoadScreen` | stops both halves; when the left one was real, waits (yielding, updating the audio manager and the device) until its voice is idle (device slot `+0x108`) | confirmed (code) |
+| `0x00111558` | `SoundTask_SetPan` | a 2D task's left and right pan gains (`+0x50`, `+0x54`) | confirmed (code) |
+| `0x001115a8` | `AudioManager_GetBankName` | copies the current bank's name (15 chars) | confirmed (code) |
+| `0x001115e0` | `AudioManager_GetPendingBank` | copies the pending bank's name | confirmed (code) |
+| `0x00111618` | `AudioManager_SetPendingBank` | keeps a bank name to load after loading (`+0x3fa48`) | confirmed (code) |
+| `0x00111650` | `AudioManager_VolumeHook` | an empty function the material and animation sound players call with their volume factor (left at 1) | confirmed (code) |
+| `0x00111658` | `AudioManager_GetTask` | the task of a handle, or null | confirmed (code) |
+| `0x00111688` | `AudioManager_CullQuietStreamsFwd` | forwards to `0x00113258` | confirmed (code) |
+| `0x001116a8` | `AudioManager_StaticInit` | the unit's static initialiser: constructs the global audio manager `0x00598aa0` (music player `0x0010d758`, matrix `0x001141e0`, ambient manager `0x0010bdb0`) and sets its handle fields to -1 | confirmed (code) |
+| `0x001118a0` | `AudioManager_StaticInitStub` | its stub | confirmed (code) |
+| `0x001118c0` | `SoundList_Clear` | count and capacity 0 | confirmed (code) |
+| `0x001118d0` | `SoundList_Alloc` | `n` 4-byte entries (tag `Sound`); `SoundList.cpp`'s anchor | confirmed (code) |
+| `0x00111990` | `SoundList_Append` | copies one record pointer into the next entry | confirmed (code) |
+| `0x001119d0` | `SoundList_Find` | binary search by the record's hash `+0x08`; index or -1 | confirmed (code) |
+| `0x00111aa0` | `SoundList_EntryAt` | entry `i` | confirmed (code) |
+| `0x00111ab0` | `SoundList_EntryAt2` | entry `i` (a second copy) | confirmed (code) |
+| `0x00111ac0` | `SoundTasks_CreatePool` | the `FreeList<SoundTask>` (`0x0050aa94`): 256 tasks of `0xf0` bytes and their free list, in the global heap at start-up; `SoundListener.cpp`'s anchor | confirmed (code) |
+| `0x00111c30` | `AudioManager_ClearLists` | empties the task list, the sound list and other counters | confirmed (code) |
+| `0x00111c80` | `AudioManager_FindSound` | binary search of the sound list (`SoundList_Find`), the record or null | confirmed (code) |
+| `0x00111cc0` | `TaskList_Append` | links a task at the tail of the task list and counts it | confirmed (code) |
+| `0x00111d00` | `AudioManager_FreeTask` | unlinks a task, stops its voice unless already stopped (device slot `+0x98`), clears it (`0x0011a150`) and returns it to the pool | confirmed (code) |
+| `0x00111f40` | `AudioManager_StartTask` | starts a task's voice (`0x0011b298`); 0 for none | confirmed (code) |
+| `0x00111f78` | `AudioManager_Prepare` | the same without fade and `a8`; a bank sound starts at once, a streamed one is only primed (`0x0011b128(task, 0)`) | confirmed (code) |
+| `0x001120a0` | `AudioManager_IsTaskReady` | `0x0011b3c0`: the device's "stream primed" status | confirmed (code) |
+| `0x001120c0` | `AudioManager_Nop` | empty | confirmed (code) |
+| `0x001129b8` | `AudioManager_UpdateTask` | `SoundTask_Update` with the manager's listeners | confirmed (code) |
+| `0x001129e0` | `AudioManager_DeviceEC` | device slot `+0xe8` (`0x0014d128` → `0x00151d28`) | confirmed (code) |
+| `0x00112a10` | `AudioManager_DeviceFlush` | device slot `+0x100` (`0x0014d0c8` → `0x0014f938`) | confirmed (code) |
+| `0x00112a40` | `AudioManager_GetFarByHash` | the far distance of the sound with a hash (class byte 1 × 5 m), 0 for hash 0 | confirmed (code) |
+| `0x00112a90` | `AudioManager_StopAll` | stops every live task (`0x00111d00`), then device slot `+0x168` | confirmed (code) |
+| `0x00112c48` | `AudioManager_MarkNonDuckable` | sets both "a non-duckable sound is playing" flags `+0x1d8` / `+0x1dc` when given true (the cinematic case of `Tasks_Update`) | confirmed (code) |
+| `0x00112c60` | `AudioManager_StopTask` | stops a task: a bank sample (stream 999) with the flag also releases its stream slot (`0x0011b2f0`); a playing task's voice is stopped (device slot `+0x98`); the task is freed unless `+0xe4` is set and it is real | confirmed (code) |
+| `0x00112d00` | `AudioManager_AddSound` | appends one record pointer to the sound list `+0x0c` (`0x00111990`) | confirmed (code) |
+| `0x00112d20` | `AudioManager_AllocSounds` | allocates the sound list for `n` sounds (`0x001118d0`, `SoundList.cpp`) | confirmed (code) |
+| `0x00112d40` | `AudioManager_AllocTracks` | `MusicPlayer_AllocTracks` on `+0x64` | confirmed (code) |
+| `0x00112d60` | `AudioManager_ClaimStereoFallback` | `0x0011b558` on the music player: the soundtrack preload's fallback | confirmed (code) |
+| `0x00112d80` | `AudioManager_AddTrack` | `MusicPlayer_AddTrack` on `+0x64` | confirmed (code) |
+| `0x00112da0` | `AudioManager_CfgMusicInfo` | `MusicPlayer_ConfigTrack` on `+0x64` | confirmed (code) |
+| `0x00112dc0` | `AudioManager_SetMusicTrack` | `SystemMusic_SetTracks` on `+0x64` | confirmed (code) |
+| `0x00112de0` | `AudioManager_LoopMusicTrack` | `Music_Play` looping | confirmed (code) |
+| `0x00112e08` | `AudioManager_PlayMusicTrack` | `Music_Play` once with a callback | confirmed (code) |
+| `0x00112e30` | `AudioManager_StopMusicTrack` | `0x0010d9a0` on `+0x64` | confirmed (code) |
+| `0x00112e50` | `AudioManager_StopAllMusic` | `Music_StopAll` on `+0x64` | confirmed (code) |
+| `0x00112e70` | `AudioManager_UpdateMusic` | `Music_Update` on `+0x64` | confirmed (code) |
+| `0x00112e90` | `AudioManager_GetMusicVolume` | `+0xc0` (music player `+0x5c`) | confirmed (code) |
+| `0x00112e98` | `AudioManager_SetMusicVolume` | `Music_SetVolume` on `+0x64` | confirmed (code) |
+| `0x00112eb8` | `AudioManager_GetOptionsMusicVolume` | `+0xc4` (music player `+0x60`) | confirmed (code) |
+| `0x00112ec0` | `AudioManager_SetOptionsMusicVolume` | `Music_SetOptionsVolume` on `+0x64` | confirmed (code) |
+| `0x00112ee0` | `SoundTask_RandomVolume` | for priority-21 sounds a random factor `1 ± Random_Int(20) / 100` (the sign from a second draw); else 1 | confirmed (code) |
+| `0x00113000` | `AudioManager_SetEffect` | the [reverb](#reverb): device slot `+0xa0` on cores 0 and 1 (IOP command `0x13`: type, depth on both sides, delay, feedback), then `0x00113118` | confirmed (code) |
+| `0x001130c8` | `AudioManager_EnableEffects` | keeps the flag at `+0x1c4`; off also turns the effect off at once (device slot `+0xc0`, IOP command `0x17` on both cores) | confirmed (code) |
+| `0x00113118` | `AudioManager_SetEffectVolume` | device slot `+0xa8` on both cores (IOP command `0x15`: the effect's return volume, the depth on both sides) | confirmed (code) |
+| `0x00113188` | `Listeners_NearestDistance` | the distance from a point to the nearest player camera's listener (players `+0x224` of the game state), and that listener's index; 10,000 when none | confirmed (code) |
+| `0x00113258` | `AudioManager_CullQuietStreams` | stops every real, streamed, mono sound of priority 8 or more whose last left and right volumes are both 0.2 or less: run whenever a command line is said, so it finds a stream channel | confirmed (code) |
+| `0x00113340` | `Snd_FadeOut` | `SndFadeOut(handle, ms)` → `Sound_FadeOut` | confirmed (code) |
+| `0x00113370` | `Audio_SetPitchMod` | `SndSetPitchMod`: the global pitch factor `+0x3fa5c` | confirmed (code) |
+| `0x00113390` | `Audio_EnableMusicDuck` | `SndEnableMusicDuck`: `+0x3fab4` | confirmed (code) |
+| `0x001133b0` | `Audio_SetNIDuck` | `SndSetNIDuck`: `+0x3faac` | confirmed (code) |
+| `0x001133d0` | `Sound_LoadBank` | `SndLoadBank`: loads at once, or while `+0x3fa58` is set keeps the name pending | confirmed (code) |
+| `0x00113438` | `Snd_CfgMusicInfo` | `SndCfgMusicInfo`: clamps the volume to 0-1, then `Sound_CfgMusicInfo` | confirmed (code) |
+| `0x00113490` | `Snd_LoadMatrix` | `SndLoadMatrix` → `Sound_LoadMatrix` | confirmed (code) |
+| `0x001134b8` | `Snd_SetMusicVolume` | `SoundSetMusicVolume` → `Sound_SetMusicVolume` | confirmed (code) |
+| `0x001134e0` | `Snd_PlayMusicTrackHash` | `SoundPlayMusicTrack` by hash, fade bars 1 | confirmed (code) |
+| `0x00113510` | `Snd_PlayMusicTrack` | `SoundPlayMusicTrack` by name, fade bars 1 | confirmed (code) |
+| `0x00113560` | `Snd_LoopMusicTrackHash` | `SoundLoopMusicTrack` by hash | confirmed (code) |
+| `0x00113590` | `Snd_LoopMusicTrack` | `SoundLoopMusicTrack` by name | confirmed (code) |
+| `0x001135e0` | `Snd_StopMusicTrack` | `SoundStopMusicTrack` | confirmed (code) |
+| `0x00113608` | `Snd_PlayAmbientTrack` | `SoundPlayAmbientTrack` → `AmbientTrack_PlayByName` | confirmed (code) |
+| `0x00113630` | `Snd_StopAmbientTrack` | `SoundStopAmbientTrack` → `AmbientTrack_Stop` | confirmed (code) |
+| `0x00113658` | `Snd_SetAmbientTrackVolume` | `SetAmbientTrackVolume` → `AmbientTrack_SetVolume` | confirmed (code) |
+| `0x00113680` | `Audio_PlaySoundAt` | `SoundPlay(name, pos)`: `PlaySound3DByHash` at volume and pitch 1, duckable | confirmed (code) |
+| `0x00113700` | `Audio_PreloadSoundAt` | `SoundPreLoad(name, pos)`: `Sound_PrepareAtCopy` with `0x00512c14` set for the call, which spares the sound the load screen's virtual rule | confirmed (code) |
+| `0x00113780` | `Audio_StartPreloadedSound` | `SoundStart(handle)` → `Sound_StartPrepared` | confirmed (code) |
+| `0x001137a8` | `Snd_Play2D` | `SoundPlay2D(name)`: `PlaySound2DByHash` with flags 0, 0 and duckable | confirmed (code) |
+| `0x001137e8` | `Snd_Stop` | `SoundStop(handle)` → `Sound_Stop` | confirmed (code) |
+| `0x00113810` | `Snd_AddAmbientSound` | `AddAmbientSound(slot, name)` → `Ambient_SetTableSlot` | confirmed (code) |
+| `0x00113840` | `Sound_AddAmbientEmitter` | `AddAmbientSoundEmitter`: the sound name's hash (0 for none) → `Ambient_AddParticleEmitter` | confirmed (code) |
+| `0x00113920` | `Snd_AddAmbientSoundEmitter2` | `AddAmbientSoundEmitter2`: the sound name's hash (0 for none) → `Ambient_AddEmitter` | confirmed (code) |
+| `0x00113a08` | `AmbientSound_AddStatResponse` | → `Ambient_AddSphereEmitter` ([effects bindings](../references/bindings/effects.md)) | confirmed (code) |
+| `0x00113a58` | `Snd_SetAmbientEmitterPositions` | `SetAmbientEmitterPositions(emitter, p1-p5, n)`: up to 5 points (w = 1) → `Ambient_SetEmitterPoints` | confirmed (code) |
+| `0x00113b28` | `Snd_AddAmbientEmitter` | `AddAmbientEmitter`: a particle emitter (range -1) → `Ambient_AddParticleEmitter` | confirmed (code) |
+| `0x00113b78` | `AmbientSound_AddOneOff` | → `Ambient_AddParticleEmitter` with one sound, played once | confirmed (code) |
+| `0x00113bc8` | `Audio_EnableAmbientEmitter` | `EnableAmbientEmitter` → `AmbientManager_EnableEmitter` | confirmed (code) |
+| `0x00113c00` | `Sound_SetAmbientEmitterVolume` | `SetAmbientEmitterVolumeMod` → `AmbientEmitter_SetVolume` | confirmed (code) |
+| `0x00113c30` | `Snd_PlayAmbientEmitter` | `PlayAmbientEmitter(emitter)` → `Ambient_TryPlay` | confirmed (code) |
+| `0x00113c58` | `Snd_NewMaterialSlots` | `NewMaterialSlots` → `Sound_NewMaterialSlots` | confirmed (code) |
+| `0x00113c98` | `Snd_NewMaterialSound` | `NewMaterialSound` → `Sound_NewMaterialSound` | confirmed (code) |
+| `0x00113ce8` | `Snd_DuplicateSoundMaterials` | `DuplicateSoundMaterials` → `Sound_DuplicateSoundMaterials` | confirmed (code) |
+| `0x00113d18` | `Snd_SetNumberOfMaterialSlots` | `SetNumberOfMaterialSlots` → `Sound_SetNumberOfMaterialSlots` | confirmed (code) |
+| `0x00113d50` | `Snd_NewAnimSlots` | `NewAnimSlots` → `Sound_NewAnimSlots` | confirmed (code) |
+| `0x00113d88` | `Snd_NewAnimSound` | `NewAnimSound` → `Sound_NewAnimSound` | confirmed (code) |
+| `0x00113dd0` | `Snd_AllocateCharacterVoices` | `SndAllocateCharacterVoices` → `Sound_AllocateCharacterVoices` | confirmed (code) |
+| `0x00113df8` | `Snd_SetCommandSoundPercent` | `SndSetCommandSoundPercent` → `Sound_SetCommandSoundPercent` | confirmed (code) |
+| `0x00113e30` | `Snd_DisableCombatMusic` | `SoundDisableCombatMusic`: the system music off (`GameState_SetSystemMusic(0)`) | confirmed (code) |
+| `0x00113e60` | `Sound_SetSystemMusicState` | `SoundSetSystemMusicState(mood)` → `GameState_SetMusicMood` | confirmed (code) |
+| `0x00113ea8` | `Sound_EnableSystemMusic` | `SoundEnableSystemMusic` → `GameState_SetSystemMusic` | confirmed (code) |
+| `0x00113ed0` | `Snd_SetMusicTrack` | `SoundSetMusicTrack(mood, a, b, c)`: the non-empty names' hashes → `Sound_SetMusicTrack`, then the system music on and the music player's `+0x68` (manager `+0xcc`) set | confirmed (code) |
+| `0x00113ff0` | `Snd_SetMusicStateCallback` | `SoundSetMusicStateCallback` → `GameState_SetMusicStateCallback` | confirmed (code) |
+| `0x00114018` | `Snd_SetListener` | `SndSetListener(n)`: the audio manager's `+0x60` | confirmed (code) |
+| `0x00114028` | `Snd_SetEffect` | `SoundSetEffect(type, depth, delay, feedback)` → `Sound_SetEffect` | confirmed (code) |
+| `0x00114060` | `Snd_EnableEffects` | `SoundEnableEffects(on)` → `Sound_EnableEffects` | confirmed (code) |
+| `0x00114088` | `Audio_PauseSound` | `SoundPauseSound(on)` → `AudioManager_Pause` / `_Resume` | confirmed (code) |
+| `0x001140d0` | `Sound_SetSoundVolume` | `SoundSetSoundVolume`: returns at once | confirmed (code) |
+| `0x001140d8` | `Sound_PlayHumanCommand` | `SoundPlayCommand` → `Human_SayCommand` | confirmed (code) |
+| `0x00114178` | `Snd_PreLoadScene` | `SoundPreLoadScene(name)` → `Scene_PreloadSoundtrack` with its hash | confirmed (code) |
+| `0x001141b0` | `Snd_CfgInterfaceSound` | `SoundCfgInterfaceSound` → `Sound_CfgInterfaceSound` | confirmed (code) |
+| `0x001141e0` | `SoundMatrix_Construct` | zeroes the three pools' fields | confirmed (code) |
+| `0x00114220` | `SoundMatrix_Init` | allocates the matrix pools: 3,000 sound-hash words, 1,200 material records and 150 animation records of 28 bytes; clears both tables, name `sound`, then `0x00116848` | confirmed (code) |
+| `0x00114528` | `SoundMatrix_Reset` | returns every pool entry and clears the material and animation tables | confirmed (code) |
+| `0x00114628` | `SoundMatrix_Load` | `SndLoadMatrix(name)`: when the name differs from the current one (`+0x23d64`), resets the matrix, keeps the name and runs the script `<name>_preload` | confirmed (code) |
+| `0x001146c0` | `SoundMatrix_GetMaterialSounds` | a material pair's next alternative: up to three hashes and the three column volumes; a second material of 0 or 1 uses the caller's default, and an empty entry falls back to it; the alternatives play **in turn** (cursor byte 2, wrapping at byte 0) | confirmed (code) |
+| `0x00114800` | `SoundMatrix_GetAnimSounds` | an animation sound's next alternative (cursor byte 1), hashes and volumes | confirmed (code) |
+| `0x001148e8` | `VoiceTable_WarnLineHash` | the name of a [gang warning line](#warning-barks), its hash when the sound exists, else 0 | confirmed (code) |
+| `0x00114a38` | `VoiceTable_LineHash` | the hash of `vags/character/voices/<set>/<command>_<NN>` when it exists and is not blocked (`VoiceTable_IsBlocked`), else 0 | confirmed (code) |
+| `0x00114b00` | `VoiceTable_NextLineFwd` | forwards to `VoiceTable_NextLine` | confirmed (code) |
+| `0x00115bb0` | `VoiceTable_SetCommandPercent` | `SndSetCommandSoundPercent(set, command, percent)`: byte 2 of the entry; set -1 for every set | confirmed (code) |
+| `0x00115c30` | `SoundMatrix_ClearMaterials` | clears the 191 × 191 material table | confirmed (code) |
+| `0x00115c80` | `SoundMatrix_ClearAnims` | clears the 162-entry animation table | confirmed (code) |
+| `0x00115cb0` | `SoundMatrix_NewMaterialSlots` | `NewMaterialSlots(m1, m2, count, columns, v1, v2, v3)`: takes a record, `count` hash words per column (1-3), zeroes them, stores the three volumes; the last three floats are not read | confirmed (code) |
+| `0x00115ee8` | `SoundMatrix_NewMaterialSound` | `NewMaterialSound(i, m1, m2, s1, s2, s3)`: sets alternative `i`'s columns to the names' hashes (`none` stores 0, nil leaves it) | confirmed (code) |
+| `0x00116080` | `SoundMatrix_NewAnimSlots` | `NewAnimSlots(event, count, columns, v1, v2, v3)`: as the material version, for the animation table (cursor byte 1) | confirmed (code) |
+| `0x001162a0` | `SoundMatrix_NewAnimSound` | `NewAnimSound(i, event, s1, s2, s3)` | confirmed (code) |
+| `0x00116438` | `SoundMatrix_DuplicateMaterials` | `DuplicateSoundMaterials(a, b)`: entry `[b][a]` = entry `[a][b]` (the pair works both ways) | confirmed (code) |
+| `0x00116480` | `SoundMatrix_SetMaterialCount` | `SetNumberOfMaterialSlots(m1, m2, n)`: alternatives used, cursor reset | confirmed (code) |
+| `0x001167b8` | `SoundMatrix_SetCue` | `SoundCfgInterfaceSound(n, name)`: cue `n`'s hash (`+0x23cc4`) | confirmed (code) |
+| `0x00116828` | `SoundMatrix_GetCue` | cue `n`'s hash | confirmed (code) |
+| `0x00116848` | `DjLines_Init` | fills the three tables of the DJ's [failure lines](#dj-failure-lines) | confirmed (code) |
+| `0x00116c98` | `DjLines_SetCheckpointEntry` | one entry of the per-checkpoint table (level, checkpoint, count, kind), cursor 1 | confirmed (code) |
+| `0x00116cd8` | `DjLines_SetLevelEntry` | one entry of the per-level table (level, count, kind) | confirmed (code) |
+| `0x00116d10` | `DjLines_SetGenericEntry` | one entry of the generic table (count, kind) | confirmed (code) |
+| `0x00116d48` | `DjLines_CheckpointLine` | the hash of `dj_l<level>_c<cp>_<kind>_<NN>` for a matching entry, NN its cursor, which then moves on (1 to count, in turn); 0 when none matches | confirmed (code) |
+| `0x00116ec0` | `DjLines_LevelLine` | the same for `dj_l<level>_<kind>_<NN>` | confirmed (code) |
+| `0x00116fe8` | `DjLines_GenericLine` | `dj_<kind>_<NN>` with NN random in 1-count (`0x003353f0`) | confirmed (code) |
+| `0x001170e8` | `DjLines_PickFailureLine` | the failure line for (level, checkpoint, kind), in the order of [DJ failure lines](#dj-failure-lines) | confirmed (code) |
+| `0x00117190` | `Sound_PlayAtDefault` | `PlaySound3DByHash` at a copy of a position, volume and pitch 1, duckable (seven object-behaviour callers) | confirmed (code) |
+| `0x001171d8` | `Sound_StopFwd` | `Sound_Stop` on the global manager; returns 1 | confirmed (code) |
+| `0x00117208` | `Sound_SetPositionFwd` | `Sound_SetPosition` with a copy of the position | confirmed (code) |
+| `0x00117238` | `Sound_PlayAtDefault2` | the same as `Sound_PlayAtDefault` (17 object-behaviour callers) | confirmed (code) |
+| `0x00117280` | `Sound_PlayMaterialPairAt` | `Sound_PlayMaterialPair(1.0, a, b, pos, default 5)`: glass and other objects | confirmed (code) |
+| `0x001172c8` | `Sound_AddScriptEmitter` | adds an emitter for an object behaviour: kind 0 with the hash of `vags/ambient/alarms/alarmbell_lo` is an `alarm_emitter`, kind 1 a `script_emitter`, else none; range -1, one sound | confirmed (code) |
+| `0x001173e8` | `Sound_DisableEmitter` | switches an emitter off (`AmbientManager_EnableEmitter(…, 0)`) | confirmed (code) |
+| `0x00117420` | `Sound_SetEmitterEnabled` | `Ambient_SetEmitterEnabled` on the global manager (object behaviours) | confirmed (code) |
+| `0x00117450` | `PanTables_Build` | fills the pan-mode-1 gain tables at reset: left `0x005d8600` and right `0x005d8ba4`, 361 entries each, `left[a] = cos(45° + a/2)`, `right[a] = sin(45° + a/2)` for a = 0-360 (the two at a = 90 / 270 stored as 0) | confirmed (code) |
+| `0x00119f78` | `MusicChannel_Init` | a channel's defaults: inactive, track -1, pair byte `0xff`, loop 1, fade bars 1, state idle, fade length 2,000 ms, no callback | confirmed (code) |
+| `0x00119fc0` | `MusicChannel_Copy` | copies a request into a channel (track, pair, loop, fade bars, callback), state idle | confirmed (code) |
+| `0x0011a038` | `MusicChannel_Set` | fills a request: active, track index, loop, fade bars, callback name (32 chars) | confirmed (code) |
+| `0x0011a0a8` | `SoundTask_Init` | a fresh task: a new handle (`SoundHandle_Make` at the first free slot), defaults (fade level 1, fade length 5,000 ms, volumes and pitch factors 1, duckable, `a8` 1) | confirmed (code) |
+| `0x0011a150` | `SoundTask_ReleaseHandle` | frees the task's handle slot | confirmed (code) |
+| `0x0011b108` | `SoundTask_GetRecord` | copies the task's record pointer | confirmed (code) |
+| `0x0011b128` | `SoundTask_StartVoice` | `+0x9c` = start; device slot `+0x90` (set up the voice, `0x0014caf8`), and when not starting, slot `+0x70` (prime the stream) | confirmed (code) |
+| `0x0011b1b0` | `SoundTask_SetFade` | fade mode 1 (in): level 0 from now; mode 2 (out): from the current level when fading in (start time moved so the level carries on), else from 1; other modes stored as given | confirmed (code) |
+| `0x0011b298` | `SoundTask_Start` | starts a prepared voice (device slot `+0x78`), `+0x9c` = 1; true when the device accepted it | confirmed (code) |
+| `0x0011b2f0` | `SoundTask_ReleaseStream` | `+0xe4` = flag, then device slot `+0xd0` | confirmed (code) |
+| `0x0011b330` | `SoundTask_SetVirtual` | `+0x4c` virtual, `+0x44` length, `+0x48` start = now | confirmed (code) |
+| `0x0011b350` | `SoundTask_VirtualDone` | a virtual task has ended: never for a loop; else when its length has passed or it is stopped (state 3) | confirmed (code) |
+| `0x0011b3c0` | `SoundTask_IsPrimed` | device slot `+0x80` | confirmed (code) |
+| `0x0011b3f8` | `SoundTask_SetOwnerFlag` | task `+0xec` (the owner's human `+0x16c`) | confirmed (code) |
+| `0x0011b400` | `StereoSlots_Init` | both [stereo slot](#stream-pairs) bytes free, pending hash 0, soundtrack handle -1 | confirmed (code) |
+| `0x0011b450` | `StereoSlots_Claim` | the preload's claim: refused (-1) when either slot holds a stereo sound and the claim is for one; slot 0 if free, else 1 if free, else -1 | confirmed (code) |
+| `0x0011b498` | `StereoSlots_Take` | making a task or a music channel: slot 0 if free, else 1; both taken: -1 while a started soundtrack lives or a cinematic runs, else a slot holding a stereo sound is taken over (`0x0011b6c0`) | confirmed (code) |
+| `0x0011b558` | `StereoSlots_Fallback` | when the claim fails: a live soundtrack is stopped and its slots freed (true); otherwise the hash becomes pending (false) | confirmed (code) |
+| `0x0011b5e8` | `StereoSlots_FreeDead` | frees every slot marked stereo when the task in `+0x08` is dead | confirmed (code) |
+| `0x0011b660` | `StereoSlots_FreeStereo` | frees every slot marked stereo | confirmed (code) |
+| `0x0011b6c0` | `StereoSlots_Evict` | the current soundtrack's hash becomes pending and its task is stopped | confirmed (code) |
+| `0x0011b740` | `StereoSlots_Set` | sets slot `i`'s user byte | confirmed (code) |
+| `0x0011b750` | `StereoSlots_PairOf` | stream pair 1 for slot 0, else 3 | confirmed (code) |
+| `0x0011b760` | `StereoSlots_BothMusic` | both slot bytes are 1 (music) | confirmed (code) |
+
 ## Coney's implementation
 
 `src/audio/`, from this page and [Audio data](formats/audio.md):
 
 - `SoundEngine` (`sound_engine.cpp`): the audio manager: 256 tasks, the admission, voice and stealing rules, virtual
-  plays and their lengths, `Task_Update`'s fades, distance attenuation, two-ear pan, ducking and rate; banks (decoded
+  plays and their lengths, `SoundTask_Update`'s fades, distance attenuation, two-ear pan, ducking and rate; banks (decoded
   to PCM at load), the load screen's banks and halves, the ambient bed, interface cues and scene soundtracks as
   [above](#scene-sound): stereo sounds on pairs 1+2 and 3+4, shared with the music through its channels' slots (a
   music channel at index 0 or 1 holds slot 0 or 1), the claim, the pending soundtrack prepared by a later update,
@@ -576,18 +1194,18 @@ Coney's stand-ins where this page is open, each marked in the code: the directio
 front); the `+0x268` state factors, the `+0x5b7` owner duck and level 82's ambient swap are not applied; a stopped task
 is freed at once (the game keeps one whose `+0xe4` is set), so a preload after a live soundtrack always takes the
 pending path; stopping the soundtrack also forgets one pending; the load screen plays only positional sounds virtually
-(not yet the other 2D sounds that are not stereo); the soundtrack's pending re-preload runs on every update (the game's
-music update interval is not traced); the random factors come from the engine's own seeded source (the game's shared one
-would shift the scripts' draws); `SoundStopMusicTrack` fades a playing track over one bar. The speech and ambience
-stand-ins: an emitter plays one sound at a time, waiting a random whole number of seconds in its two delays before the
-first and after each one ends (level99's pairs, 1-3 to 10-30, read as seconds), from a random point of its line or a
-random one of its positions; its range, `arg8`, `arg11`, mode and the name-based types are not read; a line follows its
-speaker; a line stopped by `HuShutUp` or cut off drops its callback; `HuShutUp` always stops (the human's `+0x194` is
-not modelled); `HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at target; a human's voice
-set is his type's own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of blocked lines is not
-applied; `SndSetListener` 0 is the camera and 1 the player (inferred); the bank deferral of mode 1's enter ends with the
-load screen. The system music (`repo:src/gamemodes/system_music.h`) keeps each mood's track hashes and, while on, loops
-a random track of the mood each frame's surroundings give when the mood changes; the mood is 1 while an AI human with
+(not yet the other 2D sounds that are not stereo); the soundtrack's pending re-preload runs on every update, as the
+game's music update does; the random factors come from the engine's own seeded source (the game's is a separate audio
+generator, `0x006eb8b0`, seeded from the timer at start-up, `0x0010f768`). The speech and ambience stand-ins: an emitter
+plays one sound at a time, waiting a random whole number of seconds in its two delays before the first and after each
+one ends (level99's pairs, 1-3 to 10-30, read as seconds), from a random point of its line or a random one of its
+positions; its range, `arg8`, `arg11`, mode and the name-based types are not read; a line follows its speaker; a line
+stopped by `HuShutUp` or cut off drops its callback; `HuShutUp` always stops (the human's `+0x194` is not modelled);
+`HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at target; a human's voice set is his type's
+own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of blocked lines is not applied;
+`SndSetListener` 0 is the camera and 1 the player (inferred); the bank deferral of mode 1's enter ends with the load
+screen. The system music (`repo:src/gamemodes/system_music.h`) keeps each mood's track hashes and, while on, loops a
+random track of the mood each frame's surroundings give when the mood changes; the mood is 1 while an AI human with
 health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2, its chase goals not built, never
 comes), the pick draws from the game's random index, and the fades are the music player's own. `SoundSetEffect` and
 `SoundEnableEffects` are kept in the game state only. Not built yet: reverb, the other ambient bindings
@@ -600,22 +1218,19 @@ the name changes and frees nothing (Coney keeps no matrix); `HuSay` speaks a lin
 ## Open questions
 
 - What game state `+0x268` is (it scales sounds of others, music and pitch).
-- Who sets the system-music mood (game state `+0x40c`) and the deferral flag `+0x3fa58`.
+- Who sets the system-music mood (game state `+0x40c`).
 - The listener vector's meaning and which object each listener is (`SndSetListener`'s values).
-- The directional table at `0x0050a910` (200 percentages) and the pan tables of pan mode 1: values not yet listed.
-- What human `+0x16c` does for the command lines of step 3.
 - When the game itself says each speech command (fights, crowds, the police).
 - What `a8` (the play call's third volume factor, `+0xa8`) is used for by each caller.
 - How long a primed but unstarted soundtrack survives: `Tasks_Update` frees a real task when the device reports its
   voice idle (`0x0014d168`), and whether a primed stream reads as idle was not seen (the trace's waits were under
-  0.5 s). What task `+0xe4` is (a stopped task with it set is not freed at once, `0x00112c60`).
-- How fast `SoundStopMusicTrack` (`0x0010d9a0`) fades a playing track, and which random the pitch and volume factors
-  draw from.
+  0.5 s). Which callers pass the play call's tenth argument (task `+0xe4`) and what the IOP does with it.
 - Whether a scene soundtrack holds the dialogue alone or a full mix, and what the 20 unused stereo sounds are.
 - The IOP side (`IOP.IRX`): the exact SPU2 voice assignment of streams and its mixing.
 - The emitters' timing (`0x0010c100`): the delays' unit, whether one sound waits for the last, where along the line or
   positions a sound comes from, and what range, `arg8`, `arg11`, mode and the special name types (`0x0010cf58`) do.
 - What `HuSpeak`'s fifth argument changes, and whether a line stopped by `HuShutUp` or cut off runs its callback.
-- What mode 1's enter means by the volume 0.1 and the three channels it clears (`0x001110c8`, `0x001104c8`), and who
-  ends the bank deferral (`+0x3fa58`).
-- The blocked lines of `0x00114c98` (level, set, command and line values).
+- Who ends the bank deferral (`+0x3fa58`).
+- The blocked lines of `0x00114c98`: a hand-written list for levels 11, 20, 31, 34, 82, 83, 84, 92 and 95 (some
+  by checkpoint, game state `+0x33a`), each naming voice sets, commands and 1-based lines; not yet tabulated.
+- The gang counter `+0x60d`'s starting value (the first bark's `NN`) and the meaning of game state `+0x56fc`.

@@ -183,6 +183,22 @@ pieces that flew off are drawn on their own until their lifetime runs out (infer
 system's slot `+0x54` pushes an unsigned integer as a Lua number), not a boolean. Confirmed (code) at `0x0038adfc`
 and `0x00384ce0`.
 
+**Every sender of `0x19`** (the only two; confirmed (code) at `0x0038bea0` and `0x0038adfc`). The callback always
+gets `(car, other, n, flag)`: `other` the human (or `NilHandle`), `n` the signed short `+0x04`, `flag` the short
+`+0x06` as 1 or 0.
+
+| When | `other` | `n` | `flag` |
+| --- | --- | --- | --- |
+| a hit damages part *p* (1-25) that was not yet broken ([the hit](#windows), step 4), once per part | the human responsible: the striker, or the thrower or holder of the object | *p* | 1 if this hit broke the part (a window always; a door or panel when its damage reaches 1), else 0 |
+| that hit leaves every breakable part of the car's type broken (mask `0x3ffffe`; `0x3fffe` for type 1, `0x3fff7e` for type 4) | the same human | −2 | 1 |
+| an object of class 8 (a molotov, inferred) hits the car: it catches fire and explodes 120 updates later (`+0x1200`) | the thrower | −1 | 0 |
+| the explosion itself (`Car_DoExplode`, step 3), unless quiet | `NilHandle` | −1 | 1 |
+
+A hit with no human behind it (an object nobody threw or holds) sends no per-part message. Parts 26-29 send none.
+The same hits also send [message 6](scripting.md#triggers) to the volume boxes around the human, with the car as
+the object. So `level34`'s riot meter (3 points per call with `flag` 1) counts each part a Warrior breaks, the
+all-broken call and the explosion; `level5`'s car bonus counts 15 broken parts or the explosion (`n` = −1).
+
 **Who hears it.** The car's message slot (vtable `0x00544c08` `+0x44`, `0x00389700`) only forwards to the car
 manager's table (`0x00512c7c + 0x844`, `0x0038ebf8`): the callback `SetGeneralCarMsgHandler` stored for that number
 (`+0x18 + 4 × message`) runs with the car as `self`. A car has **no handler component**: its vtable `+0x3c` (get)

@@ -47,11 +47,17 @@ No source file names this code: it lies in `Human/`, in the stretch after `cns/c
 | `0x0026dd08` | `Player_Throw` | picks the throw by stick direction and walls | confirmed (code), runtime |
 | `0x002856b8` | `Player_UpdateMugging` | the mugging stick game | confirmed (code), runtime |
 | `0x0027e6d8` | `Player_UpdateTheft` | the theft minigames (stereo) by mode | confirmed (code), runtime |
-| `0x002843f8` / `0x00284340` | `Player_StartRage` | L1 + R1 with a full meter | confirmed (code), runtime |
+| `0x002843f8` / `0x00284340` | `Player_UseItemCommand` / `Rage_Enter` | L1 + R1 with a full meter, the flash, the key when cuffed, the R2 map ([Rage](#rage)) | confirmed (code), runtime |
+| `0x00284280` / `0x0022eb40` | `Flash_Use` / `Human_Heal` | spends a flash, its sound, the heal (full, or half on fury and rumble) | confirmed (code) |
 | `0x0027a6c0` | `Player_PickTarget` | keeps or searches a target for an action | confirmed (code) |
 | `0x00264178` | `Player_ObjectAttack` | strikes at a breakable object | confirmed (code), runtime |
 | `0x002625a8` | `Attack_Start` | starts an attack clip, counts the combo | confirmed (code) |
 | `0x0021b290` | `Strike_Contact` | computes a hit's damage | confirmed (code) |
+| `0x002674c0` / `0x00230328` | `Human_OnHealthOut` / `Human_KnockOut` | health gone: wounded, knocked out or dead ([Defeat](#defeat)) | confirmed (code) |
+| `0x004197a8` | `GameState_CheckGameOver` | the engine's mission failure ([Defeat](#defeat)) | confirmed (code) |
+| `0x00169dd8` / `0x00169ea0` | `Gang_NoneAbleToHelp` / `Gang_CanReachToHelp` | whether the crew can still help a downed player | confirmed (code) |
+| `0x0027a120` / `0x0027a070` / `0x00279f50` | `Target_ObjectFilter` / `Target_GlassFilter` / `Target_CarFilter` | the square's object targets ([Targets](#targets)) | confirmed (code) |
+| `0x00396710` / `0x00393450` | `Object_IsStrikeTarget` / `WorldObject_TakeHit` | an object's strike-target bits; its hit points per strike | confirmed (code) |
 | `0x00264bd8` | `Human_AddPendingDamage` | keeps the update's largest damage on the target | confirmed (code) |
 | `0x00264cf8` | `Human_AddRage` | rage gain | confirmed (code) |
 | `0x00265dd0` / `0x00418428` | `Rage_NoteHit` / `RepeatTracker_Note` | a landed or blocked hit's kind into the attacker's repeat tracker (halved rage, the throw bonus) | confirmed (code), runtime |
@@ -471,14 +477,67 @@ circle + cross at a victim getting up played 359 and then `X1`.
 
 #### How a moving attack strikes {#moving-strikes}
 
-A moving attack has no single hit update. Its clip's events switch **strike shapes** on and off (the human's
-strike-on and strike-off messages, `0x00247fc0` / `0x00248110` from `Human_HandleMessage`, through `0x0021c030` to
-the body's switch `0x003428d0`, [Moving into a pane](objects.md#pane-break)), and while any is on
+A moving attack has no single hit update. Its clip's events switch **strike shapes** on and off, and while any is on
 `Human_TestStrikes` (`0x0033f110`) tests them **every update, after the move**, against every body near the human:
-the first shape that overlaps a body calls `Strike_Contact` (`0x0021b290`) for it. The strike shapes are the human's
-own capsule (2.0 × 0.35 m, [Physics](physics.md)) and bone shapes, posed by the clip, so the reach is the body
-itself and there is no reach or height figure of its own. Confirmed (code) at those addresses; the timings below are
+the first shape that overlaps a body calls `Strike_Contact` (`0x0021b290`) for it. The reach is the posed body
+itself: there is no reach or height figure of its own. Confirmed (code) at the addresses below; the timings are
 confirmed (runtime).
+
+**The shapes** (confirmed (code), `IPhysics_Construct` `0x0033c288` with the tables at `0x00512810`-`0x005128f0`).
+Each of the 60 human bodies holds its capsule (type 3, radius 0.35 m, height 2.0 m, [Physics](physics.md)) and ten
+**bone shapes**, identified by a bone index (shape `+0x31`). A **segment** (type 4, `0x003437b0`; posed by
+`0x00343810`) runs from the bone's position plus the bone's rotation times the offset, along the bone's local x axis,
+for its length, with its radius around it; a **sphere** (type 2, `0x00342aa0`) is centred at the bone's position plus
+the rotated offset. Both are then carried into the world by the human's transform. The limbs are named from the
+skeleton's [parent table](formats/animation.md#the-pose) (inferred); left and right follow the hand bones (25 right,
+confirmed (runtime); 19 left, inferred), and which leg is which is not known.
+
+| Id (bone) | Part | Shape | Offset in the bone's frame (m) | Radius (m) | Length (m) | Shape flags `+0x32` |
+| --- | --- | --- | --- | --- | --- | --- |
+| 3 | spine | segment | (−0.07, 0, 0.05) | 0.18 | 0.38 | `0x6` |
+| 6 | head | sphere | (0.05, 0, 0.03) | 0.15 | | `0x6` |
+| 18 | left forearm | segment | 0 | 0.07 | 0.20 | `0x2` |
+| 19 | left hand | sphere | (0.08, 0, 0) | 0.09 | | `0x2` |
+| 24 | right forearm | segment | 0 | 0.07 | 0.20 | `0x2` |
+| 25 | right hand | sphere | (0.08, 0, 0) | 0.09 | | `0x2` |
+| 29 | shin (bones 28-30) | segment | 0 | 0.10 | 0.40 | `0x2` |
+| 30 | foot (bones 28-30) | sphere | 0 | 0.15 | | `0x2` |
+| 32 | shin (bones 31-33) | segment | 0 | 0.10 | 0.40 | `0x2` |
+| 33 | foot (bones 31-33) | sphere | 0 | 0.15 | | `0x2` |
+
+The spine and the head carry `0x4`: they are the shapes a strike is tested **against** on a human target (the others
+only strike). **Switching** (confirmed (code)): `PhysBody_SetShapeEnabled` (`0x003428d0`, through
+`Human_SetStrikeShape` `0x0021c030` on human `+0x1a0`) keeps a bit per bone (`1 << (id − 2)`) in body `+0xc0` and
+turns on the shape whose `+0x31` is the id (shape vtable `+0x1c`); an id with no shape sets its bit and switches
+nothing. Turning id −1 off turns every shape off.
+
+**The clip events** (confirmed (code) at `Anim_FireEvents` `0x00101dd8` and `Human_HandleMessage`; the events read
+from the disc's clips). The 24-byte event's `+2` type picks the message and its words `+4` and `+6` are pushed as
+arguments (the message's argument stack is last-in first-out, `Msg_PopArg` `0x003a8518`):
+
+| Event type | Message | Words | What it does |
+| --- | --- | --- | --- |
+| `0xf` | `0x8f` | `+6` bone id, `+4` the window's length in frames | `Human_StrikeShapeOn` (`0x00247fc0`): that shape on |
+| `0x10` | `0x90` | `+6` bone id | `Human_StrikeShapeOff` (`0x00248110`): that shape off, and the held object's contact list cleared |
+| `0x13` | `0x93` | (`+4` ignored) | `Human_StrikeAllOn` (`0x00248170`): flag `0x2` on the capsule, then all ten on |
+| `0x14` | `0x94` | | `Human_StrikeAllOff` (`0x00248270`): the capsule's `0x2` off, all off |
+
+The disc's 1,752 distinct clips have 315 type-`0xf` events (by bone: 25 ×99, 19 ×52, 24 ×41, 18 ×28, 29 ×22,
+30 ×20, 32 ×17, 33 ×15, 3 ×7, 6 ×5, and 23, 0, 4, 28, 31, which have no shape) and 52 clips with type `0x13`: the
+charge and dive, the tackle miss, the body check, the counters, the throws' and power moves' victims, the
+**extreme reactions** 296-299 (`gen_hit_react_low_*_ex`) and the building jump's loop. The wheelchair turns all on
+above 4.5 m/s and off below (`0x002427e8`). A bone's window always ends with its own type-`0x10` event, and in the
+rage moves the `+4` word equals the frames from on to off.
+
+**With a melee object in the right hand**: a type-`0xf` event for bone 25 while the object in hand (`+0x338`) is a
+human-held melee object (object flags `0x30000`) makes strike spheres on the **object's** body instead
+(`Human_BuildWeaponStrikeSpheres`, `0x00247be8`): for an object without flag `0x20000` and not of `ObjectAttribs`
+kind (`+0x86`) 39, a row of spheres of radius *r* = 0.1 m along the object's local y: the first at −`+0x70` + *r*,
+the last at `+0x7c` / 2 plus the y of the model's bound (`0x003917d8`), and between them one every 3 *r* (the row
+reaching 0.9 m further each way for kind 36; `+0x70`, `+0x7c` are attribs of the object type); for kind 39
+one sphere of 0.8 m; for an object with `0x20000` one sphere of half its smallest extent (`+0x78`, `+0x7c`, `+0x80`;
+`+0x78` alone when attribs `+0x84` is 2), at its origin. The event's `+4` word plus 1 goes to the object's body
+`+0xd0`. Confirmed (code); the attribs fields' meanings are on [World objects](objects.md#held).
 
 - **What it hits.** Humans and objects go through the same test. A human's body is tested against the shapes of the
   target that carry flag `0x4` (or its capsule, when `0x00101b88` says so for the attacker's clip); an object's
@@ -492,15 +551,17 @@ confirmed (runtime).
   `Strike_Contact` once per body.
 - **Which shapes, and when** (updates of 1/30 s from the clip's first update, slot 10, stick 100 % straight ahead):
 
-  | Move | Shapes switched on | On | Off | Clip |
-  | --- | --- | --- | --- | --- |
-  | charge 0 (L2 + cross) | all ten bone shapes (bones 3, 6, 18, 19, 24, 25, 29, 30, 32, 33) and so the capsule (flags `0x11` → `0x13`) | 3 | 16 (all off at once) | 27 updates, 7.45 m/s throughout in the open |
-  | dive 1 (L2 + square) | the same ten | 1 | 23 | |
-  | run attack 24 (cross at gait 4) | bones 24, 25 | 1 | 7 | 21 |
-  | walk attack 23 | bones 18, 19 | 4 | 10 | 24 |
+  | Move | Shapes switched on | On | Off | Clip | Events (clip frames, of) |
+  | --- | --- | --- | --- | --- | --- |
+  | charge 0 (L2 + cross) | all ten bone shapes and the capsule's flag (`0x11` → `0x13`) | 3 | 16 (all off at once) | 27 updates, 7.45 m/s throughout in the open | `gen_charge_shoulder`: `0x13` at 3, `0x14` at 13, of 20 |
+  | dive 1 (L2 + square) | the same ten | 1 | 23 | | `gen_dive`: `0x13` at 2, `0x14` at 18, of 46 |
+  | run attack 24 (cross at gait 4) | right forearm and hand (24, 25) | 1 | 7 | 21 | `gen_run_strike`: on at 2, off at 6, of 16 |
+  | walk attack 23 | left forearm and hand (18, 19) | 4 | 10 | 24 | `gen_walk_strike`: on at 4, off at 8, of 18 |
+  | run attack with a weapon 501 | the weapon's spheres (bone 25's event) | | | | `gen_run_1hand_weapon_atk`: on at 2, off at 6, of 16 |
 
-  Which limb each bone pair is was not checked. So the **charge strikes with its whole body from its 4th update to its
-  16th**, about 13 × 0.25 m = 3.2 m of its 6.7 m; the run attack strikes only for 6 updates near its start.
+  The clips play slower than 30 frames a second (the charge's 20 frames over 27 updates), which turns the events'
+  frames into the updates measured. So the **charge strikes with its whole body from its 4th update to its 16th**,
+  about 13 × 0.25 m = 3.2 m of its 6.7 m; the run attack strikes only for 6 updates near its start.
 - **The fence (slot 10).** Rembrandt starts 4.8 m from `level99`'s wooden fence (centre line y −6.67) with the
   stick at 100 % straight at it and L2 held; cross at gait 4 started the charge (clip 0, record `+0x08`
   `0x1000000`). On its 10th update, his root 0.80 m from the fence's line, `Strike_Contact` came from the strike test
@@ -508,12 +569,35 @@ confirmed (runtime).
   its 7th update, 1.05 m from the line (record `+0x08` `0x400000`). The walk attack 23, pressed while walking against
   the fence, also broke it (its record `+0x08` holds `0x1000000` too, so kind 2). The run attack 24 did not: its
   shapes were off 1.1 m short, and he ran into the fence and slid along it at 1.07 m/s.
-- **The strike does not end the charge.** The shapes stay on and the clip runs its 27 updates whether or not
-  anything was struck. What stopped him at the fence was the collision: 2 updates after the strike he stopped dead
-  0.42 m from the fence's line, with no slide, and did not move again before the clip ended (11 updates later), even
-  after the fence object was gone (inferred to be the fence's own collision body, which the break leaves until the
-  object is removed, [Barriers](objects.md#barriers); why the charge does not slide or resume is not traced). In the
-  open the same input ran the whole clip at 7.45 m/s and the run (410) followed.
+- **The strike does not end the charge.** The shapes stay on and the clip runs its 27 updates whether or not anything
+  was struck. What stopped him at the fence was the collision: 2 updates after the strike he stopped dead 0.42 m from
+  the fence's line, with no slide, and did not move again before the clip ended (11 updates later). Why, from the code:
+  the break turns the fence's level triangles off but leaves the hidden fence's **collision body** until the object is
+  removed on its next 60-tick update ([Barriers](objects.md#barriers); 11 updates after the hit in this run). The
+  charge's sweep meets that body (the move's mask holds `0x4` on the ground, `0x0033d498`), and `Human_OnContact`
+  (`0x00219d50`) answers a world object that is not a `powerup_item` with `0x20001`: the slide response of the sweep
+  (`0x0033d9d8`, type 1), which removes the part of the velocity going into the contact's normal (`0x0033d870`) from
+  both velocities the sweep is given (this step's and, inferred, the one kept). Head-on, as here, nothing is left, so he
+  stops dead; the run attack, which met the fence at an angle, kept its sideways part and slid. Inferred from the code
+  (the response types are confirmed (code); that the fence's body has `0x4` follows from the stop). Struck first in the
+  same contact (strike shapes on and the body flagged `0x20`), the fence is not let through: only a body without `0x4`
+  gets `0x20000` (ignored) after a strike, as a glass pane's box does. The last updates of the clip after the removal
+  were not compared with the clip's own root motion. In the open the same input ran the whole clip at 7.45 m/s and the
+  run (410) followed.
+- **A knock-back is not airborne.** A knockdown reaction (`Human_PlayReaction`, `0x0026a6d0`) holds record `+0x08`
+  `0x400000` (and `0x2000` for its follow-up clip 198) and never sets the object's airborne flag `0x4000000` (none of
+  its callees does), so the flying human's sweep keeps the ground mask: a glass pane's box is met only through strike
+  shapes. The **extreme reactions** 296-299 switch all ten shapes on (`gen_hit_react_low_front_ex`: `0x13` at frame 1,
+  `0x14` at 16, of 20; `_back_ex` 2 to 11 of 32), so a human flung by one strikes what his body sweeps through,
+  panes included; the ordinary knockdowns do not. Against a wall in the level mesh a human holding `0x400000` or
+  `0x800` makes one impact sound (`Human_OnContact` → `0x00220ac8` with the triangle's material, volume 1.0 with
+  `0x400000`, else 0.5; once, `+0x3bd` cleared). Confirmed (code); not seen at runtime.
+- **Record `+0x08` bit `0x800`** is read in three places: the move's sweep mask (`0x0033d498`: with it, as when
+  airborne, the sweep also meets `0x40` bodies), `Human_OnContact` (it counts as airborne for a `0x40` body, a pane's
+  box) and the wall-impact sound above. **Nothing in the executable sets it**: no held-flag setter (`0x00226640`, the
+  clip tasks' `+0x24`, `Anim_FireEvents`' event bits) is given `0x800`, and the only immediates `0x800` in `Human/`
+  are state-word and human-flag bits (inferred from a search of every `li`/`ori` of `0x800`; a value read from data
+  was not ruled out). So it behaves as a dead "airborne" override.
 - **After the break** the script takes over ([Barriers](objects.md#barriers)): the fence's message 2 reaches
   `P3.FenceBroken`, and 15 updates later the player stood at (18.5, −16.3), heading 178°, beyond the fence. From the
   strike to that placement took 26 updates in the charge run, 33 in the walk-attack run.
@@ -1313,6 +1397,82 @@ mashing is measured in [Being hit](#being-hit-runtime).
 
 The victim can act again when its reaction clip ends (standing), its stun ends, or its rise ends.
 
+### Knocked out, and the mission failing {#defeat}
+
+**When health runs out** (inferred from what it does), `Human_OnHealthOut` (`0x002674c0`; from `0x00267a00`,
+`0x00267e48` and `Human_HandleMessage`) runs, unless state `0x1c00000000` is set. Confirmed (code) at the cited
+addresses:
+
+1. It clears the state bits `0x208000800f` (stance, grabs, block), the action and the pending damage, and sets
+   record `+0xf0` = now + 500 ms.
+2. What happens next depends on human flag `0x4` (the player in the street had it,
+   [Human flags](#human-flags)):
+   - **Without `0x4`**, a human that is not cuffed, has flag `0x8` and passes `0x00227d98` is **wounded**
+     (`Human_StartWounded`). It drops what it carries, leaves the radar and loses its icon.
+   - Any other human without `0x4` is **knocked out** (`Human_KnockOut`, `0x00230328`) and drops what it carries.
+     It is **dead** instead (state `0x100000000`, record `+0xf0` = 0) when the source of the last hit (record `+0xd0`)
+     is an object of kind 29.
+   - **With `0x4`**: knocked out, with record `+0xf0` 14 s later still.
+3. A cuffed human's idle becomes 323 `ANIM_ARRESTED_DEAD`.
+4. For a player, the players of the same gang who are knocked out get the same `+0xf0`.
+
+**`Human_KnockOut`**:
+
+- sets record `+0xf0` = now + 14,000 ms (`0x00510794`; its reader is not traced here);
+- gives the push weight 1e9;
+- turns a player's slow motion off;
+- unless the human is dead or wounded (`0x100050000`), sets state **`0x40000`** (knocked out;
+  `Human_IsKnockedOut`, `0x00227dd8`; `Human_WakeUp` clears it) and tells the brain (`0x0028c3b0`);
+- for a member of a player's gang outside Armies and Rumble levels, shows the **`dyn_cross`** icon over it
+  (`Human_ShowOverheadIcon`, argument 3), the mark a partner revives with a flash
+  ([Crimes](crimes.md#triangle); inferred).
+
+The flash clip 665 keeps a player alive ([Damage](#damage), step 4).
+
+**The mission failing.** The engine decides this; `global.lua` does not. `GameState_CheckGameOver` (`0x004197a8`)
+runs every game-state update (`0x0041a370`), while three things hold:
+
+- the check is on (`EnableGameOverCheck`, game state `+0x155`,
+  [Bindings](../references/bindings/level.md#enablegameovercheck));
+- game state `+0x158` is 0;
+- no level end is pending (`+0x14c` = 0).
+
+It works through these cases, confirmed (code):
+
+1. **A dead player** (state `0x100000000`) fails at once.
+2. Nothing more happens while any player is neither knocked out nor cuffed.
+3. A cuffed player 1 who can free himself (upgrade (6, 15) and a key) is spared.
+4. When no one else in player 1's gang is free to help (`Gang_NoneAbleToHelp`, `0x00169dd8`: not cuffed, out or
+   busy), the mission fails at once.
+5. When others are free, and player 1 is cuffed (not out) or holds a flash (item 1), and game state
+   `+0x414 + player` is 0, it **waits**. Every 37 updates it asks whether a free member has a route to him
+   (`Gang_CanReachToHelp`, `0x00169ea0`). A yes resets the count at `+0x56e6`; the 4th no in a row fails the mission.
+   A knocked-out player without a flash fails at once.
+
+A failure sets `+0x14c` = 1 and the menu's title (`MissionFailed_SetReason`, `0x001d1fb8`): `GSTRING.HUD` 21 with
+game state `+0x118` = 1 when player 1 is cuffed (busted), else 20 with `+0x118` = 0
+([Text labels](../references/text-labels.md#text-gstring-hud)).
+
+**The hand-off** (`Gm_Level_Update`, `0x00158728`), confirmed (code):
+
+1. While `+0x14c` is 1 or 2, a countdown at level mode `+0x28` runs down by one per update. `Gm_Level_Enter` and
+   `Gm_Level_Resume` set it to **180**; for anything but a story failure it is first capped at 90.
+2. On a story failure (not an Armies level) the first update does the following, unless game state `+0x152` bit
+   `0x2` is set:
+   - makes the **failed camera** (`Cam_GetFailed(1)`) active for player 1;
+   - blends the screen tint to `0xd0000014` over 6.5 s and starts a 1.5 s blur pulse;
+   - hides the HUD and removes the players' overhead icons;
+   - keeps the music volume, then fades it toward 0.7 while the failed camera runs.
+
+   At 180 the system music stops.
+3. A pad's newly pressed button bit `0x40` cuts the countdown to 10 and the tint to 1/3 s. Game state `+0x152`
+   bit `0x2` cuts it to 0.
+4. At 0, `MissionFailed_Toggle` pushes mode `0xc`, the [mission-failed screen](pause.md#the-mission-failed-screen)
+   (`ANGameOver_Toggle` on an Armies level). A level end of 2 launches the mission-complete screen instead.
+
+So the screen comes 180 updates (6 s at 30 updates a second, inferred) after the failure, with the reason set by
+the engine. `HUDLaunchMissionFailed` is only the scripts' own route.
+
 ### Being hit, at runtime {#being-hit-runtime}
 
 A puppet civilian (`PoizoCiv`, type 417, power class 2) attacked, blocked and grabbed the player (Rembrandt, 900
@@ -1538,8 +1698,8 @@ that gives no rage.
 second**), and rage ends at 0 (`0x00236fb8` clears `0x80000`). The HUD is told at 90 % and below 11. Confirmed (code)
 at `0x002562d0`; confirmed (runtime): 78 → 0 in 8.34 s raging, 40 → 25 in 2.0 s idle.
 
-**L1 + R1** (`0x1f`) with a full meter starts rage (`0x002843f8` → `0x00284340`, `0x00236d28`): 643 `RAGE_START` for
-about 2.1 s, human `+0xe0` flag `0x80000`. Confirmed (runtime). **While raging**, confirmed (code), confirmed
+**L1 + R1** (`0x1f`) with a full meter starts rage (`0x002843f8` → `Rage_Enter` `0x00284340` → `0x00236d28`): 643
+`RAGE_START` for about 2.1 s, human `+0xe0` flag `0x80000`. Confirmed (runtime). **While raging**, confirmed (code), confirmed
 (runtime) where marked:
 
 - **No damage bonus**: `S1` still deals 17 and grab strikes 57 (runtime).
@@ -1555,17 +1715,62 @@ ending it (`0x00236fb8`) the **exit** function the same way, the flag being whet
 `*(0x0051489c) + 0x268` is below 1. `HuSetLockedRage` (bit `0x100000`) does not stop `Human_AddRage`, so a locked
 meter still fills from hits (inferred: the lock holds only the decay).
 
-**The flash** is command `0x28` (d-pad right, [Commands](#commands)), handled with L1 + R1 by `0x002843f8`
-(`0x0027bbd0` tests for `0x28`), confirmed (code). It needs a player human holding at least one flash (item 1) who
-is not down, dead or in a few blocking states (`0x00227f90`, `0x00223c10`):
+**`Player_UseItemCommand`** (`0x002843f8`, run from `Human_UpdateActions` at `0x00255074`) handles L1 + R1, the flash,
+the key and the R2 map, in this order. Confirmed (code) at `0x002843f8`:
 
-- **Health below the maximum**: a grab the player holds or is held in is let go first (`0x00258a88`); when nothing
-  blocks a move the player plays **665 `SPECIAL_FLASH`** (`0x0025ade8`, flags `0x2000`) and the clip's event uses
-  the flash; otherwise (or with 665 not playing) it is used at once (`0x00284280`). **Using** it: item 1 − 1, sound
-  `0x17`, and `0x0022eb40` revives the human (ends wounded, wakes him, clears `0x4000000000`) and sets health to
-  the **maximum**, or, for a player while `*(0x0051489c) + 0x154` is above 2, adds half the maximum.
-- **Health full**: with upgrade (6, 8) unlocked ([Unlockables](player-state.md#unlockables)), and the player able to
-  gain rage, a flash is spent to fill the meter and start rage (`0x00284340`); without it nothing happens.
+1. Nothing while the state word (record `+0x00`) has any of `0x80040000`.
+2. **Cuffed** (state `0x20000`): only triangle (command `0xa`) does anything. For a player human (per-player `+0x1b`
+   set) with record `+0x08` free of `0x7c7eae0`, upgrade (6, 15) unlocked and a key (item 6) carried: interface
+   sound 24 (`vags/misc/usekey_01`), one key spent, and `0x00260fd0` frees him ([Crimes](crimes.md)).
+3. R2 held (command 1) or released (2) opens or closes player `+0x1b0`'s map panel (`0x001a6d28`, `0x001a6c58` on
+   HUD `0x00600848[player] + 0x1ef0`) unless `*(0x0051489c) + 0x42e + player` is set.
+4. **L1 + R1** (`0x1f`) with the state word free of `0x19f9e0f3000` and `+0x08` free of `0xfc7eae0`: when rage
+   (human `+0x650`) has reached the class maximum (`0x00223260`: the first `u16` of the Warrior class record,
+   `0x00222b58`) and the human may gain rage (human `+0xe0` bit `0x2000000`, which `Human_MakePlayer` sets and
+   `Human_AddRage` also tests) and is not raging (`+0xe0` bit `0x80000`), `Rage_Enter` (`0x00284340`) runs.
+5. **The flash**, command `0x28` (d-pad right, [Commands](#commands)), needs all of: a player human (`+0x1b0` ≠ −1),
+   at least one flash (item 1) in the player's inventory (`0x0041e420` on `*(0x0051489c) + 0x480`, the player index
+   at human `+0x380`), not down or dead, the state word free of `0x1c00000000` (`0x00227f90`) and `+0x08` free of
+   `0x40` (`0x00223c10`). Then by health (record `+0x144` against the maximum `+0x146`):
+   - **Below the maximum.** The flash clip **665 `SPECIAL_FLASH`** (`gen_flash_use`, 40 frames) is pushed as a
+     one-shot clip task on top of the stack (`0x0025ade8`: a type-5 task, `0x00106240`, holding `0x2000`) when
+     **nothing blocks a move**: the state word has none of `0x18003ff0` (`0x00227fd8`: grabbing, held, mugging,
+     tackling, throwing, blocking, `0x8000000`, `0x10000000`), none of `0xe0000` (`0x00223b48`), not the mini-game
+     `0x4000000` (`0x00228050`), not tagging `0x2000000` (`0x002238c0`), none of `0x7bf9e9f7ff0`; record `+0x08` has
+     none of `0x2fefefff`; and the object in hand is not of `ObjectAttribs` kind (`+0x87`) 4 or 6 (`0x00224000`).
+     Otherwise, if 665 is already the human's anim (`0x002266b8`), nothing more happens (its event will use the
+     flash); else the flash is **used at once** (`Flash_Use`, `0x00284280`). The code before this test that would let
+     go of a grab (`0x00258a88` when the state word has `0xc0` or `0x400`) also requires the state word to be free of
+     `0x7bf9e9f7ff0`, which holds both bits, so it never runs: in a grab the flash is used at once and the grab stays
+     (inferred from the masks; not seen at runtime).
+   - **At the maximum**, with upgrade (6, 8) unlocked (`0x00424130(0x006fe998, 6, 8)`: the first unlockable record of
+     type 6 whose data is 8, unlocked when its bit in `0x006fe8f8` is clear, [Unlockables](player-state.md#unlockables)),
+     the state word free of `0x19f9e0f3000`, `+0x08` free of `0xfc1fe7b`, not raging, the rage flag `0x2000000` set and
+     a flash carried: one flash is spent (`Inventory_AddItem(…, 1, −1)`), rage is set to the class maximum and
+     `Rage_Enter` runs. Without the upgrade nothing happens.
+
+**The flash clip's event**: `gen_flash_use` (665) has one event of type `0x41` at frame 19 (with a type-11 event at
+the same frame); `Anim_FireEvents` (`0x00101dd8`) sends it as message `0xc1`, and `Human_HandleMessage`
+(`0x002473bc`) calls `Flash_Use` when the human's anim is 665 (for 666 it opens the door in front, for 668 it
+serves the dealer goal). Confirmed (code); the frame read from the disc's clip (identical in both copies on the disc).
+So the flash is used 19 updates into the clip, unless the clip is cut first (then nothing is spent).
+
+**`Flash_Use`** (`0x00284280`), confirmed (code): one flash spent; **interface sound 23** (`0x0010fc30(*0x0050aa84,
+0x17)`: entry 23 of the audio manager's interface cue table at `+0x1e0`, which `SoundCfgInterfaceSound(23, …)` fills
+with `vags/misc/flash`, [Sound and music](../references/sound.md#interface-sound)), played 2D with flags `0x12`;
+`Human_Heal` (`0x0022eb40`) with "full" unless the human is a player and the **difficulty in force** (`W_GameState +
+0x154`, `SetDifficulty`: 0 easy, 1 normal, 2 hard, 3 fury, 4 rumble) is above 2; the HUD's per-panel request byte for
+the player (`0x001b28a0`, [HUD](hud.md)); and the player's screen effect at `0x005fdeb8[player]` is reset
+(`0x0018b7d0(…, 0)`). `Human_Heal` clears `+0x3be`, ends wounded (`Human_EndWounded`), wakes a knocked-out human
+(`Human_WakeUp`), clears state `0x4000000000`, then sets health to the maximum, or on fury and rumble adds half the
+maximum (capped); it also runs `0x0021ce08`, `0x0024ca40` and clears human `+0x644`. The same heal serves
+`Human_Revive`, the uncuffing and the Armies game-over toggle.
+
+**`Rage_Enter`** (`0x00284340`), confirmed (code): plays the 2D sound `vags/misc/rage_mode_06` through the game
+state's handle at `+0x264` (restarted when it is still playing, `0x004194b8`); when the state word has any of
+`0x18003ff0` and `+0x08` none of `0x2fefefff`, the pair is broken (`Human_BreakPair`); then, if nothing of
+`0x18003ff0` or `0xe0000` is left and `+0x08` is free of `0xfc1fe7b`, rage starts (`0x00236d28`) and 643
+`RAGE_START` plays as a full-body clip holding `0x2000` (`0x0025a8c0`); otherwise rage starts without the clip.
 
 `level99`'s last lesson waits for this command through `PadSetHandlerEx` (the handler receives it even when
 `EnableCommand` has turned it off, [Commands](#commands)).
@@ -1582,6 +1787,23 @@ is not down, dead or in a few blocking states (`0x00227f90`, `0x00223c10`):
 3. The filters (`0x00279410`, `0x00279568`) skip allies and the same gang (brain `+0x20c`), humans more than 2 m
    higher or lower (`0x00510970`), those with flag `0x100000000000` (`0x00227d78`), the dead and the airborne;
    the first also skips the knocked down.
+4. **Objects as targets**, confirmed (code) at `0x0027a6c0`:
+   - **Cars** (world `+0x844`, `CarManager_FindTarget`, 1.0 m) come first among the objects, through
+     `Target_CarFilter` (`0x00279f50`): within 3 × the angle (or any angle when `0x00279e00` says so) and not
+     more than 2 m away in height. A car found ends the search, with its record copied to record `+0xe0`-`+0xec`.
+   - **World objects** (world `+0x840`, `ObjectList_FindInRange`, `0x0039ab20`) within the range (2.0 m for
+     square), and at the 135° pass within 0.8 × it. They must also be beyond record `+0xd8`, which the pick zeroes.
+     `Target_ObjectFilter` (`0x0027a120`) keeps an object when it has a body, is within the angle (54°, then 135°)
+     and 2 m in height, is a world object (type mask `0x8`, `Object_AsWorldObject`) and its **body flags have any
+     of `0x8`, `0x10`, `0x20`** (`Object_IsStrikeTarget`, `0x00396710`).
+   - Glass panes (world `+0x84c`, `0x0038fc70`) within the range, through `Target_GlassFilter` (`0x0027a070`): body,
+     angle and height only.
+
+   A world object's body flags come from its type's word `+0x5e` (`Obj_CreatePhysicsBody`, `0x00391d48`):
+   bit `0x4` gives `0x10`, `0x8` gives `0x8`, `0x20` gives `0x20` (and `0x1` → `0x2`, `0x2` → `0x4`, `0x10` → `0x40`,
+   `0x40` → `0x2000`, `0x80` → `0x10000`, `0x100` → `0x20000`), on top of `0x80000500`. Kinds 29, 33, 34, 15, 26
+   and 31 add their own bits first. Which object types set those bits is on [World objects](objects.md). The square
+   then plays [`Player_ObjectAttack`](#breakables) on the object picked.
 
 #### The fight stance {#fight-stance}
 
@@ -1595,21 +1817,43 @@ addresses:
   stance logic below; L1 and the auto-lock add `0x4` with it (`0x00280158`: `+0x00` `0x5` and the lock-on movement
   state). `Human_LeaveFightStance` (`0x0022fef0`) clears `0x7`; the player's own exits (`0x002801e8`, `0x00280118`)
   clear `0x5`. The stance timer `0x002800b8` is unused: its seconds `0x00510994` are −1.
-- **The player's stance each update** (`0x0027ce90`, through `0x0027d5a0` from the dispatcher after its busy gate,
-  for a pad player outside the stealth state; distances below are compared squared):
-  1. **Running drops it**: with L2 held (the sprint), or gait 4 or 5 with record `+0x08` clear, or human `+0xe0`
-     `0x8000000000` while not locked, a player in a stance with `+0x08` clear leaves it (`0x8008` cleared, target
-     dropped, `0x002801e8`). Nothing else happens that update.
-  2. **An enemy within 2 m enters it**: outside the lock-on movement and state `0x200000`, when the nearest enemy
-     (`0x0027b1a0`: within **6 m**, `0x005104c4` = 36) is within **2 m** (`0x005104bc` = 4), or the player is locked
-     (`+0x00` `0x8` and `0x4`, `0x00227c88`), he enters it (`0x00280068`), takes that enemy as his target and, unless
-     `0x00228168` or human `+0xe0` `0x200000000000`, locks on (`0x00280158`). Not with an overhead object (set 4).
-  3. **Otherwise it holds** while a target is kept: the target timer (record `+0xf4`) is running, or a target within
-     **3 m** (`0x005104c0` = 9) is swapped for a nearer enemy within 2 m, or the current target is within 6 m.
-  4. **Then it ends**, once `+0x08` is clear and he is not locked: the target is dropped, the lock-on movement
-     ends, and the stance is left (`0x00280118`), unless he is **standing** (gait 0) with an alerted enemy (brain
-     `+0x21c` set, not a player) within **20 m** and within 60° of his facing (`0x00222710` with 120°), which keeps
-     `0x1` (the fight idle without a lock).
+- **The player's stance each update** (`Player_UpdateSprint`, `0x0027ce90`, through `Player_UpdateStanceOrIdle`
+  `0x0027d5a0` from the dispatcher after its busy gate, for a pad player (per-player `+0x1b`) outside the stealth
+  movement state `0x00244770`, the state word's `0xf0000` and a scene; an AI-controlled player runs `0x0027cd50`
+  instead, and a scene drops the target). Distances are compared squared; "drop the target" is `0x00226f70` (refused
+  while locked, state `0x8` and `0x4`) and "take" is `0x00226c30` (refused while locked, and for a human the target
+  filter `0x00227d78` rejects). Confirmed (code), in this order:
+  0. **The nearest enemy** (`Player_FindNearestEnemy`, `0x0027b1a0`): the humans within **6 m** (`0x005104c4` = 36)
+     that the enemy filter `0x002791b0` accepts, nearest first, kept if `0x0021c240` agrees; with none, the current
+     target unless it is down (state `0x80000000` or `0x100000000`, or `0x00227dd8`). It also writes record `+0xd4` /
+     `+0xd8`. A current target that is down, knocked out or in a scene is dropped (and the lock bit `0x8` cleared)
+     unless it is flying in a knockdown (`+0x08` `0x400000`).
+  1. **The sprint**: state `0x1000000` is cleared, then set again while L2 is held with stamina (record `+0x14a`)
+     and `+0x08` free of `0x10`, which also clears `0x8008` and drops the target ([Sprint](characters.md#sprint)). A
+     target beyond **13 m** (169) loses the lock bit `0x8`.
+  2. **Running drops it**: with L2 held, or gait 4 or 5 with `+0x08` clear (`Human_IsRunningFree`, `0x00223a98`), or
+     human `+0xe0` `0x8000000000` while not locked, nothing else happens this update; a player in a stance with
+     `+0x08` clear also leaves it: `0x8008` cleared, target dropped, `0x00230140` (which ends state `0x200000`, see
+     below), `Player_ExitStanceAndLock` (`0x002801e8`: `0x5` cleared, the combo count zeroed and, from the lock-on
+     movement state, back to the free one), and a state code of `0xe` becomes 7.
+  3. **An enemy within 2 m enters it**: when the movement state is not the lock-on one (`Human_FightStanceMove`), the
+     state word lacks `0x200000`, and the nearest enemy is within **2 m** (`0x005104bc` = 4) or the player is locked:
+     nothing with an object of set 4 in hand; else `0x1008000` cleared, `Player_EnterStance` (`0x00280068`:
+     `0x00230140`, then `0x1` if clear; `0x00230140` clears state `0x200000`, setting `0x20000000` when he is then free
+     and still, and zeroes record `+0x114`), the nearest taken as the target (when there is none yet and `+0x08` has
+     nothing outside `0x320100`; and again when there is one), and unless state `0x200000` or human `+0xe0`
+     `0x200000000000`, the lock (`Player_LockOn`, `0x00280158`: state `0x5`, and the lock-on movement state through
+     `0x00221038`).
+  4. **It holds** while the target timer (record `+0xf4`) runs and a target is kept; or, with the nearest within 2 m
+     and the target beyond **3 m** (`0x005104c0` = 9), the target is swapped for the nearest when `+0x08` is clear;
+     or the target is within 6 m.
+  5. **It ends** once the timer has run out, `+0x08` is clear and he is neither locked nor in state `0x8` with
+     `0x200000` (`0x00227cd8`): the target is dropped; a stance in the lock-on or the free movement state is left
+     through `0x002801e8` (a state code `0xe` → 7). Then, outside state `0x200000`, the nearest human on the brain's
+     list `+0x164` within **20 m** that is an alerted (brain `+0x21c` set) non-pad human inside a 120° cone of his
+     facing (`Human_IsInFieldOfView` with 2.094 rad) keeps him in the stance **if he is standing** (gait 0):
+     `Player_EnterStance` again. Otherwise a stance still on is left by `Player_ExitStance` (`0x00280118`: `0x5`
+     cleared and the combo count zeroed, the movement state kept), and a moving player's state code `0xb` becomes 7.
 
 So in play a player is in a fight stance **while locked on** (L1, or an enemy coming within 2 m with the street's
 auto-lock), for the rest of any attack he starts, and while he stands facing an alerted enemy within 20 m; a run or
@@ -1724,6 +1968,21 @@ panes at x 50.25-52.26, y 56.99, 3 `dyn_ringdmnd` in the next cabinet (x 48.16-5
 (x 48.13), all in object zone 26, which `BNESetup` (`global.lua`) enables. The items are `pickup_item`s of
 `TYPE_SPECIAL` (12). Confirmed (runtime, the spawn records read at slot 4) and from the disc's list.
 
+- **Any strike on a world object counts as a hit**, an ordinary punch or kick included: `Strike_Contact`
+  (`0x0021b290`) treats every body it is called for alike, confirmed (code). For a world object it does five
+  things:
+  1. reports a 30 m noise (`0x002936a8`);
+  2. takes hit points (`WorldObject_TakeHit`, `0x00393450`). Byte `+0x10d` loses 4 + 6 × the hit's kind: 4 for a punch
+     or kick (kind 0), 16 for a charge or dive (kind 2, attacker `+0x08` `0x1400000`), 22 for kind 3 (attacker human
+     `+0x54` flag `0x4000000`). It loses only 1 when object `+0x128` is 1, and nothing when the byte is 0 or −1. A
+     second byte, `+0x10e`, is spent first for objects with flag `0x4000000`;
+  3. plays the impact sound (9, or `0x1a` for a charge, by the type's material `+100`);
+  4. sends the object event 1 carrying the damage (its vtable `+0x44`), then message 1 (kind, the attacker twice
+     and the contact point and normal, [World objects](objects.md#door-break));
+  5. counts statistic 9 for a player when the object is not yet broken and lacks class flag `0x20`.
+
+  A pane also breaks. An object of kind 30 reports crime 10. A whole object with body flag `0x4` hurts a human
+  thrown into it (in a knockdown flight, `+0x08` `0x400000`, with a grab partner) by 5 × type `+0x58`.
 - **Breaking.** The square's hit breaks the struck pane only (`Glass_Break` from `Strike_Contact`, `0x0021b290`, the
   breaker the player; [a pane's life](objects.md#pane)); the cabinet's other panes stay whole and the items do not
   move. At slot 4 one square broke the front pane centred at (51.26, 56.99, 1.59), 11 updates after the press.
@@ -2171,8 +2430,9 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   (`Player_Square` on a tackled target; never seen at runtime).
 - **Square at a sprint** at runtime, and the moving attacks' hit timing (the victim was out of reach in the tests).
 - **The mugging's angle frame** (world or camera).
-- **The charge's stop at a barrier**: why it stops dead with no slide and does not resume once the barrier is gone
-  ([How a moving attack strikes](#moving-strikes)); which limb each strike bone pair is.
+- **The charge's stop at a barrier** (answered from the code: the slide response head-on against the fence's body,
+  [How a moving attack strikes](#moving-strikes)); still open: the clip's root motion in its last updates, and which
+  leg each of the bone chains 28-30 and 31-33 is.
 - **The far ranges' class table** (`0x002545e0`, table `0x0055d640`): which of the class's 45 floats goes to which
   anim id, as the damage table's index → id map does for the damage.
 - **The snap's steer and target**: whether `0x00264460`'s turn faces the target or puts it at the snap's side (Coney
@@ -2194,5 +2454,7 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **Rage extensions at runtime**: 63 → 65 in a grab and 231 → 233 in the mount, which `level99`'s rage lesson
   waits for (inferred from `Player_UpdatePowerMove`); L1 + R1 did not start rage in a slot 6 copy with the meter
   written full, so what else the start needs is open.
+- **The flash in a grab** at runtime: the masks say it is used at once and the grab stays ([Rage](#rage)); Coney
+  breaks the pair.
 - **The clips' `+0x44` flags** (paired `0x1`, tackle `0x20`, grab `0x40`): which clips carry the tackle flag
   ([Strong grapple](#strong-grapple)).

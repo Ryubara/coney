@@ -475,12 +475,14 @@ Z write, `0x0e` fog. The world toggles `0x005e5380`-`0x005e5398` are all 1 (set 
 6. **The `s` world:** add the camera to it; culling = `0x0050c69c` (2, back faces); the visibility pass
    ([below](#visibility)); then draw the collected sectors' atomics, last collected first, each with
    `World_RenderSectorAtomic` (`0x00411990`).
-7. Fog distance halved: the objects the resource manager queued in its list `+0xc78` (`0x00174320`; what they are is
-   not traced). Fog restored: the first pass of list `+0xc98` (`0x00172c70`) and the object instances of list
-   `+0xc88` (`0x0017fd78`) except those of type `0x20`.
+7. Fog distance = draw distance × 0.5: the **humans** in view (the resource manager's list `+0xc78`, last queued
+   first, back-face culling; [Drawing a human](graphics.md#human-draw)). Fog distance restored (× the fog start):
+   the **cars'** opaque pass (list `+0xc98`, culling off; [Drawing a car](graphics.md#car-draw)), then the object
+   instances of list `+0xc88` (`0x0017fd78`, back-face culling) except those of type `0x20`.
 8. **The `d` world:** the same as the `s` world.
 9. The water effect (`0x00191dd8`, a phase that grows by 0.16 a frame).
-10. With Z write off: the instances of type `0x20`, then the second pass of list `+0xc98`. Then the remaining
+10. With Z write off: the instances of type `0x20` (last first), then the cars' **glass** pass (list `+0xc98`, last
+    first, culling off). Then the remaining
     effects (`0x00419da0`, litter `0x001712c0`, ground fog `0x00171f58`, embers `0x001795f8`).
 
 **`World_RenderSectorAtomic`** (`0x00411990`): during the second after the atomic was read, set the alpha of every
@@ -548,6 +550,14 @@ white from start-up (`GraphicsDevice_Open`) and black after `UnloadLevel`; a lev
   (confirmed (code)).
 - `SetFogDistance(d)` (`0x0036e5f8` → `Level_SetFogDistance`, `0x0040c908`; confirmed (code)): the device's fog start
   `+0x444` (0.5 by default), the fraction of the far clip where fog begins.
+
+**The fog curve**, confirmed (runtime) from a PCSX2 GS dump of `level99` (checkpoint 3, the street at night): fog is
+per vertex and **linear in the camera distance** `w` (metres). The GS fog value (255 = no fog, 0 = all fog colour) is
+`255 × (far − w) / (far − start)` with `far` the draw distance and `start = far × fog start`: 255 up to 57.5 m and 0
+at 115 m, for the 115 m draw distance and fog start 0.5 (a least-squares fit over 2,305 partly fogged world vertices
+puts the ends at 57.3 m and 115.1 m). The GS blends `colour × f + fogColour × (1 − f)` with `f` = value / 255, after
+texturing and before alpha blending. Fog is off for the sky, clouds and skyline ([Level
+loading](level-loading.md#render-order)) and for the HUD.
 
 **Disc check (corroboration):** `SetFogColor` appears in 66 compiled Lua files, covering 62 of the 64 levels that have
 a `.lev`; `SetFogDistance` in 14 levels. The colour values themselves are inside Lua bytecode and were not decoded.

@@ -453,7 +453,7 @@ models the Character List names (no code was read for this subsection, so it is 
   weight is the float with those bits cleared. The same encoding as librw's PS2 skin reader.
 - **One mesh, one material**, colour `0x969696ff`, and the material is **not textured** (no texture section): every
   character's texture dictionary holds exactly one texture (507 dictionaries), named after the character in 427 of
-  them. How the game binds that texture to the material is open.
+  them. The game binds it to the material at each draw ([Drawing a human](graphics.md#human-draw)).
 - **The skin's inverse bind matrices** are the inverses of the HAnim frames' world matrices (checked to float
   precision for every model).
 - **Frames to pose bones**: frame 0 is the clump's root, frame 1 carries HAnim id 0 and the hierarchy; node index

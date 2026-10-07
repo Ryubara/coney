@@ -413,6 +413,10 @@ the C++ side; the chunks' calls are read from the disc (inferred from their disa
 | Choose Gangs (`RM_ChooseGangs.cpp`) | `0x001ecae0` | `rumble_gang.lua` | 46 `CfgRumbleGang` | `0x0063ee4c` | 0x54 bytes |
 | Choose Area (`RM_ChooseArea.cpp`) | `0x001eb0c8` | `rumble_arena.lua` | 29 `CfgRumbleArena` | `0x0063ee40` | |
 
+An arena (`CfgRumbleArena`, `0x001eaa30`) is listed only when its level number is 101-199, it is unlocked (kind 2)
+and its list of up to 16 modes holds the chosen `gameType`, so an arena with an empty list is never shown. Confirmed
+(code).
+
 Each chunk sets a per-language string table, calls `GetLanguage`, then calls its own `CfgRumble...Data` function.
 The Game Mode screen runs its chunk through the script system's slot `+0x44` and keeps the list at screen `+0x8c`.
 The arenas are levels 101-134.
@@ -558,8 +562,9 @@ The layout values (`0x001fdce0`, getters `0x001fdc80`-`0x001fdcd0`):
   `0x0063ee70`-`78` set by `0x001f2720`). Record 12 is the one-sprite sheet of CRC `0x349348bd` (inferred); the
   (93, 106, 49, 254) read at runtime ([GUI](gui.md#sprite-colours)) is 56 % of the way from red to green (inferred).
   Measured: red-brown on Game Mode, green two screens later; it covers the whole screen, so the Wonder Wheel is not
-  seen behind any Rumble screen, yet the gang screen's 3D fighters are drawn over it (how they get in front of a 2D
-  batch is open).
+  seen behind any Rumble screen, yet the gang screen's 3D fighters are drawn over it: its `Render` (`0x001f0420`)
+  flushes the 2D pass (`0x00185d20`) and then draws the fighters itself (`Human_RenderWithAttachments`), so they land
+  on top; Edit Gang and Edit Gangs do the same (`0x001f57e0`, `0x001f7b68`). Confirmed (code).
 - **Other sprites:** sheet-table record **28**, a batch of 50 at depth 8,500 (`0x001f1b90`). Rectangle 30 is the
   scroll and side arrow (depth 8,100; the down arrow rotated π).
 - **Title** (every screen): a text widget at (0.5, 0.08), centred, size **2.23**, `big_font`, grey `0x005fd310`.
@@ -577,10 +582,42 @@ animated by a reveal stepped 0.25 a frame (`+0xc8`).
 | Screen (`Init`, input) | Widgets (default mode) | Input and cues |
 | --- | --- | --- |
 | **Game Mode** `RM_GameMode` (`0x001f85c0`, `0x001f8d80`; update `0x001f9068`) | Title `0x2c`; usage `0x18`. A `ScrollingMenu` (`0x001f82c0`) of at most **3 visible** entries, set up at (0.42, 0.21), recentred each frame so its top is at 0.5 − h/2 + 0.02 (`0x001f8f98`); each entry a `ScrollingTextWidget` (`0x001e2f40`, wrap width 0.66 `0x0050f464`, backdrop 28/28) whose text is `<SIZE 1.6><BIGFONT>` title `</BIGFONT><SIZE 1.3><CR><SIZE 1.0>` description (`0x00557880`; both from `CfgRumbleGame`); scroll arrows at y 0.5 ∓ (h/2 + 0.03). Measured: entries left-aligned near x 0.20, the selected entry grey and the other dimmer. | Up / down as `ScrollingMenu`. Accept: cue 8, next. Back: cue `0xf`; from the front end "cancelled", in game a pop. |
-| **Game Type** `RM_NumPlayers` (`0x001fc5b0`, `0x001fd1c8`; update `0x001fd408`, render `0x001fdaf8`) | Title `0x2e`; usage `0x21` with one entry, else `0x17`. `OptionGrid` at (0.5, 0.84), centred: `0x34`, `0x35`, `0x36` as offered, size 1.15, colour `0x005fd320`. **Badges** (size 0.1, depth 8,100, by language: English P1 28/0, P2 28/5, CPU 28/20; Spanish 4, 9, 20; French 1, 6, 21; Italian 3, 8, 20; German 2, 7, 22) at y 0.56, x 0.5 − 0.04 (right edge) and 0.5 + 0.04 (left edge): one player P1 vs CPU, co-op P1 at 0.505 and P2 at 0.615 vs CPU, versus P1 vs P2. A sprite 28/29 turned −90°, 0.28 × 0.15 (placement not traced). Message `0x77` at (0.5, 0.78), size 1.15, hidden. | Left / right move between the entries (one grid row). Accept: cue 8 (none on the message-showing first accept); see [the set-up](#rumble-data) for the values. Back: `0xf`, pop. |
+| **Game Type** `RM_NumPlayers` (`0x001fc5b0`, `0x001fd1c8`; update `0x001fd408`, render `0x001fdaf8`) | Title `0x2e`; usage `0x21` with one entry, else `0x17`. `OptionGrid` at (0.5, 0.84), centred: `0x34`, `0x35`, `0x36` as offered, size 1.15, colour `0x005fd320`. **Badges** (size 0.1, depth 8,100, by language: English P1 28/0, P2 28/5, CPU 28/20; Spanish 4, 9, 20; French 1, 6, 21; Italian 3, 8, 20; German 2, 7, 22) at y 0.56, x 0.5 − 0.04 (right edge) and 0.5 + 0.04 (left edge): one player P1 vs CPU, co-op P1 at 0.505 and P2 at 0.615 vs CPU, versus P1 vs P2. A sprite 28/29 centred at (0.5, 0.5), turned −90°, 0.28 × 0.15 (`0x001fc5b0`, `0x001fd408`). Message `0x77` at (0.5, 0.78), size 1.15, hidden. | Left / right move between the entries (one grid row). Accept: cue 8 (none on the message-showing first accept); see [the set-up](#rumble-data) for the values. Back: `0xf`, pop. |
 | **No 2nd Controller** `RM_No2ndController` (`0x001fbe68`; update `0x001fc200`) | Text `0x3d` (a multi-line text widget) at (0.5, 0.5), wrap 0.6, grey, `big_font`; usage `0x1e` at (0.5, 0.75). | Each frame looks for a second pad (`0x001fe5d0`); when one appears it becomes player 2's and the result is 1 (Choose Gangs), or 2 for a mode with preset gangs (Choose Area). Back pops. |
 | **Choose Gangs** `RM_ChooseGangs` (`0x001ecae0`, `0x001ef7c0`) | Title `0x2b`; usage `0x18` in co-op or while side 2 is active, else `0x24`. Two name boxes (`SimpleHeader`, 0.425 × 0.07, size 1.2, backdrop 28/10) at x **0.2505** and **0.7495**, mid-height (title bottom + 0.91) / 2, each with the gang's name and a sprite 28/23 (191, 191, 191) 0.13 above it, depth 11,000; a centre box (0.5, mid, 0.1 × 0.07) with `0x2f` ("vs."). Badges P1 / P2 / CPU (size 0.08) at (0.259, 0.19) and (0.745, 0.19), co-op's P2 at (0.339, 0.205). `OptionGrid` at (0.5, 0.84): `0x37` / `0x39` with one human, `0x37` / `0x38` with two (side labels; inferred). Two `Bar`s at (0.15, 0.62) and (0.65, 0.62), 0.27 × 0.03, back (64, 64, 64), fill (134, 26, 26) (role not traced). Arrows: up / down 0.022 beside the active side, left / right 0.015 (turned ±π/2) around its name. **3D fighters**: each side's first gang-size members (at most 5), `Human_Create` named `RM_HUMAN_%d` in the gang group `RM_Gangs0` / `RM_Gangs1`, dead (no AI), placed in camera space (`0x0011b970`) **5.7 m ahead and 1.05 m down, side 1 at x −1.15 and side 2 at +1.15**, further members alternating lateral steps of 0.5 and 0.325 m and 0.45 m further back, turned to face the camera; rebuilt when a gang or warchief changes (`0x001ef150`). | Up / down move the active side's gang cursor, cue 4; **no wrap**: at an end it stays with cue `0xe`; the two sides may not hold the same gang unless the gang size (`+0x1e4`) is 1 (the cursor skips the other side's gang, or bumps). Left / right rotate the roster (warchief), cue 4, unless the side is locked, both are locked or co-op. Accept locks the side, cue 8. Back unlocks, cue `0xf`; with nothing locked (one human, or side 1) result 1 (Game Type). |
 | **Choose Area** `RM_ChooseArea` (`0x001eb0c8`, `0x001eb9f8`; list `0x001eabc0`, update `0x001ebc10`, launch `0x001ebb90`) | Title `0x2a`; usage `0x21` with one arena, `0x17` with fewer than two rows, else `0x1a`. A `ScrollingMenu` of `GridContainer` rows: up to **3 arenas a row** and **2 visible rows** (one row with fewer than 4 arenas), row width 0.95 (× count / 3 when short), row height 0.28, scroll arrows at y 0.18 and 0.845 (size 0.03). Each arena a `RumbleAreaPreviewWidget` (`0x00201fc0`, set-up `0x00202090`): the picture is the sprite word at its **level record `+0x80`**, white, depth about 9,001; frame 28/10 (about 8,001) and 28/19 (the highlight; inferred); a black label of size 0.055 at offset (0.002, −0.04) with the level record's **`+0x49` name** ("Fight Pen"). With two or more arenas a blocking preload (`0x0040e2d8`, up to 50,000 ms) loads `rumble_mode_arenas_<gameType>` first. Measured (one arena): the framed picture spans GUI x 0.40-0.57, y 0.43-0.55. | Move as `ScrollingMenu`. Accept: cue 8 (only if that sound slot is free), marks the arena; the next update launches it. Back: `0xf`, pop. |
+
+#### The Swap Soldier screen {#rm-swap-soldier}
+
+`RM_SwapSoldier` (`0x001ff598`, input `0x00201308`, update `0x00201680`, render `0x00201b50`; [its
+functions](#fn-rm-swapsoldier)) replaces one member of a custom gang ([the store](#rumble-gangs)) with another
+character. Confirmed (code) unless marked; positions are the default mode's (GUI units).
+
+- **The candidates.** Every record of the character data map that is not already in the edited gang and is
+  available: its `+0x0e` is 0 and its kind-4 unlockable is unlocked, or its type's "owned" bit is set in
+  the store. They are grouped by gang (record `+0x08`, the gang's name), one `RMSwapGang` per gang, and the groups
+  sorted. Record fields as read here: `+0x00` u16 type, `+0x04` name, `+0x08` gang name, `+0x0c` a byte copied to
+  the group, `+0x0d` rank (0-5), `+0x0e` u16 "not free" (0 = available once unlocked), `+0x10` a 0-100 value
+  (inferred: a rating; `RM_EditGang` averages it over a gang).
+- **Widgets.** Title `0x4b` at (0.5, 0.08); a progress line (a markup text, alignment 6) at (0.5, 0.16): global
+  string `0x6f` then `" n/total"` with `n` and `total` the kind-4 unlockables unlocked and listed (`0x004247d0`),
+  in `(128, 100, 0)` while some are locked and `(134, 26, 26)` when all are; usage `0x18` at (0.5, 0.91). The
+  **gang list**: a `ScrollingMenu` at (0.15, 0.27), 0.3 wide, 9 rows, gang names in `big_font` at size 1.45
+  with backdrop 28/28; accept opens a gang's **member list** below its entry (names in font slot 3, size 1.1, at
+  most 9). Scroll arrows (28/30, 0.02, the lower one turned π) 0.06 above the list and below it.
+- **The two fighters.** The **current member** (the store's current member, from the human cache) stands at
+  camera-space (1.7, 6.0, −1.22) and the **candidate** (`RM_SWAP_HUMAN_0`, cache slot 9) at (0.3, 6.0, −1.22),
+  both brain-dead, combat mode off, turned to face the camera. Their labels: the candidate's name (a multi-line text,
+  wrap 0.2, `0x0050f55c`) at (0.57, 0.58), its rank (global string `0x5a` + rank, size 0.85) at
+  (0.57, 0.8) and a `Bar` at (0.5, 0.84); the current member's at x 0.87 (bar 0.8). The bars are 0.2 × 0.025, back
+  `(64, 64, 64)`, fill `(134, 26, 26)`, sprite batch 28 rectangle 12, filled to record `+0x10` / 100. While a
+  fighter's model is loading, a spinner (28/23, 0.075, `(191, 191, 191)`, depth 11,000) turns at its label
+  (0.56, 0.46) or (0.84, 0.46), 0.004 rad per ms, and the dummy fighter is drawn in its place.
+- **Input.** Up and down move in the open menu. With no member list open the candidate is the stand-in type
+  `0x160` and its bar and rank are hidden; moving in a member list previews that character. **Accept** on a gang
+  opens its list; on a member, puts its type in the gang (`RumbleGangs_SetMemberType`), exchanges the two cache
+  slots and returns 0 (back to the gang editor) with cue 8. **Back** closes the member list, or leaves (`-0xff`),
+  cue `0xf`.
 
 #### The dummy fighter {#rm-dummy}
 
@@ -661,7 +698,10 @@ glyphs for "select", cross for "ok" and triangle for "back" (corroboration from 
 
 `PM_Controller` (`0x002040f0`) creates its screens and wires them into a **screen flow** (the
 `ScreenFlowController`, [GUI](gui.md#screen-flow)). Each screen is a widget that ends a frame with a result code;
-the flow follows the screen's transition for that code. Screens and their transitions, confirmed (code) at
+the flow follows the screen's transition for that code. A screen object has a command-listener interface at `+0x6c`
+(slot `+0x08` is `OnCommand(cmd)`, called by its `OptionGrid` with 4 accept and 5 back) and a flow-state part at
+`+0x70` (the flow, the result at `+0x74`, the transition map at `+0x78`, its vtable at `+0x88`); the flow is given
+`screen + 0x70` ([Function index](#fn-pm-controller)). Screens and their transitions, confirmed (code) at
 `0x002040f0` (field = offset in the controller, then the screen's constructor):
 
 | Field | Screen (class string) | Constructor | Code → next screen |
@@ -682,9 +722,13 @@ the flow follows the screen's transition for that code. Screens and their transi
 | `+0x98` | `PM_Subtitles` | `0x0020c8d0` | |
 
 Besides the codes, a screen can return "stay" (`-0x100`) or "back" (`-0xff`, pop to the previous screen). The table
-also holds transitions no screen produces (PM_Mode code 4 → `PM_Continue`, PM_Profile code 4) and the two Xbox screens
-(below). Confirmed (code). Starting the controller (`0x00204a78`) resets its globals (`0x0050f584`-`0x0050f5c0`, the
-first Lua callback in `0x0050f584`) and save-system `+0x124`, picks the [layout floats](#pm-layout) and enters
+also holds a transition no screen produces (PM_Mode code 4 → `PM_Continue`) and the two Xbox screens (below).
+PM_Profile's code 4 is produced: `PM_Profile_StateUpdate` (`0x0020c720`) returns it once when `0x0050f59c` is set,
+which `Gm_MemoryCard_Exit` (`0x0015c2c0`) does when the profile manager is not done and the card mode ran from the
+boot path; the transition re-enters `PM_Profile`, whose `Init` rebuilds the profile list (the purpose
+inferred). Confirmed (code).
+Starting the controller (`0x00204a78`) resets its globals (`0x0050f584`-`0x0050f5c0`, the first Lua callback in
+`0x0050f584`) and save-system `+0x124`, picks the [layout floats](#pm-layout) and enters
 `PM_Greet`. The menu sprites come from the particle page **`menu_system`** (`0x00204c50`: sheet-table record 3, a
 resource instance at depth 8,500 with room for 50 sprites, its id kept in `0x0050f588`; see
 [GUI](gui.md#resource-instances)).
@@ -704,6 +748,7 @@ from their use:
 | `0x0050f588` | the `menu_system` instance |
 | `0x0050f594` | the chosen profile slot |
 | `0x0050f598` | "create the new profile on exit": mode 0x12 `Exit` then calls save-system slot `+0x4c(slot, name)` |
+| `0x0050f59c` | re-enter PM_Profile after the memory-card mode (set by `Gm_MemoryCard_Exit`, consumed by `0x0020c720`) |
 | `0x0050f5a0` | delete mode (PM_Load lists profiles to delete) |
 | `0x0050f5b0` | done |
 | `0x0050f5b4` | a new game was started; read by `0x00204008`, the autosave check after the mission-complete mode |
@@ -932,6 +977,45 @@ The message box at `0x005e5840` (constructor `0x001c6a20`, `Init` `0x001c6c18`, 
 Timed messages: `0xb5` checking the card (3,000 ms, `0x0015a328`), `0xae` formatting (3,000 ms), `0xa9` autosaving
 (2,000 ms, style 1), `0xab` deleting (3,000 ms).
 
+### The statistics screen {#game-stats}
+
+`ShowGameStatsInterface` pushes game mode `0x13` ([HUD bindings](../references/bindings/hud.md#showgamestatsinterface));
+its `Enter` (`0x00159538`) runs `GameStats_Init` (`0x00215e78`) on the screen object at mode `+0x20`, and its update
+(`0x001596d0`) runs the screen's `Update` and `Render` once it is ready, with no world update. Confirmed (code);
+values are the default mode's (other modes set other globals at `0x005100e0`-`0x00510118` in `0x00215e78`).
+
+- **Background:** one sprite, word `0xc0005` (sheet-table record 12, rectangle 5), centred at (0.5, 0.5), 1.15 ×
+  1.1, depth 8,000. Its colour moves from red (150, 50, 50) to green (50, 150, 50) to blue (50, 50, 150) and back,
+  each step a linear blend over 5,000 ms (`0x0051011c`, colours `0x00640c60`).
+- **Summary** (a `ScrollingTextWidget` at (0.01, 0.06), text built by `0x00215150`): the title (string `0x60`,
+  size 1.6, big font, grey 178), then four lines in size 1.2 of a grey (80, 80, 80) label and a value:
+    - `0x61` and the completion percentage: the unlockable records found over all of them (`0x004245d8`, records of
+      kinds other than 1 and 4 and types other than 0, 5, 7-11), × 100, rounded (`0x0042c718`);
+    - `0x63` and missions done / missions listed (the list's missions, below, over the listed levels less the three
+      special entries);
+    - `0x64` and `0x62` and the two other found / total counts of `0x004245d8`;
+    - `0x66` and the total time, the sum of the missions' times, formatted as hours and minutes (`0x00214f58`), in gold
+      (128, 100, 0).
+  A value is drawn in red (134, 26, 26) when it is complete (100 %, or found = total), otherwise gold (128, 100, 0),
+  or purple (106, 65, 131) for the `0x64` line.
+- **Mission list** (a `ScrollingMenu` at (0.185, 0.45), built by `0x002155a8`): the level records of game state
+  `+0x14d4` (`0x84` bytes each, count `+0x56d4`) whose byte `+0x0c` is set, except levels 61-65 and 102-137, sorted;
+  each shown when the level is complete (`Unlocks_IsLevelComplete`), and levels 95 and 101 always. Each entry is a
+  `CircledTextHeader` (sprite word `0x180002`, record 24, size 1.7 text) followed by a `GameStatsSubItem`:
+    - the header's text is the level's name (record `+0x49`) and its number (record `+0x24` up to a `:`, three
+      characters at most) in the colour of record `+0x7c` (`0x0041f298`), purple when the number is 0; levels 95, 60 and
+      101 show strings `0x73`, `0x74` and `0x75` instead;
+    - the sub-item's picture is the level record's sprite word `+0x80` (`0x180001`, `0x180000` and `0x180003` for the
+      three special entries) in the batch `0x00215490` picks; its text (`0x00216eb0`) has up to five lines: the score
+      (`0x6d`, gold, with the goal `0x6e` in red after it when the score is below it; red alone otherwise), three found
+      / total lines (`0x6f`, `0x70`, `0x64`) for the level's unlockables (`0x00424298`, a line left out when its total
+      is 0), and the time (`0x66`, gold); empty lines pad every block to the same height. The score and the time are the
+      level's record in the stats object (`0x00423050`: `0x6fe490` + `0x300` + 12 × the level's slot); levels 95 and 101
+      have no score line.
+- **Usage text** (`UsageInfo`, string `0x19`) at (0.01, 0.94).
+- **Input:** back closes the screen (`0x00159520(1)`; the mode then runs the `onClose` callback); accept does
+  nothing; the list scrolls with the menu's own input ([ScrollingMenu](gui.md#fn-scrollingmenu-start)).
+
 ### The front-end scripts
 
 The front end's behaviour beyond the C++ screens lives in Lua 4.0 bytecode on the disc. The scripts have been
@@ -1126,6 +1210,707 @@ Confirmed (code).
 | `0x001d35f8` | `MSMission_Update` | slot `+0x30`: the picture over the tile, its texture rectangle cut by the reveal; the back strip 0.96 × the tile's width, height × 0.745 × the reveal mapped to 0-1 (`0x0050ecd4`, 0.745 in the default mode); the two lines and the letter stacked up from the bottom edge, each shown only inside the tile; the frame at the letter when highlighted | confirmed (code) |
 | `0x001d3aa8` | `MSMission_Render` | slot `+0x38`: when ready, visible and active | confirmed (code) |
 | `0x001d3b30`, `0x001d3b90` | `MSMission_StaticInit`, `_GlobalCtor` | the two colours; the constructor stub (list entry `0x00534120`) | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_BuySoldiers.cpp` (file inferred) {#fn-rm-buysoldiers}
+
+`0x001e9bf0`-`0x001e9f70`: three functions with no caller or data reference, using a human named `RM_BUY_HUMAN_0`.
+By link order they sit right before `RM_ChooseArea.cpp`; a soldier-buying Rumble screen that was cut (inferred).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001e9bf0` | `RMBuySoldiers_SetPreviewHuman` | replaces preview `+0x94` (kept when the type matches) by a brain-dead human of the type at `+0xa0`, gang `+0xac`, facing the camera | confirmed (code); unused inferred |
+| `0x001e9da0` | `RMBuySoldiers_SetupPrice` | OptionGrid `+0xd4` at (0.77, 0.76): price and money (game state `+0x480`) lines with string `0x16`; `+0xe0` = affordable | confirmed (code) |
+| `0x001e9f70` | `RMBuySoldiers_Show` | state `+0xdc` 0-6 shows or hides name, unlock text (strings `0x4f`/`0x50`/`0x54`/`0x55`), class label, bar (byte `+0x10` / 100), price grid | confirmed (code) |
+
+Rows for the start of `### GUI/RumbleModeGUI/RM_ChooseArea.cpp {#fn-rm-choosearea}`:
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001ea7e8` | `RM_ChooseArea_Construct` | vtable `0x0053cd10`, interfaces `0x0053ccb8` (`+0x6c`), `0x0053cce0` (`+0x88`); map `+0x7c`; `+0xc8` = -1 | confirmed (code) |
+| `0x001ea908` | `RM_ChooseArea_Destroy` | slot `+0x60`, also interface `0x0053cce0` slot `+0x08` | confirmed (code) |
+| `0x001ea9e8` | `RM_ChooseArea_ReadGameType` | `+0x90` = flow (`+0x70`) slot `+0x48` value 0; from Init `0x001eb0c8` | confirmed (code); meaning inferred |
+
+### `GUI/RumbleModeGUI/RM_ChooseArea.cpp` {#fn-rm_choosearea}
+
+The arena screen ([per screen](#rumble-screens)); its constructor, `0x001ea7e8`, sits before this range. Vtables: main
+`0x0053cd10`, input `0x0053ccb8`, state `0x0053cce0`. An arena is offered only when its `CfgRumbleArena` mode list holds
+the chosen mode (`0x001eaa30`).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001eaa30` | `RM_ChooseArea_AddArena` | (CfgRumbleArena) Adds a `0xc`-byte entry {+4 level-table index, +8 picture} to the arena list `0x0063ee40` only when level is 101-199, unlocked (Unlocks kind 2) and its mode list (up to 16, 0-ended) holds the current gameType (`0x0063eec2`); an empty list never matches | confirmed (code) |
+| `0x001eabc0` | `RM_ChooseArea_BuildList` | A ScrollingMenu (`+0xbc`) of GridContainer rows, 3 arenas a row (fewer: one row, width x n/3), 2 visible rows; preloads `rumble_mode_arenas_<gameType>` (WorldManager_Preload, 50,000 ms) when there are 2+ arenas; each arena a RumbleAreaPreviewWidget (`0x00201fc0`/`0x00202090`, frame `0x1c000a`, highlight `0x1c0013`) ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001eb0c8` | `RM_ChooseArea_Init` | Per-video-mode layout globals `0x0050f374`-`0x0050f388`; runs `rumble_arena.lua` to fill the list; title (string `0x2a`, size 2.23, big_font), usage line (`0x21` / `0x17` / `0x1a`), the list, up and down arrows (sprite `0x1c001e`, the down one turned pi) ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001eb818` | `RM_ChooseArea_Shutdown` | (vtable `0x0053cd10` slot `+0x68`) Releases title, arrows, usage line, menu and every list entry, frees the list | confirmed (code) |
+| `0x001eb9c8` | `RM_ChooseArea_IsReady` | (vtable `0x0053cd10` slot `+0x88`) set up and its sprite batch resident | confirmed (code) |
+| `0x001eb9f8` | `RM_ChooseArea_OnInput` | (input vtable `0x0053ccb8` slot `+0x08`) Keeps the cursor row/column (`+0xa4`, `+0xa8`); event 4 marks launch (`+0xc4` = 1, cue 8 if its slot is free); event 5 result `0xffffff01` (pop), cue `0xf` ([Data](#rumble-data)) | confirmed (code) |
+| `0x001ebad8`, `0x001ebaf8`, `0x001ebb20` | `RM_ChooseArea_Enter`, `_Exit`, `_StateUpdate` | the screen-flow state ([Screen flow](gui.md#screen-flow)): `Enter(flow)` keeps the flow at `+0x70` and runs `Init`; `Exit` runs `Shutdown`; `Update` sets the result to `-0x100`, runs the widget's `Update` and, while the result is unchanged, `Render`, and returns the result | confirmed (code) |
+| `0x001ebb90` | `RM_ChooseArea_Launch` | the selected arena's level record (`+0x60` index x `0x84` + `0x14d8`) gives the level number (`0x001fe1d8`) and "started" (`0x001fe218`(1)) ([Data](#rumble-data)) | confirmed (code) |
+| `0x001ebc10` | `RM_ChooseArea_Update` | (vtable `0x0053cd10` slot `+0x30`) Unless the menu is frozen: launch state `+0xc4` 0 updates title, menu (centred between title bottom `0x0063ee44` and usage top `0x0063ee48`), the highlight when the cursor moved, arrows, usage; 1 -> 2 and Launch ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001ebe00` | `RM_ChooseArea_Render` | (slot `+0x38`) title, menu, the up arrow when scrolled, the down arrow when more rows follow, usage ([Screens](#rumble-screens)) | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_ChooseGangs.cpp` {#fn-rm_choosegangs}
+
+The gang screen ([per screen](#rumble-screens)), `0x001ebf98`-`0x001f0420`; the gang-record helpers before the
+constructor are placed here because only this screen uses them (inferred). Vtables: main `0x0053ce18`, input
+`0x0053cdc0`, state `0x0053cde8`; the second player's input object `0x0053cec8`. Before the disc's 46 gangs, `Init` adds
+the player's **created gangs** (up to 10, store `0x0063ef80`) with id -1. The 3D fighters appear in front of the 2D
+background because `Render` flushes the 2D pass and then draws them itself (`0x001f0420`).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001ebf98` | `RM_GangData_Free` | (called by `0x004e9d28`) the end of the Rumble gang record's deleting destructor: frees it when flag bit 0 is set | confirmed (code); file inferred |
+| `0x001ebfc0` | `RM_Roster_SlotToMember` | (slot) left-to-right slot 0-8 -> roster member {8,6,4,2,0,1,3,5,7}, so member 0 (the warchief) is in the centre | confirmed (code) |
+| `0x001ec028` | `RM_GangData_RotateForward` | shifts side's nine-member roster (+8 + side x `0x24`) one slot to the right in display order, the last wrapping to slot 0 (Choose Gangs left/right) ([Data](#rumble-data)) | confirmed (code) |
+| `0x001ec130` | `RM_GangData_RotateBack` | the opposite rotation, one slot to the left ([Data](#rumble-data)) | confirmed (code) |
+| `0x001ec238` | `RM_ChooseGangs_Construct` | (flow field `+0x90`) constructor: Widget base, vtables `0x0053ce18` / input `0x0053cdc0` / state `0x0053cde8`, an empty map at `+0x7c`, ten fighter handles (`+0x94`) = -1 | confirmed (code) |
+| `0x001ec368` | `RM_ChooseGangs_Destroy` | (slot `+0x60`) destructor: Shutdown, frees the map, Widget base | confirmed (code) |
+| `0x001ec448` | `RM_ChooseGangs_GetSpriteBatch` | the flow's shared value 0 (the menu's sprite batch) -> `+0x178` | confirmed (code) |
+| `0x001ec490` | `RM_ResolveCharType` | a locked character type (Unlocks kind 4) is replaced by its stand-in (28 pairs) ([Data](#rumble-data)) | confirmed (code) |
+| `0x001ec980` | `RM_ChooseGangs_AddGang` | (CfgRumbleGang, and the created gangs) when id < 0 or unlocked (kind 3), a `0x54`-byte record (id, interned name, two resolved rosters, index) to `0x0063ee4c` ([Data](#rumble-data)) | confirmed (code) |
+| `0x001ecae0` | `RM_ChooseGangs_Init` | Gang size min(gangSize, 5), the players mode; the created gangs (`0x0063ef80`, up to 10) first, then `rumble_gang.lua`; second input object (vtable `0x0053cec8`); title `0x2b`, usage, two name boxes and a vs box, badges, OptionGrid, two Bars, arrows, two gangs RM_Gangs0/1, fighter positions in camera space, both sides' fighters ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001eecc0` | `RM_ChooseGangs_Shutdown` | (slot `+0x68`) releases every widget, deletes the fighters and both gangs, frees the gang list | confirmed (code) |
+| `0x001ef058` | `RM_ChooseGangs_IsReady` | (slot `+0x88`) batch resident and the three boxes, grid and usage ready | confirmed (code) |
+| `0x001ef150` | `RM_ChooseGangs_SpawnFighters` | replaces side's fighters by the gang's first gangSize members (Human_Create `RM_HUMAN_%d` in the side's gang, brain dead, at the precomputed positions), once the side's gang has no member left; clears the pending flag (`+0x170`) ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001ef3f8` | `RM_ChooseGangs_DestroyFighters` | removes and destroys side's fighters | confirmed (code) |
+| `0x001ef490` | `RM_ChooseGangs_SelectGang` | new gang for side: destroys its fighters, name box text, marks the fighters pending (`+0x170`); clears the bump flag (`+0x1e8`) | confirmed (code) |
+| `0x001ef550` | `RM_ChooseGangs_CanMoveUp` | whether up has a gang to go to (skipping the other side's gang unless gang size 1) | confirmed (code) |
+| `0x001ef5a8` | `RM_ChooseGangs_MoveUp` | previous gang (skipping the other side's), cue 4; at the end cue `0xe` and the bump flag (`+0x1e8`, turns auto-repeat off) ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001ef660` | `RM_ChooseGangs_CanMoveDown` | whether down has a gang to go to | confirmed (code) |
+| `0x001ef6d8` | `RM_ChooseGangs_MoveDown` | next gang, as MoveUp ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001ef7c0` | `RM_ChooseGangs_OnInput` | (input vtable `0x0053cdc0` slot `+0x08`) up/down gang, left/right rotate the roster (mirrored for side 1; not in co-op or when locked), accept lock, back unlock or result 1; stamps the side's input time (`+0x160`) ([Data](#rumble-data)) | confirmed (code) |
+| `0x001efd88`, `0x001efda8`, `0x001efdd0` | `RM_ChooseGangs_Enter`, `_Exit`, `_StateUpdate` | the screen-flow state ([Screen flow](gui.md#screen-flow)): `Enter(flow)` keeps the flow at `+0x70` and runs `Init`; `Exit` runs `Shutdown`; `Update` sets the result to `-0x100`, runs the widget's `Update` and, while the result is unchanged, `Render`, and returns the result | confirmed (code) |
+| `0x001efe40` | `RM_ChooseGangs_Update` | (slot `+0x30`) Runs each side's pad (side 2 through the second input object) at most every 20 ms, auto-repeat off after a bump; respawns a side's fighters 650 ms after its last change; places the arrows beside the name boxes and spins the two sprites (`+0x1c4`, `+0x1c8`) at 0.004 rad/ms ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001f0420` | `RM_ChooseGangs_Render` | (slot `+0x38`) Draws the widgets, flushes the 2D pass (`0x00185d20`), then draws each side's fighters with Human_RenderWithAttachments (the dummy fighter in their places while they load); a side's first fighter says command `0x11` on its first frame ([Screens](#rumble-screens)) | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_Controller.cpp` {#fn-rm_controller}
+
+The controller of mode 0x11 (`0x001f0e60` to its static-init stub `0x001f27b0`): a `ScreenFlowController` (interface
+vtable `0x0053cfb0`) plus a widget part at `+0x10` (vtable `0x0053cef0`) that draws the background. [The Rumble menu's
+screens](#rumble-screens) has the flow; in game the screens also go **RM_Main** 0 → Game Mode, 1 → Create Gang, 2 → Edit
+Gangs; **Create Gang** 0 → Edit Gang, 1 → Edit Gangs; **Edit Gang** 0 → Swap Soldier, 1 → RM_Main; **Swap Soldier** 0 →
+Edit Gang; **Edit Gangs** 0 → Create Gang, 1 → Edit Gang, 2 → RM_Main (confirmed (code) at `0x001f1000`).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001f0e60` | `RM_AddCharData` | (CfgRumbleChar) a `0x18`-byte record (+0 type, +4 / +8 / `+0x14` interned strings, +0xc, +0xd rank, +0xe, `+0x10` a 0-100 stat) in the character map (`0x001fe038`) under type | confirmed (code) |
+| `0x001f1000` | `RM_Controller_Init` | (interface vtable `0x0053cfb0` slot 0) ScreenFlowController_Construct; the screens (RM_Main and the gang editor only in game) at `+0x7c`..`+0xa0` and the transition table ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001f1748` | `RM_Controller_Start` | (from mode `0x11` Enter) Layout values, StringTableCache and CharDataMap, `rumble_preload.lua` in game, InitWidgets, two lights at the camera, pushes Game Mode (front end) or RM_Main (in game) ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001f1ac8` | `RM_Controller_Update` | (interface slot `+0x18`; from mode `0x11` Update) when ready, background Update and Render, the flow's Update, the device's slot `+0x18` ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001f1b60` | `RM_Controller_Stop` | (interface slot `+0x20`; from mode `0x11` Exit) the widget part's Shutdown ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001f1b90` | `RM_Controller_CreateSpriteBatch` | a batch of 50 sprites of sheet-table record 28 at depth 8,500 into the flow's shared value 0 ([Layout](#rm-layout)) | confirmed (code) |
+| `0x001f1c08` | `RM_Controller_CreateBackgroundBatch` | a one-sprite batch of sheet-table record 12 at depth 8,000 (`+0x64`) ([Layout](#rm-layout)) | confirmed (code) |
+| `0x001f1c78` | `RM_Controller_CreateDummyFighter` | gang RM_DUMMY_GANG and human RM_DUMMY_HUMAN (type `0x160`) at camera-space (0, 8, -0.85), brain dead ([Dummy fighter](#rm-dummy)) | confirmed (code) |
+| `0x001f1e00` | `RM_Controller_InitWidgets` | the two batches and the background sprite (record 12 rect 5, centred, 1.15 x 1.1) ([Layout](#rm-layout)) | confirmed (code) |
+| `0x001f1fa8` | `RM_Controller_Shutdown` | (vtable `0x0053cef0` slot `+0x68`) widget Shutdown: releases the background and batches, deletes every screen and the character map, the dummy fighter and gang, the flow, the string cache | confirmed (code) |
+| `0x001f23c0` | `RM_Controller_IsReady` | (slot `+0x88`) once both batches are resident; starts the background colour clock (`+0xa4`, leg `+0xa8` = 0) ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001f2468` | `RM_Controller_UpdateBackground` | (slot `+0x30`) background Update: every 5,000 ms the next colour leg (red, green, blue), a linear blend in between ([Layout](#rm-layout)) | confirmed (code) |
+| `0x001f2650` | `RM_Controller_Render` | (slot `+0x38`) background Render: draws the background sprite when ready ([Layout](#rm-layout)) | confirmed (code) |
+| `0x001f26a8` | `RM_GetGangName` | (GetRumbleModeGangName): side 1's name (`0x001fe048`), else side 2's (`0x001fe0c8`) ([Set-up](#rumble-setup)) | confirmed (code) |
+| `0x001f26e0` | `RM_GetModeData` | (GetRumbleModeData): copies the 23 u16 set-up values from `0x0063eec0` ([Set-up](#rumble-setup)) | confirmed (code) |
+| `0x001f2720` | `RM_Colours_StaticInit` | static initialiser: the background's colour cycle `0x0063ee70`-78 = red (150,50,50), green (50,150,50), blue (50,50,150), and a second set at `0x0063ee58`-68 ([Layout](#rm-layout)) | confirmed (code) |
+| `0x001f27b0` | `RM_Colours_StaticInitStub` | (ctor list `0x00534138`) static-init stub: RM_Colours_StaticInit(1, `0xffff`); ends RM_Controller.cpp's TU | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_CreateGang.cpp` {#fn-rm_creategang}
+
+Naming a created gang (in game, from RM_Main or Edit Gangs): a title, a prompt and a text-entry pad of at most 10
+characters. Vtables: main `0x0053d050`, input `0x0053cff8`, state `0x0053d020`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001f27d0` | `RM_CreateGang_Construct` | (flow field `+0x94`) constructor: vtables `0x0053d050` / input `0x0053cff8` / state `0x0053d020` | confirmed (code) |
+| `0x001f28d8` | `RM_CreateGang_Destroy` | (slot `+0x60`) destructor: `Shutdown`, then the widget base's | confirmed (code) |
+| `0x001f29b8` | `RM_CreateGang_GetSpriteBatch` | the flow's shared batch -> `+0x8c` | confirmed (code) |
+| `0x001f2a00` | `RM_CreateGang_Init` | Title `0x31` (new slot) or `0x40` (existing gang), prompt `0x41`, a hidden message box (`+0x9c`), a TextEntryPad of at most 10 characters with RM_CreateGang_OnNameEntered as its callback, pre-filled with the gang's name | confirmed (code) |
+| `0x001f2e90` | `RM_CreateGang_OnNameEntered` | (the text pad's callback, passed from Init at `0x001f2dd0`) A name equal to another created gang's shows message `0x42`; when renaming (new-gang flag clear) renames, result 1 (Edit Gangs); when new, creates or renames the current slot, result 0 (Edit Gang) | confirmed (code) |
+| `0x001f2ff8` | `RM_CreateGang_Shutdown` | (slot `+0x68`) `Shutdown`: releases the widgets and the screen's resources | confirmed (code) |
+| `0x001f30c0` | `RM_CreateGang_IsReady` | (slot `+0x88`) `IsReady`: set up, its sprite batch resident and its widgets ready | confirmed (code) |
+| `0x001f3128` | `RM_CreateGang_OnInput` | (input slot `+0x08`) hides the message; back pops (cue `0xf`) | confirmed (code) |
+| `0x001f31b0`, `0x001f31d0`, `0x001f31f8` | `RM_CreateGang_Enter`, `_Exit`, `_StateUpdate` | the screen-flow state ([Screen flow](gui.md#screen-flow)): `Enter(flow)` keeps the flow at `+0x70` and runs `Init`; `Exit` runs `Shutdown`; `Update` sets the result to `-0x100`, runs the widget's `Update` and, while the result is unchanged, `Render`, and returns the result | confirmed (code) |
+| `0x001f3250` | `RM_CreateGang_Update` | (slot `+0x30`) title, prompt, pad, message | confirmed (code) |
+| `0x001f3300` | `RM_CreateGang_Render` | (slot `+0x38`) `Render`: draws the widgets | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_EditGang.cpp` {#fn-rm_editgang}
+
+One created gang's nine members, shown left to right as 3D fighters with the warchief (member 0) in the centre; left and
+right pick a member, whose character data (`CfgRumbleChar`) fills the description, rank and a stat bar. Ends at the
+static-init stub `0x001f5bd0`. Vtables: main `0x0053d158`, input `0x0053d100`, state `0x0053d128`. A member of type
+`0x160` is an empty slot: leaving with one asks yes or no, and yes deletes the gang.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001f33b8` | `RM_EditGang_Construct` | (flow field `+0x98`) constructor: vtables `0x0053d158` / input `0x0053d100` / state `0x0053d128`, nine fighter handles = -1 | confirmed (code) |
+| `0x001f34e8` | `RM_EditGang_Destroy` | (slot `+0x60`) destructor: `Shutdown`, then the widget base's | confirmed (code) |
+| `0x001f35c8` | `RM_EditGang_GetSpriteBatch` | the flow's shared batch -> `+0x8c` | confirmed (code) |
+| `0x001f3610` | `RM_EditGang_Init` | Title `0x43`, the gang's name box, the member's description, rank text, a stat Bar, nine slot markers, usage `0x1a`, info `0x44`, OptionGrid `0x45` / `0x46`, a hidden yes/no grid `0x3c` / `0x3b`, the fighters; selects the gang's current member | confirmed (code) |
+| `0x001f47c8` | `RM_EditGang_Shutdown` | (slot `+0x68`) `Shutdown`: releases the widgets and the screen's resources | confirmed (code) |
+| `0x001f49d0` | `RM_EditGang_IsReady` | (slot `+0x88`) `IsReady`: set up, its sprite batch resident and its widgets ready | confirmed (code) |
+| `0x001f4a58` | `RM_EditGang_SetupFighters` | the nine soldier humans (`0x001fe2d0`), brain dead, combat stance on | confirmed (code) |
+| `0x001f4b88` | `RM_EditGang_SlotToMember` | (slot) {8,6,4,2,0,1,3,5,7}, as RM_Roster_SlotToMember | confirmed (code) |
+| `0x001f4bf0` | `RM_EditGang_MemberToSlot` | the inverse {4,5,3,6,2,7,1,8,0} | confirmed (code) |
+| `0x001f4c58` | `RM_EditGang_SlotPosition` | (out, screen, slot) x mapped from slot 0-8 onto [m, 1 - m] (m `0x0050f41c`), y `0x0050f3fc` | confirmed (code) |
+| `0x001f4d58` | `RM_EditGang_SelectSlot` | (screen, slot) makes the member current (`0x00202c38`), shows its character data (description, rank, stat bar = `+0x10` / 100) and moves the marker | confirmed (code) |
+| `0x001f4fc8` | `RM_EditGang_MoveLeft` | previous slot, cue 4; at slot 0 cue `0xe` and the grid's bump flag | confirmed (code) |
+| `0x001f5030` | `RM_EditGang_MoveRight` | next slot (to 8), as MoveLeft | confirmed (code) |
+| `0x001f5098` | `RM_EditGang_CheckComplete` | when a member is still type `0x160` (empty), opens the yes/no grid and returns 0; else 1 | confirmed (code) |
+| `0x001f51a0` | `RM_EditGang_OnConfirmInput` | yes deletes the gang (`0x00202b08`) with result 1 (RM_Main); no or back closes the grid | confirmed (code) |
+| `0x001f5308` | `RM_EditGang_OnInput` | (input vtable `0x0053d100` slot `+0x08`) left/right slot; accept `0x45` result 0 (Swap Soldier), `0x46` when complete pops (new gang) or result 1; back pops when complete | confirmed (code) |
+| `0x001f5450`, `0x001f5470`, `0x001f5498` | `RM_EditGang_Enter`, `_Exit`, `_StateUpdate` | the screen-flow state ([Screen flow](gui.md#screen-flow)): `Enter(flow)` keeps the flow at `+0x70` and runs `Init`; `Exit` runs `Shutdown`; `Update` sets the result to `-0x100`, runs the widget's `Update` and, while the result is unchanged, `Render`, and returns the result | confirmed (code) |
+| `0x001f54f0` | `RM_EditGang_Update` | (slot `+0x30`) the grids (the confirm grid takes over when shown), widgets, nine markers spinning with time | confirmed (code) |
+| `0x001f57e0` | `RM_EditGang_Render` | (slot `+0x38`) widgets, flush the 2D pass, then the nine fighters (the dummy in empty or loading slots; markers shown for filled slots) | confirmed (code) |
+| `0x001f5b90` | `RM_EditGang_StaticInit` | static initialiser: `0x0063ee80` = (0.5 - `0x0050f41c`) / 4, the slot spacing | confirmed (code) |
+| `0x001f5bd0` | `RM_EditGang_StaticInitStub` | (ctor list `0x0053413c`) static-init stub; ends RM_EditGang.cpp's TU | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_EditGangs.cpp` {#fn-rm_editgangs}
+
+The list of created gangs: up and down pick one (its name, nine fighters and a stat bar); the grid renames it, edits it,
+deletes it (after yes or no) or leaves. Vtables: main `0x0053d260`, input `0x0053d208`, state `0x0053d230`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001f5bf0` | `RM_EditGangs_Construct` | (flow field `+0x9c`) constructor: vtables `0x0053d260` / input `0x0053d208` / state `0x0053d230` | confirmed (code) |
+| `0x001f5d20` | `RM_EditGangs_Destroy` | (slot `+0x60`) destructor: `Shutdown`, then the widget base's | confirmed (code) |
+| `0x001f5e00` | `RM_EditGangs_GetSpriteBatch` | the flow's shared batch -> `+0x8c` | confirmed (code) |
+| `0x001f5e48` | `RM_EditGangs_Init` | Title `0x32`, the gang name box with up/down arrows, usage `0x1a`, info `0x47`, OptionGrid `0x48` / `0x49` / `0x4a` / `0x46`, a hidden yes/no grid `0x3b` / `0x3c`, a stat Bar, nine fighters; selects the current gang | confirmed (code) |
+| `0x001f6d90` | `RM_EditGangs_Shutdown` | (slot `+0x68`) `Shutdown`: releases the widgets and the screen's resources | confirmed (code) |
+| `0x001f6f60` | `RM_EditGangs_IsReady` | (slot `+0x88`) `IsReady`: set up, its sprite batch resident and its widgets ready | confirmed (code) |
+| `0x001f6fe8` | `RM_EditGangs_SetupFighters` | the nine fighters brain dead, combat stance off | confirmed (code) |
+| `0x001f70c8` | `RM_EditGangs_SpawnFighters` | replaces the fighters by the current gang's nine members (`0x001fe2e8` keeps each), clears the pending flag (`+0xc0`) | confirmed (code) |
+| `0x001f7238` | `RM_EditGangs_ShowGangStats` | reads the gang's nine types and sets the bar (`+0xac`) from their stat percent | confirmed (code) |
+| `0x001f7308` | `RM_EditGangs_SelectGang` | makes the n-th created gang current, its name, stats, fighters pending | confirmed (code) |
+| `0x001f73b8` | `RM_EditGangs_SelectSlot` | (screen, slot) the list position of a gang slot (counting used slots before it), then SelectGang | confirmed (code) |
+| `0x001f7450` | `RM_EditGangs_MoveUp` | previous gang, cue 4; at the first cue `0xe` and the bump flag | confirmed (code) |
+| `0x001f74b8` | `RM_EditGangs_MoveDown` | next gang, as MoveUp | confirmed (code) |
+| `0x001f7538` | `RM_EditGangs_OnConfirmInput` | yes deletes the current gang, result 2 (RM_Main); no or back closes the grid | confirmed (code) |
+| `0x001f76a0` | `RM_EditGangs_OnInput` | (input vtable `0x0053d208` slot `+0x08`) up/down gang; accept `0x48` result 0 (Create Gang: rename), `0x49` member 0 and result 1 (Edit Gang), `0x4a` the yes/no grid, `0x46` pop; back pops | confirmed (code) |
+| `0x001f7848`, `0x001f7868`, `0x001f7890` | `RM_EditGangs_Enter`, `_Exit`, `_StateUpdate` | the screen-flow state ([Screen flow](gui.md#screen-flow)): `Enter(flow)` keeps the flow at `+0x70` and runs `Init`; `Exit` runs `Shutdown`; `Update` sets the result to `-0x100`, runs the widget's `Update` and, while the result is unchanged, `Render`, and returns the result | confirmed (code) |
+| `0x001f78e8` | `RM_EditGangs_Update` | (slot `+0x30`) grids, title, spinning name-box sprite, arrows hidden while the confirm grid shows, pending fighters respawned | confirmed (code) |
+| `0x001f7b68` | `RM_EditGangs_Render` | (slot `+0x38`) widgets, flush, the nine fighters | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_GameMode.cpp` {#fn-rm_gamemode}
+
+The Game Mode screen ([per screen](#rumble-screens)); the mode-record helper before the constructor is placed here
+(inferred). Vtables: main `0x0053d368`, input `0x0053d310`, state `0x0053d338`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001f7eb8` | `RM_GameModeData_Free` | (called by `0x004eaf38`) the end of the Rumble mode record's deleting destructor: frees it when flag bit 0 is set | confirmed (code); file inferred |
+| `0x001f7ee0` | `RM_GameMode_Construct` | (flow field `+0x88`) constructor: vtables `0x0053d368` / input `0x0053d310` / state `0x0053d338` | confirmed (code) |
+| `0x001f7fe8` | `RM_GameMode_Destroy` | (slot `+0x60`) destructor: `Shutdown`, then the widget base's | confirmed (code) |
+| `0x001f80c8` | `RM_GameMode_GetSpriteBatch` | the flow's shared batch -> `+0x98` | confirmed (code) |
+| `0x001f8110` | `RM_GameMode_AddMode` | (CfgRumbleGame) a `0x1b4`-byte mode record when the mode is unlocked (Unlocks kind 1) ([Data](#rumble-data)) | confirmed (code) |
+| `0x001f82c0` | `RM_GameMode_BuildMenu` | the ScrollingMenu of ScrollingTextWidget entries, 3 visible ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001f85c0` | `RM_GameMode_Init` | `rumble_data.lua`, title `0x2c`, usage `0x18`, the menu, arrows ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001f8b30` | `RM_GameMode_Shutdown` | (slot `+0x68`) `Shutdown`: releases the widgets and the screen's resources | confirmed (code) |
+| `0x001f8d18` | `RM_GameMode_IsReady` | (slot `+0x88`) `IsReady`: set up, its sprite batch resident and its widgets ready | confirmed (code) |
+| `0x001f8d80` | `RM_GameMode_OnInput` | (input slot `+0x08`) accept copies the mode into the set-up, back cancels or pops ([Data](#rumble-data)) | confirmed (code) |
+| `0x001f8ef8`, `0x001f8f18`, `0x001f8f40` | `RM_GameMode_Enter`, `_Exit`, `_StateUpdate` | the screen-flow state ([Screen flow](gui.md#screen-flow)): `Enter(flow)` keeps the flow at `+0x70` and runs `Init`; `Exit` runs `Shutdown`; `Update` sets the result to `-0x100`, runs the widget's `Update` and, while the result is unchanged, `Render`, and returns the result | confirmed (code) |
+| `0x001f8f98` | `RM_GameMode_CentreMenu` | the menu's top at 0.5 - h/2 + 0.02 ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001f9068` | `RM_GameMode_Update` | (slot `+0x30`) title, menu (recentred), arrows and usage line unless frozen ([Screens](#rumble-screens)) | confirmed (code) |
+| `0x001f9228` | `RM_GameMode_Render` | (slot `+0x38`) title, menu, the arrows when scrollable | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_Intro.cpp` {#fn-rm_intro}
+
+The "vs" intro and countdown an arena opens ([Rumble: the intro](rumble.md#intro)); not a flow state: the HUD owns it
+(HUD `+0xe530`). Vtables: main `0x0053d440`, input `0x0053d418`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001f93a0` | `RM_Intro_CreateSpriteBatch` | 10 sprites of sheet-table record 29 at depth 20,000 (`+0x60`) | confirmed (code) |
+| `0x001f9418` | `RM_Intro_Open` | copies onDone (`+0x64`) and keeps the non-empty names (`+0x68`) ([Intro](rumble.md#intro)) | confirmed (code) |
+| `0x001f9520` | `RM_Intro_LoadCountdownVoice` | loads `vags/character/voices/dj/rumblemode/3_2_1` into `+0xfc` | confirmed (code) |
+| `0x001f9558` | `RM_Intro_Init` | layout per video mode, the HUD's pad, a text per name and a separator (`0x1d0000`) between, the prompt `0x25`, the countdown text | confirmed (code) |
+| `0x001f9b38` | `RM_Intro_Shutdown` | (vtable `0x0053d440` slot `+0x68`) releases the names, separators, prompt, countdown, batch and the onDone copy | confirmed (code) |
+| `0x001f9ce8` | `RM_Intro_IsReady` | (slot `+0x88`) batch resident and the countdown voice loaded; stamps the start time (`+0xe8`) | confirmed (code) |
+| `0x001f9d78` | `RM_Intro_OnInput` | (input vtable `0x0053d418` slot `+0x08`) accept: next phase and a random dj_ready (1-5) | confirmed (code) |
+| `0x001f9e08` | `RM_Intro_LayoutNames` | places the names and separators (spacing `0x0050f48c` / 3) | confirmed (code) |
+| `0x001fa170` | `RM_Intro_UpdateNames` | phase 1, the names one at a time with their voices and synth stings | confirmed (code) |
+| `0x001fa740` | `RM_Intro_UpdatePrompt` | phase 2, the prompt fades in over 1,000 ms, then takes the pad | confirmed (code) |
+| `0x001fa9b0` | `RM_Intro_UpdateCountdown` | phase 4, 3 / 2 / 1 / string `0x3f` each 1,000 ms fading out; then calls onDone | confirmed (code) |
+| `0x001fad40` | `RM_Intro_Update` | (slot `+0x30`; from HUD_Update) the phase machine (`+0xe4`; phase 3 waits for the voice and queues screen effect 4.0), then updates the widgets | confirmed (code) |
+| `0x001faf18` | `RM_Intro_Render` | (slot `+0x38`; from GameMode_DrawOverlays, not in mode `0xf`) names, separators, prompt, countdown | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_Main.cpp` {#fn-rm_main}
+
+The first screen in game (from the hub): play, create a gang, edit gangs. Vtables: main `0x0053d530`, input
+`0x0053d4d8`, state `0x0053d500`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001fb060` | `RM_Main_Construct` | (flow field `+0x7c`, in game only) constructor: vtables `0x0053d530` / input `0x0053d4d8` / state `0x0053d500` | confirmed (code) |
+| `0x001fb168` | `RM_Main_Destroy` | (slot `+0x60`) destructor: `Shutdown`, then the widget base's | confirmed (code) |
+| `0x001fb248` | `RM_Main_GetSpriteBatch` | the flow's shared batch -> `+0x8c` | confirmed (code) |
+| `0x001fb290` | `RM_Main_Init` | title `0x2d`, usage `0x1a` or `0x17`, a message box, OptionGrid `0x30` / `0x31` and `0x32` when a created gang exists | confirmed (code) |
+| `0x001fb790` | `RM_Main_Shutdown` | (slot `+0x68`) `Shutdown`: releases the widgets and the screen's resources | confirmed (code) |
+| `0x001fb868` | `RM_Main_IsReady` | (slot `+0x88`) `IsReady`: set up, its sprite batch resident and its widgets ready | confirmed (code) |
+| `0x001fb8f0` | `RM_Main_OnInput` | (input vtable `0x0053d4d8` slot `+0x08`) accept `0x30` result 0 (Game Mode), `0x31` a new gang slot and result 1 (Create Gang; message `0x3e` when 10 exist), `0x32` result 2 (Edit Gangs); back sets "cancelled" | confirmed (code) |
+| `0x001fba78`, `0x001fba98`, `0x001fbac0` | `RM_Main_Enter`, `_Exit`, `_StateUpdate` | the screen-flow state ([Screen flow](gui.md#screen-flow)): `Enter(flow)` keeps the flow at `+0x70` and runs `Init`; `Exit` runs `Shutdown`; `Update` sets the result to `-0x100`, runs the widget's `Update` and, while the result is unchanged, `Render`, and returns the result | confirmed (code) |
+| `0x001fbb18` | `RM_Main_Update` | (slot `+0x30`) title, usage, message, grid unless frozen | confirmed (code) |
+| `0x001fbbc8` | `RM_Main_Render` | (slot `+0x38`) `Render`: draws the widgets | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_No2ndController.cpp`: constructor and destructor {#fn-rm_no2ndcontroller-start}
+
+The start of the file (each screen's constructor and destructor open its file); the screen's other functions follow from
+`0x001fbe68`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001fbc80` | `RM_No2ndController_Construct` | (flow field `+0x84`) constructor | confirmed (code) |
+| `0x001fbd88` | `RM_No2ndController_Destroy` | (slot `+0x60`) destructor: `Shutdown`, then the widget base's | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_No2ndController.cpp` {#fn-rm-no2ndcontroller}
+
+`0x001fbe68`-`0x001fc2f8`: the No 2nd Controller screen (`RM_No2ndController`, widget vtable `0x0053d638`, input
+vtable `0x0053d5e0`, state vtable `0x0053d608`; constructor `0x001fbc80` and destructor `0x001fbd88` sit before the
+range). What it shows is in [Per screen](#per-screen).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001fbe68` | `RM_No2ndController_Init` | once: the input record is the HUD's player-0 pad (`+0x50`); a `MultiLineTextWidget` (`+0x8c`) at (0.5, 0.5) with global string `0x3d`, wrap 0.6, grey `0x005fd310`, font slot 6; a `UsageInfo` (`+0x90`) at (0.5, 0.75) with string `0x1e` | confirmed (code) |
+| `0x001fc078` | `RM_No2ndController_Shutdown` | slot `+0x68`: shuts down and frees both widgets | confirmed (code) |
+| `0x001fc118` | `RM_No2ndController_OnInput` | input slot `+0x08`: event 5 (back) sets the result to `-0xff` (pop) and plays cue `0xf`; nothing else is handled | confirmed (code) |
+| `0x001fc160`, `0x001fc180`, `0x001fc1a8` | `RM_No2ndController_Enter`, `_Exit`, `_StateUpdate` | state slots `+0x10` (store the flow at `+0x70`, `Init`), `+0x20` (`Shutdown`), `+0x18` (result `-0x100`, `Update`, `Render`, return the result) | confirmed (code) |
+| `0x001fc200` | `RM_No2ndController_Update` | slot `+0x30`: once ready and not [frozen](#rumble-screens), runs the menu input itself (`0x001e93c0` with the d-pad mask `0xf000`, then `0x001e9468` with the rest); when `Pad_FindOtherConnected` finds a pad other than player 1's, binds it to player 2 (`HUD_BindPad(hud, 1, pad)`) and sets the result 1 (Choose Gangs), or 2 when the mode has preset gangs (Choose Area) | confirmed (code) |
+| `0x001fc2f8` | `RM_No2ndController_Render` | slot `+0x38`: the text and the usage line, when ready and visible | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_NumPlayers.cpp` {#fn-rm-numplayers}
+
+`0x001fc380`-`0x001fdaf8`: the Game Type screen (`RM_NumPlayers`, widget vtable `0x0053d740`, input vtable
+`0x0053d6e8`, state vtable `0x0053d710`). Its widgets and input are in [Per screen](#per-screen) and
+[the set-up](#rumble-data).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001fc380` / `0x001fc488` | `RM_NumPlayers_Construct` / `_Destroy` | the screen base with its transition map (an STL tree, `+0x7c`); the destructor (slot `+0x60`, state `+0x08`) shuts down, empties and frees the map, then the widget base | confirmed (code) |
+| `0x001fc568` | `RM_NumPlayers_GetSpriteBatch` | `+0xa4` = the flow's sprite batch 0 (the controller's sheet-record-28 batch) | confirmed (code) |
+| `0x001fc5b0` | `RM_NumPlayers_Init` | the screen's widgets: title `0x2e`; the badges `+0xb0` (P1), `+0xb4` (P2), `+0xb8` (CPU), size 0.1, depth 8,100, rectangle by language (`0x0051489c + 0x120`); sprite 28/29 (`+0xa8`) at **(0.5, 0.5)** turned −π/2; usage line `+0xc8`; message `0x77` (`+0xc0`) at (0.5, 0.78), hidden; `OptionGrid` (`+0xbc`) with `0x34` / `0x35` / `0x36` as the mode offers them; message blink period 1,500 ms (`+0x94`); player 2's pad unbound | confirmed (code) |
+| `0x001fcff8` | `RM_NumPlayers_Shutdown` | slot `+0x68`: releases and frees the title, the four sprites, the usage line, the message and the grid | confirmed (code) |
+| `0x001fd160` | `RM_NumPlayers_IsReady` | slot `+0x88`: set up, the sprite batch resident and the grid ready | confirmed (code) |
+| `0x001fd1c8` | `RM_NumPlayers_OnInput` | input slot `+0x08`: [the Game Type input](#rumble-data) | confirmed (code) |
+| `0x001fd368`, `0x001fd388`, `0x001fd3b0` | `RM_NumPlayers_Enter`, `_Exit`, `_StateUpdate` | state slots `+0x10`, `+0x20`, `+0x18`, as for every Rumble screen | confirmed (code) |
+| `0x001fd408` | `RM_NumPlayers_Update` | slot `+0x30`: a changed selection hides the message; while it shows, player 2's START (`0x800`) re-sends accept; the message's alpha runs 0 → 255 and back over 1,500 ms halves; the badges for the selected entry (P1 vs CPU; P1 and P2 at y 0.505 and 0.615 vs CPU; P1 vs P2) at x 0.5 ∓ 0.04 (`0x0050f4bc`), y 0.56 (`0x0050f4c4`); the sprite resized to 0.28 × 0.15 (`0x0050f4cc`, `0x0050f4d0` in the default mode) | confirmed (code) |
+| `0x001fdaf8` | `RM_NumPlayers_Render` | slot `+0x38`: title, badges, sprite, usage line, message, grid | confirmed (code) |
+
+### After `RM_NumPlayers.cpp` (no path string): the Rumble menu's globals {#fn-rumble-globals}
+
+`0x001fdc10`-`0x001fe818`, in the same translation unit as `RM_NumPlayers.cpp` (its static-init stub `0x001fe818`
+comes last): the getters and setters of the Rumble menu's shared state, the human cache the gang editor shows its
+fighters with, and a few helpers. The file is not named (inferred: a shared Rumble header or source).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001fdc10` | `RumbleMode_ResetState` | from the controller's start (`0x001f1748`): menu flag `0x0050f4e4` = 1, cached gang id `0x0050f4ec` = `0xffff`, cancelled, started and level = 0, the string pool and character map pointers 0, `0x0063ef68`-`0x0063ef78` = 0 | confirmed (code) |
+| `0x001fdc80`, `0x001fdc90`, `0x001fdca0`, `0x001fdcb0`, `0x001fdcc0`, `0x001fdcd0` | `RumbleMode_GetBgWidth`, `_GetBgHeight`, `_GetTitleY`, `_GetGridY`, `_GetLowerY`, `_GetUsageY` | the six [layout floats](#rm-layout) `0x0050f4f8`-`0x0050f50c`; `_GetLowerY` (0.805) is read by `RM_EditGang` and `RM_Main` | confirmed (code) |
+| `0x001fdce0` | `RumbleMode_ApplyVideoMode` | writes the six layout floats for the device's video-mode flags (`0x02`, `0x04`, `0x20`; table in [Layout and background](#rm-layout)) | confirmed (code) |
+| `0x001fdf10`, `0x001fdf20` | `RumbleMode_SetStringCache`, `_GetStringCache` | `0x0050f4f0`: the Rumble string pool (`StringTableCache`) | confirmed (code) |
+| `0x001fdf30`, `0x001fe038` | `RumbleMode_SetCharDataMap`, `_GetCharDataMap` | `0x0050f4f4`: the character data map (`CharDataMap`, type → `RM_CharData`) | confirmed (code) |
+| `0x001fdf40`, `0x001fdf50` | `RumbleMode_HasPresetGangs`, `_SetPresetGangs` | `0x0063ef78` ([the set-up](#rumble-data)) | confirmed (code) |
+| `0x001fdf60`, `0x001fdf70`, `0x001fdf80`, `0x001fdf90`, `0x001fdfa0`, `0x001fdfb0` | `RumbleMode_OffersOnePlayer`, `_SetOffersOnePlayer`, `_OffersCoop`, `_SetOffersCoop`, `_OffersVersus`, `_SetOffersVersus` | the mode's three offer flags `0x0063ef6c` / `70` / `74` | confirmed (code) |
+| `0x001fdfc0`, `0x001fdfd0` | `RumbleMode_IsCreatingGang`, `_SetCreatingGang` | `0x0063ef68`: 1 when `RM_Main` opens the gang editor on a new gang (the [store](#rumble-gangs)'s first free slot), 0 to edit an existing one; read by `RM_CreateGang` and `RM_EditGang` | confirmed (code) |
+| `0x001fdfe0` | `RumbleStrings_Intern(text, upper)` | interns `text` in the Rumble string pool; with `upper`, a copy of at most 255 characters upper-cased first (`0x00435e70`) | confirmed (code) |
+| `0x001fe048`, `0x001fe070`, `0x001fe0c8`, `0x001fe0d8` | `RumbleMode_GetGang1Name`, `_SetGang1Name`, `_GetGang2Name`, `_SetGang2Name` | the two sides' gang names `0x0063eef0`, `0x0063ef10` ([the set-up](#rumble-setup)) | confirmed (code) |
+| `0x001fe060` | `RumbleMode_GetCachedGangId` | the `RM_CACHED_GANG` id `0x0050f4ec` (`0xffff` none) | confirmed (code) |
+| `0x001fe130`, `0x001fe140` | `RumbleMode_GetModeTitle`, `_SetModeTitle` | `0x0063ef30`: `":"` + the mode's title (set on Game Mode accept, shown by the pause menu) | confirmed (code) |
+| `0x001fe198` | `RumbleMode_GetGameMode` | `RM_LuaData` index 0 (`gameMode`, the u16 at `0x0063eec0`); read by `HUD_Update` and the Warrior command display | confirmed (code) |
+| `0x001fe1a8`, `0x001fe1b8` | `RumbleMode_IsFromFrontEnd`, `_SetFromFrontEnd` | `0x0063ef64`: the menu came from the front end (0: from a game) | confirmed (code) |
+| `0x001fe1c8`, `0x001fe1d8` | `RumbleMode_GetLevel`, `_SetLevel` | `0x0050f4e8`: the level number to start (102 for the Fight Pen) | confirmed (code) |
+| `0x001fe1e8`, `0x001fe1f8`, `0x001fe208`, `0x001fe218` | `RumbleMode_IsCancelled`, `_SetCancelled`, `_IsStarted`, `_SetStarted` | "cancelled" `0x0050f4dc` and "started" `0x0050f4e0` ([The mode around the screens](#rumble-screens)) | confirmed (code) |
+| `0x001fe228` | `RumbleMode_IsFrozen` | started or cancelled: every screen's update stops taking input | confirmed (code) |
+| `0x001fe258`, `0x001fe268` | `RumbleMode_SetMenuFlag`, `_IsMenuActive` | flag `0x0050f4e4` (cleared by the controller's shutdown `0x001f1fa8`); active = the flag and the top game mode is `0x11`, asked by `0x0018dac0` and `Radio_Update` | confirmed (code) |
+| `0x001fe2a0`, `0x001fe2c0` | `RumbleMode_GetDummyHuman`, `_SetDummyHuman` | the [dummy fighter](#rm-dummy)'s handle `0x0063eeb8`, resolved to the human | confirmed (code) |
+| `0x001fe2d0`, `0x001fe2e8` | `RumbleHumanCache_Get`, `_Set` | the **human cache** `0x0063ee90`: 10 handles, slots 0-8 the edited gang's members, slot 9 the swap screen's candidate | confirmed (code) |
+| `0x001fe300` | `RumbleHumanCache_AreResident(handles, first, last)` | each handle resolves to a human that has a model (`+0xd8` → `+0x20`) and whose character resource (`CharacterList_Record` of human `+0x37c`) is resident | confirmed (code) |
+| `0x001fe3d0` | `RM_CharData_AverageRating(types, first, last)` | the mean, as a byte, of the character records' byte `+0x10` (a 0-100 value the swap screen draws as a bar; inferred: a rating) over the given types; used by `RM_EditGang` (`0x001f7238`) | confirmed (code); meaning inferred |
+| `0x001fe548` | `RumbleRank_GetName(rank)` | ranks 0-5 → global strings `0x5a`-`0x5f`, else `"unknown rank"` (inferred: soldier, lieutenant, warchief, boss, bum, civilian, the `RM_*` rank order) | confirmed (code); names inferred |
+| `0x001fe5d0` | `Pad_FindOtherConnected(pad)` | the first connected [pad record](#pad-record) (`+0x4c`) other than `pad`: record 0 when it is connected and `pad` is not 0, else the first of 1-7; −1 when none | confirmed (code) |
+| `0x001fe640` / `0x001fe720` | `RumbleHumanCache_Create` / `_Destroy` | (from `RM_Main`) a gang `RM_CACHED_GANG` (kind `0x19`) and 10 humans `RM_HU_CACHE_%d` of type `0x160` into the cache; destroy removes the humans and the gang | confirmed (code) |
+| `0x001fe7c0`, `0x001fe818` | `RumbleHumanCache_StaticInit`, `_StaticInitStub` | the static initialiser (ctor list `0x00534140`): every cache handle and the dummy handle −1 | confirmed (code) |
+
+### `GUI/RumbleModeGUI/RM_SwapSoldier.cpp` {#fn-rm-swapsoldier}
+
+`0x001fe838`-`0x00201b50`: the gang editor's Swap Soldier screen (`RM_SwapSoldier`, widget vtable `0x0053d848`,
+input vtable `0x0053d7f0`, state vtable `0x0053d818`), described in [The Swap Soldier screen](#rm-swap-soldier).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001fe838` / `0x001fe968` | `RM_SwapSoldier_Construct` / `_Destroy` | the screen base, transition map, the two human handles `+0x94` (candidate) and `+0x98` (current) = −1; the destructor shuts down and frees the map | confirmed (code) |
+| `0x001fea48` | `RM_SwapSoldier_GetSpriteBatch` | `+0xb0` = the flow's sprite batch 0 | confirmed (code) |
+| `0x001feaf0`, `0x001feb30`, `0x001fea90` | `RM_SwapSoldier_FindGroup`, `_AddGroup`, `_AddToGroup` | the `RMSwapGang` groups (vector at `+0x8c`, tag `RMSwapGangList`): find by gang key, add one (`0x1c` bytes) when missing, append a character record | confirmed (code) |
+| `0x001fec20` | `RM_SwapSoldier_BuildGroups` | every available character not already in the edited gang, grouped by gang; the groups then sorted (comparator not traced) | confirmed (code) |
+| `0x001fee10` | `RM_SwapSoldier_BuildMemberMenu(screen, group)` | once per group: its member list, a `ScrollingMenu` of at most 9 `ScrollingTextWidget`s (font slot 3, size 1.1, backdrop 28/28) of the character names, hung under the group's gang entry | confirmed (code) |
+| `0x001ff1c8` | `RM_SwapSoldier_BuildGangMenu` | the gang list `+0xb8`: a `ScrollingMenu` at (0.15, 0.27), width 0.3, 9 rows, entry spacing 0.6 (`0x0050f51c`), entries in font slot 6 at size 1.45; builds the first group's member list; with a single group it accepts at once (opens it) | confirmed (code) |
+| `0x001ff598` | `RM_SwapSoldier_Init` | the layout globals per video mode (`0x0050f514`-`0x0050f560`), the groups, and every widget of the screen | confirmed (code) |
+| `0x00200978` | `RM_SwapSoldier_ShowCurrent` | the edited member (cache slot = the store's current member): its human at camera-space (1.7, 6.0, −1.22), brain dead, no combat mode; frees cache slot 9; shows its name, rating bar and rank on the right | confirmed (code) |
+| `0x00200c48` | `RM_SwapSoldier_ShowCandidate(screen, type)` | replaces cache slot 9 with a human `RM_SWAP_HUMAN_0` of `type` at camera-space (0.3, 6.0, −1.22), turned to face the camera (once the cached gang has 9 members left); shows its name, rating bar and rank on the left; type `0x160` twice in a row keeps the existing one | confirmed (code) |
+| `0x00200fa8` | `RM_SwapSoldier_Shutdown` | slot `+0x68`: frees every widget, the member lists, the groups | confirmed (code) |
+| `0x00201280` | `RM_SwapSoldier_IsReady` | slot `+0x88`: set up, the batch resident, the usage line and the gang list ready | confirmed (code) |
+| `0x00201308` | `RM_SwapSoldier_OnInput` | input slot `+0x08`: events 0 and 1 are left to the menus; **accept** on a member of an open list writes its type into the gang (`RumbleGangs_SetMemberType`), exchanges cache slot 9 and the member's slot, result 0, cue 8; accept on a gang (re)builds and opens its list; **back** closes an open list (cue `0xf`) or pops | confirmed (code) |
+| `0x002015b0`, `0x002015d0`, `0x002015f8` | `RM_SwapSoldier_Enter`, `_Exit`, `_StateUpdate` | state slots `+0x10`, `+0x20`, `+0x18` | confirmed (code) |
+| `0x00201650` | `RM_SwapSoldier_UpdateGangMenu` | one update of the gang list (from `Init`) | confirmed (code) |
+| `0x00201680` | `RM_SwapSoldier_Update` | slot `+0x30`: the widgets; the scroll arrows 0.06 above the gang list and below its bottom; the two spinners turned by the real-time clock × 0.004 rad/ms; with no list open the candidate is the `0x160` stand-in with its bar and rank hidden, else a newly selected member is previewed | confirmed (code) |
+| `0x00201b50` | `RM_SwapSoldier_Render` | slot `+0x38`: title, progress line, the resource manager's overlay pass, then each human (while its model is not resident: its spinner, and the dummy fighter drawn in its place), the menus, texts, bars and the scroll arrows that apply | confirmed (code) |
+
+### After `RM_SwapSoldier.cpp` (no path string): `RumbleAreaPreviewWidget` {#fn-rumble-area-preview}
+
+`0x00201fc0`-`0x002028e0`: the arena tile of the Choose Area screen (vtable `0x0053d8f8`; created by `0x001eabc0`).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00201fc0` / `0x00202028` | `RumbleAreaPreview_Construct` / `_Destroy` | widget base, frame `BaseWidget` `+0x70`, picture `BaseWidget` `+0x170`, `CircledText` label `+0x270` | confirmed (code) |
+| `0x00202090` | `RumbleAreaPreview_Setup(widget, level, ...)` | the picture: the level record's sprite word, white, depth 9,000.9; the frame: the given sprite in grey, depth 8,000.8; the label: size 0.055 at offset (0.002, −0.04), black backing (0, 0, 0, 255), the level's name ([Per screen](#per-screen)); mode globals `0x0050f56c` (0.065), `0x0050f570`, `0x0050f574` | confirmed (code) |
+| `0x00202348` | `RumbleAreaPreview_Shutdown` | slot `+0x68`: releases both sprites and the label | confirmed (code) |
+| `0x00202398` | `RumbleAreaPreview_IsReady` | slot `+0x88`: the batch resident and the label ready | confirmed (code) |
+| `0x002023f0` | `RumbleAreaPreview_SetReveal(r)` | slot `+0xa8`: reveal `+0x50` = `r` clamped to 0-1; the label's own reveal goes 0 → 1 over the last 0.065 of the height (1 at `r` = 1) | confirmed (code) |
+| `0x002024e0` | `RumbleAreaPreview_GetRect` | slot `+0x70`: the size with the height times the reveal (so the grid grows the row as it opens) | confirmed (code) |
+| `0x00202538` | `RumbleAreaPreview_Update` | slot `+0x30`: the frame 1.03 × 1.05 of the size once revealed (≥ 0.99), else × 0.98 high and lifted; the picture 0.8 of the height × min(1, reveal / 0.8), its texture rectangle cut to match; the label at the bottom edge; visible while the reveal is above 0 | confirmed (code) |
+| `0x002028e0` | `RumbleAreaPreview_Render` | slot `+0x38`: the frame in `0x005fd310` (178) when selected (slot `+0xa0`), else `0x005fd320` (80); then the picture and the label | confirmed (code) |
+
+### After `RM_SwapSoldier.cpp` (no path string): the custom-gang store {#rumble-gangs}
+
+`0x002029a8`-`0x002030f0`: the player's ten custom Rumble gangs, one static object at `0x0063ef80` (`0x254` bytes),
+saved in the profile ([Save](save.md)) and edited by `RM_Main`, `RM_CreateGang`, `RM_EditGang`, `RM_EditGangs` and
+`RM_SwapSoldier`. The static-init stub `0x002030f0` ends the `RM_SwapSoldier.cpp` translation unit. Layout,
+confirmed (code) at the functions below:
+
+| Offset | Type | Meaning |
+| --- | --- | --- |
+| `+0x000` | u32 × 16 | 512 bits, one per character type: "owned" (lets a locked type join the swap list; who sets the bits is not traced) |
+| `+0x040` + 0x34 × slot | | ten gangs |
+| | u32 `+0x00` | in use |
+| | char\[10\] `+0x04`, `+0x0e` = 0 | the name |
+| | u32 × 9 `+0x10` | the members' character types; `0x160` = none |
+| `+0x248` | u32 | the gang being edited |
+| `+0x24c` | u32 | the member being edited |
+| `+0x250` | u32 | changed since the last save |
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x002029a8` | `RumbleGangs_Construct` | everything zero | confirmed (code) |
+| `0x00202a30`, `0x00202ac8`, `0x00202b08` | `RumbleGangs_CreateGang(store, slot, name)`, `_RenameGang`, `_DeleteGang` | create: in use, the name (10 characters), nine members `0x160`, current gang = `slot`; rename: the name; delete: not in use, members `0x160`; each sets changed | confirmed (code) |
+| `0x00202b50`, `0x00202b68`, `0x00202bc8`, `0x00202c48` | `RumbleGangs_IsSlotUsed`, `_CountUsed`, `_FirstFreeSlot`, `_NthUsedSlot` | the in-use word; how many of 10; the first free slot (0 when all are used); the slot of the n-th used gang (0 when there are fewer) | confirmed (code) |
+| `0x00202c28`, `0x00202c30`, `0x00202c38`, `0x00202c40` | `RumbleGangs_SetCurrentGang`, `_GetCurrentGang`, `_SetCurrentMember`, `_GetCurrentMember` | `+0x248`, `+0x24c` | confirmed (code) |
+| `0x00202cc8`, `0x00202ce0`, `0x00202d00`, `0x00202d28` | `RumbleGangs_GetName`, `_GetMemberType`, `_SetMemberType`, `_HasMemberType` | a slot's name address; member `i`'s type; set it (u16, changed); whether any of the nine is the type | confirmed (code) |
+| `0x00202da0` | `RumbleGangs_IsTypeOwned(store, type)` | bit `type` of `+0x000` | confirmed (code) |
+| `0x00202dd0`, `0x00202eb0` | `RumbleGangs_WriteOwnedBits`, `_ReadOwnedBits` | the 512 bits as 16 words through the profile stream, a bit at a time | confirmed (code) |
+| `0x00202fc0`, `0x00203040` | `RumbleGangs_Save`, `_Load` | from `Profile_Write` / `Profile_Read`: the `0x254` bytes raw, then the bits again (the save's two Rumble blocks, [Save](save.md)); `0x0063f1d0` = 0 | confirmed (code) |
+| `0x002030c0`, `0x002030f0` | `RumbleGangs_StaticInit`, `_StaticInitStub` | static initialiser (ctor list `0x00534144`): `RumbleGangs_Construct(0x0063ef80)` | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Continue.cpp` (its constructor) {#fn-pm-continue-start}
+
+The two functions before the file's attributed range (`0x00203300`); the rest of the screen is in its own section.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00203110` / `0x00203220` | `PM_Continue_Construct` / `_Destroy` | from `PM_Controller` (`0x002040f0`): the screen base, transition map, vtables `0x0053da18` (widget), `0x0053d9c0` (input), `0x0053d9e8` (state), `+0xa0` = −1; the destructor (slot `+0x60`) calls `Shutdown` (`0x002036d8`) and frees the map | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Continue.cpp` {#fn-pm-continue}
+
+`0x00203300`-`0x00203a58`: class `PM_Continue` (its constructor `0x00203110` is before this range), `0xb0` bytes;
+vtables `0x0053da18` (widget), `0x0053d9c0` (command listener at `+0x6c`) and `0x0053d9e8` (flow state at `+0x70`); the
+file inferred from the class name. Its screen is on [The screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00203300` | `PM_Continue_Init` | builds the widgets once (`+0x0c` created): the profile name (size 2.0, grey) at y 0.73 and the CONTINUE / DELETE grid at `0x0050f5c8` | confirmed (code) |
+| `0x002036d8`, `0x00203788` | `PM_Continue_Shutdown`, `PM_Continue_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x00203800` | `PM_Continue_OnCommand` | CONTINUE: a damaged profile (save-system `+0x7c`) gives result 1 (`PM_Delete`), else load (`+0xcc`), `+0x124` = 1, done = 1; DELETE: result 1; back `-0xff`, cue `0xf` | confirmed (code) |
+| `0x00203910`, `0x00203940`, `0x00203968` | `PM_Continue_Enter`, `PM_Continue_Exit`, `PM_Continue_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x002039c0` | `PM_Continue_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
+| `0x00203a58` | `PM_Continue_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Controller.cpp` {#fn-pm-controller}
+
+`0x00203af8`-`0x00204ed8`: the profile manager's globals and layout (getters and setters; their file is inferred from
+their position before the controller) and `PM_Controller` (allocator path string `PM_Controller.cpp`), a
+`ScreenFlowController` subclass: its vtable reuses the flow's slots (slot 0 the constructor, `+0x18` Update, `+0x20`
+Stop, `+0x40` Start). [The profile manager](#profile-manager) has the transitions and the globals.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00203af8`, `0x00203b08`, `0x00203b18`, `0x00203b28`, `0x00203b38`, `0x00203b48`, `0x00203b58`, `0x00203b68`, `0x00203b78`, `0x00203b88` | `PM_GetLayoutX`, `PM_GetUsageY`, `PM_GetGridY1`-`4`, `PM_GetTitleY1`-`4` | the layout floats: x `0x0050f5c4`, usage y `0x0050f5e8`, grid y for 1-4 rows `0x0050f5c8`-`0x0050f5d4`, title y for 1-4 rows `0x0050f5d8`-`0x0050f5e4` ([Screen geometry](#pm-layout)) | confirmed (code) |
+| `0x00203b98` | `PM_PickLayout` | from controller start, writes the layout floats `0x0050f5c4``-0x0050f5e8` for the device flags (*`0x0050cdb4`; `0x20` tested before `0x04`) | confirmed (code) |
+| `0x00203f48` | `PM_GetStartCallback` | the Lua callback the profile manager was started with (`0x0050f584`; QUICK RUMBLE calls it) | confirmed (code) |
+| `0x00203f58` | `PM_GetMenuInstance` | the menu_system sprite instance `0x0050f588` | confirmed (code) |
+| `0x00203f78` | `PM_GetLoadScreenFlag` | `0x0050f5b8`, 1 in .data, cleared by `PM_Greet`'s START; `LoadScreen_Begin` picks the memory-card screen while set | confirmed (code) |
+| `0x00203f88` | `PM_SetLoadScreenFlag` | `0x0050f5b8` | confirmed (code) |
+| `0x00203f98` | `PM_GetFadeInOnResume` | `0x0050f5bc`, fade in on resume (mode `0x12` Update) | confirmed (code) |
+| `0x00203fa8` | `PM_SetFadeInOnResume` | `0x0050f5bc` (mode 6 Exit sets 1) | confirmed (code) |
+| `0x00203fb8` | `PM_SetDone` | done, `0x0050f5b0` (`PM_Subtitles`, `PM_Load`, `PM_Continue`; mode 11 Exit) | confirmed (code) |
+| `0x00203fc8` | `PM_SetWidescreen` | the 16:9 choice `0x0050f5c0` (from `Profile_Read`) | confirmed (code) |
+| `0x00203fd8` | `PM_GetWidescreen` | `0x0050f5c0`, applied to the device by mode `0x12` Exit | confirmed (code) |
+| `0x00203fe8` | `PM_IsDone` | done, `0x0050f5b0` (screens skip their Update while set) | confirmed (code) |
+| `0x00203ff8` | `PM_SetNewGame` | a new game was started, `0x0050f5b4` | confirmed (code) |
+| `0x00204008` | `PM_IsNewGame` | `0x0050f5b4`, read by `Autosave_Request` | confirmed (code) |
+| `0x00204018` | `PM_SetCreateOnExit` | `0x0050f598`, create the new profile on mode `0x12` Exit | confirmed (code) |
+| `0x00204028` | `PM_GetCreateOnExit` | `0x0050f598` | confirmed (code) |
+| `0x00204038` | `PM_SetProfileRefresh` | `0x0050f59c`, set by `Gm_MemoryCard_Exit` so `PM_Profile` rebuilds its list (inferred) | confirmed (code); the purpose inferred |
+| `0x00204048` | `PM_GetProfileRefresh` | `0x0050f59c` (`PM_Profile_StateUpdate`) | confirmed (code); the purpose inferred |
+| `0x00204058` | `PM_SetDeleteMode` | delete mode `0x0050f5a0` (`PM_Profile`) | confirmed (code) |
+| `0x00204068` | `PM_GetDeleteMode` | delete mode `0x0050f5a0` (`PM_Load`) | confirmed (code) |
+| `0x00204078` | `PM_SetProfileSlot` | the chosen profile slot `0x0050f594` | confirmed (code) |
+| `0x00204088` | `PM_GetProfileSlot` | the chosen profile slot `0x0050f594` | confirmed (code) |
+| `0x00204098` | `PM_SetProfileName` | copies at most 8 characters to `0x0063f1d8` (terminator at `0x0063f1e0`) | confirmed (code) |
+| `0x002040c8` | `PM_GetProfileName` | the profile name buffer `0x0063f1d8` | confirmed (code) |
+| `0x002040f0` | `PM_Controller_Construct` | `ScreenFlowController_Construct`, `+0x60` = a value of the top game mode (`0x0015e790`), the 14 screens (allocator tags = class names) (`+0x64``-+0x98`) and their transitions | confirmed (code) |
+| `0x00204a78` | `PM_Controller_Start` | resets the PM globals `0x0050f584``-0x0050f5c0` and the name, start callback = cb, save-system `+0x124` = 0, `PM_PickLayout`, sets up and shows the embedded widget, pushes `PM_Greet` | confirmed (code) |
+| `0x00204ba0` | `PM_Controller_Update` | when the widget is active, its Update and Render, then `ScreenFlowController_Update`; returns done (`0x0050f5b0`) | confirmed (code) |
+| `0x00204c20` | `PM_Controller_Stop` | the embedded widget's Shutdown | confirmed (code) |
+| `0x00204c50` | `PM_CreateMenuInstance` | a resource instance over sheet-table record 3 (menu_system), depth 8,500, 50 sprites, id in `0x0050f588` | confirmed (code); the caller inferred |
+| `0x00204d18` | `PM_Controller_Shutdown` | destroys the menu_system instance and the 14 screens, `ScreenFlowController_Destroy`, clears created | confirmed (code) |
+| `0x00204e70` | `PM_Controller_IsLoaded` | created and the menu_system batch resident (`Widget_IsBatchResident`) | confirmed (code) |
+| `0x00204ea8` | `PM_Controller_IsActiveThunk1` | calls the embedded widget's is-active slot (`+0x88`) for another interface | confirmed (code) |
+| `0x00204ed8` | `PM_Controller_IsActiveThunk2` | the same is-active forwarder for a second interface | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Create.cpp` {#fn-pm-create}
+
+`0x00204f08`-`0x002058b0`: class `PM_Create`, `0xa0` bytes; vtables `0x0053dc40` (widget), `0x0053dbe8` (command
+listener at `+0x6c`) and `0x0053dc10` (flow state at `+0x70`); confirmed by its path string. Its screen is on [The
+screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00204f08`, `0x00205010` | `PM_Create_Construct`, `PM_Create_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x002050f0` | `PM_Create_Init` | builds the widgets once (`+0x0c` created): title `0x89`, the name (size 2.0), the on-screen keyboard (`0x001cc1a0`) and the hidden error text; stores the free slot (save-system `+0xa4`) in `0x0050f594` | confirmed (code) |
+| `0x002054a0` | `PM_Create_ConfirmName` | the keyboard's OK callback: a name used by one of the 6 slots (save-system `+0xbc`, compare `0x00430c4c`) shows text `0x86` in the error widget; otherwise `PM_SetProfileName` and result 0 (`PM_Difficulty`) | confirmed (code) |
+| `0x002055b0`, `0x00205660` | `PM_Create_Shutdown`, `PM_Create_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x002056d8` | `PM_Create_OnCommand` | back empties the name (`PM_SetProfileName`) and pops; accept is the keyboard's | confirmed (code) |
+| `0x00205768`, `0x00205798`, `0x002057c0` | `PM_Create_Enter`, `PM_Create_Exit`, `PM_Create_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x00205818` | `PM_Create_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
+| `0x002058b0` | `PM_Create_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Delete.cpp` {#fn-pm-delete}
+
+`0x00205950`-`0x00206538`: class `PM_Delete`, `0xa0` bytes; vtables `0x0053dd50` (widget), `0x0053dcf8` (command
+listener at `+0x6c`) and `0x0053dd20` (flow state at `+0x70`); confirmed by its path string. Its screen is on [The
+screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00205950`, `0x00205a58` | `PM_Delete_Construct`, `PM_Delete_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x00205b38` | `PM_Delete_Init` | builds the widgets once (`+0x0c` created): the profile name, the sure / damaged text (`0x82` / `0x83`) and the YES / NO grid, NO selected | confirmed (code) |
+| `0x002060e8`, `0x002061c0` | `PM_Delete_Shutdown`, `PM_Delete_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x00206238` | `PM_Delete_OnCommand` | YES deletes (save-system `+0x54`, `+0x18c`, Lua Menu.deleteProfile), result 2 (`PM_Greet`) when damaged else 0 (`PM_Profile`); NO pops; ignored while a fade runs | confirmed (code) |
+| `0x002063d8`, `0x00206408`, `0x00206430` | `PM_Delete_Enter`, `PM_Delete_Exit`, `PM_Delete_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x00206488` | `PM_Delete_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
+| `0x00206538` | `PM_Delete_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Difficulty.cpp` {#fn-pm-difficulty}
+
+`0x002065f0`-`0x00206f50`: class `PM_Difficulty`, `0xa0` bytes; vtables `0x0053de60` (widget), `0x0053de08` (command
+listener at `+0x6c`) and `0x0053de30` (flow state at `+0x70`); the file inferred from the class name. Its screen is on
+[The screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x002065f0`, `0x002066f8` | `PM_Difficulty_Construct`, `PM_Difficulty_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x002067d8` | `PM_Difficulty_Init` | builds the widgets once (`+0x0c` created): title `0x8f` and three or four difficulty items (the fourth when unlocked); default index 1 or 3 | confirmed (code) |
+| `0x00206c60`, `0x00206d10` | `PM_Difficulty_Shutdown`, `PM_Difficulty_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x00206d88` | `PM_Difficulty_OnCommand` | accept stores the index in `W_GameState` `+0x43c`, result 0 (`PM_Light`), cue 9; back `-0xff`, cue `0xf` | confirmed (code) |
+| `0x00206e08`, `0x00206e38`, `0x00206e60` | `PM_Difficulty_Enter`, `PM_Difficulty_Exit`, `PM_Difficulty_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x00206eb8` | `PM_Difficulty_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
+| `0x00206f50` | `PM_Difficulty_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Extras.cpp` {#fn-pm-extras}
+
+`0x00206ff0`-`0x00207730`: class `PM_Extras`, `0xa0` bytes; vtables `0x0053df70` (widget), `0x0053df18` (command
+listener at `+0x6c`) and `0x0053df40` (flow state at `+0x70`); the file inferred from the class name. Its screen is on
+[The screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00206ff0`, `0x002070f8` | `PM_Extras_Construct`, `PM_Extras_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x002071d8` | `PM_Extras_Init` | builds the widgets once (`+0x0c` created): a one-item grid, TRAILER (`0x8c`) | confirmed (code) |
+| `0x002073e8`, `0x00207480` | `PM_Extras_Shutdown`, `PM_Extras_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x002074f8` | `PM_Extras_OnCommand` | accept on TRAILER calls Lua `Menu.playMovie(1)`, cue 9; back `-0xff`; ignored while the fade level is not 0 | confirmed (code) |
+| `0x00207600`, `0x00207630`, `0x00207658` | `PM_Extras_Enter`, `PM_Extras_Exit`, `PM_Extras_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x002076b0` | `PM_Extras_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
+| `0x00207730` | `PM_Extras_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Greet.cpp` {#fn-pm-greet}
+
+`0x002077b8`-`0x00208288`: class `PM_Greet`, `0xb0` bytes; vtables `0x0053e080` (widget), `0x0053e028` (command listener
+at `+0x6c`) and `0x0053e050` (flow state at `+0x70`); confirmed by its path string. Its screen is on [The
+screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x002077b8`, `0x002078c0` | `PM_Greet_Construct`, `PM_Greet_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x002079a0` | `PM_Greet_Init` | builds the widgets once (`+0x0c` created): the logo (menu_system rectangle 0) and the blinking press-START text `0x76` | confirmed (code) |
+| `0x00207cb8` | `PM_Greet_Shutdown` | releases the logo sprite and the text, clears created | confirmed (code) |
+| `0x00207d48` | `PM_Greet_Enter` | also sets `0x006fecc0` = 1 and calls `0x00145670` (resets eight per-pad callbacks to `0x001499e8`, not traced), then Init | confirmed (code) |
+| `0x00207da0` | `PM_Greet_Exit` | clears `0x006fecc0`, then Shutdown | confirmed (code) |
+| `0x00207dd0` | `PM_Greet_StateUpdate` | result `+0x74` = `-0x100` (stay), runs Update and Render, returns the result | confirmed (code) |
+| `0x00207e28` | `PM_Greet_Update` | START gives result 0 (`PM_Mode`), cue 9, and clears the load-screen flag `0x0050f5b8`; the 1,500 ms blink; after 70 s idle calls Lua `Menu.playMovie(2)` (attract) and sets `+0xac` | confirmed (code) |
+| `0x00208288` | `PM_Greet_Render` | the logo and the text (children `+0x8c`, `+0xa4`) | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Light.cpp` {#fn-pm-light}
+
+`0x00208320`-`0x00208f78`: class `PM_Light`, `0xb0` bytes; vtables `0x0053e190` (widget), `0x0053e138` (command listener
+at `+0x6c`) and `0x0053e160` (flow state at `+0x70`); the file inferred from the class name. Its screen is on [The
+screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00208320`, `0x00208430` | `PM_Light_Construct`, `PM_Light_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x00208510` | `PM_Light_Init` | builds the widgets once (`+0x0c` created): the brightness square (menu_system rectangle 5), the Bar (`0x001a0fd0`) and the hint `0x118`; the value starts at 40 | confirmed (code) |
+| `0x00208b40` | `PM_Light_Shutdown` | releases and frees the child widgets, clears created (`+0x0c`) and `+0x10` | confirmed (code) |
+| `0x00208c18` | `PM_Light_SetValue` | clamps to 0-100, bar fill v / 100, `Gamma_Set`(v), keeps `W_GameState` `+0x57a4` | confirmed (code) |
+| `0x00208cc0` | `PM_Light_OnCommand` | left / right step the value by 5 (cue 6); accept sets save-system `+0x124` = 1, result 0 (`PM_Subtitles`) | confirmed (code) |
+| `0x00208e00`, `0x00208e30`, `0x00208e58` | `PM_Light_Enter`, `PM_Light_Exit`, `PM_Light_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x00208eb0` | `PM_Light_Update` | also runs the d-pad pass itself (mask `0xf000`, auto-repeat) before the children | confirmed (code) |
+| `0x00208f78` | `PM_Light_Render` | the square in (v, v, v, 255), the bar (`HudBar_Draw` 0.25) and the hint | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Load.cpp` {#fn-pm-load}
+
+`0x00209068`-`0x00209b20`: class `PM_Load`, `0xa0` bytes; vtables `0x0053e2a8` (widget), `0x0053e250` (command listener
+at `+0x6c`) and `0x0053e278` (flow state at `+0x70`); the file inferred from the class name. Its screen is on [The
+screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00209068`, `0x00209170` | `PM_Load_Construct`, `PM_Load_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x00209250` | `PM_Load_Init` | builds the widgets once (`+0x0c` created): title `0x88` (`0x7e` in delete mode) and one item per used slot, two a row | confirmed (code) |
+| `0x00209788`, `0x00209838` | `PM_Load_Shutdown`, `PM_Load_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x002098b0` | `PM_Load_OnCommand` | accept stores the slot (`0x0050f594`); delete mode or a damaged slot gives result 1 (`PM_Delete`); else load (`+0xcc`), `+0x124` = 1, done = 1 | confirmed (code) |
+| `0x002099d8`, `0x00209a08`, `0x00209a30` | `PM_Load_Enter`, `PM_Load_Exit`, `PM_Load_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x00209a88` | `PM_Load_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
+| `0x00209b20` | `PM_Load_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Mode.cpp` {#fn-pm-mode}
+
+`0x00209bc0`-`0x0020a538`: class `PM_Mode`, `0xa0` bytes; vtables `0x0053e3b8` (widget), `0x0053e360` (command listener
+at `+0x6c`) and `0x0053e388` (flow state at `+0x70`); the file inferred from the class name. Its screen is on [The
+screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00209bc0`, `0x00209cc8` | `PM_Mode_Construct`, `PM_Mode_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x00209da8` | `PM_Mode_Init` | builds the widgets once (`+0x0c` created): the STORY : EXTRAS / QUICK RUMBLE grid (one row with device flag `0x02`) | confirmed (code) |
+| `0x0020a158`, `0x0020a1f0` | `PM_Mode_Shutdown`, `PM_Mode_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x0020a268` | `PM_Mode_OnCommand` | accept by item code (STORY: `PM_Profile`, or `PM_NumPlayers` with two or more pads; EXTRAS 5; QUICK RUMBLE calls the start callback `0x0050f584`); back result 8 (`PM_Greet`) | confirmed (code) |
+| `0x0020a408`, `0x0020a438`, `0x0020a460` | `PM_Mode_Enter`, `PM_Mode_Exit`, `PM_Mode_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x0020a4b8` | `PM_Mode_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
+| `0x0020a538` | `PM_Mode_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_NoSpace.cpp` {#fn-pm-nospace}
+
+`0x0020a5c0`-`0x0020af80`: class `PM_NoSpace`, `0xa0` bytes; vtables `0x0053e4c8` (widget), `0x0053e470` (command
+listener at `+0x6c`) and `0x0053e498` (flow state at `+0x70`); the file inferred from the class name. Its screen is on
+[The screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0020a5c0`, `0x0020a6c8` | `PM_NoSpace_Construct`, `PM_NoSpace_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x0020a7a8` | `PM_NoSpace_Init` | builds the widgets once (`+0x0c` created): Xbox screen: free-blocks texts `0xc3``-0xc8` and the Continue / Xbox Dashboard choices | confirmed (code) |
+| `0x0020ac48`, `0x0020ad30` | `PM_NoSpace_Shutdown`, `PM_NoSpace_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x0020adc8` | `PM_NoSpace_OnCommand` | Continue gives result 0, Xbox Dashboard calls the empty stub `0x0015f728`; cue 9 | confirmed (code) |
+| `0x0020ae38`, `0x0020ae68`, `0x0020ae90` | `PM_NoSpace_Enter`, `PM_NoSpace_Exit`, `PM_NoSpace_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x0020aee8` | `PM_NoSpace_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
+| `0x0020af80` | `PM_NoSpace_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_NumPlayers.cpp` {#fn-pm-numplayers}
+
+`0x0020b020`-`0x0020bbe0`: class `PM_NumPlayers`, `0xb0` bytes; vtables `0x0053e5d8` (widget), `0x0053e580` (command
+listener at `+0x6c`) and `0x0053e5a8` (flow state at `+0x70`); the file inferred from the class name. Its screen is on
+[The screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0020b020`, `0x0020b128` | `PM_NumPlayers_Construct`, `PM_NumPlayers_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x0020b208` | `PM_NumPlayers_Init` | builds the widgets once (`+0x0c` created): the 1 player / 2 players grid and the hidden player-2 prompt `0x77` | confirmed (code) |
+| `0x0020b5e8`, `0x0020b698` | `PM_NumPlayers_Shutdown`, `PM_NumPlayers_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x0020b710` | `PM_NumPlayers_OnCommand` | accept on 2 players first shows the prompt and waits; then the two-player flag (`0x00419ac0`) and result 0 (`PM_Profile`) | confirmed (code) |
+| `0x0020b840`, `0x0020b870`, `0x0020b898` | `PM_NumPlayers_Enter`, `PM_NumPlayers_Exit`, `PM_NumPlayers_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x0020b8f0` | `PM_NumPlayers_Update` | while 2 players is selected and the prompt shows, START on player 2's pad (`HUD_GetVirtualPad`(hud, 1)) re-sends accept; blinks the prompt 0-255 over 1,500 ms halves | confirmed (code) |
+| `0x0020bbe0` | `PM_NumPlayers_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Profile.cpp` {#fn-pm-profile}
+
+`0x0020bc80`-`0x0020c830`: class `PM_Profile`, `0xa0` bytes; vtables `0x0053e6e8` (widget), `0x0053e690` (command
+listener at `+0x6c`) and `0x0053e6b8` (flow state at `+0x70`); the file inferred from the class name. Its screen is on
+[The screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0020bc80`, `0x0020bd88` | `PM_Profile_Construct`, `PM_Profile_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x0020be68` | `PM_Profile_Init` | builds the widgets once (`+0x0c` created): title `0x7b` and the use / create / delete / reload items present for the profile count | confirmed (code) |
+| `0x0020c460`, `0x0020c510` | `PM_Profile_Shutdown`, `PM_Profile_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x0020c588` | `PM_Profile_OnCommand` | clears delete mode; item 0 result 0 (`PM_Load`), 1 result 1 (`PM_Create`), 2 delete mode and result 2, 3 Lua Menu.reloadProfiles; ignored while a fade runs | confirmed (code) |
+| `0x0020c6c8`, `0x0020c6f8` | `PM_Profile_Enter`, `PM_Profile_Exit` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x0020c720` | `PM_Profile_StateUpdate` | when `0x0050f59c` is set (by `Gm_MemoryCard_Exit`) clears it and returns 4 (`PM_Profile` again, so Init rebuilds the list after the card mode; inferred); else stay, Update, Render | confirmed (code) |
+| `0x0020c798` | `PM_Profile_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
+| `0x0020c830` | `PM_Profile_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_Subtitles.cpp` {#fn-pm-subtitles}
+
+`0x0020c8d0`-`0x0020d118`: class `PM_Subtitles`, `0xa0` bytes; vtables `0x0053e7f8` (widget), `0x0053e7a0` (command
+listener at `+0x6c`) and `0x0053e7c8` (flow state at `+0x70`); the file inferred from the class name. Its screen is on
+[The screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0020c8d0`, `0x0020c9d8` | `PM_Subtitles_Construct`, `PM_Subtitles_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+| `0x0020cab8` | `PM_Subtitles_Init` | builds the widgets once (`+0x0c` created): title `0x94` and the ON : OFF grid, OFF by default for English | confirmed (code) |
+| `0x0020ce08`, `0x0020ceb8` | `PM_Subtitles_Shutdown`, `PM_Subtitles_IsActive` | slot `+0x68`: release the child widgets, clear created (`+0x0c`); slot `+0x88`: created and every child active | confirmed (code) |
+| `0x0020cf30` | `PM_Subtitles_OnCommand` | accept sets `W_GameState` `+0x438` = ON, then `0x0050f5b4`, `0x0050f598` and done (`0x0050f5b0`) = 1: the story starts | confirmed (code) |
+| `0x0020cfd0`, `0x0020d000`, `0x0020d028` | `PM_Subtitles_Enter`, `PM_Subtitles_Exit`, `PM_Subtitles_StateUpdate` | flow-state slots: `Enter(flow)` stores the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `StateUpdate` sets the result `+0x74` to -0x100, runs Update and Render and returns the result | confirmed (code) |
+| `0x0020d080` | `PM_Subtitles_Update` | when active and the profile manager is not done (`0x0050f5b0`), updates the child widgets | confirmed (code) |
+| `0x0020d118` | `PM_Subtitles_Render` | when active and visible, renders the child widgets | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_TooManyProfiles.cpp` {#fn-pm-toomanyprofiles}
+
+`0x0020d1b8`-`0x0020d2c0`: class `PM_TooManyProfiles`, `0xa0` bytes; vtables `0x0053e908` (widget), `0x0053e8b0`
+(command listener at `+0x6c`) and `0x0053e8d8` (flow state at `+0x70`); the file inferred from the class name. Its
+screen is on [The screens](#pm-screens).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0020d1b8`, `0x0020d2c0` | `PM_TooManyProfiles_Construct`, `PM_TooManyProfiles_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
+
+### `GUI/ProfileManagementGUI/PM_TooManyProfiles.cpp`: the screen's methods {#fn-pm-toomanyprofiles-methods}
+
+`0x0020d3a0`-`0x0020daf8`, after the constructor and destructor ([above](#fn-pm-toomanyprofiles)): the widget slots
+(vtable `0x0053e908`), the command listener (`0x0053e8b0`) and the flow-state slots (`0x0053e8d8`), in the same order
+as every PM screen. An Xbox screen that the PS2 never reaches ([The screens](#pm-screens)).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0020d3a0` | `PM_TooManyProfiles_Init` | once (`+0x0c`): the text (strings 199, 6 and 200 joined by `"%s%d%s"`) in a `MultiLineTextWidget` (`+0x90`, size 0.85, red `0x005fd328`) at (`PM_GetLayoutX`, 0.76; 0.85 with device flag 8), the grid (`+0x94`, rows {2}: `0xc9` Continue code 1, `0xca` Xbox Dashboard code 0) and the usage text `0x1f` (`+0x98`) | confirmed (code) |
+| `0x0020d7a8`, `0x0020d890` | `PM_TooManyProfiles_Shutdown`, `PM_TooManyProfiles_IsActive` | slot `+0x68`: shut down and free the three children and the text; slot `+0x88`: created and every child active | confirmed (code) |
+| `0x0020d928` | `PM_TooManyProfiles_OnCommand` | back (5): result `-0xff`, cue `0xf`; accept (4): Continue gives result 0 (`PM_Mode`), Dashboard calls `0x0015f728`, which is empty on the PS2; cue 9 | confirmed (code) |
+| `0x0020d9b0`, `0x0020d9e0`, `0x0020da08` | `PM_TooManyProfiles_Enter`, `PM_TooManyProfiles_Exit`, `PM_TooManyProfiles_StateUpdate` | flow-state slots: `Enter(flow)` keeps the flow (`+0x70`) and runs Init; `Exit` runs Shutdown; `Update` sets the result `+0x74` to `-0x100`, runs Update and Render and returns it | confirmed (code) |
+| `0x0020da60`, `0x0020daf8` | `PM_TooManyProfiles_Update`, `PM_TooManyProfiles_Render` | when active and the profile manager is not done (`PM_IsDone`), update the children; when active and visible, render them | confirmed (code) |
+
+### `GUI/GameStats.cpp` {#fn-gamestats}
+
+`0x00214d08`-`0x00216e90`: the statistics screen ([The statistics screen](#game-stats)); the five batch makers before
+the file's first path-string function sit after the player panel's static initialiser, so they belong to it
+(inferred). The object is game mode `0x13`'s, at mode `+0x20`; widget vtable `0x0053eec0`, command listener
+`0x0053eea0`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00214d08`, `0x00214d78`, `0x00214df0`, `0x00214e68`, `0x00214ee0` | `GameStats_CreateBackgroundBatch`, `_CreateHeaderBatch`, `_CreateThumbBatchA`, `_CreateThumbBatchB`, `_CreateSpecialBatch` | sprite batches over sheet-table records 12 (`+0x64`, 1 sprite, depth 8,000), 24 (`+0x68`, 40, depth 8,700), 22 (`+0x6c`, 12, depth 8,500), 23 (`+0x70`, 12, format 1) and 24 (`+0x74`, 3, format 1) | confirmed (code) |
+| `0x00214f58` | `GameStats_FormatTime(seconds, withDays, out)` | minutes, hours and minutes, or days, hours and minutes, with the singular or plural word (strings `0x67`-`0x6c`); without days the days count as hours | confirmed (code) |
+| `0x00215150` | `GameStats_BuildSummary` | the summary text (`+0x90`) | confirmed (code) |
+| `0x00215490` | `GameStats_PickThumbBatch(screen, level)` | the batch of a level's picture: `+0x74` for levels 95, 60 and 101, `+0x70` for 2, 3, 5, 9, 11, 20, 31, 34, 51, 52, 54 and 55, `+0x6c` for the rest | confirmed (code) |
+| `0x002155a8` | `GameStats_BuildMissionList` | the `ScrollingMenu` (`+0x88`) of headers and sub-items | confirmed (code) |
+| `0x00215ca0`, `0x00215ce8`, `0x00215da0` | `GameStats_IsLevelListed`, `GameStats_AddLevel`, `GameStats_CollectLevels` | the level records to list (byte `+0x0c` set, level not 61-65 and not 102-137), appended to the vector `+0x60` and sorted (`0x004ed068`, `0x004ed388`) | confirmed (code) |
+| `0x00215e78` | `GameStats_Init` | from mode `0x13`'s `Enter` (`0x00159538`, code Ghidra has not made a function): everything below | confirmed (code) |
+| `0x002166d0`, `0x00216908` | `GameStats_Shutdown`, `GameStats_IsReady` | slot `+0x68`: frees every part and the five batches; slot `+0x88`: created, batches `+0x64`, `+0x6c`, `+0x70`, `+0x74` resident and the menu ready | confirmed (code) |
+| `0x002169a8` | `GameStats_OnCommand` | back (5) closes the screen (`0x00159520(1)`); accept (4) is taken and does nothing | confirmed (code) |
+| `0x002169e0`, `0x00216a60`, `0x00216d48` | `GameStats_UpdateMenu`, `GameStats_Update`, `GameStats_Render` | the menu updated and placed; slot `+0x30`: the background's colour, then every part; slot `+0x38`: background, summary, menu, usage text | confirmed (code) |
+| `0x00216e00`, `0x00216e90` | `GameStats_StaticInit`, `GameStats_StaticInitStub` | static initialiser (ctor list `0x00534150`): the background colours at `0x00640c60` | confirmed (code) |
+
+### `GUI/GameStatsSubItem.cpp` {#fn-gamestatssubitem}
+
+`0x00216eb0`-`0x002175f8`: one mission's block in the statistics list (vtable `0x0053ef58`, `0x90` bytes).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00216eb0` | `GameStatsSubItem_BuildText` | the block's text (`+0x70`), [below](#game-stats) | confirmed (code) |
+| `0x00217350` | `GameStatsSubItem_Setup(width, item, level, word, batch)` | the level (`+0x74`), the text, the picture (`+0x68`, sprite `word` in `batch`) and a `ScrollingTextWidget` (`+0x6c`) at (0.05, 0.1) adjusted to the screen; its x moved by `width` | confirmed (code) |
+| `0x002175f8` | `GameStatsSubItem_Shutdown` | slot `+0x68`: the picture, the text widget and the text freed | confirmed (code) |
 
 ## Coney's implementation
 
@@ -1538,7 +2323,6 @@ What the implementer still needs:
   around preload scripts, `+0x10` update, `+0x24` level entry. A page on the script system should confirm them.
 - **Grid row pitch:** the code gives `6h / 7` (0.0469 at size 1.15), the screen 0.0505; which term is missing?
 - **Fade speed:** the frame-time argument of `0x0018ce58`; a 1.0 s fade out went black in about 0.35 s at runtime.
-- **Rumble draw order:** how the gang screen's 3D fighters end up over the opaque 2D background (depth 8,000).
 - **Sheet-table records 12 and 28** (the Rumble background and sprites): their resource names and rectangles.
 - **The `WonderWheel_100` tracks** (answered): a fixed camera, a 20 s loop turning the wheel 45° (2.25° a
   second), the neons shown and hidden by events ([Objects: the Wonder Wheel](objects.md#wonder-wheel)).

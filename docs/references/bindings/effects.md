@@ -955,27 +955,30 @@ StartFog(texture, colour, p1, p2, p3, p4, p5, p6, p7, p8, p9)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `texture` | number, truncated to an unsigned integer | Resource id of the fog texture. |
-| 2 | `colour` | table of 5 numbers (t[1]..t[5]) | Five numbers: colour `{r, g, b, a}` 0-255 and a fifth byte. |
-| 3 | `p1` | number (single precision) | Fog parameter (number). |
-| 4 | `p2` | number (single precision) | Fog parameter (number). |
-| 5 | `p3` | number (single precision) | Fog parameter (number). |
-| 6 | `p4` | number (single precision) | Fog parameter (number). |
-| 7 | `p5` | number (single precision) | Fog parameter (number). |
-| 8 | `p6` | number (single precision) | Fog parameter (number). |
-| 9 | `p7` | number (single precision) | Fog parameter (number). |
-| 10 | `p8` | number, truncated to an unsigned integer | Integer parameter. |
-| 11 | `p9` | number, truncated to an unsigned integer | Integer parameter. |
+| 1 | `texture` | number, truncated to an unsigned integer | Sprite word of the fog texture ([Particles: sprite words](../../research/particles.md#sprite-words)). |
+| 2 | `colour` | table of 5 numbers (t[1]..t[5]) | Five numbers 0-255: the tint `{r, g, b}` (the record's alpha is 0), then the lowest and highest alpha a drift may pick. |
+| 3 | `p1` | number (single precision) | Lowest sideways scroll per update, in texture widths. |
+| 4 | `p2` | number (single precision) | Highest sideways scroll per update. |
+| 5 | `p3` | number (single precision) | Lowest vertical scroll per update (given a random sign). |
+| 6 | `p4` | number (single precision) | Highest vertical scroll per update. |
+| 7 | `p5` | number (single precision) | Largest width scale before the 1/0.7 factor (a drift picks 1.43 to `p5` / 0.7). |
+| 8 | `p6` | number (single precision) | Largest height scale (a drift picks 1.0 to `p6`). |
+| 9 | `p7` | number (single precision) | A third range, plus or minus `p7`: blended with the others but not used by the draw. |
+| 10 | `p8` | number, truncated to an unsigned integer | Shortest blend from one drift to the next, in milliseconds. |
+| 11 | `p9` | number, truncated to an unsigned integer | Longest blend, in milliseconds. |
 
 **Returns** nothing.
 
-Starts the screen-space fog effect (screen effect 1) on both views. No script calls it; levels use `Start3DFog` and the
-world fog colour instead.
+Starts the screen-space fog overlay (screen-effects layer 1, `OE_Fog`) on both views: one full-screen sprite of the
+texture, tinted, that scrolls and drifts between random settings the way the room smoke does. No script calls it; levels
+use `Start3DFog` and the world fog colour instead.
 
-**Notes.** Parameter meanings are not traced.
+**Notes.** How a drift is picked and blended, and how the camera's turning scrolls it:
+[Graphics](../../research/graphics.md#code-overlay-effects).
 
-- **Evidence:** confirmed (code) at `0x0018df00`; detail: brief
-- **Wrapper** `0x00368c40` (registered by `RegisterBindings`); **calls** `0x0018df00` `ScreenFx_StartFog`
+- **Evidence:** confirmed (code) at `0x0018df00`, `0x00199380`, `0x001996b0`, `0x00199a50`; detail: traced
+- **Wrapper** `0x00368c40` (registered by `RegisterBindings`); **calls** `0x0018df00` `ScreenFx_StartFog`, `0x00199380`
+  `OE_Fog_Construct`, `0x001996b0` `OE_Fog_PickDrift`, `0x00199a50` `OE_Fog_Update`
 - **Used by** no script on the disc
 - **Coney:** not implemented
 

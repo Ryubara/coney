@@ -533,7 +533,7 @@ cited functions; the lens fields are also on [The streamed world](world.md#playe
 | --- | --- | --- |
 | `+0x00` | vtable | `0x00535510` |
 | `+0x10` | position (`float[4]`) | 0 |
-| `+0x20` | orientation quaternion | identity |
+| `+0x20` | orientation quaternion (x, y, z, w); rotates the camera's local axes into the world: +y is the view direction, +z up, +x right (see below) | identity |
 | `+0x30` | name (15 characters) | |
 | `+0x40` | the camera's handle (a slot from `0x3c` to `0x6b`) | |
 | `+0x44` / `+0x48` | field of view, degrees / the one used (+ `0x0050b178`, halved in split mode 0) | 60 |
@@ -549,6 +549,21 @@ cited functions; the lens fields are also on [The streamed world](world.md#playe
 | `+0x1d4` / `+0x1d5` | the ground under the view has type bit `0x20` / `0x10` (`0x00121720`) | 0 |
 | `+0x1d6` | the view may show | 1 |
 | `+0x1d8` | the player it belongs to (−1 none) | −1 |
+
+**Axes.** Confirmed (code). Every camera class places itself with `Mat_LookAt` (`0x00337028`, eye, target), which
+calls `Mat_LookAtUp` (`0x00337168`). That writes a row-per-axis matrix:
+
+| Row | Axis | Value |
+| --- | --- | --- |
+| `+0x00` | local +x, right | normalise(forward × up) |
+| `+0x10` | local +y, forward | normalise(target - eye) |
+| `+0x20` | local +z, up | right × forward |
+
+The up hint is world +z (`0x00511700`), or (1, 1, 1) normalised when the forward's z is beyond ±0.98; eye and
+target within 0.005 m return 0 and leave the camera as it was. The rows' w and the matrix's position are zeroed.
+`Mat_ToQuat` (`0x003365c8`) turns that matrix into the quaternion at `+0x20`. It treats the rows as the rotated
+axes (x = (m12 - m21) / 4w with `m[row][col]`), so the quaternion maps local +y to the view direction. This is the
+same convention as the [scene cameras](scenes.md).
 
 Class fields after `+0x1e0`, confirmed (code) at the constructors and setters:
 

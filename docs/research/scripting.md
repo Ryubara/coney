@@ -62,7 +62,7 @@ its adjust word at `+0x10`, the offset [Boot](boot.md#one-frame) once gave).
 | `+0x3c` | `0x00356ad0` | run a buffer | confirmed (code) |
 | `+0x44` | `0x00356c58` | run each file of a NULL-terminated list through `+0x34` | confirmed (code) |
 | `+0x4c` | `0x00356e08` | **find a function by name** and push it: the name is split at `.` and `:` (at most 32 characters per part); a `:` also pushes the table as `self` | confirmed (code) |
-| `+0x54`-`+0x84` | `0x00356f70`-`0x00357138` | push an argument: unsigned, object handle (as its index), short, int, unsigned, string, `VolumeBox` usertype | confirmed (code) |
+| `+0x54`-`+0x84` | `0x00356f70`, `0x00356fc8`, `0x00357028`, `0x00357060`, `0x00357098`, `0x003570f0`, `0x00357138` | push an argument: unsigned, object handle (as its index, `0x00390068`), short, int, unsigned, string, `VolumeBox` usertype | confirmed (code) |
 | `+0x8c` | `0x00357188` | **call** with n arguments (plus one for `self`) | confirmed (code) |
 | `+0x94` / `+0x9c` / `+0xa4` | `0x003571b8` / `0x003572e8` / `0x00357430` | **schedule** a call of a named function after a delay in ms, with 0, 1 or 2 number arguments | confirmed (code) |
 | `+0xac` | `0x00357588` | flush scheduled calls: all, or those whose name matches | confirmed (code) |
@@ -71,6 +71,9 @@ its adjust word at `+0x10`, the offset [Boot](boot.md#one-frame) once gave).
 | `+0xcc` | `0x00357958` | intern a name (`luaS_new` + fix), so a stored callback name is never collected | confirmed (code) |
 | `+0xd4`, `+0xdc` | `0x00357988`, `0x00357bb8` | **do nothing** (the "mode switch" around the preloads is empty in this build) | confirmed (code) |
 | `+0xe4` | `0x00357bc0` | returns 0 | confirmed (code) |
+
+Two empty functions are called on the way: `0x00357ba0` by the collection slot `+0x1c` and `0x00383f30` by the
+destructor (confirmed (code); leftovers of a debug build, inferred).
 
 ## Data
 
@@ -101,6 +104,56 @@ and tolua names. confirmed (runtime).
 `FlagNetTraverse`, `GoalManWeaponPile`, `GoalPathBlocker`, `HUDSetInstArrowLocation`, `QueueMotionBlurEffect`,
 `ScenePlay`, `SetLight`, `SoundLoopMusicTrack`, `SoundPlayMusicTrack`. With the constructor's four that makes **956**.
 confirmed (code); the count confirmed (runtime).
+
+**The first registrations** are reached only from the second: each second wrapper checks its argument types and, when
+they do not match, calls the first (tolua's overload fallback). Confirmed (code); each form's arguments are in the
+binding's `overloads` entry.
+
+| Name | First wrapper | Second wrapper |
+| --- | --- | --- |
+| `CfgScrFx` | `0x0036ae60` | `0x0036b020` |
+| `FlagNetTraverse` | `0x0037a8d0` | `0x0037a968` |
+| `GoalManWeaponPile` | `0x00361a50` | `0x00361b80` |
+| `GoalPathBlocker` | `0x00362250` | `0x00362360` |
+| `HUDSetInstArrowLocation` | `0x0036fec8` | `0x0036ff40` |
+| `QueueMotionBlurEffect` | `0x0037be18` | `0x0037be90` |
+| `ScenePlay` | `0x00367810` | `0x00367a20` |
+| `SetLight` | `0x0037bfb8` | `0x0037c348` |
+| `SoundLoopMusicTrack` | `0x003712d8` | `0x00371348` |
+| `SoundPlayMusicTrack` | `0x003711d0` | `0x00371230` |
+
+**The tolua types and variables** (confirmed (code)): `0x00357bc8` declares the usertypes `M_Vector4`, `M_Quat`,
+`WorldPath` and `SoundHandle`. The fields have one getter and one setter each, at offsets 0, 4, 8 and `0xc`:
+`M_Vector4`'s `x y z w` (`0x00357c28`/`0x00357c90`, `0x00357d28`/`0x00357d90`, `0x00357e28`/`0x00357e90`,
+`0x00357f28`/`0x00357f90`) and `M_Quat`'s `i j k r` (`0x00358028`/`0x00358090`, `0x00358128`/`0x00358190`,
+`0x00358228`/`0x00358290`, `0x00358328`/`0x00358390`). The global `NilHandle` is the number at `0x006ebd30`
+(get `0x0036d418`, set `0x0036d478`) and `NilSoundHandle` the `SoundHandle` at `0x00598690` (get `0x0036d4e0`,
+set `0x0036d530`). A script can assign either.
+
+**Workers of the script and object bindings** (each called only by its binding's wrapper unless the row says
+otherwise; confirmed (code)):
+
+| Address | Name | Binding: what it does |
+| --- | --- | --- |
+| `0x00357a68` | `Script_PreloadFile` | `preLoadFile`: the path is the name itself when it starts `~/` (stripped) or the device says so (`0x001458c0`), else the current level's directory (level record `0x0051489c + 0x14e8 + 0x84 ×` index) plus the name; requests the file with the completion `0x00356d00` and the interned callback |
+| `0x00386370` | `Script_CollectGarbage` | `gc`: slot `+0x1c` |
+| `0x003863a0` | `Script_RegisterUpdate` | `RegisterUpdate`: slot `+0xb4` |
+| `0x003863d8` / `0x00386410` | `Script_ScheduleFunc` / `Script_ScheduleFuncArg1` | `ScheduleFunc` / `ScheduleFuncArg1`: slots `+0x94` / `+0x9c` |
+| `0x00386450` | `Script_FlushScheduledFuncs` | `FlushScheduledFuncs`: slot `+0xac` |
+| `0x003864b0` | `GameTimer_GetMilliseconds` | `GetGameTime` |
+| `0x00386308` | `Script_SetObjZoneMsgHandler` | `SetObjZoneMsgHandler`: `ObjZone_SetMsgHandler` on the object-zone manager (task manager `+0x840`) |
+| `0x00386340` | `Script_SetGeneralCarMsgHandler` | `SetGeneralCarMsgHandler` ([Cars](cars.md)) |
+| `0x00385950` | `Object_GetTypeBits` | `GetRTTI` |
+| `0x00385918` | `Object_GetHitpoints` | `GetHitpoints` |
+| `0x003859a0` | `Obj_GetName` | `GetName`: the object's name (its vtable `+0x14`), a fixed default string for a bad handle |
+| `0x003859f0` | `Obj_GetTypeName` | `GetObjectName` |
+| `0x00385a50` | `Obj_GetPosition` | `GetPosition`: a human's position, else the object's, else zero, in one static vector (`0x006ebd20`) that the next call overwrites |
+| `0x00385b08` | `AreaEffect_Spawn` | `SpawnAreaEffect` (also `0x002a05a4`) |
+| `0x00385b90` | `IsHumanHandle` | `IsAHuman` |
+| `0x00385c90` | `Obj_SetAxisAngle` | `OrientObject` |
+| `0x00385ea8` | `Obj_TestDistance` | `TestDistance(d, a, b)`: true when `a` and `b` are strictly nearer than `d`; false for a bad handle |
+| `0x00385f60` / `0x00386010` | `WalkingDistance` / `Obj_PathExists` | `WalkingDistance` / `PathValid` |
+| `0x003864e0` | `Script_StrDup` | no binding: a heap copy of a string, used by the GUI |
 
 | Family (name prefix) | Count | What for |
 | --- | --- | --- |
@@ -214,6 +267,13 @@ slot for that number: 26 slots, `+0x0c + 4 × message`. Message 0 also keeps a p
 ([`SetMsgHandlerEx`](../references/bindings/script.md#setmsghandlerex)). The component's `+0x74` is the **repeat
 period** in ms (1000 by default, `0x00384a10`; set by slot `+0x44`). Confirmed (code).
 
+The components come from a pool of 100 (0x80 bytes each, a free list, pointer `0x00512b24`), made by `InitLevel`
+(`0x00384688`) and freed by `UnloadLevel` (`0x00384840`); a car or prop that is destroyed gives its component back
+(`0x00384968`: clear it, detach it from the object, destroy it, push it on the free list). Its methods: set a
+slot (`0x00384aa0`, message 0 also stores the prompt at `+0x78`; `0x00384b30`, message 0 stores its value at
+`+0x7c` instead), get a slot (`0x00384bc0`), "has any handler" (`0x00384bd0`, any of the 26), the two message-0
+values (`0x00384c00`, `0x00384c18`) and set the owner `+0x08` (`0x00384c30`). Confirmed (code).
+
 **Delivery** (`0x00384c38`): a message reaches Lua only when the object has a name in that slot, the component is
 attached, and **the level-end state (`W_GameState + 0x14c`) is 0**: once a mission is won, failed or left, triggers
 stop calling scripts. The marshaller (`0x00384ce0`, only while scripting runs, `0x00512b28` = 1) pushes the
@@ -267,8 +327,11 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
 
 - **A volume box** (`AddVolumeBox`, kind 0: vtable `0x00545df8`, pools on [Tasks](tasks.md#classes)) keeps the
   handles of up to 60 occupants (`+0x70`, cleared to `NilHandle` by `0x004151c0`) and its own handler component at
-  `+0x160`. Its update (`0x00415378`), while enabled (byte `+0x68`), collects the humans within its bounding sphere
-  (centre `+0x30`, radius `+0x40`; `0x002274a8`, at most 60), skips the dead (`0x00227eb0`), and tests each:
+  `+0x160`. Every box's update runs **once every fifth frame**, round-robin by handle (`VolumeBoxes_UpdateAll`,
+  `0x00412ca0`, from mode 1's step 6; the same pass marks in `+0x69` whether player 1's camera is inside a box that
+  asks for it, `+0x6a`). The update (`0x00415378`), while enabled (byte `+0x68`), collects the humans within its
+  bounding sphere (centre `+0x30`, radius `+0x40`; `0x002274a8`, at most 60), skips the dead (`0x00227eb0`), and
+  tests each:
     - inside and new: added to the occupants, message **3** (entered);
     - inside and already an occupant: message **5**, at most once per repeat period (next time at `+0x1e0`);
     - an occupant no longer inside, or dead: removed, message **4** (left).
@@ -290,6 +353,24 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
 - **Inside** (`0x00412a18`): within the bounding sphere, between the box's lowest and highest `z` (`+0x18`, `+0x28`),
   and inside the four corners rotated about the centre by the 2 × 2 matrix at `+0x48`-`+0x54`
   (`x' = m00 dx + m01 dy`, `y' = m10 dx + m11 dy`, [`RotateVolumeBox`](../references/bindings/world.md#rotatevolumebox)).
+- **Message 6, damage done from inside a box** (`VolumeBoxes_SendDamageMessage`, `0x00413018`): when a human
+  damages something, every enabled box (handles `0x26c`-`0x2eb`) that has a Lua handler for message 6 and whose
+  inside test holds for **the human's position** (not the object's) is sent message 6; then humans within 30 m are
+  alerted (`0x00293768`). The Lua handler gets **(human, box, object)**, the object `NilHandle` when there is none
+  (marshaller case 6, `0x00384ce0`). Senders: a strike landing (`Strike_Contact`, `0x0021b290`, the object hit), a
+  thrown object hitting something (`0x00393538`, `0x003939a8`), an object breaking on a human (`0x00392b88`, no object)
+  and a car hit (`0x0038bea0`). Confirmed (code). `level34`'s riot meter and `level3`'s gallery count on it.
+    - **Only kind-0 boxes** get it: the box's kind (slot `+0x64`: 0 volume, 2 player, 3 turf) must be 0, and the box
+      enabled (`+0x68`). Every such box that contains the human gets it, not just one. Confirmed (code).
+    - **What `object` is**, by sender (confirmed (code) unless marked): a strike on a world object, a glass pane or
+      any other non-human, non-car target (`Strike_Contact`): the struck object, but only if it was still intact
+      before the blow (both its damage counters `+0x10d`, `+0x10e` non-zero, or −1 for unbreakable), so the blow
+      that breaks a newsstand or a store item is counted and blows on its wreck are not; a strike on a human sends
+      nothing. A car hit (`Car_OnHit`): the car, for every strike by a human, for a thrown object's first contact
+      that damages a part, and for a molotov. A thrown object (`0x003939a8`): the thrown object itself, when it
+      is broken by the impact, with the thrower as the human (inferred). An object breaking on a human it hit
+      (`ThrownObject_HitHuman`, `0x00392b88`): no object (`NilHandle`). Glass broken by an explosion or
+      `BreakGlassInRadius` sends nothing.
 - **A trigger sphere** ([`TriggerSphereCfg`](../references/bindings/world.md#triggerspherecfg), `0x00414bc0`) is a
   0x184-byte record from a pool of 100 (`0x006f3f50`, slots `0x006fd6e0`) attached to an object's handler component:
   `+0x170` the object, `+0x174` the radius, `+0x17c` the mode, `+0x180` armed, `+0x164` its message-5 period (1000
@@ -306,6 +387,27 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
   empties the 60-handle inside list (`+0x00`, filled with 0xff) and clears `+0x180`, without message 4; the sphere,
   its settings and the object's handlers stay. The pool slot is freed when the handler component is cleared
   (`0x00384a50`). confirmed (code).
+
+The other box and sphere functions. Confirmed (code):
+
+| Address | Name | What it does |
+| --- | --- | --- |
+| `0x00412888` | `Box_Destruct` | the box base's destructor (vtable `0x00545c48`): unregisters the handle (`+0x44`) |
+| `0x004128e8` | `Box_SetName` | the name at `+0x58`, at most 15 characters |
+| `0x00412910` | `Box_ComputeBounds` | the bounding sphere: centre `+0x30` the midpoint of the corners `+0x10` and `+0x20`, radius `+0x40` half the diagonal |
+| `0x004129c0` | `Box_ContainsObject` | the inside test on an object's position |
+| `0x00412bf8` / `0x00412c40` | `VolumeBox_Enable` / `VolumeBox_SetRotation` | `EnableVolumeBox` (the box's slot `+0x5c`) / `RotateVolumeBox` (the matrix `+0x48`-`+0x54`) |
+| `0x00413198` | `VolumeBox_ContainsObject` | `IsInVolumeBox`: both handles resolve and the object is inside |
+| `0x00413398` / `0x00413448` / `0x004134a0` | `PlayerBox_DestroyPool` / `PlayerBox_Destruct` / `PlayerBox_HasOccupant` | the kind-2 pool (`0x00514814`); the destructor (vtable `0x00545cb8`, clears the handler component `+0x70`); whether a human is one of its two occupants |
+| `0x00414ed0` / `0x00414f08` / `0x00414f40` | `TurfBox_DestroyPool` / `TurfBox_Construct` / `TurfBox_Destruct` | kind 3 (vtable `0x00545d88`, pool `0x00514834`) |
+| `0x004150e0` / `0x00415288` / `0x00415320` | `VolumeBox_DestroyPool` / `VolumeBox_Destruct` / `VolumeBox_HasOccupant` | kind 0 (pool `0x0051483c`); the destructor clears the handler component `+0x160`; whether a handle is in the occupants `+0x70` |
+| `0x00415118` | `VolumeBox_FindByName` | the first box (handles `0x26c`-`0x2eb`) with that name, else `NilHandle` |
+| `0x00413208` | | empty |
+| `0x00414438`, `0x00414cc8` / `0x00414d28` | `TriggerSphere_Construct`, its static initialiser and stub | 60 inside handles set to -1, the handler vtable at `+0xf0`; all 100 built at boot |
+| `0x004142a0` / `0x004142d0` / `0x00414338` | `TriggerSpheres_Reset` / `TriggerSphere_Alloc` / `TriggerSphere_Free` | clear the 100 slots; take the first free; free one (the sphere being updated, `0x00514824`, is only marked at `0x00514828`) |
+| `0x00414548` / `0x00414688` | `TriggerSphere_Accepts` / `TriggerSphere_AcceptsObject` | within the radius of the object, then mode 1's test (`0x0024dee8`) or mode 2's clear ray (`Ray_IsClear`); on a point or an object |
+| `0x004144f8` | `TriggerSphere_HasOccupant` | whether a handle is in the inside list |
+| `0x00414a28` | `TriggerSphere_SetRadius` | `TriggerSphereSetRadius`: makes the sphere when the object has none, then `+0x174` |
 
 ## Behaviour
 
@@ -805,9 +907,9 @@ on [Story coverage](../references/bindings/story.md#level34). Inferred unless ma
 - **The riot's three objectives** (objective line 0; each one completed is saved as its target in a Lua float and
   shown as done by `P1.CheckRiotStatus` on a reload; partial progress is not saved):
     - **Riot meter** (a HUD bar, `HUDGetNewPH(3, ...)`, its text in per cent): 200 points. `vLevelVandal` hears
-      message 6 (an object inside damaged; only a Warrior counts): a newsstand gives 3, another prop (`GetRTTI` bit
-      `0x08`) 1, an object with bit `0x400` 2; every car message 25 from a Warrior with its flag true
-      (`SetGeneralCarMsgHandler`) gives 3. The first point ever counts as 1 %. At 35 % a tutorial line.
+      [message 6](#triggers) (a human standing in it damaged something; only a Warrior counts): a newsstand gives
+      3, another world object (`GetRTTI` 8) 1, a glass pane (1024) 2; every car message 25 from a Warrior
+      with its flag true (`SetGeneralCarMsgHandler`) gives 3. The first point ever counts as 1 %. At 35 % a tutorial line.
     - **Loot**: $350 of money picked up (`CfgMoneyCallback`; the start counts both players' money at that moment).
       On a reload with the loot not done, both players' money is set to 0.
     - **Car radios**: 3 picked up (`CfgInventoryCallback`, item 11 `dyn_carstereo`), from the three cars given a
@@ -827,11 +929,11 @@ on [Story coverage](../references/bindings/story.md#level34). Inferred unless ma
 | 4 | `level34_gate` | Entered fresh: riot extras, wanted gangs, cops, level cops, the factory and the mugging bonus are set up again. Then an objective to `fFinalGate` (`ObjectiveSetup`, the `global.lua` helper), the gate `DblGt00` opens for the player, a line, the objective on line 2. At the gate (`P2.AtGate`): the park scene preloaded, `DblGt02` opens, an objective and marker to the Furies | `vNearFuries` entered by a Warrior: every riot gang removed, the factory shut, **`SetCheckPoint(5)`**, `preLoadFile("level34_park")` |
 | 5 | `level34_park` | Eleven Furies, three at the fence and two hurt Rogues (wounded, god mode). The scene `l34_c4` (preloaded when continuing: the gate closes, the fog ends). Then the objective and marker to the subway exit, Vermin's lines every 15 s, system music on (tracks `160b_risen2` and `the_fight_loop_01`). The fence Furies shake the fence (two sound emitters); entering `vEnterDiamond` or `vFuryConfront`, or 5 s after the first fence Fury arrives, sets the Furies attacking (`TacticAttack`) and kills the two Rogues. Beating the Furies is not required | `vSubwayExit` entered by a Warrior: the scene `l34_c2` with **`Final`** true and the park gangs removed; its end runs `PreCashTheWorld`, which calls **`HUDLaunchMissionComplete()`** ([how a mission ends](#level99)); mode 1's `Exit` then plays **`L34_OUT`** (the level record asks for an outro, [Movies](movies.md)) |
 
-Engine behaviour this mission needs beyond its bindings: message 6 from a [volume box](#triggers) when a Warrior
-damages an object inside it, car message 25 with its flag, the money and inventory callbacks, the mugging callback,
-gang tactics' callback codes (1, 5, 6, 9) and the police answering a forced crime level
-([Crimes](crimes.md)). Open: which class has run-time type bit `0x400` (its vtable `0x0057e408`, whose type slot
-`0x0038da54` returns it, sits among the car functions).
+Engine behaviour this mission needs beyond its bindings: [message 6](#triggers) from `vLevelVandal` when a human
+standing in it damages something (the box tests the human's position, not the object's), car message 25 with its
+flag, the money and inventory callbacks, the mugging callback, gang tactics' callback codes (1, 5, 6, 9) and the
+police answering a forced crime level ([Crimes](crimes.md)). Type bit `0x400` is a glass pane ([Tasks](tasks.md));
+which prop counts how often: [Breakable props](objects.md#breakable-props).
 
 ### `level2.lua` (mission 5) {#level2}
 
@@ -942,8 +1044,8 @@ goal does not move a brain-dead player, leaves the player standing for good. Con
 behaviour; that Snow's walk crosses `vbStartRail` is inferred from the positions (not seen at runtime).
 
 Engine behaviour this mission needs beyond its bindings: [kind-2 boxes](#triggers), the [rail
-camera](camera.md#rail) mode 0 and [GoalDevilRun](ai.md#devil-run). Open: who sends the gallery box message 6 when
-an object inside it is damaged.
+camera](camera.md#rail) mode 0, [GoalDevilRun](ai.md#devil-run) and [message 6](#triggers) from `vGallery` when a
+human standing in it damages something.
 
 ### `level5.lua` (mission 7) {#level5}
 
@@ -1057,6 +1159,21 @@ confirmed):
   `BoozerChallenge`, although a callback names it. Confirmed (runtime) in Coney's state; inferred to be a slip in the
   original script, which would also find nothing to call. Coney logs the call ("is not a function; not called") and
   skips it; what the original does with a missing callback is not traced.
+- **`level87` from checkpoint 1 into 2, "attempt to index a nil value (instruction 19)"** after the drunk's scene
+  (`l87_drunk_dest`): the scene's end runs `PreCashTheWorld`, which calls the second chapter's return function. That
+  function calls `RestorePreviousTags` and then `ch2.ArrowRadarStuff`. Instruction 19 of the return function is the
+  read of `.ArrowRadarStuff` from the global `ch2`, which is nil. The cause is the order in the first chapter's end
+  (`The_REAL_End`): `SaveLevelData`, `SetCheckPoint(2)`, `ChLoader` (`preLoadFile` of chapter 2 with `"Setup"`),
+  then the global `Cleanup`. In the original the file is only requested there (`Script_PreloadFile`, `0x00357a68`,
+  hands `FileManager_Request` the completion routine `0x00356d00`; confirmed (code)), so `Cleanup` is still
+  chapter 1's: it sets `ch1`, `Setup` and `Cleanup` to nil, and chapter 2's chunk and `Setup` run later, when the
+  file arrives. Coney's `preLoadFile` runs the chunk and `Setup` inside the call, so the `Cleanup` that follows is
+  chapter 2's, which sets `ch2`, `Setup` and `Cleanup` to nil. A direct start at checkpoint 2 never runs chapter 1's
+  end, so `ch2` survives. Save float 1 (1024 for tag 10) is not the cause: with a bit set `RestorePreviousTags` reads
+  `master[tagflag[i]].wtag` (its own instruction 19), and `master` exists, since chapter 1's `Setup` builds it
+  (`LoadTagTable`) and nothing clears it. The original does not fail here (inferred from the disassembly). A
+  `preLoadFile` must therefore run its chunk and callback after the calling Lua function has returned, at the
+  earliest.
 
 ## Notes for implementers
 
@@ -1150,7 +1267,9 @@ Coney's choices, where the page is silent or Coney differs:
   uses another one of Coney's, never the C library's. The trigonometry works in degrees, as stock Lua 4.0 does.
 - `tolua`, `M_Vector4` and `M_Quat` are empty tables and `NilHandle` and `NilSoundHandle` are 0, below the first handle
   a stub gives out.
-- `preLoadFile` runs its file at once (Coney's reads are synchronous), then calls its callback by name.
+- `preLoadFile` runs its file at once (Coney's reads are synchronous), then calls its callback by name. The original
+  runs both later, when the file arrives; `level87`'s first chapter depends on that
+  ([Errors in a fresh state](#errors-in-a-fresh-state)).
 - Without an AI host (a level script run on its own) `GangCreate` returns a new handle and the gang counts 0, and
   `InvNumberOf` returns 0 until inventories exist, so the hub's and `level5`'s start functions run to their end.
 - A runtime error's message names the last call of a missing binding skipped before it, the likely cause

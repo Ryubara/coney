@@ -97,48 +97,49 @@ Vtable `0x00538d78`, GCC 2 layout (8-byte `{delta, function}` entries, see [Comp
 are from the vtable start, as on [Boot and the main loop](boot.md). Evidence: confirmed (code) at the function's
 address for what it calls; the RenderWare call names are inferred.
 
-| Slot | Function | What it does |
-| --- | --- | --- |
-| `+0x08` | `0x00194558` | `Init`: start RenderWare, cameras, rasters ([Start-up](#start-up)) |
-| `+0x10` | `0x00195030` | clears byte `+0x448` |
-| `+0x18` | `0x00195038` | **flush the render queue**: submits the PS2 packet buffer and waits for the previous one, twice (`0x0048c508`) |
-| `+0x20` | `0x001951c0` | screen width and height as integers |
-| `+0x28` | `0x00195400` | **set up the cameras** from the player camera: view window, near and far clip, fog distance, matrix ([A frame](#a-frame)) |
-| `+0x30` | `0x001958b0` | **present**: the main camera's show-raster, then clears `0x0050b6f8` |
-| `+0x38` | `0x001958f8` | **clear** the main camera (colour and Z) to the background colour `+0x440` |
-| `+0x40` | `0x00195928` | clear the main camera to a given colour |
-| `+0x48` | `0x00195060` | set the background colour; it is also the fog colour (fog type, density, colour and fog-enable render states, set inside a camera update) |
-| `+0x50` / `+0x58` | `0x00195168` / `0x004e3928` | set / get the fog start `+0x444` |
-| `+0x60` | `0x004e3930` | main camera (`this + 0x10`) |
-| `+0x68` | `0x00195c48` | viewport camera `i` (`this + 0x70 + i × 0x60`) |
-| `+0x70` | `0x004e3938` | overlay camera (`this + 0x1f0`) |
-| `+0x78` | `0x00195c60` | viewport overlay camera `i` (`this + 0x250 + i × 0x60`) |
-| `+0x80` | `0x004e3940` | effects camera (`this + 0x3d0`) |
-| `+0x88` | `0x00195c78` | set up viewport `i` (split-screen sub-raster, clip planes, view window; creates the viewport cameras on first use) |
-| `+0x90` | `0x00195238` | convert a GUI point to overlay-camera space ([2D drawing](#2d-drawing)) |
-| `+0x98` | `0x00195330` | convert a GUI width (multiplies by width / height) |
-| `+0xa0` | `0x001953a8` | viewport `i`'s rectangle in pixels |
-| `+0xa8` / `+0xb0` | `0x004e3948` / `0x004e3950` | screen width / height (floats `+0x44c`, `+0x450`) |
-| `+0xb8` / `+0xc8` | `0x004e3958` / `0x004e3968` | get / set progressive mode `+0x458` |
-| `+0xc0` | `0x004e3960` | scale `+0x454` |
-| `+0xd0` | `0x004e3970` | 16:9 flag `+0x45c` |
-| `+0xd8` | `0x004e3978` | returns 0 |
-| `+0xe0` | `0x00192c20` | build a screen-space textured quad: destination rectangle, raster, source rectangle |
-| `+0xe8` | `0x00192f58` | draw that quad with a colour ([2D drawing](#2d-drawing)) |
-| `+0xf8`, `+0x100` | `0x00193298`, `0x001939b8` | build and draw a 9 × 9 grid of the same, with wobbling UVs: the motion blur's form for some looks ([Motion blur](#motion-blur)) |
-| `+0x108` | `0x00193d80` | blur through the 512 × 256 raster `+0x43c` and the effects camera ([Motion blur](#motion-blur)) |
-| `+0x110` | `0x00195c00` | destroy a raster |
-| `+0x118` | `0x00195980` | calls slot `+0x120` |
-| `+0x120` | `0x00195c20` | heat-distortion effects (`0x0019c438`, `DistortionEffectManager.cpp`) |
-| `+0x128` | `0x00195be0` | screen effects (`0x0018dac0`, `ScreenEffectsManager.cpp`) |
-| `+0x130` | `0x001959a8` | fill viewport `i` with a colour (fades): a full-screen RwIm2D triangle strip |
-| `+0x138`, `+0x140` | `0x00196468`, `0x001964a0` | PS2 driver: `+0x138` sets bit 4 in raster `0x00596e1c`'s plugin word before the blur and distortion passes (meaning not traced); `+0x140` returns raster `0x00596e18`, which the motion blur samples (inferred: the frame just shown) |
-| `+0x150` | `0x00197f70` | read a texture dictionary ([Loading textures](#loading-textures)) |
-| `+0x158` | `0x00198080` | destroy a texture dictionary |
-| `+0x160` | `0x001980a0` | set the current texture dictionary (or none) |
-| `+0x168` | `0x001980e0` | find a texture by name in one dictionary; on failure, prints the dictionary's contents to a debug buffer |
-| `+0x170` | `0x00197ba0` | read a world (section `0x0B`) and install the game's sector render callback |
-| `+0x178` | `0x00197d00` | destroy a world (detach its clumps and lights first) |
+| Slot | Function | What it does | Evidence |
+| --- | --- | --- | --- |
+| `+0x08` | `0x00194558` | `Init`: start RenderWare, cameras, rasters ([Start-up](#start-up)) | confirmed (code) |
+| `+0x10` | `0x00195030` | clears byte `+0x448` | confirmed (code) |
+| `+0x18` | `0x00195038` | **flush the render queue**: submits the PS2 packet buffer and waits for the previous one, twice (`0x0048c508`) | confirmed (code) |
+| `+0x20` | `0x001951c0` | screen width and height as integers | confirmed (code) |
+| `+0x28` | `0x00195400` | **set up the cameras** from the player camera: view window, near and far clip, fog distance, matrix ([A frame](#a-frame)) | confirmed (code) |
+| `+0x30` | `0x001958b0` | **present**: the main camera's show-raster, then clears `0x0050b6f8` | confirmed (code) |
+| `+0x38` | `0x001958f8` | **clear** the main camera (colour and Z) to the background colour `+0x440` | confirmed (code) |
+| `+0x40` | `0x00195928` | clear the main camera to a given colour | confirmed (code) |
+| `+0x48` | `0x00195060` | set the background colour; it is also the fog colour (fog type, density, colour and fog-enable render states, set inside a camera update) | confirmed (code) |
+| `+0x50` / `+0x58` | `0x00195168` / `0x004e3928` | set / get the fog start `+0x444` | confirmed (code) |
+| `+0x60` | `0x004e3930` | main camera (`this + 0x10`) | confirmed (code) |
+| `+0x68` | `0x00195c48` | viewport camera `i` (`this + 0x70 + i × 0x60`) | confirmed (code) |
+| `+0x70` | `0x004e3938` | overlay camera (`this + 0x1f0`) | confirmed (code) |
+| `+0x78` | `0x00195c60` | viewport overlay camera `i` (`this + 0x250 + i × 0x60`) | confirmed (code) |
+| `+0x80` | `0x004e3940` | effects camera (`this + 0x3d0`) | confirmed (code) |
+| `+0x88` | `0x00195c78` | set up viewport `i` (split-screen sub-raster, clip planes, view window; creates the viewport cameras on first use) | confirmed (code) |
+| `+0x90` | `0x00195238` | convert a GUI point to overlay-camera space ([2D drawing](#2d-drawing)) | confirmed (code) |
+| `+0x98` | `0x00195330` | convert a GUI width (multiplies by width / height) | confirmed (code) |
+| `+0xa0` | `0x001953a8` | viewport `i`'s rectangle in pixels | confirmed (code) |
+| `+0xa8` / `+0xb0` | `0x004e3948` / `0x004e3950` | screen width / height (floats `+0x44c`, `+0x450`) | confirmed (code) |
+| `+0xb8` / `+0xc8` | `0x004e3958` / `0x004e3968` | get / set progressive mode `+0x458` | confirmed (code) |
+| `+0xc0` | `0x004e3960` | scale `+0x454` | confirmed (code) |
+| `+0xd0` | `0x004e3970` | 16:9 flag `+0x45c` | confirmed (code) |
+| `+0xd8` | `0x004e3978` | returns 0 | confirmed (code) |
+| `+0xe0` | `0x00192c20` | build a screen-space textured quad: destination rectangle, raster, source rectangle | confirmed (code) |
+| `+0xe8` | `0x00192f58` | draw that quad with a colour ([2D drawing](#2d-drawing)) | confirmed (code) |
+| `+0xf0` | `0x001931f8` | the 9 × 9 grid's index list (8 × 8 cells, two triangles each) at `0x005ff470` | confirmed (code) |
+| `+0xf8`, `+0x100` | `0x00193298`, `0x001939b8` | build and draw a 9 × 9 grid of the same, with wobbling UVs: the motion blur's form for some looks ([Motion blur](#motion-blur)) | confirmed (code) |
+| `+0x108` | `0x00193d80` | blur through the 512 × 256 raster `+0x43c` and the effects camera ([Motion blur](#motion-blur)) | confirmed (code) |
+| `+0x110` | `0x00195c00` | destroy a raster | confirmed (code) |
+| `+0x118` | `0x00195980` | calls slot `+0x120` | confirmed (code) |
+| `+0x120` | `0x00195c20` | heat-distortion effects (`0x0019c438`, [Heat distortion](#code-distortion)) | confirmed (code) |
+| `+0x128` | `0x00195be0` | screen effects (`0x0018dac0`, `ScreenEffectsManager.cpp`) | confirmed (code) |
+| `+0x130` | `0x001959a8` | fill viewport `i` with a colour (fades): a full-screen RwIm2D triangle strip | confirmed (code) |
+| `+0x138`, `+0x140` | `0x00196468`, `0x001964a0` | PS2 driver: `+0x138` sets bit 4 in raster `0x00596e1c`'s plugin word before the blur and distortion passes (meaning not traced); `+0x140` returns raster `0x00596e18`, which the motion blur samples (inferred: the frame just shown) | confirmed (code) |
+| `+0x150` | `0x00197f70` | read a texture dictionary ([Loading textures](#loading-textures)) | confirmed (code) |
+| `+0x158` | `0x00198080` | destroy a texture dictionary | confirmed (code) |
+| `+0x160` | `0x001980a0` | set the current texture dictionary (or none) | confirmed (code) |
+| `+0x168` | `0x001980e0` | find a texture by name in one dictionary; on failure, prints the dictionary's contents to a debug buffer | confirmed (code) |
+| `+0x170` | `0x00197ba0` | read a world (section `0x0B`) and install the game's sector render callback | confirmed (code) |
+| `+0x178` | `0x00197d00` | destroy a world (detach its clumps and lights first) | confirmed (code) |
 
 The vtable ends at `+0x180`; the zero entries at `+0x188` start the next vtable, `0x00538f08`, a small immediate-mode
 drawing class in the same file (slot `+0x08` `0x001964c0` begins an overlay-camera update with a vertex list, slot
@@ -151,22 +152,22 @@ zero = whole screen). Confirmed (code) at `0x00198738`-`0x00198c80`; the RenderW
 `RwCamera` fields each one touches (`+0x60` frame buffer, `+0x64` Z buffer, `+0x68` view window, `+0x78` view
 offset, `+0x80` near, `+0x84` far, `+0x88` fog plane: the RenderWare 3.7 layout).
 
-| Slot | Function | What it does |
-| --- | --- | --- |
-| `+0x08` | `0x00198750` | create the `RwCamera` and its frame; perspective projection |
-| `+0x10` | `0x001987b8` | destroy |
-| `+0x20` | `0x00198808` | identity matrix, near and far clip |
-| `+0x28` | `0x00198890` | view offset (first pair) and view window (second pair) |
-| `+0x30` / `+0x38` / `+0x40` | `0x001988f0` / `0x00198910` / `0x00198930` | near clip / far clip / fog distance |
-| `+0x48` | `0x00198980` | projection: non-zero = perspective, zero = parallel |
-| `+0x50` | `0x001989b0` | set the frame from a game matrix, converting axes (the game's x and z are negated) |
-| `+0x58` | `0x00198a58` | sub-raster rectangle of the main camera's frame and Z buffers (split screen) |
-| `+0x60` / `+0x68` | `0x00198940` / `0x00198960` | `RwCameraBeginUpdate` / `RwCameraEndUpdate` |
-| `+0x70` | `0x00198b08` | `RwCameraClear(colour, flags)`: colour is `RwRGBA` packed R in the low byte; arguments 2 and 3 select image and Z |
-| `+0x78` | `0x00198b60` | `RwCameraShowRaster(camera, NULL, 0)` |
-| `+0x80`-`+0xb0` | `0x00198ba8`... | getters for view offset, view window, fog plane, near and far |
-| `+0xb8` | `0x00198bf8` | frame matrix back in game axes |
-| `+0xc0` | `0x00198c80` | rectangle in pixels |
+| Slot | Function | What it does | Evidence |
+| --- | --- | --- | --- |
+| `+0x08` | `0x00198750` | create the `RwCamera` and its frame; perspective projection | confirmed (code); RenderWare name inferred |
+| `+0x10` | `0x001987b8` | destroy | confirmed (code); RenderWare name inferred |
+| `+0x20` | `0x00198808` | identity matrix, near and far clip | confirmed (code); RenderWare name inferred |
+| `+0x28` | `0x00198890` | view offset (first pair) and view window (second pair) | confirmed (code); RenderWare name inferred |
+| `+0x30` / `+0x38` / `+0x40` | `0x001988f0` / `0x00198910` / `0x00198930` | near clip / far clip / fog distance | confirmed (code); RenderWare name inferred |
+| `+0x48` | `0x00198980` | projection: non-zero = perspective, zero = parallel | confirmed (code); RenderWare name inferred |
+| `+0x50` | `0x001989b0` | set the frame from a game matrix, converting axes (the game's x and z are negated) | confirmed (code); RenderWare name inferred |
+| `+0x58` | `0x00198a58` | sub-raster rectangle of the main camera's frame and Z buffers (split screen) | confirmed (code); RenderWare name inferred |
+| `+0x60` / `+0x68` | `0x00198940` / `0x00198960` | `RwCameraBeginUpdate` / `RwCameraEndUpdate` | confirmed (code); RenderWare name inferred |
+| `+0x70` | `0x00198b08` | `RwCameraClear(colour, flags)`: colour is `RwRGBA` packed R in the low byte; arguments 2 and 3 select image and Z | confirmed (code); RenderWare name inferred |
+| `+0x78` | `0x00198b60` | `RwCameraShowRaster(camera, NULL, 0)` | confirmed (code); RenderWare name inferred |
+| `+0x80`-`+0xb0` | `0x00198ba8`... | getters for view offset, view window, fog plane, near and far | confirmed (code); RenderWare name inferred |
+| `+0xb8` | `0x00198bf8` | frame matrix back in game axes | confirmed (code); RenderWare name inferred |
+| `+0xc0` | `0x00198c80` | rectangle in pixels | confirmed (code); RenderWare name inferred |
 
 ### Video mode {#video-mode}
 
@@ -219,6 +220,14 @@ textures, 20,582 of them distinct. Every one parsed.
   128 × 128 (1,835), 16 × 16 (989), 256 × 256 (365), 512 × 512 (358); 2,489 are not square.
 - Filter mode: 18,431 linear-mip-linear (`6`), 2,151 linear (`2`). Addressing: 20,559 wrap/wrap, 23 clamp/clamp.
 - The five older streams stamped `0x1803FFFF` ([WAD contents](formats/wad-contents.md#renderware)) were not counted.
+
+**Mipmap level at runtime**, confirmed (runtime) from PCSX2 GS dumps of `level99` (11,923 world vertices): the GS
+picks a texture's level by distance, not by screen size. `TEX1` has `LCM` 0 and `L` 0, so `LOD = log2(1/Q) + K`, and
+`1/Q` is the vertex's camera distance in metres (it runs from 3.8 to 115.0, the far clip, over the frame). `K` is
+the raster header's `+0x3c` ([RenderWare formats](formats/renderware.md#ps2-raster)), -2 to -7.6 on the textures
+seen. With `MMIN` linear-mip-linear and `MMAG` linear, a mipmapped texture uses level 0 up to `2^(−K)` m and blends
+towards level 1 by `2^(1−K)` m (`K` = −4.875: 29 m and 59 m). Most textures have no mipmaps (`MXL` 0) and are
+simply bilinear; character textures use filter mode 2 (`MMIN` linear).
 
 **Evidence:** inferred (data), counts as stated. In the textures' palettes PS2 colours put opaque alpha at 128, not
 255; librw scales it to 0-255 when it converts a raster ([Coney's implementation](#coneys-implementation)). Sprite
@@ -430,8 +439,13 @@ What [one in-game frame](boot.md#one-frame) does on the screen, confirmed (code)
    batches (`0x00185b38`: Z write and culling off, the batches farthest first, then the glass panes near a camera,
    [World objects: drawing a pane](objects.md#pane-draw));
    the ground rings (`0x0017b2e0`, [HUD](hud.md#the-health-rings)); slot `+0x118` (heat distortion).
-4. **Overlays** (`0x00156658`): screen effects (slot `+0x128`), the HUD, subtitles and the front-end layers, each
-   followed by the overlay pass `0x00185d20` ([2D drawing](#2d-drawing)).
+4. **Overlays** (`0x00156658`): the HUD (`0x001b1688`) and the overlay pass `0x00185d20` that flushes it ([2D
+   drawing](#2d-drawing)); the **screen effects** (slot `+0x128`: the tint, flashes and blur, drawn at once, not
+   queued); the subtitles and their flush; the intro movie layer and the credits, each with a flush; the queued 2D
+   shapes (`0x0017c308`). The screen effects come before the HUD instead while `W_GameState + 0x268` is above 0
+   (meaning not traced) or a blur pulse runs in either view (screen-effects manager `+0x1f8`). So the level tint
+   normally covers the HUD but not the subtitles. Confirmed (code); the tint drawn after the radar and the HUD text
+   is also confirmed (runtime) in PCSX2 GS dumps.
 5. **Present** (slot `+0x30`), then file streaming.
 
 The world pass also adjusts the **draw distance** to the measured frame rate: while the rate (`0x0050c680`) is below
@@ -558,6 +572,80 @@ texture coordinates from a source rectangle in texels plus half a texel, and dra
 source blend `SRCALPHA`, destination blend `INVSRCALPHA`; afterwards Z test and write go back on and the raster is
 unset. Slot `+0x130` fills a viewport with a flat colour the same way (a four-vertex triangle strip, Z write off,
 culling off). Confirmed (code).
+
+### Drawing a human {#human-draw}
+
+The humans in view are drawn in the world pass after the `s` world ([The streamed world](world.md#a-frame), step 7):
+`HumanAtomic_VisibilityCallback` (`0x00174248`) queues each one on the resource manager's list `+0xc78`-`+0xc7c`, and
+`WorldManager_Render` draws the list from its end (the last queued first) with `HumanRender_Draw(human, viewport)`
+(`0x00174320`), back-face culling (`0x0050c69c`), Z test and Z write on, and the fog distance set to draw distance ×
+0.5 instead of × the level's fog start. Confirmed (code). Per human, in order, confirmed (code) unless marked:
+
+1. **Texture.** The model's material is untextured on the disc ([Characters](characters.md#character-geometry)).
+   For the draw, the geometry's first material gets the character's texture: the texture at `+0x10` of the instance's
+   texture resource (`RpMaterialSetTexture`, `0x0046d010`). After the draw it is set back to none.
+2. **Blood.** The same material is a MatFX **dual-texture** material. Its second texture is one of three shared
+   blood textures, kept by the resource manager, chosen by the health percentage `h` (`Human_GetHealthPercentRaw`,
+   `0x00222ef0`: health / maximum × 100), with `i = min(trunc(h / 30), 2)`:
+
+    | `h` | `i` | Slot | Texture (confirmed (runtime), PCSX2 2.9.94, `level99`) |
+    | --- | --- | --- | --- |
+    | 60 and above | 2 | resource manager `+0x74` | `charblood_d1` |
+    | 30 to 60 | 1 | `+0x78` | `charblood_d2` |
+    | below 30 | 0 | `+0x7c` | `charblood_d3` |
+
+    (`RpMatFXMaterialSetDualTexture`, `0x00465810`; the slot is `+0x74 + ((2 - i) mod 3) × 4`, the texture its
+    object's `+0x10`.) The dual pass's GS `ALPHA` register, the 64-bit word at `+0x28` of the material's first MatFX
+    effect, gets the low byte **`0x44`** while `h` < 90 and the half-word `W_GameState + 0x454` is 0, and **`0x45`**
+    otherwise. `0x44` is `(Cs − Cd) × As + Cd`, an ordinary alpha blend of the blood texture over the first pass;
+    `0x45` is `(Cd − Cd) × As + Cd`, which leaves the frame unchanged. So **blood shows below 90 % health**, and
+    heavier textures replace it at 60 % and 30 % (that `d1`-`d3` grow heavier is inferred from the names).
+    `W_GameState + 0x454` is written only as 0 (by the game state's constructor and by the options' Restore
+    Defaults, `0x001d81c4`), and the blood particle effects read it too (`0x003a9168`, `0x003d5058`), so it is a
+    "no blood" switch the retail game never sets (inferred). The dual pass draws the blood texture with the model's
+    second texture-coordinate set; at runtime it is the GS context-2 pass that follows each character draw (PCSX2 GS
+    dumps, confirmed (runtime)).
+3. **Colour.** The material colour is the instance's colour (`+0x28`, R in the low byte, set by `HuColor`) with R, G
+   and B × `f`. `f` follows the brain's "hidden in shadow" byte (`+0x2d4`, [Lighting](lighting.md#humans)): with
+   `t` = min(time since the brain's stamp `+0x10`, 250 ms) × 0.002, `f = 0.5 + t` when not hidden (0.5 up to 1.0)
+   and `f = 1 − t` when hidden (1.0 down to 0.5).
+4. **Alpha.** The colour's alpha × `(drawDistance − d) / fadeLength` once the human's camera distance `d` (`+0x334`)
+   is past the fade start, and × `(now − start) / 1000` during the first second after the instance's stamp `+0x30`.
+   Values read at runtime (confirmed (runtime), `level99`): draw distance `0x0050cc60` = 70 m (clamped to
+   [`0x0050cc5c` = 30, `0x0050cc58` = 70] by `HumanRender_SetDrawDistance`, `0x00174200`), fade length `0x0050cc68` =
+   10 m, fade start `0x0050cc64` = draw distance − fade length = 60 m. So a human fades out from 60 to 70 m.
+5. **Skeleton and lights**: `CharacterInstance_UpdateSkeleton(inst, 1)` (`0x00177240`), then the lights
+   ([Lighting](lighting.md#humans)); then the atomic's saved render callback (`0x0050cc54`, RenderWare's default
+   `0x00469ef8`), which runs the character pipelines ([The streamed world](world.md#pipeline-unit)).
+6. **Shadow**: the blob ([Lighting](lighting.md#humans)).
+
+### Drawing a car {#car-draw}
+
+Cars are drawn twice in the world pass ([The streamed world](world.md#a-frame)): `CarInstance_Render(car, opaque)`
+(`0x00172c70`) over the resource manager's car list `+0xc98`-`+0xc9c`, confirmed (code):
+
+| Pass | When | `opaque` | Render states | Order |
+| --- | --- | --- | --- | --- |
+| Opaque | after the humans, before the other objects | 1 | culling off, Z test and Z write on, fog on | list order |
+| Glass | after the water and the type-`0x20` objects | 0 | culling off, **Z write off**, Z test and fog on | from the end of the list |
+
+Each pass stores `opaque` at the instance's `+0x41`, selects the objects' lights for the clump's bounding sphere
+(flags 1, no glow) and runs `CarPart_RenderCallback` (`0x00172940`) on every atomic. The glass pass then clears the
+26 "seen" bits `+0x11fc` that the visibility callback (`0x00172d60`) sets. Per atomic `a` (part `p = a`, or
+`a − 25` for the damaged form), confirmed (code):
+
+1. Skip it unless bit `p` of `+0x11fc` is set. Skip it in the opaque pass when `p` is in the **glass mask**
+   `0x2a80c0` (parts 6, 7, 15, 17, 19, 21) and in the glass pass when it is not.
+2. Skip it when the part is removed (`+0x11f0`), when it is the undamaged form and the part's damage is 0.5 or more
+   (wheels 22-25 excepted), or when it is the damaged form and the damage is below 0.5 ([Cars](cars.md#drawn)).
+3. Upload the selected lights; give the first material the texture at `+0x10` of the car's first texture resource.
+4. **Colour**: the car's tint (`+0x24`) for the parts in the **paint mask** `0x157c31` (parts 0, 4, 5, 10-14, 16,
+   18, 20), else the white at `0x005fd268`. Alpha × `(now − start) / 1000` during the first second after `+0x2c`.
+5. **MatFX** (`0x004653d8` reads the material's effect): an **environment map** (2) gets the texture at `+0x10` of
+   the car's second texture resource and the frame at `*(0x0070ad18) + 4` (`0x00465538`, `0x004655e0`); a
+   **dual** material (4) gets that second texture as its dual texture (`0x00465810`). That `0x0070ad18` is
+   RenderWare's current camera, so that the reflection follows the view, is inferred.
+6. Draw it with the saved render callback (`0x005fd030`), then set the material's texture back to none.
 
 ### The first screen {#first-screen}
 
@@ -699,8 +787,8 @@ What [Cars](cars.md#drawn) says is drawn, as code. Confirmed (code).
 | `0x001724f8`, `0x001726f0` | `CarAtomic_CopyLtmCb`, `CarAtomic_CopyMatrixCb` | atomic callbacks: copy the world matrix / the frame matrix of the atomic whose part number matches | confirmed (code) |
 | `0x001725d8`, `0x001727c8` | `CarInstance_GetPartLtm`, `CarInstance_GetPartMatrix(inst, out, part, toGame)` | a part's world / local matrix, converted by `0x00172280` when asked | confirmed (code) |
 | `0x001728e0` | `CarInstance_PartColour(inst, part)` | the car's tint for the painted parts (mask `0x157c31`), white for the others | confirmed (code) |
-| `0x00172940` | `CarPart_RenderCallback` | draws one atomic by its part's damage and the pass ([Cars](cars.md#drawn)) | confirmed (code) |
-| `0x00172c70` | `CarInstance_Render(inst, glassPass)` | selects lights for the clump and draws its atomics; after the opaque pass clears the 26 "drawn" bits | confirmed (code) |
+| `0x00172940` | `CarPart_RenderCallback` | draws one atomic by its part's damage and the pass ([Drawing a car](#car-draw)) | confirmed (code) |
+| `0x00172c70` | `CarInstance_Render(inst, opaque)` | [Drawing a car](#car-draw) | confirmed (code) |
 | `0x00172d60` | `CarPart_VisibilityCallback` | per atomic in view: queues the car on the resource manager's car list (`+0xc94`) when one of its parts draws | confirmed (code) |
 | `0x00172f00` | `CarInstance_MarkPartDrawn(part)` | sets bit `part` of `+0x11fc` | confirmed (code) |
 | `0x00172f28` | `CarModel_SetupAtomic` | per atomic of a new car model: render callback `0x00172d60`, the game pipelines, the bounding sphere's y and z swapped | confirmed (code) |
@@ -728,7 +816,7 @@ used here:
 | `0x00174200` | `HumanRender_SetDrawDistance(d)` | the humans' draw distance `0x0050cc60` = `d` clamped to [`0x0050cc5c`, `0x0050cc58`] (and `0x0050cc64` = that − `0x0050cc68`), from the world render | confirmed (code) |
 | `0x00174238` | `CharacterInstance_ReturnFalse` | returns 0 (a vtable slot) | confirmed (code) |
 | `0x00174248` | `HumanAtomic_VisibilityCallback` | per atomic in view and not occluded (`0x0017a680`): queues the human on the resource manager's list `+0xc74` when its squared camera distance (`+0x334`) is under the draw distance | confirmed (code) |
-| `0x00174320` | `HumanRender_Draw` | [Lighting](lighting.md#humans) | confirmed (code) |
+| `0x00174320` | `HumanRender_Draw` | [Drawing a human](#human-draw), [Lighting](lighting.md#humans) | confirmed (code) |
 | `0x00174af8` | `CharacterInstance_SetModel(inst, model, tex, data)` | base set-up, each atomic's plugin owner set (`0x001925d0`), copies the model's 34 bind offsets, then runs the queued tasks | confirmed (code) |
 | `0x00174c18` | `CharacterModel_SetupAtomic` | per atomic of a new character model: render callback `0x00174248` (first one kept in `0x0050cc54`), the game pipelines, the bounding sphere's y and z swapped | confirmed (code) |
 | `0x00174d00` | `CharacterInstance_Construct(model, data, tex)` | full instance: default pose `0x00598420`, reference pose (`0x00100a80`), empty stack and queue | confirmed (code) |
@@ -1104,6 +1192,21 @@ Water fields, confirmed (code) at `0x00191230` and `0x00190810`:
 | `0x001928a8`, `0x001928c0` | `AtomicPlugin_SetPosScale`, `AtomicPlugin_PosScale` | `+0x00` | confirmed (code) |
 | `0x001928d8`, `0x001928f0` | `AtomicPlugin_SetUvScale`, `AtomicPlugin_UvScale` | `+0x04` | confirmed (code) |
 
+**Drawing the water** (`WaterEffect_Update(phase, water)`, `0x00191dd8`), confirmed (code); constants read from
+`.data`. `WorldManager_Render` passes a phase that grows by 0.16 each frame ([The streamed world](world.md#a-frame),
+step 9) and draws with culling off; Z test, Z write and fog stay as the world pass left them (on).
+
+1. Nothing while the water is not loaded or not in view (`0x00191908`).
+2. When the phase has moved more than **0.3** (`0x0050cd84`) since the last update (`+0x60`), so every second frame,
+   with `t = phase × speed` (`+0x6c`):
+    - the texture scroll `u0 = fmod(t × 0.3, repeatsAcross)` (`0x0050cd90` = 0.3);
+    - for each column `i` but the last: `s = sin(i + t)`; every vertex of the column gets height `s × waveHeight`
+      (`+0x68`, the vertex's z) and the water's colour (`+0x64`) with alpha **`225 + 5 s`** (`0x0050cd8c` = 225,
+      `0x0050cd88` = 5; RenderWare's 0-255 scale, so about 88 % opaque);
+    - texture coordinates `u = u0 + repeatsAcross × i / (columns − 1)` and `v = repeatsAlong × j / (rows − 1)`;
+    - the last row and the last column copy the first one's heights and colours, so the surface tiles.
+3. Unlock the geometry and render the clump (`0x0046a100`).
+
 ### The RenderWare device's helpers {#code-device}
 
 `DevRWGeneric.cpp`'s functions that are not in the [device](#device-vtable) or [camera](#camera-wrapper) tables
@@ -1131,6 +1234,7 @@ above: RenderWare's memory hooks, the immediate-mode drawer (vtable `0x00538f08`
 | `0x001977c8` | `Instance_Lock` | locks the PTank arrays its format has (position `0x01`, colour `0x02`, texture rectangle `0x80`, matrix `0x08`, rotation `0x20`, size `0x04`) | confirmed (code) |
 | `0x00197900` | `Instance_Unlock` | unlocks them and clears the six array pointers | confirmed (code) |
 | `0x00197970` | `Instance_ClearSprites(inst, from, to)` | zeroes those sprites' arrays | confirmed (code) |
+| `0x00197b30` | `ChunkReader_SectorBspData` | chunk `0x15` ([Chunk system](chunk-system.md)): a world through device slot `+0x170`, pushed as `0x42` | confirmed (code) |
 | `0x00197b78` | `World_RenderSectorCb` | the sector render callback `ReadWorld` installs: calls the one it replaced (`0x005ff77c`) | confirmed (code) |
 | `0x00197cd0` | `World_RemoveObjectCb` | `DestroyWorld`'s callback: takes each clump (and light) out of the world first | confirmed (code); the light half inferred |
 | `0x00197d60`, `0x00197d98`, `0x00197dc8` | `RwStreamCustom_Read`, `RwStreamCustom_Write`, `RwStreamCustom_Skip` | the custom stream's callbacks over a game stream (`0x00197df0`) | confirmed (code) |
@@ -1144,6 +1248,82 @@ above: RenderWare's memory hooks, the immediate-mode drawer (vtable `0x00538f08`
 | `0x00198ed0`, `0x00198f70` | `SectorPlugin_Write`, `SectorPlugin_Register` | the 20 streamed bytes; registration (32 bytes, `0x0050ced0`) from `Init` | confirmed (code) |
 | `0x00198ff0` | `SectorPlugin_SetAtomic` | `+0x00` | confirmed (code) |
 | `0x00199008`, `0x00199020`, `0x00199038`, `0x00199050` | `SectorPlugin_SetIndex`, `SectorPlugin_SetState`, `SectorPlugin_SetPart`, `SectorPlugin_SetFadeEnd` | `+0x04`, `+0x08`, `+0x0c`, `+0x10` | confirmed (code) |
+| `0x00199068` | `SectorPlugin_SetOrigin` | `+0x14`-`+0x1c`: where the sector's atomic is placed | confirmed (code) |
+
+### Overlay effects: film grain, fog and rain {#code-overlay-effects}
+
+`OverlayEffects/`: the screen-effect layers ([Screen effects](#screen-effects)), each an `OverlayEffect` with a list
+of `OE_Particle` sprite widgets (`+0x04`-`+0x0c`) and its settings from `+0x98`. They share the base's colour slots
+(`+0x28` set every widget's colour, `+0x30` widget 0's colour) and its 30 Hz tick ([Room smoke](#room-smoke), which
+also covers `OE_RoomSmoke.cpp` and the base). Vtables: film grain `0x00539050`, fog `0x005390a0`, rain `0x005390f0`,
+room smoke `0x00539140`; slot `+0x10` destroys, `+0x18` updates, `+0x20` takes new settings. Confirmed (code) at each
+address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001990b8` | `OE_FilmGrain_Construct` | one widget of the settings' sprite and colour, depth 11,000 (layer 2; `StartFilmGrain` never starts it) | confirmed (code) |
+| `0x00199208`, `0x00199230` | `OE_FilmGrain_Destruct`, `OE_FilmGrain_Configure` | settings: sprite word `+0x9c`, colour `+0xa0`, repeats `+0xa4`/`+0xa5` | confirmed (code) |
+| `0x00199258` | `OE_FilmGrain_Update` | width × 1/0.7, the colour, and a new random texture offset each tick over the repeats: the grain jumps every update | confirmed (code) |
+| `0x00199380` | `OE_Fog_Construct` | one widget (depth 10,000), random start offsets, the first two drifts | confirmed (code) |
+| `0x001995c0`, `0x001995e8` | `OE_Fog_Destruct`, `OE_Fog_Configure` | the 0x34 settings bytes ([`StartFog`](../references/bindings/effects.md#startfog)) | confirmed (code) |
+| `0x00199658` | `OE_Fog_FollowCamera` | adds the camera's heading change to the sideways scroll and half its pitch change to the vertical one | confirmed (code) |
+| `0x001996b0` | `OE_Fog_PickDrift` | a sideways and a vertical scroll (random sign), a width (1.43 to `p5` / 0.7), a height (1 to `p6`), a blend time (`p8`-`p9` ms) and an alpha (between the colour's fourth and fifth values) | confirmed (code) |
+| `0x001997d8` | `OE_Fog_BlendDrift` | the same linear blend as the room smoke's, then the next drift | confirmed (code) |
+| `0x00199a50` | `OE_Fog_Update` | blend, follow the camera, size, colour, then scroll the texture rectangle `(u, -v)`-`(u + 1, 1 - v)`, wrapping at 1 | confirmed (code) |
+| `0x00199ba8` | `OE_Rain_Construct` | two screen sheets (depth 10,000) and, for each rain plane, two more on the plane | confirmed (code) |
+| `0x00199e08` | `OE_Rain_Destruct` | frees the plane batches first | confirmed (code) |
+| `0x00199e50` | `OE_Rain_Configure` | [`StartRain`](../references/bindings/effects.md#startrain) on a running layer: new layers, new sprites where they changed | confirmed (code) |
+| `0x0019a048`, `0x0019a118` | `OE_Rain_CreatePlaneBatches`, `OE_Rain_FreePlaneBatches` | one sprite batch per layer (25 sprites, depth 8,000) for the planes | confirmed (code) |
+| `0x0019a1b8` | `OE_Rain_AddSheet(rain, layer, plane, batch)` | a screen sheet, or a sheet on a plane: placed by the plane's point and two edges, each at least 6 m | confirmed (code) |
+| `0x0019a648` | `OE_Rain_Tilt` | eases a vector toward `0x006f31a0` by 0.004 a frame and tilts the sheets by its first part, clamped to ±10° | confirmed (code); what the vector is not traced |
+| `0x0019a780` | `OE_Rain_PlaneFacesCamera` | outdoors only: the plane's normal points away from the camera | confirmed (code) |
+| `0x0019a8e0` | `OE_Rain_UpdateSheet` | a screen sheet: size 1.7 (2.0 in 16:9, × 1.15 in an armies level), tilt, colour, scroll; a plane sheet copies its layer's colour and rectangle (half the vertical repeats when the plane is 12 m or more) | confirmed (code) |
+| `0x0019ac48` | `OE_Rain_Update` | indoors (`+0x90`) no tilt and no screen sheets; each plane's sheets only while it faces the camera | confirmed (code) |
+| `0x0019afd0` | `OE_RoomSmoke_Destruct` | [Room smoke](#room-smoke) | confirmed (code) |
+| `0x0019b8c0` | `OverlayFx_TakePitchDelta` | the camera's pitch mapped from −50°-10° to 0-1, less last time's | confirmed (code) |
+| `0x0019bbb0`, `0x0019bbf8` | `OverlayEffect_AddWidget`, `OverlayEffect_GetWidget` | the widget list | confirmed (code) |
+| `0x0019be28`, `0x0019bea0` | `OverlayEffect_SetColourAll`, `OverlayEffect_Colour` | slots `+0x28` and `+0x30` | confirmed (code) |
+
+### Heat distortion {#code-distortion}
+
+`DistortionEffectManager.cpp` and the effects after it: shimmering air over fires and the ring a car explosion sends
+out. The manager (`0x005ff780`) holds three `HeatDistortionEffect` slots (`{effect, used}` at `+0x00`-`+0x14`, 0x3310
+bytes each, vtable `0x005391e0`) and one `HeatWaveEffect` (`+0x18`/`+0x1c`, 0x3320 bytes, vtable `0x00539228`). An
+effect is a grid of `(cols + 1) × (rows + 1)` vertices, `cell` metres apart, kept facing the camera at a world point;
+each vertex samples the frame buffer at its own place on the screen plus a small moving offset, so what is behind it
+wavers. It is drawn by device slot `+0x118` after the world (not in an armies level). Confirmed (code) at each
+address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0019bed0`, `0x0019c598`, `0x0019c5c8` | `DistortionMgr_Construct`, `DistortionMgr_StaticInit`, `DistortionMgr_StaticInitThunk` | the static manager (its constructor does nothing) | confirmed (code) |
+| `0x0019bee0` | `DistortionMgr_Reset` | at level start (`InitLevel`): destroys every effect and clears the slots | confirmed (code) |
+| `0x0019bf50` | `DistortionMgr_DestroyAll` | also at level unload | confirmed (code) |
+| `0x0019c030` | `DistortionMgr_Fits(mgr, size)` | the current heap has more than `size` free | confirmed (code) |
+| `0x0019c070` | `DistortionMgr_StartHeat(cell, a, b, mgr, pos, cols, rows)` | a heat distortion in a free slot (−1 when none or no room): fires (`SubFadeFlame_Init`, `FireParticle_SetUpByName`: cell = size × 0.1, `size + 5` × `size + 8` cells) and `0x0021adf8` | confirmed (code) |
+| `0x0019c1d0` | `DistortionMgr_StartWave` | the heat wave, if its slot is free: `Car_DoExplode` (cell 0.4, 16 × 10 cells, 0.7 m above the car) | confirmed (code) |
+| `0x0019c328`, `0x0019c398` | `DistortionMgr_StopHeat(mgr, i)`, `DistortionMgr_StopWave` | destroy one (fires going out) | confirmed (code) |
+| `0x0019c3f0` | `DistortionMgr_SetHeatPosition(mgr, pos, i)` | moves heat *i* | confirmed (code) |
+| `0x0019c438` | `DistortionMgr_Render` | device slot `+0x120`: each live effect updates and draws; finished ones are destroyed | confirmed (code) |
+| `0x0019c5e8`, `0x0019c608` | `HeatDistortion_Construct`, `HeatDistortion_Destruct` | the vtable, not started and not finished | confirmed (code) |
+| `0x0019c638` | `HeatDistortion_Init` | slot `+0x10`: position, cell size, grid size, the weights; offsets are clamped to `[1/2048, 0.6255]` | confirmed (code) |
+| `0x0019c740` | `HeatGrid_BuildIndices` | two triangles a cell into `0x005ff7a0`; returns the index count | confirmed (code) |
+| `0x0019c7f0` | `HeatDistortion_BuildWeights` | slot `+0x20`: each vertex's strength from squared sines across and along the grid (`0x0050cf1c` = 0.8): strongest in the middle, fading to the edges | confirmed (code); the shape inferred from the formula |
+| `0x0019cac0` | `HeatGrid_PlaceVertices` | slot `+0x28`: the vertices in the camera-facing plane, centred on the position | confirmed (code) |
+| `0x0019cde0` | `HeatDistortion_SetPosition` | the position (axes converted) | confirmed (code) |
+| `0x0019ce08` | `HeatGrid_ProjectCorners` | the grid's corners on the screen | confirmed (code) |
+| `0x0019cf50`, `0x0019d5a0` | `HeatGrid_SetBaseUv`, `HeatGrid_Uv` | a vertex's resting and current texture coordinates | confirmed (code) |
+| `0x0019cf90` | `HeatGrid_MapToScreen` | slot `+0x30`: resting coordinates spread over the projected rectangle (screen 1,024 × 512; 512 across when flag `0x02` is set) | confirmed (code) |
+| `0x0019d1b0` | `HeatGrid_ClampUv` | to `[+0x32fc, +0x3300]` | confirmed (code) |
+| `0x0019d1e0` | `HeatGrid_Shimmer(amount, fx)` | slot `+0x38`: a shared phase grows by 0.5 a frame; each vertex moves by sin and cos of it × `amount` × its weight × a random ±0.9 (`0x0019d318`) | confirmed (code) |
+| `0x0019d318` | `HeatGrid_RandomSign` | ±0.9 (`0x0050cf3c`) for one vertex | confirmed (code) |
+| `0x0019d390` | `HeatDistortion_Update` | slot `+0x18`: faces the camera, rebuilds the grid and shimmers by 0.0025 | confirmed (code) |
+| `0x0019d5c8` | `HeatGrid_Draw` | the coordinates into the device's distortion mesh and one indexed triangle list | confirmed (code) |
+| `0x0019d6e8`, `0x0019d728` | `HeatWave_Construct`, `HeatWave_Destruct` | the wave's vtable over the heat's | confirmed (code) |
+| `0x0019d750` | `HeatWave_Init` | as above with 0.1 m, the ring's centre cell (`cols / 2`, given row) | confirmed (code) |
+| `0x0019d9d0` | `HeatWave_Update` | faces the camera and rebuilds; while `0x0050cf4c` is set, steps the ring | confirmed (code) |
+| `0x0019dbe8` | `HeatWave_InRing(radius, fx, col, row)` | the cell is within the radius of the centre | confirmed (code) |
+| `0x0019dc50` | `HeatWave_StepRing` | the radius grows 0.3 cells a frame; a cell it reaches gets strength 5, which falls 0.3 a frame while the cell shimmers (0.005); once the radius passes `cols + rows` the wave is finished | confirmed (code) |
 
 ## Coney's implementation
 
@@ -1264,7 +1444,7 @@ Still for the analysts:
 - **How the blur slot `+0x108` draws** (answered): see [Motion blur](#motion-blur). Who passes the previous frame to
   slot `+0x140` and when it is captured is still to trace.
 - **Texture dictionary list order** for name lookups (newest first is RenderWare's usual behaviour; not read here).
-- **The remaining slots**: `+0xf0` (`0x001931f8`, not a defined function in our Ghidra project), `+0x148`
+- **The remaining slots**: `+0x148`
   (`0x004dee48`), `+0x180` (`0x004e3820`), and the byte `+0x448`.
 - **Runtime confirmation** of the two-vertical-blank flip (partly answered): PCSX2 shows 30 frames for 60 vertical
   blanks ([Presenting](#frame-rate)); a watch on `0x005970f9` and `0x0059708b` through a slow frame (to see the

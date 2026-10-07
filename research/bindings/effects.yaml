@@ -130,25 +130,30 @@
   wrapper: 0x00368c40
   calls:
     - {addr: 0x0018df00, name: ScreenFx_StartFog}
+    - {addr: 0x00199380, name: OE_Fog_Construct}
+    - {addr: 0x001996b0, name: OE_Fog_PickDrift}
+    - {addr: 0x00199a50, name: OE_Fog_Update}
   args:
-    - {name: texture, lua: number, ctype: unsigned, desc: "Resource id of the fog texture."}
-    - {name: colour, lua: table, elem: number, count: 5, written_back: true, desc: "Five numbers: colour `{r, g, b, a}` 0-255 and a fifth byte."}
-    - {name: p1, lua: number, ctype: float, desc: "Fog parameter (number)."}
-    - {name: p2, lua: number, ctype: float, desc: "Fog parameter (number)."}
-    - {name: p3, lua: number, ctype: float, desc: "Fog parameter (number)."}
-    - {name: p4, lua: number, ctype: float, desc: "Fog parameter (number)."}
-    - {name: p5, lua: number, ctype: float, desc: "Fog parameter (number)."}
-    - {name: p6, lua: number, ctype: float, desc: "Fog parameter (number)."}
-    - {name: p7, lua: number, ctype: float, desc: "Fog parameter (number)."}
-    - {name: p8, lua: number, ctype: unsigned, desc: "Integer parameter."}
-    - {name: p9, lua: number, ctype: unsigned, desc: "Integer parameter."}
+    - {name: texture, lua: number, ctype: unsigned, desc: "Sprite word of the fog texture ([Particles: sprite words](../../research/particles.md#sprite-words))."}
+    - {name: colour, lua: table, elem: number, count: 5, written_back: true, desc: "Five numbers 0-255: the tint `{r, g, b}` (the record's alpha is 0), then the lowest and highest alpha a drift may pick."}
+    - {name: p1, lua: number, ctype: float, desc: "Lowest sideways scroll per update, in texture widths."}
+    - {name: p2, lua: number, ctype: float, desc: "Highest sideways scroll per update."}
+    - {name: p3, lua: number, ctype: float, desc: "Lowest vertical scroll per update (given a random sign)."}
+    - {name: p4, lua: number, ctype: float, desc: "Highest vertical scroll per update."}
+    - {name: p5, lua: number, ctype: float, desc: "Largest width scale before the 1/0.7 factor (a drift picks 1.43 to `p5` / 0.7)."}
+    - {name: p6, lua: number, ctype: float, desc: "Largest height scale (a drift picks 1.0 to `p6`)."}
+    - {name: p7, lua: number, ctype: float, desc: "A third range, plus or minus `p7`: blended with the others but not used by the draw."}
+    - {name: p8, lua: number, ctype: unsigned, desc: "Shortest blend from one drift to the next, in milliseconds."}
+    - {name: p9, lua: number, ctype: unsigned, desc: "Longest blend, in milliseconds."}
   description: >-
-    Starts the screen-space fog effect (screen effect 1) on both views. No script calls it; levels use `Start3DFog`
-    and the world fog colour instead.
+    Starts the screen-space fog overlay (screen-effects layer 1, `OE_Fog`) on both views: one full-screen sprite of
+    the texture, tinted, that scrolls and drifts between random settings the way the room smoke does. No script
+    calls it; levels use `Start3DFog` and the world fog colour instead.
   evidence: confirmed-code
-  depth: brief
+  depth: thorough
   notes: >-
-    Parameter meanings are not traced.
+    How a drift is picked and blended, and how the camera's turning scrolls it:
+    [Graphics](../../research/graphics.md#code-overlay-effects).
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 
 - name: EndFog

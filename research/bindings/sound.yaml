@@ -417,7 +417,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    PlaySound3D (0x0010fdd0) with volume, pitch and a third factor of 1.0 and its last flag 1; a name that is not in the
+    PlaySound3DByHash (0x0010fdd0) with volume, pitch and a third factor of 1.0 and its last flag 1; a name that is not in the
     sound list, or no free task, gives the null handle. Converted as unsigned.
   usage: {chunks: 17, calls: 27, boot: false, mission1: false, result_used: true, levels: [95, 2, 3, 5, 81, 93, 14, 82, 83, 11]}
   coney: implemented
@@ -673,12 +673,12 @@
   args:
     - {name: material1, lua: number, ctype: unsigned, desc: "First material id (MATERIAL.* from enum_preload.lua), such as a weapon or fist."}
     - {name: material2, lua: number, ctype: unsigned, desc: "Second material id, such as the body part or surface hit."}
-    - {name: count, lua: number, ctype: unsigned, desc: "How many alternative sounds the pair has (one is picked at random)."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many alternative sounds the pair has; they play in turn, one per hit (cursor byte 2 of the record, 0x001146c0)."}
     - {name: columns, lua: number, ctype: unsigned, default: 1, desc: "How many sound columns each alternative has, 1-3 (default 1); NewMaterialSound fills them."}
-    - {name: tune1, lua: number, ctype: float, default: 1, desc: "A float stored with the pair (default 1); inferred to be a volume or pitch factor."}
-    - {name: tune2, lua: number, ctype: float, default: 1, desc: "A float stored with the pair (default 1)."}
-    - {name: tune3, lua: number, ctype: float, default: 1, desc: "A float stored with the pair (default 1)."}
-    - {name: tune4, lua: number, ctype: float, desc: "A float (default 0); passed on, where it is stored is not traced."}
+    - {name: tune1, lua: number, ctype: float, default: 1, desc: "Volume of column 1 (record +0x04, default 1), multiplied into the sound's volume when it plays."}
+    - {name: tune2, lua: number, ctype: float, default: 1, desc: "Volume of column 2 (+0x08, default 1)."}
+    - {name: tune3, lua: number, ctype: float, default: 1, desc: "Volume of column 3 (+0x0c, default 1)."}
+    - {name: tune4, lua: number, ctype: float, desc: "A float (default 0); passed on but not read by 0x00115cb0."}
     - {name: tune5, lua: number, ctype: float, desc: "A float (default 0); as tune4."}
     - {name: tune6, lua: number, ctype: float, desc: "A float (default 0); as tune4."}
   description: >-
@@ -687,7 +687,7 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    0x00115cb0; the table is a 2D array indexed by the two materials (row stride 0x2fc) in the audio manager's sound
+    0x00115cb0 ([Sound: the sound matrix](../../research/sound.md#sound-matrix)); the table is a 2D array indexed by the two materials (row stride 0x2fc) in the audio manager's sound
     table at +0x1e0, allocated from the Level Dynamic & LUA pool.
   usage: {chunks: 3, calls: 2227, boot: true, mission1: false, result_used: false}
 
@@ -749,12 +749,12 @@
     - {addr: 0x00113d50}
   args:
     - {name: animSound, lua: number, ctype: unsigned, desc: "Animation sound event id (SA.* from enum_preload.lua, such as SA.play_sound_grunt)."}
-    - {name: count, lua: number, ctype: unsigned, desc: "How many alternative sounds the event has."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many alternative sounds the event has; they play in turn (cursor byte 1, 0x00114800)."}
     - {name: columns, lua: number, ctype: unsigned, default: 1, desc: "How many sound columns each alternative has, 1-3 (default 1)."}
-    - {name: tune1, lua: number, ctype: float, default: 1, desc: "A float stored with the event (default 1); the scripts pass 0.9 for some; inferred to be a volume or chance factor."}
-    - {name: tune2, lua: number, ctype: float, default: 1, desc: "A float (default 1)."}
-    - {name: tune3, lua: number, ctype: float, default: 1, desc: "A float (default 1)."}
-    - {name: tune4, lua: number, ctype: float, desc: "A float (default 0); where it is stored is not traced."}
+    - {name: tune1, lua: number, ctype: float, default: 1, desc: "Volume of column 1 (record +0x04, default 1; the scripts pass 0.9 for some)."}
+    - {name: tune2, lua: number, ctype: float, default: 1, desc: "Volume of column 2 (+0x08, default 1)."}
+    - {name: tune3, lua: number, ctype: float, default: 1, desc: "Volume of column 3 (+0x0c, default 1)."}
+    - {name: tune4, lua: number, ctype: float, desc: "A float (default 0); passed on but not read by 0x00116080."}
     - {name: tune5, lua: number, ctype: float, desc: "A float (default 0); as tune4."}
     - {name: tune6, lua: number, ctype: float, desc: "A float (default 0); as tune4."}
   description: >-
@@ -960,7 +960,7 @@
     - {name: djLine, lua: number, ctype: int, desc: "When not 0, an index 1-12 into the announcement table (0x00512d30: `vags/music/djlady_01` ... `_12`) played once when the player first comes within 5 m, cutting the track short; the scripts pass the checkpoint, so each chapter has its own announcement. 0 for none."}
   description: >-
     Makes a world object a working radio. Everything it plays is a streamed sound started at the radio's position
-    (`PlaySound3D`, a positional sound task, not the music player), heard while the player is within 40 m, at half
+    (`PlaySound3DByHash`, a positional sound task, not the music player), heard while the player is within 40 m, at half
     volume while a scene plays: its track, then a random DJ link (70% one of 15 kind-1 clips, 20% kind 0, 10% a
     `dj_rumble` clip), then a random next track, and so on; `onSegment` runs at each change. With `djLine` the
     announcement plays when the player first comes within 5 m. Holding R1 while carrying the radio retunes it (a

@@ -275,15 +275,17 @@ SetGeneralCarMsgHandler(message, callback)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `message` | number, truncated to an integer | Message number; every call passes 25 (0x19), the message a car sends itself when it explodes. |
+| 1 | `message` | number, truncated to an integer | Message number; every call passes 25 (0x19), the message a car sends itself when a hit damages it or it explodes. |
 | 2 | `callback` | string | Name of the Lua function to call, or nil to remove it. |
 
 **Returns** nothing.
 
 Registers one Lua callback for a message from any car: the car manager (`0x00512c7c + 0x844`) keeps the function's
-reference in its slot for that number (`+0x18 + 4 × message`). Scripts use it to hear every car explosion: Car_DoExplode
-sends message 0x19 and the callback runs as (car, NilHandle, -1, 1). It is the only way to hear a car: a car has no
-handler component, so SetMsgHandler on a car is never called.
+reference in its slot for that number (`+0x18 + 4 × message`). Message 0x19 calls it as (car, other, n, flag): once per
+part a hit damages (n = the part 1-25, other the human behind the hit, flag 1 when the hit broke the part), (car, human,
+-2, 1) when that hit leaves every breakable part broken, (car, thrower, -1, 0) when a molotov sets the car alight, and
+(car, NilHandle, -1, 1) when it explodes ([Cars](../../research/cars.md#explode)). It is the only way to hear a car: a
+car has no handler component, so SetMsgHandler on a car is never called.
 
 **Notes.** The store is confirmed (code) at 0x0038e538; the reference comes from the script system's slot `+0xcc`. The
 car's message slot (vtable 0x00544c08 `+0x44`, 0x00389700) forwards every message to 0x0038ebf8, which calls the

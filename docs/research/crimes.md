@@ -26,6 +26,14 @@ map](source-map.md)). Names are ours.
 | `0x0024d530` | `ContextAction_Use` | starts the action of the human's current context record (+`0x660`) | confirmed (code) |
 | `0x00417ca0` / `0x00418150` | `ContextActions_Register` / `ContextActions_Pick` | the registry of context records; the per-update choice | confirmed (code) |
 | `0x0022dc40` / `0x0022e400` / `0x0022d628` | `MiniGame_Start` / `MiniGame_End` / `MiniGame_Abort` | dispatch by mini-game mode | confirmed (code) |
+| `0x0022ec18` / `0x0022ef58` | `Human_Arrest` / `Human_Unarrest` | `HuSetArrested` 1 / 0: the cuffed state, its style, record and icon ([Arrest](#arrest)) | confirmed (code) |
+| `0x0028c5d8` | `Brain_OnArrested` | the brain's reset and event 17 | confirmed (code) |
+| `0x002271f0` / `0x00227388` | `Human_ShowOverheadIcon` / `Human_RemoveOverheadIcon` | the icon over a human (`dyn_cuffs`, `dyn_cross`) | confirmed (code) |
+| `0x00260ca8` / `0x0022d3f8` | `Uncuff_Start` / `Uncuff_BeginMash` | the uncuff mash's start ([Uncuffing](#uncuffing)) | confirmed (code) |
+| `0x00260fd0` | `Uncuff_WithKey` | freeing at once with a key | confirmed (code) |
+| `0x002606e8` / `0x00260a70` | `Uncuff_MashSuccess` / `Uncuff_MashFail` | the mash's outcome | confirmed (code) |
+| `0x0027bcd8` / `0x0027bc48` | `Mash_IsAlternation` / `Mash_IsQuitCommand` | the mash's input tests | confirmed (code) |
+| `0x00278018` | `Tag_StartSprayClips` | the spray clips and the turn to the tag | confirmed (code) |
 | `0x00255f08` | `MiniGame_Update` | each update: success, failure or the meter | confirmed (code) |
 | `0x0027e6d8` | `Player_UpdateTheft` | each update: the mode's input ([Combat](combat.md#stereo-theft)) | confirmed (code) |
 | `0x0022d790` / `0x0022d908` | `LockPick_Start` / `LockPick_End` | the lock-picking set-up and outcome | confirmed (code) |
@@ -114,11 +122,11 @@ tried, confirmed (code) at `0x0027c120`, `0x002811f0`:
 2. A human with no player number standing by a cuffed player uses a key (item 6) if either holds one
    (`0x00260fd0`).
 3. A tag in progress (a tag spot, a particle object with class bit `0x10`, at `+0x36c`) keeps the press.
-4. `ContextAction_Use` (`0x0024d530`) by the record's kind: **0** frees the cuffed human (`0x00260ca8`, the mash of
-   mode 1; with a key, at once); **2** sets mode 2 and plays 687 `ANIM_LOCKPICK_INTRO`; **3** sets mode 3 and plays
-   683 `STEREO_STEAL_INTRO` (both through `0x002789d0`, which turns the human to the object and starts the
-   mini-game); any other kind hands the press to the object's message handler (its `+0x44`, message 0 with the human
-   as the subject); a true result ends the press. Confirmed (code), and at runtime for a kind-1 bat.
+4. `ContextAction_Use` (`0x0024d530`) by the record's kind: **0** frees the cuffed human ([Uncuffing](#uncuffing): the
+   mash of mode 1; with a key, at once); **2** sets mode 2 and plays 687 `ANIM_LOCKPICK_INTRO`; **3** sets mode 3 and
+   plays 683 `STEREO_STEAL_INTRO` (both through `0x002789d0`, which turns the human to the object and starts the
+   mini-game); any other kind hands the press to the object's message handler (its `+0x44`, message 0 with the human as
+   the subject); a true result ends the press. Confirmed (code), and at runtime for a kind-1 bat.
 5. Otherwise the pick-up search (`0x0024d810`, objects within 1.5 m; only while `0x005109a0` is set). It too sends
    message 0 to every object it gathers, before its filters, and a true result ends it; then it takes one
    ([Breakables](combat.md#breakables), [A bat in hand](combat.md#bat)), or, with something in hand and nothing to
@@ -134,6 +142,127 @@ shown is not traced); else a nearby human's own talk prompt
 (`0x001acd60`). The panel's activity test then matches the prompt's text against the dealer prompts
 ([HUD](hud.md#the-player-panel)). The prompt sits 0.04 above its place in the default video mode (0.02 in the others) and
 rises with a scroll-in message (`0x0019f430`).
+
+### Arrest {#arrest}
+
+`HuSetArrested(h, on)` (`Human_SetArrested`) runs `Human_Arrest` (`0x0022ec18`) or `Human_Unarrest` (`0x0022ef58`),
+then sets state `0x20000000`. Confirmed (code) at the cited addresses.
+
+**Arrest**, for a human not already cuffed:
+
+1. The human leaves its fight stance and drops a held weapon of kind 4 or 6, or anything held without human flag
+   `0x2000`. A stun ends.
+2. Its push weight (attribute 7, vtable `+0xe4`) becomes 1e9, so nothing shoves it. State `0x8000` (block) is
+   cleared and `0x20000` (cuffed) set.
+3. Movement style `0x11` is pushed (`Human_PushMoveStyle`, `0x00253ed0`), which puts 320 `ANIM_ARRESTED_IDLE` in
+   anim slots 0 and 11 ([Anim slots](characters.md#anim-slots)). The action (record `+0x14`) becomes 0.
+4. `Brain_OnArrested(brain, 1)` (`0x0028c5d8`): the brain's actions are cleared, its target dropped and its goals
+   popped down to a goal of type `0x41` if it has one. Then the human gets **event 17** `{+0x00 the other human of a
+   grab (record +0xc4), +0x04 1}`, which a script handler receives as `(self, other, 1)`
+   (`ScriptHandler_MarshalMessage` case `0x11`, `0x00384ce0`).
+5. Brain `+0x288` = 0.
+6. **The kind-0 record** (`Human_RegisterContextAction`, human vtable `0x0053f088` slot `+0x124`, args kind 0, no
+   text) is registered for one of two humans:
+   - an AI human friendly to player 1 (`Human_IsFriendly`, `0x00222a90`). An AI Warrior in the player's crew is one;
+   - a player, when two players are in or when he owns upgrade (6, 15) and holds a key.
+
+   That human says 25 `arrested` ([Speech](../references/speech.md#speech-command-25)). Unless it is a player with a
+   key, it also gets the **`dyn_cuffs` icon** over its head (`Human_ShowOverheadIcon`, `0x002271f0`, handle at human
+   `+0x360`; `dyn_p_one` and `dyn_p_two` names become `dyn_play_one` and `dyn_play_two`, with `_euro` when game state
+   `+0x120` is set).
+7. For a type-3 brain, the player whose gang it is gets `0x004de250(…, player, 0, 1)` (not traced).
+
+A human with no AI brain component (vtable `+0xf4` null) gets only state `0x20000`, the style and action 0.
+
+**Unarrest** (`Human_Unarrest`), for a cuffed human:
+
+1. Brain `+0x40` gets `0x80000004`, and the kind-0 record is removed (slot `+0x12c`).
+2. `0x0024ce40` is called and the icon removed (message `0x15`, `Human_RemoveOverheadIcon`, `0x00227388`). Style
+   `0x11` is removed (`0x00253f78`), state `0x20000` is cleared, and the push weight returns to 1.
+3. A member of a leaderless gang (gang `+0x40` = 0) with a leader other than itself and a type-3 brain clears its
+   actions and goals and follows the leader (`Goal_FollowPlayer`, 2.0, mode 3).
+4. **Event 17** goes out as above with `+0x04` = 0: `SetMsgHandler(h, 17, "SnowUnarrested")` gets `(self, other, 0)`,
+   and `other` is the null handle unless the human was in a grab.
+
+### Uncuffing {#uncuffing}
+
+Triangle by a cuffed human's kind-0 record (`ContextAction_Use`, [Triangle](#triangle), step 4) needs two things:
+the cuffed human is not already being freed (`+0x08` `0x10000`), and nothing stands between the two
+(`0x0021c0a8`, a 0.2 m capsule collision test from the freer to him). The record's user (`+0x18`) becomes the
+freer. Then the press goes one of two ways. Confirmed (code) at the cited addresses.
+
+**With a key** (item 6 held by either), `Uncuff_WithKey` (`0x00260fd0`):
+
+1. Interface cue 24 plays and one key is spent: the freer's, or else the cuffed human's.
+2. The freer turns to face the cuffed human (`Attack_SteerToTarget`, 0.1, over clip 325). He plays 325
+   `ANIM_ARREST_RELEASE_INTRO_FRONT` (holding `+0x08` `0x2000`), then 332 `ANIM_ARREST_RELEASE_END`
+   (end hook `0x002605f0`), then his idle.
+3. The cuffed human gets `Human_Unarrest`, `Human_ClearPartner` and a heal (below). He plays 326 (paired, holding
+   `0x10000`), then 333 `ANIM_ARREST_RELEASE_END_REACT` (end hook `0x00260670`), then his idle.
+
+When a player frees himself with his own key, he plays only his half.
+
+**Without a key**, the mash (`Uncuff_Start`, `0x00260ca8`):
+
+1. The freer says 68 `unarrest_reasure` and turns to face the cuffed human over clip 325. His action (record
+   `+0x14`) becomes **`0x15`**.
+2. `Uncuff_BeginMash` (`0x0022d3f8`):
+   - leaves the fight stance; mode 1, **meter 0**;
+   - the cuffed human becomes the freer's partner (`+0xc8`);
+   - both bodies share a new group (body `+0x3c`, from a counter at `IPhysics+0x10`), so they never touch;
+   - both get push weight 1e9;
+   - a held weapon of kind 3 or 4 is dropped;
+   - state `0x8000` is cleared on both and `0x4000000` set on the freer.
+
+   For the triangle press it also shows the player's **mash meter** (`HUD_MashMeterShow`: HUD `+0xebc0` + player ×
+   `0x430`, button id 1 and sprite word `0x171`). Hint 19 is queued when in-game hints are on, the level is not an
+   Armies level, hint 19 is unlocked and the hint's shown count (game state bits 24-25) is below 2.
+3. The freer plays 325, holding `+0x08` `0x2000000`, which keeps the mash's input closed until it ends. He then loops
+   329 `ANIM_ARREST_RELEASE_LOOP`.
+4. The cuffed human plays 326 `ANIM_ARREST_RELEASE_INTRO_FRONT_REACT` paired to the freer, then loops 330, holding
+   `0x10000` throughout. He gets the freer as his partner too.
+
+The cuffed human's kind-0 record stays registered during the mash; only `Human_Unarrest` removes it.
+
+**Each update** (`Player_UpdateTheft` mode 1, `0x0027e6d8`, while `+0x08` has none of `0x7c7eee0`):
+
+- An **alternation** between commands 6 (L1 held) and 4 (R1 held) adds the gain. `Mash_IsAlternation`
+  (`0x0027bcd8`) counts the first of either and then each switch. The gain is half of `CfgButtonMash`'s press
+  gain, × 1.5 for a Warrior of class byte `+0x08` = 1 and × 0.7 for 3, rounded. Each gain also restarts the decay.
+- A **quit command**, 10 (triangle), 17, 18 (cross) or 30 (circle) (`Mash_IsQuitCommand`, `0x0027bc48`), sets the
+  meter to −1.
+- Otherwise the meter **decays** by `CfgButtonMash`'s decay each update. The decay stops once a step takes the meter
+  to 0 or below, and it does not run before the first alternation: the flag `0x005109a8` starts at 1.
+
+The executable's defaults are a target of 1000, a decay of 10 and a press gain of 100 (`0x005102b8`-`0x005102c0`).
+The script values in force are on [Combat](combat.md#stereo-theft).
+
+**The outcome** (`MiniGame_Update` mode 1, `0x00255f08`, each update):
+
+- **Success**: meter ≥ target. `Uncuff_MashSuccess` (`0x002606e8`):
+    - the mini-game ends (`MiniGame_Abort`: mode 0, meter hidden, record user cleared, state `0x4000000` cleared,
+      action 1, partner cleared);
+    - the **cuffed human says 67** `unarrest_thank`; the hint's shown count rises by one;
+    - the freer plays 332 (blend 1/6 s, end hook `0x002605f0`), then his idle;
+    - the cuffed human gets `Human_Unarrest`, then a heal when he is knocked out (`Human_IsKnockedOut`, state
+      `0x40000`) and has human flag `0x4`;
+    - the cuffed human plays 333 paired (end hook `0x00260670`), then his idle.
+
+  `0x00280fd8(freer, 3000)` sets the per-player record's `+0x4d` and `+0x50` = now + 3 s (their reader is not
+  traced).
+- **Failure**: the meter is below 0 (a quit command, or a decay step that ends below 0), or the cuffed human is gone
+  (`Object_AsHuman`, `0x00229868`, null). `Uncuff_MashFail` (`0x00260a70`):
+    - the mini-game ends;
+    - the freer plays 332, then his idle;
+    - the cuffed human returns to his idle loop (still 320, since he is still cuffed). His `0x10000` and his partner
+      are cleared.
+- **A hit on the freer**: `Human_ApplyPendingDamage` sends a human in a mini-game other than lock picking to
+  `0x00268c50`. That function ends the mini-game and plays 331 `ANIM_ARREST_RELEASE_HIT_REACT` (holding `0x2000`).
+  The cuffed human's clips are not reset there (not traced further).
+- A human leaving normal mode (`0x002325e0`, from `Human_SetNormalMode` and scenes) also ends it.
+
+While the mash runs, the meter's fill is meter ÷ target each update (`HUD_MashMeterUpdate`), and the action prompt
+is hidden (action `0x15`).
 
 ### Lock picking {#lockpick}
 
@@ -374,7 +503,10 @@ call no script). Confirmed (code) at the addresses cited.
 
 1. **When.** Not at `HuTag`. Once the human is in action `0x17` and not yet tagging, the update
    (`Tag_UpdatePlayer` for a player, which first makes the stick game; also `MiniGame_Update`, `0x00255fd8`) calls
-   `0x00278018`, which queues the spray animations (`0x14f`, then `0x14e` with the end hook `0x00277ed8`). When that
+   `Tag_StartSprayClips` (`0x00278018`), which queues 334 `ANIM_TAGGING_INTRO` (with the end hook `0x00277ed8`) and
+   then the loop 335. Nothing walks the human to the flag or places him: he stays where he pressed triangle (within
+   the flag's kind-1 reach, 1.1 m) and turns to face the tag object (its vtable `+0xac` point) over half of 334's
+   length (`Human_TurnToFacePoint`, `0x00221c20`). A held weapon of kind 4 or 6 is dropped first. When that
    hook runs and the tag still exists, `0x0022e610` starts the spray: it sets the tagging state `0x2000000`, sends
    the tag message `0` (the tagger, [Tag spots](#tag-spots)), and last calls `0x00238f50`. So the callback runs once
    per spray, at the moment the stick game goes live; `0x00238f50` does not check for a player.

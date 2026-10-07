@@ -35,10 +35,12 @@ Two blocks of `0x3f4` bytes at game state `+0x480`, one per player; item *i* is 
 `+0x04 + i × 0x2c`: the object name (31 characters), the count (`+0x20`), the pickup sound's hash (`+0x24`) and a
 duration in ms (`+0x28`). There are 23 items, ids 0-22. Confirmed (code) at `0x0041e250` and `0x0041e420`.
 
-The code uses five of them by number: 1 the flash (a revive), 2 money, 3 spray-paint charges, 5 handcuffs and
-6 handcuff keys, and 10 for stolen loot (the pickup and drop code, `0x00232c60`, `0x002334d0`, `0x0023bf00`;
-confirmed (code)). A human's **pocket** is one item id (`+0x250`) and a count (`+0x254`), set by `HuPutItemInPocket`
-(`0x00238190`; confirmed (code)); that it holds the same ids is inferred from the scripts' calls.
+The code uses five of them by number: 1 the flash (a revive; d-pad right heals with it, or at full health with upgrade
+(6, 8) fills and starts rage, [Combat](combat.md#rage)), 2 money, 3 spray-paint charges, 5 handcuffs and 6 handcuff keys
+(a cuffed player with upgrade (6, 15) spends one with triangle, [Combat](combat.md#rage)), and 10 for stolen loot (the
+pickup and drop code, `0x00232c60`, `0x002334d0`, `0x0023bf00`; confirmed (code)). A human's **pocket** is one item id
+(`+0x250`) and a count (`+0x254`), set by `HuPutItemInPocket` (`0x00238190`; confirmed (code)); that it holds the same
+ids is inferred from the scripts' calls.
 
 ### Adding an item and the callbacks {#pickup-callback}
 

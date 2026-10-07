@@ -1080,6 +1080,93 @@ the door to the navigation links carrying it ([Navigation links](#nav-links)):
 `DisableDoorLink` / `EnableDoorLink` do the same by position for the nearest `0x10` link within 5 m and its
 reverse. Confirmed (code).
 
+### Breakable props {#breakable-props}
+
+The street props `level34`'s riot meter counts ([Scripts](scripting.md#level34)) are world objects (run-time type
+`0x08`; a glass pane is `0x400`, [Tasks](tasks.md)) of two classes. Values from the `CfgObj` lines of
+`config_preload3`; behaviour confirmed (code) at the cited addresses unless marked.
+
+| Type | Class | Hit points `+0x58` | Hits `+0x5a` | Model hash |
+| --- | --- | --- | --- | --- |
+| `dyn_newsstand_a` | `dyn_masks` | 0 | 1 | `0x18f31e91` |
+| `dyn_newsstand_b` | `dyn_masks` | 0 | 1 | `0x81fa4f2b` |
+| `dyn_crate_stack` | `dyn_masks` | 0 | 1 | `0x1a0686f7` |
+| `dyn_parkbench_a` | `dyn_masks` | 10 | 2 | `0x7852cedb` |
+| `dyn_trashcan` | `overhead_weapon` | 150 | 1 | `0xfbf3e3ae` |
+| `dyn_gbags` | `overhead_weapon` | 80 | 1 | `0x62502b03` |
+
+`ObjType_GetIntField` (`0x003a37b8`) reads these fields (0: `+0x58`, 1: `+0x5a`, 3: the material `+0x64`).
+
+- **Two counters on every world object**: `+0x10d` and `+0x10e`, from the type's `+0x5a` and `+0x5b` (a 0 becomes
+  `0xff`, unbreakable; 0 means broken).
+  `WorldObject_TakeHit` (`0x00393450`, kind *k*) takes one from `+0x10e` first while the object is airborne
+  (`0x4000000`) or a held `0x3c4e590b`; otherwise `+0x10d` loses 1 when *k* is −1 or `+0x128` is 1, else 4 + 6*k*
+  (floored at 0).
+- **A strike** (`Strike_Contact`, `0x0021b290`) on a world object: kind 3 when the attacker has state `0x4000000`
+  ([Combat](combat.md#state-flags)), 2 with something in hand (held flags `0x1400000`), else 0. In order: notes whether
+  either counter was already 0, `WorldObject_TakeHit`, the impact sound, burns the attacker within 1.5 m of a
+  `0x1c21bdc3`, message 6 to the boxes **only if the object was intact before the blow**
+  ([Scripts](scripting.md#triggers)), `Glass_Break` if it is a pane, a crime report for class code `0x1e`, then
+  task message **1** to the object with (attacker, attacker, *k*, 0, contact point `+0x90`, direction `+0x10`).
+- **`dyn_masks`** keeps its own data: `+0x00` broken, `+0x04` path flag cleared, `+0x08` update interval, `+0x0c` hit
+  points (`+0x58`, −1 when 0), `+0x10` hits (`+0x5a`, −1 when 0; `+0x128` = 1 when set and `+0x0c` is not),
+  `+0x14` a child. `DynMasks_Init` (`0x003b7538`) sets flags `0x200001`, interval 20, path-polygon flag 8 under it,
+  and copies `+0x0c` into `+0x10d`. Its message 1, `DynMasks_OnHit` (`0x003b7a88`): both counters −10 → ignored;
+  `+0x0c` not −1 → `+0x0c −= 4 + 6k`, mirrored to `+0x10d`; else `+0x10` loses 1; below 1 → broken (also kind 3
+  with object-flag bit 4, or model `0xf21e6a91` with argument −1). Every hit sets object flag `0x800000`, plays the
+  material sound (survive: the material with 5; break: the material pair) and, when a visibility test passes (40 m
+  and 10 m arguments; inferred to be distance and screen), dust; then a per-model effect. No velocity is given to
+  the prop itself.
+- **What each breaks into**: the newsstands a sound and five paper debris particles, no piece; the crate stack a sound
+  and one piece object at −0.604 m, turned at random; the bench 25 splinters, a dust cloud and one piece at −0.395 m.
+  The trash can and the bags have no case. A broken prop then looks for a damaged model (`Model_FindByHash`): if one
+  exists it takes it, re-reads both counters from the new type and keeps its body; if not, it loses its collision body
+  (`Obj_RemoveBody`), the low byte of `+0xcc` is cleared and path flag 8 under it is cleared once.
+- **Removal**: `DynMasks_Update` (`0x003bf548`) answers "done" while `+0x00` is set, so `WorldObject_Update` removes it
+  on its next update (up to 20 ticks): message 2, spawn record bit `0x40000`, never spawned again
+  ([Barriers](#barriers) has the path). Messages 4 and `0x15` set flag `0x40` instead; the update then counts data
+  `+0x08` up, using it as its interval, and when it reaches 4 sends the prop a kind-0 hit of its own (message 1, from
+  itself; where the count restarts is not traced). Message `0x30` knocks a piece: velocity a random
+  4-6 × its horizontal part (vtable `+0x74`), a spin (`+0x7c`), flags `|= 0x4200000` (airborne;
+  [Physics](physics.md#movers) flies it).
+- **Counting** (inferred from the code above): a newsstand or crate stack breaks on the first blow of any kind, so it
+  sends message 6 once. The bench takes three bare-handed blows (10 → 6 → 2 → broken) or one armed blow, and each blow
+  while intact sends message 6. A strike on a trash can or bags takes `+0x10d` from 1 to 0, so only the first counts.
+- **`overhead_weapon`** objects are the throwables: `OverheadWeapon_ContactDamage` (`0x003932c8`) takes one point
+  (`WorldObject_TakeHit(-1)`) per damaging contact while flying or held. What the class does with message 1 and how
+  it breaks is not traced.
+- **`F.Vandalize`** (`level34.lua`) tells the newsstand apart by name, not by type bits: `GetRTTI` 8 and
+  `GetObjectName` `dyn_newsstand_a` or `_b` give 3 points, other 8 give 1, 1024 (a pane) gives 2.
+
+### Trains (moving hazards) {#trains}
+
+A **train** is a line of up to 12 objects (a subway train's cars) that AI humans step out of the way of; the scripts
+build one with [`ObjSetTrainPoint`](../references/bindings/world.md#objsettrainpoint) and run it with
+`ObjStartTrain` / `ObjStopTrain`. There are four records of 0x150 bytes at `0x006f3a10`, built at boot
+(`0x00414220`, from a static initialiser) and stopped by `InitLevel` and `UnloadLevel` (`0x004136f0`); the task
+manager updates all four each frame (`0x00413728`). Confirmed (code).
+
+| Offset | Field | Evidence |
+| --- | --- | --- |
+| `+0x00` | 12 point positions (0x10 each), re-read from the objects every update | confirmed (code) |
+| `+0xc0` | a box around the points, grown by the radius | confirmed (code) |
+| `+0xe0` | 12 object pointers (`Train_SetPoint`, `0x00413770` → `TrainRecord_SetPoint`, `0x004138a8`) | confirmed (code) |
+| `+0x110` | 12 gap flags: non-zero means no segment starts at that point | confirmed (code) |
+| `+0x140` | point count (the highest index set, plus one) | confirmed (code) |
+| `+0x144` | the radius in metres (`ObjStartTrain`'s first argument) | confirmed (code) |
+| `+0x148` | running (`Train_Start`, `0x004137d8`, after `TrainRecord_Reset`, `0x00413890`; `Train_Stop`, `0x00413828`) | confirmed (code) |
+| `+0x149` | the last point index set with gap 0 | confirmed (code) |
+
+`TrainRecord_Update` (`0x00413d90`), while running: up to 60 humans in the box (`0x002274a8`); each one with an AI
+brain that is not in state 1 and not cuffed, and within the radius of a segment, gets the time stamped in its brain
+(`+0x2e0`); if its brain has no goal of type 7 it drops a type-`0xf` goal on top and pushes the dodge goal
+(`0x002f9358`, given the record and the nearest point). The dodge goal uses `0x004138f0` (still within the radius of
+a segment, and whether it is more than 0.5 m inside and within 10 m of the front point) and `0x00413a90` (the
+point's projection on the first segment long enough to hold it, and that segment's two indices). `Trains_IsPathClear`
+(`0x00414188`) asks each running train (`TrainRecord_IsPathClear`, `0x00413c48`) whether a move from one point to
+another passes within its radius of a segment; [AI](ai.md) movement checks it. The record's constructor is
+`0x00413848`. Confirmed (code).
+
 ## Coney's implementation
 
 **Object types and spawn records** (`src/world_objects/object_types.h`, `src/world_objects/spawn_records.h`,
@@ -1237,6 +1324,7 @@ Coney's stand-ins, where this page is silent:
   sends `melee_weapon` messages `0x12` / `0x13`, and the frame of a thrown object's angular velocity.
 - `dyn_door_vargas`' second object, and the leaf models of `dyn_door_chainlnk_pick` (no `dyn_dr_chainlnk_pick` record).
 - What a cabin door's leaves do once it breaks, and where the wreck pieces and boards appear.
-- Moving into a pane ([Moving into a pane](#pane-break)): which clip events switch the strike shapes on in a jump,
-  the strike shapes' sizes, what record `+0x08` bit `0x800` and human vtable `+0x10c` mean, and whether a
-  knock-back flight sets the airborne flag (and so breaks a pane).
+- Moving into a pane ([Moving into a pane](#pane-break)): which clip events switch the strike shapes on in a jump.
+  (Answered on [Combat](combat.md#moving-strikes): the strike shapes' sizes and events, record `+0x08` bit `0x800`,
+  and a knock-back flight, which is not airborne. Human vtable `+0x10c`, `0x00227180`: any non-human body may be
+  struck, a human unless its state word has `0x100000000`.)

@@ -58,6 +58,21 @@ the letterbox, gives the player control back and calls the script's end function
 | `0x00355798` | `SceneTrack_Flush` | a skipped scene's remaining track events, a reduced set ([Skipping](#skipping)) | confirmed (code) |
 | `0x002e5300`, `0x002e53e0` | `GoalJoinCinematic` and its goal (type `0x29`) | binds a human to a role | confirmed (code) |
 | `0x003541a0` | `Scene_BindHuman` | writes the human into the role | confirmed (code) |
+| `0x00354178`, `0x00353b78` | `Scene_IsPreloadedWrap`, `Scene_GetState` | `SceneIsPreloaded`'s worker; the state of an id's slot: 0 none, 1 loading, else the record's state (2 = ready). An AI pair goal (`0x00306ec0`) waits for 2, then plays its two leaders' animation | confirmed (code) |
+| `0x00353fc8` | `Scene_Unload` | `SceneUnload`'s worker: a ready scene's user count to 0, then frees finished slots | confirmed (code) |
+| `0x00354710` | `Scene_SetCallback` | `SceneSetCallback`'s worker (also from `InitLevel`): looks the Lua function up (script system `+0xcc`) and keeps it at `0x00512af4`; an empty name clears it | confirmed (code) |
+| `0x00354768` | `Scene_UnloadAll` | from `UnloadLevel`: ends each of the 12 slots' tasks and unloads them | confirmed (code) |
+| `0x00353c68` / `0x00353d60` | `Scene_PlayCinematic` / `Scene_PlayFixed` | `ScenePlayCinematic` / `ScenePlayFixedScene`: `Scene_Play` at the origin with no rotation | confirmed (code) |
+| `0x00353e38` / `0x00353e70` | `Scene_PlayAt` / `Scene_PlayAtHeading` | `ScenePlay`'s two forms: straight through, or a position plus a rotation built from a heading (`0x00335ea0`) | confirmed (code) |
+| `0x00354c00` / `0x00354bb8` | `Scene_InvokeInPlace` / `Scene_Invoke` | `SceneInvokeInPlace` / `SceneInvoke`: `Scene_Play` with no scene id of its own | confirmed (code) |
+| `0x00354038` / `0x00354c48` | `Scene_StopWrap` / `Scene_Terminate` | `SceneStop` (also from `GoalJoinCinematic`'s goal) / `SceneTerminate`: `Scene_Stop(id, false)` | confirmed (code) |
+| `0x00354378` | `Scene_GetRoleStart` | a role's start position and rotation (role record `+0x90 + 0x60 × role`, `+0x10`, `+0x20`), loading the scene first; optionally fitted to the bound humans (`Scene_FitToHumans`); out of range gives the identity | confirmed (code) |
+| `0x002e51a8` | `GoalJoinCinematic_WalkToMark` | the join goal's step: a move action to the role's start, then a turn to it | confirmed (code) |
+| `0x00354c80` | `WarMoveInstance_ctor` | the 0x90-byte scene instance (vtable `0x00544960`), two identity transforms | confirmed (code) |
+| `0x00352fa0` | `SceneSlot_WaitSegment` | while the slot's next segment buffer is busy, services the file system and retries | inferred |
+| `0x00354558` / `0x003546a0` | `SceneCam_Lock` / `SceneCam_Unlock` | a locked camera (type 4, `LockedSceneCam`) made the current scene camera (`0x003a1558`) over the player's camera (its active sub-camera in modes 5-8 pushed); unlock pops it back and frees it. Used by the in-game camera bindings (`0x002cb538`) | confirmed (code) |
+| `0x003555d0` | `SceneTrack_ParticleEvent` | event type 33: the effect starts only when its position is inside player 1's view (each of the six planes, 2 m margin), except the effect `sub_shk`, which always plays | confirmed (code) |
+| `0x00356028`, `0x00356090`, `0x003560a0` | `SceneTrack_SetTarget`, `SceneTrack_SetCamera`, `SceneTrack_SetObject` | track runner: set the track's target and re-read its keys at the current frame; the camera form sets `+8` and `+0xc`, the object form `+8` | confirmed (code) |
 
 ## Data
 

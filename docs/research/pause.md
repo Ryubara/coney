@@ -263,7 +263,8 @@ What a reload restores from `SetCheckPoint` is on [Scripts](scripting.md#run-nex
 `HUDLaunchMissionFailed(reason)` (`MissionFailed_Launch`, `0x001d1f88`) sets `W_GameState + 0x118` = 2, stores the
 reason (`0x001d1fb8`) and pushes **mode 0xc** (`0x00155408`), whose `Enter` (`0x0015cae0`) switches the task manager to
 phase 1, saves the sound state (`0x001115a8`; that `0x00110548` and `0x0010fba8` stop it is inferred) and opens the
-mission-failed menu. Confirmed (code).
+mission-failed menu. Confirmed (code). The engine's own failure (players out or busted) reaches the same menu after a 180-update
+countdown ([Combat](combat.md#defeat)).
 
 The menu (`MissionFailedMenu_Open`, `0x001d23d0`), confirmed (code):
 
@@ -483,6 +484,49 @@ step 0x6f0: count +0, selection +4, index +8, 5 item pointers +0x0c, description
 | `0x001e0008`, `0x001e0430` | `RumbleResult_Open`, `RumbleResult_Close` | Slots +0xa8 / +0xb0; open applies a screen effect and hides lock-pick dials. | confirmed (code) |
 | `0x001e0460`, `0x001e0560`, `0x001e0778` | `RumbleResult_OnCommand`, `_Update`, `_Render` | Input, update (+0x30), render (+0x38; choices after `0x0050eec0`, fade `0x0050eeb8`). | confirmed (code) |
 | `0x001e0998`, `0x001e09c8` | `RumbleResult_StaticInit`, `RumbleResult_StaticInitStub` | Constructs `0x00635390`; list `0x0053412c`. | confirmed (code) |
+
+### `GUI/ControlMenuHUD.cpp` {#fn-controlmenuhud}
+
+`0x001e3458`-`0x001e5478`: the pause menu's Controls screen, two entries opening the controller picture page or the
+tutorial tips page. Both pages derive from a small `ControlPage` base and are static objects built at start-up.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001e3458`, `0x001e34c0` | `ControlPage_Construct`, `_Destroy` | vtable `0x0053c658`, interface `0x0053c630`; title TextWidget `+0x60`, alpha `+0x130` | confirmed (code) |
+| `0x001e3520` | `ControlPage_Init` | slot `+0x90`: title at (`0x0050eee4`, `0x0050eee8`), size 1.3, `0x005fd310`, font slot 4 | confirmed (code) |
+| `0x001e35d8`, `0x001e35f8`, `0x001e3670` | `ControlPage_Shutdown`, `_Update`, `_Render` | slots `+0x68`/`+0x30`/`+0x38`: the title, with alpha | confirmed (code) |
+| `0x001e36a8`, `0x001e3758` | `TutorialPage_Construct`, `_Destroy` | vtable `0x0053c588`, interface `0x0053c560`, object `0x00637be0`; 23 titles `+0x150`, 23 texts `+0x3960` (0x270 each), menu `+0x140` | confirmed (code) |
+| `0x001e3828` | `TutorialPage_Init` | ScrollingMenu at (`0x0050eef0`, `0x0050eef4`); tip i = title string `0x145`+i (focus colour (134,26,26)) with text `0x15c`+i as description; visible `0x0050ef00` = 8 (10 from the pause menu), clip height `0x0050ef0c` = 0.5; title `0x131` | confirmed (code) |
+| `0x001e3d98` | `TutorialPage_Shutdown` | frees the menu, shuts the texts down | confirmed (code) |
+| `0x001e3e60` | `TutorialPage_OnCommand` | forwards to the menu; back: cue `0xf`, returns true | confirmed (code) |
+| `0x001e3ed0`, `0x001e3f38` | `TutorialPage_Update`, `_Render` | title and menu | confirmed (code) |
+| `0x001e3f98`, `0x001e4050` | `ControllerPage_Construct`, `_Destroy` | vtable `0x0053c4b8`, interface `0x0053c490`, object `0x00635e80`; 7 + 7 labels `+0x140`/`+0xed0`, picture `+0x1c60` | confirmed (code) |
+| `0x001e4130` | `ControllerPage_Init` | label table `0x0050ef20` (`0x0050f000` in mode `0x02` without `0x04`) copied to `0x0063ed50`; label 1 y moved by game state `+0x120` (4: -0.02, 2: 0.16, mode 2: 0.22); picture sprite `0x18f0000` at (0.5, 0.58), size 0.51 x 0.45, depth 11000; labels `0x132`-`0x138` align 5, `0x139`-`0x13f` align 4; title `0x130` | confirmed (code); +0x120 as controller layout inferred |
+| `0x001e4540`, `0x001e45f8` | `ControllerPage_Shutdown`, `_IsReady` | releases; ready when the picture batch `+0x1d24` is resident | confirmed (code) |
+| `0x001e4618` | `ControllerPage_OnCommand` | table `0x005567b0`: directions cue `0xe`, back cue `0xf` and true | confirmed (code) |
+| `0x001e46c0`, `0x001e4820` | `ControllerPage_Update`, `_Render` | picture size and place, labels from the table; render with alpha | confirmed (code) |
+| `0x001e4908`, `0x001e4988` | `ControlMenuHUD_Construct`, `_Destroy` | GameMenu subclass, vtable `0x0053c3d0`, interface `0x0053c3a8`; entries `+0x7a0`/`+0x870` | confirmed (code) |
+| `0x001e4a30` | `ControlMenuHUD_Open` | slot `+0xa8`: pausing player's input (pause menu `+0x1bc0`); entries Controller `0x130` at (0.26, 0.29), Tutorial `0x131` 0.06 below, size 1.3; pages `+0x940`/`+0x944` Init; `+0x948`-`+0x954` reset | confirmed (code) |
+| `0x001e4e28`, `0x001e4ea8` | `ControlMenuHUD_Close`, `_ArePagesReady` | slot `+0xb0`; both pages' slot `+0x98` | confirmed (code) |
+| `0x001e4f18` | `ControlMenuHUD_OnCommand` | open page: forwarded, closed on true; else table `0x005567d0`: up/down cue 4 (`0xe` at an end), left/right `0xe`, accept opens (cue 8 for Controller), back cue `0xf`, leave `+0x94c` | confirmed (code) |
+| `0x001e5130` | `ControlMenuHUD_Update` | waits for pages; plain pad pass; entries or the open page | confirmed (code) |
+| `0x001e52f8`, `0x001e5300` | `ControlMenuHUD_SetAlpha`, `_Render` | alpha `+0x954`; selected `0x005fd310`, other `0x005fd320` | confirmed (code) |
+| `0x001e5438`, `0x001e5478` | `ControlMenuHUD_StaticInit`, `_StaticInitStub` | builds both pages; stub in ctor list `0x00534130` ends the file | confirmed (code) |
+
+### After `GUI/ControlMenuHUD.cpp` (no path string): the Stats screen {#fn-after-controlmenuhud}
+
+`0x001e5498`-`0x001e6e78`: the pause menu's Stats screen (pause menu `+0x3bb0`), a GameMenu subclass (vtable
+`0x0053c728`, interface `0x0053c700`) with its own static-init stub, so a file of its own (inferred).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001e5498`, `0x001e5540` | `PauseStats_Construct`, `_Destroy` | portrait `+0x7b0`, shadows `+0x8b0`/`+0x9b0`, banner `+0xab0`, 4 HudGenericBars `+0xbb0`, description `+0x1b70` | confirmed (code) |
+| `0x001e5618` | `PauseStats_Setup` | from `PauseMenu_Open`: per-mode globals `0x0050f104`-`0x0050f2b8`; human of game state `+0x228`; class 0-8 picks portrait, banner and string `0xea`-`0xf2`, else unavailable; bars Strength `0xf3`, Stamina `0xf4`, Health `0xf5`, Rage `0xf6` normalised by difficulty table `0x0050f230` (0x28 per difficulty, game state `+0x154`); description reveal 0.55 s | confirmed (code) |
+| `0x001e6530`, `0x001e6600` | `PauseStats_Shutdown`, `_IsReady` | releases; ready after 10 s or when both portrait batches are resident | confirmed (code) |
+| `0x001e6698` | `PauseStats_OnCommand` | table `0x005568e0`: up/down `MessageHUD_PageUp`/`PageDown` (cue 4, `0xe` when stuck), left/right `0xe`, back `0xf` and `+0x7a0` = 1 | confirmed (code) |
+| `0x001e6778` | `PauseStats_Update` | portrait at base + (-0.08, -0.2), banner + (-0.17, -0.099), bars at + (0.14, -0.11 + 0.05 i) 0.22 x 0.025 fill `0x0063ee38`, description + (-0.24, 0.1) | confirmed (code) |
+| `0x001e6cf0`, `0x001e6cf8` | `PauseStats_SetAlpha`, `_Render` | alpha `+0x1d70` | confirmed (code) |
+| `0x001e6e20`, `0x001e6e78` | `PauseStats_StaticInit`, `_StaticInitStub` | colours `0x0063ee30`/`0x0063ee38` = (150,30,30,255); stub in ctor list `0x00534134` | confirmed (code) |
 
 ## Coney's implementation
 

@@ -944,6 +944,91 @@ string appears.
 | `0x001e09e8` | `ScrollingMenuItem_Construct` | From `0x001e1830`: index +0x60, scale 1.0, alpha 255. | confirmed (code) |
 | `0x001e0a58` | `ScrollingMenuItem_SetIndex` | Slot +0xf0: index +0x60, refresh (slot +0xa8). | confirmed (code) |
 
+### `GUI/ScrollingMenu.cpp` {#fn-scrollingmenu}
+
+`0x001e0a98`-`0x001e33c8`: the vertical list used by the Tutorial page and Rumble screens. Each entry wraps a widget in
+a `ScrollingMenuItem` (vtable `0x0053c190`, 0x90 bytes; constructor `0x001e09e8` in the previous chunk) that can show
+a second "description" widget under it once focused. `ScrollingTextWidget` (vtable `0x0053c2c8`) is the usual entry
+widget; it has no path string of its own and is placed here by address (inferred).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001e0a98` | `ScrollingMenuItem_ReleaseDescription` | slot `+0x108`: shuts down and frees the description widget `+0x64` | confirmed (code) |
+| `0x001e0af0` | `ScrollingMenuItem_Destroy` | slot `+0x60` | confirmed (code) |
+| `0x001e0b18` | `ScrollingMenuItem_SetPosition` | slot `+0x128`: `+0x20`, moves the main widget `+0x60` (its slot `+0x08`) | confirmed (code) |
+| `0x001e0b58` | `ScrollingMenuItem_SetReveal` | slot `+0xa8`: reveal clamped 0-1 to the main widget; the description gets the share past the main widget's part (`+0x68` / height), 0.99 or more becomes 1 | confirmed (code) |
+| `0x001e0c90` | `ScrollingMenuItem_GetRect` | slot `+0x70`: main rectangle plus the shown description's height, minus 2 / screen height, plus `+0x7c`; height times the reveal | confirmed (code) |
+| `0x001e0e48`, `0x001e0eb0` | `ScrollingMenuItem_Focus`, `_Unfocus` | slots `+0x90`/`+0x98`: focus stamps the time `+0x74` and sets `+0x40`; unfocus clears both widgets' focus | confirmed (code) |
+| `0x001e0f18` | `ScrollingMenuItem_IsReady` | slot `+0x88`: both widgets ready | confirmed (code) |
+| `0x001e0f98` | `ScrollingMenuItem_Update` | slot `+0x30`: description placed under the main widget (x plus half or full width by `+0x78`, y offset `+0x7c`); while focused and `+0x6c` ms (550) after focus, its reveal grows by `+0x70` a frame (cue `0xd` as it starts), otherwise shrinks; alpha byte `+0x80` | confirmed (code) |
+| `0x001e12a0` | `ScrollingMenuItem_Render` | slot `+0x38`: main widget, then description, when visible and ready | confirmed (code) |
+| `0x001e1338` | `ScrollingMenu_Construct` | 0x110 bytes, vtable `0x0053bfc8`, input interface `0x0053bfa0` at `+0x7c`; code-to-item map `+0x84` (header 0x18 bytes, tag `STL`), item vector `+0x94`-`+0xa0` | confirmed (code) |
+| `0x001e1458` | `ScrollingMenu_Destroy` | slot `+0x60`: frees vector and map | confirmed (code) |
+| `0x001e1550` | `ScrollingMenu_Shutdown` | slot `+0x68`: clears the map; with `+0xd4` (owns widgets) frees each item's widgets; frees the items | confirmed (code) |
+| `0x001e16f0` | `ScrollingMenu_Setup` | slot `+0xc0` (pos, owner, owns): input = HUD virtual pad 0, owner `+0xcc`, delay `+0xc4` = 550, step `+0xc8` = 0.25, max visible `+0xb0` = -1, clip height `+0xb8` = 10000 (none) | confirmed (code) |
+| `0x001e1800` | `ScrollingMenu_SetPlayer` | slot `+0x198`: input `+0x60` = `HUD_GetVirtualPad(hud, n)` | confirmed (code) |
+| `0x001e1830` | `ScrollingMenu_AddItem` | slot `+0xc8` (code, widget): new item with delay, step and `+0xd8`/`+0xdc`; map[code] = item; appended; count `+0xac` | confirmed (code) |
+| `0x001e1a38` | `ScrollingMenu_SetItemDescription` | slot `+0xd0`: item slot `+0x100` with the widget, reveal 0 | confirmed (code) |
+| `0x001e1be0`, `0x001e1c40` | `ScrollingMenu_GetRect`, `_IsReady` | slots `+0x70`/`+0x88`: rectangle `+0x30` scaled by reveal `+0x50`; all items ready | confirmed (code) |
+| `0x001e1cb8`, `0x001e1d70` | `ScrollingMenu_MoveUp`, `_MoveDown` | slots `+0x1a8`/`+0x1b0`: at an end cue `0xe` and auto-repeat off (`+0x104` = 1); else `Select(i -/+ 1)`, starting scroll state 1 or 2 when the cursor passes the middle row (`+0x100` adjusts for even counts) | confirmed (code) |
+| `0x001e1e48` | `ScrollingMenu_Select` | slot `+0x1b8`: `+0x104` = 0, unfocuses the old item (releases its description when `+0xe4`), `+0xa8` = i, focuses it, cue 4 | confirmed (code) |
+| `0x001e1f28`, `0x001e1f68`, `0x001e1fa8` | `ScrollingMenu_GetSelectedWidget`, `_HasDescription`, `_GetItemWidget` | slots `+0x110`/`+0x118`/`+0x120` | confirmed (code) |
+| `0x001e1fe0` | `ScrollingMenu_OnCommand` | interface slot `+0x08`: the owner `+0xcc` sees the command first; else 0 = up, 1 = down; stamps `+0xd0`; returns 1 | confirmed (code) |
+| `0x001e2090`, `0x001e2130` | `ScrollingMenu_Focus`, `_Unfocus` | slots `+0x90`/`+0x98`: clears the input record (`0x00146000`); focuses the selected item unless `+0xe8` | confirmed (code) |
+| `0x001e21c0` | `ScrollingMenu_SetPosition` | slot `+0x08`: `+0x20` | confirmed (code) |
+| `0x001e21d8` | `ScrollingMenu_Update` | slot `+0x30`: input only when focused, not scrolling, 100 ms after `+0xd0` and the item's description not focused (repeat pass `0x001e93c0`, or plain `0x001e9518` when `+0x104`, mask `0xf000`; button pass `0x001e9468`); scroll states `+0x80` (1 up, 2 down, 3 reveal top, 4 hide top) step `+0xc8`; stacks the window (`+0xa4` first, `+0xac` count, at most `+0xb0`) from `+0x20`; clip to `+0xb8` sets fit count `+0xb4` and a partial reveal of the last item | confirmed (code) |
+| `0x001e2e40` | `ScrollingMenu_Render` | slot `+0x38`: the visible items, one more in state 3 | confirmed (code) |
+| `0x001e2f40`, `0x001e2f98` | `ScrollingTextWidget_Construct`, `_Destroy` | 0x270 bytes, vtable `0x0053c2c8`; MessageHUD text `+0x70` | confirmed (code); file inferred |
+| `0x001e2fe8` | `ScrollingTextWidget_Setup` | slot `+0xc0`: position `+0x20`, size `+0x30`, offset `+0x60`; text width = size x, colour `0x005fd310`; focus colour `+0x260` = `0x005fd310` | confirmed (code) |
+| `0x001e3070` | `ScrollingTextWidget_SetText` | slot `+0xc8` (time, text, instant): optional timed reveal (`MessageHUD_ReadAutoIndent`); height `+0x38` = text height | confirmed (code) |
+| `0x001e3140`, `0x001e31e0` | `ScrollingTextWidget_SetMetrics`, `_Shutdown` | slots `+0xd0`/`+0x68`: `MessageHUD_SetMetrics` wrap box; shuts the text down | confirmed (code) |
+| `0x001e3248` | `ScrollingTextWidget_GetRect` | slot `+0x70`: `+0x30`, height times reveal | confirmed (code) |
+| `0x001e32a0` | `ScrollingTextWidget_Update` | slot `+0x30`: text at x - width / 2 + offset; crop `+0x1f4` = max(0, height - text height); visible while reveal > 0 | confirmed (code) |
+| `0x001e33c8` | `ScrollingTextWidget_Render` | slot `+0x38`: focus colour `+0x260` when focused, else `0x005fd320` | confirmed (code) |
+
+### After `GUI/ControlMenuHUD.cpp` (no path string): text boxes, headers, menu input {#fn-after-controlmenuhud}
+
+`0x001e6e98`-`0x001e9b88`, between the pause Stats screen ([Pause](pause.md#fn-after-controlmenuhud)) and the Rumble
+screens: the boxed text base of the HUD's scroll-in texts, the three header classes, the menu input passes
+([Front end](frontend.md#input)) and particle helpers. No path strings; grouping by address (inferred).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001e6e98`, `0x001e6ef0` | `BoxedText_Construct`, `_Destroy` | vtable `0x0053c7e8`: MessageHUD base, backdrop BaseWidget `+0x210`, icon `+0x310` | confirmed (code) |
+| `0x001e6f50` | `BoxedText_SetupBox` | (pos, style 0-7): margins `+0x418`-`+0x430` (0.02, 0.06, 0.005, -0.2, -0.027, 0.05, adjusted by style); backdrop `+0x204` (part_page0 rect 78, (0,0,0,143), depth 8000) and icon `+0x208` (rect 27, depth 11000) per style: default both, 0 icon with shadow, 4 backdrop only | confirmed (code) |
+| `0x001e72c0`, `0x001e7300` | `BoxedText_Shutdown`, `_SetVisible` | slots `+0x68`/`+0x50`; the icon only shows with a sprite (`+0x3d8` != -1) | confirmed (code) |
+| `0x001e7330`, `0x001e7338`, `0x001e7358` | `BoxedText_SetIconSize`, `_SetIconSprite`, `_GetIconSprite` | `+0x410`; icon sprite word | confirmed (code) |
+| `0x001e7360`, `0x001e7380` | `BoxedText_SetBackdropSprite`, `_SetBackdropColour` | backdrop sprite word and colour | confirmed (code) |
+| `0x001e73a0`, `0x001e7408` | `BoxedText_SetPosition`, `_IsReady` | slots `+0x08`/`+0x88` | confirmed (code) |
+| `0x001e7468` | `BoxedText_Update` | slot `+0x30`: backdrop fitted round the measured text plus margins; its alpha `0x0050f2c4` = 0 except style 4; icon left, right or centred by style | confirmed (code) |
+| `0x001e7750` | `BoxedText_Render` | slot `+0x38`: backdrop, icon, text | confirmed (code) |
+| `0x001e77a0`, `0x001e7808`, `0x001e7868` | `IconTextHeader_Construct`, `_Destroy`, `_Shutdown` | vtable `0x0053cae0`: HeaderBase, MessageHUD `+0x70`, sprite `+0x260`, text `+0x60` | confirmed (code) |
+| `0x001e7898`, `0x001e7a00` | `IconTextHeader_Setup`, `_SetupInBatch` | slots `+0xc0`/`+0xc8`: child `+0x50`; sprite size 0.1, depth 8000, `0x005fd310`; text size 1, font 3; y gap `0x0050f2e0` = -0.015 (-0.025 in mode 2); the second takes a sprite batch | confirmed (code) |
+| `0x001e7b70` | `IconTextHeader_Update` | slot `+0x30`: sprite at pos + (0, `0x0050f2ec`) sized (`0x0050f2e4`, `0x0050f2e8`); text left-aligned, centred vertically; child below | confirmed (code) |
+| `0x001e7d78`, `0x001e7df0` | `IconTextHeader_Render`, `_RenderColoured` | slots `+0x38`/`+0xd0`: grey `0x005fd310` shadow `0x80`, or a given colour | confirmed (code) |
+| `0x001e7e58`, `0x001e7e78`, `0x001e7ea8` | `IconTextHeader_SetText`, `_ShowChild`, `_SetVisible` | text `+0x70`; child slot `+0x40`; visible flags | confirmed (code) |
+| `0x001e7ef8` | `IconTextHeader_IsReady` | slot `+0xb8`: sprite batch `+0x324` and batches 3, 6 | confirmed (code) |
+| `0x001e7f50`, `0x001e8020`, `0x001e8120` | `CircledTextHeader_Construct`, `_Destroy`, `_Shutdown` | vtable `0x0053ca00`, the pause screens' headers: sprite `+0x390`, 3 circles `+0x490`, 3 letters `+0x790`, title `+0xa00`, subtitle `+0xad0` | confirmed (code) |
+| `0x001e81c0` | `CircledTextHeader_ApplyVideoMode` | globals `0x0050f2fc`-`0x0050f314`, scale `0x0050f2dc` | confirmed (code) |
+| `0x001e8368` | `CircledTextHeader_Setup` | slot `+0xa8`: title size 2.23, subtitle 1.561, font slot 4; circles sprite `0x54` (rect 84), `0x005fd260`, depth 8500, size 0.082 x scale | confirmed (code) |
+| `0x001e85e8`, `0x001e8658` | `CircledTextHeader_SetCircleColour`, `_SetLetterColour` | the three circles or letters | confirmed (code) |
+| `0x001e86c8` | `CircledTextHeader_Update` | slot `+0x30`: used circles spaced `0x0050f324`, black letters, title after, subtitle under, child | confirmed (code) |
+| `0x001e8d00`, `0x001e8dd0` | `CircledTextHeader_Render`, `_RenderColoured` | slots `+0x38`/`+0xd0` | confirmed (code) |
+| `0x001e8ee0` | `CircledTextHeader_SetTitle` | characters before `:` become letters; a `:` adds a circle with `'@'` + game state `+0x33a`; rest is the title; last circle `0x005fd328`; subtitle = level name of game state `+0x56dc` (table at `+0x151d`, 0x84 each) | confirmed (code) |
+| `0x001e9088` | `CircledTextHeader_IsReady` | slot `+0xb8`: base and circle batches | confirmed (code) |
+| `0x001e90f8`, `0x001e9130` | `SimpleHeader_Shutdown`, `_Setup` | allocator tag `SimpleHeader`, vtables `0x0053c8e8`/`0x0053c968`; Rumble titles: TextWidget font slot 6 (big_font), `0x005fd310`, pos `+0xf0`, created `+0xdc` | confirmed (code) |
+| `0x001e91e8`, `0x001e9250` | `SimpleHeader_Update`, `_Render` | measured size into `+0x100`; text when created | confirmed (code) |
+| `0x001e9298`, `0x001e92d0` | `HeaderBase_Construct`, `_Destroy` | vtable `0x0053cbc0`, child `+0x50` | confirmed (code) |
+| `0x001e92f8`, `0x001e9330`, `0x001e9368` | `HeaderBase_Render`, `_SetColour`, `_PlaceChild` | renders the child; colour via child slot `+0x78`; moves and updates it | confirmed (code) |
+| `0x001e93c0` | `MenuInput_PadRepeatPass` | auto-repeating pressed bits of pad `+0x19` (`0x005dd810`, 0x50 each) & mask; plain `+0x08` = 0 | confirmed (code) |
+| `0x001e9468` | `MenuInput_ButtonPass` | released bits & mask | confirmed (code) |
+| `0x001e9518` | `MenuInput_PadPlainPass` | pressed bits & mask; plain `+0x08` = 1 (a held stick does not repeat) | confirmed (code) |
+| `0x001e95c0` | `MenuInput_Dispatch` | handler `+0x1c` slot `+0x08`: back 5 (`0x30`), accept 4 (`0x40`) after 110 ms; directions 0-3 from bits `0x1000`/`0x4000`/`0x8000`/`0x2000` or stick past 0.5, gap 110 ms or 400 ms while held (`+0x04`); stick `+0x0c`/`+0x10`, time `+0x18` | confirmed (code) |
+| `0x001e99f8` | `HudEffect_Spawn` | named particle effect via the task system `0x00512c7c` (radar blips) | confirmed (code) |
+| `0x001e9aa8`, `0x001e9ac0` | `HudEffect_GetColour`, `_SetColour` | `+0xb0` (and `+0xb4`) | confirmed (code) |
+| `0x001e9ae8`, `0x001e9b38` | `HudEffect_SendShow`, `_SendHide` | task messages `0x29` and `0x2a` | confirmed (code); meaning inferred |
+| `0x001e9b88` | `HudEffect_IsValid` | not null | confirmed (code) |
+
 ## Coney's implementation
 
 - **Sprite sheets** (`src/graphics/particle_page.h`): `parseParticlePage` reads a `0x4C` chunk's count, `firstGlyph`

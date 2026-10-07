@@ -23,10 +23,10 @@ saves only by **autosave**: right after a new profile is made, at the end of eac
 
 ## Original structure
 
-`Warriors/W_SaveSystem.cpp` (the profile slots and the record), `Warriors/W_PS2SaveSystem.cpp` (the card files, a
-state machine), `Device/ps2/memorycard/mcbase.cpp` (the card library wrapper), `GameModes/Gm_MemoryCard.cpp` (mode 6,
-the dialogs), `GUI/ProfileManagementGUI/PM_*.cpp` (the screens), `GUI/TextEntryPad.cpp` (name entry),
-`GUI/OptionMenu.cpp` (the in-game options). Names are ours.
+`Warriors/W_SaveSystem.cpp` (the profile slots and the record), `Warriors/W_PS2SaveSystem.cpp` (the card files, a state
+machine), `Device/ps2/memorycard/mcbase.cpp` (the card library wrapper, [below](#card-library)),
+`GameModes/Gm_MemoryCard.cpp` (mode 6, the dialogs), `GUI/ProfileManagementGUI/PM_*.cpp` (the screens),
+`GUI/TextEntryPad.cpp` (name entry), `GUI/OptionMenu.cpp` (the in-game options). Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -62,8 +62,8 @@ scratch memory file and keeps its length (`ss + 0x108`), **0x504 = 1,284 bytes**
 | `0x010` | 0x168 | the per-mission best records: 30 × 12 bytes, indexed by the level record's mission byte (`+0x0c`): `+0` best score, `+4` a running total, `+8` a grade byte, `+9` a percentage byte | stats object `0x006fe490 + 0x300` (`0x00423098`, `0x004231b8`) | zeros |
 | `0x178` | 0x50 | the unlockables' **locked** bits, 640 (a set bit is locked) | `0x006fe8f8` | all ones |
 | `0x1c8` | 0x50 | a second 640-bit set of the unlockables (the "new" marks, inferred) | `0x006fe948` | zeros |
-| `0x218` | 0x254 | the Rumble data (custom gangs, inferred) | `0x0063ef80` | zeros |
-| `0x46c` | 0x40 | the first 512 bits of the same Rumble block again, packed per word | `0x0063ef80` | zeros |
+| `0x218` | 0x254 | the Rumble custom-gang store ([Front end](frontend.md#rumble-gangs); written and read by `0x00202fc0` / `0x00203040`, confirmed (code)) | `0x0063ef80` | zeros |
+| `0x46c` | 0x40 | the store's first 512 bits (the owned character types) again, packed per word | `0x0063ef80` | zeros |
 | `0x4ac` | 4 | the **banked money** | `W_GameState + 0x480` | 0 |
 | `0x4b0` | 0x14 | the option block: `+0x04` brightness byte, `+0x08` SoundFX volume, `+0x0c` Music volume (floats); `+0x00`, `+0x10` unidentified | `W_GameState + 0x57a0` | 0, 40, 0.9, 0.9, 0 |
 | `0x4c4` | 4 × 3 × 2 | per pad (P1 then P2): invert camera, auto-adjust camera, vibration | `W_GameState + 0x440 + pad × 4`, `+0x448 + pad × 4`, byte `+0x56de + pad` | 0, 1, 1 |
@@ -206,6 +206,58 @@ the check is made only when the directory does not exist yet. Confirmed (code).
 disc and write it, write `icon.sys` (sub-steps 0-11 in `+0x188`); 5 **load**: read the data file into the image and
 parse the six headers; 6 **save**: write the whole image over the data file, then `icon.sys` again. Confirmed (code);
 at runtime the first save ran format (1.6 s), detect, create (1.3 s) and save (0.4 s).
+
+### The card library {#card-library}
+
+`Device/ps2/memorycard/mcbase.cpp` (`0x00149f30`-`0x0014b9d0`) wraps Sony's `libmc` for the save system's state
+machine above: a card record `{port, slot, type, free, format, changed, present}`, ten file records handed out from a
+queue, and each call retried up to six times while the library reports it busy, then (on the blocking path) waited
+for with `sceMcSync` and its error printed. `PS2Save_CreateStep`, `_LoadStep` and `_SaveStep` use the asynchronous
+calls (`0x0014b3d0`-`0x0014b9d0`) one step per frame; detection, the size checks and the `bugstar.dat` debug file use
+the blocking ones. A second, asynchronous card library (`0x001520b0`-`0x00153258`: format, directory, list, size,
+find, read, delete, run by an operation number) has no caller in this build (inferred unused). Confirmed (code):
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x00149f30` | `MCBase_InitLibrary` | `InitLibrary`: the `Queue<MC_FILE *>` of 10 free file records (`0x005df190`, 8 bytes each: card, descriptor), then `sceMcInit` up to six times, printing the library's error (old `mcserv.irx` or `mcman.irx`, failure) when it fails | confirmed (code) |
+| `0x0014a188` | `MCCard_Clear` | a card record `{port, slot, type, free, format, changed, present}`: all unknown (-1), not present | confirmed (code) |
+| `0x0014a1a8` | `MCCard_Copy` | copies a 28-byte card record | confirmed (code) |
+| `0x0014a1e8` | `MCCard_ApplyInfo` | reads `sceMcGetInfo`'s result: present when the type is 2 (a PS2 card) and the result above -10; changed when it is negative (another card); free space × 1024 | confirmed (code) |
+| `0x0014a228` | `MCCard_Detect` | `iFindFirstPS2MemoryCard`: `sceMcGetInfo` (up to six tries) and waits; 0 no card, 1 a new card, 2 the same card | confirmed (code) |
+| `0x0014a358` | `MCCard_StartDetect` | the same request without waiting | confirmed (code) |
+| `0x0014a440` | `MCCard_Init` | a card record for `port`, `slot`, then a detection, waiting or not | confirmed (code) |
+| `0x0014a4b8` | `MCBase_FileOpen` | `fopen(card, name, mode)`: `rb` read, `wb` create and write, `we` write, `rw` both; waits and takes a free file record (the descriptor), or prints the error | confirmed (code) |
+| `0x0014a758` | `MCBase_FileDelete` | `sceMcDelete`, waiting; true on success | confirmed (code) |
+| `0x0014a7f0` | `MCBase_FileClose` | `sceMcClose`, waiting; returns the record to the queue | confirmed (code) |
+| `0x0014a8d8` | `MCBase_FileRead` | `fread`: `sceMcRead`, waiting; the bytes read, or -1 with the error printed | confirmed (code) |
+| `0x0014aa78` | `MCBase_FileWrite` | `fwrite`: `sceMcWrite`, waiting; 1, or 0 with the error printed | confirmed (code) |
+| `0x0014ac50` | `MCBase_AsciiToSjis` | the icon title to Shift-JIS: letters `0x82xx`, space `0x8140`, brackets; returns the line-break offset (`\n`) | confirmed (code) |
+| `0x0014ad90` | `MCBase_BuildIconSys` | `icon.sys`: `PS2D`, the line break, background colours and light vectors, the title, the three icon names | confirmed (code) |
+| `0x0014b158` | `MCBase_GetDir` | `iGetDir`: `sceMcGetDir` up to six tries and waits; the entry count, 0 on failure (card removed below -9) | confirmed (code) |
+| `0x0014b2a8` | `MCBase_GetFileAttributes` | one directory entry's attributes, -1 when the file is missing | confirmed (code) |
+| `0x0014b310` | `MCBase_IsSubdirectory` | attribute bit `0x08` set | confirmed (code) |
+| `0x0014b360` | `MCBase_GetFileSize` | one entry's size, -1 when missing | confirmed (code) |
+| `0x0014b3d0` | `MCBase_FileOpenStart` | `fopen` without waiting (the asynchronous path) | confirmed (code) |
+| `0x0014b4c8` | `MCBase_IsOpenComplete` | `isfopenAsyncComplete`: polls `sceMcSync`; on success takes a file record, else prints the error | confirmed (code) |
+| `0x0014b6b0` | `MCBase_FileCloseNoWait` | `sceMcClose` without waiting; returns the record | confirmed (code) |
+| `0x0014b770` | `MCBase_FileReadStart` | `sceMcRead` without waiting | confirmed (code) |
+| `0x0014b7f8` | `MCBase_FileWriteStart` | `sceMcWrite` without waiting | confirmed (code) |
+| `0x0014b880` | `MCBase_FormatStart` | `sceMcFormat` without waiting | confirmed (code) |
+| `0x0014b8e8` | `MCBase_MakeDirectory` | `MakeDirectory`: `sceMcMkdir`; an existing directory is a warning | confirmed (code) |
+| `0x0014b9d0` | `MCBase_PollResult` | `sceMcSync` without waiting; 1 and the result when the request is done | confirmed (code) |
+| `0x001520b0` | `McAsync_Reset` | ends the current operation: kept as the previous one, cleared, the request block reset from defaults (`0x0054d650`) | confirmed (code) |
+| `0x001521b8` | `McAsync_Finish` | records an operation's result (ok, error) in a 12-byte log and resets | confirmed (code) |
+| `0x00152208` | `McAsync_Format` | operation 2: `sceMcFormat` | confirmed (code) |
+| `0x001522b8` | `McAsync_CountFiles` | operation 5: `sceMcGetDir("/<dir>/*")`, the entries less `.` and `..` | confirmed (code) |
+| `0x001523d8` | `McAsync_MakeDirectory` | operation 4: `sceMcMkdir`, only on a formatted card | confirmed (code) |
+| `0x001524c8` | `McAsync_DirectoryExists` | operation 3: `sceMcGetDir` of the directory itself | confirmed (code) |
+| `0x001525c0` | `McAsync_DirectorySize` | operation 7: the directory's size in KB (each file rounded up, plus the entries' clusters and 2) | confirmed (code) |
+| `0x00152740` | `McAsync_ListDirectory` | operation 6: reads the directory 16 entries at a time into the caller's buffer | confirmed (code) |
+| `0x001529a0` | `McAsync_FindFile` | operation 8: a file's directory entry by name | confirmed (code) |
+| `0x00152bf0` | `McAsync_CheckFile` | operation 11: checks the names (directory 9 characters, file 32), the directory and then the file | confirmed (code) |
+| `0x00152f78` | `McAsync_ReadFile` | operation 10: change directory, open, read into the caller's buffer, close | confirmed (code) |
+| `0x00153118` | `McAsync_DeleteFile` | operation 9: `sceMcDelete("/<dir>/<file>")` | confirmed (code) |
+| `0x00153258` | `McAsync_Update` | the dispatcher: polls `sceMcSync`, watches the card (`sceMcGetInfo`), runs the current operation's step; no code calls it | confirmed (code) |
 
 ### Mode 6: load, save and the dialogs {#mode-6}
 

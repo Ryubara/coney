@@ -1607,10 +1607,10 @@ no time limit, `+0x28` the option.
   for 20 s and, at min(strength, 100) %, queue a reaction, and is used (`0x0030fa18`); `0x13` and `0x16` re-seat the
   crowd.
 - **The reaction** (`0x0030fc48(what, on)`), run when the periodic switch `+0x2a` is on or `what` is non-zero: each
-  free member with no actions queues two actions, a clip action (`0x002fb868`, vtable `0x00542d20`) with anim `0x8f`
-  (`0x10` at rand100 < 50 when `what` is 0; `0xb1` when `what` is 1 and `on` is 0) after 0-750 ms, then a second clip
-  action (`0x002fa300`, vtable `0x00542be0`) with the cheer `0x256` in one of three variants. A cheering crowd's
-  Process calls it with (0, 1) on each tick.
+  free member with no actions queues two actions, a speech action (`PlaySound`, `0x002fb868`, vtable `0x00542d20`)
+  saying command `0x8f` (`0x10` at rand100 < 50 when `what` is 0; `0xb1` when `what` is 1 and `on` is 0) after
+  0-750 ms, then a clip action (`0x002fa300`, vtable `0x00542be0`) with the cheer `0x256` in one of three variants. A
+  cheering crowd's Process calls it with (0, 1) on each tick.
 - **`TacticTrigger(gang, what, on)`** (`0x00316fa0`), crowd tactics only: what 0 sets the periodic switch to `on`;
   what 1 runs the reaction at once (`0x0030fe58`).
 
@@ -1758,10 +1758,11 @@ argument, puts that object in his hand (the tactic passes none).
   two bytes.
 - **Process** (`BigBrawlerGoal_Process` `0x002e8f78`), by state: **0** (stage 1 only) a taunt, line `0x57` and anim 643
   (`ANIM_RAGE_START`) after 0-750 ms, then 2. **1** pick the best enemy (with the goal's own score hook below); if he
-  is the current target and busy, close to the near range, taunt (`0x002fb868`) and wait 1 s; else an event 24
-  broadcast within 30 m (`0x00293768`), an EngageEnemy goal (taunt `0x47`) whose run-in distance `+0x30` is set to
-  6.25 (2.5 m), the cross + square special (kind 16) on an enemy already within 0.55 × far, else a 31 % taunt, a turn
-  to him, and brain `+0x0c` raised by one for Diego (`+0x0b` too, but it stays 0 for both bosses, below); then 2.
+  is the current target and busy, close to the near range, say a line (`PlaySound`, `0x002fb868`) and wait 1 s;
+  else an event 24 broadcast within 30 m (`0x00293768`), an EngageEnemy goal (taunt `0x47`) whose run-in distance
+  `+0x30` is set to 6.25 (2.5 m), the cross + square special (kind 16) on an enemy already within 0.55 × far, else a
+  31 % taunt, a turn to him, and brain `+0x0c` raised by one for Diego (`+0x0b` too, but it stays 0 for both bosses,
+  below); then 2.
   **2** fight: an object in hand is used on the
   nearest enemy (`0x002faeb0` kind `0x10`; inferred: thrown); otherwise a target re-picked every 4 s, an attack kind chosen
   (`Brain_PickAttack`) and kept until it can be queued in reach (moving in within its reach), with a 10 % shout
@@ -2005,7 +2006,8 @@ numbers they go with are inferred from those types (4 `Custom`, 1 `BreakAndEnter
 #### Warrior commands {#warrior-commands}
 
 A war chief (a player human whose `+0x3ac` is 1) orders the crew, his gang, with one of seven **Warrior
-commands** ([Commands](../references/commands.md#warrior-command)). The menu (HUD `0x001a6c58`), `WCIssueCommand`
+commands** ([Commands](../references/commands.md#warrior-command)). The menu (HUD `0x001a6c58`, R2 and the right
+stick: [HUD](hud.md#warrior-command-menu)), `WCIssueCommand`
 and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command, forced, pos, arg)`, confirmed
 (code):
 
@@ -2024,8 +2026,90 @@ and the game itself go through one dispatcher, `0x0041c4e0(state, chief, command
    `steal` when the nearest thing of kind `0xe` is closer than 64 (8 m if that is a squared distance, inferred) and
    `0x0039a580` accepts it, else `vandal`; 6 none.
 
-The tactics' types and behaviour are not traced: the names follow, attack, hold, scatter and wreck are read from
-the lines (inferred).
+The command tactics, by command (constructor, vtable, type id; confirmed (code)):
+
+| Command | Constructor | Vtable | Type | Members get |
+| --- | --- | --- | --- | --- |
+| 0 follow | `WarriorFollowTactic_Create` `0x00310e00` (init `0x00310e90`, distance 9.0) | `0x005438c0` | `0x12` | `FollowPlayer` ([below](#warrior-follow)) |
+| 1 attack | `WarriorAttackTactic_Create` `0x00320530` (init `0x003205b0`, member goals `0x00320618`) | `0x00544160` | `0x01` | `FollowAndAttack` (`0x34`, `0x002bbdc0`) on the chief; dogs (class 221) `AvoidEnemies` |
+| 2 defend | `Tactic_Defend` round the chief (given 2.25) | `0x00543800` | `0x02` | `FollowAndDefend` ([table](#tactic-kinds)) |
+| 3 hold | `0x00313400` (init `0x00313490`, given 1.5), or `0x003128a0` (init `0x003128f8`) | `0x005439e0` / `0x00543980` | `0x03` / `0x13` | not traced |
+| 4 scatter | `0x00319570` (init `0x00319600`, given 75.0) | `0x00543d40` | `0x25` | not traced |
+| 5 steal / wreck | `0x00320b60` (init `0x00320be0`) | `0x005441c0` | `0x26` | not traced |
+
+The names follow, attack, hold, scatter and wreck are read from the lines (inferred). The follow, second hold,
+scatter and steal tactics are of type `0x12` or above, so they own their members' goals (`+0x3c`, [Tactics](#tactics)).
+
+#### The default command: follow {#warrior-follow}
+
+**Follow is the default, and the game issues it itself.** Confirmed (code) at the addresses cited:
+
+- **Level start.** `InitLevel`'s game-state reset (`0x00418c68`) sets, for both players, the last command (`+0x41a`)
+  to 0, all seven commands enabled (`+0x41e`), the menu unlocked (`+0x42e`), and the automatic commands on (`+0x431` =
+  1, [below](#warrior-auto-commands)). `Human_MakePlayer` (`0x00229c40`) makes the new player the **war chief**
+  (`+0x3ac` = 1) unless another player of his gang already is, makes him his gang's leader (gang `+0x44`), and then
+  **dispatches command 0, forced** (`0x0022a1a8`). So a crew starts every level under the follow tactic as soon as
+  its chief is made a player.
+- **After a scene.** `SceneTask_End` (`0x0039f450`) pops each bound human's scene goal when it is of type `0x27`-`0x2a`
+  (`JoinCinematic` is `0x29`), and, when one of the roles was a player (or the first player's brain `+0x2e4` is set),
+  unlocks that player's menu and dispatches **command 0, forced**; `SceneTask_Abort` (`0x0039ec60`) does the same for
+  the first player. So the crew leaves `GoalJoinCinematic` and goes straight back to following.
+- `Human_SetWarChief` (`0x002398b0`) re-issues the player's last command (`+0x41a`) to the new chief's gang.
+
+A forced dispatch still passes the checks of step 1 above (a locked command system, `WCLockCommands`, or a disabled
+command gives nothing) and always rebuilds the tactic.
+
+**The follow tactic** (fields after the base: `+0x20` the follow distance, 9 m; `+0x24` the next formation reshuffle;
+`+0x28` the next banter check; `+0x2c` the idle timer; `+0x30` "the leader is a player"; `+0x31` started):
+
+- **Start** (`0x003111a8`) gives the members their goals (`WarriorFollowTactic_GiveGoals` `0x00310f38`): the chief's
+  formation takes slot set 9 (`0x00295dd8`); every member that is not the chief, not a player and not down is flushed
+  and gets **`GoalFollowPlayer(9 m, chief, mode 3)`** (`0x002de380`, type `0x32`, vtable `0x00541d70`). In a
+  two-player game a Warrior of the first player's gang more than 10 m from him whose nearest player is the other one
+  gets `FollowAndDefend` (`0x35`, `0x002bca20`) on that player instead. Start also fills the gang's anim group 604
+  with ten idle clips (`0x00169468`; End `0x00311230` undoes it).
+- **Process** (`0x00311638`): done (1) when the gang has no leader; every 8 s the chief's slot set is re-picked
+  (`0x00295db0`, one of two); every 1 s (0.25 s while the chief holds something) a banter check: when no scene plays,
+  no member has an enemy and every member has been idle for 25 s, one member says an idle line and looks at the
+  chief for 4 s. Otherwise it returns 0, so the tactic never ends by itself.
+- **Events** (`0x00311928`): 19 for a member (not the chief) with a goal: flushed and given `FollowPlayer` mode 1;
+  11 from a Warrior: the gang's warning line (`0x001691a0`, by how many are left and whether the spotter is beyond
+  12 m); 20 (violence nearby): consumed, and a free member near a busy offender looks at him for 3 s, with a 10 %
+  taunt (`0x00311250`); 22 with argument 1: the goals are given again.
+- Repeating the follow command (unforced, under type `0x12`) calls `0x003114e0`: each member holding `FollowPlayer`
+  without `FollowFormation` (`0x33`) also gets `FollowFormation(0.75 m, chief, 1)`.
+
+**`GoalFollowPlayer`'s Process** (`0x002de7c0`): done (2) when the leader is gone. Every 31 updates while the
+follower is not in fight mode, or when it lost a straight walkable line to the leader, it pushes
+`FollowFormation(0.75 m, leader)` (`0x002dfba8`), which walks it to its formation slot. Its **fight mode**
+(`0x002de650`) is on for a Warrior when a player's brain `+0x2e4` is set (a Warrior is hitting back at a chief who
+hit him, `WarriorBrain_OnHitByChief` `0x00306190`), or when a member of its gang has attackers and its own brain
+`+0x152` (inferred: how many hold it as an enemy) is not 0; it is off while one of its own attackers is a player. In
+fight mode it widens its field of view to 2π, keeps a valid target, else takes the nearest attacker within 20 m or
+the leader's target, enters the fight stance and **turns to the target** within the far melee range (the near one
+when the target is busy) or moves to him (`MoveToHumanAction`, 3 s); it does **not attack**. Out of fight mode it
+leaves the stance, may fetch a pickable object (the roll of [the Warriors' pick-ups](#warrior-pickups), every 30
+updates), every 2-4 s turns as its mode says (mode 3: toward the leader's heading when more than 60° off), and every
+3-6 s, at 30 %, queues a fidget (`PlayFidget`, `0x002f9f48`).
+
+#### Automatic commands {#warrior-auto-commands}
+
+What turns a following crew into a fighting one is the chief's own brain. `PlayerBrain_Update` (`0x003035d8`) calls
+`WarChief_AutoCommand` (`0x00303988`) on every update with the chief's target (brain `+0x124`). For a war chief,
+while game state `+0x431` is set (always: `InitLevel` sets it and no script clears it), it unlocks his menu every 10
+updates and then, by his last command (confirmed (code)):
+
+- **0, follow**: when he is mugging (`0x100`), tagging or in a player mode 2 or 3 (record `+0x46`; not traced),
+  **defend** at once. Otherwise, when his target is within his far melee range (`+0x140`, 5 m) and is not a Warrior
+  hitting back at him (`+0x2e5`), and he has attackers (`+0x1a4`), **attack** after 1.5 s (**defend** while he grabs
+  from the rear, `0x80`). Every 20 updates, next to a store flag whose group still has objects, **steal** (5).
+- **1, attack** and **2, defend**: back to **follow** 1.5 s after no member of the gang has an enemy (`0x00165a20`)
+  and his brain `+0x2d4` is clear (defend also waits until he is free, not cuffed and not mugging).
+- **5, steal**: back to **follow** when he is more than 15 m from the store flag.
+
+All of these are forced dispatches. So in the original a crew under follow stands round the chief, turns to face his
+enemies, and joins the fight with `FollowAndAttack` 1.5 s after the chief, within 5 m of his target, is attacked.
+Under attack, defend or follow, `Brain_PushFightGoal` pushes nothing ([Tactics](#tactics)): the tactic decides.
 
 #### Formations and follow slots {#formations}
 
@@ -2229,8 +2313,22 @@ Warriors, as read at runtime ([the cast while the scene plays](#level99-scene-st
   EngageEnemy** (top) at 8.96, 8.59 and 8.77 m, far range 5.0. They ran in at up to **7.80 m/s** (the run gait;
   one slowed to about 2 m/s for some 20 updates while steering round another). The first reached the player and
   stayed at 0.71 m with an action running (inferred: the run-in's charge, step 11); its EngageEnemy ended at update
-  564. The other two stopped at 2.1-2.6 m (inferred: the player was busy, step 9) and swapped EngageEnemy for a
-  fight goal at updates 546 and 562. Each stack then read **FindEnemy, Melee, Fight**.
+  564. The other two stopped at 2.1-2.6 m and swapped EngageEnemy for a fight goal at updates 546 and 562. Each stack
+  then read **FindEnemy, Melee, Fight**.
+- **Why the other two stop short** (confirmed (runtime), PCSX2 2.9.94, the same state, the three Warriors' and the
+  player's state word, gait, speed `+0x1ac` and clip read every update; [EngageEnemy](#engage-enemy) step 9 confirmed
+  (code) at `0x002afa48`). The first Warrior's run-in ends in the charge (clip 0), which hits the player and plays the
+  extreme reaction 296 on him: his state word becomes `0x180000`, inside the busy mask `0x7bf9e9f7ff0` that step 9
+  tests (`HumanRecord_AreActionsBlocked`), and stays so through 296 and the getting-up 198. Step 9 runs only on a
+  re-plan (step 6: every 250 ms, or on the target's turn, slowing or coming within 1.6 m), so each runner stops at the
+  first re-plan that finds the player busy within 0.75 × far (3.75 m): one 4-5 updates after the hit, at 2.12 m (the
+  player had been free until then, so the 3.75 m line had passed), the other 5 updates after crossing 3.75 m, at
+  3.15 m. The stop sets the move speed to 0 (`0x0028aac0`) and the run (410, 7.80 m/s) **ramps down by 1.067 m/s per
+  update to 0 in 7 updates**, about 0.83 m, with no run-stop clip (410 straight to the idle 388); they stood at 2.10
+  and 2.49 m, the player flung farther meanwhile. Then the stop's turn to face (0.3 s), EngageEnemy ends, and the
+  fight goal walks them in with the combat-walk clips (380, 387; 3.43 m/s) while he is still down. So the 2.1-2.6 m
+  is not a distance of its own: it is where a 3.75 m test, sampled every 250 ms and started when the player became
+  busy, leaves a 0.83 m stop. Analyst run (not a committed scenario), from 470 updates after the state.
 - The fence gangs (5, 6) get the **crowd tactic** and no `GoalFight`: they cheer from the fence
   ([TacticCrowd](#tactics)). They are friends of the Warriors' gang.
 - **Which wins**, confirmed (code) at `0x0028d2e8` and `0x0028d190`: a threat response of 0 stops `GoalFight`
@@ -2598,7 +2696,7 @@ when `GangCanFlee` turns it on.
   flag 1 or 2) are for if they contain nothing.
 - The move action's braking distance `+0x48` (how it is worked out) and how a corner's arc is predicted
   (`0x0022aae8`, `0x002fbef0`).
-- `GoalFollowPlayer`'s Process (vtable `0x00541d70`) and the formation's assignment mode `+0x275`.
+- The formation's assignment mode `+0x275`, and `GoalFollowPlayer`'s modes 1, 2 and 4.
 - What reads the turn action's `+0x10` (`ActLookAt`'s turn value) and the play-anim action's flag (loop or hold?).
 - Whether the buyer can press triangle during the dealer's money pair (the deal completes on a second event 0,
   [Buying](#dealer-buy)), and what the rip-off's `gen_push` clip does to the buyer.
@@ -2608,7 +2706,7 @@ when `GangCanFlee` turns it on.
 - The tactic event codes (`TacticGetString`, `0x00315c58`) passed to a tactic's callback.
 - Whether `CfgSetDefaultFollowSlotSet` (`0x00294788`) rewrites the slots of formations in use or only the pool's
   defaults for formations made later.
-- What the player gang's type-3 tactic (vtable `0x005439e0`) is called and does, and what `0x0041c4e0` decides.
+- What the hold, scatter and steal command tactics (types `0x03`, `0x13`, `0x25`, `0x26`) give their members.
 - The perception struct (`+0xf8`).
 - Human `+0x333` (the riot's move deadline adds 1000 × it ms; Coney: 0) and a turf box's radius `+0x40` (Coney:
   half its diagonal).

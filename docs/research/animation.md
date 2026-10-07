@@ -197,6 +197,7 @@ events, and wrap together. Confirmed (code):
 Type 13's set value (`0x001094f0`) rounds to the nearest of 8 unless task flag `0x200`, like the gait blend
 (`0x0010a558`, which clamps to 0-4). `0x0010a2a0` is the gait blend's pair index: 0, 1, 2 or 3 at the 0.995, 1.995,
 2.995 steps. When a type 11 or 13 crosses to another clip the incoming one starts at the same normalised time.
+Confirmed (code) at the addresses cited.
 
 ## Dynamic animation slots {#dynamic-slots}
 

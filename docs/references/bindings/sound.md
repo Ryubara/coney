@@ -242,12 +242,12 @@ NewAnimSlots(animSound, count, columns, tune1, tune2, tune3, tune4, tune5, tune6
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `animSound` | number, truncated to an unsigned integer | Animation sound event id (SA.* from enum_preload.lua, such as SA.play_sound_grunt). |
-| 2 | `count` | number, truncated to an unsigned integer | How many alternative sounds the event has. |
+| 2 | `count` | number, truncated to an unsigned integer | How many alternative sounds the event has; they play in turn (cursor byte 1, 0x00114800). |
 | 3 | `columns` | number, truncated to an unsigned integer; default 1 | How many sound columns each alternative has, 1-3 (default 1). |
-| 4 | `tune1` | number (single precision); default 1 | A float stored with the event (default 1); the scripts pass 0.9 for some; inferred to be a volume or chance factor. |
-| 5 | `tune2` | number (single precision); default 1 | A float (default 1). |
-| 6 | `tune3` | number (single precision); default 1 | A float (default 1). |
-| 7 | `tune4` | number (single precision) | A float (default 0); where it is stored is not traced. |
+| 4 | `tune1` | number (single precision); default 1 | Volume of column 1 (record +0x04, default 1; the scripts pass 0.9 for some). |
+| 5 | `tune2` | number (single precision); default 1 | Volume of column 2 (+0x08, default 1). |
+| 6 | `tune3` | number (single precision); default 1 | Volume of column 3 (+0x0c, default 1). |
+| 7 | `tune4` | number (single precision) | A float (default 0); passed on but not read by 0x00116080. |
 | 8 | `tune5` | number (single precision) | A float (default 0); as tune4. |
 | 9 | `tune6` | number (single precision) | A float (default 0); as tune4. |
 
@@ -298,12 +298,12 @@ NewMaterialSlots(material1, material2, count, columns, tune1, tune2, tune3, tune
 | --- | --- | --- | --- |
 | 1 | `material1` | number, truncated to an unsigned integer | First material id (MATERIAL.* from enum_preload.lua), such as a weapon or fist. |
 | 2 | `material2` | number, truncated to an unsigned integer | Second material id, such as the body part or surface hit. |
-| 3 | `count` | number, truncated to an unsigned integer | How many alternative sounds the pair has (one is picked at random). |
+| 3 | `count` | number, truncated to an unsigned integer | How many alternative sounds the pair has; they play in turn, one per hit (cursor byte 2 of the record, 0x001146c0). |
 | 4 | `columns` | number, truncated to an unsigned integer; default 1 | How many sound columns each alternative has, 1-3 (default 1); NewMaterialSound fills them. |
-| 5 | `tune1` | number (single precision); default 1 | A float stored with the pair (default 1); inferred to be a volume or pitch factor. |
-| 6 | `tune2` | number (single precision); default 1 | A float stored with the pair (default 1). |
-| 7 | `tune3` | number (single precision); default 1 | A float stored with the pair (default 1). |
-| 8 | `tune4` | number (single precision) | A float (default 0); passed on, where it is stored is not traced. |
+| 5 | `tune1` | number (single precision); default 1 | Volume of column 1 (record +0x04, default 1), multiplied into the sound's volume when it plays. |
+| 6 | `tune2` | number (single precision); default 1 | Volume of column 2 (+0x08, default 1). |
+| 7 | `tune3` | number (single precision); default 1 | Volume of column 3 (+0x0c, default 1). |
+| 8 | `tune4` | number (single precision) | A float (default 0); passed on but not read by 0x00115cb0. |
 | 9 | `tune5` | number (single precision) | A float (default 0); as tune4. |
 | 10 | `tune6` | number (single precision) | A float (default 0); as tune4. |
 
@@ -312,8 +312,9 @@ NewMaterialSlots(material1, material2, count, columns, tune1, tune2, tune3, tune
 Allocates the sound table for one pair of materials (what hits what): count alternatives with up to three columns of
 sound names each; config_preload.lua and the sound matrix call it thousands of times.
 
-**Notes.** 0x00115cb0; the table is a 2D array indexed by the two materials (row stride 0x2fc) in the audio manager's
-sound table at +0x1e0, allocated from the Level Dynamic & LUA pool.
+**Notes.** 0x00115cb0 ([Sound: the sound matrix](../../research/sound.md#sound-matrix)); the table is a 2D array indexed
+by the two materials (row stride 0x2fc) in the audio manager's sound table at +0x1e0, allocated from the Level Dynamic &
+LUA pool.
 
 - **Evidence:** confirmed (code) at `0x00113c58`; detail: traced
 - **Wrapper** `0x00372700` (registered by `RegisterBindings`); **calls** `0x00113c58`
@@ -510,10 +511,10 @@ SetupRadio(object, onPickUp, track, onSegment, djLine)
 **Returns** nothing.
 
 Makes a world object a working radio. Everything it plays is a streamed sound started at the radio's position
-(`PlaySound3D`, a positional sound task, not the music player), heard while the player is within 40 m, at half volume
-while a scene plays: its track, then a random DJ link (70% one of 15 kind-1 clips, 20% kind 0, 10% a `dj_rumble` clip),
-then a random next track, and so on; `onSegment` runs at each change. With `djLine` the announcement plays when the
-player first comes within 5 m. Holding R1 while carrying the radio retunes it (a retune sound, then a random track);
+(`PlaySound3DByHash`, a positional sound task, not the music player), heard while the player is within 40 m, at half
+volume while a scene plays: its track, then a random DJ link (70% one of 15 kind-1 clips, 20% kind 0, 10% a `dj_rumble`
+clip), then a random next track, and so on; `onSegment` runs at each change. With `djLine` the announcement plays when
+the player first comes within 5 m. Holding R1 while carrying the radio retunes it (a retune sound, then a random track);
 smashing it silences it for good. The object is pinned (`ObjRecord_SetPinned`) so it is not recycled. State machine,
 tables and names: [Sound, Radios](../../research/sound.md#radios).
 
@@ -952,8 +953,8 @@ could not start.
 Plays a sound once as a positional (3D) sound at a point in the world, at full caller volume and normal pitch; it is
 heard with the usual distance falloff and panning to each listener and then ends by itself.
 
-**Notes.** PlaySound3D (0x0010fdd0) with volume, pitch and a third factor of 1.0 and its last flag 1; a name that is not
-in the sound list, or no free task, gives the null handle. Converted as unsigned.
+**Notes.** PlaySound3DByHash (0x0010fdd0) with volume, pitch and a third factor of 1.0 and its last flag 1; a name that
+is not in the sound list, or no free task, gives the null handle. Converted as unsigned.
 
 - **Evidence:** confirmed (code) at `0x00113680`, `0x0010fdd0`; detail: traced
 - **Wrapper** `0x003715f8` (registered by `RegisterBindings`); **calls** `0x00113680` `Audio_PlaySoundAt`, `0x0010fdd0`

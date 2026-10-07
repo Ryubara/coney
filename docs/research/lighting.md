@@ -246,11 +246,14 @@ Effects bit 0 spawns `part_light_bugs` at the light when it is made (`0x0017c508
   nor by world-only lights. In `level99` that is the moonlight, the reflected light and the object ambient (3 lights),
   then up to 3 point lamps within 40 m (fewer further away).
 - **Model colour**: the render instance's colour word `+0x28` (`HuColor`, `0x00239100`) × a dimming factor; while the
-  brain's `+0x2d4` is set the factor falls from 1.0 to 0.5 over 250 ms (else it is 1.0), and **point lights are
-  skipped**. `+0x2d4` is set by `Brain_SetHiddenInShadow` (`0x0028ee88`) from the ground check `0x0023eab8` when the
-  triangle under the feet has flag bit 4 ([Collision](collision.md#triangles)): the player hiding in a shadow
-  (inferred; [AI](ai.md#block) shows the same flag shrinking how far an attack is noticed to 2 m).
-- **Alpha**: faded beyond the distance `0x0050cc64` and over the first second after `+0x30`.
+  brain's `+0x2d4` is set the factor falls from 1.0 to 0.5 over 250 ms (and rises back from 0.5 to 1.0 over 250 ms
+  after it clears, inferred: both run from the brain's stamp `+0x10`; [Drawing a human](graphics.md#human-draw)),
+  and **point lights are skipped**. `+0x2d4` is set by `Brain_SetHiddenInShadow` (`0x0028ee88`) from the ground
+  check `0x0023eab8` when the triangle under the feet has flag bit 4 ([Collision](collision.md#triangles)): the
+  player hiding in a shadow (inferred; [AI](ai.md#block) shows the same flag shrinking how far an attack is noticed
+  to 2 m).
+- **Alpha**: faded out from 60 to 70 m (`0x0050cc64`) and in over the first second after `+0x30` ([Drawing a
+  human](graphics.md#human-draw)).
 - **Shadow**: when the human's shadow is on (`HuShadow`, `+0x2b4`), in viewport 0 or 1 and not in some states, one
   **blob** sprite: rectangle 40 of `part_page1` (resource instances 9 and 10), colour (10, 10, 10, 128), on the ground
   found by a ray from 0.25 m above the human, 4 m down (`WorldManager_RayCast`), turned to the ground's normal and

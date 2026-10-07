@@ -360,7 +360,9 @@ queue first (inferred from the callers; no lock exists).
 ### Disc errors
 
 `0x005e5580` holds a device error state; the value 3 makes the readers push the error mode (`0x00157930(errorMode,
-1, 3)`). Where the value is set (the IOP client's status handling) is open. Confirmed (code) for the checks.
+1, 3)`). The sound device's update sets it (`0x0014c140`) from MultiStream's disc-error check: 4 for error -1, 5 for
+-3, 3 for any other ([Sound: the PS2 sound device](sound.md#device)). Confirmed (code); what -1 and -3 are (the
+IOP's error codes) is not traced.
 
 ### Buffer sizes and limits
 
@@ -402,7 +404,7 @@ opener at `0x0040c5e0` is named `Wad_Open` here (our name; no string names it). 
 
 ## Open questions
 
-- Where the disc error state `0x005e5580` is set, and what values other than 3 mean.
+- What the disc error states 4 and 5 (`0x005e5580`) change for the readers, and the IOP's error codes -1 and -3.
 - The exact `IOP.IRX` command protocol (command words, the channel argument of `0x01`, status layout at
   `0x00150838`); only needed if Coney ever emulates the IOP side, which it does not plan to.
 - Whether any game file is read from outside `./ee_files/` through the stream file system (movies use

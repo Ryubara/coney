@@ -117,6 +117,7 @@ nav:
           - Pause menu and mission failed: research/pause.md
           - Rumble mode: research/rumble.md
           - Particles and script types: research/particles.md
+          - "Script types: the code of every type": research/script-types.md
           - Level loading: research/level-loading.md
           - Scripts (Lua): research/scripting.md
           - World flags: research/flags.md
@@ -129,6 +130,7 @@ nav:
           - Tasks (the TaskEngine): research/tasks.md
           - "World objects: tint, glass, doors": research/objects.md
           - AI humans: research/ai.md
+          - "AI code index: brains, actions and tactics": research/ai-code.md
           - Cars: research/cars.md
           - Camera: research/camera.md
           - Scenes (cutscenes): research/scenes.md

@@ -91,7 +91,8 @@ Confirmed (code) at `0x0033c288` and the step. Pool sizes are counts × bytes.
 | `+0x4f450`-`+0x4f45c` | vector | every live body, by index (body `+0x20`) |
 
 The 60 human body sets match the 60 human slots ([AI humans](ai.md)), inferred. Who allocates from which pool is
-confirmed (code) by the callers: `Obj_CreatePhysicsBody` (world objects), `GlassPane_CreateBody`, `Car_MakeBodies`.
+confirmed (code) by the callers: `Obj_CreatePhysicsBody` (world objects), `GlassPane_CreateBody`, `Car_MakeBodies`. The
+ten bone shapes are the strike shapes; their bones, sizes and events are on [Combat](combat.md#moving-strikes).
 
 ### Bodies {#bodies}
 

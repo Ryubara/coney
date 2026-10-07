@@ -4386,7 +4386,9 @@ HuShutUp(human, force)
 Stops the line the human is saying (the speech handle at +0x178) and marks it as finished. Scripts call it before a
 scene or a new line.
 
-**Notes.** What +0x194 means exactly is not traced; the stop itself is confirmed (code) at 0x0021ec38.
+**Notes.** +0x194 is the line's cut-able byte: set while no line plays and by HuSpeak's lines, cleared by HuSpeakNI's
+(0x0021e698), so HuShutUp without force cannot stop a HuSpeakNI line. A stopped line's callback still runs on the next
+update. Confirmed (code) at 0x0021ec38 and 0x0021e940.
 
 - **Evidence:** confirmed (code) at `0x00239558`; detail: traced
 - **Wrapper** `0x00364ba8` (registered by `RegisterBindings`); **calls** `0x00239558` `Human_ShutUp`
@@ -4440,12 +4442,19 @@ HuSpeakNI(human, line, callback, arg, flag, listener)
 
 **Returns** nothing.
 
-Like HuSpeak, but interrupts: it stops whatever the human is saying (as HuShutUp does) and plays the new line. Only a
-missing human or line, or speech off in the game state, makes it run the callback at once instead. The most used speech
-binding in the scripts.
+Like HuSpeak, but it cuts a line started by HuSpeak (stopping it, whose callback is then lost) and its own line cannot
+be cut: while a HuSpeakNI line plays, another HuSpeakNI or HuSpeak on that human is dropped and its callback runs at
+once, and HuShutUp without force does not stop it. The callback runs on the human's first update after the line's sound
+has finished (the stream's handle no longer resolves), so at the end of the sample, and also after a forced HuShutUp. A
+missing human or line, speech off for the human or muted by a scene runs the callback at once, inside the call. The most
+used speech binding in the scripts.
 
-**Notes.** NI is read as 'interrupt' from the behaviour (0x0021e698 stops the current line first); the expansion of the
-letters is not known.
+**Notes.** Human_PlaySpeechCutting (0x0021e698) refuses when the current line (+0x178) is alive and the cut-able byte
++0x194 is 0, else stops it (Human_StopSpeech(h, 0), which acts only when +0x194 is set), stores the callback (+0x188)
+and its argument (+0x190) and clears +0x194. HuSpeak (0x0021e400) plays only when no line is alive and +0x194 is set,
+and leaves +0x194 set. Human_UpdateSpeech (0x0021e940) runs the callback once when the handle dies and sets +0x194 again
+one update later, so a HuSpeak called from inside a HuSpeakNI callback is dropped (its callback runs at once) while a
+HuSpeakNI there plays. 'NI' read as 'no interrupt' (speculative).
 
 - **Evidence:** confirmed (code) at `0x002395a0`; detail: traced
 - **Wrapper** `0x00364f50` (registered by `RegisterBindings`); **calls** `0x002395a0` `Human_SpeakInterrupt`
