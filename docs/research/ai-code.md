@@ -57,7 +57,7 @@ actions run is in [AI humans: goals](ai.md#goals) and [actions](ai.md#actions).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x0028d8a0` | `Brain_MarkGoalBase` | helper | remembers the current top index in `+0x2d` (the base for a flush) | confirmed (code) |
+| `0x0028d8a0` | `Brain_MarkGoalBase` | helper | stores the current top index in `+0x2d` as the goal base, only when the stack is not empty; nothing is popped ([Tactics](ai.md#tactics)) | confirmed (code) |
 | `0x0028d8c0` | `Brain_PopToGoalBase` | helper | pops goals down to `+0x2d`, then clears it | confirmed (code) |
 | `0x0028db08` | `Brain_FrontAction` | helper | the front action of the queue | confirmed (code) |
 | `0x0028f1e8` | `Brain_SuspendTop` | helper | suspends the top goal and clears the actions | confirmed (code) |
@@ -252,7 +252,7 @@ How a brain hears events and passes calls for help on; see [AI humans: events](a
 | `0x00291d08` | `Brain_CallForHelp` | helper | unless in shadow mode, a 5 m help call (`Gang_BroadcastHelpCall`) | confirmed (code) |
 | `0x00292158` | `Brain_TryPatternBlock` | helper | when the attacker's pattern (`+0x5d0`) reaches the human's block threshold and he is in a fight goal: a block (`Goal_TryBlock`), ending a stun, command 4 | confirmed (code) |
 | `0x002935d8` | `Brain_IsInHearRange` | helper | whether an event's distance is within the hearing radius (`+0x134`; `+0x138` for event 20) | confirmed (code) |
-| `0x00293640` | `Gang_BroadcastHelpCall` | helper | a call for help to nearby humans | confirmed (code) |
+| `0x00293640` | `Gang_BroadcastHelpCall` | helper | event `0x14` from the caller to every human within min(range, his `+0x138`), not only the gang; record `+0x00` aggressor, `+0x0c` the new-enemy flag, `+0x24` the caller ([Help calls](ai.md#help-calls)) | confirmed (code) |
 
 ### Script bindings {#script-bindings}
 
@@ -452,7 +452,7 @@ holds a near human or a wall. Steering, side-picking in melee and the attack che
 | `0x0029ea48` | `Sectors_IsFree` | helper | no human and no wall | confirmed (code) |
 | `0x0029eaa0` | `Sectors_AllClear` | helper | no sector has bit 1 or 2 (no human within 1.5 m; used by the Warriors' pick-up check) | confirmed (code) |
 | `0x0029ead8` | `Sectors_IsHeldBy` | helper | whether a given human is the near one in a sector | confirmed (code) |
-| `0x0029eb10` | `Sectors_SectorOf` | helper | the sector (0-7, 45° each, centred on k × 45°, rising anticlockwise) of a point relative to a human's heading | confirmed (code) |
+| `0x0029eb10` | `Sectors_SectorOf` | helper | the sector (0-7, 45° each, centred on k × 45°, rising clockwise, toward his right) of a point relative to a human's heading | confirmed (code) |
 | `0x0029ec90` | `Sectors_TurnWay` | helper | the shorter way round (+1 or −1) between two of eight sectors | confirmed (code) |
 | `0x0029ecd8` | `Sectors_ResetAll` | helper | constructs all 60 sector records | confirmed (code) |
 | `0x0029ed38` | `Sectors_StaticInit` | helper | static initialiser calling ResetAll | confirmed (code) |
@@ -629,6 +629,7 @@ Every function of the classes, and the helpers among them:
 | `0x002fe568` | `GiveWayAction_Init` | `GiveWay` init | a step, the human, a boost flag; marks the brain (`+0xcc` bit 1) | confirmed (code) |
 | `0x002fe5d8` | `GiveWayAction_Start` | `GiveWay` Start | looks at him for 2 s, optional turn boost, then the step | confirmed (code) |
 | `0x002fe658` | `GiveWayAction_Abort` | `GiveWay` Abort | the step's Abort, the boost restored | confirmed (code) |
+| `0x002fe6a8` | `GiveWayAction_Destroy` | `GiveWay` destroy | clears brain `+0xcc` bit 1; Abort (with the boost) runs before it on a normal end too ([AI: Actions](ai.md#actions)) | confirmed (code) |
 | `0x002fe6c8` | `GiveWayAction_Update` | `GiveWay` Update | the step's Update | confirmed (code) |
 | `0x002fe6e8` | `MoveMeleeLineAction_Init` | `MoveMeleeLine` init | the human, a point | confirmed (code) |
 | `0x002fe720` | `MoveMeleeLineAction_Start` | `MoveMeleeLine` Start | a 2 s limit | confirmed (code) |

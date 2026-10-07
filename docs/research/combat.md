@@ -581,18 +581,32 @@ one sphere of 0.8 m; for an object with `0x20000` one sphere of half its smalles
   and the human's body leaving the physics (`IPhysics_RemoveHumanBody`). A clip faded out keeps its task until the
   fade ends, so its shapes stay on through the fade unless its own off event comes first (inferred from the task
   release). Confirmed (code) at the addresses cited; the flags read from the disc.
-- **Which shapes, and when** (updates of 1/30 s from the clip's first update, slot 10, stick 100 % straight ahead):
+- **Which shapes, and when** (updates of 1/30 s counted from the update that starts the move, update 0, on which its
+  held flag and clip id first show and its clip time is still 0; slot 10, stick 100 % straight ahead, needed for gait 4):
 
   | Move | Shapes switched on | On | Off | Clip | Events (clip frames, of) |
   | --- | --- | --- | --- | --- | --- |
-  | charge 0 (L2 + cross) | all ten bone shapes and the capsule's flag (`0x11` → `0x13`) | 3 | 16 (all off at once) | 27 updates, 7.45 m/s throughout in the open | `gen_charge_shoulder`: `0x13` at 3, `0x14` at 13, of 20 |
-  | dive 1 (L2 + square) | the same ten | 1 | 23 | | `gen_dive`: `0x13` at 2, `0x14` at 18, of 46 |
-  | run attack 24 (cross at gait 4) | right forearm and hand (24, 25) | 1 | 7 | 21 | `gen_run_strike`: on at 2, off at 6, of 16 |
-  | walk attack 23 | left forearm and hand (18, 19) | 4 | 10 | 24 | `gen_walk_strike`: on at 4, off at 8, of 18 |
+  | charge 0 (L2 + cross) | all ten bone shapes and the capsule's flag (`0x11` → `0x13`) | 4 | 17 (all off at once) | 27 updates, 7.45 m/s throughout in the open | `gen_charge_shoulder`: `0x13` at 3, `0x14` at 13, of 20 |
+  | dive 1 (L2 + square) | the same ten | 2 | 24 | | `gen_dive`: `0x13` at 2, `0x14` at 18, of 46 |
+  | run attack 24 (cross at gait 4) | right forearm and hand (24, 25) | 2 | 8 | 21 | `gen_run_strike`: on at 2, off at 6, of 16 |
+  | walk attack 23 | left forearm and hand (18, 19) | 5 | 11 | 24 | `gen_walk_strike`: on at 4, off at 8, of 18 |
   | run attack with a weapon 501 | the weapon's spheres (bone 25's event) | | | | `gen_run_1hand_weapon_atk`: on at 2, off at 6, of 16 |
 
   The clips play slower than 30 frames a second (the charge's 20 frames over 27 updates), which turns the events'
-  frames into the updates measured. So the **charge strikes with its whole body from its 4th update to its 16th**,
+  frames into the updates measured. **The moving attacks follow the same event rule as the standing ones**, with no
+  head start: confirmed (runtime), PCSX2 2.9.94, slot 10, the run attack 24 with the top animation task and its cursor
+  read every update. The move is pushed by the dispatcher (step 9 of [Humans_Update](tasks.md#humans-update)) on
+  update 0, as a type-5 layer (`Player_StartCharge` `0x00264a80`, `AnimTask5_Construct`: fade-in 0.3 s, fade-out 0, so
+  it plays at once) whose cursor starts at frame 0 (`AnimCursor_Bind` sets the time to 0): no start offset, no
+  hand-over from the gait blend, no extra advance. It is first advanced on update 1 (animation step 6): cursor time
+  0.025 s, frame 1 (rate 0.75), then 0.050 s / frame 2 on update 2, when the frame-2 events fire (the cursor's event
+  index went 1 → 5) and the shapes go on; frame 6 on update 8 turns them off. Confirmed (code): `AnimCursor_Advance`
+  (`0x001044a0`) moves to frame `uint((t + dt) × 30 + 0.5)`, and `Anim_FireFrameEvents` fires every pending event
+  whose frame is at most that frame plus the cursor's offset `+0x128` (0 for this clip, read at runtime). The **earlier
+  table** (on 1 / off 7 for 24, 4 / 10 for 23, 3 / 16 for the charge) was one update low throughout: the recorder tags
+  a hook entry made during update *N* with *N* − 1 (it drains the hook ring before moving its step on; confirmed
+  (code), `repo:python/src/coney_tools/recorder.py`). Its values here are corrected.
+  So the **charge strikes with its whole body from its 4th update to its 16th**,
   about 13 × 0.25 m = 3.2 m of its 6.7 m; the run attack strikes only for 6 updates near its start.
 - **The fence (slot 10).** Rembrandt starts 4.8 m from `level99`'s wooden fence (centre line y −6.67) with the
   stick at 100 % straight at it and L2 held; cross at gait 4 started the charge (clip 0, record `+0x08`
@@ -2009,7 +2023,8 @@ Beyond the range it only turns (`0x00276008`), capped at 8. Confirmed (code).
   16 bytes per kind): `+0x4` the **reach** (`0x002544a0`), `+0x8` the **far range** in mm (`0x00254508`; when it is
   not above the reach, reach × 1.25), `+0x0`/`+0x2` an offset in mm (`0x00254418`) and `+0xc` flags (`0x00254d60`).
   `Attack_Start` steers only when a target is locked and its distance (`0x00229960`) is within the far range; with
-  flag `0x8` and the global `0x005102c4` set it uses the variant `0x00275678` instead.
+  flag `0x8` and the global `0x005102c4` set it uses the variant `0x00275678` instead, which aims at the target's
+  head and slides for the first event + 0.1 s ([Moves: the two steers](combat-moves.md#two-steers)).
 - **The goal.** The target's position plus its velocity × (`T` + 0.1) (cut to 0.5 m long when the full lead would
   carry it more than 1 m and farther away; [where the attacker stands](combat-moves.md#reach)), minus the reach along
   the line from the human: the human should stand
@@ -2034,6 +2049,40 @@ That is a rate of 76°/s over `T` ≈ 0.308 s (9.25 updates). The body moves at 
 1.34, 1.34, 1.25, 0.81 m/s (the clip's root motion plus the slide), and the distance to the target falls from 1.364 to
 0.825 m. So Coney should neither snap the facing nor spread the reach over the whole clip: turn at angle / `T` and
 slide at (goal − position) / `T` for the `T` up to the first event, starting the update after the clip.
+
+##### The led steer {#led-steer}
+
+`Attack_SteerLed` (`0x00275678`), for a kind with flag `0x8`. Confirmed (code) unless
+marked:
+
+- **Its target point is the target's head**, aim point 0 (`Human_GetLedSlotPoint(target, 0)`, `0x00226aa0`), not his
+  position. `Human_UpdateLedSlots` (`0x0023cd30`) writes it: the human's world transform (vtable `+0xac`) composed with
+  the transform at `+0x500` (`Transform_Compose`, the child in the parent's frame). `+0x500` is pose bone 6, the head,
+  in the model's frame (x right, y forward, z up, from the feet, already times the human's scale; [Camera: the body
+  point](camera.md#body-point)). So the offset is **turned by the human's full rotation**, not scaled again and **not
+  flattened**: the point is at head height. It is not a formation offset and not the hips (`+0x4e0` is aim point 2).
+  The points are refreshed only when read with the move dirty (`+0x255`), so the steer aims at the head as it is
+  when the attack starts.
+- **Lead.** The target's velocity × (time to the first event + 0.1 s) is added to the head point: in full when it is
+  at most 1 m long, or when the led point is nearer the attacker than the head itself; otherwise cut to 0.5 m long.
+- **The point serves both the turn and the stand.** The standing point is the led head point minus the reach along
+  the unit line from the attacker to it in plan; the turn (`Human_TurnToOver`) is to that line's heading (less the
+  attack's own direction offset, `AttackTable_GetOffset`); the slide (`Human_MoveToOver`) runs over the time to the
+  first event + 0.1 s.
+- **How far off the position**, confirmed (runtime), PCSX2 2.9.94, a copy of slot 6: X1 pressed at update 41 at
+  PoizoCiv standing 1.0 m ahead, facing the player, brain off, speed 0. On the update the steer started (43) the
+  target played idle **388**, `+0x500` was (0.000, 0.018, 1.734) and aim point 0 lay **0.018 m from his position,
+  straight toward the attacker** (0.000 m sideways); the stand point was 1.022 m from it in plan (the reach). Earlier
+  in the same idle the head offset ranged over x −0.004 to 0.025, y 0.019 to 0.041 m as the pose breathed. In the
+  reel 275 after the hit the head swung to (0.237, 0.126) and in the recovery 389 to (0.054, 0.129) m. The
+  "0.016-0.036 m" figure is this idle (388 / 396). The point's z was 1.834 m above the transform table's z while
+  `+0x500` gave 1.734 (inferred: the world transform from vtable `+0xac` sits 0.1 m above it; plan offsets match
+  exactly).
+- **In the fight idle 358** the head leans forward: on the player, `+0x500` ran x 0.024 to 0.051, y 0.075 to 0.165 m
+  (confirmed (runtime), an earlier recording of the same skeleton), so aim point 0 is **0.09-0.17 m ahead of a fighter
+  along his own facing, slightly to his right**: toward an attacker he faces, never away from him. An AI target held
+  in 358 was not recorded: forcing state bit 1 on a brain-off target did not change its idle (the bit was cleared
+  each update).
 
 ### An AI's attacks {#ai-attacks}
 

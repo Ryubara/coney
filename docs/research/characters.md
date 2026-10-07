@@ -1020,6 +1020,20 @@ control (`+0x1bc` = `0x00243420`, the member-function pointer form `+0x1be` = �
    | 22.5° to 112.5°, negative | heading + π/2 | 364 `..._STEP_LEFT` | 399 `ANIM_MOVEMENT_STEP_LEFT` | 405 `ANIM_MOVEMENT_DASH_LEFT` |
 
    In a fight stance the boost is ignored. The clip ids are the [anim ids](../references/anim-ids.md#anim-364).
+
+   **Which way is positive.** Both angles are the game's headings (`Quat_Heading`, [Maths](maths.md)): a heading `h`
+   faces `(sin h, cos h)` in the ground plane, so it grows from `+y` toward `+x`, clockwise seen from above (`+z`
+   up). A positive `d` therefore means the heading lies **to the human's right**: from the facing `f`, his right
+   (forward × up) is `(cos f, −sin f)`, the heading `f + π/2`. Confirmed (code): `Quat_AxisY` (`0x003363b0`) gives
+   the forward `(−sin θ, cos θ)` for a turn θ about `+z`, `Vec_Heading` (`0x00335d98`) is `atan2(x, y)`, so the heading
+   is −θ. The clips agree: the generic `gen_step_right` clip's root moves along body `+x` (root velocity `+0.98` m/s on
+   x at its first key; `gen_step_left` `−0.86`; `gen_step_forward` `+1.23` on y; read from the disc as numbers), and
+   body `+x` turned by the end facing `h − π/2` points along `h`. So the human always steps toward the heading:
+   STEP_RIGHT with a positive `d`, ending side-on with his right toward it; with `d` = +90° the end facing is his
+   current one and he does not turn. Runtime was not needed: the code and the clip data leave no other reading.
+   A port whose headings grow anticlockwise (the turn θ, minus the game's heading) sees every sign flipped: there a
+   **negative** `d` picks STEP_RIGHT, and the end facings are heading + π/2 for the right step and heading − π/2 for
+   the left.
 4. **Play it.** `Human_PlayOneShotClip` (`0x0025cb90`) plays the clip:
    - a blend-out of the current pose over 0.1 s, then the clip chained in over 0.2 s;
    - after the clip, the idle loops (slot 0, or slot 11 in a fight stance);
@@ -1028,8 +1042,9 @@ control (`+0x1bc` = `0x00243420`, the member-function pointer form `+0x1be` = �
    The clip-end callback (`0x0025c5b0`) is an empty function.
 5. **Turn during the clip.** The human is not turned first. `Human_TurnToOver` (`0x0023cf88`) turns it to the end
    facing at a constant rate over **half the clip's play time** (`Anim_GetPlayTime` × 0.5), while the clip plays.
-   The angle is negated before the call, the same convention as [turning on the spot](#ai-locomotion). A turn under
-   0.01 rad is skipped.
+   The angle is negated before the call, the same convention as [turning on the spot](#ai-locomotion):
+   `Human_TurnToOver` takes the turn θ about `+z` (anticlockwise seen from above), which is minus the heading. A turn
+   under 0.01 rad is skipped.
 6. **Leave.** `Human_LeaveStepControl` (`0x00243360`) runs in the same update. It restores the saved control
    (`Human_RestoreControl`), then sets `+0x1bc` to `Human_UpdateControl` (`0x00243848`), or to `Human_MoveAttached`
    (`0x00244e78`) while grabbed or being mugged. So the step control is installed for a single update, unless step 2
@@ -1044,8 +1059,8 @@ the wheelchair, or else `PlayerLocomotion` (`0x00240e38`).
 - **Update** (`TakeStepAction_Update`, `0x002fe428`) returns running (0) while held flags **`0x20080000`**
   (`Human_HasHeld20080000`, `0x00228448`: `0x80000` the step clip, `0x20000000` a turn clip) are set, or while the
   step control is still installed. Otherwise it returns done (2). The step lasts as long as its clip.
-- **Abort** (`0x002fe3d8`) always calls `Human_LeaveStepControl`. A forced abort succeeds; a polite one is refused
-  while `0x20080000` is held.
+- **Abort** (`0x002fe3d8`) always calls `Human_LeaveStepControl`. With argument 0 it agrees; with a non-zero
+  argument it refuses while `0x20080000` is held.
 
 **GiveWay.** `GiveWayAction_Start` (`0x002fe5d8`) runs these steps in order:
 
@@ -1054,7 +1069,11 @@ the wheelchair, or else `PlayerLocomotion` (`0x00240e38`).
    therefore becomes 1, which selects the **dash** clips.
 3. It runs `TakeStepAction_Start`.
 
-Abort restores the saved boost. `Brain_GiveWayTo` (`0x00289ed0`) sets the boost flag when the mover is a pad player
+Abort (`GiveWayAction_Abort`, `0x002fe658`) restores the saved boost once `TakeStepAction_Abort` agrees. **It also runs
+when the step ends normally**: a finished action is popped through `Action_AbortAndDestroy`, which calls Abort with
+argument 0 (always agreed) for any started action ([AI: Actions](ai.md#actions)). So the boost goes back however the
+GiveWay ends; nothing else restores it. The destroy (`GiveWayAction_Destroy`, `0x002fe6a8`) then clears brain
+`+0xcc` bit 1. Confirmed (code). `Brain_GiveWayTo` (`0x00289ed0`) sets the boost flag when the mover is a pad player
 (`+0x1b0` ≠ −1) whose stored gait `+0x1a8` is 3 (jog) or more, so an AI dashes out of a running player's way and
 steps out of a walker's.
 
@@ -1878,7 +1897,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x002269d8` | `Human_GetGrabOther` | Record `+0xc4` resolved, the other human of a grab. | confirmed (code) |
 | `0x00226a00` | `Human_ClearGrabOther` | Record `+0xc4` = null. | confirmed (code) |
 | `0x00226a20` | `Human_GetHeadPoint` | The upper point of the human's capsule segment: feet + `+0x4e8` - 0.16 x scale. | confirmed (code) |
-| `0x00226aa0` | `Human_GetLedSlotPoint` | Point n (`+0x1e0` + n x 0x10) of the led formation after refreshing it (0x0023cd30). | confirmed (code) |
+| `0x00226aa0` | `Human_GetLedSlotPoint` | Aim point n (`+0x1e0` + n x 0x10) after refreshing them (0x0023cd30); point 0, the head, is the led attack steer's target ([Combat: the led steer](combat.md#led-steer)). Not a formation. | confirmed (code) |
 | `0x00226af8` | `Human_SetTargetFromHandle` | Sets the target from a handle: a player sets its own human or object target; an AI sets the brain's target and `+0x128`; skipped while a player with record flag `+0x1b` is locked on. | confirmed (code) |
 | `0x00226e20` | `Human_GetTargetHandle` | The target handle `+0xc8`, refreshed from the brain first for an AI. | confirmed (code) |
 | `0x00226ea8` | `Human_GetTargetResolved` | The target `+0xc8` resolved, refreshed from the brain first for an AI. | confirmed (code) |
@@ -1891,7 +1910,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x00227428` | `Human_HasOverheadIconType` | True when the overhead icon `+0x360` is a world object of the given type. | confirmed (code) |
 | `0x002274a0` | `Human_EmptyStub3` | Empty function called by Human_StateUpdate. | confirmed (code) |
 | `0x00227738` | `Humans_FindNear` | Collects up to n humans of the game state's list (`+0x224`, `+0x228`) within a radius of a point, skipping one human and an optional filter; distances squared go beside each. | confirmed (code) |
-| `0x002278a8` | `Humans_FindNearSegment` | Finds humans whose pose slot lies near a segment (Segment_ClosestPoint), skipping one; used by Route_IsLinkBusy. | confirmed (code) |
+| `0x002278a8` | `Humans_FindNearSegment` | Finds humans whose pose slot lies near a segment (Segment_ClosestPoint), skipping one; used by Route_IsJumpLegClear ([AI: Giving way](ai.md#giving-way)). | confirmed (code) |
 | `0x00227a38` | `Human_IsButtonTapControl` | State flag 0x100000000000 (button-tap movement, Human_SetButtonTapControl). | confirmed (code) |
 | `0x00227a60` | `Human_IsInWheelchair` | State flag 0x80000000000 (wheelchair control). | confirmed (code) |
 | `0x00227b78` | `Human_SetFightStanceControl` | Control function `+0x1bc` = Human_FightStanceMove (lock-on). | confirmed (code) |
@@ -2213,7 +2232,7 @@ the human code reads.
 | `0x0023bc80` | `Humans_StaticInitAnimHandles` | Humans_InitAnimHandles(1, 0xffff). | confirmed (code) |
 | `0x0023bcf0` | `Human_ClearVelocity` | Zeroes the task velocity and `+0x3a0`, clears the bone cache's `+0x460` and marks the move dirty (`+0x255`). | confirmed (code) |
 | `0x0023be98` | `Task_SendHandleMessage0` | Sends message 0 with a handle to a task (Human_PickUpObject). | confirmed (code) |
-| `0x0023cd30` | `Human_UpdateLedSlots` | When the move is dirty (`+0x255`), recomputes the led formation's slot points (`+0x1e0`) around the human. | confirmed (code) |
+| `0x0023cd30` | `Human_UpdateLedSlots` | When the move is dirty (`+0x255`), recomputes four aim points in world space: `+0x1e0` = the world transform composed with `+0x500` (bone 6, the head), `+0x1f0` with `+0x540` (bone 3), `+0x200` with `+0x4e0` (bone 2, the hips), `+0x210` = the position + 0.3 m up ([Combat: the led steer](combat.md#led-steer)). | confirmed (code) |
 | `0x0023ceb8` | `Task_SetVelocityXYZ` | Sets a task's velocity from three floats (w = 1). | confirmed (code) |
 | `0x0023cf00` | `Human_SetMoveVelocity` | Sets the velocity `+0x30`, its speed `+0x1ac` and the gait for that speed `+0x1a8`, and marks the move dirty. | confirmed (code) |
 | `0x0023cf70` | `Human_ClearTurn` | Clears the turn state `+0x300`, `+0x304`, `+0x331`, `+0x332`; attacks and climbs call it before steering. | confirmed (code) |

@@ -490,14 +490,16 @@ None of this is in the step; it is listed so an implementer knows where each mot
   Airborne and with a body (`0x00395a10`), velocity first: `vz −= 15.68 × dt`, then `PhysicsBody_Sweep` with that
   velocity, then the rotation by the angular velocity unless settling. On the update after a human lets go (`+0x10c`
   set, holder at `+0x11c`), the object starts at the holder's `+0x5f0` with velocity from the holder's `+0x600` and
-  that first sweep uses dt = 1/60 s. The two are the thrower's aim, written every frame of the
+  that first sweep uses dt = 1/60 s. `+0x10c` is set only for a throw released from the aiming state
+  ([Objects: throws](objects.md#throws)). The two are the thrower's aim, written every frame of the
   aiming state by `Human_TraceThrowAim` (`0x0018fee0`, [Graphics](graphics.md) draws its arc): `+0x5f0` is the
   release point, a fixed offset turned by the human's rotation (`+0x620`) and added to his position (`+0x610`), and
   `+0x600` the throw velocity (`Human_ComputeThrowVelocity`) turned the same way. Confirmed (code).
 - While airborne or settling (`0x4040000`, or body flag `0x800`), an object's interval is **2 ticks**
   (`0x00395b70`): it flies at 30 Hz, like the humans.
 - **A thrown object hitting a human** is decided in its contact handler, from its own sweep: the hit object is
-  tested as a human (`0x00229868`) and handled by `0x003928d0` and `0x00392b88` (roles inferred).
+  tested as a human (`0x00229868`) and handled by `ThrownObject_HitHumanTest` (`0x003928d0`) and
+  `ThrownObject_HitHuman` (`0x00392b88`): damage, reaction and wear are in [Objects: throws](objects.md#throws).
 
 ### Cars {#cars}
 

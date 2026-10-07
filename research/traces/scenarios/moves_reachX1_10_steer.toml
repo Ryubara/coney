@@ -1,4 +1,4 @@
-description = "slot 6: cross (X1) at PoizoCiv standing still (its walk stopped: per-player record +0x1e = 0, no stick, its brain off (+0x08 = 0) with its move speed +0x114 at 0) 1.0 m ahead, placed until update 30 and then free; the hands' and the target's bone positions and rotations every update, the steer's goal (+0x310), velocity (+0x2e0), time left (+0x300) and flag (+0x331), and bone-cache entry 0 (the clip's root motion)"
+description = "slot 6: cross (X1) at PoizoCiv standing still (its walk stopped: per-player record +0x1e = 0, no stick, its brain off (+0x08 = 0) with its move speed +0x114 at 0) 1.0 m ahead, placed until update 30 and then free; the hands' and the target's bone positions and rotations every update, the steer's goal (+0x310), velocity (+0x2e0), time left (+0x300) and flag (+0x331), bone-cache entry 0 (the clip's root motion), and the target's slot point 0 (+0x1e0) and head transform (+0x500) that the led steer aims at"
 research = "docs/research/combat-moves.md"
 input = "moves_reachX1_10_steer.txt"
 updates = 70
@@ -315,4 +315,34 @@ type = "f32"
 [[field]]
 name = "pvel_z"
 address = "player + 0x38"
+type = "f32"
+
+[[field]]
+name = "slot0_x"
+address = "enemy + 0x1e0"
+type = "f32"
+
+[[field]]
+name = "slot0_y"
+address = "enemy + 0x1e4"
+type = "f32"
+
+[[field]]
+name = "slot0_z"
+address = "enemy + 0x1e8"
+type = "f32"
+
+[[field]]
+name = "head_x"
+address = "enemy + 0x500"
+type = "f32"
+
+[[field]]
+name = "head_y"
+address = "enemy + 0x504"
+type = "f32"
+
+[[field]]
+name = "head_z"
+address = "enemy + 0x508"
 type = "f32"

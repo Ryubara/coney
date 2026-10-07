@@ -35,7 +35,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- |
 | **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.7% of the game's own code (527,124 of 3,354,776 bytes, 1,926 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
-| **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
+| **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,220 of 3,284,028 bytes; 11,424 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
 702 reimplemented function(s) have no size yet and add no bytes.
@@ -103,7 +103,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `████████████████████` | 100.0% | 450 of 450 | 450 | 450 | 98,632 |
 | `Graphics` | `████████████████████` | 100.0% | 630 of 630 | 630 | 630 | 191,888 |
 | `GUI` | `████████████████████` | 100.0% | 1,725 of 1,725 | 1,725 | 1,725 | 492,072 |
-| `Human` | `████████████████████` | 100.0% | 3,312 of 3,312 | 3,312 | 3,312 | 1,080,068 |
+| `Human` | `████████████████████` | 100.0% | 3,313 of 3,313 | 3,313 | 3,313 | 1,080,096 |
 | `Maths (unnamed)` | `████████████████████` | 100.0% | 72 of 72 | 72 | 72 | 12,288 |
 | `Memory` | `████████████████████` | 100.0% | 89 of 89 | 89 | 89 | 15,504 |
 | `Physics` | `████████████████████` | 100.0% | 183 of 183 | 183 | 183 | 78,580 |
@@ -118,7 +118,7 @@ at the top of the repository's `README.md`.
 | `Movie` | `████████████████████` | 100.0% | 11 of 11 | 11 | 11 | 5,136 |
 | `link-once` | `████████████████████` | 100.0% | 651 of 651 | 651 | 651 | 95,912 |
 | Unattributed | `████████████████████` | 100.0% | 44 of 44 | 44 | 44 | 20,936 |
-| **All** | `████████████████████` | 100.0% | 11,423 of 11,425 | 11,425 | 11,423 | 3,284,000 |
+| **All** | `████████████████████` | 100.0% | 11,424 of 11,426 | 11,426 | 11,424 | 3,284,028 |
 
 ## Research coverage
 

@@ -660,13 +660,24 @@ weapons, none for model hash `0x03c5256c`). It then falls under physics from the
 dropped from the hand came to rest on the ground (`z` 0.3, the ground's height there), flags `0xc321a081`
 (confirmed (runtime)).
 
-**Throw** (`0x002586d8` on event 10, confirmed (code)): as the drop, but the physics body is made per the type
-(`CfgObj` `+0x84` = 2 or `+0x5a` ≠ 1, else `0x003923b8`), the velocity comes from `Human_ComputeThrowVelocity`, and
-the human's target is told (`0x0021d5c0`). **Detach** (`melee_weapon` `0x003fe6b8`): the velocity, given in the
-holder's frame, is turned by the holder's world rotation. A thrown object (velocity not zero) of anim set 1 or 2 takes
-the holder's rotation and the angular velocity (−4π, 0, 0) rad/s (its vtable `+0x7c`); five model hashes get the
-holder's rotation and (−8π, 0, 0); anything else keeps its own rotation and gets (0, 0, −kπ), `k` random in 5-7. A
-drop keeps its rotation and gets no spin. Which frame the angular velocity is in is not traced.
+**Throw** (`Human_ReleaseThrow`, `0x002586d8`, confirmed (code)): as the drop, but the physics body is made per the
+type (`CfgObj` `+0x84` = 2 or `+0x5a` ≠ 1, else `ThrownObject_MakeBody` `0x003923b8`) and gets body flag `1` (the
+first contact after the throw, [Throws](#throws)), the object is rescheduled, its velocity comes from
+`Human_ComputeThrowVelocity` and is sent in message `0x1c` **detach** with the thrower, the thrower becomes its last
+holder (`+0x11c`) and `+0x116` is set, and the human's target is warned (`0x0021d5c0`). The removal time is the game
+setting `0x0051489c` `+0x26c` for every model but four (`0x03c5256c` gets none; three others keep theirs). The
+details are in [Throws](#throws).
+
+**Detach** (`melee_weapon`, `MeleeWeapon_Detach` `0x003fe6b8`): the velocity, given in the holder's frame, is turned
+by the holder's world rotation and set (vtable `+0x74`). Five model hashes (object `+0xc4`), the knives
+`dyn_bowie`, `dyn_hunter`, `dyn_tknife`, `dyn_swhbld` and `dyn_swhbld_super`, are tested first (`0x003fe7ac`-`0x003fe7f0`):
+they take the holder's rotation and the angular velocity (−8π, 0, 0) rad/s (its vtable `+0x7c`) whether thrown or
+dropped. Otherwise a thrown object (velocity not zero) of anim set 1 or 2 takes the holder's rotation and (−4π, 0, 0);
+any other thrown object keeps its own rotation and gets (0, 0, −kπ), `k` random in 5-7; a drop keeps its rotation and
+gets no spin. The angular velocity is stored as given (`+0x7c` writes task `+0x40`,
+`0x003a19a0`) and the integrator applies it as `q += ½ ω ⊗ q dt` (`Quat_IntegrateAngular` `0x00335b08`), so it is in
+**world axes**, not the object's or the thrower's: a set 1 or 2 weapon thrown along world y tumbles end over end, one
+thrown along world x rolls about its line of flight. Confirmed (code).
 `simple_object`'s detach only detaches.
 
 **Holstering.** No code moves a weapon to another bone (back or belt): a human holds one object (`+0x338`), in the
@@ -676,6 +687,112 @@ from the senders of messages `0x1b` and `0x32` above (all clip events or the scr
 `HuRender` (`0x00237e98`) draws a human and then every object attached to it that is not hidden (flag 4), giving each
 the human's alpha (confirmed (code)). In the normal draw an attached object skips the small-size fade and is drawn
 only within its parent's `ObjShow` distance ([Drawing](#tint)).
+
+### Throws {#throws}
+
+Confirmed (code) unless marked. Gravity in flight is 15.68 m/s² (the aim trace steps the z speed by −0.2613 per
+1/60 s, [Graphics](graphics.md)).
+
+**Starting a throw.** Square or cross with an object of set 4, 5 or 6 in hand (`Player_CrossWithWeapon`,
+`0x002880d8`) plays a throw clip at once, by gait; nothing waits for the button's release:
+
+| Set | Standing or fight stance | Walking | Jogging, running or sprinting | Target search |
+| --- | --- | --- | --- | --- |
+| 4 (`overhead_weapon` and the like) | 505 | 506 | 507 | 10 m |
+| 5 (`thrown_weapon`: bottles, bricks, balls) | 467 | 471 | 472 | 20 m |
+| 6 | 551 | 552 | 553 | 20 m |
+
+Outside the aiming state, a player with no brain target picks one (`Player_PickThrowTarget`, within the search
+radius) and turns to face it over the time to the clip's first event; the held object is sent message 4, then
+`Human_StartMeleeThrow` plays the clip. **The release** is the clip's event of type **10**: the event code
+(`Anim_FireFrameEvents`, `0x00101dd8`) sends the human message `0x8a`, and his handler (`0x00245920`) calls
+`Human_ReleaseThrow` when he holds an object with held flag `0x1000010`. The event frames (30 per second, before the
+clip's rate; read from the disc's clips):
+
+| Clip | Type 10 at frame | Clip | Type 10 at frame | Clip | Type 10 at frame |
+| --- | --- | --- | --- | --- | --- |
+| 467 `gen_1hand_throw` | 5 | 505 `gen_2hand_throw_fwd` | 16 | 551 `ghetto_throw` | 9 |
+| 471 `gen_1hand_throw_walk` | 11 | 506 `gen_2hand_throw_walk` | 12 | 552 `ghetto_throw_walk` | 10 |
+| 472 `gen_1hand_throw_run` | 11 | 507 `gen_run_2hand_weapon_throw` | 13 | 553 `ghetto_throw_run` | 7 |
+
+The melee weapons' throws have one too: 491 `gen_knifethrow` frame 18, 502 `gen_batthrow` frame 15.
+
+**The aiming state** (`Human_MoveThrowAim`, `0x00244770`) is entered only with a **set 5** object: L1 pressed with
+no target locked, or with a friendly one or one of his own gang (`Player_OnL1Pressed` `0x0027da10`, then
+`Human_EnterThrowAim` `0x00227b30`: state `0x200000000000`, move style `0x13`, clips 466-470). It stores the human's
+position at `+0x610`, his rotation at `+0x620` and the pitch **0.157 rad** (9°) at `+0x630`. Each frame the left
+stick turns the aim (outside a dead zone of 26 of 128, 0.000589 rad per step of the stick value) and pitches it,
+clamped to ±0.628 rad (36°); with the camera in mode 2 the aim follows the camera's heading. L1 again leaves it, and
+so does losing the object, a grab or a mug, or an AI in control. Square or cross then throws as above, at the target
+the aim trace found (`0x006ebd30`).
+
+**The aim trace** (`Human_TraceThrowAim`, `0x0018fee0`, each aiming frame) writes the two holder fields the first
+flying update reads: **`+0x5f0`, the release point** = `+0x610` + `+0x620` turning **(0.3009, −0.6354, 1.5865)** (x
+right, y forward, z up, metres), the same offset `ThrowArc_PlaceAtHand` (`0x0018f628`) uses for the arc; and
+**`+0x600`, the throw velocity** = `Human_ComputeThrowVelocity` turned by `+0x620`. They are used only for a throw
+released **from the aiming state**: `Human_ReleaseThrow` then sets the object's `+0x10c` to 1 (and leaves the aim,
+putting the pitch back to 0.157), else to 0. A plain throw starts from the object's own pose in the hand with the
+velocity of the detach message; the holder's stale `+0x5f0` and `+0x600` are not read.
+
+**The velocity** (`Human_ComputeThrowVelocity`, `0x002570e8`) is in the **thrower's frame** (x right, y forward,
+z up; the detach and the aim turn it into the world):
+
+1. **The weight factor** `w` = 1 for an object of kind `+0x86` = 11 (the knives), else 0.05 × the type's `+0x62`
+   (`CfgObj` argument 6, read through vtable `+0xd4` with 1); halved when the thrower's scale is above 1.1. A bottle
+   (`+0x62` = 20) has `w` = 1.0, a crate or chair (50) 2.5, a fridge (75) 3.75.
+2. **Aiming with no target**: (0, cos p, sin p) × 20 / `w`, `p` the aim's pitch `+0x630`.
+3. **With a target** (aiming with one, or not aiming with a brain target or an object target): the direction from
+   the thrower's right hand (bone 25, posed) to the target point, turned into the thrower's frame. A human's target
+   point is his position plus, when his `+0xd8` is set, a bone: bone 5 for an object of set 1 or 2; bone 6 (the head)
+   unless the object has flag `0x10000` and is not of kind 10; else the middle height of bones 29 and 32 on his
+   axis. A human in state `0xe0000` (down) is aimed at bone 3. An object target is its position plus its attach
+   offset. With `u` the unit direction: when it points more sideways than forward (|u.x| > |u.y|) it is clamped to
+   45° (u.x = ±0.7071, u.y = 0.7071, u.z kept). When |u.z| < 0.85: speed `s` = 30 / `w`, v = u × s, and
+   **v.z += 7.84 × d / s** (`d` the straight distance: half of 15.68 × the flight time d / s, so the arc comes back
+   down to the target's height there). Then, unless the thrower has flag `0x40000` (`+0xe0`), a random spread: with
+   `f` = d / 30 clamped to 0.1-1, the velocity turns about world z by `f` × r × 8° and about the horizontal axis
+   across it by `f` × r × 8° (r random in −1 to 1 each, `0x6eb898`; 8° × 0.6 for an AI of brain kind 3). A target
+   almost straight above or below (|u.z| ≥ 0.85) falls to the default.
+4. **The default** (no target): (0, 1, 0.1) normalised × 30 / `w`, or × 50 / `w` when the human's stored gait `+0x1a8`
+   ([Characters](characters.md)) is above 2 (jogging or faster) and he holds a set 4 or 6 object or a throwable one.
+
+So a bottle aimed at a target leaves at 30 m/s and a set 4 crate at 12 m/s, each with the lift that brings it down
+on the target. Nothing clamps the speed; the 45° rule is the only limit on the direction.
+
+**A thrown object meeting a human** (`WorldObject_OnContact`, `0x00394050`, when the hit body's owner is a human with
+a body and a brain, `+0xd4`): `ThrownObject_HitHumanTest` (`0x003928d0`) handles two kinds first and the contact
+ends (answer 0): kind `0x1d` deals the human his own record's `+0x144` damage with a particle and a sound and clears
+his body flags `2` and `1`; kind `0x22` deals **500** once per object (human `+0x564` remembers it). Otherwise
+`ThrownObject_HitHuman` (`0x00392b88`) deals the damage, plays the impact sounds ([Sound events](sound-events.md)),
+reports the noise and, for a knife that stays whole, sticks it in him (`Human_StickThrownKnife`); the answer is then
+`0x40000` (the object's move stops there). The damage is the type's `+0x58` (× the holder's class factor while
+held), negated against a friend of the thrower (no hurt flag), × 0.25 for kind `0x24` when the thrower's stored gait
+`+0x1a8` is above 2, × 0.5 from an AI of brain kind 3 against class 13, and from a player × 3 against human kinds `0x77`
+and
+`0x78` and × 1.25 against `0x87`; a knife at its thrower's target or at a non-friend deals the type's `+0x58` (the
+victim's health for kind `0x4f`). The victim's reaction (`HitReact_FromObject`, `0x0026b170`, from his pending
+damage) asks `Hit_PickReactionClip` with a severity from the object: set 2 → 3 (kind 10) or 2; set 3 → 2; otherwise
+by the weight `+0x62`: under 20 → 0, 20-49 → 1, 50 and over → 2. He reacts toward the thrower's side, or toward the
+object's point for kinds `0x22`, `0x1d`, 8 and cars (kind 8 plays no reaction).
+
+**Wear on contact** (`OverheadWeapon_ContactDamage`, `0x003932c8`, run first on every contact of a free object): an
+`overhead_weapon` (the class at `0x00580ed8`; not material `0x9a`) that no one holds loses **one hit**
+(`WorldObject_TakeHit(obj, −1)`, `0x00393450`: `+0x10e` first for an object with flag `0x4000000`, else `+0x10d`;
+255 means it never wears) only on its **first contact after the throw** (body flag `1`, cleared after it when it has
+a last holder); any other class loses one hit on **every** contact. At the end of the handler, when either counter
+is 0, the object breaks (`WorldObject_Break`, `0x00393e20`) and the answer is `0x10000` (the move goes on: no
+bounce). So a type with hits (`+0x5a`) 1 breaks on the first thing it meets: every bottle, brick and ball, and the
+lawn chairs and the other set 4 objects with 1 ([Riot props](#riot-prop-breaks) for what a break makes). The roles
+of the arguments the decompiler hides in these calls are inferred from their use.
+
+**The removal time** (`+0x120`). `WorldObject_SetRespawnTimer` (`0x00395d20`) sets now + the time and marks the
+spawn record (bit `0x1000000`). The setting `0x0051489c` `+0x26c` (`CfgSetGlobalTimeToLive`) held **30,000 ms** in
+quick-save slot 6 (confirmed (runtime)), so a thrown or dropped weapon stays 30 s. The streaming walk
+(`ObjectTaskManager_UpdateSpawns`) checks it through `ObjRecord_ShouldRemove` (`0x00399718`): once the time has
+passed the object is no longer pickable (flag `0x8000` cleared), stops at its next ground contact (`0x8000000`),
+updates every 240 ticks (40 for one class), and its tint becomes white with **alpha 0** (`+0xcc` = `0xffffff00`,
+taken the next update: it vanishes, with no fade); the next check that finds that tint removes it for good. A live
+object with a removal time that is streamed out is removed, not stored.
 
 ### How they get into a level {#placement}
 

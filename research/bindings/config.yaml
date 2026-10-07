@@ -1171,7 +1171,7 @@
     - {name: n19, lua: number, ctype: int, desc: "Byte at +0x37, clamped 0-15."}
     - {name: f20, lua: number, ctype: float, desc: "Float at +0x24, clamped to 0-1."}
     - {name: n21, lua: number, ctype: int, desc: "Byte at +0x38, clamped 0-127."}
-    - {name: flag22, lua: number, ctype: int, desc: "Byte at +0x39, clamped 0-1."}
+    - {name: flag22, lua: number, ctype: int, desc: "Byte at +0x39, clamped 0-1: when 1, an AI grabber of this class throws or pushes into a wall next to the pair (Grabbing_PickMove 0x002b5b98, ai.md#fight-reactions)."}
     - {name: n23, lua: number, ctype: int, desc: "Byte at +0x3a."}
     - {name: n24, lua: number, ctype: int, desc: "Byte at +0x3b."}
     - {name: n25, lua: number, ctype: int, desc: "Byte at +0x3c."}

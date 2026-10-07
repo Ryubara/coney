@@ -207,15 +207,67 @@ becomes the target (and with the street's `CfgAutoLockAndCombat` the lock); it i
 once the target is beyond 3 m; the lock bit goes beyond 13 m; the locked walk drops a target beyond 2.5 m unless L1
 (`+0x00` `0x8`) holds it. L1 pressed or held also picks one.
 
-**Turning onto it**: an attack whose target is within its far range turns and slides onto it over the time to the
-clip's first event (`Attack_SteerToTarget` `0x002761c8`; a snap over a fixed 0.1 s, `Attack_StartSnap`
-`0x00264460`); beyond, it only turns ([Combat](combat.md#targets)). The turn does not face the target: it turns
+**Turning onto it**: an attack whose target is within its far range turns and slides onto it; beyond, it only turns
+([Combat](combat.md#targets)). Which steer runs, and so how long the slide lasts and where it aims, is set out in
+[The two steers](#two-steers) below. The turn does not face the target: it turns
 so that the attack's **direction** points at it. The direction is the record's offset (`+0x0` / `+0x2`, read by
 `AttackTable_GetOffset` `0x00254418`), a unit vector in thousandths in the attacker's frame (y forward; x right,
 inferred from 25 and 27):
 forward (0, 1000) or within a few degrees of it for the standing, moving and ground attacks (193: 7.6° right),
 (999, −12) right for 25, (−1000, 0) left for 27, (−39, −999) back for 29, and for the strafes 31 / 32 / 33
 3° / 9° left and 6° right of forward. The new heading is the goal's heading minus the direction's. Confirmed (code).
+
+#### The two steers {#two-steers}
+
+There are two steer functions, and the attack record's **flag `0x8`** (record `+0x160` + kind × 16 `+0xc`,
+`AttackTable_GetFlags` `0x00254d60`) picks between them. Confirmed (code) unless marked:
+
+| | `Attack_SteerToTarget` (`0x002761c8`) | `Attack_SteerLed` (`0x00275678`) |
+| --- | --- | --- |
+| Used by | `Attack_Start` and `Attack_StartSnap` for a kind **without** flag `0x8`; always by `Attack_StartAtTarget` (`0x00261c80`, the specials from `Player_Special`), `Attack_StartSolo` and the other callers | `Attack_Start` (`0x002625a8`), `Attack_StartSnap` (`0x00264460`), `Attack_StartGrounded` and `Revive_Start` for a kind **with** flag `0x8`, when the word `0x005102c4` is non-zero |
+| Slide time | the caller's time, cut to the first event + 0.1 s. `Attack_Start`, `Attack_StartAtTarget` and `Attack_StartSolo` pass the time to the first event (`0x00101658`), so the slide lasts **the time to the first event**; `Attack_StartSnap` passes 0.1 s | always **the time to the first event + 0.1 s**; the caller's time is not read |
+| Target point | the target's position (its task `+0x10`) | the target's **slot point 0** (`Human_GetLedSlotPoint(target, 0)`, `0x00226aa0`) |
+| Lead, reach, turn | the same in both: the lead by the target's velocity × (first event + 0.1 s), cut to 0.5 m; the reach along the line in x and y; the goal at the attacker's own height | |
+
+`0x005102c4` is 1 on the disc and only read by these two callers (no write was found), so in practice flag `0x8`
+alone decides (inferred). So **653** (flags `0x26`) and **645** (`0x23`), both started by `Player_Special` through
+`Attack_StartAtTarget`, slide for their first event's time, while **`X1`** (`0x09`) slides for the first event +
+0.1 s. Neither the special's own `T` nor the event's type makes the difference; it is the steer. The snaps 25, 27
+and 29 (`0x1b` / `0x19` / `0x1b`) also have flag `0x8`, so they take the led steer too, and **not** the 0.1 s that
+`Attack_StartSnap` passes to the other one.
+
+**Slot point 0 is the target's head.** `Human_UpdateLedSlots` (`0x0023cd30`) sets slot 0 (`+0x1e0`) to the human's
+`+0x500` transform composed with his world transform, and `+0x500` holds bone 6 (the head) in the model's frame,
+the same value as bone-cache entry 6. Confirmed (runtime), `moves_reachX1_10_steer`:
+`+0x500` equalled bone 6 to 0.1 mm in every update, (0.000, 0.016, 1.735) at the press. So the head of a standing
+target that faces the attacker sits **0.016 m** in front of its position, toward the attacker, and the led steer's
+goal was 1.0215 m from the slot point and **1.0375 m** from the target's transform position. That is the 0.02-0.03 m
+measured below: the head's lean in the target's current pose, not an offset in the attack record (it changed from
+0.036 m to 0.016 m over the 15 updates before the press as the idle pose moved).
+
+**The head point moves with the pose.** `+0x500` is bone-cache entry 6 (`0x006b6880` + index × `0x470` + 6 × `0x20`)
+copied as it is, in the model frame: x to the human's right, y forward, z up, from his transform position (bone 0,
+the root, is not subtracted: it moves away with root motion while `+0x500` does not follow it). Slot 0 is not kept
+up to date: `Human_UpdateLedSlots` recomputes the slots only when they are read (`Human_GetLedSlotPoint`, its only
+caller) and the move is dirty (`+0x255`), so the led steer aims at the head **as it is when the attack starts**.
+Confirmed (code) at `0x00226aa0` and `0x0023cd30`; confirmed (runtime), `moves_head_reel` (slot 6, a cross combo at
+PoizoCiv standing 1.0 m ahead with his brain off; two runs gave the same values): slot 0 changed only on the updates
+an attack started (43 for `X1`, 54 for `XX2`), each time to that update's `+0x500`. The head's offset from the
+position, `+0x500` in metres:
+
+| Pose (clip) | x (right) | y (forward) | xy length | z |
+| --- | --- | --- | --- | --- |
+| idle 388 / 396 (target, brain off) | −0.008 to −0.003 | 0.012 to 0.037 | **0.013-0.037** | 1.728-1.734 |
+| fight idle 358 (the player, looping from update 88) | 0.024 to 0.051 | 0.075 to 0.165 | **0.09-0.165** | 1.540-1.558 |
+| reel 275 after `X1` (updates 52-63) | 0.083 to 0.273 | 0.031 to 0.137 | **0.15-0.28** | 1.469-1.601 |
+| reel 273 after `XX2` (updates 65-76) | −0.228 to 0.070 | 0.029 to 0.141 | **0.10-0.23** | 1.530-1.600 |
+| recovery 389 (updates 78-96) | −0.028 to 0.079 | 0.020 to 0.140 | 0.02-0.16 | 1.61-1.73 |
+
+So the original's head really moves that far: in a reel it swings up to 0.28 m, mostly sideways, and drops by up to
+0.26 m; in the fight idle the head leans 0.08-0.17 m forward. `XX2` started at update 54, two updates into the reel
+275, and its steer aimed at (0.215, 0.132): **0.25 m** from the target's position, to his right. The fight idle was
+measured on the player, whose model shares the humans' skeleton (inferred); an AI target held in 358 was not
+recorded.
 
 #### Where the attacker stands at contact {#reach}
 
@@ -242,8 +294,9 @@ the transform):
 | `X1` from 1.0 / 1.3 / 1.6 m | a straight slide from k3 to k11 (below) | ends at 0.878-0.879 m | **k9** | 0.903 / 0.890, 0.976 / 0.930, 1.048 / 0.970 |
 | `X1` from 1.9 m | turns only (the far range is 1.90 m): 1.886 at k3, 1.747 at k10 | | **miss** | |
 
-From k3 on, the three 653 runs are the same to the millimetre: the steer ends at 1.62 m (the reach 1.58 m and the
-attack's offset) by k3, and the clip then carries the attacker 0.50 m forward to 1.12 m by the end of k7. The
+From k3 on, the three 653 runs are the same to the millimetre: the steer ends at 1.62 m (the reach 1.58 m and
+0.04 m more, not explained: 653 takes the steer that aims at the target's position, not its head, [The two
+steers](#two-steers)) by k3, and the clip then carries the attacker 0.50 m forward to 1.12 m by the end of k7. The
 shapes are on k2-k8 (653) and k1-k9 (`S1`, from the hook).
 
 **Bones at contact**, in the attacker's frame (forward, right, height above the attacker's feet; metres). The pose
@@ -282,7 +335,7 @@ decide where `X1` lands, and they hold for every move:
 1. **The steer** (`Attack_SteerToTarget`, then `Human_MoveToOver` `0x0023d2b8`, which keeps the goal at human
    `+0x310`, the velocity at `+0x2e0`, the time left at `+0x300` and an on flag at `+0x331`). On X1's first update
    (k2) the goal is set **1.038-1.048 m** from the target's transform position, at the target's height: the reach
-   1.02 m plus 0.02-0.03 m (inferred: the attack's offset, as 653's 1.58 m reach steered to 1.62 m). The attacker
+   1.02 m from the target's head ([The two steers](#two-steers)), which leans 0.02-0.03 m toward the attacker. The attacker
    slides to it at a **constant velocity over 0.308 s** (9.25 updates, k3-k11; the time to the clip's first event
    plus 0.1 s): 1.824 m/s inward from 1.6 m, and **0.157 m/s backward** from 1.0 m (the goal is outside him).
 2. **The clip's own root motion**, bone-cache entry 0 (`0x006b6880` + index × `0x470`, its second word the forward
@@ -847,6 +900,8 @@ The moves Coney plays and where they differ from the table above: [Combat differ
 
 ## Open questions
 
+- Where 653's 0.04 m beyond its 1.58 m reach comes from: its steer aims at the target's position (task `+0x10`),
+  not its head ([The two steers](#two-steers)); whether the clip's root motion over k1-k3 adds it was not read.
 - The low and mid tests' state bits are read but not all named; which reactions put a human in them, and which
   point the height test compares (vtable `+0xac`).
 - Why the snap 25 slides the player 0.3-0.5 m away from a target pinned on its right and misses, when 27 hits one

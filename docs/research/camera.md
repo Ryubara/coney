@@ -192,7 +192,7 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 | `0x00123888` | `CamFailed_SetTarget` | Death camera: sets the human it looks at (`+0x1e0`) and places the camera (`0x001238a8`). | confirmed (code) |
 | `0x001238a8` | `CamFailed_Place` | Death camera placement: look-at = the human's position (`+0x180`); height (`+0x1e8`) = an upward ray of near + 5 m (mask 0x200) less the near plane; camera straight above, looking down (pitch about -88°) at a random yaw (Random_Int(36) × 10° - 180°); rotating flag set. | confirmed (code) |
 | `0x00123ba0` | `CamFailed_Deactivate` | Death camera vtable `+0x154`: releases itself when it is no longer its player's current camera. | confirmed (code) |
-| `0x00123bf0` | `CamFailed_Update` | Death camera update: while rotating, yaws by turn rate × 15°/s and closes in on the body at 0.18 m/s down to 2.5 m; when player 1's colour controller has faded fully (`+0x1d8` >= 1, `+0x1dc` > 0) starts the next fade (`0x0018d058`) and stops rotating. | confirmed (code) |
+| `0x00123bf0` | `CamFailed_Update` | Death camera update: while rotating, yaws by turn rate × 15°/s and closes in on the body at 0.18 m/s down to 2.5 m; when player 1's screen-effects manager's fade out has fully covered the screen (fade level `+0x1d8` >= 1, rate `+0x1dc` > 0) ends the blur pulse at once (`0x0018d058`, 0 s, reverse) and stops rotating ([Graphics](graphics.md#fade)). | confirmed (code) |
 
 ### `Cam_Fixed` (type 0) {#fn-fixed}
 
@@ -1463,7 +1463,18 @@ rule) and `0x0050b19c` was 1. Confirmed (runtime) unless marked:
   just above 22.5° it turned slightly the other way, as the rule's negative rate says. It turned while walking,
   running, sprinting and in the air, and not while standing, during the walk and run start clips or during the
   landing clip 436 (the gaits, [Heading](#heading)). Because the stick is turned by the camera, a stick held 90° to
-  the side makes the player run in a circle. **The circling rate** (re-measured 2026-10-05, slot 1, stick held 90°
+  the side makes the player run in a circle. **Which camera turns the stick** (confirmed (code)): `Pads_Update`
+  (`0x001454a8`, step 2 of [`Humans_Update`](tasks.md#humans-update), before the locomotion; the cameras update
+  last) builds the matrix from the player camera's orientation (vtable slot `+0x224`, the `+0x20` that faces the
+  aim point) as left by the previous update, stores it at `0x005ddc90 + player × 0x10`, and `Pad_Update`
+  (`0x00144fb0`) turns the stick `(x, y)` by its x and y axes and restores the stick's length (reversed while
+  `+0x455` is set). The stored quaternion is reused instead only while the follow camera's `+0x473` is 0; the
+  constructor, `Cam_Follow_Deactivate` and a stick at rest set it to 1, and only the co-op view change
+  (`0x001276a0`, its third argument) can clear it. So in one-player play the stick's frame is exactly the orientation
+  the auto-centre rule measures `a` from. Inferred check, with the locomotion's turn ([Characters](characters.md#locomotion),
+  18° limit, ease to 2.0 rad, carry 0.8; steady step = 5 × 18° × ease(`e`)): at the run's circle the original turns
+  6.37° an update, so `e` = 90° − 76.6° + 6.37° = 19.8° before the step, and the rule gives 6.47° (194°/s).
+  **The circling rate** (re-measured 2026-10-05, slot 1, stick held 90°
   to the side for 120 updates after 30 updates straight up; rates averaged over updates 100-158):
 
   | Stick | Gait | Player's turn | Rule's turn about the look-at point | Leash drag | `a` |
@@ -2088,7 +2099,9 @@ it, each with `CamSetupRail("rail", player, 22, {0, −0.25, 1.25}, 0.5, 90)`, t
        the last point, sets the hold `+0x3e4` ([the hold](#rail)). Inferred: a camera that starts clamped at the
        first point holds at once, so these levels must start the player ahead of it.
     6. **Move**, when the goal was taken, the hold was off at step 4 and is still off: with `v` = the target's
-       velocity (`0x003a1f00`) along the segment's direction in plan, the look-at point moves toward the goal by
+       **stored velocity** (`Task_GetVelocity` `0x003a1f00`: the task's `+0x30`, zero while its flags `+0x54` have
+       `0x600`; for a human what the locomotion writes, so 0 while a clip alone moves the body, and not the move
+       made by a push) along the segment's direction in plan, the look-at point moves toward the goal by
        min(0.4 × the gap, (max(`v`, 0) + 1 m/s) × `dt`). So it moves 1 m/s faster than the target goes forward,
        never more than 40% of the gap in one update. The segment is then chosen again for the moved look-at point
        (so it **crosses joints** on its own) and the camera = the look-at point projected on the rail.
@@ -2121,8 +2134,12 @@ addresses unless marked). `s` = +1 in mode 1 (ahead), −1 in mode 2 (behind); t
 3. **Lead point's segment.** The same forward and back steps for `B`. If they change the segment, `F` and `B` are
    worked out again on the new one (the farthest-ahead target added again, in either mode) and `B` is the mean of
    the old and new `B`: the camera does not jump at a joint.
-4. **Rail point.** `t` = `B`'s plan distance from the segment's start ÷ the segment's plan length (not clamped on
-   an inner segment). Ends: on segment 0 with `P` more than the lead behind the start, `t` = 0 (the first point); on
+4. **Rail point.** `t` = `B`'s plan distance from the segment's start ÷ the segment's plan length, a **length**
+   (the plan length of `B` − start, never negative) and not clamped on an inner segment. So a lead point
+   before the start gives the same `t` as one that far after it: in mode 2 with `P` less than the lead past the
+   first point, the camera stands (lead − `P`'s distance) **past** the start, mirrored, not before it; and with `P`
+   up to the lead behind the start, lead + that distance past it. Ends: on segment 0 with `P` more than the lead
+   behind the start, `t` = 0 (the first point); on
    the last segment, unless `P` is still before the last point and `F` is at least the lead from it, the camera
    takes the last point (`t` = 1). `C` = the 3D lerp of the segment's points by `t`, so the height follows the rail.
 5. **Switch 7** (`0x0050b2ac`, default 1, set to 1 again by every `CamSetupRail`, `0x0013b2b8`): when on, the
@@ -2226,7 +2243,8 @@ The parts of the shot itself:
   long (mask `0x200`), gives the height: the camera sits that far above the body, less the near plane, looking
   straight down (a pitch of about −88°) at a random yaw (one of 36 steps of 10° from −180°).
 - **Each update** (`0x00123bf0`): it turns about the vertical at 15°/s and sinks toward the body at 0.18 m/s, no nearer
-  than 2.5 m, until player 1's colour controller has finished its fade; it then starts the next fade and stops moving.
+  than 2.5 m, until player 1's screen-effects manager has faded out fully ([Fade](graphics.md#fade)); it then ends
+  the blur pulse at once and stops moving.
 
 **The game-over shot** (`Cam_GetFailed(1)` in the gameplay mode's update, `0x00158728`), confirmed (code) at the
 cited addresses:

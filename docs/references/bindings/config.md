@@ -1730,7 +1730,7 @@ CfgPowerClass(classId, p2, p3, p4, p5, p6, p7, p8, f9, f10, f11, f12, f13, f14, 
 | 19 | `n19` | number, truncated to an integer | Byte at +0x37, clamped 0-15. |
 | 20 | `f20` | number (single precision) | Float at +0x24, clamped to 0-1. |
 | 21 | `n21` | number, truncated to an integer | Byte at +0x38, clamped 0-127. |
-| 22 | `flag22` | number, truncated to an integer | Byte at +0x39, clamped 0-1. |
+| 22 | `flag22` | number, truncated to an integer | Byte at +0x39, clamped 0-1: when 1, an AI grabber of this class throws or pushes into a wall next to the pair (Grabbing_PickMove 0x002b5b98, ai.md#fight-reactions). |
 | 23 | `n23` | number, truncated to an integer | Byte at +0x3a. |
 | 24 | `n24` | number, truncated to an integer | Byte at +0x3b. |
 | 25 | `n25` | number, truncated to an integer | Byte at +0x3c. |

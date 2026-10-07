@@ -274,20 +274,159 @@ on [Screen effects](../references/screen-effects.md). Layout, confirmed (code) a
 
 | Offset | What | Written by |
 | --- | --- | --- |
-| `+0x10 + 0x18 × k` | look *k* (0-12): `+0x10` in seconds, `+0x14` out seconds, `+0x18` motion-blur alpha, `+0x1c` a value, `+0x20` a time in 60 Hz frames, `+0x24` tint RGBA | `CfgScrFx` (`0x0018b4a8`, colour form) |
-| `+0x148` / `+0x14c` / `+0x150` | the blur pulse's strength and two factors | `CfgScrFx` numeric form (`0x0018b648`) |
+| `+0x10 + 0x18 × k` | look *k* (0-12): `+0x10` in seconds, `+0x14` out seconds, `+0x18` motion-blur alpha, `+0x1c` a value, `+0x20` a time (the script's milliseconds × 0.06, as an unsigned integer), `+0x24` tint RGBA | `CfgScrFx` (`0x0018b4a8`, colour form) |
+| `+0x148` / `+0x14c` / `+0x150` | the blur pulse's pass count *n* and its two UV offsets *f1*, *f2* | `CfgScrFx` numeric form (`0x0018b648`) |
 | `+0x154 + 0x10 × layer` | effect layer 0-3 (rain, fog, film grain, room smoke): its object and two "on" words | `0x0018bae0` / `0x0018bd48` |
 | `+0x194` / `+0x198` | the base look and the current look | `0x0018b460`, `0x0018b7d0`, `0x0018b950` |
-| `+0x1d4`-`+0x1e4` | the fade: running, level, rate per second | `0x0018cc60` |
+| `+0x1bc`-`+0x1cc` | the [tint blend](#tint-blend): from colour, current colour, target colour, start and end in seconds | `0x0018c988` |
+| `+0x1d0`-`+0x1e4` | the [fade](#fade): colour, state, level 0-1, rate per second, delay and start in ms | `0x0018cc60` |
 | `+0x1e8`-`+0x1f4` | the letterbox: state, level 0-1, rate | `0x0018d868` |
-| `+0x1f8`-`+0x210` | the blur pulse: state (1 start, 2 rising, 3 held), level, rate, start time, auto-end | `0x0018d058` |
+| `+0x1f8`-`+0x210` | the [blur pulse](#blur-pulse): state, level, rate, delay, start, hold start, auto-end flag | `0x0018d058` |
 | `+0x212` | the view's player | |
+| `+0x214` | byte: when set, neither the blur pulse nor the motion blur is drawn | `0x0018d1d0`, `0x0018c408` |
 
-`ScreenQueueEffect(type, seconds)` runs `0x0018d450(manager, type, seconds)` on both managers, a jump table of six
-at `0x00552f70`; types 6 and above do nothing. The letterbox (`0x0018d5f8`) is two black quads, top and bottom,
-each `level × 0.12` of the screen height. The blur pulse (`0x0018d1d0`) draws device slot `+0x108` with look 5's
-two factors and `strength × level`; started by type 4 it holds for look 5's frame time and then queues type 5
-itself.
+`ScreenQueueEffect(type, seconds)` runs `0x0018d450(manager, type, seconds, delay, colour)` on both managers, a jump
+table of six at `0x00552f70`; types 6 and above do nothing. Type 0 fades in from the fade colour, type 1 fades out to
+it ([Fade](#fade)); 2 and 3 slide the letterbox in and out; 4 starts the [blur pulse](#blur-pulse) over look 5's in
+time and arms its auto-end; 5 ends it (at once when the seconds are 0, otherwise over look 5's out time). The letterbox
+(`0x0018d5f8`) is two black quads, top and bottom, each `level × 0.12` of the screen height. Confirmed (code).
+
+The clocks: every start time, delay and hold is read from the **real-time clock** (the `Timer` at `0x0050b8b8`, its slot
+`+0x30`, milliseconds; [Boot](boot.md#timers)), so they run on while the game is paused (inferred). The tint blend
+is timed on that clock alone. The fade, the letterbox and the blur pulse's **level** step by the `dt` that device slot `+0x128`
+(`0x0018dac0`) is handed each frame, the frame's game time ([Boot](boot.md#one-frame), step 8). Confirmed (code).
+
+#### Tint blend {#tint-blend}
+
+`ScreenFx_BlendTintTo(seconds, manager, colour)` (`0x0018c988`) blends the view's tint
+([Rendering](rendering.md#tint)) to a packed colour (bytes red, green, blue, alpha from the low byte). Fields,
+confirmed (code):
+
+| Offset | What |
+| --- | --- |
+| `+0x1bc` | **from** colour: set to the current colour (`+0x1c0`) when a blend starts |
+| `+0x1c0` | **current** colour: what was last drawn |
+| `+0x1c4` | **target** colour |
+| `+0x1c8` / `+0x1cc` | start and end, in seconds on the real-time clock (now ms × 0.001; end = start + seconds) |
+
+- **Start**: target = colour, from = current. With seconds > 0, start = now, end = now + seconds. With 0 or less
+  the blend is **instant**: from = target and start = end = 0.
+- **Each frame** (`ScreenFx_DrawTint`, `0x0018ca50`): when end > start, *r* = (end − now) / (end − start), the
+  fraction left; while *r* > 0 the colour is `lerp(from, target, 1 − r)`, otherwise (blend over, or instant) the
+  colour is the target and from is set to it. The colour is stored in `+0x1c0` and filled over the viewport when its
+  alpha byte is not 0. Nothing is drawn while the current look is 2 and `+0x1b8` is 0 (the current colour is still
+  set to the target).
+- **Lerp** (`0x0017a258`): **linear per byte**, each of the four bytes as a float, `from × (1 − t) + to × t`,
+  converted back with the EE's float-to-int, which **truncates** (rounds toward zero). The four bytes blend
+  together, alpha included.
+- `ScreenFx_FinishTintBlend` (`0x0018cb78`): once now is past the end, start = end and from = target.
+
+The death camera's blend (`0xd0000014`: red 20, alpha 208) is on [Camera](camera.md#death-camera).
+
+#### Fade {#fade}
+
+`ScreenFx_StartFade(seconds, manager, out, colour, delay)` (`0x0018cc60`, queue types 0 and 1) and
+`ScreenFx_DrawFade` (`0x0018ce58`), confirmed (code):
+
+| Offset | What |
+| --- | --- |
+| `+0x1d0` | the fade colour (its red, green and blue are used) |
+| `+0x1d4` | state: 0 idle, 1 just started, 2 running |
+| `+0x1d8` | **level**, 0-1: the fill's alpha is `level × 255`, truncated |
+| `+0x1dc` | **rate** per second of `dt`: positive fades out (toward the colour), negative fades in |
+| `+0x1e0` / `+0x1e4` | the delay and the start, real-time ms: nothing is drawn before start + delay |
+
+A fade out (type 1, `out` ≠ 0) takes 0.2 s off the time when it is longer than 0.2 s; from level 0 it starts at
+−(tint alpha / 255) with rate 1 / seconds, from a level part-way it keeps the level and runs over seconds × (1 −
+level); 0 s jumps to level 1. It also hides the radar on both views. A fade in (type 0) starts at 1 + tint alpha /
+255 with rate −1 / seconds (0 s: level 0 at once). Each frame after the delay the level moves by rate × `dt`, clamped to
+0-1; at 1 the state goes to 0 (fully covered, alpha 255); when a fade in drops to the tint's own alpha the level is 0
+and the fade ends. The fill uses the fade colour while the level is above 0.05 and the tint's target colour below
+that.
+
+So **`+0x1d8` and `+0x1dc` are the fade's level and rate, not the tint's**. `CamFailed_Update` (`0x00123bf0`)
+tests `level ≥ 1` and `rate > 0`: a fade out has fully covered the screen. It then ends the blur pulse at once
+(`0x0018d058` with 0 s, reverse, no delay; [Blur pulse](#blur-pulse)) and stops the death camera's turn
+([Camera](camera.md#death-camera)). Confirmed (code).
+
+#### Blur pulse {#blur-pulse}
+
+A full-view blur that rises, holds and falls, drawn through the device's [blur pass](#motion-blur). Fields, confirmed
+(code) at `0x0018d058` and `0x0018d1d0`:
+
+| Offset | What |
+| --- | --- |
+| `+0x1f8` | state: 0 off, 1 started, 2 moving, 3 held at full |
+| `+0x1fc` | level, 0-1 |
+| `+0x200` | rate per second of `dt` (positive rising, negative falling) |
+| `+0x204` | delay, real-time ms |
+| `+0x208` | start, real-time ms |
+| `+0x20c` | when the level reached 1, real-time ms (0 after the auto-end) |
+| `+0x210` | 16 bits: 1 = end by itself after the hold (set by queue type 4 only) |
+
+**Start**, `ScreenFx_StartBlurPulse(seconds, manager, reverse, delay)` (`0x0018d058`): the state becomes 1, the delay
+and the start (now) are stored, then:
+
+- **Forward** (reverse 0), seconds > 0: from level 0 the rate is 1 / seconds. From a level part-way the level is
+  kept, the rate is 1 / (seconds × (1 − level)) (1.0 if that time is 0), and the state goes back to what it was,
+  except that a held pulse (3) becomes 2.
+- Forward, 0 s or less: level 1 and rate 1 at once.
+- **Reverse** (reverse ≠ 0): the auto-end flag is cleared. seconds > 0: the level is **set to 1** whatever it was,
+  rate −1 / seconds. **0 s or less: level 0, rate −1 and state 0**: the pulse is off at once and nothing more is
+  drawn.
+
+**Each frame**, `ScreenFx_DrawBlurPulse(dt, manager)` (`0x0018d1d0`), from `ScreenFx_Render`:
+
+1. Nothing when `+0x214` is set, or while the level is 0 and now < start + delay (unsigned ms), so the delay only
+   holds back a pulse that starts from nothing.
+2. **State 3**: the blur pass with all *n* passes. If the auto-end flag is 1 and now − `+0x20c` ≥ `+0x98` (look 5's
+   time field, read as **milliseconds**), queue type 5 with look 5's out time (a reverse start, no delay) and clear
+   `+0x20c`.
+3. **State 0 with level 0**: nothing.
+4. **State 1**: the state becomes 2; the pass is drawn (all *n*) only if the level is already 1. The level does not
+   move this frame.
+5. **Otherwise**: level = clamp(level + rate × `dt`, 0, 1); passes = level × *n*, truncated. At level 1: state 3,
+   passes *n*, `+0x20c` = now. At level ≤ 0 with a negative rate: level 0, auto-end flag 0, **state 0**, passes 0,
+   and the global `0x00510174` is cleared. The pass is drawn this frame with that count, **even with 0 passes**.
+
+So the level scales the **number of passes**, not an alpha. The hold is a units slip: `+0x98` is the script's
+milliseconds × 0.06 (meant as 60 Hz frames) but is compared with real-time milliseconds, so look 5's 6,000 ms hold
+lasts **360 ms**. Confirmed (code).
+
+**The pass** (`ScreenFx_DrawBlurPass`, `0x0018c310`, then slot `+0x108`, `0x00193d80`) gets *f1* (`+0x14c`), *f2*
+(`+0x150`), the view's camera (slot `+0x68`), the source raster (slot `+0x138`, `0x00196468`, which returns the
+raster it marks; inferred the frame being drawn), the view's rectangle (slot `+0xa0`) and the pass count. It is
+drawn only when slot `+0x138` returns a raster. All three steps use linear filtering, `ONE` / `ZERO` blending (a
+plain copy), no Z test or write, no fog, vertex colour (255, 255, 255, 255). Confirmed (code):
+
+1. **Down**: the source's rectangle (UV = (pixel + 0.5) / raster size) is drawn at half size, (0, 0)-(w/2, h/2), into
+   the 512 × 256 raster `+0x43c`.
+2. **Passes**: *k* times, that half-size image is drawn onto itself, UV (0.5 / 512)-((w/2 + 0.5) / 512) across and
+   (0.5 / 256)-((h/2 + 0.5) / 256) down, with the offset (*f1* / 2, *f2* / 2) **in UV units** (fractions of the
+   512 × 256 raster), its sign flipped after every pass (`0x0050ce64` = 1). `ScreenQuad_DrawOffset` (`0x00193c20`)
+   does not move the quad's UVs: a positive offset is added to the **low** edge only (u0 or v0), a negative one to the
+   **high** edge only (u1 or v1). Each pass therefore narrows the sampled window from one side, alternately left/top
+   and right/bottom, and resamples it bilinearly: a slight zoom toward the centre plus a blur (the look, inferred).
+   With look 5's numbers each pass moves an edge by 0.001 in U (0.5 texel) and 0.0015 in V (0.4 texel).
+3. **Up**: the view's camera draws raster `+0x43c` over the whole rectangle with UV inset by one texel (`0x0050ce68`
+   = 1, `0x0050ce60` = 1.0): U (1 / 512)-((w/2 − 1) / 512), V (1 / 256)-((h/2 − 1) / 256). With `ONE` / `ZERO` it
+   **replaces the view opaquely**: while a pulse draws, the view is the half-resolution image, even at 0 passes.
+
+**Look 5's numbers** (`CfgScrFx` numeric form in `config_preload2.lua`; the call's order is look, in ms, out ms,
+hold ms, *n*, *f1*, *f2*): in **1,250 ms** (`+0x88` = 1.25 s), out **4,000 ms** (`+0x8c` = 4.0 s), hold **6,000**
+(`+0x98` = 360), *n* **28**, *f1* **0.002**, *f2* **0.003**. Read from the disc's script; the order of the fields
+is confirmed (code) at `0x0018b648`.
+
+**Callers**: queue type 4 (forward over look 5's in time, then auto-end); `CamUseDeathCamera` (`0x0011daa8`:
+forward over its `ms`, delay `ms2`, no auto-end; [Camera](camera.md#death-camera)); `CamFailed_Update`
+(off at once, above); `MissionFailed_Toggle` (`0x00155408`: off at once, with the tint put back instantly, on a
+retry); `Gm_Level_Update` (`0x00158928`, `0x00158b1c`; arguments not traced).
+
+**Draw order** (`ScreenFx_Render`, `0x0018dac0`), confirmed (code): with one view (or one player), for each view: blur
+pulse, tint, fade, letterbox, then the motion blur (only when no rumble-mode menu is up and `PM_IsDone` is 1). In the
+two-player one-view case: the blur pulse of whichever manager has one running (view 0 first), the letterbox, the
+tint and motion blur of view 0 or view 1 by their current looks, and view 0's fade last. Since the blur pulse is
+drawn first and replaces the view, the tint, fade and letterbox go over the blurred image.
 
 #### Looks {#looks}
 
@@ -358,11 +497,11 @@ one, confirmed (code):
    blur's alpha everywhere ([Screen quads](#2d-drawing)).
 
 The **blur pass**, device slot `+0x108` (`0x00193d80`), used by the blur pulse (`0x0018d1d0`) and `0x0018c310`, is a
-different effect: (1) the effects camera draws the source at half size into the 512 × 256 raster `+0x43c`
-(linear filtering, `ONE` / `ZERO`, Z off); (2) as many times as asked, that half-size image is drawn onto itself
-shifted by half the given offset, the sign flipping each pass (`0x0050ce64` = 1), each pass averaging neighbouring
-texels; (3) the view's camera draws the result stretched over the whole rectangle, inset by one texel
-(`0x0050ce60`), opaque. Confirmed (code).
+different effect: (1) the effects camera draws the source at half size into the 512 × 256 raster `+0x43c` (linear
+filtering, `ONE` / `ZERO`, Z off); (2) as many times as asked, that half-size image is drawn onto itself with half the
+given offset added to one edge of its UVs, the sign flipping each pass (`0x0050ce64` = 1), each pass resampling it
+bilinearly (details under [Blur pulse](#blur-pulse)); (3) the view's camera draws the result stretched over the whole
+rectangle, inset by one texel (`0x0050ce60`), opaque. Confirmed (code).
 
 #### Room smoke {#room-smoke}
 
@@ -1182,14 +1321,14 @@ acts on both. Times are on the real-time clock in seconds. Confirmed (code) at e
 | `0x0018c310` | `ScreenFx_DrawBlurPass(a, b, mgr)` | device slot `+0x108` on the manager's viewport camera with the viewport rectangle | confirmed (code) |
 | `0x0018c408` | `ScreenFx_DrawMotionBlur(mgr)` | blends the motion-blur strength from `+0x1a4` to `+0x1a8` over its time and draws it (not in game mode 100's state, nor when `+0x214` is set) | confirmed (code) |
 | `0x0018c8c8` | `ScreenFx_BlendBlurTo(seconds, mgr, alpha)` | starts that blend (instant when 0 s) | confirmed (code) |
-| `0x0018c988` | `ScreenFx_BlendTintTo(seconds, mgr, colour)` | starts the tint blend from the current tint (instant when 0 s) | confirmed (code) |
+| `0x0018c988` | `ScreenFx_BlendTintTo(seconds, mgr, colour)` | starts the tint blend from the current tint (instant when 0 s); [Tint blend](#tint-blend) | confirmed (code) |
 | `0x0018ca50` | `ScreenFx_DrawTint(mgr)` | the tint's current colour along its blend, filled over the viewport (`0x0018cc20`) | confirmed (code) |
 | `0x0018cb78` | `ScreenFx_FinishTintBlend` | jumps the tint to its target once the time is past | confirmed (code) |
 | `0x0018cc20` | `ScreenFx_FillViewport(mgr, colour)` | device slot `+0x130` for the manager's viewport | confirmed (code) |
-| `0x0018cc60`, `0x0018ce58` | `ScreenFx_StartFade`, `ScreenFx_DrawFade` | [Front end](frontend.md) | confirmed (code) |
+| `0x0018cc60`, `0x0018ce58` | `ScreenFx_StartFade`, `ScreenFx_DrawFade` | [Fade](#fade), [Front end](frontend.md) | confirmed (code) |
 | `0x0018d020` | `ScreenFx_IsFadeActive` | true while a fade runs or its level is not 0 | confirmed (code) |
-| `0x0018d058` | `ScreenFx_StartBlurPulse` | [Screen effects](#screen-effects) | confirmed (code) |
-| `0x0018d1d0` | `ScreenFx_DrawBlurPulse` | [Screen effects](#screen-effects) | confirmed (code) |
+| `0x0018d058` | `ScreenFx_StartBlurPulse(seconds, mgr, reverse, delay)` | [Blur pulse](#blur-pulse) | confirmed (code) |
+| `0x0018d1d0` | `ScreenFx_DrawBlurPulse(dt, mgr)` | [Blur pulse](#blur-pulse) | confirmed (code) |
 | `0x0018d450` | `ScreenFx_QueueEffect` | [Screen effects](#screen-effects) | confirmed (code) |
 | `0x0018d5f8`, `0x0018d868`, `0x0018d910` | `ScreenFx_DrawLetterbox`, `ScreenFx_StartLetterbox`, `ScreenFx_StepLetterbox` | [Screen effects](#screen-effects), [HUD](hud.md) | confirmed (code) |
 | `0x0018da80` | `ScreenFx_CopyFadeAndLetterbox(dst, src)` | view 1 follows view 0's fade and letterbox | confirmed (code) |
