@@ -54,6 +54,21 @@ class FightGoal final : public Goal {
     std::uint64_t m_retargetAtMs = 0; // the once-a-second re-target
 };
 
+/// **Coney's stand-in** for the melee goal (type 8, `Goal_Melee`) that `Brain_PushFightGoal` pushes beneath the fight
+/// goal (docs/research/ai.md#riot: goals `0x41` and 8, then the fight goal); its Process is not traced. It keeps a
+/// `GoalFight` going whatever the distance: the fight goal ends once its target is beyond the far melee range × 1.1,
+/// and then this goal, back on top, runs the human at its target (MoveToHumanAction, 2 s at a time) until it is within
+/// that range and pushes the fight goal again. It waits while the human or the target is down, while actions are queued
+/// and while the target has no attack slot for it; it ends when there is no target or the target is out of health.
+/// Without it, `level99`'s sparring Warriors, sent from 8.6-9 m (docs/research/ai.md#level99-fight), stood still.
+class CloseInGoal final : public Goal {
+  public:
+    CloseInGoal() : Goal(GoalType::Melee) {}
+
+    /// One update: wait, run at the target, or push the fight goal, as above.
+    [[nodiscard]] GoalStatus process(Brain& brain) override;
+};
+
 /// Queues attack kind `kind` as its chain of attack actions (ai::chainOf()), each later press delayed by the chain
 /// delay of the press before (ai::chainDelayMs() in the human's anims).
 /// @orig 0x0028e248 Brain_QueueAttack (unknown)

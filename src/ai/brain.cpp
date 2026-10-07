@@ -263,6 +263,16 @@ void Brain::runActions() {
 
 void Brain::startFight(Brain& target) {
     clearActions();
+    if (m_threatResponse == 0 || &target == this) {
+        return;
+    }
+    // Coney's stand-in for the melee goal Brain_PushFightGoal leaves beneath the fight goal: it closes on the target
+    // whenever the fight goal ends out of range. Not under a tactic, nor beneath a fight goal already on top.
+    const bool tactic = m_gang != nullptr && m_gang->tactic() != nullptr;
+    const Goal* top = topGoal();
+    if (!tactic && (top == nullptr || top->type() != GoalType::Fight) && findGoal(GoalType::Melee) == nullptr) {
+        pushGoal(std::make_unique<CloseInGoal>());
+    }
     fight(target);
 }
 

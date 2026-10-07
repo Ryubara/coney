@@ -1830,6 +1830,15 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
 - **Fighting**: `FightGoal`, the weighted pick, `Brain_QueueAttack`'s chains timed by the chain clip's first event,
   `AttackAction` (the command once in Start, the delay halved when the target targets the attacker or the brain is
   type 3, then a wait on `0x5c0221f`), `MoveToHumanAction` (a heading and speed in the record's `move`, no stick).
+- **`GoalFight` from afar** (`CloseInGoal`, a **stand-in** for the melee goal `Brain_PushFightGoal` leaves beneath
+  the fight goal, [GoalRiot](#riot); its Process is not traced): `GoalFight` (`Brain::startFight`) pushes it under the
+  fight goal unless the gang has a tactic, the threat response is 0, or a melee goal or the fight goal is on top
+  already. When the fight goal ends with its target beyond the far melee range × 1.1, this goal runs the human at the
+  target (`MoveToHumanAction`, 2 s at a time, stopping at 90 % of the far range) and pushes the fight goal again
+  within that range; it waits while either human is down, while actions are queued and while the target has no
+  attack slot for it, and ends when there is no target or it is out of health. `level99`'s sparring Warriors are sent
+  from 8.6-9.0 m ([the sparring fight](#level99-fight)): without it their fight goals ended at once and they stood
+  still. `coney_tests "the disc's level99: the sparring Warriors*"` checks that all three close in and attack.
 - **Blocking**: `BlockGoal` never produces a block: Coney's block starts only on R1 held in the record's buttons,
   which only a pad writes, so its command 4 does nothing. It turns the human's hit reactions off
   (`Fighter::setHitReactionsOff`, bit `0x800`) from its start until its sixth update with the human free; rolls the

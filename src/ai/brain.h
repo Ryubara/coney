@@ -270,7 +270,9 @@ class Brain {
 
     // --- Fighting (docs/research/ai.md#targets).
 
-    /// `GoalFight(human, target)`: clears the actions, then fight().
+    /// `GoalFight(human, target)`: clears the actions, then fight(), with **Coney's stand-in** for the melee goal
+    /// beneath the fight goal (CloseInGoal, unless a melee goal or the fight goal is on the stack's top already): it
+    /// runs the human at a target beyond the fight goal's range and fights again within it.
     /// @orig 0x002b2b90 Brain_StartFight (unknown)
     void startFight(Brain& target);
     /// Fights `target` when the threat response allows it: adds it to the enemies, takes it as the target (claiming an

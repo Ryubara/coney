@@ -85,6 +85,31 @@ GoalStatus FightGoal::process(Brain& brain) {
     return GoalStatus::Stop;
 }
 
+GoalStatus CloseInGoal::process(Brain& brain) {
+    Brain* target = brain.target();
+    if (target == nullptr || !Brain::fightable(*target)) {
+        return GoalStatus::Done;
+    }
+    // Waits while either is down, while the human is busy, and while the target's attack slots are all taken.
+    const human::Human& human = brain.human();
+    if (human.fighter().health().depleted() || human.state() == human::TargetState::Grounded ||
+        target->human().state() == human::TargetState::Grounded || brain.actionCount() > 0) {
+        return GoalStatus::Stop;
+    }
+    brain.setTarget(target);
+    if (!brain.hasAttackSlot()) {
+        return GoalStatus::Stop;
+    }
+    // Beyond the fight goal's range: run at the target, stopping inside the reach. Within it: the fight goal again.
+    const float reach = kInReachShare * brain.meleeFar();
+    if (brain.distanceTo(*target) > brain.meleeFar() * kFightRangeScale) {
+        brain.queueAction(std::make_unique<MoveToHumanAction>(kLongMoveMs, reach));
+        return GoalStatus::Stop;
+    }
+    brain.pushGoal(std::make_unique<FightGoal>());
+    return GoalStatus::Again;
+}
+
 void queueAttack(Brain& brain, int kind) {
     const std::vector<int> chain = chainOf(kind);
     for (std::size_t i = 0; i < chain.size(); ++i) {

@@ -19,7 +19,7 @@ class Gangs;
 /// The attack tactic's type id.
 inline constexpr int kAttackTactic = 0x00;
 /// The melee goal's type id (`Goal_Melee`).
-inline constexpr GoalType kMeleeGoal = static_cast<GoalType>(0x08);
+inline constexpr GoalType kMeleeGoal = GoalType::Melee;
 /// The tactic's codes: no member has an enemy, a member died (`TacticGetString`).
 inline constexpr int kTacNoEnemies = 9;
 inline constexpr int kTacMemberDied = 13;
