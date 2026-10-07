@@ -55,6 +55,7 @@ the letterbox, gives the player control back and calls the script's end function
 | `0x003a0da8` | `SceneTask_CallEnd` | calls the play binding's end function with the scene id | confirmed (code) |
 | `0x00356290`, `0x00356308`, `0x003560a8`, `0x00355ab8`, `0x00356188` | track runner: bind camera / bind object, advance, step keys, apply | | confirmed (code) |
 | `0x00354d98` | `SceneTrack_Events` | the object, camera and light tracks' events | confirmed (code) |
+| `0x00355798` | `SceneTrack_Flush` | a skipped scene's remaining track events, a reduced set ([Skipping](#skipping)) | confirmed (code) |
 | `0x002e5300`, `0x002e53e0` | `GoalJoinCinematic` and its goal (type `0x29`) | binds a human to a role | confirmed (code) |
 | `0x003541a0` | `Scene_BindHuman` | writes the human into the role | confirmed (code) |
 
@@ -176,7 +177,7 @@ controls fall where the scene needs them only when read that way. Inferred from 
 | 28 | 380 | fade in over `+8` seconds (type 0) |
 | 29 | 38 | loop point: in a looping scene, the frame to restart from (`+4`) |
 | 30 | 72 | a light's colour (`+8`), range (`+0x14`) and cone (`+0x10`, degrees) |
-| 31 | 33 | calls the scene's end function now |
+| 31 | 33 | calls the scene's end function now (also when skipped past, [Skipping](#skipping)) |
 | 33 | 333 | a particle effect at a position and rotation (s16 values, scaled as clip keys) named by `+0x14` with a prefix |
 | 41 | 1,422 | caption control: `+4` = 0 shows the next caption, 4 or 5 set that kind (4 hides it), 6 sets a flag first (confirmed (code) at `0x00354d98`; [Movies](movies.md#caption-timing)) |
 | 69 | 0 | an object or car action (`0x00396048`, `0x0038d798`) |
@@ -221,6 +222,8 @@ helper. Confirmed (code) for `global.lua`, read as bytecode (functions at its li
    with `StageLighting`, and with `FadeIn` **`ScreenQueueEffect(0, 0.5)`** (or `ScheduleFunc("DelayedFadeIn",
    DelayFadeIn)`); `tblScene[id] = nil`. With `Final`: black at once, `ReturnFunc(NumCallBacks)`, `tblScene[id] =
    nil`, `HUDLaunchMissionComplete()`. Then `bSuppressHud = nil`.
+   The count-down calls come from the scene's type-31 events ([Events](#events)), which a skip still fires, one call
+   each, before the final call ([Skipping](#skipping)); the helpers never check whether the scene was skipped.
 
 Nothing in these helpers shows the HUD again, and `level99`'s `ReturnFunc`s do not either: the cinematic end's
 letterbox-out does, as its bars finish going out ([HUD: who shows the HUD again](hud.md#who-shows-the-hud-again)).
@@ -410,8 +413,54 @@ Only a skippable scene (`+0xe5`), confirmed (code) at `0x0039cbf0`:
   the caption is cleared, that player's view goes **black at once** (`ScreenQueueEffect` type 1, 0 s), and the scene
   is stopped like `SceneStop(id, false)`. START also sets the chain-skip flag (`0x0051489c + 0x56e4`), so the next
   scenes played with `chain` skip at once without a button.
-- The stop ends every role's clip, first firing its remaining events (`0x003a0a68`, `0x00103e90`); the scene then ends
-  as below with the skip flag set.
+- The stop ends every role's clip, first firing its remaining events (`0x003a0a68`, `0x00103e90`; only when skipped,
+  `+0xe4`); the scene then ends as below with the skip flag set. The end fires what is left of the **object, light
+  and camera tracks** too, a reduced set, described next.
+- A **looping** scene with a loop point (`+0xec`, [Ending](#ending)) is not cut short: the skip's stop only clears the
+  loop, the task retries it each update and the scene plays to the end of its pass. Confirmed (code) at `0x0039cbf0`,
+  `0x00353a10`.
+
+**The remaining track events on a skip** (`SceneTrack_Flush`, `0x00355798`). In the end (`0x0039f450`), only when
+skipped, each bound object's track is flushed (before the object is placed at its end pose), then each light's,
+then the camera's (before the camera is popped, and only while the scene camera's field `+0x1e0` is 0, the case in
+which it is popped at all; that field's meaning was not traced). The flush walks every event not yet passed, in
+track order, regardless of its frame, and does only these; confirmed (code) at `0x00355798`:
+
+| Type | On a skip |
+| --- | --- |
+| 24 | message `0x12` (show) to the object, unless the **next** event of the track is a 25 (the code means to look further ahead but compares the same event each time) |
+| 25 | message `0x13` (hide) |
+| 27 | fade out on player 1's view **at once** (`ScreenQueueEffect` type 1, 0 s); the caption is not touched |
+| 28 | fade in **at once** (type 0, 0 s) |
+| 31 | **calls the scene's end function now** (`0x003a0da8`), once per pending event, as in play |
+| 74 | the coloured fade, at once |
+| 76 | sets each player's rumble strength (`min(255, +6 × 25.5)`, pads with a motor only), which the camera's pop a moment later sets back to 0 |
+
+Every other type is dropped: sounds (13, 14, 71), lens (26), loop point (29), light colour (30), particles (33),
+captions (41), object and car actions (69), holding an object before the camera (73). A type-31 event in the flush
+finds its scene through the current scene camera (`0x00512c7c + 0x850`, `+0x14`, the camera's scene id `+0x1e4`),
+without the in-play fallback to the object's scene slot; the pointer is cleared (`0x003a1558(0)`) only after the
+camera's flush, so every flush of a scene with a camera finds it.
+
+So on a skip the order is: the role clips' remaining events (at the stop); then, in the end, humans placed, each
+object's pending events and placement, the lights' and the camera's pending events (the type-31 calls among them,
+in frame order), the camera popped, the letterbox out, brains resumed, and **the end function called once more**
+with the scene id (step 7). A scene whose tracks hold *n* pending type-31 events therefore calls its end function
+*n* + 1 times, the last one after the camera is back. Confirmed (code) at `0x0039f450`, `0x00355798`; not yet seen
+at runtime (no save state reaches `level80`).
+
+**`level80`'s intro, skipped** (inferred from the code above and the scripts, read as bytecode). `level80_chapter1`
+preloads `l80_c1` at checkpoint 1 and, once it is loaded, runs `SuperRunScene` with it already loaded, seven humans
+(Cleon, Rembrandt, Vermin and four scene-only Destroyers), the clubhouse's two doors and a Destroyers object as
+objects, `NoClearWanted`, **`NumCallBacks` = 3** and its `ReturnFunc` (an `EndIntroScene`). That function, given 3, 2
+or 1, breaks one of the clubhouse's three glass panes and sets off the explosion at the matching flag; given anything
+else (the scene id), it closes the doors, removes the scene's Destroyers gang and goes on to the chapter's next setup.
+The three type-31 events on the camera track (about 21.7 to 22.1 s) are flushed by a skip, so `PreCashTheWorld` runs
+three times (`ReturnFunc(3)`, `(2)`, `(1)`, `NumCallBacks` down to 0, each pane and explosion at once), then a
+fourth time from step 7, which calls `ReturnFunc(id)` and queues `ScreenQueueEffect(0, 0.5)`: the screen, black
+since the skip, fades in over 0.5 s. Neither `global.lua` nor the level's scripts look at whether a scene was
+skipped: no scene-state query, no skip callback, nothing zeroes `NumCallBacks`; the engine's flush is what keeps the
+count right. (`level80.lua` also builds a looping `l80_c1` table, but only in its `SCENETEST` debug path.)
 
 ### Ending {#ending}
 
