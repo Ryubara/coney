@@ -149,6 +149,7 @@ nav:
           - The streamed world: research/world.md
           - Memory: research/memory.md
           - Maths: research/maths.md
+          - "Link-once code (templates, inlines)": research/link-once.md
           - Debug features and leftovers: research/debug.md
       - File formats:
           - Asset inventory: research/formats/inventory.md

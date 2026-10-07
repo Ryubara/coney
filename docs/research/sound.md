@@ -1010,6 +1010,7 @@ The unit's other functions (`0x0010d758`-`0x0011b770`), by address; names are ou
 | `0x0010f768` | `AudioManager_InitDefaults` | seeds the audio random (`0x006eb8b0`) from the timer, picks the first load screen (`Random % 7`, `+0x3fa28`) and sets both option volumes to 0.9 | confirmed (code) |
 | `0x0010f7f8` | `AudioManager_ResetLowPriorityCount` | `+0x3fa34` = 0 | confirmed (code) |
 | `0x0010f900` | `SoundList_Load` | makes the sound list: `n` 4-byte entries, each a pointer to a 16-byte record of the chunk | confirmed (code) |
+| `0x0010f978` | `SoundClasses_SetTable` | stores the class table pointer at `0x00598670` (from `SoundClasses_LoadChunk`) | confirmed (code) |
 | `0x0010f988` | `StereoTable_Load` | stores the stereo table's count `0x00598678` and records `0x00598674` | confirmed (code) |
 | `0x0010f9a0` | `AudioDevice_ListsLoaded` | device slot `+0x160` after a list is loaded; the PS2 device's is empty (`0x0014c118`) | confirmed (code) |
 | `0x0010f9d0` | `Audio_IopCommandHook` | an empty function the IOP command sender calls (`0x0014daa8`) | confirmed (code) |

@@ -175,6 +175,17 @@ orphans as well ([Source map](source-map.md)). The TCP socket and file-system cl
 none is loaded by live code we found. The `host0:` file system is set up at boot but never receives game files
 ([File I/O](file-io.md)).
 
+### Unreferenced shell code {#shell-leftovers}
+
+Three functions of the shell layer, just before `Shell/Core/shellMemory.cpp`'s rodata ([Source map](source-map.md)),
+have no caller and no data reference: leftovers of a sample shell. Confirmed (code) for the absence of callers.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00153490` | `ShellPad_Update` | a `libpad` state machine (port `+0x118`, slot `+0x11c`, state `+0x124`): reads the pad's modes and sets its main mode (analog, locked) | confirmed (code) |
+| `0x00153c18` | `ShellDisplay_Setup` | the display set-up for an aspect mode (4:3, 16:9 and others; NTSC or PAL from `0x005e5200`), then `0x00153de0` | confirmed (code) |
+| `0x00153de0` | `ShellDisplay_BuildPacket` | the GS register packet for that display (frame, offsets, scissor) | confirmed (code) |
+
 ### Not present
 
 - **Debug menu**: no menu strings beyond the retail GUI, and no mode on the [game-mode stack](boot.md) that is not a

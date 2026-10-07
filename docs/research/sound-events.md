@@ -20,16 +20,16 @@ script's `NewMaterialSound` / `NewAnimSound` calls. The matrix's tables are inde
 its alternatives play in turn. Every player below plays **positional, duckable** sounds (the play call's last
 argument 1) at volume × the column's volume and pitch 1 unless stated. Confirmed (code):
 
-| Player | Address | What it plays |
-| --- | --- | --- |
-| `Sound_PlayMaterialPair(vol, m1, m2, pos, default)` | `0x00110830` | entry `[m1][m2]`: column 2, then column 1 (column 1 at pitch `Random_Unit() × 0.2` when `m1` is 13 `CAR_HOOD`); no owner |
-| `Sound_PlayMaterialPairPlain` | `0x00110940` | the same without the `CAR_HOOD` pitch |
-| `Sound_PlayMaterialHit` | `0x00110790` | column 1 of `[m1][m2]` only |
-| `Sound_PlayAnimSound(vol, id, pos)` | `0x00110a08` | column 1 of animation entry `id`; no owner |
-| `Human_PlayAnimSound(h, id, pos)` | `0x0021f548` | animation entry `id` at the human, owned by him: not a player: column 1 at its volume; a player: column 1 and column 2 at **2 ×** volume × the combat factor (column 2 unowned), and column 3 the same while the camera is in combat framing |
-| `Human_PlayImpactSound(vol, h, owner, victim, m1, m2, default)` | `0x00220ac8` | entry `[m1][m2]` at `h`, owned by `owner`; with a `victim` knocked down, `TORSO` (10) and `HEAD` (17) on either side become 159 `TORSO_PRONE`; owner not a player: column 1; a player: column 1 and column 2 at 2 × vol × the owner's combat factor, and under combat framing also column 3 at a random pitch `1 ± n / 100`, `n` in 0-19 (the audio generator `0x006eb8b0`) |
-| `Human_PlayFootstep(vol, pitch, h, bodyMaterial)` | `0x0021f290` | [footsteps](#footsteps) |
-| `Human_SayAnimLine(h, id, overLine, cut)` | `0x0021f410` | animation entry `id`'s column 1 as the human's **speech line** ([vocal ids](#vocal-ids)) |
+| Player | Address | What it plays | Evidence |
+| --- | --- | --- | --- |
+| `Sound_PlayMaterialPair(vol, m1, m2, pos, default)` | `0x00110830` | entry `[m1][m2]`: column 2, then column 1 (column 1 at pitch `Random_Unit() × 0.2` when `m1` is 13 `CAR_HOOD`); no owner | confirmed (code) |
+| `Sound_PlayMaterialPairPlain` | `0x00110940` | the same without the `CAR_HOOD` pitch | confirmed (code) |
+| `Sound_PlayMaterialHit` | `0x00110790` | column 1 of `[m1][m2]` only | confirmed (code) |
+| `Sound_PlayAnimSound(vol, id, pos)` | `0x00110a08` | column 1 of animation entry `id`; no owner | confirmed (code) |
+| `Human_PlayAnimSound(h, id, pos)` | `0x0021f548` | animation entry `id` at the human, owned by him: not a player: column 1 at its volume; a player: column 1 and column 2 at **2 ×** volume × the combat factor (column 2 unowned), and column 3 the same while the camera is in combat framing | confirmed (code) |
+| `Human_PlayImpactSound(vol, h, owner, victim, m1, m2, default)` | `0x00220ac8` | entry `[m1][m2]` at `h`, owned by `owner`; with a `victim` knocked down, `TORSO` (10) and `HEAD` (17) on either side become 159 `TORSO_PRONE`; owner not a player: column 1; a player: column 1 and column 2 at 2 × vol × the owner's combat factor, and under combat framing also column 3 at a random pitch `1 ± n / 100`, `n` in 0-19 (the audio generator `0x006eb8b0`) | confirmed (code) |
+| `Human_PlayFootstep(vol, pitch, h, bodyMaterial)` | `0x0021f290` | [footsteps](#footsteps) | confirmed (code) |
+| `Human_SayAnimLine(h, id, overLine, cut)` | `0x0021f410` | animation entry `id`'s column 1 as the human's **speech line** ([vocal ids](#vocal-ids)) | confirmed (code) |
 
 A material lookup whose second material is 0 or 1 uses the caller's `default` (5, `CONCRETE`, at every call site on
 this page), and an empty entry falls back to `[m1][default]` ([Sound](sound.md#sound-matrix)).
@@ -70,42 +70,42 @@ factor × the human's combat factor × **2 for a player**. For body material 8 (
 (state `0x200000`, `Human_IsHiddenInShadow` `0x00228168`, the sneak) plays at **half** volume and without the
 player's doubling; classes `0x77` and `0x78` use the plain pair (no difference for body 8).
 
-| `SA` id | Name | Body material | Volume |
-| --- | --- | --- | --- |
-| 1 | `footstep` | 8 `SHOE` | 1 |
-| 3 | `footstep_run` | 8 `SHOE` | 1.25 |
-| 12 | `truekneedrop` | 34 `KNEE` | 1 |
-| 13 | `hit_ground` | 26 `HUMAN` | 1 |
-| 18 | `xhit_ground` | 10 `TORSO` | 1 |
-| 37 | `jump_land` | 164 `FEET_LAND` | 1 |
-| 40 | `light_hit_ground` | 161 `HUMAN_LIGHT` | 1 |
-| 43 | `thrown_hit_ground` | 162 `HUMAN_HEAVY` | 1 |
-| 67 | `light_land` | 163 `FEET_LIGHT` | 1 |
-| 69 | `land` | 101 `FEET` | 1 |
+| `SA` id | Name | Body material | Volume | Evidence |
+| --- | --- | --- | --- | --- |
+| 1 | `footstep` | 8 `SHOE` | 1 | confirmed (code) |
+| 3 | `footstep_run` | 8 `SHOE` | 1.25 | confirmed (code) |
+| 12 | `truekneedrop` | 34 `KNEE` | 1 | confirmed (code) |
+| 13 | `hit_ground` | 26 `HUMAN` | 1 | confirmed (code) |
+| 18 | `xhit_ground` | 10 `TORSO` | 1 | confirmed (code) |
+| 37 | `jump_land` | 164 `FEET_LAND` | 1 | confirmed (code) |
+| 40 | `light_hit_ground` | 161 `HUMAN_LIGHT` | 1 | confirmed (code) |
+| 43 | `thrown_hit_ground` | 162 `HUMAN_HEAVY` | 1 | confirmed (code) |
+| 67 | `light_land` | 163 `FEET_LIGHT` | 1 | confirmed (code) |
+| 69 | `land` | 101 `FEET` | 1 | confirmed (code) |
 
 ### Fixed material pairs {#anim-pairs}
 
-| `SA` id | Name | Plays |
-| --- | --- | --- |
-| 46 | `kick_to_body` | `Sound_PlayMaterialPair([8 SHOE][159 TORSO_PRONE])` at the human, volume 1, a player 2 |
-| 65 | `kick_to_head` | `Sound_PlayMaterialPair([8 SHOE][17 HEAD])`, volume 1, a player 2 |
-| 52 | `bottle_smash` | by the held object's material (its type's `+100`): 102 `BRICK` → `SA` 141 `brick_smash`, 60 `POOLBALL` → 142 `cueball_smash`, 37 `BOTTLE` → 52 itself, through `Human_PlayAnimSound`; when that plays nothing (no entry), the object's material against itself: not a player `Sound_PlayMaterialHit([m][m])` volume 1, a player `Sound_PlayMaterialPair([m][m])` at 2 × the combat factor. Nothing without a held world object |
-| 86 | `head_wtand` | the held object's material `m` against 17 `HEAD`: not a player `Sound_PlayMaterialHit([m][17])`, a player `Sound_PlayMaterialPair([m][17])` at 2 × the combat factor |
-| 62 | `stab` | `Human_PlayAnimSound(62)`, or `SA` 140 `bottle_stab` when the held object's `+0xc4` is hash `0xc68a017c` (the broken bottle, inferred) |
+| `SA` id | Name | Plays | Evidence |
+| --- | --- | --- | --- |
+| 46 | `kick_to_body` | `Sound_PlayMaterialPair([8 SHOE][159 TORSO_PRONE])` at the human, volume 1, a player 2 | confirmed (code) |
+| 65 | `kick_to_head` | `Sound_PlayMaterialPair([8 SHOE][17 HEAD])`, volume 1, a player 2 | confirmed (code) |
+| 52 | `bottle_smash` | by the held object's material (its type's `+100`): 102 `BRICK` → `SA` 141 `brick_smash`, 60 `POOLBALL` → 142 `cueball_smash`, 37 `BOTTLE` → 52 itself, through `Human_PlayAnimSound`; when that plays nothing (no entry), the object's material against itself: not a player `Sound_PlayMaterialHit([m][m])` volume 1, a player `Sound_PlayMaterialPair([m][m])` at 2 × the combat factor. Nothing without a held world object | confirmed (code) |
+| 86 | `head_wtand` | the held object's material `m` against 17 `HEAD`: not a player `Sound_PlayMaterialHit([m][17])`, a player `Sound_PlayMaterialPair([m][17])` at 2 × the combat factor | confirmed (code) |
+| 62 | `stab` | `Human_PlayAnimSound(62)`, or `SA` 140 `bottle_stab` when the held object's `+0xc4` is hash `0xc68a017c` (the broken bottle, inferred) | confirmed (code); the bottle inferred |
 
 ### Sounds without a speaker {#anim-plain}
 
-| `SA` ids | Plays |
-| --- | --- |
-| 4 `short_fabric`, 6 `long_fabric`, 15 `fabric_friction` | `Sound_PlayAnimSound` at the human: a player at volume 2; anyone else at 1 **only when his class `+0x11b` is 13** (`Human_IsClass13` `0x00223e20`: the bosses and big fighters, `CfgChar`'s third argument), else nothing |
-| 5 `swoosh_big`, 8 `swoosh_sml`, 16 `boss_swoosh1`, 23 `swoosh_punch3`, 44 `weapon_swoosh`, 90 `boss_swoosh2`, 91 `boss_swoosh3`, 92 `boss_swoosh` | `Sound_PlayAnimSound`: volume 1, a player 2 |
-| 50 `zoom_01` | column 1 by `PlaySound3DByHash` at its column volume, no owner, no doubling |
-| 66 `fence_rattle_big`, 68 `fence_rattle_small` | column 1 owned by the human at its column volume (`AudioManager_PlayOwned`), no doubling: the fence climb |
-| 83 `sprayloop` | stops the human's sound at `+0x168`, plays column 1 owned by him and keeps it there (`Human_SetSpeechHandle`) |
-| 60 `uncuff` | `Human_StartGrabSound` (`0x0021b228`): starts the sound prepared in `+0x180` (`Human_PrepareGrabSound` `0x0021b148` prepares `SA` 60's column 1 at the grab partner, from `Human_StateUpdate` and `ContextActions_Pick`), or, when none was prepared, `Human_PlayAnimSound(60)` |
-| 87 `stealth_hands`, 88 `stealth_baton`, 89 `stealth_knife` | while the human's sound at `+0x17c` is not alive: stop his line and play column 1 as a cutting speech line (`Human_PlaySpeechCutting`, volume 1), then `Player_UpdateHiddenLoopSound` (`0x002301f0`); otherwise `Player_StartPreparedLine` (`0x0021f208`) |
-| 0 `none` | nothing |
-| **every other id** | `Human_PlayAnimSound` (the default; listed explicitly for 2, 11, 26, 33, 74, 94, 118-128) |
+| `SA` ids | Plays | Evidence |
+| --- | --- | --- |
+| 4 `short_fabric`, 6 `long_fabric`, 15 `fabric_friction` | `Sound_PlayAnimSound` at the human: a player at volume 2; anyone else at 1 **only when his class `+0x11b` is 13** (`Human_IsClass13` `0x00223e20`: the bosses and big fighters, `CfgChar`'s third argument), else nothing | confirmed (code) |
+| 5 `swoosh_big`, 8 `swoosh_sml`, 16 `boss_swoosh1`, 23 `swoosh_punch3`, 44 `weapon_swoosh`, 90 `boss_swoosh2`, 91 `boss_swoosh3`, 92 `boss_swoosh` | `Sound_PlayAnimSound`: volume 1, a player 2 | confirmed (code) |
+| 50 `zoom_01` | column 1 by `PlaySound3DByHash` at its column volume, no owner, no doubling | confirmed (code) |
+| 66 `fence_rattle_big`, 68 `fence_rattle_small` | column 1 owned by the human at its column volume (`AudioManager_PlayOwned`), no doubling: the fence climb | confirmed (code) |
+| 83 `sprayloop` | stops the human's sound at `+0x168`, plays column 1 owned by him and keeps it there (`Human_SetSpeechHandle`) | confirmed (code) |
+| 60 `uncuff` | `Human_StartGrabSound` (`0x0021b228`): starts the sound prepared in `+0x180` (`Human_PrepareGrabSound` `0x0021b148` prepares `SA` 60's column 1 at the grab partner, from `Human_StateUpdate` and `ContextActions_Pick`), or, when none was prepared, `Human_PlayAnimSound(60)` | confirmed (code) |
+| 87 `stealth_hands`, 88 `stealth_baton`, 89 `stealth_knife` | while the human's sound at `+0x17c` is not alive: stop his line and play column 1 as a cutting speech line (`Human_PlaySpeechCutting`, volume 1), then `Player_UpdateHiddenLoopSound` (`0x002301f0`); otherwise `Player_StartPreparedLine` (`0x0021f208`) | confirmed (code) |
+| 0 `none` | nothing | confirmed (code) |
+| **every other id** | `Human_PlayAnimSound` (the default; listed explicitly for 2, 11, 26, 33, 74, 94, 118-128) | confirmed (code) |
 
 ### Vocal ids {#vocal-ids}
 
@@ -116,21 +116,21 @@ player's doubling; classes `0x77` and `0x78` use the plain pair (no difference f
 [Speech lines](sound.md#speech): nothing during a cinematic. Where a female id is given, a human with
 `+0x3b8` = 1 uses it instead.
 
-| `SA` id (female id) | overLine | cut | Notes |
-| --- | --- | --- | --- |
-| 7 `whistle`, 149 `sleep_snore`, 150 `sleep_grunt`, 156 `puke_big`, 161 `puke` | yes | no | |
-| 9 `grunt_pch` (109) | yes | no | |
-| 22 `grunt` (108) | yes | no | |
-| 59 `grunt_pain` → plays 22 `grunt` (108) | yes | no | the pain grunt is the `grunt` entry |
-| 30 `grunt_land`, 54 `grunt_strain`, 72 `grunt_hit_face` | yes | no | no female variant |
-| 39 `winded` (111) | yes | no | |
-| 71 `grab_back_grunt` (112) | yes | no | |
-| 101 `grab_grunt` (110) | yes | no | |
-| 58 `die` (114) | yes | **yes** | only while no scene plays (game state `+0x410` clear) |
-| 115 `expire` (116) | no | **yes** | only when no line is playing |
-| 28 `grunt_x` (113) | yes | no | only after command 12 `pain` said nothing (below) |
-| 32 `grunt_lightlift` (145) | no | no | only after command 152 `lightlift` said nothing |
-| 57 `grunt_heavylift` (144) | no | no | only after command 151 `heavylift` said nothing |
+| `SA` id (female id) | overLine | cut | Notes | Evidence |
+| --- | --- | --- | --- | --- |
+| 7 `whistle`, 149 `sleep_snore`, 150 `sleep_grunt`, 156 `puke_big`, 161 `puke` | yes | no | | confirmed (code) |
+| 9 `grunt_pch` (109) | yes | no | | confirmed (code) |
+| 22 `grunt` (108) | yes | no | | confirmed (code) |
+| 59 `grunt_pain` → plays 22 `grunt` (108) | yes | no | the pain grunt is the `grunt` entry | confirmed (code) |
+| 30 `grunt_land`, 54 `grunt_strain`, 72 `grunt_hit_face` | yes | no | no female variant | confirmed (code) |
+| 39 `winded` (111) | yes | no | | confirmed (code) |
+| 71 `grab_back_grunt` (112) | yes | no | | confirmed (code) |
+| 101 `grab_grunt` (110) | yes | no | | confirmed (code) |
+| 58 `die` (114) | yes | **yes** | only while no scene plays (game state `+0x410` clear) | confirmed (code) |
+| 115 `expire` (116) | no | **yes** | only when no line is playing | confirmed (code) |
+| 28 `grunt_x` (113) | yes | no | only after command 12 `pain` said nothing (below) | confirmed (code) |
+| 32 `grunt_lightlift` (145) | no | no | only after command 152 `lightlift` said nothing | confirmed (code) |
+| 57 `grunt_heavylift` (144) | no | no | only after command 151 `heavylift` said nothing | confirmed (code) |
 
 ### Speech-command ids {#command-ids}
 
@@ -139,20 +139,20 @@ uncut, target, duckable)` (`0x002205e0`; `uncut` 0 plays it as a cutting line; i
 target for a look is the null handle (`0x006ebd30`) in every row. "Gesture" means only when `Ambient_MayGesture`
 allows; "1.5 at a player" means volume 1.5 when the human's target is a player, else 1.
 
-| `SA` id | Command (number) | Volume | Interrupt | Duckable | Condition |
-| --- | --- | --- | --- | --- | --- |
-| 28 `grunt_x` | `pain` (12) | 1.5 at a player | yes | yes | then the vocal line above when no line came |
-| 29 `cmd_mount` | `mount` (14) | 1.5 at a player | yes | yes | gesture; never for a player while game state `+0x268` is positive |
-| 32 `grunt_lightlift` | `lightlift` (152) | 1 | no | yes | then the vocal line |
-| 35 `cmd_wave`, 97 `cmd_point` | `point` (15) | 1.5 at a player | yes | yes | gesture |
-| 41 `agony` | `agony` (34) | 1 | no | **no** while the human has interrogation lines (`+0x590`-`+0x59c`, [Crimes](crimes.md)), else yes | |
-| 56 `cmd_throw` | `throw` (10), or `throw2` (38) when the held object's type (`+0x86`) is 8 `TYPE_MOLOTOV` | 1 (3, below) | yes | yes | only with a target (a human or a flag) and brain `+0x2d4` clear |
-| 57 `grunt_heavylift` | `heavylift` (151) | 1 | yes | yes | then the vocal line |
-| 82 `cmd_rage` | `rage` (160) | 1 | yes | yes | |
-| 95 `cmd_boss` | `roar` (167) | 1 | yes | yes | |
-| 103 `cmd_kiyap` | `kiyap` (176) | 1.5 at a player | yes | yes | gesture |
-| 139 `cmd_fire` | `onfire` (107) | 1 | yes | yes | only while the human burns (`+0x19b`) |
-| 146 `sprayface` | `sprayface` (203) | 1 | yes | yes | |
+| `SA` id | Command (number) | Volume | Interrupt | Duckable | Condition | Evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| 28 `grunt_x` | `pain` (12) | 1.5 at a player | yes | yes | then the vocal line above when no line came | confirmed (code) |
+| 29 `cmd_mount` | `mount` (14) | 1.5 at a player | yes | yes | gesture; never for a player while game state `+0x268` is positive | confirmed (code) |
+| 32 `grunt_lightlift` | `lightlift` (152) | 1 | no | yes | then the vocal line | confirmed (code) |
+| 35 `cmd_wave`, 97 `cmd_point` | `point` (15) | 1.5 at a player | yes | yes | gesture | confirmed (code) |
+| 41 `agony` | `agony` (34) | 1 | no | **no** while the human has interrogation lines (`+0x590`-`+0x59c`, [Crimes](crimes.md)), else yes | | confirmed (code) |
+| 56 `cmd_throw` | `throw` (10), or `throw2` (38) when the held object's type (`+0x86`) is 8 `TYPE_MOLOTOV` | 1 (3, below) | yes | yes | only with a target (a human or a flag) and brain `+0x2d4` clear | confirmed (code) |
+| 57 `grunt_heavylift` | `heavylift` (151) | 1 | yes | yes | then the vocal line | confirmed (code) |
+| 82 `cmd_rage` | `rage` (160) | 1 | yes | yes | | confirmed (code) |
+| 95 `cmd_boss` | `roar` (167) | 1 | yes | yes | | confirmed (code) |
+| 103 `cmd_kiyap` | `kiyap` (176) | 1.5 at a player | yes | yes | gesture | confirmed (code) |
+| 139 `cmd_fire` | `onfire` (107) | 1 | yes | yes | only while the human burns (`+0x19b`) | confirmed (code) |
+| 146 `sprayface` | `sprayface` (203) | 1 | yes | yes | | confirmed (code) |
 
 `cmd_throw` in the level whose record `+0x04` is 31 at checkpoint 6, for a gang member (brain `+0x04` = 3): volume 3,
 and with a target he cannot see (`Human_HasLineOfSight` `0x00222288`), instead the line
@@ -289,137 +289,137 @@ speaker's voice set has no line for says nothing. The triggers are the functions
 [Combat](combat.md), [Crimes](crimes.md)); a "variable" command is a parameter of the goal or action. Confirmed
 (code) for every call's arguments.
 
-| Address | Function | Commands (volume, flags) |
-| --- | --- | --- |
-| `0x002b6fa0` | `ArrestedGoal_Process` | within 4 m of a player, every 4 s, gesture: 126 `unarrest_help` from a gang member (brain 3), 72 `scared` from someone of a gang hostile to the arrested (1.5, -) |
-| `0x002af278` | `AttackTargetGoal_Process` | 17 `cheer2` (1, IC) |
-| `0x002af0b8` | `AttackTarget_Cleanup` | 88 `fuck_you` (1, ICL) |
-| `0x002e3630` | `AvoidEnemiesGoal_Process` | variable (var, -) |
-| `0x002e8858` | `BigBrawlerGoal_OnAttackWarning` | 11 `block` or 14 `mount`, 50 % each (1.5, IC) |
-| `0x002e8bc8` | `BigBrawlerGoal_OnHit` | 8 `swear` (1, -) |
-| `0x002e8f78` | `BigBrawlerGoal_Process` | 87 `kingohill` (1.5, IC); 17 `cheer2` (1.5, -C) |
-| `0x002ee7b0` | `BigLedgeThrowerGoal_Process` | 87 `kingohill` (1.5, IC) |
-| `0x002ed718` | `BigThrowerGoal_Process` | 17 `cheer2` (1.5, IC) |
-| `0x0030bc68` | `BossRoofTactic_UpdateBanter` | 144 `cheer3` (1, IC) |
-| `0x0028ca50` | `Brain_OnFoeDown` | the one who downed him, gesture, not wounded: 143 `whoop` or 15 `point`, 50 % each (1, 2 for a player, IC) |
-| `0x002af928` | `Brain_Shout` | gesture, alternating: the brain's command (`+0x2c`, default 71 `engage`; 1.5 at a player), then for a cop brain 138 `chase_cop` (1, -) |
-| `0x0028ac80` | `Brain_SpotPlayers` | 22 `spot` (1.5, ICL) |
-| `0x002accc8` | `BumLogicGoal_Process` | 182 `bum_hire` (1, IC); 145 `bum_beg` (1, I) |
-| `0x002ac458` | `Bum_GiveItem` | 148 `kicked` (1, IC) |
-| `0x002ac5e0` | `Bum_TakeMoney` | 145 `bum_beg` (1, I); 147 `bum_beg_resp` (1, I); 2 `follow` (1, I) |
-| `0x002acaf8` | `Bum_UpdateRadar` | 170 `bum_beg_deal` (1, I) |
-| `0x002d6638` | `CallGangGoal_Process` | 169 `surprise` (1.5, IL); 22 `spot` (1.5, IC) |
-| `0x002a81f8` | `CallPolice_OnCrimeSeen` | 9 `scream` (1, I) |
-| `0x002a8190` | `CallPolice_SayOnce` | 127 `catch_rat` (1, I) |
-| `0x002b1860` | `ChaseGoal_Process` | 23 `search` (1, -); 64 `copresistco` (1.5, I); 24 `give_up` (1.5, I) |
-| `0x002b2410` | `ChaseSupportGoal_Process` | 23 `search` (1, -) |
-| `0x002ffb30` | `CivilianBrain_OnEvent` | 205 `help_girl` (1.5, IC) |
-| `0x0030eec0` | `ConfrontTactic_Process` | variable (1, -) |
-| `0x002c61f8` | `CopInteractGoal_Process` | 192 `shake_ho` (1, I); 193 `shake_ho_resp` (1, I); 190 `shake_bum` (1, I); 191 `shake_bum_resp` (1, I) |
-| `0x002d4fe8` | `CowerGoal_Process` | 9 `scream` (1, -L) |
-| `0x002c8af0` | `DealerFleeGoal_Process` | 9 `scream` (1, I); variable (var, -) |
-| `0x002c89a8` | `DealerFleeGoal_Start` | 9 `scream` (1, -) |
-| `0x002c7248` | `DealerGoal_Say` | variable (1, ?); 95 `offer` (1, IL) |
-| `0x002af670` | `EngageEnemyGoal_Start` | 71 `engage` (1, -) |
-| `0x002678c8` | `Human_PlayGangDeathReaction` | 13 `near` (1, IC) |
-| `0x00269b80` | `Hit_PlayBegReaction` | 73 `beg` (1, -C) |
-| `0x00273a68` | `Tag_SayNearbyLine` | a nearby human (of 16, gesture, `+0x19a`) says the tag code's command (1, -) |
-| `0x00274ee0` | `Revive_Finish` | 75 `revive_thank` (1, I) |
-| `0x002752a0` | `Revive_Start` | 76 `revive_reasure` (1, I) |
-| `0x00283a30` | `Player_UpdateMugHold` | 8 `swear` (1, I) |
-| `0x002cfb90` | `InvestigateGoal_End` | not chasing, gesture: 24 `give_up`, or 184 `give_up_ne` (1, -) |
-| `0x002d0100` | `InvestigateGoal_Process` | gesture: 183 `ex_alert` or 36 `alert` (1, I); 134 `nosearch` (1, I) |
-| `0x002d1100` | `Riot_OnAttacked` | 17 `cheer2` (1, IC) |
-| `0x002d11f8` | `Riot_AfterFight` | 88 `fuck_you` (1, I) |
-| `0x002d2600` | `HarassGoal_Process` | 88 `fuck_you` (1, -); variable (1, -) |
-| `0x002d42c0` | `PlaySpecialIdleGoal_Process` | variable (1, ICL); variable (1.5, ICL) |
-| `0x002d5798` | `Hostile_Attack` | 17 `cheer2` (1.5, I) |
-| `0x002d58b8` | `HostileGoal_Process` | 175 `hostile` (1.5, I) |
-| `0x002d8028` | `PathScout_SayLine` | 23 `search` (1, -) |
-| `0x002db918` | `MoveToUseFlagGoal_End` | 32 `avoid` (1, I) |
-| `0x002dd210` | `DestroyItemGoal_Process` | variable (1, -) |
-| `0x002dde50` | `DestroyCarGoal_Process` | variable (1, -) |
-| `0x002e63e0` | `ShopkeeperGoal_OnPlayerAction` | 197 `collect` (1, I) |
-| `0x002ea6f0` | `BigFighterGoal_StartBreak` | 34 `agony` (1.5, IC) |
-| `0x002eabc8` | `BigFighterGoal_Process` | variable (1.5, IC); variable (1, -C); 71 `engage` (1, -); 14 `mount` (1.5, -C); 8 `swear` (1, -); 143 `whoop` (1.5, IC); 8 `swear` (1.5, -C) |
-| `0x002ec780` | `BigFighterAGoal_Process` | variable (1.5, IC); 14 `mount` (1, -C); variable (1, -C); 71 `engage` (1, -); 8 `swear` (1, -) |
-| `0x002ee3d0` | `BigLedgeThrowerGoal_PlayTaunt` | variable (1, IC) |
-| `0x002ee608` | `BigLedgeThrowerGoal_MaybeTaunt` | 11 `block` (1, IC) |
-| `0x002f2438` | `ShooterGoal_OnHit` | 12 `pain` (2, IC) |
-| `0x002f28b8` | `StationaryShooterAGoal_Process` | 87 `kingohill` (1.5, IC) |
-| `0x002f4c68` | `StationaryShooterBGoal_Say` | variable (1.5, -C) |
-| `0x002f52e8` | `StationaryShooterBGoal_Process` | 87 `kingohill` (1.5, IC); 16 `cheer1` (1, -); 16 `cheer1` (1.5, -C) |
-| `0x002f5988` | `StationaryShooterBGoal_OnHurt` | 40 `fall` (1, IC) |
-| `0x002f7348` | `BigBullGoal_Process` | 8 `swear` (1, IC); 11 `block` (1, IC); variable (1, -C) |
-| `0x002f8468` | `HideAndSeekGoal_Process` | 17 `cheer2` (1, -); 71 `engage` (1, -); 143 `whoop` (1.5, -C); 15 `point` (1, -C) |
-| `0x002f8e70` | `LeftTurfGoal_Process` | 71 `engage` (1, -L) |
-| `0x003069f0` | `Tactic_SayAckLine` | variable (1, -) |
-| `0x0030d3b8` | `BossBirdieTactic_OnEvent` | 34 `agony` (1.5, IC) |
-| `0x0031b768` | `ShadowTactic_Process` | 135 `shadow` (1, -) |
-| `0x0031c840` | `TauntTactic_Process` | 17 `cheer2` (1, -) |
-| `0x0031e770` | `VandalizeTactic_OnObjectBroken` | 143 `whoop` (1, I) |
-| `0x003200c8` | `WanderTactic_TryPickUp` | 89 `riot` (1, -) |
-| `0x00322050` | `ChargeSubTactic_Process` | 1 `attack` (1.5, IC) |
-| `0x00322510` | `GuardSubTactic_Process` | variable (1.5, IC); 1 `attack` (1.5, IC) |
-| `0x00322a40` | `LeaderSubTactic_Process` | 1 `attack` (1.5, IC) |
-| `0x00323160` | `ThrowSubTactic_Process` | 10 `throw` (1.5, IC) |
-| `0x002f9f78` | `FidgetAction_Start` | variable (var, -) |
-| `0x002b3ab0` | `FightGoal_Process` | 17 `cheer2` (1, -C) |
-| `0x00416530` | `Flag_ActivitySound` | variable (1, I) |
-| `0x002bd808` | `FollowAndDefendGoal_Process` | variable (1, -) |
-| `0x0041c230` | `GameState_AddGuardingCop` | 22 `spot` (1, IC) |
-| `0x00165d40` | `Gang_SaySpotLine` | variable (1.5, IC) |
-| `0x002dacf8` | `GoalMoveToExitFlag_Process` | variable (1, I) |
-| `0x002ab4b8` | `Goal_ProcessMove` | 89 `riot` (1, -); variable (1, IL); 125 `mumble` (1, -) |
-| `0x002a83f8` | `Goal_ReportCrime` | 33 `rat` (1.5, I); 129 `hurryup` (1, I); 84 `phone_cop` (1.5, I); 9 `scream` (1, I) |
-| `0x002c4360` | `Goal_ReportCrimeB` | 22 `spot` (1, IL) |
-| `0x002bb858` | `GrabTargetGoal_Process` | 9 `scream` (1.5, -) |
-| `0x0022c730` | `Grab_Link` | 8 `swear` (var, -) |
-| `0x002c8ff8` | `HTLDefenseGoal_Process` | 74 `holdline` (1, -) |
-| `0x002cc990` | `HideGoal_Process` | 69 `hide` (1, -); 168 `hide_stealth` (1, -); 206 `hide_response` (1, -) |
-| `0x00265f70` | `Human_ApplyPendingDamage` | the attacker, after a hit that causes no reaction, when his anim is 9 or `0x4c`, gesture: 60 % 17 `cheer2` (11 `block` for anim `0x4c`), else 8 `swear` (1, 1.5 when either is a player, -) |
-| `0x0022ec18` | `Human_Arrest` | 25 `arrested` (1, I) |
-| `0x00269f30` | `Human_BlockHit` | 11 `block` (var, -) |
-| `0x00245920` | `Human_HandleMessage` | 34 `agony` (1, IC) |
-| `0x0021f700` | `Human_OnAnimSoundEvent` | 12 `pain` (var, I); 152 `lightlift` (1, -); 34 `agony` (1, -N); 151 `heavylift` (1, I); variable (var, ?) |
-| `0x0021ed28` | `Human_SayCopLine` | variable (1, I) |
-| `0x00233890` | `Human_SayGoalLine` | variable (1, I) |
-| `0x002207d0` | `Human_SayObjectLine` | 108 `cb_wear` (1, -); 110 `hat_wear` (1, -) |
-| `0x00219238` | `Human_StartBurning` | 107 `onfire` (1, IC) |
-| `0x00238db0` | `Human_Tag` | 37 `nopaint` (2, -) |
-| `0x002c69b0` | `IssueWarningGoal_Process` | 32 `avoid` (1, IL); 36 `alert` (1, I) |
-| `0x00412dc8` | `Item_TakeOwned` | variable (1, -) |
-| `0x002c5160` | `LeaveAreaGoal_Process` | 46 `cop1034f` (1, IL) |
-| `0x002ae2e8` | `MeleeGoal_ProcessTarget` | 71 `engage` (1, -) |
-| `0x002da588` | `MoveToFlagGoal_Process` | 125 `mumble` (1, -) |
-| `0x002c1858` | `PatrolGoal_Process` | 32 `avoid` (1, IL); 125 `mumble` (1, -) |
-| `0x002a9508` | `PedInteractGoal_Process` | variable (1, I); 179 `question` (1, I); 180 `answer` (1, I); 181 `bye` (1, I) |
-| `0x002aa760` | `PedReactionGoal_Process` | 9 `scream` (1, -); 9 `scream` (1, I) |
-| `0x002aa598` | `PedReactionGoal_Start` | 9 `scream` (1, -); variable (1, I) |
-| `0x002ad6c0` | `PeddlerGoal_Process` | variable (1, I) |
-| `0x002fb8a0` | `PlaySoundAction_Update` | variable (var, I?) |
-| `0x00303468` | `PlayerBrain_OnPrompt` | 146 `give_me` (1, -) |
-| `0x002856b8` | `Player_UpdateMugging` | 39 `mugcop` (1, IC); 19 `mug` (1, IC); 31 `no_item` (1, IC); variable (1, I); variable (1, IC) |
-| `0x00318130` | `PursueTactic_EndSearch` | 24 `give_up` (1, I) |
-| `0x001f0420` | `RM_ChooseGangs_Render` | 17 `cheer2` (20, -) |
-| `0x002d1c38` | `RiotGoal_Process` | 89 `riot` (1, I) |
-| `0x002d1288` | `RiotGoal_TryPickFight` | 17 `cheer2` (1, IC) |
-| `0x002e5fa0` | `ShopkeeperGoal_OnDisturbed` | 188 `cower` (1, I) |
-| `0x002e6668` | `ShopkeeperGoal_Process` | 185 `store_greet` (1, I); 189 `dead_meat` (1, I); 137 `mug_grunt` (1, I); 187 `phone_gang` (1, I); 186 `store_chat` (1, I); variable (1, I) |
-| `0x001140d8` | `Sound_PlayHumanCommand` | variable (1, ?NL) |
-| `0x0021b290` | `Strike_Contact` | 88 `fuck_you` (1, I) |
-| `0x002fb128` | `TauntAction_Start` | variable (var, -) |
-| `0x002e7f50` | `TiredGoal_Process` | 150 `energy` (1.5, IC); 149 `tired` (1.5, IC); 8 `swear` (1, -) |
-| `0x002e7c18` | `TiredGoal_StartBreak` | 34 `agony` (1.5, IC) |
-| `0x002606e8` | `Uncuff_MashSuccess` | 67 `unarrest_thank` (1, I) |
-| `0x00260ca8` | `Uncuff_Start` | 68 `unarrest_reasure` (1, I) |
-| `0x002fb738` | `UsePhoneAction_Update` | variable (1, I) |
-| `0x0041c338` | `WarChief_CheckCrewInRange` | variable (1, -) |
-| `0x0041cc40` | `WarChief_SayCommand` | variable (1.5, IC); 3 `defend` (1.5, IC); 158 `scatter` (1.5, IC) |
-| `0x00306040` | `WarriorBrain_OnPrompt` | 146 `give_me` (1, -) |
-| `0x003052f0` | `WarriorBrain_Think` | 109 `cb_whine` (1.5, ICL) |
-| `0x002bf118` | `WarriorVandalStealGoal_TryVandalise` | variable (1, -) |
-| `0x002b52c0` | `WoundedGoal_Process` | 8 `swear` (0.75, I) |
+| Address | Function | Commands (volume, flags) | Evidence |
+| --- | --- | --- | --- |
+| `0x002b6fa0` | `ArrestedGoal_Process` | within 4 m of a player, every 4 s, gesture: 126 `unarrest_help` from a gang member (brain 3), 72 `scared` from someone of a gang hostile to the arrested (1.5, -) | confirmed (code) |
+| `0x002af278` | `AttackTargetGoal_Process` | 17 `cheer2` (1, IC) | confirmed (code) |
+| `0x002af0b8` | `AttackTarget_Cleanup` | 88 `fuck_you` (1, ICL) | confirmed (code) |
+| `0x002e3630` | `AvoidEnemiesGoal_Process` | variable (var, -) | confirmed (code) |
+| `0x002e8858` | `BigBrawlerGoal_OnAttackWarning` | 11 `block` or 14 `mount`, 50 % each (1.5, IC) | confirmed (code) |
+| `0x002e8bc8` | `BigBrawlerGoal_OnHit` | 8 `swear` (1, -) | confirmed (code) |
+| `0x002e8f78` | `BigBrawlerGoal_Process` | 87 `kingohill` (1.5, IC); 17 `cheer2` (1.5, -C) | confirmed (code) |
+| `0x002ee7b0` | `BigLedgeThrowerGoal_Process` | 87 `kingohill` (1.5, IC) | confirmed (code) |
+| `0x002ed718` | `BigThrowerGoal_Process` | 17 `cheer2` (1.5, IC) | confirmed (code) |
+| `0x0030bc68` | `BossRoofTactic_UpdateBanter` | 144 `cheer3` (1, IC) | confirmed (code) |
+| `0x0028ca50` | `Brain_OnFoeDown` | the one who downed him, gesture, not wounded: 143 `whoop` or 15 `point`, 50 % each (1, 2 for a player, IC) | confirmed (code) |
+| `0x002af928` | `Brain_Shout` | gesture, alternating: the brain's command (`+0x2c`, default 71 `engage`; 1.5 at a player), then for a cop brain 138 `chase_cop` (1, -) | confirmed (code) |
+| `0x0028ac80` | `Brain_SpotPlayers` | 22 `spot` (1.5, ICL) | confirmed (code) |
+| `0x002accc8` | `BumLogicGoal_Process` | 182 `bum_hire` (1, IC); 145 `bum_beg` (1, I) | confirmed (code) |
+| `0x002ac458` | `Bum_GiveItem` | 148 `kicked` (1, IC) | confirmed (code) |
+| `0x002ac5e0` | `Bum_TakeMoney` | 145 `bum_beg` (1, I); 147 `bum_beg_resp` (1, I); 2 `follow` (1, I) | confirmed (code) |
+| `0x002acaf8` | `Bum_UpdateRadar` | 170 `bum_beg_deal` (1, I) | confirmed (code) |
+| `0x002d6638` | `CallGangGoal_Process` | 169 `surprise` (1.5, IL); 22 `spot` (1.5, IC) | confirmed (code) |
+| `0x002a81f8` | `CallPolice_OnCrimeSeen` | 9 `scream` (1, I) | confirmed (code) |
+| `0x002a8190` | `CallPolice_SayOnce` | 127 `catch_rat` (1, I) | confirmed (code) |
+| `0x002b1860` | `ChaseGoal_Process` | 23 `search` (1, -); 64 `copresistco` (1.5, I); 24 `give_up` (1.5, I) | confirmed (code) |
+| `0x002b2410` | `ChaseSupportGoal_Process` | 23 `search` (1, -) | confirmed (code) |
+| `0x002ffb30` | `CivilianBrain_OnEvent` | 205 `help_girl` (1.5, IC) | confirmed (code) |
+| `0x0030eec0` | `ConfrontTactic_Process` | variable (1, -) | confirmed (code) |
+| `0x002c61f8` | `CopInteractGoal_Process` | 192 `shake_ho` (1, I); 193 `shake_ho_resp` (1, I); 190 `shake_bum` (1, I); 191 `shake_bum_resp` (1, I) | confirmed (code) |
+| `0x002d4fe8` | `CowerGoal_Process` | 9 `scream` (1, -L) | confirmed (code) |
+| `0x002c8af0` | `DealerFleeGoal_Process` | 9 `scream` (1, I); variable (var, -) | confirmed (code) |
+| `0x002c89a8` | `DealerFleeGoal_Start` | 9 `scream` (1, -) | confirmed (code) |
+| `0x002c7248` | `DealerGoal_Say` | variable (1, ?); 95 `offer` (1, IL) | confirmed (code) |
+| `0x002af670` | `EngageEnemyGoal_Start` | 71 `engage` (1, -) | confirmed (code) |
+| `0x002678c8` | `Human_PlayGangDeathReaction` | 13 `near` (1, IC) | confirmed (code) |
+| `0x00269b80` | `Hit_PlayBegReaction` | 73 `beg` (1, -C) | confirmed (code) |
+| `0x00273a68` | `Tag_SayNearbyLine` | a nearby human (of 16, gesture, `+0x19a`) says the tag code's command (1, -) | confirmed (code) |
+| `0x00274ee0` | `Revive_Finish` | 75 `revive_thank` (1, I) | confirmed (code) |
+| `0x002752a0` | `Revive_Start` | 76 `revive_reasure` (1, I) | confirmed (code) |
+| `0x00283a30` | `Player_UpdateMugHold` | 8 `swear` (1, I) | confirmed (code) |
+| `0x002cfb90` | `InvestigateGoal_End` | not chasing, gesture: 24 `give_up`, or 184 `give_up_ne` (1, -) | confirmed (code) |
+| `0x002d0100` | `InvestigateGoal_Process` | gesture: 183 `ex_alert` or 36 `alert` (1, I); 134 `nosearch` (1, I) | confirmed (code) |
+| `0x002d1100` | `Riot_OnAttacked` | 17 `cheer2` (1, IC) | confirmed (code) |
+| `0x002d11f8` | `Riot_AfterFight` | 88 `fuck_you` (1, I) | confirmed (code) |
+| `0x002d2600` | `HarassGoal_Process` | 88 `fuck_you` (1, -); variable (1, -) | confirmed (code) |
+| `0x002d42c0` | `PlaySpecialIdleGoal_Process` | variable (1, ICL); variable (1.5, ICL) | confirmed (code) |
+| `0x002d5798` | `Hostile_Attack` | 17 `cheer2` (1.5, I) | confirmed (code) |
+| `0x002d58b8` | `HostileGoal_Process` | 175 `hostile` (1.5, I) | confirmed (code) |
+| `0x002d8028` | `PathScout_SayLine` | 23 `search` (1, -) | confirmed (code) |
+| `0x002db918` | `MoveToUseFlagGoal_End` | 32 `avoid` (1, I) | confirmed (code) |
+| `0x002dd210` | `DestroyItemGoal_Process` | variable (1, -) | confirmed (code) |
+| `0x002dde50` | `DestroyCarGoal_Process` | variable (1, -) | confirmed (code) |
+| `0x002e63e0` | `ShopkeeperGoal_OnPlayerAction` | 197 `collect` (1, I) | confirmed (code) |
+| `0x002ea6f0` | `BigFighterGoal_StartBreak` | 34 `agony` (1.5, IC) | confirmed (code) |
+| `0x002eabc8` | `BigFighterGoal_Process` | variable (1.5, IC); variable (1, -C); 71 `engage` (1, -); 14 `mount` (1.5, -C); 8 `swear` (1, -); 143 `whoop` (1.5, IC); 8 `swear` (1.5, -C) | confirmed (code) |
+| `0x002ec780` | `BigFighterAGoal_Process` | variable (1.5, IC); 14 `mount` (1, -C); variable (1, -C); 71 `engage` (1, -); 8 `swear` (1, -) | confirmed (code) |
+| `0x002ee3d0` | `BigLedgeThrowerGoal_PlayTaunt` | variable (1, IC) | confirmed (code) |
+| `0x002ee608` | `BigLedgeThrowerGoal_MaybeTaunt` | 11 `block` (1, IC) | confirmed (code) |
+| `0x002f2438` | `ShooterGoal_OnHit` | 12 `pain` (2, IC) | confirmed (code) |
+| `0x002f28b8` | `StationaryShooterAGoal_Process` | 87 `kingohill` (1.5, IC) | confirmed (code) |
+| `0x002f4c68` | `StationaryShooterBGoal_Say` | variable (1.5, -C) | confirmed (code) |
+| `0x002f52e8` | `StationaryShooterBGoal_Process` | 87 `kingohill` (1.5, IC); 16 `cheer1` (1, -); 16 `cheer1` (1.5, -C) | confirmed (code) |
+| `0x002f5988` | `StationaryShooterBGoal_OnHurt` | 40 `fall` (1, IC) | confirmed (code) |
+| `0x002f7348` | `BigBullGoal_Process` | 8 `swear` (1, IC); 11 `block` (1, IC); variable (1, -C) | confirmed (code) |
+| `0x002f8468` | `HideAndSeekGoal_Process` | 17 `cheer2` (1, -); 71 `engage` (1, -); 143 `whoop` (1.5, -C); 15 `point` (1, -C) | confirmed (code) |
+| `0x002f8e70` | `LeftTurfGoal_Process` | 71 `engage` (1, -L) | confirmed (code) |
+| `0x003069f0` | `Tactic_SayAckLine` | variable (1, -) | confirmed (code) |
+| `0x0030d3b8` | `BossBirdieTactic_OnEvent` | 34 `agony` (1.5, IC) | confirmed (code) |
+| `0x0031b768` | `ShadowTactic_Process` | 135 `shadow` (1, -) | confirmed (code) |
+| `0x0031c840` | `TauntTactic_Process` | 17 `cheer2` (1, -) | confirmed (code) |
+| `0x0031e770` | `VandalizeTactic_OnObjectBroken` | 143 `whoop` (1, I) | confirmed (code) |
+| `0x003200c8` | `WanderTactic_TryPickUp` | 89 `riot` (1, -) | confirmed (code) |
+| `0x00322050` | `ChargeSubTactic_Process` | 1 `attack` (1.5, IC) | confirmed (code) |
+| `0x00322510` | `GuardSubTactic_Process` | variable (1.5, IC); 1 `attack` (1.5, IC) | confirmed (code) |
+| `0x00322a40` | `LeaderSubTactic_Process` | 1 `attack` (1.5, IC) | confirmed (code) |
+| `0x00323160` | `ThrowSubTactic_Process` | 10 `throw` (1.5, IC) | confirmed (code) |
+| `0x002f9f78` | `FidgetAction_Start` | variable (var, -) | confirmed (code) |
+| `0x002b3ab0` | `FightGoal_Process` | 17 `cheer2` (1, -C) | confirmed (code) |
+| `0x00416530` | `Flag_ActivitySound` | variable (1, I) | confirmed (code) |
+| `0x002bd808` | `FollowAndDefendGoal_Process` | variable (1, -) | confirmed (code) |
+| `0x0041c230` | `GameState_AddGuardingCop` | 22 `spot` (1, IC) | confirmed (code) |
+| `0x00165d40` | `Gang_SaySpotLine` | variable (1.5, IC) | confirmed (code) |
+| `0x002dacf8` | `GoalMoveToExitFlag_Process` | variable (1, I) | confirmed (code) |
+| `0x002ab4b8` | `Goal_ProcessMove` | 89 `riot` (1, -); variable (1, IL); 125 `mumble` (1, -) | confirmed (code) |
+| `0x002a83f8` | `Goal_ReportCrime` | 33 `rat` (1.5, I); 129 `hurryup` (1, I); 84 `phone_cop` (1.5, I); 9 `scream` (1, I) | confirmed (code) |
+| `0x002c4360` | `Goal_ReportCrimeB` | 22 `spot` (1, IL) | confirmed (code) |
+| `0x002bb858` | `GrabTargetGoal_Process` | 9 `scream` (1.5, -) | confirmed (code) |
+| `0x0022c730` | `Grab_Link` | 8 `swear` (var, -) | confirmed (code) |
+| `0x002c8ff8` | `HTLDefenseGoal_Process` | 74 `holdline` (1, -) | confirmed (code) |
+| `0x002cc990` | `HideGoal_Process` | 69 `hide` (1, -); 168 `hide_stealth` (1, -); 206 `hide_response` (1, -) | confirmed (code) |
+| `0x00265f70` | `Human_ApplyPendingDamage` | the attacker, after a hit that causes no reaction, when his anim is 9 or `0x4c`, gesture: 60 % 17 `cheer2` (11 `block` for anim `0x4c`), else 8 `swear` (1, 1.5 when either is a player, -) | confirmed (code) |
+| `0x0022ec18` | `Human_Arrest` | 25 `arrested` (1, I) | confirmed (code) |
+| `0x00269f30` | `Human_BlockHit` | 11 `block` (var, -) | confirmed (code) |
+| `0x00245920` | `Human_HandleMessage` | 34 `agony` (1, IC) | confirmed (code) |
+| `0x0021f700` | `Human_OnAnimSoundEvent` | 12 `pain` (var, I); 152 `lightlift` (1, -); 34 `agony` (1, -N); 151 `heavylift` (1, I); variable (var, ?) | confirmed (code) |
+| `0x0021ed28` | `Human_SayCopLine` | variable (1, I) | confirmed (code) |
+| `0x00233890` | `Human_SayGoalLine` | variable (1, I) | confirmed (code) |
+| `0x002207d0` | `Human_SayObjectLine` | 108 `cb_wear` (1, -); 110 `hat_wear` (1, -) | confirmed (code) |
+| `0x00219238` | `Human_StartBurning` | 107 `onfire` (1, IC) | confirmed (code) |
+| `0x00238db0` | `Human_Tag` | 37 `nopaint` (2, -) | confirmed (code) |
+| `0x002c69b0` | `IssueWarningGoal_Process` | 32 `avoid` (1, IL); 36 `alert` (1, I) | confirmed (code) |
+| `0x00412dc8` | `Item_TakeOwned` | variable (1, -) | confirmed (code) |
+| `0x002c5160` | `LeaveAreaGoal_Process` | 46 `cop1034f` (1, IL) | confirmed (code) |
+| `0x002ae2e8` | `MeleeGoal_ProcessTarget` | 71 `engage` (1, -) | confirmed (code) |
+| `0x002da588` | `MoveToFlagGoal_Process` | 125 `mumble` (1, -) | confirmed (code) |
+| `0x002c1858` | `PatrolGoal_Process` | 32 `avoid` (1, IL); 125 `mumble` (1, -) | confirmed (code) |
+| `0x002a9508` | `PedInteractGoal_Process` | variable (1, I); 179 `question` (1, I); 180 `answer` (1, I); 181 `bye` (1, I) | confirmed (code) |
+| `0x002aa760` | `PedReactionGoal_Process` | 9 `scream` (1, -); 9 `scream` (1, I) | confirmed (code) |
+| `0x002aa598` | `PedReactionGoal_Start` | 9 `scream` (1, -); variable (1, I) | confirmed (code) |
+| `0x002ad6c0` | `PeddlerGoal_Process` | variable (1, I) | confirmed (code) |
+| `0x002fb8a0` | `PlaySoundAction_Update` | variable (var, I?) | confirmed (code) |
+| `0x00303468` | `PlayerBrain_OnPrompt` | 146 `give_me` (1, -) | confirmed (code) |
+| `0x002856b8` | `Player_UpdateMugging` | 39 `mugcop` (1, IC); 19 `mug` (1, IC); 31 `no_item` (1, IC); variable (1, I); variable (1, IC) | confirmed (code) |
+| `0x00318130` | `PursueTactic_EndSearch` | 24 `give_up` (1, I) | confirmed (code) |
+| `0x001f0420` | `RM_ChooseGangs_Render` | 17 `cheer2` (20, -) | confirmed (code) |
+| `0x002d1c38` | `RiotGoal_Process` | 89 `riot` (1, I) | confirmed (code) |
+| `0x002d1288` | `RiotGoal_TryPickFight` | 17 `cheer2` (1, IC) | confirmed (code) |
+| `0x002e5fa0` | `ShopkeeperGoal_OnDisturbed` | 188 `cower` (1, I) | confirmed (code) |
+| `0x002e6668` | `ShopkeeperGoal_Process` | 185 `store_greet` (1, I); 189 `dead_meat` (1, I); 137 `mug_grunt` (1, I); 187 `phone_gang` (1, I); 186 `store_chat` (1, I); variable (1, I) | confirmed (code) |
+| `0x001140d8` | `Sound_PlayHumanCommand` | variable (1, ?NL) | confirmed (code) |
+| `0x0021b290` | `Strike_Contact` | 88 `fuck_you` (1, I) | confirmed (code) |
+| `0x002fb128` | `TauntAction_Start` | variable (var, -) | confirmed (code) |
+| `0x002e7f50` | `TiredGoal_Process` | 150 `energy` (1.5, IC); 149 `tired` (1.5, IC); 8 `swear` (1, -) | confirmed (code) |
+| `0x002e7c18` | `TiredGoal_StartBreak` | 34 `agony` (1.5, IC) | confirmed (code) |
+| `0x002606e8` | `Uncuff_MashSuccess` | 67 `unarrest_thank` (1, I) | confirmed (code) |
+| `0x00260ca8` | `Uncuff_Start` | 68 `unarrest_reasure` (1, I) | confirmed (code) |
+| `0x002fb738` | `UsePhoneAction_Update` | variable (1, I) | confirmed (code) |
+| `0x0041c338` | `WarChief_CheckCrewInRange` | variable (1, -) | confirmed (code) |
+| `0x0041cc40` | `WarChief_SayCommand` | variable (1.5, IC); 3 `defend` (1.5, IC); 158 `scatter` (1.5, IC) | confirmed (code) |
+| `0x00306040` | `WarriorBrain_OnPrompt` | 146 `give_me` (1, -) | confirmed (code) |
+| `0x003052f0` | `WarriorBrain_Think` | 109 `cb_whine` (1.5, ICL) | confirmed (code) |
+| `0x002bf118` | `WarriorVandalStealGoal_TryVandalise` | variable (1, -) | confirmed (code) |
+| `0x002b52c0` | `WoundedGoal_Process` | 8 `swear` (0.75, I) | confirmed (code) |
 
 Lines played by name or by voice-table hash, not by command, confirmed (code):
 
@@ -451,25 +451,25 @@ Confirmed (code). 2D sounds are `PlaySound2DByHash` / `ByName` with flags 0, 0 a
 `Sound_PlayInterfaceCue` (2D, flags `0x12`) by number from the `SoundCfgInterfaceSound` table
 ([Sound and music](../references/sound.md#interface-sound)).
 
-| Event | Sound | Where |
-| --- | --- | --- |
-| A pick-up gives an inventory item (key, flash, spray can, money, loot, cuffs ...) | the item's pick-up sound (item `+0x24`, [Inventory](player-state.md#inventory)), 2D | `Human_PickUpObject` `0x0023bf00` |
-| Taking from a weapon pile (types 17-23, 47) | cues 25-31 by pile type (17 `BRICKPILE` 25 ... 23 `POOLBALLPILE` 31; 47 `BEERPILEHEAVY` 27) **at the object**, positional | human message 3, `Human_HandleMessage` |
-| Taking from a spray pile (type 44) | item 3's pick-up sound, 2D | the same |
-| Mugging: the money taken, the pocket handed over | item 2's sound; the pocket item's sound, or item 3's or item 1's | `Player_UpdateMugging` `0x002856b8`, `Mug_HandOverPocket` `0x002334d0` ([Crimes](crimes.md)) |
-| The mugging camera starts, ends | `vags/misc/mug_intro` (handle kept), then `vags/misc/mug_outro` after stopping it | `CamMug_Start` `0x00137e08`, `CamMug_Update` `0x00138b90` |
-| Buying from a dealer | `vags/interface/powerup` | `DealerGoal_OnBuy` `0x002c74d8` |
-| Using a flash; a revive completed | cue 23 | `Flash_Use` `0x00284280`, `Revive_Finish` `0x00274ee0` |
-| Triangle on a context action (lock, key) | cue 24 | `ContextAction_Use` `0x0024d530`, `Player_TriangleAction` `0x002811f0`, `Player_UseItemCommand` `0x002843f8` |
-| The car-stereo theft's turns, done | cue 34 per turn, cue 35 at the fourth | `Theft_UpdateStereo` `0x0027e908` |
-| The lock-pick dial | `vags/misc/lock_spins_01` (shown), `vags/misc/click_01` (judged) | `LockPickDial_Show` `0x001b8428`, `LockPickDial_Judge` `0x001b8d38` |
-| Rage full, rage starts, rage ends | `vags/interface/rage_indicator_02` once when the meter reaches its maximum; `vags/misc/rage_mode_06`; `vags/misc/rage_ends_01` | `PlayerHUD_Update` `0x00214138`, `GameState_PlayRageSound` `0x004194b8`, `RageSound_PlayEnd` `0x00419400` |
-| Wanted level, money count, objective, announcement, hint | cues 2, 16, 17, 20, 21 | `HUD_SetWanted`, `HudMoney_Update`, `HUD_SetObjective`, `HUD_ShowAnnouncement`, `HintBox_Update` ([HUD](hud.md)) |
-| A Warrior command chosen on the stick | cue 32 | `WarCommandDisplay_ReadStick` `0x001a7040` |
-| The stopwatch's last seconds | `vags/interface/menu/menu_enter3`, once a second | `StopWatch_Update` `0x004233f8` |
-| The "go" sign | `vags/misc/bleep27` while it shows, one at a time, not while paused | `GoSign_Render` `0x0019ed28` |
-| A counter panel's bonus | `vags/interface/menu/bonuspart_01` | `CounterPanels_SetValue` `0x001c3280` |
-| The angry breathing | `CfgBreathingSound`'s sound, 2D, its handle kept | `Breathing_Start` `0x00419030` |
+| Event | Sound | Where | Evidence |
+| --- | --- | --- | --- |
+| A pick-up gives an inventory item (key, flash, spray can, money, loot, cuffs ...) | the item's pick-up sound (item `+0x24`, [Inventory](player-state.md#inventory)), 2D | `Human_PickUpObject` `0x0023bf00` | confirmed (code) |
+| Taking from a weapon pile (types 17-23, 47) | cues 25-31 by pile type (17 `BRICKPILE` 25 ... 23 `POOLBALLPILE` 31; 47 `BEERPILEHEAVY` 27) **at the object**, positional | human message 3, `Human_HandleMessage` | confirmed (code) |
+| Taking from a spray pile (type 44) | item 3's pick-up sound, 2D | the same | confirmed (code) |
+| Mugging: the money taken, the pocket handed over | item 2's sound; the pocket item's sound, or item 3's or item 1's | `Player_UpdateMugging` `0x002856b8`, `Mug_HandOverPocket` `0x002334d0` ([Crimes](crimes.md)) | confirmed (code) |
+| The mugging camera starts, ends | `vags/misc/mug_intro` (handle kept), then `vags/misc/mug_outro` after stopping it | `CamMug_Start` `0x00137e08`, `CamMug_Update` `0x00138b90` | confirmed (code) |
+| Buying from a dealer | `vags/interface/powerup` | `DealerGoal_OnBuy` `0x002c74d8` | confirmed (code) |
+| Using a flash; a revive completed | cue 23 | `Flash_Use` `0x00284280`, `Revive_Finish` `0x00274ee0` | confirmed (code) |
+| Triangle on a context action (lock, key) | cue 24 | `ContextAction_Use` `0x0024d530`, `Player_TriangleAction` `0x002811f0`, `Player_UseItemCommand` `0x002843f8` | confirmed (code) |
+| The car-stereo theft's turns, done | cue 34 per turn, cue 35 at the fourth | `Theft_UpdateStereo` `0x0027e908` | confirmed (code) |
+| The lock-pick dial | `vags/misc/lock_spins_01` (shown), `vags/misc/click_01` (judged) | `LockPickDial_Show` `0x001b8428`, `LockPickDial_Judge` `0x001b8d38` | confirmed (code) |
+| Rage full, rage starts, rage ends | `vags/interface/rage_indicator_02` once when the meter reaches its maximum; `vags/misc/rage_mode_06`; `vags/misc/rage_ends_01` | `PlayerHUD_Update` `0x00214138`, `GameState_PlayRageSound` `0x004194b8`, `RageSound_PlayEnd` `0x00419400` | confirmed (code) |
+| Wanted level, money count, objective, announcement, hint | cues 2, 16, 17, 20, 21 | `HUD_SetWanted`, `HudMoney_Update`, `HUD_SetObjective`, `HUD_ShowAnnouncement`, `HintBox_Update` ([HUD](hud.md)) | confirmed (code) |
+| A Warrior command chosen on the stick | cue 32 | `WarCommandDisplay_ReadStick` `0x001a7040` | confirmed (code) |
+| The stopwatch's last seconds | `vags/interface/menu/menu_enter3`, once a second | `StopWatch_Update` `0x004233f8` | confirmed (code) |
+| The "go" sign | `vags/misc/bleep27` while it shows, one at a time, not while paused | `GoSign_Render` `0x0019ed28` | confirmed (code) |
+| A counter panel's bonus | `vags/interface/menu/bonuspart_01` | `CounterPanels_SetValue` `0x001c3280` | confirmed (code) |
+| The angry breathing | `CfgBreathingSound`'s sound, 2D, its handle kept | `Breathing_Start` `0x00419030` | confirmed (code) |
 
 ## World one-shots {#world}
 

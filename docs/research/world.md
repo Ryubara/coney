@@ -275,13 +275,13 @@ skyline models) is set up, `Atomic_AssignGamePipelines` (`0x00426c78`) gives the
 (`0x005151c4`, made by `0x00426d58`) and chooses each material's pipeline from its **MatFX effect** (`0x00426cc8`,
 reading the effect type through `0x004653d8`), confirmed (code):
 
-| Material's MatFX effect | Pipeline | Made by | Texture coordinates unpacked as | Microcode |
-| --- | --- | --- | --- | --- |
-| none, geometry without flag `0x80` | `0x30084` (`0x005151b4`) | `0x00428f30` | `V2_16`, one set (`0x6500000d`) | table `0x005045a0` |
-| none, geometry with flag `0x80` (two sets) | `0x30088` (`0x005151b8`) | `0x004298c0` | `V4_16`, two sets (`0x6d00000d`) | the same table `0x005045a0` |
-| 4, dual texture | `0x30086` (`0x005151bc`) | `0x004273f8` | | `0x004fc870` |
-| 2, environment map | `0x30087` (`0x005151c0`) | `0x00428080` | | `0x004ff1c0` |
-| any other | unchanged | | | |
+| Material's MatFX effect | Pipeline | Made by | Texture coordinates unpacked as | Microcode | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| none, geometry without flag `0x80` | `0x30084` (`0x005151b4`) | `0x00428f30` | `V2_16`, one set (`0x6500000d`) | table `0x005045a0` | confirmed (code) |
+| none, geometry with flag `0x80` (two sets) | `0x30088` (`0x005151b8`) | `0x004298c0` | `V4_16`, two sets (`0x6d00000d`) | the same table `0x005045a0` | confirmed (code) |
+| 4, dual texture | `0x30086` (`0x005151bc`) | `0x004273f8` | | `0x004fc870` | confirmed (code) |
+| 2, environment map | `0x30087` (`0x005151c0`) | `0x00428080` | | `0x004ff1c0` | confirmed (code) |
+| any other | unchanged | | | | confirmed (code) |
 
 The set-up of these pipelines is `0x00426e28` / `0x00426c40`. So `0x30084` and `0x30088` run the **same microcode**
 and differ only in unpacking one or two texture-coordinate sets: on a plain material the second set is unpacked and,

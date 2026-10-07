@@ -473,3 +473,190 @@ type = "u16"
 name = "body_44"                          # body +0x44
 address = "u32(player + 0x1a0) + 0x44"
 type = "u32"
+
+# More of the follow camera's state (docs/research/camera.md#the-follow-camera-object): the lag, the bands, the
+# collision latches and the pitch offsets, for the climb, ledge and level95 camera passes.
+[[camera_state]]
+name = "lag"                              # +0x388, the share of the wanted move covered
+address = "camera + 0x388"
+type = "f32"
+
+[[camera_state]]
+name = "band_far"                         # +0x330, the leash band's far edge
+address = "camera + 0x330"
+type = "f32"
+
+[[camera_state]]
+name = "hard_near"                        # +0x33c, the hard band's near edge
+address = "camera + 0x33c"
+type = "f32"
+
+[[camera_state]]
+name = "hard_far"                         # +0x340, the hard band's far edge
+address = "camera + 0x340"
+type = "f32"
+
+[[camera_state]]
+name = "recovered"                        # +0x380, the recovered distance
+address = "camera + 0x380"
+type = "f32"
+
+[[camera_state]]
+name = "cur_dist"                         # +0x440, the current distance
+address = "camera + 0x440"
+type = "f32"
+
+[[camera_state]]
+name = "prev_look_z"                      # +0x278, last update's look-at height
+address = "camera + 0x278"
+type = "f32"
+
+[[camera_state]]
+name = "off_z"                            # +0x208, the eased look-at offset's height
+address = "camera + 0x208"
+type = "f32"
+
+[[camera_state]]
+name = "slope_pitch"                      # +0x3a4, the slope pitch offset (radians)
+address = "camera + 0x3a4"
+type = "f32"
+
+[[camera_state]]
+name = "tilt_pitch"                       # +0x3a8, the obstacle tilt offset (radians)
+address = "camera + 0x3a8"
+type = "f32"
+
+[[camera_state]]
+name = "hold"                             # +0x453, the height-hold state
+address = "camera + 0x453"
+type = "u8"
+
+[[camera_state]]
+name = "blocked"                          # +0x45b, the main ray was blocked
+address = "camera + 0x45b"
+type = "u8"
+
+[[camera_state]]
+name = "blocked_latch"                    # +0x45d, the blocked-view latch
+address = "camera + 0x45d"
+type = "u8"
+
+[[camera_state]]
+name = "side_l"                           # +0x434, a side factor
+address = "camera + 0x434"
+type = "f32"
+
+[[camera_state]]
+name = "side_r"                           # +0x438, the other side factor
+address = "camera + 0x438"
+type = "f32"
+
+[[camera_state]]
+name = "heading_target"                   # +0x350, the heading target
+address = "camera + 0x350"
+type = "f32"
+
+[[camera_state]]
+name = "timer"                            # +0x40c, the timed-move timer
+address = "camera + 0x40c"
+type = "f32"
+
+[[camera_state]]
+name = "upper_limit"                      # +0x3ac, the upper pitch limit (radians)
+address = "camera + 0x3ac"
+type = "f32"
+
+[[camera_state]]
+name = "yaw_rate"                         # +0x358, the right-stick yaw rate
+address = "camera + 0x358"
+type = "f32"
+
+[[camera_state]]
+name = "flags460"                         # +0x460, camera flags
+address = "camera + 0x460"
+type = "u32"
+
+[[camera_state]]
+name = "aim_x"                            # +0x240, the aim point the view faces (Mat_LookAt target)
+address = "camera + 0x240"
+type = "f32"
+
+[[camera_state]]
+name = "aim_y"                            # +0x244
+address = "camera + 0x244"
+type = "f32"
+
+[[camera_state]]
+name = "aim_z"                            # +0x248
+address = "camera + 0x248"
+type = "f32"
+
+[[camera_state]]
+name = "held_x"                           # +0x260, the lagged position before collision
+address = "camera + 0x260"
+type = "f32"
+
+[[camera_state]]
+name = "held_y"                           # +0x264
+address = "camera + 0x264"
+type = "f32"
+
+[[camera_state]]
+name = "held_z"                           # +0x268
+address = "camera + 0x268"
+type = "f32"
+
+[[camera_state]]
+name = "hit_nz"                           # +0x298, the last hit plane's normal z (+0x290 plane)
+address = "camera + 0x298"
+type = "f32"
+
+[[camera_state]]
+name = "hit_d"                            # +0x29c, the last hit plane's distance
+address = "camera + 0x29c"
+type = "f32"
+
+[[camera_state]]
+name = "aim_lag"                          # +0x418, the aim point's lag
+address = "camera + 0x418"
+type = "f32"
+
+[[camera_state]]
+name = "swing_latch"                      # +0x479, the full-block swing latch
+address = "camera + 0x479"
+type = "u8"
+
+[[camera_state]]
+name = "side_a"                           # +0x42c, last free angle one side (radians)
+address = "camera + 0x42c"
+type = "f32"
+
+[[camera_state]]
+name = "side_b"                           # +0x430, last free angle other side (radians)
+address = "camera + 0x430"
+type = "f32"
+
+[[camera_state]]
+name = "blocked_copy"                     # +0x45c, the main-ray latch
+address = "camera + 0x45c"
+type = "u8"
+
+[[camera_state]]
+name = "hold_timer"                       # +0x414, the hold timer
+address = "camera + 0x414"
+type = "f32"
+
+[[camera_state]]
+name = "body_ox"                          # human +0x4e0, a body point's offset from the feet (the aim point follows it)
+address = "player + 0x4e0"
+type = "f32"
+
+[[camera_state]]
+name = "body_oy"                          # human +0x4e4
+address = "player + 0x4e4"
+type = "f32"
+
+[[camera_state]]
+name = "body_oz"                          # human +0x4e8
+address = "player + 0x4e8"
+type = "f32"

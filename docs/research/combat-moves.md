@@ -217,6 +217,59 @@ forward (0, 1000) or within a few degrees of it for the standing, moving and gro
 (999, −12) right for 25, (−1000, 0) left for 27, (−39, −999) back for 29, and for the strafes 31 / 32 / 33
 3° / 9° left and 6° right of forward. The new heading is the goal's heading minus the direction's. Confirmed (code).
 
+#### Where the attacker stands at contact {#reach}
+
+**The steer sets the distance, both ways** (`Attack_SteerToTarget`, `0x002761c8`), confirmed (code) and (runtime).
+The goal is the target's predicted point minus the reach along the line from the attacker, and `Human_MoveToOver`
+(`0x0023d2b8`) slides the attacker there whatever the direction: a target nearer than the reach makes the attacker
+slide **back**. The prediction leads the target by its velocity (the target's `+0x30`, zero when its `+0x54` has
+`0x600`) × (the time to the first event + 0.1 s); when that lead is over 1 m and takes the target farther away it is
+cut to **0.5 m** long. The reach gets +0.07 m against a target scaled above 1.1, else −0.1 m when the attacker is
+behind it (`Human_GetSideOf` = 2). The slide only happens within the attack's far range (653: 1.97 m); beyond, the
+attack only turns.
+
+So in the original a free attack hits from a fixed stance whatever the starting distance, as long as the target is
+within the far range. At runtime (PCSX2, slot 6, PoizoCiv standing still: brain off, its move speed 0, velocity 0;
+the press update is k0; positions from the bone cache, `0x006b6880` + index × `0x470`, turned into world space with
+the transform):
+
+| Move, start | Distance after k1 / k2 / k3 | Then | Contact | Distance at contact (before / after the update) |
+| --- | --- | --- | --- | --- |
+| 653 from 1.0 m | 1.216 / 1.513 / **1.617** (slides back 0.62 m) | the clip's root motion: 1.455, 1.281 | **k7** | 1.172 / 1.120 |
+| 653 from 1.6 m | 1.591 / 1.663 / **1.617** | the same | **k7** | 1.172 / 1.120 |
+| 653 from 1.9 m | 1.779 / 1.738 / **1.617** | the same | **k7** | 1.172 / 1.120 |
+| `S1` from 1.5 m | 1.319 / 1.176 (no back slide; reach 1.03) | | **k3** | 1.176 / 1.034 |
+
+From k3 on, the three 653 runs are the same to the millimetre: the steer ends at 1.62 m (the reach 1.58 m and the
+attack's offset) by k3, and the clip then carries the attacker 0.50 m forward to 1.12 m by the end of k7. The
+shapes are on k2-k8 (653) and k1-k9 (`S1`, from the hook).
+
+**Bones at contact**, in the attacker's frame (forward, right, height above the attacker's feet; metres). The pose
+before the contact update (k6's) and after it (k7's) bracket the test; the hands reach the target only in k7's
+pose:
+
+| Run | Pose | Left hand (19) | Right hand (25) | Target spine (3) | Target head (6) |
+| --- | --- | --- | --- | --- | --- |
+| 653, any start | after k6 | 0.78, −0.40, 1.21 | 0.78, +0.23, 1.22 | 1.22, −0.01, 1.18 | 1.16, −0.01, 1.74 |
+| 653, any start | after k7 | 0.99, −0.19, 1.28 | 0.99, +0.14, 1.25 | 1.17, −0.01, 1.18 | 1.11, −0.01, 1.74 |
+| `S1` from 1.5 m | after k2 | 0.73, +0.03, 1.61 | −0.03, +0.39, 1.32 | 1.21, +0.02, 1.18 | 1.15, +0.03, 1.73 |
+| `S1` from 1.5 m | after k3 | 0.73, +0.02, 1.60 | −0.06, +0.37, 1.32 | 1.07, +0.02, 1.18 | 1.01, +0.03, 1.73 |
+
+After k7 of 653 the hands are 0.24-0.28 m from the target's spine bone (0.51-0.52 m from the head); after k6, 0.50-
+0.58 m. In world space for the 1.9 m run (attacker at (33.391, 37.943), heading 179°): left hand (33.537, 36.949,
+1.500), right hand (33.204, 36.960, 1.471), spine (33.345, 36.778, 1.403), head (33.342, 36.831, 1.959). `S1`'s
+left hand is 0.30 m from the head after k3.
+
+**A walking target** changes this through the lead. PoizoCiv walking in at 1.63 m/s (its AI on, placed until update
+9): the 653 steer stopped near 1.7 m by k3 and contact came at k7 from 1.0 and 1.6 m and **k8** from 1.9 m (the
+shapes' last live update), at 1.15-1.21 m. Pinned in place but still in its walk (velocity 1.6 m/s toward the
+attacker, position written every update), the lead put the attacker 1.9-1.95 m away at k3 and 653 **missed** from
+1.0 and 1.9 m, as did `S1` from 1.5 m. So runs against a pinned walking target, as some earlier ones on this page
+were, understate what reaches (inferred; the right snap's miss may be this).
+
+Scenarios: `moves_reach653_10`, `moves_reach653_16`, `moves_reach653_19`, `moves_reachS1_15` (still target) and
+`moves_reach653_19_walk` (walking).
+
 ### Square, in order {#square}
 
 `Player_Square` (`0x00286cc8`), unarmed (held object set 0). Confirmed (code). Refused while the state word has any
@@ -720,6 +773,8 @@ Found while building this table; for the owners of those pages. Confirmed (code)
 - [Combat](combat.md#targets), the steer's turn: the new heading is the goal's heading minus the attack's direction
   (record offset `+0x0` / `+0x2`), not the goal's heading; a snap turns its side, not its front, to the target
   ([Targets](#targeting)).
+- [Combat](combat.md#targets), the steer's goal "only half that lead": a lead over 1 m that takes the target farther
+  away is cut to 0.5 m long (the lead × 0.5 / its length), not halved ([Contact](#reach)).
 
 ## Coney's implementation
 
@@ -729,8 +784,9 @@ The moves Coney plays and where they differ from the table above: [Combat differ
 
 - The low and mid tests' state bits are read but not all named; which reactions put a human in them, and which
   point the height test compares (vtable `+0xac`).
-- Why the snap 25 slides the player 0.3-0.5 m away from a still target on its right and misses, when 27 hits one on
-  the left.
+- Why the snap 25 slides the player 0.3-0.5 m away from a target pinned on its right and misses, when 27 hits one
+  on the left. That target was pinned while walking, so the steer's lead may explain it ([Contact](#reach)); not
+  rerun against a still target.
 - Why the tandem intro ran 51 updates, not 36.
 - 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no code path plays them here (20 is the
   chain's random pick after `SS2`, `0x00280708`).

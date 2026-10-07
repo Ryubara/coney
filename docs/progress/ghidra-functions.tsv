@@ -5134,155 +5134,155 @@
 0x0026f2c8	1148	Grab_PullOffTackler	1
 0x0026f760	32	Tandem_OnAttackerEnd	1
 0x0026f780	176	Tandem_OnVictimIntroEnd	1
-0x0026f840	32		0
+0x0026f840	32	Tandem_OnEnd	1
 0x0026f860	1988	Tandem_Start	1
-0x00270028	124		0
-0x002700a8	452		0
+0x00270028	124	Tackle_OnVictimRiseEnd	1
+0x002700a8	452	Mount_OnStrikeEnd	1
 0x00270270	748	Tackle_StartMount	1
-0x00270560	580		0
+0x00270560	580	Tackle_OnIntroEnd	1
 0x002707a8	708	Tackle_Start	1
-0x00270a70	196		0
+0x00270a70	196	Mount_CheckVictim	1
 0x00270b38	1104	Mount_StartStrike	0
-0x00270f88	52		0
-0x00270fc0	104		0
-0x00271028	52		0
-0x00271060	52		0
-0x00271098	984	Mount_GetOff	0
+0x00270f88	52	Mount_OnGetOffEnd	1
+0x00270fc0	104	Mount_OnVictimGetOffEnd	1
+0x00271028	52	Mount_OnGetOffThrowEnd	1
+0x00271060	52	Mount_OnVictimThrowEnd	1
+0x00271098	984	Mount_GetOff	1
 0x00271470	920	Mount_GetOff	1
-0x00271808	804	Mount_ReturnToFrontGrab	0
-0x00271b30	960		0
+0x00271808	804	Mount_ReturnToFrontGrab	1
+0x00271b30	960	Mount_StartOnGrounded	1
 0x00271ef0	1052	Mount_Strike	1
-0x00272310	152		0
-0x002723a8	60		0
+0x00272310	152	Mount_OnReversalEnd	1
+0x002723a8	60	Mount_OnReversedEnd	1
 0x002723e8	732	Mount_StartReversal	1
 0x002726d8	416	Human_SetStrafeDirection	1
-0x00272878	160		0
+0x00272878	160	Mug_OnStartEnd	1
 0x00272918	144	Grab_SnapToRear	1
-0x002729a8	1676		0
+0x002729a8	1676	Mug_Start	1
 0x00273038	84	Mug_OnFailEnd	1
 0x00273090	128	Mug_OnSuccessEnd	1
 0x00273110	1368	Mug_PlayEnd	1
-0x00273668	436		0
-0x00273820	436		0
-0x002739d8	144	TagGame_Difficulty	0
+0x00273668	436	Mug_PlayVictimLoop343	1
+0x00273820	436	Mug_PlayVictimLoop341	1
+0x002739d8	144	TagGame_Difficulty	1
 0x00273a68	500	Tag_SayNearbyLine	1
 0x00273c60	832	Tag_UpdatePlayer	0
-0x00273fa0	28		0
-0x00273fc0	36		0
-0x00273ff0	404		0
-0x00274188	80		0
+0x00273fa0	28	Vec2_Scale	1
+0x00273fc0	36	Vec2_Add	1
+0x00273ff0	404	Tag_CatmullRomPoint	1
+0x00274188	80	Tag_SetPatternPoints	1
 0x002741d8	1036	TagGame_Init	0
-0x002745e8	12		0
-0x002745f8	60		0
-0x00274638	216		0
+0x002745e8	12	Tag_HasStickGame	1
+0x002745f8	60	Tag_IsComplete	1
+0x00274638	216	Tag_GetChargeLeft	1
 0x00274710	400	TagGame_SpendPaint	0
-0x002748a0	8		0
+0x002748a0	8	Tag_IsPaused	1
 0x002748a8	1420	TagGame_Update	0
-0x00274e38	168		0
+0x00274e38	168	Tag_GetProgress	1
 0x00274ee0	960	Revive_Finish	1
 0x002752a0	980	Revive_Start	1
 0x00275678	836	Attack_SteerLed	1
-0x002759c0	848		0
+0x002759c0	848	Human_AlignToObject	1
 0x00275d10	760	Attack_SteerToPoint	1
 0x00276008	448	Attack_TurnToTarget	0
 0x002761c8	1252	Attack_SteerToTarget	0
-0x002766b0	352		0
-0x00276810	392		0
+0x002766b0	352	Human_AlignToPoint	1
+0x00276810	392	Human_AlignForObjectAttack	1
 0x00276998	1024	Pair_AlignStart	0
 0x00276d98	600	Pair_SnapAttach	1
-0x00276ff0	596		0
-0x00277248	524		0
+0x00276ff0	596	Human_AlignToHuman	1
+0x00277248	524	Human_AlignToVictimFacing	1
 0x00277458	1276	Tandem_AlignThree	1
 0x00277958	456	Pair_CheckPlace	0
 0x00277b20	948	Pair_AlignForMove	1
-0x00277ed8	80		0
-0x00277f28	240		0
+0x00277ed8	80	Tag_OnIntroEnd	1
+0x00277f28	240	Tag_StartSprayEffect	1
 0x00278018	500	Tag_StartSprayClips	1
-0x00278210	404		0
-0x002783b0	620		0
+0x00278210	404	Tag_RestartSprayClips	1
+0x002783b0	620	Tag_EndSprayClips	1
 0x00278628	936	MiniGame_PlayEnd	1
 0x002789d0	1320	MiniGame_StartAtObject	1
-0x00278ef8	164		0
-0x00278fa0	176	Human_IsRevivableBy	0
-0x00279050	40		0
+0x00278ef8	164	Human_IsFreeableBy	1
+0x00278fa0	176	Human_IsRevivableBy	1
+0x00279050	40	Human_FindFreeable	1
 0x00279078	40	Human_FindRevivableNear	0
 0x002790a8	252	Target_AngleFromAimHeading	1
-0x002792c8	328		0
+0x002792c8	328	TargetFilter_LockFirst	1
 0x00279410	344	TargetFilter_Enemy	1
 0x00279568	308	TargetFilter_EnemyStanding	1
 0x002796a0	272	TargetFilter_Wide	1
 0x002797b0	272	TargetFilter_AnyAngle	1
-0x002798c0	328		0
-0x00279a08	296		0
-0x00279b30	280		0
-0x00279c48	236		0
-0x00279d38	196		0
+0x002798c0	328	TargetFilter_AlongFirst	1
+0x00279a08	296	TargetFilter_AlongThird	1
+0x00279b30	280	TargetFilter_AlongSecond	1
+0x00279c48	236	TargetFilter_NearAhead	1
+0x00279d38	196	TargetFilter_KnockedOut	1
 0x00279e00	332	Human_IsInCarFootprint	1
 0x00279f50	288	Target_CarFilter	1
 0x0027a070	176	Target_GlassFilter	1
 0x0027a120	196	Target_ObjectFilter	1
-0x0027a1e8	268		0
-0x0027a2f8	440		0
+0x0027a1e8	268	TargetFilter_ThrowObject	1
+0x0027a2f8	440	Human_FindTargetAlong	1
 0x0027a4b0	524	Player_FindAttackTarget	1
 0x0027a6c0	888	Player_PickTarget	0
 0x0027aa38	492	Player_FindSnapTarget	1
 0x0027ac30	336	Player_FindCounterTarget	1
-0x0027ad80	728		0
-0x0027b058	324		0
+0x0027ad80	728	Player_PickThrowTarget	1
+0x0027b058	324	Attack_FindNearestInReach	1
 0x0027b1a0	264	Player_FindNearestEnemy	1
-0x0027b2a8	672		0
-0x0027b548	120		0
-0x0027b5c0	32		0
-0x0027b5e0	36		0
-0x0027b608	36		0
-0x0027b630	36		0
-0x0027b658	36		0
+0x0027b2a8	672	Player_FindLockTarget	1
+0x0027b548	120	Player_LockOnTarget	1
+0x0027b5c0	32	PlayerCmd_IsAny	1
+0x0027b5e0	36	PlayerCmd_IsCrossLongHold	1
+0x0027b608	36	PlayerCmd_IsSquarePressOnly	1
+0x0027b630	36	PlayerCmd_IsL2Cross	1
+0x0027b658	36	PlayerCmd_IsL2Square	1
 0x0027b680	36	PlayerCmd_IsCrossPress	1
 0x0027b6a8	84	PlayerCmd_IsSquarePress	1
-0x0027b700	36	PlayerCmd_IsCommand14	0
-0x0027b728	36	PlayerCmd_IsCommand13	0
-0x0027b750	36		0
-0x0027b778	36	PlayerCmd_IsCommand17	0
-0x0027b7a0	36		0
-0x0027b7c8	36		0
-0x0027b7f0	36		0
-0x0027b818	36		0
-0x0027b840	36	PlayerCmd_IsCrossSquare	0
-0x0027b868	36	PlayerCmd_IsCircleCross	0
-0x0027b890	36	PlayerCmd_IsCircleTriangle	0
-0x0027b8b8	36		0
-0x0027b8e0	36		0
-0x0027b908	36		0
-0x0027b930	36		0
-0x0027b960	36		0
+0x0027b700	36	PlayerCmd_IsCommand14	1
+0x0027b728	36	PlayerCmd_IsCommand13	1
+0x0027b750	36	PlayerCmd_IsR1Press	1
+0x0027b778	36	PlayerCmd_IsCommand17	1
+0x0027b7a0	36	PlayerCmd_IsCircleTap	1
+0x0027b7c8	36	PlayerCmd_IsCircleHold	1
+0x0027b7f0	36	PlayerCmd_IsCrossSquareB	1
+0x0027b818	36	PlayerCmd_IsCommand30	1
+0x0027b840	36	PlayerCmd_IsCrossSquare	1
+0x0027b868	36	PlayerCmd_IsCircleCross	1
+0x0027b890	36	PlayerCmd_IsCircleTriangle	1
+0x0027b8b8	36	PlayerCmd_IsCommand39	1
+0x0027b8e0	36	PlayerCmd_IsL1Held	1
+0x0027b908	36	PlayerCmd_IsL1Release	1
+0x0027b930	36	PlayerCmd_IsL1Press	1
+0x0027b960	36	PlayerCmd_IsR1Held	1
 0x0027b988	96	PlayerRec_IsAttackCommand	1
-0x0027b9e8	36		0
+0x0027b9e8	36	PlayerCmd_IsL2Held	1
 0x0027ba10	36	PlayerCmd_IsTriangle	1
-0x0027ba38	36		0
-0x0027ba68	188		0
-0x0027bb28	36		0
-0x0027bb50	36		0
-0x0027bb78	36		0
-0x0027bba0	36		0
+0x0027ba38	36	PlayerCmd_IsTriangleHold	1
+0x0027ba68	188	PlayerCmd_IsOtherInput	1
+0x0027bb28	36	PlayerCmd_IsCommand37	1
+0x0027bb50	36	PlayerCmd_IsCommand38	1
+0x0027bb78	36	PlayerCmd_IsCommand36	1
+0x0027bba0	36	PlayerCmd_IsCommand33	1
 0x0027bbd0	36	PlayerCmd_IsDpadRight	1
-0x0027bbf8	36		0
-0x0027bc20	36		0
+0x0027bbf8	36	PlayerCmd_IsDpadLeft	1
+0x0027bc20	36	PlayerCmd_IsCommand32	1
 0x0027bc48	124	Mash_IsQuitCommand	1
 0x0027bcc8	12	Mash_ResetAlternation	1
 0x0027bcd8	192	Mash_IsAlternation	1
-0x0027bd98	96		0
-0x0027bdf8	84		0
-0x0027be50	84		0
-0x0027bea8	96		0
-0x0027bf08	36		0
-0x0027bf30	104		0
-0x0027bf98	88		0
-0x0027bff0	104		0
+0x0027bd98	96	PlayerCmd_IsGrabSpin	1
+0x0027bdf8	84	PlayerCmd_IsSquareAny	1
+0x0027be50	84	PlayerCmd_IsCrossAny	1
+0x0027bea8	96	PlayerCmd_IsGrabReverse	1
+0x0027bf08	36	PlayerCmd_IsLetGo	1
+0x0027bf30	104	PlayerCmd_IsCircleAny	1
+0x0027bf98	88	PlayerCmd_IsCommand31	1
+0x0027bff0	104	PlayerCmd_IsCircleAnyB	1
 0x0027c058	36	PlayerCmd_IsR2Held	1
 0x0027c080	36	PlayerCmd_IsR2Released	1
 0x0027c0a8	36	PlayerCmd_IsL1R1	1
-0x0027c0d0	36		0
-0x0027c0f8	36		0
+0x0027c0d0	36	PlayerCmd_IsDpadUp	1
+0x0027c0f8	36	PlayerCmd_IsDpadDown	1
 0x0027c120	3120	Player_UpdateActions	0
 0x0027cd50	316	Player_UpdateStanceAI	1
 0x0027ce90	1804	Player_UpdateSprint	1
@@ -5309,30 +5309,30 @@
 0x00280158	144	Player_LockOn	1
 0x002801e8	176	Player_ExitStanceAndLock	1
 0x002802a0	680	Pair_Attach	1
-0x00280548	232		0
+0x00280548	232	Grab_End	1
 0x00280630	212	Player_BufferChain	1
 0x00280708	1548	Player_UpdateChain	1
-0x00280d20	444		0
-0x00280ee0	40		0
-0x00280f08	40		0
-0x00280f30	112		0
-0x00280fa0	52		0
+0x00280d20	444	Grab_StickDirectionBits	1
+0x00280ee0	40	Player_AnnounceObjective	1
+0x00280f08	40	Player_AnnounceBonusObjective	1
+0x00280f30	112	PlayerRec_GetActionDelayLeft	1
+0x00280fa0	52	PlayerRec_ClearActionDelay	1
 0x00280fd8	108	PlayerRec_SetActionDelay	1
-0x00281048	36		0
-0x00281070	276		0
+0x00281048	36	Float_NearlyEqual	1
+0x00281070	276	Climb_IsSpaceClear	1
 0x00281188	100	Player_OnCommand33	1
 0x002811f0	376	Player_TriangleAction	0
-0x00281368	232		0
+0x00281368	232	Human_RestoreBodyAfterClimb	1
 0x00281450	996	Climb_OnFirstClipEndRun	1
 0x00281838	1000	Climb_OnFirstClipEndStand	1
 0x00281c20	1872	Climb_Start	0
 0x00282370	896	Climb_ProbeTop	0
 0x002826f0	756	Climb_TryStart	0
 0x002829e8	380	Player_TryJump	1
-0x00282b68	1296		0
-0x00283078	580		0
+0x00282b68	1296	Hold_GetParams	1
+0x00283078	580	Hold_GetParamsB	1
 0x002832c8	248	Player_OnCommand32	1
-0x002833c0	1644		0
+0x002833c0	1644	Player_UpdateCuffHold	1
 0x00283a30	1804	Player_UpdateMugHold	1
 0x00284140	316	Player_UpdateHold	1
 0x00284280	188	Flash_Use	1
@@ -5345,7 +5345,7 @@
 0x00285520	216	Mug_TakeAllItems	1
 0x002855f8	192	Mug_MoveTargetAngle	1
 0x002856b8	3732	Player_UpdateMugging	0
-0x00286550	1624		0
+0x00286550	1624	Player_UpdateMuggedGame	1
 0x00286ba8	284	Player_TryRevive	1
 0x00286cc8	2664	Player_Square	0
 0x00287730	392	Player_Special	0
@@ -6299,7 +6299,7 @@
 0x002d2eb0	176	PlayDynAnimGoal_Init	1
 0x002d2f98	156	Goal_ScheduleCallback	1
 0x002d3038	36	PlayDynAnimGoal_Destroy	1
-0x002d3060	240		1
+0x002d3060	240	PlayDynAnimGoal_Process	1
 0x002d3150	96	ScatterGoal_Init	1
 0x002d31b0	164	ScatterGoal_Start	1
 0x002d3258	52	ScatterGoal_Resume	1

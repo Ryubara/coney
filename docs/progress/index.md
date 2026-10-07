@@ -22,13 +22,13 @@ at the top of the repository's `README.md`.
 ## Overall
 
 ![Reimplemented: 14.9%](https://img.shields.io/badge/reimplemented-14.9%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
-![Understood: 88.4%](https://img.shields.io/badge/understood-88.4%25-yellowgreen)
+![Understood: 93.0%](https://img.shields.io/badge/understood-93.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
 | **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,695 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
-| **Understood** | `█████████████████▋░░` | 88.4% named in Ghidra and cited with evidence (2,903,120 of 3,283,904 bytes; 9,818 of 11,422 functions, 86.0%) |
+| **Understood** | `██████████████████▋░` | 93.0% named in Ghidra and cited with evidence (3,054,860 of 3,283,904 bytes; 10,503 of 11,422 functions, 92.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
 540 reimplemented function(s) have no size yet and add no bytes.
@@ -88,15 +88,15 @@ at the top of the repository's `README.md`.
 | Subsystem | Understood | Share | Functions understood | Named | Cited | Code (bytes) |
 | --- | --- | --- | --- | --- | --- | --- |
 | `Animation` | `████████████████████` | 100.0% | 210 of 210 | 210 | 210 | 53,888 |
-| `Audio` | `████████████████████` | 100.0% | 332 of 333 | 333 | 332 | 56,412 |
+| `Audio` | `████████████████████` | 100.0% | 333 of 333 | 333 | 333 | 56,412 |
 | `Camera` | `████████████████████` | 100.0% | 302 of 302 | 302 | 302 | 164,920 |
 | `Core` | `████████████████████` | 100.0% | 22 of 22 | 22 | 22 | 2,816 |
-| `Device/ps2` | `███████████████████▎` | 96.5% | 313 of 316 | 316 | 313 | 59,940 |
+| `Device/ps2` | `████████████████████` | 100.0% | 316 of 316 | 316 | 316 | 59,940 |
 | `FileIO` | `████████████████████` | 100.0% | 58 of 58 | 58 | 58 | 6,780 |
 | `GameModes` | `████████████████████` | 100.0% | 450 of 450 | 450 | 450 | 98,632 |
 | `Graphics` | `████████████████████` | 100.0% | 630 of 630 | 630 | 630 | 191,888 |
 | `GUI` | `████████████████████` | 100.0% | 1,725 of 1,725 | 1,725 | 1,725 | 492,072 |
-| `Human` | `██████████████▊░░░░░` | 73.7% | 2,336 of 3,309 | 3,213 | 2,341 | 1,079,972 |
+| `Human` | `███████████████▊░░░░` | 78.8% | 2,390 of 3,309 | 3,309 | 2,390 | 1,079,972 |
 | `Maths (unnamed)` | `████████████████████` | 100.0% | 72 of 72 | 72 | 72 | 12,288 |
 | `Memory` | `████████████████████` | 100.0% | 89 of 89 | 89 | 89 | 15,504 |
 | `Physics` | `████████████████████` | 100.0% | 183 of 183 | 183 | 183 | 78,580 |
@@ -109,9 +109,9 @@ at the top of the repository's `README.md`.
 | `WorldObjects` | `████████████████████` | 100.0% | 124 of 124 | 124 | 124 | 21,716 |
 | `Warriors` | `████████████████████` | 100.0% | 390 of 390 | 390 | 390 | 52,688 |
 | `Movie` | `████████████████████` | 100.0% | 11 of 11 | 11 | 11 | 5,136 |
-| `link-once` | `▋░░░░░░░░░░░░░░░░░░░` | 3.4% | 28 of 651 | 651 | 28 | 95,912 |
-| Unattributed | `██████████████████▎░` | 91.5% | 40 of 44 | 44 | 40 | 20,936 |
-| **All** | `█████████████████▋░░` | 88.4% | 9,818 of 11,422 | 11,326 | 9,823 | 3,283,904 |
+| `link-once` | `████████████████████` | 100.0% | 651 of 651 | 651 | 651 | 95,912 |
+| Unattributed | `████████████████████` | 100.0% | 44 of 44 | 44 | 44 | 20,936 |
+| **All** | `██████████████████▋░` | 93.0% | 10,503 of 11,422 | 11,422 | 10,503 | 3,283,904 |
 
 ## Research coverage
 
