@@ -339,6 +339,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's waist
     // deals. Returns whether one took the press.
     bool tryDeal(human::Human& human);
+    // Player 1's flash (command 0x28, d-pad right, docs/research/combat.md#rage): with a flash carried and health
+    // below its maximum, a pair he is in is broken, the flash spent and his health filled, and 665 SPECIAL_FLASH plays
+    // when nothing blocks a move. **Coney's stand-ins**: the flash is spent on the press, not on the clip's event; its
+    // sound is not played; the full-health rage use (upgrade (6, 8)) is not built.
+    // @orig 0x002843f8 Player_StartRage (unknown)
+    void stepFlash();
     // Player 1's square may strike the level's whole glass panes, aiming at their centres.
     void giveObjectTargets();
     // Player 1's pick-up that reached its clip's event this step: the object is taken.

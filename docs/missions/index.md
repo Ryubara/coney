@@ -12,8 +12,8 @@ to run it.
 | Status | Missions | Meaning |
 | --- | --- | --- |
 | ⬜ Not Started | 22 | No Coney code for it yet. |
-| 🚧 In Progress | 4 | Being built. |
-| 🎮 Pending Gameplay Approval | 3 | Built to its end in Coney; waits for the owner's play-test against the original. |
+| 🚧 In Progress | 3 | Being built. |
+| 🎮 Pending Gameplay Approval | 4 | Built to its end in Coney; waits for the owner's play-test against the original. |
 | 🔧 Needs Fixes | 0 | A play-test found something off; back in maintenance, the known issues are listed. |
 | ✅ Approved | 0 | The owner played it and signed it off. |
 
@@ -21,7 +21,7 @@ to run it.
 
 | Mission | Level | Status | Checkpoints built | Approved | New bindings in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [Mission 1: New Blood](level99.md) | `level99` | 🚧 In Progress | 2 of 3 | 0 | 215 of 215 |
+| [Mission 1: New Blood](level99.md) | `level99` | 🎮 Pending Gameplay Approval | 3 of 3 | 0 | 215 of 215 |
 | [Mission 2: Real Live Bunch](level80.md) | `level80` | 🎮 Pending Gameplay Approval | 4 of 4 | 0 | 50 of 50 |
 | [Mission 3: Payback](level87.md) | `level87` | 🎮 Pending Gameplay Approval | 5 of 5 | 0 | 87 of 87 |
 | [Mission 4: Blackout](level34.md) | `level34` | 🚧 In Progress | 0 of 5 | 0 | 17 of 17 |

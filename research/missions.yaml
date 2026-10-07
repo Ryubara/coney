@@ -30,14 +30,14 @@ missions:
     label: "Mission 1"
     summary: "The first mission, a tutorial: a combat course taught lesson by lesson, a section on getting around the streets, and a finale that hands over to the second mission. Coney starts it from a new game at checkpoint 1."
     summary_source: research
-    status: in-progress
+    status: pending-approval
     checkpoints:
       count: 3
       default: in-progress
       each:
         1: {status: pending-approval, note: "Plays from the intro through all twelve lessons (bats picked up with triangle, rage, the second wave, the Warriors' 50-second stopwatch) to scene l99_c6, driven by the pad; then player 1 is handed to the new Rembrandt on the street beside Vermin for checkpoint 2 and the course's humans are deleted with their gangs. In the last lesson the three sparring Warriors run in at the player and fight him (Melee, EngageEnemy and FindEnemy as the original pushes them)."}
         2: {status: pending-approval, note: "Plays through to checkpoint 3, driven by the pad: the store's glass and doors are drawn, the door or a window is hit open, the watch cabinet broken and its watches taken with triangle; square at the parked car breaks its window and triangle starts the stereo theft, whose stick turns call P2.CarRadioStolen; the passer-by at the phone (who starts with $5-$20 as the original rolls it) walks off, and grabbing and mugging him pays his money and calls P2.PedMugged; walking back to Vermin sets checkpoint 3 and plays l99_c3."}
-        3: {status: in-progress, note: "Plays to the mission's end, driven by the pad: the fence climbs, Vermin's wall demo and gestures, the rooftop, the jump through the window (the pane breaks), Vermin's jumps across the roof gaps and his drop to the street, the sprint jump to the second roof and the wooden fences; the charge (L2 + cross) breaks a rotting fence, whose removal calls P3.FenceBroken; triangle at the dealer buys a flash for $20, and d-pad right plays the closing cinematic and the mission-complete hand-over. The flash is not spent and does not heal yet."}
+        3: {status: pending-approval, note: "Plays to the mission's end, driven by the pad: the fence climbs, Vermin's wall demo and gestures, the rooftop, the jump through the window (the pane breaks), Vermin's jumps across the roof gaps and his drop to the street, the sprint jump to the second roof and the wooden fences; the charge (L2 + cross) breaks a rotting fence, whose removal calls P3.FenceBroken; triangle at the dealer buys a flash for $20, and d-pad right plays the closing cinematic and the mission-complete hand-over. The flash is spent and fills the health (with clip 665)."}
     research:
       - {title: "The first mission's script", path: "research/scripting.md#level99"}
       - {title: "The combat tutorial's lessons", path: "research/scripting.md#level99-lessons"}

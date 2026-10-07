@@ -13,6 +13,7 @@
 #include "ai/brain.h"
 #include "ai/dealer_goal.h"
 #include "ai/goal.h"
+#include "characters/anim_set.h"
 #include "characters/character_class.h"
 #include "combat/anim_ids.h"
 #include "combat/anim_ranges.h"
@@ -24,6 +25,7 @@
 #include "human/human.h"
 #include "human/humans.h"
 #include "human/locomotion.h"
+#include "human/locomotion_gate.h"
 #include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/object_bindings.h"
@@ -58,6 +60,11 @@ constexpr std::uint32_t kRunAttackOrCharge = 0x1400000;
 // (docs/research/crimes.md#lockpick); any other press abandons it.
 constexpr std::uint16_t kLockPickKeeps =
     pad::kCross | pad::kL1 | pad::kR2 | pad::kUp | pad::kDown | pad::kLeft | pad::kRight | pad::kSelect;
+// The flash's clip, 665 SPECIAL_FLASH, and the record bits it holds (docs/research/combat.md#rage); its fade in is
+// Coney's (the scripted clips' 0.2 s).
+constexpr std::uint32_t kFlashAnim = 665;
+constexpr std::uint32_t kFlashHeld = 0x2000;
+constexpr float kFlashFade = 0.2F;
 // The 60 Hz ticks the objects take in one 1/30 s step.
 constexpr int kObjectTicksPerStep = 2;
 
@@ -216,6 +223,31 @@ bool PlayLevelMode::tryDeal(human::Human& human) {
         return outcome != ai::DealOutcome::NotDealing;
     }
     return false;
+}
+
+void PlayLevelMode::stepFlash() {
+    human::Human& human = m_player->human();
+    if (human.record().command != combat::command::kDpadRight || m_pickups == nullptr ||
+        m_pickups->carried(0, item::kRevive) < 1) {
+        return;
+    }
+    // Not while out of health, down or airborne; at full health it would only feed rage (not built).
+    combat::Health& health = human.fighter().health();
+    if (health.depleted() || human.airborne() || human.fighter().helpless(human.animator()) ||
+        health.value() >= health.maximum()) {
+        return;
+    }
+    // A grab he holds or is held in is let go first; then 665 when nothing holds his moves, and the flash is used.
+    human.breakPair();
+    if (!human::stickBusy(human.gateInput())) {
+        if (const anim::AnimClip* clip = human.anims().clip(kFlashAnim)) {
+            human.playScripted(*clip, kFlashAnim, 1.0F, kFlashFade, human::HeldFlags{.held = kFlashHeld});
+        }
+    }
+    m_pickups->spendItem(0, item::kRevive);
+    human.setWounded(false);
+    health.set(health.maximum());
+    m_print(std::format("flash: used, health {}\n", health.value()));
 }
 
 void PlayLevelMode::giveObjectTargets() {

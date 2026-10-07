@@ -471,6 +471,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     }
     m_ai->capture();
     stepPickups();
+    stepFlash();
     stepObjects();
     const anim::Vec3 after = m_player->human().position();
     m_stats.travelled += std::hypot(after.x - before.x, after.y - before.y);

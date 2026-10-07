@@ -143,6 +143,8 @@ class LevelPickups {
     /// taken (an amount of 0: a dirty dealer kept the price). **Coney's reading**: neither notifies the inventory
     /// callbacks (the research names only the pickup sound, which Coney does not play).
     void dealerSold(int player, int item, int amount, int price);
+    /// Player `player` (0 or 1) used one of item `item` (a flash): one fewer, no callbacks.
+    void spendItem(int player, int item);
 
     /// The mugging record `SetInterrogateParam` set (set 0-2's override) while its required time is not 0; nothing for
     /// the defaults (docs/research/combat.md#mugging).

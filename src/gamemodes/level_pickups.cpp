@@ -179,6 +179,8 @@ int LevelPickups::carried(int player, int item) const { return m_state.player.in
 
 int LevelPickups::itemLimit(int item) const { return m_state.player.inventory.limit(item); }
 
+void LevelPickups::spendItem(int player, int item) { m_state.player.inventory.give(player, item, -1); }
+
 void LevelPickups::dealerSold(int player, int item, int amount, int price) {
     script::addInventoryItem(m_scripts, m_state, player, item, amount, false);
     script::addInventoryItem(m_scripts, m_state, player, item::kMoney, -price, false);
