@@ -513,7 +513,9 @@ void GameplayMode::loadLevel() {
                                              .lighting = m_lighting.get(),
                                              .effects = m_effects.get(),
                                              .cars = m_cars.get(),
-                                             .pickups = m_pickups ? &*m_pickups : nullptr});
+                                             .pickups = m_pickups ? &*m_pickups : nullptr,
+                                             .records = m_context.spawnRecords,
+                                             .types = m_context.objectTypes});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));

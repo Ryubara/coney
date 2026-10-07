@@ -21,11 +21,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 14.2%](https://img.shields.io/badge/reimplemented-14.2%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 14.4%](https://img.shields.io/badge/reimplemented-14.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.2% of the game's own code (477,292 of 3,354,776 bytes, 1,540 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.4% of the game's own code (481,628 of 3,354,776 bytes, 1,549 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
-| `Graphics` | `█▉░░░░░░░░░░░░░░░░░░` | 9.4% | 61 | 195,624 |
+| `Graphics` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 63 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
 | `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.5% | 485 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
@@ -72,7 +72,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 202 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▌░░░░░░░░░░░░░░░░░░` | 7.8% | 94 | 531,312 |
+| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 101 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -433,6 +433,8 @@ at the top of the repository's `README.md`.
 | `0x0017f218` | `LightManager_SetWorldAmbient` | `Graphics` | 72 |
 | `0x0017f270` | `Shadow_Enable_Stub` | `Graphics` | 8 |
 | `0x0017f2c0` | `ChunkReader_PreinstanceObject` | `Graphics` | not filled in |
+| `0x0017fa80` | `ObjectRender_ApplyFadeDistance` | `Graphics` | 120 |
+| `0x0017fd78` | `ObjectRender_Draw` | `Graphics` | 648 |
 | `0x00181170` | `ObjectList_OnLoaded` | `Graphics` | 56 |
 | `0x001811b0` | `ObjectList_FindByHash` | `Graphics` | not filled in |
 | `0x00181b20` | `ChunkLoaded_ParticlePage` | `Graphics` | 72 |
@@ -1405,6 +1407,7 @@ at the top of the repository's `README.md`.
 | `0x003913d8` | `ObjectDb_FindByName` | `TaskEngine` | not filled in |
 | `0x00391c98` | `WorldObject_RegisterContext` | `TaskEngine` | not filled in |
 | `0x00393538` | `Thrown_HitObject` | `TaskEngine` | 1,136 |
+| `0x00395b70` | `WorldObject_Update` | `TaskEngine` | 432 |
 | `0x003961d0` | `World_BreakObjectsInRadius` | `TaskEngine` | 448 |
 | `0x00396390` | `BreakObjectsInRadius` | `TaskEngine` | 40 |
 | `0x003963b8` | `World_BreakGlassInRadius` | `TaskEngine` | 784 |
@@ -1432,6 +1435,7 @@ at the top of the repository's `README.md`.
 | `0x00398940` | `ObjRecord_Add` | `TaskEngine` | not filled in |
 | `0x00398df8` | `ObjRecord_SetPinned` | `TaskEngine` | not filled in |
 | `0x00398fe0` | `ObjRecord_GetHandle` | `TaskEngine` | not filled in |
+| `0x00399d88` | `ObjectTaskManager_UpdateSpawns` | `TaskEngine` | 1,336 |
 | `0x0039bc28` | `Tag_Configure` | `TaskEngine` | not filled in |
 | `0x0039bd50` | `ProcessTag` | `TaskEngine` | not filled in |
 | `0x0039be28` | `Steam_Configure` | `TaskEngine` | not filled in |
@@ -1449,6 +1453,7 @@ at the top of the repository's `README.md`.
 | `0x003a0be8` | `SceneTask_StopLooping` | `TaskEngine` | 344 |
 | `0x003a0da8` | `SceneTask_CallEnd` | `TaskEngine` | 160 |
 | `0x003a13d0` | `SceneTask_Create` | `TaskEngine` | 280 |
+| `0x003a19b0` | `Obj_GetWorldPose` | `TaskEngine` | 296 |
 | `0x003a2e00` | `Task_SendMessage` | `TaskEngine` | 32 |
 | `0x003a4768` | `Triangle_MakeTwoSided` | `TaskEngine` | 88 |
 | `0x003ac4d0` | `Radio_Setup` | `TaskEngine` | not filled in |
@@ -1462,6 +1467,9 @@ at the top of the repository's `README.md`.
 | `0x003e29e8` | `GlassScript_Init` | `TaskEngine` | 936 |
 | `0x003e2d90` | `GlassScript_Message` | `TaskEngine` | 712 |
 | `0x003e4cb8` | `SubGlass_Update` | `TaskEngine` | 984 |
+| `0x003e9828` | `ObjectiveMarker_SetShown` | `TaskEngine` | 192 |
+| `0x003e98e8` | `dyn_objective_Init` | `TaskEngine` | 544 |
+| `0x003e9b08` | `dyn_objective_Update` | `TaskEngine` | 216 |
 | `0x003f17e0` | `PickupItem_Init` | `TaskEngine` | not filled in |
 | `0x003f6b40` | `Steam_HandleMessage` | `TaskEngine` | not filled in |
 | `0x003f80f0` | `DoorSwing_SetUpType` | `TaskEngine` | 3,656 |
@@ -1475,6 +1483,7 @@ at the top of the repository's `README.md`.
 | `0x003fc8d8` | `SprayTag_HandleMessage` | `TaskEngine` | not filled in |
 | `0x003fca68` | `SprayTag_Update` | `TaskEngine` | not filled in |
 | `0x003fd420` | `MeleeWeapon_Init` | `TaskEngine` | not filled in |
+| `0x003fe490` | `melee_weapon_HandleMessage` | `TaskEngine` | 552 |
 | `0x0040c868` | `Level_SetFogColour` | `World` | 160 |
 | `0x0040c908` | `Level_SetFogDistance` | `World` | 48 |
 | `0x0040c948` | `World_Precache` | `World` | 208 |

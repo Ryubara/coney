@@ -36,7 +36,9 @@
 #include "world_objects/flag_net.h"
 #include "world_objects/flags.h"
 #include "world_objects/level_objects.h"
+#include "world_objects/object_types.h"
 #include "world_objects/radios.h"
+#include "world_objects/spawn_records.h"
 #include "world_objects/tag_spots.h"
 #include "world_objects/trigger_spheres.h"
 #include "world_objects/volume_boxes.h"
@@ -77,6 +79,9 @@ struct ScriptedCast {
     effects::LevelEffects* effects = nullptr;    ///< The level's particles and motion blur, which it draws.
     world_objects::Cars* cars = nullptr;         ///< The level's parked cars, which it draws and stands.
     LevelPickups* pickups = nullptr;             ///< The level's loose objects for triangle's pick-up; null for none.
+    /// The level's spawn records and object types: the world objects the level draws (world_objects::ObjectTasks).
+    world_objects::SpawnRecords* records = nullptr;
+    const world_objects::ObjectTypes* types = nullptr;
 };
 
 /// A loaded level that can draw a 2D layer over its frame just before the frame is presented: the pause menu over the

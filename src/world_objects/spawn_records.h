@@ -28,7 +28,13 @@ struct SpawnRecord {
     bool removed = false;                      ///< `+0x24` bit `0x40000`: gone for good, never spawned again.
     bool hidden = false;                       ///< Its object is hidden (`ObjHide`) until shown again (`ObjShow`).
     float fadeInDistance = 0.0F;               ///< `+0x138`: what `ObjShow` was given (inferred: a fade-in distance).
-    std::uint32_t money = 0;                   ///< A `dyn_money` pickup's dollars (its object's `+0x124`).
+    /// The last show/hide message (0x0a) a binding sent its object: `ObjShow` true, `ObjHide` false; none yet. An
+    /// objective marker follows it (its init hides it until one is sent).
+    std::optional<bool> shownMessage;
+    /// `ObjDestroy(object, true)` sent an objective marker the destroy message (0x15): it fades out, then its record is
+    /// removed (world_objects::ObjectTasks).
+    bool dying = false;
+    std::uint32_t money = 0; ///< A `dyn_money` pickup's dollars (its object's `+0x124`).
 };
 
 /// The `ObjectTaskManager`'s spawn records: `ObjSpawn` adds one and returns its handle; resolving the handle (a binding

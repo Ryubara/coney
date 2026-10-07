@@ -226,7 +226,7 @@ void SceneStage::humanExitScene(double /*human*/) {}
 
 void SceneStage::objectPose(double object, const scenes::ScenePose& pose) {
     if (m_onObjectPose) {
-        m_onObjectPose(object, pose.position);
+        m_onObjectPose(object, pose.position, pose.rotation);
     }
 }
 

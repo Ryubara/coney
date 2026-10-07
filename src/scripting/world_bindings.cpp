@@ -10,6 +10,8 @@
 #include "scripting/binding_args.h"
 #include "scripting/human_bindings.h"
 #include "world_objects/flag_net.h"
+#include "world_objects/object_tasks.h"
+#include "world_objects/object_types.h"
 #include "world_objects/spawn_records.h"
 #include "world_objects/trigger_spheres.h"
 
@@ -97,9 +99,10 @@ NativeFunction makeFlagNetTraverse(const BindingContext& context) {
     };
 }
 
-// `ObjDestroy(object, viaMessage)`: the object goes for good, a human holding it letting go first. Either path (at
-// once, or the destroy message 0x15 the object handles itself) removes it; Coney's dynamic objects have no handling of
-// their own, so both remove the record now.
+// `ObjDestroy(object, viaMessage)`: the object goes for good, a human holding it letting go first. Without
+// `viaMessage` at once; with it the destroy message 0x15, which an objective marker handles by fading out before it
+// goes (marked dying; world_objects::ObjectTasks removes it at alpha 0). Coney's other classes have no handling of
+// their own, so they go at once (docs/research/objects.md#objective-markers).
 // @orig 0x00396c58 Obj_Destroy (unknown)
 NativeFunction makeObjDestroy(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
@@ -109,7 +112,17 @@ NativeFunction makeObjDestroy(const BindingContext& context) {
                 humans->releaseObject(object);
             }
         }
-        if (context->spawnRecords != nullptr) {
+        if (context->spawnRecords == nullptr) {
+            return binding::none();
+        }
+        world_objects::SpawnRecord* record = context->spawnRecords->find(object);
+        const world_objects::ObjectType* type = record != nullptr && context->objectTypes != nullptr
+                                                    ? context->objectTypes->find(record->typeName)
+                                                    : nullptr;
+        if (record != nullptr && !record->removed && type != nullptr && booleanArg(args, 1, false) &&
+            type->className == world_objects::kObjectiveClass) {
+            record->dying = true;
+        } else {
             static_cast<void>(context->spawnRecords->destroy(object));
         }
         return binding::none();
@@ -138,6 +151,7 @@ NativeFunction makeObjShowHide(const BindingContext& context, bool show) {
         }
         if (world_objects::SpawnRecord* record = context->spawnRecords->resolve(handleArg(args, 0))) {
             record->hidden = !show;
+            record->shownMessage = show;
             if (show && args.size() > 1 && args[1].number()) {
                 record->fadeInDistance = static_cast<float>(binding::number(args, 1));
             }

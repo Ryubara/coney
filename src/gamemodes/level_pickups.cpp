@@ -117,9 +117,10 @@ int LevelPickups::animSetOf(std::string_view typeName) const {
     return type != nullptr ? type->animSet : 0;
 }
 
-void LevelPickups::placeObject(double handle, anim::Vec3 position) {
+void LevelPickups::placeObject(double handle, anim::Vec3 position, anim::Quat rotation) {
     if (world_objects::SpawnRecord* record = m_records.find(handle); record != nullptr && !m_inHand.contains(handle)) {
         record->position = {position.x, position.y, position.z};
+        record->rotation = {rotation.x, rotation.y, rotation.z, rotation.w};
     }
 }
 

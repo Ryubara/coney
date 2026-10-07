@@ -103,8 +103,10 @@ class SceneStage final : public scenes::SceneHost {
     /// Sets what places a released human. It is called at the release itself, before the scene's end function
     /// runs (scenes.md#ending), so the end function's own moves (a teleport to a flag) win over the placement.
     void setReleaseHandler(std::function<void(const Release&)> handler) { m_onRelease = std::move(handler); }
-    /// Sets what the scene's moves of a bound object go to (the object's handle and its world position).
-    void setObjectMover(std::function<void(double, anim::Vec3)> mover) { m_onObjectPose = std::move(mover); }
+    /// Sets what the scene's moves of a bound object go to (the object's handle, its world position and rotation).
+    void setObjectMover(std::function<void(double, anim::Vec3, anim::Quat)> mover) {
+        m_onObjectPose = std::move(mover);
+    }
 
     /// Skins the puppets for the frame between the last two steps, `alpha` of the way, with `skin` (the play mode's
     /// skinning: character, pose, feet, heading into positions and normals).
@@ -175,7 +177,7 @@ class SceneStage final : public scenes::SceneHost {
     std::map<double, Bound> m_bound;
     std::map<double, Puppet> m_puppets;
     std::function<void(const Release&)> m_onRelease;
-    std::function<void(double, anim::Vec3)> m_onObjectPose; // where the scene's object moves go
+    std::function<void(double, anim::Vec3, anim::Quat)> m_onObjectPose; // where the scene's object moves go
     std::optional<Interpolated<CameraState>> m_camera;
     graphics::ScreenFade m_fade;
     scenes::Letterbox m_letterbox;

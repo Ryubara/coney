@@ -1,29 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/placed_objects.h"
 
+#include <cmath>
 #include <format>
 #include <utility>
+#include <vector>
 
 #include <rw.h>
 
 #include "platform/level_file.h"
 #include "world/level_object.h"
+#include "world_objects/object_tasks.h"
 
 namespace coney::platform {
 
 namespace {
 
-// The game's axes into RenderWare's, (x, y, z) to (x, z, -y), and back.
+// The game's axes into RenderWare's, (x, y, z) to (x, z, -y).
 constexpr anim::Mat34 kGameToRw{{1.0F, 0.0F, 0.0F}, {0.0F, 0.0F, -1.0F}, {0.0F, 1.0F, 0.0F}, {}};
-constexpr anim::Mat34 kRwToGame{{1.0F, 0.0F, 0.0F}, {0.0F, 0.0F, 1.0F}, {0.0F, -1.0F, 0.0F}, {}};
-
-// A loaded frame as our matrix.
-anim::Mat34 toMat34(const world::FrameMatrix& m) {
-    return anim::Mat34{{m.right.x, m.right.y, m.right.z},
-                       {m.up.x, m.up.y, m.up.z},
-                       {m.at.x, m.at.y, m.at.z},
-                       {m.position.x, m.position.y, m.position.z}};
-}
 
 // Our matrix as a frame for librw.
 world::FrameMatrix toFrame(const anim::Mat34& m) {
@@ -35,12 +29,8 @@ world::FrameMatrix toFrame(const anim::Mat34& m) {
 
 } // namespace
 
-anim::Mat34 objectRenderTransform(anim::Quat rotation, anim::Vec3 position, const anim::Mat34& modelFrame) {
-    const anim::Mat34 game = anim::transform(rotation, position);
-    const anim::Mat34 world = anim::multiply(kGameToRw, anim::multiply(game, kRwToGame));
-    anim::Mat34 turn = modelFrame;
-    turn.t = anim::Vec3{};
-    return anim::multiply(world, turn);
+anim::Mat34 objectRenderTransform(anim::Quat rotation, anim::Vec3 position) {
+    return anim::multiply(kGameToRw, anim::transform(rotation, position));
 }
 
 PlacedObjects::PlacedObjects(const io::Wad& wad, const world_objects::ObjectList& list,
@@ -91,12 +81,19 @@ const ObjectModel* PlacedObjects::model(std::uint32_t modelHash) {
     return slot.get();
 }
 
-void PlacedObjects::place(double handle, std::uint32_t modelHash, anim::Vec3 position, anim::Quat rotation) {
+void PlacedObjects::place(double handle, std::uint32_t modelHash, anim::Vec3 position, anim::Quat rotation,
+                          const Look& look) {
     (void)model(modelHash);
     Placed& object = m_objects[handle];
     object.modelHash = modelHash;
     object.position = position;
     object.rotation = rotation;
+    object.look = look;
+}
+
+rw::Atomic* PlacedObjects::atomicOf(std::uint32_t modelHash) {
+    const ObjectModel* loaded = model(modelHash);
+    return loaded != nullptr ? levelAtomic(loaded->model.get()) : nullptr;
 }
 
 void PlacedObjects::setVisible(double handle, bool visible) {
@@ -123,27 +120,90 @@ bool PlacedObjects::visible(double handle) const {
     return found != m_objects.end() && found->second.visible;
 }
 
-void PlacedObjects::draw(const std::function<void(rw::Atomic*)>& render) const {
+int PlacedObjects::alphaOf(const Placed& object, rw::Atomic* atomic, const DrawOptions& options) const {
+    float alpha = static_cast<float>(object.look.tint & 0xFFU);
+    if (!options.camera) {
+        return static_cast<int>(alpha);
+    }
+    // The size cull by the model's bounding radius over its squared camera distance, then the ObjShow distance.
+    const rw::Sphere* sphere = atomic->getWorldBoundingSphere();
+    const anim::Vec3& eye = *options.camera;
+    const float dx = sphere->center.x - eye.x;
+    const float dy = sphere->center.y - eye.y;
+    const float dz = sphere->center.z - eye.z;
+    const float distanceSq = dx * dx + dy * dy + dz * dz;
+    if (!object.look.sizeCullExempt) {
+        alpha *= world_objects::sizeFade(sphere->radius, distanceSq);
+    }
+    alpha *= world_objects::showDistanceFade(object.look.fadeDistance, std::sqrt(distanceSq));
+    return static_cast<int>(alpha);
+}
+
+void PlacedObjects::drawOne(const Placed& object, rw::Atomic* atomic, int alpha, const DrawOptions& options) const {
+    // The tint multiplies each material's colour, its alpha the material's; the materials are shared by every object
+    // of the type, so they are put back after.
+    rw::Geometry* geometry = atomic->geometry;
+    std::vector<rw::RGBA> own;
+    const auto channel = [](rw::uint8 base, std::uint32_t tint) {
+        return static_cast<rw::uint8>((static_cast<std::uint32_t>(base) * (tint & 0xFFU) + 127U) / 255U);
+    };
+    const std::uint32_t tint = object.look.tint;
+    for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
+        rw::RGBA& colour = geometry->matList.materials[i]->color;
+        own.push_back(colour);
+        colour = rw::RGBA{channel(colour.red, tint >> 24U), channel(colour.green, tint >> 16U),
+                          channel(colour.blue, tint >> 8U), channel(colour.alpha, static_cast<std::uint32_t>(alpha))};
+    }
+    // librw multiplies by the material's colour only for a geometry that modulates: set for the draw when the colour
+    // changes anything.
+    const rw::uint32 flags = geometry->flags;
+    if (tint != 0xFFFFFFFFU || alpha < 255) {
+        geometry->flags |= rw::Geometry::MODULATE;
+    }
+    if (options.render) {
+        options.render(atomic);
+    } else {
+        atomic->render();
+    }
+    geometry->flags = flags;
+    for (rw::int32 i = 0; i < geometry->matList.numMaterials; ++i) {
+        geometry->matList.materials[i]->color = own.at(static_cast<std::size_t>(i));
+    }
+}
+
+void PlacedObjects::draw(const DrawOptions& options) {
+    m_drawn = 0;
     rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
     rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-    // Objects of one type share their model's atomic: each is placed, then drawn, in turn.
-    for (const auto& [handle, object] : m_objects) {
-        const auto found = m_models.find(object.modelHash);
-        if (!object.visible || found == m_models.end() || found->second == nullptr) {
-            continue;
-        }
-        auto* atomic = dynamic_cast<LevelAtomicObject*>(found->second->model.get());
-        if (atomic == nullptr) {
-            continue;
-        }
-        atomic->place(toFrame(objectRenderTransform(object.rotation, object.position, toMat34(atomic->frame()))));
-        if (render) {
-            render(atomic->atomic());
-        } else {
-            atomic->atomic()->render();
+    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    // Two passes: the opaque objects with Z writes, then the translucent ones over them (Coney's order: the original
+    // draws objects in its instance order).
+    for (const bool translucentPass : {false, true}) {
+        for (const auto& [handle, object] : m_objects) {
+            const auto found = m_models.find(object.modelHash);
+            if (!object.visible || found == m_models.end() || found->second == nullptr) {
+                continue;
+            }
+            auto* level = dynamic_cast<LevelAtomicObject*>(found->second->model.get());
+            if (level == nullptr) {
+                continue;
+            }
+            // Objects of one type share their model's atomic: each is placed, then drawn, in turn.
+            level->place(toFrame(objectRenderTransform(object.rotation, object.position)));
+            const int alpha = alphaOf(object, level->atomic(), options);
+            if (alpha < world_objects::kMinDrawnAlpha) {
+                continue;
+            }
+            if ((object.look.translucent || alpha < 255) != translucentPass) {
+                continue;
+            }
+            rw::SetRenderState(rw::ZWRITEENABLE, object.look.translucent ? 0 : 1);
+            drawOne(object, level->atomic(), alpha, options);
+            ++m_drawn;
         }
     }
+    rw::SetRenderState(rw::ZWRITEENABLE, 1);
 }
 
 } // namespace coney::platform

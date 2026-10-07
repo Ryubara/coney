@@ -228,6 +228,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     if (cast != nullptr) {
         bindObjects(cast->objects, cast->recorded);
         bindPickups(cast->pickups);
+        makeWorldObjects(*cast);
     }
     // The AI humans in the player's step: the level's scripts' humans, or the layout's fighters.
     if (cast != nullptr && cast->brains != nullptr && cast->scripted != nullptr) {
@@ -497,6 +498,8 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     m_lights->step(stepView, m_scenery->collision(), m_player->human().position(),
                    static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
     m_scenery->findVisible(stepView);
+    // The world objects round the camera, after the scripts and the scenes moved them.
+    stepWorldObjects(eye, static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
     // The HUD's step (docs/research/hud.md#the-huds-frame), with the player's rage on panel 0.
     hud::HudFrame hudFrame;
     hudFrame.nowMs = millisecondsOf(frame.gameTicks);
@@ -603,6 +606,8 @@ void PlayLevelMode::render(const RenderTime& time) {
         if (m_levelEffects) {
             m_levelEffects->drawCars([this](rw::Atomic* atomic) { m_lights->drawHuman(atomic, false); });
         }
+        // The world objects, then the humans and their blob shadows.
+        drawWorldObjects(snapshot);
         drawCharacter();
         drawDebugLines(snapshot);
         if (m_levelEffects) {

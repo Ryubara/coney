@@ -73,9 +73,9 @@ void PlayLevelMode::makeStage() {
     // Placed at the release, before the scene's end function can move them on.
     m_stage->setReleaseHandler([this](const SceneStage::Release& release) { placeReleased(release); });
     // A bound object stays where the scene leaves it (scenes.md#ending): its record keeps the place.
-    m_stage->setObjectMover([this](double object, anim::Vec3 position) {
+    m_stage->setObjectMover([this](double object, anim::Vec3 position, anim::Quat rotation) {
         if (m_pickups != nullptr) {
-            m_pickups->placeObject(object, position);
+            m_pickups->placeObject(object, position, rotation);
         }
     });
 }

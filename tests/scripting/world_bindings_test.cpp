@@ -21,6 +21,7 @@
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
 #include "world_objects/flag_net.h"
+#include "world_objects/object_types.h"
 #include "world_objects/spawn_records.h"
 #include "world_objects/trigger_spheres.h"
 
@@ -59,6 +60,7 @@ struct Harness {
     QuietHost host;
     coney::script::RecordedCalls recorded;
     coney::world_objects::SpawnRecords records;
+    coney::world_objects::ObjectTypes types;
     coney::world_objects::TriggerSpheres spheres;
     coney::world_objects::FlagNet net;
     KeepingAi ai;
@@ -72,6 +74,7 @@ struct Harness {
               },
               [this](ScriptSystem& system, LuaVm& vm) { coney::script::installBindings(system, vm, context); }, {}) {
         context.spawnRecords = &records;
+        context.objectTypes = &types;
         context.spheres = &spheres;
         context.flagNet = &net;
         context.ai = &ai;
@@ -114,6 +117,30 @@ TEST_CASE("ObjEnableZone switches a zone; ObjShow, ObjHide and ObjDestroy act on
     h.call("ObjDestroy", {Value(9.0)});
     CHECK(h.records.find(9)->removed);
     h.call("ObjShow", {Value(77.0)}); // no such object: nothing happens
+}
+
+TEST_CASE("ObjShow and ObjHide leave the show message; ObjDestroy with its message makes a marker die",
+          "[world_bindings]") {
+    Harness h;
+    static_cast<void>(h.types.add("dyn_w_mission", "dyn_objective", 0));
+    static_cast<void>(h.types.add("dyn_bat_tuff", "melee_weapon", 50));
+    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 5, .typeName = "dyn_w_mission"}) != nullptr);
+    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 6, .typeName = "dyn_w_mission"}) != nullptr);
+    REQUIRE(h.records.add(coney::world_objects::SpawnRecord{.handle = 7, .typeName = "dyn_bat_tuff"}) != nullptr);
+    CHECK_FALSE(h.records.find(5)->shownMessage.has_value());
+    h.call("ObjShow", {Value(5.0)});
+    CHECK(h.records.find(5)->shownMessage == true);
+    h.call("ObjHide", {Value(5.0)});
+    CHECK(h.records.find(5)->shownMessage == false);
+    // With its message a marker fades out first: dying, not yet removed; without, it goes at once.
+    h.call("ObjDestroy", {Value(5.0), Value(true)});
+    CHECK(h.records.find(5)->dying);
+    CHECK_FALSE(h.records.find(5)->removed);
+    h.call("ObjDestroy", {Value(6.0)});
+    CHECK(h.records.find(6)->removed);
+    // Another class has no handling of its own: removed at once either way.
+    h.call("ObjDestroy", {Value(7.0), Value(true)});
+    CHECK(h.records.find(7)->removed);
 }
 
 TEST_CASE("TriggerSphereCfg configures the object's sphere, a true mode being 1", "[world_bindings]") {

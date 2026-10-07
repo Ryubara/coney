@@ -22,6 +22,9 @@ struct ObjectType {
     int value = 0;               ///< `+0x5a`, `CfgObj`'s 4th argument: a `TYPE_SPECIAL` pick-up's worth in dollars.
     int pickupAnim = 0;          ///< `+0x65`, `CfgObj`'s 14th argument: the pick-up animation (5 for jewellery).
     int animSet = 0; ///< `+0x87`, `CfgObj`'s 20th argument: the anim set the object applies in hand (3 for a bat).
+    /// `+0x70`, `CfgObj`'s 17th argument: how far a held object is slid along its own y from the hand's offset to its
+    /// grip (0.39 m for `dyn_bat_tuff`, docs/research/objects.md#held).
+    float grip = 0.0F;
 };
 
 /// `TYPE_SPECIAL`: a store's jewellery and other loose loot (docs/research/combat.md#breakables).

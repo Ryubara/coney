@@ -139,6 +139,7 @@ add_executable(coney_tests
     world/world_streams_test.cpp
     world_objects/cars_test.cpp
     world_objects/flags_test.cpp
+    world_objects/object_tasks_test.cpp
     world_objects/disc_doors_test.cpp
     world_objects/disc_object_list_test.cpp
     world_objects/doors_test.cpp

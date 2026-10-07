@@ -64,7 +64,13 @@ class SceneLighting {
     void drawCoronas() const;
     /// Draws one blob shadow (game axes) per entry of `shadows`.
     void drawBlobShadows(std::span<const graphics::BlobShadow> shadows) const;
+    /// Draws a world object's atomic with the objects' lights for its squared distance to the camera and the point
+    /// lights its sphere overlaps, as a human's (docs/research/objects.md#models: the lights are chosen per object).
+    /// @orig 0x0017fd78 ObjectRender_Draw (unknown)
+    void drawObjectAtomic(rw::Atomic* atomic);
 
+    /// This frame's camera (RenderWare's axes), as beginFrame() was given it.
+    [[nodiscard]] const world::CameraPose& pose() const { return m_pose; }
     /// The light manager, for the summary.
     [[nodiscard]] const graphics::LightManager& lights() const { return m_lighting.lights; }
     /// The level's fog, which the world pass clears to and fogs with.

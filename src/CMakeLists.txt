@@ -157,6 +157,7 @@ add_library(coney_core STATIC
     world_objects/lock_pick.cpp
     world_objects/nav_links.cpp
     world_objects/object_list.cpp
+    world_objects/object_tasks.cpp
     world_objects/object_types.cpp
     world_objects/pickups.cpp
     world_objects/placed_objects_file.cpp

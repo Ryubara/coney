@@ -219,6 +219,12 @@ void SceneLighting::drawHumanAtomic(rw::Atomic* atomic, bool hidden) {
     renderInRig(atomic);
 }
 
+void SceneLighting::drawObjectAtomic(rw::Atomic* atomic) {
+    const graphics::LightSphere sphere = sphereOf(atomic);
+    useLights(m_lighting.lights.select(distanceSq(sphere.centre, m_pose.position), sphere, true, true, false));
+    renderInRig(atomic);
+}
+
 void SceneLighting::drawCoronas() const {
     rw::Texture* texture = rwTextureOf(m_coronaSheet);
     if (texture == nullptr || !m_coronaSheet) {

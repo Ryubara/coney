@@ -1853,6 +1853,18 @@ name = "ChunkReader_PreinstanceObject"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0017fa80
+name = "ObjectRender_ApplyFadeDistance"
+subsystem = "Graphics"
+size = 120
+
+[[function]]
+address = 0x0017fd78
+name = "ObjectRender_Draw"
+subsystem = "Graphics"
+size = 648
+
+[[function]]
 address = 0x00181170
 name = "ObjectList_OnLoaded"
 subsystem = "Graphics"
@@ -7462,6 +7474,12 @@ subsystem = "TaskEngine"
 size = 1136
 
 [[function]]
+address = 0x00395b70
+name = "WorldObject_Update"
+subsystem = "TaskEngine"
+size = 432
+
+[[function]]
 address = 0x003961d0
 name = "World_BreakObjectsInRadius"
 subsystem = "TaskEngine"
@@ -7615,6 +7633,12 @@ name = "ObjRecord_GetHandle"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x00399d88
+name = "ObjectTaskManager_UpdateSpawns"
+subsystem = "TaskEngine"
+size = 1336
+
+[[function]]
 address = 0x0039bc28
 name = "Tag_Configure"
 subsystem = "TaskEngine"
@@ -7713,6 +7737,12 @@ subsystem = "TaskEngine"
 size = 280
 
 [[function]]
+address = 0x003a19b0
+name = "Obj_GetWorldPose"
+subsystem = "TaskEngine"
+size = 296
+
+[[function]]
 address = 0x003a2e00
 name = "Task_SendMessage"
 subsystem = "TaskEngine"
@@ -7783,6 +7813,24 @@ address = 0x003e4cb8
 name = "SubGlass_Update"
 subsystem = "TaskEngine"
 size = 984
+
+[[function]]
+address = 0x003e9828
+name = "ObjectiveMarker_SetShown"
+subsystem = "TaskEngine"
+size = 192
+
+[[function]]
+address = 0x003e98e8
+name = "dyn_objective_Init"
+subsystem = "TaskEngine"
+size = 544
+
+[[function]]
+address = 0x003e9b08
+name = "dyn_objective_Update"
+subsystem = "TaskEngine"
+size = 216
 
 [[function]]
 address = 0x003f17e0
@@ -7856,6 +7904,12 @@ subsystem = "TaskEngine"
 address = 0x003fd420
 name = "MeleeWeapon_Init"
 subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003fe490
+name = "melee_weapon_HandleMessage"
+subsystem = "TaskEngine"
+size = 552
 
 [[function]]
 address = 0x0040c868

@@ -61,6 +61,8 @@ class PlayLighting {
     void addShadow(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
     /// Draws and forgets this frame's blob shadows.
     void drawShadows();
+    /// Draws a world object's atomic with the objects' lights (SceneLighting::drawObjectAtomic()).
+    void drawObject(rw::Atomic* atomic) { m_scene->drawObjectAtomic(atomic); }
 
     /// The rig, for the scenery's renderer.
     [[nodiscard]] SceneLighting& scene() { return *m_scene; }

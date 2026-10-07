@@ -32,6 +32,7 @@
 #include "human/target_human.h"
 #include "platform/character_mesh.h"
 #include "platform/hud_layer.h"
+#include "platform/placed_objects.h"
 #include "platform/play_lighting.h"
 #include "platform/play_scenery.h"
 #include "platform/render_engine.h"
@@ -44,6 +45,8 @@
 #include "world/sector_budget.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/lock_pick.h"
+#include "world_objects/object_list.h"
+#include "world_objects/object_tasks.h"
 
 namespace rw {
 struct Texture;
@@ -240,6 +243,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// of the mode's own, with the player attached to its panel 0.
     void useHud(hud::Hud& shared);
 
+    /// The level's world objects (the scripts' spawn records brought in round the camera, the objective markers):
+    /// what the newest step draws (play_level_world.cpp).
+    [[nodiscard]] const world_objects::ObjectTasks& worldObjects() const { return m_objectTasks; }
+    /// How many world objects the last frame drew (0 without pixels).
+    [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
+
   private:
     // A character's resources and its texture dictionaries, ready to draw.
     struct LoadedCharacter {
@@ -321,6 +330,16 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void stepPickups();
     // Player 1's handle, as the scripts know him; the nil handle without a cast.
     [[nodiscard]] double playerHandle() const;
+
+    // --- play_level_world.cpp: the world objects.
+
+    // Loads the Object List the world objects' models come by (only when the engine draws).
+    void makeWorldObjects(const ScriptedCast& cast);
+    // The world objects' step round the camera at `eye` (RenderWare's axes), after the scripts and scenes.
+    void stepWorldObjects(world::Vec3 eye, std::uint32_t elapsedMs);
+    // Draws this step's world objects (lit as objects) and the object in player 1's hand at `snapshot`'s pose
+    // (docs/research/objects.md#held).
+    void drawWorldObjects(const human::PlayerSnapshot& snapshot);
 
     // Draws the character: its lights, the render states, the atomic.
     void drawCharacter() const;
@@ -410,6 +429,13 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::uint64_t m_traceSteps = 0;
     // The level's parked cars, particles and motion blur (play_level_effects.h), when gameplay brought them.
     std::unique_ptr<PlayLevelEffects> m_levelEffects;
+    // The world objects: the scripts' records and types (null without a cast), their objects, the models they are
+    // drawn with (null without pixels or an Object List).
+    world_objects::SpawnRecords* m_records = nullptr;
+    const world_objects::ObjectTypes* m_objectTypes = nullptr;
+    world_objects::ObjectTasks m_objectTasks;
+    std::unique_ptr<world_objects::ObjectList> m_objectList; // before the models that read it
+    std::unique_ptr<PlacedObjects> m_placed;
     std::unique_ptr<HudLayer> m_hud; // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
     // The layer renderWithOverlay() adds over the HUD for the render it runs; null otherwise.
     const std::function<void(graphics::RenderDevice&)>* m_overlay = nullptr;

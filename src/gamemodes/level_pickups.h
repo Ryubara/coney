@@ -101,9 +101,10 @@ class LevelPickups {
     /// Whether `handle` is an object in a hand.
     [[nodiscard]] bool inHand(double handle) const { return m_inHand.contains(handle); }
 
-    /// A scene moved object `handle` to `position`: its record keeps the place. **Coney's reading**: with no object
-    /// tasks, the record's pose stands for the object's (the original writes it when the object is stored).
-    void placeObject(double handle, anim::Vec3 position);
+    /// A scene moved object `handle` to `position`, turned by `rotation`: its record keeps the pose. **Coney's
+    /// reading**: with no object tasks, the record's pose stands for the object's (the original writes it when the
+    /// object is stored).
+    void placeObject(double handle, anim::Vec3 position, anim::Quat rotation = {});
 
   private:
     // The object with an interaction prompt nearest `feet` within the prompt's reach; nothing for none.

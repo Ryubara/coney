@@ -836,14 +836,13 @@ object count plus 500). Resolving a handle marks its record live and pinning kee
 with no records but keeps the types, which the legal screen's preloads configure once
 ([Scripting](scripting.md#life-of-the-lua-state)).
 **Coney's choices:** a record's handle comes from the counter every world object's handle comes from, not the record
-index << 16 (record 0 would be `NilHandle`); the rotation is kept as given rather than packed into s16 × 4,096; there
-are no object tasks yet, so "live" marks a record a consumer draws; and the keys and the power cuffs are always
+index << 16 (record 0 would be `NilHandle`); the rotation is kept as given rather than packed into s16 × 4,096; a
+record a binding resolved is "live"; and the keys and the power cuffs are always
 suppressed, as a fresh profile has neither unlockable. `ObjEnableZone` sets or clears a zone's bit of the records'
 zone mask (zone 0 on at a level's start, the rest off); `ObjShow` and `ObjHide` resolve the handle and mark the record
-shown or hidden (`ObjShow`'s distance kept); `ObjDestroy` makes a human holding the object let go, then removes the
-record for good, by either of its paths (`src/scripting/world_bindings.h`). Nothing streams by zone or draws the
-hidden mark in play yet: Coney has no object tasks there, so play mode draws no
-[objective marker](#objective-markers) (the `level99` tutorial's first hints point at nothing). Disc check (NTSC-U,
+shown or hidden and keep the show message (`ObjShow`'s distance kept); `ObjDestroy` makes a human holding the object
+let go, then removes the record for good, except that with its second argument an objective marker is marked dying and
+fades out first (`src/scripting/world_bindings.h`). Disc check (NTSC-U,
 2026-10-06, counts only): at the front end
 `level100.lua` leaves 29 Wonder Wheel records, each of a configured type, the wheel tinted `0x474542FF`.
 
@@ -856,17 +855,47 @@ yet). A missing file adds nothing. Disc check (NTSC-U, 2026-10-06, counts only):
 **Pickable objects and objects in a scene** (`src/world_objects/pickups.h`, `src/gamemodes/level_pickups.h`): triangle
 takes the [pickable](#pickable) classes (`world_objects::pickable()`, the model-hash exceptions included); `CfgObj`'s
 20th argument is kept as the type's anim set (`+0x87`; inferred from the field order and a bat's 3). A scene's moves
-of a bound object go to its spawn record (`SceneStage::setObjectMover`): with no object tasks, the record's pose stands
-for the object's, so the bats `l99_c8` lays down are where the pick-up finds them. **Coney's reading**; the original
+of a bound object (position and rotation) go to its spawn record (`SceneStage::setObjectMover`): the record's pose
+stands for the object's, so the bats `l99_c8` lays down are where the pick-up finds them. **Coney's reading**; the original
 writes the record only when the object is stored.
 
 **Models** (`src/platform/object_models.h`, `src/platform/placed_objects.h`): an object's model is its type's Object
 List record (`ObjectList::findByHash`, the type's model hash), its `0x47` model read as the level file's and its
 dictionary's first texture on the first material, loaded once per type and shared. An object is drawn at its pose
-in the game's axes carried into RenderWare's as positions are, `(x, y, z) → (x, z, −y)`, the model's y up being the
-game's z up (inferred; with it the Wonder Wheel stands where the runtime picture has it). Not modelled: the size cull
-and fade, per-object lights, the tint and the second dictionary. The front end draws the live records' objects this
-way ([Front end](frontend.md#coneys-implementation)).
+with the model's vertices taken in the game's axes (z up) and carried into RenderWare's as positions are, `(x, y, z) →
+(x, z, −y)`; the model's own atomic frame is left out. **Coney's reading**: the frames are either the identity or the
+turn of z up into RenderWare's y up, some with a stray offset (the column's 2.69 m, the Wonder Wheel neons' 35 m), and
+only without the frame does the objective disc (an identity frame, its centre 1.4 m up) stand upright on its column
+as the runtime sees it. The draw (`PlacedObjects::draw`) follows [The tint](#tint): the tint word multiplies the
+materials' colours and alpha, then the size cull (the model's bounding sphere), the `ObjShow` distance and the alpha
+floor of 10; opaque objects first, then the translucent ones. Not modelled: the camera fade and the second dictionary.
+The front end draws the live records' objects this way, without a camera (no cull), each lit as a world object
+([Front end](frontend.md#coneys-implementation)); the eight Wonder Wheel types' frames are all the z-up turn, so
+leaving the frame out draws them as turning by it would.
+
+**World objects in play** (`repo:src/world_objects/object_tasks.h`, `repo:src/platform/play_level_world.cpp`): each
+step, after the scripts and the scenes, `ObjectTasks` brings records in as [streaming](#streaming) does (zone enabled,
+within 70 m of the camera), keeps them until they are beyond the draw distance + 10 m, and makes each object's draw;
+the play mode draws them between the `s` and `d` worlds with the objects' lights. **Objective markers** follow
+[the page](#objective-markers): the disc turns 90° a second about z; the alpha steps 8 an update towards 255 or 0 by
+the last show message and is drawn one update late; the disc is never size-culled; the column (model `0x1f3b85ea`)
+stands at the disc's position turning back, coloured by the disc's type; a dying marker is removed at alpha 0, and
+`ObjDestroy` without its second argument removes it at once. **Held objects** ([In a human's hand](#held)): player 1's
+object hangs from the bone of the first take event of its type's low pick-up clip, at the event's position × his scale
+slid along the object's y by `CfgObj` `+0x70` (`ObjectType::grip`), composed with this frame's bone and his
+placement. Disc check (NTSC-U, counts only): `coney_tests "[disc][objects]"` at `level99` checkpoint 1 after the
+intro: one marker disc and one gold column at alpha 255; the three bats, laid on the ground as `l99_c8` leaves them,
+drawn there.
+
+Coney's stand-ins for the world objects, where this page is silent:
+
+- The column's blend: alpha blended over what is drawn, Z tested without Z writes, after the opaque objects.
+- A new marker starts at alpha 0. Every record within reach comes in on the same step; a record a binding resolved
+  or a scene pinned is drawn whatever its distance and zone. `ObjHide` hides a plain object (`simple_object`'s
+  `0x0a` is not a hide). The fade-in over the first second is linear.
+- A held object: the bone's position is not scaled by the human's scale (Coney draws the body unscaled), the lean is
+  left out, only player 1's object is drawn in a hand, and a dropped object lands where the pick-up's drop puts it
+  (no fall from the hand).
 
 **Glass and doors**, written from this page and [Crimes](crimes.md#lockpick) (2026-10-06), in `repo:src/world_objects/`:
 
@@ -928,6 +957,8 @@ Coney's stand-ins, where this page is silent:
 - Which sheet the glass sprite batch and the `glasstest` shards draw from.
 - How the draw blends a translucent object (the column's material and vertex alpha, the PS2 blend), and where the
   instance's colour bytes are set from `+0xc8`.
+- How the instance places the model: whether its clump's atomic frame (identity, or the z-up turn with an offset) is
+  used; Coney leaves it out.
 - Who spawns `sub_objective_glow`; which levels use the purple and white marker kinds.
 - How the resource manager picks the object whose model it loads next (`+0xbd4`), and whether `level100`'s packs
   hold the Wonder Wheel's models.
