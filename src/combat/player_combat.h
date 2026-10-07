@@ -45,6 +45,7 @@ struct CombatInput {
     float objectHeight = 0.0F;            ///< A breakable target's point above the feet, metres.
     int animSet = 0;                      ///< The anim set a held weapon applied (animSetClips()); 0 for none.
     bool grabTargetInReach = false;       ///< The search found someone to grab for this circle or circle + cross.
+    bool snapTarget = false;              ///< The snap's search found a human that is not the target (SquareInput).
     bool fromRear = false;                ///< Holding the victim from behind.
     bool wallInReach = false;             ///< A wall within a throw's reach.
     bool victimMuggable = false;          ///< The held victim may be mugged.

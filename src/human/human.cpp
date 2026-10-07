@@ -525,11 +525,14 @@ void Human::fight(std::span<Combatant* const> targets) {
     const combat::Stick stick{-m_intent.magnitude * std::sin(relative), m_intent.magnitude * std::cos(relative)};
     // Game time from the updates stepped (whole milliseconds, as the original keeps it).
     const std::uint64_t nowMs = m_updates * 1000 / 30;
+    // **Coney's reading**: the dispatcher's gait tests (`0x00223a30`-`0x00223a60`) read the gait the last update's
+    // velocity left, not this one's: in the original a square one update after the stick is first pushed fully still
+    // snaps, though the run start moves the body on that update (docs/research/combat.md#attacks).
     m_fighter.update(FighterInput{.command = m_record.command,
                                   .buttons = m_record.buttons,
                                   .stick = stick,
                                   .padStick = combat::Stick{m_record.stickX, m_record.stickY},
-                                  .gait = gait(),
+                                  .gait = m_gaitBefore,
                                   .position = m_position,
                                   .heading = m_heading,
                                   .nowMs = nowMs,
@@ -730,6 +733,7 @@ void Human::followClimb(const raycast::CollisionMesh* mesh) {
 
 void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     m_record = recordOf(input);
+    m_gaitBefore = gait();
     animate(mesh);
     updateState(mesh);
     updateActions(input.targets, mesh);

@@ -200,10 +200,15 @@ TEST_CASE("a square in recovery is dropped and one after the attack starts a new
     CHECK(hits(frames) == Starts{{2, 0}, {26, 0}}); // no range list: no damage
 }
 
-TEST_CASE("a snap: the full stick 90 degrees off the facing, then square", "[combat]") {
+TEST_CASE("a snap: the full stick 90 degrees off the facing, then square, with a human there", "[combat]") {
     Runner runner(nullptr);
-    const auto frames = runner.run("70 stick left 100 0\n71 tap square\n72 stick left 0 0\n", 80);
+    const auto found = [](std::uint64_t, CombatInput& input) { input.snapTarget = true; };
+    const auto frames = runner.run("70 stick left 100 0\n71 tap square\n72 stick left 0 0\n", 80, found);
     CHECK(starts(frames) == Starts{{71, anim_id::kSnapRight}});
+    // With nobody found there (or only the current target) the same input is an S1.
+    Runner alone(nullptr);
+    const auto none = alone.run("70 stick left 100 0\n71 tap square\n72 stick left 0 0\n", 80);
+    CHECK(starts(none) == Starts{{71, anim_id::kAttackS1}});
 }
 
 TEST_CASE("R1 held blocks and reads nothing else; cross under it still attacks", "[combat]") {

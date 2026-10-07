@@ -10,15 +10,16 @@ using coney::human::Gait;
 
 namespace {
 
-// Square's attack for a stick, a gait and a target, with snaps on and no attack phase.
+// Square's attack for a stick, a gait and a target, with snaps on, a human found for a snap and no attack phase.
 int square(Stick stick, Gait gait = Gait::Standing, TargetKind target = TargetKind::None, bool snaps = true,
-           std::uint32_t phase = 0) {
+           std::uint32_t phase = 0, bool snapTarget = true) {
     SquareInput input;
     input.target = target;
     input.stick = stick;
     input.gait = gait;
     input.phaseFlags = phase;
     input.snapAttacks = snaps;
+    input.snapTarget = snapTarget;
     return squareAttack(input);
 }
 
@@ -37,11 +38,22 @@ TEST_CASE("square picks its attack by target, then stick and gait", "[combat]") 
     // Standing, or a stick short of a snap: S1.
     CHECK(square({}) == anim_id::kAttackS1);
     CHECK(square({0.7F, 0.4F}) == anim_id::kAttackS1);
-    // Full stick off the facing: a snap to that side, unless snaps are off.
+    // Full stick off the facing with a human found there: a snap to that side, unless snaps are off.
     CHECK(square({0.98F, 0.1F}) == anim_id::kSnapRight);
     CHECK(square({-0.97F, -0.2F}) == anim_id::kSnapLeft);
     CHECK(square({0.1F, -0.99F}) == anim_id::kSnapBack);
     CHECK(square({0.98F, 0.1F}, Gait::Standing, TargetKind::None, false) == anim_id::kAttackS1);
+    // No human there (or only the current target): no snap, square goes on to S1.
+    CHECK(square({0.98F, 0.1F}, Gait::Standing, TargetKind::None, true, 0, false) == anim_id::kAttackS1);
+    // Full stick ahead, or under 45° off it, is no snap.
+    CHECK(square({0.0F, 0.99F}) == anim_id::kAttackS1);
+    CHECK(square({0.68F, 0.72F}) == anim_id::kAttackS1);
+    // The run and walk attacks come first: a snap comes from a player standing (or sprinting).
+    CHECK(square({0.98F, 0.1F}, Gait::Run) == anim_id::kAttackFromRun);
+    CHECK(square({0.98F, 0.1F}, Gait::Walk) == anim_id::kAttackFromWalk);
+    CHECK(square({0.1F, -0.99F}, Gait::Jog) == anim_id::kAttackFromWalk);
+    CHECK(square({0.98F, 0.1F}, Gait::Sprint) == anim_id::kSnapRight);
+    CHECK(square({0.98F, 0.1F}, Gait::Run, TargetKind::None, true, kPhaseRecovery) == anim_id::kSnapRight);
     // Full stick ahead at a run: the run attack, but not while an attack phase is set.
     CHECK(square({0.05F, 0.99F}, Gait::Run) == anim_id::kAttackFromRun);
     CHECK(square({0.05F, 0.99F}, Gait::Run, TargetKind::None, true, kPhaseRecovery) == anim_id::kAttackS1);
@@ -56,6 +68,15 @@ TEST_CASE("square picks its attack by target, then stick and gait", "[combat]") 
     CHECK(square({}, Gait::Standing, TargetKind::Grabbed) == anim_id::kGrabFrontStrike);
     CHECK(square({}, Gait::Standing, TargetKind::Breakable) == anim_id::kNone);
     CHECK(crossAttack() == anim_id::kAttackX1);
+}
+
+TEST_CASE("the stick asks for a snap beyond 0.95 and more than 45 degrees off the facing", "[combat]") {
+    CHECK(snapForStick({0.96F, 0.0F}) == anim_id::kSnapRight);
+    CHECK(snapForStick({-0.96F, 0.0F}) == anim_id::kSnapLeft);
+    CHECK(snapForStick({0.0F, -0.96F}) == anim_id::kSnapBack);
+    CHECK(snapForStick({0.94F, 0.0F}) == anim_id::kNone);
+    CHECK(snapForStick({0.0F, 1.0F}) == anim_id::kNone);
+    CHECK(snapForStick({0.68F, 0.72F}) == anim_id::kNone); // under 45°: the front
 }
 
 TEST_CASE("an object attack picks its clip by the point's height above the feet", "[combat]") {

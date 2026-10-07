@@ -545,7 +545,8 @@ TEST_CASE("square then cross spammed plays S1 and SX2, which plays to its end", 
 }
 
 TEST_CASE("a snap plays to its end under square spam, then the stick at rest gives S1", "[human][combat][timing]") {
-    Fight fight(timingCharacter(), 30.0F);
+    // A human 1.1 m to the right for the snap to find (docs/research/combat.md#attacks).
+    Fight fight(timingCharacter(), 0.0F, 1.1F);
     // The stick flicked fully right for one update with square (combat.md#input-scripts), then square every 2.
     const std::string script = "10 stick left 100 0\n10 tap square\n11 stick left 0 0\n" + taps("square", 12, 60, 2);
     const Timeline line = Timeline::record(fight, script, 80);

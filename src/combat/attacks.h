@@ -51,6 +51,15 @@ inline constexpr float kSnapStick = 0.95F;
 inline constexpr float kWalkAttackStick = 0.12F;
 /// An object point up to this height above the feet takes the low break clip; above it the mid one.
 inline constexpr float kObjectLowHeight = 0.8F;
+/// The snap's target search (`0x0027aa38(h, 0x80)`, docs/research/combat.md#attacks): the nearest human within this
+/// many metres (`0x00227598`), ...
+inline constexpr float kSnapSearchRange = 2.0F;
+/// ... within this angle of the stick's direction (radians, π/4 written to `0x0051096c`) ...
+inline constexpr float kSnapSearchCone = 0.7853982F;
+/// ... and at most this far above or below (metres, `0x00510970`).
+inline constexpr float kSnapSearchHeight = 2.0F;
+/// A snap turns the player onto its target over this long (seconds, `Attack_SteerToTarget` from `0x00264460`).
+inline constexpr float kSnapSteerSeconds = 0.1F;
 
 /// What square is aimed at: the target's state decides the attack before the stick does.
 enum class TargetKind : std::uint8_t {
@@ -68,14 +77,22 @@ struct SquareInput {
     human::Gait gait = human::Gait::Standing;
     std::uint32_t phaseFlags = 0; ///< The record's `+0x08`.
     bool snapAttacks = true;      ///< CombatTuning::snapAttacks.
+    /// The snap's search found a human on the stick's side that is not the current target (the caller searches:
+    /// kSnapSearchRange, kSnapSearchCone, kSnapSearchHeight).
+    bool snapTarget = false;
 };
 
-/// The attack square starts: 193 at a grounded target, 212 at a mounted one, 120 at a grabbed one; an object attack
-/// at a breakable (anim_id::kNone here: objectAttack() picks the clip); with the stick beyond 0.95 more than 45° off
-/// the facing a snap (25 right, 27 left, 29 back); at a run with no phase bit and the stick beyond 0.95 the run
-/// attack 24; walking (gait 1-3) with the stick at 0.12 or more the walk attack 23; otherwise `S1`.
-/// **Coney choice**: at a sprint (gait 5) square is `S1`, as the research lists no sprint case; a grounded target
-/// takes 193, never 194.
+/// The snap a stick asks for: beyond 0.95 and more than 45° off the facing, 25 right, 27 left, 29 back; otherwise
+/// anim_id::kNone. It needs a target as well to play (squareAttack()).
+[[nodiscard]] int snapForStick(Stick stick);
+
+/// The attack square starts, in the original's order: 193 at a grounded target, 212 at a mounted one, 120 at a
+/// grabbed one; an object attack at a breakable (anim_id::kNone here: objectAttack() picks the clip); at a run (gait 4)
+/// with no phase bit and the stick beyond 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the
+/// walk attack 23; only then, standing or sprinting, the snap of snapForStick() when snaps are on and the search found
+/// a target (SquareInput::snapTarget); otherwise `S1`. So a snap comes from a player who has not started to walk.
+/// **Coney choice**: a grounded target takes 193, never 194.
+/// The snap itself is `0x00264460` (docs/research/combat.md#attacks).
 /// @orig 0x00286cc8 Player_Square (unknown)
 [[nodiscard]] int squareAttack(const SquareInput& input);
 

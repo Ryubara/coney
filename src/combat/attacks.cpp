@@ -13,8 +13,9 @@ bool walking(human::Gait gait) {
     return gait == human::Gait::Sneak || gait == human::Gait::Walk || gait == human::Gait::Jog;
 }
 
-// The snap attack of a stick beyond kSnapStick pointing off the front, or anim_id::kNone.
-int snapAttack(Stick stick) {
+} // namespace
+
+int snapForStick(Stick stick) {
     if (stick.magnitude() <= kSnapStick) {
         return anim_id::kNone;
     }
@@ -30,6 +31,8 @@ int snapAttack(Stick stick) {
     }
     return anim_id::kNone;
 }
+
+namespace {
 
 // The snap attack a buffered snap plays.
 int snapOf(ChainButton button) {
@@ -61,18 +64,19 @@ int squareAttack(const SquareInput& input) {
     case TargetKind::None:
         break;
     }
-    // Then the stick: a snap, a run attack, a walk attack.
-    if (input.snapAttacks) {
-        if (const int snap = snapAttack(input.stick); snap != anim_id::kNone) {
-            return snap;
-        }
-    }
+    // Then the gait: a run attack, a walk attack; these come before the snap.
     const float length = input.stick.magnitude();
     if (input.gait == human::Gait::Run && input.phaseFlags == 0 && length > kSnapStick) {
         return anim_id::kAttackFromRun;
     }
     if (walking(input.gait) && length >= kWalkAttackStick) {
         return anim_id::kAttackFromWalk;
+    }
+    // A snap, with a human on the stick's side that is not the current target; without one square goes on to S1.
+    if (input.snapAttacks && input.snapTarget) {
+        if (const int snap = snapForStick(input.stick); snap != anim_id::kNone) {
+            return snap;
+        }
     }
     return anim_id::kAttackS1;
 }
@@ -112,7 +116,7 @@ ChainButton chainButton(CommandId command, Stick stick, bool snapAttacks) {
     if (command != command::kSquarePressed && command != command::kSquareChain) {
         return ChainButton::None;
     }
-    switch (snapAttacks ? snapAttack(stick) : anim_id::kNone) {
+    switch (snapAttacks ? snapForStick(stick) : anim_id::kNone) {
     case anim_id::kSnapRight:
         return ChainButton::SnapRight;
     case anim_id::kSnapLeft:

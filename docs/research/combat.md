@@ -1626,7 +1626,7 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | File | What it does |
 | --- | --- |
 | `combat/commands.*` | the nine trigger tables (`CommandTables::street()` is the street's), and the matcher that turns each update's buttons into one command in the documented order, with the tap (1-6 samples), long hold (4th sample, or a release within 3) and history hold (7) counted per button |
-| `combat/attacks.*` | square's choice (target, snap, run, walk, `S1`), cross's `X1`, the object attack's clip, the charge and dive condition, the chain table, `attackHitUpdate()` (the measured hits of the [timing table](#attacks)) and `AttackChain`: the chain read from the record's `+0x08` as the attack's clip holds it ([Tasks](tasks.md#held-flags)), one buffered press, the hit counted in updates, the attack over once its clip has given its bits back |
+| `combat/attacks.*` | square's choice (target, run, walk, a snap with a target found, `S1`), cross's `X1`, the object attack's clip, the charge and dive condition, the chain table, `attackHitUpdate()` (the measured hits of the [timing table](#attacks)) and `AttackChain`: the chain read from the record's `+0x08` as the attack's clip holds it ([Tasks](tasks.md#held-flags)), one buffered press, the hit counted in updates, the attack over once its clip has given its bits back |
 | `combat/anim_ranges.*` | the Anim Range List decoded from the character data's chunk (direction, reach, far range, damage, hit code, flags), and `applyClassDamage()`: a class's damage table written over it by the index → anim id table, scaled for a player |
 | `combat/reactions.*` | the hit code taken apart, the victim's side, `hitReaction()` (the strength, height and direction rules, the combo attacks 13-15 and 17-20, and the table at `0x00510798`), the dying reaction, the block reactions and when a block holds |
 | `combat/power_class.h` | a human's power class: the power maximum and refill, the hurt fraction and the power factor while hurt, the stun and ground times and the struggle divisor (`+0x36`); the player's and the street civilian's |
@@ -1639,7 +1639,7 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | `combat/stick_games.*` | the mugging, the stereo theft's rotation (mode 3) and the button mash (mode 1) |
 | `combat/player_combat.*` | the dispatcher: block, chain, meters, the routes (grabbing, tackling, mugging, theft) and the commands, in the original's order; the grab breaks at 0 power |
 | `combat/combat_tuning.*`, `debug/combat_tunables.*` | the values above as tunables, category **Combat**, registered at start-up beside the game's |
-| `human/fighter.*`, `human/fighter_grab.cpp`, `human/fighter_victim.cpp`, `human/fighter_clips.h` | the player's combat inside the human (split as the attacker, the grab and the victim side): builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front and the grab search), plays its clips, turns and slides into an attack, poses a grab (the alignment, the connect, the gate, the snap and the attachment), turns and walks the grab by the stick, lands the hits with their rage, locks onto a target and combat-walks round it; and the player hit (a duck and its counter, the block, the health floor, the hit armour, the reaction, stun, knockdown and mash) and held in a grab (the counter at the catch, the struggle, the strike back, the escape and the reversal) |
+| `human/fighter.*`, `human/fighter_grab.cpp`, `human/fighter_victim.cpp`, `human/fighter_clips.h` | the player's combat inside the human (split as the attacker, the grab and the victim side): builds `PlayerCombat`'s input (the camera-turned stick in the facing frame, the pad's stick, the gait, game time, the target in front, the grab search and the snap's search), plays its clips, turns and slides into an attack, poses a grab (the alignment, the connect, the gate, the snap and the attachment), turns and walks the grab by the stick, lands the hits with their rage, locks onto a target and combat-walks round it; and the player hit (a duck and its counter, the block, the health floor, the hit armour, the reaction, stun, knockdown and mash) and held in a grab (the counter at the catch, the struggle, the strike back, the escape and the reversal) |
 | `world_objects/pickups.*`, `gamemodes/level_pickups.*` | triangle with the objects of a level ([Crimes: triangle](crimes.md#triangle), steps 4 and 5): message 0 to the nearest object with a prompt (`SetMsgHandlerEx`), then to each object in reach, a true result taking the press; the search (the [pickable](objects.md#pickable) classes, reach, the two sight rays, the score by the direction from behind the feet) and the clip; the take, which adds a `TYPE_SPECIAL`'s loot with notify and its value in money without and removes the record, or puts any other kind in the hand ([A bat in hand](#bat)); with something in hand and nothing taken, the drop. The human plays the clip with a 0.2 s blend and takes the object at its first event (`Human::startPickUp`); the play mode gives the fighter the held type's anim set, whose square, cross and two strikes `combat::animSetClips()` gives |
 | `human/human_flags.h`, `human/fighter_script.cpp` | the [human flags](#human-flags) as the fighter keeps and reads them: god mode drops a hit's damage (**Coney's reading**: the reaction still plays), the demi-god floor (`HuSetDemiGodMode`'s fraction, one global) sets god mode when reached, `0x80`, `0x100`, `0x200`, `0x400` and `0x200000` shape the reaction, `0x2000000` gates every rage gain, `0x100000` freezes the meter's drain and decay, `0x4000000` spends no power, `0x100000000000` and an untargetable gang are skipped by the target search; `HuRevive` and `HuSetNormalMode`. The rage handlers (`CfgRageHandlers`) are called after the characters' step with the human's handle (**Coney choice** of the arguments) |
 | `human/turn_and_slide.*` | the attack's steer ([Target selection](#targets)): a turn and a slide at a constant rate over a time, the last update only for the time left; the time to a clip's first steer-ending event; and the goal, the target led by its velocity and short of it by the reach |
@@ -1800,12 +1800,19 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   30 Hz characters' update, without the 60 Hz tick or the timing wheel, which wait for the world's objects; the brains
   are an empty hook until the AI lands; the context actions (triangle) are refused while the dispatcher would drop a
   command or the human is busy.
-- `SS2`, square is always `SSS3` (19), never 20; a grounded target takes 193, never 194; at a sprint (gait 5) square is
-  `S1`; the dive takes the charge's conditions; a buffered snap plays where a square would continue the chain.
-- **Gap** (the snap, `squareAttack` in `repo:src/combat/attacks.cpp`): Coney snaps on the stick alone, ahead of the
-  run and walk attacks, with no target search and no turn onto a target, so a snap with nobody within its clip's
-  reach hits nothing. The original needs a target in the 2 m, ±45° cone that is not the current target, tests the run
-  and walk attacks first, and steers onto the target ([Attacks](#attacks)).
+- `SS2`, square is always `SSS3` (19), never 20; a grounded target takes 193, never 194; the dive takes the charge's
+  conditions; a buffered snap plays where a square would continue the chain, without a search of its own.
+- **The snap** (`squareAttack` in `repo:src/combat/attacks.cpp`, the search and steer in `repo:src/human/fighter.cpp`)
+  follows [Attacks](#attacks): the run and walk attacks first, then the snap only when `Fighter::snapTarget` finds a
+  human within 2 m, 45° of the stick and 2 m in height, standing, with health left and targetable, that is not the
+  current target; without one, `S1`. Its steer is `Attack_SteerToTarget`'s turn and slide over 0.1 s, only within the
+  snap's far range. **Coney's readings**: the turn puts the target at the snap's own direction from the Anim Range
+  List (to the side for 25 and 27, behind for 29), where the clip strikes, rather than straight ahead, and the hit
+  lands on whoever stands within the far range on that side; the snap's target is not kept as the target (human
+  `+0xc8`); the dispatcher's gait tests read the gait the last update's velocity left (so a square one update after
+  the stick is first pushed fully still snaps, as at runtime, though the run start has moved the body). **Stand-in**:
+  the clear line to the target (`0x00222a90`) is not tested. With the disc, `level99`'s lesson 7 passes:
+  `repo:tests/platform/disc_level99_snaps_test.cpp`.
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
   1.5 m.
 - The mount ([The mount](#mount)): the victim is placed at clip 210's pair event when 210 starts rather than slid
@@ -1923,6 +1930,9 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **The fence break** in slot 10: which script reacts to the charge.
 - **The far ranges' class table** (`0x002545e0`, table `0x0055d640`): which of the class's 45 floats goes to which
   anim id, as the damage table's index → id map does for the damage.
+- **The snap's steer and target**: whether `0x00264460`'s turn faces the target or puts it at the snap's side (Coney
+  does the latter), whether the snap writes the target `+0xc8`, and which update's gait square's tests
+  (`0x00223a30`-`0x00223a60`) read, given that a square one update after the stick still snapped at runtime.
 - **The hits not measured**: the hit of the snaps, the moving attacks, the throws and the grounded and mounted strikes
   (the phases are the clips' events, [Tasks](tasks.md#held-flags)).
 - **Input and the stick after a move** (answered at runtime, [When input and the stick come back](#input-return)).

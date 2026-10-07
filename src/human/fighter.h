@@ -176,6 +176,11 @@ class Fighter {
     // Circle + cross's search (combat::nearestInCone() along the stick, combat::strongGrappleRange()): makes the human
     // found the target and returns it when it may be grabbed, else null.
     Holdable* strongGrappleTarget(const FighterInput& input);
+    /// The snap's target: the nearest human within combat::kSnapSearchRange, combat::kSnapSearchCone of the stick's
+    /// direction and combat::kSnapSearchHeight, standing, with health left and targetable (null for none).
+    /// **Coney stand-in**: the clear line to it (`0x00222a90`) is not tested.
+    /// The original's search is `0x0027aa38(h, 0x80)` (docs/research/combat.md#attacks).
+    [[nodiscard]] static Combatant* snapTarget(const FighterInput& input);
     /// Hits that reached a target, and the damage they did.
     [[nodiscard]] int hitsLanded() const { return m_hitsLanded; }
     [[nodiscard]] int damageDealt() const { return m_damageDealt; }
@@ -284,8 +289,13 @@ class Fighter {
   private:
     // --- fighter.cpp: the update, the attacks and the targets.
 
-    // The nearest standing (or grounded, with `grounded`) target within `range` in front of the player.
-    [[nodiscard]] Combatant* inFront(const FighterInput& input, float range, bool grounded) const;
+    // The nearest standing (or grounded, with `grounded`) target within `range` in front of the player: within 90° of
+    // its facing turned by `offset` radians (a snap's side, snapOffset()).
+    [[nodiscard]] Combatant* inFront(const FighterInput& input, float range, bool grounded, float offset = 0.0F) const;
+    // For a snap `animId`, the angle from the facing (radians, positive to the left, as headings) towards the other
+    // human: the Anim Range List's direction (`+0x00`, `+0x02`), or without one its side (right, left or back); 0 for
+    // any other attack.
+    [[nodiscard]] float snapOffset(int animId) const;
     // The strike reach of attack `animId`.
     [[nodiscard]] float reachOf(int animId) const;
     // The dispatcher's input from the world: square's target, circle's search, the hold, and the record's +0x08.
@@ -303,6 +313,14 @@ class Fighter {
     // @orig 0x002761c8 Attack_SteerToTarget (unknown)
     // @orig 0x00276008 Attack_TurnToTarget (unknown)
     void steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading);
+    // A snap's steer onto the target its search found (m_snapTarget): the turn and the slide onto the reach over
+    // combat::kSnapSteerSeconds, from the next state update, when it is within the snap's far range; nothing beyond.
+    // The original's snap (`0x00264460`) steers so (docs/research/combat.md#attacks).
+    void steerSnap(int animId, const FighterInput& input, float heading);
+    // Where an attack of clip `clipId` at `target`, `distance` away, should stand from it: the clip's reach, 0.07 m
+    // longer for a big target and 0.1 m shorter from behind it; without a reach, where the target stands.
+    [[nodiscard]] float steerReach(std::uint32_t clipId, const Combatant& target, const FighterInput& input,
+                                   float distance) const;
     // The block's clip: the shuffle with the stick pushed, the sustain otherwise.
     static void playBlock(const FighterInput& input, HumanAnimator& animator);
     // Lands a hit of attack `animId` and `damage`, and gives the rage it earns.
@@ -402,21 +420,22 @@ class Fighter {
     combat::PlayerCombat m_combat;
     combat::CombatOutput m_last;
     Holdable* m_held = nullptr;
-    Holdable* m_thrown = nullptr;    // the victim of the throw whose hit has not landed yet
-    Holdable* m_candidate = nullptr; // what the grab or tackle search found this update
-    Combatant* m_target = nullptr;   // the target kept (human +0xc8)
-    int m_connect = 72;              // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
-    anim::Vec3 m_slide;              // a grab's alignment's slide velocity, m/s
-    int m_slideUpdates = 0;          // updates of slide left
-    TurnAndSlide m_steer;            // an attack start's turn and slide onto its target
-    anim::Vec3 m_holdOffset;         // the attached victim's place in the grabber's frame
-    float m_holdTurn = 0.0F;         // the attached victim's heading less the grabber's
-    std::uint32_t m_lastClip = 0;    // the grabber's clip at the end of the last update
-    float m_turnStep = 0.0F;         // the grabber's alignment turn per update, radians
-    float m_victimTurnStep = 0.0F;   // the victim's
-    int m_turnUpdates = 0;           // updates of turn left
-    float m_grabTurn = 0.0F;         // the grab's stick turn of the last update, radians
-    int m_duckCounters = 0;          // the duck counters played
+    Holdable* m_thrown = nullptr;      // the victim of the throw whose hit has not landed yet
+    Holdable* m_candidate = nullptr;   // what the grab or tackle search found this update
+    Combatant* m_target = nullptr;     // the target kept (human +0xc8)
+    Combatant* m_snapTarget = nullptr; // what the snap's search found for this update's square (not the target)
+    int m_connect = 72;            // the grab's front connecting clip: 72, or the strong grapple's 657 (649 in rage)
+    anim::Vec3 m_slide;            // a grab's alignment's slide velocity, m/s
+    int m_slideUpdates = 0;        // updates of slide left
+    TurnAndSlide m_steer;          // an attack start's turn and slide onto its target
+    anim::Vec3 m_holdOffset;       // the attached victim's place in the grabber's frame
+    float m_holdTurn = 0.0F;       // the attached victim's heading less the grabber's
+    std::uint32_t m_lastClip = 0;  // the grabber's clip at the end of the last update
+    float m_turnStep = 0.0F;       // the grabber's alignment turn per update, radians
+    float m_victimTurnStep = 0.0F; // the victim's
+    int m_turnUpdates = 0;         // updates of turn left
+    float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
+    int m_duckCounters = 0;        // the duck counters played
     int m_hitsLanded = 0;
     int m_animSet = 0;                    // the anim set a held weapon applied (record +0x10's top)
     std::vector<int> m_strikes;           // a player's struck hits' anim ids in the last update

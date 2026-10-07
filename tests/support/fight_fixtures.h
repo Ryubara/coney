@@ -48,7 +48,8 @@ inline combat::AnimRangeList fightRanges() {
         {59, {79, 0, 0}},         {147, {66, 0x2a, 0x100}}, {193, {20, 0x0a, 0}}, {212, {30, 0x06, 0}},
         {0, {31, 0x36, 0}},       {76, {30, 0, 0}},         {96, {0, 0, 0}},      {100, {20, 0x2a, 0x100}},
         {104, {20, 0x26, 0x400}}, {219, {61, 0, 0}},        {221, {61, 0, 0}},    {223, {61, 0, 0}},
-        {225, {61, 0, 0}},        {657, {60, 0, 0}},        {659, {60, 0, 0}}};
+        {225, {61, 0, 0}},        {657, {60, 0, 0}},        {659, {60, 0, 0}},    {25, {31, 0, 0}},
+        {27, {31, 0, 0}},         {29, {31, 0, 0}}};
     test::Bytes bytes;
     bytes.u32(722);
     for (int animId = 0; animId < 722; ++animId) {
@@ -61,15 +62,16 @@ inline combat::AnimRangeList fightRanges() {
             far = 2999;
         }
         // The grab's records (combat.md#grab-posing): the connecting clips straight ahead at their reach with a far
-        // range of 2.5 m, the front and rear holds at their offsets; every other id straight ahead at 1 m.
+        // range of 2.5 m, the front and rear holds at their offsets; the snaps to their sides as on the disc
+        // (formats/animation.md#anim-range-list); every other id straight ahead at 1 m.
         struct Place {
             std::int16_t x;
             std::int16_t y;
             float reach;
         };
-        const std::map<int, Place> places{{72, {0, 1000, 0.999F}},  {74, {0, 1000, 1.018F}},
-                                          {82, {351, 936, 1.081F}}, {84, {-399, 916, 0.242F}},
-                                          {657, {0, 1000, 0.999F}}, {659, {0, 1000, 1.018F}}};
+        const std::map<int, Place> places{{72, {0, 1000, 0.999F}},   {74, {0, 1000, 1.018F}},  {82, {351, 936, 1.081F}},
+                                          {84, {-399, 916, 0.242F}}, {657, {0, 1000, 0.999F}}, {659, {0, 1000, 1.018F}},
+                                          {25, {999, -12, 1.0F}},    {27, {-1000, 0, 1.0F}},   {29, {-39, -999, 1.0F}}};
         const auto placed = places.find(animId);
         const Place place = placed != places.end() ? placed->second : Place{0, 1000, 1.0F};
         if (animId == 72 || animId == 74 || animId == 657 || animId == 659) {

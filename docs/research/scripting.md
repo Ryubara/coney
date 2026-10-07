@@ -721,8 +721,8 @@ Then the scene `l99_c6` and `P1.Cleanup` (checkpoint 2). Points an implementer n
 - **7**: `P1.StartSnaps` (5 s after the set-up) arms `P1.Snaps` with `ANIM_SNAP_RIGHT_01`, `_LEFT_01` and
   `_BACK_01` (25, 27, 29). Any of the three counts, in any order and on any bum; any other id (an `S1`, 12) is ignored.
   The first two update the text and give Rudy a line; the third calls `P1.SnapsDone`. Confirmed (runtime):
-  snaps 27, 29 and 25 that landed on the bums each reached the callback once, with that id. What fails in Coney:
-  [the second wave](ai.md#coney) stands too far off for a snap to reach.
+  snaps 27, 29 and 25 that landed on the bums each reached the callback once, with that id. Coney passes it with the
+  disc ([the second wave](ai.md#coney), [the snap](combat.md#coneys-implementation)).
 - **2, 6, 8**: a plain grab scores nothing; strikes, throws and power moves are scored with their own ids when they
   start, since a grab move applies its damage on its first update.
 

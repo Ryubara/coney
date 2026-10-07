@@ -3,11 +3,13 @@
 #include <array>
 #include <bit>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -224,6 +226,111 @@ TEST_CASE("an attack turns and slides onto its target at a constant rate up to i
     }
     const Vec3 end = samples[k + 11].position;
     CHECK(std::hypot(40.4F - end.x, 41.1F - end.y) == Approx(1.0F).margin(1e-3));
+}
+
+namespace {
+
+// The clips the player played, in order, and the heading after every update, for one script.
+struct Played {
+    std::vector<std::uint32_t> clips;
+    std::vector<float> headings;
+    std::vector<Vec3> positions;
+};
+
+// Runs `script` for `frames` updates of `fight`, noting each new clip the player plays.
+Played play(Fight& fight, std::string_view script, std::uint64_t frames) {
+    Played out;
+    fight.run(script, frames, [&](std::uint64_t) {
+        const std::uint32_t now = fight.human().animator().animId();
+        if (out.clips.empty() || out.clips.back() != now) {
+            out.clips.push_back(now);
+        }
+        out.headings.push_back(fight.human().heading());
+        out.positions.push_back(fight.human().position());
+    });
+    return out;
+}
+
+// Whether `clips` holds `clip`.
+bool playedClip(const Played& played, std::uint32_t clip) {
+    return std::ranges::find(played.clips, clip) != played.clips.end();
+}
+
+// The stick fully to the right one update before square, as the research reached lesson 7's snaps
+// (docs/research/combat.md#attacks), then at rest.
+constexpr std::string_view kSnapRightScript = "10 stick left 100 0\n11 tap square\n12 stick left 0 0\n";
+
+} // namespace
+
+TEST_CASE("a snap turns the player so a human on the stick's side sits at the snap's side, and strikes it",
+          "[human][combat]") {
+    const FightCharacter character;
+    // The target 0.6 m ahead and 1.0 m to the right: 1.17 m away (inside the snap's 1.25 m far range), 59° right of
+    // the facing, so 31° off the stick pushed to the right.
+    Fight fight(character, 0.6F, 1.0F);
+    const Played played = play(fight, kSnapRightScript, 40);
+    CHECK(playedClip(played, id::kSnapRight));
+    CHECK_FALSE(playedClip(played, id::kAttackS1));
+    CHECK(fight.target().damageTaken() == 31);
+    CHECK(fight.human().fighter().hitsLanded() == 1);
+    // The steer, set on the snap's start (update 11) from the next update on: over 0.1 s (3 updates, at one rate) the
+    // facing turns to put the target at the snap's direction on the disc, (0.999, -0.012), 90.7° to the right.
+    const Vec3 to = coney::anim::subtract(fight.target().position(), played.positions[11]);
+    const float wanted = coney::human::wrapAngle(coney::human::headingOf(to) - std::atan2(-0.999F, -0.012F));
+    CHECK(played.headings[14] == Approx(wanted).margin(1e-3));
+    const auto turned = [&](std::size_t frame) { return played.headings[frame] - played.headings[frame - 1]; };
+    CHECK(turned(13) == Approx(turned(12)).margin(1e-4));
+    CHECK(turned(14) == Approx(turned(12)).margin(1e-4));
+    CHECK(turned(15) == Approx(0.0F).margin(1e-5));
+    CHECK(std::fabs(turned(12)) > 0.05F);
+}
+
+TEST_CASE("a snap backwards strikes a human behind the player", "[human][combat]") {
+    const FightCharacter character;
+    Fight fight(character, -1.0F);
+    const Played played = play(fight, "10 stick left 0 -100\n11 tap square\n12 stick left 0 0\n", 40);
+    CHECK(playedClip(played, id::kSnapBack));
+    CHECK(fight.target().damageTaken() == 31);
+}
+
+TEST_CASE("without a human within 2 m and 45 degrees of the stick square is an S1, not a snap", "[human][combat]") {
+    const FightCharacter character;
+    SECTION("only a human ahead, 90 degrees off the stick") {
+        Fight fight(character, 1.0F);
+        const Played played = play(fight, kSnapRightScript, 40);
+        CHECK(playedClip(played, id::kAttackS1));
+        CHECK_FALSE(playedClip(played, id::kSnapRight));
+    }
+    SECTION("a human to the right, 2.5 m away") {
+        Fight fight(character, 0.0F, 2.5F);
+        const Played played = play(fight, kSnapRightScript, 40);
+        CHECK(playedClip(played, id::kAttackS1));
+        CHECK_FALSE(playedClip(played, id::kSnapRight));
+        CHECK(fight.target().damageTaken() == 0);
+    }
+    SECTION("a human 1.2 m away, 50 degrees off the stick") {
+        // 40° right of the facing.
+        Fight fight(character, 1.2F * std::cos(0.698F), 1.2F * std::sin(0.698F));
+        const Played played = play(fight, kSnapRightScript, 40);
+        CHECK_FALSE(playedClip(played, id::kSnapRight));
+    }
+}
+
+TEST_CASE("a snap does not make its human the target, so the next snap may strike it again", "[human][combat]") {
+    const FightCharacter character;
+    Fight fight(character, 0.0F, 1.1F);
+    const Played played =
+        play(fight, std::string(kSnapRightScript) + "50 stick left 100 0\n51 tap square\n52 stick left 0 0\n", 80);
+    CHECK(fight.human().fighter().target() == nullptr);
+    CHECK(fight.target().damageTaken() == 62);
+    CHECK_FALSE(playedClip(played, id::kAttackS1));
+}
+
+TEST_CASE("walking, square with the stick fully to the side is the walk attack, not a snap", "[human][combat]") {
+    const FightCharacter character;
+    Fight fight(character, 0.0F, 1.1F);
+    const Played played = play(fight, "5 stick left 0 35\n30 stick left 100 0\n30 tap square\n31 stick left 0 0\n", 60);
+    CHECK_FALSE(playedClip(played, id::kSnapRight));
 }
 
 TEST_CASE("a heavy reaction knocks the target down, and it rises after 2000 ms", "[human][combat]") {

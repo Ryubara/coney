@@ -486,6 +486,8 @@ class Human final : public Holdable {
     bool m_jumping = false;
     float m_lean = 0.0F;
     float m_lastTurn = 0.0F; // the heading's change in the last state update, for the lean
+    // The gait of the velocity the last update left, which the dispatcher's gait tests read (fight()).
+    Gait m_gaitBefore = Gait::Standing;
     std::optional<ClimbRun> m_climbRun;
     // A pick-up under way: the object, the clip, the updates to its event and the turn each takes.
     struct PickUpRun {

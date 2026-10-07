@@ -333,6 +333,7 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
             square.stick = input.stick;
             square.gait = input.gait;
             square.snapAttacks = tuning.snapAttacks;
+            square.snapTarget = input.snapTarget;
             startAttack(input.target == TargetKind::Breakable ? objectAttack(input.objectHeight)
                                                               : withAnimSet(squareAttack(square), input.animSet),
                         tuning, out);

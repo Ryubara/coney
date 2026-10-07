@@ -94,7 +94,8 @@ inline std::vector<LocomotionClip> locomotionClips() {
     return clips;
 }
 
-/// The synthetic combat clips, all still but 74: the attacks (11-17, 19 and the object attacks 661, 662, 0.6 s), the
+/// The synthetic combat clips, all still but 74: the attacks (11-17, 19, the snaps 25, 27, 29 and the object attacks
+/// 661, 662, 0.6 s), the
 /// grab (69, 71-75, 0.3 s; the holds 82-85, 1 s), the grab strikes and their reactions (51-56, 57-58, 0.5 s), the spins
 /// (78-81, 0.4 s), the let-go (94, 95, 0.4 s), the throw and its reaction (147, 148, 0.6 s), the tackle (2, 4-6, 0.4
 /// s), the ground (195, 196, 199, 207, 210, 212), the mount (118, 119, 219-226, 244, 245, 248, 249; 0.4 s), the
@@ -114,7 +115,7 @@ inline std::vector<LocomotionClip> combatClips() {
     };
     // The attacks, each with phase events as an attack's clip has them (docs/research/tasks.md#held-flags): the first
     // and second of a chain open a window (0x2c) at frame 5, every one ends (0x2d) at 12 and recovers (0x48) at 13.
-    for (const std::uint32_t id : {11U, 12U, 13U, 14U, 15U, 16U, 17U, 19U, 661U, 662U}) {
+    for (const std::uint32_t id : {11U, 12U, 13U, 14U, 15U, 16U, 17U, 19U, 25U, 27U, 29U, 661U, 662U}) {
         still(id, 0.6F);
         if (id == 11U || id == 12U || id == 16U) {
             clips.back().markers.push_back({5, 0x2c});

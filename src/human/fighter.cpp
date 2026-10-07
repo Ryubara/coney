@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <numbers>
 #include <optional>
 #include <utility>
@@ -60,10 +62,10 @@ float Fighter::reachOf(int animId) const {
     return far > 0.0F ? far : kDefaultStrikeReach;
 }
 
-Combatant* Fighter::inFront(const FighterInput& input, float range, bool grounded) const {
+Combatant* Fighter::inFront(const FighterInput& input, float range, bool grounded, float offset) const {
     Combatant* best = nullptr;
     float bestDistance = range;
-    const anim::Vec3 ahead = facing(input.heading);
+    const anim::Vec3 ahead = facing(input.heading + offset);
     for (Combatant* target : input.targets) {
         const bool fightable =
             target->state() == TargetState::Standing || (grounded && target->state() == TargetState::Grounded);
@@ -256,6 +258,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     in.nowMs = input.nowMs;
     in.helpless = helpless;
     in.animSet = m_animSet;
+    m_snapTarget = nullptr;
     if (helpless) {
         return in;
     }
@@ -292,6 +295,13 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
         m_candidate = strongGrappleTarget(input);
     }
     in.grabTargetInReach = m_candidate != nullptr;
+    // Square with the stick asking for a snap: the snap's own search. The current target found means no snap.
+    if (input.command == combat::command::kSquarePressed && tuning.snapAttacks &&
+        combat::snapForStick(input.stick) != id::kNone) {
+        Combatant* found = snapTarget(input);
+        m_snapTarget = found != m_target ? found : nullptr;
+    }
+    in.snapTarget = m_snapTarget != nullptr;
     // The record's +0x08: the bits the clips playing hold (an attack's phases, the grab bit, the duck's).
     in.phase = animator.flags();
     in.fromRear = m_rear;
@@ -326,6 +336,40 @@ Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
         return nullptr;
     }
     return target->holdable();
+}
+
+float Fighter::snapOffset(int animId) const {
+    if (animId != id::kSnapRight && animId != id::kSnapLeft && animId != id::kSnapBack) {
+        return 0.0F;
+    }
+    const combat::AnimRange* range = m_ranges != nullptr && animId >= 0
+                                         ? m_ranges->find(static_cast<std::uint32_t>(clips::clipOf(animId)))
+                                         : nullptr;
+    if (range != nullptr && (range->directionX != 0.0F || range->directionY != 0.0F)) {
+        // x is to the attacker's right, y ahead; headings grow to the left.
+        return std::atan2(-range->directionX, range->directionY);
+    }
+    // The snaps' directions on the disc: (1, 0) right, (-1, 0) left, (0, -1) back (formats/animation.md).
+    if (animId == id::kSnapBack) {
+        return std::numbers::pi_v<float>;
+    }
+    return animId == id::kSnapRight ? -std::numbers::pi_v<float> / 2.0F : std::numbers::pi_v<float> / 2.0F;
+}
+
+Combatant* Fighter::snapTarget(const FighterInput& input) {
+    // Humans that can be fought: standing (not down, grabbed or tackled), with health left, targetable.
+    std::vector<combat::TargetCandidate> candidates;
+    candidates.reserve(input.targets.size());
+    for (Combatant* target : input.targets) {
+        candidates.push_back(combat::TargetCandidate{target->position(), target->targetable() &&
+                                                                             target->state() == TargetState::Standing &&
+                                                                             !target->health().depleted()});
+    }
+    // Along the stick's direction (its angle is positive to the right, headings grow to the left).
+    const float along = input.heading - (input.stick.angleDegrees() * kDegrees);
+    const std::size_t found = combat::nearestInCone(input.position, facing(along), candidates, combat::kSnapSearchRange,
+                                                    combat::kSnapSearchCone, combat::kSnapSearchHeight);
+    return found != combat::kNoTarget ? input.targets[found] : nullptr;
 }
 
 void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode before, const FighterInput& input,
@@ -455,6 +499,11 @@ void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& a
 
 void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading) {
     m_steer.clear();
+    // A snap steers onto the human its own search found.
+    if (m_snapTarget != nullptr && (animId == id::kSnapRight || animId == id::kSnapLeft || animId == id::kSnapBack)) {
+        steerSnap(animId, input, heading);
+        return;
+    }
     const float far = reachOf(animId);
     Combatant* target = pickTarget(input, far);
     if (target == nullptr) {
@@ -480,16 +529,7 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     const anim::AnimClip* clip = animator.anims().clip(clipId);
     const float toEvent = clip != nullptr ? firstContactTime(*clip, animator.anims().rate(clipId)) : 0.0F;
     const float seconds = toEvent + kSteerLeadExtraSeconds;
-    // The reach: the attack's, 0.07 m longer for a big target and 0.1 m shorter from behind it; without one, where the
-    // target stands.
-    const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clipId) : nullptr;
-    float reach = range != nullptr && range->reach > 0.0F ? range->reach : distance;
-    if (target->bodyScale() > kSteerBigScale) {
-        reach += kSteerBigReach;
-    }
-    if (combat::victimSide(target->position(), target->heading(), input.position) == combat::Side::Rear) {
-        reach -= kSteerRearReach;
-    }
+    const float reach = steerReach(clipId, *target, input, distance);
     // Turn to face the led target and slide to stand at the reach from it, each at a constant rate over the steer's
     // time, from the next state update (the dispatcher runs after it, docs/research/combat.md#targets). **Coney's
     // reading**: the turn faces the led target, not the standing point, which lies behind the attacker when the target
@@ -498,6 +538,41 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     const anim::Vec3 toAim = anim::subtract(goal.aim, input.position);
     m_steer.turnToOver(heading, std::hypot(toAim.x, toAim.y) > 1e-4F ? headingOf(toAim) : headingOf(to), seconds);
     m_steer.moveToOver(input.position, goal.stand, seconds);
+}
+
+void Fighter::steerSnap(int animId, const FighterInput& input, float heading) {
+    // **Coney's readings**: the snap's target is handed to the steer only, not kept as the target (human +0xc8; the
+    // page does not say the snap writes it); and "turns onto it" puts the target along the snap's own direction (its
+    // side, the Anim Range List's), where its clip strikes, not straight ahead.
+    const Combatant* target = m_snapTarget;
+    const anim::Vec3 to = anim::subtract(target->position(), input.position);
+    const float distance = std::hypot(to.x, to.y);
+    if (distance < 1e-4F || distance > reachOf(animId)) {
+        return;
+    }
+    // The steer of every attack, given the snap's 0.1 s as its time: the target led by its velocity over that time +
+    // 0.1 s, the turn and the slide spread over it.
+    const auto clipId = static_cast<std::uint32_t>(clips::clipOf(animId));
+    const float reach = steerReach(clipId, *target, input, distance);
+    const SteerGoal goal =
+        attackSteerGoal(input.position, target->position(), target->velocity(), reach, combat::kSnapSteerSeconds);
+    const anim::Vec3 toAim = anim::subtract(goal.aim, input.position);
+    const float aim = std::hypot(toAim.x, toAim.y) > 1e-4F ? headingOf(toAim) : headingOf(to);
+    m_steer.turnToOver(heading, wrapAngle(aim - snapOffset(animId)), combat::kSnapSteerSeconds);
+    m_steer.moveToOver(input.position, goal.stand, combat::kSnapSteerSeconds);
+}
+
+float Fighter::steerReach(std::uint32_t clipId, const Combatant& target, const FighterInput& input,
+                          float distance) const {
+    const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clipId) : nullptr;
+    float reach = range != nullptr && range->reach > 0.0F ? range->reach : distance;
+    if (target.bodyScale() > kSteerBigScale) {
+        reach += kSteerBigReach;
+    }
+    if (combat::victimSide(target.position(), target.heading(), input.position) == combat::Side::Rear) {
+        reach -= kSteerRearReach;
+    }
+    return reach;
 }
 
 void Fighter::landHit(int animId, int damage, const FighterInput& input) {
@@ -512,7 +587,8 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input) {
         victim = m_held;
         heldMove = true;
     } else {
-        victim = inFront(input, reachOf(animId), true);
+        // A snap strikes to its side (**Coney's reading**: the side its clip's direction gives, not the front).
+        victim = inFront(input, reachOf(animId), true, snapOffset(animId));
     }
     if (victim == nullptr || (!heldMove && flatDistance(input.position, victim->position()) > reachOf(animId))) {
         return;
