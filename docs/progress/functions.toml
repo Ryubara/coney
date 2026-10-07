@@ -1923,6 +1923,16 @@ subsystem = "Graphics"
 size = 1480
 
 [[function]]
+address = 0x0017b8a8
+name = "Im2D_DrawTexturedRing"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x0017bc28
+name = "Im2D_DrawTexturedDisc"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x0017c508
 name = "Light_InitFromDescriptor"
 subsystem = "Graphics"
@@ -2423,6 +2433,11 @@ subsystem = "GUI"
 size = 240
 
 [[function]]
+address = 0x001b2e10
+name = "HudManager_SetRadarRange"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001b3f98
 name = "HUD_RadarAddObjective"
 subsystem = "GUI"
@@ -2439,6 +2454,11 @@ address = 0x001b4098
 name = "HUD_RadarRemove"
 subsystem = "GUI"
 size = 40
+
+[[function]]
+address = 0x001b40e0
+name = "HUD_SetRadarZoomScale"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001b4168
@@ -2641,6 +2661,21 @@ address = 0x001c2530
 name = "HudGenericBar_SetFill"
 subsystem = "GUI"
 size = 56
+
+[[function]]
+address = 0x001c3de0
+name = "Radar_Setup"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001c5210
+name = "Radar_Update"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001c60b0
+name = "Radar_Render"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001c6a20
@@ -5868,6 +5903,11 @@ name = "DealerGoal_Deal"
 subsystem = "Human"
 
 [[function]]
+address = 0x002c7ee0
+name = "DealerGoal_AddRadarIcon"
+subsystem = "Human"
+
+[[function]]
 address = 0x002c7fd8
 name = "DealerGoal_Process"
 subsystem = "Human"
@@ -7639,6 +7679,11 @@ subsystem = "Scripting"
 size = 152
 
 [[function]]
+address = 0x00370728
+name = "HUDSetRadarZoomScale"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x00370760
 name = "HUDAddRadarMissionObjective"
 subsystem = "Scripting"
@@ -7661,6 +7706,11 @@ address = 0x00370980
 name = "HUDDeleteRadarMissionObjective"
 subsystem = "Scripting"
 size = 56
+
+[[function]]
+address = 0x003709b8
+name = "HUDRadarSetRange"
+subsystem = "Scripting"
 
 [[function]]
 address = 0x00370a30
@@ -8448,6 +8498,11 @@ subsystem = "TaskEngine"
 size = 1336
 
 [[function]]
+address = 0x0039b020
+name = "ParticleTask_Draw"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x0039bc28
 name = "Tag_Configure"
 subsystem = "TaskEngine"
@@ -8627,6 +8682,16 @@ address = 0x003e4cb8
 name = "SubGlass_Update"
 subsystem = "TaskEngine"
 size = 984
+
+[[function]]
+address = 0x003e8fa0
+name = "DynIcon_Init"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003e92e0
+name = "DynIcon_Update"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x003e9828

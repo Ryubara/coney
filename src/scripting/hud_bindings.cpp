@@ -71,6 +71,14 @@ template <typename Body> NativeFunction hudCall(const BindingContext& context, B
     };
 }
 
+// Radar icons (docs/references/radar-icons.md): a Warrior's blip, the target icon drawn at 0.7 and the dealers' icons
+// with their green tint (`0x63db4bff`).
+constexpr int kWarriorIcon = 365;
+constexpr int kSmallTargetIcon = 22;
+constexpr float kSmallTargetFactor = 0.7F;
+constexpr int kDealerIconFirst = 29;
+constexpr int kDealerIconLast = 31;
+
 // The radar blip of `object`, made with `type` when it has none yet.
 hud::RadarBlip& blipOf(hud::Hud& hud, double object, int type) {
     auto [found, made] = hud.radar().blips.try_emplace(object);
@@ -243,7 +251,9 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
     // @orig 0x001b3f98 HUD_RadarAddObjective (unknown)
     // @orig 0x00370760 HUDAddRadarMissionObjective (unknown)
     vm.registerFunction("HUDAddRadarMissionObjective", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
-                            hud.radar().blips[handleArg(args, 0)] = hud::RadarBlip{.type = 10};
+                            // A new objective blinks for its first 100 updates.
+                            hud.radar().blips[handleArg(args, 0)] =
+                                hud::RadarBlip{.type = 10, .flashCountdown = hud::kRadarObjectiveFlash};
                         }));
     // @orig 0x00370798 HUDAddSecondaryRadarMissionObjective (unknown)
     vm.registerFunction("HUDAddSecondaryRadarMissionObjective",
@@ -253,7 +263,8 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
     // @orig 0x001b4168 HUD_RadarAddHuman (unknown)
     // @orig 0x00370a68 HUDAddRadarHuman (unknown)
     vm.registerFunction("HUDAddRadarHuman", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
-                            hud.radar().blips[handleArg(args, 0)] = hud::RadarBlip{.type = 7};
+                            hud.radar().blips[handleArg(args, 0)] = hud::RadarBlip{
+                                .type = 7, .icon = kWarriorIcon, .scale = hud::kRadarDotSize * hud::kRadarIconFactor};
                         }));
     // @orig 0x001b4098 HUD_RadarRemove (unknown)
     const auto remove = [](hud::Hud& hud, std::span<const Value> args) { hud.radar().blips.erase(handleArg(args, 0)); };
@@ -265,8 +276,27 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
     // @orig 0x003708c8 HUDSetRadarItemTexture (unknown)
     vm.registerFunction("HUDSetRadarItemTexture", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
                             hud::RadarBlip& blip = blipOf(hud, handleArg(args, 0), 10);
-                            blip.icon = static_cast<int>(unsignedArg(args, 1));
-                            blip.scale = floatArg(args, 2, 1.0F);
+                            // The icon and its size factor (compounding) unless the lock is already set, then the lock
+                            // (`HUD_RadarSetIcon`, `0x001b2ca0`: icon 22 at 0.7, the dealers' icons 29-31 green).
+                            if (!blip.iconLock) {
+                                blip.icon = static_cast<int>(unsignedArg(args, 1));
+                                blip.scale *=
+                                    blip.icon == kSmallTargetIcon ? kSmallTargetFactor : floatArg(args, 2, 1.0F);
+                                if (blip.icon >= kDealerIconFirst && blip.icon <= kDealerIconLast) {
+                                    blip.colour = hud::kRadarDealerColour;
+                                }
+                            }
+                            blip.iconLock = boolArg(args, 3);
+                        }));
+    // `HUDRadarSetRange(near, far)`.
+    // @orig 0x003709b8 HUDRadarSetRange (unknown)
+    vm.registerFunction("HUDRadarSetRange", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            hud.setRadarRange(floatArg(args, 0, 0.0F), floatArg(args, 1, 0.0F));
+                        }));
+    // `HUDSetRadarZoomScale(scale)`.
+    // @orig 0x00370728 HUDSetRadarZoomScale (unknown)
+    vm.registerFunction("HUDSetRadarZoomScale", hudCall(context, [](hud::Hud& hud, std::span<const Value> args) {
+                            hud.setRadarZoomScale(floatArg(args, 0, 1.0F));
                         }));
     // @orig 0x001b4298 HUD_RadarFlash (unknown)
     // @orig 0x00370690 HUDSetRadarObjectFlash (unknown)

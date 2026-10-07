@@ -123,3 +123,32 @@ TEST_CASE("batches with equal keys keep the order they were queued in", "[sprite
     CHECK(device.draws[0].texture == b.get());
     CHECK(device.draws[1].texture == a.get());
 }
+
+TEST_CASE("a batch draws its triangles after its sprites, projected, with its addressing", "[sprite_batch]") {
+    auto texture = std::make_shared<FakeTexture>(64, 64);
+    SpriteBatch batch(twoRectSheet(texture), 4, 0.0F);
+    batch.setTriangleStates(coney::graphics::TriangleStates{.wrap = true, .alphaRef = 0.5F});
+    const OverlayCamera camera;
+    const coney::graphics::OverlayPoint centre = OverlayCamera::guiToOverlay(0.5F, 0.5F);
+    const coney::graphics::OverlayVertex corner{centre, 1.5F, -0.5F, coney::graphics::kWhite};
+    batch.addSprite(centred(0.1F, UvRect{}));
+    batch.addTriangle(corner, corner, corner);
+    // A corner behind the camera drops its triangle.
+    coney::graphics::OverlayVertex behind = corner;
+    behind.position.z = -1.0F;
+    batch.addTriangle(corner, behind, corner);
+    REQUIRE(batch.triangles().size() == 3);
+    RecordingDevice device;
+    batch.render(device, camera);
+    REQUIRE(device.calls == std::vector<std::string>{"draw", "triangles"});
+    REQUIRE(device.triangles.size() == 1);
+    CHECK(device.triangles[0].states.wrap);
+    CHECK(device.triangles[0].states.alphaRef == 0.5F);
+    CHECK(device.triangles[0].texture == texture.get());
+    REQUIRE(device.triangles[0].vertices.size() == 3);
+    CHECK(device.triangles[0].vertices[0].x == Approx(320.0));
+    CHECK(device.triangles[0].vertices[0].y == Approx(224.0));
+    CHECK(device.triangles[0].vertices[0].u == Approx(1.5));
+    batch.clear();
+    CHECK(batch.triangles().empty());
+}

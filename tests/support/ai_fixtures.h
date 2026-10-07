@@ -62,6 +62,9 @@ class KeepingServices final : public ai::ScriptServices {
     void stopScene(int scene) override { stopped.push_back(scene); }
     void loadDynamicClip(ai::Brain& /*human*/, std::string_view name) override { loaded.emplace_back(name); }
     void freeDynamicClip(ai::Brain& /*human*/) override { ++freed; }
+    void addRadarIcon(ai::Brain& human, int type, int icon, float factor) override {
+        radarIcons.push_back(RadarIcon{&human, type, icon, factor});
+    }
     [[nodiscard]] std::optional<std::uint32_t> playClip(ai::Brain& /*human*/, int animId) override {
         clips.push_back(animId);
         if (!clipsPlay) {
@@ -70,8 +73,17 @@ class KeepingServices final : public ai::ScriptServices {
         return 0U; // held by no flag: the action ends on its next update
     }
 
+    /// One addRadarIcon() call.
+    struct RadarIcon {
+        ai::Brain* human;
+        int type;
+        int icon;
+        float factor;
+    };
+
     std::map<double, ai::Brain*> brains;
     ai::Brain* playerBrain = nullptr;
+    std::vector<RadarIcon> radarIcons;
     std::vector<ScriptCall> calls;
     bool callResult = false;
     std::vector<std::pair<ai::Brain*, ai::BrainEvent>> humanEvents; // offered to a human's own handlers

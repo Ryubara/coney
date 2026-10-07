@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
@@ -22,6 +23,7 @@
 #include "support/optional_value.h"
 #include "warriors/game_state.h"
 
+using Catch::Approx;
 using coney::script::LuaVm;
 using coney::script::ScriptSystem;
 using coney::script::Value;
@@ -185,11 +187,32 @@ TEST_CASE("the counter-panel, arrow, announcement and radar bindings", "[scripti
     REQUIRE(hud.radar().blips.contains(12.0));
     CHECK(hud.radar().blips.at(12.0).type == 10);
     CHECK(hud.radar().blips.at(12.0).icon == 27);
-    CHECK(hud.radar().blips.at(12.0).scale == 1.0F);
+    // The dot's 0.7 times the call's factor (1 by default); a new objective blinks for 100 updates.
+    CHECK(hud.radar().blips.at(12.0).scale == Approx(0.7F));
+    CHECK(hud.radar().blips.at(12.0).flashCountdown == 100);
     CHECK(hud.radar().blips.at(12.0).flashing);
+    // The lock (the fourth argument) keeps the icon and size until a call clears it; factors compound.
+    harness.call("HUDSetRadarItemTexture", {Value(12.0), Value(28.0), Value(0.5), Value(1.0)});
+    CHECK(hud.radar().blips.at(12.0).icon == 28);
+    CHECK(hud.radar().blips.at(12.0).scale == Approx(0.35F));
+    harness.call("HUDSetRadarItemTexture", {Value(12.0), Value(22.0)});
+    CHECK(hud.radar().blips.at(12.0).icon == 28);
+    harness.call("HUDSetRadarItemTexture", {Value(12.0), Value(29.0), Value(0.8)});
+    CHECK(hud.radar().blips.at(12.0).icon == 29);
+    CHECK(hud.radar().blips.at(12.0).scale == Approx(0.28F));
+    CHECK(hud.radar().blips.at(12.0).colour == coney::hud::kRadarDealerColour);
     harness.call("HUDAddSecondaryRadarMissionObjective", {Value(13.0)});
     harness.call("HUDAddRadarHuman", {Value(14.0)});
     CHECK(hud.radar().blips.size() == 3);
+    CHECK(hud.radar().blips.at(14.0).icon == 365);
+    CHECK(hud.radar().blips.at(14.0).scale == Approx(0.56F));
+    // The range and the zoom scale.
+    harness.call("HUDRadarSetRange", {Value(25.0), Value(35.0)});
+    CHECK(hud.radar().rest == 25.0F);
+    CHECK(hud.radar().fast == 35.0F);
+    CHECK(hud.radar().zoom == 25.0F);
+    harness.call("HUDSetRadarZoomScale", {Value(0.5)});
+    CHECK(hud.radar().zoomScale == 0.5F);
     harness.call("HUDDeleteRadarMissionObjective", {Value(12.0)});
     harness.call("HUDDeleteRadarObject", {Value(14.0)});
     CHECK(hud.radar().blips.size() == 1);

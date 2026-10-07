@@ -24,11 +24,10 @@ constexpr int kAnnounceCustom = 5;
 // The Armies of the Night levels, where the first-objective hint is not given.
 constexpr int kArmiesFirstLevel = 60;
 constexpr int kArmiesLastLevel = 64;
-// The player's blip's colour (`0x787878ff`) and Coney's size for it.
-constexpr graphics::Rgba kPlayerBlipColour{0x78, 0x78, 0x78, 0xff};
-constexpr float kPlayerBlipSize = 0.025F;
-// Coney's stand-in for the map inside the radar disc.
-constexpr graphics::Rgba kRadarMapStandIn{40, 40, 40, 255};
+// The player's arrow: the widget colour (`0x005fd310`, (178, 178, 178, 255) at run time), 0.03 overlay units wide
+// (`0x001c5210`).
+constexpr graphics::Rgba kPlayerBlipColour{178, 178, 178, 255};
+constexpr float kPlayerBlipSize = 0.03F;
 
 // The radars a player argument names: 0 or 1 one, anything else (2, the default) both.
 std::array<bool, kPlayers> radarsOf(int player) {
@@ -284,6 +283,7 @@ void Hud::update(const HudFrame& frame) {
     if (frame.letterbox) {
         return;
     }
+    updateRadar(frame);
     // 1. The player panels, with their values and pads.
     for (std::size_t i = 0; i < kPlayers; ++i) {
         PanelValues values = frame.players.at(i);
@@ -323,28 +323,99 @@ void Hud::update(const HudFrame& frame) {
     }
 }
 
+void Hud::setRadarRange(float near, float far) {
+    m_radar.rest = near;
+    m_radar.fast = far;
+    m_radar.zoom = near;
+}
+
+void Hud::updateRadar(const HudFrame& frame) {
+    // The view and the zoom's easing by the game time since the last step.
+    const std::uint64_t elapsed =
+        m_radar.lastMs != 0 && frame.nowMs > m_radar.lastMs ? frame.nowMs - m_radar.lastMs : 0;
+    m_radar.lastMs = frame.nowMs;
+    if (frame.radar.known) {
+        m_radar.view = frame.radar;
+        m_radar.zoom = radarZoomStep(m_radar, frame.radar.speed, static_cast<std::uint32_t>(elapsed));
+    }
+    // A new objective's blinking counts down by the update.
+    ++m_radar.updates;
+    for (auto& [handle, blip] : m_radar.blips) {
+        if (blip.flashCountdown > 0) {
+            --blip.flashCountdown;
+        }
+    }
+}
+
 void Hud::renderRadar(const HudCanvas& canvas) const {
-    if (!m_radar.on.at(0)) {
+    if (!m_radar.on.at(0) || !m_radar.view.known) {
         return;
     }
-    // The disc's centre in overlay-camera space at depth 1.0, its size from the runtime measurement.
-    const graphics::OverlayCamera camera;
-    const graphics::LogicalPoint size =
-        camera.unprojectSize(graphics::LogicalPoint{kRadarPixelsWide, kRadarPixelsHigh}, kRadarDepth);
+    // The disc's centre in overlay-camera space at depth 1.0; R = 0.9 × 0.19 × w / 2 of the overlay view's width,
+    // stretched by the default video mode.
     const graphics::OverlayPoint centre{kRadarX, kRadarY, kRadarDepth};
-    if (canvas.radar != nullptr && kRadarDiscRect < canvas.radar->sheet().page.rects.size()) {
-        const graphics::UvRect uv = canvas.radar->sheet().page.rect(kRadarDiscRect);
-        canvas.radar->addSprite(graphics::Sprite{centre, size.x, size.y, uv, kRadarColour});
-        canvas.radar->addSprite(
-            graphics::Sprite{centre, size.x * kRadarInnerScale, size.y * kRadarInnerScale, uv, kRadarMapStandIn});
+    if (canvas.radarMap != nullptr && m_radar.map.usable()) {
+        addRadarDisc(*canvas.radarMap, centre, kRadarRadius * kRadarStretchX, kRadarRadius * kRadarStretchY, m_radar,
+                     kRadarDiscColour);
     }
-    if (canvas.parts != nullptr && kRadarPlayerIcon < canvas.parts->sheet().page.rects.size()) {
-        const graphics::UvRect uv = canvas.parts->sheet().page.rect(kRadarPlayerIcon);
-        const float side = kPlayerBlipSize * kRadarDepth / graphics::OverlayCamera::kGuiDepth;
-        const float width =
-            graphics::OverlayCamera::guiWidthToOverlay(squareTexelWidth(canvas.parts->sheet(), uv, side));
-        canvas.parts->addSprite(graphics::Sprite{centre, width, side, uv, kPlayerBlipColour});
+    renderBlips(canvas, centre);
+    renderPlayerArrow(canvas, centre);
+}
+
+void Hud::renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) const {
+    if (canvas.parts == nullptr || !m_locate) {
+        return;
     }
+    const graphics::SpriteSheet& sheet = canvas.parts->sheet();
+    for (const auto& [handle, blip] : m_radar.blips) {
+        // **Coney choice**: a blip whose object cannot be found is skipped, not freed (the original frees the slot
+        // of a dead handle; Coney cannot yet locate every kind of object).
+        const std::optional<anim::Vec3> at = m_locate(handle);
+        if (!at || !radarBlipShown(blip, m_radar.updates) || blip.icon < 0 ||
+            static_cast<std::size_t>(blip.icon) >= sheet.page.rects.size()) {
+            continue;
+        }
+        const RadarOffset offset = radarBlipOffset(m_radar.view, m_radar.zoom, *at);
+        const graphics::UvRect uv = sheet.page.rect(static_cast<std::size_t>(blip.icon));
+        const float texWidth = sheet.texture ? static_cast<float>(sheet.texture->width()) : 0.0F;
+        const float texHeight = sheet.texture ? static_cast<float>(sheet.texture->height()) : 0.0F;
+        const std::array<float, 2> size = radarDotSize(uv, texWidth, texHeight, blip.scale);
+        canvas.parts->addSprite(
+            graphics::Sprite{graphics::OverlayPoint{centre.x + offset.x, centre.y + offset.y, centre.z}, size[0],
+                             size[1], uv, blip.colour});
+    }
+}
+
+void Hud::renderPlayerArrow(const HudCanvas& canvas, graphics::OverlayPoint centre) const {
+    if (canvas.parts == nullptr || kRadarPlayerIcon >= canvas.parts->sheet().page.rects.size()) {
+        return;
+    }
+    // The widget, 0.03 overlay units wide and as tall as its rectangle's texels make it (inferred: the size set is the
+    // width), at the overlay's depth 1.
+    const graphics::SpriteSheet& sheet = canvas.parts->sheet();
+    const graphics::UvRect uv = sheet.page.rect(kRadarPlayerIcon);
+    const float texWidth = sheet.texture ? static_cast<float>(sheet.texture->width()) : 1.0F;
+    const float texHeight = sheet.texture ? static_cast<float>(sheet.texture->height()) : 1.0F;
+    const float texelsWide = std::abs(uv.u1 - uv.u0) * texWidth;
+    const float halfWidth = kPlayerBlipSize / 2.0F;
+    const float halfHeight =
+        texelsWide > 0.0F ? halfWidth * std::abs(uv.v1 - uv.v0) * texHeight / texelsWide : halfWidth;
+    // Turned by the player's heading minus the camera's (a turn to the left turns it counter-clockwise on screen),
+    // drawn as two triangles: the rotated sprite format is not built.
+    const float angle = m_radar.view.heading - m_radar.view.cameraHeading;
+    const float c = std::cos(angle);
+    const float s = std::sin(angle);
+    const auto corner = [&](float x, float y, float u, float v) {
+        return graphics::OverlayVertex{
+            graphics::OverlayPoint{centre.x + (x * c) - (y * s), centre.y + (x * s) + (y * c), centre.z}, u, v,
+            kPlayerBlipColour};
+    };
+    const graphics::OverlayVertex topLeft = corner(-halfWidth, halfHeight, uv.u0, uv.v0);
+    const graphics::OverlayVertex topRight = corner(halfWidth, halfHeight, uv.u1, uv.v0);
+    const graphics::OverlayVertex bottomRight = corner(halfWidth, -halfHeight, uv.u1, uv.v1);
+    const graphics::OverlayVertex bottomLeft = corner(-halfWidth, -halfHeight, uv.u0, uv.v1);
+    canvas.parts->addTriangle(topLeft, topRight, bottomRight);
+    canvas.parts->addTriangle(topLeft, bottomRight, bottomLeft);
 }
 
 void Hud::renderArrow(const HudCanvas& canvas) const {

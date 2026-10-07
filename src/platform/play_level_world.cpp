@@ -7,10 +7,12 @@
 #include <cstdint>
 #include <format>
 #include <map>
+#include <string>
 #include <utility>
 
 #include "animation/anim_clip.h"
 #include "animation/skeleton.h"
+#include "core/name_hash.h"
 #include "core/pad.h"
 #include "human/combatant.h"
 #include "human/fighter.h"
@@ -23,6 +25,7 @@
 #include "world_objects/level_objects.h"
 #include "world_objects/object_list.h"
 #include "world_objects/pickups.h"
+#include "world_objects/spinning_icons.h"
 
 namespace coney::platform {
 
@@ -38,6 +41,9 @@ float healthPercentOf(const combat::Health& health) { return std::clamp(health.f
 bool standing(human::TargetState state) {
     return state == human::TargetState::Standing || state == human::TargetState::Held;
 }
+
+// The first id of the spinning icons among the placed objects: script handles are positive.
+constexpr double kIconIdBase = -1.0;
 
 } // namespace
 
@@ -178,6 +184,20 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
             snapshot.feet, snapshot.heading, bones.at(attachment->bone), 1.0F, *attachment);
         m_placed->place(held, type->modelHash, pose.position, pose.rotation,
                         PlacedObjects::Look{.tint = record->tint, .sizeCullExempt = true});
+    }
+    // The spinning icons over the humans that wear one (a dealer's, a script's `HuAttachSpinningIcon`), turning with
+    // the game time of the newest step (docs/research/ai.md#dealer-icon). Their ids are negative, apart from the
+    // handles.
+    double iconId = kIconIdBase;
+    for (const human::Human* human : m_player->humans().humans()) {
+        const std::string& icon = human->script().icon;
+        if (icon.empty() || !human->alive()) {
+            continue;
+        }
+        const world_objects::IconPose pose =
+            world_objects::spinningIconPose(icon, human->position(), m_hud->hud().nowMs());
+        m_placed->place(iconId, crc32(icon), pose.position, pose.rotation, PlacedObjects::Look{.sizeCullExempt = true});
+        iconId -= 1.0;
     }
     PlacedObjects::DrawOptions options;
     const world::Vec3 eye = m_lights->scene().pose().position;

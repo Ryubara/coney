@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -71,6 +72,8 @@ class HudLayer {
     // The batch of sheet `record` for the HUD's other sheets (the chase gauge's), loaded the first time; null when it
     // fails.
     graphics::SpriteBatch* sheetBatch(std::uint32_t record);
+    // The batch over the level's radar map sheet (hud::RadarMap::sheet), loaded when the map changes; null without one.
+    graphics::SpriteBatch* radarMapBatch();
 
     const io::Wad& m_wad;
     bool m_drawsPixels;
@@ -82,7 +85,9 @@ class HudLayer {
     std::optional<graphics::Font> m_bigFont;  // big_font, slot 6
     std::unique_ptr<graphics::SpriteBatch> m_parts;
     std::unique_ptr<graphics::SpriteBatch> m_bigText;
-    std::unique_ptr<graphics::SpriteBatch> m_radar;
+    std::unique_ptr<graphics::SpriteBatch> m_radarMap; // the level's map sheet: the radar's disc
+    std::string m_radarSheet;                          // the map sheet's name m_radarMap was loaded for
+    std::function<void(std::string_view)> m_print;
     std::unique_ptr<graphics::SpriteBatch> m_minigames;
     std::unique_ptr<graphics::SpriteBatch> m_flat;
     std::map<std::uint32_t, BannerBatches> m_banners; // by record; empty batches for a sheet that failed

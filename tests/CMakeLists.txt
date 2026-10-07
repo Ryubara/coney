@@ -71,6 +71,7 @@ add_executable(coney_tests
     hud/health_rings_test.cpp
     hud/hud_test.cpp
     hud/mash_meter_test.cpp
+    hud/radar_test.cpp
     hud/player_panel_test.cpp
     hud/scripted_bars_test.cpp
     hud/war_command_display_test.cpp
@@ -157,6 +158,7 @@ add_executable(coney_tests
     world_objects/car_hits_test.cpp
     world_objects/cars_test.cpp
     world_objects/flags_test.cpp
+    world_objects/spinning_icons_test.cpp
     world_objects/object_tasks_test.cpp
     world_objects/disc_doors_test.cpp
     world_objects/disc_object_list_test.cpp

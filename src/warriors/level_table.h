@@ -46,6 +46,11 @@ struct LevelRecord {
     /// "three booleans"), lock, map position, two values, subway and one more, in that order
     /// (docs/references/levels.md lists them).
     static constexpr std::size_t kIntroValue = 3;
+    /// Where in `values` the radar map's floats are: arguments 13-15, the record's `+0x6c` x offset, `+0x70` y offset
+    /// and `+0x74` metres across the map texture (docs/research/hud.md#the-radar-on-screen).
+    static constexpr std::size_t kRadarOffsetXValue = 6;
+    static constexpr std::size_t kRadarOffsetYValue = 7;
+    static constexpr std::size_t kRadarScaleValue = 8;
 };
 
 /// The game state's level table: up to 128 records by index, filled by `CfgLevelName` (`config_preload3.lua` sets

@@ -17,7 +17,15 @@ struct RecordedDraw {
     std::vector<graphics::LogicalQuad> quads;
 };
 
-/// Records "begin", "draw" and "present" in `calls`, the clear colours in `clears` and each draw in `draws`.
+/// One drawTriangles() call as the device saw it.
+struct RecordedTriangles {
+    const graphics::Texture* texture = nullptr;
+    std::vector<graphics::LogicalVertex> vertices;
+    graphics::TriangleStates states;
+};
+
+/// Records "begin", "draw", "triangles" and "present" in `calls`, the clear colours in `clears` and each draw in
+/// `draws`.
 class RecordingDevice final : public graphics::RenderDevice {
   public:
     void beginFrame(graphics::Rgba clear) override {
@@ -28,11 +36,17 @@ class RecordingDevice final : public graphics::RenderDevice {
         calls.emplace_back("draw");
         draws.push_back(RecordedDraw{texture, {quads.begin(), quads.end()}});
     }
+    void drawTriangles(const graphics::Texture* texture, std::span<const graphics::LogicalVertex> vertices,
+                       const graphics::TriangleStates& states) override {
+        calls.emplace_back("triangles");
+        triangles.push_back(RecordedTriangles{texture, {vertices.begin(), vertices.end()}, states});
+    }
     void present() override { calls.emplace_back("present"); }
 
     std::vector<std::string> calls;
     std::vector<graphics::Rgba> clears;
     std::vector<RecordedDraw> draws;
+    std::vector<RecordedTriangles> triangles;
 };
 
 /// A texture of a given size that is nothing but its size.

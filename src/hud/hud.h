@@ -22,6 +22,7 @@
 #include "hud/mash_meter.h"
 #include "hud/messages.h"
 #include "hud/player_panel.h"
+#include "hud/radar.h"
 #include "hud/scripted_bars.h"
 #include "hud/war_command_display.h"
 
@@ -36,6 +37,7 @@ struct HudFrame {
     bool screenFading = false; ///< A screen fade turns both radars off.
     bool letterbox = false;    ///< Player 1's letterbox is in or moving: nothing is drawn and the radars go off.
     int levelNumber = 0;       ///< The level record's `+0x04` (99 for the first mission).
+    RadarView radar;           ///< Player 0's radar: where he is, his speed and the camera's facing.
 };
 
 /// Values the debug menus put in place of a player's own (Coney's tool, not the original's): each set field replaces
@@ -75,22 +77,6 @@ struct InstructionArrow {
 
     /// The bob's offset now: step × (sin angle, −cos angle) / 200.
     [[nodiscard]] GuiPoint offset() const;
-};
-
-/// One radar blip a script asked for, by the object's handle.
-struct RadarBlip {
-    int type = 10;      ///< 10 mission objective, 1 secondary objective, 7 a human (Coney: its class is not read).
-    int icon = 69;      ///< `part_page0` rectangle; 69 the plain dot.
-    float scale = 1.0F; ///< `HUDSetRadarItemTexture`'s scale.
-    bool flashing = false;
-};
-
-/// The radars' state: on or off per player (each radar's `+0x04`), whether they come back on their own after a
-/// letterbox or fade (`+0x177ac`, the scripts' last radar call), and the blips.
-struct RadarState {
-    std::array<bool, kPlayers> on{true, true};
-    bool scriptOn = true; ///< `+0x177ac`: set by the level's set-up and `HUDTurnOnRadar`, cleared by `HUDTurnOffRadar`.
-    std::map<double, RadarBlip> blips;
 };
 
 /// A number indicator (`HUDSetNumIndicator`): the remaining members of a gang, as Rumble brawls show. **Coney
@@ -144,8 +130,6 @@ struct ActionCycle {
 /// @orig 0x001acee0 HUD::HUD (unknown)
 class Hud {
   public:
-    /// The stand-in sheet rectangle of the radar disc: `big_font`'s circle (the map texture is not researched).
-    static constexpr std::size_t kRadarDiscRect = 256;
     /// The player's own blip: `part_page0` icon 362 in grey `0x787878ff`.
     static constexpr std::size_t kRadarPlayerIcon = 362;
 
@@ -270,6 +254,20 @@ class Hud {
     void radarOn(int player);
     /// @orig 0x001b43a8 HUD_RadarOff (unknown)
     void radarOff(int player);
+    /// The level's map on the radars (`Radar_Setup`, from the level record); an unusable map draws no disc.
+    /// @orig 0x001c3de0 Radar_Setup (RadarHUD.cpp)
+    void setRadarMap(RadarMap map) { m_radar.map = std::move(map); }
+    /// `HUDRadarSetRange(near, far)`: the radius shown at rest and at full speed; the shown radius jumps to `near`.
+    /// @orig 0x001b2e10 HudManager_SetRadarRange (unknown)
+    void setRadarRange(float near, float far);
+    /// `HUDSetRadarZoomScale(scale)`: the factor on the radius shown; the zoom eases toward it.
+    /// @orig 0x001b40e0 HUD_SetRadarZoomScale (unknown)
+    void setRadarZoomScale(float scale) { m_radar.zoomScale = scale; }
+    /// Finds where a blip's object is now (game axes) by its handle; nothing for a handle that names nothing placed.
+    /// Empty: no blip is drawn. Its owner clears it before it goes.
+    void setRadarLocator(std::function<std::optional<anim::Vec3>(double handle)> locate) {
+        m_locate = std::move(locate);
+    }
     [[nodiscard]] RadarState& radar() { return m_radar; }
     [[nodiscard]] const RadarState& radar() const { return m_radar; }
 
@@ -339,8 +337,14 @@ class Hud {
     [[nodiscard]] static std::string read(const std::function<std::string(std::uint32_t)>& service, std::uint32_t id);
     // The objective message's header for `slot`: the icon, the HUD colour and the heading string.
     [[nodiscard]] std::string objectiveHeader(int slot) const;
-    // The radar's disc and the player's icon (Coney's stand-ins for the map).
+    // The radar's step: the view, the zoom's easing, the blips' blinking.
+    void updateRadar(const HudFrame& frame);
+    // The radar's map disc, its blips and the player's arrow.
     void renderRadar(const HudCanvas& canvas) const;
+    // The blips over the disc centred at `centre`.
+    void renderBlips(const HudCanvas& canvas, graphics::OverlayPoint centre) const;
+    // The player's arrow at `centre`, turned by his facing from the camera's.
+    void renderPlayerArrow(const HudCanvas& canvas, graphics::OverlayPoint centre) const;
     // The arrow sprite.
     void renderArrow(const HudCanvas& canvas) const;
     // The scoreboard's rows and the stopwatch (Coney's places and sizes, hud_layout.h).
@@ -376,6 +380,7 @@ class Hud {
     ScriptedBars m_bars;
     InstructionArrow m_arrow;
     RadarState m_radar;
+    std::function<std::optional<anim::Vec3>(double)> m_locate;
     std::array<NumIndicator, kNumIndicators> m_indicators{};
     std::array<TextProgressRow, kTextProgressRows> m_progress{};
     std::array<std::uint32_t, 2> m_progressCounts{}; // 0x00622e44 (slot 0) and 0x00622e40 (slot 1)

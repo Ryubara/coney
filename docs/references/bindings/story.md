@@ -20,9 +20,9 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 90 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 17 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 4 |
-| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 4 |
+| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 5 |
 | [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 14 |
-| [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 6 |
+| [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 7 |
 | [`level86`](#level86) | mission 9 | 245 | 17 | 17 | 4 |
 | [`level93`](#level93) | mission 10 | 295 | 24 | 24 | 4 |
 | [`level31`](#level31) | mission 11 | 266 | 9 | 9 | 3 |
@@ -345,7 +345,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level3: mission 6 {#level3}
 
-259 bindings, 22 new: 22 traced, 4 implemented in Coney (237 of all 259).
+259 bindings, 22 new: 22 traced, 5 implemented in Coney (238 of all 259).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -366,7 +366,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`CameraCreateThird`](camera.md#cameracreatethird) | Cameras | traced | confirmed (code) | not implemented |
 | [`ChangeCollision`](world.md#changecollision) | World and objects | traced | confirmed (code) | not implemented |
 | [`HUDCheckTutorialText`](hud.md#hudchecktutorialtext) | HUD and menus | traced | confirmed (code) | implemented |
-| [`HUDRadarSetRange`](hud.md#hudradarsetrange) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDRadarSetRange`](hud.md#hudradarsetrange) | HUD and menus | traced | confirmed (code) | implemented |
 | [`HUDSetChaseHUDState_DESTROY`](hud.md#hudsetchasehudstate_destroy) | HUD and menus | traced | confirmed (code) | not implemented |
 | [`AddAmbientSoundEmitter`](sound.md#addambientsoundemitter) | Sound and music | traced | confirmed (code) | not implemented |
 | [`SndLoadBank`](sound.md#sndloadbank) | Sound and music | traced | confirmed (code) | implemented |
@@ -397,7 +397,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level81: mission 8 {#level81}
 
-236 bindings, 20 new: 20 traced, 6 implemented in Coney (214 of all 236).
+236 bindings, 20 new: 20 traced, 7 implemented in Coney (215 of all 236).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -418,7 +418,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`ObjSetTrainPoint`](world.md#objsettrainpoint) | World and objects | traced | confirmed (code) | not implemented |
 | [`ObjStartTrain`](world.md#objstarttrain) | World and objects | traced | confirmed (code) | not implemented |
 | [`WidgetSetColour`](effects.md#widgetsetcolour) | Effects and lighting | traced | confirmed (code) | not implemented |
-| [`HUDSetRadarZoomScale`](hud.md#hudsetradarzoomscale) | HUD and menus | traced | confirmed (code) | not implemented |
+| [`HUDSetRadarZoomScale`](hud.md#hudsetradarzoomscale) | HUD and menus | traced | confirmed (code) | implemented |
 | [`SetNumberOfMaterialSlots`](sound.md#setnumberofmaterialslots) | Sound and music | traced | confirmed (code) | implemented |
 | [`GameIsOver`](level.md#gameisover) | Levels and game state | traced | confirmed (code) | not implemented |
 
@@ -521,7 +521,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level51: mission 14 {#level51}
 
-256 bindings, 6 new: 6 traced, 1 implemented in Coney (235 of all 256).
+256 bindings, 6 new: 6 traced, 1 implemented in Coney (236 of all 256).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -589,7 +589,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level82: flashback 1 {#level82}
 
-250 bindings, 4 new: 4 traced, 0 implemented in Coney (225 of all 250).
+250 bindings, 4 new: 4 traced, 0 implemented in Coney (226 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

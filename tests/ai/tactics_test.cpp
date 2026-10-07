@@ -169,6 +169,8 @@ TEST_CASE("GoalDealer turns to the player, greets him, deals once he is close, a
     dealer.pushGoal(std::make_unique<coney::ai::DealerGoal>(scene.services, 0, 10.0F, 50, 0, false));
     scene.run(1);
     CHECK(dealer.threatResponse() == 0);
+    // The flash dealer wears his spinning icon while the goal runs.
+    CHECK(dealer.human().script().icon == "dyn_flashdeal");
     const auto* goal = dynamic_cast<const coney::ai::DealerGoal*>(dealer.topGoal());
     REQUIRE(goal != nullptr);
     for (int k = 0; k < 300 && !goal->dealing(); ++k) {
@@ -177,8 +179,29 @@ TEST_CASE("GoalDealer turns to the player, greets him, deals once he is close, a
     CHECK(goal->greeted());
     CHECK(goal->dealing());
     CHECK(goal->state() == coney::ai::DealerState::Dealing);
+    // Made without the option: no radar icon at the greeting.
+    CHECK(scene.services.radarIcons.empty());
     dealer.flush();
     CHECK(dealer.threatResponse() == 2);
+    CHECK(dealer.human().script().icon.empty());
+}
+
+TEST_CASE("a dealer made with the option puts himself on the radar when he greets the player", "[ai][dealer]") {
+    AiScene scene;
+    Brain& dealer = scene.add({41.2F, 40.0F, 0.0F}, 0.0F);
+    // A weapon dealer (type 1): blip type 4, icon 31, at 0.8.
+    dealer.pushGoal(std::make_unique<coney::ai::DealerGoal>(scene.services, 1, 10.0F, 50, 0, true));
+    const auto* goal = dynamic_cast<const coney::ai::DealerGoal*>(dealer.topGoal());
+    REQUIRE(goal != nullptr);
+    for (int k = 0; k < 300 && !goal->greeted(); ++k) {
+        scene.run(1);
+    }
+    CHECK(dealer.human().script().icon == "dyn_weapdeal");
+    REQUIRE(scene.services.radarIcons.size() == 1);
+    CHECK(scene.services.radarIcons.front().human == &dealer);
+    CHECK(scene.services.radarIcons.front().type == 4);
+    CHECK(scene.services.radarIcons.front().icon == 31);
+    CHECK(scene.services.radarIcons.front().factor == 0.8F);
 }
 
 TEST_CASE("GoalDealer waits while the player is out of range", "[ai][dealer]") {

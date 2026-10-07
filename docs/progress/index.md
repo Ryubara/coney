@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,708 functions) |
+| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,721 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `██████████████████▊░` | 93.7% named in Ghidra and cited with evidence (3,076,568 of 3,283,904 bytes; 10,615 of 11,422 functions, 92.9%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-553 reimplemented function(s) have no size yet and add no bytes.
+566 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -71,17 +71,17 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
-| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 72 | 195,624 |
-| `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 205 | 497,416 |
-| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 555 | 1,096,672 |
+| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 74 | 195,624 |
+| `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 210 | 497,416 |
+| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 556 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
-| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 206 | 197,192 |
+| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 208 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 117 | 531,312 |
+| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 120 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 27 | 22,008 |
@@ -489,6 +489,8 @@ at the top of the repository's `README.md`.
 | `0x0017a560` | `Occluders_Load` | `Graphics` | not filled in |
 | `0x0017ae38` | `ColourTable_Init` | `Graphics` | not filled in |
 | `0x0017b2e0` | `GroundRing_DrawQueued` | `Graphics` | 1,480 |
+| `0x0017b8a8` | `Im2D_DrawTexturedRing` | `Graphics` | not filled in |
+| `0x0017bc28` | `Im2D_DrawTexturedDisc` | `Graphics` | not filled in |
 | `0x0017c508` | `Light_InitFromDescriptor` | `Graphics` | 392 |
 | `0x0017c840` | `Light_ApplyDescriptor` | `Graphics` | 592 |
 | `0x0017caa8` | `Light_UpdateFlickerAndCorona` | `Graphics` | 1,544 |
@@ -576,9 +578,11 @@ at the top of the repository's `README.md`.
 | `0x001b2088` | `HUD_ShowPlayers` | `GUI` | 88 |
 | `0x001b20f8` | `HUD_ShowAll` | `GUI` | 176 |
 | `0x001b2200` | `HUD_AttachPlayer` | `GUI` | 240 |
+| `0x001b2e10` | `HudManager_SetRadarRange` | `GUI` | not filled in |
 | `0x001b3f98` | `HUD_RadarAddObjective` | `GUI` | 40 |
 | `0x001b4038` | `HUD_RadarSetIcon` | `GUI` | 96 |
 | `0x001b4098` | `HUD_RadarRemove` | `GUI` | 40 |
+| `0x001b40e0` | `HUD_SetRadarZoomScale` | `GUI` | not filled in |
 | `0x001b4168` | `HUD_RadarAddHuman` | `GUI` | 304 |
 | `0x001b4298` | `HUD_RadarFlash` | `GUI` | 64 |
 | `0x001b4328` | `HUD_RadarOn` | `GUI` | 128 |
@@ -613,6 +617,9 @@ at the top of the repository's `README.md`.
 | `0x001b9600` | `TextWidget_Layout` | `GUI` | 5,664 |
 | `0x001c22b0` | `HudGenericBar_SetWidth` | `GUI` | 56 |
 | `0x001c2530` | `HudGenericBar_SetFill` | `GUI` | 56 |
+| `0x001c3de0` | `Radar_Setup` | `GUI` | not filled in |
+| `0x001c5210` | `Radar_Update` | `GUI` | not filled in |
+| `0x001c60b0` | `Radar_Render` | `GUI` | not filled in |
 | `0x001c6a20` | `MessageBox::MessageBox` | `GUI` | not filled in |
 | `0x001c6fc8` | `MessageBox_ShowTimed` | `GUI` | not filled in |
 | `0x001c7128` | `MessageBox_ShowChoice` | `GUI` | not filled in |
@@ -1180,6 +1187,7 @@ at the top of the repository's `README.md`.
 | `0x002c6e78` | `DealerGoal_Start` | `Human` | 288 |
 | `0x002c70a0` | `DealerGoal_End` | `Human` | 184 |
 | `0x002c74d8` | `DealerGoal_Deal` | `Human` | not filled in |
+| `0x002c7ee0` | `DealerGoal_AddRadarIcon` | `Human` | not filled in |
 | `0x002c7fd8` | `DealerGoal_Process` | `Human` | 2,256 |
 | `0x002caf78` | `IdleGoal_Init` | `Human` | 160 |
 | `0x002cc348` | `Goal_AddressPerson` | `Human` | 192 |
@@ -1487,10 +1495,12 @@ at the top of the repository's `README.md`.
 | `0x00370100` | `HUDTurnOffRadar` | `Scripting` | 56 |
 | `0x00370138` | `HUDSetNumIndicator` | `Scripting` | 144 |
 | `0x00370690` | `HUDSetRadarObjectFlash` | `Scripting` | 152 |
+| `0x00370728` | `HUDSetRadarZoomScale` | `Scripting` | not filled in |
 | `0x00370760` | `HUDAddRadarMissionObjective` | `Scripting` | 56 |
 | `0x00370798` | `HUDAddSecondaryRadarMissionObjective` | `Scripting` | 56 |
 | `0x003708c8` | `HUDSetRadarItemTexture` | `Scripting` | 184 |
 | `0x00370980` | `HUDDeleteRadarMissionObjective` | `Scripting` | 56 |
+| `0x003709b8` | `HUDRadarSetRange` | `Scripting` | not filled in |
 | `0x00370a30` | `HUDDeleteRadarObject` | `Scripting` | 56 |
 | `0x00370a68` | `HUDAddRadarHuman` | `Scripting` | 56 |
 | `0x00370c68` | `ShowHud` | `Scripting` | 56 |
@@ -1630,6 +1640,7 @@ at the top of the repository's `README.md`.
 | `0x00398df8` | `ObjRecord_SetPinned` | `TaskEngine` | not filled in |
 | `0x00398fe0` | `ObjRecord_GetHandle` | `TaskEngine` | not filled in |
 | `0x00399d88` | `ObjectTaskManager_UpdateSpawns` | `TaskEngine` | 1,336 |
+| `0x0039b020` | `ParticleTask_Draw` | `TaskEngine` | not filled in |
 | `0x0039bc28` | `Tag_Configure` | `TaskEngine` | not filled in |
 | `0x0039bd50` | `ProcessTag` | `TaskEngine` | not filled in |
 | `0x0039be28` | `Steam_Configure` | `TaskEngine` | not filled in |
@@ -1662,6 +1673,8 @@ at the top of the repository's `README.md`.
 | `0x003e29e8` | `GlassScript_Init` | `TaskEngine` | 936 |
 | `0x003e2d90` | `GlassScript_Message` | `TaskEngine` | 712 |
 | `0x003e4cb8` | `SubGlass_Update` | `TaskEngine` | 984 |
+| `0x003e8fa0` | `DynIcon_Init` | `TaskEngine` | not filled in |
+| `0x003e92e0` | `DynIcon_Update` | `TaskEngine` | not filled in |
 | `0x003e9828` | `ObjectiveMarker_SetShown` | `TaskEngine` | 192 |
 | `0x003e98e8` | `dyn_objective_Init` | `TaskEngine` | 544 |
 | `0x003e9b08` | `dyn_objective_Update` | `TaskEngine` | 216 |

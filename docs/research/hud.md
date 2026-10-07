@@ -2197,6 +2197,22 @@ under where its human is drawn this frame, as 64 flat-coloured triangles of `par
 disc test (`[disc][objects]`, `repo:tests/platform/disc_level99_world_test.cpp`) checks that SELECT brings up player
 1's two rings after `l99_c1`.
 
+**The radar** (`repo:src/hud/radar.h`, drawn by `repo:src/platform/hud_layer.cpp`), as
+[the radar on screen](#the-radar-on-screen) says: `GameplayMode` gives the HUD the level record's map (the world name's
+sheet and arguments 13-15) and a locator for the blips' objects; the play mode gives each step player 1's feet,
+heading and speed and the camera's heading. The disc is 32 segments of triangles over the whole map texture,
+clamped as [the GS dumps](rendering.md#hud) show (the sheet's own flags say wrap) and with no alpha test (the GS's
+test there keeps the failing pixels' colour), filled to 0.825 R in
+`(191, 191, 191, 240)` and fading to R, drawn under every other HUD batch, and nothing without a map; the
+zoom eases between `HUDRadarSetRange`'s radii by the speed and `HUDSetRadarZoomScale`; blips sit at
+(right, forward) × 0.12 / zoom (on the edge beyond it), sized as `hud_radar_dot`'s particles (0.7 × each icon's
+factor), white but the dealers' green icons 29-31, a new objective blinking for 100 updates; the player's arrow (icon
+362, 0.03 wide, `(178, 178, 178)`) turned by his heading less the camera's, drawn as two triangles. **Coney's
+stand-ins**: w = 1.33 (the measured disc) for the camera slot's value; `rest` 50 and `fast` 75 until a script sets
+them; the disc colour's blue state and its blend are not built; enemies and police (types 6, 8) never show, as no
+scanner marks them yet; `HUDAddRadarHuman` makes every human a Warrior's blip (type 7, icon 365); a blip whose
+object the locator cannot find is skipped, not freed. Tests: `repo:tests/hud/radar_test.cpp`.
+
 **Coney's stand-ins for the rings** (marked in the code): the blend state the world pass leaves is taken as alpha
 blending with Z test and no Z write; flat shading gives a triangle its last vertex's colour; the blink runs on the game
 clock, black first; the fight stance is a lock-on or a block; a hit's pulse is the health lost in the step; the
@@ -2211,9 +2227,8 @@ timer does not freeze yet; player 0's prompt chosen each frame of play from the 
 nearest kind-1 [context record](crimes.md#context-records), none while tagging or in a scene;
 `repo:src/gamemodes/gameplay_mode.cpp`), not yet from a held human, a partner to revive or a talkable human, and
 its hint not queued;
-the counter panels' texts right-aligned on x 0.96; the radar disc
-`big_font` 256 sized from the measurement, a dark disc for the map, the player's icon 362 at the centre and no other
-blips drawn; the arrow turned only by half turns (no rotated sprites yet); player 1's other parts 0.09 right of player
+the counter panels' texts right-aligned on x 0.96; the arrow turned only by half turns (no rotated sprites yet);
+player 1's other parts 0.09 right of player
 0's; a HUD no level has set up (the debug pages, the tests) shown at start; no wasted/busted restore yet (Coney has
 no death camera). The hub's HUD bindings (`repo:src/scripting/hub_world_bindings.cpp`):
 `HUDEnableClubActionText` raises the prompt to y 0.125 (the other video modes' heights are not used); the action-cycle

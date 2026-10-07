@@ -59,6 +59,22 @@ struct LogicalQuad {
     Rgba colour;         ///< Multiplies the texture; its alpha blends the quad over what is below.
 };
 
+/// One corner of a 2D triangle, in the logical screen's pixels, with its texture coordinate and colour.
+struct LogicalVertex {
+    float x = 0.0F; ///< Logical pixels from the left of the screen.
+    float y = 0.0F; ///< Logical pixels from the top.
+    float u = 0.0F; ///< Texture coordinate across, 0 to 1 over the texture.
+    float v = 0.0F; ///< Texture coordinate down.
+    Rgba colour;    ///< Multiplies the texture; its alpha blends the triangle over what is below.
+};
+
+/// How a drawTriangles() call samples and tests: the texture's addressing, and the GS alpha test that drops a fragment
+/// whose alpha (the texel's times the vertex's, 0 to 1) is below `alphaRef` (0: no test, every fragment kept).
+struct TriangleStates {
+    bool wrap = false;     ///< Repeat the texture beyond 0-1; otherwise its edge texels repeat.
+    float alphaRef = 0.0F; ///< Fragments with alpha below this are not drawn.
+};
+
 /// The part of the renderer a game mode drives each frame: start a frame cleared to a colour, draw 2D quads, then
 /// show it.
 ///
@@ -86,6 +102,13 @@ class RenderDevice {
     /// are drawn in the order given. Only between beginFrame() and present(); `texture` must stay alive until the call
     /// returns.
     virtual void drawQuads(const Texture* texture, std::span<const LogicalQuad> quads) = 0;
+
+    /// Draws `vertices` as a list of triangles (three corners each; a remainder is ignored) with `texture` (null: flat
+    /// colour) in the same 2D states as drawQuads(), the colour and texture coordinates blended across each triangle:
+    /// the original's immediate-mode 2D shapes (the radar's disc, docs/research/hud.md#the-radar-on-screen), sampled
+    /// and tested as `states` says.
+    virtual void drawTriangles(const Texture* texture, std::span<const LogicalVertex> vertices,
+                               const TriangleStates& states) = 0;
 
     /// Ends the frame and shows it. With a display and vsync on this waits for the vertical blank; the headless
     /// renderer returns at once. The game's speed does not depend on it: the main loop steps the game by real time

@@ -8,10 +8,14 @@
 #include <rw.h>
 
 #include "platform/sprite_sheets.h"
+#include "platform/world_atomic.h"
 
 namespace coney::platform {
 
 namespace {
+
+// The first passes' alpha test reference, 0x40 of the GS's 0x80, in librw's 0-255.
+constexpr rw::uint32 kFirstPassAlphaRef = 128;
 
 // librw's vector from ours.
 rw::V3d toRw(world::Vec3 v) { return rw::V3d{v.x, v.y, v.z}; }
@@ -198,7 +202,34 @@ void SceneLighting::renderInRig(rw::Atomic* atomic) {
     rw::World* home = atomic->world;
     rw::engine->currentWorld = m_world;
     atomic->world = m_world;
+    // A first pass (GS context 1, docs/research/rendering.md#shared-state) tests alpha GEQUAL 0x40 of 0x80 with AFAIL
+    // FB_ONLY: a fainter pixel is still blended but writes no Z, so what lies behind it (a wall behind a decal's
+    // clear part) still draws. Passes that turn the test off (second layers, blood) are drawn as they ask.
+    const bool firstPass = rw::GetRenderState(rw::ALPHATESTFUNC) == rw::ALPHAGREATEREQUAL;
+    if (firstPass) {
+        rw::SetRenderState(rw::GSALPHATEST, 1);
+        rw::SetRenderState(rw::GSALPHATESTREF, kFirstPassAlphaRef);
+    }
     atomic->render();
+    if (firstPass) {
+        rw::SetRenderState(rw::GSALPHATEST, 0);
+    }
+    // A dual material's second layer right after it, on the same vertices (docs/research/rendering.md#dual): blended
+    // by its texture's alpha with no alpha test, writing Z, at the base's fade.
+    if (rw::Atomic* layer = dualLayerOf(atomic); layer != nullptr) {
+        const rw::Geometry* base = atomic->geometry;
+        const rw::uint8 fade = base->matList.numMaterials > 0 ? base->matList.materials[0]->color.alpha : 255;
+        rw::Geometry* second = layer->geometry;
+        for (rw::int32 i = 0; i < second->matList.numMaterials; ++i) {
+            second->matList.materials[i]->color.alpha = fade;
+        }
+        const rw::uint32 testFunc = rw::GetRenderState(rw::ALPHATESTFUNC);
+        rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+        layer->world = m_world;
+        layer->render();
+        layer->world = nullptr;
+        rw::SetRenderState(rw::ALPHATESTFUNC, testFunc);
+    }
     atomic->world = home;
     rw::engine->currentWorld = current;
 }

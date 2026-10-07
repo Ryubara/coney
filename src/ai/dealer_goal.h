@@ -89,10 +89,11 @@ class DealerGoal final : public Goal {
         : Goal(GoalType::Dealer), m_services(&services), m_type(type), m_range(range), m_runChance(runChance),
           m_dirtyChance(dirtyChance), m_option(option) {}
 
-    /// Threat response 0 and the home spot (where he stands). **Coney choice**: the spinning icon is not built.
+    /// Threat response 0, the type's spinning icon over his head (world_objects::dealerIcon()) and the home spot (where
+    /// he stands).
     /// @orig 0x002c6e78 DealerGoal_Start (unknown)
     void start(Brain& brain) override;
-    /// Threat response back to 2; he no longer deals.
+    /// Threat response back to 2, his icon removed; he no longer deals.
     /// @orig 0x002c70a0 DealerGoal_End (unknown)
     void end(Brain& brain) override;
     /// One update: the player in range or not (leaving after a deal: state 4, or 5 with the option, and a turn to
@@ -101,8 +102,9 @@ class DealerGoal final : public Goal {
     /// gang's member within 16 m makes him wary (a spectate goal of 2-4 s and a turn to it); more than 1 m
     /// from home he walks back; more than 15° off the player he turns (before he has greeted him, or when the player
     /// stands within 2 m); the first time, he greets him; in state 1 (as constructed) with the player within 1.5 m
-    /// he deals (state 3). Never done. **Coney choices**: no line of sight is tested, the gestures, the buy clip
-    /// in the player's slot and the radar icon are not built, and the run and dirty chances are kept, not read.
+    /// he deals (state 3). Never done. The greeting puts him on the radar when the goal was made with `option`
+    /// (DealerGoal_AddRadarIcon). **Coney choices**: no line of sight is tested, the gestures and the buy clip in the
+    /// player's slot are not built, and the run and dirty chances are kept, not read.
     /// @orig 0x002c7fd8 DealerGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
 

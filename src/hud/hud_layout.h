@@ -77,8 +77,6 @@ inline constexpr graphics::Rgba kCounterGreen{99, 219, 75, 255};
 inline constexpr graphics::Rgba kCounterBlue{35, 83, 188, 255};
 /// The hint box.
 inline constexpr graphics::Rgba kHintBoxColour{0, 0, 0, 128};
-/// The radar disc.
-inline constexpr graphics::Rgba kRadarColour{143, 143, 143, 255};
 /// The instruction arrow.
 inline constexpr graphics::Rgba kArrowColour{191, 191, 191, 255};
 /// **Coney's stand-in:** the grey of the score's leading zeros (the page says grey, not which).
@@ -236,11 +234,5 @@ inline constexpr float kArrowBobDivisor = 20.0F * 10.0F;
 inline constexpr float kRadarX = 0.51F;
 inline constexpr float kRadarY = -0.31F;
 inline constexpr float kRadarDepth = 1.0F;
-/// The inner disc's scale (`0x0050e9dc`).
-inline constexpr float kRadarInnerScale = 0.825F;
-/// The disc's size as measured on screen (logical pixels of 640 × 448): Coney sizes it from this until the formula is
-/// worked out.
-inline constexpr float kRadarPixelsWide = 110.0F;
-inline constexpr float kRadarPixelsHigh = 100.0F;
 
 } // namespace coney::hud

@@ -228,29 +228,73 @@ void RenderEngine::drawWrappedQuads(const graphics::Texture* texture, std::span<
     drawTexturedQuads(texture, quads, true);
 }
 
+rw::Raster* RenderEngine::bindTexture(const graphics::Texture* texture, bool wrap) {
+    if (texture == nullptr) {
+        return nullptr;
+    }
+    // A sprite sheet's texture, or a movie's frame (platform/movie_screen.h).
+    rw::Texture* rwTexture = nullptr;
+    if (const auto* sheetTexture = dynamic_cast<const SheetTexture*>(texture); sheetTexture != nullptr) {
+        rwTexture = sheetTexture->rwTexture();
+    } else if (const auto* movieTexture = dynamic_cast<const MovieTexture*>(texture); movieTexture != nullptr) {
+        rwTexture = movieTexture->rwTexture();
+    }
+    CONEY_ASSERT(rwTexture != nullptr);
+    // The texture's own filtering (most of the game's textures ask for linear), clamped at the edges so a rectangle
+    // that reaches the texture's border does not pick up texels from the opposite side, unless the caller repeats the
+    // texture.
+    rw::SetRenderState(rw::TEXTUREFILTER, rwTexture->getFilter());
+    rw::SetRenderState(rw::TEXTUREADDRESS, wrap ? rw::Texture::WRAP : rw::Texture::CLAMP);
+    return rwTexture->raster;
+}
+
+void RenderEngine::drawTriangles(const graphics::Texture* texture, std::span<const graphics::LogicalVertex> vertices,
+                                 const graphics::TriangleStates& states) {
+    CONEY_ASSERT(m_inFrame);
+    const std::size_t count = vertices.size() / 3 * 3;
+    if (m_camera == nullptr || count == 0) {
+        return; // NULL backend: nothing to draw
+    }
+    rw::Raster* raster = bindTexture(texture, states.wrap);
+    set2dStates(raster);
+    // The alpha test, as the GS's: keep a fragment whose alpha is at least the reference.
+    const rw::uint32 testFunction = rw::GetRenderState(rw::ALPHATESTFUNC);
+    const rw::uint32 testRef = rw::GetRenderState(rw::ALPHATESTREF);
+    if (states.alphaRef > 0.0F) {
+        rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAGREATEREQUAL);
+        rw::SetRenderState(rw::ALPHATESTREF, static_cast<rw::uint32>(std::lround(states.alphaRef * 255.0F)));
+    } else {
+        rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS); // every fragment kept, however faint
+    }
+    // Logical pixels to window pixels: a point is a rectangle of no size.
+    const float nearZ = rw::im2d::GetNearZ();
+    const float recipZ = 1.0F / m_camera->nearPlane;
+    std::vector<rw::gl3::Im2DVertex> mapped(count);
+    for (std::size_t i = 0; i < count; ++i) {
+        const graphics::LogicalVertex& in = vertices[i];
+        const graphics::LogicalRect at =
+            graphics::logicalToWindow(graphics::LogicalRect{in.x, in.y, 0.0F, 0.0F}, m_viewport);
+        rw::gl3::Im2DVertex& vertex = mapped[i];
+        vertex.setScreenX(at.x);
+        vertex.setScreenY(at.y);
+        vertex.setScreenZ(nearZ);
+        vertex.setRecipCameraZ(recipZ);
+        vertex.setColor(in.colour.r, in.colour.g, in.colour.b, in.colour.a);
+        vertex.setU(in.u, recipZ);
+        vertex.setV(in.v, recipZ);
+    }
+    rw::im2d::RenderPrimitive(rw::PRIMTYPETRILIST, mapped.data(), static_cast<rw::int32>(count));
+    rw::SetRenderState(rw::ALPHATESTFUNC, testFunction);
+    rw::SetRenderState(rw::ALPHATESTREF, testRef);
+}
+
 void RenderEngine::drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads,
                                      bool wrap) {
     CONEY_ASSERT(m_inFrame);
     if (m_camera == nullptr || quads.empty()) {
         return; // NULL backend: nothing to draw
     }
-    rw::Raster* raster = nullptr;
-    if (texture != nullptr) {
-        // A sprite sheet's texture, or a movie's frame (platform/movie_screen.h).
-        rw::Texture* rwTexture = nullptr;
-        if (const auto* sheetTexture = dynamic_cast<const SheetTexture*>(texture); sheetTexture != nullptr) {
-            rwTexture = sheetTexture->rwTexture();
-        } else if (const auto* movieTexture = dynamic_cast<const MovieTexture*>(texture); movieTexture != nullptr) {
-            rwTexture = movieTexture->rwTexture();
-        }
-        CONEY_ASSERT(rwTexture != nullptr);
-        raster = rwTexture->raster;
-        // The texture's own filtering (most of the game's textures ask for linear), clamped at the edges so a
-        // rectangle that reaches the texture's border does not pick up texels from the opposite side, unless the
-        // caller repeats the texture.
-        rw::SetRenderState(rw::TEXTUREFILTER, rwTexture->getFilter());
-        rw::SetRenderState(rw::TEXTUREADDRESS, wrap ? rw::Texture::WRAP : rw::Texture::CLAMP);
-    }
+    rw::Raster* raster = bindTexture(texture, wrap);
     // Logical pixels to window pixels, then the shared 2D drawing.
     std::vector<graphics::LogicalQuad> mapped(quads.begin(), quads.end());
     for (graphics::LogicalQuad& quad : mapped) {
@@ -264,7 +308,7 @@ void RenderEngine::drawTexturedQuads(const graphics::Texture* texture, std::span
     drawWindowQuads(raster, mapped);
 }
 
-void RenderEngine::drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads) {
+void RenderEngine::set2dStates(rw::Raster* raster) {
     // The 2D pass's states (docs/research/graphics.md#2d-drawing): no depth test or write, no culling, no fog, blended
     // by the vertex and texture alpha over what is already drawn.
     rw::SetRenderState(rw::ZTESTENABLE, 0);
@@ -275,6 +319,10 @@ void RenderEngine::drawWindowQuads(rw::Raster* raster, std::span<const graphics:
     rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
     rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
     rw::SetRenderStatePtr(rw::TEXTURERASTER, raster);
+}
+
+void RenderEngine::drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads) {
+    set2dStates(raster);
 
     // Four corners and two triangles per quad, clockwise from the top left, as the device's screen quads.
     const float nearZ = rw::im2d::GetNearZ();

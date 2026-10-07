@@ -15,12 +15,13 @@ namespace coney::platform {
 
 namespace {
 
-// The batches' capacities and depths (the 2D sort keys, docs/research/gui.md#draw-order): the flat quads under
-// everything, the radar disc, the big font, then part_page0 (the text and the icons) and hud_minigames.
+// The batches' capacities and depths (the 2D sort keys, docs/research/gui.md#draw-order): the radar disc under
+// everything (HUD_Render draws it before the sorted pass, docs/research/hud.md#the-radar-on-screen), the flat quads,
+// the big font, then part_page0 (the text and the icons) and hud_minigames.
 constexpr std::size_t kTextCapacity = 2048;
 constexpr std::size_t kSmallCapacity = 64;
 constexpr float kFlatDepth = 8000.0F;
-constexpr float kRadarDepth = 8500.0F;
+constexpr float kRadarDepth = 0.0F;
 constexpr float kBigTextDepth = 9000.0F;
 constexpr float kPartsDepth = 10000.0F;
 constexpr float kMinigamesDepth = 10000.0F;
@@ -71,10 +72,10 @@ std::unique_ptr<HudLayer> HudLayer::create(const io::Wad& wad, bool drawsPixels,
             layer->m_textFont = std::move(*font);
         }
     }
-    // big_font: slot 6, and the radar disc's stand-in.
+    layer->m_print = print;
+    // big_font: slot 6.
     if (auto sheet = layer->loadSheet(gui::kBigFontSheet, print)) {
         layer->m_bigText = std::make_unique<graphics::SpriteBatch>(*sheet, kTextCapacity, kBigTextDepth);
-        layer->m_radar = std::make_unique<graphics::SpriteBatch>(*sheet, kSmallCapacity, kRadarDepth);
         if (auto font = graphics::Font::fromSheet(std::move(*sheet))) {
             layer->m_bigFont = std::move(*font);
         }
@@ -137,6 +138,25 @@ graphics::SpriteBatch* HudLayer::sheetBatch(std::uint32_t record) {
     return found->second.get();
 }
 
+graphics::SpriteBatch* HudLayer::radarMapBatch() {
+    // `Radar_Setup`: the sheet named after the level's world is the map; loaded again only when the level's map
+    // changes, a failure logged once and drawn as no disc.
+    const std::string& name = m_hud->radar().map.sheet;
+    if (name != m_radarSheet) {
+        m_radarSheet = name;
+        m_radarMap.reset();
+        if (!name.empty()) {
+            if (auto sheet = loadSheet(name, m_print ? m_print : [](std::string_view) {})) {
+                m_radarMap = std::make_unique<graphics::SpriteBatch>(std::move(*sheet), 0, kRadarDepth);
+                // Clamped, though the sheet's own flags say wrap; the GS's alpha test there keeps failing pixels'
+                // colour (FB_ONLY), so in effect none (docs/research/rendering.md#hud).
+                m_radarMap->setTriangleStates(graphics::TriangleStates{.wrap = false, .alphaRef = 0.0F});
+            }
+        }
+    }
+    return m_radarMap.get();
+}
+
 void HudLayer::step(const hud::HudFrame& frame) {
     m_hud->update(frame);
     m_pass.empty();
@@ -154,7 +174,7 @@ void HudLayer::step(const hud::HudFrame& frame) {
     canvas.parts = m_parts.get();
     canvas.minigames = m_minigames.get();
     canvas.flat = m_flat.get();
-    canvas.radar = m_radar.get();
+    canvas.radarMap = radarMapBatch();
     canvas.banner = [this](std::uint32_t record, bool shadow) -> graphics::SpriteBatch* {
         BannerBatches* batches = bannerBatches(record);
         return shadow ? batches->shadow.get() : batches->banner.get();
@@ -164,7 +184,7 @@ void HudLayer::step(const hud::HudFrame& frame) {
     // Every batch is queued; an empty one draws nothing.
     m_spritesQueued = 0;
     for (graphics::SpriteBatch* batch :
-         {m_flat.get(), m_radar.get(), m_bigText.get(), m_parts.get(), m_minigames.get()}) {
+         {m_flat.get(), m_radarMap.get(), m_bigText.get(), m_parts.get(), m_minigames.get()}) {
         if (batch != nullptr) {
             m_pass.queue(*batch);
             m_spritesQueued += batch->sprites().size();

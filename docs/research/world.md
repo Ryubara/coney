@@ -638,6 +638,19 @@ registered from Coney's code; librw needs no patch.
   (`src/camera/camera_lens.h`: 65°, view window (0.637, 0.478), near clip 0.1, far clip 115 as the draw distance's
   ceiling). The documented clip planes keep the debug view useful: the draw distance still follows the missing
   scenery, and 115 is far enough to see down a street; beyond it the fog's colour takes over.
+- **Second layers** (`world_atomic.h`, `dualLayerOf`): librw's MatFX plugin is not attached (it opens a driver for
+  every backend and draws through pipelines Coney does not use), so Coney reads the MatFX material extension itself,
+  keeping only the dual effect's texture. `WorldAtomic::unpack()` gives an atomic with dual materials a second atomic
+  on the same frame: the same vertices with the second texture-coordinate set, one mesh per dual material textured
+  with its dual texture. `SceneLighting` draws it right after the atomic, as [the second pass](rendering.md#dual)
+  does: blended by the texture's alpha, no alpha test, Z write, at the base's fade (`level99` checkpoint 3: 137 dual
+  meshes, stains and dirt over the ground and walls).
+- **First passes' alpha test**: the world, objects and humans are drawn with librw's emulation of the GS's GEQUAL
+  `0x40` test with `AFAIL` `FB_ONLY` ([Shared state](rendering.md#shared-state)): a fainter pixel is blended but
+  writes no Z.
+- **Mipmapped textures**: librw's OpenGL conversion makes a whole mip chain for a texture flagged mipmapped but fills
+  only the levels the PS2 texture has (most have one), and OpenGL draws such a texture black; each converted texture is
+  limited to its source's levels (`texture_dictionary.h`). Before this, `level99`'s roller shutters drew black.
 
 **Seen in the viewer** (screenshots of `level2`, `level14`, `level51`, `level83`, `level100` and `objarena`, checked by
 eye; none kept):
@@ -646,8 +659,8 @@ eye; none kept):
 - **`0x3F0 +0x04` is the texture-coordinate scale**: with it, road markings, crossings, tiled pavements and trees
   look right; with the `+0x00` scale instead, the same textures tile visibly wrong (trees become rows of repeated leaf
   patches, crossings lose their stripes). Coney's evidence: confirmed (runtime), visually.
-- **The first texture-coordinate set** is the base texture's: drawn with set 1 only, everything looks right. What the
-  second set (in the `s` worlds) is for is open.
+- **The first texture-coordinate set** is the base texture's: drawn with set 1 only, everything looks right. The
+  second set (in the `s` worlds) is the MatFX dual texture's, below.
 - **Prelighting is dark**: over all of `level2s`'s vertices the colour channels average about 14 of 255 and rarely
   pass 128; alpha is always 255. Coney doubles red, green and blue (clamped) when it unpacks, reading 0x80 as full
   brightness as the GS does when it modulates a texel by a vertex colour (**Coney's choice**, inferred from the GS).

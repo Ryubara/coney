@@ -106,6 +106,11 @@ class RenderEngine final : public graphics::RenderDevice {
     /// drawQuads() with wrapped addressing, for a texture whose coordinates run past its edges and repeat it (the
     /// room-smoke overlay, docs/research/graphics.md#room-smoke).
     void drawWrappedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads);
+    /// Draws `vertices`, given in logical pixels, as triangles mapped onto the logical screen's place in the window,
+    /// with `texture` as drawQuads() takes it, wrapped or clamped and alpha tested as `states` says (the test is put
+    /// back after). Only between beginFrame() and present(); draws nothing with the NULL backend.
+    void drawTriangles(const graphics::Texture* texture, std::span<const graphics::LogicalVertex> vertices,
+                       const graphics::TriangleStates& states) override;
 
     /// Draws flat-coloured `quads` given in window pixels (from the top left), blended by their alpha, in the 2D
     /// states. Only between beginFrame() and present() (checked by CONEY_ASSERT); draws nothing with the NULL backend.
@@ -156,6 +161,10 @@ class RenderEngine final : public graphics::RenderDevice {
     void startFrame(graphics::Rgba clear);
     /// Draws quads already in window pixels with `raster` (null: flat colour) in the 2D states.
     void drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads);
+    // Sets the 2D pass's render states with `raster` (null: flat colour).
+    void set2dStates(rw::Raster* raster);
+    // Binds `texture`'s filter and addressing (`wrap` or clamped) and returns its raster; null for no texture.
+    rw::Raster* bindTexture(const graphics::Texture* texture, bool wrap);
     // drawQuads() and drawWrappedQuads(): the texture's filter, `wrap` or clamped addressing, the quads mapped from
     // logical pixels to the window.
     void drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads, bool wrap);

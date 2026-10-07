@@ -20,7 +20,29 @@ bool SpriteBatch::addSprite(const Sprite& sprite) {
     return true;
 }
 
+void SpriteBatch::addTriangle(const OverlayVertex& a, const OverlayVertex& b, const OverlayVertex& c) {
+    if (a.position.z <= 0.0F || b.position.z <= 0.0F || c.position.z <= 0.0F) {
+        return;
+    }
+    m_triangles.insert(m_triangles.end(), {a, b, c});
+}
+
 void SpriteBatch::render(RenderDevice& device, const OverlayCamera& camera) const {
+    renderSprites(device, camera);
+    if (m_triangles.empty()) {
+        return;
+    }
+    // The corners projected as the sprites' centres are; the texture coordinates and colours pass through.
+    std::vector<LogicalVertex> vertices;
+    vertices.reserve(m_triangles.size());
+    for (const OverlayVertex& corner : m_triangles) {
+        const LogicalPoint at = camera.project(corner.position);
+        vertices.push_back(LogicalVertex{at.x, at.y, corner.u, corner.v, corner.colour});
+    }
+    device.drawTriangles(m_sheet.texture.get(), vertices, m_triangleStates);
+}
+
+void SpriteBatch::renderSprites(RenderDevice& device, const OverlayCamera& camera) const {
     if (m_sprites.empty()) {
         return;
     }

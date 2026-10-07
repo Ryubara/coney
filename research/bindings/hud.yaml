@@ -1045,6 +1045,7 @@
   notes: >-
     Nothing resets it per level as far as traced (inferred: scripts set it back to 1 themselves).
   usage: {chunks: 6, calls: 8, boot: false, mission1: false, result_used: false, levels: [81, 51, 82]}
+  coney: implemented
 
 - name: HUDAddRadarMissionObjective
   wrapper: 0x00370760
@@ -1138,6 +1139,7 @@
     The floats pass through in registers, which hides them in the decompiled wrapper. The zoom formula and
     HUDSetRadarZoomScale are in [HUD: the radar](../../research/hud.md#the-radar-on-screen).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [3]}
+  coney: implemented
 
 - name: HUDDeleteRadarObject
   wrapper: 0x00370a30

@@ -40,6 +40,9 @@ class ScriptServices {
     [[nodiscard]] virtual Brain* brain(double handle) const = 0;
     /// Player 1's brain; null when there is none.
     [[nodiscard]] virtual Brain* player() const { return nullptr; }
+    /// Puts `human` on both radars as a blip of `type` with `icon` at `factor` (a dealer's greeting,
+    /// `DealerGoal_AddRadarIcon`), unless it has one already; nothing without a HUD.
+    virtual void addRadarIcon(Brain& /*human*/, int /*type*/, int /*icon*/, float /*factor*/) {}
 
     /// Schedules the Lua function `function` with `args` (at most two) `delayMs` of game time from now
     /// (`ScriptSystem::Schedule*`).

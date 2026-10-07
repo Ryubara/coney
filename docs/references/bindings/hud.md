@@ -950,7 +950,7 @@ HUDSetRadarZoomScale are in [HUD: the radar](../../research/hud.md#the-radar-on-
   `HudManager_SetRadarRange`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDReleasePH {#hudreleaseph}
 
@@ -1458,7 +1458,7 @@ frames, not at once.
 - **Wrapper** `0x00370728` (registered by `RegisterBindings`); **calls** `0x001b40e0` `HUD_SetRadarZoomScale`
 - **Used by** 6 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level81`](story.md#level81) (mission 8)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDSetTextProgress {#hudsettextprogress}
 

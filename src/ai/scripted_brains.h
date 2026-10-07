@@ -273,6 +273,16 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] Brain* brain(double handle) const override;
     /// Player 1's brain, as setPlayer() gave it.
     [[nodiscard]] Brain* player() const override { return m_player; }
+    /// Hands the human's handle, the blip type, icon and factor to the radar hook (setRadarIcon()), if any.
+    void addRadarIcon(Brain& human, int type, int icon, float factor) override {
+        if (m_radarIcon) {
+            m_radarIcon(human.handle(), type, icon, factor);
+        }
+    }
+    /// What addRadarIcon() calls: the HUD's radar (by handle, blip type, icon, size factor); empty for none.
+    void setRadarIcon(std::function<void(double handle, int type, int icon, float factor)> hook) {
+        m_radarIcon = std::move(hook);
+    }
     /// ScriptSystem::schedule() when there is a script system.
     void schedule(std::string_view function, std::span<const double> args, std::uint32_t delayMs) override;
     /// ScriptSystem::call() when there is a script system. **Coney choice**: the result is whether the call ran, as
@@ -318,6 +328,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     Brains* m_owner;
     const world_objects::WorldFlags* m_flags;
     world_objects::ObjectLocator m_locate;
+    std::function<void(double, int, int, float)> m_radarIcon; // setRadarIcon()
     script::ScriptSystem* m_scripts = nullptr;
     const script::MessageHandlers* m_messages = nullptr;
     const world_objects::FlagNet* m_flagNet = nullptr;

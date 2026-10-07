@@ -582,6 +582,13 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     hudFrame.players.at(0).rage = rage.value();
     hudFrame.players.at(0).rageMax = rage.maximum();
     hudFrame.players.at(0).raging = rage.raging();
+    // Player 1's radar: his feet, facing and speed, and the camera's facing in the humans' convention (0 faces +y,
+    // positive to the left); RenderWare's (x, y, z) is the game's (x, -z, y).
+    hudFrame.radar.known = true;
+    hudFrame.radar.position = m_player->human().position();
+    hudFrame.radar.heading = m_player->human().heading();
+    hudFrame.radar.speed = m_player->human().speed();
+    hudFrame.radar.cameraHeading = std::atan2(-stepView.pose.forward.x, -stepView.pose.forward.z);
     m_hud->step(hudFrame);
     // The health rings, after the HUD's step: hidden with it.
     stepRings(playerPad, stepView, hudFrame.nowMs);

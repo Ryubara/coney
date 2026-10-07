@@ -226,6 +226,10 @@ void GameplayMode::endLevel() {
     // The level first: its humans are what the brains refer to, its player what the cameras follow. Then the cameras,
     // whose locator reads the scripts' hold, then the hold, then the brains it holds.
     m_level.reset();
+    // The radar's blips stop locating the level's objects.
+    if (m_context.hud != nullptr) {
+        m_context.hud->setRadarLocator({});
+    }
     if (m_context.cameras == m_cameras.get()) {
         m_context.cameras = nullptr;
     }
@@ -492,6 +496,31 @@ void GameplayMode::loadLevel() {
     // InitLevel's HUD set-up, before the script: the level starts with the HUD hidden until something shows it.
     if (m_context.hud != nullptr) {
         m_context.hud->levelSetUp();
+        // `Radar_Setup`: the map named after the level's world and the record's three map floats (arguments 13-15);
+        // the blips find their objects as the trigger spheres do.
+        hud::RadarMap map;
+        if (const LevelRecord* record = m_state.levels.at(m_state.currentLevel); record != nullptr) {
+            map.sheet = record->worldName;
+            map.offsetX = static_cast<float>(record->values.at(LevelRecord::kRadarOffsetXValue));
+            map.offsetY = static_cast<float>(record->values.at(LevelRecord::kRadarOffsetYValue));
+            map.scale = static_cast<float>(record->values.at(LevelRecord::kRadarScaleValue));
+            m_log(std::format("gameplay: radar map {} offset ({:.2f}, {:.2f}) scale {:.2f}\n", map.sheet, map.offsetX,
+                              map.offsetY, map.scale));
+        }
+        m_context.hud->setRadarMap(std::move(map));
+        // A dealer's greeting puts him on the radar in white, then his icon tinted green, unless he has a blip.
+        if (m_scripted) {
+            m_scripted->setRadarIcon([hud = m_context.hud](double handle, int type, int icon, float factor) {
+                hud->radar().blips.try_emplace(handle, hud::RadarBlip{.type = type,
+                                                                      .icon = icon,
+                                                                      .scale = hud::kRadarDotSize * factor,
+                                                                      .colour = hud::kRadarDealerColour});
+            });
+        }
+        m_context.hud->setRadarLocator([this](double handle) -> std::optional<anim::Vec3> {
+            const std::optional<std::array<float, 3>> at = objectPosition(handle);
+            return at ? std::optional(anim::Vec3{(*at)[0], (*at)[1], (*at)[2]}) : std::nullopt;
+        });
     }
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
     const LevelStart& start =

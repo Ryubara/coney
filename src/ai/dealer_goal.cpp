@@ -2,9 +2,12 @@
 #include "ai/dealer_goal.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <string>
+#include <string_view>
 
 #include "ai/attack_kinds.h"
 #include "ai/brain.h"
@@ -16,10 +19,20 @@
 #include "human/human.h"
 #include "human/locomotion.h"
 #include "warriors/inventory.h"
+#include "world_objects/spinning_icons.h"
 
 namespace coney::ai {
 
 namespace {
+
+// A dealer type's radar blip (docs/research/ai.md#dealer-icon): its blip type and icon, both at 0.8.
+// @orig 0x002c7ee0 DealerGoal_AddRadarIcon (unknown)
+struct DealerBlip {
+    int type;
+    int icon;
+};
+constexpr std::array<DealerBlip, 3> kDealerBlips{{{2, 29}, {4, 31}, {3, 30}}};
+constexpr float kDealerBlipFactor = 0.8F;
 
 // The dealer classes and the kinds they sell.
 constexpr int kFlashClassFirst = 426;
@@ -96,12 +109,20 @@ int dealerTypeFor(int characterClass, int type) {
 
 void DealerGoal::start(Brain& brain) {
     brain.setThreatResponse(0);
+    if (const std::string_view icon = world_objects::dealerIcon(m_type); !icon.empty()) {
+        brain.human().script().icon = std::string(icon);
+        brain.human().script().iconParam = 0;
+    }
     m_home = brain.human().position();
     m_dirty = rollRange(brain.random(), 0, 99) < m_dirtyChance;
 }
 
 void DealerGoal::end(Brain& brain) {
     brain.setThreatResponse(kDefaultThreatResponse);
+    // His icon goes with the goal (a script's own icon given since is left alone).
+    if (brain.human().script().icon == world_objects::dealerIcon(m_type)) {
+        brain.human().script().icon.clear();
+    }
     m_dealing = false;
     m_offering = false;
 }
@@ -165,6 +186,11 @@ GoalStatus DealerGoal::process(Brain& brain) {
     // 6. The greeting, the first time; then the deal once the player is close.
     if (!m_greeted) {
         m_greeted = true;
+        // The blip: type 2, 4 or 3 with icon 29, 31 or 30 at 0.8 for dealer types 0, 1, 2.
+        if (m_option && m_type >= 0 && m_type < static_cast<int>(kDealerBlips.size())) {
+            const DealerBlip& blip = kDealerBlips.at(static_cast<std::size_t>(m_type));
+            m_services->addRadarIcon(brain, blip.type, blip.icon, kDealerBlipFactor);
+        }
     }
     if (m_state == DealerState::Waiting && distance < kDealDistance) {
         m_state = DealerState::Dealing;

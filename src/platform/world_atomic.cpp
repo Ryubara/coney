@@ -27,6 +27,127 @@ constexpr rw::int32 kAtomicPluginBytes = 16;
 // The game's atomic plugin data inside a librw atomic, at the offset librw gave the plugin.
 rw::int32 atomicPluginOffset = -1;
 
+// Coney's own atomic plugin (never streamed): the pointer to an atomic's dual layer (dualLayerOf()). The id is Coney's,
+// outside RenderWare's and the game's ranges.
+constexpr rw::uint32 kDualLayerPluginId = 0x00C0DE01;
+rw::int32 dualLayerOffset = -1;
+
+// A new atomic has no dual layer.
+void* constructDualLayer(void* object, rw::int32 offset, rw::int32 /*size*/) {
+    rw::Atomic* none = nullptr;
+    std::memcpy(static_cast<std::byte*>(object) + offset, &none, sizeof(none));
+    return object;
+}
+
+// A copy of an atomic does not share its original's dual layer, which the original's owner destroys.
+void* copyDualLayer(void* destination, void* /*source*/, rw::int32 offset, rw::int32 size) {
+    return constructDualLayer(destination, offset, size);
+}
+
+// Coney's reader of RenderWare's MatFX material extension (rendering.md#dual), keeping only the dual effect's texture;
+// librw's own MatFX plugin is not attached, as it opens a driver for every backend (shaders without a GL context
+// under the NULL engine) and draws through pipelines Coney does not use.
+constexpr rw::uint32 kMatFxPluginId = 0x120; // rwID_MATERIALEFFECTSPLUGIN
+rw::int32 dualTextureOffset = -1;
+
+// The effect types a MatFX slot can hold (RenderWare's numbering).
+enum : rw::uint32 { kFxBumpMap = 1, kFxEnvMap = 2, kFxDual = 4 };
+
+// A material's dual texture slot, or its value.
+rw::Texture*& dualSlot(void* material) {
+    return *reinterpret_cast<rw::Texture**>(static_cast<std::byte*>(material) + dualTextureOffset);
+}
+
+// A new material has no dual texture.
+void* constructDualTexture(void* object, rw::int32 /*offset*/, rw::int32 /*size*/) {
+    dualSlot(object) = nullptr;
+    return object;
+}
+
+// A destroyed material lets go of its dual texture.
+void* destroyDualTexture(void* object, rw::int32 /*offset*/, rw::int32 /*size*/) {
+    if (rw::Texture* texture = std::exchange(dualSlot(object), nullptr); texture != nullptr) {
+        texture->destroy();
+    }
+    return object;
+}
+
+// A copied material shares its original's dual texture, holding its own reference.
+void* copyDualTexture(void* destination, void* source, rw::int32 /*offset*/, rw::int32 /*size*/) {
+    rw::Texture* texture = dualSlot(source);
+    if (texture != nullptr) {
+        ++texture->refCount;
+    }
+    dualSlot(destination) = texture;
+    return destination;
+}
+
+// Reads one texture the extension says follows (a flag, then the texture chunk); null when it has none, or on error.
+rw::Texture* readFxTexture(rw::Stream* stream, bool& ok) {
+    if (stream->readI32() == 0) {
+        return nullptr;
+    }
+    if (!rw::findChunk(stream, rw::ID_TEXTURE, nullptr, nullptr)) {
+        ok = false;
+        return nullptr;
+    }
+    return rw::Texture::streamRead(stream);
+}
+
+// The MatFX material extension: its effects word, then two slots, each a type and that effect's values and textures.
+rw::Stream* readDualTexture(rw::Stream* stream, rw::int32 /*length*/, void* object, rw::int32 /*offset*/,
+                            rw::int32 /*size*/) {
+    (void)stream->readU32(); // which effects; the slots below say the same
+    bool ok = true;
+    for (int slot = 0; slot < 2 && ok; ++slot) {
+        switch (stream->readU32()) {
+        case kFxBumpMap: {
+            (void)stream->readF32(); // coefficient
+            for (int t = 0; t < 2 && ok; ++t) {
+                if (rw::Texture* texture = readFxTexture(stream, ok); texture != nullptr) {
+                    texture->destroy(); // Coney draws no bump maps
+                }
+            }
+            break;
+        }
+        case kFxEnvMap: {
+            (void)stream->readF32(); // coefficient
+            (void)stream->readI32(); // frame-buffer alpha
+            if (rw::Texture* texture = readFxTexture(stream, ok); texture != nullptr) {
+                texture->destroy(); // the environment maps are not drawn yet
+            }
+            break;
+        }
+        case kFxDual: {
+            (void)stream->readI32(); // source blend
+            (void)stream->readI32(); // destination blend
+            rw::Texture* texture = readFxTexture(stream, ok);
+            if (rw::Texture* old = std::exchange(dualSlot(object), texture); old != nullptr) {
+                old->destroy();
+            }
+            break;
+        }
+        default: // nothing, or a UV transform: no values in the stream
+            break;
+        }
+    }
+    return ok ? stream : nullptr;
+}
+
+// Coney never writes materials back out.
+rw::Stream* writeDualTexture(rw::Stream* stream, rw::int32 /*length*/, void* /*object*/, rw::int32 /*offset*/,
+                             rw::int32 /*size*/) {
+    return stream;
+}
+
+// So nothing is written.
+rw::int32 dualTextureStreamSize(void* /*object*/, rw::int32 /*offset*/, rw::int32 /*size*/) { return 0; }
+
+// Stores `layer` as `atomic`'s dual layer.
+void setDualLayer(rw::Atomic* atomic, rw::Atomic* layer) {
+    std::memcpy(reinterpret_cast<std::byte*>(atomic) + dualLayerOffset, &layer, sizeof(layer));
+}
+
 // Sets the plugin's defaults on a new atomic: scales 1, word 0 (as the original's constructor at 0x00192618 does).
 void* constructAtomicPlugin(void* object, rw::int32 offset, rw::int32 /*size*/) {
     std::memcpy(static_cast<std::byte*>(object) + offset, &world::kDefaultAtomicPluginData,
@@ -266,6 +387,78 @@ void replaceWithPlainGeometry(rw::Atomic* atomic, const std::vector<PlainMesh>& 
     geometry->calculateBoundingSphere();
 }
 
+// The dual texture of `material` (its MatFX dual effect's), or null.
+rw::Texture* dualTextureOf(rw::Material* material) {
+    return material != nullptr && dualTextureOffset >= 0 ? dualSlot(material) : nullptr;
+}
+
+// Makes the dual layer of `base` (plain geometry with two texture-coordinate sets): a geometry with the same vertices,
+// the second set as its only one, and one mesh per dual material, textured with the dual texture and coloured as the
+// base material; on `base`'s frame. Null when no mesh has a dual texture.
+rw::Atomic* makeDualLayer(rw::Atomic* base) {
+    rw::Geometry* source = base->geometry;
+    if (source == nullptr || source->meshHeader == nullptr || source->numTexCoordSets < 2 ||
+        (source->flags & rw::Geometry::NATIVE) != 0) {
+        return nullptr;
+    }
+    const rw::Mesh* meshes = source->meshHeader->getMeshes();
+    std::vector<const rw::Mesh*> duals;
+    rw::uint32 indexTotal = 0;
+    for (rw::int32 m = 0; m < static_cast<rw::int32>(source->meshHeader->numMeshes); ++m) {
+        if (dualTextureOf(meshes[m].material) != nullptr && meshes[m].numIndices > 0) {
+            duals.push_back(&meshes[m]);
+            indexTotal += meshes[m].numIndices;
+        }
+    }
+    if (duals.empty()) {
+        return nullptr;
+    }
+
+    // The vertices, with the second texture-coordinate set as the first.
+    const rw::uint32 kept = source->flags & (rw::Geometry::POSITIONS | rw::Geometry::PRELIT | rw::Geometry::NORMALS |
+                                             rw::Geometry::LIGHT | rw::Geometry::MODULATE | rw::Geometry::TRISTRIP);
+    rw::Geometry* geometry =
+        rw::Geometry::create(source->numVertices, static_cast<rw::int32>(indexTotal), kept | rw::Geometry::TEXTURED);
+    const rw::MorphTarget& from = source->morphTargets[0];
+    rw::MorphTarget& to = geometry->morphTargets[0];
+    const auto count = static_cast<std::size_t>(source->numVertices);
+    std::memcpy(to.vertices, from.vertices, count * sizeof(rw::V3d));
+    if (to.normals != nullptr && from.normals != nullptr) {
+        std::memcpy(to.normals, from.normals, count * sizeof(rw::V3d));
+    }
+    if (geometry->colors != nullptr && source->colors != nullptr) {
+        std::memcpy(geometry->colors, source->colors, count * sizeof(rw::RGBA));
+    }
+    std::memcpy(geometry->texCoords[0], source->texCoords[1], count * sizeof(rw::TexCoords));
+
+    // One mesh per dual material, its indices as the base mesh's.
+    geometry->allocateMeshes(static_cast<rw::int32>(duals.size()), indexTotal, 0);
+    geometry->meshHeader->flags = source->meshHeader->flags;
+    rw::Mesh* out = geometry->meshHeader->getMeshes();
+    for (std::size_t m = 0; m < duals.size(); ++m) {
+        rw::Material* material = rw::Material::create();
+        material->color = duals[m]->material->color;
+        material->surfaceProps = duals[m]->material->surfaceProps;
+        material->setTexture(dualTextureOf(duals[m]->material));
+        geometry->matList.appendMaterial(material);
+        material->destroy(); // the list holds its own reference
+        out[m].material = material;
+        out[m].numIndices = duals[m]->numIndices;
+    }
+    geometry->meshHeader->setupIndices(); // each mesh's indices after the one before, by the counts just set
+    for (std::size_t m = 0; m < duals.size(); ++m) {
+        std::memcpy(out[m].indices, duals[m]->indices, duals[m]->numIndices * sizeof(rw::uint16));
+    }
+    geometry->generateTriangles();
+    geometry->calculateBoundingSphere();
+
+    rw::Atomic* layer = rw::Atomic::create();
+    layer->setGeometry(geometry, 0);
+    geometry->destroy(); // the atomic holds its own reference
+    layer->setFrame(base->getFrame());
+    return layer;
+}
+
 // The uninstance step of the game pipelines' stand-in: the packed layout.
 void uninstanceGameAtomic(rw::ObjPipeline* /*pipeline*/, rw::Atomic* atomic) {
     std::vector<PlainMesh> meshes;
@@ -323,6 +516,12 @@ void attachWorldPlugins() {
     rw::registerNativeDataPlugin();
     rw::registerAtomicRightsPlugin();
     rw::registerMaterialRightsPlugin();
+    // MatFX, for the dual layers' textures; Coney draws them itself.
+    dualTextureOffset = rw::Material::registerPlugin(sizeof(rw::Texture*), kMatFxPluginId, constructDualTexture,
+                                                     destroyDualTexture, copyDualTexture);
+    rw::Material::registerPluginStream(kMatFxPluginId, readDualTexture, writeDualTexture, dualTextureStreamSize);
+    dualLayerOffset =
+        rw::Atomic::registerPlugin(sizeof(rw::Atomic*), kDualLayerPluginId, constructDualLayer, nullptr, copyDualLayer);
 
     atomicPluginOffset = rw::Atomic::registerPlugin(kAtomicPluginBytes, world::kAtomicPluginId, constructAtomicPlugin,
                                                     nullptr, copyAtomicPlugin);
@@ -341,6 +540,15 @@ void attachWorldPlugins() {
     defaultLayoutPipeline.impl.uninstance = uninstanceDefaultAtomic;
     rw::Atomic::registerPlugin(0, kGamePipelinePlugin, nullptr, nullptr, nullptr);
     rw::Atomic::setStreamRightsCallback(kGamePipelinePlugin, gamePipelineRights);
+}
+
+rw::Atomic* dualLayerOf(const rw::Atomic* atomic) {
+    if (dualLayerOffset < 0 || atomic == nullptr) {
+        return nullptr;
+    }
+    rw::Atomic* layer = nullptr;
+    std::memcpy(&layer, reinterpret_cast<const std::byte*>(atomic) + dualLayerOffset, sizeof(layer));
+    return layer;
 }
 
 world::AtomicPluginData atomicPluginData(const rw::Atomic* atomic) {
@@ -477,6 +685,11 @@ WorldAtomic::~WorldAtomic() { destroy(); }
 void WorldAtomic::destroy() noexcept {
     if (m_atomic != nullptr) {
         rw::Frame* frame = m_atomic->getFrame();
+        if (rw::Atomic* layer = dualLayerOf(m_atomic); layer != nullptr) {
+            setDualLayer(m_atomic, nullptr);
+            layer->setFrame(nullptr);
+            layer->destroy();
+        }
         m_atomic->destroy();
         if (frame != nullptr) {
             frame->destroy();
@@ -502,6 +715,9 @@ void WorldAtomic::unpack() {
     }
     m_atomic->uninstance(); // through Coney's stand-in pipeline: uninstanceGameAtomic or uninstanceDefaultAtomic
     m_atomic->pipeline = nullptr;
+    if (dualLayerOf(m_atomic) == nullptr) {
+        setDualLayer(m_atomic, makeDualLayer(m_atomic));
+    }
 }
 
 } // namespace coney::platform

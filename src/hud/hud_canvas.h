@@ -27,7 +27,7 @@ struct HudCanvas {
     graphics::SpriteBatch* parts = nullptr;     ///< `part_page0`: the meter, the counters' icons, the radar's icons.
     graphics::SpriteBatch* minigames = nullptr; ///< `hud_minigames`: the instruction arrow.
     graphics::SpriteBatch* flat = nullptr;      ///< Untextured quads below the text: the hint box, panel bars.
-    graphics::SpriteBatch* radar = nullptr;     ///< The radar disc (Coney's stand-in sheet, Hud::kRadarDiscRect).
+    graphics::SpriteBatch* radarMap = nullptr;  ///< The level's map sheet (RadarMap::sheet): the radar's disc.
     /// The batch of a banner's sheet (by sheet-table record) at the banner's depth (`shadow` false) or the shadows'
     /// (`shadow` true); null when that sheet is not loaded.
     std::function<graphics::SpriteBatch*(std::uint32_t record, bool shadow)> banner;

@@ -19,6 +19,15 @@ struct Sprite {
     Rgba colour = kWhite;  ///< Multiplies the texture; alpha blends the sprite over what is below.
 };
 
+/// One corner of a triangle of a batch: the original's immediate-mode 2D vertices, which some HUD parts draw over a
+/// batch's texture (the radar's disc, docs/research/hud.md#the-radar-on-screen).
+struct OverlayVertex {
+    OverlayPoint position; ///< In the overlay camera's space.
+    float u = 0.0F;        ///< Texture coordinate across the whole texture.
+    float v = 0.0F;        ///< Texture coordinate down.
+    Rgba colour = kWhite;  ///< Multiplies the texture; alpha blends the triangle over what is below.
+};
+
 /// A batch of sprites over one sprite sheet, drawn with one texture: the original's resource-manager instance, whose
 /// atomic is a PTank. Game code adds sprites to it every frame; the 2D pass (OverlayPass) draws it and empties it.
 ///
@@ -36,13 +45,24 @@ class SpriteBatch {
     /// @orig 0x00182de0 Instance_AddSprite (unknown)
     bool addSprite(const Sprite& sprite);
 
+    /// Appends one triangle for this frame, drawn with the sheet's texture after the sprites. A triangle with a corner
+    /// at or behind the camera is dropped.
+    void addTriangle(const OverlayVertex& a, const OverlayVertex& b, const OverlayVertex& c);
+
     /// Draws the batch's sprites through `camera` onto the logical screen, in the order they were added, as one
-    /// drawQuads() call with the sheet's texture. Does nothing for an empty batch.
+    /// drawQuads() call with the sheet's texture, then its triangles as one drawTriangles() call. Does nothing for an
+    /// empty batch.
     /// @orig 0x00197168 Instance_Render (unknown)
     void render(RenderDevice& device, const OverlayCamera& camera) const;
 
-    /// Removes this frame's sprites; the 2D pass does it after drawing.
-    void clear() { m_sprites.clear(); }
+    /// How the triangles sample and test (TriangleStates): clamped with no alpha test by default.
+    void setTriangleStates(const TriangleStates& states) { m_triangleStates = states; }
+
+    /// Removes this frame's sprites and triangles; the 2D pass does it after drawing.
+    void clear() {
+        m_sprites.clear();
+        m_triangles.clear();
+    }
 
     /// The sheet the sprites come from.
     [[nodiscard]] const SpriteSheet& sheet() const { return m_sheet; }
@@ -52,14 +72,21 @@ class SpriteBatch {
     [[nodiscard]] float depth() const { return m_depth; }
     /// This frame's sprites, in the order they were added.
     [[nodiscard]] const std::vector<Sprite>& sprites() const { return m_sprites; }
+    /// This frame's triangles, three corners each, in the order they were added.
+    [[nodiscard]] const std::vector<OverlayVertex>& triangles() const { return m_triangles; }
     /// The largest number of sprites a frame has held (the original keeps it at `+0x74`).
     [[nodiscard]] std::size_t mostSprites() const { return m_mostSprites; }
 
   private:
+    // The sprites' part of render(): one drawQuads() call.
+    void renderSprites(RenderDevice& device, const OverlayCamera& camera) const;
+
     SpriteSheet m_sheet;
     std::size_t m_capacity;
     float m_depth;
     std::vector<Sprite> m_sprites;
+    std::vector<OverlayVertex> m_triangles;
+    TriangleStates m_triangleStates;
     std::size_t m_mostSprites = 0;
 };
 

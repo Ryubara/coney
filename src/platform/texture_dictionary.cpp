@@ -60,6 +60,23 @@ std::expected<void, Error> readDictionaryIntoStacks(io::Stream& chunk, const chu
     return {};
 }
 
+// Limits a converted texture to the `levels` mip levels its PS2 raster had. librw's GL3 raster of a mipmapped format
+// allocates the whole chain down to 1 x 1 but the conversion fills only the levels the source has; with the rest
+// empty, OpenGL treats the texture as incomplete under a mipmap filter and samples black (most of the world's
+// mipmapped textures have one level, MXL 0, docs/research/rendering.md#world). With one level the texture is
+// filtered without mipmaps, as on the GS.
+void keepLevels(rw::Raster* raster, rw::int32 levels) {
+    auto* native = PLUGINOFFSET(rw::gl3::Gl3Raster, raster, rw::gl3::nativeRasterOffset);
+    if (raster->platform != rw::PLATFORM_GL3 || native->autogenMipmap || levels < 1 || native->numLevels <= levels) {
+        return;
+    }
+    native->numLevels = static_cast<rw::int8>(levels);
+    const rw::uint32 bound = rw::gl3::bindTexture(native->texid);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, levels - 1);
+    rw::gl3::bindTexture(bound); // librw's state cache still holds the texture bound before
+    native->filterMode = 0xFF;   // the device sets the filter again, without mipmaps for a single level
+}
+
 // Whether librw's PS2 texture reader can take `texture` without writing past the buffers it allocates. librw sizes
 // a raster's buffers by its own reckoning of the GS layout and then copies as many bytes as the stream's header says;
 // for some of the game's smallest textures (a 2 x 2 4-bit texture padded to the GS's minimum transfer, for one) the
@@ -231,11 +248,13 @@ std::expected<void, Error> TextureDictionary::convertForDrawing() {
             return conversionFailure(texture, "(it has no raster)");
         }
         // convertTexToCurrentPlatform destroys the old raster when it makes a new one.
+        const rw::int32 levels = texture->raster->getNumLevels();
         rw::Raster* converted = rw::Raster::convertTexToCurrentPlatform(texture->raster);
         if (converted == nullptr) {
             return conversionFailure(texture, "for drawing");
         }
         texture->raster = converted;
+        keepLevels(converted, levels);
     }
     return {};
 }

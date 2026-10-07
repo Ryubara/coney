@@ -36,6 +36,11 @@ void attachWorldPlugins();
 /// attachWorldPlugins().
 [[nodiscard]] world::AtomicPluginData atomicPluginData(const rw::Atomic* atomic);
 
+/// The second layer of `atomic`'s MatFX dual materials (docs/research/rendering.md#dual): an atomic on the same frame
+/// holding only those materials' triangles, each with its dual texture on the second texture-coordinate set, to draw
+/// right after the atomic itself. Null when the atomic has none, or before WorldAtomic::unpack().
+[[nodiscard]] rw::Atomic* dualLayerOf(const rw::Atomic* atomic);
+
 /// Which vertex layout an atomic's PS2 native data uses.
 enum class VertexLayout : std::uint8_t {
     GamePacked,        ///< The game's packed integers, unpacked by its pipelines 0x30082 and 0x30083.
@@ -78,7 +83,7 @@ class WorldAtomic {
     /// Turns the PS2 native geometry into plain librw geometry (positions scaled by the 0x3F0 position scale, texture
     /// coordinates, prelighting, normals and triangles), through the atomic's pipeline as librw's own uninstance step,
     /// then hands the atomic back to the platform's default pipeline, so that the GL3 renderer instances it like any
-    /// other. Does nothing when the geometry is already plain.
+    /// other, and makes its dual layer (dualLayerOf()). Does nothing when the geometry is already plain.
     void unpack();
 
   private:

@@ -166,6 +166,7 @@ add_library(coney_core STATIC
     world_objects/pickups.cpp
     world_objects/placed_objects_file.cpp
     world_objects/radios.cpp
+    world_objects/spinning_icons.cpp
     world_objects/spawn_records.cpp
     world_objects/tag_spots.cpp
     world_objects/flag_net.cpp
@@ -345,6 +346,7 @@ target_sources(coney_core PRIVATE
     hud/health_rings.cpp
     hud/hint_box.cpp
     hud/hud.cpp
+    hud/radar.cpp
     hud/hud_canvas.cpp
     hud/mash_meter.cpp
     hud/messages.cpp
