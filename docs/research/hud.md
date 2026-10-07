@@ -2089,6 +2089,12 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   `level99` checkpoint 1 through `l99_c1` unskipped: hidden and nothing drawn under the bars, then shown, drawn and
   the first hint up, and a pause hiding and showing it. The debug menus' HUD page sets its values ([Debug menu](../guides/debug-menu.md#pages)).
 
+**The mash meter** (`repo:src/hud/mash_meter.h`), as [the mash meter](#fn-after-basewidget) says: player 0's or 1's button
+sprite, the bar from its left end filled by the mash over its target and the L1 and R1 glyphs alternating every
+400 ms (the triangle blink for any other word); while one shows, the scroll-in messages, the hint box and the prompts
+are hidden. The uncuffing shows it ([Crimes](crimes.md#coneys-implementation)). **Coney's stand-in**: the loaded
+`menu_system` page has no rectangles 80-83, so the rage meter's `part_page0` rectangles draw the bar.
+
 **The Warrior command menu** (`repo:src/hud/war_command_display.h`, stepped by
 `repo:src/gamemodes/gameplay_war_commands.cpp`), as [the menu](#warrior-command-menu) says: each frame of play, before
 the level's step, pad 1's R2 release gives the highlighted slot's command to the dispatcher (unforced, through

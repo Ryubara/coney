@@ -32,6 +32,7 @@ struct DisplayOptions {
     bool fpsCounter = false;    ///< The frame rate, frame time and steps a second, under the frame stats.
     bool safeArea = false;      ///< The GUI square's edges: the overlay camera's built-in safe-area margin.
     bool logicalBounds = false; ///< The 640 x 448 logical screen's edges.
+    bool coordinates = false;   ///< Player 1's feet and heading, in a corner (needs a play mode).
 };
 
 /// What the debug menus reach in the running game. Every field may be empty; a page whose service is missing says so

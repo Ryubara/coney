@@ -216,7 +216,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// as and its files (the anim set, the moves' Anim Range List, the speeds its clips give), loaded as the mode's
     /// start loads them, and his class as the start's player takes it (human::playerClassOf(): the class's damage
     /// scaled by his Warrior class, his power class), at full health where he stands. The AI
-    /// fighters are made again where they stand, at full health, since their brains hold the player they fought.
+    /// fighters are made again where they stand, at full health, since their brains hold the player they fought. In a
+    /// level whose scripts drive the cast the player cannot be made again, so only his model and type change.
     std::expected<void, Error> changeCharacter(int type) override;
 
     /// Plays the game's scenes in this mode (src/platform/play_level_scene.cpp): `scenes` is stepped with every step
@@ -290,6 +291,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // player's creation, at the start and at a change of character (src/platform/play_level_character.cpp).
     [[nodiscard]] static std::expected<LoadedCharacter, Error> loadCharacter(RenderEngine& engine, const io::Wad& wad,
                                                                              std::string_view model);
+    // Draws the player as `loaded` (the model `model`) from now on, keeping his animations and class: a hand-over and
+    // a change of character in a scripted level share it.
+    void swapPlayerModel(LoadedCharacter loaded, const std::string& model);
     // The texture a character's dictionaries hold, which every material uses; null when none.
     [[nodiscard]] static rw::Texture* textureOf(const std::vector<TextureDictionary>& dictionaries);
     // The character the player plays: his own after a change of character, else the scene's.

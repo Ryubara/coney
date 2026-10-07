@@ -344,6 +344,7 @@ target_sources(coney_core PRIVATE
     hud/hint_box.cpp
     hud/hud.cpp
     hud/hud_canvas.cpp
+    hud/mash_meter.cpp
     hud/messages.cpp
     hud/player_panel.cpp
     hud/player_panel_render.cpp

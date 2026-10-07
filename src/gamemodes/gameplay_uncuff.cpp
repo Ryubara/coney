@@ -14,9 +14,12 @@
 #include "ai/scripted_brains.h"
 #include "ai/scripted_humans.h"
 #include "characters/character_class.h"
+#include "combat/combat_tuning.h"
 #include "combat/player_combat.h"
 #include "combat/stick_games.h"
 #include "gamemodes/gameplay_mode.h"
+#include "hud/hud.h"
+#include "hud/mash_meter.h"
 #include "human/human.h"
 #include "human/human_flags.h"
 #include "scripting/object_bindings.h"
@@ -112,6 +115,10 @@ bool GameplayMode::startUncuff(human::Human& freer) {
             script::CommandCall{.human = player->handle, .command = kReassureCommand, .interrupt = true}, {}));
     }
     freer.startUncuff(cuffed->human().position(), factor);
+    // The triangle press shows player 1's mash meter: button id 1, the L1-R1 sprite word.
+    if (m_context.hud != nullptr) {
+        m_context.hud->mashMeter(0).show(1, hud::MashMeter::kUncuffWord);
+    }
     cuffed->human().playUncuffReact(freer);
     m_uncuff = Uncuff{.freer = player->handle, .cuffed = cuffed->handle()};
     m_log(std::format("uncuff: freeing human {:.0f}, mash byte {}\n", cuffed->handle(), mashByte));
@@ -138,11 +145,20 @@ void GameplayMode::updateUncuff() {
     const bool running = combat.mode() == combat::CombatMode::Theft;
     // The cuffed human gone, or freed some other way: the mash fails.
     const bool cuffedGone = cuffed == nullptr || !cuffed->human().script().arrested;
+    // The meter's fill each update: the meter over its target (HUD_MashMeterUpdate).
+    const int target = combat::combatTuning().mashTarget;
+    if (m_context.hud != nullptr && combat.mash() && target > 0) {
+        m_context.hud->mashMeter(0).setFill(static_cast<float>(combat.mash()->meter()) / static_cast<float>(target));
+    }
     if (running && !cuffedGone && freer.uncuffPlaying()) {
         return;
     }
+    // Whatever the outcome, the mini-game ends and its meter goes (MiniGame_Abort).
     const Uncuff uncuff = *m_uncuff;
     m_uncuff.reset();
+    if (m_context.hud != nullptr) {
+        m_context.hud->mashMeter(0).hide();
+    }
     if (result == combat::GameResult::Succeeded && !cuffedGone) {
         uncuffSucceeded(freer, *cuffed);
         return;

@@ -16,6 +16,8 @@ patches = ["scripted-pad", "right-stick"]
 # right of his facing).
 level = "level99"
 args = ["--checkpoint", "3", "--start", "75.155,41.1354,0.2231,91.909,5.3,89.854"]
+# Checkpoint 3 opens with Vermin's fence lesson, which holds the pad for about 9 s; the slot starts after it.
+settle = 300
 
 [diff]
 # The walk start's timing and speeds, where he walks, and the camera that follows him.

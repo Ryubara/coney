@@ -77,11 +77,21 @@ std::string PlayLevelMode::characterState() const {
     return state;
 }
 
-std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
-    // **Coney choice**: not in a level whose scripts drive the cast, whose brains hold the player by his handle.
-    if (m_cast.brains != nullptr) {
-        return fail(ErrorCode::InvalidArgument, "the level's scripts hold the player; change him in a sandbox");
+void PlayLevelMode::swapPlayerModel(LoadedCharacter loaded, const std::string& model) {
+    // He keeps animating with the character he has (every character has the same 34 bones); only the model drawn
+    // changes. The old mesh goes before the dictionaries whose texture it holds.
+    m_mesh = std::make_unique<CharacterMesh>(loaded.character->assets().model, textureOf(loaded.dictionaries));
+    m_positions.assign(loaded.character->assets().model.vertices.size(), anim::Vec3{});
+    m_normals.assign(m_positions.size(), anim::Vec3{});
+    if (m_playerCharacter) {
+        m_retired.push_back(std::move(m_playerCharacter));
     }
+    m_playerCharacter = std::move(loaded.character);
+    m_playerDictionaries = std::move(loaded.dictionaries);
+    m_model = model;
+}
+
+std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     // The type must be configured and name a model a player of it is drawn as.
     if (m_types.find(type) == nullptr) {
         return fail(ErrorCode::NotFound, std::format("type {} is not in the configuration", type));
@@ -94,6 +104,17 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     auto loaded = loadCharacter(m_engine, m_wad, *model);
     if (!loaded) {
         return std::unexpected(std::move(loaded.error()));
+    }
+
+    // In a level whose scripts drive the cast, the brains and the scripts hold the player by his handle, so he cannot
+    // be made again: **Coney's choice** is to change only what he is drawn as and his type, as a hand-over does
+    // (takePlace()); his class and health stay what the level made them.
+    if (m_cast.brains != nullptr) {
+        swapPlayerModel(std::move(*loaded), *model);
+        m_type = type;
+        m_print(std::format("player: type {} drawn as {} (the level's scripts hold the player: class and health kept)\n",
+                            type, *model));
+        return {};
     }
 
     // Where the player and the fighters stand. The fighters' brains hold the player they fight, so they go with him

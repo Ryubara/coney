@@ -15,3 +15,5 @@ patches = ["scripted-pad", "right-stick", "strike-contact", "strike-shape", "bar
 [coney]
 level = "level99"
 args = ["--checkpoint", "3"]
+# Checkpoint 3 opens with Vermin's fence lesson, which holds the pad for about 9 s; the slot starts after it.
+settle = 300

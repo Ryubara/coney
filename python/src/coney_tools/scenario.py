@@ -21,6 +21,7 @@ calls = [ { function = "0x002b2b90", args = ["u32(puppet + 0x90)", "u32(player +
 [coney]
 level = "level99"                    # --play-level
 args = []                            # more of Coney's options
+settle = 0                           # updates Coney plays first with no input, dropped from its trace
 
 [diff]
 start_frame = true                   # compare in the player's frame at the first update of input
@@ -123,10 +124,20 @@ class Scenario:
     coney_level: str
     coney_args: tuple[str, ...]
     diff: DiffSettings
+    #: Updates Coney plays before the script starts, where a level's opening holds the pad (they are dropped from the
+    #: trace and the script is shifted by them), so a scenario can start where the original's slot does.
+    coney_settle: int = 0
 
     def first_input_step(self) -> int:
         """The step the first line of input takes effect on (frame N is step N + 1), or 1 for an empty script."""
         return self.events[0].frame + 1 if self.events else 1
+
+
+def _settle(value: object, where: str) -> int:
+    """The `[coney] settle` count: a whole number of updates, not negative."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ScenarioError(f"{where}: [coney] settle must be a whole number of updates, 0 or more")
+    return value
 
 
 def _load_toml(path: Path) -> dict[str, Any]:
@@ -322,4 +333,5 @@ def load_scenario(path: Path, root: Path) -> Scenario:
         coney_level=str(coney.get("level", "")),
         coney_args=tuple(str(a) for a in coney.get("args", [])),
         diff=_diff(data.get("diff", {}), where),
+        coney_settle=_settle(coney.get("settle", 0), where),
     )

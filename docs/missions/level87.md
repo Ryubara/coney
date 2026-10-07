@@ -21,7 +21,7 @@ goals.
 | # | Status | Note |
 | --- | --- | --- |
 | 1 | 🚧 In Progress | Plays to checkpoint 2 driven by the pad: the walk and climb to the first burner, triangle at its flag (the spray intro 334 where he stands, then the stick game as the loop 335 starts), the tag finished with the left stick, and the walk to the streets. Played on into checkpoint 2, chapter 2's set-up fails (the preLoadFile fix is being merged). |
-| 2 | 🚧 In Progress | From a checkpoint 2 start: a passer-by mugged for cash, spray bought from the dealer, the three burners tagged; the walk to the back alleys is next. |
+| 2 | 🚧 In Progress | From a checkpoint 2 start, driven by the pad: a passer-by mugged for cash, spray bought from the dealer, the three burners tagged and the walk back to the back alleys' marker reach checkpoint 3. |
 | 3 | 🚧 In Progress | - |
 | 4 | 🚧 In Progress | - |
 | 5 | 🚧 In Progress | - |

@@ -89,6 +89,16 @@ std::vector<std::string> DebugSession::cornerLines() const {
                                         rates->frameMilliseconds, rates->stepsPerSecond));
         }
     }
+    // Player 1's place, from the play mode's own state; nothing in a run without a player.
+    if (m_display.coordinates) {
+        if (const PlayControls* play = this->play(); play != nullptr) {
+            const anim::Vec3 feet = play->playerFeet();
+            lines.push_back(std::format("x {:.2f}  y {:.2f}  z {:.2f}  heading {:.1f}", feet.x, feet.y, feet.z,
+                                        play->playerHeadingDegrees()));
+        } else {
+            lines.emplace_back("coordinates: no player");
+        }
+    }
     return lines;
 }
 

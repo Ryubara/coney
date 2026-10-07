@@ -196,6 +196,10 @@ void addDisplayPage(DebugSession& session) {
                     .withHelp("Waits for the display's vertical blank on each present.");
             }
             page.add(toggleItem(
+                         "Coordinates", [&display] { return display.coordinates; },
+                         [&display](bool on) { display.coordinates = on; }))
+                .withHelp("Player 1's position (x y z, metres) and heading (degrees, 0 faces +y), in the corner.");
+            page.add(toggleItem(
                          "Safe area", [&display] { return display.safeArea; },
                          [&display](bool on) { display.safeArea = on; }))
                 .withHelp("The GUI square: where the menus and the HUD place things (docs/research/graphics.md).");

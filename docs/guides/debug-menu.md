@@ -117,7 +117,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | AI fighters | AI humans that fight the player: spawn one in front of him, the engaging toggle, their state, clear them |
 | HUD | the [in-game HUD](../research/hud.md)'s parts on and off, player 1's rage, score, money and items set (-1 gives the value back), an objective, a hint and an announcement fired |
 | Debug draw | lines in the scene: collision near the player, the player's heading and velocity, the camera, places |
-| Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the GUI safe area, the logical screen |
+| Display | the frame-stats line, the FPS counter, the frame cap and vsync (live), the player's coordinates, the GUI safe area, the logical screen |
 | Audio | the output device, the master and bus volumes, a looping test tone, the voices playing (plotted) |
 | Input | port 1 live: buttons held, both sticks (plotted), the raw stick bytes, the triggers' pressure |
 
@@ -162,7 +162,9 @@ starting player takes his. That is the class's damage table scaled by his Warrio
 type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, hurt threshold,
 stun and down times. The Player page's *Character* line shows both classes. The AI fighters are made again where they
 stand, at full health, since their brains hold the player they fought; they and the targets keep the scene's
-character. The new character loads from the disc, so that frame stalls briefly.
+character. In a level whose scripts hold the player (every story level, the hub included) he cannot be made again, so
+*Change character* changes only what he is drawn as and his type: his class and health stay what the level made them.
+The new character loads from the disc, so that frame stalls briefly.
 
 Not taken from the configuration yet, because Coney does not model them for a player: the health (he keeps 900, the
 player's maximum read at runtime, which the class's 1800 does not explain), the power class's stamina, the Warrior
@@ -176,7 +178,9 @@ frame time and the steps a second over each half second, as the frame pacer meas
 whose one-second readings `--show-fps` prints); it is only shown, never read by a step. *FPS cap* and *Vsync* change
 the pacing live, as `--fps-cap` and `--vsync` set it at start: a cap of 30 runs one step a frame, any other (0 shows
 as *uncapped*) blends between steps ([Update and render](conventions.md#update-and-render)). A test-mode run has no
-real clock, so the counter says so and there is no cap to change.
+real clock, so the counter says so and there is no cap to change. *Coordinates* shows player 1's feet (x, y, z in
+metres, z up) and heading (degrees, 0 faces +y) under the other corner lines, read from the play mode; with no player
+it says so.
 
 **Debug draw** switches lines the play mode draws into the scene, tested against depth: the collision triangles within
 a radius of the player as a wireframe (at most 6,000), a cross at his feet with his heading and velocity, the ground's

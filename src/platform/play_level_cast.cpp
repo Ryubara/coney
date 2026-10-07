@@ -97,18 +97,7 @@ void PlayLevelMode::takePlace(const ai::Brain& to) {
     const HumanCreation* made = m_cast.humans != nullptr ? m_cast.humans->find(to.handle()) : nullptr;
     if (made != nullptr && !made->model.empty() && made->model != m_model) {
         if (auto loaded = loadCharacter(m_engine, m_wad, made->model); loaded) {
-            // He keeps animating with the character he was made with (every character has the same 34 bones); only
-            // the model drawn changes. The old mesh goes before the dictionaries whose texture it holds.
-            m_mesh =
-                std::make_unique<CharacterMesh>(loaded->character->assets().model, textureOf(loaded->dictionaries));
-            m_positions.assign(loaded->character->assets().model.vertices.size(), anim::Vec3{});
-            m_normals.assign(m_positions.size(), anim::Vec3{});
-            if (m_playerCharacter) {
-                m_retired.push_back(std::move(m_playerCharacter));
-            }
-            m_playerCharacter = std::move(loaded->character);
-            m_playerDictionaries = std::move(loaded->dictionaries);
-            m_model = made->model;
+            swapPlayerModel(std::move(*loaded), made->model);
         } else {
             m_print(std::format("cast: model {} not loaded ({}); player 1 keeps {}\n", made->model,
                                 loaded.error().message, m_model));

@@ -458,6 +458,7 @@ setup = [ { address = "prec(puppet) + 0x1e", type = "u8", value = "0", frame = 0
 [coney]
 level = "level99"                 # --play-level
 args = []                         # more of Coney's options, such as ["--spawn", "start"]
+settle = 0                        # updates Coney plays first with no input, dropped from its trace
 
 [diff]                            # how `coney-tools trace diff --scenario` compares the two traces
 start_frame = true
@@ -520,7 +521,10 @@ The hooks of the runtime-checks pass: `tick-game` and `humans-update` (the play 
 ### Comparing with Coney {#comparing-with-coney}
 
 `coney-tools trace coney` plays the same scenario on Coney headless (`--play-level` from its `[coney]` table,
-`--frames` its updates, its input script, `--trace`), and `coney-tools trace diff` compares the two traces:
+`--frames` its updates, its input script, `--trace`), and `coney-tools trace diff` compares the two traces. A
+scenario whose level opens with a script that holds the pad (level99 checkpoint 3: Vermin's fence lesson, about 9 s)
+sets `settle` in `[coney]`: Coney plays that many updates first, the input script is shifted by them, and they are
+dropped from the trace (renumbered from 1), so the run starts where the original's saved slot does:
 
 ```sh
 uv run --project python coney-tools trace coney research/traces/scenarios/walk60.toml --out ../../scratch/walk60-coney.csv

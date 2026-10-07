@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -18,6 +19,7 @@
 #include "hud/hud_audio.h"
 #include "hud/hud_canvas.h"
 #include "hud/hud_layout.h"
+#include "hud/mash_meter.h"
 #include "hud/messages.h"
 #include "hud/player_panel.h"
 #include "hud/scripted_bars.h"
@@ -239,6 +241,9 @@ class Hud {
     void stopActionCycle(std::size_t player) { m_cycles.at(player).on = false; }
     [[nodiscard]] const ActionCycle& actionCycle(std::size_t player) const { return m_cycles.at(player); }
 
+    /// Player `player`'s mash meter (HUD `+0xebc0` + player × `0x430`, docs/research/hud.md#mash-meter-layout).
+    [[nodiscard]] MashMeter& mashMeter(std::size_t player) { return m_mash.at(player); }
+    [[nodiscard]] const MashMeter& mashMeter(std::size_t player) const { return m_mash.at(player); }
     /// Player `player`'s Warrior command menu (panel `+0x1ef0`, docs/research/hud.md#warrior-command-menu).
     [[nodiscard]] WarCommandDisplay& warCommands(std::size_t player) { return m_warCommands.at(player); }
     [[nodiscard]] const WarCommandDisplay& warCommands(std::size_t player) const { return m_warCommands.at(player); }
@@ -315,9 +320,12 @@ class Hud {
     /// The level number of the last step.
     [[nodiscard]] int levelNumber() const { return m_levelNumber; }
 
-    /// Whether the hint box, the prompts and the scroll-in messages are hidden now: a bottom-left announcement shows
-    /// (and, for the hint box, a scroll-in message).
-    [[nodiscard]] bool scrollInHidden() const { return m_announcement.has_value(); }
+    /// Whether the hint box, the prompts and the scroll-in messages are hidden now: a bottom-left announcement or a
+    /// mini-game panel (a mash meter) shows (and, for the hint box, a scroll-in message).
+    [[nodiscard]] bool scrollInHidden() const {
+        return m_announcement.has_value() ||
+               std::ranges::any_of(m_mash, [](const MashMeter& meter) { return meter.shown(); });
+    }
     [[nodiscard]] bool hintsHidden() const { return scrollInHidden() || m_scrollIn.showing(); }
 
     /// Adds the newest step's sprites: nothing while hidden or letterboxed; else the radar, the arrow, the counter
@@ -357,6 +365,7 @@ class Hud {
     bool m_clubActionText = false;
     std::array<ActionCycle, kPlayers> m_cycles{};
     std::array<WarCommandDisplay, kPlayers> m_warCommands{};
+    std::array<MashMeter, kPlayers> m_mash{};
     bool m_letterbox = false;
     // The letterbox's "restore pending" mark (screen effects +0x1f4): armed by a letterbox move, stamped as the bars
     // reach 0, and the next step with the bars out shows the HUD.

@@ -70,6 +70,7 @@ add_executable(coney_tests
     gui/widgets_test.cpp
     hud/health_rings_test.cpp
     hud/hud_test.cpp
+    hud/mash_meter_test.cpp
     hud/player_panel_test.cpp
     hud/scripted_bars_test.cpp
     hud/war_command_display_test.cpp

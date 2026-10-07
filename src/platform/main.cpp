@@ -1231,6 +1231,12 @@ int main(int argc, char** argv) {
         printText(audio->summary());
     }
 
+    // The level played on its own goes before the sound output (declared further down, so destroyed first), whose
+    // game sound its scripts' binding context and play mode still point at: tearing those down afterwards read freed
+    // sound state and crashed `--play-level level95` at exit.
+    levelGameplay.reset();
+    levelScripts.reset();
+
     // Report the screenshot: where it went and a summary that says whether anything was drawn.
     if (const auto& capture = renderer.capture(); capture) {
         if (!capture->has_value()) {

@@ -740,11 +740,13 @@ runs the mash ([above](#uncuffing), `combat::ButtonMash`) with his class's byte 
 `combat::mashFactor()`); the cuffed human plays 326 paired, then 330. Success: he says 67 and is released (and revived
 when knocked out and revivable), the freer plays 332 and he 333; failure (a quit command, the decay below 0, the cuffed
 human gone or released some other way): 332 and back to 320. A body something else takes before the outcome (a hit)
-plays 331. A disc test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at
+plays 331. Player 1's [mash meter](hud.md#fn-after-basewidget) (`hud::MashMeter`) shows from the press to the outcome,
+filled by the meter over its target, and hides the prompt, the hint box and the scroll-in messages meanwhile. A disc
+test (`[disc][uncuff]`, `repo:tests/platform/disc_level80_test.cpp`) frees Snow and Cowboy at
 `level80` checkpoint 2 and reaches checkpoint 3. **Coney's stand-ins and readings**: friendly is the gangs'
 friendship (`Human_IsFriendly`, `0x00222a90`, is not on the page); event 17's other human is none; the push weight,
-the partner and the shared body group are not kept; after a hit the cuffed human goes back to 320. Not yet: the mash
-meter and hint 19, the `dyn_cuffs` icon, the key path, the 0.2 m capsule test, players in cuffs, the leaderless
+the partner and the shared body group are not kept; after a hit the cuffed human goes back to 320. Not yet: hint 19,
+the `dyn_cuffs` icon, the key path, the 0.2 m capsule test, players in cuffs, the leaderless
 gang's follow after a release and `0x00280fd8`.
 
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);

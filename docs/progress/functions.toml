@@ -2312,6 +2312,16 @@ subsystem = "GUI"
 size = 640
 
 [[function]]
+address = 0x001a3338
+name = "MashMeter_SetFill"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001a3360
+name = "MashMeter_Render"
+subsystem = "GUI"
+
+[[function]]
 address = 0x001a3990
 name = "ChaseGauge_Update"
 subsystem = "GUI"

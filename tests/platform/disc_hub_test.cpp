@@ -63,12 +63,14 @@ struct HubRun {
     bool standing = false;
     float travelled = 0.0F;
     std::size_t humans = 0;
+    bool changed = false;     // whether Change character took (when asked)
+    std::string modelAfter;   // the player's model after it
 };
 
 // Plays `level95` at `checkpoint` as `--play-level` does (the preloads, the level's script, gameplay over the play
 // mode with the scripts' AI and character configuration) for 30 s, the stick pushed 70 % forward for the last 3 s: the
 // hub's opening locks the pad for a while (about 23 s at checkpoint 1).
-HubRun playHub(const coney::io::Wad& wad, int checkpoint) {
+HubRun playHub(const coney::io::Wad& wad, int checkpoint, std::optional<int> changeTo = std::nullopt) {
     HubRun run;
     const std::string_view level = "level95";
     auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
@@ -138,6 +140,13 @@ HubRun playHub(const coney::io::Wad& wad, int checkpoint) {
         }
         return run;
     }
+    // The debug menus' Change character, in a level whose scripts hold the player (level95 is one).
+    if (changeTo) {
+        auto* mutablePlay = dynamic_cast<coney::platform::PlayLevelMode*>(gameplay.level());
+        run.changed = mutablePlay->changeCharacter(*changeTo).has_value();
+        run.modelAfter = mutablePlay->model();
+        stack.runUntilEmpty(timer, {}, 5);
+    }
     const float before = play->stats().travelled;
     stack.runUntilEmpty(timer, {}, 90);
     run.travelled = play->stats().travelled - before;
@@ -175,4 +184,18 @@ TEST_CASE("the disc's level95 plays each checkpoint without a script error, play
                     checkpoint, run.humans, static_cast<unsigned long long>(run.scriptErrors), run.missingBindings,
                     run.travelled);
     }
+}
+
+TEST_CASE("Change character works in level95, whose scripts hold the player", "[disc][story][hub][debug]") {
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    const HubRun run = playHub(*wad, 1, 31);
+    REQUIRE(run.loaded);
+    CHECK(run.changed);
+    CHECK(run.modelAfter == "warr_re");
+    CHECK(run.scriptErrors == 0);
+    CHECK(run.standing);
+    std::printf("  level95 change character: took %d, model %s\n", run.changed ? 1 : 0, run.modelAfter.c_str());
 }

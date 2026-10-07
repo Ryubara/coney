@@ -95,8 +95,36 @@ def _disc(given: str | None) -> str:
     return str(images[0] if len(images) == 1 else game)
 
 
-def coney_command(scenario: Scenario, executable: Path, disc: str, out: Path) -> list[str]:
-    """The command line that plays `scenario` on Coney headless and traces it to `out`."""
+def shifted_script(text: str, by: int) -> str:
+    """The input script `text` with every frame number raised by `by` (comments and blank lines are kept)."""
+    lines = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            lines.append(line)
+            continue
+        frame, _, rest = stripped.partition(" ")
+        lines.append(f"{int(frame) + by} {rest}")
+    return "\n".join(lines) + "\n"
+
+
+def trimmed_trace(text: str, settle: int) -> str:
+    """The trace CSV `text` without its first `settle` steps, the rest numbered from 1 again."""
+    header, *rows = text.splitlines()
+    kept = []
+    for row in rows:
+        step, _, rest = row.partition(",")
+        if int(step) > settle:
+            kept.append(f"{int(step) - settle},{rest}")
+    return "\n".join([header, *kept]) + "\n"
+
+
+def coney_command(scenario: Scenario, executable: Path, disc: str, out: Path, script: Path | None = None) -> list[str]:
+    """The command line that plays `scenario` on Coney headless and traces it to `out`.
+
+    `script` is the input script to play instead of the scenario's (the settled one, when it has a `settle`), and the
+    run lasts the scenario's settle longer than its updates.
+    """
     if not scenario.coney_level:
         raise ConfigError(f"{scenario.path}: has no [coney] level")
     return [
@@ -108,9 +136,9 @@ def coney_command(scenario: Scenario, executable: Path, disc: str, out: Path) ->
         *scenario.coney_args,
         "--headless",
         "--frames",
-        str(scenario.updates),
+        str(scenario.updates + scenario.coney_settle),
         "--input-script",
-        str(scenario.input_path),
+        str(script if script is not None else scenario.input_path),
         "--trace",
         str(out),
     ]
@@ -120,12 +148,25 @@ def run_coney(scenario_path: Path, out: Path, executable: Path | None, disc: str
     """`trace coney`: run the scenario on Coney and write its trace; Coney's exit code when it fails."""
     refuse_inside_repo(out)
     scenario = _scenario(scenario_path)
-    command = coney_command(scenario, _coney_executable(executable), _disc(disc), out)
     out.parent.mkdir(parents=True, exist_ok=True)
+    settle = scenario.coney_settle
+    script = None
+    played = out
+    if settle:
+        # The script starts `settle` updates later, and the trace Coney writes keeps only what follows them.
+        script = out.with_name(out.stem + ".input.txt")
+        script.write_text(shifted_script(scenario.input_path.read_text(encoding="utf-8"), settle), encoding="utf-8")
+        played = out.with_name(out.stem + ".full.csv")
+    command = coney_command(scenario, _coney_executable(executable), _disc(disc), played, script)
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         print(result.stdout + result.stderr, file=sys.stderr)
         print(f"coney-tools: Coney exited with {result.returncode}", file=sys.stderr)
         return result.returncode
+    if settle:
+        out.write_text(trimmed_trace(played.read_text(encoding="utf-8"), settle), encoding="utf-8")
+        played.unlink()
+        if script is not None:
+            script.unlink()
     print(f"{out}: {scenario.updates} steps of {scenario.coney_level}")
     return 0

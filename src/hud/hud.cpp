@@ -418,6 +418,9 @@ void Hud::render(const HudCanvas& canvas) const {
         panel.render(canvas, m_levelNumber);
     }
     renderWarCommands(canvas);
+    for (std::size_t player = 0; player < kPlayers; ++player) {
+        m_mash.at(player).render(canvas, player, m_nowMs);
+    }
     // The announcements' own `<DISPLAYTIME>` fades them, timed from when they were set.
     if (m_announcement) {
         gui::TextStyle style = messageStyle(kAnnouncePlace.x);

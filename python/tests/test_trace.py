@@ -191,6 +191,18 @@ def test_a_scenario_gives_coneys_command_line() -> None:
     scenario = load_scenario(REPO / "research/traces/scenarios/walk60.toml", REPO)
     command = trace_cli.coney_command(scenario, Path("coney"), "H:/", Path("out.csv"))
     assert command[:5] == ["coney", "--disc", "H:/", "--play-level", "level99"]
-    assert command[command.index("--frames") + 1] == str(scenario.updates)
+    assert command[command.index("--frames") + 1] == str(scenario.updates + scenario.coney_settle)
     assert command[command.index("--input-script") + 1] == str(scenario.input_path)
     assert scenario.first_input_step() == scenario.events[0].frame + 1
+
+
+def test_a_settled_scenario_shifts_its_script_and_drops_the_settle_from_the_trace() -> None:
+    script = "# note\n\n40 stick left 0 100\n70 tap cross\n"
+    assert trace_cli.shifted_script(script, 300) == "# note\n\n340 stick left 0 100\n370 tap cross\n"
+    trace = "step,x\n1,0.0\n300,1.0\n301,2.0\n302,3.0\n"
+    assert trace_cli.trimmed_trace(trace, 300) == "step,x\n1,2.0\n2,3.0\n"
+    scenario = load_scenario(REPO / "research/traces/scenarios/run_circle.toml", REPO)
+    assert scenario.coney_settle == 300
+    command = trace_cli.coney_command(scenario, Path("coney"), "H:/", Path("out.csv"), Path("shifted.txt"))
+    assert command[command.index("--frames") + 1] == str(scenario.updates + 300)
+    assert command[command.index("--input-script") + 1] == "shifted.txt"

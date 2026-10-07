@@ -351,3 +351,24 @@ TEST_CASE("the Player page changes the player's character type through a choice 
     CHECK(play.type == 40);
     CHECK(session.log().last(1).back() == "player: type 99: no model");
 }
+
+TEST_CASE("the Coordinates toggle shows player 1's feet and heading, and says so with no player", "[debug]") {
+    TunableRegistry tunables;
+    FakePlay play;
+    play.feet = {1.5F, -2.25F, 3.0F};
+    play.heading = 90.0F;
+    DebugSession session(tunables, servicesOver(&play), nullptr);
+    CHECK(session.cornerLines().empty());
+    const auto page = session.model().openPage("Display");
+    REQUIRE(page != nullptr);
+    itemOn(*page, "Coordinates").setBool(true);
+    REQUIRE(session.cornerLines().size() == 1);
+    CHECK(session.cornerLines().front() == "x 1.50  y -2.25  z 3.00  heading 90.0");
+    // It follows the player.
+    play.feet = {0.0F, 0.0F, 0.0F};
+    CHECK(session.cornerLines().front() == "x 0.00  y 0.00  z 0.00  heading 90.0");
+
+    DebugSession bare(tunables, servicesOver(nullptr), nullptr);
+    bare.display().coordinates = true;
+    CHECK(bare.cornerLines() == std::vector<std::string>{"coordinates: no player"});
+}
