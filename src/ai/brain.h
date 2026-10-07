@@ -61,6 +61,8 @@ inline constexpr float kDefaultMeleeNear = 3.0F;
 inline constexpr float kDefaultMeleeFar = 5.0F;
 inline constexpr float kDefaultSightRange = 30.0F;
 inline constexpr float kDefaultFieldOfView = 1.92F;
+/// The threat response every brain is made with (`0x0028a570`, from `Human_Init`); 0 never fights.
+inline constexpr int kDefaultThreatResponse = 2;
 /// A brain thinks once every this many character steps (docs/research/ai.md#update).
 inline constexpr std::uint64_t kThinkPeriod = 5;
 /// `CfgAttackDelay`'s value for most kinds, ms (`config_preload2`, docs/research/ai.md#attack-action).
@@ -456,9 +458,9 @@ class Brain {
     float m_sightRange = kDefaultSightRange;                           // +0x130
     float m_fieldOfView = kDefaultFieldOfView;                         // +0x12c
     BrainSenses m_senses;
-    int m_threatResponse = 2;              // +0x21c
-    float m_meleeNear = kDefaultMeleeNear; // +0x13c
-    float m_meleeFar = kDefaultMeleeFar;   // +0x140
+    int m_threatResponse = kDefaultThreatResponse; // +0x21c
+    float m_meleeNear = kDefaultMeleeNear;         // +0x13c
+    float m_meleeFar = kDefaultMeleeFar;           // +0x140
     int m_goalsRanOut = 0;
     RoutePlanner* m_planner = nullptr;
     MoveFailure m_moveFailure = MoveFailure::None; // +0x284

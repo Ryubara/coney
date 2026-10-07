@@ -6,7 +6,8 @@
 // the Warriors, `P1.SetupWarriors`, docs/research/ai.md#level99-save), the scene `l99_c5` plays and its return
 // function `P1.SendWarriors` gives each of the three sparring Warriors `GoalFight` on a player who stands still
 // (the recording `warriors_passive`, docs/research/ai.md#level99-fight). Then each Warrior must close on the player
-// and attack him, running in with the EngageEnemy goal the Melee goal pushes (docs/research/ai.md#fight-approach). It
+// and attack him, running in with the EngageEnemy goal the Melee goal pushes (docs/research/ai.md#fight-approach); the
+// sparring gang must be id 4 with no tactic and threat response 2, the two fence gangs under a cheering crowd. It
 // runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts, distances
 // and speeds only (LEGAL.md).
 
@@ -32,6 +33,7 @@
 #include "ai/brains.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
+#include "ai/tactic_crowd.h"
 #include "characters/character_types.h"
 #include "core/error.h"
 #include "core/game_random.h"
@@ -70,6 +72,8 @@ constexpr int kFightFrames = 300;
 constexpr float kCloseRange = 3.0F;
 // The sparring Warriors' gang (docs/research/ai.md#level99-fight).
 constexpr std::string_view kSparringGang = "CombatWarriors";
+// Its id: the gangs are made in record order, and it is the fifth (docs/research/ai.md#level99-fight).
+constexpr int kSparringGangId = 4;
 
 // The disc named by CONEY_DISC, opened; nothing when it is not set.
 std::optional<coney::io::Wad> openDisc() {
@@ -215,6 +219,24 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
     REQUIRE(sparring >= 0);
     const coney::ai::Gang* gang = level.fighters().brains().gangs().find(sparring);
     REQUIRE(gang != nullptr);
+    // Who fights (docs/research/ai.md#level99-fight): the sparring gang is id 4, has no tactic and keeps the threat
+    // response 2 every brain is made with, so its GoalFight runs in full; the fence gangs cheer under a crowd tactic.
+    CHECK(sparring == kSparringGangId);
+    CHECK(gang->tactic() == nullptr);
+    for (const coney::ai::Brain* member : gang->members()) {
+        CHECK(member->threatResponse() == coney::ai::kDefaultThreatResponse);
+    }
+    int crowds = 0;
+    for (std::size_t id = 0; id < coney::ai::kGangSlots; ++id) {
+        const coney::ai::Gang* other = level.fighters().brains().gangs().find(static_cast<int>(id));
+        if (other != nullptr && other->name().starts_with("FenceWarriors")) {
+            const bool crowd = dynamic_cast<const coney::ai::TacticCrowd*>(other->tactic()) != nullptr;
+            std::printf("  level99 fence gang %zu: %zu members, %s\n", id, other->members().size(),
+                        crowd ? "crowd tactic" : "no crowd tactic");
+            crowds += crowd ? 1 : 0;
+        }
+    }
+    CHECK(crowds == 2);
     std::vector<Watched> warriors;
     const coney::anim::Vec3 player = level.player().human().position();
     for (const coney::ai::Brain* member : gang->members()) {

@@ -26,8 +26,6 @@ constexpr int kDealerClassLast = 440;
 constexpr int kFlashType = 0;
 constexpr int kWeaponType = 1;
 constexpr int kThirdType = 2;
-// What the threat response returns to when the goal ends.
-constexpr int kDefaultThreatResponse = 2;
 
 // The horizontal distance between two points.
 float planDistance(anim::Vec3 a, anim::Vec3 b) { return std::hypot(b.x - a.x, b.y - a.y); }
