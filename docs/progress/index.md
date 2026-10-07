@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,558 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,560 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-435 reimplemented function(s) have no size yet and add no bytes.
+437 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -64,7 +64,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
 | `Graphics` | `██▏░░░░░░░░░░░░░░░░░` | 10.5% | 64 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
-| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 488 | 1,096,672 |
+| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 489 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -76,7 +76,7 @@ at the top of the repository's `README.md`.
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
-| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 108 | 54,264 |
+| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 109 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -768,6 +768,7 @@ at the top of the repository's `README.md`.
 | `0x00238d30` | `Human_StopWorkout` | `Human` | 128 |
 | `0x00238db0` | `Human_Tag` | `Human` | not filled in |
 | `0x00238f10` | `Cfg_SetTagStartCallback` | `Human` | not filled in |
+| `0x00238f50` | `Tag_CallStartCallback` | `Human` | not filled in |
 | `0x00239080` | `Human_SetTagColour` | `Human` | not filled in |
 | `0x00239188` | `Tag_SetPattern` | `Human` | not filled in |
 | `0x00239240` | `Human_EnableSoundCommands` | `Human` | 64 |
@@ -1552,6 +1553,7 @@ at the top of the repository's `README.md`.
 | `0x00416bb8` | `Flag_GetPosition` | `WorldObjects` | 40 |
 | `0x00416ed0` | `Flag_GetOwner` | `WorldObjects` | not filled in |
 | `0x00417af0` | `Cfg_SetActionDistance` | `Warriors` | 32 |
+| `0x00418150` | `ContextActions_Pick` | `Warriors` | not filled in |
 | `0x00418428` | `RepeatTracker_Note` | `Warriors` | 240 |
 | `0x0041a060` | `GameState_UpdateSystemMusic` | `Warriors` | not filled in |
 | `0x0041a8c0` | `Human_SwitchPlayer` | `Warriors` | 256 |

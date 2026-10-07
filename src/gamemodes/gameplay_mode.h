@@ -261,6 +261,12 @@ class GameplayMode final : public GameMode {
     [[nodiscard]] world_objects::LevelObjects& objects() { return m_objects; }
     /// The level's particles and motion blur; null while no level is entered.
     [[nodiscard]] effects::LevelEffects* effects() const { return m_effects.get(); }
+    /// Player 1's spray under way (HuTag); null when he is not tagging.
+    [[nodiscard]] const TagSession* tagSession() const { return m_tagSession ? &*m_tagSession : nullptr; }
+    /// The level's tag spots.
+    [[nodiscard]] const world_objects::TagSpots& tagSpots() const { return m_tagSpots; }
+    /// The loose objects and action objects a player uses with triangle; null while no level is entered.
+    [[nodiscard]] const LevelPickups* pickups() const { return m_pickups ? &*m_pickups : nullptr; }
 
   private:
     // InitLevel's script step and the level from the loader, entered (its preload).
@@ -278,8 +284,13 @@ class GameplayMode final : public GameMode {
     // The radios' update (Radio_Update): their sounds through the game's sound, the player's place and the progress.
     void updateRadios();
     // HuTag (docs/research/crimes.md#tagging): player 1 with paint starts the stick game at the spot, without paint
-    // says 37 `nopaint`; another human is the spot's tagger at once (Coney's stand-in for the walk to the flag).
+    // says 37 `nopaint` and gets event 14 unfinished; another human is the spot's tagger at once (Coney's stand-in
+    // for the walk to the flag). A spray that starts calls the start callback.
     void startTag(double human, double tag, double flag);
+    // The spray's start reaching the scripts (docs/research/crimes.md#tag-callbacks): `CfgTagStartCallback`'s
+    // function with the tagger, the tag and the flag, no result asked; nothing when no name is set.
+    // @orig 0x00238f50 Tag_CallStartCallback (unknown)
+    void callTagStart(double human, double tag, double flag);
     // The tag spots' update every second 60 Hz tick, and player 1's stick game on pad 1's left stick; its end frees
     // the pad, has him say 83 `tagdone` on a finish and sends him event 14 (Tag_End).
     void updateTagging(const Pads& pads, double seconds);
@@ -302,6 +313,15 @@ class GameplayMode final : public GameMode {
     void wireHub();
     // Where a trigger sphere's object is: a human the scripts made, a flag or a spawn record; nothing when gone.
     [[nodiscard]] std::optional<std::array<float, 3>> objectPosition(double handle) const;
+    // Where a prompt object with no spawn record is: a particle system (a tag spot) or a flag; nothing otherwise.
+    [[nodiscard]] std::optional<anim::Vec3> promptObjectPosition(double handle) const;
+    // Player 1's feet as the scripts see them; nothing with no player 1.
+    [[nodiscard]] std::optional<anim::Vec3> playerFeet() const;
+    // HUD_Update's choice of player 1's action prompt (docs/research/hud.md#action-prompts), as far as Coney has it:
+    // the action object's text, none while he sprays or is in a scene. **Coney's stand-in**: the other sources (a
+    // held human to mug, a partner to revive, a talkable human) are not chosen yet.
+    // @orig 0x001af010 HUD_Update (unknown)
+    void updateActionPrompt();
 
     graphics::RenderDevice& m_device;
     script::ScriptSystem& m_scripts;
@@ -339,6 +359,7 @@ class GameplayMode final : public GameMode {
     double m_tagTicks = 0.0;                             // 60 Hz ticks not yet given to the tag spots
     world_objects::FlagNet m_flagNet;                    // the level's flag network (FlagNetAddLink)
     std::optional<LevelPickups> m_pickups;               // over the context's spawn records and object types
+    std::string m_shownPrompt;                           // the action prompt updateActionPrompt() last set
     std::unique_ptr<GameMode> m_level;
     std::uint32_t m_playerTeleports = 0;  // player 1's teleports the level has been told of
     PauseMode* m_pause = nullptr;         // what START pauses through; not owned

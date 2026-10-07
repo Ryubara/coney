@@ -34,24 +34,30 @@ constexpr double kMillisecondsPerSecond = 1000.0;
 void GameplayMode::startTag(double human, double tag, double flag) {
     const HumanCreation* player = m_humans.player(1);
     if (player == nullptr || player->handle != human) {
-        // Another human: the spot takes him as its tagger and fades in (Coney's stand-in: no walk to the flag).
+        // Another human: the spot takes him as its tagger and fades in, and his spray starts (Coney's stand-in: no
+        // walk to the flag and no spray animation first).
         m_log(std::format("tag: human {:.0f} sprays tag {:.0f} from flag {:.0f}\n", human, tag, flag));
         m_tagSpots.setTagger(tag, human);
+        callTagStart(human, tag, flag);
         return;
     }
     if (m_tagSession) {
         return;
     }
-    // A player with no paint says so; the tag's handler ignores the message it is sent (0xe).
+    // A player with no paint says so, and he himself gets event 14 with the tag, not finished.
     if (!TagSession::hasPaint(m_state.player.inventory, 0)) {
         m_log(std::format("tag: no paint for tag {:.0f}\n", tag));
         if (m_context.sound != nullptr) {
             static_cast<void>(m_context.sound->sayCommand(
                 script::CommandCall{.human = human, .command = kNoPaintCommand, .interrupt = true}, {}));
         }
+        if (m_context.messages != nullptr) {
+            m_context.messages->deliver(m_scripts, human, kTagEndEvent, 0.0, tag, 0.0);
+        }
         return;
     }
-    // The player sprays where he stands (Coney's stand-in for occupying the flag), held still by the game.
+    // The player sprays where he stands (Coney's stand-in for occupying the flag and the spray animation), held still
+    // by the game; the stick game goes live at once, and with it the start callback.
     const std::span<const float> pattern(m_state.story.tagPattern);
     const int difficulty = script::tagDifficulty(&m_recorded, characters::warriorClassOf(player->type));
     m_tagSession.emplace(m_tagSpots, m_state.player.inventory, 0, human, tag,
@@ -59,9 +65,17 @@ void GameplayMode::startTag(double human, double tag, double flag) {
     m_log(std::format("tag: player sprays tag {:.0f}, {} path points, difficulty {}\n", tag,
                       m_tagSession->game().path().size(), difficulty));
     m_scripted->storyHost().lockMovement(human, true);
-    if (!m_state.story.tagStartCallback.empty()) {
-        m_scripts.call(m_state.story.tagStartCallback, std::vector<script::Value>{});
+    callTagStart(human, tag, flag);
+}
+
+void GameplayMode::callTagStart(double human, double tag, double flag) {
+    if (m_state.story.tagStartCallback.empty()) {
+        return;
     }
+    // Three handles and no result asked: whatever the function returns is dropped.
+    static_cast<void>(
+        m_scripts.call(m_state.story.tagStartCallback,
+                       std::vector<script::Value>{script::Value(human), script::Value(tag), script::Value(flag)}));
 }
 
 void GameplayMode::updateTagging(const Pads& pads, double seconds) {

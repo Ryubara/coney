@@ -26,6 +26,7 @@ add_executable(coney_tests
     gamemodes/disc_lighting_test.cpp
     gamemodes/frame_rate_test.cpp
     gamemodes/gameplay_objects_test.cpp
+    gamemodes/gameplay_tag_test.cpp
     gamemodes/game_mode_stack_test.cpp
     gamemodes/idle_mode_test.cpp
     gamemodes/legal_screen_mode_test.cpp
@@ -81,6 +82,7 @@ add_executable(coney_tests
     platform/disc_level99_street_test.cpp
     platform/disc_level99_world_test.cpp
     platform/disc_story_missions_test.cpp
+    platform/disc_tagging_test.cpp
     platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp
     platform/disc_world_test.cpp

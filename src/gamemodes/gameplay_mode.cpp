@@ -490,7 +490,9 @@ void GameplayMode::loadLevel() {
     m_pickups.reset();
     if (m_context.spawnRecords != nullptr && m_context.objectTypes != nullptr) {
         m_pickups.emplace(m_scripts, m_state, *m_context.spawnRecords, *m_context.objectTypes, m_context.messages);
+        m_pickups->setLocator([this](double object) { return promptObjectPosition(object); });
     }
+    m_shownPrompt.clear();
 
     // The level itself, with the player at that start; entering it preloads the world around him.
     std::expected<std::unique_ptr<GameMode>, Error> level = fail(ErrorCode::NotFound, "no level loader");
@@ -621,6 +623,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     }
     updateRadios();
     updateTagging(stack.pads(), frame.seconds);
+    updateActionPrompt();
     runPlayerFrame(m_state, m_scripts, stack.pads(), nowMs, &m_objectServices.crimeServices());
     m_scripts.update(nowMs, frame.seconds);
     if (m_effects) {
@@ -813,6 +816,51 @@ std::optional<std::array<float, 3>> GameplayMode::objectPosition(double handle) 
         }
     }
     return std::nullopt;
+}
+
+std::optional<anim::Vec3> GameplayMode::promptObjectPosition(double handle) const {
+    // A tag spot is a particle system (`part_spray_tag`).
+    if (m_effects) {
+        if (const effects::ParticleSystem* system = m_effects->particles.find(handle)) {
+            return system->position;
+        }
+    }
+    if (const world_objects::WorldFlag* flag = m_flags.find(handle); flag != nullptr) {
+        const std::array<float, 3> p = world_objects::WorldFlags::position(
+            *flag, [this](double parent) { return m_scripted ? m_scripted->humanPlacement(parent) : std::nullopt; });
+        return anim::Vec3{p[0], p[1], p[2]};
+    }
+    return std::nullopt;
+}
+
+std::optional<anim::Vec3> GameplayMode::playerFeet() const {
+    const HumanCreation* player = m_humans.player(1);
+    if (player == nullptr || !m_scripted) {
+        return std::nullopt;
+    }
+    const std::optional<world_objects::Placement> placement = m_scripted->humanPlacement(player->handle);
+    if (!placement) {
+        return std::nullopt;
+    }
+    return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
+}
+
+void GameplayMode::updateActionPrompt() {
+    if (m_context.hud == nullptr || !m_pickups) {
+        return;
+    }
+    // Nothing while he sprays or plays a part in a scene; else the action object's text.
+    std::string text;
+    if (const std::optional<anim::Vec3> feet = playerFeet(); feet && !m_tagSession && !playerInScene()) {
+        if (const std::optional<ActionObject> object = m_pickups->actionObject(*feet)) {
+            text = object->prompt;
+        }
+    }
+    // Only a change is written, so a prompt set some other way (the debug menu) stays until the choice changes.
+    if (text != m_shownPrompt) {
+        m_shownPrompt = text;
+        m_context.hud->setActionPrompt(0, std::move(text));
+    }
 }
 
 void GameplayMode::render(const RenderTime& time) {

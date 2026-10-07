@@ -831,7 +831,10 @@ civilian's class byte is Rembrandt's 35; the camera's heading is that of its for
 the counter slots' `x0` 0 and lines at y 0.104 and 0.154, the count 0.022 right of its icon; handcuff and key icons
 `part_page0` 31 and 34; the money's icon a `$`; the popups' places; the money cue once per count; the built-in
 announcements' texts from `GSTRING.ANNOUNCE` by kind; a `<FREEZE>` hint shown for its time (at least 2 s) as the game
-timer does not freeze yet; the prompt's text set by the game code or the debug menu, not chosen by `HUD_Update`;
+timer does not freeze yet; player 0's prompt chosen each frame of play from the action object in reach only (the
+nearest kind-1 [context record](crimes.md#context-records), none while tagging or in a scene;
+`repo:src/gamemodes/gameplay_mode.cpp`), not yet from a held human, a partner to revive or a talkable human, and
+its hint not queued;
 the counter panels' texts right-aligned on x 0.96; the radar disc
 `big_font` 256 sized from the measurement, a dark disc for the map, the player's icon 362 at the centre and no other
 blips drawn; the arrow turned only by half turns (no rotated sprites yet); player 1's other parts 0.09 right of player

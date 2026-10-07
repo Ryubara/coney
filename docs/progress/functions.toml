@@ -3795,6 +3795,11 @@ name = "Cfg_SetTagStartCallback"
 subsystem = "Human"
 
 [[function]]
+address = 0x00238f50
+name = "Tag_CallStartCallback"
+subsystem = "Human"
+
+[[function]]
 address = 0x00239080
 name = "Human_SetTagColour"
 subsystem = "Human"
@@ -6187,11 +6192,11 @@ address = 0x00354d98
 name = "SceneTrack_Events"
 subsystem = "Scene"
 size = 2104
+
 [[function]]
 address = 0x00355798
 name = "SceneTrack_Flush"
 subsystem = "Scene"
-
 
 [[function]]
 address = 0x00355ab8
@@ -8277,6 +8282,11 @@ address = 0x00417af0
 name = "Cfg_SetActionDistance"
 subsystem = "Warriors"
 size = 32
+
+[[function]]
+address = 0x00418150
+name = "ContextActions_Pick"
+subsystem = "Warriors"
 
 [[function]]
 address = 0x00418428

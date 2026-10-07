@@ -203,3 +203,27 @@ TEST_CASE("with something in hand triangle takes loot, but drops it for a weapon
     CHECK(pickups.triangle(100, Vec3{40.0F, 40.0F, 0.0F}, kFacingY, false, {}).result ==
           coney::TriangleResult::Nothing);
 }
+
+TEST_CASE("a prompt on an object with no spawn record (a tag spot's flag) is the action object", "[level_pickups]") {
+    Harness h;
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types, &h.messages);
+    h.messages.set(11, 0, "Keep");
+    h.messages.setPrompt(11, "Keep", "Tag");
+    // Without a locator the object is nowhere: no prompt, and triangle has nothing to hand it.
+    CHECK_FALSE(pickups.actionObject(kFeet).has_value());
+    CHECK(pickups.triangle(100, kFeet, kFacingY, false, {}).result == coney::TriangleResult::Nothing);
+    // Located 1 m away on the wall at waist height: its text is the prompt and triangle gives it the press.
+    pickups.setLocator([](double object) -> std::optional<Vec3> {
+        return object == 11 ? std::optional<Vec3>(Vec3{11.0F, 10.0F, 1.2F}) : std::nullopt;
+    });
+    const std::optional<coney::ActionObject> object = pickups.actionObject(kFeet);
+    REQUIRE(object.has_value());
+    CHECK(object.value_or(coney::ActionObject{}).handle == 11);
+    CHECK(object.value_or(coney::ActionObject{}).prompt == "Tag");
+    CHECK(pickups.triangle(100, kFeet, kFacingY, false, {}).result == coney::TriangleResult::Consumed);
+    CHECK(h.touched == std::vector<double>{11});
+    // Out of reach: 1.2 m away in the plane, or more than 1.5 m above the waist.
+    CHECK_FALSE(pickups.actionObject(Vec3{9.8F, 10.0F, 0.0F}).has_value());
+    CHECK_FALSE(pickups.actionObject(Vec3{10.5F, 10.0F, -1.4F}).has_value());
+    CHECK(pickups.actionObject(Vec3{10.5F, 10.0F, -1.2F}).has_value());
+}

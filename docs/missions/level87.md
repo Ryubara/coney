@@ -53,6 +53,7 @@ Research:
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [World objects: doors](../research/objects.md)
 - [AI: scripted goals and actions](../research/ai.md#scripted)
+- [Crimes: tagging](../research/crimes.md#tagging)
 
 ## Run it in Coney {#run}
 
@@ -76,7 +77,8 @@ coney_tests "[disc][story]"
 
 ## Notes {#notes}
 
-All five checkpoints play headless on the disc with no script error and player 1 moving under the pad; nobody has
-compared them with the original yet.
+All five checkpoints play headless on the disc with no script error and player 1 moving under the pad. At checkpoint 1
+the first tag spot's flag offers its prompt, triangle starts the stick game and tracing the pattern with the left stick
+finishes the tag (`coney_tests "[tagging]"`); nobody has compared them with the original yet.
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

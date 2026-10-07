@@ -79,10 +79,11 @@ missions:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "World objects: doors", path: "research/objects.md"}
       - {title: "AI: scripted goals and actions", path: "research/ai.md#scripted"}
+      - {title: "Crimes: tagging", path: "research/crimes.md#tagging"}
     questions:
       - "Chapter 3 names a callback its script never defines (`ch3.BoozerChallenge`); Coney logs and skips it, and what the original does is not traced (Scripts, errors in a fresh state)."
     test: "coney_tests \"[disc][story]\""
-    notes: "All five checkpoints play headless on the disc with no script error and player 1 moving under the pad; nobody has compared them with the original yet."
+    notes: "All five checkpoints play headless on the disc with no script error and player 1 moving under the pad. At checkpoint 1 the first tag spot's flag offers its prompt, triangle starts the stick game and tracing the pattern with the left stick finishes the tag (`coney_tests \"[tagging]\"`); nobody has compared them with the original yet."
   - level: 95
     group: hub
     slot: the hub

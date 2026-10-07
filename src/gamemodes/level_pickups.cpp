@@ -50,7 +50,7 @@ std::optional<PickupChoice> LevelPickups::search(anim::Vec3 feet, anim::Vec3 fac
 TriangleOutcome LevelPickups::triangle(double human, anim::Vec3 feet, anim::Vec3 facing, bool holding,
                                        const world_objects::SightBlocked& blocked) {
     // Step 4: the current context record's object, which may take the press.
-    if (const std::optional<double> object = promptObject(feet); object && interact(*object, human)) {
+    if (const std::optional<ActionObject> object = actionObject(feet); object && interact(object->handle, human)) {
         return TriangleOutcome{.result = TriangleResult::Consumed, .choice = {}};
     }
     // Step 5: every object the search gathers hears message 0 first, before its filters.
@@ -124,25 +124,34 @@ void LevelPickups::placeObject(double handle, anim::Vec3 position, anim::Quat ro
     }
 }
 
-std::optional<double> LevelPickups::promptObject(anim::Vec3 feet) const {
+std::optional<ActionObject> LevelPickups::actionObject(anim::Vec3 feet) const {
     if (m_messages == nullptr) {
         return std::nullopt;
     }
-    std::optional<double> best;
+    std::optional<ActionObject> best;
     float bestDistance = kPromptReach;
     for (const auto& [object, prompt] : m_messages->prompts()) {
-        const world_objects::SpawnRecord* record = m_records.find(object);
-        if (record == nullptr || record->removed || m_inHand.contains(object)) {
+        const std::optional<anim::Vec3> at = promptPosition(object);
+        if (!at) {
             continue;
         }
-        const anim::Vec3 at = positionOf(*record);
-        const float distance = planDistance(feet, at);
-        if (distance <= bestDistance && std::fabs(at.z - (feet.z + 1.0F)) <= kPromptHeight) {
-            best = object;
+        const float distance = planDistance(feet, *at);
+        if (distance <= bestDistance && std::fabs(at->z - (feet.z + 1.0F)) <= kPromptHeight) {
+            best = ActionObject{.handle = object, .prompt = prompt};
             bestDistance = distance;
         }
     }
     return best;
+}
+
+std::optional<anim::Vec3> LevelPickups::promptPosition(double object) const {
+    if (const world_objects::SpawnRecord* record = m_records.find(object)) {
+        if (record->removed || m_inHand.contains(object)) {
+            return std::nullopt;
+        }
+        return positionOf(*record);
+    }
+    return m_locate ? m_locate(object) : std::nullopt;
 }
 
 bool LevelPickups::interact(double object, double human) {

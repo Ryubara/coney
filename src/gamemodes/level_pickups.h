@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <set>
 #include <string>
@@ -26,6 +27,12 @@ struct PickupChoice {
     double handle = 0;
     anim::Vec3 position{};
     int clip = 0; ///< The pick-up clip (world_objects::pickupClip()).
+};
+
+/// The action object in a player's reach: a kind-1 context record's object and its prompt text.
+struct ActionObject {
+    double handle = 0;
+    std::string prompt; ///< The text `SetMsgHandlerEx` gave it, markup and all.
 };
 
 /// What one triangle press came to (TriangleOutcome).
@@ -62,9 +69,25 @@ class LevelPickups {
     /// The kinds a player takes whatever he holds: `TYPE_SPECIAL` (12) and 24.
     static constexpr int kKindAnyHands = 24;
 
+    /// Where an object with an interaction prompt but no spawn record is (a tag spot's particle system, a flag);
+    /// nothing when it is gone.
+    using Locator = std::function<std::optional<anim::Vec3>(double object)>;
+
     LevelPickups(script::ScriptSystem& scripts, GameState& state, world_objects::SpawnRecords& records,
                  const world_objects::ObjectTypes& types, const script::MessageHandlers* messages = nullptr)
         : m_scripts(scripts), m_state(state), m_records(records), m_types(types), m_messages(messages) {}
+
+    /// Locates the prompt objects that are not spawn records: a `SetMsgHandlerEx` on a tag spot (`level87`) or a
+    /// flag registers a kind-1 context record just as one on a loose object does (docs/research/crimes.md#triangle).
+    void setLocator(Locator locator) { m_locate = std::move(locator); }
+
+    /// The action object for a player whose feet are at `feet`: of the objects with an interaction prompt, the
+    /// nearest within kPromptReach in the ground plane whose height is within kPromptHeight of the feet + 1 m.
+    /// Nothing for none. Its text is the player's action prompt and triangle hands it message 0.
+    /// **Coney's reading**: the nearest such object stands for the human's current record (`+0x660`; the original
+    /// keeps the current one while it still passes and otherwise takes the first of the kind's list).
+    /// @orig 0x00418150 ContextActions_Pick (unknown)
+    [[nodiscard]] std::optional<ActionObject> actionObject(anim::Vec3 feet) const;
 
     /// The triangle search (world_objects::searchPickup()) for a human at `feet` facing `facing`, over the records that
     /// are not removed, hidden, held or in a disabled zone, whose type is pickable. Nothing when none qualifies.
@@ -72,11 +95,10 @@ class LevelPickups {
                                                      const world_objects::SightBlocked& blocked) const;
 
     /// Steps 4 and 5 of triangle for human `human` at `feet` facing `facing`, `holding` whether something is in hand:
-    /// the nearest object with an interaction prompt within kPromptReach gets message 0, and a true result ends the
-    /// press; then every object within the search's reach gets message 0 in turn, the same way; then the search. Its
-    /// choice is picked up unless the human holds something and it is a kind other than 12 or 24; with something in
-    /// hand and nothing taken, the press drops it. **Coney's reading**: the nearest prompt's object is the human's
-    /// current record (`+0x660`; how it is chosen is not traced).
+    /// the action object (actionObject()) gets message 0, and a true result ends the press; then every object within
+    /// the search's reach gets message 0 in turn, the same way; then the search. Its choice is picked up unless the
+    /// human holds something and it is a kind other than 12 or 24; with something in hand and nothing taken, the press
+    /// drops it.
     /// @orig 0x0024d810 Pickup_Search (unknown)
     TriangleOutcome triangle(double human, anim::Vec3 feet, anim::Vec3 facing, bool holding,
                              const world_objects::SightBlocked& blocked);
@@ -107,8 +129,8 @@ class LevelPickups {
     void placeObject(double handle, anim::Vec3 position, anim::Quat rotation = {});
 
   private:
-    // The object with an interaction prompt nearest `feet` within the prompt's reach; nothing for none.
-    [[nodiscard]] std::optional<double> promptObject(anim::Vec3 feet) const;
+    // Where prompt object `object` is: its spawn record's place (none when removed or in a hand), else the locator's.
+    [[nodiscard]] std::optional<anim::Vec3> promptPosition(double object) const;
     // Delivers message 0 from `human` to `object`; whether its handler took the press.
     bool interact(double object, double human);
 
@@ -118,6 +140,7 @@ class LevelPickups {
     const world_objects::ObjectTypes& m_types;
     const script::MessageHandlers* m_messages;
     std::set<double> m_inHand; // the objects held, whose records stay
+    Locator m_locate;          // the prompt objects that are not spawn records
 };
 
 } // namespace coney
