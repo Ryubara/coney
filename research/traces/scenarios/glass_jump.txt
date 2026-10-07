@@ -1,0 +1,3 @@
+# A straight run at the window (the stick at 100 %, straight ahead), triangle a metre before the roof edge.
+5 stick left 0 100
+59 tap triangle

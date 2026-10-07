@@ -63,6 +63,9 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003e44e0` / `0x003e4838` | `GlassTest_Init` / `GlassTest_Update` | a shard (`glasstest`) | confirmed (code) |
 | `0x0038f1c8` | `GlassPane_UpdateBodyByDistance` | per frame (vtable `+0x13c`): the pane's body within 50 m | confirmed (code) |
 | `0x0038ed68` / `0x0038eec0` | `GlassPane_CreateBody` / `GlassPane_RemoveBody` | the pane's collision body (`+0xe8`) | confirmed (code) |
+| `0x0033d070` | `Physics_CreateBoxBody` | a static box body in the 255-body pool, flags `0x8000007a` (the pane's) | confirmed (code) |
+| `0x0033f110` | `Human_TestStrikes` | per update, after the move: the human's switched-on strike shapes against nearby bodies | confirmed (code), runtime |
+| `0x00219d50` | `Human_OnContact` | the human body's contact handler; an airborne body touching a pane breaks it ([Moving into a pane](#pane-break)) | confirmed (code), runtime |
 | `0x0038fa50` → `0x0038ef60` | `GlassManager_QueueDraws` → `GlassPane_QueueDraw` | per frame: each pane into its sprite batch or the near list | confirmed (code) |
 | `0x0038f090` → `0x001831c0` | `GlassPane_DrawNear` → `Instance_DrawOneSpriteIm3D` | a pane near a camera, drawn on its own | confirmed (code) |
 | `0x00185b38` | `ResourceMgr_Render3DSprites` | the 3D sprite pass ([Drawing a pane](#pane-draw)) | confirmed (code) |
@@ -679,8 +682,10 @@ collision mesh that stand for them. Confirmed (code) for the spawns, counts from
    (`0x00250b68`) and, when the pane lies in a path polygon, it and its reverse are retagged kind `0x40`. Confirmed
    (code).
 4. **What breaks it**: anything that sends message 1. There are no hitpoints: the first hit breaks a pane. The
-   senders are a human's landed hit (`0x0021b290`), a thrown object (`0x00393538`) and `BreakGlassInRadius`
-   (`0x003963b8`: every pane whose centre is within the radius, and every `TYPE_GLASS` object). Confirmed (code).
+   senders are `Strike_Contact` (`0x0021b290`), a thrown object (`0x00393538`) and `BreakGlassInRadius`
+   (`0x003963b8`: every pane whose centre is within the radius, and every `TYPE_GLASS` object). `Strike_Contact`
+   runs for a human's strike shape touching the pane's body, which covers a landed hit and a **jump**, and for an
+   **airborne** human body touching it ([Moving into a pane](#pane-break)). Confirmed (code).
 5. **Hit** (message 1, `0x003e2d90`), once, while not broken: the broken sprite (or the pane hidden when it is 0),
    a `sub_glass` shatter at the pane's centre with the pane's normal (`+0x80`), shard size 0.2 and size word
    (`sub_stained_glass` for type 14), the triangles disabled, its collision body removed (`0x003a5340` →
@@ -701,6 +706,70 @@ collision mesh that stand for them. Confirmed (code) for the spawns, counts from
    at `0x0021b290` and `0x00393538`. Confirmed (code).
 8. **No respawn**: nothing clears the broken flag; a pane comes back only when its level's script spawns it again.
    Inferred from the handlers (messages 0 and 1 only).
+
+### Moving into a pane {#pane-break}
+
+A whole pane is two things to a moving human: its two triangles in the level's collision mesh and its **body**
+(`+0xe8`), a box in the physics world. The triangles are an ordinary wall; the body is what breaks. Nothing here
+depends on the pane's type, its alarm or its window link: every pane gets the same body (`0x0038ed68`), and the only
+type tests in the pane's code are the spawn and hit cases of [A pane's life](#pane). Confirmed (code) unless marked.
+
+**The triangles.** Material 2 (`GLASS`) has no rule of its own in the human's wall sweep (`0x00347c08` never reads a
+triangle's material) or in its contact handler (`Human_OnContact`, `0x00219d50`, whose level-triangle branch tests
+only the fence materials 30, 31 and 122 while climbing, [Characters](characters.md#walls)). Both triangles are
+two-sided, so while they are enabled a pane stops a human from either side like any other wall face 0.25 m or taller.
+The hit disables them (message 1, [A pane's life](#pane)), and the sweep's resolution skips a contact on a disabled
+triangle (`0x0033d9d8` checks the triangle's enabled bit), so a pane broken during a sweep stops blocking at once.
+
+**The body.** `GlassPane_CreateBody` makes a box of **half-extents** width / 2, **0.25** and height / 2
+(`0x00342dc0` halves `width, 0.5, height`), posed by the pane's matrix, so it stands 0.25 m proud of the glass on
+each side and covers the whole pane. Its body flags (`0x0033d070`) are `0x8000007a`: bits `0x2`, `0x8`, `0x10`,
+`0x20` and `0x40`. Two paths reach it.
+
+1. **A strike shape** (the jump, a punch or kick). A shape of the human's body is a strike shape while its flag
+   `0x2` is set. The human's strike-on and strike-off messages (`0x00247fc0` / `0x00248110`, from
+   `Human_HandleMessage`) go through `0x003428d0`, which keeps a bit mask in body `+0xc0` (a bit per bone byte
+   `+0x31`, from bone 2) and sets or clears flag `0x2` on the shape of that bone (shape vtable `+0x1c`). In the jump
+   it is the body's own capsule: its flags read `0x11` on the ground and `0x13` from the launch to the landing
+   (runtime, below). `Human_TestStrikes` (`0x0033f110`) runs once per update, after the move (`0x0023fea8` calls
+   the move `0x0023d8c8`, then it), while body `+0xc0` (or `+0xd0`) is non-zero. It gathers bodies near the human
+   whose flags hold `0x18`; for each, a ray from 1 m above the feet to the body's centre must hit nothing in the
+   level mesh, the ray excluding material 2 (its exclusion list is `{2, 1}`) and triangles with flag `0x8` (and
+   `0x40`, unless the target is a human's body, body `+0x44` bit `0x40`), so glass never hides a pane from a strike.
+   A body with any of `0x30` that the human may strike (human vtable `+0x10c`, not traced) is then tested against
+   each strike shape (shape flags `0x1` and `0x2`), and the first that overlaps calls `Strike_Contact`
+   (`0x0021b290`). For a pane that is: the noise event (`0x002936a8`, 30 m), `Glass_Break` (`0x0038f378`), a
+   player's crime-10 statistic and then message 1 ([A pane's life](#pane), steps 5-7).
+2. **The airborne body**. The move's sweep asks the physics world for bodies whose flags meet a mask the human
+   builds (`0x0033d498`, for a body with `+0x44` bit `0x40`, a human's): `0x4` on the ground; `0x44` while airborne
+   (object flag `0x4000000`) or while record `+0x08` holds `0x800`; plus `0x20` while the sweeping shape is a strike
+   shape and `0x40000` above gait 3. A pane's body has `0x20` and `0x40` but not `0x4` or `0x40000`, so **only an
+   airborne or striking human's sweep meets it**: walking and running on the ground (capsule flags `0x11`) never
+   touch the body, only the triangles. On the contact, `Human_OnContact` (object branch) goes on when the body has
+   `0x40` and the human is airborne (or record `+0x08` `0x800`, or the landing state flag `0x2000000000`), or the
+   body has `0x20` and the touching shape is a strike shape; it calls `Strike_Contact` (vtable `+0x104`) once per
+   body (the body's contact list, vtable `+0x34` / `+0x44`) and, because the pane's type flags hold `0x400`
+   (`0x0038f588`), returns 0: the contact is ignored and the sweep goes on as if the box were not there.
+
+So a pane breaks for a human who is in the air, or whose strike shapes are on, as soon as his body or a strike shape
+reaches the box 0.25 m in front of the glass; there is no minimum speed and nothing slows him. On the ground with no
+strike, the glass is a wall. Thrown objects use `0x00393538` ([A pane's life](#pane)).
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, a copy of slot 9, 2026-10-07; scenario
+[`glass_jump`](repo:research/traces/scenarios/glass_jump.toml), stick at 100 % straight ahead, hooks on
+`Strike_Contact` and `Glass_Break`). Slot 9 stands Rembrandt at (63.6, −1.9, 4.20), heading 88°, on the roof of
+`level99` checkpoint 3.4, facing the window: two type-11 panes in the plane x = 47.4, side by side (centres y 0.245
+and −2.77, a 4 cm mullion between them at y −1.27 to −1.23), from z 4.36 to 7.54.
+
+| Run | What happened |
+| --- | --- |
+| triangle at 51.4 m (update 60), launch at 9.5 m/s | the jump clip 434 from update 60; from the launch (update 61) to the landing (update 84) body `+0xc0` is non-zero and the capsule's flags are `0x13` (`0x11` before and after); on update 71, feet ending at x 48.33 z 5.26, `Strike_Contact` called from `Human_TestStrikes` (return `0x0033fddc`) for **both** panes, each then `Glass_Break` (return `0x0021bb7c`); x kept falling by 0.26 m per update (7.8 m/s) through the window, landing at x 44.95 on update 84 (clip 435) and stopping at 44.38 |
+| no triangle: he runs off the roof edge at 49.6 m | falling (clip 428), feet at z 3.84 on update 72: `Strike_Contact` from `Human_OnContact` (return `0x0021a0e0`) for both panes and `Glass_Break` for each; the panes broke, but his body was below the sill and stopped at x 47.95 against the wall under the window (0.55 m from it) and fell to the street (z 0.22) |
+
+So the original's jump goes through the window on the jump's strike shapes, not on the airborne body path; both
+break the pane, and the airborne path alone is enough when the body reaches the box. In `level99` this is the only
+thing that opens the window: the script's checkpoint 3.4 code breaks no glass (inferred: no `BreakGlassInRadius` or
+pane message in `level99_lesson2.lua`'s `P3` functions).
 
 ### Drawing a pane {#pane-draw}
 
@@ -1135,3 +1204,6 @@ Coney's stand-ins, where this page is silent:
   sends `melee_weapon` messages `0x12` / `0x13`, and the frame of a thrown object's angular velocity.
 - `dyn_door_vargas`' second object, and the leaf models of `dyn_door_chainlnk_pick` (no `dyn_dr_chainlnk_pick` record).
 - What a cabin door's leaves do once it breaks, and where the wreck pieces and boards appear.
+- Moving into a pane ([Moving into a pane](#pane-break)): which clip events switch the strike shapes on in a jump,
+  the strike shapes' sizes, what record `+0x08` bit `0x800` and human vtable `+0x10c` mean, and whether a
+  knock-back flight sets the airborne flag (and so breaks a pane).

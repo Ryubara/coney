@@ -441,3 +441,35 @@ type = "f32"
 name = "s_turn_error"
 address = "player + 0x5e4"
 type = "f32"
+
+# The player's physics body (human +0x1a0) during a jump through a glass pane (docs/research/objects.md#pane-break):
+# the counters that make the per-update strike test (0x0033f110) run, the body flags and the object flags.
+[[strike]]
+name = "b_c0"                             # body +0xc0
+address = "u32(player + 0x1a0) + 0xc0"
+type = "s32"
+
+[[strike]]
+name = "b_d0"                             # body +0xd0
+address = "u32(player + 0x1a0) + 0xd0"
+type = "s32"
+
+[[strike]]
+name = "b_flags"                          # body +0x40
+address = "u32(player + 0x1a0) + 0x40"
+type = "u32"
+
+[[strike]]
+name = "o_flags"                          # human +0x54, 0x4000000 airborne
+address = "player + 0x54"
+type = "u32"
+
+[[strike]]
+name = "shape_flags"                      # the body's main shape (body +0x30), its flags +0x32
+address = "u32(u32(player + 0x1a0) + 0x30) + 0x32"
+type = "u16"
+
+[[strike]]
+name = "body_44"                          # body +0x44
+address = "u32(player + 0x1a0) + 0x44"
+type = "u32"

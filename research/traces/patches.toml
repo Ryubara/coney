@@ -215,12 +215,20 @@ original = [0x27bdff60, 0x7fb10080]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "[a0 + 0x660]", name = "context" }]
 
 [hook.glass-break]
-description = "Each call of Glass_Break (0x0038f378): the pane, the breaker and the object."
+description = "Each call of Glass_Break (0x0038f378): the pane, the breaker, the pane's centre x and y and its type."
 research = "docs/research/objects.md#pane"
 address = 0x0038f378
 # addiu sp,sp,-0xb0; sq s0,0xa0(sp)
 original = [0x27bdff50, 0x7fb000a0]
-log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "pane" }, { value = "a1", name = "breaker" }, { value = "a2", name = "object" }]
+log = [
+  { value = "[0x005104f4]", name = "ticks" },
+  "ra",
+  { value = "a0", name = "pane" },
+  { value = "a1", name = "breaker" },
+  { value = "[a0 + 0x10]", name = "x", type = "f32" },
+  { value = "[a0 + 0x14]", name = "y", type = "f32" },
+  { value = "[a0 + 0xfa]", name = "type", type = "u16" },
+]
 
 [hook.pad-handler]
 description = "The PadSetHandlerEx dispatch in 0x001480e0, after its checks (a handler is set, the per-player record has a command in +0x20 or +0x24) and before the handler is looked up: the per-player record, the human's handle, the command it passes, the pad lock (+0x1e) and both command words."
@@ -326,3 +334,11 @@ address = 0x003fead0
 # addiu sp,sp,-0x90; sq s0,0x80(sp)
 original = [0x27bdff70, 0x7fb00080]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "weapon" }, { value = "a1", name = "message" }, { value = "[a0 + 0x128]", name = "hitpoints", type = "s16" }]
+
+[hook.strike-contact]
+description = "Each call of Strike_Contact (0x0021b290): a human's strike contact, also called by Human_OnContact (0x00219d50, return address 0x0021a0e0) when a moving human body touches another body it reacts to (a glass pane while airborne). The human and the object touched; the return address tells which path."
+research = "docs/research/objects.md#pane"
+address = 0x0021b290
+# addiu sp,sp,-0xe0; sq s1,0xb0(sp)
+original = [0x27bdff20, 0x7fb100b0]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "[a1 + 0x40]", name = "object" }]

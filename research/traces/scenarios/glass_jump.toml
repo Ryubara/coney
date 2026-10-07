@@ -1,0 +1,23 @@
+# The window jump of level99 checkpoint 3 (P3.JumpPoizoDone, "jump across to the yellow marker"): slot 9 stands
+# Rembrandt on the roof in sight of the gap and the type-11 pane across it. A run and a jump at the window; the hooks
+# show what breaks the two panes: Strike_Contact from the strike test (0x0033f110, the jump clip's strike shapes), then
+# Glass_Break. Without the tap he runs off the edge and the falling body breaks them (Human_OnContact) below the sill.
+# Research: docs/research/objects.md#pane.
+description = "level99 rooftop: run at the window and jump through it; what breaks the two type-11 panes"
+research = "docs/research/objects.md#pane"
+input = "glass_jump.txt"
+updates = 150
+fields = ["player", "strike"]
+
+[original]
+slot = 9
+patches = ["scripted-pad", "right-stick", "strike-contact", "glass-break"]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3", "--start", "63.6,-1.9,4.2016,88"]
+
+[diff]
+# Where the jump goes and whether he passes the window without slowing.
+columns = ["x", "y", "z", "speed", "vz", "clip"]
+tolerance = { x = 0.05, y = 0.05, z = 0.05, speed = 0.05, vz = 0.01, clip = 0 }

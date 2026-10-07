@@ -142,7 +142,9 @@ Materials that change movement, confirmed (code): a triangle of material **30** 
 its flags (`Climb_TryStart`), and while a human climbs over (record `+0x08` `0x40`), its body's contacts with
 materials **30**, **31** (`OPAQUE_FENCE`) and **122** (`RAILING`) are ignored (`0x00219d50`), so it passes through
 the fence ([Characters](characters.md#walls)). In `level99`'s mesh (1,718 triangles, read at runtime) the
-material-30 triangles stand away from the start room.
+material-30 triangles stand away from the start room. Material 2 (`GLASS`) has no movement rule: a pane's triangles
+are walls until it breaks, and only the line-of-sight ray of a strike excludes them
+([Moving into a pane](objects.md#pane-break)).
 
 ## Behaviour
 

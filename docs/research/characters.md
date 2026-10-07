@@ -1153,7 +1153,8 @@ functions by type (world `+0xe0`, `0x0033d2d8`, which passes −0.65). For type 
    contact. The contacts go to the body's contact handler (`Human_OnContact`, `0x00219d50`), which for the level's
    triangles slides (code `0x20001`), lands on a floor contact (flag `0x80`), and during a climb (record `+0x08`
    `0x40`) **ignores** triangles of materials 30 (`LOW_FENCE`), 31 (`OPAQUE_FENCE`) and 122 (`RAILING`), so the body
-   passes through the fence it climbs.
+   passes through the fence it climbs. No other material has a rule here: a glass pane's `GLASS` triangles are a
+   wall like any other until the pane breaks ([Moving into a pane](objects.md#pane-break)).
 
 So on the ground the original has **no step height of its own**: a wall face shorter than 0.25 m is not a wall, and
 the ground snap (1.0 m up, above) then lifts the feet onto it; any face 0.25 m or taller that reaches into the sphere

@@ -746,7 +746,7 @@ the disassembly of the scripts (names, ids and values only).
 | 3.1 set-up | `P3.SetupLesson2` | the dealer `FlashDealer` with `GoalDealer(dealer, 0, 17, 0, 0, false)` and messages 1 and 16 (`P3.DealerHit`), Vermin (god mode, unpushable, ungrabbable, fast climber), scene `l99_c3` | the scene's end | [GoalDealer](ai.md#dealer) |
 | 3.2 fences | `P3.EndChapterScene` | `DoorOpenDegree(WXL00, 100)`, command 40 off and 38 on, Vermin (secondary camera target) to `fVerminFencePoizo` | `vFenceJump` 3, the flag's 8, then `vFenceJump2` / `3` texts | [Climbs](characters.md), [AI fence climb](ai.md#path-planning) |
 | 3.3 climb | `vClimb` 3 (`P3.MoveToClimb`) | Vermin to `fStop2`; `P3.GetBack(1)` 10 s later flashes his radar icon while the player is lost | `fStop2` 8 → the camera `ClimbPoizo`, the players put at `fClimbWarp`; `vFirstClimb` / `vDoneClimb` 3 | [Characters](characters.md) |
-| 3.4 rooftops | `vReachRooftop` / `2` 3 (`P3.PoizoJump`) | `ObjShow(dyn_w_mission)`, the camera `JumpCam`, the players put at `fRoofTeleport`, radar target `fRadarJump` | `vReachWindow` 3 (both players with two), then Vermin's run to `fStop3`, his line, `vVerminJumps` 3 | [Jumps](characters.md) |
+| 3.4 rooftops | `vReachRooftop` / `2` 3 (`P3.PoizoJump`) | `ObjShow(dyn_w_mission)`, the camera `JumpCam`, the players put at `fRoofTeleport`, radar target `fRadarJump` | `vReachWindow` 3 (both players with two, below), then Vermin's run to `fStop3`, his line, `vVerminJumps` 3 | [Jumps](characters.md#jump), [Moving into a pane](objects.md#pane-break) |
 | 3.5 wooden fences | `vAlmostDone` 3 (`P3.WoodenFences`) | the players put at `fBreakFencePoizo` (a held object destroyed), two locked cameras, message 2 on `dyn_door_fence02` and `03` | either fence's message 2 (`P3.FenceBroken`) | [Barriers](objects.md#barriers) |
 | 3.6 dealer | `P3.DealerPoizo`, 0.5 s later | `CfgSetGlobalTimeToLive(1000)`, money raised to at least $20, the dealer's icon `dyn_flashdeal`, `TriggerSphereCfg(dealer, true, 4, 2, 500)` with messages 3 / 4, the scene `l99_c9` preloaded | message 3 on the dealer → `P3.CheckForFlash` every 0.5 s until `InvNumberOf(1)` ≥ 1 | [Buying](ai.md#dealer), [trigger spheres](#triggers) |
 | 3.7 flash | `P3.FlashSpeak`, 3 s after the buy | `CfgSetGlobalTimeToLive(10000)`, command 40 on, `PadSetHandlerEx(P3.UseFlash)` | command 40 (d-pad right) → `P3.MissionOver` 1.5 s later | [The flash](combat.md#rage), [How the mission ends](#level99) |
@@ -761,6 +761,22 @@ Points an implementer needs:
   flash, refused at 3 carried; a dirty dealer would take the money and give nothing.
 - **3.7**: the last step waits only for the command; the flash itself heals the player when he is hurt (he is at 35 %
   from 2.1) and does nothing at full health without upgrade (6, 8).
+- **3.4**: the jump is the player's own ([Jumping](characters.md#jump)) and the script never touches the window: the
+  two type-11 panes in it break when the jumping player reaches them ([Moving into a pane](objects.md#pane-break)).
+  `P3.JumpPoizoDone` arms `vReachWindow` (corner 43.2, −4.3, 4.1, size 4 × 6 × 4, just past the panes at x 47.4)
+  with `P3.ReachWindow`, which counts only players. With one player, his entering removes the handler and runs
+  `P3.Player2Jumps`. With two, each player who enters is set brain-dead (`BrDead`, so he gives up the pad,
+  [AI](ai.md#handlers)) and counted; the second removes the handler and runs `P3.Player2Jumps` (player 2 arriving
+  first sets `bWindowWait`; if he then drops out, player 1 still has to enter). `P3.Player2Jumps` marks the
+  objective done, flushes the Warriors' brains and sets the gang dead (the player is `Warriors.Rembrandt`, so he too
+  gives up the pad), gives each player `GoalAddressPerson` towards Vermin, turns the follow camera off with
+  Vermin as its secondary target, destroys the marker `dyn_w_mission` and sends Vermin to `fStop[3]`
+  (`P3.VerminInWindow` on arrival). A jump enters the box in the air (at about x 47.2), so the pad is lost
+  mid-jump and the jump finishes on its own. Confirmed (runtime) in the jump of
+  [Moving into a pane](objects.md#pane-break), one player, the stick held at 100 % throughout: he landed with 435,
+  the jump end for a centred stick (436 follows a held one, [Characters](characters.md#jump)), slid to a stop 0.57 m
+  on, then turned on the spot about 164° (heading 88° to −108.6°, clip 398) in 14 updates and stood idle. If player
+  2 drops out while player 1 waits at the window, `level99.lua`'s drop-out handler runs `P3.Player2Jumps` itself.
 - **3.5**: who sends a barrier's script message 2 is not traced; its class update (`0x003b3220`) reports done once the
   barrier has broken (data `+0x00`), which is inferred to make the object system send it.
 
