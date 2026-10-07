@@ -181,11 +181,13 @@ class SoundEngine {
     /// stops the previous one.
     /// @orig 0x0010ff68 SceneSound_Preload (unknown)
     SoundHandle preloadSceneSound(std::uint32_t hash);
-    /// Starts the prepared scene soundtrack (scene event 13).
+    /// Starts the prepared scene soundtrack (scene event 13); false when none is prepared.
     /// @orig 0x00110018 SceneSound_Start (unknown)
-    void startSceneSound();
+    bool startSceneSound();
     /// Stops the scene soundtrack.
     void stopSceneSound();
+    /// The scene soundtrack, prepared or playing (invalid when there is none).
+    [[nodiscard]] SoundHandle sceneSound() const { return m_sceneSound; }
 
     // ---- Settings ----
 

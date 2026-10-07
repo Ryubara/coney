@@ -76,8 +76,9 @@ class SceneStage final : public scenes::SceneHost {
     /// Hands the scene camera to player 1's `cameras` (null: the stage keeps it alone); they must outlive the stage's
     /// use of them.
     void setCameras(camera::Cameras* cameras) { m_cameras = cameras; }
-    /// Tells the stage whether a cinematic is playing (the original's scene state): the soundtrack stops when it ends
-    /// (the engine ducks the music while its soundtrack plays).
+    /// Tells the stage, each step, whether a cinematic is playing (the original's scene state): the soundtrack stops
+    /// when one ends (the engine ducks the music while its soundtrack plays); a soundtrack prepared with none playing
+    /// is kept for its event.
     void setCinematic(bool playing);
     /// Sets the role names of the scene about to play (the human's model may follow its role), by role index.
     void setRoleNames(std::vector<std::string> names) { m_roleNames = std::move(names); }
@@ -186,6 +187,7 @@ class SceneStage final : public scenes::SceneHost {
     std::uint64_t m_particles = 0;
     std::uint64_t m_rumbles = 0;
     std::uint64_t m_soundtracks = 0;
+    bool m_cinematic = false; // a cinematic played at the last setCinematic()
 };
 
 } // namespace coney::platform

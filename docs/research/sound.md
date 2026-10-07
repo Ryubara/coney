@@ -484,7 +484,8 @@ hashes and, while on, loops a random track of the mood each frame's surroundings
 mood is 1 while an AI human with health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2,
 its chase goals not built, never comes), the pick draws from the game's random index, and the fades are the music
 player's own. `SoundSetEffect` and `SoundEnableEffects` are kept in the game state only. Not built yet: reverb, the
-other ambient bindings (`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`), the game's own speech commands.
+other ambient bindings (`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`), the game's own speech commands, and
+the sounds of the scenes' role clips (clip event 11, [Scenes](scenes.md#events)).
 The hub's sound bindings (`repo:src/scripting/hub_world_bindings.cpp`): `EnableAmbientEmitter` switches an emitter
 off (it stops its sound and plays nothing more) and on; `SoundPlay` plays a sound once at a point; `SndLoadMatrix`
 runs `<name>_preload.lua` when the name changes and frees nothing (Coney keeps no matrix); `HuSay` speaks a line

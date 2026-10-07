@@ -504,7 +504,8 @@ unchanged. The Python reader for the disc check is `repo:python/src/coney_tools/
 **Disc test** (`[disc][scenes]`, counts only): `l99_c1` and `l99_c5` load with their 5 and 1 segments and play headless
 with the roles `level99_combat.lua` binds: 2,026 and 500 updates playing, every bound human on its start mark (to
 0.1 mm) at frame 0 and within 2 cm of its end mark at the end (on it, after a skip), one soundtrack prepared and started
-each.
+each. `[disc][story][audio]` plays level99's checkpoint 1 with the sound mixed offline: `l99_c1`'s soundtrack plays on
+a real voice for its whole 2,026 frames, and the mix is audible through every one of them.
 
 **Coney choices** where the page is silent:
 
@@ -539,7 +540,9 @@ placed at the release itself so the end function's own moves (`level87`'s `Telep
 other bound humans are drawn as puppets of their characters. Sounds go through the sound engine
 ([Sound](sound.md#scene-sound)): the soundtrack is prepared on the scene's load and starts on its event, the engine
 ducking the music to 0.75 while it plays, and it stops when the cinematic ends (Coney's choice, so a skip silences
-it); events 14 and 71 play at the human the scene holds, else unplaced on the effects bus. **Coney stand-ins:**
+it; only the end stops it, as a scene's soundtrack is prepared before its cinematic starts; the log says
+`scene sound: <hash> prepared` and `scene sound: started`); events 14 and 71 play at the human the scene holds, else
+unplaced on the effects bus. **Coney stand-ins:**
 captions, particles and rumble are counted; a puppet's model follows its role's name (`warrcl` is Cleon's `warr_cl`,
 and so on); a cast human keeps running its brain while a scene poses it.
 `--scene NAME` with `--play-level` plays one scene at once ([Building](../guides/building.md#playing-a-level)).

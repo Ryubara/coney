@@ -327,15 +327,22 @@ void SceneStage::soundtrackPrepare(std::uint32_t hash) {
     // The engine stops the previous scene's soundtrack and buffers this one silent on a stereo stream pair
     // (docs/research/sound.md#scene-sound).
     ++m_soundtracks;
-    if (audio::SoundEngine* engine = soundEngine(); engine != nullptr) {
-        engine->preloadSceneSound(hash);
+    audio::SoundEngine* engine = soundEngine();
+    if (engine == nullptr) {
+        m_print(std::format("scene sound: {:#010x} not prepared: no sound engine\n", hash));
+        return;
     }
+    const audio::SoundHandle sound = engine->preloadSceneSound(hash);
+    m_print(std::format("scene sound: {:#010x} prepared{}\n", hash,
+                        !sound.valid()             ? " as nothing (no such sound, or refused)"
+                        : engine->isVirtual(sound) ? " virtually (silent)"
+                                                   : ""));
 }
 
 void SceneStage::soundtrackStart() {
     // Scene event 13: the prepared soundtrack starts, and the music ducks while it plays.
     if (audio::SoundEngine* engine = soundEngine(); engine != nullptr) {
-        engine->startSceneSound();
+        m_print(std::format("scene sound: {}\n", engine->startSceneSound() ? "started" : "nothing prepared to start"));
     }
 }
 
@@ -356,8 +363,12 @@ void SceneStage::sound(std::uint32_t hash, std::optional<double> object) {
 
 void SceneStage::setCinematic(bool playing) {
     // The music's duck is the engine's while its scene soundtrack plays (docs/research/sound.md#music). Coney's choice:
-    // the soundtrack ends with the cinematic, so a skip silences it.
-    if (audio::SoundEngine* engine = soundEngine(); engine != nullptr && !playing) {
+    // the soundtrack ends with the cinematic, so a skip silences it. Only the cinematic's end stops it: the next
+    // scene's soundtrack is prepared while none plays (as the scene loads, before event 13 starts it), and stopping on
+    // every step without a cinematic threw that preparation away, so no scene was ever heard.
+    const bool ended = m_cinematic && !playing;
+    m_cinematic = playing;
+    if (audio::SoundEngine* engine = soundEngine(); engine != nullptr && ended) {
         engine->stopSceneSound();
     }
 }

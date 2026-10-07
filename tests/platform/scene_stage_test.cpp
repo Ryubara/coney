@@ -1,19 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The play mode's scene stage handing a scene's camera to player 1's cameras (docs/research/scenes.md,
 // docs/research/camera.md#scenes): the scene's start pushes the camera shown, its keys set the scene camera's view
-// and its end pops the camera back over the scene's blend.
+// and its end pops the camera back over the scene's blend; and the scene soundtrack
+// (docs/research/sound.md#scene-sound) kept from its preparation to its event, and stopped when the cinematic ends.
 #include "platform/scene_stage.h"
 
 #include <cmath>
+#include <cstdint>
 #include <expected>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "animation/anim_math.h"
+#include "audio/audio_fixtures.h"
+#include "audio/mixer.h"
+#include "audio/sound_data.h"
+#include "audio/sound_engine.h"
+#include "audio/sound_player.h"
 #include "camera/cameras.h"
 #include "camera/locked_camera.h"
 #include "core/error.h"
@@ -118,4 +127,43 @@ TEST_CASE("a released human is handed to the play mode at the release, at its en
     // A human the scene does not hold is not handed over.
     stage.humanRelease(6.0, std::nullopt);
     CHECK(released.size() == 1);
+}
+
+TEST_CASE("a scene soundtrack prepared before its cinematic is kept for its event and stops when the cinematic ends",
+          "[scene_stage][audio]") {
+    // One made-up stereo stream (class flags 0x04, priority 3, two channels); with no stream files it plays virtually,
+    // which is enough to follow its task.
+    constexpr std::uint32_t kSoundtrack = 0x600;
+    const std::vector<coney::test::TestSound> sounds{
+        coney::test::TestSound{.hash = kSoundtrack, .size = 64'000, .soundClass = 0}};
+    auto list = coney::audio::SoundTables::parseSoundList(coney::test::soundListChunk(sounds));
+    REQUIRE(list.has_value());
+    coney::audio::Mixer mixer;
+    coney::audio::SoundPlayer player(mixer);
+    player.attach(std::make_unique<coney::audio::SoundEngine>(
+        mixer, coney::audio::SoundTables(std::move(*list), {coney::test::testClass(0, 0, 0x04, 3, 2)}, {}, {}), nullptr,
+        coney::audio::SoundEngine::BankLoader{}, coney::audio::SoundEngine::RandomRange{}));
+    coney::audio::SoundEngine& engine = *player.engine();
+    SceneStage stage = quietStage();
+    stage.setSounds(&player);
+
+    // The scene loads with no cinematic playing: the play mode tells the stage so each step, and the soundtrack stays.
+    stage.soundtrackPrepare(kSoundtrack);
+    const coney::audio::SoundHandle prepared = engine.sceneSound();
+    REQUIRE(prepared.valid());
+    for (int step = 0; step < 5; ++step) {
+        stage.setCinematic(false);
+        player.update(1000.0F / 30.0F);
+    }
+    CHECK(engine.sceneSound() == prepared);
+    // Its event starts it as the cinematic plays, and it plays on through the cinematic.
+    stage.setCinematic(true);
+    stage.soundtrackStart();
+    player.update(1000.0F / 30.0F);
+    stage.setCinematic(true);
+    CHECK(engine.isPlaying(prepared));
+    // The cinematic ends (or is skipped): the soundtrack stops.
+    stage.setCinematic(false);
+    CHECK_FALSE(engine.isPlaying(prepared));
+    CHECK_FALSE(engine.sceneSound().valid());
 }

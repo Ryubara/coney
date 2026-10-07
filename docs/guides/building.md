@@ -167,6 +167,9 @@ environment variable `CONEY_DISC` names the disc, are reported as skipped otherw
 CONEY_DISC=/path/to/warriors.iso build/dev/tests/coney_tests "[disc]"
 ```
 
+The level99 intro's sound check (`[disc][story][audio]`) also writes everything it mixed as a 48 kHz stereo WAV file
+when `CONEY_AUDIO_WAV` names one, to listen to; keep it out of the repository.
+
 ## Run Coney {#run-coney}
 
 The executable is `build/<preset>/src/platform/coney` (`coney.exe` on Windows). Run with no arguments, it opens a

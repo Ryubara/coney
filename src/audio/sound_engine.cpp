@@ -633,15 +633,16 @@ SoundHandle SoundEngine::preloadSceneSound(std::uint32_t hash) {
     return m_sceneSound;
 }
 
-void SoundEngine::startSceneSound() {
+bool SoundEngine::startSceneSound() {
     Task* task = find(m_sceneSound);
     if (task == nullptr) {
-        return;
+        return false;
     }
     task->prepared = false;
     task->startMs = m_now;
     m_mixer.setPaused(task->mixerVoice, false);
     m_music.setScenePlaying(true);
+    return true;
 }
 
 void SoundEngine::stopSceneSound() {
