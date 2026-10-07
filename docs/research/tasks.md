@@ -1120,6 +1120,16 @@ See [Tasks: The wheel](#wheel).
 | `0x003a45a8` | `ScriptObj_Unschedule` | Takes the task off the wheel. | confirmed (code) |
 | `0x003a45d8` | `ScriptObj_Schedule` | Puts the task on the wheel. | confirmed (code) |
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0041b3d8` | `GameState_CallRadioCallback` | from `Radio_HandleMessage` (through `0x003a5a10`): calls the function named at `+0x360` with (object, value); the name's writer is not traced | confirmed (code) |
+| `0x0041d968` | `Cfg_SetTimeScale` | `CfgSetTimeScale`: the game clock's `+0x50` ([Tasks](tasks.md#clocks)) | confirmed (code) |
+
 ## Open questions {#open-questions}
 
 - The file split of `0x003a1570`-`0x003a4288` between `TaskManager.cpp` and a base task file.

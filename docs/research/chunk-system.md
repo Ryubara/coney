@@ -100,7 +100,7 @@ the push/pop behaviour; the description of what the object *is* is inferred from
 | `0x13` | German String Table | `0x00386f90` (empty) | | raw |
 | `0x14` | Null Pointer | `0x00144370` | | retagged as `0x14`: an untyped "pointer" result |
 | `0x15` | Sector BSP Data | | `0x00197b30` | world sector read through the render device (slot `+0x170`); result `0x42` |
-| `0x16` | World Header | `0x004124f8` | | pops `0x16`, `0x42`, `0x0B`; world object (vtable `0x00545bf0`) with sectors at `+4`, textures at `+8`; pushed as an object |
+| `0x16` | World Header | `0x004124f8` | | pops `0x16`, `0x42`, `0x0B`; world object (vtable `0x00545bf0`) with sectors at `+4`, textures at `+8`; pushed as an object; released by `0x00412550` (both freed through the device); confirmed (code) |
 | `0x17` | Level Header | set at run time: `0x0040ce30` | | see [below](#handlers-registered-at-run-time) |
 | `0x18` | The One World | | | raw |
 | `0x19` | Particle Types | | | raw |

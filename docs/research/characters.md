@@ -1935,6 +1935,22 @@ the human code reads.
 | `0x00250bb8` | `NavLink_SetKindNearest` | Sets the kind of the nearest link pair to a point. | confirmed (code) |
 | `0x00250db0` | `NavLink_ConvertJumpToDoor` | `ConvertJumpToDoor`: turns a jump link into a door link. | confirmed (code) |
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x004197a8` | `GameState_CheckGameOver` | each update, when enabled (`+0x155`), outside Rumble (`+0x158`) and not already over (`+0x14c`): over when a player has state flag `0x100000000`; when every player is knocked out or cuffed, not over while player 1 is cuffed, awake and can uncuff himself (upgrade (6, 15) and item 6); over when no gang member can help (`Gang_NoneAbleToHelp`); over at once when player 1 is out with no flash (item 1) or byte `+0x414 + player` is set; otherwise every 37th update asks `Gang_CanReachToHelp` and is over after 4 failures in a row (`+0x56e6`). The mission-failed reason is GSTRING 21 when cuffed (`+0x118` = 1), else 20 | confirmed (code) |
+| `0x00419a68` | `GameState_SetWarChiefPlayer` | `+0x222` = the war chief's player number (0 or 1; larger values ignored); from `GameState_SetWarChiefHUD` | confirmed (code) |
+| `0x00419e10` | `GameState_SwapPlayerSlots(a, b)` | from `Human_SetWarChief`: swaps two players' entries in the player list (`+0x228`), their player numbers (human `+0x1b0`) and the pads' player numbers (pad record `+0x42`) | confirmed (code) |
+| `0x0041a9c0` | `GameState_SetLeadPlayer` | from `Human_SetWarChief`: puts player 1's camera target first (`CameraTargets_Swap`) and moves the old leader's pad bit in `+0x456` to the new one | confirmed (code) |
+| `0x0041cf78` | `GameState_AnimEventHook` | empty; called by `Anim_FireFrameEvents` | confirmed (code) |
+| `0x0041d428` | `Cfg_SetCharClassAttribs` | `CfgCharClassAttribs`'s worker: a 16-byte record per class at `W_GameState + 8 + class × 16` (two floats at `+0x0c`, `+0x14` and four bytes) | confirmed (code) |
+| `0x0041d890` | `GameState_EnableGameOverCheck` | `EnableGameOverCheck`: byte `+0x155` (1 at set-up) | confirmed (code) |
+| `0x0041ddb8` | `GameState_IsLevelEnding` | whether `+0x14c` (game over or complete) is set | confirmed (code) |
+
 ## Coney's implementation
 
 Coney loads a character's three resources, plays its clips, and plays Rembrandt as player 1 with the human's

@@ -1658,7 +1658,8 @@ StatGetScore(human) -> number
 
 Returns a player's score from the stats object; `global.lua` reads it for the end-of-mission screen.
 
-**Notes.** Computed by `0x00422998`; the formula is not traced.
+**Notes.** `0x00422998` returns the player's running score (stats `+0x00`), or the Armies score in Armies levels; no
+category sum is computed.
 
 - **Evidence:** confirmed (code) at `0x00422630`; detail: traced
 - **Wrapper** `0x0037cb20` (registered by `RegisterBindings`); **calls** `0x00422630`

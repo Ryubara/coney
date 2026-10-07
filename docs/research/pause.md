@@ -528,6 +528,16 @@ tutorial tips page. Both pages derive from a small `ControlPage` base and are st
 | `0x001e6cf0`, `0x001e6cf8` | `PauseStats_SetAlpha`, `_Render` | alpha `+0x1d70` | confirmed (code) |
 | `0x001e6e20`, `0x001e6e78` | `PauseStats_StaticInit`, `_StaticInitStub` | colours `0x0063ee30`/`0x0063ee38` = (150,30,30,255); stub in ctor list `0x00534134` | confirmed (code) |
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0041dd78` | `GameState_RequestOptionMenu` | `+0x11c` = 1 | confirmed (code) |
+| `0x004229c0` | `Stats_ClearArmiesScores` | zeroes the Armies score (`+0x04`) of both players in the list (`W_GameState + 0x228`); from the game-over and pause menus' quit or retry | confirmed (code) |
+
 ## Coney's implementation
 
 Written from this page: `repo:src/gui/pause_menu/` (`PauseMenu`, `YesNoBox`, `MissionFailedMenu`, the item table

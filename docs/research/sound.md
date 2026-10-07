@@ -1246,6 +1246,22 @@ The unit's other functions (`0x0010d758`-`0x0011b770`), by address; names are ou
 | `0x0011b750` | `StereoSlots_PairOf` | stream pair 1 for slot 0, else 3 | confirmed (code) |
 | `0x0011b760` | `StereoSlots_BothMusic` | both slot bytes are 1 (music) | confirmed (code) |
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00419030` / `0x00419108` | `Breathing_Start` / `Breathing_Stop` | starts the 2D loop (handle `+0x234`) at volume 0 rising to 1.0, or turns a fading one round; stops it and clears the state `+0x248` | confirmed (code) |
+| `0x00419150` | `Breathing_Update` | each frame (from `0x0041a370`): while the camera frames combat (`Camera_IsCombatFraming`) the loop fades in over `+0x250` ms; once it does not, it fades out over `+0x254` ms and stops at 0 | confirmed (code) |
+| `0x004193e8` | `Breathing_Configure` | `CfgBreathingSound`'s worker: game state `+0x258` the sound hash, `+0x250` fade-in ms, `+0x254` fade-out ms | confirmed (code) |
+| `0x00419fc8` | `GameState_SetMusicMood` | the system music's mood `+0x40c`; mood 4 switches the system music off and stores 3 | confirmed (code) |
+| `0x0041a060` | `SystemMusic_UpdateMood` | every 30th update, and from `GameState_SetSystemMusic` and `Gang_SetAlertState`: with system music off (`+0x3f8` 0) mood 4; otherwise, unless locked (`+0x3f4`) outside mood 3, picks a mood from player 1's gang and the nearest other gang: 1 (combat) when one of that gang's members fights ours, or when it is farther than both radii + 30 m but at least `CfgGangSizeForCombatMusic` strong (`0x005148a8`) and in sight of a player; 2 when our gang is hunted (`Gang_IsBeingHunted`); else 0 | confirmed (code); the reading of each test inferred |
+| `0x0041b4c0` | `GameState_SetMusicStateCallback` | the name at `+0x384`; from the set-up and `Snd_SetMusicStateCallback` | confirmed (code) |
+| `0x0041d480` | `Cfg_SetBreathingSound` | `CfgBreathingSound(v, in, out, name)`: the sound's hash and fades to `Breathing_Configure`, `v` to `+0x24c` | confirmed (code) |
+| `0x0041d920` / `0x0041d930` | `Cfg_SetGangSizeForCombatMusic` / `Cfg_SetDisableMusicForScenes` | `CfgGangSizeForCombatMusic` (`0x005148a8`, read by `SystemMusic_UpdateMood`) / `CfgDisableMusicForScenes` (`0x005148ac`) | confirmed (code) |
+
 ## Coney's implementation
 
 `src/audio/`, from this page and [Audio data](formats/audio.md):

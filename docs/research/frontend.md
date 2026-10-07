@@ -1912,6 +1912,29 @@ the file's first path-string function sit after the player panel's static initia
 | `0x00217350` | `GameStatsSubItem_Setup(width, item, level, word, batch)` | the level (`+0x74`), the text, the picture (`+0x68`, sprite `word` in `batch`) and a `ScrollingTextWidget` (`+0x6c`) at (0.05, 0.1) adjusted to the screen; its x moved by `width` | confirmed (code) |
 | `0x002175f8` | `GameStatsSubItem_Shutdown` | slot `+0x68`: the picture, the text widget and the text freed | confirmed (code) |
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00419a80` / `0x00419ac0` | `GameState_IsTwoPlayerActive` / `GameState_SetTwoPlayerActive` | whether player 2 is in play, kept in three places: `+0x56f0` while `+0x158` (Rumble) is set, `+0x56f4` in an Armies of the Night level, else `+0x56ec`; `GameState_SyncPlayers` reads it | confirmed (code) |
+| `0x0041a430` | `GameState_SetJoinAllowed` | `+0x56e8`; when it becomes non-zero the players are synced (`GameState_SyncPlayers(-1)`); from `CfgMultiplayerJoin` and the pause menu's quick Rumble quit | confirmed (code) |
+| `0x0041b0f0` / `0x0041b118` / `0x0041b0d0` | `Script_SetMultiplayerCallback` / `GameState_SetMultiplayerCallback` / `GameState_GetMultiplayerCallback` | `SetMultiplayerCallback`: the name at `+0x3a4` (null when empty) | confirmed (code) |
+| `0x0041b148` | `GameState_CallMultiplayerCallback` | from `GameState_SyncPlayers`: calls it with (player 2's handle, joined) and, on a join, resets player 2's camera (vtable `+0x13c`) | confirmed (code) |
+| `0x0041b280` / `0x0041b2c8` / `0x0041b2a8` | `Script_SetArmiesMultiplayerCallback` / `GameState_SetArmiesMultiplayerCallback` / `GameState_GetArmiesMultiplayerCallback` | the same for Armies of the Night, `+0x3c4`; `Player2_TryJoin` calls it with (player 2) | confirmed (code) |
+| `0x0041d788` / `0x0041d7e0` | `GameState_SetGameMode` / `GameState_GetGameMode` | `SetGameMode(mode, a, b, c)`: the mode at `+0x158` (non-zero in Rumble), its three values at `+0x15c`-`+0x164`, and `0x004e8700` told 1 for modes 1 and 2, else 0 / `GetGameMode` | confirmed (code) |
+| `0x0041d800` / `0x0041d810` / `0x0041d820` | `GameState_GetDifficulty` / `GameState_SetDifficulty` / `GameState_GetProfileDifficulty` | `GetDifficulty` / `SetDifficulty` (byte `+0x154`) and `GetProfileDifficulty` (byte `+0x43c`) | confirmed (code) |
+| `0x0041da08` | `Cfg_SetMultiplayerJoin` | `CfgMultiplayerJoin`: `GameState_SetJoinAllowed` | confirmed (code) |
+| `0x0041dd90` | `Game_CheckMultiplayer` | `GameState_SyncPlayers(-1)` when the game state exists | confirmed (code) |
+| `0x0041f0e0` | `LevelTable_CountPacked` | counts the level records whose `+0x10` is 1 into `+0x4204` of the table (`W_GameState + 0x56d8`); from `Gm_LevelFlow_Resume` | confirmed (code) |
+| `0x0041f298` / `0x0041f340` | `LevelRecord_GetAreaColour` / `LevelRecord_GetAreaColour2` | two colours (RGB, alpha 255) chosen by the record's area byte `+0x7c` (1-4); used by the mission-select screen and the end-of-mission list | confirmed (code) |
+| `0x0041f3e8` / `0x0041f428` | `LevelRecord_LabelLength` / `LevelRecord_GetLabel` | in the record's second name (`+0x24`): one past the position of its `:` (0 when none) / the text before the `:`, at most 3 characters; used by the mission select, the end-of-mission list and the Rumble soldier screen | confirmed (code) |
+| `0x0041f4d0` | `LevelTable_FindPacked(n)` | the index of the n-th record whose `+0x10` is 1, 0 when there is none | confirmed (code) |
+| `0x0041f540` / `0x0041f5f8` | `LevelRecord_GetMapPos` / `LevelRecord_GetMapPos2` | a pair of floats for the record's byte `+0x0c` (1-based) from the tables `0x005148e0` / `0x00514c78`, 5 columns chosen by the video mode flags (`*0x0050cdb4` bits 2, 4, `0x20`); `(0, 0)` when the byte is 0 | confirmed (code); that they are screen positions inferred |
+| `0x00424298` | `Unlockables_GetLevelTargets` | counts a level's targets for the mission screens: the highest item of its group-0 records × 1000 (the score target), type-4 and type-2 records (total and unlocked) and group-1 distinct items (total and unlocked); level 60 stands for all Armies levels 60-64 and 101 for 101-137 | confirmed (code) |
+
 ## Coney's implementation
 
 **The start-up path** (`src/gamemodes/start_up_flow.h`, `StartUpFlow`), written from [the flow](#mode-flow) and

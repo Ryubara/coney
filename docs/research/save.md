@@ -307,6 +307,43 @@ hiding CREATE NEW PROFILE. Confirmed (code); that the two screens are left from 
 [`SSMC_detect`](../references/bindings/level.md#ssmc_detect), [`SSMC_format`](../references/bindings/level.md#ssmc_format),
 [`ShowProfileManager`](../references/bindings/hud.md#showprofilemanager).
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0041e3a8` / `0x0041e3b0` | `Value_Get` / `Value_Set` | read / write the first word of a record; used by `Profile_Read`, `Profile_Write` and the Rumble soldier price (`0x00424d60`, `RMBuySoldiers_SetupPrice`) | confirmed (code); the field's meaning inferred |
+| `0x0041f6b0` | `PS2SaveSystem_Construct` | from the static initialiser: the base (`0x004212c0`), the card state `+0x180`-`+0x190` zeroed, vtable `0x00545fa0` at `+0x128`, the card record at `+0x148` cleared | confirmed (code) |
+| `0x0041f700` | `PS2SaveSystem_InitLibrary` | vtable slot: initialises the card library and sets the state `+0x184` = 1 (idle) | confirmed (code) |
+| `0x0041f730` | `PS2SaveSystem_GetDate` | vtable slot: the console clock, BCD to binary, into 6 bytes (the slot's date) | confirmed (code) |
+| `0x0041f848` | `PS2SaveSystem_HasSaveDirectory` | vtable slot: opens card 1 and tests for the `BASLUS-21215` directory | confirmed (code) |
+| `0x0041fa38` | `PS2SaveSystem_StartDetect` | vtable slot: opens card 1 for a check and sets the state to 2 (detect), sub-step 0 | confirmed (code) |
+| `0x0041faa8` | `PS2SaveSystem_IsCardFormatted` | vtable slot: opens the card and returns whether it is present and formatted (`+0x144`, `+0x140`) | confirmed (code) |
+| `0x0041fb08` | `PS2SaveSystem_HasRoom` | vtable slot: true when the directory exists already, else when the free space (`+0x158`) holds the needed KB (slot `+0x134`) × 1024 | confirmed (code) |
+| `0x0041fbb8` | `PS2SaveSystem_StartFormat` | vtable slot: starts a format and sets the state to 3 | confirmed (code) |
+| `0x0041fc28` | `PS2SaveSystem_FilesExist` | vtable slot: whether both the data file and `WARR.ICO` are in the save directory (their attributes kept at `+0x194`) | confirmed (code) |
+| `0x0041fd60` / `0x0041fdc8` / `0x0041fed0` | `PS2SaveSystem_StartLoad` / `PS2SaveSystem_StartCreate` / `PS2SaveSystem_StartSave` | vtable slots: open the data file for reading and set state 5 / make the directory and set state 4 / delete `icon.sys`, open the data file for writing and set state 6 | confirmed (code) |
+| `0x0041fe20` | `PS2SaveSystem_DeleteFiles` | vtable slot: deletes `icon.sys`, `WARR.ICO` and the data file | confirmed (code) |
+| `0x0041fe78` | `PS2SaveSystem_RunToIdle` | vtable slot: services the state machine (slot `+0x1c`) until it reports idle (slot `+0x24`) | confirmed (code) |
+| `0x00420928` | `PS2Save_IconLoaded` | the completion of the create step's read of the disc's `WARR.ICO`: copies its 79,128 bytes from the file manager's buffer into `+0x190` and moves to the next sub-step | confirmed (code) |
+| `0x004209a0` | `PS2SaveSystem_StaticInitStub` | `PS2SaveSystem_StaticInit(1, 0xffff)` | confirmed (code) |
+| `0x004212c0` | `SaveSystem_Construct` | base save system: vtable `0x00546198`, the six slot dates cleared, the record length, image file, template, bad-version flag and saving-enabled flag (`+0x108`, `+0x110`, `+0x114`, `+0x11c`, `+0x124`) zeroed | confirmed (code) |
+| `0x004214c0` | `SaveSystem_BuildTemplate` | writes the current (fresh) game state with `Profile_Write` into a 5 KB memory file, keeps the length as the record length (`+0x108`), allocates `+0x114` of that size and copies the bytes in: the template a new profile starts from. Called by `SaveSystem_Init` | confirmed (code) |
+| `0x00421578` / `0x004215d8` | `SaveSystem_WriteHeaders` / `SaveSystem_ReadHeaders` | `ProfileHeader_Write` / `_Read` for slots 0-5 in turn; the writer runs from `SaveSystem_WriteCurrent`, the reader from the card load step | confirmed (code) |
+| `0x004221a0` | `SaveSystem_CountUsedSlots` | vtable `+0x9c`: how many of the six slots answer "used" (`+0x64`) | confirmed (code) |
+| `0x00422208` | `SaveSystem_FirstFreeSlot` | vtable `+0xa4`: index of the first unused slot, 0 when all six are used | confirmed (code) |
+| `0x004222a0` | `SaveSystem_MarkHardcoreDone` | vtable `+0xb4`: when saving is enabled, the profile difficulty (`W_GameState + 0x43c`) is 2 and every story level is unlocked, sets the current slot's `+0x28` (the fourth difficulty) | confirmed (code) |
+| `0x00422358` | `SaveSystem_LoadSlot` | vtable `+0xcc`: makes the slot current (`+0x118`) and reads it from the image file into the game state (`Profile_Read`); returns 1 | confirmed (code) |
+| `0x00422380` / `0x004223b0` | `Script_SSMCDetect` / `Script_SSMCFormat` | the `SSMC_detect` / `SSMC_format` bindings: start the card detect (vtable `+0xf4`, `PS2SaveSystem_StartDetect`) or format (`+0x11c`, `PS2SaveSystem_StartFormat`) on `g_PS2SaveSystem` | confirmed (code) |
+| `0x004223e0` | `SaveSystem_InitHook` | empty; the first call of `SaveSystem_Init` | confirmed (code) |
+| `0x00423050` | `Stats_GetLevelBest` | copies the 12-byte best record of a level-table index (its mission byte, record `+0x0c`, picks one of the 30) from stats `+0x300` | confirmed (code) |
+| `0x00423098` | `Stats_UpdateLevelBest` | on entering play after a mission (`Gm_InGame_Enter`): for a mission byte below 30, the two players' summed score; if over the stored best it becomes the best, with player 1's bonus percentage (`+9`) and rank (`+8`); returns 1 for a new best | confirmed (code) |
+| `0x004231b8` | `Stats_AddLevelTotal` | adds a value to the current mission's running total (`+4` of its best record); from `Gm_Level_Suspend` | confirmed (code) |
+| `0x00423200` / `0x00423280` / `0x00423300` | `Stats_WriteBests` / `Stats_ReadBests` / `Stats_BestsSize` | write / read the 0x168-byte best records (`0x006fe790`) to or from the profile file (from `Profile_Write` / `Profile_Read`); the size is 0x168 | confirmed (code) |
+| `0x00424a20` / `0x00424b90` | `Unlockables_Write` / `Unlockables_Read` | write / read the locked set then the new set, twenty 32-bit words each, to or from the profile file | confirmed (code) |
+
 ## What Coney stores instead of a memory card {#coney}
 
 Coney keeps each profile as one file holding the 1,284-byte record above (same fields and order, little-endian) in the

@@ -1226,7 +1226,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Computed by `0x00422998`; the formula is not traced.
+    `0x00422998` returns the player's running score (stats `+0x00`), or the Armies score in Armies levels; no category
+    sum is computed.
   usage: {chunks: 6, calls: 12, boot: true, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 

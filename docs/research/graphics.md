@@ -1398,6 +1398,16 @@ address.
 | `0x0019dbe8` | `HeatWave_InRing(radius, fx, col, row)` | the cell is within the radius of the centre | confirmed (code) |
 | `0x0019dc50` | `HeatWave_StepRing` | the radius grows 0.3 cells a frame; a cell it reaches gets strength 5, which falls 0.3 a frame while the cell shimmers (0.005); once the radius passes `cols + rows` the wave is finished | confirmed (code) |
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00419da0` | `ThrowArcs_RenderAll` | from `WorldManager_Render`: draws each player's throw arc (game state `+0x5740 + 0x30 × p`) | confirmed (code) |
+| `0x0041d728` | `Cfg_SetOutdoorMode` | `CfgSetOutdoorMode`: `+0x3e4` | confirmed (code) |
+
 ## Coney's implementation
 
 First pixels (2026-10-04), in `src/platform/` and `src/graphics/`:

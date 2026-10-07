@@ -2115,6 +2115,26 @@ to make a body immovable and back to 1.0.
 | `0x00230d00` | `Attack_ReachSquared` | Squared reach of an attack kind for a human: kind to anim id to AttackTable_GetReach, with fixed values for some kinds. | confirmed (code) |
 | `0x00232be8` | `Grab_EndBoth` | Ends a grab between two humans (Grab_End, 0x00280548) and sets state 0x20000000 on both. | confirmed (code) |
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x004182e8` / `0x00418310` | `HitBalance_Construct` / `HitBalance_Reset` | a two-byte pair of counts in every human, zeroed by `Human_Construct` and `Human_Init` | confirmed (code) |
+| `0x00418330` | `HitBalance_Note(kind)` | from `Rage_NoteHit`: for kind 0 or 1, that count goes up by 1 (at most 20) and the other count, when above 3, down by 4; its reader is not traced | confirmed (code); purpose inferred |
+| `0x004183d8` / `0x00418408` | `RepeatTracker_Construct` / `RepeatTracker_Reset` | the [repeat tracker](#rage): both set the counts and the flag to 0 and the last kind to 4; the constructor also sets the time 0 and the throw bonus 1.0 | confirmed (code) |
+| `0x00418530` | `PlayerRecord_Reset` | clears a per-player record: the repeat tracker at `+0x10`, `+0x28`, the mini-game fields `+0x40`-`+0x58` ([Crimes](crimes.md#mini-game-record)); from `Human_Destroy`, `Human_MakePlayer`, the game state's set-up | confirmed (code) |
+| `0x004193f8` | `RageSound_Hook` | empty; called from `Human_UpdateMeters` | confirmed (code) |
+| `0x00419400` | `RageSound_PlayEnd` | `Human_EndRageMode`'s one-shot `vags/misc/rage_ends_01` | confirmed (code) |
+| `0x00419460` / `0x00419630` / `0x00419558` | `RageSound_Prepare` / `RageSound_RestartIfRaging` / `RageSound_StopIfNoneRaging` | prepares the loop when no one rages (from `Human_UpdateMeters`); restarts it when a player has flag `0x80000` at human `+0xe0` and none plays (each frame, `0x0041a370`); stops it when no player has that flag | confirmed (code) |
+| `0x004194b8` | `GameState_PlayRageSound` | (already named) the rage loop: when no sound is held at `W_GameState + 0x264` plays the 2D rage-mode loop by name and marks the task owned; otherwise restarts the prepared one | confirmed (code) |
+| `0x00419718` / `0x00419728` | `RageSound_AddRager` / `RageSound_RemoveRager` | count of raging humans `+0x268`: `Human_StartRageMode` adds one, `Human_EndRageMode` takes one and at 0 stops the rage loop | confirmed (code) |
+| `0x00419758` | `RageSound_Stop` | fades the rage loop (`vags/misc/rage_mode_06`, handle `+0x264`) out over 2 s and zeroes the count | confirmed (code) |
+| `0x0041d940` | `Cfg_SetMaxThrowError` | `CfgSetMaxThrowError(a, b)`: both angles from degrees to radians, `0x005148b0` and `0x005148b4` | confirmed (code) |
+| `0x0041daf8` | `Cfg_SetPlayerMugging` | `CfgPlayerMugging`: `+0x5708` | confirmed (code) |
+
 ## Coney's implementation
 
 `src/combat/` holds the player's combat rules as a self-contained core: it decides, and `src/human/` plays what it

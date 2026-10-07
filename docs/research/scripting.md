@@ -109,18 +109,18 @@ confirmed (code); the count confirmed (runtime).
 they do not match, calls the first (tolua's overload fallback). Confirmed (code); each form's arguments are in the
 binding's `overloads` entry.
 
-| Name | First wrapper | Second wrapper |
-| --- | --- | --- |
-| `CfgScrFx` | `0x0036ae60` | `0x0036b020` |
-| `FlagNetTraverse` | `0x0037a8d0` | `0x0037a968` |
-| `GoalManWeaponPile` | `0x00361a50` | `0x00361b80` |
-| `GoalPathBlocker` | `0x00362250` | `0x00362360` |
-| `HUDSetInstArrowLocation` | `0x0036fec8` | `0x0036ff40` |
-| `QueueMotionBlurEffect` | `0x0037be18` | `0x0037be90` |
-| `ScenePlay` | `0x00367810` | `0x00367a20` |
-| `SetLight` | `0x0037bfb8` | `0x0037c348` |
-| `SoundLoopMusicTrack` | `0x003712d8` | `0x00371348` |
-| `SoundPlayMusicTrack` | `0x003711d0` | `0x00371230` |
+| Name | First wrapper | Second wrapper | Evidence |
+| --- | --- | --- | --- |
+| `CfgScrFx` | `0x0036ae60` | `0x0036b020` | confirmed (code) |
+| `FlagNetTraverse` | `0x0037a8d0` | `0x0037a968` | confirmed (code) |
+| `GoalManWeaponPile` | `0x00361a50` | `0x00361b80` | confirmed (code) |
+| `GoalPathBlocker` | `0x00362250` | `0x00362360` | confirmed (code) |
+| `HUDSetInstArrowLocation` | `0x0036fec8` | `0x0036ff40` | confirmed (code) |
+| `QueueMotionBlurEffect` | `0x0037be18` | `0x0037be90` | confirmed (code) |
+| `ScenePlay` | `0x00367810` | `0x00367a20` | confirmed (code) |
+| `SetLight` | `0x0037bfb8` | `0x0037c348` | confirmed (code) |
+| `SoundLoopMusicTrack` | `0x003712d8` | `0x00371348` | confirmed (code) |
+| `SoundPlayMusicTrack` | `0x003711d0` | `0x00371230` | confirmed (code) |
 
 **The tolua types and variables** (confirmed (code)): `0x00357bc8` declares the usertypes `M_Vector4`, `M_Quat`,
 `WorldPath` and `SoundHandle`. The fields have one getter and one setter each, at offsets 0, 4, 8 and `0xc`:
@@ -133,27 +133,28 @@ set `0x0036d530`). A script can assign either.
 **Workers of the script and object bindings** (each called only by its binding's wrapper unless the row says
 otherwise; confirmed (code)):
 
-| Address | Name | Binding: what it does |
-| --- | --- | --- |
-| `0x00357a68` | `Script_PreloadFile` | `preLoadFile`: the path is the name itself when it starts `~/` (stripped) or the device says so (`0x001458c0`), else the current level's directory (level record `0x0051489c + 0x14e8 + 0x84 ×` index) plus the name; requests the file with the completion `0x00356d00` and the interned callback |
-| `0x00386370` | `Script_CollectGarbage` | `gc`: slot `+0x1c` |
-| `0x003863a0` | `Script_RegisterUpdate` | `RegisterUpdate`: slot `+0xb4` |
-| `0x003863d8` / `0x00386410` | `Script_ScheduleFunc` / `Script_ScheduleFuncArg1` | `ScheduleFunc` / `ScheduleFuncArg1`: slots `+0x94` / `+0x9c` |
-| `0x00386450` | `Script_FlushScheduledFuncs` | `FlushScheduledFuncs`: slot `+0xac` |
-| `0x003864b0` | `GameTimer_GetMilliseconds` | `GetGameTime` |
-| `0x00386308` | `Script_SetObjZoneMsgHandler` | `SetObjZoneMsgHandler`: `ObjZone_SetMsgHandler` on the object-zone manager (task manager `+0x840`) |
-| `0x00386340` | `Script_SetGeneralCarMsgHandler` | `SetGeneralCarMsgHandler` ([Cars](cars.md)) |
-| `0x00385950` | `Object_GetTypeBits` | `GetRTTI` |
-| `0x00385918` | `Object_GetHitpoints` | `GetHitpoints` |
-| `0x003859a0` | `Obj_GetName` | `GetName`: the object's name (its vtable `+0x14`), a fixed default string for a bad handle |
-| `0x003859f0` | `Obj_GetTypeName` | `GetObjectName` |
-| `0x00385a50` | `Obj_GetPosition` | `GetPosition`: a human's position, else the object's, else zero, in one static vector (`0x006ebd20`) that the next call overwrites |
-| `0x00385b08` | `AreaEffect_Spawn` | `SpawnAreaEffect` (also `0x002a05a4`) |
-| `0x00385b90` | `IsHumanHandle` | `IsAHuman` |
-| `0x00385c90` | `Obj_SetAxisAngle` | `OrientObject` |
-| `0x00385ea8` | `Obj_TestDistance` | `TestDistance(d, a, b)`: true when `a` and `b` are strictly nearer than `d`; false for a bad handle |
-| `0x00385f60` / `0x00386010` | `WalkingDistance` / `Obj_PathExists` | `WalkingDistance` / `PathValid` |
-| `0x003864e0` | `Script_StrDup` | no binding: a heap copy of a string, used by the GUI |
+| Address | Name | Binding: what it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00357a68` | `Script_PreloadFile` | `preLoadFile`: the path is the name itself when it starts `~/` (stripped) or the device says so (`0x001458c0`), else the current level's directory (level record `0x0051489c + 0x14e8 + 0x84 ×` index) plus the name; requests the file with the completion `0x00356d00` and the interned callback | confirmed (code) |
+| `0x00386370` | `Script_CollectGarbage` | `gc`: slot `+0x1c` | confirmed (code) |
+| `0x003863a0` | `Script_RegisterUpdate` | `RegisterUpdate`: slot `+0xb4` | confirmed (code) |
+| `0x003863d8` / `0x00386410` | `Script_ScheduleFunc` / `Script_ScheduleFuncArg1` | `ScheduleFunc` / `ScheduleFuncArg1`: slots `+0x94` / `+0x9c` | confirmed (code) |
+| `0x00386450` | `Script_FlushScheduledFuncs` | `FlushScheduledFuncs`: slot `+0xac` | confirmed (code) |
+| `0x003864b0` | `GameTimer_GetMilliseconds` | `GetGameTime` | confirmed (code) |
+| `0x00386308` | `Script_SetObjZoneMsgHandler` | `SetObjZoneMsgHandler`: `ObjZone_SetMsgHandler` on the object-zone manager (task manager `+0x840`) | confirmed (code) |
+| `0x00386340` | `Script_SetGeneralCarMsgHandler` | `SetGeneralCarMsgHandler` ([Cars](cars.md)) | confirmed (code) |
+| `0x00385950` | `Object_GetTypeBits` | `GetRTTI` | confirmed (code) |
+| `0x00385918` | `Object_GetHitpoints` | `GetHitpoints` | confirmed (code) |
+| `0x003859a0` | `Obj_GetName` | `GetName`: the object's name (its vtable `+0x14`), a fixed default string for a bad handle | confirmed (code) |
+| `0x003859f0` | `Obj_GetTypeName` | `GetObjectName` | confirmed (code) |
+| `0x00385a50` | `Obj_GetPosition` | `GetPosition`: a human's position, else the object's, else zero, in one static vector (`0x006ebd20`) that the next call overwrites | confirmed (code) |
+| `0x00385b08` | `AreaEffect_Spawn` | `SpawnAreaEffect` (also `0x002a05a4`) | confirmed (code) |
+| `0x00385b90` | `IsHumanHandle` | `IsAHuman` | confirmed (code) |
+| `0x00385c90` | `Obj_SetAxisAngle` | `OrientObject` | confirmed (code) |
+| `0x00385ea8` | `Obj_TestDistance` | `TestDistance(d, a, b)`: true when `a` and `b` are strictly nearer than `d`; false for a bad handle | confirmed (code) |
+| `0x00385f60` / `0x00386010` | `WalkingDistance` / `Obj_PathExists` | `WalkingDistance` / `PathValid` | confirmed (code) |
+| `0x003858b8` | `ScriptHandlers_ClearAll` | no binding: clears all 26 message handlers of a handler component (slot `+0xc` with none, messages 0-25); from a gang's and a human's teardown (`0x0016ac10`, `0x00233f48`) | confirmed (code) |
+| `0x003864e0` | `Script_StrDup` | no binding: a heap copy of a string, used by the GUI | confirmed (code) |
 
 | Family (name prefix) | Count | What for |
 | --- | --- | --- |
@@ -242,9 +243,9 @@ One countdown (or count-up) timer for the whole game, the object at `*0x0051504c
 | --- | --- | --- |
 | `+0x00` | u32 | game-timer reading at the last step |
 | `+0x08` / `+0x0c` | s32 | current time / target time, ms |
-| `+0x10` | float | rate the elapsed time is multiplied by (its writer is not traced) |
+| `+0x10` | float | rate the elapsed time is multiplied by: 1.0 from the constructor (`0x00423358`); other writers not traced |
 | `+0x14` | u32 | running (`W_StartStopWatch`'s argument; the update clears it at the target) |
-| `+0x18` / `+0x1c` | u32 / char* | shown on the HUD / the label drawn before the time; read by the HUD's stopwatch text (`StopWatchHud_UpdateMinutes`, `0x001cd5e8`, and `0x001cd748`; [HUD](hud.md#fn-after-textentrypad)), their writer not traced |
+| `+0x18` / `+0x1c` | u32 / char* | shown on the HUD / the label drawn before the time; read by the HUD's stopwatch text (`StopWatchHud_UpdateMinutes`, `0x001cd5e8`, and `0x001cd748`; [HUD](hud.md#fn-after-textentrypad)); written by `W_ShowStopWatch` (`0x00423670` → `0x004235e0`) |
 | `+0x20` | char[32] | the callback's name, kept as text (empty for none) |
 | `+0x40` / `+0x48` | s32 | warning window (ms) / time of the last warning beep; `W_SetStopWatch` sets 0 / 1000 |
 
@@ -390,24 +391,24 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
 
 The other box and sphere functions. Confirmed (code):
 
-| Address | Name | What it does |
-| --- | --- | --- |
-| `0x00412888` | `Box_Destruct` | the box base's destructor (vtable `0x00545c48`): unregisters the handle (`+0x44`) |
-| `0x004128e8` | `Box_SetName` | the name at `+0x58`, at most 15 characters |
-| `0x00412910` | `Box_ComputeBounds` | the bounding sphere: centre `+0x30` the midpoint of the corners `+0x10` and `+0x20`, radius `+0x40` half the diagonal |
-| `0x004129c0` | `Box_ContainsObject` | the inside test on an object's position |
-| `0x00412bf8` / `0x00412c40` | `VolumeBox_Enable` / `VolumeBox_SetRotation` | `EnableVolumeBox` (the box's slot `+0x5c`) / `RotateVolumeBox` (the matrix `+0x48`-`+0x54`) |
-| `0x00413198` | `VolumeBox_ContainsObject` | `IsInVolumeBox`: both handles resolve and the object is inside |
-| `0x00413398` / `0x00413448` / `0x004134a0` | `PlayerBox_DestroyPool` / `PlayerBox_Destruct` / `PlayerBox_HasOccupant` | the kind-2 pool (`0x00514814`); the destructor (vtable `0x00545cb8`, clears the handler component `+0x70`); whether a human is one of its two occupants |
-| `0x00414ed0` / `0x00414f08` / `0x00414f40` | `TurfBox_DestroyPool` / `TurfBox_Construct` / `TurfBox_Destruct` | kind 3 (vtable `0x00545d88`, pool `0x00514834`) |
-| `0x004150e0` / `0x00415288` / `0x00415320` | `VolumeBox_DestroyPool` / `VolumeBox_Destruct` / `VolumeBox_HasOccupant` | kind 0 (pool `0x0051483c`); the destructor clears the handler component `+0x160`; whether a handle is in the occupants `+0x70` |
-| `0x00415118` | `VolumeBox_FindByName` | the first box (handles `0x26c`-`0x2eb`) with that name, else `NilHandle` |
-| `0x00413208` | | empty |
-| `0x00414438`, `0x00414cc8` / `0x00414d28` | `TriggerSphere_Construct`, its static initialiser and stub | 60 inside handles set to -1, the handler vtable at `+0xf0`; all 100 built at boot |
-| `0x004142a0` / `0x004142d0` / `0x00414338` | `TriggerSpheres_Reset` / `TriggerSphere_Alloc` / `TriggerSphere_Free` | clear the 100 slots; take the first free; free one (the sphere being updated, `0x00514824`, is only marked at `0x00514828`) |
-| `0x00414548` / `0x00414688` | `TriggerSphere_Accepts` / `TriggerSphere_AcceptsObject` | within the radius of the object, then mode 1's test (`0x0024dee8`) or mode 2's clear ray (`Ray_IsClear`); on a point or an object |
-| `0x004144f8` | `TriggerSphere_HasOccupant` | whether a handle is in the inside list |
-| `0x00414a28` | `TriggerSphere_SetRadius` | `TriggerSphereSetRadius`: makes the sphere when the object has none, then `+0x174` |
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00412888` | `Box_Destruct` | the box base's destructor (vtable `0x00545c48`): unregisters the handle (`+0x44`) | confirmed (code) |
+| `0x004128e8` | `Box_SetName` | the name at `+0x58`, at most 15 characters | confirmed (code) |
+| `0x00412910` | `Box_ComputeBounds` | the bounding sphere: centre `+0x30` the midpoint of the corners `+0x10` and `+0x20`, radius `+0x40` half the diagonal | confirmed (code) |
+| `0x004129c0` | `Box_ContainsObject` | the inside test on an object's position | confirmed (code) |
+| `0x00412bf8` / `0x00412c40` | `VolumeBox_Enable` / `VolumeBox_SetRotation` | `EnableVolumeBox` (the box's slot `+0x5c`) / `RotateVolumeBox` (the matrix `+0x48`-`+0x54`) | confirmed (code) |
+| `0x00413198` | `VolumeBox_ContainsObject` | `IsInVolumeBox`: both handles resolve and the object is inside | confirmed (code) |
+| `0x00413398` / `0x00413448` / `0x004134a0` | `PlayerBox_DestroyPool` / `PlayerBox_Destruct` / `PlayerBox_HasOccupant` | the kind-2 pool (`0x00514814`); the destructor (vtable `0x00545cb8`, clears the handler component `+0x70`); whether a human is one of its two occupants | confirmed (code) |
+| `0x00414ed0` / `0x00414f08` / `0x00414f40` | `TurfBox_DestroyPool` / `TurfBox_Construct` / `TurfBox_Destruct` | kind 3 (vtable `0x00545d88`, pool `0x00514834`) | confirmed (code) |
+| `0x004150e0` / `0x00415288` / `0x00415320` | `VolumeBox_DestroyPool` / `VolumeBox_Destruct` / `VolumeBox_HasOccupant` | kind 0 (pool `0x0051483c`); the destructor clears the handler component `+0x160`; whether a handle is in the occupants `+0x70` | confirmed (code) |
+| `0x00415118` | `VolumeBox_FindByName` | the first box (handles `0x26c`-`0x2eb`) with that name, else `NilHandle` | confirmed (code) |
+| `0x00413208` | | empty | confirmed (code) |
+| `0x00414438`, `0x00414cc8` / `0x00414d28` | `TriggerSphere_Construct`, its static initialiser and stub | 60 inside handles set to -1, the handler vtable at `+0xf0`; all 100 built at boot | confirmed (code) |
+| `0x004142a0` / `0x004142d0` / `0x00414338` | `TriggerSpheres_Reset` / `TriggerSphere_Alloc` / `TriggerSphere_Free` | clear the 100 slots; take the first free; free one (the sphere being updated, `0x00514824`, is only marked at `0x00514828`) | confirmed (code) |
+| `0x00414548` / `0x00414688` | `TriggerSphere_Accepts` / `TriggerSphere_AcceptsObject` | within the radius of the object, then mode 1's test (`0x0024dee8`) or mode 2's clear ray (`Ray_IsClear`); on a point or an object | confirmed (code) |
+| `0x004144f8` | `TriggerSphere_HasOccupant` | whether a handle is in the inside list | confirmed (code) |
+| `0x00414a28` | `TriggerSphere_SetRadius` | `TriggerSphereSetRadius`: makes the sphere when the object has none, then `+0x174` | confirmed (code) |
 
 ## Behaviour
 
@@ -1185,6 +1186,27 @@ confirmed):
 - What a script needs to run without errors on the front-end path: the preloads in one state, then `global.lua` and
   `level100.lua` in that same state, with numbers from `GetLanguage`, `GetPlatform`, `GetCurrentLevelIndex`,
   `GetLevelId` and `UM_IsLevelComplete` (nil for false).
+
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00418518` / `0x00418520` / `0x00418528` | `GameState_IsDongleValid` / `GameState_CreateDongle` / `GameState_CreateDongleChallengeKey` | the workers of `IsDongleValid` (always 1), `CreateDongle` and `CreateDongleChallengeKey` (always 0): stubs on the PS2 | confirmed (code) |
+| `0x0041abc0` / `0x0041abe8` | `Script_SetCheckPoint` / `Script_GetCheckPoint` | the workers of `SetCheckPoint` (`GameState_SetCheckPoint`) and `GetCheckPoint` (`+0x33a`) | confirmed (code) |
+| `0x0041abf8` / `0x0041ac88` | `GameState_SetSaveBit` / `GameState_GetSaveBit` | bit n of the saved flag bits at `+0x572c` (32 per word), set or cleared / tested | confirmed (code) |
+| `0x0041ad28` / `0x0041ad60` | `Script_SetLUASaveDataBool` / `Script_GetLUASaveDataBool` | the workers of `SetLUASaveDataBool` and `GetLUASaveDataBool`: bit n − 1 of the same set | confirmed (code) |
+| `0x0041af20` / `0x0041af48` | `Script_SetHatCallback` / `GameState_SetHatCallback` | `SetHatCallBack`: the name at `+0x33c` | confirmed (code) |
+| `0x0041af80` | `GameState_CallHatCallback` | from `Human_HandleMessage`: unless `+0x410` is set, calls the hat callback with (human, object, the object's type name) | confirmed (code) |
+| `0x0041cf20` / `0x0041cf40` / `0x0041cf58` | `GameState_SetFlagByte` / `GameState_SetFlagBits` / `GameState_ClearFlagBits` | the four game-state flag bytes at `+0x3e8 + n` that `GameState_TestFlag(n)` reads: write, OR, AND NOT (`GameState_SetDetailFlag` and `GameState_ClearDetailFlag` use the last two) | confirmed (code) |
+| `0x0041d830` / `0x0041d860` | `GameState_SetDetailFlag` / `GameState_ClearDetailFlag` | `setDetailFlag(n, bits)` / `clearDetailFlag(n, bits)` on the flag bytes `+0x3e8 + n` | confirmed (code) |
+| `0x00423358` | `StopWatch_Construct` | the stopwatch (0x50 bytes, from `Game_InitializeSubsystems`): fields zeroed, rate `+0x10` = 1.0, `+0x44` from `0x00598690` | confirmed (code) |
+| `0x004235a8` | `StopWatch_SetCallbackName` | copies up to 31 characters of the callback name into `+0x20`, or empties it for none; from `W_SetStopWatch` and `UnloadLevel` | confirmed (code) |
+| `0x004235e0` | `StopWatch_SetDisplay` | sets shown (`+0x18`) and the label (`+0x1c`) | confirmed (code) |
+| `0x00423638` | `StopWatch_GetTime` | the stopwatch's current time (`+0x08`, ms) | confirmed (code) |
+| `0x00423670` | `StopWatch_Show` | `W_ShowStopWatch(show, label, warn)`: shown sets the warning window `+0x40` to warn and the next beep `+0x48` to warn + 1000; hidden resets them to 0 and 1000; then `StopWatch_SetDisplay` | confirmed (code) |
 
 ## Coney's implementation
 

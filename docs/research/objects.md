@@ -1143,8 +1143,8 @@ The street props `level34`'s riot meter counts ([Scripts](scripting.md#level34))
 A **train** is a line of up to 12 objects (a subway train's cars) that AI humans step out of the way of; the scripts
 build one with [`ObjSetTrainPoint`](../references/bindings/world.md#objsettrainpoint) and run it with
 `ObjStartTrain` / `ObjStopTrain`. There are four records of 0x150 bytes at `0x006f3a10`, built at boot
-(`0x00414220`, from a static initialiser) and stopped by `InitLevel` and `UnloadLevel` (`0x004136f0`); the task
-manager updates all four each frame (`0x00413728`). Confirmed (code).
+(`0x00414220`, from the static initialiser stub `0x00414280`) and stopped by `InitLevel` and `UnloadLevel`
+(`0x004136f0`); the task manager updates all four each frame (`0x00413728`). Confirmed (code).
 
 | Offset | Field | Evidence |
 | --- | --- | --- |
@@ -1166,6 +1166,15 @@ point's projection on the first segment long enough to hold it, and that segment
 (`0x00414188`) asks each running train (`TrainRecord_IsPathClear`, `0x00413c48`) whether a move from one point to
 another passes within its radius of a segment; [AI](ai.md) movement checks it. The record's constructor is
 `0x00413848`. Confirmed (code).
+
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0041d4f8` | `Cfg_SetGlobalTimeToLive` | `CfgSetGlobalTimeToLive`: `+0x26c` | confirmed (code) |
 
 ## Coney's implementation
 

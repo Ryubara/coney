@@ -2152,6 +2152,195 @@ the point (gait 2, arrival radius `distance`, option 1, no delay, facing the tar
 more than 15° off the target. Confirmed (code); this corrects the binding's "walks to the target
 when it has no slot".
 
+#### Gang functions {#gang-functions}
+
+Every function of the gang module (`0x00162518`-`0x0016e388`) not described above, by address. Offsets are gang
+record offsets unless a spawner (0x130 at `+0x640`) or the configuration record (0x7a) is named. Script bindings
+are given by their Lua name ([Gang bindings](../references/bindings/gang.md)).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001624e0` | `LoadScreenObj_Construct` | Sets the vtable `0x00538900` and clears the three slots (`0x00162568`); the object at `0x005e6da8` | Confirmed (code) |
+| `0x00162518` | `LoadScreenObj_Destruct` | Restores the vtable, finishes the level load screen, frees the object when bit 0 of the flag is set | Confirmed (code) |
+| `0x00162568` | `LoadScreenObj_ClearSlots` | Sets the three ids at `+4` to `0xffff` | Confirmed (code) |
+| `0x00163c08` | `LoadScreens_StaticInit` | File-scope initialiser: constructs the objects at `0x005e6da8` and `0x005e6dc8` (memory-card load screen) | Confirmed (code) |
+| `0x00163c48` | `LoadScreens_GlobalCtor` | Calls `0x00163c08(1, 0xffff)` at start-up | Confirmed (code) |
+| `0x00163ed8` | `GangClips_Clear` | Empties the 27 anim substitution entries (0x28 bytes: a name, `+0x20` the loaded slot) at gang `+0x1b0` | Confirmed (code) |
+| `0x00163f10` | `GangClips_GetGroup` | First slot and count per anim id: `0x25b` 0/8, `0x25c` 8/4, `0x253` 12/5, `0x257` 17/3, `0x256` 20/3, `0x29c` 23/4 (27 slots) | Confirmed (code) |
+| `0x00163fc0` | `GangClips_Get` | The clip of a group's entry *i*; for a negative *i*, a random loaded entry (group `0x29c`: only entries made for that anim id) | Confirmed (code) |
+| `0x00164100` | `GangClips_FindPending` | First entry with a name and no loaded slot, or null | Confirmed (code) |
+| `0x00164138` | `GangClips_AnyPending` | Whether any named entry is not loaded yet | Confirmed (code) |
+| `0x00164178` | `GangClips_Set` | Loads names into a group's slots; a longer list fills them with a random subset in order | Confirmed (code) |
+| `0x001642b0` | `GangClips_ReleaseAll` | Releases every entry's dynamic anim slot | Confirmed (code) |
+| `0x001642f0` | `GangClips_ReleaseGroup` | Releases the slots of one group (`GangClips_GetGroup`) | Confirmed (code) |
+| `0x00164370` | `GangConfig_InitTable` | The 28 gang configuration records (0x7a bytes, `0x0050caa8`): track names empty, `+0x6c` 1, `+0x6d` 1, `+0x6e` 4, `+0x6f`, `+0x72` and the strategy 0 | Confirmed (code) |
+| `0x00164410` | `GangConfig_SetMusicTrack` | Copies music track *n* (35 characters at most) of a gang's configuration (`+n × 0x24`) | Confirmed (code) |
+| `0x00164458` | `GangConfig_GetMusicTrack` | Track *n*, or null when empty | Confirmed (code) |
+| `0x00164480` / `0x00164498` | `GangConfig_SetField6C` / `GangConfig_GetField6C` | Byte `+0x6c` of a gang's configuration (`CfgSetGang`) | Confirmed (code) |
+| `0x001644b0` / `0x001644c8` | `GangConfig_SetField6D` / `GangConfig_GetField6D` | Byte `+0x6d` | Confirmed (code) |
+| `0x001644e0` / `0x001644f8` | `GangConfig_SetField6E` / `GangConfig_GetField6E` | Byte `+0x6e` | Confirmed (code) |
+| `0x00164510` / `0x00164528` | `GangConfig_SetField6F` / `GangConfig_GetField6F` | Byte `+0x6f` | Confirmed (code) |
+| `0x00164540` / `0x00164558` | `GangConfig_SetField70` / `GangConfig_GetField70` | Byte `+0x70` | Confirmed (code) |
+| `0x00164570` / `0x00164588` | `GangConfig_SetField71` / `GangConfig_GetField71` | Byte `+0x71` | Confirmed (code) |
+| `0x001645a0` / `0x001645b8` | `GangConfig_SetField72` / `GangConfig_GetField72` | Byte `+0x72` (0 or 50) | Confirmed (code) |
+| `0x001645d0` | `GangConfig_SetStrategy` | Stores the seven strategy entries as bytes from `+0x73` | Confirmed (code) |
+| `0x00164610` | `GangConfig_GetStrategyEntry` | Strategy byte *i* | Confirmed (code) |
+| `0x00164630` | `Gang_Construct` | Null handles for the leader, members and `+0x88[16]`, clears the anim substitutions, constructs the four spawners (`+0x640`, 0x130 each), then resets the record | Confirmed (code) |
+| `0x001647e0` | `Gang_ClearMsgHandlers` | Clears the 26 event handlers at `+0xe4` | Confirmed (code) |
+| `0x00164808` | `Gang_Reset` | Not in use or suspended; members, turf boxes, callbacks, handlers, masks and tactic cleared; the spawners reset; wanted timers 0; `+0xd7` 30, `+0xdd` 0x18 (no tactic kind); leader the null handle | Confirmed (code) |
+| `0x00164a28` | `Gang_SetAlertState` | On a change: fighting (1) installs the combat fidget (not kind `0x18`) and taunt (not kind `0x17`) substitutions and updates the music mood; calm (0) removes them; kind 5 keeps neither; AI members' brain `+0x14d` = 1 when calm, 0 when fighting | Confirmed (code) |
+| `0x00164b68` | `Gang_SetEmptyHandler` | Interns (or clears) the Lua name at `+0x158` called when the gang is emptied ([The gang update](#gang-update)) | Confirmed (code) |
+| `0x00164bb8` | `Gang_SetMsgHandlerName` | Interns the name for event *n* at `+0xe4 + n × 4` | Confirmed (code) |
+| `0x00164c10` | `Gang_GetMsgHandler` | The interned handler for event *n* | Confirmed (code) |
+| `0x001651b8` | `Gang_SetMusicTrackName` | Interns (or clears) name *n* (0-2) at `+0x14c`: the kind's three music tracks, copied at `GangCreate` | Confirmed (code) |
+| `0x00165220` | `Gang_AddTurfBoxPtr` | Stores a turf box in the first free of the eight slots at `+0x15c`; `+0x17c` counts them | Confirmed (code) |
+| `0x00165260` | `Gang_RemoveTurfBoxPtr` | Clears that box's slot and the count | Confirmed (code) |
+| `0x001652a0` | `Gang_IsHumanInTurf` | `Gang_IsPointInTurf` at the human's position | Confirmed (code) |
+| `0x001652e8` | `Gang_IsPointInTurf` | True when the gang has no turf boxes or the point is in one of them | Confirmed (code) |
+| `0x00165368` | `Gang_HasIntruderInTurf` | True when this gang has no turf boxes, or a standing, uncuffed member of the other gang is inside one | Confirmed (code) |
+| `0x00165430` | `Gang_AreMembersReady` | `GangGoodToGo`: false when a member (not of class role 6) is cuffed, in a scene, knocked out or in either flagged state, or, unless told otherwise, engaged | Confirmed (code) |
+| `0x00165548` | `Gang_CountMembersWithGoal` | Members whose brain has goal *g* (`Brain_FindGoal`) | Confirmed (code) |
+| `0x001655e0` | `Gang_StopTactic` | Stops and queues the tactic for freeing; its kind (vtable `+0x34`) kept at `+0xdd` | Confirmed (code) |
+| `0x00165738` | `Gang_PickLeader` | Leader `+0x44`: first member that is a player (or with player 1 in a flagged state), or a cop class (`+0x11b` 12-13) not cuffed; else the first standing, uncuffed member; else the first handle | Confirmed (code) |
+| `0x00165918` | `Gang_SetMembersInFormation` | Every AI member other than the leader joins (`Formation_Join`) or leaves the leader's formation | Confirmed (code) |
+| `0x00165a20` | `Gang_AnyMemberHasEnemy` | Whether a member's enemy list (brain `+0x164`) is not empty | Confirmed (code) |
+| `0x00165aa0` | `Gang_AnyMemberTargetsGang` | Whether any member's brain list `+0x164` holds a human of the given gang | Confirmed (code) |
+| `0x00165b70` | `Gang_SetSharedTarget` | Target `+0x10`: checked through the leader's brain; unless friendly, every AI member adds it as an enemy. The null handle just clears it | Confirmed (code) |
+| `0x00165c88` | `Gang_AnyMemberHolding` | Whether any member holds an object | Confirmed (code) |
+| `0x00165cf8` | `Gang_SetSpotLine` | Speech hash `+0x608` (CRC of the name) said once on spotting a player; 0 for none | Confirmed (code) |
+| `0x00165d40` | `Gang_SaySpotLine` | While flag `+0xd2` is set and the game is in play: a free member (the leader unless busy) that sees the nearest player of a gang the members target says the command line, or the stored line (`+0x608`, then cleared); the flag is cleared | Confirmed (code) |
+| `0x00165f80` | `Gang_FindMemberForItem` | The nearest member within the radius of the point that is not busy and does not already hold an object of that name | Confirmed (code) |
+| `0x001660e0` | `Gang_SetMembersBrainByte265` | Writes brain `+0x265` of every current member | Confirmed (code) |
+| `0x00166220` | `Gang_CountStanding` | Members not knocked out, wounded or in flagged state `0x100000000` | Confirmed (code) |
+| `0x00166308` | `Gang_AddMember` | Moves a human in: out of its old gang (its actions, target and enemies cleared), brain `+0x20c` set, its attack weights loaded, god mode when the gang is invincible, a player of flag `+0x3ac` made leader, type `0xed` gets its own anim substitution; event `0x16`. The cap (16 for kinds 1 and `0x17`, else 10) only calls a no-op (`0x0016d0e0`) | Confirmed (code) |
+| `0x001664d8` | `Gang_RemoveMember` | Takes a human out of the list: when asked, its spawner's alive count (`+0x5c`) and the global count go down unless the spawner is in state 4, 6, 9 or 10; clears the leader; pops the brain to its base goal under a tactic; offers event `0x16` | Confirmed (code) |
+| `0x00166b60` | `Gang_UpdateBounds` | Centre `+0x00` and radius `+0x14` of the box around the members not cuffed or knocked out | Confirmed (code) |
+| `0x00166cf8` | `Gang_CheckReturnToCalm` | With no tactic and alert state 1: calm (state 0) once no member has a fight goal, or a chase goal with an active goal `0xc` | Confirmed (code) |
+| `0x00166e10` | `Gang_RecordDownedForPlayer` | For the player whose gang this is: counts the AI members of brain type 3 knocked out and cuffed and adds them to stats 3 and 1 (`0x006fe490`) | Inferred |
+| `0x00166fc8` | `Gang_SetName` | Copies the name (15 characters) to `+0x1c` | Confirmed (code) |
+| `0x001672a8` | `GangSpawner_OnHumanGone` | A spawned human's brain is torn down: the spawner's alive count `+0x5c` and the global count go down, and so does `+0x5a` for a police dispatch spawner (4 or 6, with the game's dispatch count `+0x324`) or a responder spawner (9 or 10) | Confirmed (code) |
+| `0x00167370` | `Gang_NextPlayerIndex` | `(+0xe1 + 1)` modulo the player count, 0 with one player | Confirmed (code) |
+| `0x00168158` | `GangSpawner_ResetDelay` | Spawner *i*'s next spawn time `+0x64`: now + its delay `+0x60`, or + 100 ms in state 6 | Confirmed (code) |
+| `0x00168aa0` | `Gang_FindSpawnerByName` | The slot of the active spawner with that name, or −1 | Confirmed (code) |
+| `0x00168b58` | `Gang_HasSpawnerNamed` | Whether an active spawner has that name | Confirmed (code) |
+| `0x00168be0` | `Gang_SetSpawnerStateByName` | The first active spawner of that name gets the state; state 2 also sets its end time (`+0x68` seconds), and its next time is now + `+0x60` | Confirmed (code) |
+| `0x00168cd0` | `Gang_SetSpawnerState` | `GangStartSpawner`: the named spawner's state (0-5, 7, 8, 9, 11; others keep it), its value unless −1, next spawn now | Confirmed (code) |
+| `0x00168e00` | `Gang_SetSpawnerValueByName` | `0x0016d758` on the spawner of that name | Confirmed (code) |
+| `0x00168e68` | `GangSpawner_SetMustBeOffScreen` | The named spawner's flag `+0x8c` | Confirmed (code) |
+| `0x00168eb8` | `GangSpawner_SetMaxConcurrent` | The named spawner's limit `+0x5a` | Confirmed (code) |
+| `0x00168f08` | `Gang_WriteEnemyMask` | Writes the enemy mask `+0x38`; a change stamps the time at `+0x34` | Confirmed (code) |
+| `0x00168f30` | `Gang_WriteFriendMask` | Writes the friend mask `+0x3c`, stamping `+0x34` likewise | Confirmed (code) |
+| `0x00168f58` | `Gang_AreFriends` | True for the same gang or kind, both kinds in {1, `0x17`}, during a truce, or with the friend bit | Confirmed (code) |
+| `0x00168fe0` | `Gang_IsEnemyOf` | False for kinds 1 and `0x17` together and during a global truce (`0x0050cb7c` in the future); else the enemy bit of the other gang's id | Confirmed (code) |
+| `0x00169060` | `Gang_SetFriendBit` | Clears the other gang's enemy bit and sets its friend bit | Confirmed (code) |
+| `0x001690c8` | `Gang_SetEnemyBit` | Clears the other gang's friend bit and sets its enemy bit (one way) | Confirmed (code) |
+| `0x00169130` | `Gang_ClearRelationBits` | Clears the other gang's friend and enemy bits (neutral, one way) | Confirmed (code) |
+| `0x001691a0` | `Gang_SayWarnLine` | Once (flag `+0xd0`), while warnings are on: the speaker says a warning picked by distance (over 12 m, or when forced), group size (1, 2-5, 6 and more), whether members already target the speaker's gang, whether one holds an object and whether the target is a player; the speech id goes to `+0x610` and, from far and not yet engaged, the target to `+0x614` | Confirmed (code) |
+| `0x00169468` / `0x00169498` | `Gang_AddIdleFidgetClips` / `Gang_RemoveIdleFidgetClips` | Anim substitution group `0x25c` (4 slots): a random four of ten `fidget_*` clips (`0x0050cac8`) | Confirmed (code) |
+| `0x001694b8` / `0x001694e8` | `Gang_AddCombatFidgetClips` / `Gang_RemoveCombatFidgetClips` | Group `0x25b` (8 slots): four `combat_fidget_*` clips (`0x0050cab8`) | Confirmed (code) |
+| `0x00169508` / `0x00169570` | `Gang_AddFightTauntClips` / `Gang_RemoveFightTauntClips` | Installed while fighting: groups `0x253` (five `taunt*_adv`), `0x257` (a random three of five `gen_tnt_*`) and `0x256` (three `gen_tnt_cheer*`) | Confirmed (code) |
+| `0x001695b8` / `0x001695e8` | `Gang_AddCheerClips` / `Gang_RemoveCheerClips` | Group `0x256` alone | Confirmed (code) |
+| `0x00169608` | `Gang_CycleSpotLine` | Advances `+0x60c`, back to 1 past the given count | Confirmed (code) |
+| `0x00169630` | `Gang_CycleWarnLine` | Advances `+0x60d`, which stays at 1 | Confirmed (code) |
+| `0x00169658` | `Gang_AnyMemberHasAttackers` | Whether a member's brain has attackers | Confirmed (code) |
+| `0x001696e0` | `Gang_IsBeingHunted` | Whether a gang (not of kind `0x17`/`0x18`) that has this one as enemy has a member chasing one of its humans (goal `0xc` active) or holding goal `0x75` or `0x76` | Confirmed (code) |
+| `0x001698a0` | `Gang_SetTimer5EC` | `+0x5ec` = now + the given ms, or 0 | Confirmed (code) |
+| `0x00169b00` | `Gang_CalmMembers` | Each AI member: target and enemies cleared, actions cleared, goals `0xf` and `0x41` popped, and goal `0x74` brought to the top and marked done | Confirmed (code) |
+| `0x00169cc8` | `Gang_ClearMembersBrainByte290` | Brain `+0x290` = 0 on every member | Confirmed (code) |
+| `0x00169d30` | `Gang_CheckNeutralRule` | A gang of kind `0x17` or `0x18` whose members all have threat response 0 is made neutral with the kind-0 gangs | Confirmed (code) |
+| `0x00169dd8` | `Gang_NoneAbleToHelp` | True when the gang has members and none other than the given human is free (not cuffed, knocked out or wounded) | Confirmed (code) |
+| `0x00169ea0` | `Gang_CanReachToHelp` | Whether a member other than the human, not cuffed or down, has a navigation route to the human's nav area | Confirmed (code) |
+| `0x00169fe0` | `Gang_ProbeGroundFlag10` | Casts a ray down from 0.1 m above the point and reports a hit whose surface has flag `0x10` (`0x00249050`) | Confirmed (code) |
+| `0x0016a000` | `Gang_SetInvincible` | `+0xd8` and god mode on every current member | Confirmed (code) |
+| `0x0016a088` | `Gang_UpdateIdleFlag` | Flag `+0xdb` (only while `0x0050cab4` is set): with no tactic, set when no spawner is active and no member has a goal; with one, set when the tactic allows it and the given distance exceeds the radius + 20 m | Confirmed (code) |
+| `0x0016a220` | `Gang_SetSuspendedById` | `GangSuspend`: byte `+0xd4` | Confirmed (code) |
+| `0x0016a260` | `Gang_SetInvincibleById` | `GangInvincible` | Confirmed (code) |
+| `0x0016a2a8` | `Gang_EnableAttackStrategiesById` | `GangEnableAttackStrategies`: byte `+0xd9` | Confirmed (code) |
+| `0x0016a2e8` | `Gang_SetRespondPercentage` | `GangSetRespondPercentage`: byte `+0xd7` (30 after a reset) | Confirmed (code) |
+| `0x0016a328` | `Gang_AddTurfBoxById` | `GangAddTurfBox`: only a volume box of kind 3 is added | Confirmed (code) |
+| `0x0016a3a8` | `Gang_RemoveTurfBox` | `GangRemoveTurfBox`: `Gang_RemoveTurfBoxPtr` | Confirmed (code) |
+| `0x0016a3f8` | `Gang_AddMemberByHandle` | `GangAddMember(gang, human)`: `Gang_AddMember` when the handle resolves | Confirmed (code) |
+| `0x0016a458` | `Gang_GetHeadCountById` | `GangGetHeadCount`: `Gang_CountLiving`, 0 for id −1 | Confirmed (code) |
+| `0x0016a4a8` | `Gang_GetStandingCount` | `GangGetStandingCount`: `Gang_CountStanding` | Confirmed (code) |
+| `0x0016a4e8` | `Gang_IsGoodToGoById` | `GangGoodToGo`: `Gang_AreMembersReady`, 0 for id −1 | Confirmed (code) |
+| `0x0016a538` | `Gang_SetLeaderById` | `GangSetLeader`: writes the leader handle `+0x44` | Confirmed (code) |
+| `0x0016a578` | `Gang_GetLeaderById` | `GangGetLeader`: the leader's handle, or the null handle | Confirmed (code) |
+| `0x0016a5e8` | `Gang_SetSightRange` | `GangSetLOS`: brain `+0x130` of every member | Confirmed (code) |
+| `0x0016a670` | `Gang_ExitWorld` | `GangExitWorld(gang, flag, fn, delete)`: every member walks to the flag, or with none to the farthest exit flag (activity 8) in front of player 1 (`Goal_MoveToExitFlag`); with `delete`, flag `+0xd3` and the empty handler are set so the gang is freed when they are gone ([The gang update](#gang-update)). A gang with no living members is deleted at once, after calling `fn` with its id | Confirmed (code) |
+| `0x0016a870` | `Gang_EngageEnemy` | `GangEngageEnemy(gang, target)`: an engage goal on the target for every member | Confirmed (code) |
+| `0x0016a910` | `Gang_LookAt` | `GangLookAt(gang, target)`: each member's brain marked dead and flushed, then turns to the target after a random delay under 500 ms | Confirmed (code) |
+| `0x0016aa98` | `Gang_SetMembersDeadFlag` | `GangBrDead`: `Brain_SetDead` on every member's brain | Confirmed (code) |
+| `0x0016ab38` | `Gang_SetMsgHandlerById` | `GangSetMsgHandler`: `Gang_SetMsgHandlerName` on the gang ([Events](#gang-events)) | Confirmed (code) |
+| `0x0016ab90` | `Gang_ClearHandlers` | `GangClearHandlers`: clears the gang's event handlers and every member's own script handlers | Confirmed (code) |
+| `0x0016ac40` | `Gang_SetFriendById` | `GangSetFriend`: `Gang_SetFriendBit` one way | Confirmed (code) |
+| `0x0016ac98` | `Gang_SetEnemyById` | `GangSetEnemy(a, b)`: `Gang_SetEnemyBit` one way | Confirmed (code) |
+| `0x0016acf0` | `Gang_MakeEnemies` | `GangMakeEnemies(a, b)`: `Gang_SetEnemyBit` both ways; id −1 ignored | Confirmed (code) |
+| `0x0016ad80` | `Gang_MakeFriends` | `GangMakeFriends(a, b)`: `Gang_SetFriendBit` both ways | Confirmed (code) |
+| `0x0016ae10` | `Gang_SetNeutral` | `GangSetNeutral(a, b)`: `Gang_ClearRelationBits` one way | Confirmed (code) |
+| `0x0016ae60` | `Gang_MakeEnemiesOfType` | `GangMakeEnemiesOfType`: `Gang_SetHostileToKind(gang, kind, 1)` | Confirmed (code) |
+| `0x0016ae90` | `Gang_MakeNeutralOfTypeById` | `GangMakeNeutralOfType`: `Gang_MakeNeutralWithType(gang, kind, 0)` | Confirmed (code) |
+| `0x0016aec0` | `Gang_AddSpawnerById` | `GangAddSpawner`: `Gang_AddSpawner` on the gang | Confirmed (code) |
+| `0x0016afc8` | `Gang_StartSpawner` | `GangStartSpawner`: `Gang_SetSpawnerState` by gang id | Confirmed (code) |
+| `0x0016b018` | `Gang_SetSpawnerModelById` | `GangSetSpawnerModel`: `Gang_SetSpawnerValueByName` | Confirmed (code) |
+| `0x0016b070` | `Gang_SetSpawnerMustBeOffScreen` | `GangSetSpawnerMustBeOffScreen`, by gang id | Confirmed (code) |
+| `0x0016b0b0` | `Gang_SetSpawnerMaxConcurrent` | `GangSetMaxConcurrent`, by gang id | Confirmed (code) |
+| `0x0016b108` | `Cfg_SetGangMusic` | `CfgGangMusic`: the kind's three music track names in its configuration | Confirmed (code) |
+| `0x0016b178` | `Cfg_SetGang` | `CfgGang`: the eight configuration values and the strategy of one gang kind ([CfgGang](../references/bindings/config.md#cfggang)) | Confirmed (code) |
+| `0x0016b280` | `Gang_SetSpotLineById` | `GangSetCustomSpotDialog`: `Gang_SetSpotLine` | Confirmed (code) |
+| `0x0016b2c8` | `Gang_ShowMembersIcon` | `GangAttachSpinningIcon`: the overhead icon on every member | Confirmed (code) |
+| `0x0016b358` | `Gang_RemoveMembersIcon` | `GangRemoveSpinningIcon` | Confirmed (code) |
+| `0x0016b3d0` | `Gang_SetThreatResponse` | `GangSetThreatResponse`: brain `+0x21c` of the current members only | Confirmed (code) |
+| `0x0016b460` | `Gang_SetDamageResponseById` | `GangSetDamageResponse`: brain `+0x220` of every current member | Confirmed (code) |
+| `0x0016b4f0` | `Gang_SetInvestigateResponseById` | `GangSetInvestigateResponse`: brain `+0x224` | Confirmed (code) |
+| `0x0016b580` | `Gang_IsWantedById` | `GangIsWanted`: the wanted timer `+0x5e8` (kind 1) or `+0x5f0` (otherwise) is running | Confirmed (code) |
+| `0x0016b5e0` | `Gang_ClearWantedById` | `GangClearWanted`: `Gang_ClearWanted(gang, 1)` | Confirmed (code) |
+| `0x0016b618` | `Gang_HasSpawnerById` | `GangIsASpawner`: `Gang_HasSpawnerNamed`, 0 for id −1 | Confirmed (code) |
+| `0x0016b678` | `Gang_QueueRespondersAt` | `GangQueueResponders`: when a spawner is in responder state 9 or 10 (`0x0016cb78(0)`), queues a gang call to the point; the target human's gang gets a 10 s second wanted timer | Confirmed (code) |
+| `0x0016b728` | `Gang_Respond` | `GangRespond(gang, point, human)`: a non-police gang gets the cower substitution; every member gets brain `+0x28d` and a type-4 respond goal to the point and human; the human's gang gets a 10 s wanted timer (police) or second wanted timer | Confirmed (code) |
+| `0x0016b8b0` | `Gangs_ClearRespondersBinding` | `GangClearResponders`: calls `Gangs_ClearResponders` | Confirmed (code) |
+| `0x0016b980` | `Gang_SetCanSaveAlliesById` | `GangCanSaveAllys`: brain `+0x2d6` of every member (gang in use) | Confirmed (code) |
+| `0x0016ba18` | `Gang_FlushBrainsById` | `GangBrFlush`: clears each member's goals and actions ([Deleting a gang](#gang-delete)) | Confirmed (code) |
+| `0x0016bac0` | `Gang_SetTargetableById` | `GangSetTargetable`: brain `+0x120` | Confirmed (code) |
+| `0x0016bbf0` | `Gang_SetHearRange` | `GangSetHearRange(gang, range, which)`: brain `+0x138` (which 1, default 20 m) or `+0x134` (default 50 m); −1 restores the default | Confirmed (code) |
+| `0x0016bcf0` | `Gang_SetCanFlee` | `GangCanFlee`: byte `+0xdf` (1 after a reset) | Confirmed (code) |
+| `0x0016bde8` | `Gang_SetAlwaysSeen` | `GangSetAlwaysSeen`: byte `+0xdc` | Confirmed (code) |
+| `0x0016be30` | `Gang_SetCanUseWorldFlagsById` | `GangCanUseWorldFlags(gang, on, x)`: brain `+0x2d1` = on, `+0x2d2` = x (0 when off) | Confirmed (code) |
+| `0x0016bee0` | `Gang_SetReactToViolence` | `GangSetReactToViolence`: brain `+0x267` of every member (gang in use) | Confirmed (code) |
+| `0x0016bf78` | `Gang_ReactsToGang` | Whether the second gang reacts to the first: its flag `+0xde`, not of kind `0x17`/`0x18`, and the first is its enemy | Confirmed (code) |
+| `0x0016bfc8` | `Gang_CanJoinFightAgainst` | The second gang is the first's enemy, fighting (or under tactic kind `0x14` with `+0x4c` 0), has living members and one able to help | Confirmed (code) |
+| `0x0016c078` | `Gang_FindNearestOtherMember` | Sorts the members by distance to the human and returns the first that is not it | Confirmed (code) |
+| `0x0016c120` | `Gang_ComputeFacing` | A heading for a human by mode: 2 random, 3 / 4 towards or from a handle's object, 5 / 6 towards or from a flag | Inferred |
+| `0x0016c298` | `Gangs_ResetAll` | Ends the truce and resets all 32 records | Confirmed (code) |
+| `0x0016c2f0` | `Gangs_DestroyAll` | Destroys the 32 records, then rebuilds the tactic pool | Confirmed (code) |
+| `0x0016c358` | `Gangs_SetTruce` | Truce until now + the given ms (`0x0050cb7c`), 0 to end it | Confirmed (code) |
+| `0x0016c470` | `Gang_MakeNeutralWithType` | `GangMakeNeutralOfType(gang, kind, calm)`: clears both relation bits with every gang of that kind that is not a friend either way; with `calm`, both sides are calmed, a 3 s truce starts and the crime report is cancelled; kind 0 clears brain byte `+0x290` | Confirmed (code) |
+| `0x0016c730` | `Gangs_FindNearestEnemy` | The nearest gang in use (by centre) that is this gang's enemy, and its squared distance | Confirmed (code) |
+| `0x0016c808` | `Gangs_FindNearestFighting` | The nearest fighting gang (or under tactic kind `0x14` with `+0x4c` 0) passing an optional filter, with living members and one able to help | Confirmed (code) |
+| `0x0016c978` | `Gangs_FindNearestAttacked` | The nearest gang one of whose members has attackers | Confirmed (code) |
+| `0x0016ca50` | `Gangs_FindWithinRadius` | The first gang whose centre is within the radius and whose own radius is not larger, passing an optional filter; writes it and the squared distance when asked | Confirmed (code) |
+| `0x0016cb78` | `Spawners_AnyInState` | Whether any active spawner of any gang is in state 4 or 6 (kind 1) or in 9 or 10 (kind 0) | Confirmed (code) |
+| `0x0016cc60` | `Gangs_ClearResponders` | `GangClearResponders`: each gang in use not of kind 1 with no second wanted timer is deleted if a member has goal `0x74`; one with the timer has it cleared and, when it is player 1's gang, the all-clear callback runs | Confirmed (code) |
+| `0x0016cdf0` | `Gang_Create` | `GangCreate(kind, name)`: −1 when the name is taken; else the first free record is reset, put in use, calm, given the kind, name, id, spot-line flag `+0xd2`, the kind's three music track names (`CfgGangMusic`) and no active spawner; kinds 1, `0x17` and `0x18` get their own anim substitutions; a new kind-1 gang makes every wanted gang hostile to the police (unless game `+0x28c` is set) | Confirmed (code) |
+| `0x0016d0e0` | `Gangs_ResolveAllMembers` | Resolves every member handle of every gang in use and discards the result (no effect) | Confirmed (code) |
+| `0x0016d410` | `Gangs_FindFreeSlot` | The first record not in use, or −1 | Confirmed (code) |
+| `0x0016d498` | `Gangs_FindByName` | The id of the gang in use with that name (`+0x1c`), or −1 | Confirmed (code) |
+| `0x0016d548` | `Humans_PollKnockedOut` | Asks each of the 60 human handles whether it is knocked out and discards the answer (no effect) | Confirmed (code) |
+| `0x0016d5c0` | `KillHumans_Stub` | `KillHumans`: does nothing | Confirmed (code) |
+| `0x0016d5d0` | `Gangs_StaticInit` | File-scope initialiser: constructs the 32 gang records | Confirmed (code) |
+| `0x0016d630` | `Gangs_GlobalCtor` | Calls `0x0016d5d0(1, 0xffff)` at start-up | Confirmed (code) |
+| `0x0016d650` | `GangSpawner_Construct` | Clears a spawner (0x130 bytes): name, callback, anim and model 0, not in use, door and queue handles null, types 0, type index `+0x4c` 0 | Confirmed (code) |
+| `0x0016d6d8` | `GangSpawner_SetName` | Interns the name at `+0x14` | Confirmed (code) |
+| `0x0016d718` | `GangSpawner_SetCallback` | Interns the Lua callback name at `+0x18` | Confirmed (code) |
+| `0x0016d758` | `GangSpawner_SetModel` | Interns the model name at `+0x20` | Confirmed (code) |
+| `0x0016d798` | `GangSpawner_SetAnim` | Interns the anim name at `+0x1c` | Confirmed (code) |
+| `0x0016d7d8` | `GangSpawner_SetTypes` | Copies the ten human types to `+0x24` | Confirmed (code) |
+| `0x0016d808` | `GangSpawner_GetTypes` | The address of the types (`+0x24`) | Confirmed (code) |
+| `0x0016db30` | `Gang_SetCopStation` | `SetCopStation(gang, spawner, ...)`: writes the twelve values to the named spawner's `+0x90`-`+0xa6` | Confirmed (code) |
+| `0x0016dc70` | `Spawner_QueueCall` | Adds an entry to a spawner's dispatch queue (full at 4): due in the given seconds, the target, point, kind and count bytes, and the calling human's gang id | Confirmed (code) |
+| `0x0016de30` | `GangSpawner_PopQueueEntry` | Clears the queue entry being served (`+0xac`) and counts it out of `+0xb0` | Confirmed (code) |
+| `0x0016def8` | `GangSpawner_ClearQueue` | Empties the four dispatch queue entries | Confirmed (code) |
+| `0x0016e0f0` | `Responders_QueueGangCall` | Picks the spawner in state 9 or 10 nearest the point (one with a full queue of 4 is skipped) and queues a type-4 call on it (`Spawner_QueueCall`); 0 when there is none | Confirmed (code) |
+
 ### The first mission's cast {#level99}
 
 From `level99`'s scripts and the `CfgChar` calls (ids and values only). The brain type is the class's `behaviour`
@@ -2393,6 +2582,28 @@ read from each goal vtable's `+0x0c` function, confirmed (code) at the construct
 - Inferred: the type-3 tactic is set by `0x00313400(…, gang id, …)` from `0x0041c4e0`, which `Human_MakePlayer`
   (`0x00229c40`), `Human_SetWarChief` and `Gang_OnEvent` call: the player gang's standing tactic, and the source of
   Ash's HoldPosition (`0x00313718` pushes it).
+
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00419ee0` | `GameState_FindNearestPlayer` | the nearest listed player to a point, the squared distance out; 40 callers in the AI | confirmed (code) |
+| `0x0041b4f0` | `GameState_SetWarriorCommandName` | the name at `+0x2fc` that `GameState_CallWarriorCommandCallback` calls with (human, command) ([Warrior commands](#warrior-commands)) | confirmed (code) |
+| `0x0041b5e0` | `GameState_CallWarriorCommandCallback` | from `WarriorCommand_Dispatch` | confirmed (code) |
+| `0x0041c2b0` / `0x0041c2d0` | `GameState_TurnWarriorCommands` / `GameState_IssueWarriorCommand` | the workers of `TurnWarriorCommands` (all on or off) and `IssueWarriorCommand` (for player 1) | confirmed (code) |
+| `0x0041c338` | `WarChief_CheckCrewInRange` | for a war chief: when the nearest crew member is within 50 m clears byte `+0x414 + player` and returns 0; otherwise (unless told to be quiet) says command `0x12`, or `0x5c` when a member is cuffed or out, sets the byte and returns 1; from `WarriorCommand_Dispatch` and `PlayerBrain_Update`; `GameState_CheckGameOver` reads the byte | confirmed (code) |
+| `0x0041c4c8` | `GameState_StoreWarriorCommand` | a player's last command (`+0x41a`) and its argument (`+0x42c`) | confirmed (code) |
+| `0x0041d080` / `0x0041d088` | `GameState_SetDealerCustomer` / `GameState_IsDealerFree` | the handle at `+0x284` (set by the dealer goal and the scout tactic) / whether it no longer resolves | confirmed (code); role inferred |
+| `0x0041d738` / `0x0041d748` | `Cfg_SetEnemySpotting` / `Cfg_SetWarriorSpotting` | `CfgSetEnemySpotting`: `+0x56f8`; `CfgSetWarriorSpotting` clears `+0x56fc` whatever its argument | confirmed (code) |
+| `0x0041d758` / `0x0041d770` | `GameState_SetWarriorVandalize` / `GameState_SetWarriorWeapons` | `CfgSetWarriorVandalize` (`+0x5700`) and `CfgWarriorWeapons` (`+0x5704`) | confirmed (code) |
+| `0x0041d978` | `Cfg_SetExcludedVandalizeZone` | `CfgExcludedVandalizeZone`: `0x005148bc` (`0xffff` at set-up) | confirmed (code) |
+| `0x0041da50` / `0x0041da60` / `0x0041da70` | `Cfg_SetTurfInvasion` / `Cfg_SetGrappleCounters` / `GameState_SetPowerupPickup` | `CfgEnableTurfInvasion` (byte `+0x56e1`), `CfgEnableGrappleCounters` (`+0x56e3`), `CfgPowerupPickup` (`+0x56e5`) | confirmed (code) |
+| `0x0041db08` / `0x0041dbe8` | `GameState_EnableAllWarriorCommands` / `GameState_EnableWarriorCommand` | the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`) | confirmed (code) |
+| `0x0041dc80` / `0x0041dcf0` / `0x0041dd40` | `GameState_IssueWarriorCommandFor` / `GameState_LockWarriorCommands` / `GameState_SetWarriorCommandCallback` | `WarriorCommand_Dispatch` for a human / byte `+0x418 + player` / the callback name | confirmed (code) |
+| `0x0041dd68` | `GameState_SetAutoSwitch` | byte `+0x431` (1 at set-up) | confirmed (code) |
 
 ## Coney's implementation {#coney}
 

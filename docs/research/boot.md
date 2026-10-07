@@ -139,20 +139,20 @@ The modes, each a static object built by a static constructor (or a constructor 
 | 6 | `0x005e5810` | `0x00538580` | `0x0015baa0` | `Gm_MemoryCard.cpp` | memory card checks and saving | confirmed (code) (anchor) |
 | 7 | `0x005e6800` | `0x005388b8` | `0x0015f830` | `Gm_XboxSaveSystem.cpp` | save-system screens | confirmed (code) (anchor) |
 | 8 | `0x005e5d90` | `0x005385c8` | `0x0015c688` | `GameModes/` | **level flow**: bottom of the stack in `main`; loads the front end, then pushes mode 1 with the chosen level ([Front end](frontend.md#mode-flow)) | confirmed (code); role inferred |
-| 0xa | `0x005e6550` | `0x005386e8` | `0x0015dbb8` | `GameModes/` | | confirmed (code) id |
+| 0xa | `0x005e6550` | `0x005386e8` | `0x0015dbb8` | `GameModes/` | **pause** ([Pause](pause.md)) | confirmed (code) |
 | 0xb | `0x005e5df8` | `0x00538658` | `0x0015cf70` | `GameModes/` | **mission complete**: pushed by `MissionComplete_Launch` (`0x0015d420`); `Enter` calls the Lua `UnlockAndLoad`, `Update` runs the game world on `GameTimer` until its `+0x24` (the kind) is set, then pops ([Front end](frontend.md#story-start)) | confirmed (code); role inferred |
-| 0xc | `0x005e5dc0` | `0x00538610` | `0x0015cae0` | `GameModes/` | | confirmed (code) id |
-| 0xd | `0x005e53a0` | `0x00538360` | `0x00155b30` | `GameModes/` (own unit, before the base class's) | | confirmed (code) id |
-| 0xe | (ctor `0x00157e48`) | `0x00538438` | `0x00157e88` | `GameModes/` | | confirmed (code) id |
+| 0xc | `0x005e5dc0` | `0x00538610` | `0x0015cae0` | `GameModes/` | **mission failed**: the world runs under the failed menu, the DJ's failure line ([Level loading](level-loading.md#game-mode-functions)) | confirmed (code) |
+| 0xd | `0x005e53a0` | `0x00538360` | `0x00155b30` | `GameModes/` (own unit, before the base class's) | **Armies of the Night game over** menu over the world | confirmed (code) |
+| 0xe | (ctor `0x00157e48`) | `0x00538438` | `0x00157e88` | `GameModes/` | runs the world until a set time, then pops and calls a Lua name (`GameMode_PushFreeze`, `0x00158218`) | confirmed (code) |
 | 0xf | `0x005e5560` (ctor `0x00156d20`) | `0x005383f0` | `0x00156dd8` | `Gm_Error.cpp` | error screen (disc error, controller removed) | confirmed (code) |
-| 0x10 | (ctor `0x0015d4f8`) | `0x005386a0` | `0x0015d648` | `GameModes/` | | confirmed (code) id |
-| 0x11 | `0x005e66d0` | `0x00538828` | `0x0015e8b0` | `GameModes/` | | confirmed (code) id |
+| 0x10 | (ctor `0x0015d4f8`) | `0x005386a0` | `0x0015d648` | `GameModes/` | **mission select** | confirmed (code) |
+| 0x11 | `0x005e66d0` | `0x00538828` | `0x0015e8b0` | `GameModes/` | **Rumble menus** ([Front end](frontend.md)) | confirmed (code) |
 | 0x12 | `0x005e65c0` | `0x00538730` | `0x0015e048` | `GameModes/` | **profile manager**: the front-end menus ([Front end](frontend.md#profile-manager)) | confirmed (code); role inferred |
-| 0x13 | `0x005e56f0` | `0x005384c8` | `0x00159538` | `GameModes/` | | confirmed (code) id |
-| 0x14 | `0x005e67d0` | `0x00538870` | `0x0015f1a0` | `GameModes/` | | confirmed (code) id |
+| 0x13 | `0x005e56f0` | `0x005384c8` | `0x00159538` | `GameModes/` | **statistics screen** | confirmed (code) |
+| 0x14 | `0x005e67d0` | `0x00538870` | `0x0015f1a0` | `GameModes/` | **Rumble result** ([Rumble](rumble.md)) | confirmed (code) |
 
-The modes without a role are for the analysts of the front end and gameplay to name; the boot path only needs 5, 6,
-8, 0xb and 0xf.
+Every mode's functions: [Level loading](level-loading.md#game-mode-functions). The boot path only needs 5, 6, 8,
+0xb and 0xf.
 
 ### Timers
 

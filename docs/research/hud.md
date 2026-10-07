@@ -1824,6 +1824,17 @@ Confirmed (code) at `0x00210e48`, `0x00211938`, `0x002102f0`.
 | `0x00214bc8`, `0x00214c28` | `PlayerHUD_RefreshTallyMarks`, `PlayerHUD_RenderTallyMarks` | slot `+0x60`: when the tally is on, origin from `0x0050fa10`, count = living members of gang `+0x4140` (`0x0016a458`), laid out; slot `+0x68`: the marks drawn at full alpha. Who sets the tally on is not traced | confirmed (code) |
 | `0x00214cb0`, `0x00214ce8` | `PlayerHUD_StaticInit`, `PlayerHUD_StaticInitStub` | static initialiser (ctor list `0x0053414c`): the colour `0x00640c40` = (128, 0, 0, 111) | confirmed (code) |
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0041cc10` | `WarCommandDisplay_ResetShown` | both players' shown command bytes (`+0x41c`, `+0x41d`) set to 7 (none); from `WarCommandDisplay_ShowCurrent` | confirmed (code) |
+| `0x0041d988` / `0x0041d9a8` / `0x0041d9c8` / `0x0041d9e8` / `0x0041dad8` | `Cfg_SetHUDMessage` / `Cfg_SetTutorialMessage` / `Cfg_SetCrimeMessage` / `Cfg_SetHUDColour` / `Cfg_SetWarriorCommandText` | forwarders: `CfgHUDMessage` to `GlobalString_Set`, `CfgTutorialMessage` to `Tutorial_SetMessageText`, `CfgCrimeMessage` to `HudCrimePanel_SetMessage`, `CfgHUDColour` to `HudColourTag_Set`, the command text to `WarCommandText_Set` | confirmed (code) |
+| `0x00422a40` / `0x00422a68` | `Stats_TakeStyleFlag` / `Stats_TakeBonusFlag` | the human's record's style / bonus changed flag, cleared on read; `ScoreCounter_Update` picks label `0x183` / `0x184` from them | confirmed (code) |
+
 ## Coney's implementation
 
 `src/hud/` is the HUD, platform-neutral, stepped on the fixed 1/30 s step with the game time in ms; `src/platform/hud_layer.h`

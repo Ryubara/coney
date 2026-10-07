@@ -280,6 +280,18 @@ more, not the movie's frame count. Confirmed (code).
 - **Kind 2**: the screen's centre, size 1.2, colour (134, 26, 26, 255), wrapped at 0.9; it fades in over the first
   1.5 s and out over the last 1.5 s of 5 s, and freezes the game meanwhile ([Boot](boot.md#timers)). No movie uses it.
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00418ad8` | `GameState_GetLanguageName` | the language name for game state `+0x120` (0 English, 1 Spanish, 2 French, 3 Italian, 4 German; others English); `Captions_Init` uses it | confirmed (code) |
+| `0x00418b48` | `GameState_SetLanguageFromSystem` | sets `+0x120` from the console's language setting (`0x004d8918`): 2 → French, 3 → Spanish, 4 → German, 5 → Italian, anything else English; from the game state's constructor | confirmed (code) |
+| `0x0041d7f0` | `GameState_GetLanguage` | `GetLanguage`: `+0x120` | confirmed (code) |
+| `0x0041da40` | `Cfg_SetLanguage` | `CfgSetLanguage`: `+0x120` | confirmed (code) |
+
 ## Coney's implementation
 
 `movies::MovieMode` (`src/movies/movie_mode.h`) is the player, a game mode that each `Movie_Play` request pushes over

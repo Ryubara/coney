@@ -634,6 +634,35 @@ The start and end of each mode of the [mini-game record](#mini-game-record), the
 | `0x00236828` | `LockPick_CallEndA` | Calls the first end handler (0x00510284); LockPick_End uses it. | confirmed (code) |
 | `0x002368d0` | `LockPick_CallEndB` | Calls the second end handler (0x00510280); LockPick_End uses it. | confirmed (code) |
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00417af0` | `Cfg_SetActionDistance` | `CfgActionDistance(d, kind)`: stores d² at `0x00514878 + kind × 4` ([Context records](#context-records)) | confirmed (code) |
+| `0x00417b88` / `0x00417be8` | `ContextActions_Construct` / `ContextActions_Reset` | the registry's constructor zeroes its 256 records of 0x1c bytes (from `+0x18`) and resets: the six kind lists at `+0x00`-`+0x14` emptied, every record chained into the free list (head `+0x1c18`) | confirmed (code) |
+| `0x00417c48` / `0x00417c58` | `ContextActions_TakeFree` / `ContextActions_Release` | pops the free list's head (from `ContextActions_Register`) / unlinks a record from its kind list, clears its object and user and pushes it back on the free list | confirmed (code) |
+| `0x0041ad90` | `GameState_SetCrimeLevel(level, s)` | the crime level `+0x291` and its expiry `+0x2a8` (now + s × 1000 ms, 0 for none); from `Crime_UpdateLevel`, `InitLevel` and `SetCrimeLevel` | confirmed (code) |
+| `0x0041add0` | `Script_SetAllClearCallback` | the worker of `SetAllClearCallBack` | confirmed (code) |
+| `0x0041adf8` / `0x0041ae30` | `GameState_SetAllClearCallback` / `GameState_SetCrimeCallback` | store a Lua function name (31 characters) at `+0x2bc` / `+0x2dc`, or clear it; from the game state's set-up and the `SetAllClearCallBack` / `CfgSetCrimeCallback` workers | confirmed (code) |
+| `0x0041b6a8` / `0x0041b6c8` / `0x0041b6b8` | `Script_EnableCrimeReports` / `Script_SetCrimeSceneTime` / `Script_SetCopGuardArrestedRange` | the workers of `ReportCrime` (`+0x288`), `SetCrimeSceneTimeLength` (`+0x2b0`) and `SetCopGuardArrestedRange` (`+0x320`) | confirmed (code) |
+| `0x0041b888` | `GameState_SetCrimeLevelTimes` | the bytes `+0x2a3`-`+0x2a6` (10, 15, 20, 25 at set-up): the seconds each crime level lasts | confirmed (code) |
+| `0x0041b8a0` | `GameState_SetCrimeResponders(type, n)` | byte `+0x294 + type`; `CfgCrimeResponders`'s worker | confirmed (code) |
+| `0x0041c1f8` | `GameState_SetCrimeTimer(s)` | `+0x2ac` = now + s × 1000 ms, or 0 | confirmed (code) |
+| `0x0041c230` / `0x0041c2a0` | `GameState_AddGuardingCop` / `GameState_RemoveGuardingCop` | count `+0x322` up (the cop says command `0x16` when his brain's `+0x28f` is set) / down; from a police goal's start and end (`0x002c0430`, `0x002c0548`) | confirmed (code); role inferred |
+| `0x0041cf80` | `GameState_CanReportCrime(human)` | true when no one is reporting a crime now (`+0x280` empty), reports are on (`+0x288` = 1) and the human's role (character type `+0x11b`) is not 6 or 7; from the civilian and cop brains | confirmed (code) |
+| `0x0041cfe8` / `0x0041cff0` | `GameState_SetCrimeReporter` / `GameState_CancelCrimeReport` | the reporter's handle `+0x280`; dropping the report pops the reporter's goal when it is type `0x6d` (from `Gang_MakeNeutralWithType`) | confirmed (code) |
+| `0x0041d0a8` | `GameState_SetDispatcherVoice` | `+0x328`, −1 giving the default 125 | confirmed (code) |
+| `0x0041d0d0` / `0x0041d0e8` | `GameState_SetCrimeTypeEnabled` / `GameState_IsCrimeTypeEnabled` | the bytes `+0x32b + type` for types 0-14; read by the cop and civilian brains | confirmed (code) |
+| `0x0041d108` | `GameState_DamageHook` | empty; called by `LockPick_End`, `Strike_Contact`, `Glass_Break` and `WorldObject_ReportDamage` | confirmed (code) |
+| `0x0041d8a0` | `Cfg_SetCrimeResponders` | `CfgCrimeResponders(type, n)` | confirmed (code) |
+| `0x0041d8d0` | `GameState_SetForceCrimeLevel` | `ForceCrimeLevel`: `+0x28c` | confirmed (code) |
+| `0x0041d8e0` | `GameState_EnableDispatcher` | `CfgEnableDispatcher(on, voice)`: byte `+0x32a` and the dispatcher voice | confirmed (code) |
+| `0x0041d910` | `Cfg_SetBreakAndEnterDelay` | `CfgBreakAndEnterDelay`: `0x005148a4` | confirmed (code) |
+| `0x0041da80` / `0x0041dab0` | `Cfg_EnableCrimeType` / `Script_SetCrimeCallback` | `CfgEnableCrimeType(type, on)` for types 0-14 / `CfgSetCrimeCallback` | confirmed (code) |
+
 ## Coney's implementation
 
 **Lock picking** (`repo:src/world_objects/lock_pick.h`, 2026-10-06): `LockPickDial` turns the current pin 0.1 rad ×

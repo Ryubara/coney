@@ -44,6 +44,34 @@ The script side: `AddFlag` (wrapper `0x00379fd0`), `GetFlagPos` (`0x0037a288`), 
 `SetFlagPos`, `TeleportToFlag` (`0x0036cdc0` → `0x00385db0`) and the `global.lua` helper `FlagPos`; the full list is
 in the [script bindings](../references/bindings/index.md).
 
+The rest of `flags.cpp` and `WorldPath.cpp`, confirmed (code) at each address; names are ours:
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00415d30` / `0x00415dd0` | `FlagPool_Count` / `FlagPool_Get(i)` | the number of flags made (`0x00514858`); slot `i`'s record | confirmed (code) |
+| `0x00416e68` | `Flags_ForEach(fn, arg)` | calls `fn(flag, arg)` for every flag made (one caller, the AI at `0x002e723c`) | confirmed (code) |
+| `0x00415de8` | `Flag_FindIndexByName` | the slot index of the first flag with that name, else −1 | confirmed (code) |
+| `0x00415fa0` | `Flag_Destruct` | unregisters the handle (`0x00390038`), clears the script handler (`+0x4c`), frees when asked | confirmed (code) |
+| `0x00416010` / `0x00416250` | `Flag_SetName` / `Flag_SetHeading` | the name at `+0x34` (15 characters) / the heading `+0x44` | confirmed (code) |
+| `0x004161b0` | `Flag_SetUser` | writes the user `+0xdc` (six callers in the AI and `0x00238ef0`) | confirmed (code) |
+| `0x004162d0` | `Flag_ClipCount` | the number of clip names of the flag's activity (`0x00589678`), 0 above 36 | confirmed (code) |
+| `0x00415d40` / `0x00415d90` | `Flag_RegisterContext` / `Flag_UnregisterContext` | vtable slots: register the flag as a context action once (handle at `+0xe0`) / unregister it | confirmed (code) |
+| `0x00416038` | `Flag_OnMessage` | vtable slot: hands a message to the flag's script handler; for message 8 (a human reached it) runs `0x00416b18` and calls the Lua handler with (flag, human; the arguments inferred) | confirmed (code) |
+| `0x00416dc0` / `0x00416e10` | `Vec_HeadingXY` / `Vec_HeadingYX` | the heading from one point to another, `atan2(dy, dx)` / `atan2(dx, dy)` | confirmed (code) |
+| `0x004176d8` | `Flags_NearestUsable(human, pos, dist)` | the nearest enabled flag with no user that `0x00416718` admits the human to; the squared plan distance to `dist` | confirmed (code) |
+| `0x00417670` | `Human_NearestUsableFlag` | the same from the human's position, only when its brain's byte `+0x2d1` is set | confirmed (code) |
+| `0x004177d8` | `Flag_FindNearestByActivity(pos, activity, dist, skip, reach)` | the nearest enabled flag of an activity other than `skip`, straight-line distance; with `reach` set only one `Nav_CanReach` reaches; squared distance to `dist` ([AI](ai.md) uses it for exits) | confirmed (code) |
+| `0x00416b68` / `0x004161d8` | `Flag_SetPosition(handle, pos)` / `Flag_SetPositionRaw` | resolves the handle and writes `+0x10` with `w` = 1 / writes `+0x10` as given | confirmed (code) |
+| `0x004161b8` / `0x00416ed0` | `Flag_ReleaseUser(flag, h)` / `Flag_GetOwner(handle)` | clears the user to `NilHandle` only if it is `h` / `FlagGetOwner`: the user, `NilHandle` for a non-flag | confirmed (code) |
+| `0x004171e8` | `Flags_FarthestOfActivity` | the farthest enabled flag of an activity from an object | confirmed (code) |
+| `0x00417910` | `Flags_NearestBeyond(r, ...)` | the nearest enabled flag of an activity more than `r` from a point and within 90° of a direction | confirmed (code) |
+| `0x00416be0` | `Flags_GangCall(gang, pos)` | `GangCallForHelp`: unless one is pending (game state `+0x3ec` ≠ −1), stores the gang's number and the time (`+0x3f0`) and moves the `GangCall` flag to `pos` | confirmed (code) |
+| `0x00416cb0` / `0x00416c60` | `DebugText_Add` / `DebugText_Reset` | 32 timed debug strings of 64 characters at `0x006fd978` (expiry `0x006fd8f8`); only written (one caller, `0x0016d20c`) | confirmed (code) |
+| `0x00417aa8` / `0x00417ad0` | static initialiser / stub | sets `0x006fd8f0` to `NilHandle` | confirmed (code) |
+| `0x00415690` / `0x004156d0` | `WorldPath_Construct` / `WorldPath_Destruct` | a 0x38-byte path: name `+0x00` (16), eight flag pointers `+0x10`, slot `+0x30`, count `+0x32`, `+0x34` | confirmed (code) |
+| `0x004156f8` / `0x00415720` | `WorldPath_SetName` / `Path_AddPoint` | the name; appends a flag | confirmed (code) |
+| `0x00415740` / `0x00415878` | `Path_Add` / `Path_FindByName` | [`AddPath`](../references/bindings/world.md#addpath): the first of 32 slots at `0x006fd870`; by name | confirmed (code) |
+
 ## Data
 
 ### The pool {#pool}
@@ -82,7 +110,7 @@ Written by `Flag_Construct` (`0x00415e70`), confirmed (code); the meanings are o
 | `+0xd0` | u16 | `AddFlag`'s fourth argument: the **activity** ([Activities](#activities)) |
 | `+0xd4` | u32 | **enabled**: 1 from `AddFlag`; `FlagEnable` writes it (`0x00415dc8`) |
 | `+0xd8` | s32 | `AddFlag`'s fifth argument (read as 16 bits, sign-extended): the **group** ([Groups](#groups)) |
-| `+0xdc` | u32 | the **user**: who is using the flag now, `NilHandle` at first (`FlagGetOwner` reads it, `0x00416ed0`) |
+| `+0xdc` | u32 | the **user**: who is using the flag now, `NilHandle` at first (`FlagGetOwner` reads it, `0x00416ed0`; confirmed (code)) |
 | `+0xe0` | u32 | 0 |
 
 The fourth and fifth arguments are 0 in 4,340 of the 7,057 calls. Every flag the scripts add, with both, is in
@@ -94,17 +122,17 @@ The fourth argument says what an ambient human does at the flag. Confirmed (code
 
 - `0x00416f08` returns the nearest enabled flag with a given activity; for activity 8 only one that `0x0028ff38`
   accepts for the human's brain. `0x00417028` and `0x004172c8` pick the nearest and the farthest flag of an activity
-  within 89 degrees of a direction.
+  within 89 degrees of a direction. Confirmed (code).
 - `0x00416718` says whether a human may use the flag: the flag must be enabled (`+0xd4`), and each activity admits
   some role categories (the character type's byte `+0x11b`, [Characters](characters.md)), some only while
   `0x00226ff0` returns 0 (not traced), and activities 35 and 36 only a brain of kind 6. Activities 0, 3, 8, 12, 14,
-  15, 18 and 33 admit no one through it.
+  15, 18 and 33 admit no one through it. Confirmed (code).
 - `0x004162f8` picks the clip: the table at `0x005896a0` holds three clip names of 0x1a bytes per activity (37 rows
   of 0x4e; idle, enter, exit where there are three), with the count of names per activity at `0x00589678`; activities
-  4, 7 (for a woman, byte `+0x14b` of the type), 17, 19, 22 and 34 choose among variants instead.
-- `0x00416b18`: a human that reaches an activity-8 flag is removed (`0x002271c0`); these are the exits.
+  4, 7 (for a woman, byte `+0x14b` of the type), 17, 19, 22 and 34 choose among variants instead. Confirmed (code).
+- `0x00416b18`: a human that reaches an activity-8 flag is removed (`0x002271c0`); these are the exits. Confirmed (code).
 - `0x00416530`, `0x00416690`: per-activity sound and timing tables at `0x0058a310` and `0x0058a1e8` (8 bytes per
-  activity); their meaning is not traced.
+  activity), confirmed (code); their meaning is not traced.
 
 The activities by their first clip, and the flag names that carry each (names inferred from the scripts):
 

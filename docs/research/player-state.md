@@ -165,6 +165,88 @@ player, which AI Warriors led by a player use. What each event counts is in
 anim id that lands, unblocked, on a human not down; crimes by victim (civilian, bum or dealer; cop; gang member);
 harmony by Warriors cuffed or down (every 2 s, the number still cuffed or down, from `0x00166f54`).
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0041d618` | `GameState_SetObjectValueMod` | `CfgObjectValueMod`: the money multiplier `+0x380` for picked-up items | confirmed (code) |
+| `0x0041ded0` | `Inventory_GetLimit(item)` | the most of an item a player may carry: the table at `0x0058b304` (8 bytes per item, 23 items), one more flash (item 1) with upgrade (6, 7) | confirmed (code) |
+| `0x0041df40` | `Inventory_Construct` | both players' 23 entries get the default name `0x0058b2e8`, its CRC-32 and 10,000 ms; the four callback names cleared; then the checkpoint copy | confirmed (code) |
+| `0x0041e040` | `Inventory_Reset(full)` | clears the four callback names (`+0xfd4`, `+0xff4`, `+0x1014`, `+0x1034`); with `full`, zeroes every count of both players and takes the checkpoint copy; `GameState_ResetForLevel` passes `full` below checkpoint 2 | confirmed (code) |
+| `0x0041e168` | `Inventory_RestoreCheckpoint` | copies the checkpoint blocks (`+0x7ec`) back over the live ones (`+0x04`); from `GameState_ResetForLevel` at checkpoint 2 or later and from `MissionFailed_Toggle` (a retry) | confirmed (code) |
+| `0x0041e218` / `0x0041ec60` | `Inventory_ClearPlayer` / `Inventory_ClearPlayerChecked` | zeroes one player's counts, live and checkpoint; the second checks the player is 0 or 1 (from `Human_ReleasePlayer`) | confirmed (code) |
+| `0x0041e320` / `0x0041e348` / `0x0041e370` / `0x0041e3c0` | `InventoryBlock_GetSound` / `InventoryBlock_GetDuration` / `InventoryBlock_GetCount` / `InventoryBlock_GetEntry` | an item's pickup sound hash, its duration, its count (0 above item 22), the entry's address; used by `Human_PickUpObject`, `Human_DropCarried`, the mugging and the mission-item icons | confirmed (code) |
+| `0x0041e3d8` | `Inv_HasItem(inv, player, item)` | count above 0, for players 0-1 and items 0-22; from the triangle action and `ContextAction_Use` | confirmed (code) |
+| `0x0041e460` / `0x0041e490` / `0x0041e4c0` / `0x0041e4f0` | `Inventory_SetCallback` / `Inventory_SetHuCallback` / `Inventory_SetHuCallback2` / `Inventory_SetMoneyCallback` | the names at `+0xfd4`, `+0xff4`, `+0x1014`, `+0x1034` (32 characters) | confirmed (code) |
+| `0x0041e520` | `Inventory_CallHuCallback2(arg)` | calls the `+0x1014` function with one argument; from `Human_PickUpObject` and `Human_HandleMessage` | confirmed (code) |
+| `0x0041e9d8` | `Inventory_SetCount(inv, player, item, n)` | sets a count, clamped to the item's range in the table at `0x0058b300` (minimum, maximum; with upgrade (6, 7) the flash's maximum is 4); a positive count of spray paint (item 3) sets game-state hint bits (the first time `0x100000000`, later `0x400200000` and the hint 17 withdrawn); from `InvSetMoney` and `0x0041f030` | confirmed (code) |
+| `0x0041eca0` / `0x0041ece8` / `0x0041ed10` / `0x0041ed38` / `0x0041ed60` | `Cfg_SetInventoryItem` / `Cfg_SetInventoryCallback` / `Cfg_SetHuInventoryCallback` / `Cfg_SetHuInventoryCallback2` / `Cfg_SetMoneyCallback` | the `CfgInventoryItem`, `CfgInventoryCallback`, `CfgHuInventoryCallback`, `CfgHuInventoryCallback2` and `CfgMoneyCallback` workers, on the game state's inventory (`+0x480`) | confirmed (code) |
+| `0x0041ed88` | `Inv_PlayerHasItem` | `InvPlayerHasItem(item, player)`, the player 1-based | confirmed (code) |
+| `0x0041edb8` / `0x0041edf0` | `Inv_GiveRevive` / `Inv_NumberRevives` | `InvGiveRevive(n, player)` adds flashes (item 1) with notify (also from `BossDiegoGoal_Start`) / `InvNumberRevives(player)` | confirmed (code) |
+| `0x0041ee20` / `0x0041ee58` | `Inv_GiveSkeletonKey` / `Inv_NumberSkeletonKeys` | the same for handcuff keys (item 6) | confirmed (code) |
+| `0x0041ee88` / `0x0041eeb8` | `Inv_GetMoney` / `Inv_SetMoney` | `InvGetMoney(player)` / `InvSetMoney(n, player)`: clears the player's HUD money roll (`+0xe20`) and sets item 2 through `Inventory_SetCount` | confirmed (code) |
+| `0x0041ef00` / `0x0041ef60` | `GameState_GiveMoney` / `GameState_TakeMoney` | `GiveMoney(n, player)` / `TakeMoney(n, player)`: item 2 ± n with notify | confirmed (code) |
+| `0x0041ef98` / `0x0041efd0` | `Inv_GiveItem` / `Inv_NumberOf` | `InvGiveItem(item, n, player)` with notify / `InvNumberOf(item, player)` | confirmed (code) |
+| `0x0041f000` / `0x0041f030` | `Inv_GetSpraycanCharges` / `Inv_SetSpraycanCharges` | `InvGetSpraycanCharges(player)` / `InvSetSpraycanCharges(n, player)` (item 3, negative read as 0, through `Inventory_SetCount`) | confirmed (code) |
+| `0x004209c0` | `PlayerStats_Construct` | zeroes six static buffers (`0x005971b8`, `0x00715510`, `0x005971c0`, `0x00715500`, `0x00715818`, `0x00715830`), `+0x04` and `+0xbc`, then `PlayerStats_Reset`; from `0x004227d8` | confirmed (code) |
+| `0x00420a70` | `PlayerStats_Reset` | clears one player's statistics record: score, every category's counts and the style flag `+0xbc`; the Armies score `+0x04` survives unless the current level's id is 60 (the first Armies level) | confirmed (code) |
+| `0x00420b48` / `0x00420ba8` / `0x00420c08` | `PlayerStats_CategoryEventCount` / `PlayerStats_CategoryPointsTable` / `PlayerStats_CategoryCounts` | the three lookups behind a category id (0-5, jump tables at `0x0058b710`, `0x0058b730`, `0x0058b750`): how many events it has (3, 4, 13, 8, 12, 5), its 16-bit points table, and the record's array of counts for it | confirmed (code) |
+| `0x00420c80` | `PlayerStats_GetScore` | a player's running score (`+0x00`), or the Armies score (`+0x04`) in an Armies of the Night level | confirmed (code) |
+| `0x00420cb8` | `PlayerStats_AddMission` | category 0 (mission, 3 events): adds n to the event's count (`+0x08`, capped at `0xffffff`), adds n × points (`0x005971b8`) to the score (capped at 9,999,999) and, in Armies levels, to `+0x04`; returns the points added. Reached through `0x004ed908` | confirmed (code) |
+| `0x00420db0` | `PlayerStats_AddStyle` | category 2 (style, 13 events, counts `+0x24`, points `0x00715510`); sets the style flag `+0xbc`. Reached through `0x004ed988` | confirmed (code) |
+| `0x00420eb0` | `PlayerStats_AddBonus` | category 1 (bonus, 4 events, counts `+0x14`, points `0x005971c0`), as the mission adder; also sets the bonus flag `+0xbd` the HUD's score counter shows a label for. Reached through `0x004ed888` (lock picks, tags) | confirmed (code) |
+| `0x00420fb0` | `PlayerStats_AddCombat` | category 3 (combat, 8 events, counts `+0x58`, points `0x00715500`). Reached through `0x004ed8c8` | confirmed (code) |
+| `0x004210a8` | `PlayerStats_AddCrime` | category 4 (crime, 12 events, counts `+0x78`, points `0x00715818`). Reached through `0x004ed948` and `0x004f39e8` | confirmed (code) |
+| `0x004211a0` | `PlayerStats_AddHarmony` | category 5 (harmony, 5 counts at `+0xa8`): adds to the count only, capped at `0xffffff`; its score is taken off later as a penalty. Reached through `0x004de250` (arrests, knock-outs, the 2 s cuffed-or-down tally) | confirmed (code) |
+| `0x004211d8` | `Stats_CategoryPoints` | (already named) the sum over a category of count × points | confirmed (code) |
+| `0x00421280` / `0x004212a0` | `PlayerStats_TakeStyleFlag` / `PlayerStats_TakeBonusFlag` | return and clear the record's style (`+0xbc`) or bonus (`+0xbd`) changed flag | confirmed (code) |
+| `0x004223e8` | `Cfg_SetStatTypeMax` | `CfgSetStatTypeMax(combat, crime, harmony, style, mission, bonus)`: reorders its six arguments into category order and stores them as the maxima (`0x00422900`) | confirmed (code) |
+| `0x00422430` | `Cfg_SetStatValue` | `CfgSetStatValue(category, event, points)`: writes one 16-bit entry of the category's points table; an unknown category is ignored | confirmed (code) |
+| `0x004224d8` | `Script_StatAdd` | `StatAdd(human, category, event, n)`: resolves the human and calls that category's adder (0 mission … 5 harmony); not a human, or a category over 5, does nothing | confirmed (code) |
+| `0x004225f0` / `0x00422630` / `0x00422670` | `Script_StatGetRank` / `Script_StatGetScore` / `Script_StatGetPreviousHiScore` | the `StatGetRank`, `StatGetScore` (the running score, `0x00422998`) and `StatGetPreviousHiScore` (the current-index level's best record, `0x00423050`) bindings | confirmed (code) |
+| `0x004226a0` | `Script_StatGetTotal` | `StatGetTotal(human, category)`: the category's score (`Stats_CategoryScore`), 0 when not a human | confirmed (code) |
+| `0x004226f8` / `0x00422930` | `Stats_ResetAll` / `Stats_ResetPlayers` | `PlayerStats_Reset` on both live player records of the stats object | confirmed (code) |
+| `0x00422718` | `Script_StatResetPlayer` | `StatResetPlayer(human)`: resets that player's record (`0x00422970`) | confirmed (code) |
+| `0x00422758` | `Script_StatGetHighScore` | `StatGetHighScore(levelId)`: finds the level-table record with that id (`+0x04` of each 0x84-byte record, `+0x56d4` of them) and returns its best record; index −1 when absent | confirmed (code) |
+| `0x004227d8` | `Stats_Construct` | the stats object (`0x006fe490`): constructs two live (`+0x000`, `+0x0c0`) and two checkpoint (`+0x180`, `+0x240`) 0xc0-byte player records, clears the maxima (`0x00715840`) and the 30 best records (`+0x300`, 0x168 bytes), resets the players and takes a checkpoint copy | confirmed (code) |
+| `0x004228a0` | `Stats_GetPlayer` | a human's live record: stats + player index (human `+0x380`) × 0xc0 | confirmed (code) |
+| `0x004228b8` | `Stats_RankFromPercent` | the rank of an average percentage: 0 below 50, 1 below 80, else 2 | confirmed (code) |
+| `0x00422900` | `Stats_SetMaxima` | copies six 16-bit maxima to `0x00715840` | confirmed (code) |
+| `0x00422970` | `Stats_ResetPlayer` | `PlayerStats_Reset` on a human's live record | confirmed (code) |
+| `0x00422998` | `Stats_GetScore` | a human's running score (`PlayerStats_GetScore`); this is what `StatGetScore` and the HUD's score counter show, not a computed category total | confirmed (code) |
+| `0x00422ae8` | `Stats_GetMaximum` | the category's maximum (16-bit, `0x00715840 + 2 × category`) | confirmed (code) |
+| `0x00422bd8` | `Stats_GetRank` | a human's rank: the mean of the six category percentages, through `Stats_RankFromPercent` | confirmed (code) |
+| `0x00422d00` | `Stats_RestoreCheckpoint` | copies the checkpoint pair (`+0x180`, 0x180 bytes) back over the live pair; from the mission-failed retry and level init | confirmed (code) |
+| `0x00422da0` | `Stats_MergePlayer2` | when player 2 drops out (`Human_ReleasePlayer`): re-adds every count of the second record to the first through the category adders (so its points are scored again at the current rates), clears the second's flags and resets it; then the same for the checkpoint pair | confirmed (code) |
+| `0x00423308` / `0x00423338` | `Stats_StaticInit` / `Stats_StaticInitStub` | static constructor: `Stats_Construct(0x006fe490)` on (1, 0xffff) | confirmed (code) |
+| `0x004236d0` | `Script_UMReset` | `UM_Reset`: frees the unlockable records (`Unlockables_Reset`) | confirmed (code) |
+| `0x004236f0` | `Script_UMSetNumUnlockables` | `UM_SetNumUnlockables(n)`: stores the record count (`0x006fe99c`) while no records are allocated yet | confirmed (code) |
+| `0x00423768` | `Script_UMGetUnlockables` | `UM_GetUnlockables(level, group, out)`: when records exist, lists the indices matching level and group (`Unlockables_ListByLevelGroup`) | confirmed (code) |
+| `0x004237a8` | `UM_GetUnlockablesByType` | the type form: `Unlockables_ListByType` when records exist | confirmed (code) |
+| `0x004237e8` | `Script_UMUnlock` | `UM_Unlock(level, group, item)`: `Unlockables_Unlock` when records exist | confirmed (code) |
+| `0x00423828` / `0x00423868` / `0x004238a8` | `Script_UMIsUnlocked` / `Script_UMIsDataUnlocked` / `Script_UMIsLevelComplete` | `UM_IsUnlocked(index)`, `UM_IsDataUnlocked(type, data)`, `UM_IsLevelComplete(level)`: 0 when no records exist | confirmed (code) |
+| `0x004238e8` | `UM_GetRecordField` | `UM_GetRecordData(index, field)`: field 0-3 the level, group, item and type bytes, 4 the 16-bit extra, 5 the data id; 0 otherwise | confirmed (code) |
+| `0x00423988` | `Script_UMIsTypeDirty` | `UM_IsTypeDirty(type, clear)`: `Unlockables_IsTypeDirty` | confirmed (code) |
+| `0x004239b0` | `UM_IsDataDirty` | `UM_IsDataDirty(type, data, clear)`: `Unlockables_TestDirtyByData` | confirmed (code) |
+| `0x004239e0` | `Script_UMUnlockAll` | `UM_UnlockAll(on)`: `Unlockables_SetAll` | confirmed (code) |
+| `0x00423a08` | `Unlockables_Construct` | empties the manager (records, count), frees any records and sets every record locked and none new | confirmed (code) |
+| `0x00423a98` / `0x00423b88` | `Unlockables_Reset` / `Unlockables_FreeRecords` | free the record array (if any) back to the heap and clear the pointer | confirmed (code) |
+| `0x00423ab8` | `Unlockables_AllocRecords` | frees any old array and allocates count × 12 bytes; done lazily by the first record write | confirmed (code) |
+| `0x00423c30` | `Unlockables_SetRecordFields` | fills one record (level, group, item, type, extra, data), allocating the array first if needed; from `Unlocks_SetRecord`; returns whether the index was valid | confirmed (code) |
+| `0x00423cf0` | `Unlockables_GetRecord` | the record at an index, or null when out of range or not allocated | confirmed (code) |
+| `0x00423d30` | `Unlockables_FindByData` | the first record of a type with a data id, or null; from the Rumble soldier-buying screen | confirmed (code) |
+| `0x00423de0` | `Unlockables_ListByLevelGroup` | fills a 32-entry list with 65535, then writes the index of every record with that level and group | confirmed (code) |
+| `0x00423f70` | `Unlockables_Unlock` | every record matching (level, group, item): marked new if it was locked, then unlocked | confirmed (code) |
+| `0x00424098` / `0x004240c8` / `0x004240f8` | `Unlockables_IsUnlocked` / `Unlockables_IsDirty` / `Unlockables_ClearDirty` | test the locked set (`0x006fe8f8`, clear = unlocked), test or clear the new set (`0x006fe948`) | confirmed (code) |
+| `0x004247d0` | `Unlockables_CountCharacters` | how many type-4 (character type) records exist and how many are unlocked; from the Rumble soldier-swap screen | confirmed (code) |
+| `0x00424890` | `Unlockables_IsTypeDirty` | whether any record of a type is new; optionally clears each one's new bit | confirmed (code) |
+| `0x00424958` | `Unlockables_TestDirtyByData` | whether the first record of a type with a data id is new; optionally clears it | confirmed (code) |
+| `0x00424d60` | `Unlockables_SetAll` | the unlock-all switch: player 1's money (inventory `+0x480`) set to 1,000,000; on, every record unlocked and new; off, every record locked and none new | confirmed (code) |
+| `0x00424e50` / `0x00424ec8` | `Unlockables_StaticInit` / `Unlockables_StaticInitStub` | static constructor: clears both bit sets and constructs the manager on (1, 0xffff) | confirmed (code) |
+
 ## Coney's implementation
 
 Written from this page, [Scripts](scripting.md#stopwatch), [AI: crimes](ai.md#crimes) and the binding pages
@@ -187,7 +269,8 @@ Written from this page, [Scripts](scripting.md#stopwatch), [AI: crimes](ai.md#cr
 Coney's choices, where the page is silent:
 
 - Items other than revives have no upper limit (the table at `0x0058b300` is not described).
-- `StatGetScore` is the five scoring categories' points less harmony's, not below 0 (`0x00422998` is not traced).
+- `StatGetScore` is the five scoring categories' points less harmony's, not below 0. The original returns the running
+  score (`0x00422998`, [Game-state functions](#warriors-functions)), so this differs.
 - An event index past its table is ignored; `StatGetTotal` is not registered.
 - `Inventory_AddItem` is `script::addInventoryItem` (`src/scripting/player_bindings.h`), with the money,
   `CfgInventoryCallback` and `CfgHuInventoryCallback` calls in the order above; `CfgMoneyCallback`
@@ -204,6 +287,6 @@ Coney's choices, where the page is silent:
 - How `global.lua`'s `SetupMissionPoints` turns a level's mission and bonus values into maxima.
 - Whether scripts other than the four found set events 1/0-1/2 and 2/4.
 - The item limits at `0x0058b300`, and what each item's duration (`+0x28`) does.
-- The score formula of `0x00422998`, and which category `StatGetTotal`'s statistic id picks.
+- Which category `StatGetTotal`'s statistic id picks.
 - Which notify flag `InvGiveItem`, `InvGiveRevive` and the other give bindings pass to `Inventory_AddItem`.
 - What the money multiplier at game state `+0x380` (1.0 in mission 1) is.

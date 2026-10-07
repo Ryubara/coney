@@ -377,19 +377,19 @@ where not stated.
 `level100` included, has one. It is not a game mode and has no frame loop of its own: the load blocks, and the screen
 is redrawn from inside the blocking file reads. Confirmed (code) at the addresses below unless stated.
 
-| Address | Name (ours) | Role |
-| --- | --- | --- |
-| `0x001612b0` | `LoadScreen_Begin` | picks the screen object, starts it, installs the tick callback |
-| `0x00161340` | `LoadScreen_TickCallback` | calls the current object's tick (slot `+0x18`); returns 1 |
-| `0x00161378` | `LoadScreen_End` | removes the callback, ticks once, flushes the render queue (device slot `+0x18`), finishes the object (slot `+0x10`), clears `0x005e6dec` |
-| `0x001458d8` | `Loading_SetCallback(fn)` | `0x0050b728` = fn, `0x0050b72c` = 0, `0x0050c7d8` = now; calls fn once when it is set |
-| `0x00148c90` | `PS2StreamFile::Wait` | while a read is in flight, every 67 ms (`0x0050b720`): read the pads, call `0x0050b728` ([File I/O](file-io.md)) |
-| `0x00163c08` | static constructor | builds the two screen objects |
-| `0x005e6da8` | the **level** screen (vtable `0x00538900`) | start `0x00163888`, tick `0x00162b88`, finish `0x00162598`, reset `0x00162568`, bar `0x00162688` |
-| `0x005e6dc8` | the **memory-card** screen (vtable `0x00538938`) | start `0x001620a0`, tick `0x001619d0`, finish `0x001618f0`, reset `0x001618b8` |
-| `0x00163270`, `0x001635d0` | `LoadScreen_FormatTextureName`, `...Ex` | the picture names (story, Rumble) |
-| `0x00161600` | (none) | the callback a preload installs when no loading screen is up |
-| `0x005e6dec` | | the current screen object, or null |
+| Address | Name (ours) | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x001612b0` | `LoadScreen_Begin` | picks the screen object, starts it, installs the tick callback | confirmed (code) |
+| `0x00161340` | `LoadScreen_TickCallback` | calls the current object's tick (slot `+0x18`); returns 1 | confirmed (code) |
+| `0x00161378` | `LoadScreen_End` | removes the callback, ticks once, flushes the render queue (device slot `+0x18`), finishes the object (slot `+0x10`), clears `0x005e6dec` | confirmed (code) |
+| `0x001458d8` | `Loading_SetCallback(fn)` | `0x0050b728` = fn, `0x0050b72c` = 0, `0x0050c7d8` = now; calls fn once when it is set | confirmed (code) |
+| `0x00148c90` | `PS2StreamFile::Wait` | while a read is in flight, every 67 ms (`0x0050b720`): read the pads, call `0x0050b728` ([File I/O](file-io.md)) | confirmed (code) |
+| `0x00163c08` | static constructor | builds the two screen objects | confirmed (code) |
+| `0x005e6da8` | the **level** screen (vtable `0x00538900`) | start `0x00163888`, tick `0x00162b88`, finish `0x00162598`, reset `0x00162568`, bar `0x00162688` | confirmed (code) |
+| `0x005e6dc8` | the **memory-card** screen (vtable `0x00538938`) | start `0x001620a0`, tick `0x001619d0`, finish `0x001618f0`, reset `0x001618b8` | confirmed (code) |
+| `0x00163270`, `0x001635d0` | `LoadScreen_FormatTextureName`, `...Ex` | the picture names (story, Rumble) | confirmed (code) |
+| `0x00161600` | (none) | the callback a preload installs when no loading screen is up | confirmed (code) |
+| `0x005e6dec` | | the current screen object, or null | confirmed (code) |
 
 **Which screen.** `LoadScreen_Begin` takes the memory-card screen when the flag `0x0050f5b8` is set **and** the level is
 `level100`, the level screen otherwise. The flag is 1 in `.data` and `PM_Greet`'s START clears it (`0x00203f88(0)` at
@@ -716,6 +716,137 @@ too. `UnloadLevel(keep)`, confirmed (code) for the order:
 | `<level>_<section>.pak` | the preload, blocking | the resource manager evicts what nothing holds |
 | world parts (`_ms<i>.sec`) | the preload, then streamed by distance | unloaded when far, unseen and memory is short |
 | other resources | streamed by the resource manager | evicted least recently used |
+
+### Game mode functions {#game-mode-functions}
+
+The rest of `GameModes/` (`0x00155b30`-`0x00162598`) besides `InitLevel`, `UnloadLevel` and the loading screens above:
+each mode's slots ([the mode table](boot.md#game-mode)), its static initialiser and the helpers of its unit. The
+"phase" is the task manager's (`TaskManager_SetPhase`): 0 while a menu mode is on top, 1 for the modes that run the
+world under a menu. Names are ours; the strings are global-string ids, their English text in `config_strings_en.lua`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00155b98` | `Gm_ANGameOver_Resume` | mode 0xd (the Armies of the Night game over, [File I/O](file-io.md)) `Resume`: the task manager back to phase 1 | confirmed (code) |
+| `0x00155bc0` | `Gm_ANGameOver_Exit` | mode 0xd `Exit`: a device call (slot `+0xb4`), every entry of the task manager's list `+0x834` told to finish (slot `+0x4c`), the audio resumed, the game timer unpaused | confirmed (code) |
+| `0x00155c78` | `Gm_ANGameOver_Update` | mode 0xd `Update`: one world frame under the game-over menu (`0x0050ebec`, slots `+0x3c` and `+0x34`) with the task manager in phase 1 (managers, skeleton marks), streaming, the world and audio from the player camera, the alternate viewport render, the end-of-frame overlay, the file manager and pad bindings; never pops itself | confirmed (code) |
+| `0x00155e70` / `0x00155eb8` | `Gm_ANGameOver_StaticInit` / `Gm_ANGameOver_StaticInitStub` | builds mode 0xd's object at `0x005e53a0` on the base and sets its vtable | confirmed (code) |
+| `0x00155f48` | `GameMode_dtor` | the base's destructor: restores the base vtable, frees when asked | confirmed (code) |
+| `0x00156078` | `GameMode_DoResume` | clears game state byte `+0x56e0`, then calls `Resume` (slot `+0x28`) if the mode is entered | confirmed (code) |
+| `0x001560c0` | `GameMode_DoSuspend` | calls `Suspend` (slot `+0x30`) if the mode is entered | confirmed (code) |
+| `0x00156100` | `GameMode_DoUpdate` | enters the mode first if needed (`GameMode_DoEnter`), then calls `Update` (slot `+0x38`) | confirmed (code) |
+| `0x001567f8` | `GameMode_EndFrameHud` | end of a gameplay frame: outside the armies levels and in split screen with game-state byte `+0x1c3` below 200, refreshes the 19 HUD widgets at `0x00614020` (a mode from `0x0050b1a4`); then the device's end-of-frame slot and, in an armies level, the HUD; then the resource overlay | confirmed (code) |
+| `0x00156978` | `GameMode_EndFrameOverlay` | the device's end-of-frame slot `+0x12c`, the resource manager's overlay, then the queued 2D shapes | confirmed (code) |
+| `0x00156d88` | `Gm_Error_dtor` | mode 0xf's destructor: frees its two-line text (`+0x30`), then the base's | confirmed (code) |
+| `0x00156f90` | `Gm_Error_Exit` | mode 0xf `Exit`: frees its buffer (`0x0050c6cc`), resumes audio unless mode 0xa (pause) is on top, restarts the game timer when game-state byte `+0x410` says so, shuts its text, and under mode 1 sets a flag at `0x0050eddc + 0x20ac` | confirmed (code) |
+| `0x00157090` | `Gm_Error_DrawStill` | mode 0xf with the world stopped: clears the screen, the audio listener at the origin, then the message (`Gm_Error_DrawMessage`) | confirmed (code) |
+| `0x00157220` | `Gm_Error_DrawOverWorld` | mode 0xf over the world: one world frame (the task manager only reads pads while game-state byte `+0x410` is set), the viewport and overlays, then the message | confirmed (code) |
+| `0x001573e8` | `Gm_Error_Update` | mode 0xf `Update`: for a pad error (kind 2), rebinds any player whose controller is back (`0x0022aa78`, `HUD_BindPad`) and pops when both are; then draws over the running world (`+0x24` = 1) or a cleared screen; pops when `Gm_Error_IsResolved` says so | confirmed (code) |
+| `0x00157588` | `Gm_Error_SetPadMessage` | mode 0xf: packs a pad's (port, slot, kind) into the per-player short at `+0x100` | confirmed (code) |
+| `0x001575b8` | `Gm_Error_IsResolved` | by kind `+0x20`: 1 (a player's controller is gone) until a free pad is found and bound; 2 until each reported pad is back; 3 and 4 (disc errors) the flag `0x0050bcf4`; others at once | confirmed (code) |
+| `0x001579a8` | `Gm_Error_ShowFatal` | draws a message on a cleared screen into both buffers, then loops for ever while its third argument is non-zero (a hang on a fatal error) | confirmed (code) |
+| `0x00157c20` | `Gm_Error_DrawMessage` | picks the text by kind (strings `0x175`-`0x177` with the port number for 2, `0x178` for 1, `0x17d` for 4, `0x17f` for 3 and 6, `0x17e` for 5) and draws it as two-line text at `+0x30` | confirmed (code) |
+| `0x00157df8` / `0x00157e28` | `Gm_Error_StaticInit` / `Gm_Error_StaticInitStub` | builds mode 0xf's object at `0x005e5560` | confirmed (code) |
+| `0x00157ef8` | `Gm_Mode0E_Exit` | mode 0xe `Exit`: finishes the task manager's list `+0x834`, resumes audio, calls the Lua function named at `+0x24` (if any) with no arguments, unpauses the game timer | confirmed (code) |
+| `0x00157ff0` | `Gm_Mode0E_Update` | mode 0xe `Update`: while the mode's timer has not passed `+0x20`, one full world frame (task manager phase 1, viewport, overlays, the script system's per-frame slot `+0x14`); after it, pops (so `Exit` calls the Lua function) | confirmed (code) |
+| `0x001581e8` | `Gm_Mode0E_SetLuaName` | mode 0xe: the Lua function `Exit` calls (`+0x24`, up to 32 characters), or none | confirmed (code) |
+| `0x00158218` | `GameMode_PushFreeze` | pushes and enters mode 0xe (`0x005e5670`) with its end time `+0x20` = the argument and its Lua name set | confirmed (code) |
+| `0x00158258` / `0x00158288` | `Gm_Mode0E_StaticInit` / `Gm_Mode0E_StaticInitStub` | builds mode 0xe's object at `0x005e5670` | confirmed (code) |
+| `0x00159490` / `0x001594c0` | `Gm_Level_StaticInit` / `Gm_Level_StaticInitStub` | builds mode 1's object at `0x005e56b8` | confirmed (code) |
+| `0x001594e0` | `GameStats_SetCloseCallback` | interns a Lua name (script slot `+0xcc`) into `0x005e57d0` for mode 0x13 | confirmed (code) |
+| `0x00159520` | `GameStats_SetAutoClose` | writes the flag `0x0050c6e4` mode 0x13's `Update` reads: when set, the screen closes itself once its fade is done | confirmed (code) |
+| `0x001595f8` | `GameStats_Resume` | mode 0x13 `Resume`: task manager phase 0, game timer paused | confirmed (code) |
+| `0x001596d0` | `GameStats_Update` | mode 0x13 (the statistics screen) `Update`: one world frame (phase 0), the stats widget (`+0x20`; its fade-in queued once it is ready, `+0xd4`), the overlay; with auto-close (`0x0050c6e4`) a fade-out is queued once and the mode pops when the fade ends (`0x005fdeb8 + 0x1d4`) | confirmed (code) |
+| `0x001599a8` / `0x00159a38` | `GameStats_StaticInit` / `GameStats_StaticInitStub` | builds mode 0x13's object at `0x005e56f0` with its stats widget at `0x005e5710` | confirmed (code) |
+| `0x0015a208` / `0x0015a250` | `Gm_Legal_StaticInit` / `Gm_Legal_StaticInitStub` | builds mode 5's object at `0x005e57e0` | confirmed (code) |
+| `0x0015a280` | `MemoryCard_SetStep` | writes the next step of mode 6 (`0x0050c734`, [Save](save.md#mode-6)) | confirmed (code) |
+| `0x0015a290` / `0x0015a2a0` | `MemoryCard_SetScanAsk` / `MemoryCard_SetDeleteKind` | write `0x0050c6fc` (the boot scan asks with a two-choice dialog) / `0x0050c700` (a save-kind run deletes instead) | confirmed (code) |
+| `0x0015a410` | `MemoryCard_ResetSlots` | clears `0x0050c70c` and the save system's slots, next step the timed message | confirmed (code) |
+| `0x0015a508` | `MemoryCard_AskNoCard` | the no-card dialog: save kind, strings `0x9c` + free space + `0x9d`, choices `0xc0` / `0xbd` (Retry), default Retry; save kind with delete set, `0x9f` with OK only; load kind `0x9c` + `0x9e` with `0xba` / `0xbd`, or `0x9f` when the scan asks | confirmed (code) |
+| `0x0015a7a8` | `MemoryCard_CheckCardChanged` | after a scan: unless the card changed (`0x0050c71c`) or a delete is pending, next step `0x0015ac08`; a delete on a changed card shows string `0xa7` with OK; else next step `MemoryCard_CheckCard` | confirmed (code) |
+| `0x0015a900` | `MemoryCard_CheckCard` | with no card (save-system slot `+0x104`) scans again; else by slot `+0x154`: 0 → `0x0015a998`, non-zero → the question `0x0015a9f0` | confirmed (code) |
+| `0x0015a998` | `MemoryCard_CheckCard2` | save-system slot `+0x12c`: 0 → the space dialog `0x0015ab10`, else the question `0x0015aa80` | confirmed (code) |
+| `0x0015a9f0` / `0x0015aa80` | `MemoryCard_AskA3` / `MemoryCard_AskA4` | strings `0xa3` / `0xa4` with Yes (`0xba`) / Continue without saving (`0xc0`), default Yes / Continue; Yes → `0x0015ad80`, the other → `0x0015a4e0` | confirmed (code) |
+| `0x0015ab10` | `MemoryCard_AskNoSpace` | strings `0xa5` + free space + `0xa6`, Continue without saving / Retry, default Retry | confirmed (code) |
+| `0x0015ac08` | `MemoryCard_CheckSaveTarget` | unless a format is pending (`0x0050c708`) or the kind is load: slot `+0x12c` 0 → `0x0015b2d8`, else the question `0x0015ac88`; otherwise → `0x0015ada0` | confirmed (code) |
+| `0x0015ac88` | `MemoryCard_AskA1A2` | no card → scan; else string `0xa1` (`0xa2` when slot `+0x154` is set) with Yes / Continue without saving, default Yes | confirmed (code) |
+| `0x0015ada0` | `MemoryCard_CheckFormat` | slot `+0x124` (formatted) set → `0x0015b0b0`; else load kind finishes quietly (or `0xa0` with OK / Retry when the scan asks), save kind with no delete → `MemoryCard_AskFormat`, with delete `0xa0` OK / Retry | confirmed (code) |
+| `0x0015afb0` | `MemoryCard_AskFormatSure` | string `0xad` with Yes / No (`0xbb`), default No; Yes → `0x0015b040`, No → a new scan | confirmed (code) |
+| `0x0015b040` | `MemoryCard_Format` | stores the failure text `0xb6`, formats (save-system slot `+0x11c`), shows `0xae` for 3,000 ms, then scans again | confirmed (code) |
+| `0x0015b0b0` | `MemoryCard_CheckSave` | no card → scan; slot `+0x154` clear (no save on the card) → load kind finishes (or `0xa0` OK / Retry when the scan asks), save kind → `0x0015b268` (a delete shows `0xa0`); a save → `0x0015b490` | confirmed (code) |
+| `0x0015b268` | `MemoryCard_CheckSpace` | slot `+0x12c` 0 (too little space) → `MemoryCard_AskTooLittleSpace`; else save kind → create (`0x0015b528`), load kind finishes | confirmed (code) |
+| `0x0015b2d8` | `MemoryCard_AskTooLittleSpace` | marks `0x0050c72c` and `0x0050c708`; strings `0xaf` + free space + `0xb0` (save: Continue without saving / Retry) or `0xb1` (load: Yes / Retry), default Retry | confirmed (code) |
+| `0x0015b490` | `MemoryCard_CheckExisting` | save kind: a pending recreate (`0x0050c728`, slot `+0x184`) → create, else the size check `0x0015b598`; load kind → `0x0015b650` | confirmed (code) |
+| `0x0015b528` | `MemoryCard_Create` | stores the failure text `0xb7`, shows `0xa9` for 2,000 ms, creates the save (save-system slot `+0x17c`), then saves (`0x0015b598`) | confirmed (code) |
+| `0x0015b598` | `MemoryCard_Save` | save: failure text `0xb7`, `0xa9` for 2,000 ms; delete: failure text `0xb9`, `0xab` for 3,000 ms; runs save-system slot `+0x194`; then finishes | confirmed (code) |
+| `0x0015b650` | `MemoryCard_CheckLoadSizes` | save-system slot `+0x15c` (sizes right): yes → load (`0x0015b7e0`), no → `0x0015b6a8` | confirmed (code) |
+| `0x0015b6a8` | `MemoryCard_AskBadSave` | marks a recreate (`0x0050c728`); string `0xb2` with Yes / Retry, default Yes (or `0xb3` with OK / Retry when the scan asks) | confirmed (code) |
+| `0x0015b7e0` | `MemoryCard_Load` | failure text `0xb8`, `0xaa` for 3,000 ms, sets the loaded flags (`0x0050c704`, `0x0050c6f8`, `0x0050c708`), loads (save-system slot `+0x164`), then finishes | confirmed (code) |
+| `0x0015b8d8` | `MemoryCard_DisableSaving` | clears `0x0050c704`, turns saving off (save-system slot `+0x5c`) and finishes: the "Continue without saving" of a delete | confirmed (code) |
+| `0x0015bc70` | `Gm_MemoryCard_Resume` | mode 6 `Resume`: task manager phase 0, game timer paused | confirmed (code) |
+| `0x0015bca8` | `MemoryCard_WatchCard` | each frame: notes a card change (save-system slot `+0x10c` after a scan, `0x0050c71c`) and a different card id (slot `+0xfc` against `0x0050c710`); either restarts the steps at the first (`0x0015a448`) and, for a changed card in save kind, clears the loaded flag; when the save system is idle (slot `+0x24` = 1) asks for a new card poll (slot `+0xf4`) | confirmed (code) |
+| `0x0015c400` / `0x0015c450` | `Gm_MemoryCard_StaticInit` / `Gm_MemoryCard_StaticInitStub` | builds mode 6's object at `0x005e5810` and its message box at `0x005e5840` | confirmed (code) |
+| `0x0015c470` | `Gm_LevelFlow_ctor` | mode 8's constructor: the base, then the chosen level `+0x20` = −1 and `+0x24` = 0 | confirmed (code) |
+| `0x0015c680` | `Gm_LevelFlow_ReturnZero` | returns 0 (an unused slot of mode 8's unit) | confirmed (code) |
+| `0x0015c7a8` | `Gm_LevelFlow_SetLevel` | writes the chosen level index `+0x20` | confirmed (code) |
+| `0x0015ca90` / `0x0015cac0` | `Gm_LevelFlow_StaticInit` / `Gm_LevelFlow_StaticInitStub` | builds mode 8's object at `0x005e5d90` | confirmed (code) |
+| `0x0015cb68` | `Gm_MissionFailed_Resume` | mode 0xc (mission failed, [Pause](pause.md)) `Resume`: task manager phase 1 | confirmed (code) |
+| `0x0015cb90` | `Gm_MissionFailed_Exit` | mode 0xc `Exit`: closes the mission-failed menu (`0x0050ec8c`, slot `+0xb4`), finishes the task manager's list `+0x834`, stops the failure line (`+0x30`), reloads the sound bank named at `+0x20`, unpauses the game timer | confirmed (code) |
+| `0x0015cc78` | `Gm_MissionFailed_Update` | mode 0xc `Update`: one world frame (phase 1); once, plays the DJ's failure line for the level and section (`DjLines_PickFailureLine`, handle `+0x30`, flag `+0x34`); updates and draws the menu over the alternate viewport; never pops itself | confirmed (code) |
+| `0x0015cf00` / `0x0015cf50` | `Gm_MissionFailed_StaticInit` / `Gm_MissionFailed_StaticInitStub` | builds mode 0xc's object at `0x005e5dc0` (`+0x30` = no sound) | confirmed (code) |
+| `0x0015d0f0` | `Gm_InGame_Resume` | mode 0xb (mission complete) `Resume`: task manager phase 0, game timer paused | confirmed (code) |
+| `0x0015d128` | `Gm_InGame_Exit` | mode 0xb `Exit`: resumes audio, unpauses the game timer | confirmed (code) |
+| `0x0015d480` / `0x0015d4c8` | `Gm_InGame_StaticInit` / `Gm_InGame_StaticInitStub` | builds mode 0xb's object at `0x005e5df8` | confirmed (code) |
+| `0x0015d4e8` / `0x0015d540` | `MissionSelect_GetMission` / `MissionSelect_SetMission` | the chosen mission number `0x0050c764` (set by the mission-select widget, `0x001bdda8`) | confirmed (code) |
+| `0x0015d550` / `0x0015d560` | `MissionSelect_GetCheckpoint` / `MissionSelect_SetCheckpoint` | the chosen checkpoint `0x0050c768` | confirmed (code) |
+| `0x0015d570` / `0x0015d580` | `MissionSelect_GetCancelled` / `MissionSelect_SetCancelled` | `0x0050c75c`: the player backed out | confirmed (code) |
+| `0x0015d590` / `0x0015d5a0` | `MissionSelect_GetChosen` / `MissionSelect_SetChosen` | `0x0050c760`: a mission was chosen | confirmed (code) |
+| `0x0015d5b0` | `MissionSelect_IsDone` | either flag set (the mode's `Update` and the widget poll it) | confirmed (code) |
+| `0x0015d5e0` | `MissionSelect_SetCallbacks` | mode 0x10: the Lua names to call on cancel (`+0x6d8`) and on a choice (`+0x6f8`), 32 characters each; from `0x001551b8` | confirmed (code) |
+| `0x0015d700` | `MissionSelect_Resume` | mode 0x10 `Resume`: task manager phase 0 | confirmed (code) |
+| `0x0015d728` | `MissionSelect_Exit` | mode 0x10 `Exit`: shuts the widget (`+0x20`); cancelled with a cancel name → reloads the `menu` bank (`0x0054f688`) and calls it; chosen with a choice name → calls it with (mission, checkpoint); unpauses the game timer | confirmed (code) |
+| `0x0015d890` | `MissionSelect_Update` | mode 0x10 `Update`: one world frame (phase 0), the widget (`+0x20`; its fade-in queued once loaded, `+0x6d4`), the overlay; when the player is done, queues a fade-out once (a choice also stops the music and fades over 1.5 s) and pops when the fade ends | confirmed (code) |
+| `0x0015db68` / `0x0015db98` | `MissionSelect_StaticInit` / `MissionSelect_StaticInitStub` | builds mode 0x10's object at `0x005e5e30` | confirmed (code) |
+| `0x0015dd10` | `PauseMode_Resume` | mode 0xa (pause) `Resume`: task manager phase 1 | confirmed (code) |
+| `0x0015df68` / `0x0015dfb0` | `PauseMode_StaticInit` / `PauseMode_StaticInitStub` | builds mode 0xa's object at `0x005e6550` | confirmed (code) |
+| `0x0015dfd0` | `ProfileManager_SetCallbacks` | mode 0x12: interns the two Lua names `ShowProfileManager` was given (script slot `+0xcc`) into `0x005e6690` and `0x005e6694` ([Front end](frontend.md#profile-manager)) | confirmed (code) |
+| `0x0015e0f8` | `ProfileManager_Resume` | mode 0x12 `Resume`: task manager phase 0, game timer paused | confirmed (code) |
+| `0x0015e5c8` | `PM_Controller_InitStub` | static-init stub of the profile manager's controller widget (`PM_Controller_InitWidget(1, 0xffff)`) | confirmed (code) |
+| `0x0015e790` | `GameModeStack_BelowTopId` | the id of the mode just below the top (`GetId`, slot `+0x10`), 0 when there is none | confirmed (code) |
+| `0x0015e838` | `RumbleMenu_SetCallbacks` | mode 0x11 (the Rumble menus): interns the cancel and start names into `0x005e67c0` / `0x005e67c4` ([Front end](frontend.md)) | confirmed (code) |
+| `0x0015ea08` | `RumbleMenu_Resume` | mode 0x11 `Resume`: task manager phase 0, game timer paused | confirmed (code) |
+| `0x0015f0d8` / `0x0015f180` | `RumbleMenu_StaticInit` / `RumbleMenu_StaticInitStub` | builds mode 0x11's object at `0x005e66d0` with its widget at `0x005e6700` | confirmed (code) |
+| `0x0015f220` | `RumbleResult_Resume` | mode 0x14 (the Rumble result, [Rumble](rumble.md)) `Resume`: task manager phase 0 | confirmed (code) |
+| `0x0015f248` | `RumbleResult_Exit` | mode 0x14 `Exit`: closes the result menu (`0x0050ee94`, slot `+0xb4`), finishes the task manager's list `+0x834`, reloads the bank named at `+0x20` and resumes audio | confirmed (code) |
+| `0x0015f308` | `RumbleResult_Update` | mode 0x14 `Update`: one world frame (phase 0, no second manager pass), the alternate viewport and overlays, then the result menu (`0x0050ee94`, slots `+0x3c`, `+0x34`); never pops itself | confirmed (code) |
+| `0x0015f4f8` / `0x0015f540` | `RumbleResult_StaticInit` / `RumbleResult_StaticInitStub` | builds mode 0x14's object at `0x005e67d0` | confirmed (code) |
+| `0x0015f560` | `SaveSystemMode_ClearFlag` | clears `0x0050c7a4` (mode 7) | confirmed (code) |
+| `0x0015f590` | `SaveSystemMode_StartScan` | mode 7's first step: clears the done flag `0x0050c7a0` and the failure text `0x0050c7a8`, starts a card scan (save-system slot `+0x3c`), next step `0x0015f5e0` | confirmed (code) |
+| `0x0015f658` | `SaveSystemMode_Save` | failure text `0xcc`, message `0xc2` for 1,000 ms (box `0x005e6830`), save (slot `+0x194`), next step `0x0015f750` | confirmed (code) |
+| `0x0015f6c8` | `SaveSystemMode_Load` | failure text `0xcd`, marks a load (`0x0050c79c`), load (slot `+0x164`), next step `0x0015f750` | confirmed (code) |
+| `0x0015f728` | `SaveSystemMode_Nop` | empty step | confirmed (code) |
+| `0x0015f760` | `SaveSystemMode_AskFailed` | the failure text (or `0xcc` save / `0xcd` load by the kind `0x005e6d70`) with Continue (`0xc9`) / Retry (`0xcb`), default Retry; Retry starts again (`SaveSystemMode_StartScan`); starts a card scan | confirmed (code) |
+| `0x0015f930` | `SaveSystemMode_Resume` | mode 7 `Resume`: task manager phase 0 | confirmed (code) |
+| `0x0015f958` | `SaveSystemMode_Update` | mode 7 `Update`: pad bindings, services the save system, sets the listener at the origin, services files; while not done (`0x0050c7a0`) and no message is timing, runs the next step (`0x0050c7ac`; a card that is not usable switches to `SaveSystemMode_AskFailed`), ticks the task manager and draws the box on a cleared screen; once done, draws cleared frames until the box's accept sound has played, then pops | confirmed (code) |
+| `0x0015fd20` | `SaveSystemMode_Exit` | mode 7 `Exit`: frees its buffer `0x0050c7b0`; from mode 8 clears `0x005e5db8`; kind `0x005e6d70` = 2; closes the box; frees a pool (`0x006eb9b8`) and restarts the real-time clock | confirmed (code) |
+| `0x0015fde0` / `0x0015fe30` | `SaveSystemMode_StaticInit` / `SaveSystemMode_StaticInitStub` | builds mode 7's object at `0x005e6800` and its message box at `0x005e6830` | confirmed (code) |
+| `0x0015fe50` | `SaveSystemMode_SetReturnName` | copies up to 32 characters to `0x005e6d88`, or clears it | confirmed (code) |
+| `0x00160db0` / `0x00160dd8` | `Initialize_StaticInit` / `Initialize_StaticInitStub` | `Initialize.cpp`'s static initialiser: the sound handle `0x005e6d80` starts as `NilSoundHandle` | confirmed (code) |
+| `0x001613f0` | `LoadScreen_DrawPulse` | the loading indicator ([HUD](hud.md)): the HUD element at `0x0060e890` in a dark red brightened 1.3 times, fading to and from transparent on a 2.2 s cycle of the real-time clock | confirmed (code) |
+| `0x00161830` / `0x00161868` | `MemCardLoadScreen_ctor` / `MemCardLoadScreen_dtor` | the memory-card screen object (vtable `0x00538938`): reset on construction; `Finish` and a free on destruction | confirmed (code) |
+| `0x001618b8` | `MemCardLoadScreen_Reset` | its reset: the start time from `0x0050b720` and three handles at `+0x04`-`+0x0c` to `0xffff` | confirmed (code) |
+
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00418c68` | `GameState_ResetForLevel` | `InitLevel`'s reset of the game state for a level: the inventories (`+0x480`, a full reset below checkpoint 2), crime-type defaults (all 15 enabled but type 12), the dispatcher voice, the crime, all-clear, hat, music and command callbacks cleared, music mood 4, `+0x380` = 1.0, every Warrior command enabled, both per-player records cleared (`PlayerRecord_Reset` at `+0x168 + 0x5c × p`), the rage sound stopped and a run of flags set to their defaults (`+0x56e1`-`+0x56e5`, `+0x5708`) | confirmed (code) |
+| `0x0041a370` | `GameState_Tick` | the game state's per-update step (from `TaskManager_TickGame`): counts updates (`+0x230`), restarts the rage loop if needed, every 30th update the system music mood, the breathing loop, then `GameState_CheckGameOver` | confirmed (code) |
+| `0x0041cef0` | `GameState_SetSection` | writes the section `+0x33a` and resets the object manager's per-level lists (`ObjectManager_ResetLevelLists`), without the checkpoint copy; from `InitLevel`, the pause menu, `Gm_InGame_Update` and `LevelFlow_Quit` | confirmed (code) |
+| `0x0041d510` | `Cfg_SetLevelRecord` | `CfgLevelName`'s worker: fills a level record (`LevelRecord_Set`, records from `+0x14d4`) | confirmed (code) |
+| `0x0041d690` / `0x0041d6a8` / `0x0041d6f0` / `0x0041d718` | `GameState_GetLevelCount` / `GameState_GetLevelNamePacked` / `GameState_GetLevelId` / `GameState_GetCurrentLevelIndex` | the workers of `GetNumberOfLevelsPacked` (`+0x56d8`), `GetLevelNamePacked` (the record found by `0x0041f4d0`, its name at `+0x14`), `GetLevelId` (record n's `+0x04`; records of 0x84 bytes from `+0x14d4`) and `GetCurrentLevelIndex` (`+0x56dc`) | confirmed (code) |
 
 ## Coney's implementation
 

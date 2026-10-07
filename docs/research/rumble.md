@@ -322,6 +322,15 @@ flight may have some). Each links to its reference entry by name.
 - **Other arenas' set dressing**: `CfgSteam`, `GetPTank`, `ObjSetTrainPoint`, `ObjStartTrain`, `ObjStopTrain`,
   `ReleasePTank`, `SoundPlay`, `StartRain`; partial `PlayMovie`.
 
+### Game-state functions {#warriors-functions}
+
+Functions of the game-state module (`0x00417af0`-`0x00424e50`: inventory, statistics, flags, configuration
+workers) that belong to this page, by address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0041a3e0` / `0x0041a400` | `GameState_IsVibrationActive` / `GameState_GetVibrationOption` | pad p's vibration option (byte `+0x56de + p`, [Save](save.md)); the first also needs byte `+0x56e0`; read by the pad code (`0x00149668`), the option menu and `Profile_Write` | confirmed (code) |
+
 ## Coney's implementation {#coney}
 
 A Brawl (1 ON 1 or WAR PARTY) plays to its end, won or lost ([Building: QUICK RUMBLE](../guides/building.md)): the
