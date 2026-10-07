@@ -123,7 +123,7 @@ player's Xbox disc ([Xbox assets](../research/xbox-assets.md)).
 | Bloom | The original glows through coronas, `propglow` halos and the unresearched 512 × 256 glow raster. A threshold bloom would also bloom white walls and text | **yes** | Bloom only from what Coney knows glows (coronas, glow sprites, lamp sprites) drawn into a bloom buffer, plus an optional low threshold pass | F2; research on device slot `+0x108` | S |
 | Motion blur | The original has one: frame feedback, strength set by looks and scripts. Coney's is a stand-in | **yes** | Keep the faithful blur, rate-independent (now-choice 2). Optional per-object velocity blur from the blended steps; camera blur from depth reprojection | F2, F3 for velocity | S (rate fix), M (velocity) |
 | Chromatic aberration | Not in the original; purely cosmetic | **yes** | One post pass, off by default | F2 | S |
-| Colour grading | The game tints through looks (`SetLevelColour`, stores) and the brightness option; PCSX2 shows the picture about 70% bright (open on [Graphics](../research/graphics.md#open-questions)) | **yes** | A 3D LUT after the game's own looks; presets *Faithful TV* (the measured brightness) and *Neutral* | F2; the display-brightness research | S |
+| Colour grading | The game tints through looks (`SetLevelColour`, stores) and the brightness option; PCSX2 shows the picture about 70% bright, the game's own colours ([Graphics](../research/graphics.md#open-questions)) | **yes** | A 3D LUT after the game's own looks; presets *Faithful TV* (the measured brightness) and *Neutral* | F2; the display-brightness research | S |
 | Depth of field | No focus data. Cutscene cameras have targets, the follow camera has a look-at point 1.4 m above the player | **partly** | Cutscenes only: focus on the scene camera's target; gameplay off (it would blur the street) | F2 | S-M |
 | HDR | Content is LDR on the GS scale (0x80 = 1.0); lit colours clamp at 1.0, so there is no overbright range (measured by the graphics analysts) | **partly**, low value | HDR10 / scRGB output with a paper-white setting; only additive effects (glows, coronas, bloom) could go above it. Not on OpenGL portably; SDL3's GPU API has HDR swapchains | F5 | S after F5 |
 
@@ -225,9 +225,12 @@ The owner's decisions (2026-10-07):
 
 One line each; owned by the graphics and HUD analysts.
 
-- The 16:9 mode's 3D camera constants (`0x00122ca0`, `0x00122d38`) and the HUD and menu 16:9 tables
-  (`0x00211ef8`, `0x001af010`, `0x001cdc80`).
-- Device slot `+0x108` (the 512 × 256 blur or glow) and the heat distortion, for F2 and bloom.
-- The display brightness (about 70% in PCSX2), for the *Faithful TV* grade.
-- Human and object fade distances, and whether any geometry LOD exists.
+- The 16:9 mode's 3D camera constants: **done** ([Graphics: video mode](../research/graphics.md#video-mode)). Still
+  open: the HUD and menu 16:9 tables (`0x00211ef8`, `0x001af010`, `0x001cdc80`).
+- Device slot `+0x108` and the heat distortion: **done** ([Graphics: motion blur](../research/graphics.md#motion-blur),
+  [heat distortion](../research/graphics.md#code-distortion)).
+- The display brightness: **done**, the dimness is the game's own colours and the capture is faithful
+  ([Graphics: open questions](../research/graphics.md#open-questions), "Display brightness").
+- Human and object fade distances and geometry LOD: **done**, fades only, no geometry LOD
+  ([Graphics: distance](../research/graphics.md#lod)).
 - What `GraphicsShadowXBox.cpp` draws (**Xbox**, optional).

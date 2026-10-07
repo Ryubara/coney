@@ -309,8 +309,10 @@ object or light, from the type flags). A **piece** (a drop, puff or decal) sets 
 alpha byte of `+0xb4`; it returns 1 (done) at the last step. Two tests gate nearly every spawn:
 
 - `0x003a5a50`: the particle pool has more than 512 free (inferred from the count it compares);
-- `0x003a7d58(15, 5, pos)`: some camera is within 15 m (`Cameras_MinDistanceSq`) and the point is on screen in some
-  view within 5 (`0x003a51f8`; inferred). Some types use 25 m and 10 instead.
+- `0x003a7d58(15, 5, pos)`: some camera is within 15 m (`Cameras_MinDistanceSq`) and the point is in some player view
+  with a 5 m margin (`0x003a51f8`: outside means more than the margin beyond one of the view's six frustum planes,
+  `0x003a50e0`). Some types use 25 m and 10 instead; the glass shatter uses 15 and 10
+  ([Objects](objects.md#shatter)). Confirmed (code) at `0x003a50e0`.
 
 Blood is skipped while game state `+0x454` (a short, read through `0x003a3e78(6)`) is not 0; game state flag word 0
 bit `0x40` swaps the reds for `0x55c9ff` (speculative: a blood colour option or cheat).
@@ -614,8 +616,34 @@ four `sub_water` drops and two mist puffs within the particle budget (`0x003a5a5
 
 ### Explosions {#part-explosion}
 
-`part_explosion` (interval 30, flags `0xc04`) makes, within the particle budget, six fireballs, twenty debris and
-eight embers around its position, and is done after 24 updates (freeing its batch, `+0x08`). The parts step through
+`part_explosion` (interval 30, flags `0xc04`) is done after 24 updates (freeing its batch, `+0x08`). Its init
+(`0x003c3448`) makes, at its position `p` and rotation, confirmed (code):
+
+- a sprite batch of its own (`PTank_New(10.0, 0x10006, ...)`: sheet record 1, `part_page1`, rectangle 6; capacity
+  6) kept at data `+0x08`;
+- **six `sub_explosion_embers`** (table below), each given a random vector (x and z ±0.05, y −3.5 to 0.05, turned by
+  the rotation), a random 0.6-1.5, the fire sprite word `0xc0000` (batch 12, `part_fire`) and the explosion's batch;
+  which popped value is the speed and which the size is not traced;
+- **one `sub_fireball_emitter`** (`0x003c4580`), which makes **six `sub_fireball`s** at scale 2.0, one along each of
+  ±x, ±y, ±z of the rotation, moving outward;
+- **one `sub_explosion_light`** at `p` + (0, 0, 0.5);
+- while the particle budget allows, **twenty `sub_debris`** at `p` + (0, 0, 0.5) with directions x, y ±0.5 and z
+  0.25-1, life 30, size 0.25-0.35, white, `part_page1` rectangles 8-11, each then sent message `0x27` with
+  `0xc0000`; and **eight smaller `sub_debris`** at `p` + (0, 0, 0.55), directions x, y ±0.25 and z 0-0.75, life 60,
+  size 0.05-0.1, the same sprites.
+
+**`sub_explode`** (the molotov's flash; `0x003c5350`, `0x003c54b8`): `part_page1` rectangle 17 (batch 4), a random
+roll, flags `0x80000`, colour from white at alpha `0xf0` toward alpha `0xbf`. Stages (interval, size): 1 tick to 0.2,
+then 8 ticks to 1.0 (at this stage it makes the `part_explosion` at its position and rotation), then 40 ticks to 1.5
+while the colour fades to alpha 0, then done: about 49 ticks. A particle's drawn sprite is 2 × size wide
+(`ParticleTask_Draw`, [GUI](gui.md#radar-icons)), so the flash grows to 3 m.
+
+**`sub_fireball`** (`0x003c4a58`, `0x003c4c38`): `part_page1` rectangle 42 (batch 4), flags `0x80000`, a random roll
+and flip, velocity = the direction × scale × 1.25, size table `0x00512ea0` (0.8) × scale (1.6 for the emitter's 2.0),
+colour from transparent black to the stage colours. Seven stages, each lasting the table's interval plus up to as
+much again (8, 10, 10, 8, 8, 10, 10 ticks) and setting the size to 0.8-0.88 × scale; the stage colours (`0x00512ec0`,
+`0xRRGGBBAA`): `1010ce24` (a faint blue), `fb780c9f`, `c336097f` (oranges), `590e0024`, `33080030`, `33080020`,
+`34210010` (dark, fading). Done at stage 7: 64-128 ticks. The parts step through
 small tables of interval, colour and size: `sub_fireball` 7 stages (`0x00512e80` intervals, `0x00512ec0` colours,
 `0x00512ea0` start size), `sub_flames` 7 (`0x00512ee0`, `0x00512f00`), `sub_explode` 3 (`0x00512e58`, `0x00512e68`).
 `sub_explosion_light` is a light: colour `0xdacaffff`, then `0xf45c1cff`, `0xf45c1a90`, `0xf4ba1f20`, off at the
@@ -1246,13 +1274,14 @@ the looping sound.
 
 ### Car damage effects {#car-damage-effects}
 
-`sub_car_damage` is a hidden child of a car; the car's damage code sends it message **`0x3f`** with a kind, and it
-spawns the matching effect at its position.
+`sub_car_damage` is one hidden particle shared by every car (the car manager makes it with the first car); the
+car's hit code sends it message **`0x3f`** with a kind, a position and a direction, and it spawns the matching effect
+there ([Cars: hit effects](cars.md#hit-effects)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x003df698` | `SubCarDamage_Init` | `sub_car_damage` init | hidden, attached to its parent car, update every 2 | confirmed (code) |
-| `0x003df730` | `SubCarDamage_OnMessage` | `sub_car_damage` message | `0x3f` kind: 0 a `sub_car_spark_emitter`; 1 and 2 4-9 `sub_coloured_glass` / `sub_glass` pieces; 3 `sub_car_steam`; 4 glass; 5 `sub_hood_smoke`; 6 dust | confirmed (code) for the names; the kind-to-part mapping inferred |
+| `0x003df698` | `SubCarDamage_Init` | `sub_car_damage` init | hidden, update every 2; made with no parent | confirmed (code) |
+| `0x003df730` | `SubCarDamage_OnMessage` | `sub_car_damage` message | `0x3f` kind: 0 a `sub_car_spark_emitter` and dust; 1 about 4-10 `miniglass`; 2 the same as `sub_coloured_glass`, dark red; 3 `sub_car_steam`; 4 a small `sub_glass` shatter; 5 `sub_hood_smoke`; 6 a 2 × 1 `sub_glass` shatter ([Cars](cars.md#hit-effects)) | confirmed (code) |
 | `0x003df228` | `SubCarSparkEmitter_Init` | `sub_car_spark_emitter` init | pops a strength; along each of the 16 table directions, 50 %: a `sub_car_sparks`; with strength ≥ 1 also 25 %: a `sub_car_rubble` | confirmed (code) |
 | `0x003df038` | `SubCarSparks_Init` | `sub_car_sparks` init | a spark streak, grey `0xa4a4a4ff`, size 2.5-5 | confirmed (code) |
 | `0x003df1b0` | `SubCarSparks_Update` | `sub_car_sparks` update | lives 15 steps while the pool allows | confirmed (code) |
@@ -1943,10 +1972,30 @@ Data: `+0x20` state, `+0x24` update interval, `+0x30` a linked object's handle, 
 `molotov_smoke` is a smoke puff. The bottle's data: `+0x10` the holder, `+0x18` state (−5 broken), `+0x1c` update
 interval, `+0x24` its fuse sound.
 
+**Set off by message `0x15`** (what [`BreakObjectsInRadius`](objects.md#break-objects-in-radius) sends), confirmed
+(code) at `0x00404c48` and `0x00405600`:
+
+1. `0x15`: flag `0x40` on, data `+0x1c` = 2. The task keeps its current schedule (20 ticks from the init).
+2. Each update sets its interval to data `+0x1c` and, with flag `0x40`, adds one to it; when it reaches 4 (the
+   second update after `0x15`, two ticks after the first) the bottle sends **itself message 1** with itself as the
+   breaker, its position and the normal (0, 0, 1).
+3. Message 1 (the break): the fuse sound stops if one plays; the bottle's rotation is turned from its velocity
+   reflected about the normal; **one `sub_explode`** is made at the position **+ 0.7 m up** with that rotation;
+   state −5. (No `sub_debris` here: the debris comes from the `part_explosion` the `sub_explode` makes,
+   [Explosions](#part-explosion).)
+4. The next update (3 ticks later) sees state −5: the flame is told `0x13` (out) and `0x15` (remove), the particles
+   named at `0x00587620` within 1 m are killed, and the bottle ends (update returns 1).
+
+The flame is never lit on this path (only messages 4, `0x12` and `0x1b` light it), so a molotov set off this way
+shows no `sub_molotv_flame`, no `sub_molotv_light` and no `molotov_smoke`, and **leaves no fire behind**: nothing on
+the path makes `sub_flames`, `sub_burn` or a fire. None of the functions on the path plays a sound. From the
+`0x15` to the flash: up to about 22 ticks (the remaining part of the 20-tick schedule, then 2); inferred from the
+intervals.
+
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x00404b38` | `DynMolotov_Init` | `dyn_molotv` init | flags `0x228081`, update 20, model, data defaults | confirmed (code) |
-| `0x00404c48` | `DynMolotov_OnMessage` | `dyn_molotv` message | 0 pick-up offer; 1 break: fuse sound stopped, `sub_explode` and `sub_debris`, state −5; 4 thrown (the flame lit with `0x12`); 10 hittable (forwarded to the flame); `0x12` light; `0x15` flag `0x40`; `0x1b` picked up (lights the flame, attaches to the hand); `0x1c` dropped (flame told `0x22`); `0x20` put out (flame `0x13`, then `0x15`); `0x30` thrown | confirmed (code) |
+| `0x00404c48` | `DynMolotov_OnMessage` | `dyn_molotv` message | 0 pick-up offer; 1 break: fuse sound stopped, one `sub_explode` 0.7 m above it, state −5; 4 thrown (the flame lit with `0x12`); 10 hittable (forwarded to the flame); `0x12` light; `0x15` flag `0x40`; `0x1b` picked up (lights the flame, attaches to the hand); `0x1c` dropped (flame told `0x22`); `0x20` put out (flame `0x13`, then `0x15`); `0x30` thrown | confirmed (code) |
 | `0x00405600` | `DynMolotov_Update` | `dyn_molotv` update | broken: tells the flame and ends; airborne below z velocity −500: state −5; keeps its last position | confirmed (code) |
 | `0x004058c8` | `MolotovSmoke_Init` | `molotov_smoke` init | size, colours, one of three smoke sprites, update every 2 | confirmed (code) |
 | `0x00405a08` | `MolotovSmoke_Update` | `molotov_smoke` update | grows over four steps (update 15, then 45 at the last), darkening; then done | confirmed (code) |

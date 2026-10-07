@@ -468,7 +468,10 @@ at runtime (no save state reaches `level80`).
 preloads `l80_c1` at checkpoint 1 and, once it is loaded, runs `SuperRunScene` with it already loaded, seven humans
 (Cleon, Rembrandt, Vermin and four scene-only Destroyers), the clubhouse's two doors and a Destroyers object as
 objects, `NoClearWanted`, **`NumCallBacks` = 3** and its `ReturnFunc` (an `EndIntroScene`). That function, given 3, 2
-or 1, breaks one of the clubhouse's three glass panes and sets off the explosion at the matching flag; given anything
+or 1, removes one of the clubhouse's three glass panes (`ObjDestroy`: the pane vanishes, with no shatter,
+[Objects](objects.md#pane)) and sets off a molotov explosion at the matching flag (`ObjSpawn("dyn_molotv")` there and
+`BreakObjectsInRadius(molotov, 0.5)`, which makes the molotov break itself:
+[Script types: the Molotov](script-types.md#molotov)); given anything
 else (the scene id), it closes the doors, removes the scene's Destroyers gang and goes on to the chapter's next setup.
 The three type-31 events on the camera track (about 21.7 to 22.1 s) are flushed by a skip, so `PreCashTheWorld` runs
 three times (`ReturnFunc(3)`, `(2)`, `(1)`, `NumCallBacks` down to 0, each pane and explosion at once), then a

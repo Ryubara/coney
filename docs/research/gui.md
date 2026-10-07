@@ -533,6 +533,43 @@ human with byte `+0x19d` set counts as class 2 unless a Warrior. `Human_Init` ad
 AI re-marks humans that turn on the player as type 6 (`0x002b0608`, `0x002c2e80`, `0x002d6e10`, `0x002d79a8`), and a
 dealer greeting the player adds type 2, 4 or 3 with icon 29, 31 or 30 at 0.8 (`0x002c7ee0`, dealer types 0, 1, 2).
 
+**Colours and icons by blip type**, as the adding code passes them (colours `0xRRGGBBAA`; white leaves the icon's
+own colours). Confirmed (code) at `0x001b2990`, `0x001b2ee8`, `0x001b4168`, `0x001b40f8`, `0x001b2e38`,
+`0x001b2e68`, `0x001b3258`, `0x002c7ee0`, `0x001b2ca0`:
+
+| Type | Added by | Colour | Icon, size factor |
+| --- | --- | --- | --- |
+| 1 | `HUDAddRadarObject` (and the secondary objective) | the script's `{r, g, b}`, alpha `ff` | 69 (the dot) until a script sets one |
+| 2, 4, 3 | a dealer of type 0, 1, 2 (`DealerGoal_AddRadarIcon`, at the greeting) | white at the add, then **`0x63db4bff` (green)** | 29, 31, 30 at 0.8 |
+| 5 | civilians | nothing is added | |
+| 6 | hostile humans (classes 2, 5, 6; the AI) | white (the grey `0x808080ff` passed is ignored) | 352 on layer 0, 359 on layer 1, both at 0.8 |
+| 7 | a Warrior other than the player | white | 365 at 0.8 |
+| 8 | police (class 1) | white, then blip mode 0 (alpha `0x80`) | 356 on both layers at 0.8 |
+| 9 | the player | slot `0x787878ff`; the widget draws in the widget colour `0x005fd310` (runtime: `(178, 178, 178, 255)`) | 362 |
+| 10 | `HUDAddRadarMissionObjective` | white, flashing (alpha toggled every 4 updates for 100), then solid | 69 until a script sets 27, 28 or 22 |
+
+**Every icon set through `HUD_RadarSetBlipIcon`** (`0x001b2ca0`, which `HUDSetRadarItemTexture` reaches through
+`0x001b4038`) **with icon 29, 30 or 31 is tinted `0x63db4bff`**, whoever sets it, and icon 22 is forced to 0.7. So
+the flash dealer's blip is the green icon 29 in the `+0x58` batch whether the dealer goal or `level99_lesson2.lua` sets
+it. `0x001b4038` then sets the icon lock (`0x001b2bf0`) from the script's third argument.
+
+**A dot's size on screen.** `hud_radar_dot` starts with size 0.7 (`+0xc0`; `0x003e5bf8`) and every icon set multiplies
+it by the call's factor (`Radar_SetSlotIcon` / `Radar_SetBlipIcon`, both `+0xbc` and `+0xc0`), so the factors
+**compound** when an icon is set twice. The particle draw (`ParticleTask_Draw` `0x0039b020`, dots have flag
+`0x400000`) makes the sprite, in overlay units,
+
+```text
+width  = 2 × size × (u1 − u0)
+height = 2 × size × (v1 − v0) × (texH / texW) × 0.925       (sheet +0x1c = texH / texW, 0.5 for part_page0)
+```
+
+for the icon's rectangle `(u0, v0, u1, v1)` of `part_page0` (512 × 256), centred on the blip position. The size and
+colour blend from the previous update's values (`+0xbc`, `+0xb0`) to the current ones (`+0xc0`, `+0xb4`) over the
+update interval (`0x00338240`, `0x0039ba68`); a new dot starts at size 0 and colour `0xffffff00`, so it fades and grows
+in over its first interval (inferred from the fields; not timed). Confirmed (code); **confirmed (runtime)**: a type-7
+blip (icon 365, 11 × 11 texels) had size 0.56 (0.7 × 0.8), colour white, and drew about 11 px of 640, as
+`2 × 0.56 × 11/512 = 0.024` units × 441 px.
+
 **Blip modes** (`0x001b32e0(hud, handle, mode)`), sent with message `0x19` to the dot (`0x003e5d00`): mode 0 plain;
 1 and 2 icon 352; 3 and 4 icon 353 at 0.8 on layer 0 with a ring (icon 32 or 33 at 0.75) on layer 1, flashing. The
 dot's own states: 0 dim (alpha `0x80`), 1 full, 2 pulsing size (× 1.3), 10 growing, 13 blinking, 14 cycling size
@@ -766,10 +803,15 @@ plain struct, not a widget, with 128 blip slots of `0x40` bytes from `+0x920` (l
   set and the slot is marked (`+0x30`). A police blip (type 8) within 0.9 × zoom of a story player whose brain is
   type 1, while marked or `+0x18` is set, queues hint 8 once (flag `0x200`; not in levels 80 and 99). The mark timer
   `+0x2e` counts down each update; at 0 the mark is cleared and the dot hidden unless `+0x18` is set.
-- **The player arrow (type 9):** the widget sits at the blip position, size 0.026 (`0x0050e9cc`), turned by the
-  difference between the camera's heading and the radar's; with two players and two views player 0's icon `0x16b`
+- **The player arrow (type 9):** a `BaseWidget` (depth 20,000, on top of the blips) at the blip position (the disc
+  centre), turned by the **player's heading minus the camera's** (`Quat_Heading` of the human's rotation and of radar
+  `+0x80`, into widget `+0xa0`, radians). Confirmed (runtime): with the player turned 79° to the left of the camera's
+  view (heading 154° against 233°, clockwise from +y), the arrow pointed left; facing along the view it points up. So a
+  positive difference turns the arrow clockwise on screen. With two players and two views player 0's icon `0x16b`
   becomes `0x169` or `0x15f`, player 1's `0x16a` `0x168` or `0x15e` (by `W_GameState + 0x90`); icons 25, 26 and those
-  four are not turned; size 0.035 for 25 and 26, 0.03 otherwise.
+  four are not turned. Its size is set to 0.026 (`0x0050e9cc`) and then, the same frame, to 0.035 for icons 25 and 26
+  and **0.03** otherwise (`BaseWidget_SetSize(s, s, widget, 1)`; with mode 1 the height follows the width by the
+  rectangle's aspect, [Widgets](#widget-classes); inferred that `s` ends as the width in overlay units).
 - Icons 25 and 26 are moved to batch `+0x48` when not already there (`0x001c6730`).
 
 ### `GUI/ScreenFlowController.cpp` {#fn-screenflowcontroller}

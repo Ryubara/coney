@@ -1181,7 +1181,12 @@ camera made current (player 1's current-camera word `0x005d9150` pointed at it) 
 | `VerminFencePoizo` | 25.282, 6.984, 2.012 | −90.95051, −3.46206, 0 | 50 / 150 | −0.02118, 0.02154, −0.71262, 0.70090 | 0.9980, −0.0166, −0.0604 |
 | `BreakFencePoizo` | 23.674, 0.423, 1.087 | 178.03990, 4.13726, 0 | 50 / 150 | 0.00062, 0.03609, 0.99920, 0.01709 | −0.0341, −0.9968, 0.0721 |
 
-All eight have near 0.1. **Worked example**, `FenceCam` (`level99_lesson2`, checkpoint 3, the shot of Vermin going
+All eight have near 0.1. In `level80` (checkpoint 1, the "Let's Go" tutorial) the current camera is `StartCam1`
+((−194.746, 130.353, 2.699), h −163.123, p −3.893, fov 65, far 150): `+0x20` reads (0.00498, −0.03360, 0.98860,
+−0.14667), the formula's quaternion negated (the same rotation; `Mat_ToQuat` picks the sign), and `level2`'s first
+camera `StartLock` ((453.389, 203.602, 15.861), h −111.904, p −19.474) reads (−0.09469, 0.14013, −0.81663, 0.55182),
+the formula's to 4 decimals; confirmed (runtime).
+**Worked example**, `FenceCam` (`level99_lesson2`, checkpoint 3, the shot of Vermin going
 over the chain-link fence): `CameraCreateLocked("FenceCam", {47.497, 37.941, 3.507}, 50, 177.78334, −11.85450, 0,
 0.1, 150)`. `qh` = (0, 0, sin 88.892°, cos 88.892°) = (0, 0, 0.99981, 0.01934); `qp` = (sin −5.927°, 0, 0, cos
 −5.927°) = (−0.10326, 0, 0, 0.99465); `q = qh ⊗ qp` = (−0.00200, −0.10325, 0.99447, 0.01924), as read. Forward =

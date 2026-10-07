@@ -297,7 +297,10 @@ How the microcode at `0x004fc870` draws the second pass was not read.
 scaled by `1/255` for an untextured material and by `0.0019700117` (about `0.5/255`) for a textured one; alpha
 always by `0.00197`. A textured white material thus reaches the GS as 128, and the GS's texture modulate treats 128 as
 1.0 (inferred from the GS's documented behaviour). The prelighting colours are unpacked unsigned (`V4_8`) and not
-scaled by the CPU, so they too are on the GS's scale, where 0x80 is full brightness (inferred).
+scaled by the CPU, so they too are on the GS's scale, where 0x80 is full brightness (inferred). The lit vertex colour
+the GS receives **never exceeds 0x80** (confirmed (runtime): the brightest channel in a `level99` frame is exactly 128
+on thousands of vertices), so there is no 2× overbright: `min(1, prelight + light) × material`, [Lighting: the
+maths](lighting.md#world).
 
 #### The pipeline unit {#pipeline-unit}
 
@@ -681,7 +684,8 @@ above):
 - **`0x3F0 +0x04`**: the texture-coordinate scale. The code shows both floats uploaded in one quadword; the microcode
   that applies them was not read, so the evidence stays Coney's visual check ([Atomic plugin](#atomic-plugin)).
 - **Vertex colour range**: consistent with 0x80 = 1.0, so Coney's doubling stays; the CPU halves textured material
-  colours for the same reason ([Pipelines](#pipelines)). The world is lit by Coney's light manager
+  colours for the same reason ([Pipelines](#pipelines)). The lit result is clamped at 1.0 before the material
+  multiplies it ([Lighting: the maths](lighting.md#world)), confirmed (runtime). The world is lit by Coney's light manager
   ([Lighting](lighting.md#coneys-implementation)).
 - **The 5.0 margin**: squared distances. **`0x0040e100`**: no new search. **`World_PendingDistance` with nothing
   found**: `FLT_MAX` ([Camera distance](#camera-distance)).

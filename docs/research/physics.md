@@ -406,7 +406,8 @@ and clears the car's object flag `0x200`. Confirmed (code). The car never sweeps
 (pose on the next update) and is what humans, objects and the camera meet. When a car explodes, box 1 loses 0.25 m of
 height ([Cars](cars.md#explode)). `Car_OnLanded` (`0x00389e08`) answers 2 to every contact; on the level it also
 clears the airborne flag, zeroes the velocity and sends message `0x3f` (kind 5) with the point (0, 1.84, 0.02) in the car's
-frame to the task whose handle is at `[0x005971b4] + 0x14` (an effect, inferred).
+frame to the task whose handle is at `[0x005971b4] + 0x14`: the shared `sub_car_damage`, which makes a `sub_hood_smoke`
+there ([Cars: hit effects](cars.md#hit-effects)).
 
 **Loose parts** (`Car_UpdateLoosePart`, `0x00387f18`, from the car's update for each part flying off, bit in `+0x11f4`)
 have no body. Confirmed (code):
@@ -448,7 +449,7 @@ step yet. When world objects come, the settle is a per-object tween run on Coney
 ## Open questions
 
 - What the human attributes 1 and 7 that weigh the push sphere's push are.
-- What the effect task at `0x005971b4` does with a car's message `0x3f`, and which classes the four other task
-  vtables with the empty contact handler are.
+- Which classes the four other task vtables with the empty contact handler are (the car's message `0x3f` is
+  answered: [Cars: hit effects](cars.md#hit-effects)).
 - Where the axis mask of `0x00340b38` comes from for a settle.
 - A runtime check of a settle started by a real landing (a thrown bottle); the step's 11 ticks are confirmed.

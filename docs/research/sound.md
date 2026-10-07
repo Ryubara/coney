@@ -253,8 +253,8 @@ if it loops). Confirmed (code). `SoundTask_Update` (`0x0011a170`), confirmed (co
 - **Volume** per ear: `a × ear gain × record volume % × caller's volume × sound volume (+0x3fa20) × directional ×
   fade × a8 × state factor`, then the loudest over the listeners, then × the duck factor (`+0x3faac`) for a
   duckable directional sound not owned by a player while a non-duckable one plays, × 0.25 for a duckable positional
-  sound whose owner's flag `+0x5b7` differs from every listener's (meaning not traced), clamped to 1. Sent only
-  when changed.
+  sound whose owner's flag `+0x5b7` differs from every listener's ([covered ground](sound-events.md#covered)),
+  clamped to 1. Sent only when changed.
 - **State factor**: when game state `+0x268` is positive (meaning not traced) a sound with task `+0xa0` set whose
   owner is not a player (human `+0x1b0` = -1) is scaled by 0.75, or 0.15 beyond 2 m, and its pitch by 0.85.
 - **2D sounds**: `record volume × sound volume × fade × caller's volume × pan gains (+0x50, +0x54) × a8`; a stereo
@@ -382,8 +382,9 @@ id`; the Animation page counts from the manager, 16 bytes more). Confirmed (code
 all while game-state flag 2 is set or the load screen is up (`+0x24270`). For each player and each emitter:
 
 1. **Who hears it.** A player counts unless the filter says otherwise: filter 0 skips a player whose `+0x5b7` is set,
-   1 one whose `+0x5b7` is clear, 2 none (what `+0x5b7` is is not traced; it also gates the owner duck of
-   [Task update](#three-d)). An emitter that is off, or that no player counts for, has its sound stopped.
+   1 one whose `+0x5b7` is clear, 2 none (`+0x5b7`: the player stands on
+   [covered ground](sound-events.md#covered), inferred indoors). An emitter that is off, or that no player counts
+   for, has its sound stopped.
 2. **Volume.** A playing sound gets the ambient factor (`a8`: 0.75 while a scene plays, else 1), and a `music`
    emitter's also the duck: 0.5 while a music channel is busy and the mood is not 2.
 3. **Distance**: to the nearest listener from `pos1` (`0x00113188`). Beyond the range, or while `0x005147c8` is set,
@@ -505,6 +506,8 @@ acts by id. Confirmed (code):
   `0x0021f410`; needs `+0x199`, a player twice as loud), some only when no line plays, some cutting it.
 - **Speech-command ids**: `Human_SayCommand` with a fixed command (`0x8b` itself says `onfire`, 107, while `+0x19b`
   is set; others taunts and reactions, some only when `Ambient_MayGesture` allows).
+
+Every id's sound, material and condition is on [Sound events](sound-events.md#anim-sounds).
 
 Types 12, 14, 69, 70 and 71 send messages `0x8c`, `0x8e`, `0xc5`, `0xc6` and `0xc7` with the value; 14 and 71 are the
 sound-by-hash events of [Scene soundtracks](#scene-sound). Type 13 starts the scene soundtrack.
@@ -1335,15 +1338,13 @@ the name changes and frees nothing (Coney keeps no matrix); `HuSay` speaks a lin
 - What game state `+0x268` is (it scales sounds of others, music and pitch).
 - Who sets the system-music mood (game state `+0x40c`).
 - The listener vector's meaning and which object each listener is (`SndSetListener`'s values).
-- When the game itself says each speech command (fights, crowds, the police).
 - What `a8` (the play call's third volume factor, `+0xa8`) is used for by each caller.
 - How long a primed but unstarted soundtrack survives: `Tasks_Update` frees a real task when the device reports its
   voice idle (`0x0014d168`), and whether a primed stream reads as idle was not seen (the trace's waits were under
   0.5 s). Which callers pass the play call's tenth argument (task `+0xe4`) and what the IOP does with it.
 - Whether a scene soundtrack holds the dialogue alone or a full mix, and what the 20 unused stereo sounds are.
 - The IOP side (`IOP.IRX`): the exact SPU2 voice assignment of streams and its mixing.
-- What player `+0x5b7` is (the emitters' listener filter and the owner duck), and what the AI's ambient event stamp
-  (`0x002936a8`) marks.
+- What the AI's ambient event stamp (`0x002936a8`) marks.
 - Who ends the bank deferral (`+0x3fa58`).
 - The blocked lines of `0x00114c98`: a hand-written list for levels 11, 20, 31, 34, 82, 83, 84, 92 and 95 (some
   by checkpoint, game state `+0x33a`), each naming voice sets, commands and 1-based lines; not yet tabulated.

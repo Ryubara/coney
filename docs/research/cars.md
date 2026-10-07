@@ -110,6 +110,23 @@ front towards +y (the bumper of part 2 and the headlights at y ≈ +2.8 m on the
 The body (part 0) and the wheels have no damaged form; `Car_OpenPart` only acts on parts 4, 5, 14, 16, 18 and 20, so
 `p + 25` never reaches a wheel.
 
+**Placing the model** (`Car_UpdateRender` `0x00389b40`, each frame the car moved; confirmed (code)): the car's transform
+(position and rotation, vtable `+0xa4`) becomes a matrix whose four rows are each turned from the game's axes into
+RenderWare's, `(x, y, z) → (x, z, −y)` (the sign flip and `pexcw` word swap), and that matrix is set on the clump's root
+frame (`CarInstance_SetMatrix`). The atomics keep their own frames under it, so each atomic's world matrix is its frame
+composed up the parents (window → door → frame 1 → root) and then the car's. When the bytes `+0x12d4` and `+0x12d6` are
+both set (inferred: the car is driven or simulated), the four wheels (atomics 22-25) instead get their own matrices:
+wheel matrix `+0x70 + i × 0x40` times the inverse of the car's matrix (`CarInstance_SetPartMatrix`); otherwise they keep
+the model's wheel frames (inferred for a parked car). The same pass sets the render object's tint `+0x24` from the car's
+two colours (a blend over the update, `Colour_LerpRatio`). Disc check (sedan): frames 0 and 1 are identity; the part
+frames carry their own turns (180° about z, 90° turns about several axes, e.g. frames 3, 15, 22), so a part drawn
+without its frame's rotation, or with the rotation applied in the wrong order, comes out misplaced or turned.
+
+**How each atomic is drawn** is in [Graphics: drawing a car](graphics.md#car-draw): **culling off** in both passes;
+the six glass parts (mask `0x2a80c0`) only in a second pass after the water with **Z write off**; the paint only on
+the parts of mask `0x157c31` (0, 4, 5, 10-14, 16, 18, 20; not parts 1-3, 6-9, 15, 17, 19, 21 or the wheels); the
+environment map or dual texture from the car's second texture resource.
+
 ## Behaviour
 
 ### Parts {#parts}
@@ -157,6 +174,53 @@ A flying piece has no body of its own: `Car_UpdateLoosePart` (`0x00387f18`) fall
 and counts the lifetime down, so a piece lasts 360 ticks (6 s); below 91 it sends message `0x15` to the object held
 in `+0x8c`, and at 0 the part is removed (put in `+0x11f0`). [Physics](physics.md#cars) has the steps. Confirmed (code)
 at that address.
+
+### Hit effects: glass, sparks and steam {#hit-effects}
+
+A car's damage effects come from **one shared `sub_car_damage` particle** (made once by the car manager when its first
+car is created, `CarTaskManager_Create` `0x0038e430`, handle at manager `+0x14`, manager at `0x005971b4`), sent
+**message `0x3f`** with a kind, a position and a direction. Its handler (`SubCarDamage_OnMessage` `0x003df730`) makes
+the effect at once. Confirmed (code) at the addresses cited.
+
+**When.** Only `Car_OnHit` (`0x0038bea0`) and `Car_OnLanded` (`0x00389f00`, [Physics](physics.md)) send it:
+
+1. Each hit that touches any part outside the glass mask (`s5 & 0xffd57f3f`) sends **kind 0 at the hit point**
+   (hit record `+0x90`), direction (0, 1, 0).
+2. Then, for each hit part `p` (bits 1-29 of the hit's part mask) not removed, flying or off, after its damage:
+   **the first time that part is ever hit** (bit `p` of `+0x11ec`, set here; what clears it is not traced) the car
+   calls `Car_BreakWindow(car, p, hit)` (`0x0038a830`), which picks the kind below and sends it. A part coming off
+   later, a window's damage reaching 1, `CarRemovePart` and the explosion send nothing; only the explosion's flying
+   pieces carry an effect (`sub_flaming_debris`, [What is drawn](#drawn)).
+
+**`Car_BreakWindow`**, by part (position and direction as sent):
+
+| Part | Kind | Position | Direction |
+| --- | --- | --- | --- |
+| 4 (bonnet) | 3 | the point (0, 2.743, 0.023) in the car's frame (its rotation `+0x20`, position `+0x10`) | (0, 0, 1) |
+| 6, 7 (front and rear glass, inferred) | 6 | the part's damaged atomic (`p + 25`) world position | its frame's second row, + for 6 and − for 7 |
+| 15, 19 | 4 | the same | its frame's first row, negated |
+| 17, 21 | 4 | the same | its frame's first row |
+| 26, 27 (hit bits beyond the 26 parts; inferred: the headlights) | 1 | the hit point | (0, 1, 0) |
+| 28, 29 (inferred: the rear lights) | 2 | the hit point | (0, 1, 0) |
+| any other | 0 | the hit point | (0, 1, 0) |
+
+**What each kind makes** (`0x003df730`):
+
+| Kind | Effect |
+| --- | --- |
+| 0 | a `sub_car_spark_emitter` at the position with strength 1.0 (so sparks, and rubble at 25 % per direction, [Script types](script-types.md#car-damage-effects)), and a dust puff (`Particles_Dust`) of size 1.95-3.0, colour `0x8b7d6920`, at the position + a random ±0.5 m per axis |
+| 1 | while the particle pool has room: `miniglass` pieces, each at the position + a random ±0.05 m per axis, given the direction, a size of 0.01-0.04 and colour 0 (the default pale shard); the loop runs while its index is below `4 + Random_Int(6)`, drawn again each pass, so about 4 to 10 |
+| 2 | the same with `sub_coloured_glass` and colour `0x5c0a18ff` (`0xRRGGBBAA`, a dark red) |
+| 3 | one `sub_car_steam` at the position |
+| 4 | one **`sub_glass` shatter** at the position with the direction, shard size 0.06 and size word `0x10001` (1 × 1 m): a small pane, so **10 `glasstest` shards of 0.06** and the **`GLASS_SMALL` × `GLASS_SMALL` sound** (entry 88) |
+| 5 | one `sub_hood_smoke` at the position (from `Car_OnLanded`: (0, 1.84, 0.02) in the car's frame) |
+| 6 | one **`sub_glass` shatter**, shard size 0.09, size word `0x10002` (2 × 1 m): **20 shards of 0.09** and the **`GLASS` × `GLASS` sound** (entry 2) |
+
+The shatter, its shards, its camera culling (some camera within 15 m and the point within 10 m of a view) and its
+sound are the glass pane's: [Objects: the shatter](objects.md#shatter). So a car window **does** make a sound when it
+first breaks: the `sub_glass` shatter's material-pair sound, played before the culling. It has no sound of the car's
+own. Confirmed (code) at `0x003df730` and `0x003e4be0` for the arguments; the shatter's sound choice from
+[Objects](objects.md#shatter).
 
 ### Explosion {#explode}
 
@@ -388,7 +452,8 @@ Coney's stand-ins, where this page is silent:
 - What the object a car holds at `+0x1204` is (released when it explodes; part 15 coming off makes it pickable).
 - The lookup that takes a car to its Object List record.
 - Which atomics the paint tints, how cars are lit, and how the type record's boxes make a car's collision.
-- Where a car's stereo sits (answered: [Windows, hits and the stereo](#windows)). Still open: the effect kinds of
-  message `0x3f` (`0x0038a830`) and what `0x002936a8` and `0x00413018` report for a car hit.
+- Where a car's stereo sits (answered: [Windows, hits and the stereo](#windows)) and the effect kinds of message
+  `0x3f` (answered: [Hit effects](#hit-effects)). Still open: what `0x002936a8` and `0x00413018` report for a car hit,
+  what clears `+0x11ec`, and which parts hit bits 26-29 stand for.
 - The zone thresholds, masks and boxes of the coupe, wagon, police car, van and Sully's car (Coney uses the
   sedan's).

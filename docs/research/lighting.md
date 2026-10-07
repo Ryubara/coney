@@ -186,11 +186,35 @@ the scenery stays visible from its prelighting alone; with the normal 0.227 a li
 (mean about 29 → 58 of 255); with 0.927 it reaches about 117, while the road, brighter in its prelighting, moves
 only from 40 to 53 (saturating). The humans and the sky do not change.
 
-**The maths** (inferred: RenderWare 3.7's PS2 lighting, whose light block `0x00476cc8` fills; the VU1 microcode was
-not read): per vertex, `colour = prelight + material × (Σ ambient + Σ directional × max(0, n · -L) + Σ point ×
-max(0, n · -L) × (1 - d / radius))`, clamped, on the GS's scale where 0x80 is 1.0; the GS then modulates the texel by
-it ([Vertex colour range](world.md#pipelines): textured material colours are halved to that scale). The runtime check
-above fits an additive, saturating sum.
+**The maths**, confirmed (runtime), PCSX2 2.9.94 GS dumps of the `level99` street with lights changed over PINE
+(every vertex's colour read from the GS packets, world positions rebuilt from the camera; the VU1 microcode itself was
+not read):
+
+```text
+light  = ambient + Σ directional × max(0, n · −L) + Σ point × max(0, n · −L) × max(0, 1 − d / radius)
+colour = min(1, prelight + light) × material          (per channel; 1.0 is 0x80 on the GS)
+alpha  = material alpha / 2                          (0xff → 0x80)
+```
+
+1. **Clamped at 1.0, no overbright.** The largest colour channel over every world, human and object vertex of a frame
+   is exactly 128 (3,729 world vertices sit at 128); none goes above, although the GS would take up to 255 (2×).
+2. **The clamp comes before the material.** A player with only ambient light (moonlight and reflected light set to
+   0): ambient 1.2 with a white `HuColor` gives 128; ambient 1.2 with `HuColor` 0x80 (0.5) gives **64**, not 77;
+   ambient 0.6 with 0.5 gives 38 (0.6 × 0.5 × 128); ambient 0.3 with `HuColor` (255, 128, 64) gives (38, 19, 9). A
+   dark material therefore stays dark under any amount of light; a colour multiplied before the sum is clamped (or
+   light added after the tint) comes out paler.
+3. **Point lights fall off linearly**, `1 − d / radius`, times `max(0, n · −L)`, and give nothing beyond the radius:
+   a lamp moved over the road at 3 m, radius 15 and 30 m, colours 0.25 and 0.7; medians of the measured share against
+   `x = d / radius`: 0.3 → 0.72 (expected 0.70), 0.4 → 0.60 (0.60), 0.5 → 0.47 (0.50), 0.8 → 0.17 (0.20), 0.9 → 0.13
+   (0.10); radius 30: 0.133 → 0.862 (0.867), 0.267 → 0.72 (0.733). Neither `(1 − x)²` nor `1 − x²` fits.
+4. **Prelight and lights add before the clamp**: world vertices with no prelighting show exactly 29 = the world ambient
+   0.227 × 128, and lit ones prelight + ambient + lamps, saturating at 128. Whether the prelighting is also multiplied by
+   the material is not tested (the streamed world's materials are white).
+5. **Ambient-only humans**: (27, 28, 29) in `level99` = the object ambient (0.212, 0.222, 0.232) × 128 with a white
+   `HuColor`.
+
+Inferred, not fitted: the directional term's `max(0, n · −L)` (RenderWare's), and that skinned humans are lit with the
+skinned normal. Some world sectors get no lamp at all (the per-atomic selection limit, [Selection](#select)).
 
 **In `level99`** no directional light lights the world (all three of `global.lua`'s have flag 1), so the world is its
 prelighting plus 0.227 grey, plus two lamps that light both (flags 3, radius 3 and 6 m, flicker mode 1). Confirmed
@@ -372,7 +396,8 @@ checks `level99`'s values against the table above (all match). Coney's choices:
 
 ## Open questions
 
-- The VU1 microcode's lighting: the exact point-light falloff, clamping and how prelighting and material combine.
+- Lighting: whether the prelighting is multiplied by the material (needs a non-white world or car material), and a
+  directional light's fit.
 - What sets a human's glow colour `+0x644` (a rage or power-up effect?).
 - What object flag `0x80` (the pulse, light B) marks.
 - Mode 4's flicker: the RpLight's colour is not updated by it; whether another step applies the base.

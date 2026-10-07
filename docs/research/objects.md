@@ -707,6 +707,23 @@ collision mesh that stand for them. Confirmed (code) for the spawns, counts from
    at `0x0021b290` and `0x00393538`. Confirmed (code).
 8. **No respawn**: nothing clears the broken flag; a pane comes back only when its level's script spawns it again.
    Inferred from the handlers (messages 0 and 1 only).
+9. **`ObjDestroy(pane)` is not a break**: `Obj_Destroy` (`0x00396c58`) without its second argument calls the
+   object's vtable `+0x4c`, which for a pane (vtable `0x00544ec8`) is `GlassPane_Release` (`0x0038ed08`): body
+   removed, script handler and handle freed, the task given back to the glass manager. No shatter, no sound, no
+   broken sprite: the pane simply vanishes. `BreakObjectsInRadius` never reaches a pane either (it searches the
+   object manager, and panes live in the glass manager; [below](#break-objects-in-radius)). Only
+   `BreakGlassInRadius`, a strike, a thrown object or an airborne body breaks one visibly. Confirmed (code).
+
+#### `BreakObjectsInRadius` {#break-objects-in-radius}
+
+`BreakObjectsInRadius(object, radius)` (`World_BreakObjectsInRadius` `0x00396390` →
+`World_BreakObjectsAround` `0x003961d0`): takes the object's position, reports a crime there when the object's type
+has class byte `+0x86` = 30, finds up to 384 tasks of the **object manager** within `radius` of that point
+(`ObjectManager_FindObjects`) and sends each **message `0x15`**, **the given object included** (the "skip myself"
+argument is 0 on this path). What `0x15` does is up to each type: a door takes a hit two updates later
+([Doors](#doors)), a `dyn_molotv` breaks itself ([Script types: the Molotov](script-types.md#molotov)). So the
+scripts' `ObjSpawn("dyn_molotv", flag position)` then `BreakObjectsInRadius(molotov, 0.5)` is a way to set off a
+molotov explosion at a point. Confirmed (code).
 
 ### Moving into a pane {#pane-break}
 
@@ -851,8 +868,15 @@ invisibly.
 1. **Count** = 10 × width × height (whole metres from the size word); a pane under 2, or exactly 1 × 1, uses 10
    shards of size 0.06 and the sound of materials `GLASS_SMALL` × `GLASS_SMALL` (88); others the sound of `GLASS` ×
    `GLASS` (2). The sound is the material pair's entry in the sound matrix ([Sound](sound.md#play)).
-2. **Culling**: no shards unless the pane is within 15 m (`0x003a5280`) and 10 m (`0x003a51f8`) of the tests' points
-   and the particle budget (`0x003a5a50`) allows; game state bit `0x20` (`0x0041cf30`) forces them.
+2. **Culling**: no shards unless **some active camera is within 15 m** of the pane's centre
+   (`Cameras_IsWithinRange(15, p)`, `0x003a5280`: the smallest squared distance to any view's camera,
+   `Cameras_MinDistanceSq`), **and the centre is in some player view with a 10 m margin**
+   (`Cameras_IsPointVisibleAny(10, p)`, `0x003a51f8` → `Camera_IsPointInPlayerView` `0x003a50e0`: the point fails only
+   when it lies more than 10 m outside one of the view's six frustum planes), and the particle budget (`0x003a5a50`)
+   allows; game state bit `0x20` (`0x0041cf30`) forces them. Both tests are about **cameras, never player 1's
+   position**: in a scene the scene camera is the view's camera, so panes near the scene camera shatter wherever
+   the player stands (inferred: the scene camera is what the view's camera answers while a scene plays). Confirmed
+   (code) at `0x003e4cb8` for the arguments 15 and 10.
 3. **Shards**: for each of the count, two tries, each taken at 2 in 3 (`Random_Int(2) < 2`, `Random_Int(n)` giving
    0 to n): a `glasstest` particle at a random point within ±4/7 of the width (whole metres) and ±4/7 of the height
    on the pane's plane (`0.5714286`), turned by the shatter's rotation. Each gets the shard size (0.2 from a hit,

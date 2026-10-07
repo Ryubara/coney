@@ -1035,7 +1035,7 @@ at each address.
 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
-| `0x00181b68` | `Sheet_Construct(sheet, page, heap, stream)` | sheet holder (vtable `0x00538d48`): the page, its texture (`+0x14`), the half-texel size | confirmed (code) |
+| `0x00181b68` | `Sheet_Construct(sheet, page, heap, stream)` | sheet holder (vtable `0x00538d48`): the page (`+0x0c`), its texture (`+0x14`), the texture's height / width (`+0x1c`, used by the sprite draw, [GUI](gui.md#radar-icons)) | confirmed (code) |
 | `0x00181ca0` | `Sheet_Destruct` | destroys the dictionary's textures and the dictionary, frees the page and the heap | confirmed (code) |
 | `0x00181e18`, `0x00181e28` | `Sheet_TextureWidth`, `Sheet_TextureHeight` | [GUI](gui.md#particle-page) | confirmed (code) |
 | `0x00181e38` | `Page_Rect` | [GUI](gui.md#particle-page) | confirmed (code) |

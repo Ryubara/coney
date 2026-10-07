@@ -9,13 +9,6 @@ How far Coney has come, measured three ways:
 - **Researched:** the share of the game's own code that the [source map](../research/source-map.md) places in at
   least an original source file or directory. It says how much of the executable an analyst can already find their
   way around in, not how much is understood.
-- **Understood:** the share of the game's own functions (by bytes, and by count) that are researched in full: the
-  function has a meaningful name in the shared Ghidra project (not `FUN_<address>`), and a research page cites its
-  address in a table row or paragraph that states an evidence level, or says `not needed: <reason>` (the source
-  map's citations do not count: placing is not understanding); a script binding's wrapper counts when its
-  `research/bindings` entry has an `evidence`. Names and sizes come from `docs/progress/ghidra-functions.tsv`
-  (addresses, sizes and our names only), the citations from the pages themselves, so citing a function moves the
-  bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
   Approved by the owner's play-test, with its checkpoints and the script bindings it needs.
@@ -35,7 +28,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- |
 | **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.8% of the game's own code (495,164 of 3,354,776 bytes, 1,628 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
-| **Understood** | `█████████████████▍░░` | 86.7% named in Ghidra and cited with evidence (2,846,944 of 3,283,480 bytes; 9,646 of 11,379 functions, 84.8%) |
+| **Understood** | `█████████████████▍░░` | 86.7% named in Ghidra and cited with evidence (2,847,192 of 3,283,480 bytes; 9,647 of 11,379 functions, 84.8%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
 477 reimplemented function(s) have no size yet and add no bytes.
@@ -103,7 +96,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `████████████████████` | 100.0% | 450 of 450 | 450 | 450 | 98,632 |
 | `Graphics` | `████████████████████` | 100.0% | 630 of 630 | 630 | 630 | 191,888 |
 | `GUI` | `████████████████████` | 100.0% | 1,725 of 1,725 | 1,725 | 1,725 | 492,072 |
-| `Human` | `█████████████▊░░░░░░` | 68.9% | 2,191 of 3,309 | 3,088 | 2,198 | 1,079,972 |
+| `Human` | `█████████████▊░░░░░░` | 68.9% | 2,192 of 3,309 | 3,088 | 2,199 | 1,079,972 |
 | `Maths (unnamed)` | `████████████████████` | 100.0% | 72 of 72 | 72 | 72 | 12,288 |
 | `Memory` | `████████████████████` | 100.0% | 89 of 89 | 89 | 89 | 15,504 |
 | `Physics` | `████████████████████` | 100.0% | 183 of 183 | 183 | 183 | 78,580 |
@@ -118,7 +111,7 @@ at the top of the repository's `README.md`.
 | `Movie` | `████████████████████` | 100.0% | 11 of 11 | 11 | 11 | 5,136 |
 | `link-once` | `▏░░░░░░░░░░░░░░░░░░░` | 0.2% | 2 of 608 | 4 | 28 | 95,488 |
 | Unattributed | `██████████████████▎░` | 91.5% | 40 of 44 | 44 | 40 | 20,936 |
-| **All** | `█████████████████▍░░` | 86.7% | 9,646 of 11,379 | 10,552 | 9,680 | 3,283,480 |
+| **All** | `█████████████████▍░░` | 86.7% | 9,647 of 11,379 | 10,552 | 9,681 | 3,283,480 |
 
 ## Research coverage
 

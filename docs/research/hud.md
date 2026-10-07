@@ -739,8 +739,24 @@ at depth 1.0**. `HUD_Update` sets that position every frame: with one player **(
 creates a sprite batch over the **sprite sheet named after the world** (`ResourceMgr_CreateInstance`, depth 10,000,
 [GUI](gui.md#resource-instances)) and keeps its slot at radar `+0x94`; otherwise `+0x94` is `0xff` and no disc is
 drawn. The sheet's texture is the map. Confirmed (code); **confirmed (runtime)**, `level99`: radar `+0x94` = 24, and
-resource slot 24 holds the sheet `0xe36542ae` (the CRC-32 of `level99`), resident, two rectangles. The same set-up keeps
-a `part_page0` batch at `+0x96` for the blips. Which WAD or pack file holds a world's map sheet is not traced.
+resource slot 24 holds the sheet `0xe36542ae` (the CRC-32 of `level99`), resident. The same set-up keeps a
+`part_page0` batch at `+0x96` for the blips.
+
+**Where the map sheet is.** Like every sprite sheet it is the WAD file named by the decimal CRC-32 of its name
+(`"3815064238"` for `level99`, entry 2,611; `level80` entry 1,129; `level95` entry 2,741): a `0x2A` texture dictionary
+holding one texture named after the world, then a `0x4C` page with **one** rectangle, inset 1/1024 from the texture's
+edges. Disc check (2026-10-07): 27 of the names `level0`-`level100` have such a file. The three checked are 256 × 256,
+4- or 8-bit palettised, filter linear, addressing wrap in both directions (texture flags `0x1102`). The texels
+(decoded): the streets and open ground are **transparent** (alpha 0), the blocked areas grey `(128, 128, 128)` at
+alpha about 0.73, and a few areas (inside buildings the player can enter) a lighter opaque `(192, 192, 192)`. So the
+disc shows the world through its streets and a grey tint elsewhere. Confirmed (disc) for the file and contents; the
+meaning of the lighter areas is inferred.
+
+**Nothing is drawn without the map**: `Radar_Render` draws the disc only when the map instance (`+0x94`) exists and
+is resident, and the blip batch `+0x96` is resident; there is no plain grey disc. It ignores the page's rectangle and
+maps `u`, `v` over the **whole texture** (the page's texture, `**(page + 0x14)`), so values outside 0-1 fall to the
+texture's own wrap addressing (inferred: the draw sets no addressing state). The texel is multiplied by the disc
+colour below (vertex colour; inferred, the Im2D default). Confirmed (code) at `0x001c60b0`.
 
 **Where the map is read.** The level record's three floats map world metres to the texture
 (`W_GameState + 0x14d4 + index × 0x84`, set by `CfgLevelName` arguments 13-15, [binding](../references/bindings/config.md#cfglevelname)):
@@ -752,8 +768,10 @@ u = (x + offsetX) / scale        v = (offsetY − y) / scale
 ```
 
 for the radar's world position `(x, y)` (radar `+0x70`, `+0x74`: the player's; the world's `z` is up), and its radius in
-texture units is `zoom / scale`. Confirmed (code) at `0x001c60b0`; runtime, `level99`: offsets −1.33 and 61.55, scale
-95, the player at (75.6, 41.2), so the disc showed the texture around (0.78, 0.21).
+texture units is `zoom / scale`, times the same video-mode factors `fx`, `fy` as the disc's screen radii (below), so
+the map is not stretched by them. Confirmed (code) at `0x001c60b0`; runtime, `level99`: offsets −1.33 and 61.55, scale
+95, the player at (75.155, 41.135) (radar `+0x70`, while the camera stood at (80.32, 41.12)), so the disc showed the
+texture around (0.78, 0.21) with a radius of 0.53: a 50 m disc covers half of `level99`'s 95 m map.
 
 **Zoom.** Radar `+0x20` is the radius shown, in metres. Each frame it moves toward a target by `k = min(0.0004 × ms,
 1)` of the difference (`ms` the game time since the last frame): target = (`rest` + (`fast` − `rest`) × min(speed, 12)
@@ -761,9 +779,36 @@ texture units is `zoom / scale`. Confirmed (code) at `0x001c60b0`; runtime, `lev
 (`HUDSetRadarZoomScale`, 1.0 by default). Confirmed (code); runtime, `level99`: `rest` 50 m, `fast` 75 m, scale 1.0, so
 the disc shows 50 m around a standing player and 75 m around one running at 12 m/s.
 
-**Rotation.** The texture coordinates turn by −(the camera's heading) (`0x00335d98` of the matrix at radar `+0x80`),
-the screen positions start at π/2, so the map turns under a fixed disc with the view direction up. Confirmed (code);
-that `+0x80` holds the active camera's matrix is inferred.
+**Rotation.** The disc is a fan of 32 segments: vertex `i` sits at screen angle `s = π/2 − i × 2π/32` and samples
+the texture at angle `t = −h − i × 2π/32`, where `h` is the camera's heading (`Vec_Heading` of `Quat_AxisY`: the
+heading of the camera's forward, clockwise from world +y):
+
+```text
+screen  = centre + (Rx × sin s,  Ry × cos s)
+texture = (u, v) + (ru × cos t,  −rv × sin t)
+```
+
+(`0x004b8c40` is `sinf`, `0x004b8a70` `cosf`.) **What it looks like, confirmed (runtime)**, PCSX2 2.9.94, `level99`
+street with the camera looking along −x: the disc shows a plain top-down view of the map, **not mirrored**, turned so
+that **screen up is the camera's forward and screen right the camera's right** (a simulation of the formula with that
+orientation matched the screenshot texel for texel; the mirrored reading did not). Implement it in those terms: a
+world point at offset `(right, forward)` metres from the player in the camera's ground axes is drawn at `centre +
+(right × Rx, forward × Ry) / zoom` (overlay y up), sampling the map at its own `u`, `v`. Radar `+0x80` holds the **active
+camera's rotation** (a quaternion; confirmed (runtime): equal to the camera's), `+0x70` the player's position.
+
+**Blips** use the same frame: `Radar_Update` places a blip at `centre + (right, forward) × 0.12 / zoom` in overlay
+units, or on the edge at `0.9 × 0.12` along that direction beyond the zoom ([GUI](gui.md#fn-radarhud)). Confirmed
+(runtime): a Warrior 27.8 m ahead and 9.4 m to the right of the player, zoom 50, was placed at `(+0.02, +0.07)` from
+the centre, upper right on screen. The blips' scale (0.12 per zoom) is not the map's (`Rx`, `Ry` per zoom), so a
+blip and the map under it can be a few per cent apart; that is the original's.
+
+**Draw order.** `GameMode_DrawOverlays` (`0x00156658`) calls `HUD_Render` (which draws the disc at once through
+Im2D) and only then `ResourceMgr_RenderOverlay`, the sorted pass of every sprite batch, so the disc is **under every
+blip, the player arrow and all HUD text**, whatever their depth keys. Confirmed (code).
+
+**Overlay units to pixels** (default mode, 640 × 448): the overlay camera's view window at depth 1 is ±0.725 by ±0.5
+([Graphics](graphics.md#2d-drawing)), so one unit is 441 px across and 448 px down; overlay y is up. Confirmed
+(runtime) through the disc's centre and a blip's size ([GUI](gui.md#radar-icons)).
 
 **Size and shape.** The disc's outer radius in overlay units is
 
@@ -774,10 +819,9 @@ Rx = R × fx,  Ry = R × fy
 
 with the video-mode factors `fx`, `fy` below. It is drawn in two parts (`Im2D` helpers, 32 segments): a filled disc
 out to **0.825 R** (`0x0017bc28`, alpha of the colour below) and a ring from 0.825 R to R whose alpha falls from 240
-to 0 (`0x0017b8a8`), a soft edge. Confirmed (code). That `w` is the overlay view's width (1.595 in the default mode,
-[Graphics](graphics.md#2d-drawing)) is inferred from the runtime size: it gives R = 0.136, so Rx = 60 and Ry = 56
-pixels of 640 × 448 with the solid part 50 × 46; measured (runtime): the solid part about 103 px wide, the whole disc
-with its soft edge about 110 × 100 px.
+to 0 (`0x0017b8a8`), a soft edge. Confirmed (code). Measured (runtime): the whole disc with its soft edge about
+110 × 100 px of 640 × 448, so with 441 and 448 px per unit (below) `Rx` ≈ 0.125 and `Ry` ≈ 0.112, R ≈ 0.113 and
+`w` ≈ 1.33 (inferred: the overlay camera's 4:3 width, not the 1.595 assumed before).
 
 | Device flags ([Graphics](graphics.md#video-mode)) | fx | fy |
 | --- | --- | --- |
@@ -1678,6 +1722,54 @@ the game is [Combat: the stereo theft](combat.md#stereo-theft)).
 | `0x001ca260` | `StereoHud_Render` | the backdrop; unless done, the arrow, gauge, stick and ring | confirmed (code) |
 | `0x001ca2d0` | `StereoHud_Update` | the arrow at the stage's corner of the backdrop (anchor ± (size + 0.025 if flag `0x02`), ∓ 0.05) turned 0, −π/2, −π or −3π/2; the gauge sized 0.025-0.05 by value / target and turned by −value; at value ≥ target it rises by a step that doubles each frame; the stick cycles `part_page0` rectangles 3, 2, 1, 0 every 320 ms; the ring turns −0.004 rad per ms | confirmed (code) |
 
+#### The stereo panel on screen {#stereo-layout}
+
+Default video mode (device flag `0x01` only), player 0; GUI coordinates (x right, y down). Sizes are BaseWidget sizes
+in overlay units ([GUI: the widget classes](gui.md#widget-classes)); in this mode `StereoHud_Update` sets each moving
+part's width to its height every update, so the arrow, gauge, stick and ring are **square**. Confirmed (code) at
+`0x001c9ad0`, `0x001ca2d0` and `0x001ca260` unless marked.
+
+**What is drawn** (`StereoHud_Render`): only five parts. The backdrop always, and unless done (`+0x40`, cleared by
+start and by every progress call) the arrow, the gauge, the stick and the ring, in that order. The two rectangle-4
+sprites, the two rectangle-1 sprites and the two glyph texts (`"%c"` of `big_font` codes `0x9c` and `0xa0`, size
+0.04) are set up and **never drawn**.
+
+With the anchor `A = (0.12, 0.57)` (player 1: x = 0.88) and `S = 0.08`:
+
+| Part | Sprite word (sheet, rectangle) | Size | Depth | Colour | Position |
+| --- | --- | --- | --- | --- | --- |
+| Backdrop | `0xa0003` (`hud_minigames`, 3) | 0.08 | 11,000 | grey 128 | `A` |
+| Arrow | `0xa0000` (`hud_minigames`, 0) | 0.12 | 12,000 | grey 128 | the stage's corner, below |
+| Gauge | `0xa0002` (`hud_minigames`, 2) | 0.025-0.05 | 13,000 | grey 128 | the arrow's position (+ the pop, below) |
+| Stick | 3, 2, 1, 0 (`part_page0`, 0-3) | 0.055 | 11,000 | grey 128 | (`A.x` − 0.015, `A.y` + `S`) in stages 0 and 1; (`A.x` − 0.015, `A.y` − `S`) in 2 and 3 |
+| Ring | 5 (`part_page0`, 5) | 0.05 | 11,000 | (225, 186, 65) | the stick's position + (0.04, 0) |
+
+- **The arrow** by stage (`+0x44`): 0 at (`A.x` + `S`, `A.y` − 0.05), angle 0; 1 at (`A.x` − `S`, `A.y` − 0.05),
+  −π/2; 2 at (`A.x` − `S`, `A.y` + 0.05), −π; 3 at (`A.x` + `S`, `A.y` + 0.05), −3π/2. So it goes round the backdrop's
+  corners anticlockwise on screen (top right, top left, bottom left, bottom right), turned a quarter more each stage.
+  With device flag `0x02` (PAL, speculative) the x offset grows by 0.025 and the y offset is 0.04.
+- **The gauge** (`value` = `+0x48`, `target` = `+0x4c`): size = 0.025 + 0.025 × value / target
+  (`Math_MapRange(value, 0, target, 0.025, 0.05)`), angle = −value. The value is the stick angle turned in the current
+  stage, in radians, from 0 up to the stage target (`Theft_UpdateStereo` `0x0027e908`, clamped there), and the target
+  is the one `StereoHud_Start` was given: the player class's turn per stage (`Human_GetClassSpinAngle`, 6π or 2π,
+  [Combat](combat.md#stereo-theft)). So the gauge grows from half size to full size and spins once per radian turned.
+- **The pop**: while value ≥ target (the 250 ms pause after a stage is complete, while the value stays at the
+  target), the gauge's **y** grows by a step each update and the step doubles (from 0.001: 0.001, 0.002, 0.004, ...,
+  so 0.127 after 7 updates). The gauge falls down the screen and accelerates; below the target the step is reset to
+  0.001 and the gauge is back on the arrow.
+- **The stick** shows `part_page0` rectangle 3 − (t mod 1280) / 320 (t = the timer `0x0050b8b8` slot `+0x34`, in ms):
+  3, 2, 1, 0, a 1.28 s loop, inferred to be a stick drawn in four positions round the circle.
+- **The ring** turns −0.004 rad per ms of that timer (one turn in about 1.57 s) and swaps its rectangle's `u0` and
+  `u1` every update, so it is mirrored left to right every other update.
+
+**When it is shown** (`MiniGame_Start` `0x0022dc40` → `StereoTheft_Start` `0x0022dd98` → `HUD_StereoTheftStart`):
+on the triangle press, when the intro 683 starts (`MiniGame_StartAtObject` `0x002789d0`), so the panel is up during
+the intro with the gauge at half size. The game updates it each update (`HUD_StereoTheftSet`, from
+`Theft_UpdateStereo`, 2 calls). **Success and failure both remove it at once**: `MiniGame_PlayEnd` (`0x00278628`)
+starts the end clip (685 or 686) and calls `MiniGame_End` → `StereoTheft_End` (`0x0022e020`) →
+`HUD_StereoTheftEnd` → `StereoHud_Shutdown`; an abort (`MiniGame_Abort` `0x0022d628`) does the same. Each stage
+completed plays interface cue `0x22`, and the fourth also `0x23`.
+
 ### After `GUI/SubTitle.cpp` (no path string): the tagging panel {#fn-after-subtitle}
 
 What the player sees during the tagging stick game ([Crimes](crimes.md#tagging)), drawn from `HUD_Render` per player.
@@ -1933,8 +2025,8 @@ animation (`HUDTurnOnActionCycleAnim`) is kept per player but not drawn yet (the
 - **The caption pager** (HUD `+0x18e60`, [GUI](gui.md#fn-subtitle)): which script or mode creates it and whose
   command 1 steps the captions (`0x001cb340`).
 - Who sets HUD `+0x177a8` (the centred announcement while hidden).
-- The radar: which file holds each world's map sheet; the active camera's slot `+0xc4` third value (inferred: the
-  overlay width); what the player stands on for the blue disc colour.
+- The radar: the active camera's slot `+0xc4` third value (`w`, measured about 1.33); what the player stands on for
+  the blue disc colour.
 - The health rings: the shape of `part_page1` rectangle 1 (the ring's band), what the power class byte `+0x40` is
   meant as, the blend state the world pass leaves, and a runtime look at a target's ring, the rage-full flashes and a
   boss's bands.
