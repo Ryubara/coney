@@ -751,7 +751,7 @@ Confirmed (code) at `0x0029ad04`-`0x0029adb8`:
 | Leg's kind | What the follower does | Handler |
 | --- | --- | --- |
 | 8 or `0x80` | a **climb** (8 a fence or wall, `0x80` the same taken at a run) | `0x0029b848` |
-| 4 | a **jump** (`Human_BeginJump`, `0x0023db48`; route state 1), or, without the avoid bit, a run at the speed `0x003378b0` gives (state 2) when that is positive and the leg under 10 × it | `0x0029baa8` |
+| 4 | a **jump** (route state 1) or a **drop** off the edge (state 2), [Jump legs](#route-jump) | `0x0029baa8` |
 | any, avoid bit (31) set, `0x40` | the **charge** at a breakable door or pane ([Objects](objects.md#nav-links)) | `0x0029bca0` |
 | any other, avoid bit set | refused: brain `+0x284` = 4 for kind `0x10` (a closed door), else 2; the move ends | |
 | 1, 2, `0x10` (an open door) | walked | |
@@ -765,7 +765,8 @@ waypoint changes). When the **next** leg is 8 or `0x80`, a human with flag `0x2`
 `HuSetFastClimber`) running faster than gait 3 starts the climb early, within 4.5 m of the waypoint (`0x0029b9b0`).
 
 Before a leg of kind 4 or `0x80`, with human `+0x333` < 2, the link must be clear: another human on it
-(`0x0029a3f0`, `0x0029a6c8`) makes this one hold with speed 0 when within 2 m of the waypoint. Every waypoint is
+(`0x0029a3f0`, `0x0029a6c8`, [Jump legs](#route-jump)) makes this one hold with speed 0 when within 2 m of the
+waypoint. Every waypoint is
 also claimed in a table of 40 `{node, human}` at `0x006ce978` (`0x00293e40`): the nearer human keeps it and the
 other is told to wait (`0x00294088`); a kind-4 link with a queue (`0x002510f8`) goes to one of the 20 queue records
 at `0x006cde30` instead ([Queues](#queues)). Confirmed (code); the queue's waiting is inferred.
@@ -778,6 +779,109 @@ avoid bit, set in the file, is cleared while the level loads). He ran straight, 
 crossed the fence in 38 updates (route state 3, waypoint 1) and left it at y = 22.3 with the waypoint index at 2,
 then ran on to (46.31, 20.18) and stopped. Over the graph read from that state, any mask without 8 (`0x3`, `0x13`,
 `0x93`) finds no route between the two points: the yard behind the fence is reached only over its kind-8 links.
+
+#### Jump legs {#route-jump}
+
+A kind-4 link crosses a gap or drops down an edge. The follower reaches the take-off waypoint like any other, starts
+the jump (or the drop) on the update after, and leaves the air to the landing code. Confirmed (code) at the addresses
+cited, and at runtime where marked.
+
+**Where it starts.** There is no edge test and no distance of its own: the jump starts on the update after the
+follower moves on from the take-off waypoint to the landing one. Moving on is the usual arrival test, which the
+human's state update runs every update, in the air too (`0x0023f9d0`, from `Human_StateUpdate` `0x0023fea8`): while
+the front action is a move action, brain `+0x11d` is set when the distance to the aim point (brain `+0x90`) less one
+update's travel (human speed `+0x1ac` / 30) is within the aim radius (brain `+0x118`); the distance is in 3D, or in
+plan when the 3D distance is 1 m or less. The move action then asks the follower to move on (`0x002fc674`), and
+`0x0029b6d8` makes the landing waypoint current with the radius 0.25 m and route state `+0x12` = 1 (the leg is new).
+The take-off waypoint is never skipped (its outgoing link is not of kind 1 or 2), and moving on over a kind-4 link
+keeps the waypoint claims (`0x00294088` is not called). So the jump starts within 0.25 m plus one update's travel of
+the take-off point.
+
+**The two points** (`0x0029b2b8`). Nodes whose C record byte `+0x1e` is non-zero come in pairs: `0x002510f8` finds the
+linked node with the same byte, and the pair is an edge to jump from or to.
+
+- **Take-off** (a waypoint whose outgoing link is kind 4): the human's point in the queue on its edge
+  (`0x002941c0`), when a queue holds the node and the human and he can walk there in a straight line (`0x002221e0`);
+  otherwise the node. The claim makes the queue on demand (`0x00293e40` → `0x00293d08`): `0x00299538` lays
+  trunc(edge length) + 1 points, at most 6, evenly from the partner node to this one, and the queue update gives each
+  human the nearest free point (`0x00299b50`). A lone human so takes off from the nearest of those points.
+- **Landing** (the waypoint the kind-4 link enters): with a partner node, the take-off point projected onto the line
+  through the two nodes (`0x00336e08`, not clamped to the segment); while the landing waypoint is current, the
+  take-off point is the human's own position. Otherwise the node. So the jump goes square across the landing edge.
+
+**The handler** (`0x0029baa8`), run by the follower on every update while the leg is new:
+
+1. Let *d* be the landing point less the human's position and *D* its length in plan. Aim at the point (brain
+   `+0x90`, radius `+0x118` = the waypoint radius), set the heading `+0x110` along *d* in plan, clear `+0x11c`, and
+   turn the body to that heading (`0x0021b100`).
+2. **Drop or jump.** With the link's avoid bit (31) set, jump. Otherwise *t* = `0x003378b0`(7.84, 0, *d*.z) (below):
+   when *t* > 0 and *D* / *t* < 10, **drop**: brain speed `+0x114` = *D* / *t*, route state 2. Otherwise **jump**:
+   `Human_BeginJump(human, 1)` (below); refused → the handler returns 2 and the move action ends (`GoalMoveToFlag`
+   queues another and plans again); accepted → route state 1.
+3. It returns 0, so the move action does nothing else that update: no steering round humans, no corner speed.
+
+**`0x003378b0(a, b, c)`** returns the larger real root of *a t*² + *b t* + *c* = 0, or 0 when there is none. 7.84 is
+half the fall's gravity (15.68 m/s², `Human_StateUpdate`), so with (7.84, 0, *d*.z) it is √(−*d*.z / 7.84): the time
+to fall from rest to the landing point's height, real only when the point is below. The **drop** therefore runs at
+the speed that covers the remaining plan distance in that time, recomputed each update until the human leaves the
+ground (the follower then stops running, below), so it slows as it nears the edge and leaves it at the speed that
+lands it on the point (inferred from the formula). Over 10 m/s, or with the landing point level or higher, it jumps
+instead. A drop of more than about 7.1 m lands faster than the fall-damage threshold of 14.9 m/s
+([Characters: Falling](characters.md#falling)).
+
+**`Human_BeginJump` for an AI** (`0x0023db48`): with the argument 1 it refuses while record `+0x08` holds any of
+`0x5cfeafb` or the state flags any of `0x7bf9e9f7ff0` (airborne and landing among them). The gait (3 or more) and
+3.3 m/s tests apply only to a brain of type 0, the player: an AI jumps at any gait, from a standstill too, and its
+take-off gait `+0x3c0` is not written. No run-up or lining up is needed; the handler has already turned the body.
+
+**The launch** (`Human_LaunchJump`, `0x002217f0`, on the same update). For a human whose per-player record `+0x1b` is
+0 it takes the velocity from `0x0029ade0` instead of the player's run speed ([Characters: Jumping](characters.md#jump)):
+
+- route state 1: turn the body to the landing point again; try the vertical speeds *v* = 0.5, 1.25, 2.0, … m/s
+  (steps of 0.75) and, for each, the time *t* at which the arc *v t* − 7.84 *t*² comes down to *d*.z (the larger
+  root of −7.84 *t*² + *v t* − *d*.z = 0); keep the first *v* for which *t* > 0 and *D* / *t* ≤ 10 m/s, giving up
+  after *v* passes 5.5 m/s (`0x00510188`, so at most 5.75). The velocity is *D* / *t* along *d* in plan and *v*
+  upwards: an arc that ends on the landing point;
+- any other route state: route state 5 (the route ends) and the velocity is left as it was.
+
+Then the fall starts and anim state 26 (clip 434), as for the player.
+
+**In the air** the follower does not run: `MoveAction_Update` returns 0 at once while `Human_IsBusy` holds, and it
+holds while any of the state flags `0x1c00000000` (jumping, falling) is set (`0x00227f90`). The arrival test above
+still runs, so `+0x11d` is set in the air when the arc passes within 0.25 m plus one update's travel of the landing
+point.
+
+**Landing** (`Human_Land`, `0x0023e090`), for an AI whose front action is a move action (and unless `0x0015e718`
+reports mode `0x11`):
+
+- **Near**: a route in state 1 or 2 and the human within 1.5 m (3D) of the current waypoint (`0x0029b170`): the actions
+  run again at once with the busy test off (`0x005112b4` = 1 around `Brain_RunActions`). With `+0x11d` set the move
+  action moves on to the next waypoint and its leg; without it the leg is still new and the handler runs again from
+  where the human stands (inferred: another jump when `Human_BeginJump` allows it, else the move ends and is planned
+  again).
+- **Otherwise** (no route, another route state, or farther than 1.5 m): `Brain_PopAction(brain, 1)` ends the move
+  action; `GoalMoveToFlag` then queues a new move from where the human landed, which plans a new route. This applies
+  to any landing during a move, a fall off an edge included.
+
+**The clear test, claims and queue for a lone human.** The clear test (`0x0029a3f0`, before a leg of kind 4, with
+human `+0x333` < 2) looks only at other humans: one within 4 m in plan and ahead of this one (along its facing),
+among those `0x002278a8` gathers along the leg and `0x00290230` accepts, blocks the link when it is moving (a move
+action and a speed above 0); one standing is pushed aside (`0x0028a248`) and the link counts as blocked for that
+update. Blocked and within 2 m (3D) of the waypoint, the human holds there with speed 0. The claim (`0x00293e40`) is
+refused while another human holds the node (the nearer of the two takes it, for the next update). With no other
+human near, neither changes anything; the queue still picks the take-off point (above).
+
+**Confirmed (runtime)**, PCSX2 2.9.94, `level99` checkpoint 3.4 (the rooftops), from the window-jump state of
+[Objects](objects.md#pane) with the player run at the window (stick 100 % ahead, triangle at frame 59) so that
+`vReachWindow` sends Vermin to `fStop_03`: Vermin ran from (62.80, −3.30) at 7.80 m/s to the take-off point
+(50.744, −2.830, 4.252), set the arrival flag 0.004 m from it, and on the next update had route state 1, waypoint 1,
+the aim (46.619, −2.830, 4.252) (the landing point, square across from him: its y is his), the heading 3π/2 and clip
+434. The launch gave *v* = 3.5 m/s (0.5, 1.25, 2.0 and 2.75 need more than 10 m/s) and 9.546 m/s in plan (0.318 m
+per update), as the arc above gives for *D* = 4.121 m and *d*.z = +0.05 (*t* = 0.432 s). The arc stopped against the
+window at x = 47.76, where the two type-11 panes stand (x 47.40); he fell 4 m into the gap, landed 4.2 m from the
+waypoint, and the move action ended on that update; nine updates later a new route took him along the street and up
+the fence (route state 3 at (56.78, 7.24)). Putting the player in `vReachWindow` without his own jump gave the same
+jump and fall.
 
 #### Steering round humans {#steering}
 
@@ -2128,3 +2232,5 @@ when `GangCanFlee` turns it on.
 - The think handlers of types 2, 3 and 5 in detail; what goals the Warriors' think pushes for an ally.
 - Which class `+0x11b` value 13 is ([Combat](combat.md#open-questions)), and what the byte
   `*(0x0051489c) + 0x56e3` that lets every AI counter is.
+- What stopped Vermin's route jump at the `level99` window (x 47.76, by the panes at x 47.40) in the window-jump
+  state, and whether a normal play-through clears it first; a jump that lands on its point is not yet seen at runtime.

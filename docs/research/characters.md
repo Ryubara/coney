@@ -1311,8 +1311,15 @@ centred nothing changes. Gravity, the airborne counter and the landing are those
 | per update (the feel pass, slot 1) | **24 updates** in the air from a run: the last airborne update leaves the feet 0.19 m below the ground and the next one lands them ([the landing rule](#falling)); that landing update still moves at the full 7.80 m/s, then 436 holds 4.23 m/s for 10 more updates (11 in all) and the gait blend gains 0.8 m/s per update from there; take-off to landing **6.24 m** |
 | triangle during the run start (414), at 3.35 m/s | a jump at once: the run start does not block it, only the 3.3 m/s and gait tests do (slot 7) |
 
-Clips 427 (slot 25) and 430-433 (jump from idle, walk or either foot) did not play in the player's jump; 430-433
-belong to the AI's jump (`0x0029ade0`, inferred from its callees).
+Clips 427 (slot 25) and 430-433 (jump from idle, walk or either foot) did not play in the player's jump, nor in
+Vermin's route jump in `level99` (clip 434 at take-off, 435 on landing; runtime): what plays them is not traced.
+
+**An AI's jump.** `Human_BeginJump`'s gait and speed tests apply only to the player's brain (type 0): an AI may jump
+from any gait, standing too, and its `+0x3c0` is not written. `Human_LaunchJump` gives a human whose per-player record
+`+0x1b` is 0 the velocity of the route follower's arc instead (`0x0029ade0`): the lowest of the vertical speeds 0.5,
+1.25, 2.0, ... m/s whose arc lands on the route's landing point at no more than 10 m/s in plan. Confirmed (code), and
+at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
+[AI: Jump legs](ai.md#route-jump).
 
 **In an input script**: `stick left 0 100`, wait until the run start is over and the speed is above 3.3 m/s, then
 `tap triangle`; add `press l2` beforehand for a sprint jump.
