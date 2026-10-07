@@ -28,9 +28,9 @@ callback is called 33 ms after the goal ends with the human's handle and whether
 | <span id="goal-5"></span>5 | `MoveToPosition` | `0x00541fb0` | | | |
 | <span id="goal-6"></span>6 | `MoveToHuman` | `0x00541f50` | `GoalMoveToHuman` | 11 | Go to a human |
 | <span id="goal-7"></span>7 | `RunFromTrain` | `0x00542ac0` | | | |
-| <span id="goal-8"></span>8 | `Melee` | `0x00540450` | `GoalMelee` | 2 | Melee fighting; popped when a fight starts ([AI](../research/ai.md#goals)) |
+| <span id="goal-8"></span>8 | `Melee` | `0x00540450` | `GoalMelee` | 2 | Under a fight goal: sends the fighter in (EngageEnemy) and pushes fight goals once in range ([AI](../research/ai.md#melee-goal)) |
 | <span id="goal-9"></span>9 | `AttackTarget` | `0x005403f0` | | | |
-| <span id="goal-11"></span>11 | `EngageEnemy` | `0x00540330` | `GangEngageEnemy`, `GoalEngageEnemy` | 22 | A fight sub-goal |
+| <span id="goal-11"></span>11 | `EngageEnemy` | `0x00540330` | `GangEngageEnemy`, `GoalEngageEnemy` | 22 | The run-in to a fight target, ending close by or with a charge ([AI](../research/ai.md#engage-enemy)) |
 | <span id="goal-12"></span>12 | `Chase` | `0x0053fcd0` | | | |
 | <span id="goal-13"></span>13 | `ChaseSupport` | `0x0053fc70` | | | |
 | <span id="goal-14"></span>14 | `Shadow` | `0x00541a10` | | | |
@@ -83,7 +83,7 @@ callback is called 33 ms after the goal ends with the human's handle and whether
 | <span id="goal-62"></span>62 | `StandIdle` | `0x00541230` | `GoalStandIdle` | | |
 | <span id="goal-63"></span>63 | `LeftTurf` | `0x00542a60` | | | |
 | <span id="goal-64"></span>64 | `CopperGuard` | `0x00540bd0` | `GoalCopperGuard` | | |
-| <span id="goal-65"></span>65 | `FindEnemy` | `0x00540a50` | `GoalMelee` | 2 | Find an enemy; popped when a fight starts |
+| <span id="goal-65"></span>65 | `FindEnemy` | `0x00540a50` | `GoalMelee` | 2 | Under Melee: restarts the fight while the target is valid ([AI](../research/ai.md#find-enemy)) |
 | <span id="goal-66"></span>66 | `CopperPatrol` | `0x00540b70` | `GoalCopperPatrol` | 4 | |
 | <span id="goal-67"></span>67 | `GeneralParlay` | `0x00541890` | `GoalStartParlay` | | |
 | <span id="goal-68"></span>68 | `PedLogicPath` | `0x0053f970` | `GoalPedestrianPath` | | |

@@ -22,9 +22,9 @@ entries:
   - {id: 5, name: MoveToPosition, vtable: 0x00541fb0, process: 0x002dc338}
   - {id: 6, name: MoveToHuman, vtable: 0x00541f50, process: 0x002dc578, bindings: [GoalMoveToHuman], calls: 11, scripts: [hifi.lua, level86.lua, survival.lua], meaning: "Go to a human"}
   - {id: 7, name: RunFromTrain, vtable: 0x00542ac0, process: 0x002f9c88}
-  - {id: 8, name: Melee, vtable: 0x00540450, process: 0x002aebf8, bindings: [GoalMelee], calls: 2, scripts: [level87_chap3_shanty.lua], meaning: "Melee fighting; popped when a fight starts ([AI](../research/ai.md#goals))"}
+  - {id: 8, name: Melee, vtable: 0x00540450, process: 0x002aebf8, bindings: [GoalMelee], calls: 2, scripts: [level87_chap3_shanty.lua], meaning: "Under a fight goal: sends the fighter in (EngageEnemy) and pushes fight goals once in range ([AI](../research/ai.md#melee-goal))"}
   - {id: 9, name: AttackTarget, vtable: 0x005403f0, process: 0x002af278}
-  - {id: 11, name: EngageEnemy, vtable: 0x00540330, process: 0x002afa48, bindings: [GangEngageEnemy, GoalEngageEnemy], calls: 22, scripts: ["36763710", level20_mainstreet.lua, level20_marketplace.lua, level20_temple.lua, level52.lua, level80.lua], meaning: "A fight sub-goal"}
+  - {id: 11, name: EngageEnemy, vtable: 0x00540330, process: 0x002afa48, bindings: [GangEngageEnemy, GoalEngageEnemy], calls: 22, scripts: ["36763710", level20_mainstreet.lua, level20_marketplace.lua, level20_temple.lua, level52.lua, level80.lua], meaning: "The run-in to a fight target, ending close by or with a charge ([AI](../research/ai.md#engage-enemy))"}
   - {id: 12, name: Chase, vtable: 0x0053fcd0, process: 0x002b1860}
   - {id: 13, name: ChaseSupport, vtable: 0x0053fc70, process: 0x002b2410}
   - {id: 14, name: Shadow, vtable: 0x00541a10, process: 0x002e2d90}
@@ -77,7 +77,7 @@ entries:
   - {id: 62, name: StandIdle, vtable: 0x00541230, process: 0x002d4a80, bindings: [GoalStandIdle]}
   - {id: 63, name: LeftTurf, vtable: 0x00542a60, process: 0x002f8e70}
   - {id: 64, name: CopperGuard, vtable: 0x00540bd0, process: 0x002c0a10, event: 0x002c0bc8, bindings: [GoalCopperGuard]}
-  - {id: 65, name: FindEnemy, vtable: 0x00540a50, process: 0x002c0748, bindings: [GoalMelee], calls: 2, scripts: [level87_chap3_shanty.lua], meaning: "Find an enemy; popped when a fight starts"}
+  - {id: 65, name: FindEnemy, vtable: 0x00540a50, process: 0x002c0748, bindings: [GoalMelee], calls: 2, scripts: [level87_chap3_shanty.lua], meaning: "Under Melee: restarts the fight while the target is valid ([AI](../research/ai.md#find-enemy))"}
   - {id: 66, name: CopperPatrol, vtable: 0x00540b70, process: 0x002c11d8, bindings: [GoalCopperPatrol], calls: 4, scripts: ["36763710", level52.lua]}
   - {id: 67, name: GeneralParlay, vtable: 0x00541890, process: 0x002cb5d0, bindings: [GoalStartParlay]}
   - {id: 68, name: PedLogicPath, vtable: 0x0053f970, process: 0x002a62d8, bindings: [GoalPedestrianPath]}

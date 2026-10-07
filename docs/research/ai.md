@@ -98,7 +98,7 @@ used.
 | `+0x124` | handle | the **target** |
 | `+0x110` / `+0x114` | float | the heading to move along / the speed ([Moving](#moving)) |
 | `+0x12c` | float | field of view (`BrSetFOV`) |
-| `+0x13c` / `+0x140` | float | melee range near / far (`BrSetMeleeRange`) |
+| `+0x13c` / `+0x140` | float | melee range near / far (`BrSetMeleeRange`): **3.0 / 5.0 m** for every brain ([below](#melee-range)) |
 | `+0x14a`, `+0x14b` | u8 | attack spacing |
 | `+0x152` | u8 | attackers on this human (player brain, counted every 300 updates) |
 | `+0x164` | handle[16] | the **enemy list** |
@@ -144,7 +144,10 @@ type 3"). The player's update `0x003035d8` only keeps books (target validity, at
 ### Goals {#goals}
 
 Goals come from a pool of 170 of 0x90 bytes at `0x006e0430` (bitmap `0x006ceac0`). Base fields: `+0x00` the brain,
-`+0x04` started, `+0x05` resumed, `+0x08` wait-until time (-1 none), `+0x0c` vtable. Vtable function words: `+0x0c`
+`+0x04` started, `+0x05` resumed, `+0x08` the **time limit** (−1 none), `+0x0c` vtable. The constructor stores a
+duration in `+0x08`; `Goal_Start` (`0x0029ed58`) adds the time it starts, and `Goal_Process` (`0x0029eed8`) ends the
+goal (returns 2, its Process not called) once the game time has passed it; −1 never passes. Confirmed (code) at both
+addresses; this corrects the earlier reading "wait-until time". Vtable function words: `+0x0c`
 the type id, `+0x14` the class's name (a string, such as `MoveToFlag`), `+0x1c` destroy, `+0x24` Start, `+0x2c` End,
 `+0x34` Resume, `+0x44` **Process**, `+0x4c` event (default `0x0029ef80`). There are 149 goal classes, types 0-158
 with ten unused, all on [AI goal types](../references/goal-types.md) with the bindings that make them; confirmed
@@ -154,8 +157,8 @@ with ten unused, all on [AI goal types](../references/goal-types.md) with the bi
 | --- | --- | --- | --- |
 | `0x01` | MoveToFlag | `0x002da3b0` (vtable `0x00542130`) | [`GoalMoveToFlag`](#move-to-flag) |
 | `0x06` | MoveToHuman | `0x002dc4f8` | |
-| `0x08` | Melee | `0x002ade10` | `Goal_Melee`; popped by `Brain_PushFightGoal` |
-| `0x0b` | EngageEnemy | `0x002af5b0` | a fight sub-goal |
+| `0x08` | Melee | `0x002ade10` (vtable `0x00540450`) | [below](#fight-approach); Process `0x002aebf8` |
+| `0x0b` | EngageEnemy | `0x002af5b0` (vtable `0x00540330`) | the run-in, [below](#engage-enemy); Process `0x002afa48` |
 | `0x0f` | **Fight** | `0x002b2c20` (vtable `0x005402d0`) | [below](#fight) |
 | `0x12`-`0x1a` | reaction goals | | [below](#reaction-goals) |
 | `0x1b` | **Blocking** | `0x002b54d8` (vtable `0x0053feb0`) | [below](#block) |
@@ -165,7 +168,7 @@ with ten unused, all on [AI goal types](../references/goal-types.md) with the bi
 | `0x29` | JoinCinematic | `0x002e53e0` (vtable `0x005421f0`) | `GoalJoinCinematic` (`0x002e5300`); Process `0x002e5618` |
 | `0x30` | TrackHuman | `0x002df250` | [`GoalTrackHuman`](#formations) |
 | `0x36` | HoldPosition | `0x002be640` (vtable `0x00540510`) | `GoalHoldPosition` (`0x002be590`), and the tactic code at `0x00313718`; Process `0x002be818` |
-| `0x41` | FindEnemy | `0x002c0430` | popped by `Brain_PushFightGoal` |
+| `0x41` | FindEnemy | `0x002c0430` (vtable `0x00540a50`) | [below](#fight-approach); Process `0x002c0748` |
 | `0x4f` | BumLogic | `0x002abef8` | `GoalBumLogic` |
 | `0x57` | AddressPerson | `0x002cc408` | [`GoalAddressPerson`](#address-person) |
 | `0x69` / `0x73` | Pedestrian / Patrol | `0x002aae30` / `0x002c1338` | `FlagNetTraverse` |
@@ -300,8 +303,15 @@ callers.
 - `GoalFight(human, target, …)` is `Brain_StartFight` (`0x002b2b90`): clear the actions, then `Brain_Fight`.
 - **`Brain_Fight`** (`0x0028d2e8`) needs a threat response (`+0x21c` ≠ 0). It adds the target to the enemy list
   (`Brain_AddEnemy`, `0x0028d538`, which tells the gang's tactic with event `0xb`), takes it as the target
-  (`Brain_SetTarget`, `0x0028cfe0`) and pushes the fight goal (`Brain_PushFightGoal`, `0x0028d190`, only when the
-  gang has no tactic at gang `+0x40`; it pops goals 8 and `0x41` first).
+  (`Brain_SetTarget`, `0x0028cfe0`) and calls `Brain_PushFightGoal` (`0x0028d190`) with its duration argument.
+- **`Brain_PushFightGoal(brain, duration)`** does nothing when the gang has a tactic (gang `+0x40`), the human is
+  down or dead (`0x00223b70`, `0x00227dd8`), or a type-3 brain holds goal 9 (AttackTarget). Otherwise it **pops**
+  any goal 8 (Melee) and `0x41` (FindEnemy) already on the stack, with every goal above them, then **pushes three**:
+  `Goal_Melee` (`0x002add08`, the `GoalMelee` binding's worker) pushes FindEnemy (`0x41`) and then Melee (8), both
+  given the duration, and sets the gang's alert state to 1 when the gang has no tactic; then the fight goal (`0xf`,
+  `FightGoal_Init` with the duration). The stack ends **FindEnemy, Melee, Fight** (top). So both earlier
+  statements were half right: it pops and then pushes. Confirmed (code) at `0x0028d190` and `Goal_Melee`; the
+  order confirmed (runtime), [in lesson 12](#level99-fight).
 - **`Brain_SetTarget`** releases the old target's attack slot and claims one on the new target
   (`Brain_ClaimAttackSlot`, `0x0028df30`): the target's list `+0x1a4` holds at most `+0x1e4` attackers, and a closer
   attacker takes the slot of the farthest.
@@ -311,7 +321,9 @@ callers.
 
 `FightGoal_Process` (`0x002b3ab0`), each update while the fight goal is on top:
 
-1. No valid target or no attack slot (`Brain_HasAttackSlot`) → done. A target farther than (`+0x140` × 1.1)² → done.
+1. No valid target or no attack slot (`Brain_HasAttackSlot`) → done. A target farther than (`+0x140` × 1.1)² → done
+   (5.5 m with the usual 5 m far range). The fight goal never closes a distance itself: the Melee goal beneath it
+   does, and pushes it again ([Closing on the target](#fight-approach)).
 2. Every 30 updates `0x002221b0`; once a second, re-target.
 3. **The block try** (`Goal_TryBlock`, [below](#block)).
 4. While actions are queued, wait.
@@ -329,6 +341,119 @@ callers.
    `0x005431e0`) with a 1000 or 2000 ms limit. **In reach**: queue the attack (`Brain_QueueAttack`); a class whose
    `+0x11b` is 13, 6 or 7 taunts instead one time in five (`0x002205e0`, anim `0x11`).
 9. Otherwise reposition (`0x002b2fc8`).
+
+The fight goal's own time limit (goal `+0x08`) is always −1 (`FightGoal_Init`); its duration goes only to `+0x24`.
+
+### Closing on the target {#fight-approach}
+
+Below the fight goal sit the Melee goal (8) and the FindEnemy goal (`0x41`) that `Brain_PushFightGoal` pushed
+([Starting a fight](#targets)). When the fight goal ends, most often at once because the target is beyond 1.1 × the
+far range, Melee runs; it sends the fighter in with an **EngageEnemy** goal (`0xb`) and pushes a fresh fight goal
+once he is in range. Confirmed (code) at the addresses cited; the sequence confirmed (runtime) below.
+
+#### Melee ranges {#melee-range}
+
+Every brain starts with near `+0x13c` and far `+0x140` from two globals (`0x0028a650`, `0x0028a664`, reading
+`0x00510ab4` / `0x00510ab8`), which [`CfgSetMeleeRange`](../references/bindings/config.md#cfgsetmeleerange) sets
+from `config_preload2.lua` to **3 and 5 m** (1 and 4 in the executable's image, before the config runs). Nothing per
+class or power class changes them: the only other writers are `BrSetMeleeRange` (no script calls it) and
+`GoalBossDiego` (`0x002a1b50`, 1 and 2 m). So the far range is **5 m** for the sparring Warriors (power class 40)
+and every other AI. Confirmed (code) at the writes above; confirmed (runtime), PCSX2 2.9.94, read from the owner's
+save states 1 and 6 (all 19 brains 3.0 / 5.0) and in the lesson-12 trace below.
+
+#### The Melee goal {#melee-goal}
+
+`Goal_Melee` builds it with `0x002ade10(goal, brain, duration, 4000)`: `+0x08` the time limit (the duration),
+`+0x10` the target's handle (−1 at first), `+0x14` 1.1 × far, `+0x18` **4000**, the duration of every fight goal it
+pushes, `+0x1c` a step counter. End (`0x002ade60`) sets brain `+0x2d3` and calls `0x00226f70`. Brain `+0x2d3` ("may
+approach", 1 when the brain is made) is cleared below when the target cannot be chased (`0x0028abc0`: the target
+brain's [reachable](../references/bindings/character.md#humarkreachable) byte `+0x11e` clear, a train near it, or on
+fire), when the last move failed (`+0x284`), or when the target is outside the gang's turf (`0x0028ff58`).
+
+**Process** (`0x002aebf8`), when the goal's time limit has not passed:
+
+1. While actions are queued, wait.
+2. **Choose the target.** With threat response ≠ 0, the best-scoring valid enemy in the enemy list `+0x164`
+   (`0x0029f230`, scores `0x0029ce98`), set as the target. With threat response 0, only the current target, kept
+   while valid and holding an attack slot on it (else the target is cleared and the goal is done).
+3. **No target**: done when the enemy list is empty, or when its nearest enemy is hidden in shadow (`+0x2d4`) or
+   fails `0x002225d8`; otherwise push a Spectate goal (`0x10`, `0x002b4098`, 1000 / 3000 / 2000 ms) and wait.
+4. **With a target** (`0x002ae2e8`), with `d` the distance and `R` = 1.1 × far: a new target resets the counter and
+   sets `+0x2d3`.
+    - **Armed** (holding a weapon, `0x00223ea0` or `0x00224000`), or **unarmed, `+0x2d3` set and `d` ≤ `R`**: when
+      the line of sight (`0x00222288`, eye heights 1.7 m) holds, either walk to him in the fight stance (a move
+      action, gait 2, radius about 1.0 m) when `d` > 1 m and the straight line to him is not walkable
+      (`0x002221b0`), or **push a fight goal with duration 4000** and run again (returns 1); without the line, a
+      move-to-human action (2000 ms), an EngageEnemy goal, or a 100 ms wait.
+    - **Unarmed, `+0x2d3` set, `d` > `R`**: **push an EngageEnemy goal** on the target when `0x00290588` allows it
+      (below), else a move-to-human action to 2 × far (4000 ms) and a 100 ms wait.
+    - Without `+0x2d3` (the target cannot be chased): pick up a weapon nearby (`0x002ade90`, brain `+0x265`), a
+      throw of a held object (kind `0x17`) at a target within 4 × `R`, at most one in the game every 6 s, or a
+      positioning move (`0x002ae028`, four modes by distance and a draw); not traced further.
+
+`0x00290588(brain, target)` allows the chase unless the brain is not type 1, the target's own target is someone
+else, and the gang's wanted timer (gang `+0x5e8`) is set and `0x0028de98` refuses; a type-1 brain (police) also
+checks `0x00290138`. With no wanted timer it allows it.
+
+#### The FindEnemy goal {#find-enemy}
+
+Built by `0x002c0430` with 90.0, 30.0, the byte at `0x00510adb` and the duration (`+0x1c`); its time limit is its
+own `+0x20` = the push time + duration (none for −1). **Process** (`0x002c0748`): past `+0x20`, done. Target still
+valid → **`Brain_Fight(brain, target, duration, 0)`**, which pops Melee and FindEnemy and pushes the three goals
+again. No valid target → fight stance off (`0x0022fed0`) and done, except for a brain with `+0x28d` set and
+`+0x264` ≥ 0 in a gang whose `+0x18` is 1, which may push a Chase goal (12, `0x002b04f0`) on a new enemy. So
+FindEnemy runs only when Melee has ended and restarts the fight while the target lasts.
+
+#### EngageEnemy: the run-in {#engage-enemy}
+
+`EngageEnemyGoal_Init` (`0x002af5b0`): `+0x10` the target's handle, `+0x20` the attack kind (45 = none chosen),
+`+0x2c` a taunt (0), `+0x30` **2.56** (a squared distance: 1.6 m), `+0x34` "start slowly" (the human's gait
+`+0x1a8` below 3 and not class 13), `+0x36` 1. **Start** (`0x002af670`): `+0x35` (**charge armed**) is set when the
+target is at least far (5 m) away; a type-2 brain may taunt (anim `0x47`); next shout `+0x18` = now + 4000, next
+re-target `+0x1c` = now + 2000; raises brain `+0x0b` by one (restored by End, `0x002af8d0`, which also clears the
+actions). It has no time limit. **Process** (`0x002afa48`), each update:
+
+1. Actions blocked → done; `0x00228428` → wait. The fight stance is dropped (it runs, not shuffles).
+2. **Stopping** (`+0x39`, set by the stop below): wait until the human's `+0x1a8` is 0, turn to the target
+   (`0x00221cd8`, 0.3) and end (2).
+3. Target no longer valid, hidden in shadow, or `0x00290588` refusing → stop.
+4. Every 2 s (not class 13): the nearest enemy replaces the target when it differs, the target is farther than far
+   and the new one is seen (`Human_CanSeeHuman`, 9 m / 4 m).
+5. The target brain's `+0x1ec` is cleared (he may be attacked at once).
+6. **Re-plan** when the target's heading turned more than 45°, he is within 1.6 m, he slowed from a run, or 250 ms
+   have passed; a shout every 4-4.5 s (`0x002af928`). Otherwise wait while the move action runs.
+7. The last move failed (`+0x284`) → stop.
+8. **Gait 4 (run)**; 5 (sprint) when the target runs (gait > 3) and `0x00222fa0` > 50 (inferred: stamina).
+9. **Stop** (when the target is in sight, `0x00222288`) if he cannot be attacked by this human now
+   (`Brain_IsAttackableBy`, `0x00290ea8`), at any distance; and, within 0.75 × far (**3.75 m**), if his actions are
+   blocked (he is busy, as when another Warrior is hitting him) or the charge is not armed and he walks or stands
+   (when he runs, it arms the charge instead).
+10. **Give up** (done) when the target is out of sight, at least 10 m away, and either 20 m away or brain `+0x28d`
+    set, and his gang's `+0xdc` is 0.
+11. **Charge**: within 1.6 m with the charge armed or the target running: pick an attack (a type-1 brain: kind 0 or
+    21; otherwise `Brain_PickAttack`, checked by `0x00229b60` and `0x00224778`), queue the
+    [attack action](#attack-action), disarm.
+12. **Move**: aim at the target's position led by his facing × his speed (`+0x1ac`), turned 9° per attack slot
+    index, alternating sides, when he faces away (sector 3-5 of `0x0029eb38`; inferred: to fan the attackers out);
+    aim straight at him when no lead applies or the led point is not reachable in a walkable line (`0x002221e0`).
+    The running move action gets the new point and gait; else a new [move action](#move-action) (radius 0.5 m, a
+    random 0-500 ms start delay the first time when "start slowly").
+
+When EngageEnemy ends, Melee is on top again and, now within `R`, pushes the fight goal.
+
+#### The durations {#fight-durations}
+
+The duration given to `Brain_Fight` (2000 or 8000 by the AI's own fights, −1 by `GoalFight`) reaches three goals:
+
+- the first **fight goal**'s deadline `+0x24` (−1: already past, [The fight goal](#fight) step 5);
+- **Melee**'s time limit: it counts from when Melee first runs (after that fight goal ends), and once passed Melee
+  ends the next time it is on top, without running. −1: **no limit**;
+- **FindEnemy**'s `+0x20`, counted from the push. −1: **no limit**, so it re-starts the fight for as long as the
+  target is valid.
+
+Every **later** fight goal, pushed by Melee, gets **4000** whatever the duration was, so under `GoalFight` the
+second and later fight goals have a 4 s deadline. The engage goal has no time limit. Confirmed (code) at
+`0x0029ed58`, `0x0029eed8`, `0x002ade10`, `0x002ae2e8` and `0x002c0748`.
 
 ### The attack action {#attack-action}
 
@@ -359,8 +484,8 @@ Confirmed (runtime), the street civilian (`PoizoCiv`, class 417, `Att_Normal`, p
 set on the player with `GangMakeEnemies` and `GoalFight` (no save reaches `level99`'s `CombatWarriors` fight, so this
 is a stand-in with the same attack table). Hooks on `0x00147ef0` and `0x00147ef8`:
 
-- The goal stack was `0x41`, `0x08` (fight), `0x0f`; the front action was the attack action, the move-to-human
-  action or, when far, a move action (goal `0x0b`).
+- The goal stack was `0x41` (FindEnemy), `0x08` (Melee), `0x0f` (Fight); the front action was the attack action,
+  the move-to-human action or, when far, a move action (goal `0x0b`, [EngageEnemy](#engage-enemy)).
 - Commands seen: `0xd` (grab, then a throw with a stick of 1.0), `0xf`, `0x10`, `0x11`, `0x12`, `0xe` and `0x20`
   (charge). Each is written once, in the attack action's Start, and read by the dispatcher in the same step; the next
   step's record update clears it ([Tasks](tasks.md#humans-update)).
@@ -937,8 +1062,9 @@ reached from the rioter in a straight line. Then threat response `+0x21c` = 2, `
 and the taunt `0x11` (`0x002205e0`). So the binding's sixth argument is the chance that **the player** may be picked,
 not a gang member.
 
-**How the 8 s fight ends.** `Brain_Fight` → `Brain_PushFightGoal(brain, 8000)` pushes `Goal_Melee` (goals `0x41`
-and 8, each given the 8000) and then the fight goal (15) with **its deadline `+0x24` = now + 8000 ms**
+**How the 8 s fight ends.** `Brain_Fight` → `Brain_PushFightGoal(brain, 8000)` pops any Melee and FindEnemy goals,
+pushes FindEnemy (`0x41`) and Melee (8), each given the 8000 ([Closing on the target](#fight-approach)), and then the
+fight goal (15) with **its deadline `+0x24` = now + 8000 ms**
 (`FightGoal_Init`, `0x002b2c20`; `+0x20` is the separate 750-1000 ms first-attack timer). The fight goal's usual
 ends apply (no target, no attack slot, out of range, [The fight goal](#fight)). Past the deadline, at each update
 with no actions queued, it **ends** (returns 2) when any of these holds: the fighter's class `+0x11b` is 13 and goal
@@ -990,9 +1116,9 @@ update counter (a byte), `+0x3c` hostile.
     2. A **hostile** runner attacks when the chaser is running (its gait `+0x1a8` above 2) and `d` ≤ the attack
        distance, or when the chaser is slower and `d` ≤ (1.1 × the runner's far melee range `+0x140`)², a distance
        compared with a squared length as written. It then sets threat response 2, targets the chaser
-       (`Brain_SetTarget`), pushes a [melee goal](#goals) (`0x002ade10`, 2000, 2000) and, in the running case, an
-       engage-enemy goal (`0x47`) whose `+0x30` is set to 4.0; the devil run stays below them and resumes when they
-       end.
+       (`Brain_SetTarget`), pushes a [Melee goal](#melee-goal) (`0x002ade10`: time limit 2000, its fight goals
+       2000) and, in the running case, an engage-enemy goal (`0x47`) whose `+0x30` is set to 4.0; the devil run
+       stays below them and resumes when they end.
     3. Otherwise the blend `f`: hostile `min(d / pace distance, 1)`; friendly `max(1 − d / pace distance, 0)` (1
        while the chaser is ahead). Speed = gait speed + (maximum speed − gait speed) × `f`, stored at `+0x34` and
        given to a running move action at once (`0x0029f710` → action `+0x40`). The brain's byte `+0x0b` = the saved
@@ -1104,8 +1230,8 @@ A pool of 30 tactics of 0x90 at `0x006ea1b0` (mask `0x006ea1a0`; alloc `0x003065
   the gang's id (`+0x30`) and the code. **`TacticClear`** ends and frees it.
 - **Fights under a tactic**: `Brain_PushFightGoal` (`0x0028d190`) returns at once when the gang has a tactic, so
   `GoalFight` picks the target but **pushes no fight goal**; the tactic fights. It also does nothing for a knocked-down
-  or dead human, or a type-3 brain already holding goal 9; otherwise it pops goals 8 and `0x41`, pushes the melee
-  goal (8) and then the fight goal (`0xf`).
+  or dead human, or a type-3 brain already holding goal 9; otherwise it pops goals 8 and `0x41`, pushes FindEnemy
+  (`0x41`), Melee (8) and then the fight goal (`0xf`) ([Starting a fight](#targets)).
 - **`Brain_AddEnemy`** (`0x0028d538`) adds the enemy to `+0x164` (16), makes the enemy's brain add this human back
   (`0x0028ef20`, unless both are players), and, when the tactic's `+0x3c` answers 0, sends it event `0xb` with the
   enemy.
@@ -1609,10 +1735,22 @@ Warriors, as read at runtime ([the cast while the scene plays](#level99-scene-st
 - The sparring Warriors' gang (4) has **no tactic**, and no script sets its threat response: it keeps the **2**
   every brain gets when it is made (`0x0028a570`). The scripts set 0 only on `CombatEnemy`, `CombatEnemy2` and
   `CombatTeacher` (and 2 on `CombatEnemy2` when its fight starts). Their `GoalFight` therefore runs in full:
-  `Brain_Fight` adds the player as an enemy, takes him as the target and `Brain_PushFightGoal` pushes the melee
-  goal and the fight goal ([Starting a fight](#targets)). The three take the player on together (the player's brain
+  `Brain_Fight` adds the player as an enemy, takes him as the target and `Brain_PushFightGoal` pushes FindEnemy,
+  Melee and the fight goal ([Starting a fight](#targets)). The three take the player on together (the player's brain
   allows 4 attack slots), demi-gods at a quarter of their health, until the stopwatch ends the lesson. Confirmed
   (runtime): they fought in the `warriors_*` recordings.
+- **How they reach him.** They stand 8.6-9.0 m away, beyond 1.1 × their 5 m far range ([Melee
+  ranges](#melee-range)), so each fight goal ends at its first update and the Melee goal sends them in with an
+  [EngageEnemy run](#engage-enemy); a fight goal (4000 ms) follows once each is in range
+  ([Closing on the target](#fight-approach)). Nothing else in the lesson gates them: brain type 2, threat response
+  2, no tactic, the player reachable (`+0x11e` = 1) and no wanted timer on the gang. Confirmed (runtime), PCSX2
+  2.9.94, the `warriors_passive` state with each Warrior's goal stack, position and `+0x140` read every update over
+  PINE (an analyst run, not a committed scenario): 490 updates after the state, all three had **FindEnemy, Melee,
+  EngageEnemy** (top) at 8.96, 8.59 and 8.77 m, far range 5.0. They ran in at up to **7.80 m/s** (the run gait;
+  one slowed to about 2 m/s for some 20 updates while steering round another). The first reached the player and
+  stayed at 0.71 m with an action running (inferred: the run-in's charge, step 11); its EngageEnemy ended at update
+  564. The other two stopped at 2.1-2.6 m (inferred: the player was busy, step 9) and swapped EngageEnemy for a
+  fight goal at updates 546 and 562. Each stack then read **FindEnemy, Melee, Fight**.
 - The fence gangs (5, 6) get the **crowd tactic** and no `GoalFight`: they cheer from the fence
   ([TacticCrowd](#tactics)). They are friends of the Warriors' gang.
 - **Which wins**, confirmed (code) at `0x0028d2e8` and `0x0028d190`: a threat response of 0 stops `GoalFight`
@@ -1805,12 +1943,12 @@ dirty at Start; his wary scan looks for members of enemy gangs.
 **The Rumble tactics** (`src/ai/tactic_attack.*`, `src/ai/tactic_confront.*`, [Rumble mode](rumble.md#coney)).
 `TacticAttack` and `TacticConfront` follow the table above. **Stand-ins:** the melee goal (8) takes the nearest member
 of an enemy gang as the enemy and target, runs to him (2 s at a time) beyond the fight goal's reach (90 % of the far
-melee range) and pushes the fight goal within it; the confront goal (60) closes on the other gang's leader to its
-distance and waits. **Coney choices:** a gang's leader is its first standing member not a player's (else the first
-standing); the confront's gang radii are 0 and there is always a way between the leaders, so 9 never fires; the
-attack's coordinated sub-tactics, `PedReaction` exception and spot line, and the confront's postures and formation are
-not built. A tactic replaced from inside its own update or callback is freed after the gangs' update, as the original
-queues the free (`0x00306630`).
+melee range) and pushes the fight goal within it (the original's: [The Melee goal](#melee-goal)); the confront goal
+(60) closes on the other gang's leader to its distance and waits. **Coney choices:** a gang's leader is its first
+standing member not a player's (else the first standing); the confront's gang radii are 0 and there is always a
+way between the leaders, so 9 never fires; the attack's coordinated sub-tactics, `PedReaction` exception and spot
+line, and the confront's postures and formation are not built. A tactic replaced from inside its own update or
+callback is freed after the gangs' update, as the original queues the free (`0x00306630`).
 
 **The character bindings' goals and gangs** (`src/ai/scripted_humans.*`, `src/ai/scripted_goals.*`). `GoalBackoff`
 (`0x9b`), `GoalBumLogic` (`0x4f`) and `GoalMoveToUseFlag` (4) are built from their constructors; **stand-ins** for their
@@ -1844,9 +1982,10 @@ taken as a cone of half the field of view widened by the sphere.
 ends within its radius in 3D, when the target is no longer alive in the world, or when its human is down.
 `GoalEngageEnemy` (11) runs at the enemy (`MoveToHumanAction`, 1 s at a time) beyond an attack's reach and pushes the
 fight goal within it, ending when the enemy is gone or down. **Stand-ins**: the engage goal follows the enemy at any
-range (the original's limit is not on the page) and leaves out its `+0x34` flag; the valid-target test `0x0028d4b0` is
-taken as alive and in the world. `BrSetType` sets types 1-6 (0 and past 6 are ignored, **stand-in**: 0's pad hand-over
-is not built), `BrSetAttackWeight` one kind's weight.
+range and leaves out its `+0x34` flag (the original's goal is now traced: [EngageEnemy](#engage-enemy), which runs
+with a move action, stops and hands back to the Melee goal rather than pushing the fight goal itself); the
+valid-target test `0x0028d4b0` is taken as alive and in the world. `BrSetType` sets types 1-6 (0 and past 6 are
+ignored, **stand-in**: 0's pad hand-over is not built), `BrSetAttackWeight` one kind's weight.
 `CfgSetDefaultFollowSlotSet` writes its sets into every formation in use and keeps them for those made later
 (`Formations::setDefaults`, through `HumanBindingHost::setDefaultFollowSlots`); every other rules binding
 (`rulesCall` in `repo:src/scripting/human_bindings.cpp`, among them `WCEnableAllCommands`, which `EnableAllButtons`
