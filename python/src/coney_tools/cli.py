@@ -195,6 +195,13 @@ def _add_progress_commands(groups: Any) -> None:
         "disc", nargs="?", help="a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
     )
     sizes.add_argument("--fill", action="store_true", help="write the estimated size of entries that have none")
+    ghidra = commands.add_parser(
+        "ghidra", help="re-export docs/progress/ghidra-functions.tsv from a running ghidra-mcp (read only)"
+    )
+    ghidra.add_argument("--url", default=None, help="the ghidra-mcp server (default http://127.0.0.1:8090)")
+    ghidra.add_argument("--check", action="store_true", help="change nothing; exit 1 when the listing is stale")
+    backlog = commands.add_parser("backlog", help="write one Markdown file per subsystem of not-yet-understood code")
+    backlog.add_argument("out_dir", type=Path, help="a folder outside the repository")
 
 
 def _add_natives_commands(groups: Any) -> None:
@@ -336,6 +343,10 @@ def _run_progress(args: argparse.Namespace) -> int:
         return progress_cli.run_show(args.json)
     if args.command == "update":
         return progress_cli.run_update(args.check)
+    if args.command == "ghidra":
+        return progress_cli.run_ghidra(args.url, args.check)
+    if args.command == "backlog":
+        return progress_cli.run_backlog(args.out_dir)
     return progress_cli.run_sizes(args.disc, args.fill)
 
 

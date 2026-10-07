@@ -74,20 +74,39 @@ def _summary_rows(progress: Progress, roadmap_link: str) -> list[str]:
         f"({done:,} of {game:,} bytes, {count:,} function{'' if count == 1 else 's'}) |",
         f"| **Researched** | {bar(totals.researched_bytes, game)} | {percent(totals.researched_bytes, game)} "
         f"placed in a source file or directory ({totals.researched_bytes:,} bytes) |",
+        *_understood_row(progress),
         f"| **[Milestones]({roadmap_link})** | {bar(finished, len(milestones))} "
         f"| {finished} of {len(milestones)} done |",
     ]
 
 
+def _understood_row(progress: Progress) -> list[str]:
+    """The summary's "Understood" row, or nothing before the checkout has a Ghidra listing."""
+    u = progress.understanding
+    if u is None:
+        return []
+    return [
+        f"| **Understood** | {bar(u.understood_bytes, u.bytes)} | {percent(u.understood_bytes, u.bytes)} named in "
+        f"Ghidra and cited with evidence ({u.understood_bytes:,} of {u.bytes:,} bytes; "
+        f"{u.understood_functions:,} of {u.functions:,} functions, {percent(u.understood_functions, u.functions)}) |"
+    ]
+
+
 def _badges(progress: Progress) -> str:
-    """The two shields.io badges, reimplemented and researched."""
+    """The shields.io badges: reimplemented, researched and, with a Ghidra listing, understood."""
     game = progress.totals.game_bytes
     reimplemented = badge_url("reimplemented", progress.reimplemented_bytes, game)
     researched = badge_url("researched", progress.totals.researched_bytes, game)
-    return (
+    badges = (
         f"![Reimplemented: {percent(progress.reimplemented_bytes, game)}]({reimplemented}) "
         f"![Researched: {percent(progress.totals.researched_bytes, game)}]({researched})"
     )
+    u = progress.understanding
+    if u is not None:
+        # On a line of its own (the same paragraph), so the line stays within the docs' 120 columns.
+        understood = badge_url("understood", u.understood_bytes, u.bytes)
+        badges += f"\n![Understood: {percent(u.understood_bytes, u.bytes)}]({understood})"
+    return badges
 
 
 def _current(progress: Progress, roadmap_link: str) -> str:
@@ -125,6 +144,30 @@ def _subsystem_table(progress: Progress) -> list[str]:
             lines.append(f"| {label} | {bar(0, 0)} | n/a | {count} | not placed yet |")
         else:
             lines.append(f"| {label} | {bar(done, total)} | {percent(done, total)} | {count} | {total:,} |")
+    return lines
+
+
+def _understood_table(progress: Progress) -> list[str]:
+    """The "Understood" measure per subsystem: bytes, functions, and how many are named and cited."""
+    u = progress.understanding
+    if u is None:
+        return ["Not measured yet: the checkout has no docs/progress/ghidra-functions.tsv."]
+    lines = [
+        "| Subsystem | Understood | Share | Functions understood | Named | Cited | Code (bytes) |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
+    for r in u.by_subsystem([s.name for s in progress.totals.subsystems]):
+        label = "Unattributed" if r.name == UNATTRIBUTED else f"`{r.name}`"
+        lines.append(
+            f"| {label} | {bar(r.understood_bytes, r.bytes)} | {percent(r.understood_bytes, r.bytes)} "
+            f"| {r.understood_functions:,} of {r.functions:,} | {r.named:,} | {r.cited:,} | {r.bytes:,} |"
+        )
+    total_named = sum(1 for s in u.statuses if s.function.named)
+    total_cited = sum(1 for s in u.statuses if s.cited)
+    lines.append(
+        f"| **All** | {bar(u.understood_bytes, u.bytes)} | {percent(u.understood_bytes, u.bytes)} "
+        f"| {u.understood_functions:,} of {u.functions:,} | {total_named:,} | {total_cited:,} | {u.bytes:,} |"
+    )
     return lines
 
 
@@ -166,6 +209,7 @@ def render_page(progress: Progress) -> str:
     lines += ["## Milestones", "", "| Milestone | Status |", "| --- | --- |"]
     lines += [f"| [{m.name}](../roadmap.md#{m.anchor}) | {m.status} |" for m in progress.milestones]
     lines += ["", "## By subsystem", "", *_subsystem_table(progress), ""]
+    lines += ["## Understood by subsystem", "", *_understood_table(progress), ""]
     lines += ["## Research coverage", "", *_coverage_table(progress), ""]
     lines += ["## Middleware: replaced, not reimplemented", "", *_middleware_table(progress), ""]
     lines += ["## Reimplemented functions", "", *_function_table(progress)]

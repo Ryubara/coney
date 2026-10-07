@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from coney_tools import elf, progress, progress_render
+from coney_tools import elf, progress, progress_cli, progress_render, progress_research
 from coney_tools.cli import main
 from coney_tools.config import ConfigError
 from coney_tools.progress_cli import set_size
@@ -383,3 +383,149 @@ def test_sizes_command_checks_and_fills(
     (root / progress.FUNCTIONS_FILE).write_text(functions.replace("size = 8", "size = 32"), encoding="utf-8")
     assert main(["progress", "sizes", str(disc)]) == 1
     assert "error: size 32 runs past" in capsys.readouterr().out
+
+
+# --- the "Understood" measure -----------------------------------------------------------------------------------------
+
+# Four game functions and one in the middleware: Alpha's first is named and cited with evidence, its second is cited
+# without evidence, Beta's is named but uncited, the unattributed one is unnamed but cited with evidence.
+LISTING = (
+    "# a comment\n"
+    "0x00001000\t256\tAlpha_Init\t1\n"
+    "0x00001100\t64\tAlpha_Step\t0\n"
+    "0x00001200\t128\tBeta_Run\t0\n"
+    "0x00001500\t32\t\t0\n"
+    "0x00001c00\t512\tlib_thing\t0\n"
+)
+RESEARCH_PAGE = """# Alpha
+
+| Address | Name | Evidence |
+| --- | --- | --- |
+| `0x00001000` | `Alpha_Init` | confirmed (code) |
+| `0x00001100` | `Alpha_Step` | |
+
+The helper at `0x00001500` (`Odd_Helper`) is dead code: not needed: never called.
+"""
+
+
+def make_research_checkout(root: Path) -> Path:
+    """A checkout with a Ghidra listing and a research page; the source map cites Beta, which must not count."""
+    make_checkout(root)
+    (root / "docs" / "progress" / "ghidra-functions.tsv").write_text(LISTING, encoding="utf-8")
+    (root / "docs" / "research").mkdir(parents=True)
+    (root / "docs" / "research" / "alpha.md").write_text(RESEARCH_PAGE, encoding="utf-8")
+    (root / "docs" / "research" / "source-map.md").write_text("`0x00001200` inferred\n", encoding="utf-8")
+    return root
+
+
+def test_listing_round_trips_and_refuses_bad_lines() -> None:
+    functions = progress_research.parse_listing(LISTING)
+    assert [f.address for f in functions] == [0x1000, 0x1100, 0x1200, 0x1500, 0x1C00]
+    assert functions[0].plate and functions[0].named and not functions[3].named
+    assert progress_research.parse_listing(progress_research.format_listing(functions)) == functions
+    default = progress_research.ListedFunction(0x1500, 32, "FUN_00001500", False)
+    assert "\t\t0" in progress_research.format_listing([default])  # the default name is left out
+    assert not progress_research.ListedFunction(0x10, 4, "thunk_FUN_00000010", False).named
+    with pytest.raises(progress.ProgressError, match="expected"):
+        progress_research.parse_listing("0x1000\t4\tx\t0\n")
+    with pytest.raises(progress.ProgressError, match="ascending"):
+        progress_research.parse_listing("0x00002000\t4\ta\t0\n0x00001000\t4\tb\t0\n")
+
+
+def test_citations_need_evidence_and_skip_the_source_map(tmp_path: Path) -> None:
+    root = make_research_checkout(tmp_path)
+    citations = progress_research.scan_citations(root)
+    assert citations[0x1000].evidence and citations[0x1000].page_name == "Alpha_Init"
+    assert not citations[0x1100].evidence  # its table row states no level
+    assert citations[0x1500].evidence  # "not needed" counts
+    assert 0x1200 not in citations  # only the source map cites it
+
+
+def test_binding_wrappers_count_with_evidence(tmp_path: Path) -> None:
+    root = make_research_checkout(tmp_path)
+    (root / "research" / "bindings").mkdir(parents=True)
+    (root / "research" / "bindings" / "x.yaml").write_text(
+        "- name: DoIt\n  wrapper: 0x00001200\n  evidence: inferred\n\n- name: Other\n  wrapper: 0x00001300\n",
+        encoding="utf-8",
+    )
+    citations = progress_research.scan_citations(root)
+    assert citations[0x1200].evidence and citations[0x1200].page_name == "lua_DoIt"
+    assert not citations[0x1300].evidence
+
+
+def test_measure_by_subsystem_and_backlog(tmp_path: Path) -> None:
+    root = make_research_checkout(tmp_path)
+    u = progress.load(root).understanding
+    assert u is not None
+    assert u.functions == 4 and u.bytes == 256 + 64 + 128 + 32  # the middleware function is left out
+    assert u.understood_functions == 1 and u.understood_bytes == 256
+    rows = {r.name: r for r in u.by_subsystem(["Alpha", "Beta", "Empty"])}
+    assert list(rows) == ["Alpha", "Beta", progress.UNATTRIBUTED]
+    assert (rows["Alpha"].understood_functions, rows["Alpha"].named, rows["Alpha"].cited) == (1, 2, 1)
+    assert [s.missing() for s in u.backlog("Alpha")] == [["evidence"]]
+    assert [s.missing() for s in u.backlog("Beta")] == [["cite"]]
+    assert [s.missing() for s in u.backlog(progress.UNATTRIBUTED)] == [["name"]]
+    text = progress_research.render_backlog(u, rows[progress.UNATTRIBUTED])
+    assert "| `0x00001500` | 32 | `FUN_00001500` | name | no | `Odd_Helper` | research/alpha.md |" in text
+    assert progress_research.backlog_file_name("Device/ps2") == "Device-ps2.md"
+    assert progress_research.backlog_file_name("Maths (unnamed)") == "Maths.md"
+
+
+def test_understood_is_rendered_and_checked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The bar appears once there is a listing, and a new citation makes the page stale."""
+    root = make_research_checkout(tmp_path)
+    monkeypatch.chdir(root)
+    assert main(["progress", "update"]) == 0
+    page = (root / "docs" / "progress" / "index.md").read_text(encoding="utf-8")
+    assert "| **Understood** |" in page and "## Understood by subsystem" in page
+    assert "1 of 4 functions" in page and "badge/understood-" in page
+    assert main(["progress", "update", "--check"]) == 0
+    page_path = root / "docs" / "research" / "alpha.md"
+    page_path.write_text(RESEARCH_PAGE.replace("| `Alpha_Step` | |", "| `Alpha_Step` | inferred |"), encoding="utf-8")
+    assert main(["progress", "update", "--check"]) == 1
+    capsys.readouterr()
+    assert main(["progress", "show", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["understood"]["functions"] == 2
+
+
+def test_without_a_listing_nothing_is_measured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = make_checkout(tmp_path)
+    monkeypatch.chdir(root)
+    assert progress.load(root).understanding is None
+    assert main(["progress", "update"]) == 0
+    assert "Understood" not in (root / "README.md").read_text(encoding="utf-8")
+
+
+def test_backlog_command_writes_one_file_per_subsystem(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = make_research_checkout(tmp_path / "repo")
+    monkeypatch.chdir(root)
+    with pytest.raises(ConfigError):
+        progress_cli.run_backlog(root / "inside")
+    out = tmp_path / "backlog"
+    assert main(["progress", "backlog", str(out)]) == 0
+    assert sorted(p.name for p in out.iterdir()) == ["Alpha.md", "Beta.md", "Unattributed.md"]
+
+
+def test_export_listing_reads_through_fetch() -> None:
+    """The export asks for the functions, each one's body and the plate comments, and skips external functions."""
+    answers = {
+        "/list_functions_enhanced?limit=100000&offset=0": {
+            "functions": [
+                {"address": "00001000", "name": "Alpha_Init", "isThunk": False, "isExternal": False},
+                {"address": "00001100", "name": "FUN_00001100", "isThunk": False, "isExternal": False},
+                {"address": "00009000", "name": "ext", "isThunk": False, "isExternal": True},
+            ]
+        },
+        "/get_function_by_address?address=0x00001000": {"body_start": "00001000", "body_end": "000010ff"},
+        "/get_function_by_address?address=0x00001100": {"body_start": "00001100", "body_end": "0000113f"},
+        "/batch_get_comments?addresses=0x00001000,0x00001100": {
+            "results": [{"address": "00001000", "plate": "Sets up."}, {"address": "00001100", "plate": None}]
+        },
+    }
+    functions = progress_research.export_listing(answers.__getitem__)
+    assert functions == [
+        progress_research.ListedFunction(0x1000, 256, "Alpha_Init", True),
+        progress_research.ListedFunction(0x1100, 64, "FUN_00001100", False),
+    ]

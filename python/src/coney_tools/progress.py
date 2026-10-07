@@ -7,7 +7,9 @@ Three committed inputs feed it, none of them game data:
   (docs/research/source-map.md): `.text`, the coverage categories, each subsystem's address ranges and the
   middleware, which Coney replaces rather than reimplements;
 * `docs/progress/functions.toml`: the numerator, one entry per original function Coney reimplements;
-* the status table of `docs/roadmap.md`, parsed rather than copied.
+* the status table of `docs/roadmap.md`, parsed rather than copied;
+* `docs/progress/ghidra-functions.tsv` and the research pages, for the "Understood" measure
+  (coney_tools.progress_research).
 
 It also checks that functions.toml agrees with the `@orig` tags in `src/` (docs/guides/conventions.md), so an
 implementer cannot add a tag without counting it, or the other way round.
@@ -20,9 +22,12 @@ import tomllib
 from dataclasses import dataclass, field
 from itertools import pairwise
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from coney_tools.config import ConfigError
+
+if TYPE_CHECKING:
+    from coney_tools.progress_research import Understanding
 
 DATA_DIR = Path("docs/progress")
 TOTALS_FILE = DATA_DIR / "totals.toml"
@@ -164,6 +169,7 @@ class Progress:
     functions: list[Function]
     milestones: list[Milestone]
     problems: list[str] = field(default_factory=list)
+    understanding: Understanding | None = None  # None until the checkout has a Ghidra listing
 
     @property
     def reimplemented_bytes(self) -> int:
@@ -197,7 +203,24 @@ class Progress:
                 {"name": m.name, "bytes": m.bytes, "replaced_by": m.replaced_by} for m in self.totals.middleware
             ],
             "milestones": [{"name": m.name, "anchor": m.anchor, "status": m.status} for m in self.milestones],
+            "understood": self._understood_json(),
             "problems": self.problems,
+        }
+
+    def _understood_json(self) -> dict[str, Any] | None:
+        """The "Understood" measure as plain data, or None without a listing."""
+        u = self.understanding
+        if u is None:
+            return None
+        order = [s.name for s in self.totals.subsystems]
+        return _share(u.understood_bytes, u.bytes) | {
+            "functions": u.understood_functions,
+            "total_functions": u.functions,
+            "subsystems": [
+                {"name": r.name, "functions": r.understood_functions, "total_functions": r.functions}
+                | _share(r.understood_bytes, r.bytes)
+                for r in u.by_subsystem(order)
+            ],
         }
 
 
@@ -414,4 +437,7 @@ def load(root: Path) -> Progress:
     if not milestones:
         raise ProgressError(f"{ROADMAP_FILE}: no status table (rows like `| [Name](#anchor) | status |`)")
     problems = check(totals, functions, scan_orig_tags(root))
-    return Progress(totals, functions, milestones, problems)
+    # Imported here: progress_research builds on this module's Totals.
+    from coney_tools import progress_research
+
+    return Progress(totals, functions, milestones, problems, progress_research.load(root, totals))

@@ -568,3 +568,26 @@ A finding is done when someone else can use it without asking you. For each one:
    file, a dump or an extracted asset never do.
 7. **Build the docs** with `mkdocs build --strict` (see [Writing these docs](writing-docs.md)), which catches broken
    links and pages missing from the navigation.
+
+## The Understood measure {#understood}
+
+A function is researched in full ("understood" on the [progress page](../progress/index.md)) when it has a
+meaningful name and a plate comment in the shared Ghidra project, and a research page cites its address in a table
+row or paragraph that states an evidence level and says what it does. A function nobody needs (dead code, a debug
+stub) is cited with `not needed: <reason>` instead. The bar checks the name and the citation; the plate comment is
+listed in the backlog. Citations on the [source map](../research/source-map.md) do not count; a script binding's
+wrapper counts through its `evidence` in `research/bindings`.
+
+The names, sizes and plate flags come from `docs/progress/ghidra-functions.tsv`, exported from Ghidra; the
+citations are read from the pages on every `progress update`. After renaming functions in Ghidra, refresh both
+(ghidra-mcp on `:8090` must be running; the export only reads):
+
+```sh
+uv run --project python coney-tools progress ghidra    # re-export the listing (--check: exit 1 when stale)
+uv run --project python coney-tools progress update    # regenerate the bars; CI runs it with --check
+uv run --project python coney-tools progress backlog "<scratch>/research-backlog"   # per-subsystem to-do lists
+```
+
+The backlog writes one Markdown file per subsystem, outside the repository: every function not yet understood,
+largest first, with what it lacks (`name`, `cite` or `evidence`), whether it has a plate comment, and the name a page
+already gives it. A row that lacks only `name` is documented already; renaming it in Ghidra is the cheapest step.

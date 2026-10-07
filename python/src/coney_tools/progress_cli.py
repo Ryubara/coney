@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools progress ...` commands: show, update and sizes."""
+"""The `coney-tools progress ...` commands: show, update, sizes, ghidra and backlog."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import json
 import re
 from pathlib import Path
 
-from coney_tools import elf, progress, progress_render, wad
+from coney_tools import elf, progress, progress_render, progress_research, wad
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.wad_cli import open_disc
 
@@ -30,6 +30,10 @@ def run_show(as_json: bool) -> int:
     print(f"reimplemented: {pct(state.reimplemented_bytes, game)} ({state.reimplemented_bytes:,} of {game:,} bytes,")
     print(f"               {len(state.functions)} functions)")
     print(f"researched:    {pct(totals.researched_bytes, game)} ({totals.researched_bytes:,} bytes)")
+    u = state.understanding
+    if u is not None:
+        print(f"understood:    {pct(u.understood_bytes, u.bytes)} ({u.understood_bytes:,} of {u.bytes:,} bytes,")
+        print(f"               {u.understood_functions:,} of {u.functions:,} functions)")
     finished = sum(1 for m in state.milestones if m.status == "done")
     print(f"milestones:    {finished} of {len(state.milestones)} done")
     for name, total, done, count in state.subsystem_rows():
@@ -140,3 +144,51 @@ def run_sizes(disc_arg: str | None, fill: bool) -> int:
         path.write_bytes(text.replace("\n", newline).encode("utf-8"))
         print(f"filled {filled} size(s) in {progress.FUNCTIONS_FILE.as_posix()}; check them, then commit")
     return 1 if failed else 0
+
+
+def run_ghidra(url: str | None, check_only: bool) -> int:
+    """Re-export the Ghidra listing from a running ghidra-mcp; with `check_only`, 1 when the committed one differs.
+
+    Only reading endpoints are called, so this is safe on the server the analysts share.
+    """
+    root = find_repo_root(Path.cwd())
+    path = root / progress_research.LISTING_FILE
+    fetch = progress_research.http_fetch((url or progress_research.DEFAULT_GHIDRA_URL).rstrip("/"))
+    exported = progress_research.export_listing(fetch)
+    text = progress_research.format_listing(exported)
+    try:
+        current = _normalise(path.read_bytes().decode("utf-8"))
+    except FileNotFoundError:
+        current = ""
+    except (OSError, UnicodeDecodeError) as error:
+        raise ConfigError(f"{path}: cannot be read ({error})") from error
+    named = sum(1 for f in exported if f.named)
+    print(f"ghidra: {len(exported):,} functions, {named:,} named, {sum(f.plate for f in exported):,} with a plate")
+    if current == text:
+        print(f"ghidra: {progress_research.LISTING_FILE.as_posix()} is up to date")
+        return 0
+    if check_only:
+        print(f"ghidra: {progress_research.LISTING_FILE.as_posix()} is stale; run `coney-tools progress ghidra`")
+        return 1
+    path.write_bytes(text.encode("utf-8"))
+    print(f"ghidra: wrote {progress_research.LISTING_FILE.as_posix()}; now run `coney-tools progress update`")
+    return 0
+
+
+def run_backlog(out_dir: Path) -> int:
+    """Write one backlog file per subsystem (not-yet-understood functions, largest first) to `out_dir`."""
+    wad.refuse_inside_repo(out_dir)
+    state = progress.load(find_repo_root(Path.cwd()))
+    u = state.understanding
+    if u is None:
+        raise ConfigError(f"no {progress_research.LISTING_FILE.as_posix()}; run `coney-tools progress ghidra` first")
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        rows = u.by_subsystem([s.name for s in state.totals.subsystems])
+        for row in rows:
+            name = progress_research.backlog_file_name(row.name)
+            (out_dir / name).write_text(progress_research.render_backlog(u, row), encoding="utf-8")
+    except OSError as error:
+        raise ConfigError(f"{out_dir}: cannot be written ({error})") from error
+    print(f"backlog: wrote {len(rows)} files to {out_dir}")
+    return 0
