@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,580 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,583 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-457 reimplemented function(s) have no size yet and add no bytes.
+460 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -62,7 +62,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
-| `Graphics` | `██▏░░░░░░░░░░░░░░░░░` | 10.5% | 64 | 195,624 |
+| `Graphics` | `██▏░░░░░░░░░░░░░░░░░` | 10.5% | 65 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
 | `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 502 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
@@ -72,7 +72,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 202 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 108 | 531,312 |
+| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 110 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -448,6 +448,7 @@ at the top of the repository's `README.md`.
 | `0x00182820` | `ChunkLoaded_ParticlePageHeader` | `Graphics` | 144 |
 | `0x001828c0` | `ResourceMgr_SheetRecord` | `Graphics` | 32 |
 | `0x00182de0` | `Instance_AddSprite` | `Graphics` | 600 |
+| `0x001831c0` | `Instance_DrawOneSpriteIm3D` | `Graphics` | not filled in |
 | `0x00184890` | `ResourceMgr_CompareOverlayKeys` | `Graphics` | 64 |
 | `0x00185cc8` | `ResourceMgr_EmptyInstances` | `Graphics` | 88 |
 | `0x00185d20` | `ResourceMgr_RenderOverlay` | `Graphics` | 840 |
@@ -1430,6 +1431,8 @@ at the top of the repository's `README.md`.
 | `0x0038e0f0` | `Car_PlaceInTrunkOnDetach` | `TaskEngine` | not filled in |
 | `0x0038e538` | `CarManager_SetMsgHandler` | `TaskEngine` | 88 |
 | `0x0038e860` | `Cars_FindNear` | `TaskEngine` | not filled in |
+| `0x0038ef60` | `GlassPane_QueueDraw` | `TaskEngine` | not filled in |
+| `0x0038f1c8` | `GlassPane_UpdateBodyByDistance` | `TaskEngine` | not filled in |
 | `0x0038f378` | `Glass_Break` | `TaskEngine` | 496 |
 | `0x0038f8a8` | `GlassManager_Create` | `TaskEngine` | 424 |
 | `0x0038fab8` | `GlassTypes_Set` | `TaskEngine` | 40 |

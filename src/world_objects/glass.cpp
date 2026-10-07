@@ -42,7 +42,7 @@ ShatterPlan shatterPlan(std::uint32_t sizeWord) {
         return ShatterPlan{.count = kSmallShards, .shardSize = kSmallShardSize, .soundMaterial = material::kGlassSmall};
     }
     return ShatterPlan{
-        .count = std::min(count, kMaxShards), .shardSize = kSmallShardSize, .soundMaterial = material::kGlass};
+        .count = std::min(count, kMaxShards), .shardSize = kHitShardSize, .soundMaterial = material::kGlass};
 }
 
 void GlassPanes::setType(int type, const GlassType& entry) {
@@ -144,6 +144,8 @@ void GlassPanes::shatter(GlassPane& pane, bool markBroken, ObjectWorld& world) {
     shatterEffect(pane, world);
     setTrianglesEnabled(world.collision, pane.triangles, false);
     if (markBroken) {
+        // White and faint: no longer whole, the pane never gets its body back.
+        pane.colour = kBrokenPaneColour;
         if (world.services != nullptr) {
             world.services->setBody(pane.handle, false);
         }
@@ -244,6 +246,33 @@ const GlassPane* GlassPanes::findByTriangle(std::uint32_t triangle) const {
         return pane.triangles[0] == triangle || pane.triangles[1] == triangle;
     });
     return found == m_panes.end() ? nullptr : &*found;
+}
+
+std::vector<GlassQuad> glassDraws(const GlassPanes& panes, anim::Vec3 camera) {
+    std::vector<GlassQuad> far;
+    std::vector<GlassQuad> near;
+    for (const GlassPane& pane : panes.panes()) {
+        // Only a whole pane within reach of a camera has a body, and only a pane with a body is drawn.
+        const anim::Vec3 offset = anim::subtract(pane.centre, camera);
+        const float distanceSq = anim::dot(offset, offset);
+        if (pane.colour != kPaneColour || pane.type == glass_type::kStained ||
+            distanceSq >= kPaneBodyReach * kPaneBodyReach) {
+            continue;
+        }
+        const anim::Vec3 halfU = anim::scale(pane.edgeU, 0.5F);
+        const anim::Vec3 halfV = anim::scale(pane.edgeV, 0.5F);
+        const anim::Vec3 first = anim::subtract(anim::subtract(pane.centre, halfU), halfV);
+        GlassQuad quad;
+        quad.handle = pane.handle;
+        quad.corners = {first, anim::add(first, pane.edgeU), anim::add(first, pane.edgeV),
+                        anim::add(anim::add(first, pane.edgeU), pane.edgeV)};
+        quad.rect = static_cast<std::uint16_t>(pane.sprite & kSpriteRectMask);
+        quad.colour = pane.colour;
+        // The near panes go on their own list, drawn after the batches.
+        (distanceSq < kNearPaneReach * kNearPaneReach ? near : far).push_back(quad);
+    }
+    far.insert(far.end(), near.begin(), near.end());
+    return far;
 }
 
 } // namespace coney::world_objects

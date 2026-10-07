@@ -53,6 +53,12 @@ struct GlassSpawn {
 
 /// A pane's colour word at spawn, and type 15's.
 inline constexpr std::uint32_t kPaneColour = 0x808080e0U;
+/// A broken pane's colour word (white, alpha 112): a pane no longer whole never gets its body back, so is not drawn.
+inline constexpr std::uint32_t kBrokenPaneColour = 0xffffff70U;
+/// A whole pane has a body, and so is drawn, within this many metres of a camera.
+inline constexpr float kPaneBodyReach = 50.0F;
+/// A pane within this many metres of a camera (√12) is drawn on its own after the sprite batches.
+inline constexpr float kNearPaneReach = 3.4641016F;
 /// Type 14's sprite word: its own batch.
 inline constexpr std::uint32_t kStainedSprite = 0x00020000U;
 
@@ -86,8 +92,9 @@ struct ShatterPlan {
     std::uint8_t soundMaterial = material::kGlass;
 };
 
-/// Shards' size in a small shatter, and Coney's stand-in for a large one (the page gives only the small size).
+/// Shards' size in a small shatter, and in a hit's shatter of a larger pane (docs/research/objects.md#shatter).
 inline constexpr float kSmallShardSize = 0.06F;
+inline constexpr float kHitShardSize = 0.2F;
 /// The shard count's cap: the size word is overwritten with `0x4f` above it.
 inline constexpr int kMaxShards = 79;
 /// How far a shard lands from the centre, as a fraction of the half-width and half-height.
@@ -164,5 +171,23 @@ class GlassPanes {
     std::array<GlassType, kGlassTypeCount> m_types{};
     std::vector<GlassPane> m_panes;
 };
+
+/// One pane's quad as the 3D sprite pass draws it: the corners in triangle-strip order (game axes) with the sheet
+/// rectangle's corners they show, and the colour word.
+struct GlassQuad {
+    double handle = kNoObject;
+    /// centre − W/2 − H/2, + W, + H, and the opposite corner, where W and H are the width and height edges.
+    std::array<anim::Vec3, 4> corners{};
+    std::uint16_t rect = 0;             ///< The `part_page1` rectangle (the sprite word's low half).
+    std::uint32_t colour = kPaneColour; ///< `0xRRGGBBAA`, RenderWare's 0-255.
+};
+
+/// The panes the frame draws for a camera at `camera` (game axes): each with a body, that is still whole (its colour
+/// kPaneColour; types 17 and 18 too) and within kPaneBodyReach, but type 14; the farther ones first in pane order,
+/// then those within kNearPaneReach in pane order (docs/research/objects.md#pane-draw). The corners show the
+/// rectangle's (u1, v1), (u0, v1), (u1, v0) and (u0, v0) in turn.
+/// @orig 0x0038ef60 GlassPane_QueueDraw (unknown)
+/// @orig 0x0038f1c8 GlassPane_UpdateBodyByDistance (unknown)
+[[nodiscard]] std::vector<GlassQuad> glassDraws(const GlassPanes& panes, anim::Vec3 camera);
 
 } // namespace coney::world_objects

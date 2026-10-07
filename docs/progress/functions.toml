@@ -1938,6 +1938,11 @@ subsystem = "Graphics"
 size = 600
 
 [[function]]
+address = 0x001831c0
+name = "Instance_DrawOneSpriteIm3D"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x00184890
 name = "ResourceMgr_CompareOverlayKeys"
 subsystem = "Graphics"
@@ -7585,6 +7590,16 @@ size = 88
 [[function]]
 address = 0x0038e860
 name = "Cars_FindNear"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038ef60
+name = "GlassPane_QueueDraw"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x0038f1c8
+name = "GlassPane_UpdateBodyByDistance"
 subsystem = "TaskEngine"
 
 [[function]]

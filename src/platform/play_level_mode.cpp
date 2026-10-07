@@ -620,6 +620,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         // The world objects, then the humans and their blob shadows, then the health rings over the shadows.
         drawWorldObjects(snapshot);
         drawCharacter();
+        drawGlass();
         drawRings(ringFeet);
         drawDebugLines(snapshot);
         if (m_levelEffects) {

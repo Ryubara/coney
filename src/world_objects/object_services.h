@@ -54,6 +54,7 @@ struct ObjectTypeInfo {
     int hitpoints = 0;         ///< Argument 3: a door's or barrier's hitpoints.
     anim::Vec3 size{};         ///< Argument 8: the object's box, metres.
     std::uint8_t material = 0; ///< Argument 13: the material its triangles take.
+    float leafWidth = 0.0F;    ///< Argument 15 (`f15`, type `+0x68`, property 5): a door leaf's width, metres.
     int objectType = 0;        ///< Argument 19: `TYPE_*` (object_type).
 };
 

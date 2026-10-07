@@ -107,14 +107,21 @@ struct DoorTypeSetup {
 /// The class of the script type `className`.
 [[nodiscard]] DoorClass doorClassOf(std::string_view className);
 
+/// A leaf's update interval, 60 Hz ticks: the time one swing takes (docs/research/objects.md#leaves).
+inline constexpr int kLeafSwingTicks = 28;
+
 /// One leaf of a swinging door (a `sub_swinging_door` object).
 struct DoorLeaf {
     double handle = kNoObject; ///< `GetLeftDoorHandle` / `GetRightDoorHandle`.
     std::string model{};       ///< Its object type (`dyn_dr_*`).
     anim::Vec3 position{};
     anim::Quat base{};     ///< The closed pose.
-    anim::Quat target{};   ///< Where message `0x35` turns it.
-    anim::Quat rotation{}; ///< Where it is (`+0x40`).
+    anim::Quat target{};   ///< Where message `0x35` last turned it (data `+0x00`).
+    anim::Quat from{};     ///< Where its swing starts (`+0x20`).
+    anim::Quat to{};       ///< Where its swing ends (`+0x40`).
+    anim::Quat rotation{}; ///< Where it is now: `from` slerped to `to` over kLeafSwingTicks.
+    int swingTicks = 0;    ///< Ticks since the swing started (`+0x50`).
+    bool turned = false;   ///< A new target waits for the leaf's next update (data `+0x14`).
     bool broken = false;   ///< A cabin door's leaf, flagged broken.
 };
 
@@ -139,7 +146,7 @@ struct Door {
     std::uint16_t number = 0;
     std::uint8_t material = 0; ///< The type's material: its triangles' and its hits' sound.
     int objectType = 0;        ///< The type's `TYPE_*` (object_type).
-    float halfWidth = 0.0F;    ///< The type's float property 5 (`w`); see Doors::spawn().
+    float leafWidth = 0.0F;    ///< `w`, the type's `CfgObj` argument 15 (property 5): one leaf's width.
 
     float angle = 0.0F;             ///< Data `+0x00`: the angle it swings to, degrees.
     float keptAngle = 0.0F;         ///< Data `+0x04`: a `DoorOpenDegree` left while it was pickable.
@@ -180,7 +187,7 @@ class Doors {
     /// links retagged for `_dclub` and `_liz`, and the lock-pick glint for the pickable types. A barrier gets its
     /// triangles two-sided with `0x40` and `0x400` and, all but `dyn_door_chain_s`, its links retagged `0x40`.
     ///
-    /// **Coney's stand-in** for `w`, the type's float property 5: half the `CfgObj` box's width (`size.x / 2`).
+    /// `w` is the type's `CfgObj` argument 15, one leaf's width (docs/research/objects.md#leaves).
     /// @orig 0x00397230 Door_Spawn (unknown)
     /// @orig 0x003fb5f8 DoorSwing_Init (unknown)
     /// @orig 0x003b2f40 DoorFence_Init (unknown)

@@ -146,6 +146,22 @@ std::string fallbackModelOf(std::string_view type) {
     return model;
 }
 
+// One 60 Hz tick of a leaf: a new target starts a swing from the last one (snapping to it first), then the pose is
+// the swing's slerp over the leaf's update interval, at a constant rate.
+// @orig 0x003fb5a0 SubSwingingDoor_Update (unknown)
+void stepLeaf(DoorLeaf& leaf) {
+    if (leaf.turned) {
+        leaf.from = leaf.to;
+        leaf.to = leaf.target;
+        leaf.swingTicks = 0;
+        leaf.turned = false;
+    } else if (leaf.swingTicks < kLeafSwingTicks) {
+        ++leaf.swingTicks;
+    }
+    const float t = static_cast<float>(leaf.swingTicks) / static_cast<float>(kLeafSwingTicks);
+    leaf.rotation = anim::slerp(leaf.from, leaf.to, t);
+}
+
 // The two loose pieces a breaking type leaves.
 std::array<std::string_view, 2> wreckOf(std::string_view type) {
     if (type == kLiz) {
@@ -239,7 +255,7 @@ const Door& Doors::spawn(double handle, const DoorSpawn& spawn, const ObjectType
     door.maxHitpoints = door.hitpoints;
     door.material = info != nullptr ? info->material : 0;
     door.objectType = info != nullptr ? info->objectType : 0;
-    door.halfWidth = info != nullptr ? info->size.x * 0.5F : 0.0F;
+    door.leafWidth = info != nullptr ? info->leafWidth : 0.0F;
 
     if (door.doorClass == DoorClass::Swinging) {
         door.setup = swingingDoorSetup(door.type);
@@ -251,9 +267,11 @@ const Door& Doors::spawn(double handle, const DoorSpawn& spawn, const ObjectType
             made.position =
                 leaf == 0
                     ? door.position
-                    : anim::add(door.position, rotate(door.rotation, anim::Vec3{-2.0F * door.halfWidth, 0.0F, 0.0F}));
+                    : anim::add(door.position, rotate(door.rotation, anim::Vec3{-2.0F * door.leafWidth, 0.0F, 0.0F}));
             made.base = leaf == 0 ? door.rotation : turnAboutVertical(door.rotation, 180.0F);
             made.target = made.base;
+            made.from = made.base;
+            made.to = made.base;
             made.rotation = made.base;
             door.leaves.push_back(std::move(made));
         }
@@ -362,8 +380,7 @@ void Doors::pickableOn(Door& door, ObjectWorld& world) {
     }
     door.pickable = true;
     door.glint = true;
-    door.glintAt =
-        anim::add(door.position, rotate(door.rotation, anim::Vec3{-0.5F * door.halfWidth, 0.0F, kGlintHeight}));
+    door.glintAt = anim::add(door.position, rotate(door.rotation, anim::Vec3{-door.leafWidth, 0.0F, kGlintHeight}));
     if (world.services != nullptr) {
         world.services->setBody(door.handle, false);
     }
@@ -436,13 +453,17 @@ void Doors::swingTo(Door& door) {
     for (std::size_t leaf = 0; leaf < door.leaves.size(); ++leaf) {
         DoorLeaf& made = door.leaves[leaf];
         made.target = turnAboutVertical(made.base, leaf == 0 ? door.angle : -door.angle);
+        made.turned = true;
     }
 }
 
 void Doors::resetLeaves(Door& door) {
     for (DoorLeaf& leaf : door.leaves) {
         leaf.target = leaf.base;
+        leaf.from = leaf.base;
+        leaf.to = leaf.base;
         leaf.rotation = leaf.base;
+        leaf.turned = false;
     }
 }
 
@@ -634,9 +655,8 @@ void Doors::setHittable(double handle, bool hittable) {
 
 void Doors::tick(ObjectWorld& world) {
     for (Door& door : m_doors) {
-        // Each leaf takes its target on its update (Coney's stand-in for the easing: at once).
         for (DoorLeaf& leaf : door.leaves) {
-            leaf.rotation = leaf.target;
+            stepLeaf(leaf);
         }
         if (door.ended || door.doorClass != DoorClass::Swinging) {
             continue;

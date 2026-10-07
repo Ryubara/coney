@@ -30,12 +30,13 @@ namespace door_command = coney::world_objects::door_command;
 
 namespace {
 
-// A swinging door type's CfgObj: 2 m wide, `hitpoints`, material 9, `objectType`.
+// A swinging door type's CfgObj: 2 m wide, leaves 1 m wide, `hitpoints`, material 9, `objectType`.
 ObjectTypeInfo swinging(int hitpoints, int objectType = 0) {
     return ObjectTypeInfo{.className = "dyn_door_swinging",
                           .hitpoints = hitpoints,
                           .size = {2.0F, 0.1F, 2.2F},
                           .material = 9,
+                          .leafWidth = 1.0F,
                           .objectType = objectType};
 }
 
@@ -121,13 +122,17 @@ TEST_CASE("OpenDoor swings, and collision goes 29 ticks later; CloseDoor brings 
     CHECK(fixture.services.sounds == std::vector<std::uint32_t>{coney::world_objects::kDefaultOpenSound});
     tick(doors, fixture, 1);
     CHECK(doors.find(handle)->state == door_state::kSwung);
-    // The leaves took their targets: the left turned +170°, the right -170° from its base.
-    CHECK(doors.find(handle)->leaves[0].rotation.z == Catch::Approx(std::sin(85.0 * 3.14159265 / 180.0)).margin(1e-4));
-    tick(doors, fixture, 27);
+    // The leaves start their swing from the closed pose: the left turns +170°, the right -170° from its base, at a
+    // constant rate over 28 ticks.
+    CHECK(doors.find(handle)->leaves[0].rotation.z == Catch::Approx(0.0).margin(1e-4));
+    tick(doors, fixture, 14);
+    CHECK(doors.find(handle)->leaves[0].rotation.z == Catch::Approx(std::sin(42.5 * 3.14159265 / 180.0)).margin(1e-4));
+    tick(doors, fixture, 13);
     CHECK(fixture.enabled(0));
     CHECK_FALSE(doors.isOpen(handle));
     tick(doors, fixture, 1);
     CHECK(doors.isOpen(handle));
+    CHECK(doors.find(handle)->leaves[0].rotation.z == Catch::Approx(std::sin(85.0 * 3.14159265 / 180.0)).margin(1e-4));
     CHECK_FALSE(fixture.enabled(0));
     CHECK_FALSE(fixture.paths.edges()[0].avoid);
     CHECK((fixture.paths.polygons()[3].flags & coney::world::kPathPolygonExcluded) != 0);

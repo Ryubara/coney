@@ -176,6 +176,15 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
     m_placed->draw(options);
 }
 
+void PlayLevelMode::drawGlass() const {
+    if (m_objects == nullptr || !m_engine.drawsPixels()) {
+        return;
+    }
+    // The camera in the game's axes: RenderWare's (x, y, z) is the game's (x, -z, y).
+    const world::Vec3 eye = m_lights->scene().pose().position;
+    m_lights->drawGlass(world_objects::glassDraws(m_objects->glass, anim::Vec3{eye.x, -eye.z, eye.y}));
+}
+
 void PlayLevelMode::drawRings(const std::map<std::uint64_t, anim::Vec3>& feet) const {
     // Each ring and marker under where its human is drawn this frame, at its own height above the feet.
     std::vector<hud::GroundRing> rings = m_rings.rings();

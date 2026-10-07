@@ -305,4 +305,33 @@ void SceneLighting::drawBlobShadows(std::span<const graphics::BlobShadow> shadow
     drawQuads(vertices, texture);
 }
 
+void SceneLighting::drawGlass(std::span<const world_objects::GlassQuad> panes) const {
+    rw::Texture* texture = rwTextureOf(m_shadowSheet);
+    if (texture == nullptr || !m_shadowSheet) {
+        return;
+    }
+    const graphics::ParticlePage& page = m_shadowSheet->page;
+    std::vector<rw::gl3::Im3DVertex> vertices;
+    for (const world_objects::GlassQuad& pane : panes) {
+        if (pane.rect >= page.rects.size()) {
+            continue;
+        }
+        const graphics::UvRect& uv = page.rect(pane.rect);
+        const std::array<std::uint8_t, 4> rgba{
+            static_cast<std::uint8_t>(pane.colour >> 24U), static_cast<std::uint8_t>(pane.colour >> 16U),
+            static_cast<std::uint8_t>(pane.colour >> 8U), static_cast<std::uint8_t>(pane.colour)};
+        // Game axes into RenderWare's (x, z, -y); the strip's corners show (u1, v1), (u0, v1), (u1, v0), (u0, v0).
+        const auto at = [&pane](std::size_t i) {
+            const anim::Vec3& p = pane.corners.at(i);
+            return rw::V3d{p.x, p.z, -p.y};
+        };
+        const rw::gl3::Im3DVertex a = vertex(at(0), uv.u1, uv.v1, rgba);
+        const rw::gl3::Im3DVertex b = vertex(at(1), uv.u0, uv.v1, rgba);
+        const rw::gl3::Im3DVertex c = vertex(at(2), uv.u1, uv.v0, rgba);
+        const rw::gl3::Im3DVertex d = vertex(at(3), uv.u0, uv.v0, rgba);
+        vertices.insert(vertices.end(), {a, b, c, c, b, d});
+    }
+    drawQuads(vertices, texture);
+}
+
 } // namespace coney::platform

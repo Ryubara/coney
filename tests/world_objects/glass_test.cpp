@@ -44,6 +44,7 @@ TEST_CASE("the shatter: 10 shards per square metre, small panes and the cap", "[
     CHECK(shatterPlan(size(1, 1)).soundMaterial == material::kGlassSmall);
     CHECK(shatterPlan(size(0, 3)).count == 10); // under 2: the small shatter
     CHECK(shatterPlan(size(0, 3)).shardSize == Catch::Approx(0.06F));
+    CHECK(shatterPlan(size(2, 2)).shardSize == Catch::Approx(0.2F));
     CHECK(shatterPlan(size(2, 1)).count == 20);
 }
 
@@ -176,4 +177,38 @@ TEST_CASE("message 0 shatters without breaking", "[world_objects][glass]") {
     CHECK_FALSE(panes.find(handle)->broken);
     CHECK_FALSE(fixture.enabled(2));
     CHECK(fixture.services.pairs.size() == 1);
+}
+
+TEST_CASE("the panes drawn: whole ones within 50 m as a quad of their rectangle, the near ones last",
+          "[world_objects][glass]") {
+    coney::test::ObjectWorldFixture fixture;
+    GlassPanes panes;
+    panes.setType(1, GlassType{.windowLink = false, .alarm = false, .sprite = 0x00010014, .brokenSprite = 0x15});
+    panes.setType(17, GlassType{.windowLink = false, .alarm = false, .sprite = 0x15, .brokenSprite = 0x15});
+    const double near = panes.spawn(fixture.handle(), pane(1), fixture.world).handle;
+    const double far = panes.spawn(fixture.handle(), pane(1, 31.0F), fixture.world).handle;
+    const double gone = panes.spawn(fixture.handle(), pane(1, 61.0F), fixture.world).handle;
+    const double preBroken = panes.spawn(fixture.handle(), pane(17, 21.0F), fixture.world).handle;
+    const double broken = panes.spawn(fixture.handle(), pane(1, 41.0F), fixture.world).handle;
+    panes.hit(broken, fixture.world);
+
+    // From (5, 12, 1): the first pane 1 m away is near; the one at y 62 is beyond 50 m; the broken one is not drawn.
+    const std::vector<coney::world_objects::GlassQuad> quads =
+        coney::world_objects::glassDraws(panes, coney::anim::Vec3{5.0F, 12.0F, 1.0F});
+    REQUIRE(quads.size() == 3);
+    CHECK(quads[0].handle == far);
+    CHECK(quads[1].handle == preBroken);
+    CHECK(quads[2].handle == near);
+    CHECK(quads[2].rect == 0x14); // the high half ignored
+    CHECK(quads[1].rect == 0x15);
+    CHECK(quads[2].colour == coney::world_objects::kPaneColour);
+    // The corners: the first, along the width, along the height, the opposite one.
+    CHECK(quads[2].corners[0].y == Catch::Approx(11.0F));
+    CHECK(quads[2].corners[0].z == Catch::Approx(0.0F));
+    CHECK(quads[2].corners[1].y == Catch::Approx(13.0F));
+    CHECK(quads[2].corners[2].z == Catch::Approx(2.0F));
+    CHECK(quads[2].corners[3].y == Catch::Approx(13.0F));
+    CHECK(quads[2].corners[3].z == Catch::Approx(2.0F));
+    CHECK(panes.find(broken)->colour == coney::world_objects::kBrokenPaneColour);
+    static_cast<void>(gone);
 }

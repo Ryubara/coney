@@ -12,6 +12,7 @@
 #include "graphics/particle_page.h"
 #include "hud/health_rings.h"
 #include "world/view_frustum.h"
+#include "world_objects/glass.h"
 
 // librw's types, declared rather than included: <rw.h> brings in SDL and the OpenGL loader.
 namespace rw {
@@ -69,6 +70,10 @@ class SceneLighting {
     /// lights its sphere overlaps, as a human's (docs/research/objects.md#models: the lights are chosen per object).
     /// @orig 0x0017fd78 ObjectRender_Draw (unknown)
     void drawObjectAtomic(rw::Atomic* atomic);
+    /// Draws the glass panes (game axes) from `part_page1`, each a quad of its rectangle in its colour: alpha blended,
+    /// Z tested, no Z write, no culling, no fog.
+    /// @orig 0x001831c0 Instance_DrawOneSpriteIm3D (unknown)
+    void drawGlass(std::span<const world_objects::GlassQuad> panes) const;
     /// Draws the health rings and the L1 markers (game axes) from `part_page1`: triangle fans in their per-vertex
     /// colours, Z tested, fog off. **Coney's stand-in** for the state the world pass leaves (not traced): alpha
     /// blended, no Z write.
