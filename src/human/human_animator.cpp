@@ -330,11 +330,13 @@ void HumanAnimator::choose(const AnimInputs& inputs) {
     if (m_state == AnimState::Jump && inputs.airborne) {
         return;
     }
-    // The state: falling, moving (asked to, or still going faster than a quarter of the walk), or idle.
+    // The state: falling, moving (asked to, or still going faster than a quarter of the walk), or idle. A start clip
+    // no longer asked for gives way to the idle at once whatever its root motion's speed, as the idle's builder fades
+    // over a start clip still playing (`0x0025f770`, docs/research/characters.md#clip-selection).
     AnimState next = AnimState::Idle;
     if (inputs.airborne) {
         next = AnimState::Fall;
-    } else if (inputs.wantsMove || inputs.speed >= kIdleSpeedShare * m_speeds.walk) {
+    } else if (inputs.wantsMove || (inputs.speed >= kIdleSpeedShare * m_speeds.walk && !startClipPlaying())) {
         next = AnimState::Move;
     }
     // While the idle's fade holds 0x10000000 the move waits: the walk start begins the update the fade ends (at

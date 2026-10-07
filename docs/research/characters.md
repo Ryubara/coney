@@ -1519,7 +1519,9 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   resource manager `+0x70` is not decoded.
 - **Standing**: a human not asked to move counts as moving while faster than a quarter of the walk speed. The
   original's getter `0x00221580` is the **sneak-walk** speed (record `+0x16c` × `+0x3a4`, 1.585 for Rembrandt;
-  confirmed (code)), so the original's threshold is 0.396 m/s against Coney's 0.407.
+  confirmed (code)), so the original's threshold is 0.396 m/s against Coney's 0.407. **Coney's reading**: a start clip
+  no longer asked for gives way to the idle at once, whatever its root motion's speed: the idle builder fades over a
+  start clip still playing (`0x0025f770`, above), which the speed test alone would never reach.
 - **Falling**: state 26's builder loops the drop cycle (slot 26, 428) with the idle's 0.15 s fade; a drop lands
   straight into the idle or the move, without the drop land (429), the long-fall cycles or the ground roll.
 - **Locomotion while a start clip plays** keeps turning (only the horizontal velocity waits for the clip), as the

@@ -121,6 +121,25 @@ TEST_CASE("a full stick runs: the run start, then 0.8 m/s more each update up to
     CHECK(human.speed() < 0.5F);
 }
 
+TEST_CASE("letting go during the run start goes to the idle at once, whatever the clip's speed", "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 5.0F, 0.0F});
+    human.step(stick(0.0F, 1.0F), mesh.get());
+    human.step(stick(0.0F, 1.0F), mesh.get());
+    REQUIRE(human.animator().startClipPlaying());
+    REQUIRE(human.speed() > 0.5F);
+    // The release: the idle replaces the run start (the idle builder's fade over a start clip), so its root motion
+    // stops carrying the body (docs/research/characters.md#clip-selection).
+    human.step(stick(0.0F, 0.0F), mesh.get());
+    CHECK(human.animator().state() == AnimState::Idle);
+    const Vec3 at = human.position();
+    for (int i = 0; i < 10; ++i) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+    }
+    CHECK(std::hypot(human.position().x - at.x, human.position().y - at.y) < 0.2F);
+}
+
 TEST_CASE("the update a walk start begins does not move the body; the clip moves it from the next", "[human]") {
     const TestCharacter character;
     const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
