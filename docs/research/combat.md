@@ -469,9 +469,58 @@ needs and spends 0.25 of the power meter. At runtime (confirmed (runtime)): cros
 played 653, power 400 → 300, the civilian lost 6 and fell (291, grounded 196, up with 199 2.0 s after the hit);
 circle + cross at a victim getting up played 359 and then `X1`.
 
-**Slot 10 (a fence)**: sprinting at a breakable fence (L2 held, stick 1.0 straight at it) and pressing cross charges;
-the charge stopped at the fence, and about 1.4 s later a cutscene placed the player on the far side. Confirmed
-(runtime). That the break is a script trigger reacting to the charge is inferred.
+#### How a moving attack strikes {#moving-strikes}
+
+A moving attack has no single hit update. Its clip's events switch **strike shapes** on and off (the human's
+strike-on and strike-off messages, `0x00247fc0` / `0x00248110` from `Human_HandleMessage`, through `0x0021c030` to
+the body's switch `0x003428d0`, [Moving into a pane](objects.md#pane-break)), and while any is on
+`Human_TestStrikes` (`0x0033f110`) tests them **every update, after the move**, against every body near the human:
+the first shape that overlaps a body calls `Strike_Contact` (`0x0021b290`) for it. The strike shapes are the human's
+own capsule (2.0 × 0.35 m, [Physics](physics.md)) and bone shapes, posed by the clip, so the reach is the body
+itself and there is no reach or height figure of its own. Confirmed (code) at those addresses; the timings below are
+confirmed (runtime).
+
+- **What it hits.** Humans and objects go through the same test. A human's body is tested against the shapes of the
+  target that carry flag `0x4` (or its capsule, when `0x00101b88` says so for the attacker's clip); an object's
+  against its own shapes; a shape touching the level mesh calls `Strike_Contact` with no object (a material impact
+  sound only). `Strike_Contact` then does what a hit on that thing does: damage from the clip's
+  [Anim Range List](#damage-table) value for a human, message 1 of kind 2 for an object
+  ([World objects](objects.md#door-break)), and for a pane its break. A body struck is put on the striking body's
+  contact list (body vtable `+0x34` / `+0x44`) and not struck again while the shapes stay on (inferred from the list's
+  use; what empties it is `0x00342168`, run when the shapes go off). The same overlap also runs from the human's
+  move: a sweep by a strike shape meets bodies with flag `0x20`, and `Human_OnContact` (`0x00219d50`) calls
+  `Strike_Contact` once per body.
+- **Which shapes, and when** (updates of 1/30 s from the clip's first update, slot 10, stick 100 % straight ahead):
+
+  | Move | Shapes switched on | On | Off | Clip |
+  | --- | --- | --- | --- | --- |
+  | charge 0 (L2 + cross) | all ten bone shapes (bones 3, 6, 18, 19, 24, 25, 29, 30, 32, 33) and so the capsule (flags `0x11` → `0x13`) | 3 | 16 (all off at once) | 27 updates, 7.45 m/s throughout in the open |
+  | dive 1 (L2 + square) | the same ten | 1 | 23 | |
+  | run attack 24 (cross at gait 4) | bones 24, 25 | 1 | 7 | 21 |
+  | walk attack 23 | bones 18, 19 | 4 | 10 | 24 |
+
+  Which limb each bone pair is was not checked. So the **charge strikes with its whole body from its 4th update to its
+  16th**, about 13 × 0.25 m = 3.2 m of its 6.7 m; the run attack strikes only for 6 updates near its start.
+- **The fence (slot 10).** Rembrandt starts 4.8 m from `level99`'s wooden fence (centre line y −6.67) with the
+  stick at 100 % straight at it and L2 held; cross at gait 4 started the charge (clip 0, record `+0x08`
+  `0x1000000`). On its 10th update, his root 0.80 m from the fence's line, `Strike_Contact` came from the strike test
+  for the fence; the fence took the hit with 10 hitpoints and broke (kind 2: 16). The dive broke it the same way on
+  its 7th update, 1.05 m from the line (record `+0x08` `0x400000`). The walk attack 23, pressed while walking against
+  the fence, also broke it (its record `+0x08` holds `0x1000000` too, so kind 2). The run attack 24 did not: its
+  shapes were off 1.1 m short, and he ran into the fence and slid along it at 1.07 m/s.
+- **The strike does not end the charge.** The shapes stay on and the clip runs its 27 updates whether or not
+  anything was struck. What stopped him at the fence was the collision: 2 updates after the strike he stopped dead
+  0.42 m from the fence's line, with no slide, and did not move again before the clip ended (11 updates later), even
+  after the fence object was gone (inferred to be the fence's own collision body, which the break leaves until the
+  object is removed, [Barriers](objects.md#barriers); why the charge does not slide or resume is not traced). In the
+  open the same input ran the whole clip at 7.45 m/s and the run (410) followed.
+- **After the break** the script takes over ([Barriers](objects.md#barriers)): the fence's message 2 reaches
+  `P3.FenceBroken`, and 15 updates later the player stood at (18.5, −16.3), heading 178°, beyond the fence. From the
+  strike to that placement took 26 updates in the charge run, 33 in the walk-attack run.
+
+Confirmed (runtime), PCSX2 2.9.94, copies of slot 10, scenario
+[`charge_fence`](repo:research/traces/scenarios/charge_fence.toml) (hooks `strike-shape`, `strike-contact`,
+`barrier-hit` and `object-remove`); the open-ground run turned the stick to 100 % straight back.
 
 ### When input and the stick come back {#input-return}
 
@@ -1704,6 +1753,10 @@ panes at x 50.25-52.26, y 56.99, 3 `dyn_ringdmnd` in the next cabinet (x 48.16-5
 
 Scenario `store_loot` (`repo:research/traces/scenarios/store_loot.toml`) replays this with the hooks that log it.
 
+**A wooden fence** (slot 10, `level99` checkpoint 3.5): the charge, the dive or the walk attack breaks it with their
+strike shapes, the run attack falls short; the break, its message 2 and the script's placement are under
+[How a moving attack strikes](#moving-strikes) and [Barriers](objects.md#barriers).
+
 ### The stereo theft {#stereo-theft}
 
 **Triangle** at a car's open window with a radio (slot 5) plays 683 `STEREO_STEAL_INTRO` (0.55 s), then the loop 684,
@@ -2111,7 +2164,8 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   (`Player_Square` on a tackled target; never seen at runtime).
 - **Square at a sprint** at runtime, and the moving attacks' hit timing (the victim was out of reach in the tests).
 - **The mugging's angle frame** (world or camera).
-- **The fence break** in slot 10: which script reacts to the charge.
+- **The charge's stop at a barrier**: why it stops dead with no slide and does not resume once the barrier is gone
+  ([How a moving attack strikes](#moving-strikes)); which limb each strike bone pair is.
 - **The far ranges' class table** (`0x002545e0`, table `0x0055d640`): which of the class's 45 floats goes to which
   anim id, as the damage table's index → id map does for the damage.
 - **The snap's steer and target**: whether `0x00264460`'s turn faces the target or puts it at the snap's side (Coney

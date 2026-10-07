@@ -1,0 +1,17 @@
+# level99 checkpoint 3.5 (P3.WoodenFences): slot 10 stands Rembrandt in sight of the breakable wooden fence. A sprint
+# (L2 held, the stick at 100 % straight ahead) and cross: the charge (anim 0). The hooks show when the charge's strike
+# shapes go on and off, the strike's contact with the fence, the barrier's hit and its removal, whose message 2 is
+# what P3.FenceBroken waits for. Research: docs/research/combat.md#run-attacks.
+description = "level99 wooden fence: sprint and charge into the breakable fence; the strike, the hit and the break"
+research = "docs/research/combat.md#run-attacks"
+input = "charge_fence.txt"
+updates = 150
+fields = ["player", "strike"]
+
+[original]
+slot = 10
+patches = ["scripted-pad", "right-stick", "strike-contact", "strike-shape", "barrier-hit", "object-remove"]
+
+[coney]
+level = "level99"
+args = ["--checkpoint", "3"]

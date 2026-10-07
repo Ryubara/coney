@@ -1,0 +1,6 @@
+# A sprint straight ahead (the stick at 100 %, L2 held), then cross at a run, 3 m before the fence: the charge.
+5 stick left 0 100
+5 press l2
+18 tap cross
+60 release l2
+60 stick left 0 0

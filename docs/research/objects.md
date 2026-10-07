@@ -82,7 +82,8 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003f9ad0` / `0x003fa438` | `DoorSwing_Hit` / `DoorSwing_HitBreakable` | message 1 | confirmed (code) |
 | `0x003fb330` / `0x003fb5a0` / `0x003fb430` | `sub_swinging_door` init / update / message | a leaf | confirmed (code) |
 | `0x003a2310` / `0x00336a00` | `Task_Integrate` / `Quat_Slerp` | a leaf's rotation step and its in-between pose ([Leaves](#leaves)) | confirmed (code) |
-| `0x003b2f40` / `0x003b3158` / `0x003b2180` | `dyn_door_fence` init / message / hit | a breakable barrier | confirmed (code) |
+| `0x003b2f40` / `0x003b3220` / `0x003b3158` / `0x003b2180` | `dyn_door_fence` init / update / message / hit | a breakable barrier | confirmed (code), runtime |
+| `0x00391c10` | `WorldObject_Remove` | vtable `+0x4c`: message 2 to the object's handlers, out of its record, deleted ([Barriers](#barriers)) | confirmed (code), runtime |
 | `0x00250c00` | `NavLinks_SetKindByNumber(number, kind)` | retags every navigation link carrying a number | confirmed (code) |
 | `0x00250c50` / `0x00250d00` | `NavLinks_OpenByNumber` / `NavLinks_CloseByNumber` | bit 31 of every link with a number, path flag 8 of its door hole | confirmed (code) |
 | `0x002508b8` | `NavLink_DoorPolygon(link)` | the hole at the middle of a door link | confirmed (code) |
@@ -992,10 +993,11 @@ this pose "now" is inferred: it is the only place the slerp happens. The door's 
 
 A **hit** is message 1, the same as a pane's: a direction, a point, an int, the hit's **kind** and two handles (the
 attacker). The human path (`0x0021b290`) sends kind 0 for a plain hit, 2 while the attacker's record `+0x08` has any of
-`0x1400000` (the run attack, charge or dive) and 3 while airborne (object flag `0x4000000`); a thrown object
-(`0x00393538`) sends 1 (3 for `TYPE_MISSIONTV`, 0 for an object of animation set 5 other than a molotov). Every door
-and barrier takes **4 + 6 × kind** hitpoints: 4, 10, 16 or 22. Confirmed (code) at `0x003f9ad0`, `0x003fa438`,
-`0x003b2180`.
+`0x1400000` (`0x1000000`: the run attack, the charge and, at runtime, the walk attack 23; `0x400000`: the dive) and 3
+while airborne (object flag `0x4000000`); a thrown object (`0x00393538`) sends 1 (3 for `TYPE_MISSIONTV`, 0 for an
+object of animation set 5 other than a molotov). Every door and barrier takes **4 + 6 × kind** hitpoints: 4, 10, 16
+or 22. Confirmed (code) at `0x003f9ad0`, `0x003fa438`, `0x003b2180`; the kinds of the moving attacks confirmed
+(runtime) on a fence ([Barriers](#barriers)).
 
 - **`dyn_door_store`** (`TYPE_BREAKANDENTER_DOOR`, 1 hitpoint): the first hit plays sound `0xcf6586b2` and the
   `GLASS` × `GLASS` pair, triangles off, and the door sends itself `0x0b` (the human pushed is inferred to be the
@@ -1015,16 +1017,39 @@ and barrier takes **4 + 6 × kind** hitpoints: 4, 10, 16 or 22. Confirmed (code)
 
 `dyn_door_fence` and the classes beside it are single objects, not leaves: `SpawnDoor` with the same arguments; the
 triangles get two-sided, `0x40` and `0x400`, the number's links are retagged `0x40` at spawn, and the update interval is
-60 ticks. Hitpoints from the type, written to `+0x128`. A hit (`0x003b2180`) takes 4 + 6 × kind and makes dust and 20
-splinters. One that leaves hitpoints swaps to the damaged model (`0x7f97c350`). At 0 or below: triangles off, the
-number's links opened; all but `dyn_door_wall_a`/`_b` throw three `dyn_wooddmg_a`/`_b` boards (unless game state bit
-2); then the barrier hides itself, or, for `dyn_door_vargas`, which makes a second object at spawn (data `+0x08`),
-destroys that object and takes model `0x3b4fefad`. The type's material pair sounds unless game state bit 4.
-Message 10 sets whether it can be hit (`0x003a17e8`), `0x19` its hitpoints. Confirmed (code) for `dyn_door_fence`; the
-other five classes are alike by their shared calls, not read in full.
+60 ticks. Hitpoints from the type, written to data `+0x04` and object `+0x128`. A hit (`0x003b2180`) takes 4 + 6 ×
+kind and makes dust and 20 splinters; one that leaves hitpoints does nothing more. At 0 or below: both triangle sets
+off, the number's links opened (`0x00250c50`), then by class name:
 
-The player charging one: [Combat, slot 10](combat.md#breakables) (a charge is kind 2: 16 hitpoints, so a fence's 10
-go in one).
+- `dyn_door_wall_a`: a sound, flag `0x800000`, the damaged model `0x7f97c350` and its collision body removed
+  (`0x003a5340`);
+- `dyn_door_wall_b`: sounds only;
+- the others (`dyn_door_fence`, `dyn_door_vargas`): more dust (unless bit 2 of game state word 0, `0x0041cf30`), a
+  sound, and three `dyn_wooddmg_a`/`_b` boards (unless bit 2 of word 3), each sent messages `0x19` and `0x30`.
+
+Then the type's material pair sounds (unless bit 4 of word 3), and the barrier either marks itself broken (data
+`+0x00` = 1) and hides (flag 4), or, for `dyn_door_vargas`, which makes a second object at spawn (data `+0x08`),
+destroys that object (message `0x15`), takes model `0x3b4fefad` and loses its body. Message 10 sets whether it can be
+hit (`0x003a17e8`), `0x19` its hitpoints. Confirmed (code) at `0x003b2180`, `0x003b2f40`, `0x003b3158` for
+`dyn_door_fence`; the other five classes are alike by their shared calls, not read in full.
+
+**Message 2 is the removal.** The class's update (`0x003b3220`, every 60 ticks) only answers whether data `+0x00` is
+set. When it is, `WorldObject_Update` (`0x00395b70`) calls the object's vtable `+0x4c`, `WorldObject_Remove`
+(`0x00391c10`), which sends the object's own handlers message **2** with `+0x00` = 0 (a script's callback gets
+`(self, NilHandle)`, [Scripts](scripting.md#message-handlers)), takes it out of its spawn record for good
+(`0x00398cb0`, record bit `0x40000`) and deletes it (`0x00391b08`, which frees its collision body). So a broken
+fence's script hears of it on the fence's next update, up to 1 s after the hit, and until then the hidden fence keeps
+its body. Nothing in the barrier's hit sends a message itself. Confirmed (code). Every world object removed this way
+sends message 2, which is why the [script event](../references/script-events.md) list reads it as "finished or
+broke".
+
+At runtime (confirmed (runtime), PCSX2 2.9.94, slot 10, `level99` checkpoint 3.5; scenario
+[`charge_fence`](repo:research/traces/scenarios/charge_fence.toml)): the fence (type index 520, centre (23.6, −6.67))
+had 10 hitpoints and broke on one charge, dive or walk-attack hit (kind 2). Its three boards were removed on their
+own first update, the update after the hit (type indices 1368 and 1369, along the fence at x 22.7, 23.7 and 24.6); why
+is not traced. The fence was removed 4, 11 and 18 updates after the hit in three runs (its 60-tick phase); in the same
+update the objective marker went, and 15 updates later `P3.FenceBroken`'s placement put the player at (18.5, −16.3),
+beyond the fence. Breaking in by charge: [Combat](combat.md#moving-strikes).
 
 ### Lock picking {#lock-pick}
 

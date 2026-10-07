@@ -342,3 +342,27 @@ address = 0x0021b290
 # addiu sp,sp,-0xe0; sq s1,0xb0(sp)
 original = [0x27bdff20, 0x7fb100b0]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "human" }, { value = "[a1 + 0x40]", name = "object" }]
+
+[hook.strike-shape]
+description = "Each call of 0x003428d0, the body's strike-shape switch (the human's strike-on and strike-off messages): the body, the bone byte (negative: every shape), on (1) or off (0) and the caller."
+research = "docs/research/combat.md#run-attacks"
+address = 0x003428d0
+# addiu sp,sp,-0x40; sq s0,0x30(sp)
+original = [0x27bdffc0, 0x7fb00030]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "body" }, { value = "a1", name = "bone" }, { value = "a2", name = "on" }, { value = "[a0 + 0xc0]", name = "mask" }]
+
+[hook.barrier-hit]
+description = "Each hit (message 1) on a breakable barrier of the dyn_door_fence class (0x003b2180): the object and its hitpoints before the hit (data +0x04)."
+research = "docs/research/objects.md#barriers"
+address = 0x003b2180
+# addiu sp,sp,-0x1c0; sq s5,0x120(sp)
+original = [0x27bdfe40, 0x7fb50120]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "object" }, { value = "[a1 + 0x4]", name = "hitpoints", type = "s32" }]
+
+[hook.object-remove]
+description = "Each call of WorldObject_Remove (0x00391c10): the object, which first sends its script handlers message 2."
+research = "docs/research/objects.md#barriers"
+address = 0x00391c10
+# addiu sp,sp,-0x50; lui v1,0x4
+original = [0x27bdffb0, 0x3c030004]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "object" }, { value = "[a0 + 0x10]", name = "x", type = "f32" }, { value = "[a0 + 0x14]", name = "y", type = "f32" }, { value = "[a0 + 0x112]", name = "type", type = "u16" }]
