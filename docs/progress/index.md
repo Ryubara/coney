@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.8% of the game's own code (563,308 of 3,354,776 bytes, 1,946 functions) |
+| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.8% of the game's own code (563,308 of 3,354,776 bytes, 2,008 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,220 of 3,284,028 bytes; 11,424 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-712 reimplemented function(s) have no size yet and add no bytes.
+774 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -65,27 +65,27 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `███████░░░░░░░░░░░░░` | 35.0% | 28 | 54,616 |
 | `Audio` | `█▋░░░░░░░░░░░░░░░░░░` | 8.4% | 91 | 57,368 |
-| `Camera` | `█▏░░░░░░░░░░░░░░░░░░` | 5.6% | 67 | 165,680 |
+| `Camera` | `█▏░░░░░░░░░░░░░░░░░░` | 5.6% | 81 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
-| `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
+| `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 110 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 87 | 195,624 |
-| `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 232 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 689 | 1,096,672 |
+| `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 233 | 497,416 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 713 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 8 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
-| `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
+| `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 12 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
-| `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 211 | 197,192 |
+| `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 223 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `███▏░░░░░░░░░░░░░░░░` | 15.8% | 160 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
-| `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 27 | 22,008 |
-| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 19.0% | 111 | 54,264 |
+| `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 32 | 22,008 |
+| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 19.0% | 112 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -270,6 +270,7 @@ at the top of the repository's `README.md`.
 | `0x0011bad8` | `Camera_ResetByHandle` | `Camera` | not filled in |
 | `0x0011bb98` | `Camera_SetClipping` | `Camera` | not filled in |
 | `0x0011bdc0` | `Camera_LockLocked` | `Camera` | not filled in |
+| `0x0011be18` | `Camera_CreateThird` | `Camera` | not filled in |
 | `0x0011bfa8` | `Camera_SetupFollow` | `Camera` | not filled in |
 | `0x0011c0b8` | `CfgFollowCamera` | `Camera` | not filled in |
 | `0x0011c270` | `Camera_TargetList` | `Camera` | not filled in |
@@ -277,11 +278,16 @@ at the top of the repository's `README.md`.
 | `0x0011c3b8` | `Camera_SetFollowPitch` | `Camera` | not filled in |
 | `0x0011c470` | `Camera_SetFollowZoom` | `Camera` | not filled in |
 | `0x0011c638` | `Camera_SetFollowPosition` | `Camera` | not filled in |
+| `0x0011c6b8` | `Camera_CreateFixed` | `Camera` | not filled in |
 | `0x0011c858` | `Camera_CreateWin` | `Camera` | 392 |
 | `0x0011c9e0` | `Camera_SetupPoizo` | `Camera` | not filled in |
 | `0x0011cb70` | `Camera_ReversePoizo` | `Camera` | not filled in |
 | `0x0011cbb0` | `Camera_AddPoizoPoint` | `Camera` | not filled in |
 | `0x0011cc68` | `Camera_AddPoizoPointCam` | `Camera` | not filled in |
+| `0x0011cce8` | `Camera_SetupRail` | `Camera` | not filled in |
+| `0x0011cf70` | `Camera_SetRailLead` | `Camera` | not filled in |
+| `0x0011d098` | `Camera_AddRailPoint` | `Camera` | not filled in |
+| `0x0011d228` | `Camera_ModifyRail` | `Camera` | not filled in |
 | `0x0011dcf0` | `Camera_SetFollowSecondary` | `Camera` | not filled in |
 | `0x0011dd78` | `Camera_CanSeeObject` | `Camera` | not filled in |
 | `0x0011de58` | `Camera_EnableFeature` | `Camera` | not filled in |
@@ -289,7 +295,9 @@ at the top of the repository's `README.md`.
 | `0x0011e198` | `Camera_AssignReverseButton` | `Camera` | 24 |
 | `0x0011e878` | `Cameras_Update` | `Camera` | not filled in |
 | `0x0011ee08` | `Camera_MakeActive` | `Camera` | not filled in |
+| `0x0011fbb0` | `Camera_GetPlayerRail` | `Camera` | not filled in |
 | `0x001202e8` | `Camera_AnyPlayerCanSeePoint` | `Camera` | 152 |
+| `0x001205e8` | `Cam3rdPerson_Update` | `Camera` | not filled in |
 | `0x001210f8` | `Cam_StartShake` | `Camera` | not filled in |
 | `0x00121298` | `Cam_UpdateShake` | `Camera` | not filled in |
 | `0x00122248` | `Camera_SwitchTarget` | `Camera` | 104 |
@@ -298,6 +306,8 @@ at the top of the repository's `README.md`.
 | `0x001236e0` | `CamFailed_Activate` | `Camera` | 424 |
 | `0x001238a8` | `CamFailed_Place` | `Camera` | 760 |
 | `0x00123bf0` | `CamFailed_Update` | `Camera` | 688 |
+| `0x00124000` | `CamFixed_ComputeLookAt` | `Camera` | not filled in |
+| `0x00124690` | `CamFixed_Update` | `Camera` | not filled in |
 | `0x00124d00` | `Cam_Follow_Reset` | `Camera` | not filled in |
 | `0x00124f38` | `Cam_Follow_PlaceBehind` | `Camera` | not filled in |
 | `0x001250a8` | `Cam_Follow_PlaceAtHeading` | `Camera` | not filled in |
@@ -323,6 +333,10 @@ at the top of the repository's `README.md`.
 | `0x001358d0` | `LockedCam_SetKeptInView` | `Camera` | not filled in |
 | `0x00135960` | `LockedCam_PushInsideSides` | `Camera` | not filled in |
 | `0x00135ca8` | `LockedCam_KeepHumansInView` | `Camera` | not filled in |
+| `0x0013b2b8` | `CamRail_Reset` | `Camera` | not filled in |
+| `0x0013b780` | `CamRail_AppendPoint` | `Camera` | not filled in |
+| `0x0013d010` | `CamRail_Update` | `Camera` | not filled in |
+| `0x0013f930` | `CamRail_EaseValue` | `Camera` | not filled in |
 | `0x00142578` | `PoizoCam_Reverse` | `Camera` | not filled in |
 | `0x001426c0` | `PoizoCam_Update` | `Camera` | not filled in |
 | `0x00142a58` | `PoizoCam_AddPoint` | `Camera` | not filled in |
@@ -462,6 +476,7 @@ at the top of the repository's `README.md`.
 | `0x0016ab90` | `Gang_ClearHandlers` | `GameModes` | 176 |
 | `0x0016acf0` | `GangMakeEnemies` | `GameModes` | 144 |
 | `0x0016ad80` | `GangMakeFriends` | `GameModes` | 144 |
+| `0x0016ae60` | `Gang_MakeEnemiesOfType` | `GameModes` | not filled in |
 | `0x0016ae90` | `Gang_MakeNeutralOfTypeById` | `GameModes` | 48 |
 | `0x0016afc8` | `Gang_StartSpawner` | `GameModes` | not filled in |
 | `0x0016b070` | `Gang_SetSpawnerMustBeOffScreen` | `GameModes` | 64 |
@@ -478,10 +493,13 @@ at the top of the repository's `README.md`.
 | `0x0016bb58` | `Gang_SetAttackable` | `GameModes` | not filled in |
 | `0x0016bbf0` | `Gang_SetHearRange` | `GameModes` | not filled in |
 | `0x0016bcf0` | `Gang_SetCanFlee` | `GameModes` | 72 |
+| `0x0016bde8` | `Gang_SetAlwaysSeen` | `GameModes` | not filled in |
 | `0x0016be30` | `Gang_CanUseWorldFlags` | `GameModes` | not filled in |
+| `0x0016c3a8` | `Gang_SetHostileToKind` | `GameModes` | not filled in |
 | `0x0016c470` | `Gang_MakeNeutralWithType` | `GameModes` | 328 |
 | `0x0016cdf0` | `Gang_Create` | `GameModes` | 632 |
 | `0x0016d170` | `Gangs_Update` | `GameModes` | 672 |
+| `0x0016d5c0` | `KillHumans_Stub` | `GameModes` | not filled in |
 | `0x0016d810` | `Gang_SpawnerNextType` | `GameModes` | 80 |
 | `0x0016e258` | `CharacterData_OnLoaded` | `GameModes` | 304 |
 | `0x0016e8f0` | `ResourceManager_LoadCharacterData` | `Graphics` | 304 |
@@ -620,6 +638,7 @@ at the top of the repository's `README.md`.
 | `0x001b47e0` | `HUD_PanelSetValue` | `GUI` | 40 |
 | `0x001b4908` | `LightManager_SetColourOffset` | `GUI` | 64 |
 | `0x001b4948` | `HUD_ShowWarCommand` | `GUI` | not filled in |
+| `0x001b4a88` | `ChaseHud_Destroy` | `GUI` | not filled in |
 | `0x001b4ba0` | `HUD_EnableRedBar` | `GUI` | 216 |
 | `0x001b4c98` | `HUD_EnableLabelledBar` | `GUI` | 568 |
 | `0x001b4f00` | `HUD_EnableGaugeBar` | `GUI` | 192 |
@@ -852,6 +871,7 @@ at the top of the repository's `README.md`.
 | `0x00228d70` | `Cfg_AddHatFit` | `Human` | 244 |
 | `0x00229570` | `Human_BannerKind` | `Human` | 176 |
 | `0x00229b60` | `AttackKind_IsCharge` | `Human` | 48 |
+| `0x00229b90` | `Human_ScaleAttackDamages` | `Human` | not filled in |
 | `0x0022a770` | `Gang_PickSwitchMember` | `Human` | 528 |
 | `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
@@ -879,11 +899,13 @@ at the top of the repository's `README.md`.
 | `0x00233ef0` | `Human_Delete` | `Human` | 112 |
 | `0x00234038` | `Human_SetNoTarget` | `Human` | 112 |
 | `0x002340a8` | `Human_SetNoAutoLock` | `Human` | 112 |
+| `0x00234118` | `Human_SetAutoCombat` | `Human` | not filled in |
 | `0x00234188` | `Human_SetWheelchairControl` | `Human` | 400 |
 | `0x00234530` | `Cfg_SetWorkoutParams` | `Human` | 168 |
 | `0x002345f8` | `Human_SetWorkoutCallbacks` | `Human` | 168 |
 | `0x00234ef8` | `Human_LockMovement` | `Human` | 112 |
 | `0x002350c8` | `Human_SetTireless` | `Human` | 104 |
+| `0x00235198` | `Human_SetNoReact` | `Human` | not filled in |
 | `0x00235200` | `Human_SetAutoEscape` | `Human` | not filled in |
 | `0x00235268` | `Human_SetPushable` | `Human` | 72 |
 | `0x002352b0` | `HuGetPosition` | `Human` | 72 |
@@ -905,6 +927,7 @@ at the top of the repository's `README.md`.
 | `0x00235d50` | `Human_SetReducedReact` | `Human` | 96 |
 | `0x00235db0` | `Human_SetRevivable` | `Human` | not filled in |
 | `0x00235e70` | `Human_SetUnarrestable` | `Human` | 160 |
+| `0x00236038` | `Human_ApplyDamageModifier` | `Human` | not filled in |
 | `0x00236188` | `Human_SetUnlockedGear` | `Human` | 96 |
 | `0x00236470` | `Cfg_SetStickDeflection` | `Human` | 16 |
 | `0x00236480` | `Cfg_SetPlayerCombatWalkOnly` | `Human` | 16 |
@@ -926,6 +949,7 @@ at the top of the repository's `README.md`.
 | `0x002377f8` | `Human_Revive` | `Human` | 80 |
 | `0x00237848` | `Human_SetHealth` | `Human` | not filled in |
 | `0x002378a8` | `Human_SetHealthPercent` | `Human` | 176 |
+| `0x00237958` | `Human_SetBlockJump` | `Human` | not filled in |
 | `0x00237b70` | `Human_SetBlockTackle` | `Human` | 112 |
 | `0x00237c38` | `Human_GetHealthPercent` | `Human` | 64 |
 | `0x00237d08` | `Human_GetHeldObjectType` | `Human` | not filled in |
@@ -971,11 +995,13 @@ at the top of the repository's `README.md`.
 | `0x00239e30` | `Human_MarkReachable` | `Human` | 72 |
 | `0x00239e78` | `Human_SetMugCallback` | `Human` | 104 |
 | `0x00239ee0` | `Human_SetMug` | `Human` | 64 |
+| `0x00239f20` | `Human_SetInterrogation` | `Human` | not filled in |
 | `0x0023a1b0` | `Human_SetCombatMode` | `Human` | 96 |
 | `0x0023a210` | `Human_SetNormalMode` | `Human` | 72 |
 | `0x0023a2c0` | `Human_SetBlockLook` | `Human` | not filled in |
 | `0x0023a328` | `Human_SetForceLook` | `Human` | not filled in |
 | `0x0023a3b8` | `Human_SetLookTarget` | `Human` | 168 |
+| `0x0023a460` | `Human_ClearLook_Stub` | `Human` | not filled in |
 | `0x0023a468` | `Human_IsAimingAt` | `Human` | not filled in |
 | `0x0023a5f8` | `Cfg_SetTurnRate` | `Human` | not filled in |
 | `0x0023a7a0` | `Cfg_SetTurnRates` | `Human` | not filled in |
@@ -1251,6 +1277,7 @@ at the top of the repository's `README.md`.
 | `0x0029f098` | `Goal_TryBlock` | `Human` | 408 |
 | `0x0029f230` | `Brain_PickBestEnemy` | `Human` | not filled in |
 | `0x0029f3a8` | `Goal_AdjustEnemyScoreDefault` | `Human` | not filled in |
+| `0x0029f710` | `Brain_SetMoveSpeed` | `Human` | not filled in |
 | `0x002a4cb8` | `Goal_AreaWalker` | `Human` | 272 |
 | `0x002a4dc8` | `AreaWalkerGoal_Init` | `Human` | 200 |
 | `0x002a4eb0` | `AreaWalkerGoal_Process` | `Human` | 1,200 |
@@ -1305,6 +1332,9 @@ at the top of the repository's `README.md`.
 | `0x002b6b88` | `MountedGoal_Init` | `Human` | 44 |
 | `0x002b6bb8` | `MountedGoal_Process` | `Human` | 520 |
 | `0x002b75b8` | `Brain_Melee` | `Human` | 184 |
+| `0x002b79b8` | `Goal_GuardFlag` | `Human` | not filled in |
+| `0x002b7a90` | `GuardFlagGoal_Init` | `Human` | not filled in |
+| `0x002b7c18` | `GuardFlagGoal_Process` | `Human` | not filled in |
 | `0x002b9538` | `Goal_HoldFlag` | `Human` | 152 |
 | `0x002b9730` | `HoldFlagGoal_FilterTarget` | `Human` | 144 |
 | `0x002b97c0` | `HoldFlagGoal_MoveToFlag` | `Human` | 304 |
@@ -1375,6 +1405,15 @@ at the top of the repository's `README.md`.
 | `0x002e0748` | `TravelPathGoal_Init` | `Human` | not filled in |
 | `0x002e07d0` | `TravelPathGoal_NextPoint` | `Human` | not filled in |
 | `0x002e0968` | `TravelPathGoal_Process` | `Human` | not filled in |
+| `0x002e0a78` | `Goal_LeadChase` | `Human` | not filled in |
+| `0x002e0b48` | `LeadChaseGoal_Init` | `Human` | not filled in |
+| `0x002e0dc8` | `LeadChaseGoal_Process` | `Human` | not filled in |
+| `0x002e1760` | `Goal_DevilRun` | `Human` | not filled in |
+| `0x002e1850` | `DevilRunGoal_Init` | `Human` | not filled in |
+| `0x002e18d8` | `DevilRunGoal_Start` | `Human` | not filled in |
+| `0x002e1950` | `DevilRunGoal_End` | `Human` | not filled in |
+| `0x002e1998` | `DevilRunGoal_Resume` | `Human` | not filled in |
+| `0x002e2230` | `DevilRunGoal_Process` | `Human` | not filled in |
 | `0x002e4980` | `PlayAnimationGoal_Init` | `Human` | 120 |
 | `0x002e49f8` | `PlayAnimationGoal_Start` | `Human` | 88 |
 | `0x002e4a50` | `PlayAnimationGoal_End` | `Human` | 32 |
@@ -1404,6 +1443,9 @@ at the top of the repository's `README.md`.
 | `0x002ed168` | `BigThrowerGoal_Start` | `Human` | not filled in |
 | `0x002ed260` | `BigThrowerGoal_End` | `Human` | not filled in |
 | `0x002ed718` | `BigThrowerGoal_Process` | `Human` | not filled in |
+| `0x002edf20` | `Goal_BigLedgeThrower` | `Human` | not filled in |
+| `0x002edff8` | `BigLedgeThrowerGoal_Init` | `Human` | not filled in |
+| `0x002ee7b0` | `BigLedgeThrowerGoal_Process` | `Human` | not filled in |
 | `0x002eee50` | `Goal_StationaryThrower` | `Human` | 144 |
 | `0x002eeee0` | `StationaryThrowerGoal_Init` | `Human` | 152 |
 | `0x002ef2c0` | `StationaryThrowerGoal_Process` | `Human` | 1,256 |
@@ -1424,6 +1466,7 @@ at the top of the repository's `README.md`.
 | `0x002fc5c0` | `MoveAction_Update` | `Human` | 2,000 |
 | `0x002fcd90` | `Move_CornerSpeedLimit` | `Human` | not filled in |
 | `0x002fcf50` | `MoveToHumanAction_Init` | `Human` | 160 |
+| `0x002fdb90` | `Action_TurnToHeading` | `Human` | not filled in |
 | `0x002fdc28` | `TurnAction_Init` | `Human` | 64 |
 | `0x002fdc68` | `TurnAction_Start` | `Human` | 96 |
 | `0x002fdcc8` | `TurnAction_Abort` | `Human` | 64 |
@@ -1507,6 +1550,7 @@ at the top of the repository's `README.md`.
 | `0x0034f740` | `Collision_MarchRay` | `RayCast` | not filled in |
 | `0x0034f950` | `Collision_DropToGround` | `RayCast` | not filled in |
 | `0x0034fa28` | `Collision_DropToMarkedGround` | `RayCast` | not filled in |
+| `0x0034fba0` | `CollisionMesh_SetEnabledInVolume` | `RayCast` | not filled in |
 | `0x00350538` | `CollisionTri_PassesMaterialFilter` | `RayCast` | not filled in |
 | `0x00350580` | `CollisionMesh_OnLoaded` | `RayCast` | not filled in |
 | `0x00350778` | `CollisionMesh_RayTestCell` | `RayCast` | not filled in |
@@ -1589,12 +1633,17 @@ at the top of the repository's `README.md`.
 | `0x0035ff18` | `GoalMoveToFlag` | `Scripting` | 376 |
 | `0x003603a8` | `GoalAddressPerson` | `Scripting` | 264 |
 | `0x00360690` | `GoalTrackHuman` | `Scripting` | 160 |
+| `0x00360ac8` | `GoalLeadChase` | `Scripting` | not filled in |
+| `0x00360d98` | `GoalDevilRun` | `Scripting` | not filled in |
+| `0x00360f28` | `GoalGuardFlag` | `Scripting` | not filled in |
 | `0x003610a8` | `GoalFight` | `Scripting` | 168 |
 | `0x00361418` | `GoalJoinFixedScene` | `Scripting` | 224 |
 | `0x003614f8` | `GoalJoinCinematic` | `Scripting` | 224 |
 | `0x003615d8` | `GoalJoinAnimation` | `Scripting` | 224 |
 | `0x00363018` | `GoalDealer` | `Scripting` | 272 |
 | `0x00363530` | `GoalPlayDynAnimation` | `Scripting` | 160 |
+| `0x00363b38` | `GoalBigLedgeThrower` | `Scripting` | not filled in |
+| `0x00364708` | `ActTurnToDir` | `Scripting` | not filled in |
 | `0x003647d8` | `ActLookAt` | `Scripting` | 200 |
 | `0x003648a0` | `ActGiveWay` | `Scripting` | 120 |
 | `0x00364ba8` | `HuShutUp` | `Scripting` | 96 |
@@ -1609,7 +1658,13 @@ at the top of the repository's `README.md`.
 | `0x00365bb8` | `CamSetFollowAngle` | `Scripting` | not filled in |
 | `0x00365bf0` | `CamSetFollowZoom` | `Scripting` | not filled in |
 | `0x00365d38` | `CameraCreateLocked` | `Scripting` | not filled in |
+| `0x00365f28` | `CameraCreateThird` | `Scripting` | not filled in |
+| `0x00366140` | `CameraCreateFixed` | `Scripting` | not filled in |
 | `0x00366360` | `CameraCreateWin` | `Scripting` | 440 |
+| `0x00366518` | `CamSetupRail` | `Scripting` | not filled in |
+| `0x003666e8` | `CamLeadRail` | `Scripting` | not filled in |
+| `0x003667a0` | `CamAddRailPoint` | `Scripting` | not filled in |
+| `0x003668e8` | `CamModifyRail` | `Scripting` | not filled in |
 | `0x00366dd0` | `lua_CamReversePoizo` | `Scripting` | not filled in |
 | `0x00367030` | `CamLockLocked` | `Scripting` | not filled in |
 | `0x003670c0` | `CamSetSecondary` | `Scripting` | not filled in |
@@ -1644,6 +1699,7 @@ at the top of the repository's `README.md`.
 | `0x0036ca18` | `GetPosition` | `Scripting` | 112 |
 | `0x0036cdc0` | `TeleportToFlag` | `Scripting` | 152 |
 | `0x0036d008` | `TriggerSphereEnable` | `Scripting` | not filled in |
+| `0x0036d068` | `TriggerSphereSetRadius` | `Scripting` | not filled in |
 | `0x0036d0e0` | `TriggerSphereCfg` | `Scripting` | 232 |
 | `0x0036d938` | `ToInt` | `Scripting` | not filled in |
 | `0x0036de50` | `CarSpawnRadio` | `Scripting` | not filled in |
@@ -1954,10 +2010,13 @@ at the top of the repository's `README.md`.
 | `0x00412c40` | `VolumeBox_SetRotation` | `WorldObjects` | 96 |
 | `0x00413018` | `VolumeBoxes_SendDamageMessage` | `WorldObjects` | not filled in |
 | `0x00413198` | `VolumeBox_ContainsObject` | `WorldObjects` | not filled in |
+| `0x004134f8` | `PlayerVolumeBox_Update` | `WorldObjects` | not filled in |
+| `0x004142d0` | `TriggerSphere_Alloc` | `WorldObjects` | not filled in |
 | `0x00414398` | `TriggerSpheres_Update` | `WorldObjects` | 160 |
 | `0x00414480` | `TriggerSphere_Init` | `WorldObjects` | not filled in |
 | `0x004144d0` | `TriggerSphere_Disarm` | `WorldObjects` | not filled in |
 | `0x004146e0` | `TriggerSphere_Update` | `WorldObjects` | 840 |
+| `0x00414a28` | `TriggerSphere_SetRadius` | `WorldObjects` | not filled in |
 | `0x00414ae0` | `TriggerSphere_Enable` | `WorldObjects` | not filled in |
 | `0x00414bc0` | `TriggerSphere_Configure` | `WorldObjects` | 264 |
 | `0x004152e0` | `VolumeBox_SetEnabled` | `WorldObjects` | not filled in |
@@ -1969,6 +2028,8 @@ at the top of the repository's `README.md`.
 | `0x00415b68` | `Flag_New` | `WorldObjects` | 176 |
 | `0x00415c18` | `Flag_Add` | `WorldObjects` | 48 |
 | `0x00415c48` | `Flag_FindByName` | `WorldObjects` | 160 |
+| `0x00415ce8` | `Flag_Enable` | `WorldObjects` | not filled in |
+| `0x00415dc8` | `Flag_SetEnabled` | `WorldObjects` | not filled in |
 | `0x00415e70` | `Flag_Construct` | `WorldObjects` | 304 |
 | `0x004161e8` | `Flag_Position` | `WorldObjects` | 104 |
 | `0x00416258` | `Flag_Heading` | `WorldObjects` | 120 |
@@ -2019,6 +2080,7 @@ at the top of the repository's `README.md`.
 | `0x0041d8d0` | `GameState_SetForceCrimeLevel` | `Warriors` | 16 |
 | `0x0041d920` | `Cfg_SetGangSizeForCombatMusic` | `Warriors` | not filled in |
 | `0x0041d930` | `Cfg_SetDisableMusicForScenes` | `Warriors` | not filled in |
+| `0x0041d940` | `Cfg_SetMaxThrowError` | `Warriors` | not filled in |
 | `0x0041da08` | `Cfg_SetMultiplayerJoin` | `Warriors` | 40 |
 | `0x0041da30` | `Cfg_SetSubtitles` | `Warriors` | 16 |
 | `0x0041da50` | `Cfg_SetTurfInvasion` | `Warriors` | 16 |

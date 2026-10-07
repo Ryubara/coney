@@ -155,7 +155,7 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
         return;
     }
     // With reactions off (an AI's block goal, docs/research/ai.md#block) the hit only takes health.
-    if (m_hitReactionsOff) {
+    if (hitReactionsOff()) {
         return;
     }
     // On the ground a strike gets the ground's reaction.

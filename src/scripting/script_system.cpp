@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <format>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <span>
@@ -149,7 +150,26 @@ void ScriptSystem::destroy() {
     m_skippedBefore += m_vm->nilCalls();
     m_vm.reset();
     m_schedule.clear();
+    m_preloads.clear();
     m_updateFunction.clear();
+}
+
+void ScriptSystem::preload(std::string name, std::string callback) {
+    m_preloads.emplace_back(std::move(name), std::move(callback));
+}
+
+void ScriptSystem::servicePreloads(bool all) {
+    // Only the files asked for before this call, unless `all`: a chunk that asks for another sees it arrive later.
+    std::size_t budget = all ? std::numeric_limits<std::size_t>::max() : m_preloads.size();
+    while (m_vm && budget > 0 && !m_preloads.empty()) {
+        --budget;
+        auto [name, callback] = std::move(m_preloads.front());
+        m_preloads.erase(m_preloads.begin());
+        // The completion routine runs the chunk, then calls the callback by name when one was given.
+        if (runFile(name) && !callback.empty()) {
+            call(callback);
+        }
+    }
 }
 
 LuaVm& ScriptSystem::vm() {
@@ -282,6 +302,8 @@ void ScriptSystem::update(std::uint64_t nowMs, double stepSeconds) {
     if (!m_vm) {
         return;
     }
+    // Files asked for with preload() arrive first: the original's file manager is serviced before the scripts' frame.
+    servicePreloads(false);
     // The calls that are due, oldest first. Only those scheduled before this update began run now; a call may
     // schedule or flush others, so the list is searched afresh each time.
     const std::uint64_t firstNew = m_nextSequence;

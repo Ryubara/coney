@@ -372,8 +372,8 @@ class Fighter {
     [[nodiscard]] const combat::RepeatTracker& repeats() const { return m_repeat; }
     /// Whether a hit plays no reaction (human `+0xe0` bit `0x800`): the hit still takes its health, but the human's
     /// clip goes on. The AI's block goal sets it for its first updates (docs/research/ai.md#block).
-    [[nodiscard]] bool hitReactionsOff() const { return m_hitReactionsOff; }
-    void setHitReactionsOff(bool off) { m_hitReactionsOff = off; }
+    [[nodiscard]] bool hitReactionsOff() const { return hasFlag(flag::kNoReact); }
+    void setHitReactionsOff(bool off) { setFlag(flag::kNoReact, off); }
 
   private:
     // --- fighter.cpp: the update, the attacks and the targets.

@@ -592,7 +592,7 @@ was.
   `CollisionMesh_SetEnabledInVolume`, `0x00351160` `CollisionMesh_SetEnabledInBox`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CloseDoor {#closedoor}
 
@@ -839,7 +839,7 @@ groups switch their flags off through 0x00417540, the same writer.
   `Flag_SetEnabled`
 - **Used by** 2 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## FlagGetOwner {#flaggetowner}
 
@@ -2136,7 +2136,7 @@ is taken from the pool of 100 and attached first, with the defaults of 0x0041448
   `0x004142d0` `TriggerSphere_Alloc`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## UnloadTimedObjects {#unloadtimedobjects}
 

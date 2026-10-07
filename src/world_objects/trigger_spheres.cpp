@@ -45,18 +45,38 @@ bool TriggerSpheres::arm(double object, bool armed) {
         return true;
     }
     if (sphere == nullptr) {
-        if (m_spheres.size() >= kCapacity) {
+        sphere = make(object);
+        if (sphere == nullptr) {
             return false;
         }
-        // The defaults of 0x00414480.
-        sphere = &m_spheres.emplace_back();
-        sphere->object = object;
-        sphere->radius = 0.0F;
-        sphere->mode = 1;
-        sphere->stayPeriodMs = kDefaultStayPeriodMs;
-        sphere->nextStayMs = 0;
     }
     sphere->armed = true;
+    return true;
+}
+
+TriggerSphere* TriggerSpheres::make(double object) {
+    if (m_spheres.size() >= kCapacity) {
+        return nullptr;
+    }
+    // The defaults of 0x00414480.
+    TriggerSphere& sphere = m_spheres.emplace_back();
+    sphere.object = object;
+    sphere.radius = 0.0F;
+    sphere.mode = 1;
+    sphere.stayPeriodMs = kDefaultStayPeriodMs;
+    sphere.nextStayMs = 0;
+    return &sphere;
+}
+
+bool TriggerSpheres::setRadius(double object, float radius) {
+    TriggerSphere* sphere = find(object);
+    if (sphere == nullptr) {
+        sphere = make(object);
+    }
+    if (sphere == nullptr) {
+        return false;
+    }
+    sphere->radius = radius;
     return true;
 }
 

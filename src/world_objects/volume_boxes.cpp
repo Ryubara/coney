@@ -71,19 +71,22 @@ bool VolumeBoxes::inside(const VolumeBox& box, const std::array<float, 3>& point
 
 void VolumeBoxes::update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const Send& send) {
     for (VolumeBox& box : m_boxes) {
-        if (!box.enabled || box.kind != 0) {
+        if (!box.enabled || (box.kind != 0 && box.kind != 2)) {
             continue;
         }
+        // A kind-2 box tests the two players' humans only.
+        const bool playersOnly = box.kind == 2;
+        const std::size_t room = playersOnly ? kMaxPlayerOccupants : kMaxOccupants;
         std::vector<Message> messages;
         // The living humans inside: new ones enter, kept ones stay.
         const bool stayDue = nowMs >= box.nextStayMs;
         bool stayed = false;
         for (const BoxSubject& subject : subjects) {
-            if (!subject.alive || !inside(box, subject.position)) {
+            if (!subject.alive || (playersOnly && !subject.player) || !inside(box, subject.position)) {
                 continue;
             }
             if (std::ranges::find(box.occupants, subject.handle) == box.occupants.end()) {
-                if (box.occupants.size() < kMaxOccupants) {
+                if (box.occupants.size() < room) {
                     box.occupants.push_back(subject.handle);
                     messages.push_back({kEntered, subject.handle});
                 }

@@ -140,6 +140,7 @@ Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
              std::span<const anim::Quat, anim::kPoseBones> bindRotations, float scale,
              const combat::AnimRangeList* ranges, std::span<const std::int16_t> classDamage, int damagePercent)
     : m_animator(anims, slots), m_ownRanges(classRanges(ranges, classDamage, damagePercent)),
+      m_classDamage(classDamage.begin(), classDamage.end()), m_damagePercent(damagePercent),
       m_ranges(m_ownRanges != nullptr ? m_ownRanges.get() : ranges), m_fighter(m_ranges), m_scale(scale) {
     std::ranges::copy(bindRotations, m_bindRotations.begin());
 }
@@ -168,6 +169,18 @@ void Human::reportSound(const HumanSound& sound) {
 void Human::reportSounds(bool on) {
     m_reportSounds = on;
     m_animator.keepEvents(on);
+}
+
+void Human::applyDamageModifier(float factor) {
+    if (m_ownRanges == nullptr) {
+        return;
+    }
+    // The class's values scaled and rounded; a 0 is not written, so that entry keeps its damage.
+    std::vector<std::int16_t> scaled(m_classDamage.size());
+    for (std::size_t i = 0; i < scaled.size(); ++i) {
+        scaled[i] = static_cast<std::int16_t>(std::lround(static_cast<float>(m_classDamage[i]) * factor));
+    }
+    combat::applyClassDamage(*m_ownRanges, scaled, m_damagePercent);
 }
 
 void Human::setFighterProfile(const FighterProfile& profile) {
@@ -901,6 +914,10 @@ bool Human::tryClimb(const raycast::CollisionMesh& mesh, anim::Vec3 direction) {
 }
 
 bool Human::tryJump(const raycast::CollisionMesh* mesh, anim::Vec3 direction) {
+    // `HuBlockJump` skips the jump altogether.
+    if (hasFlag(flag::kBlockJump)) {
+        return false;
+    }
     const float current = speed();
     const bool nearClimbable =
         mesh != nullptr && climbableAhead(*mesh, m_position, direction, jumpTuning().climbableCheck, true);

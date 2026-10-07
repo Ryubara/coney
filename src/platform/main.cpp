@@ -217,34 +217,6 @@ std::expected<coney::sandbox::SandboxWorld, coney::Error> loadSandbox(const cone
     return world;
 }
 
-// The player's turning as the preload scripts configure it (`CfgSetTurnRates`, `CfgTurnRate` in config_preload2.lua,
-// recorded by their stubs): the values the original plays with (docs/research/characters.md#movement-constants).
-void applyTurnConfig(const coney::script::RecordedCalls& recorded) {
-    // A recorded argument as a float; nil and strings count as nothing.
-    const auto numberAt = [](const std::vector<coney::script::Value>& args, std::size_t i) -> std::optional<float> {
-        if (i >= args.size()) {
-            return std::nullopt;
-        }
-        const std::optional<double> number = args[i].number();
-        return number ? std::optional<float>(static_cast<float>(*number)) : std::nullopt;
-    };
-    for (const std::vector<coney::script::Value>& args : recorded.calls("CfgSetTurnRates")) {
-        std::vector<float> degrees;
-        degrees.reserve(args.size());
-        for (std::size_t i = 0; i < args.size(); ++i) {
-            degrees.push_back(numberAt(args, i).value_or(-1.0F)); // -1 is out of range: the old value stays
-        }
-        coney::human::setPlayerTurnRates(degrees);
-    }
-    for (const std::vector<coney::script::Value>& args : recorded.calls("CfgTurnRate")) {
-        const std::optional<float> ease = numberAt(args, 2);
-        const std::optional<float> carry = numberAt(args, 3);
-        if (ease && carry) {
-            coney::human::setTurnEase(*ease, *carry);
-        }
-    }
-}
-
 // Player 1's start as the level scripts left him, in the play mode's terms: where a TeleportToFlag put him, else where
 // HuCreate made him; nothing when the scripts made none.
 std::optional<coney::human::PlayerStart> playerStartOf(const coney::LevelStart& start) {
@@ -302,7 +274,7 @@ std::unique_ptr<coney::LevelScripts> levelScriptsFor(const coney::io::Wad& wad, 
     options.sound = sound;
     auto scripts = std::make_unique<coney::LevelScripts>(coney::script::wadScriptSource(wad), name, checkpoint,
                                                          printText, options);
-    applyTurnConfig(scripts->recorded());
+    coney::applyTurnConfig(scripts->recorded());
     return scripts;
 }
 

@@ -328,7 +328,7 @@ so it runs after any actions already queued; a human busy in some states (record
   `0x002fdc28` `TurnAction_Init`
 - **Used by** 3 of 467 script chunks (5 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## BrCanUseWorldFlags {#brcanuseworldflags}
 
@@ -1286,7 +1286,7 @@ it waits for its speech to end, turns on the nearest player with reaction 0x11 (
   `0x002edff8` `BigLedgeThrowerGoal_Init`, `0x002ee7b0` `BigLedgeThrowerGoal_Process`
 - **Used by** 1 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalBigThrower {#goalbigthrower}
 
@@ -1700,7 +1700,7 @@ a brain byte. Full behaviour: [AI: GoalDevilRun](../../research/ai.md#devil-run)
   `DevilRunGoal_Init`, `0x002e2230` `DevilRunGoal_Process`
 - **Used by** 6 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalEngageEnemy {#goalengageenemy}
 
@@ -1933,7 +1933,7 @@ rule of [AI: scripted goals](../../research/ai.md#scripted). How the base goal u
   `GuardFlagGoal_Init`, `0x002b7c18` `GuardFlagGoal_Process`
 - **Used by** 4 of 467 script chunks (14 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalHoldPosition {#goalholdposition}
 
@@ -2123,7 +2123,7 @@ responses are set to 0 (brain `+0x21c`, `+0x220`), so it does not fight back.
   `LeadChaseGoal_Init`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GoalLutherShooter {#goalluthershooter}
 

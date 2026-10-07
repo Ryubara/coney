@@ -39,6 +39,9 @@ inline constexpr std::uint64_t kUnstunnable = 0x100;
 inline constexpr std::uint64_t kReducedReact = 0x200;
 /// As the victim, combo hits keep their full strength (the player has it).
 inline constexpr std::uint64_t kComboStrength = 0x400;
+/// A hit takes its health but plays no reaction, so the clip goes on (`HuSetNoReact`, `Human_ApplyPendingDamage`
+/// `0x00265f70`); the AI's block and engage goals set it for themselves too.
+inline constexpr std::uint64_t kNoReact = 0x800;
 /// Keeps its weapon when hit (`HuSetKeepWeapon`; inferred from the name).
 inline constexpr std::uint64_t kKeepWeapon = 0x2000;
 /// The rage meter stays where it is (`HuSetLockedRage`; inferred from the name).
@@ -72,6 +75,11 @@ inline constexpr std::uint64_t kDemiGod = 0x20000000000;
 /// Never picked as a target (`HuSetNoTarget`; the target filter `0x00279410`). `HuSetNoAutoLock` sets another bit
 /// (`0x8000000000`), not this one.
 inline constexpr std::uint64_t kNoTarget = 0x100000000000;
+/// Triangle never starts a jump (`HuBlockJump`, `0x00237958`: `Player_TryJump` is skipped); a climb, a context action
+/// or an object action can still take the press.
+inline constexpr std::uint64_t kBlockJump = 0x10000000;
+/// `HuSetAutoCombat` (`0x00234118`): no reader of the bit is on the page, so Coney only keeps it.
+inline constexpr std::uint64_t kAutoCombat = 0x200000000000;
 
 /// The flags a player's human starts with: what `Human_MakePlayer` sets (kFastClimber, kRevivable, kRageAllowed) and
 /// the combo rule kComboStrength (docs/research/combat.md#human-flags). kDemiGod, also seen on the player at runtime,

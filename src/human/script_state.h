@@ -43,6 +43,11 @@ struct AnimOverride {
 // dozen padding bytes cost nothing worth the lost readability.
 // NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)
 struct ScriptState {
+    /// Set up for interrogation (`HuSetInterrogation`): its four speech files (`+0x590`-`+0x59c`, empty for none) and
+    /// the Lua function the success calls (`+0x5a0`; empty: not interrogable); the icon is interrogationIcon.
+    /// **Coney stand-in**: the grab's shake-down is not built, so it is only kept.
+    std::array<std::string, 4> interrogationLines;
+    std::string interrogationCallback;
     /// Arrested (state `0x20000`, `HuSetArrested`): it loops 320 `ANIM_ARRESTED_IDLE` where it stands and does nothing
     /// until released (docs/research/crimes.md#arrest).
     bool arrested = false;
@@ -155,6 +160,8 @@ struct ScriptState {
         *found = AnimOverride{.clip = std::string(clip), .animId = id};
         return true;
     }
+    /// The spinning icon over a human set up for interrogation (`HuSetInterrogation`'s last argument).
+    bool interrogationIcon = false;
 };
 
 } // namespace coney::human

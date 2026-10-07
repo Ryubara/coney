@@ -2167,6 +2167,15 @@ rooftops the player runs along; the main framing (setting 3 = −8, 4 = 6, 0 = 5
 puts the camera 8 m behind the player along the rail, at most 5.5 m from him in plan and 4 m above his feet, looking
 at a point 2 m behind him and 2 m up. Inferred from the code above with the script's values.
 
+### Fixed and third-person cameras {#fixed-third}
+
+- **The fixed camera** (type 0, [`CameraCreateFixed`](../references/bindings/camera.md#cameracreatefixed)) stands at
+  one point and looks at the average of the humans on the shared target list plus an offset; its target is put on
+  that list. Confirmed (code) at `0x00124690`.
+- **The third-person camera** (type 16, [`CameraCreateThird`](../references/bindings/camera.md#cameracreatethird))
+  sits a distance behind its target's facing, eased 10% an update toward it, a height above the look-at point and
+  swung by an angle. Confirmed (code) at `0x001205e8`.
+
 ### Combat camera {#combat-camera}
 
 While the player fights with a lock-on, the follow camera pulls in and frames the enemy. Confirmed (code) in the
@@ -2652,6 +2661,15 @@ The world viewer keeps its own free camera with the player camera's lens
   once along the player's forward turned clockwise by `degrees` (180 behind him), looking back at him at the target
   pitch, at the preset distance nearest its own (the sprint zoom's saved edge while one is held) clamped to the band;
   the band moves to that preset and the zoom step to the one after it.
+- **The rail, fixed and third-person cameras** (`src/camera/rail_camera.*`, `fixed_camera.*`, `third_camera.*`):
+  the rail camera follows [Rail cameras](#rail) for player 1 (one target, the set-up's): the settings and their
+  easing, the target and look-at points, the damping, mode 0's segment choice, foot, reach, hand-over, ceiling, fixed
+  pitch and end hold, and the leading modes. **Coney choices and stand-ins**: the end hold lasts only while its
+  condition does (what clears it is not traced); the tie between two nearest rail points, the 40% look-at catch-up
+  (`+0x3ec`), the `+0x330` vector, the split-screen halving and extras, mode 3 (settings 5, 6, 7) and the push out of
+  world collision are not built; a rail with no points stands 3 m behind and 1 m above the look-at point. The fixed
+  camera always looks at the average (the original's single-entry case is not traced). `CamDelete` forgets a fixed
+  camera as it does a locked one and keeps third-person cameras.
 
 ## Notes for implementers
 

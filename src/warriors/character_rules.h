@@ -67,6 +67,10 @@ struct CharacterRules {
     /// The animation files the level asked the resource manager for (`SetDynamicAnimation`), at most
     /// kDynamicAnimations.
     std::vector<std::string> dynamicAnimations;
+    /// An AI throw's largest aiming errors, up or down and sideways, in radians (`CfgSetMaxThrowError`, `0x005148b0`,
+    /// `0x005148b4`); nothing until a script sets them (the defaults are not traced). Coney's throws do not read them
+    /// yet.
+    std::optional<std::pair<float, float>> maxThrowError;
 };
 
 } // namespace coney

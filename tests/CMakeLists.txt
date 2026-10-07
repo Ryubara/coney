@@ -103,6 +103,7 @@ add_executable(coney_tests
     platform/disc_level99_world_test.cpp
     platform/disc_story_chain_test.cpp
     platform/disc_story_missions_test.cpp
+    platform/disc_story_playthrough_test.cpp
     platform/disc_tagging_test.cpp
     platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp
@@ -213,6 +214,7 @@ target_sources(coney_tests PRIVATE
     animation/held_flags_test.cpp
     camera/cameras_test.cpp
     camera/path_camera_test.cpp
+    camera/rail_camera_test.cpp
     camera/win_camera_test.cpp
     camera/failed_camera_test.cpp
     camera/follow_camera_test.cpp

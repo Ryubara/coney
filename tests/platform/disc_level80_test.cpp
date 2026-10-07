@@ -251,7 +251,11 @@ TEST_CASE("the disc's level80: the cuffed Warriors offer the uncuff prompt and t
         [&level, &frame] {
             constexpr int kTapEvery = 30;
             level.pad.buttons = (++frame % kTapEvery == 0) ? coney::pad::kCross : 0;
-            return level.logged("uncuff: human 231 arrested");
+            // Both cuffed (their handles depend on how many handles the scripts took before them).
+            constexpr long kCuffed = 2;
+            return std::ranges::count_if(level.log, [](const std::string& line) {
+                       return line.starts_with("uncuff: human ") && line.contains(" arrested");
+                   }) >= kCuffed;
         },
         kWait);
     if (!arrested) {

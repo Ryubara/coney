@@ -818,7 +818,7 @@ friends ([AI: gangs](../../research/ai.md)). The crime report uses the same rout
   `0x0016c3a8` `Gang_SetHostileToKind`, `0x001690c8` `Gang_SetEnemyBit`
 - **Used by** 8 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangMakeFriends {#gangmakefriends}
 
@@ -1003,7 +1003,7 @@ in the EngageEnemy (11) and Spectate (16) goals skip their line-of-sight test (0
   `Brain_ScanEnemies`
 - **Used by** 8 of 467 script chunks (11 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetAttackable {#gangsetattackable}
 

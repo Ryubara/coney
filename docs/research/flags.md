@@ -301,6 +301,9 @@ Coney's choices, where the page is silent or Coney differs:
 - The pool size from `CfgSetDatabaseSizes` is a capacity, not a count; a reimplementation may grow instead.
 - Flags last until the level unloads.
 
+`FlagEnable` writes a flag's enabled word (`WorldFlag::enabled`), which the nearest-exit search already reads; other
+handles are ignored (2026-10-06).
+
 ## Open questions
 
 - The reader of the group on path-network flags, the activity sound and timing tables, and `+0xcc` and `+0xe0`.

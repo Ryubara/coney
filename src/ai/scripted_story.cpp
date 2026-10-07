@@ -12,6 +12,7 @@
 
 #include "ai/brain.h"
 #include "ai/brains.h"
+#include "ai/chase_goals.h"
 #include "ai/gangs.h"
 #include "ai/riot_goals.h"
 #include "ai/route_planner.h"
@@ -289,6 +290,32 @@ void ScriptedStory::tag(double human, double tag, double flag) {
     }
 }
 
+void ScriptedStory::makeEnemiesOfType(int gang, int kind) {
+    onGang(gang, [this, kind](Gang& found) { m_scripted->owner().gangs().makeEnemiesOfType(found.id(), kind); });
+}
+
+void ScriptedStory::setAlwaysSeen(int gang, bool on) {
+    onGang(gang, [this, on](Gang& found) { m_scripted->owner().gangs().setAlwaysSeen(found.id(), on); });
+}
+
+bool ScriptedStory::setInterrogation(double human, const std::array<std::string, 4>& lines, std::string_view callback,
+                                     bool icon) {
+    const bool known = m_scripted->holding() || m_scripted->brain(human) != nullptr;
+    // Shared, so the held call copies no strings.
+    auto set = std::make_shared<const std::pair<std::array<std::string, 4>, std::string>>(lines, std::string(callback));
+    onBrain(human, [set, icon](Brain& brain) {
+        human::ScriptState& script = brain.human().script();
+        script.interrogationLines = set->first;
+        script.interrogationCallback = set->second;
+        script.interrogationIcon = icon && !set->second.empty();
+    });
+    return known;
+}
+
+void ScriptedStory::applyDamageModifier(double human, float factor) {
+    onBrain(human, [factor](Brain& brain) { brain.human().applyDamageModifier(factor); });
+}
+
 std::optional<double> ScriptedStory::nearestExit(anim::Vec3 from, double exclude,
                                                  const std::function<bool(anim::Vec3)>& accept) const {
     std::optional<double> best;
@@ -444,6 +471,55 @@ void ScriptedStory::goalRiot(const script::RiotCall& call) {
 void ScriptedStory::goalStationaryThrower(const script::StationaryThrowerCall& call) {
     onBrain(call.human, [this, call](Brain& brain) {
         brain.pushGoal(std::make_unique<StationaryThrowerGoal>(call.delay, call.objects, *m_scripted));
+    });
+}
+
+void ScriptedStory::goalGuardFlag(const script::GuardFlagCall& call) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
+    onBrain(call.human, [this, call](Brain& brain) {
+        // A flag that does not resolve gives nothing.
+        if (!m_scripted->flag(call.flag)) {
+            return;
+        }
+        brain.pushGoal(std::make_unique<GuardFlagGoal>(call.flag, call.radius, call.heading, call.callback, call.timeMs,
+                                                       *m_scripted, m_scripted));
+    });
+}
+
+void ScriptedStory::goalLeadChase(const script::LeadChaseCall& call) {
+    onBrain(call.human, [this, call](Brain& brain) {
+        const WorldPath* found = path(call.path);
+        std::vector<double> points = found != nullptr ? found->points : std::vector<double>{};
+        brain.pushGoal(std::make_unique<LeadChaseGoal>(std::move(points), call.waitDistance, *m_scripted,
+                                                       m_scripted->owner().gangs()));
+    });
+}
+
+void ScriptedStory::goalDevilRun(const script::DevilRunCall& call) {
+    onBrain(call.human, [this, call](Brain& brain) {
+        const WorldPath* found = path(call.path);
+        std::vector<double> points = found != nullptr ? found->points : std::vector<double>{};
+        const DevilRunOrder order{.gang = call.gang,
+                                  .gait = call.gait,
+                                  .attackDistance = call.attackDistance,
+                                  .paceDistance = call.paceDistance,
+                                  .maxSpeed = call.maxSpeed,
+                                  .urgency = call.urgency,
+                                  .hostile = call.hostile};
+        brain.pushGoal(
+            std::make_unique<DevilRunGoal>(std::move(points), order, *m_scripted, m_scripted->owner().gangs()));
+    });
+}
+
+void ScriptedStory::goalBigLedgeThrower(const script::LedgeThrowerCall& call) {
+    // NOLINTNEXTLINE(bugprone-exception-escape): copying the captures can only fail on allocation
+    onBrain(call.human, [this, call](Brain& brain) {
+        const LedgeThrowerOrder order{.targets = call.targets,
+                                      .objects = call.objects,
+                                      .cycles = call.cycles,
+                                      .delayMs = call.delayMs,
+                                      .taunt = call.taunt};
+        brain.pushGoal(std::make_unique<BigLedgeThrowerGoal>(order, *m_scripted, m_scripted->owner().gangs()));
     });
 }
 

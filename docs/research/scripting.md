@@ -346,6 +346,8 @@ Most of the first mission's progress is driven by message 3 on volume boxes. Con
   occupants (`+0xf0`). An AI human never sets one off, however it moves. The chase levels mark their camera and
   hint zones with kind 2 (`level2`: 5 boxes, `level3`: 29, among them `vbStartRail`, which hands the player back his
   pad in [`level3`'s chase](#level3)). Confirmed (code). Kind-3 boxes (turf) have no trigger update traced.
+  Coney: `VolumeBoxes::update()` runs kind-2 boxes over the players' humans only (a player's brain, alive or
+  brain-dead).)
 - **Disabling** a box (`EnableVolumeBox(box, false)`, `0x004152e0`) empties its occupant list without sending
   message 4, so a human still inside when it is enabled again gets a fresh message 3.
 - **Teleporting** (`TeleportToFlag`, `0x00385db0`) only sets the object's position (and calls a human's slot
@@ -1327,8 +1329,9 @@ Coney's choices, where the page is silent or Coney differs:
   uses another one of Coney's, never the C library's. The trigonometry works in degrees, as stock Lua 4.0 does.
 - `tolua`, `M_Vector4` and `M_Quat` are empty tables and `NilHandle` and `NilSoundHandle` are 0, below the first handle
   a stub gives out.
-- `preLoadFile` runs its file at once (Coney's reads are synchronous), then calls its callback by name. The original
-  runs both later, when the file arrives; `level87`'s first chapter depends on that
+- `preLoadFile` queues its file: the caller's script goes on, and the file runs, then its callback by name, at the
+  level start's preload (with any files those scripts ask for) or, during play, at the top of the next script frame,
+  as the original runs both later, when the file arrives; `level87`'s first chapter depends on that
   ([Errors in a fresh state](#errors-in-a-fresh-state)).
 - Without an AI host (a level script run on its own) `GangCreate` returns a new handle and the gang counts 0, and
   `InvNumberOf` returns 0 until inventories exist, so the hub's and `level5`'s start functions run to their end.
@@ -1356,6 +1359,10 @@ table holds 111 records; `CfgObj` is called 1,371 times; 9,273 configuration cal
 set. `Menu.startGame` asks for `level99` (`runNextMission(1)`), and after the unload `global.lua` and `level100.lua` run
 again in the fresh state without the preloads, also without errors (a Coney observation for the front end, not a check
 of the original).
+
+**A sphere's radius** (2026-10-06): `TriggerSphereSetRadius` sets an object's sphere radius, first making one with the
+defaults of `0x00414480`, not armed, when it has none (`TriggerSpheres::setRadius`; Coney counts any object as having a
+handler component, as for `TriggerSphereEnable`).
 
 ## Open questions
 

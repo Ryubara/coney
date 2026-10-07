@@ -317,6 +317,11 @@ class Human final : public Holdable {
     /// The Anim Range List its hits take their damage from (its own copy when made with a class damage table); null
     /// for none.
     [[nodiscard]] const combat::AnimRangeList* ranges() const { return m_ranges; }
+    /// `HuApplyDamageModifier(human, factor)`: its attack damages become its class's values × `factor`, rounded (then
+    /// a player's Warrior class percentage, as when it was made); each call starts from the class values, and an entry
+    /// that rounds to 0 keeps its damage. Nothing for a human made without a class damage table.
+    /// @orig 0x00229b90 Human_ScaleAttackDamages (unknown)
+    void applyDamageModifier(float factor);
 
     // Being attacked: the entry points another human and the tests use. Each is acted on at the human's next step
     // (docs/research/combat.md#being-hit-runtime).
@@ -623,6 +628,8 @@ class Human final : public Holdable {
     std::string m_idleClipName;                           // setIdleClip()
     std::map<std::uint32_t, std::string> m_overrideNames; // setOverrideClip()
     std::unique_ptr<combat::AnimRangeList> m_ownRanges;   // the list with the class's damage, when it has one
+    std::vector<std::int16_t> m_classDamage;              // the class's damage table, for HuApplyDamageModifier
+    int m_damagePercent = 0;                              // a player's Warrior class percentage (0: not a player)
     const combat::AnimRangeList* m_ranges;
     FighterProfile m_profile;
     Fighter m_fighter;

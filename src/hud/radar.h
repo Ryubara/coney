@@ -64,6 +64,9 @@ struct RadarState {
     RadarView view;
     std::uint64_t lastMs = 0;  ///< The game time of the last radar step (the zoom's easing).
     std::uint64_t updates = 0; ///< Radar steps taken (the blips' blinking).
+    /// The chase HUD (the pursuit widget at `0x00609e80`) exists. **Coney stand-in**: it is not built or drawn; only
+    /// `HUDSetChaseHUDState_DESTROY` clears it.
+    bool chaseHud = false;
 };
 
 /// The full speed of the zoom's easing, m/s, and its rate per millisecond.

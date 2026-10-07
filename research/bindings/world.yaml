@@ -140,6 +140,7 @@
   notes: >-
     With the pool full the allocation returns null and the store would write through it (no check in 0x00414a28).
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: false, levels: [2, 31]}
+  coney: implemented
 
 - name: TriggerSphereCfg
   wrapper: 0x0036d0e0
@@ -1134,6 +1135,7 @@
     A triangle only partly inside the box is left alone. The camera's main ray still tests disabled triangles
     ([Collision: switching](../../research/collision.md#enable)).
   usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false, levels: [3, 93, 31, 54, 82]}
+  coney: implemented
 
 - name: ChangeBlocker
   wrapper: 0x00379c80
@@ -1294,6 +1296,7 @@
     Goals given the flag directly by a script (GoalMoveToFlag and the like) do not check it (inferred). Store
     groups switch their flags off through 0x00417540, the same writer.
   usage: {chunks: 2, calls: 15, boot: false, mission1: false, result_used: false, levels: [2, 20]}
+  coney: implemented
 
 - name: GetFlagPos
   wrapper: 0x0037a288

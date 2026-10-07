@@ -103,6 +103,9 @@ class MoveAction final : public Action {
 
     /// What it was asked.
     [[nodiscard]] const MoveRequest& request() const { return m_request; }
+    /// A speed in place of the gait's top (m/s, action `+0x40`), as a goal pacing the human sets it.
+    /// @orig 0x0029f710 Brain_SetMoveSpeed (unknown)
+    void setSpeed(float speed) { m_speed = speed; }
     /// Whether it follows a route now.
     [[nodiscard]] bool routed() const { return m_follower.has_value(); }
 
@@ -138,6 +141,7 @@ class MoveAction final : public Action {
     [[nodiscard]] static ActionStatus finish(Brain& brain);
 
     MoveRequest m_request;
+    std::optional<float> m_speed; // +0x40: a speed in place of the gait's top
     std::optional<RouteFollower> m_follower;
     std::uint32_t m_updates = 0;
     // The corner speeds for the waypoint index they were worked out at.

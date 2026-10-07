@@ -1,0 +1,520 @@
+# level3 checkpoint 4, the rooftop chase (--play-level level3 --checkpoint 4), as a player would drive it: the
+# pad is ignored while the AI walks Snow to vbStartRail; then the stick (mostly full deflection, east along the
+# roofs, steered by the rail camera's heading), L2 to sprint before each gap and triangle to climb a ledge or jump
+# a gap, to vbEnterGallery. Frames are 1/30 s. Recorded with a closed-loop pilot; tests/platform/
+# disc_story_playthrough_test.cpp replays it.
+0 stick left 0 0
+165 stick left 95 31
+168 stick left 92 39
+171 stick left 87 49
+174 stick left 82 57
+177 stick left 76 65
+180 stick left 69 72
+183 stick left 66 75
+225 stick left 67 75
+228 stick left 67 74
+234 stick left 68 74
+237 stick left 68 73
+243 stick left 69 73
+246 stick left 69 72
+249 stick left 70 72
+255 stick left 70 71
+273 stick left 71 71
+285 stick left 71 70
+297 stick left 72 70
+306 stick left 72 69
+312 stick left 73 69
+318 stick left 73 68
+324 stick left 74 67
+330 stick left 75 66
+336 stick left 76 65
+339 stick left 77 64
+342 stick left 78 63
+345 stick left 79 62
+348 stick left 80 60
+351 stick left 82 57
+354 stick left 84 54
+357 stick left 85 52
+360 stick left 87 50
+363 stick left 74 68
+366 stick left 73 68
+372 stick left 73 69
+375 stick left 72 69
+393 stick left 72 70
+405 tap triangle
+408 stick left 71 70
+414 stick left 72 70
+453 stick left 72 69
+462 stick left 73 69
+468 stick left 73 68
+477 tap triangle
+480 stick left 72 69
+492 stick left 75 66
+495 stick left 84 55
+498 stick left 92 40
+501 stick left 97 24
+504 stick left 99 16
+507 stick left 100 7
+510 stick left 100 -7
+513 stick left 100 -8
+549 stick left 100 -9
+555 stick left 100 -10
+558 stick left 99 -11
+561 stick left 99 -12
+564 stick left 100 3
+567 stick left 100 4
+588 stick left 100 5
+642 stick left 100 6
+663 stick left 100 7
+678 stick left 100 8
+684 stick left 100 9
+687 stick left 100 10
+690 stick left 98 -20
+696 stick left 98 -19
+700 stick left 98 -18
+702 stick left 99 -17
+704 stick left 99 -16
+706 stick left 99 -15
+708 stick left 99 -14
+712 stick left 99 -13
+714 stick left 99 -12
+716 stick left 99 -11
+718 stick left 99 -10
+720 stick left 100 -9
+726 tap triangle
+728 stick left 100 -8
+780 stick left 100 -4
+782 stick left 100 0
+784 stick left 100 5
+786 stick left 100 9
+788 stick left 99 13
+790 stick left 99 17
+792 stick left 98 21
+794 stick left 97 25
+796 stick left 96 29
+798 stick left 94 33
+800 stick left 94 34
+802 stick left 94 35
+804 stick left 93 36
+806 stick left 93 38
+808 stick left 92 39
+810 stick left 91 41
+812 stick left 91 42
+814 stick left 90 44
+816 stick left 89 45
+818 stick left 89 46
+820 stick left 88 48
+822 stick left 87 49
+826 stick left 89 46
+828 stick left 90 43
+830 stick left 91 42
+832 stick left 92 39
+834 stick left 90 43
+836 stick left 90 44
+838 stick left 89 45
+840 stick left 88 47
+842 stick left 86 50
+844 stick left 84 54
+846 stick left 82 58
+848 stick left 79 62
+850 stick left 75 66
+852 stick left 71 71
+854 stick left 68 73
+860 stick left 68 74
+864 stick left 67 74
+876 stick left 67 75
+882 stick left 66 75
+884 press l2
+902 release l2
+902 tap triangle
+908 stick left 100 0
+976 stick left 66 75
+980 stick left 65 76
+982 stick left 41 91
+990 stick left 42 91
+994 stick left 43 90
+1000 stick left 44 90
+1002 stick left 45 90
+1004 stick left 45 89
+1006 stick left 46 89
+1008 stick left 47 88
+1010 stick left 48 87
+1012 stick left 50 87
+1014 stick left 51 86
+1016 stick left 52 85
+1018 stick left 53 85
+1020 stick left 54 84
+1022 stick left 55 83
+1024 stick left 56 83
+1026 stick left 57 82
+1028 stick left 58 81
+1030 stick left 59 81
+1032 stick left 60 80
+1040 tap triangle
+1042 stick left 61 79
+1094 stick left 62 79
+1096 stick left 63 78
+1098 stick left 64 77
+1100 stick left 65 76
+1102 stick left 66 75
+1104 stick left 67 74
+1106 stick left 68 73
+1108 stick left 69 73
+1110 stick left 70 72
+1112 stick left 70 71
+1114 stick left 71 71
+1116 stick left 72 70
+1118 stick left 72 69
+1120 stick left 73 69
+1122 stick left 73 68
+1124 stick left 74 68
+1126 stick left 74 67
+1132 stick left 75 67
+1134 stick left 75 66
+1140 stick left 76 66
+1142 stick left 76 65
+1148 tap triangle
+1184 stick left 76 64
+1186 stick left 77 64
+1196 stick left 78 63
+1200 stick left 79 62
+1202 stick left 79 61
+1212 stick left 79 62
+1214 stick left 78 62
+1218 stick left 77 63
+1220 stick left 77 64
+1222 stick left 76 65
+1228 stick left 77 64
+1232 stick left 76 64
+1246 stick left 76 65
+1248 stick left 76 64
+1254 stick left 77 64
+1286 tap triangle
+1316 stick left 77 63
+1320 stick left 78 63
+1330 stick left 78 62
+1334 stick left 79 62
+1336 stick left 79 61
+1338 stick left 80 60
+1352 stick left 80 61
+1354 stick left 79 61
+1356 stick left 78 62
+1358 stick left 78 63
+1360 stick left 77 63
+1366 stick left 78 63
+1386 stick left 77 63
+1388 stick left 78 63
+1414 tap triangle
+1490 stick left 77 63
+1506 stick left 78 63
+1506 press l2
+1524 release l2
+1524 tap triangle
+1528 stick left 75 -67
+1596 stick left 74 -67
+1606 stick left 78 63
+1610 stick left 78 62
+1612 stick left 79 61
+1614 stick left 81 59
+1616 stick left 82 57
+1618 stick left 84 54
+1620 stick left 86 51
+1622 stick left 88 48
+1624 stick left 90 44
+1626 stick left 92 40
+1628 stick left 93 36
+1630 stick left 94 35
+1632 stick left 95 32
+1634 stick left 96 28
+1636 stick left 97 23
+1638 stick left 98 18
+1640 stick left 99 15
+1642 stick left 99 14
+1644 stick left 99 13
+1646 stick left 99 12
+1650 stick left 99 11
+1660 stick left 99 10
+1668 stick left 100 10
+1674 stick left 100 9
+1694 stick left 100 8
+1734 stick left 100 9
+1736 stick left 99 12
+1738 stick left 99 14
+1740 stick left 99 17
+1742 stick left 98 19
+1744 stick left 98 21
+1746 stick left 97 24
+1748 stick left 96 26
+1750 stick left 96 29
+1752 stick left 95 31
+1754 stick left 94 34
+1756 stick left 93 36
+1758 stick left 92 39
+1760 stick left 91 41
+1762 stick left 90 44
+1764 stick left 89 45
+1778 stick left 89 46
+1808 stick left 89 45
+1810 stick left 90 43
+1812 stick left 91 41
+1814 stick left 92 39
+1816 stick left 92 38
+1818 stick left 93 37
+1820 stick left 93 38
+1822 stick left 91 42
+1824 stick left 88 47
+1826 stick left 87 50
+1828 stick left 84 54
+1830 stick left 81 58
+1832 stick left 78 62
+1834 stick left 74 67
+1836 stick left 69 72
+1838 stick left 67 74
+1844 stick left 67 75
+1860 stick left 66 75
+1896 press l2
+1898 stick left 67 75
+1914 stick left 67 74
+1914 release l2
+1914 tap triangle
+1920 stick left 1 100
+1984 stick left 67 74
+1992 stick left 68 74
+1998 stick left 68 73
+2020 stick left 69 73
+2048 stick left 68 73
+2074 stick left 48 88
+2078 stick left 49 87
+2082 stick left 50 87
+2084 stick left 51 86
+2088 stick left 52 85
+2090 stick left 53 85
+2092 stick left 54 84
+2094 stick left 55 83
+2096 stick left 56 83
+2098 stick left 57 82
+2100 stick left 58 82
+2102 stick left 59 81
+2104 stick left 59 80
+2106 stick left 60 80
+2108 stick left 61 79
+2110 stick left 62 79
+2112 stick left 62 78
+2116 stick left 63 78
+2122 stick left 63 77
+2124 stick left 64 77
+2128 stick left 65 76
+2136 stick left 66 75
+2150 stick left 67 75
+2154 stick left 67 74
+2166 stick left 68 74
+2172 stick left 68 73
+2184 tap triangle
+2268 stick left 84 55
+2272 stick left 83 55
+2274 stick left 83 56
+2278 stick left 82 57
+2280 stick left 81 58
+2282 stick left 81 59
+2284 stick left 80 60
+2286 stick left 79 61
+2288 stick left 79 62
+2290 stick left 78 63
+2292 stick left 77 63
+2294 stick left 77 64
+2296 stick left 76 65
+2298 stick left 75 66
+2302 stick left 74 67
+2304 stick left 74 68
+2306 stick left 73 68
+2308 stick left 73 69
+2310 stick left 72 69
+2312 stick left 72 70
+2314 stick left 71 70
+2318 stick left 71 71
+2320 stick left 70 71
+2324 stick left 70 72
+2326 stick left 69 72
+2332 stick left 69 73
+2336 stick left 68 73
+2342 tap triangle
+2408 press l2
+2434 release l2
+2434 tap triangle
+2440 stick left 68 74
+2460 stick left 90 -44
+2464 stick left 90 -43
+2466 stick left 91 -42
+2468 stick left 91 -41
+2470 stick left 92 -40
+2472 stick left 92 -39
+2474 stick left 92 -38
+2476 stick left 93 -37
+2478 stick left 93 -36
+2482 stick left 94 -35
+2484 stick left 94 -34
+2486 stick left 95 -33
+2488 stick left 95 -32
+2490 stick left 95 -31
+2492 stick left 96 -30
+2494 stick left 96 -29
+2496 stick left 96 -28
+2498 stick left 96 -27
+2500 stick left 97 -25
+2502 stick left 97 -24
+2504 stick left 97 -23
+2506 stick left 97 -22
+2508 stick left 98 -21
+2510 stick left 98 -20
+2512 stick left 98 -19
+2514 stick left 98 -18
+2516 stick left 99 -17
+2518 stick left 99 -16
+2520 stick left 99 -15
+2522 stick left 100 -9
+2524 stick left 100 -3
+2526 stick left 100 3
+2528 stick left 100 7
+2530 stick left 100 9
+2532 stick left 99 12
+2534 stick left 99 14
+2536 stick left 99 16
+2538 stick left 98 19
+2540 stick left 98 22
+2542 stick left 97 26
+2544 stick left 95 30
+2546 stick left 94 34
+2548 stick left 93 38
+2550 stick left 91 41
+2552 stick left 90 44
+2554 stick left 88 47
+2556 stick left 87 49
+2558 stick left 86 51
+2560 stick left 85 53
+2562 stick left 83 55
+2564 stick left 82 57
+2566 stick left 80 59
+2568 stick left 79 61
+2570 stick left 77 63
+2572 stick left 76 65
+2574 stick left 74 67
+2576 stick left 73 69
+2578 stick left 71 70
+2580 stick left 69 72
+2582 stick left 67 74
+2584 stick left 66 75
+2618 tap triangle
+2712 press l2
+2722 stick left 67 75
+2730 release l2
+2730 tap triangle
+2732 stick left 67 74
+2752 stick left 36 93
+2754 stick left 37 93
+2760 stick left 38 93
+2762 stick left 39 92
+2766 stick left 40 92
+2768 stick left 41 91
+2772 stick left 42 91
+2774 stick left 43 91
+2776 stick left 43 90
+2778 stick left 44 90
+2780 stick left 45 89
+2782 stick left 47 88
+2784 stick left 48 88
+2786 stick left 49 87
+2788 stick left 50 86
+2790 stick left 52 86
+2792 stick left 52 85
+2796 tap triangle
+2800 stick left 53 85
+2816 stick left 54 84
+2818 tap triangle
+2836 stick left 55 84
+2840 tap triangle
+2846 stick left 55 83
+2856 stick left 56 83
+2862 tap triangle
+2876 stick left 57 82
+2886 stick left 58 82
+2888 stick left 58 81
+2892 stick left 59 81
+2894 stick left 59 80
+2896 stick left 60 80
+2900 stick left 61 80
+2902 stick left 61 79
+2906 stick left 62 79
+2908 stick left 62 78
+2910 stick left 63 78
+2914 stick left 63 77
+2916 stick left 64 77
+2922 stick left 64 76
+2924 stick left 65 76
+2932 stick left 66 76
+2934 stick left 66 75
+2944 stick left 67 75
+2946 stick left 67 74
+2958 stick left 89 45
+2962 stick left 89 46
+2964 stick left 89 47
+2966 stick left 88 48
+2968 stick left 87 49
+2970 stick left 86 50
+2970 press l2
+2972 stick left 85 52
+2974 stick left 84 54
+2976 stick left 83 55
+2978 stick left 83 56
+2990 release l2
+2990 tap triangle
+2996 stick left 82 57
+2998 stick left 81 59
+3000 stick left 80 60
+3002 stick left 79 61
+3004 stick left 78 63
+3006 stick left 77 64
+3008 stick left 76 65
+3010 stick left 75 66
+3012 stick left 74 68
+3014 stick left 73 69
+3016 stick left 71 70
+3018 stick left 70 71
+3020 stick left 69 72
+3022 stick left 68 73
+3024 stick left 20 -98
+3028 stick left 21 -98
+3034 stick left 22 -98
+3038 stick left 23 -97
+3044 stick left 24 -97
+3048 stick left 25 -97
+3058 tap triangle
+3080 tap triangle
+3096 stick left -8 -100
+3102 tap triangle
+3124 tap triangle
+3146 tap triangle
+3168 tap triangle
+3190 tap triangle
+3212 tap triangle
+3226 stick left -100 -8
+3234 tap triangle
+3256 tap triangle
+3278 tap triangle
+3300 tap triangle
+3322 tap triangle
+3344 tap triangle
+3366 tap triangle
+3388 tap triangle
+3410 tap triangle
+3432 tap triangle
+3454 tap triangle
+3476 tap triangle
+3498 tap triangle
+3520 tap triangle
+3522 stick left 100 -4
+3542 tap triangle
+3564 tap triangle
+3586 tap triangle
+3608 tap triangle
+3630 tap triangle
+3652 tap triangle

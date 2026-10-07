@@ -169,6 +169,15 @@ void ScriptedBrains::actGiveWay(double human, double other) {
     static_cast<void>(pushAside(*mover, *stander, body.position(), human::facing(body.heading())));
 }
 
+void ScriptedBrains::actTurnToDir(double human, float headingDegrees, std::int16_t delayMs) {
+    if (held([this, human, headingDegrees, delayMs] { actTurnToDir(human, headingDegrees, delayMs); })) {
+        return;
+    }
+    if (Brain* found = named(human); found != nullptr) {
+        found->queueAction(TurnAction::toHeading(headingDegrees * std::numbers::pi_v<float> / 180.0F, delayMs));
+    }
+}
+
 void ScriptedBrains::goalFight(double human, double target) {
     if (held([this, human, target] { goalFight(human, target); })) {
         return;
@@ -692,7 +701,8 @@ std::vector<world_objects::BoxSubject> ScriptedBrains::boxSubjects() const {
         const anim::Vec3 feet = brain->human().position();
         subjects.push_back({.handle = handle,
                             .position = {feet.x, feet.y, feet.z},
-                            .alive = !brain->human().fighter().health().depleted()});
+                            .alive = !brain->human().fighter().health().depleted(),
+                            .player = brain->type() == BrainType::Player});
     }
     return subjects;
 }

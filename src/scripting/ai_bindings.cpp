@@ -87,6 +87,17 @@ NativeFunction makeActLookAt(const BindingContext& context) {
     });
 }
 
+// `ActTurnToDir(human, heading, turnSpeed, delayMs)`: the heading kept as 16 bits; the turn speed is stored and never
+// read, so it is not passed on; the delay defaults to -1.
+// @orig 0x00364708 ActTurnToDir (unknown)
+// @orig 0x002fdb90 Action_TurnToHeading (unknown)
+NativeFunction makeActTurnToDir(const BindingContext& context) {
+    return hostCall(context, [](AiBindingHost& host, std::span<const Value> args) {
+        host.actTurnToDir(handleArg(args, 0), static_cast<float>(static_cast<std::int16_t>(wholeArg(args, 1))),
+                          static_cast<std::int16_t>(absent(args, 3) ? -1 : wholeArg(args, 3)));
+    });
+}
+
 // `GoalFight(human, target, unused)`: the third argument is read and never used.
 // @orig 0x003610a8 GoalFight (unknown)
 NativeFunction makeGoalFight(const BindingContext& context) {
@@ -232,6 +243,7 @@ NativeFunction makeTacticClear(const BindingContext& context) {
 void addAiBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("GoalMoveToFlag", makeGoalMoveToFlag(context));
     vm.registerFunction("ActLookAt", makeActLookAt(context));
+    vm.registerFunction("ActTurnToDir", makeActTurnToDir(context));
     vm.registerFunction("GoalFight", makeGoalFight(context));
     vm.registerFunction("BrFlush", makeBrFlush(context));
     vm.registerFunction("BrDead", makeBrDead(context));

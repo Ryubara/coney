@@ -70,10 +70,10 @@ void Cameras::configureFollow(const FollowSettings& settings, float slowMotion) 
 void Cameras::createLocked(double handle, const LockedCamera& camera) { m_locked.insert_or_assign(handle, camera); }
 
 void Cameras::deleteCamera(double handle) {
-    if (m_locked.erase(handle) == 0) {
+    if (m_locked.erase(handle) + m_fixed.erase(handle) == 0) {
         return;
     }
-    if (m_current.kind == CameraKind::Locked && m_current.handle == handle) {
+    if ((m_current.kind == CameraKind::Locked || m_current.kind == CameraKind::Fixed) && m_current.handle == handle) {
         ++m_cuts;
         setCurrent(CameraRef{.kind = m_follow != nullptr ? CameraKind::Follow : CameraKind::None});
     }
@@ -167,6 +167,15 @@ std::optional<CameraRef> Cameras::find(double handle) const {
     if (m_path && m_pathHandle != 0.0 && handle == m_pathHandle) {
         return CameraRef{.kind = CameraKind::Path, .handle = handle};
     }
+    if (m_rail && m_railHandle != 0.0 && handle == m_railHandle) {
+        return CameraRef{.kind = CameraKind::Rail, .handle = handle};
+    }
+    if (m_fixed.contains(handle)) {
+        return CameraRef{.kind = CameraKind::Fixed, .handle = handle};
+    }
+    if (m_third.contains(handle)) {
+        return CameraRef{.kind = CameraKind::Third, .handle = handle};
+    }
     return std::nullopt;
 }
 
@@ -184,6 +193,10 @@ void Cameras::setClipping(double handle, float nearClip, float farClip) {
         camera.farClip = far;
     } else if (ref->kind == CameraKind::Win) {
         m_winSettings.farClip = std::min(far, WinCamera::kMaxFarClip);
+    } else if (ref->kind == CameraKind::Fixed) {
+        m_fixed.at(handle).setClipping(nearClip, far);
+    } else if (ref->kind == CameraKind::Third) {
+        m_third.at(handle).second.setClipping(nearClip, far);
     }
 }
 
@@ -231,6 +244,96 @@ bool Cameras::addPathPointFrom(double camera, float seconds, std::string onReach
     return true;
 }
 
+double Cameras::setupRail(double handle, double target, const RailSetup& setup) {
+    if (m_railHandle == 0.0) {
+        m_railHandle = handle;
+    }
+    if (!m_rail) {
+        m_rail.emplace();
+    }
+    m_railTarget = target;
+    // Its target joins the shared target list, as `CameraTargets_Add(human, 1)` puts it there.
+    if (std::ranges::find(m_targets, target) == m_targets.end()) {
+        (void)this->target(0, target);
+    }
+    m_rail->setup(setup);
+    return m_railHandle;
+}
+
+bool Cameras::addRailPoint(anim::Vec3 point) {
+    if (!m_rail) {
+        return false;
+    }
+    m_rail->addPoint(point);
+    return true;
+}
+
+void Cameras::leadRail(float lead, float seconds, bool ahead) {
+    if (m_rail) {
+        m_rail->setLead(lead, seconds, ahead);
+    }
+}
+
+void Cameras::modifyRail(std::uint32_t param, float value, float seconds) {
+    if (m_rail) {
+        m_rail->modify(param, value, seconds);
+    }
+}
+
+void Cameras::createFixed(double handle, double target, const FixedCamera& camera) {
+    m_fixed.insert_or_assign(handle, camera);
+    if (std::ranges::find(m_targets, target) == m_targets.end()) {
+        (void)this->target(0, target);
+    }
+}
+
+const FixedCamera* Cameras::fixed(double handle) const {
+    const auto found = m_fixed.find(handle);
+    return found == m_fixed.end() ? nullptr : &found->second;
+}
+
+void Cameras::createThird(double handle, double target, const ThirdCameraSettings& settings) {
+    m_third.insert_or_assign(handle, std::pair<double, ThirdCamera>(target, ThirdCamera(settings)));
+}
+
+const ThirdCamera* Cameras::third(double handle) const {
+    const auto found = m_third.find(handle);
+    return found == m_third.end() ? nullptr : &found->second.second;
+}
+
+void Cameras::stepTracking(CameraRef ref, float seconds) {
+    switch (ref.kind) {
+    case CameraKind::Rail:
+        if (m_rail && m_place) {
+            const auto placed = m_place(m_railTarget);
+            m_rail->update(placed ? std::optional<anim::Vec3>(placed->first) : std::nullopt, enabled(kSwitchRailLead),
+                           seconds);
+        }
+        break;
+    case CameraKind::Fixed:
+        if (const auto found = m_fixed.find(ref.handle); found != m_fixed.end()) {
+            // The listed humans that are found.
+            std::vector<anim::Vec3> at;
+            for (const double human : m_targets) {
+                if (const std::optional<anim::Vec3> feet = m_locate ? m_locate(human) : std::nullopt) {
+                    at.push_back(*feet);
+                }
+            }
+            found->second.update(at);
+        }
+        break;
+    case CameraKind::Third:
+        if (const auto found = m_third.find(ref.handle); found != m_third.end() && m_place) {
+            if (const auto placed = m_place(found->second.first)) {
+                found->second.second.update(placed->first, placed->second);
+            }
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 std::optional<double> Cameras::activeHandle() const {
     switch (m_current.kind) {
     case CameraKind::Follow:
@@ -238,6 +341,9 @@ std::optional<double> Cameras::activeHandle() const {
     case CameraKind::Locked:
     case CameraKind::Win:
     case CameraKind::Path:
+    case CameraKind::Rail:
+    case CameraKind::Fixed:
+    case CameraKind::Third:
         return m_current.handle;
     default:
         return std::nullopt;
@@ -294,6 +400,18 @@ CameraView Cameras::viewOf(CameraRef ref) const {
         return m_path ? m_path->view() : m_view;
     case CameraKind::Failed:
         return m_failed ? m_failed->view() : m_view;
+    case CameraKind::Rail:
+        return m_rail ? m_rail->view() : m_view;
+    case CameraKind::Fixed:
+        if (const FixedCamera* camera = fixed(ref.handle); camera != nullptr) {
+            return camera->view();
+        }
+        return m_view;
+    case CameraKind::Third:
+        if (const ThirdCamera* camera = third(ref.handle); camera != nullptr) {
+            return camera->view();
+        }
+        return m_view;
     case CameraKind::None:
         break;
     }
@@ -338,6 +456,8 @@ void Cameras::makeActive(double handle, float seconds) {
     if (ref->kind == CameraKind::Path && m_path) {
         m_path->activate();
     }
+    // A tracking camera is placed on its target before it is first shown.
+    stepTracking(*ref, 0.0F);
     // A scene camera keeps the screen: the script changes what the scene returns to.
     if (m_current.kind == CameraKind::Scene) {
         if (!m_stack.empty()) {
@@ -502,6 +622,8 @@ void Cameras::update(const FollowTarget& target, std::uint8_t rawRightX, std::ui
     if (m_failed && m_current.kind == CameraKind::Failed) {
         m_failed->update(seconds);
     }
+    // The rail, fixed and third-person cameras follow their targets while current.
+    stepTracking(m_current, seconds);
     // A current locked camera keeps its listed humans inside the frame's sides.
     keepHumansInView(mesh);
     // The blend toward the destination's live view; at the end the destination becomes current directly.

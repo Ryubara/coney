@@ -2369,7 +2369,7 @@ traced. Readers: 0x00257a08, 0x00257a14.
 - **Wrapper** `0x0035e480` (registered by `RegisterBindings`); **calls** `0x0041d940` `Cfg_SetMaxThrowError`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgSetMeleeRange {#cfgsetmeleerange}
 

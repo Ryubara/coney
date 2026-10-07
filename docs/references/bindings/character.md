@@ -557,7 +557,7 @@ call starts from the class values, so calls do not compound.
   `0x00229b90` `Human_ScaleAttackDamages`
 - **Used by** 8 of 467 script chunks (30 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuAreActionsBlocked {#huareactionsblocked}
 
@@ -728,7 +728,7 @@ plays (characters.md), so a script clearing it may race the game's own use (infe
 - **Wrapper** `0x00359020` (registered by `RegisterBindings`); **calls** `0x00237958` `Human_SetBlockJump`
 - **Used by** 7 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuBlockLook {#hublocklook}
 
@@ -920,7 +920,7 @@ end by themselves ([AI: turning](../../research/ai.md#look-at)).
 - **Wrapper** `0x00358c58` (registered by `RegisterBindings`); **calls** `0x0023a460` `Human_ClearLook_Stub`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 4 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuColor {#hucolor}
 
@@ -2493,7 +2493,7 @@ its own; the scripts set it on the Warriors during set-piece fights.
 - **Wrapper** `0x00358810` (registered by `RegisterBindings`); **calls** `0x00234118` `Human_SetAutoCombat`
 - **Used by** 4 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetAutoEscape {#husetautoescape}
 
@@ -3113,7 +3113,7 @@ interrogation](../../research/crimes.md#interrogation)). Which of lines 1-3 play
 - **Wrapper** `0x0035d498` (registered by `RegisterBindings`); **calls** `0x00239f20` `Human_SetInterrogation`
 - **Used by** 5 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetKeepHat {#husetkeephat}
 
@@ -3545,7 +3545,7 @@ hit reaction (`Human_ApplyPendingDamage`, 0x00265f70), so blows do not stagger o
 - **Wrapper** `0x00359320` (registered by `RegisterBindings`); **calls** `0x00235198` `Human_SetNoReact`
 - **Used by** 10 of 467 script chunks (13 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetNormalMode {#husetnormalmode}
 
@@ -4895,7 +4895,7 @@ Does nothing in this build: the function it calls (0x0016d5c0) returns at once. 
 - **Wrapper** `0x0036d990` (registered by `RegisterBindings`); **calls** `0x0016d5c0` `KillHumans_Stub`
 - **Used by** 4 of 467 script chunks (4 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## LoadBumAnims {#loadbumanims}
 

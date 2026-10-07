@@ -314,6 +314,11 @@ void addRadarBindings(LuaVm& vm, const BindingContext& context) {
                                 found->second.flashing = boolArg(args, 1);
                             }
                         }));
+    // `HUDSetChaseHUDState_DESTROY()`: the chase HUD's destroy state.
+    // @orig 0x001b4a88 ChaseHud_Destroy (unknown)
+    vm.registerFunction(
+        "HUDSetChaseHUDState_DESTROY",
+        hudCall(context, [](hud::Hud& hud, std::span<const Value> /*args*/) { hud.radar().chaseHud = false; }));
 }
 
 } // namespace

@@ -96,6 +96,7 @@ int Gangs::create(int kind, std::string_view name) {
     gang.m_friends = 0;
     gang.m_suspended = false;
     gang.m_invincible = false;
+    gang.m_alwaysSeen = false;
     gang.m_members.clear();
     gang.m_tactic.reset();
     gang.m_handlers.clear();
@@ -210,6 +211,29 @@ void Gangs::makeNeutralOfType(int id, int kind) {
         gang->m_friends &= ~bitOf(other);
         second->m_enemies &= ~bitOf(id);
         second->m_friends &= ~bitOf(id);
+    }
+}
+
+void Gangs::makeEnemiesOfType(int id, int kind) {
+    Gang* gang = find(id);
+    if (gang == nullptr) {
+        return;
+    }
+    for (int other = 0; other < static_cast<int>(kGangSlots); ++other) {
+        Gang* second = find(other);
+        if (second == nullptr || second->m_kind != kind) {
+            continue;
+        }
+        gang->m_friends &= ~bitOf(other);
+        gang->m_enemies |= bitOf(other);
+        second->m_friends &= ~bitOf(id);
+        second->m_enemies |= bitOf(id);
+    }
+}
+
+void Gangs::setAlwaysSeen(int id, bool on) {
+    if (Gang* gang = find(id); gang != nullptr) {
+        gang->m_alwaysSeen = on;
     }
 }
 

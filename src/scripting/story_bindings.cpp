@@ -451,6 +451,21 @@ template <typename Read> NativeFunction storyQuery(const BindingContext& context
     };
 }
 
+// `HuSetInterrogation(human, line1, line2, line3, line4, callback, icon) -> boolean`: the lines cleared and set, the
+// callback (nil: not interrogable) and the icon (any non-zero, default 1). True when the handle names a human.
+// @orig 0x00239f20 Human_SetInterrogation (unknown)
+NativeFunction makeHuSetInterrogation(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        StoryBindingHost* host = storyOf(*context);
+        if (host == nullptr) {
+            return binding::boolean(false);
+        }
+        const std::array<std::string, 4> lines{nameArg(args, 1), nameArg(args, 2), nameArg(args, 3), nameArg(args, 4)};
+        const bool icon = intArgOr(args, 6, 1) != 0;
+        return binding::boolean(host->setInterrogation(handleArg(args, 0), lines, nameArg(args, 5), icon));
+    };
+}
+
 // `HuTag(human, tag, flag)`: the human sprays the tag spot `tag` from `flag`.
 // @orig 0x00238db0 Human_Tag (unknown)
 NativeFunction makeHuTag(const BindingContext& context) {
@@ -535,6 +550,72 @@ NativeFunction makeGoalThrowObject(const BindingContext& context) {
                                              .range = floatArgOr(args, 2, kThrowRange),
                                              .gait = intArgOr(args, 3, 2),
                                              .callback = nameArg(args, 4)});
+    });
+}
+
+// `GoalGuardFlag(human, flag, radius, heading, callback, timeMs)`: the time defaults to -1.
+// @orig 0x00360f28 GoalGuardFlag (unknown)
+// @orig 0x002b79b8 Goal_GuardFlag (unknown)
+NativeFunction makeGoalGuardFlag(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        host.goalGuardFlag(GuardFlagCall{.human = handleArg(args, 0),
+                                         .flag = handleArg(args, 1),
+                                         .radius = floatArg(args, 2),
+                                         .heading = static_cast<int>(static_cast<std::int16_t>(intArg(args, 3))),
+                                         .callback = nameArg(args, 4),
+                                         .timeMs = intArgOr(args, 5, -1)});
+    });
+}
+
+// `GoalLeadChase(human, path, chaser, distance1, distance2, distance3, distance4)`: the path is read only when a
+// second argument is given; the chaser and the last three distances are not used by the goal.
+// @orig 0x00360ac8 GoalLeadChase (unknown)
+// @orig 0x002e0a78 Goal_LeadChase (unknown)
+NativeFunction makeGoalLeadChase(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        host.goalLeadChase(LeadChaseCall{.human = handleArg(args, 0),
+                                         .path = absent(args, 1) ? kNilHandle : handleArg(args, 1),
+                                         .waitDistance = floatArg(args, 3)});
+    });
+}
+
+// `GoalDevilRun(human, path, gang, gait, attackDistance, paceDistance, maxSpeed, urgency, hostile)`.
+// @orig 0x00360d98 GoalDevilRun (unknown)
+// @orig 0x002e1760 Goal_DevilRun (unknown)
+NativeFunction makeGoalDevilRun(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        host.goalDevilRun(DevilRunCall{.human = handleArg(args, 0),
+                                       .path = absent(args, 1) ? kNilHandle : handleArg(args, 1),
+                                       .gang = static_cast<int>(static_cast<std::int16_t>(intArg(args, 2))),
+                                       .gait = static_cast<int>(static_cast<std::int16_t>(intArg(args, 3))),
+                                       .attackDistance = floatArg(args, 4),
+                                       .paceDistance = floatArg(args, 5),
+                                       .maxSpeed = floatArg(args, 6),
+                                       .urgency = floatArg(args, 7),
+                                       .hostile = boolArg(args, 8)});
+    });
+}
+
+// `GoalBigLedgeThrower(human, targets, objects, cycles, delayMs, taunt, anim)`.
+// @orig 0x00363b38 GoalBigLedgeThrower (unknown)
+// @orig 0x002edf20 Goal_BigLedgeThrower (unknown)
+NativeFunction makeGoalBigLedgeThrower(const BindingContext& context) {
+    return storyCall(context, [](StoryBindingHost& host, std::span<const Value> args) {
+        LedgeThrowerCall call;
+        call.human = handleArg(args, 0);
+        const std::array<double, 3> targets = tableArg<3>(args, 1);
+        for (std::size_t i = 0; i < targets.size(); ++i) {
+            call.targets.at(i) = static_cast<double>(static_cast<std::uint32_t>(targets.at(i)));
+        }
+        const std::array<double, 8> objects = tableArg<8>(args, 2);
+        for (std::size_t i = 0; i < objects.size(); ++i) {
+            call.objects.at(i) = static_cast<int>(static_cast<std::int16_t>(static_cast<std::int64_t>(objects.at(i))));
+        }
+        call.cycles = static_cast<int>(static_cast<std::uint8_t>(wholeArg(args, 3)));
+        call.delayMs = static_cast<std::uint16_t>(wholeArg(args, 4));
+        call.taunt = boolArg(args, 5);
+        call.anim = nameArg(args, 6);
+        host.goalBigLedgeThrower(call);
     });
 }
 
@@ -826,6 +907,28 @@ void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
     vm.registerFunction("HuSetKeepHat", flagCall(context, human::flag::kKeepHat, exactlyOne));
     // @orig 0x00235db0 Human_SetRevivable (unknown)
     vm.registerFunction("HuSetRevivable", flagCall(context, human::flag::kRevivable, exactlyOne));
+    // @orig 0x00237958 Human_SetBlockJump (unknown)
+    vm.registerFunction("HuBlockJump", flagCall(context, human::flag::kBlockJump, boolArg));
+    // @orig 0x00234118 Human_SetAutoCombat (unknown)
+    vm.registerFunction("HuSetAutoCombat", flagCall(context, human::flag::kAutoCombat, boolArg));
+    // @orig 0x00235198 Human_SetNoReact (unknown)
+    vm.registerFunction("HuSetNoReact", flagCall(context, human::flag::kNoReact, boolArg));
+    // `HuClearLook(human)`: the original's function returns at once.
+    // @orig 0x0023a460 Human_ClearLook_Stub (unknown)
+    vm.registerFunction("HuClearLook", [](std::span<const Value>) { return binding::none(); });
+    vm.registerFunction("HuSetInterrogation", makeHuSetInterrogation(context));
+    // @orig 0x00236038 Human_ApplyDamageModifier (unknown)
+    vm.registerFunction("HuApplyDamageModifier", storyCall(context, [](StoryBindingHost& h, std::span<const Value> a) {
+                            h.applyDamageModifier(handleArg(a, 0), floatArg(a, 1));
+                        }));
+    // @orig 0x0016ae60 Gang_MakeEnemiesOfType (unknown)
+    vm.registerFunction("GangMakeEnemiesOfType", storyCall(context, [](StoryBindingHost& h, std::span<const Value> a) {
+                            h.makeEnemiesOfType(intArg(a, 0), intArg(a, 1));
+                        }));
+    // @orig 0x0016bde8 Gang_SetAlwaysSeen (unknown)
+    vm.registerFunction("GangSetAlwaysSeen", storyCall(context, [](StoryBindingHost& h, std::span<const Value> a) {
+                            h.setAlwaysSeen(intArg(a, 0), boolArg(a, 1));
+                        }));
 
     // The humans.
     using A = std::span<const Value>;
@@ -881,6 +984,10 @@ void addStoryBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
     vm.registerFunction("HuExitWorld", makeHuExitWorld(context));
     vm.registerFunction("GoalTravelPath", makeGoalTravelPath(context));
     vm.registerFunction("GoalThrowObject", makeGoalThrowObject(context));
+    vm.registerFunction("GoalGuardFlag", makeGoalGuardFlag(context));
+    vm.registerFunction("GoalLeadChase", makeGoalLeadChase(context));
+    vm.registerFunction("GoalDevilRun", makeGoalDevilRun(context));
+    vm.registerFunction("GoalBigLedgeThrower", makeGoalBigLedgeThrower(context));
     vm.registerFunction("GoalPlayDynIdle", makeGoalPlayDynIdle(context));
     // `GoalMelee(human, target)`: NilHandle (the default) lets it pick.
     // @orig 0x002add08 Goal_Melee (unknown)

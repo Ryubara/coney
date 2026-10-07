@@ -208,3 +208,42 @@ TEST_CASE("CamLockLocked lists a human on a locked camera and takes him off agai
     h.call("CamLockLocked", {Value(cut), Value(12.0), Value()});
     CHECK(h.cameras.locked(cut)->keptInView.empty());
 }
+
+TEST_CASE("a chase's rail camera calls: set-up, points, lead and settings; fixed and third-person cameras",
+          "[camera_bindings]") {
+    Harness h;
+    // A point before any rail camera is not added; a NilHandle target makes none.
+    CHECK(h.call("CamAddRailPoint", {triple(0, 0, 2)}).isNil());
+    CHECK(h.call("CamSetupRail", {str("rail"), Value(0.0), Value(60.0), triple(0, 0, 1.5), Value(0.1), Value(90.0)})
+              .number() == 0.0);
+    const double rail =
+        h.call("CamSetupRail", {str("rail"), Value(5.0), Value(60.0), triple(0, 0, 1.5), Value(0.1), Value(90.0)})
+            .number()
+            .value_or(0.0);
+    CHECK(rail >= 1.0);
+    CHECK(h.call("CamAddRailPoint", {triple(0, 0, 2)}).number() == 1.0);
+    CHECK(h.call("CamAddRailPoint", {triple(10, 0, 2), Value(1.0)}).isNil()); // player 2 has no rail camera
+    h.call("CamLeadRail", {Value(3.0), Value(0.0)});
+    h.call("CamModifyRail", {Value(2.0), Value(40.0), Value(0.0)});
+    REQUIRE(h.cameras.rail() != nullptr);
+    CHECK(h.cameras.rail()->pointCount() == 1);
+    CHECK(h.cameras.rail()->mode() == coney::camera::RailMode::Ahead);
+    CHECK(h.cameras.rail()->lead() == Approx(3.0F));
+    CHECK(h.cameras.rail()->fieldOfView() == Approx(40.0F));
+    // CamSetupRail again keeps the handle.
+    CHECK(h.call("CamSetupRail", {str("rail"), Value(5.0), Value(60.0), triple(0, 0, 1.5), Value(0.1), Value(90.0)})
+              .number() == rail);
+
+    const double fixed = h.call("CameraCreateFixed", {str("fixed"), Value(5.0), triple(0, 0, 5), Value(50.0),
+                                                      triple(0, 0, 1), Value(0.1), Value(100.0)})
+                             .number()
+                             .value_or(0.0);
+    CHECK(h.cameras.fixed(fixed) != nullptr);
+    CHECK(h.cameras.targets() == std::vector<double>{5.0});
+    const double third = h.call("CameraCreateThird", {str("third"), Value(5.0), Value(60.0), Value(4.0), Value(1.0),
+                                                      Value(0.0), triple(0, 0, 1.5), Value(0.1), Value(100.0)})
+                             .number()
+                             .value_or(0.0);
+    CHECK(h.cameras.third(third) != nullptr);
+    CHECK(h.call("CameraCreateThird", {str("third"), Value(0.0)}).number() == 0.0);
+}

@@ -12,7 +12,8 @@ namespace coney::script {
 
 /// The HUD bindings Coney implements: every HUD binding the first mission calls, and the few beside them that share
 /// their state. All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 37> kHudBindings{"FlashRageBar",
+inline constexpr std::array<std::string_view, 38> kHudBindings{"FlashRageBar",
+                                                               "HUDSetChaseHUDState_DESTROY",
                                                                "ForceShowPlayerHud",
                                                                "HUDAddRadarHuman",
                                                                "HUDAddRadarMissionObjective",

@@ -19,31 +19,34 @@ summary is still to be written from the script.
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | 🚧 In Progress | - |
-| 2 | 🚧 In Progress | - |
-| 3 | 🚧 In Progress | - |
-| 4 | 🚧 In Progress | - |
-| 5 | 🚧 In Progress | - |
+| 1 | 🚧 In Progress | Runs headless with no script error and every binding it calls; not yet checked to its end. |
+| 2 | 🚧 In Progress | No script error; waits on the tagging goal and the HUD bars (being built for level34). |
+| 3 | 🚧 In Progress | No script error; waits on the car message handler and object indices (being built for level34). |
+| 4 | 🚧 In Progress | Plays to its end from a pad script (tests/support/level3_chase.txt, its disc test `[playthrough]`): the AI walks Snow to the rail's start box, then the stick, L2 and triangle run, climb and jump him across the roofs to the gallery box, which hands over to checkpoint 5. The Warriors stay behind the player (the crew's follow is not built yet). |
+| 5 | 🚧 In Progress | Runs headless with no script error and every binding it calls; not yet checked to its end. |
 
 ## What it needs {#needs}
 
-Its scripts can call 259 script bindings. 22 of them are new, which no earlier level of the story calls: 9 are
+Its scripts can call 259 script bindings. 22 of them are new, which no earlier level of the story calls: 21 are
 implemented in Coney and 22 are traced. The full list is on [the coverage page](../references/bindings/story.md#level3).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
-| [Characters](../references/bindings/character.md) | 7 | 4 |
-| [AI](../references/bindings/ai.md) | 4 | 0 |
-| [Gangs](../references/bindings/gang.md) | 2 | 0 |
-| [Cameras](../references/bindings/camera.md) | 2 | 0 |
-| [World and objects](../references/bindings/world.md) | 1 | 0 |
-| [HUD and menus](../references/bindings/hud.md) | 3 | 2 |
+| [Characters](../references/bindings/character.md) | 7 | 7 |
+| [AI](../references/bindings/ai.md) | 4 | 3 |
+| [Gangs](../references/bindings/gang.md) | 2 | 2 |
+| [Cameras](../references/bindings/camera.md) | 2 | 2 |
+| [World and objects](../references/bindings/world.md) | 1 | 1 |
+| [HUD and menus](../references/bindings/hud.md) | 3 | 3 |
 | [Sound and music](../references/bindings/sound.md) | 2 | 2 |
 | [Configuration (Cfg)](../references/bindings/config.md) | 1 | 1 |
 
 Research:
 
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
+- [The mission's script and the rooftop chase](../research/scripting.md#level3)
+- [Rail cameras](../research/camera.md#rail)
+- [AI: GoalDevilRun](../research/ai.md#devil-run)
 
 ## Run it in Coney {#run}
 
@@ -52,6 +55,12 @@ to 5:
 
 ```text
 coney --disc /path/to/disc --play-level level3 --checkpoint 1
+```
+
+Its disc test (needs `CONEY_DISC`; [Building](../guides/building.md)):
+
+```text
+coney_tests "[disc][story]"
 ```
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

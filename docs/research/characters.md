@@ -2712,6 +2712,18 @@ reference images' pose, camera and lights, are Coney's own. For the human:
 - **A disc test**: every Character List record resolves to three resources that load, and every model is the clump
   described above (counts only).
 
+**The fifth and sixth missions' switches** (2026-10-06): `HuBlockJump` sets flag `0x10000000`, which makes
+`Human::tryJump` refuse (a climb or a context action still takes triangle); `HuSetNoReact` sets `0x800`, the same bit
+the AI's block goal sets (`Fighter::hitReactionsOff()` now reads the flag word); `HuSetAutoCombat` keeps
+`0x200000000000` with no reader. `HuApplyDamageModifier` rewrites a human's attack damages from its class table × the
+factor, rounded, then a player's Warrior class percentage (`Human::applyDamageModifier`; an entry that rounds to 0
+keeps its damage). **Coney's stand-ins**: `HuEnableTagCheer`, `HuSetInterrogation` and `HuUseAnyAnim` are kept on the
+human's `ScriptState` (no crew comment on a slip, no interrogation shake-down, no clip played; `HuUseAnyAnim` keeps
+up to seven overrides apart from `HuUseAnim`'s four and answers whether the file was requested); `HuHasHat` answers
+NilHandle, as Coney's humans wear no hat objects; `HuClearLook` and `KillHumans` do nothing, as in the original.
+`CfgSetMaxThrowError` keeps its two errors in radians (`CharacterRules::maxThrowError`); Coney's AI throws do not
+read them yet.
+
 ## Open questions
 
 - The workout's reach and timing: how near the equipment the start clip (691) begins, and how the loop clips'

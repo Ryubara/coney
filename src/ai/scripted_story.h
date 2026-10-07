@@ -40,7 +40,6 @@ class ScriptedBrains;
 
 /// A level's paths hold at most this many (`0x006fd870`, 32 slots).
 inline constexpr std::size_t kPathSlots = 32;
-
 /// One path `AddPath` made: its name and its points (flag handles), in order.
 struct WorldPath {
     std::string name;
@@ -105,6 +104,12 @@ class ScriptedStory final : public script::StoryBindingHost {
     void tag(double human, double tag, double flag) override;
     /// The level's volume boxes, where the gangs' turf boxes are found (null for none: every point is in turf).
     void setBoxes(const world_objects::VolumeBoxes* boxes) { m_boxes = boxes; }
+    /// Kept on the human (ScriptState); true when the handle names a human (or calls are held for the level).
+    bool setInterrogation(double human, const std::array<std::string, 4>& lines, std::string_view callback,
+                          bool icon) override;
+    void applyDamageModifier(double human, float factor) override;
+    void makeEnemiesOfType(int gang, int kind) override;
+    void setAlwaysSeen(int gang, bool on) override;
 
     /// The brain's off flag set (as `BrDead`) unless it is a player's, then the exit goal; flag 0 takes the nearest
     /// exit flag (`HuExitWorld`), and with none nothing happens.
@@ -119,6 +124,14 @@ class ScriptedStory final : public script::StoryBindingHost {
     /// StationaryThrowerGoal over the human's goals.
     void goalStationaryThrower(const script::StationaryThrowerCall& call) override;
     void goalPlayDynIdle(const script::DynIdleCall& call) override;
+    /// `GoalGuardFlag`: a GuardFlagGoal pushed.
+    void goalGuardFlag(const script::GuardFlagCall& call) override;
+    /// `GoalLeadChase`: a LeadChaseGoal along the path pushed.
+    void goalLeadChase(const script::LeadChaseCall& call) override;
+    /// `GoalDevilRun`: a DevilRunGoal along the path pushed.
+    void goalDevilRun(const script::DevilRunCall& call) override;
+    /// `GoalBigLedgeThrower`: a BigLedgeThrowerGoal pushed. **Coney stand-in**: the anim name is not applied.
+    void goalBigLedgeThrower(const script::LedgeThrowerCall& call) override;
     /// A bum in its bum goal plays its reaction clip (anim 668 for types 1 and 2, 669 for type 0).
     void bumTrigger(double human) override;
 

@@ -16,6 +16,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/brain.h"
+#include "ai/chase_goals.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
 #include "ai/riot_goals.h"
@@ -308,4 +309,100 @@ TEST_CASE("The fourth mission's brain calls reach the brains: pedestrian type, w
         dynamic_cast<const coney::ai::StationaryThrowerGoal*>(barman.findGoal(GoalType::StationaryThrower));
     REQUIRE(thrower != nullptr);
     CHECK(thrower->objects()[4] == 16);
+}
+
+TEST_CASE("The fifth and sixth missions' human switches reach the humans", "[ai][story]") {
+    Level level;
+    Brain& extra = level.add({44.0F, 40.0F, 0.0F});
+    level.call("HuBlockJump", {Value(1.0), Value(1.0)});
+    CHECK(level.scene.player().human().hasFlag(flag::kBlockJump));
+    level.call("HuSetNoReact", {Value(2.0), Value(1.0)});
+    CHECK(extra.human().fighter().hitReactionsOff());
+    level.call("HuSetNoReact", {Value(2.0), Value(0.0)});
+    CHECK_FALSE(extra.human().fighter().hitReactionsOff());
+    level.call("HuSetAutoCombat", {Value(2.0), Value(1.0)});
+    CHECK(extra.human().hasFlag(flag::kAutoCombat));
+    level.call("HuClearLook", {Value(2.0)});
+
+    // Interrogation: the lines and callback kept, the icon with it; nil lines are empty; a bad handle answers nil.
+    CHECK(level
+              .call("HuSetInterrogation",
+                    {Value(2.0), Value("vags/a"), Value(), Value("vags/c"), Value("vags/d"), Value("P2.GivesUp")})
+              .number() == 1.0);
+    const coney::human::ScriptState& script = extra.human().script();
+    CHECK(script.interrogationLines[0] == "vags/a");
+    CHECK(script.interrogationLines[1].empty());
+    CHECK(script.interrogationCallback == "P2.GivesUp");
+    CHECK(script.interrogationIcon);
+    CHECK(level.call("HuSetInterrogation", {Value(99.0), Value("vags/a")}).isNil());
+}
+
+TEST_CASE("A gang becomes the enemy of every gang of a kind, and can be always seen", "[ai][story]") {
+    Level level;
+    const int riffs = level.scripted->gangCreate(19, "Riffs");
+    const int police = level.scripted->gangCreate(1, "Police");
+    const int morePolice = level.scripted->gangCreate(1, "Police2");
+    level.call("GangMakeEnemiesOfType", {Value(static_cast<double>(riffs)), Value(1.0)});
+    const coney::ai::Gangs& gangs = level.scene.brains.gangs();
+    CHECK(coney::ai::Gangs::enemies(gangs.find(riffs), gangs.find(police)));
+    CHECK(coney::ai::Gangs::enemies(gangs.find(morePolice), gangs.find(riffs)));
+    CHECK_FALSE(coney::ai::Gangs::enemies(gangs.find(police), gangs.find(morePolice)));
+    level.call("GangSetAlwaysSeen", {Value(static_cast<double>(riffs)), Value(1.0)});
+    CHECK(gangs.find(riffs)->alwaysSeen());
+}
+
+TEST_CASE("The fifth and sixth missions' goals: a turn, a guard, a lead chase, a devil run and a ledge thrower",
+          "[ai][story]") {
+    Level level;
+    Brain& turner = level.add({44.0F, 40.0F, 0.0F});
+    level.call("ActTurnToDir", {Value(2.0), Value(90.0), Value(1.0), Value(0.0)});
+    CHECK(turner.actionCount() == 1);
+
+    // A guard away from its flag walks back to it; a flag that does not resolve gives nothing.
+    Brain& guard = level.add({30.0F, 30.0F, 0.0F});
+    level.flags.add(100.0, "post", {34.0F, 30.0F, 0.0F}, 0.0F);
+    level.call("GoalGuardFlag", {Value(3.0), Value(999.0), Value(1.0), Value(90.0), Value("Note")});
+    CHECK(guard.topGoal() == nullptr);
+    level.call("GoalGuardFlag", {Value(3.0), Value(100.0), Value(1.0), Value(90.0), Value("Note")});
+    REQUIRE(guard.topGoal() != nullptr);
+    CHECK(guard.topGoal()->type() == GoalType::GuardFlag);
+    level.scene.run(90);
+    CHECK(guard.human().position().x > 31.0F);
+
+    // A runner with the player, its enemy, close behind runs on along the path.
+    Brain& runner = level.add({42.0F, 44.0F, 0.0F});
+    runner.addEnemy(level.scene.player());
+    level.flags.add(101.0, "a", {42.0F, 60.0F, 0.0F}, 0.0F);
+    level.flags.add(102.0, "b", {42.0F, 70.0F, 0.0F}, 0.0F);
+    const Value path = level.call("AddPath", {Value("chase"), array({101.0, 102.0})});
+    level.call("GoalLeadChase", {Value(4.0), path, Value(1.0), Value(30.0), Value(50.0), Value(70.0), Value(90.0)});
+    REQUIRE(runner.topGoal() != nullptr);
+    CHECK(runner.topGoal()->type() == GoalType::LeadChase);
+    level.scene.run(30);
+    CHECK(runner.threatResponse() == 0);
+    CHECK(runner.human().position().y > 45.0F);
+
+    // A friendly devil runner heads for the path's end, paced against the player's gang; without a gang it ends.
+    Brain& devil = level.add({60.0F, 44.0F, 0.0F});
+    const int warriors = level.scripted->gangCreate(1, "Warriors");
+    level.scripted->gangAddMember(warriors, 1.0);
+    level.call("GoalDevilRun", {Value(5.0), path, Value(static_cast<double>(warriors)), Value(4.0), Value(5.0),
+                                Value(10.0), Value(12.0), Value(1.0), Value()});
+    REQUIRE(devil.topGoal() != nullptr);
+    CHECK(devil.topGoal()->type() == GoalType::DevilRun);
+    level.scene.run(30);
+    CHECK(devil.human().position().y > 45.0F);
+    const auto* run = dynamic_cast<const coney::ai::DevilRunGoal*>(devil.topGoal());
+    REQUIRE(run != nullptr);
+    CHECK(run->chaser() == &level.scene.player());
+    CHECK(run->speed() > 0.0F);
+
+    // The ledge thrower keeps its spot and counts its throws.
+    Brain& thrower = level.add({20.0F, 20.0F, 0.0F});
+    level.call("GoalBigLedgeThrower", {Value(6.0), array({100.0, 0.0, 0.0}), array({-1, -1, -1, -1, -1, -1, -1, -1}),
+                                       Value(2.0), Value(100.0), Value(), Value("")});
+    REQUIRE(thrower.topGoal() != nullptr);
+    CHECK(thrower.topGoal()->type() == GoalType::BigLedgeThrower);
+    level.scene.run(60);
+    CHECK(coney::anim::distance(thrower.human().position(), coney::anim::Vec3{20.0F, 20.0F, 0.0F}) < 0.6F);
 }

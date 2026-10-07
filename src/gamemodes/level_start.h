@@ -89,9 +89,22 @@ struct LevelScriptOptions {
 /// What the bindings ask of the game while a level's scripts run without the menus: there are no menus, modes or
 /// audio, so most requests are dropped. The two that change the level are kept for whoever runs the level to act on
 /// between frames (`--play-level`'s chaining, docs/guides/building.md#playing-a-level): `MenuLoadLevel` (a hub
-/// mission's start, `runNextMission`) and `HUDLaunchMissionComplete` (a mission's end). A movie is not played.
+/// mission's start, `runNextMission`) and `HUDLaunchMissionComplete` (a mission's end). The mission's end
+/// (`HUDLaunchMissionComplete`, `HUDLaunchMissionFailed`) is also logged, so a level played on its own says how it
+/// ended. A movie is not played.
 class QuietBindingHost final : public script::BindingHost {
   public:
+    /// Where the mission's end is logged (none when empty).
+    void setLog(std::function<void(std::string_view)> log) { m_log = std::move(log); }
+    /// Keeps and logs the kind; a launch made by the mission-complete work itself (`runNextMission`'s kind 4, while
+    /// setUnlocking() holds) is not a new end.
+    void launchMissionComplete(int kind) override;
+    /// Keeps and logs the reason.
+    void launchMissionFailed(std::string_view reason) override;
+    /// The kind `HUDLaunchMissionComplete` passed, once it has been called.
+    [[nodiscard]] const std::optional<int>& missionComplete() const { return m_complete; }
+    /// The reason `HUDLaunchMissionFailed` passed, once it has been called.
+    [[nodiscard]] const std::optional<std::string>& missionFailed() const { return m_failed; }
     void showProfileManager(std::string_view /*onRumble*/, std::string_view /*onStartGame*/) override {}
     void showRumbleModeInterface(std::string_view /*onCancel*/, std::string_view /*onStart*/,
                                  double /*players*/) override {}
@@ -100,10 +113,6 @@ class QuietBindingHost final : public script::BindingHost {
     void playMusic(std::string_view /*track*/) override {}
     void stopMusic() override {}
     void queueScreenEffect(int /*type*/, double /*seconds*/) override {}
-    void launchMissionComplete(int /*kind*/) override {
-        // runNextMission launches it again (kind 4) while the mission-complete work runs: that one is not a new end.
-        m_missionComplete = m_missionComplete || !m_unlocking;
-    }
 
     /// Whether a script has ended the mission (`HUDLaunchMissionComplete`) since the last clearMissionComplete().
     [[nodiscard]] bool missionCompleteRequested() const { return m_missionComplete; }
@@ -117,6 +126,9 @@ class QuietBindingHost final : public script::BindingHost {
     void clearNextLevel() { m_nextLevel.reset(); }
 
   private:
+    std::function<void(std::string_view)> m_log;
+    std::optional<int> m_complete;
+    std::optional<std::string> m_failed;
     bool m_missionComplete = false;
     bool m_unlocking = false;
     std::optional<std::string> m_nextLevel;
@@ -181,6 +193,12 @@ class LevelScripts {
     script::BindingContext m_context;
     script::ScriptSystem m_scripts; // after everything its bindings refer to
 };
+
+/// Sets the player's turning as the preload scripts configure it (`CfgSetTurnRates`, `CfgTurnRate` in
+/// config_preload2.lua, recorded by their stubs): the values the original plays with
+/// (docs/research/characters.md#movement-constants). The settings are global; a level played on its own applies them
+/// once its scripts are ready.
+void applyTurnConfig(const script::RecordedCalls& recorded);
 
 /// The story's way into `level` at `checkpoint` without the menus, run once: a script system of its own
 /// running what the original runs before a level's script, in its order: the preloads (the legal screen's, which fill

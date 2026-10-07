@@ -140,6 +140,20 @@ class ScriptSystem {
     /// @orig 0x003566d8 ScriptSystem::Update (ScriptLua.cpp)
     void update(std::uint64_t nowMs, double stepSeconds);
 
+    /// Asks for the script `name` without waiting (`preLoadFile`): it runs, then `callback` (when not empty) is called
+    /// with no arguments, when the file arrives. Coney's reads are synchronous, so the file "arrives" at the next
+    /// servicePreloads(): the top of the next update(), or the level start's preload. Until then the caller's script
+    /// goes on, as in the original, where the read takes frames.
+    /// @orig 0x00357a68 preLoadFile (unknown)
+    void preload(std::string name, std::string callback);
+    /// Runs the files preload() asked for, oldest first, each followed by its callback. With `all`, files asked for by
+    /// those scripts run too (the level start's preload, which services the file manager until it is idle);
+    /// otherwise they wait for the next call.
+    /// @orig 0x00356d00 ScriptSystem_PreloadDone (unknown)
+    void servicePreloads(bool all);
+    /// Files preload() asked for that have not run yet.
+    [[nodiscard]] std::size_t preloadsPending() const { return m_preloads.size(); }
+
     /// Scheduled calls waiting.
     [[nodiscard]] std::size_t scheduled() const { return m_schedule.size(); }
     /// Script errors since start-up (all states): failed runs and calls. The original keeps no such count.
@@ -188,7 +202,8 @@ class ScriptSystem {
     std::function<double()> m_objectHandles; // the bindings' world object handle counter (setObjectHandles())
     Log m_log;
     std::unique_ptr<LuaVm> m_vm;
-    std::vector<ScheduledCall> m_schedule; // kept sorted by (due time, sequence)
+    std::vector<ScheduledCall> m_schedule;                       // kept sorted by (due time, sequence)
+    std::vector<std::pair<std::string, std::string>> m_preloads; // preload(): (file, callback), oldest first
     std::uint64_t m_nextSequence = 0;
     std::string m_updateFunction;
     std::uint64_t m_nowMs = 0;

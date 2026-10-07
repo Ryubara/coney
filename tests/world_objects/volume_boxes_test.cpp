@@ -55,8 +55,8 @@ TEST_CASE("a box holds the points between its corners, turned about its centre b
 TEST_CASE("a trigger box sends 3 on entry, 5 once a period while inside and 4 on leaving or dying", "[volume_boxes]") {
     VolumeBoxes boxes;
     boxes.add(40, "vMark", 0, {0, 0, 0}, {2, 2, 3}, true);
-    std::vector<BoxSubject> humans{{.handle = 100, .position = {5, 5, 0}, .alive = true},
-                                   {.handle = 101, .position = {1, 1, 1}, .alive = true}};
+    std::vector<BoxSubject> humans{{.handle = 100, .position = {5, 5, 0}, .alive = true, .player = false},
+                                   {.handle = 101, .position = {1, 1, 1}, .alive = true, .player = false}};
 
     CHECK(step(boxes, humans, 0) == Sent{{40, VolumeBoxes::kEntered, 101}});
     CHECK(step(boxes, humans, 500) == Sent{{40, VolumeBoxes::kInside, 101}});
@@ -80,12 +80,15 @@ TEST_CASE("a trigger box sends 3 on entry, 5 once a period while inside and 4 on
     CHECK(step(boxes, {}, 2100) == Sent{{40, VolumeBoxes::kLeft, 101}});
 }
 
-TEST_CASE("a disabled box or one of another kind sends nothing", "[volume_boxes]") {
+TEST_CASE("a disabled box or a turf box sends nothing; a players' box only for a player", "[volume_boxes]") {
     VolumeBoxes boxes;
     boxes.add(1, "vOff", 0, {0, 0, 0}, {2, 2, 3}, false);
-    boxes.add(2, "vPlayer", 2, {0, 0, 0}, {2, 2, 3}, true);
-    const std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 1, 1}, .alive = true}};
+    boxes.add(2, "vbStartRail", 2, {0, 0, 0}, {2, 2, 3}, true);
+    boxes.add(3, "vTurf", 3, {0, 0, 0}, {2, 2, 3}, true);
+    std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 1, 1}, .alive = true, .player = false}};
     CHECK(step(boxes, humans, 0).empty());
+    humans.push_back({.handle = 1, .position = {1, 1, 1}, .alive = true, .player = true});
+    CHECK(step(boxes, humans, 100) == Sent{{2, VolumeBoxes::kEntered, 1}});
     boxes.clear();
     CHECK(boxes.all().empty());
 }
@@ -96,7 +99,7 @@ TEST_CASE("an occupant gone from the subjects leaves while its handle resolves, 
     boxes.add(40, "vTopTier", 0, {0, 0, 0}, {2, 2, 3}, true);
     bool resolves = true;
     boxes.setResolves([&resolves](double /*handle*/) { return resolves; });
-    const std::vector<BoxSubject> inside{{.handle = 101, .position = {1, 1, 1}, .alive = true}};
+    const std::vector<BoxSubject> inside{{.handle = 101, .position = {1, 1, 1}, .alive = true, .player = false}};
     CHECK(step(boxes, inside, 0) == Sent{{40, VolumeBoxes::kEntered, 101}});
 
     // Deleted but still resolving: it leaves as anyone does.

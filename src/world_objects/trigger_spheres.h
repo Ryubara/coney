@@ -66,6 +66,12 @@ class TriggerSpheres {
     /// @orig 0x00414480 TriggerSphere_Init (unknown)
     /// @orig 0x004144d0 TriggerSphere_Disarm (unknown)
     bool arm(double object, bool armed);
+    /// `TriggerSphereSetRadius(object, radius)`: the object's sphere gets `radius` metres, first made with the defaults
+    /// of `0x00414480` (not armed) when it has none; false when the pool is full. **Coney choice** as for arm(): any
+    /// object counts as having a handler component.
+    /// @orig 0x00414a28 TriggerSphere_SetRadius (unknown)
+    /// @orig 0x004142d0 TriggerSphere_Alloc (unknown)
+    bool setRadius(double object, float radius);
     /// The sphere round `object`; null when it has none.
     [[nodiscard]] TriggerSphere* find(double object);
     [[nodiscard]] const TriggerSphere* find(double object) const;
@@ -95,6 +101,9 @@ class TriggerSpheres {
                                const std::array<float, 3>& point) const;
 
   private:
+    // A sphere for `object` with the defaults of 0x00414480; null when the pool is full.
+    TriggerSphere* make(double object);
+
     std::vector<TriggerSphere> m_spheres;
     Locate m_locate;
     ClearLine m_clearLine;

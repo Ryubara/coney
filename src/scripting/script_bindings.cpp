@@ -158,15 +158,12 @@ NativeFunction makeDoFile(const Factory& factory) {
 
 // `preLoadFile(name, callback)`: the original asks for `name.lua` without waiting; when it arrives it runs the chunk,
 // then, when a callback name was given, calls that function with no arguments (docs/research/scripting.md#open-
-// questions, `RegisterUpdate`). Coney's reads are synchronous, so both happen at once, inside the call.
+// questions, `RegisterUpdate`). The caller's script goes on first: level2's RunLevel sets up its flag net after the
+// call, before the chapter's set-up runs (ScriptSystem::preload()).
 // @orig 0x00357a68 preLoadFile (unknown)
-// @orig 0x00356d00 ScriptSystem_PreloadDone (unknown)
 NativeFunction makePreLoadFile(const Factory& factory) {
     return [scripts = factory.scripts](std::span<const Value> args) {
-        const bool ran = scripts->runFile(std::format("{}.lua", binding::string(args, 0)));
-        if (const std::string callback = binding::string(args, 1); ran && !callback.empty()) {
-            scripts->call(callback);
-        }
+        scripts->preload(std::format("{}.lua", binding::string(args, 0)), binding::string(args, 1));
         return binding::none();
     };
 }
@@ -693,6 +690,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     // The level scripts' goals and actions for a human's brain (ai_bindings.h).
     real("GoalMoveToFlag"),
     real("ActLookAt"),
+    real("ActTurnToDir"),
     real("GoalFight"),
     real("BrFlush"),
     real("BrDead"),
@@ -722,6 +720,12 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("CamSetSecondary"),
     real("CamEnable"),
     real("CamTarget"),
+    real("CamSetupRail"),
+    real("CamAddRailPoint"),
+    real("CamLeadRail"),
+    real("CamModifyRail"),
+    real("CameraCreateFixed"),
+    real("CameraCreateThird"),
     // The gangs (gang_bindings.h, and GangCreate above).
     // The characters', brains' and gangs' bindings of the first mission (scripting/human_bindings.h).
     real("BrClearBackoff"),
@@ -959,6 +963,10 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("GoalMoveToExitFlag"),
     real("GoalPlayDynIdle"),
     real("GoalThrowObject"),
+    real("GoalGuardFlag"),
+    real("GoalLeadChase"),
+    real("GoalDevilRun"),
+    real("GoalBigLedgeThrower"),
     real("GoalTravelPath"),
     real("HuAreActionsBlocked"),
     real("HuBlockLook"),
@@ -977,6 +985,14 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("HuSetRevivable"),
     real("HuShadow"),
     real("HuTag"),
+    real("HuBlockJump"),
+    real("HuSetAutoCombat"),
+    real("HuSetNoReact"),
+    real("HuClearLook"),
+    real("HuSetInterrogation"),
+    real("HuApplyDamageModifier"),
+    real("GangMakeEnemiesOfType"),
+    real("GangSetAlwaysSeen"),
     real("HuTagColor"),
     real("HuTagPattern"),
     real("HuWhatAmIHolding"),
@@ -1055,6 +1071,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("HUDSetRadarItemTexture"),
     real("HUDSetRadarObjectFlash"),
     real("HUDSetRadarZoomScale"),
+    real("HUDSetChaseHUDState_DESTROY"),
     real("HUDSetTutorialCallback"),
     real("HUDSetTutorialText"),
     real("HUDShowMissionSummaryText"),
@@ -1135,6 +1152,11 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("ObjShow"),
     real("TriggerSphereCfg"),
     real("TriggerSphereEnable"),
+    real("TriggerSphereSetRadius"),
+    real("FlagEnable"),
+    real("ChangeCollision"),
+    real("CfgSetMaxThrowError"),
+    real("KillHumans"),
     // The Rumble arenas' game mode, precache queue and switches, and the humans' movement lock, speech switch,
     // pocket, damage response and teleport (arena_bindings.h).
     real("ActGiveWay"),

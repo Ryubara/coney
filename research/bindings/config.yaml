@@ -807,6 +807,7 @@
     No error for a human with flag 0x40000 at `+0xe0` (inferred: the player). The globals' default values are not
     traced. Readers: 0x00257a08, 0x00257a14.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [2]}
+  coney: implemented
 
 - name: CfgGangSizeForCombatMusic
   wrapper: 0x0035e4f8

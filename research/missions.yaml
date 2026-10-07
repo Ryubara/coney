@@ -144,8 +144,16 @@ missions:
     checkpoints:
       count: 4
       default: in-progress
+      each:
+        1: {status: in-progress, note: "Runs headless with no script error and every binding it calls; not yet checked to its end."}
+        2: {status: in-progress, note: "No script error; the tenement's set-up runs after RunLevel, which sets up the pedestrian net (`SetupFlagNet2`) first, as in the original."}
+        3: {status: in-progress, note: "Runs headless with no script error and every binding it calls; not yet checked to its end."}
+        4: {status: in-progress, note: "No script error; waits on the general car message handler (being built for level34)."}
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "The mission's script", path: "research/scripting.md#level2"}
+      - {title: "Rail cameras", path: "research/camera.md#rail"}
+    test: "coney_tests \"[disc][story]\""
   - level: 3
     group: story
     slot: story mission 6
@@ -158,8 +166,18 @@ missions:
     checkpoints:
       count: 5
       default: in-progress
+      each:
+        1: {status: in-progress, note: "Runs headless with no script error and every binding it calls; not yet checked to its end."}
+        2: {status: in-progress, note: "No script error; waits on the tagging goal and the HUD bars (being built for level34)."}
+        3: {status: in-progress, note: "No script error; waits on the car message handler and object indices (being built for level34)."}
+        4: {status: in-progress, note: "Plays to its end from a pad script (tests/support/level3_chase.txt, its disc test `[playthrough]`): the AI walks Snow to the rail's start box, then the stick, L2 and triangle run, climb and jump him across the roofs to the gallery box, which hands over to checkpoint 5. The Warriors stay behind the player (the crew's follow is not built yet)."}
+        5: {status: in-progress, note: "Runs headless with no script error and every binding it calls; not yet checked to its end."}
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "The mission's script and the rooftop chase", path: "research/scripting.md#level3"}
+      - {title: "Rail cameras", path: "research/camera.md#rail"}
+      - {title: "AI: GoalDevilRun", path: "research/ai.md#devil-run"}
+    test: "coney_tests \"[disc][story]\""
   - level: 5
     group: story
     slot: story mission 7

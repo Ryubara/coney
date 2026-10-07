@@ -53,8 +53,8 @@ TEST_CASE("a sphere sends its object 3 on entry, 5 once a period while inside an
     spheres.setLocate(locate);
     REQUIRE(spheres.configure(7, true, 4.0F, 0, 500));
     // The object itself, standing at the centre, is never an occupant; the human 3 m away enters.
-    std::vector<BoxSubject> humans{{.handle = 7, .position = {0, 0, 0}, .alive = true},
-                                   {.handle = 100, .position = {3, 0, 0}, .alive = true}};
+    std::vector<BoxSubject> humans{{.handle = 7, .position = {0, 0, 0}, .alive = true, .player = false},
+                                   {.handle = 100, .position = {3, 0, 0}, .alive = true, .player = false}};
     CHECK(checkAll(spheres, humans, 0) == Sent{{7, VolumeBoxes::kEntered, 100}});
     // Still inside: 5 at the next check, then once the sphere's own period (1000 ms) is due again.
     CHECK(checkAll(spheres, humans, 600) == Sent{{7, VolumeBoxes::kInside, 100}});
@@ -73,7 +73,7 @@ TEST_CASE("each sphere is checked on one frame in five", "[trigger_spheres]") {
     TriggerSpheres spheres;
     spheres.setLocate(locate);
     REQUIRE(spheres.configure(7, true, 4.0F, 0, 1));
-    const std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 0, 0}, .alive = true}};
+    const std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 0, 0}, .alive = true, .player = false}};
     // Sphere 0 is checked on frames 0, 5, 10, ...
     CHECK(step(spheres, humans, 0).size() == 1);
     for (int frame = 1; frame < 5; ++frame) {
@@ -84,7 +84,7 @@ TEST_CASE("each sphere is checked on one frame in five", "[trigger_spheres]") {
 TEST_CASE("an unarmed sphere, or one round a gone object, sends nothing; the pool holds 100", "[trigger_spheres]") {
     TriggerSpheres spheres;
     spheres.setLocate(locate);
-    const std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 0, 0}, .alive = true}};
+    const std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 0, 0}, .alive = true, .player = false}};
     REQUIRE(spheres.configure(7, false, 4.0F, 0, 1));
     CHECK(checkAll(spheres, humans, 0).empty());
     // Arming it again reconfigures the same sphere.
@@ -110,7 +110,7 @@ TEST_CASE("modes 1 and 2 also need a clear line, mode 2 from a raised centre", "
         starts.push_back(from);
         return !(from[0] < 1 && to[0] > 1 && from[2] < 0.5F);
     });
-    const std::vector<BoxSubject> humans{{.handle = 100, .position = {2, 0, 0}, .alive = true}};
+    const std::vector<BoxSubject> humans{{.handle = 100, .position = {2, 0, 0}, .alive = true, .player = false}};
     REQUIRE(spheres.configure(7, true, 4.0F, 1, 1));
     CHECK(checkAll(spheres, humans, 0).empty());
     REQUIRE(spheres.configure(7, true, 4.0F, 2, 1));
@@ -130,7 +130,7 @@ TEST_CASE("TriggerSphereEnable arms a sphere, making one of radius 0 and mode 1;
     CHECK(spheres.find(7)->radius == 0.0F);
     CHECK(spheres.find(7)->mode == 1);
     CHECK(spheres.find(7)->stayPeriodMs == 1000);
-    std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 0, 0}, .alive = true}};
+    std::vector<BoxSubject> humans{{.handle = 100, .position = {1, 0, 0}, .alive = true, .player = false}};
     CHECK(checkAll(spheres, humans, 0).empty());
     // Configured, a human inside enters; disarmed, he is forgotten without message 4 and the sphere stays.
     REQUIRE(spheres.configure(7, true, 4.0F, 0, 500));

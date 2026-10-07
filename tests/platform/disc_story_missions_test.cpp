@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Checks against the player's own disc that the story's second, third, fourth and seventh missions (`level80`,
-// `level87`, `level34`, `level5`) play as `--play-level NAME --checkpoint N` plays them, at every checkpoint: the
-// level's scripts run for a while in gameplay over the play mode, headless, with no script error, and player 1 stands
-// under the pad's control, moving when the stick is pushed. They run only when the environment variable CONEY_DISC
-// names the disc and skip otherwise; they print counts only (LEGAL.md).
+// Checks against the player's own disc that the story's second to seventh missions (`level80`, `level87`, `level34`,
+// `level2`, `level3`, `level5`) play as `--play-level NAME --checkpoint N` plays them, at every checkpoint: the level's
+// scripts run for a while in gameplay over the play mode, headless, with no script error, and player 1 stands under
+// the pad's control, moving when the stick is pushed. They run only when the environment variable CONEY_DISC names
+// the disc and skip otherwise; they print counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
@@ -211,7 +211,7 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
             run.errors.push_back(line);
         }
         if (line.find("is not a binding Coney has") != std::string::npos) {
-            UNSCOPED_INFO(line);
+            std::printf("    %s\n", line.c_str());
             ++run.missingBindings;
         }
     }
@@ -221,14 +221,15 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
 
 } // namespace
 
-TEST_CASE("the disc's level80 and level87 play each checkpoint without a script error", "[disc][story]") {
+TEST_CASE("the disc's story missions 2, 3, 5 and 6 play each checkpoint without a script error", "[disc][story]") {
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
     }
-    // level80 has four checkpoints, level87 five.
-    for (const auto& [level, checkpoints] :
-         {std::pair{std::string_view("level80"), 4}, std::pair{std::string_view("level87"), 5}}) {
+    // Each level and its checkpoints (docs/references/level-starts.md).
+    constexpr std::array<std::pair<std::string_view, int>, 4> kLevels{
+        {{"level80", 4}, {"level87", 5}, {"level2", 4}, {"level3", 5}}};
+    for (const auto& [level, checkpoints] : kLevels) {
         for (int checkpoint = 1; checkpoint <= checkpoints; ++checkpoint) {
             INFO(level << " checkpoint " << checkpoint);
             const MissionRun run = playMission(*wad, level, checkpoint);

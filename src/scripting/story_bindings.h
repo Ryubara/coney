@@ -25,7 +25,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addStoryBindings().
-inline constexpr std::array<std::string_view, 85> kStoryBindings{"AddPath",
+inline constexpr std::array<std::string_view, 97> kStoryBindings{"AddPath",
                                                                  "BrSetFOV",
                                                                  "BrSetInvestigateResponse",
                                                                  "BrSetReactToViolence",
@@ -55,7 +55,11 @@ inline constexpr std::array<std::string_view, 85> kStoryBindings{"AddPath",
                                                                  "GangSetRespondPercentage",
                                                                  "GangStartSpawner",
                                                                  "GetDistanceTweenHumans",
+                                                                 "GoalBigLedgeThrower",
                                                                  "GoalBumLogicTrigger",
+                                                                 "GoalDevilRun",
+                                                                 "GoalGuardFlag",
+                                                                 "GoalLeadChase",
                                                                  "GoalMelee",
                                                                  "GoalMoveToExitFlag",
                                                                  "GoalPlayDynIdle",
@@ -78,6 +82,14 @@ inline constexpr std::array<std::string_view, 85> kStoryBindings{"AddPath",
                                                                  "HuSetRevivable",
                                                                  "HuShadow",
                                                                  "HuTag",
+                                                                 "HuBlockJump",
+                                                                 "HuSetAutoCombat",
+                                                                 "HuSetNoReact",
+                                                                 "HuClearLook",
+                                                                 "HuSetInterrogation",
+                                                                 "HuApplyDamageModifier",
+                                                                 "GangMakeEnemiesOfType",
+                                                                 "GangSetAlwaysSeen",
                                                                  "HuTagColor",
                                                                  "HuTagPattern",
                                                                  "HuWhatAmIHolding",
@@ -133,6 +145,48 @@ struct TravelPathCall {
     bool reverse = false;
     int gait = 2;
     float radius = 0.5F;
+};
+
+/// `GoalGuardFlag(human, flag, radius, heading, callback, timeMs)`.
+struct GuardFlagCall {
+    double human = 0;
+    double flag = 0;
+    float radius = 0.0F;  ///< Metres.
+    int heading = -1;     ///< Degrees, -1 for none.
+    std::string callback; ///< Empty for none.
+    int timeMs = -1;      ///< -1 (the default) for none.
+};
+
+/// `GoalLeadChase(human, path, chaser, distance1, distance2, distance3, distance4)`; the chaser and the last three
+/// distances are read and not used.
+struct LeadChaseCall {
+    double human = 0;
+    double path = 0;           ///< The path's handle; 0 for none.
+    float waitDistance = 0.0F; ///< `distance1`, metres.
+};
+
+/// `GoalDevilRun(human, path, gang, gait, attackDistance, paceDistance, maxSpeed, urgency, hostile)`.
+struct DevilRunCall {
+    double human = 0;
+    double path = 0; ///< The path's handle; 0 for none.
+    int gang = 0;
+    int gait = 0;
+    float attackDistance = 0.0F;
+    float paceDistance = 0.0F;
+    float maxSpeed = 0.0F;
+    float urgency = 0.0F;
+    bool hostile = false;
+};
+
+/// `GoalBigLedgeThrower(human, targets, objects, cycles, delayMs, taunt, anim)`.
+struct LedgeThrowerCall {
+    double human = 0;
+    std::array<double, 3> targets{}; ///< Flag handles, 0 for unused.
+    std::array<int, 8> objects{};    ///< Object type ids, -1 for unused.
+    int cycles = 0;
+    std::uint32_t delayMs = 0;
+    bool taunt = false;
+    std::string anim; ///< Replaces anim slot 0x256 when not empty.
 };
 
 /// `GoalThrowObject(human, target, range, gait, callback)`.
@@ -305,6 +359,14 @@ class StoryBindingHost {
     virtual void setTagColour(double /*human*/, std::uint32_t /*rgba*/) {}
     /// `HuTag(human, tag, flag)`: the human sprays `tag` from `flag`.
     virtual void tag(double /*human*/, double /*tag*/, double /*flag*/) {}
+    /// `HuSetInterrogation`: the human's four speech files, the success callback (empty: not interrogable) and its
+    /// icon. Returns whether the handle names a human.
+    virtual bool setInterrogation(double /*human*/, const std::array<std::string, 4>& /*lines*/,
+                                  std::string_view /*callback*/, bool /*icon*/) {
+        return false;
+    }
+    /// `HuApplyDamageModifier(human, factor)`: its attack damages become its class's × `factor`.
+    virtual void applyDamageModifier(double /*human*/, float /*factor*/) {}
 
     // ---- The brains' goals.
 
@@ -320,6 +382,14 @@ class StoryBindingHost {
     virtual void goalRiot(const RiotCall& /*call*/) {}
     /// `GoalStationaryThrower`.
     virtual void goalStationaryThrower(const StationaryThrowerCall& /*call*/) {}
+    /// `GoalGuardFlag`.
+    virtual void goalGuardFlag(const GuardFlagCall& /*call*/) {}
+    /// `GoalLeadChase`.
+    virtual void goalLeadChase(const LeadChaseCall& /*call*/) {}
+    /// `GoalDevilRun`.
+    virtual void goalDevilRun(const DevilRunCall& /*call*/) {}
+    /// `GoalBigLedgeThrower`.
+    virtual void goalBigLedgeThrower(const LedgeThrowerCall& /*call*/) {}
     /// `GoalPlayDynIdle`.
     virtual void goalPlayDynIdle(const DynIdleCall& /*call*/) {}
     /// `GoalBumLogicTrigger`.
@@ -340,6 +410,10 @@ class StoryBindingHost {
     virtual void setHearRange(int /*gang*/, bool /*help*/, float /*range*/) {}
     /// `GangEnableAttackStrategies`.
     virtual void enableAttackStrategies(int /*gang*/, bool /*on*/) {}
+    /// `GangMakeEnemiesOfType(gang, kind)`: the gang and every gang in use of `kind` become enemies both ways.
+    virtual void makeEnemiesOfType(int /*gang*/, int /*kind*/) {}
+    /// `GangSetAlwaysSeen(gang, on)`.
+    virtual void setAlwaysSeen(int /*gang*/, bool /*on*/) {}
     /// `GangSetLeader` / `GangGetLeader` (0 for none).
     virtual void setLeader(int /*gang*/, double /*human*/) {}
     [[nodiscard]] virtual double leader(int /*gang*/) const { return 0; }

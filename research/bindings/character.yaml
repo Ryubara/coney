@@ -149,6 +149,7 @@
     Only the store is confirmed; no reader of the bit was found (it is not the global auto-combat switch
     `0x005104b0` of CfgAutoCombat, which the player target routine 0x00241b90 reads), so the effect stays open.
   usage: {chunks: 4, calls: 8, boot: false, mission1: false, result_used: false, levels: [3, 55]}
+  coney: implemented
 
 - name: HuSetAccurate
   wrapper: 0x00358870
@@ -310,6 +311,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false, levels: [2, 5, 31, 54]}
+  coney: implemented
 
 - name: HuSetScale
   wrapper: 0x00358c90
@@ -446,6 +448,7 @@
     Only players jump, so it matters only for a player human. The same bit is seen set briefly while a start clip
     plays (characters.md), so a script clearing it may race the game's own use (inferred).
   usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false, levels: [2, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuBlockClimb
   wrapper: 0x00359080
@@ -571,6 +574,7 @@
     The engage-enemy goal also sets and clears the same bit for itself (it remembers whether it was already set,
     [AI](../../research/ai.md)), so a fight can clear a flag a script did not set but keeps one the script set first.
   usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: false, levels: [3, 5, 31, 55, 84, 20, 11]}
+  coney: implemented
 
 - name: HuSetAutoEscape
   wrapper: 0x00359380
@@ -1029,6 +1033,7 @@
     An entry whose scaled value rounds to 0 is not written and keeps its previous damage. The write is
     0x002548f0, as when the human is made ([Combat: damage](../../research/combat.md#damage-table)).
   usage: {chunks: 8, calls: 30, boot: false, mission1: false, result_used: false, levels: [3, 93, 83, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: HuGiveCuffs
   wrapper: 0x0035aa28
@@ -2688,6 +2693,7 @@
     ([Crimes: interrogation](../../research/crimes.md#interrogation)). Which of lines 1-3 plays at which moment is
     not traced.
   usage: {chunks: 5, calls: 10, boot: false, mission1: false, result_used: false, levels: [2, 83, 11]}
+  coney: implemented
 
 - name: HuMarkReachable
   wrapper: 0x0035d5b0
@@ -3494,6 +3500,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 4, calls: 4, boot: true, mission1: false, result_used: false, levels: [2, 31, 20]}
+  coney: implemented
 
 - name: CullCorpses
   wrapper: 0x0036d9c8

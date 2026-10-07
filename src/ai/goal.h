@@ -40,10 +40,12 @@ enum class GoalType : std::uint8_t {
     PlayDynAnimation = 0x22,   ///< PlayDynAnimationGoal.
     PlayDynIdle = 0x23,        ///< PlayDynIdleGoal.
     PlayGenAnim = 0x26,        ///< PlayGenAnimGoal: one generic clip.
+    GuardFlag = 0x2b,          ///< GuardFlagGoal: keeps to a flag.
     TrackHuman = 0x30,         ///< TrackHumanGoal.
     TravelPath = 0x38,         ///< TravelPathGoal.
     FindEnemy = 0x41,          ///< FindEnemyGoal: looks for an enemy to fight.
     AreaWalker = 0x47,         ///< AreaWalkerGoal: strolls round a centre.
+    LeadChase = 0x49,          ///< LeadChaseGoal: leads a chaser along a path.
     BumLogic = 0x4f,           ///< BumLogicGoal.
     Peddler = 0x50,            ///< PeddlerGoal: a vendor beckoning passers-by.
     Riot = 0x54,               ///< RiotGoal: roams, smashes, loots and picks fights, then leaves.
@@ -55,8 +57,10 @@ enum class GoalType : std::uint8_t {
     Shopkeeper = 0x82,         ///< ShopkeeperGoal.
     BigBrawler = 0x84,        ///< BigBrawlerGoal: a boss who fights, tires after six hits and (Vargas) fetches objects.
     BigThrower = 0x87,        ///< BigThrowerGoal: a boss who throws objects from a flag.
+    BigLedgeThrower = 0x8a,   ///< BigLedgeThrowerGoal: the balcony boss.
     StationaryThrower = 0x8c, ///< StationaryThrowerGoal: throws at enemies from its spot.
     Tired = 0x90,             ///< TiredGoal: a boss stunned and open to hits for a while.
+    DevilRun = 0x98,          ///< DevilRunGoal: a chase's paced runner.
     Backoff = 0x9b,           ///< BackoffGoal.
     Boxer = 0x9e,             ///< BoxerGoal: boxes a target for ever.
 };

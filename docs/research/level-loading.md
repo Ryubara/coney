@@ -891,8 +891,11 @@ Coney's choices and stand-ins for mode 1:
   of the twelve `CfgLevelName` numbers is the intro switch is inferred (the fourth, `LevelRecord::kIntroValue`); the
   STORY disc check sees `L99_IN` asked for once. Its flags step (`CrimeScene`, `GangCall`)
   and its start callback are ([World flags](flags.md#coneys-implementation)); the callback runs before the level
-  loads, and `preLoadFile` runs the checkpoint's script at once and then calls its callback by name. A teleport of
-  player 1 by the scripts, at the start or later, moves the player. The player has control on the first frame.
+  loads, and the checkpoint's script that `preLoadFile` asked for runs after the level script and before that
+  callback, then its own callback by name. A teleport of player 1 by the scripts, at the start or later, moves the
+  player. The player has control on the first frame. With no menus, `HUDLaunchMissionComplete` and
+  `HUDLaunchMissionFailed` push no mode: the level logs `level: mission complete (kind N)` or `level: mission failed:
+  REASON` and plays on.
 - `HuCreate` does not snap the position or write it back into the script's table (no collision is loaded while the
   script runs; the play mode snaps it); the unused string and the flag are not kept.
 - The player is drawn as the model his type names ([Characters](characters.md#coneys-implementation)), Rembrandt

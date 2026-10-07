@@ -1,20 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "scripting/world_bindings.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <numbers>
 #include <span>
 
+#include "raycast/collision_mesh.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
 #include "scripting/human_bindings.h"
+#include "warriors/game_state.h"
 #include "world_objects/flag_net.h"
+#include "world_objects/flags.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/object_tasks.h"
 #include "world_objects/object_types.h"
 #include "world_objects/spawn_records.h"
 #include "world_objects/trigger_spheres.h"
+#include "world_objects/volume_boxes.h"
 
 namespace coney::script {
 
@@ -191,6 +197,67 @@ NativeFunction makeTriggerSphereEnable(const BindingContext& context) {
     };
 }
 
+// `TriggerSphereSetRadius(object, radius)`: the object's trigger sphere's radius (a sphere made when it has none).
+// @orig 0x0036d068 TriggerSphereSetRadius (unknown)
+NativeFunction makeTriggerSphereSetRadius(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->spheres != nullptr) {
+            static_cast<void>(
+                context->spheres->setRadius(handleArg(args, 0), static_cast<float>(binding::number(args, 1))));
+        }
+        return binding::none();
+    };
+}
+
+// `FlagEnable(flag, enable)`: the flag's enabled word; any other handle is ignored.
+// @orig 0x00415ce8 Flag_Enable (unknown)
+// @orig 0x00415dc8 Flag_SetEnabled (unknown)
+NativeFunction makeFlagEnable(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->flags != nullptr) {
+            if (world_objects::WorldFlag* flag = context->flags->find(handleArg(args, 0)); flag != nullptr) {
+                flag->enabled = booleanArg(args, 1, false);
+            }
+        }
+        return binding::none();
+    };
+}
+
+// `ChangeCollision(box, enable)`: the level's collision triangles wholly inside the volume box switched on or off.
+// **Coney choice**: only volume boxes name a box (the original also takes any object with a box at +0x10 / +0x20).
+// @orig 0x0034fba0 CollisionMesh_SetEnabledInVolume (unknown)
+NativeFunction makeChangeCollision(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->boxes == nullptr || context->objects == nullptr || context->objects->world.collision == nullptr) {
+            return binding::none();
+        }
+        const world_objects::VolumeBox* box = context->boxes->find(handleArg(args, 0));
+        if (box == nullptr) {
+            return binding::none();
+        }
+        const raycast::Vec3 low{std::min(box->low[0], box->high[0]), std::min(box->low[1], box->high[1]),
+                                std::min(box->low[2], box->high[2])};
+        const raycast::Vec3 high{std::max(box->low[0], box->high[0]), std::max(box->low[1], box->high[1]),
+                                 std::max(box->low[2], box->high[2])};
+        context->objects->world.collision->setEnabledInBox(low, high, booleanArg(args, 1, false));
+        return binding::none();
+    };
+}
+
+// `CfgSetMaxThrowError(verticalDeg, horizontalDeg)`: an AI throw's largest aiming errors, kept in radians.
+// @orig 0x0041d940 Cfg_SetMaxThrowError (unknown)
+NativeFunction makeCfgSetMaxThrowError(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        if (context->state != nullptr) {
+            constexpr float kRadiansPerDegree = std::numbers::pi_v<float> / 180.0F;
+            context->state->characters.maxThrowError =
+                std::pair{static_cast<float>(binding::number(args, 0)) * kRadiansPerDegree,
+                          static_cast<float>(binding::number(args, 1)) * kRadiansPerDegree};
+        }
+        return binding::none();
+    };
+}
+
 } // namespace
 
 void addWorldBindings(LuaVm& vm, const BindingContext& context) {
@@ -205,6 +272,13 @@ void addWorldBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("ObjShow", makeObjShowHide(context, true));
     vm.registerFunction("TriggerSphereCfg", makeTriggerSphereCfg(context));
     vm.registerFunction("TriggerSphereEnable", makeTriggerSphereEnable(context));
+    vm.registerFunction("TriggerSphereSetRadius", makeTriggerSphereSetRadius(context));
+    vm.registerFunction("FlagEnable", makeFlagEnable(context));
+    vm.registerFunction("ChangeCollision", makeChangeCollision(context));
+    vm.registerFunction("CfgSetMaxThrowError", makeCfgSetMaxThrowError(context));
+    // `KillHumans(seconds)`: the original's function returns at once.
+    // @orig 0x0016d5c0 KillHumans_Stub (unknown)
+    vm.registerFunction("KillHumans", makeNothing());
 }
 
 } // namespace coney::script

@@ -155,6 +155,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// kGiveWayQueueLimit actions queued.
     /// @orig 0x002fe4b0 Action_GiveWay (unknown)
     void actGiveWay(double human, double other) override;
+
+    /// Queues the turn to the heading (TurnAction::toHeading()).
+    /// @orig 0x002fdb90 Action_TurnToHeading (unknown)
+    void actTurnToDir(double human, float headingDegrees, std::int16_t delayMs) override;
     /// The human starts a fight with the target (Brain::startFight()).
     void goalFight(double human, double target) override;
     /// Brain::flush(): the goals end (their callbacks fire), then the actions.

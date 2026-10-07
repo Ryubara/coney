@@ -797,6 +797,7 @@
     If the gang is itself of that kind its own enemy bit is set too, but a gang always counts its own members as
     friends ([AI: gangs](../../research/ai.md)). The crime report uses the same routine one way for police gangs.
   usage: {chunks: 8, calls: 17, boot: false, mission1: false, result_used: false, levels: [3, 93, 9, 54]}
+  coney: implemented
 
 - name: GangMakeNeutralOfType
   wrapper: 0x00373ce0
@@ -1049,6 +1050,7 @@
   notes: >-
     The sight range itself (0x0028bf00) still applies. Readers: 0x0028b47c, 0x002affd8, 0x002b45c8.
   usage: {chunks: 8, calls: 11, boot: false, mission1: false, result_used: false, levels: [3, 5, 81, 31, 52, 84, 83]}
+  coney: implemented
 
 - name: GangCanUseWorldFlags
   wrapper: 0x00374688

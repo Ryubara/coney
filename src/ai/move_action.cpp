@@ -114,7 +114,9 @@ ActionStatus MoveAction::update(Brain& brain) {
     ++m_updates;
     const anim::Vec3 position = human.position();
     // The move's speed this update: its gait's, or the steering's override while it runs (set on an earlier update).
-    const float moveSpeed = brain.steering().speedOverride().value_or(gaitSpeed(human.speeds(), m_request.gait));
+    // The steering's override while it runs, else the action's own speed (a pace), else the gait's.
+    const float moveSpeed =
+        brain.steering().speedOverride().value_or(m_speed.value_or(gaitSpeed(human.speeds(), m_request.gait)));
     // 2. Now and then, a route whose point has come into a straight line is dropped.
     RoutePlanner* planner = brain.planner();
     // Not near a jump leg, which the straight line would cut across.

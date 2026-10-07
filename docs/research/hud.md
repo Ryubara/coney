@@ -2565,6 +2565,10 @@ prompt widget's colour) centred on the prompt's anchor, its word swapping every 
 `blinkFrames` on and off, and hides the text until a new or changed one;
 `HUDShowMissionSelect` and `ShowGameStatsInterface` reach the front end, which has neither screen yet.
 
+**The radar's range and the chase HUD** (2026-10-06): `HUDRadarSetRange` keeps both players' near and far radii
+(`RadarState::nearRange`, `farRange`; 50 and 75 until a script sets them); `HUDSetChaseHUDState_DESTROY` clears the
+chase HUD's flag. **Coney's stand-ins**: the radar and the chase HUD are not drawn yet, so both are only kept.
+
 ## Open questions
 
 - Which character each name-banner sheet (records `0x1f`-`0x32`) names, beyond Rembrandt (`0x2f`).

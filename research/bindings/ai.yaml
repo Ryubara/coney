@@ -935,6 +935,7 @@
     the argument has no effect. A path linked to a next path (`+0x34`) continues onto it. The runner's threat and
     damage responses are set to 0 (brain `+0x21c`, `+0x220`), so it does not fight back.
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [2]}
+  coney: implemented
 
 - name: GoalRunCarrotRun
   wrapper: 0x00360c10
@@ -1000,6 +1001,7 @@
     hindmost segment: 0x002e1b60. Start / Resume / End save and restore the threat response, the field of view (2π
     while it runs) and a brain byte. Full behaviour: [AI: GoalDevilRun](../../research/ai.md#devil-run).
   usage: {chunks: 6, calls: 33, boot: false, mission1: false, result_used: false, levels: [3, 54]}
+  coney: implemented
 
 - name: GoalGuardFlag
   wrapper: 0x00360f28
@@ -1024,6 +1026,7 @@
     Event handler 0x002b7bc0 pushes LeftTurf (0x002f8c90) for any event it gets. The callback follows the shared
     rule of [AI: scripted goals](../../research/ai.md#scripted). How the base goal uses `+0x08` is not traced here.
   usage: {chunks: 4, calls: 14, boot: false, mission1: false, result_used: false, levels: [3, 14, 55]}
+  coney: implemented
 
 - name: GoalArrestHuman
   wrapper: 0x00361030
@@ -1951,6 +1954,7 @@
     178 only walks back every other round (runs beyond 1.5 m) and runs to a random spot 3-5 m away after each throw.
     0x002ee3d0 and where the object list is read are not traced.
   usage: {chunks: 1, calls: 7, boot: false, mission1: false, result_used: false, levels: [3]}
+  coney: implemented
 
 - name: GoalBackoff
   wrapper: 0x00363d70
@@ -2185,6 +2189,7 @@
     it runs after any actions already queued; a human busy in some states (record `+0x08` has any of 0x1c16a40)
     skips it.
   usage: {chunks: 3, calls: 5, boot: false, mission1: false, result_used: false, levels: [2, 54, 55]}
+  coney: implemented
 
 - name: ActLookAt
   wrapper: 0x003647d8

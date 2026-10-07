@@ -14,7 +14,8 @@ namespace coney::script {
 
 /// The AI bindings Coney implements: the goals and actions the level scripts give a human's brain, its switches, its
 /// follow slots and the gang tactics. All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 17> kAiBindings{"ActLookAt",
+inline constexpr std::array<std::string_view, 18> kAiBindings{"ActLookAt",
+                                                              "ActTurnToDir",
                                                               "BrDead",
                                                               "BrFlush",
                                                               "BrSetFollowSlot",
@@ -133,6 +134,9 @@ class AiBindingHost {
     virtual void goalMoveToFlag(const MoveToFlagCall& call) = 0;
     /// Queues the look-at turn action on the human.
     virtual void actLookAt(const LookAtCall& call) = 0;
+    /// `ActTurnToDir(human, heading, turnSpeed, delayMs)`: queues the turn to a world heading (degrees) on the human,
+    /// starting after `delayMs` (-1: a random 0-500 ms).
+    virtual void actTurnToDir(double /*human*/, float /*headingDegrees*/, std::int16_t /*delayMs*/) {}
 
     /// Queues the turn-to-point action on the human (`ActTurnTo`).
     virtual void actTurnTo(const TurnToCall& /*call*/) {}

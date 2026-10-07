@@ -134,7 +134,7 @@ through the points in the order added; the camera moves along it after its targe
   `0x0013b780` `CamRail_AppendPoint`
 - **Used by** 27 of 467 script chunks (132 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 19 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamAssignRevCamButton {#camassignrevcambutton}
 
@@ -266,7 +266,7 @@ here.
   `CameraTargets_Add`, `0x00124690` `CamFixed_Update`, `0x00124000` `CamFixed_ComputeLookAt`
 - **Used by** 9 of 467 script chunks (12 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 7 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CameraCreateLocked {#cameracreatelocked}
 
@@ -332,7 +332,7 @@ factory 0x0011e1b0 with player 0; shake is applied (0x00121298) with no position
   `Cam3rdPerson_SetAngle`, `0x001205e8` `Cam3rdPerson_Update`
 - **Used by** 2 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CameraCreateWin {#cameracreatewin}
 
@@ -603,7 +603,7 @@ Mode 0 (after CamSetupRail, 0x0013d6b0): [Camera: rail cameras](../../research/c
   `CamRail_PlaceLeading`
 - **Used by** 9 of 467 script chunks (15 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamLockLocked {#camlocklocked}
 
@@ -705,7 +705,7 @@ camera's present angle (0x0013f9b0). Setting 0 starts from the present distance.
   `CamRail_Update`, `0x0013f930` `CamRail_EaseValue`
 - **Used by** 26 of 467 script chunks (132 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 17 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamRegisterObject {#camregisterobject}
 
@@ -1085,7 +1085,7 @@ modes push the camera off the rail by the lead; 0x0050b2b0 not traced). The lead
   `Camera_GetPlayerRail`, `0x0013b2b8` `CamRail_Reset`
 - **Used by** 27 of 467 script chunks (48 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 19 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamTarget {#camtarget}
 

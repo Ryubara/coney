@@ -225,6 +225,9 @@ target_sources(coney_core PRIVATE
     camera/locked_camera.cpp
     camera/path_camera.cpp
     camera/slow_motion.cpp
+    camera/fixed_camera.cpp
+    camera/rail_camera.cpp
+    camera/third_camera.cpp
     camera/win_camera.cpp
     camera/failed_camera.cpp
     characters/anim_set.cpp
@@ -268,6 +271,7 @@ target_sources(coney_core PRIVATE
     ai/boss_goals.cpp
     ai/brain.cpp
     ai/brains.cpp
+    ai/chase_goals.cpp
     ai/dealer_goal.cpp
     ai/engage_goals.cpp
     ai/melee_goal.cpp

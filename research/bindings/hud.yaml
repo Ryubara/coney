@@ -630,6 +630,7 @@
   notes: >-
     State 6 does not store the state (`+0x44`); what slot `+0x6c` frees is inferred from the name. Takes no arguments.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [3, 83]}
+  coney: implemented
 
 - name: HUDSetChaseHUDState_CREATE
   wrapper: 0x0036f558

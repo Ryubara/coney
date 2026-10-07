@@ -1,29 +1,37 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The world bindings (scripting/world_bindings.h): the subtitle switch, the dynamic objects' zones, show, hide and
-// destroy, the trigger spheres, the flag network and its traversal, and the two that do nothing. Synthetic scripts.
+// destroy, the trigger spheres and their radius, the flag network and its traversal, a flag's switch, the collision
+// inside a box, the throw error, and the three that do nothing. Synthetic scripts.
 #include "scripting/world_bindings.h"
 
+#include <cmath>
 #include <cstddef>
 #include <expected>
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
 #include "gui/global_strings.h"
+#include "raycast/collision_mesh.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
+#include "support/collision_fixtures.h"
 #include "warriors/game_state.h"
 #include "world_objects/flag_net.h"
+#include "world_objects/flags.h"
+#include "world_objects/level_objects.h"
 #include "world_objects/object_types.h"
 #include "world_objects/spawn_records.h"
 #include "world_objects/trigger_spheres.h"
+#include "world_objects/volume_boxes.h"
 
 using coney::script::LuaVm;
 using coney::script::ScriptSystem;
@@ -174,4 +182,56 @@ TEST_CASE("FlagNetAddLink builds the network and FlagNetTraverse reaches the AI 
     h.call("FlagNetTraverse", {Value(6.0), Value(std::string("x")), Value(3.0)});
     REQUIRE(h.ai.traversals.size() == 2);
     CHECK(h.ai.traversals[1].mode == 0);
+}
+
+TEST_CASE("TriggerSphereSetRadius sets a sphere's radius, making one unarmed when there is none", "[world_bindings]") {
+    Harness h;
+    h.call("TriggerSphereSetRadius", {Value(40.0), Value(3.5)});
+    const coney::world_objects::TriggerSphere* sphere = h.spheres.find(40.0);
+    REQUIRE(sphere != nullptr);
+    CHECK(sphere->radius == 3.5F);
+    CHECK_FALSE(sphere->armed);
+    CHECK(sphere->mode == 1);
+    h.call("TriggerSphereEnable", {Value(40.0), Value(1.0)});
+    h.call("TriggerSphereSetRadius", {Value(40.0), Value(6.0)});
+    CHECK(h.spheres.find(40.0)->radius == 6.0F);
+    CHECK(h.spheres.find(40.0)->armed);
+}
+
+TEST_CASE("FlagEnable switches a flag; ChangeCollision switches the triangles inside a box", "[world_bindings]") {
+    Harness h;
+    coney::world_objects::WorldFlags flags;
+    flags.add(100.0, "fGuard", {1.0F, 2.0F, 0.0F}, 0.0F);
+    coney::world_objects::VolumeBoxes boxes;
+    boxes.add(200.0, "vGap", 0, {25.0F, 25.0F, 4.0F}, {30.0F, 30.0F, 2.0F}, true);
+    coney::world_objects::LevelObjects objects;
+    auto mesh = coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
+                                                        coney::test::floorAt(5.0F, 30.0F, 50.0F, 30.0F, 50.0F)));
+    objects.world.collision = mesh.get();
+    h.context.flags = &flags;
+    h.context.boxes = &boxes;
+    h.context.objects = &objects;
+
+    h.call("FlagEnable", {Value(100.0), Value(0.0)});
+    CHECK_FALSE(flags.find(100.0)->enabled);
+    h.call("FlagEnable", {Value(100.0), Value(1.0)});
+    CHECK(flags.find(100.0)->enabled);
+    h.call("FlagEnable", {Value(999.0), Value(0.0)}); // no flag: nothing
+
+    // The box holds the upper floor whole: it goes off, the lower floor (only partly inside) stays.
+    const coney::raycast::Ray down{.origin = {40.0F, 40.0F, 20.0F}, .direction = {0.0F, 0.0F, -1.0F}, .length = 50.0F};
+    h.call("ChangeCollision", {Value(200.0), Value(0.0)});
+    CHECK(mesh->rayCast(down, {}, 0).value_or(coney::raycast::RayHit{}).t == 20.0F);
+    h.call("ChangeCollision", {Value(200.0), Value(1.0)});
+    CHECK(mesh->rayCast(down, {}, 0).value_or(coney::raycast::RayHit{}).t == 15.0F);
+}
+
+TEST_CASE("CfgSetMaxThrowError keeps radians; KillHumans does nothing", "[world_bindings]") {
+    Harness h;
+    h.call("CfgSetMaxThrowError", {Value(5.0), Value(10.0)});
+    REQUIRE(h.state.characters.maxThrowError.has_value());
+    const std::pair<float, float> error = h.state.characters.maxThrowError.value_or(std::pair{0.0F, 0.0F});
+    CHECK(std::abs(error.first - 0.0872665F) < 1e-5F);
+    CHECK(std::abs(error.second - 0.174533F) < 1e-5F);
+    h.call("KillHumans", {Value(5.0)});
 }

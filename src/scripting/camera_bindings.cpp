@@ -16,6 +16,9 @@ namespace coney::script {
 
 namespace {
 
+// The handle scripts read as no object.
+constexpr double kNilHandle = 0.0;
+
 // Argument `i` as an integer, truncated as tolua reads one.
 int intArg(std::span<const Value> args, std::size_t i) {
     return static_cast<int>(std::trunc(binding::number(args, i)));
@@ -195,6 +198,120 @@ NativeFunction makeCamTarget(const BindingContext& context) {
     };
 }
 
+// Whether a `player` argument (default -1, every player) reaches player 1's cameras, the only ones Coney has.
+bool forPlayerOne(std::span<const Value> args, std::size_t i) {
+    if (i >= args.size() || args[i].isNil()) {
+        return true;
+    }
+    const int player = intArg(args, i);
+    return player == -1 || player == 0;
+}
+
+// A table argument {x, y, z} as a vector; the origin when it is missing.
+anim::Vec3 vecArg(std::span<const Value> args, std::size_t i) {
+    const std::array<float, 3> p = binding::position(args, i).value_or(std::array<float, 3>{});
+    return anim::Vec3{p[0], p[1], p[2]};
+}
+
+// `CamSetupRail(name, target, fov, offset, near, far, player)`: the rail camera's handle, or NilHandle for no target.
+// @orig 0x00366518 CamSetupRail (unknown)
+NativeFunction makeCamSetupRail(const BindingContext& context, std::function<double()> nextHandle) {
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+        camera::Cameras* cameras = context->cameras;
+        const double target = handleArg(args, 1);
+        if (cameras == nullptr || target == kNilHandle || !forPlayerOne(args, 6)) {
+            return binding::number(kNilHandle);
+        }
+        camera::RailSetup setup;
+        setup.fieldOfView = floatArg(args, 2);
+        setup.offset = vecArg(args, 3);
+        setup.nearClip = floatArg(args, 4);
+        setup.farClip = floatArg(args, 5);
+        const double handle = cameras->rail() != nullptr ? 0.0 : nextHandle();
+        return binding::number(cameras->setupRail(handle, target, setup));
+    };
+}
+
+// `CamAddRailPoint(pos, player)`: true when the point was added, nil without a rail camera.
+// @orig 0x003667a0 CamAddRailPoint (unknown)
+NativeFunction makeCamAddRailPoint(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        camera::Cameras* cameras = context->cameras;
+        const bool added = cameras != nullptr && forPlayerOne(args, 1) && cameras->addRailPoint(vecArg(args, 0));
+        return binding::boolean(added);
+    };
+}
+
+// `CamLeadRail(lead, seconds, ahead, player)`: `ahead` defaults to true.
+// @orig 0x003666e8 CamLeadRail (unknown)
+NativeFunction makeCamLeadRail(const BindingContext& context) {
+    return camerasCall(context, [](camera::Cameras& cameras, std::span<const Value> args) {
+        if (forPlayerOne(args, 3)) {
+            const bool ahead = args.size() <= 2 || boolArg(args, 2);
+            cameras.leadRail(floatArg(args, 0), floatArg(args, 1), ahead);
+        }
+    });
+}
+
+// `CamModifyRail(param, value, seconds, player)`.
+// @orig 0x003668e8 CamModifyRail (unknown)
+NativeFunction makeCamModifyRail(const BindingContext& context) {
+    return camerasCall(context, [](camera::Cameras& cameras, std::span<const Value> args) {
+        if (forPlayerOne(args, 3)) {
+            cameras.modifyRail(static_cast<std::uint32_t>(std::trunc(binding::number(args, 0))), floatArg(args, 1),
+                               floatArg(args, 2));
+        }
+    });
+}
+
+// `CameraCreateFixed(name, target, pos, fov, offset, near, far)`: a new fixed camera's handle, or NilHandle for no
+// target.
+// @orig 0x00366140 CameraCreateFixed (unknown)
+// @orig 0x0011c6b8 Camera_CreateFixed (unknown)
+NativeFunction makeCameraCreateFixed(const BindingContext& context, std::function<double()> nextHandle) {
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+        camera::Cameras* cameras = context->cameras;
+        const double target = handleArg(args, 1);
+        if (target == kNilHandle) {
+            return binding::number(kNilHandle);
+        }
+        const double handle = nextHandle();
+        if (cameras != nullptr) {
+            cameras->createFixed(handle, target,
+                                 camera::FixedCamera(vecArg(args, 2), vecArg(args, 4), floatArg(args, 3),
+                                                     floatArg(args, 5), floatArg(args, 6)));
+        }
+        return binding::number(handle);
+    };
+}
+
+// `CameraCreateThird(name, target, fov, distance, height, angle, offset, near, far)`: a new third-person camera's
+// handle, or NilHandle for no target.
+// @orig 0x00365f28 CameraCreateThird (unknown)
+// @orig 0x0011be18 Camera_CreateThird (unknown)
+NativeFunction makeCameraCreateThird(const BindingContext& context, std::function<double()> nextHandle) {
+    return [context = &context, nextHandle = std::move(nextHandle)](std::span<const Value> args) {
+        camera::Cameras* cameras = context->cameras;
+        const double target = handleArg(args, 1);
+        if (target == kNilHandle) {
+            return binding::number(kNilHandle);
+        }
+        const double handle = nextHandle();
+        if (cameras != nullptr) {
+            camera::ThirdCameraSettings settings;
+            settings.fieldOfView = floatArg(args, 2);
+            settings.distance = floatArg(args, 3);
+            settings.height = floatArg(args, 4);
+            settings.angleDegrees = floatArg(args, 5);
+            settings.offset = vecArg(args, 6);
+            settings.nearClip = floatArg(args, 7);
+            settings.farClip = floatArg(args, 8);
+            cameras->createThird(handle, target, settings);
+        }
+        return binding::number(handle);
+    };
+}
+
 } // namespace
 
 void addCameraBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
@@ -208,6 +325,12 @@ void addCameraBindings(LuaVm& vm, const BindingContext& context, std::function<d
     vm.registerFunction("CamSetSplitMode", makeCamSetSplitMode(context));
     vm.registerFunction("CamAssignRevCamButton", makeCamAssignRevCamButton(context));
     vm.registerFunction("CamSetSecondary", makeCamSetSecondary(context));
+    vm.registerFunction("CamSetupRail", makeCamSetupRail(context, nextHandle));
+    vm.registerFunction("CamAddRailPoint", makeCamAddRailPoint(context));
+    vm.registerFunction("CamLeadRail", makeCamLeadRail(context));
+    vm.registerFunction("CamModifyRail", makeCamModifyRail(context));
+    vm.registerFunction("CameraCreateFixed", makeCameraCreateFixed(context, nextHandle));
+    vm.registerFunction("CameraCreateThird", makeCameraCreateThird(context, nextHandle));
     vm.registerFunction("CamSetupFollow", makeCamSetupFollow(context, std::move(nextHandle)));
     vm.registerFunction("CamTarget", makeCamTarget(context));
     vm.registerFunction("CfgFollowCamera", makeCfgFollowCamera(context));

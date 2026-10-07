@@ -293,6 +293,10 @@ centres, a steep one 22 long and a shallow one about 102 long, give the same nea
 brute-force cast over every triangle in all 79,062 casts: on the disc's data the walk's half-cell offset loses no hit
 on these rays.
 
+**`ChangeCollision`** (2026-10-06) switches the level's triangles wholly inside a volume box with
+`CollisionMesh::setEnabledInBox` (the box's corners sorted per axis). **Coney choice**: only volume boxes name a box;
+the original also takes any object with a box at `+0x10` / `+0x20`.
+
 ## Open questions
 
 - **Flag bits 3, 6, 8-10 and 12-15** (bits 2 and 7 mark climbable triangles, bit 4 shadow ground, bit 5 human

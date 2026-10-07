@@ -74,6 +74,10 @@ class Gang {
     [[nodiscard]] bool suspended() const { return m_suspended; }
     /// Invincible (`+0xd8`, `GangInvincible`): its members, and those who join later, are gods (human flag `0x10`).
     [[nodiscard]] bool invincible() const { return m_invincible; }
+    /// Always seen (`+0xdc`, `GangSetAlwaysSeen`): an enemy's scan notices its members anywhere in sight range, and its
+    /// own members' fight and spectate goals skip the line-of-sight test. **Coney stand-in**: Coney's brains have no
+    /// enemy scan yet, so it is only kept.
+    [[nodiscard]] bool alwaysSeen() const { return m_alwaysSeen; }
     /// The members (`+0x48`), in the order they joined.
     [[nodiscard]] const std::vector<Brain*>& members() const { return m_members; }
     /// The tactic (`+0x40`); null for none.
@@ -121,6 +125,7 @@ class Gang {
     std::uint32_t m_friends = 0;
     bool m_suspended = false;
     bool m_invincible = false;
+    bool m_alwaysSeen = false;
     std::vector<Brain*> m_members;
     Brain* m_chosenTarget = nullptr;
     std::unique_ptr<Tactic> m_tactic;
@@ -179,6 +184,15 @@ class Gangs {
     /// @orig 0x0016ae90 Gang_MakeNeutralOfTypeById (unknown)
     /// @orig 0x0016c470 Gang_MakeNeutralWithType (unknown)
     void makeNeutralOfType(int id, int kind);
+    /// `GangMakeEnemiesOfType(id, kind)`: gang `id` and every gang in use of kind `kind` become enemies both ways (the
+    /// friend bit cleared, the enemy bit set), the gang itself too when it is of that kind. Gangs made later are not
+    /// affected. Nothing for a gang not in use.
+    /// @orig 0x0016ae60 Gang_MakeEnemiesOfType (unknown)
+    /// @orig 0x0016c3a8 Gang_SetHostileToKind (unknown)
+    void makeEnemiesOfType(int id, int kind);
+    /// `GangSetAlwaysSeen`: the always-seen byte. Nothing for a gang not in use.
+    /// @orig 0x0016bde8 Gang_SetAlwaysSeen (unknown)
+    void setAlwaysSeen(int id, bool on);
     /// Whether gang `a` has `b` as an enemy (the enemy bit).
     [[nodiscard]] static bool enemies(const Gang* a, const Gang* b);
 

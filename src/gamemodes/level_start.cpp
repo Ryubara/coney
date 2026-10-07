@@ -3,18 +3,21 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "core/assert.h"
 #include "effects/particles.h"
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
 #include "gui/rumble_mode_gui/rumble_menu.h"
+#include "human/locomotion.h"
 #include "scripting/hud_bindings.h"
 #include "scripting/lua_value.h"
 #include "scripting/script_bindings.h"
@@ -89,6 +92,10 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
         scripts.call("AddFlag", args);
     }
 
+    // Steps 9-10: the preload services the file manager, so the checkpoint scripts the level asked for with
+    // preLoadFile arrive and run here, before the start (docs/research/level-loading.md, inferred).
+    scripts.servicePreloads(true);
+
     // The start callback the script set (an arena's DoRules, which places the players), called once.
     if (!state.startGameCallback.empty()) {
         const std::string callback = std::exchange(state.startGameCallback, std::string{});
@@ -105,6 +112,49 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
     return start;
 }
 
+// The player's turning as the preload scripts configure it (`CfgSetTurnRates`, `CfgTurnRate` in config_preload2.lua,
+// recorded by their stubs): the values the original plays with (docs/research/characters.md#movement-constants).
+void applyTurnConfig(const script::RecordedCalls& recorded) {
+    // A recorded argument as a float; nil and strings count as nothing.
+    const auto numberAt = [](const std::vector<script::Value>& args, std::size_t i) -> std::optional<float> {
+        if (i >= args.size()) {
+            return std::nullopt;
+        }
+        const std::optional<double> number = args[i].number();
+        return number ? std::optional<float>(static_cast<float>(*number)) : std::nullopt;
+    };
+    for (const std::vector<script::Value>& args : recorded.calls("CfgSetTurnRates")) {
+        std::vector<float> degrees;
+        degrees.reserve(args.size());
+        for (std::size_t i = 0; i < args.size(); ++i) {
+            degrees.push_back(numberAt(args, i).value_or(-1.0F)); // -1 is out of range: the old value stays
+        }
+        human::setPlayerTurnRates(degrees);
+    }
+    for (const std::vector<script::Value>& args : recorded.calls("CfgTurnRate")) {
+        const std::optional<float> ease = numberAt(args, 2);
+        const std::optional<float> carry = numberAt(args, 3);
+        if (ease && carry) {
+            human::setTurnEase(*ease, *carry);
+        }
+    }
+}
+
+void QuietBindingHost::launchMissionComplete(int kind) {
+    m_complete = kind;
+    m_missionComplete = m_missionComplete || !m_unlocking;
+    if (m_log) {
+        m_log(std::format("level: mission complete (kind {})\n", kind));
+    }
+}
+
+void QuietBindingHost::launchMissionFailed(std::string_view reason) {
+    m_failed = std::string(reason);
+    if (m_log) {
+        m_log(std::format("level: mission failed: {}\n", reason));
+    }
+}
+
 LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view level, int checkpoint,
                            const std::function<void(std::string_view)>& log, const LevelScriptOptions& options)
     : m_context{&m_state, &m_strings,  &m_host,  &m_recorded,      &m_humans,      &m_flags,       &m_rumbleData,
@@ -113,6 +163,7 @@ LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view 
           source,
           [this](script::ScriptSystem& system, script::LuaVm& vm) { script::installBindings(system, vm, m_context); },
           log) {
+    m_host.setLog(log);
     // The HUD the scripts' HUD bindings act on and the sound the preloads configure, before the first Lua state.
     m_context.hud = &m_hud;
     m_context.sound = options.sound;

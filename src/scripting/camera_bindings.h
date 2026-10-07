@@ -11,12 +11,13 @@
 namespace coney::script {
 
 /// The camera bindings level99 calls: the follow camera's set-up, configuration, zoom, pitch and watched human, the
-/// locked cameras, making a camera current with or without a blend, resets, the switches and the shared target list.
-/// All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 13> kCameraBindings{
-    "CamAssignRevCamButton", "CamEnable",         "CameraCreateLocked", "CameraMakeActive", "CameraReset",
-    "CamLockLocked",         "CamSetFollowAngle", "CamSetFollowZoom",   "CamSetSecondary",  "CamSetSplitMode",
-    "CamSetupFollow",        "CamTarget",         "CfgFollowCamera"};
+/// locked, fixed, third-person and rail cameras, making a camera current with or without a blend, resets, the switches
+/// and the shared target list. All real; installBindings() registers them.
+inline constexpr std::array<std::string_view, 19> kCameraBindings{
+    "CamAddRailPoint", "CamAssignRevCamButton", "CamEnable",         "CameraCreateFixed",  "CameraCreateThird",
+    "CamLeadRail",     "CamModifyRail",         "CamSetupRail",      "CameraCreateLocked", "CameraMakeActive",
+    "CameraReset",     "CamLockLocked",         "CamSetFollowAngle", "CamSetFollowZoom",   "CamSetSecondary",
+    "CamSetSplitMode", "CamSetupFollow",        "CamTarget",         "CfgFollowCamera"};
 
 /// Registers kCameraBindings in `vm`, working on `context.cameras` as it is at each call (null keeps no cameras: the
 /// making bindings still return new handles, the rest do nothing); `context` must outlive the state. `nextHandle`

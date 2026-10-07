@@ -19,29 +19,31 @@ summary is still to be written from the script.
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | 🚧 In Progress | - |
-| 2 | 🚧 In Progress | - |
-| 3 | 🚧 In Progress | - |
-| 4 | 🚧 In Progress | - |
+| 1 | 🚧 In Progress | Runs headless with no script error and every binding it calls; not yet checked to its end. |
+| 2 | 🚧 In Progress | No script error; the tenement's set-up runs after RunLevel, which sets up the pedestrian net (`SetupFlagNet2`) first, as in the original. |
+| 3 | 🚧 In Progress | Runs headless with no script error and every binding it calls; not yet checked to its end. |
+| 4 | 🚧 In Progress | No script error; waits on the general car message handler (being built for level34). |
 
 ## What it needs {#needs}
 
-Its scripts can call 243 script bindings. 19 of them are new, which no earlier level of the story calls: 6 are
+Its scripts can call 243 script bindings. 19 of them are new, which no earlier level of the story calls: 19 are
 implemented in Coney and 19 are traced. The full list is on [the coverage page](../references/bindings/story.md#level2).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
-| [Characters](../references/bindings/character.md) | 4 | 0 |
-| [AI](../references/bindings/ai.md) | 3 | 1 |
-| [Cameras](../references/bindings/camera.md) | 4 | 0 |
-| [World and objects](../references/bindings/world.md) | 2 | 0 |
+| [Characters](../references/bindings/character.md) | 4 | 4 |
+| [AI](../references/bindings/ai.md) | 3 | 3 |
+| [Cameras](../references/bindings/camera.md) | 4 | 4 |
+| [World and objects](../references/bindings/world.md) | 2 | 2 |
 | [HUD and menus](../references/bindings/hud.md) | 3 | 3 |
 | [Sound and music](../references/bindings/sound.md) | 2 | 2 |
-| [Configuration (Cfg)](../references/bindings/config.md) | 1 | 0 |
+| [Configuration (Cfg)](../references/bindings/config.md) | 1 | 1 |
 
 Research:
 
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
+- [The mission's script](../research/scripting.md#level2)
+- [Rail cameras](../research/camera.md#rail)
 
 ## Run it in Coney {#run}
 
@@ -50,6 +52,12 @@ to 4:
 
 ```text
 coney --disc /path/to/disc --play-level level2 --checkpoint 1
+```
+
+Its disc test (needs `CONEY_DISC`; [Building](../guides/building.md)):
+
+```text
+coney_tests "[disc][story]"
 ```
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

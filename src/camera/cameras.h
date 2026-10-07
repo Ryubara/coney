@@ -17,10 +17,13 @@
 #include "camera/camera_shake.h"
 #include "camera/camera_view.h"
 #include "camera/failed_camera.h"
+#include "camera/fixed_camera.h"
 #include "camera/follow_camera.h"
 #include "camera/locked_camera.h"
 #include "camera/path_camera.h"
+#include "camera/rail_camera.h"
 #include "camera/slow_motion.h"
+#include "camera/third_camera.h"
 #include "camera/win_camera.h"
 #include "raycast/collision_mesh.h"
 
@@ -41,6 +44,9 @@ enum class CameraKind : std::uint8_t {
     Win,    ///< The Rumble win camera (`Cam_Win`), which circles the winner.
     Path,   ///< The scripts' path camera (type 3, `Cam_Spline`), which flies through its points.
     Failed, ///< The death camera (type 12, `Cam_Failed`), the game-over shot.
+    Rail,   ///< The rail camera (type 9, `Cam_Rail`), which runs along a rail after its target.
+    Fixed,  ///< A fixed camera (type 0, `Cam_Fixed`), which turns to look at the shared target list.
+    Third,  ///< A third-person camera (type 16, `Cam_3rdPerson`), behind its target.
 };
 
 /// A camera the manager knows: its kind and, for a locked one, its handle.
@@ -59,6 +65,7 @@ class Cameras {
     static constexpr std::size_t kSwitchStick = 0;       ///< The right stick and zoom buttons.
     static constexpr std::size_t kSwitchSprintZoom = 5;  ///< The follow camera's sprint zoom.
     static constexpr std::size_t kSwitchShakeView = 6;   ///< The shake's view offset.
+    static constexpr std::size_t kSwitchRailLead = 7;    ///< The rail camera's look-at point led along the rail.
     static constexpr std::size_t kSwitchLookBehind = 11; ///< The look-behind button.
     /// The shared target list holds at most this many humans (`0x005d91a8`).
     static constexpr std::size_t kTargetListSize = 4;
@@ -119,9 +126,9 @@ class Cameras {
     using Mover = std::function<void(double handle, anim::Vec3 feet)>;
     /// Sets how the manager moves humans (null: the push moves no one).
     void setMover(Mover mover) { m_move = std::move(mover); }
-    /// `CamDelete(camera)`: forgets the locked camera with `handle`; the shared kinds (follow, win) are kept. When it
-    /// is current the follow camera is made current at once (**Coney choice**: what the original shows then is not
-    /// traced).
+    /// `CamDelete(camera)`: forgets the locked or fixed camera with `handle`; the shared kinds (follow, win) are kept.
+    /// When it is current the follow camera is made current at once (**Coney choice**: what the original shows then is
+    /// not traced).
     /// @orig 0x0011b888 Camera_Delete (unknown)
     void deleteCamera(double handle);
     /// `CameraCreateWin`: sets the one win camera up on the human `target` with `settings` and returns its handle,
@@ -187,6 +194,31 @@ class Cameras {
     [[nodiscard]] CameraRef beforeFailed() const { return m_beforeFailed; }
     /// The path camera, once made.
     [[nodiscard]] const PathCamera* path() const { return m_path ? &*m_path : nullptr; }
+    /// `CamSetupRail`: the one rail camera (made on first use) put on the human `target` (also put on the shared target
+    /// list when it is not there) and reset with `setup`
+    /// (RailCamera::setup()); its handle, `handle` the first time and the same one after.
+    /// @orig 0x0011fbb0 Camera_GetPlayerRail (unknown)
+    [[nodiscard]] double setupRail(double handle, double target, const RailSetup& setup);
+    /// `CamAddRailPoint`: a point appended to the rail; false without a rail camera.
+    /// @orig 0x0011d098 Camera_AddRailPoint (unknown)
+    bool addRailPoint(anim::Vec3 point);
+    /// `CamLeadRail`: the rail camera led ahead of or behind its target (RailCamera::setLead()); nothing without one.
+    void leadRail(float lead, float seconds, bool ahead);
+    /// `CamModifyRail`: one of the rail camera's settings eased (RailCamera::modify()); nothing without one.
+    void modifyRail(std::uint32_t param, float value, float seconds);
+    /// The rail camera, once made.
+    [[nodiscard]] const RailCamera* rail() const { return m_rail ? &*m_rail : nullptr; }
+
+    /// `CameraCreateFixed`: keeps `camera` under `handle` and puts the human `target` on the shared target list when it
+    /// is not there and the list has room.
+    void createFixed(double handle, double target, const FixedCamera& camera);
+    /// The fixed camera with `handle`, or null.
+    [[nodiscard]] const FixedCamera* fixed(double handle) const;
+    /// `CameraCreateThird`: keeps a third-person camera on the human `target` under `handle`.
+    void createThird(double handle, double target, const ThirdCameraSettings& settings);
+    /// The third-person camera with `handle`, or null.
+    [[nodiscard]] const ThirdCamera* third(double handle) const;
+
     /// The script functions the path camera reached since the last call (its points' and its end's), in order: the
     /// gameplay calls them after the step.
     [[nodiscard]] std::vector<std::string> takeFired() { return std::exchange(m_fired, {}); }
@@ -295,6 +327,8 @@ class Cameras {
     void switchTo(CameraRef ref, float seconds);
     // The current locked camera's update of its listed humans (keepInView()), with the level's `mesh`.
     void keepHumansInView(const raycast::CollisionMesh* mesh);
+    // One update of the rail, fixed or third-person camera `ref` names, from where its target is now.
+    void stepTracking(CameraRef ref, float seconds);
 
     FollowCamera* m_follow = nullptr;
     std::optional<double> m_followHandle;
@@ -307,8 +341,13 @@ class Cameras {
     CameraRef m_beforeFailed;
     bool m_missionFailed = false; // game state +0x14c, for makeActive()'s lock
     double m_pathHandle = 0.0;
-    std::vector<std::string> m_fired; // the path camera's functions reached, for takeFired()
-    double m_winHandle = 0.0;         // the win camera's handle once made
+    std::optional<RailCamera> m_rail;
+    double m_railHandle = 0.0;
+    double m_railTarget = 0.0;
+    std::map<double, FixedCamera> m_fixed;
+    std::map<double, std::pair<double, ThirdCamera>> m_third; // each one's target and camera
+    std::vector<std::string> m_fired;                         // the path camera's functions reached, for takeFired()
+    double m_winHandle = 0.0;                                 // the win camera's handle once made
     double m_winTarget = 0.0;
     WinCameraSettings m_winSettings;
     Placer m_place;

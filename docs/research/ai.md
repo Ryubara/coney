@@ -5254,6 +5254,20 @@ weights; the grab target is held by standing at it, facing it, with no damage; t
 `phone_gang`...) are kept, not played; the flight runs 10 s at gait 4, 10 m legs away from the enemy; a gang's starting
 count is noted when `GangCanFlee` turns it on.
 
+**Gangs of a kind** (2026-10-06): `GangMakeEnemiesOfType` makes a gang and every gang in use of a kind enemies both
+ways (`Gangs::makeEnemiesOfType`). `GangSetAlwaysSeen` keeps the gang's byte (`Gang::alwaysSeen()`); **Coney
+stand-in**: Coney's brains have no enemy scan or line-of-sight test yet, so nothing reads it.
+
+**The fifth and sixth missions' goals** (2026-10-06; `repo:src/ai/chase_goals.h`): `ActTurnToDir` queues the turn to
+a heading ([Turning](#look-at)); `GoalGuardFlag` (43), `GoalLeadChase` (73), `GoalBigLedgeThrower` (138) follow their
+binding pages and `GoalDevilRun` (152) [its section](#devil-run): the hindmost segment, the chaser farthest back, the
+pace and a move action to the path's last point whose speed the pace sets (`MoveAction::setSpeed()`). **Coney
+choices and stand-ins**: the lead chase steers straight from point to point (no route planning) and counts a point
+reached within 1 m; the guard's LeftTurf on an event and its time word are not built; the devil runner's attack
+fights the chaser (the melee and engage-enemy goals are not built) and the urgency's brain byte is not kept; the ledge
+thrower has no objects to pick up or throw yet, so each throw is a turn to the nearest enemy (or a target flag) and
+the wait, and its animation name is kept, not applied.
+
 ## Open questions {#open-questions}
 
 - Movement and world use: MoveToUseFlag's clip states once he is on the flag; the pedestrian's flag re-use timer

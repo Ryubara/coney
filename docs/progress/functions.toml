@@ -697,6 +697,11 @@ name = "Camera_LockLocked"
 subsystem = "Camera"
 
 [[function]]
+address = 0x0011be18
+name = "Camera_CreateThird"
+subsystem = "Camera"
+
+[[function]]
 address = 0x0011bfa8
 name = "Camera_SetupFollow"
 subsystem = "Camera"
@@ -733,6 +738,11 @@ name = "Camera_SetFollowPosition"
 subsystem = "Camera"
 
 [[function]]
+address = 0x0011c6b8
+name = "Camera_CreateFixed"
+subsystem = "Camera"
+
+[[function]]
 address = 0x0011c858
 name = "Camera_CreateWin"
 subsystem = "Camera"
@@ -756,6 +766,26 @@ subsystem = "Camera"
 [[function]]
 address = 0x0011cc68
 name = "Camera_AddPoizoPointCam"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011cce8
+name = "Camera_SetupRail"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011cf70
+name = "Camera_SetRailLead"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011d098
+name = "Camera_AddRailPoint"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0011d228
+name = "Camera_ModifyRail"
 subsystem = "Camera"
 
 [[function]]
@@ -796,10 +826,20 @@ name = "Camera_MakeActive"
 subsystem = "Camera"
 
 [[function]]
+address = 0x0011fbb0
+name = "Camera_GetPlayerRail"
+subsystem = "Camera"
+
+[[function]]
 address = 0x001202e8
 name = "Camera_AnyPlayerCanSeePoint"
 subsystem = "Camera"
 size = 152
+
+[[function]]
+address = 0x001205e8
+name = "Cam3rdPerson_Update"
+subsystem = "Camera"
 
 [[function]]
 address = 0x001210f8
@@ -846,6 +886,16 @@ address = 0x00123bf0
 name = "CamFailed_Update"
 subsystem = "Camera"
 size = 688
+
+[[function]]
+address = 0x00124000
+name = "CamFixed_ComputeLookAt"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00124690
+name = "CamFixed_Update"
+subsystem = "Camera"
 
 [[function]]
 address = 0x00124d00
@@ -977,6 +1027,26 @@ subsystem = "Camera"
 [[function]]
 address = 0x00135ca8
 name = "LockedCam_KeepHumansInView"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0013b2b8
+name = "CamRail_Reset"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0013b780
+name = "CamRail_AppendPoint"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0013d010
+name = "CamRail_Update"
+subsystem = "Camera"
+
+[[function]]
+address = 0x0013f930
+name = "CamRail_EaseValue"
 subsystem = "Camera"
 
 [[function]]
@@ -1773,6 +1843,11 @@ subsystem = "GameModes"
 size = 144
 
 [[function]]
+address = 0x0016ae60
+name = "Gang_MakeEnemiesOfType"
+subsystem = "GameModes"
+
+[[function]]
 address = 0x0016ae90
 name = "Gang_MakeNeutralOfTypeById"
 subsystem = "GameModes"
@@ -1864,8 +1939,18 @@ subsystem = "GameModes"
 size = 72
 
 [[function]]
+address = 0x0016bde8
+name = "Gang_SetAlwaysSeen"
+subsystem = "GameModes"
+
+[[function]]
 address = 0x0016be30
 name = "Gang_CanUseWorldFlags"
+subsystem = "GameModes"
+
+[[function]]
+address = 0x0016c3a8
+name = "Gang_SetHostileToKind"
 subsystem = "GameModes"
 
 [[function]]
@@ -1885,6 +1970,11 @@ address = 0x0016d170
 name = "Gangs_Update"
 subsystem = "GameModes"
 size = 672
+
+[[function]]
+address = 0x0016d5c0
+name = "KillHumans_Stub"
+subsystem = "GameModes"
 
 [[function]]
 address = 0x0016d810
@@ -2664,6 +2754,11 @@ size = 64
 [[function]]
 address = 0x001b4948
 name = "HUD_ShowWarCommand"
+subsystem = "GUI"
+
+[[function]]
+address = 0x001b4a88
+name = "ChaseHud_Destroy"
 subsystem = "GUI"
 
 [[function]]
@@ -3990,6 +4085,11 @@ subsystem = "Human"
 size = 48
 
 [[function]]
+address = 0x00229b90
+name = "Human_ScaleAttackDamages"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022a770
 name = "Gang_PickSwitchMember"
 subsystem = "Human"
@@ -4141,6 +4241,11 @@ subsystem = "Human"
 size = 112
 
 [[function]]
+address = 0x00234118
+name = "Human_SetAutoCombat"
+subsystem = "Human"
+
+[[function]]
 address = 0x00234188
 name = "Human_SetWheelchairControl"
 subsystem = "Human"
@@ -4169,6 +4274,11 @@ address = 0x002350c8
 name = "Human_SetTireless"
 subsystem = "Human"
 size = 104
+
+[[function]]
+address = 0x00235198
+name = "Human_SetNoReact"
+subsystem = "Human"
 
 [[function]]
 address = 0x00235200
@@ -4294,6 +4404,11 @@ subsystem = "Human"
 size = 160
 
 [[function]]
+address = 0x00236038
+name = "Human_ApplyDamageModifier"
+subsystem = "Human"
+
+[[function]]
 address = 0x00236188
 name = "Human_SetUnlockedGear"
 subsystem = "Human"
@@ -4416,6 +4531,11 @@ address = 0x002378a8
 name = "Human_SetHealthPercent"
 subsystem = "Human"
 size = 176
+
+[[function]]
+address = 0x00237958
+name = "Human_SetBlockJump"
+subsystem = "Human"
 
 [[function]]
 address = 0x00237b70
@@ -4674,6 +4794,11 @@ subsystem = "Human"
 size = 64
 
 [[function]]
+address = 0x00239f20
+name = "Human_SetInterrogation"
+subsystem = "Human"
+
+[[function]]
 address = 0x0023a1b0
 name = "Human_SetCombatMode"
 subsystem = "Human"
@@ -4700,6 +4825,11 @@ address = 0x0023a3b8
 name = "Human_SetLookTarget"
 subsystem = "Human"
 size = 168
+
+[[function]]
+address = 0x0023a460
+name = "Human_ClearLook_Stub"
+subsystem = "Human"
 
 [[function]]
 address = 0x0023a468
@@ -6219,6 +6349,11 @@ name = "Goal_AdjustEnemyScoreDefault"
 subsystem = "Human"
 
 [[function]]
+address = 0x0029f710
+name = "Brain_SetMoveSpeed"
+subsystem = "Human"
+
+[[function]]
 address = 0x002a4cb8
 name = "Goal_AreaWalker"
 subsystem = "Human"
@@ -6532,6 +6667,21 @@ address = 0x002b75b8
 name = "Brain_Melee"
 subsystem = "Human"
 size = 184
+
+[[function]]
+address = 0x002b79b8
+name = "Goal_GuardFlag"
+subsystem = "Human"
+
+[[function]]
+address = 0x002b7a90
+name = "GuardFlagGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002b7c18
+name = "GuardFlagGoal_Process"
+subsystem = "Human"
 
 [[function]]
 address = 0x002b9538
@@ -6937,6 +7087,51 @@ name = "TravelPathGoal_Process"
 subsystem = "Human"
 
 [[function]]
+address = 0x002e0a78
+name = "Goal_LeadChase"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e0b48
+name = "LeadChaseGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e0dc8
+name = "LeadChaseGoal_Process"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e1760
+name = "Goal_DevilRun"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e1850
+name = "DevilRunGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e18d8
+name = "DevilRunGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e1950
+name = "DevilRunGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e1998
+name = "DevilRunGoal_Resume"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e2230
+name = "DevilRunGoal_Process"
+subsystem = "Human"
+
+[[function]]
 address = 0x002e4980
 name = "PlayAnimationGoal_Init"
 subsystem = "Human"
@@ -7090,6 +7285,21 @@ name = "BigThrowerGoal_Process"
 subsystem = "Human"
 
 [[function]]
+address = 0x002edf20
+name = "Goal_BigLedgeThrower"
+subsystem = "Human"
+
+[[function]]
+address = 0x002edff8
+name = "BigLedgeThrowerGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002ee7b0
+name = "BigLedgeThrowerGoal_Process"
+subsystem = "Human"
+
+[[function]]
 address = 0x002eee50
 name = "Goal_StationaryThrower"
 subsystem = "Human"
@@ -7203,6 +7413,11 @@ address = 0x002fcf50
 name = "MoveToHumanAction_Init"
 subsystem = "Human"
 size = 160
+
+[[function]]
+address = 0x002fdb90
+name = "Action_TurnToHeading"
+subsystem = "Human"
 
 [[function]]
 address = 0x002fdc28
@@ -7653,6 +7868,11 @@ subsystem = "RayCast"
 [[function]]
 address = 0x0034fa28
 name = "Collision_DropToMarkedGround"
+subsystem = "RayCast"
+
+[[function]]
+address = 0x0034fba0
+name = "CollisionMesh_SetEnabledInVolume"
 subsystem = "RayCast"
 
 [[function]]
@@ -8137,6 +8357,21 @@ subsystem = "Scripting"
 size = 160
 
 [[function]]
+address = 0x00360ac8
+name = "GoalLeadChase"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00360d98
+name = "GoalDevilRun"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00360f28
+name = "GoalGuardFlag"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x003610a8
 name = "GoalFight"
 subsystem = "Scripting"
@@ -8171,6 +8406,16 @@ address = 0x00363530
 name = "GoalPlayDynAnimation"
 subsystem = "Scripting"
 size = 160
+
+[[function]]
+address = 0x00363b38
+name = "GoalBigLedgeThrower"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00364708
+name = "ActTurnToDir"
+subsystem = "Scripting"
 
 [[function]]
 address = 0x003647d8
@@ -8250,10 +8495,40 @@ name = "CameraCreateLocked"
 subsystem = "Scripting"
 
 [[function]]
+address = 0x00365f28
+name = "CameraCreateThird"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x00366140
+name = "CameraCreateFixed"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x00366360
 name = "CameraCreateWin"
 subsystem = "Scripting"
 size = 440
+
+[[function]]
+address = 0x00366518
+name = "CamSetupRail"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x003666e8
+name = "CamLeadRail"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x003667a0
+name = "CamAddRailPoint"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x003668e8
+name = "CamModifyRail"
+subsystem = "Scripting"
 
 [[function]]
 address = 0x00366dd0
@@ -8448,6 +8723,11 @@ size = 152
 [[function]]
 address = 0x0036d008
 name = "TriggerSphereEnable"
+subsystem = "Scripting"
+
+[[function]]
+address = 0x0036d068
+name = "TriggerSphereSetRadius"
 subsystem = "Scripting"
 
 [[function]]
@@ -10188,6 +10468,16 @@ name = "VolumeBox_ContainsObject"
 subsystem = "WorldObjects"
 
 [[function]]
+address = 0x004134f8
+name = "PlayerVolumeBox_Update"
+subsystem = "WorldObjects"
+
+[[function]]
+address = 0x004142d0
+name = "TriggerSphere_Alloc"
+subsystem = "WorldObjects"
+
+[[function]]
 address = 0x00414398
 name = "TriggerSpheres_Update"
 subsystem = "WorldObjects"
@@ -10208,6 +10498,11 @@ address = 0x004146e0
 name = "TriggerSphere_Update"
 subsystem = "WorldObjects"
 size = 840
+
+[[function]]
+address = 0x00414a28
+name = "TriggerSphere_SetRadius"
+subsystem = "WorldObjects"
 
 [[function]]
 address = 0x00414ae0
@@ -10271,6 +10566,16 @@ address = 0x00415c48
 name = "Flag_FindByName"
 subsystem = "WorldObjects"
 size = 160
+
+[[function]]
+address = 0x00415ce8
+name = "Flag_Enable"
+subsystem = "WorldObjects"
+
+[[function]]
+address = 0x00415dc8
+name = "Flag_SetEnabled"
+subsystem = "WorldObjects"
 
 [[function]]
 address = 0x00415e70
@@ -10552,6 +10857,11 @@ subsystem = "Warriors"
 [[function]]
 address = 0x0041d930
 name = "Cfg_SetDisableMusicForScenes"
+subsystem = "Warriors"
+
+[[function]]
+address = 0x0041d940
+name = "Cfg_SetMaxThrowError"
 subsystem = "Warriors"
 
 [[function]]

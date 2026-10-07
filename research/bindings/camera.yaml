@@ -307,6 +307,7 @@
     The camera is not added to the shared target list, and CamDelete does not delete type 16. Created by the factory
     0x0011e1b0 with player 0; shake is applied (0x00121298) with no position offset.
   usage: {chunks: 2, calls: 3, boot: false, mission1: false, result_used: true, levels: [3, 81]}
+  coney: implemented
 
 - name: CameraCreateFixed
   wrapper: 0x00366140
@@ -336,6 +337,7 @@
     With an empty list the camera keeps its last view; when two list counters are equal (0x0050b198 == 0x0050b19c)
     it looks at one chosen entry instead of the average. The target stays on the list after the camera is gone.
   usage: {chunks: 9, calls: 12, boot: false, mission1: false, result_used: true, levels: [3, 81, 51, 52, 54, 55, 84]}
+  coney: implemented
 
 - name: CameraCreateWin
   wrapper: 0x00366360
@@ -391,6 +393,7 @@
     modes push the camera off the rail by the lead; 0x0050b2b0 not traced). The lead (CamLeadRail) is not reset.
     Cameras: [the list](../../references/cameras.md#type).
   usage: {chunks: 27, calls: 48, boot: false, mission1: false, result_used: true, levels: [2, 3, 5, 81, 86, 93, 9, 51, 54, 55, 84, 82, 83, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: CamLeadRail
   wrapper: 0x003666e8
@@ -417,6 +420,7 @@
     ([Camera: leading](../../research/camera.md#rail-leading)). Mode 0 (after CamSetupRail, 0x0013d6b0): [Camera: rail cameras](../../research/camera.md#rail).
     No rail camera: nothing.
   usage: {chunks: 9, calls: 15, boot: false, mission1: false, result_used: false, levels: [2, 81, 9, 51, 54, 84]}
+  coney: implemented
 
 - name: CamAddRailPoint
   wrapper: 0x003667a0
@@ -436,6 +440,7 @@
   notes: >-
     At most 16 points: further calls overwrite the 16th. With -1, a player without a rail camera is skipped.
   usage: {chunks: 27, calls: 132, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 9, 51, 54, 55, 84, 82, 83, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: CamLockRail
   wrapper: 0x00366880
@@ -481,6 +486,7 @@
     switched off; setting 8 (0x0013fb30) turns 0 into -0.05°. When an angle is switched on its current value starts
     from the camera's present angle (0x0013f9b0). Setting 0 starts from the present distance.
   usage: {chunks: 26, calls: 132, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 51, 54, 84, 82, 83, 11, 60, 61, 62, 63, 64]}
+  coney: implemented
 
 - name: CamSetupHood
   wrapper: 0x003669b0

@@ -19,7 +19,7 @@ namespace coney::world_objects {
 struct VolumeBox {
     double handle = 0;                     ///< From the world objects' handle space.
     std::string name;                      ///< For the scripts' own reference (`vMark01`).
-    int kind = 0;                          ///< 0 a trigger box; 2 and 3 other kinds (not traced: no trigger update).
+    int kind = 0;                          ///< 0 a trigger box; 2 a players' trigger box; 3 turf (no trigger update).
     std::array<float, 3> low{};            ///< The minimum corner (`+0x18` holds its z).
     std::array<float, 3> high{};           ///< The opposite corner (`+0x28` holds its z).
     std::array<float, 4> turn{1, 0, 0, 1}; ///< `+0x48`-`+0x54`: m00, m01, m10, m11.
@@ -28,11 +28,13 @@ struct VolumeBox {
     std::uint64_t nextStayMs = 0;          ///< `+0x1e0`: when message 5 may be sent again.
 };
 
-/// A human the boxes test: its handle, where its feet are, and whether it is alive (a dead human is skipped).
+/// A human the boxes test: its handle, where its feet are, whether it is alive (a dead human is skipped) and whether
+/// it is a player's (the only ones a kind-2 box tests).
 struct BoxSubject {
     double handle = 0;
     std::array<float, 3> position{};
     bool alive = true;
+    bool player = false;
 };
 
 /// The level's volume boxes and their trigger update: a kind-0 box that is enabled sends itself message 3 when a human
@@ -81,12 +83,17 @@ class VolumeBoxes {
     /// @orig 0x00412a18 VolumeBox_IsInside (unknown)
     [[nodiscard]] static bool inside(const VolumeBox& box, const std::array<float, 3>& point);
 
-    /// One trigger update of every enabled kind-0 box at game time `nowMs` over `subjects`: a living human inside and
+    /// A kind-2 box keeps at most this many occupants: the two players (`+0xf0`).
+    static constexpr std::size_t kMaxPlayerOccupants = 2;
+
+    /// One trigger update of every enabled kind-0 and kind-2 box at game time `nowMs` over `subjects` (for a kind-2
+    /// box, the players' humans only, at most kMaxPlayerOccupants kept): a living human inside and
     /// new is kept (while there is room) and gets 3; one inside and kept gets 5 when the period is due (the box's next
     /// 5 then a period later); a kept one no longer inside, dead or gone gets 4 and is dropped, except one whose handle
     /// no longer resolves (setResolves()), which is skipped with no message and kept. The messages go to `send` after
     /// the box's update.
     /// @orig 0x00415378 VolumeBox_Update (unknown)
+    /// @orig 0x004134f8 PlayerVolumeBox_Update (unknown)
     void update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const Send& send);
 
     /// Damage done by a human whose feet are at `human`: every enabled kind-0 box that `human` is inside goes to

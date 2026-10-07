@@ -1145,7 +1145,7 @@ arguments.
   `ChaseHud_SetState`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDSetChaseHUDState_NORMAL {#hudsetchasehudstate_normal}
 

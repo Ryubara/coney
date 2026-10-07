@@ -302,3 +302,36 @@ TEST_CASE("the call trace shows the calls into the scripts and every binding cal
     CHECK(trace.empty());
     CHECK(h.notes.size() == 3);
 }
+
+TEST_CASE("a preloaded file runs at the next update, then its callback; one it asks for waits", "[script_system]") {
+    Harness h;
+    // a.lua asks for b.lua (Chain) and notes "a"; b.lua notes "b".
+    LuaAsm a;
+    a.getGlobal("Chain").call(0).getGlobal("Note").pushString("a").call(1);
+    h.add("a.lua", a.end());
+    h.add("b.lua", noteScript("b"));
+    h.scripts.create();
+    h.scripts.vm().registerFunction("Chain", [&h](std::span<const Value>) -> std::expected<std::vector<Value>, Error> {
+        h.scripts.preload("b.lua", "");
+        return std::vector<Value>{};
+    });
+
+    // The caller goes on: nothing runs until the file arrives.
+    h.scripts.preload("a.lua", "Note");
+    CHECK(h.notes.empty());
+    CHECK(h.scripts.preloadsPending() == 1);
+    // It arrives at the next update: the chunk, then the callback with no arguments.
+    h.scripts.update(33, 0.0);
+    CHECK(h.notes == std::vector<std::string>{"a", ""});
+    CHECK(h.scripts.preloadsPending() == 1);
+    h.scripts.update(66, 0.0);
+    CHECK(h.notes == std::vector<std::string>{"a", "", "b"});
+
+    // The level start's preload runs everything, chained files too; a missing file calls no callback.
+    h.notes.clear();
+    h.scripts.preload("a.lua", "");
+    h.scripts.preload("missing.lua", "Note");
+    h.scripts.servicePreloads(true);
+    CHECK(h.notes == std::vector<std::string>{"a", "b"});
+    CHECK(h.scripts.preloadsPending() == 0);
+}
