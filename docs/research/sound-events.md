@@ -177,10 +177,11 @@ Confirmed (code):
    `0x0051489c` `+0x41a` + his `+0x1b0`) is 2, [defend](ai.md#warrior-commands).
 2. **Candidates**: the 16 member slots (gang `+0x48`) of the tagger's gang (his brain `+0x20c`), in slot order. A slot
    counts when it holds a human who is not the gang's leader (`Gang_GetLeader` `0x00165678`, normally the tagger
-   himself), not a player (`+0x1b0` = −1), not busy (`0x00228258`), whose actions are not blocked (`0x00228228`), whose
-   brain has no queued actions (`+0x2e` ≤ 0), and who is within the **tagger's** far melee range (his brain `+0x140`,
-   5.0 m unless `BrSetMeleeRange` changed it; [AI](ai.md#melee-range)) of the tagger, by the squared distance between
-   their positions.
+   himself), not a player (`+0x1b0` = −1), not busy (`Human_IsBusy` `0x00228258`: busy means he has a record and either
+   a state flag of `0x1f80974000` or record `+0x108` ahead of the game time), whose actions are not blocked
+   (`0x00228228`: no state flag of `0x7bf9e9f7ff0`), whose brain has no queued actions (`+0x2e` ≤ 0), and who is within
+   the **tagger's** far melee range (his brain `+0x140`, 5.0 m unless `BrSetMeleeRange` changed it;
+   [AI](ai.md#melee-range)) of the tagger, by the squared distance between their positions.
 3. **Pick**: not the nearest. The first counting slot is taken; every later counting slot replaces it when
    `Random_Int(100)` (stream `0x006eb8a0`) is 50 or more. So the last counting slot wins at 50 %, the one before at 25
    %, and the first at 1/2^(n−1) of n.

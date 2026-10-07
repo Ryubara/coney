@@ -813,9 +813,11 @@ just took, shown over his head).
 ### `sub_fog`: a fog wisp {#fog-wisp}
 
 A wisp of `part_fog` ([Particles](particles.md#fog); init `0x003ca658`). Record `+0x00` age, `+0x08` target colour,
-`+0x0c` fade-in steps, `+0x10` the camera it belongs to, `+0x14` fade step. It fades in toward its colour, is shown at
-full colour every tick when its camera is beyond 20 m (or within 10 m when that camera says so), every 30 ticks within
-4 m, and is done (lowering the wisp count `0x005144cc`) when its camera is not the player view any more.
+`+0x0c` fade-in steps, `+0x10` the camera it belongs to, `+0x14` fade step. It fades in toward its colour. It is
+**hidden** (alpha 0, updating every tick) when its camera is more than 20 m away, or out of view by more than 5 m, or
+within 10 m when that camera says so; within 4 m it is hidden and updates every 30 ticks. From its third update on, a
+wisp whose last colour had alpha 0 is done and lowers the wisp count `0x005144cc`. So is one whose camera is no longer
+the player view.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |

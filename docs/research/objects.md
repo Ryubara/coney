@@ -144,8 +144,9 @@ A world object's tint is a colour word at `+0xc8`, copied at `+0xcc`: `0xRRGGBBA
   again; the soft-float conversion (`0x0042c718`) keeps the low 8 bits. Since 65,025 is 1 modulo 256, a whole
   component 0-255 comes out as itself and a 0-1 component does not (1.0 gives 1). The one script that calls it passes
   0-255 values.
-- `HuSetSpinningIconColor(human, colour, colour2)` sends message `0x34` with the two words to the human's spinning
-  icon (`0x00238b18`); no script calls it.
+- `HuSetSpinningIconColor(human, steps, colour)` sends message `0x34` to the human's spinning icon (`0x00238b18`),
+  which fades its tint word to the colour over the steps ([Characters: the spinning icon](characters.md#spinning-icon));
+  no script calls it.
 - The breakable doors write the word too: a broken `dyn_door_liz`, `dyn_door_dclub` or `dyn_door_stall` clears its
   alpha byte (`+0xcc` = `+0xc8` & `0xffffff00`, `0x003fa438`).
 
@@ -333,6 +334,21 @@ resources are in memory, then whatever moves it.
 flags, tint, flagName )` (format at `0x005811f0`), the arguments `ObjSpawn` takes. A name starting `part` (`0x00581228`)
 makes a particle emitter task by that name at the pose instead; every other line goes to `ObjRecord_Add` directly (no
 unlockable checks). Confirmed (code); that the fields mean what `ObjSpawn`'s do is inferred from their order.
+
+**Emitter lines**, confirmed (code) at `0x003987f4`-`0x0039882c`: the loader pushes the position (w = 1), the rotation
+and a null parent into the message scratch and creates the task by name (`Task_CreateParticleByName`), which is
+`SpawnParticle`'s path ([Particles: spawning](particles.md#spawning)) with no parent; `Particle_Spawn` only also
+returns the new task's handle. The line's other fields (−1, zone, flags, tint, flag name) are read but not used, so an
+emitter is **not a spawn record**: it is made at once at level load, whatever its zone, is never streamed or stored,
+and lives until it ends itself or the level is freed. Any distance gating is the type's own: the steam vents
+(`part_steam`, `_large`, `_huge`) start **on** with built-in defaults and puff only near a camera
+([Steam vents](particles.md#steam)); the fly swarms keep their bugs only while a view is near
+([Flies](script-types.md#flies)); the neon types place a `sub_neon_light` and end; `part_strobe_red` starts **off**
+(no light, its alarm sound emitter disabled) until message `0x12`, which a store break-in sends to the nearest task
+whose type name contains `strobe` (a substring test, `0x00435d30`) within 6 m of the store's flag
+([Crimes: stores](crimes.md#stores)), and then spawns a `strober` (a red light flashing in four steps) and enables the
+sound; `0x13` stops both ([Small lights and strobes](script-types.md#small-lights-strobes)).
+`part_s_shack_dust_puff` and `part_s_subway_sparks` also wait for message `0x12`.
 `level99_objs.txt` holds 112 lines: 14 emitters and 98 objects; 89 lines name zone 0 (the emitters among them) and 23
 zone 26 (the two stores' jewellery and a cash register, flags 2), a zone `BNESetup` (`global.lua`, called by
 `level99.lua`'s `RegisterObjects`) enables, as it does each of zones 21-32 the level defines. Disc check (NTSC-U,
@@ -1161,6 +1177,31 @@ The street props `level34`'s riot meter counts ([Scripts](scripting.md#level34))
   it breaks is not traced.
 - **`F.Vandalize`** (`level34.lua`) tells the newsstand apart by name, not by type bits: `GetRTTI` 8 and
   `GetObjectName` `dyn_newsstand_a` or `_b` give 3 points, other 8 give 1, 1024 (a pane) gives 2.
+
+#### The riot props' hit effects {#riot-prop-breaks}
+
+What `DynMasks_OnHit` (`0x003b7a88`) does for the four `dyn_masks` riot props above. Confirmed (code) at that
+address; the materials, piece names and next models are confirmed (runtime), read from `level99`'s object database
+and Object List (the hashes are the CRC-32s of the names in the table above):
+
+| Prop | Material (`+0x64`) | Next model | Piece on a break |
+| --- | --- | --- | --- |
+| `dyn_newsstand_a` | `WOODFURNITURE` (47) | none | none (paper debris particles only) |
+| `dyn_newsstand_b` | `MEDWOOD` (56) | none | none (paper debris particles only) |
+| `dyn_crate_stack` | `CHAIR` (86) | none | one `dyn_wooddmg_a` (material `NONE`) at (0, 0, −0.604) m from the prop, turned about z by a random angle (quaternion (0, 0, sin θ, cos θ), θ in 0-π) |
+| `dyn_parkbench_a` | `WOODFURNITURE` (47) | none | one `dyn_parkbench_aa` (`SMALLBOARD`) at (0, 0, −0.395) m in the prop's own pose, after 25 splinters |
+
+- **Sound**: unless game-state set 3 has bit `0x4`, a hit that leaves the prop standing plays the material pair
+  (prop material, `CONCRETE` 5) at the hit point, and a break plays (prop material, prop material); one other prop
+  (model `0xe42da444`) breaks with (its material, `TINBOX` 23). `Sound_PlayMaterialPairAt`.
+- **Dust**: on every hit, standing or broken, when the particle pool has room and the hit point is within 40 m of a
+  camera and visible from one (`Cameras_IsWithinRange` 40, `Cameras_IsPointVisibleAny` 10), two dust bursts at the
+  hit point with radii **3.75 m and 2.75 m**, colour `0x8b7d6964`, unless game-state set 0 has bit `0x2`. The
+  per-prop effects come after them. Out of view, a hit that leaves the prop standing stops there; a break still
+  swaps or removes the model.
+- **Damaged model**: none of the four has one (their Object List records' `+0x04` is 0; only `dyn_trashcan` has one,
+  `dyn_trashcan_b`, and it is an `overhead_weapon`). So each broken riot prop loses its collision body and is removed
+  on its next update, as above; the pieces fly as [knocked pieces](physics.md#movers).
 
 ### Trains (moving hazards) {#trains}
 

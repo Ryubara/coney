@@ -1,0 +1,17 @@
+description = "slot 6: the player put 1.5 m north of a parked car walks at it, stick 80 % up"
+research = "docs/research/physics.md#layers"
+input = "physics_car_walk.txt"
+updates = 90
+fields = ["player", "camera"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "human-contact"]
+setup = [
+  { address = "tf(player) + 0x0", type = "f32", value = "41.2", frame = 0, until = 2 },
+  { address = "tf(player) + 0x4", type = "f32", value = "47.6", frame = 0, until = 2 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = []

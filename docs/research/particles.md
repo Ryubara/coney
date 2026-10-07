@@ -117,11 +117,12 @@ through further rectangles (the flames step through 36, `0x003c84f0`), and 212 o
 
 `Particle_Spawn` (`0x0039bfb0`), behind `SpawnParticle`: resolve the parent handle, push the position (w = 1), the
 rotation and the parent into the [message scratch](tasks.md#messages) (`0x003a2d60` a vec4, `0x003a2dc0` a handle,
-`0x003a2da0` an int), create by name (`0x003a2e40` → `0x003a4160` → the particle manager's allocator
-`0x0039c698`), then call the new task's vtable `+0x2c` (start). The initialiser `0x0039aef0` runs `Task_Init`, takes
-a handle, looks the type up by name (`ScriptType_Find`) and hands the record to vtable `+0x194`; default colour
-`DAT_005fd268`, scale 1.0, 5.0 and 0.3 at `+0xc8`-`+0xd0`. The type's own `init` then **pops** its arguments
-last-pushed first (`0x003a8518` an int, `0x003a84a8` a vec4). Confirmed (code).
+`0x003a2da0` an int), create by name (`0x003a2e40` → `0x003a4160` → the particle manager's allocator `0x0039c698`), then
+call the new task's vtable `+0x2c`, which gives its handle, and return that (inferred: `+0x2c` is the handle getter, as
+for objects, [Tasks: handles](tasks.md#handles); nothing else is started there). The initialiser `0x0039aef0` runs
+`Task_Init`, takes a handle, looks the type up by name (`ScriptType_Find`) and hands the record to vtable `+0x194`;
+default colour `DAT_005fd268`, scale 1.0, 5.0 and 0.3 at `+0xc8`-`+0xd0`. The type's own `init` then **pops** its
+arguments last-pushed first (`0x003a8518` an int, `0x003a84a8` a vec4). Confirmed (code).
 
 A type spawns others the same way, by name: the 33 such links found are in the list's *Spawns* column (inferred:
 calls to `0x003a2e40`, `0x003a4160` or `0x001e99f8` with a constant name). The car initialiser makes
@@ -168,8 +169,24 @@ vent passes 0.
 - alpha = `start alpha × (life − age) / life`, 0 on the last update or when the particle budget is short.
 
 The task keeps each value twice (`+0xb0`/`+0xb4` colour, `+0xbc`/`+0xc0` size): the update writes the second, and
-the size it grows from is the first; that the draw blends from the first to the second over the update is inferred.
-`part_steam_huge` (`0x003f6d70`) and `part_steam_large` (`0x003f7138`) have their own code, not read.
+the size it grows from is the first. The draw blends from the first to the second over the update interval
+(`ParticleTask_Draw`, `0x0039b020`, [Drifting fog](#fog)); confirmed (code).
+**Defaults.** A vent starts **on** (data `+0x2c` = 1) with built-in values, which `CfgSteam` (`0x003f6720`) replaces;
+the vents in a level's [objects file](objects.md#objs-file) get no `CfgSteam` there, so they puff with these. Data
+layout, from `CfgSteam`'s writes: `+0x00` the start velocity (x, y = the vent's −x axis × speed, z = rise), `+0x10`
+dragH, dragV, size, growth, `+0x20` the colour word (alpha in the low byte, so `0xffffff40` is white at alpha 64),
+`+0x24` the life in puff updates (negative = still), `+0x28` the puff interval and `+0x29` the vent interval (ticks).
+The inits store the vent's −x axis unscaled (speed 1 m/s) and then the values below; every vent's first update
+interval is 60 ticks. Confirmed (code) at the inits:
+
+| Vent (init) | rise | dragH, dragV | size, growth | colour | life (updates) | puff, vent interval |
+| --- | --- | --- | --- | --- | --- | --- |
+| `part_steam` (`0x003f69b8`) | 0.25 | 0, 0 | 0.25, 0.125 | `0xffffff40` | 11 | 10, 17 |
+| `part_steam_large` (`0x003f7138`) | 0.45 | 0, 0 | 0.75, 0.02 | `0xffffff54` | 11 | 10, 6 |
+| `part_steam_huge` (`0x003f6d70`) | 0.75 | 0, −0.3 | 2.5, 0.32 | `0xffffff40` | 4 | 30, 7 |
+
+The large and huge vents' updates (`0x003f7378`, `0x003f6fb8`) spawn the puffs with sizes of their own
+([Steam family](script-types.md#steam-family)); how they differ from `part_steam`'s puffs was not read.
 
 ### Drifting fog {#fog}
 
@@ -186,6 +203,64 @@ camera** (the camera task's position, vtable `+0x21c`), plus a sideways offset: 
 applied to (r, 0, 0) with r a random −2 to 2 m, i.e. along the camera's own x axis. The sum is normalised and scaled
 by `drift` × 1.75-2.25. So every wisp drifts toward the viewer, spread a little to either side, and rises or sinks
 with the height difference. Confirmed (code).
+
+**The wisp record** (`sub_fog` init `0x003ca658`, update `0x003ca9d8`; the arguments come from `PartFog_Update`
+`0x003caed8`, which passes on the `Start3DFog` values): the task's sprite word `+0xc4` is the emitter's batch with
+rectangle 0; colour `+0xb0` = the script colour with alpha 0 (bit 0 of the alpha kept) and `+0xb4` = the colour with
+alpha 0; size `+0xbc` = 0 and `+0xc0` = a random 1-4 (`Random_FloatRange2`, the particles' stream). The type's own
+record holds the age, the target colour, the fade length in steps (⌊9 / fadeSpeed⌋, at least 1), the viewport and
+the alpha step (⌊alpha / steps⌋ × ⌊fadeRate⌋, one byte). The wisp updates every 2 ticks; when the step comes out 0 it
+updates every 30 ticks instead, with step 1 and ⌊0.6 / fadeSpeed⌋ steps. Confirmed (code).
+
+**Each update**, in order (`0x003ca9d8`). Before it, the shared particle step (`ParticleTask_Process`, `0x0039ba68`)
+copies the current colour and size into the previous ones (`+0xb4` → `+0xb0`, `+0xc0` → `+0xbc`). Confirmed (code):
+
+1. **Fade in**: while the age is below the fade length and the colour is not the target yet, `+0xb4` += the alpha
+   step, capped at the target.
+2. **Hide**: the alpha of `+0xb4` is set to 0, and the wisp updates every tick, when its camera (the viewport's
+   player camera, vtable `+0x21c`) is more than 20 m away, or within 20 m when the point is more than 5 m outside the
+   view (`Cameras_IsPointVisibleAny(5, position)`, a test against the six frustum planes, `0x003a50e0`), or within
+   10 m when a camera flag (vtable `+0x29c`, not traced) is set. Within 4 m the alpha is also set to 0, and it updates
+   every 30 ticks.
+3. **End**: from the third update on, a wisp whose previous colour (`+0xb0`) had alpha 0 is done. It lowers the wisp
+   count (`0x005144cc`), and the emitter spawns a new one elsewhere. It also ends when its viewport's camera is gone.
+
+So a wisp that leaves the 20 m range or the view, or comes within 4 m, vanishes at once and is replaced one update
+later (inferred from the order above).
+
+**The draw** (`ParticleTask_Draw`, `0x0039b020`, the same for every particle task; confirmed (code) unless marked):
+
+- **Sheet and rectangle**: the whole 64 × 64 texture. Rectangle 0 of `part_fog_00`, or of `part_fog_01` for the two
+  calls that pass record 531; the rectangle covers the sheet ([above](#fog)). There is no animation through
+  rectangles.
+- **Colour**: the previous and current colours blended by t = time since the last update ÷ the update interval
+  (`Colour_LerpRatio`, `0x00338240`, with the interval at task `+0x64`). The value is on RenderWare's 0-255 scale
+  ([GUI: sprite colours](gui.md#sprite-colours)), so the script's alpha is the opacity the wisp fades in to.
+- **Size**: 2 × the previous and current sizes blended the same way, as both width and height. So a wisp is a square
+  of 2-8 units (metres, inferred) and grows from 0 over its first update. The width is stored negated, as for every
+  particle task; its effect is not traced.
+- **Orientation**: the batch is a format-0 PTank (position and size, no rotation or matrix; flags `0x10000087`), so
+  each wisp is a **camera-facing square** with no spin. Its position is the task's, written as (x, z, −y) for the
+  RenderWare frame of the 3D overlay world.
+- **The batch** (`PTank_New(10000, sprite, origin, 10, 0, viewport)` at `0x003cae98`, then `ResourceMgr_CreateInstance`
+  and `Instance_Init`, `0x001828e0`): capacity **10 sprites a frame** (`+0x18`), blend 5 / 6 (source alpha over
+  inverse source alpha, `+0x30` / `+0x34`), Z test on (`+0x24` = 1, flag `0x100` clear), in the **3D overlay world**
+  (`+0x3c` = 1), and drawn only in its own viewport (`+0x42`). Each frame a wisp's sprite is added in the pool's
+  order. Sprites past the tenth are dropped, so with the default 20 wisps (or 15 after `MaxFogParticles`) at most 10
+  show in a frame. Hidden wisps (alpha 0) still take a place (inferred from `Instance_AddSpriteFormat`,
+  `0x00183038`).
+- **Frame order**: `ResourceMgr_RenderOverlay` (`0x00185d20`) turns Z write off and draws the queued batches in
+  ascending key. The fog batch's key is the squared distance from player 1's camera to the batch's atomic (at the
+  world origin) minus 10,000², so it sorts with the other 3D batches before every 2D one (`Instance_QueueCb`,
+  `0x00197000`; [GUI: draw order](gui.md#draw-order)). That is [pass 10](rendering.md#sprites) of the frame: after the
+  world, the objects, the characters and the translucent objects; before the HUD and the level tint.
+
+**Seen in a GS dump** of `level87` (scratch dump `lv_l87`; confirmed (runtime)): one run per frame of 5 `SPRITE`
+primitives with a 64 × 64 `T8` texture, in context 2, blend `0x44`, alpha test NOTEQUAL 0, Z test GEQUAL with no Z
+write, fog on (vertex fog 254). All five have the vertex colour (35, 40, 40), alpha 55 on the GS's scale. It is drawn
+after the strips of pass 9 and before the HUD and the full-screen fans. That this run is the fog is inferred: it is
+the only 64 × 64 sprite batch, and `level87` runs `Start3DFog` throughout. The state matches the [3D sprite
+pass](rendering.md#sprites) of the steam.
 
 ### Blowing litter {#garbage}
 
@@ -301,6 +376,7 @@ short-alpha rule is left out.
 - What `part_s_subway_sparks`, `subway_spark` and `urine_spray` really draw: rectangle 54 of `part_page1` does not look
   like either.
 - Each type's update: the lives, speeds, counts, sizes and blending of its sprites (Coney's behaviours stand in).
-- How `PTank` draws a batch: facing, blend modes, and what `+0xc8`-`+0xd0` (1.0, 5.0, 0.3) scale.
+- What `+0xc8`-`+0xd0` (1.0, 5.0, 0.3) scale in the particle draw, and what the negated sprite width does (the
+  facing, blending and Z of a format-0 batch are in [Drifting fog](#fog)).
 - `glasstest`'s sprite and fall, and which types the objects' dust (`0x003c57d8`) and bursts (`0x003c6038`) make.
 - Which combat hits spawn which blood and spark types.

@@ -35,7 +35,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- |
 | **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,741 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
-| **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,904 of 3,283,904 bytes; 11,422 of 11,422 functions, 100.0%) |
+| **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,096 of 3,283,904 bytes; 11,420 of 11,422 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
 586 reimplemented function(s) have no size yet and add no bytes.
@@ -111,14 +111,14 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████████████` | 100.0% | 61 of 61 | 61 | 61 | 17,608 |
 | `Scripting` | `████████████████████` | 100.0% | 1,064 of 1,064 | 1,064 | 1,064 | 194,656 |
 | `StringTable` | `████████████████████` | 100.0% | 2 of 2 | 2 | 2 | 1,052 |
-| `TaskEngine` | `████████████████████` | 100.0% | 1,300 of 1,300 | 1,300 | 1,300 | 526,528 |
+| `TaskEngine` | `████████████████████` | 99.8% | 1,298 of 1,300 | 1,300 | 1,298 | 526,528 |
 | `World` | `████████████████████` | 100.0% | 61 of 61 | 61 | 61 | 24,212 |
 | `WorldObjects` | `████████████████████` | 100.0% | 124 of 124 | 124 | 124 | 21,716 |
 | `Warriors` | `████████████████████` | 100.0% | 390 of 390 | 390 | 390 | 52,688 |
 | `Movie` | `████████████████████` | 100.0% | 11 of 11 | 11 | 11 | 5,136 |
 | `link-once` | `████████████████████` | 100.0% | 651 of 651 | 651 | 651 | 95,912 |
 | Unattributed | `████████████████████` | 100.0% | 44 of 44 | 44 | 44 | 20,936 |
-| **All** | `████████████████████` | 100.0% | 11,422 of 11,422 | 11,422 | 11,422 | 3,283,904 |
+| **All** | `████████████████████` | 100.0% | 11,420 of 11,422 | 11,422 | 11,420 | 3,283,904 |
 
 ## Research coverage
 

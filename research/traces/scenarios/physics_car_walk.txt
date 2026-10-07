@@ -1,0 +1,3 @@
+# The walker against a parked car (docs/research/physics.md#layers): stick 80 % up from frame 10 to 80.
+10 stick left 0 80
+80 stick left 0 0

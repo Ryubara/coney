@@ -1586,24 +1586,25 @@ times are wall-clock and approximate:
 #### The first visit's opening, at runtime {#level95-first-visit}
 
 The same load (the profile of slot 7 has not done the hub tutorial, unlockable `(6, 4)` locked, so `WCLoc` is 5),
-recorded from the moment the level starts. Times are game time from the level's start (`*(0x0050b734) + 0x48`, which
-the load sets back to 0) and updates at 30 a second; the player was read every one or two updates, so each moment is
-good to about 2 updates. Confirmed (runtime), PCSX2 2.9.94, 2026-10-07; what each step is comes from the scripts
-(`level95.lua`: `StartLevel`, `FinalStartLevel`, and the `tutorial` table's `RunTutorial`, `ShowANewItem`,
-`StopWalk` and `Setup`), confirmed (code) for the bytecode:
+recorded from the moment the level starts. Headings are the game's (`Quat_Heading`, clockwise from +y,
+[Maths](maths.md)); a recorder heading (2 atan2(q.z, q.w), anticlockwise) is 360° less this. Times are game time from
+the level's start (`*(0x0050b734) + 0x48`, which the load sets back to 0) and updates at 30 a second; the player was
+read every one or two updates, so each moment is good to about 2 updates. Confirmed (runtime), PCSX2 2.9.94, 2026-10-07;
+what each step is comes from the scripts (`level95.lua`: `StartLevel`, `FinalStartLevel`, and the `tutorial` table's
+`RunTutorial`, `ShowANewItem`, `StopWalk` and `Setup`), confirmed (code) for the bytecode:
 
 | Game time (update) | What happens |
 | --- | --- |
 | 0 | the player stands at `fWchiefStart_1` (−188.6, 95, −194.38), where `AddWarchief` makes him |
-| 0.10 s (3) | teleported to `fWchiefStart_5` (−185.2, 112.7, −193.79), heading 182°; brain "dead" (`+0x09` = 1) |
+| 0.10 s (3) | teleported to `fWchiefStart_5` (−185.2, 112.7, −193.79), facing the flag's 182°; brain "dead" (`+0x09` = 1) |
 | 0.43-0.70 s (13-21) | turns in place towards the end flag |
 | 0.73 s (22) | **walk 1** starts (gait 1, then 2 from 1.23 s), straight down −y at about 1.6 m/s |
 | 4.07 s (122) | stops at (−185.48, 107.63): **5.07 m** walked, 0.43 m short of **`fWchiefEnd_5` (−185.5, 107.2, −193.8), heading 182°**, inside the goal's 0.5 m radius |
-| 4.17 s (125) | turned to 182.6° (within the goal's 15° of the flag's heading): message 8, so **`WalkFinish`** runs between 4.10 and 4.27 s (updates 123-128), then `FinalStartLevel` |
+| 4.17 s (125) | turned to 177.4° (recorded 182.6°; within the goal's 15° of the flag's 182°): message 8, so **`WalkFinish`** runs between 4.10 and 4.27 s (updates 123-128), then `FinalStartLevel` |
 | 4.27 s (128) | **walk 2** starts at once: `FinalStartLevel` sees the tutorial locked, puts the player back under script control (`DeactivateWarchief`) and gives him `GoalMoveToFlag(player, fWchiefEnd_1, walk, 0.5 m)` |
-| about 7.6 s (229) | he enters the volume box `vbTutorialStart` (centre (−187.8, 98, −194.1), size (6, 4, 4); entered at y ≈ 102, so the size is a half-extent, inferred): `tutorial.RunTutorial` gives the **same** `GoalMoveToFlag` again, so the walk goes on without a break, and starts the tutorial text and shots |
-| 12.21 s (366) | walk 2 ends at (−184.92, 95.47), 0.47 m from `fWchiefEnd_1` (−184.9, 95, −194.3): **12.2 m** in 7.9 s; `tutorial.StopWalk` flushes the goal |
-| 12.24-12.44 s (367-373) | turns to −97.6° (262.4°; not the flag's 89°, since the goal was flushed; what turns him is not traced) and stands |
+| about 7.6 s (229) | he enters the volume box `vbTutorialStart` (centre (−187.8, 98, −194.1), size (6, 4, 4); entered at y ≈ 102, so the size is a half-extent, inferred): `tutorial.RunTutorial` gives the **same** `GoalMoveToFlag` again (its Resume clears the running move; the new move action waits a random 0-250 ms first, the brain asking for speed 0 meanwhile, [AI](ai.md#move-action)); the positions, read every 1-2 updates, show no stop here, so the walk goes on, and starts the tutorial text and shots |
+| 12.21 s (366) | walk 2 ends at (−184.92, 95.47), 0.47 m from `fWchiefEnd_1` (−184.9, 95, −194.3), inside the goal's 0.5 m radius: **12.2 m** in 7.9 s, facing 178° (the game's clockwise heading; the recorder's 182° is anticlockwise) |
+| 12.24-12.44 s (367-373) | the goal's face-the-flag turn (`faceFlag` true; facing 178°, he is 89° off the flag's 89°): a turn action at the standing 12° per update, which ends within 15°, at **97.6°** (recorded as 262.4°); then the goal arrives, its End sends the flag message 8, and `tutorial.StopWalk` (the flag's message-8 handler, installed by `RunTutorial`) flushes the player's goals and removes the handler; he stands |
 | **25.05 s (751)** | brain "dead" back to 0: **control returns** (`ActivateWarchief`, at the end of the tutorial's last item) |
 
 The tutorial (`ShowANewItem`, rescheduled after each item's time) is seven items, one skipped: item 1, 4.5 s, the
@@ -1613,10 +1614,11 @@ skipped; item 7, 2.5 s, the `exit1` camera on `fClubexit_4`. That is **17.0 s**;
 and no reset) and `ActivateWarchief` (`BrDead(player, false)`, right stick on). From the box at about 7.6 s that
 gives about 24.6 s, as seen (25.05 s).
 
-So in the original the opening has **two walks, not three**: the door walk (5.1 m, 4.1 s) and one walk to
-`fWchiefEnd_1` (12.2 m), which the tutorial's second `GoalMoveToFlag` continues rather than restarts. Control comes
-back **about 25 s** after the level starts (21 s after `WalkFinish`). A walk 1 that ends at y 108.1 after 3.7 m is
-0.9 m from `fWchiefEnd_5`, outside the 0.5 m radius, so the original would not have sent message 8 there.
+So in the original the opening has **two walks, not three**: the door walk (5.1 m, 4.1 s) and one walk to `fWchiefEnd_1`
+(12.2 m), which the tutorial's second `GoalMoveToFlag` continues rather than restarts, and which ends as walk 1 does:
+arrival inside the radius, the turn to the flag's heading (to within 15°), message 8. Control comes back **about 25 s**
+after the level starts (21 s after `WalkFinish`). A walk 1 that ends at y 108.1 after 3.7 m is 0.9 m from
+`fWchiefEnd_5`, outside the 0.5 m radius, so the original would not have sent message 8 there.
 
 ### Blends between cameras {#blends}
 
@@ -1973,8 +1975,24 @@ turn about the vertical, "pitch" about the shot's side axis. Confirmed (code) at
    **1.8 m**; the camera goes to the ray's hit − the near plane, with the point raised by 2.5 × tan 5°.
 4. Two tries: the drawn shot, then the plain one (victim turned 90°, no pitch or yaw); with neither the camera is
    not placed (`+0x24c` = 1).
-5. A placed shot is **rolled** (a Dutch tilt) by **15°**, or **11°** when bit 0 of a counter read through `0x0050b734`
-   is set, negated when its bit 1 is set (inferred: the frame counter).
+5. A placed shot is **rolled** (a Dutch tilt), confirmed (code) at `0x00138078` and `0x00138b90`:
+   - **The angle** (`+0x234`, radians): **15°** (0.2618), or **11°** (0.1920) when bit 0 of the game time in ms is
+     set; then **negated** when bit 1 is set. The game time is the `GameTimer`'s `+0x48` (`0x0050b734`, read
+     through its vtable `+0x34`, `0x004dc9a8`, which returns `+0x48`), so the four cases (+15°, +11°, −15°, −11°)
+     come from the shot's start time, about equally often.
+   - **How it is applied**: the orientation is multiplied on the right by a rotation about the camera's own **+y**
+     (its view axis; the constant `0x00511730` = (0, 1, 0, 1)), `q' = q ⊗ (0, sin(r/2), 0, cos(r/2))`, as the
+     scripted roll is ([Scripted camera angles](#scripted-angles)): a positive angle tips the top of the picture
+     toward its right.
+   - **Held for the whole shot**: each update (`CamMug_Update`) rebuilds the orientation by looking from the eye at
+     the aim point `+0x210` with the world's up (`Mat_LookAt` `0x00337028`, then `Mat_ToQuat` into `+0x20`),
+     keeps that un-rolled orientation in `+0x220`, and applies the same roll again; the angle never eases. The
+     shot keeps the tilt until the blend back to the follow camera (0.3 s). When the follow camera is in its
+     state 2 (its vtable `+0x1ec`), it is first turned (`Cam_Follow_TurnToQuat`) to the shot's base orientation
+     with **no roll** (the victim's facing turned 90°, then the shot's yaw `+0x238` and pitch `+0x23c`); the tilt
+     goes away through the blend.
+   - To draw it, a port needs only the camera's up from the rolled quaternion (`Quat_AxisZ(q)`), as for the
+     scripted rolls.
 
 ### Power-move camera {#power-camera}
 

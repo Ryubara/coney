@@ -158,7 +158,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`HuSetScale`](#husetscale) | - | 17 | no | no | confirmed (code) |
 | [`HuSetSlowMo`](#husetslowmo) | - | 2 | no | no | confirmed (code) |
 | [`HuSetSpecialCallbacks`](#husetspecialcallbacks) | - | 0 | no | no | inferred |
-| [`HuSetSpinningIconColor`](#husetspinningiconcolor) | - | 0 | no | no | speculative |
+| [`HuSetSpinningIconColor`](#husetspinningiconcolor) | - | 0 | no | no | confirmed (code) |
 | [`HuSetStateRespVoiceIndex`](#husetstaterespvoiceindex) | - | 4 | no | no | confirmed (code) |
 | [`HuSetStrong`](#husetstrong) | - | 0 | no | no | inferred |
 | [`HuSetStunned`](#husetstunned) | - | 1 | no | no | confirmed (code) |
@@ -3900,22 +3900,27 @@ shape.
 ## HuSetSpinningIconColor {#husetspinningiconcolor}
 
 ```lua
-HuSetSpinningIconColor(human, colour, colour2)
+HuSetSpinningIconColor(human, steps, colour)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human with the icon. |
-| 2 | `colour` | number, truncated to an unsigned integer | Packed colour (32-bit number). |
-| 3 | `colour2` | number, truncated to an unsigned integer; default 4294967040 | Second packed colour (default 0xFFFFFF00). |
+| 2 | `steps` | number, truncated to an unsigned integer | Number of icon updates (every 2 ticks) the fade takes; 0 sets the colour at once. |
+| 3 | `colour` | number, truncated to an unsigned integer; default 4294967040 | Target tint word of the icon (default 0xFFFFFF00, white with alpha 0). |
 
 **Returns** nothing.
 
-Changes the colours of the spinning icon shown over a human by rebuilding its effect with two packed colours. No script
-calls it.
+Fades the tint of the spinning icon over a human to a target colour over a number of updates (message `0x34`). The
+message's arguments are popped last in, first out, so the second argument is the step count and the third the colour. No
+script calls it.
 
-- **Evidence:** speculative; detail: brief
-- **Wrapper** `0x0035af80` (registered by `RegisterBindings`); **calls** `0x00238b18` `Human_SetSpinningIconColor`
+**Notes.** The step is the difference of the whole 32-bit tint words divided by the step count, not per channel; the
+game itself only fades the alpha byte. See characters.md#spinning-icon.
+
+- **Evidence:** confirmed (code) at `0x00238b18`, `0x003e93d0`; detail: traced
+- **Wrapper** `0x0035af80` (registered by `RegisterBindings`); **calls** `0x00238b18` `Human_SetSpinningIconColor`,
+  `0x003e93d0` `DynIcon_SetColourFade`
 - **Used by** no script on the disc
 - **Coney:** not implemented
 

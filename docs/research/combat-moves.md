@@ -276,13 +276,24 @@ decide where `X1` lands, and they hold for every move:
   runs above), and the shapes that overlap are the ones posed in it. So "contact k9" in the table is the update
   whose result is sample k10, the hand sweeping from its k9 point to its k10 point.
 
-**The slide.** From every start within the far range the attacker slides in a straight line from k3 to k11, by
-(start − 0.879) / 9 per update (0.080 m from 1.6 m, 0.047 m from 1.3 m, 0.013 m from 1.0 m: forward even from 1.0 m,
-inside the 1.02 m reach, unlike 653's slide back), and stands **0.878-0.879 m** from the target at k12 whatever the
-start. `Attack_SteerToTarget` sends the attacker to the target's point less the reach (1.02 m) by
-`Human_MoveToOver` over at most the time to the clip's first event + 0.1 s (confirmed (code)); the other 0.14 m is
-the clip's own forward motion or the target point not being the feet (inferred, not separated). So at the contact
-the attacker is **still moving in**: 0.890 m (from 1.0 m), 0.930 m (from 1.3 m), 0.970 m (from 1.6 m) after the
+**The slide** is two motions added together, confirmed (runtime) with the steer's own fields (`moves_reachX1_10_steer`,
+`moves_reachX1_16_steer`):
+
+1. **The steer** (`Attack_SteerToTarget`, then `Human_MoveToOver` `0x0023d2b8`, which keeps the goal at human
+   `+0x310`, the velocity at `+0x2e0`, the time left at `+0x300` and an on flag at `+0x331`). On X1's first update
+   (k2) the goal is set **1.038-1.048 m** from the target's transform position, at the target's height: the reach
+   1.02 m plus 0.02-0.03 m (inferred: the attack's offset, as 653's 1.58 m reach steered to 1.62 m). The attacker
+   slides to it at a **constant velocity over 0.308 s** (9.25 updates, k3-k11; the time to the clip's first event
+   plus 0.1 s): 1.824 m/s inward from 1.6 m, and **0.157 m/s backward** from 1.0 m (the goal is outside him).
+2. **The clip's own root motion**, bone-cache entry 0 (`0x006b6880` + index × `0x470`, its second word the forward
+   speed in m/s): 0.42, 0.59, 0.62, 0.63, 0.57, 0.58, 0.70, 0.60, 0.47, 0.22 m/s over k3-k12, about **0.18 m
+   forward** in all, then about 0 (its first word, up to −1.17, is not a sideways speed: the attacker does not drift;
+   inferred, a turn).
+
+So the attacker ends at the goal less the clip's 0.18 m: **0.870-0.880 m** from the target at k12 whatever the start
+(0.879 from 1.3 m), and the target point is the target's own position, not a bone. From 1.0 m the steer moves him
+back while the clip carries him forward faster, so he still closes in (0.013-0.017 m per update). At the contact the
+attacker is **still moving in**: 0.890 m (from 1.0 m), 0.930 m (from 1.3 m), 0.970 m (from 1.6 m) after the
 contact update, never 1.02 m.
 
 **The hand and the target at contact.** In the attacker's frame (forward, right, up from his feet, metres; samples
@@ -318,8 +329,9 @@ attacker, position written every update), the lead put the attacker 1.9-1.95 m a
 were, understate what reaches (inferred; the right snap's miss may be this).
 
 Scenarios: `moves_reach653_10`, `moves_reach653_16`, `moves_reach653_19`, `moves_reachS1_15`, `moves_reachX1_10`,
-`moves_reachX1_13`, `moves_reachX1_16`, `moves_reachX1_19` (still target; the `X1` ones but the last also read
-the bodies' shapes) and `moves_reach653_19_walk` (walking).
+`moves_reachX1_13`, `moves_reachX1_16`, `moves_reachX1_19` (still target; the `X1` ones but the last also read the
+bodies' shapes), `moves_reachX1_10_steer`, `moves_reachX1_16_steer` (the steer's goal and the clip's root) and
+`moves_reach653_19_walk` (walking).
 
 ### Square, in order {#square}
 

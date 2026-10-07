@@ -1759,6 +1759,19 @@ a "flag kind `0x12`" bit.
        distance² `+0x48`, and uses `+0x0c` while farther than that, else `+0x44`, never above the gait's speed.
     9. **Stuck** (`0x002fc330`): every 60 updates while moving, less than 0.2 m covered → brain `+0x284` = 3, done.
 - Brain `+0x284` says why a move failed: 1 no polygon or no route, 2 or 4 an edge it cannot take, 3 stuck.
+- **Nothing keeps a move going between actions** (confirmed (code)). `Brain_UpdateGoals` (`0x0028fbb0`) starts
+  every think with `Brain_StopMove` (`0x0028ac18`): speed `+0x114` 0 (`Brain_SetMoveGait(brain, 0)`) and heading
+  `+0x110` = the human's facing; only a move action's Update (step 7 above) writes `+0x90`, `+0x110`, `+0x118` and
+  the speed back, each update. **Abort** (`0x002fc560`) sets the abort bit, ends the avoidance (`0x00289108`) and
+  frees the route (`0x0029aa20`); it writes none of the move fields, and **destroy** (vtable `+0x24`, `0x004eef40`)
+  is empty. So when a move is replaced (`GoalMoveToFlag`'s Resume, `0x002da550`: `Brain_ClearActions`, then
+  `Human_DropTarget` `0x00226f70`, which only clears the target) the human is asked to stand for every think in
+  which the new action is still counting its start delay: `Action_Update` (`0x002f9e48`) takes the time since the
+  brain's previous think (`+0x30`) off the delay, the first time too, and returns before the class's Update while
+  any is left. `GoalMoveToFlag`'s delay is `Random_IntRange(0, 250)` ms, so a draw within one update (about 33 ms)
+  starts the move in the same think with no gap, and a longer one leaves up to 7 thinks at speed 0; the control
+  slows a walk to rest in two updates and restarts it at once at the walking speed
+  ([Characters](characters.md#ai-locomotion)).
 
 #### The move-to-human action (MoveMelee) {#move-melee}
 
@@ -2930,7 +2943,7 @@ object at its own size (no scale is set); it is not a HUD sprite. **The cuffs** 
 `dyn_cuffs_geo`, placed at the feet + the type record's offset, then left in the world there. While the camera
 state at `0x005fdeb8` `+0x1e8` / `+0x1ec` is set (inferred: a scene or camera effect), every icon but `dyn_cross`
 gets its draw fields `+0xc8` / `+0xcc` set to −255 / −256 (inferred: hidden). Messages: 8 detach, `0x0a` show or hide, `0x15`
-remove, `0x20` hide, `0x34` the colour pair (`HuSetSpinningIconColor`).
+remove, `0x20` hide, `0x34` a colour fade (`HuSetSpinningIconColor`, [the spinning icon](characters.md#spinning-icon)).
 
 **The radar icon** (`DealerGoal_AddRadarIcon` `0x002c7ee0`, at the greeting, only with the option and when the dealer
 has no blip yet): blip type 2, 4 or 3 with icon 29, 31 or 30 at 0.8 for types 0, 1, 2 ([GUI](gui.md#radar-icons)).
@@ -3794,28 +3807,28 @@ two-player game a Warrior of player 1's gang more than 10 m from player 1 and ne
 `attack_resp` (132), `scatter_resp` (159), `vandal_resp` (140) or, at a store, `steal_resp` (141); the hold answers
 with line `0x85`. None of their Process functions ever ends the tactic (they return 0); a new command replaces it.
 
-- **Attack** (`0x01`): `FollowAndAttack` (`0x34`) on the chief, whose Process fights the best enemy within 60 m of
-  the chief ([its row](ai-goals.md#goal-follow-and-attack)). Event 19 gives all goals again; 22 with `+8` = 1 gives
-  that member his goal again.
-- **Hold** (`0x03`): `HoldTactic_GiveMemberGoal` (`0x00313718`) pops each member to his goal base and pushes
-  HoldPosition (`0x36`) at his own position with radius 1.5 m (the tactic's `+0x20`); `HoldTactic_GiveGoals`
-  (`0x00313508`) then queues a turn to a heading spread 360° / (members − 1) from the chief's, after 0-1 s with
-  enemies about, else 2-4 s. HoldPosition's Process (`0x002be818`): with no enemy, a 30 % fidget every 3 s inside the
-  radius, a walk back outside it; an enemy not targeting him: turn to him; one targeting him: a fight goal (4000 ms)
-  when in sight and reach from inside the radius, else turn and shuffle. Events 17 (`+4` = 0), 19 and 22 (`+8` = 1)
-  hold again; 20 (violence) makes a free member look at the fighter for 3 s and taunt at 10 %.
-- **Hide** (`0x13`, the hold for a gang whose brain `+0x2d5` is set): from the hiding flag (activity `0x21`) nearest
-  the chief, ten 10 m rays 15° apart find wall points; each member gets Hide (`0x58`) at a free wall point at least
-  1 m from the chief. Events 1 and 16 (a player attacked while hidden in shadow): when no free member is left, the
-  attack command is dispatched for the chief; another gang's tactic stops.
-- **Scatter** (`0x25`): up to six hiding flags (activity `0x21`) within 75 m of the chief and at least 10 m from him,
-  reachable, nearest first; members get Scatter (`0x37`) to them in turn, at a random navigable point 1-1.5 m from the
-  flag (no flags: Scatter with no flag). Events 1 and 16 on a member at his flag: he moves on to the farthest flag
-  with no player within 5 m, or with none fights (Melee) for 10 s.
-- **Steal / wreck** (`0x26`): every 2 s the store flag (activity `0xe`) within 12 m of the chief and reachable is
-  picked again; its zone's objects are clustered (1 m). Members get WarriorVandalSteal (`0x83`), which steals from the
-  zone's clusters (an object is claimed for 5 s when no enemy stands within 1.5 m of it) or, with no store, wrecks
-  what is near.
+- <span id="warrior-attack"></span>**Attack** (`0x01`): `FollowAndAttack` (`0x34`) on the chief, whose Process fights
+  the best enemy within 60 m of the chief ([its row](ai-goals.md#goal-follow-and-attack)). Event 19 gives all goals
+  again; 22 with `+8` = 1 gives that member his goal again.
+- <span id="warrior-hold"></span>**Hold** (`0x03`): `HoldTactic_GiveMemberGoal` (`0x00313718`) pops each member to his
+  goal base and pushes HoldPosition (`0x36`) at his own position with radius 1.5 m (the tactic's `+0x20`);
+  `HoldTactic_GiveGoals` (`0x00313508`) then queues a turn to a heading spread 360° / (members − 1) from the chief's,
+  after 0-1 s with enemies about, else 2-4 s. HoldPosition's Process (`0x002be818`): with no enemy, a 30 % fidget every
+  3 s inside the radius, a walk back outside it; an enemy not targeting him: turn to him; one targeting him: a fight
+  goal (4000 ms) when in sight and reach from inside the radius, else turn and shuffle. Events 17 (`+4` = 0), 19 and 22
+  (`+8` = 1) hold again; 20 (violence) makes a free member look at the fighter for 3 s and taunt at 10 %.
+- <span id="warrior-hide"></span>**Hide** (`0x13`, the hold for a gang whose brain `+0x2d5` is set): from the hiding
+  flag (activity `0x21`) nearest the chief, ten 10 m rays 15° apart find wall points; each member gets Hide (`0x58`) at
+  a free wall point at least 1 m from the chief. Events 1 and 16 (a player attacked while hidden in shadow): when no
+  free member is left, the attack command is dispatched for the chief; another gang's tactic stops.
+- <span id="warrior-scatter"></span>**Scatter** (`0x25`): up to six hiding flags (activity `0x21`) within 75 m of the
+  chief and at least 10 m from him, reachable, nearest first; members get Scatter (`0x37`) to them in turn, at a random
+  navigable point 1-1.5 m from the flag (no flags: Scatter with no flag). Events 1 and 16 on a member at his flag: he
+  moves on to the farthest flag with no player within 5 m, or with none fights (Melee) for 10 s.
+- <span id="warrior-steal"></span>**Steal / wreck** (`0x26`): every 2 s the store flag (activity `0xe`) within 12 m of
+  the chief and reachable is picked again; its zone's objects are clustered (1 m). Members get WarriorVandalSteal
+  (`0x83`), which steals from the zone's clusters (an object is claimed for 5 s when no enemy stands within 1.5 m of it)
+  or, with no store, wrecks what is near.
 
 #### The default command: follow {#warrior-follow}
 

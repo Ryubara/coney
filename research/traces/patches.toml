@@ -406,3 +406,11 @@ address = 0x003925f8
 # addiu sp,sp,-0x10; sd ra,0x0(sp)
 original = [0x27bdfff0, 0xffbf0000]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "object" }, { value = "[a1 + 0x8]", name = "vz", type = "f32" }]
+
+[hook.human-contact]
+description = "Each call of Human_OnContact (0x00219d50, a human's sweep contact): the human, the object hit (0 for the level mesh), the normal's z and the mesh triangle (+0xb4, 0 for a body)."
+research = "docs/research/physics.md#layers"
+address = 0x00219d50
+# addiu sp,sp,-0x70; sq s0,0x50(sp)
+original = [0x27bdff90, 0x7fb00050]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "human" }, { value = "[a1 + 0x40]", name = "hit" }, { value = "[a1 + 0x58]", name = "nz", type = "f32" }, { value = "[a1 + 0xb4]", name = "triangle" }]

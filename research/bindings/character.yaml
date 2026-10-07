@@ -1295,15 +1295,20 @@
   wrapper: 0x0035af80
   calls:
     - {addr: 0x00238b18, name: Human_SetSpinningIconColor}
+    - {addr: 0x003e93d0, name: DynIcon_SetColourFade}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human with the icon."}
-    - {name: colour, lua: number, ctype: unsigned, desc: "Packed colour (32-bit number)."}
-    - {name: colour2, lua: number, ctype: unsigned, default: 4294967040, desc: "Second packed colour (default 0xFFFFFF00)."}
+    - {name: steps, lua: number, ctype: unsigned, desc: "Number of icon updates (every 2 ticks) the fade takes; 0 sets the colour at once."}
+    - {name: colour, lua: number, ctype: unsigned, default: 4294967040, desc: "Target tint word of the icon (default 0xFFFFFF00, white with alpha 0)."}
   description: >-
-    Changes the colours of the spinning icon shown over a human by rebuilding its effect with two packed colours. No
-    script calls it.
-  evidence: speculative
-  depth: brief
+    Fades the tint of the spinning icon over a human to a target colour over a number of updates (message `0x34`).
+    The message's arguments are popped last in, first out, so the second argument is the step count and the third the
+    colour. No script calls it.
+  evidence: confirmed-code
+  depth: thorough
+  notes: >-
+    The step is the difference of the whole 32-bit tint words divided by the step count, not per channel; the game
+    itself only fades the alpha byte. See characters.md#spinning-icon.
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 
 - name: HuHasHat

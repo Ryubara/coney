@@ -148,8 +148,15 @@ Body flag bits that a mover's mask selects ([Sweeping a body](#sweep)), named by
 The "who" column for strikes, rays and thrown weapons is inferred from the names. Confirmed (runtime), the body flags
 in `level99`'s street: humans `0x2203f` (`0x2223f`, `0x2343f`), cars `0x2211a`, glass panes `0x7a`, world objects
 `0x500` (no layer) up to `0x5057e`. So **a walking human meets other humans** (answered `4`, [Contacts](#contacts))
-and the objects with `BLOCKHUMANS`, but **not a car's or a glass pane's body**; what keeps a walker out of a parked
-car is not this sweep (open).
+and the objects with `BLOCKHUMANS`, but **not a car's or a glass pane's body**.
+
+What stops a walker at a parked car is the **collision mesh**. Confirmed (runtime), quick-save slot 6: the player put
+1.5 m from a parked car's side and walked into it at an angle (stick 80 % up; hook `human-contact` on
+`Human_OnContact`) slid along the car's side 0.42 m from its body's box, and each of the 29 contacts had no object
+(`+0x40` = 0) and a mesh triangle with flags `0xf00d` (enabled, type bits 2 and 3, top value 15) and material 0. The
+car code has no collision-mesh call, so these triangles are inferred to be part of the level's static mesh at the
+car's place; bit 2 is the player-climbable bit ([Collision](collision.md#triangles)), which matches the climb onto a
+car ([Characters](characters.md#climb)).
 
 The create functions take the first free body of a pool (owner 0), set the owner (`0x00341a68`) and flags, and add it to
 the body vector and the sorted list (`IPhysics_AddBody` `0x00340668`); the free functions undo that

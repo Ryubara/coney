@@ -201,7 +201,7 @@ constexpr std::array<NativeArg, 2> kArgs_HuSetRevivable{{{"human", A::Handle, ""
 constexpr std::array<NativeArg, 2> kArgs_HuSetScale{{{"human", A::Handle, "", 0}, {"scale", A::Number, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HuSetSlowMo{{{"fraction", A::Number, "", 0}, {"human", A::Integer, "4294967295", 0}}};
 constexpr std::array<NativeArg, 3> kArgs_HuSetSpecialCallbacks{{{"onStart", A::String, "", 0}, {"onStep", A::String, "", 0}, {"onEnd", A::String, "", 0}}};
-constexpr std::array<NativeArg, 3> kArgs_HuSetSpinningIconColor{{{"human", A::Handle, "", 0}, {"colour", A::Integer, "", 0}, {"colour2", A::Integer, "4294967040", 0}}};
+constexpr std::array<NativeArg, 3> kArgs_HuSetSpinningIconColor{{{"human", A::Handle, "", 0}, {"steps", A::Integer, "", 0}, {"colour", A::Integer, "4294967040", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HuSetStateRespVoiceIndex{{{"human", A::Handle, "", 0}, {"voice", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HuSetStrong{{{"human", A::Handle, "", 0}, {"on", A::Boolean, "", 0}}};
 constexpr std::array<NativeArg, 2> kArgs_HuSetStunned{{{"human", A::Handle, "", 0}, {"on", A::Boolean, "", 0}}};

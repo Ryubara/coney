@@ -648,7 +648,8 @@ deferred to a later update. Confirmed (code); in order:
    the hand does not stay on the ground; the two bone objects `+0x348` / `+0x34c` are destroyed; for a player, the
    objects its per-panel record holds are destroyed; the object at `+0x358` is let go with a 120 s lifetime.
 5. A human that still has its instance is knocked out first (`Human_KnockOut`) and marked.
-6. A grab partner (`+0x360`) is sent message `0x15` and the handle cleared.
+6. The [spinning icon](#spinning-icon) (`+0x360`) is sent message `0x15` and the handle cleared
+   (`Human_RemoveOverheadIcon`, `0x00227388`).
 7. **Radar**: a blip of the human is removed from both radars (HUD `+0x15d0` and `+0x3f10`, `0x001b2b58`,
    [HUD](hud.md)).
 8. A spawner that made it is told (`GangSpawner_OnHumanGone`); the instance is released (`0x00217dd8`); its script
@@ -1637,6 +1638,98 @@ The vertical part of a climb is the single move at P2's start: the feet do not r
 **In an input script**: standing, `stick left 0 50` toward the obstacle and `tap triangle` within reach; from a run,
 `stick left 0 100` and `tap triangle` when the face is 4.5 m away or less.
 
+### The spinning icon {#spinning-icon}
+
+The marker over a human's head (a mission target's star, a dealer's sign, the co-op player markers, the crown in
+Rumble) is a **3D world object of class `dyn_icon`**, attached to the human; it is not a HUD sprite. One per human,
+its handle at human `+0x360`. Confirmed (code) at the cited addresses unless marked; not checked at run time. The
+dealer's case is also on [AI: the dealer's icon](ai.md#dealer-icon).
+
+**Making one** (`Human_ShowOverheadIcon`, `0x002271f0`; reached from `HuAttachSpinningIcon` `0x00238a88`,
+`GangAttachSpinningIcon` `0x0016b2c8` for each of the gang's 16 member slots, and the game's own callers):
+
+1. The name is the **object type to spawn** (any `dyn_icon` type: `dyn_rockstar`, `dyn_crown`, `dyn_exclamation`,
+   `dyn_gangrat`, `dyn_weapdeal`, ...; [the object list](../references/objects.md)). A name whose first 9 characters
+   are `dyn_p_one` becomes `dyn_play_one`, and `dyn_p_two` becomes `dyn_play_two`, each with `_euro` appended when
+   game state `+0x120` is set (inferred: a European language).
+2. When the human already has an icon of that type nothing happens; another icon is removed first (message `0x15`).
+3. `Task_CreateObjectByName` spawns it with two message arguments, the human's handle and the **attach bone** (the
+   script's third argument; every script and every game caller passes 0, the human's own transform).
+
+**The script arguments** (from the bindings `0x0035aeb0`, `0x0035f128`, `0x0035af80`):
+
+| Function | Arguments |
+| --- | --- |
+| `HuAttachSpinningIcon(human, name, bone)` | the human's handle; the type name; the pose bone the icon hangs from, 0 = the human |
+| `GangAttachSpinningIcon(gang, name, bone)` | as above, for every current member; gang −1 does nothing |
+| `HuSetSpinningIconColor(human, steps, colour)` | a **fade**: the step count, then the target colour word; the colour defaults to `0xFFFFFF00` (white, alpha 0) |
+| `HuRemoveSpinningIcon(human)` | message `0x15`, the handle cleared (`0x00227388`) |
+
+`HuSetSpinningIconColor`'s two numbers are not two colours, as its argument names in the
+[binding reference](../references/bindings/character.md#husetspinningiconcolor) suggest: the message's argument stack
+is last in, first out, so `DynIcon_SetColourFade` (`0x003e93d0`) pops the second script argument as the step count
+and the third as the target colour. The game's own call, `(human, 3, 0xFFFFFF00)` in `0x0024b2a8`, fades an icon
+out in 3 steps. No level script calls it.
+
+**Init** (`DynIcon_Init`, `0x003e8fa0`):
+
+- **Model**: the object type's own model (`Obj_SetModel(obj, 0)`), at its own size: no scale is applied.
+- **Attachment**: `Obj_Attach(obj, human, bone)`; its world pose is the human's transform (position and rotation)
+  ∘ the bone's (none for bone 0) ∘ the icon's local pose ([World objects: the attachment](objects.md#held)).
+  Flags `+0x54` = `0x91`. Update every 2 ticks.
+- **Local position**: (0, 0, **2.25**) m; (0, 0, **2.5**) for `dyn_weapdeal`, `dyn_flashdeal` and `dyn_spraydeal`
+  (model hashes `0x30f09efb`, `0x51d27ab6`, `0xd939c21d`); the type record's offset (property 11) for `dyn_cross`
+  (`0xe3f92003`). The human's transform is at his feet (inferred), so the icon floats 2.25 m above the ground.
+  There is **no bob**: nothing moves the local position afterwards.
+- **Local rotation**: the quaternion (0, 0, 1, 0) (`0x00511700`), a half turn about z.
+- **Spin**: angular velocity (0, 0, **π**) rad/s (`π × (0, 0, 1)`, `0x00511740`): a half turn a second about the
+  local z axis, which is the human's up axis, one turn in 2 s. The attached pose advances the local rotation by it
+  ([World objects: the attachment](objects.md#held)).
+- **No spin** for model hashes `0x8b7fe995`, `0x7644ee5d`, `0x1de2e2ca`, `0x1a72a32d`, `0x687e742b`: the angular
+  velocity is zeroed and flag bit 1 cleared. These are the player markers (`dyn_play_one`, `dyn_play_two` and their
+  `_euro` forms) and `dyn_lizziestarget` ([AI](ai.md#dealer-icon)); they keep the half-turn local rotation, so they
+  turn with the human.
+- **`dyn_cuffs`** (`0x464ac521`) takes the type record's offset and rotation (properties 11 and 12), turns at π/2
+  rad/s, and is detached at once, so it stays where it appeared ([Crimes: arrest](crimes.md#arrest)).
+- **Colour state** (5 words): not fading, colour **`0xFFFFFFFF`** (white, opaque), the rest 0.
+
+**Colour** (`DynIcon_Update`, `0x003e92e0`, every 2 ticks). The colour is the world object's tint word (`+0xcc`,
+copied to `+0xc8` at the next update; `0xRRGGBBAA`), which multiplies the model's colours and its alpha its opacity
+([World objects: the tint](objects.md#tint)):
+
+- **Not fading**: `+0xcc` := the stored colour, each update.
+- **A fade** (message `0x34`, `DynIcon_SetColourFade`): steps 0 sets `+0xcc` := `0xFFFFFFFF` and stores the colour,
+  which the next update writes (not fading, above). Otherwise step := (`+0xc8` − target) ÷ steps, an **unsigned division
+  of the whole 32-bit word**, not per channel; each update the counter goes up, and `+0xcc` := `+0xc8` − step until the
+  counter reaches the step count, when `+0xcc` := the target and the fade ends. The game only fades the alpha byte,
+  where the word arithmetic is a plain linear fade; a port that fades other channels must keep the word arithmetic to
+  match. Because the step is truncated, the alpha jumps to the target at the end: from 255 to 0 in 80 steps it falls by
+  3 an update to 18, then to 0.
+
+**Hidden** (confirmed (code); the visible result inferred from the tint rule, an alpha under 10 is not drawn):
+
+- **While the letterbox is up**: when not fading and player 1's screen-effects record (`0x005fdeb8`) has the
+  letterbox state (`+0x1e8`) set or its level (`+0x1ec`) non-zero ([Screen effects](graphics.md#screen-effects)),
+  `+0xcc` := `0xFFFFFF00` and `+0xc8` := `0xFFFFFF01`: alpha 0. Not for `dyn_cross`; not during a fade.
+- **Message `0x0a`** (argument 0 hides, non-zero shows) sets or clears the hidden flag (`+0x54` bit 4); **`0x20`**
+  sets it and also clears the attached bit (`0x10`); **8** detaches; **`0x15`** removes the icon
+  (`DynIcon_OnMessage`, `0x003e9470`).
+- **Distance**: an attached object uses its parent's `ObjShow` distance and is not drawn beyond it
+  ([World objects: the tint](objects.md#tint)).
+- **Removal**: when the human is beaten (`Human_CreditDefeat`, `0x00230740`) or destroyed ([Destroying a
+  human](#destroy), message `0x15` to `+0x360`), by the death sequence's camera (which removes the players' icons,
+  [Camera](camera.md)), and by the goals that made it.
+
+**Drawing**: as any world object (`ObjectRender_Draw` `0x0017fd78`, [World objects: the tint](objects.md#tint)):
+the model with its own materials, lit and Z-tested like the other world objects, the tint multiplying it, alpha
+scaled by the distance and fade-in rules there (inferred: nothing in `dyn_icon` changes the draw).
+
+**The co-op player markers** (`0x0024b2a8` at a respawn, `Reticules_UpdateTarget` `0x0024b3d8` at the hints): with
+two players on one screen, not in Rumble and not during the letterbox, `dyn_p_one` / `dyn_p_two` (so
+`dyn_play_one` / `dyn_play_two`) on the players, then a fade to `0xFFFFFF00`: from alpha 255 over **80** updates (160
+on an armies level, `GameState_IsArmiesLevel` `0x0041d110`), or at a respawn from the alpha byte passed in over 3
+updates (`+0xc8` and `+0xcc` set to `0xFFFFFF00` | alpha first). [HUD](hud.md) has the context.
+
 ## Code index {#code-index}
 
 Every function of the human code in `0x002176b8`-`0x00288000` that the sections above do not walk through, in address
@@ -2042,7 +2135,7 @@ the human code reads.
 | `0x00238828` | `Human_PlayDynPair` | `HuPlayDynPair`: a paired dynamic clip on two humans; the dealer goal uses it to sell. | confirmed (code) |
 | `0x00238948` | `Human_PlayDynAnim` | `HuPlayDynAnim`: a dynamic clip on the human. | confirmed (code) |
 | `0x002389e8` | `Human_PlayDynamicAnim` | `HuPlayDynamicAnim`: a dynamic clip by name. | confirmed (code) |
-| `0x00238a88` | `Human_AttachSpinningIcon` | `HuAttachSpinningIcon`: the spinning icon over the human (`+0x360`); AI crime and dealer goals use it. | confirmed (code) |
+| `0x00238a88` | `Human_AttachSpinningIcon` | `HuAttachSpinningIcon`: the [spinning icon](#spinning-icon) over the human (`+0x360`); AI crime and dealer goals use it. | confirmed (code) |
 | `0x00238ae0` | `Human_RemoveSpinningIcon` | `HuRemoveSpinningIcon`: removes it. | confirmed (code) |
 | `0x00238b18` | `Human_SetSpinningIconColor` | `HuSetSpinningIconColor`: messages the icon's colour. | confirmed (code) |
 | `0x00238bd8` | `Human_StartWorkout` | `HuWorkout`: starts a workout on the human (Human_StartWorkout state, start callback). | confirmed (code) |
