@@ -3012,7 +3012,7 @@
     - {name: line, lua: string, desc: "Speech file name (a path such as `vags/speeches/l31/l31_t7_001`), looked up by name; nil only runs the callback."}
     - {name: callback, lua: string, desc: "Name of a Lua function to call when the line ends (dotted names work), or nil."}
     - {name: arg, lua: number, ctype: int, desc: "Number passed to the callback; 0 (the default) calls it with no argument."}
-    - {name: flag, lua: boolean, default: true, desc: "Default true; passed on to the sound system with the line (meaning not traced)."}
+    - {name: flag, lua: boolean, default: true, desc: "Default true: the line is duckable. False makes it non-duckable, so other duckable directional sounds of non-players drop to 0.2 while it plays ([Sound: speech lines](../../research/sound.md#speech-lines-by-name))."}
     - {name: listener, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional handle of a human to look at; the speaker turns its head to it for the line's length plus 0.5 s. Default NilHandle."}
   description: >-
     Makes a human say a line unless it is already speaking: the line plays at the speaker and the callback runs when
@@ -3021,7 +3021,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    HuSpeakNI is the same but cuts off the current line instead of giving up.
+    HuSpeakNI is the same but cuts off the current line instead of giving up. A cinematic (game state +0x410) also
+    makes it give up. The line starts once its stream is primed (Human_UpdateSpeech, 0x0021e940), which then runs the
+    callback when the line is gone, also after HuShutUp.
   usage: {chunks: 43, calls: 142, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 54, 55, 82, 83, 20, 11]}
   coney: implemented
 
@@ -3034,7 +3036,7 @@
     - {name: line, lua: string, desc: "Speech file name, as for HuSpeak; nil only runs the callback."}
     - {name: callback, lua: string, desc: "Name of a Lua function to call when the line ends, or nil."}
     - {name: arg, lua: number, ctype: int, desc: "Number passed to the callback; 0 (the default) calls it with no argument."}
-    - {name: flag, lua: boolean, default: true, desc: "Default true; passed on to the sound system (meaning not traced)."}
+    - {name: flag, lua: boolean, default: true, desc: "Default true: the line is duckable; false makes it non-duckable, as for HuSpeak."}
     - {name: listener, lua: number, ctype: unsigned, default: 4294967295, desc: "Optional handle of a human to look at while speaking. Default NilHandle."}
   description: >-
     Like HuSpeak, but it cuts a line started by HuSpeak (stopping it, whose callback is then lost) and its own line

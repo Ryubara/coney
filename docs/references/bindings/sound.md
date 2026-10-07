@@ -113,7 +113,7 @@ Puts a sound into the ambient sound table that the ambient emitters pick their r
 ## AddAmbientSoundEmitter {#addambientsoundemitter}
 
 ```lua
-AddAmbientSoundEmitter(pos1, pos2, index, sound, count, range, arg7, minDelay, maxDelay, arg10, mode) -> number
+AddAmbientSoundEmitter(pos1, pos2, index, sound, count, range, plays, minDelay, maxDelay, mode, filter) -> number
 ```
 
 | # | Argument | Read as | Meaning |
@@ -122,13 +122,13 @@ AddAmbientSoundEmitter(pos1, pos2, index, sound, count, range, arg7, minDelay, m
 | 2 | `pos2` | table of 3 numbers (t[1]..t[3]) | Second point {x, y, z} (emitter `+0x10`); the same as pos1 for a point source; written back. |
 | 3 | `index` | number, truncated to an integer | First ambient-table slot to pick from (AddAmbientSound), or -1 to use the sound name. |
 | 4 | `sound` | string | Sound name when index is -1 (such as a music loop for a radio); hashed, nil for none. |
-| 5 | `count` | number, truncated to an unsigned integer | Number of consecutive table slots to pick from at random. |
-| 6 | `range` | number (single precision) | Audible range in metres (inferred); -1 takes the sound's own range plus 10. |
-| 7 | `arg7` | number, truncated to an integer | Stored as a byte at emitter `+0x8c` (AddAmbientSoundEmitter2's arg8; the scripts pass 0); meaning not traced. |
-| 8 | `minDelay` | number, truncated to an unsigned integer | Lower bound of the random pause between plays (16-bit, `+0x86`; inferred). |
-| 9 | `maxDelay` | number, truncated to an unsigned integer | Upper bound of the random pause (16-bit, `+0x88`; inferred); the first pause is drawn between the two at once. |
-| 10 | `arg10` | number, truncated to an unsigned integer | Stored as a byte at emitter `+0x8d` (the scripts pass 3); meaning not traced. |
-| 11 | `mode` | number, truncated to an integer | Mode byte 0-2 at `+0x90`; larger values become 0 (the scripts pass 0 or 3, so 3 acts as 0). |
+| 5 | `count` | number, truncated to an unsigned integer | Number of consecutive table slots, played in turn. |
+| 6 | `range` | number (single precision) | Range in metres from pos1; -1 takes the sound's own far distance plus 10. |
+| 7 | `plays` | number, truncated to an integer | Plays before it switches itself off (`+0x8c`; -1 without limit). The scripts pass 0, which would allow none in modes 1-2; their mode 3 ignores it. |
+| 8 | `minDelay` | number, truncated to an unsigned integer | Lower bound of the random pause between plays, whole seconds (`+0x86`). |
+| 9 | `maxDelay` | number, truncated to an unsigned integer | Upper bound of the random pause, whole seconds (`+0x88`); the first pause is drawn between the two at once. |
+| 10 | `mode` | number, truncated to an unsigned integer | How it plays (`+0x8d`, as AddAmbientSoundEmitter2's mode; the scripts pass 3, a loop while in range). |
+| 11 | `filter` | number, truncated to an integer | Listener filter 0-2 at `+0x90`; larger values become 0 (the scripts pass 0 or 3, so 3 acts as 0). |
 
 **Returns** number: The emitter's id, for EnableAmbientEmitter and SetAmbientEmitterVolumeMod.
 
@@ -137,7 +137,8 @@ Calling it again with the same sound and first point returns the existing emitte
 adding one. The sounds it can play are preloaded when it is added.
 
 **Notes.** Argument-to-field mapping confirmed (code) through the register and stack passing at 0x00371ce0 (the
-decompiler hides arguments 10 and 11); the meaning of the numbers is inferred as for AddAmbientSoundEmitter2.
+decompiler hides arguments 10 and 11); the numbers' meaning is confirmed (code) at 0x0010c100 ([Sound: ambient
+emitters](../../research/sound.md#ambient)).
 
 - **Evidence:** confirmed (code) at `0x00113840`, `0x0010cf58`, `0x0010cc70`; detail: traced
 - **Wrapper** `0x00371b18` (registered by `RegisterBindings`); **calls** `0x00113840` `Sound_AddAmbientEmitter`,
@@ -149,32 +150,33 @@ decompiler hides arguments 10 and 11); the meaning of the numbers is inferred as
 ## AddAmbientSoundEmitter2 {#addambientsoundemitter2}
 
 ```lua
-AddAmbientSoundEmitter2(name, pos1, pos2, index, sound, count, range, arg8, minDelay, maxDelay, arg11, mode) -> number
+AddAmbientSoundEmitter2(name, pos1, pos2, index, sound, count, range, plays, minDelay, maxDelay, mode, filter) -> number
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `name` | string | The emitter's name (such as "tCrickets01"), used by SetAmbientEmitterPositions; a name already used refers to the existing emitter. |
-| 2 | `pos1` | table of 3 numbers (t[1]..t[3]) | First point {x, y, z} of the emitter (one end of the line or corner of the area the sound comes from); written back. |
-| 3 | `pos2` | table of 3 numbers (t[1]..t[3]) | Second point {x, y, z}; the same as pos1 for a point source; written back. |
+| 2 | `pos1` | table of 3 numbers (t[1]..t[3]) | The point the range is measured from (emitter `+0x60`); written back. |
+| 3 | `pos2` | table of 3 numbers (t[1]..t[3]) | The point the sounds play from (`+0x10`) until SetAmbientEmitterPositions gives up to five; written back. |
 | 4 | `index` | number, truncated to an integer | First entry of the ambient sound table (AddAmbientSound) to pick from, or -1 to play the sound named by sound. |
 | 5 | `sound` | string | Sound name used when index is -1; the scripts pass "" otherwise. |
-| 6 | `count` | number, truncated to an unsigned integer | How many consecutive table entries, starting at index, the emitter picks from at random. |
-| 7 | `range` | number (single precision) | A float stored with the emitter (the scripts use 25-70, or -1); inferred to be the audible range in metres, -1 for the default. |
-| 8 | `arg8` | number, truncated to an integer | A number the scripts pass as -1; meaning not traced. |
-| 9 | `minDelay` | number, truncated to an unsigned integer | Shortest pause between two plays, in seconds (inferred from the random range the emitter draws from). |
-| 10 | `maxDelay` | number, truncated to an unsigned integer | Longest pause between two plays, in seconds (inferred). |
-| 11 | `arg11` | number, truncated to an unsigned integer | A small number stored as a byte (the scripts pass 3 or 4); meaning not traced. |
-| 12 | `mode` | number, truncated to an integer | A mode byte 0-2 (larger values become 0); the scripts pass 0. Meaning not traced. |
+| 6 | `count` | number, truncated to an unsigned integer | How many consecutive table entries, starting at index, the emitter plays in turn (from a random one). |
+| 7 | `range` | number (single precision) | Range in metres from pos1 within which a listener makes it play (the scripts use 25-70); -1 takes the first sound's far distance + 10. |
+| 8 | `plays` | number, truncated to an integer | How many times it plays before switching itself off; -1 (what the scripts pass) without limit. |
+| 9 | `minDelay` | number, truncated to an unsigned integer | Shortest pause between two plays, in whole seconds. |
+| 10 | `maxDelay` | number, truncated to an unsigned integer | Longest pause between two plays, in whole seconds. |
+| 11 | `mode` | number, truncated to an unsigned integer | How it plays (`+0x8d`): 1-2 timed one-shots, 3 a loop while in range, 4 timed with an immediate first play, 5 timed and cut after a second, 7 a conversation; the scripts pass 3 or 4. |
+| 12 | `filter` | number, truncated to an integer | Which players hear it (`+0x90`): 0 those whose `+0x5b7` is clear, 1 those whose it is set, 2 all; larger values become 0. The scripts pass 0. |
 
 **Returns** number: The emitter's id.
 
 Adds a named ambient sound emitter: at random intervals it plays a random sound from part of the ambient table (or one
-named sound) somewhere between two points. The levels place their crickets, dogs, wind and machinery this way.
+named sound) from its point or points. The levels place their crickets, dogs, wind and machinery this way.
 
 **Notes.** 0x00113920 → 0x0010cf58. Which argument lands in which emitter field is confirmed (code); the meaning of the
-numbers is inferred from the scripts' values. Names containing certain substrings get a special type (0x0010cf58
-compares against 0x00546ce0, 0x00546ce8, 0x00546cf0).
+numbers is confirmed (code) at the update 0x0010c100 ([Sound: ambient emitters](../../research/sound.md#ambient)). Names
+containing `_DAM_` play only 2-15 s after an AI event, `_FHT_` only during fights, and `music` ones duck under the
+score.
 
 - **Evidence:** confirmed (code) at `0x00113920`; detail: traced
 - **Wrapper** `0x00371db0` (registered by `RegisterBindings`); **calls** `0x00113920`

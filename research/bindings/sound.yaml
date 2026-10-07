@@ -522,13 +522,13 @@
     - {name: pos2, lua: table, elem: number, count: 3, written_back: true, desc: "Second point {x, y, z} (emitter `+0x10`); the same as pos1 for a point source; written back."}
     - {name: index, lua: number, ctype: int, desc: "First ambient-table slot to pick from (AddAmbientSound), or -1 to use the sound name."}
     - {name: sound, lua: string, desc: "Sound name when index is -1 (such as a music loop for a radio); hashed, nil for none."}
-    - {name: count, lua: number, ctype: unsigned, desc: "Number of consecutive table slots to pick from at random."}
-    - {name: range, lua: number, ctype: float, desc: "Audible range in metres (inferred); -1 takes the sound's own range plus 10."}
-    - {name: arg7, lua: number, ctype: int, desc: "Stored as a byte at emitter `+0x8c` (AddAmbientSoundEmitter2's arg8; the scripts pass 0); meaning not traced."}
-    - {name: minDelay, lua: number, ctype: unsigned, desc: "Lower bound of the random pause between plays (16-bit, `+0x86`; inferred)."}
-    - {name: maxDelay, lua: number, ctype: unsigned, desc: "Upper bound of the random pause (16-bit, `+0x88`; inferred); the first pause is drawn between the two at once."}
-    - {name: arg10, lua: number, ctype: unsigned, desc: "Stored as a byte at emitter `+0x8d` (the scripts pass 3); meaning not traced."}
-    - {name: mode, lua: number, ctype: int, desc: "Mode byte 0-2 at `+0x90`; larger values become 0 (the scripts pass 0 or 3, so 3 acts as 0)."}
+    - {name: count, lua: number, ctype: unsigned, desc: "Number of consecutive table slots, played in turn."}
+    - {name: range, lua: number, ctype: float, desc: "Range in metres from pos1; -1 takes the sound's own far distance plus 10."}
+    - {name: plays, lua: number, ctype: int, desc: "Plays before it switches itself off (`+0x8c`; -1 without limit). The scripts pass 0, which would allow none in modes 1-2; their mode 3 ignores it."}
+    - {name: minDelay, lua: number, ctype: unsigned, desc: "Lower bound of the random pause between plays, whole seconds (`+0x86`)."}
+    - {name: maxDelay, lua: number, ctype: unsigned, desc: "Upper bound of the random pause, whole seconds (`+0x88`); the first pause is drawn between the two at once."}
+    - {name: mode, lua: number, ctype: unsigned, desc: "How it plays (`+0x8d`, as AddAmbientSoundEmitter2's mode; the scripts pass 3, a loop while in range)."}
+    - {name: filter, lua: number, ctype: int, desc: "Listener filter 0-2 at `+0x90`; larger values become 0 (the scripts pass 0 or 3, so 3 acts as 0)."}
   results:
     - {lua: number, desc: "The emitter's id, for EnableAmbientEmitter and SetAmbientEmitterVolumeMod."}
   description: >-
@@ -539,7 +539,7 @@
   depth: thorough
   notes: >-
     Argument-to-field mapping confirmed (code) through the register and stack passing at 0x00371ce0 (the decompiler
-    hides arguments 10 and 11); the meaning of the numbers is inferred as for AddAmbientSoundEmitter2.
+    hides arguments 10 and 11); the numbers' meaning is confirmed (code) at 0x0010c100 ([Sound: ambient emitters](../../research/sound.md#ambient)).
   usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: true, levels: [3, 5, 93, 14, 52, 82, 11]}
 
 - name: AddAmbientSoundEmitter2
@@ -548,28 +548,28 @@
     - {addr: 0x00113920}
   args:
     - {name: name, lua: string, desc: "The emitter's name (such as \"tCrickets01\"), used by SetAmbientEmitterPositions; a name already used refers to the existing emitter."}
-    - {name: pos1, lua: table, elem: number, count: 3, written_back: true, desc: "First point {x, y, z} of the emitter (one end of the line or corner of the area the sound comes from); written back."}
-    - {name: pos2, lua: table, elem: number, count: 3, written_back: true, desc: "Second point {x, y, z}; the same as pos1 for a point source; written back."}
+    - {name: pos1, lua: table, elem: number, count: 3, written_back: true, desc: "The point the range is measured from (emitter `+0x60`); written back."}
+    - {name: pos2, lua: table, elem: number, count: 3, written_back: true, desc: "The point the sounds play from (`+0x10`) until SetAmbientEmitterPositions gives up to five; written back."}
     - {name: index, lua: number, ctype: int, desc: "First entry of the ambient sound table (AddAmbientSound) to pick from, or -1 to play the sound named by sound."}
     - {name: sound, lua: string, desc: "Sound name used when index is -1; the scripts pass \"\" otherwise."}
-    - {name: count, lua: number, ctype: unsigned, desc: "How many consecutive table entries, starting at index, the emitter picks from at random."}
-    - {name: range, lua: number, ctype: float, desc: "A float stored with the emitter (the scripts use 25-70, or -1); inferred to be the audible range in metres, -1 for the default."}
-    - {name: arg8, lua: number, ctype: int, desc: "A number the scripts pass as -1; meaning not traced."}
-    - {name: minDelay, lua: number, ctype: unsigned, desc: "Shortest pause between two plays, in seconds (inferred from the random range the emitter draws from)."}
-    - {name: maxDelay, lua: number, ctype: unsigned, desc: "Longest pause between two plays, in seconds (inferred)."}
-    - {name: arg11, lua: number, ctype: unsigned, desc: "A small number stored as a byte (the scripts pass 3 or 4); meaning not traced."}
-    - {name: mode, lua: number, ctype: int, desc: "A mode byte 0-2 (larger values become 0); the scripts pass 0. Meaning not traced."}
+    - {name: count, lua: number, ctype: unsigned, desc: "How many consecutive table entries, starting at index, the emitter plays in turn (from a random one)."}
+    - {name: range, lua: number, ctype: float, desc: "Range in metres from pos1 within which a listener makes it play (the scripts use 25-70); -1 takes the first sound's far distance + 10."}
+    - {name: plays, lua: number, ctype: int, desc: "How many times it plays before switching itself off; -1 (what the scripts pass) without limit."}
+    - {name: minDelay, lua: number, ctype: unsigned, desc: "Shortest pause between two plays, in whole seconds."}
+    - {name: maxDelay, lua: number, ctype: unsigned, desc: "Longest pause between two plays, in whole seconds."}
+    - {name: mode, lua: number, ctype: unsigned, desc: "How it plays (`+0x8d`): 1-2 timed one-shots, 3 a loop while in range, 4 timed with an immediate first play, 5 timed and cut after a second, 7 a conversation; the scripts pass 3 or 4."}
+    - {name: filter, lua: number, ctype: int, desc: "Which players hear it (`+0x90`): 0 those whose `+0x5b7` is clear, 1 those whose it is set, 2 all; larger values become 0. The scripts pass 0."}
   results:
     - {lua: number, desc: "The emitter's id."}
   description: >-
     Adds a named ambient sound emitter: at random intervals it plays a random sound from part of the ambient table (or
-    one named sound) somewhere between two points. The levels place their crickets, dogs, wind and machinery this way.
+    one named sound) from its point or points. The levels place their crickets, dogs, wind and machinery this way.
   evidence: confirmed-code
   depth: thorough
   notes: >-
     0x00113920 → 0x0010cf58. Which argument lands in which emitter field is confirmed (code); the meaning of the
-    numbers is inferred from the scripts' values. Names containing certain substrings get a special type (0x0010cf58
-    compares against 0x00546ce0, 0x00546ce8, 0x00546cf0).
+    numbers is confirmed (code) at the update 0x0010c100 ([Sound: ambient emitters](../../research/sound.md#ambient)). Names containing `_DAM_` play only
+    2-15 s after an AI event, `_FHT_` only during fights, and `music` ones duck under the score.
   usage: {chunks: 58, calls: 2230, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11]}
   coney: implemented
 

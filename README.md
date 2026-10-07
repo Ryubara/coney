@@ -30,7 +30,7 @@ so it is not counted.
 | --- | --- | --- |
 | **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.8% of the game's own code (495,164 of 3,354,776 bytes, 1,620 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
-| **Understood** | `███▌░░░░░░░░░░░░░░░░` | 17.5% named in Ghidra and cited with evidence (571,508 of 3,274,152 bytes; 1,889 of 11,278 functions, 16.7%) |
+| **Understood** | `███▌░░░░░░░░░░░░░░░░` | 17.5% named in Ghidra and cited with evidence (571,992 of 3,274,152 bytes; 1,890 of 11,278 functions, 16.8%) |
 | **[Milestones](docs/roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
 Working on: [Scripts](docs/roadmap.md#scripts), [Characters](docs/roadmap.md#characters),

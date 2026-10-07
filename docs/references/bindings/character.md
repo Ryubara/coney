@@ -4408,7 +4408,7 @@ HuSpeak(human, line, callback, arg, flag, listener)
 | 2 | `line` | string | Speech file name (a path such as `vags/speeches/l31/l31_t7_001`), looked up by name; nil only runs the callback. |
 | 3 | `callback` | string | Name of a Lua function to call when the line ends (dotted names work), or nil. |
 | 4 | `arg` | number, truncated to an integer | Number passed to the callback; 0 (the default) calls it with no argument. |
-| 5 | `flag` | boolean (nil or 0 is false); default true | Default true; passed on to the sound system with the line (meaning not traced). |
+| 5 | `flag` | boolean (nil or 0 is false); default true | Default true: the line is duckable. False makes it non-duckable, so other duckable directional sounds of non-players drop to 0.2 while it plays ([Sound: speech lines](../../research/sound.md#speech-lines-by-name)). |
 | 6 | `listener` | number, truncated to an unsigned integer; default 4294967295 | Optional handle of a human to look at; the speaker turns its head to it for the line's length plus 0.5 s. Default NilHandle. |
 
 **Returns** nothing.
@@ -4417,7 +4417,9 @@ Makes a human say a line unless it is already speaking: the line plays at the sp
 ends. If the human does not exist, the line is nil, speech is off in the game state (+0x410) or another line is playing,
 the callback runs at once instead.
 
-**Notes.** HuSpeakNI is the same but cuts off the current line instead of giving up.
+**Notes.** HuSpeakNI is the same but cuts off the current line instead of giving up. A cinematic (game state +0x410)
+also makes it give up. The line starts once its stream is primed (Human_UpdateSpeech, 0x0021e940), which then runs the
+callback when the line is gone, also after HuShutUp.
 
 - **Evidence:** confirmed (code) at `0x00239370`; detail: traced
 - **Wrapper** `0x00364e48` (registered by `RegisterBindings`); **calls** `0x00239370` `Human_Speak`
@@ -4437,7 +4439,7 @@ HuSpeakNI(human, line, callback, arg, flag, listener)
 | 2 | `line` | string | Speech file name, as for HuSpeak; nil only runs the callback. |
 | 3 | `callback` | string | Name of a Lua function to call when the line ends, or nil. |
 | 4 | `arg` | number, truncated to an integer | Number passed to the callback; 0 (the default) calls it with no argument. |
-| 5 | `flag` | boolean (nil or 0 is false); default true | Default true; passed on to the sound system (meaning not traced). |
+| 5 | `flag` | boolean (nil or 0 is false); default true | Default true: the line is duckable; false makes it non-duckable, as for HuSpeak. |
 | 6 | `listener` | number, truncated to an unsigned integer; default 4294967295 | Optional handle of a human to look at while speaking. Default NilHandle. |
 
 **Returns** nothing.

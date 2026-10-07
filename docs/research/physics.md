@@ -118,14 +118,14 @@ Body vtable: `+0x08` destructor (`0x00341a00`), `+0x10` `Update` (`0x00341c10`),
 `+0x20` `AddShape` (`0x00341aa8`), `+0x28` `GetShapes` (`0x00341ae0`), `+0x30` / `+0x38` / `+0x40` the ignore
 list, `+0x48` `GetContactScale` (`0x00341e18`: 1.0 for a contact with a body, 0.98 with the mesh).
 
-The create functions take the first free body of a pool (owner 0), set the owner (`0x00341a68`) and flags, and add
-it to the body vector and the sorted list (`IPhysics_AddBody` `0x00340668`); the free functions undo that
-(`IPhysics_RemoveBody` `0x00340700`, which first clears the owner from every ignore list) and clear the shape's
-in-use bit `0x8`. Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world object `0x80000500`, car
-`0x80000000`, glass pane `0x8000007a` ([Objects](objects.md)). A human body also joins the human list
-(`0x003407a0`; next `+0xc8`, previous `+0xcc`) and gets its scale (`0x00341f28`). The punch bag is the human class
-`0x1cc` (`HeavyBag`, [Characters](../references/characters.md)): `0x0021ce08` gives it its own body set instead of
-one of the 60.
+The create functions take the first free body of a pool (owner 0), set the owner (`0x00341a68`) and flags, and add it to
+the body vector and the sorted list (`IPhysics_AddBody` `0x00340668`); the free functions undo that
+(`IPhysics_RemoveBody` `0x00340700`, which first clears the owner from every ignore list) and clear the shape's in-use
+bit `0x8`. Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world object `0x80000500`, car `0x80000000` (then
+`0x8002231a` once `Car_MakeBodies` adds `0x2211a`), glass pane `0x8000007a` ([Objects](objects.md)). A human body also
+joins the human list (`0x003407a0`; next `+0xc8`, previous `+0xcc`) and gets its scale (`0x00341f28`). The punch bag is
+the human class `0x1cc` (`HeavyBag`, [Characters](../references/characters.md)): `0x0021ce08` gives it its own body set
+instead of one of the 60.
 
 `PhysicsBody_Update` (`0x00341c10`), when the body is dirty or flag `0x800` is set: pose every shape (shape vtable
 `+0x28`), recompute the AABB from the shapes (`0x00341638`, `0x003417c0`), re-sort (`0x00340628`), clear the dirty
@@ -205,13 +205,25 @@ does not want them (`+0xf0`) are skipped. The low 16 bits of the answer:
 | 1 | moves the body back to the contact (owner position, vtable `+0xa8` / `+0xb0`) and removes from the velocity the part that goes into the surface (`0x0033d870`) | confirmed (code); summary inferred |
 | 2 | when the move went more than 0.01 into the surface, moves the body back to 0.01 in front of it; then bounces both velocities (the one in and the one out) off the normal with the owner's restitution (owner vtable `+0xd0` with 8; `0x0033d8f0`) | confirmed (code); summary inferred |
 | 3 | the same move back, then zeroes both velocities | confirmed (code); summary inferred |
-| 4 | as 1, unless the other body has flag `0x200` | confirmed (code); summary inferred |
+| 4 | as 1, after handing half of the velocity along the normal to the other body (its body vtable `+0x54`), unless that body has flag `0x200` | confirmed (code); summary inferred |
 
 High bits: `0x10000` go on with the next contact (return 0), `0x40000` abort the move (return −1), otherwise stop
 after this contact (return 1); `0x20000` keeps the smallest contact scale (body vtable `+0x48`) as the move's limit.
 A contact whose `+0xb0` has bit 2 removes the normal part of its slide vector (`+0xa0`) and stores it, once per move,
-in body `+0x50`. Confirmed (code) for the branches; the one-word summaries are inferred, and which owner returns
-which code is on the owners' pages ([Characters](characters.md#walls), [Objects](objects.md)).
+in body `+0x50`. Confirmed (code) for the branches; the one-word summaries are inferred. A code above 4 takes none of
+the branches.
+
+**Who answers what.** Owner vtable `+0xf8` is set in seven classes of the task family; the vtables were found from
+the code that stores them, and each handler was decompiled. Confirmed (code):
+
+| Owner | Handler | Answers |
+| --- | --- | --- |
+| human (vtable `0x0053f088`) | `Human_OnContact` `0x00219d50` | `0`, `0x20000` or `0x20001` (slide) against the level and objects ([Characters](characters.md#walls)); `1` against a body with type flag `0x200`; against another human, `1` after a strike (`Strike_Contact` `0x0021b290`, its vtable `+0x104`), otherwise **`4`**, with `0x20000` added while airborne |
+| world object (`0x005453a0`) | `WorldObject_OnContact` `0x00394050` | **`2`** against a body or a steep surface (normal z ≤ 0.7), `0x20002` on a floor, `0x10003` on a floor once settled ([Settling](#settle)); `0x10000` (after `0x00393e20`) while its byte `+0x10d` or `+0x10e` is clear; `0x40000` when, thrown, it hits a human; `0` or `5` (no branch) when `0x003951d8` gives it a human (its holder, inferred) |
+| car (`0x00544c08`) | `Car_OnLanded` `0x00389e08` | always **`2`**; with the level it also clears airborne and zeroes the velocity ([Cars](#cars)) |
+| four others (`0x00544ed0`, `0x00545138`, `0x00545660`, `0x005458c8`) | `0x004dac20` | `0` |
+
+So **3** is never answered: nothing in the game zeroes both velocities on a contact.
 
 ### Settle slot
 
@@ -244,6 +256,11 @@ Object flags (`+0x54`, [task head](tasks.md#task-object)): `0x40000` settling, `
 
 Starting from rest, `t` after *n* ticks is `0.01 × n(n − 1)`, so **a settle takes 11 ticks (183 ms)**, slow at
 first and fastest at the end, like something tipping over.
+
+Confirmed (runtime) in a level: a settle slot filled by hand (an object, start = its rotation, end a quarter turn,
+acceleration 0.02, speed 0) read `t` = 0.02, 0.12, 0.2, 0.3, 0.42, 0.56, 0.72, 0.9 on successive samples, then 1.0
+with the slot freed and the object's flags `0x40000` → `0x8000000`, 0.21 s after the slot was written. A landing that
+starts a settle on its own was not produced: an object lifted and marked airborne through memory did not fall.
 
 ### Settling a landed object {#settle}
 
@@ -380,6 +397,35 @@ None of this is in the step; it is listed so an implementer knows where each mot
 - **A thrown object hitting a human** is decided in its contact handler, from its own sweep: the hit object is
   tested as a human (`0x00229868`) and handled by `0x003928d0` and `0x00392b88` (roles inferred).
 
+### Cars {#cars}
+
+A car's collision is one body (`IPhysics_CreateCarBody`) with two boxes from the car pool, built by `Car_MakeBodies`
+(`0x00387d50`) from the type record (`0x0057e4c0 + 0x5f0 × type`, [Cars](cars.md#type-record)): box 1 has its
+half-sizes at record `+0x00` and its offset at `+0x10`, box 2 at `+0x20` and `+0x30`. It sets body flags `0x2211a`
+and clears the car's object flag `0x200`. Confirmed (code). The car never sweeps its body: it is moved with the car
+(pose on the next update) and is what humans, objects and the camera meet. When a car explodes, box 1 loses 0.25 m of
+height ([Cars](cars.md#explode)). `Car_OnLanded` (`0x00389e08`) answers 2 to every contact; on the level it also
+clears the airborne flag, zeroes the velocity and sends message `0x3f` (kind 5) with the point (0, 1.84, 0.02) in the car's
+frame to the task whose handle is at `[0x005971b4] + 0x14` (an effect, inferred).
+
+**Loose parts** (`Car_UpdateLoosePart`, `0x00387f18`, from the car's update for each part flying off, bit in `+0x11f4`)
+have no body. Confirmed (code):
+
+1. The part's lifetime (`+0x94`, 360 at the start) counts down once per update; below 91 it sends message `0x15`
+   once to the object held in `+0x8c`; at 0 the part is removed (`+0x11f0`, and its linked part) and stops flying.
+2. Otherwise, while flying (`+0x96` bit 0): `vz −= 15.68 × dt` (the same gravity as objects), then a box of the
+   part's size (part record `+0x10`-`+0x18`, records at type record `+0xf0`, 0x30 bytes each) at the part's matrix is
+   swept by `v × dt` (`IPhysics_CollideShape`, option `0x400`).
+3. With no contact the part moves by `v × dt`. With one it backs off the plane (`PhysicsVec_BackOffPlane`) and
+   bounces with the restitution at part record `+0x20` (`PhysicsVec_Bounce`). On a floor (normal z > 0.7) its spin
+   stops; on the first floor contact (`+0x96` bit 1 not yet set, then set) it starts turning to lie flat by the
+   smallest angle, eased like a settle but with an acceleration of 0.05 (`+0x88`) from rest (`+0x84`). Each floor
+   contact is counted (`+0x97`); the first three, when faster than 2 m/s, play impact sounds at volume
+   1 / (count + 1). After any contact the velocity is scaled by 0.95.
+
+The car's update runs every tick while a part flies (`Task_SetUpdateInterval`), so a piece lasts 360 ticks, **6 s**
+(inferred from the interval).
+
 ### 30 Hz or 60 Hz, and online play {#tick-rate}
 
 What follows is inferred from the code above.
@@ -401,8 +447,8 @@ step yet. When world objects come, the settle is a per-object tween run on Coney
 
 ## Open questions
 
-- Who returns contact codes 2 to 4 ([Contacts](#contacts)), and what the human attributes 1 and 7 that weigh the
-  push sphere's push are.
-- How cars use their bodies (`0x00387f18` sets the box matrices and backs off planes, `0x0038e590`).
+- What the human attributes 1 and 7 that weigh the push sphere's push are.
+- What the effect task at `0x005971b4` does with a car's message `0x3f`, and which classes the four other task
+  vtables with the empty contact handler are.
 - Where the axis mask of `0x00340b38` comes from for a settle.
-- A runtime check of the settle's 11 ticks on a thrown bottle.
+- A runtime check of a settle started by a real landing (a thrown bottle); the step's 11 ticks are confirmed.

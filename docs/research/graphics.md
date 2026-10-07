@@ -181,9 +181,11 @@ depth, flags, refresh, raster format}` at `0x0052ec38` in the PS2 driver) and pi
 | Flags | `0x203` | `0x1` |
 | Refresh in the table | 60 | 60 |
 
-Confirmed (code) for the selection and the table. Flag `0x1` is RenderWare's "exclusive" and `0x2` "interlace";
-`0x200` is a PS2-only flag, read-circuit anti-aliasing in the RenderWare 3.7 PS2 headers (inferred). For Coney this
-means: a **640 × 448 logical screen** (4:3; 16:9 when the widescreen option is on), 32-bit colour with a Z buffer.
+Confirmed (code) for the selection and the table. Flag `0x1` is RenderWare's "exclusive" and `0x2` "interlace"; `0x200`
+is a PS2-only flag, read-circuit anti-aliasing in the RenderWare 3.7 PS2 headers (inferred). How the driver then sends
+the picture to the TV (field mode with a two-line anti-flicker mix) is on [The PS2 render
+driver](ps2-render.md#video-output). For Coney this means: a **640 × 448 logical screen** (4:3; 16:9 when the widescreen
+option is on), 32-bit colour with a Z buffer.
 
 ### RenderWare plugins {#plugins}
 
@@ -1453,7 +1455,8 @@ Still for the analysts:
 - **Runtime confirmation** of the two-vertical-blank flip (partly answered): PCSX2 shows 30 frames for 60 vertical
   blanks ([Presenting](#frame-rate)); a watch on `0x005970f9` and `0x0059708b` through a slow frame (to see the
   20-a-second and the tearing cases) is still to do.
-- **Display brightness.** In PCSX2's screenshots the white of the legal image and of `big_font` text both come out
+- **Display brightness.** (The output set-up is now read in full: [The PS2 render driver](ps2-render.md#video-output);
+  it does not darken.) In PCSX2's screenshots the white of the legal image and of `big_font` text both come out
   at about 178 of 255 (and the menu's grey and red text at the same 70 % of their vertex colours), so the whole
   picture is about 70 % bright. **Not `PMODE`** (partly answered, 2026-10-04): the game writes the GS output
   registers from a display-buffer record in memory (`0x004aa748`, called at the vertical blank by `0x0048bdb0`), and

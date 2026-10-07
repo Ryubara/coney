@@ -348,13 +348,68 @@ are not traced.
 - **Ambient track**: `SoundPlayAmbientTrack(name)` (`0x00110b60`) plays one looping 2D sound with a 2 s fade-in,
   replacing the current one unless it is the same; in level 82 one track is swapped for another
   (`0x63f1c8b3` → `0x0ffbaa27`). Its volume is the task's caller volume (`SetAmbientTrackVolume`). Confirmed (code).
-- **Ambient table and emitters** {#ambient}: `AddAmbientSound(slot, name)` (`global.lua`, 1,077 calls) stores a
-  name's hash in slot `slot` of the ambient table (ambient manager `+0x1a014 + 4 × slot`); an emitter
-  (`AddAmbientSoundEmitter2(name, p1, p2, slot, sound, count, ...)`) plays, at random intervals, a random sound of
-  slots `slot` to `slot + count - 1`, or the one named sound when `slot` is -1
-  ([Sound bindings](../references/bindings/sound.md#addambientsoundemitter2)). The emitters run in
-  `0x0010c100` from the manager's update. Confirmed (code) for the slot store; the emitters' timing is inferred.
+- **Ambient table**: `AddAmbientSound(slot, name)` (`global.lua`, 1,077 calls) stores a name's hash in slot `slot`
+  of the ambient table (ambient manager `+0x1a014 + 4 × slot`). Confirmed (code).
 - The `small_loops` sounds (class flag `0x20`) take the stream channels 10-12, so they never steal from effects.
+
+#### Ambient emitters {#ambient}
+
+The ambient manager (audio manager `+0x24280`; its functions are on [Animation](animation.md#ambient)) holds up to
+512 emitters of `0xd0` bytes. `AddAmbientSoundEmitter2(name, pos1, pos2, slot, sound, count, range, plays, minDelay,
+maxDelay, mode, filter)` makes one through `AmbientManager_AddEmitter` (`0x0010cf58`); a name already used returns
+the existing emitter and switches it on. Offsets below are from the emitter's start (ambient manager `+0x10 + 0xd0 ×
+id`; the Animation page counts from the manager, 16 bytes more). Confirmed (code):
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x00` | the one sound's hash, when `slot` is -1 |
+| `+0x10` | up to five points the sound plays from, 16 bytes each: `pos2`, or `SetAmbientEmitterPositions`' list |
+| `+0x60` | `pos1`, the point the range is measured from |
+| `+0x70` | the playing sound's handle |
+| `+0x74` | range in m; -1 gives the first sound's `far` + 10 |
+| `+0x78` | volume (`SetAmbientEmitterVolumeMod`, 1) |
+| `+0x7c` | on (`EnableAmbientEmitter`) |
+| `+0x80`, `+0x84` | the last play's time (ms) and the delay in whole **seconds** before the next, drawn in `minDelay`-`maxDelay` (`+0x86`, `+0x88`) |
+| `+0x8a`, `+0x8f`, `+0x94` | first table slot (-1: the one sound), slot count, next slot (a random one to start) |
+| `+0x8c` | plays left (`plays`; -1 without limit); reaching -1 switches the emitter off |
+| `+0x8d` | mode (below; the scripts pass 3 or 4) |
+| `+0x8e` | number of points (1, or the positions' count) |
+| `+0x90` | listener filter (`filter` 0-2, larger is 0) |
+| `+0xac` | name kind: 1 when the name contains `_DAM_`, 2 for `_FHT_`, 3 when its lower-case form contains `music` |
+| `+0xad` | the name (31 chars) |
+
+**The update** (`AmbientManager_UpdateEmitters`, `0x0010c100`) runs at most **once a second** (game clock) and not at
+all while game-state flag 2 is set or the load screen is up (`+0x24270`). For each player and each emitter:
+
+1. **Who hears it.** A player counts unless the filter says otherwise: filter 0 skips a player whose `+0x5b7` is set,
+   1 one whose `+0x5b7` is clear, 2 none (what `+0x5b7` is is not traced; it also gates the owner duck of
+   [Task update](#three-d)). An emitter that is off, or that no player counts for, has its sound stopped.
+2. **Volume.** A playing sound gets the ambient factor (`a8`: 0.75 while a scene plays, else 1), and a `music`
+   emitter's also the duck: 0.5 while a music channel is busy and the mood is not 2.
+3. **Distance**: to the nearest listener from `pos1` (`0x00113188`). Beyond the range, or while `0x005147c8` is set,
+   nothing starts, and a playing sound is stopped once the listener is beyond that sound's own `far`.
+4. **Kind gates**: a `_DAM_` emitter plays only from 2 s to 15 s after the AI's event stamp
+   (`AmbientManager_MarkEvent`, [Animation](animation.md#ambient)) and not while the fight timer is on; a `_FHT_` one
+   only while the fight timer is on (mood 1 and 5 s after).
+5. **Play**, by mode, at most **two new sounds per update** over all emitters:
+    - **1, 2**: when the delay has passed and nothing is playing, take one play, play the next sound (the table slots
+      **in turn**, from the random start) at a random one of the points, positional and duckable, at the emitter's
+      volume; then draw the next delay.
+    - **3**: a loop: whenever the listener is in range and nothing is playing, start the next sound at the first
+      point; beyond the range, stop it. No delays.
+    - **4**: as 1 and 2, but its first play waits for neither the delay nor a playing sound; it then becomes mode 2.
+    - **5**: as 1 and 2, but a playing sound is stopped at the next update (inferred to suit sounds of a second or
+      less).
+    - **6**: nothing.
+    - **7**: a **conversation** (`AmbientSound_AddStatResponse` → `AmbientManager_AddSphereEmitter`, `0x0010cd68`): up
+      to five voice sets (`+0x98`, -1 ends the list) take turns, each saying the `statement` command (20) and the
+      next set the `response` (21), the line number moving on after each response; when the listener is farther
+      than the line's `far` − 20 m the distant `statement2` / `response2` lines (77, 78) are used, or the same line
+      at half volume.
+
+Confirmed (code). `AmbientSound_AddOneOff` (`0x00113b78`) is an emitter of one sound with one play;
+`AddAmbientSoundEmitter` (no name) is the same call named `particle task`
+([Sound bindings](../references/bindings/sound.md#addambientsoundemitter2)).
 
 ### Radios {#radios}
 
@@ -430,6 +485,30 @@ handle and queues hint text `0x11`. Confirmed (code).
 sound with flags `0x12` (the front end's cue 9 on START, `0xf` on back; [Front end](frontend.md)). The 39 cues are in
 [Sound and music](../references/sound.md#interface-sound); the menu cues are in the `menu` bank. Confirmed (code).
 
+### Animation sounds {#anim-sounds}
+
+A clip event of **type 11** ([Animation data](formats/animation.md#keyframes-chunk-0x00), fired by
+`Anim_FireFrameEvents`, `0x00101dd8`) sends its human message `0x8b` with the event's value, an animation sound id
+(`SA.*`, 0-161, the [matrix](#sound-matrix)'s animation table). Gameplay clips and scene role clips carry them alike:
+the footsteps, cloth, grunts and impacts of every move. The human's handler (`Human_OnAnimSoundEvent`, `0x0021f700`)
+acts by id. Confirmed (code):
+
+- **Most ids**: the animation entry played at the human's position (`Human_PlayAnimSound`, `0x0021f548`), owned by
+  the human. A player's (human `+0x1b0` not -1) play at **twice** the entry's volume times the combat factor (game
+  state `+0x24c` while the camera is in combat framing, `0x0021e3a8`), and add column 2, and column 3 under combat
+  framing; anyone else's play column 1 only.
+- **Footsteps and body falls** (ids 1, 3 and some others): the material pair of a body material (8 for feet) and the
+  ground under the human (`+0x1d8`, remapped as above), through `Human_PlayFootstep` (`0x0021f290`); twice as loud for
+  a player, half for one hidden in shadow.
+- **Held objects** (ids `0x34`, `0x56`): the held object's material against itself or against 17.
+- **Vocal ids** (grunts and efforts): the entry's first sound said as a speech line (`Human_SayAnimLine`,
+  `0x0021f410`; needs `+0x199`, a player twice as loud), some only when no line plays, some cutting it.
+- **Speech-command ids**: `Human_SayCommand` with a fixed command (`0x8b` itself says `onfire`, 107, while `+0x19b`
+  is set; others taunts and reactions, some only when `Ambient_MayGesture` allows).
+
+Types 12, 14, 69, 70 and 71 send messages `0x8c`, `0x8e`, `0xc5`, `0xc6` and `0xc7` with the value; 14 and 71 are the
+sound-by-hash events of [Scene soundtracks](#scene-sound). Type 13 starts the scene soundtrack.
+
 ### Saying a speech command {#speech}
 
 `SoundPlayCommand(human, command, callback, flag, target, flag2)` resolves the human and calls `Human_SayCommand`
@@ -502,6 +581,26 @@ first part. Speech lines are class flags `0x06` (streamed, positional) at priori
 sounds outrank them. 537 of the 566 names the scripts form are in the sound list; every bank sound is in the list too,
 so the other 29 (and the 2 missing ambient names) are not on the disc at all (inferred: the scripts name lines
 that were cut).
+
+**How a line plays** (`Human_Speak`, `0x00239370` → `Human_PlaySpeech`, `0x0021e400`; `HuSpeakNI` →
+`Human_PlaySpeechCutting`, `0x0021e698`), confirmed (code):
+
+1. Nothing plays, and the callback runs at once, when the human is missing, the line is nil, the human's speech is
+   off (`+0x198`, `HuEnableSpeaking`) or **a cinematic is playing** (game state `+0x410`): characters do not speak
+   over cinematics; their dialogue there is the scene's soundtrack ([Scene soundtracks](#scene-sound)).
+2. `HuSpeak` also gives up while a line is alive or the human's "may be cut" byte `+0x194` is clear. `HuSpeakNI`
+   stops the current line first, unless that line is itself an uncut `HuSpeakNI` one: it clears `+0x194` while it
+   plays, so a second `HuSpeakNI` (or `HuShutUp(false)`) leaves it alone and runs its own callback at once.
+   `HuShutUp(true)` always stops.
+3. The line is **prepared**, not started: a positional, directional stream 1.8 m above the human's feet, at volume 1
+   (× the combat factor of [Animation sounds](#anim-sounds) for a player). **The fifth argument is the play call's
+   duckable flag**: false makes a non-duckable line, which plays at pitch 1 and ducks every other duckable
+   directional sound of a non-player to `+0x3faac` (0.2) while it lasts.
+4. `Human_UpdateSpeech` (`0x0021e940`, each update) starts the stream once it is primed (and the speaking pose with
+   it), keeps it at the human's head, and when the line is gone calls the Lua callback with its argument and sets
+   `+0x194` again. A line stopped by `HuShutUp` keeps its Lua callback, which runs at that next update; a line cut off
+   by a new one loses it (the new line's callback replaces it). The speaker looks at the `listener` for the line's
+   length plus 0.5 s.
 
 ### Scene soundtracks {#scene-sound}
 
@@ -978,7 +1077,7 @@ The unit's other functions (`0x0010d758`-`0x0011b770`), by address; names are ou
 | `0x001110e8` | `Sound_EnableEffects` | `SoundEnableEffects`: forwards to `AudioManager_EnableEffects` (`0x001130c8`) | confirmed (code) |
 | `0x00111110` | `Sound_CfgInterfaceSound` | forwards to `SoundMatrix_SetCue` (`0x001167b8`) | confirmed (code) |
 | `0x00111130` | `AudioManager_GetCueTable` | the sound matrix's interface-cue lookup (`0x00116828`) | confirmed (code) |
-| `0x00111150` | `Sound_SetListenerCopy` | copies a 16-byte vector and calls `0x00113188` | confirmed (code) |
+| `0x00111150` | `Sound_DistanceToListener` | a copy of a point's distance to the nearest player listener (`0x00113188`), the [emitters'](#ambient) range test | confirmed (code) |
 | `0x00111428` | `AudioManager_StopLoadScreen` | stops both halves; when the left one was real, waits (yielding, updating the audio manager and the device) until its voice is idle (device slot `+0x108`) | confirmed (code) |
 | `0x00111558` | `SoundTask_SetPan` | a 2D task's left and right pan gains (`+0x50`, `+0x54`) | confirmed (code) |
 | `0x001115a8` | `AudioManager_GetBankName` | copies the current bank's name (15 chars) | confirmed (code) |
@@ -1199,7 +1298,7 @@ game's music update does; the random factors come from the engine's own seeded s
 generator, `0x006eb8b0`, seeded from the timer at start-up, `0x0010f768`). The speech and ambience stand-ins: an emitter
 plays one sound at a time, waiting a random whole number of seconds in its two delays before the first and after each
 one ends (level99's pairs, 1-3 to 10-30, read as seconds), from a random point of its line or a random one of its
-positions; its range, `arg8`, `arg11`, mode and the name-based types are not read; a line follows its speaker; a line
+positions; its range, `plays`, `mode`, `filter` and the name kinds are not read; a line follows its speaker; a line
 stopped by `HuShutUp` or cut off drops its callback; `HuShutUp` always stops (the human's `+0x194` is not modelled);
 `HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at target; a human's voice set is his type's
 own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of blocked lines is not applied;
@@ -1209,8 +1308,8 @@ random track of the mood each frame's surroundings give when the mood changes; t
 health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2, its chase goals not built, never
 comes), the pick draws from the game's random index, and the fades are the music player's own. `SoundSetEffect` and
 `SoundEnableEffects` are kept in the game state only. Not built yet: reverb, the other ambient bindings
-(`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`), the game's own speech commands, and the sounds of the scenes'
-role clips (clip event 11, [Scenes](scenes.md#events)). The hub's sound bindings
+(`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`), the game's own speech commands, and the clips' animation
+sounds (clip event 11, [Animation sounds](#anim-sounds)). The hub's sound bindings
 (`repo:src/scripting/hub_world_bindings.cpp`): `EnableAmbientEmitter` switches an emitter off (it stops its sound and
 plays nothing more) and on; `SoundPlay` plays a sound once at a point; `SndLoadMatrix` runs `<name>_preload.lua` when
 the name changes and frees nothing (Coney keeps no matrix); `HuSay` speaks a line with no callback.
@@ -1227,9 +1326,8 @@ the name changes and frees nothing (Coney keeps no matrix); `HuSay` speaks a lin
   0.5 s). Which callers pass the play call's tenth argument (task `+0xe4`) and what the IOP does with it.
 - Whether a scene soundtrack holds the dialogue alone or a full mix, and what the 20 unused stereo sounds are.
 - The IOP side (`IOP.IRX`): the exact SPU2 voice assignment of streams and its mixing.
-- The emitters' timing (`0x0010c100`): the delays' unit, whether one sound waits for the last, where along the line or
-  positions a sound comes from, and what range, `arg8`, `arg11`, mode and the special name types (`0x0010cf58`) do.
-- What `HuSpeak`'s fifth argument changes, and whether a line stopped by `HuShutUp` or cut off runs its callback.
+- What player `+0x5b7` is (the emitters' listener filter and the owner duck), and what the AI's ambient event stamp
+  (`0x002936a8`) marks.
 - Who ends the bank deferral (`+0x3fa58`).
 - The blocked lines of `0x00114c98`: a hand-written list for levels 11, 20, 31, 34, 82, 83, 84, 92 and 95 (some
   by checkpoint, game state `+0x33a`), each naming voice sets, commands and 1-based lines; not yet tabulated.

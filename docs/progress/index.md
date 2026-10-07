@@ -28,7 +28,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- |
 | **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.8% of the game's own code (495,164 of 3,354,776 bytes, 1,620 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
-| **Understood** | `███▌░░░░░░░░░░░░░░░░` | 17.5% named in Ghidra and cited with evidence (571,508 of 3,274,152 bytes; 1,889 of 11,278 functions, 16.7%) |
+| **Understood** | `███▌░░░░░░░░░░░░░░░░` | 17.5% named in Ghidra and cited with evidence (571,992 of 3,274,152 bytes; 1,890 of 11,278 functions, 16.8%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
 469 reimplemented function(s) have no size yet and add no bytes.
@@ -96,7 +96,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██▍░░░░░░░░░░░░░░░░░` | 12.1% | 30 of 449 | 95 | 133 | 98,444 |
 | `Graphics` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 66 of 628 | 66 | 628 | 191,720 |
 | `GUI` | `██░░░░░░░░░░░░░░░░░░` | 10.0% | 134 of 1,719 | 134 | 1,719 | 491,800 |
-| `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.1% | 225 of 3,307 | 732 | 891 | 1,079,924 |
+| `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.2% | 226 of 3,307 | 732 | 892 | 1,079,924 |
 | `Maths (unnamed)` | `██▊░░░░░░░░░░░░░░░░░` | 13.8% | 8 of 72 | 12 | 29 | 12,288 |
 | `Memory` | `████░░░░░░░░░░░░░░░░` | 19.8% | 9 of 89 | 9 | 89 | 15,504 |
 | `Physics` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 13 of 173 | 13 | 173 | 77,904 |
@@ -111,7 +111,7 @@ at the top of the repository's `README.md`.
 | `Movie` | `██████████████████▏░` | 90.7% | 7 of 11 | 7 | 11 | 5,136 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 of 605 | 1 | 23 | 95,212 |
 | Unattributed | `▌░░░░░░░░░░░░░░░░░░░` | 2.3% | 4 of 37 | 8 | 33 | 20,672 |
-| **All** | `███▌░░░░░░░░░░░░░░░░` | 17.5% | 1,889 of 11,278 | 2,596 | 7,453 | 3,274,152 |
+| **All** | `███▌░░░░░░░░░░░░░░░░` | 17.5% | 1,890 of 11,278 | 2,596 | 7,454 | 3,274,152 |
 
 ## Research coverage
 
