@@ -267,6 +267,10 @@ void PlayLevelMode::useHud(hud::Hud& shared) {
 }
 
 PlayLevelMode::~PlayLevelMode() {
+    // The dynamic clips go with the mode; the scripts' hold (gameplay's, which outlives it) must not use them.
+    if (m_cast.scripted != nullptr) {
+        m_cast.scripted->setClipSource({});
+    }
     m_levelEffects.reset();
     attachScenes(nullptr, 0.0); // the scenes may outlive the stage they were hosted by
     m_scenery->setLighting(nullptr);

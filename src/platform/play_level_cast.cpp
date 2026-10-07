@@ -40,6 +40,8 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
         sceneName() != "level99");
     // HuChangePlayerGang hands player 1 to a member of another gang: the player takes its place.
     cast.scripted->setHandOver([this](const ai::Brain& to) { takePlace(to); });
+    // GoalPlayDynAnimation's clips are the level's dynamic clips, loaded from the disc when first named.
+    cast.scripted->setClipSource([this](std::string_view name) { return m_dynamicClips.find(name); });
     cast.scripted->release([this](const HumanCreation& human) { return castHuman(human); });
     m_print(std::format("cast: {} humans from the level's scripts, {} AI ({} models); {} calls held for them run\n",
                         cast.humans != nullptr ? cast.humans->all().size() : 0, m_ai->count(), m_castCharacters.size(),

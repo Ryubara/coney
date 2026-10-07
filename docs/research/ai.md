@@ -2049,8 +2049,10 @@ the slower of the two corners' speeds is used. A move clears `+0x284` at its sta
 (`Human_IsBusy`). The look-at's turn value is kept, not read; no turn is ever refused its abort.
 
 **Coney choices for the scripted goals, gangs and tactics.** With no scene system a scene ends at once and its callback
-is scheduled with (handle, 1) after 33 ms; with no clip by id from outside the dispatcher (`ScriptServices::playClip`)
-a play-anim action ends at once, so `GoalPlayDynAnimation` still completes. "Not on its feet" stands in for the state
+is scheduled with (handle, 1) after 33 ms. A play-anim action plays its clip (668 the level's dynamic clip by name, any
+other id the anim set's) faded in over 0.2 s, at rate 1 for a dynamic clip, then the idle, holding `0x80000` (busy and
+gated; which bits the original's clip holds is not traced); with no such clip it ends at once, so
+`GoalPlayDynAnimation` still completes. "Not on its feet" stands in for the state
 words (PlayDyn's `0x7bf9e9f7ff0`, the crowd's free test, the standing count's three tests); the headcount's "living" is
 health left. AddressPerson's turn leads the target by one second of its velocity. `BrSuspend` clears the actions,
 then suspends. A full gang drops its first member; a human with no gang is no one's friend. A handler's call counts as
@@ -2201,6 +2203,8 @@ when `GangCanFlee` turns it on.
 - The attack pick's adjustments in detail (`0x002240e8` and the attacker-count terms), and the two tokens.
 - Link kind 2 and mask bit `0x100` in play, polygon `+0x02`, the globals `0x005105a0` and `0x005112b4`, and the
   goals that search with the mask `0x13` (`0x002aafd0`, `0x002c1470`).
+- Which record `+0x08` bits the play-anim action's clip holds (`0x0025a3e0`), its rate for a dynamic clip and its blend
+  out; Coney holds `0x80000`.
 - Which climb clips Vermin's fence plays (tall or short fence, standing or running) and how the climb's end moves
   the follower to the next waypoint (route state 3 → 0).
 - A\*'s "fails at 128 nodes": nodes closed, or the open heap's size? And the use term: (40 × uses) − 8, or

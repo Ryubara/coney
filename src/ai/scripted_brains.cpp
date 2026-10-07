@@ -755,4 +755,29 @@ void ScriptedBrains::playScene(int /*scene*/, Brain& human, std::string_view cal
     }
 }
 
+void ScriptedBrains::loadDynamicClip(Brain& human, std::string_view name) {
+    m_dynamicClips[human.handle()] = m_clipSource ? m_clipSource(name) : nullptr;
+}
+
+void ScriptedBrains::freeDynamicClip(Brain& human) { m_dynamicClips.erase(human.handle()); }
+
+std::optional<std::uint32_t> ScriptedBrains::playClip(Brain& human, int animId) {
+    // The dynamic slot's clip, or the anim set's own by id.
+    const anim::AnimClip* clip = nullptr;
+    float rate = 1.0F;
+    if (animId == kDynamicAnimId) {
+        const auto found = m_dynamicClips.find(human.handle());
+        clip = found != m_dynamicClips.end() ? found->second : nullptr;
+    } else if (animId >= 0) {
+        const characters::AnimSet& anims = human.human().animator().anims();
+        clip = anims.clip(static_cast<std::size_t>(animId));
+        rate = clip != nullptr ? anims.rate(static_cast<std::size_t>(animId)) : 1.0F;
+    }
+    if (clip == nullptr) {
+        return std::nullopt;
+    }
+    human.human().playScripted(*clip, static_cast<std::uint32_t>(animId), rate, kScriptedClipFade, kScriptedClipHeld);
+    return kScriptedClipHeld.held;
+}
+
 } // namespace coney::ai

@@ -11,6 +11,7 @@
 #include <numbers>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -20,12 +21,14 @@
 #include "ai/brains.h"
 #include "ai/move_to_flag_goal.h"
 #include "ai/pedestrian_goal.h"
+#include "ai/play_dyn_animation_goal.h"
 #include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
 #include "ai/turn_action.h"
 #include "human/human.h"
 #include "human/humans.h"
 #include "human/locomotion.h"
+#include "human/locomotion_gate.h"
 #include "support/collision_fixtures.h"
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
@@ -458,4 +461,36 @@ TEST_CASE("a pedestrian walks to the nearest network node, then on along its lin
     CHECK(planDistance(brain.human().position(), {49.0F, 41.0F, 0.0F}) < 1.2F);
     CHECK(coney::ai::pedestrianGait(2) == 3);
     CHECK(coney::ai::pedestrianGait(7) == 2);
+}
+
+TEST_CASE("GoalPlayDynAnimation plays the named level clip as anim 668, holding the human until it ends",
+          "[ai][scripted]") {
+    MoveScene scene;
+    coney::world_objects::WorldFlags flags;
+    coney::ai::ScriptedBrains scripted(scene.brains, flags);
+    // The level's dynamic clips: here the synthetic walk clip under the name "wave".
+    const coney::anim::AnimClip* wave = scene.character.anims.clip(408);
+    REQUIRE(wave != nullptr);
+    scripted.setClipSource([wave](std::string_view name) { return name == "wave" ? wave : nullptr; });
+    Brain& brain = scene.add({41.0F, 41.0F, 0.0F}, 0.0F);
+    scripted.bind(1.0, brain);
+    REQUIRE(coney::ai::goalPlayDynAnimation(brain, scripted, "wave", "", true));
+    // It starts within a few updates and plays as anim 668, the human busy while it does.
+    bool played = false;
+    const int steps = scene.runUntil(
+        300, [&] { return brain.goalCount() == 0; },
+        [&] {
+            if (brain.human().animator().animId() == static_cast<std::uint32_t>(coney::ai::kDynamicAnimId)) {
+                played = true;
+                CHECK(coney::human::stickBusy(brain.human().gateInput()));
+            }
+        });
+    CHECK(played);
+    CHECK(brain.goalCount() == 0);
+    // It took about the clip's length, not a single update.
+    CHECK(static_cast<float>(steps) >= wave->duration * 30.0F * 0.9F);
+
+    // A name no clip answers plays nothing and still ends at once.
+    REQUIRE(coney::ai::goalPlayDynAnimation(brain, scripted, "missing", "", true));
+    CHECK(scene.runUntil(10, [&] { return brain.goalCount() == 0; }, [] {}) < 10);
 }

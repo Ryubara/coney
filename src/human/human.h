@@ -209,6 +209,10 @@ class Human final : public Holdable {
         m_idleClipName = std::string(name);
         m_animator.setIdleClip(clip);
     }
+    /// A scripted clip played from outside the dispatcher (HumanAnimator::playScripted()).
+    void playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade, HeldFlags held) {
+        m_animator.playScripted(clip, animId, rate, fade, held);
+    }
     /// The name of the idle replacement applied (empty for none).
     [[nodiscard]] const std::string& idleClipName() const { return m_idleClipName; }
     /// Called with each anim id the human starts playing, for the scripts' animation callbacks

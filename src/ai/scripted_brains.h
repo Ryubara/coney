@@ -17,7 +17,9 @@
 #include "ai/move_to_flag_goal.h"
 #include "ai/script_services.h"
 #include "ai/scripted_humans.h"
+#include "animation/anim_clip.h"
 #include "animation/anim_math.h"
+#include "human/human_animator.h"
 #include "scripting/ai_bindings.h"
 #include "warriors/created_humans.h"
 #include "world_objects/flag_net.h"
@@ -40,6 +42,12 @@ namespace coney::ai {
 
 class ScriptedStory;
 class ScriptedHub;
+
+/// A scripted clip's fade in (the play-anim action's blend, 0.2 s, docs/research/ai.md#dyn-animation).
+inline constexpr float kScriptedClipFade = 0.2F;
+/// The record bits a scripted clip holds while it plays: **Coney stand-in** (`0x80000`, busy and gated), as the
+/// original's are not traced.
+inline constexpr human::HeldFlags kScriptedClipHeld{.held = 0x80000, .set = 0x80000};
 
 /// The brains the scripts drive by handle, and the gangs they make.
 class ScriptedBrains final : public script::AiBindingHost, public FlagServices, public ScriptServices {
@@ -275,6 +283,22 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// is scheduled with the human's handle and 1 after kGoalCallbackDelayMs, as a goal's is (what the original's
     /// scene end passes is not traced).
     void playScene(int scene, Brain& human, std::string_view callback) override;
+    /// Where a level-loaded clip comes from by name (the play mode's dynamic clips); empty: none ever loads.
+    using ClipSource = std::function<const anim::AnimClip*(std::string_view name)>;
+    void setClipSource(ClipSource source) {
+        m_clipSource = std::move(source);
+        m_dynamicClips.clear();
+    }
+    /// Names `name`'s clip, found through the clip source, as `human`'s dynamic animation (human `+0x468`).
+    void loadDynamicClip(Brain& human, std::string_view name) override;
+    /// Frees `human`'s dynamic animation.
+    void freeDynamicClip(Brain& human) override;
+    /// Starts anim `animId` on `human` (`0x0025a3e0`): kDynamicAnimId its dynamic clip, any other id its anim set's,
+    /// faded in over kScriptedClipFade and then the idle. Returns the record bits the clip holds, or nothing when there
+    /// is no clip (a name no clip answers: the play-anim action then ends at once). **Coney stand-in**: the clip holds
+    /// kScriptedClipHeld (`0x80000`, busy and gated), as which bits the original's holds is not traced; a dynamic clip
+    /// plays at rate 1.
+    [[nodiscard]] std::optional<std::uint32_t> playClip(Brain& human, int animId) override;
 
   private:
     // The brain named by `handle`, or null.
@@ -313,6 +337,8 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     std::map<double, HeldHuman> m_heldHumans; // the humans created while holding, by handle
     std::map<double, int> m_deletedGangs;     // the gang of each human deleted from one, by handle
     std::map<double, int> m_priorities;       // HuCreate's player argument of each human made, by handle
+    ClipSource m_clipSource;
+    std::map<double, const anim::AnimClip*> m_dynamicClips; // each human's dynamic animation, by handle
 };
 
 } // namespace coney::ai

@@ -280,6 +280,15 @@ void HumanAnimator::playCombatThenRun(std::span<const std::uint32_t> clips, floa
     m_state = AnimState::Attack;
 }
 
+void HumanAnimator::playScripted(const anim::AnimClip& clip, std::uint32_t animId, float rate, float fade,
+                                 HeldFlags held) {
+    // One clip handing over to the idle, as a combat clip does; the controller chooses again once it is over.
+    auto task = std::make_unique<anim::ClipThenNextTask>(clip, animId, rate, 0U, idleLoop());
+    task->holdFlags(held.held, held.set);
+    m_tasks.change(std::move(task), fade);
+    m_state = AnimState::Attack;
+}
+
 void HumanAnimator::playCombatWalk(std::uint32_t clip) {
     std::uint32_t id = clip;
     if (m_anims->clip(id) == nullptr) {
