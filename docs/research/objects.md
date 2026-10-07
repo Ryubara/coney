@@ -1077,7 +1077,10 @@ Coney's stand-ins for the world objects, where this page is silent:
 - **In play** (`repo:src/gamemodes/gameplay_mode.h`, `repo:src/platform/play_level_objects.cpp`): gameplay owns the
   level's `LevelObjects`; the boot scripts' recorded `CfgSetGlassProperties` calls are applied before the level script
   spawns into them. The play mode gives them the level's collision mesh and path data, ticks them twice a step, and
-  sends player 1's landed hit to the pane or door the strike meets. Their lock-pick callbacks call the scripts, a
+  sends player 1's landed hit to the pane or door the strike meets. It draws each swinging door's leaves at their
+  poses and each barrier as its type's model (its damaged model once hit, gone once broken;
+  `world_objects::doorDraws()`) with the world objects; the panes are not drawn yet. Their lock-pick callbacks call
+  the scripts, a
   break-in moves the `CrimeScene` flag, and their sounds go to `repo:src/audio/object_sounds.h`, which plays a name
   hash through the `SoundPlayer`.
 - **Disc check (NTSC-U, counts only):** `coney_tests "[disc][objects]"`: `level2` places its 26 doors (14 swinging, 12
@@ -1089,6 +1092,8 @@ Coney's stand-ins, where this page is silent:
 
 - `w` (the type's float property 5) is half the `CfgObj` box's width; the glint stands at `(−w/2, 0, 1.3)` in the door's
   frame; a leaf model is `dyn_dr_` and the type name after `dyn_door_`.
+- A swinging door's frame type draws no model of its own; a leaf is drawn with its model's origin at the leaf's
+  position; a model stage a splintering door or a cabin leaf takes is not drawn.
 - A leaf takes its target rotation on the next tick (no easing). `DoorOpen`'s "away" uses the door's turned y axis.
   `OpenDoorAnimated` and a lock pick's success open at once (`DoorOpen`), without human state 26.
 - A large pane's shards are 0.06 like a small one's; a shard's offset is a random step of 1/1000 in ±1. A link's distance

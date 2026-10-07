@@ -5,6 +5,7 @@
 #include <cmath>
 #include <utility>
 
+#include "core/name_hash.h"
 #include "raycast/collision_mesh.h"
 #include "world_objects/nav_links.h"
 
@@ -131,6 +132,18 @@ std::string leafModelOf(std::string_view type) {
         return std::string(kLeafPrefix) + std::string(type.substr(kDoorPrefix.size()));
     }
     return std::string(type);
+}
+
+// The model a door draws when the Object List has none for its own (Coney's stand-in): dyn_dr_ and the name after
+// dyn_door_, less a leading "dbl" (dyn_door_fence draws dyn_dr_fence, dyn_door_dblwoodfnce_xl's leaves
+// dyn_dr_woodfnce_xl).
+std::string fallbackModelOf(std::string_view type) {
+    std::string model = leafModelOf(type);
+    constexpr std::string_view kDouble = "dbl";
+    if (model.starts_with(kLeafPrefix) && std::string_view(model).substr(kLeafPrefix.size()).starts_with(kDouble)) {
+        model.erase(kLeafPrefix.size(), kDouble.size());
+    }
+    return model;
 }
 
 // The two loose pieces a breaking type leaves.
@@ -725,6 +738,38 @@ const Door* Doors::findByLeaf(double leaf) const {
         return std::ranges::find(door.leaves, leaf, &DoorLeaf::handle) != door.leaves.end();
     });
     return found == m_doors.end() ? nullptr : &*found;
+}
+
+std::vector<DoorDraw> doorDraws(const Doors& doors) {
+    std::vector<DoorDraw> draws;
+    for (const Door& door : doors.doors()) {
+        if (door.ended || door.hidden) {
+            continue;
+        }
+        if (door.doorClass == DoorClass::Swinging) {
+            for (const DoorLeaf& leaf : door.leaves) {
+                draws.push_back(DoorDraw{.handle = leaf.handle,
+                                         .modelHash = crc32(leaf.model),
+                                         .fallbackHash = crc32(fallbackModelOf(door.type)),
+                                         .position = leaf.position,
+                                         .rotation = leaf.rotation,
+                                         .tint = door.tint});
+            }
+            continue;
+        }
+        // A barrier swaps to its damaged model once hit, dyn_door_vargas to its broken one at the end.
+        std::uint32_t model = crc32(door.type);
+        if (door.doorClass == DoorClass::Barrier && door.hitpoints < door.maxHitpoints) {
+            model = door.type == kVargas && door.hitpoints <= 0 ? kVargasBrokenModel : kBarrierDamagedModel;
+        }
+        draws.push_back(DoorDraw{.handle = door.handle,
+                                 .modelHash = model,
+                                 .fallbackHash = crc32(fallbackModelOf(door.type)),
+                                 .position = door.position,
+                                 .rotation = door.rotation,
+                                 .tint = door.tint});
+    }
+    return draws;
 }
 
 } // namespace coney::world_objects

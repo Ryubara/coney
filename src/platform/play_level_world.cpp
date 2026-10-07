@@ -17,6 +17,8 @@
 #include "human/target_human.h"
 #include "platform/play_level_mode.h"
 #include "platform/play_lighting.h"
+#include "world_objects/doors.h"
+#include "world_objects/level_objects.h"
 #include "world_objects/object_list.h"
 #include "world_objects/pickups.h"
 
@@ -136,6 +138,14 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
                                             .fadeDistance = draw.fadeDistance,
                                             .sizeCullExempt = draw.sizeCullExempt,
                                             .translucent = draw.column});
+    }
+    // The doors' leaves and the barriers, at their poses (docs/research/objects.md#doors).
+    if (m_objects != nullptr) {
+        for (const world_objects::DoorDraw& door : world_objects::doorDraws(m_objects->doors)) {
+            const bool listed = m_objectList != nullptr && m_objectList->findByHash(door.modelHash) != nullptr;
+            m_placed->place(door.handle, listed ? door.modelHash : door.fallbackHash, door.position, door.rotation,
+                            PlacedObjects::Look{.tint = door.tint});
+        }
     }
     // The object in player 1's hand (docs/research/objects.md#held): the pick-up clip's take event gives the bone and
     // the local pose, composed with the bone of this frame's pose and the body's placement (the lean left out).

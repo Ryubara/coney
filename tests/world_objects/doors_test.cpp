@@ -12,6 +12,7 @@
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/name_hash.h"
 #include "raycast/collision_mesh.h"
 #include "support/object_fixtures.h"
 #include "world/path_map.h"
@@ -354,4 +355,55 @@ TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world
     coney::test::ObjectWorldFixture other;
     doors.spawn(other.handle(), at("dyn_door_chain_s"), &chain, {}, other.world);
     CHECK(other.paths.edges()[0].flags == 0x10); // dyn_door_chain_s leaves its links alone
+}
+
+TEST_CASE("the doors draw their leaves at their poses and a barrier as its model, damaged once hit",
+          "[world_objects][doors]") {
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo store = swinging(1, coney::world_objects::object_type::kBreakAndEnterDoor);
+    const double door =
+        doors
+            .spawn(
+                fixture.handle(), at("dyn_door_store"), &store, [&fixture] { return fixture.handle(); }, fixture.world)
+            .handle;
+    const ObjectTypeInfo fence{.className = "dyn_door_fence", .hitpoints = 10};
+    const double barrier = doors.spawn(fixture.handle(), at("dyn_door_fence"), &fence, {}, fixture.world).handle;
+
+    std::vector<coney::world_objects::DoorDraw> draws = coney::world_objects::doorDraws(doors);
+    // The store door's two leaves (no model for its frame), then the fence.
+    REQUIRE(draws.size() == 3);
+    const Door& made = *doors.find(door);
+    CHECK(draws[0].handle == made.leaves[0].handle);
+    CHECK(draws[0].modelHash == coney::crc32(made.leaves[0].model));
+    CHECK(draws[1].position.x == Catch::Approx(made.leaves[1].position.x));
+    CHECK(draws[2].handle == barrier);
+    CHECK(draws[2].modelHash == coney::crc32("dyn_door_fence"));
+
+    // Hit: the store door's leaves swing to their new rotation; the fence takes its damaged model, then hides.
+    doors.hit(door, hitBy(HitKind::Plain, {4.0F, 7.0F, 0.0F}), fixture.world);
+    doors.hit(barrier, hitBy(HitKind::Plain), fixture.world);
+    tick(doors, fixture, 2);
+    draws = coney::world_objects::doorDraws(doors);
+    REQUIRE(draws.size() == 3);
+    CHECK(draws[0].rotation.w == Catch::Approx(doors.find(door)->leaves[0].rotation.w));
+    CHECK(draws[0].rotation.w != Catch::Approx(1.0F));
+    CHECK(draws[2].modelHash == coney::world_objects::kBarrierDamagedModel);
+    doors.hit(barrier, hitBy(HitKind::Charge), fixture.world);
+    CHECK(coney::world_objects::doorDraws(doors).size() == 2);
+}
+
+TEST_CASE("a door whose model is not listed falls back to dyn_dr_ and its name, less a leading dbl",
+          "[world_objects][doors]") {
+    coney::test::ObjectWorldFixture fixture;
+    Doors doors;
+    const ObjectTypeInfo fence{.className = "dyn_door_fence", .hitpoints = 10};
+    doors.spawn(fixture.handle(), at("dyn_door_fence"), &fence, {}, fixture.world);
+    const ObjectTypeInfo wood = swinging(100);
+    doors.spawn(
+        fixture.handle(), at("dyn_door_dblwoodfnce_xl"), &wood, [&fixture] { return fixture.handle(); }, fixture.world);
+    const std::vector<coney::world_objects::DoorDraw> draws = coney::world_objects::doorDraws(doors);
+    REQUIRE(draws.size() == 3);
+    CHECK(draws[0].fallbackHash == coney::crc32("dyn_dr_fence"));
+    CHECK(draws[1].fallbackHash == coney::crc32("dyn_dr_woodfnce_xl"));
 }

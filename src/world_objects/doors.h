@@ -280,4 +280,23 @@ class Doors {
     std::vector<Door> m_doors;
 };
 
+/// One model a door puts in the world this frame.
+struct DoorDraw {
+    double handle = kNoObject; ///< The leaf's or the door's handle.
+    std::uint32_t modelHash = 0;
+    /// **Coney's stand-in** when the Object List has no model for modelHash: `dyn_dr_` and the type name after
+    /// `dyn_door_`, less a leading `dbl` (the barrier `dyn_door_fence` draws `dyn_dr_fence`).
+    std::uint32_t fallbackHash = 0;
+    anim::Vec3 position{};
+    anim::Quat rotation{};
+    std::uint32_t tint = 0xffffffffU; ///< `0xRRGGBBAA`.
+};
+
+/// What the level's doors draw: each leaf of a swinging door at its pose (its model `dyn_dr_*`), and a barrier or a
+/// door of another class as its type's model (a hit barrier its damaged model, `dyn_door_vargas` broken its broken
+/// one); nothing for a hidden barrier or a door whose task has ended. **Coney's stand-in** until the draw is traced: a
+/// swinging door's frame type draws no model of its own, and a model stage a splintering door or a leaf takes is not
+/// shown.
+[[nodiscard]] std::vector<DoorDraw> doorDraws(const Doors& doors);
+
 } // namespace coney::world_objects
