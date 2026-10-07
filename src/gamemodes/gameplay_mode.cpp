@@ -630,6 +630,13 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
     if (m_level) {
         result = m_level->update(stack, frame);
     }
+    // A frozen world: after its first step only the level's own step runs.
+    if (m_worldFrozen && m_level) {
+        if (m_frozenStepDone) {
+            return result;
+        }
+        m_frozenStepDone = true;
+    }
     updateUncuff();
     m_scripts.setTime(nowMs);
     callTutorialCallback();

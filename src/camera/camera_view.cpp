@@ -82,4 +82,15 @@ CameraView viewLookingAt(anim::Vec3 position, anim::Vec3 lookAt, float fieldOfVi
                       .farClip = farClip};
 }
 
+CameraView pinnedView(anim::Vec3 position, anim::Quat orientation, float fieldOfView, float nearClip, float farClip) {
+    CameraView view{.position = position,
+                    .orientation = anim::normalise(orientation),
+                    .lookAt = position,
+                    .fieldOfView = fieldOfView,
+                    .nearClip = nearClip,
+                    .farClip = farClip};
+    view.lookAt = anim::add(position, viewForward(view));
+    return view;
+}
+
 } // namespace coney::camera

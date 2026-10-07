@@ -148,8 +148,10 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
     }
     placeCamera(camera, view);
     camera->beginUpdate();
+    // The animations' time: game time, or the time freezeAnimation() holds them at.
+    const std::uint64_t animationMs = m_animationMs.value_or(nowMs);
     // The light manager's viewport pass: the ambients' colours, the cull and the coronas of this frame.
-    lit.beginFrame(view.pose, view.nearClip, view.drawDistance, nowMs);
+    lit.beginFrame(view.pose, view.nearClip, view.drawDistance, animationMs);
 
     // The render states of the streamed worlds' passes: Z test and write, back faces culled, fog in the background
     // colour, blending by alpha for the fade.
@@ -166,7 +168,7 @@ void WorldRenderer::render(RenderEngine& engine, const WorldSet& set, const worl
 
     // The level's background, before the world (LevelObject_RenderBackground, from the viewport pass).
     if (level != nullptr) {
-        renderBackground(camera, *level, view, fogColour, pendingDistance, nowMs);
+        renderBackground(camera, *level, view, fogColour, pendingDistance, animationMs);
         // 5. The level world, the light glows: nothing culled, Z test and write and fog on.
         if (rw::Atomic* glows = atomicOf(level->levelWorld.get()); glows != nullptr) {
             rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);

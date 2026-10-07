@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "camera/camera_view.h"
 #include "core/error.h"
 #include "debug/play_controls.h"
 #include "fileio/wad.h"
@@ -65,6 +66,9 @@ class PlayScenery {
     /// simulation reads.
     virtual void draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
                       const std::function<void()>& drawObjects) = 0;
+    /// Holds the scenery's own animations (clouds, light flicker) at game time `atMs` from now on, whatever draw() is
+    /// given, while what streams in still fades in: `--freeze-world`. A scenery without animations ignores it.
+    virtual void freezeAnimation(std::uint64_t atMs) { (void)atMs; }
     /// The direction the character's directional light travels, in the game's axes: the stand-in lighting of a scenery
     /// without a level's lights.
     [[nodiscard]] virtual anim::Vec3 lightDirection() const = 0;
@@ -126,6 +130,7 @@ class LevelPlayScenery final : public PlayScenery {
               const std::function<void()>& drawObjects) override;
     [[nodiscard]] anim::Vec3 lightDirection() const override;
     void setLighting(SceneLighting* lighting) override { m_renderer.setLighting(lighting); }
+    void freezeAnimation(std::uint64_t atMs) override { m_renderer.freezeAnimation(atMs); }
     [[nodiscard]] std::string summary() const override;
     [[nodiscard]] std::string name() const override { return m_name; }
     [[nodiscard]] const world::PathMap* pathMap() const override { return m_paths ? &*m_paths : nullptr; }
@@ -211,5 +216,10 @@ class SandboxPlayScenery final : public PlayScenery {
 
 /// A direction in the game's axes in RenderWare's, as toRenderWare() turns points.
 [[nodiscard]] anim::Vec3 directionToRenderWare(anim::Vec3 game);
+
+/// The camera `view` (game axes: its orientation's +y the view direction, +z up) as the world renderer takes it, in
+/// RenderWare's axes, its 4:3 view window drawn at `aspect` (width over height, RenderEngine::viewAspect()) keeping its
+/// height, and `drawDistance` as the far clip. Right is forward x up, as the play camera's.
+[[nodiscard]] WorldView worldViewOf(const camera::CameraView& view, float aspect, float drawDistance);
 
 } // namespace coney::platform

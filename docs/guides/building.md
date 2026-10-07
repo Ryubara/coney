@@ -185,7 +185,8 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
       [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--trace FILE]
-                   [--script-trace FILE] [--scene NAME]]
+                   [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]] [--freeze-world]]
+      [--render-size WxH]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE] [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
@@ -661,7 +662,7 @@ scene system, beside the scenes the level's scripts play themselves (level99's i
 is a test aid:
 
 ```sh
-build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --scene l99_c5 --headless --frames 560 --screenshot ../../scratch/l99_c5.png
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --scene l99_c5 --frames 560 --screenshot ../../scratch/l99_c5.png
 ```
 
 The original's trace, recorded in PCSX2 by `coney-tools pcsx2 record`, uses the same names and units for the columns
@@ -676,6 +677,29 @@ script starts with `MenuLoadLevel` (the hub's missions) is played the same way. 
 carry from one level to the next, so the story's order holds: 99, 80, 87, the hub (`level95`), 34 and on. It happens
 between frames, once the level's gameplay is the mode on top (not under a pause), and only for a level with a streamed
 world: the front end (`level100`) is not played, and a mission with no next one just stays. `--frames` still ends the run.
+
+#### Matched views {#matched-views}
+
+Three options make a frame that can be laid beside a screenshot of the original from the same place:
+
+- `--camera X,Y,Z,QX,QY,QZ,QW[,FOV]` (with `--play-level`) pins player 1's view for the whole run, over the follow,
+  scene and free cameras. X,Y,Z is the eye in the game's axes (metres, z up) and QX..QW the orientation quaternion,
+  both exactly as the original's camera object holds them at `+0x10` and `+0x20`; FOV is the field of view used, in
+  degrees (`+0x48`, 60 when not given). The quaternion turns the camera's +y (the view direction) and +z (up) into the
+  world ([The base camera object](../research/camera.md#the-base-camera-object)). The near and far clips are the
+  current camera's, as usual, and the scenery streams round the pinned eye.
+- `--render-size WxH` draws frames of W × H pixels (`640x448` is the original's frame buffer). The 2D screen fills the
+  whole frame and the 3D view keeps the 4:3 shape of a television across it, so a 640 × 448 screenshot lines up pixel
+  for pixel with the original's frame buffer. It needs a window.
+- `--freeze-world` (with `--play-level`) stops the world after the first step of play: the scripts, people, cars,
+  particles and animation stand still, while the fixed step runs on and the scenery still streams in (and fades in)
+  round the camera, so every later frame shows the same picture.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 --checkpoint 1 --skip-movies --freeze-world --camera 75.2,41.1,1.8,0,0,0.7071068,0.7071068,65 --render-size 640x448 --frames 300 --screenshot ../../scratch/l99_view.png
+```
+
+`--screenshot` needs a window, so these runs are not `--headless`.
 
 ### The debug menus {#the-debug-menus}
 

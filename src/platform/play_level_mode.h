@@ -180,6 +180,17 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// says, if it says: `--start`, Coney's own test aid.
     void startAt(const StartPlace& place);
 
+    /// Pins player 1's view at `pin` for the rest of the run, whatever camera the game shows (scene cameras too), with
+    /// the current camera's near and far clips: `--camera`, Coney's test aid for matching the original's frames. The
+    /// scenery streams and culls round the pinned view.
+    void pinCamera(const CameraPin& pin);
+    /// Freezes the world after the next step: from then on a step only streams the scenery round the camera and brings
+    /// in the world objects there, and every frame is drawn from that step with the scenery's animations held, so each
+    /// frame shows the same picture: `--freeze-world`.
+    void freezeWorld() { m_freezeWorld = true; }
+    /// Whether the world is frozen now (freezeWorld() and its first step done).
+    [[nodiscard]] bool worldFrozen() const { return m_freezeWorld && m_frozenSince.has_value(); }
+
     /// Sets the debug lines render() draws (the debug session's, which must outlive the mode); null draws none.
     void setDebugDraw(const debug::DebugDrawOptions* options) { m_debugDraw = options; }
 
@@ -303,6 +314,16 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
 
     // The camera of `snapshot` as the scenery draws it, in RenderWare's axes, with `drawDistance` as its far clip.
     [[nodiscard]] WorldView view(const human::PlayerSnapshot& snapshot, float drawDistance) const;
+    // The view a step or a frame draws through: the pinned camera, else a scene's camera, else the free camera, else
+    // the follow camera of `snapshot`; `free` is the free camera's pose to use when it is on.
+    [[nodiscard]] WorldView chosenView(const human::PlayerSnapshot& snapshot, float drawDistance, float alpha,
+                                       const world::CameraPose* free) const;
+    // The scenery's part of a step from the camera chosenView() gives (streaming, then the draw distance), returning
+    // that view at the new draw distance.
+    WorldView stepSceneryView(const FrameTime& frame);
+    // A step of the frozen world: the scenery's streaming and visibility round the camera and the world objects
+    // brought in there, nothing advanced.
+    void stepFrozen(const FrameTime& frame);
     // Makes the scene stage (play_level_scene.cpp).
     void makeStage();
     // One step of the scenes at `nowMs` with pad 1's and 2's buttons (a released human is placed as it is let go,
@@ -442,6 +463,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::uint32_t m_lastAnimId = 0;
     const debug::DebugDrawOptions* m_debugDraw = nullptr;
     bool m_frozen = false;
+    std::optional<CameraPin> m_pinnedCamera;                      // `--camera`
+    bool m_freezeWorld = false;                                   // `--freeze-world`
+    std::optional<std::uint64_t> m_frozenSince;                   // the game ticks of the step the world froze after
     std::optional<Interpolated<world::DebugCamera>> m_freeCamera; // at the last two steps, while it is on
     std::vector<sandbox::Primitive> m_spawned;
     // The sandbox's targets, each drawn with its own copy of the character's mesh.

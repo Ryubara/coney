@@ -48,4 +48,11 @@ struct CameraView {
 [[nodiscard]] CameraView viewLookingAt(anim::Vec3 position, anim::Vec3 lookAt, float fieldOfView, float nearClip,
                                        float farClip);
 
+/// A view pinned at `position` with the orientation `orientation` as a base camera stores it (+0x10 and +0x20,
+/// docs/research/camera.md#the-base-camera-object; normalised here, as any length but 0 is taken), looking along its
+/// +y with its +z up, the look-at point one metre ahead: `--camera`, Coney's test aid for matching the original's
+/// frames.
+[[nodiscard]] CameraView pinnedView(anim::Vec3 position, anim::Quat orientation, float fieldOfView, float nearClip,
+                                    float farClip);
+
 } // namespace coney::camera

@@ -34,6 +34,32 @@ struct StartPlace {
     std::optional<float> cameraYawDegrees;
 };
 
+/// What `--camera` asks for: player 1's view pinned to one place and orientation for the whole run, whatever camera
+/// the game would show, so a frame can be matched with one of the original's (docs/guides/building.md#matched-views).
+/// The values are the base camera object's (docs/research/camera.md#the-base-camera-object): Coney's own test aid.
+struct CameraPin {
+    float x = 0.0F; ///< The eye, game axes (metres, z up): the camera's +0x10.
+    float y = 0.0F;
+    float z = 0.0F;
+    float qx = 0.0F; ///< The orientation quaternion as the camera stores it at +0x20 (x, y, z, w).
+    float qy = 0.0F;
+    float qz = 0.0F;
+    float qw = 1.0F;
+    float fieldOfView = 60.0F; ///< Degrees, the field of view used (+0x48); 60, the base camera's, when not given.
+};
+
+/// What `--render-size` asks for: the frame's size in pixels, which then holds the logical screen exactly, shown at
+/// its 4:3 display shape, as the original's 640 x 448 frame buffer does.
+struct RenderSize {
+    int width = 0;
+    int height = 0;
+};
+
+/// The smallest `--render-size` side.
+inline constexpr int kMinRenderSide = 16;
+/// The largest `--render-size` side.
+inline constexpr int kMaxRenderSide = 8192;
+
 /// What `--rumble` asks for: the Rumble set-up the match starts with, written over what the Rumble menu chose when its
 /// arena is confirmed (docs/guides/building.md#rumble-from-the-command-line). Coney's own developer aid: a fresh
 /// profile's menu offers only 1 ON 1 and WAR PARTY.
@@ -120,6 +146,13 @@ struct Options {
     /// `--start X,Y,Z,HEADING[,DISTANCE,YAW]`: put player 1 (and the camera) there once the level or layout has
     /// started (StartPlace). Requires playLevel.
     std::optional<StartPlace> start;
+    /// `--camera X,Y,Z,QX,QY,QZ,QW[,FOV]`: player 1's view pinned there for the whole run (CameraPin). Requires
+    /// playLevel.
+    std::optional<CameraPin> cameraPin;
+    /// `--freeze-world`: after the first step of play nothing in the world advances (pedestrians, cars, particles,
+    /// animation, the scripts), so every frame shows the same picture; the scenery still streams round the camera and
+    /// the fixed step still runs. Requires playLevel.
+    bool freezeWorld = false;
     /// `--trace`: write the player's and the follow camera's state after every step of `--play-level` to this file,
     /// one CSV line per step (human::traceLine()), so feel comparisons can be repeated
     /// (docs/guides/building.md#tracing). Requires playLevel.
@@ -134,6 +167,9 @@ struct Options {
     /// `--screenshot`: save the last frame as a PNG at this path. Requires frameLimit and a window (not headless or
     /// `--load`).
     std::optional<std::string> screenshotPath;
+    /// `--render-size WxH`: the frame's size (RenderSize) in place of the window's usual one. Needs a window (not
+    /// headless, `--load` or `--render-references`).
+    std::optional<RenderSize> renderSize;
     /// `--input-script`: play the pad input in this file (src/core/input_script.h) instead of reading the keyboard
     /// and gamepads: the scripted input of test mode.
     std::optional<std::string> inputScript;

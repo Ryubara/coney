@@ -163,6 +163,28 @@ TEST_CASE("the story's scripted shots get the original's orientation from their 
     }
 }
 
+TEST_CASE("a pinned view looks along its quaternion's +y with its +z up, the quaternion normalised", "[camera]") {
+    // The identity faces +y with +z up.
+    const CameraView still = coney::camera::pinnedView(Vec3{1, 2, 3}, coney::anim::Quat{}, 60.0F, 0.1F, 115.0F);
+    CHECK(near(coney::camera::viewForward(still), Vec3{0.0F, 1.0F, 0.0F}));
+    CHECK(near(coney::camera::viewUp(still), Vec3{0.0F, 0.0F, 1.0F}));
+    CHECK(near(still.lookAt, Vec3{1.0F, 3.0F, 3.0F}));
+    CHECK(still.fieldOfView == 60.0F);
+    CHECK(still.nearClip == Approx(0.1F));
+    CHECK(still.farClip == Approx(115.0F));
+    // 90 degrees about +z, given at twice its length: it faces -x.
+    const float h = std::sqrt(0.5F) * 2.0F;
+    const CameraView turned =
+        coney::camera::pinnedView(Vec3{0, 0, 0}, coney::anim::Quat{0.0F, 0.0F, h, h}, 50.0F, 0.3F, 60.0F);
+    CHECK(near(coney::camera::viewForward(turned), Vec3{-1.0F, 0.0F, 0.0F}));
+    CHECK(near(coney::camera::viewUp(turned), Vec3{0.0F, 0.0F, 1.0F}));
+    // 90 degrees about +x tips the view straight up, its up then -y.
+    const CameraView up = coney::camera::pinnedView(
+        Vec3{0, 0, 0}, coney::anim::Quat{std::sqrt(0.5F), 0.0F, 0.0F, std::sqrt(0.5F)}, 60.0F, 0.3F, 60.0F);
+    CHECK(near(coney::camera::viewForward(up), Vec3{0.0F, 0.0F, 1.0F}));
+    CHECK(near(coney::camera::viewUp(up), Vec3{0.0F, -1.0F, 0.0F}));
+}
+
 TEST_CASE("a blend lerps the points and slerps the orientation linearly in time; the far clip never grows",
           "[camera]") {
     const CameraView from = coney::camera::viewLookingAt(Vec3{0, 0, 0}, Vec3{0, 10, 0}, 50.0F, 0.1F, 150.0F);

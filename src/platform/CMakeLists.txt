@@ -87,6 +87,9 @@ set_tests_properties(coney.debug_menu_by_pad PROPERTIES TIMEOUT 30 PASS_REGULAR_
 add_test(NAME coney.rejects_bad_tunables COMMAND coney --headless --frames 1
                                                  --tunables "${PROJECT_SOURCE_DIR}/tests/support/debug_menu.txt")
 set_tests_properties(coney.rejects_bad_tunables PROPERTIES WILL_FAIL TRUE)
+# --render-size sizes a window's frames: refused without one.
+add_test(NAME coney.render_size_needs_window COMMAND coney --headless --frames 1 --render-size 640x448)
+set_tests_properties(coney.render_size_needs_window PROPERTIES WILL_FAIL TRUE)
 
 # With CONEY_DISC set when CMake configures, a headless run from the legal screen to the main menu: START on PM_Greet
 # must reach PM_Mode (docs/research/frontend.md#coneys-implementation). It prints states only, never game data.
@@ -128,6 +131,14 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
     set_tests_properties(coney.plays_sandbox PROPERTIES TIMEOUT 60
                          PASS_REGULAR_EXPRESSION "play: 390 frames.*grounded.*respawns 0.*sandbox \"Traversal course\"")
+    # A matched view of level99 headless (docs/guides/building.md#matched-views): the view pinned, the world frozen
+    # after its first step of play while the walk script pushes the stick, so the player is still where he started.
+    add_test(NAME coney.freezes_level
+             COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 200 --play-level level99 --skip-movies
+                     --freeze-world --camera 75.2,41.1,1.8,0,0,0.7071068,0.7071068,65
+                     --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
+    set_tests_properties(coney.freezes_level PROPERTIES TIMEOUT 120 PASS_REGULAR_EXPRESSION
+                         "camera: pinned at \\(75.200, 41.100, 1.800\\).*fov 65.0.*world: frozen after frame")
 endif()
 
 # Coney's own assets (the sandbox's layouts and textures, assets/sandbox) copied beside the executable on every build,

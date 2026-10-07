@@ -78,6 +78,10 @@ class RenderEngine final : public graphics::RenderDevice {
     /// the NULL backend.
     [[nodiscard]] graphics::Extent frameSize() const { return m_frameSize; }
 
+    /// The shape the 3D view is drawn at across the frame, width over height: the display's 4:3 when the frame is the
+    /// logical screen (WindowDesc::logicalFrame), else the frame's own, so its pixels stay square.
+    [[nodiscard]] float viewAspect() const;
+
     /// Starts a frame: the window cleared to black and the logical screen (graphics::fitLogicalScreen()) filled with
     /// `clear`. Follows the window's size: when the window has been resized, the frame buffers are made again at the
     /// new size first.
@@ -156,6 +160,8 @@ class RenderEngine final : public graphics::RenderDevice {
     // logical pixels to the window.
     void drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads, bool wrap);
 
+    /// Where the logical screen goes in a frame of `size` (WindowDesc::logicalFrame).
+    [[nodiscard]] graphics::ScreenRect logicalScreenIn(graphics::Extent size) const;
     /// Makes the camera and its frame and depth buffers at m_frameSize (OpenGL only).
     void createCamera();
     /// Destroys the camera and its buffers, if any.
@@ -177,6 +183,7 @@ class RenderEngine final : public graphics::RenderDevice {
     bool m_sdlStarted = false;       // this object holds a reference to SDL's video subsystem
     bool m_glStubbed = false;        // the NULL backend's stand-in for glDeleteTextures is installed
     bool m_vsync = true;             // present() waits for the vertical blank
+    bool m_logicalFrame = false;     // the logical screen fills the frame (WindowDesc::logicalFrame)
 
     std::uint64_t m_presented = 0; // frames presented so far
     std::optional<std::uint64_t> m_captureFrame;

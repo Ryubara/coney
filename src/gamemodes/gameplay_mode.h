@@ -200,6 +200,10 @@ class GameplayMode final : public GameMode {
     /// Plays the glass panes' and doors' sounds through `sounds` (the audio's ObjectSounds; null: none), which must
     /// outlive the mode or be replaced first.
     void setObjectSounds(world_objects::ObjectServices* sounds) { m_objectServices.setSounds(sounds); }
+    /// `--freeze-world`: once the level has played one step, a step runs only the level's own (frozen) step: no
+    /// scripts, effects, spawners, radios or other world updates, so nothing in the world advances.
+    void setWorldFrozen(bool frozen) { m_worldFrozen = frozen; }
+
     /// Shows `screen` while each level loads (null: none, the level loads in enter); it must outlive the mode.
     void setLoadingScreen(LoadingScreen* screen) { m_loadingScreen = screen; }
 
@@ -362,6 +366,8 @@ class GameplayMode final : public GameMode {
     // A mash that filled: the cuffed human is released and both play their ends.
     void uncuffSucceeded(human::Human& freer, ai::Brain& cuffed);
 
+    bool m_worldFrozen = false;    // setWorldFrozen()
+    bool m_frozenStepDone = false; // the step before the freeze has run
     graphics::RenderDevice& m_device;
     script::ScriptSystem& m_scripts;
     script::BindingContext& m_context;

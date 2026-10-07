@@ -395,6 +395,12 @@ int main(int argc, char** argv) {
     const bool headless = options->headless || !options->loads.empty();
     coney::platform::WindowDesc windowDesc;
     windowDesc.hidden = options->renderReferences.has_value();
+    // `--render-size`: frames of that size holding exactly the logical screen, as the original's frame buffer does.
+    if (const std::optional<coney::RenderSize> size = options->renderSize; size) {
+        windowDesc.width = size->width;
+        windowDesc.height = size->height;
+        windowDesc.logicalFrame = true;
+    }
     auto engine = coney::platform::RenderEngine::start(
         headless ? coney::platform::RenderBackend::Null : coney::platform::RenderBackend::OpenGl, windowDesc);
     if (!engine) {
@@ -564,6 +570,13 @@ int main(int argc, char** argv) {
                 if (const std::optional<coney::StartPlace> place = options->start; place) {
                     (*mode)->startAt(*place);
                 }
+                // `--camera` and `--freeze-world`: a stable, matched view for comparing with the original's frames.
+                if (const std::optional<coney::CameraPin> pin = options->cameraPin; pin) {
+                    (*mode)->pinCamera(*pin);
+                }
+                if (options->freezeWorld) {
+                    (*mode)->freezeWorld();
+                }
                 if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
                     if (auto traced = (*mode)->traceTo(*tracePath); !traced) {
                         return std::unexpected(std::move(traced.error()));
@@ -582,6 +595,7 @@ int main(int argc, char** argv) {
                                                               scripts.state(), scripts.humans(), scripts.flags(),
                                                               scripts.recorded(), std::move(loader), printText);
         levelGameplay->setLevel(name);
+        levelGameplay->setWorldFrozen(commandLine && options->freezeWorld);
         levelGameplay->setSceneMaker(sceneMaker);
         levelGameplay->setObjectSounds(&objectSounds);
         scripts.hud().setSoundOutput(hudSound());
@@ -677,6 +691,12 @@ int main(int argc, char** argv) {
             // `--start`: the player (and the camera) somewhere else from the first step, a trace scenario's start.
             if (const std::optional<coney::StartPlace> start = options->start; start) {
                 playLevel->startAt(*start);
+            }
+            if (const std::optional<coney::CameraPin> pin = options->cameraPin; pin) {
+                playLevel->pinCamera(*pin);
+            }
+            if (options->freezeWorld) {
+                playLevel->freezeWorld();
             }
             if (const std::optional<std::string> tracePath = options->traceFile; tracePath) {
                 if (auto traced = playLevel->traceTo(*tracePath); !traced) {

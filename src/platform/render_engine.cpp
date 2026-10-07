@@ -53,7 +53,21 @@ PFNGLDELETETEXTURESPROC savedDeleteTextures = nullptr;
 } // namespace
 
 RenderEngine::RenderEngine(RenderBackend backend, const WindowDesc& desc)
-    : m_backend(backend), m_title(desc.title), m_frameSize{desc.width, desc.height} {}
+    : m_backend(backend), m_title(desc.title), m_frameSize{desc.width, desc.height}, m_logicalFrame(desc.logicalFrame) {
+}
+
+float RenderEngine::viewAspect() const {
+    if (m_logicalFrame || m_frameSize.height <= 0) {
+        return static_cast<float>(graphics::kStandardAspect.width) /
+               static_cast<float>(graphics::kStandardAspect.height);
+    }
+    return static_cast<float>(m_frameSize.width) / static_cast<float>(m_frameSize.height);
+}
+
+// Where the logical screen goes in a frame of `size`: all of it when the frame is the logical screen, else fitted.
+graphics::ScreenRect RenderEngine::logicalScreenIn(graphics::Extent size) const {
+    return m_logicalFrame ? graphics::ScreenRect{0, 0, size.width, size.height} : graphics::fitLogicalScreen(size);
+}
 
 RenderEngine::~RenderEngine() { shutDown(); }
 
@@ -307,7 +321,7 @@ void RenderEngine::startFrame(graphics::Rgba clear) {
     CONEY_ASSERT(!m_inFrame);
     m_inFrame = true;
     m_clearColour = clear;
-    m_viewport = graphics::fitLogicalScreen(m_frameSize);
+    m_viewport = logicalScreenIn(m_frameSize);
     if (m_camera == nullptr) {
         return; // NULL backend: nothing to clear
     }
@@ -320,7 +334,7 @@ void RenderEngine::startFrame(graphics::Rgba clear) {
         m_frameSize = graphics::Extent{width, height};
         createCamera();
     }
-    m_viewport = graphics::fitLogicalScreen(m_frameSize);
+    m_viewport = logicalScreenIn(m_frameSize);
     rw::RGBA colour = toRw(clear);
     m_camera->clear(&colour, rw::Camera::CLEARIMAGE | rw::Camera::CLEARZ);
     m_camera->beginUpdate();

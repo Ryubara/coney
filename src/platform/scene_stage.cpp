@@ -76,33 +76,17 @@ void SceneStage::beginStep(std::uint64_t nowMs) {
     }
 }
 
-std::optional<WorldView> SceneStage::cameraView(float alpha, graphics::Extent size) const {
+std::optional<WorldView> SceneStage::cameraView(float alpha, float aspect) const {
     if (!m_camera) {
         return std::nullopt;
     }
     const CameraState& a = m_camera->previous();
     const CameraState& b = m_camera->current();
-    const anim::Vec3 position = anim::lerp(a.pose.position, b.pose.position, alpha);
-    const anim::Quat rotation = anim::slerp(a.pose.rotation, b.pose.rotation, alpha);
-    // The camera looks along its rotation's +y with +z up (Coney's reading, docs/research/scenes.md), in RenderWare's
-    // axes for the renderer; right is forward × up, as the play camera's.
-    const anim::Vec3 forward = anim::normalise(directionToRenderWare(rotate(rotation, {0.0F, 1.0F, 0.0F})));
-    const anim::Vec3 up = anim::normalise(directionToRenderWare(rotate(rotation, {0.0F, 0.0F, 1.0F})));
-    const anim::Vec3 right = anim::normalise(anim::cross(forward, up));
-    const scenes::SceneLens& lens = b.lens;
-    const camera::ViewWindow window = camera::viewWindow(
-        camera::CameraLens{.fieldOfView = lens.fieldOfView, .nearClip = lens.nearClip, .farClip = lens.farClip});
-    const float aspect =
-        size.height > 0 ? static_cast<float>(size.width) / static_cast<float>(size.height) : 4.0F / 3.0F;
-    const world::Vec3 eye = toRenderWare(position);
-    return WorldView{.pose = world::CameraPose{.position = eye,
-                                               .forward = world::Vec3{forward.x, forward.y, forward.z},
-                                               .up = world::Vec3{up.x, up.y, up.z},
-                                               .right = world::Vec3{right.x, right.y, right.z}},
-                     .halfWidth = window.halfHeight * aspect,
-                     .halfHeight = window.halfHeight,
-                     .nearClip = lens.nearClip,
-                     .drawDistance = lens.farClip};
+    // The camera looks along its rotation's +y with +z up (Coney's reading, docs/research/scenes.md).
+    scenes::ScenePose pose;
+    pose.position = anim::lerp(a.pose.position, b.pose.position, alpha);
+    pose.rotation = anim::slerp(a.pose.rotation, b.pose.rotation, alpha);
+    return worldViewOf(sceneCameraView(pose, b.lens), aspect, b.lens.farClip);
 }
 
 bool SceneStage::holds(double human) const { return m_bound.contains(human); }

@@ -14,6 +14,7 @@
 
 #include "animation/anim_pose.h"
 #include "camera/camera_lens.h"
+#include "camera/camera_view.h"
 #include "characters/character_data.h"
 #include "characters/character_rig.h"
 #include "core/game_timer.h"
@@ -391,14 +392,61 @@ WorldView PlayLevelMode::viewFrom(const world::CameraPose& pose, float drawDista
                                   const camera::CameraLens& lens) const {
     // A window of another shape keeps the view's height (as the world viewer does).
     const camera::ViewWindow window = camera::viewWindow(lens);
-    const graphics::Extent size = m_engine.frameSize();
-    const float aspect =
-        size.height > 0 ? static_cast<float>(size.width) / static_cast<float>(size.height) : 4.0F / 3.0F;
+    const float aspect = m_engine.viewAspect();
     return WorldView{.pose = pose,
                      .halfWidth = window.halfHeight * aspect,
                      .halfHeight = window.halfHeight,
                      .nearClip = lens.nearClip,
                      .drawDistance = drawDistance};
+}
+
+WorldView PlayLevelMode::chosenView(const human::PlayerSnapshot& snapshot, float drawDistance, float alpha,
+                                    const world::CameraPose* free) const {
+    // `--camera` wins over every camera the game would show, with the current camera's clips.
+    if (m_pinnedCamera) {
+        const CameraPin& pin = *m_pinnedCamera;
+        const camera::CameraView pinned =
+            camera::pinnedView(anim::Vec3{pin.x, pin.y, pin.z}, anim::Quat{pin.qx, pin.qy, pin.qz, pin.qw},
+                               pin.fieldOfView, snapshot.nearClip, snapshot.farClip);
+        return worldViewOf(pinned, m_engine.viewAspect(), std::min(drawDistance, snapshot.farClip));
+    }
+    if (const std::optional<WorldView> scene = m_stage->cameraView(alpha, m_engine.viewAspect()); scene) {
+        return *scene;
+    }
+    if (free != nullptr) {
+        return viewFrom(*free, drawDistance);
+    }
+    return view(snapshot, drawDistance);
+}
+
+WorldView PlayLevelMode::stepSceneryView(const FrameTime& frame) {
+    // The scenery's step round the newest step's camera (for a level: one streaming decision and the draw distance),
+    // then that camera at the new draw distance: the next step's streaming reads the visibility pass made from it, so
+    // it belongs to the simulation, not to the blended render.
+    const std::optional<world::CameraPose> free =
+        m_freeCamera ? std::optional<world::CameraPose>(m_freeCamera->current().pose()) : std::nullopt;
+    const world::CameraPose* freePose = free ? &*free : nullptr;
+    const world::Vec3 eye = chosenView(m_player->current(), m_drawDistance.current(), 1.0F, freePose).pose.position;
+    m_scenery->step(eye, frame);
+    m_drawDistance.current() = m_scenery->drawDistance();
+    return chosenView(m_player->current(), m_drawDistance.current(), 1.0F, freePose);
+}
+
+void PlayLevelMode::stepFrozen(const FrameTime& frame) {
+    // Only what keeps the picture whole as the camera's surroundings stream in: the scenery and the world objects
+    // round the camera, with no time passing for them.
+    m_drawDistance.commit();
+    const WorldView stepView = stepSceneryView(frame);
+    m_scenery->findVisible(stepView);
+    stepWorldObjects(stepView.pose.position, 0);
+    ++m_stats.frames;
+}
+
+void PlayLevelMode::pinCamera(const CameraPin& pin) {
+    m_pinnedCamera = pin;
+    m_print(std::format("camera: pinned at ({:.3f}, {:.3f}, {:.3f}) quaternion ({:.4f}, {:.4f}, {:.4f}, {:.4f}) "
+                        "fov {:.1f}\n",
+                        pin.x, pin.y, pin.z, pin.qx, pin.qy, pin.qz, pin.qw, pin.fieldOfView));
 }
 
 std::expected<void, Error> PlayLevelMode::traceTo(const std::string& path) {
@@ -469,6 +517,11 @@ rw::Texture* PlayLevelMode::bloodTextureFor(const combat::Health& health) const 
 }
 
 ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
+    // `--freeze-world`, once its first step is done: nothing advances.
+    if (worldFrozen()) {
+        stepFrozen(frame);
+        return ModeResult::Stay;
+    }
     // The draw distance render() blends moves on a step.
     m_drawDistance.commit();
 
@@ -507,20 +560,11 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     stepScenes(millisecondsOf(frame.gameTicks),
                static_cast<std::uint16_t>(pad.buttons() | stack.pads().port(1).buttons()));
 
-    // The scenery's step around the camera (for a level: one streaming decision and the draw distance), then its
-    // visibility pass from the newest step's camera: the next step's streaming reads it, so it belongs to the
-    // simulation, not to the blended render.
-    // With the free camera on, the scenery streams and culls round it instead.
-    // A scene camera, while one is current, likewise.
-    const std::optional<WorldView> sceneView = m_stage->cameraView(1.0F, m_engine.frameSize());
-    const world::Vec3 eye = sceneView      ? sceneView->pose.position
-                            : m_freeCamera ? m_freeCamera->current().position()
-                                           : toRenderWare(m_player->current().cameraEye);
-    m_scenery->step(eye, frame);
-    m_drawDistance.current() = m_scenery->drawDistance();
-    const WorldView stepView = sceneView      ? *sceneView
-                               : m_freeCamera ? viewFrom(m_freeCamera->current().pose(), m_drawDistance.current())
-                                              : view(m_player->current(), m_drawDistance.current());
+    // The scenery's step around the camera, then its visibility pass from the newest step's camera. The pinned
+    // camera, a scene camera while one is current, or the free camera while it is on, takes the follow camera's
+    // place.
+    const WorldView stepView = stepSceneryView(frame);
+    const world::Vec3 eye = stepView.pose.position;
     // The lights' flicker and the player's shadow dimming, stepped with the simulation.
     m_lights->step(stepView, m_scenery->collision(), m_player->human().position(),
                    static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
@@ -542,6 +586,12 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     // The health rings, after the HUD's step: hidden with it.
     stepRings(playerPad, stepView, hudFrame.nowMs);
     ++m_stats.frames;
+    // `--freeze-world`: the world stops here, its animations held at this step's time.
+    if (m_freezeWorld && !m_frozenSince) {
+        m_frozenSince = frame.gameTicks;
+        m_scenery->freezeAnimation(millisecondsOf(frame.gameTicks));
+        m_print(std::format("world: frozen after frame {}\n", frame.index));
+    }
     return ModeResult::Stay;
 }
 
@@ -561,17 +611,19 @@ void PlayLevelMode::applyIdleClips() {
 
 void PlayLevelMode::render(const RenderTime& time) {
     // Everything drawn comes from the player's snapshots and the draw distance, `alpha` of the way from the step before
-    // to the newest one.
-    human::PlayerSnapshot snapshot = human::interpolate(m_player->previous(), m_player->current(), time.alpha);
-    const float drawDistance = lerp(m_drawDistance.previous(), m_drawDistance.current(), time.alpha);
-    // The scene camera while one is current; and player 1 as a scene poses him while it holds him.
-    const std::optional<WorldView> sceneView = m_stage->cameraView(time.alpha, m_engine.frameSize());
-    const WorldView blended = sceneView ? *sceneView
-                              : m_freeCamera
-                                  ? viewFrom(blendedFreeCamera(*m_freeCamera, time.alpha).pose(), drawDistance)
-                                  : view(snapshot, drawDistance);
+    // to the newest one; in a frozen world exactly the newest, at the time it froze (the scenery's fade-in excepted).
+    const bool frozen = worldFrozen();
+    const float alpha = frozen ? 1.0F : time.alpha;
+    const std::uint64_t nowMs = millisecondsOf(frozen ? m_frozenSince.value_or(time.gameTicks) : time.gameTicks);
+    human::PlayerSnapshot snapshot = human::interpolate(m_player->previous(), m_player->current(), alpha);
+    const float drawDistance = lerp(m_drawDistance.previous(), m_drawDistance.current(), alpha);
+    // The pinned camera, the scene camera while one is current, or the free camera; and player 1 as a scene poses him
+    // while it holds him.
+    const std::optional<world::CameraPose> free =
+        m_freeCamera ? std::optional<world::CameraPose>(blendedFreeCamera(*m_freeCamera, alpha).pose()) : std::nullopt;
+    const WorldView blended = chosenView(snapshot, drawDistance, alpha, free ? &*free : nullptr);
     if (const std::optional<scenes::RoleFrame> posed =
-            sceneHoldsPlayer() ? m_stage->frameOf(m_playerHandle, time.alpha) : std::nullopt) {
+            sceneHoldsPlayer() ? m_stage->frameOf(m_playerHandle, alpha) : std::nullopt) {
         snapshot.pose = posed->pose;
         snapshot.feet = posed->feet;
         snapshot.heading = posed->heading;
@@ -583,7 +635,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(human));
     };
     if (m_engine.drawsPixels()) {
-        m_stage->skinPuppets(time.alpha,
+        m_stage->skinPuppets(alpha,
                              [](const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
                                 float heading, std::vector<anim::Vec3>& positions, std::vector<anim::Vec3>& normals) {
                                  skin(character, pose, feet, heading, 0.0F, positions, normals);
@@ -595,7 +647,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         ringFeet[ringKey(&m_player->human())] = snapshot.feet;
         for (Target& target : m_targets) {
             const human::TargetSnapshot pose =
-                human::interpolate(target.human->previous(), target.human->current(), time.alpha);
+                human::interpolate(target.human->previous(), target.human->current(), alpha);
             skin(*m_character, pose.pose, pose.feet, pose.heading, 0.0F, target.positions, target.normals);
             target.mesh->update(target.positions, target.normals);
             m_lights->addShadow(ground, pose.feet);
@@ -608,11 +660,11 @@ void PlayLevelMode::render(const RenderTime& time) {
                 m_fighterMeshes[i].hidden = true;
                 continue;
             }
-            human::TargetSnapshot pose = human::interpolate(fighters[i].previous, fighters[i].current, time.alpha);
+            human::TargetSnapshot pose = human::interpolate(fighters[i].previous, fighters[i].current, alpha);
             // A cast human a scene holds is drawn as the scene poses it.
             if (const double handle = m_scenes != nullptr ? castHandleOf(fighters[i]) : 0.0;
                 handle != 0.0 && m_stage->holds(handle)) {
-                if (const std::optional<scenes::RoleFrame> posed = m_stage->frameOf(handle, time.alpha)) {
+                if (const std::optional<scenes::RoleFrame> posed = m_stage->frameOf(handle, alpha)) {
                     pose.pose = posed->pose;
                     pose.feet = posed->feet;
                     pose.heading = posed->heading;
@@ -632,8 +684,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawOverlay(engine); });
     }
     m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hud->draw(engine); });
-    m_engine.addFrameOverlay(
-        [this, nowMs = millisecondsOf(time.gameTicks)](RenderEngine& engine) { m_stage->drawOverlay(engine, nowMs); });
+    m_engine.addFrameOverlay([this, nowMs](RenderEngine& engine) { m_stage->drawOverlay(engine, nowMs); });
     // A layer over all of them (the pause menu), added last so it draws last.
     if (m_overlay != nullptr) {
         m_engine.addFrameOverlay([overlay = *m_overlay](RenderEngine& engine) { overlay(engine); });

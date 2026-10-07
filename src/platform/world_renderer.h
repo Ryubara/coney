@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 
 #include "graphics/level_lighting.h"
 #include "graphics/render_device.h"
@@ -93,6 +94,11 @@ class WorldRenderer {
     /// The lighting the frames are drawn with.
     [[nodiscard]] SceneLighting& lighting() const { return m_lighting != nullptr ? *m_lighting : *m_ownLighting; }
 
+    /// From now on the frames' animations (the turning clouds, the lights' flicker and coronas) show game time `atMs`
+    /// whatever render() is given, while sectors still fade in on render()'s time (`--freeze-world`); nothing goes back
+    /// to render()'s time for both.
+    void freezeAnimation(std::optional<std::uint64_t> atMs) { m_animationMs = atMs; }
+
     /// Atomics drawn by the last render().
     [[nodiscard]] std::uint32_t drawnAtomics() const { return m_drawn; }
 
@@ -112,6 +118,7 @@ class WorldRenderer {
     std::unique_ptr<SceneLighting> m_ownLighting;
     SceneLighting* m_lighting = nullptr; // a level's, when set
     std::uint32_t m_drawn = 0;
+    std::optional<std::uint64_t> m_animationMs; // freezeAnimation()'s time
 };
 
 } // namespace coney::platform

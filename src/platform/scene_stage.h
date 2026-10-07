@@ -86,9 +86,9 @@ class SceneStage final : public scenes::SceneHost {
 
     /// Whether the scene camera is current.
     [[nodiscard]] bool cameraActive() const { return m_camera.has_value(); }
-    /// The scene camera's view between the last two steps, `alpha` of the way, as the world renderer takes it, for a
-    /// frame `size` pixels; nothing while no scene camera is current.
-    [[nodiscard]] std::optional<WorldView> cameraView(float alpha, graphics::Extent size) const;
+    /// The scene camera's view between the last two steps, `alpha` of the way, as the world renderer takes it, drawn at
+    /// `aspect` (RenderEngine::viewAspect()); nothing while no scene camera is current.
+    [[nodiscard]] std::optional<WorldView> cameraView(float alpha, float aspect) const;
     /// Whether the scene holds `human` now (from its join until its release): the play mode does not move it.
     [[nodiscard]] bool holds(double human) const;
     /// The newest frame the scene gave `human`, blended `alpha` of the way from the one before; nothing when none.

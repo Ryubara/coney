@@ -442,6 +442,72 @@ TEST_CASE("the start option places the player, and optionally the camera, for th
     CHECK(coney::usageText().find("--start X,Y,Z,HEADING") != std::string_view::npos);
 }
 
+TEST_CASE("the camera option pins a view with the camera's quaternion and field of view", "[options]") {
+    auto pinned = parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--camera",
+                                                        "75.5,-41.25,3,0,0,0.7071068,0.7071068"});
+    REQUIRE(pinned.has_value());
+    REQUIRE(pinned->cameraPin.has_value());
+    const coney::CameraPin pin = pinned->cameraPin.value_or(coney::CameraPin{});
+    CHECK(pin.x == Approx(75.5F));
+    CHECK(pin.y == Approx(-41.25F));
+    CHECK(pin.z == Approx(3.0F));
+    CHECK(pin.qx == 0.0F);
+    CHECK(pin.qz == Approx(0.7071068F));
+    CHECK(pin.qw == Approx(0.7071068F));
+    CHECK(pin.fieldOfView == 60.0F); // the base camera's, when not given
+    auto lens = parse(
+        std::array<std::string_view, 6>{"--disc", "x", "--play-level", "sandbox", "--camera", "0,0,0,0,0,0,1,65"});
+    REQUIRE(lens.has_value());
+    CHECK(lens->cameraPin.value_or(coney::CameraPin{}).fieldOfView == Approx(65.0F));
+    // Seven or eight numbers, a quaternion that is not zero, a field of view inside (0, 180), given once, and only with
+    // --play-level.
+    for (const std::string_view bad : {"", "1,2,3,0,0,0", "1,2,3,0,0,0,1,60,1", "1,2,3,0,0,0,0", "1,2,3,0,0,0,1,0",
+                                       "1,2,3,0,0,0,1,180", "1,2,3,0,0,x,1"}) {
+        INFO(std::string(bad));
+        CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--camera", bad})
+                        .has_value());
+    }
+    CHECK_FALSE(parse(std::array<std::string_view, 8>{"--disc", "x", "--play-level", "level99", "--camera",
+                                                      "0,0,0,0,0,0,1", "--camera", "0,0,0,0,0,0,1"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--camera", "0,0,0,0,0,0,1"}).has_value());
+    CHECK(coney::usageText().find("--camera X,Y,Z,QX,QY,QZ,QW") != std::string_view::npos);
+}
+
+TEST_CASE("the freeze option freezes a played level's world", "[options]") {
+    auto frozen = parse(std::array<std::string_view, 5>{"--disc", "x", "--play-level", "level99", "--freeze-world"});
+    REQUIRE(frozen.has_value());
+    CHECK(frozen->freezeWorld);
+    CHECK_FALSE(parse(std::array<std::string_view, 4>{"--disc", "x", "--play-level", "level99"})->freezeWorld);
+    CHECK_FALSE(parse(std::array<std::string_view, 6>{"--disc", "x", "--play-level", "level99", "--freeze-world",
+                                                      "--freeze-world"})
+                    .has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--disc", "x", "--freeze-world"}).has_value());
+    CHECK(coney::usageText().find("--freeze-world") != std::string_view::npos);
+}
+
+TEST_CASE("the render size option sizes the frames for a window", "[options]") {
+    auto sized =
+        parse(std::array<std::string_view, 6>{"--frames", "3", "--screenshot", "a.png", "--render-size", "640x448"});
+    REQUIRE(sized.has_value());
+    REQUIRE(sized->renderSize.has_value());
+    CHECK(sized->renderSize.value_or(coney::RenderSize{}).width == 640);
+    CHECK(sized->renderSize.value_or(coney::RenderSize{}).height == 448);
+    auto upper = parse(std::array<std::string_view, 2>{"--render-size", "1280X896"});
+    REQUIRE(upper.has_value());
+    CHECK(upper->renderSize.value_or(coney::RenderSize{}).width == 1280);
+    // WxH with whole numbers in range, given once, and only with a window.
+    for (const std::string_view bad :
+         {"", "640", "640x", "x448", "640x448x2", "15x448", "640x8193", "-640x448", "640.5x448", "640 x448"}) {
+        INFO(std::string(bad));
+        CHECK_FALSE(parse(std::array<std::string_view, 2>{"--render-size", bad}).has_value());
+    }
+    CHECK_FALSE(
+        parse(std::array<std::string_view, 4>{"--render-size", "640x448", "--render-size", "640x448"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 3>{"--render-size", "640x448", "--headless"}).has_value());
+    CHECK(coney::usageText().find("--render-size WxH") != std::string_view::npos);
+}
+
 TEST_CASE("the assets option takes a folder", "[options][sandbox]") {
     auto assets = parse(std::array<std::string_view, 3>{"--sandbox", "--assets", "some/folder"});
     REQUIRE(assets.has_value());

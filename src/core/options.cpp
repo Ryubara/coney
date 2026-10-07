@@ -26,7 +26,8 @@ constexpr std::string_view kUsage =
     "             [--profiles DIR]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
     "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
-    "             [--trace FILE] [--script-trace FILE] [--scene NAME]] [--sandbox [NAME]]\n"
+    "             [--trace FILE] [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]]\n"
+    "             [--freeze-world]] [--sandbox [NAME]]\n"
     "             [--assets DIR]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
@@ -63,6 +64,12 @@ constexpr std::string_view kUsage =
     "                     step to FILE, one CSV line per step\n"
     "  --script-trace FILE with --play-level levelN: write every script binding call, and every call\n"
     "                     into the scripts, with its arguments to FILE, one line each\n"
+    "  --camera X,Y,Z,QX,QY,QZ,QW[,FOV]\n"
+    "                     with --play-level: pin player 1's view for the whole run at the eye X,Y,Z\n"
+    "                     (metres, z up) with the camera's orientation quaternion and field of view\n"
+    "                     (degrees, default 60); a test aid for matching the original's frames\n"
+    "  --freeze-world     with --play-level: after the first step nothing in the world moves\n"
+    "                     (people, cars, particles, animation, scripts), so every frame is the same\n"
     "  --scene NAME       with --play-level levelN: play the in-engine scene NAME (such as l99_c1) at\n"
     "                     once, with stand-ins in its roles and the player in his; a test aid\n"
     "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
@@ -93,6 +100,8 @@ constexpr std::string_view kUsage =
     "                     --frames, --headless, --input-script or --screenshot each frame is one\n"
     "                     step and one render, with no clock, so a run is the same every time\n"
     "  --screenshot PATH  save the last frame as a PNG; needs --frames and a window\n"
+    "  --render-size WxH  draw frames W x H pixels (such as 640x448, the original's), the logical\n"
+    "                     screen filling them at its 4:3 shape; needs a window\n"
     "  --input-script FILE\n"
     "                     play the pad input in FILE instead of the keyboard and gamepads\n"
     "  --tunables FILE    the debug menus' tunable overrides to load and save (default: coney-tunables.ini\n"
@@ -219,6 +228,12 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     if (options.start.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--start needs --play-level: it places the player");
     }
+    if (options.cameraPin.has_value() && !options.playLevel.has_value()) {
+        return invalidArgument("--camera needs --play-level: it pins player 1's view");
+    }
+    if (options.freezeWorld && !options.playLevel.has_value()) {
+        return invalidArgument("--freeze-world needs --play-level: it freezes the level's world");
+    }
     if (!options.sandbox.has_value()) {
         return {};
     }
@@ -323,6 +338,11 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     if (options.viewWorld.has_value() && (!options.loads.empty() || options.viewTxd.has_value() ||
                                           options.viewSheet.has_value() || options.viewText.has_value())) {
         return invalidArgument("--view-world cannot be combined with --load, --view-txd, --view-sheet or --view-text");
+    }
+    if (options.renderSize.has_value() &&
+        (options.headless || !options.loads.empty() || options.renderReferences.has_value())) {
+        return invalidArgument("--render-size sizes the window's frames, so it cannot be combined with --headless, "
+                               "--load or --render-references");
     }
     if (options.screenshotPath.has_value()) {
         if (!options.frameLimit.has_value()) {
@@ -434,6 +454,71 @@ std::expected<StartPlace, Error> parseStart(std::string_view text) {
                       .cameraYawDegrees = camera ? std::optional<float>(values[5]) : std::nullopt};
 }
 
+// Splits `text` at its commas into decimal numbers; empty when any part is not one.
+std::vector<float> parseDecimalList(std::string_view text) {
+    std::vector<float> values;
+    std::size_t from = 0;
+    while (from <= text.size()) {
+        const std::size_t comma = text.find(',', from);
+        const std::string_view part = text.substr(from, comma == std::string_view::npos ? text.npos : comma - from);
+        const std::optional<double> value = parseDecimal(part);
+        if (!value) {
+            return {};
+        }
+        values.push_back(static_cast<float>(*value));
+        if (comma == std::string_view::npos) {
+            break;
+        }
+        from = comma + 1;
+    }
+    return values;
+}
+
+// Parses the value after `--camera`: X,Y,Z,QX,QY,QZ,QW and optionally FOV, decimal numbers. The quaternion must not
+// be zero (it is normalised where it is used) and the field of view must lie between 0 and 180 degrees.
+std::expected<CameraPin, Error> parseCameraPin(std::string_view text) {
+    const std::vector<float> v = parseDecimalList(text);
+    const bool sized = v.size() == 7 || v.size() == 8;
+    const bool quaternion = sized && (v[3] * v[3] + v[4] * v[4] + v[5] * v[5] + v[6] * v[6]) > 1e-12F;
+    const bool lens = v.size() != 8 || (v[7] > 0.0F && v[7] < 180.0F);
+    if (!sized || !quaternion || !lens) {
+        return invalidArgument(std::format("--camera needs X,Y,Z,QX,QY,QZ,QW or X,Y,Z,QX,QY,QZ,QW,FOV (decimal "
+                                           "numbers, a quaternion that is not zero, FOV between 0 and 180), got \"{}\"",
+                                           text));
+    }
+    CameraPin pin{
+        .x = v[0], .y = v[1], .z = v[2], .qx = v[3], .qy = v[4], .qz = v[5], .qw = v[6], .fieldOfView = 60.0F};
+    if (v.size() == 8) {
+        pin.fieldOfView = v[7];
+    }
+    return pin;
+}
+
+// One side of `--render-size`: a whole number from kMinRenderSide to kMaxRenderSide, decimal digits only.
+std::optional<int> parseRenderSide(std::string_view text) {
+    int value = 0;
+    if (!isAllDigits(text)) {
+        return std::nullopt;
+    }
+    const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+    if (parsed.ec != std::errc{} || value < kMinRenderSide || value > kMaxRenderSide) {
+        return std::nullopt;
+    }
+    return value;
+}
+
+// Parses the value after `--render-size`: WxH (or WXH), each side as parseRenderSide() takes it.
+std::expected<RenderSize, Error> parseRenderSize(std::string_view text) {
+    const std::size_t x = text.find_first_of("xX");
+    const std::optional<int> width = x == std::string_view::npos ? std::nullopt : parseRenderSide(text.substr(0, x));
+    const std::optional<int> height = x == std::string_view::npos ? std::nullopt : parseRenderSide(text.substr(x + 1));
+    if (!width || !height) {
+        return invalidArgument(std::format("--render-size needs WxH, each a whole number from {} to {}, got \"{}\"",
+                                           kMinRenderSide, kMaxRenderSide, text));
+    }
+    return RenderSize{.width = *width, .height = *height};
+}
+
 } // namespace
 
 bool isTestMode(const Options& options) {
@@ -452,6 +537,8 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> rumbleArg;     // as typed, likewise
     std::optional<std::string> arenaArg;      // as typed, likewise
     std::optional<std::string> gangSizeArg;   // as typed, likewise
+    std::optional<std::string> cameraArg;     // as typed, likewise
+    std::optional<std::string> renderSizeArg; // as typed, likewise
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string_view arg = args[i];
         if (arg == "--help") {
@@ -688,6 +775,29 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(start.error()));
             }
             options.start = *start;
+        } else if (arg == "--camera") {
+            if (auto value = takeValue(args, i, cameraArg, "--camera", "X,Y,Z,QX,QY,QZ,QW[,FOV]"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto pin = parseCameraPin(cameraArg.value_or(std::string{}));
+            if (!pin) {
+                return std::unexpected(std::move(pin.error()));
+            }
+            options.cameraPin = *pin;
+        } else if (arg == "--render-size") {
+            if (auto value = takeValue(args, i, renderSizeArg, "--render-size", "WxH, such as 640x448"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            auto size = parseRenderSize(renderSizeArg.value_or(std::string{}));
+            if (!size) {
+                return std::unexpected(std::move(size.error()));
+            }
+            options.renderSize = *size;
+        } else if (arg == "--freeze-world") {
+            if (options.freezeWorld) {
+                return invalidArgument("--freeze-world given twice");
+            }
+            options.freezeWorld = true;
         } else if (arg == "--screenshot") {
 
             if (auto value = takeValue(args, i, options.screenshotPath, "--screenshot", "the path of a PNG file");

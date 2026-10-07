@@ -28,6 +28,22 @@ world::Vec3 toRenderWare(anim::Vec3 game) { return world::Vec3{game.x, game.z, -
 
 anim::Vec3 directionToRenderWare(anim::Vec3 game) { return anim::Vec3{game.x, game.z, -game.y}; }
 
+WorldView worldViewOf(const camera::CameraView& view, float aspect, float drawDistance) {
+    const anim::Vec3 forward = anim::normalise(directionToRenderWare(camera::viewForward(view)));
+    const anim::Vec3 up = anim::normalise(directionToRenderWare(camera::viewUp(view)));
+    const anim::Vec3 right = anim::normalise(anim::cross(forward, up));
+    const camera::ViewWindow window = camera::viewWindow(
+        camera::CameraLens{.fieldOfView = view.fieldOfView, .nearClip = view.nearClip, .farClip = view.farClip});
+    return WorldView{.pose = world::CameraPose{.position = toRenderWare(view.position),
+                                               .forward = world::Vec3{forward.x, forward.y, forward.z},
+                                               .up = world::Vec3{up.x, up.y, up.z},
+                                               .right = world::Vec3{right.x, right.y, right.z}},
+                     .halfWidth = window.halfHeight * aspect,
+                     .halfHeight = window.halfHeight,
+                     .nearClip = view.nearClip,
+                     .drawDistance = drawDistance};
+}
+
 human::PlayerStart playLevelStandInStart(const WorldSet& set, const raycast::CollisionMesh& mesh) {
     // The world viewer's start is in RenderWare's axes: back to the game's, (x, y, z) -> (x, -z, y).
     const world::Vec3 top = viewerStartPosition(*set.worlds().front());
