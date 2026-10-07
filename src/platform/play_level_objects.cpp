@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The play mode's part of the level's glass panes and doors (docs/research/objects.md#coneys-implementation): their
 // world, their ticks, player 1's hits on them and the lock pick (docs/research/crimes.md#lockpick).
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <format>
@@ -15,6 +16,7 @@
 #include "characters/character_class.h"
 #include "combat/anim_ids.h"
 #include "combat/anim_ranges.h"
+#include "combat/attacks.h"
 #include "combat/player_combat.h"
 #include "combat/stick_games.h"
 #include "human/fighter.h"
@@ -36,6 +38,11 @@ namespace {
 // long as the attack's reach. The original strikes the object its target picker chose (`Player_ObjectAttack`,
 // docs/research/combat.md#breakables), which Coney's picker does not offer yet.
 constexpr float kStrikeHeight = 1.0F;
+// **Coney's stand-in** for a moving attack's strike shapes (its capsule and bone shapes posed by the clip,
+// docs/research/combat.md#moving-strikes): the ray above, this long, every update of the attack's strike window. The
+// lengths are where the shapes first met level99's fence: the charge's root 0.80 m from it, the dive's 1.05 m.
+constexpr float kMovingStrikeReach = 0.8F;
+constexpr float kDiveStrikeReach = 1.05F;
 // A dropped object lands this far ahead of the feet (Coney's stand-in for its fall from the hand).
 constexpr float kDropAhead = 0.3F;
 // A car stereo's context record (kind 3) reaches this far in the ground plane (`CfgActionDistance`'s default).
@@ -371,6 +378,14 @@ void PlayLevelMode::stepObjects() {
     // Player 1's object attack strikes its object; any other hit that landed this step goes to the pane or door the
     // strike meets, if any.
     const human::Human& human = m_player->human();
+    // The clip's age in updates from its first (0), for a moving strike; a new clip starts with nothing struck.
+    if (const std::uint32_t clip = human.animator().animId(); clip != m_strikeClip) {
+        m_strikeClip = clip;
+        m_strikeAge = 0;
+        m_struck.clear();
+    } else {
+        ++m_strikeAge;
+    }
     if (const std::optional<double> attacked = human.fighter().objectHit()) {
         const anim::Vec3 feet = human.position();
         const anim::Vec3 ahead = human::facing(human.heading());
@@ -388,8 +403,17 @@ void PlayLevelMode::stepObjects() {
                                                     .attackerAt = feet});
             m_print(std::format("objects: object attack on {:.0f}{}\n", *attacked, took ? "" : " (no effect)"));
         }
-    } else if (const int animId = human.fighter().last().hitAnim;
-               animId != combat::anim_id::kNone && m_objects->world.collision != nullptr) {
+    } else if (const std::optional<combat::StrikeWindow> window =
+                   combat::movingStrikeWindow(static_cast<int>(human.animator().animId()))) {
+        // A moving attack strikes with its body while its window is open, each object once.
+        if (m_strikeAge >= window->on && m_strikeAge < window->off) {
+            const int animId = static_cast<int>(human.animator().animId());
+            const float reach = animId == combat::anim_id::kRunningAttackDive ? kDiveStrikeReach : kMovingStrikeReach;
+            if (const std::optional<double> object = strikeAhead(animId, reach)) {
+                m_struck.push_back(*object);
+            }
+        }
+    } else if (const int animId = human.fighter().last().hitAnim; animId != combat::anim_id::kNone) {
         // The attack's reach as the fighter measures it: its far range, else the default reach.
         float reach = human::kDefaultStrikeReach;
         if (const combat::AnimRangeList* ranges = human.ranges(); ranges != nullptr && animId >= 0) {
@@ -397,31 +421,48 @@ void PlayLevelMode::stepObjects() {
                 reach = far;
             }
         }
-        const anim::Vec3 feet = human.position();
-        const anim::Vec3 ahead = human::facing(human.heading());
-        const raycast::Ray ray{.origin = {feet.x, feet.y, feet.z + kStrikeHeight},
-                               .direction = {ahead.x, ahead.y, ahead.z},
-                               .length = reach};
-        if (const std::optional<raycast::RayHit> struck = m_objects->world.collision->rayCast(ray, {}, 0)) {
-            if (const std::optional<double> object = m_objects->objectOfTriangle(struck->triangle)) {
-                const human::GateInput gate = human.gateInput();
-                const anim::Vec3 point{feet.x + (ahead.x * struck->t), feet.y + (ahead.y * struck->t),
-                                       feet.z + kStrikeHeight};
-                const bool took = m_objects->humanHit(
-                    *object, world_objects::ObjectHit{.attacker = playerHandle(),
-                                                      .kind = world_objects::humanHitKind(
-                                                          (gate.flags & kRunAttackOrCharge) != 0, gate.airborne),
-                                                      .point = point,
-                                                      .direction = ahead,
-                                                      .attackerAt = feet});
-                m_print(
-                    std::format("objects: hit {:.0f} with clip {}{}\n", *object, animId, took ? "" : " (no effect)"));
-            }
-        }
+        static_cast<void>(strikeAhead(animId, reach));
     }
     for (int tick = 0; tick < kObjectTicksPerStep; ++tick) {
         m_objects->tick();
     }
+    // A broken barrier removed at its update: its handlers hear message 2 and its record goes.
+    for (const double removed : m_objects->doors.takeRemoved()) {
+        m_print(std::format("objects: {:.0f} removed\n", removed));
+        if (m_pickups != nullptr) {
+            m_pickups->objectRemoved(removed);
+        }
+    }
+}
+
+std::optional<double> PlayLevelMode::strikeAhead(int animId, float reach) {
+    if (m_objects == nullptr || m_objects->world.collision == nullptr) {
+        return std::nullopt;
+    }
+    const human::Human& human = m_player->human();
+    const anim::Vec3 feet = human.position();
+    const anim::Vec3 ahead = human::facing(human.heading());
+    const raycast::Ray ray{
+        .origin = {feet.x, feet.y, feet.z + kStrikeHeight}, .direction = {ahead.x, ahead.y, ahead.z}, .length = reach};
+    const std::optional<raycast::RayHit> struck = m_objects->world.collision->rayCast(ray, {}, 0);
+    if (!struck) {
+        return std::nullopt;
+    }
+    const std::optional<double> object = m_objects->objectOfTriangle(struck->triangle);
+    if (!object || std::ranges::find(m_struck, *object) != m_struck.end()) {
+        return std::nullopt;
+    }
+    const human::GateInput gate = human.gateInput();
+    const anim::Vec3 point{feet.x + (ahead.x * struck->t), feet.y + (ahead.y * struck->t), feet.z + kStrikeHeight};
+    const bool took = m_objects->humanHit(
+        *object, world_objects::ObjectHit{
+                     .attacker = playerHandle(),
+                     .kind = world_objects::humanHitKind((gate.flags & kRunAttackOrCharge) != 0, gate.airborne),
+                     .point = point,
+                     .direction = ahead,
+                     .attackerAt = feet});
+    m_print(std::format("objects: hit {:.0f} with clip {}{}\n", *object, animId, took ? "" : " (no effect)"));
+    return object;
 }
 
 } // namespace coney::platform

@@ -95,6 +95,7 @@ constexpr std::string_view kLiz = "dyn_door_liz";
 constexpr std::string_view kDclub = "dyn_door_dclub";
 constexpr std::string_view kStall = "dyn_door_stall";
 constexpr std::string_view kVargas = "dyn_door_vargas";
+constexpr std::string_view kWallA = "dyn_door_wall_a";
 constexpr std::array<std::string_view, 2> kBoardlessBarriers{"dyn_door_wall_a", "dyn_door_wall_b"};
 // The boards a broken barrier throws.
 constexpr std::array<std::string_view, 3> kBoards{"dyn_wooddmg_a", "dyn_wooddmg_b", "dyn_wooddmg_a"};
@@ -586,33 +587,38 @@ void Doors::wreck(Door& door, ObjectWorld& world) {
 }
 
 void Doors::hitBarrier(Door& door, const ObjectHit& hit, ObjectWorld& world) {
+    // Every hit: its damage, dust and splinters; one that leaves hitpoints does nothing more.
     door.hitpoints -= hitDamage(hit.kind);
     dustAndSplinters(world, hit.point);
-    playPair(world, door.material, door.material, hit.point);
     if (door.hitpoints > 0) {
-        if (world.services != nullptr) {
-            world.services->setModel(door.handle, kBarrierDamagedModel);
-        }
         return;
     }
-    // Broken: the triangles off and the links open, the boards (not for the walls), then hidden (or vargas' model).
+    // Broken: the triangles off and the links open, then by class: dyn_door_wall_a its damaged model and no body,
+    // dyn_door_wall_b nothing more, the others three boards.
     setTrianglesEnabled(world.collision, door.triangles, false);
     NavLinks(world.paths).openByNumber(door.number);
-    if (world.services == nullptr) {
-        door.hidden = door.type != kVargas;
-        return;
-    }
-    if (!listed(kBoardlessBarriers, door.type)) {
-        for (const std::string_view board : kBoards) {
-            world.services->spawnObject(board, door.position, door.rotation);
+    if (world.services != nullptr) {
+        if (door.type == kWallA) {
+            world.services->setModel(door.handle, kBarrierDamagedModel);
+            world.services->setBody(door.handle, false);
+        } else if (!listed(kBoardlessBarriers, door.type)) {
+            for (const std::string_view board : kBoards) {
+                world.services->spawnObject(board, door.position, door.rotation);
+            }
         }
     }
+    playPair(world, door.material, door.material, hit.point);
+    // dyn_door_vargas destroys its second object and takes its broken model; the others are marked broken and hide,
+    // to be removed at their next update.
     if (door.type == kVargas) {
-        world.services->destroyObject(door.secondObject);
-        world.services->setModel(door.handle, kVargasBrokenModel);
-    } else {
-        door.hidden = true;
+        if (world.services != nullptr) {
+            world.services->destroyObject(door.secondObject);
+            world.services->setModel(door.handle, kVargasBrokenModel);
+        }
+        return;
     }
+    door.broken = true;
+    door.hidden = true;
 }
 
 void Doors::destroy(double handle) {
@@ -657,6 +663,15 @@ void Doors::tick(ObjectWorld& world) {
     for (Door& door : m_doors) {
         for (DoorLeaf& leaf : door.leaves) {
             stepLeaf(leaf);
+        }
+        // A barrier's update only asks whether it is broken; a broken one is removed (WorldObject_Update).
+        if (door.doorClass == DoorClass::Barrier && !door.removed && --door.countdown <= 0) {
+            door.countdown = door.interval;
+            if (door.broken) {
+                door.removed = true;
+                m_removed.push_back(door.handle);
+            }
+            continue;
         }
         if (door.ended || door.doorClass != DoorClass::Swinging) {
             continue;
@@ -763,7 +778,7 @@ const Door* Doors::findByLeaf(double leaf) const {
 std::vector<DoorDraw> doorDraws(const Doors& doors) {
     std::vector<DoorDraw> draws;
     for (const Door& door : doors.doors()) {
-        if (door.ended || door.hidden) {
+        if (door.ended || door.hidden || door.removed) {
             continue;
         }
         if (door.doorClass == DoorClass::Swinging) {
@@ -777,10 +792,10 @@ std::vector<DoorDraw> doorDraws(const Doors& doors) {
             }
             continue;
         }
-        // A barrier swaps to its damaged model once hit, dyn_door_vargas to its broken one at the end.
+        // dyn_door_vargas swaps to its broken model at the end (a broken barrier of another class is hidden).
         std::uint32_t model = crc32(door.type);
-        if (door.doorClass == DoorClass::Barrier && door.hitpoints < door.maxHitpoints) {
-            model = door.type == kVargas && door.hitpoints <= 0 ? kVargasBrokenModel : kBarrierDamagedModel;
+        if (door.doorClass == DoorClass::Barrier && door.type == kVargas && door.hitpoints <= 0) {
+            model = kVargasBrokenModel;
         }
         draws.push_back(DoorDraw{.handle = door.handle,
                                  .modelHash = model,

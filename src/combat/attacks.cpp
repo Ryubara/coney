@@ -224,6 +224,21 @@ int attackHitUpdate(int animId, const CombatTuning& tuning) {
     return found != kMeasured.end() ? found->hit : tuning.hitUpdate;
 }
 
+std::optional<StrikeWindow> movingStrikeWindow(int animId) {
+    switch (animId) {
+    case anim_id::kRunningAttackCharge:
+        return StrikeWindow{.on = 3, .off = 16};
+    case anim_id::kRunningAttackDive:
+        return StrikeWindow{.on = 1, .off = 23};
+    case anim_id::kAttackFromRun:
+        return StrikeWindow{.on = 1, .off = 7};
+    case anim_id::kAttackFromWalk:
+        return StrikeWindow{.on = 4, .off = 10};
+    default:
+        return std::nullopt;
+    }
+}
+
 bool AttackChain::start(int animId, const CombatTuning& tuning) {
     m_hit = attackHitUpdate(animId, tuning);
     m_current = animId;

@@ -7666,6 +7666,11 @@ name = "ObjectDb_FindByName"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x00391c10
+name = "WorldObject_Remove"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x00391c98
 name = "WorldObject_RegisterContext"
 subsystem = "TaskEngine"
@@ -7983,6 +7988,11 @@ address = 0x003b2f40
 name = "DoorFence_Init"
 subsystem = "TaskEngine"
 size = 536
+
+[[function]]
+address = 0x003b3220
+name = "DoorFence_Update"
+subsystem = "TaskEngine"
 
 [[function]]
 address = 0x003c55e8

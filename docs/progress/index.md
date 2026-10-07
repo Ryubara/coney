@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,590 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,592 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-467 reimplemented function(s) have no size yet and add no bytes.
+469 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -72,7 +72,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 202 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 111 | 531,312 |
+| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 113 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -1445,6 +1445,7 @@ at the top of the repository's `README.md`.
 | `0x0038fab8` | `GlassTypes_Set` | `TaskEngine` | 40 |
 | `0x00390f18` | `Cfg_AddObjectType` | `TaskEngine` | not filled in |
 | `0x003913d8` | `ObjectDb_FindByName` | `TaskEngine` | not filled in |
+| `0x00391c10` | `WorldObject_Remove` | `TaskEngine` | not filled in |
 | `0x00391c98` | `WorldObject_RegisterContext` | `TaskEngine` | not filled in |
 | `0x00393538` | `Thrown_HitObject` | `TaskEngine` | 1,136 |
 | `0x00395b70` | `WorldObject_Update` | `TaskEngine` | 432 |
@@ -1501,6 +1502,7 @@ at the top of the repository's `README.md`.
 | `0x003ad440` | `Radio_Update` | `TaskEngine` | not filled in |
 | `0x003b2180` | `DoorFence_Hit` | `TaskEngine` | 3,520 |
 | `0x003b2f40` | `DoorFence_Init` | `TaskEngine` | 536 |
+| `0x003b3220` | `DoorFence_Update` | `TaskEngine` | not filled in |
 | `0x003c55e8` | `ScriptType_Find` | `TaskEngine` | not filled in |
 | `0x003ca658` | `Fog3D_WispInit` | `TaskEngine` | not filled in |
 | `0x003cadd8` | `Fog3D_EmitterUpdate` | `TaskEngine` | not filled in |

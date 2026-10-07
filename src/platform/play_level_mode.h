@@ -327,6 +327,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     bool stepLockPick(const Pad& pad);
     // After the player's step: his landed hit sent to the pane or door it struck, then the objects' two 60 Hz ticks.
     void stepObjects();
+    // Player 1's strike along his facing, `reach` long, at the pane or door it meets: message 1 to it with `animId`'s
+    // kind. Returns the object struck, if one took the ray.
+    std::optional<double> strikeAhead(int animId, float reach);
     // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the
     // level's collision, starts the pick-up on him.
     void bindPickups(LevelPickups* pickups);
@@ -449,6 +452,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     LevelPickups* m_pickups = nullptr;     // the level's loose objects for the pick-up; not owned
     std::optional<world_objects::LockPick> m_lockPick;
     int m_lockPickDifficulty = 0;
+    // Player 1's moving attack: the clip, the updates since it started, and the objects its strike shapes have struck.
+    std::uint32_t m_strikeClip = 0xffffffffU;
+    int m_strikeAge = 0;
+    std::vector<double> m_struck;
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;

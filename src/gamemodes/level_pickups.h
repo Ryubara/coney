@@ -132,6 +132,10 @@ class LevelPickups {
     /// @orig 0x0022e020 StereoTheft_End (unknown)
     void stereoStolen(int player, double human, double car);
 
+    /// World object `object` was removed (`WorldObject_Remove`, a broken barrier at its next update): its handlers get
+    /// message 2 with itself and no other object, and its spawn record is gone for good.
+    void objectRemoved(double object);
+
     /// How many of item `item` player `player` (0 or 1) holds, and the most the inventory lets a player hold.
     [[nodiscard]] int carried(int player, int item) const;
     [[nodiscard]] int itemLimit(int item) const;

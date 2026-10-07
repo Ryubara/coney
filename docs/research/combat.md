@@ -1999,7 +1999,8 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
 - **The held flags** ([Tasks](tasks.md#held-flags)): the bits each move holds where the research names none. Every
   attack the dispatcher starts (the walk attack, the snaps, the grounded and mounted strikes, the grab strikes, power
   strikes and throws) is built as `Attack_Start`'s (holds `0x7`, sets `0x1`); the charge and dive hold the run attack's
-  `0x1000000`; the grab's connecting clips, its spins, the mugging's clips and the let-go hold the grab bit `0x10`; a
+  `0x1000000` (the dive's is `0x400000` at runtime, [Moving strikes](#moving-strikes); both make an object hit kind 2);
+  the grab's connecting clips, its spins, the mugging's clips and the let-go hold the grab bit `0x10`; a
   start clip `0x10000000`, the landing `0x1000000`, the run stop and the climbs `0x80000`. An event acts only on a
   task holding the bits it changes; a new task first clears the bits it holds, so the next attack of a chain starts
   in its wind-up, and one leaving clears only the bits no other task holds; only the newest task's events fire. An
@@ -2009,7 +2010,10 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   and the mount's strike take square's mask (`0x100101f`), so a move in a hold plays out before the next. The chain
   ends once the record holds none of the attack's phases, the recovery, the counter or the run attack's bit. Every
   attack whose hit was not measured (the snaps, the moving attacks, the throws, the grounded and mounted strikes) hits
-  2 updates in, as `S1`. The block's release plays the idle at once, and its fade holds `0x10000000` for its 5 updates:
+  2 updates in, as `S1`. A moving attack's hit on a world object lands instead through its strike window
+  (`combat::movingStrikeWindow()`, [Objects](objects.md#coneys-implementation)); its hit on a human still lands 2
+  updates in (the strike shapes are not built). The block's release plays the idle at once, and its fade holds
+  `0x10000000` for its 5 updates:
   the stick turns the player but the walk start waits for the fade, as at runtime. Coney never sets state code 5.
 - **The characters' step** ([Tasks](tasks.md#humans-update)): it runs on Coney's fixed 1/30 s step, the original's
   30 Hz characters' update, without the 60 Hz tick or the timing wheel, which wait for the world's objects; the brains
@@ -2171,7 +2175,7 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **The snap's steer and target**: whether `0x00264460`'s turn faces the target or puts it at the snap's side (Coney
   does the latter), whether the snap writes the target `+0xc8`, and which update's gait square's tests
   (`0x00223a30`-`0x00223a60`) read, given that a square one update after the stick still snapped at runtime.
-- **The hits not measured**: the hit of the snaps, the moving attacks, the throws and the grounded and mounted strikes
+- **The hits not measured**: the hit of the snaps, the throws and the grounded and mounted strikes
   (the phases are the clips' events, [Tasks](tasks.md#held-flags)).
 - **Input and the stick after a move** (answered at runtime, [When input and the stick come back](#input-return)).
   The locomotion gate (answered, [Tasks](tasks.md#locomotion-gate)). The block's 5 updates after release (answered):

@@ -13,6 +13,9 @@ namespace coney {
 
 namespace {
 
+// The message WorldObject_Remove sends an object's handlers (docs/research/objects.md#barriers).
+constexpr int kRemovedMessage = 2;
+
 // A record's position as a vector.
 anim::Vec3 positionOf(const world_objects::SpawnRecord& record) {
     return anim::Vec3{record.position[0], record.position[1], record.position[2]};
@@ -163,6 +166,13 @@ void LevelPickups::stereoStolen(int player, double human, double car) {
         const std::array<script::Value, 2> args{script::Value(human), script::Value(car)};
         static_cast<void>(m_scripts.call(m_state.player.stereoTheftHandler, args));
     }
+}
+
+void LevelPickups::objectRemoved(double object) {
+    if (m_messages != nullptr) {
+        static_cast<void>(m_messages->deliver(m_scripts, object, kRemovedMessage, object, 0.0, 0.0));
+    }
+    static_cast<void>(m_records.destroy(object));
 }
 
 int LevelPickups::carried(int player, int item) const { return m_state.player.inventory.count(player, item); }

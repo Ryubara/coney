@@ -319,7 +319,8 @@ TEST_CASE("other swinging doors ignore hits; a destroyed one hits itself", "[wor
     CHECK(doors.hitpoints(cabin) == 8);
 }
 
-TEST_CASE("a barrier: links charged through, damaged model, boards and hidden", "[world_objects][doors]") {
+TEST_CASE("a barrier: links charged through, boards, hidden, then removed at its next update",
+          "[world_objects][doors]") {
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
     const ObjectTypeInfo info{
@@ -332,9 +333,10 @@ TEST_CASE("a barrier: links charged through, damaged model, boards and hidden", 
     doors.command(handle, door_command::kOpen, fixture.world);
     CHECK(doors.find(handle)->state == door_state::kClosed);
 
+    // A hit that leaves hitpoints changes no model.
     doors.hit(handle, hitBy(HitKind::Plain), fixture.world);
-    CHECK(fixture.services.models.size() == 1);
-    CHECK(fixture.services.models[0].second == coney::world_objects::kBarrierDamagedModel);
+    CHECK(fixture.services.models.empty());
+    CHECK_FALSE(doors.find(handle)->hidden);
     // A charge (16) breaks the 6 left.
     doors.hit(handle, hitBy(HitKind::Charge), fixture.world);
     CHECK(doors.find(handle)->hidden);
@@ -342,6 +344,14 @@ TEST_CASE("a barrier: links charged through, damaged model, boards and hidden", 
     CHECK_FALSE(fixture.paths.edges()[0].avoid);
     CHECK(fixture.services.spawned.size() == 3);
     CHECK_FALSE(doors.hit(handle, hitBy(HitKind::Plain), fixture.world));
+    // Broken, it is removed at its next update (every 60 ticks), once.
+    CHECK(doors.find(handle)->broken);
+    CHECK(doors.takeRemoved().empty());
+    tick(doors, fixture, coney::world_objects::kBarrierInterval);
+    CHECK(doors.takeRemoved() == std::vector<double>{handle});
+    CHECK(doors.find(handle)->removed);
+    tick(doors, fixture, coney::world_objects::kBarrierInterval);
+    CHECK(doors.takeRemoved().empty());
 }
 
 TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world_objects][doors]") {
@@ -355,6 +365,9 @@ TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world
     CHECK(doors.hit(wall, hitBy(HitKind::Plain), fixture.world));
     CHECK(doors.find(wall)->hidden);
     CHECK(fixture.services.spawned.empty());
+    // dyn_door_wall_a takes its damaged model and loses its body when broken.
+    REQUIRE(fixture.services.models.size() == 1);
+    CHECK(fixture.services.models[0].second == coney::world_objects::kBarrierDamagedModel);
 
     const ObjectTypeInfo chain{.className = "dyn_door_chain_s", .hitpoints = 10};
     coney::test::ObjectWorldFixture other;
@@ -362,7 +375,7 @@ TEST_CASE("walls throw no boards; message 10 stops a barrier being hit", "[world
     CHECK(other.paths.edges()[0].flags == 0x10); // dyn_door_chain_s leaves its links alone
 }
 
-TEST_CASE("the doors draw their leaves at their poses and a barrier as its model, damaged once hit",
+TEST_CASE("the doors draw their leaves at their poses and a barrier as its model until it breaks",
           "[world_objects][doors]") {
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
@@ -385,7 +398,7 @@ TEST_CASE("the doors draw their leaves at their poses and a barrier as its model
     CHECK(draws[2].handle == barrier);
     CHECK(draws[2].modelHash == coney::crc32("dyn_door_fence"));
 
-    // Hit: the store door's leaves swing to their new rotation; the fence takes its damaged model, then hides.
+    // Hit: the store door's leaves swing to their new rotation; the fence keeps its model, then hides.
     doors.hit(door, hitBy(HitKind::Plain, {4.0F, 7.0F, 0.0F}), fixture.world);
     doors.hit(barrier, hitBy(HitKind::Plain), fixture.world);
     tick(doors, fixture, 2);
@@ -393,7 +406,7 @@ TEST_CASE("the doors draw their leaves at their poses and a barrier as its model
     REQUIRE(draws.size() == 3);
     CHECK(draws[0].rotation.w == Catch::Approx(doors.find(door)->leaves[0].rotation.w));
     CHECK(draws[0].rotation.w != Catch::Approx(1.0F));
-    CHECK(draws[2].modelHash == coney::world_objects::kBarrierDamagedModel);
+    CHECK(draws[2].modelHash == coney::crc32("dyn_door_fence"));
     doors.hit(barrier, hitBy(HitKind::Charge), fixture.world);
     CHECK(coney::world_objects::doorDraws(doors).size() == 2);
 }

@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include "animation/anim_task.h"
 #include "combat/anim_ids.h"
@@ -164,6 +165,17 @@ enum class ChainButton : std::uint8_t { None, Cross, Square, SnapRight, SnapLeft
 /// `XX2` 10, `SX2` 7, `XS2` 9, the grab strikes 51, 53 and 55 1, the power strike 57 0. **Coney choice**: every attack
 /// not measured hits as `S1` does (its hit event is not mapped).
 [[nodiscard]] int attackHitUpdate(int animId, const CombatTuning& tuning);
+
+/// The updates, counted from a moving attack's clip start, during which its strike shapes are on: from `on` up to but
+/// not including `off` (docs/research/combat.md#moving-strikes).
+struct StrikeWindow {
+    int on = 0;
+    int off = 0;
+};
+
+/// The strike window of moving attack `animId`, measured at runtime: the charge 3-16, the dive 1-23, the run attack
+/// 1-7 and the walk attack 4-10; nothing for any other clip.
+[[nodiscard]] std::optional<StrikeWindow> movingStrikeWindow(int animId);
 
 /// What one update of an attack did.
 struct ChainStep {

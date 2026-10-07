@@ -2189,7 +2189,8 @@ queues; the dynamic obstacles; the legs of edges 8, `0x10`,
 system, the dynamic clip slot and clips by id; the head look-ats; the sender of message 1 and its attacker; the gang's
 alert state, bounds, return to calm and neutral rule; the anim
 substitutions; the crowd's cheer idles; the formation's ground ray, line of sight and assignment mode `+0x275`; the
-dealer's run to a flag, gestures, speech, buy clip and pair, shove and icons; the other tactics; the attack's steer, the post-block pause and
+dealer's run to a flag, gestures, speech, buy clip and pair, shove and icons; the other tactics; the attack's steer, the
+post-block pause and
 the run-stop.
 
 **The hub's goals and gangs** (`level95`; `repo:src/ai/hub_goals.h`, `repo:src/ai/scripted_hub.h`): `GoalAreaWalker`

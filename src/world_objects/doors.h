@@ -9,6 +9,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -169,6 +170,8 @@ struct Door {
 
     bool hittable = true;            ///< A barrier's message 10.
     bool hidden = false;             ///< A broken barrier hides itself.
+    bool broken = false;             ///< Data `+0x00`: a broken barrier, removed at its next update.
+    bool removed = false;            ///< Removed from the world (`WorldObject_Remove`): gone for good.
     double secondObject = kNoObject; ///< `dyn_door_vargas`' second object (data `+0x08`).
 };
 
@@ -231,10 +234,11 @@ class Doors {
     /// A barrier's message 10: whether it can be hit.
     void setHittable(double handle, bool hittable);
 
-    /// One 60 Hz tick: each door whose countdown runs out updates (a swinging door's states, a destroyed door's hit),
-    /// and each leaf takes its target rotation.
+    /// One 60 Hz tick: each door whose countdown runs out updates (a swinging door's states, a destroyed door's hit;
+    /// a broken barrier is removed, and takeRemoved() names it), and each leaf takes its target rotation.
     /// @orig 0x003fbba0 DoorSwing_Update (unknown)
     /// @orig 0x003fb5a0 SubSwingingDoor_Update (unknown)
+    /// @orig 0x003b3220 DoorFence_Update (unknown)
     void tick(ObjectWorld& world);
 
     /// A lock pick at the door by `human` succeeded: command 0 (no longer pickable), then the door swings open away
@@ -253,6 +257,10 @@ class Doors {
     [[nodiscard]] const Door* findByLeaf(double leaf) const;
     /// Every door, oldest first.
     [[nodiscard]] std::span<const Door> doors() const { return m_doors; }
+    /// The barriers removed since the last call (`WorldObject_Remove`, docs/research/objects.md#barriers): the caller
+    /// sends each one's handlers message 2 and removes its spawn record for good.
+    /// @orig 0x00391c10 WorldObject_Remove (unknown)
+    [[nodiscard]] std::vector<double> takeRemoved() { return std::exchange(m_removed, {}); }
     /// Forgets every door (the level's unload).
     void clear() { m_doors.clear(); }
 
@@ -285,6 +293,7 @@ class Doors {
     static void wreck(Door& door, ObjectWorld& world);
 
     std::vector<Door> m_doors;
+    std::vector<double> m_removed; // barriers removed since the last takeRemoved()
 };
 
 /// One model a door puts in the world this frame.
@@ -300,10 +309,10 @@ struct DoorDraw {
 };
 
 /// What the level's doors draw: each leaf of a swinging door at its pose (its model `dyn_dr_*`), and a barrier or a
-/// door of another class as its type's model (a hit barrier its damaged model, `dyn_door_vargas` broken its broken
-/// one); nothing for a hidden barrier or a door whose task has ended. **Coney's stand-in** until the draw is traced: a
-/// swinging door's frame type draws no model of its own, and a model stage a splintering door or a leaf takes is not
-/// shown.
+/// door of another class as its type's model (`dyn_door_wall_a` broken its damaged model, `dyn_door_vargas` broken
+/// its broken one); nothing for a hidden barrier or a door whose task has ended. **Coney's stand-in** until the draw is
+/// traced: a swinging door's frame type draws no model of its own, and a model stage a splintering door or a leaf takes
+/// is not shown.
 [[nodiscard]] std::vector<DoorDraw> doorDraws(const Doors& doors);
 
 } // namespace coney::world_objects
