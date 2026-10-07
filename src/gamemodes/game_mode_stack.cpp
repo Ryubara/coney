@@ -35,6 +35,8 @@ GameMode* GameModeStack::top() const { return m_modes.empty() ? nullptr : m_mode
 
 std::uint32_t GameModeStack::topId() const { return m_modes.empty() ? 0 : m_modes.back()->id(); }
 
+bool GameModeStack::contains(const GameMode& mode) const { return std::ranges::find(m_modes, &mode) != m_modes.end(); }
+
 void GameModeStack::updateTop(const FrameTime& frame) {
     GameMode* mode = top();
     if (mode == nullptr) {

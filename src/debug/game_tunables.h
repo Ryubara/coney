@@ -14,7 +14,9 @@ namespace coney::debug {
 /// - **Sprint**, **Jump** and **Climb** (src/human/stamina.h, jump.h, climb.h, docs/research/characters.md#sprint,
 ///   #jump, #climb): stamina's maximum, drain and refill; the jump's speeds and checks; the climbs' probes and windows;
 /// - **Follow camera** (src/camera/follow_camera.h, docs/research/camera.md): the position lag, the collision margins,
-///   and the leash band, the pitch and the look-at height a new camera starts with.
+///   and the leash band, the pitch and the look-at height a new camera starts with;
+/// - **Display** (src/scenes/letterbox.h, docs/guides/enhancements.md#where-the-settings-live): Coney's render-side
+///   settings: whether the cutscene letterbox's bars are drawn (default on, the original's look).
 ///
 /// Call it once at start-up; the values live as long as the program. Unregister with
 /// TunableRegistry::removeCategory().

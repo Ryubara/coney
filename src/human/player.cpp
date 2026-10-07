@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <utility>
@@ -149,6 +150,23 @@ Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* m
     m_humans.add(m_human, true);
     m_human.spawn(mesh, start.position, start.headingDegrees);
     m_camera = camera::FollowCamera(m_human.position(), m_human.heading());
+    m_current = capture();
+    m_previous = m_current;
+}
+
+void Player::changeCharacter(const PlayerCharacter& character, const raycast::CollisionMesh* mesh,
+                             const PlayerClass& playerClass) {
+    // The constructor's profile: the player's own unless the class names a power class.
+    FighterProfile profile;
+    if (playerClass.powerClass) {
+        profile = FighterProfile{.player = true, .powerClass = *playerClass.powerClass};
+    }
+    const anim::Vec3 feet = m_human.position();
+    const float headingDegrees = m_human.heading() * 180.0F / std::numbers::pi_v<float>;
+    m_human.changeCharacter(character.anims(), &character.ranges(), playerClass.damage, playerClass.damagePercent,
+                            profile);
+    m_human.setSkeleton(&character.skeleton());
+    m_human.spawn(mesh, feet, headingDegrees);
     m_current = capture();
     m_previous = m_current;
 }

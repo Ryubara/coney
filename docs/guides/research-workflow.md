@@ -302,22 +302,34 @@ How the first runtime pass (2026-10-04, official portable PCSX2 2.9.94) was done
 PINE server and the `pcsx2` MCP server (or any PINE client).
 
 - **Set-up.** Enable PINE in `inis/PCSX2.ini` (`[EmuCore]` `EnablePINE = true`, `PINESlot = 28011`) before launching.
-  Start `pcsx2-qt.exe -fastboot -- <iso>` in the background. In our run PCSX2 2.9.94 failed to open the ISO whose path
-  holds commas and parentheses ("Requested filename ... does not exist"); an NTFS hard link with a plain name in your
-  scratch folder (`New-Item -ItemType HardLink`) boots fine and copies nothing. Pass the path with backslashes (start
-  it from PowerShell): the same link given as `C:/Users/...` from Git Bash was refused with the same error.
+  PCSX2 2.9.94 fails to open an ISO whose path holds commas and parentheses ("Requested filename ... does not
+  exist"), so the launcher boots an NTFS hard link with a plain name in the scratch folder (it copies nothing).
+- **PCSX2 is started only by `coney-tools pcsx2 launch` or `pcsx2 record`, never by hand** (no `pcsx2-qt.exe` from
+  a shell, a script or `Start-Process`). The launcher is what keeps PCSX2 from taking the keyboard focus, which
+  interrupts the owner's typing. `pcsx2 launch --agent <id> [<state.p2s>]` starts it on a state file, or with no
+  state boots the disc and returns once PINE answers; it runs under your claim and leaves PCSX2 running.
+- **How the launcher keeps the focus off** (`repo:python/src/coney_tools/pcsx2_proc.py`, whose docstring says why it
+  must stay this way). A no-activate show command alone (`SW_SHOWNOACTIVATE` in `STARTUPINFO`) was not enough: Qt
+  ignores it for its first window, and Windows lets a process activate its window when the foreground process
+  started it, which every agent's process tree (under the owner's terminal) is. So the launcher has WMI start PCSX2
+  (`Win32_Process.Create`): its parent is WMI's provider host, outside that tree, with no foreground rights to hand
+  down. As a backstop, while `pcsx2 record` runs a guard polls every 50 ms and, if a PCSX2 window is in the
+  foreground, hands it back to the window that had it (no input sent, PCSX2 never minimised, so screenshots keep
+  working). Checked 2026-10-07: the foreground owner logged every 50 ms over a state launch and over a cold boot
+  (about 900 polls each) was never PCSX2.
 - **Several at once.** A portable PCSX2 keeps its settings, states and memory cards in its own folder, so each copy of
   the folder (`pcsx2`, `pcsx2-b`, ..., each with its own `PINESlot` 28011, 28012, ...) is an independent instance, and
   `coney-tools pcsx2` reads the port from that copy's `PCSX2.ini`. Every PCSX2 use starts with
   `coney-tools pcsx2 claim --agent <your id>` (it prints the copy's folder and port; `--json` for scripts) and ends
   with `pcsx2 release --agent <your id>`, which also closes your PCSX2. `pcsx2 status` shows who holds what, built
   from the live claims and processes; a claim whose process is gone is stale and the next `claim` takes it over.
-  `pcsx2 launch` and `pcsx2 record` take `--agent` and run under your claim (making one if you hold none). Starting
-  `pcsx2-qt` by hand (the bullet above) is only for your claimed copy. Input to the game is over PINE only (scripted
+  `pcsx2 launch` and `pcsx2 record` take `--agent` and run under your claim (making one if you hold none). Input to the
+  game is over PINE only (scripted
   pad input, the stick table below); no tool takes the keyboard focus. When a hotkey is unavoidable (Space to
   pause), `pcsx2 keys --agent <id> --copy <name> space` posts the key to that copy's window by handle, and
   `pcsx2 screenshot --copy <name> --out <png>` reads the window by handle (not F8); both are Windows-only and leave
-  the focus alone. PCSX2 starts without activating its window, and every copy has `[InputSources] SDL = false` so the
+  the focus alone. PCSX2 never takes the focus (the launcher, above), and every copy has `[InputSources] SDL = false` so
+  the
   owner's gamepad cannot drive it; the owner turns SDL on in a copy only to test by hand, and `claim` and `status`
   warn when it is on. Claims live in `pcsx2-claims/` of the shared scratch folder (`pcsx2_root` and `pcsx2_claims_dir`
   in `coney.local.toml` move the copies and the claims).
@@ -354,8 +366,8 @@ PINE server and the `pcsx2` MCP server (or any PINE client).
   instead of 2, 3, 6 and 7, so `0x005de3aa` / `0x005de3ab` are the active-low button bytes and `0x005de3ae` /
   `0x005de3af` the stick's x and y. The patch must be in RAM before the block is compiled: **copy** the save state
   file (a zip of `eeMemory.bin` and the rest; Python 3.14's `zipfile` reads its zstd entries), patch `eeMemory.bin` at
-  those addresses, and start `pcsx2-qt.exe -fastboot -statefile <copy> -- <iso>`; restart PCSX2 the same way for
-  every run. Then write the bytes over PINE (the stick table above gives the magnitude). Find the player as the human
+  those addresses, and start it with `coney-tools pcsx2 launch --agent <id> <copy>`; restart PCSX2 the same way
+  for every run. Then write the bytes over PINE (the stick table above gives the magnitude). Find the player as the human
   whose `+0x1b0` is 0: in later levels it is not human 0, and the per-player record is indexed by its `+0x92`. The
   patch is `scripted-pad` in `research/traces/patches.toml`, with each instruction word it expects and the one that
   replaces it; `coney-tools pcsx2 prepare-state` and `pcsx2 record` make the copy and restart PCSX2 for you.

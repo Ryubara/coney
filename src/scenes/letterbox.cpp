@@ -6,6 +6,11 @@
 
 namespace coney::scenes {
 
+LetterboxSettings& letterboxSettings() {
+    static LetterboxSettings settings;
+    return settings;
+}
+
 void Letterbox::start(bool in, float seconds, std::uint64_t nowMs) {
     // From wherever the bars are now, towards closed or open.
     m_from = amount(nowMs);

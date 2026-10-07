@@ -7,6 +7,7 @@
 #include "human/jump.h"
 #include "human/locomotion.h"
 #include "human/stamina.h"
+#include "scenes/letterbox.h"
 
 namespace coney::debug {
 
@@ -122,6 +123,10 @@ void registerGameTunables(TunableRegistry& registry) {
         .range(0, 3, 0.05)
         .units("m")
         .describe("Look-at point above the player's feet; applies when the camera is next placed");
+
+    // Display: Coney's own render-side settings (docs/guides/enhancements.md#where-the-settings-live).
+    registry.add("Display", "Cutscene letterbox", &scenes::letterboxSettings().drawn)
+        .describe("Draw the black bars over cutscenes, as the original does; off plays them full screen");
 }
 
 } // namespace coney::debug

@@ -91,6 +91,17 @@ HumanAnimator::HumanAnimator(const characters::AnimSet& anims, const AnimSlots& 
     m_state = AnimState::Idle;
 }
 
+void HumanAnimator::changeAnims(const characters::AnimSet& anims) {
+    CONEY_ASSERT(clipsMissing(anims, m_slots) == 0);
+    m_anims = &anims;
+    m_speeds = speedsOf(anims, m_slots);
+    // The clips the scripts gave came from the old set's level; the new character stands in its own idle.
+    m_idleClip = nullptr;
+    m_overrides.clear();
+    m_tasks.change(idleLoop(), 0.0F);
+    m_state = AnimState::Idle;
+}
+
 anim::GaitClip HumanAnimator::slotClip(std::size_t slot) const {
     const std::uint32_t id = m_slots.ids[slot];
     return anim::GaitClip{.clip = clip(id), .animId = id};

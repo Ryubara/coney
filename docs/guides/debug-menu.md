@@ -135,19 +135,24 @@ is not in Coney yet. The page does what the checker does on a match: it calls th
 the sandbox the page reports that it is not set.
 
 **Levels.** In the front end (a run with a disc and no mode named), the level table holds the game's levels (filled by
-`CfgLevelName`); choosing one asks the level flow to start it next (`MenuLoadLevel`). In `--play-level` and the other
+`CfgLevelName`); choosing one jumps there at checkpoint 1 at the start of the next frame, as the Missions page does
+(below). In `--play-level` and the other
 modes run with a disc, the page lists instead every level with a streamed world on the disc (`level0` to `level199`,
 79 of them); choosing one, or typing its name, plays it with Rembrandt at the start of the next frame, in place of the
 play mode or sandbox viewer on top. *Sandbox layouts* lists the layouts in the sandbox folder
 ([Sandbox](sandbox.md)); choosing one plays it at the start of the next frame, in place of the play mode or sandbox
 viewer on top: with Rembrandt when there is a disc for his character, else with the free camera.
 
-**Missions.** The page lists the story's missions in order, each tagged with its level and its checkpoint count
-(`1. New Blood`, `level99, 3 cp`); a mission opens a page with one action per checkpoint, which starts the level there
-as `--play-level LEVEL --checkpoint N` does: in a `--play-level` run it replaces the play mode at the start of the next
-frame, in the story it sets the checkpoint (`SetCheckPoint`) and asks the level flow for the level, as `runNextMission`
-does. The list is `src/debug/story_missions.cpp`, which a Python test checks against `research/missions.yaml` and the
-[levels list](../references/levels.md). The hub (`level95`) between the missions is not listed: the Levels page loads it.
+**Missions.** The page lists the story's missions in order, each tagged with its level and its checkpoint count (`1. New
+Blood`, `level99, 3 cp`); a mission opens a page with one action per checkpoint, which starts the level there as
+`--play-level LEVEL --checkpoint N` does: in a `--play-level` run it replaces the play mode at the start of the next
+frame. In the story (a plain `coney --disc PATH`) the jump waits for the start of the next frame too, then sets the
+checkpoint (`SetCheckPoint`), asks the level flow for the level as `runNextMission` does, and closes everything above
+the level flow: the front end's menus or a movie, or the level in play and its pause. The level flow starts the level on
+its next step, from the front end or from inside a level (`StartUpFlow::jumpToLevel`). A level the level table does not
+have yet (before the preloads at the legal screen fill it) is refused and the page says so. The list is
+`src/debug/story_missions.cpp`, which a Python test checks against `research/missions.yaml` and the [levels
+list](../references/levels.md). The hub (`level95`) between the missions is not listed: the Levels page loads it.
 
 **Player, Camera, Spawner and AI fighters** act on the mode the player plays in (`--play-level`, or a sandbox from
 Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which the play mode implements; elsewhere they say
@@ -170,9 +175,13 @@ starting player takes his. That is the class's damage table scaled by his Warrio
 type's own ([Power classes](../research/characters.md#power-classes)), which sets his power meter, hurt threshold,
 stun and down times. The Player page's *Character* line shows both classes. The AI fighters are made again where they
 stand, at full health, since their brains hold the player they fought; they and the targets keep the scene's
-character. In a level whose scripts hold the player (every story level, the hub included) he cannot be made again, so
-*Change character* changes only what he is drawn as and his type: his class and health stay what the level made them.
-The new character loads from the disc, so that frame stalls briefly.
+character. In a level whose scripts hold the player (every story level, the hub included) the brains and the scripts
+hold him by his handle, so he is not made again but becomes the type in place (`human::Player::changeCharacter()`):
+the same files, moves, speeds, class damage, power class and full health as a player made as that type, standing
+where he was with the camera where it was. The scripts' record of him and his brain take the new type too, so
+`HuGetCharType`, his voice and his sounds' character type follow it; the cast is left as it is. A disc test
+(`tests/platform/disc_level99_change_character_test.cpp`) checks the result against a player made as the type. The
+new character loads from the disc, so that frame stalls briefly.
 
 Not taken from the configuration yet, because Coney does not model them for a player: the health (he keeps 900, the
 player's maximum read at runtime, which the class's 1800 does not explain), the power class's stamina, the Warrior
@@ -211,9 +220,11 @@ The first tunables are the player's and the camera's researched values (`src/deb
 | Climb | low and high probe (0.69 m, 1.7 m), reach and running reach (1.5 m, 4.5 m), probe behind (0.4 m), fence top limit (0.25 m), fence ceiling (2.5 m), wall window (1.7-2.91 m), short wall window (0.7-1.7 m) |
 | Follow camera | position lag (0.22), collision margin (0.2 m), closest after collision (0.5 m), auto-centre (on; off is the default rule), one player camera `0x0050b19c` (on), leash near and far (4.8 m, 5.3 m), pitch (13°), look-at height (1.4 m) |
 | Combat | history hold (7 samples), snaps need a target (`CfgSnap`, on), `S1`'s timing (hit 2, window 6 to 15, recovery 17, end 20 updates; the other attacks keep their measured timing), grab search scale (1.25), power endurance (0.25), grab strike cost (0.2, halved for the player), power drain (15/s), rage points cap (25) and factors (1.0, 0.1), rage drain (9.36/s), rage hold (5000 ms), rage decay (7.8/s), the button mash, the mugging and the stereo theft ([Combat](../research/combat.md#coneys-implementation), `src/debug/combat_tunables.cpp`) |
+| Display | cutscene letterbox (on: the black bars over cutscenes, as the original draws them; off plays cutscenes full screen) |
 
 The leash, pitch and look-at height apply when the camera is next placed (a level start); the others at the next step.
-The game registers the Combat category at start-up beside the others.
+The game registers the Combat category at start-up beside the others. Display values are render-side and apply on
+the next frame ([Enhancements: Where the settings live](enhancements.md#where-the-settings-live)).
 
 **Determinism.** A change never lands in the middle of a step: the registry queues it, and the input gate applies the
 queue between two steps (`TunableRegistry::applyPending()`). A run with the same overrides file and the same input is

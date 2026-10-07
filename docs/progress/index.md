@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.8% of the game's own code (563,308 of 3,354,776 bytes, 2,047 functions) |
+| **Reimplemented** | `███▍░░░░░░░░░░░░░░░░` | 16.8% of the game's own code (563,308 of 3,354,776 bytes, 2,048 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,220 of 3,284,028 bytes; 11,424 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-813 reimplemented function(s) have no size yet and add no bytes.
+814 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -71,7 +71,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 110 | 100,440 |
-| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 87 | 195,624 |
+| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 88 | 195,624 |
 | `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 233 | 497,416 |
 | `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 752 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 8 | 12,544 |
@@ -566,6 +566,7 @@ at the top of the repository's `README.md`.
 | `0x0018d058` | `ScreenFx_StartBlurPulse` | `Graphics` | not filled in |
 | `0x0018d1d0` | `ScreenFx_DrawBlurPulse` | `Graphics` | not filled in |
 | `0x0018d450` | `ScreenFx_QueueEffect` | `Graphics` | not filled in |
+| `0x0018d5f8` | `ScreenFx_DrawLetterbox` | `Graphics` | not filled in |
 | `0x0018dac0` | `ScreenFx_Render` | `Graphics` | not filled in |
 | `0x0018e070` | `ScreenFx_StartRoomSmoke` | `Graphics` | 136 |
 | `0x0018e0f8` | `ScreenFx_EndRoomSmoke` | `Graphics` | 80 |

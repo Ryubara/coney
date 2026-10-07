@@ -131,7 +131,9 @@ void SceneStage::drawPuppets() const {
 void SceneStage::drawOverlay(RenderEngine& engine, std::uint64_t nowMs) const {
     // The bars over the window's whole width, then the fade over everything.
     const graphics::Extent size = engine.frameSize();
-    const float bar = m_letterbox.barHeight(nowMs) * static_cast<float>(size.height);
+    // The bars unless the display setting leaves them out.
+    const float bar =
+        scenes::letterboxSettings().drawn ? m_letterbox.barHeight(nowMs) * static_cast<float>(size.height) : 0.0F;
     std::vector<graphics::LogicalQuad> quads;
     if (bar > 0.0F) {
         const graphics::Rgba black{0, 0, 0, 255};

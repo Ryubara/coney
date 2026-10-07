@@ -8,6 +8,7 @@
 #include <rw.h>
 
 #include "platform/sprite_sheets.h"
+#include "platform/texture_lod.h"
 #include "platform/world_atomic.h"
 
 namespace coney::platform {
@@ -236,7 +237,11 @@ void SceneLighting::renderInRig(rw::Atomic* atomic) {
 
 void SceneLighting::drawWorldAtomic(rw::Atomic* atomic) {
     useLights(m_lighting.lights.select(0.0F, sphereOf(atomic), false, true, false));
+    // The sectors are the only geometry the original draws with mipmaps, levels picked by distance
+    // (docs/research/rendering.md#world).
+    setDistanceMipmaps(true);
     renderInRig(atomic);
+    setDistanceMipmaps(false);
 }
 
 void SceneLighting::drawBackgroundAtomic(rw::Atomic* atomic) {

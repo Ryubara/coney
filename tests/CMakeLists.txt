@@ -63,6 +63,7 @@ add_executable(coney_tests
     graphics/screen_test.cpp
     graphics/sprite_batch_test.cpp
     graphics/texture_grid_test.cpp
+    graphics/texture_lod_test.cpp
     gui/debug_menu_view_test.cpp
     gui/disc_text_test.cpp
     gui/markup_test.cpp
@@ -99,6 +100,7 @@ add_executable(coney_tests
     platform/disc_level99_snaps_test.cpp
     platform/disc_level99_course_test.cpp
     platform/disc_level99_sparring_test.cpp
+    platform/disc_level99_change_character_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_world_test.cpp
     platform/disc_story_chain_test.cpp
@@ -345,3 +347,11 @@ if(MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
                      "${CMAKE_CURRENT_SOURCE_DIR}/support/error_dialogs_check.cmake")
     set_tests_properties(coney.error_dialogs_off PROPERTIES TIMEOUT 60)
 endif()
+
+# The passes that copy the frame and lay it back must not flip it (support/frame_copy_check.cpp). It needs a display and
+# OpenGL 3.3, so it reports itself skipped (77) on machines without them, such as CI's.
+add_executable(frame_copy_check support/frame_copy_check.cpp)
+coney_target_defaults(frame_copy_check)
+target_link_libraries(frame_copy_check PRIVATE coney_platform)
+add_test(NAME coney.frame_copies_upright COMMAND frame_copy_check)
+set_tests_properties(coney.frame_copies_upright PROPERTIES TIMEOUT 60 SKIP_RETURN_CODE 77)

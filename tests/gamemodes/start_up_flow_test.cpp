@@ -273,6 +273,55 @@ TEST_CASE("start-up with scripts: preloads at the legal screen, Menu.onStart sho
     CHECK(run.flow->scripts().errors() == 0);
 }
 
+// A mode standing for whatever is over the level flow when the debug menus jump: a level in play, its pause.
+class StandInMode final : public coney::GameMode {
+  public:
+    explicit StandInMode(std::uint32_t id) : m_id(id) {}
+    [[nodiscard]] std::uint32_t id() const override { return m_id; }
+    coney::ModeResult update(GameModeStack& /*stack*/, const coney::FrameTime& /*frame*/) override {
+        return coney::ModeResult::Stay;
+    }
+    void exit() override { exited = true; }
+    bool exited = false;
+
+  private:
+    std::uint32_t m_id;
+};
+
+TEST_CASE("start-up with scripts: the debug menus' jump starts a level at its checkpoint from the menus or a level",
+          "[start_up][debug]") {
+    ScriptedRun run("");
+    run.frames(152);
+    REQUIRE(run.stack.topId() == ProfileManagerMode::kId);
+
+    // A name the level table does not have changes nothing.
+    CHECK_FALSE(run.flow->jumpToLevel("level77", 2));
+    CHECK(run.stack.topId() == ProfileManagerMode::kId);
+    CHECK(run.logged("jump to level77: not in the level table"));
+
+    // From the front end: the menus go, the checkpoint is set and the level flow starts the level on its next step.
+    CHECK(run.flow->jumpToLevel("level1", 3));
+    CHECK(run.stack.topId() == LevelFlowMode::kId);
+    CHECK(run.flow->state().checkPoint == 3.0);
+    CHECK(run.flow->levelFlow().chosenLevel() != LevelFlowMode::kNoLevel);
+    run.frames(1);
+    CHECK(run.flow->levelFlow().levelRequests() == std::vector<std::string>{"level1"});
+    CHECK(run.flow->levelFlow().chosenLevel() == LevelFlowMode::kNoLevel);
+
+    // From a level in play with its pause over it: both go, the level flow below starts the new choice.
+    StandInMode level(1);
+    StandInMode pause(0xa);
+    run.stack.push(level);
+    run.stack.push(pause);
+    run.frames(1);
+    CHECK(run.flow->jumpToLevel("level1", 2));
+    CHECK(pause.exited);
+    CHECK(run.stack.topId() == LevelFlowMode::kId);
+    CHECK_FALSE(run.stack.contains(level));
+    CHECK(run.flow->state().checkPoint == 2.0);
+    CHECK(run.flow->levelFlow().levelRequests().size() == 2);
+}
+
 TEST_CASE("start-up with scripts: story reaches Menu.startGame, the level request, and back to the menus",
           "[start_up]") {
     // STORY with a new profile (tests/support/story_new_profile.txt): the menus are done on frame 419, then fade out.

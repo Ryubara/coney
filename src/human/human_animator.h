@@ -119,6 +119,11 @@ class HumanAnimator {
     /// controller plays must exist (checked by CONEY_ASSERT; see clipsMissing()).
     HumanAnimator(const characters::AnimSet& anims, const AnimSlots& slots);
 
+    /// Plays `anims` (which must outlive it, with every clip the controller plays) from now on, as a new controller
+    /// over it would: standing in its idle at once, the scripts' idle and override clips dropped. The start hook, the
+    /// flags and whether events are kept stay, since they belong to the human, not to the anim set.
+    void changeAnims(const characters::AnimSet& anims);
+
     /// How many of the clips the controller plays (slots 0, 4-7, 10, 26, 30 and 33, the run start, the two landings
     /// and the 24 climb clips) `anims` lacks; 0 when it can run.
     [[nodiscard]] static std::size_t clipsMissing(const characters::AnimSet& anims, const AnimSlots& slots);

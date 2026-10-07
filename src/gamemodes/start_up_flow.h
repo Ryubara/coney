@@ -132,6 +132,15 @@ class StartUpFlow final : public script::BindingHost {
     void showProfileManager(std::string_view onRumble, std::string_view onStartGame) override;
     void showRumbleModeInterface(std::string_view onCancel, std::string_view onStart, double players) override;
     void menuLoadLevel(std::string_view level) override;
+
+    /// The debug menus' jump to `level` at `checkpoint`, from the front end or from a level in play: sets the
+    /// checkpoint, chooses the level as MenuLoadLevel does and pops every mode above the level flow (the menus, a
+    /// movie, the pause, the level in play), so the level flow starts it on the next step. Call it between two
+    /// frames, outside any step. Returns false, changing nothing, when the level table has no `level` (the preloads
+    /// have not filled it yet, or a wrong name) or the level flow is not on the stack.
+    ///
+    /// Coney's tool: the original's debug menus are not in the retail game (docs/research/debug.md#not-present).
+    bool jumpToLevel(std::string_view level, int checkpoint);
     void playMovie(std::string_view name) override;
     void playMusic(std::string_view track) override;
     void stopMusic() override;

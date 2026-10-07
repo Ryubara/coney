@@ -140,6 +140,13 @@ class Player {
     /// Hands the follow camera back: cameras given with setCameras() no longer refer to it.
     ~Player();
 
+    /// Makes him `character` (which must outlive him) with `playerClass` where he stands, as a player made as that
+    /// character would be (the constructor's class, anim set, Anim Range List and skeleton), spawned afresh at his
+    /// feet and heading on `mesh` (may be null). He stays the same object, so whatever holds him (the brains, the
+    /// cameras, the scripts' handle) keeps him; the follow camera stays where it is.
+    void changeCharacter(const PlayerCharacter& character, const raycast::CollisionMesh* mesh,
+                         const PlayerClass& playerClass);
+
     /// One update of 1/30 s from `pad` (port 1): the buttons turned into a command (combat::CommandMatcher with the
     /// street's tables) and written with the left stick and the camera's view into the human's per-player record, the
     /// characters' step (humans()) with `targets` to fight, then the camera with the right stick. A human that fell

@@ -345,8 +345,12 @@ def _add_pcsx2_commands(groups: Any) -> None:
     repack.add_argument("source", help="a .p2s file, or slot:N for quick-save slot N (only read)")
     repack.add_argument("out", type=Path, help="the repacked copy (outside the repository and sstates/)")
     repack.add_argument("--pcsx2-dir", type=Path, help="the portable PCSX2 folder; default: pcsx2_dir")
-    launch = commands.add_parser("launch", help="start PCSX2 on a state file and wait until its game runs")
-    launch.add_argument("state", type=Path, help="a .p2s file (a patched copy)")
+    launch = commands.add_parser(
+        "launch", help="start PCSX2 (never taking the focus) on a state file and wait until its game runs"
+    )
+    launch.add_argument(
+        "state", type=Path, nargs="?", help="a .p2s file (a patched copy); omitted: boot the disc and wait for PINE"
+    )
     launch.add_argument("--agent", help="your id; PCSX2 starts under your claim (made if you hold none)")
     _add_pcsx2_flags(launch)
     record = commands.add_parser("record", help="play a scenario on the original and write its per-update trace")

@@ -1,9 +1,23 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The operating-system layer of `coney-tools pcsx2`: finding, closing and looking at PCSX2 processes and windows.
+"""The operating-system layer of `coney-tools pcsx2`: starting, finding, closing and looking at PCSX2 processes and
+windows.
 
 Windows needs ctypes (this is the only module that touches it); other systems get the process calls and a clear
 error from the window calls. Nothing here ever focuses a window or sends input to whichever window has focus: keys go
 to a window by its handle (PostMessage), and screenshots read a window by its handle (PrintWindow).
+
+**PCSX2 must never take the keyboard focus** (the machine's owner types while agents work). Do not "simplify" the
+launch back to a Popen with a no-activate show command: that was tried and PCSX2 still came to the foreground,
+because Qt ignores the show command for its first window and Windows lets a process activate its window when the
+foreground process started it, and every agent runs under the owner's foreground terminal. So the launch has two
+layers:
+
+1. `start_detached` has WMI (Win32_Process.Create) start PCSX2. Its parent is then WMI's provider host, outside our
+   process tree, which holds no foreground rights to hand down. Measured 2026-10-07 with the foreground logged every
+   50 ms over a boot to the game: PCSX2 never owned it.
+2. `FocusGuard` runs while an Emulator lives: whenever a PCSX2 window still becomes the foreground, it hands the
+   foreground straight back to the window that had it before. It never sends input, never minimises PCSX2
+   (PrintWindow screenshots need a restored window) and never raises PCSX2.
 """
 
 from __future__ import annotations
@@ -14,7 +28,9 @@ import re
 import signal
 import subprocess
 import sys
+import threading
 import time
+from collections.abc import Callable
 from ctypes import wintypes
 from dataclasses import dataclass
 from functools import lru_cache
@@ -155,19 +171,47 @@ def pcsx2_processes() -> dict[int, Path]:
     return found
 
 
-#: How PCSX2's window first appears: SW_SHOWMINNOACTIVE (7) or SW_SHOWNOACTIVATE (4); neither takes the focus.
+#: The show command PCSX2 is started with: SW_SHOWNOACTIVATE (4). Qt ignores it for its first window, so on its own it
+#: does not keep the focus off (see the module docstring); WMI's launch and FocusGuard do.
 LAUNCH_SHOW = 4
 
 
-def quiet_start() -> dict[str, Any]:
-    """Popen arguments that start a program without activating its window (the machine's owner keeps the focus).
-    Empty off Windows."""
+#: PowerShell that has WMI start the program in CONEY_COMMAND_LINE (in CONEY_DIRECTORY) and prints its pid. WMI's
+#: provider host, not our process tree, becomes the parent.
+_WMI_CREATE = (
+    "$s = New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{ShowWindow=[uint16]%d}; "
+    "$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments "
+    "@{CommandLine=$env:CONEY_COMMAND_LINE; CurrentDirectory=$env:CONEY_DIRECTORY; ProcessStartupInformation=$s}; "
+    'Write-Output "$($r.ReturnValue) $($r.ProcessId)"'
+)
+
+
+def start_detached(command: list[str]) -> int:
+    """Start a program outside this process tree and return its pid.
+
+    Windows lets a process take the foreground when the foreground process (the owner's terminal, which every agent
+    runs under) started it, so a child of ours may activate its window whatever its show command says. Started by
+    WMI (Win32_Process.Create) the program's parent is WMI's provider host, which holds no foreground rights to
+    pass on. Elsewhere this is a plain detached Popen. Raises ConfigError when WMI refuses."""
     if sys.platform != "win32":
-        return {}
-    info = subprocess.STARTUPINFO()
-    info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    info.wShowWindow = LAUNCH_SHOW
-    return {"startupinfo": info}
+        return subprocess.Popen(
+            command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True
+        ).pid
+    env = dict(os.environ)
+    env["CONEY_COMMAND_LINE"] = subprocess.list2cmdline(command)
+    env["CONEY_DIRECTORY"] = str(Path(command[0]).parent)
+    result = subprocess.run(
+        ["powershell", "-NoProfile", "-NonInteractive", "-Command", _WMI_CREATE % LAUNCH_SHOW],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+    match = re.search(r"(\d+) (\d+)", result.stdout)
+    if result.returncode != 0 or match is None or match.group(1) != "0":
+        raise ConfigError(f"WMI could not start {command[0]}: {(result.stdout + result.stderr).strip()}")
+    return int(match.group(2))
 
 
 def terminate(pid: int, wait: float = 15.0) -> bool:
@@ -217,6 +261,7 @@ def _user32() -> Any:
     lib.EnumWindows.argtypes = [enum_proc, wintypes.LPARAM]
     lib.EnumChildWindows.argtypes = [wintypes.HWND, enum_proc, wintypes.LPARAM]
     lib.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    lib.GetWindowThreadProcessId.restype = wintypes.DWORD
     lib.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
     lib.GetClassNameW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
     lib.SetProcessDpiAwarenessContext.argtypes = [ctypes.c_void_p]
@@ -230,6 +275,10 @@ def _user32() -> Any:
     lib.GetDC.argtypes = [wintypes.HWND]
     lib.ReleaseDC.argtypes = [wintypes.HWND, wintypes.HDC]
     lib.PrintWindow.argtypes = [wintypes.HWND, wintypes.HDC, wintypes.UINT]
+    lib.GetForegroundWindow.restype = wintypes.HWND
+    lib.SetForegroundWindow.argtypes = [wintypes.HWND]
+    lib.IsWindow.argtypes = [wintypes.HWND]
+    lib.AttachThreadInput.argtypes = [wintypes.DWORD, wintypes.DWORD, wintypes.BOOL]
     return lib
 
 
@@ -316,6 +365,111 @@ def key_targets(pid: int) -> list[Window]:
     """The windows that get posted keys: the largest visible top-level window. Posting to it reaches the pad bindings
     and hotkeys (Space paused the game, verified); a child as well would press twice."""
     return [_biggest([w for w in windows_of(pid) if w.top_level], pid)]
+
+
+# --- keeping the focus off PCSX2 ---------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class FocusCalls:
+    """The window calls FocusGuard makes, swappable so tests can fake the desktop: the foreground window, a window's
+    process id, whether a window still exists, and handing the foreground to a window."""
+
+    foreground: Callable[[], int]
+    owner_pid: Callable[[int], int]
+    exists: Callable[[int], bool]
+    give_foreground: Callable[[int], bool]
+
+
+class FocusGuard:
+    """Hands the foreground back whenever a window of the guarded process takes it.
+
+    Built before the launch, it remembers the foreground window then (the owner's); `check()` is one poll, and
+    `start()` runs it every `interval` seconds on a daemon thread until `stop()`."""
+
+    def __init__(self, calls: FocusCalls, interval: float = 0.05) -> None:
+        """Remember the current foreground window as the one to give the focus back to."""
+        self.calls = calls
+        self.interval = interval
+        self.pid: int | None = None
+        self.restore_to = calls.foreground()
+        self.returned = 0
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def check(self) -> bool:
+        """One poll: True when the guarded process held the foreground and it was handed back. A foreground window
+        of any other process becomes the one to return to (the owner moved on), so the guard never fights the
+        owner's own clicks elsewhere."""
+        if self.pid is None:
+            return False
+        current = self.calls.foreground()
+        if not current:
+            return False
+        if self.calls.owner_pid(current) != self.pid:
+            self.restore_to = current
+            return False
+        if not self.restore_to or not self.calls.exists(self.restore_to):
+            return False
+        self.calls.give_foreground(self.restore_to)
+        self.returned += 1
+        return True
+
+    def start(self, pid: int) -> None:
+        """Guard process `pid` on a background thread."""
+        self.pid = pid
+        self._thread = threading.Thread(target=self._run, name="pcsx2-focus-guard", daemon=True)
+        self._thread.start()
+
+    def _run(self) -> None:
+        """Poll until stopped; a failing call ends only that poll."""
+        while not self._stop.wait(self.interval):
+            try:
+                self.check()
+            except OSError:
+                continue
+
+    def stop(self) -> None:
+        """End the guard thread."""
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=1)
+
+
+def _give_foreground(hwnd: int) -> bool:
+    """Make `hwnd` (the owner's window) the foreground again: attach to the input of the thread that holds the
+    foreground now (PCSX2's), which allows SetForegroundWindow, then detach. No input is sent."""
+    user, kernel = _user32(), _kernel32()
+    current = user.GetForegroundWindow()
+    theirs = user.GetWindowThreadProcessId(current, None)
+    ours = kernel.GetCurrentThreadId()
+    attached = bool(theirs and theirs != ours and user.AttachThreadInput(ours, theirs, True))
+    try:
+        return bool(user.SetForegroundWindow(hwnd))
+    finally:
+        if attached:
+            user.AttachThreadInput(ours, theirs, False)
+
+
+def _owner_pid(hwnd: int) -> int:
+    """The process id of a window."""
+    pid = wintypes.DWORD()
+    _user32().GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+    return pid.value
+
+
+def focus_guard() -> FocusGuard | None:
+    """A FocusGuard on the real desktop, made before PCSX2 starts; None off Windows (nothing to guard there)."""
+    if sys.platform != "win32":
+        return None
+    user = _user32()
+    calls = FocusCalls(
+        foreground=lambda: int(user.GetForegroundWindow() or 0),
+        owner_pid=_owner_pid,
+        exists=lambda hwnd: bool(user.IsWindow(hwnd)),
+        give_foreground=_give_foreground,
+    )
+    return FocusGuard(calls)
 
 
 # --- keys -------------------------------------------------------------------------------------------------------

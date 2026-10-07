@@ -213,6 +213,7 @@ class RenderEngine final : public graphics::RenderDevice {
     bool m_glStubbed = false;           // the NULL backend's stand-in for glDeleteTextures is installed
     bool m_vsync = true;                // present() waits for the vertical blank
     bool m_logicalFrame = false;        // the logical screen fills the frame (WindowDesc::logicalFrame)
+    bool m_textureLod = false;          // Coney's distance mip levels are in librw's pipeline (texture_lod.h)
     bool m_lineBlend = true;            // present() blends neighbouring lines (setLineBlend())
     rw::Raster* m_lineRaster = nullptr; // the frame's copy for blendLines(), the logical screen's size
     rw::Raster* m_blurRaster = nullptr; // blurScreen()'s copies: the screen, then its half-size image

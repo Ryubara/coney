@@ -12,6 +12,7 @@
 #include "core/assert.h"
 #include "core/chunk_types.h"
 #include "gamemodes/load_entry_mode.h"
+#include "platform/texture_lod.h"
 
 namespace coney::platform {
 
@@ -249,12 +250,18 @@ std::expected<void, Error> TextureDictionary::convertForDrawing() {
         }
         // convertTexToCurrentPlatform destroys the old raster when it makes a new one.
         const rw::int32 levels = texture->raster->getNumLevels();
+        const std::optional<rw::uint32> packedKl = texture->raster->platform == rw::PLATFORM_PS2
+                                                       ? std::optional<rw::uint32>(GETPS2RASTEREXT(texture->raster)->kl)
+                                                       : std::nullopt;
         rw::Raster* converted = rw::Raster::convertTexToCurrentPlatform(texture->raster);
         if (converted == nullptr) {
             return conversionFailure(texture, "for drawing");
         }
         texture->raster = converted;
         keepLevels(converted, levels);
+        if (packedKl) {
+            setRasterLod(converted, *packedKl);
+        }
     }
     return {};
 }

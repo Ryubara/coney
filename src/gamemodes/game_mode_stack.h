@@ -64,6 +64,8 @@ class GameModeStack {
     [[nodiscard]] bool empty() const { return m_modes.empty(); }
     /// Number of modes on the stack.
     [[nodiscard]] std::size_t size() const { return m_modes.size(); }
+    /// Whether `mode` is on the stack, at any depth.
+    [[nodiscard]] bool contains(const GameMode& mode) const;
 
     /// One simulation step: enters the top mode if it has not been entered, runs its update with `frame`, and pops
     /// the top if the update returns ModeResult::Leave. Does nothing on an empty stack. Draws nothing: render() does.

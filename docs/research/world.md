@@ -677,6 +677,12 @@ registered from Coney's code; librw needs no patch.
 - **Mipmapped textures**: librw's OpenGL conversion makes a whole mip chain for a texture flagged mipmapped but fills
   only the levels the PS2 texture has (most have one), and OpenGL draws such a texture black; each converted texture is
   limited to its source's levels (`texture_dictionary.h`). Before this, `level99`'s roller shutters drew black.
+- **Mip level by distance**: OpenGL picks a level by the texture's size on screen, the GS by the camera distance
+  ([Rendering](rendering.md#world)). Coney keeps each texture's `K` and `L` when it converts it and draws atomics
+  through its own copy of librw's default GL3 shaders, which sample at `log2(depth) × 2^L + K` for the sectors and
+  at level 0 for everything else (`repo:src/platform/texture_lod.h`). With an OpenGL 2.1 context librw's own shaders
+  stay. The far roller shutters of the street view still show a grid pattern where the original shows slats, at any
+  level: not a filtering difference.
 
 **Seen in the viewer** (screenshots of `level2`, `level14`, `level51`, `level83`, `level100` and `objarena`, checked by
 eye; none kept):

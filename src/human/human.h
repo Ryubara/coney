@@ -156,6 +156,14 @@ class Human final : public Holdable {
     void setFighterProfile(const FighterProfile& profile);
     [[nodiscard]] const FighterProfile& fighterProfile() const { return m_profile; }
 
+    /// Makes it another character where it is, as a human made with these arguments would be: it animates with
+    /// `anims` (HumanAnimator::changeAnims()), fights with its own copy of `ranges` with `classDamage` scaled by
+    /// `damagePercent` written over it (as the constructor takes them) and as `profile` says, its fighting afresh.
+    /// What the human is to the rest of the game stays: its handle's place in the humans, its script state, its hooks
+    /// and actions, its skeleton (set it again for another skeleton). Spawn it again to stand it up afresh.
+    void changeCharacter(const characters::AnimSet& anims, const combat::AnimRangeList* ranges,
+                         std::span<const std::int16_t> classDamage, int damagePercent, const FighterProfile& profile);
+
     /// Places the human at `position` (the feet, game axes) facing `headingDegrees` (0 faces +y), snapped to the
     /// ground of `mesh` (may be null: no snap) with a 2.5 m ray from 1 m above; 0.01 above the hit. Stamina is full
     /// again and anything in progress (a jump, a climb) is dropped.

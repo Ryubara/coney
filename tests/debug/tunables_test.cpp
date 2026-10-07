@@ -12,6 +12,7 @@
 #include "camera/follow_camera.h"
 #include "debug/game_tunables.h"
 #include "human/locomotion.h"
+#include "scenes/letterbox.h"
 
 using coney::debug::TunableRegistry;
 using coney::debug::TunableType;
@@ -116,6 +117,7 @@ TEST_CASE("the game's movement and camera tunables edit the values the game read
     CHECK(registry.inCategory("Sprint").size() == 3);
     CHECK(registry.inCategory("Jump").size() == 4);
     CHECK(registry.inCategory("Climb").size() == 11);
+    CHECK(registry.inCategory("Display").size() == 1);
     REQUIRE(registry.find("Movement/Run threshold") != nullptr);
     // Each traversal tunable starts at the original's value.
     REQUIRE(registry.find("Body/Step height") != nullptr);
@@ -139,4 +141,19 @@ TEST_CASE("the game's movement and camera tunables edit the values the game read
     registry.applyPending();
     CHECK(coney::human::locomotionTuning().runThreshold == coney::human::kRunThreshold);
     CHECK(coney::camera::followDefaults().leashFar == 5.3F);
+}
+
+TEST_CASE("the cutscene letterbox setting is on by default and the Display tunable turns the bars off", "[debug]") {
+    TunableRegistry registry;
+    coney::debug::registerGameTunables(registry);
+    const coney::debug::Tunable* letterbox = registry.find("Display/Cutscene letterbox");
+    REQUIRE(letterbox != nullptr);
+    CHECK(letterbox->defaultValue() == 1.0);
+    CHECK(coney::scenes::letterboxSettings().drawn);
+    registry.set("Display/Cutscene letterbox", 0.0);
+    registry.applyPending();
+    CHECK_FALSE(coney::scenes::letterboxSettings().drawn);
+    registry.resetAll();
+    registry.applyPending();
+    CHECK(coney::scenes::letterboxSettings().drawn);
 }

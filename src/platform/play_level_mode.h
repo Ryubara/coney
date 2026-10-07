@@ -231,7 +231,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// start loads them, and his class as the start's player takes it (human::playerClassOf(): the class's damage
     /// scaled by his Warrior class, his power class), at full health where he stands. The AI
     /// fighters are made again where they stand, at full health, since their brains hold the player they fought. In a
-    /// level whose scripts drive the cast the player cannot be made again, so only his model and type change.
+    /// level whose scripts drive the cast the brains and scripts hold the player, so he becomes the type in place
+    /// (human::Player::changeCharacter(): the same files and class, at full health) and the scripts' record of him
+    /// and his brain take the new type; the cast is left as it is.
     std::expected<void, Error> changeCharacter(int type) override;
 
     /// Plays the game's scenes in this mode (src/platform/play_level_scene.cpp): `scenes` is stepped with every step
@@ -310,8 +312,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // player's creation, at the start and at a change of character (src/platform/play_level_character.cpp).
     [[nodiscard]] static std::expected<LoadedCharacter, Error> loadCharacter(RenderEngine& engine, const io::Wad& wad,
                                                                              std::string_view model);
-    // Draws the player as `loaded` (the model `model`) from now on, keeping his animations and class: a hand-over and
-    // a change of character in a scripted level share it.
+    // Draws the player as `loaded` (the model `model`) from now on and keeps its files: a hand-over keeps his
+    // animations and class; a change of character in a scripted level rebuilds him as `loaded` first.
     void swapPlayerModel(LoadedCharacter loaded, const std::string& model);
     // The texture a character's dictionaries hold, which every material uses; null when none.
     [[nodiscard]] static rw::Texture* textureOf(const std::vector<TextureDictionary>& dictionaries);

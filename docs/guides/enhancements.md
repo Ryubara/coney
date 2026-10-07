@@ -66,6 +66,11 @@ the game's options screens.
   (`Display/MSAA samples = 4`), and a preset writes a set of values at once. Display values are render-side only:
   the simulation never reads them, so they need no step-boundary queue. They apply on the next frame. A few
   (MSAA on the default framebuffer, the backend) take effect at the next start, and the page says so.
+- **Settings so far.** `Display/Cutscene letterbox` (on by default, the original's look): off, a cutscene plays
+  without its black bars. The letterbox still runs underneath, so the HUD and the spinning icons hide during
+  cutscenes as in the original; only the bars are not drawn. Set it on the Tunables page's *Display* category in
+  the pad menus or the developer overlay, then *Save overrides*; or put `Display/Cutscene letterbox = 0` in the
+  overrides file (`coney-tunables.ini` in your config folder, or the file `--tunables FILE` names).
 - **Command line.** Flags where they help scripted captures and benchmarks: `--preset faithful|enhanced`,
   `--render-scale`, `--aspect`, `--fov-offset` and `--msaa`, beside the existing `--fps-cap` and `--vsync`. A
   general `--set Display/<name>=<value>` covers the rest.

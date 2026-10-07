@@ -17,6 +17,7 @@
 #include "core/assert.h"
 #include "platform/movie_screen.h"
 #include "platform/sprite_sheets.h"
+#include "platform/texture_lod.h"
 #include "platform/world_atomic.h"
 
 namespace coney::platform {
@@ -99,6 +100,8 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     }
     // Plugins are registered between init and open, as librw requires: the streamed world's (platform/world_atomic.h).
     attachWorldPlugins();
+    // Each converted texture's GS level parameters, for drawing at the original's mip levels (platform/texture_lod.h).
+    attachTextureLodPlugin();
     // Anisotropic filtering per texture, which the sandbox's grid floor needs to stay sharp at grazing angles
     // (platform/sandbox_renderer.h); it only takes effect on textures that ask for it.
     rw::registerAnisotropyPlugin();
@@ -157,6 +160,8 @@ std::expected<std::unique_ptr<RenderEngine>, Error> RenderEngine::start(RenderBa
     SDL_GetWindowSize(static_cast<SDL_Window*>(engine->m_sdlWindow), &width, &height);
     engine->m_frameSize = graphics::Extent{width, height};
     engine->createCamera();
+    // Mip levels by distance, as the GS picks them; without it OpenGL picks them by screen size.
+    engine->m_textureLod = startTextureLod();
     return engine;
 }
 
@@ -627,6 +632,10 @@ std::expected<CapturedFrame, Error> RenderEngine::captureBackBuffer(const std::s
 
 void RenderEngine::shutDown() noexcept {
     destroyCamera();
+    if (m_textureLod) {
+        m_textureLod = false;
+        stopTextureLod();
+    }
     // The reverse of start(): librw refuses each step unless the one before it has run. With the GL3 device, the stop
     // step destroys the window and the context and the close step releases the GL3 device's reference to SDL's video.
     if (m_librwStarted) {

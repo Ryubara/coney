@@ -106,15 +106,28 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
         return std::unexpected(std::move(loaded.error()));
     }
 
-    // In a level whose scripts drive the cast, the brains and the scripts hold the player by his handle, so he cannot
-    // be made again: **Coney's choice** is to change only what he is drawn as and his type, as a hand-over does
-    // (takePlace()); his class and health stay what the level made them.
+    // In a level whose scripts drive the cast, the brains and the scripts hold the player by his handle, so he is not
+    // made again: he becomes the type in place, as the level's start makes a player of it (its anim set and moves,
+    // the class's damage and power class, full health), and the scripts and brains see the new type (HuGetCharType,
+    // his voice, his sounds' character type).
     if (m_cast.brains != nullptr) {
+        m_player->changeCharacter(*loaded->character, &m_scenery->collision(), human::playerClassOf(m_types, type));
+        // The new character's files are the ones he now animates with; the old ones are kept while anything may
+        // still point at them (swapPlayerModel() retires them).
         swapPlayerModel(std::move(*loaded), *model);
         m_type = type;
-        m_print(
-            std::format("player: type {} drawn as {} (the level's scripts hold the player: class and health kept)\n",
-                        type, *model));
+        m_lastAnimId = 0;
+        m_ai->playerBrain().setCharacterClass(type);
+        if (m_cast.humans != nullptr) {
+            if (HumanCreation* made = m_cast.humans->find(m_playerHandle); made != nullptr) {
+                made->type = type;
+                made->model = *model;
+            }
+        }
+        const human::Speeds speeds = human::speedsOf(playerCharacter().anims(), human::AnimSlots::player());
+        m_print(std::format("player: type {} drawn as {}, rebuilt in place (the level's scripts hold him); speeds walk "
+                            "{:.3f}, jog {:.3f}, run {:.3f}, sprint {:.3f} m/s\n",
+                            type, *model, speeds.walk, speeds.jog, speeds.run, speeds.sprint));
         return {};
     }
 

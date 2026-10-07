@@ -436,12 +436,15 @@ by all three, so PCSX2's own compression setting stays as it is. The same refusa
 do not usually load states into Ghidra: [Tools](research-workflow.md#tools).
 
 ```sh
-uv run --project python coney-tools pcsx2 launch STATE --agent ID
+uv run --project python coney-tools pcsx2 launch [STATE] --agent ID
 ```
 
 Starts PCSX2 on a state file (`-fastboot -statefile`, the disc through a hard link in the scratch folder when its path
-holds commas or parentheses), waits until the game runs, and leaves it running. It refuses to start when something
-already serves PINE. It runs under `--agent`'s claim (made, and kept, if you hold none) and records PCSX2's pid in it;
+holds commas or parentheses), waits until the game runs, and leaves it running; with no state it boots the disc and
+returns once PINE answers. It is the only way agents start PCSX2: it never takes the keyboard focus (WMI starts the
+process outside the agent's process tree; why: [Driving PCSX2](research-workflow.md#driving-pcsx2)). It refuses to
+start when something already serves PINE. It runs under `--agent`'s claim (made, and kept, if you hold none) and records
+PCSX2's pid in it;
 `--pcsx2-dir` must be that claim's copy.
 
 ```sh

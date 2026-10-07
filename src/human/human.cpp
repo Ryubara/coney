@@ -188,6 +188,19 @@ void Human::setFighterProfile(const FighterProfile& profile) {
     m_fighter = Fighter(m_ranges, 1, m_profile);
 }
 
+void Human::changeCharacter(const characters::AnimSet& anims, const combat::AnimRangeList* ranges,
+                            std::span<const std::int16_t> classDamage, int damagePercent,
+                            const FighterProfile& profile) {
+    m_animator.changeAnims(anims);
+    m_idleClipName.clear();
+    m_overrideNames.clear();
+    // The fighter reads the list, so the new list first; the old copy goes once the fighter no longer holds it.
+    std::unique_ptr<combat::AnimRangeList> own = classRanges(ranges, classDamage, damagePercent);
+    m_ranges = own != nullptr ? own.get() : ranges;
+    setFighterProfile(profile);
+    m_ownRanges = std::move(own);
+}
+
 TargetState Human::state() const {
     const Victim& victim = m_fighter.victim();
     if (m_fighter.health().depleted()) {

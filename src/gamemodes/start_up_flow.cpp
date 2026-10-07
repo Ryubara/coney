@@ -98,6 +98,25 @@ void StartUpFlow::showRumbleModeInterface(std::string_view onCancel, std::string
 
 void StartUpFlow::menuLoadLevel(std::string_view level) { m_levelFlow.chooseLevel(level); }
 
+bool StartUpFlow::jumpToLevel(std::string_view level, int checkpoint) {
+    if (!m_state.levels.find(level)) {
+        m_log(std::format("level flow: jump to {}: not in the level table (yet); ignored\n", level));
+        return false;
+    }
+    if (!m_stack.contains(m_levelFlow)) {
+        m_log(std::format("level flow: jump to {}: the level flow is not running; ignored\n", level));
+        return false;
+    }
+    // The level first, so the level flow's resume below starts it and not the front end.
+    m_state.checkPoint = checkpoint;
+    m_levelFlow.chooseLevel(level);
+    while (m_stack.top() != &m_levelFlow) {
+        m_stack.pop();
+    }
+    m_log(std::format("level flow: jump to {} checkpoint {}\n", level, checkpoint));
+    return true;
+}
+
 void StartUpFlow::playMovie(std::string_view name) {
     m_services.playMovie(name);
     // Movie_Play leaves both screen-effects managers fully black on return: the screen stays black until a fade in.

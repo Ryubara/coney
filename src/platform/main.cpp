@@ -980,26 +980,35 @@ int main(int argc, char** argv) {
             coney::LoadScreenSettings{.language = options->language}, std::move(loadSounds), printText);
         startUp->gameplay().setLoadingScreen(&*loadingScreen);
     }
+    // A level the Levels or Missions page asks for, started at the start of the next frame, outside any step: by the
+    // level flow's jump (from the front end or a level in play), or without it by replacing the play mode
+    // (playLevelNamed below).
+    std::optional<std::string> pendingLevel;
+    int pendingCheckpoint = 1;
     if (startUp) {
         debugServices.scripts = [&startUp] { return &startUp->scripts(); };
         debugServices.recorded = [&startUp] { return &startUp->recorded(); };
         debugServices.gameState = [&startUp] { return &startUp->state(); };
-        // The level flow starts the chosen level next (MenuLoadLevel); a level in play waits for player-movement.
-        debugServices.loadLevel = [&startUp](std::string_view name) {
-            startUp->menuLoadLevel(name);
+        // The level table decides what can be jumped to; the jump itself waits for the next frame.
+        debugServices.loadLevel = [&startUp, &pendingLevel, &pendingCheckpoint](std::string_view name) {
+            if (!startUp->state().levels.find(name)) {
+                return false;
+            }
+            pendingLevel = std::string(name);
+            pendingCheckpoint = 1;
             return true;
         };
-        // The Missions page: the checkpoint is set as runNextMission sets it, then the level chosen.
-        debugServices.loadLevelAt = [&startUp](std::string_view name, int checkpoint) {
-            startUp->state().checkPoint = checkpoint;
-            startUp->menuLoadLevel(name);
+        debugServices.loadLevelAt = [&startUp, &pendingLevel, &pendingCheckpoint](std::string_view name,
+                                                                                  int checkpoint) {
+            if (!startUp->state().levels.find(name)) {
+                return false;
+            }
+            pendingLevel = std::string(name);
+            pendingCheckpoint = checkpoint;
             return true;
         };
     }
-    // Without the level flow, a level the Levels page asks for replaces the play mode at the start of the next frame
-    // (playLevelNamed below); the page lists every level with a world on the disc.
-    std::optional<std::string> pendingLevel;
-    int pendingCheckpoint = 1;
+    // Without the level flow the Levels page lists every level with a world on the disc.
     if (!startUp && wad) {
         debugServices.loadLevel = [&pendingLevel, &pendingCheckpoint](std::string_view name) {
             pendingLevel = std::string(name);
@@ -1220,7 +1229,7 @@ int main(int argc, char** argv) {
     // The window's events go past the developer overlay first; while it has the keyboard, the keyboard pad is off.
     coney::FrameHooks hooks;
     hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingLevel, &pendingCheckpoint,
-                        &playLevelNamed, &chainLevels] {
+                        &playLevelNamed, &chainLevels, &startUp] {
         chainLevels();
         // A sandbox or level the Levels page asked for, between two frames.
         if (pendingSandbox) {
@@ -1231,7 +1240,11 @@ int main(int argc, char** argv) {
         if (pendingLevel) {
             const std::string name = *pendingLevel;
             pendingLevel.reset();
-            playLevelNamed(name, pendingCheckpoint);
+            if (startUp) {
+                startUp->jumpToLevel(name, pendingCheckpoint);
+            } else {
+                playLevelNamed(name, pendingCheckpoint);
+            }
         }
         if (!window) {
             return true;

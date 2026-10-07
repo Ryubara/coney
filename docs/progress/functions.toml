@@ -2350,6 +2350,11 @@ name = "ScreenFx_QueueEffect"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0018d5f8
+name = "ScreenFx_DrawLetterbox"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x0018dac0
 name = "ScreenFx_Render"
 subsystem = "Graphics"

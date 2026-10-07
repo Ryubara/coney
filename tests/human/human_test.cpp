@@ -13,6 +13,7 @@
 #include "human/body.h"
 #include "human/human_animator.h"
 #include "support/collision_fixtures.h"
+#include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
 
 using Catch::Approx;
@@ -373,4 +374,54 @@ TEST_CASE("only an airborne human's body touches what the level gives it, at the
         human.step(stick(0.0F, 1.0F), mesh.get());
     }
     CHECK(heights.size() == landed);
+}
+
+TEST_CASE("a human made another character in place is the human made as that character", "[human][debug]") {
+    // Two characters: the synthetic one, and one whose walk is faster and whose class hits harder.
+    const TestCharacter first;
+    std::vector<coney::test::LocomotionClip> clips = coney::test::locomotionClips();
+    for (coney::test::LocomotionClip& clip : clips) {
+        if (clip.id == 408) {
+            clip.speed = 2.0F;
+        }
+    }
+    const coney::characters::CharacterData secondData = coney::test::locomotionData(clips);
+    const coney::characters::AnimSet secondAnims{secondData, nullptr};
+    const coney::combat::AnimRangeList ranges = coney::test::fightRanges();
+    const std::vector<std::int16_t> secondDamage(64, 40); // every row of the class table
+    coney::human::FighterProfile secondProfile;
+    secondProfile.powerClass.powerMax = 600;
+
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    // Made as the first, played a little, then made the second where it stands.
+    Human changed(first.anims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F, &ranges);
+    changed.spawn(mesh.get(), Vec3{10.0F, 10.0F, 0.0F}, 0.0F);
+    for (int i = 0; i < 10; ++i) {
+        changed.step(stick(0.0F, 1.0F), mesh.get());
+    }
+    changed.changeCharacter(secondAnims, &ranges, secondDamage, 50, secondProfile);
+    changed.spawn(mesh.get(), changed.position(), 0.0F);
+
+    // Made as the second from the start.
+    Human fresh(secondAnims, coney::human::AnimSlots::player(), coney::test::identityBind(), 1.0F, &ranges,
+                secondDamage, 50);
+    fresh.setFighterProfile(secondProfile);
+    fresh.spawn(mesh.get(), changed.position(), 0.0F);
+
+    CHECK(&changed.anims() == &fresh.anims());
+    REQUIRE(changed.ranges() != nullptr);
+    CHECK(changed.ranges() != &ranges); // its own copy, with the class's damage
+    CHECK(changed.ranges()->damage(12) == fresh.ranges()->damage(12));
+    CHECK(changed.ranges()->damage(12) == 20); // the class table's 40 at 50%
+    CHECK(changed.fighterProfile().powerClass.powerMax == 600);
+    CHECK(changed.health().value() == fresh.health().value());
+    CHECK(changed.health().maximum() == fresh.health().maximum());
+    CHECK(changed.animator().state() == AnimState::Idle);
+    // It walks as the second character does.
+    for (int i = 0; i < 30; ++i) {
+        changed.step(stick(0.0F, 0.5F), mesh.get());
+        fresh.step(stick(0.0F, 0.5F), mesh.get());
+    }
+    CHECK(changed.position().y == Approx(fresh.position().y));
+    CHECK(changed.speed() == Approx(fresh.speed()));
 }

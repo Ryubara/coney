@@ -275,16 +275,14 @@ def test_launch_runs_under_a_claim_and_records_the_pid(
     iso.write_bytes(b"")
     (registry.copies()[0].path / "pcsx2-qt.exe").write_bytes(b"")
 
-    class FakeProcess:
-        pid = 31337
-
     class FakeClient:
         def close(self) -> None:
             pass
 
     # A real PCSX2 copy may be running on this port while the tests run; the launch must not see it.
     monkeypatch.setattr(pcsx2_cli, "_port_open", lambda port: False)
-    monkeypatch.setattr(pcsx2_cli.subprocess, "Popen", lambda *a, **k: FakeProcess())
+    monkeypatch.setattr(pcsx2_cli.pcsx2_proc, "start_detached", lambda command: 31337)
+    monkeypatch.setattr(pcsx2_cli.pcsx2_proc, "focus_guard", lambda: None)
     monkeypatch.setattr(pcsx2_cli, "_wait_for_game", lambda *a, **k: FakeClient())
     monkeypatch.setattr(pcsx2_cli, "disc_link", lambda iso, scratch: iso)
     assert pcsx2_cli.run_launch(Path("s.p2s"), None, iso, tmp_path / "scratch", "alice") == 0

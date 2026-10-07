@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
 import sys
 import time
 from collections.abc import Callable
@@ -157,29 +156,48 @@ def _wait_for_game(port: int, patches: list[Patch], deadline: float) -> PineClie
     raise PineError(f"PCSX2 did not run the state within {LAUNCH_TIMEOUT:.0f} s")
 
 
+def _wait_for_pine(port: int, deadline: float) -> PineClient:
+    """Connect over PINE once PCSX2 answers (a plain boot: the game's timer is not running yet)."""
+    while time.monotonic() < deadline:
+        if _port_open(port):
+            return PineClient(port)
+        time.sleep(0.5)
+    raise PineError(f"PCSX2 did not open PINE within {LAUNCH_TIMEOUT:.0f} s")
+
+
 class Emulator:
-    """PCSX2 started on a state file; close() ends it and warns about new files in its sstates/ folder."""
+    """PCSX2 started on a state file (or a plain boot of the disc), never taking the focus; close() ends it and
+    warns about new files in its sstates/ folder."""
 
     def __init__(
-        self, paths: Paths, state: Path, patches: list[Patch], on_start: Callable[[int], None] | None = None
+        self, paths: Paths, state: Path | None, patches: list[Patch], on_start: Callable[[int], None] | None = None
     ) -> None:
-        """Start PCSX2 on `state` and wait until its game runs; `on_start` gets the process id as soon as it exists
-        (the claim records it). Raises ConfigError when PCSX2 already runs (one PINE client at a time, and a run needs
-        a fresh start for its patches) or PineError when it never answers."""
+        """Start PCSX2 on `state` and wait until its game runs (no state: boot the disc and wait for PINE); `on_start`
+        gets the process id as soon as it exists (the claim records it). Raises ConfigError when PCSX2 already runs
+        (one PINE client at a time, and a run needs a fresh start for its patches) or PineError when it never
+        answers."""
         self.paths = paths
         self.port = pine_port(paths.pcsx2_dir)
         if _port_open(self.port):
             raise ConfigError(f"something already serves PINE on port {self.port}; close PCSX2 first (or --attach)")
         self.before = _slot_states(paths.pcsx2_dir)
         disc = disc_link(paths.iso, paths.scratch)
-        command = [str(_executable(paths.pcsx2_dir)), "-fastboot", "-statefile", str(state), "--", str(disc)]
-        self.process = subprocess.Popen(
-            command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **pcsx2_proc.quiet_start()
-        )
+        load = ["-statefile", str(state)] if state is not None else []
+        command = [str(_executable(paths.pcsx2_dir)), "-fastboot", *load, "--", str(disc)]
+        # Never a plain Popen: a child of ours inherits the right to take the owner's focus (pcsx2_proc's docstring).
+        self.guard = pcsx2_proc.focus_guard()
+        self.pid = pcsx2_proc.start_detached(command)
+        if self.guard is not None:
+            self.guard.start(self.pid)
         if on_start is not None:
-            on_start(self.process.pid)
+            on_start(self.pid)
         try:
-            self.client = _wait_for_game(self.port, patches, time.monotonic() + LAUNCH_TIMEOUT)
+            deadline = time.monotonic() + LAUNCH_TIMEOUT
+            self.client = (
+                _wait_for_game(self.port, patches, deadline)
+                if state is not None
+                else _wait_for_pine(self.port, deadline)
+            )
         except PineError:
             self.close()
             raise
@@ -188,11 +206,10 @@ class Emulator:
         """End PCSX2 (no shutdown save) and report any state file that appeared in its sstates/ folder."""
         if getattr(self, "client", None) is not None:
             self.client.close()
-        self.process.terminate()
-        try:
-            self.process.wait(timeout=15)
-        except subprocess.TimeoutExpired:
-            self.process.kill()
+        if self.guard is not None:
+            self.guard.stop()
+        if pcsx2_proc.is_pcsx2(self.pid):  # a pid of a PCSX2 that already ended may belong to something else now
+            pcsx2_proc.terminate(self.pid)
         for path in sorted(_slot_states(self.paths.pcsx2_dir) - self.before):
             print(f"warning: {path} appeared while PCSX2 ran; move it to your scratch folder", file=sys.stderr)
 
@@ -276,10 +293,10 @@ def run_repack_state(source: str, out: Path, pcsx2_dir: Path | None) -> int:
 
 
 def run_launch(
-    state: Path, pcsx2_dir: Path | None, iso: Path | None, scratch: Path | None, agent: str | None = None
+    state: Path | None, pcsx2_dir: Path | None, iso: Path | None, scratch: Path | None, agent: str | None = None
 ) -> int:
-    """`pcsx2 launch`: start PCSX2 on a state file under `agent`'s claim, wait for its game, and leave it running.
-    Without a claim of the agent's on that copy it makes one (kept: `pcsx2 release` ends it)."""
+    """`pcsx2 launch`: start PCSX2 on a state file (None: boot the disc) under `agent`'s claim, wait for its game,
+    and leave it running. Without a claim of the agent's on that copy it makes one (kept: `pcsx2 release` ends it)."""
     registry = pcsx2_claims.default_registry()
     claim, created = registry.claim_for_run(agent, pcsx2_dir, None)
     try:
@@ -290,7 +307,7 @@ def run_launch(
             registry.release(claim.agent, claim.copy)
         raise ConfigError(str(error)) from error
     emulator.client.close()
-    print(f"PCSX2 runs {state} (pid {emulator.process.pid}) on {claim.copy}; PINE on port {emulator.port}")
+    print(f"PCSX2 runs {state or 'the disc'} (pid {emulator.pid}) on {claim.copy}; PINE on port {emulator.port}")
     print(f"{claim.agent} keeps the claim on {claim.copy}; `coney-tools pcsx2 release --agent {claim.agent}` ends it")
     return 0
 
