@@ -5033,10 +5033,13 @@ Teleport(object, pos, heading)
 Moves an object: reads its transform (vtable `+0xac`), replaces the position (w = 1) and, unless the heading is -1, the
 rotation with one about z, and hands it back through the object's set-transform slot (`+0x6c`). For a human that slot
 (`0x0023d440`) casts a short ray down from the point (0.5) and lowers it onto what it hits, marks the human moved,
-points its brain's move heading the new way and drops a move action in progress.
+points its brain's move heading the new way and drops a move action in progress. Before that it breaks any grab, mount,
+mugging or throw link the human is in (`Human_BreakPair`, `0x00258a88`): the other human plays a reaction clip and
+stands free, the moved one is free at once.
 
-**Notes.** Other object kinds take the transform as given; a human linked in a grab (+0x280 set) is not lowered; this
-corrects 'neither snaps to the ground' on Characters for the 0.5 ray only (the ray's units are not checked).
+**Notes.** Other object kinds take the transform as given; a human in a scene (+0x280 set to the scene id) is not
+lowered; this corrects 'neither snaps to the ground' on Characters for the 0.5 ray only (the ray's units are not
+checked). The partner's clips by link are on Combat (Breaking a pair).
 
 - **Evidence:** confirmed (code) at `0x00385bb8`, `0x0023d440`; detail: traced
 - **Wrapper** `0x0036cbc0` (registered by `RegisterBindings`); **calls** `0x00385bb8` `Object_Teleport`, `0x0023d440`
@@ -5059,12 +5062,14 @@ TeleportToFlag(object, flag, heading)
 
 **Returns** nothing.
 
-Moves an object to a flag's position and turns it to the flag's heading (or the one given). For a human it also resets
-its movement state (virtual slot +0x14c) so it does not carry on its old move. The most used placement binding in the
-scripts.
+Moves an object to a flag's position and turns it to the flag's heading (or the one given). A human goes through the
+same set-transform slot as Teleport, so it is lowered onto the ground below and any grab, mount or mugging it is in is
+broken (the other human plays a reaction clip and stands free); it also resets its movement state (virtual slot +0x14c)
+so it does not carry on its old move. The most used placement binding in the scripts.
 
-- **Evidence:** confirmed (code) at `0x00385db0`; detail: traced
-- **Wrapper** `0x0036cdc0` (registered by `RegisterBindings`); **calls** `0x00385db0` `Object_TeleportToFlag`
+- **Evidence:** confirmed (code) at `0x00385db0`, `0x0023d440`; detail: traced
+- **Wrapper** `0x0036cdc0` (registered by `RegisterBindings`); **calls** `0x00385db0` `Object_TeleportToFlag`,
+  `0x0023d440` `Human_SetTransform`
 - **Used by** 162 of 467 script chunks (1471 references); boot to menu: no; mission 1: yes; result used: no
 - **Later in the story:** 28 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented

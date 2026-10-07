@@ -543,8 +543,9 @@ So a level loaded without a `SetCheckPoint` starts at checkpoint 1, or at whatev
 `Teleport(object, {x, y, z}, heading)` (`0x00385bb8`) sets the transform; a heading of −1 keeps the rotation. Its
 `TeleportToFlag(object, flag, heading)` sibling (`0x00385db0`) takes the flag's position and, with −1, the flag's
 heading (`0x00416258`), and for a human also calls its vtable slot `+0x14c`. Confirmed (code). Neither places the
-object on the ground as `HuCreate` does (above), but a human not linked in a grab is lowered onto whatever a short
-ray (0.5) straight down hits (`0x0023d440`; confirmed (code)).
+object on the ground as `HuCreate` does (above), but a human not in a scene (`+0x280` = −1) is lowered onto whatever a
+short ray (0.5) straight down hits (`0x0023d440`; confirmed (code)). A human in a grab, mount or mugging is first let
+go, its partner playing a reaction clip ([Combat](combat.md#pair-break)).
 
 **Interiors are below the street.** Starts with `z` near −195 to −215 (`level5` checkpoint 2, `level11` 1 and 2,
 `level20` 1 and 3, the hub ...) are rooms placed about 200 m under the city in the same world (inferred from the values

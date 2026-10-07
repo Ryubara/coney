@@ -3381,12 +3381,15 @@
     Moves an object: reads its transform (vtable `+0xac`), replaces the position (w = 1) and, unless the heading is -1,
     the rotation with one about z, and hands it back through the object's set-transform slot (`+0x6c`). For a human
     that slot (`0x0023d440`) casts a short ray down from the point (0.5) and lowers it onto what it hits, marks the
-    human moved, points its brain's move heading the new way and drops a move action in progress.
+    human moved, points its brain's move heading the new way and drops a move action in progress. Before that it
+    breaks any grab, mount, mugging or throw link the human is in (`Human_BreakPair`, `0x00258a88`): the other human
+    plays a reaction clip and stands free, the moved one is free at once.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Other object kinds take the transform as given; a human linked in a grab (+0x280 set) is not lowered; this
-    corrects 'neither snaps to the ground' on Characters for the 0.5 ray only (the ray's units are not checked).
+    Other object kinds take the transform as given; a human in a scene (+0x280 set to the scene id) is not lowered;
+    this corrects 'neither snaps to the ground' on Characters for the 0.5 ray only (the ray's units are not checked).
+    The partner's clips by link are on Combat (Breaking a pair).
   usage: {chunks: 54, calls: 140, boot: false, mission1: false, result_used: false, levels: [95, 3, 81, 86, 14, 9, 51, 55, 84, 83]}
   coney: implemented
 
@@ -3394,14 +3397,16 @@
   wrapper: 0x0036cdc0
   calls:
     - {addr: 0x00385db0, name: Object_TeleportToFlag}
+    - {addr: 0x0023d440, name: Human_SetTransform}
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of any world object, usually a human."}
     - {name: flag, lua: number, ctype: unsigned, desc: "Handle of the flag (a placed marker from the level's flags)."}
     - {name: heading, lua: number, ctype: int, default: -1, desc: "Heading in whole degrees; -1 (the default) uses the flag's own heading."}
   description: >-
-    Moves an object to a flag's position and turns it to the flag's heading (or the one given). For a human it also
-    resets its movement state (virtual slot +0x14c) so it does not carry on its old move. The most used placement
-    binding in the scripts.
+    Moves an object to a flag's position and turns it to the flag's heading (or the one given). A human goes through
+    the same set-transform slot as Teleport, so it is lowered onto the ground below and any grab, mount or mugging it
+    is in is broken (the other human plays a reaction clip and stands free); it also resets its movement state
+    (virtual slot +0x14c) so it does not carry on its old move. The most used placement binding in the scripts.
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 162, calls: 1471, boot: false, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}

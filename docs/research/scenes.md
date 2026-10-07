@@ -341,12 +341,31 @@ human's brain is switched off (`BrDead(brain, 1)`) right away. The goal's Start 
 heading; its Process finishes when the scene has. Its End restores an AI brain; its destroy turns a pad brain back on
 (`BrDead(brain, 0)`). Confirmed (code) at `0x002e53e0`, `0x002e5480`, `0x002e55a0`, `0x002e55e8`, `0x002e5618`.
 
-**At the start** each bound human not already in a scene: counted in (`+0x1e`), `+0x280` = scene id, its brain's
-actions cleared, its state reset, human flag `0x2000` set, its scene transform set to the scene's position and
-rotation, message 10 sent to its task; a held object named by clip event 9 is taken from the object slots
+**At the start** each bound human that is free (below) and not already in a scene: counted in (`+0x1e`), `+0x280` =
+scene id, its brain's actions cleared, its state reset, record `+0x08` `0x2000` set, its scene transform set to the
+scene's position and rotation, message 10 sent to its held object's task; a held object named by clip event 9
+is taken from the object slots
 (`0x00227080`); then its clip is pushed as three animation tasks with the end callback `0x003a00b8`, looping when the
 scene loops, streaming when it has segments, blended in over 0.3 s only for a non-cinematic scene placed on its humans
 (and not in game modes 8 and `0xb`); the instance is put in mode 3. Confirmed (code) at `0x0039d870`.
+
+**The state reset** is a handful of small resets, not a release, confirmed (code): `0x0023e6e8(h, 0)` takes the
+human out of shadow (`Brain_SetHiddenInShadow`) and, for player 1, ends a pending gang command and clears `+0x658`;
+brain `+0x2d5` = 0 (`0x0028ef00`); the motion reset (slot `+0x14c`, `0x0023f158`: velocities and turn zeroed, the
+transform re-applied as it is); `0x00227388` sends message `0x15` to the object whose handle is at `+0x360` (not
+traced) and clears it; the record's state code `+0x14` and `+0x18` = 0. None of them touches the state bits of a
+grab or a mount, and none calls `Grab_Release` or `Human_BreakPair` ([Combat](combat.md#pair-break)).
+
+**A human in a grab is not taken in.** "Free" (`0x002263d8`) means: state `0x100000000` clear, none of the grab,
+mount and tackle-mount bits `0xcf0` (grabbed `0x10` / `0x20`, grabbing `0x40` / `0x80`, mounting `0x400`, mounted
+`0x800`), and none of `+0x08` `0xc1e600`. Confirmed (code) at `0x0039d870`. Step 5 above waits (state 4) only for
+the `+0x08` bits; a human that is grabbing, grabbed, mounting or mounted is **skipped**: not counted, not reset, no
+clip, its `+0x280` left −1, while the scene plays on without it. The grab is not released by the start, on either
+human (the partner need not be bound at all). Its join goal still holds a player's pad off, so the grab runs on
+until something breaks it: its power running out (`Grab_Release`, 95 / 94; inferred, [Combat](combat.md#pair-break)),
+a script teleporting either human, or, for a skipped scene, the end's placement below (both through
+`Human_BreakPair`, the partner playing its reaction clip). The cinematic's step 0 → 1 (`Gang_ClearBums`,
+`0x0016b8d0`) destroys the player's gang members whose type byte `+0x11b` is 6; it does not release grabs either.
 
 **While it plays** the human is driven by the clip's animation and root motion ([Animation](formats/animation.md)),
 and the clip's 21/22 events place it at its marks ([Events](#events)). **When its clip ends** (`0x003a00b8`): unless
@@ -397,7 +416,9 @@ Only a skippable scene (`+0xe5`), confirmed (code) at `0x0039cbf0`:
 State 7 (all clips done, or a part ended with no roles) calls the end (`0x0039f450`). Confirmed (code):
 
 1. Cinematic: scene state `0x410` = 0; system music back on when step 6 turned it off.
-2. Each bound human: when skipped, `+0x280` = −1 and it is **placed at its role's end pose** (in the scene's space);
+2. Each bound human: its sounds stopped; when skipped, `+0x280` = −1 and it is **placed at its role's end pose** (in
+   the scene's space, through `Human_SetTransform`, so a human still in a grab is let go by `Human_BreakPair` and its
+   partner plays a reaction clip, [Combat](combat.md#pair-break));
    its join goal (types `0x27`-`0x2a`) is popped, which gives a player back control ([Humans](#humans)); unbound.
 3. Each object: when skipped, placed at its end pose; then its scene slot (`+0x110`) is −1 again, its sound
    stopped, its body flagged (`0x80000000`) and added back to the world, and its record unpinned (`SceneAddObject`
@@ -570,8 +591,11 @@ trace above.
 
 ## Open questions
 
-- Which human state the start resets (`0x0023e6e8`, `0x00227388`, `0x002266a8`) and what messages 10, `0x95`, `0x96`
-  do in the human's handler; the 21/22 warp is inferred from the data.
+- Which human state the start resets (answered: small resets, [Humans](#humans); a grab is never released by it).
+  Messages `0x95` / `0x96` set the human's transform from the scene's space (`Human_HandleMessage`, `0x00245920`),
+  which breaks a pair ([Combat](combat.md#pair-break)); the start's message 10 goes to the human's held object,
+  not the human.
+  What the object at human `+0x360` is (message `0x15` at the start).
 - How `ScenePlayAnimation` fits the scene to its humans (`0x003547e8`), and the 0.1 at `0x0039d618`.
 - What the camera definition's `+0x50`, `+0x5c`, `+0x68` and the header's `+0x30` name are for.
 - Track events 24/25 (messages `0x12`/`0x13`), and most clip event types besides 9, 11, 21, 22.

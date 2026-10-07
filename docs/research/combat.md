@@ -84,6 +84,8 @@ No source file names this code: it lies in `Human/`, in the stretch after `cns/c
 | `0x00244e78` / `0x00245310` | `Human_MoveAttached` / `Human_MoveGrabbing` | movement states of the held victim and of a grabbing player | confirmed (code) |
 | `0x0026f008` / `0x0026ef68` | `Grab_StartMountFromFront` / `Grab_MountClipEnd` | circle in the front hold: 118 / 119, then the mount | confirmed (code), runtime |
 | `0x0022bfd0` | `Pair_LinkMount` | the mount's states for both (also the tackle's and the grounded mount's) | confirmed (code) |
+| `0x0026c7e0` | `Grab_Release` | both let go of a grab: 95 / 94 (107 / 106 from the rear); refused in a scene ([Breaking a pair](#pair-break)) | confirmed (code), runtime |
+| `0x00258a88` | `Human_BreakPair` | ends any grab, mount, mugging or throw link from outside; only the other human plays a clip ([Breaking a pair](#pair-break)) | confirmed (code) |
 | `0x0027ec20` | `Player_UpdateMounting` | strikes, power strike, back to the hold, get off, in the mount | confirmed (code), runtime |
 | `0x00277958` | `Pair_CheckPlace` | a move in the hold needs the victim within 0.3 m of the move's offset | confirmed (code) |
 | `0x0023cf88` / `0x0023d2b8` | `Human_TurnToOver` / `Human_MoveToOver` | turn to a heading, or move to a point, over a time | confirmed (code) |
@@ -957,6 +959,48 @@ let go (95 / 94). A tackle dismounts (`0x00271470`). Confirmed (code); confirmed
 drained at 15 per second and broke with 95 / 94; with the player hurt (200 of 900 health) the civilian escaped with 100,
 the player played 101, was knocked down and stunned (`0x180005`), lay in 196 and rose with 199 2.78 s later; the
 escapee took 20. A third human hitting a grabber costs it 0.6 of its power (`0x00510274`).
+
+### Breaking a pair from outside {#pair-break}
+
+Two routines end a grab. Confirmed (code) unless marked.
+
+**`Grab_Release` (`0x0026c7e0`)** is called only by the grab itself: the power running out (`Human_UpdateMeters`),
+a grab strike without the power for it (`Player_UpdateGrabbing`) and a connect that misses (`Grab_ConnectEnd`). It
+does nothing when the grabber's `+0x08` has `0x800000` or `0x2000`, or the victim's has `0x400000` or `0x2000`.
+Otherwise it unlinks the pair (states `0xc0` / `0x30` cleared, the `+0xc4` handles emptied, the victim's attached
+movement ended) and plays **95 `GRAB_FRONT_BREAK_REACT` on the grabber and 94 `GRAB_FRONT_BREAK` on the victim**
+(from the rear, grabber state `0x80`: **107 / 106**), each blended in over 0.2 s, and sets `+0x08` `0x2000` on both.
+Confirmed (runtime) for 95 / 94 ([Grabbed](#grabbed)).
+
+**`Human_BreakPair` (`0x00258a88`)** ends whatever link a human `h` is in, for callers outside the grab code: **every
+`Human_SetTransform`** (`0x0023d440`, the human's set-transform slot `+0x6c`: `Teleport`, `TeleportToFlag`, a
+scene's place events 21 / 22 (messages `0x95` / `0x96`) and a skipped scene's end placement), message `0x24` to a
+human, `Human_StartBurning`, `GameState_SyncPlayers` and six callers not traced. `h` itself plays **no** clip: its
+link bits are cleared (state `0x1` set), its link handle emptied and its attached or grabbing movement ended, so it
+is free at once and keeps the clip it was playing. **The other human** (`h`'s `+0xc4`) is unlinked the same way and
+given a clip, by `h`'s state:
+
+| `h` is | The other human plays | `+0x08` set on it |
+| --- | --- | --- |
+| grabbed from the front (`0x10`) | 138 `GRAB_FRONT_HIT_VICTIM_KNOCKDOWN_REACT` (`0x00269250`) | `0x40000000` |
+| grabbed from the rear (`0x20`) | 106 `GRAB_REAR_BREAK` (`0x002690f0`) | `0x40000000` |
+| grabbing from the front (`0x40`) | 145 `GRAB_FRONT_HIT_GRABBER_KNOCKDOWN_REACT` (`0x002693b0`) | `0x40000000` |
+| grabbing from the rear (`0x80`) | 107 `GRAB_REAR_BREAK_REACT` (`0x00269510`) | `0x40000000` |
+| mugging (`0x100`) / being mugged (`0x200`) | as for a rear grab: 107 / 106 (the mugging is first turned into a rear grab, `0x0022ceb8`) | `0x40000000` |
+| mounting (`0x400`, or the states `0x8000000000` / `0x10000000000`) | 245 `MOUNT_RELEASE_REACT`, then 199 `GROUNDED_RISE` (`0x00269908`): it gets up | `0x8000` |
+| mounted (`0x800`) | 244 `MOUNT_RELEASE` (`0x002697a8`) | `0x8000` |
+| throwing (`0x1000`) or `0x2000` | no clip; the throw link is cleared (`0x0022bce0`, `0x0022bdc0`) and the other human gets state `0x20000000` | |
+
+The clips blend in over 0.2 s; 244 and 199 end in `0x00267870` (not traced). That 245 plays before 199 is inferred
+from the task chain (the dismount's order, [The mount](#mount)). A human with no link is left alone. So a teleport
+never leaves a partner hanging: the human not named stands free after its reaction clip (or gets up from the mount),
+and the named one is free at once. `Grab_Release` does not run, so 94 / 95 never play from a teleport.
+
+**Brains are not links.** `BrDead`, `BrSuspend` and `Brain_ClearActions` only clear the brain's queued actions and
+set its flags or handlers (`0x00292330`, `0x002923a0`); none touches the human's state, so a grab in progress goes on.
+Inferred: its power keeps draining (15 per second in a grab or a mount, [constants](#constants)) until `Grab_Release`
+ends it with 95 / 94, as for any grab whose power runs out ([Grabbed](#grabbed)). There is no `HuStop` binding in the
+game.
 
 ### Throws {#throws}
 
