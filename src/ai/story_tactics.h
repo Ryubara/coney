@@ -122,6 +122,8 @@ class DefendTactic final : public StoryTactic {
     DefendTactic(const script::TacticCall& call, const TacticServices& services) : StoryTactic(call, services) {}
     void start(Gang& gang) override;
     [[nodiscard]] int update(Gang& gang) override;
+    /// The defended human's handle (the binding's `human`).
+    [[nodiscard]] double defended() const { return call().flags.at(0); }
 
   private:
     std::uint64_t m_nextCheckMs = 0;

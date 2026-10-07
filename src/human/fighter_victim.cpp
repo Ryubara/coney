@@ -352,6 +352,18 @@ void Fighter::escapeGrab(int clip, HumanAnimator& animator) {
     m_reacting = true;
 }
 
+void Fighter::stunFor(HumanAnimator& animator, std::uint64_t nowMs, std::uint64_t durationMs) {
+    m_victim.stunUntil(nowMs + durationMs);
+    animator.playCombat(clips::one(static_cast<std::uint32_t>(combat::kStunLoop)),
+                        static_cast<std::uint32_t>(combat::kStunLoop), AnimState::Hold);
+}
+
+void Fighter::endStun(std::uint64_t nowMs) {
+    if (m_victim.stunned()) {
+        m_victim.stunUntil(nowMs);
+    }
+}
+
 void Fighter::releaseFromGrab(HumanAnimator& animator) {
     if (!m_grabbed.has_value()) {
         return;

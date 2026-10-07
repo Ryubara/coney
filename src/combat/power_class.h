@@ -24,6 +24,9 @@ struct PowerClass {
     float attackDelayFactor = 3.0F;     ///< `+0x1c`: `CfgAttackDelay`'s factor.
     float attackDelayDownFactor = 3.0F; ///< `+0x20`: the same against a downed target.
     float counterChance = 0.1F;         ///< `+0x24`, 0-1: the chance, each update of a block, to press R1.
+    /// Byte `+0x39` (`CfgPowerClass` argument 22, 0-1): a grabber of this class throws his man into a wall next to
+    /// them when there is one (`Grabbing_PickMove`, docs/research/ai.md#fight-reactions).
+    bool throwsAtWalls = false;
     /// Byte `+0x40`: the health rings span byte / 100 of their circle (35 for Rembrandt's class 64, read at runtime;
     /// what the field is meant as is open, docs/research/hud.md#the-health-rings).
     int ringByte = 35;

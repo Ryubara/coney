@@ -2937,6 +2937,7 @@
     the BigBrawler's cycles, are stored but never read (AI page, The Diego and Vargas fight). Members are re-assigned goals on events 19 and 22
     (OnEvent 0x0030a798); Vargas's stage-3 break count is tactic `+0x69`. Vtable 0x00543440.
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false, levels: [5]}
+  coney: implemented
 
 - name: TacticBossScenarioB
   wrapper: 0x00376e78

@@ -185,8 +185,7 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
     const float distance = brain.distanceTo(*target);
     const bool running = them.gait() > human::Gait::Jog;
     const bool turned = std::fabs(human::wrapAngle(them.heading() - m_planHeading)) > kReplanTurn;
-    const bool replan =
-        brain.nowMs() >= m_nextPlanMs || distance <= kChargeRange || turned || (m_planRunning && !running);
+    const bool replan = brain.nowMs() >= m_nextPlanMs || distance <= m_runIn || turned || (m_planRunning && !running);
     if (!replan && brain.actionCount() > 0) {
         return GoalStatus::Stop;
     }
@@ -221,7 +220,7 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
         return GoalStatus::Done;
     }
     // 11. The charge: an attack out of the run.
-    if (distance <= kChargeRange && (m_charge || running)) {
+    if (distance <= m_runIn && (m_charge || running)) {
         // 11.1 Another man the near one in the sector A comes from disarms the charge (A only moves); A himself waits.
         const ApproachSector sector = approachSector(brain, *target);
         if (sector == ApproachSector::Mine) {

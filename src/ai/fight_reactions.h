@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include "ai/goal.h"
 
@@ -37,16 +38,18 @@ class GrabbingGoal final : public Goal {
   public:
     GrabbingGoal() : Goal(GoalType::ReactGrabbing) {}
 
-    /// Rolls the hand-over flag: `Random_Int(100)` < the gang's `CfgGang` value 5 × 10.
+    /// Rolls the hand-over flag: `Random_Int(100)` < the gang's `CfgGang` value 5 × 10; cleared under a HoldFlag goal
+    /// or a FollowAndDefend one (**Coney stand-in**: TrackHumanGoal, which Coney gives for FollowAndDefend).
     /// @orig 0x002b5ad0 GrabbingGoal_Start (unknown)
     void start(Brain& brain) override;
     /// Done when no longer grabbing. The held man becomes the target; while actions are queued it waits. A front grab
     /// with the flag, the man under two or more attackers, spins him into a rear hold (command `0x19`, after 33 ms). A
-    /// rear grab with the flag, while the man has other than one attacker, turns to face the nearest player among them
-    /// (else the nearest active attacker) and waits: holding him up for a friend to hit. Otherwise it picks a kind:
-    /// kind 24 (a strike in the grab) twice 40 % of the time, the throws 25 and 29 with the stick toward
-    /// grabMoveDirection(), the power strikes 26-28 without one. **Coney stand-ins**: no trains; the presenting to a
-    /// friendly player is not built; the FollowAndDefend and HoldFlag goals that clear the flag are not built.
+    /// rear grab with the flag, while the man has other than one attacker, or while presenting him to a friendly player
+    /// (a rear grab, the nearest player friendly, not busy and within 3 m, for up to 3 s), turns to face the nearest
+    /// player among them (else the nearest active attacker) and waits: holding him up for a friend to hit. Otherwise it
+    /// picks a kind: kind 24 (a strike in the grab) twice 40 % of the time, the throws 25 and 29 with the stick toward
+    /// grabMoveDirection(), the power strikes 26-28 without one. **Coney stand-ins**: no trains; the presenting does
+    /// not test player 1's state 2.
     /// @orig 0x002b60c0 GrabbingGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
     /// Clears the actions.
@@ -57,14 +60,20 @@ class GrabbingGoal final : public Goal {
     [[nodiscard]] bool handsOver() const { return m_handOver; }
 
   private:
-    bool m_handOver = false;
+    // Whether he presents the man to a friendly player (step 4); the 3 s run from the first update that could.
+    bool presenting(Brain& brain);
+
+    bool m_handOver = false;                       // +0x14
+    std::optional<std::uint64_t> m_presentUntilMs; // +0x10
 };
 
-/// The throw's or push's direction from a grab (`Grabbing_PickMove`): Coney keeps only the last rule, a random
-/// left, ahead or right (never behind). **Coney stand-ins**: the held flag, the walls and the Defend tactic's rules
-/// are not built.
+/// The throw's or push's direction for `brain` grabbing `held` (`Grabbing_PickMove`), the first rule that gives one:
+/// away from his HoldFlag goal's flag; for a power class that throws at walls, a random wall next to them (the man's
+/// sectors 4, 6 and 2 and the grabber's 4), else a random side where a human not friendly to the grabber stands; away
+/// from the human his gang's Defend tactic defends; else a random left, ahead or right (never behind). **Coney
+/// reading**: the not-friendly sides are the same four sectors, each occupied with its nearest not friendly.
 /// @orig 0x002b5b98 Grabbing_PickMove (unknown)
-[[nodiscard]] GrabMove grabMoveDirection(Brain& brain);
+[[nodiscard]] GrabMove grabMoveDirection(Brain& brain, Brain& held);
 
 /// The mounting goal (`0x13`, the tackler on top): done when no longer tackling; the held man the target; a kind
 /// picked, 45 and 36 doing nothing, kind 35 (the ground punches) twice 40 % of the time.
@@ -86,13 +95,14 @@ class HeldGoal final : public Goal {
   public:
     /// The grabbed goal (`mounted` false) or the mounted goal.
     explicit HeldGoal(bool mounted) : Goal(mounted ? GoalType::ReactTackled : GoalType::ReactGrabbed) {}
-    /// Done once free. A friend's hold is left alone; with threat response 0 (but for a dealer) he only waits;
+    /// Done once free. A friend's hold is left alone; with threat response 0 (but for a dealer or a
+    /// class-221 human, the dogs) he only waits;
     /// otherwise the holder becomes the target and, once the actions are done, he picks a kind: the struggle strike
-    /// 31 after struggleDelayMs(); grabbed, any other kind with the stick along his heading or behind him (50/50);
-    /// mounted, every kind after the struggle's delay with no stick. Once mugged (grabbed only), he no longer
-    /// struggles. **Coney stand-ins**: the civilian's help call is not built; the class-221 exceptions are not kept;
-    /// the queue must be empty before a pick (the original's wait is not traced); a held AI's presses reach no
-    /// handler yet (Coney's held AI is driven by its holder).
+    /// 31 after struggleDelayMs() (a class-221 human with a hurt fraction of 0); grabbed, any other kind with the stick
+    /// along his heading or behind him (50/50); mounted, every kind after the struggle's delay with no stick. Once
+    /// mugged (grabbed only), he no longer struggles. **Coney stand-ins**: the civilian's help call is not built; the
+    /// queue must be empty before a pick (the original's wait is not traced); a held AI's presses reach no handler yet
+    /// (Coney's held AI is driven by its holder).
     /// @orig 0x002b6848 GrabbedGoal_Process (unknown)
     /// @orig 0x002b6bb8 MountedGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;

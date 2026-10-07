@@ -136,6 +136,8 @@ class AiBindingHost {
 
     /// Queues the turn-to-point action on the human (`ActTurnTo`).
     virtual void actTurnTo(const TurnToCall& /*call*/) {}
+    /// `ActGiveWay(human, other)`: the human gives way to the other, as a stander to a mover.
+    virtual void actGiveWay(double /*human*/, double /*other*/) {}
     /// `GoalFight(human, target, unused)`: the human fights the target.
     virtual void goalFight(double /*human*/, double /*target*/) {}
     /// `BrFlush(human)`: the goals, then the actions, cleared.

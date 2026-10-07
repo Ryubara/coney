@@ -44,6 +44,7 @@ constexpr std::size_t kDelayFactor = 15;     // +0x1c
 constexpr std::size_t kDelayDownFactor = 16; // +0x20
 constexpr std::size_t kStruggle = 17;        // +0x36
 constexpr std::size_t kCounter = 19;         // +0x24, clamped 0-1
+constexpr std::size_t kThrowsAtWalls = 21;   // +0x39, clamped 0-1
 
 // `CfgWarriorClass`'s arguments (docs/references/bindings/config.md#cfgwarriorclass), 0-based.
 constexpr std::size_t kWarriorClassId = 0;
@@ -158,6 +159,9 @@ combat::PowerClass parseCfgPowerClass(std::span<const script::Value> call, const
     real(kDelayDownFactor, power.attackDelayDownFactor);
     real(kCounter, power.counterChance);
     power.counterChance = std::clamp(power.counterChance, 0.0F, 1.0F);
+    int walls = power.throwsAtWalls ? 1 : 0;
+    whole(kThrowsAtWalls, walls);
+    power.throwsAtWalls = std::clamp(walls, 0, 1) == 1;
     return power;
 }
 

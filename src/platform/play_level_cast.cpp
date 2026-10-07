@@ -14,6 +14,7 @@
 #include "ai/scripted_brains.h"
 #include "characters/character_types.h"
 #include "platform/play_level_mode.h"
+#include "scripting/sound_bindings.h"
 
 namespace coney::platform {
 
@@ -43,6 +44,15 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
     cast.scripted->setHandOver([this](const ai::Brain& to) { takePlace(to); });
     // GoalPlayDynAnimation's clips are the level's dynamic clips, loaded from the disc when first named.
     cast.scripted->setClipSource([this](std::string_view name) { return m_dynamicClips.find(name); });
+    // The AI goals' lines (a boss's taunts and shouts) go to the game's sound, when there is one.
+    cast.scripted->setSpeech([this](double handle, int command, bool interrupt) {
+        if (m_sound != nullptr) {
+            static_cast<void>(m_sound->sayCommand(script::CommandCall{.human = handle,
+                                                                      .command = static_cast<std::uint32_t>(command),
+                                                                      .interrupt = interrupt},
+                                                  {}));
+        }
+    });
     cast.scripted->release([this](const HumanCreation& human) { return castHuman(human); });
     m_print(std::format("cast: {} humans from the level's scripts, {} AI ({} models); {} calls held for them run\n",
                         cast.humans != nullptr ? cast.humans->all().size() : 0, m_ai->count(), m_castCharacters.size(),

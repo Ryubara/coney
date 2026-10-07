@@ -13,6 +13,7 @@
 #include "ai/script_services.h"
 #include "ai/story_goals.h"
 #include "ai/tactic_attack.h"
+#include "ai/tactic_boss.h"
 #include "ai/track_human_goal.h"
 #include "human/human.h"
 
@@ -93,7 +94,7 @@ std::optional<anim::Vec3> flagPoint(FlagServices* flags, double handle) {
 void holdPlaces(Gang& gang) {
     for (Brain* member : gang.members()) {
         if (canAct(*member)) {
-            member->pushGoal(std::make_unique<IdleGoal>());
+            member->pushTacticGoal(std::make_unique<IdleGoal>());
         }
     }
 }
@@ -155,16 +156,16 @@ void GroupMoveTactic::start(Gang& gang) {
     case TacticKind::TravelPath:
         follow = kFollowTravelPath;
         if (flags != nullptr && !m_path.empty()) {
-            lead->pushGoal(std::make_unique<TravelPathGoal>(m_path, order.options.at(script::kTacticLoop) ? 1 : 2,
-                                                            order.options.at(script::kTacticReverse), order.gait,
-                                                            kPathRadius, *flags));
+            lead->pushTacticGoal(std::make_unique<TravelPathGoal>(m_path, order.options.at(script::kTacticLoop) ? 1 : 2,
+                                                                  order.options.at(script::kTacticReverse), order.gait,
+                                                                  kPathRadius, *flags));
         } else {
-            lead->pushGoal(std::make_unique<IdleGoal>());
+            lead->pushTacticGoal(std::make_unique<IdleGoal>());
         }
         break;
     default:
         follow = kFollowWander;
-        lead->pushGoal(std::make_unique<IdleGoal>());
+        lead->pushTacticGoal(std::make_unique<IdleGoal>());
         break;
     }
     // The others follow him.
@@ -230,7 +231,7 @@ void StationTactic::start(Gang& gang) {
                                  std::max(member->fieldOfView() - kHangOutViewNarrowing, 0.0F));
             }
             // Walk to the flag, then hold the place there.
-            member->pushGoal(std::make_unique<IdleGoal>());
+            member->pushTacticGoal(std::make_unique<IdleGoal>());
             if (flags != nullptr) {
                 static_cast<void>(goalMoveToFlag(*member,
                                                  MoveToFlagOrder{.flag = order.flags.at(0),
@@ -260,7 +261,7 @@ int StationTactic::update(Gang& gang) {
                 m_playerNear = true;
                 for (Brain* member : gang.members()) {
                     if (isAi(*member)) {
-                        member->flush();
+                        member->popToGoalBase();
                     }
                 }
             }
@@ -316,6 +317,9 @@ void DefendTactic::start(Gang& gang) {
     }
     for (Brain* member : gang.members()) {
         if (canAct(*member) && member->handle() != call().flags.at(0)) {
+            // On top of his own goals (DefendTactic_GiveGoals pops to the base and marks it again).
+            member->popToGoalBase();
+            member->markGoalBase();
             static_cast<void>(
                 goalTrackHuman(*member, *services().scripts, *services().formations, call().flags.at(0), call().range));
         }
@@ -352,7 +356,7 @@ void HoldTheLineTactic::start(Gang& gang) {
         if (!canAct(*member)) {
             continue;
         }
-        member->pushGoal(std::make_unique<IdleGoal>());
+        member->pushTacticGoal(std::make_unique<IdleGoal>());
         const double flag = placed < defenders ? call().flags.at(placed % 2) : call().flags.at(2);
         static_cast<void>(goalMoveToFlag(*member, MoveToFlagOrder{.flag = flag, .radius = kLineRadius}, *flags));
         ++placed;
@@ -434,6 +438,8 @@ std::unique_ptr<Tactic> makeStoryTactic(const script::TacticCall& call, std::vec
         return std::make_unique<HoldTheLineTactic>(call, services);
     case TacticKind::Pursue:
         return std::make_unique<PursueTactic>(call, services);
+    case TacticKind::BossDiegoVargas:
+        return std::make_unique<BossDiegoVargasTactic>(call, services);
     default:
         return std::make_unique<StationTactic>(call, services);
     }

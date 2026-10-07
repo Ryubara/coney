@@ -54,7 +54,7 @@ int makeGang(AiScene& scene, const std::string& name, int count, std::vector<Bra
 
 } // namespace
 
-TEST_CASE("a tactic starts by flushing its AI members, and past its time limit fires its callback with 2",
+TEST_CASE("a tactic starts by marking its AI members' goal bases, and past its time limit fires its callback with 2",
           "[ai][tactics]") {
     AiScene scene;
     std::vector<Brain*> members;
@@ -67,12 +67,14 @@ TEST_CASE("a tactic starts by flushing its AI members, and past its time limit f
     auto owned = std::make_unique<CountingTactic>("P1.Done", 200);
     CountingTactic& tactic = *owned;
     scene.brains.gangs().setTactic(gang, std::move(owned));
-    CHECK_FALSE(tactic.keepsOwnGoals());
+    CHECK_FALSE(tactic.alertsGang());
 
     scene.run(1);
     CHECK(tactic.started());
     CHECK(tactic.starts == 1);
-    CHECK(members[0]->goalCount() == 0);
+    // Nothing is popped: the goal base is marked over the goal each member had.
+    CHECK(members[0]->goalCount() == 1);
+    CHECK(members[0]->goalBase() == 0);
     CHECK(scene.player().goalCount() == 1); // the player is not flushed
     CHECK(scene.services.calls.empty());
 
@@ -299,4 +301,38 @@ TEST_CASE("a dealer says nocash, limit, ripoff, and cash at most every 5 s", "[a
     CHECK_FALSE(goal->dealLine(DealOutcome::Sold, 5999).has_value());
     CHECK(goal->dealLine(DealOutcome::Sold, 6000) == coney::ai::kDealCashLine);
     CHECK_FALSE(goal->dealLine(DealOutcome::NotDealing, 0).has_value());
+}
+
+namespace {
+
+// A goal of `type` that holds the stack until it is popped (a script's goal, such as level3's GoalTag).
+class HoldingGoal final : public coney::ai::Goal {
+  public:
+    explicit HoldingGoal(GoalType type) : Goal(type) {}
+    [[nodiscard]] coney::ai::GoalStatus process(Brain& /*brain*/) override { return coney::ai::GoalStatus::Stop; }
+};
+
+} // namespace
+
+TEST_CASE("a goal a script gives right after a tactic stays under the tactic's goal, and its end pops back to it",
+          "[ai][tactics]") {
+    AiScene scene;
+    std::vector<Brain*> members;
+    const int gang = makeGang(scene, "Rivals", 1, members);
+    Brain& rival = *members[0];
+    // The script step: the tactic first, then the member's own goal (the tactic starts on the gang's next update).
+    scene.brains.gangs().setTactic(gang, std::make_unique<coney::ai::TacticCrowd>("", true, 0));
+    REQUIRE(rival.pushGoal(std::make_unique<HoldingGoal>(GoalType::MoveToHuman)));
+
+    scene.run(1);
+    REQUIRE(rival.goalCount() == 2);
+    CHECK(rival.topGoal()->type() == GoalType::Idle); // the crowd's goal, on top
+    CHECK(rival.goalBase() == 0);
+
+    // A goal pushed after the start sits above the base too, and goes with the tactic.
+    REQUIRE(rival.pushGoal(std::make_unique<HoldingGoal>(GoalType::Spectate)));
+    scene.brains.gangs().setTactic(gang, nullptr);
+    REQUIRE(rival.goalCount() == 1);
+    CHECK(rival.topGoal()->type() == GoalType::MoveToHuman);
+    CHECK(rival.goalBase() == -1);
 }

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -15,6 +16,7 @@
 #include "ai/goal.h"
 #include "ai/route_planner.h"
 #include "ai/sectors.h"
+#include "ai/steering.h"
 #include "ai/targeting.h"
 #include "combat/stick.h"
 #include "human/human.h"
@@ -251,6 +253,19 @@ class Brain {
     /// Pops every goal.
     /// @orig 0x0028d910 Brain_ClearGoals (unknown)
     void clearGoals();
+    /// Marks the goal base (`Brain_MarkGoalBase`, `+0x2d`): the top's index becomes the base, so the goals now on the
+    /// stack stay under what a tactic pushes. Nothing on an empty stack (the base stays as it was).
+    /// @orig 0x0028d8a0 Brain_MarkGoalBase (unknown)
+    void markGoalBase();
+    /// Pops down to the goal base (`Brain_PopToGoalBase`): every goal above it, then the base is cleared (−1, which
+    /// pops everything next time).
+    /// @orig 0x0028d8c0 Brain_PopToGoalBase (unknown)
+    void popToGoalBase();
+    /// A tactic's goal for this member: pops to the base, marks it again and pushes `goal` on top, so the member's own
+    /// goals stay underneath (docs/research/ai.md#tactics). False when the stack is full.
+    bool pushTacticGoal(std::unique_ptr<Goal> goal);
+    /// The goal base's index (−1: none).
+    [[nodiscard]] int goalBase() const { return m_goalBase; }
     /// The goal of `type` on the stack, nearest the top; null when none.
     /// @orig 0x0028d960 Brain_FindGoal (unknown)
     [[nodiscard]] Goal* findGoal(GoalType type);
@@ -271,9 +286,16 @@ class Brain {
     /// Frees the front action.
     /// @orig 0x0028da60 Brain_PopAction (unknown)
     void popAction();
-    /// Asks the actions to stop from the front, freeing each that agrees; stops at one that refuses.
+    /// Asks the actions to stop from the front, freeing each that agrees; stops at one that refuses. Returns whether
+    /// the queue is empty.
     /// @orig 0x0028db20 Brain_ClearActions (unknown)
-    void clearActions();
+    bool clearActions();
+    /// Brain `+0xcc` bit 1: a GiveWay action lives (asked to give way again, the brain answers yes at once).
+    [[nodiscard]] bool givingWay() const { return m_givingWay; }
+    void setGivingWay(bool on) { m_givingWay = on; }
+    /// Brain `+0xcc` bit 4: inside a push-aside, which keeps its recursion from looping.
+    [[nodiscard]] bool pushingAside() const { return m_pushingAside; }
+    void setPushingAside(bool on) { m_pushingAside = on; }
     /// Actions queued.
     [[nodiscard]] std::size_t actionCount() const { return m_actionCount; }
     /// The front action; null when the queue is empty.
@@ -433,6 +455,15 @@ class Brain {
     /// The scene's brains (every brain, this one included), which the sector record counts round this one; Brains
     /// gives it (null for none: the record stays empty).
     void setPeers(const std::vector<std::unique_ptr<Brain>>* peers) { m_peers = peers; }
+    /// The scene's brains as given (null for none).
+    [[nodiscard]] const std::vector<std::unique_ptr<Brain>>* peers() const { return m_peers; }
+    /// The steering round humans' state (brain `+0xa0`, docs/research/ai.md#steering).
+    [[nodiscard]] SteeringState& steering() { return m_steering; }
+    [[nodiscard]] const SteeringState& steering() const { return m_steering; }
+    /// The route node a move heads for now (`RouteState_CurrentNode` on the route state at `+0xe0`): the move action
+    /// writes it each update, nothing when it goes straight or no move runs.
+    [[nodiscard]] std::optional<std::uint32_t> routeNode() const { return m_routeNode; }
+    void setRouteNode(std::optional<std::uint32_t> node) { m_routeNode = node; }
     /// The neighbour sectors round this brain's human, rebuilt first when at least `maxAgeMs` old
     /// (docs/research/ai.md#neighbour-sectors): callers pass kSectorAgeMs, or kSectorGiveWayAgeMs for giving way.
     /// @orig 0x0028fe90 Brain_GetSectors (unknown)
@@ -450,12 +481,16 @@ class Brain {
 
     /// The horizontal distance from this brain's human to `other`'s.
     [[nodiscard]] float distanceTo(const Brain& other) const;
+    /// The player's brain nearest this one among the scene's brains (null for none).
+    [[nodiscard]] Brain* nearestPlayer() const;
     /// Whether `other`'s human can be fought: it has health left.
     [[nodiscard]] static bool fightable(const Brain& other);
     /// Forgets `other` wherever this brain refers to it (its target, enemies, slots): `other` is going away.
     void forget(const Brain& other);
 
   private:
+    // The peer standing at an announced attack's position (the warning's attacker); null when none.
+    [[nodiscard]] Brain* announcer(anim::Vec3 position) const;
     // The goal stack's turn: the top is started or resumed once the queue is empty, then processed; done pops it and
     // the new top is processed in the same update, again processes the top again (up to a bound).
     // @orig 0x0029ed58 Goal_Start (unknown)
@@ -469,6 +504,10 @@ class Brain {
     bool updateReactionGoal();
     // The front action: its delay counted down against the last update's time, then started and updated in the same
     // update, and popped when either says done.
+    // Frees the front action once it has finished: it is aborted first (its answer ignored), then freed
+    // (docs/research/ai.md#giving-way).
+    // @orig 0x002f9de0 Action_AbortAndDestroy (unknown)
+    void finishAction(Action& action);
     // @orig 0x0028fe28 Brain_RunActions (unknown)
     void runActions();
     // Claims a slot for `attacker` on this brain's human: a free one, else the farthest holder's when `attacker` is
@@ -494,6 +533,7 @@ class Brain {
     std::uint64_t m_thinks = 0;                                        // +0x38
     std::unique_ptr<Goal> m_reaction;                                  // +0x3c
     std::vector<std::unique_ptr<Goal>> m_goals;                        // +0x40, the top at the back
+    int m_goalBase = -1;                                               // +0x2d
     std::array<std::unique_ptr<Action>, kActionQueueSize> m_actions{}; // +0x68, circular
     std::size_t m_actionCount = 0;                                     // +0x2e
     std::size_t m_actionFront = 0;                                     // +0x2f
@@ -518,10 +558,14 @@ class Brain {
     MoveFailure m_moveFailure = MoveFailure::None; // +0x284
     anim::Vec3 m_moveAim;                          // +0x90
     float m_moveAimRadius = 0.0F;                  // +0x118
+    SteeringState m_steering;                      // +0xa0
+    std::optional<std::uint32_t> m_routeNode;      // RouteState_CurrentNode of +0xe0
     std::size_t m_slot = 0;
     double m_handle = 0;              // the human's script handle
     int m_characterClass = -1;        // the human's class
     bool m_dead = false;              // +0x09
+    bool m_givingWay = false;         // +0xcc bit 1
+    bool m_pushingAside = false;      // +0xcc bit 4
     bool m_suspended = false;         // +0x0a
     bool m_wantsWeapon = true;        // +0x265
     Gang* m_gang = nullptr;           // +0x20c

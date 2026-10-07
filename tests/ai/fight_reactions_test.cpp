@@ -15,12 +15,14 @@
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/reaction_goals.h"
+#include "ai/route_planner.h"
 #include "combat/commands.h"
 #include "human/human.h"
 #include "human/humans.h"
 #include "support/collision_fixtures.h"
 #include "support/fight_fixtures.h"
 #include "support/human_fixtures.h"
+#include "support/path_fixtures.h"
 
 // The fight reaction goals: the grabber's, mounter's, held man's and downed man's moves. Synthetic clips only; game
 // time is the steps run (1/30 s each).
@@ -40,6 +42,8 @@ struct Scene {
     std::unique_ptr<coney::raycast::CollisionMesh> mesh =
         coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
     std::vector<std::unique_ptr<Human>> humans;
+    coney::world::PathMap map = paths();
+    coney::ai::RoutePlanner planner{map};
     coney::human::Humans step;
     coney::ai::Brains brains;
 
@@ -59,6 +63,14 @@ struct Scene {
         made.spawn(mesh.get(), feet, headingDegrees);
         step.add(made, player);
         return brains.add(made, type, coney::ai::FightSettings{}, static_cast<std::uint32_t>(humans.size()));
+    }
+
+    // A path rectangle [38, 42] x [39, 42], for the wall probe when a test hands the brains its planner: from (40, 40)
+    // its edge lies 1 m behind (-y) and 2 m ahead (+y).
+    static coney::world::PathMap paths() {
+        coney::test::PathBuilder builder;
+        builder.rectangle(38.0F, 42.0F, 39.0F, 42.0F);
+        return builder.build();
     }
 
     void run(int steps) {
@@ -130,4 +142,57 @@ TEST_CASE("a knocked-down man under attack presses the get-up attack about 1.9 s
     // 1900 ms is 57 steps; the goal starts one update after the fall.
     CHECK(pressedAt >= 55);
     CHECK(pressedAt <= 62);
+}
+
+namespace {
+
+// Makes `brain`'s human a grabber whose power class throws at walls (`CfgPowerClass` argument 22).
+void throwAtWalls(Brain& brain) {
+    coney::combat::PowerClass power = coney::ai::kWarriorPowerClass;
+    power.throwsAtWalls = true;
+    brain.human().setFighterProfile(coney::human::FighterProfile{.player = false, .powerClass = power, .health = 1400});
+}
+
+} // namespace
+
+TEST_CASE("a grabber whose class throws at walls throws into a wall next to them", "[ai]") {
+    Scene scene;
+    scene.brains.setPlanner(&scene.planner);
+    // The grabber at (40, 40.2) facing +y, the man 1 m ahead facing him. The path's edge is 1.2 m behind the grabber
+    // (his sector 4) and 0.8 m behind the man (the man's sector 4); the man's sides are open.
+    Brain& grabber = scene.add({40.0F, 40.2F, 0.0F}, 0.0F, BrainType::Gang);
+    Brain& man = scene.add({40.0F, 41.2F, 0.0F}, 180.0F, BrainType::Gang);
+    throwAtWalls(grabber);
+    bool sawAhead = false;
+    bool sawBehind = false;
+    for (int k = 0; k < 40; ++k) {
+        const GrabMove move = coney::ai::grabMoveDirection(grabber, man);
+        CHECK((move == GrabMove::Ahead || move == GrabMove::Behind));
+        sawAhead = sawAhead || move == GrabMove::Ahead;
+        sawBehind = sawBehind || move == GrabMove::Behind;
+    }
+    CHECK(sawAhead);
+    CHECK(sawBehind);
+}
+
+TEST_CASE("with no wall, a grabber whose class throws at walls throws into a man who is not his friend", "[ai]") {
+    Scene scene; // no planner: no sector is a wall
+    Brain& grabber = scene.add({20.0F, 20.0F, 0.0F}, 0.0F, BrainType::Gang);
+    Brain& man = scene.add({20.0F, 21.0F, 0.0F}, 180.0F, BrainType::Gang);
+    // A gangless stranger on the man's left (+x for a man facing -y): the grabber's right.
+    static_cast<void>(scene.add({21.0F, 21.0F, 0.0F}, 0.0F, BrainType::Gang));
+    throwAtWalls(grabber);
+    for (int k = 0; k < 10; ++k) {
+        CHECK(coney::ai::grabMoveDirection(grabber, man) == GrabMove::Right);
+    }
+}
+
+TEST_CASE("a grabber of an ordinary class throws left, ahead or right, never behind", "[ai]") {
+    Scene scene;
+    scene.brains.setPlanner(&scene.planner);
+    Brain& grabber = scene.add({40.0F, 40.2F, 0.0F}, 0.0F, BrainType::Gang);
+    Brain& man = scene.add({40.0F, 41.2F, 0.0F}, 180.0F, BrainType::Gang);
+    for (int k = 0; k < 40; ++k) {
+        CHECK(coney::ai::grabMoveDirection(grabber, man) != GrabMove::Behind);
+    }
 }

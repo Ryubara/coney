@@ -387,6 +387,10 @@ class Human final : public Holdable {
     /// Health as a percentage of its maximum, 0-100 (`HuGetHealthPercent`).
     /// @orig 0x00237c38 Human_GetHealthPercent (unknown)
     [[nodiscard]] float healthPercent() const { return m_fighter.health().fraction() * 100.0F; }
+    /// A stun of `durationMs` from `nowMs` in the stun's loop (Fighter::stunFor()).
+    void stunFor(std::uint64_t nowMs, std::uint64_t durationMs) { m_fighter.stunFor(m_animator, nowMs, durationMs); }
+    /// Ends a stun now (Fighter::endStun()).
+    void endStun(std::uint64_t nowMs) { m_fighter.endStun(nowMs); }
     /// `HuSetHealthPercent`: health becomes `percent` of the maximum, truncated to whole points; a value outside
     /// (0, 100] gives full health.
     /// @orig 0x002378a8 Human_SetHealthPercent (unknown)
@@ -457,6 +461,25 @@ class Human final : public Holdable {
     /// with `stageTurns` turns of the stick a stage (combat::stereoStageTurns()). **Coney's reading**: the turn is not
     /// spread over the intro.
     void startStereoTheft(anim::Vec3 point, float stageTurns);
+    /// Enters the step control for one step toward `heading` (radians) with the turn boost `boost`: the next state
+    /// update that finds the human free plays the step's clip (stepClipFor(); the fight stance's while locked onto a
+    /// target), turns him to its end facing over half the clip, and leaves the control. Until then he waits, not
+    /// moved by his stick or brain. Refused (false) while grabbed, grabbing or held in a hold, or when a step is
+    /// already waiting. **Coney's reading**: those stand for the state bits `0x180f3ff0`.
+    /// @orig 0x002432b0 Human_EnterStepControl (unknown)
+    bool enterStepControl(float heading, int boost);
+    /// Whether the step control still waits to play its step.
+    [[nodiscard]] bool stepControlWaiting() const { return m_stepRequest.has_value(); }
+    /// Whether a step clip or a turn clip holds the record (`0x20080000`): a step under way.
+    /// @orig 0x00228448 Human_HasHeld20080000 (unknown)
+    [[nodiscard]] bool stepHeld() const;
+    /// Leaves the step control: a step still waiting is dropped (one already playing plays on).
+    /// @orig 0x00243360 Human_LeaveStepControl (unknown)
+    void leaveStepControl() { m_stepRequest.reset(); }
+    /// Whether the human is idle under its own control (the stander test of giving way): on the ground, not climbing,
+    /// in no wheelchair, not held by combat or a grab, and no held flag at all on the record.
+    /// @orig 0x00225390 Human_IsIdleUnderControl (unknown)
+    [[nodiscard]] bool idleUnderControl() const;
     /// Starts freeing a cuffed human at `cuffed` by the mash (`Uncuff_Start`, docs/research/crimes.md#uncuffing): he
     /// turns to him over 325 `ANIM_ARREST_RELEASE_INTRO_FRONT`, which holds `0x2000000` and so keeps the mash's input
     /// closed, then loops 329; the mash (mode 1) runs with the Warrior factor `mashFactor` (combat::mashFactor()).
@@ -636,6 +659,14 @@ class Human final : public Holdable {
     // The gait of the velocity the last update left, which the dispatcher's gait tests read (fight()).
     Gait m_gaitBefore = Gait::Standing;
     std::optional<ClimbRun> m_climbRun;
+    // The step control's waiting step: its heading and turn boost (enterStepControl()).
+    struct StepRequest {
+        float heading = 0.0F;
+        int boost = 0;
+    };
+    std::optional<StepRequest> m_stepRequest;
+    // Plays the waiting step when the human is free; true while the step control holds the update.
+    bool runStepControl();
     // A pick-up under way: the object, the clip, the updates to its event and the turn each takes.
     struct PickUpRun {
         double handle = 0;

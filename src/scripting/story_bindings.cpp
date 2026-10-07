@@ -123,6 +123,20 @@ template <std::size_t N> std::array<double, N> tableArg(std::span<const Value> a
     return values;
 }
 
+// The numbers of a table as 16-bit object type ids (the tactic keeps them as 16 bits).
+std::array<std::uint16_t, 8> objectTypes(const std::array<double, 8>& values) {
+    std::array<std::uint16_t, 8> types{};
+    for (std::size_t k = 0; k < values.size(); ++k) {
+        types.at(k) = static_cast<std::uint16_t>(static_cast<std::int64_t>(values.at(k)));
+    }
+    return types;
+}
+
+// The numbers of a three-entry table as whole numbers (the tactic keeps them as bytes).
+std::array<int, 3> tableInts(const std::array<double, 3>& values) {
+    return {static_cast<int>(values[0]) & 0xff, static_cast<int>(values[1]) & 0xff, static_cast<int>(values[2]) & 0xff};
+}
+
 // The story host of the level, if there is a level with an AI host.
 StoryBindingHost* storyOf(const BindingContext& context) {
     return context.ai != nullptr ? context.ai->story() : nullptr;
@@ -621,6 +635,7 @@ template <typename Read> NativeFunction tacticCall(const BindingContext& context
 
 // The tactic bindings, each with its arguments and defaults (docs/references/bindings/ai.md); TacticAttack and
 // TacticConfront are the Rumble's (rumble_match_bindings.h).
+// @orig 0x00309a40 Tactic_BossDiegoVargas (unknown)
 // @orig 0x00315d98 Tactic_Defend (unknown)
 // @orig 0x00313e30 Tactic_HoldTheLine (unknown)
 // @orig 0x00316a68 Tactic_ManWeaponPile (unknown)
@@ -638,6 +653,21 @@ template <typename Read> NativeFunction tacticCall(const BindingContext& context
 // @orig 0x0031a268 Tactic_Scout (unknown)
 void addTacticBindings(LuaVm& vm, const BindingContext& context) {
     using A = std::span<const Value>;
+    vm.registerFunction("TacticBossScenarioA", tacticCall(context, TacticKind::BossDiegoVargas, [](TacticCall& c, A a) {
+                            c.boss.stage = static_cast<int>(static_cast<std::uint32_t>(wholeArg(a, 1)));
+                            const std::array<double, 2> flags = tableArg<2>(a, 2);
+                            c.flags = {flags[0], flags[1], 0.0};
+                            c.boss.vargasObjects = objectTypes(tableArg<8>(a, 3));
+                            c.boss.minionObjects = objectTypes(tableArg<8>(a, 4));
+                            // Each table pair is Diego's, then Vargas's.
+                            for (std::size_t boss = 0; boss < 2; ++boss) {
+                                c.boss.fatigue.at(boss) = tableInts(tableArg<3>(a, 5 + boss));
+                                c.boss.damage.at(boss) = tableInts(tableArg<3>(a, 7 + boss));
+                                c.boss.prone.at(boss) = tableInts(tableArg<3>(a, 9 + boss));
+                                c.boss.cycles.at(boss) = tableInts(tableArg<3>(a, 11 + boss));
+                            }
+                            c.callback = nameArg(a, 13);
+                        }));
     vm.registerFunction("TacticDefend", tacticCall(context, TacticKind::Defend, [](TacticCall& c, A a) {
                             c.flags.at(0) = handleArg(a, 1);
                             c.range = floatArgOr(a, 2, 2.25F);

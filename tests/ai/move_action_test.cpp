@@ -4,6 +4,7 @@
 // Synthetic clips, a flat floor and synthetic path data; game time is the steps run (1/30 s each).
 #include "ai/move_action.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -39,6 +40,7 @@
 #include "world_objects/flags.h"
 
 using coney::ai::Brain;
+using coney::ai::gaitSpeed;
 using coney::ai::MoveAction;
 using coney::ai::MoveFailure;
 using coney::ai::MoveRequest;
@@ -143,6 +145,19 @@ coney::script::LookAtCall lookAtCall(double human, double target, float turn) {
 }
 
 } // namespace
+
+TEST_CASE("a gait's speed is the human's own clip speed, and 0 for gait 0 or any unknown gait", "[ai][move]") {
+    const coney::human::Speeds speeds{
+        .base = 3.4F, .sneak = 1.5F, .walk = 1.6F, .jog = 4.8F, .run = 7.8F, .sprint = 10.2F};
+    CHECK(gaitSpeed(speeds, 1) == 1.5F);
+    CHECK(gaitSpeed(speeds, 2) == 1.6F);
+    CHECK(gaitSpeed(speeds, 3) == 4.8F);
+    CHECK(gaitSpeed(speeds, 4) == 7.8F);
+    CHECK(gaitSpeed(speeds, 5) == 10.2F);
+    CHECK(gaitSpeed(speeds, 0) == 0.0F);
+    CHECK(gaitSpeed(speeds, 6) == 0.0F);
+    CHECK(gaitSpeed(speeds, -1) == 0.0F);
+}
 
 TEST_CASE("a move goes straight to its point when the line is walkable and stops within its radius", "[ai][move]") {
     MoveScene scene;
@@ -543,4 +558,25 @@ TEST_CASE("a running AI turns 4 degrees an update, 8 with a turn boost of 1, and
     const auto [c, d] = turnSteps(1);
     CHECK(c == Catch::Approx(radians(8.0F)).margin(1e-4));
     CHECK(d == Catch::Approx(radians(8.0F)).margin(1e-4));
+}
+
+TEST_CASE("a move steers round a human standing on its line and still arrives", "[ai][move][steering]") {
+    MoveScene scene;
+    Brain& walker = scene.add({41.0F, 41.0F, 0.0F}, -90.0F);
+    Brain& stander = scene.add({45.0F, 41.0F, 0.0F}, 0.0F);
+    walker.queueAction(moveTo({49.0F, 41.0F, 0.0F}, 0.3F));
+    float nearest = 100.0F;
+    float widest = 0.0F;
+    scene.runUntil(
+        600, [&] { return walker.actionCount() == 0; },
+        [&] {
+            nearest = std::min(nearest, planDistance(walker.human().position(), stander.human().position()));
+            widest = std::max(widest, std::fabs(walker.human().position().y - 41.0F));
+        });
+    CHECK(walker.actionCount() == 0);
+    CHECK(walker.moveFailure() == MoveFailure::None);
+    CHECK(planDistance(walker.human().position(), {49.0F, 41.0F, 0.0F}) < 0.4F);
+    // He went round: off the line, never through the stander's disc.
+    CHECK(widest > 0.3F);
+    CHECK(nearest > 0.5F);
 }

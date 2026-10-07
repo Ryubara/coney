@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.7% of the game's own code (527,124 of 3,354,776 bytes, 1,859 functions) |
+| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.7% of the game's own code (527,124 of 3,354,776 bytes, 1,926 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-635 reimplemented function(s) have no size yet and add no bytes.
+702 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,8 +73,8 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 79 | 195,624 |
 | `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 231 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 623 | 1,096,672 |
-| `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 688 | 1,096,672 |
+| `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 8 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
@@ -819,6 +819,7 @@ at the top of the repository's `README.md`.
 | `0x002223e8` | `Human_CanSeeHuman` | `Human` | not filled in |
 | `0x00222710` | `Human_IsInFieldOfView` | `Human` | not filled in |
 | `0x00222980` | `Human_AddCuffs` | `Human` | 200 |
+| `0x00222a48` | `Human_IsThreatTo` | `Human` | not filled in |
 | `0x00222ba8` | `Human_WarriorPowerClassOfType` | `Human` | 120 |
 | `0x00222c20` | `Human_WarriorClassOfType` | `Human` | 120 |
 | `0x00222ef0` | `Human_HealthPercent` | `Human` | 88 |
@@ -829,9 +830,12 @@ at the top of the repository's `README.md`.
 | `0x00223cb0` | `Human_IsBusy` | `Human` | 136 |
 | `0x002240e8` | `Human_CanUseAttackKind` | `Human` | 1,680 |
 | `0x00224778` | `Human_CanStartAttack` | `Human` | 1,832 |
+| `0x00225390` | `Human_IsIdleUnderControl` | `Human` | not filled in |
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
+| `0x002274a8` | `Humans_FindAhead` | `Human` | not filled in |
 | `0x00227d28` | `Human_IsInSceneState` | `Human` | not filled in |
+| `0x00228448` | `Human_HasHeld20080000` | `Human` | not filled in |
 | `0x00228d70` | `Cfg_AddHatFit` | `Human` | 244 |
 | `0x00229570` | `Human_BannerKind` | `Human` | 176 |
 | `0x00229b60` | `AttackKind_IsCharge` | `Human` | 48 |
@@ -988,6 +992,9 @@ at the top of the repository's `README.md`.
 | `0x00240e38` | `Human_PlayerLocomotion` | `Human` | not filled in |
 | `0x00241b90` | `Human_FightStanceMove` | `Human` | 3,160 |
 | `0x002427e8` | `Human_WheelchairControl` | `Human` | 1,272 |
+| `0x002432b0` | `Human_EnterStepControl` | `Human` | not filled in |
+| `0x00243360` | `Human_LeaveStepControl` | `Human` | not filled in |
+| `0x00243420` | `Human_StepControl` | `Human` | not filled in |
 | `0x00243848` | `Human_UpdateControl` | `Human` | not filled in |
 | `0x00244e78` | `Human_MoveAttached` | `Human` | 1,176 |
 | `0x00245310` | `Human_MoveGrabbing` | `Human` | 1,552 |
@@ -997,6 +1004,7 @@ at the top of the repository's `README.md`.
 | `0x00248170` | `Human_StrikeAllOn` | `Human` | not filled in |
 | `0x00248270` | `Human_StrikeAllOff` | `Human` | not filled in |
 | `0x00248df0` | `Human_Lean` | `Human` | not filled in |
+| `0x00249050` | `Ground_ProbeBelow` | `Human` | not filled in |
 | `0x00249108` | `Humans_Update` | `Human` | 2,704 |
 | `0x0024a230` | `Reticule_QueueHealthRings` | `Human` | 3,400 |
 | `0x0024b780` | `Reticules_Update` | `Human` | 2,040 |
@@ -1116,6 +1124,18 @@ at the top of the repository's `README.md`.
 | `0x00287730` | `Player_Special` | `Human` | 392 |
 | `0x002878b8` | `LockPick_JudgePress` | `Human` | 352 |
 | `0x00287a18` | `Player_Cross` | `Human` | 1,480 |
+| `0x00288ad0` | `Steering_Clear` | `Human` | not filled in |
+| `0x00288b70` | `Steering_SetAvoiding` | `Human` | not filled in |
+| `0x00288be0` | `Steering_SideSign` | `Human` | not filled in |
+| `0x00288cb0` | `Steering_SetSpeed` | `Human` | not filled in |
+| `0x00288cc8` | `Steering_FindBlocker` | `Human` | not filled in |
+| `0x00288f40` | `Steering_ClampStep` | `Human` | not filled in |
+| `0x00289010` | `Steering_TryDetour` | `Human` | not filled in |
+| `0x002890a8` | `Steering_ResetAvoidance` | `Human` | not filled in |
+| `0x00289138` | `Human_SteerAroundHumans` | `Human` | not filled in |
+| `0x00289d68` | `Steering_RayHitsHuman` | `Human` | not filled in |
+| `0x00289ed0` | `Brain_GiveWayTo` | `Human` | not filled in |
+| `0x0028a248` | `Brain_PushAside` | `Human` | not filled in |
 | `0x0028abc0` | `Brain_CanBeChased` | `Human` | not filled in |
 | `0x0028bf00` | `Brain_GetSightRange` | `Human` | not filled in |
 | `0x0028c1a8` | `Brain_InstallHandlers` | `Human` | 440 |
@@ -1128,6 +1148,8 @@ at the top of the repository's `README.md`.
 | `0x0028d538` | `Brain_AddEnemy` | `Human` | 360 |
 | `0x0028d758` | `Brain_PushGoal` | `Human` | 128 |
 | `0x0028d7d8` | `Brain_PopGoal` | `Human` | 200 |
+| `0x0028d8a0` | `Brain_MarkGoalBase` | `Human` | not filled in |
+| `0x0028d8c0` | `Brain_PopToGoalBase` | `Human` | not filled in |
 | `0x0028d910` | `Brain_ClearGoals` | `Human` | 80 |
 | `0x0028d960` | `Brain_FindGoal` | `Human` | 128 |
 | `0x0028d9f0` | `Brain_AllocAction` | `Human` | 112 |
@@ -1186,6 +1208,7 @@ at the top of the repository's `README.md`.
 | `0x0029a8c0` | `Route_Request` | `Human` | 352 |
 | `0x0029aa88` | `Route_Follow` | `Human` | 856 |
 | `0x0029ade0` | `Route_JumpArc` | `Human` | not filled in |
+| `0x0029b248` | `RouteState_CurrentNode` | `Human` | not filled in |
 | `0x0029b2b8` | `Route_JumpPoints` | `Human` | not filled in |
 | `0x0029b4b8` | `Route_CanSkip` | `Human` | 544 |
 | `0x0029b6d8` | `Route_MoveOn` | `Human` | 368 |
@@ -1346,9 +1369,31 @@ at the top of the repository's `README.md`.
 | `0x002e5a00` | `Goal_Shopkeeper` | `Human` | 224 |
 | `0x002e5ae0` | `ShopkeeperGoal_Init` | `Human` | 272 |
 | `0x002e6668` | `ShopkeeperGoal_Process` | `Human` | 4,000 |
+| `0x002e7970` | `TiredGoal_Init` | `Human` | not filled in |
+| `0x002e7a68` | `TiredGoal_Start` | `Human` | not filled in |
+| `0x002e7b30` | `TiredGoal_End` | `Human` | not filled in |
+| `0x002e7c18` | `TiredGoal_StartBreak` | `Human` | not filled in |
+| `0x002e7da8` | `TiredGoal_EndBreak` | `Human` | not filled in |
+| `0x002e7e68` | `TiredGoal_IsBreakDone` | `Human` | not filled in |
+| `0x002e7f50` | `TiredGoal_Process` | `Human` | not filled in |
+| `0x002e8288` | `BigBrawlerGoal_Init` | `Human` | not filled in |
+| `0x002e8418` | `BigBrawlerGoal_Start` | `Human` | not filled in |
+| `0x002e8530` | `BigBrawlerGoal_End` | `Human` | not filled in |
+| `0x002e8620` | `BigBrawlerGoal_AdjustEnemyScore` | `Human` | not filled in |
+| `0x002e8818` | `BigBrawlerGoal_GetFatigueMs` | `Human` | not filled in |
+| `0x002e8830` | `BigBrawlerGoal_GetDamagePercent` | `Human` | not filled in |
+| `0x002e8840` | `BigBrawlerGoal_SetStage` | `Human` | not filled in |
+| `0x002e8858` | `BigBrawlerGoal_OnAttackWarning` | `Human` | not filled in |
+| `0x002e8bc8` | `BigBrawlerGoal_OnHit` | `Human` | not filled in |
+| `0x002e8f78` | `BigBrawlerGoal_Process` | `Human` | not filled in |
+| `0x002ed0a8` | `BigThrowerGoal_Init` | `Human` | not filled in |
+| `0x002ed168` | `BigThrowerGoal_Start` | `Human` | not filled in |
+| `0x002ed260` | `BigThrowerGoal_End` | `Human` | not filled in |
+| `0x002ed718` | `BigThrowerGoal_Process` | `Human` | not filled in |
 | `0x002eee50` | `Goal_StationaryThrower` | `Human` | 144 |
 | `0x002eeee0` | `StationaryThrowerGoal_Init` | `Human` | 152 |
 | `0x002ef2c0` | `StationaryThrowerGoal_Process` | `Human` | 1,256 |
+| `0x002f9de0` | `Action_AbortAndDestroy` | `Human` | not filled in |
 | `0x002fa5a0` | `PlayAnimAction_Init` | `Human` | 64 |
 | `0x002fa918` | `AttackAction_Init` | `Human` | 144 |
 | `0x002fa9a8` | `AttackAction_Start` | `Human` | 904 |
@@ -1363,6 +1408,7 @@ at the top of the repository's `README.md`.
 | `0x002fc330` | `MoveAction_Stuck` | `Human` | 184 |
 | `0x002fc420` | `MoveAction_Start` | `Human` | 320 |
 | `0x002fc5c0` | `MoveAction_Update` | `Human` | 2,000 |
+| `0x002fcd90` | `Move_CornerSpeedLimit` | `Human` | not filled in |
 | `0x002fcf50` | `MoveToHumanAction_Init` | `Human` | 160 |
 | `0x002fdc28` | `TurnAction_Init` | `Human` | 64 |
 | `0x002fdc68` | `TurnAction_Start` | `Human` | 96 |
@@ -1373,10 +1419,21 @@ at the top of the repository's `README.md`.
 | `0x002fe0c8` | `Action_LookAt` | `Human` | 152 |
 | `0x002fe160` | `LookAtAction_Init` | `Human` | 80 |
 | `0x002fe1b0` | `LookAtAction_Update` | `Human` | 152 |
+| `0x002fe380` | `TakeStepAction_Init` | `Human` | not filled in |
+| `0x002fe3a8` | `TakeStepAction_Start` | `Human` | not filled in |
+| `0x002fe3d8` | `TakeStepAction_Abort` | `Human` | not filled in |
+| `0x002fe428` | `TakeStepAction_Update` | `Human` | not filled in |
+| `0x002fe4b0` | `Action_GiveWay` | `Human` | not filled in |
+| `0x002fe568` | `GiveWayAction_Init` | `Human` | not filled in |
+| `0x002fe5d8` | `GiveWayAction_Start` | `Human` | not filled in |
+| `0x002fe658` | `GiveWayAction_Abort` | `Human` | not filled in |
+| `0x002fe6a8` | `GiveWayAction_Destroy` | `Human` | not filled in |
+| `0x002fe6c8` | `GiveWayAction_Update` | `Human` | not filled in |
 | `0x002fee38` | `Objects_GetDistance` | `Human` | not filled in |
 | `0x003035d8` | `PlayerBrain_Update` | `Human` | 944 |
 | `0x00306690` | `Tactic_Start` | `Human` | 328 |
 | `0x003067d8` | `Tactic_Process` | `Human` | 120 |
+| `0x00306850` | `Tactic_End` | `Human` | not filled in |
 | `0x003068f8` | `Tactic_SetCallback` | `Human` | 64 |
 | `0x00306938` | `Tactic_FireCallback` | `Human` | 184 |
 | `0x003075c8` | `TacticAttack_Init` | `Human` | 160 |
@@ -1384,6 +1441,14 @@ at the top of the repository's `README.md`.
 | `0x00307fe0` | `TacticAttack_Start` | `Human` | 232 |
 | `0x003081a8` | `TacticAttack_Process` | `Human` | 720 |
 | `0x00308478` | `TacticAttack_Event` | `Human` | 352 |
+| `0x00309a40` | `Tactic_BossDiegoVargas` | `Human` | not filled in |
+| `0x00309b60` | `BossDiegoVargasTactic_Init` | `Human` | not filled in |
+| `0x00309ea0` | `BossDiegoVargasTactic_AssignGoal` | `Human` | not filled in |
+| `0x0030a150` | `BossDiegoVargasTactic_CheckHealth` | `Human` | not filled in |
+| `0x0030a458` | `BossDiegoVargasTactic_IsAnyBossStanding` | `Human` | not filled in |
+| `0x0030a6c0` | `BossDiegoVargasTactic_Start` | `Human` | not filled in |
+| `0x0030a738` | `BossDiegoVargasTactic_Process` | `Human` | not filled in |
+| `0x0030a798` | `BossDiegoVargasTactic_OnEvent` | `Human` | not filled in |
 | `0x0030e670` | `TacticConfront_Init` | `Human` | 808 |
 | `0x0030ec20` | `TacticConfront_Start` | `Human` | 176 |
 | `0x0030eec0` | `TacticConfront_Process` | `Human` | 1,352 |
@@ -1416,6 +1481,8 @@ at the top of the repository's `README.md`.
 | `0x00336a00` | `QuaternionSlerp` | `Maths (unnamed)` | 440 |
 | `0x00336bb8` | `VectorLerp` | `Maths (unnamed)` | 64 |
 | `0x00336bf8` | `QuaternionNlerp` | `Maths (unnamed)` | 160 |
+| `0x00337308` | `Segment_Intersect2D` | `Maths (unnamed)` | not filled in |
+| `0x003375d0` | `Math_CircleRadius2D` | `Maths (unnamed)` | not filled in |
 | `0x003378b0` | `Math_LargerRoot` | `Maths (unnamed)` | not filled in |
 | `0x00337920` | `RayTriangle_OneSided` | `Maths (unnamed)` | not filled in |
 | `0x00337a60` | `RayTriangle_TwoSided` | `Maths (unnamed)` | not filled in |

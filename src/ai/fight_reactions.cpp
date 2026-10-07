@@ -2,6 +2,7 @@
 #include "ai/fight_reactions.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -15,13 +16,19 @@
 #include "ai/brain.h"
 #include "ai/gangs.h"
 #include "ai/reaction_goals.h"
+#include "ai/script_services.h"
+#include "ai/sectors.h"
 #include "ai/set_command_action.h"
+#include "ai/story_tactics.h"
+#include "ai/tactic_domination.h"
 #include "ai/turn_action.h"
 #include "combat/commands.h"
 #include "combat/player_combat.h"
 #include "human/fighter.h"
 #include "human/human.h"
 #include "human/locomotion.h"
+#include "human/locomotion_gate.h"
+#include "scripting/story_bindings.h"
 
 namespace coney::ai {
 
@@ -44,6 +51,45 @@ constexpr std::int16_t kSpinDelayMs = 0x21;
 // The get-up attack's timing: it comes this long after going down, counted up to the cap, ms.
 constexpr int kGetUpAfterMs = 1900;
 constexpr std::uint64_t kGetUpCapMs = 2000;
+
+// The class whose held man struggles whatever his threat response, with a hurt fraction of 0 (type 221: the dogs).
+constexpr int kDogClass = 221;
+
+// A grabber shows his man to a friendly player this close, metres, for this long, ms.
+constexpr float kPresentRange = 3.0F;
+constexpr std::uint64_t kPresentMs = 3000;
+
+// Whether `brain`'s human is busy (`Human_IsBusy`'s record bits).
+bool busy(const Brain& brain) { return (brain.human().animator().flags() & human::kBusyFlags) != 0; }
+
+// The throw away from something in the grabber's sector `k`: ahead of him (0, 1, 7) behind, on his left (2) right,
+// behind him (3-5) ahead, on his right (6) left.
+GrabMove awayFrom(int k) {
+    switch (wrapSector(k)) {
+    case 2:
+        return GrabMove::Right;
+    case 3:
+    case 4:
+    case 5:
+        return GrabMove::Ahead;
+    case 6:
+        return GrabMove::Left;
+    default:
+        return GrabMove::Behind;
+    }
+}
+
+// One of Grabbing_PickMove's side tests: a sector of the grabber's record or the man's, and the move toward it.
+struct SideTest {
+    bool grabbers;
+    int sector;
+    GrabMove move;
+};
+// In the original's order: behind the man, his right, his left, behind the grabber.
+constexpr std::array<SideTest, 4> kSideTests{{{false, 4, GrabMove::Ahead},
+                                              {false, 6, GrabMove::Left},
+                                              {false, 2, GrabMove::Right},
+                                              {true, 4, GrabMove::Behind}}};
 
 // The brain whose human is `human` among those `brain` knows: its target, its enemies, and those holding attack slots
 // on it or on its target; null when none.
@@ -133,7 +179,26 @@ int getUpDelayMs(std::uint64_t downMs) {
     return std::max(0, kGetUpAfterMs - static_cast<int>(std::min(downMs, kGetUpCapMs)));
 }
 
-void GrabbingGoal::start(Brain& brain) { m_handOver = brain.rand100() < brain.gangFight().handOver * kHandOverPercent; }
+void GrabbingGoal::start(Brain& brain) {
+    m_handOver = brain.rand100() < brain.gangFight().handOver * kHandOverPercent;
+    // A man holding a flag or guarding someone does not hand his man over.
+    if (brain.findGoal(kHoldFlagGoal) != nullptr || brain.findGoal(GoalType::TrackHuman) != nullptr) {
+        m_handOver = false;
+    }
+}
+
+bool GrabbingGoal::presenting(Brain& brain) {
+    const Brain* player = brain.nearestPlayer();
+    if (player == nullptr || !Gangs::friends(player->gang(), brain.gang()) || busy(*player) ||
+        brain.distanceTo(*player) > kPresentRange) {
+        return false;
+    }
+    const std::uint64_t now = brain.nowMs();
+    if (!m_presentUntilMs.has_value()) {
+        m_presentUntilMs = now + kPresentMs;
+    }
+    return now < *m_presentUntilMs;
+}
 
 GoalStatus GrabbingGoal::process(Brain& brain) {
     // 1. Not grabbing: done.
@@ -150,13 +215,15 @@ GoalStatus GrabbingGoal::process(Brain& brain) {
         return GoalStatus::Stop;
     }
     const std::size_t holders = held->attackSlots().size();
+    // 4. Presenting him: a rear grab shown to a friendly player close by, for up to 3 s.
+    const bool shown = fighter.fromRear() && presenting(brain);
     // 5. A front grab with the flag, the man under two or more attackers: spin him into a rear hold for them.
     if (m_handOver && !fighter.fromRear() && holders >= 2) {
         brain.queueAction(std::make_unique<SetCommandAction>(combat::command::kGrabSpin, kSpinDelayMs));
         return GoalStatus::Stop;
     }
-    // 6. A rear grab with the flag holds him up, facing a friend who may hit him.
-    if (m_handOver && fighter.fromRear() && holders != 1) {
+    // 6. A rear grab with the flag, or one shown, holds him up, facing a friend who may hit him.
+    if (fighter.fromRear() && ((m_handOver && holders != 1) || shown)) {
         const Brain* friendHitter = nullptr;
         float best = std::numeric_limits<float>::max();
         for (const bool players : {true, false}) {
@@ -187,7 +254,7 @@ GoalStatus GrabbingGoal::process(Brain& brain) {
     if (*kind == kGrabStrikeKind) {
         queueKind(brain, *kind, brain.rand100() < kDoublePercent);
     } else if (*kind == kThrowKind || *kind == kThrowKind2) {
-        queueKind(brain, *kind, false, grabMoveHeading(grabMoveDirection(brain), brain.human().heading()));
+        queueKind(brain, *kind, false, grabMoveHeading(grabMoveDirection(brain, *held), brain.human().heading()));
     } else {
         queueKind(brain, *kind, false);
     }
@@ -196,7 +263,45 @@ GoalStatus GrabbingGoal::process(Brain& brain) {
 
 void GrabbingGoal::end(Brain& brain) { brain.clearActions(); }
 
-GrabMove grabMoveDirection(Brain& brain) {
+GrabMove grabMoveDirection(Brain& brain, Brain& held) {
+    // Rule 1: away from his HoldFlag goal's flag.
+    if (const auto* hold = static_cast<const HoldFlagGoal*>(brain.findGoal(kHoldFlagGoal)); hold != nullptr) {
+        if (const std::optional<anim::Vec3> flag = hold->point()) {
+            return awayFrom(sectorOf(brain.human(), *flag));
+        }
+    }
+    // Rule 2: into a wall next to them, else into men not his friends.
+    if (brain.human().fighter().victim().powerClass().throwsAtWalls) {
+        Sectors& mine = brain.sectors(kSectorAgeMs);
+        Sectors& his = held.sectors(kSectorAgeMs);
+        for (const bool walls : {true, false}) {
+            std::array<GrabMove, 4> choices{};
+            std::size_t count = 0;
+            for (const SideTest& test : kSideTests) {
+                Sectors& record = test.grabbers ? mine : his;
+                const Brain& owner = test.grabbers ? brain : held;
+                const Sector& sector = record[test.sector];
+                const bool hit = walls ? record.wall(owner, test.sector)
+                                       : sector.nearest != nullptr && sector.nearest != &brain &&
+                                             !Gangs::friends(sector.nearest->gang(), brain.gang());
+                if (hit) {
+                    choices.at(count++) = test.move;
+                }
+            }
+            if (count > 0) {
+                return choices.at(static_cast<std::size_t>(rollRange(brain.random(), 0, static_cast<int>(count) - 1)));
+            }
+        }
+    }
+    // Rule 3: away from the human his gang's Defend tactic defends.
+    if (const Gang* gang = brain.gang(); gang != nullptr && gang->tactic() != nullptr &&
+                                         gang->tactic()->type() == static_cast<int>(script::TacticKind::Defend)) {
+        const auto* defend = static_cast<const DefendTactic*>(gang->tactic());
+        ScriptServices* scripts = gang->owner().scripts();
+        if (const Brain* defended = scripts != nullptr ? scripts->brain(defend->defended()) : nullptr) {
+            return awayFrom(sectorOf(brain.human(), defended->human().position()));
+        }
+    }
     // Rule 4: left, ahead or right.
     return static_cast<GrabMove>(rollRange(brain.random(), 0, 2));
 }
@@ -233,8 +338,9 @@ GoalStatus HeldGoal::process(Brain& brain) {
     if (holder == nullptr || Gangs::friends(holder->gang(), brain.gang())) {
         return GoalStatus::Stop;
     }
-    // 4. With threat response 0 (but for a dealer) he only waits.
-    if (brain.threatResponse() == 0 && brain.type() != BrainType::Dealer) {
+    // 4. With threat response 0 (but for a dealer or a class-221 human) he only waits.
+    const bool dog = brain.characterClass() == kDogClass;
+    if (brain.threatResponse() == 0 && brain.type() != BrainType::Dealer && !dog) {
         return GoalStatus::Stop;
     }
     // 5. The holder is the target.
@@ -256,8 +362,8 @@ GoalStatus HeldGoal::process(Brain& brain) {
     const human::Fighter& fighter = brain.human().fighter();
     const int chain = chainDelayMs(*kind, brain.human().animator().anims());
     if (mounted || *kind == kStruggleKind) {
-        const int delay =
-            struggleDelayMs(chain, fighter.health().fraction(), fighter.victim().powerClass().hurtFraction);
+        const int delay = struggleDelayMs(chain, fighter.health().fraction(),
+                                          dog ? 0.0F : fighter.victim().powerClass().hurtFraction);
         brain.queueAction(std::make_unique<AttackAction>(*kind, static_cast<std::int16_t>(delay)));
     } else {
         const float heading = brain.human().heading();

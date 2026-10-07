@@ -4480,8 +4480,7 @@ Build in this order; each step is testable without the game.
        is walkable, else waypoints with the 0.25 m radius; the corner speed; the stuck test and brain `+0x284`. The
        search mask is `0xff`, and a leg of kind 8 or `0x80` is a climb through the player's `Climb_TryStart`
        ([link kinds](#route-follow)): `level99`'s Vermin crosses a fence that way.
-       Steering round humans ([Steering](#steering)), choke points and [queues](#queues) can follow later: without
-       them AIs only bump.
+       Steering round humans ([Steering](#steering)) is built; choke points and [queues](#queues) can follow later.
     3. **`GoalMoveToFlag`** ([GoalMoveToFlag](#move-to-flag)): offset target, arrival radius, the face-the-flag turn,
        re-planning when a move ends short, flag message 8 and the gang notice in End.
     4. **The turn actions** and `ActLookAt` ([Turning](#look-at)): heading to brain `+0x110`, done within 15° or
@@ -4774,6 +4773,41 @@ human whose last move failed runs straight at
   point in a sector. **Coney choices**: a record never built is always rebuilt (the original's clock is far past 0);
   a player is busy for flag 8 when not standing or with a busy record bit; with no trains, the probe's train test
   never fails.
+- **Steering round humans** (`repo:src/ai/steering.h`, [Steering](#steering)): every move action update, after the
+  route's aim and outside climb, jump and charge legs, `steerAroundHumans` finds the blocker (the 0.63 m disc against
+  the relative 0.75 s step) and passes a standing one 1 m beside him, steps 1 m aside from the contact head-on or
+  overtaking (overtaking only with right of way), goes round behind a crossing one, or yields (stop for an update,
+  match his speed, or 0.75 × for a same-way human off to the side); of two humans heading for the same route node the
+  one held there follows at 0.75 × the other's speed. A steered aim is reached within 0.3 m; speed changes go through
+  the state's override, which the move takes in place of its gait's speed from the next update. The held detour point
+  is the move's own aim, as in the original. The detour raises the turn boost by one while it lasts; a move's start
+  clears it, with the score, the detour's decision count and the slow counter seeded with the human's index. The
+  corner check is `Move_CornerSpeedLimit` as traced (the circle tangent to the facing through the point, 2R tan(ω/2)
+  per update for each gait, stepping down while a gait allows as much), and `Steering_TryDetour` refuses a point whose
+  first ground within 2.1 m below is a triangle with flag `0x10` (`groundProbeBelow`). The sector a standing AI gives
+  way into is chosen (s, s+1, s+2, s−1, s+3, s+4, s−2 from straight off the mover's path, in a record at most 500 ms
+  old). **Coney choices**: the detail level is 0, so a decision is made every update; a speed tie goes to the lower
+  brain slot, and the brain's slot stands for the human's index; the mover's line for giving way is unbounded.
+  **Stand-in**: with no waypoint claims (`Nav_ClaimWaypoint`), "held at the node" (route state `+0x16`) is read as
+  "he is nearer the shared node than I am", the human the claim would keep. **Not yet**: the waypoint claims and
+  queues.
+- **Giving way** (`repo:src/ai/give_way.h`, [Giving way](#giving-way); the step in `repo:src/human/step_control.h`,
+  [Characters: Step control](characters.md#step-control)): `pushAside` (yes while a GiveWay lives, no inside another
+  push-aside, both brains marked for the call) and `giveWayTo` (an AI's or a "dead" brain, no threat either way, the
+  stander idle under his control); the first free sector gets a `GiveWayAction` on the facing + sector × 45° after
+  0-124 ms, dashing (turn boost + 1) from a player at a jog or faster, else the human nearest in each sector is asked
+  in turn. `TakeStepAction` stops the move and enters the human's step control, which waits while he is busy, then
+  plays one clip (the fight stance's shuffle while locked on, the step, or the dash with a boost) holding `0x80000`
+  and turns him to its end facing over half of it; the action ends with the clip. The script's `ActGiveWay` asks a
+  human with fewer than 8 actions to give way to the other along his facing. Callers so far: `ActGiveWay` only.
+  **Coney's readings**: the side clip is the one toward the heading (so a step to the left plays the left clip); the
+  step's heading goes to the step control directly, not through the brain's heading; grabbed, grabbing or in a hold
+  stand for the step's refusing state bits `0x180f3ff0`. **Coney choice**: every abort is the polite one. A
+  finished action is aborted before it is freed (`Action_AbortAndDestroy`), so the boost goes back in Abort alone.
+  **Stand-ins**: the 2 s look at the mover (no head look-ats); the push sphere stays on during the step; a Warrior's
+  `+0x2e5` mode in the threat test; brain flag
+  `+0xcc` bit 2. **Not yet**: the other callers (the route's busy links, `Gang_ClearWayForLeader`,
+  `WarriorBrain_Think`, `SaveHumanGoal_Process`).
 - **Scripted goals**: `MoveToFlagGoal` (offset target, radius, the face-the-flag turn, a new move each time one ends
   short, message 8 and the gang's notice through `FlagServices`), `TurnAction` (look-at, to a point, to a heading;
   15°, 3 s), `PlayDynAnimationGoal` with `PlayAnimAction` (slot 668), `AddressPersonGoal` with `PlayAnimationGoal`
@@ -4797,10 +4831,20 @@ human whose last move failed runs straight at
 - **Formations** (`Formations`, `Formation`, stepped before the gangs): sets of 9 slots in 1/16 m turned by the
   leader's heading, the plan when he stops, every 1 or 2 s or 1 m from the plan point, the nearest follower per
   usable slot, the rest queued nearest-first behind, and the crossing-paths swap.
-- **Tactics** (`Tactic`, stepped by the gangs): started on the first update with the AI members flushed, 2 past the
-  time limit, the callback with (gang id, code); a gang with a tactic gets no fight goal from `GoalFight`.
+- **Tactics** (`Tactic`, stepped by the gangs): started on the first update with each AI member's goal base marked
+  over the goals he has (its goals go on top, and its end pops back down to them), 2 past the time limit, the
+  callback with (gang id, code); a gang with a tactic gets no fight goal from `GoalFight`.
   `TacticCrowd` seats its members (idle and fightless when cheering, spectating 4-6 s when watching), gestures,
   cheers in turn and reacts (a clip, then the cheer) on its tick, on `TacticTrigger` and on violence nearby.
+- **The Diego and Vargas fight** (`BossDiegoVargasTactic`, `repo:src/ai/tactic_boss.h`, `repo:src/ai/boss_goals.h`,
+  [the fight](#boss-diego-vargas)): `TacticBossScenarioA` gives class 120 a `BigBrawlerGoal`, class 119 a
+  `BigThrowerGoal` in stage 2 and a `BigBrawlerGoal` in stage 3, the others `StationaryThrowerGoal`; holds the
+  boss at 67 % and 34 % until he is tired, then starts the break (clips 671, 672, 673) and answers 18 while its
+  clip plays and 1 once it is done. Six hits in the fight push `TiredGoal`, which stuns him for the stage's fatigue
+  or damage limit. An attack warning names the attacker as the peer standing where it was announced (**Coney
+  reading**). **Coney stand-ins**: no object appears in a boss's hand (the throw clip plays alone), the enemy scan is
+  his gang's enemies within sight, the camera turn faces player 1, no event 24 or help call, and each tactic code
+  is answered once.
 - **Disc check (NTSC-U, counts only):** `coney_tests "[disc][routes]"` decodes all 64 levels' path data; 42,373 of the
   43,234 route nodes lie inside the polygon that owns them. Of 500 seeded pairs of `level99`'s 415 nodes, 101 are a
   straight line, 52 routed (200 route nodes), 34 refused (a polygon off the graph), 151 linked only over flag `0x10`
@@ -4815,9 +4859,10 @@ whoever's gangs are not friends (`Humans::setOpposition`); without gangs, the hu
 fight each other, and only the former fight the sandbox's passive targets. A move runs beyond 4 m and lasts 1000 or 2000
 ms (2000 beyond twice the reach). Command `0x11` chains as
 square. A reaction goal clears the actions and the move. The fight reaction goals (grabbing, mounting, grabbed,
-mounted, grounded) are built in `repo:src/ai/fight_reactions.h`; their stand-ins: no trains, no presenting to a
-friendly player, the throw direction only the random left, ahead or right, no help call,
-and a held AI's presses reach no handler (its holder drives it). A block ends when its target is not on its feet
+mounted, grounded) are built in `repo:src/ai/fight_reactions.h`; their stand-ins: no trains, the presenting does not
+test player 1's state 2, the FollowAndDefend that clears the hand-over is TrackHumanGoal, the throw at men who are not
+friends reads the wall rule's four sectors (a Coney reading), no help call, and a held AI's presses reach no handler
+(its holder drives it). A block ends when its target is not on its feet
 (Coney has no state word). Each brain's generator is seeded by its slot.
 A think only counts (the types' think handlers are not traced).
 
@@ -4973,9 +5018,8 @@ within `range` of one of it. Scout melees with members that have enemies. **Stan
 Steal, AvoidEnemies and Scout hold their places, their goals not traced; banter, answering violence, the anim
 substitutions, HoldTheLine's 12 and 14 and Pursue's search time are not built.
 
-**Open in Coney.** The pattern read at Start and in the pick; the reposition's band-keeping move and taunt; the sector
-record; the move's sight checks;
-the steering round humans, choke points and the waypoint queues; the dynamic obstacles; the legs of edges 8, `0x10`,
+**Open in Coney.** The pattern read at Start and in the pick; the reposition's band-keeping move and taunt; the move's
+sight checks; choke points and the waypoint queues; the dynamic obstacles; the legs of edges 8, `0x10`,
 `0x40` and `0x80` (taken as plain walking, with `+0x284` 2 and 4 never set); the move's object to face; the turn clip
 (398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off and the gang's notice; the scene
 system, the dynamic clip slot and clips by id; the head look-ats; the sender of message 1 and its attacker; the gang's

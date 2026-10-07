@@ -25,13 +25,13 @@ The Warriors try to collect a payment owed to them by Sanchez, a Hurricanes asso
 
 ## What it needs {#needs}
 
-Its scripts can call 274 script bindings. 16 of them are new, which no earlier level of the story calls: 14 are
+Its scripts can call 274 script bindings. 16 of them are new, which no earlier level of the story calls: 15 are
 implemented in Coney and 16 are traced. The full list is on [the coverage page](../references/bindings/story.md#level5).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
 | [Characters](../references/bindings/character.md) | 4 | 4 |
-| [AI](../references/bindings/ai.md) | 4 | 2 |
+| [AI](../references/bindings/ai.md) | 4 | 3 |
 | [World and objects](../references/bindings/world.md) | 3 | 3 |
 | [Effects and lighting](../references/bindings/effects.md) | 2 | 2 |
 | [Sound and music](../references/bindings/sound.md) | 2 | 2 |

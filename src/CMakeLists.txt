@@ -245,6 +245,7 @@ target_sources(coney_core PRIVATE
     human/player.cpp
     human/player_trace.cpp
     human/stamina.cpp
+    human/step_control.cpp
     human/strike_shapes.cpp
     human/target_human.cpp
     human/turn_and_slide.cpp
@@ -261,6 +262,7 @@ target_sources(coney_core PRIVATE
     ai/attack_reach.cpp
     ai/attack_views.cpp
     ai/block_goal.cpp
+    ai/boss_goals.cpp
     ai/brain.cpp
     ai/brains.cpp
     ai/dealer_goal.cpp
@@ -274,6 +276,7 @@ target_sources(coney_core PRIVATE
     ai/fight_reactions.cpp
     ai/formations.cpp
     ai/gangs.cpp
+    ai/give_way.cpp
     ai/idle_goals.cpp
     ai/move_action.cpp
     ai/move_to_flag_goal.cpp
@@ -292,9 +295,11 @@ target_sources(coney_core PRIVATE
     ai/scripted_story.cpp
     ai/sectors.cpp
     ai/set_command_action.cpp
+    ai/steering.cpp
     ai/spawners.cpp
     ai/story_goals.cpp
     ai/story_tactics.cpp
+    ai/tactic_boss.cpp
     ai/tactic.cpp
     ai/targeting.cpp
     ai/tactic_attack.cpp

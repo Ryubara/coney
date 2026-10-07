@@ -73,7 +73,7 @@ struct MoveRequest {
 };
 
 /// The speed of gait `gait` for a human of speeds `speeds` (`Human_SpeedForGait`): 1 sneak, 2 walk, 3 jog, 4 run, 5
-/// sprint; any other value walks.
+/// sprint; 0 and any other value give 0 (docs/research/characters.md).
 /// @orig 0x0022ae40 Human_SpeedForGait (unknown)
 [[nodiscard]] float gaitSpeed(const human::Speeds& speeds, int gait);
 
@@ -85,8 +85,8 @@ class MoveAction final : public Action {
     explicit MoveAction(const MoveRequest& request) : Action(request.delayMs), m_request(request) {}
 
     /// Done at once within kMoveNothingToDo of the point. Otherwise the brain's `+0x284` is cleared (**Coney
-    /// choice**), the aim is written to the brain and a route is asked for: none needed, it goes straight; none
-    /// possible, it is done with the brain's `+0x284` set.
+    /// choice**), the steering's detour is reset, the aim is written to the brain and a route is asked for: none
+    /// needed, it goes straight; none possible, it is done with the brain's `+0x284` set.
     /// @orig 0x002fc420 MoveAction_Start (unknown)
     [[nodiscard]] ActionStatus start(Brain& brain) override;
     /// One update: waits while the human is busy; every kStraightCheckSteps updates drops a route whose point is in
@@ -94,7 +94,8 @@ class MoveAction final : public Action {
     /// height); aims at the route's waypoint or the point; turns on the spot while standing more than 30° off; else
     /// goes at the corner speed; done (`+0x284` = 3) when stuck. **Coney choice**: no line of sight is tested
     /// (Coney has none; the original's every-31-updates check that the point is still in sight is not made, and the
-    /// straight check uses the walkable line), and the dynamic obstacles and the steering round humans are not built.
+    /// straight check uses the walkable line), the dynamic obstacles are not built, and a route's climb and jump legs
+    /// are not steered round humans (their aim is the leg's).
     /// @orig 0x002fc5c0 MoveAction_Update (unknown)
     [[nodiscard]] ActionStatus update(Brain& brain) override;
     /// Stops the move; never refused.
@@ -106,12 +107,12 @@ class MoveAction final : public Action {
     [[nodiscard]] bool routed() const { return m_follower.has_value(); }
 
   private:
-    // The speed for the corners ahead: the first and second corner's trial speeds and the braking distance, worked
-    // out again whenever the waypoint changes; the first's beyond the braking distance from the waypoint, within it
-    // the slower of the two (**Coney choice**: the original's reads the second's there, which could speed a human up
-    // into the first corner when the second is gentler).
+    // The speed for the corners ahead, at most `top` (the move's speed this update): the first and second corner's
+    // trial speeds and the braking distance, worked out again whenever the waypoint changes; the first's beyond the
+    // braking distance from the waypoint, within it the slower of the two (**Coney choice**: the original's reads the
+    // second's there, which could speed a human up into the first corner when the second is gentler).
     // @orig 0x002fc158 MoveAction_CornerSpeed (unknown)
-    [[nodiscard]] float cornerSpeed(Brain& brain, anim::Vec3 position);
+    [[nodiscard]] float cornerSpeed(Brain& brain, anim::Vec3 position, float top);
     // The fastest of the trial speeds, from `top` down by kCornerSpeedStep to `floor`, at which a human coming into
     // the corner at `corner` along `in` and turning to `out` at its gait's turn rate stays on the polygons.
     // @orig 0x002fbd18 MoveAction_CornerTrial (unknown)

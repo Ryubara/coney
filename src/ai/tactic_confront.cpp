@@ -68,7 +68,7 @@ void TacticConfront::start(Gang& gang) {
             continue;
         }
         member->setTarget(leader);
-        member->pushGoal(std::make_unique<ConfrontGoal>(distance));
+        member->pushTacticGoal(std::make_unique<ConfrontGoal>(distance));
     }
     m_nextMs = gang.owner().nowMs();
 }

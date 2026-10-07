@@ -6,11 +6,11 @@
 
 #include "ai/tactic.h"
 
-// TacticCrowd: turns a gang into onlookers round a fight. Each member is flushed and given one goal that keeps it in
-// place: an idle goal when the crowd cheers, a spectate goal of 4-6 s when it only watches. A cheering crowd takes no
-// hit reactions and never fights, and every 2 s sends its next member into a cheer; a watching crowd has a free member
-// gesture now and then. TacticTrigger switches the reactions: on demand, every free member cheers (two clips).
-// Research: docs/research/ai.md#tactics
+// TacticCrowd: turns a gang into onlookers round a fight. Each member is given one goal, on top of his own, that keeps
+// it in place: an idle goal when the crowd cheers, a spectate goal of 4-6 s when it only watches. A cheering crowd
+// takes no hit reactions and never fights, and every 2 s sends its next member into a cheer; a watching crowd has a
+// free member gesture now and then. TacticTrigger switches the reactions: on demand, every free member cheers (two
+// clips). Research: docs/research/ai.md#tactics
 
 namespace coney::ai {
 
@@ -32,7 +32,7 @@ class TacticCrowd final : public Tactic {
     /// tick is 2 s after `nowMs`.
     TacticCrowd(std::string callback, bool cheering, std::uint64_t nowMs);
 
-    /// Seats the members (each living one flushed and given its goal); a cheering crowd's members take no hit
+    /// Seats the members (each living one given its goal above his goal base); a cheering crowd's members take no hit
     /// reactions and have threat response 0, and its first cheer is 2 s on. **Coney choices**: the anim substitutions
     /// (cheers for `0x256`, 599 and 668; `0x25c` for watchers), the cheer idles and `0x001695b8` are not built.
     /// @orig 0x0030f6b0 TacticCrowd_Start (unknown)
@@ -59,7 +59,7 @@ class TacticCrowd final : public Tactic {
     [[nodiscard]] int cheerTurn() const { return m_cheerTurn; }
 
   private:
-    // Each living member flushed and given its goal: idle when cheering, else spectate for 4-6 s.
+    // Each living member given its goal above his goal base: idle when cheering, else spectate for 4-6 s.
     // @orig 0x0030f570 TacticCrowd_Seat (unknown)
     void seat(Gang& gang);
     // Each free member with no actions queues its reaction (a clip, then the cheer), when the switch is on or `all`;

@@ -69,6 +69,9 @@ class ScriptServices {
     [[nodiscard]] virtual bool dynamicClipLoaded(const Brain& /*human*/) const { return true; }
     /// Frees `human`'s dynamic slot (`0x0010bcf8`).
     virtual void freeDynamicClip(Brain& /*human*/) {}
+    /// Has `human` say speech command `command` (0-206, `Human_PlaySpeech`); with `interrupt` it cuts off a line he is
+    /// saying, else nothing plays while one does. Nothing without a sound system.
+    virtual void say(Brain& /*human*/, int /*command*/, bool /*interrupt*/) {}
     /// Starts anim `animId` on `human` (`0x0025a3e0`) and returns the record flags (`+0x08`) it holds while it plays;
     /// nothing when it cannot start. By default nothing starts: Coney's humans play no clip by id from outside their
     /// dispatcher yet.

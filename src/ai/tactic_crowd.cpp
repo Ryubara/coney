@@ -125,11 +125,10 @@ void TacticCrowd::seat(Gang& gang) {
         if (member->human().fighter().health().depleted()) {
             continue;
         }
-        member->flush();
         if (m_cheering) {
-            member->pushGoal(std::make_unique<IdleGoal>());
+            member->pushTacticGoal(std::make_unique<IdleGoal>());
         } else {
-            member->pushGoal(std::make_unique<SpectateGoal>(kSpectateMinMs, kSpectateMaxMs));
+            member->pushTacticGoal(std::make_unique<SpectateGoal>(kSpectateMinMs, kSpectateMaxMs));
         }
     }
 }

@@ -128,6 +128,13 @@ TEST_CASE("a CfgPowerClass call fills the fields it gives over a base", "[charac
         std::vector<Value>{Value(2.0), Value(150.0)}, coney::combat::kPlayerPowerClass);
     CHECK(partial.powerMax == 150);
     CHECK(partial.stunMs == coney::combat::kPlayerPowerClass.stunMs);
+    // Argument 22, the throw at walls, clamped 0-1.
+    std::vector<Value> walls = cfgPowerClass(64, 380, 0.25);
+    walls.resize(22, Value(0.0));
+    walls[21] = Value(5.0);
+    CHECK(coney::characters::parseCfgPowerClass(walls, coney::combat::kPlayerPowerClass).throwsAtWalls);
+    walls[21] = Value(0.0);
+    CHECK_FALSE(coney::characters::parseCfgPowerClass(walls, coney::combat::kPlayerPowerClass).throwsAtWalls);
 }
 
 TEST_CASE("a player takes his class's damage, his Warrior's power class and its damage scale", "[characters]") {

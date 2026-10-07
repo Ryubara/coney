@@ -102,6 +102,8 @@ class EngageEnemyGoal final : public Goal {
 
     /// The enemy's handle (the binding's goal; 0 for the fight's).
     [[nodiscard]] double enemy() const { return m_enemy; }
+    /// Sets the run-in distance (`+0x30`, kChargeRange by default): a boss's BigBrawler gives 2.5 m.
+    void setRunIn(float metres) { m_runIn = metres; }
     /// Whether the charge is armed (`+0x35`).
     [[nodiscard]] bool chargeArmed() const { return m_charge; }
 
@@ -115,6 +117,7 @@ class EngageEnemyGoal final : public Goal {
 
     ScriptServices* m_services = nullptr;
     double m_enemy = 0;
+    float m_runIn = kChargeRange;     // +0x30 (as a distance)
     bool m_charge = false;            // +0x35
     int m_chargeKind = kNoAttackKind; // +0x20, the charge's kind
     bool m_boosted = false;           // Start raised the turn boost

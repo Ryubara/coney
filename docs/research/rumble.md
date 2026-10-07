@@ -396,7 +396,8 @@ built yet.
   ([Characters: wheelchair control](characters.md#wheelchair), `repo:src/human/human.h`), while the CPU racer keeps
   its own locomotion. Stand-ins: no start clip or wheelchair clips (the body slides in its idle), commands 46 and 47
   are not added (the control reads the buttons itself), and `DeclareWinner`'s pad lock stops the pushes.
-  `HuSetNoAutoLock` and `CamAssignRevCamButton` are kept, and `ActGiveWay` does nothing.
+  `HuSetNoAutoLock` and `CamAssignRevCamButton` are kept, and `ActGiveWay` makes the human give way to the other
+  ([AI: Giving way](ai.md#giving-way)).
 - **Result screen**, mode 0x14 (`repo:src/gamemodes/rumble_result_mode.h`,
   `repo:src/gui/rumble_mode_gui/rumble_result_menu.h`):
   the world keeps running under it; its choices act through the pause menu's outcomes.
@@ -441,6 +442,5 @@ wheelchair's clips and the give-way action.
   itself is answered in [AI: the search](ai.md#spawner-search).
 - The wheelchair's clips and start (state code 5), and whether the update is 1/30 s or 1/60 s (Coney: no clips, the
   constants per 1/30 s step).
-- What `ActGiveWay`'s action (`0x002fe4b0`) does (Coney: nothing).
 - Mercy is versus only, and Coney has no second player yet; its one-player path (`GoalGrabTarget` on `P21` against
   Mercy) is not reachable from the menus.

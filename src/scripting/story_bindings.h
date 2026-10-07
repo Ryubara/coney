@@ -25,7 +25,7 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addStoryBindings().
-inline constexpr std::array<std::string_view, 84> kStoryBindings{"AddPath",
+inline constexpr std::array<std::string_view, 85> kStoryBindings{"AddPath",
                                                                  "BrSetFOV",
                                                                  "BrSetInvestigateResponse",
                                                                  "BrSetReactToViolence",
@@ -89,6 +89,7 @@ inline constexpr std::array<std::string_view, 84> kStoryBindings{"AddPath",
                                                                  "SetFlagPos",
                                                                  "SetSpawnMax",
                                                                  "TacticAvoidEnemies",
+                                                                 "TacticBossScenarioA",
                                                                  "TacticDefend",
                                                                  "TacticHanginOut",
                                                                  "TacticHoldTheLine",
@@ -178,6 +179,7 @@ enum class TacticKind : std::uint8_t {
     Defend = 0x02,
     HoldTheLine = 0x04,
     ManWeaponPile = 0x06,
+    BossDiegoVargas = 0x0a,
     Pursue = 0x14,
     WalkinTall = 0x15,
     Wander = 0x16,
@@ -191,6 +193,18 @@ enum class TacticKind : std::uint8_t {
     Confront = 0x23,
     Idle = 0x24,
     Scout = 0x27,
+};
+
+/// `TacticBossScenarioA`'s arguments beyond the gang, the two flags (TacticCall::flags) and the callback: the stage and
+/// each boss's tables (index 0 Diego, 1 Vargas; entry k stage k + 1), and the objects Vargas and the minions throw.
+struct BossScenarioCall {
+    int stage = 1;
+    std::array<std::array<int, 3>, 2> fatigue{};
+    std::array<std::array<int, 3>, 2> damage{};
+    std::array<std::array<int, 3>, 2> prone{};
+    std::array<std::array<int, 3>, 2> cycles{};
+    std::array<std::uint16_t, 8> vargasObjects{};
+    std::array<std::uint16_t, 8> minionObjects{};
 };
 
 /// One `Tactic<Name>(gang, ...)` call as its binding reads it: the gang, the kind, the callback and the arguments by
@@ -219,6 +233,7 @@ struct TacticCall {
     std::array<bool, 6> options{};  ///< By kind (kTacticOption*): banter, respond, full aware, harass, loop, ...
     std::vector<std::string> anims; ///< Confront's five posture anims (empty strings for none).
     std::uint32_t spotLine = 135;   ///< Confront's spot line.
+    BossScenarioCall boss;          ///< TacticBossScenarioA.
 };
 
 /// TacticCall::options' meanings.

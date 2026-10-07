@@ -3270,7 +3270,7 @@ events 19 and 22 (OnEvent 0x0030a798); Vargas's stage-3 break count is tactic `+
   `BossDiegoVargasTactic_AssignGoal`
 - **Used by** 1 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TacticBossScenarioB {#tacticbossscenariob}
 

@@ -2,10 +2,12 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 
 #include "ai/goal.h"
 #include "ai/tactic.h"
+#include "animation/anim_math.h"
 
 // TacticDomination: a gang takes and holds the ground round a flag (king of the hill). Each AI member gets the
 // hold-flag goal: run to the flag, stand there, and fight the enemies that come within the tactic's range of it.
@@ -51,6 +53,8 @@ class HoldFlagGoal final : public Goal {
     /// The flag held, and the range.
     [[nodiscard]] double flag() const { return m_flag; }
     [[nodiscard]] float range() const { return m_range; }
+    /// Where the flag stands; nothing when it is gone.
+    [[nodiscard]] std::optional<anim::Vec3> point() const;
 
   private:
     double m_flag;

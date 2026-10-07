@@ -21,7 +21,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 17 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 6 |
 | [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 9 |
-| [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 14 |
+| [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 15 |
 | [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 7 |
 | [`level86`](#level86) | mission 9 | 245 | 17 | 17 | 4 |
 | [`level93`](#level93) | mission 10 | 295 | 24 | 24 | 4 |
@@ -374,7 +374,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level5: mission 7 {#level5}
 
-274 bindings, 16 new: 16 traced, 14 implemented in Coney (266 of all 274).
+274 bindings, 16 new: 16 traced, 15 implemented in Coney (267 of all 274).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -385,7 +385,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`ActTurnTo`](ai.md#actturnto) | AI | traced | confirmed (code) | implemented |
 | [`BrFlushGoals`](ai.md#brflushgoals) | AI | traced | confirmed (code) | implemented |
 | [`GoalRunCarrotRun`](ai.md#goalruncarrotrun) | AI | traced | confirmed (code) | not implemented |
-| [`TacticBossScenarioA`](ai.md#tacticbossscenarioa) | AI | traced | confirmed (code) | not implemented |
+| [`TacticBossScenarioA`](ai.md#tacticbossscenarioa) | AI | traced | confirmed (code) | implemented |
 | [`CarRemovePart`](world.md#carremovepart) | World and objects | traced | confirmed (code) | implemented |
 | [`ConvertJumpToDoor`](world.md#convertjumptodoor) | World and objects | traced | confirmed (code) | implemented |
 | [`ObjEnablePhysics`](world.md#objenablephysics) | World and objects | traced | confirmed (code) | implemented |

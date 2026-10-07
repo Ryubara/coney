@@ -376,10 +376,14 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
         record->tint = word;
         return binding::none();
     });
-    // `ActGiveWay(human, other)`. **Coney stand-in**: the give-way action (`0x002fe4b0`) is not on the page, so the
-    // human stays where it is.
+    // `ActGiveWay(human, other)`: the human steps out of the other's way (docs/research/ai.md#giving-way).
     // @orig 0x003648a0 ActGiveWay (unknown)
-    vm.registerFunction("ActGiveWay", [](std::span<const Value> /*args*/) { return binding::none(); });
+    vm.registerFunction("ActGiveWay", [context = &context](std::span<const Value> args) {
+        if (AiBindingHost* ai = context->ai; ai != nullptr) {
+            ai->actGiveWay(handleArg(args, 0), handleArg(args, 1));
+        }
+        return binding::none();
+    });
     // `TacticDomination(gang, flag, range, callback)`: range defaults to 3 m; a nil callback is none.
     // @orig 0x00316b30 Tactic_Domination (unknown)
     vm.registerFunction("TacticDomination", [context = &context](std::span<const Value> args) {

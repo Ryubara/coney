@@ -3806,6 +3806,11 @@ subsystem = "Human"
 size = 200
 
 [[function]]
+address = 0x00222a48
+name = "Human_IsThreatTo"
+subsystem = "Human"
+
+[[function]]
 address = 0x00222ba8
 name = "Human_WarriorPowerClassOfType"
 subsystem = "Human"
@@ -3866,6 +3871,11 @@ subsystem = "Human"
 size = 1832
 
 [[function]]
+address = 0x00225390
+name = "Human_IsIdleUnderControl"
+subsystem = "Human"
+
+[[function]]
 address = 0x00226448
 name = "Human_SpendPower"
 subsystem = "Human"
@@ -3878,8 +3888,18 @@ subsystem = "Human"
 size = 192
 
 [[function]]
+address = 0x002274a8
+name = "Humans_FindAhead"
+subsystem = "Human"
+
+[[function]]
 address = 0x00227d28
 name = "Human_IsInSceneState"
+subsystem = "Human"
+
+[[function]]
+address = 0x00228448
+name = "Human_HasHeld20080000"
 subsystem = "Human"
 
 [[function]]
@@ -4771,6 +4791,21 @@ subsystem = "Human"
 size = 1272
 
 [[function]]
+address = 0x002432b0
+name = "Human_EnterStepControl"
+subsystem = "Human"
+
+[[function]]
+address = 0x00243360
+name = "Human_LeaveStepControl"
+subsystem = "Human"
+
+[[function]]
+address = 0x00243420
+name = "Human_StepControl"
+subsystem = "Human"
+
+[[function]]
 address = 0x00243848
 name = "Human_UpdateControl"
 subsystem = "Human"
@@ -4816,6 +4851,11 @@ subsystem = "Human"
 [[function]]
 address = 0x00248df0
 name = "Human_Lean"
+subsystem = "Human"
+
+[[function]]
+address = 0x00249050
+name = "Ground_ProbeBelow"
 subsystem = "Human"
 
 [[function]]
@@ -5477,6 +5517,66 @@ subsystem = "Human"
 size = 1480
 
 [[function]]
+address = 0x00288ad0
+name = "Steering_Clear"
+subsystem = "Human"
+
+[[function]]
+address = 0x00288b70
+name = "Steering_SetAvoiding"
+subsystem = "Human"
+
+[[function]]
+address = 0x00288be0
+name = "Steering_SideSign"
+subsystem = "Human"
+
+[[function]]
+address = 0x00288cb0
+name = "Steering_SetSpeed"
+subsystem = "Human"
+
+[[function]]
+address = 0x00288cc8
+name = "Steering_FindBlocker"
+subsystem = "Human"
+
+[[function]]
+address = 0x00288f40
+name = "Steering_ClampStep"
+subsystem = "Human"
+
+[[function]]
+address = 0x00289010
+name = "Steering_TryDetour"
+subsystem = "Human"
+
+[[function]]
+address = 0x002890a8
+name = "Steering_ResetAvoidance"
+subsystem = "Human"
+
+[[function]]
+address = 0x00289138
+name = "Human_SteerAroundHumans"
+subsystem = "Human"
+
+[[function]]
+address = 0x00289d68
+name = "Steering_RayHitsHuman"
+subsystem = "Human"
+
+[[function]]
+address = 0x00289ed0
+name = "Brain_GiveWayTo"
+subsystem = "Human"
+
+[[function]]
+address = 0x0028a248
+name = "Brain_PushAside"
+subsystem = "Human"
+
+[[function]]
 address = 0x0028abc0
 name = "Brain_CanBeChased"
 subsystem = "Human"
@@ -5542,6 +5642,16 @@ address = 0x0028d7d8
 name = "Brain_PopGoal"
 subsystem = "Human"
 size = 200
+
+[[function]]
+address = 0x0028d8a0
+name = "Brain_MarkGoalBase"
+subsystem = "Human"
+
+[[function]]
+address = 0x0028d8c0
+name = "Brain_PopToGoalBase"
+subsystem = "Human"
 
 [[function]]
 address = 0x0028d910
@@ -5878,6 +5988,11 @@ size = 856
 [[function]]
 address = 0x0029ade0
 name = "Route_JumpArc"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029b248
+name = "RouteState_CurrentNode"
 subsystem = "Human"
 
 [[function]]
@@ -6796,6 +6911,111 @@ subsystem = "Human"
 size = 4000
 
 [[function]]
+address = 0x002e7970
+name = "TiredGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e7a68
+name = "TiredGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e7b30
+name = "TiredGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e7c18
+name = "TiredGoal_StartBreak"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e7da8
+name = "TiredGoal_EndBreak"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e7e68
+name = "TiredGoal_IsBreakDone"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e7f50
+name = "TiredGoal_Process"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e8288
+name = "BigBrawlerGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e8418
+name = "BigBrawlerGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e8530
+name = "BigBrawlerGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e8620
+name = "BigBrawlerGoal_AdjustEnemyScore"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e8818
+name = "BigBrawlerGoal_GetFatigueMs"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e8830
+name = "BigBrawlerGoal_GetDamagePercent"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e8840
+name = "BigBrawlerGoal_SetStage"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e8858
+name = "BigBrawlerGoal_OnAttackWarning"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e8bc8
+name = "BigBrawlerGoal_OnHit"
+subsystem = "Human"
+
+[[function]]
+address = 0x002e8f78
+name = "BigBrawlerGoal_Process"
+subsystem = "Human"
+
+[[function]]
+address = 0x002ed0a8
+name = "BigThrowerGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002ed168
+name = "BigThrowerGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002ed260
+name = "BigThrowerGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002ed718
+name = "BigThrowerGoal_Process"
+subsystem = "Human"
+
+[[function]]
 address = 0x002eee50
 name = "Goal_StationaryThrower"
 subsystem = "Human"
@@ -6812,6 +7032,11 @@ address = 0x002ef2c0
 name = "StationaryThrowerGoal_Process"
 subsystem = "Human"
 size = 1256
+
+[[function]]
+address = 0x002f9de0
+name = "Action_AbortAndDestroy"
+subsystem = "Human"
 
 [[function]]
 address = 0x002fa5a0
@@ -6895,6 +7120,11 @@ subsystem = "Human"
 size = 2000
 
 [[function]]
+address = 0x002fcd90
+name = "Move_CornerSpeedLimit"
+subsystem = "Human"
+
+[[function]]
 address = 0x002fcf50
 name = "MoveToHumanAction_Init"
 subsystem = "Human"
@@ -6955,6 +7185,56 @@ subsystem = "Human"
 size = 152
 
 [[function]]
+address = 0x002fe380
+name = "TakeStepAction_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002fe3a8
+name = "TakeStepAction_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002fe3d8
+name = "TakeStepAction_Abort"
+subsystem = "Human"
+
+[[function]]
+address = 0x002fe428
+name = "TakeStepAction_Update"
+subsystem = "Human"
+
+[[function]]
+address = 0x002fe4b0
+name = "Action_GiveWay"
+subsystem = "Human"
+
+[[function]]
+address = 0x002fe568
+name = "GiveWayAction_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002fe5d8
+name = "GiveWayAction_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002fe658
+name = "GiveWayAction_Abort"
+subsystem = "Human"
+
+[[function]]
+address = 0x002fe6a8
+name = "GiveWayAction_Destroy"
+subsystem = "Human"
+
+[[function]]
+address = 0x002fe6c8
+name = "GiveWayAction_Update"
+subsystem = "Human"
+
+[[function]]
 address = 0x002fee38
 name = "Objects_GetDistance"
 subsystem = "Human"
@@ -6976,6 +7256,11 @@ address = 0x003067d8
 name = "Tactic_Process"
 subsystem = "Human"
 size = 120
+
+[[function]]
+address = 0x00306850
+name = "Tactic_End"
+subsystem = "Human"
 
 [[function]]
 address = 0x003068f8
@@ -7018,6 +7303,46 @@ address = 0x00308478
 name = "TacticAttack_Event"
 subsystem = "Human"
 size = 352
+
+[[function]]
+address = 0x00309a40
+name = "Tactic_BossDiegoVargas"
+subsystem = "Human"
+
+[[function]]
+address = 0x00309b60
+name = "BossDiegoVargasTactic_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x00309ea0
+name = "BossDiegoVargasTactic_AssignGoal"
+subsystem = "Human"
+
+[[function]]
+address = 0x0030a150
+name = "BossDiegoVargasTactic_CheckHealth"
+subsystem = "Human"
+
+[[function]]
+address = 0x0030a458
+name = "BossDiegoVargasTactic_IsAnyBossStanding"
+subsystem = "Human"
+
+[[function]]
+address = 0x0030a6c0
+name = "BossDiegoVargasTactic_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x0030a738
+name = "BossDiegoVargasTactic_Process"
+subsystem = "Human"
+
+[[function]]
+address = 0x0030a798
+name = "BossDiegoVargasTactic_OnEvent"
+subsystem = "Human"
 
 [[function]]
 address = 0x0030e670
@@ -7195,6 +7520,16 @@ address = 0x00336bf8
 name = "QuaternionNlerp"
 subsystem = "Maths (unnamed)"
 size = 160
+
+[[function]]
+address = 0x00337308
+name = "Segment_Intersect2D"
+subsystem = "Maths (unnamed)"
+
+[[function]]
+address = 0x003375d0
+name = "Math_CircleRadius2D"
+subsystem = "Maths (unnamed)"
 
 [[function]]
 address = 0x003378b0

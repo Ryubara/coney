@@ -300,7 +300,7 @@ void Gangs::setTactic(int id, std::unique_ptr<Tactic> tactic) {
         return;
     }
     if (gang->m_tactic != nullptr) {
-        gang->m_tactic->end(*gang);
+        gang->m_tactic->finish(*gang);
         // Freed at the end of the next update, as the original queues it: a tactic may be replaced from its own
         // callback.
         m_retired.push_back(std::move(gang->m_tactic));

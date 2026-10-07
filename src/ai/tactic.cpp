@@ -12,14 +12,15 @@ namespace coney::ai {
 
 int Tactic::process(Gang& gang) {
     const std::uint64_t now = gang.owner().nowMs();
-    // The start, on the first process: the limit made absolute, every AI member flushed (its move stopped with it).
+    // The start, on the first process: the limit made absolute; every AI member's goal base marked over the goals he
+    // has (a script's goal given in the same step stays under the tactic's) and his target dropped. Nothing is popped.
     if (!m_started) {
         m_endsAtMs = m_timeLimitMs < 0 ? std::numeric_limits<std::uint64_t>::max()
                                        : now + static_cast<std::uint64_t>(m_timeLimitMs);
         for (Brain* member : gang.members()) {
             if (member->type() != BrainType::Player) {
-                member->flush();
-                member->stopMove();
+                member->markGoalBase();
+                member->setTarget(nullptr);
             }
         }
         start(gang);
@@ -29,6 +30,16 @@ int Tactic::process(Gang& gang) {
         return 2;
     }
     return update(gang);
+}
+
+void Tactic::finish(Gang& gang) {
+    end(gang);
+    // Every AI member back down to his goal base: the tactic's goals and any pushed since its start go.
+    for (Brain* member : gang.members()) {
+        if (member->type() != BrainType::Player) {
+            member->popToGoalBase();
+        }
+    }
 }
 
 void Tactic::fireCallback(Gang& gang, int code) {

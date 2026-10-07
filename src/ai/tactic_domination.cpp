@@ -57,11 +57,19 @@ void assignGoals(Gang& gang, double flag, float range, FlagServices& flags) {
             member->findGoal(kHoldFlagGoal) != nullptr) {
             continue;
         }
-        member->pushGoal(std::make_unique<HoldFlagGoal>(flag, range, flags, gang.owner()));
+        member->pushTacticGoal(std::make_unique<HoldFlagGoal>(flag, range, flags, gang.owner()));
     }
 }
 
 } // namespace
+
+std::optional<anim::Vec3> HoldFlagGoal::point() const {
+    const std::optional<world_objects::Placement> placement = m_flags->flag(m_flag);
+    if (!placement) {
+        return std::nullopt;
+    }
+    return anim::Vec3{placement->position[0], placement->position[1], placement->position[2]};
+}
 
 GoalStatus HoldFlagGoal::process(Brain& brain) {
     const std::optional<world_objects::Placement> placement = m_flags->flag(m_flag);

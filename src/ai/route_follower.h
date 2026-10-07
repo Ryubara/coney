@@ -58,6 +58,11 @@ class RouteFollower {
     void passWaypoint(const RoutePlanner& planner, anim::Vec3 position) { moveOn(planner, position, true); }
     /// Whether the destination is the waypoint (the route is freed).
     [[nodiscard]] bool onLastLeg() const { return m_index + 1 >= m_points.size(); }
+    /// The route node of the current waypoint; nothing once the destination is the waypoint.
+    /// @orig 0x0029b248 RouteState_CurrentNode (unknown)
+    [[nodiscard]] std::optional<std::uint32_t> currentNode() const {
+        return m_index < m_nodes.size() ? std::optional<std::uint32_t>{m_nodes[m_index]} : std::nullopt;
+    }
 
   private:
     // Moves on: past a reached waypoint, then past each one the human can skip.

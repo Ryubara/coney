@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "ai/brain.h"
+#include "ai/steering.h"
 #include "human/locomotion.h"
 
 namespace coney::ai {
@@ -44,6 +45,8 @@ float gaitSpeed(const human::Speeds& speeds, int gait) {
     switch (gait) {
     case 1:
         return speeds.sneak;
+    case 2:
+        return speeds.walk;
     case 3:
         return speeds.jog;
     case 4:
@@ -51,7 +54,7 @@ float gaitSpeed(const human::Speeds& speeds, int gait) {
     case 5:
         return speeds.sprint;
     default:
-        return speeds.walk;
+        return 0.0F; // gait 0 stands, and the original gives 0 for any other value too
     }
 }
 
@@ -62,6 +65,7 @@ ActionStatus MoveAction::start(Brain& brain) {
         return finish(brain);
     }
     brain.setMoveFailure(MoveFailure::None);
+    resetAvoidance(brain);
     brain.setMoveAim(m_request.point, m_request.radius);
     m_stuckFrom = position;
     RoutePlanner* planner = brain.planner();
@@ -109,6 +113,8 @@ ActionStatus MoveAction::update(Brain& brain) {
     }
     ++m_updates;
     const anim::Vec3 position = human.position();
+    // The move's speed this update: its gait's, or the steering's override while it runs (set on an earlier update).
+    const float moveSpeed = brain.steering().speedOverride().value_or(gaitSpeed(human.speeds(), m_request.gait));
     // 2. Now and then, a route whose point has come into a straight line is dropped.
     RoutePlanner* planner = brain.planner();
     // Not near a jump leg, which the straight line would cut across.
@@ -129,9 +135,23 @@ ActionStatus MoveAction::update(Brain& brain) {
         aim = m_follower->waypoint(*planner, position, human.speed());
         aimRadius = m_follower->onLastLeg() ? m_request.radius : kWaypointRadius;
     }
+    brain.setRouteNode(m_follower ? m_follower->currentNode() : std::nullopt);
     brain.setMoveAim(aim, aimRadius);
     if (const std::optional<ActionStatus> leg = followLeg(brain, position, aim)) {
         return *leg;
+    }
+    // 6. The steering round other humans may bend the aim (arriving within kSteerAimRadius) or set a speed for the
+    // updates to come. Never on a charge leg: the original's follower returns before the steering there (Coney walks
+    // the charge, which is not built).
+    const bool chargeLeg = m_follower && !m_follower->onLastLeg() && (m_follower->legKind() & edge_flag::kCharge) != 0;
+    if (const std::optional<anim::Vec3> steered =
+            chargeLeg ? std::nullopt
+                      : steerAroundHumans(brain, SteerRequest{.moveSpeed = moveSpeed,
+                                                              .aim = aim,
+                                                              .destination = m_request.point,
+                                                              .arrivalRadius = m_request.radius})) {
+        aim = *steered;
+        brain.setMoveAim(aim, kSteerAimRadius);
     }
     const anim::Vec3 way = anim::subtract(aim, position);
     const float heading = std::hypot(way.x, way.y) > 1e-4F ? human::headingOf(way) : human.heading();
@@ -142,7 +162,7 @@ ActionStatus MoveAction::update(Brain& brain) {
         m_stuckFrom = position;
         return ActionStatus::Running;
     }
-    brain.setMoveHeading(heading, cornerSpeed(brain, position));
+    brain.setMoveHeading(heading, cornerSpeed(brain, position, moveSpeed));
     // 9. Stuck.
     if (stuck(position)) {
         brain.setMoveFailure(MoveFailure::Stuck);
@@ -188,12 +208,12 @@ std::optional<ActionStatus> MoveAction::followLeg(Brain& brain, anim::Vec3 posit
 
 bool MoveAction::abort(Brain& brain) {
     brain.stopMove();
+    brain.setRouteNode(std::nullopt);
     return true;
 }
 
-float MoveAction::cornerSpeed(Brain& brain, anim::Vec3 position) {
+float MoveAction::cornerSpeed(Brain& brain, anim::Vec3 position, float top) {
     const human::Speeds& speeds = brain.human().speeds();
-    const float top = gaitSpeed(speeds, m_request.gait);
     if (!m_follower || brain.planner() == nullptr) {
         return top;
     }
@@ -277,6 +297,7 @@ bool MoveAction::stuck(anim::Vec3 position) {
 
 ActionStatus MoveAction::finish(Brain& brain) {
     brain.stopMove();
+    brain.setRouteNode(std::nullopt);
     return ActionStatus::Done;
 }
 

@@ -903,6 +903,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("StartRoomSmoke"),
     // The story's second and third missions (story_bindings.h).
     real("TacticAvoidEnemies"),
+    real("TacticBossScenarioA"),
     real("TacticDefend"),
     real("TacticHanginOut"),
     real("TacticHoldTheLine"),

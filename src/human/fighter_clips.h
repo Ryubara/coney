@@ -68,6 +68,23 @@ inline constexpr std::uint32_t kReleaseHitReact = 331;   ///< `ANIM_ARREST_RELEA
 inline constexpr std::uint32_t kReleaseEnd = 332;        ///< `ANIM_ARREST_RELEASE_END`: the freer's end.
 inline constexpr std::uint32_t kReleaseEndReact = 333;   ///< `ANIM_ARREST_RELEASE_END_REACT`: the freed human's end.
 inline constexpr std::uint32_t kBlockShuffle = 607;
+/// The step control's clips (docs/research/characters.md#step-control): in the fight stance 364 left, 365 right, 366
+/// forward, 367 backward; otherwise the steps 399 left, 400 right, 401 forward, 402 backward, or with a turn boost
+/// above 0 the dashes 403 forward, 404 backward, 405 left, 406 right.
+inline constexpr std::uint32_t kStanceStepLeft = 364;
+inline constexpr std::uint32_t kStanceStepRight = 365;
+inline constexpr std::uint32_t kStanceStepForward = 366;
+inline constexpr std::uint32_t kStanceStepBackward = 367;
+inline constexpr std::uint32_t kStepLeft = 399;
+inline constexpr std::uint32_t kStepRight = 400;
+inline constexpr std::uint32_t kStepForward = 401;
+inline constexpr std::uint32_t kStepBackward = 402;
+inline constexpr std::uint32_t kDashForward = 403;
+inline constexpr std::uint32_t kDashBackward = 404;
+inline constexpr std::uint32_t kDashLeft = 405;
+inline constexpr std::uint32_t kDashRight = 406;
+/// What a step clip holds on the record `+0x08` while it plays.
+inline constexpr std::uint32_t kStepHeld = 0x80000;
 
 /// What the player's moves hold on the record `+0x08` while their clips play (docs/research/tasks.md#held-flags).
 /// An attack holds its phases and starts in its wind-up, as `Attack_Start` builds it; the grab's and tackle's clips the

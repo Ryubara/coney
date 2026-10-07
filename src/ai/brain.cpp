@@ -40,6 +40,22 @@ Brain::Brain(human::Human& human, BrainType type, const FightSettings& settings,
 
 Brain::~Brain() = default;
 
+// The brain whose human stands at `position` (the announced attacker); null when none does. **Coney reading**: the
+// announcement carries the attacker's position, so the attacker is the peer standing there (the boss counters answer
+// him, docs/research/ai.md#boss-diego-vargas).
+Brain* Brain::announcer(anim::Vec3 position) const {
+    if (m_peers == nullptr) {
+        return nullptr;
+    }
+    constexpr float kSamePlace = 1e-3F;
+    for (const std::unique_ptr<Brain>& peer : *m_peers) {
+        if (peer.get() != this && anim::distance(peer->human().position(), position) <= kSamePlace) {
+            return peer.get();
+        }
+    }
+    return nullptr;
+}
+
 void Brain::update(std::uint64_t nowMs) {
     m_nowMs = nowMs;
     // The attacks announced since the last update that this brain's range and field of view take in: events 0x10,
@@ -52,7 +68,7 @@ void Brain::update(std::uint64_t nowMs) {
             distance > 1e-4F ? std::fabs(human::wrapAngle(human::headingOf(to) - m_human->heading())) : 0.0F;
         if (distance <= m_sightRange && off <= m_fieldOfView &&
             lineOfSight(m_collision, m_human->position(), attacker).clear) {
-            deliverEvent(*this, BrainEvent{.id = kEventAttackWarning});
+            deliverEvent(*this, BrainEvent{.id = kEventAttackWarning, .other = announcer(attacker)});
         }
     }
     // The player's brain only keeps books (Brains does them for every player brain at once), unless it is dead; a
@@ -150,6 +166,44 @@ void Brain::clearGoals() {
     }
 }
 
+Brain* Brain::nearestPlayer() const {
+    Brain* best = nullptr;
+    float bestDistance = 0.0F;
+    if (m_peers == nullptr) {
+        return nullptr;
+    }
+    for (const std::unique_ptr<Brain>& peer : *m_peers) {
+        if (peer.get() == this || peer->type() != BrainType::Player) {
+            continue;
+        }
+        const float d = distanceTo(*peer);
+        if (best == nullptr || d < bestDistance) {
+            best = peer.get();
+            bestDistance = d;
+        }
+    }
+    return best;
+}
+
+void Brain::markGoalBase() {
+    if (!m_goals.empty()) {
+        m_goalBase = static_cast<int>(m_goals.size()) - 1;
+    }
+}
+
+void Brain::popToGoalBase() {
+    while (static_cast<int>(m_goals.size()) - 1 > m_goalBase) {
+        popGoal();
+    }
+    m_goalBase = -1;
+}
+
+bool Brain::pushTacticGoal(std::unique_ptr<Goal> goal) {
+    popToGoalBase();
+    markGoalBase();
+    return pushGoal(std::move(goal));
+}
+
 Goal* Brain::findGoal(GoalType type) {
     for (auto it = m_goals.rbegin(); it != m_goals.rend(); ++it) {
         if ((*it)->type() == type) {
@@ -177,13 +231,21 @@ void Brain::popAction() {
     --m_actionCount;
 }
 
-void Brain::clearActions() {
+void Brain::finishAction(Action& action) {
+    // A finished action is still aborted before it is freed, so its Abort undoes what its Start did however it ends;
+    // its answer is ignored.
+    static_cast<void>(action.abort(*this));
+    popAction();
+}
+
+bool Brain::clearActions() {
     while (m_actionCount > 0) {
         if (!m_actions[m_actionFront]->abort(*this)) {
-            return;
+            return false;
         }
         popAction();
     }
+    return true;
 }
 
 Action* Brain::frontAction() { return m_actionCount == 0 ? nullptr : m_actions[m_actionFront].get(); }
@@ -266,12 +328,12 @@ void Brain::runActions() {
         }
         action->m_started = true;
         if (action->start(*this) == ActionStatus::Done) {
-            popAction();
+            finishAction(*action);
             return;
         }
     }
     if (action->update(*this) == ActionStatus::Done) {
-        popAction();
+        finishAction(*action);
     }
 }
 
@@ -333,7 +395,7 @@ void Brain::addEnemy(Brain& enemy) {
         enemy.listEnemy(*this);
     }
     // A tactic that runs its members hears of the new enemy.
-    if (m_gang != nullptr && m_gang->tactic() != nullptr && !m_gang->tactic()->keepsOwnGoals()) {
+    if (m_gang != nullptr && m_gang->tactic() != nullptr && !m_gang->tactic()->alertsGang()) {
         m_gang->tactic()->event(*m_gang, *this, BrainEvent{.id = kEventEnemyAdded, .other = &enemy});
     }
 }
@@ -532,6 +594,10 @@ void Brain::forget(const Brain& other) {
     std::erase(m_enemies, &other);
     std::erase(m_slots, &other);
     m_sectors.forget(other);
+    // A detour round him ends.
+    if (m_steering.avoiding == &other) {
+        setAvoiding(*this, nullptr);
+    }
 }
 
 Sectors& Brain::sectors(std::uint64_t maxAgeMs) {

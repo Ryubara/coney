@@ -13,6 +13,7 @@
 #include "ai/address_person_goal.h"
 #include "ai/dealer_goal.h"
 #include "ai/engage_goals.h"
+#include "ai/give_way.h"
 #include "ai/pedestrian_goal.h"
 #include "ai/play_dyn_animation_goal.h"
 #include "ai/scripted_hub.h"
@@ -24,6 +25,8 @@
 #include "ai/track_human_goal.h"
 #include "ai/turn_action.h"
 #include "combat/meters.h"
+#include "human/human.h"
+#include "human/locomotion.h"
 #include "scripting/anim_callbacks.h"
 #include "scripting/lua_value.h"
 #include "scripting/message_handlers.h"
@@ -150,6 +153,20 @@ void ScriptedBrains::actTurnTo(const script::TurnToCall& call) {
         found->queueAction(
             TurnAction::toPoint(anim::Vec3{call.point[0], call.point[1], call.point[2]}, call.delayMs, call.turn));
     }
+}
+
+void ScriptedBrains::actGiveWay(double human, double other) {
+    if (held([this, human, other] { actGiveWay(human, other); })) {
+        return;
+    }
+    Brain* stander = named(human);
+    Brain* mover = named(other);
+    if (stander == nullptr || mover == nullptr || stander == mover || stander->actionCount() >= kGiveWayQueueLimit) {
+        return;
+    }
+    // The mover's position is the point, his forward axis the step.
+    const human::Human& body = mover->human();
+    static_cast<void>(pushAside(*mover, *stander, body.position(), human::facing(body.heading())));
 }
 
 void ScriptedBrains::goalFight(double human, double target) {

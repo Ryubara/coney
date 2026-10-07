@@ -20,6 +20,7 @@
 #include "human/body.h"
 #include "human/fighter_clips.h"
 #include "human/jump.h"
+#include "human/step_control.h"
 #include "world_objects/pickups.h"
 
 namespace coney::human {
@@ -723,6 +724,56 @@ void Human::turnOverClip(std::uint32_t clip, anim::Vec3 point, float share) {
     m_clipTurn = ClipTurn{.clip = clip, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
 }
 
+bool Human::enterStepControl(float heading, int boost) {
+    if (m_stepRequest || m_fighter.grabbed() || m_fighter.holdAttached() || m_fighter.holdState().has_value()) {
+        return false;
+    }
+    m_stepRequest = StepRequest{.heading = wrapAngle(heading), .boost = boost};
+    return true;
+}
+
+bool Human::stepHeld() const {
+    constexpr std::uint32_t kStepOrTurnHeld = 0x20080000;
+    return (m_animator.flags() & kStepOrTurnHeld) != 0;
+}
+
+bool Human::idleUnderControl() const {
+    return !m_outOfWorld && !m_airborne && !m_climbRun && !hasFlag(flag::kWheelchair) &&
+           !m_fighter.holdsMovement(m_animator) && !m_fighter.grabbed() && !m_fighter.holdAttached() &&
+           !m_fighter.holdState().has_value() && m_animator.flags() == 0;
+}
+
+bool Human::runStepControl() {
+    // The control moves nothing itself: the clip's root motion does.
+    m_velocity = anim::Vec3{0.0F, 0.0F, m_velocity.z};
+    // Waits while the human is busy, held by combat, wounded, or anything is held on the record.
+    if (stickBusy(gateInput()) || m_fighter.holdsMovement(m_animator) || m_script.wounded || m_animator.flags() != 0) {
+        return true;
+    }
+    // The clip toward the heading, then the idle (the fight idle in the stance), holding the step bit while it
+    // plays; it fades in over 0.2 s.
+    constexpr float kStepFade = 0.2F;
+    const bool stance = m_fighter.lockTarget() != nullptr;
+    const StepClip step = stepClipFor(m_stepRequest->heading, m_heading, stance, m_stepRequest->boost);
+    m_stepRequest.reset();
+    const anim::AnimClip* found = m_animator.anims().clip(step.clip);
+    if (found == nullptr) {
+        return true;
+    }
+    m_animator.playCombat(clips::one(step.clip), stance ? kAnimFightIdle : clips::kIdle, AnimState::Attack, kStepFade,
+                          HeldFlags{.held = clips::kStepHeld, .set = clips::kStepHeld});
+    // The turn to the end facing, at a constant rate over half the clip's play time; under 0.01 rad, none.
+    constexpr float kMinTurn = 0.01F;
+    const float turn = wrapAngle(step.endFacing - m_heading);
+    if (std::fabs(turn) >= kMinTurn) {
+        const float rate = m_animator.anims().rate(step.clip) > 0.0F ? m_animator.anims().rate(step.clip) : 1.0F;
+        const int updates = std::max(1, static_cast<int>(std::lround(found->duration / rate * 0.5F / m_stepSeconds)));
+        m_clipTurn =
+            ClipTurn{.clip = step.clip, .updatesLeft = updates, .turnStep = turn / static_cast<float>(updates)};
+    }
+    return true;
+}
+
 bool Human::startTagSpray(anim::Vec3 point) {
     if (m_animator.clip(clips::kTaggingIntro) == nullptr) {
         return false;
@@ -1199,6 +1250,8 @@ void Human::updateState(const raycast::CollisionMesh* mesh) {
         if (m_jumping) {
             airControl();
         }
+    } else if (m_stepRequest && runStepControl()) {
+        // The step control holds this update: it waits for the human to be free, or has just played the step.
     } else if (wheelchair) {
         // A pad-driven human in a wheelchair runs its control instead; a brain-driven one keeps its own.
         wheelchairControl(movementHeld);

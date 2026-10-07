@@ -89,6 +89,11 @@ class Victim {
     void stun(std::uint64_t nowMs);
     /// Forgets the stun and the ground (a hold takes it, it got up another way).
     void clear();
+    /// Stunned until `untilMs`, the class's stun time aside (a boss's tired window).
+    void stunUntil(std::uint64_t untilMs) {
+        m_stunUntilMs = untilMs;
+        m_stunExitPending = false;
+    }
     /// Forgets the stun only.
     void endStun() {
         m_stunUntilMs = 0;

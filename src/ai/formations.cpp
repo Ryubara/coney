@@ -10,6 +10,7 @@
 
 #include "ai/brain.h"
 #include "ai/route_planner.h"
+#include "ai/steering.h"
 #include "human/locomotion.h"
 
 namespace coney::ai {
@@ -30,14 +31,6 @@ float planDistanceSquared(anim::Vec3 a, anim::Vec3 b) {
     const float dx = b.x - a.x;
     const float dy = b.y - a.y;
     return dx * dx + dy * dy;
-}
-
-// The z of the 2D cross product of (b - a) and (c - a): its sign says which side of a-b c lies on.
-float side(anim::Vec3 a, anim::Vec3 b, anim::Vec3 c) { return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x); }
-
-// Whether segments p1-p2 and q1-q2 cross in plan (touching does not count), as `0x00337308` asks.
-bool cross(anim::Vec3 p1, anim::Vec3 p2, anim::Vec3 q1, anim::Vec3 q2) {
-    return side(p1, p2, q1) * side(p1, p2, q2) < 0.0F && side(q1, q2, p1) * side(q1, q2, p2) < 0.0F;
 }
 
 } // namespace
@@ -217,7 +210,8 @@ void Formation::assign() {
                 }
                 const std::optional<anim::Vec3> to = slotPoint(*a.brain);
                 const std::optional<anim::Vec3> other = slotPoint(*b.brain);
-                if (to && other && cross(a.brain->human().position(), *to, b.brain->human().position(), *other)) {
+                if (to && other &&
+                    segmentsCross(a.brain->human().position(), *to, b.brain->human().position(), *other)) {
                     std::swap(a.slot, b.slot);
                     swapped = true;
                 }

@@ -151,6 +151,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// @orig 0x002fe0c8 Action_LookAt (unknown)
     void actLookAt(const script::LookAtCall& call) override;
     void actTurnTo(const script::TurnToCall& call) override;
+    /// The human gives way to the other (pushAside(), the other the mover along his facing) when it has fewer than
+    /// kGiveWayQueueLimit actions queued.
+    /// @orig 0x002fe4b0 Action_GiveWay (unknown)
+    void actGiveWay(double human, double other) override;
     /// The human starts a fight with the target (Brain::startFight()).
     void goalFight(double human, double target) override;
     /// Brain::flush(): the goals end (their callbacks fire), then the actions.
@@ -283,6 +287,14 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void setRadarIcon(std::function<void(double handle, int type, int icon, float factor)> hook) {
         m_radarIcon = std::move(hook);
     }
+    /// Hands the line to the hook setSpeech() gave (the game's sound), with the human's handle.
+    void say(Brain& human, int command, bool interrupt) override {
+        if (m_speech) {
+            m_speech(human.handle(), command, interrupt);
+        }
+    }
+    /// What say() calls: the game's speech (by handle, command, interrupt); empty for none.
+    void setSpeech(std::function<void(double handle, int command, bool interrupt)> hook) { m_speech = std::move(hook); }
     /// ScriptSystem::schedule() when there is a script system.
     void schedule(std::string_view function, std::span<const double> args, std::uint32_t delayMs) override;
     /// ScriptSystem::call() when there is a script system. **Coney choice**: the result is whether the call ran, as
@@ -329,6 +341,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     const world_objects::WorldFlags* m_flags;
     world_objects::ObjectLocator m_locate;
     std::function<void(double, int, int, float)> m_radarIcon; // setRadarIcon()
+    std::function<void(double, int, bool)> m_speech;          // setSpeech()
     script::ScriptSystem* m_scripts = nullptr;
     const script::MessageHandlers* m_messages = nullptr;
     const world_objects::FlagNet* m_flagNet = nullptr;

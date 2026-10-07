@@ -280,6 +280,13 @@ class Fighter {
     /// Coney, and the state machine's restart is the idle.
     /// @orig 0x0023a210 Human_SetNormalMode (unknown)
     void setNormal(HumanAnimator& animator, bool full);
+    /// `Human_Stun` for a set time: stunned until `nowMs + durationMs` in the stun's loop (356), however long the
+    /// class's stun is. **Coney reading**: the loop plays at once, as after a stunning hit's reaction.
+    /// @orig 0x0022f658 Human_Stun (unknown)
+    void stunFor(HumanAnimator& animator, std::uint64_t nowMs, std::uint64_t durationMs);
+    /// `Human_EndStun` from outside: the stun ends now, its end clip (357) once the clip playing is over.
+    /// @orig 0x0022f8d8 Human_EndStun (unknown)
+    void endStun(std::uint64_t nowMs);
     /// Breaks any pair this human is in from outside, as every placement of it does (a teleport, a scene's end
     /// placement): it plays no clip and is free at once; a victim it holds is unlinked and plays its reaction (145
     /// from a front grab, 107 from the rear or a mugging, 245 then the rise 199 from the mount) and stands free; a

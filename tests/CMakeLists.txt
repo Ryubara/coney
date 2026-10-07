@@ -287,11 +287,13 @@ target_sources(coney_tests PRIVATE
     ai/attack_reach_test.cpp
     ai/fight_goal_test.cpp
     ai/fight_reactions_test.cpp
+    ai/boss_goals_test.cpp
     ai/brain_test.cpp
     ai/disc_ai_config_test.cpp
     ai/disc_route_test.cpp
     ai/formations_test.cpp
     ai/gangs_test.cpp
+    ai/give_way_test.cpp
     ai/move_action_test.cpp
     ai/perception_test.cpp
     ai/route_planner_test.cpp
@@ -301,6 +303,7 @@ target_sources(coney_tests PRIVATE
     ai/riot_goals_test.cpp
     ai/scripted_story_test.cpp
     ai/sectors_test.cpp
+    ai/steering_test.cpp
     ai/spawners_test.cpp
     ai/rumble_tactics_test.cpp
     ai/tactics_test.cpp
