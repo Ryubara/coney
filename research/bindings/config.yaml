@@ -166,20 +166,22 @@
     - {addr: 0x0041d428, name: Cfg_SetCharClassAttribs}
   args:
     - {name: classId, lua: number, ctype: int, desc: "Character class index (1-12 in config_preload2.lua); selects a 16-byte record at game state + classId x 16."}
-    - {name: a, lua: number, ctype: int, desc: "Small integer stored as a byte at record +0x08 (5-10 in the scripts)."}
-    - {name: b, lua: number, ctype: int, desc: "Small integer stored as a byte at record +0x09 (4-20 in the scripts)."}
-    - {name: chance, lua: number, ctype: float, desc: "Fraction 0-1 stored as a float at record +0x0c (0.1-0.25)."}
-    - {name: c, lua: number, ctype: int, desc: "Integer stored as a byte at record +0x10 (0, 20 or 100)."}
-    - {name: d, lua: number, ctype: int, desc: "Integer stored as a byte at record +0x11 (0 or 1)."}
-    - {name: e, lua: number, ctype: float, desc: "Number stored as a float at record +0x14 (1 or 5)."}
+    - {name: a, lua: number, ctype: int, desc: "Byte +0x08: the least money a human of the class starts with, dollars (1-10 in the scripts)."}
+    - {name: b, lua: number, ctype: int, desc: "Byte +0x09: the most money, dollars (4-20)."}
+    - {name: chance, lua: number, ctype: float, desc: "Fraction 0-1 stored as a float at record +0x0c (0.1-0.25); not read by the creation code."}
+    - {name: c, lua: number, ctype: int, desc: "Byte +0x10: the percent chance of carrying no object (0, 20 or 100); a roll of 0-100 at or below it gives none."}
+    - {name: d, lua: number, ctype: int, desc: "Byte +0x11: the percent chance of the money bonus (0 or 1); a second roll of 0-100 at or below it multiplies the money."}
+    - {name: e, lua: number, ctype: float, desc: "Float +0x14: the money bonus multiplier (1 or 5)."}
   description: >-
     Fills one character-class attribute record in the game state (W_GameState + classId x 16, fields +0x08 to +0x14)
-    with two byte values, a fraction, two more bytes and a float. config_preload2.lua sets classes 1 to 12.
+    with the money a human of that class starts with and whether it carries an object. config_preload2.lua sets classes
+    1 to 12. The class is the CfgChar category byte (+0x11b); Human_Init (0x00218008) reads the record when a human is
+    created ([Crimes: starting money](../../research/crimes.md#starting-money)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Layout confirmed (code) at 0x0041d428. The meaning of the fields (perhaps money carried min/max, a drop chance, a
-    percentage) is not traced; the readers of these records were not found.
+    Layout confirmed (code) at 0x0041d428; the reader at 0x002187e4-0x00218a90. The values of classes 1-12 were read
+    at runtime (confirmed (runtime)); the float at +0x0c has no reader found.
   usage: {chunks: 1, calls: 16, boot: true, mission1: false, result_used: false}
 
 - name: CfgPickupIsGrab
@@ -2068,7 +2070,7 @@
   args:
     - {name: charType, lua: number, ctype: int, desc: "Character type id (the number HuCreate takes); record at 0x00684620 + charType x 0x1ac ([Characters](../../research/characters.md#classes))."}
     - {name: v2, lua: number, ctype: int, desc: "Byte at +0x11a (3 for the Warriors)."}
-    - {name: v3, lua: number, ctype: int, desc: "Byte at +0x11b (14)."}
+    - {name: v3, lua: number, ctype: int, desc: "Byte at +0x11b: the category (14 for the Warriors), which also picks the CfgCharClassAttribs record for the starting money."}
     - {name: speedClass, lua: number, ctype: int, desc: "Speed class (see CfgSpeedClass), byte at +0x11c."}
     - {name: v5, lua: number, ctype: int, desc: "Byte at +0x11d: the power class an AI human of the type gets (human +0x1b8; a player's +0x1b9 unless a Warriors type gets its Warrior's, 0x00218008)."}
     - {name: v6, lua: number, ctype: int, desc: "16-bit value at +0x116 (1800: probably hit points)."}
@@ -2080,8 +2082,8 @@
     - {name: warrior, lua: number, ctype: int, desc: "16-bit value at +0x118: the Warrior index for playable characters (Rembrandt 7), inferred."}
     - {name: v13, lua: number, ctype: int, desc: "Byte at +0x14b."}
     - {name: ranges, lua: table, elem: number, count: 45, written_back: true, desc: "Table of 45 numbers (a range table such as RangeNormal), divided by 100 and stored as floats from +0x00."}
-    - {name: str15, lua: string, desc: "String (31 characters) at +0x16c."}
-    - {name: v16, lua: number, ctype: int, desc: "Integer at +0xb4 (0 or 5)."}
+    - {name: str15, lua: string, desc: "String (31 characters) at +0x16c: the object a human of the type may carry, a `grp_` object group to pick one from, or none ([Crimes: starting money](../../research/crimes.md#starting-money))."}
+    - {name: v16, lua: number, ctype: int, desc: "Integer at +0xb4: -1 gives the class money range; otherwise the carried object's drop chance (+0x278) and a cap on the starting money (0 or 5 in some calls)."}
     - {name: str17, lua: string, desc: "String (31 characters) at +0x18c."}
   description: >-
     Fills one character class: speed class, health-like values, the 45-entry damage, attack and range tables, the

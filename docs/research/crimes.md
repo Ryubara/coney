@@ -1,7 +1,8 @@
 # Crimes and context actions
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
-(Ghidra), with the disc's compiled scripts read through `coney-tools`' Lua walker for string ids. No runtime claims.
+(Ghidra), with the disc's compiled scripts read through `coney-tools`' Lua walker for string ids. Runtime reads (the
+mugging's starting money) are over PINE in PCSX2 2.9.94.
 
 ## Purpose
 
@@ -85,11 +86,12 @@ the dispatch).
 | --- | --- | --- |
 | state `0x2000000` | **tagging** (`HuIsTagging`); the other state bits are on [Combat](combat.md#state-flags) | confirmed (code) at `0x002238c0` |
 | `+0x250` / `+0x254` | the pocket: item id and count (`HuPutItemInPocket`) | confirmed (code) |
-| `+0x257` | an object name; anything but `none` counts as something to give | confirmed (code) at `0x00225ff0` |
+| `+0x257` | the carried object's name; anything but `none` counts as something to give ([starting values](#starting-money)) | confirmed (code) at `0x00225ff0` |
+| `+0x278` | the carried object's drop chance (`CfgChar` `+0xb4`; 100 after `HuSetCarriedItem`), inferred a percentage | confirmed (code) at `0x00218850` |
 | `+0x36c` | the tag object being sprayed | confirmed (code) at `0x00238db0` |
-| `+0x370` | money carried (0-999) | confirmed (code) |
+| `+0x370` | money carried (0-999); rolled at creation ([Starting money](#starting-money)) | confirmed (code) at `0x00218a90` |
 | `+0x3ba` | 1 once the current tag is finished | confirmed (code) |
-| `+0x590`-`+0x59c` | the four interrogation lines; `+0x5a0` the interrogation callback (`HuSetInterrogation`) | confirmed (code) |
+| `+0x590`-`+0x59c` | the four interrogation lines; `+0x5a0` the interrogation callback (`HuSetInterrogation`; [Interrogation](#interrogation)) | confirmed (code) |
 | `+0x5a4` | the mug callback (`HuSetMugCallback`) | confirmed (code) |
 | `+0x5b0` | may be mugged (`HuSetMug`) | confirmed (code) |
 | `+0x660` | the current context record | confirmed (code) at `0x00240888` |
@@ -190,30 +192,119 @@ its set-up and end, confirmed (code) at `0x0022dd98`, `0x0022e020`:
 
 The stick game and its timings are on [Combat: mugging](combat.md#mugging). **Who can be mugged**
 (`Mug_CanMugVictim`, `0x00225ff0`), confirmed (code): the player must be holding the human from the front or the rear
-with no move playing, and either the human has an **interrogation** set (`+0x5a0`), or it may be mugged (`+0x5b0`,
-`HuSetMug`) and:
+with no move playing, and either the human has an **interrogation** set (`+0x5a0`, [below](#interrogation)), or it may
+be mugged (`+0x5b0`, `HuSetMug`; `Human_Init` sets it to 1 at `0x002180ec`, so every new human may be) and:
 
-- a human no player controls must not carry the ledger (pocket item 12) and must have something: a named object,
-  money, or a pocket count;
+- a human no player controls must not carry the ledger (pocket item 12) and must have something: a carried object
+  (`+0x257` not `none`), money (`+0x370`), or a pocket count (`+0x254`);
 - a **player** human (the other player) only while `CfgPlayerMugging` is on (game state `+0x5708`) and he holds any
   of items 0-6.
+
+A human made by `HuCreate` with no `HuSetMoney` carries the money `Human_Init` rolled
+([below](#starting-money)); for the street civilian (`PoizoCiv`, type 417) that is never less than $5, so he can
+always be mugged.
 
 **What happens**, confirmed (code) at `0x002856b8`:
 
 - The mugger says speech command 19 `mug`, or 39 `mugcop` when the victim's brain is a cop's; an interrogation plays
   the victim's set lines instead. Hint 0 (a mugging) or 1 (an interrogation) the first times.
 - Half-way to the required time the victim says 28 `resist` (103 `dirty_resist` for ped type 5, inferred a dirty
-  dealer). A victim with **nothing** says 31 `no_item` at that point and the mugging ends with nothing.
-- **Success**: the victim says 30 `item` (104 `dirty_item`). Its money goes to the player (item 2; ped type 5 gives
-  1.5 times, at most 999) and its money is set to 0; a victim with a pocket item gives that instead
-  (`0x002334d0`: a flash or spray can is added to the inventory, a switchblade is equipped). A player victim hands
-  over all of items 0-6 (`0x00285520`). An interrogation instead plays the fourth line and calls its callback.
+  dealer). A victim with **nothing** (no money, `+0x257` `none`, pocket item 0, no interrogation) says 31 `no_item`
+  at that point and the mugging stops; it still ends through the **success** clips (the result flag, mugger
+  `+0x5b4`, is set to 1), so the mug callback runs with true although nothing was taken.
+- **Success** is decided in the update that reaches the required time, before any end clip: the victim says 30
+  `item` (104 `dirty_item`). With pocket item 0 and `+0x257` `none`, **all** its money (`+0x370`; ped type 5 gives
+  1.5 times, at most 999) goes to the mugger's player in one call, `Inventory_AddItem(inv, player, 2, money, 1)`
+  (`0x0041e5b0`, notify on), the victim's money is set to 0 and item 2's pick-up sound plays (`0x0010fcd8` with the
+  hash at inventory entry `+0x24`). A victim with a pocket item or object hands that over first (`0x002334d0`:
+  pocket items 1 and 3 are added to the inventory with notify, item 4 equips the switchblade, a named object goes to
+  the mugger); its money follows with the same call once the object handed over no longer resolves (state 5). A
+  player victim hands over all of items 0-6 (`0x00285520`). An interrogation instead plays the fourth line and pays
+  nothing ([below](#interrogation)).
+- Then (state 5) `0x00273110(mugger, result)` plays the end clips, mugger 344 and victim 345 on success, 346 and 347
+  on failure, and gives the mugger's clip the end callback `0x00273090` (success) or `0x00273038` (failure). A
+  player mugger who succeeds also counts a statistic by the victim's brain kind (1 → 6, 2 → 7, 4 or 5 → 5, others
+  none; `0x004ed948` on `0x006fe490`).
 - Any command outside the game's own ends it; so does, for a mugger no player controls, its time limit.
-- **The mug callback** (`HuSetMugCallback`, human `+0x5a4`): every end of a mugging goes through `0x0022ceb8(mugger,
-  victim, success)` (the success and failure clips' ends `0x00273090` / `0x00273038`, a let-go `0x00258a88`, a hit
-  and the other aborts), which calls the **mugger's** callback with **(mugger, success)** when the victim has no
-  interrogation set and is not a player (`0x002262f0`). So the callback also runs, with false, for a failed or broken
-  off mugging. Confirmed (code).
+
+Adding the money notifies, synchronously and in this order ([Player state](player-state.md#pickup-callback)): the
+`CfgMoneyCallback` function with (player, amount), the `CfgInventoryCallback` one with (2), then the
+`CfgHuInventoryCallback` one with (player, 2). The mugging calls nothing for the HUD; the HUD shows the inventory
+count. Confirmed (code).
+
+**The mug callback** (`HuSetMugCallback`, human `+0x5a4`). Every end of a mugging goes through `0x0022ceb8(mugger,
+victim, success)`: the end clips' callbacks above, **when the mugger's clip ends**, not at the decision; a let-go
+(`0x00258a88`); a hit and the other aborts (`0x002325e0`, `0x00267e48`, `0x00268df8`, `0x00268e50`,
+`Player_UpdateActions`). It clears the mugging states (`0x100`, `0x200`), puts the pair back in a rear hold (`0x80`
+/ `0x20`), withdraws hint 0 or 1, and then:
+
+- a victim with no interrogation that is not a player: the **mugger's** callback (`0x002262f0`) is called with
+  **(mugger, success)**, so it also runs, with false, for a failed or broken-off mugging;
+- a victim with an interrogation: on success only, the interrogation callback ([below](#interrogation));
+- a player victim: no callback.
+
+Confirmed (code). By the time the callback runs the money has already moved.
+
+#### Starting money and the carried object {#starting-money}
+
+`Human_Init` (`0x00218008`, from `HuCreate` through `Human_Create` `0x00233d60`) sets the money (`+0x370`), the
+carried object (`+0x257`) and its drop chance (`+0x278`); the pocket (`+0x250`, `+0x254`) starts empty. Afterwards
+only `HuSetMoney` (`0x00238100`), `GangSetMoney` (`0x0016bd38`), a mugging, a drop (`0x00233494`) and the shopkeeper
+goal (`0x002e74c0`) write a human's money. Confirmed (code).
+
+The inputs are the type's `CfgChar` record (`0x00684620 + type × 0x1ac`): its category byte `+0x11b` (category 4
+with byte `+0x14b` = 1 uses record 16 instead), the integer `+0xb4` (`v16`; -1 means "use the class range",
+otherwise it is a drop chance and a money cap) and the name `+0x16c` (`str15`: an object, a `grp_` object group, or
+`none`); and that category's `CfgCharClassAttribs` record (game state + category × 16): `min` (byte `+0x08`), `max`
+(`+0x09`), `noObject` (byte `+0x10`, percent), `bonusChance` (byte `+0x11`, percent) and `bonus` (float `+0x14`).
+Every draw uses the game's generator (`0x006eb880`, [Scripting](scripting.md)); `rand(a, b)` (`0x003353f0`) is `a`
+to `b` inclusive. Confirmed (code) at `0x002187e4`-`0x00218a90`:
+
+1. `roll = rand(0, 100)`.
+2. The object: `none` when `roll <= noObject`. Otherwise `+0x278 = v16`, and a `str15` containing `grp_` gives a
+   random member of that object group (drawn from another generator, `0x006eb8a8`; `none` for an unknown group),
+   while any other `str15` is the object when `roll <= v16` and `none` otherwise.
+3. The money starts at 0. If `v16` is -1 or the object is not `none`: `m = rand(min, max)`. Else, when `roll <=
+   noObject`: `m = rand(min, v16)` if `min < v16`, else `m = v16`. Else the money stays 0 and step 4 is skipped.
+4. When `rand(0, 100) <= bonusChance`, `m = (int)(m × bonus)`. The money is `m` clamped to 0-999.
+5. Categories 4 and 6 then set the brain's `+0x26c` to 1, or 2 when `+0x14b` is 1 or the money is 21 or more;
+   category 4 first draws `Random_Int(100)` (`0x003353b8`, 0 to 100) and takes 2 when it is below 10. Categories 5
+   and 7 set 3.
+
+The `CfgCharClassAttribs` records, confirmed (runtime) over PINE in level99 (a copy of the owner's slot 6; game
+state `0x01fd8400`):
+
+| Category | `min`-`max` | `+0x0c` | `noObject` | `bonusChance` | `bonus` |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 10-20 | 0.25 | 100 | 1 | 5 |
+| 2 | 10-15 | 0.2 | 100 | 1 | 5 |
+| 3 | 10-20 | 0.2 | 100 | 1 | 5 |
+| 4 | 5-20 | 0.1 | 100 | 1 | 5 |
+| 5 | 7-20 | 0.1 | 100 | 0 | 1 |
+| 6 | 1-4 | 0.1 | 100 | 0 | 1 |
+| 7 | 2-6 | 0.1 | 100 | 0 | 1 |
+| 8 | 5-10 | 0.1 | 100 | 0 | 1 |
+| 9, 10 | 5-10 | 0.1 | 0 | 0 | 1 |
+| 11 | 5-10 | 0.1 | 20 | 0 | 1 |
+| 12 | 10-20 | 0.1 | 20 | 0 | 1 |
+
+**`PoizoCiv` (type 417)**, confirmed (runtime) from the same state: category 4, `+0x14b` 0, `v16` -1, `str15`
+`grp_male_ped`. Step 2 always gives `none` (`noObject` is 100), and the money is `rand(5, 20)`, times 5 when the
+second roll is 0 or 1 (2 in 101): $5-$20, rarely $25-$100. The $18 seen at runtime ([Combat](combat.md#mugging)) is
+in range. His pocket is empty (item 0, count 0), so the mugging pays money only. A seeded reimplementation draws, in
+this order: the object roll, the money, the bonus roll, then `Random_Int(100)` for `+0x26c`.
+
+#### Interrogation {#interrogation}
+
+`+0x5a0` holds a reference to a Lua function, confirmed (code). Its only writers: `HuSetInterrogation` (`0x00239f20`:
+clears the four lines and `+0x5a0`, then stores the lines and the callback; a nil callback leaves 0), `Human_Init`
+and `Human_Destroy` (0), and the interrogation's success (`0x00226168`: calls the function with (victim, mugger,
+true), the mugger an invalid handle when there is none, then clears `+0x5a0` and the lines, so an interrogation
+succeeds once). Non-zero means "can be interrogated": `Mug_CanMugVictim` accepts the human whatever it carries and
+whatever `+0x5b0` says, the prompt reads "interrogate", and the mugging plays the set lines and pays nothing.
+**`SetInterrogateParam` does not touch it**: it only overrides the stick game's tuning for every mugging
+([Combat: mugging](combat.md#mugging)). No level99 script calls `HuSetInterrogation` (levels 2, 11 and 83 do), so
+the lesson's mugging of `PoizoCiv` is a plain mugging.
 
 The scores (crime events 4-5 to 4-7) are on [Statistics](../references/statistics.md). The mugging itself reports
 no crime; type 8 (`Mugging`) comes from scripts or from the witnesses' goals, which report a type from their own

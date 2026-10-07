@@ -3086,28 +3086,29 @@ SetInterrogateParam(valueA, valueB, valueC, timeA, timeB, timeC, angleA, angleB,
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `valueA` | number, truncated to an unsigned integer | First byte-sized tuning value (0-255). The game's own defaults put 160 here; the mission-1 tutorial passes 160. Its role in the shake-down is not traced (inferred: a threshold or chance). |
-| 2 | `valueB` | number, truncated to an unsigned integer | Second byte-sized tuning value (0-255); default 75 in the game's own table. |
-| 3 | `valueC` | number, truncated to an unsigned integer | Third byte-sized tuning value (0-255); default 255 in the game's own table. |
-| 4 | `timeA` | number, truncated to an unsigned integer | A time in milliseconds (the tutorial passes 5000). Doubles as the switch: when it is 0 the override is off and the game computes its own values from the victim's character class. |
-| 5 | `timeB` | number, truncated to an unsigned integer | A time in milliseconds (the tutorial passes 2500). |
-| 6 | `timeC` | number, truncated to an unsigned integer | A time in milliseconds (the tutorial passes 20000; the game's own tables use 50000 here). |
-| 7 | `angleA` | number (single precision) | An angle in degrees (converted to radians; the tutorial passes 40). |
-| 8 | `angleB` | number (single precision) | An angle in degrees (converted to radians; the tutorial passes 60). |
-| 9 | `timeD` | number, truncated to an unsigned integer | A time in milliseconds (the tutorial passes 20000; the game's defaults range from 4500 to 13000 depending on the victim's class). |
-| 10 | `flag` | number, truncated to an unsigned integer | A byte flag stored with the set (the tutorial passes 0). |
-| 11 | `set` | number, truncated to an unsigned integer | Which override set to write: 0-2 the first set (used by the routine at 0x00284ca0), 3-5 the second (0x002853a8); 6 or more is ignored. |
+| 1 | `valueA` | number, truncated to an unsigned integer | Byte +0x00 of the mugging record (0-255); the game's defaults put 160 here, as does the tutorial. No reader found. |
+| 2 | `valueB` | number, truncated to an unsigned integer | Byte +0x01 (0-255); default 75. No reader found. |
+| 3 | `valueC` | number, truncated to an unsigned integer | Byte +0x02: the pad rumble while the stick is on target (default 255). |
+| 4 | `timeA` | number, truncated to an unsigned integer | +0x04: the time on target that makes the mugging succeed, ms (the tutorial passes 5000). Doubles as the switch: 0 turns the override off and the game uses its per-class values. |
+| 5 | `timeB` | number, truncated to an unsigned integer | +0x08: every this much time on target the target angle moves, ms (the tutorial passes 2500). |
+| 6 | `timeC` | number, truncated to an unsigned integer | +0x0c: the total time off target allowed before the mugging fails, ms (the tutorial passes 20000; the game's own values are 50000). |
+| 7 | `angleA` | number (single precision) | +0x10: the on-target tolerance, degrees, stored in radians (the tutorial passes 40). |
+| 8 | `angleB` | number (single precision) | +0x14: a new target angle lies more than this plus 20 degrees from the old one, degrees, stored in radians (the tutorial passes 60). |
+| 9 | `timeD` | number, truncated to an unsigned integer | +0x18, ms (the tutorial passes 20000; the game's defaults range from 4500 to 13000 by the victim's class); not read by the mugging update. |
+| 10 | `flag` | number, truncated to an unsigned integer | Byte +0x1c: the pad rumble while off target (the tutorial passes 0). |
+| 11 | `set` | number, truncated to an unsigned integer | Which override set to write: 0-2 the first set (used by the routine at 0x00284ca0), 3-5 the second (0x002853a8, a player victim); 6 or more is ignored. |
 
 **Returns** nothing.
 
-Overrides the tuning the game uses when a player interrogates (shakes down) a held human: three byte values, four times
-in milliseconds, two angles in degrees and a flag, stored in one of two global override sets (0x00510a18, 0x00510a38).
-While a set's `timeA` is non-zero the interrogation code uses it instead of the per-class defaults it otherwise
-computes; calling again with all zeros restores the defaults, which is what the mission-1 tutorial (`level99_lesson1`)
-does after its interrogation lesson.
+Overrides the tuning of the mugging's stick game (every mugging, interrogations included): three bytes, four times in
+milliseconds, two angles in degrees and a byte, stored in one of two global override sets (0x00510a18, 0x00510a38).
+While a set's `timeA` is non-zero every mugging uses it instead of the per-class values; calling again with all zeros
+restores them, which is what the mission-1 tutorial (`level99_lesson1`) does after its mugging lesson ([Combat:
+mugging](../../research/combat.md#mugging)). It does not make anyone interrogable: that is HuSetInterrogation's field
+`+0x5a0` ([Crimes: interrogation](../../research/crimes.md#interrogation)).
 
-**Notes.** Storage and the default/override switch are confirmed (code) at 0x002854b0, 0x00284ca0 and 0x002853a8; what
-each value controls in the interrogation is inferred from the defaults and is an open question.
+**Notes.** Storage and the default/override switch are confirmed (code) at 0x002854b0, 0x00284ca0 and 0x002853a8; the
+fields' uses at 0x002856b8 (Player_UpdateMugging). Bytes +0x00 and +0x01 have no reader found.
 
 - **Evidence:** confirmed (code) at `0x002854b0`; detail: traced
 - **Wrapper** `0x0035d808` (registered by `RegisterBindings`); **calls** `0x002854b0` `Brain_SetInterrogateOverride`

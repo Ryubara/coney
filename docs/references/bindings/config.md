@@ -550,7 +550,7 @@ CfgChar(charType, v2, v3, speedClass, v5, v6, damage, attacks, damageScale, mode
 | --- | --- | --- | --- |
 | 1 | `charType` | number, truncated to an integer | Character type id (the number HuCreate takes); record at 0x00684620 + charType x 0x1ac ([Characters](../../research/characters.md#classes)). |
 | 2 | `v2` | number, truncated to an integer | Byte at +0x11a (3 for the Warriors). |
-| 3 | `v3` | number, truncated to an integer | Byte at +0x11b (14). |
+| 3 | `v3` | number, truncated to an integer | Byte at +0x11b: the category (14 for the Warriors), which also picks the CfgCharClassAttribs record for the starting money. |
 | 4 | `speedClass` | number, truncated to an integer | Speed class (see CfgSpeedClass), byte at +0x11c. |
 | 5 | `v5` | number, truncated to an integer | Byte at +0x11d: the power class an AI human of the type gets (human +0x1b8; a player's +0x1b9 unless a Warriors type gets its Warrior's, 0x00218008). |
 | 6 | `v6` | number, truncated to an integer | 16-bit value at +0x116 (1800: probably hit points). |
@@ -562,8 +562,8 @@ CfgChar(charType, v2, v3, speedClass, v5, v6, damage, attacks, damageScale, mode
 | 12 | `warrior` | number, truncated to an integer | 16-bit value at +0x118: the Warrior index for playable characters (Rembrandt 7), inferred. |
 | 13 | `v13` | number, truncated to an integer | Byte at +0x14b. |
 | 14 | `ranges` | table of 45 numbers (t[1]..t[45]) | Table of 45 numbers (a range table such as RangeNormal), divided by 100 and stored as floats from +0x00. |
-| 15 | `str15` | string | String (31 characters) at +0x16c. |
-| 16 | `v16` | number, truncated to an integer | Integer at +0xb4 (0 or 5). |
+| 15 | `str15` | string | String (31 characters) at +0x16c: the object a human of the type may carry, a `grp_` object group to pick one from, or none ([Crimes: starting money](../../research/crimes.md#starting-money)). |
+| 16 | `v16` | number, truncated to an integer | Integer at +0xb4: -1 gives the class money range; otherwise the carried object's drop chance (+0x278) and a cap on the starting money (0 or 5 in some calls). |
 | 17 | `str17` | string | String (31 characters) at +0x18c. |
 
 **Returns** nothing.
@@ -588,20 +588,22 @@ CfgCharClassAttribs(classId, a, b, chance, c, d, e)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `classId` | number, truncated to an integer | Character class index (1-12 in config_preload2.lua); selects a 16-byte record at game state + classId x 16. |
-| 2 | `a` | number, truncated to an integer | Small integer stored as a byte at record +0x08 (5-10 in the scripts). |
-| 3 | `b` | number, truncated to an integer | Small integer stored as a byte at record +0x09 (4-20 in the scripts). |
-| 4 | `chance` | number (single precision) | Fraction 0-1 stored as a float at record +0x0c (0.1-0.25). |
-| 5 | `c` | number, truncated to an integer | Integer stored as a byte at record +0x10 (0, 20 or 100). |
-| 6 | `d` | number, truncated to an integer | Integer stored as a byte at record +0x11 (0 or 1). |
-| 7 | `e` | number (single precision) | Number stored as a float at record +0x14 (1 or 5). |
+| 2 | `a` | number, truncated to an integer | Byte +0x08: the least money a human of the class starts with, dollars (1-10 in the scripts). |
+| 3 | `b` | number, truncated to an integer | Byte +0x09: the most money, dollars (4-20). |
+| 4 | `chance` | number (single precision) | Fraction 0-1 stored as a float at record +0x0c (0.1-0.25); not read by the creation code. |
+| 5 | `c` | number, truncated to an integer | Byte +0x10: the percent chance of carrying no object (0, 20 or 100); a roll of 0-100 at or below it gives none. |
+| 6 | `d` | number, truncated to an integer | Byte +0x11: the percent chance of the money bonus (0 or 1); a second roll of 0-100 at or below it multiplies the money. |
+| 7 | `e` | number (single precision) | Float +0x14: the money bonus multiplier (1 or 5). |
 
 **Returns** nothing.
 
 Fills one character-class attribute record in the game state (W_GameState + classId x 16, fields +0x08 to +0x14) with
-two byte values, a fraction, two more bytes and a float. config_preload2.lua sets classes 1 to 12.
+the money a human of that class starts with and whether it carries an object. config_preload2.lua sets classes 1 to 12.
+The class is the CfgChar category byte (+0x11b); Human_Init (0x00218008) reads the record when a human is created
+([Crimes: starting money](../../research/crimes.md#starting-money)).
 
-**Notes.** Layout confirmed (code) at 0x0041d428. The meaning of the fields (perhaps money carried min/max, a drop
-chance, a percentage) is not traced; the readers of these records were not found.
+**Notes.** Layout confirmed (code) at 0x0041d428; the reader at 0x002187e4-0x00218a90. The values of classes 1-12 were
+read at runtime (confirmed (runtime)); the float at +0x0c has no reader found.
 
 - **Evidence:** confirmed (code) at `0x0041d428`; detail: traced
 - **Wrapper** `0x0035a330` (registered by `RegisterBindings`); **calls** `0x0041d428` `Cfg_SetCharClassAttribs`

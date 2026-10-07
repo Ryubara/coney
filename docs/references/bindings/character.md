@@ -2636,7 +2636,8 @@ HuSetCarriedItem(human, object)
 Sets the item a human carries and will drop, by object name; the first mission's training enemies are given "none" so
 they drop nothing.
 
-**Notes.** Stores the name at +0x257 and sets +0x278 to 100 (likely the drop chance in percent, inferred).
+**Notes.** Stores the name at +0x257 and sets +0x278 to 100 (likely the drop chance in percent, inferred). At creation
+both come from the type's CfgChar record ([Crimes: starting money](../../research/crimes.md#starting-money)).
 
 - **Evidence:** confirmed (code) at `0x00238230`; detail: traced
 - **Wrapper** `0x0035c470` (registered by `RegisterBindings`); **calls** `0x00238230` `Human_SetCarriedItemName`
@@ -3102,7 +3103,9 @@ mugging](../../research/crimes.md#mugging)).
 
 **Notes.** The icon value itself is not passed on; one fixed icon (0x0055c6e0, Human_AttachSpinningIcon) is used. The
 lines are cleared first, so nil lines remove earlier ones; a nil callback leaves `+0x5a0` 0, which is what marks a human
-as not interrogable. Which of lines 1-3 plays at which moment is not traced.
+as not interrogable. On success 0x00226168 calls the callback with (victim, mugger, true) and clears `+0x5a0` and the
+lines, so an interrogation works once; a failure calls nothing ([Crimes:
+interrogation](../../research/crimes.md#interrogation)). Which of lines 1-3 plays at which moment is not traced.
 
 - **Evidence:** confirmed (code) at `0x00239f20`; detail: traced
 - **Wrapper** `0x0035d498` (registered by `RegisterBindings`); **calls** `0x00239f20` `Human_SetInterrogation`
@@ -3382,10 +3385,12 @@ HuSetMoney(human, dollars)
 
 **Returns** nothing.
 
-Sets how much money the human carries (+0x370), clamped to 0-999. This is the cash a player gets by mugging or beating
-the human; scripts often set 0 so a character drops nothing.
+Sets how much money the human carries (+0x370), clamped to 0-999, replacing the amount rolled at creation from its
+character class ([Crimes: starting money](../../research/crimes.md#starting-money)). This is the cash a player gets by
+mugging or beating the human; scripts often set 0 so a character drops nothing.
 
-**Notes.** That the amount is what the human drops or is mugged for is inferred from the name and the scripts.
+**Notes.** A mugging hands over all of +0x370 as item 2 and sets it to 0 (confirmed (code) at 0x002856b8); the drop on a
+beating is at 0x00233494.
 
 - **Evidence:** confirmed (code) at `0x00238100`; detail: traced
 - **Wrapper** `0x0035c3a0` (registered by `RegisterBindings`); **calls** `0x00238100` `Human_SetMoney`
@@ -3428,11 +3433,14 @@ HuSetMugCallback(human, callback)
 
 **Returns** nothing.
 
-Stores the interned name of a Lua function (+0x5a4) that is called when this human mugs someone; the tutorial uses it to
-notice the player's first mugging.
+Stores the interned name of a Lua function (+0x5a4) that is called with (mugger, success) at the end of every mugging
+this human does of a non-player victim with no interrogation set: when the mugger's success or failure end clip
+finishes, or when the mugging is broken off (success false). The money has already moved by then; a victim with nothing
+to give ends through the success clips, so the call passes true. The tutorial uses it to notice the player's first
+mugging ([Crimes: mugging](../../research/crimes.md#mugging)).
 
-**Notes.** The storage is confirmed (code) at 0x00239e78; when the name is called is inferred from the scripts
-(`PedMugged` handlers set on the players).
+**Notes.** Storage confirmed (code) at 0x00239e78; the call at 0x002262f0 from 0x0022ceb8, reached from the end clips'
+callbacks 0x00273090 / 0x00273038 and the aborts.
 
 - **Evidence:** confirmed (code) at `0x00239e78`; detail: traced
 - **Wrapper** `0x0035d3d8` (registered by `RegisterBindings`); **calls** `0x00239e78` `Human_SetMugCallback`

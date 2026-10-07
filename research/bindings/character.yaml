@@ -2112,12 +2112,14 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: dollars, lua: number, ctype: int, desc: "Cash the human carries, in dollars; clamped to 0-999."}
   description: >-
-    Sets how much money the human carries (+0x370), clamped to 0-999. This is the cash a player gets by mugging or
-    beating the human; scripts often set 0 so a character drops nothing.
+    Sets how much money the human carries (+0x370), clamped to 0-999, replacing the amount rolled at creation from its
+    character class ([Crimes: starting money](../../research/crimes.md#starting-money)). This is the cash a player gets
+    by mugging or beating the human; scripts often set 0 so a character drops nothing.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    That the amount is what the human drops or is mugged for is inferred from the name and the scripts.
+    A mugging hands over all of +0x370 as item 2 and sets it to 0 (confirmed (code) at 0x002856b8); the drop on a
+    beating is at 0x00233494.
   usage: {chunks: 55, calls: 109, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 5, 93, 31, 51, 84, 82, 83, 20, 11]}
   coney: implemented
 
@@ -2152,7 +2154,8 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Stores the name at +0x257 and sets +0x278 to 100 (likely the drop chance in percent, inferred).
+    Stores the name at +0x257 and sets +0x278 to 100 (likely the drop chance in percent, inferred). At creation both
+    come from the type's CfgChar record ([Crimes: starting money](../../research/crimes.md#starting-money)).
   usage: {chunks: 37, calls: 72, boot: false, mission1: true, result_used: false, levels: [34, 2]}
   coney: implemented
 
@@ -2616,13 +2619,16 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human doing the mugging (the scripts set it on the players)."}
     - {name: callback, lua: string, desc: "Name of a Lua function (dotted names work), or nil to remove it."}
   description: >-
-    Stores the interned name of a Lua function (+0x5a4) that is called when this human mugs someone; the tutorial uses
-    it to notice the player's first mugging.
+    Stores the interned name of a Lua function (+0x5a4) that is called with (mugger, success) at the end of every
+    mugging this human does of a non-player victim with no interrogation set: when the mugger's success or failure end
+    clip finishes, or when the mugging is broken off (success false). The money has already moved by then; a victim
+    with nothing to give ends through the success clips, so the call passes true. The tutorial uses it to notice the
+    player's first mugging ([Crimes: mugging](../../research/crimes.md#mugging)).
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The storage is confirmed (code) at 0x00239e78; when the name is called is inferred from the scripts (`PedMugged`
-    handlers set on the players).
+    Storage confirmed (code) at 0x00239e78; the call at 0x002262f0 from 0x0022ceb8, reached from the end clips'
+    callbacks 0x00273090 / 0x00273038 and the aborts.
   usage: {chunks: 6, calls: 20, boot: false, mission1: true, result_used: false, levels: [34, 82, 20]}
   coney: implemented
 
@@ -2665,7 +2671,10 @@
   notes: >-
     The icon value itself is not passed on; one fixed icon (0x0055c6e0, Human_AttachSpinningIcon) is used. The
     lines are cleared first, so nil lines remove earlier ones; a nil callback leaves `+0x5a0` 0, which is what marks
-    a human as not interrogable. Which of lines 1-3 plays at which moment is not traced.
+    a human as not interrogable. On success 0x00226168 calls the callback with (victim, mugger, true) and clears
+    `+0x5a0` and the lines, so an interrogation works once; a failure calls nothing
+    ([Crimes: interrogation](../../research/crimes.md#interrogation)). Which of lines 1-3 plays at which moment is
+    not traced.
   usage: {chunks: 5, calls: 10, boot: false, mission1: false, result_used: false, levels: [2, 83, 11]}
 
 - name: HuMarkReachable

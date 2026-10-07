@@ -1185,10 +1185,12 @@ Triangle in a front grab spins the victim to a rear hold (78 / 79, state `0x85`)
 
 `Player_UpdateMugging` (`0x002856b8`), confirmed (code): the stick must be above **0.5** and within the tolerance of
 the target angle (human `+0x5a8`); the time on target adds to record `+0x12c` (ms). Every period the target angle
-moves (`0x002855f8`), by at least the tolerance plus 20°. At the required time the mugging succeeds: 344 / 345, the
-money moves (victim `+0x370` 18 → 0 at runtime), then 80 / 81 and back to the hold 82 / 83. Past the fail time it
-fails. The parameters come from `0x00284ca0` by the victim's class (human `+0x11b`) and the Warrior class byte
-`+0x0c`; the record seen: `+0x04` required **5000 ms**, `+0x08` period **2500 ms**, `+0x0c` fail **50000 ms**,
+moves (`0x002855f8`), by at least the tolerance plus 20°. At the required time the mugging succeeds: the money moves
+in that update (victim `+0x370` 18 → 0 at runtime; [Crimes: mugging](crimes.md#mugging)), then 344 / 345 play
+(346 / 347 on a failure), then 80 / 81 and back to the hold 82 / 83; the mug callback runs when the mugger's end
+clip finishes. Past the fail time it fails. A victim's starting money: [Crimes](crimes.md#starting-money). The
+parameters come from `0x00284ca0` by the victim's class (human `+0x11b`) and the Warrior class byte `+0x0c`;
+the record seen: `+0x04` required **5000 ms**, `+0x08` period **2500 ms**, `+0x0c` fail **50000 ms**,
 `+0x10` **50°** and `+0x14` **60°**. The stick counts as on target within `+0x10` (50°); `+0x14` (60°) is a coarser
 gate, and each new target angle (`0x002855f8`) is re-rolled, up to 64 times, until it lies more than `+0x14` + 20°
 (about 68°) from the old one. A victim whose brain `+0x26c` is 5 gives 1.5 times the money (at most 999). Confirmed
