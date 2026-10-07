@@ -860,6 +860,12 @@ int main(int argc, char** argv) {
             objectSounds.setPlayer(&audio->sounds());
             if (movieMode) {
                 movieMode->setMixer(&audio->sounds().mixer());
+                movieMode->setSoundStop([&audio] {
+                    if (coney::audio::SoundEngine* engine = audio->sounds().engine(); engine != nullptr) {
+                        engine->music().stop();
+                        engine->stopAll();
+                    }
+                });
             }
             if (!testMode) {
                 printText(audio->startLine());

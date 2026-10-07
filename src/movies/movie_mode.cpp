@@ -114,7 +114,11 @@ bool MovieMode::start(std::string name) {
     playing->skippable = movieSkippable(playing->name);
     playing->decoder = std::move(*decoder);
     playing->info = playing->decoder->info();
-    // Movie_Play stops the music and every sound before Bink takes the sound hardware.
+    // Movie_Play stops the music and every sound before Bink takes the sound hardware: the game's sound engine first,
+    // so its tasks end with their voices, then whatever else the mixer plays.
+    if (m_soundStop) {
+        m_soundStop();
+    }
     if (m_mixer != nullptr) {
         m_mixer->stopAll();
         if (playing->info.hasAudio) {

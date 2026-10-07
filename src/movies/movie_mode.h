@@ -99,6 +99,9 @@ class MovieMode final : public GameMode, public MoviePlayer {
 
     /// Plays the movies' sound on `mixer` from the next movie on (null: none); it must outlive its use here.
     void setMixer(audio::Mixer* mixer) { m_mixer = mixer; }
+    /// Stops the game's own sound as a movie starts (Movie_Play step 1: the music and every sound task, through the
+    /// game's sound engine, so none is left thinking it still plays); empty: only the mixer's voices are stopped.
+    void setSoundStop(std::function<void()> stop) { m_soundStop = std::move(stop); }
     /// The captions of each movie come from `source` (empty: none).
     void setCaptionSource(CaptionSource source) { m_captionSource = std::move(source); }
     /// The captions are drawn in `font` (Coney's stand-in: the page does not name the caption font); null: none drawn.
@@ -169,6 +172,7 @@ class MovieMode final : public GameMode, public MoviePlayer {
     MovieOpener m_open;
     MovieScreen* m_screen;
     audio::Mixer* m_mixer;
+    std::function<void()> m_soundStop;
     MovieSettings m_settings;
     std::function<void(std::string_view)> m_log;
     CaptionSource m_captionSource;

@@ -41,9 +41,9 @@ constexpr float kAmbientFadeMs = 2000.0F;
 constexpr int kLoadScreens = 7;
 // How far ahead of its voice a sound stream is decoded: half a second of frames.
 constexpr int kStreamAheadDivisor = 2;
-// Stereo sound effects take two adjacent stream channels of 5-9 (Coney's pairing: the game's pair claim at
-// 0x0011b450 is not traced).
-constexpr std::array<int, 2> kStereoPairs{5, 7};
+// The two stereo stream pairs, 1+2 (slot 0) and 3+4 (slot 1), shared with the music
+// (docs/research/sound.md#stream-pairs).
+constexpr std::array<int, 2> kStereoPairs{1, 3};
 
 // Distance between two points.
 float distance(SoundVec a, SoundVec b) {
@@ -74,6 +74,23 @@ SoundEngine::SoundEngine(Mixer& mixer, SoundTables tables, std::unique_ptr<Sound
       m_random(random ? std::move(random) : defaultRandom()), m_tasks(kMaxTasks), m_music(mixer, m_tables) {
     // The first load screen is a random one (0x0010f768).
     m_loadScreenNumber = m_random(0, kLoadScreens - 1);
+    // The music shares the stereo pairs: a queued track takes a slot a stereo sound holds only from a prepared
+    // soundtrack, and not while a started one lives or a cinematic runs; the soundtrack then waits for a pair again.
+    m_music.setPairGate([this](std::size_t slot, bool takeOver) {
+        if (!m_stereoSlots.at(slot)) {
+            return true;
+        }
+        if (!takeOver || m_sceneSoundStarted || m_cinematic) {
+            return false;
+        }
+        if (Task* current = find(m_sceneSound); current != nullptr) {
+            m_pendingSceneSound = current->record->hash;
+            current->state = 3;
+            endTask(*current);
+        }
+        m_stereoSlots.at(slot) = false;
+        return true;
+    });
 }
 
 SoundEngine::~SoundEngine() { stopAll(); }
@@ -168,20 +185,59 @@ SoundEngine::Task* SoundEngine::findVictim(const Task& task) {
     return best;
 }
 
+// Whether stereo slot `slot` is free: neither a music channel nor a stereo sound holds it.
+bool SoundEngine::slotFree(std::size_t slot) const { return !m_stereoSlots.at(slot) && !m_music.holdsPair(slot); }
+
+// The preload's claim of a stereo slot: refused when either slot holds a stereo sound, else a free slot if there is
+// one.
+// @orig 0x0011b450 StereoSlot_Claim (unknown)
+bool SoundEngine::claimStereoSlot() const {
+    if (m_stereoSlots[0] || m_stereoSlots[1]) {
+        return false;
+    }
+    return slotFree(0) || slotFree(1);
+}
+
+// A stereo stream's pair: slot 0 if free, else slot 1; with both taken, while a started soundtrack lives or a
+// cinematic runs, none (the pair is then 3+4 over whatever uses it), otherwise a slot holding a stereo sound is taken
+// over, the current soundtrack's hash going back to pending. A stereo sound never plays virtually for want of a pair.
+// @orig 0x0011b498 StereoSlot_Take (unknown)
+void SoundEngine::takeStereoPair(Task& task) {
+    std::optional<std::size_t> slot;
+    for (std::size_t i = 0; i < kStereoPairs.size() && !slot; ++i) {
+        if (slotFree(i)) {
+            slot = i;
+        }
+    }
+    if (!slot && !m_sceneSoundStarted && !m_cinematic) {
+        for (std::size_t i = 0; i < kStereoPairs.size() && !slot; ++i) {
+            if (m_stereoSlots.at(i)) {
+                // 0x0011b6c0: the soundtrack gives its slot up and is prepared again once a slot frees.
+                if (Task* current = find(m_sceneSound); current != nullptr && current != &task) {
+                    m_pendingSceneSound = current->record->hash;
+                    current->state = 3;
+                    endTask(*current);
+                }
+                slot = i;
+            }
+        }
+    }
+    const int first = kStereoPairs.at(slot.value_or(1));
+    if (slot) {
+        m_stereoSlots.at(*slot) = true;
+    }
+    task.voice = first;
+    task.voice2 = first + 1;
+}
+
 // Task_GetVoice (docs/research/sound.md#play, step 5): a stream channel or pair for a streamed sound, an SPU2 voice for
 // a bank sample, or a victim's; false when there is none (the sound then plays virtually).
 // @orig 0x00112560 Task_GetVoice (unknown)
 bool SoundEngine::takeVoice(Task& task) {
     const SoundClass& cls = *task.soundClass;
     if (cls.streamed() && cls.stereo()) {
-        for (const int first : kStereoPairs) {
-            if (voiceFree(first) && voiceFree(first + 1)) {
-                task.voice = first;
-                task.voice2 = first + 1;
-                return true;
-            }
-        }
-        return false;
+        takeStereoPair(task);
+        return true;
     }
     const int low = cls.streamed() ? (cls.smallLoop() ? kFirstSmallLoop : kFirstStream) : kFirstSample;
     const int high = cls.streamed() ? (cls.smallLoop() ? kLastSmallLoop : kLastStream) : kLastSample;
@@ -253,7 +309,9 @@ SoundHandle SoundEngine::startTask(std::uint32_t hash, const SoundPlay& how, boo
         task.distance = distance(how.position.value_or(SoundVec{}), m_listeners.front().position);
     }
     const bool culled = positional && !cls->loops() && task.distance > static_cast<float>(cls->far) + kCullMargin;
-    const bool loading = m_loadScreen && (positional || cls->stereo());
+    // The load screen's virtual plays spare a stereo sound, so a scene loaded under it is prepared on a real pair.
+    // Coney's gap: the game also plays its other 2D sounds virtually there; Coney does not yet.
+    const bool loading = m_loadScreen && positional && !cls->stereo();
     task.virtualPlay = culled || loading || !takeVoice(task);
     // 6. Its length; a virtual unimportant sound is short.
     task.lengthMs = durationMs(task);
@@ -498,7 +556,9 @@ void SoundEngine::update(float milliseconds, std::span<const Listener> listeners
         m_listeners.assign(listeners.begin(), listeners.end());
     }
     // "A non-duckable sound is playing": set by the live tasks, cleared each update.
-    m_nonDuckablePlaying = std::ranges::any_of(m_tasks, [](const Task& t) { return t.live && !t.how.duckable; });
+    // Both are also set for the whole update while a cinematic runs (0x00112b10): the scene's voices duck the rest.
+    m_nonDuckablePlaying =
+        m_cinematic || std::ranges::any_of(m_tasks, [](const Task& t) { return t.live && !t.how.duckable; });
     for (Task& task : m_tasks) {
         if (!task.live) {
             continue;
@@ -515,15 +575,27 @@ void SoundEngine::update(float milliseconds, std::span<const Listener> listeners
                 ++m_stats.readErrors;
             }
         }
-        const bool voiceEnded = !m_mixer.isPlaying(task.mixerVoice) && (!task.feeder || task.feeder->done());
+        // A voice the mixer no longer plays has ended: played out, or stopped behind the engine's back (a movie's stop
+        // of every voice, a play the mixer dropped). Also waiting for the stream to finish kept such a task, and its
+        // stream channels, live for good: its feeder never finishes a stream that nothing drains.
+        const bool voiceEnded = !m_mixer.isPlaying(task.mixerVoice);
         if (task.state == 2 || task.state == 3 || voiceEnded) {
             endTask(task);
         }
     }
     m_startedThisUpdate = 0;
-    if (m_sceneSound.valid() && !isPlaying(m_sceneSound)) {
-        m_sceneSound = {};
-        m_music.setScenePlaying(false);
+    // +0x2426c means "a started soundtrack is still alive": cleared once its task is dead (0x0010f894).
+    if (!isPlaying(m_sceneSound)) {
+        m_sceneSoundStarted = false;
+    }
+    // The music update's soundtrack work (0x0010df30): a pending soundtrack is prepared once the claim would succeed;
+    // then the slots marked as stereo sounds are freed when the soundtrack's task is dead.
+    if (m_pendingSceneSound != 0 && claimStereoSlot()) {
+        const std::uint32_t hash = std::exchange(m_pendingSceneSound, 0);
+        preloadSceneSound(hash);
+    }
+    if (!isPlaying(m_sceneSound)) {
+        m_stereoSlots = {false, false};
     }
     m_music.update(m_now, m_files.get(), m_random);
 }
@@ -628,27 +700,68 @@ SoundHandle SoundEngine::playInterfaceSound(std::size_t index) {
 // ---- Scene soundtracks ----
 
 SoundHandle SoundEngine::preloadSceneSound(std::uint32_t hash) {
-    stopSceneSound();
+    // The current soundtrack stops (0x00110078); then the claim, and when it is refused the fallback (0x00112d60 ->
+    // 0x0011b558): with the previous soundtrack's task still alive its slots are freed and the preload goes on,
+    // otherwise the hash waits as pending until a later update finds a slot free. Coney frees a stopped task at once
+    // (the game keeps one whose +0xe4 is set, not modelled), so a preload while a soundtrack still lives is always
+    // pending for an update or two, as seen at runtime.
+    const SoundHandle previous = std::exchange(m_sceneSound, SoundHandle{});
+    stop(previous);
+    m_sceneSoundStarted = false;
+    if (!claimStereoSlot()) {
+        if (!isPlaying(previous)) {
+            m_pendingSceneSound = hash;
+            return {};
+        }
+        m_stereoSlots = {false, false};
+    }
+    m_pendingSceneSound = 0;
     m_sceneSound = startTask(hash, SoundPlay{}, true);
     return m_sceneSound;
 }
 
-bool SoundEngine::startSceneSound() {
+SceneSoundStart SoundEngine::startSceneSound() {
+    // Whatever task is prepared starts; nothing checks it is this scene's. A dead handle starts nothing, and the
+    // device refuses a virtual task, so neither is heard.
     Task* task = find(m_sceneSound);
+    m_sceneSoundStarted = task != nullptr;
     if (task == nullptr) {
-        return false;
+        return SceneSoundStart::NothingPrepared;
     }
     task->prepared = false;
     task->startMs = m_now;
+    if (task->virtualPlay) {
+        return SceneSoundStart::Virtual;
+    }
     m_mixer.setPaused(task->mixerVoice, false);
-    m_music.setScenePlaying(true);
-    return true;
+    return SceneSoundStart::Started;
 }
 
 void SoundEngine::stopSceneSound() {
     stop(m_sceneSound);
-    m_sceneSound = {};
-    m_music.setScenePlaying(false);
+    m_sceneSoundStarted = false;
+    // Coney's choice: a soundtrack still pending is forgotten too, so nothing of a stopped scene is prepared later.
+    m_pendingSceneSound = 0;
+}
+
+bool SoundEngine::sceneSoundReady() {
+    const Task* task = find(m_sceneSound);
+    if (task != nullptr) {
+        return task->virtualPlay || task->feeder == nullptr || task->feeder->ready();
+    }
+    if (m_pendingSceneSound == 0) {
+        return true;
+    }
+    // Waiting for a pair: music holding both gives one up (0x0011b760, 0x00110528).
+    if (m_music.holdsPair(0) && m_music.holdsPair(1)) {
+        m_music.stop();
+    }
+    return false;
+}
+
+void SoundEngine::setCinematic(bool playing) {
+    m_cinematic = playing;
+    m_music.setScenePlaying(playing);
 }
 
 // ---- Settings ----

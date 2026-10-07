@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "audio/music_player.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -158,4 +160,29 @@ TEST_CASE("the system music plays one of the mood's tracks, cutting into a fight
     rig.player.setMood(2);
     rig.steps(1);
     CHECK(rig.player.state(1) == MusicState::FadeOut);
+}
+
+TEST_CASE("a queued track takes a pair no stereo sound holds, and a soundtrack's only when let", "[audio]") {
+    Rig rig;
+    // Slot 0 (pair 1+2) holds a prepared scene soundtrack the gate does not give up: the track takes pair 3+4.
+    std::vector<std::pair<std::size_t, bool>> asked;
+    bool giveUp = false;
+    rig.player.setPairGate([&](std::size_t slot, bool takeOver) {
+        asked.emplace_back(slot, takeOver);
+        return slot != 0 || (takeOver && giveUp);
+    });
+    rig.player.play(kTrackA, true);
+    rig.steps(1);
+    CHECK(rig.player.state(0) == MusicState::Idle);
+    CHECK(rig.player.state(1) == MusicState::Playing);
+    CHECK(rig.player.holdsPair(1));
+    CHECK_FALSE(rig.player.holdsPair(0));
+    // A cross-fade's new track: slot 0 is asked for, refused, and only taken over once the gate lets it.
+    rig.player.play(kTrackB, true);
+    rig.steps(1);
+    CHECK(rig.player.state(2) == MusicState::Queued);
+    giveUp = true;
+    rig.steps(1);
+    CHECK(rig.player.holdsPair(0));
+    CHECK(std::ranges::find(asked, std::pair<std::size_t, bool>{0, true}) != asked.end());
 }

@@ -238,6 +238,16 @@ name = "SceneSound_Start"
 subsystem = "Audio"
 
 [[function]]
+address = 0x00110078
+name = "SceneSound_Stop"
+subsystem = "Audio"
+
+[[function]]
+address = 0x001102a0
+name = "SceneSound_IsReady"
+subsystem = "Audio"
+
+[[function]]
 address = 0x00110b60
 name = "AmbientTrack_Play"
 subsystem = "Audio"
@@ -480,6 +490,16 @@ size = 784
 [[function]]
 address = 0x0011a170
 name = "Task_Update"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0011b450
+name = "StereoSlot_Claim"
+subsystem = "Audio"
+
+[[function]]
+address = 0x0011b498
+name = "StereoSlot_Take"
 subsystem = "Audio"
 
 [[function]]

@@ -227,8 +227,11 @@ class SceneTask {
                 return;
             }
         }
-        // 6. A cinematic: state 3, one more update, then the pads' skip flags cleared and, unless chained, the chain
-        // skip.
+        // 6. A cinematic: the soundtrack ready (its stream buffered, or its pending preload run), state 3, one more
+        // update, then the pads' skip flags cleared and, unless chained, the chain skip.
+        if (m_request.cinematic && !m_waited && !host.soundtrackReady()) {
+            return;
+        }
         if (m_request.cinematic && !m_waited) {
             m_system.m_sceneState = 3;
             m_waited = true;
@@ -792,6 +795,10 @@ class SceneTask {
         if (m_request.freeze && begun()) {
             host.suspendBrains(false);
         }
+        // Only a skip stops the soundtrack; otherwise it plays on to its own end or the next preload.
+        if (m_skipped) {
+            host.soundtrackStop();
+        }
         m_slot.state = SceneState::Ended;
         ++m_system.m_stats.ended;
         if (callEndFunction) {
@@ -816,6 +823,9 @@ class SceneTask {
         ++m_system.m_stats.aborted;
         m_system.host().log(
             std::format("scene {}: did not start in {} ms; given up\n", m_slot.header->name, kStartTimeoutMs));
+        if (m_request.cinematic) {
+            m_system.host().soundtrackStop();
+        }
         end(false);
     }
 

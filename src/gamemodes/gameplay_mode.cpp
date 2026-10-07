@@ -571,6 +571,12 @@ ModeResult GameplayMode::update(GameModeStack& stack, const FrameTime& frame) {
     if (m_phase != Phase::Playing && m_loadingScreen != nullptr && !updateLoadingScreen(frame)) {
         return ModeResult::Stay;
     }
+    // The intro movie the load's end just asked for plays before the level's first frame, as InitLevel blocks in
+    // Movie_Play: had the world stepped now, the scripts' first scene would load and prepare its soundtrack, and the
+    // movie's stop of every sound would throw it away (docs/research/sound.md#scene-sound).
+    if (stack.top() != this) {
+        return ModeResult::Stay;
+    }
     const ModeResult result = updateWorld(stack, frame);
     // START pauses the game (PauseMenu_Toggle), last in the frame of play.
     if (m_pause != nullptr) {

@@ -32,6 +32,7 @@
 #include "gamemodes/level_start.h"
 #include "gamemodes/loading_screen.h"
 #include "gamemodes/mission_complete_mode.h"
+#include "gamemodes/movie_player.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "gamemodes/start_up_flow.h"
 #include "gui/global_strings.h"
@@ -418,4 +419,58 @@ TEST_CASE("story: behind the loading screen the level loads after the fade in an
     CHECK(run.levelUpdates == 1);
     run.frames(3);
     CHECK(run.levelUpdates == 4);
+}
+
+TEST_CASE("story: a level's intro movie plays before the level's first step", "[story_start][loading_screen][movies]") {
+    // As InitLevel blocks in Movie_Play: had the world stepped first, its first scene would have loaded and prepared
+    // its soundtrack, and the movie's stop of every sound would have thrown it away
+    // (docs/research/sound.md#scene-sound).
+    StoryRun run(storyScript(), true);
+    // A movie as MovieMode plays one: a mode pushed over gameplay that leaves after three frames.
+    class Movie final : public coney::GameMode {
+      public:
+        [[nodiscard]] std::uint32_t id() const override { return 0x110; }
+        coney::ModeResult update(GameModeStack& /*stack*/, const coney::FrameTime& /*frame*/) override {
+            return --m_left > 0 ? coney::ModeResult::Stay : coney::ModeResult::Leave;
+        }
+
+      private:
+        int m_left = 3;
+    };
+    struct Player final : coney::MoviePlayer {
+        explicit Player(GameModeStack& s) : stack(s) {}
+        void playMovie(std::string_view name) override {
+            played.emplace_back(name);
+            stack.push(movie);
+        }
+        GameModeStack& stack;
+        Movie movie;
+        std::vector<std::string> played;
+    };
+    Player player(run.stack);
+    run.flow->services().attachMoviePlayer(&player);
+    coney::LoadingScreen screen(run.device, {}, {}, {}, coney::LoadScreenSounds{}, [](std::string_view) {});
+    run.flow->gameplay().setLoadingScreen(&screen);
+    for (int i = 0; i < 900 && run.stack.topId() != GameplayMode::kId; ++i) {
+        run.frames(1);
+    }
+    REQUIRE(run.stack.topId() == GameplayMode::kId);
+    run.frames(6); // faded in: the level loads
+    REQUIRE(run.flow->gameplay().phase() == GameplayMode::Phase::Loading);
+    // The level's first section, with the intro switch on: the load's end plays L1_IN.
+    coney::GameState& state = run.flow->state();
+    coney::LevelRecord record = *state.levels.at(state.currentLevel);
+    record.values.at(coney::LevelRecord::kIntroValue) = 1.0;
+    state.levels.set(record);
+    state.checkPoint = 1.0;
+    for (int i = 0; i < 200 && run.flow->gameplay().phase() != GameplayMode::Phase::Playing; ++i) {
+        run.frames(1);
+    }
+    REQUIRE(player.played == std::vector<std::string>{"L1_IN"});
+    CHECK(run.stack.topId() == 0x110);
+    CHECK(run.levelUpdates == 0); // the movie first
+    run.frames(3);
+    CHECK(run.stack.topId() == GameplayMode::kId);
+    run.frames(1);
+    CHECK(run.levelUpdates == 1);
 }

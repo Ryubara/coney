@@ -71,6 +71,9 @@ class RecordingHost final : public scenes::SceneHost {
     }
     void soundtrackPrepare(std::uint32_t hash) override { calls.push_back(std::format("soundtrack {:#x}", hash)); }
     void soundtrackStart() override { calls.emplace_back("soundtrack start"); }
+    bool soundtrackReady() override { return soundtrackBuffered; }
+    void soundtrackStop() override { calls.emplace_back("soundtrack stop"); }
+    bool soundtrackBuffered = true;
 
     // Whether a call equal to `call` was made.
     [[nodiscard]] bool made(std::string_view call) const { return std::ranges::find(calls, call) != calls.end(); }
@@ -296,6 +299,7 @@ TEST_CASE("a cinematic starts, plays its parts, streams its segment and ends wit
     CHECK(h.host.made("screen 3 1.5"));
     CHECK(h.lua == std::vector<std::string>{"PreCashTheWorld(1)"});
     CHECK_FALSE(h.system.cinematicActive());
+    CHECK_FALSE(h.host.made("soundtrack stop")); // played out: the soundtrack runs on to its own end
     // The next update frees the task and unloads the slot.
     h.step();
     CHECK(h.system.state(1) == scenes::SceneState::Empty);
@@ -329,6 +333,32 @@ TEST_CASE("cross skips a skippable scene only after 2 s; the humans go to their 
           coney::anim::Vec3{12.0F, 21.0F, 0.0F});
     CHECK(h.system.stats().skipped == 1);
     CHECK(h.lua == std::vector<std::string>{"PreCashTheWorld(3)"});
+    CHECK(h.host.made("soundtrack stop")); // a skip stops the soundtrack
+}
+
+TEST_CASE("a cinematic's start waits until its soundtrack is buffered or its pending preload has run", "[scenes]") {
+    Harness h;
+    h.system.preload("tst_c1", "");
+    h.step();
+    h.host.soundtrackBuffered = false;
+    REQUIRE(h.system.play(1, Harness::cinematic()));
+    for (int i = 0; i < 6; ++i) {
+        h.step();
+    }
+    CHECK(h.system.state(1) == scenes::SceneState::Starting);
+    CHECK_FALSE(h.host.made("soundtrack start"));
+    h.host.soundtrackBuffered = true;
+    h.step();
+    h.step();
+    CHECK(h.system.state(1) == scenes::SceneState::Playing);
+    // A fixed scene does not wait.
+    h.host.soundtrackBuffered = false;
+    h.system.preload("tst_wheel", "");
+    h.step();
+    REQUIRE(h.system.play(4, Harness::fixedScene()));
+    h.step();
+    h.step();
+    CHECK(h.system.state(4) == scenes::SceneState::Playing);
 }
 
 TEST_CASE("a bound human in a grab at the start is left out: not taken in, not posed, not placed", "[scenes]") {

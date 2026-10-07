@@ -308,6 +308,7 @@ void GameSound::gameplayLeft() {
     }
     engine->stopAmbientTrack();
     engine->stopSceneSound();
+    engine->setCinematic(false); // a level left mid-scene leaves no duck behind
     engine->stopAll();
     engine->music().stop();
 }

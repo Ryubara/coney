@@ -44,6 +44,7 @@ enum : std::uint8_t {
     kStereo,        // a streamed stereo bed, priority 3
     kVoice,         // a streamed, positional, directional voice line, near 1 m, far 30 m, priority 9
     kImportantBank, // a bank sample of priority 6
+    kImportantMono, // a streamed mono sound, priority 2
 };
 
 constexpr std::uint32_t kBankSound = 0x100;
@@ -56,6 +57,7 @@ constexpr std::uint32_t kVoiceSound = 0x700;
 constexpr std::uint32_t kImportantSound = 0x800;
 constexpr std::uint32_t kAbsentSample = 0x900; // a bank sound the bank does not hold
 constexpr std::uint32_t kShortSound = 0xa00;   // 16,000 bytes at 8 kHz: a 3 s sound by the game's reckoning
+constexpr std::uint32_t kImportantStream = 0xb00;
 
 // The test tables: one sound per class, plus the absent sample and the short sound.
 SoundTables testTables() {
@@ -71,6 +73,7 @@ SoundTables testTables() {
         TestSound{.hash = kImportantSound, .size = 160, .soundClass = kImportantBank},
         TestSound{.hash = kAbsentSample, .size = 160, .soundClass = kBank2D},
         TestSound{.hash = kShortSound, .size = 16'000, .soundClass = kBank2D, .rateIndex = 11},
+        TestSound{.hash = kImportantStream, .size = 16'000, .offset = 0, .soundClass = kImportantMono},
     };
     auto list = SoundTables::parseSoundList(coney::test::soundListChunk(sounds));
     REQUIRE(list.has_value());
@@ -79,6 +82,7 @@ SoundTables testTables() {
         coney::test::testClass(0, 0, 0x04, 6),  coney::test::testClass(0, 0, 0x25, 6),
         coney::test::testClass(0, 0, 0x00, 21), coney::test::testClass(0, 0, 0x04, 3, 2),
         coney::test::testClass(1, 30, 0x1c, 9), coney::test::testClass(0, 0, 0x00, 6),
+        coney::test::testClass(0, 0, 0x04, 2),
     };
     return SoundTables(
         std::move(*list), std::move(classes),
@@ -201,7 +205,7 @@ TEST_CASE("a positional sound fades with distance squared and pans between two e
     CHECK(rig.engine->isVirtual(rig.engine->play(kBank3DSound, SoundPlay{.position = SoundVec{0.0F, 0.0F, 31.0F}})));
 }
 
-TEST_CASE("streams take channels 5-9, small loops 10-12, a stereo bed a pair", "[audio]") {
+TEST_CASE("streams take channels 5-9, small loops 10-12, a stereo bed pair 1+2 or 3+4", "[audio]") {
     Rig rig;
     for (int channel = 5; channel <= 9; ++channel) {
         CHECK(rig.engine->voiceOf(rig.engine->play(kStreamSound)) == channel);
@@ -212,8 +216,14 @@ TEST_CASE("streams take channels 5-9, small loops 10-12, a stereo bed a pair", "
 
     Rig fresh;
     const SoundHandle bed = fresh.engine->play(kStereoSound);
-    CHECK(fresh.engine->voiceOf(bed) == 5);
-    CHECK(fresh.engine->voiceOf(fresh.engine->play(kStreamSound)) == 7);
+    CHECK(fresh.engine->voiceOf(bed) == 1);
+    CHECK(fresh.engine->voiceOf(fresh.engine->play(kStreamSound)) == 5);
+    // Stereo sounds share the two pairs and never play virtually for want of one: with both held by stereo sounds
+    // (and no scene soundtrack started, no cinematic) the first is taken over.
+    CHECK(fresh.engine->voiceOf(fresh.engine->play(kStereoSound)) == 3);
+    const SoundHandle third = fresh.engine->play(kStereoSound);
+    CHECK_FALSE(fresh.engine->isVirtual(third));
+    CHECK(fresh.engine->voiceOf(third) == 1);
 }
 
 TEST_CASE("with every SPU2 voice busy a more important sound steals the quietest of the least important", "[audio]") {
@@ -277,6 +287,8 @@ TEST_CASE("the load screen loads load_NN in turn and its two halves, and plays p
     CHECK(first.starts_with("load_0"));
     CHECK(rig.engine->bankName() == first);
     CHECK(rig.engine->isVirtual(rig.engine->play(kBank3DSound, SoundPlay{.position = SoundVec{0.0F, 0.0F, 1.0F}})));
+    // A stereo sound is spared: a scene soundtrack prepared under the load screen is on a real pair.
+    CHECK_FALSE(rig.engine->isVirtual(rig.engine->preloadSceneSound(kStereoSound)));
     CHECK_FALSE(rig.engine->isVirtual(rig.engine->play(kBankSound)));
     rig.engine->endLoadScreen();
     CHECK(rig.engine->bankName() == "sound");
@@ -316,6 +328,85 @@ TEST_CASE("a scene soundtrack is prepared silent, starts on its event and ducks 
     CHECK(coney::test::pull(rig.mixer, 8)[0] != 0);
     rig.engine->stopSceneSound();
     CHECK_FALSE(rig.engine->isPlaying(scene));
+}
+
+TEST_CASE("a streamed sound whose voice the mixer stopped ends and frees its stream channel", "[audio]") {
+    // A movie stops every voice of the mixer (Movie_Play); the stream's feeder never finishes a stream nothing drains,
+    // so the task must end with its voice, not hold channel 5 for good.
+    Rig rig;
+    const SoundHandle stream = rig.engine->play(kStreamSound);
+    REQUIRE(rig.engine->voiceOf(stream) == 5);
+    rig.mixer.stopAll();
+    coney::test::pull(rig.mixer, 1);
+    rig.steps(1);
+    CHECK_FALSE(rig.engine->isPlaying(stream));
+    CHECK(rig.engine->voiceOf(rig.engine->play(kStreamSound)) == 5);
+}
+
+TEST_CASE("a scene soundtrack takes stereo pair 1+2, never the mono stream channels the level's sounds hold",
+          "[audio]") {
+    // Five mono streams fill channels 5-9 (the emitters, beds and voices of a level): they never compete with it.
+    Rig rig;
+    std::vector<SoundHandle> streams;
+    for (int i = 0; i < 5; ++i) {
+        streams.push_back(rig.engine->play(kImportantStream));
+    }
+    REQUIRE(rig.engine->voiceOf(streams.back()) == 9);
+    const SoundHandle scene = rig.engine->preloadSceneSound(kStereoSound);
+    REQUIRE(scene.valid());
+    CHECK_FALSE(rig.engine->isVirtual(scene));
+    CHECK(rig.engine->voiceOf(scene) == 1);
+    for (const SoundHandle stream : streams) {
+        CHECK(rig.engine->isPlaying(stream));
+    }
+    rig.steps(1);
+    CHECK(rig.engine->sceneSoundReady());
+    CHECK(rig.engine->startSceneSound() == coney::audio::SceneSoundStart::Started);
+    CHECK(coney::test::pull(rig.mixer, 8)[0] != 0);
+}
+
+TEST_CASE("a soundtrack preloaded after another waits for its pair, and a cinematic's start waits for it", "[audio]") {
+    Rig rig;
+    rig.engine->preloadSceneSound(kStereoSound);
+    rig.engine->startSceneSound();
+    // The next scene's preload stops the first; its pair is still marked, so the new one waits as pending.
+    CHECK_FALSE(rig.engine->preloadSceneSound(kStereoSound).valid());
+    CHECK(rig.engine->pendingSceneSound() == kStereoSound);
+    CHECK_FALSE(rig.engine->sceneSoundReady());
+    // The update after the old task died frees the pair; the next prepares the pending soundtrack.
+    rig.steps(1);
+    CHECK(rig.engine->pendingSceneSound() == kStereoSound);
+    rig.steps(1);
+    CHECK(rig.engine->pendingSceneSound() == 0);
+    REQUIRE(rig.engine->sceneSound().valid());
+    CHECK(rig.engine->voiceOf(rig.engine->sceneSound()) == 1);
+    CHECK(rig.engine->sceneSoundReady());
+    CHECK(rig.engine->startSceneSound() == coney::audio::SceneSoundStart::Started);
+}
+
+TEST_CASE("event 13 starts whichever soundtrack is prepared, and nothing once it was stopped", "[audio]") {
+    Rig rig;
+    CHECK(rig.engine->startSceneSound() == coney::audio::SceneSoundStart::NothingPrepared);
+    const SoundHandle scene = rig.engine->preloadSceneSound(kStereoSound);
+    CHECK(rig.engine->startSceneSound() == coney::audio::SceneSoundStart::Started);
+    // A cinematic's end does not stop it; a skip does (the stage's stop), and a later event starts nothing.
+    rig.engine->setCinematic(false);
+    rig.steps(1);
+    CHECK(rig.engine->isPlaying(scene));
+    rig.engine->stopSceneSound();
+    CHECK_FALSE(rig.engine->isPlaying(scene));
+    CHECK(rig.engine->startSceneSound() == coney::audio::SceneSoundStart::NothingPrepared);
+}
+
+TEST_CASE("while a cinematic runs the scene's voices duck the other directional sounds", "[audio]") {
+    Rig rig;
+    const SoundHandle voice = rig.engine->play(kVoiceSound, SoundPlay{.position = SoundVec{}});
+    rig.steps(1);
+    const float before = rig.sent(voice, 0);
+    REQUIRE(before > 0.0F);
+    rig.engine->setCinematic(true);
+    rig.steps(1);
+    CHECK(rig.sent(voice, 0) == Approx(before * 0.2F));
 }
 
 TEST_CASE("the ambient bed fades in, and a new one replaces it", "[audio]") {

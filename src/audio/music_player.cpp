@@ -206,15 +206,26 @@ void MusicPlayer::update(double now, SoundFiles* files,
     m_now = now;
     updateSystemMusic(random);
 
-    // 1. A queued request takes the stream pair the old track is not using (an idle channel, else the one fading
-    // out) and starts pre-loading.
+    // 1. A queued request takes the stream pair the old track is not using (an idle channel no stereo sound holds,
+    // else the one fading out, else an idle one taken over from a prepared scene soundtrack, which then waits for a
+    // pair again; docs/research/sound.md#stream-pairs) and starts pre-loading. With none it stays queued.
     Channel& request = m_channels.at(kRequest);
     if (request.state == MusicState::Queued) {
-        auto slot = std::ranges::find_if(m_channels.begin(), m_channels.begin() + 2,
-                                         [](const Channel& c) { return c.state == MusicState::Idle; });
+        const auto idleSlot = [this](bool takeOver) {
+            for (std::size_t i = 0; i < 2; ++i) {
+                if (m_channels.at(i).state == MusicState::Idle && (!m_pairGate || m_pairGate(i, takeOver))) {
+                    return m_channels.begin() + static_cast<std::ptrdiff_t>(i);
+                }
+            }
+            return m_channels.begin() + 2;
+        };
+        auto slot = idleSlot(false);
         if (slot == m_channels.begin() + 2) {
             slot = std::ranges::find_if(m_channels.begin(), m_channels.begin() + 2,
                                         [](const Channel& c) { return c.state == MusicState::FadeOut; });
+        }
+        if (slot == m_channels.begin() + 2) {
+            slot = idleSlot(true);
         }
         if (slot != m_channels.begin() + 2) {
             const int pair = slot == m_channels.begin() ? 1 : 3;

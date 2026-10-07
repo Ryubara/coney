@@ -279,10 +279,12 @@ more, not the movie's frame count. Confirmed (code).
 ## Coney's implementation
 
 `movies::MovieMode` (`src/movies/movie_mode.h`) is the player, a game mode that each `Movie_Play` request pushes over
-its caller, which waits beneath it until the movie ends: the start-up movies, the attract movie, a level's intro.
+its caller, which waits beneath it until the movie ends: the start-up movies, the attract movie, a level's intro
+(asked for at the loading screen's end, before the level's first step, which waits for it as `InitLevel` does).
 FFmpeg's Bink demuxer and its Bink video and audio (DCT) decoders read `PSS/<NAME>.BIK` from the disc
 (`src/platform/ffmpeg_movie_decoder.h`, the build: [Building](../guides/building.md#ffmpeg)). As this page says: the
-frames unscaled and centred over black, the last frame never shown, every other sound stopped first and the movie's
+frames unscaled and centred over black, the last frame never shown, every other sound stopped first (the music and
+every task through the game's sound engine, then the mixer's voices) and the movie's
 at 80 % volume, any button but the sticks skipping every movie but `LOGO`, the captions from the level's Subtitles
 chunk and `<movie>_sub.scn` in steps of 0.166 s, drawn only with the subtitle option for ordinary ones. Unit tests
 over a fake decoder (`tests/movies/`) and the disc check `coney_tests "[disc][movies]"` (`LOGO`: 115 frames, 368,640

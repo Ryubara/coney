@@ -598,7 +598,10 @@ unchanged. The Python reader for the disc check is `repo:python/src/coney_tools/
 with the roles `level99_combat.lua` binds: 2,026 and 500 updates playing, every bound human on its start mark (to
 0.1 mm) at frame 0 and within 2 cm of its end mark at the end (on it, after a skip), one soundtrack prepared and started
 each. `[disc][story][audio]` plays level99's checkpoint 1 with the sound mixed offline: `l99_c1`'s soundtrack plays on
-a real voice for its whole 2,026 frames, and the mix is audible through every one of them.
+a real voice for its whole 2,026 frames, and the mix is audible through every one of them. `[disc][scenes][audio]`
+then plays the other ten `l99_` scenes with a soundtrack in turn, one to 430 updates after the last cinematic ends
+(at least one while the last soundtrack still plays, so the new one is pending): each starts on a real voice and is
+heard through its scene.
 `[disc][story][combat][scenes]` plays checkpoint 1 through lesson 6, whose power move still holds a bum as `l99_c7`
 starts (1 human holding, 1 held), and finds no human holding, held or grabbed 90 updates after the scene.
 
@@ -637,11 +640,11 @@ player or cast human that is grabbing, grabbed, mounting or mounted at the start
 says (the stage's free test, `SceneHost::humanFree`): not taken in or posed, its grab going on, and at the end placed
 only when the scene was skipped. Other bound humans are drawn as puppets of their characters. Sounds go through
 the sound engine
-([Sound](sound.md#scene-sound)): the soundtrack is prepared on the scene's load and starts on its event, the engine
-ducking the music to 0.75 while it plays, and it stops when the cinematic ends (Coney's choice, so a skip silences
-it; only the end stops it, as a scene's soundtrack is prepared before its cinematic starts; the log says
-`scene sound: <hash> prepared` and `scene sound: started`); events 14 and 71 play at the human the scene holds, else
-unplaced on the effects bus. **Coney stand-ins:**
+([Sound](sound.md#scene-sound)): the soundtrack is prepared on the scene's load (or, pending a stream pair, by a
+later sound update), a cinematic's start waits for it, event 13 starts whatever is prepared, and only a skip or a
+cinematic given up stops it; otherwise it plays on past the scene's end. The music ducks to 0.75 while a cinematic
+runs. The log says `scene sound: <hash> prepared` (or `pending`) and `scene sound: started`; events 14 and 71 play at
+the human the scene holds, else unplaced on the effects bus. **Coney stand-ins:**
 captions, particles and rumble are counted; a puppet's model follows its role's name (`warrcl` is Cleon's `warr_cl`,
 and so on); a cast human keeps running its brain while a scene poses it.
 `--scene NAME` with `--play-level` plays one scene at once ([Building](../guides/building.md#playing-a-level)).

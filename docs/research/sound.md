@@ -535,8 +535,14 @@ also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/7
 
 - `SoundEngine` (`sound_engine.cpp`): the audio manager: 256 tasks, the admission, voice and stealing rules, virtual
   plays and their lengths, `Task_Update`'s fades, distance attenuation, two-ear pan, ducking and rate; banks (decoded
-  to PCM at load), the load screen's banks and halves, the ambient bed, interface cues and scene soundtracks
-  (prepared, then started by scene event 13, ducking the music).
+  to PCM at load), the load screen's banks and halves, the ambient bed, interface cues and scene soundtracks as
+  [above](#scene-sound): stereo sounds on pairs 1+2 and 3+4, shared with the music through its channels' slots (a
+  music channel at index 0 or 1 holds slot 0 or 1), the claim, the pending soundtrack prepared by a later update,
+  the take-overs both ways, event 13 starting whatever is prepared, the cinematic's start waiting for it
+  (`sceneSoundReady()`, stopping the music when it holds both pairs), and, while a cinematic runs, the music ducked
+  and duckable directional sounds of non-players at 0.2. A task whose voice the mixer no longer plays ends at the
+  next update, whatever its stream, and a movie stops the music and every task through the engine before Bink's
+  sound starts ([Movies](movies.md#coneys-implementation)).
 - `MusicPlayer` (`music_player.cpp`): the three channels and their states, bar-synchronised starts and cross-fades,
   the volumes and the system music's moods.
 - `StreamFeeder` (`sound_stream.cpp`): decodes `BFW.SND` and `MUSIC.SND` streams a little each step, mono or
@@ -567,28 +573,29 @@ also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/7
   (`onPickUp`), the smash and the R1 retune are not built (Coney has no carried boom box).
 
 Coney's stand-ins where this page is open, each marked in the code: the directional table is 1 (as loud behind as in
-front); the `+0x268` state factors, the `+0x5b7` owner duck and level 82's ambient swap are not applied; a stereo
-sound effect takes channels 5+6 or 7+8 (the original's pairs are 1+2 and 3+4, shared with the music, [Stream
-pairs](#stream-pairs)); the random factors come from the engine's own seeded source (the game's shared
-one would shift the scripts' draws); `SoundStopMusicTrack` fades a playing track over one bar. The speech and
-ambience stand-ins: an emitter plays one sound at a time, waiting a random whole number of seconds in its two delays
-before the first and after each one ends (level99's pairs, 1-3 to 10-30, read as seconds), from a random point of its
-line or a random one of its positions; its range, `arg8`, `arg11`, mode and the name-based types are not read; a
-line follows its speaker; a line stopped by `HuShutUp` or cut off drops its callback; `HuShutUp` always stops (the
-human's `+0x194` is not modelled); `HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at
-target; a human's voice set is his type's own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of
-blocked lines is not applied; `SndSetListener` 0 is the camera and 1 the player (inferred); the bank deferral of mode
-1's enter ends with the load screen. The system music (`repo:src/gamemodes/system_music.h`) keeps each mood's track
-hashes and, while on, loops a random track of the mood each frame's surroundings give when the mood changes; the
-mood is 1 while an AI human with health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2,
-its chase goals not built, never comes), the pick draws from the game's random index, and the fades are the music
-player's own. `SoundSetEffect` and `SoundEnableEffects` are kept in the game state only. Not built yet: reverb, the
-other ambient bindings (`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`), the game's own speech commands, and
-the sounds of the scenes' role clips (clip event 11, [Scenes](scenes.md#events)).
-The hub's sound bindings (`repo:src/scripting/hub_world_bindings.cpp`): `EnableAmbientEmitter` switches an emitter
-off (it stops its sound and plays nothing more) and on; `SoundPlay` plays a sound once at a point; `SndLoadMatrix`
-runs `<name>_preload.lua` when the name changes and frees nothing (Coney keeps no matrix); `HuSay` speaks a line
-with no callback.
+front); the `+0x268` state factors, the `+0x5b7` owner duck and level 82's ambient swap are not applied; a stopped task
+is freed at once (the game keeps one whose `+0xe4` is set), so a preload after a live soundtrack always takes the
+pending path; stopping the soundtrack also forgets one pending; the load screen plays only positional sounds virtually
+(not yet the other 2D sounds that are not stereo); the soundtrack's pending re-preload runs on every update (the game's
+music update interval is not traced); the random factors come from the engine's own seeded source (the game's shared one
+would shift the scripts' draws); `SoundStopMusicTrack` fades a playing track over one bar. The speech and ambience
+stand-ins: an emitter plays one sound at a time, waiting a random whole number of seconds in its two delays before the
+first and after each one ends (level99's pairs, 1-3 to 10-30, read as seconds), from a random point of its line or a
+random one of its positions; its range, `arg8`, `arg11`, mode and the name-based types are not read; a line follows its
+speaker; a line stopped by `HuShutUp` or cut off drops its callback; `HuShutUp` always stops (the human's `+0x194` is
+not modelled); `HuSpeak`'s fifth argument is not read, and neither speaker turns to a look-at target; a human's voice
+set is his type's own `CfgChar` voice (no alias rule, no `HuSetVoiceIndex`); the fixed list of blocked lines is not
+applied; `SndSetListener` 0 is the camera and 1 the player (inferred); the bank deferral of mode 1's enter ends with the
+load screen. The system music (`repo:src/gamemodes/system_music.h`) keeps each mood's track hashes and, while on, loops
+a random track of the mood each frame's surroundings give when the mood changes; the mood is 1 while an AI human with
+health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2, its chase goals not built, never
+comes), the pick draws from the game's random index, and the fades are the music player's own. `SoundSetEffect` and
+`SoundEnableEffects` are kept in the game state only. Not built yet: reverb, the other ambient bindings
+(`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`), the game's own speech commands, and the sounds of the scenes'
+role clips (clip event 11, [Scenes](scenes.md#events)). The hub's sound bindings
+(`repo:src/scripting/hub_world_bindings.cpp`): `EnableAmbientEmitter` switches an emitter off (it stops its sound and
+plays nothing more) and on; `SoundPlay` plays a sound once at a point; `SndLoadMatrix` runs `<name>_preload.lua` when
+the name changes and frees nothing (Coney keeps no matrix); `HuSay` speaks a line with no callback.
 
 ## Open questions
 

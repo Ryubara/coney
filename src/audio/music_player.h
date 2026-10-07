@@ -104,6 +104,16 @@ class MusicPlayer {
     [[nodiscard]] float sentVolume(std::size_t channel) const { return m_channels.at(channel).sent; }
     /// How many stream reads of MUSIC.SND failed.
     [[nodiscard]] std::uint64_t readErrors() const { return m_readErrors; }
+    /// Whether a channel holds stereo pair slot `slot` (0: pair 1+2, 1: pair 3+4), which the music shares with the
+    /// stereo sounds (docs/research/sound.md#stream-pairs).
+    [[nodiscard]] bool holdsPair(std::size_t slot) const {
+        return slot < 2 && m_channels.at(slot).state != MusicState::Idle;
+    }
+    /// Asks whether a queued track may take the free slot `slot` from the stereo sounds: with `takeOver` false only
+    /// when no stereo sound holds it, with it true also by taking it over from a prepared soundtrack.
+    using PairGate = std::function<bool(std::size_t slot, bool takeOver)>;
+    /// Sets the gate (empty: every idle slot is the music's).
+    void setPairGate(PairGate gate) { m_pairGate = std::move(gate); }
     /// The track playing or fading in (0 for none): the one a new request syncs to.
     [[nodiscard]] std::uint32_t currentTrack() const;
 
@@ -154,6 +164,7 @@ class MusicPlayer {
     std::array<std::array<std::uint32_t, kTracksPerMood>, kMoods> m_moodTracks{};
     std::function<void(std::string_view)> m_onTrackEnd;
     std::function<void(int)> m_onMood;
+    PairGate m_pairGate;
     std::uint64_t m_readErrors = 0;
 };
 

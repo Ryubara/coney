@@ -128,8 +128,13 @@ class SceneHost {
     /// The scene soundtrack `hash` (a 32,250 Hz stereo stream) is prepared without starting, as the scene loads; the
     /// previous scene's soundtrack stops (docs/research/sound.md#scene-sound).
     virtual void soundtrackPrepare(std::uint32_t /*hash*/) {}
-    /// Event 13 (on a role's clip or a track) starts the prepared soundtrack; music ducks to 0.75 while it plays.
+    /// Event 13 (on a role's clip or a track) starts the prepared soundtrack, whichever scene's it is.
     virtual void soundtrackStart() {}
+    /// Whether a cinematic's start may go on as far as the soundtrack goes: the prepared one is buffered, or none is
+    /// prepared or waiting for a stream pair (docs/research/sound.md#scene-sound).
+    [[nodiscard]] virtual bool soundtrackReady() { return true; }
+    /// The soundtrack stops: a skipped scene's end, a cinematic given up.
+    virtual void soundtrackStop() {}
     /// Events 14 and 71: a sound by name hash on the track's object or human (`object`), or with none.
     virtual void sound(std::uint32_t /*hash*/, std::optional<double> /*object*/) {}
     /// Track event 33: a particle effect named `name` at `pose` (world).

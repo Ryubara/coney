@@ -328,8 +328,8 @@ audio::SoundEngine* SceneStage::soundEngine() const {
 }
 
 void SceneStage::soundtrackPrepare(std::uint32_t hash) {
-    // The engine stops the previous scene's soundtrack and buffers this one silent on a stereo stream pair
-    // (docs/research/sound.md#scene-sound).
+    // The engine stops the previous scene's soundtrack and buffers this one silent on a stereo stream pair, or keeps
+    // it pending until a pair frees (docs/research/sound.md#scene-sound).
     ++m_soundtracks;
     audio::SoundEngine* engine = soundEngine();
     if (engine == nullptr) {
@@ -337,16 +337,32 @@ void SceneStage::soundtrackPrepare(std::uint32_t hash) {
         return;
     }
     const audio::SoundHandle sound = engine->preloadSceneSound(hash);
-    m_print(std::format("scene sound: {:#010x} prepared{}\n", hash,
-                        !sound.valid()             ? " as nothing (no such sound, or refused)"
-                        : engine->isVirtual(sound) ? " virtually (silent)"
-                                                   : ""));
+    m_print(std::format("scene sound: {:#010x} {}\n", hash,
+                        engine->pendingSceneSound() == hash ? "pending (waiting for a stream pair)"
+                        : !sound.valid()                    ? "not prepared (no such sound, or refused)"
+                        : engine->isVirtual(sound)          ? "prepared virtually (silent)"
+                                                            : "prepared"));
 }
 
 void SceneStage::soundtrackStart() {
-    // Scene event 13: the prepared soundtrack starts, and the music ducks while it plays.
+    // Scene event 13: whatever soundtrack is prepared starts.
     if (audio::SoundEngine* engine = soundEngine(); engine != nullptr) {
-        m_print(std::format("scene sound: {}\n", engine->startSceneSound() ? "started" : "nothing prepared to start"));
+        const audio::SceneSoundStart started = engine->startSceneSound();
+        m_print(std::format("scene sound: {}\n", started == audio::SceneSoundStart::Started ? "started"
+                                                 : started == audio::SceneSoundStart::Virtual
+                                                     ? "started virtually (silent)"
+                                                     : "nothing prepared to start"));
+    }
+}
+
+bool SceneStage::soundtrackReady() {
+    audio::SoundEngine* engine = soundEngine();
+    return engine == nullptr || engine->sceneSoundReady();
+}
+
+void SceneStage::soundtrackStop() {
+    if (audio::SoundEngine* engine = soundEngine(); engine != nullptr) {
+        engine->stopSceneSound();
     }
 }
 
@@ -366,14 +382,11 @@ void SceneStage::sound(std::uint32_t hash, std::optional<double> object) {
 }
 
 void SceneStage::setCinematic(bool playing) {
-    // The music's duck is the engine's while its scene soundtrack plays (docs/research/sound.md#music). Coney's choice:
-    // the soundtrack ends with the cinematic, so a skip silences it. Only the cinematic's end stops it: the next
-    // scene's soundtrack is prepared while none plays (as the scene loads, before event 13 starts it), and stopping on
-    // every step without a cinematic threw that preparation away, so no scene was ever heard.
-    const bool ended = m_cinematic && !playing;
-    m_cinematic = playing;
-    if (audio::SoundEngine* engine = soundEngine(); engine != nullptr && ended) {
-        engine->stopSceneSound();
+    // The engine ducks the music while a cinematic runs and keeps the soundtrack's pair from the music
+    // (docs/research/sound.md#scene-sound). The soundtrack itself is not stopped here: only a skip or a give-up stops
+    // it, else it plays on to its own end or the next scene's preload.
+    if (audio::SoundEngine* engine = soundEngine(); engine != nullptr) {
+        engine->setCinematic(playing);
     }
 }
 

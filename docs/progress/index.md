@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,553 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,557 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-430 reimplemented function(s) have no size yet and add no bytes.
+434 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -55,7 +55,7 @@ at the top of the repository's `README.md`.
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
-| `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 59 | 57,368 |
+| `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 63 | 57,368 |
 | `Camera` | `▉░░░░░░░░░░░░░░░░░░░` | 4.4% | 57 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -147,6 +147,8 @@ at the top of the repository's `README.md`.
 | `0x0010fdd0` | `PlaySound3D` | `Audio` | 96 |
 | `0x0010ff68` | `SceneSound_Preload` | `Audio` | not filled in |
 | `0x00110018` | `SceneSound_Start` | `Audio` | not filled in |
+| `0x00110078` | `SceneSound_Stop` | `Audio` | not filled in |
+| `0x001102a0` | `SceneSound_IsReady` | `Audio` | not filled in |
 | `0x00110b60` | `AmbientTrack_Play` | `Audio` | not filled in |
 | `0x00110c70` | `AmbientTrack_Stop` | `Audio` | not filled in |
 | `0x00111178` | `AudioManager_StartLoadScreen` | `Audio` | 688 |
@@ -190,6 +192,8 @@ at the top of the repository's `README.md`.
 | `0x00115bb0` | `VoiceTable_SetPercent` | `Audio` | 128 |
 | `0x001164a8` | `VoiceTable_Build` | `Audio` | 784 |
 | `0x0011a170` | `Task_Update` | `Audio` | not filled in |
+| `0x0011b450` | `StereoSlot_Claim` | `Audio` | not filled in |
+| `0x0011b498` | `StereoSlot_Take` | `Audio` | not filled in |
 | `0x0011b838` | `Camera_GetActiveHandle` | `Camera` | not filled in |
 | `0x0011b888` | `Camera_Delete` | `Camera` | 152 |
 | `0x0011b920` | `Camera_GetPositionByHandle` | `Camera` | not filled in |

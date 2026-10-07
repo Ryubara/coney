@@ -57,6 +57,13 @@ struct SoundPlay {
     SoundVec facing{0.0F, 0.0F, 1.0F};  ///< A directional sound's facing.
 };
 
+/// What starting the scene soundtrack did (SoundEngine::startSceneSound()).
+enum class SceneSoundStart : std::uint8_t {
+    Started,         ///< It plays on a stream pair.
+    Virtual,         ///< Its task plays virtually (tracked, silent): the device refuses it.
+    NothingPrepared, ///< No live soundtrack is prepared (pending, stopped, ended, or not in the sound list).
+};
+
 /// What the engine has done, for logs, tests and the debug menu.
 struct SoundEngineStats {
     std::size_t tasks = 0;            ///< Live tasks now.
@@ -177,17 +184,32 @@ class SoundEngine {
 
     // ---- Scene soundtracks (docs/research/sound.md#scene-sound) ----
 
-    /// Prepares the scene soundtrack `hash` without starting it, so it is buffered before the scene's first frame;
-    /// stops the previous one.
+    /// Prepares the scene soundtrack `hash` without starting it, so it is buffered before the scene's first frame: the
+    /// current one stops, and it takes a stereo pair (1+2 or 3+4, shared with the music). With no pair to claim it
+    /// waits as pending and a later update prepares it once one frees. Returns the prepared sound (invalid while
+    /// pending).
     /// @orig 0x0010ff68 SceneSound_Preload (unknown)
     SoundHandle preloadSceneSound(std::uint32_t hash);
-    /// Starts the prepared scene soundtrack (scene event 13); false when none is prepared.
+    /// Starts the prepared scene soundtrack (scene event 13), whichever scene's it is; says whether it plays, plays
+    /// silent (virtual), or none was prepared.
     /// @orig 0x00110018 SceneSound_Start (unknown)
-    bool startSceneSound();
-    /// Stops the scene soundtrack.
+    SceneSoundStart startSceneSound();
+    /// Stops the scene soundtrack, prepared or playing (a skip, a cinematic's give-up), and forgets one pending.
+    /// @orig 0x00110078 SceneSound_Stop (unknown)
     void stopSceneSound();
+    /// Whether a cinematic's start may go on: the prepared soundtrack's stream is primed, or none is prepared or
+    /// pending. While a pending one waits and the music holds both pairs, the music is stopped to free one.
+    /// @orig 0x001102a0 SceneSound_IsReady (unknown)
+    bool sceneSoundReady();
+    /// Tells the engine whether a cinematic runs (scene state +0x410): the music ducks, the scene's voices duck the
+    /// others, and the soundtrack's pair is not taken over.
+    void setCinematic(bool playing);
+    /// Whether a cinematic runs, as last told.
+    [[nodiscard]] bool cinematic() const { return m_cinematic; }
     /// The scene soundtrack, prepared or playing (invalid when there is none).
     [[nodiscard]] SoundHandle sceneSound() const { return m_sceneSound; }
+    /// The scene soundtrack waiting for a stereo pair (0 for none).
+    [[nodiscard]] std::uint32_t pendingSceneSound() const { return m_pendingSceneSound; }
 
     // ---- Settings ----
 
@@ -260,6 +282,9 @@ class SoundEngine {
     [[nodiscard]] const Task* find(SoundHandle sound) const;
     [[nodiscard]] bool admits(std::uint8_t priority) const;
     bool takeVoice(Task& task);
+    [[nodiscard]] bool slotFree(std::size_t slot) const;
+    [[nodiscard]] bool claimStereoSlot() const;
+    void takeStereoPair(Task& task);
     Task* findVictim(const Task& task);
     [[nodiscard]] bool voiceFree(int voice) const;
     void startVoice(Task& task);
@@ -295,6 +320,10 @@ class SoundEngine {
     float m_ambientVolume = 1.0F;
     std::vector<std::uint32_t> m_interfaceSounds;
     SoundHandle m_sceneSound;
+    bool m_sceneSoundStarted = false;      // +0x2426c: started and still alive
+    std::uint32_t m_pendingSceneSound = 0; // music player +0x04: waiting for a stereo pair
+    std::array<bool, 2> m_stereoSlots{};   // a stereo slot held by a stereo sound (music player +0x64/+0x65 = 2)
+    bool m_cinematic = false;              // scene state +0x410
 
     float m_soundVolume = 0.9F;
     float m_pitchFactor = 1.0F;
