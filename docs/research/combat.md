@@ -395,7 +395,9 @@ confirmed (code) at the functions below.
   0.8-1.4 m away, and a square with the stick at the bum in front (the current target) gave 12;
 - otherwise 12, `S1`. Strafe ids 31-33 come from the combat-walk path (not tested).
 
-**Cross** (`0x00287a18`) starts 11, `X1`, on command `0x10`.
+**Cross** (`0x00287a18`) starts 11, `X1`, on command `0x10`; at a run (gait 4, or 5, with record `+0x08` clear) it
+plays the run attack 24 and at a walk the walk attack 23, as square does, but has no snaps. Confirmed (code), confirmed
+(runtime). With a weapon in hand both buttons follow [Moving attacks with something in hand](#armed-moves).
 
 **The chain** (`0x00280708`) accepts the next button while record `+0x08` has `0x2`, or during the wind-up `0x1` while
 the combo count is below 2 (or is 2 and the current id is 16), and stores it in `+0xb8` (one buffered press; a
@@ -439,8 +441,10 @@ The third hits end the chain, so their window was not needed.
 
 ### Moving attacks: run, charge and dive {#run-attacks}
 
-At a run (gait 4, 7.8 m/s, stick 1.0) **square** plays 24 for about 0.7 s and the run resumes. At a walk it plays 23.
-Confirmed (runtime).
+At a run (gait 4, 7.8 m/s, stick 1.0) **square** or **cross** plays 24 for about 0.7 s and the run resumes. At a walk
+either plays 23. Confirmed (runtime). Both ids are constants in the code, not clip slots; with a knife, baton or bat
+in hand the run attack is 501 and there is no walk attack, and with a thrown or carried object both buttons throw
+([Moving attacks with something in hand](#armed-moves)).
 
 **The charge**: **L2 held, then cross pressed** (command `0x20`) at gait 4 with record `+0x08` clear, or at gait 5
 (a sprint), plays 0 (`gen_charge_shoulder`) for about **0.9 s** at about 7.45 m/s. **The dive**: L2 held, then
@@ -1077,23 +1081,89 @@ the bat in Rembrandt's right hand.
 
 **The anim set.** A human keeps a stack of up to 3 anim sets (record `+0x0c` the depth, the sets as bytes at `+0x10`;
 push `0x00253ed0`, pop `0x00253f28`). Applying one (`0x00253688`) resets the clip slots (record `+0x28` + slot × 4)
-from the defaults at `0x005105d8` (a player's slot `0xe` is always 380) and then writes the set's overrides. Square
-and cross read slots `0x10` and `0x11`, which is how the bat's 34 and 36 replace 12 and 11. Confirmed (code):
+from the defaults at `0x005105d8` (a player's slot `0xe` is always 380) and then writes the set's overrides. With a
+set 1-3 weapon in hand, square and cross read slots `0x10` and `0x11` (and `0x13` at a grounded target), which is how
+the bat's 34 and 36 replace 12 and 11 ([Moving attacks with something in hand](#armed-moves)). The three melee sets,
+confirmed (code):
 
-| Slot | Default | Set 3 (bat) |
-| --- | --- | --- |
-| 0 (idle) | 388 | not changed |
-| `0xb` (fight idle), `0xe` (fight walk) | 358, 372 | not changed |
-| `0x10` (square) | 12 `ATTACK_S1` | 34 |
-| `0x11` (cross) | 11 `ATTACK_X1` | 36 |
-| `0x12` (mounting strike) | 212 | 38 |
-| `0x13` (grounded strike) | 193 | 37 |
-| `0x15`, `0x16`, `0x17`, `0x18` (block start, high front, sustain, shuffle) | 605, 608, 606, 607 | 621, 624, 622, 623 |
+| Slot | Default | Set 1 (knife) | Set 2 (baton) | Set 3 (bat) |
+| --- | --- | --- | --- | --- |
+| 0 (idle), `0xb` (fight idle) | 388, 358 | not changed | not changed | not changed |
+| `0xe` (fight walk) | 372 | 380 (players) | 380 (players) | 380 (players) |
+| `0x10` (square) | 12 `ATTACK_S1` | 45 | 39 | 34 |
+| `0x11` (cross) | 11 `ATTACK_X1` | 47 | 41 | 36 |
+| `0x12` (mounting strike) | 212 | 49 | 43 | 38 |
+| `0x13` (grounded strike) | 193 | 48 | 42 | 37 |
+| `0x14` (grab front strike) | | 50 | 44 | not changed |
+| `0x15`, `0x16`, `0x17`, `0x18` (block start, high front, sustain, shuffle) | 605, 608, 606, 607 | not changed | 621, 624, 622, 623 | 621, 624, 622, 623 |
 
 So a bat has **no carrying or idle clip** of its own: the human idles and walks as usual with the bat in his hand.
-Set 1 overrides with 45, 47, 49, 50, 48 and set 2 with 39, 41, 43, 44, 42 (the same slots in that order: square,
-cross, grounded, mounting, `0x14`); which weapons use them is not traced. At runtime the stack's depth was 1 with a
-bat placed. Confirmed (runtime).
+No set has a slot for the walk attack, the run attack or the snaps: those ids are constants in the square and cross
+code. At runtime the stack's depth was 1 with a bat placed. Confirmed (runtime).
+
+**Which objects carry which set** (the object's `+0x87`, `CfgObj`'s `anim_set`, from the objects list): 1
+`KNIFE_WEAPON_SET` (6 `TYPE_KNIFE`, a `TYPE_BROKENBOTTLE`), 2 `BATON_WEAPON_SET` (11 `TYPE_BATON`, a `TYPE_BAT`), 3
+`CLUB_WEAPON_SET` (42 `TYPE_BAT`, a `TYPE_BATON`, the mace, Diego's weapon), 4 `OVERHEAD_WEAPON_SET` (68: drums,
+chairs, amps, carts, ...), 5 `SINGLE_HAND_THROW_WEAPON_SET` (46: bricks, bottles, the molotov), 6 `GHETTO_SET` (the
+two blasters); everything else is 0 `NONE_SET`. The numbers are inferred from the clips each set installs (knife,
+baton and bat combos; the barrel idle 509 for 4, the ghetto idle 555 for 6; 5 installs nothing and serves the
+one-handed throw) and from `dyn_bat_tuff` being `CLUB_WEAPON_SET` with set 3 (confirmed (runtime)). Sets 7 and up
+are the human's own states (7 installs the grab hold 82 and the grab strikes 51 and 55), never an object's.
+
+#### Moving attacks with something in hand {#armed-moves}
+
+Square, cross and L2 + cross or square choose by the **held object's set** (`0x00231a80`: the held object's
+`+0x87`; `0x00231a38` gives its type, `+0x86`), not by the human's set stack. Confirmed (code) at `0x00286cc8`
+(square), `0x00287a18` (cross), `0x0027d800` (charge), `0x0027d900` (dive), `0x002880d8` (throw) and the dispatcher
+`0x0027c120`. "Run" below is gait 4 with record `+0x08` clear (`0x00223a60`), and for cross also gait 5 with
+`+0x08` clear (`0x00223a98`); either needs `0x00225c10` (for a pad player: the stick above 0.95 at `0x005102e8`, plus
+state tests) and no fight stance (state bits `0x3`, `0x00228340`). "Walk" is gait 1-3 with the stick at 0.12
+or more.
+
+| Held set | Square / cross at a run | At a walk | Standing (or in a fight stance) | Charge, dive |
+| --- | --- | --- | --- | --- |
+| nothing, 0 | 24 `ATTACK_FROM_RUN` (square at gait 4 only; cross at 4 or 5) | 23 `ATTACK_FROM_WALK` | square's snaps, `S1` 12 / `X1` 11 ([Attacks](#attacks)) | 0 / 1 |
+| 1, 2, 3 (knife, baton, bat) | **501** `SWINGABLE_OBJECT_ATTACK_FROM_RUN` (`gen_run_1hand_weapon_atk`) for all three (gaits as unarmed) | **no walk attack**: the standing swing, slot `0x10` / `0x11` | slot `0x10` / `0x11` (bat 34 / 36, knife 45 / 47, baton 39 / 41); no snaps | 0 / 1, unchanged |
+| 4 (overhead) | the throw 507 `BARREL_THROW_FROM_RUN` (gait 3, 4 or 5) | 506 `BARREL_THROW_FROM_WALK` (gait 2) | 505 `BARREL_THROW` (gait 0 or 1) | the throw instead |
+| 5 (one-handed throw) | 472 `ONE_HANDED_OBJECT_THROW_FROM_RUN` (gait 3-5) | 471 `…_FROM_WALK` (gait 2) | 467 `ONE_HANDED_OBJECT_THROW` | the throw instead |
+| 6 (ghetto blaster) | 553 `GHETTO_THROW_FROM_RUN` (gait 3-5) | 552 `GHETTO_THROW_FROM_WALK` (gait 2) | 551 `GHETTO_THROW` | the throw instead |
+
+So **with a bat at a run, square plays 501**, not 24 and not a slot: `Player_Square` tests the held set first and,
+for 1, 2 or 3, takes its own branch, which has the run attack (constant `0x1f5`, through the same starter as 24,
+`0x00264a80`: record `+0x08` `0x1000000`, a 0.3 s blend, aimed at the current target or, for the player without
+one, the nearest in the clip's reach, `0x0027b058`) and then only the grounded strike
+(slot `0x13`, also on a tackled target), a mugging (`0x0026f860`), an object attack on a breakable with no human
+target (`0x00263eb8`, not traced) and the slot's swing. That branch has **no walk attack, no snaps, and no strike
+on a grabbed target** (the unarmed 120); a walking player swings from where he is. Cross's armed branch is the same
+with slot `0x11` (and combo count `+0xbc` = 2 before the swing). The knife's own `KNIFE_ATTACK_FROM_RUN` (490) is
+not chosen by either button; what plays it is not traced. For sets 4-6 the dispatcher sends square and cross to the
+throw (`0x002880d8`) and never reaches `Player_Square`; the charge and dive commands do the same. The throw's gait
+test differs from the run attack's: gait 3 already counts as a run and `+0x08` is not tested. Set 5 first tries a
+**smash** on a human in reach (473 from the front, 475 from behind, `bottle_smash_attacker`; not with a molotov,
+`TYPE_MOLOTOV` 8), and the throw turns a held `TYPE_KNIFE` (11) into set 5 (pop, then push 5) when it is called
+with one; neither path was followed further.
+
+At runtime (confirmed (runtime), PCSX2 2.9.94, slot 1 copy, `dyn_bat_tuff` placed with `Human_PlaceItemInHand`,
+nobody near):
+
+| Input | Gait | Clip | Notes |
+| --- | --- | --- | --- |
+| stick 100 % up, square | 4, 7.80 m/s | **501** | 21 updates, `+0x08` `0x1000000` throughout, 7.09 m/s on its 2nd update; the run (410) the next update |
+| stick 100 % up, cross (on its release) | 4 | **501** | the same |
+| stick 60 % up, square | 2, 1.63 m/s | **34** | the standing swing; he stops (0.11 m/s on its 2nd update), 37 updates, then 389 |
+| without the bat: stick 100 % up, cross | 4 | **24** | 21 updates, as square's |
+| without the bat: stick 60 % up, cross | 2 | **23** | 24 updates, the walk (408) after |
+
+**The held weapon in a run attack** (confirmed (code) at `0x0021b290`, `0x002653d8`): nothing about the weapon depends
+on the clip. A hit's damage is the clip's Anim Range List value (501's own: the class table writes no index for
+it, [The Anim Range List](#damage-table)); then, with the attacker's body `+0xd0` set and the held object's flags
+(vtable `+0x54`) having `0x10000`, **(damage + the object's `CfgObj` u16 `+0x58`) × the first float of the
+attacker's power class record** (`0x00222b78`, [Power meter](#power-meter)), the same for a swing and a run
+attack. Because record `+0x08` has `0x1000000`, the hit takes the moving-attack branch that 24, 0 and 1 take (a
+breakable gets hit kind 2, [World objects](objects.md#door-break)). Rage: 501 is **event 1 × 1 = 5** (2 blocked)
+and kind 4, so never halved by repeats ([Rage](#rage)), against the bat's square 34 at 2 and its cross 36 at 11,
+and the unarmed 24 at 1. The weapon is not worn: only its message 1 breaks it ([Losing it](#bat)). 501's damage,
+hit code and the victim's reaction were not measured.
 
 **Losing it.** Triangle with nothing to take drops the held bat at once, with no clip (`0x00257f38`, falling from
 the hand under physics: [Drop](objects.md#held)); confirmed
@@ -1823,7 +1893,8 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   prompt in reach. A pick-up animation other than 5 plays 461 (as the bat did at runtime). A dropped object lands
   0.3 m ahead of the feet, with no fall.
 - **A weapon in hand** ([A bat in hand](#bat)): of an anim set only square's, cross's and the two strikes' clips are
-  applied (not the blocks', nor the walk and run attacks' or snaps', whose slots are not traced); an anim set's square
+  applied (not the blocks'; nor the armed run attack 501 or the loss of the walk attack and snaps,
+  [Moving attacks with something in hand](#armed-moves)); an anim set's square
   and cross award rage as `S1` and `X1` do (the events of the weapon ids are not traced); a bat never breaks.
 - **The held flags** ([Tasks](tasks.md#held-flags)): the bits each move holds where the research names none. Every
   attack the dispatcher starts (the walk attack, the snaps, the grounded and mounted strikes, the grab strikes, power
