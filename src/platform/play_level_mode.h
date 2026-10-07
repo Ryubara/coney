@@ -28,6 +28,7 @@
 #include "gamemodes/game_mode.h"
 #include "gamemodes/gameplay_mode.h"
 #include "graphics/render_device.h"
+#include "hud/health_rings.h"
 #include "human/player.h"
 #include "human/target_human.h"
 #include "platform/character_mesh.h"
@@ -246,6 +247,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// The level's world objects (the scripts' spawn records brought in round the camera, the objective markers):
     /// what the newest step draws (play_level_world.cpp).
     [[nodiscard]] const world_objects::ObjectTasks& worldObjects() const { return m_objectTasks; }
+    /// The health rings and L1 markers the newest step queued.
+    [[nodiscard]] const hud::HealthRings& healthRings() const { return m_rings; }
     /// How many world objects the last frame drew (0 without pixels).
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
 
@@ -331,15 +334,19 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Player 1's handle, as the scripts know him; the nil handle without a cast.
     [[nodiscard]] double playerHandle() const;
 
-    // --- play_level_world.cpp: the world objects.
+    // --- play_level_world.cpp: the world objects and the health rings.
 
     // Loads the Object List the world objects' models come by (only when the engine draws).
     void makeWorldObjects(const ScriptedCast& cast);
     // The world objects' step round the camera at `eye` (RenderWare's axes), after the scripts and scenes.
     void stepWorldObjects(world::Vec3 eye, std::uint32_t elapsedMs);
+    // The health rings' step: player 1 and his target, the triggers from `pad`, the camera's heading from `view`.
+    void stepRings(const Pad& pad, const WorldView& view, std::uint64_t nowMs);
     // Draws this step's world objects (lit as objects) and the object in player 1's hand at `snapshot`'s pose
     // (docs/research/objects.md#held).
     void drawWorldObjects(const human::PlayerSnapshot& snapshot);
+    // Draws this step's health rings and L1 markers, each under where its human is drawn (`feet` by ring id).
+    void drawRings(const std::map<std::uint64_t, anim::Vec3>& feet) const;
 
     // Draws the character: its lights, the render states, the atomic.
     void drawCharacter() const;
@@ -430,13 +437,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The level's parked cars, particles and motion blur (play_level_effects.h), when gameplay brought them.
     std::unique_ptr<PlayLevelEffects> m_levelEffects;
     // The world objects: the scripts' records and types (null without a cast), their objects, the models they are
-    // drawn with (null without pixels or an Object List).
+    // drawn with (null without pixels or an Object List), and the health rings.
     world_objects::SpawnRecords* m_records = nullptr;
     const world_objects::ObjectTypes* m_objectTypes = nullptr;
     world_objects::ObjectTasks m_objectTasks;
     std::unique_ptr<world_objects::ObjectList> m_objectList; // before the models that read it
     std::unique_ptr<PlacedObjects> m_placed;
-    std::unique_ptr<HudLayer> m_hud; // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
+    hud::HealthRings m_rings;
+    std::map<std::uint64_t, int> m_ringHealth; // each ringed human's health at the last step, for its hit pulse
+    std::unique_ptr<HudLayer> m_hud;           // the HUD's sheets, batches and pass (src/platform/hud_layer.h)
     // The layer renderWithOverlay() adds over the HUD for the render it runs; null otherwise.
     const std::function<void(graphics::RenderDevice&)>* m_overlay = nullptr;
 };

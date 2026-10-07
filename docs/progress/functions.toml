@@ -1740,6 +1740,12 @@ name = "ColourTable_Init"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0017b2e0
+name = "GroundRing_DrawQueued"
+subsystem = "Graphics"
+size = 1480
+
+[[function]]
 address = 0x0017c508
 name = "Light_InitFromDescriptor"
 subsystem = "Graphics"
@@ -4040,6 +4046,18 @@ address = 0x00249108
 name = "Humans_Update"
 subsystem = "Human"
 size = 2704
+
+[[function]]
+address = 0x0024a230
+name = "Reticule_QueueHealthRings"
+subsystem = "Human"
+size = 3400
+
+[[function]]
+address = 0x0024b780
+name = "Reticules_Update"
+subsystem = "Human"
+size = 2040
 
 [[function]]
 address = 0x0024d810

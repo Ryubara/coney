@@ -515,7 +515,8 @@ void GameplayMode::loadLevel() {
                                              .cars = m_cars.get(),
                                              .pickups = m_pickups ? &*m_pickups : nullptr,
                                              .records = m_context.spawnRecords,
-                                             .types = m_context.objectTypes});
+                                             .types = m_context.objectTypes,
+                                             .forceReticules = &m_state.forceReticules});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));

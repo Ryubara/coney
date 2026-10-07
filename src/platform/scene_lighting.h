@@ -10,6 +10,7 @@
 #include "graphics/level_lighting.h"
 #include "graphics/light_manager.h"
 #include "graphics/particle_page.h"
+#include "hud/health_rings.h"
 #include "world/view_frustum.h"
 
 // librw's types, declared rather than included: <rw.h> brings in SDL and the OpenGL loader.
@@ -68,6 +69,11 @@ class SceneLighting {
     /// lights its sphere overlaps, as a human's (docs/research/objects.md#models: the lights are chosen per object).
     /// @orig 0x0017fd78 ObjectRender_Draw (unknown)
     void drawObjectAtomic(rw::Atomic* atomic);
+    /// Draws the health rings and the L1 markers (game axes) from `part_page1`: triangle fans in their per-vertex
+    /// colours, Z tested, fog off. **Coney's stand-in** for the state the world pass leaves (not traced): alpha
+    /// blended, no Z write.
+    /// @orig 0x0017b2e0 GroundRing_DrawQueued (unknown)
+    void drawGroundRings(std::span<const hud::GroundRing> rings, std::span<const hud::TargetMarker> markers) const;
 
     /// This frame's camera (RenderWare's axes), as beginFrame() was given it.
     [[nodiscard]] const world::CameraPose& pose() const { return m_pose; }

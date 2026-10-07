@@ -313,6 +313,7 @@ checks `level99`'s values against the table above (all match). Coney's choices:
   255, and the blob shadow's (10, 10, 10, 128) is half transparent. Coronas and shadows are drawn with Z test and no Z
   write after the world.
 - The blob shadow is 1 m square (`+0x580` is not researched); the shadow-ground check uses the shadow's ray.
+  The [health rings](hud.md#the-health-rings) are drawn over the shadows.
 - A light with radius 0 given `SetLightFlicker` keeps its corona and flickers (no `sub_flashing_light` particle);
   light bugs are not spawned. No object uses the pulse or the glow yet.
 - A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background has its own

@@ -809,11 +809,23 @@ loads its sheets and draws it through the [sprite batches and the 2D pass](gui.m
   `level99` checkpoint 1 through `l99_c1` unskipped: hidden and nothing drawn under the bars, then shown, drawn and
   the first hint up, and a pause hiding and showing it. The debug menus' HUD page sets its values ([Debug menu](../guides/debug-menu.md#pages)).
 
-**Not built yet: [the health rings](#the-health-rings).** Coney draws no rings; `HuForceEnableReticule` is only kept
-(`GameState::forceReticules`, `repo:src/warriors/game_state.h`). The dark shade under Coney's humans is the blob shadow
-(`repo:src/platform/scene_lighting.cpp`, [Lighting](lighting.md#coneys-implementation)), not a partial ring. The
-rings belong in the world pass after the blob shadows (`repo:src/platform/play_lighting.cpp` draws those), fed from
-the play mode's humans, and hidden with the HUD.
+**The health rings** (`repo:src/hud/health_rings.h`, drawn by `repo:src/platform/play_level_world.cpp`), as
+[the health rings](#the-health-rings) say: each step after the HUD's, `hud::HealthRings` takes player 1 and his target
+and queues the rings (nothing while the HUD is hidden: `HideHud`, a scene's start); the show list (SELECT newly
+pressed, a fight stance or health at or below 20 % renewing it; 4 s hold, 0.5 s fades), `HuForceEnableReticule`
+(`GameState::forceReticules`) at alpha 255, the target's outer ring fading in over 500 ms and the L1 marker under a
+non-player target; the arcs from health, power or raw rage × the power class byte (`PowerClass::ringByte`), the
+colours, the blink at or below 25 %, the rage-full flashes and the raging grey, the hit pulse (damage this step, 45 an
+update, at most × 1.15), the start angle from the camera's heading. They are drawn after the blob shadows, each ring
+under where its human is drawn this frame, as 64 flat-coloured triangles of `part_page1` rectangle 1 with fog off. A
+disc test (`[disc][objects]`, `repo:tests/platform/disc_level99_world_test.cpp`) checks that SELECT brings up player
+1's two rings after `l99_c1`.
+
+**Coney's stand-ins for the rings** (marked in the code): the blend state the world pass leaves is taken as alpha
+blending with Z test and no Z write; flat shading gives a triangle its last vertex's colour; the blink runs on the game
+clock, black first; the fight stance is a lock-on or a block; a hit's pulse is the health lost in the step; the
+civilian's class byte is Rembrandt's 35; the camera's heading is that of its forward. Not built: the flash's trigger
+(no flash item yet), a boss's three bands, the Rumble team disc and pointer, two players' rings and icons.
 
 **Coney's stand-ins** (marked in the code): text sizes read as the glyph height (`(0.04, 0.05)` as w × h, 0.05 as h);
 the counter slots' `x0` 0 and lines at y 0.104 and 0.154, the count 0.022 right of its icon; handcuff and key icons

@@ -225,6 +225,41 @@ void SceneLighting::drawObjectAtomic(rw::Atomic* atomic) {
     renderInRig(atomic);
 }
 
+void SceneLighting::drawGroundRings(std::span<const hud::GroundRing> rings,
+                                    std::span<const hud::TargetMarker> markers) const {
+    rw::Texture* texture = rwTextureOf(m_shadowSheet);
+    if (texture == nullptr || !m_shadowSheet) {
+        return;
+    }
+    const graphics::ParticlePage& page = m_shadowSheet->page;
+    if (static_cast<std::size_t>(hud::kRingRect) >= page.rects.size()) {
+        return;
+    }
+    // Game axes into RenderWare's, (x, y, z) to (x, z, -y).
+    const auto toRwPoint = [](anim::Vec3 p) { return rw::V3d{p.x, p.z, -p.y}; };
+    std::vector<rw::gl3::Im3DVertex> vertices;
+    // The rings: centred on the middle of rectangle 1, each rim vertex offset in whole-sheet units.
+    const graphics::UvRect& band = page.rect(static_cast<std::size_t>(hud::kRingRect));
+    const float midU = (band.u0 + band.u1) * 0.5F;
+    const float midV = (band.v0 + band.v1) * 0.5F;
+    for (const hud::GroundRing& ring : rings) {
+        for (const hud::RingVertex& v : hud::ringFan(ring)) {
+            vertices.push_back(vertex(toRwPoint(v.position), midU + v.du, midV + v.dv, v.rgba));
+        }
+    }
+    // The L1 markers: flat squares of rectangle 0, white (black in Rumble) at the target ring's alpha.
+    if (static_cast<std::size_t>(hud::kTargetMarkerRect) < page.rects.size()) {
+        const graphics::UvRect& uv = page.rect(static_cast<std::size_t>(hud::kTargetMarkerRect));
+        for (const hud::TargetMarker& marker : markers) {
+            const float half = marker.size * 0.5F;
+            const std::uint8_t shade = marker.black ? 0 : 255;
+            addQuad(vertices, toRwPoint(marker.centre), rw::V3d{half, 0.0F, 0.0F}, rw::V3d{0.0F, 0.0F, -half}, uv,
+                    {shade, shade, shade, marker.alpha});
+        }
+    }
+    drawQuads(vertices, texture);
+}
+
 void SceneLighting::drawCoronas() const {
     rw::Texture* texture = rwTextureOf(m_coronaSheet);
     if (texture == nullptr || !m_coronaSheet) {

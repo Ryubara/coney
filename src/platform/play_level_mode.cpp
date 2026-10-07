@@ -512,6 +512,8 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
     hudFrame.players.at(0).rageMax = rage.maximum();
     hudFrame.players.at(0).raging = rage.raging();
     m_hud->step(hudFrame);
+    // The health rings, after the HUD's step: hidden with it.
+    stepRings(playerPad, stepView, hudFrame.nowMs);
     ++m_stats.frames;
     return ModeResult::Stay;
 }
@@ -548,6 +550,11 @@ void PlayLevelMode::render(const RenderTime& time) {
         snapshot.heading = posed->heading;
         snapshot.lean = 0.0F;
     }
+    // Where each human is drawn this frame, by the health rings' id of it (its address).
+    std::map<std::uint64_t, anim::Vec3> ringFeet;
+    const auto ringKey = [](const void* human) {
+        return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(human));
+    };
     if (m_engine.drawsPixels()) {
         m_stage->skinPuppets(time.alpha,
                              [](const human::PlayerCharacter& character, const anim::Pose& pose, anim::Vec3 feet,
@@ -558,12 +565,14 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_mesh->update(m_positions, m_normals);
         const raycast::CollisionMesh& ground = m_scenery->collision();
         m_lights->addShadow(ground, snapshot.feet);
+        ringFeet[ringKey(&m_player->human())] = snapshot.feet;
         for (Target& target : m_targets) {
             const human::TargetSnapshot pose =
                 human::interpolate(target.human->previous(), target.human->current(), time.alpha);
             skin(*m_character, pose.pose, pose.feet, pose.heading, 0.0F, target.positions, target.normals);
             target.mesh->update(target.positions, target.normals);
             m_lights->addShadow(ground, pose.feet);
+            ringFeet[ringKey(target.human.get())] = pose.feet;
         }
         const std::vector<ai::AiHuman>& fighters = m_ai->humans();
         for (std::size_t i = 0; i < fighters.size() && i < m_fighterMeshes.size(); ++i) {
@@ -586,6 +595,7 @@ void PlayLevelMode::render(const RenderTime& time) {
             skin(*mesh.character, pose.pose, pose.feet, pose.heading, 0.0F, mesh.positions, mesh.normals);
             mesh.mesh->update(mesh.positions, mesh.normals);
             m_lights->addShadow(ground, pose.feet);
+            ringFeet[ringKey(fighters[i].human.get())] = pose.feet;
         }
     }
     // Over the frame, before its present: the level's screen effects, the HUD's sprites of the newest step, then the
@@ -601,14 +611,15 @@ void PlayLevelMode::render(const RenderTime& time) {
     if (m_overlay != nullptr) {
         m_engine.addFrameOverlay([overlay = *m_overlay](RenderEngine& engine) { overlay(engine); });
     }
-    m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot, &blended] {
+    m_scenery->draw(m_engine, blended, millisecondsOf(time.gameTicks), [this, &snapshot, &blended, &ringFeet] {
         // The parked cars, lit as the level lights humans (**Coney's stand-in**: how cars are lit is not traced).
         if (m_levelEffects) {
             m_levelEffects->drawCars([this](rw::Atomic* atomic) { m_lights->drawHuman(atomic, false); });
         }
-        // The world objects, then the humans and their blob shadows.
+        // The world objects, then the humans and their blob shadows, then the health rings over the shadows.
         drawWorldObjects(snapshot);
         drawCharacter();
+        drawRings(ringFeet);
         drawDebugLines(snapshot);
         if (m_levelEffects) {
             m_levelEffects->drawInScene(blended.pose);

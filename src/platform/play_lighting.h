@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -63,6 +64,10 @@ class PlayLighting {
     void drawShadows();
     /// Draws a world object's atomic with the objects' lights (SceneLighting::drawObjectAtomic()).
     void drawObject(rw::Atomic* atomic) { m_scene->drawObjectAtomic(atomic); }
+    /// Draws the health rings and L1 markers, after the shadows (SceneLighting::drawGroundRings()).
+    void drawRings(std::span<const hud::GroundRing> rings, std::span<const hud::TargetMarker> markers) const {
+        m_scene->drawGroundRings(rings, markers);
+    }
 
     /// The rig, for the scenery's renderer.
     [[nodiscard]] SceneLighting& scene() { return *m_scene; }

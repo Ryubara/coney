@@ -24,6 +24,9 @@ struct PowerClass {
     float attackDelayFactor = 3.0F;     ///< `+0x1c`: `CfgAttackDelay`'s factor.
     float attackDelayDownFactor = 3.0F; ///< `+0x20`: the same against a downed target.
     float counterChance = 0.1F;         ///< `+0x24`, 0-1: the chance, each update of a block, to press R1.
+    /// Byte `+0x40`: the health rings span byte / 100 of their circle (35 for Rembrandt's class 64, read at runtime;
+    /// what the field is meant as is open, docs/research/hud.md#the-health-rings).
+    int ringByte = 35;
 };
 
 /// The player's class (64, Rembrandt in the street).
@@ -40,6 +43,8 @@ inline constexpr PowerClass kCivilianPowerClass{.powerMax = 200,
                                                 .hurtBlockChance = 0.25F,
                                                 .attackDelayFactor = 3.0F,
                                                 .attackDelayDownFactor = 3.0F,
-                                                .counterChance = 0.1F};
+                                                .counterChance = 0.1F,
+                                                // **Coney's stand-in**: the civilian's byte is not read; Rembrandt's.
+                                                .ringByte = 35};
 
 } // namespace coney::combat

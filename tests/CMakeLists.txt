@@ -65,6 +65,7 @@ add_executable(coney_tests
     gui/screen_flow_controller_test.cpp
     gui/text_layout_test.cpp
     gui/widgets_test.cpp
+    hud/health_rings_test.cpp
     hud/hud_test.cpp
     hud/player_panel_test.cpp
     platform/disc_change_character_test.cpp
@@ -74,6 +75,7 @@ add_executable(coney_tests
     platform/disc_level99_audio_test.cpp
     platform/disc_level99_hud_test.cpp
     platform/disc_level99_snaps_test.cpp
+    platform/disc_level99_world_test.cpp
     platform/disc_story_missions_test.cpp
     platform/disc_story_start_test.cpp
     platform/disc_textures_test.cpp

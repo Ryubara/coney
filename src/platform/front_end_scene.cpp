@@ -261,8 +261,8 @@ void FrontEndWorldScene::render(const RenderTime& time, const std::function<void
     // (object flag 0x80) and the small-radius exception are not applied; the wheel's parts are not small.
     const std::function<void()> drawObjects = [this] {
         if (m_objects != nullptr) {
-            m_objects->draw(
-                PlacedObjects::DrawOptions{.render = [this](rw::Atomic* atomic) { m_sceneLighting.drawObjectAtomic(atomic); }});
+            m_objects->draw(PlacedObjects::DrawOptions{
+                .render = [this](rw::Atomic* atomic) { m_sceneLighting.drawObjectAtomic(atomic); }});
         }
     };
     m_renderer.render(m_engine, *m_set, m_level.get(), viewAt(time.alpha), m_pendingDistance, nowMs, drawObjects,

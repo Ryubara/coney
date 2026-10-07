@@ -82,6 +82,8 @@ struct ScriptedCast {
     /// The level's spawn records and object types: the world objects the level draws (world_objects::ObjectTasks).
     world_objects::SpawnRecords* records = nullptr;
     const world_objects::ObjectTypes* types = nullptr;
+    /// `HuForceEnableReticule`'s flag (GameState::forceReticules): every player's health rings at full alpha.
+    const bool* forceReticules = nullptr;
 };
 
 /// A loaded level that can draw a 2D layer over its frame just before the frame is presented: the pause menu over the

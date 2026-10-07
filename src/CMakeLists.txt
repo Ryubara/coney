@@ -326,6 +326,7 @@ target_sources(coney_core PRIVATE
 target_sources(coney_core PRIVATE
     hud/counter_panels.cpp
     hud/counting_number.cpp
+    hud/health_rings.cpp
     hud/hint_box.cpp
     hud/hud.cpp
     hud/hud_canvas.cpp

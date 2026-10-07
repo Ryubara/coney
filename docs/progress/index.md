@@ -21,11 +21,11 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 14.4%](https://img.shields.io/badge/reimplemented-14.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 14.6%](https://img.shields.io/badge/reimplemented-14.6%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.4% of the game's own code (481,628 of 3,354,776 bytes, 1,549 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,552 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
@@ -62,9 +62,9 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
-| `Graphics` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 63 | 195,624 |
+| `Graphics` | `██▏░░░░░░░░░░░░░░░░░` | 10.5% | 64 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
-| `Human` | `██▉░░░░░░░░░░░░░░░░░` | 14.5% | 485 | 1,096,672 |
+| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 487 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -414,6 +414,7 @@ at the top of the repository's `README.md`.
 | `0x00179c30` | `Font_Draw` | `Graphics` | 1,408 |
 | `0x0017a560` | `Occluders_Load` | `Graphics` | not filled in |
 | `0x0017ae38` | `ColourTable_Init` | `Graphics` | not filled in |
+| `0x0017b2e0` | `GroundRing_DrawQueued` | `Graphics` | 1,480 |
 | `0x0017c508` | `Light_InitFromDescriptor` | `Graphics` | 392 |
 | `0x0017c840` | `Light_ApplyDescriptor` | `Graphics` | 592 |
 | `0x0017caa8` | `Light_UpdateFlickerAndCorona` | `Graphics` | 1,544 |
@@ -812,6 +813,8 @@ at the top of the repository's `README.md`.
 | `0x00245920` | `Human_HandleMessage` | `Human` | 8,248 |
 | `0x00248df0` | `Human_Lean` | `Human` | not filled in |
 | `0x00249108` | `Humans_Update` | `Human` | 2,704 |
+| `0x0024a230` | `Reticule_QueueHealthRings` | `Human` | 3,400 |
+| `0x0024b780` | `Reticules_Update` | `Human` | 2,040 |
 | `0x0024d810` | `Pickup_Search` | `Human` | not filled in |
 | `0x0024e478` | `Nav_GetWalkingDistance` | `Human` | not filled in |
 | `0x0024e720` | `PathData_OnLoaded` | `Human` | not filled in |
