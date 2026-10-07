@@ -50,6 +50,8 @@ class Humans {
     void remove(const Human& human);
     /// Sets what runs at the brains' place.
     void setBrains(BrainsHook brains) { m_brains = std::move(brains); }
+    /// Sets what an airborne human's body touches (Human::BodyContact), given to every human it steps; empty: nothing.
+    void setBodyContact(Human::BodyContact contact) { m_bodyContact = std::move(contact); }
 
     /// One characters' step, in the original's order (docs/research/tasks.md#humans-update): the records no pad
     /// drives lose their command; the brains write theirs; every human's animation; every human's state update (the
@@ -79,6 +81,7 @@ class Humans {
     Opposition m_opposition;
     std::vector<Combatant*> m_scratch; // gatherTargets()'s list
     BrainsHook m_brains;
+    Human::BodyContact m_bodyContact;
     std::uint64_t m_steps = 0;
 };
 

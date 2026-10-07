@@ -355,6 +355,11 @@ class Human final : public Holdable {
     /// None: nothing.
     using ContextAction = std::function<bool(Human& human)>;
     void setContextAction(ContextAction action) { m_contextAction = std::move(action); }
+    /// What an airborne body touches before the walls push it (`Human_OnContact`'s object branch and the jump's strike
+    /// shapes, docs/research/objects.md#pane-break): the level breaks the panes whose bodies a sphere at `centre` of
+    /// `radius` reaches. Humans::setBodyContact() gives it; null: nothing.
+    using BodyContact = std::function<void(Human& human, anim::Vec3 centre, float radius)>;
+    void setBodyContact(const BodyContact* contact) { m_bodyContact = contact; }
     /// The breakable objects square may strike from now on (the level's whole panes), given each step.
     void setObjectTargets(std::vector<ObjectTarget> objects) { m_objectTargets = std::move(objects); }
     /// Picks up the object `handle` at `point` with clip `clip` (world_objects::pickupClip()): the clip plays after a
@@ -512,7 +517,8 @@ class Human final : public Holdable {
     std::optional<PickUpRun> m_pickUp;
     std::optional<double> m_pickedUp; // the object a pick-up reached, until takePickedUp()
     ContextAction m_contextAction;
-    std::vector<ObjectTarget> m_objectTargets; // the breakable objects square may strike
+    const BodyContact* m_bodyContact = nullptr; // setBodyContact(), the step's
+    std::vector<ObjectTarget> m_objectTargets;  // the breakable objects square may strike
     std::optional<ClimbProbe> m_climbProbe;
     std::vector<std::uint16_t> m_nearby; // scratch for the wall test
 };

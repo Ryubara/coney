@@ -59,6 +59,8 @@ inline constexpr std::uint32_t kBrokenPaneColour = 0xffffff70U;
 inline constexpr float kPaneBodyReach = 50.0F;
 /// A pane within this many metres of a camera (√12) is drawn on its own after the sprite batches.
 inline constexpr float kNearPaneReach = 3.4641016F;
+/// How far a pane's body stands proud of the glass on each side, metres (`0x00342dc0` halves 0.5).
+inline constexpr float kPaneBodyDepth = 0.25F;
 /// Type 14's sprite word: its own batch.
 inline constexpr std::uint32_t kStainedSprite = 0x00020000U;
 
@@ -155,6 +157,13 @@ class GlassPanes {
     [[nodiscard]] const GlassPane* find(double handle) const;
     /// The pane one of whose two triangles is `triangle`; null when none.
     [[nodiscard]] const GlassPane* findByTriangle(std::uint32_t triangle) const;
+    /// The panes whose body a sphere at `centre` of `radius` touches (game axes): each pane still whole and shown has
+    /// a box body covering it, half-extents width / 2, kPaneBodyDepth and height / 2 along its width, normal and
+    /// height, so standing kPaneBodyDepth proud of the glass on each side (docs/research/objects.md#pane-break).
+    /// **Coney's reading**: every whole pane has its body, as the 50 m camera rule (GlassPane_UpdateBodyByDistance)
+    /// only matters for panes no human is near.
+    /// @orig 0x0038ed68 GlassPane_CreateBody (unknown)
+    [[nodiscard]] std::vector<double> bodiesTouching(anim::Vec3 centre, float radius) const;
     /// Every pane, oldest first.
     [[nodiscard]] std::span<const GlassPane> panes() const { return m_panes; }
     /// Forgets the panes (the level's unload); the type table stays, as the global configuration does.

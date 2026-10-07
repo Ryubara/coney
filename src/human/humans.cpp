@@ -32,6 +32,7 @@ void Humans::remove(const Human& human) {
     if (found == m_humans.end()) {
         return;
     }
+    (*found)->setBodyContact(nullptr);
     const auto slot = std::distance(m_humans.begin(), found);
     m_humans.erase(found);
     m_padControlled.erase(m_padControlled.begin() + slot);
@@ -54,6 +55,7 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
     // The step every human advances by this time.
     for (Human* human : m_humans) {
         human->setStepSeconds(stepSeconds);
+        human->setBodyContact(m_bodyContact ? &m_bodyContact : nullptr);
     }
     // 1. The records: one no pad drives has its command cleared, so only what a brain writes this step is read, and no
     // buttons, which only a pad gives.

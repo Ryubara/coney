@@ -8,6 +8,8 @@
 #include <string>
 #include <utility>
 
+#include "ai/ai_humans.h"
+#include "ai/brain.h"
 #include "characters/character_class.h"
 #include "combat/anim_ids.h"
 #include "combat/anim_ranges.h"
@@ -16,10 +18,12 @@
 #include "human/fighter.h"
 #include "human/fighter_clips.h"
 #include "human/human.h"
+#include "human/humans.h"
 #include "human/locomotion.h"
 #include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/object_bindings.h"
+#include "world_objects/glass.h"
 
 namespace coney::platform {
 
@@ -57,6 +61,25 @@ void PlayLevelMode::bindObjects(world_objects::LevelObjects* objects, const scri
     m_objects->world.collision = m_scenery->objectCollision();
     m_objects->world.paths = m_scenery->objectPaths();
     m_lockPickDifficulty = script::lockPickDifficulty(recorded, characters::warriorClassOf(m_type));
+    // An airborne human breaks every pane whose body he reaches, as Strike_Contact does
+    // (docs/research/objects.md#pane-break).
+    m_player->humans().setBodyContact([this](human::Human& human, anim::Vec3 centre, float radius) {
+        for (const double pane : m_objects->glass.bodiesTouching(centre, radius)) {
+            const ai::Brain* brain = m_ai != nullptr ? m_ai->brainOf(human) : nullptr;
+            const double attacker = &human == &m_player->human() ? playerHandle()
+                                    : brain != nullptr           ? brain->handle()
+                                                                 : world_objects::kNoObject;
+            const bool took =
+                m_objects->humanHit(pane, world_objects::ObjectHit{.attacker = attacker,
+                                                                   .kind = world_objects::humanHitKind(false, true),
+                                                                   .point = centre,
+                                                                   .direction = human::facing(human.heading()),
+                                                                   .attackerAt = human.position()});
+            if (took) {
+                m_print(std::format("objects: pane {:.0f} broken by an airborne body\n", pane));
+            }
+        }
+    });
     m_print(std::format("objects: {} glass panes, {} doors and barriers\n", m_objects->glass.panes().size(),
                         m_objects->doors.doors().size()));
 }

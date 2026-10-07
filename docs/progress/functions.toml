@@ -7593,6 +7593,11 @@ name = "Cars_FindNear"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x0038ed68
+name = "GlassPane_CreateBody"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x0038ef60
 name = "GlassPane_QueueDraw"
 subsystem = "TaskEngine"

@@ -347,3 +347,30 @@ TEST_CASE("a run let go without a skid keeps turning toward the stick's last ang
     human.step(stick(0.0F, 0.0F), mesh.get());
     CHECK(human.heading() == last);
 }
+
+TEST_CASE("only an airborne human's body touches what the level gives it, at the push-out sphere", "[human]") {
+    const TestCharacter character;
+    const auto mesh = coney::test::makeMesh(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F));
+    Human human = spawnHuman(character, mesh.get(), Vec3{40.0F, 40.0F, 3.0F});
+    std::vector<float> heights;
+    const Human::BodyContact contact = [&heights](Human& touching, Vec3 centre, float radius) {
+        CHECK(radius > 0.0F);
+        CHECK(centre.z == Approx(touching.position().z + radius + 0.05F).margin(0.5F));
+        heights.push_back(centre.z);
+    };
+    human.setBodyContact(&contact);
+    // Spawned 3 m up it falls: each airborne update asks; once landed, standing or walking, none does.
+    for (int i = 0; i < 40 && heights.size() < 3; ++i) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+    }
+    CHECK(heights.size() >= 3);
+    for (int i = 0; i < 60; ++i) {
+        human.step(stick(0.0F, 0.0F), mesh.get());
+    }
+    REQUIRE_FALSE(human.airborne());
+    const std::size_t landed = heights.size();
+    for (int i = 0; i < 30; ++i) {
+        human.step(stick(0.0F, 1.0F), mesh.get());
+    }
+    CHECK(heights.size() == landed);
+}

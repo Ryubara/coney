@@ -442,6 +442,13 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
     anim::Vec3 feet = anim::add(m_position, displacement);
     // Walls still push the airborne body: move across, push out, then fall straight.
     const anim::Vec3 across{m_position.x + displacement.x, m_position.y + displacement.y, m_position.z};
+    // The airborne body breaks the panes it reaches first, so a pane broken now no longer blocks the push-out
+    // (docs/research/objects.md#pane-break). **Coney stand-in**: the push-out sphere stands for both the body and the
+    // jump's strike shapes, whose sizes are not traced.
+    if (m_bodyContact != nullptr && *m_bodyContact) {
+        const float radius = bodyTuning().airRadius * m_scale;
+        (*m_bodyContact)(*this, anim::Vec3{across.x, across.y, across.z + radius + bodyTuning().footGap}, radius);
+    }
     if (const auto moved = pushOutInAir(mesh, across); moved) {
         feet = anim::Vec3{moved->x, moved->y, m_position.z + displacement.z};
         m_blockedUpdates = 0;

@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,583 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,584 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-460 reimplemented function(s) have no size yet and add no bytes.
+461 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -72,7 +72,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 202 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 110 | 531,312 |
+| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 111 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -1431,6 +1431,7 @@ at the top of the repository's `README.md`.
 | `0x0038e0f0` | `Car_PlaceInTrunkOnDetach` | `TaskEngine` | not filled in |
 | `0x0038e538` | `CarManager_SetMsgHandler` | `TaskEngine` | 88 |
 | `0x0038e860` | `Cars_FindNear` | `TaskEngine` | not filled in |
+| `0x0038ed68` | `GlassPane_CreateBody` | `TaskEngine` | not filled in |
 | `0x0038ef60` | `GlassPane_QueueDraw` | `TaskEngine` | not filled in |
 | `0x0038f1c8` | `GlassPane_UpdateBodyByDistance` | `TaskEngine` | not filled in |
 | `0x0038f378` | `Glass_Break` | `TaskEngine` | 496 |

@@ -212,3 +212,22 @@ TEST_CASE("the panes drawn: whole ones within 50 m as a quad of their rectangle,
     CHECK(panes.find(broken)->colour == coney::world_objects::kBrokenPaneColour);
     static_cast<void>(gone);
 }
+
+TEST_CASE("a whole pane's body is a box 0.25 m proud of the glass; a broken pane has none", "[world_objects][glass]") {
+    coney::test::ObjectWorldFixture fixture;
+    GlassPanes panes;
+    panes.setType(1, GlassType{.brokenSprite = 6});
+    // The pane in the plane x = 4, y 11 to 13, z 0 to 2.
+    const double handle = panes.spawn(fixture.handle(), pane(1), fixture.world).handle;
+    const std::vector<double> touching{handle};
+    // A 0.5 m sphere 0.7 m from the glass reaches the box (0.25 + 0.5 > 0.7); 0.8 m away it does not.
+    CHECK(panes.bodiesTouching({4.7F, 12.0F, 1.0F}, 0.5F) == touching);
+    CHECK(panes.bodiesTouching({3.3F, 12.0F, 1.0F}, 0.5F) == touching); // from either side
+    CHECK(panes.bodiesTouching({4.8F, 12.0F, 1.0F}, 0.5F).empty());
+    // Past the pane's edge by more than the radius: nothing; above its top within the radius: touching.
+    CHECK(panes.bodiesTouching({4.0F, 13.6F, 1.0F}, 0.5F).empty());
+    CHECK(panes.bodiesTouching({4.0F, 12.0F, 2.4F}, 0.5F) == touching);
+    // Broken, the body is gone.
+    REQUIRE(panes.humanHit(handle, 42.0, fixture.world));
+    CHECK(panes.bodiesTouching({4.0F, 12.0F, 1.0F}, 0.5F).empty());
+}

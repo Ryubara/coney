@@ -248,6 +248,30 @@ const GlassPane* GlassPanes::findByTriangle(std::uint32_t triangle) const {
     return found == m_panes.end() ? nullptr : &*found;
 }
 
+std::vector<double> GlassPanes::bodiesTouching(anim::Vec3 centre, float radius) const {
+    std::vector<double> touched;
+    for (const GlassPane& pane : m_panes) {
+        // Only a pane still whole and shown has its body.
+        if (pane.colour != kPaneColour || pane.hidden || pane.width <= 0.0F || pane.height <= 0.0F) {
+            continue;
+        }
+        // The sphere's centre in the box's frame, each axis clamped to the box: the nearest point of the box.
+        const anim::Vec3 offset = anim::subtract(centre, pane.centre);
+        const anim::Vec3 across = anim::scale(pane.edgeU, 1.0F / pane.width);
+        const anim::Vec3 up = anim::scale(pane.edgeV, 1.0F / pane.height);
+        const float u = anim::dot(offset, across);
+        const float v = anim::dot(offset, up);
+        const float n = anim::dot(offset, pane.normal);
+        const float du = u - std::clamp(u, -pane.width / 2.0F, pane.width / 2.0F);
+        const float dv = v - std::clamp(v, -pane.height / 2.0F, pane.height / 2.0F);
+        const float dn = n - std::clamp(n, -kPaneBodyDepth, kPaneBodyDepth);
+        if ((du * du) + (dv * dv) + (dn * dn) <= radius * radius) {
+            touched.push_back(pane.handle);
+        }
+    }
+    return touched;
+}
+
 std::vector<GlassQuad> glassDraws(const GlassPanes& panes, anim::Vec3 camera) {
     std::vector<GlassQuad> far;
     std::vector<GlassQuad> near;

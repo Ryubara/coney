@@ -1163,7 +1163,9 @@ Coney's stand-ins, where this page is silent:
 - A leaf model is `dyn_dr_` and the type name after `dyn_door_`; a door model the Object List lacks draws `dyn_dr_`
   and the name less a leading `dbl` (`dyn_door_fence` draws `dyn_dr_fence`). A model stage a splintering door or a
   cabin leaf takes is not drawn. Panes are not sorted by their distance within the frame (all share batch 0), a
-  pane's body is not modelled apart from its colour and distance, and the leaf's pose steps per 60 Hz tick.
+  pane's body is a box only an airborne human meets ([Moving into a pane](#pane-break): the push-out sphere of
+  [Characters](characters.md#falling) stands for both the airborne body and the jump's strike shapes, and every whole
+  pane has its body whatever its distance from a camera), and the leaf's pose steps per 60 Hz tick.
 - `DoorOpen`'s "away" uses the door's turned y axis. `OpenDoorAnimated` and a lock pick's success open at once
   (`DoorOpen`), without human state 26.
 - A shard's offset is a random step of 1/1000 in ±1. A link's distance
