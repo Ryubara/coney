@@ -73,6 +73,9 @@ class SceneHost {
     [[nodiscard]] virtual bool humanReady(double /*human*/) { return true; }
     /// Whether `human` stands at `mark` (the start waits for that while its delay lasts).
     [[nodiscard]] virtual bool humanAtMark(double /*human*/, const ScenePose& /*mark*/) { return true; }
+    /// Whether `human` is free to be taken in at the start: not grabbing, grabbed, mounting or mounted. A human in a
+    /// pair is left out of the scene (docs/research/scenes.md#humans).
+    [[nodiscard]] virtual bool humanFree(double /*human*/) { return true; }
     /// The scene takes `human` over (`+0x280` = the scene, its brain's actions cleared, its clip pushed).
     virtual void humanEnterScene(double /*human*/, std::size_t /*role*/) {}
     /// The scene drives `human` this update.

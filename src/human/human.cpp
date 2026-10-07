@@ -194,10 +194,15 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_sprinting = false;
     m_jumping = false;
     m_lean = 0.0F;
-    // The fighting starts afresh; the flags the scripts set stay.
+    // A placement first breaks any pair the human is in (Human_SetTransform calls Human_BreakPair,
+    // docs/research/combat.md#pair-break), so its partner is let go; then the fighting starts afresh and the flags the
+    // scripts set stay.
+    m_fighter.breakPair();
     const std::uint64_t flags = m_fighter.flags();
+    const std::optional<TargetState> broken = m_fighter.takeBrokenHold();
     m_fighter = Fighter(m_ranges, 1, m_profile);
     m_fighter.setFlags(flags);
+    m_fighter.setBrokenHold(broken);
     m_announced.clear();
     endClimb();
     if (m_animator.state() != AnimState::Idle) {

@@ -280,7 +280,8 @@ class SceneTask {
                                    .range = def.range > 0.0F ? def.range : SceneLightDef::kDefaultLightRange};
             m_tracks.push_back(run);
         }
-        // The humans, each at its role's start mark.
+        // The humans, each at its role's start mark. One in a grab or a mount is skipped (not counted, not reset, no
+        // clip) and the scene plays on without it; the grab goes on (docs/research/scenes.md#humans).
         m_roles.resize(m_slot.roleHandles.size());
         for (std::size_t role = 0; role < m_roles.size(); ++role) {
             RoleRun& run = m_roles[role];
@@ -288,7 +289,7 @@ class SceneTask {
             const ScenePose start = toWorld(m_request.place, header.roles[role].start);
             run.feet = start.position;
             run.heading = headingOf(start.rotation);
-            if (run.handle == 0.0 || clipOf(run) == nullptr) {
+            if (run.handle == 0.0 || clipOf(run) == nullptr || !host.humanFree(run.handle)) {
                 run.handle = 0.0;
                 continue;
             }

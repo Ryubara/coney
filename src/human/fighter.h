@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -65,6 +66,10 @@ inline constexpr float kStrongGrappleFallbackRange = 3.0F;
 inline constexpr float kAttackTurnCapDegrees = 8.0F;
 /// The player's health (Rembrandt's 900 at runtime, record `+0x146`).
 inline constexpr int kPlayerHealth = 900;
+/// A held human frees itself after this many of its own updates without its grabber keeping the hold
+/// (Fighter::keepHold()). **Coney's choice**: the humans act in an order that alternates each step, so a live grabber
+/// keeps the hold at most 2 of the victim's updates apart; 3 means it has stopped.
+inline constexpr int kHoldLostUpdates = 3;
 
 /// A breakable object square may strike (a glass pane): its handle and the point an attack aims at.
 struct ObjectTarget {
@@ -224,6 +229,22 @@ class Fighter {
     /// Coney, and the state machine's restart is the idle.
     /// @orig 0x0023a210 Human_SetNormalMode (unknown)
     void setNormal(HumanAnimator& animator, bool full);
+    /// Breaks any pair this human is in from outside, as every placement of it does (a teleport, a scene's end
+    /// placement): it plays no clip and is free at once; a victim it holds is unlinked and plays its reaction (145
+    /// from a front grab, 107 from the rear or a mugging, 245 then the rise 199 from the mount) and stands free; a
+    /// grab holding it ends, its grabber playing its own reaction on its next update (pairBroken()). Not the grab's
+    /// release: 95 / 94 never play.
+    /// @orig 0x00258a88 Human_BreakPair (unknown)
+    void breakPair();
+    /// Whether this human is in a pair: holding, held or mounted, or held in another human's grab. A scene's start
+    /// leaves such a human out (docs/research/scenes.md#humans, `0x002263d8`).
+    [[nodiscard]] bool inPair() const;
+    /// The hold this human was in when a placement broke it (breakPair()), once: its grabber reads it on its next
+    /// update to play its side's reaction; nothing otherwise.
+    [[nodiscard]] std::optional<TargetState> takeBrokenHold() { return std::exchange(m_brokenFrom, std::nullopt); }
+    /// Puts back a broken hold taken from the fighter this one replaces (a placement starts the fighting afresh, but
+    /// the grabber must still hear of the break).
+    void setBrokenHold(std::optional<TargetState> broken) { m_brokenFrom = broken; }
     /// The grabbing player's movement: with the hold standing still (no move playing) and the stick beyond
     /// CombatTuning::grabTurnStick, turns `heading` towards the stick's heading `stickHeading` + 180° (the grabber's
     /// back to the stick) by combat::grabTurnStep() and returns the pair's backward walk (m/s, world axes); zero
@@ -250,6 +271,9 @@ class Fighter {
     /// `targetState`: Held or Mounted holds it (what it was doing ends; it neither moves itself nor acts until let go),
     /// Standing frees it, Grounded knocks it down to rise later; a stun ends. The clips are the caller's.
     void enterHold(TargetState targetState, HumanAnimator& animator, std::uint64_t nowMs);
+    /// Its grabber still drives the hold this update (Holdable::keepHold()). A held human whose grabber has not kept
+    /// the hold for kHoldLostUpdates of its own updates is let go (freeFromLostGrabber()).
+    void keepHold() { m_holdUnkept = 0; }
     /// Placed by its grabber each update (Holdable::setAttached()); only while held.
     void setHoldAttached(bool attached) { m_holdAttached = attached && m_holdState.has_value(); }
     [[nodiscard]] bool holdAttached() const { return m_holdAttached; }
@@ -336,7 +360,9 @@ class Fighter {
     // --- fighter_grab.cpp: a grab the player holds.
 
     // The victim held is gone from the targets (removed from the level), or something other than this grab freed it
-    // (a script's normal mode, a hit that knocked it down): the hold ends without touching a victim that is gone.
+    // (a script's normal mode, a hit that knocked it down, a placement that broke the pair): the hold ends without
+    // touching a victim that is gone; after a broken pair this side plays its reaction (138 or 106, or 244 from the
+    // mount; docs/research/combat.md#pair-break).
     void dropLostHold(const FighterInput& input, HumanAnimator& animator);
     // A grab or tackle started on `victim`: the intro plays (the player turning to face it), the victim waits. A grab
     // connects with front clip `connect` (72, or a strong grapple's strike), the rear one 2 on.
@@ -388,6 +414,11 @@ class Fighter {
     // Puts an attached victim at its stored offset from the grabber at `position` facing `heading`.
     // @orig 0x00244e78 Human_MoveAttached (unknown)
     void placeAttached(anim::Vec3 position, float heading) const;
+    // Held or mounted, but the grabber has stopped driving the hold (removed, out of the update): the human frees
+    // itself with the victim's side of a broken pair (docs/research/combat.md#pair-break) rather than stay in the held
+    // loop. **Coney's choice**: in the original every way a grabber leaves breaks the pair; Coney's grabber may stop
+    // updating without that, so the victim's side makes sure.
+    void freeFromLostGrabber(HumanAnimator& animator);
 
     // --- fighter_victim.cpp: the player hit, warned and grabbed.
 
@@ -448,8 +479,9 @@ class Fighter {
     Victim m_victim;
     std::optional<AttackNotice> m_notice;
     std::optional<GrabCatch> m_catch;
-    std::optional<GrabCatch> m_grabbed;     // the grab holding the player, its grabber's numbers kept up to date
-    std::optional<TargetState> m_holdState; // held or mounted by a grabber that drives it (enterHold())
+    std::optional<GrabCatch> m_grabbed;      // the grab holding the player, its grabber's numbers kept up to date
+    std::optional<TargetState> m_holdState;  // held or mounted by a grabber that drives it (enterHold())
+    std::optional<TargetState> m_brokenFrom; // the hold a placement broke, for its grabber (takeBrokenHold())
     GrabbedReport m_report;
     std::optional<ReactionShake> m_reactionShake; // the last update's reaction's shake
     anim::Vec3 m_duckAttacker;                    // where the attacker that made the player duck stood
@@ -461,6 +493,7 @@ class Fighter {
     int m_hitsBlocked = 0;
     int m_hitsDucked = 0;
     int m_hitsArmoured = 0;
+    int m_holdUnkept = 0; // own updates held since the grabber last kept the hold (keepHold())
     // The flags, together so the class packs.
     bool m_player = true;         // FighterProfile::player
     bool m_l1Held = false;        // L1 held this update (record +0x00 0x8)

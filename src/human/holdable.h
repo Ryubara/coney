@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <span>
 
 #include "animation/anim_math.h"
@@ -32,6 +33,12 @@ class Holdable : public Combatant {
     /// Attached, the grabber places it each update and nothing else moves it; detached, its clips' root motion does.
     virtual void setAttached(bool attached) = 0;
     [[nodiscard]] virtual bool attached() const = 0;
+    /// The grabber still drives the hold: called on each of its updates while it holds this victim. A human held
+    /// without it for a few updates frees itself (Fighter::keepHold()).
+    virtual void keepHold() = 0;
+    /// The hold it was in when a placement broke the pair from its side, once (Fighter::takeBrokenHold()); nothing
+    /// otherwise.
+    [[nodiscard]] virtual std::optional<TargetState> takeBrokenHold() = 0;
     /// Moves it to `position` facing `headingRadians`.
     virtual void place(anim::Vec3 position, float headingRadians) = 0;
     /// Turns it to face `point`.

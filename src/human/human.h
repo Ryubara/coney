@@ -280,6 +280,8 @@ class Human final : public Holdable {
                     AnimState state, TargetState targetState) override;
     void setAttached(bool attached) override { m_fighter.setHoldAttached(attached); }
     [[nodiscard]] bool attached() const override { return m_fighter.holdAttached(); }
+    void keepHold() override { m_fighter.keepHold(); }
+    [[nodiscard]] std::optional<TargetState> takeBrokenHold() override { return m_fighter.takeBrokenHold(); }
     /// Moves it there and stops it (its velocity goes).
     void place(anim::Vec3 position, float headingRadians) override;
     void face(anim::Vec3 point) override;
@@ -315,6 +317,8 @@ class Human final : public Holdable {
     void revive() { m_fighter.revive(m_animator); }
     /// `HuSetNormalMode` (Fighter::setNormal()); an arrest ends too.
     void setNormalMode(bool full);
+    /// Breaks any pair it is in from outside (Fighter::breakPair()), as a placement does.
+    void breakPair() { m_fighter.breakPair(); }
     /// `HuSetArrested`: arrested, the human stops where it is and its fighting ends; released, it stands again with
     /// the idle.
     /// @orig 0x00237700 Human_SetArrested (unknown)

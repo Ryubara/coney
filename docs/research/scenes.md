@@ -543,6 +543,8 @@ with the roles `level99_combat.lua` binds: 2,026 and 500 updates playing, every 
 0.1 mm) at frame 0 and within 2 cm of its end mark at the end (on it, after a skip), one soundtrack prepared and started
 each. `[disc][story][audio]` plays level99's checkpoint 1 with the sound mixed offline: `l99_c1`'s soundtrack plays on
 a real voice for its whole 2,026 frames, and the mix is audible through every one of them.
+`[disc][story][combat][scenes]` plays checkpoint 1 through lesson 6, whose power move still holds a bum as `l99_c7`
+starts (1 human holding, 1 held), and finds no human holding, held or grabbed 90 updates after the scene.
 
 **Coney choices** where the page is silent:
 
@@ -574,7 +576,11 @@ shown, its keys set the scene camera's view and its end pops the camera back ove
 with no cameras, the end is a cut). The player and the level's cast (the humans its scripts made) are posed from
 their roles' frames and, when let go, stand where the scene left them (a cast human placed as a spawn places it),
 placed at the release itself so the end function's own moves (`level87`'s `TeleportToFlag`) win ([Ending](#ending));
-other bound humans are drawn as puppets of their characters. Sounds go through the sound engine
+that placement breaks any pair the human is in, its partner playing its reaction ([Combat](combat.md#pair-break)). A
+player or cast human that is grabbing, grabbed, mounting or mounted at the start is left out as [Humans](#humans)
+says (the stage's free test, `SceneHost::humanFree`): not taken in or posed, its grab going on, and at the end placed
+only when the scene was skipped. Other bound humans are drawn as puppets of their characters. Sounds go through
+the sound engine
 ([Sound](sound.md#scene-sound)): the soundtrack is prepared on the scene's load and starts on its event, the engine
 ducking the music to 0.75 while it plays, and it stops when the cinematic ends (Coney's choice, so a skip silences
 it; only the end stops it, as a scene's soundtrack is prepared before its cinematic starts; the log says

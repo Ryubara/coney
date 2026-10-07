@@ -70,6 +70,14 @@ void PlayLevelMode::makeStage() {
             return model.empty() ? m_model : model;
         },
         m_print);
+    // Player 1 or a cast human in a grab or a mount is left out of the scene's start (scenes.md#humans).
+    m_stage->setFreeTest([this](double human) {
+        if (human == m_playerHandle) {
+            return !m_player->human().fighter().inPair();
+        }
+        const ai::AiHuman* fighter = castHumanOf(human);
+        return fighter == nullptr || !fighter->human->fighter().inPair();
+    });
     // Placed at the release, before the scene's end function can move them on.
     m_stage->setReleaseHandler([this](const SceneStage::Release& release) { placeReleased(release); });
     // A bound object stays where the scene leaves it (scenes.md#ending): its record keeps the place.
@@ -121,6 +129,7 @@ void PlayLevelMode::stepScenes(std::uint64_t nowMs, std::uint16_t buttons) {
 
 void PlayLevelMode::placeReleased(const SceneStage::Release& release) {
     // Player 1 and the cast, let go, stand where the scene left them (their end marks after a skip), on the ground.
+    // The placement breaks any pair the human is in, its partner playing its reaction (Human::spawn()).
     // **Coney's choice** for a cast human: placed as a spawn places it (Human_Init), its stamina full again.
     const float headingDegrees = release.heading * 180.0F / std::numbers::pi_v<float>;
     if (release.human == m_playerHandle) {

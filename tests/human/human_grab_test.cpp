@@ -62,15 +62,17 @@ class HumanFight {
                 m_matcher.update(frame.buttons, m_tables, combat::combatTuning().historyHoldSamples);
             const std::span<coney::human::Combatant* const> targets =
                 m_removed ? std::span<coney::human::Combatant* const>{} : std::span{m_targets};
-            m_player.step(coney::human::HumanInput{.stickX = frame.leftX,
-                                                   .stickY = frame.leftY,
-                                                   .cameraForward = Vec3{0.0F, 1.0F, 0.0F},
-                                                   .sprintHeld = false,
-                                                   .actionPressed = false,
-                                                   .command = command,
-                                                   .buttons = frame.buttons,
-                                                   .targets = targets},
-                          m_mesh.get());
+            if (!m_playerStopped) {
+                m_player.step(coney::human::HumanInput{.stickX = frame.leftX,
+                                                       .stickY = frame.leftY,
+                                                       .cameraForward = Vec3{0.0F, 1.0F, 0.0F},
+                                                       .sprintHeld = false,
+                                                       .actionPressed = false,
+                                                       .command = command,
+                                                       .buttons = frame.buttons,
+                                                       .targets = targets},
+                              m_mesh.get());
+            }
             if (!m_removed) {
                 m_other.step(coney::human::HumanInput{.stickX = 0.0F,
                                                       .stickY = 0.0F,
@@ -91,6 +93,10 @@ class HumanFight {
     }
     // Takes the other human out of the level: no longer a target, no longer stepped.
     void removeOther() { m_removed = true; }
+    // The player is no longer stepped (taken out of the update); the other human goes on.
+    void stopPlayer() { m_playerStopped = true; }
+    // Places `human` afresh at `feet`, as a teleport does (Human::spawn()).
+    void place(Human& human, Vec3 feet) { human.spawn(m_mesh.get(), feet, 0.0F); }
 
     Human& player() { return m_player; }
     Human& other() { return m_other; }
@@ -107,6 +113,7 @@ class HumanFight {
     combat::CommandTables m_tables = combat::CommandTables::street();
     combat::CommandMatcher m_matcher;
     bool m_removed = false;
+    bool m_playerStopped = false;
     std::uint64_t m_frame = 0;
 };
 
@@ -280,4 +287,75 @@ TEST_CASE("the power strike ends the grab with the victim down, unless square in
     CHECK(extended.damageTaken() == 57 + 79);
     CHECK(extended.other().state() == TargetState::Grounded);
     CHECK(extended.player().fighter().combat().mode() == combat::CombatMode::Free);
+}
+
+TEST_CASE("placing the grabber breaks the pair: the victim plays its reaction and stands free", "[human][combat]") {
+    // docs/research/combat.md#pair-break: the human placed plays nothing and is free; a front grab's victim plays 145.
+    const FightCharacter character;
+    HumanFight fight(character, 1.5F);
+    fight.run("5 tap circle\n", 40);
+    REQUIRE(fight.other().state() == TargetState::Held);
+    fight.place(fight.player(), Vec3{20.0F, 20.0F, 0.0F});
+    CHECK(fight.player().fighter().held() == nullptr);
+    CHECK_FALSE(fight.player().fighter().inPair());
+    CHECK(fight.other().state() == TargetState::Standing);
+    CHECK_FALSE(fight.other().attached());
+    CHECK(fight.other().animator().animId() == 145U);
+    fight.run("", 60);
+    CHECK(fight.other().state() == TargetState::Standing);
+    CHECK_FALSE(fight.other().fighter().inPair());
+    CHECK(fight.other().animator().animId() != 83U);
+}
+
+TEST_CASE("placing the victim breaks the pair: the grabber plays its reaction on its next update", "[human][combat]") {
+    const FightCharacter character;
+    HumanFight fight(character, 1.5F);
+    fight.run("5 tap circle\n", 40);
+    REQUIRE(fight.player().fighter().held() == &fight.other());
+    fight.place(fight.other(), Vec3{20.0F, 20.0F, 0.0F});
+    CHECK(fight.other().state() == TargetState::Standing);
+    fight.run("", 1);
+    CHECK(fight.player().fighter().held() == nullptr);
+    CHECK(fight.player().fighter().combat().mode() == combat::CombatMode::Free);
+    CHECK(fight.player().animator().animId() == 138U);
+    // The other human stays where it was put.
+    CHECK(fight.other().position().x == Approx(20.0F).margin(0.05F));
+}
+
+TEST_CASE("placing the mounter breaks the mount: the human below plays 245, then gets up", "[human][combat]") {
+    const FightCharacter character;
+    HumanFight fight(character, 2.0F);
+    fight.run("5 press circle\n15 release circle\n", 60);
+    REQUIRE(fight.other().state() == TargetState::Mounted);
+    fight.place(fight.player(), Vec3{20.0F, 20.0F, 0.0F});
+    CHECK(fight.other().state() == TargetState::Standing);
+    CHECK(fight.other().animator().animId() == 245U);
+    bool rose = false;
+    fight.run("", 90, [&](std::uint64_t /*frame*/) { rose = rose || fight.other().animator().animId() == 199U; });
+    CHECK(rose);
+    CHECK_FALSE(fight.other().fighter().inPair());
+}
+
+TEST_CASE("a held human whose grabber stops updating frees itself", "[human][combat]") {
+    // Coney's choice (Fighter::freeFromLostGrabber()): no hold outlives the grabber that drives it.
+    const FightCharacter character;
+    HumanFight fight(character, 1.5F);
+    fight.run("5 tap circle\n", 40);
+    REQUIRE(fight.other().state() == TargetState::Held);
+    fight.stopPlayer();
+    // The victim acts after its grabber here, so its first update without the grabber is its second since the keep.
+    fight.run("", 1);
+    CHECK(fight.other().state() == TargetState::Held);
+    fight.run("", 1);
+    CHECK(fight.other().state() == TargetState::Standing);
+    CHECK(fight.other().animator().animId() == 145U);
+}
+
+TEST_CASE("a held human stays held while its grabber goes on updating", "[human][combat]") {
+    // A live grabber keeps the hold every update, so the victim never frees itself.
+    const FightCharacter character;
+    HumanFight fight(character, 1.5F);
+    fight.run("5 tap circle\n", 40);
+    REQUIRE(fight.other().state() == TargetState::Held);
+    fight.run("", 200, [&](std::uint64_t /*frame*/) { REQUIRE(fight.other().state() == TargetState::Held); });
 }

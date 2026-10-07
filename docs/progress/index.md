@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,552 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,553 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-429 reimplemented function(s) have no size yet and add no bytes.
+430 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -64,7 +64,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
 | `Graphics` | `██▏░░░░░░░░░░░░░░░░░` | 10.5% | 64 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
-| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 487 | 1,096,672 |
+| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 488 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -846,6 +846,7 @@ at the top of the repository's `README.md`.
 | `0x002562d0` | `Human_DrainMeters` | `Human` | not filled in |
 | `0x00256a60` | `Human_RefillMeters` | `Human` | not filled in |
 | `0x00257f38` | `Human_DropHeld` | `Human` | not filled in |
+| `0x00258a88` | `Human_BreakPair` | `Human` | not filled in |
 | `0x00259578` | `Human_ChooseAnimState` | `Human` | not filled in |
 | `0x0025b200` | `Human_BuildMoveTasks` | `Human` | not filled in |
 | `0x0025cf30` | `Human_BuildJumpTasks` | `Human` | not filled in |

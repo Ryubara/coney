@@ -210,6 +210,8 @@ bool SceneStage::humanReady(double human) {
     return true;
 }
 
+bool SceneStage::humanFree(double human) { return !m_isFree || m_isFree(human); }
+
 void SceneStage::humanEnterScene(double /*human*/, std::size_t /*role*/) {}
 
 void SceneStage::humanPose(double human, const scenes::RoleFrame& frame) {
@@ -238,6 +240,8 @@ void SceneStage::humanRelease(double human, const std::optional<scenes::ScenePos
     // Where it stands: its end pose after a skip, else where its clip left it.
     Release release{.human = human};
     std::optional<Interpolated<scenes::RoleFrame>>& frame = found->second.frame;
+    // A human the scene never took in (one in a grab at the start) and not skipped stays where it is.
+    const bool placed = endPose.has_value() || frame.has_value();
     if (endPose) {
         release.feet = endPose->position;
         release.heading = scenes::headingOf(endPose->rotation);
@@ -245,7 +249,7 @@ void SceneStage::humanRelease(double human, const std::optional<scenes::ScenePos
         release.feet = frame->current().feet;
         release.heading = frame->current().heading;
     }
-    if (m_onRelease) {
+    if (placed && m_onRelease) {
         m_onRelease(release);
     }
     if (found->second.model.empty()) {

@@ -4235,6 +4235,11 @@ name = "Human_DropHeld"
 subsystem = "Human"
 
 [[function]]
+address = 0x00258a88
+name = "Human_BreakPair"
+subsystem = "Human"
+
+[[function]]
 address = 0x00259578
 name = "Human_ChooseAnimState"
 subsystem = "Human"

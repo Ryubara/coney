@@ -182,8 +182,8 @@ inline std::vector<LocomotionClip> combatClips() {
         }
     }
     for (const std::uint32_t id :
-         {78U,  79U,  80U,  81U,  94U,  95U,  2U,   4U,   5U,   6U,   195U, 199U, 212U, 357U, 389U,
-          118U, 119U, 219U, 220U, 221U, 222U, 223U, 224U, 225U, 226U, 244U, 245U, 248U, 249U}) {
+         {78U,  79U,  80U,  81U,  94U,  95U,  2U,   4U,   5U,   6U,   195U, 199U, 212U, 357U, 389U, 118U, 119U,
+          219U, 220U, 221U, 222U, 223U, 224U, 225U, 226U, 244U, 245U, 248U, 249U, 106U, 107U, 138U, 145U}) {
         still(id, 0.4F);
     }
     still(147, 0.6F);

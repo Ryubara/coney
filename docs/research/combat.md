@@ -1934,6 +1934,14 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   answer it; the tackle's intro stops it at once (**Coney choice**, as before). The answer itself (the AI's counter
   76 or 9) and the AI's own struggle in the hold are not built, and no AI grabs or tackles yet. A held human gone from
   the targets, or freed by a script, ends the hold.
+- **Breaking a pair** ([Breaking a pair from outside](#pair-break)): every placement of a human (`Human::spawn`: the
+  scripts' teleports, a scene's release) first breaks any pair it is in (`Fighter::breakPair`). The human placed plays
+  nothing; a victim it held plays 145 (front), 107 (rear or a mugging) or 245 then 199 (mounted) and stands free; a
+  grabber it was held by plays 138, 106 or 244 on its next update (**Coney's choice**: the original plays it at once).
+  **Coney's choice**: a held human whose grabber stops updating without a break (taken out of the update) frees
+  itself with the same victim clips after 3 of its own updates without its grabber keeping the hold (the humans act
+  in an order that alternates each step, so a live grabber keeps it at most 2 apart). `Grab_Release`'s refusal in a
+  scene is not built: no human in a pair is taken into one.
 - The combat walk's clip by eight even 45° sectors centred on the clips' directions; the walk starts at its full
   speed (the 5 slower first updates backward are not known).
 

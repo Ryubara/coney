@@ -164,8 +164,15 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         m_repeat.resetBonus();
     }
     // 1. The victim's side first, as the original applies the pending damage before the actions: a grab caught on
-    // the player, a warning, the update's hit, then the reaction's timers.
+    // the player, a warning, the update's hit, then the reaction's timers. A hold whose grabber has stopped driving it
+    // frees this human; a hold this human drives is kept for its victim.
+    if (m_holdState.has_value() && ++m_holdUnkept >= kHoldLostUpdates) {
+        freeFromLostGrabber(animator);
+    }
     dropLostHold(input, animator);
+    if (m_held != nullptr) {
+        m_held->keepHold();
+    }
     if (m_catch.has_value()) {
         startGrabbed(input, animator);
     }

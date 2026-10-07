@@ -56,7 +56,19 @@ void Fighter::dropLostHold(const FighterInput& input, HumanAnimator& animator) {
             return;
         }
     }
-    // The grabber stands in its fight idle; the victim, if it is still there, is left as it is.
+    // A placement broke the pair from the victim's side: this side plays its reaction (244 from the mount, 138 or 106
+    // from a grab or a mugging) and stands free. Otherwise the grabber stands in its fight idle; the victim, if it is
+    // still there, is left as it is.
+    std::optional<TargetState> broken;
+    if (listed(m_held)) {
+        broken = m_held->takeBrokenHold();
+    }
+    std::uint32_t reaction = 0;
+    if (broken == TargetState::Mounted) {
+        reaction = clips::kBreakMounter;
+    } else if (broken.has_value()) {
+        reaction = m_rear ? clips::kBreakRearGrabber : clips::kBreakFrontGrabber;
+    }
     m_held = nullptr;
     m_pair = PairStage::None;
     m_turnUpdates = 0;
@@ -65,8 +77,53 @@ void Fighter::dropLostHold(const FighterInput& input, HumanAnimator& animator) {
     m_tacklePending = false;
     m_mountPending = false;
     m_combat.release();
-    animator.playCombat(clips::kNoClips, kAnimFightIdle, AnimState::Attack);
+    if (reaction != 0) {
+        animator.playCombat(clips::one(reaction), kAnimFightIdle, AnimState::Attack);
+        m_reacting = true;
+    } else {
+        animator.playCombat(clips::kNoClips, kAnimFightIdle, AnimState::Attack);
+    }
 }
+
+void Fighter::breakPair() {
+    // This human plays nothing: its link ends and whatever it plays goes on (the placement that called this decides).
+    // 1. Holding someone (a grab, a mount, a mugging): the victim is unlinked and plays its side's reaction.
+    if (m_held != nullptr) {
+        Holdable& victim = *m_held;
+        const bool mounted = victim.state() == TargetState::Mounted;
+        victim.setAttached(false);
+        if (!victim.health().depleted()) {
+            if (mounted) {
+                static constexpr std::array<std::uint32_t, 2> kUp{clips::kBreakMountedVictim, clips::kGroundedRise};
+                victim.play(kUp, clips::kIdle, AnimState::Attack, TargetState::Standing);
+            } else {
+                victim.play(clips::one(m_rear ? clips::kBreakRearVictim : clips::kBreakFrontVictim), clips::kIdle,
+                            AnimState::Attack, TargetState::Standing);
+            }
+        }
+        m_held = nullptr;
+        m_pair = PairStage::None;
+        m_turnUpdates = 0;
+        m_grabTurn = 0.0F;
+        m_rear = false;
+        m_combat.release();
+    }
+    // 2. A throw's link is cleared, with no clip.
+    m_thrown = nullptr;
+    // 3. Held or mounted: free at once; the grabber reads the broken hold on its next update and plays its reaction.
+    if (m_holdState.has_value()) {
+        m_brokenFrom = m_holdState;
+        m_holdState.reset();
+        m_holdAttached = false;
+        m_holdUnkept = 0;
+    }
+    m_catch.reset();
+    m_grabbed.reset();
+    m_tacklePending = false;
+    m_mountPending = false;
+}
+
+bool Fighter::inPair() const { return m_held != nullptr || m_holdState.has_value() || m_grabbed.has_value(); }
 
 void Fighter::startHold(Holdable& victim, const FighterInput& input, float& heading, bool tackle, int connect,
                         HumanAnimator& animator) {

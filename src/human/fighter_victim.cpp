@@ -389,12 +389,30 @@ void Fighter::enterHold(TargetState targetState, HumanAnimator& animator, std::u
             m_steer.clear();
         }
         m_holdState = targetState;
+        m_holdUnkept = 0;
+        m_brokenFrom.reset();
         return;
     }
     // Let go: the clip the grabber gave plays out before it acts again.
     m_holdState.reset();
     m_holdAttached = false;
     m_reacting = true;
+}
+
+void Fighter::freeFromLostGrabber(HumanAnimator& animator) {
+    // As if the grabber's placement had broken the pair: the victim's side of the break (245 then the rise from the
+    // mount, 107 from a rear hold, else 145), then the idle.
+    const bool mounted = m_holdState == TargetState::Mounted;
+    const std::uint32_t clip = animator.animId();
+    const bool rear = clip == clips::kGrabRearHeld || clip == clips::kGrabReactFromRear;
+    enterHold(TargetState::Standing, animator, 0);
+    if (mounted) {
+        static constexpr std::array<std::uint32_t, 2> kUp{clips::kBreakMountedVictim, clips::kGroundedRise};
+        animator.playCombat(kUp, clips::kIdle, AnimState::Attack);
+    } else {
+        animator.playCombat(clips::one(rear ? clips::kBreakRearVictim : clips::kBreakFrontVictim), clips::kIdle,
+                            AnimState::Attack);
+    }
 }
 
 } // namespace coney::human

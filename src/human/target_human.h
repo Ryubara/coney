@@ -76,6 +76,10 @@ class TargetHuman final : public Holdable {
     /// clip's root motion.
     void setAttached(bool attached) override { m_attached = attached; }
     [[nodiscard]] bool attached() const override { return m_attached; }
+    /// A passive target has no state of its own to free: its grabber alone moves it.
+    void keepHold() override {}
+    /// No placement breaks a passive target's pair from its side.
+    [[nodiscard]] std::optional<TargetState> takeBrokenHold() override { return std::nullopt; }
     /// Moves it to `position` facing `headingRadians` (a grab or a tackle puts it in front of the player).
     void place(anim::Vec3 position, float headingRadians) override;
     /// Turns it to face `point`.

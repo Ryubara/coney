@@ -8,6 +8,7 @@
 #include <format>
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -35,12 +36,14 @@ class RecordingHost final : public scenes::SceneHost {
     std::optional<scenes::SceneLens> lens;
     std::map<double, std::optional<scenes::ScenePose>> released;
     bool ready = true;
+    std::set<double> inPair; // the humans in a grab or a mount: not free to be taken in
 
     void humanJoin(double human, std::uint32_t scene, std::size_t role, const scenes::ScenePose& /*start*/,
                    int gait) override {
         calls.push_back(std::format("join {} {} {} {}", human, scene, role, gait));
     }
     bool humanReady(double /*human*/) override { return ready; }
+    bool humanFree(double human) override { return !inPair.contains(human); }
     void humanEnterScene(double human, std::size_t role) override {
         calls.push_back(std::format("enter {} {}", human, role));
     }
@@ -326,6 +329,30 @@ TEST_CASE("cross skips a skippable scene only after 2 s; the humans go to their 
           coney::anim::Vec3{12.0F, 21.0F, 0.0F});
     CHECK(h.system.stats().skipped == 1);
     CHECK(h.lua == std::vector<std::string>{"PreCashTheWorld(3)"});
+}
+
+TEST_CASE("a bound human in a grab at the start is left out: not taken in, not posed, not placed", "[scenes]") {
+    // docs/research/scenes.md#humans: the start skips a human that is grabbing, grabbed, mounting or mounted; the
+    // scene plays on without it and, not skipped, lets it go where it stands.
+    Harness h;
+    h.system.preload("tst_long", "");
+    h.step();
+    REQUIRE(h.system.joinHuman(7.0, 3, 0, 2));
+    h.host.inPair.insert(7.0);
+    REQUIRE(h.system.play(3, Harness::cinematic()));
+    for (int i = 0; i < 20 && h.system.state(3) != scenes::SceneState::Playing; ++i) {
+        h.step();
+    }
+    CHECK(h.system.state(3) == scenes::SceneState::Playing);
+    CHECK_FALSE(h.host.made("enter 7 0"));
+    for (int i = 0; i < 120 && h.system.state(3) != scenes::SceneState::Ended; ++i) {
+        h.step();
+    }
+    CHECK(h.system.state(3) == scenes::SceneState::Ended);
+    CHECK_FALSE(h.host.frames.contains(7.0));
+    CHECK_FALSE(h.host.made("exit 7"));
+    REQUIRE(h.host.released.contains(7.0));
+    CHECK_FALSE(h.host.released.at(7.0).has_value());
 }
 
 TEST_CASE("START skips and sets the chain skip; a stop ends a starting scene; freeze suspends the brains", "[scenes]") {

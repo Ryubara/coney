@@ -25,6 +25,13 @@ inline constexpr std::uint32_t kGrabHeld = 83;
 inline constexpr std::uint32_t kGrabRearHold = 84;
 inline constexpr std::uint32_t kGrabRearHeld = 85;
 inline constexpr std::uint32_t kGrabLetGoReact = 94;
+// A pair broken from outside (docs/research/combat.md#pair-break): the clip the human not placed plays.
+inline constexpr std::uint32_t kBreakRearGrabber = 106;   ///< GRAB_REAR_BREAK: the grabber of a rear grab or mugging
+inline constexpr std::uint32_t kBreakRearVictim = 107;    ///< GRAB_REAR_BREAK_REACT: its victim
+inline constexpr std::uint32_t kBreakFrontGrabber = 138;  ///< GRAB_FRONT_HIT_VICTIM_KNOCKDOWN_REACT: front grabber
+inline constexpr std::uint32_t kBreakFrontVictim = 145;   ///< GRAB_FRONT_HIT_GRABBER_KNOCKDOWN_REACT: its victim
+inline constexpr std::uint32_t kBreakMounter = 244;       ///< MOUNT_RELEASE: the human on top
+inline constexpr std::uint32_t kBreakMountedVictim = 245; ///< MOUNT_RELEASE_REACT: the one below, then 199
 inline constexpr std::uint32_t kNormalFromFight = 389;
 inline constexpr std::uint32_t kTackleMiss = 2;
 inline constexpr std::uint32_t kTackleHit = 5;
