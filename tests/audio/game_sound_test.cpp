@@ -187,6 +187,38 @@ Value position(float x, float y, float z) {
     return Value(std::move(table));
 }
 
+// The emitters over a rig's engine with one player at `listener`, on covered ground or not.
+struct EmitterRig {
+    Rig rig;
+    AmbientEmitters emitters;
+    SoundVec listener{};
+    bool covered = false;
+
+    // Runs `seconds` of 1/30 s frames: the emitters, then the engine.
+    void run(double seconds) {
+        const auto frames = static_cast<int>(std::lround(seconds * 30.0));
+        for (int i = 0; i < frames; ++i) {
+            const std::array<SoundVec, 1> listeners{listener};
+            const std::array<bool, 1> players{covered};
+            emitters.update(rig.engine(),
+                            coney::audio::AmbientWorld{.listeners = listeners, .playersCovered = players});
+            rig.player.update(1000.0F / 30.0F);
+        }
+    }
+};
+
+// An emitter of the gull in mode `mode`: measured from the origin, range 50 m, a 2 s delay.
+AmbientEmitterSetup gulls(std::uint8_t mode, int plays = -1) {
+    return AmbientEmitterSetup{.name = "tGulls01",
+                               .to = SoundVec{10.0F, 0.0F, 0.0F},
+                               .sound = coney::crc32(kGull),
+                               .range = 50.0F,
+                               .plays = plays,
+                               .minDelay = 2,
+                               .maxDelay = 2,
+                               .mode = mode};
+}
+
 } // namespace
 
 TEST_CASE("the voice table counts each set's lines and says them in turn", "[audio][speech]") {
@@ -235,55 +267,154 @@ TEST_CASE("the voice table counts each set's lines and says them in turn", "[aud
     CHECK(table.percent(0, 12) == 40);
 }
 
-TEST_CASE("an ambient emitter plays a random sound of its slots after its pause, one at a time", "[audio][ambient]") {
-    Rig rig;
-    AmbientEmitters emitters;
-    emitters.setSound(7, coney::crc32(kGull));
-    emitters.setSound(8, coney::crc32(kCrow));
-    CHECK(emitters.sound(7) == coney::crc32(kGull));
-    CHECK(emitters.sound(9) == 0);
-    emitters.setSound(-1, 1); // ignored
-    const int id = emitters.add(AmbientEmitterSetup{.name = "tBirds01",
-                                                    .from = SoundVec{0.0F, 0.0F, 0.0F},
-                                                    .to = SoundVec{10.0F, 0.0F, 0.0F},
-                                                    .slot = 7,
-                                                    .count = 2,
-                                                    .minDelay = 2,
-                                                    .maxDelay = 2});
+TEST_CASE("a timed ambient emitter plays after its delay, once a second at most, not over its own sound",
+          "[audio][ambient]") {
+    EmitterRig r;
+    r.emitters.setSound(7, coney::crc32(kGull));
+    r.emitters.setSound(8, coney::crc32(kCrow));
+    CHECK(r.emitters.sound(7) == coney::crc32(kGull));
+    CHECK(r.emitters.sound(9) == 0);
+    r.emitters.setSound(-1, 1); // ignored
+    const int id = r.emitters.add(gulls(2), r.rig.engine());
     CHECK(id == 0);
-    // The same name changes that emitter.
-    CHECK(emitters.add(AmbientEmitterSetup{.name = "tBirds01", .slot = 7, .count = 2, .minDelay = 2, .maxDelay = 2}) ==
-          0);
-    CHECK(emitters.emitterCount() == 1);
+    // The same name, sound and first point is that emitter; another point is another.
+    CHECK(r.emitters.add(gulls(2), r.rig.engine()) == 0);
+    AmbientEmitterSetup elsewhere = gulls(2);
+    elsewhere.from = SoundVec{1.0F, 0.0F, 0.0F};
+    CHECK(r.emitters.add(elsewhere, r.rig.engine()) == 1);
+    r.emitters.setEnabled(1, false);
+    // -1 takes the sound's far distance + 10.
+    AmbientEmitterSetup wide = gulls(6);
+    wide.name = "tWide";
+    wide.range = -1.0F;
+    CHECK(r.emitters.add(wide, r.rig.engine()) == 2);
+    CHECK(r.emitters.range(2) == Approx(110.0F));
 
-    SoundEngine& engine = rig.engine();
-    const auto run = [&](int frames) {
-        for (int i = 0; i < frames; ++i) {
-            emitters.update(engine);
-            rig.player.update(1000.0F / 30.0F);
-        }
-    };
-    // A 2 s pause first.
-    run(58);
-    CHECK(emitters.plays() == 0);
-    run(4);
-    CHECK(emitters.plays() == 1);
-    const SoundHandle first = emitters.playing(0);
-    CHECK(engine.isPlaying(first));
-    // Nothing more while it plays (3 s), then another 2 s pause.
-    run(80);
-    CHECK(emitters.plays() == 1);
-    run(80);
-    CHECK(emitters.plays() == 2);
+    // The 2 s delay first, judged once a second.
+    r.run(1.9);
+    CHECK(r.emitters.plays() == 0);
+    r.run(0.4);
+    CHECK(r.emitters.plays() == 1);
+    const SoundHandle first = r.emitters.playing(0);
+    CHECK(r.rig.engine().isPlaying(first));
+    // Its delay passes while the sound (3 s) plays: no second play, and the delay is drawn again.
+    r.run(3.0);
+    CHECK(r.emitters.plays() == 1);
+    r.run(2.5);
+    CHECK(r.emitters.plays() == 2);
 
     // Positions given by name; an unknown name is refused.
     const std::array<SoundVec, 2> points{SoundVec{1.0F, 2.0F, 3.0F}, SoundVec{4.0F, 5.0F, 6.0F}};
-    CHECK(emitters.setPositions("tBirds01", points));
-    CHECK_FALSE(emitters.setPositions("tNobody", points));
-    emitters.clearEmitters(&engine);
-    CHECK(emitters.emitterCount() == 0);
-    CHECK_FALSE(engine.isPlaying(first));
-    CHECK(emitters.sound(8) == coney::crc32(kCrow));
+    CHECK(r.emitters.setPositions("tGulls01", points));
+    CHECK_FALSE(r.emitters.setPositions("tNobody", points));
+    r.emitters.clearEmitters(&r.rig.engine());
+    CHECK(r.emitters.emitterCount() == 0);
+    CHECK_FALSE(r.rig.engine().isPlaying(first));
+    CHECK(r.emitters.sound(8) == coney::crc32(kCrow));
+}
+
+TEST_CASE("an ambient emitter out of range plays nothing; its plays run out; its filter picks the players",
+          "[audio][ambient]") {
+    SECTION("out of range") {
+        EmitterRig r;
+        r.listener = SoundVec{60.0F, 0.0F, 0.0F};
+        r.emitters.add(gulls(4), r.rig.engine());
+        r.run(4.0);
+        CHECK(r.emitters.plays() == 0);
+    }
+    SECTION("no plays left switches it off without a play") {
+        EmitterRig r;
+        r.emitters.add(gulls(2, 0), r.rig.engine());
+        r.run(4.0);
+        CHECK(r.emitters.plays() == 0);
+        CHECK_FALSE(r.emitters.enabled(0));
+    }
+    SECTION("one play") {
+        EmitterRig r;
+        r.emitters.add(gulls(4, 1), r.rig.engine());
+        r.run(12.0);
+        CHECK(r.emitters.plays() == 1);
+        CHECK_FALSE(r.emitters.enabled(0));
+    }
+    SECTION("filter 1: only a player on covered ground hears it") {
+        EmitterRig r;
+        AmbientEmitterSetup room = gulls(4);
+        room.filter = 1;
+        r.emitters.add(room, r.rig.engine());
+        r.run(2.0);
+        CHECK(r.emitters.plays() == 0);
+        r.covered = true;
+        r.run(1.5);
+        CHECK(r.emitters.plays() == 1);
+        // Back outside, its sound stops.
+        r.covered = false;
+        r.run(1.5);
+        CHECK_FALSE(r.rig.engine().isPlaying(r.emitters.playing(0)));
+    }
+    SECTION("filter 0 is not heard on covered ground; filter 2 always") {
+        EmitterRig r;
+        r.covered = true;
+        r.emitters.add(gulls(4), r.rig.engine());
+        AmbientEmitterSetup all = gulls(4);
+        all.name = "tAll";
+        all.filter = 2;
+        r.emitters.add(all, r.rig.engine());
+        r.run(1.5);
+        CHECK(r.emitters.plays() == 1);
+        CHECK_FALSE(r.emitters.playing(0).valid());
+        CHECK(r.emitters.playing(1).valid());
+    }
+}
+
+TEST_CASE("the ambient modes: 3 loops in range, 4 plays at once then times, 5 cuts its sound", "[audio][ambient]") {
+    SECTION("mode 3") {
+        EmitterRig r;
+        r.emitters.add(gulls(3), r.rig.engine());
+        r.run(1.5);
+        CHECK(r.emitters.plays() == 1);
+        // Started again when it ends, without a delay.
+        r.run(3.0);
+        CHECK(r.emitters.plays() == 2);
+        // Beyond the range it stops at once.
+        r.listener = SoundVec{60.0F, 0.0F, 0.0F};
+        r.run(1.1);
+        CHECK_FALSE(r.rig.engine().isPlaying(r.emitters.playing(0)));
+    }
+    SECTION("mode 4") {
+        EmitterRig r;
+        AmbientEmitterSetup soon = gulls(4);
+        soon.minDelay = 10;
+        soon.maxDelay = 10;
+        r.emitters.add(soon, r.rig.engine());
+        r.run(1.5);
+        CHECK(r.emitters.plays() == 1);
+        CHECK(r.emitters.mode(0) == 2);
+        r.run(8.0);
+        CHECK(r.emitters.plays() == 1);
+        r.run(3.0);
+        CHECK(r.emitters.plays() == 2);
+    }
+    SECTION("mode 5") {
+        EmitterRig r;
+        r.emitters.add(gulls(5), r.rig.engine());
+        r.run(2.4);
+        CHECK(r.emitters.plays() == 1);
+        const SoundHandle sound = r.emitters.playing(0);
+        r.run(1.0);
+        CHECK_FALSE(r.rig.engine().isPlaying(sound));
+    }
+    SECTION("at most two new sounds an update") {
+        EmitterRig r;
+        for (int i = 0; i < 4; ++i) {
+            AmbientEmitterSetup each = gulls(4);
+            each.name = "tGulls0" + std::to_string(i);
+            r.emitters.add(each, r.rig.engine());
+        }
+        r.run(1.05);
+        CHECK(r.emitters.plays() == 2);
+        r.run(1.2);
+        CHECK(r.emitters.plays() == 4);
+    }
 }
 
 TEST_CASE("the ambient bindings fill the table and place a level's emitters", "[audio][ambient]") {
@@ -292,7 +423,7 @@ TEST_CASE("the ambient bindings fill the table and place a level's emitters", "[
     CHECK(rig.sound.emitters().sound(3) == coney::crc32(kGull));
     const Value id = rig.call("AddAmbientSoundEmitter2",
                               {str("tGulls01"), position(0, 0, 0), position(4, 0, 0), Value(3.0), str(""), Value(1.0),
-                               Value(40.0), Value(-1.0), Value(1.0), Value(1.0), Value(3.0), Value(0.0)});
+                               Value(40.0), Value(-1.0), Value(1.0), Value(1.0), Value(4.0), Value(0.0)});
     CHECK(id.number() == 0.0);
     rig.call("SetAmbientEmitterPositions", {str("tGulls01"), position(1, 1, 1), position(2, 2, 2), position(3, 3, 3),
                                             position(0, 0, 0), position(0, 0, 0), Value(3.0)});
@@ -303,8 +434,13 @@ TEST_CASE("the ambient bindings fill the table and place a level's emitters", "[
              {str("clubRadio"), position(0, 0, 0), position(0, 0, 0), Value(-1.0), str(kCrow), Value(1.0), Value(-1.0),
               Value(-1.0), Value(0.0), Value(0.0), Value(3.0), Value(0.0)});
     CHECK(rig.sound.emitters().emitterCount() == 2);
-    rig.frames(2);
+    rig.frames(32);
     CHECK(rig.sound.emitters().plays() == 2);
+    // The older form, and an emitter's volume.
+    CHECK(rig.call("AddAmbientSoundEmitter", {position(9, 0, 0), position(9, 0, 0), Value(3.0), str(""), Value(1.0),
+                                              Value(40.0), Value(-1.0), Value(1.0), Value(1.0), Value(4.0), Value(0.0)})
+              .number() == 2.0);
+    rig.call("SetAmbientEmitterVolumeMod", {Value(1.0), Value(0.5)});
     // EnableAmbientEmitter switches one off (it plays nothing more) and on again.
     rig.call("EnableAmbientEmitter", {Value(1.0), Value()});
     CHECK_FALSE(rig.sound.emitters().enabled(1));

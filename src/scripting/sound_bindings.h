@@ -24,12 +24,12 @@ struct AmbientEmitterCall {
     int index = -1;              ///< The first ambient-table entry, or -1 to play `sound`.
     std::string sound;           ///< The sound name when `index` is -1.
     std::uint32_t count = 0;     ///< How many table entries from `index` it picks from.
-    float range = -1.0F;         ///< Stored; inferred to be the audible range in metres (-1 the default).
-    int arg8 = -1;               ///< Stored; meaning not traced.
-    std::uint32_t minDelay = 0;  ///< The shortest pause between plays, seconds (inferred).
-    std::uint32_t maxDelay = 0;  ///< The longest pause, seconds (inferred).
-    std::uint8_t arg11 = 0;      ///< Stored as a byte; meaning not traced.
-    std::uint8_t mode = 0;       ///< 0-2 (larger values become 0); meaning not traced.
+    float range = -1.0F;         ///< Metres from `from` (-1: the first sound's far distance + 10).
+    int plays = -1;              ///< Plays before it switches itself off (-1 without limit).
+    std::uint32_t minDelay = 0;  ///< The shortest pause between plays, whole seconds.
+    std::uint32_t maxDelay = 0;  ///< The longest pause, whole seconds.
+    std::uint8_t mode = 0;       ///< How it plays (docs/research/sound.md#ambient).
+    std::uint8_t filter = 0;     ///< Which players hear it: 0 off covered ground, 1 on it, 2 all (larger: 0).
 };
 
 /// A line a human is to say by name (`HuSpeak`, `HuSpeakNI`).
@@ -145,6 +145,11 @@ class SoundHost {
     virtual double play3D(std::uint32_t /*sound*/, const std::array<float, 3>& /*position*/) { return 0.0; }
     /// `EnableAmbientEmitter(id, on)`: switches an ambient emitter on or off. Does nothing by default.
     virtual void enableAmbientEmitter(int /*emitter*/, bool /*on*/) {}
+    /// `SetAmbientEmitterVolumeMod(id, volume)`: an ambient emitter's volume. Does nothing by default.
+    virtual void setAmbientEmitterVolume(int /*emitter*/, float /*volume*/) {}
+    /// Whether player 1 stands on covered ground, which decides the ambient emitters he hears
+    /// (docs/research/sound-events.md#covered). Does nothing by default.
+    virtual void setPlayerCovered(bool /*covered*/) {}
     /// `SoundStopAmbientTrack()`.
     virtual void stopAmbientTrack() = 0;
     /// Whether the sound `handle` (from play2D() or play3D()) still plays.
@@ -162,6 +167,9 @@ class SoundHost {
 
     /// `SoundPlayMusicTrack` (`loop` false, with the end `callback`) and `SoundLoopMusicTrack` (`loop` true).
     virtual void playMusic(std::uint32_t track, bool loop, std::string_view callback) = 0;
+    /// The system music's pick: `track` looping, cross-faded over `fadeBars` bars (0: a cut at the bar). By default
+    /// playMusic() without a fade.
+    virtual void playSystemMusic(std::uint32_t track, int /*fadeBars*/) { playMusic(track, true, {}); }
     /// `SoundStopMusicTrack()`.
     virtual void stopMusic() = 0;
     /// `SoundSetMusicVolume(volume)`.
@@ -194,7 +202,9 @@ class SoundHost {
 
 /// The sound bindings: the configuration the preloads make, the ambience, the music, the listener, the speech lines by
 /// name and the speech commands. All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 31> kSoundBindings{"AddAmbientSound",
+inline constexpr std::array<std::string_view, 33> kSoundBindings{"AddAmbientSound",
+                                                                 "AddAmbientSoundEmitter",
+                                                                 "SetAmbientEmitterVolumeMod",
                                                                  "AddAmbientSoundEmitter2",
                                                                  "HuSay",
                                                                  "HuShutUp",

@@ -299,6 +299,7 @@
     State 4 (0x00419fc8) calls GameState_SetSystemMusic(0), which stops the music and clears the hold, and leaves
     the mood at 3. The moods' names come from the game's choice in SystemMusic_UpdateMood (0x0041a0d0).
   usage: {chunks: 8, calls: 16, boot: false, mission1: false, result_used: false, levels: [2, 3, 86, 14, 55]}
+  coney: implemented
 
 - name: SoundEnableSystemMusic
   wrapper: 0x00371470
@@ -541,6 +542,7 @@
     Argument-to-field mapping confirmed (code) through the register and stack passing at 0x00371ce0 (the decompiler
     hides arguments 10 and 11); the numbers' meaning is confirmed (code) at 0x0010c100 ([Sound: ambient emitters](../../research/sound.md#ambient)).
   usage: {chunks: 10, calls: 13, boot: false, mission1: false, result_used: true, levels: [3, 5, 93, 14, 52, 82, 11]}
+  coney: implemented
 
 - name: AddAmbientSoundEmitter2
   wrapper: 0x00371db0
@@ -632,6 +634,7 @@
   notes: >-
     The ambient manager is the audio manager `+0x24280`. That later plays use `+0x88` is inferred.
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [2, 54, 82]}
+  coney: implemented
 
 - name: PlayAmbientEmitter
   wrapper: 0x00372668

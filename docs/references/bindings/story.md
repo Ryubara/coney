@@ -19,8 +19,8 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level87`](#level87) | mission 3 | 261 | 87 | 87 | 87 |
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 90 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 17 |
-| [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 4 |
-| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 8 |
+| [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 6 |
+| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 9 |
 | [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 14 |
 | [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 7 |
 | [`level86`](#level86) | mission 9 | 245 | 17 | 17 | 4 |
@@ -319,7 +319,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level2: mission 5 {#level2}
 
-243 bindings, 19 new: 19 traced, 4 implemented in Coney (228 of all 243).
+243 bindings, 19 new: 19 traced, 6 implemented in Coney (230 of all 243).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -339,13 +339,13 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`HUDEnableBar`](hud.md#hudenablebar) | HUD and menus | traced | confirmed (code) | implemented |
 | [`HUDSetBarPercentage`](hud.md#hudsetbarpercentage) | HUD and menus | traced | confirmed (code) | implemented |
 | [`HUDSetBarProperty`](hud.md#hudsetbarproperty) | HUD and menus | traced | confirmed (code) | implemented |
-| [`SetAmbientEmitterVolumeMod`](sound.md#setambientemittervolumemod) | Sound and music | traced | confirmed (code) | not implemented |
-| [`SoundSetSystemMusicState`](sound.md#soundsetsystemmusicstate) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SetAmbientEmitterVolumeMod`](sound.md#setambientemittervolumemod) | Sound and music | traced | confirmed (code) | implemented |
+| [`SoundSetSystemMusicState`](sound.md#soundsetsystemmusicstate) | Sound and music | traced | confirmed (code) | implemented |
 | [`CfgSetMaxThrowError`](config.md#cfgsetmaxthrowerror) | Configuration (Cfg) | traced | confirmed (code) | not implemented |
 
 ## level3: mission 6 {#level3}
 
-259 bindings, 22 new: 22 traced, 8 implemented in Coney (241 of all 259).
+259 bindings, 22 new: 22 traced, 9 implemented in Coney (243 of all 259).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -368,13 +368,13 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`HUDCheckTutorialText`](hud.md#hudchecktutorialtext) | HUD and menus | traced | confirmed (code) | implemented |
 | [`HUDRadarSetRange`](hud.md#hudradarsetrange) | HUD and menus | traced | confirmed (code) | implemented |
 | [`HUDSetChaseHUDState_DESTROY`](hud.md#hudsetchasehudstate_destroy) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`AddAmbientSoundEmitter`](sound.md#addambientsoundemitter) | Sound and music | traced | confirmed (code) | not implemented |
+| [`AddAmbientSoundEmitter`](sound.md#addambientsoundemitter) | Sound and music | traced | confirmed (code) | implemented |
 | [`SndLoadBank`](sound.md#sndloadbank) | Sound and music | traced | confirmed (code) | implemented |
 | [`CfgHuInventoryCallback`](config.md#cfghuinventorycallback) | Configuration (Cfg) | traced | confirmed (code) | implemented |
 
 ## level5: mission 7 {#level5}
 
-274 bindings, 16 new: 16 traced, 14 implemented in Coney (265 of all 274).
+274 bindings, 16 new: 16 traced, 14 implemented in Coney (266 of all 274).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -424,7 +424,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level86: mission 9 {#level86}
 
-245 bindings, 17 new: 17 traced, 4 implemented in Coney (226 of all 245).
+245 bindings, 17 new: 17 traced, 4 implemented in Coney (227 of all 245).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -448,7 +448,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level93: mission 10 {#level93}
 
-295 bindings, 24 new: 24 traced, 4 implemented in Coney (265 of all 295).
+295 bindings, 24 new: 24 traced, 4 implemented in Coney (266 of all 295).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -495,7 +495,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level14: mission 12 {#level14}
 
-226 bindings, 6 new: 6 traced, 2 implemented in Coney (217 of all 226).
+226 bindings, 6 new: 6 traced, 2 implemented in Coney (219 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -534,7 +534,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level52: mission 15 {#level52}
 
-235 bindings, 4 new: 4 traced, 0 implemented in Coney (227 of all 235).
+235 bindings, 4 new: 4 traced, 0 implemented in Coney (228 of all 235).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -545,7 +545,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level54: mission 16 {#level54}
 
-241 bindings, 7 new: 7 traced, 1 implemented in Coney (223 of all 241).
+241 bindings, 7 new: 7 traced, 1 implemented in Coney (224 of all 241).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -559,7 +559,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level55: mission 17 {#level55}
 
-226 bindings, 8 new: 8 traced, 1 implemented in Coney (207 of all 226).
+226 bindings, 8 new: 8 traced, 1 implemented in Coney (208 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -589,7 +589,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level82: flashback 1 {#level82}
 
-250 bindings, 4 new: 4 traced, 0 implemented in Coney (226 of all 250).
+250 bindings, 4 new: 4 traced, 0 implemented in Coney (228 of all 250).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -641,7 +641,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level11: flashback 5 {#level11}
 
-260 bindings, 7 new: 7 traced, 1 implemented in Coney (246 of all 260).
+260 bindings, 7 new: 7 traced, 1 implemented in Coney (247 of all 260).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |

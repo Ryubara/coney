@@ -10184,3 +10184,63 @@ address = 0x0042a938
 name = "Movie_Play"
 subsystem = "Movie"
 size = 1768
+
+[[function]]
+address = 0x0010d570
+name = "AmbientManager_EnableEmitter"
+subsystem = "Animation"
+size = 20
+
+[[function]]
+address = 0x0010d2a0
+name = "AmbientEmitter_SetVolume"
+subsystem = "Animation"
+size = 88
+
+[[function]]
+address = 0x002195e0
+name = "Human_SetCoverFlag5"
+subsystem = "Human"
+size = 36
+
+[[function]]
+address = 0x00371b18
+name = "AddAmbientSoundEmitter"
+subsystem = "Scripting"
+size = 664
+
+[[function]]
+address = 0x00113840
+name = "Sound_AddAmbientEmitter"
+subsystem = "Audio"
+size = 224
+
+[[function]]
+address = 0x0010ced0
+name = "AmbientManager_AddParticleEmitter"
+subsystem = "Animation"
+size = 132
+
+[[function]]
+address = 0x003725f0
+name = "SetAmbientEmitterVolumeMod"
+subsystem = "Scripting"
+size = 116
+
+[[function]]
+address = 0x00113c00
+name = "Sound_SetAmbientEmitterVolume"
+subsystem = "Audio"
+size = 48
+
+[[function]]
+address = 0x00113e60
+name = "Sound_SetSystemMusicState"
+subsystem = "Audio"
+size = 72
+
+[[function]]
+address = 0x00419fc8
+name = "GameState_SetMusicMood"
+subsystem = "Warriors"
+size = 64

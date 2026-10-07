@@ -530,6 +530,12 @@ void SoundEngine::setVolume(SoundHandle sound, float volume) {
     }
 }
 
+void SoundEngine::setVolumeFactor(SoundHandle sound, float factor) {
+    if (Task* task = find(sound)) {
+        task->how.volumeFactor = factor;
+    }
+}
+
 void SoundEngine::setPosition(SoundHandle sound, SoundVec position, SoundVec facing) {
     if (Task* task = find(sound)) {
         task->how.position = position;

@@ -27,6 +27,8 @@ namespace coney::human {
 namespace {
 
 constexpr float kPi = std::numbers::pi_v<float>;
+// The triangle flag of covered ground (onCoveredGround()).
+constexpr std::uint16_t kCoveredGroundFlag = 0x20;
 // A human's capsule (docs/research/physics.md): its radius and height before the body scale.
 constexpr float kStrikeCapsuleRadius = 0.35F;
 constexpr float kStrikeCapsuleHeight = 2.0F;
@@ -459,6 +461,7 @@ void Human::snapToGround(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
         m_lastGround = feet;
         m_groundNormal = fromMesh(hit->normal);
         m_groundMaterial = hit->material;
+        m_coveredGround = (hit->flags & kCoveredGroundFlag) != 0;
         return;
     }
     // Nothing within 0.5 m below the feet: the human starts to fall.

@@ -128,6 +128,8 @@ class SoundEngine {
     [[nodiscard]] int voiceOf(SoundHandle sound) const;
     /// Sets the caller's volume factor of a live sound.
     void setVolume(SoundHandle sound, float volume);
+    /// Sets the third volume factor (`a8`, SoundPlay::volumeFactor) of a live sound.
+    void setVolumeFactor(SoundHandle sound, float factor);
     /// Moves a positional sound.
     void setPosition(SoundHandle sound, SoundVec position, SoundVec facing = {0.0F, 0.0F, 1.0F});
     /// The left and right volumes last sent for the sound (0-1), for tests and the debug menu.

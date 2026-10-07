@@ -109,6 +109,8 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     double play3D(std::uint32_t sound, const std::array<float, 3>& position) override;
     /// AmbientEmitters::setEnabled().
     void enableAmbientEmitter(int emitter, bool on) override;
+    void setAmbientEmitterVolume(int emitter, float volume) override;
+    void setPlayerCovered(bool covered) override { m_playerCovered = covered; }
     void stopAmbientTrack() override;
     [[nodiscard]] bool soundPlaying(double handle) const override;
     void stopSound(double handle) override;
@@ -117,6 +119,7 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void pauseSound(bool on) override;
     void setAmbientTrackVolume(float volume) override;
     void playMusic(std::uint32_t track, bool loop, std::string_view callback) override;
+    void playSystemMusic(std::uint32_t track, int fadeBars) override;
     void stopMusic() override;
     void setMusicVolume(float volume) override;
     void setListener(int listener) override;
@@ -181,6 +184,8 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     [[nodiscard]] std::optional<double> playerHandle() const;
     // Puts the listener at player 1's camera (and, for listener 1, at the player).
     void updateListener();
+    // Runs the ambient emitters with the game's view (AmbientWorld).
+    void updateEmitters(SoundEngine& engine);
     // Runs the callbacks of the lines that ended.
     void runCallbacks(std::span<const Speech::Ended> ended);
     // Writes a line to the log, if there is one.
@@ -201,6 +206,7 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     VoiceTable m_voices;
     Speech m_speech;
     int m_listenerMode = 0;
+    bool m_playerCovered = false; // setPlayerCovered()
     Listener m_listener{};
 };
 

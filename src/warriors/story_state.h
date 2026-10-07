@@ -76,6 +76,9 @@ struct StoryState {
     bool systemMusic = false;
     std::array<std::vector<std::uint32_t>, kMusicMoods> moodTracks;
     int musicMood = -1;
+    /// The mood the scripts hold (`SoundSetSystemMusicState`, game state `+0x40c` with the hold flag `+0x3f4`), -1 for
+    /// none: while held the game's own choice does not override it.
+    int musicHold = -1;
     /// `StartGarbage` / `EndGarbage`: the litter kind blowing round the camera, -1 for none. **Coney stand-in**: the
     /// litter is not drawn yet.
     int garbage = -1;

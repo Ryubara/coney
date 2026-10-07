@@ -26,6 +26,7 @@ SoundHandle Speech::say(SoundEngine& engine, double human, std::uint32_t hash, c
         return {};
     }
     m_lines.push_back(Line{.human = human, .sound = sound, .callback = std::move(callback), .arg = arg});
+    ++m_said;
     return sound;
 }
 

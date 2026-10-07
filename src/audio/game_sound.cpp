@@ -2,6 +2,7 @@
 #include "audio/game_sound.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <format>
 #include <numbers>
@@ -9,6 +10,7 @@
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "audio/music_player.h"
 #include "camera/camera_view.h"
 #include "camera/cameras.h"
 #include "characters/character_class.h"
@@ -21,6 +23,7 @@
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
+#include "warriors/game_state.h"
 
 namespace coney::audio {
 
@@ -72,7 +75,7 @@ void GameSound::update() {
     if (engine == nullptr || engine->paused()) {
         return;
     }
-    m_emitters.update(*engine);
+    updateEmitters(*engine);
     const std::vector<Speech::Ended> ended = m_speech.update(*engine, [this](double human) { return locate(human); });
     runCallbacks(ended);
 }
@@ -122,8 +125,10 @@ void GameSound::setPitchFactor(float factor) {
 // ---- The humans' sounds ----
 
 std::string GameSound::summary() const {
-    return std::format("game sound: {} animation sounds and {} hit sounds asked for, {} matrix sounds started\n",
-                       m_animSounds, m_impactSounds, m_materialSounds.started());
+    return std::format("game sound: {} animation sounds and {} hit sounds asked for, {} matrix sounds started; {} "
+                       "ambient emitters, {} plays; {} lines said\n",
+                       m_animSounds, m_impactSounds, m_materialSounds.started(), m_emitters.emitterCount(),
+                       m_emitters.plays(), m_speech.said());
 }
 
 void GameSound::humanSound(const script::HumanSoundCall& call) {
@@ -278,6 +283,10 @@ void GameSound::newAnimSound(std::uint32_t index, std::uint32_t event,
 void GameSound::addAmbientSound(int index, std::uint32_t sound) { m_emitters.setSound(index, sound); }
 
 double GameSound::addAmbientEmitter(const script::AmbientEmitterCall& call) {
+    SoundEngine* engine = m_sounds.engine();
+    if (engine == nullptr) {
+        return 0.0;
+    }
     const AmbientEmitterSetup setup{.name = call.name,
                                     .from = SoundVec{call.from[0], call.from[1], call.from[2]},
                                     .to = SoundVec{call.to[0], call.to[1], call.to[2]},
@@ -285,9 +294,12 @@ double GameSound::addAmbientEmitter(const script::AmbientEmitterCall& call) {
                                     .sound = call.index == -1 ? crc32(call.sound) : 0,
                                     .count = call.count,
                                     .range = call.range,
+                                    .plays = call.plays,
                                     .minDelay = call.minDelay,
-                                    .maxDelay = call.maxDelay};
-    return static_cast<double>(m_emitters.add(setup));
+                                    .maxDelay = call.maxDelay,
+                                    .mode = call.mode,
+                                    .filter = call.filter};
+    return static_cast<double>(m_emitters.add(setup, *engine));
 }
 
 void GameSound::setAmbientEmitterPositions(std::string_view name, std::span<const std::array<float, 3>> positions) {
@@ -341,6 +353,12 @@ void GameSound::moveSound(double handle, const std::array<float, 3>& position, f
 
 void GameSound::enableAmbientEmitter(int emitter, bool on) { m_emitters.setEnabled(emitter, on); }
 
+void GameSound::setAmbientEmitterVolume(int emitter, float volume) {
+    if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
+        m_emitters.setVolume(emitter, volume, *engine);
+    }
+}
+
 void GameSound::pauseSound(bool on) {
     if (on) {
         m_sounds.pauseAll();
@@ -378,6 +396,17 @@ void GameSound::playMusic(std::uint32_t track, bool loop, std::string_view callb
         }
     });
     engine->music().play(track, loop, std::string(callback));
+}
+
+void GameSound::playSystemMusic(std::uint32_t track, int fadeBars) {
+    SoundEngine* engine = m_sounds.engine();
+    if (engine == nullptr) {
+        return;
+    }
+    const MusicRecord* record = engine->tables().findMusic(track);
+    write(std::format("music: {} (system, fade {} bars)\n",
+                      record != nullptr ? record->name : std::format("{:#010x}", track), fadeBars));
+    engine->music().play(track, true, {}, fadeBars);
 }
 
 void GameSound::stopMusic() {
@@ -565,6 +594,26 @@ void GameSound::updateListener() {
         engine->setPlayerOwners(player ? std::vector<std::uint32_t>{static_cast<std::uint32_t>(*player)}
                                        : std::vector<std::uint32_t>{});
     }
+}
+
+// The emitters' view of the game (docs/research/sound.md#ambient): player 1 and the listener; the scene, the music's
+// duck and the fight timer. **Coney's stand-ins**: the fight timer is on while the music's mood is the fight (the
+// original's 5 s after it ends are not kept); no AI event opens the `_DAM_` window yet.
+void GameSound::updateEmitters(SoundEngine& engine) {
+    const int mood = m_context != nullptr && m_context->state != nullptr ? m_context->state->story.musicMood : -1;
+    const MusicPlayer& music = engine.music();
+    const bool musicBusy =
+        music.state(0) != MusicState::Idle || music.state(1) != MusicState::Idle || music.state(2) != MusicState::Idle;
+    const std::array<SoundVec, 1> listeners{m_listener.position};
+    const std::array<bool, 1> covered{m_playerCovered};
+    const bool hasPlayer = playerHandle().has_value();
+    m_emitters.update(
+        engine, AmbientWorld{.listeners = listeners,
+                             .playersCovered = hasPlayer ? std::span<const bool>(covered) : std::span<const bool>(),
+                             .scenePlaying = engine.cinematic(),
+                             .musicDuck = musicBusy && mood != 2,
+                             .damWindow = false,
+                             .fightTimer = mood == 1});
 }
 
 void GameSound::runCallbacks(std::span<const Speech::Ended> ended) {

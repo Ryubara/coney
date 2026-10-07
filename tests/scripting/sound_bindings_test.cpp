@@ -64,6 +64,7 @@ std::string columnsText(const std::array<std::optional<std::uint32_t>, 3>& sound
 class RecordingSound final : public coney::script::SoundHost {
   public:
     std::vector<std::string> calls;
+    std::vector<int> fades; // playSystemMusic()'s fades
     std::optional<coney::script::AmbientEmitterCall> emitter;
     std::vector<std::array<float, 3>> positions;
     bool speaks = true;
@@ -81,6 +82,10 @@ class RecordingSound final : public coney::script::SoundHost {
     void loadSoundBank(std::string_view name) override { calls.push_back(std::format("bank {}", name)); }
     void setNonDuckableDuck(float factor) override { calls.push_back(std::format("niduck {}", factor)); }
     void setPitchFactor(float factor) override { calls.push_back(std::format("pitch {}", factor)); }
+    void playSystemMusic(std::uint32_t track, int fadeBars) override {
+        fades.push_back(fadeBars);
+        playMusic(track, true, {});
+    }
     void addAmbientSound(int index, std::uint32_t sound) override {
         calls.push_back(std::format("ambient {} {:#x}", index, sound));
     }
@@ -258,15 +263,27 @@ TEST_CASE("an emitter's twelve arguments and its positions reach the sound host"
     CHECK(e.index == 592);
     CHECK(e.count == 2);
     CHECK(e.range == Approx(45.5F));
-    CHECK(e.arg8 == -1);
+    CHECK(e.plays == -1);
     CHECK(e.minDelay == 3);
     CHECK(e.maxDelay == 9);
-    CHECK(e.arg11 == 4);
-    CHECK(e.mode == 0); // above 2 becomes 0
+    CHECK(e.mode == 4);
+    CHECK(e.filter == 0); // above 2 becomes 0
     h.call("SetAmbientEmitterPositions", {str("tGulls01"), position(1, 1, 1), position(2, 2, 2), position(3, 3, 3),
                                           position(4, 4, 4), position(5, 5, 5), Value(9.0)});
     CHECK(h.sound.positions.size() == 5);
     CHECK(h.sound.positions[4] == std::array<float, 3>{5.0F, 5.0F, 5.0F});
+
+    // The older form: no name (every one is `particle task`), the same arguments after it.
+    h.call("AddAmbientSoundEmitter",
+           {position(1, 2, 3), position(4, 5, 6), Value(-1.0), str("vags/test/radio"), Value(1.0), Value(-1.0),
+            Value(0.0), Value(1.0), Value(2.0), Value(3.0), Value(1.0)});
+    REQUIRE(h.sound.emitter.has_value());
+    CHECK(h.sound.emitter->name == "particle task");
+    CHECK(h.sound.emitter->sound == "vags/test/radio");
+    CHECK(h.sound.emitter->index == -1);
+    CHECK(h.sound.emitter->plays == 0);
+    CHECK(h.sound.emitter->mode == 3);
+    CHECK(h.sound.emitter->filter == 1);
 }
 
 TEST_CASE("the speech bindings pass the speaker, the line and the callback; a refused line calls back at once",
@@ -315,6 +332,35 @@ TEST_CASE("the system music plays a track of the mood and changes with it", "[sc
     const std::size_t calls = harness.sound.calls.size();
     coney::stepSystemMusic(story, &harness.sound, harness.state.random, 0);
     CHECK(harness.sound.calls.size() == calls);
+}
+
+TEST_CASE("SoundSetSystemMusicState holds a mood over the game's, hands it back, or turns the music off",
+          "[scripting][sound]") {
+    Harness harness;
+    coney::StoryState& story = harness.state.story;
+    harness.call("SoundSetMusicTrack", {Value(0.0), Value("calm_a")});
+    harness.call("SoundSetMusicTrack", {Value(1.0), Value("fight_a")});
+    // Held at the fight, the game's calm changes nothing.
+    harness.call("SoundSetSystemMusicState", {Value(1.0)});
+    CHECK(story.musicHold == 1);
+    coney::stepSystemMusic(story, &harness.sound, harness.state.random, 0);
+    REQUIRE(harness.sound.calls.size() == 1);
+    CHECK(harness.sound.calls[0] == std::format("music {:#x} true ", coney::crc32("fight_a")));
+    // 3 hands the mood back: the game's calm plays.
+    CHECK(harness.sound.fades.back() == 0); // a cut into the fight
+    harness.call("SoundSetSystemMusicState", {Value(3.0)});
+    CHECK(story.musicHold == -1);
+    coney::stepSystemMusic(story, &harness.sound, harness.state.random, 0);
+    CHECK(harness.sound.calls.back() == std::format("music {:#x} true ", coney::crc32("calm_a")));
+    CHECK(harness.sound.fades.back() == 4); // back to calm from the fight
+    // 4 turns the system music off and stops it.
+    harness.call("SoundSetSystemMusicState", {Value(4.0)});
+    CHECK_FALSE(story.systemMusic);
+    CHECK(harness.sound.calls.back() == "music stop");
+    // SoundEnableSystemMusic ends a hold.
+    harness.call("SoundSetSystemMusicState", {Value(0.0)});
+    harness.call("SoundEnableSystemMusic", {Value(1.0)});
+    CHECK(story.musicHold == -1);
 }
 
 TEST_CASE("the reverb's settings are kept", "[scripting][sound]") {

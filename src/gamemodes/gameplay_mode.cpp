@@ -739,6 +739,10 @@ void GameplayMode::reportHumanSounds() {
         return;
     }
     const ai::Brain* player = m_scripted->player();
+    // Player 1's ground decides the ambient emitters he hears.
+    if (player != nullptr && m_context.sound != nullptr) {
+        m_context.sound->setPlayerCovered(player->human().onCoveredGround());
+    }
     for (const auto& [handle, brain] : m_scripted->bound()) {
         human::Human& body = brain->human();
         const std::vector<human::HumanSound> sounds = body.takeSounds();

@@ -53,6 +53,8 @@ class Speech {
     void clear(SoundEngine* engine);
     /// Lines being said.
     [[nodiscard]] std::size_t lines() const { return m_lines.size(); }
+    /// Lines started so far, for the test mode's summary.
+    [[nodiscard]] std::uint64_t said() const { return m_said; }
 
   private:
     // One human's line.
@@ -64,6 +66,7 @@ class Speech {
     };
 
     std::vector<Line> m_lines;
+    std::uint64_t m_said = 0; // said()
 };
 
 } // namespace coney::audio

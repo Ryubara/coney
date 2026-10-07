@@ -36,6 +36,10 @@ namespace {
 constexpr int kTagPainted = 6;
 constexpr int kTagBlank = 4;
 
+// SoundSetSystemMusicState's states that hand the mood back to the game and turn the music off.
+constexpr std::int64_t kMoodToGame = 3;
+constexpr std::int64_t kMoodMusicOff = 4;
+
 // `NilHandle`'s value.
 constexpr double kNilHandle = 0.0;
 
@@ -217,6 +221,8 @@ NativeFunction makeSoundEnableSystemMusic(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
         StoryState& story = context->state->story;
         const bool on = boolArg(args, 0);
+        // Either way the scripts' hold on the mood ends.
+        story.musicHold = -1;
         if (on == story.systemMusic) {
             return binding::none();
         }
@@ -225,6 +231,34 @@ NativeFunction makeSoundEnableSystemMusic(const BindingContext& context) {
         if (!on && context->sound != nullptr) {
             context->sound->stopMusic();
         }
+        return binding::none();
+    };
+}
+
+// `SoundSetSystemMusicState(state)`: 0-2 hold that mood over the game's own choice; 3 hands the mood back to the game;
+// 4 turns the system music off (as SoundEnableSystemMusic(false)). **Coney choice**: another state is held as given
+// and plays nothing (the original stores it as the mood).
+// @orig 0x00113e60 Sound_SetSystemMusicState (unknown)
+// @orig 0x00419fc8 GameState_SetMusicMood (unknown)
+NativeFunction makeSoundSetSystemMusicState(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        StoryState& story = context->state->story;
+        const std::int64_t state = wholeArg(args, 0);
+        story.musicHold = -1;
+        if (state == kMoodToGame) {
+            return binding::none();
+        }
+        if (state == kMoodMusicOff) {
+            if (story.systemMusic) {
+                story.systemMusic = false;
+                story.musicMood = -1;
+                if (context->sound != nullptr) {
+                    context->sound->stopMusic();
+                }
+            }
+            return binding::none();
+        }
+        story.musicHold = static_cast<std::int16_t>(state);
         return binding::none();
     };
 }
@@ -462,6 +496,7 @@ void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::func
     vm.registerFunction("SoundEnableSystemMusic", makeSoundEnableSystemMusic(context));
     vm.registerFunction("SoundSetEffect", makeSoundSetEffect(context));
     vm.registerFunction("SoundSetMusicTrack", makeSoundSetMusicTrack(context));
+    vm.registerFunction("SoundSetSystemMusicState", makeSoundSetSystemMusicState(context));
     vm.registerFunction("SetupRadio", makeSetupRadio(context));
     vm.registerFunction("StartParticle", makeParticleSwitch(context, true));
 }

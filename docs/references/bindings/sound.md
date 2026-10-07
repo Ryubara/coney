@@ -145,7 +145,7 @@ emitters](../../research/sound.md#ambient)).
   `0x0010cf58` `AmbientManager_AddEmitter`, `0x0010cc70` `AmbientManager_FindEmitter`
 - **Used by** 10 of 467 script chunks (13 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 7 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## AddAmbientSoundEmitter2 {#addambientsoundemitter2}
 
@@ -450,7 +450,7 @@ radio turned down.
   `0x0010d2a0` `AmbientEmitter_SetVolume`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetAmbientTrackVolume {#setambienttrackvolume}
 
@@ -1288,7 +1288,7 @@ the mood at 3. The moods' names come from the game's choice in SystemMusic_Updat
   `0x00419fc8` `GameState_SetMusicMood`
 - **Used by** 8 of 467 script chunks (16 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundStart {#soundstart}
 

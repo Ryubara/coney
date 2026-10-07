@@ -274,6 +274,10 @@ class Human final : public Holdable {
     /// before any. **Coney's reading**: the snap's triangle (docs/research/sound.md#anim-sounds names `+0x1d8` the
     /// ground under the human).
     [[nodiscard]] std::uint8_t groundMaterial() const { return m_groundMaterial; }
+    /// Whether the last ground snap stood him on a triangle with flag bit 5 (`0x20`), the covered ground that decides
+    /// which ambient emitters a player hears (`+0x5b7`, docs/research/sound-events.md#covered).
+    /// @orig 0x002195e0 Human_SetCoverFlag5 (unknown)
+    [[nodiscard]] bool onCoveredGround() const { return m_coveredGround; }
     [[nodiscard]] const Speeds& speeds() const { return m_animator.speeds(); }
     /// Stamina (record `+0x14a`).
     [[nodiscard]] const Stamina& stamina() const { return m_stamina; }
@@ -614,6 +618,7 @@ class Human final : public Holdable {
     std::uint32_t m_blockedUpdates = 0;
     anim::Vec3 m_lastGround;
     anim::Vec3 m_groundNormal{0.0F, 0.0F, 1.0F};
+    bool m_coveredGround = false;            // onCoveredGround()
     std::uint8_t m_groundMaterial = 5;       // groundMaterial(): CONCRETE until the first snap
     bool m_reportSounds = false;             // reportSounds()
     std::vector<HumanSound> m_contactSounds; // reportSound()

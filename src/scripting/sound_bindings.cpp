@@ -66,6 +66,9 @@ std::string callbackArg(std::span<const Value> args, std::size_t i) {
     return binding::string(args, i);
 }
 
+// Whether argument `i` is missing or nil.
+bool absent(std::span<const Value> args, std::size_t i) { return i >= args.size() || args[i].isNil(); }
+
 // A position argument, the origin when it is not a table of three numbers.
 std::array<float, 3> positionArg(std::span<const Value> args, std::size_t i) {
     return binding::position(args, i).value_or(std::array<float, 3>{});
@@ -214,31 +217,58 @@ NativeFunction makeSoundPlayCommand(ScriptSystem& scripts, const BindingContext&
     };
 }
 
-// `AddAmbientSoundEmitter2(name, pos1, pos2, index, sound, count, range, arg8, minDelay, maxDelay, arg11, mode)`: the
-// emitter's id (0 without a sound host). A mode above 2 becomes 0.
+// The ambient emitter whose arguments start at `first` (pos1, pos2, index, sound, count, range, plays, minDelay,
+// maxDelay, mode, filter), named `name`: its id (0 without a sound host). A filter above 2 becomes 0
+// (docs/references/bindings/sound.md#addambientsoundemitter2).
+double addAmbientEmitter(const BindingContext& context, std::string name, std::span<const Value> args,
+                         std::size_t first) {
+    SoundHost* sound = context.sound;
+    if (sound == nullptr) {
+        return 0.0;
+    }
+    const std::uint32_t filter = unsignedArg(args, first + 10);
+    const AmbientEmitterCall call{.name = std::move(name),
+                                  .from = positionArg(args, first),
+                                  .to = positionArg(args, first + 1),
+                                  .index = intArg(args, first + 2),
+                                  .sound = absent(args, first + 3) ? std::string() : binding::string(args, first + 3),
+                                  .count = unsignedArg(args, first + 4),
+                                  .range = floatArg(args, first + 5),
+                                  .plays = intArg(args, first + 6),
+                                  .minDelay = unsignedArg(args, first + 7),
+                                  .maxDelay = unsignedArg(args, first + 8),
+                                  .mode = static_cast<std::uint8_t>(unsignedArg(args, first + 9)),
+                                  .filter = static_cast<std::uint8_t>(filter > 2 ? 0 : filter)};
+    return sound->addAmbientEmitter(call);
+}
+
+// `AddAmbientSoundEmitter2(name, pos1, pos2, index, sound, count, range, plays, minDelay, maxDelay, mode, filter)`.
 // @orig 0x00371db0 AddAmbientSoundEmitter2 (unknown)
 // @orig 0x00113920 Ambient_AddEmitter2 (unknown)
 NativeFunction makeAddAmbientSoundEmitter2(const BindingContext& context) {
     return [context = &context](std::span<const Value> args) {
-        SoundHost* sound = context->sound;
-        if (sound == nullptr) {
-            return binding::number(0.0);
-        }
-        const std::uint32_t mode = unsignedArg(args, 11);
-        const AmbientEmitterCall call{.name = binding::string(args, 0),
-                                      .from = positionArg(args, 1),
-                                      .to = positionArg(args, 2),
-                                      .index = intArg(args, 3),
-                                      .sound = binding::string(args, 4),
-                                      .count = unsignedArg(args, 5),
-                                      .range = floatArg(args, 6),
-                                      .arg8 = intArg(args, 7),
-                                      .minDelay = unsignedArg(args, 8),
-                                      .maxDelay = unsignedArg(args, 9),
-                                      .arg11 = static_cast<std::uint8_t>(unsignedArg(args, 10)),
-                                      .mode = static_cast<std::uint8_t>(mode > 2 ? 0 : mode)};
-        return binding::number(sound->addAmbientEmitter(call));
+        return binding::number(addAmbientEmitter(*context, binding::string(args, 0), args, 1));
     };
+}
+
+// `AddAmbientSoundEmitter(pos1, pos2, index, sound, count, range, plays, minDelay, maxDelay, mode, filter)`: the
+// older form, every emitter named `particle task`.
+// @orig 0x00371b18 AddAmbientSoundEmitter (unknown)
+// @orig 0x00113840 Sound_AddAmbientEmitter (unknown)
+// @orig 0x0010ced0 AmbientManager_AddParticleEmitter (unknown)
+NativeFunction makeAddAmbientSoundEmitter(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        return binding::number(addAmbientEmitter(*context, "particle task", args, 0));
+    };
+}
+
+// `SetAmbientEmitterVolumeMod(emitter, volume)`.
+// @orig 0x003725f0 SetAmbientEmitterVolumeMod (unknown)
+// @orig 0x00113c00 Sound_SetAmbientEmitterVolume (unknown)
+NativeFunction makeSetAmbientEmitterVolumeMod(const BindingContext& context) {
+    return soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
+        sound.setAmbientEmitterVolume(intArg(args, 0), floatArg(args, 1));
+    });
 }
 
 // `SetAmbientEmitterPositions(name, pos1, ..., pos5, count)`: the first `count` (at most five) positions.
@@ -370,6 +400,8 @@ void addSoundBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
                             sound.addAmbientSound(intArg(args, 0), crc32(binding::string(args, 1)));
                         }));
     vm.registerFunction("AddAmbientSoundEmitter2", makeAddAmbientSoundEmitter2(context));
+    vm.registerFunction("AddAmbientSoundEmitter", makeAddAmbientSoundEmitter(context));
+    vm.registerFunction("SetAmbientEmitterVolumeMod", makeSetAmbientEmitterVolumeMod(context));
     vm.registerFunction("SetAmbientEmitterPositions", makeSetAmbientEmitterPositions(context));
     // @orig 0x00113608 Sound_PlayAmbientTrack (unknown)
     vm.registerFunction("SoundPlayAmbientTrack", soundCall(context, [](SoundHost& sound, std::span<const Value> args) {

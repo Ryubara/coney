@@ -17,12 +17,32 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addStoryEffectsBindings().
-inline constexpr std::array<std::string_view, 25> kStoryEffectsBindings{
-    "CamAddPoizoPoint", "CamAddPoizoPointCam", "CamReversePoizo", "CamCanSee",          "CamGhostDoor",
-    "End3DFog",         "CfgTagSettings",      "ProcessTag",      "CameraGetActive",    "CameraSetClipping",
-    "CamGetPos",        "CamSetFollowPos",     "CamSetupPoizo",   "CfgSteam",           "EndGarbage",
-    "EndParticle",      "MaxFogParticles",     "SetupRadio",      "SoundEnableEffects", "SoundEnableSystemMusic",
-    "SoundSetEffect",   "SoundSetMusicTrack",  "Start3DFog",      "StartGarbage",       "StartParticle"};
+inline constexpr std::array<std::string_view, 26> kStoryEffectsBindings{"SoundSetSystemMusicState",
+                                                                        "CamAddPoizoPoint",
+                                                                        "CamAddPoizoPointCam",
+                                                                        "CamReversePoizo",
+                                                                        "CamCanSee",
+                                                                        "CamGhostDoor",
+                                                                        "End3DFog",
+                                                                        "CfgTagSettings",
+                                                                        "ProcessTag",
+                                                                        "CameraGetActive",
+                                                                        "CameraSetClipping",
+                                                                        "CamGetPos",
+                                                                        "CamSetFollowPos",
+                                                                        "CamSetupPoizo",
+                                                                        "CfgSteam",
+                                                                        "EndGarbage",
+                                                                        "EndParticle",
+                                                                        "MaxFogParticles",
+                                                                        "SetupRadio",
+                                                                        "SoundEnableEffects",
+                                                                        "SoundEnableSystemMusic",
+                                                                        "SoundSetEffect",
+                                                                        "SoundSetMusicTrack",
+                                                                        "Start3DFog",
+                                                                        "StartGarbage",
+                                                                        "StartParticle"};
 
 /// Registers kStoryEffectsBindings in `vm`: the cameras on `context.cameras`, the particles, steam vents, fog and
 /// litter on `context.effects` (and a plain object's record on `context.spawnRecords`), the tag spots on

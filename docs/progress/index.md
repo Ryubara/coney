@@ -9,6 +9,13 @@ How far Coney has come, measured three ways:
 - **Researched:** the share of the game's own code that the [source map](../research/source-map.md) places in at
   least an original source file or directory. It says how much of the executable an analyst can already find their
   way around in, not how much is understood.
+- **Understood:** the share of the game's own functions (by bytes, and by count) that are researched in full: the
+  function has a meaningful name in the shared Ghidra project (not `FUN_<address>`), and a research page cites its
+  address in a table row or paragraph that states an evidence level, or says `not needed: <reason>` (the source
+  map's citations do not count: placing is not understanding); a script binding's wrapper counts when its
+  `research/bindings` entry has an `evidence`. Names and sizes come from `docs/progress/ghidra-functions.tsv`
+  (addresses, sizes and our names only), the citations from the pages themselves, so citing a function moves the
+  bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
   Approved by the owner's play-test, with its checkpoints and the script bindings it needs.
@@ -21,12 +28,12 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 15.5%](https://img.shields.io/badge/reimplemented-15.5%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 15.6%](https://img.shields.io/badge/reimplemented-15.6%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.5% of the game's own code (520,460 of 3,354,776 bytes, 1,795 functions) |
+| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.6% of the game's own code (521,924 of 3,354,776 bytes, 1,805 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -56,8 +63,8 @@ at the top of the repository's `README.md`.
 
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
-| `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
-| `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.8% | 88 | 57,368 |
+| `Animation` | `███████░░░░░░░░░░░░░` | 35.0% | 28 | 54,616 |
+| `Audio` | `█▋░░░░░░░░░░░░░░░░░░` | 8.4% | 91 | 57,368 |
 | `Camera` | `▉░░░░░░░░░░░░░░░░░░░` | 4.4% | 63 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -66,19 +73,19 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 77 | 195,624 |
 | `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 210 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 612 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 613 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
-| `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 208 | 197,192 |
+| `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 210 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% | 134 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 27 | 22,008 |
-| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 110 | 54,264 |
+| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 19.0% | 111 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -160,8 +167,11 @@ at the top of the repository's `README.md`.
 | `0x0010a5b8` | `GaitBlend_Advance` | `Animation` | not filled in |
 | `0x0010adf8` | `GaitBlend_Sample` | `Animation` | not filled in |
 | `0x0010c100` | `Ambient_Update` | `Animation` | 2,928 |
+| `0x0010ced0` | `AmbientManager_AddParticleEmitter` | `Animation` | 132 |
 | `0x0010cf58` | `Ambient_AddEmitter` | `Animation` | 792 |
+| `0x0010d2a0` | `AmbientEmitter_SetVolume` | `Animation` | 88 |
 | `0x0010d3c8` | `Ambient_SetSound` | `Animation` | 88 |
+| `0x0010d570` | `AmbientManager_EnableEmitter` | `Animation` | 20 |
 | `0x0010d590` | `Ambient_SetEmitterPositions` | `Animation` | 216 |
 | `0x0010d8e8` | `Music_Play` | `Audio` | not filled in |
 | `0x0010d9a0` | `Music_Stop` | `Audio` | not filled in |
@@ -213,9 +223,11 @@ at the top of the repository's `README.md`.
 | `0x00113780` | `Audio_StartPreloadedSound` | `Audio` | 40 |
 | `0x001137a8` | `Sound_Play2D` | `Audio` | 64 |
 | `0x00113810` | `Ambient_AddSound` | `Audio` | 48 |
+| `0x00113840` | `Sound_AddAmbientEmitter` | `Audio` | 224 |
 | `0x00113920` | `Ambient_AddEmitter2` | `Audio` | 232 |
 | `0x00113a58` | `Ambient_SetEmitterPositions` | `Audio` | 208 |
 | `0x00113bc8` | `Audio_EnableAmbientEmitter` | `Audio` | 56 |
+| `0x00113c00` | `Sound_SetAmbientEmitterVolume` | `Audio` | 48 |
 | `0x00113c58` | `Snd_NewMaterialSlots` | `Audio` | not filled in |
 | `0x00113c98` | `Snd_NewMaterialSound` | `Audio` | not filled in |
 | `0x00113ce8` | `Snd_DuplicateSoundMaterials` | `Audio` | not filled in |
@@ -224,6 +236,7 @@ at the top of the repository's `README.md`.
 | `0x00113d88` | `Snd_NewAnimSound` | `Audio` | not filled in |
 | `0x00113dd0` | `Sound_AllocateCharacterVoices` | `Audio` | 40 |
 | `0x00113df8` | `Sound_SetCommandSoundPercent` | `Audio` | 56 |
+| `0x00113e60` | `Sound_SetSystemMusicState` | `Audio` | 72 |
 | `0x00113ea8` | `Sound_EnableSystemMusic` | `Audio` | not filled in |
 | `0x00113ed0` | `Sound_SetMusicTrack` | `Audio` | not filled in |
 | `0x00114018` | `Sound_SetListener` | `Audio` | 16 |
@@ -755,6 +768,7 @@ at the top of the repository's `README.md`.
 | `0x00213290` | `PlayerHUD_Render` | `GUI` | 1,160 |
 | `0x00214138` | `PlayerHUD_Update` | `GUI` | 2,704 |
 | `0x00218008` | `Human_Init` | `Human` | not filled in |
+| `0x002195e0` | `Human_SetCoverFlag5` | `Human` | 36 |
 | `0x0021a490` | `Human_PushOutInAir` | `Human` | not filled in |
 | `0x0021b290` | `Strike_Contact` | `Human` | 3,488 |
 | `0x0021cda8` | `Human_StoreName` | `Human` | 96 |
@@ -1565,8 +1579,10 @@ at the top of the repository's `README.md`.
 | `0x00371230` | `SoundPlayMusicTrack` | `Scripting` | 168 |
 | `0x00371348` | `SoundLoopMusicTrack` | `Scripting` | 176 |
 | `0x003713f8` | `SoundStopMusicTrack` | `Scripting` | 32 |
+| `0x00371b18` | `AddAmbientSoundEmitter` | `Scripting` | 664 |
 | `0x00371db0` | `AddAmbientSoundEmitter2` | `Scripting` | 680 |
 | `0x00372058` | `SetAmbientEmitterPositions` | `Scripting` | 760 |
+| `0x003725f0` | `SetAmbientEmitterVolumeMod` | `Scripting` | 116 |
 | `0x00372fe0` | `SoundPlayCommand` | `Scripting` | 312 |
 | `0x00373148` | `GangCreate` | `Scripting` | 184 |
 | `0x00373200` | `GangDelete` | `Scripting` | 56 |
@@ -1821,6 +1837,7 @@ at the top of the repository's `README.md`.
 | `0x00417af0` | `Cfg_SetActionDistance` | `Warriors` | 32 |
 | `0x00418150` | `ContextActions_Pick` | `Warriors` | not filled in |
 | `0x00418428` | `RepeatTracker_Note` | `Warriors` | 240 |
+| `0x00419fc8` | `GameState_SetMusicMood` | `Warriors` | 64 |
 | `0x0041a060` | `GameState_UpdateSystemMusic` | `Warriors` | not filled in |
 | `0x0041a8c0` | `Human_SwitchPlayer` | `Warriors` | 256 |
 | `0x0041ab30` | `SlowMotion_On` | `Warriors` | not filled in |

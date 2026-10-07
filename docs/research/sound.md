@@ -382,11 +382,12 @@ id`; the Animation page counts from the manager, 16 bytes more). Confirmed (code
 all while game-state flag 2 is set or the load screen is up (`+0x24270`). For each player and each emitter:
 
 1. **Who hears it.** A player counts unless the filter says otherwise: filter 0 skips a player whose `+0x5b7` is set,
-   1 one whose `+0x5b7` is clear, 2 none (`+0x5b7`: the player stands on
+   1 one whose `+0x5b7` is clear, 2 skips none (`+0x5b7`: the player stands on
    [covered ground](sound-events.md#covered), inferred indoors). An emitter that is off, or that no player counts
    for, has its sound stopped.
-2. **Volume.** A playing sound gets the ambient factor (`a8`: 0.75 while a scene plays, else 1), and a `music`
-   emitter's also the duck: 0.5 while a music channel is busy and the mood is not 2.
+2. **Volume.** A playing sound's `a8` factor becomes the ambient factor (0.75 while a scene plays, else 1), and a
+   `music` emitter's then the duck instead, when it is not 1: 0.5 while a music channel is busy and the mood is
+   not 2 (`AmbientSound_ApplyVolume`, `AmbientSound_ApplyDuck`).
 3. **Distance**: to the nearest listener from `pos1` (`0x00113188`). Beyond the range, or while `0x005147c8` is set,
    nothing starts, and a playing sound is stopped once the listener is beyond that sound's own `far`.
 4. **Kind gates**: a `_DAM_` emitter plays only from 2 s to 15 s after the AI's event stamp
@@ -395,12 +396,16 @@ all while game-state flag 2 is set or the load screen is up (`+0x24270`). For ea
 5. **Play**, by mode, at most **two new sounds per update** over all emitters:
     - **1, 2**: when the delay has passed and nothing is playing, take one play, play the next sound (the table slots
       **in turn**, from the random start) at a random one of the points, positional and duckable, at the emitter's
-      volume; then draw the next delay.
+      volume with the ambient factor; then draw the next delay. A play count that reaches -1 switches the emitter
+      off instead of playing (so 0 plays allows none). When the delay has passed while its sound still plays, the
+      delay is drawn again; after the last play of a count (0 left) the next delay is 1 s.
     - **3**: a loop: whenever the listener is in range and nothing is playing, start the next sound at the first
-      point; beyond the range, stop it. No delays.
+      point (the ambient factor, or for a `music` emitter outside a scene the duck); beyond the range, stop it. No
+      delays, no play count, not counted in the two new sounds.
     - **4**: as 1 and 2, but its first play waits for neither the delay nor a playing sound; it then becomes mode 2.
     - **5**: as 1 and 2, but a playing sound is stopped at the next update (inferred to suit sounds of a second or
-      less).
+      less); a delay not yet passed is set to 0 from now, so it plays at the following update; a count reaching -1
+      switches it off after that play.
     - **6**: nothing.
     - **7**: a **conversation** (`AmbientSound_AddStatResponse` → `AmbientManager_AddSphereEmitter`, `0x0010cd68`): up
       to five voice sets (`+0x98`, -1 ends the list) take turns, each saying the `statement` command (20) and the
@@ -1331,9 +1336,22 @@ workers) that belong to this page, by address.
   scripts' humans report sounds; there are no punch bags (`BAG`); a strike shape meets the level when its segment,
   as a ray, crosses a level triangle, without the turn limits and state `0x4000000`; a pane sounds as `GLASS`; a
   thrown human against the level (`Human_OnContact`) does not sound yet.
-- `VoiceTable` (`voice_table.cpp`, [The voice table](#voice-table)), `AmbientEmitters` (`ambient_emitters.cpp`,
-  [Ambience](#ambience)) and `Speech` (`speech.cpp`, [Saying a speech command](#speech)): one line per human at a
-  time, positional and directional at him, cut off by an interrupting one.
+- `VoiceTable` (`voice_table.cpp`, [The voice table](#voice-table)) and `Speech` (`speech.cpp`,
+  [Saying a speech command](#speech)): one line per human at a time, positional and directional at him, cut off by
+  an interrupting one.
+- `AmbientEmitters` (`ambient_emitters.cpp`, [Ambient emitters](#ambient)): both binding forms (the older one named
+  `particle task`; the same name, sound and first point is the existing emitter, switched on), modes 1-5, the range
+  from `pos1`, the plays, the delays, the points, the volume, the name kinds, the filter on player 1's covered
+  ground (his last ground snap's triangle flag `0x20`), the ambient factor and the `music` duck, once a second and
+  at most two new sounds an update. **Coney's stand-ins**: one listener (the game's) and one player; the fight
+  timer is on while the music's mood is the fight; no AI event opens the `_DAM_` window; mode 7 (no script makes
+  one) and the `0x005147c8` block are not modelled.
+- **System music** (`repo:src/gamemodes/system_music.cpp`, [Music](#music)): on a mood change a random track of
+  the mood loops through the music player, cross-faded on the bar as `0x0010e7d0` does (a cut into the fight, 4
+  bars back to calm from the fight or the hunt, else 2); `SoundSetSystemMusicState` holds a mood (3 hands it back,
+  4 turns the music off) and `SoundEnableSystemMusic` ends a hold. **Coney's stand-ins**: the game's mood is the
+  fight while an AI targeting player 1 has a fight or melee goal, else calm (no hunted mood, no gang-size or sight
+  test); the mood is judged every frame, not every 30th update; the scripts' mood callback is not called.
 - **Radios** (`world_objects::Radios`, `repo:src/world_objects/radios.h`; [Radios](#radios)): `SetupRadio` pins the
   object and makes it a radio; gameplay updates each radio every frame through `GameSound::play3D` (a positional
   sound at the radio, half volume during a scene), with player 1's place, the game's random draws and the levels'
