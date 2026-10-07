@@ -45,6 +45,7 @@ add_executable(coney_tests
     gamemodes/text_viewer_mode_test.cpp
     graphics/font_test.cpp
     graphics/frame_stats_test.cpp
+    graphics/human_blood_test.cpp
     graphics/human_lighting_test.cpp
     graphics/light_manager_test.cpp
     graphics/overlay_camera_test.cpp

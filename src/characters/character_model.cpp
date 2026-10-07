@@ -56,6 +56,8 @@ std::expected<SkinVertex, Error> unpackVertex(const graphics::Ps2PackedVertex& v
                             static_cast<float>(v.normal[2]) / 128.0F};
     out.texCoords = {static_cast<float>(v.texCoords[0]) * scales.secondScale,
                      static_cast<float>(v.texCoords[1]) * scales.secondScale};
+    out.secondTexCoords = {static_cast<float>(v.texCoords[2]) * scales.secondScale,
+                           static_cast<float>(v.texCoords[3]) * scales.secondScale};
     for (std::size_t i = 0; i < kVertexWeights; ++i) {
         const std::uint32_t word = v.skin[i];
         const std::uint32_t tag = (word & kBoneBits) >> 2U;

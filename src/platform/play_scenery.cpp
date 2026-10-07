@@ -249,8 +249,12 @@ std::expected<void, Error> SandboxPlayScenery::setExtras(const RenderEngine& eng
     return {};
 }
 
-void SandboxPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::uint64_t /*nowMs*/,
+void SandboxPlayScenery::draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
                               const std::function<void()>& drawObjects) {
+    // The manager's viewport pass (the ambients and the cull) before anything is lit with it.
+    if (m_lighting != nullptr) {
+        m_lighting->beginFrame(view.pose, view.nearClip, view.drawDistance, nowMs);
+    }
     m_renderer->render(engine, view, drawObjects);
 }
 

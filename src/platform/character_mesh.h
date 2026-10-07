@@ -20,7 +20,11 @@ namespace coney::platform {
 /// geometry and frame, and a reference to the texture. Needs a running RenderEngine (either backend) and must be
 /// destroyed before it stops. Not copyable or movable: librw keeps pointers to it.
 ///
-/// Research: docs/research/characters.md#coneys-implementation
+/// A second atomic holds the same triangles with the model's second texture-coordinate set: the material's MatFX dual
+/// layer, which the original draws right after the first pass with a blood texture (bloodAtomic()). librw's GL3
+/// pipeline draws one texture per atomic, so the layer is an atomic of its own, posed with the first.
+///
+/// Research: docs/research/characters.md#coneys-implementation, docs/research/rendering.md#characters
 class CharacterMesh {
   public:
     /// Builds the geometry of `model` in its unskinned (bind) positions. `texture` (may be null: untextured) is used by
@@ -33,16 +37,22 @@ class CharacterMesh {
     CharacterMesh(CharacterMesh&&) = delete;
     CharacterMesh& operator=(CharacterMesh&&) = delete;
 
-    /// Replaces every vertex's position and normal; both spans hold one entry per model vertex (checked by
-    /// CONEY_ASSERT).
+    /// Replaces every vertex's position and normal, in both atomics; both spans hold one entry per model vertex
+    /// (checked by CONEY_ASSERT).
     void update(std::span<const anim::Vec3> positions, std::span<const anim::Vec3> normals);
 
-    /// The librw atomic, for drawing. Valid as long as this object.
+    /// The librw atomic of the first pass, for drawing. Valid as long as this object.
     [[nodiscard]] rw::Atomic* atomic() const { return m_atomic; }
+    /// The librw atomic of the dual (blood) layer, untextured until setBloodTexture(). Valid as long as this object.
+    [[nodiscard]] rw::Atomic* bloodAtomic() const { return m_blood; }
+    /// Sets the dual layer's texture (null: none); its materials hold their own reference.
+    void setBloodTexture(rw::Texture* texture);
 
   private:
-    rw::Atomic* m_atomic = nullptr;   // owned, with its geometry and frame
-    rw::Texture* m_texture = nullptr; // one reference held
+    rw::Atomic* m_atomic = nullptr;        // owned, with its geometry and frame
+    rw::Atomic* m_blood = nullptr;         // owned, with its geometry and frame
+    rw::Texture* m_texture = nullptr;      // one reference held
+    rw::Texture* m_bloodTexture = nullptr; // the dual layer's, as last set (its materials hold the references)
 };
 
 } // namespace coney::platform

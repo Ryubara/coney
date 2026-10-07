@@ -32,6 +32,7 @@
 #include "human/player.h"
 #include "human/strike_shapes.h"
 #include "human/target_human.h"
+#include "platform/blood_textures.h"
 #include "platform/character_mesh.h"
 #include "platform/hud_layer.h"
 #include "platform/placed_objects.h"
@@ -390,8 +391,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // Draws this step's health rings and L1 markers, each under where its human is drawn (`feet` by ring id).
     void drawRings(const std::map<std::uint64_t, anim::Vec3>& feet) const;
 
-    // Draws the character: its lights, the render states, the atomic.
+    // Draws the humans: their lights, the render states, each mesh in its two passes; then the blob shadows.
     void drawCharacter() const;
+    // The blood texture of the second pass of a human with `health`, or null when it shows none.
+    [[nodiscard]] rw::Texture* bloodTextureFor(const combat::Health& health) const;
     // The view from a camera pose (RenderWare's axes) through the player camera's lens, with `drawDistance`.
     [[nodiscard]] WorldView viewFrom(const world::CameraPose& pose, float drawDistance,
                                      const camera::CameraLens& lens = camera::kPlayerCameraLens) const;
@@ -411,6 +414,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     std::unique_ptr<PlayScenery> m_scenery;
     std::unique_ptr<human::PlayerCharacter> m_character; // the scene's: the targets and fighters play it
     std::vector<TextureDictionary> m_dictionaries;       // before the mesh, which holds a reference to their texture
+    // The humans' shared blood textures, before every mesh, whose dual layers hold references to them.
+    std::optional<BloodTextures> m_blood;
     // After a change of character, the player's own character and textures; and the characters he played before,
     // kept while the mode lasts because a target may still be playing a paired clip from one of their anim sets.
     std::unique_ptr<human::PlayerCharacter> m_playerCharacter;

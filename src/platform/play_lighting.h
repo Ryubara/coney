@@ -13,6 +13,7 @@
 #include "fileio/wad.h"
 #include "graphics/human_lighting.h"
 #include "graphics/level_lighting.h"
+#include "platform/character_mesh.h"
 #include "platform/render_engine.h"
 #include "platform/scene_lighting.h"
 #include "platform/world_renderer.h"
@@ -21,6 +22,7 @@
 namespace rw {
 struct Atomic;
 struct RGBA;
+struct Texture;
 } // namespace rw
 
 namespace coney::platform {
@@ -58,6 +60,11 @@ class PlayLighting {
 
     /// Draws a human's atomic lit as the original lights humans; `player` takes the player's shadow dimming.
     void drawHuman(rw::Atomic* atomic, bool player);
+    /// Draws a human as the original does, mesh by mesh in two passes: the first with his texture (drawHuman()), then
+    /// at once the dual layer with `blood` (null: no second pass), blended by the texture's alpha with no alpha test,
+    /// Z tested and written, lit and fogged as the first. `player` as drawHuman()'s.
+    /// @orig 0x00174320 HumanRender_Draw (HumanRender.cpp)
+    void drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood);
     /// Keeps a blob shadow for a human standing at `feet` (game axes) on `mesh`, for this frame's drawShadows().
     void addShadow(const raycast::CollisionMesh& mesh, anim::Vec3 feet);
     /// Draws and forgets this frame's blob shadows.

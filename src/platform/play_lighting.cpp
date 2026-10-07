@@ -111,6 +111,30 @@ void PlayLighting::drawHuman(rw::Atomic* atomic, bool player) {
     m_scene->drawHumanAtomic(atomic, player && m_playerDim.hidden());
 }
 
+void PlayLighting::drawHumanPasses(CharacterMesh& mesh, bool player, rw::Texture* blood) {
+    drawHuman(mesh.atomic(), player);
+    if (blood == nullptr) {
+        return;
+    }
+    // The dual layer takes the first pass's material colours (the player's dimming included), so both passes are lit
+    // alike, as the original's vertex colours are equal.
+    rw::Geometry* base = mesh.atomic()->geometry;
+    rw::Geometry* layer = mesh.bloodAtomic()->geometry;
+    for (rw::int32 i = 0; i < layer->matList.numMaterials && i < base->matList.numMaterials; ++i) {
+        layer->matList.materials[i]->color = base->matList.materials[i]->color;
+    }
+    mesh.setBloodTexture(blood);
+    // GS context 2 (rendering.md#characters): ALPHA 0x44 (source over by the texture's alpha), alpha test off, the
+    // same Z test with Z write. Equal depths pass librw's LEQUAL test.
+    rw::SetRenderState(rw::VERTEXALPHA, 1);
+    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAALWAYS);
+    m_scene->drawHumanAtomic(mesh.bloodAtomic(), player && m_playerDim.hidden());
+    rw::SetRenderState(rw::ALPHATESTFUNC, rw::ALPHAGREATEREQUAL);
+    rw::SetRenderState(rw::VERTEXALPHA, 0);
+}
+
 void PlayLighting::addShadow(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
     if (auto shadow = graphics::placeBlobShadow(mesh, raycast::Vec3{feet.x, feet.y, feet.z})) {
         m_shadows.push_back(*shadow);

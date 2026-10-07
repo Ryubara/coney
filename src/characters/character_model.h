@@ -34,6 +34,7 @@ struct SkinVertex {
     anim::Vec3 position;                              ///< Packed integers times the atomic's position scale.
     anim::Vec3 normal;                                ///< Packed signed bytes over 128.
     std::array<float, 2> texCoords{};                 ///< The first set, times the atomic's texture-coordinate scale.
+    std::array<float, 2> secondTexCoords{};           ///< The second set (the blood pass's), scaled the same way.
     std::array<std::uint8_t, kVertexWeights> bones{}; ///< Node indices of the HAnim hierarchy (and of the skin).
     std::array<float, kVertexWeights> weights{};      ///< 0 for an unused slot.
 };

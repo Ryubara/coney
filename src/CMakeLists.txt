@@ -52,6 +52,7 @@ add_library(coney_core STATIC
     gamemodes/text_viewer_mode.cpp
     graphics/font.cpp
     graphics/frame_stats.cpp
+    graphics/human_blood.cpp
     graphics/human_lighting.cpp
     graphics/level_lighting.cpp
     graphics/light_manager.cpp

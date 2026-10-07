@@ -18,6 +18,7 @@
 #include "characters/character_rig.h"
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
+#include "graphics/human_blood.h"
 #include "human/human_animator.h"
 #include "human/player_trace.h"
 #include "platform/play_level_effects.h"
@@ -214,6 +215,12 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
       m_normals(m_character->assets().model.vertices.size()), m_drawDistance(m_scenery->drawDistance()),
       m_model(std::move(model)) {
     m_texture = textureOf(m_dictionaries);
+    // The blood of every human's second pass; without it humans are drawn in one pass.
+    if (auto blood = BloodTextures::load(engine, wad); blood) {
+        m_blood = std::move(*blood);
+    } else {
+        m_print(std::format("humans: no blood textures ({}); drawn without them\n", blood.error().message));
+    }
     m_mesh = std::make_unique<CharacterMesh>(m_character->assets().model, m_texture);
     // The level's lights as its scripts set them, or a stand-in; the scenery draws with them too.
     m_lights = std::make_unique<PlayLighting>(engine, wad, cast != nullptr ? cast->lighting : nullptr,
@@ -437,17 +444,28 @@ void PlayLevelMode::drawCharacter() const {
     rw::SetRenderState(rw::ZTESTENABLE, 1);
     rw::SetRenderState(rw::ZWRITEENABLE, 1);
     rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
-    m_lights->drawHuman(m_mesh->atomic(), true);
+    m_lights->drawHumanPasses(*m_mesh, true, bloodTextureFor(m_player->human().health()));
     for (const Target& target : m_targets) {
-        m_lights->drawHuman(target.mesh->atomic(), false);
+        m_lights->drawHumanPasses(*target.mesh, false, bloodTextureFor(target.human->health()));
     }
-    for (const FighterMesh& fighter : m_fighterMeshes) {
+    const std::vector<ai::AiHuman>& fighters = m_ai->humans();
+    for (std::size_t i = 0; i < m_fighterMeshes.size(); ++i) {
+        const FighterMesh& fighter = m_fighterMeshes[i];
         if (!fighter.hidden) {
-            m_lights->drawHuman(fighter.mesh->atomic(), false);
+            rw::Texture* blood = i < fighters.size() ? bloodTextureFor(fighters[i].human->health()) : nullptr;
+            m_lights->drawHumanPasses(*fighter.mesh, false, blood);
         }
     }
     m_stage->drawPuppets();
     m_lights->drawShadows();
+}
+
+rw::Texture* PlayLevelMode::bloodTextureFor(const combat::Health& health) const {
+    if (!m_blood) {
+        return nullptr;
+    }
+    const graphics::BloodLayer layer = graphics::bloodLayerFor(health.fraction() * 100.0F);
+    return layer.shows ? m_blood->texture(layer.texture) : nullptr;
 }
 
 ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {

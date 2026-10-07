@@ -1966,6 +1966,11 @@ locomotion and the follow camera ([Camera](camera.md#coneys-implementation)):
   408 walk and 413 walk-start as above.
 - `src/characters/character_rig.*` builds the skeleton and the skinning matrices (pose bone `n + 2` · the pose turn
   · the inverse bind matrix) and skins on the CPU.
+- `src/platform/character_mesh.*` holds the skinned model as two librw atomics: the first texture-coordinate set
+  with the character's texture, and the second set for the material's dual layer. In play
+  (`src/platform/play_lighting.*`) every human is drawn in the two passes of
+  [Drawing a human](graphics.md#human-draw): the second pass blends the blood texture
+  (`src/graphics/human_blood.*`, the three `charblood` textures of `global.pak`) by its alpha below 90% health.
 - `--view-character [NAME] [--anim CLIP]` ([Building](../guides/building.md#the-character-viewer)) shows a skinned
   character playing a clip in place on the fixed 30 Hz step, with a pad-driven orbit camera.
 - `--render-references DIR` ([Building](../guides/building.md#reference-images)) writes a 256x256
@@ -2259,8 +2264,8 @@ default ids are known, [Anim slots](#anim-slots)), and the
 - **The `+0x65c` scale's source**: what the division in `Human_Init` takes.
 - **How the texture reaches the material**, which names none ([Character geometry](#character-geometry)).
 - **The rest rotations of pose bones 0-2** and why bone 3's parent in the table differs from its frame's.
-- **The vertex colour slot** (zeros in every character checked) and **the second texture coordinate set**: what
-  the renderer does with them.
+- **The vertex colour slot** (zeros in every character checked): what the renderer does with it. The second
+  texture-coordinate set is the blood layer's ([Graphics](graphics.md#human-draw)).
 - **The default anim table** at resource manager `+0x70`, which answers the slots set to `0xffffffff`; Coney uses the
   generic data `0x9da2e531`, which matches every speed checked, but whether the table is that resource is open.
 - **The idle threshold's getter** (answered): the sneak-walk speed ([Coney's implementation](#coneys-implementation)).

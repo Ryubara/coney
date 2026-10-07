@@ -175,6 +175,8 @@ class SandboxPlayScenery final : public PlayScenery {
     void findVisible(const WorldView& /*newest*/) override {}
     void draw(RenderEngine& engine, const WorldView& view, std::uint64_t nowMs,
               const std::function<void()>& drawObjects) override;
+    /// The lights the humans and objects are drawn with; each frame starts their viewport pass before drawing.
+    void setLighting(SceneLighting* lighting) override { m_lighting = lighting; }
     [[nodiscard]] anim::Vec3 lightDirection() const override { return m_world.layout().lighting.sunDirection; }
     [[nodiscard]] std::string summary() const override;
 
@@ -196,7 +198,8 @@ class SandboxPlayScenery final : public PlayScenery {
     sandbox::SandboxLayout m_made; // the layout as made, before any extras: the base setExtras() builds on
     std::unique_ptr<SandboxRenderer> m_renderer;
     human::PlayerStart m_start;
-    std::string m_spawn; // the spawn point's name
+    std::string m_spawn;                 // the spawn point's name
+    SceneLighting* m_lighting = nullptr; // the play mode's lights, started each frame for the humans and objects
 };
 
 /// **Coney's choice** for a level whose player start is not researched: above the middle of the first world's part 1
