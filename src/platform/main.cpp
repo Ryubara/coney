@@ -778,6 +778,9 @@ int main(int argc, char** argv) {
             movieMode->setCaptionFont(&*captionFont);
         }
         startUp->services().attachMoviePlayer(&*movieMode);
+        if (options->rumble) {
+            startUp->rumbleMenu().setLaunchOverride(options->rumble);
+        }
         startUp->start();
     } else {
         // No disc: no game to run, only the idle screen.

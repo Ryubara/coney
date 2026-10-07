@@ -24,6 +24,7 @@
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
+#include "core/options.h"
 #include "fileio/disc.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode_stack.h"
@@ -119,8 +120,9 @@ inline constexpr std::string_view kQuickRumbleScript = "200 tap start\n"
 /// (kQuickRumbleScript and a test's own lines): the start-up flow, its mode stack and its log.
 class DiscGame {
   public:
-    /// Everything set up over `wad` (which must outlive it) and started; the pad script must parse.
-    DiscGame(const io::Wad& wad, std::string_view script)
+    /// Everything set up over `wad` (which must outlive it) and started; the pad script must parse. `launch` is what
+    /// `--rumble` would pass: the match the Rumble menu then starts, whatever it chose.
+    DiscGame(const io::Wad& wad, std::string_view script, std::optional<RumbleLaunch> launch = std::nullopt)
         : m_wad(wad), m_handlers(chunk::ChunkHandlerTable::withDefaults()), m_budget(world::kSectorPoolSize) {
         platform::addTextureDictionaryHandlers(m_handlers);
         platform::addSpriteSheetHandlers(m_handlers);
@@ -139,6 +141,7 @@ class DiscGame {
             m_strings, LegalScreenSettings{}, [this](std::string_view line) { m_log.emplace_back(line); },
             script::wadScriptSource(m_wad),
             playLoader(*m_engine, m_wad, m_budget, [this](std::string_view line) { m_log.emplace_back(line); }));
+        m_flow->rumbleMenu().setLaunchOverride(launch);
         m_flow->start();
         m_timer.setFixedStep(true);
     }

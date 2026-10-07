@@ -2,6 +2,7 @@
 #include "core/options.h"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cstddef>
 #include <format>
@@ -180,6 +181,22 @@ std::expected<void, Error> checkPlayLevel(const Options& options) {
     return {};
 }
 
+// Refuses --rumble where it cannot work: part of checkCombinations().
+std::expected<void, Error> checkRumble(const Options& options) {
+    if (!options.rumble.has_value()) {
+        return {};
+    }
+    if (!options.discPath.has_value()) {
+        return invalidArgument("--rumble needs --disc to say where the game's files are");
+    }
+    if (!options.loads.empty() || options.viewTxd.has_value() || options.viewSheet.has_value() ||
+        options.viewText.has_value() || options.viewWorld.has_value() || options.viewCharacter.has_value() ||
+        options.playLevel.has_value() || options.sandbox.has_value()) {
+        return invalidArgument("--rumble cannot be combined with --load, the viewers, --play-level or --sandbox");
+    }
+    return {};
+}
+
 // Refuses the sandbox's options in combinations that cannot work: part of checkCombinations().
 std::expected<void, Error> checkSandbox(const Options& options) {
     if (options.spawn.has_value() && !(options.playLevel && sandboxOfPlayLevel(*options.playLevel))) {
@@ -267,6 +284,9 @@ std::expected<void, Error> checkCombinations(const Options& options) {
     if (auto play = checkPlayLevel(options); !play) {
         return play;
     }
+    if (auto rumble = checkRumble(options); !rumble) {
+        return rumble;
+    }
     if (auto sandbox = checkSandbox(options); !sandbox) {
         return sandbox;
     }
@@ -321,6 +341,45 @@ std::expected<int, Error> parseFpsCap(std::string_view text) {
     }
     return invalidArgument(
         std::format("--fps-cap needs a whole number from 0 (no cap) to {}, got \"{}\"", kMaxFpsCap, text));
+}
+
+// The modes --rumble names, with the arena and gang size each plays in by default (the disc tests' choices).
+constexpr std::array<RumbleModeName, 6> kRumbleModes{{
+    {"brawl", 12, 102, 1},
+    {"warparty", 14, 102, 5},
+    {"kinghill", 2, 101, 3},
+    {"royal", 3, 131, 3},
+    {"survival", 9, 134, 1},
+    {"wchair", 24, 104, 1},
+}};
+
+// The arenas' level numbers (`level101` to `level137`) and the most fighters a side the set-up holds.
+constexpr int kFirstRumbleArena = 101;
+constexpr int kLastRumbleArena = 137;
+constexpr int kMaxGangSize = 9;
+// The arena and gang size a numeric game type no name lists plays in: the Fight Pen, one a side.
+constexpr int kFallbackArena = 102;
+
+// The valid mode names, for an error message.
+std::string rumbleNameList() {
+    std::string list;
+    for (const RumbleModeName& mode : kRumbleModes) {
+        list += list.empty() ? "" : ", ";
+        list += mode.name;
+    }
+    return list;
+}
+
+// Parses a value of `option` (`--arena`, `--gang-size`): a whole number from `low` to `high`, decimal digits only.
+std::expected<int, Error> parseRange(std::string_view option, std::string_view text, int low, int high) {
+    int value = 0;
+    if (isAllDigits(text)) {
+        const auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+        if (parsed.ec == std::errc{} && value >= low && value <= high) {
+            return value;
+        }
+    }
+    return invalidArgument(std::format("{} needs a whole number from {} to {}, got \"{}\"", option, low, high, text));
 }
 
 // Parses the value after `--checkpoint`: a whole number from 1 to kMaxCheckpoint, written with decimal digits only.
@@ -385,6 +444,9 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> vsyncArg;      // as typed, likewise
     std::optional<std::string> checkpointArg; // as typed, likewise
     std::optional<std::string> startArg;      // as typed, likewise
+    std::optional<std::string> rumbleArg;     // as typed, likewise
+    std::optional<std::string> arenaArg;      // as typed, likewise
+    std::optional<std::string> gangSizeArg;   // as typed, likewise
     for (std::size_t i = 0; i < args.size(); ++i) {
         const std::string_view arg = args[i];
         if (arg == "--help") {
@@ -593,6 +655,20 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return std::unexpected(std::move(checkpoint.error()));
             }
             options.checkpoint = *checkpoint;
+        } else if (arg == "--rumble") {
+            if (auto value = takeValue(args, i, rumbleArg, "--rumble",
+                                       "a mode: brawl, warparty, kinghill, royal, survival, wchair or a number");
+                !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--arena") {
+            if (auto value = takeValue(args, i, arenaArg, "--arena", "an arena's level number"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--gang-size") {
+            if (auto value = takeValue(args, i, gangSizeArg, "--gang-size", "the fighters a side"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
         } else if (arg == "--start") {
             if (auto value = takeValue(args, i, startArg, "--start", "X,Y,Z,HEADING[,DISTANCE,YAW]"); !value) {
                 return std::unexpected(std::move(value.error()));
@@ -616,6 +692,32 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     if (options.showHelp) {
         return options; // --help wins over every other mistake: the user is asking how to get it right
     }
+    if (!rumbleArg && (arenaArg || gangSizeArg)) {
+        return invalidArgument("--arena and --gang-size need --rumble: they set the match it starts");
+    }
+    if (rumbleArg) {
+        std::optional<int> arena;
+        std::optional<int> gangSize;
+        if (arenaArg) {
+            auto parsed = parseRange("--arena", *arenaArg, kFirstRumbleArena, kLastRumbleArena);
+            if (!parsed) {
+                return std::unexpected(std::move(parsed.error()));
+            }
+            arena = *parsed;
+        }
+        if (gangSizeArg) {
+            auto parsed = parseRange("--gang-size", *gangSizeArg, 1, kMaxGangSize);
+            if (!parsed) {
+                return std::unexpected(std::move(parsed.error()));
+            }
+            gangSize = *parsed;
+        }
+        auto launch = resolveRumbleLaunch(*rumbleArg, arena, gangSize);
+        if (!launch) {
+            return std::unexpected(std::move(launch.error()));
+        }
+        options.rumble = *launch;
+    }
     if (auto combined = checkCombinations(options); !combined) {
         return std::unexpected(std::move(combined.error()));
     }
@@ -623,6 +725,38 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
 }
 
 std::string_view usageText() { return kUsage; }
+
+std::span<const RumbleModeName> rumbleModeNames() { return kRumbleModes; }
+
+std::expected<RumbleLaunch, Error> resolveRumbleLaunch(std::string_view type, std::optional<int> arena,
+                                                       std::optional<int> gangSize) {
+    RumbleLaunch launch;
+    const auto named = std::ranges::find(kRumbleModes, type, &RumbleModeName::name);
+    if (named != kRumbleModes.end()) {
+        launch = {.gameType = named->gameType, .arena = named->arena, .gangSize = named->gangSize};
+    } else {
+        // A number: any `RM_*` game type, which the arena's own script may or may not support.
+        int number = 0;
+        const auto parsed = std::from_chars(type.data(), type.data() + type.size(), number);
+        if (!isAllDigits(type) || parsed.ec != std::errc{} || number < 1 || number > 99) {
+            return invalidArgument(std::format("--rumble needs a mode, one of {} or a game type's number, got \"{}\"",
+                                               rumbleNameList(), type));
+        }
+        const auto listed = std::ranges::find(
+            kRumbleModes, number, [](const RumbleModeName& mode) { return static_cast<int>(mode.gameType); });
+        launch =
+            listed != kRumbleModes.end()
+                ? RumbleLaunch{.gameType = listed->gameType, .arena = listed->arena, .gangSize = listed->gangSize}
+                : RumbleLaunch{.gameType = static_cast<std::uint16_t>(number), .arena = kFallbackArena, .gangSize = 1};
+    }
+    if (arena) {
+        launch.arena = *arena;
+    }
+    if (gangSize) {
+        launch.gangSize = static_cast<std::uint16_t>(*gangSize);
+    }
+    return launch;
+}
 
 std::optional<std::string> sandboxOfPlayLevel(std::string_view name) {
     if (name == kSandboxLevelPrefix) {

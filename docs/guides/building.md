@@ -188,7 +188,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
                    [--scene NAME]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE] [--no-audio | --audio-test]
-      [--skip-movies]
+      [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
       [--profiles DIR] [--dev-overlay N]
 ```
 
@@ -346,6 +346,35 @@ WAR PARTY, five a side; when the player goes down with team-mates standing, the 
 pad passes from human ... to human ...`). Add `tap square` every 12 frames from 1100 to 2000 and the Orphan goes down
 instead; the result screen takes input from about frame 2400 (`2400 tap cross` replays). The run logs each step (`rumble
 intro: done, calling FinishCountdown`, `rumble result: winner ...`, `rumble result: choice 0`).
+
+#### Rumble from the command line {#rumble-from-the-command-line}
+
+A fresh profile's Rumble menu offers only **1 ON 1** and **WAR PARTY** (Game Mode), the Furies and the Orphans and
+the Fight Pen; King of the hill, Battle royal, Survival and Wheelchair, and the other arenas, are unlocked through the
+story ([Rumble](../research/rumble.md)). For play-testing the others there is `--rumble TYPE [--arena N] [--gang-size
+N]` (`--disc` needed): Coney boots as usual and goes through QUICK RUMBLE's menus, and when the arena is confirmed the
+mode, the arena and the gang size are written over the menu's choice, so the arena's scripts run as the menu would have
+set them. Go through the menu by hand (or with a script, as above); whatever you choose there, the match is the one you
+named, and the log says `rumble menu: --rumble sets game type ...`.
+
+| `TYPE` | Mode | Game type | Default arena | Default gang size |
+| --- | --- | --- | --- | --- |
+| `brawl` | Brawl (1 ON 1) | 12 | 102 | 1 |
+| `warparty` | Brawl (WAR PARTY) | 14 | 102 | 5 |
+| `kinghill` | King of the hill | 2 | 101 | 3 |
+| `royal` | Battle royal | 3 | 131 | 3 |
+| `survival` | Survival | 9 | 134 | 1 |
+| `wchair` | Wheelchair | 24 | 104 | 1 |
+
+`TYPE` may also be the game type's number (a listed number takes that mode's defaults; any other 1 to 99 plays in arena
+102 with one a side, which its arena script may not support). `--arena` takes an arena's level number (101 to 137) and
+`--gang-size` 1 to 9. A bad `TYPE` prints the valid names and exits with 2. Test mode works as for any run: add
+`--headless --frames N --input-script FILE`.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --skip-movies --rumble kinghill
+build/dev/src/platform/coney --disc /path/to/warriors.iso --rumble royal --arena 131 --gang-size 3
+```
 
 `--load ENTRY` loads one WAD entry through the reimplemented chunk system and prints a summary of it. `ENTRY` is a
 file name such as `level1.lev` (any letter case) or a name hash written `0x` and up to 8 hex digits, such as

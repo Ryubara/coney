@@ -22,6 +22,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "core/options.h"
 #include "fileio/wad.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/rumble_result_mode.h"
@@ -285,4 +286,32 @@ TEST_CASE("the disc's Wheelchair race is won by the CPU racer that drives the co
     CHECK(game.flow().rumbleResult().reason().find("WINS") != std::string::npos);
     CHECK(game.flow().scripts().errors() == 0);
     std::printf("  wheelchair: result screen at frame %llu\n", static_cast<unsigned long long>(game.frames()));
+}
+
+TEST_CASE("the disc's `--rumble kinghill` starts King of the hill in arena 101 from the Rumble menu's QUICK RUMBLE",
+          "[disc][rumble]") {
+    std::optional<coney::io::Wad> wad = coney::test::openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // The command line's own parse, then the menu's QUICK RUMBLE with its default choice (1 ON 1, the Fight Pen): the
+    // option overrides it when the arena is confirmed.
+    const std::array<std::string_view, 4> args{"--disc", "x", "--rumble", "kinghill"};
+    auto options = coney::parseOptions(args);
+    REQUIRE(options.has_value());
+    REQUIRE(options->rumble.has_value());
+    coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript, options->rumble);
+    game.run(1000);
+    REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
+    const coney::RumbleSetup& rumble = game.flow().state().rumble;
+    CHECK(rumble.values.at(coney::RumbleSetup::kGameType) == 2);
+    CHECK(rumble.values.at(coney::RumbleSetup::kGangSize) == 3);
+    CHECK(rumble.levelNumber == 101);
+    // The arena's own script ran with that set-up: King of the hill's top tier flag exists and nothing failed.
+    CHECK(game.flow().scripts().vm().global("fTopTier").number().has_value());
+    CHECK(game.flow().scripts().errors() == 0);
+    CHECK(std::ranges::any_of(game.log(), [](const std::string& line) {
+        return line.find("rumble menu: start level101") != std::string::npos;
+    }));
+    std::printf("  --rumble kinghill: gameplay in arena %d, %zu log lines\n", rumble.levelNumber, game.log().size());
 }

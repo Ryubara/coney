@@ -34,6 +34,34 @@ struct StartPlace {
     std::optional<float> cameraYawDegrees;
 };
 
+/// What `--rumble` asks for: the Rumble set-up the match starts with, written over what the Rumble menu chose when its
+/// arena is confirmed (docs/guides/building.md#rumble-from-the-command-line). Coney's own developer aid: a fresh
+/// profile's menu offers only 1 ON 1 and WAR PARTY.
+struct RumbleLaunch {
+    std::uint16_t gameType = 0; ///< The mode's `RM_*` number (RumbleSetup::kGameType).
+    int arena = 0;              ///< The arena's level number (`101` for `level101`).
+    std::uint16_t gangSize = 0; ///< Fighters per side (RumbleSetup::kGangSize).
+};
+
+/// One mode `--rumble` knows: its name on the command line, its `RM_*` number and the arena and gang size it plays in
+/// unless `--arena` and `--gang-size` say otherwise (the ones the disc tests use).
+struct RumbleModeName {
+    std::string_view name;
+    std::uint16_t gameType;
+    int arena;
+    std::uint16_t gangSize;
+};
+
+/// Every mode `--rumble` accepts, in the order the usage text lists them.
+[[nodiscard]] std::span<const RumbleModeName> rumbleModeNames();
+
+/// Resolves `--rumble`'s `type` (a name from rumbleModeNames() or a numeric game type), `arena` and `gangSize` (unset:
+/// the mode's own; a number that is no listed mode's takes arena 102 and gang size 1) into a RumbleLaunch. A bad type
+/// is ErrorCode::InvalidArgument whose message lists the valid names; so is an arena outside 101 to 137 or a gang size
+/// outside 1 to 9.
+[[nodiscard]] std::expected<RumbleLaunch, Error> resolveRumbleLaunch(std::string_view type, std::optional<int> arena,
+                                                                     std::optional<int> gangSize);
+
 /// Which lists `--render-references` renders (`--kind`).
 enum class ReferenceKind : std::uint8_t {
     All,        ///< Every kind below (the default).
@@ -147,6 +175,9 @@ struct Options {
     /// was mixed at the end; a check of the sound output. Cannot be combined with `--no-audio`, `--load` or
     /// `--render-references`.
     bool audioTest = false;
+    /// `--rumble TYPE [--arena N] [--gang-size N]`: start a Rumble match of that mode as QUICK RUMBLE does, whatever
+    /// the menu chose. Requires discPath; cannot be combined with `--load`, the viewers, `--play-level` or `--sandbox`.
+    std::optional<RumbleLaunch> rumble;
     /// `--skip-movies`: every movie is skipped at once, as if it had ended
     /// (docs/research/movies.md#coneys-implementation).
     bool skipMovies = false;

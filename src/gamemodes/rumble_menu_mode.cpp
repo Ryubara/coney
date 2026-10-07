@@ -186,6 +186,15 @@ void RumbleMenuMode::exit() {
         m_log("rumble menu: cancelled\n");
         m_scripts.call(m_onCancel);
     } else if (m_started) {
+        if (m_launch) {
+            // The developer's choice (`--rumble`) over the menu's: a fresh profile's menu offers only 1 ON 1 and WAR
+            // PARTY.
+            m_state.rumble.values.at(RumbleSetup::kGameType) = m_launch->gameType;
+            m_state.rumble.values.at(RumbleSetup::kGangSize) = m_launch->gangSize;
+            m_state.rumble.levelNumber = m_launch->arena;
+            m_log(std::format("rumble menu: --rumble sets game type {}, arena {}, {} a side\n", m_launch->gameType,
+                              m_launch->arena, m_launch->gangSize));
+        }
         m_log(std::format("rumble menu: start level{} ({} vs {})\n", m_state.rumble.levelNumber,
                           m_state.rumble.gangNames[0], m_state.rumble.gangNames[1]));
         const std::array<script::Value, 1> args{script::Value(static_cast<double>(m_state.rumble.levelNumber))};

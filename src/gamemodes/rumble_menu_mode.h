@@ -10,6 +10,7 @@
 #include <string_view>
 
 #include "core/error.h"
+#include "core/options.h"
 #include "gamemodes/front_end_services.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/font.h"
@@ -111,6 +112,11 @@ class RumbleMenuMode final : public GameMode {
     /// @orig 0x0015ea40 Mode11::Exit (unknown)
     void exit() override;
 
+    /// Makes every fight this menu starts the match `launch` describes (`--rumble`): its mode, arena and gang size are
+    /// written over what the screens chose when the arena is confirmed, as the fixture of the disc tests does, so the
+    /// arena's scripts run as in the original. Nothing (the default) leaves the screens' choice alone.
+    void setLaunchOverride(std::optional<RumbleLaunch> launch) { m_launch = launch; }
+
     /// Whether the last visit started a fight / was cancelled.
     [[nodiscard]] bool started() const { return m_started; }
     [[nodiscard]] bool cancelled() const { return m_cancelled; }
@@ -142,9 +148,10 @@ class RumbleMenuMode final : public GameMode {
     std::optional<graphics::SpriteBatch> m_bigBatch;
     graphics::OverlayCamera m_camera;
     graphics::OverlayPass m_pass;
-    std::string m_onCancel;        // `0x005e67c0`
-    std::string m_onStart;         // `0x005e67c4`
-    std::string_view m_lastScreen; // the screen logged last, so each change is logged once
+    std::optional<RumbleLaunch> m_launch; // `--rumble`: written over the set-up when a fight starts
+    std::string m_onCancel;               // `0x005e67c0`
+    std::string m_onStart;                // `0x005e67c4`
+    std::string_view m_lastScreen;        // the screen logged last, so each change is logged once
     bool m_fromFrontEnd = false;
     bool m_startPending = false; // enter() ran; the menu starts on the next update, which knows the time
     bool m_leaving = false;      // the screens ended: frozen while the fade out runs
