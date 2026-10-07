@@ -4,11 +4,14 @@
 #include <cstddef>
 #include <format>
 #include <optional>
+#include <span>
 #include <utility>
+#include <vector>
 
 #include "core/game_timer.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
+#include "scripting/lua_value.h"
 
 namespace coney {
 
@@ -102,6 +105,7 @@ void LevelFlowMode::startFrontEnd() {
     // InitLevel: the level's world (the scene behind the menus), then its script step: global.lua, then the level's own
     // script.
     loadScene();
+    makeScenes();
     m_scripts.enterLevel(m_currentLevel);
     m_services.loadBank(ProfileManagerMode::kSoundBank);
 
@@ -119,7 +123,8 @@ void LevelFlowMode::startFrontEnd() {
 
 void LevelFlowMode::finishFrontEnd() {
     m_scripts.call("Menu.onFinish");
-    // UnloadLevel(0): the front-end world goes with the level.
+    // UnloadLevel(0): the front-end world and its scenes go with the level.
+    dropScenes();
     m_profileManager.setScene(nullptr);
     m_scene.reset();
     // UnloadLevel destroys the script system and makes it again: the next level starts from the bindings alone.
@@ -134,6 +139,7 @@ void LevelFlowMode::finishFrontEnd() {
 namespace coney {
 
 void LevelFlowMode::loadScene() {
+    dropScenes();
     m_scene.reset();
     if (!m_loadScene) {
         m_log(std::format("level flow: front end {} (scripts only: no scene loader)\n", m_currentLevel));
@@ -148,6 +154,48 @@ void LevelFlowMode::loadScene() {
         m_log(std::format("level flow: front end {} with its scene\n", m_currentLevel));
     }
     m_profileManager.setScene(m_scene.get());
+}
+
+} // namespace coney
+
+namespace coney {
+
+void LevelFlowMode::makeScenes() {
+    dropScenes();
+    if (!m_sceneMaker) {
+        return;
+    }
+    m_scenes = m_sceneMaker();
+    if (!m_scenes) {
+        return;
+    }
+    // A preload's callback and an end function call into the front end's scripts.
+    m_scenes->setScriptCall([this](std::string_view function, std::span<const double> args) {
+        std::vector<script::Value> values(args.begin(), args.end());
+        m_scripts.call(function, values);
+    });
+    m_scenes->setHost(m_scene ? m_scene->sceneHost() : nullptr);
+    if (m_context != nullptr) {
+        m_context->scenes = m_scenes.get();
+        m_context->lighting = m_scene ? m_scene->lighting() : nullptr;
+    }
+    m_profileManager.setScenes(m_scenes.get());
+}
+
+void LevelFlowMode::dropScenes() {
+    if (m_context != nullptr) {
+        if (m_scenes && m_context->scenes == m_scenes.get()) {
+            m_context->scenes = nullptr;
+        }
+        if (m_scene && m_context->lighting != nullptr && m_context->lighting == m_scene->lighting()) {
+            m_context->lighting = nullptr;
+        }
+    }
+    m_profileManager.setScenes(nullptr);
+    if (m_scenes) {
+        m_scenes->setHost(nullptr);
+    }
+    m_scenes.reset();
 }
 
 } // namespace coney

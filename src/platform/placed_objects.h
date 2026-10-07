@@ -14,13 +14,23 @@
 #include "platform/object_models.h"
 #include "world_objects/object_list.h"
 
+// librw's atomic, declared rather than included: <rw.h> brings in SDL and the OpenGL loader.
+namespace rw {
+struct Atomic;
+} // namespace rw
+
 namespace coney::platform {
 
-/// The transform that draws an object's model in RenderWare's axes: the model's own frame (`modelFrame`, as it was
-/// placed when read), then the object's pose (`rotation` and `position`, in the game's axes, z up) carried into
-/// RenderWare's, where a game point (x, y, z) is (x, z, −y). The model's own axes are taken to turn the same way, its
-/// y up being the game's z up (inferred: the models stand with y up, docs/research/level-loading.md#the-object-list,
-/// and the original carries game positions into RenderWare's axes so, docs/research/world.md).
+/// The transform that draws an object's model in RenderWare's axes: the turn of the model's own frame (`modelFrame`,
+/// as it was placed when read), then the object's pose (`rotation` and `position`, in the game's axes, z up) carried
+/// into RenderWare's, where a game point (x, y, z) is (x, z, −y). The model's own axes are taken to turn the same way,
+/// its y up being the game's z up (inferred: the models stand with y up,
+/// docs/research/level-loading.md#the-object-list, and the original carries game positions into RenderWare's axes so,
+/// docs/research/world.md).
+///
+/// The model frame's translation is not used: it is where the model was authored (the Wonder Wheel's neon signs hold
+/// (−29.32, 19.94, 0.07), its carts (−78.2, 0, 0)), and the object's pose replaces it. With it, the neons would stand
+/// 35 m off the hub they ring at runtime (inferred, docs/research/objects.md#models).
 [[nodiscard]] anim::Mat34 objectRenderTransform(anim::Quat rotation, anim::Vec3 position,
                                                 const anim::Mat34& modelFrame);
 
@@ -55,8 +65,10 @@ class PlacedObjects {
     /// Forgets every object (the models stay loaded).
     void clear() { m_objects.clear(); }
 
-    /// Draws every shown object whose model loaded, with the current camera, lights and render states.
-    void draw() const;
+    /// Draws every shown object whose model loaded, with the current camera and render states, each atomic through
+    /// `render` (the caller's lights, SceneLighting); empty renders it with the current librw world's lights, which
+    /// must then be set.
+    void draw(const std::function<void(rw::Atomic*)>& render = {}) const;
 
     /// Objects placed, and of them shown with a model.
     [[nodiscard]] std::size_t placed() const { return m_objects.size(); }

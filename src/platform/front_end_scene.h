@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <functional>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string_view>
 
 #include "animation/anim_math.h"
 #include "core/error.h"
+#include "core/interpolation.h"
 #include "fileio/wad.h"
 #include "gamemodes/front_end_scene.h"
 #include "graphics/level_lighting.h"
@@ -19,6 +22,7 @@
 #include "platform/scene_lighting.h"
 #include "platform/world_renderer.h"
 #include "platform/world_set.h"
+#include "scenes/scene_host.h"
 #include "world/level_object.h"
 #include "world/sector_budget.h"
 #include "world_objects/object_list.h"
@@ -30,7 +34,7 @@ namespace coney::platform {
 /// Where the front-end scene finds its dynamic objects: the flow's spawn records and object types (both null: none).
 /// Both must outlive the scene.
 struct FrontEndObjectSource {
-    const world_objects::SpawnRecords* records = nullptr;
+    world_objects::SpawnRecords* records = nullptr;
     const world_objects::ObjectTypes* types = nullptr;
 };
 
@@ -38,97 +42,119 @@ struct FrontEndObjectSource {
 /// streamed one decision a step around the camera and drawn by the world renderer, cleared to black (the background
 /// colour `LevelFlow_StartFrontEnd` sets), with the menus' 2D pass and fade drawn over them before the frame is shown.
 ///
-/// **Coney's stand-in camera** until the scene player (src/scenes, being written) plays `WonderWheel_100`, whose
-/// `camera01` track is the real view: the track's first pose, (462.60, −122.35, −187.93) in the game's axes, with its
-/// lens (field of view 54.43° across, near 0.5, far 150), turned to the wheel's hub at (515.51, −68.89, −188.67) and
-/// then kHubYawOffsetDegrees to the left, so the hub sits right of centre where the runtime picture has the wheel (its
-/// outline across logical x 335-615 of 640). The camera does not move, as at runtime.
+/// **The scenes' host** (scenes::SceneHost): `level100.lua`'s `WonderWheelAnim` plays the looping scene
+/// `WonderWheel_100` on the front end's scene system, which this world hosts. The scene's camera is the view: it is
+/// made current as the scene starts (cameraBegin()), its track moves it (cameraPose()) and it goes as the scene ends.
+/// Without it the current camera is the script's (`CameraCreateLocked("Black", ...)`), about 550 m from the wheel and
+/// past its far clip, so the frame is the black background alone (frontend.md#background).
 ///
 /// **The dynamic objects** (the wheel, its carts and neon signs, spawned by `level100.lua`'s `ObjSpawn`): every live
-/// spawn record of the objects source is drawn with its type's model (PlacedObjects), at the pose a scene last gave
-/// it (setObjectPose()) or else at its record's, and shown or hidden by messages 0x12 and 0x13 (objectMessage()). A
-/// record becomes live when its handle is resolved (`SceneAddObject`); the 70 m streaming that would also spawn one
-/// is not Coney's yet, and the wheel stands 75 m from the camera, beyond it.
+/// spawn record of the objects source is drawn with its type's model (PlacedObjects), at the pose the scene's track
+/// last gave it (objectPose(), blended between the last two steps) or else at its record's, and shown or hidden by
+/// messages 0x12 and 0x13 (objectMessage()). A record becomes live when `SceneAddObject` resolves its handle; the
+/// scene releasing an object unpins its record (docs/research/scenes.md#ending). The 70 m streaming that would also
+/// spawn one is not Coney's yet.
 ///
-/// **Lighting** is the light manager as it starts, before any script sets it: the world ambient at the brightness
-/// alone, and the fog black (kBackground). `level100.lua`'s own lights are not run yet.
-class FrontEndWorldScene final : public FrontEndScene {
+/// **Lighting** is the front-end level's light manager, which the scripts' lighting bindings fill (lighting()):
+/// `global.lua`'s lights for level 100, with the fog black (kBackground). The objects are drawn with the world
+/// renderer's render states, without per-object lights (PlacedObjects).
+///
+/// **Coney's choices**: when the scene camera starts, the world round it is preloaded at once (the original streams it
+/// during the menus' 1.5 s fade in); a scene's own lights are counted, not made.
+class FrontEndWorldScene final : public FrontEndScene, public scenes::SceneHost {
   public:
-    /// The scene camera's first pose and the hub it faces, in the game's axes (z up).
-    static constexpr float kCameraX = 462.60F;
-    static constexpr float kCameraY = -122.35F;
-    static constexpr float kCameraZ = -187.93F;
-    static constexpr float kHubX = 515.51F;
-    static constexpr float kHubY = -68.89F;
-    static constexpr float kHubZ = -188.67F;
-    /// The scene camera's lens.
-    static constexpr float kFieldOfViewDegrees = 54.43F;
-    static constexpr float kNearClip = 0.5F;
-    static constexpr float kFarClip = 150.0F;
-    /// Coney's turn to the left of the hub, so the world's "WONDER WHEEL" sign lands where the runtime picture has it,
-    /// near logical (410, 217) of 640 × 448.
-    static constexpr float kHubYawOffsetDegrees = 10.7F;
     /// The background (and fog) colour the front end sets.
     static constexpr graphics::Rgba kBackground = graphics::kBlack;
+    /// The radius the world is preloaded in round the scene camera when it starts: the scene's far clip, 150 m.
+    static constexpr float kPreloadRadius = 150.0F;
 
     /// Loads level `name`'s worlds and level file from `wad` into a Sector Pool of its own (the level owns it until it
-    /// is unloaded, so a level loaded after the front end starts from an empty pool), and preloads the parts round the
-    /// camera. `print` gets the load's summary. Fails as loadLevelScenery() does.
+    /// is unloaded, so a level loaded after the front end starts from an empty pool). `print` gets the load's summary.
+    /// Fails as loadLevelScenery() does.
     [[nodiscard]] static std::expected<std::unique_ptr<FrontEndWorldScene>, Error>
     create(RenderEngine& engine, const io::Wad& wad, std::string_view name,
            const std::function<void(std::string_view)>& print, FrontEndObjectSource objects = {});
 
-    /// One streaming decision round the camera and the visibility pass, then the dynamic objects brought up to date
-    /// with the live spawn records: a new one placed, one no longer live dropped.
+    ~FrontEndWorldScene() override;
+    FrontEndWorldScene(const FrontEndWorldScene&) = delete;
+    FrontEndWorldScene& operator=(const FrontEndWorldScene&) = delete;
+    FrontEndWorldScene(FrontEndWorldScene&&) = delete;
+    FrontEndWorldScene& operator=(FrontEndWorldScene&&) = delete;
+
+    /// One step after the scenes' update: the camera's and objects' new poses become the newest, then (with a scene
+    /// camera) one streaming decision round it and the visibility pass, and the dynamic objects brought up to date
+    /// with the live spawn records.
     void update(std::uint64_t nowMs) override;
 
-    /// The world through the camera, the dynamic objects between its two streamed worlds, then `overlay`, then the
-    /// present.
+    /// The world through the scene camera between the last two steps, the dynamic objects between its two streamed
+    /// worlds, then `overlay`, then the present; without a scene camera the black background and `overlay` alone.
     void render(const RenderTime& time, const std::function<void()>& overlay) override;
 
-    /// Puts object `handle` at `position` turned by `rotation` (the game's axes), as a scene's track does each step;
-    /// the pose holds until the next. Drawn while its record is live.
-    void setObjectPose(double handle, anim::Vec3 position, anim::Quat rotation);
-    /// A message sent to object `handle`: `simple_object`'s 0x12 shows it and 0x13 hides it
-    /// (docs/research/objects.md#simple-object); others do nothing here.
-    void objectMessage(double handle, int message);
+    [[nodiscard]] scenes::SceneHost* sceneHost() override { return this; }
+    [[nodiscard]] graphics::LevelLighting* lighting() override { return &m_lighting; }
 
-    /// The view the scene is drawn through.
-    [[nodiscard]] const WorldView& view() const { return m_view; }
+    // ---- scenes::SceneHost ----
+    void objectPose(double object, const scenes::ScenePose& pose) override;
+    void objectMessage(double object, int message) override;
+    void objectRelease(double object) override;
+    void lightSet(std::size_t index, const scenes::ScenePose& pose, const scenes::SceneLight& light) override;
+    void cameraBegin(const scenes::ScenePose& pose, const scenes::SceneLens& lens) override;
+    void cameraPose(const scenes::ScenePose& pose, const scenes::SceneLens& lens) override;
+    void cameraEnd(float blendSeconds) override;
+    void log(std::string_view line) override { m_print(line); }
+
+    /// Whether the scene camera is current (a scene with a camera is playing).
+    [[nodiscard]] bool cameraActive() const { return m_camera.has_value(); }
+    /// The view through the scene camera as of the newest step; nothing while no scene camera is current.
+    [[nodiscard]] std::optional<WorldView> view() const;
     /// The dynamic objects; null when the Object List did not load.
     [[nodiscard]] const PlacedObjects* objects() const { return m_objects.get(); }
+    /// The newest pose a scene gave object `handle` (the game's axes); nothing when none did.
+    [[nodiscard]] std::optional<scenes::ScenePose> objectPoseOf(double handle) const;
+    /// The scene lights set so far (counted, not made).
+    [[nodiscard]] std::uint64_t sceneLights() const { return m_sceneLights; }
 
   private:
-    // A pose a scene gave an object.
-    struct ObjectPose {
-        anim::Vec3 position;
-        anim::Quat rotation;
+    // The scene camera at a step.
+    struct CameraState {
+        scenes::ScenePose pose;
+        scenes::SceneLens lens;
     };
 
-    explicit FrontEndWorldScene(RenderEngine& engine);
+    FrontEndWorldScene(RenderEngine& engine, std::function<void(std::string_view)> print);
 
-    // Places every live record's object (at its scene pose, or its record's) and drops the objects whose records are
-    // gone or no longer live.
+    // The view through the scene camera `alpha` of the way between its last two steps (one must be current).
+    [[nodiscard]] WorldView viewAt(float alpha) const;
+    // Drops the objects whose records are gone or no longer live, and keeps every live one's pose for this step.
     void syncObjects();
+    // Places every kept object at its pose `alpha` of the way between the last two steps.
+    void placeObjects(float alpha);
 
     RenderEngine& m_engine;
+    std::function<void(std::string_view)> m_print;
     world::SectorBudget m_budget{world::kSectorPoolSize}; // before the worlds charged to it
     std::unique_ptr<WorldSet> m_set;
     std::unique_ptr<world::LevelObject> m_level;
     graphics::LevelLighting m_lighting;
     SceneLighting m_sceneLighting; // after the lighting it reads, before the renderer that draws with it
     WorldRenderer m_renderer;
-    WorldView m_view;
     float m_pendingDistance = 0.0F;
+    std::optional<Interpolated<CameraState>> m_camera; // the scene camera at the last two steps; none: the script's
+    std::optional<CameraState> m_cameraNext;           // what the scenes' update set, taken by the next update()
+    bool m_cameraEnded = false;                        // the scenes' update ended the scene camera
+    bool m_preloadPending = false;                     // the scene camera has just started
     FrontEndObjectSource m_source;
     std::unique_ptr<world_objects::ObjectList> m_objectList; // before the objects that read it
     std::unique_ptr<PlacedObjects> m_objects;
-    std::map<double, ObjectPose> m_poses;
-    std::set<double> m_hidden; // the objects a message 0x13 hid
+    std::map<double, scenes::ScenePose> m_poses;                // the newest pose a scene gave each object
+    std::map<double, Interpolated<scenes::ScenePose>> m_placed; // each drawn object's pose at the last two steps
+    std::set<double> m_hidden;                                  // the objects a message 0x13 hid
+    std::uint64_t m_sceneLights = 0;
 };
 
-/// The stand-in camera's view: kCameraX/Y/Z turned to the hub and kHubYawOffsetDegrees left, in RenderWare's axes,
-/// with the lens's view window on the 4:3 picture.
-[[nodiscard]] WorldView frontEndSceneView();
+/// The view through a scene camera at `pose` (the game's axes; the camera looks along its rotation's +y with +z up,
+/// docs/research/scenes.md#coneys-implementation) with `lens`, in RenderWare's axes, with the lens's view window on
+/// the 4:3 picture.
+[[nodiscard]] WorldView sceneCameraWorldView(const scenes::ScenePose& pose, const scenes::SceneLens& lens);
 
 } // namespace coney::platform

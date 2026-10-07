@@ -65,7 +65,10 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
     m_shared.secondPad = &stack.pads().port(1);
     m_scripts.setTime(nowMs);
     m_fade.update(nowMs);
-    // The world frame under the menus: the scene's step.
+    // The world frame under the menus: the scenes' update (camera, objects), then the world's step.
+    if (m_scenes != nullptr) {
+        m_scenes->update(nowMs, 0);
+    }
     if (m_scene != nullptr) {
         m_scene->update(nowMs);
     }

@@ -19,6 +19,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "animation/anim_math.h"
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
@@ -30,10 +31,13 @@
 #include "gamemodes/profile_manager_mode.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
+#include "scenes/scene_list.h"
+#include "scenes/scene_player.h"
 #include "support/fixtures.h"
 #include "support/font_fixtures.h"
 #include "support/lua_fixtures.h"
 #include "support/recording_device.h"
+#include "support/scene_fixtures.h"
 #include "warriors/disk_profile_store.h"
 #include "warriors/game_state.h"
 #include "warriors/profile_record.h"
@@ -476,4 +480,146 @@ TEST_CASE("start-up with scripts: deleting a profile removes its file and the me
     CHECK(run.flow->profileManager().controller().currentName() == "PM_Profile");
     CHECK(run.flow->fade().level() == 0.0F);
     CHECK(run.flow->scripts().errors() == 0);
+}
+
+namespace {
+
+// A front-end world that hosts the front end's scenes and keeps what they did to it.
+struct HostingScene final : coney::FrontEndScene, coney::scenes::SceneHost {
+    int cameraBegins = 0;
+    int cameraEnds = 0;
+    std::map<double, coney::anim::Vec3> poses; // the newest position the scene gave each object
+    float lowestX = 1e9F;                      // the smallest x any object was given, to see the loop restart
+    float highestX = -1e9F;
+    void update(std::uint64_t /*nowMs*/) override {}
+    void render(const coney::RenderTime& /*time*/, const std::function<void()>& overlay) override {
+        if (overlay) {
+            overlay();
+        }
+    }
+    coney::scenes::SceneHost* sceneHost() override { return this; }
+    void cameraBegin(const coney::scenes::ScenePose& /*pose*/, const coney::scenes::SceneLens& /*lens*/) override {
+        ++cameraBegins;
+    }
+    void cameraEnd(float /*blendSeconds*/) override { ++cameraEnds; }
+    void objectPose(double object, const coney::scenes::ScenePose& pose) override {
+        poses[object] = pose.position;
+        lowestX = std::min(lowestX, pose.position.x);
+        highestX = std::max(highestX, pose.position.x);
+    }
+};
+
+// level100.lua written like the game's WonderWheelAnim (synthetic bytecode, nothing from the disc): an object spawned
+// by the main chunk, Menu.onStart shows the menus, fades in and preloads `tst_wheel` with WheelStart as its callback;
+// WheelStart(id) keeps the id, binds the object to slot 0 and plays the scene as level100.lua does
+// (`ScenePlayCinematic(id, 0, nil, false, false, true, false)`: no bars, not skippable, looping, not frozen);
+// Menu.startGame stops it (SceneStop(id)) and asks for level 1.
+std::vector<std::byte> wheelLevelScript() {
+    using coney::test::LuaAsm;
+    LuaAsm onStart;
+    onStart.getGlobal("ShowProfileManager").pushString("Menu.fadeToRMI").pushString("Menu.startGame").call(2);
+    onStart.getGlobal("ScreenQueueEffect").pushInt(0).pushInt(1).call(2);
+    onStart.getGlobal("ScenePreload").pushString("tst_wheel").pushString("WheelStart").call(2);
+    LuaAsm startGame;
+    startGame.getGlobal("SceneStop").getGlobal("WheelId").call(1);
+    startGame.getGlobal("MenuLoadLevel").pushString("level1").call(1);
+    LuaAsm wheelStart;
+    wheelStart.params(1);
+    wheelStart.getLocal(0).setGlobal("WheelId");
+    wheelStart.getGlobal("SceneAddObject").getLocal(0).getGlobal("WheelObj").pushInt(0).call(3);
+    wheelStart.getGlobal("ScenePlayCinematic").getLocal(0).pushInt(0).pushNil().pushInt(0).pushInt(0).pushInt(1);
+    wheelStart.pushInt(0).call(7);
+    LuaAsm level;
+    level.spec.protos = {onStart.end(), startGame.end(), wheelStart.end()};
+    level.newTable().setGlobal("Menu");
+    level.getGlobal("Menu").pushString("onStart").closure(0).setTable();
+    level.getGlobal("Menu").pushString("startGame").closure(1).setTable();
+    level.closure(2).setGlobal("WheelStart");
+    level.getGlobal("ObjSpawn").pushString("dyn_test").call(1, 1).setGlobal("WheelObj");
+    return coney::test::luaChunk(level.end());
+}
+
+// The scene `tst_wheel`: no roles, one object sliding from x 0 to 3 over its 1 s part, and a camera.
+coney::test::SceneSpec wheelSceneSpec() {
+    coney::test::SceneSpec spec;
+    spec.name = "tst_wheel";
+    spec.frames = 30;
+    spec.objects = {coney::test::RoleSpec{"wheel", {0.0F, 0.0F, 0.0F}, 0.0F, {3.0F, 0.0F, 0.0F}, 0.0F}};
+    spec.camera = coney::test::RoleSpec{"camera", {0.0F, -5.0F, 2.0F}, 0.0F, {0.0F, -5.0F, 2.0F}, 0.0F};
+    spec.part.objects = {coney::test::TrackSpec{.duration = 1.0F,
+                                                .positions = {{0, {0.0F, 0.0F, 0.0F}}, {30, {3.0F, 0.0F, 0.0F}}},
+                                                .rotations = {},
+                                                .events = {}}};
+    spec.part.camera = coney::test::TrackSpec{
+        .duration = 1.0F, .positions = {{0, {0.0F, -5.0F, 2.0F}}}, .rotations = {{0, {0, 0, 0}}}, .events = {}};
+    return spec;
+}
+
+} // namespace
+
+TEST_CASE("start-up with scripts: level100's scene plays looping on the front end's scenes, its object live",
+          "[frontend][scenes]") {
+    HostingScene* hosting = nullptr;
+    const coney::scenes::SceneList list{
+        std::vector<coney::scenes::SceneListEntry>{{0, 0, "tst_other"}, {1, 0, "tst_wheel"}}};
+    std::vector<coney::scenes::SceneSystem*> made;
+    ScriptedRun run("");
+    run.files["level100.lua"] = wheelLevelScript();
+    LevelFlowMode& levelFlow = run.flow->levelFlow();
+    levelFlow.setSceneLoader(
+        [&hosting](std::string_view /*level*/) -> std::expected<std::unique_ptr<coney::FrontEndScene>, coney::Error> {
+            auto scene = std::make_unique<HostingScene>();
+            hosting = scene.get();
+            return scene;
+        });
+    levelFlow.setScenes(
+        [&list, &made]() -> std::unique_ptr<coney::scenes::SceneSystem> {
+            auto system = std::make_unique<coney::scenes::SceneSystem>(
+                list,
+                [](std::string_view /*name*/) -> std::expected<std::vector<std::byte>, coney::Error> {
+                    return coney::test::sceneHeaderRecord(wheelSceneSpec()).data();
+                },
+                coney::scenes::SceneSystem::ScriptCall{});
+            made.push_back(system.get());
+            return system;
+        },
+        &run.flow->context());
+
+    // Frame 151 starts the front end: its scene system made before the scripts run and handed to the bindings.
+    run.frames(160);
+    REQUIRE(levelFlow.scenes() != nullptr);
+    REQUIRE(hosting != nullptr);
+    CHECK(made.size() == 1);
+    CHECK(run.flow->context().scenes == levelFlow.scenes());
+    CHECK(run.stack.topId() == ProfileManagerMode::kId);
+    // The menus step it: the preload's callback bound the object, which SceneAddObject resolved (live) and pinned,
+    // and the scene plays with its camera current.
+    CHECK(levelFlow.scenes()->state(1) == coney::scenes::SceneState::Playing);
+    const double object = run.flow->spawnRecords().all().at(0).handle;
+    CHECK(run.flow->spawnRecords().all().at(0).live);
+    CHECK(run.flow->spawnRecords().all().at(0).pinned);
+    CHECK(hosting->cameraBegins == 1);
+    CHECK(hosting->poses.contains(object));
+
+    // It loops: three seconds later it still plays, its object back near the start more than once, and the camera
+    // never ended.
+    run.frames(90);
+    CHECK(levelFlow.scenes()->playing());
+    CHECK(levelFlow.scenes()->stats().ended == 0);
+    CHECK(hosting->cameraEnds == 0);
+    CHECK(hosting->lowestX < 0.5F);
+    CHECK(hosting->highestX > 2.5F);
+    CHECK(run.flow->scripts().errors() == 0);
+
+    // Menu.startGame stops it and asks for a level: the front end finishes and takes its scenes back from the
+    // bindings; without gameplay it starts again with a fresh system that plays the scene again.
+    run.flow->scripts().call("Menu.startGame");
+    run.stack.pop(); // the menus gone, as their fade out ends
+    run.frames(2);
+    CHECK(run.logged("level start requested: level1"));
+    CHECK(made.size() == 2);
+    REQUIRE(levelFlow.scenes() != nullptr);
+    CHECK(run.flow->context().scenes == levelFlow.scenes());
+    run.frames(10);
+    CHECK(levelFlow.scenes()->state(1) == coney::scenes::SceneState::Playing);
 }

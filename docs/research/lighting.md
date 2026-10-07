@@ -317,9 +317,9 @@ checks `level99`'s values against the table above (all match). Coney's choices:
   humans; the health rings are not built ([HUD](hud.md#the-health-rings)).
 - A light with radius 0 given `SetLightFlicker` keeps its corona and flickers (no `sub_flashing_light` particle);
   light bugs are not spawned. No object uses the pulse or the glow yet.
-- A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background draws with the
-  manager as it starts and black fog, without running `level100.lua`'s lights; the character viewer and the reference
-  renders keep their fixed lights (`repo:src/platform/character_lights.h`).
+- A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background has its own
+  manager, which `global.lua`'s lights for level 100 fill, with black fog, and its objects are lit as world objects;
+  the character viewer and the reference renders keep their fixed lights (`repo:src/platform/character_lights.h`).
 
 ## Open questions
 

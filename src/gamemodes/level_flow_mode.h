@@ -14,6 +14,8 @@
 #include "gamemodes/game_mode.h"
 #include "gamemodes/profile_manager_mode.h"
 #include "graphics/render_device.h"
+#include "scenes/scene_player.h"
+#include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
 
@@ -34,6 +36,10 @@ class GameplayMode;
 /// - **`InitLevel`** loads the level's world as the scene behind the menus (FrontEndScene, through the loader given),
 ///   then its script step: the level entry (`global.lua`, then `level100.lua`). Without a loader the background is
 ///   black.
+/// - **The front end's scenes**: with a scene maker, `InitLevel` also makes the level's scene system, hosted by the
+///   world and stepped by the menus, so `level100.lua`'s `WonderWheelAnim` plays `WonderWheel_100`
+///   (docs/research/frontend.md#background). Until the front end finishes, the scene bindings work on it and the
+///   lighting bindings on the world's lights, as gameplay's do for a level.
 /// - **Without scripts** (no script system, or a `Menu.onStart` that does not show the menus) Coney shows the profile
 ///   manager itself with the two callbacks `Menu.onStart` passes, so the menus always come up.
 /// - **Starting a chosen level**: the update finishes the front end as the original does (`Menu.onFinish`, then the
@@ -97,6 +103,17 @@ class LevelFlowMode final : public GameMode {
     /// The front-end world while the front end is loaded; null otherwise or without a loader.
     [[nodiscard]] FrontEndScene* scene() const { return m_scene.get(); }
 
+    /// Makes the front end's scene system (over the disc's scene list); null or empty: no scenes.
+    using SceneMaker = std::function<std::unique_ptr<scenes::SceneSystem>()>;
+    /// Makes a scene system with `maker` each time the front end starts, and hands it (and the world's lights) to the
+    /// bindings through `context` while the front end is loaded. `context` must outlive the mode.
+    void setScenes(SceneMaker maker, script::BindingContext* context) {
+        m_sceneMaker = std::move(maker);
+        m_context = context;
+    }
+    /// The front end's scene system while the front end is loaded; null otherwise or without a maker.
+    [[nodiscard]] scenes::SceneSystem* scenes() const { return m_scenes.get(); }
+
     /// What the memory-card mode's exit does to this mode when it is below: no front end on the next resume.
     void cancelFrontEndLoad() { m_loadFrontEndOnResume = false; }
 
@@ -125,6 +142,12 @@ class LevelFlowMode final : public GameMode {
     /// to the menus.
     void loadScene();
 
+    /// InitLevel's scenes for the front end: a fresh scene system hosted by the world, its Lua calls into the scripts,
+    /// given to the bindings and to the menus, which step it.
+    void makeScenes();
+    /// Takes the front end's scene system and lights back from the bindings and the menus, and drops the system.
+    void dropScenes();
+
     graphics::RenderDevice& m_device;
     GameModeStack& m_stack;
     ProfileManagerMode& m_profileManager;
@@ -140,6 +163,9 @@ class LevelFlowMode final : public GameMode {
     std::vector<std::string> m_levelRequests;
     FrontEndSceneLoader m_loadScene;
     std::unique_ptr<FrontEndScene> m_scene; // the front-end world while the front end is loaded
+    SceneMaker m_sceneMaker;
+    script::BindingContext* m_context = nullptr;   // where the bindings find the scenes and lights; null: not given
+    std::unique_ptr<scenes::SceneSystem> m_scenes; // the front end's scenes while it is loaded
 };
 
 } // namespace coney

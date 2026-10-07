@@ -45,9 +45,16 @@ TEST_CASE("an object turned about the game's up axis turns its model about Rende
     checkSame(coney::anim::transformDirection(m, Vec3{0, 1, 0}), Vec3{0, 1, 0});
 }
 
-TEST_CASE("the model's own frame comes before the object's pose", "[placed_objects]") {
+TEST_CASE("the model's own frame turns it before the object's pose; its authored translation is not used",
+          "[placed_objects]") {
+    // A quarter turn about the model's x (its z becomes its y), authored 30 m away.
     Mat34 frame;
-    frame.t = Vec3{0, 2, 0}; // two metres up in the model's (RenderWare's) axes
+    frame.y = Vec3{0, 0, -1};
+    frame.z = Vec3{0, 1, 0};
+    frame.t = Vec3{-29.0F, 20.0F, 0.0F};
     const Mat34 m = coney::platform::objectRenderTransform(Quat{}, Vec3{1, 2, 3}, frame);
-    checkSame(coney::anim::transformPoint(m, Vec3{}), Vec3{1, 5, -2});
+    // The model's origin is at the object's position, (1, 2, 3) in the game's axes.
+    checkSame(coney::anim::transformPoint(m, Vec3{}), Vec3{1, 3, -2});
+    // Its z is RenderWare's y.
+    checkSame(coney::anim::transformDirection(m, Vec3{0, 0, 1}), Vec3{0, 1, 0});
 }

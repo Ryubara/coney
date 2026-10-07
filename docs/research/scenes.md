@@ -510,9 +510,10 @@ each.
 
 - A record arrives on the update after `ScenePreload` (Coney's reads are synchronous); a play binding reads it at once.
 - The bindings work on the scene system the binding context holds at each call. Gameplay makes one per level, over
-  the disc's scene list (read once), before the level script runs, and drops it when the level ends. With none (a
-  test, the menus) `ScenePreload` and the three play bindings are a stand-in that keeps the scripts' scene flow
-  moving: a scene loads and ends at once, its load and end functions called with its id at the scripts' next update.
+  the disc's scene list (read once), before the level script runs, and drops it when the level ends; the front end
+  makes one the same way for `level100`, hosted by its world ([Front end](frontend.md#coneys-implementation)). With
+  none (a test) `ScenePreload` and the three play bindings are a stand-in that keeps the scripts' scene flow moving: a
+  scene loads and ends at once, its load and end functions called with its id at the scripts' next update.
 - Coney runs a level's start callback before it loads the level (`StartAmbient` binds `l99_c1`'s roles then), so a
   host attached later is told of the humans already joined, at their roles' start marks.
 - `ScreenQueueEffect` also goes to the scenes' host in play: the stage owns player 1's view's fades and letterbox,

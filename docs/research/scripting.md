@@ -1012,9 +1012,10 @@ Coney's choices, where the page is silent or Coney differs:
   (`...; last skipped call HuTagPattern`).
 - `GetLUASaveDataFloat` and `SetLUASaveDataFloat` outside slots 1 to 8 read 0 and write nothing (the original does not
   check).
-- **Scene stand-in** until the scene player exists ([Scenes](scenes.md)): `ScenePreload` returns a new handle and calls
-  its load function with it at the next script update; the three play bindings return true and call their end
-  function (third argument) with the scene at the next update, so a scene ends at once. `SceneAddObject` is a stub.
+- **Scene stand-in** while no scene system is attached (gameplay and the front end attach one, [Scenes](scenes.md)):
+  `ScenePreload` returns a new handle and calls its load function with it at the next script update; the three play
+  bindings return true and call their end function (third argument) with the scene at the next update, so a scene
+  ends at once. With a system, `SceneAddObject` resolves and pins the object's spawn record and binds it.
 - A message is delivered whatever the level-end state (`W_GameState + 0x14c`), which Coney does not keep yet; a
   message that asks for a result counts as taken when its call runs, but for message 0 (the interaction), which is
   taken when its callback returns anything but nil. `SetMsgHandlerEx` with message 0 keeps the object's prompt as its

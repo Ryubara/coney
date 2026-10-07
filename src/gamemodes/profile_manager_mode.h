@@ -23,6 +23,7 @@
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_controller.h"
 #include "gui/profile_management_gui/pm_shared.h"
+#include "scenes/scene_player.h"
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
 #include "warriors/profile_store.h"
@@ -98,6 +99,9 @@ class ProfileManagerMode final : public GameMode {
     /// Draws the menus over `scene` (not owned; null: black) and runs its step with theirs: the front-end world the
     /// level flow loaded.
     void setScene(FrontEndScene* scene) { m_scene = scene; }
+    /// Steps `scenes` (not owned; null: none) before the world: the front end's scenes (`WonderWheel_100`), which the
+    /// level flow makes with the front end. No button skips them (the front end's scene is not skippable).
+    void setScenes(scenes::SceneSystem* scenes) { m_scenes = scenes; }
 
     /// Starts a screen fade of `type` lasting `seconds` now, as `ScreenQueueEffect` does from a script.
     void queueFade(int type, double seconds) { m_fade.queue(type, seconds, m_scripts.now()); }
@@ -157,7 +161,8 @@ class ProfileManagerMode final : public GameMode {
     graphics::OverlayPass m_pass;
     Interpolated<float> m_fadeLevel{0.0F}; // the fade's level at the last two steps, for render()
 
-    FrontEndScene* m_scene = nullptr; // the front-end world, not owned
+    FrontEndScene* m_scene = nullptr;        // the front-end world, not owned
+    scenes::SceneSystem* m_scenes = nullptr; // the front end's scenes, not owned
     std::string m_onRumble;
     std::string m_onStartGame;
     std::string m_lastScreen;       // the screen logged last, so each change is logged once

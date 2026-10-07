@@ -729,7 +729,7 @@ int main(int argc, char** argv) {
         startUp->levelFlow().setSceneLoader(
             [&renderer, &startUp,
              &gameWad](std::string_view level) -> std::expected<std::unique_ptr<coney::FrontEndScene>, coney::Error> {
-                // The dynamic objects the flow's scripts spawn (the Wonder Wheel).
+                // The dynamic objects the flow's scripts spawn (the Wonder Wheel), which the scene binds and moves.
                 const coney::platform::FrontEndObjectSource objects{&startUp->spawnRecords(), &startUp->objectTypes()};
                 auto scene = coney::platform::FrontEndWorldScene::create(renderer, gameWad, level, printText, objects);
                 if (!scene) {
@@ -758,6 +758,8 @@ int main(int argc, char** argv) {
             startUp->state().random.setTable(table);
         }
         startUp->gameplay().setSceneMaker(sceneMaker);
+        // The front end's scenes (the Wonder Wheel's `WonderWheel_100`), over the same list.
+        startUp->levelFlow().setScenes(sceneMaker, &startUp->context());
         // The movie player (docs/research/movies.md#coneys-implementation): every movie the flow asks for, its sound on
         // the mixer once the sound output starts (below), drawn when the renderer draws pixels.
         if (renderer.drawsPixels()) {

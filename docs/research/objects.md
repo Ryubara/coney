@@ -366,6 +366,10 @@ Disc check (counts and hashes): the eight Wonder Wheel types have records whose 
 dictionary and no variant; the three cart types share one dictionary (`0x4a9e1bf5`) and the four neon types another
 (`0xf2a65bf6`), the wheel has its own (`0xad06c88d`). 33 of the 1,406 records have a second dictionary. Whether
 `level100`'s packs hold them (resident at once) or they stream in is not checked.
+The models' own frames are the z-up to y-up turn with an authored translation (the wheel none, the neons
+(−29.32, 19.94, 0.07), the carts (−78.2, 0, 0)); drawn at their scene poses without that translation, the neons ring
+the hub and the carts ride the rim as at runtime ([Front end](frontend.md#background)), so the instance is taken to
+replace the frame's translation. Inferred.
 
 **Drawing** (`ObjectRender_Draw`, `0x0017fd78`, confirmed (code) for what is cited): the lights are chosen per object
 (`LightManager_SelectLights`, [Lighting](lighting.md)); an object whose `+0x124` is 0 and whose bounding radius over

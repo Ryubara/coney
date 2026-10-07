@@ -38,7 +38,9 @@ world::FrameMatrix toFrame(const anim::Mat34& m) {
 anim::Mat34 objectRenderTransform(anim::Quat rotation, anim::Vec3 position, const anim::Mat34& modelFrame) {
     const anim::Mat34 game = anim::transform(rotation, position);
     const anim::Mat34 world = anim::multiply(kGameToRw, anim::multiply(game, kRwToGame));
-    return anim::multiply(world, modelFrame);
+    anim::Mat34 turn = modelFrame;
+    turn.t = anim::Vec3{};
+    return anim::multiply(world, turn);
 }
 
 PlacedObjects::PlacedObjects(const io::Wad& wad, const world_objects::ObjectList& list,
@@ -121,7 +123,7 @@ bool PlacedObjects::visible(double handle) const {
     return found != m_objects.end() && found->second.visible;
 }
 
-void PlacedObjects::draw() const {
+void PlacedObjects::draw(const std::function<void(rw::Atomic*)>& render) const {
     rw::SetRenderState(rw::ZTESTENABLE, 1);
     rw::SetRenderState(rw::ZWRITEENABLE, 1);
     rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
@@ -136,7 +138,11 @@ void PlacedObjects::draw() const {
             continue;
         }
         atomic->place(toFrame(objectRenderTransform(object.rotation, object.position, toMat34(atomic->frame()))));
-        atomic->atomic()->render();
+        if (render) {
+            render(atomic->atomic());
+        } else {
+            atomic->atomic()->render();
+        }
     }
 }
 

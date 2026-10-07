@@ -11,6 +11,7 @@
 
 #include "scenes/scene_player.h"
 #include "scripting/binding_args.h"
+#include "world_objects/spawn_records.h"
 
 namespace coney::script {
 
@@ -225,11 +226,19 @@ NativeFunction makeSceneLength(const BindingContext& context) {
     });
 }
 
-// `SceneAddObject(id, object, slot)`.
+// `SceneAddObject(id, object, slot)`: the object's handle is resolved, which spawns it from its record when it is not
+// live, and its record pinned so streaming never stores it while a scene holds it (docs/research/objects.md#spawning,
+// docs/research/objects.md#streaming); then it is bound to the slot.
 // @orig 0x00367f48 SceneAddObject (unknown)
+// @orig 0x00354280 Scene_BindObject (SceneCache.cpp)
+// @orig 0x00398fe0 ObjRecord_GetHandle (unknown)
 NativeFunction makeSceneAddObject(const BindingContext& context) {
-    return withScenes(context, [](scenes::SceneSystem& scenes, std::span<const Value> args) {
-        scenes.addObject(unsignedArg(args, 0), handleArg(args, 1), unsignedArg(args, 2));
+    return withScenes(context, [context = &context](scenes::SceneSystem& scenes, std::span<const Value> args) {
+        const double object = handleArg(args, 1);
+        if (context->spawnRecords != nullptr && context->spawnRecords->resolve(object) != nullptr) {
+            context->spawnRecords->setPinned(object, true);
+        }
+        scenes.addObject(unsignedArg(args, 0), object, unsignedArg(args, 2));
         return binding::none();
     });
 }

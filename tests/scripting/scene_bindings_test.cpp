@@ -24,6 +24,7 @@
 #include "scripting/script_system.h"
 #include "support/scene_fixtures.h"
 #include "warriors/game_state.h"
+#include "world_objects/spawn_records.h"
 
 using coney::script::LuaVm;
 using coney::script::ScriptSystem;
@@ -215,4 +216,23 @@ TEST_CASE("ScenePlayCinematic's freeze is true only when the argument is absent"
         h.system.update(500, 0);
         CHECK(h.value("SceneDone", {id}).number() == 1.0);
     }
+}
+
+TEST_CASE("SceneAddObject resolves the object's spawn record, which goes live and pinned", "[scripting][scenes]") {
+    Harness h;
+    coney::world_objects::SpawnRecords records;
+    h.context.spawnRecords = &records;
+    coney::world_objects::SpawnRecord record;
+    record.handle = 20.0;
+    record.typeName = "dyn_test";
+    REQUIRE(records.add(record) != nullptr);
+    const Value id = h.value("ScenePreload", {Value("tst_c1"), Value()});
+    h.system.update(33, 0);
+    CHECK_FALSE(records.find(20.0)->live);
+    h.value("SceneAddObject", {id, Value(20.0), Value(0.0)});
+    CHECK(records.find(20.0)->live);
+    CHECK(records.find(20.0)->pinned);
+    // A handle no record has is bound all the same, with nothing to resolve.
+    h.value("SceneAddObject", {id, Value(21.0), Value(0.0)});
+    CHECK(records.find(21.0) == nullptr);
 }

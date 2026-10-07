@@ -90,6 +90,7 @@ add_executable(coney_tests
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp
     platform/world_atomic_test.cpp
+    platform/disc_front_end_wheel_test.cpp
     platform/front_end_scene_test.cpp
     platform/placed_objects_test.cpp
     platform/world_renderer_test.cpp

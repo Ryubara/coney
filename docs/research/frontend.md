@@ -1083,17 +1083,24 @@ fresh Lua state), selects the level (`W_GameState + 0x56dc`) and pushes gameplay
 ([Level loading](level-loading.md#coneys-implementation)). `chooseLevelIndex` chooses by index, for the
 mission-complete mode's kinds 2 and 3. Coney's stand-ins, each because the research or the subsystem is not there yet:
 
-- The front end's `InitLevel` loads `level100`'s streamed worlds and level file and preloads round the camera
-  (`FrontEndScene`, `src/platform/front_end_scene.h`), then runs the scripts; the menus step it and draw it under their
-  2D pass, cleared to black, and it is released when the front end finishes. **Stand-in camera** until the scene player
-  plays `WonderWheel_100`: the `camera01` track's first pose and lens ([Background](#background)), turned to the hub
-  and 10.7° to the left so the world's "WONDER WHEEL" sign lands at logical (409, 227), the runtime's (410, 217). The
-  script's 29 objects (the wheel, its carts and neons) are drawn once their spawn records are live, each with its
-  type's model (`src/platform/placed_objects.h`, [Objects: models](objects.md#models)), at the pose a scene gives it
-  or its record's, shown and hidden by messages `0x12` and `0x13`; until `SceneAddObject` resolves them through the
-  scene player, none is live, so none is drawn. With every record made live by hand, the wheel's outline spans logical
-  x 327-617 of 640, the runtime's 335-615. Not drawn: the scene's lights (the world renderer's ambient stand-in) and
-  the objects' tint. The dependency list and packs are not loaded.
+- The front end's `InitLevel` loads `level100`'s streamed worlds and level file (`FrontEndScene`,
+  `src/platform/front_end_scene.h`) and makes the front end's scene system over the disc's scene list
+  (`LevelFlowMode::setScenes`), then runs the scripts. Until the front end finishes, the scene bindings work on that
+  system and the lighting bindings on the world's light manager (`global.lua`'s lights for level 100). The menus step
+  the scenes, then the world, and draw it under their 2D pass; both go when the front end finishes. So
+  `WonderWheelAnim` plays `WonderWheel_100` (id 34) as the script asks. `SceneAddObject` resolves each of the 29
+  objects (live, pinned; [Objects: spawning](objects.md#spawning)), and the scene's tracks pose them, drawn with
+  their types' models ([Objects: models](objects.md#models)) and lit as world objects, shown and hidden by messages
+  `0x12` and `0x13`. The view is the scene's camera (`camera01`). Before it starts, and after it ends, the script's
+  camera, which sees nothing, gives the black background alone. At runtime in Coney (960 × 720 window, PM_Mode) the
+  neon outline spans logical x 325-602 and y 51-408 of 640 × 448, with the sign near (411, 215); the runtime's are
+  335-615, 53-408 and (410, 217). **Coney's choices:** when the scene camera starts, the world within 150 m of it is
+  preloaded at once (the original streams it during the menus' fade in); the scene's own lights are counted, not
+  made; the objects' tint, pulse and fade are not drawn; the dependency list and packs are not loaded. **Gap**: after
+  an attract movie, `Menu.movieFinished`'s `startScene` asks for the scene with `ScenePreload`, but the scene is still
+  playing out the pass `stopScene` left it, so the preload only adds a user and calls nothing back
+  ([Scenes: loading](scenes.md#loading)). The wheel then stops at the end of that 20 s pass and the background goes
+  black (open question below).
 - A flow made without a level loader (the tests without a disc) has no gameplay: after finishing the front end,
   `update` logs `level start requested: <level>` and starts the front end again, so the player is back on the menus.
 - Without a script system (no disc), or when `Menu.onStart` did not push the menus, the level flow calls
@@ -1336,8 +1343,7 @@ What the implementer still needs:
   usage lines and sounds, and `ShowRumbleModeIntro`.
 - The bindings that are stubs today (cameras, scenes, particles, sound, `PadSetHandler`), each with its subsystem;
   the list is the binding table in `src/scripting/script_bindings.cpp` ([Scripts](scripting.md#coneys-implementation)).
-- For the background: the dynamic objects' models (`ObjSpawn`'s `dyn_s_wwheel_a`, carts, neons), the scene player, the
-  level's lights, its dependency list.
+- For the background: the objects' tint, the scene's lights, the level's dependency list and packs.
 
 ## Open questions
 
@@ -1391,6 +1397,10 @@ What the implementer still needs:
 - **Sheet-table records 12 and 28** (the Rumble background and sprites): their resource names and rectangles.
 - **The `WonderWheel_100` tracks** (answered): a fixed camera, a 20 s loop turning the wheel 45° (2.25° a
   second), the neons shown and hidden by events ([Objects: the Wonder Wheel](objects.md#wonder-wheel)).
+- **The wheel after an attract movie:** how the original starts `WonderWheel_100` again. `start` preloads a scene that
+  is still playing (no callback, [Scenes: loading](scenes.md#loading)), and its `GetSceneID` path is undefined, yet
+  the runtime shows the wheel turning after the movie. Does `SceneStop` without force free the slot, or does
+  `SceneIsPreloaded` answer true while it plays?
 - **Dynamic objects' models** (answered): `<name>_geo` and its dictionaries from the Object List record
   ([Objects](objects.md#models)).
 - **`0x005147cc`**, set to 10.0 while the Rumble menu is open, and `0x0040c938`.
