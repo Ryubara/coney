@@ -228,12 +228,14 @@ nav:
           - Utilities: references/bindings/util.md
           - Debug: references/bindings/debug.md
   - Guides:
+      - How we work: guides/how-we-work.md
       - Building and testing: guides/building.md
       - The sandbox: guides/sandbox.md
       - Local workspace: guides/workspace.md
       - The coney-tools command line: guides/coney-tools.md
       - The debug menus: guides/debug-menu.md
       - Enhancements plan: guides/enhancements.md
+      - Asset and script architecture: guides/asset-and-script-architecture.md
       - Conventions: guides/conventions.md
       - Research workflow: guides/research-workflow.md
       - Ghidra + ghidra-mcp: guides/ghidra.md

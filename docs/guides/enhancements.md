@@ -98,7 +98,7 @@ player's Xbox disc ([Xbox assets](../research/xbox-assets.md)).
 | MSAA | Low-poly scenery, many long straight edges: MSAA suits it well | **yes** | librw's multisample levels before the window is made, or a multisampled F2 target. The motion blur's copy must then become a resolve (`glBlitFramebuffer`), since a multisampled buffer cannot be copied into a texture | F2 for the blur | S |
 | Alpha-to-coverage | Chain-link fences, foliage and railings are alpha cut-outs that MSAA does not smooth | **yes** | `GL_SAMPLE_ALPHA_TO_COVERAGE` on alpha-tested materials, with coverage-preserving mips (below) | F3, MSAA | S |
 | FXAA / SMAA | Post-process AA; cheap, a little blur | **yes** | One post pass. SMAA's reference code is MIT; FXAA 3.11's NVIDIA licence is permissive (check at adoption) | F2 | S |
-| TAA | Removes shimmer on fences and thin wires; blurs the already soft 64 × 64 textures and ghosts. Needs jitter, velocity and history | **partly** | Per-object velocity from the two blended steps (we have them); jittered projection. FSR 2/3 (MIT) can be the TAA and upscaler. DLSS and XeSS are proprietary SDKs (**licence question for the maintainer**) | F2, F3; better after F5 | M |
+| TAA | Removes shimmer on fences and thin wires; blurs the already soft 64 × 64 textures and ghosts. Needs jitter, velocity and history | **partly** | Per-object velocity from the two blended steps (we have them); jittered projection. FSR 2/3 (MIT) can be the TAA and upscaler, and stays the default the build ships. DLSS and XeSS are allowed as optional plug-ins beside the GPL code ([Decided](#decided)) | F2, F3; better after F5 | M |
 | Anisotropic filtering | Streets and pavements at grazing angles | **yes**, but only with mips | `Texture::maxAnisotropy` per texture | mip generation | S |
 | Mip generation | 98% of textures have no mips, so they alias in the distance at any resolution | **yes** | Build mips at conversion (`AUTOMIPMAP`, or Coney's own box filter with alpha coverage kept at the alpha-test reference so fences do not vanish); LOD bias as a setting. Changes the look slightly (less shimmer than the PS2) | F4 (one load path) | S |
 
@@ -125,14 +125,16 @@ player's Xbox disc ([Xbox assets](../research/xbox-assets.md)).
 | Chromatic aberration | Not in the original; purely cosmetic | **yes** | One post pass, off by default | F2 | S |
 | Colour grading | The game tints through looks (`SetLevelColour`, stores) and the brightness option; PCSX2 shows the picture about 70% bright (open on [Graphics](../research/graphics.md#open-questions)) | **yes** | A 3D LUT after the game's own looks; presets *Faithful TV* (the measured brightness) and *Neutral* | F2; the display-brightness research | S |
 | Depth of field | No focus data. Cutscene cameras have targets, the follow camera has a look-at point 1.4 m above the player | **partly** | Cutscenes only: focus on the scene camera's target; gameplay off (it would blur the street) | F2 | S-M |
-| HDR | Content is LDR on the GS scale (0x80 = 1.0, vertex colours up to about 2× overbright) | **partly**, low value | HDR10 / scRGB output with a paper-white setting and the overbright range mapped above it. Not on OpenGL portably; SDL3's GPU API has HDR swapchains | F5 | S after F5 |
+| HDR | Content is LDR on the GS scale (0x80 = 1.0); lit colours clamp at 1.0, so there is no overbright range (measured by the graphics analysts) | **partly**, low value | HDR10 / scRGB output with a paper-white setting; only additive effects (glows, coronas, bloom) could go above it. Not on OpenGL portably; SDL3's GPU API has HDR swapchains | F5 | S after F5 |
 
 ## AI upscaling {#ai-upscaling}
 
-**Legal frame.** An upscaled texture is derived from the player's disc. It is made on the player's machine by a
-tool the player runs, written to a directory the player chooses outside the repository, and never committed or
-distributed ([LEGAL](repo:LEGAL.md#no-game-data)). Coney ships the tool and the loader, never a pack or model
-weights.
+**Legal frame.** An upscaled texture is derived from the player's disc, and converting or upscaling it does not
+change who owns it. It is made on the player's machine by a tool the player runs, written to a directory the player
+chooses outside the repository, and never committed or hosted by the project
+([LEGAL](repo:LEGAL.md#no-game-data)). Coney ships the tool and the loader, never a pack. `coney-tools` may download
+a model's weights itself ([Decided](#decided)), but the project does not host them. Sharing follows the pack kinds
+in [Texture packs](#packs).
 
 **Pipeline** (a new `coney-tools textures` group beside [`wad extract`](coney-tools.md#extract), refusing output
 paths inside the repository as `wad extract` does):
@@ -182,6 +184,18 @@ paths inside the repository as `wad extract` does):
 pixels: about 8 GB as RGBA, about 2.7 GB as BC7 with mips. So 2× is the default. A GPU upscales 64 × 64 textures in
 milliseconds each, so the whole disc takes minutes to an hour; on a CPU it takes hours.
 
+### Texture packs {#packs}
+
+Coney imports any pack placed in `overrides/`, keyed by the original texture's hash. An entry
+whose hash matches no texture on the player's disc is ignored. `coney-tools` makes and exports packs as a folder
+with a manifest. There are three kinds:
+
+| Kind | Holds | Sharing |
+| --- | --- | --- |
+| Original art | textures drawn by the pack's author: no game pixels | shared freely, under the author's licence |
+| **Recipe** (the easy default) | the manifest, the model (or where to download it) and the settings; no textures | shared freely; each player rebuilds the pack from their own disc with `coney-tools` |
+| Pre-made upscale | upscaled game textures | players may import one; the project never hosts or links one |
+
 ## Order
 
 | Phase | When | Items |
@@ -192,12 +206,20 @@ milliseconds each, so the whole disc takes minutes to an hour; on a CPU it takes
 | 3 | Then | F3; shadow maps for humans and objects; GTAO; velocity motion blur; cutscene depth of field; chromatic aberration; fog and render distance scales; TAA or FSR |
 | 4 | After the whole game | F5 (SDL3 GPU backend); HDR output; ray-traced shadows and AO on Vulkan; character subdivision |
 
+## Decided {#decided}
+
+The owner's decisions (2026-10-07):
+
+- **Model weights**: `coney-tools` may download an upscaling model itself.
+- **Proprietary SDKs**: DLSS and XeSS are allowed as optional plug-ins next to the GPL-3.0-or-later code.
+- **Sharing texture packs**: Coney helps players share packs, in the model under [Packs](#packs). It imports from
+  `overrides/` by texture hash and exports with `coney-tools`; recipe packs are the default; pre-made upscales can
+  be imported but are never hosted or linked by the project.
+
 ## Questions for the maintainer
 
-- Model weights: may `coney-tools` download a model itself (and which licences are acceptable for that), or must
-  the player always supply the file? May the docs name non-commercial community models?
-- Proprietary SDKs (DLSS, XeSS, Streamline) next to GPL-3.0-or-later code: allowed as optional plug-ins or not?
-- Whether Coney should ever help players share packs they make (this plan assumes no).
+- Which model licences are acceptable for a download that `coney-tools` starts itself, and may the docs name
+  non-commercial community models?
 
 ## Research this plan needs
 
