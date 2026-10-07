@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "platform/scene_lighting.h"
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <utility>
@@ -60,17 +59,15 @@ rw::Texture* rwTextureOf(const std::optional<graphics::SpriteSheet>& sheet) {
     return texture != nullptr ? texture->rwTexture() : nullptr;
 }
 
-// A sprite colour channel on the GS's scale (0x80 is 1.0, for colour and for alpha) on librw's (255 is 1.0): doubled
-// and clamped, as the world's prelighting is (Coney's choice, src/platform/world_atomic.cpp).
-rw::uint8 gsToRw(std::uint8_t channel) { return static_cast<rw::uint8>(std::min(255, channel * 2)); }
-
-// One textured, coloured vertex for librw's immediate mode, its colour on the GS's scale.
+// One textured, coloured vertex for librw's immediate mode. A sprite's colour is RenderWare's 0-255 as given (255 full
+// and opaque, docs/research/gui.md#sprite-colours), not the GS's 0x80 scale: a corona's is its light's colour × 255,
+// and the blob shadow's alpha 128 is half transparent (docs/research/lighting.md#humans).
 rw::gl3::Im3DVertex vertex(rw::V3d p, float u, float v, const std::array<std::uint8_t, 4>& rgba) {
     rw::gl3::Im3DVertex out{};
     out.setX(p.x);
     out.setY(p.y);
     out.setZ(p.z);
-    out.setColor(gsToRw(rgba[0]), gsToRw(rgba[1]), gsToRw(rgba[2]), gsToRw(rgba[3]));
+    out.setColor(rgba[0], rgba[1], rgba[2], rgba[3]);
     out.setU(u);
     out.setV(v);
     return out;

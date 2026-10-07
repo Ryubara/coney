@@ -309,12 +309,10 @@ checks `level99`'s values against the table above (all match). Coney's choices:
 
 - The flicker steps with the simulation (game time per step) for the lights the cull would keep, drawing from the
   manager's own random sequence, not the game's; a burst starts with its pause.
-- Sprite colours are on the GS's scale (0x80 = 1.0) and doubled for librw, as the prelighting is; coronas and shadows
-  are drawn with Z test and no Z write after the world.
+- Sprite colours are RenderWare's 0-255 as given ([GUI](gui.md#sprite-colours)): a corona's is its light's colour ×
+  255, and the blob shadow's (10, 10, 10, 128) is half transparent. Coronas and shadows are drawn with Z test and no Z
+  write after the world.
 - The blob shadow is 1 m square (`+0x580` is not researched); the shadow-ground check uses the shadow's ray.
-  **Known gap**: its colour goes through the doubling above, so its alpha 128 becomes 255 and the shadow draws as an
-  opaque black shade; the original's is half transparent ([Humans](#humans)). This shade is what shows under Coney's
-  humans; the health rings are not built ([HUD](hud.md#the-health-rings)).
 - A light with radius 0 given `SetLightFlicker` keeps its corona and flickers (no `sub_flashing_light` particle);
   light bugs are not spawned. No object uses the pulse or the glow yet.
 - A sandbox (no level scripts) gets a stand-in ambient and directional light; the front end's background has its own

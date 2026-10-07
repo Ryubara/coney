@@ -51,7 +51,7 @@ struct BlobShadow {
 
 /// The blob shadow sprite's rectangle in `part_page1`.
 inline constexpr int kBlobShadowRect = 40;
-/// Its colour (RGBA).
+/// Its colour (RGBA) on RenderWare's 0-255 scale, drawn as given: alpha 128 is half transparent.
 inline constexpr std::array<std::uint8_t, 4> kBlobShadowColour{10, 10, 10, 128};
 /// **Coney's stand-in** for the shadow's size: the original scales it by the human's `+0x580`-`+0x588`, whose values
 /// are not researched; 1 m square.

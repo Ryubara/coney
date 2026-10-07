@@ -46,3 +46,10 @@ TEST_CASE("Ground with type bit 4 is a shadow to hide in") {
         coney::test::floorAt(0.0F, 0.0F, 20.0F, 0.0F, 20.0F, 1, coney::graphics::kTriangleShadow));
     CHECK(coney::graphics::onShadowGround(*dark, Vec3{5.0F, 5.0F, 0.1F}));
 }
+
+TEST_CASE("the blob shadow is a near-black sprite at half alpha on RenderWare's 0-255 scale", "[human_lighting]") {
+    // (10, 10, 10, 128): drawn as given, 128 of 255 is half transparent (docs/research/lighting.md#humans).
+    CHECK(coney::graphics::kBlobShadowColour[3] == 128);
+    CHECK(static_cast<float>(coney::graphics::kBlobShadowColour[3]) / 255.0F == Catch::Approx(0.5F).margin(0.01F));
+    CHECK(coney::graphics::kBlobShadowColour[0] == 10);
+}
