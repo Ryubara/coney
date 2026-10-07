@@ -806,8 +806,8 @@ disassembly of the script (ids and counts only); the moves themselves are confir
 | 6 | power moves | 57; then 59 | in a front grab, cross + square, then square or cross in its window | [Power strike](combat.md#grabbing) |
 | 7 | snaps (after the scene `l99_c7`; Rudy drinks at the fence, the second wave surrounds the player) | three hits of 25, 27 or 29 | square, standing, with the stick past 0.95 more than 45° off the facing, at a bum within 2 m there | [Attacks](combat.md#attacks), [the second wave](ai.md#level99-snaps) |
 | 8 | throws | two hits of 147, 149, 151 or 153; then zone 1 is enabled | circle with the stick in a grab | [Throws](combat.md#throws) |
-| 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 | triangle at a bat; square, cross | [A bat in hand](combat.md#bat), [the prompt](#message-handlers) |
-| 10 | rage | the meter set to half and locked; the full callback; L1 + R1 (every other command off); then 645 or 647; then 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat.md#rage); 65 and 233 inferred |
+| 9 | weapons (after the scene `l99_c8`, three bats on the ground) | the pick-up (message 0 on a bat, with a prompt); then 34; 36; then two more of 34 or 36 (four counted hits) | triangle at a bat; square, cross | [A bat in hand](combat.md#bat), [the prompt](#message-handlers) |
+| 10 | rage (2 s after lesson 9) | the meter set to half and locked, then filled by hits; the full callback; L1 + R1 (every other command off); 3.5 s into rage, 645 or 647; 3.5 s later, 65 or 233 | rage, the rage special, the extended power move in rage (grab or mount) | [Rage](combat.md#rage); 65 and 233 inferred |
 | 11 | finish the second wave | the gang's message 18 with none standing | any | [AI](ai.md#level99) |
 | 12 | the Warriors (after the scene `l99_c5`) | the 50-second stopwatch; a hint the first time the player holds a grab (anim callback on 82 / 84) | any | [Stopwatch](#stopwatch), [anim callbacks](characters.md#anim-callbacks) |
 
@@ -819,16 +819,46 @@ bums. Points an implementer needs:
 - **6**: from the rear hold the hit is scored with the spin's id 80, not 57, so only a front grab passes the first step.
 - **10**: the rage special is cross + square while raging (645 / 647); the last step wants the extension of the rage
   power strike in a grab (63 → 65) or of the rage power strike in the mount (231 → 233); both use the + 2 of
-  `Player_UpdatePowerMove` (inferred for the mount). The callbacks are re-armed 3.5 s after each step.
+  `Player_UpdatePowerMove` (inferred for the mount). **What arms `P1.RageMoves`** (the step order):
+    1. `P1.WeaponsDone` clears the tutorial callback and starts the section 2000 ms later.
+    2. `P1.SetupRageMode` makes rage gains possible again (`HuSetPreventRage(false)`). It sets the meter to 0.5 and
+       locks it, and it registers the rage handlers: enter `P1.EnterRageMode`, exit `P1.ExitRageMode`, full
+       `P1.CheckRage`, 20000 and 5000 ms. It arms **no** tutorial callback.
+    3. The meter fills only from the player's own hits. The lock stops the drain but not `Human_AddRage`
+       ([Rage](combat.md#rage)), so the player must earn the other half (39 of class 6's 78) by hurting someone.
+    4. When it is full, `Human_AddRage` calls the full handler once, `P1.CheckRage(player, true)`. That shows the
+       next text, drops his weapon, turns every command off and turns command 31 (L1 + R1) back on.
+    5. Pressing L1 + R1 starts rage, which calls `P1.EnterRageMode(player, …)`. That turns every button back on except
+       commands 1 and 40, sets the rage protections, and schedules `P1.EnableMoveCheck` for **3500 ms** later.
+    6. `P1.EnableMoveCheck` is what calls `HUDSetTutorialCallback("P1.RageMoves")`.
+    7. In `P1.RageMoves`, step 1 (645 / 647) clears the callback, schedules `P1.EnableMoveCheck` 3500 ms later again,
+       and moves to step 2. Step 2 (65 / 233) calls `P1.RageDone`. Any other id is ignored.
+
+  So RageMoves arms 2 s + the fill + the L1 + R1 press + 3.5 s after the fourth bat hit. In the passing run that was
+  631 frames (4260 → 4891). An L1 + R1 pressed before the meter is full, or before command 31 is the only one on,
+  does not start rage, and nothing re-arms it until the meter is full. Inferred from the disassembly of the script
+  (`main/46`-`main/52`); the game side is confirmed where linked.
 - **9**: the scene's return function schedules the setup 50 ms later. The setup gives each of the three bats a
   message-0 handler with the lesson's prompt, places the players in the pen, sets up the fence's enemies and starts a
   check that runs every 250 ms. The handler, on the first bat taken, removes the handler and prompt from all three,
   arms the tutorial callback and returns nothing, so the game's own pick-up puts the bat in hand ([A bat in
   hand](combat.md#bat)); no binding does it. The check asks `HuGetHeldObject`: holding, it shows the lesson's current
   text once; empty-handed after holding, it shows a "pick it up again" text; it stops rescheduling once the lesson is
-  done. The callback wants 34, then 36, then two more of either (the fifth hit ends the lesson). A dropped bat has no
-  prompt any more, but triangle's plain search still takes it (bats are [pickable](objects.md#pickable)). Inferred
-  from the disassembly of the script; the game side is confirmed where linked.
+  done. A dropped bat has no prompt any more, but triangle's plain search still takes it (bats are
+  [pickable](objects.md#pickable)). Inferred from the disassembly of the script; the game side is confirmed where
+  linked.
+
+  **The steps** (`P1.Weapons`, `main/45`). It keeps `wAnims` = {34 `ANIM_BAT_COMBO_S1`, 36 `ANIM_BAT_COMBO_X1`},
+  `weaponCount` = 1 and `multiCount` = 1. Each call is one hurting hit:
+    1. While `multiCount` is 1, only `wAnims[weaponCount]` counts. Step 1 wants 34 and step 2 wants 36; anything
+       else, a 36 before the first 34 included, is **ignored**, not a reset. Step 1 → `weaponCount` 2,
+       `CombatEnemy.GenWarrior`'s line `l99_t1_052` and the next text. Step 2 → 3, the next text, and `multiCount` = 2.
+    2. While `multiCount` is 2, any 34 or 36 adds one and says `l99_t1_053`. At `weaponCount` 5, so on the **fourth**
+       counted hit in all, it sets `weaponDone` and calls `P1.WeaponsDone`.
+
+  There is **no re-arm delay** between steps: the callback stays armed throughout, and the next counted hit can come
+  on the next frame. Lesson 10's 3.5 s gaps are its own (above). So 34, 36, 34, 36 ends the lesson on the fourth
+  hit.
 - **7**: `P1.StartSnaps` (5 s after the set-up) arms `P1.Snaps` with `ANIM_SNAP_RIGHT_01`, `_LEFT_01` and
   `_BACK_01` (25, 27, 29). Any of the three counts, in any order and on any bum; any other id (an `S1`, 12) is ignored.
   The first two update the text and give Rudy a line; the third calls `P1.SnapsDone`. Confirmed (runtime):

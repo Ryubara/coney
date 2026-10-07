@@ -873,7 +873,8 @@ camera never shows anything, the PM screens never change the camera, and only th
   only the fog colour, to black, so a fog start set by a level's `SetFogDistance` would carry over, inferred), and the
   fog ends at the scene camera's far clip, 150: linear from 75 m to 150 m, black, confirmed (runtime) by the
   `fe_title` GS dump ([The front end](rendering.md#front-end), [Fog](ps2-render.md#fog)). The wheel, 54-100 m away,
-  is at most a third fogged.
+  is at most a third fogged; its dark frame comes from the objects' [tint](objects.md#tint) (the carts 68, the wheel
+  5-12, the neon signs 128 on the GS scale, inferred, [The front end](rendering.md#front-end)).
 - **What the screen shows** (confirmed (runtime), PCSX2 2.9.94): the wheel's neon outline on black at the right of
   the screen, its lit outline spanning logical x 335-615 and y 53-408 of 640 × 448 (GUI x 0.53-1.01, y 0.08-0.95),
   the "WONDER WHEEL" sign at its hub near logical (410, 217); the same on every PM screen, the outline still to within 2

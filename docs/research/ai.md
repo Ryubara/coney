@@ -327,13 +327,19 @@ said. Confirmed (code) at each address.
       (`+0x6f`) × 10. A FollowAndDefend (`0x35`) or HoldFlag (`0x7d`) goal on the stack clears it.
     - **Process** (`0x002b60c0`):
         1. Not grabbing: done.
-        2. Near a train (`Brain_IsNearTrain`): write command 5 every update (inferred: let go).
+        2. Near a train (`Brain_IsNearTrain`): write command 5 every update. In `Player_UpdateGrabbing` command 5
+           (L2 held, `PlayerCmd_IsLetGo` `0x0027bf08`) **lets go**: grabber 95, victim 94
+           ([Combat](combat.md#grabbing)). Confirmed (code).
         3. The target is the held man (`+0xc4`). While actions are queued, wait.
         4. **Presenting him.** This happens in a rear grab when the nearest player is friendly to A, is not busy
            and is within near (3 m), and player 1 exists and is not in state 2. The timer `+0x10` (now + 3000 ms,
            set on the first such update) must not yet have run out.
         5. **A front grab with the flag**, when the victim has two or more slot holders: queue a set-command
-           action (command `0x19`, `0x21`; inferred: shove him off to the others) and wait.
+           action (`SetCommandAction_Init(action, B, 0x19, 0x21)`: command `0x19` after a 33 ms start delay, the
+           base field `+0x04`) and wait. Command `0x19` is the grab **spin** (`PlayerCmd_IsGrabSpin` `0x0027bd98`,
+           as R1 pressed): front to rear, 78 / 79 (`0x0026d570`), into the rear hold 84 / 85
+           ([Combat](combat.md#grabbing)). So he turns the victim round, and step 6 then holds him up facing the
+           others. Confirmed (code) at `0x002b60c0` and `0x0027f3b0`.
         6. **A rear grab with the flag**, when the victim has a number of slot holders other than 1, or while
            presenting. Find the nearest player among the victim's slot holders, else the nearest of his active
            attackers, and turn to face him (`TurnToPointAction`). Wait. (Holding him up for a friend to hit.)
@@ -354,7 +360,8 @@ said. Confirmed (code) at each address.
         4. Otherwise `Random_Int(3)`: left, ahead or right, never behind.
 - **Mounting** (`0x13`, the tackler on top, `0x002b6638`).
     1. Not tackling: done.
-    2. Near a train: command 5.
+    2. Near a train: command 5, which in the mount (`Player_UpdateMounting` `0x0027ec20`) **gets off**: 244 / 245,
+       the victim rises with 199 ([Combat](combat.md#mount)).
     3. The target is the held man. Pick a kind; 45 and 36 do nothing.
     4. Kind 35 (the ground punches): 40 % of the time two of them, chained.
 - **Grabbed** (`0x14`, `0x002b6848`).
@@ -784,8 +791,8 @@ block try before the range checks and left out the tackle try.
 12. **May A attack now?** `Brain_CheckAttack(B, kind, T holds an object)` (`0x002906b8`,
     [below](#check-attack)).
     - Any answer but 1: [reposition](#fight-reposition) and wait.
-    - Answer 1 and the target is beyond the kind's reach (`Attack_ReachSquared` `0x00230d00`): queue a
-      move-to-human action and wait.
+    - Answer 1 and the target is beyond the kind's reach ([The reach of a kind](#attack-reach)): queue a
+      move-to-human action and wait. The distance is the 3D distance of the two transforms (`Vec_DistSq`).
         - It holds between 2 × T's capsule radius and max(reach, that + 0.1 m).
         - Its limit is 2000 ms, or 1000 ms for a class-13 fighter or with a FollowAndDefend goal (`0x35`).
     - Answer 1 and in reach:
@@ -800,6 +807,46 @@ block try before the range checks and left out the tackle try.
 
 `Brain_QueueAttack`'s first argument is the **stick angle** in radians, −1 for none. It is written with the command
 ([The attack action](#attack-action)).
+
+#### The reach of a kind {#attack-reach}
+
+`Attack_ReachSquared(d², A, kind)` (`0x00230d00`) gives the square of how close A must be to start `kind`. The fight
+goal moves A in when the distance² is above it ([step 12](#fight-order)). Ten other goals ask it too (Boxer,
+BigBrawler, BigFighter, BigFighterA, HideAndSeek, ObjectPile, SaveHuman, FollowAndDefend, the dealer, and the fight
+goal's grab try). Confirmed (code), jump tables `0x0055c0e0` and `0x0055c110`.
+
+The reach is the **near** value of one anim id: `AttackTable_GetReach(A, anim)` (`0x002544a0`), the float at `+0x4`
+of that anim's 16-byte row in A's attack table (record `+0x160`, [Combat](combat.md)). It is used as is: no scale, no
+capsule radii, and not the far range (`+0x8`, which `Human_CanStartAttack` uses instead). The anim is chosen by kind:
+
+| Kind | Anim id when A holds nothing |
+| --- | --- |
+| 0 | 24 at a run or sprint; 23 at a walk; otherwise 194 when A's target is knocked down, else 11 |
+| 1, 3, 5-9 | 12 |
+| 2, 4 | 11 |
+| 10 | 25 |
+| 11 | 21 |
+| 12, 13 | 193, 194 |
+| 14 | 237 |
+| 15, 16, 17 | 664, 653, 657 |
+| 19, 20, 21 | 0, 1, 3 |
+| 22 (grab) | 72 |
+| 23 (throw) | none: **12 m** always |
+| 32 | 104 |
+| 18, 24-31, 33-44 | none: **2 m** (empty-handed) |
+
+When A holds an object, kinds 10-17 and 19-23 and 32 keep the anims above. The rest go by the held object's
+anim set (`0x00231a80`):
+
+- **Set 1** (a throwable), kinds 0 and 1: **12 m** when A's brain is not type 5 and the distance is above the melee
+  near range (`0x00510ab4`, [Melee ranges](#melee-range)). Otherwise kind 0 anim 47, kinds 1 and 5 anim 45.
+- **Set 2**: kind 0 anim 41; kinds 1-5 anim 39 (the test is `kind < 6`, unlike sets 1 and 3).
+- **Set 3**: kind 0 anim 36; kinds 1 and 5 anim 34.
+- **Set 5**: kinds 0-9 **30 m**. **Set 4**: kinds 0-9 **15 m**.
+- Anything else: **2 m**.
+
+The far-reach test of `Human_CanStartAttack` maps kinds 1-9 to their own clips (12-20) and kind 22 to 70
+([Combat](combat.md#ai-attacks)). This one uses only clips 11 and 12 for kinds 1-9, and 72 for the grab.
 
 #### Picking the attack kind {#pick-attack}
 
@@ -862,7 +909,7 @@ state word has none of `0x7bf9e9f7ff0`.
 | --- | --- |
 | 0, 1 | A holds a world object whose type byte `+0x87` is 1-3: A free. Otherwise as 2-9. |
 | 2-9, 11 | A free, and T's state has none of `0xe3000` |
-| 10 (snap) | A free, and A holds an attack slot on the human in sector 2, 3, 4, 5 or 6 of his [sector record](#neighbour-sectors) (flag bit 1, within 1.5 m). That is a human to his side or behind. |
+| 10 (snap) | A free, and the near human in sector 2, 3, 4, 5 or 6 of A's [sector record](#neighbour-sectors) (flag bit 1, within 1.5 m) is in **A's own** attack-slot list (B `+0x1a4`, `Brain_HoldsAttackSlot(B, him)`): someone attacking A from his side or behind. |
 | 12, 13 (grounded strikes) | T ≠ A. Either T is high or busy (`Human_IsHighOrBusy` `0x00225200`), or T lacks state `0x2000` and has held flag `0x400000`. Then A free. |
 | 14 | T is A (1), or T is knocked down and A is free |
 | 15 | A free; then A holds spray paint (1), or A is not pad-controlled |
@@ -886,8 +933,24 @@ state word has none of `0x7bf9e9f7ff0`.
 - A has damage pending (record `+0x118`);
 - the distance is beyond the kind's far reach.
 
-It then runs the same per-kind state tests. Confirmed (code) for the guard and the reach; the per-kind cases were
-read for 10-15 only and are inferred to mirror the table for the rest.
+It then runs a per-kind test, given in full on [Combat](combat.md#ai-attacks). Confirmed (code), all kinds read. It
+matches `Human_CanUseAttackKind` above except here:
+
+- **10** (snap): A free only; no sector or attack-slot test.
+- **12, 13**: T must be high or busy (`Human_IsHighOrBusy`); the other way in (T without `0x2000` holding
+  `0x400000`) is not accepted. A must also hold none of `0x48000`. T = A still passes.
+- **14**: T = A does not pass; T must be knocked down and A free.
+- **15**: T's state must also have none of `0x40100f0800`.
+- **22** (grab): T must also hold none of `0xc12200`, and a T in state `0x20` (grabbed from the rear) only when A is
+  in front of him (`Human_GetSideOf(T, A, 1)` = 0).
+- **23** (throw): A free, and the held object throwable with sets 1-3 counted for an AI too
+  (`Human_HeldIsThrowable(A, 1)`); `CanUse` asks `(A, 0)`, which counts sets 1-3 only for a player.
+- **27, 28** (in a grab): A in any of state `0x10c0` and holding T; **no** free test.
+- **38, 39** (mounted): A in any of state `0x1400` and holding T; **no** free test.
+
+So for grabs (22), tackles (21) and ground strikes (12-14) it mostly mirrors the pick. The start test is stricter on
+the grab's target and on the ground strike's target, and looser for moves 27, 28, 38 and 39, which start even while
+A is busy.
 
 #### May A attack now: Brain_CheckAttack {#check-attack}
 
@@ -1014,10 +1077,10 @@ make the fight goal wait. Confirmed (code). Sectors are the eight 45° sectors o
 (sector *k* at record `+8k`, flags at `+8k + 4`). The stick angle of a sector *k* is A's heading − *k* × 45°.
 
 - The angle starts at −1.
-- **Kind 10 (the snap)**: the first of A's sectors 4, 5, 3, 6, 2 whose near human (flag bit 1) has A's attack slot
-  gives the stick angle: heading + π for 3-5, heading + π/2 for 6, heading − π/2 for 2. The kind becomes 1 (square),
-  so the press is square with the stick to that side or back. This is how the player's snap is made
-  ([Combat](combat.md)).
+- **Kind 10 (the snap)**: the first of A's sectors 4, 5, 3, 6, 2 whose near human (flag bit 1) is in A's own attack-slot
+  list (B `+0x1a4`: he is attacking A) gives the stick angle: heading + π for 3-5, heading + π/2 for 6, heading − π/2
+  for 2. The kind becomes 1 (square), so the press is square with the stick to that side or back. This is how the
+  player's snap is made ([Combat](combat.md)).
 - **Kind 22 (the grab)**: when A is in T's sector 2 or 6 (at his side) and T is grabbed from the rear, A moves in
   (move-to-human, 2 × T's radius to the grab reach, 1500 ms) and returns 1. At his side otherwise, the grab becomes
   kind 0 (`X1`).
@@ -1499,6 +1562,9 @@ otherwise. The chance byte `+0x2d2` (10 when made) is written by the same setter
   human out (`Brain_IsNearTrain`, [the score](#enemy-score)).
 - **Doors and breakables on a route.** Doors are route links ([Following a route](#route-follow)); a follower stuck
   on the way to his formation slot smashes a breakable within 1.5 m (VandalizeItem, [FollowFormation](#warrior-follow)).
+
+Which world uses an AI reaches (objects, cars, doors, climbs) through the player's own functions, and which it never
+reaches, is on [AI and the world](ai-world.md).
 
 ### The attack action {#attack-action}
 
@@ -3489,8 +3555,10 @@ argument, puts that object in his hand (the tactic passes none).
   `+0x30` is set to 6.25 (2.5 m), the cross + square special (kind 16) on an enemy already within 0.55 × far, else a
   31 % taunt, a turn to him, and brain `+0x0c` raised by one for Diego (`+0x0b` too, but it stays 0 for both bosses,
   below); then 2.
-  **2** fight: an object in hand is used on the
-  nearest enemy (`0x002faeb0` kind `0x10`; inferred: thrown); otherwise a target re-picked every 4 s, an attack kind chosen
+  **2** fight: an object in hand (a throwable for an AI, `Human_HeldIsThrowable(A, 0)`: set 5
+  or a knife; or held set 4 or 6, `Human_HoldsKind4Or6`) is **thrown**: a turn to the nearest enemy (brain `+0x164`),
+  then a set-command action of **command `0x10`** (cross; `SetCommandAction_Init(action, B, 0x10, 0)`, no delay; see
+  [the throw](#boss-throw) below); otherwise a target re-picked every 4 s, an attack kind chosen
   (`Brain_PickAttack`) and kept until it can be queued in reach (moving in within its reach), with a 10 % shout
   while closing. **3** the flag cycle (Vargas, stage 3): walk to the flag (0.5 m), turn toward the camera, play 549
   `ANIM_GHETTO_PICK_UP` (the next of the eight objects appears in his hand, `0x002e8ee0` → `0x0024c280`, while the
@@ -3532,14 +3600,51 @@ take in that window.
    `TiredGoal_EndBreak` (`0x002e7da8`) plays 673 `ANIM_SPECIAL_IDLE_END` (blend 0.3 s), clears `0x10` and `0x800`, and the
    break count `+0x69` rises. Stage 3 reports 1 once neither boss is standing (`0x0030a458`).
 
-The clips 671-673 are `missing_anim_filler` in the anim id table, so the level supplies them (inferred: through the
-bosses' dynamic animations).
+**The clips 671-673.** They are `missing_anim_filler` only in the generic anim set ([anim ids](../references/anim-ids.md)).
+The two bosses' own anim sets carry them, and a character's set answers an id before the generic one
+(`CharacterInstance_GetAnim` `0x00175080`: an override slot or gang clip, else the character data's clip). No level 5
+script loads or overrides them (`level5*.lua` set no `ANIM_SPECIAL_IDLE` with `HuUseAnyAnim`). From the disc's anim
+headers (the lookup confirmed (code); the names from the disc):
 
-**BigThrower** (Vargas, stage 2; Process `0x002ed718`): state 0 a taunt (line `0x11`, anim 643); 1 walk to the flag
-(0.5 m) or tire (above); 2 turn toward the camera and play 549 (`ghetto_pickup`; for others than Vargas the pickup clip
-is overridden with the name at `0x00567a88`), the next object appears in his hand (`0x002ed498`); 3 aim: turn within
-45°, line of sight (six misses drop the target), then 4; 4 throw (`0x002faeb0` kind `0x10`, 100 ms) and back to 1
-when the hand is empty. Start (`0x002ed168`) and End (`0x002ed260`) as the BigBrawler's, plus that override.
+| Anim id | Diego (`hurr_de`) | Vargas (`hurr_va`) |
+| --- | --- | --- |
+| 671 `ANIM_SPECIAL_IDLE` | `hurr_de_collapse_c` | `var_tired_enter` |
+| 672 `ANIM_SPECIAL_IDLE_START` | `hurr_de_collapse_b` | `var_tired_cycle` |
+| 673 `ANIM_SPECIAL_IDLE_END` | `hurr_de_collapse_e` | `var_tired_exit` |
+
+The same sets give Diego 643 `hurr_de_rage` and 653 `hurr_de_360_attack`, and Vargas 549
+`hurr_va_pickup_large_obj`, 643 `var_rage1` and 653 `var_clearing`. Any other character in a tired goal would play
+the filler.
+
+**BigThrower** (Vargas, stage 2; Process `0x002ed718`): state 0 a taunt (line `0x11`, anim 643); 1 walk to the flag (0.5
+m) or tire (above); 2 turn toward the camera and play 549 (`ghetto_pickup`; for others than Vargas the pickup clip is
+overridden with the name at `0x00567a88`), the next object appears in his hand (`0x002ed498`); 3 aim: turn within 45°,
+line of sight (six misses drop the target), then 4; 4 throw (`BigThrowerGoal_HoldDistance`, then a set-command action of
+command `0x10` with a 100 ms start delay) and back to 1 when the hand is empty. Start (`0x002ed168`) and End
+(`0x002ed260`) as the BigBrawler's, plus that override.
+
+##### The throw {#boss-throw}
+
+Command `0x10` (cross) reaches the dispatcher like a pad press. With a held object of set 4, 5 or 6 it goes to
+`Player_CrossWithWeapon` (`0x002880d8`, [Combat](combat.md#dispatch)). Confirmed (code). For an AI (brain type not 0)
+the clip is thrown at **his current target**: the human's target handle (`Human_GetTargetHandle` `0x00226e20`,
+`+0xc8`, refreshed from the brain's target). He turns to it over the time to the clip's first event, then
+`Human_StartMeleeThrow` (`0x00261e78`). A player instead searches (`Player_PickThrowTarget`, 10 m for set 4, 20 m
+for 5 and 6). The clip by held set and gait:
+
+| Held set | At a jog, run or sprint | At a walk, outside the stance | Standing or in the stance |
+| --- | --- | --- | --- |
+| 4 (overhead) | 507 | 506 | 505 |
+| 6 (ghetto) | 553 | 552 | 551 |
+| 5 (one hand) | 472 | 471 | 467 |
+
+Set 5 first tries the bottle smash (473 / 475) on a human in reach. Vargas's objects (the names in `VargasObjTypes`
+in `level5_chapter3.lua`: `dyn_vargas_bookcase_a`, `dyn_vargas_sofa`, `dyn_vargas_stove_a`, `dyn_vargas_washer_a`,
+`dyn_fridge_c`, `dyn_porcelain_weap_b`, `dyn_porcelain_weap_c`) are all `overhead_weapon`
+([Objects](../references/objects.md)), set 4, so he throws 505-507 (the generic clips; his set has none). The hit
+deals the object's `CfgObj` `+0x58` ([Combat moves](combat-moves.md)). In BigThrower state 4 the goal has just
+validated the brain's enemy (brain `+0x124`), inferred to be the same human. In the BigBrawler the throw also goes to
+his target, which need not be the nearest enemy he turned to first.
 
 ##### The BossDiego program {#boss-diego-ops}
 
@@ -4802,11 +4907,12 @@ the run-stop.
 
 **The hub's goals and gangs** (`level95`; `repo:src/ai/hub_goals.h`, `repo:src/ai/scripted_hub.h`): `GoalAreaWalker`
 (`0x47`), `GoalBoxer` (`0x9e`), `GoalGrabTarget` (`0x1f`), `GoalPeddler` (`0x50`), `GoalPlayGenAnim` (`0x26`) and
-`GoalShopkeeper` (`0x82`) follow their binding pages; a fleeing gang (`GangCanFlee`) sends its class-11 members off
-with the pedestrian reaction goal (`0x6b`) in mode 9. **Stand-ins**: the boxer fights with his own attack weights; the
-grab target is held by standing at it, facing it, with no damage; the goals' lines (`beckon`, `phone_gang`...) are
-kept, not played; the flight runs 10 s at gait 4, 10 m legs away from the enemy; a gang's starting count is noted
-when `GangCanFlee` turns it on.
+`GoalShopkeeper` (`0x82`) follow their binding pages; a fleeing gang (`GangCanFlee`) sends its class-11 members off with
+the pedestrian reaction goal (`0x6b`) and line 9 ([its flight](ai-goals.md#goal-ped-reaction): the nearest reachable
+exit flag, until no camera sees him, else AvoidEnemies 7-14 m). **Stand-ins**: the boxer fights with his own attack
+weights; the grab target is held by standing at it, facing it, with no damage; the goals' lines (`beckon`,
+`phone_gang`...) are kept, not played; the flight runs 10 s at gait 4, 10 m legs away from the enemy; a gang's starting
+count is noted when `GangCanFlee` turns it on.
 
 ## Open questions {#open-questions}
 
@@ -4816,8 +4922,7 @@ when `GangCanFlee` turns it on.
 - Who sends events `0x15`, 6, 9, 10 and `0x11`, and who reads event `0xf` (the tag-spot message); what reads the
   tackle meter brain `+0x148` besides the fight goal, and what brain `+0x28f` controls.
 - The per-gang `CfgGang` values 2, 3, 5, 7 and 8 (attackers at once, tackle and rear-grab chances) as
-  `config_preload2.lua` sets them; what commands 5 and `0x19` do in a grab (inferred: let go, shove off); the
-  target's pattern bytes `+0x5d0` / `+0x5d1`; `Human_CanStartAttack`'s cases beyond kinds 10-15.
+  `config_preload2.lua` sets them; the target's pattern bytes `+0x5d0` / `+0x5d1`.
 - `GoalBumLogic`'s begging (type 2's prompt, the chance, the callback, the 12 s timer) and what sets `+0x36`; what
   `GoalBackoff`, `GoalMoveToUseFlag` and the pedestrian goal (`0x69`, with its two variants
   and `FlagNetTraverse`'s flags) do each update (Process), and the use-flag goal's two floats; what
@@ -4849,9 +4954,8 @@ when `GangCanFlee` turns it on.
 - The hold's damage (`0x00510acc`) of `GoalGrabTarget` and the boxing attack weights (`0x00511120`) of
   `GoalBoxer`.
 - Which sound each hub goal line plays (`beckon`, `store_greet`, `phone_gang`, `dead_meat`, `cower`, `mug_grunt`).
-- The pedestrian reaction goal's (`0x6b`) Process and end in mode 9 (the flight): its length and route.
 - The Warrior commands' tactics (`0x00310e00`, `0x00320530`, `0x00313400`, `0x00319570`, `0x00320b60`), the exit
-  goal's on-screen test, the finding goal's search values (90, 30, 10) and the throw's Process (`0x002cf690`).
+  goal's on-screen test and the finding goal's search values (90, 30, 10).
 - The think handlers of types 2, 3 and 5 in detail; what goals the Warriors' think pushes for an ally.
 - Which class `+0x11b` value 13 is ([Combat](combat.md#open-questions)), and what the byte
   `*(0x0051489c) + 0x56e3` that lets every AI counter is.

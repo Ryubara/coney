@@ -278,15 +278,75 @@ A pedestrian's reaction to a noise.
 
 ### PedReaction (type 0x6b) {#goal-ped-reaction}
 
-A pedestrian's reaction to being attacked.
+A pedestrian's reaction to being attacked, and the flight of a gang that breaks. The pusher's third argument is a
+**speech command**, not a mode. `GangTactic_CheckFlee` (`0x00307f8c`) passes 9, the same line Start says by default.
+So "mode 9" is ordinary PedReaction with line 9. Confirmed (code) at the addresses in the table and at
+`0x002dacf8`.
+
+**Fields**:
+
+- `+0x10` the enemy (a handle);
+- `+0x14` a timer;
+- `+0x18` the phase (0, then 1);
+- `+0x1a` "mugged";
+- `+0x1c` the line;
+- `+0x1e` the saved turn boost.
+
+**Start**. With no enemy, or when he holds the enemy's attack slot, he says line 9 and waits 62-125 ms. Otherwise he
+says the line (`+0x1c`, when not 0) at high priority, waits 250-500 ms, and turns to the enemy. His record's
+`+0x108` is cleared and the turn boost goes up by one.
+
+**Process**, each update:
+
+1. Every 30 updates he looks at the enemy for 1.5 s.
+2. While actions are queued: when the timer runs out, he says line 9 again if he holds the attack slot, and the timer
+   clears.
+3. While his actions are blocked (grabbed, mugged), the phase becomes 1, and being mugged (`Human_IsBeingMugged`) is
+   noted.
+4. He waits for the timer, and while he holds anything.
+5. **Phase 0**, with an enemy: he turns toward him. A civilian (brain type 4) whose human `+0x3b8` is 1 may shove back:
+   kind 15, at its attack weight 15 as a percent chance. Then phase 1, and a 200 ms wait.
+6. **Phase 1**, mugged: he calls the police (`CallPoliceGoal_Push`) and stops here when all of these hold:
+    - his brain's `+0x26c` is not 3;
+    - his health is at least 50 %;
+    - the crime can be reported, and the enemy has not been reported in the last 30 s;
+    - a roll under 31 %;
+    - he can see the enemy;
+    - a spawner is in state 1, and game `+0x294` is set.
+7. **The flight**:
+    - He stops taunting.
+    - He takes the nearest flag of activity 8 (an exit flag, `Flags_FindNearestWithActivity`). When the nav mesh
+      reaches it, he says line 9 if he holds the attack slot and pushes `MoveToExitFlag` (gait 4, line 9).
+    - A civilian (type 4) with an enemy also gets a first dash: a move to an open point 10 m from the enemy
+      (`Ai_FindOpenPoint(10)`), gait 4 at speed 1.01, facing that way, action code 7.
+    - With no reachable exit flag he leaves the fight stance. A human whose class byte `+0x11b` is not 11 cowers
+      (`Goal_Cower(1)`). Class 11, the only class a fleeing gang sends, gets `AvoidEnemies(7 m, 14 m)` instead.
+
+The Process always returns 0, so the goal never ends by itself. When the exit goal ends, the flight runs again from
+step 4.
+
+**How long the flight lasts** is set by `MoveToExitFlag` (`0x002dacf8`):
+
+- **Every 8 s** it checks whether he is still in view. When no camera is within 60 m and no player's camera sees a
+  point 1.6 m above him, he is set to one health and the goal is done. That end sends the gang event 8 (arrived).
+- **While he is still seen**, he says the line every 8 s. That is for brain types 4-5 only; a gang brain (type 2)
+  says only line `0x59`.
+- **The route.** He walks to the flag (MoveAction at the goal's gait and radius). He switches to gait 5 once he is more
+  than 15 m from where he started; cops (type 1) do not. Every 30 updates, and after each move, a flag within 40 m
+  that a player's camera can see is swapped for the next nearest exit flag.
+- **At the flag**:
+    - A civilian or dealer (types 4-5) with a player within 8 m picks another flag.
+    - Out of every camera's sight (none within 8 m, flag unseen), types 4-5 first stand still for 1.5 s (3 s for a
+      dealer in `+0x26c` state 5), then the goal is done.
+    - Still seen, he picks the next nearest exit flag and goes on.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x002aa490` | `PedReactionGoal_Push` | pusher | stops his anims and pushes the goal on the human of an object (also from the peddler when attacked) | confirmed (code) |
+| `0x002aa490` | `PedReactionGoal_Push` | pusher | stops his anims and pushes the goal on the human of an object (also from the peddler when attacked); the third argument is the line | confirmed (code) |
 | `0x002aa558` | `PedReactionGoal_Init` | init | vtable `0x0053f6d0` | confirmed (code) |
 | `0x002aa598` | `PedReactionGoal_Start` | Start | says line 9, a random 62-125 delay, picks the reaction | confirmed (code) |
 | `0x002aa740` | `PedReactionGoal_End` | End | restores the turn boost | confirmed (code) |
-| `0x002aa760` | `PedReactionGoal_Process` | Process | flees, cowers or calls the police | inferred |
+| `0x002aa760` | `PedReactionGoal_Process` | Process | turns to the enemy, may shove back; when mugged may call the police; then flees to an exit flag, cowers or avoids (above) | confirmed (code) |
 
 ### Pedestrian (type 0x69) {#goal-pedestrian}
 
@@ -1063,14 +1123,40 @@ Gang members hanging about on their turf near their leader, in his formation, us
 
 ### ThrowObject (type 0x5d) {#goal-throw-object}
 
-Walks to a flag and throws what he holds.
+Walks to a flag and throws what he holds at it (Lua `GoalThrowObject(human, flag, range, gait, callback)`; Virgil's
+opening molotov uses 20 m, [Boss Virgil](ai-code.md#t1-boss-virgil)). Confirmed (code) at `0x002cf690`.
+
+**Fields**:
+
+- `+0x10` the flag (a handle);
+- `+0x14` the range in metres;
+- `+0x18` the gait;
+- `+0x20` thrown.
+
+**Process**, each update:
+
+1. He waits while swinging what he holds (`Human_IsSwingingHeld`) or while actions are queued.
+2. **Done** (2) when he holds nothing throwable or the flag is gone. Throwable means `Human_HeldIsThrowable(…, 0)`, or
+   an object of kind 4 or 6 (`Human_HoldsKind4Or6`). After the throw his hands are empty, so the next update ends the
+   goal.
+3. **Range**: farther from the flag than the range (3D distance), he walks to the flag at the goal's gait, with the
+   range as the arrival radius.
+4. **Aim**: when his heading is more than 15° (0.2618 rad) off the flag, he turns to it at his top turn rate.
+5. **The throw**: only on an update whose counter (brain `+0x34`) is a multiple of 30, unless he is Virgil (class
+   `0xb2`), who throws at once.
+    - The flag becomes the brain's object target (`+0x128`).
+    - He queues attack kind **0** (cross, command `0x10`) at himself (`Brain_QueueAttack(−1, brain, self, 0, 0x21)`).
+    - The goal notes `+0x20` = 1.
+
+With a throwable in hand, cross is the throw, so the player's own throw code sends the object off. That it aims at the
+object target is inferred: the goal sets nothing else. Neither the arc nor any spread is set here.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x002cf480` | `Goal_ThrowObject` | binding | `Goal_ThrowObject`: pushes the goal on a human | confirmed (code) |
 | `0x002cf530` | `ThrowObjectGoal_Init` | init | vtable `0x005415f0`; the flag, the range, the gait, a Lua callback (`*(0x00512b04)` `+0xcc`) | confirmed (code) |
 | `0x002cf5d0` | `ThrowObjectGoal_End` | End | clears object flag `0x40000` and human `+0x128`; calls the Lua callback ([Scripted goals](ai.md#scripted)) | confirmed (code) |
-| `0x002cf690` | `ThrowObjectGoal_Process` | Process | done unless he holds something throwable; walks to within range of the flag, turns to it (15°), throws | confirmed (code) |
+| `0x002cf690` | `ThrowObjectGoal_Process` | Process | done unless he holds something throwable; walks to within range of the flag, turns to it (15°), makes the flag his object target and queues kind 0 (cross) every 30th update (above) | confirmed (code) |
 
 ### Investigate (type 0x5e) {#goal-investigate}
 

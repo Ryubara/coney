@@ -171,9 +171,34 @@ already holds, if any.
    - queue the attack at himself (`Brain_QueueAttack`);
    - every 8 s, when he may gesture: say line `0x8e` (30 %) or `0x8f` (70 %).
 
-The car takes the hit through its own handler (`Car_OnHit`, `0x0038bea0`): 0.34 per hit from a weapon or thrown
-object, 0.51 from a human with held flag `0x400000`, 0.115 otherwise. A gang-locked car ignores hits from other
-gangs ([Cars: Windows, hits and the stereo](cars.md#windows)).
+**How the strike reaches the car.** Confirmed (code) at `0x0027de78`, `0x00287fe0`, `0x00261c80` and `0x00261a08`;
+the strike path is the player's.
+
+1. **The clip plays in place.** The queued kind becomes a command in the per-player record:
+    - kind 11 is `0x36`, handled by `Player_OnCommand36`, which calls `Attack_StartAtTarget(h, target, 21)`;
+    - kind 12 is `0x37`, handled by `Attack_StartGroundStrike`, which calls `Attack_StartGrounded(h, target, 193)`.
+
+   Both read the target with `Human_GetTarget`, the human target, which step 7 dropped. With none, both skip the
+   steer and the turn and just start the clip (chained in over 0.1 s and 0.2 s, held flag `0x10`). The facing comes
+   from step 7's turn to within 15° of the part. Nothing reads the record's `+0xe0` car copy or the object target
+   `+0x128` here.
+2. **The strike is a body overlap.** The clip's strike window turns its strike shapes on:
+    - 21 `ATTACK_PUSH`: both hands, frames 2-8;
+    - 193 `GROUNDED_STRIKE_01`: foot B, frames 10-12.
+
+   While they are on, `Human_TestStrikes` tests them each update against the bodies near him, the car's physics
+   body included. The first overlap calls `Strike_Contact` ([Combat: How a moving attack
+   strikes](combat.md#moving-strikes)). The spot stands 0.8 m out from the part's origin, so a hand or foot that
+   reaches the car's box strikes it; a swing that misses the box does nothing.
+3. **The part comes from where he stands.** `Strike_Contact` sees a car (type word `0x100000`) and calls `Car_OnHit`
+   (`0x0038bea0`) directly. For a plain human hit, that picks the parts from the attacker's position in the car's zone
+   tables, with no facing test (`0x0038b8d0`). It does not use the clip's contact point. Standing at the spot of
+   part *p*, he hits the parts of that zone, which for these spots includes *p* (inferred from the spot positions
+   and the zone tables). An intact window shields its door, so at a door spot the first hit breaks the window
+   ([Cars: Windows, hits and the stereo](cars.md#windows)).
+
+The car takes 0.34 per hit from a weapon or thrown object, 0.51 from a human with held flag `0x400000`, and 0.115
+otherwise. A gang-locked car ignores hits from other gangs.
 
 ### Breakables, climbs and charges on a route {#route-objects}
 
@@ -238,6 +263,5 @@ events ([AI](ai.md)). Inferred: no other caller of the door or breakable functio
 ## Open questions
 
 - The van's part frames, so its spots 0, 1, 6 and 7 can be placed without guessing (only sedans and a coupe were read).
-- An AI's push (kind 11) and grounded strike (kind 12) at a car: the AI has dropped its human target, so neither
-  handler (`0x0027de78`, `0x00287fe0`) has a target to steer to, and neither reads the record's `+0xe0` car copy.
-  How the clip's strike reaches the car part (the strike spheres against the car's boxes, inferred) is not traced.
+- Whether the push's hands (21) and the ground kick's foot (193) reach the car's box from every spot in practice: a
+  runtime check of a DestroyCar gang at a parked car.

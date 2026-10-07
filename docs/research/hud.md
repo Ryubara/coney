@@ -136,7 +136,7 @@ confirmed (code) at `0x001ad588`, `0x001ae980`, `0x001af010` and `0x001b1688` un
 | `+0x177a4` | active (set by `HUD_InitLevel`, cleared by `HUD_ShutdownLevel`) | |
 | `+0x177a8` | draw the centred announcement while hidden | |
 | `+0x177ac`, `+0x177b0` | radars wanted on (`HUDTurnOnRadar`); radars turned on | |
-| `+0x177b4` | fixed-camera icons enabled | |
+| `+0x177b4` | fixed-camera icons enabled (written, never read: [the icon](#hud-fixed-cam-icon)) | |
 | `+0x177b8` | a radar item removed by `HUD_RadarClearPending` | |
 | `+0x177bc` | per player, the action object's hint id queued in the hint box | |
 | `+0x177d0`, `+0x18280` | the two radar frames (`0xab0` bytes each) | `0x001aa290` / `0x001aa9b0` / `0x001aaba8` |
@@ -253,6 +253,18 @@ colour; the body (rectangle 54) over the inner width (`width` less the cap's wid
 capacity strip (rectangle 55) over inner width × capacity in the capacity colour; the fill strip (rectangle 55) over
 inner width × fill in the fill colour; the right cap (rectangle 57). The stretched rectangles are inset by one texel
 on each side. Confirmed (code).
+
+**Flash and trail, unused.** `HudBar_Draw(flashBelow, bar, flash, trail)` takes the threshold in `f12` and the bar,
+`flash` and `trail` in `a0`-`a2`. Every one of its 14 calls passes **`flash` = 0 and `trail` = 0** (`0x001a33a4`,
+`0x001c0aac`, `0x001c0ac0`, `0x001c2504`, `0x001d737c`, `0x001d7390`, `0x001d73e4`, `0x001d7400`, `0x00209034`,
+`0x002119dc`, `0x00211a18`, `0x00211a44`, `0x002135d0`, `0x0021360c`), so `flashBelow` (0.25 at most sites, 0 for the
+mash meter) changes nothing and **no bar flashes or trails** through this path. Confirmed (code). The rage meter's
+gold pulse below is the panel's own colour switch, not this flash. For reference, the dead path: with `flash` set and
+the fill ≤ `flashBelow`, a byte at `+0x65` drops by 16 each draw and jumps back to 255 when it falls under 32 (255,
+239, ..., 47: a 14-draw cycle), and the **background parts only** (the two caps and the body, not the capacity strip
+or the fill) get that byte ÷ 2 ORed into their colour's **red** byte. The trail (`+0x44`-`+0x4c`) would draw the fill
+rectangle between the old and new fill ends for 64 draws after a drop, at alpha (count & 3) × 85 (a 4-draw flicker).
+Confirmed (code) at `0x001a1138`.
 
 **Fill colour:** the rage colour for raging (human `+0xe0` flag `0x80000`) or not. **A full meter** (rage ≥ maximum)
 plays `vags/interface/rage_indicator_02` once and flashes: with `t` = game time mod 400 ms, `f` = |200 − t| / 200 (a
@@ -760,9 +772,31 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
       himself knocked out gets no prompt.
 - **Showing:** no text hides the prompt (`0x001b2490`); a new or changed text restarts it (`ActionPrompt_SetText`,
   `0x0019f1b0`; a text that parses as a number goes through `0x0019f128`). A prompt naming `Spray`, `Flash`, `Blades`
-  or `Give Mon...` also wakes the player panel ([Activity](#the-player-panel)). With the cycle animation on
-  (`HUDTurnOnActionCycleAnim`, `+0x45c`) the icon alternates between two sprite words (`+0x440`/`+0x444`) at the rate
-  `+0x448` (`0x0019f328`).
+  or `Give Mon...` also wakes the player panel ([Activity](#the-player-panel)).
+- **The cycle animation** (`HUDTurnOnActionCycleAnim(framesPerIcon, seconds, blinkFrames, iconA, iconB, player)` →
+  `ActionPrompt_StartCycle`, `0x0019f270`), confirmed (code) unless marked:
+    - **The sprites**: `iconA`/`iconB` go to `+0x440`/`+0x444` as sprite words of the icon widget `+0x480`, which the
+      set-up gives batch 3 (`ActionPrompt_Setup`, `0x0019ef80`), so they are **`part_page0` rectangles**. The scripts
+      (disc scan of the compiled scripts) pass **73**, the triangle button, in `level51_chapter8` and `level54`, and
+      **79**, the cross button, in `level51_chapter8`, `level51_chapter9`, `level81_chase` and `level95_workout`
+      (`level84_chase` computes them); every call passes the **same word twice**, so the swap never shows and only the
+      blink does.
+    - **Size**: the start sets the icon's size to its first argument in overlay units (0.1 from the binding), square
+      for these 34 × 34-texel buttons, and **hides the text** (`BoxedText_SetVisible(prompt, 0)`).
+    - **Place**: each `ActionPrompt_Update` (`0x0019f528`) puts the icon's **centre at the prompt's own anchor**: x 0.5
+      for one player (two players: `0x0050cfcc`/`0x0050cfd0`, or 0.5 for both while either player human is cuffed
+      or knocked out), y = the base 0.86 + the raise `+0x470` (the raise before the multi-line lift that `+0x46c`, the
+      text's, adds). So the icon stands where the text's line would be, centred on it. While the cycle is on, the
+      update no longer sets the text's visibility from `+0x460`, so the text stays hidden until `ActionPrompt_SetText`
+      restarts it with a new owner or text (it would then overlap the icon; not seen, inferred).
+    - **Rate and blink** (`ActionPrompt_UpdateCycle`, `0x0019f328`, once per prompt update; units are **HUD updates**,
+      one per game frame, inferred): a counter `+0x44c` swaps the word index `+0x450` whenever it reaches a multiple
+      of `framesPerIcon` (`+0x448`; the first update already swaps, and 0 traps on the division), so each word lasts
+      `framesPerIcon` updates (scripts: 4, or 3 in `level54`). With `blinkFrames` (`+0x458`) non-zero, the icon is on
+      (active `+0x488`) for `blinkFrames` updates and off for as many (6 and 6, or 2 and 2 in `level54`); with 0 it
+      stays on. The `seconds` argument is ignored ([HUD bindings](../references/bindings/hud.md#hudturnonactioncycleanim)).
+    - **Drawn** by `ActionPrompt_Render` (`0x0019f850`) under the text, in a two-player game or for player 0;
+      `HUDTurnOffActionCycleAnim` (`0x0019f320`) clears `+0x45c`.
 - **Drawn last** in the HUD, and not while an announcement or a mini-game panel shows ([The HUD's
   frame](#the-huds-frame)).
 - **Mini-game widgets:** the lock-picking dial (HUD `+0xf420` + player × `0x540`), the stereo theft's (`+0xfea0` +
@@ -1131,13 +1165,40 @@ sprites form the line between the two views is inferred.
 
 ### The fixed-camera icon {#hud-fixed-cam-icon}
 
-Per player, a sprite (HUD `+0x135e0` + player × `0x100`, size 0.1, sprite word `0x57` in batch 3, colour
-(191, 191, 191, 255)) at (`*0x0050d468`, `*0x0050d46c`)
-(in split screen the first player's at (`*0x0050d460`, `*0x0050d464`)).
-Each update, when the player's camera type (camera vtable `+0x1ec`) is 0, 1, 5 or 9 or the per-player flag
-`0x0050b1b8[player]` is clear, the icon is shown and restarted (`0x001a25b8`) whenever the player pushes the stick
-(`HUD_IsPlayerStickPushed`); with any other camera type it is hidden. `HUDEnableFixedCamIcon` enables the pair
-(`+0x177b4`). Confirmed (code) at `0x001af010`.
+A **"this camera can't be turned" hint**: a crossed-out film camera (`part_page0` rectangle 87, sprite word `0x57`,
+batch 3) that appears while the player pushes the **right stick** on a camera that ignores it, and fades out over a
+second after he lets go. Confirmed (code) at `0x001af010` unless marked.
+
+- **Set-up** (`HUD_InitLevel`, `0x001ad588`): one `BaseWidget` per player at HUD `+0x135e0` + player × `0x100`, size
+  0.1, depth 11,000, colour (191, 191, 191, 255), **hidden but active**; `+0x177b4` = 1.
+- **When** (each `HUD_Update`, per player): if the player's camera type (camera vtable `+0x1ec`) is **0 `Cam_Fixed`,
+  1 `Cam_Locked`, 5 `Cam_Transition` or 9 `Cam_Rail`** ([Cameras](../references/cameras.md#type)), or his camera
+  switch 0 is off (`0x0050b1b8[player]`: right-stick turning and the zoom buttons, default on,
+  [switch 0](../references/cameras.md#switch)), then pushing the stick (`HUD_IsPlayerStickPushed`, `0x001aef50`: a
+  raw byte `+0x1a` or `+0x1b` of the pad record outside 64-176) shows the icon and cancels its fade
+  (`BaseWidget_CancelFade`, `0x001a25b8`: end time `+0xf4` = 0). Not pushing changes nothing. With any other camera
+  and the switch on, the icon is hidden at once. Pad `+0x1a`/`+0x1b` are stored with the right stick's floats
+  `+0x10`/`+0x14` (`0x00149990`) and are what the camera's [right-stick step](camera.md#right-stick) reads, so this is
+  the right stick.
+- **The fade**: later in the update a shown icon gets `BaseWidget_StartFade(icon, 1000)` (`0x0050d49c` = 1,000 ms),
+  which starts only when no fade runs; `BaseWidget_RenderAlpha` (`0x001a2690`) draws it at its alpha × (time left ÷
+  1,000), and `BaseWidget_IsFadeDone` hides it when the time is up. A pushed update cancels the fade and the same
+  update restarts it, so the icon stays fully opaque while the stick is held and **fades linearly to nothing over 1 s**
+  after release.
+- **Place and size** (set each update while shown; GUI position; the size is an overlay height, the width following
+  from the rectangle's aspect). In the default mode (device flag `0x01` only) none of these globals is rewritten, so
+  the static values hold: **(0.9, 0.64)** (`0x0050d468`, `0x0050d46c`), size **0.09** (`0x0050d450`; `0x0050d454` =
+  0.08 also passed). In two-player views (split screen, or `0x0050b194` > 1 with more than one view) player 0's icon
+  is at **(0.11, 0.64)** (`0x0050d460`, `0x0050d464`, never rewritten) and player 1's at (`0x0050d468`, `0x0050d46c`).
+  Other modes rewrite them: 16:9 (`0x01` with `0x04`) x 1.05, size 0.08; progressive 16:9 (`0x01`, `0x20`, `0x04`)
+  (1.0, 0.63), size 0.08 × 0.08; with `0x01` clear, (0.9, 0.63) and 0.06 × 0.058 in 4:3, (1.09, 0.58) and 0.075 ×
+  0.08 in 16:9.
+- **On in story play.** `+0x177b4` is written (by the set-up and `HUD_SetFixedCamIconVisible`) but never read. What
+  gates the icon is each widget's **active** flag (`+0x08`: `BaseWidget` vtable `0x005394b8` slot `+0x40` sets it,
+  `0x004e3fb8`, slot `+0x48` reads it), which `BaseWidget_RenderAlpha` tests with visible (`+0x04`); the set-up turns
+  it on. `HUDEnableFixedCamIcon(false)` turns it off, and the scripts call it only in `level60`-`level64` (once each,
+  with `false`; disc scan of the compiled scripts); nothing turns it back on within a level. So in every other level it
+  shows on a fixed, locked, transition or rail camera, or while a script has switch 0 off.
 
 ### The spinner {#hud-spinner}
 
@@ -1209,7 +1270,7 @@ the behaviour is confirmed (code) unless a row says otherwise.
 | `0x001a0c90` | `CrewStatusEntry_Render` | slot `+0x38`: both sprites when the batch is resident | confirmed (code) |
 | `0x001a0d28` | `CrewStatusEntry_Update` | slot `+0x30`: hidden unless the human is in player 1's gang; status rectangle `0x1a` (down), `0x19` (dead) or `0x15` (lost); the status alpha pulses on an 800 ms triangle wave, cubed | confirmed (code) |
 | `0x001a0fd0`, `0x001a1008`, `0x001a1098` | `Bar_Construct`, `HudBar_Construct`, `HudBar_Init` | the meter's set-up and defaults ([The rage meter](#the-rage-meter), [GUI](gui.md#widget-classes)) | confirmed (code) |
-| `0x001a1138` | `HudBar_Draw(flashBelow, bar, flash, trail)` | the end caps (rectangles +2, +3), back (+0), fill (+1) and an optional second fill `+0x3c`; flashing below `flashBelow`; a fading trail after a drop ([The rage meter](#the-rage-meter)) | confirmed (code) |
+| `0x001a1138` | `HudBar_Draw(flashBelow, bar, flash, trail)` | the end caps (rectangles +2, +3), back (+0), fill (+1) and an optional second fill `+0x3c`; a flash below `flashBelow` and a fading trail, both unused: every caller passes 0 for both ([The rage meter](#the-rage-meter)) | confirmed (code) |
 | `0x001a1be8` | `HudBar_SetFillGradient(bar, on, low, high)` | `+0x60` on: the fill colour is lerped from `+0x30` to `+0x34` by the fill | confirmed (code) |
 
 ### After `GUI/BaseWidget.cpp` (no path string): mash meter and chase HUD {#fn-after-basewidget}
@@ -1461,7 +1522,7 @@ neighbours.
 | `0x001ae898` | `HUD_GetVirtualPad(hud, player)` | the player's input record ([Front end](frontend.md#input)) | confirmed (code) |
 | `0x001ae8d8` | `HUD_BindPad(hud, player, pad)` | frees the pad records the player owned, then `+0x19` = pad, `+0x1b` = (pad ≥ 0), the pad record's owner = player | confirmed (code) |
 | `0x001ae980` | `HUD_ShutdownLevel` | undoes `HUD_InitLevel` (from `0x001607b8`): `+0x177a4` = 0, every part's shutdown, the `ANHud` panels freed, the six menus' `Shutdown` | confirmed (code) |
-| `0x001aef50` | `HUD_IsPlayerStickPushed(hud, player)` | 1 unless both raw stick bytes `+0x1a`, `+0x1b` of the player's pad record are within 64-176 (inferred: the left stick) | confirmed (code) |
+| `0x001aef50` | `HUD_IsPlayerStickPushed(hud, player)` | 1 unless both raw right-stick bytes `+0x1a`, `+0x1b` of the player's pad record are within 64-176 (stored with the right stick's floats, `0x00149990`; [Fixed-camera icon](#hud-fixed-cam-icon)) | confirmed (code) |
 | `0x001af010` | `HUD_Update(hud, a, b)` | the HUD's frame ([The HUD's frame](#the-huds-frame)); `a` and `b` go to the two radars' updates (`0x001c5210`) | confirmed (code) |
 | `0x001b1640` | `HUD_IsSplitScreen` | more than one player (game state `+0x224`) and more than one view (`0x0011eae0`) | confirmed (code) |
 | `0x001b1688` | `HUD_Render` | the HUD's draw ([The HUD's frame](#the-huds-frame)) | confirmed (code) |
@@ -1506,7 +1567,7 @@ neighbours.
 | `0x001b3d10`, `0x001b3d28`, `0x001b3d58`, `0x001b3d80`, `0x001b3da8` | `HUD_SetArrowFlag`, `_SetArrowTarget`, `_SetArrowColour`, `_ArrowOn`, `_ArrowOff` | the [instruction arrow](#the-instruction-arrow-hudenableinstarrow)'s setters | confirmed (code) |
 | `0x001b3dd0`, `0x001b3df8` | `HUD_ActionCycleStart`, `_Stop` | a prompt's cycle animation | confirmed (code) |
 | `0x001b3e20` | `HUD_WithdrawActionHint(hud, player)` | withdraws `+0x177bc[player]` from the hint box | confirmed (code) |
-| `0x001b2818` | `HUD_SetFixedCamIconVisible(hud, on)` | `+0x177b4` = on; both fixed-camera icons' slot `+0x40` | confirmed (code) |
+| `0x001b2818` | `HUD_SetFixedCamIconVisible(hud, on)` | `+0x177b4` = on; both fixed-camera icons' slot `+0x40` (the active flag `+0x08`, which gates drawing) | confirmed (code) |
 | `0x001b28a0` | `HUD_SetReticuleRequest(hud, player, v)` | byte `+0x225d0[player]` | confirmed (code) |
 | `0x001b2e10` | `HudManager_SetRadarRange(r, r2, hud)` | both radars' `+0x20`, `+0x28` = r and `+0x24` = r2 | confirmed (code) |
 | `0x001b3cb0` | `HUD_ShowAnnouncement` | [Announcements](#announcements-and-other-messages) | confirmed (code) |
@@ -1622,13 +1683,52 @@ default mode.
 | `+0xc50` | origin (from `0x0050d5f0`) |
 | `+0xc60` | gang id (−1 none) |
 
-- **Header** (when the set-up is given a sprite): blue (35, 83, 188), size 0.04, depth 11,000; French uses sprite
-  word `0x20f0000`, German `0x2100000`; shadows in black at (+0.0035, +0.005) and (−0.002, −0.003), depth 8,000.
-- **Marks**: sprite word `0x16e` (every fifth `0x16f`), blue, all rotated 3.3 rad, size 0.04 × 1.2 (every fifth
-  0.017 × 1.2). Mark *i* sits at the origin (0.09, 0.94) plus (−0.095 + 0.015 i, 0.104), every fifth at
-  (−0.095 + 0.005 i, 0.104) (over the four before it), and marks after the first five from −0.1. With a header the
-  marks move by (+0.05 + 0.08, −0.1) and the header sits at the first mark plus (0.065, −0.1), size 0.048.
-- Only nine mark sprites exist, but the update lays out as many as the gang has living members.
+- **Header** (always set up: `HUD_InitLevel` passes sprite word `0x20e0000`, sheet-table record `0x20e` rectangle 0;
+  French `0x20f0000`, German `0x2100000`): blue (35, 83, 188), depth 11,000; shadows in black at (+0.0035, +0.005)
+  and (−0.002, −0.003), depth 8,000.
+- **Marks**: `part_page0` rectangle 366 (`0x16e`, a short upright stroke, 7 × 14 texels) for the strokes and 367
+  (`0x16f`, a long flat bar, 37 × 6 texels) for every fifth, blue, all rotated **3.3 rad** (about 189°, so tilted
+  about 9° off their art). Size (an overlay height; the width follows from the rectangle's aspect): 0.04 × 1.2 =
+  **0.048** for a stroke, 0.017 × 1.2 = **0.0204** for a crossing bar (`0x0050d5c0`, `0x0050d5c4` × `0x0050d604`).
+- **Where mark *i* goes** (0-based, *i* < the living count), in GUI units, `NumIndicator_Update` (`0x001b67b8`) with
+  the default mode's layout (`NumIndicator_ApplyLayout`, `0x001b6168`: origin (0.09, 0.94) `0x0050d5f0`/`0x0050d5f8`,
+  header shift 0.08 `0x0050d600`):
+
+  ```text
+  stroke, i < 5     x = 0.09 - 0.095 + 0.015 i      y = 0.94 + 0.104
+  crossing bar      x = 0.09 - 0.095 + 0.005 i      (i = 4: x = 0.015, centred on the four strokes before it)
+  stroke, i > 4     x = 0.09 - 0.100 + 0.015 i
+  with the header   every mark  + (0.08 + 0.05, -0.1)
+  ```
+
+  | *i* | 0 | 1 | 2 | 3 | 4 (bar) | 5 | 6 | 7 | 8 |
+  | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+  | x, no header | −0.005 | 0.010 | 0.025 | 0.040 | 0.015 | 0.065 | 0.080 | 0.095 | 0.110 |
+  | x, header | 0.125 | 0.140 | 0.155 | 0.170 | 0.145 | 0.195 | 0.210 | 0.225 | 0.240 |
+
+  y is 1.044 without the header and **0.944** with it. The header counts as present when its batch instance
+  (`+0x104`) is not −1 and its `+0x4c` is 0, which the always-made header satisfies (inferred), so the **header row
+  is the one seen**: the header at the first mark's no-header place plus (0.065, −0.1) = **(0.06, 0.944)**, size
+  0.04 × 1.2 = 0.048 (`0x0050d608` × `0x0050d604`), and the marks from x 0.125. German moves the origin 0.05 right
+  and the header shift to 0.15. Confirmed (code).
+- Only nine mark sprites exist (`+0x340`), but the loop lays out as many as the gang has living members; a tenth
+  would be the second crossing bar at x −0.05 + origin (back over the first group) and would write past the sprites
+  (inferred; the Rumble gangs that use it are not checked for size).
+- **Who calls it** (disc scan of the compiled scripts): only Rumble, `brawl.lua` and `royal.lua`, each in two branches
+  with `Rumble.gang1ID` and `Rumble.gang2ID`: `brawl.lua` player 0 with gang 1 and then either **2** (this shared
+  indicator) or **1** with gang 2; `royal.lua` 0 and 1, or 2, with gang 2. Which branch is two-player is not traced
+  (inferred: player 2 when there is one human). `HUD_Render` draws the shared indicator only in a Rumble level
+  (`GameState_IsRumbleLevel`, `0x001b1688`).
+- **Players 0 and 1** (`HUD_SetNumIndicator`, `0x001b4438`) go to their **panel's own tally** instead: interface slot
+  `+0x50` stores the gang at panel `+0x4140` (`0x004eca18`) and slot `+0x48` the "on" at `+0x4130` (`0x004eca10`);
+  in an `ANHud` panel (levels 60-69) both slots are empty functions. The panel's update (`PlayerHUD_RefreshTallyMarks`,
+  `0x00214bc8`) counts the gang's living members into `+0x413c` and lays out the same pattern of strokes and bars
+  (`PlayerHUD_LayoutTallyMarks`, `0x00213e68`, the nine sprites at `+0x4150`, in the player's colour) from the panel's
+  origin (`0x0050fa10` by panel layout `+0x40f4`) with the offsets, steps and size of the panel layout table
+  (`0x0050fc30` + layout × `0x240`: `+0x1f0`, `+0x200`, `+0x210`, `+0x220`, `+0x230`), plus a y shift of
+  `0x005100a0` or `0x005100a4`, chosen by fields `+0x68`/`+0x80` and `+0x98`/`+0xb0` of the record `0x0050fec0` +
+  layout × `0xc0`, and `0x005100c4` more in a level numbered 100 or more (`0x00213eb4`-`0x00213f40`). Confirmed (code)
+  for the structure; the panel tally's numbers are not worked out here. No header is drawn there.
 
 #### The lock-pick dial layout {#lock-pick-dial-layout}
 
@@ -1811,9 +1911,9 @@ second record (`+0x90`); its x values are in the last column.
 - **The fills** (`HUD_MugMeterStart(a, b)` → `MugMeter_SetFills`, each clamped to 0-1): bar 1 = `a`, bar 2 = `b`. In
   `Player_UpdateMugging` (a player mugging an AI human) `a` = time since the start (`+0x130`) ÷ the time allowed
   (`+0x134` − `+0x130`) and `b` = time on target (`+0x12c`) ÷ the required time (`+0x04`); with a player victim `a` is
-  the victim's own progress against its record. Both bars are drawn with `HudBar_Draw(0.25, bar, 0, 0)` (flashing
-  below a quarter, no trail). A player who is neither mugging, mugged nor in the meter's hold gets both fills 0 and
-  nothing drawn.
+  the victim's own progress against its record. Both bars are drawn with `HudBar_Draw(0.25, bar, 0, 0)`: `flash` 0, so
+  no flashing whatever the fill ([unused](#the-rage-meter)), and no trail. A player who is neither mugging, mugged
+  nor in the meter's hold gets both fills 0 and nothing drawn.
 - **Modes** (`MugMeter_SetMode`, from each state's update): 0 `Player_UpdateMugging` (mugging): bar 1 amber (128,
   100, 0), bar 2 red (170, 43, 43), arcs red, prompt `0x180`; 1 `0x00286550` (being mugged by the other player): the
   bar colours swapped, prompt `0x181`; 2 `0x002833c0` and 3 `Player_UpdateMugHold` (`0x00283a30`), the two sides of a

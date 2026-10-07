@@ -554,6 +554,8 @@ which takes the human's **handle**, called on the game's thread; PoizoCiv facing
 | `0x33` | `Player_OnCommand33` (`0x00281188`) | the pick-up search |
 | `0x32` | `Player_OnCommand32` (`0x002832c8`) | uncuff with a key |
 | `0x27` | `Player_TryRevive` (`0x00286ba8`) | revive a downed Warrior with a flash (665, `use` at k24) |
+| 5 (as L2 held) | `Player_UpdateGrabbing` / `Player_UpdateMounting` (`PlayerCmd_IsLetGo` `0x0027bf08`) | in a grab, let go (95 / 94); in the mount, get off (244 / 245, the victim rises with 199). The Grabbing and Mounting reaction goals send it every update near a train ([AI](ai.md#fight-reactions)) |
+| `0x19` | `Player_UpdateGrabbing` (`PlayerCmd_IsGrabSpin` `0x0027bd98`, as R1 pressed) | spin the grab: front to rear 78 / 79, rear to front 80 / 81 ([Combat](combat.md#grabbing)). The Grabbing goal sends it to turn a front-held victim to his attackers |
 
 Confirmed (code).
 
