@@ -14,6 +14,7 @@
 #include "combat/player_combat.h"
 #include "combat/stick_games.h"
 #include "human/fighter.h"
+#include "human/fighter_clips.h"
 #include "human/human.h"
 #include "human/locomotion.h"
 #include "platform/play_level_mode.h"
@@ -212,20 +213,38 @@ void PlayLevelMode::stepMugging(human::Human& human) {
     // The next mugging runs with SetInterrogateParam's record while the scripts have one set.
     combat::PlayerCombat& fight = human.fighter().combat();
     fight.setMuggingOverride(m_pickups->muggingOverride());
+    // A decided mugging's callback waits for the mugger's end clip (344 or 346) to finish.
+    if (m_mugEnding) {
+        if (human.animator().animId() != m_mugEndClip) {
+            m_pickups->mugEnded(playerHandle(), human.script().mugCallback, *m_mugEnding);
+            m_print(std::format("mugging: callback ({})\n", *m_mugEnding ? "success" : "failure"));
+            m_mugEnding.reset();
+        }
+        return;
+    }
     const bool mugging = fight.mode() == combat::CombatMode::Mugging;
     const bool wasMugging = std::exchange(m_wasMugging, mugging);
     if (!wasMugging || mugging) {
         return;
     }
-    // The mugging ended this step: won, lost, or broken off (a let-go, a hit). The victim still held on a win.
-    const bool success = human.fighter().last().game == combat::GameResult::Succeeded;
-    auto* victim = dynamic_cast<human::Human*>(human.fighter().held());
-    int none = 0;
-    int& money = victim != nullptr ? victim->script().money : none;
-    const int taken = success ? money : 0;
-    m_pickups->mugEnded(0, playerHandle(), human.script().mugCallback, money, success);
-    m_print(std::format("mugging: {}{}\n", success ? "succeeded" : "ended without success",
-                        taken > 0 ? std::format(", ${} taken", taken) : std::string{}));
+    // The mugging ended this step. A win pays at once, from the victim still held; a win or a loss then waits for its
+    // end clip; a let-go or a hit calls back at once.
+    const combat::GameResult result = human.fighter().last().game;
+    if (result == combat::GameResult::Succeeded) {
+        auto* victim = dynamic_cast<human::Human*>(human.fighter().held());
+        int none = 0;
+        int& money = victim != nullptr ? victim->script().money : none;
+        const int taken = money;
+        m_pickups->mugPaid(0, money);
+        m_print(std::format("mugging: succeeded, ${} taken\n", taken));
+    }
+    if (result == combat::GameResult::Running) {
+        m_pickups->mugEnded(playerHandle(), human.script().mugCallback, false);
+        m_print("mugging: broken off\n");
+        return;
+    }
+    m_mugEnding = result == combat::GameResult::Succeeded;
+    m_mugEndClip = *m_mugEnding ? human::clips::kMugEnd : human::clips::kMugFail;
 }
 
 double PlayLevelMode::playerHandle() const {

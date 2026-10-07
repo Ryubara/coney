@@ -49,6 +49,9 @@ inline constexpr std::uint32_t kMugStruggle = 342;
 inline constexpr std::uint32_t kMugStruggleReact = 343;
 inline constexpr std::uint32_t kMugEnd = 344;
 inline constexpr std::uint32_t kMugEndReact = 345;
+/// A failed mugging's end, the mugger's and the victim's (docs/research/crimes.md#mugging).
+inline constexpr std::uint32_t kMugFail = 346;
+inline constexpr std::uint32_t kMugFailReact = 347;
 inline constexpr std::uint32_t kBlockSustain = 606;
 inline constexpr std::uint32_t kStereoStealIntro = 683; ///< `STEREO_STEAL_INTRO`.
 inline constexpr std::uint32_t kStereoStealLoop = 684;  ///< The stereo theft's loop while the stick turns.

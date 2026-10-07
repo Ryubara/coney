@@ -250,8 +250,7 @@ TEST_CASE("a stolen stereo pays $15 and a car stereo, then calls the theft handl
     CHECK(heard == std::vector<double>{181, 142});
 }
 
-TEST_CASE("a mugging's end pays the victim's money on success and calls the mug callback every time",
-          "[level_pickups]") {
+TEST_CASE("a won mugging pays all the victim's money; every end calls the mug callback", "[level_pickups]") {
     Harness h;
     coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
     std::vector<std::pair<double, bool>> heard;
@@ -260,10 +259,11 @@ TEST_CASE("a mugging's end pays the victim's money on success and calls the mug 
         return std::vector<Value>{};
     });
     int money = 18;
-    pickups.mugEnded(0, 181, "Mugged", money, false);
+    pickups.mugEnded(181, "Mugged", false);
     CHECK(money == 18);
-    pickups.mugEnded(0, 181, "Mugged", money, true);
+    pickups.mugPaid(0, money);
     CHECK(money == 0);
+    pickups.mugEnded(181, "Mugged", true);
     CHECK(h.state.player.inventory.count(0, item::kMoney) == 18);
     CHECK(heard == std::vector<std::pair<double, bool>>{{181, false}, {181, true}});
 }

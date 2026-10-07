@@ -172,6 +172,7 @@ target_sources(coney_tests PRIVATE
     characters/character_data_test.cpp
     characters/character_class_test.cpp
     characters/character_types_test.cpp
+    characters/starting_money_test.cpp
     characters/character_list_test.cpp
     characters/character_model_test.cpp
     characters/character_rig_test.cpp

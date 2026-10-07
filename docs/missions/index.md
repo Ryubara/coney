@@ -21,7 +21,7 @@ to run it.
 
 | Mission | Level | Status | Checkpoints built | Approved | New bindings in Coney |
 | --- | --- | --- | --- | --- | --- |
-| [Mission 1: New Blood](level99.md) | `level99` | 🚧 In Progress | 1 of 3 | 0 | 215 of 215 |
+| [Mission 1: New Blood](level99.md) | `level99` | 🚧 In Progress | 2 of 3 | 0 | 215 of 215 |
 | [Mission 2: Real Live Bunch](level80.md) | `level80` | 🎮 Pending Gameplay Approval | 4 of 4 | 0 | 50 of 50 |
 | [Mission 3: Payback](level87.md) | `level87` | 🎮 Pending Gameplay Approval | 5 of 5 | 0 | 87 of 87 |
 | [Mission 4: Blackout](level34.md) | `level34` | 🚧 In Progress | 0 of 5 | 0 | 17 of 17 |

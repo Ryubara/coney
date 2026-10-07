@@ -9,14 +9,14 @@ finale that hands over to the second mission. Coney starts it from a new game at
 | --- | --- |
 | Status | 🚧 In Progress |
 | Level | `level99` (story mission 1) |
-| Checkpoints | 1 of 3 built, 0 approved |
+| Checkpoints | 2 of 3 built, 0 approved |
 
 ## Checkpoints {#checkpoints}
 
 | # | Status | Note |
 | --- | --- | --- |
 | 1 | 🎮 Pending Gameplay Approval | Plays from the intro through all twelve lessons (bats picked up with triangle, rage, the second wave, the Warriors' 50-second stopwatch) to scene l99_c6, driven by the pad; then player 1 is handed to the new Rembrandt on the street beside Vermin for checkpoint 2 and the course's humans are deleted with their gangs. In the last lesson the three sparring Warriors run in at the player and fight him (Melee, EngageEnemy and FindEnemy as the original pushes them). |
-| 2 | 🚧 In Progress | The store's door is hit open, the watch cabinet broken and its watches taken with triangle, which schedules the car lesson; square at the parked car breaks its window and triangle starts the stereo theft, whose stick turns call P2.CarRadioStolen; then the passer-by at the phone walks off and grabbing and mugging him (the stick game with the lesson's SetInterrogateParam record) calls P2.PedMugged. The doors and barriers are drawn; the store's glass is not drawn yet. The rest of the checkpoint is being built. |
+| 2 | 🎮 Pending Gameplay Approval | Plays through to checkpoint 3, driven by the pad: the store's glass and doors are drawn, the door or a window is hit open, the watch cabinet broken and its watches taken with triangle; square at the parked car breaks its window and triangle starts the stereo theft, whose stick turns call P2.CarRadioStolen; the passer-by at the phone (who starts with $5-$20 as the original rolls it) walks off, and grabbing and mugging him pays his money and calls P2.PedMugged; walking back to Vermin sets checkpoint 3 and plays l99_c3. |
 | 3 | ⬜ Not Started | Not yet played in Coney: the fence climbs and the mission's end (the cinematic, the hand-over to level80). |
 
 ## What it needs {#needs}

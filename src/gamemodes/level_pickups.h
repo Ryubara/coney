@@ -136,13 +136,19 @@ class LevelPickups {
     /// the defaults (docs/research/combat.md#mugging).
     [[nodiscard]] std::optional<combat::MuggingParams> muggingOverride() const;
 
-    /// Player `player` (0 or 1), human `mugger`, ended a mugging of a human no player controls (`success` or not). On
-    /// success the victim's `victimMoney` dollars go to the player (item 2) and it is left with none; then the mugger's
-    /// `callback` (`HuSetMugCallback`) is called with the mugger and the success (1 or nil), as for every end of a
-    /// mugging. **Coney's reading**: the money notifies as a pickup does, and the callback runs when the game ends
-    /// rather than at the end of its clip; a victim's interrogation (`+0x5a0`) and pocket items are not modelled.
+    /// Player `player` (0 or 1) won a mugging of a human no player controls: in the update that reached the required
+    /// time, all the victim's `victimMoney` dollars go to the player (item 2, notifying: the money callback, then the
+    /// inventory callbacks) and it is left with none. Nothing for a victim with no money. **Not yet**: a pocket item or
+    /// carried object handed over first, the 1.5 times of ped type 5, item 2's pick-up sound.
+    /// @orig 0x002856b8 Player_UpdateMugging (unknown)
+    void mugPaid(int player, int& victimMoney);
+
+    /// A mugging by `mugger` of a human no player controls ended (`success` or not): its mugger's `callback`
+    /// (`HuSetMugCallback`) is called with the mugger and the success (1 or nil). The caller calls it when the
+    /// mugger's end clip finishes, or at once for a let-go or a hit. A victim's interrogation (`+0x5a0`) is not
+    /// modelled (level99 sets none).
     /// @orig 0x0022ceb8 Mugging_End (unknown)
-    void mugEnded(int player, double mugger, const std::string& callback, int& victimMoney, bool success);
+    void mugEnded(double mugger, const std::string& callback, bool success);
 
     /// A scene moved object `handle` to `position`, turned by `rotation`: its record keeps the pose. **Coney's
     /// reading**: with no object tasks, the record's pose stands for the object's (the original writes it when the

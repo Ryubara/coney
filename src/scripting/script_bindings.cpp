@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "characters/character_class.h"
+#include "characters/starting_money.h"
 #include "core/assert.h"
 #include "scenes/scene_player.h"
 #include "scripting/ai_bindings.h"
@@ -295,6 +296,54 @@ std::optional<std::string> recordedCfgCharModel(const RecordedCalls* recorded, i
     return std::nullopt;
 }
 
+// The carry fields of type `type`'s last recorded `CfgChar` call (arguments 3, 13, 15 and 16); a type with none
+// rolls with category 0, no cap and no object.
+characters::CarryConfig recordedCarryConfig(const RecordedCalls* recorded, int type) {
+    constexpr std::size_t kCategory = 2;
+    constexpr std::size_t kAltRecord = 12;
+    constexpr std::size_t kObject = 14;
+    constexpr std::size_t kDropChance = 15;
+    characters::CarryConfig config;
+    config.object = "none";
+    if (recorded == nullptr) {
+        return config;
+    }
+    for (const std::vector<Value>& call : recorded->calls("CfgChar")) {
+        const std::span<const Value> args(call);
+        if (args.empty() || args[0].number() != static_cast<double>(type)) {
+            continue;
+        }
+        config.category = static_cast<int>(std::trunc(binding::number(args, kCategory)));
+        config.altRecord = static_cast<int>(std::trunc(binding::number(args, kAltRecord))) == 1;
+        config.object = binding::string(args, kObject);
+        config.dropChance = static_cast<int>(std::trunc(binding::number(args, kDropChance)));
+    }
+    return config;
+}
+
+// Category `category`'s last recorded `CfgCharClassAttribs(class, min, max, chance, noObject, bonusChance, bonus)`;
+// zeros for a category no call set, as the game state starts.
+characters::ClassMoney recordedClassMoney(const RecordedCalls* recorded, int category) {
+    characters::ClassMoney money;
+    money.bonus = 0.0F;
+    if (recorded == nullptr) {
+        return money;
+    }
+    for (const std::vector<Value>& call : recorded->calls("CfgCharClassAttribs")) {
+        const std::span<const Value> args(call);
+        if (args.empty() || args[0].number() != static_cast<double>(category)) {
+            continue;
+        }
+        const auto whole = [args](std::size_t i) { return static_cast<int>(std::trunc(binding::number(args, i))); };
+        money = characters::ClassMoney{.min = whole(1),
+                                       .max = whole(2),
+                                       .noObject = whole(4),
+                                       .bonusChance = whole(5),
+                                       .bonus = static_cast<float>(binding::number(args, 6))};
+    }
+    return money;
+}
+
 // The current level's number (its record's `+0x04`); 0 when the table has no record for it.
 int currentLevelNumber(const GameState& state) {
     const LevelRecord* record = state.levels.at(state.currentLevel);
@@ -333,6 +382,15 @@ NativeFunction makeHuCreate(const Factory& factory) {
         // The AI host makes the human in the world (or once the level's characters are loaded).
         if (context->ai != nullptr) {
             context->ai->humanCreated(human);
+        }
+        // Human_Init's starting money, drawn from the game's random numbers as every new human's is.
+        if (context->state != nullptr) {
+            const characters::CarryConfig carry = recordedCarryConfig(context->recorded, human.type);
+            const characters::StartingCarry rolled = characters::rollStartingCarry(
+                carry, recordedClassMoney(context->recorded, characters::moneyCategory(carry)), context->state->random);
+            if (HumanBindingHost* host = context->ai != nullptr ? context->ai->humans() : nullptr; host != nullptr) {
+                host->setMoney(human.handle, rolled.money);
+            }
         }
         return binding::number(human.handle);
     };

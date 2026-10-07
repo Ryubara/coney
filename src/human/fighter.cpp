@@ -440,8 +440,10 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
             m_held->play(endReact, clips::kGrabHeld, AnimState::Hold, TargetState::Held);
             m_rear = false;
         } else {
-            animator.playCombat(clips::kNoClips, clips::kGrabRearHold, AnimState::Hold);
-            m_held->play(clips::kNoClips, clips::kGrabRearHeld, AnimState::Hold, TargetState::Held);
+            // A failure plays its own end, then the pair is back in the rear hold.
+            animator.playCombat(clips::one(clips::kMugFail), clips::kGrabRearHold, AnimState::Hold, kCombatFade,
+                                clips::kGrabHolds);
+            m_held->play(clips::one(clips::kMugFailReact), clips::kGrabRearHeld, AnimState::Hold, TargetState::Held);
         }
     } else if (const auto& mugging = m_combat.mugging(); m_combat.mode() == combat::CombatMode::Mugging &&
                                                          mugging.has_value() && m_held != nullptr &&

@@ -526,6 +526,16 @@ item 11, then the `CfgSetSteroTheftHandler` callback with the human and the car)
 the stereo is at once, not spread over the intro; both gifts notify the inventory callback; the success and failure
 clips (685, 686), the HUD widget, the hint and the owned byte are not played or set yet.
 
+**The mugging and the starting money** (2026-10-07): `HuCreate` rolls each new human's carry as
+[Starting money](#starting-money) gives (`characters::rollStartingCarry()`, `repo:src/characters/starting_money.h`)
+from its recorded `CfgChar` and `CfgCharClassAttribs` calls with the game's random numbers, and sets the money
+(`HuSetMoney` later overrides it). Player 1's won mugging (`PlayLevelMode::stepMugging()`) moves all the victim's
+money in the deciding update (`LevelPickups::mugPaid()`: item 2 with the money and inventory callbacks); his
+`HuSetMugCallback` callback runs with (mugger, 1 or nil) when his end clip (344 or 346) finishes, or at once for a
+let-go or a hit (`LevelPickups::mugEnded()`). **Coney's stand-ins**: a `grp_` object group carries nothing and a
+rolled object is not given to the human; not yet: interrogation, the pocket items, the half-way `no_item` stop, ped
+type 5's 1.5 times, item 2's pick-up sound and the statistic.
+
 Coney's choices: a break-in and a custom crime queue kind-1 responders (the break-in after `CfgBreakAndEnterDelay`);
 the assault statistic is scored once per victim through the service.
 

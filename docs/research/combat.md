@@ -2032,10 +2032,10 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   moves of a hold switch both humans with no fade, the let-go keeps the combat fade.
 - The mugging (`MuggingGame`, `LevelPickups::mugEnded()`): the record is `SetInterrogateParam`'s set 0 while its
   required time is set, else the runtime one (5 s, 2.5 s, 50 s off target, 50°, 60°), not the per-class table; the
-  target angles are drawn evenly (the first at random). At the end, the victim's money goes to the player (it
-  notifies) and the mugger's callback runs with (mugger, 1 or nil) when the game ends or is broken off, not at its
-  clip's end; the speech, the hints, the victim's interrogation and pocket item, and the empty-handed victim's
-  `no_item` end are not built, so a victim with no money still gives a success. The theft: clockwise steps neither
+  target angles are drawn evenly (the first at random). The money moves in the deciding update, the end clips 344 /
+  345 or 346 / 347 play, and the mugger's callback runs when his end clip finishes, or at once for a let-go or a hit
+  ([Crimes](crimes.md#coneys-implementation)); the speech, the hints, the half-way `no_item` stop, the victim's
+  interrogation and pocket item, ped type 5's 1.5 times and the statistic are not built. The theft: clockwise steps neither
   add nor take away; the 250 ms pause ignores the stick. The mash: the first press counts, a press's gain is
   truncated, and other commands are ignored.
 - The block is read only when the player is free (not grabbing, tackling, mugging or in a theft); it turns the player

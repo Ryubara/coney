@@ -178,12 +178,15 @@ std::optional<combat::MuggingParams> LevelPickups::muggingOverride() const {
                                  .gapDegrees = set.anglesRadians[1] * kDegrees};
 }
 
-void LevelPickups::mugEnded(int player, double mugger, const std::string& callback, int& victimMoney, bool success) {
-    // The victim's money goes to the player.
-    if (success && victimMoney > 0) {
+void LevelPickups::mugPaid(int player, int& victimMoney) {
+    // All the victim's money goes to the player in one add.
+    if (victimMoney > 0) {
         script::addInventoryItem(m_scripts, m_state, player, item::kMoney, victimMoney, true);
         victimMoney = 0;
     }
+}
+
+void LevelPickups::mugEnded(double mugger, const std::string& callback, bool success) {
     // Every end calls the mugger's callback with the mugger and the success (Lua 4: true is 1, false nil).
     if (!callback.empty()) {
         const std::array<script::Value, 2> args{script::Value(mugger), success ? script::Value(1.0) : script::Value()};
