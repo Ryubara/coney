@@ -140,7 +140,7 @@ test is cited in the behaviour below; seen at runtime unless marked.
 
 | Bit | Meaning |
 | --- | --- |
-| `0x1`, `0x2` | fight stance (`0x00228340` tests `0x3`) |
+| `0x1`, `0x2` | fight stance (`0x00228340` tests `0x3`); a player sets only `0x1`, scripts and AI set both ([Fight stance](#fight-stance)) |
 | `0x4` | has a target (inferred: set with the target at a grab) |
 | `0x10` / `0x20` | grabbed from the front / rear |
 | `0x40` / `0x80` | grabbing from the front / rear (a front grab reads `0x45`) |
@@ -380,9 +380,13 @@ confirmed (code) at the functions below.
 - a grounded target → 193 (`0x00261a08`); a tackled one → 212; a grabbed one → 120;
 - a breakable object → `Player_ObjectAttack` ([Breakables](#breakables));
 - at gait 4 (run) with record `+0x08` clear and the stick above 0.95 → 24, from a run; at gait 1-3 with the stick at
-  0.12 or more → 23, from a walk. These come **before** the snap (gait tests `0x00223a30`-`0x00223a60`), unless
-  `0x0051031c` is set for a pad-controlled human (0 in the executable's data), so a snap comes from a standing (or
-  sprinting) player: the stick pushed from rest and square pressed while he has not yet started to walk;
+  0.12 or more → 23, from a walk. These come **before** the snap (gait tests `0x00223a30`-`0x00223a60`), but the
+  whole block, run and walk alike (and the `0x00510270` attack 22), is skipped **in a fight stance** (record `+0x00`
+  & `0x3`, `0x00228340`) or when `0x0051031c` is set for a pad-controlled human (0 in the executable's data).
+  Confirmed (code) at `0x00286cc8`; cross (`0x00287a18`) skips its run and walk attacks on the same test. So a snap
+  comes from a player in a [fight stance](#fight-stance) (a locked-on combat walk is gait 3, but the stance skips the
+  walk attack) or from one standing (or sprinting) outside it: the stick pushed from rest and square pressed while he
+  has not yet started to walk;
 - the stick above 0.95 (the per-player record's buffered magnitude) and more than 45° from the facing → a **snap**
   attack, 25 right, 27 left, 29 back (`0x00264460`), but only **with a target there**: `0x0027aa38(h, 0x80)` takes
   the nearest human within **2.0 m** (`0x00227598`) and within **45° of the stick's direction** (π/4 written to
@@ -1118,7 +1122,8 @@ Square, cross and L2 + cross or square choose by the **held object's set** (`0x0
 `0x0027c120`. "Run" below is gait 4 with record `+0x08` clear (`0x00223a60`), and for cross also gait 5 with
 `+0x08` clear (`0x00223a98`); either needs `0x00225c10` (for a pad player: the stick above 0.95 at `0x005102e8`, plus
 state tests) and no fight stance (state bits `0x3`, `0x00228340`). "Walk" is gait 1-3 with the stick at 0.12
-or more.
+or more, and the unarmed walk attack also needs no fight stance ([Attacks](#attacks)); for the throws a stance only turns
+the walking throw (gait 2) into the standing one.
 
 | Held set | Square / cross at a run | At a walk | Standing (or in a fight stance) | Charge, dive |
 | --- | --- | --- | --- | --- |
@@ -1526,6 +1531,40 @@ is not down, dead or in a few blocking states (`0x00227f90`, `0x00223c10`):
 3. The filters (`0x00279410`, `0x00279568`) skip allies and the same gang (brain `+0x20c`), humans more than 2 m
    higher or lower (`0x00510970`), those with flag `0x100000000000` (`0x00227d78`), the dead and the airborne;
    the first also skips the knocked down.
+
+#### The fight stance {#fight-stance}
+
+**The fight stance is record `+0x00` bit `0x1` or `0x2`** (`0x00228340` tests `0x3`). Confirmed (code) at the cited
+addresses:
+
+- **Who sets it.** `Human_EnterFightStance` (`0x0022fe80`) sets both bits; only AI goals and the script call
+  `HuSetCombatMode` (`Human_SetCombatMode`, `0x0023a1b0`) use it. A player gets **`0x1` alone** from `0x00280068`
+  (`0x00230140`, then `0x1` if clear), which every attack start of the player's runs (square, cross, the dive, the
+  grab or tackle, the grounded strike `0x00287fe0`, and the clip handler `0x0025de20`), and from his per-update
+  stance logic below; L1 and the auto-lock add `0x4` with it (`0x00280158`: `+0x00` `0x5` and the lock-on movement
+  state). `Human_LeaveFightStance` (`0x0022fef0`) clears `0x7`; the player's own exits (`0x002801e8`, `0x00280118`)
+  clear `0x5`. The stance timer `0x002800b8` is unused: its seconds `0x00510994` are −1.
+- **The player's stance each update** (`0x0027ce90`, through `0x0027d5a0` from the dispatcher after its busy gate,
+  for a pad player outside the stealth state; distances below are compared squared):
+  1. **Running drops it**: with L2 held (the sprint), or gait 4 or 5 with record `+0x08` clear, or human `+0xe0`
+     `0x8000000000` while not locked, a player in a stance with `+0x08` clear leaves it (`0x8008` cleared, target
+     dropped, `0x002801e8`). Nothing else happens that update.
+  2. **An enemy within 2 m enters it**: outside the lock-on movement and state `0x200000`, when the nearest enemy
+     (`0x0027b1a0`: within **6 m**, `0x005104c4` = 36) is within **2 m** (`0x005104bc` = 4), or the player is locked
+     (`+0x00` `0x8` and `0x4`, `0x00227c88`), he enters it (`0x00280068`), takes that enemy as his target and, unless
+     `0x00228168` or human `+0xe0` `0x200000000000`, locks on (`0x00280158`). Not with an overhead object (set 4).
+  3. **Otherwise it holds** while a target is kept: the target timer (record `+0xf4`) is running, or a target within
+     **3 m** (`0x005104c0` = 9) is swapped for a nearer enemy within 2 m, or the current target is within 6 m.
+  4. **Then it ends**, once `+0x08` is clear and he is not locked: the target is dropped, the lock-on movement
+     ends, and the stance is left (`0x00280118`), unless he is **standing** (gait 0) with an alerted enemy (brain
+     `+0x21c` set, not a player) within **20 m** and within 60° of his facing (`0x00222710` with 120°), which keeps
+     `0x1` (the fight idle without a lock).
+
+So in play a player is in a fight stance **while locked on** (L1, or an enemy coming within 2 m with the street's
+auto-lock), for the rest of any attack he starts, and while he stands facing an alerted enemy within 20 m; a run or
+sprint ends it. A locked-on combat walk keeps `0x1` (it moves at the base speed, gait 3), so **square there skips the
+walk attack and goes to the snap or `S1`**, which is what level99's lesson 7 needs ([Attacks](#attacks)). At runtime L1
+held gave state `0xd` (confirmed (runtime), below).
 
 **Lock-on** is the fight stance's movement state `0x00241b90` (the normal one is `0x00240e38`), confirmed (code):
 the human is **locked** when it has a human or object target and either L1 is held (`CfgLockOn`), or `CfgAutoLock`,

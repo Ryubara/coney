@@ -341,7 +341,11 @@ The speed class table is therefore only a fallback.
 
 **Gait from speed** (`0x0022aeb0`, the gait stored with the velocity): below 0.5 m/s gait 0; otherwise the gait 1-5
 whose speed (`+0x16c`, `+0x170`, `+0x174`, `+0x178`, `+0x17c`) is nearest. Confirmed (code); a jump table at
-`0x0055bec0`.
+`0x0055bec0`. It scans from gait 5 down and stops at the first gait whose next lower one is strictly farther, so a
+tie goes to the lower gait. With Rembrandt's speeds (above, `+0x3a4` = 1.0) the bounds are the midpoints: gait 0
+below **0.5**, 1 below **1.607**, 2 below **3.243**, 3 below **6.329**, 4 below **9.023**, 5 above. So the combat
+walk at 3.429 m/s is **gait 3** (1.428 from the jog, 1.800 from the walk), the free walk at 1.629 is gait 2 and the
+run at 7.801 gait 4. Confirmed (code) at `0x0022aeb0`; the bounds follow from the runtime speeds.
 
 ### Anim slots {#anim-slots}
 
