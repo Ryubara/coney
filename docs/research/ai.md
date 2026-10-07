@@ -2542,9 +2542,9 @@ line to it walkable (always without a planner) and keeps the leader's height. Th
 still (their Process is not traced). Both of a crowd reaction's clip actions are `PlayAnimAction`. The dealer rolls
 dirty at Start; his wary scan looks for members of enemy gangs. Player 1's triangle within 1.75 m of a dealer whose offer
 stands (after the objects' prompts and the stereos) makes the deal: the table's terms against the inventory, the item
-and money moved without notifying the inventory callbacks; the speech, gestures, the shove and the pair
-`money_take.anm` / `money_give.anm` are not played, so a sale completes at once (as the original does when the pair
-cannot load).
+and money moved without notifying the inventory callbacks, and his line said at the buyer (96 at most every 5 s, 97,
+101, 105); the gestures, the shove and the pair `money_take.anm` / `money_give.anm` are not played, so a sale
+completes at once (as the original does when the pair cannot load).
 
 **The Rumble tactics** (`src/ai/tactic_attack.*`, `src/ai/tactic_confront.*`, [Rumble mode](rumble.md#coney)).
 `TacticAttack` and `TacticConfront` follow the table above. **Stand-ins:** the tactic's melee goal (8,
@@ -2663,7 +2663,7 @@ queues; the dynamic obstacles; the legs of edges 8, `0x10`,
 system, the dynamic clip slot and clips by id; the head look-ats; the sender of message 1 and its attacker; the gang's
 alert state, bounds, return to calm and neutral rule; the anim
 substitutions; the crowd's cheer idles; the formation's ground ray, line of sight and assignment mode `+0x275`; the
-dealer's run to a flag, gestures, speech, buy clip and pair, shove and icons; the other tactics; the attack's steer, the
+dealer's run to a flag, gestures, buy clip and pair, shove and icons; the other tactics; the attack's steer, the
 post-block pause and
 the run-stop.
 

@@ -140,6 +140,16 @@ void ScriptedBrains::actLookAt(const script::LookAtCall& call) {
     }
 }
 
+void ScriptedBrains::actTurnTo(const script::TurnToCall& call) {
+    if (held([this, call] { actTurnTo(call); })) {
+        return;
+    }
+    if (Brain* found = named(call.human); found != nullptr) {
+        found->queueAction(
+            TurnAction::toPoint(anim::Vec3{call.point[0], call.point[1], call.point[2]}, call.delayMs, call.turn));
+    }
+}
+
 void ScriptedBrains::goalFight(double human, double target) {
     if (held([this, human, target] { goalFight(human, target); })) {
         return;

@@ -84,6 +84,8 @@ struct ScriptedCast {
     const world_objects::ObjectTypes* types = nullptr;
     /// `HuForceEnableReticule`'s flag (GameState::forceReticules): every player's health rings at full alpha.
     const bool* forceReticules = nullptr;
+    /// The game's sound, for the humans' speech commands the level says itself (a dealer's lines); null for none.
+    script::SoundHost* sound = nullptr;
 };
 
 /// A loaded level that can draw a 2D layer over its frame just before the frame is presented: the pause menu over the

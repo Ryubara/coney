@@ -163,6 +163,9 @@ class RageMeter {
     /// Starts rage when the meter is full and rage is not on; returns whether it started.
     /// @orig 0x002843f8 Player_StartRage (unknown)
     bool start(std::uint64_t nowMs);
+    /// Starts rage whatever the meter holds (`HuSetRageMode(human, true)`, `0x00236d28`): raging, the hold timer
+    /// (`+0x648`) cleared and the drain's clock restarted at `nowMs`. An empty meter ends it at the next update().
+    void force(std::uint64_t nowMs);
 
     /// Moves to game time `nowMs`: while raging the meter drains at CombatTuning::rageDrainPerSecond and rage ends when
     /// it is empty; otherwise, once the hold of the last gain has passed, it decays at

@@ -24,6 +24,9 @@ constexpr float kRadarDepth = 8500.0F;
 constexpr float kBigTextDepth = 9000.0F;
 constexpr float kPartsDepth = 10000.0F;
 constexpr float kMinigamesDepth = 10000.0F;
+// The other sheets' batches (the chase gauge's three sprites), over the rest (depth 11,000).
+constexpr std::size_t kSheetCapacity = 16;
+constexpr float kSheetDepth = 11000.0F;
 
 } // namespace
 
@@ -117,6 +120,23 @@ HudLayer::BannerBatches* HudLayer::bannerBatches(std::uint32_t record) {
     return &found->second;
 }
 
+graphics::SpriteBatch* HudLayer::sheetBatch(std::uint32_t record) {
+    auto found = m_sheets.find(record);
+    if (found == m_sheets.end()) {
+        // The first use: the record's sheet from the WAD file named by its name hash; a failure is kept as null.
+        std::unique_ptr<graphics::SpriteBatch> batch;
+        if (record < m_sheetHashes.size()) {
+            if (auto entry = m_wad.lookup(std::to_string(m_sheetHashes[record]))) {
+                if (auto sheet = loadSpriteSheet(m_wad, **entry, m_handlers, m_drawsPixels)) {
+                    batch = std::make_unique<graphics::SpriteBatch>(std::move(*sheet), kSheetCapacity, kSheetDepth);
+                }
+            }
+        }
+        found = m_sheets.emplace(record, std::move(batch)).first;
+    }
+    return found->second.get();
+}
+
 void HudLayer::step(const hud::HudFrame& frame) {
     m_hud->update(frame);
     m_pass.empty();
@@ -139,6 +159,7 @@ void HudLayer::step(const hud::HudFrame& frame) {
         BannerBatches* batches = bannerBatches(record);
         return shadow ? batches->shadow.get() : batches->banner.get();
     };
+    canvas.sheet = [this](std::uint32_t record) { return sheetBatch(record); };
     m_hud->render(canvas);
     // Every batch is queued; an empty one draws nothing.
     m_spritesQueued = 0;
@@ -154,6 +175,12 @@ void HudLayer::step(const hud::HudFrame& frame) {
             m_pass.queue(*batches.shadow);
             m_pass.queue(*batches.banner);
             m_spritesQueued += batches.shadow->sprites().size() + batches.banner->sprites().size();
+        }
+    }
+    for (auto& [record, batch] : m_sheets) {
+        if (batch) {
+            m_pass.queue(*batch);
+            m_spritesQueued += batch->sprites().size();
         }
     }
 }

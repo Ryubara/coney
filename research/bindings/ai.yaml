@@ -2162,6 +2162,7 @@
     0x002fdd08 is shared with ActLookAt; the start is refused (action ends at once) when the human rejects message
     0x01c16a40 (0x002fdc68).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [5]}
+  coney: implemented
 
 - name: ActTurnToDir
   wrapper: 0x00364708

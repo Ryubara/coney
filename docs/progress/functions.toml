@@ -378,6 +378,18 @@ subsystem = "Audio"
 size = 128
 
 [[function]]
+address = 0x00113700
+name = "Audio_PreloadSoundAt"
+subsystem = "Audio"
+size = 128
+
+[[function]]
+address = 0x00113780
+name = "Audio_StartPreloadedSound"
+subsystem = "Audio"
+size = 40
+
+[[function]]
 address = 0x001137a8
 name = "Sound_Play2D"
 subsystem = "Audio"
@@ -1977,6 +1989,18 @@ name = "ScreenEffects_UpdateFade"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0018e070
+name = "ScreenFx_StartRoomSmoke"
+subsystem = "Graphics"
+size = 136
+
+[[function]]
+address = 0x0018e0f8
+name = "ScreenFx_EndRoomSmoke"
+subsystem = "Graphics"
+size = 80
+
+[[function]]
 address = 0x0018e148
 name = "Fog3D_Start"
 subsystem = "Graphics"
@@ -2050,6 +2074,36 @@ name = "SectorPlugin_StreamRead"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0019add0
+name = "OE_RoomSmoke_Construct"
+subsystem = "Graphics"
+size = 512
+
+[[function]]
+address = 0x0019b070
+name = "OE_RoomSmoke_FollowCamera"
+subsystem = "Graphics"
+size = 296
+
+[[function]]
+address = 0x0019b198
+name = "OE_RoomSmoke_PickDrift"
+subsystem = "Graphics"
+size = 272
+
+[[function]]
+address = 0x0019b2a8
+name = "OE_RoomSmoke_BlendDrift"
+subsystem = "Graphics"
+size = 536
+
+[[function]]
+address = 0x0019b4c0
+name = "OE_RoomSmoke_Update"
+subsystem = "Graphics"
+size = 488
+
+[[function]]
 address = 0x0019ee70
 name = "GlobalString_Get"
 subsystem = "GUI"
@@ -2111,6 +2165,18 @@ address = 0x001a2690
 name = "BaseWidget_AddSprite"
 subsystem = "GUI"
 size = 640
+
+[[function]]
+address = 0x001a3990
+name = "ChaseGauge_Update"
+subsystem = "GUI"
+size = 624
+
+[[function]]
+address = 0x001a3c00
+name = "ChaseGauge_Render"
+subsystem = "GUI"
+size = 72
 
 [[function]]
 address = 0x001a8e30
@@ -2249,6 +2315,48 @@ name = "HUD_ShowWarCommand"
 subsystem = "GUI"
 
 [[function]]
+address = 0x001b4ba0
+name = "HUD_EnableRedBar"
+subsystem = "GUI"
+size = 216
+
+[[function]]
+address = 0x001b4c98
+name = "HUD_EnableLabelledBar"
+subsystem = "GUI"
+size = 568
+
+[[function]]
+address = 0x001b4f00
+name = "HUD_EnableGaugeBar"
+subsystem = "GUI"
+size = 192
+
+[[function]]
+address = 0x001b5008
+name = "HUD_EnableBarStack"
+subsystem = "GUI"
+size = 888
+
+[[function]]
+address = 0x001b53b0
+name = "HUD_EnableBar"
+subsystem = "GUI"
+size = 160
+
+[[function]]
+address = 0x001b5450
+name = "HUD_SetBarPercentage"
+subsystem = "GUI"
+size = 160
+
+[[function]]
+address = 0x001b54f0
+name = "HUD_SetBarProperty"
+subsystem = "GUI"
+size = 160
+
+[[function]]
 address = 0x001b5590
 name = "HUD_EnableTextProgress"
 subsystem = "GUI"
@@ -2336,6 +2444,18 @@ address = 0x001b9600
 name = "TextWidget_Layout"
 subsystem = "GUI"
 size = 5664
+
+[[function]]
+address = 0x001c22b0
+name = "HudGenericBar_SetWidth"
+subsystem = "GUI"
+size = 56
+
+[[function]]
+address = 0x001c2530
+name = "HudGenericBar_SetFill"
+subsystem = "GUI"
+size = 56
 
 [[function]]
 address = 0x001c6a20
@@ -3604,6 +3724,12 @@ subsystem = "Human"
 size = 208
 
 [[function]]
+address = 0x00237128
+name = "Human_SetRageMode"
+subsystem = "Human"
+size = 176
+
+[[function]]
 address = 0x002372a8
 name = "Human_GiveCuffs"
 subsystem = "Human"
@@ -3769,6 +3895,12 @@ name = "Human_AreActionsBlocked"
 subsystem = "Human"
 
 [[function]]
+address = 0x002387e8
+name = "Human_IsTagging"
+subsystem = "Human"
+size = 64
+
+[[function]]
 address = 0x00238948
 name = "Human_PlayDynAnim"
 subsystem = "Human"
@@ -3860,10 +3992,22 @@ subsystem = "Human"
 size = 488
 
 [[function]]
+address = 0x00239788
+name = "Human_ActionDialog"
+subsystem = "Human"
+size = 200
+
+[[function]]
 address = 0x00239b80
 name = "Players_ChangeGang"
 subsystem = "Human"
 size = 648
+
+[[function]]
+address = 0x00239e30
+name = "Human_MarkReachable"
+subsystem = "Human"
+size = 72
 
 [[function]]
 address = 0x00239e78
@@ -5787,6 +5931,12 @@ subsystem = "Human"
 size = 224
 
 [[function]]
+address = 0x002fdf70
+name = "Action_TurnToTarget"
+subsystem = "Human"
+size = 144
+
+[[function]]
 address = 0x002fe000
 name = "TurnToPointAction_Init"
 subsystem = "Human"
@@ -7602,6 +7752,12 @@ subsystem = "TaskEngine"
 size = 64
 
 [[function]]
+address = 0x0038dfe0
+name = "Car_RemovePart"
+subsystem = "TaskEngine"
+size = 80
+
+[[function]]
 address = 0x0038e068
 name = "Car_Repair"
 subsystem = "TaskEngine"
@@ -7733,6 +7889,12 @@ address = 0x00396a08
 name = "Obj_Show"
 subsystem = "TaskEngine"
 size = 136
+
+[[function]]
+address = 0x00396a90
+name = "Obj_EnablePhysics"
+subsystem = "TaskEngine"
+size = 216
 
 [[function]]
 address = 0x00396b68
@@ -8611,6 +8773,12 @@ address = 0x0041d748
 name = "Cfg_SetWarriorSpotting"
 subsystem = "Warriors"
 size = 16
+
+[[function]]
+address = 0x0041d770
+name = "GameState_SetWarriorWeapons"
+subsystem = "Warriors"
+size = 24
 
 [[function]]
 address = 0x0041d788

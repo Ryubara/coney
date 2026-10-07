@@ -460,6 +460,7 @@
     A global flag (0x00512c14) is held at 1 while the task is made (inferred: tells the task code not to start it).
     Converted as unsigned. A prepared sound never started keeps its task (not traced when it is freed).
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: true, levels: [5, 93, 14]}
+  coney: implemented
 
 - name: SoundStart
   wrapper: 0x00371868
@@ -477,6 +478,7 @@
   notes: >-
     The same start path is used by scene event 71 on a car ([Sound](../../research/sound.md)).
   usage: {chunks: 3, calls: 4, boot: false, mission1: false, result_used: false, levels: [5, 93, 14]}
+  coney: implemented
 
 - name: SoundStop
   wrapper: 0x003718a0

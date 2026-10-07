@@ -10,47 +10,6 @@
 
 namespace coney::hud {
 
-namespace {
-
-// `uv` moved in by one texel on each side of a `width` × `height` texture: the meter's stretched rectangles are, so
-// that filtering stays inside them.
-graphics::UvRect insetOneTexel(graphics::UvRect uv, const graphics::SpriteSheet& sheet) {
-    if (!sheet.texture || sheet.texture->width() == 0 || sheet.texture->height() == 0) {
-        return uv;
-    }
-    const float du = 1.0F / static_cast<float>(sheet.texture->width());
-    const float dv = 1.0F / static_cast<float>(sheet.texture->height());
-    if (uv.u1 - uv.u0 > 2.0F * du) {
-        uv.u0 += du;
-        uv.u1 -= du;
-    }
-    if (uv.v1 - uv.v0 > 2.0F * dv) {
-        uv.v0 += dv;
-        uv.v1 -= dv;
-    }
-    return uv;
-}
-
-// A strip of `rect` from GUI x `left`, `width` wide and `height` tall, centred on y, inset by a texel.
-void addStrip(graphics::SpriteBatch* batch, std::size_t rect, float left, float y, float width, float height,
-              graphics::Rgba colour) {
-    if (batch == nullptr || rect >= batch->sheet().page.rects.size() || width <= 0.0F) {
-        return;
-    }
-    const graphics::UvRect uv = insetOneTexel(batch->sheet().page.rect(rect), batch->sheet());
-    batch->addSprite(guiSprite(left + width / 2.0F, y, width, height, uv, colour));
-}
-
-// The width a cap rectangle of the meter's sheet takes at the meter's height.
-float capWidth(const graphics::SpriteBatch* batch, std::size_t rect, float height) {
-    if (batch == nullptr || rect >= batch->sheet().page.rects.size()) {
-        return 0.0F;
-    }
-    return squareTexelWidth(batch->sheet(), batch->sheet().page.rect(rect), height);
-}
-
-} // namespace
-
 void PlayerPanel::render(const HudCanvas& canvas, int levelNumber) const {
     if (!m_shown) {
         return;

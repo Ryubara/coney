@@ -60,4 +60,13 @@ void Human::setRageLocked(bool locked) {
     m_fighter.combat().rage().setLocked(locked, nowMs());
 }
 
+void Human::setRageMode(bool on) {
+    combat::RageMeter& rage = m_fighter.combat().rage();
+    if (on) {
+        rage.force(nowMs());
+    } else if (rage.raging()) {
+        rage.stop();
+    }
+}
+
 } // namespace coney::human

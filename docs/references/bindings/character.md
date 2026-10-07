@@ -530,7 +530,7 @@ level5](../../research/scripting.md#level5)).
   `Human_SpeakInterrupt`
 - **Used by** 7 of 467 script chunks (21 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuApplyDamageModifier {#huapplydamagemodifier}
 
@@ -1962,7 +1962,7 @@ not re-traced here.
   `0x002265f0` `Human_HasStateFlag`
 - **Used by** 3 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 2 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuKill {#hukill}
 
@@ -2142,7 +2142,7 @@ Brain_PickAttack 0x0028e708 and goals at 0x002ae2e8, 0x002bc198, 0x002bd808, 0x0
 - **Wrapper** `0x0035d5b0` (registered by `RegisterBindings`); **calls** `0x00239e30` `Human_MarkReachable`
 - **Used by** 9 of 467 script chunks (29 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 8 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuPlaceHatOnHead {#huplacehatonhead}
 
@@ -3769,7 +3769,7 @@ level5](../../research/scripting.md#level5)). Rage itself: [Combat](../../resear
 - **Wrapper** `0x00359478` (registered by `RegisterBindings`); **calls** `0x00237128` `Human_SetRageMode`
 - **Used by** 9 of 467 script chunks (18 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuSetReducedReact {#husetreducedreact}
 

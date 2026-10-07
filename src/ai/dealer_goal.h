@@ -65,6 +65,12 @@ enum class DealOutcome : std::uint8_t {
 inline constexpr float kDealReach = 1.75F;
 /// The most money a dealer holds.
 inline constexpr int kDealerMostMoney = 999;
+/// The dealer's speech commands (docs/research/ai.md#dealer) and the least time between two `cash` lines, ms.
+inline constexpr std::uint32_t kDealCashLine = 96;
+inline constexpr std::uint32_t kDealNoCashLine = 97;
+inline constexpr std::uint32_t kDealLimitLine = 101;
+inline constexpr std::uint32_t kDealRipOffLine = 105;
+inline constexpr std::uint64_t kDealCashLineMs = 5000;
 
 /// The kind of goods a dealer sells, from `GoalDealer`'s type or his class: 0 flash, 1 weapons, 2 the third kind.
 /// Classes 426-430 sell flash, 431-435 the third kind and 436-440 weapons, whatever the type says.
@@ -112,6 +118,9 @@ class DealerGoal final : public Goal {
     /// @orig 0x002c74d8 DealerGoal_Deal (unknown)
     [[nodiscard]] DealOutcome deal(Brain& brain, const Brain& buyer, int money, int carried, int itemLimit);
     /// The deals made (`+0x38`) and whether one was (`+0x3f`).
+    /// The speech command the dealer says for a deal's `outcome` at `nowMs`: 97 `nocash`, 101 `limit`, 105 `ripoff`,
+    /// and 96 `cash` for a sale at most every 5 s; nothing otherwise.
+    [[nodiscard]] std::optional<std::uint32_t> dealLine(DealOutcome outcome, std::uint64_t nowMs);
     [[nodiscard]] int sales() const { return m_sales; }
     [[nodiscard]] bool sold() const { return m_sold; }
 
@@ -144,6 +153,7 @@ class DealerGoal final : public Goal {
     bool m_sold = false;                        // +0x3f
     bool m_atLimit = false;                     // +0x40
     bool m_offering = false;                    // the dealer human's +0x1b2
+    std::optional<std::uint64_t> m_lastCashMs;  // when he last said `cash`
 };
 
 } // namespace coney::ai

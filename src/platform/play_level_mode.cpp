@@ -229,6 +229,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
         bindObjects(cast->objects, cast->recorded);
         m_cars = cast->cars;
         bindPickups(cast->pickups);
+        m_sound = cast->sound;
         makeWorldObjects(*cast);
     }
     // The AI humans in the player's step: the level's scripts' humans, or the layout's fighters.

@@ -190,6 +190,7 @@
     (`room_smoke_overlay`), the blend from one drift to the next (0x0019b2a8) and the camera follow (0x0019b070):
     [Graphics](../../research/graphics.md#room-smoke).
   usage: {chunks: 8, calls: 8, boot: false, mission1: false, result_used: false, levels: [5, 81, 93, 55, 11]}
+  coney: implemented
 
 - name: EndRoomSmoke
   wrapper: 0x00368fb8
@@ -200,6 +201,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 39, calls: 39, boot: true, mission1: false, result_used: false, levels: [5, 81, 55]}
+  coney: implemented
 
 - name: StartFilmGrain
   wrapper: 0x00368fd8

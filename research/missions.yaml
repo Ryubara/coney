@@ -161,13 +161,24 @@ missions:
     summary_source: web
     sources:
       - "https://thewarriors.fandom.com/wiki/Adios_Amigo"
-    status: not-started
+    status: in-progress
     checkpoints:
       count: 4
-      default: not-started
+      default: in-progress
+      each:
+        1: {status: in-progress, note: "The scripts run with no error; the checkpoint is not yet played to its end."}
+        2: {status: in-progress, note: "The scripts run with no error; the bar's room smoke drifts over the screen as the original's does, and the Hurricanes fight the player. Not yet played to its end."}
+        3: {status: in-progress, note: "The scripts run with no error; the runner's carrot run (GoalRunCarrotRun) is still missing."}
+        4: {status: in-progress, note: "The scripts run with no error and the boss's HUD bar shows in the right column; the Diego and Vargas fight (TacticBossScenarioA) and the boss rail camera are still missing."}
     research:
       - {title: "The mission's scripts, checkpoint by checkpoint", path: "research/scripting.md#level5"}
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
+      - {title: "The seventh mission's script", path: "research/scripting.md#level5"}
+      - {title: "The seventh mission's bindings", path: "references/bindings/story.md#level5"}
+      - {title: "Room smoke", path: "research/graphics.md#room-smoke"}
+    questions:
+      - "The Diego and Vargas boss goals (fatigue, damage, prone and cycle values, the break animation)."
+    test: "coney_tests \"[disc][story]\""
   - level: 81
     group: story
     slot: story mission 8

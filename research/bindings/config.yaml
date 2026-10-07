@@ -1721,6 +1721,7 @@
     (0x003052f0, the read at 0x003055e0) applies the same rule to the Warriors' own pick-up search (AI page, The
     Warriors' pick-ups). The player's own pickups are not affected (inferred: only brain code reads it).
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [5]}
+  coney: implemented
 
 - name: CfgCrimeResponders
   wrapper: 0x0036be50

@@ -396,6 +396,10 @@ void Hud::render(const HudCanvas& canvas) const {
     renderArrow(canvas);
     renderScores(canvas);
     m_counters.render(canvas);
+    // The bars go below the visible counter panels, and lower again while the stopwatch shows.
+    const auto panels = static_cast<float>(std::ranges::count_if(
+        m_counters.panels(), [](const CounterPanel& panel) { return panel.used && panel.visible; }));
+    m_bars.render(canvas, (panels * kCounterPanelRow) + (m_stopWatch.shown ? kStopWatchBarDrop : 0.0F));
     for (const PlayerPanel& panel : m_panels) {
         panel.render(canvas, m_levelNumber);
     }

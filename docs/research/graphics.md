@@ -385,6 +385,10 @@ Confirmed (code) at the functions cited unless a line says otherwise.
   (`0x0019aff8`), which also picks a new "to" and sets its blend time to 1 ms, so the next update jumps to it.
   `EndRoomSmoke` deletes the effect (`0x0018bd48`) and its widget with it (`0x0019bab8`).
 
+Coney (`effects::RoomSmoke`, `repo:src/effects/room_smoke.h`; `platform::RoomSmokeOverlay`) follows this, drawn after
+the motion blur and before the HUD with the texture repeating. **Coney's readings**: its fixed step drives both the
+blend and the ticks; the heading is measured from +x toward +y, and the first tick slides nothing.
+
 ## Behaviour
 
 ### Start-up {#start-up}

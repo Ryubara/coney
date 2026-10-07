@@ -168,6 +168,13 @@ bool RageMeter::start(std::uint64_t nowMs) {
     return true;
 }
 
+void RageMeter::force(std::uint64_t nowMs) {
+    m_raging = true;
+    m_holdUntilMs = 0;
+    m_lastMs = nowMs;
+    m_carry = 0.0F;
+}
+
 void RageMeter::update(std::uint64_t nowMs, const CombatTuning& tuning) {
     const std::uint64_t elapsed = nowMs > m_lastMs ? nowMs - m_lastMs : 0;
     m_lastMs = nowMs;

@@ -29,6 +29,7 @@
 #include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/object_bindings.h"
+#include "scripting/sound_bindings.h"
 #include "warriors/inventory.h"
 #include "world_objects/glass.h"
 
@@ -219,6 +220,14 @@ bool PlayLevelMode::tryDeal(human::Human& human) {
         } else if (outcome == ai::DealOutcome::RippedOff) {
             m_pickups->dealerSold(0, terms->item, 0, terms->price);
         }
+        // His line about it, said with the buyer as its target.
+        if (const std::optional<std::uint32_t> line = dealer.dealLine(outcome, brain.nowMs());
+            line && m_sound != nullptr) {
+            static_cast<void>(m_sound->sayCommand(
+                script::CommandCall{
+                    .human = brain.handle(), .command = *line, .interrupt = true, .target = playerHandle()},
+                {}));
+        }
         m_print(std::format("deal: dealer {} outcome {}\n", i, static_cast<int>(outcome)));
         return outcome != ai::DealOutcome::NotDealing;
     }
@@ -245,6 +254,7 @@ void PlayLevelMode::stepFlash() {
         }
     }
     m_pickups->spendItem(0, item::kRevive);
+    m_flashRingRequest = true;
     human.setWounded(false);
     health.set(health.maximum());
     m_print(std::format("flash: used, health {}\n", health.value()));

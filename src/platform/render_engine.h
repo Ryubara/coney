@@ -99,6 +99,9 @@ class RenderEngine final : public graphics::RenderDevice {
     /// for flat colour. The texture's own filter mode is used, with clamped addressing. Only between beginFrame() and
     /// present() (checked by CONEY_ASSERT); draws nothing with the NULL backend.
     void drawQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) override;
+    /// drawQuads() with wrapped addressing, for a texture whose coordinates run past its edges and repeat it (the
+    /// room-smoke overlay, docs/research/graphics.md#room-smoke).
+    void drawWrappedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads);
 
     /// Draws flat-coloured `quads` given in window pixels (from the top left), blended by their alpha, in the 2D
     /// states. Only between beginFrame() and present() (checked by CONEY_ASSERT); draws nothing with the NULL backend.
@@ -149,6 +152,9 @@ class RenderEngine final : public graphics::RenderDevice {
     void startFrame(graphics::Rgba clear);
     /// Draws quads already in window pixels with `raster` (null: flat colour) in the 2D states.
     void drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads);
+    // drawQuads() and drawWrappedQuads(): the texture's filter, `wrap` or clamped addressing, the quads mapped from
+    // logical pixels to the window.
+    void drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads, bool wrap);
 
     /// Makes the camera and its frame and depth buffers at m_frameSize (OpenGL only).
     void createCamera();

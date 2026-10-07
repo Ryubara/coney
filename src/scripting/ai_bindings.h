@@ -54,6 +54,14 @@ struct LookAtCall {
     std::int16_t delayMs = -1; ///< The start delay; -1 (the default) is a random 0-500 ms.
 };
 
+/// `ActTurnTo(human, target, turnSpeed, timeMs)` as the binding reads it (docs/references/bindings/ai.md#actturnto).
+struct TurnToCall {
+    double human = 0;             ///< The human's handle.
+    std::array<float, 3> point{}; ///< The point to face, metres.
+    float turn = 0.0F;            ///< The turn value (kept, not read).
+    std::int16_t delayMs = -1;    ///< The start delay; -1 (the default) is a random 0-500 ms.
+};
+
 /// `GoalPlayDynAnimation(human, anim, callback, option)` (docs/references/bindings/ai.md#goalplaydynanimation).
 struct DynAnimationCall {
     double human = 0;     ///< The human's handle.
@@ -126,6 +134,8 @@ class AiBindingHost {
     /// Queues the look-at turn action on the human.
     virtual void actLookAt(const LookAtCall& call) = 0;
 
+    /// Queues the turn-to-point action on the human (`ActTurnTo`).
+    virtual void actTurnTo(const TurnToCall& /*call*/) {}
     /// `GoalFight(human, target, unused)`: the human fights the target.
     virtual void goalFight(double /*human*/, double /*target*/) {}
     /// `BrFlush(human)`: the goals, then the actions, cleared.

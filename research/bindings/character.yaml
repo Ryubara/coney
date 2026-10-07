@@ -652,6 +652,7 @@
     them ([Scripts: level5](../../research/scripting.md#level5)). Rage itself:
     [Combat](../../research/combat.md#rage).
   usage: {chunks: 9, calls: 18, boot: false, mission1: false, result_used: false, levels: [5, 81, 51, 84, 82, 20, 11]}
+  coney: implemented
 
 - name: HuSetBlurMode
   wrapper: 0x003594d8
@@ -2699,6 +2700,7 @@
     The value a new brain starts with is not traced (inferred: set from the character's config). Readers:
     Brain_PickAttack 0x0028e708 and goals at 0x002ae2e8, 0x002bc198, 0x002bd808, 0x002be818.
   usage: {chunks: 9, calls: 29, boot: false, mission1: false, result_used: false, levels: [5, 81, 93, 55, 84, 83, 20, 11]}
+  coney: implemented
 
 - name: HuButtonMiniGame
   wrapper: 0x0035d610
@@ -3096,6 +3098,7 @@
     partners are within 10 m and stops nothing still playing. That they overlap audibly is not checked at runtime
     ([Scripts: level5](../../research/scripting.md#level5)).
   usage: {chunks: 7, calls: 21, boot: false, mission1: false, result_used: false, levels: [5, 51, 84, 82, 20, 11]}
+  coney: implemented
 
 - name: HuPlayDynAnim
   wrapper: 0x003651a0
@@ -3239,6 +3242,7 @@
     A human with no state word reads as not tagging. The code that sets and clears the bit is on the crimes page,
     not re-traced here.
   usage: {chunks: 3, calls: 6, boot: false, mission1: false, result_used: true, levels: [5, 51]}
+  coney: implemented
 
 - name: HuLockPad
   wrapper: 0x00365540

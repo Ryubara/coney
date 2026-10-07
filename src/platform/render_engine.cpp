@@ -207,6 +207,15 @@ void RenderEngine::beginFrame(graphics::Rgba clear) {
 void RenderEngine::beginWindowFrame(graphics::Rgba clear) { startFrame(clear); }
 
 void RenderEngine::drawQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) {
+    drawTexturedQuads(texture, quads, false);
+}
+
+void RenderEngine::drawWrappedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads) {
+    drawTexturedQuads(texture, quads, true);
+}
+
+void RenderEngine::drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads,
+                                     bool wrap) {
     CONEY_ASSERT(m_inFrame);
     if (m_camera == nullptr || quads.empty()) {
         return; // NULL backend: nothing to draw
@@ -223,9 +232,10 @@ void RenderEngine::drawQuads(const graphics::Texture* texture, std::span<const g
         CONEY_ASSERT(rwTexture != nullptr);
         raster = rwTexture->raster;
         // The texture's own filtering (most of the game's textures ask for linear), clamped at the edges so a
-        // rectangle that reaches the texture's border does not pick up texels from the opposite side.
+        // rectangle that reaches the texture's border does not pick up texels from the opposite side, unless the
+        // caller repeats the texture.
         rw::SetRenderState(rw::TEXTUREFILTER, rwTexture->getFilter());
-        rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
+        rw::SetRenderState(rw::TEXTUREADDRESS, wrap ? rw::Texture::WRAP : rw::Texture::CLAMP);
     }
     // Logical pixels to window pixels, then the shared 2D drawing.
     std::vector<graphics::LogicalQuad> mapped(quads.begin(), quads.end());

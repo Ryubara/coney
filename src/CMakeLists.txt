@@ -124,6 +124,7 @@ add_library(coney_core STATIC
     scripting/hub_bindings.cpp
     scripting/hub_world_bindings.cpp
     scripting/mission4_bindings.cpp
+    scripting/mission7_bindings.cpp
     scripting/story_bindings.cpp
     scripting/story_effects_bindings.cpp
     scripting/trigger_bindings.cpp
@@ -175,6 +176,7 @@ target_sources(coney_core PRIVATE
     effects/motion_blur.cpp
     effects/particle_types.cpp
     effects/particles.cpp
+    effects/room_smoke.cpp
     scripting/effects_bindings.cpp
     scripting/car_bindings.cpp
     world_objects/car_hits.cpp
@@ -335,7 +337,8 @@ target_sources(coney_core PRIVATE
     hud/hud_canvas.cpp
     hud/messages.cpp
     hud/player_panel.cpp
-    hud/player_panel_render.cpp)
+    hud/player_panel_render.cpp
+    hud/scripted_bars.cpp)
 # The pad debug menu's renderer: the in-game list in the game's font or Coney's bitmap font.
 target_sources(coney_core PRIVATE graphics/bitmap_font.cpp gui/debug_menu_view.cpp gui/debug_text_painter.cpp)
 coney_target_defaults(coney_core)

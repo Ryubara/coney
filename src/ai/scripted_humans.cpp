@@ -103,6 +103,16 @@ void ScriptedHumans::setNormalMode(double human, bool full) {
     onBrain(human, [full](Brain& brain) { brain.human().setNormalMode(full); });
 }
 
+void ScriptedHumans::setRageMode(double human, bool on) {
+    onBrain(human, [on](Brain& brain) { brain.human().setRageMode(on); });
+}
+
+void ScriptedHumans::markReachable(double human, bool reachable) {
+    onBrain(human, [reachable](Brain& brain) { brain.senses().reachable = reachable; });
+}
+
+bool ScriptedHumans::tagging(double human) const { return m_tagging && m_tagging(human); }
+
 void ScriptedHumans::setArrested(double human, bool arrested) {
     onBrain(human, [arrested](Brain& brain) { brain.human().setArrested(arrested); });
 }

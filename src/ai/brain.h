@@ -119,6 +119,10 @@ struct BrainSenses {
     /// `BrSetPedType` (`+0x26c`, low 16 bits; 0 when made): 3 a civilian who stands up to attackers, 5 a rich mugging
     /// victim. **Coney stand-in**: the civilian brain's reactions and the mugging's money do not read it yet.
     std::uint16_t pedType = 0;
+    /// `HuMarkReachable` (`+0x11e`): other AI may reach this human to fight it. Its readers (the reachable test
+    /// `0x0028abc0`, the enemy scoring's 5-point cut, the attack picker and the combat goals) are not built yet.
+    /// **Coney choice** until set: true (the value a new brain starts with is not traced).
+    bool reachable = true;
 };
 
 /// The configuration a brain fights by: what the configuration scripts set (docs/research/ai.md#fight).

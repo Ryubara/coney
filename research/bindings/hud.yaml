@@ -672,6 +672,7 @@
     down by a constant in a two-player game (0x00609e8c). The bars draw in the HUD pass
     ([HUD: render order](../../research/hud.md)).
   usage: {chunks: 28, calls: 100, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 51, 54, 55, 84, 82, 92, 20, 11]}
+  coney: implemented
 
 - name: HUDEnableGenBar
   wrapper: 0x0036f748
@@ -708,6 +709,7 @@
   notes: >-
     The kind-1 fall-through into the gauge is in 0x001b5450; it is harmless while no gauge is shown (inferred).
   usage: {chunks: 28, calls: 103, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 51, 54, 55, 84, 82, 92, 20, 11]}
+  coney: implemented
 
 - name: HUDSetBarProperty
   wrapper: 0x0036f8e8
@@ -725,6 +727,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 21, calls: 39, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 54, 55, 84, 82, 92, 20, 11]}
+  coney: implemented
 
 - name: HUDEnableTextProgress
   wrapper: 0x0036fa28

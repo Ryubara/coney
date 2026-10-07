@@ -258,3 +258,22 @@ TEST_CASE("a dealer refuses a buyer with less than the price; a dirty one keeps 
     CHECK(dirty.human().script().money == 20);
     CHECK(second->sales() == 0);
 }
+
+TEST_CASE("a dealer says nocash, limit, ripoff, and cash at most every 5 s", "[ai][dealer]") {
+    AiScene scene;
+    Brain& dealer = scene.add({41.2F, 40.0F, 0.0F}, 0.0F);
+    dealer.pushGoal(std::make_unique<coney::ai::DealerGoal>(scene.services, 0, 10.0F, 50, 0, false));
+    auto* goal = dynamic_cast<coney::ai::DealerGoal*>(dealer.topGoal());
+    REQUIRE(goal != nullptr);
+    if (goal == nullptr) {
+        return;
+    }
+    using coney::ai::DealOutcome;
+    CHECK(goal->dealLine(DealOutcome::NoCash, 0) == coney::ai::kDealNoCashLine);
+    CHECK(goal->dealLine(DealOutcome::AtLimit, 0) == coney::ai::kDealLimitLine);
+    CHECK(goal->dealLine(DealOutcome::RippedOff, 0) == coney::ai::kDealRipOffLine);
+    CHECK(goal->dealLine(DealOutcome::Sold, 1000) == coney::ai::kDealCashLine);
+    CHECK_FALSE(goal->dealLine(DealOutcome::Sold, 5999).has_value());
+    CHECK(goal->dealLine(DealOutcome::Sold, 6000) == coney::ai::kDealCashLine);
+    CHECK_FALSE(goal->dealLine(DealOutcome::NotDealing, 0).has_value());
+}

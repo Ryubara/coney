@@ -31,6 +31,9 @@ struct HudCanvas {
     /// The batch of a banner's sheet (by sheet-table record) at the banner's depth (`shadow` false) or the shadows'
     /// (`shadow` true); null when that sheet is not loaded.
     std::function<graphics::SpriteBatch*(std::uint32_t record, bool shadow)> banner;
+    /// The batch of the sheet with sheet-table record `record`, over the HUD's other images (the chase gauge's
+    /// `chasebar`); null when there is none or that sheet is not loaded.
+    std::function<graphics::SpriteBatch*(std::uint32_t record)> sheet;
 };
 
 /// A sprite of a `width` x `height` GUI box centred at GUI (`x`, `y`): the overlay-camera position and size the batches
@@ -87,5 +90,13 @@ float drawPlainText(const HudCanvas& canvas, int slot, std::string_view text, fl
 /// for a null batch or a sheet without that rectangle.
 void addRect(graphics::SpriteBatch* batch, std::size_t rect, float x, float y, float width, float height,
              graphics::Rgba colour);
+/// Adds rectangle `rect` of `batch`'s sheet, moved in by a texel so that filtering stays inside it, stretched from GUI
+/// x `left` over `width` and `height` tall, centred on y `y`: a strip of a meter. Nothing for a null batch, a missing
+/// rectangle or no width.
+void addStrip(graphics::SpriteBatch* batch, std::size_t rect, float left, float y, float width, float height,
+              graphics::Rgba colour);
+/// The GUI width a cap rectangle `rect` of `batch`'s sheet takes at `height` (squareTexelWidth()); 0 for a null batch
+/// or a missing rectangle.
+[[nodiscard]] float capWidth(const graphics::SpriteBatch* batch, std::size_t rect, float height);
 
 } // namespace coney::hud

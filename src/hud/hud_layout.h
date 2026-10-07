@@ -210,6 +210,8 @@ inline constexpr std::size_t kCounterPanels = 5;
 inline constexpr float kCounterPanelX = 0.96F;
 inline constexpr float kCounterPanelTop = 0.26F;
 inline constexpr float kCounterPanelRow = 0.08F;
+/// The scripted bars move down this far while the stopwatch shows (HUD `+0x6858`).
+inline constexpr float kStopWatchBarDrop = 0.07F;
 /// What a panel shows for when HUDSetPHValue gives no time.
 inline constexpr std::uint32_t kCounterPanelDefaultMs = 3000;
 /// The default bar width of a bar panel.

@@ -150,6 +150,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     /// Queues the look-at on the human's brain, its target found by locate().
     /// @orig 0x002fe0c8 Action_LookAt (unknown)
     void actLookAt(const script::LookAtCall& call) override;
+    void actTurnTo(const script::TurnToCall& call) override;
     /// The human starts a fight with the target (Brain::startFight()).
     void goalFight(double human, double target) override;
     /// Brain::flush(): the goals end (their callbacks fire), then the actions.

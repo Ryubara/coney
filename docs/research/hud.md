@@ -1877,8 +1877,8 @@ disc test (`[disc][objects]`, `repo:tests/platform/disc_level99_world_test.cpp`)
 **Coney's stand-ins for the rings** (marked in the code): the blend state the world pass leaves is taken as alpha
 blending with Z test and no Z write; flat shading gives a triangle its last vertex's colour; the blink runs on the game
 clock, black first; the fight stance is a lock-on or a block; a hit's pulse is the health lost in the step; the
-civilian's class byte is Rembrandt's 35; the camera's heading is that of its forward. Not built: the flash's trigger
-(no flash item yet), a boss's three bands, the Rumble team disc and pointer, two players' rings and icons.
+civilian's class byte is Rembrandt's 35; the camera's heading is that of its forward. Not built: a boss's three
+bands, the Rumble team disc and pointer, two players' rings and icons.
 
 **Coney's stand-ins** (marked in the code): text sizes read as the glyph height (`(0.04, 0.05)` as w × h, 0.05 as h);
 the counter slots' `x0` 0 and lines at y 0.104 and 0.154, the count 0.022 right of its icon; handcuff and key icons

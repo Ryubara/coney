@@ -68,6 +68,9 @@ class HudLayer {
         std::unique_ptr<graphics::SpriteBatch> banner;
     };
     BannerBatches* bannerBatches(std::uint32_t record);
+    // The batch of sheet `record` for the HUD's other sheets (the chase gauge's), loaded the first time; null when it
+    // fails.
+    graphics::SpriteBatch* sheetBatch(std::uint32_t record);
 
     const io::Wad& m_wad;
     bool m_drawsPixels;
@@ -83,6 +86,7 @@ class HudLayer {
     std::unique_ptr<graphics::SpriteBatch> m_minigames;
     std::unique_ptr<graphics::SpriteBatch> m_flat;
     std::map<std::uint32_t, BannerBatches> m_banners; // by record; empty batches for a sheet that failed
+    std::map<std::uint32_t, std::unique_ptr<graphics::SpriteBatch>> m_sheets; // by record; null for a sheet that failed
     graphics::OverlayCamera m_camera;
     graphics::OverlayPass m_pass;
     std::size_t m_spritesQueued = 0; // spritesQueued()

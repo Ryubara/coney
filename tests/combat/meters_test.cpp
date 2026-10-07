@@ -188,3 +188,18 @@ TEST_CASE("rage starts only with a full meter, gains nothing while on and drains
     CHECK(update >= 248);
     CHECK(update <= 252);
 }
+
+TEST_CASE("a forced rage starts with any meter, and an empty one ends at the next update", "[combat]") {
+    const CombatTuning tuning;
+    RageMeter rage;
+    rage.set(40);
+    rage.force(0);
+    CHECK(rage.raging());
+    CHECK(rage.value() == 40);
+    rage.stop();
+    rage.set(0);
+    rage.force(msAt(1));
+    CHECK(rage.raging());
+    rage.update(msAt(2), tuning);
+    CHECK_FALSE(rage.raging());
+}

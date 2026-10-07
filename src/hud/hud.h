@@ -20,6 +20,7 @@
 #include "hud/hud_layout.h"
 #include "hud/messages.h"
 #include "hud/player_panel.h"
+#include "hud/scripted_bars.h"
 
 namespace coney::hud {
 
@@ -238,6 +239,9 @@ class Hud {
 
     /// The counter panels.
     [[nodiscard]] CounterPanels& counterPanels() { return m_counters; }
+    /// The scripts' bars (`HUDEnableBar`), below the counter panels in the right column.
+    [[nodiscard]] ScriptedBars& bars() { return m_bars; }
+    [[nodiscard]] const ScriptedBars& bars() const { return m_bars; }
     [[nodiscard]] const CounterPanels& counterPanels() const { return m_counters; }
 
     /// `HUDEnableInstArrow(on, x, y, angle)`: the place and angle apply only when turning it on.
@@ -347,6 +351,7 @@ class Hud {
     LetterboxRestore m_letterboxRestore = LetterboxRestore::Idle;
     bool m_radarsAutoOn = false; // HUD +0x177b0: the radars' automatic return has turned them on
     CounterPanels m_counters;
+    ScriptedBars m_bars;
     InstructionArrow m_arrow;
     RadarState m_radar;
     std::array<NumIndicator, kNumIndicators> m_indicators{};

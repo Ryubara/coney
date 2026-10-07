@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Checks against the player's own disc that the story's second, third and fourth missions (`level80`, `level87`,
-// `level34`) play as `--play-level NAME --checkpoint N` plays them, at every checkpoint: the level's scripts run for a
-// while in gameplay over the play mode, headless, with no script error, and player 1 stands under the pad's control,
-// moving when the stick is pushed. They run only when the environment variable CONEY_DISC names the disc and skip
-// otherwise; they print counts only (LEGAL.md).
+// Checks against the player's own disc that the story's second, third, fourth and seventh missions (`level80`,
+// `level87`, `level34`, `level5`) play as `--play-level NAME --checkpoint N` plays them, at every checkpoint: the
+// level's scripts run for a while in gameplay over the play mode, headless, with no script error, and player 1 stands
+// under the pad's control, moving when the stick is pushed. They run only when the environment variable CONEY_DISC
+// names the disc and skip otherwise; they print counts only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
@@ -296,4 +296,31 @@ TEST_CASE("the disc's level80 intro, skipped, gives the screen and the player ba
                 "at frame %d, player 1 %s at (%.1f, %.1f)\n",
                 kSkipFrame, blackAfterSkip, static_cast<double>(play->stage().fadeLevel()), kFrames,
                 teleported ? "teleported" : "not teleported", static_cast<double>(at.x), static_cast<double>(at.y));
+}
+
+TEST_CASE("the disc's level5 plays each checkpoint without a script error", "[disc][story]") {
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    // Mission 7 has four checkpoints.
+    constexpr int kCheckpoints = 4;
+    for (int checkpoint = 1; checkpoint <= kCheckpoints; ++checkpoint) {
+        INFO("level5 checkpoint " << checkpoint);
+        const MissionRun run = playMission(*wad, "level5", checkpoint);
+        REQUIRE(run.loaded);
+        for (const std::string& error : run.errors) {
+            UNSCOPED_INFO(error);
+        }
+        CHECK(run.scriptErrors == 0);
+        // At checkpoint 2 the Hurricanes in the room fight him from the start, so he may be down when the stick moves.
+        if (checkpoint != 2) {
+            CHECK(run.standing);
+            CHECK(run.travelled > 1.0F);
+        }
+        std::printf("  level5 checkpoint %d: %zu humans created, %llu script errors, %zu missing bindings, %.1f m "
+                    "walked\n",
+                    checkpoint, run.humans, static_cast<unsigned long long>(run.scriptErrors), run.missingBindings,
+                    run.travelled);
+    }
 }

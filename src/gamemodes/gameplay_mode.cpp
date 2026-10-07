@@ -20,6 +20,7 @@
 #include "ai/route_planner.h"
 #include "ai/scripted_brains.h"
 #include "ai/scripted_hub.h"
+#include "ai/scripted_humans.h"
 #include "ai/scripted_story.h"
 #include "ai/spawners.h"
 #include "animation/anim_math.h"
@@ -348,6 +349,15 @@ void GameplayMode::enter() {
     m_context.tagSpots = &m_tagSpots;
     m_scripted->storyHost().setTagHandler(
         [this](double human, double tag, double flag) { startTag(human, tag, flag); });
+    // HuIsTagging: player 1 in his stick game, or a spot's tagger while the spot paints in.
+    m_scripted->humanHost().setTaggingQuery([this](double human) {
+        if (m_tagSession && !m_tagSession->ended() && m_tagSession->human() == human) {
+            return true;
+        }
+        return std::ranges::any_of(m_tagSpots.all(), [human](const world_objects::TagSpot& spot) {
+            return spot.tagger == human && spot.fadeMode == world_objects::TagSpot::kFadingIn;
+        });
+    });
     m_context.flagNet = &m_flagNet;
     m_scripted->setFlagNet(&m_flagNet);
     m_scripted->storyHost().setBoxes(m_context.boxes);
@@ -510,7 +520,8 @@ void GameplayMode::loadLevel() {
                                              .pickups = m_pickups ? &*m_pickups : nullptr,
                                              .records = m_context.spawnRecords,
                                              .types = m_context.objectTypes,
-                                             .forceReticules = &m_state.forceReticules});
+                                             .forceReticules = &m_state.forceReticules,
+                                             .sound = m_context.sound});
     }
     if (!level) {
         m_log(std::format("gameplay: {}: {}\n", start.level, level.error().message));

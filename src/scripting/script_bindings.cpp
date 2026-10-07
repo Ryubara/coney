@@ -30,6 +30,7 @@
 #include "scripting/level_bindings.h"
 #include "scripting/lighting_bindings.h"
 #include "scripting/mission4_bindings.h"
+#include "scripting/mission7_bindings.h"
 #include "scripting/object_bindings.h"
 #include "scripting/player_bindings.h"
 #include "scripting/rumble_bindings.h"
@@ -875,6 +876,22 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("HuSetWounded"),
     real("ObjGetIndex"),
     real("SetGeneralCarMsgHandler"),
+    // The story's seventh mission, level5 (mission7_bindings.h).
+    real("ActTurnTo"),
+    real("CarRemovePart"),
+    real("CfgWarriorWeapons"),
+    real("EndRoomSmoke"),
+    real("HUDEnableBar"),
+    real("HUDSetBarPercentage"),
+    real("HUDSetBarProperty"),
+    real("HuActionDialog"),
+    real("HuIsTagging"),
+    real("HuMarkReachable"),
+    real("HuSetRageMode"),
+    real("ObjEnablePhysics"),
+    real("SoundPreLoad"),
+    real("SoundStart"),
+    real("StartRoomSmoke"),
     // The story's second and third missions (story_bindings.h).
     real("TacticAvoidEnemies"),
     real("TacticDefend"),
@@ -1209,7 +1226,6 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     // Lighting, weather and screen effects of the level.
     stub("EndFog"),
     stub("EndRain"),
-    stub("EndRoomSmoke"),
     stub("SetLevelColour"),
     stub("SetShadowColor"),
     stub("SetShadowLightOffset"),
@@ -1344,7 +1360,8 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
                      std::ranges::find(kStoryEffectsBindings, info.name) != kStoryEffectsBindings.end() ||
                      std::ranges::find(kHubBindings, info.name) != kHubBindings.end() ||
                      std::ranges::find(kHubWorldBindings, info.name) != kHubWorldBindings.end() ||
-                     std::ranges::find(kMission4Bindings, info.name) != kMission4Bindings.end());
+                     std::ranges::find(kMission4Bindings, info.name) != kMission4Bindings.end() ||
+                     std::ranges::find(kMission7Bindings, info.name) != kMission7Bindings.end());
     }
     addStringBindings(vm, *context.strings);
     addRumbleBindings(vm, context);
@@ -1383,6 +1400,7 @@ void installBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& con
     addHubBindings(scripts, vm, context);
     addHubWorldBindings(scripts, vm, context);
     addMission4Bindings(scripts, vm, context);
+    addMission7Bindings(scripts, vm, context, nextHandle);
 
     // The tolua support the registration also makes: the table `tolua`, the classes `M_Vector4` and `M_Quat`, and the
     // variables `NilHandle` and `NilSoundHandle`. Coney's choices: the classes are empty tables (no usertypes yet) and

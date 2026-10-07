@@ -189,6 +189,12 @@ class HumanBindingHost {
     virtual void revive(double /*human*/) {}
     /// `HuSetNormalMode`.
     virtual void setNormalMode(double /*human*/, bool /*full*/) {}
+    /// `HuSetRageMode(human, on)`.
+    virtual void setRageMode(double /*human*/, bool /*on*/) {}
+    /// `HuMarkReachable(human, reachable)`.
+    virtual void markReachable(double /*human*/, bool /*reachable*/) {}
+    /// `HuIsTagging(human)`: whether the human is spraying a tag now.
+    [[nodiscard]] virtual bool tagging(double /*human*/) const { return false; }
     /// `HuSetArrested`.
     virtual void setArrested(double /*human*/, bool /*arrested*/) {}
     /// `HuSetPushable`.

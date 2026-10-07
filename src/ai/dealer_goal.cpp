@@ -206,4 +206,25 @@ DealOutcome DealerGoal::deal(Brain& brain, const Brain& buyer, int money, int ca
     return DealOutcome::Sold;
 }
 
+std::optional<std::uint32_t> DealerGoal::dealLine(DealOutcome outcome, std::uint64_t nowMs) {
+    switch (outcome) {
+    case DealOutcome::NoCash:
+        return kDealNoCashLine;
+    case DealOutcome::AtLimit:
+        return kDealLimitLine;
+    case DealOutcome::RippedOff:
+        return kDealRipOffLine;
+    case DealOutcome::Sold:
+        // `cash` at most every 5 s.
+        if (m_lastCashMs && nowMs < *m_lastCashMs + kDealCashLineMs) {
+            return std::nullopt;
+        }
+        m_lastCashMs = nowMs;
+        return kDealCashLine;
+    case DealOutcome::NotDealing:
+        return std::nullopt;
+    }
+    return std::nullopt;
+}
+
 } // namespace coney::ai

@@ -2392,7 +2392,8 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   speed (the 5 slower first updates backward are not known).
 - **The flash** (`PlayLevelMode::stepFlash()`): d-pad right with a flash carried and health below the maximum breaks
   any pair, plays 665 (holding `0x2000`) when nothing holds the stick, spends the flash and fills the health at once
-  (the original spends it on the clip's event); its sound and the full-health rage use are not built.
+  (the original spends it on the clip's event), and asks for the health rings; its sound and the full-health rage use
+  are not built.
 
 **Not yet**: an attacker for the player (no human attacks him yet, so the victim side runs only in the tests; the
 AI that would is on [AI](ai.md)); the

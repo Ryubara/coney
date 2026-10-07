@@ -12,6 +12,7 @@
 #include "platform/parked_cars.h"
 #include "platform/particle_renderer.h"
 #include "platform/render_engine.h"
+#include "platform/room_smoke_overlay.h"
 #include "raycast/collision_builder.h"
 #include "world/view_frustum.h"
 #include "world_objects/cars.h"
@@ -36,7 +37,7 @@ class PlayLevelEffects {
     void drawCars(const std::function<void(rw::Atomic*)>& render);
     /// Draws the particle systems through the current camera at `view` (RenderWare's axes), after everything solid.
     void drawInScene(const world::CameraPose& view);
-    /// Lays the motion blur over the 3D frame, before the 2D overlays.
+    /// Lays the motion blur, then the room smoke, over the 3D frame, before the 2D overlays.
     void drawOverlay(RenderEngine& engine);
 
   private:
@@ -44,6 +45,7 @@ class PlayLevelEffects {
     const effects::LevelEffects* m_effects;
     ParticleRenderer m_particles;
     MotionBlurPass m_motionBlur;
+    RoomSmokeOverlay m_smoke;
     std::unique_ptr<ParkedCars> m_cars; // null without cars
 };
 

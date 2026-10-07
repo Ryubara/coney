@@ -645,6 +645,7 @@
     does not by itself make the object fall. Off does not set the static flag back. Class 0x30 also gets a state
     command 2 (vtable `+0x124`), not traced.
   usage: {chunks: 12, calls: 73, boot: false, mission1: false, result_used: false, levels: [5, 81, 51, 84, 61, 62, 63]}
+  coney: implemented
 
 - name: ObjShow
   wrapper: 0x00377fd8
@@ -830,6 +831,7 @@
     Putting a part back leaves its bit in `+0x11f8`, which still excludes it as a hit point, and does not restore
     the linked part. Car explosions and contacts also write `+0x11f0` (0x0038ac78, 0x0039442c).
   usage: {chunks: 3, calls: 7, boot: false, mission1: false, result_used: false, levels: [5, 14]}
+  coney: implemented
 
 - name: CarCanBeDamagedBy
   wrapper: 0x00378790

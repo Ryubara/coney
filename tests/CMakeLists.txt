@@ -16,6 +16,7 @@ add_executable(coney_tests
     effects/ground_fog_test.cpp
     effects/motion_blur_test.cpp
     effects/particles_test.cpp
+    effects/room_smoke_test.cpp
     fileio/disc_test.cpp
     fileio/executable_test.cpp
     fileio/reader_test.cpp
@@ -69,6 +70,7 @@ add_executable(coney_tests
     hud/health_rings_test.cpp
     hud/hud_test.cpp
     hud/player_panel_test.cpp
+    hud/scripted_bars_test.cpp
     platform/disc_change_character_test.cpp
     platform/disc_sprite_sheets_test.cpp
     platform/disc_rumble_test.cpp
@@ -78,6 +80,7 @@ add_executable(coney_tests
     platform/disc_level99_hud_test.cpp
     platform/disc_level99_scene_grab_test.cpp
     platform/disc_level99_snaps_test.cpp
+    platform/disc_level99_course_test.cpp
     platform/disc_level99_sparring_test.cpp
     platform/disc_level99_street_test.cpp
     platform/disc_level99_world_test.cpp
@@ -112,6 +115,7 @@ add_executable(coney_tests
     scripting/disc_script_system_test.cpp
     scripting/hub_bindings_test.cpp
     scripting/mission4_bindings_test.cpp
+    scripting/mission7_bindings_test.cpp
     scripting/hud_bindings_test.cpp
     scripting/disc_strings_test.cpp
     scripting/camera_bindings_test.cpp

@@ -1111,7 +1111,7 @@ it). Converted as unsigned. A prepared sound never started keeps its task (not t
   `0x001101b8`, `0x00111f78`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundPreLoadScene {#soundpreloadscene}
 
@@ -1310,7 +1310,7 @@ Starts a sound prepared with SoundPreLoad: the handle is resolved to its sound t
   `0x00110258`, `0x00111f40`
 - **Used by** 3 of 467 script chunks (4 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SoundStop {#soundstop}
 

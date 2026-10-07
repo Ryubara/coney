@@ -84,6 +84,9 @@ struct StoryState {
     /// **Coney stand-in**: civilians do not call for help yet, so it is only kept; **Coney choice** until set (the
     /// default is not on the page): 0.
     int chanceToGetHelp = 0;
+    /// `CfgWarriorWeapons` (game state `+0x5704`, 1 from the constructor and the level reset): the AI Warriors may pick
+    /// up weapons. **Coney stand-in**: Coney's AI Warriors search for no pickups yet, so it is only kept.
+    bool warriorWeapons = true;
 
     /// The level reset's part (`0x00418c68`): the retaliation switches, the menu locks, the callback and the detail
     /// bytes cleared. The Warrior commands' enables are CharacterRules' (enabled again by the caller).
@@ -93,6 +96,7 @@ struct StoryState {
         commandCallback.clear();
         detailFlags.fill(0);
         garbage = -1;
+        warriorWeapons = true;
     }
 };
 

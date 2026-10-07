@@ -418,7 +418,7 @@ the linked part. Car explosions and contacts also write `+0x11f0` (0x0038ac78, 0
   `Car_RemovePartBits`
 - **Used by** 3 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 2 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CarSetColor {#carsetcolor}
 
@@ -1313,7 +1313,7 @@ command 2 (vtable `+0x124`), not traced.
   `Obj_CreatePhysicsBody`, `0x003924d8` `Obj_FreePhysicsBody`
 - **Used by** 12 of 467 script chunks (73 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ObjEnableZone {#objenablezone}
 

@@ -7,17 +7,19 @@
 #include "effects/ground_fog.h"
 #include "effects/motion_blur.h"
 #include "effects/particles.h"
+#include "effects/room_smoke.h"
 
 namespace coney::effects {
 
-/// A level's effects that scripts and the engine start: the particle systems, player 1's view's motion blur and ground
-/// fog, and the litter round the camera. Gameplay owns one for each level, steps it after the level's step and hands it
-/// to the level to draw.
+/// A level's effects that scripts and the engine start: the particle systems, player 1's view's motion blur, ground
+/// fog and room smoke, and the litter round the camera. Gameplay owns one for each level, steps it after the level's
+/// step and hands it to the level to draw.
 struct LevelEffects {
     ParticleSystems particles;
     MotionBlur motionBlur;
     GroundFog fog;
     CameraLitter litter;
+    RoomSmoke smoke;
     /// The level's collision for the litter's rays (empty: the litter meets nothing).
     LitterRay litterRay;
 
@@ -31,6 +33,7 @@ struct LevelEffects {
             fog.step(seconds, *viewer);
             litter.step(seconds, viewer->position, litterRay);
         }
+        smoke.step(seconds, viewer);
     }
 };
 

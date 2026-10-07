@@ -9,13 +9,6 @@ How far Coney has come, measured three ways:
 - **Researched:** the share of the game's own code that the [source map](../research/source-map.md) places in at
   least an original source file or directory. It says how much of the executable an analyst can already find their
   way around in, not how much is understood.
-- **Understood:** the share of the game's own functions (by bytes, and by count) that are researched in full: the
-  function has a meaningful name in the shared Ghidra project (not `FUN_<address>`), and a research page cites its
-  address in a table row or paragraph that states an evidence level, or says `not needed: <reason>` (the source
-  map's citations do not count: placing is not understanding); a script binding's wrapper counts when its
-  `research/bindings` entry has an `evidence`. Names and sizes come from `docs/progress/ghidra-functions.tsv`
-  (addresses, sizes and our names only), the citations from the pages themselves, so citing a function moves the
-  bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
   Approved by the owner's play-test, with its checkpoints and the script bindings it needs.
@@ -28,12 +21,12 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 14.6%](https://img.shields.io/badge/reimplemented-14.6%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 14.8%](https://img.shields.io/badge/reimplemented-14.8%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 17.5%](https://img.shields.io/badge/understood-17.5%25-orange)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,592 functions) |
+| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.8% of the game's own code (495,164 of 3,354,776 bytes, 1,620 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `███▌░░░░░░░░░░░░░░░░` | 17.5% named in Ghidra and cited with evidence (571,508 of 3,274,152 bytes; 1,889 of 11,278 functions, 16.7%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -64,16 +57,16 @@ at the top of the repository's `README.md`.
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
-| `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.5% | 63 | 57,368 |
+| `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.8% | 65 | 57,368 |
 | `Camera` | `▉░░░░░░░░░░░░░░░░░░░` | 4.4% | 57 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
-| `Graphics` | `██▏░░░░░░░░░░░░░░░░░` | 10.5% | 65 | 195,624 |
-| `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
-| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 507 | 1,096,672 |
+| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 72 | 195,624 |
+| `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 197 | 497,416 |
+| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.1% | 512 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -81,11 +74,11 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 202 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 113 | 531,312 |
+| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 115 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
-| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 109 | 54,264 |
+| `Warriors` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 110 | 54,264 |
 | `Movie` | `██████████████████▍░` | 91.9% | 5 | 5,208 |
 | `link-once` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 115,808 |
 | Unattributed | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 27,632 |
@@ -211,6 +204,8 @@ at the top of the repository's `README.md`.
 | `0x00113630` | `Sound_StopAmbientTrack` | `Audio` | 40 |
 | `0x00113658` | `Sound_SetAmbientTrackVolume` | `Audio` | 40 |
 | `0x00113680` | `Audio_PlaySoundAt` | `Audio` | 128 |
+| `0x00113700` | `Audio_PreloadSoundAt` | `Audio` | 128 |
+| `0x00113780` | `Audio_StartPreloadedSound` | `Audio` | 40 |
 | `0x001137a8` | `Sound_Play2D` | `Audio` | 64 |
 | `0x00113810` | `Ambient_AddSound` | `Audio` | 48 |
 | `0x00113920` | `Ambient_AddEmitter2` | `Audio` | 232 |
@@ -494,6 +489,8 @@ at the top of the repository's `README.md`.
 | `0x0018c8c8` | `ScreenFx_BlendMotionBlur` | `Graphics` | not filled in |
 | `0x0018cc60` | `ScreenQueueEffect` | `Graphics` | 504 |
 | `0x0018ce58` | `ScreenEffects_UpdateFade` | `Graphics` | not filled in |
+| `0x0018e070` | `ScreenFx_StartRoomSmoke` | `Graphics` | 136 |
+| `0x0018e0f8` | `ScreenFx_EndRoomSmoke` | `Graphics` | 80 |
 | `0x0018e148` | `Fog3D_Start` | `Graphics` | not filled in |
 | `0x0018e2f0` | `Fog3D_SetMaxParticles` | `Graphics` | not filled in |
 | `0x0018e3c8` | `Fog3D_End` | `Graphics` | 168 |
@@ -507,6 +504,11 @@ at the top of the repository's `README.md`.
 | `0x00197168` | `Instance_Render` | `Graphics` | 328 |
 | `0x00197b30` | `ChunkReader_SectorBspData` | `Graphics` | not filled in |
 | `0x00198e20` | `SectorPlugin_StreamRead` | `Graphics` | not filled in |
+| `0x0019add0` | `OE_RoomSmoke_Construct` | `Graphics` | 512 |
+| `0x0019b070` | `OE_RoomSmoke_FollowCamera` | `Graphics` | 296 |
+| `0x0019b198` | `OE_RoomSmoke_PickDrift` | `Graphics` | 272 |
+| `0x0019b2a8` | `OE_RoomSmoke_BlendDrift` | `Graphics` | 536 |
+| `0x0019b4c0` | `OE_RoomSmoke_Update` | `Graphics` | 488 |
 | `0x0019ee70` | `GlobalString_Get` | `GUI` | 48 |
 | `0x0019eea0` | `GlobalString_Set` | `GUI` | 64 |
 | `0x0019f1b0` | `ActionPrompt_SetText` | `GUI` | 192 |
@@ -518,6 +520,8 @@ at the top of the repository's `README.md`.
 | `0x001a1bf8` | `BaseWidget::BaseWidget` | `GUI` | 56 |
 | `0x001a1db8` | `BaseWidget_Setup` | `GUI` | not filled in |
 | `0x001a2690` | `BaseWidget_AddSprite` | `GUI` | 640 |
+| `0x001a3990` | `ChaseGauge_Update` | `GUI` | 624 |
+| `0x001a3c00` | `ChaseGauge_Render` | `GUI` | 72 |
 | `0x001a8e30` | `Widget::Widget` | `GUI` | 72 |
 | `0x001acee0` | `HUD::HUD` | `GUI` | 1,704 |
 | `0x001ad588` | `HUD_LevelSetUp` | `GUI` | not filled in |
@@ -541,6 +545,13 @@ at the top of the repository's `README.md`.
 | `0x001b47e0` | `HUD_PanelSetValue` | `GUI` | 40 |
 | `0x001b4908` | `LightManager_SetColourOffset` | `GUI` | 64 |
 | `0x001b4948` | `HUD_ShowWarCommand` | `GUI` | not filled in |
+| `0x001b4ba0` | `HUD_EnableRedBar` | `GUI` | 216 |
+| `0x001b4c98` | `HUD_EnableLabelledBar` | `GUI` | 568 |
+| `0x001b4f00` | `HUD_EnableGaugeBar` | `GUI` | 192 |
+| `0x001b5008` | `HUD_EnableBarStack` | `GUI` | 888 |
+| `0x001b53b0` | `HUD_EnableBar` | `GUI` | 160 |
+| `0x001b5450` | `HUD_SetBarPercentage` | `GUI` | 160 |
+| `0x001b54f0` | `HUD_SetBarProperty` | `GUI` | 160 |
 | `0x001b5590` | `HUD_EnableTextProgress` | `GUI` | 568 |
 | `0x001b57c8` | `HUD_SetTextProgress` | `GUI` | 712 |
 | `0x001b5a90` | `HUD_TurnOnActionCycleAnim` | `GUI` | 80 |
@@ -556,6 +567,8 @@ at the top of the repository's `README.md`.
 | `0x001b8d38` | `LockPickDial_Judge` | `GUI` | 408 |
 | `0x001b8f98` | `MessageHUD::MessageHUD` | `GUI` | not filled in |
 | `0x001b9600` | `TextWidget_Layout` | `GUI` | 5,664 |
+| `0x001c22b0` | `HudGenericBar_SetWidth` | `GUI` | 56 |
+| `0x001c2530` | `HudGenericBar_SetFill` | `GUI` | 56 |
 | `0x001c6a20` | `MessageBox::MessageBox` | `GUI` | not filled in |
 | `0x001c6fc8` | `MessageBox_ShowTimed` | `GUI` | not filled in |
 | `0x001c7128` | `MessageBox_ShowChoice` | `GUI` | not filled in |
@@ -774,6 +787,7 @@ at the top of the repository's `README.md`.
 | `0x00236ad0` | `Human_SetPreventRage` | `Human` | 104 |
 | `0x00236b38` | `Human_SetLockedRage` | `Human` | 168 |
 | `0x00236c58` | `Cfg_SetRageHandlers` | `Human` | 208 |
+| `0x00237128` | `Human_SetRageMode` | `Human` | 176 |
 | `0x002372a8` | `Human_GiveCuffs` | `Human` | 128 |
 | `0x00237328` | `Human_SetKeepWeapon` | `Human` | 96 |
 | `0x00237388` | `Human_SetKeepHat` | `Human` | not filled in |
@@ -803,6 +817,7 @@ at the top of the repository's `README.md`.
 | `0x00238640` | `Human_SetPedReaction` | `Human` | 80 |
 | `0x00238690` | `Human_UseAnim` | `Human` | 184 |
 | `0x002387a8` | `Human_AreActionsBlocked` | `Human` | not filled in |
+| `0x002387e8` | `Human_IsTagging` | `Human` | 64 |
 | `0x00238948` | `Human_PlayDynAnim` | `Human` | 160 |
 | `0x00238a88` | `Human_AttachSpinningIcon` | `Human` | 88 |
 | `0x00238ae0` | `Human_RemoveSpinningIcon` | `Human` | 56 |
@@ -819,7 +834,9 @@ at the top of the repository's `README.md`.
 | `0x00239370` | `Human_Speak` | `Human` | 488 |
 | `0x00239558` | `Human_ShutUp` | `Human` | 72 |
 | `0x002395a0` | `Human_SpeakInterrupt` | `Human` | 488 |
+| `0x00239788` | `Human_ActionDialog` | `Human` | 200 |
 | `0x00239b80` | `Players_ChangeGang` | `Human` | 648 |
+| `0x00239e30` | `Human_MarkReachable` | `Human` | 72 |
 | `0x00239e78` | `Human_SetMugCallback` | `Human` | 104 |
 | `0x00239ee0` | `Human_SetMug` | `Human` | 64 |
 | `0x0023a1b0` | `Human_SetCombatMode` | `Human` | 96 |
@@ -1156,6 +1173,7 @@ at the top of the repository's `README.md`.
 | `0x002fdc68` | `TurnAction_Start` | `Human` | 96 |
 | `0x002fdcc8` | `TurnAction_Abort` | `Human` | 64 |
 | `0x002fdd08` | `TurnAction_Update` | `Human` | 224 |
+| `0x002fdf70` | `Action_TurnToTarget` | `Human` | 144 |
 | `0x002fe000` | `TurnToPointAction_Init` | `Human` | 88 |
 | `0x002fe0c8` | `Action_LookAt` | `Human` | 152 |
 | `0x002fe160` | `LookAtAction_Init` | `Human` | 80 |
@@ -1472,6 +1490,7 @@ at the top of the repository's `README.md`.
 | `0x0038dea8` | `Car_Destroy` | `TaskEngine` | 64 |
 | `0x0038df38` | `Car_SetColour` | `TaskEngine` | not filled in |
 | `0x0038dfa0` | `Car_Explode` | `TaskEngine` | 64 |
+| `0x0038dfe0` | `Car_RemovePart` | `TaskEngine` | 80 |
 | `0x0038e068` | `Car_Repair` | `TaskEngine` | not filled in |
 | `0x0038e0f0` | `Car_PlaceInTrunkOnDetach` | `TaskEngine` | not filled in |
 | `0x0038e538` | `CarManager_SetMsgHandler` | `TaskEngine` | 88 |
@@ -1496,6 +1515,7 @@ at the top of the repository's `README.md`.
 | `0x003967e0` | `ObjZone_Mark` | `TaskEngine` | 48 |
 | `0x00396858` | `Obj_Spawn` | `TaskEngine` | not filled in |
 | `0x00396a08` | `Obj_Show` | `TaskEngine` | 136 |
+| `0x00396a90` | `Obj_EnablePhysics` | `TaskEngine` | 216 |
 | `0x00396b68` | `Obj_Hide` | `TaskEngine` | 104 |
 | `0x00396bd0` | `Obj_SetColour` | `TaskEngine` | 136 |
 | `0x00396c58` | `Obj_Destroy` | `TaskEngine` | 288 |
@@ -1654,6 +1674,7 @@ at the top of the repository's `README.md`.
 | `0x0041d728` | `Cfg_SetOutdoorMode` | `Warriors` | not filled in |
 | `0x0041d738` | `Cfg_SetEnemySpotting` | `Warriors` | 16 |
 | `0x0041d748` | `Cfg_SetWarriorSpotting` | `Warriors` | 16 |
+| `0x0041d770` | `GameState_SetWarriorWeapons` | `Warriors` | 24 |
 | `0x0041d788` | `GameState_SetGameMode` | `Warriors` | 88 |
 | `0x0041d7e0` | `GameState_GetGameMode` | `Warriors` | 16 |
 | `0x0041d7f0` | `GetLanguage` | `Warriors` | 16 |

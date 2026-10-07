@@ -3051,7 +3051,7 @@ pick-ups). The player's own pickups are not affected (inferred: only brain code 
 - **Wrapper** `0x0036be20` (registered by `RegisterBindings`); **calls** `0x0041d770` `GameState_SetWarriorWeapons`
 - **Used by** 1 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CfgWorkoutParams {#cfgworkoutparams}
 

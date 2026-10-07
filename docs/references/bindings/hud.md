@@ -625,7 +625,7 @@ constant in a two-player game (0x00609e8c). The bars draw in the HUD pass ([HUD:
   `HUD_EnableBarStack`
 - **Used by** 28 of 467 script chunks (100 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDEnableClubActionText {#hudenableclubactiontext}
 
@@ -1076,7 +1076,7 @@ those three into the kind-2 gauge.
   `0x001c2530` `HudGenericBar_SetFill`
 - **Used by** 28 of 467 script chunks (103 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 15 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDSetBarProperty {#hudsetbarproperty}
 
@@ -1101,7 +1101,7 @@ bars made by HUDEnableBar kind 3.
   `HudGenericBar_SetWidth`
 - **Used by** 21 of 467 script chunks (39 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 14 of 28 levels, first [`level2`](story.md#level2) (mission 5)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HUDSetChaseHUDState_CREATE {#hudsetchasehudstate_create}
 

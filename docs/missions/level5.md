@@ -10,7 +10,7 @@ The Warriors try to collect a payment owed to them by Sanchez, a Hurricanes asso
 
 | | |
 | --- | --- |
-| Status | ⬜ Not Started |
+| Status | 🚧 In Progress |
 | Level | `level5` (story mission 7) |
 | Checkpoints | 0 of 4 built, 0 approved |
 
@@ -18,29 +18,32 @@ The Warriors try to collect a payment owed to them by Sanchez, a Hurricanes asso
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | ⬜ Not Started | - |
-| 2 | ⬜ Not Started | - |
-| 3 | ⬜ Not Started | - |
-| 4 | ⬜ Not Started | - |
+| 1 | 🚧 In Progress | The scripts run with no error; the checkpoint is not yet played to its end. |
+| 2 | 🚧 In Progress | The scripts run with no error; the bar's room smoke drifts over the screen as the original's does, and the Hurricanes fight the player. Not yet played to its end. |
+| 3 | 🚧 In Progress | The scripts run with no error; the runner's carrot run (GoalRunCarrotRun) is still missing. |
+| 4 | 🚧 In Progress | The scripts run with no error and the boss's HUD bar shows in the right column; the Diego and Vargas fight (TacticBossScenarioA) and the boss rail camera are still missing. |
 
 ## What it needs {#needs}
 
-Its scripts can call 274 script bindings. 16 of them are new, which no earlier level of the story calls: 2 are
+Its scripts can call 274 script bindings. 16 of them are new, which no earlier level of the story calls: 14 are
 implemented in Coney and 16 are traced. The full list is on [the coverage page](../references/bindings/story.md#level5).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
-| [Characters](../references/bindings/character.md) | 4 | 0 |
-| [AI](../references/bindings/ai.md) | 4 | 1 |
-| [World and objects](../references/bindings/world.md) | 3 | 1 |
-| [Effects and lighting](../references/bindings/effects.md) | 2 | 0 |
-| [Sound and music](../references/bindings/sound.md) | 2 | 0 |
-| [Configuration (Cfg)](../references/bindings/config.md) | 1 | 0 |
+| [Characters](../references/bindings/character.md) | 4 | 4 |
+| [AI](../references/bindings/ai.md) | 4 | 2 |
+| [World and objects](../references/bindings/world.md) | 3 | 3 |
+| [Effects and lighting](../references/bindings/effects.md) | 2 | 2 |
+| [Sound and music](../references/bindings/sound.md) | 2 | 2 |
+| [Configuration (Cfg)](../references/bindings/config.md) | 1 | 1 |
 
 Research:
 
 - [The mission's scripts, checkpoint by checkpoint](../research/scripting.md#level5)
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
+- [The seventh mission's script](../research/scripting.md#level5)
+- [The seventh mission's bindings](../references/bindings/story.md#level5)
+- [Room smoke](../research/graphics.md#room-smoke)
 
 ## Run it in Coney {#run}
 
@@ -50,5 +53,15 @@ to 4:
 ```text
 coney --disc /path/to/disc --play-level level5 --checkpoint 1
 ```
+
+Its disc test (needs `CONEY_DISC`; [Building](../guides/building.md)):
+
+```text
+coney_tests "[disc][story]"
+```
+
+## Open questions {#questions}
+
+- The Diego and Vargas boss goals (fatigue, damage, prone and cycle values, the break animation).
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

@@ -44,6 +44,16 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void setHealthPercent(double human, float percent) override;
     void revive(double human) override;
     void setNormalMode(double human, bool full) override;
+    void setRageMode(double human, bool on) override;
+    /// The brain's reachable mark (BrainSenses::reachable).
+    void markReachable(double human, bool reachable) override;
+    /// What the tagging query set with setTaggingQuery() answers; false without one.
+    [[nodiscard]] bool tagging(double human) const override;
+    /// Whether a human is spraying a tag now: what the play mode's tagging knows (player 1's stick game, the spots'
+    /// AI taggers).
+    using TaggingQuery = std::function<bool(double human)>;
+    /// Sets the tagging query; an empty one answers false.
+    void setTaggingQuery(TaggingQuery query) { m_tagging = std::move(query); }
     void setArrested(double human, bool arrested) override;
     void setPushable(double human, bool pushable) override;
     void setMoney(double human, int dollars) override;
@@ -137,6 +147,7 @@ class ScriptedHumans final : public script::HumanBindingHost {
     std::map<double, double> m_reservations; // flag -> the human using it
     int m_playerGang = -1;
     std::uint64_t m_gangChangeMs = 0;
+    TaggingQuery m_tagging;
 };
 
 } // namespace coney::ai

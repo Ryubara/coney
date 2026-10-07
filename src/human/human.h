@@ -350,6 +350,13 @@ class Human final : public Holdable {
     void setRageFraction(float fraction) { m_fighter.combat().rage().setFraction(fraction, nowMs()); }
     /// `HuSetLockedRage`: flag::kRageLocked, and the meter locked or unlocked at once.
     void setRageLocked(bool locked);
+    /// `HuSetRageMode`: `on` starts rage whatever the meter holds (RageMeter::force()); off ends it when it is on.
+    /// The rage handlers (`CfgRageHandlers`' enter and exit functions, `SetRageMode` and `ClrRageMode` from
+    /// `global.lua`) run from the scripted humans' step as for a rage the pad starts (ai::ScriptedHumans::
+    /// runRageHandlers()), not inside the call as in the original. **Coney stand-in**: the notice to the player's
+    /// camera is not built; the HUD follows the meter by itself (docs/research/scripting.md#level5).
+    /// @orig 0x00237128 Human_SetRageMode (unknown)
+    void setRageMode(bool on);
 
     /// Another human's grab catches this one (Fighter::catchInGrab()).
     void catchInGrab(const GrabCatch& grab) { m_fighter.catchInGrab(grab); }

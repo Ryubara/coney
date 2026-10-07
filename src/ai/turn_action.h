@@ -40,9 +40,11 @@ class TurnAction final : public Action {
     /// @orig 0x002fe160 LookAtAction_Init (unknown)
     [[nodiscard]] static std::unique_ptr<TurnAction> lookAt(TargetLocator locate, double target, float turn,
                                                             std::int16_t delayMs);
-    /// Turns to face `point`, the heading taken once at Start (the turn-to-point, vtable `0x005430e0`).
+    /// Turns to face `point`, the heading taken once at Start (the turn-to-point, vtable `0x005430e0`), keeping the
+    /// turn value `turn` as the look-at does (`ActTurnTo`).
     /// @orig 0x002fe000 TurnToPointAction_Init (unknown)
-    [[nodiscard]] static std::unique_ptr<TurnAction> toPoint(anim::Vec3 point, std::int16_t delayMs = 0);
+    [[nodiscard]] static std::unique_ptr<TurnAction> toPoint(anim::Vec3 point, std::int16_t delayMs = 0,
+                                                             float turn = 0.0F);
     /// Turns to `heading` (radians, 0 facing +y).
     [[nodiscard]] static std::unique_ptr<TurnAction> toHeading(float heading, std::int16_t delayMs = 0);
 

@@ -35,6 +35,10 @@ struct SpawnRecord {
     /// removed (world_objects::ObjectTasks).
     bool dying = false;
     std::uint32_t money = 0; ///< A `dyn_money` pickup's dollars (its object's `+0x124`).
+    /// What `ObjEnablePhysics` last gave its object (`+0x118`): a physics body (true) or none (false); nothing while no
+    /// script has called it. **Coney stand-in**: Coney's dynamic objects have no collision bodies yet, so it is only
+    /// kept.
+    std::optional<bool> physicsBody;
 };
 
 /// The `ObjectTaskManager`'s spawn records: `ObjSpawn` adds one and returns its handle; resolving the handle (a binding

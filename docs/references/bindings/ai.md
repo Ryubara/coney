@@ -299,7 +299,7 @@ pass); then it ends. It is ActLookAt with a fixed world point instead of an obje
   `0x002fe000` `TurnToPointAction_Init`, `0x002fe058` `TurnToPointAction_Begin`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## ActTurnToDir {#actturntodir}
 

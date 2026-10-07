@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <format>
 #include <map>
+#include <utility>
 
 #include "animation/anim_clip.h"
 #include "animation/skeleton.h"
@@ -107,6 +108,8 @@ void PlayLevelMode::stepRings(const Pad& pad, const WorldView& view, std::uint64
     ringPlayer.human = ringHuman(player, true);
     ringPlayer.human.canShow = ringPlayer.human.canShow && !sceneHoldsPlayer();
     ringPlayer.selectPressed = (pad.pressed() & pad::kSelect) != 0;
+    // A flash used since the last update asks for the rings (the panel request the update clears).
+    ringPlayer.flashUsed = std::exchange(m_flashRingRequest, false);
     // **Coney's stand-in** for the fight stance (record `+0x00` & 3): locked onto a target or blocking.
     ringPlayer.fightStance = fighter.lockTarget() != nullptr || fighter.blocking();
     ringPlayer.holdingL1 = (pad.buttons() & pad::kL1) != 0;

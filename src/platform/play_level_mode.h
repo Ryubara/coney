@@ -59,6 +59,10 @@ class SceneList;
 class SceneSystem;
 } // namespace coney::scenes
 
+namespace coney::script {
+class SoundHost;
+} // namespace coney::script
+
 namespace coney::platform {
 
 class PlayLevelEffects;
@@ -458,6 +462,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     LevelPickups* m_pickups = nullptr;     // the level's loose objects for the pick-up; not owned
     std::optional<world_objects::LockPick> m_lockPick;
     int m_lockPickDifficulty = 0;
+    bool m_flashRingRequest = false;      // a flash used: the HUD's ring request (docs/research/hud.md)
+    script::SoundHost* m_sound = nullptr; // the game's sound for the dealers' lines; not owned
     // Player 1's moving attack: the clip, the updates since it started, and the objects its strike shapes have struck.
     std::uint32_t m_strikeClip = 0xffffffffU;
     int m_strikeAge = 0;

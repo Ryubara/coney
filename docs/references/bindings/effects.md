@@ -301,7 +301,7 @@ Stops the room smoke screen effect (effect 3) on both screen-effects managers.
 - **Wrapper** `0x00368fb8` (registered by `RegisterBindings`); **calls** `0x0018e0f8` `ScreenFx_EndRoomSmoke`
 - **Used by** 39 of 467 script chunks (39 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GetGamma {#getgamma}
 
@@ -1097,7 +1097,7 @@ layer runs passes the new settings to the running effect. EndRoomSmoke stops it.
   `OE_RoomSmoke_Update`
 - **Used by** 8 of 467 script chunks (8 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 5 of 28 levels, first [`level5`](story.md#level5) (mission 7)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## TermFallingEmbers {#termfallingembers}
 

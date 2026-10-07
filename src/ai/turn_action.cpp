@@ -17,9 +17,10 @@ std::unique_ptr<TurnAction> TurnAction::lookAt(TargetLocator locate, double targ
     return action;
 }
 
-std::unique_ptr<TurnAction> TurnAction::toPoint(anim::Vec3 point, std::int16_t delayMs) {
+std::unique_ptr<TurnAction> TurnAction::toPoint(anim::Vec3 point, std::int16_t delayMs, float turn) {
     auto action = std::make_unique<TurnAction>(Aim::Point, delayMs);
     action->m_point = point;
+    action->m_turn = turn;
     return action;
 }
 
