@@ -4150,6 +4150,9 @@
 0x00221038	68	Human_SaveControl	1
 0x00221080	136	Human_RestoreControl	1
 0x00221108	340	Human_ReportBarsToHUD	1
+0x00221260	64	Human_GetAttribute	1
+0x002212a0	12	Human_HasAttribute2	1
+0x002212b0	20	Human_SetAttribute	1
 0x002212d0	264	Human_GetTurnRateForGait	1
 0x002213d8	420	Human_MaxTurn	1
 0x00221580	80	Human_GetSneakSpeed	1
@@ -12674,8 +12677,8 @@
 0x004a2240	504		0
 0x004a2438	564		0
 0x004a2670	668		0
-0x004a2910	1976		0
-0x004a30c8	1336		0
+0x004a2910	1976	TexCache_UploadRaster	1
+0x004a30c8	1336	TexCache_Allocate	1
 0x004a3600	256	TexCache_Init	1
 0x004a3700	312		0
 0x004a3838	780		0

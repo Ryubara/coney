@@ -659,11 +659,13 @@ CamLockRail(on, player)
 
 Locks or releases a player's rail camera (camera type 9) by setting its byte `+0x3e4`. While locked, the rail update
 (0x0013d6b0) no longer moves the camera along its rail after the target: it keeps its position and view from the
-previous frame. The rail camera also locks itself when the target passes the rail's end point. Armies of the Night
-(levels 60-64) uses it to hold the side-scrolling view.
+previous frame, while still keeping its targets in frame. It stays locked until `CamLockRail(false)`: neither
+`CamSetupRail` nor `CameraMakeActive` clears it. The rail camera also holds itself for one update at a time while its
+look-at point is past the rail's end. Armies of the Night (levels 60-64) uses it to hold the side-scrolling view.
 
-**Notes.** A player with no rail camera is skipped (Camera_GetPlayerRail returns none). Other readers of `+0x3e4`
-(0x0013b358, 0x0013dcc8, 0x00140708) are not traced; the rail camera is not on [Camera](../../research/camera.md) yet.
+**Notes.** A player with no rail camera is skipped (Camera_GetPlayerRail returns none). Modes 1 and 2 ignore the lock;
+mode 3 sets it itself at the rail's ends. Every reader and writer: [Camera: rail
+cameras](../../research/camera.md#rail).
 
 - **Evidence:** confirmed (code) at `0x0011d180`, `0x0013d6b0`; detail: traced
 - **Wrapper** `0x00366880` (registered by `RegisterBindings`); **calls** `0x0011d180` `Camera_LockRail`, `0x0013d6b0`

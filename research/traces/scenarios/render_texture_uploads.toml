@@ -1,0 +1,13 @@
+description = "slot 1: the level99 street standing still, then the camera turned by the right stick; every texture upload counted"
+research = "docs/research/ps2-render.md#gs-memory"
+input = "render_texture_uploads.txt"
+updates = 240
+fields = ["player", "camera"]
+
+[original]
+slot = 1
+patches = ["scripted-pad", "right-stick", "texture-upload"]
+
+[coney]
+level = "level99"
+args = []

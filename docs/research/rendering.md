@@ -250,11 +250,22 @@ motion blur ([Screen effects](graphics.md#screen-effects)), whose strength is th
 ### The front end {#front-end}
 
 The title screen and the main menu draw through the same passes as a level: a black clear, a small sky (`T4` 16 × 16
-strips, no Z write), a Z clear, the Wonder Wheel as world geometry (trilinear, `K` down to −13.2) and its lights,
-then the menu text sprites and the tint. `FOGCOL` is **black** (0, 0, 0) here and the wheel's vertex fog values run
-from 255 down to 0, so its far side fades into the black; only the neon tubes, the bulbs and the sign stand out. The
-same tint as in `level99` ((7, 20, 30), alpha 21) is drawn last, so the black background shows as a very dark
-blue-grey.
+strips, no Z write), a Z clear, the world (trilinear, `K` down to −13.2) and the Wonder Wheel's objects, then the
+menu text sprites and the tint. The same tint as in `level99` ((7, 20, 30), alpha 21) is drawn last, so the black
+background shows as a very dark blue-grey.
+
+**Fog and colour on the title screen** (the `fe_title` dump, confirmed (runtime)): `FOGCOL` is **black** (0, 0, 0)
+and the fog is the usual linear curve ([Fog](ps2-render.md#fog)) for the scene camera's far clip of **150** and the
+default fog start **0.5**: 255 up to 75 m, 0 at 150 m (fit 74.7 m and 151.2 m). The wheel stands 54-100 m from the
+camera, so its vertex fog values run only from **255 down to 168**: its far side darkens by at most a third, it never
+fades out. The values that reach 0 are those of the 16 × 16 `T4` world strips beyond 90 m. What keeps the wheel's
+frame dark is its **vertex colour** (on the GS's scale, 128 = 1.0): of the three batches that span the wheel's
+outline (bilinear, `K` −4; inferred to be its objects), the largest (`32 × 32 T8`, 2,561 vertices) has 68 on every
+vertex, a `128 × 128 T8` batch 5-12, and a `32 × 32 T8` batch (338 vertices, the bright outline: inferred, the neon
+tubes and the bulbs) a full 128; the nearby world strips have 29. Which object draws which batch was not identified.
+**No sprite, particle or corona** is drawn for the bulbs: the frame has no batch between the world and the menu
+text, so the bulbs are geometry at full vertex colour (confirmed (runtime) for the absence; the bulbs' batch
+inferred).
 
 The Rumble screens (Game Mode, Choose Gangs, [Front end](frontend.md)) draw no world and **no tint**: a black clear,
 then one 512 × 512 `T4` sprite, the grey gang-logo collage, modulated by a per-screen vertex colour, (24, 49, 50)

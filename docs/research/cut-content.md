@@ -56,8 +56,11 @@ Warriors working with Edge's Saracens against the Jones Street Boys, and a bag o
 Cochise instead of Fox's party. A speech-to-text pass over all 67 `l14` lines (scenes `l14_c1`-`l14_c6` and the
 chapter scripts' `l14_t*` / `l14_s1_*`) and the Jones Street voice sets (16, 18, 19, 21, 23, 83; their spot, search,
 alert and engage commands) found **no mention of a graveyard**. `l14_t4_004` is in the sound list but no script plays
-it; it is a Jones Street line from the bum scare in `l14_c4`. **Evidence:** inferred (machine transcription, not
-checked by ear).
+it; it is a Jones Street line from the bum scare in `l14_c4`. A second pass over every level's speech (all 25
+`speeches` folders, 1,842 lines) found exactly one graveyard line: `l51_t1_000`, a crew line about leaving a
+graveyard during the `level51` escape (*Desperate Dudes*, the first of the film missions). It belongs to that
+mission's own setting, not to Graveyard Shift or Set Up. **Evidence:** inferred (machine transcription, not checked
+by ear).
 
 ## Other cut levels and scenes {#other}
 
@@ -106,7 +109,7 @@ Compared entry by entry (SHA1) with the PS2 WAD. **Evidence:** inferred.
 | Source | Claim | Here |
 | --- | --- | --- |
 | The Warriors fan wiki, *Graveyard Shift (Unused Level)* | A lost level reworked into Set Up; Warriors sent by Cleon to a Prospect Park graveyard against the Jones Street Boys, with the Saracens; Mausoleum Hill, The Graveyard and The Bridge are what is left | Confirmed: title, place, gangs, briefing; The Graveyard and The Bridge share the level's world. Mausoleum Hill is a separate world. |
-| Same page | In Set Up, Jones Street war parties mention their graveyard plans being foiled | Not found in any `l14` line or Jones Street voice set (see [Set Up](#set-up)) |
+| Same page | In Set Up, Jones Street war parties mention their graveyard plans being foiled | Not found in any level speech line or Jones Street voice set; the one graveyard line is in `level51` (see [Set Up](#set-up)) |
 | TCRF, *The Warriors/Unused Textures* | Three Graveyard Shift loading screens without widescreen variants; its radar map; radar maps of `level4` and `level23` | Confirmed |
 | TCRF, *The Warriors* | `level119` *The Graveyard* is an unused map; `level106` *The Shanties* a stripped Heavy Muscle area | Confirmed for the names and world; arena use not checked |
 | atlas (YouTube), *Graveyard Shift cutscenes* | The cutscenes exist only on Xbox and PSP | Confirmed for Xbox vs PS2; PSP not checked |

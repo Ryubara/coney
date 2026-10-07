@@ -3418,6 +3418,29 @@ Class details, confirmed (code) unless marked:
 - **Vandalize** / **Steal**: each member's goal takes the zone, the delay and `leaderRange`; the vandal brain's
   `+0x28d` is set. Vandalize's code 1 comes from `0x0039a580(zone)` reporting nothing left to break.
 
+#### The boss fights {#boss-fights}
+
+Every boss fight on the disc sets one of the `TacticBossScenarioA`-`H` tactics, and each gives the boss an ordinary
+fighting goal. None uses the boss goals BossChatter, BossLizzies, BossLuther or BossBigMo (types `0x93`-`0x96`,
+[AI goals](ai-goals.md#goal-boss-lizzies)). Those are pushed only by the old Boss tactic's Start (`0x003089b0`,
+[type `0x09`](ai-code.md#t1-boss)), which only `TacticBoss` reaches. No script calls `TacticBoss` (the bindings scan,
+[`TacticBoss`](../references/bindings/ai.md#tacticboss)), and `GoalBossLizzies` is not called either. Confirmed (code:
+the only callers of the four pushers and of `Tactic_Boss` `0x00308870` are those two).
+
+| Level | Binding | Tactic | The boss's goal, by stage |
+| --- | --- | --- | --- |
+| [`level5`](../references/bindings/story.md#level5) (mission 7) | `TacticBossScenarioA` | [BossDiegoVargas](ai-code.md#t1-boss-diego-vargas) | [below](#boss-diego-vargas): BigBrawler (Diego); BigThrower then BigBrawler (Vargas) |
+| [`level81`](../references/bindings/story.md#level81) (mission 8) | `TacticBossScenarioH` | [BossChatterbox](ai-code.md#t1-boss-chatterbox) | 1 [BigLedgeThrower](ai-goals.md#goal-big-ledge-thrower), 2 [BigFighterA](ai-goals.md#goal-big-fighter-a) |
+| [`level93`](../references/bindings/story.md#level93) (mission 10) | `TacticBossScenarioG` | [BossVirgil](ai-code.md#t1-boss-virgil) | 1 BigLedgeThrower, 2 [HideAndSeek](ai-goals.md#goal-hide-and-seek), 3 [BigFighter](ai-goals.md#goal-big-fighter) |
+| [`level31`](../references/bindings/story.md#level31) (mission 11) | `TacticBossScenarioF` | [BossBirdie](ai-code.md#t1-boss-birdie) | StationaryShooterB ([type `0x8f`](ai-goals.md#goal-stationary-shooter-b)) |
+| [`level55`](../references/bindings/story.md#level55) (mission 17) | `TacticBossScenarioB` | [BossLizzies](ai-code.md#t1-boss-lizzies) | StationaryShooter ([type `0x8d`](ai-goals.md#goal-stationary-shooter)), for class `0xed` |
+| [`level84`](../references/bindings/story.md#level84) (mission 18) | `TacticBossScenarioE` | [BossLuther](ai-code.md#t1-boss-luther) | StationaryShooterA ([type `0x8e`](ai-goals.md#goal-shooter)) |
+| [`level82`](../references/bindings/story.md#level82) (flashback 1) | `TacticBossScenarioD` | [BossRoof](ai-code.md#t1-boss-roof) | [Grabber](ai-goals.md#goal-grabber) and [BigDefender](ai-goals.md#goal-big-defender); the survivor AvoidEnemies or [BigBull](ai-goals.md#goal-big-bull) |
+| [`level11`](../references/bindings/story.md#level11) (flashback 5) | `TacticBossScenarioC` | [BossMoe](ai-code.md#t1-boss-moe) | BigFighter, its level set to the stage |
+
+The levels come from the bindings scan of the disc's scripts (one level each). The other members of each gang melee
+(Moe's carry maces, [Mace](ai-goals.md#goal-mace)). Confirmed (code) at each tactic's AssignGoal.
+
 #### The Diego and Vargas fight {#boss-diego-vargas}
 
 `TacticBossScenarioA` (level 5, [binding](../references/bindings/ai.md#tacticbossscenarioa); tactic vtable

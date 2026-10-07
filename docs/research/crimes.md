@@ -132,16 +132,17 @@ tried, confirmed (code) at `0x0027c120`, `0x002811f0`:
    ([Breakables](combat.md#breakables), [A bat in hand](combat.md#bat)), or, with something in hand and nothing to
    take, drops it (`0x00257f38`).
 
-**The prompt** (two text widgets per player at HUD `+0x6b40`, `0x590` each; [HUD](hud.md#announcements-and-other-messages))
-is chosen every frame by `HUD_Update` (`0x001af010`), confirmed (code): nothing while the player is mugging, mugged,
-tagging, in a mini-game of mode 2 or 3, in a hold (`0x18000000000`), uncuffing (action `0x15`) or a few other
-states, or when command `0xa` is not available (`0x00147738`). Otherwise, in order: holding a human who can be
-mugged → `GSTRING.HUD` 1 (mug), or 0 (interrogate) when the human has an interrogation set; a partner who can be
-revived while either holds a flash → 4 (revive); a context record → its text (`+0x10`; whether the second text is ever
-shown is not traced); else a nearby human's own talk prompt
-(`0x001acd60`). The panel's activity test then matches the prompt's text against the dealer prompts
-([HUD](hud.md#the-player-panel)). The prompt sits 0.04 above its place in the default video mode (0.02 in the others) and
-rises with a scroll-in message (`0x0019f430`).
+**The prompt** (two text widgets per player at HUD `+0x6b40`, `0x590` each;
+[HUD](hud.md#announcements-and-other-messages)) is chosen every frame by `HUD_Update` (`0x001af010`), confirmed (code):
+nothing while the player is mugging, mugged, tagging, in a mini-game of mode 2 or 3, in a hold (`0x18000000000`),
+uncuffing (action `0x15`) or a few other states, or when command `0xa` is not available (`0x00147738`). Otherwise, in
+order: holding a human who can be mugged → `GSTRING.HUD` 1 (mug), or 0 (interrogate) when the human has an interrogation
+set; a revivable friend or gang member knocked out within 3 m and in sight, while the player or (in co-op) the downed
+player carries a flash → 4 (revive, [HUD: the revive test](hud.md#action-prompts)); a context record → its text
+(`+0x10`; whether the second text is ever shown is not traced); else a nearby human's own talk prompt (`0x001acd60`).
+The panel's activity test then matches the prompt's text against the dealer prompts ([HUD](hud.md#the-player-panel)).
+The prompt sits 0.04 above its place in the default video mode (0.02 in the others) and rises with a scroll-in message
+(`0x0019f430`).
 
 ### Arrest {#arrest}
 

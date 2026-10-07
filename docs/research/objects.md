@@ -955,8 +955,9 @@ after the swing starts (inferred from the scheduling, [Tasks](tasks.md#wheel)).
   **±170°, away from the human** (the sign of the dot product of the door's turned axis with the human-to-door
   direction), or the kept data `+0x04` angle after a state 5; state 3, the open sound; pickable cleared.
 - `0` with a human: `Door_OpenAnimated(door, human)`, the human's object target becomes the door
-  (`0x00227080`) and its state code 26 (`0x1a`, `0x002266a8`). What state 26 plays (anim 666
-  `ANIM_SPECIAL_OPEN_DOOR`, `gen_dooropen`, is the likely clip) is not traced.
+  (`0x00227080`) and its action code 26 (`0x1a`, `0x002266a8`). Action 26 plays anim 666
+  `ANIM_SPECIAL_OPEN_DOOR`, and its event opens the door away from the human. Confirmed (code); the steps are in
+  [AI and the world: Doors](ai-world.md#doors).
 - `0x15` (destroy, what `BreakObjectsInRadius` sends): flag `0x40` and update interval 2; the update then raises the
   interval by one each time and, on reaching 3, sends the door a hit (message 1) from itself.
 - `0x19`: hitpoints = the argument. `0x20`: calls each leaf's vtable `+0x4c` (not `dyn_door_stall`). `0x3e`: answers

@@ -747,7 +747,8 @@ scene. No script calls it.
 
 `TacticBoss(gang, boss, stage, callback)` (vtable `0x005433e0`): an older single tactic for six bosses, chosen by
 `+0x24` (0 Diego, 1 Vargas, 2 Chatterbox, 3 Luther, 4 the Lizzies, 5 Big Mo). No script calls it; the
-`TacticBossScenarioA`-`H` tactics below replaced it.
+`TacticBossScenarioA`-`H` tactics below replaced it, so its boss goals (types `0x93`-`0x96`) never run in the game.
+Which tactic each level uses: [AI: The boss fights](ai.md#boss-fights).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |

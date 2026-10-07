@@ -64,9 +64,15 @@ Ids missing from the table get the stub `0x00498be8`. The frame flip (`0x0048bdb
 The 90 modes are 24-byte records `{width, height, depth, flags, refresh, raster format}` at `0x0052ec38`
 ([Graphics](graphics.md#video-mode) for how the game picks one). The game uses **mode 82**: 640 × 448, 32-bit,
 flags `0x203`, 60 Hz, format `0x500` (current mode `0x00597130` = `0x52`, confirmed (runtime)). Its neighbours differ
-only in flags: 72 is `0x101`, 77 is `0x3`; 87 is the progressive 640 × 480. Flags: `0x1` exclusive, `0x2` interlace,
-`0x200` the two-circuit anti-flicker below, `0x100` and `0x4` other display set-ups `Sky_Start` handles (confirmed
-(code) for the branches; names inferred).
+only in flags: 72 is `0x101`, 77 is `0x3`; 87 is the progressive 640 × 480. The 90 records use five flag sets: `0x1`
+(22 modes), `0x3` (20), `0x203` (20), `0x5` (20, all 224 or 256 lines high) and `0x101` (8, all 448 or 512 high).
+`Sky_Start` (`0x00496758`) resets the GS (`0x004aa180(0, interlace, video mode, frame mode)`) by flag: `0x2` (without
+`0x4`) interlaced in **field** mode, `(0, 1, mode, 0)`; `0x4` and `0x100` interlaced in **frame** mode, `(0, 1, mode,
+1)`; neither, non-interlaced, `(0, 0, mode, 1)`. `0x100` also halves two display factors (bytes `0x00710080` /
+`0x00710081` = 1 instead of 2) and takes the display width from `0x00596e50`. `0x200` adds the second read circuit
+(below). Confirmed (code) for the branches; reading the reset's arguments as interlace and field/frame is inferred
+from the GS's `SMODE2`. So `0x4` is a half-height buffer shown in both fields, and `0x100` a full-height buffer
+read a line in two per field: neither has the anti-flicker blend of mode 82.
 
 ### Display records {#display-records}
 
@@ -114,7 +120,8 @@ In field mode the GS shows every other line of the 448-line frame buffer in each
 behaviour; inferred). With the second circuit one line lower, **every line on the TV is the average of two adjacent
 lines of the frame buffer**: a vertical two-tap filter, the usual PS2 anti-flicker. The picture is slightly soft
 vertically and thin horizontal lines do not flicker between fields. It does not change the brightness: the two copies
-are the same picture ([Graphics](graphics.md#open-questions) keeps the 70 % brightness seen in PCSX2 open).
+are the same picture. The 70 % brightness seen in PCSX2 is the game's own vertex colours
+([Graphics](graphics.md#open-questions), confirmed (runtime) for text).
 The same registers read from a frame's GS dump are in [Rendering: Output](rendering.md#output).
 
 ### GS memory {#gs-memory}
@@ -124,7 +131,23 @@ The GS has 4 MB (`0x100000` 32-bit words). `Sky_Start` places the two 640 × 448
 `0xd2000`, **753,664 bytes**, through `TexCache_Init` (`0x004a3600`). The driver reports `(0x100000 − end) × 4` as the
 texture memory size (request 12). Confirmed (code); `0x00597144` = `0xd2000` confirmed (runtime). So textures do not
 stay in GS memory: the driver uploads each one when a draw needs it and evicts others to make room (`TexCache_Find` and
-`TexCache_Upload`, called before each material's draw; how it chooses what to evict was not read).
+`TexCache_Upload`, called before each material's draw).
+
+**Eviction** (`TexCache_Allocate`, `0x004a30c8`, the cache's placement function when it is on; confirmed (code)): the
+cache is a **ring**. A table of `{raster, GS address, size}` entries (sizes rounded up to 2,048 words) records what
+is resident, from the oldest (`0x0052f948`) to the newest (`0x0052f944`). A raster that is not resident is placed
+right after the newest one, or back at the start of the cache when it does not fit before the end, and every older
+entry whose range it overlaps is dropped (its raster loses its cache link). So eviction is first in, first out, by
+address, with no use counts. Two entries are protected: the rasters bound to context 1 and context 2 for the current
+draw (`0x0052f96c`, `0x0052f970`); when the new raster would overwrite one of them, it is not placed. A raster
+flagged locked (raster extension `+0x17`) is never placed by it. The upload itself (`TexCache_UploadRaster`,
+`0x004a2910`) sends every mip level and the palette, or a raster's pre-built packets.
+
+**The cache does not hold a frame.** Confirmed (runtime), quick-save slot 1 in `level99`'s street (scenario
+`render_texture_uploads`, hook `texture-upload` on every placement): standing still, every frame (one per two ticks,
+30 per second) placed and uploaded **376-377 rasters, 300 of them different, about 1.08 million words (4.3 MB)**,
+nearly six times the cache; with the camera turning (right stick 60 %), 190 to 436 a frame. So nearly every texture is
+sent to the GS again in every frame, some twice. Nothing of this shows on screen; a PC renderer keeps its textures.
 
 ### Render states {#render-states}
 
@@ -225,9 +248,18 @@ Textures arrive as RenderWare PS2 native textures (read by standard 26, `0x00495
 
 Fog is per vertex: the pipelines' microcode writes the fog value and the primitive's `FGE` bit turns it on (render
 state 14). The colour is `FOGCOL` (render state 15, the device's background colour, [Graphics](graphics.md#device-vtable)
-slot `+0x48`), and only linear fog exists (state 16). Where it starts is the device's fog start
-([Graphics](graphics.md#device-object) `+0x444`). Confirmed (code) for the state handling; that the microcode
-computes it linearly between the fog start and the far clip is inferred.
+slot `+0x48`), and only linear fog exists (state 16). Confirmed (code) for the state handling.
+
+**The curve**: when the device sets up the cameras (`RwDevice_SetUpCameras`, `0x00195400`) it gives the main camera
+a fog distance of **far × the fog start** ([Graphics](graphics.md#device-object) `+0x444`, 0.5 unless a level script
+calls `SetFogDistance`), confirmed (code) at `0x001954f0`. The vertex fog value is then linear in the camera depth
+`w`: 255 up to that distance, 0 at the **far clip**, `255 × (far − w) / (far − far × start)` between. Confirmed
+(runtime) twice from GS dumps, with a least-squares fit of the value against `w` (= 1 / `Q`): `level99` (far 115, ends
+57.3 m and 115.1 m, [The streamed world](world.md#fog)) and the title screen (far 150, ends 74.7 m and 151.2 m over
+1,998 partly fogged vertices of the world and the Wonder Wheel, residuals about 1, [The front end](rendering.md#front-end)).
+The world's own pipelines and the objects' share it: an object's atomics get the same game pipelines as the streamed
+world (`ObjectModel_SetupAtomic`, `0x001807cc` → `Atomic_AssignGamePipelines`), confirmed (code). How the microcode
+computes the value was not read.
 
 ### Packets {#packets}
 
@@ -260,6 +292,4 @@ handling of failing pixels have not been compared with the above.
 
 ## Open questions
 
-- How the texture cache chooses what to evict, and whether a frame ever re-uploads a texture it already drew.
-- The display flags `0x100` and `0x4` (which other modes use them).
-- Whether PCSX2's 70 % brightness comes from the drawn colours or the capture ([Graphics](graphics.md#open-questions)).
+None left for the driver; the per-pass measurements are on [Rendering](rendering.md).

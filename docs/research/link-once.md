@@ -422,7 +422,7 @@ free-list rows follow the families above.
 | `0x004db7d8` | `CamFollow_GetMinDistance` | minimum distance `+0x300` | confirmed (code) |
 | `0x004db7e0` | `CamFollow_GetMaxDistance` | maximum distance `+0x304` | confirmed (code) |
 | `0x004db7e8` | `CamFollow_GetDefaultDistance` | default distance `+0x308` | confirmed (code) |
-| `0x004dbb68` | `CamRail_KeepOffWalls` | keeps the rail camera at least 2 m in front of the rail's side planes around the current segment (`+0x352`), or a given plane by a margin; true when it moved the camera | inferred |
+| `0x004dbb68` | `CamRail_KeepOffWalls` | mode 0, switch 2 off: moves the rail camera along its segment to stay `max(2, 0.4 × height)` from `P` in plan; switch 2 on: pushes a point 2 m off the vertical planes of the previous, current and next segments; modes 1-3: pushes it the margin beyond a given plane; true when it pushed the point ([camera](camera.md#rail-collide)) | confirmed (code) |
 | `0x004dc638` | `CamBlend_ForwardSlot198` | `CamBlend` vtable `0x00537610` slot `+0x198`: forwards to the destination camera (`+0x214`) | confirmed (code) |
 | `0x004dc668` | `CamBlend_ForwardSlot1a0` | slot `+0x1a0`: forwards to the destination camera | confirmed (code) |
 | `0x004dc698` | `CamBlend_ForwardSlot1a8` | slot `+0x1a8`: forwards to the destination camera | confirmed (code) |

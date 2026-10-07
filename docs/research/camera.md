@@ -275,7 +275,7 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 | `0x0012e9a8` | `Cam_Follow_FrameEnemy` | Combat camera: holds the enemy 27° off centre. [combat camera](#combat-camera). | confirmed (code) |
 | `0x0012ec50` | `Cam_Follow_TiltOverObstacles` | Sweeps a sphere from the look-at point to the camera against the camera-obstacle boxes (`0x00715280`); tilts the view over a box it looks along (`+0x3a8`, eased 90%, decays 10%) or pulls the camera in front of it. [Helpers](#collision-helpers). | confirmed (code) |
 | `0x0012f3e0` | `Cam_Follow_SlopePitch` | From the height ray's ground normal, eases a pitch offset `+0x3a4` 10% per update toward the slope's angle (sets `+0x460`); 0 on flat ground. [Helpers](#collision-helpers). | confirmed (code) |
-| `0x0012f858` | `Cam_Follow_RaiseWhenBlocked` | When the collision step pulls the camera in, raises the wanted position toward a height over the look-at, chooses a clear heading (`0x0012fd20`) for one target, and sphere-pushes the camera. [Helpers](#collision-helpers). | confirmed (code) |
+| `0x0012f858` | `Cam_Follow_RaiseWhenBlocked` | When the collision step pulls the camera in, raises the wanted position toward a height over the look-at, chooses a clear heading (`0x0012fd20`) for one target, and sphere-pushes the aim point (1.0 m) again. [Helpers](#collision-helpers). | confirmed (code) |
 | `0x0012fd20` | `Cam_Follow_ChooseClearHeading` | Blocked view, one target: casts 11 rays round the face's normal (0, ±30°, ±45°, ±60°, ±77°, ±82°), scores 9 windows of 3 and stores the best as the swing heading `+0x43c`; latches `+0x462`..`+0x464`. [Helpers](#collision-helpers). | confirmed (code) |
 | `0x001303c8` | `Cam_Follow_SphereTest` | Switch 1: a physics bound sphere (radius = near plane) at the camera collided with the physics world, ignoring object kinds 0xc-0xe, 0x10 and 0x1c; keeps the camera off what it hits (`+0x410` timer 0.15 s). [Helpers](#collision-helpers). | confirmed (code) |
 | `0x00130990` | `Cam_Follow_Collide` | Follow world collision: rays, side probes, swing away, sphere pushes, next update's lag. [collision](#collision). | confirmed (code) |
@@ -400,7 +400,7 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 | `0x0013fba0` | `CamRail_ChooseSegment` | Chooses the rail segment for P (nearest point, then the segment P projects inside). [rail](#rail). | confirmed (code) |
 | `0x00140308` | `CamRail_ProjectOnSegment` | Projects P on the segment, clamped, and pulls it toward P by setting 0. [rail](#rail). | confirmed (code) |
 | `0x00140708` | `CamRail_CollideTwoTargets` | Collision with two targets and switch 8: when the targets are not all in frame (`0x00140ad0`, margin 0.3) keeps the previous position, orientation and look-at, then reframes (`0x00140d68`). | confirmed (code) |
-| `0x00140830` | `CamRail_Collide` | Sweeps a 0.3 m sphere from the target's head to 2 m behind the camera and pulls the camera in front of a hit. [rail](#rail). | confirmed (code) |
+| `0x00140830` | `CamRail_Collide` | Mode 0's last step for the first target, with no world test: with switch 2 off moves the camera along its segment to keep it `max(2, 0.4 × height above P)` from `P` in plan; with switch 2 on keeps the player 2 m from the rail's vertical planes. [collision](#rail-collide). | confirmed (code) |
 | `0x00140ad0` | `CamRail_TargetsInFrame` | True when every target, by its radius (humans: scale × 0.5) plus a margin, is inside the view's side planes (vtable `+0x174`); with switch 2 (`+0x3e6`) tested from the camera's view. | confirmed (code) |
 | `0x00140d68` | `CamRail_KeepTargetsInFrame` | Pulls the rail camera back and up until every target is inside the frame: the targets' height span (plus the offset's height, at least 1 m) and each target's radius against the side planes; with switch 2 (`+0x3e6`) a target within 2 m of the segment's points also counts (inferred). | inferred |
 
@@ -835,6 +835,38 @@ With one target that is a player (with any other target, only a 1.0 m sphere pus
    level, by `min(1, (3.5 − the feet's distance in front of it) × 0.4) × 0.3` instead); then, if that left it farther
    from the look-at point than `P` is, it is pulled back in plan to `P`'s distance.
 
+**Steps 4 and 5 in detail** (confirmed (code), `0x00133b40`-`0x00134180`; `old` is the aim point `+0x240` before
+this update, `P` the pushed lead point):
+
+- **The tests in player terms.** "The target does not count for the cameras" is `Camera_HumanCounts`
+  (`0x00123500`) returning 0: he is down or dead (`Human_IsDownOrDead` `0x00227e60`: dying, dead, knocked out or
+  tackled, state `0x180050000`; not knocked down), or he is **cuffed** (`Human_IsCuffed` `0x00223b70`, state
+  `0x20000`) and cannot free himself (he still counts with upgrade (6, 15) unlocked and a key, item 6, carried,
+  [Crimes](crimes.md)). "The game mode is not 1" is `GameModeStack_TopId` (`0x0015e748`) ≠ 1: another mode is on top
+  of gameplay ([Boot](boot.md)). **The long fall** (state flag `0x1000000000`, read only for a player, human `+0x1b0`
+  ≠ −1) is set by `Human_BuildFallClip` (`0x0025d020`) when a fall (anim state 26) starts while he is knocked down,
+  knocked out or cuffed (state `0xe0000`), dying or dead, or already falling (held flag `0x400000`): he goes over an
+  edge limp, as when knocked or thrown off a ledge, and plays the long-fall cycles 422 / 425.
+- **The timer `+0x38c`.** Set to **0.375 s** when the main ray hit a face this update (its hit plane is not zero) but
+  the hit does not hold the camera (`+0x45b` clear) while the sticky copy `+0x45c` is still set; set to **0.75 s**
+  when the main ray hit a face this update and the step-3 push of `P` (the 1.0 m `CollisionMesh_SpherePush`, which
+  returns whether it touched a wall) touched nothing this update but touched (or did not run, while aiming) on the
+  last (`+0x45a`, this update's result kept at the end of the step). With any other target the push in question is
+  the 1.0 m push of the old aim point. It **counts down by `dt` only while `s` > 0** (the target faster than his
+  walk), so it waits while he stands.
+- **The overshoot test** (the ×2.5): with `new` = `old` + (`P` − `old`) × the lag being built, it compares squared
+  **3D** distances: (|`P` − `old`|² > 10⁻⁵ or the slope latch `+0x460`) and |`P` − `old`|² < |`P` − `new`|². That
+  holds only for a lag outside 0-2, which the build never reaches (inferred), so in play the ×2.5 comes from the
+  other case: the target not pad-controlled (per-player record `+0x1b` = 0). The ×1.25 needs the target at or below
+  walk + 18% of (run − walk), the latch bytes `+0x45b` or `+0x45d` set (`+0x458` & `0xff00ff000000`) and the slope
+  latch `+0x460`.
+- **The blocked-wall share** replaces the lag in step 5 when the main ray's hit holds the camera (`+0x45b`), the
+  camera does not aim, and the hit face is steep: |normal `z`| < **0.6** (`0x005d91cc`, steeper than 53.13°). Its
+  "feet's distance in front" is the target's transform position (his feet) against the **hit face's plane**:
+  `n · feet − d`, with `n` and `d` the plane of the main ray's hit (the ray from the look-at point toward the
+  camera). The share is `min(1, (3.5 − that distance) × 0.4) × 0.3`: 0.3 within 1 m of the wall, falling to 0 at
+  3.5 m. (Aiming, the lag is at least 0.8 instead.)
+
 The camera's yaw and pitch therefore lag the look-at point: the trace's `cam_pitch` (camera to look-at) is not the
 pitch of the view; the view's pitch is camera to `+0x240`.
 
@@ -1130,18 +1162,30 @@ the shake's levels 1-3; the last argument is stored in the camera's `+0x1d7` (no
 
 ### Height hold {#height-hold}
 
-The height hold keeps the camera below an overhang or at a wall top instead of following the leash's height.
-Confirmed (code) in `0x0012ae58` and `0x0012a7d8`; the reading inferred:
+The height hold drops a raised camera under an overhang (a beam, an awning's edge, a bridge's underside) and keeps
+it there instead of following the leash's height. Confirmed (code) in `0x0012ae58` (`0x0012bf14`-`0x0012c078`) and
+`0x0012a7d8`; the player-terms reading is inferred. Below, `feet` = `+0x378` − the offset's z (`+0x208`), where
+`+0x378` is the look-at height, refreshed every update while not holding and frozen while holding; `H` is the probe
+height of update step 1 (2.0 m; with a target 1.9 m × his scale, changed in some animations, not traced); the near
+plane is the camera's vtable `+0x5c`.
 
-- **Probe** (each update while the main ray did not block last update, `+0x45b` = 0, and the held position is
-  higher than 1.5 m above the player's feet): a ray with mask `0x200` from the wanted position's x, y at the height
-  feet + 2.0 + 0.75 m + the near plane, horizontally toward the look-at point, as long as their distance in plan.
-- **Entering** (`0x0012a7d8`): when that ray hits a near-vertical face (its normal's `z` below a cosine constant) and
-  the camera is not holding yet, the face's plane is stored (`+0x220` normal, `+0x230` point), the probe steps
-  through a table of heights and casts again (inferred: to find the face's top), and the hold starts: `+0x453` = 1
-  with the held height `+0x324` = the hit height − the near plane − `+0x378` (the look-at height when it began).
-- **Leaving**: when the slope flag `+0x460` is set, the probe did not run or hit nothing, or (holding) the wanted
-  position is no longer in front of the stored plane (closer than 10⁻⁵): `+0x453` = 0 and the plane is cleared.
+- **Probe** (update step 12): runs while the main ray did not block last update (`+0x45b` = 0) and the held position
+  `+0x260` is higher than `feet` + `H` − 0.5 m (1.4 m for a normal-sized player): a ray with mask `0x200` from the
+  wanted position's x, y at the height `feet` + `H` + 0.75 m + the near plane, level toward the look-at point
+  (`0x00336da8`), as long as their distance in plan (`0x00336d68`).
+- **Entering** (`0x0012a7d8`, called with `feet`, `feet` + `H` and a table of two heights at `0x00548ad0`): needs a
+  hit more than 10⁻⁵ along the ray, on a steep face (its normal's |z| under cos 53.13° = 0.6, `0x005d91cc`), while not
+  holding. The face's plane goes to `+0x220` and the hit point to `+0x230`. The same level ray is then cast lower,
+  at `feet` + **2.395 m** and then `feet` + **2.148 m**: forward, and when that is clear, backward from its far end.
+  The first height clear both ways is taken. If both hit, a last try at `feet` + `H`; if that hits either way there
+  is no hold. Otherwise the hold starts: `+0x453` = 1 and `+0x324` = the height − the near plane − `+0x378`, so
+  step 12 eases the wanted position's height to that height less the near plane.
+- **In player terms**: the camera stands higher than the player's head, something steep sits between it and the
+  look-at point about 0.75 m above head height, and there is clear space 2.0-2.4 m above his feet: the camera comes
+  down into that space and stays there.
+- **Leaving** (`0x0012c048`): when the slope flag `+0x460` is set, the probe did not run or hit nothing, or (holding)
+  the wanted position is no longer in front of the stored plane (its distance in plan under 10⁻⁵): `+0x453` = 0 and
+  the plane is cleared. So the hold also needs the probe ray to keep hitting something every update.
 - **While holding**: update step 12 eases the height and step 11 (the pitch toward its target) and the 85°/s pitch
   return of step 16 are skipped.
 
@@ -1214,8 +1258,31 @@ calls and constants; the overall reading is inferred:
   direction (1 for a positive turn, 2 for a negative one) and, when the needed turn reverses, becomes −1: the turn is
   given up (0), the player's position is kept in `+0x2c0`, and the camera pulls in to the hit instead. `+0x479` is
   cleared when the view is not fully blocked (inferred). Confirmed (code) before `0x001325cc`.
-- **Sphere pushes** (`CollisionMesh_SpherePush`) with radius 1.0 and half the wanted distance push the camera out of
-  walls. (The sway `+0x3f8` is the sprint's, at most 0.028 m: [The aim point](#aim-point) step 2.)
+- **What moves the camera, in order** (confirmed (code) at the addresses cited; the step works on a copy of the
+  wanted position `C`, from the look-at point `L` along the unit direction `u` = (`C` − `L`) / |`C` − `L`|):
+    1. The swing away (above) turns `C` about `L`.
+    2. **Pull-in** (`0x001327f0`-`0x00132a20`), when the main ray or the side probes are blocked: `C` = `L` + `u` ×
+       the **nearest hit distance among the main ray and the six side probes** (the probes are as long as the main
+       ray, so a face met at a slant by a probe can be nearer than the main ray's hit). With only side probes
+       blocked and `+0x471` clear, the distance is instead the farthest probe hit, or, when that is nearer than last
+       update's allowed distance, last update's distance moved toward it by 2 × `+0x1a0` (the time step, inferred) of
+       the gap. `C` is then moved off the hit's plane, and off a second
+       probe plane if there is one, until it is `m` in front of it, with `m` = min(near plane × (1 − `n` · (−`u`)),
+       **0.01 m**): almost nothing for a face met head-on. No margin like Coney's 0.2 m.
+    3. **Creep out** (`0x00132f5c`-`0x00133250`, [Heading](#heading)): when `C` is now farther from `L` than the
+       allowed distance of the last update, it is put at that distance plus 4% of the gap (blocked) or 3% (clearing).
+       A pull-in nearer than last update's distance stands at once.
+    4. `Camera_PushOutOfHumans` (`0x00122728`) when `C` is more than min(`+0x300`, `+0x32c`) or 1 m from `L`.
+    5. The aim point `P` work, including both radius-1.0 sphere pushes ([The aim point](#aim-point) step 3, and again
+       in `0x0012f858` after it raises `P`): those pushes move `P` (or `+0x240` with two targets), **never `C`**.
+    6. **Raise when blocked** (helpers, below) lifts `C`'s height only; its plan distance is unchanged.
+    7. The **wall push** (below), only while `+0x464` is set: the one sphere push of the camera itself, radius the
+       near plane + 10⁻⁵.
+
+  So the distance a blocked view leaves is the nearest of the seven hits, less up to 1 cm; the near plane is not kept
+  clear of the face unless the wall push runs. In the street run above the camera came to rest 0.25 m in front of the
+  disabled panel; a slanted side probe meeting the panel nearer than the main ray fits that (inferred). (The sway
+  `+0x3f8` is the sprint's, at most 0.028 m: [The aim point](#aim-point) step 2.)
   The [aim point](#aim-point) gets its own 1.0 m push. **Wall push** (only while `+0x464` is set, set by [choose a clear
   heading](#collision-helpers); one view per player; the final position's distance in front of a near-vertical face,
   `|n.z|` < cos 10°, under 1.05 × the near-plane radius, or the main ray blocked): a sphere push of the near-plane
@@ -1276,7 +1343,10 @@ Confirmed (code) at each function; where the reading of a direction or a gate is
   2.0 + 0.085 m (feet + 0.5 m or the look-at height in states `0xe0c00` / `0x2000`, feet + 0.145 × scale with the
   last argument set; inferred: crouching), never down. Then with one target, the main ray blocked, no clear heading
   latched (`+0x463`) and no timed move (`+0x475`), **choose a clear heading** (below); then the height moves `s` of
-  the way to that target − 0.05 m once more and the camera is sphere-pushed with half the wanted distance as radius.
+  the way to that target − 0.05 m once more, applied to the aim point `P` (one target; `+0x240` with two), and `P`
+  is sphere-pushed again with radius half of 2.0 (1.0 m; 0.5 m on one sway path), the same push as
+  [The aim point](#aim-point) step 3. Its result goes to the step's push flag (`+0x45a`). The camera is not pushed
+  here.
 - **Choose a clear heading** (`0x0012fd20`). Only when the player is less than **1.8 m** in front of the blocking
   face, not aiming, not holding someone in front, and the allowed distance is under 9 m (or he is in a fight stance
   that counts, or has one of state flags `0x3800f0c00`). It sets `+0x462`, `+0x463` and `+0x464` (the wall push), and
@@ -1828,11 +1898,58 @@ height set negative eases back to the present height before it switches off. Set
    ceiling, it never raises the camera). The camera stands at `Q`.
 5. **Look-at**: with setting 8 on, the look-at point is replaced by the point 6 m from `Q` toward the targets in plan,
    raised by 6 × tan(setting 8). The camera then faces the look-at point.
-6. **Ends**: at the first point with the look-at point behind the rail's start, or at the last point with it beyond
-   the end, the camera is held (`+0x3e4` = 1): it keeps the previous frame's position, orientation, `P` and look-at
-   point; what clears the hold is not traced.
-7. **Collision**: `0x00140830` sweeps a 0.3 m sphere from the target's head (position + offset) to 2 m behind the
-   camera and pulls the camera in front of a hit (two targets and switch 8: `0x00140708` instead).
+6. **Ends**: when `Q` is the rail's first point and the look-at point lies behind the rail's start, or `Q` is the
+   last point and the look-at point lies beyond the end, the hold `+0x3e4` is set (`0x0013dafc`) and the camera is
+   put back as it was at the start of the update (position, orientation, `P`, look-at point), then faces the
+   look-at point again. This hold lasts one update: step 7 clears it. So the camera stands still while the look-at
+   point is past an end and follows again on the first update it is not.
+7. **Collision** (`0x0013dbbc`-`0x0013dc1c`): when the camera is held (by step 6 or by `CamLockRail`), or with
+   switch 3 off, switch 8 on and two or more targets, `CamRail_CollideTwoTargets` (`0x00140708`) runs and the hold
+   is then set back to its value at the start of placement. Otherwise `CamRail_Collide` (`0x00140830`) runs for the
+   first target ([below](#rail-collide)); it does not touch the hold.
+
+**The hold** (`+0x3e4`, confirmed (code) at the addresses cited):
+
+- **Mode 0 held** at the start of placement (the value reaches `CamRail_UpdatePosition` as its fifth argument,
+  `t0` = `+0x3e4` ≠ 0 at `0x0013d498`): steps 1-6 are skipped. The camera's position, orientation, `P` and look-at
+  point are put back to their values at the start of the update (last update's), the camera faces the look-at point
+  and the frustum is rebuilt. Step 7 then runs `CamRail_CollideTwoTargets`: when a target is out of frame (margin
+  0.3 m, `0x00140ad0`) it pulls the camera back and up until every target is in frame (`0x00140d68`), so a locked
+  camera still keeps its targets in view. The hold is written back as 1, so a `CamLockRail(true)` lock lasts until
+  `CamLockRail(false)`.
+- **Every writer**: the constructor (0, `0x0013b1fc`); `Camera_LockRail` (`0x0011d180`, the script's value);
+  `CamRail_CopySettings` (`0x0013b498`, copies player 1's, so a joining player inherits his lock); the mode 0 ends
+  test (1) and step 7 (the start value); mode 3 (1, below). `CamRail_Reset` (`0x0013b2b8`), `CamRail_Activate`
+  (`0x0013b508`), `CamSetupRail` and switching modes never write it: a lock survives `CamSetupRail` and
+  `CameraMakeActive`.
+- **Modes 1 and 2** (`CamRail_PlaceLeading`, `0x0013e708`) never read it: a lock does not stop them.
+- **Mode 3** (`0x0013dcc8`) sets it when the camera reaches the rail's first or last point (squared distance under
+  10⁻¹⁰, `0x0013e260`, `0x0013e2ec`) and, while it is set, no longer moves along the rail toward the target: the
+  camera keeps its position and its look-at point, still reframing (`0x00140d68`) and shaking. Mode 3 never clears it,
+  so a mode-3 camera that reaches an end stays there until `CamLockRail(false)` (inferred from the list of writers).
+
+<span id="rail-collide"></span>**Collision** (`CamRail_Collide`, `0x00140830`, confirmed (code))
+does no world or physics test.
+Its one caller is mode 0 (`0x0013dc18`). Let `A` be the first target's position in the transform table
+(`0x00714b00` + index × `0x20`) plus the look-at offset `+0x320`, and `B` his position as copied at the start of
+his own update (human `+0x10`, vtable `+0x9c`) plus the same offset. The helper `0x004dbb68` then acts by switch 2
+(`+0x3e6`):
+
+- **Switch 2 off** (the default): the camera keeps its distance from `P`. With `m` = max(2, 0.4 × (camera z − `P`.z)),
+  when the camera is nearer than `m` to `P` in plan, it moves along the current segment's direction by `m` minus
+  that distance: toward the segment's end, or toward its start when it is within `m` of the end (segment length −
+  `m` ≤ its distance from the segment's first point). One step, with no easing or timer; it can leave the camera
+  still nearer than `m`. The player is not moved. The camera then faces the look-at point and the frustum is rebuilt.
+- **Switch 2 on** (`level83_c5_apartment.lua`): the **player** is kept at least 2 m in plan from the vertical planes
+  through the previous, current and next segments. Each plane is unbounded, built from the segment and world up,
+  with its positive side the one `B` is on. In turn, when `A` is nearer than 2 m to a plane on that side, `A` is
+  pushed along the plane's normal to 2 m (plus 10⁻⁵). If any plane pushed, the player is placed at `A` minus the
+  offset with his current rotation (`Human_SetTransform` `0x0023d440`, his vtable `+0x6c`). When he is jumping or in a
+  long fall (state flags `0x400000000` or `0x1000000000`) he is landed first (`Human_Land` `0x0023e090`). The camera
+  is neither moved nor turned.
+- `CamRail_Collide` also builds a vertical plane 2 m in front of the camera along its level forward and passes it
+  with a 0.3 m margin. The helper uses that plane only for a rail in modes 1-3 (it would push `A` to 0.3 m beyond
+  it), which never call `CamRail_Collide`: the 0.3 m and 2 m have no effect.
 
 **Mode 3 placement** (`0x0013dcc8`, `CamModifyRail` setting 5 ≥ −360): the camera starts at the rail point nearest
 the target point, raised by 2 × tan(setting 5); each update it moves along the rail toward the nearest target, at
@@ -1893,7 +2010,21 @@ cited addresses:
 
 1. **When.** `W_GameState + 0x14c` is 1 (a failure: the players are out or busted, [Combat](combat.md#defeat)), the
    level is not an Armies level, the game-state flags `+0x152` do not have bit 2 (with it the countdown goes to 0 at
-   once and the menu comes with no shot), and player 0's camera is not already type 12.
+   once and the menu comes with no shot), and player 0's camera is not already type 12. In player terms:
+   - **Armies levels** (`GameState_IsArmiesLevel`, levels 60-64) never get the shot: their failure counts down
+     at most 90 updates (3 s, the same cap as a level completed) with the current camera still running, then
+     pushes the Armies game-over (`ANGameOver_Toggle`) instead of `MissionFailed_Toggle`.
+   - **`+0x152` bit 2 means a player fell out of the world.** Its only writer besides the level reset (0,
+     `GameState_ResetForLevel`) is `Human_StateUpdate` at `0x002403ec`. When player 1's or player 2's human
+     (handles `+0x228`, `+0x22c`) is more than 20 m below the collision mesh's lowest vertex
+     ([Characters](characters.md#ground)), it sets the failure reason to global string `0x13`
+     (`MissionFailed_SetReason`, `0x001d1fb8`), `+0x118` = 0, `+0x14c` = 1 and `+0x152` = 2. It does this only while
+     game-state `+0x150` has bit 2, which `GameState_ResetForLevel` sets (7) and nothing else writes: always, in
+     practice (inferred). That same update the countdown goes to 0 and the mission-failed menu is pushed: no shot,
+     no tint, no wait.
+   - The shot starts only while the failed camera does not yet exist (`Cam_GetFailed(0)` = 0); later updates of the
+     same failure find it and skip the start. The slot `0x0050b170` is cleared again by `Cameras_ClearSlots`
+     (`0x0011ea68`) and `Camera_Release` (`0x0011e7e0`), so each new level's failure gets a fresh shot (inferred).
 2. **Start**, once: `Cam_GetFailed(1)` makes the camera on first use (`0x0050b170`); player 0's current camera is kept
    in `+0x1e4`, and `Camera_MakeActive(0, failed, 0)` makes the shot current with **no blend** (a cut), which runs the
    activation above (target, then placement). It saves the screen tint (`+0x1f8`), the HUD state (`+0x1fc`), the
@@ -2185,8 +2316,8 @@ The world viewer keeps its own free camera with the player camera's lens
 - **Disabled triangles**: the main ray's rule is in place, but which triangles the game switches off in a level
   (`0x0034fba0` from a game object's box, [Collision](collision.md#enable)) is not known from the data yet, so every
   triangle of a level stays enabled in Coney and the street's disabled panel still pulls the camera in there.
-- **The height hold** is never entered by the player yet: what sets `+0x453` is not traced, nor the two special
-  modes' 40.5 % and 48 %.
+- **The height hold** is never entered by the player yet: the probe and its lower heights are now on the page
+  ([Height hold](#height-hold)) but not modelled, nor the two special modes' 40.5 % and 48 %.
 - Beyond 157.5° the auto-centre rule's falling line is carried on for a running player (5°/s at 180°). The other
   gates of [Heading](#heading) (human flags, the clip's descriptor flag `0x8000`, state flag 4, the watched target)
   are not modelled.
@@ -2268,10 +2399,9 @@ position, and `CamSetFollowPos` puts the follow camera at a point at once.
 - **The combat camera's 0.4 keep-in-view** (answered): `0x0012e170(0.4)` keeps the player's brain target (brain
   `+0x124`) in view while he is in a fight stance that counts for the camera and no
   secondary target is watched ([update step 9](#update)).
-- **Still open in the follow update**: the height probe's table of heights;
-  the camera hand-over queued in `+0x3c0` / `+0x47c`; the update's seventh argument to the right stick.
-- **Rail cameras** ([Rail cameras](#rail)): settings 6 and 7; what clears the end hold `+0x3e4`; the vector at
-  `+0x330`.
+- **Still open in the follow update**: the camera hand-over queued in `+0x3c0` / `+0x47c`;
+  the update's seventh argument to the right stick.
+- **Rail cameras** ([Rail cameras](#rail)): settings 6 and 7; the vector at `+0x330`.
 - **Scenes**: the "a scene is playing" flag at `0x0051489c + 0x410` (see
   [Scenes](#scenes)).
 - **Teleports**: whether `Teleport` / `TeleportToFlag` of a player (the human slot `+0x14c` they call) moves or resets his

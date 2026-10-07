@@ -1,0 +1,2 @@
+# Standing still for 120 updates, then the right stick at 60 % to the right for 120 updates (the camera turns).
+120 stick right 60 0

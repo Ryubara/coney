@@ -233,6 +233,9 @@ An owner answers numbered float attributes through its vtable `+0xd0` (and sets 
 | 8 | 0 | its type's `+0x88` (`CfgObj` argument 11, named `mass` in the scripts): 0.1 for 1,359 of the 1,371 types, 0.2 for 7 (the cue ball among them), 0.15 and 0.4 for one each, 0 for 3 | contact code 2's bounce: the restitution |
 | others | 0 | 0 | |
 
+A third slot, vtable `+0xd8`, asks whether the owner has attribute `n` at all; the human's answer
+(`Human_HasAttribute2`, `0x002212a0`) is yes for attribute 2 only. Confirmed (code); its callers are not traced.
+
 The values per type are confirmed (runtime), read from `level99`'s object database. The bounce
 (`PhysicsVec_Bounce`, `0x0033d8f0`) is `v −= n (v·n)(1 + e)` when `v·n < 0`; a brick
 that hit the floor at 5.4 m/s came back up at 0.54 m/s ([Settling](#settle)).
@@ -280,7 +283,7 @@ the code that stores them, and each handler was decompiled. Confirmed (code):
 | human (vtable `0x0053f088`) | `Human_OnContact` `0x00219d50` | `0`, `0x20000` or `0x20001` (slide) against the level and objects ([Characters](characters.md#walls)); `1` against a body with type flag `0x200`; against another human, `1` after a strike (`Strike_Contact` `0x0021b290`, its vtable `+0x104`), otherwise **`4`**, with `0x20000` added while airborne |
 | world object (`0x005453a0`) | `WorldObject_OnContact` `0x00394050` | **`2`** against a body or a steep surface (normal z ≤ 0.7), `0x20002` on a floor, `0x10003` on a floor once settled ([Settling](#settle)); `0x10000` (after `0x00393e20`) while its byte `+0x10d` or `+0x10e` is clear; `0x40000` when, thrown, it hits a human; `0` or `5` (no branch) when `0x003951d8` gives it a human (its holder, inferred) |
 | car (`0x00544c08`) | `Car_OnLanded` `0x00389e08` | always **`2`**; with the level it also clears airborne and zeroes the velocity ([Cars](#cars)) |
-| four others (`0x00544ed0`, `0x00545138`, `0x00545660`, `0x005458c8`) | `0x004dac20` | `0` |
+| glass pane (`0x00544ed0`), light task (`0x00545138`), particle system (`0x00545660`), scene (`0x005458c8`) ([Task classes](tasks.md#classes)) | `0x004dac20` | `0` |
 
 So **3** is never answered: nothing in the game zeroes both velocities on a contact.
 
@@ -487,7 +490,10 @@ None of this is in the step; it is listed so an implementer knows where each mot
   Airborne and with a body (`0x00395a10`), velocity first: `vz −= 15.68 × dt`, then `PhysicsBody_Sweep` with that
   velocity, then the rotation by the angular velocity unless settling. On the update after a human lets go (`+0x10c`
   set, holder at `+0x11c`), the object starts at the holder's `+0x5f0` with velocity from the holder's `+0x600` and
-  that first sweep uses dt = 1/60 s.
+  that first sweep uses dt = 1/60 s. The two are the thrower's aim, written every frame of the
+  aiming state by `Human_TraceThrowAim` (`0x0018fee0`, [Graphics](graphics.md) draws its arc): `+0x5f0` is the
+  release point, a fixed offset turned by the human's rotation (`+0x620`) and added to his position (`+0x610`), and
+  `+0x600` the throw velocity (`Human_ComputeThrowVelocity`) turned the same way. Confirmed (code).
 - While airborne or settling (`0x4040000`, or body flag `0x800`), an object's interval is **2 ticks**
   (`0x00395b70`): it flies at 30 Hz, like the humans.
 - **A thrown object hitting a human** is decided in its contact handler, from its own sweep: the hit object is
@@ -548,7 +554,3 @@ per-object tween run on Coney's fixed step, not a separate pass.
 - How an object of a type with `axis` 0 comes to rest: nothing in its contact handler clears airborne, so it would
   keep bouncing at interval 2 (inferred); the throwable ones (`dyn_lawnchair_a`, `_b`) break on their first contact
   (runtime).
-- What the holder's `+0x5f0` and `+0x600` are (a thrown object's start position and velocity, [Movers](#movers);
-  the hand and the throw, inferred).
-- Which classes the four other task vtables with the empty contact handler are (the car's message `0x3f` is
-  answered: [Cars: hit effects](cars.md#hit-effects)).

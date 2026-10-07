@@ -414,3 +414,11 @@ address = 0x00219d50
 # addiu sp,sp,-0x70; sq s0,0x50(sp)
 original = [0x27bdff90, 0x7fb00050]
 log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "human" }, { value = "[a1 + 0x40]", name = "hit" }, { value = "[a1 + 0x58]", name = "nz", type = "f32" }, { value = "[a1 + 0xb4]", name = "triangle" }]
+
+[hook.texture-upload]
+description = "Each texture upload the GS texture cache places (TexCache_Allocate's call of TexCache_UploadRaster at 0x004a33e0): the raster, its GS word address and its size in words."
+research = "docs/research/ps2-render.md#gs-memory"
+address = 0x004a33e0
+# jal 0x004a2910; move a0,s3
+original = [0x0c128a44, 0x0260202d]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "s3", name = "raster" }, { value = "s1", name = "address" }, { value = "[s0 + 0x30]", name = "size" }]

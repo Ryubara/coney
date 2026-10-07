@@ -25,8 +25,62 @@ Helpers the goals below call, at the start of the goals' file.
 
 ### BossLizzies (type 0x94) {#goal-boss-lizzies}
 
-The Lizzies boss, Vargas ([The Diego and Vargas fight](ai.md#boss-diego-vargas)): a state machine of attack tactics and
-speech lines.
+A scripted gunman for the Lizzies' fight, using Vargas's voice (`vags/speeches/l55`) and `l55_gun_*` aim clips. It
+is **unused**: only the unused Boss tactic and the uncalled `GoalBossLizzies` push it; the shipped level 55 fight is
+`TacticBossScenarioB` ([AI: The boss fights](ai.md#boss-fights)). The goal types `0x93`-`0x96` below are all in this
+case. Confirmed (code) at the cited addresses.
+
+**BossLizzies' state machine** (`0x0029fe18`). The state is goal `+0x10`, its deadline `+0x14` (ms on the game clock),
+and the shots left `+0x1e`/`+0x20`. Every state waits for its deadline. The tunables are globals set only by
+`AdjustBossLizzies(a, b, c, d)`:
+
+- shots per volley `0x006e9424` (a);
+- the gap between shots `0x006e9426` (b);
+- the aim time `0x006e9428` (c);
+- `0x006e942a` (d), which nothing reads;
+- the pause `0x006e942c` (1000 ms);
+- the reload time `0x006e942e` (1000 ms);
+- the taunt-or-retreat split `0x006e9430` (50).
+
+The gang it orders is found by name, `LizSpn`. The aim point is player 1. The shot's victim is the object
+BossTactic's 25 m ray hit (`0x00510bbc`, [Boss tactic](ai-code.md#t1-boss)).
+
+| State | On its deadline | Next, after |
+| --- | --- | --- |
+| 0 | `Tactic_Attack` for `LizSpn`, turn to player 1, line `l55_t3_002a`-`d` (one of four), reload the volley | 1, 2 s |
+| 1 | turn to player 1, line `002a`-`d` | 9, the pause |
+| 9 | (waits for the actions to finish) turn to player 1 | 10, the aim time |
+| 10 | turns to player 1 each update | 11, the aim time |
+| 11 | - | 8, 300 ms |
+| 8 | anim action 668 with argument 3 (fire) | 5, 500 ms |
+| 5 | **the shot**, below | 9 after the gap and a new `Tactic_Attack`, while shots are left; else 6, 1 s |
+| 6 | clears the actions, anim action 668 with argument 0 (reload) | 2, the reload time |
+| 7 | as 6 (BossTactic's damage event sets it, 1 s on) | 2, the reload time |
+| 2 | (waits for the actions) reloads the volley, turns | 3, the pause |
+| 3 | turns, anim action 668 with argument 1; when a roll of 0-99 is above the split, a line `002a`-`d`, else `Tactic_AvoidEnemies(3 m, 10 m)` for the gang and line `001a`-`d` | 9, the pause |
+
+The shot puts the `part_gun_flash` effect at the gun. Then:
+
+- **A human hit (flag `0x40`)**:
+    - a `vags/weapons/gunshot_hit_01`-`05` sound;
+    - `Human_SetDamage(100)`;
+    - `part_blood_spray` and a 0.2 m area effect for 500 ms;
+    - line `004a`-`d` when the victim's brain has no current target;
+    - when the victim is player 1, straight to state 6.
+- **Anything else**: a `gunshot_miss_01`-`05` sound, and message 1 (a hit) to an object with flag 8.
+
+**BossLuther** (type `0x95`): its Process (`0x002a0b00`) is `return 0`, so the goal does nothing.
+
+**BossChatter** (type `0x93`, `0x002a0c78`, `0x002a0fb8`). The init sets 500 health and turns the threat and damage
+responses off. The stage picks the first state:
+
+- **Stage 0** (states 100-107): walks `fBalcony1a`, `2a` and `3a`. Within 100 m of player 1 it mans a weapon pile.
+- **Stage 1** (states 0-26): walks the balcony flags `fBalcony1a`-`3d` by indices 6, 7 and 8, and calls the Lua
+  functions `StopBalconyShake1` and `CollapseBalcony2`. It mans weapon piles whose kind and time come from health / 1200:
+  0 gives kind 1 for 5 s, 1 gives kind 2 for 3 s, 2-3 give kind 3 for 2 s. Between piles it steps aside at random.
+- **Stage 2** (states 200-202): untouchable, with heavy push. Within 50 m of player 1 it mans a pile every 3 s.
+- **Stage 3** (states 300-303): untouchable. It travels the paths `TPath1`, `TPath2` and `TPath3` in turn, each forward
+  then back, and mans a pile between them.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1643,9 +1697,73 @@ Diego, and Vargas at stage 3: [The Diego and Vargas fight](ai.md#boss-diego-varg
 
 ### BigFighter (type 0x85) {#goal-big-fighter}
 
-A giant boss fighter (Lua `GoalBigFighter`; the Moe boss tactic sets its level). A small state machine `+0x24`: 0 taunt,
-1 guard (block or duck and counter), 2 attack, 3 pick up an object; it tires after hits with the break clips of the
-[tired goal](#goal-tired). "Giant" is a model scale above 1.1.
+A boss fighter (Lua `GoalBigFighter`). Big Mo has it in level 11, set to the tactic's stage, and Virgil has it in
+stage 3 of level 93 ([AI: The boss fights](ai.md#boss-fights)). "Giant" means a model scale above 1.1. Confirmed (code)
+at `0x002eabc8`, `0x002ea3c8`, `0x002ea218` and `0x002ea038`, with the [attack kinds](ai.md#attack-kinds) as numbered
+there.
+
+**The fields**:
+
+- `+0x10` his weapon (the world object at human `+0x364`);
+- `+0x14` the class record's `+0x1c` saved by Start;
+- `+0x18` the chosen attack kind (45 = none);
+- `+0x1c` a timer;
+- `+0x20` the break timer;
+- `+0x24` the state;
+- `+0x25` the level (1-3);
+- `+0x27` hits taken in state 2;
+- `+0x28` guard on;
+- `+0x29` counter-attack;
+- `+0x2a` the duck variant;
+- `+0x2c` "just attacked";
+- `+0x2d` the guard count;
+- `+0x2e` the break stage (0 none, 1 started, 2 over, 3 ending);
+- `+0x30` pick-up tries;
+- `+0x31` state 4's taunt done.
+
+**The level** (`BigFighterGoal_SetLevel`). Level 1 zeroes attack weight 16 (Start does this too). Level 2 sets
+weight 16 to 20 and weight 11 to 30. Level 3 sets weight 16 to 40 and weight 11 to 10. From level 2 up, a state still
+0 becomes 2.
+
+**The states.** Nothing runs while actions are queued or during a break (`+0x2e` is 1 or 2).
+
+| State | Entered with | Each update |
+| --- | --- | --- |
+| 0 taunt | the init | Once the human is free (no held or state flags): line `0x57` (giant) or `0x11` when he may gesture, anim 643 (`0x283`). Goes to 2. |
+| 1 guard | timer 1.25 s; guard on; duck variant at 50 %; stun ended; block flag `0x800`; gives up his attack slot. A normal-size fighter also loses flags `0x80020280`, gets back the saved `+0x1c` and weight 16 = 0. | The guard ends (→ 2 once he stops blocking) when the enemy is in a standing reaction, his actions are blocked, or he is farther than the brain's near range (`+0x13c`). Before the timer runs out, unless ducking, he attacks when countering (`+0x29`) or in the duck variant with under 500 ms left: kind 7 (from level 2, kind 16 at 31 %); a counter-attack instead uses kind 7 at 45 / 30 / 25 % by level, else 11 (a giant: 0). Otherwise he counters an escapable tackle or grab (command 3), else holds block (command 4). When the timer runs out: if the enemy is attacking him, counter-attack is set and the timer restarts at 1.25 s; else the guard ends. |
+| 2 attack | timer 0; turn boost restored; guard flags cleared | Every 4 s (or with no enemy) re-picks the best enemy. Without that enemy's attack slot he drops the target. Picks a kind (mask `0x2240e8ffff0000`) when none is chosen. His weapon on the ground, the enemy beyond 1.2 m or blocked: walks to it (gait 2) when more than 1 m away, then picks it up; after 5 tries the weapon is moved to him. In reach: queues the kind; a giant's kinds 16 and 11 say line `0xe` (50 %). Out of reach: moves to the enemy. Not ready to attack: shuffles (20 %, just after an attack) or moves to within 0.95 × near range, with line `0x11` or `0x8f` 10 % of the time. |
+| 3 dazed | 2 s timer; drops his target; flag `0x8000000`; stunned | Line 8 until the timer ends, then ends the stun, then → 1. |
+| 4 enraged | all counters cleared; block flag. A normal-size fighter gets flags `0x80020280`, a push factor of 0.1 and weight 16 = 80. | First update: drops what he holds, then line `0x8f` and anim 643. After that it is like state 2, but every 4 s he picks kind 22 (grab, 30 %) or 16. A kind 16 in reach plays anim 21 (`0x15`, 30 %) or 645 (`0x285`), with line 8, instead of the attack. |
+
+**The guard counter** (`BigFighterGoal_OnAttackWarning`). Outside a break and state 3, a warning of an incoming
+attack clears a move. Against an escapable tackle or grab it presses command 3. Then, unless he is attacking, he
+retargets the attacker.
+
+**The hit thresholds** (`BigFighterGoal_OnHit`, damage event 1):
+
+- **During a break**, a hit ends the 4 s wait (the break timer becomes 1).
+- **In state 2**:
+    - each hit calls the gang for help at 20 m and counts in `+0x27`;
+    - on the **2nd** hit, `+0x2d` steps on modulo 4 (10 for a giant);
+    - at 0 he goes to state 4 (a giant to state 3), otherwise to state 1.
+
+  So a normal-size fighter guards after every second hit and is enraged on every eighth. A giant is dazed on every
+  twentieth.
+- **In state 4**, after the taunt, a thrown object of type class 5 (object type `+0x87`) puts him back to guard. So
+  does `Human_HasState2000`.
+- States 0, 1 and 3 ignore hits.
+
+**The break** (Moe's stages, [Boss Moe](ai-code.md#t1-boss-moe)). At 75 % health (stage 1) or 50 % (stage 2) the
+tactic caps the health and calls `StartBreak`:
+
+1. He drops what he holds and leaves the fight stance. Anim 671 (`0x29f`) plays, with line `0x22` the first time.
+2. Once his action code is 18 with free hands, `UpdateBreak` waits 4 s, or less when a hit cuts it short.
+3. `EndBreak` plays anim 673 (`0x2a1`), sets state 2 and the break stage 3. The tactic then moves to the next stage.
+4. `ClearBreak` drops the block flag on his next update.
+
+In stage 3 the tactic's check calls `Stagger` whenever his hands are free. `Stagger` clears his actions and plays
+anim 668 (`0x29c`), and the tactic reports 8 `TacArrived`; health plays no part. It sets `+0x21` but does not read it,
+so this repeats on each update until the script changes the tactic (inferred).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |

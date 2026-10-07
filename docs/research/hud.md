@@ -716,16 +716,48 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
   otherwise −0.02 (`0x0050d504`) − the showing scroll-in's height (scroll-in `+0x578`, 0 when none). A prompt of more
   than one line moves up a further 0.025 (`0x0050cfb4`) × its height in lines. **Runtime check** (PCSX2 2.9.94, quick
   save slot copies, `level99`): with a hint box 0.124 high the raise was −0.0738 = 0.05 − 0.124.
-- **Its text** is chosen each update by `HUD_Update` for each player who is free to act (not in a scene, a paired
-  move, a mini-game, a car or several other states, `0x001af010`), in this order: when `0x00225ff0` holds and the
-  human's `+0xc4` handle resolves (inferred: something held), HUD string 1 or 0 by that object's `+0x5a0`; when
-  `0x00279078` finds a human and the game state's check `0x0041e420(…, 1)` is at least 1 for either, string 4
-  (neither traced further); the **action object** in reach (`0x00240888`): its prompt `+0x10`, and its hint `+0x14` is
-  queued in the hint box **at priority 0** once (remembered at HUD `+0x177bc` per player, withdrawn by `0x001b3e20`
-  when the object or its hint changes or none is in reach); else a talkable human within 1.5 m whose brain state is 0
-  or 3 (`ActionPrompt_FindNearbyHuman`, `0x001acd60`): the HUD string its interface names (ids 1-388), its own text,
-  or string 9. The strings are `GSTRING.HUD` entries ([Strings](gui.md#strings)); the action objects and their kinds:
-  [Crimes](crimes.md#triangle).
+- **Its text** is chosen each update by `HUD_Update` (`0x001af010`) for each player human (game state `+0x224` of them,
+  handles at `+0x228`) who is free to act, confirmed (code): not knocked out; not cuffed, unless upgrade (6, 15) is
+  unlocked and his player holds a key (item 6); not in a scene state, not in state `0x100000000`, with a player record;
+  not mugging, tagging, in a button mini-game, being mugged or in the mug meter; not aiming a throw (record `+0x1be` =
+  −1 with the move `Human_MoveThrowAim`); his mini-game mode (player state `+0x46`) not 2 or 3 (lock pick, stereo); his
+  action not `0x15` (uncuffing); and command `0xa` (triangle) enabled. Each update starts with no text for either
+  player, so a player who is not free has his prompt cleared (`HUD_ClearActionPrompt`). Then, in this order, the first
+  that applies:
+
+    1. **Mug or interrogate**: `Mug_CanMugVictim` (`0x00225ff0`) holds and the held human (`+0xc4`) resolves: HUD string
+       1 (mug) when that human's `+0x5a0` is 0, else string 0 (interrogate).
+    2. **Revive**: `Human_FindRevivableNear` (`0x00279078`) finds a human and the **player or the downed human** carries
+       a flash: HUD string 4. Details below.
+    3. **The action object** in reach (`0x00240888`): its prompt `+0x10`, and its hint `+0x14` is queued in the hint box
+       **at priority 0** once (remembered at HUD `+0x177bc` per player, withdrawn by `0x001b3e20` when the object or its
+       hint changes or none is in reach).
+    4. Else a talkable human within 1.5 m whose brain state is 0 or 3 (`ActionPrompt_FindNearbyHuman`, `0x001acd60`):
+       the HUD string its interface names (ids 1-388), its own text, or string 9.
+
+    The strings are `GSTRING.HUD` entries ([Strings](gui.md#strings)); the action objects and their kinds:
+    [Crimes](crimes.md#triangle).
+- **The revive test**, confirmed (code) at `0x00279078`, `0x0029cc78`, `0x0029ca28`, `0x00278fa0`:
+
+    - **Who is searched**: `Humans_FindAhead` (`0x002274a8`) lists up to 60 humans, the player excepted, within **3 m**
+      in 3D of the player's position (every direction; humans whose slot flag in `0x00715390` has bit 1; inferred:
+      present); with more than 16 the 16 nearest are kept.
+    - **The filter** `Human_IsRevivableBy(player, him)` (`0x00278fa0`): he is friendly to the player
+      (`Human_IsFriendly`, `0x00222a90`) or in the same gang (brain `+0x20c`); knocked out (`0x00227dd8`); not cuffed
+      (`0x00223b70`); not in state `0x80000000` (`0x00227e18`) or `0x100000000` (`0x00227eb0`); and **revivable**, human
+      flag `+0xe0` bit `0x4` (`HuSetRevivable`; `Human_MakePlayer` sets it on every player, scripts set or clear it on
+      others).
+    - **Sight, no facing**: each candidate must also pass `Human_HasLineOfSight(player, him)` (`0x00222288`: a ray at
+      1.7 m to his 1.7 m, else to his 1.0 m; it passes fences, railings and glass, [AI: sight](ai.md#sight)). The list's
+      field-of-view test is only consulted beyond 3 m (squared distance over 9), which the 3 m search never yields, so
+      **facing does not matter**.
+    - **Which one**: the candidate nearest the player's position (`HandleArray16_NearestHandle`).
+    - **The flash**: the count of item 1 in the inventory at `W_GameState + 0x480` (`Inventory_Count`, `0x0041e420`) for
+      the **player's** panel index (human `+0x380`), or, failing that, for the **downed human's** `+0x380`. An inventory
+      belongs to a player panel (0 or 1) and the count is 0 for any other index, so the downed human's flash counts only
+      when he is the other player (co-op); an AI crew member (`+0x380` = −1) has none.
+    - **Order**: after the mug test and before the action object, under the same "free to act" gates; a player who is
+      himself knocked out gets no prompt.
 - **Showing:** no text hides the prompt (`0x001b2490`); a new or changed text restarts it (`ActionPrompt_SetText`,
   `0x0019f1b0`; a text that parses as a number goes through `0x0019f128`). A prompt naming `Spray`, `Flash`, `Blades`
   or `Give Mon...` also wakes the player panel ([Activity](#the-player-panel)). With the cycle animation on
@@ -1618,8 +1650,19 @@ the centre is the point (x, y, −1) in the **overlay camera's** space, projecte
 (`Im2DDrawer_Begin` `0x001964c0` → `Camera_ProjectToScreen` `0x00198460`); every rim vertex is then that pixel
 centre + r × (sin a, cos a), with **r in screen pixels** and a stepping by −2π / 32 (32 segments, `+0x4ac`). With the
 overlay camera's view window (0.725 × 0.5 at distance 1, [Graphics](graphics.md#2d-drawing)), the default-mode centre
-lands at about GUI (0.110, 0.570) for player 1, 0.02 right of and 0.02 above the pins' centre (inferred; not checked
-at run time).
+lands at **screen** (0.110, 0.570) for player 1, pixel (70.6, 255.4) of 640 × 448: the dial stores the centre as
+(x, y, −1, 1) at shape `+0x00` (`0x001b8530`, the `−1` written at dial `+0x488`), and the overlay camera's
+`viewMatrix` read at run time (camera `+0x20`: right (0.6897, 0, 0), up (0, −1, 0), at (−0.5, −0.5, −1), pos 0;
+PCSX2 2.9.94, `level99`) gives screen x = 0.6897 x + 0.5 and y = 0.5 − y at that depth, confirmed (runtime). The pins,
+sprites at depth 1.1, land at screen (0.133, 0.582), pixel (85.0, 260.6). So the wedges' and the disc's centre is
+**14 pixels left of and 5 above** the pins' centre, as the code stands; that the original shows this offset on
+screen was not seen (no capture of the dial).
+
+**The disc's texture** (`LockPickDial_IsResident`, `0x001b83c0`-`0x001b8404`, confirmed (code)): the u-v centre
+(`+0x4cc`) is rectangle 12's centre and the u radius (`+0x490`, `+0x494`) half its width, with v scaled by the texture's
+width ÷ height (`+0x4d8`), so the circle inscribed in the whole rectangle is stretched over the 41-pixel disc. How
+much of that circle the lock-face art fills decides how big the face looks, and with it how much of the wedges it
+hides.
 
 | Shape | What | Radius (px) | Colour (0-255) | Extent |
 | --- | --- | --- | --- | --- |
@@ -1630,9 +1673,9 @@ at run time).
 Both wedges are centred on angle π, which with y down on screen is **straight up** from the centre (12 o'clock); the
 segments outside the wedge are drawn with a zero colour, so only the wedge shows (whole segments, below). Which band is
 the good zone and which the perfect one follows from the sizes (band 1 the larger good zone, band 2 the perfect one;
-inferred, the judge's bounds are on [Crimes: lock picking](crimes.md#lockpick)). The disc is queued last, so it covers
-the wedges' centre and only the parts outside radius 41 would show, which a 40-pixel wedge never reaches; inferred from
-the radii: the wedges show only where the disc's texture is transparent.
+inferred, the judge's bounds are on [Crimes: lock picking](crimes.md#lockpick)). The disc is queued last, over the
+wedges; where its texture is transparent (outside the lock-face art) the wedges show through (inferred from the draw
+order; how much the art covers is above).
 
 **Draw order, frame and extent** (confirmed (code) unless marked):
 
@@ -2239,8 +2282,7 @@ animation (`HUDTurnOnActionCycleAnim`) is kept per player but not drawn yet (the
 
 - Which character each name-banner sheet (records `0x1f`-`0x32`) names, beyond Rembrandt (`0x2f`).
 - The handcuff and key counters' icon rectangles, and the counters' exact text offsets.
-- The action prompts' text alignment and icon sprite; what `0x00225ff0`, `0x00279078` and the many "free to act"
-  checks of `0x001af010` test; a runtime look at a shown prompt.
+- The action prompts' text alignment and icon sprite; what `0x00225ff0` tests; a runtime look at a shown prompt.
 - Which event raises each of the game's own hints (the 19 callers of `HintBox_QueueGameHint`).
 - **The caption pager** (HUD `+0x18e60`, [GUI](gui.md#fn-subtitle)): which script or mode creates it and whose
   command 1 steps the captions (`0x001cb340`).
