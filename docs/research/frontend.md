@@ -828,12 +828,31 @@ camera never shows anything, the PM screens never change the camera, and only th
   the screen, its lit outline spanning logical x 335-615 and y 53-408 of 640 × 448 (GUI x 0.53-1.01, y 0.08-0.95),
   the "WONDER WHEEL" sign at its hub near logical (410, 217); the same on every PM screen, the outline still to within 2
   logical pixels over 12 s (the camera does not visibly move), while the spokes' neon turns between captures (the
-  wheel rotates). It also rotates after an attract movie (so the restart below does start the scene again).
+  wheel rotates). It also rotates after an attract movie, because the scene is played again from scratch (below).
 - **Who drives it:** `Menu.startScene` / `stopScene` (`WonderWheelAnim:enable(true / false)`) around movies and the
-  start of a level; nothing changes between PM screens. Both always loop `music/wonderwheel_132b` first. Inferred.
-  `start` calls `GetSceneID`, which no binding or script defines, when the scene is already loaded and idle
-  (inferred: the script would fail there; the runtime above shows the wheel moving after the movie, so that path is
-  not the one taken, or fails harmlessly).
+  start of a level; nothing changes between PM screens. Both always loop `music/wonderwheel_132b` first. Inferred
+  (script, [Scripts](scripting.md#level100lua-the-front-end)).
+- **Stop and restart** (how the wheel survives a movie). Confirmed (code) for each step, at the addresses on
+  [Scenes](scenes.md#ending) and [Scenes: loading](scenes.md#loading); confirmed (runtime) for the sequence:
+    1. `stopScene` calls `SceneStop(sceneId)` with `force` left out, so false. The scene has no roles and no loop
+       point (event 29), so it does **not** finish its pass: it goes to state 7 at once, wherever it is in the 20 s.
+    2. `PlayMovie` blocks inside that Lua call: no task updates and the game clock stands still while the movie
+       plays (there is no game mode push or pop to suspend anything).
+    3. On the first updates after the movie the scene ends (its camera is popped back to the script's black camera,
+       the 29 objects are released where they stood, state 8) and the next update unloads the slot; its one user
+       (from the first load) goes to 0, so the slot is emptied.
+    4. 500 ms later `Menu.movieFinished` calls `startScene`. `start` asks `SceneIsPreloaded`, which is false (empty
+       slot), so it calls `ScenePreload` again: the record is loaded afresh, the callback `WonderWheelAnim:startScene`
+       binds the objects and plays it looping **from frame 0**, behind the 1.0 s fade in.
+    5. `GetSceneID` (no binding or script defines it) is reached only when `SceneIsPreloaded` is true, that is when a
+       slot holds the scene loaded and idle (state 2). In `level100` nothing leaves it idle (a play keeps it in
+       states 4-8, and the one user's unload empties it), so that path is never taken; taken, the call of a nil
+       global would raise a Lua error (inferred).
+- **At runtime** (PCSX2 2.9.94, cold boot, no input, scene slot 0 read over PINE every 30 ms): the menus played
+  `WonderWheel_100` (state 5, 1 user); 71.1 s of game time later, as the attract `L1_IN` began, state 7 with its
+  camera track at 10.77 s; the game clock moved 33 ms during the 172 s movie; then state 8, the slot empty one update
+  later, a new request 467 ms later, and the scene playing again (state 5, 1 user) with its camera track at 0.03 s,
+  333 ms after the request. The second attract stopped it the same way 70.5 s later.
 
 ### Fades {#fades}
 
@@ -1100,7 +1119,8 @@ mission-complete mode's kinds 2 and 3. Coney's stand-ins, each because the resea
   an attract movie, `Menu.movieFinished`'s `startScene` asks for the scene with `ScenePreload`, but the scene is still
   playing out the pass `stopScene` left it, so the preload only adds a user and calls nothing back
   ([Scenes: loading](scenes.md#loading)). The wheel then stops at the end of that 20 s pass and the background goes
-  black (open question below).
+  black. In the original a non-forced stop ends this scene at once and its slot is emptied before the restart, so
+  `startScene` loads and plays it afresh ([Background: stop and restart](#background)).
 - A flow made without a level loader (the tests without a disc) has no gameplay: after finishing the front end,
   `update` logs `level start requested: <level>` and starts the front end again, so the player is back on the menus.
 - Without a script system (no disc), or when `Menu.onStart` did not push the menus, the level flow calls
@@ -1397,10 +1417,8 @@ What the implementer still needs:
 - **Sheet-table records 12 and 28** (the Rumble background and sprites): their resource names and rectangles.
 - **The `WonderWheel_100` tracks** (answered): a fixed camera, a 20 s loop turning the wheel 45° (2.25° a
   second), the neons shown and hidden by events ([Objects: the Wonder Wheel](objects.md#wonder-wheel)).
-- **The wheel after an attract movie:** how the original starts `WonderWheel_100` again. `start` preloads a scene that
-  is still playing (no callback, [Scenes: loading](scenes.md#loading)), and its `GetSceneID` path is undefined, yet
-  the runtime shows the wheel turning after the movie. Does `SceneStop` without force free the slot, or does
-  `SceneIsPreloaded` answer true while it plays?
+- **The wheel after an attract movie** (answered): the non-forced `SceneStop` ends it at once (no loop point), the
+  slot is emptied after the movie, and `startScene` loads and plays it from frame 0 ([Background](#background)).
 - **Dynamic objects' models** (answered): `<name>_geo` and its dictionaries from the Object List record
   ([Objects](objects.md#models)).
 - **`0x005147cc`**, set to 10.0 while the Rumble menu is open, and `0x0040c938`.

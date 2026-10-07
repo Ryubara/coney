@@ -80,7 +80,7 @@ There are **12 slots** of 0x40 bytes at `0x006eba18`, confirmed (code) at `0x003
 | `+0x24` | the scene task while it plays |
 | `+0x2c` | flags: `0x1` loaded, `0x2` waiting for memory, `0x4` file requested; the same three per segment buffer in the next nibbles; `0x1000` the scene has segments; `0x2000` restart the chain (looping) |
 | `+0x30` | `s16` current segment buffer (0 or 1), −1 when the chain is done |
-| `+0x34` | users (`ScenePreload` calls on a loaded scene) |
+| `+0x34` | users: 1 when the record arrives, one more per later `ScenePreload`, one less per unload ([Loading](#loading)) |
 | `+0x38` | the interned name of the `ScenePreload` callback |
 | `+0x3c` | the time of the last request (for eviction) |
 
@@ -257,6 +257,15 @@ fixed up (state 2), the slot is flagged loaded, and the callback is called with 
 manager's phase set to 0 for the call). A play binding on a scene not yet loaded requests it and waits for the file
 there and then (`0x00353020` services the file manager until it arrives). Confirmed (code).
 
+- **Users.** The arrival sets the user count to 1 (`0x00352430` → `0x00353158`); a `ScenePreload` on a scene already
+  loaded or loading, in any state (idle, playing, ended), only adds a user and stamps the request time
+  (`0x00353158`): **no callback**, no restart. Confirmed (code) at `0x00353af0`.
+- **Unloading** (`0x00351da0`, from the end of a play and from `SceneUnload`): one user less (`0x003531a8`, never
+  below 0); at 0 the record and both segment buffers are freed and the slot emptied; otherwise the record stays and
+  its header goes **back to state 2** (loaded, idle). Confirmed (code).
+- **`SceneIsPreloaded(name)`** is true only for a slot whose header is in **state 2** (`0x00354b38`): false while the
+  file loads and while the scene starts, plays or ends (states 4-8). Confirmed (code).
+
 **Segments** stream during play (`0x00352c08`): the first request loads the first segment into buffer 0; each later
 one toggles the buffer, frees what it held, and loads the next by name. The update requests the next segment once
 every runner has moved onto the current one (`+0xf2` runners ≤ `+0xf4` switched) and, for a cinematic, unless a
@@ -356,11 +365,11 @@ saved after it began); when it pops, `Generic2` stands at (−282.55, 128.97), r
 A **track runner** (0x90 bytes) per object, camera and light holds the track, the target, the time, the scene's
 position (`+0x40`) and rotation (`+0x50`) and the sampled pose (`+0x60`, `+0x70`). Each update it advances by the
 frame's time; at the end of a part it returns the time left over and switches to the next part's track (`0x003a0400`
-camera, `0x003a05a8` objects, `0x003a0768` lights); with none left, a looping scene starts again from the header's
-track (restarting the segment chain, slot flag `0x2000`, or from the loop point of event 29) and any other scene
-without roles ends. It then sets
-the target's transform to **scene rotation × sampled position + scene position** (`0x00356188`, target vtable
-`+0x6c`). Confirmed (code).
+camera, `0x003a05a8` objects, `0x003a0768` lights); with none left, a looping scene (runner bit `0x4`, set at the
+start from the task's `+0xeb`) starts again from the header's track (restarting the segment chain, slot flag
+`0x2000`, or from the loop point of event 29) with the time left over, so the pass repeats seamlessly; any other
+scene without roles ends (state 7). It then sets the target's transform to **scene rotation × sampled position +
+scene position** (`0x00356188`, target vtable `+0x6c`). Confirmed (code).
 
 **The camera** (when `+0x22` is set): a type-4 camera (`Cam_Scene`) is made, given the scene's name and the current
 camera's view, the current camera is **pushed** and the scene camera made current with no blend (`0x0011ee08`); its
@@ -410,11 +419,18 @@ State 7 (all clips done, or a part ended with no roles) calls the end (`0x0039f4
 9. When skipped and `BlendCam` > 0: fade in over `BlendCam` seconds.
 
 The next update sees state 8 with no humans left and frees the task and **unloads the slot** (`0x00353bf0`,
-`0x00351da0`), so a scene is loaded again for its next play. Confirmed (code).
+`0x00351da0`): one user less, and with no user left the slot is emptied, so a scene is loaded again for its next
+play ([Loading](#loading)). Confirmed (code).
 
-`SceneStop(id, force)` (`0x00353a10`): a starting scene goes straight to state 7; a playing one with roles has its
-clips ended (state 6 while a role is in a paired move, retried each update); without roles it goes to state 7; a
-looping one that is not forced only stops looping (`0x003a0be8`) and ends after the current pass. Confirmed (code).
+`SceneStop(id, force)` (`0x00353a10`; the binding `0x00367e20` reads `force` with default **false**): a starting
+scene goes straight to state 7; a playing one with roles has its clips ended (state 6 while a role is in a paired
+move, retried each update); without roles it goes to state 7 **at once, mid-pass**. Only a scene whose task has the
+**loop-point flag** (`+0xec`) and is not forced just stops looping instead (`0x003a0be8` clears the runners' loop bit
+`0x4` and the roles' clip loop) and ends after the current pass. The start sets `+0xec` = looping **and** at least one
+bound track or role clip has event 29 (loop point, `0x0039d870`); a plain looping scene without event 29 therefore
+stops at once like any other. Confirmed (code). `WonderWheel_100` has no roles and no event 29 (disc: its 29 object
+tracks and camera track carry only events 24 and 25), so a non-forced stop ends it at once: at runtime (PCSX2 2.9.94,
+slot read over PINE) it went from state 5 to 7 with its camera track at 10.77 s of the 20 s pass.
 
 ### Timing {#timing}
 

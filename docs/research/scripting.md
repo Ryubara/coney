@@ -386,11 +386,15 @@ The main chunk, in order (inferred from the disassembly; what the result looks l
    parked rows at z −208.59 (x 522.95-544.82; y −73.15, −65, −69.19); the scene moves them onto the wheel.
 
 `WonderWheelAnim:start` puts the 29 handles in scene-slot order (a-carts 0-7, b-carts 8-15, the wheel 16, c-carts
-17-24, neons 25-28), then `ScenePreload(name, "WonderWheelAnim:startScene")`, or, when the scene is already loaded,
-`GetSceneID(name)`, which no binding or script defines. `startScene(id)` adds the 29 objects (`SceneAddObject`) and
-calls `ScenePlayCinematic(id, 0, nil, false, false, true, false)`: no delay, no end callback, no letterbox, not
-skippable, looping, the world not frozen. `enable(true / false)` always loops `music/wonderwheel_132b` first, then
-starts or stops (`SceneStop`) the scene. The lights come from `global.lua`'s matrix entry for level 100
+17-24, neons 25-28) and marks itself playing, then, when `SceneIsPreloaded(name)` (loaded and idle), keeps
+`GetSceneID(name)` (which no binding or script defines) as the id and calls `startScene` itself; otherwise keeps the
+id `ScenePreload(name, "WonderWheelAnim:startScene")` returns. It does nothing while disabled. `startScene(id)` adds
+the 29 objects (`SceneAddObject`) and calls `ScenePlayCinematic(id, 0, nil, false, false, true, false)`: no delay, no
+end callback, no letterbox, not skippable, looping, the world not frozen; reached while disabled (a load arriving
+after `enable(false)`), it instead unloads the scene when it is loaded and idle. `enable(on)` keeps the flag, always
+loops `music/wonderwheel_132b`, then on `true` calls `start` unless already playing, and on `false`, when playing,
+clears the playing mark and calls `SceneStop(sceneId)` without `force` (so false), which ends this scene at once
+([Front end: stop and restart](frontend.md#background)). The lights come from `global.lua`'s matrix entry for level 100
 ([Front end](frontend.md#background)).
 
 The `Menu` functions (inferred from the disassembly):

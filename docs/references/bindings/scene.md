@@ -387,7 +387,7 @@ SceneStop(scene, force)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `scene` | number, truncated to an unsigned integer | Scene id. |
-| 2 | `force` | boolean (nil or 0 is false) | true ends it at once; false, on a looping scene, only stops the looping so it ends after the current pass. |
+| 2 | `force` | boolean (nil or 0 is false); default false | true ends it at once; false does too, except on a looping scene with a loop point (event 29), which only stops looping and ends after the current pass. |
 
 **Returns** nothing.
 

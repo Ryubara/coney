@@ -194,7 +194,7 @@
     - {addr: 0x00354038, name: Scene_Stop}
   args:
     - {name: scene, lua: number, ctype: unsigned, desc: "Scene id."}
-    - {name: force, lua: boolean, desc: "true ends it at once; false, on a looping scene, only stops the looping so it ends after the current pass."}
+    - {name: force, lua: boolean, default: false, desc: "true ends it at once; false does too, except on a looping scene with a loop point (event 29), which only stops looping and ends after the current pass."}
   description: >-
     Stops a playing scene (state 4 or 5); nothing happens when it is not playing.
   evidence: confirmed-code

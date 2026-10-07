@@ -820,7 +820,7 @@ constexpr std::array<NativeResultType, 1> kResults_ScenePlayFixedScene{R::Boolea
 constexpr std::array<NativeArg, 2> kArgs_ScenePreload{{{"name", A::String, "", 0}, {"onLoaded", A::String, "", 0}}};
 constexpr std::array<NativeResultType, 1> kResults_ScenePreload{R::Number};
 constexpr std::array<NativeArg, 1> kArgs_SceneSetCallback{{{"name", A::String, "", 0}}};
-constexpr std::array<NativeArg, 2> kArgs_SceneStop{{{"scene", A::Integer, "", 0}, {"force", A::Boolean, "", 0}}};
+constexpr std::array<NativeArg, 2> kArgs_SceneStop{{{"scene", A::Integer, "", 0}, {"force", A::Boolean, "false", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_SceneTerminate{{{"scene", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_SceneUnload{{{"scene", A::Integer, "", 0}}};
 constexpr std::array<NativeArg, 1> kArgs_AddMoneyToBank{{{"amount", A::Integer, "", 0}}};
