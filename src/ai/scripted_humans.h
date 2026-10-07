@@ -6,7 +6,9 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <span>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "ai/spawners.h"
@@ -95,8 +97,11 @@ class ScriptedHumans final : public script::HumanBindingHost {
     void setTargetable(int gang, bool on) override;
     void setGangDamageResponse(int gang, int response) override;
     void setGangIcon(int gang, std::string_view object, int param) override;
-    /// Takes the rage handlers and the formations' default slots.
+    /// Takes the rage handlers, and the formations' default slots for the formations made later (Formations::
+    /// keepDefaults()): a configuration call never rewrites the slots of a formation in use.
     void applyRules(const CharacterRules& rules) override;
+    /// `CfgSetDefaultFollowSlotSet`: set `set`'s slots written into every formation (Formations::setDefaults()).
+    void setDefaultFollowSlots(int set, std::span<const std::pair<float, float>> slots) override;
 
     /// Calls the rage handlers for what changed since the last call on each bound human's rage meter: `onFull` when
     /// it filled, `onEnter` when rage started, `onExit` when it ended, each with the human's handle (**Coney choice**

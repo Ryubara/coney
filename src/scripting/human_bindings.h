@@ -5,8 +5,10 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
@@ -268,6 +270,10 @@ class HumanBindingHost {
 
     /// The game state's characters' rules changed (a configuration binding): the host takes what it uses of them.
     virtual void applyRules(const CharacterRules& /*rules*/) {}
+    /// `CfgSetDefaultFollowSlotSet`: set `set`'s default follow slots, (x, y) m, written into every formation in use
+    /// as well as kept for those made later. Only this binding touches the formations in use; the other configuration
+    /// bindings' applyRules() must not (docs/research/ai.md#level99-snaps).
+    virtual void setDefaultFollowSlots(int /*set*/, std::span<const std::pair<float, float>> /*slots*/) {}
 };
 
 /// Registers kHumanBindings in `vm`: the humans', brains' and gangs' bindings act through `context.ai`'s

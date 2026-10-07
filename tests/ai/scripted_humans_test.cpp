@@ -3,13 +3,16 @@
 // ai/scripted_humans.h): each binding called by name in a script state whose AI host is the scripted brains over a
 // synthetic scene, then the humans, brains, gangs and the game state's rules checked. Handles: 1 the player, 2 and up
 // the AI humans the tests add.
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <initializer_list>
 #include <memory>
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -303,6 +306,62 @@ TEST_CASE("the configuration bindings set the game state's rules, which the leve
     CHECK(rules.interrogate[1].active());
     CHECK(rules.interrogate[1].values[0] == 160);
     CHECK_FALSE(rules.interrogate[0].active());
+}
+
+TEST_CASE("a script's follow slots survive later configuration calls; only the defaults' own call rewrites them",
+          "[ai][scripted]") {
+    const TuningScope scope;
+    Level level;
+    // A table of numbers 1..n.
+    const auto numbers = [](std::initializer_list<double> values) {
+        auto table = std::make_shared<coney::script::Table>();
+        double key = 1.0;
+        for (const double value : values) {
+            REQUIRE(table->set(Value(key), Value(value)).has_value());
+            key += 1.0;
+        }
+        return Value(table);
+    };
+    // The defaults first (a level's configuration), then lesson 7's four slots 1 m around the player, ahead, right,
+    // behind and left (docs/research/ai.md#level99-snaps).
+    level.call("CfgSetDefaultFollowSlotSet",
+               {Value(0.0), numbers({-1.25, -1.0, 1.25, -1.0, -2.75, -1.0, 2.75, -1.0, 0.0, -2.0,
+                                     0.0,   -3.0, 0.0,  -4.0, 0.0,   -5.0, 0.0,  -6.0, 0.0, 0.0})});
+    level.call("BrSetFollowSlotSet", {Value(1.0), Value(0.0)});
+    level.call("BrSetNumFollowSlots", {Value(1.0), Value(4.0)});
+    const std::array<std::pair<double, double>, 4> around{{{0.0, 1.0}, {1.0, 0.0}, {0.0, -1.0}, {-1.0, 0.0}}};
+    for (std::size_t slot = 0; slot < around.size(); ++slot) {
+        level.call("BrSetFollowSlot", {Value(1.0), Value(static_cast<double>(slot)),
+                                       numbers({around.at(slot).first, around.at(slot).second}), Value(0.0)});
+    }
+    const coney::ai::Formation* formation = level.scene.brains.formations().of(level.scene.player(), false);
+    REQUIRE(formation != nullptr);
+    // In sixteenths of a metre.
+    const auto offsetOf = [&formation](int slot) {
+        return std::pair<int, int>{formation->slot(0, slot).offset[0], formation->slot(0, slot).offset[1]};
+    };
+    const auto checkAround = [&] {
+        CHECK(offsetOf(0) == std::pair<int, int>{0, 16});
+        CHECK(offsetOf(1) == std::pair<int, int>{16, 0});
+        CHECK(offsetOf(2) == std::pair<int, int>{0, -16});
+        CHECK(offsetOf(3) == std::pair<int, int>{-16, 0});
+    };
+    checkAround();
+    // EnableAllButtons reaches a rules binding (WCEnableAllCommands); it and the others leave the slots alone.
+    level.call("WCEnableAllCommands", {Value(1.0)});
+    level.call("CfgSetEnemySpotting", {});
+    level.call("TurnWarriorCommands", {Value(1.0)});
+    checkAround();
+    // A formation made now still starts from the defaults.
+    coney::ai::Brain& other = level.scene.add(coney::anim::Vec3{44.0F, 40.0F, 0.0F}, 0.0F);
+    const coney::ai::Formation* fresh = level.scene.brains.formations().of(other, true);
+    REQUIRE(fresh != nullptr);
+    CHECK(fresh->slot(0, 0).offset[0] == -20);
+    CHECK(fresh->slot(0, 0).offset[1] == -16);
+    // CfgSetDefaultFollowSlotSet itself writes its set into every formation, the player's too.
+    level.call("CfgSetDefaultFollowSlotSet", {Value(0.0), numbers({0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                                   0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0})});
+    CHECK(offsetOf(0) == std::pair<int, int>{8, 8});
 }
 
 TEST_CASE("the rage handler runs when a human's meter fills, with its handle", "[ai][scripted]") {

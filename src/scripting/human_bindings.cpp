@@ -642,13 +642,15 @@ NativeFunction makeCfgRageHandlers(const BindingContext& context) {
     });
 }
 
-// `CfgSetDefaultFollowSlotSet(set, slots)`: set 0 or 1; the first nine (x, y) pairs of the 20 numbers.
+// `CfgSetDefaultFollowSlotSet(set, slots)`: set 0 or 1; the first nine (x, y) pairs of the 20 numbers, kept in the
+// rules and written into every formation, those in use too (the only binding that touches those:
+// docs/research/ai.md#level99-snaps).
 // @orig 0x00294788 Cfg_SetDefaultFollowSlotSet (unknown)
 NativeFunction makeCfgSetDefaultFollowSlotSet(const BindingContext& context) {
-    return rulesCall(context, [](CharacterRules& rules, std::span<const Value> args) {
+    return [context = &context](std::span<const Value> args) {
         const int set = intArg(args, 0);
         if (set < 0 || set >= static_cast<int>(kDefaultFollowSets)) {
-            return;
+            return binding::none();
         }
         constexpr std::size_t kNumbers = 20;
         const std::array<double, kNumbers> numbers = tableArg<kNumbers>(args, 1);
@@ -656,8 +658,14 @@ NativeFunction makeCfgSetDefaultFollowSlotSet(const BindingContext& context) {
         for (std::size_t i = 0; i < slots.size(); ++i) {
             slots.at(i) = {static_cast<float>(numbers.at(2 * i)), static_cast<float>(numbers.at((2 * i) + 1))};
         }
+        CharacterRules& rules = context->state->characters;
         rules.followSlots.at(static_cast<std::size_t>(set)) = slots;
-    });
+        if (HumanBindingHost* host = hostOf(*context); host != nullptr) {
+            host->setDefaultFollowSlots(set, slots);
+            host->applyRules(rules);
+        }
+        return binding::none();
+    };
 }
 
 // `CfgSetEnemySpotting(enabled)`: true when omitted.

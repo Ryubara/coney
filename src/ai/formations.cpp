@@ -275,14 +275,22 @@ void Formations::setDefaults(int set, std::span<const std::pair<float, float>> s
     if (set < 0 || set >= static_cast<int>(kFormationSets)) {
         return;
     }
+    keepDefaults(set, slots);
     const std::size_t count = std::min(slots.size(), kFormationSlots);
-    m_defaults.at(static_cast<std::size_t>(set))
-        .assign(slots.begin(), slots.begin() + static_cast<std::ptrdiff_t>(count));
     for (const std::unique_ptr<Formation>& formation : m_formations) {
         for (std::size_t slot = 0; slot < count; ++slot) {
             formation->setDefaultSlot(static_cast<int>(slot), slots[slot].first, slots[slot].second, set);
         }
     }
+}
+
+void Formations::keepDefaults(int set, std::span<const std::pair<float, float>> slots) {
+    if (set < 0 || set >= static_cast<int>(kFormationSets)) {
+        return;
+    }
+    const std::size_t count = std::min(slots.size(), kFormationSlots);
+    m_defaults.at(static_cast<std::size_t>(set))
+        .assign(slots.begin(), slots.begin() + static_cast<std::ptrdiff_t>(count));
 }
 
 void Formations::update(std::uint64_t nowMs) {

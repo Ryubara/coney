@@ -395,9 +395,13 @@ void ScriptedHumans::applyRules(const CharacterRules& rules) {
     m_rage = rules.rage;
     for (std::size_t set = 0; set < rules.followSlots.size(); ++set) {
         if (const auto& slots = rules.followSlots.at(set); slots) {
-            m_scripted->owner().formations().setDefaults(static_cast<int>(set), *slots);
+            m_scripted->owner().formations().keepDefaults(static_cast<int>(set), *slots);
         }
     }
+}
+
+void ScriptedHumans::setDefaultFollowSlots(int set, std::span<const std::pair<float, float>> slots) {
+    m_scripted->owner().formations().setDefaults(set, slots);
 }
 
 void ScriptedHumans::runRageHandlers() {

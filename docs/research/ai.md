@@ -1821,15 +1821,14 @@ fight goal within it, ending when the enemy is gone or down. **Stand-ins**: the 
 range (the original's limit is not on the page) and leaves out its `+0x34` flag; the valid-target test `0x0028d4b0` is
 taken as alive and in the world. `BrSetType` sets types 1-6 (0 and past 6 are ignored, **stand-in**: 0's pad hand-over
 is not built), `BrSetAttackWeight` one kind's weight.
-`CfgSetDefaultFollowSlotSet` writes its sets into every formation, those made later too. **Gap** (lesson 7): every
-rules binding (`rulesCall` in `repo:src/scripting/human_bindings.cpp`, among them `WCEnableAllCommands`, which
-`EnableAllButtons` calls) runs `ScriptedHumans::applyRules`, whose `Formations::setDefaults` writes the default sets
-again into every live formation. `P1.SetupSnapAttacks` sets the player's four slots and then calls
-`EnableAllButtons`, so the defaults (−1.25, −1), (1.25, −1), (−2.75, −1), (2.75, −1) replace them: in a local
-build traced at lesson 7 the bums stood 2.1-2.8 m away, behind and to the sides, and no snap hit. With that
-re-write skipped they stood about 1 m away on four sides and three snaps scored. The defaults should reach only
-formations made later (and existing ones only when `CfgSetDefaultFollowSlotSet` itself runs, which is not
-traced), never on a rules call that has nothing to do with them ([the second wave](#level99-snaps)).
+`CfgSetDefaultFollowSlotSet` writes its sets into every formation in use and keeps them for those made later
+(`Formations::setDefaults`, through `HumanBindingHost::setDefaultFollowSlots`); every other rules binding
+(`rulesCall` in `repo:src/scripting/human_bindings.cpp`, among them `WCEnableAllCommands`, which `EnableAllButtons`
+calls) hands the rules back through `ScriptedHumans::applyRules`, which only keeps the defaults for formations made
+later (`Formations::keepDefaults`). So the four slots `P1.SetupSnapAttacks` sets survive its `EnableAllButtons`, and
+with the disc the bums settle 1.27-1.44 m from the player on four sides and three snaps pass lesson 7
+(`repo:tests/platform/disc_level99_snaps_test.cpp`, [the second wave](#level99-snaps)). **Coney's reading**: that
+`CfgSetDefaultFollowSlotSet` itself rewrites formations in use is not traced.
 `FlagNetAddLink` builds the level's flag network (`src/world_objects/flag_net.h`, 128 nodes) and `FlagNetTraverse`
 pushes `PedestrianGoal` (`0x69`) on a human that is not a player's; **stand-in** for its untraced Process: walk
 (mode 2 jog, 3 run) to the node nearest the human, then on to a random linked node within 1 m, for ever, standing at a
@@ -1928,6 +1927,8 @@ when `GangCanFlee` turns it on.
   sender was not found (`0x0022dd98` and `0x0022e020` are the arrest's).
 - What a scene's end passes to the callback `Goal_PlayAnimation` hands it (`0x00353f40`).
 - The tactic event codes (`TacticGetString`, `0x00315c58`) passed to a tactic's callback.
+- Whether `CfgSetDefaultFollowSlotSet` (`0x00294788`) rewrites the slots of formations in use or only the pool's
+  defaults for formations made later.
 - What the player gang's type-3 tactic (vtable `0x005439e0`) is called and does, and what `0x0041c4e0` decides.
 - The perception struct (`+0xf8`).
 - The riot goal's roam (where a rioter walks between decisions), its smash and loot targets in Coney's objects,
