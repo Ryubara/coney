@@ -1,4 +1,4 @@
-description = "slot 6: stick full to the right of the facing and square on the same update, PoizoCiv 1.0 m there: the snap"
+description = "slot 6: PoizoCiv pinned 1.0 m to the player's right (world point); stick full right and square on the same update: the snap 25"
 research = "docs/research/combat-moves.md"
 input = "moves_snap_right.txt"
 updates = 60
@@ -12,12 +12,12 @@ setup = [
   { address = "rec(player) + 0x144", type = "s16", value = "900", frame = 0, until = 0 },
   { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
   { address = "rec(enemy) + 0x144", type = "s16", value = "600", frame = 0, until = 0 },
-  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin((heading(player) + rad(-90.0)))", until = 20 },
-  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos((heading(player) + rad(-90.0)))", until = 20 },
-  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 20 },
-  { address = "tf(enemy) + 0x18", type = "f32", value = "sin(((heading(player) + rad(-90.0)) + pi) / 2)", until = 20 },
-  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos(((heading(player) + rad(-90.0)) + pi) / 2)", until = 20 },
-  { address = "player + 0xc8", type = "u32", value = "0", until = 20 },]
+  { address = "tf(enemy) + 0x0", type = "f32", value = "32.3770", until = 50 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "38.7402", until = 50 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 50 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "0.71307", until = 50 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "-0.70109", until = 50 },
+]
 
 [coney]
 level = "sandbox:combat"

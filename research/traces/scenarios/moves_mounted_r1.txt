@@ -1,0 +1,17 @@
+76 tap square
+95 tap r1
+98 tap r1
+101 tap r1
+104 tap r1
+107 tap r1
+110 tap r1
+113 tap r1
+116 tap r1
+119 tap r1
+122 tap r1
+125 tap r1
+128 tap r1
+131 tap r1
+134 tap r1
+137 tap r1
+140 tap r1

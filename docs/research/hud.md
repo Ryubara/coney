@@ -1165,7 +1165,7 @@ The **mash meter** (HUD `+0xebc0` + player × `0x430`, vtable `0x00539568`) and 
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
 | `0x001a29c0` | `MashMeter_ApplyVideoMode` | fills the layout table `0x0050d050` (`0x80` bytes per player) for the video mode | confirmed (code) |
-| `0x001a2f68` | `MashMeter_Setup(meter, player)` | button sprite `+0x50`; `Bar` `+0x150` (sprite word `0x30050`, fill `(225, 186, 65)`); three `TextWidget`s `+0x1c0`, `+0x290`, `+0x360` with HUD strings `0x96`, `0xa0`, `0x9c` | confirmed (code) |
+| `0x001a2f68` | `MashMeter_Setup(meter, player)` | button sprite `+0x50`; `Bar` `+0x150` (sprite word `0x30050`, fill `(225, 186, 65)`); three `TextWidget`s `+0x1c0`, `+0x290`, `+0x360`, each one character (`"%c"`) of font slot 3: `0x96`, `0xa0`, `0x9c` ([The mash meter on screen](#mash-meter-layout)) | confirmed (code) |
 | `0x001a32f0` | `MashMeter_Shutdown` | slot `+0x68`: the button sprite | confirmed (code) |
 | `0x001a3310`, `0x001a3338` | `MashMeter_SetButton(meter, id, word)`, `MashMeter_SetFill(fill, meter)` | from the mini-games (`MiniGame_Update`, `MiniGame_Abort`): button id `+0x04` and its sprite; fill `+0x188` clamped to 0-1 | confirmed (code) |
 | `0x001a3360` | `MashMeter_Render` | slot `+0x38`: button, bar and a blinking text at the table's period: button `0x171` alternates texts 2 and 3, any other shows text 1 every other period | confirmed (code) |
@@ -1178,6 +1178,34 @@ The **mash meter** (HUD `+0xebc0` + player × `0x430`, vtable `0x00539568`) and 
 | `0x001a4310` | `ChaseHud_SetEndText(hud, text)` | up to 31 characters at `+0x2f0`, the message shown when a timer ends | confirmed (code) |
 | `0x001a4348` | `ChaseHud_Update` | slot `+0x30`: waits for the batch; state 7 shuts down | confirmed (code) |
 | `0x001a43d8` | `ChaseHud_Render` | slot `+0x38`: state 1 the disc; 2 the disc blinking; 3 / 4 the timer (value 0-100 over `+0x320` seconds), ending in state 7 with the end text shown as a message; 5 coloured by value | confirmed (code) |
+
+#### The mash meter on screen {#mash-meter-layout}
+
+The layout table `0x0050d050` (`0x80` bytes per player, rewritten by `MashMeter_ApplyVideoMode` every update):
+`+0x00` button position `(x, 0, y, 1)`, `+0x10` button size, `+0x20` the bar's left end, `+0x30` / `+0x34` the bar's
+width and height, `+0x40`, `+0x50`, `+0x60` texts 1-3's positions, `+0x70` the text size, `+0x74` the blink half
+period (ms, integer). Values in the default video mode (device flag `0x01` only), GUI coordinates; confirmed (code)
+at `0x001a29c0`, `0x001a2f68`, `0x001a3360` and `0x001a3458`:
+
+| Part | Player 0 | Player 1 | Size | What |
+| --- | --- | --- | --- | --- |
+| Button sprite | (0.09, 0.59) | (0.885, 0.59) | 0.12 | the sprite word given to `HUD_MashMeterShow`; instance 2, depth 11,000, grey 128, centred |
+| Bar | left end (0.02, 0.65) | (0.815, 0.65) | 0.2 × 0.025 | `HudBar_Draw(0, bar, 0, 0)` (no flash, no trail); sprite word `0x30050`: `menu_system` rectangles 80 (back), 81 (fill), 82 and 83 (end caps); back grey 128, fill (225, 186, 65); fill = meter ÷ target ([Crimes](crimes.md#triangle)) |
+| Text 1 | (0.045, 0.65) | (1.015, 0.65) | 0.04 | character `0x96`, the **triangle** glyph |
+| Text 2 | (0.05, 0.59) | (0.845, 0.59) | 0.04 | character `0xa0`, the **L1** glyph |
+| Text 3 | (0.21, 0.59) | (1.005, 0.59) | 0.04 | character `0x9c`, the **R1** glyph |
+
+The texts are `TextWidget`s in **font slot 3** (`part_page0`, whose characters `0x91`-`0xa0` are the button pictures,
+[GUI: markup](gui.md#markup)), grey 128, `Font_Draw` flags 1 (right-aligned, [GUI](gui.md#widget-classes)), so x is
+the glyph's right edge (inferred from the flag). They are **not** HUD string ids: each is the `"%c"` of one code.
+Blink half period: **400 ms**.
+
+**Render** (`0x001a3360`): only while the meter's button id (`+0x04`) is not 0 (slot `+0x5c` returns it). The button
+sprite, then the bar, then one text by phase = (timer ms mod 800) / 400: with sprite word `0x171` (`part_page0`
+rectangle 369) phase 0 draws text 3 (R1) and phase 1 text 2 (L1), so **R1 and L1 alternate every 400 ms** on either
+side of the button; any other word draws text 1 (triangle) in phase 1 only, a 400 ms blink. Only one caller shows the
+meter: `Uncuff_BeginMash` (`0x0022d3f8`) with button id 1 and **word `0x171`**, so in the game the triangle text is
+never seen. `HUD_MashMeterHide` sets the id and the word to 0 and the fill to 0.
 
 ### After `GUI/BaseWidget.cpp` (no path string): the chase gauge {#fn-chase-gauge}
 
@@ -1540,10 +1568,39 @@ default mode.
 
 #### The lock-pick dial layout {#lock-pick-dial-layout}
 
-Per player (`0x0050d670` + player × `0x20`), default mode: player 1 at (0.09, 0.59), disc centre offset
-(−0.531, −0.075); player 2 at (0.9, 0.59), offset (0.519, −0.075). The pins are sheet 10 rectangle 11, sizes 0.19,
-0.152, 0.114, depths 8,000 + 1,000 i. Confirmed (code) at `0x001b7eb0`, `0x001b8530`; the other video modes rewrite
-the entry (`0x001b7c10`).
+Per player (`0x0050d670` + player × `0x20`): the pins' GUI position, player 1 (0.09, 0.59) and player 2 (0.9, 0.59),
+and the shapes' centre, (−0.531, −0.075) and (0.519, −0.075). **In the default video mode** (device flag `0x01`
+only) `LockPickDial_Draw` replaces that centre every update with **(−0.565, −0.07)** for player 1 and **(0.546,
+−0.07)** for player 2. Confirmed (code) at `0x001b7eb0`, `0x001b8530`; the other video modes rewrite the entry
+(`0x001b7c10`) and the radius factors `0x0050d6e8`-`0x0050d6fc` (all 1.0 in the default mode).
+
+**The pins**: three `BaseWidget`s, `hud_minigames` rectangle 11 (a brass lock cylinder), grey 191, at the GUI
+position, sizes 0.19, 0.152 and 0.114 (0.19 × (1 − 0.2 i), square in the default mode), depths 8,000, 9,000, 10,000,
+all on one centre. Each turns about its own centre (the widget's position, anchor 0). Only the current pin turns:
+its angle (`+0x454`, radians, starting at π) changes by **0.1 × its speed** per update (speeds 1, 2, 3 by default),
+up or down by its direction byte, wrapped into 0-2π; positive angles turn clockwise on screen
+([The stereo panel](#stereo-layout)). Drawn while the dial is shown and a pin is left. No text.
+
+**The shapes** (`Shape2D_Queue` → `Shape2D_DrawQueued` `0x0017c308`, drawn in the viewport pass with RwIm2D):
+the centre is the point (x, y, −1) in the **overlay camera's** space, projected to screen pixels
+(`Im2DDrawer_Begin` `0x001964c0` → `Camera_ProjectToScreen` `0x00198460`); every rim vertex is then that pixel
+centre + r × (sin a, cos a), with **r in screen pixels** and a stepping by −2π / 32 (32 segments, `+0x4ac`). With the
+overlay camera's view window (0.725 × 0.5 at distance 1, [Graphics](graphics.md#2d-drawing)), the default-mode centre
+lands at about GUI (0.110, 0.570) for player 1, 0.02 right of and 0.02 above the pins' centre (inferred; not checked
+at run time).
+
+| Shape | What | Radius (px) | Colour (0-255) | Extent |
+| --- | --- | --- | --- | --- |
+| Band 1 | an untextured **wedge** (a fan from the centre) | 40 (`0x0050d6c0`) | (191, 16, 16), alpha 100 (`0x0050d6b4`) | `0x0050d6b8` per cent of the circle (35, 27 or 20 by difficulty) |
+| Band 2 | the same, drawn over band 1 | 40 | (50, 7, 7), alpha 100 | `0x0050d6bc` per cent (14, 12 or 9.2) |
+| Centre disc | a textured disc, the whole circle | 41 (`0x0050d6b0`) | (191, 191, 191, 255) | `hud_minigames` rectangle 12 (the lock face with its keyhole), mapped by the rectangle's centre and radius, turned by π/2 |
+
+Both wedges are centred on angle π, which with y down on screen is **straight up** from the centre (12 o'clock); the
+segments outside the wedge are drawn with a zero colour, so only the wedge shows. Which band is the good zone and
+which the perfect one follows from the sizes (band 1 the larger good zone, band 2 the perfect one; inferred, the
+judge's bounds are on [Crimes: lock picking](crimes.md#lockpick)). The disc is queued last, so it covers the
+wedges' centre and only the parts outside radius 41 would show, which a 40-pixel wedge never reaches; inferred from
+the radii: the wedges show only where the disc's texture is transparent.
 
 ### `GUI/HUDLua.cpp`: the scripted bars {#fn-hudlua-bars}
 
@@ -1604,7 +1661,7 @@ mug meter's layout is a table of `0x90` bytes per player at `0x00622e50`, rebuil
 | `0x001becb0` | `HudMoney_Update` | [Score and money](#score-and-money): the `±$N` line for 1,000 ms, counting by (difference / 16) ± 1 per frame with cue `0x10`, grey leading zeros (`Hud_GreyLeadingZeros`) | confirmed (code) |
 | `0x001bf068` | `HudMoney_Render` | the counter while the shown value is above 0 | confirmed (code) |
 | `0x001bf090` | `MugMeter_ApplyLayout` | rebuilds the layout table for the current video mode | confirmed (code) |
-| `0x001bf7e0` | `MugMeter_Setup` | two dark (32, 32, 32) bars (`part_page0` rectangle 54), two `hud_minigames` sprites (rectangles 5 and 6, grey 128, batch 11), three arrows (rectangles 7-9, (225, 186, 65)), the prompt (string `0x180`) | confirmed (code) |
+| `0x001bf7e0` | `MugMeter_Setup` | two dark (32, 32, 32) bars (sprite word `0x30036`: `menu_system` rectangles 54-57), two `hud_minigames` sprites (rectangles 5 and 6, grey 128, batch 11), three arrows (rectangles 7-9, (225, 186, 65)), the prompt (string `0x180`) | confirmed (code) |
 | `0x001bfcc0` | `MugMeter_SetFills` | both bars' fills, clamped to 0-1 | confirmed (code) |
 | `0x001bfd30` | `MugMeter_SetStick` | the stick dot moves by 0.01 × stick from its rest point; a stick beyond 0.5 in one of eight directions (and within 0.1 on the other axis for the four straight ones) picks the arrows' position and angle from `0x00622f70` and `0x0050e924`-`0x0050e940` | confirmed (code) |
 | `0x001c0640` | `MugMeter_SetArrowsOn` | `HUDMugMeterSet`: `+0x84c` | confirmed (code) |
@@ -1614,6 +1671,63 @@ mug meter's layout is a table of `0x90` bytes per player at `0x00622e50`, rebuil
 | `0x001c0f28` | `MugMeter_Update` | from `PlayerHUD_Update`: relayout, the bars' positions from the table; both fills 0 when the player is not mugging | confirmed (code) |
 | `0x001c1228` | `MugMeter_InitLayoutTable` | static initialiser of the table and the eight arrow positions | confirmed (code) |
 | `0x001c1688` | `MissionSelectHUD_StaticInit` | the file's static-init stub (constructor table `0x0053410c`) | confirmed (code) |
+
+#### The mug meter on screen {#mug-meter-layout}
+
+Default video mode (device flag `0x01` only), player 0, GUI coordinates (x right, y down); confirmed (code) at the
+functions above. The base point is (−0.08, 0.02) (`0x0050e8f4`, `0x0050e8f8`), and every part's y gets **−0.07**
+(`0x0050e920`) when it is placed each update, so the positions below include it. Player 1's parts use the table's
+second record (`+0x90`); its x values are in the last column.
+
+| Part | Sprite | Place | Size | Player 1 x |
+| --- | --- | --- | --- | --- |
+| Bar 1 (`+0x10`) | `menu_system` 54-57 (back, fill, caps), back (32, 32, 32) | left end (0.09, 0.57) | 0.2 × 0.014 | 0.74 |
+| Bar 2 (`+0x80`) | the same | left end (0.09, 0.545) | 0.2 × 0.025 | 0.74 |
+| Stick base (`+0x100`) | `hud_minigames` 6, a black ball; grey 128, depth 11,000 | (0.04, 0.55) | 0.06 (square) | 0.935 |
+| Stick dot (`+0x200`) | `hud_minigames` 5, a grey disc | (0.04 + 0.01 × sx, 0.55 − 0.01 × sy) | 0.05 (square) | 0.935 |
+| Arrows (`+0x300`, `+0x400`, `+0x500`) | `hud_minigames` 7, 8, 9: three white arcs of growing size, coloured by mode | one of eight places, below | 0.05 (square) while lit | + 0.898 |
+| Prompt (`+0x640`) | markup text, font slot 3, size 1.0, colour `0x005fd310`, string `0x180` or `0x181` | (−0.01, 0.63) | | 0.69 |
+
+- **The stick** is the pad record's **left stick, raw** (`+0x08`, `+0x0c`: x and y in [−1, 1], y up, not turned by
+  the camera; [Front end: the pad record](frontend.md#pad-record)), passed as the per-player record's `+0x00` / `+0x04`
+  by `HUD_MugMeterUpdate` each update. The dot moves at most 0.01 from its rest point, up for a stick pushed up.
+- **The eight arrow places** (`MugMeter_SetStick`): a stick beyond 0.5 on an axis picks one (the four straight ones
+  also need the other axis within ±0.1); the last one picked stays. All three arcs go to the same place and angle:
+
+  | Stick | Place | Angle (rad) |
+  | --- | --- | --- |
+  | up | (0.04, 0.50) | 2.4 |
+  | down | (0.04, 0.60) | 5.5 |
+  | left | (0.00, 0.555) | 0.65 |
+  | right | (0.075, 0.55) | 3.85 |
+  | up-left | (0.01, 0.515) | 1.5 |
+  | up-right | (0.07, 0.515) | 3.2 |
+  | down-right | (0.07, 0.585) | 4.7 |
+  | down-left | (0.005, 0.585) | 0.1 |
+
+  Unturned, an arc's bulge faces down-left; with positive angles clockwise on screen
+  ([The stereo panel](#stereo-layout)) each angle turns the bulge towards the stick's direction (up: 225° + 137° ≈
+  0°; right: 225° + 221° ≈ 90°), which fits the art (inferred from the art and the angles).
+- **The ripple** (`MugMeter_AnimateArrows`): each arc is lit for **2 updates** (`+0x848` = `0x0050e948` = 2):
+  arc 7 alone, then 7 at half alpha with 8, then 8 at half alpha with 9 (7 hidden); after 6 updates all three are
+  hidden and the count starts again. The arcs are animated and drawn only while `+0x850` is set (each stick update
+  sets it, each render clears it), and by mode: in modes 0 and 2 while `+0x84c` is set (`HUD_MugMeterSet(1)`, the
+  stick on target), in modes 1 and 3 while it is clear.
+- **The fills** (`HUD_MugMeterStart(a, b)` → `MugMeter_SetFills`, each clamped to 0-1): bar 1 = `a`, bar 2 = `b`. In
+  `Player_UpdateMugging` (a player mugging an AI human) `a` = time since the start (`+0x130`) ÷ the time allowed
+  (`+0x134` − `+0x130`) and `b` = time on target (`+0x12c`) ÷ the required time (`+0x04`); with a player victim `a` is
+  the victim's own progress against its record. Both bars are drawn with `HudBar_Draw(0.25, bar, 0, 0)` (flashing
+  below a quarter, no trail). A player who is neither mugging, mugged nor in the meter's hold gets both fills 0 and
+  nothing drawn.
+- **Modes** (`MugMeter_SetMode`, from each state's update): 0 `Player_UpdateMugging` (mugging): bar 1 amber (128,
+  100, 0), bar 2 red (170, 43, 43), arcs red, prompt `0x180`; 1 `0x00286550` (being mugged by the other player): the
+  bar colours swapped, prompt `0x181`; 2 `0x002833c0` and 3 `Player_UpdateMugHold` (`0x00283a30`), the two sides of a
+  hold (`Player_UpdateHold` picks by state flag `0x8000000000`): as 0 and 1 with blue (35, 83, 188) for red. The
+  prompt's texts are `GSTRING.HUD` entries `0x180` and `0x181` (not reproduced here).
+- The prompt is a `MessageHUD` (`MessageHUD_Setup(1.0, 1.0, …, font slot 3)`) whose alignment byte is never set
+  (inferred: left, 0), so at x −0.01 it starts at the screen's left edge (inferred, not checked at run time).
+- `HUD_MugMeterStart(0, 0)` also comes from the grab code (`0x002729a8`) when a mugging is set up, so the bars start
+  empty.
 
 ### After `GUI/MissionSelectHUD.cpp` (no path string): bars and counter panels {#fn-hud-bars-panels}
 
@@ -1714,7 +1828,7 @@ the game is [Combat: the stereo theft](combat.md#stereo-theft)).
 | `0x001c96e0`, `0x001c9720`, `0x001c9748` | `SprayCounter_GetCount`, `_Init`, `_Update` | as the flash counter, for inventory item 3 | confirmed (code) |
 | `0x001c9818`, `0x001c98a8` | `StereoHud_Construct`, `StereoHud_Destroy` | nine `BaseWidget`s (`+0x50`-`+0x9f0`) and two `TextWidget`s (`+0x850`, `+0x920`) | confirmed (code) |
 | `0x001c9978` | `StereoHud_ApplyVideoMode` | anchor `+0xaf0` = (0.12, 0.57) in the default mode, x mirrored to 1 − x for player 1; size `+0xb00` = 0.08 (× 0.7 when device flag `0x01` is clear) | confirmed (code) |
-| `0x001c9ad0` | `StereoHud_Setup(hud, player)` | sprites, all grey (128, 128, 128) unless noted: backdrop `hud_minigames` rectangle 3 (size 0.08, depth 11,000) at the anchor; arrow rectangle 0 (0.12 × scale, depth 12,000); gauge rectangle 2 (depth 13,000); stick `part_page0` rectangle 0 (0.055); ring `part_page0` rectangle 5 (0.05, (225, 186, 65)); two each of rectangles 4 and 1; two glyph texts (`big_font` codes `0x9c`, `0xa0`) | confirmed (code) |
+| `0x001c9ad0` | `StereoHud_Setup(hud, player)` | sprites, all grey (128, 128, 128) unless noted: backdrop `hud_minigames` rectangle 3 (size 0.08, depth 11,000) at the anchor; arrow rectangle 0 (0.12 × scale, depth 12,000); gauge rectangle 2 (depth 13,000); stick `part_page0` rectangle 0 (0.055); ring `part_page0` rectangle 5 (0.05, (225, 186, 65)); two each of rectangles 4 and 1; two glyph texts (font slot 3, characters `0x9c`, `0xa0`); [on screen](#stereo-layout) | confirmed (code) |
 | `0x001ca118` | `StereoHud_Start(target, hud)` | set-up, target `+0x4c`, done `+0x40` = 0, pop step `+0xb04` = 0.001, progress 0 | confirmed (code) |
 | `0x001ca180` | `StereoHud_Shutdown` | releases every part | confirmed (code) |
 | `0x001ca210` | `StereoHud_SetProgress(value, hud, stage)` | `+0x48` value (the angle turned), `+0x44` stage (0-3), done cleared | confirmed (code) |
@@ -1731,8 +1845,14 @@ part's width to its height every update, so the arrow, gauge, stick and ring are
 
 **What is drawn** (`StereoHud_Render`): only five parts. The backdrop always, and unless done (`+0x40`, cleared by
 start and by every progress call) the arrow, the gauge, the stick and the ring, in that order. The two rectangle-4
-sprites, the two rectangle-1 sprites and the two glyph texts (`"%c"` of `big_font` codes `0x9c` and `0xa0`, size
-0.04) are set up and **never drawn**.
+sprites, the two rectangle-1 sprites and the two glyph texts (`"%c"` of characters `0x9c` and `0xa0` in font slot 3,
+`part_page0`: the R1 and L1 button glyphs, [GUI: markup](gui.md#markup); size 0.04) are set up and **never drawn**.
+
+**The pictures** (`hud_minigames`, 256 × 128; rectangles read from the sheet's `0x4c` chunk, the look from viewing
+the texture): rectangle 3 is the **car radio** (112 × 47 px); rectangle 0 is a **round lens** (60 × 60 px), black
+with a grey rounded corner of the radio filling its lower left; rectangle 2 is a **small round knob** with a slot
+(21 × 21 px); rectangle 1 (unused) a red arrow pointing down; rectangle 4 (unused) a grey bracket. So the "arrow"
+is a magnified corner of the radio, and the "gauge" a turning knob.
 
 With the anchor `A = (0.12, 0.57)` (player 1: x = 0.88) and `S = 0.08`:
 
@@ -1744,9 +1864,13 @@ With the anchor `A = (0.12, 0.57)` (player 1: x = 0.88) and `S = 0.08`:
 | Stick | 3, 2, 1, 0 (`part_page0`, 0-3) | 0.055 | 11,000 | grey 128 | (`A.x` − 0.015, `A.y` + `S`) in stages 0 and 1; (`A.x` − 0.015, `A.y` − `S`) in 2 and 3 |
 | Ring | 5 (`part_page0`, 5) | 0.05 | 11,000 | (225, 186, 65) | the stick's position + (0.04, 0) |
 
-- **The arrow** by stage (`+0x44`): 0 at (`A.x` + `S`, `A.y` − 0.05), angle 0; 1 at (`A.x` − `S`, `A.y` − 0.05),
-  −π/2; 2 at (`A.x` − `S`, `A.y` + 0.05), −π; 3 at (`A.x` + `S`, `A.y` + 0.05), −3π/2. So it goes round the backdrop's
-  corners anticlockwise on screen (top right, top left, bottom left, bottom right), turned a quarter more each stage.
+- **The arrow** (the lens) by stage (`+0x44`): 0 at (`A.x` + `S`, `A.y` − 0.05), angle 0; 1 at (`A.x` − `S`,
+  `A.y` − 0.05), −π/2; 2 at (`A.x` − `S`, `A.y` + 0.05), −π; 3 at (`A.x` + `S`, `A.y` + 0.05), −3π/2. So it goes round
+  the backdrop's corners anticlockwise on screen (top right, top left, bottom left, bottom right), turned a quarter
+  more each stage. **A positive widget angle turns a sprite clockwise on screen**: unturned, the lens's grey corner
+  is at its lower left, towards the radio from the top-right corner, and only clockwise-positive keeps it facing the
+  radio at the other three corners (−π/2 puts it at the lower right for the top-left corner). This matches the radar
+  arrow, confirmed (runtime) ([GUI: radar icons](gui.md#radar-icons)); inferred here from the art.
   With device flag `0x02` (PAL, speculative) the x offset grows by 0.025 and the y offset is 0.04.
 - **The gauge** (`value` = `+0x48`, `target` = `+0x4c`): size = 0.025 + 0.025 × value / target
   (`Math_MapRange(value, 0, target, 0.025, 0.05)`), angle = −value. The value is the stick angle turned in the current

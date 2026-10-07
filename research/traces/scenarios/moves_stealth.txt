@@ -1,0 +1,3 @@
+20 press l1
+30 tap square
+80 release l1

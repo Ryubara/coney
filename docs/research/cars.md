@@ -384,8 +384,24 @@ the boot is shut. Both vectors are 0x20 and 0x10 bytes before the type record as
 `CarSetColor(car, {c1, c2, c3, c4})` turns each number into a byte (× 255, `0x0017aca8`) in the order given and stores
 the four bytes as one word in `+0x12e8` and `+0x12ec`, marking the car dirty. `Car_UpdateRender` passes both words to
 `0x00338240`, which spreads the bytes in reverse order (`pextlb`, `prevh`) and blends the two, and stores the result in
-the render object (`+0x24`). So `c1` is alpha and `c4` red (inferred from the reversal; the scripts always pass 1 as
-`c1`). Confirmed (code) for the packing and the reversal.
+the render object (`+0x24`). Confirmed (code) for the packing (`Colour_PackFloat`: byte *i* = `c(i+1)` × 255) and the
+reversal (`Colour_LerpRatio` reverses the bytes on unpacking and does not reverse them back), and **confirmed
+(runtime)**, PCSX2 2.9.94, `level99`, the owner's slot 5 (copied): the render tint's bytes in memory order
+(`RwRGBA` r, g, b, a) are **(`c4`, `c3`, `c2`, `c1`)**. So `c1` is alpha, `c2` blue, `c3` green and `c4` red:
+
+- **Order.** Car slot 0 stores the word `0xe5cc99ff` (bytes `c1..c4` = 255, 153, 204, 229) and its tint reads
+  `0xff99cce5`, bytes (229, 204, 153, 255). Writing bytes (255, 0, 0, 255) to the radio car's `+0x12e8` / `+0x12ec`
+  (dirty byte `+0x1308` = 1) turned its tint to (255, 0, 0, 255) and the car **red** on screen.
+- **The radio car in that scene** is car slot 1, `car_osedan` (type 0) at (57.5, 37.9, 1.1), bytes `c1..c4` = (255,
+  140, 165, 165): tint **(165, 165, 140)**. The (255, 153, 204, 229) car is slot 0, a coupe (type 1) at (73.2, 44.8),
+  not the one by the player.
+- **What reaches the GS** (GS dumps of the same frame with the tint unchanged and with red): the body's vertex colours
+  are `min(1, light) × tint / 255` on the GS scale ([Lighting](lighting.md#world)), alpha `0x80`, texture
+  modulated (a 64 × 64 8-bit texture). With red, the darkest vertices read (27, 0, 0): the object ambient 0.212 alone
+  (`level99`, [Lighting](lighting.md#level99)); with the real tint the same vertices read **(17, 18, 16)** = (0.212,
+  0.222, 0.232) × (165, 165, 140) / 255 × 128. Over the car's 2,140 body vertices the channels run 17-94, median about
+  (29, 31, 29): about a quarter of full brightness, so the dark grey-green look is the tint × a mostly ambient light ×
+  the texture.
 
 ## Coney's implementation
 

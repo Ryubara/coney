@@ -1,0 +1,25 @@
+description = "slot 6: the player held in the hidden state (state 0x200000 written each update), PoizoCiv pinned 1.0 m ahead facing away; L1 held, then square: the stealth kill"
+research = "docs/research/combat-moves.md"
+input = "moves_stealth.txt"
+updates = 110
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet", "strike-contact", "strike-shape"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "rec(player) + 0x144", type = "s16", value = "900", frame = 0, until = 0 },
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "rec(enemy) + 0x144", type = "s16", value = "600", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "33.3600", until = 25 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "37.7235", until = 25 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 25 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "0.99996", until = 25 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "0.008473", until = 25 },
+  { address = "rec(player) + 0x0", type = "u32", value = "u32(rec(player)) | 0x200000", frame = 1, until = 34 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]

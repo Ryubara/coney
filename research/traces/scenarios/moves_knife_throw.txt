@@ -1,0 +1,3 @@
+30 press cross
+31 tap square
+33 release cross

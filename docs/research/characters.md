@@ -254,6 +254,44 @@ rotation); a hat in no slot of the set gets a default transform (`0x005116c0`). 
 model's own attach point (`0x00391828`, `0x00391880`). Confirmed (code). The 908 fittings:
 [Hat fittings](../references/hats.md).
 
+**Where a hat comes from.** The character class's string at `+0x14c` ([`CfgChar`](../references/bindings/config.md#cfgchar)'s
+argument 11, `none` for most classes) is the **hat object's type name**: when the human's character instance is
+attached (`Human_AttachInstance` `0x00217a98`, at creation or when the model streams in later) and that name is not
+`none`, `Human_SpawnHat` (`0x0024bfc0`) creates the object by name at the human, adds it to the world's object list
+pinned, stores its handle at **`+0x364`** and sends it message `0x32` (wear) with attach point **6**, a zero offset, an
+identity rotation and whether the human is in a scene. `HuPlaceHatOnHead` (`0x002385f8`) goes through the same
+function. Confirmed (code). So a dealer with no script hat still wears his class's hat when his class names one.
+
+**On the head.** The hat's `0x32` handler (`HatObject_Wear`, `0x003e77c0`, [Script types](script-types.md#hat-object))
+zeroes its velocity and spin, attaches it (`Obj_Attach`) to **bone 6, the head** (the head strike sphere's bone,
+[Combat](combat.md#moving-strikes)), clears its flags `0x6000000`, and writes its local transform in that bone's frame:
+the position is the fit offset (`Human_PlaceHat(…, 0xb)`, the set's or the model's, above) **times the human's
+scale** (`Human_GetScale`), the rotation the fit rotation (`Human_PlaceHat(…, 0xc)`), unscaled; then it tells the
+human (message 3). Confirmed (code). That the attach composes the head bone's matrix with this local translation
+and then rotation (bone × T × R), as every attached object does, is inferred.
+
+**Knocked off** (`Human_KnockOffHat`, `0x00258330`), confirmed (code):
+
+- **Never** while human flag `0x10000000000` is set ([`HuSetKeepHat`](../references/bindings/character.md#husetkeephat)),
+  without a hat, or when the hat's object kind (`+0x86`) is 27.
+- **Who calls it**: every knockdown reaction (`Human_PlayReaction` `0x0026a6d0`), except for a brain of type 1, class
+  `0x80` and class 13; health running out (`0x002677c8`); being mounted (`Pair_LinkMount` `0x0022c0a0`); the human's
+  messages 3 and `0xc2` (not for brain type 1); `Human_ResetToOneHealth`, `Human_ScriptDrop`, the hat object's
+  destruction (`Obj_Destroy`), class `0x80` going down (`0x00257ef0`), and picking up another hat (kind 24) in the
+  pick-up search (`0x0024d810`). Ordinary hits that do not knock down leave it on.
+- **The throw**: by human `+0x668` & 3 (inferred: the side the blow came from) it picks a direction *d* and a spin axis
+  *a* from the unit x and y axes (0: *d* = +y, *a* = +x; 1: +x, −y; 2: −y, −x; 3: −x, +y), sets the hat's spin
+  (vtable `+0x7c`) to *a* × 8 rad/s and sends it message `0x1c` (drop) with *d* × **2 m/s**. The drop
+  (`HatObject_Drop` `0x003e7958`) turns that velocity by the wearer's orientation (inferred from the cross products),
+  detaches the hat at its world pose (`Obj_Detach`), gives it flag `0x4000000` (and `0x80` for three models) and
+  state 2, updated every 2 ticks: from here it is a loose physics object that falls and lands
+  ([Script types](script-types.md#hat-object)). `+0x364` is cleared.
+- **Afterwards** it stays where it lands, and may be picked up again. Only when the game state's `+0x35c` is 1 (a mode
+  flag, not traced) does it get a respawn timer, by model hash (`+0xc4`): none for the Warriors' hat `0xbbbef927`;
+  8000 ms for a player's `0x50e8de39` or `0x17d7194b`; none for the other `0x331fd29`, `0x50e8de39`, `0x17d7194b` and a
+  player's `0x1d5ee290`; the game state's `+0x26c` for every other hat. A wearer of brain type 1 or 2 marks the
+  hat's `+0x10b` with its type.
+
 ### From a type to a model {#type-to-model}
 
 How `HuCreate`'s type picks what is drawn and animated, confirmed (code) at `0x00218008` (`Human_Init`),
@@ -729,7 +767,8 @@ the game does at runtime (confirmed (runtime)).
 
 ### Locomotion {#locomotion}
 
-`Human_PlayerLocomotion` (`0x00240e38`) for a pad-controlled human; others run their state's function instead.
+`Human_PlayerLocomotion` (`0x00240e38`) for a pad-controlled human; an AI human moves by its brain instead
+([An AI's locomotion](#ai-locomotion)).
 Confirmed (code) for the steps; the state predicates are named by what they test where known.
 
 1. **Current speed** = the length of the velocity (vtable slot `+0x94`).
@@ -840,6 +879,100 @@ In the idle that follows a release without the run stop, the stick's last angle 
 keep turning the body: while the idle's fade holds `0x10000000`, the locomotion turns toward the last stick angle with
 a magnitude × 0.8 each update (`0x002411cc` onward), which is the 0.7°, 1.1°, 1.4°, 1.5° seen after `run_circle`'s
 release.
+
+### An AI's locomotion {#ai-locomotion}
+
+An AI human has no stick: its goals and actions write the brain's heading `+0x110`, speed `+0x114` (from a gait,
+`Brain_SetMoveGait` `0x0028aac0`), aim point `+0x90` and radius `+0x118` ([AI, Moving](ai.md#moving)), and its
+control function, `Human_UpdateControl` (`0x00243848`, the default `+0x1bc`), turns them into a velocity and a
+rotation each update. For a pad-controlled human the same function only picks the player's control (locomotion, air,
+fight stance, button tap or wheelchair) and runs it. Confirmed (code) at `0x00243848` unless marked.
+
+**The gaits an AI asks for.** `Human_SpeedForGait` (`0x0022ae40`, jump table `0x0055bec0`) returns the human's own
+clip speeds from its 0x180 record, **unscaled** by `+0x3a4`: gait 1 the sneak walk `+0x16c`, 2 the walk `+0x170`,
+3 the jog `+0x174`, 4 the run `+0x178`, 5 the sprint `+0x17c` ([Speed classes](#speed-classes); Rembrandt 1.585,
+1.629, 4.857, 7.801, 10.245 m/s), 0 and anything else 0. An AI's sprint drains stamina as a player's does
+([Sprint](#sprint), `Human_UpdateMeters` runs for every human), but nothing in this control reads stamina, so an AI
+keeps sprinting at 0 (inferred: no reader found).
+
+**The speed this update.** Start from the brain's speed, then, in order:
+
+1. **Stopped** (zero velocity, the rotation kept, the lean cleared) while the human is busy (`0x00223cb0`), its
+   `+0x280` is not −1, or it is blocking or ducking (`0x00223ad0`).
+2. **Caps by state**: hurt (state `0x10000`, `0x00227d98`) → the record's walk speed `+0x170` when asked for more
+   than 0.1; in a fight stance (state `0x3`) → the base speed (`+0x164` × `+0x3a4`, the combat walk) when asked for
+   more than 0.1, else 0; carrying an object of kind 4 or 6 and asked for more than the run speed → it **drops** the
+   object (`0x00257f38`) unless its type's `+0x87` is 6 and `+0x5a` is 0; otherwise at most 25 m/s. With brain
+   `+0x0b` (the turn boost, [AI](ai.md#brain-boosts)) above 0, a human (`+0x1b0` = −1) in a fight stance gets
+   anim slot 14 = 380 (the player's combat walk) and its speeds recomputed; at 0 or below, slot 14 goes back to 372.
+3. **Speeding up from rest** (current speed exactly 0): unless the state code is 3 or 7 or the anim state is 4, the
+   state code becomes **6** (run start) when asked for at least the run speed (**8** instead when brain `+0x0c` is
+   above 0), or **5** when asked for exactly the walk speed; the [clip selection](#clip-selection) plays the run or
+   walk start from those. The speed this update is min(asked, **2.0**).
+4. **Speeding up while moving**: + 8 m/s² × 1/30 (0.267 m/s per update); when that still leaves more than 2 m/s to
+   go, + 32 m/s² (1.067 per update) instead; never past the asked speed. So an AI ramps 0.267 per update for the last
+   2 m/s and faster before, where a player gains 0.8 ([Locomotion](#locomotion) step 5).
+5. **Slowing down**: − 32 m/s² (1.067 per update), not below the asked speed. Except for **Diego and Vargas**
+   (classes `0x78`, `0x77`) running or sprinting and asked for 0 with no held flag `0x110c0880`: velocity 0 and state
+   code **9**, the [run stop](#run-stop).
+
+**The direction.** With human `+0x333` (the detail level, 0-4, from the distance to the nearest camera,
+`Human_UpdateLod` `0x0023d660`) below 2, or any held flag `0x310c0880`, the AI moves toward the brain's point `+0x90`;
+at detail 2 or more it simply moves along the heading `+0x110` at the speed and the rotation is set to that heading
+at once: far from the camera there is no turn limit and none of the clips below. Close up (confirmed (code)):
+
+- **Turning** happens only while the brain asks for a speed above 0 (or the human is hurt): the facing turns toward
+  the heading `+0x110` by at most `Human_MaxTurn` (`0x002213d8`) per update, **at a constant step, no easing** (the
+  player's turn eases, [Locomotion](#locomotion) step 4). For an AI the limit is the table's second word
+  ([Movement constants](#movement-constants)): **12° walking or standing, 6° jogging, 4° running, 2.5° sprinting,
+  24° in a fight stance, 1.5° grabbing, blocking or ducking**, a quarter of 1.5° hurt and of 2.5° with a held flag
+  `0x1000080`, and 4° / 6° in the two special states (`0x00227f68`, `0x00227f40`); the gait words are multiplied
+  by brain `+0x0b` + 1 (divided by 1 − `+0x0b` when it is negative, `0x002212d0`). The turn decides the facing; the
+  velocity is the new facing × the speed, so an AI runs wide arcs (a run turns 120° per second).
+- **In a fight stance** the velocity is instead along the line to the point (it **strafes**: the facing follows
+  `+0x110`, the feet go to `+0x90`), and record `+0xdc` gets the direction of the movement relative to the facing,
+  0 to 2π (`0x002726d8`), which drives the eight-direction blend ([Clip selection](#clip-selection)).
+- **Held flag `0x20000000`** (a turn clip playing, below) or any of `0x110c0880`, or the state code 5 or 6 (a start
+  clip): no velocity; the clip moves the body.
+- The vertical velocity is kept (`+0x3a0`), and the lean (`0x00248df0`) gets the heading change, as for a player.
+
+**Turning on the spot** (`0x0025c240`): with a speed of 0 this update, the heading more than **15°** off the
+facing and no held flag, the AI plays a turn clip and turns the rest of the way over the clip's length
+(`Human_TurnToOver`, `0x0023cf88`: a constant rate on top of the clip's own turn, which is taken as 60° or 120°,
+inferred from the subtraction). Positive angles turn left. Confirmed (code):
+
+| Heading off by | Clip (most AI) | Clip (brain `+0x0b` below 0, or move style 4 or 6) | In a fight stance |
+| --- | --- | --- | --- |
+| 15°-90° left | 396 `ANIM_FAST_TURN_LEFT` | slot 8 + 1 (391, slow left) | slot 15 + 1 |
+| 15°-90° right | 395 `ANIM_FAST_TURN_RIGHT` | slot 8 (390, slow right) | slot 15 |
+| over 90° left | 398 `ANIM_FAST_TURN_QUICK_LEFT` | slot 8 + 3 (393) | slot 15 + 3 |
+| over 90° right | 397 `ANIM_FAST_TURN_QUICK_RIGHT` | slot 8 + 2 (392) | slot 15 + 2 |
+
+The clip is played by `0x0025cb90`: a fade of 0.1 s, the clip, then the idle (slot 0, or slot 11 in a fight stance)
+looping, holding the given flag (`0x20000000` here) while it plays, state code 0. This is the turn (398) seen at
+runtime before an AI's run-in ([AI, Moving](ai.md#moving)).
+
+**Arriving with one clip** (`0x0025c5b8`, the global `0x005104e8` = 1): while the brain asks for more than the jog
+speed, its `+0x11c` is 0, the human is not down, not hurt and holds no flag, and its point is at least 0.1 m beyond
+the radius (`d` = the distance in plan − `+0x118`), the AI may cover `d` with a single clip instead of the gait.
+Confirmed (code):
+
+- **From rest** (stored gait `+0x1a8` 0): for an asked gait below 4 a step, slot 1 + (0 ahead within 45°, 1 behind
+  beyond 135°, −1 right, −2 left: 401, 402, 400, 399); for 4 or more a dash, slot 2 + (0, 1, 3 right, 2 left: 403,
+  404, 406, 405); in a fight stance slots 12 and 13 instead of 1 and 2.
+- **At a run or sprint** (gait 4 or 5) with the point within 45° ahead: the run stop, slot 33 (417).
+- With `L` the clip's root displacement: the clip plays when `L` ≥ `d`, or from rest when `L` × 1.25 ≥ `d`. When
+  `L` < `d` + the radius it plays as it is; otherwise the body is turned so the clip's displacement points at the
+  point and moved over the clip's time so it ends there (`Human_MoveToOver`). The clip holds `0x80000`, and the
+  control sets no velocity that update.
+
+So an AI running at its point stops with the run stop once the point is closer than the run stop's slide (about
+1.6 m for Rembrandt), and one starting near its point takes a step or dash. Whether a given goal's move reaches
+this test is the move action's business ([AI, The move action](ai.md#move-action)).
+
+**Other effects**: when the brain asks for any gait above 0 (`Brain_UpdateGait`, `0x0028ab08`), the human lets go of
+carried props (`0x0024ce40`) and, after a state 18 or with held flag `0x20000`, its animation is rebuilt
+(`0x0025f450`); a human in a scene state also lets go of its props.
 
 ### Wheelchair control {#wheelchair}
 
@@ -999,7 +1132,8 @@ record `+0x14` is 18 or human flag `0x40000000` is set), which builds one of:
 - **Already moving** (the top task is a gait blend): a fade of 0.1333 s and a new gait blend that starts at the old
   one's value (`0x0025ff50` rounds it down to 0, 1, 2 or 3) and the old one's normalised time, so the cycle carries on.
 - Other cases: a looping single clip of slot 14 (combat walk) when the global `0x0051031c` is set; a four-clip task of
-  slot 0 and slot 4 under `0x00227d98`; a two-clip mix of ids 633 and 636 when carrying (`0x00228188`).
+  slot 0 and slot 4 under `0x00227d98`; a two-clip mix of 633 `STEALTH_WALK` and 636 `STEALTH_READY_WALK` while stalking
+  a target (`Human_IsStalkingTarget`, `0x00228188`, [Combat moves](combat-moves.md#stealth)).
 
 **Walk start to run start.** While the walk start plays (flag `0x10000000`), if the stick asks for a run or sprint
 (`0x00225c10`, `0x00225dc0`) above the magnitude at `0x005102e8`, and less than half of the clip has played, the
@@ -1877,6 +2011,14 @@ the human code reads.
 | `0x0023b128` | `CNS_SetMissionInfoEnabled` | `CNSEnableMissionInfo`: sets 0x005109ac. | confirmed (code) |
 | `0x0023b138` | `Human_TeleportNear` | `HuTeleportNearHuman`: puts the human at a free point near another human, facing it. | confirmed (code) |
 | `0x0023b778` | `Human_SetSlowMo` | `HuSetSlowMo`: a player's slow motion (`+0x3bb`, the time factor 0x005102cc). | confirmed (code) |
+
+### The update, controls and carried props {#code-update}
+
+`0x0023b838`-`0x0024e1f8`: anim handles, the state update and its control functions (the member-function pointer at
+`+0x1bc`, [An AI's locomotion](#ai-locomotion)), falling and landing, the look-at, the reticules and carried props.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
 | `0x0023b838` | `Humans_InitAnimHandles` | Static initialiser: fills the handle records at 0x006b6710 with null handles and clip 0x2d2. | confirmed (code) |
 | `0x0023bc80` | `Humans_StaticInitAnimHandles` | Humans_InitAnimHandles(1, 0xffff). | confirmed (code) |
 | `0x0023bcf0` | `Human_ClearVelocity` | Zeroes the task velocity and `+0x3a0`, clears the bone cache's `+0x460` and marks the move dirty (`+0x255`). | confirmed (code) |
@@ -1927,6 +2069,14 @@ the human code reads.
 | `0x0024cef0` | `Player_AttachGear` | For a player with the unlocked gear (unlockables 6/5, 6/6): spawns the gear pieces on its bones from the transforms at 0x00715480. | confirmed (code) |
 | `0x0024d340` | `Player_RemoveGear` | Destroys a player's gear objects. | confirmed (code) |
 | `0x0024d420` | `Player_MessageGear` | Sends message 10 with a value to each gear object. | confirmed (code) |
+
+### Navigation {#code-nav}
+
+`0x0024e1f8`-`0x00250e00`: the human's side of the navigation mesh (on-mesh tests, path polygons, links); the planner is
+on [AI](ai.md#path-planning).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
 | `0x0024e1f8` | `Nav_IsOnMesh` | True when a point lies in a nav area. | confirmed (code) |
 | `0x0024e478` | `Nav_GetWalkingDistance` | `WalkingDistance`: the length of the path between two points. | confirmed (code) |
 | `0x0024e608` | `Path_LengthFrom` | The length of a path from a point through its corners. | confirmed (code) |
@@ -1934,6 +2084,97 @@ the human code reads.
 | `0x00250b10` | `NavLink_ClearAvoidByKind` | Clears the avoid mark of links of a kind (glass broken, doors opened). | confirmed (code) |
 | `0x00250bb8` | `NavLink_SetKindNearest` | Sets the kind of the nearest link pair to a point. | confirmed (code) |
 | `0x00250db0` | `NavLink_ConvertJumpToDoor` | `ConvertJumpToDoor`: turns a jump link into a door link. | confirmed (code) |
+
+### Movement styles, clips and actions {#code-movement}
+
+From `0x00250e00`: movement styles and anim slots, the clip builders ([Clip selection](#clip-selection)), the turn and
+arrival clips of an AI, and the per-human actions.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00250e00` | `NavLink_DisableDoor` | Marks the door links near a point to be avoided (kind 0x10), as when a door shuts. | confirmed (code) |
+| `0x00250e48` | `NavLink_EnableDoor` | Clears the avoid mark of the door links near a point (kind 0x10). | confirmed (code) |
+| `0x002510a8` | `NavNode_IsLinkBlocked` | Whether a node's link list holds a link to the given node with a negative cost (a blocked edge). | confirmed (code) |
+| `0x00251188` | `PathRequests_Clear` | Clears the 32 path-request slots (0x110 bytes each, at 0x006cc340 downward). | confirmed (code) |
+| `0x002516d0` | `PathNode_SetIndex` | Stores a node pointer as its index (offset from the node array 0x006ca21c / 32) at slot i of a list. | confirmed (code) |
+| `0x002516f0` | `PathNode_GetAt` | The node pointer at slot i of a list (the node array 0x006ca21c + index x 32). | confirmed (code) |
+| `0x00251710` | `Ptr_Set` | Writes a word: a one-line setter. | confirmed (code) |
+| `0x00251718` | `PathNode_IsEdgeBlocked` | Whether the edge between list slots i and i+1 is blocked (NavNode_IsLinkBlocked). | confirmed (code) |
+| `0x00251768` | `PathNodes_ResetParents` | Sets every path node's parent (+0x1c) to none (0xffff) before a search. | confirmed (code) |
+| `0x00251820` | `Path_DistanceCost` | The A* cost of a distance: length x 16, as a u16. | confirmed (code) |
+| `0x00251a00` | `PathNodes_ClearOpenMarks` | Clears the +0x18 mark of every node on the open list after a search. | confirmed (code) |
+| `0x00252108` | `Nav_NearestEdgePoint` | The nearest point on a nav polygon's edges (within 1.5 m of its box, at or above the point's height less 0.1) to a point; only when closer than 1.5 m, then dropped to the ground. | confirmed (code) |
+| `0x00252ae0` | `Nav_FindPolygonUnderThunk` | Nav_FindPolygonUnder with a height of 1.0. | confirmed (code) |
+| `0x00252b08` | `Nav_ClampMoveToRange` | Limits a move to a range: beyond it the point is kept only when the nav mesh connects the two (Nav_IsConnected), else the start. | confirmed (code) |
+| `0x00252c28` | `NavLink_SetBlocked` | Sets or clears a path polygon's blocked flag 8 (+0x48) at a point. | confirmed (code) |
+| `0x00253068` | `PathSearch_ResetCount` | Global 0x005105b0 = 0. | confirmed (code) |
+| `0x00253118` | `PathSearch_InitLists` | Static initialiser: the open heap, the closed list and two small lists of the path search. | confirmed (code) |
+| `0x00253170` | `PathSearch_StaticInit` | Calls PathSearch_InitLists(1, 0xffff). | confirmed (code) |
+| `0x00253190` | `PathHeap_Construct` | Constructs the open heap (count 0). | confirmed (code) |
+| `0x002531b8` | `PathHeap_Clear` | Count = 0. | confirmed (code) |
+| `0x002531c0` | `PathHeap_Push` | Pushes a node on the binary min-heap keyed by the node's cost (+0x16), at most 1000. | confirmed (code) |
+| `0x00253268` | `PathHeap_PopMin` | Removes and returns the cheapest node of the heap. | confirmed (code) |
+| `0x00253350` | `PathHeap_Find` | The heap position of a node, or 0xffff. | confirmed (code) |
+| `0x00253398` | `PathHeap_IsEmpty` | Count is 0. | confirmed (code) |
+| `0x002533b8` | `PathHeap_SiftUp` | Moves a node whose cost dropped up the heap. | confirmed (code) |
+| `0x00253480` | `PathList_Construct` | Constructs the closed list. | confirmed (code) |
+| `0x002534a8` | `PathList_Get` | Entry i of the closed list. | confirmed (code) |
+| `0x002534c0` | `PathList_Clear` | Count (+6000) = 0, last (+0x1772) = -1. | confirmed (code) |
+| `0x002534d0` | `PathList_Add` | Appends a node to the closed list, at most 3000. | confirmed (code) |
+| `0x00253528` | `PathList_Count` | The closed list's count. | confirmed (code) |
+| `0x00253538` | `PathPair_Construct` | Constructs a three-short record (zeroed). | confirmed (code) |
+| `0x00253560` | `PathPair_Clear` | Zeroes the three shorts. | confirmed (code) |
+| `0x00253598` | `PathCursor_Construct` | Constructs a two-short record (zeroed). | confirmed (code) |
+| `0x002535c0` | `PathCursor_Clear` | Zeroes the two shorts. | confirmed (code) |
+| `0x00253e68` | `Human_SetMoveStyle` | Replaces the top movement style (pop then push), or applies style 0 when none is stacked. | confirmed (code) |
+| `0x00253f78` | `Human_RemoveMoveStyle` | Removes a movement style from the human's stack and re-applies the top one ([Anim slots](#anim-slots)). | confirmed (code) |
+| `0x00254060` | `Human_GetMoveStyle` | The movement style byte of the human's record (styles 4 and 6 use the slow turns). | confirmed (code) |
+| `0x002541c8` | `Human_CheckMoveStyles` | Drops a held-object movement style (1-6) that no longer matches what is held, style 14 without state 0x100000, and an object held with no style. | confirmed (code) |
+| `0x002544b8` | `Human_GetAttackerReach` | The reach (attack table +0x4) of the move the human's attacker is playing on it. | confirmed (code) |
+| `0x002545a8` | `AnimRange_SetFarRange` | Writes an anim id's far range (seconds x 1000, mm) into the human's Anim Range List (+0x160). | confirmed (code) |
+| `0x002548c8` | `AnimRange_SetDamage` | Writes an anim id's damage (+0x0a) into the human's Anim Range List. | confirmed (code) |
+| `0x00254e20` | `AnimRange_GetHitFlags` | The Anim Range List's u16 +0x0e for an anim (-1: the current one); Hit_ResolveBlock tests 0x600. | confirmed (code) |
+| `0x00255540` | `Human_UpdateWorkout` | State code 0x1b: the workout on gym equipment (start, repetitions with the pad's pumps, end), its clips and rate. | confirmed (code) |
+| `0x00255cf8` | `Human_UpdateSpecialIdle` | State code 0x1d: the special idle (672 start, then 671 looping) from the script's clips; ends the special state. | confirmed (code) |
+| `0x002570e8` | `Human_ComputeThrowVelocity` | The launch velocity of a thrown held object: aimed at the target (led by its speed) or along the facing, scaled by the object's weight and the human's scale. | confirmed (code) |
+| `0x00257ce8` | `Human_EndThrowAim` | Cancels the throw aim and drops what cannot stay in hand (kinds 4 and 6; any but sets 1 and 2 without human flag 0x2000). | confirmed (code) |
+| `0x00257d70` | `Human_EndThrowAimDropHeavy` | Ends the throw aim: drops a held object of kind 4 or 6, then (no human flag 0x2000) drops any other unless an AI holds one of sets 1 or 2. | confirmed (code) |
+| `0x00257e38` | `Human_EndThrowAimIfHurt` | Ends the throw aim and drops a held object of kind 4 or 6; a hurt human (no human flag 0x2000) also drops any other, unless an AI holds one of sets 1 or 2. | confirmed (code) |
+| `0x00257ef0` | `Human_KnockOffHatIfDown` | Class 0x80 down or dead: knocks the hat off ([Hats](#hats)). | confirmed (code) |
+| `0x00258330` | `Human_KnockOffHat` | Throws the worn hat off (unless HuSetKeepHat or kind 27): spin 8 rad/s, drop at 2 m/s, +0x364 cleared ([Hats](#hats)). | confirmed (code) |
+| `0x00258968` | `Human_ReleaseAll` | Lets go of everything: breaks a pair, ends a mini-game, drops the held object, clears the object target, ends rage, clears state 0x18800f, empties the move-style stack and sets style 0x12. | confirmed (code) |
+| `0x00259368` | `Human_UpdateFaceClip` | Queues the face clip 698 + 3 x the record's +0x1c (and its pair 700 + 3n), fading out the old one over at most 1/30 s; record +0x24 holds the current face clip. | confirmed (code) |
+| `0x0025a178` | `Human_BuildCombatIdle` | Anim state 11: the fight-stance idle (slot 11) looping after a fade; from state 2 the fade holds 0x80000. | confirmed (code) |
+| `0x0025a310` | `Human_PushRecordOverlay` | Sets the anim state and a held flag and pushes the record's +0x20 clip as a 0.05 s overlay holding that flag. | confirmed (code) |
+| `0x0025aeb8` | `Human_TryIdleFidget` | With nothing held and record +0x3bc set, a 30% chance to play the fidget 601 as an overlay holding 0x200000. | confirmed (code) |
+| `0x0025af90` | `Human_BuildPairedFourMix` | Builds the four-way gait mix (slot 4, anim state 4, action 3) for the human and for its pair partner (+0xc4), after a fade (0.1 s longer with held flag 0x40000000). | confirmed (code) |
+| `0x0025c240` | `Human_StartTurnOnSpot` | An AI's turn on the spot: a turn clip (395-398, slot 8 or 15 variants) and the rest of the angle over the clip ([An AI's locomotion](#ai-locomotion)). | confirmed (code) |
+| `0x0025c5b8` | `Human_TryArriveClip` | An AI covering the last metres to its point with one clip: a step or dash from rest, the run stop at a run ([An AI's locomotion](#ai-locomotion)). | confirmed (code) |
+| `0x0025cb90` | `Human_PlayOneShotClip` | Plays a clip once over a 0.1 s fade, then the idle (or combat idle) looping, holding the given flag; state code 0. | confirmed (code) |
+| `0x0025cd58` | `Human_BuildStanceEightDir` | Anim state 14: the fight-stance eight-direction blend (slot 14) driven by record +0xdc x 4/pi, after a fade of 0.15 s (none from state 2). | confirmed (code) |
+| `0x0025cf10` | `Human_LaunchJumpThunk` | Calls Human_LaunchJump. | confirmed (code) |
+| `0x0025cf30` | `Human_BuildJumpLoop` | Anim state 25: the jump loop 434 after a 0.1 s fade, then the launch ([Anim states in the air](#jump)). | confirmed (code) |
+| `0x0025d020` | `Human_BuildFallClip` | Anim state 26: the drop cycle 428, or the long-fall cycle 422 / 425; a long fall from a grab gives the grabber style points and rage. | confirmed (code) |
+| `0x0025d2d0` | `Human_ResetToIdleState` | Anim state 0 unless state 0x1c00000000; clears landing 0x2000000000 and the down and stun timers. | confirmed (code) |
+| `0x0025d348` | `Human_ResetToMoveState` | Anim state 4 unless state 0x1c00000000; clears landing 0x2000000000. | confirmed (code) |
+| `0x0025d390` | `Human_BuildLandingClip` | Anim state 27: the jump end 435 / 436, the drop land 429 or a long-fall clip, then the idle or a gait blend ([Anim states in the air](#jump)). | confirmed (code) |
+| `0x0025e0e0` | `Human_BuildSlotLoopWithIntro` | Loops the record's +0x88 clip, after the +0x7c clip (holding 0x20000000) unless asked not to. | confirmed (code) |
+| `0x0025e250` | `Human_EndDownState` | Clears record +0xbe and gets the human back up: wakes it (0x40000), unarrests it (0x20000), gets it up (0x80000), else back to the fight stance. | confirmed (code) |
+| `0x0025e900` | `Human_EndObjectSteer` | End hook of the steer clip: clears the object target and sets push weight back to 1.0. | confirmed (code) |
+| `0x0025e948` | `Human_StartObjectSteer` | Plays clip 666 then the idle, holding 0x4000, push weight 1e9, steering onto the object target over 0.1 s. | confirmed (code) |
+| `0x0025eee0` | `Human_UpdateGaitBlendTarget` | Sets the top gait blend's target from the speed ([Clip selection](#clip-selection)). | confirmed (code) |
+| `0x0025ef58` | `Human_PushScriptOverlay` | Pushes a script clip as a 0.1 s overlay holding 0x100, unless the human is busy. | confirmed (code) |
+| `0x0025f028` | `Human_BuildAnimState` | Calls the builder for anim state 0-7 from the table at 0x0055db50. | confirmed (code) |
+| `0x0025f1b8` | `Human_BuildIdleClip` | Builds the idle (or a given loop) with stealth and stalking variants ([Clip selection](#clip-selection)). | confirmed (code) |
+| `0x0025f450` | `Human_RebuildAnimOnMove` | Forces the anim state to be rebuilt (flag 0x20000000) after state code 18 or while holding 0x20000 (clearing it). | confirmed (code) |
+| `0x0025f4d0` | `Human_BuildMoveState` | Anim state 4: the gait blend via Human_BuildMoveTasks, or the stance eight-direction blend ([Clip selection](#clip-selection)). | confirmed (code) |
+| `0x0025fba0` | `Human_BuildState25` | Builds the jump loop and sets anim state 0x1a. | confirmed (code) |
+| `0x0025fbd0` | `Human_BuildState26` | Builds the fall clip and sets anim state 0x1a. | confirmed (code) |
+| `0x0025fc00` | `Human_BuildState27` | Builds the landing clip and sets anim state 0x1b. | confirmed (code) |
+| `0x0025fcb0` | `Human_UpdateDealerPair` | The paired clip 668 between two humans: within 1.875 m, a clear way and grabbable, aligns both and plays it on both; otherwise idles both. | confirmed (code) |
+| `0x0025ff18` | `Human_StartObjectSteerIdle` | Starts the object steer, then anim state 0 and action 0. | confirmed (code) |
+| `0x0025ff50` | `Human_BuildGaitBlendFromValue` | Builds a gait blend from a gait value, rounded down to 0-3 ([Clip selection](#clip-selection)). | confirmed (code) |
+| `0x002726d8` | `Human_SetStrafeDirection` | In a fight stance with a brain: record +0xdc = the movement direction relative to the facing (0-2π), for the eight-direction blend. | confirmed (code) |
 
 ### Game-state functions {#warriors-functions}
 

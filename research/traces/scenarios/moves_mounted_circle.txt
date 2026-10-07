@@ -1,0 +1,17 @@
+76 tap square
+95 tap circle
+98 tap circle
+101 tap circle
+104 tap circle
+107 tap circle
+110 tap circle
+113 tap circle
+116 tap circle
+119 tap circle
+122 tap circle
+125 tap circle
+128 tap circle
+131 tap circle
+134 tap circle
+137 tap circle
+140 tap circle

@@ -1,0 +1,29 @@
+description = "slot 6: PoizoCiv 1.5 m ahead is given the tackle (command 0xe) at the player; once mounted, the player presses square: the mounted victim's input"
+research = "docs/research/combat-moves.md"
+input = "moves_mounted_square.txt"
+updates = 200
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet", "strike-contact", "strike-shape"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "rec(player) + 0x144", type = "s16", value = "900", frame = 0, until = 0 },
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "rec(enemy) + 0x144", type = "s16", value = "600", frame = 0, until = 0 },
+  { address = "rec(enemy) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.5 * sin((heading(player) + rad(0.0)))", until = 9 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.5 * cos((heading(player) + rad(0.0)))", until = 9 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 9 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin(((heading(player) + rad(0.0)) + pi) / 2)", until = 9 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos(((heading(player) + rad(0.0)) + pi) / 2)", until = 9 },
+  { address = "prec(enemy) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 },
+  { address = "enemy + 0xc8", type = "u32", value = "u32(player + 0x90)", frame = 0, until = 12 },
+  { address = "brain(enemy) + 0x124", type = "u32", value = "u32(player + 0x90)", frame = 0, until = 12 },
+  { address = "prec(enemy) + 0x20", type = "u32", value = "14", frame = 10, until = 10 },
+  { address = "prec(enemy) + 0x20", type = "u32", value = "0", frame = 11, until = 11 },]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]

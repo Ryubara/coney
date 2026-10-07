@@ -1,0 +1,24 @@
+description = "slot 6: PoizoCiv pinned 1.5 m ahead; square, then R1 held from 10 updates after the press (S1's window): the block waits for S1's end"
+research = "docs/research/combat-moves.md"
+input = "moves_block_window.txt"
+updates = 70
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet", "strike-contact", "strike-shape"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "rec(player) + 0x144", type = "s16", value = "900", frame = 0, until = 0 },
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "rec(enemy) + 0x144", type = "s16", value = "600", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "33.3515", until = 69 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "37.2235", until = 69 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 69 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "0.008473", until = 69 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "-0.999964", until = 69 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]

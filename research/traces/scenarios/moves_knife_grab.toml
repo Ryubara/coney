@@ -1,0 +1,36 @@
+description = "slot 6: a knife (dyn_tknife) placed in the player's hand; circle grabs PoizoCiv 1.0 m ahead, then square: the knife grab kill"
+research = "docs/research/combat-moves.md"
+input = "moves_knife_grab.txt"
+updates = 160
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet", "strike-contact", "strike-shape", "call-brains"]
+let = { enemy = 'human("PoizoCiv")' }
+setup = [
+  { address = "rec(player) + 0x144", type = "s16", value = "900", frame = 0, until = 0 },
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "rec(enemy) + 0x144", type = "s16", value = "600", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "f32(tf(player)) - 1.0 * sin(heading(player))", until = 15 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "f32(tf(player) + 4) + 1.0 * cos(heading(player))", until = 15 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 15 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "sin((heading(player) + pi) / 2)", until = 15 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "cos((heading(player) + pi) / 2)", until = 15 },
+  { address = "0x000c0000", type = "u32", value = "0x5f6e7964", frame = 0, until = 0 },
+  { address = "0x000c0004", type = "u32", value = "0x696e6b74", frame = 0, until = 0 },
+  { address = "0x000c0008", type = "u32", value = "0x00006566", frame = 0, until = 0 },
+  { address = "0x000c000c", type = "u32", value = "0", frame = 0, until = 0 },
+]
+calls = [
+  { function = "0x00238540", args = ["u32(player + 0x90)", "0x000c0000"], frame = 3 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+[[field]]
+name = "inhand"
+address = "player + 0x338"
+type = "u32"

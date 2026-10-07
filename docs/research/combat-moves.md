@@ -37,7 +37,9 @@ knife and bottle kills and thrown melee weapons) and gives frame data for all of
 | `0x00258e10` / `0x0026f860` | `Tandem_CanStart` / `Tandem_Start` | the three-person tandem | confirmed (code) |
 | `0x00258e88` / `0x002590f8` | `Human_CanCounterGrab` / `Human_CanCounterTackle` | whether a grab or tackle coming at the human can be countered | confirmed (code) |
 | `0x00264738` | `Player_StartStealthKill` | the stealth kill 637 / 639 / 641 | confirmed (code) |
-| `0x00261c80` | (unnamed) | starts a strike on a target in a given state: 212, 661, 120, the push 21 | confirmed (code) |
+| `0x00261c80` | `Attack_StartAtTarget` | starts a strike on a target in a given state: 212, 661, 120, the push 21 | confirmed (code), runtime |
+| `0x002723e8` | `Mount_StartReversal` | the mounted victim's reversal 242 / 243 | confirmed (code), runtime |
+| `0x00225200` / `0x002250a0` | `Human_IsHighOrBusy` / `Human_IsMidOrBusy` | the low and mid target tests ([Square](#square)) | confirmed (code) |
 | `0x00261a08` | `Attack_StartGrounded` | a strike at a low target: 193, 194, the armed slot `0x13` | confirmed (code) |
 | `0x00269f30` | `Human_BlockHit` | whether a block stops a hit, by weapon set | confirmed (code) |
 | `0x00280630` / `0x00280708` | `Player_BufferChain` / `Player_UpdateChain` | the one-press chain buffer and the next attack ([Input](#input)) | confirmed (code), runtime |
@@ -98,7 +100,7 @@ are the exception: their damage is applied by the pair's own code, mostly on the
 
 | Id | Starts on | Strike shapes on-off | Contact (runtime) | Takes the next press | Window `0x2` (plays it) | End `0x4` | Recovery `0x40000` | Free again |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 12 `S1` | square pressed, the same update | L hand 0-9 | 2 | 0-14 | 6-14 | 15 | 16-19 | 20 |
+| 12 `S1` | square pressed, the same update | L hand 0-9 | 2 (1 at 0.93 m, 5 from 1.45 m; one miss at 1.03 m) | 0-14 | 6-14 | 15 | 16-19 | 20 |
 | 16 `SS2` | the window of 12 | L forearm, L hand 1-6 | 4 | 0-18 | 6-18 | 19 | 20-24 | 25 |
 | 19 `SSS3` | the window of 16 | R hand 6-14 | 7 | none | - | 16 | 17-26 | 27 |
 | 20 `SSS3_HOLD` | the window of 16, instead of 19 at random ([Combat](combat.md#attacks)) | shin A, foot A 14-20 | | none | - | 24 | 25-31 | 32 |
@@ -152,9 +154,11 @@ From `Commands_Match` (`0x00147940`; the tables are in [Commands](combat.md#comm
   `0x10`) and passes the dispatcher's gate (`0x5c7fee0`, which holds the recovery). R1's block is tested before both
   gates (`Player_UpdateActions` `0x0027c120`), and `Human_CanFight` (`0x00224f28`: no held flag outside
   `0x20081404`) lets it through in the end phase `0x4` only, so a block can cut the end phase but not the wind-up,
-  window or recovery (inferred from the code; not run).
-- **Blend.** A new attack enters over **0.2 s** from the current pose (`AnimTaskChained_Construct(0.2, ...)` in both
-  starts); a chain step taken in the window swaps the clip inside the running task instead (`Attack_Start` with
+  window or recovery. Confirmed (runtime): R1 pressed in `S1`'s window gave the block 606 at k15, 5 updates before
+  `S1` ended; pressed at k16 (recovery) it came at k20.
+- **Blend.** A new attack enters over **0.2 s** from the current pose (`AnimTaskChained_Construct(0.2, ...)` in
+  `Attack_Start`, `Attack_StartSolo` and `Attack_StartSnap`; 0.1 s in `Attack_StartAtTarget`, so 212, 661 and 120); a
+  chain step taken in the window swaps the clip inside the running task instead (`Attack_Start` with
   record `+0x08` `0x2` and a combo count of 1 or 2). Confirmed (code); how the swap blends is not traced.
 
 ### Targets: which human each move goes for {#targeting}
@@ -204,7 +208,14 @@ once the target is beyond 3 m; the lock bit goes beyond 13 m; the locked walk dr
 (`+0x00` `0x8`) holds it. L1 pressed or held also picks one.
 
 **Turning onto it**: an attack whose target is within its far range turns and slides onto it over the time to the
-clip's first event (`Attack_SteerToTarget`); beyond, it only turns ([Combat](combat.md#targets)).
+clip's first event (`Attack_SteerToTarget` `0x002761c8`; a snap over a fixed 0.1 s, `Attack_StartSnap`
+`0x00264460`); beyond, it only turns ([Combat](combat.md#targets)). The turn does not face the target: it turns
+so that the attack's **direction** points at it. The direction is the record's offset (`+0x0` / `+0x2`, read by
+`AttackTable_GetOffset` `0x00254418`), a unit vector in thousandths in the attacker's frame (y forward; x right,
+inferred from 25 and 27):
+forward (0, 1000) or within a few degrees of it for the standing, moving and ground attacks (193: 7.6° right),
+(999, −12) right for 25, (−1000, 0) left for 27, (−39, −999) back for 29, and for the strafes 31 / 32 / 33
+3° / 9° left and 6° right of forward. The new heading is the goal's heading minus the direction's. Confirmed (code).
 
 ### Square, in order {#square}
 
@@ -226,10 +237,16 @@ of `0x7bf9e9f4300` or record `+0x08` any of `0x100101f`; the buffered chain pres
 4. Re-pick the target (`Player_PickTarget(2.0)`, [Targets](#targeting)) when a pad player has none, or it is
    farther than **3 m** (`0x005104c0` = 9, squared). No human but an
    object → `Player_ObjectAttack` ([Combat](combat.md#breakables)).
-5. **Low target** (`0x00225200`: a height difference of 1.3-1.8 m or below −0.7 m between the two, or the target
-   in one of its lying held flags or states; the meaning "down" is inferred) → **193**.
-6. **Mid target** (`0x002250a0`: a height difference of 0.7-1.3 m, or the target in state bits `0x2800c000400`,
-   which include mounting `0x400`, outside some held flags) → **212** `MOUNTING_STRIKE` through `0x00261c80`.
+5. **Low target** (`Human_IsHighOrBusy`, `0x00225200`): the attacker's point stands more than 1.3 and less than
+   1.8 m above the target's (`Object_HeightDiff` `0x00229a10`: attacker's z minus target's, of the point each
+   object's vtable `+0xac` gives); otherwise, unless the target is more than 0.7 m higher, the target's state: in a
+   held phase of `0xc08000`, before 0.2 of its clip (when it holds `0x8000`), in 195 with `0x400000`, or with state
+   `0x4000000000`; outside those phases, state `0x40100f0800` without the recovery `0x40000`. "Down" is inferred
+   → **193**.
+6. **Mid target** (`Human_IsMidOrBusy`, `0x002250a0`): more than 0.7 and at most 1.3 m above it; otherwise, unless
+   the target is more than 0.7 m higher, the target in state bits `0x2800c000400` (mounting `0x400` among them)
+   without the held flags `0xc48000`, or between 0.2 and 0.4 of a clip holding `0x48000`, or holding `0x4000` →
+   **212** `MOUNTING_STRIKE` through `Attack_StartAtTarget` (`0x00261c80`).
 7. **Grabbed from the front or grabbing someone from the front** → **120** `GRAB_FRONT_STRIKE_01`.
 8. **Tandem** possible (`Tandem_CanStart`) → the tandem ([Tandems](#tandem)).
 9. Pad player only: the target is **grabbing or tackling him** and can be countered → **76** or **9**
@@ -248,8 +265,8 @@ a tandem; the object attack; otherwise the swing slot `0x10`. No snaps, strafes,
   gives 193;
 - **no strafes and no snaps**;
 - in the stance a **low target gets 194** `GROUNDED_STRIKE_02` (the stomp), a **mid target 661**
-  `SPECIAL_BREAK_OBJECT_LOW` (the `carhit_low` kick) through `0x00261c80`, a front grab 120, then the tandem, the
-  counters 76 / 9 and **11 `X1`**.
+  `SPECIAL_BREAK_OBJECT_LOW` (the `carhit_low` kick) through `Attack_StartAtTarget` (`0x00261c80`), a front grab 120,
+  then the tandem, the counters 76 / 9 and **11 `X1`**.
 
 Armed: as square's branch with slot `0x11`, combo count `+0xbc` = 2 before the swing (so cross never chains).
 
@@ -261,7 +278,7 @@ confirmed (runtime):
 
 | Scenario | Stick | Clip | Speed | Strike shapes | Result |
 | --- | --- | --- | --- | --- | --- |
-| `moves_strafe_right` | full, 90° right, 10 updates | **31** `STRAFE_RIGHT` | 3.43 m/s before square | L forearm / hand k7-k11 | missed (the target 1.2 m ahead drifted out of the arc) |
+| `moves_strafe_right` | full, 90° right, 10 updates, the target pinned 1.2 m ahead | **31** `STRAFE_RIGHT` | 3.43 m/s before square; locked, the player turns about 7.9° an update to keep facing the target | L forearm / hand k7-k11 | 30 damage at k8, reaction 275 |
 | `moves_strafe_left` | full, 90° left | **32** `STRAFE_LEFT` | 3.43 m/s | L forearm / hand k7-k11 | 30 damage at k9, reaction 273 |
 | `moves_strafe_front` | full, at the target 2.6 m ahead, 6 updates | **33** `STRAFE_FRONT` | lunge at 3.98 m/s | L forearm / hand k4-k10 | out of reach (far range 3.0 m) |
 
@@ -288,12 +305,13 @@ showed 359 for one update. Confirmed (runtime).
 | --- | --- | --- | --- |
 | square | low (down) | **193** `gen_ground_kickB` | foot B shape k10-k12, contact k11, −34 health seen k12, reaction 195 |
 | cross | low (down) | **194** `gen_ground_stomp` | foot B shape k10-k16, contact k14, −34 seen k15, 32 updates, then 358 |
-| square | mid (the mount's states, or 0.7-1.3 m lower) | **212** `MOUNTING_STRIKE` | not run |
-| cross | mid | **661** `SPECIAL_BREAK_OBJECT_LOW` | not run |
-| square or cross | grabbed from the front by someone else, or grabbing someone from the front | **120** | not run |
+| square | mid (the mount's states, or 0.7-1.3 m lower) | **212** `MOUNTING_STRIKE` | `moves_mid_square`: at Bum01 mounting PoizoCiv (made the target), contact on the mounter at k7; the victim was let go (245, then up with 199) |
+| cross | mid | **661** `SPECIAL_BREAK_OBJECT_LOW` | `moves_mid_cross`: the same, 661 one update after the release, contact at k8, the victim let go |
+| square or cross | grabbed from the front by someone else, or grabbing someone from the front | **120** | `moves_grab_front_strike`: at PoizoCiv holding Bum01 from the front (82), contact at k8, 50 damage, PoizoCiv 144 and the hold broken |
 | commands `0x37` / `0x38` (scripts, AI) | any | 193 / 194 (`Attack_StartGroundStrike`, `0x00287fe0`) | not run |
 
-Both grounded strikes deal 34 (class indices 12 / 13). Confirmed (code); confirmed (runtime) for 193 and 194.
+Both grounded strikes deal 34 (class indices 12 / 13). Confirmed (code); confirmed (runtime) for 193, 194, 212, 661
+and 120. A plain `S1` at a tackled victim lying under its mounter (PoizoCiv in 207) did not touch it.
 
 ### Tandems {#tandem}
 
@@ -314,7 +332,10 @@ A **tandem** is a three-person move: a player strikes a victim another human hol
 - The grabber is let go into a fight stance afterwards. A player's tandem scores through `Grab_ScoreMove` (100
   points of category 6).
 
-Not run at runtime (it needs a second human holding the victim).
+At runtime (`moves_tandem`: Ash, the player's ally, given the grab command at PoizoCiv from behind; PoizoCiv held
+in 85): square played the set 1 on the next update, the player's 165 and the victim's 164 for **51** updates (not
+the 36 of their clips), then 168 / 167; the victim lost **400** (50 + 350) on the first update of 167. Confirmed
+(runtime).
 
 ### Stealth: hiding and the stealth kill {#stealth}
 
@@ -323,8 +344,9 @@ enters state `0x200000` (`Human_EnterShadow`, `0x0022ff88`) and leaves it 4 s af
 (`Human_LeaveShadow`, `0x002300c0`). Hidden, the idle is 630 `STEALTH_IDLE` and the walk 633 `STEALTH_WALK`
 (about 2.31 m/s); the brain flag `+0x2d4` is set and the player's gang is ordered to hold. Confirmed (code).
 
-**The stealth kill** (`Player_UpdateActionsHidden`, `0x0027e040`): hidden, with **L1 held** (state
-`0x20000008`), square, cross or circle starts `Player_StartStealthKill` (`0x00264738`) when:
+**The stealth kill** (`Player_UpdateActionsHidden`, `0x0027e040`): hidden, with **L1 held** (state bit `0x8`, the L1
+target lock; its release sets `0x20000000`), square, cross or circle starts `Player_StartStealthKill`
+(`0x00264738`) when:
 
 - the player is **behind** the target (side 2) and the target faces away;
 - the target can be grabbed by him (`Human_CanBeGrabbedBy`) and the way is clear;
@@ -333,21 +355,36 @@ enters state `0x200000` (`Human_EnterShadow`, `0x0022ff88`) and leaves it 4 s af
 The clip is 637 bare-handed, 639 with a knife, 641 with a baton or club (all `player_stealthkill_weak` in
 Rembrandt's set); the victim's flag `0x8` is cleared and the pair starts through `Attack_StartPaired`. It deals
 **3000**, knocking the victim out (638 / 640 / 642), and scores 100 points (about 144 rage). With a set 5 object
-held the player drops it and does 637 when within 1.5 m. **The AI never stealth kills.** Confirmed (code); not
-run. The stealth ready blend is `Human_SetStealthReadyBlend` (`0x0025eb00`).
+held the player drops it and does 637 when within 1.5 m. **The AI never stealth kills.** Confirmed (code).
+The stealth ready blend is `Human_SetStealthReadyBlend` (`0x0025eb00`).
+
+At runtime (`moves_stealth`: the hidden state written onto the player each update, PoizoCiv pinned 1.0 m ahead
+facing away): L1 played 634 and then 630; square on the next update started 637 with the victim in 638, the
+victim's health fell to **1** at once (knocked out, state `0x80000000`), power 400 → 300; 637 ran 52 updates, then
+the fight idle 358. Confirmed (runtime).
 
 ### The mounted victim {#mounted-victim}
 
-`Player_UpdateTackled` (`0x0027f1a0`) runs for a mounted player (state `0x800`). Confirmed (code):
+`Player_UpdateTackled` (`0x0027f1a0`) runs for a mounted player (state `0x800`), after the gate `0x5c7eee0`.
+Confirmed (code); confirmed (runtime) below:
 
 | Input | Effect |
 | --- | --- |
-| square or cross | **250** `MOUNT_STRUGGLE`; costs the mounter 1 / divisor of its power (the grab struggle's rule, [Combat](combat.md#grabbed)) |
-| circle | the mounter gets off (`Mount_GetOff`, `0x00271470`) when `Grab_CanEscape` allows |
-| R1 pressed or `0x19` | **reversal** (`0x002723e8`): the victim plays 242 `MOUNT_REVERSAL`, the mounter 243, then the roles swap into 210 / 207 with the victim on top; statistics event 4 |
+| square or cross (`0xf`, `0x11`, `0x12`, `0x10`) | while `Grab_CanStruggle` (the victim not hurt, the mounter not raging, the victim's power above max / 6) and the victim's power fraction is above 1 / the mounter's class divisor: the **mounter** loses 1 / the victim's divisor of its power; then, unless the victim's record `+0x08` has any of `0x5c7eae1`, **250** `MOUNT_STRUGGLE` (`Mount_Strike`). A press during 250 drains the mounter without a new clip |
+| circle (`0x1e`, `0xd`, `0xe`) | with the victim's human flag `0x2000000000` clear and `Grab_CanEscape(mounter)`: `Mount_GetOff` (`0x00271470`), which plays **246** `MOUNT_BREAK` / 247 |
+| R1 (command 3, `0x00510988`) or `0x19` | with the mounter's flag `0x40` and the victim's `0x100000000` clear and `Grab_CanEscape(mounter)`: the **reversal** (`Mount_StartReversal`, `0x002723e8`): 242 `MOUNT_REVERSAL` / 243, then the roles swap into 210 / 207 with the victim on top; statistics event 4 |
 
-The AI does the same through its commands. 246 `MOUNT_BREAK` (the escape) is the other way out; its trigger is the
-power drain's end, as for a grab ([Combat](combat.md#grabbed)).
+`Grab_CanEscape` (`0x00225830`: at or below a quarter of the mounter's maximum power, half
+when hurt, always; above it, a 1 in floor(power / that) chance per press; never while the mounter rages) makes the
+mounter's power the gate: struggle first, then circle or R1. The AI does the same through its commands.
+
+At runtime (`moves_mounted_square`, `_r1`, `_circle`; the puppet civilian at power 400 given the tackle command
+`0xe` 1.5 m away): its intro 3 ran 19 updates, then the player played 6 for 46 updates (every press refused) under
+the puppet's 5, then the mounted idles 207 (victim) and 210 (mounter). Square played 250 on the next update for 16
+updates, the mounter 251, and the mounter lost **40** health on 250's second update. Squares every 4 updates (two
+250s, the presses between them draining) ended in 246 / 247 (48 updates) 2 updates after the 6th press, and the
+player was free. After one 250, R1 every 3 updates gave the reversal 242 / 243 on the 3rd press (57 updates, then
+210 / 207 with the player on top); circle every 3 updates gave 246 / 247 on the 6th press.
 
 ### Weapons {#weapons}
 
@@ -370,19 +407,32 @@ The armed moves' choice of clip is on [Combat](combat.md#armed-moves). Added her
   (`ThrownObject_HitHuman`, `0x00392b88`), not the clip's damage.
 - **Throwing a melee weapon**: commands `0x22` and `0x39` with a knife or baton play 491 `KNIFE_THROW`, with a bat
   502 `SWINGABLE_OBJECT_THROW`, and 471 / 472 when moving (`Player_ArmedSpecial`, `0x00288838`, then
-  `Player_ThrowMeleeWeapon`, `0x00288698`). So cross + square with a weapon throws it instead of the special.
+  `Player_ThrowMeleeWeapon`, `0x00288698`). So cross + square with a weapon throws it instead of the special. The
+  throw is refused when the target (the counter target, else the nearest within 20 m, `0x0027ad80`) is within
+  **2.0 m**, and with human flag `0x4000000000`; the command then does nothing.
 - **Blocks against weapons** (`Human_BlockHit`, `0x00269f30`): the bat's 26-34 range (its first swing 34 included)
   is never blocked; an unarmed blocker never blocks an armed hit; a set 3 (bat) blocker blocks armed hits, and the
   bat's cross 36 against a set 3 front block makes the attacker play 629 `BAT_BLOCK_REACT`; other armed blockers
   block only while in their block clips 605-620. The armed block clips 621-624 come from slots `0x15`-`0x18`
   (sets 2 and 3).
 
+At runtime (confirmed (runtime); the object put in the player's hand with `Human_PlaceItemInHand` `0x00238540`,
+which takes the human's **handle**, called on the game's thread; PoizoCiv facing the player):
+
+| Scenario | Object, target | Input | Result |
+| --- | --- | --- | --- |
+| `moves_knife_grab` | `dyn_tknife`, 1.0 m | circle, then square in the hold | the grab ended in the rear hold (74, then 84); square played **484** on the next update with the victim in 485, its health at **1** at once (knocked out), power 387 → 287; 484 ran 76 updates |
+| `moves_knife_throw` | `dyn_tknife`, 5.0 m (pinned) | cross held, square | **491** on the `0x22` update; the knife left the hand at k24 and hit 5 updates later for **200**, reaction 280. With the target at 2.5 m and walking in, the throw was refused and cross's release played the knife's `X1` 47, which dealt 259 |
+| `moves_bottle_cross` | `dyn_beerbottle`, 0.7 m | cross | **475** at once (the smash, from behind by the side test) with the victim in 476: **155** damage and power 400 → 300 on its first update; the bottle was swapped for another object (the broken bottle) at k23 |
+| `moves_bottle_kill` | the broken bottle the smash left, the same victim once up | circle, then square in the front hold (82) | square in the hold played **494** on the next update with the victim in 495, power −100, **51** damage on its second update (not lethal at 445), 43 updates. Square outside a hold with the broken bottle played the knife's swing 45 |
+| `moves_bottle_throw` | `dyn_beerbottle`, 4.0 m | cross | 466 `ONE_HANDED_OBJECT_THROW_START` for 7 updates, then **467**; the bottle left the hand at k7 of 467 and hit 2 updates later for **60**, reaction 280 |
+
 ### Commands only scripts and the AI send {#ai-commands}
 
 | Command | Handler | Move |
 | --- | --- | --- |
 | 3 | `Player_TryCounterGrab` (`0x0027d6e0`) | the AI's counter: 76 against a grab intro, 9 against a tackle intro ([Counters](#counters)) |
-| `0x36` | `Player_OnCommand36` (`0x0027de78`) | the push 21 `ATTACK_PUSH` through `0x00261c80`, holding flag `0x10` |
+| `0x36` | `Player_OnCommand36` (`0x0027de78`) | the push 21 `ATTACK_PUSH` through `Attack_StartAtTarget` (`0x00261c80`), holding flag `0x10` |
 | `0x37` / `0x38` | `Attack_StartGroundStrike` (`0x00287fe0`) | 193 / 194 at the target |
 | `0x39` | `Player_ArmedSpecial` | throw the melee weapon (as `0x22`) |
 | `0x33` | `Player_OnCommand33` (`0x00281188`) | the pick-up search |
@@ -402,13 +452,15 @@ more than 0.95 (snaps, strafes) and is otherwise centred. k counts from the clip
 | --- | --- | --- | --- | --- | --- |
 | `moves_snap_left` | 27 | L forearm / hand k1-k6 | k3 (health seen k4) | 31 | 283 |
 | `moves_snap_back` | 29 | R forearm / hand k0-k6 | k3 (health seen k4) | 31 | 281 |
-| `moves_snap_right` | 25 | R forearm / hand k1-k6 | none (the target drifted) | | |
+| `moves_snap_right` | 25 | R forearm / hand k1-k6 | none: with the target pinned 0.75 or 1.0 m to the right the player slid 0.3-0.5 m away from it (to 1.26 m) | | |
 | (any walk attack seen) | 23 | L forearm / hand k4-k10 | | | |
 | `moves_grounded_square` setup: cross + square | 653 | | k6-k7 | 6 | 289 / 291, thrown about 3.7 m; power 400 → 300 |
 | `moves_grounded_square` | 193 | foot B k10-k12 | k11 | 34 | 195 |
 | `moves_grounded_cross` | 194 | foot B k10-k16 | k14 | 34 | 358 after 32 updates |
 | `moves_strafe_left` | 32 | L forearm / hand k7-k11 | k9 | 30 | 273 |
-| `moves_strafe_right` | 31 | L forearm / hand k7-k11 | none | | |
+| `moves_strafe_right` | 31 | L forearm / hand k7-k11 | k8 | 30 | 275 |
+| `moves_block_window` | 12, R1 pressed at k10 | | k5 (target 1.45 m away at the press) | 17 | the block 606 replaces 12 at k15 (its end phase), 5 updates before its end |
+| `moves_block_end` | 12, R1 pressed at k16 | | none (target at 1.03 m) | | 606 starts at k20, when 12 ends: no cut in recovery |
 | `moves_strafe_front` | 33 | L forearm / hand k4-k10 | none (2.6 m) | | |
 | `moves_grabcounter_12`, `_14` | 76 (grabber 77) | all | k0 | 100 | 77 |
 
@@ -665,6 +717,9 @@ Found while building this table; for the owners of those pages. Confirmed (code)
   `0x002796a0`) have no angle test at all ([Targets](#targeting)).
 - [Combat](combat.md#attacks) "Square takes a target from `Player_PickTarget`": in the stance square keeps the
   current target within 3 m and searches only without one or beyond; cross always searches ([Targets](#targeting)).
+- [Combat](combat.md#targets), the steer's turn: the new heading is the goal's heading minus the attack's direction
+  (record offset `+0x0` / `+0x2`), not the goal's heading; a snap turns its side, not its front, to the target
+  ([Targets](#targeting)).
 
 ## Coney's implementation
 
@@ -672,9 +727,10 @@ The moves Coney plays and where they differ from the table above: [Combat differ
 
 ## Open questions
 
-- The low and mid tests' state bits are read but not all named; which reactions put a human in them.
-- The strafe right run missed although the target was in front; whether the strafe aims (no steer call was seen).
-- The tandem, stealth kill, knife kills, mounted victim and thrown weapons were not run.
+- The low and mid tests' state bits are read but not all named; which reactions put a human in them, and which
+  point the height test compares (vtable `+0xac`).
+- Why the snap 25 slides the player 0.3-0.5 m away from a still target on its right and misses, when 27 hits one on
+  the left.
+- Why the tandem intro ran 51 updates, not 36.
 - 490 `KNIFE_ATTACK_FROM_RUN`, 18 `ATTACK_SSX3_HOLD` and the `_02` snaps: no code path plays them here (20 is the
   chain's random pick after `SS2`, `0x00280708`).
-- Whether R1 really cuts an attack's end phase into the block (the code lets it through; not run).

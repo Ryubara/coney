@@ -1,0 +1,34 @@
+description = "slot 6: PoizoCiv 1.2 m ahead side-on is given the grab (command 0xd) at Bum01 standing face to face with it; with PoizoCiv grabbing from the front, square at PoizoCiv: 120"
+research = "docs/research/combat-moves.md"
+input = "moves_grab_front_strike.txt"
+updates = 120
+fields = ["player", "enemy"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "puppet", "strike-contact", "strike-shape"]
+let = { enemy = 'human("PoizoCiv")', other = 'human("Bum01")' }
+setup = [
+  { address = "rec(player) + 0x144", type = "s16", value = "900", frame = 0, until = 0 },
+  { address = "rec(player) + 0x148", type = "s16", value = "400", frame = 0, until = 0 },
+  { address = "rec(enemy) + 0x144", type = "s16", value = "600", frame = 0, until = 0 },
+  { address = "tf(enemy) + 0x0", type = "f32", value = "33.3566", until = 9 },
+  { address = "tf(enemy) + 0x4", type = "f32", value = "37.5235", until = 9 },
+  { address = "tf(enemy) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 9 },
+  { address = "tf(enemy) + 0x18", type = "f32", value = "0.70711", until = 9 },
+  { address = "tf(enemy) + 0x1c", type = "f32", value = "0.70711", until = 9 },
+  { address = "tf(other) + 0x0", type = "f32", value = "32.5566", until = 22 },
+  { address = "tf(other) + 0x4", type = "f32", value = "37.5235", until = 22 },
+  { address = "tf(other) + 0x8", type = "f32", value = "f32(tf(player) + 8)", until = 22 },
+  { address = "tf(other) + 0x18", type = "f32", value = "-0.70711", until = 22 },
+  { address = "tf(other) + 0x1c", type = "f32", value = "0.70711", until = 22 },
+  { address = "prec(enemy) + 0x1e", type = "u8", value = "0", frame = 0, until = 0 },
+  { address = "enemy + 0xc8", type = "u32", value = "u32(other + 0x90)", frame = 0, until = 12 },
+  { address = "brain(enemy) + 0x124", type = "u32", value = "u32(other + 0x90)", frame = 0, until = 12 },
+  { address = "prec(enemy) + 0x20", type = "u32", value = "13", frame = 10, until = 10 },
+  { address = "prec(enemy) + 0x20", type = "u32", value = "0", frame = 11, until = 11 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]

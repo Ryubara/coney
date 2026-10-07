@@ -1,0 +1,3 @@
+20 tap square
+36 press r1
+60 release r1

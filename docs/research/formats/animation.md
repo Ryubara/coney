@@ -101,9 +101,12 @@ channel. Confirmed (code) at `0x001041f8`, `0x00104110`; every clip on the disc 
 **Decoding.** Positions: `x / 1023`, `y / 1023`, `z / 2047` (metres). Rotations: `x, y, z × 2⁻¹⁵` (the constant
 `0x38000100` in the code), `w = sqrt(1 − x² − y² − z²)`, so `w` is never negative. Confirmed (code).
 
-**Events** (24 bytes each): `+0` u16 frame, `+2` u16 type, `+6` u16, `+8`-`+0xc` three s16 (a position, scaled
-`/1023`, `/1023`, `/2047`), `+0xe`-`+0x12` three s16 (a quaternion's `x, y, z`). Types 8, 9 and 10 use the position
-and rotation (a transform); the others' fields are not traced. Confirmed (code) for the layout at `0x00101dd8`;
+**Events** (24 bytes each): `+0` u16 frame, `+2` u16 type, `+4` and `+6` u16 arguments (types 15, 16 and 19 pass
+them), `+8`-`+0xc` three s16 (a position, scaled `/1023`, `/1023`, `/2047`), `+0xe`-`+0x12` three s16 (a quaternion's
+`x, y, z`). Types 8, 9 and 10 use the position and rotation (a transform). Types 11 and 12 instead pass the **32-bit
+word at `+8`** as their message's value (`lw a1,0x8(s1)` at `0x0010246c` for type 11, `0x00102498` for type 12): for
+type 11 the animation sound id, so `+0xa`-`+0xb` must be 0 for the id to be used as such (on the disc `+4` and `+6`
+are 0 in these events). Confirmed (code) for the layout at `0x00101dd8` (the cursor steps `0x18` at `0x00103df8`);
 the type meanings are open, except type 8, the **partner's place** in a paired clip ([Paired tasks](#paired-tasks)),
 read by `0x00101558`, and types 9 and 10, effects. Survey: type 11 is the most common (4,287 events).
 

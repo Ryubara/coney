@@ -62,6 +62,7 @@ A u32 after the reference count. Confirmed (code) at the readers; meanings from 
 | Bit | Reader | Meaning |
 | --- | --- | --- |
 | `0x1` | `0x00101af8` | a paired clip |
+| `0x4` | `0x00175120` | has strike events (type `0xf` or `0x13`): releasing the clip turns every strike shape off ([Combat](combat.md#moving-strikes)); 222 of the disc's 1,752 clips |
 | `0x20` | `0x00101b28` | starts a tackle |
 | `0x40` | `0x00101b58` | starts a grab |
 | `0x80` | `0x00101bc0` | read by `0x00228488` (not traced) |

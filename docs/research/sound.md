@@ -490,7 +490,11 @@ sound with flags `0x12` (the front end's cue 9 on START, `0xf` on back; [Front e
 
 A clip event of **type 11** ([Animation data](formats/animation.md#keyframes-chunk-0x00), fired by
 `Anim_FireFrameEvents`, `0x00101dd8`) sends its human message `0x8b` with the event's value, an animation sound id
-(`SA.*`, 0-161, the [matrix](#sound-matrix)'s animation table). Gameplay clips and scene role clips carry them alike:
+(`SA.*`, 0-161, the [matrix](#sound-matrix)'s animation table). The value is the **32-bit word at event `+8`**
+(`lw a1,0x8(s1)` at `0x0010246c`, pushed with `Msg_PushInt`), not `+4` or `+6`, which are 0 in these events; the
+handler switches on the whole word (`sltiu` against 162 at `0x0021f72c`), so a word of 162 or more takes the default
+path (`Human_PlayAnimSound` with that value). Reading the s16 at `+8` matches whenever `+0xa`-`+0xb` are 0, which the
+footstep ids 1 and 3 need to work as they do. Confirmed (code). Gameplay clips and scene role clips carry them alike:
 the footsteps, cloth, grunts and impacts of every move. The human's handler (`Human_OnAnimSoundEvent`, `0x0021f700`)
 acts by id. Confirmed (code):
 

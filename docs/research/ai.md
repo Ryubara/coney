@@ -446,9 +446,14 @@ actions). It has no time limit. **Process** (`0x002afa48`), each update:
    (when he runs, it arms the charge instead).
 10. **Give up** (done) when the target is out of sight, at least 10 m away, and either 20 m away or brain `+0x28d`
     set, and his gang's `+0xdc` is 0.
-11. **Charge**: within 1.6 m with the charge armed or the target running: pick an attack (a type-1 brain: kind 0 or
-    21; otherwise `Brain_PickAttack`, checked by `0x00229b60` and `0x00224778`), queue the
-    [attack action](#attack-action), disarm.
+11. **Charge**: within 1.6 m with the charge armed or the target running, pick an attack kind once (kept in
+    `+0x20` until used). A type-1 brain takes kind 0 (50 %, 80 % for a class whose `+0x11b` is 10, always when the
+    target has human flag `0x40`) or 21. Any other brain takes `Brain_PickAttack` with mask `0x2240e8ffff0000`, and
+    a kind that is not a charge kind (0 or 19-21, `AttackKind_IsCharge` `0x00229b60`) **stops the run-in** (step 2):
+    no charge, Melee takes over. The kind must then pass `Human_CanStartAttack` (`0x00224778`; for 19 and 20 the
+    fighter must be at the run speed, for 21 have a fifth of his power, [Combat](combat.md#ai-attacks)), else the
+    run-in goes on moving and tries again next update. Then queue the [attack action](#attack-action) (kind 0 with
+    the fighter's facing as its angle), set the gait and disarm. Confirmed (code) at `0x002afa48`.
 12. **Move**: aim at the target's position led by his facing × his speed (`+0x1ac`), turned 9° per attack slot
     index, alternating sides, when he faces away (sector 3-5 of `0x0029eb38`; inferred: to fan the attackers out);
     aim straight at him when no lead applies or the led point is not reachable in a walkable line (`0x002221e0`).
@@ -594,8 +599,9 @@ The attack action (vtable `0x00542ce0`, `AttackAction_Init` `0x002fa918`):
   target's own target is this human or the brain is type 3. `CfgAttackDelay` is a table of ms **indexed by attack
   kind** (`0x00228870` reads `0x006b6658 + kind × 4`); `config_preload2.lua` sets 200 for most kinds, 400 for 12 and
   13, 500 for 19 and 21, 1000 for 20, 300 for 32-34 and 0 for 23, 31 and 42. When neither human is busy, it sets the target
-  brain's `+0x1ec` (when it may be attacked next, `0x00290e78`) from a **separate per-kind time** (`0x00231590`),
-  scaled by `0x00510ad0` / the target brain's spacing byte `+0x14a` (or `+0x14b`, by `0x00223b48`) when that is not 0.
+  brain's `+0x1ec` (when it may be attacked next, `0x00290e78`) from a **separate per-kind time** (`0x00231590`:
+  the attacker's clip length for the kind), divided by the target brain's spacing byte `+0x14a` (or `+0x14b` when it
+  is down), which the attacking gang's `CfgGang` sets ([Combat](combat.md#ai-attacks)).
   This corrects the earlier reading that both took the attack delay. Then it writes the command
   (`AttackKind_ToCommand`) into the per-player record `+0x20` (`PlayerRecord_SetCommand`, `0x00147ef0`) and, when
   the action has an angle (`+0x1c` ≥ 0), a stick of magnitude 1.0 at that angle.
@@ -715,10 +721,11 @@ chance, `+0x37` the pattern-reading threshold ([Power classes](characters.md#pow
 ### Moving {#moving}
 
 An AI moves by writing brain fields, never a stick: `+0x110` the heading to move along, `+0x114` the speed (through
-`0x0028ab28`; `0x0028aac0(brain, 0)` stops), `+0x90` the point aimed at and `+0x118` its radius; the human's state
-update moves it from those. A gait's speed is `Human_SpeedForGait` (`0x0022ae40`): 1.6286 m/s walking, 7.8012 m/s
-running. Confirmed (runtime): the civilian's per-player stick magnitude stayed 0 through its move and move-to-human
-actions; only the attack action wrote a stick (1.0, for throws).
+`0x0028ab28`; `0x0028aac0(brain, 0)` stops), `+0x90` the point aimed at and `+0x118` its radius; the human's control
+(`Human_UpdateControl`) moves it from those: speeds, turn limits, start and turn clips are on
+[Characters](characters.md#ai-locomotion). A gait's speed is `Human_SpeedForGait` (`0x0022ae40`): 1.6286 m/s walking,
+7.8012 m/s running. Confirmed (runtime): the civilian's per-player stick magnitude stayed 0 through its move and
+move-to-human actions; only the attack action wrote a stick (1.0, for throws).
 
 From 8 m behind the player (confirmed (runtime)): a turn on the spot (clip 398), the run start 414, the run 410 at
 7.80 m/s, then at 1.29 m a charge (`0x20`). Closer, the move-to-human action walks in the fight-stance clips 372-380 at
@@ -1230,6 +1237,20 @@ is `dlr_offer_flash`, entry 1 `money_give` and entry 2 of 668 `money_take`; no g
 kinds 1 and 9 of `0x002c7158`, which would, have no caller). A dealer whose gang is not kind 24 plays his
 character's own 603 and 668 clips.
 
+**Loading the clips.** The eleven names are `dlr_offer_flash`, `money_give`, `dlr_refuse_1`, `dlr_refuse_2`,
+`dlr_goodbye1`, `dlr_thanks_1`, `dlr_thanks_2`, `dlr_nearfight` (603, entries 0-7) and `dlr_becken_1`,
+`dlr_becken_2`, `money_take` (668, entries 0-2), each with `.anm`. Setting a slot (`DynAnimSlot_Set` `0x0010bc38`)
+only attaches a pack already resident; the others are streamed by the resource manager's
+`ResourceMgr_StreamGangs` (`0x00189ed8`), one pack per call: first the script's `SetDynamicAnimation` packs, then
+the first unloaded slot (`GangClips_FindPending`) of the **nearest gang** with one, or of the nearest human's own
+slots, requested by name (`ResourceMgr_RequestAnimPack` `0x0016f260`) and attached once loaded. Each `.anm` is its
+own entry in the disc's WAD (one clip per pack; `money_give` and `money_take` are entries 9805 and 9806,
+`dlr_becken_1` 3847). So in `level99` the dealer's gestures and the money pair arrive a few updates after
+`GangCreate(24, "FDealer", 0, 0)` while the dealer's gang is the nearest; `level99`'s six `SetDynamicAnimation`
+packs (`point_behind`, `point_left`, `dlr_greetagrsive`, `phone_idle`, `phone_enter`, `phone_exit`) do not include
+them. Until both money clips are resident the deal completes at once, without the pair ([Buying](#dealer-buy)).
+Confirmed (code) at the addresses cited; the entries from the disc.
+
 ##### The icon {#dealer-icon}
 
 The icon object's script type is `dyn_icon` (its record holds the pointer at `0x005131e4`: init `0x003e8fa0`, update
@@ -1237,10 +1258,19 @@ The icon object's script type is `dyn_icon` (its record holds the pointer at `0x
 (`Obj_Attach`), update interval 2 ticks, velocity zero, **angular velocity (0, 0, π)**: it turns about the world z
 axis at 180° per second, one turn in 2 s ([World objects](objects.md#objective-markers) for how an angular velocity is
 applied). Its local position: **(0, 0, 2.5)** m for `dyn_weapdeal`, `dyn_flashdeal` and `dyn_spraydeal` (model hashes
-`0x30f09efb`, `0x51d27ab6`, `0xd939c21d`); (0, 0, 2.25) for the other icons, except `dyn_cross` (at bone 11) and
-`dyn_cuffs` (detached at bone 11, turning at 90° per second); the player markers (`dyn_play_one`, `dyn_play_two`,
+`0x30f09efb`, `0x51d27ab6`, `0xd939c21d`); (0, 0, 2.25) for the other icons, except `dyn_cross` and `dyn_cuffs`, whose
+local position is their **object type record's offset** (`+0x00`, `ScriptObj_GetVectorProperty(obj, 11)` →
+`Vec4_FromVec3` `0x00391828`; the values are in the type data, not read here). `dyn_cuffs` (hash `0x464ac521`) also
+takes the record's rotation (`+0x0c`, property 12) and is then **detached at once** (`Obj_Detach` keeps the world
+pose), so it stays where it appeared instead of following the human, turning at 90° per second (0, 0, π/2); the
+player markers (`dyn_play_one`, `dyn_play_two`,
 their `_euro` forms) and `dyn_lizziestarget` do not turn. Inferred: the attachment's origin is the human's root at
-his feet, so the dealer's icon floats 2.5 m above the ground. Messages: 8 detach, `0x0a` show or hide, `0x15`
+his feet, so the dealer's icon floats 2.5 m above the ground. The icon is the type's 3D model drawn as a world
+object at its own size (no scale is set); it is not a HUD sprite. **The cuffs** (`Human_ShowOverheadIcon`
+`0x002271f0` from `Human_Arrest` with attach point 0, the root at the feet; [Crimes](crimes.md#arrest)): the model
+`dyn_cuffs_geo`, placed at the feet + the type record's offset, then left in the world there. While the camera
+state at `0x005fdeb8` `+0x1e8` / `+0x1ec` is set (inferred: a scene or camera effect), every icon but `dyn_cross`
+gets its draw fields `+0xc8` / `+0xcc` set to −255 / −256 (inferred: hidden). Messages: 8 detach, `0x0a` show or hide, `0x15`
 remove, `0x20` hide, `0x34` the colour pair (`HuSetSpinningIconColor`).
 
 **The radar icon** (`DealerGoal_AddRadarIcon` `0x002c7ee0`, at the greeting, only with the option and when the dealer
@@ -1326,9 +1356,10 @@ actions are not blocked); unless already in state 3 his current line is cut (`0x
    (`Inventory_AddItem`, with the pickup sound `vags/interface/powerup`); the price is taken and added to the dealer's
    money (at most 999); `+0x3f` = 1, `+0x38` + 1.
 
-So, with the clips loaded, **one event 0 starts the pair and the deal completes on the next event 0 that arrives
-while the pair still plays**. Confirmed (code) at `0x002c74d8`. The only sender found is the triangle press; whether
-the buyer can press again during the pair (and so whether something else completes it) is an open question.
+So, with the clips loaded, **event 0 starts the pair, and the dealer's `money_take` completes it**: its clip event
+`0x41` at frame 17 (message `0xc1`, `Human_HandleMessage` `0x002473bc`) calls `DealerGoal_FinishPair` (`0x002c7c20`),
+which does step 6 when `+0x45` is set ([Combat](combat.md#rage)). A second event 0 during the pair completes it at
+once. Confirmed (code) at `0x002c74d8` and `0x002473bc`; the frame from the disc's clip.
 
 **Attacked** (`DealerBrain_OnHit` `0x00302ff0`, events `0x10` and 1): a help call to his gang (30 m); then, when the
 dealer is not down and his top goal is the dealer goal, goal 1, or a Spectate goal without a fight goal, and his brain
@@ -2912,7 +2943,6 @@ when `GangCanFlee` turns it on.
   and `FlagNetTraverse`'s flags) do each update (Process), and the use-flag goal's two floats; what
   `GangInvincible` sets on a member (`0x0016a000`).
 
-- The per-kind time `0x00231590` that sets the target's `+0x1ec`, and the spacing bytes `+0x14a`, `+0x14b`.
 - The attack pick's adjustments in detail (`0x002240e8` and the attacker-count terms), and the two tokens.
 - Link kind 2 and mask bit `0x100` in play, polygon `+0x02`, the globals `0x005105a0` and `0x005112b4`, and the
   goals that search with the mask `0x13` (`0x002aafd0`, `0x002c1470`).
@@ -2928,8 +2958,7 @@ when `GangCanFlee` turns it on.
   (`0x0022aae8`, `0x002fbef0`).
 - The formation's assignment mode `+0x275`, and `GoalFollowPlayer`'s modes 1, 2 and 4.
 - What reads the turn action's `+0x10` (`ActLookAt`'s turn value) and the play-anim action's flag (loop or hold?).
-- Whether the buyer can press triangle during the dealer's money pair (the deal completes on a second event 0,
-  [Buying](#dealer-buy)), and what the rip-off's `gen_push` clip does to the buyer.
+- What the rip-off's `gen_push` clip does to the buyer ([Buying](#dealer-buy)).
 - Who sends a gang's event 18 (a member down or dead), and with which attacker: `Gang_OnEvent` reads it, but its
   sender was not found (`0x0022dd98` and `0x0022e020` are the arrest's).
 - What a scene's end passes to the callback `Goal_PlayAnimation` hands it (`0x00353f40`).
@@ -2938,8 +2967,8 @@ when `GangCanFlee` turns it on.
   defaults for formations made later.
 - What the hold, scatter and steal command tactics (types `0x03`, `0x13`, `0x25`, `0x26`) give their members.
 - The perception struct (`+0xf8`).
-- Human `+0x333` (the riot's move deadline adds 1000 × it ms; Coney: 0) and a turf box's radius `+0x40` (Coney:
-  half its diagonal).
+- A turf box's radius `+0x40` (Coney: half its diagonal). Human `+0x333` is the detail level from the camera
+  distance ([Characters](characters.md#ai-locomotion)).
 - The hold's damage (`0x00510acc`) of `GoalGrabTarget` and the boxing attack weights (`0x00511120`) of
   `GoalBoxer`.
 - Which sound each hub goal line plays (`beckon`, `store_greet`, `phone_gang`, `dead_meat`, `cower`, `mug_grunt`).

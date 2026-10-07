@@ -284,7 +284,7 @@
 0x0010f7f8	20	AudioManager_ResetLowPriorityCount	1
 0x0010f810	220	AudioManager_Update	1
 0x0010f900	116	SoundList_Load	1
-0x0010f978	12		0
+0x0010f978	12	SoundClasses_SetTable	1
 0x0010f988	20	StereoTable_Load	1
 0x0010f9a0	48	AudioDevice_ListsLoaded	1
 0x0010f9d0	8	Audio_IopCommandHook	1
@@ -1048,7 +1048,7 @@
 0x0014ca20	100	AudioDevice_IsPrimedStrict	1
 0x0014ca88	44	AudioDevice_IsStreamActive	1
 0x0014cab8	64	AudioDevice_IsStreamPlaying	1
-0x0014caf8	1256		0
+0x0014caf8	1256	AudioDevice_Start	1
 0x0014cfe0	228	AudioDevice_StopVoice	1
 0x0014d0c8	32	AudioDevice_FindFreeVoice	1
 0x0014d0e8	32	AudioDevice_FindFreeBankVoice	1
@@ -4885,170 +4885,170 @@
 0x00250c50	172	NavLinks_OpenByNumber	1
 0x00250d00	176	NavLinks_CloseByNumber	1
 0x00250db0	76	NavLink_ConvertJumpToDoor	1
-0x00250e00	72	NavLink_DisableDoor	0
-0x00250e48	72	NavLink_EnableDoor	0
+0x00250e00	72	NavLink_DisableDoor	1
+0x00250e48	72	NavLink_EnableDoor	1
 0x00250e98	468	Nav_NearestReachableNode	1
 0x00251070	56	NavNode_GetLinkFlags	1
-0x002510a8	76		0
+0x002510a8	76	NavNode_IsLinkBlocked	1
 0x002510f8	88	NavNode_GetQueueNode	1
 0x00251150	52	Nav_NearestReachableNodeAt	1
-0x00251188	48		0
+0x00251188	48	PathRequests_Clear	1
 0x002511b8	12	Climb_SetFilter	0
 0x002511c8	476	Route_Find	1
 0x002513a8	724	Route_Build	1
 0x00251680	80	Route_Free	1
-0x002516d0	32		0
-0x002516f0	32		0
-0x00251710	8		0
-0x00251718	80		0
-0x00251768	72		0
+0x002516d0	32	PathNode_SetIndex	1
+0x002516f0	32	PathNode_GetAt	1
+0x00251710	8	Ptr_Set	1
+0x00251718	80	PathNode_IsEdgeBlocked	1
+0x00251768	72	PathNodes_ResetParents	1
 0x002517b0	108	Nav_Heuristic	1
-0x00251820	108		0
+0x00251820	108	Path_DistanceCost	1
 0x00251890	364	Nav_EdgeCost	1
-0x00251a00	108		0
+0x00251a00	108	PathNodes_ClearOpenMarks	1
 0x00251a70	692	Route_AStar	1
 0x00251d28	988	Route_SearchOutOfSight	1
-0x00252108	772		0
+0x00252108	772	Nav_NearestEdgePoint	1
 0x00252410	1744	Nav_FindPolygonUnder	1
-0x00252ae0	36		0
-0x00252b08	288		0
-0x00252c28	104	NavLink_SetBlocked	0
+0x00252ae0	36	Nav_FindPolygonUnderThunk	1
+0x00252b08	288	Nav_ClampMoveToRange	1
+0x00252c28	104	NavLink_SetBlocked	1
 0x00252c90	980	Nav_MarkLinksNearSphere	1
-0x00253068	12		0
+0x00253068	12	PathSearch_ResetCount	1
 0x00253078	160	Nav_AvoidSphere	1
-0x00253118	84		0
-0x00253170	32		0
-0x00253190	40		0
-0x002531b8	8		0
-0x002531c0	164		0
-0x00253268	228		0
-0x00253350	68		0
-0x00253398	12		0
-0x002533b8	196		0
-0x00253480	40		0
-0x002534a8	20		0
-0x002534c0	16		0
-0x002534d0	76		0
-0x00253528	8		0
-0x00253538	40		0
-0x00253560	16		0
-0x00253598	40		0
-0x002535c0	12		0
+0x00253118	84	PathSearch_InitLists	1
+0x00253170	32	PathSearch_StaticInit	1
+0x00253190	40	PathHeap_Construct	1
+0x002531b8	8	PathHeap_Clear	1
+0x002531c0	164	PathHeap_Push	1
+0x00253268	228	PathHeap_PopMin	1
+0x00253350	68	PathHeap_Find	1
+0x00253398	12	PathHeap_IsEmpty	1
+0x002533b8	196	PathHeap_SiftUp	1
+0x00253480	40	PathList_Construct	1
+0x002534a8	20	PathList_Get	1
+0x002534c0	16	PathList_Clear	1
+0x002534d0	76	PathList_Add	1
+0x00253528	8	PathList_Count	1
+0x00253538	40	PathPair_Construct	1
+0x00253560	16	PathPair_Clear	1
+0x00253598	40	PathCursor_Construct	1
+0x002535c0	12	PathCursor_Clear	1
 0x002535f0	20	Human_SetAnimSlot	1
 0x00253608	124	Human_ResetAnimSlots	1
 0x00253688	2012	Human_ApplyMoveStyle	1
-0x00253e68	100		0
+0x00253e68	100	Human_SetMoveStyle	1
 0x00253ed0	88	Human_PushMoveStyle	1
 0x00253f28	76	Human_PopMoveStyle	1
 0x00253f78	232	Human_RemoveMoveStyle	1
 0x00254060	20	Human_GetMoveStyle	1
 0x00254078	336	Human_ComputeGaitSpeeds	1
-0x002541c8	288		0
+0x002541c8	288	Human_CheckMoveStyles	1
 0x002542e8	40	AnimRange_Damage	1
 0x00254310	264	Attack_GetOffsetHeading	0
 0x00254418	128	AttackTable_GetOffset	1
 0x002544a0	24	AttackTable_GetReach	0
-0x002544b8	76		0
+0x002544b8	76	Human_GetAttackerReach	1
 0x00254508	92	AttackTable_GetFarRange	0
 0x00254568	64	HumanRecord_SetAttackTable	1
-0x002545a8	56		0
+0x002545a8	56	AnimRange_SetFarRange	1
 0x002545e0	744	Attack_CallKindHandler	1
-0x002548c8	36		0
+0x002548c8	36	AnimRange_SetDamage	1
 0x002548f0	1136	AnimRange_ApplyClassDamage	1
 0x00254d60	188	AttackTable_GetFlags	1
 0x00254e20	84	AnimRange_GetHitFlags	1
 0x00254e78	1736	Human_UpdateActions	0
-0x00255540	1976	Human_UpdateWorkout	0
-0x00255cf8	524		0
+0x00255540	1976	Human_UpdateWorkout	1
+0x00255cf8	524	Human_UpdateSpecialIdle	1
 0x00255f08	968	MiniGame_Update	0
 0x002562d0	1936	Human_UpdateMeters	1
 0x00256a60	1224	Human_UpdateDown	1
 0x00256f28	448	Human_UpdateDown	1
-0x002570e8	3072	Human_ComputeThrowVelocity	0
-0x00257ce8	136		0
-0x00257d70	200		0
-0x00257e38	180		0
-0x00257ef0	72		0
+0x002570e8	3072	Human_ComputeThrowVelocity	1
+0x00257ce8	136	Human_EndThrowAim	1
+0x00257d70	200	Human_EndThrowAimDropHeavy	1
+0x00257e38	180	Human_EndThrowAimIfHurt	1
+0x00257ef0	72	Human_KnockOffHatIfDown	1
 0x00257f38	1012	Human_DropHeld	0
-0x00258330	932	Human_KnockOffHat	0
+0x00258330	932	Human_KnockOffHat	1
 0x002586d8	656	Human_ReleaseThrow	0
-0x00258968	288		0
+0x00258968	288	Human_ReleaseAll	1
 0x00258a88	904	Human_BreakPair	1
 0x00258e10	116	Tandem_CanStart	1
 0x00258e88	620	Human_CanCounterGrab	1
 0x002590f8	620	Human_CanCounterTackle	1
-0x00259368	528		0
+0x00259368	528	Human_UpdateFaceClip	1
 0x00259578	3060	Human_ChooseAnimState	1
-0x0025a178	408		0
-0x0025a310	208		0
+0x0025a178	408	Human_BuildCombatIdle	1
+0x0025a310	208	Human_PushRecordOverlay	1
 0x0025a3e0	1236	Human_PlayScriptAnim	1
 0x0025a8c0	1316	Human_PlayActionClip	1
 0x0025ade8	208	Human_PushOverlayClip	1
-0x0025aeb8	212		0
-0x0025af90	620		0
+0x0025aeb8	212	Human_TryIdleFidget	1
+0x0025af90	620	Human_BuildPairedFourMix	1
 0x0025b200	2040	Human_BuildMoveTasks	1
 0x0025b9f8	1772	Human_BuildRunStartTask	1
 0x0025c0e8	344	Human_BuildRunStop	0
 0x0025c240	880	Human_StartTurnOnSpot	1
 0x0025c5b8	1492	Human_TryArriveClip	1
 0x0025cb90	456	Human_PlayOneShotClip	1
-0x0025cd58	440		0
-0x0025cf10	28		0
-0x0025cf30	236		0
-0x0025d020	688		0
-0x0025d2d0	120		0
-0x0025d348	68		0
-0x0025d390	2704		0
+0x0025cd58	440	Human_BuildStanceEightDir	1
+0x0025cf10	28	Human_LaunchJumpThunk	1
+0x0025cf30	236	Human_BuildJumpLoop	1
+0x0025d020	688	Human_BuildFallClip	1
+0x0025d2d0	120	Human_ResetToIdleState	1
+0x0025d348	68	Human_ResetToMoveState	1
+0x0025d390	2704	Human_BuildLandingClip	1
 0x0025de20	704	Human_PlayStanceIdle	1
-0x0025e0e0	364		0
-0x0025e250	136		0
+0x0025e0e0	364	Human_BuildSlotLoopWithIntro	1
+0x0025e250	136	Human_EndDownState	1
 0x0025e2d8	712	Human_PlayRise	1
 0x0025e5a8	856	Human_PlayPickupClip	1
-0x0025e900	72		0
-0x0025e948	428		0
+0x0025e900	72	Human_EndObjectSteer	1
+0x0025e948	428	Human_StartObjectSteer	1
 0x0025eb00	292	Human_SetStealthReadyBlend	1
 0x0025ec28	696	Gait_BlendForSpeed	1
-0x0025eee0	116		0
-0x0025ef58	208		0
-0x0025f028	396		0
-0x0025f1b8	664		0
+0x0025eee0	116	Human_UpdateGaitBlendTarget	1
+0x0025ef58	208	Human_PushScriptOverlay	1
+0x0025f028	396	Human_BuildAnimState	1
+0x0025f1b8	664	Human_BuildIdleClip	1
 0x0025f450	104	Human_RebuildAnimOnMove	1
-0x0025f4d0	672		0
+0x0025f4d0	672	Human_BuildMoveState	1
 0x0025f770	724	Human_BuildIdleTasks	0
 0x0025fa48	340	Human_PlayStanceIdleState	1
-0x0025fba0	48		0
-0x0025fbd0	48		0
-0x0025fc00	48		0
+0x0025fba0	48	Human_BuildState25	1
+0x0025fbd0	48	Human_BuildState26	1
+0x0025fc00	48	Human_BuildState27	1
 0x0025fc30	64	Human_PlayTurnInPlace21	1
 0x0025fc70	64	Human_PlayTurnInPlace24	1
-0x0025fcb0	616		0
-0x0025ff18	56		0
-0x0025ff50	412		0
-0x002600f0	136		0
-0x00260178	212		0
-0x00260250	928		0
+0x0025fcb0	616	Human_UpdateDealerPair	1
+0x0025ff18	56	Human_StartObjectSteerIdle	1
+0x0025ff50	412	Human_BuildGaitBlendFromValue	1
+0x002600f0	136	Cuff_OnCufferClipEnd	1
+0x00260178	212	Cuff_OnCuffedClipEnd	1
+0x00260250	928	Cuff_Start	1
 0x002605f0	124	Uncuff_FreerEndHook	1
 0x00260670	116	Uncuff_FreedEndHook	1
 0x002606e8	900	Uncuff_MashSuccess	0
 0x00260a70	564	Uncuff_MashFail	0
 0x00260ca8	804	Uncuff_Start	1
 0x00260fd0	976	Uncuff_WithKey	1
-0x002613a8	460		0
+0x002613a8	460	Pair_StartLoop256	1
 0x00261578	640	Human_PlayBlockDodge	1
 0x002617f8	524	Block_DuckCounter	1
 0x00261a08	620	Attack_StartGrounded	1
-0x00261c80	492		0
-0x00261e78	1264		0
+0x00261c80	492	Attack_StartAtTarget	1
+0x00261e78	1264	Human_StartMeleeThrow	1
 0x00262368	572	Attack_StartSolo	1
 0x002625a8	788	Attack_Start	1
 0x002628c0	96	Human_EndOverlayAndStrikes	1
-0x00262920	136		0
-0x002629a8	140	Attack_OnPairedClipEnd	0
-0x00262a38	144		0
+0x00262920	136	Pair_EndTopTasks	1
+0x002629a8	140	Attack_OnPairedClipEnd	1
+0x00262a38	144	Pair_OnVictimClipEnd	1
 0x00262ac8	2228	Attack_StartPaired	1
-0x00263380	2316		0
+0x00263380	2316	Grab_StartPairedMove	1
 0x00263c90	548	Player_SpecialAttack	0
-0x00263eb8	700		0
+0x00263eb8	700	Human_AttackObject	1
 0x00264178	736	Player_ObjectAttack	1
 0x00264460	728	Attack_StartSnap	1
 0x00264738	316	Player_StartStealthKill	1
@@ -5059,79 +5059,79 @@
 0x00264fa0	1076	Grab_ScoreMove	1
 0x002653d8	2128	Hit_Score	1
 0x00265c28	176	Human_IsDamageDefeating	1
-0x00265cd8	248		0
+0x00265cd8	248	Hit_MaybeQueueHint15	1
 0x00265dd0	412	Rage_NoteHit	1
 0x00265f70	3040	Human_ApplyPendingDamage	1
-0x00266b50	236		0
-0x00266c40	188		0
+0x00266b50	236	Hit_IsReactionWeakened	1
+0x00266c40	188	Hit_IsReactionStrengthened	1
 0x00266d00	568	Hit_PickReaction	1
 0x00266f38	156	Hit_PickReactionClip	1
-0x00266fd8	464		0
+0x00266fd8	464	Hit_PickDyingReaction	1
 0x002671a8	292	Hit_PickEarlyBlock	1
 0x002672d0	104	Human_GetSideOf	1
-0x00267338	392		0
+0x00267338	392	Hit_GetSideFromPoint	1
 0x002674c0	944	Human_OnHealthOut	1
 0x00267870	88	Human_ClearBodyGroup	1
-0x002678c8	308		0
+0x002678c8	308	Human_PlayGangDeathReaction	1
 0x00267a00	1096	Human_PlayDeathReaction	1
 0x00267e48	1508	Human_PlayLethalReaction	1
-0x00268430	696		0
-0x002686e8	484		0
-0x002688d0	480		0
-0x00268ab0	216		0
-0x00268b88	200		0
-0x00268c50	420		0
-0x00268df8	88		0
-0x00268e50	88		0
-0x00268ea8	584		0
-0x002690f0	348		0
-0x00269250	348		0
-0x002693b0	348		0
-0x00269510	352		0
-0x00269670	312		0
-0x002697a8	352		0
-0x00269908	424		0
-0x00269ab0	16		0
-0x00269ac0	88		0
-0x00269b18	100		0
-0x00269b80	580		0
-0x00269dc8	360		0
+0x00268430	696	HitReact_InSpecial	1
+0x002686e8	484	HitReact_WhileOut	1
+0x002688d0	480	HitReact_WhileGrabbed	1
+0x00268ab0	216	HitReact_WhileCuffing	1
+0x00268b88	200	HitReact_WhileBeingCuffed	1
+0x00268c50	420	HitReact_InMiniGame	1
+0x00268df8	88	HitReact_WhileMugging	1
+0x00268e50	88	HitReact_WhileMugged	1
+0x00268ea8	584	HitReact_WhileGrabbing	1
+0x002690f0	348	PairBreak_Play106	1
+0x00269250	348	PairBreak_Play138	1
+0x002693b0	348	PairBreak_Play145	1
+0x00269510	352	PairBreak_Play107	1
+0x00269670	312	HitReact_WhileTackling	1
+0x002697a8	352	PairBreak_Play244	1
+0x00269908	424	PairBreak_GetUp199	1
+0x00269ab0	16	HitReact_WhileTackled	1
+0x00269ac0	88	HitReact_WhileMounting	1
+0x00269b18	100	HitReact_WhileMounted	1
+0x00269b80	580	Hit_PlayBegReaction	1
+0x00269dc8	360	Human_MoveAlongAxisOver	1
 0x00269f30	700	Human_BlockHit	1
-0x0026a1f8	160		0
+0x0026a1f8	160	HitReact_OnSpecialEnd	1
 0x0026a298	364	Human_PlayRecoilClip	1
-0x0026a408	712		0
+0x0026a408	712	Pair_PlayPairedReaction	1
 0x0026a6d0	1824	Human_PlayReaction	1
-0x0026adf0	44		0
+0x0026adf0	44	Block_OnDodgeEnd	1
 0x0026ae20	636	Human_PlayEarlyBlock	1
 0x0026b0a0	204	Hit_PlayReaction	1
-0x0026b170	440		0
-0x0026b328	172		0
-0x0026b3d8	16		0
-0x0026b3e8	1120		0
-0x0026b848	652	ButtonMiniGame_Update	0
+0x0026b170	440	HitReact_FromObject	1
+0x0026b328	172	HitReact_InJump	1
+0x0026b3d8	16	HitReact_WhileFalling	1
+0x0026b3e8	1120	HitReact_OnFire	1
+0x0026b848	652	ButtonMiniGame_Update	1
 0x0026bad8	908	Grab_ConnectEnd	0
 0x0026be68	848	Grab_Connect	1
-0x0026c1b8	28		0
+0x0026c1b8	28	Grab_OnStartEnd	1
 0x0026c1d8	880	Grab_IntroEnd	0
 0x0026c548	664	Grab_Start	1
 0x0026c7e0	832	Grab_Release	1
-0x0026cb20	116		0
-0x0026cb98	124		0
+0x0026cb20	116	Grab_OnEscapeEnd	1
+0x0026cb98	124	Grab_OnEscapeEndClear	1
 0x0026cc18	1116	Grab_Escape	1
 0x0026d078	148	Grab_Reattach	1
-0x0026d110	60		0
+0x0026d110	60	Grab_OnReverseEnd	1
 0x0026d150	956	Grab_Reverse	1
 0x0026d510	92	Grab_OnSpinToRearEnd	1
 0x0026d570	852	Grab_SpinToRear	1
 0x0026d8c8	208	Grab_OnHoldClipEnd	1
 0x0026d998	852	Grab_SpinToFront	1
 0x0026dd08	2284	Player_Throw	1
-0x0026e5f8	1448		0
+0x0026e5f8	1448	Grab_Strike	1
 0x0026eba0	112	Grab_OnStrikeEnd	1
-0x0026ec10	852		0
+0x0026ec10	852	Grab_SpinToFront	1
 0x0026ef68	160	Grab_MountClipEnd	0
 0x0026f008	704	Grab_StartMountFromFront	0
-0x0026f2c8	1148		0
+0x0026f2c8	1148	Grab_PullOffTackler	1
 0x0026f760	32	Tandem_OnAttackerEnd	1
 0x0026f780	176	Tandem_OnVictimIntroEnd	1
 0x0026f840	32		0
@@ -5154,7 +5154,7 @@
 0x00271ef0	1052	Mount_Strike	1
 0x00272310	152		0
 0x002723a8	60		0
-0x002723e8	732		0
+0x002723e8	732	Mount_StartReversal	1
 0x002726d8	416	Human_SetStrafeDirection	1
 0x00272878	160		0
 0x00272918	144	Grab_SnapToRear	1
@@ -5165,7 +5165,7 @@
 0x00273668	436		0
 0x00273820	436		0
 0x002739d8	144	TagGame_Difficulty	0
-0x00273a68	500		0
+0x00273a68	500	Tag_SayNearbyLine	1
 0x00273c60	832	Tag_UpdatePlayer	0
 0x00273fa0	28		0
 0x00273fc0	36		0
@@ -5179,8 +5179,8 @@
 0x002748a0	8		0
 0x002748a8	1420	TagGame_Update	0
 0x00274e38	168		0
-0x00274ee0	960		0
-0x002752a0	980		0
+0x00274ee0	960	Revive_Finish	1
+0x002752a0	980	Revive_Start	1
 0x00275678	836	Attack_SteerLed	1
 0x002759c0	848		0
 0x00275d10	760	Attack_SteerToPoint	1
@@ -5333,7 +5333,7 @@
 0x00283078	580		0
 0x002832c8	248	Player_OnCommand32	1
 0x002833c0	1644		0
-0x00283a30	1804		0
+0x00283a30	1804	Player_UpdateMugHold	1
 0x00284140	316	Player_UpdateHold	1
 0x00284280	188	Flash_Use	1
 0x00284340	184	Rage_Enter	1
@@ -5731,7 +5731,7 @@
 0x0029d438	188	ObjFilter_NearestWithFlags	1
 0x0029d4f8	96	ObjFilter_IsVandalisable	1
 0x0029d558	152	ObjFilter_VandalisableInRange	1
-0x0029d5f0	824	Riot_FindSmashTarget	1
+0x0029d5f0	824	Ai_FindObject	1
 0x0029d928	784	Glass_ClaimPane	1
 0x0029dc38	256	Brains_Nearest	1
 0x0029dd38	572	Gang_CountAhead	1
@@ -6555,7 +6555,7 @@
 0x002e5010	56	JoinSceneGoal_Process	1
 0x002e5048	220	Goal_JoinFixedScene	1
 0x002e5128	124	JoinFixedSceneGoal_Init	1
-0x002e51a8	248	GoalJoinCinematic_WalkToMark	1
+0x002e51a8	248	JoinFixedSceneGoal_Start	1
 0x002e52a0	36	JoinFixedSceneGoal_End	1
 0x002e52c8	56	JoinFixedSceneGoal_Process	1
 0x002e5300	220	Goal_JoinCinematic	0
@@ -6953,7 +6953,7 @@
 0x00307878	408	AttackTactic_OnViolence	1
 0x00307a10	812	AttackTactic_StartSubTactic	1
 0x00307d40	668	GangTactic_CheckFlee	1
-0x00307fe0	228	GangTactic_StartFlee	0
+0x00307fe0	228	AttackTactic_Start	0
 0x003080c8	132	AttackTactic_End	1
 0x00308150	84	AttackTactic_OnStrategyEnd	1
 0x003081a8	716	AttackTactic_Process	1
@@ -6965,7 +6965,7 @@
 0x00308870	168	Tactic_Boss	1
 0x00308918	148	BossTactic_Init	1
 0x003089b0	676	BossTactic_Start	1
-0x00308c60	1016	Brain_LineTest	1
+0x00308c60	1016	BossTactic_Process	1
 0x00309058	2532	BossTactic_OnEvent	1
 0x00309a40	284	Tactic_BossDiegoVargas	1
 0x00309b60	664	BossDiegoVargasTactic_Init	1
@@ -7126,7 +7126,7 @@
 0x00313400	140	WarriorHoldTactic_Create	1
 0x00313490	120	PlayerGangTactic_Init	1
 0x00313508	528	HoldTactic_GiveGoals	1
-0x00313718	572	HoldPositionTactic_Process	1
+0x00313718	572	HoldTactic_GiveMemberGoal	1
 0x00313958	132	HoldTactic_Start	1
 0x003139e0	28	HoldTactic_End	1
 0x00313a00	656	HoldTactic_OnViolence	1
@@ -9518,7 +9518,7 @@
 0x00396008	64	WorldObject_UpdateSoundPosition	1
 0x00396048	64	WorldObject_StopSound	1
 0x00396090	316	WorldObjects_TouchPickUpByHash	1
-0x003961d0	444	World_BreakObjectsAround	0
+0x003961d0	444	World_BreakObjectsAround	1
 0x00396390	36	World_BreakObjectsInRadius	0
 0x003963b8	784	World_BreakGlassInRadius	1
 0x003966c8	72	World_BreakGlassInRadius	0
@@ -13313,611 +13313,654 @@
 0x004d9f68	80		0
 0x004d9fb8	48		0
 0x004d9fe8	296		0
-0x004da118	20		0
-0x004da140	84		0
-0x004da1c8	48		0
-0x004da210	48		0
-0x004da328	48		0
-0x004da4b8	48		0
-0x004da558	48		0
-0x004da670	48		0
-0x004da700	48		0
-0x004da848	48		0
-0x004da8f0	48		0
-0x004da990	48		0
-0x004daa30	48		0
-0x004daa60	48		0
-0x004daac8	44		0
-0x004dab08	68		0
-0x004dab50	8		0
-0x004dab58	8		0
-0x004dab68	124		0
-0x004dabe8	48		0
+0x004da118	20	LinkOnce_StaticInit	1
+0x004da140	84	SortedU64_LowerBound	1
+0x004da1c8	48	AnimData_DeletingDtor	1
+0x004da210	48	BaseObject_DeletingDtor	1
+0x004da328	48	AnimTaskLoop_DeletingDtor	1
+0x004da4b8	48	AnimTask5_DeletingDtor	1
+0x004da558	48	AnimTaskScene_DeletingDtor	1
+0x004da670	48	AnimTaskFourMix_DeletingDtor	1
+0x004da700	48	AnimTaskTwoMix_DeletingDtor	1
+0x004da848	48	GaitBlend_DeletingDtor	1
+0x004da8f0	48	AnimTaskPairedOverlay_DeletingDtor	1
+0x004da990	48	PairedTask_DeletingDtor	1
+0x004daa30	48	FaceBlendOut_DeletingDtor	1
+0x004daa60	48	FaceTask_DeletingDtor	1
+0x004daac8	44	Cursor_ForwardSlot10	1
+0x004dab08	68	Memory_FreeIfSet	1
+0x004dab50	8	GameState_GetLevelIndex	1
+0x004dab58	8	GameState_GetLevelTable	1
+0x004dab68	124	Object_DeleteVirtual	1
+0x004dabe8	48	Vec4_Sub	1
 0x004dac20	8	TaskObject_OnContactNone	1
-0x004dac60	48		0
-0x004dac90	44		0
-0x004dacc0	96		0
-0x004dad20	32		0
-0x004dad40	172		0
-0x004dadf0	12		0
-0x004dae00	92		0
-0x004dae60	48		0
-0x004dae90	92		0
-0x004daef0	96		0
-0x004daf50	28		0
-0x004daf70	68		0
-0x004dafb8	164		0
-0x004db060	24		0
-0x004db090	40		0
-0x004db0e0	40		0
-0x004db108	28		0
-0x004db128	28		0
-0x004db198	8		0
+0x004dac60	48	Vec4_Add	1
+0x004dac90	44	Vec4_Scale	1
+0x004dacc0	96	Vec3_Cross	1
+0x004dad20	32	HandleArray4_Clear	1
+0x004dad40	172	HandleArray4_Compact	1
+0x004dadf0	12	HandleArray_At	1
+0x004dae00	92	HandleArray16_CountLive	1
+0x004dae60	48	HandleArray4_IndexOf	1
+0x004dae90	92	HandleArray4_CountLive	1
+0x004daef0	96	HandleArray4_PutInFree	1
+0x004daf50	28	HandleArray4_Add	1
+0x004daf70	68	HandleArray4_Remove	1
+0x004dafb8	164	HandleArray4_AddUnique	1
+0x004db060	24	HandleArray_ClearAt	1
+0x004db090	40	ICamera_DefaultFinish	1
+0x004db0e0	40	ICamera_SetName	1
+0x004db108	28	ICamera_SetFov	1
+0x004db128	28	ICamera_SetAspect	1
+0x004db198	8	ICamera_GetFov	1
 0x004db1c0	8	Camera_GetViewDistance	0
-0x004db2d8	12		0
-0x004db4d0	48		0
-0x004db510	76		0
-0x004db568	48		0
-0x004db5b0	228		0
-0x004db6a0	28		0
-0x004db728	92		0
-0x004db7b0	8		0
-0x004db7d8	8		0
-0x004db7e0	8		0
-0x004db7e8	8		0
-0x004db828	32		0
-0x004db848	172		0
-0x004db8f8	48		0
-0x004db928	96		0
-0x004db988	68		0
-0x004db9d0	92		0
-0x004dba30	12		0
-0x004dbb68	2608		0
-0x004dc638	44		0
-0x004dc668	44		0
-0x004dc698	44		0
-0x004dc6c8	44		0
-0x004dc6f8	76		0
-0x004dc748	116		0
-0x004dc7c0	116		0
-0x004dc848	88		0
-0x004dc8a0	88		0
-0x004dc8f8	88		0
-0x004dc958	52		0
-0x004dc9b0	108		0
-0x004dca60	64		0
-0x004dcaa0	108		0
-0x004dcb68	48		0
-0x004dcbb8	124		0
-0x004dcc38	48		0
-0x004dcc88	200		0
-0x004dcdd8	64		0
-0x004dce18	112		0
-0x004dce88	56		0
-0x004dcec0	64		0
-0x004dcf00	100		0
-0x004dcf70	48		0
-0x004dcfc0	48		0
-0x004dd010	52		0
-0x004dd108	192		0
-0x004dd1c8	372		0
-0x004dd340	156		0
-0x004dd3e0	136		0
-0x004dd468	144		0
-0x004dd4f8	544		0
-0x004dd718	668		0
+0x004db2d8	12	Camera_GetViewFlagGlobal	1
+0x004db4d0	48	Vec3_Length	1
+0x004db510	76	Quat_Multiply	1
+0x004db568	48	CamFixed_GetFirstTarget	1
+0x004db5b0	228	HandleArray16_Nearest	1
+0x004db6a0	28	CamFollow_ResetSlot	1
+0x004db728	92	CamFollow_ApplyDistances	1
+0x004db7b0	8	CamFollow_GetBandNear	1
+0x004db7d8	8	CamFollow_GetMinDistance	1
+0x004db7e0	8	CamFollow_GetMaxDistance	1
+0x004db7e8	8	CamFollow_GetDefaultDistance	1
+0x004db828	32	HandleArray2_Clear	1
+0x004db848	172	HandleArray2_Compact	1
+0x004db8f8	48	HandleArray2_IndexOf	1
+0x004db928	96	HandleArray2_PutInFree	1
+0x004db988	68	HandleArray2_Remove	1
+0x004db9d0	92	HandleArray2_CountLive	1
+0x004dba30	12	HandleArray2_At	1
+0x004dbb68	2608	CamRail_KeepOffWalls	1
+0x004dc638	44	CamBlend_ForwardSlot198	1
+0x004dc668	44	CamBlend_ForwardSlot1a0	1
+0x004dc698	44	CamBlend_ForwardSlot1a8	1
+0x004dc6c8	44	CamBlend_ForwardSlot1c8	1
+0x004dc6f8	76	CamBlend_SetDrawDistance	1
+0x004dc748	116	CamBlend_ForwardActivate1b8	1
+0x004dc7c0	116	CamBlend_ForwardActivate1c0	1
+0x004dc848	88	CamBlend_GetFov	1
+0x004dc8a0	88	CamBlend_GetParam228	1
+0x004dc8f8	88	CamBlend_GetNearClip	1
+0x004dc958	52	GameTimer_DeletingDtor	1
+0x004dc9b0	108	GameTimer_GetSeconds	1
+0x004dca60	64	GameTimer_MsSince	1
+0x004dcaa0	108	GameTimer_SecondsSince	1
+0x004dcb68	48	DS_PS2Device_DeletingDtor	1
+0x004dcbb8	124	FileSys_DeleteObject	1
+0x004dcc38	48	FileSysBase_DeletingDtor	1
+0x004dcc88	200	PS2StreamFileSys_DeletingDtor	1
+0x004dcdd8	64	Timer_GetMilliseconds	1
+0x004dce18	112	Timer_GetSeconds	1
+0x004dce88	56	Timer_TicksSince	1
+0x004dcec0	64	Timer_MsSince	1
+0x004dcf00	100	Timer_SecondsSince	1
+0x004dcf70	48	PS2DbgFile_DeletingDtor	1
+0x004dcfc0	48	StreamFSFile_DeletingDtor	1
+0x004dd010	52	FSToStreamFS_DeletingDtor	1
+0x004dd108	192	ReqDeque_CreateNodes	1
+0x004dd1c8	372	ReqDeque_InitMap	1
+0x004dd340	156	ReqDeque_DestroyNodes	1
+0x004dd3e0	136	ReqDeque_FreeStorage	1
+0x004dd468	144	ReqDeque_PopFrontNode	1
+0x004dd4f8	544	ReqDeque_ReallocMap	1
+0x004dd718	668	ReqDeque_PushBackNode	1
 0x004dd9b8	92	FileManager_Destroy	1
-0x004dda18	320		0
-0x004ddb58	152		0
-0x004ddc60	40		0
-0x004ddc90	40		0
-0x004ddcc0	104		0
-0x004ddd30	8		0
-0x004dddb0	40		0
-0x004ddde0	40		0
-0x004dde48	80		0
-0x004dded8	128		0
-0x004ddf60	28		0
-0x004ddf80	12		0
-0x004ddfa0	128		0
-0x004de098	12		0
-0x004de0a8	32		0
-0x004de0c8	100		0
-0x004de130	104		0
-0x004de198	12		0
-0x004de1a8	96		0
-0x004de208	48		0
-0x004de238	24		0
-0x004de250	64		0
-0x004de290	124		0
-0x004de310	68		0
-0x004de358	124		0
-0x004de3d8	124		0
-0x004de458	104		0
-0x004de4c0	124		0
-0x004de540	104		0
-0x004de5a8	124		0
-0x004de628	48		0
-0x004de678	48		0
-0x004de6c8	416		0
-0x004de868	104		0
-0x004de8d0	104		0
-0x004de938	124		0
-0x004de9c8	124		0
-0x004dea48	416		0
-0x004debe8	104		0
-0x004dec50	124		0
-0x004decd0	48		0
-0x004ded90	68		0
-0x004dedd8	108		0
-0x004dee48	8		0
-0x004dee58	416		0
-0x004df008	24		0
-0x004df020	416		0
-0x004df1c0	104		0
-0x004df228	124		0
-0x004df2a8	124		0
-0x004df328	104		0
-0x004df390	124		0
-0x004df430	64		0
-0x004df470	976		0
-0x004df840	340		0
-0x004df998	428		0
-0x004dfb50	192		0
-0x004dfc10	372		0
-0x004dfd90	104		0
-0x004dfdf8	64		0
-0x004dfe38	976		0
-0x004e0208	340		0
-0x004e0360	428		0
-0x004e0510	64		0
-0x004e0550	976		0
-0x004e0920	340		0
-0x004e0a78	428		0
-0x004e0c28	64		0
-0x004e0c68	976		0
-0x004e1038	340		0
-0x004e1190	428		0
-0x004e1340	64		0
-0x004e1380	976		0
-0x004e1750	340		0
-0x004e18a8	428		0
-0x004e1a58	64		0
-0x004e1a98	976		0
-0x004e1e68	340		0
-0x004e1fc0	428		0
-0x004e2170	64		0
-0x004e21b0	976		0
-0x004e2580	340		0
-0x004e26d8	428		0
-0x004e2888	64		0
-0x004e28c8	976		0
-0x004e2c98	340		0
-0x004e2df0	428		0
-0x004e2fa0	544		0
-0x004e31c0	280		0
-0x004e32d8	144		0
-0x004e3368	416		0
-0x004e3508	416		0
-0x004e36a8	124		0
-0x004e3728	68		0
-0x004e3770	16		0
-0x004e3780	124		0
-0x004e3820	260		0
-0x004e39c8	124		0
-0x004e3a48	416		0
-0x004e3c90	124		0
-0x004e3d10	124		0
-0x004e3d90	48		0
-0x004e3dc8	68		0
-0x004e3e10	96		0
-0x004e3e70	144		0
-0x004e3f38	68		0
-0x004e4068	152		0
-0x004e4100	156		0
-0x004e41a0	124		0
-0x004e4248	48		0
-0x004e42f0	36		0
-0x004e4340	416		0
-0x004e44e0	124		0
-0x004e4560	68		0
-0x004e45a8	148		0
-0x004e4640	108		0
-0x004e46b0	28		0
-0x004e4768	124		0
-0x004e47e8	124		0
-0x004e4868	416		0
-0x004e4a08	28		0
-0x004e4a58	28		0
-0x004e4a78	124		0
-0x004e4af8	180		0
-0x004e4c20	44		0
-0x004e4c78	28		0
-0x004e4d58	416		0
-0x004e4ef8	416		0
-0x004e5098	268		0
-0x004e51a8	324		0
-0x004e52f0	140		0
-0x004e5380	164		0
-0x004e5428	288		0
-0x004e5548	292		0
-0x004e5670	648		0
-0x004e58f8	184		0
-0x004e59b0	260		0
-0x004e5ab8	76		0
-0x004e5b08	112		0
-0x004e5b78	276		0
-0x004e5c90	324		0
-0x004e5dd8	140		0
-0x004e5e68	164		0
-0x004e5f10	296		0
-0x004e6038	300		0
-0x004e6168	680		0
-0x004e6410	192		0
-0x004e64d0	260		0
-0x004e65d8	76		0
-0x004e6628	112		0
-0x004e6698	124		0
-0x004e6718	108		0
-0x004e6788	108		0
-0x004e6918	48		0
-0x004e69b0	152		0
-0x004e6a48	152		0
-0x004e6ae0	64		0
-0x004e6b20	976		0
-0x004e6ef0	340		0
-0x004e7048	428		0
-0x004e71f8	204		0
-0x004e72c8	104		0
-0x004e7330	156		0
-0x004e73d0	200		0
-0x004e7498	64		0
-0x004e74d8	976		0
-0x004e78a8	340		0
-0x004e7a00	428		0
-0x004e7bb0	104		0
-0x004e7c50	152		0
-0x004e7ce8	156		0
-0x004e7d88	156		0
-0x004e7e28	196		0
-0x004e7ef0	48		0
-0x004e7f20	124		0
-0x004e7fa0	124		0
-0x004e8040	40		0
-0x004e8068	152		0
-0x004e8100	156		0
-0x004e81a0	156		0
-0x004e8270	124		0
-0x004e82f0	124		0
-0x004e8370	416		0
-0x004e8528	124		0
-0x004e85e0	288		0
-0x004e8700	8		0
-0x004e8718	12		0
-0x004e8738	152		0
-0x004e87d0	124		0
-0x004e8850	64		0
-0x004e8890	976		0
-0x004e8c60	340		0
-0x004e8db8	428		0
-0x004e8f68	416		0
-0x004e9108	104		0
-0x004e91c0	52		0
-0x004e92b8	124		0
-0x004e93d0	416		0
-0x004e9580	124		0
-0x004e9600	124		0
-0x004e9680	124		0
-0x004e9700	188		0
-0x004e97c0	416		0
-0x004e9960	124		0
-0x004e99e0	68		0
-0x004e9a28	148		0
-0x004e9ac0	416		0
-0x004e9c60	68		0
-0x004e9ca8	124		0
-0x004e9d28	108		0
-0x004e9d98	148		0
-0x004e9e30	44		0
-0x004e9e60	64		0
-0x004e9ea0	976		0
-0x004ea270	340		0
-0x004ea3c8	428		0
-0x004ea578	152		0
-0x004ea610	124		0
-0x004ea690	124		0
-0x004ea710	124		0
-0x004ea790	124		0
-0x004ea810	124		0
-0x004ea890	124		0
-0x004ea910	124		0
-0x004ea990	124		0
-0x004eaa10	124		0
-0x004eaa90	124		0
-0x004eab10	68		0
-0x004eab58	200		0
-0x004eac98	124		0
-0x004ead18	416		0
-0x004eaeb8	124		0
-0x004eaf38	108		0
-0x004eafa8	148		0
-0x004eb040	48		0
-0x004eb070	416		0
-0x004eb210	128		0
-0x004eb290	180		0
-0x004eb348	140		0
-0x004eb3d8	164		0
-0x004eb480	188		0
-0x004eb540	156		0
-0x004eb5e0	324		0
-0x004eb728	76		0
-0x004eb778	180		0
-0x004eb830	76		0
-0x004eb880	112		0
-0x004eb8f0	148		0
-0x004eb988	148		0
-0x004eba20	124		0
-0x004ebaa0	124		0
-0x004ebb20	124		0
-0x004ebba0	124		0
-0x004ebc20	124		0
-0x004ebca0	124		0
-0x004ebd20	124		0
-0x004ebda0	124		0
-0x004ebe20	124		0
-0x004ebea0	124		0
-0x004ebf20	124		0
-0x004ebfa0	124		0
-0x004ec020	124		0
-0x004ec0a0	124		0
-0x004ec4b0	104		0
-0x004ec518	104		0
-0x004ec580	104		0
-0x004ec5e8	104		0
-0x004ec660	932		0
-0x004eca20	416		0
-0x004ecbc0	164		0
-0x004ecc68	236		0
-0x004ecd58	140		0
-0x004ecde8	164		0
-0x004ece90	244		0
-0x004ecf88	220		0
-0x004ed068	380		0
-0x004ed1e8	100		0
-0x004ed250	228		0
-0x004ed338	76		0
-0x004ed388	112		0
-0x004ed3f8	68		0
-0x004ed440	148		0
-0x004ed4d8	48		0
-0x004ed538	68		0
-0x004ed738	28		0
-0x004ed758	28		0
-0x004ed778	28		0
-0x004ed888	64		0
-0x004ed8c8	64		0
-0x004ed908	64		0
-0x004ed948	64		0
-0x004ed988	64		0
-0x004ed9c8	76		0
-0x004eda18	76		0
-0x004eda68	132		0
-0x004edaf0	68		0
-0x004edb38	112		0
-0x004edba8	372		0
-0x004edd20	32		0
-0x004edd50	180		0
-0x004ede08	192		0
-0x004edec8	48		0
-0x004edef8	48		0
-0x004edf28	48		0
-0x004edf58	48		0
-0x004edf88	48		0
-0x004edff0	48		0
-0x004ef2e0	44		0
-0x004ef318	48		0
-0x004ef350	44		0
-0x004ef380	48		0
-0x004ef3b8	44		0
-0x004ef3e8	48		0
-0x004ef420	44		0
-0x004ef450	48		0
-0x004ef488	44		0
-0x004ef4b8	48		0
-0x004ef4f0	44		0
-0x004ef520	48		0
-0x004ef558	44		0
-0x004ef588	48		0
-0x004ef5c0	44		0
-0x004ef5f0	48		0
-0x004ef628	44		0
-0x004ef658	48		0
-0x004ef690	44		0
-0x004ef6c0	48		0
-0x004ef6f8	44		0
-0x004ef728	48		0
-0x004ef760	44		0
-0x004ef790	48		0
-0x004ef7c8	44		0
-0x004ef7f8	48		0
-0x004ef830	44		0
-0x004ef868	48		0
-0x004ef8a8	44		0
-0x004ef8d8	48		0
-0x004ef910	44		0
-0x004ef940	48		0
-0x004ef978	44		0
-0x004ef9a8	48		0
-0x004ef9e8	44		0
-0x004efa18	48		0
-0x004efa50	44		0
-0x004efa80	48		0
-0x004efab8	44		0
-0x004efae8	48		0
-0x004efb30	44		0
-0x004efb60	48		0
-0x004efb98	44		0
-0x004efbd0	48		0
-0x004efc08	44		0
-0x004efc40	48		0
-0x004efc78	44		0
-0x004efca8	48		0
-0x004efce0	44		0
-0x004efd10	48		0
-0x004efd50	44		0
-0x004efd80	48		0
-0x004efdb8	44		0
-0x004efde8	48		0
-0x004efe20	44		0
-0x004efe90	44		0
-0x004efec0	48		0
-0x004efef8	44		0
-0x004eff28	48		0
-0x004eff60	44		0
-0x004eff90	48		0
-0x004effc8	44		0
-0x004f0000	48		0
-0x004f0038	44		0
-0x004f0068	48		0
-0x004f00a0	44		0
-0x004f00d0	48		0
-0x004f0108	44		0
-0x004f0138	48		0
-0x004f0170	44		0
-0x004f01a0	48		0
-0x004f01d8	44		0
-0x004f0208	48		0
-0x004f0240	44		0
-0x004f0270	48		0
-0x004f02a8	44		0
-0x004f02d8	48		0
-0x004f0310	44		0
-0x004f0340	48		0
-0x004f0378	44		0
-0x004f03a8	48		0
-0x004f03f0	48		0
-0x004f0420	32		0
-0x004f0440	48		0
-0x004f0478	48		0
-0x004f04b0	48		0
-0x004f04e8	48		0
-0x004f0520	96		0
-0x004f0598	48		0
-0x004f0608	48		0
-0x004f0650	48		0
-0x004f06a8	64		0
-0x004f06e8	984		0
-0x004f0ac0	340		0
-0x004f0c18	428		0
-0x004f0dc8	104		0
-0x004f0e30	156		0
-0x004f0ed0	188		0
-0x004f0fa8	416		0
-0x004f1148	124		0
-0x004f12a8	88		0
-0x004f1368	124		0
-0x004f13e8	44		0
-0x004f1420	48		0
-0x004f1450	124		0
-0x004f14d0	320		0
-0x004f1610	324		0
-0x004f1758	84		0
-0x004f17b0	704		0
-0x004f1a70	84		0
-0x004f1ac8	696		0
-0x004f1d80	48		0
-0x004f1db8	212		0
-0x004f1f00	48		0
-0x004f1f30	48		0
-0x004f1f60	40		0
-0x004f1f88	604		0
-0x004f21e8	252		0
-0x004f22e8	252		0
-0x004f23e8	612		0
-0x004f2650	504		0
-0x004f2a70	112		0
-0x004f2ae0	92		0
-0x004f2b40	96		0
-0x004f2bd8	48		0
-0x004f2c80	200		0
-0x004f2dd8	120		0
-0x004f2e50	92		0
-0x004f2eb0	96		0
-0x004f2f48	48		0
-0x004f3000	200		0
-0x004f3158	108		0
-0x004f31c8	92		0
-0x004f3228	96		0
-0x004f32c0	48		0
-0x004f32f0	40		0
-0x004f3318	604		0
-0x004f3580	612		0
-0x004f37e8	512		0
-0x004f39e8	176		0
-0x004f3a98	48		0
-0x004f3b40	68		0
-0x004f3be0	68		0
-0x004f3c28	68		0
-0x004f3c70	68		0
-0x004f3d40	200		0
-0x004f3e98	128		0
-0x004f3f18	92		0
-0x004f3f78	96		0
-0x004f4010	12		0
-0x004f4020	12		0
-0x004f4030	48		0
-0x004f4098	68		0
-0x004f4158	200		0
-0x004f42b0	120		0
-0x004f4328	92		0
-0x004f4388	96		0
-0x004f4420	48		0
-0x004f44b8	200		0
-0x004f4610	108		0
-0x004f4680	92		0
-0x004f46e0	96		0
-0x004f4820	124		0
-0x004f48a0	124		0
-0x004f4920	124		0
-0x004f49a0	124		0
-0x004f4a20	124		0
-0x004f4ae8	8		0
-0x004f4af8	124		0
-0x004f4b78	124		0
-0x004f4bf8	68		0
-0x004f4c60	192		0
-0x004f4d20	364		0
-0x004f4e98	60		0
-0x004f4ed8	228		0
-0x004f4fc0	124		0
-0x004f5040	160		0
-0x004f50e0	600		0
-0x004f5338	544		0
-0x004f5558	420		0
-0x004f5700	216		0
-0x004f57d8	108		0
-0x004f5848	108		0
-0x004f58b8	68		0
-0x004f5900	416		0
-0x004f5ab8	88		0
-0x004f5b10	8		0
-0x004f5b60	212		0
-0x004f5c58	28		0
-0x004f5c78	32		0
-0x004f5c98	48		0
-0x004f5cc8	96		0
-0x004f5d28	68		0
-0x004f5d70	12		0
-0x004f5d80	124		0
-0x004f5e18	200		0
-0x004f5ef0	112		0
-0x004f5f60	92		0
-0x004f6038	96		0
-0x004f60d8	212		0
-0x004f61b0	24		0
-0x004f61e8	28		0
-0x004f6208	68		0
-0x004f6250	108		0
-0x004f6428	28		0
-0x004f64c8	40		0
+0x004dda18	320	ReqDeque_Destroy	1
+0x004ddb58	152	RbTree_EraseSubtree	1
+0x004ddc60	40	GameMode0e_Dtor	1
+0x004ddc90	40	GameplayMode_Dtor	1
+0x004ddcc0	104	GameMode13_Dtor	1
+0x004ddd30	8	Ptr_Assign	1
+0x004dddb0	40	LevelFlowMode_Dtor	1
+0x004ddde0	40	GameMode0c_Dtor	1
+0x004dde48	80	GameMode10_Dtor	1
+0x004dded8	128	ProfileManagerMode_Dtor	1
+0x004ddf60	28	Widget_DestroyThunk	1
+0x004ddf80	12	Widget_SetFlag40	1
+0x004ddfa0	128	GameMode11_Dtor	1
+0x004de098	12	HandleArray16_At	1
+0x004de0a8	32	HandleArray16_Clear	1
+0x004de0c8	100	HandleArray16_IsEmpty	1
+0x004de130	104	HandleArray16_First	1
+0x004de198	12	EnemyList16_At	1
+0x004de1a8	96	HandleArray16_PutInFree	1
+0x004de208	48	HandleArray16_IndexOf	1
+0x004de238	24	HandleArray16_ClearAt	1
+0x004de250	64	Stats_AddHarmony	1
+0x004de290	124	CharDataRes_DeleteSlot	1
+0x004de310	68	SafeDeleteArrayPod	1
+0x004de358	124	CharDataRes_DeleteTable	1
+0x004de3d8	124	Resource_DeleteObject	1
+0x004de458	104	CharDataMap_Find	1
+0x004de4c0	124	ResourceMgr_DeleteCharEntry	1
+0x004de540	104	AnimPackMap_Find	1
+0x004de5a8	124	ResourceMgr_DeleteAnimEntry	1
+0x004de628	48	ResourceBase_DeletingDtor	1
+0x004de678	48	CharacterDataChunk_DeletingDtor	1
+0x004de6c8	416	CarPartVisibilityCallback_VecInsertAux	1
+0x004de868	104	CarModelMap_Find	1
+0x004de8d0	104	ResMap_LowerBound	1
+0x004de938	124	SafeDelete_CarInstance	1
+0x004de9c8	124	SafeDelete_ModelEntry	1
+0x004dea48	416	HumanAtomicVisibilityCallback_VecInsertAux	1
+0x004debe8	104	CharModelMap_Find	1
+0x004dec50	124	SafeDelete_CharacterInstance	1
+0x004decd0	48	CharacterInstance_DeletingDtor	1
+0x004ded90	68	SafeFree_CharacterModelDestruct	1
+0x004dedd8	108	SafeDeleteDirect_Embers	1
+0x004dee48	8	LinkOnce_EmptyStub48	1
+0x004dee58	416	LightManagerCullForViewport_VecInsertAux	1
+0x004df008	24	Renderable_SetParam24	1
+0x004df020	416	ObjectAtomicVisibilityCallback_VecInsertAux	1
+0x004df1c0	104	ObjModelMap_Find	1
+0x004df228	124	SafeDelete_ObjectInstance	1
+0x004df2a8	124	SafeDelete_ObjectModel	1
+0x004df328	104	SheetMap_Find	1
+0x004df390	124	SafeDelete_Sheet	1
+0x004df430	64	CharDataMap_LowerBound	1
+0x004df470	976	CharDataMap_InsertNode	1
+0x004df840	340	CharDataMap_InsertUnique	1
+0x004df998	428	CharDataMap_InsertHint	1
+0x004dfb50	192	ResDeferDeque_CreateNodes	1
+0x004dfc10	372	ResDeferDeque_InitMap	1
+0x004dfd90	104	RequestMap_Find	1
+0x004dfdf8	64	CharModelMap_LowerBound	1
+0x004dfe38	976	CharModelMap_InsertNode	1
+0x004e0208	340	CharModelMap_InsertUnique	1
+0x004e0360	428	CharModelMap_InsertHint	1
+0x004e0510	64	TextureMap_LowerBound	1
+0x004e0550	976	TextureMap_InsertNode	1
+0x004e0920	340	TextureMap_InsertUnique	1
+0x004e0a78	428	TextureMap_InsertHint	1
+0x004e0c28	64	ObjModelMap_LowerBound	1
+0x004e0c68	976	ObjModelMap_InsertNode	1
+0x004e1038	340	ObjModelMap_InsertUnique	1
+0x004e1190	428	ObjModelMap_InsertHint	1
+0x004e1340	64	CarModelMap_LowerBound	1
+0x004e1380	976	CarModelMap_InsertNode	1
+0x004e1750	340	CarModelMap_InsertUnique	1
+0x004e18a8	428	CarModelMap_InsertHint	1
+0x004e1a58	64	SheetMap_LowerBound	1
+0x004e1a98	976	SheetMap_InsertNode	1
+0x004e1e68	340	SheetMap_InsertUnique	1
+0x004e1fc0	428	SheetMap_InsertHint	1
+0x004e2170	64	AnimPackMap_LowerBound	1
+0x004e21b0	976	AnimPackMap_InsertNode	1
+0x004e2580	340	AnimPackMap_InsertUnique	1
+0x004e26d8	428	AnimPackMap_InsertHint	1
+0x004e2888	64	RequestMap_LowerBound	1
+0x004e28c8	976	RequestMap_InsertNode	1
+0x004e2c98	340	RequestMap_InsertUnique	1
+0x004e2df0	428	RequestMap_InsertHint	1
+0x004e2fa0	544	ResDeferDeque_ReallocMap	1
+0x004e31c0	280	ResDeferDeque_PushBackNode	1
+0x004e32d8	144	ResDeferDeque_PopFrontNode	1
+0x004e3368	416	ResourceMgrQueuePaneFar_VecInsertAux	1
+0x004e3508	416	ResourceMgrQueuePaneNear_VecInsertAux	1
+0x004e36a8	124	SafeDelete_ScreenFxEndLayer	1
+0x004e3728	68	SafeFree_ScreenFxResetAll	1
+0x004e3770	16	MsgArgs_Init	1
+0x004e3780	124	SafeDelete_TextureSet	1
+0x004e3820	260	RwDevice_DeletingDtorCopy	1
+0x004e39c8	124	SafeDelete_RadarBlip	1
+0x004e3a48	416	OverlayEffectAddWidget_VecInsertAux	1
+0x004e3c90	124	SafeDelete_HeatDistortion	1
+0x004e3d10	124	SafeDelete_WaveDistortion	1
+0x004e3d90	48	Widget_SetOpacity	1
+0x004e3dc8	68	ActionPrompt_DestroyWidget	1
+0x004e3e10	96	HudCrewStatus_DestroyWidget	1
+0x004e3e70	144	HUD_DestroyWidget	1
+0x004e3f38	68	SafeFree_BaseWidgetEnableShadow	1
+0x004e4068	152	ChecklistList_Clear	1
+0x004e4100	156	ChecklistList_Delete	1
+0x004e41a0	124	SafeDelete_ChecklistItem	1
+0x004e4248	48	HudCrimePanelPart_DeletingDtor	1
+0x004e42f0	36	Widget_ReturnMinus1	1
+0x004e4340	416	CreditsAddLine_VecInsertAux	1
+0x004e44e0	124	SafeDelete_CreditsShutdown	1
+0x004e4560	68	SafeFree_CreditsShutdown	1
+0x004e45a8	148	CreditList_Delete	1
+0x004e4640	108	SafeDeleteDirect_StringTableCache	1
+0x004e46b0	28	Credits_DestroyWidget	1
+0x004e4768	124	SafeDelete_ScrollingMenuItem	1
+0x004e47e8	124	SafeDelete_GridItem	1
+0x004e4868	416	GridContainerAddItem_VecInsertAux	1
+0x004e4a08	28	GridContainer_DestroyWidget	1
+0x004e4a58	28	HudLabel_DestroyWidget	1
+0x004e4a78	124	SafeDelete_HUDShutdownLevel	1
+0x004e4af8	180	HudItemRow_DestroyWidget	1
+0x004e4c20	44	MessageHUD_MeasureSlot	1
+0x004e4c78	28	MessageHUD_SetColourSlot	1
+0x004e4d58	416	MissionSelectAddMission_VecInsertAux	1
+0x004e4ef8	416	MissionSelectAddArea_VecInsertAux	1
+0x004e5098	268	MissionSort_PushHeap	1
+0x004e51a8	324	MissionSort_AdjustHeap	1
+0x004e52f0	140	MissionSort_MakeHeap	1
+0x004e5380	164	MissionSort_SortHeap	1
+0x004e5428	288	MissionSort_PartialSort	1
+0x004e5548	292	MissionSort_Partition	1
+0x004e5670	648	MissionSort_IntrosortLoop	1
+0x004e58f8	184	MissionSort_LinearInsert	1
+0x004e59b0	260	MissionSort_InsertionSort	1
+0x004e5ab8	76	MissionSort_UnguardedInsertion	1
+0x004e5b08	112	MissionSort_FinalInsertion	1
+0x004e5b78	276	AreaSort_PushHeap	1
+0x004e5c90	324	AreaSort_AdjustHeap	1
+0x004e5dd8	140	AreaSort_MakeHeap	1
+0x004e5e68	164	AreaSort_SortHeap	1
+0x004e5f10	296	AreaSort_PartialSort	1
+0x004e6038	300	AreaSort_Partition	1
+0x004e6168	680	AreaSort_IntrosortLoop	1
+0x004e6410	192	AreaSort_LinearInsert	1
+0x004e64d0	260	AreaSort_InsertionSort	1
+0x004e65d8	76	AreaSort_UnguardedInsertion	1
+0x004e6628	112	AreaSort_FinalInsertion	1
+0x004e6698	124	SafeDelete_MissionSelectShutdown	1
+0x004e6718	108	SafeDeleteDirect_MissionSelectShutdown	1
+0x004e6788	108	SafeDeleteDirect_MissionSelectShutdown2	1
+0x004e6918	48	Vec4_AddTo	1
+0x004e69b0	152	SfcStateList_Clear	1
+0x004e6a48	152	SfcTransitionMap_EraseSubtree	1
+0x004e6ae0	64	TransitionMap_LowerBound	1
+0x004e6b20	976	TransitionMap_InsertNode	1
+0x004e6ef0	340	TransitionMap_InsertUnique	1
+0x004e7048	428	TransitionMap_InsertHint	1
+0x004e71f8	204	SfcStateList_EraseRange	1
+0x004e72c8	104	TransitionMap_Find	1
+0x004e7330	156	SfcStateList_Delete	1
+0x004e73d0	200	SfcTransitionMap_Delete	1
+0x004e7498	64	SharedValueMap_LowerBound	1
+0x004e74d8	976	SharedValueMap_InsertNode	1
+0x004e78a8	340	SharedValueMap_InsertUnique	1
+0x004e7a00	428	SharedValueMap_InsertHint	1
+0x004e7bb0	104	SharedValueMap_Find	1
+0x004e7c50	152	ScrollInList_Clear	1
+0x004e7ce8	156	ScrollInList_Delete	1
+0x004e7d88	156	ScrollInQueue_Delete	1
+0x004e7e28	196	ScrollInList_Remove	1
+0x004e7ef0	48	HudMenuGrid_DestroyWidget	1
+0x004e7f20	124	SafeDelete_PMContinueShutdown	1
+0x004e7fa0	124	SafeDelete_GameStatsShutdown2	1
+0x004e8040	40	StopWatchHud_DestroyWidget	1
+0x004e8068	152	TutorialQueueList_Clear	1
+0x004e8100	156	TutorialQueueList_Delete	1
+0x004e81a0	156	HintBoxQueue_Delete	1
+0x004e8270	124	SafeDelete_OptionGridShutdown	1
+0x004e82f0	124	SafeDelete_OptionGridShutdown2	1
+0x004e8370	416	OptionGridAddItem_VecInsertAux	1
+0x004e8528	124	SafeDelete_OptionPageShutdown	1
+0x004e85e0	288	PauseMenu_DestroyWidget	1
+0x004e8700	8	PauseMenu_SetQuitTarget	1
+0x004e8718	12	PauseMenu_SetFlag1b80	1
+0x004e8738	152	ScrollingMenuItemMap_EraseSubtree	1
+0x004e87d0	124	SafeDelete_ScrollingMenuShutdown	1
+0x004e8850	64	MenuDescMap_LowerBound	1
+0x004e8890	976	MenuDescMap_InsertNode	1
+0x004e8c60	340	MenuDescMap_InsertUnique	1
+0x004e8db8	428	MenuDescMap_InsertHint	1
+0x004e8f68	416	ScrollingMenuAddItem_VecInsertAux	1
+0x004e9108	104	MenuDescMap_Find	1
+0x004e91c0	52	ScrollingMenuItem_SetFlag80	1
+0x004e92b8	124	SafeDelete_GameStatsShutdown3	1
+0x004e93d0	416	RMSwapSoldierAddToGroup_VecInsertAux	1
+0x004e9580	124	SafeDelete_PMCreateShutdown	1
+0x004e9600	124	SafeDelete_PMLightShutdown	1
+0x004e9680	124	SafeDelete_PMLightShutdown2	1
+0x004e9700	188	ProfileSetWidget_DeletingDtor	1
+0x004e97c0	416	RMChooseAreaAddArena_VecInsertAux	1
+0x004e9960	124	SafeDelete_RMChooseAreaShutdown	1
+0x004e99e0	68	SafeFree_RMChooseAreaShutdown	1
+0x004e9a28	148	RmArenaVector_Delete	1
+0x004e9ac0	416	RMChooseGangsAddGang_VecInsertAux	1
+0x004e9c60	68	SafeFree_RMChooseGangsShutdown	1
+0x004e9ca8	124	SafeDelete_RMChooseGangsShutdown	1
+0x004e9d28	108	SafeDeleteDirect_RMChooseGangsShutdown	1
+0x004e9d98	148	RmGangVector_Delete	1
+0x004e9e30	44	RmChooseGangsCb_Invoke	1
+0x004e9e60	64	RmCharDataMap_LowerBound	1
+0x004e9ea0	976	RmCharDataMap_InsertNode	1
+0x004ea270	340	RmCharDataMap_InsertUnique	1
+0x004ea3c8	428	RmCharDataMap_InsertHint	1
+0x004ea578	152	RmControllerMap_EraseSubtree	1
+0x004ea610	124	SafeDelete_RMMain	1
+0x004ea690	124	SafeDelete_RMNo2ndController	1
+0x004ea710	124	SafeDelete_RMNumPlayers	1
+0x004ea790	124	SafeDelete_RMGameMode	1
+0x004ea810	124	SafeDelete_RMChooseArea	1
+0x004ea890	124	SafeDelete_RMChooseGangs	1
+0x004ea910	124	SafeDelete_RMCreateGang	1
+0x004ea990	124	SafeDelete_RMEditGang	1
+0x004eaa10	124	SafeDelete_RMEditGangs	1
+0x004eaa90	124	SafeDelete_RMSwapSoldier	1
+0x004eab10	68	SafeFree_RMControllerShutdown	1
+0x004eab58	200	RmControllerMap_Delete	1
+0x004eac98	124	SafeDelete_PMCreateShutdown2	1
+0x004ead18	416	RMGameModeAddMode_VecInsertAux	1
+0x004eaeb8	124	SafeDelete_GameStatsSubItemShutdown	1
+0x004eaf38	108	SafeDeleteDirect_RMGameModeShutdown	1
+0x004eafa8	148	RmModeVector_Delete	1
+0x004eb040	48	HudPanel53d440_DestroyWidget	1
+0x004eb070	416	RMSwapSoldierAddGroup_VecInsertAux	1
+0x004eb210	128	SoldierSort_PushHeap	1
+0x004eb290	180	SoldierSort_AdjustHeap	1
+0x004eb348	140	SoldierSort_MakeHeap	1
+0x004eb3d8	164	SoldierSort_SortHeap	1
+0x004eb480	188	SoldierSort_PartialSort	1
+0x004eb540	156	SoldierSort_Partition	1
+0x004eb5e0	324	SoldierSort_IntrosortLoop	1
+0x004eb728	76	SoldierSort_LinearInsert	1
+0x004eb778	180	SoldierSort_InsertionSort	1
+0x004eb830	76	SoldierSort_UnguardedInsertion	1
+0x004eb880	112	SoldierSort_FinalInsertion	1
+0x004eb8f0	148	RmSoldierGroupVector_Delete	1
+0x004eb988	148	RmSoldierVector_Delete	1
+0x004eba20	124	SafeDelete_PMGreet	1
+0x004ebaa0	124	SafeDelete_PMNoSpace	1
+0x004ebb20	124	SafeDelete_PMTooManyProfiles	1
+0x004ebba0	124	SafeDelete_PMMode	1
+0x004ebc20	124	SafeDelete_PMExtras	1
+0x004ebca0	124	SafeDelete_PMNumPlayers	1
+0x004ebd20	124	SafeDelete_PMProfile	1
+0x004ebda0	124	SafeDelete_PMCreate	1
+0x004ebe20	124	SafeDelete_PMLoad	1
+0x004ebea0	124	SafeDelete_PMContinue	1
+0x004ebf20	124	SafeDelete_PMDelete	1
+0x004ebfa0	124	SafeDelete_PMDifficulty	1
+0x004ec020	124	SafeDelete_PMLight	1
+0x004ec0a0	124	SafeDelete_PMSubtitles	1
+0x004ec4b0	104	ANHudPanel1_DestroyWidget	1
+0x004ec518	104	ANHudPanel2_DestroyWidget	1
+0x004ec580	104	ANHudPanel3_DestroyWidget	1
+0x004ec5e8	104	ANHudPanel4_DestroyWidget	1
+0x004ec660	932	PlayerHUD_DeletingDtor	1
+0x004eca20	416	GameStatsAddLevel_VecInsertAux	1
+0x004ecbc0	164	StatLevelSort_PushHeap	1
+0x004ecc68	236	StatLevelSort_AdjustHeap	1
+0x004ecd58	140	StatLevelSort_MakeHeap	1
+0x004ecde8	164	StatLevelSort_SortHeap	1
+0x004ece90	244	StatLevelSort_PartialSort	1
+0x004ecf88	220	StatLevelSort_Partition	1
+0x004ed068	380	StatLevelSort_IntrosortLoop	1
+0x004ed1e8	100	StatLevelSort_LinearInsert	1
+0x004ed250	228	StatLevelSort_InsertionSort	1
+0x004ed338	76	StatLevelSort_UnguardedInsertion	1
+0x004ed388	112	StatLevelSort_FinalInsertion	1
+0x004ed3f8	68	SafeFree_GameStatsShutdown	1
+0x004ed440	148	GsMissionList_Delete	1
+0x004ed4d8	48	GameStatsPage_DestroyWidget	1
+0x004ed538	68	SafeFree_HumanDestroy	1
+0x004ed738	28	ScriptHost_SetSlotExThunk	1
+0x004ed758	28	ScriptHost_GetSlotThunk	1
+0x004ed778	28	ScriptHost_SetOwnerThunk	1
+0x004ed888	64	Stats_AddBonus	1
+0x004ed8c8	64	Stats_AddCombat	1
+0x004ed908	64	Stats_AddMission	1
+0x004ed948	64	Stats_AddCrime	1
+0x004ed988	64	Stats_AddStyle	1
+0x004ed9c8	76	Stats_CombatPoints	1
+0x004eda18	76	Stats_StylePoints	1
+0x004eda68	132	HandleArray16_Copy	1
+0x004edaf0	68	HandleArray16_Remove	1
+0x004edb38	112	HandleArray16_PruneDead	1
+0x004edba8	372	HandleArray16_SortByDistance	1
+0x004edd20	32	HandleArray16_SortNearest	1
+0x004edd50	180	Brain_ConstructMembers	1
+0x004ede08	192	HandleArray16_NearestHandle	1
+0x004edec8	48	ObjFilterHasFlags_DeletingDtor	1
+0x004edef8	48	ObjFilterFetch_DeletingDtor	1
+0x004edf28	48	ObjFilterHasName_DeletingDtor	1
+0x004edf58	48	ObjFilterNearestWithFlags_DeletingDtor	1
+0x004edf88	48	ObjFilterVandalisable_DeletingDtor	1
+0x004edff0	48	ObjFilter_DeletingDtor	1
+0x004ef2a8	48	TacticType1a_DeletingDtor	1
+0x004ef2d8	8	TacticType1a_GetType	1
+0x004ef2e0	44	TacticType1a_IsCombatType	1
+0x004ef318	48	TacticAttack_DeletingDtor	1
+0x004ef348	8	TacticAttack_GetType	1
+0x004ef350	44	TacticAttack_IsCombatType	1
+0x004ef380	48	TacticAvoidEnemies_DeletingDtor	1
+0x004ef3b0	8	TacticAvoidEnemies_GetType	1
+0x004ef3b8	44	TacticAvoidEnemies_IsCombatType	1
+0x004ef3e8	48	TacticType09_DeletingDtor	1
+0x004ef418	8	TacticType09_GetType	1
+0x004ef420	44	TacticType09_IsCombatType	1
+0x004ef450	48	TacticBossDiegoVargas_DeletingDtor	1
+0x004ef480	8	TacticBossDiegoVargas_GetType	1
+0x004ef488	44	TacticBossDiegoVargas_IsCombatType	1
+0x004ef4b8	48	TacticType0b_DeletingDtor	1
+0x004ef4e8	8	TacticType0b_GetType	1
+0x004ef4f0	44	TacticType0b_IsCombatType	1
+0x004ef520	48	TacticBossMoe_DeletingDtor	1
+0x004ef550	8	TacticBossMoe_GetType	1
+0x004ef558	44	TacticBossMoe_IsCombatType	1
+0x004ef588	48	TacticBossRoof_DeletingDtor	1
+0x004ef5b8	8	TacticBossRoof_GetType	1
+0x004ef5c0	44	TacticBossRoof_IsCombatType	1
+0x004ef5f0	48	TacticBossLuther_DeletingDtor	1
+0x004ef620	8	TacticBossLuther_GetType	1
+0x004ef628	44	TacticBossLuther_IsCombatType	1
+0x004ef658	48	TacticBossScenarioF_DeletingDtor	1
+0x004ef688	8	TacticBossScenarioF_GetType	1
+0x004ef690	44	TacticBossScenarioF_IsCombatType	1
+0x004ef6c0	48	TacticBossVirgil_DeletingDtor	1
+0x004ef6f0	8	TacticBossVirgil_GetType	1
+0x004ef6f8	44	TacticBossVirgil_IsCombatType	1
+0x004ef728	48	TacticBossChatterbox_DeletingDtor	1
+0x004ef758	8	TacticBossChatterbox_GetType	1
+0x004ef760	44	TacticBossChatterbox_IsCombatType	1
+0x004ef790	48	TacticConfront_DeletingDtor	1
+0x004ef7c0	8	TacticConfront_GetType	1
+0x004ef7c8	44	TacticConfront_IsCombatType	1
+0x004ef7f8	48	TacticCrowd_DeletingDtor	1
+0x004ef828	8	TacticCrowd_GetType	1
+0x004ef830	44	TacticCrowd_IsCombatType	1
+0x004ef868	48	TacticDefend_DeletingDtor	1
+0x004ef8a0	8	TacticDefend_GetType	1
+0x004ef8a8	44	TacticDefend_IsCombatType	1
+0x004ef8d8	48	TacticDomination_DeletingDtor	1
+0x004ef908	8	TacticDomination_GetType	1
+0x004ef910	44	TacticDomination_IsCombatType	1
+0x004ef940	48	TacticWarriorFollow_DeletingDtor	1
+0x004ef970	8	TacticWarriorFollow_GetType	1
+0x004ef978	44	TacticWarriorFollow_IsCombatType	1
+0x004ef9a8	48	TacticHanginOut_DeletingDtor	1
+0x004ef9e0	8	TacticHanginOut_GetType	1
+0x004ef9e8	44	TacticHanginOut_IsCombatType	1
+0x004efa18	48	TacticType13_DeletingDtor	1
+0x004efa48	8	TacticType13_GetType	1
+0x004efa50	44	TacticType13_IsCombatType	1
+0x004efa80	48	TacticPlayerGang_DeletingDtor	1
+0x004efab0	8	TacticPlayerGang_GetType	1
+0x004efab8	44	TacticPlayerGang_IsCombatType	1
+0x004efae8	48	TacticHoldTheLine_DeletingDtor	1
+0x004efb28	8	TacticHoldTheLine_GetType	1
+0x004efb30	44	TacticHoldTheLine_IsCombatType	1
+0x004efb60	48	TacticIdle_DeletingDtor	1
+0x004efb90	8	TacticIdle_GetType	1
+0x004efb98	44	TacticIdle_IsCombatType	1
+0x004efbd0	48	TacticType1f_DeletingDtor	1
+0x004efc00	8	TacticType1f_GetType	1
+0x004efc08	44	TacticType1f_IsCombatType	1
+0x004efc40	48	TacticManWeaponPile_DeletingDtor	1
+0x004efc70	8	TacticManWeaponPile_GetType	1
+0x004efc78	44	TacticManWeaponPile_IsCombatType	1
+0x004efca8	48	TacticMoveToFlag_DeletingDtor	1
+0x004efcd8	8	TacticMoveToFlag_GetType	1
+0x004efce0	44	TacticMoveToFlag_IsCombatType	1
+0x004efd10	48	TacticPursue_DeletingDtor	1
+0x004efd48	8	TacticPursue_GetType	1
+0x004efd50	44	TacticPursue_IsCombatType	1
+0x004efd80	48	TacticType08_DeletingDtor	1
+0x004efdb0	8	TacticType08_GetType	1
+0x004efdb8	44	TacticType08_IsCombatType	1
+0x004efde8	48	TacticType05_DeletingDtor	1
+0x004efe18	8	TacticType05_GetType	1
+0x004efe20	44	TacticType05_IsCombatType	1
+0x004efe58	48	TacticType25_DeletingDtor	1
+0x004efe88	8	TacticType25_GetType	1
+0x004efe90	44	TacticType25_IsCombatType	1
+0x004efec0	48	TacticScout_DeletingDtor	1
+0x004efef0	8	TacticScout_GetType	1
+0x004efef8	44	TacticScout_IsCombatType	1
+0x004eff28	48	TacticType1e_DeletingDtor	1
+0x004eff58	8	TacticType1e_GetType	1
+0x004eff60	44	TacticType1e_IsCombatType	1
+0x004eff90	48	TacticStandGround_DeletingDtor	1
+0x004effc0	8	TacticStandGround_GetType	1
+0x004effc8	44	TacticStandGround_IsCombatType	1
+0x004f0000	48	TacticSteal_DeletingDtor	1
+0x004f0030	8	TacticSteal_GetType	1
+0x004f0038	44	TacticSteal_IsCombatType	1
+0x004f0068	48	TacticType28_DeletingDtor	1
+0x004f0098	8	TacticType28_GetType	1
+0x004f00a0	44	TacticType28_IsCombatType	1
+0x004f00d0	48	TacticTravelPath_DeletingDtor	1
+0x004f0100	8	TacticTravelPath_GetType	1
+0x004f0108	44	TacticTravelPath_IsCombatType	1
+0x004f0138	48	TacticUseFlag_DeletingDtor	1
+0x004f0168	8	TacticUseFlag_GetType	1
+0x004f0170	44	TacticUseFlag_IsCombatType	1
+0x004f01a0	48	TacticVandalize_DeletingDtor	1
+0x004f01d0	8	TacticVandalize_GetType	1
+0x004f01d8	44	TacticVandalize_IsCombatType	1
+0x004f0208	48	TacticWalkinTall_DeletingDtor	1
+0x004f0238	8	TacticWalkinTall_GetType	1
+0x004f0240	44	TacticWalkinTall_IsCombatType	1
+0x004f0270	48	TacticWander_DeletingDtor	1
+0x004f02a0	8	TacticWander_GetType	1
+0x004f02a8	44	TacticWander_IsCombatType	1
+0x004f02d8	48	TacticWarriorAttack_DeletingDtor	1
+0x004f0308	8	TacticWarriorAttack_GetType	1
+0x004f0310	44	TacticWarriorAttack_IsCombatType	1
+0x004f0340	48	TacticType26_DeletingDtor	1
+0x004f0370	8	TacticType26_GetType	1
+0x004f0378	44	TacticType26_IsCombatType	1
+0x004f03a8	48	GrabSubTactic_DeletingDtor	1
+0x004f03f0	48	SubTactic_DeletingDtor	1
+0x004f0420	32	HandleArray16_SortForCharge	1
+0x004f0440	48	ChargeSubTactic_DeletingDtor	1
+0x004f0478	48	GuardSubTactic_DeletingDtor	1
+0x004f04b0	48	LeaderSubTactic_DeletingDtor	1
+0x004f04e8	48	ThrowSubTactic_DeletingDtor	1
+0x004f0520	96	MemHeap_Contains	1
+0x004f0598	48	MemHeap544370_DeletingDtor	1
+0x004f0608	48	MemHeap544428_DeletingDtor	1
+0x004f0650	48	WarriorsMemory_DeletingDtor	1
+0x004f06a8	64	PoolTrackMap_LowerBound	1
+0x004f06e8	984	PoolTrackMap_InsertNode	1
+0x004f0ac0	340	PoolTrackMap_InsertUnique	1
+0x004f0c18	428	PoolTrackMap_InsertHint	1
+0x004f0dc8	104	PoolTrackMap_Find	1
+0x004f0e30	156	PoolTrackMap_EraseSubtree	1
+0x004f0ed0	188	MemoryPoolTrack_DeletingDtor	1
+0x004f0fa8	416	IPhysicsAddBody_VecInsertAux	1
+0x004f1148	124	SafeDelete_PhysicsBodyDestroy	1
+0x004f12a8	88	CollisionMesh_DeletingDtor	1
+0x004f1368	124	SafeDelete_MoviePlay	1
+0x004f13e8	44	WarMoveInstance_ForwardSlot10	1
+0x004f1420	48	WarMoveInstance_DeletingDtor	1
+0x004f1450	124	SafeDelete_ScriptSystem	1
+0x004f14d0	320	SchedHeap_PushUp	1
+0x004f1610	324	SchedHeap_AdjustDown	1
+0x004f1758	84	SchedCalls_UninitCopy	1
+0x004f17b0	704	SchedCalls_InsertAux	1
+0x004f1a70	84	SchedCalls_UninitCopy2	1
+0x004f1ac8	696	SchedCalls_Assign	1
+0x004f1d80	48	ScriptSystemPart_DeletingDtor	1
+0x004f1db8	212	ScriptObjectFreeList_Delete	1
+0x004f1f00	48	Flag_TestSlot18	1
+0x004f1f30	48	StrHashBuckets_Fill	1
+0x004f1f60	40	StrHashBuckets_FillN	1
+0x004f1f88	604	StrHashBuckets_FillInsert	1
+0x004f21e8	252	StrHashTable_Clear	1
+0x004f22e8	252	StrHashTable_IterNext	1
+0x004f23e8	612	StrHashTable_Resize	1
+0x004f2650	504	StrHashTable_InsertUnique	1
+0x004f2a70	112	CarTaskPool_New	1
+0x004f2ae0	92	CarTaskPool_Alloc	1
+0x004f2b40	96	CarTaskPool_Delete	1
+0x004f2bd8	48	GlassTask_DeletingDtor	1
+0x004f2c80	200	GlassTaskPool_DeletingDtor	1
+0x004f2dd8	120	GlassTaskPool_New	1
+0x004f2e50	92	GlassTaskPool_Alloc	1
+0x004f2eb0	96	GlassTaskPool_Delete	1
+0x004f2f48	48	LightTask_DeletingDtor	1
+0x004f3000	200	LightTaskPool_DeletingDtor	1
+0x004f3158	108	LightTaskPool_New	1
+0x004f31c8	92	LightTaskPool_Alloc	1
+0x004f3228	96	LightTaskPool_Delete	1
+0x004f32c0	48	ObjTypeBuckets_Fill	1
+0x004f32f0	40	ObjTypeBuckets_FillN	1
+0x004f3318	604	ObjTypeBuckets_FillInsert	1
+0x004f3580	612	ObjTypeHash_Resize	1
+0x004f37e8	512	ObjTypeHash_InsertUnique	1
+0x004f39e8	176	Stats_AddCrimeAllPlayers	1
+0x004f3a98	48	ObjectTask_DeletingDtor	1
+0x004f3b40	68	ObjectTask_GetPosition	1
+0x004f3be0	68	SafeFree_ObjectManagerFreeArrays	1
+0x004f3c28	68	SafeFree_ObjectManagerFreeArrays2	1
+0x004f3c70	68	Vec_PackFixed12	1
+0x004f3d40	200	ObjectTaskPool_DeletingDtor	1
+0x004f3e98	128	ObjectTaskPool_New	1
+0x004f3f18	92	ObjectTaskPool_Alloc	1
+0x004f3f78	96	ObjectTaskPool_Delete	1
+0x004f4010	12	ParticleTask_GetFlag10	1
+0x004f4020	12	ParticleTask_GetFlag11	1
+0x004f4030	48	ParticleTask_DeletingDtor	1
+0x004f4098	68	ParticleTask_GetPosition	1
+0x004f4158	200	ParticleTaskPool_DeletingDtor	1
+0x004f42b0	120	ParticleTaskPool_New	1
+0x004f4328	92	ParticleTaskPool_Alloc	1
+0x004f4388	96	ParticleTaskPool_Delete	1
+0x004f4420	48	SceneTask_DeletingDtor	1
+0x004f44b8	200	SceneTaskPool_DeletingDtor	1
+0x004f4610	108	SceneTaskPool_New	1
+0x004f4680	92	SceneTaskPool_Alloc	1
+0x004f46e0	96	SceneTaskPool_Delete	1
+0x004f4820	124	SafeDelete_TaskManagerDestruct	1
+0x004f48a0	124	SafeDelete_TaskManagerDestruct2	1
+0x004f4920	124	SafeDelete_TaskManagerDestruct3	1
+0x004f49a0	124	SafeDelete_TaskManagerDestruct4	1
+0x004f4a20	124	SafeDelete_TaskManagerDestruct5	1
+0x004f4ae8	8	ObjType_GetField78	1
+0x004f4af8	124	SafeDelete_WorldLevel	1
+0x004f4b78	124	SafeDelete_LevelObjectDestroy	1
+0x004f4bf8	68	SafeFree_LevelObjectDestroy	1
+0x004f4c60	192	PackDeque_CreateNodes	1
+0x004f4d20	364	PackDeque_InitMap	1
+0x004f4e98	60	Chars_Copy	1
+0x004f4ed8	228	RcString_Clone	1
+0x004f4fc0	124	CiString_Length	1
+0x004f5040	160	Chars_Move	1
+0x004f50e0	600	RcString_Replace	1
+0x004f5338	544	PackDeque_ReallocMap	1
+0x004f5558	420	PackDeque_PushBack	1
+0x004f5700	216	PackDeque_PopFront	1
+0x004f57d8	108	SafeDeleteDirect_WorldManagerUnload	1
+0x004f5848	108	SafeDeleteDirect_WorldManagerUnload2	1
+0x004f58b8	68	SafeFree_WorldManagerUnload	1
+0x004f5900	416	WorldCollectSector_VecInsertAux	1
+0x004f5ab8	88	WorldHeader_DeletingDtor	1
+0x004f5b10	8	Box_SetFlag68	1
+0x004f5b60	212	PlayerBoxFreeList_Delete	1
+0x004f5c58	28	PlayerBox_DeliverScript	1
+0x004f5c78	32	HandleArray60_Clear	1
+0x004f5c98	48	HandleArray60_IndexOf	1
+0x004f5cc8	96	HandleArray60_AddInFreeSlot	1
+0x004f5d28	68	HandleArray60_Remove	1
+0x004f5d70	12	HandleArray60_At	1
+0x004f5d80	124	SafeDelete_TurfBoxPool	1
+0x004f5e18	200	TurfBoxPool_DeletingDtor	1
+0x004f5ef0	112	TurfBoxPool_New	1
+0x004f5f60	92	TurfBoxPool_Alloc	1
+0x004f6038	96	TurfBoxPool_Delete	1
+0x004f60d8	212	VolumeBoxFreeList_Delete	1
+0x004f61b0	24	HandleArray60_ClearAt	1
+0x004f61e8	28	VolumeBox_DeliverScript	1
+0x004f6208	68	SafeFree_FlagPoolDestroy	1
+0x004f6250	108	SafeDeleteDirect_FlagPoolDestroy	1
+0x004f6428	28	SaveDate_Clear	1
+0x004f64c8	40	SaveDate_Construct	1
 0x004f6500	108	BinkMovie_Delete	1
