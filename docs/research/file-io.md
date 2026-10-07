@@ -46,6 +46,50 @@ Key functions (names ours):
 | `0x00154d50` | `FileManager_Request` | queue an asynchronous whole-file read | confirmed (code) |
 | `0x00154ae0` | `FileManager_Service(fm, block)` | start/finish queued reads | confirmed (code) |
 
+The other functions of `FileIO/` (`0x00153f60`-`0x00155b30`), names ours. The vtable slots are those of
+[the file interface](#file-interface) and [the file system interface](#file-system-interface). Several one- and
+two-instruction methods had no function in Ghidra and were made there (marked *made*).
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x00153f60` | `FSToStreamFile_Init(file, name, streamFs)` | the embedded file's open: copies the name (63 chars), keeps the stream file system, position 0 | confirmed (code) |
+| `0x00154068` | `FSToStreamFile_Write` (*made*) | slot `+0x58`: does nothing | confirmed (code) |
+| `0x00154070` / `0x00154078` | `FSToStreamFile_Seek` / `_Tell` (*made*) | slots `+0x60` / `+0x68`: set / return the position `+0x04` | confirmed (code) |
+| `0x00154080` | `FSToStreamFile_GetSize` | slot `+0x70`: the stream file system's `GetSize(name)` | confirmed (code) |
+| `0x001540b0` | `FSToStreamFile_Close` | slot `+0x78`: does nothing | confirmed (code) |
+| `0x001540c0` | `FSToStreamFSFileSys_Init(fs, streamFs)` | keeps the stream file system, marks the file free | confirmed (code) |
+| `0x001540d0` / `0x00154100` | `FSToStreamFSFileSys_Exists` / `_GetSize` | slots `+0x50` / `+0x58`: forward the name to the stream file system | confirmed (code) |
+| `0x00154130` | `FSToStreamFSFileSys_Open(fs, name)` | slot `+0x60`: marks the one embedded file in use and opens it (`0x00153f60`); never refuses, even when it is already open | confirmed (code) |
+| `0x00154168` | `FSToStreamFSFileSys_Close` | slot `+0x68`: marks the file free | confirmed (code) |
+| `0x00154530` | `BufferedStream_Clear` | zeroes the fields before the set-up | confirmed (code) |
+| `0x00154550` | `BufferedStream_Attach(s, file, buffer, size)` | the set-up of [BufferedStream](#bufferedstream): reads the file's size through its slot `+0x70` | confirmed (code) |
+| `0x001545a0` | `File_Destroy(file, flags)` | the file base class's destructor (vtable `0x00534298`), slot `+0x08` of `BufferedStream`; frees itself when bit 0 is set | confirmed (code) |
+| `0x001545d0` | `BufferedStream_Take(s, dst, n)` | copies `n` bytes from the buffer cursor and moves the cursor, the bytes left and the position | confirmed (code) |
+| `0x001546f8` / `0x00154700` | `BufferedStream_Write` / `_Seek` (*made*) | slots `+0x58` / `+0x60`: do nothing (reads are forward-only) | confirmed (code) |
+| `0x00154708` / `0x00154710` | `BufferedStream_Tell` / `_GetSize` (*made*) | slots `+0x68` / `+0x70`: `+0x14` / `+0x18` | confirmed (code) |
+| `0x00154718` | `BufferedStream_Detach` | slot `+0x78`: forgets the buffer (the `s.detach()` of [Synchronous reads](#synchronous-reads)); 7 loaders call it | confirmed (code) |
+| `0x001547b0` | `FileManager_Create` | allocates the 0x48-byte `FileManager` in the system pool, sets up the queue, calls `0x001548c0`, stores it in `g_FileManager` (`0x005e5340`) | confirmed (code) |
+| `0x001548c0` | `FileManager_Init` | takes the device's stream file system, allocates the `File Stream Buffer` | confirmed (code) |
+| `0x00154950` | `FileManager_FreeBuffer` | frees the `File Stream Buffer` (from the destructor `0x004dd9b8`, link-once code) | confirmed (code) |
+| `0x001549a8` | `FileManager_IsBusy` | `+0x08` | confirmed (code) |
+| `0x001549b0` | `FileManager_IsInFlightDone` | busy and the stream file's `IsDone` | confirmed (code) |
+| `0x001549f8` | `FileManager_WaitInFlight` | the stream file's `Wait` | confirmed (code) |
+| `0x00154a28` | `FileManager_GetFileSize(fm, name)` | the stream file system's `GetSize(name)`; the scene cache sizes its `scene_list.cnk` request with it (`0x003535e8`) | confirmed (code) |
+| `0x00154a68` | `FileManager_QueueLength` | requests waiting in the queue (a deque of 0x54-byte requests, 6 to a node); the world streamer and resource loaders poll it | confirmed (code) |
+| `0x00154ee8` | `Gpu_DmaHangCallback(active, value)` | the callback the graphics driver calls while it waits for the GPU ([Graphics](graphics.md)): keeps `value` in `0x0050c6a8`, or prints `DMA Hang` when it is `0xcdcdcdcd` | confirmed (code) |
+| `0x00155a90` / `0x00155b10` | `StreamManager_StaticInit` / its stub | the unit's static initialiser: sets 22 words `0x005e5348`-`0x005e539c` to 1 (the world toggles, [The streamed world](world.md)); the stub ends `StreamManager.cpp` | confirmed (code) |
+
+The same unit also holds the push-or-pop helpers of several game modes, documented on their own pages:
+`PauseMenu_Toggle` (`0x00154f28`, [Pause](pause.md)), `MissionSelect_Show` (`0x00155180`: pushes mode 0x10 unless
+it is on top, after storing the two Lua callbacks), `GameStats_Show` (`0x001551e0`: mode 0x13 with a close callback),
+`RumbleMenu_Show` (`0x00155228`) and `ProfileManager_Show` (`0x001552b0`, [Front end](frontend.md)),
+`Autosave_Request` (`0x00155308`, [Save](save.md)), `SSMC_StartLoadSequence` / `SSMC_StartDeleteSequence`
+(`0x00155378` / `0x001553c0`: push the memory-card mode 6 set to load or delete, [Front end](frontend.md)),
+`MissionFailed_Toggle` (`0x00155408`, mode 0xc, [Pause](pause.md)), `RumbleResult_Toggle` (`0x00155648`, mode
+0x14, [Rumble](rumble.md)) and `ANGameOver_Toggle` (`0x001557f8`, mode 0xd, the Armies of the Night game over). Each
+pushes its mode when it is not on top and otherwise pops it and acts on the result. Confirmed (code). That they sit in
+`StreamManager.cpp` rather than a unit of their own is inferred from position (the next stub is `0x00155b10`).
+
 ## Data
 
 All classes use the GCC 2 vtable layout (8-byte `{delta, fn}` slots, see [Compiler](compiler.md)); slot offsets
@@ -179,18 +223,18 @@ A request is 0x54 bytes, confirmed (code) at `0x00154d50`:
 Its functions, all in `FileIO/FS_MemoryFile.cpp` (names ours, in the `FS_MemoryFile::` style of the class tag),
 confirmed (code):
 
-| Address | Name | Slot | Behaviour |
-| --- | --- | --- | --- |
-| `0x001541e0` | `FS_MemoryFile(capacity)` | | allocates `capacity` bytes from the current pool (tag `unsigned char`, align 16); size = capacity = `capacity`, position 0, owns the data |
-| `0x00154268` | `FS_MemoryFile(buffer, size, capacity)` | | wraps an existing buffer without owning it |
-| `0x00154290` | `~FS_MemoryFile` | `+0x08` | frees owned data into the current pool ([Memory](memory.md#the-heap-stack)) |
-| `0x00154320` | `Read(dst, n)` | `+0x50` | copies from data + position, advances |
-| `0x00154370` | `Write(src, n)` | `+0x58` | copies to data + position, advances, raises the size |
-| `0x001543c8` | `Seek(position)` | `+0x60` | sets the position |
-| `0x001543d0` | `Tell()` | `+0x68` | the position |
-| `0x001543d8` | `GetSize()` | `+0x70` | the size |
-| `0x001543e0` | `Release()` | `+0x78` | frees owned data; data = null |
-| `0x00154438` | `GetData()` | `+0x88` | the data pointer |
+| Address | Name | Slot | Behaviour | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x001541e0` | `FS_MemoryFile(capacity)` | | allocates `capacity` bytes from the current pool (tag `unsigned char`, align 16); size = capacity = `capacity`, position 0, owns the data | confirmed (code) |
+| `0x00154268` | `FS_MemoryFile(buffer, size, capacity)` | | wraps an existing buffer without owning it | confirmed (code) |
+| `0x00154290` | `~FS_MemoryFile` | `+0x08` | frees owned data into the current pool ([Memory](memory.md#the-heap-stack)) | confirmed (code) |
+| `0x00154320` | `Read(dst, n)` | `+0x50` | copies from data + position, advances | confirmed (code) |
+| `0x00154370` | `Write(src, n)` | `+0x58` | copies to data + position, advances, raises the size | confirmed (code) |
+| `0x001543c8` | `Seek(position)` | `+0x60` | sets the position | confirmed (code) |
+| `0x001543d0` | `Tell()` | `+0x68` | the position | confirmed (code) |
+| `0x001543d8` | `GetSize()` | `+0x70` | the size | confirmed (code) |
+| `0x001543e0` | `Release()` | `+0x78` | frees owned data; data = null | confirmed (code) |
+| `0x00154438` | `GetData()` | `+0x88` | the data pointer | confirmed (code) |
 
 None checks bounds. A file made with a capacity starts with its size equal to that capacity, not 0. The last
 function of the file, `0x00154440` (`Stream_SkipBytes(file, n)`), is not a method: it skips `n` bytes of any file by

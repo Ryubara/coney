@@ -1393,7 +1393,7 @@ GoalBumLogic(human, bumType, option, chance, value, callback, option2)
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the bum. |
 | 2 | `bumType` | number, truncated to an unsigned integer | Behaviour type 0, 1 or 2 (scripts give each bum of a group a different one; type 2 calls come with a chance and an extra number). |
-| 3 | `option` | boolean (nil or 0 is false); default true | A flag (default true). |
+| 3 | `option` | boolean (nil or 0 is false); default true | Adds the dealer's radar icon at the greeting (default true). |
 | 4 | `chance` | number, truncated to an unsigned integer | A percentage, clamped to 100 (scripts use 75; inferred: the chance to beg or react). |
 | 5 | `value` | number, truncated to an integer; default 3 | A number (default 3). |
 | 6 | `callback` | string | Name of a Lua function called by the goal, or nil. |
@@ -1644,10 +1644,10 @@ GoalDealer(human, dealerType, range, runChance, dirtyChance, option)
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the dealer. |
 | 2 | `dealerType` | number, truncated to an integer | Dealer type 0, 1 or 2; overridden by the human's character class when it is one of the dealer classes (0x1aa-0x1ae give 0, 0x1af-0x1b3 give 2, 0x1b4-0x1b8 give 1). |
-| 3 | `range` | number (single precision); default 10 | A distance in metres (default 10; inferred: how close the player must come to deal). |
-| 4 | `runChance` | number, truncated to an unsigned integer; default 50 | Percentage chance (0-100, default 50) stored with the goal; scripts call it `chance2Run` (inferred: the dealer runs when approached). |
+| 3 | `range` | number (single precision); default 10 | Metres within which the dealer greets the nearest player and offers the deal (default 10). |
+| 4 | `runChance` | number, truncated to an unsigned integer; default 50 | Percentage chance (0-100, default 50) that the dealer flees rather than fights when attacked; scripts call it `chance2Run`. |
 | 5 | `dirtyChance` | number, truncated to an unsigned integer | Percentage chance (0-100) that this dealer is dirty: the goal rolls it once when made; scripts call it `chance2BDirty`. |
-| 6 | `option` | boolean (nil or 0 is false); default true | A flag (default true). |
+| 6 | `option` | boolean (nil or 0 is false); default true | Adds the dealer's radar icon at the greeting (default true). |
 
 **Returns** nothing.
 
@@ -1655,7 +1655,7 @@ Makes a human act as a street dealer the player can buy flash from; whether this
 roll against `dirtyChance` when the goal is made. Levels use it for the flash dealers, including the mission-1 area.
 
 **Notes.** Wrapper 0x002c6c88 remaps the type by class; constructor 0x002c6d90 rolls `random(100) < dirtyChance` into
-`+0x41`. The other arguments' roles are inferred from the scripts' field names.
+`+0x41`. The goal's behaviour is on the AI page (GoalDealer).
 
 - **Evidence:** confirmed (code) at `0x002c6c88`; detail: traced
 - **Wrapper** `0x00363018` (registered by `RegisterBindings`); **calls** `0x002c6c88` `Goal_Dealer`
@@ -2744,11 +2744,12 @@ Pushes a run-carrot goal on the human: it runs the path point to point like Goal
 move-to-point goal per point) and ends when the path runs out. Each update it finds the nearest member of the chasing
 gang and sets its speed to the gait's speed plus up to 6 m/s: by default the boost is `1 - d/distance` when that chaser
 is closer than `distance` (so a caught-up carrot sprints away), with `keepAhead` it is `min((d - distance) * 0.2, 1)`.
-It also raises a brain byte (`+0x0b`, 0/2/3 for boosts of 0, up to 0.5, above 0.5) that is restored when the goal ends.
+It also raises a brain byte (`+0x0b`, 0/2/3 for boosts of 0, up to 0.5, above 0.5) that is restored when the goal ends:
+the brain's turn boost, so the runner turns 3 or 4 times as fast while a chaser is close.
 
-**Notes.** Speed is recomputed only while brain flags `+0x34 & 3` are clear. The meaning of brain `+0x0b` (set via
-0x0028cdf8, forced 0 in some human states) is not traced; inferred: a panic/urgency level for the run animation. No
-chaser alive: speed stays the gait's.
+**Notes.** Speed is recomputed only every fourth update (brain `+0x34 & 3` clear). Brain `+0x0b` (Brain_SetTurnBoost
+0x0028cdf8) multiplies an AI human's turn limit by (b + 1); see the AI page (Brain bytes). No chaser alive: speed stays
+the gait's.
 
 - **Evidence:** confirmed (code) at `0x002e1140`, `0x002e1230`, `0x002e13c0`, `0x002e15e8`; detail: traced
 - **Wrapper** `0x00360c10` (registered by `RegisterBindings`); **calls** `0x002e1140` `Goal_RunCarrot`, `0x002e1230`
@@ -3128,7 +3129,7 @@ TacticAddress(gang, value, name1, approach, range, option, target, callback, opt
 | 3 | `name1` | string | A name. |
 | 4 | `approach` | number, truncated to an unsigned integer; default 3 | A distance (default 3). |
 | 5 | `range` | number, truncated to an unsigned integer; default 6 | A distance (default 6). |
-| 6 | `option` | boolean (nil or 0 is false); default true | A flag (default true). |
+| 6 | `option` | boolean (nil or 0 is false); default true | Adds the dealer's radar icon at the greeting (default true). |
 | 7 | `target` | number, truncated to an unsigned integer | A handle. |
 | 8 | `callback` | string | Name of the Lua function that receives the tactic's events, or nil. |
 | 9 | `option2` | boolean (nil or 0 is false); default true | A flag (default true). |
@@ -3237,14 +3238,14 @@ TacticBossScenarioA(gang, stage, flags, vargasObjects, minionObjects, diegoFatig
 | 3 | `flags` | table of 2 numbers (t[1]..t[2]) | Two flag handles (tactic `+0x20`): Vargas's throwing spot in stage 2 and his spot in stage 3; a flag that stops resolving is cleared to the null handle. |
 | 4 | `vargasObjects` | table of 8 numbers (t[1]..t[8]) | Eight object type ids (kept as 16 bits, `+0x30`) Vargas picks up and throws. |
 | 5 | `minionObjects` | table of 8 numbers (t[1]..t[8]) | Eight object type ids (`+0x40`) the other gang members throw from a stationary-thrower goal. |
-| 6 | `diegoFatigue` | table of 3 numbers (t[1]..t[3]) | Three bytes (`+0x50`) handed to Diego's boss goal, one per stage (inferred: fatigue times). |
-| 7 | `vargasFatigue` | table of 3 numbers (t[1]..t[3]) | Three bytes (`+0x53`) for Vargas's goals; stage 2 uses the second. |
-| 8 | `diegoDamage` | table of 3 numbers (t[1]..t[3]) | Three damage percentages (`+0x56`) handed to Diego's boss goal. |
-| 9 | `vargasDamage` | table of 3 numbers (t[1]..t[3]) | Three damage percentages (`+0x59`) for Vargas; stage 2 uses the second. |
-| 10 | `diegoProne` | table of 3 numbers (t[1]..t[3]) | Three prone percentages (`+0x5c`) handed to Diego's boss goal. |
-| 11 | `vargasProne` | table of 3 numbers (t[1]..t[3]) | Three prone percentages (`+0x5f`) for Vargas's stage-3 goal. |
-| 12 | `diegoCycles` | table of 3 numbers (t[1]..t[3]) | Three cycle counts (`+0x62`); Diego's goal gets the one of the current stage. |
-| 13 | `vargasCycles` | table of 3 numbers (t[1]..t[3]) | Three cycle counts (`+0x65`); Vargas's goal gets the one of the current stage. |
+| 6 | `diegoFatigue` | table of 3 numbers (t[1]..t[3]) | Diego's tired time in seconds, per stage (`+0x50`). |
+| 7 | `vargasFatigue` | table of 3 numbers (t[1]..t[3]) | Vargas's tired time in seconds, per stage (`+0x53`). |
+| 8 | `diegoDamage` | table of 3 numbers (t[1]..t[3]) | Percent of Diego's maximum health the players may take while he is tired, per stage (`+0x56`). |
+| 9 | `vargasDamage` | table of 3 numbers (t[1]..t[3]) | Percent of Vargas's maximum health the players may take while he is tired, per stage (`+0x59`). |
+| 10 | `diegoProne` | table of 3 numbers (t[1]..t[3]) | Three bytes (`+0x5c`) stored in Diego's goal and never read. |
+| 11 | `vargasProne` | table of 3 numbers (t[1]..t[3]) | Three bytes (`+0x5f`) stored in Vargas's stage-3 goal and never read. |
+| 12 | `diegoCycles` | table of 3 numbers (t[1]..t[3]) | Three bytes (`+0x62`); Diego's goal stores the stage's one and never reads it. |
+| 13 | `vargasCycles` | table of 3 numbers (t[1]..t[3]) | Throws before Vargas tires in stage 2 (`+0x65`; the stage-3 goal stores but ignores its own). |
 | 14 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
@@ -3256,9 +3257,10 @@ stationary-thrower goal with `minionObjects`. Diego's health is capped per stage
 on reaching it he plays a break animation and the callback gets 18 `TacAnimStart`, or 1 `TacFinished` when his goal
 reports the break done; in stage 3 it reports 1 once neither boss is still standing.
 
-**Notes.** The wrapper writes every table back unchanged. Exact meaning of the fatigue, damage, prone and cycle bytes
-lives in the boss goals (0x002e8288, 0x002ed0a8), not traced. Members are re-assigned goals on events 19 and 22 (OnEvent
-0x0030a798); Vargas's stage-3 break count is tactic `+0x69`. Vtable 0x00543440.
+**Notes.** The wrapper writes every table back unchanged. Fatigue is the seconds a tired boss stays stunned, damage the
+percent of his maximum health that ends it early, cycles Vargas's throws before he tires (stage 2); prone, and the
+BigBrawler's cycles, are stored but never read (AI page, The Diego and Vargas fight). Members are re-assigned goals on
+events 19 and 22 (OnEvent 0x0030a798); Vargas's stage-3 break count is tactic `+0x69`. Vtable 0x00543440.
 
 - **Evidence:** confirmed (code) at `0x00309a40`, `0x00309b60`, `0x0030a6c0`, `0x0030a738`, `0x0030a798`, `0x00309ea0`;
   detail: traced

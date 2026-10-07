@@ -41,8 +41,8 @@ Names are ours unless they come from a path or tag string.
 | `0x0040e8d8` | `WorldManager_Render(viewport)` | same | the world part of a frame ([The streamed world](world.md#a-frame)) | confirmed (code) |
 | `0x0040f5b8` | `WorldManager_Unload(keepLevelFile)` | same | the worlds, the water, the level file | confirmed (code) |
 | `0x0040c688` | `WorldLevel_Load(name)` | `World/` (between tolua and `WorldLevel.cpp`) | `<name>.lev` through the chunk system | confirmed (code) |
-| `0x0040ce30` | chunk `0x17` handler | `World/ps2/WorldLevelPS2.cpp` region | builds the level object | confirmed (code) |
-| `0x0040cf40` / `0x0040cf80` | level object constructor / destructor | `World/ps2/WorldLevelPS2.cpp` | | confirmed (code) |
+| `0x0040ce30` | `LevelHeader_OnLoaded` (chunk `0x17` handler) | `World/ps2/WorldLevelPS2.cpp` region | builds the level object | confirmed (code) |
+| `0x0040cf40` / `0x0040cf80` | `LevelObject_Construct` / `_Destroy` | `World/ps2/WorldLevelPS2.cpp` | | confirmed (code) |
 | `0x0040cdd8` | `LevelModel_LinkFirstTexture` | same | gives a sky, cloud or skyline model its pipelines and its texture | confirmed (code) |
 | `0x0040d088` | `LevelObject_SetOccluders` | same | stores the occluders and converts their points (`0x0017a560`) | confirmed (code) |
 | `0x0040d0a8` | `LevelObject_RenderBackground(viewport)` | same | sky, clouds and skyline, before the world | confirmed (code) |

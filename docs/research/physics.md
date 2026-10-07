@@ -1,15 +1,17 @@
 # Physics
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Static reading in Ghidra
-(2026-10-06); no runtime claims yet.
+(2026-10-06, the whole of `Physics/` on 2026-10-07); no runtime claims yet.
 
 ## Purpose
 
 The physics world is what moving things collide through: the bodies and shapes of humans and world objects, the
-sweep that moves a body against the level's [collision mesh](collision.md), and a small per-tick step. It is **not a
-rigid-body simulator**: nothing in it integrates velocities, resolves body-against-body contacts or applies impulses.
-Each mover integrates itself in its own update (humans in [`Humans_Update`](tasks.md#humans-update), world objects
-on the [wheel](tasks.md#wheel)) and asks the physics world to sweep it.
+sweep that moves a body against the level's [collision mesh](collision.md) and the other bodies, the queries other
+code asks (a shape, a box or a ray against the world), and a small per-tick step. It is **not a rigid-body
+simulator**: nothing in it integrates velocities or applies impulses, and a contact changes only the moving body's
+velocity, as its owner's contact handler decides ([Contacts](#contacts)). Each mover integrates itself in its own
+update (humans in [`Humans_Update`](tasks.md#humans-update), world objects on the [wheel](tasks.md#wheel)) and asks
+the physics world to sweep it.
 
 The **60 Hz step** (`0x00340918`, called on every tick of [the play tick](tasks.md#tick)) does two small jobs: it
 plays the "settle" turn of a thrown or dropped object that has landed, and every 2 s it refreshes a broad-phase
@@ -26,20 +28,31 @@ block allocator, so `0x0033c288`-`0x003418f8` is `Physics/` too (inferred; no pa
 `c:/Warriors/Source/Physics/`. Inferred for the absence: no string of the executable names Havok, Karma, Meqon, ODE
 or a ragdoll, and the linked libraries ([Source map](source-map.md#middleware)) include no physics library.
 
+Every function of `Physics/` (`0x0033c288`-`0x0034f740`), by area; the sections below say what each does. Names are
+ours (some set by the [Combat](combat.md) analyst) and match the local Ghidra project; all confirmed (code) at the
+address unless a section says otherwise.
+
+| Area | Functions | Evidence |
+| --- | --- | --- |
+| The world | `IPhysics_Construct` `0x0033c288`, `IPhysics_Step` `0x00340918`, `Physics_StaticInit` `0x0034f6c0` and its stub `0x0034f718` (copy a 48-byte constant from `0x00511720` to `0x006eb9e0`) | confirmed (code) |
+| [Bodies](#bodies) | create and free: `IPhysics_CreateHumanBody` `0x0033cc48` / `_FreeHumanBody` `0x0033ce00`, `_CreatePunchBagBody` `0x0033cb08` / `_FreePunchBagBody` `0x0033cbf0`, `_CreateObjectBody` `0x0033ce58` / `_FreeObjectBody` `0x0033cf00`, `_CreateCarBody` `0x0033cf68` / `_FreeCarBody` `0x0033cff8`, `Physics_CreateBoxBody` `0x0033d070` / `IPhysics_FreeBoxBody` `0x0033d158`; lists: `IPhysics_AddBody` `0x00340668`, `_RemoveBody` `0x00340700`, `_AddHumanBody` `0x003407a0`, `_RemoveHumanBody` `0x003407f8`, `BodyList_Insert` / `_Remove` / `_Reinsert` `0x003404a8` / `0x003405d8` / `0x00340628`; the body: `PhysicsNode_Init` `0x00341158`, `PhysicsBody_Construct` `0x003418f8`, `_ConstructForOwner` `0x00341970`, `_Destroy` `0x00341a00`, `_SetOwner` `0x00341a68`, `_AddShape` `0x00341aa8`, `_GetShapes` `0x00341ae0`, `_Update` `0x00341c10`, `_Moved` `0x00341e40`, `_GetContactScale` `0x00341e18`, `_ComputeBounds` `0x00341638`, `_AddShapeBounds` `0x003417c0` | confirmed (code) |
+| [Shapes](#shapes) | pools: `IPhysics_AllocObjectSphere` `0x0033d1a0`, `_AllocObjectBox` `0x0033d1e8`, `_AllocCarBox` `0x0033d230`, `_AllocBigSphere` `0x0033d278`, `_FreeShape` `0x0033d2c8`, `_FindFreeStrikeSphere` `0x003408d8`; base: `PhysicsShape_Construct` / `_Destroy` `0x00342a30` / `0x00342a70`, `PhysicsShape_GetBounds` `0x00341190`; sphere `0x00342aa0` / `0x00342ae0` / pose `0x00342b08`; box `0x00342d18` / `0x00342d98`, `PhysicsBox_SetSize` `0x00342dc0`, pose `0x00342df8`, `_SetMatrix` `0x00343040`, `_GetBounds` `0x003430e8`; capsule `0x003434a8` / `0x003434e0`, size `0x00343508`, pose `0x00343518`; segment `0x003437b0` / `0x003437e8`, pose `0x00343810`; `AABB_FromSphere` `0x00341660` (and `0x00341708`), `AABB_ExtendByMove` `0x00341840`, `AABB_ScaleAboutCentre` `0x003414c0` | confirmed (code) |
+| [The human body](#human-body) | `PhysicsHumanBody_Construct` `0x00341e98`, `_Destroy` `0x00341f00`, `PhysicsBody_ApplyHumanScale` `0x00341f28`, `PhysicsHumanBody_SetPushSphere` `0x003420d0`, `_GetShapes` `0x003420c8`, `_OnStruck` `0x00342130`, `_AddStrikeSphere` `0x00342158`, `_ClearStrikeSpheres` `0x00342168`, `_GetContactScale` `0x00342288`, `_Update` `0x003422d0`, `_PushAwayHumans` `0x003425c0`, `_Moved` `0x00342828`, `PhysBody_SetShapeEnabled` `0x003428d0`, `_AddBoneShape` `0x003429e8`, `Human_TestStrikes` `0x0033f110` ([Combat](combat.md#moving-strikes)) | confirmed (code) |
+| [Ignore lists](#ignore-lists) | `IPhysics_FindFreeIgnoreSlot` `0x00340890`, `IPhysics_ForgetIgnoredOwner` `0x0033cd70`, `PhysicsBody_IsIgnoring` / `_Ignore` / `_StopIgnoring` `0x00341ae8` / `0x00341b20` / `0x00341b80`, the human body's `0x003421d0` / `0x00342230` / `0x00342260` | confirmed (code) |
+| [Queries](#queries) | `IPhysics_QueryBox` `0x0033feb0`, `_QueryBoxFiltered` `0x00340120`, `_CollideShape` `0x0033e7f0`, `_OverlapShape` `0x0033ebb8`, `_RayCastBodies` `0x0033eee0` | confirmed (code) |
+| [Sweeping a body](#sweep) | `PhysicsBody_Sweep` `0x0033e278`, `IPhysics_SweepShapeVsMesh` `0x0033d2d8`, `_SweepBodyVsMesh` `0x0033d340`, `PhysicsBody_SweepHumanMask` `0x0033d498` (against the bodies), `PhysicsBody_PushOutOfWalls` `0x003477c0` ([Characters](characters.md#walls)) | confirmed (code) |
+| [Contacts](#contacts) | `Contact_InsertSorted` `0x0033d718`, `PhysicsBody_ResolveContacts` `0x0033d9d8`, `PhysicsVec_BackOffPlane` `0x0033d7b8`, `Vec_RemoveNormalPart` `0x0033d870`, `PhysicsVec_Bounce` `0x0033d8f0` | confirmed (code) |
+| [Shape pairs](#dispatch) | 14 overlap functions `0x00345d58`-`0x00347148`, 16 sweep functions `0x00343cd8`-`0x00345d38`, 2 ray functions `0x003459f0`, `0x00345b90`, the mesh functions `0x003473b8`, `0x003473c0`, `0x003473c8`, `0x00347c08`, `0x00348530`, `0x00348a50` | confirmed (code) |
+| [Mesh tests](#mesh-tests) | `CollisionMesh_BeginShapeQuery` `0x00347170`, `MeshContacts_SortByFraction` `0x00347300`, the working triangle `0x00343a90`, `0x00343b20`, `0x00343c30`, `0x00343c90` | confirmed (code) |
+| [Geometry kernels](#kernels) | `0x00349180`-`0x0034ee60` (37 functions) | confirmed (code) |
+| [Settling](#settle) | `IPhysics_StartSettle` `0x00340fe0`, `_CancelSettle` `0x003410f0`, `Settle_ComputeTarget` `0x00340d08`, `Settle_NearestAxis` `0x00340b38` | confirmed (code) |
+
+Outside `Physics/`:
+
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
-| `0x0033c288` | `IPhysics_Construct` | the pools, the shape-dispatch tables, the human body sets | confirmed (code) |
-| `0x00340918` | `IPhysics_Step` | the 60 Hz step: settle turns, broad-phase bound refresh | confirmed (code) |
-| `0x003404a8` / `0x003405d8` / `0x00340628` | `BodyList_Insert` / `_Remove` / `_Reinsert` | the bodies sorted by AABB min x | confirmed (code) |
-| `0x00340fe0` | `IPhysics_StartSettle(phys, obj, normal)` | takes a settle slot for an object | confirmed (code) |
-| `0x003410f0` | `IPhysics_CancelSettle(phys, obj)` | frees the object's slot, clears its `0x40000` | confirmed (code) |
-| `0x00340d08` | `Settle_ComputeTarget` | the end rotation of a settle | confirmed (code) |
-| `0x00340b38` | `Settle_NearestAxis` | the object's local axis nearest a direction | confirmed (code) |
 | `0x00336a00` | `Quat_Slerp(t, out, from, to)` | spherical interpolation, shortest arc | confirmed (code) |
 | `0x00335b08` | `Quat_IntegrateAngular(dt, q, ω)` | `q += ½ ω q dt`, normalised | confirmed (code) |
-| `0x003418f8` | `PhysicsBody_Construct` | a 0x80-byte body | confirmed (code) |
-| `0x00341e40` | `PhysicsBody_Moved` | updates the shape, re-sorts the body | confirmed (code) |
-| `0x0033e278` | `PhysicsBody_Sweep` | moves a body against the mesh ([Characters](characters.md#walls)) | confirmed (code) |
 | `0x00394050` | `WorldObject_OnContact` | the world object's contact handler (vtable `0x005453a0` `+0xfc`) | confirmed (code); role inferred |
 | `0x00395a10` | `WorldObject_Integrate` | the world object's integrator (vtable `+0x144`) | confirmed (code) |
 | `0x00395b70` | `WorldObject_Update` | the world object's update (vtable `+0x13c`) | confirmed (code) |
@@ -57,30 +70,151 @@ Confirmed (code) at `0x0033c288` and the step. Pool sizes are counts × bytes.
 
 | Offset | Type | Meaning |
 | --- | --- | --- |
+| `+0x04` | ptr | head of the human body list ([below](#human-body)) |
 | `+0x08` | ptr | head of the body list, sorted by AABB min x |
 | `+0x12` | u16 | ticks since the last bound refresh (0-119) |
 | `+0x14` | float | the widest body in x, `max(max.x − min.x)` |
-| `+0x18`-`+0x11c` | fn tables | per-shape-type functions; `+0xec` is `PhysicsMesh_SweepCapsule` (`0x00347c08`), the walking sphere's sweep |
-| `+0x120` | 300 × 0x60 | shapes |
-| `+0x71a0` | 300 × 0x70 | shapes |
-| `+0xf7b0` | 60 × 0x60 | shapes |
+| `+0x18` / `+0x7c` | 5 × 5 fns | the shape-pair [overlap and sweep tables](#dispatch) |
+| `+0xe0` / `+0xf4` / `+0x108` | 5 fns each | per shape type: sweep against the level mesh, overlap with it, a ray against the shape |
+| `+0x120` | 300 × 0x60 | spheres: the humans' five bone spheres each |
+| `+0x71a0` | 300 × 0x70 | segments: the humans' five bone segments each |
+| `+0xf4e0` | 60 × 12 | the [ignore slots](#ignore-lists) |
+| `+0xf7b0` | 60 × 0x60 | spheres for weapon strike spheres (`0x003408d8`), switched off at construction |
 | `+0x10e30` | 60 × 0x60 | the humans' capsules, made with (2.0, 0.35) by `0x00343508` |
-| `+0x124b0` | 60 × 0xe0 | the humans' bodies: each holds its capsule (`+0x30`) and ten bone shapes (below) |
-| `+0x15930` / `+0x22930` / `+0x2c530` | 416 × 0x80 / 0x60 / 0x90 | bodies, shapes, shapes |
-| `+0x3af30` / `+0x42eb0` | 255 × 0x80 / 0x90 | bodies, shapes |
-| `+0x4be20` / `+0x4c720` / `+0x4db60` | 18 × 0x80 / 36 × 0x90 / 30 × 0x60 | bodies, shapes, shapes |
+| `+0x124b0` | 60 × 0xe0 | the humans' bodies: each holds its capsule (`+0x30`) and ten bone shapes |
+| `+0x15930` / `+0x22930` / `+0x2c530` | 416 × 0x80 / 0x60 / 0x90 | world objects: bodies, spheres, boxes |
+| `+0x3af30` / `+0x42eb0` | 255 × 0x80 / 0x90 | glass panes: bodies, boxes |
+| `+0x4be20` / `+0x4c720` | 18 × 0x80 / 36 × 0x90 | cars: bodies, boxes |
+| `+0x4db60` | 30 × 0x60 | 2.0 m spheres: the humans' push spheres |
 | `+0x4e6a0` | 64 × 0x30 | settle slots (below) |
-| `+0x4f2a0`-`+0x4f3f0` | | one more human body set (capsule 0.35, `+0x4f3e4` = 1.5) |
+| `+0x4f2a0`-`+0x4f3f0` | | the punch bag's body set: a human body, one segment (bone 3, radius 0.35, length 1.5) and a capsule |
+| `+0x4f450`-`+0x4f45c` | vector | every live body, by index (body `+0x20`) |
 
-The 60 human body sets match the 60 human slots ([AI humans](ai.md)), inferred. Each gets five 0x70 shapes on
-bones 3, 24, 18, 32, 29 and five 0x60 shapes on bones 6, 25, 19, 33, 30 (the byte at shape `+0x31`; reading it as a
-bone index is inferred), probably the volumes hits test against (speculative).
+The 60 human body sets match the 60 human slots ([AI humans](ai.md)), inferred. Who allocates from which pool is
+confirmed (code) by the callers: `Obj_CreatePhysicsBody` (world objects), `GlassPane_CreateBody`, `Car_MakeBodies`.
 
-**Body** (0x80, `0x003418f8`): `+0x00` AABB min, `+0x10` AABB max, `+0x24`/`+0x28` previous/next in the sorted list,
-`+0x30` shape, `+0x40` flags (`0x80000400` at construction; the step sets `0x80000000`), `+0x50` pending push-out,
-`+0x60` scale, `+0x74` vtable (`0x00544710`).
+### Bodies {#bodies}
 
-**Settle slot** (0x30), free when `+0x00` is 0:
+**Body** (0x80, `PhysicsBody_Construct` `0x003418f8`, vtable `0x00544710`). Confirmed (code):
+
+| Offset | Meaning |
+| --- | --- |
+| `+0x00` / `+0x10` | AABB min / max (w = 1) |
+| `+0x20` | index in the body vector, −1 when none (`PhysicsNode_Init` `0x00341158`) |
+| `+0x24` / `+0x28` | previous / next in the x-sorted list |
+| `+0x30` | first shape (a chain through shape `+0x00`) |
+| `+0x34` | owner (a task object); free when 0 |
+| `+0x38` | ignore list ([below](#ignore-lists)) |
+| `+0x3c` | group (s16): two bodies of the same non-zero group never touch |
+| `+0x40` | flags: `0x80000000` dirty (re-pose and re-sort on the next update), `0x800` update every time, `0x801` sweep the moved shape against the bodies in the update, `0x8000` no slide on contact; the starting values per kind are below |
+| `+0x44` | the owner's type mask, from owner vtable `+0x20` (`0x40` a human); queries filter by it |
+| `+0x50` | pending push-out, added to the next sweep's move |
+| `+0x60` | scale per axis (1.0; the player's capsule 1.4286, [Characters](characters.md#walls)) |
+| `+0x70` | the sweep's "could not move" counter |
+| `+0x74` | vtable |
+
+Body vtable: `+0x08` destructor (`0x00341a00`), `+0x10` `Update` (`0x00341c10`), `+0x18` `Moved` (`0x00341e40`),
+`+0x20` `AddShape` (`0x00341aa8`), `+0x28` `GetShapes` (`0x00341ae0`), `+0x30` / `+0x38` / `+0x40` the ignore
+list, `+0x48` `GetContactScale` (`0x00341e18`: 1.0 for a contact with a body, 0.98 with the mesh).
+
+The create functions take the first free body of a pool (owner 0), set the owner (`0x00341a68`) and flags, and add
+it to the body vector and the sorted list (`IPhysics_AddBody` `0x00340668`); the free functions undo that
+(`IPhysics_RemoveBody` `0x00340700`, which first clears the owner from every ignore list) and clear the shape's
+in-use bit `0x8`. Flags by kind: human `0x8002243f`, punch bag `0x8000243f`, world object `0x80000500`, car
+`0x80000000`, glass pane `0x8000007a` ([Objects](objects.md)). A human body also joins the human list
+(`0x003407a0`; next `+0xc8`, previous `+0xcc`) and gets its scale (`0x00341f28`). The punch bag is the human class
+`0x1cc` (`HeavyBag`, [Characters](../references/characters.md)): `0x0021ce08` gives it its own body set instead of
+one of the 60.
+
+`PhysicsBody_Update` (`0x00341c10`), when the body is dirty or flag `0x800` is set: pose every shape (shape vtable
+`+0x28`), recompute the AABB from the shapes (`0x00341638`, `0x003417c0`), re-sort (`0x00340628`), clear the dirty
+bit; with `0x801` set, it also sweeps the first shape from where it was to where it is against the other bodies and
+resolves the contacts, so a body moved by its owner still meets what is in the way. The camera builds bodies on its
+stack for its sphere tests (`0x00341970`).
+
+### Shapes {#shapes}
+
+A shape is a 16-byte-aligned record with a common head (`PhysicsShape_Construct` `0x00342a30`, vtable `0x00544870`):
+`+0x00` next shape of the body, `+0x10` local offset, `+0x20` the previous world position (for sweeps), `+0x30`
+type, `+0x31` bone (−1: the body's own frame), `+0x32` flags (`0x1` enabled, `0x2`, `0x4` a target for strikes,
+`0x8` allocated, `0x10` reset the previous position on the next pose), `+0x34` vtable (`+0x1c` enable,
+`+0x24` world position, `+0x28` pose, `+0x30` reset). The world AABB of any shape is `0x00341190`. Confirmed (code):
+
+| Type | Shape | Size, vtable | Fields | Pose (vtable `+0x28`) |
+| --- | --- | --- | --- | --- |
+| 1 | oriented box | 0x90, `0x005447f0` | `+0x40` half extents (`PhysicsBox_SetSize` `0x00342dc0` halves the sizes it gets), `+0x50`-`+0x7c` axes, `+0x80` position | the owner's matrix and the local offset (`0x00342df8`); cars set the matrix directly (`0x00343040`) |
+| 2 | sphere | 0x60, `0x00544830` | `+0x40` radius, `+0x50` centre | the local offset on its bone (owner vtable `+0xb8`) or in the body's frame (owner vtable `+0xa0`) (`0x00342b08`) |
+| 3 | capsule | 0x60, `0x005447b0` | `+0x40` radius, `+0x44` height, `+0x50` base | at the owner's position; for a human the height follows the state (`0x00343518`, [below](#human-body)) |
+| 4 | segment | 0x70, `0x00544770` | `+0x40` start, `+0x50` end, `+0x60` radius, `+0x64` length | start on its bone, end = start + the bone's axis × length (`0x00343810`) |
+
+The "capsule" is an **upright cylinder**: every test treats it as the vertical range `[base z, base z + height]`
+with a horizontal radius (`0x00346388`, `0x003498c0` + `0x0034a8d0`), so a human never tilts. A segment is a sphere
+of its radius swept along a bone: the limbs' strike volumes.
+
+### The human body {#human-body}
+
+0xe0 bytes (`0x00341e98`, vtable `0x005446b0`): a body plus `+0x80` the ten bone shapes (`0x003429e8`), `+0x84`
+the push sphere, `+0x90` a broad bound, `+0xc0` one bit per switched-on bone (`PhysBody_SetShapeEnabled`
+`0x003428d0`), `+0xc4` the weapon strike spheres (`0x00342158`, `0x00342168`), `+0xc8` / `+0xcc` the human list,
+`+0xd0` a weapon-strike flag, `+0xd4` "ignore the level". The bone shapes, their sizes and when they switch on are on
+[Combat](combat.md#moving-strikes); `PhysicsBody_ApplyHumanScale` (`0x00341f28`) multiplies their offsets, radii and
+lengths and the capsule (height `0x00219890`, radius `0x00219860` of the human) by the human's scale. Confirmed
+(code) at the cited addresses:
+
+- **Update** (vtable `+0x10`, `0x003422d0`), unless flag `0x4000`: re-pose the capsule when dirty; with weapon strike
+  spheres, pose them on the held object (`0x00226ff0`); while anything strikes, widen the strike reach to 0.8 × the
+  scale or the current attack's reach (`AttackTable_GetReach`); pose the enabled bone shapes and the push sphere.
+- **Moved** (vtable `+0x18`, `0x00342828`): the broad bound `+0x90` becomes a box of radius 0.8 m around the point
+  1.0 m above the position, and the enabled bone shapes' previous positions are reset, so a teleport is not a strike.
+- **The capsule's height** (`0x00343518`): base height + 0.2 × scale; the bottom raised by 0.61 × scale in one mode
+  (`+0x3be`) and by 0.7 × scale in the states `0x00227f68` selects (at most 0.7 above `+0x560`), except in a long
+  fall; 0.35 × scale when cuffed; never under 0.2 × scale.
+- **The push sphere** (`0x003420d0`): a 2.0 m sphere from the 30 pool, switched on by set-piece actions (workout,
+  uncuff, the action clips through `0x0021c058`). While it is on, `0x003425c0` (from the human's update
+  `0x0023d8c8`) overlaps it with the other humans and adds to each free one's pending push-out (body `+0x50`) a push
+  away from this human, weighed by both humans' attributes 1 and 7: bystanders are nudged out of the animation's
+  way. The weights' meaning is inferred.
+- `GetContactScale` (`+0x48`, `0x00342288`): 0.25 while airborne, else 1.0. `+0x50` (`0x00342130`) tells the human
+  (`0x00219b08`).
+
+### Ignore lists {#ignore-lists}
+
+A body can ignore particular owners: sixty 12-byte slots at IPhysics `+0xf4e0` (`+0x00` the body, `+0x04` the
+ignored owner, `+0x08` next), chained from body `+0x38`. `Ignore` (vtable `+0x40`, `0x00341b20`) takes a free slot
+(`0x00340890`), `IsIgnoring` (`+0x30`, `0x00341ae8`) walks the chain, `StopIgnoring` (`+0x38`, `0x00341b80`) frees
+one slot or, given null, all. When a body is removed, every slot naming its owner is freed (`0x0033cd70`). The human
+body adds two rules (`0x003421d0`, `0x00342230`, `0x00342260`): its held object is always ignored, and a null owner
+means the level itself (`+0xd4`). With all sixty slots in use, `Ignore` does nothing. Confirmed (code).
+
+### Contacts {#contacts}
+
+A contact is 0xc0 bytes, two 0x40-byte halves for the moving shape and the other one (`0x0033d718`: `+0x00` own
+owner, `+0x04` own shape, `+0x40` the other owner or 0 for the level, `+0x44` the other shape), then `+0x50` the
+normal, `+0x80` the fraction of the move at the contact (0 to 1), `+0x90` the point, `+0xa0` a slide vector,
+`+0xb0` flags (`0x80` a human's landing), `+0xb4` the mesh triangle. A mirrored pair function swaps the halves.
+Lists hold at most 50 contacts, kept sorted by fraction. Confirmed (code).
+
+**Resolution** (`PhysicsBody_ResolveContacts`, `0x0033d9d8`) walks the sorted contacts and asks the moving body's
+owner what to do (owner vtable `+0xf8`, for example `Human_OnContact` `0x00219d50`); contacts with an owner that
+does not want them (`+0xf0`) are skipped. The low 16 bits of the answer:
+
+| Code | What the branch does | Evidence |
+| --- | --- | --- |
+| 0 | nothing | confirmed (code); summary inferred |
+| 1 | moves the body back to the contact (owner position, vtable `+0xa8` / `+0xb0`) and removes from the velocity the part that goes into the surface (`0x0033d870`) | confirmed (code); summary inferred |
+| 2 | when the move went more than 0.01 into the surface, moves the body back to 0.01 in front of it; then bounces both velocities (the one in and the one out) off the normal with the owner's restitution (owner vtable `+0xd0` with 8; `0x0033d8f0`) | confirmed (code); summary inferred |
+| 3 | the same move back, then zeroes both velocities | confirmed (code); summary inferred |
+| 4 | as 1, unless the other body has flag `0x200` | confirmed (code); summary inferred |
+
+High bits: `0x10000` go on with the next contact (return 0), `0x40000` abort the move (return −1), otherwise stop
+after this contact (return 1); `0x20000` keeps the smallest contact scale (body vtable `+0x48`) as the move's limit.
+A contact whose `+0xb0` has bit 2 removes the normal part of its slide vector (`+0xa0`) and stores it, once per move,
+in body `+0x50`. Confirmed (code) for the branches; the one-word summaries are inferred, and which owner returns
+which code is on the owners' pages ([Characters](characters.md#walls), [Objects](objects.md)).
+
+### Settle slot
+
+0x30 bytes, free when `+0x00` is 0:
 
 | Offset | Type | Meaning |
 | --- | --- | --- |
@@ -101,8 +235,7 @@ Object flags (`+0x54`, [task head](tasks.md#task-object)): `0x40000` settling, `
 
 1. **Bound refresh.** Count the tick in `+0x12`; at 120 (every 2 s), reset it and recompute `+0x14` as the widest
    body in x over the list. Inserting a body (`0x003404a8`) only ever grows `+0x14`, so the refresh is what lets it
-   shrink. That a query reads `+0x14` to look back along the sorted list is inferred (the classic sort-and-sweep
-   use); the readers are not traced.
+   shrink. The queries read it to know how far back along the sorted list to look ([Queries](#queries)).
 2. **Settle turns.** For each of the 64 slots in use: `t += speed`, `speed += 0.02`, clamp `t` to 1; set the object's
    rotation to `slerp(start, end, t)`, keeping its position; if the object has a body, mark it (`+0x40 |=
    0x80000000`) and let the body follow the object (body vtable `+0x14`). At `t` = 1 the object's flags lose
@@ -125,6 +258,109 @@ it comes to rest on its nearest face.
 On a later ground contact with `0x8000000` set, the object stops: velocity and angular velocity zeroed, flags
 `0x4000000` (airborne) and `0x8000000` cleared, `0x2000000` (grounded) set. Removing an object (`0x00391c10`)
 cancels its settle.
+
+### Queries: the sort-and-sweep {#queries}
+
+Every query first gathers candidate bodies from the x-sorted list with a box. Confirmed (code) at `0x0033feb0`
+(`IPhysics_QueryBox(phys, out, box, startBody, ignoredOwner, typeMask, flagMask)`) and `0x00340120` (the same with
+more filters):
+
+1. With a start body (the querying body itself), walk **backwards** from it while `box.min.x − node.min.x` is at
+   most the widest body (IPhysics `+0x14`): further back, nothing can reach the box. Then walk **forwards** from it.
+   Without one, walk forwards from the head.
+2. Forwards, stop at the first node with `min.x > box.max.x`.
+3. Keep a body when its `max.x ≥ box.min.x` and it overlaps the box in y and z, its owner is not the ignored one,
+   its type mask (`+0x44`) meets `typeMask` and its flags (`+0x40`) meet `flagMask` (0: any). The filtered form also
+   drops bodies with excluded flags, owners whose state flags (owner vtable `+0x50`) meet an excluded mask, and pairs
+   a callback refuses.
+
+The answer is the bodies in list order, at most 512. On top of it:
+
+| Query | Address | What it does | Evidence |
+| --- | --- | --- | --- |
+| `IPhysics_CollideShape(phys, out, query)` | `0x0033e7f0` | sweeps a shape (the body's own, or one given with a transform: option `0x400`) along a move against the candidate bodies (option `2`; the [sweep table](#dispatch)) and the level mesh (option `1`; the type's mesh sweep with the query's two thresholds); keeps up to 50 contacts sorted by fraction and copies the first `max` out. Bodies of the same non-zero group and owners that refuse (owner vtable `+0x110`) are skipped. Used by the follow camera's sphere tests, the throw aim, the airborne push-out and the cars | confirmed (code) |
+| `IPhysics_OverlapShape(phys, out, query)` | `0x0033ebb8` | the same without a move, with the overlap table and the mesh overlap (`+0xf4`); option `0x80` skips the same group, `0x100` asks the owner, `0x200` only enabled shapes. Used by the push sphere and the strikes | confirmed (code) |
+| `IPhysics_RayCastBodies(length, phys, out, ray)` | `0x0033eee0` | the box around the ray's two ends, then each candidate's shapes with the type's ray function (`+0x108`); keeps the nearest hit's owner, shape and fraction. Used by the AI's line tests (`0x002e7608`, `0x00308c60` and others) | confirmed (code) |
+
+So `+0x14` is the classic sort-and-sweep bound: the step's refresh keeps it from growing for ever
+([The step](#step)).
+
+### Sweeping a body {#sweep}
+
+`PhysicsBody_Sweep` (`0x0033e278`, [Characters](characters.md#walls) for the human's use) moves a body by
+`v × dt` plus its pending push-out, in up to three passes. A pass, confirmed (code):
+
+1. The body's box, scaled about its centre by body `+0x60` (`0x003414c0`) and grown to cover the move
+   (`0x00341840`).
+2. **Against the mesh** (`0x0033d340`): the first shape's mesh sweep (`+0xe0` by type, through `0x0033d2d8` with
+   the wall threshold −0.65). For a human (type mask `0x40`) in the air, also the landing segment (`0x0023e408`),
+   whose hit becomes a contact flagged `0x80`.
+3. **Against the bodies** (`PhysicsBody_SweepHumanMask`, `0x0033d498`): the candidates of the swept box, filtered by
+   a type mask that depends on the mover (2 for a non-human; for a human 4, or `0x44` while airborne or holding
+   (`0x800`), plus `0x20` when the capsule has flag `0x2`, `0x40000` from a state counter above 3, and a bit per
+   grab partner); same non-zero group skipped; owner asked (`+0x110`); each enabled shape of the candidate (body
+   vtable `+0x28`) through the sweep table.
+4. Contacts are inserted sorted by fraction (`0x0033d718`) and resolved ([Contacts](#contacts)).
+
+### The shape-pair tables {#dispatch}
+
+Two 5 × 5 tables of functions at IPhysics `+0x18` (overlap) and `+0x7c` (sweep), indexed `[moving type][other type]`
+(row × 0x14 + column × 4), and three per-type tables against the level mesh and rays. An empty entry means the pair
+never touches. Filled by `IPhysics_Construct`, confirmed (code):
+
+| Moving \ other | 1 box | 2 sphere | 3 capsule | 4 segment | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| **1 box** | overlap `0x00345dd8`; sweep `0x003451e8` | `0x00346680`; `0x003454c0` | `0x00346d18`; `0x00345108` | none; `0x00345590` (never) | confirmed (code) |
+| **2 sphere** | `0x00346db8`; `0x003453f8` | `0x00345d58`; `0x003440d0` | `0x00346f90`; `0x00345670` | `0x00346eb0`; `0x00344320` | confirmed (code) |
+| **3 capsule** | `0x00346808`; `0x00344618` | `0x00346ed8`; `0x00345910` | `0x00346388`; `0x00343cd8` | `0x00347148`; `0x00345d18` (overlap) | confirmed (code) |
+| **4 segment** | none; `0x00345588` (returns 0) | `0x00346de0`; `0x00344538` | `0x00346fb8`; `0x00345d38` (overlap) | `0x00346500`; `0x00344300` (overlap) | confirmed (code) |
+
+| Per type | 1 box | 2 sphere | 3 capsule | 4 segment | Evidence |
+| --- | --- | --- | --- | --- | --- |
+| mesh sweep `+0xe0` | `0x00348530` | `0x00348a50` | `PhysicsMesh_SweepCapsule` `0x00347c08` (one sphere, [Characters](characters.md#walls)) | none | confirmed (code) |
+| mesh overlap `+0xf4` | `0x003473b8` (returns 0) | `0x003473c8` | `0x003473c0` (returns 0) | none | confirmed (code) |
+| ray `+0x108` | `0x00345b90` | none | `0x003459f0` | none | confirmed (code) |
+
+Mirrored entries call the other order and swap the contact's halves. A segment's "sweep" against a capsule or a
+segment is the static overlap: segments move with their bone and are tested where they are, which is how strikes
+work ([Combat](combat.md#moving-strikes)). A segment never touches a box, and no sphere or segment is ray-tested.
+
+### Mesh tests {#mesh-tests}
+
+The mesh functions read the level's [collision mesh](collision.md) through the world manager (`+0x40` level object,
+`+4` mesh). Confirmed (code):
+
+- `0x00347170` starts a query: it clears the mesh's per-triangle "visited" bits (`+0x94`, one bit per triangle,
+  `+0x84` triangles) so a triangle shared by several grid cells is tested once, and turns the world box into the
+  mesh's frame to pick the cells.
+- For each enabled triangle of those cells the test fills a working triangle (corners `+0x00`/`+0x10`/`+0x20`,
+  edges `0x00343a90`, edge normals `0x00343b20`, unit normal `+0x70` by `0x00343c30`) and turns a two-sided one to
+  face the shape (`0x00343c90`).
+- Sphere sweep (`0x00348a50`): `Sweep_SphereTriangle` (`0x0034ee60`); box sweep (`0x00348530`):
+  `Sweep_BoxTriangle` (`0x0034d5d0`); sphere overlap (`0x003473c8`): `SphereTriangle_Penetration` (`0x0034edd0`).
+  Hits become 0xb0-byte mesh contacts, sorted by fraction (`0x00347300`) and copied out.
+
+### Geometry kernels {#kernels}
+
+The pair and mesh functions above call these. Their roles are confirmed (code) by their callers and arguments;
+the exact algebra is not written out here (any correct implementation of the same test gives the same contacts).
+
+| Address | Name | Test | Evidence |
+| --- | --- | --- | --- |
+| `0x00349268` | `Sweep_SphereSphere` | moving sphere against a sphere (also `ObjectRender_Draw`) | confirmed (code) |
+| `0x00349488` / `0x00349560` | `Ray_ClipSlab` / `Ray_OrientedBox` | a ray against an oriented box, slab by slab | confirmed (code) |
+| `0x003498c0`, `0x0034a8d0` | `Sweep_CircleCircle2D`, `Sweep_IntervalOverlap` | the capsule-capsule sweep: horizontal circles, then the vertical ranges over time | confirmed (code) |
+| `0x00349a60`, `0x00349180` | `Sweep_SphereCapsule`, `Vec_MakePerpendicularBasis` | moving sphere (or a ray: radius 0) against an upright capsule | confirmed (code) |
+| `0x0034a318`, `0x0034a6d0` | `CapsuleBox_SweepSide`, `CapsuleBox_SweepCorner` | the capsule-box sweep, four sides and four corners | confirmed (code) |
+| `0x0034a2d0`, `0x0034a6a0` | `CapsuleBox_CornerCircle`, `CapsuleBox_SideInterval` | the capsule-box overlap | confirmed (code) |
+| `0x0034ac08`, `0x0034acc8`, `0x0034ad50` | `Segment_ClosestParam`, `Segment_ClosestPoint`, `Segment_ClosestPoints` | point-segment and segment-segment closest points | confirmed (code) |
+| `0x0034af50`, `0x0034afd8` | `Ray_SphereRoot`, `Ray_CircleRoot` | the first root of a ray against a sphere (3D) or a circle (2D) | confirmed (code) |
+| `0x0034bbe8` and `0x0034b040`, `0x0034b3b8`, `0x0034b600`, `0x0034b7b0`, `0x0034baf0` | `Sweep_SphereOrientedBox` and its corner, edge, edges, face-edge and frame steps | moving sphere against an oriented box (also the camera's tilt over obstacles) | confirmed (code) |
+| `0x0034c430` | `Sweep_BoxBox` | moving oriented box against an oriented box | confirmed (code) |
+| `0x0034d5d0`, `0x0034aa60`, `0x0034ab28` | `Sweep_BoxTriangle`, `BoxTri_ProjectBox`, `BoxTri_ProjectTriangle` | moving box against a triangle, axis by axis | confirmed (code) |
+| `0x0034ee60` (`0x0034ee40` calls it) | `Sweep_SphereTriangle` | moving sphere against a triangle: the face, then the edges (`0x0034e5d0`, `0x0034e3b8`) | confirmed (code) |
+| `0x0034e3b8`, `0x0034e5d0`, `0x0034dff8`, `0x0034d938`, `0x0034e120` | `SphereSweep_Edge`, `_EdgeIfNear`, `_EdgeCylinder`, `Ray_InfiniteCylinder`, `Segment_SphereIntersect` | its edge steps: the end points as spheres, then the edge as a cylinder | confirmed (code) |
+| `0x0034e840`, `0x0034edd0` | `PointTriangle_DistanceSq`, `SphereTriangle_Penetration` | the distance of a point to a triangle; a sphere's depth into it | confirmed (code) |
 
 ### How things actually move {#movers}
 
@@ -164,10 +400,8 @@ step yet. When world objects come, the settle is a per-object tween run on Coney
 
 ## Open questions
 
-- Which queries read `+0x14`, and the sort-and-sweep they do.
-- What the 416- and 255-body pools hold (world objects, glass?); the 18-body pool matches the 18 cars
-  ([Tasks](tasks.md#classes), inferred).
-- What the human's ten bone shapes are used for, and the shape types in the dispatch tables.
+- Who returns contact codes 2 to 4 ([Contacts](#contacts)), and what the human attributes 1 and 7 that weigh the
+  push sphere's push are.
+- How cars use their bodies (`0x00387f18` sets the box matrices and backs off planes, `0x0038e590`).
 - Where the axis mask of `0x00340b38` comes from for a settle.
-- How cars move (`0x0038e590`) and whether they use this world.
 - A runtime check of the settle's 11 ticks on a thrown bottle.

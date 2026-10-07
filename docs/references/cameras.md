@@ -10,8 +10,8 @@ holds a camera by handle; the type says which class the handle is.
 
     All fourteen classes the code makes are listed: types 10, 14 and 15 belong to no class. The types, tags and
     vtables are read from the executable; sizes and makers are from the factory `0x0011e1b0` and the getters. All
-    fourteen switches (0-13) are listed with the flag each sets and its default; switches 2 and 8 are read by rail-camera
-    code not traced further.
+    fourteen switches (0-13) are listed with the flag each sets and its default; switch 8's part in the rail camera's
+    choice of targets is not traced further.
 
 28 entries. Data: `research/references/cameras.yaml`.
 
@@ -44,7 +44,7 @@ holds a camera by handle; the type says which class the handle is.
 | --- | --- | --- | --- | --- | --- | --- |
 | <span id="cam-switch-0"></span>0 | `0x0050b1b8[player]` | `per player` | 1 | 52 | `level101.lua`, `level102.lua`, `level103.lua`, `level104.lua`, `level105.lua`, `level107.lua` | Right-stick turning and the zoom buttons for the player: off, the stick step returns |
 | <span id="cam-switch-1"></span>1 | `0x0050b1cc` | `global` | 0 | 6 | `level60.lua`, `level61.lua`, `level62.lua`, `level63.lua`, `level64.lua`, `level84_chase.lua` | An extra sphere test (`0x001303c8`) in the follow camera's world collision |
-| <span id="cam-switch-2"></span>2 | rail camera `+0x3e6` | `per player` | 0 | 1 | `level83_c5_apartment.lua` | A byte of the player's rail camera; not traced |
+| <span id="cam-switch-2"></span>2 | rail camera `+0x3e6` | `per player` | 0 | 1 | `level83_c5_apartment.lua` | Rail framing: the keep-in-frame tests (`0x00140ad0`, `0x00140d68`) also weigh how near the target is to the current segment's rail points (within 2 m) |
 | <span id="cam-switch-3"></span>3 | `0x0050b1c0` | `global` | 1 | 216 | `hifi.lua`, `kinghill.lua`, `level101.lua`, `level102.lua`, `level103.lua`, `level104.lua` | Two-player views: a view shows only while its player still counts (`0x00123500`); off, both always show |
 | <span id="cam-switch-4"></span>4 | `0x0050b1c8` | `global` | 1 | 74 | `caps.lua`, `hifi.lua`, `kinghill.lua`, `level101.lua`, `level102.lua`, `level103.lua` | With `0x0050b1c4` (set by `0x00418ac8`), a player is a camera target only while he still counts |
 | <span id="cam-switch-5"></span>5 | follow camera `+0x468` | `per player` | 1 | 2 | `level81_chase.lua`, `level81_cracker.lua` | The follow camera's [sprint zoom](../research/camera.md#sprint-zoom) |

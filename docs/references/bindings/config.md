@@ -2499,22 +2499,23 @@ CfgSetTargetingPoints(f1, n2, n3, n4, n5, n6, n7, n8, n9)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `f1` | number (single precision) | Float score weight at 0x00510b4c. |
-| 2 | `n2` | number, truncated to an integer | Integer weight at 0x00510b58. |
-| 3 | `n3` | number, truncated to an integer | Integer weight at 0x00510b5c. |
-| 4 | `n4` | number, truncated to an integer | Integer weight at 0x00510b60. |
-| 5 | `n5` | number, truncated to an integer | Integer weight at 0x00510b64. |
+| 1 | `f1` | number (single precision) | Points per metre the enemy is inside the scorer's sight range (0x00510b4c). |
+| 2 | `n2` | number, truncated to an integer | Points for a stunned enemy (0x00510b58). |
+| 3 | `n3` | number, truncated to an integer | Points for an enemy outside the field of view (0x00510b5c). |
+| 4 | `n4` | number, truncated to an integer | Points for a knocked-down enemy (0x00510b60). |
+| 5 | `n5` | number, truncated to an integer | Points for a grabbed enemy (0x00510b64). |
 | 6 | `n6` | number, truncated to an integer | Ignored: read but not stored. |
-| 7 | `n7` | number, truncated to an integer | Integer weight at 0x00510b74. |
-| 8 | `n8` | number, truncated to an integer | Integer weight at 0x00510b6c. |
-| 9 | `n9` | number, truncated to an integer | Integer weight at 0x00510b84. |
+| 7 | `n7` | number, truncated to an integer | Points per near-a-train flag (0x00510b74; never counts). |
+| 8 | `n8` | number, truncated to an integer | Points for an enemy who targets the scorer (0x00510b6c). |
+| 9 | `n9` | number, truncated to an integer | Points for keeping the previous target (0x00510b84). |
 
 **Returns** nothing.
 
 Stores the point weights the AI uses to score targets; config_preload2.lua sets them once. The sixth argument has no
 effect.
 
-**Notes.** Callee 0x002946c0 never stores its sixth parameter. What each weight scores is not traced.
+**Notes.** Callee 0x002946c0 never stores its sixth parameter. The score is Brain_ScoreEnemy (0x0029ce98); the terms are
+on the AI page (Choosing among enemies).
 
 - **Evidence:** confirmed (code) at `0x002946c0`; detail: traced
 - **Wrapper** `0x0036a868` (registered by `RegisterBindings`); **calls** `0x002946c0` `Cfg_SetTargetingPoints`
@@ -2529,15 +2530,15 @@ CfgSetTargetingPointsEx(f1, n2, n3, n4, n5, n6, n7, n8, n9)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `f1` | number (single precision) | Float score weight at 0x00510b50. |
-| 2 | `n2` | number, truncated to an integer | Integer weight at 0x00510b54. |
-| 3 | `n3` | number, truncated to an integer | Integer weight at 0x00510b68. |
-| 4 | `n4` | number, truncated to an integer | Integer weight at 0x00510b70. |
-| 5 | `n5` | number, truncated to an integer | Integer weight at 0x00510b78. |
-| 6 | `n6` | number, truncated to an integer | Integer weight at 0x00510b7c. |
-| 7 | `n7` | number, truncated to an integer | Integer weight (may be negative) at 0x00510b90. |
-| 8 | `n8` | number, truncated to an integer | Integer weight at 0x00510b94. |
-| 9 | `n9` | number, truncated to an integer | Integer weight at 0x00510b80. |
+| 1 | `f1` | number (single precision) | Points per metre the enemy is inside the sight range of the scorer gang's leader (0x00510b50). |
+| 2 | `n2` | number, truncated to an integer | Points for an enemy who leads his gang (0x00510b54). |
+| 3 | `n3` | number, truncated to an integer | Points for an enemy grabbed from the rear (0x00510b68). |
+| 4 | `n4` | number, truncated to an integer | Points for a running enemy (0x00510b70). |
+| 5 | `n5` | number, truncated to an integer | Points for an enemy who is tagging (0x00510b78). |
+| 6 | `n6` | number, truncated to an integer | Points for an armed enemy who targets the scorer (0x00510b7c). |
+| 7 | `n7` | number, truncated to an integer | Points when no straight walkable line leads to the enemy (0x00510b90). |
+| 8 | `n8` | number, truncated to an integer | Base points when the scorer cannot chase the enemy (0x00510b94). |
+| 9 | `n9` | number, truncated to an integer | Points for an enemy who is a player (0x00510b80). |
 
 **Returns** nothing.
 
@@ -3043,7 +3044,8 @@ Warriors' item search (0x002bbfa0, 0x002bcf88) skips any pickup whose object typ
 fight bare-handed but still pick up other items. Level 5 turns it off and back on.
 
 **Notes.** The game state constructor (0x00418588) and another reset (0x00418c68) set it to 1. WarriorBrain_Think
-(0x003055e0) also reads it, not traced. The player's own pickups are not affected (inferred: only brain code reads it).
+(0x003052f0, the read at 0x003055e0) applies the same rule to the Warriors' own pick-up search (AI page, The Warriors'
+pick-ups). The player's own pickups are not affected (inferred: only brain code reads it).
 
 - **Evidence:** confirmed (code) at `0x0041d770`; detail: traced
 - **Wrapper** `0x0036be20` (registered by `RegisterBindings`); **calls** `0x0041d770` `GameState_SetWarriorWeapons`

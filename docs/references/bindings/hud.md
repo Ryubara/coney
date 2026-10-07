@@ -611,13 +611,13 @@ HUDEnableBar(kind, on, labels, count, flag, texA, texB)
 **Returns** nothing.
 
 Creates or removes one of the HUD's scripted bars. Kinds 0, 1 and 3 share four generic bar slots (0x0060a1b0, 0x3f0
-bytes each; kinds 0 and 1 use slot 0): kind 0 a red (200, 30, 30) bar 0.17 × 0.025 at the top, kind 1 a green (115, 183,
-11) labelled bar 0.22 × 0.025 of the screen, kind 3 up to four labelled bars 0.07 apart with a (217, 158, 12) fill. Kind
-2 is a separate three-sprite gauge (0x0060b180). Fill them with HUDSetBarPercentage.
+bytes each; kinds 0 and 1 use slot 0): kind 0 a red (200, 30, 30) bar 0.17 × 0.025 at the top, kind 1 a labelled bar
+0.22 × 0.025 at the right whose fill shades from red (empty) to green (full), kind 3 up to four labelled bars 0.07 apart
+with a (217, 158, 12) fill. Kind 2 is a separate three-sprite gauge (0x0060b180). Fill them with HUDSetBarPercentage.
 
-**Notes.** Kind 2's gauge (0x001a3720) starts with values 60 (`+0x348`) and 30 (`+0x340`) and a frame sprite 0x1a0007;
-what it looks like on screen is not traced. Positions shift down by a constant in a two-player game (0x00609e8c). The
-bars draw in the HUD pass ([HUD: render order](../../research/hud.md)).
+**Notes.** Kind 2's gauge (0x001a3720) starts with values 60 (`+0x348`) and 30 (`+0x340`) and the marker sprite 0x1a0007
+(sheet `chasebar`); its look is on [HUD: scripted bars](../../research/hud.md#scripted-bars). Positions shift down by a
+constant in a two-player game (0x00609e8c). The bars draw in the HUD pass ([HUD: render order](../../research/hud.md)).
 
 - **Evidence:** confirmed (code) at `0x001b53b0`, `0x001b4ba0`, `0x001b4c98`, `0x001b4f00`, `0x001b5008`; detail: traced
 - **Wrapper** `0x0036f5b8` (registered by `RegisterBindings`); **calls** `0x001b53b0` `HUD_EnableBar`, `0x001b4ba0`
@@ -1059,14 +1059,15 @@ HUDSetBarPercentage(kind, fill, fill2, index, value2)
 | --- | --- | --- | --- |
 | 1 | `kind` | number, truncated to an unsigned integer | The bar kind given to HUDEnableBar (0-3); other values do nothing. |
 | 2 | `fill` | number (single precision) | Fill fraction 0-1 (clamped) for kinds 0, 1 and 3; for kind 2 the gauge's main value (`+0x340`), not clamped. |
-| 3 | `fill2` | number (single precision); default 1 | Read but ignored (scripts pass 1 or the same value). |
+| 3 | `fill2` | number (single precision); default 1 | Kinds 1 and 2: the chase gauge's maximum (`+0x348`); ignored by kinds 0 and 3. |
 | 4 | `index` | number, truncated to an unsigned integer | Which generic bar for kinds 1 and 3 (0-3). |
 | 5 | `value2` | number (single precision) | Kind 2's second gauge value (`+0x344`); also passed for kind 1 (scripts pass 0). |
 
 **Returns** nothing.
 
 Sets how full a HUD bar is: kinds 0, 1 and 3 store the clamped fraction in the generic bar (`+0x78`, only when that bar
-exists); kind 2 sets the gauge's two values. Kind 1 also writes `fill` and `value2` into the kind-2 gauge.
+exists); kind 2 sets the chase gauge's value (`fill`), maximum (`fill2`) and minimum (`value2`). Kind 1 also writes
+those three into the kind-2 gauge.
 
 **Notes.** The kind-1 fall-through into the gauge is in 0x001b5450; it is harmless while no gauge is shown (inferred).
 
@@ -1086,7 +1087,7 @@ HUDSetBarProperty(index, flag, colour, width)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `index` | number, truncated to an unsigned integer | Generic bar slot (0-3, as HUDEnableBar's kinds 0, 1 and 3 fill them); ignored when that bar does not exist. |
-| 2 | `flag` | boolean (nil or 0 is false) | Read but ignored (scripts pass true). |
+| 2 | `flag` | boolean (nil or 0 is false) | The red-to-green gradient flag (HudBar `+0x60`): true makes the fill colour follow the fill again at the next draw, replacing `colour`; false keeps `colour`. |
 | 3 | `colour` | table of 4 numbers (t[1]..t[4]) | Fill colour {r, g, b, a}, each 0-255 (the low byte is kept); written back unchanged. |
 | 4 | `width` | number (single precision) | Bar width as a fraction of the screen width (`+0x40`; × 0.7 when the HUD's layout flag 2 is set, inferred: widescreen). |
 
@@ -1395,14 +1396,15 @@ HUDSetRadarItemTexture(object, icon, scale, flag)
 | 1 | `object` | number, truncated to an unsigned integer | Handle of an object that already has a blip. |
 | 2 | `icon` | number, truncated to an unsigned integer | Radar icon id (scripts use 27 and 28 for objective markers, 34 for items; icon 22 is drawn at 0.7 scale, icons 29-31 tinted green). |
 | 3 | `scale` | number (single precision); default 1 | Icon scale (default 1). |
-| 4 | `flag` | boolean (nil or 0 is false) | A per-blip flag passed to both radars (scripts sometimes pass 1). |
+| 4 | `flag` | boolean (nil or 0 is false) | Icon lock (slot `+0x34`, `0x001c4640`), set after the icon: while it is set, icon and scale changes to this blip are ignored (including this call's own icon when the lock was already set), so a locked blip keeps its icon until a call with false unlocks it and a further call changes it; scripts sometimes pass 1. |
 
 **Returns** nothing.
 
-Changes the icon (and scale) of an object's radar blip on both radars.
+Changes the icon (and scale) of an object's radar blip on both radars, then sets or clears its icon lock.
 
-- **Evidence:** confirmed (code) at `0x001b4038`; detail: traced
-- **Wrapper** `0x003708c8` (registered by `RegisterBindings`); **calls** `0x001b4038` `HUD_RadarSetIcon`
+- **Evidence:** confirmed (code) at `0x001b4038`, `0x001b2bf0`; detail: traced
+- **Wrapper** `0x003708c8` (registered by `RegisterBindings`); **calls** `0x001b4038` `HUD_RadarSetIcon`, `0x001b2bf0`
+  `HUD_RadarSetBlipIconLock`
 - **Used by** 70 of 467 script chunks (154 references); boot to menu: yes; mission 1: yes; result used: no
 - **Later in the story:** 22 of 28 levels, first [`level80`](story.md#level80) (mission 2)
 - **Coney:** implemented

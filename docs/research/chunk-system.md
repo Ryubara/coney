@@ -24,8 +24,11 @@ CRC helpers at `0x00143f68`-`0x00144050` belong to that earlier unit, the first 
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
+| `0x00143ea0` | `Crc32_BuildTable(table)` | fills the 256-word reflected CRC-32 table (polynomial `0xedb88320`) | confirmed (code) |
+| `0x00143f00` | `Crc32_Buffer(table, data, n)` | CRC-32 of `n` bytes | confirmed (code) |
 | `0x00143f68` | `Crc32_Hash(table, name)` | CRC-32 of a string, used by the WAD index (see [Name hashing](name-hash.md)) | confirmed (code) |
 | `0x00143fd8` | `Crc32_Lowercase(table, name)` | lowercases a string in place | confirmed (code) |
+| `0x00144050` / `0x00144080` | `Crc32_StaticInit` / its stub | builds the table at `0x005d91e0` before `main`; the stub ends the CRC unit | confirmed (code) |
 | `0x001440a0` | `ChunkSystem_PopObject()` | pop from the object stack | confirmed (code) |
 | `0x001440c8` | `ChunkSystem_PushObject(obj)` | push onto the object stack | confirmed (code) |
 | `0x001440f0` | `ChunkSystem_PeekChunkType()` | type of the top chunk, `0x54` when empty | confirmed (code) |

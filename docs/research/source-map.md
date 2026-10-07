@@ -149,9 +149,9 @@ before the maths unit. tolua starts at `~0x00408ac8`: `0x004077b8`-`0x00408ac8` 
 
 Still unplaced (21 KB): `0x003865d8`-`0x00386b30` (seven functions between `Scripting/ScriptUtilities.cpp` and
 `StringTable/StringTableCache.cpp`, called from the AI), `0x00424ee8`-`0x00429b18` (the game's RenderWare pipelines,
-`Atomic_AssignGamePipelines` `0x00426c78`, [The streamed world](world.md#pipelines), and the Bink raster set-up
+`Atomic_AssignGamePipelines` `0x00426c78`, [The streamed world](world.md#pipeline-unit), and their creation
 `0x00429a98`; linked between `Warriors/` and `Movie/`, which come out of alphabetical order, so position says
-nothing) and `0x0042af70` (176 bytes, no callers).
+nothing) and `0x0042af70` (176 bytes, the C++ runtime's constructor walker called by `__main`, [Boot](boot.md)).
 
 ## Files by subsystem
 

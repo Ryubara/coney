@@ -20,7 +20,8 @@ a second; positions are lerped and rotations nlerped between keys, and two poses
 
 The player code is in the unnamed stretch before `Animation/` (`0x00100200`-`0x00104630`, whose rodata holds the
 skeleton's `bip_sw_*` bone names) and in `Animation/AnimationBlend.cpp` and `AnimationMgr.cpp`
-([Source map](../source-map.md)). Names are ours.
+([Source map](../source-map.md)); every function of the stretch is listed on [Animation system: code](../animation.md).
+Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -72,6 +73,7 @@ Confirmed (code) at the readers above unless stated.
 | `+0x20`-`+0x24` | 5 bytes | bone mask: bit `b` (byte `b / 8`, bit `b % 8`) set when bone `b` (0-33) has a rotation channel |
 | `+0x25` | char[30] | the clip's name, cut to fit |
 | `+0x43` | u8 | reference count (runtime) |
+| `+0x44` | u32 | clip flags: paired, tackle, grab, capsule strike and others ([Animation system](../animation.md#clip-flags)) |
 
 ### Keyframes (chunk `0x00`)
 
@@ -125,7 +127,8 @@ rotations stay as they are (the result keeps the lower pose's), and otherwise th
 them is a default; for the root velocity and bone 0 (the motion channels) a tagged side is ignored and the other side
 is copied, so a clip without root motion does not damp the motion of the one it blends with.
 
-**Parent table** (`0x00597200`, 34 entries, filled by `0x00101120`), bone → parent:
+**Parent table** (34 entries, the 0x88-byte `AnimationSystem` object that `0x00597200` points to, filled by
+`0x00101120`), bone → parent:
 
 ```text
 -1, 0, 1, 1, 3, 4, 5, 6, 6, 8, 6, 10, 6, 12, 6, 6, 5, 16, 17, 18, 19, 19, 5, 22, 23, 24, 25, 25, 2, 28, 29, 2, 31, 32

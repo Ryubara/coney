@@ -24,6 +24,7 @@ being the main loop is not: it is a save-system call that reads a QA file from t
 | --- | --- | --- | --- | --- |
 | `0x00100008` | `entry` | crt0 | clears `.bss`, sets up thread and heap, calls `main`, exits | confirmed (code) |
 | `0x0042b020` | `__main` | C++ runtime | runs the global constructors once (`0x0042af70` walks the list at `0x00534060` backwards) | confirmed (code) |
+| `0x0042af70` | `__do_global_ctors` | C++ runtime | calls each constructor of the list at `0x00534060` (a count, or -1 and a null-terminated list), last first | confirmed (code) |
 | `0x001446d0` | `main` | `Core/` (file unknown) | boot sequence, then runs the game-mode stack | confirmed (code) |
 | `0x00160df8` | `Game_InitializeSubsystems` | `GameModes/Initialize.cpp` | creates every subsystem, in the order below | confirmed (code) |
 | `0x00145790` | `DS_PS2Device_Init` | `Device/ps2/DS_PS2Device.cpp` (class) | IOP, memory, pads, renderer, file systems | confirmed (code) |
@@ -41,6 +42,7 @@ being the main loop is not: it is a save-system call that reads a QA file from t
 `main` sits between `Core/ChunkSystem.cpp`'s functions and the static-initialiser stub at `0x001449e8`, with no stub
 in between, so it was most likely compiled as part of `ChunkSystem.cpp` (inferred; an unnamed `Core/` file without
 global constructors would also fit).
+
 Three more units have no path string; static-initialiser stubs and link order place them (all inferred, see
 [Source map](source-map.md#for-the-next-steps)):
 
@@ -57,6 +59,24 @@ Three more units have no path string; static-initialiser stubs and link order pl
   no stub from `0x001449e8` to `DS_PS2Device.cpp`'s stub `0x001485a8`. So it is `Device/ps2/` code (the `Timer` it
   wraps is too, `0x00148f60`), in `DS_PS2Device.cpp` itself or a constructor-less unit before it; no string names
   the file.
+
+### The rest of main's unit {#the-main-unit}
+
+After `main`, up to the stub (names ours):
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x001448c8` | `Frame_MarkCamerasSetUp` | sets the "cameras set up this frame" flag `0x0050b6f8`; returns 1 when it was clear, so the device's camera set-up (slot `+0x28`, [Graphics](graphics.md)) runs once a frame | confirmed (code) |
+| `0x001448f0` | `Frame_ClearCamerasSetUp` | clears `0x0050b6f8` (from `Present`, `0x001958b0`) | confirmed (code) |
+| `0x00144910` | `DebugStream_WriteString(stream, s)` | `stream << s`: the stream's virtual write (slot `+0x0c`), returns the stream | confirmed (code) |
+| `0x00144948` | `DebugStream_WritePointer(stream, p)` | `stream << p`: formats `%p` into 256 bytes, then writes it | confirmed (code) |
+| `0x001449b0` | `Main_StaticInit` | the unit's static initialiser: gives the two debug-stream globals `0x005dd800` and `0x005dd808` their vtables (`0x00537ba8`, `0x00537b90`) | confirmed (code) |
+| `0x001449e8` | `Main_StaticInitStub` | its stub, the unit's end | confirmed (code) |
+
+Both debug streams' write slots are empty functions (`0x00144900`, `0x00144908`), so the messages that the scene
+task (`0x0039caf0`, `0x0039cb70`) and the RenderWare file opener (`0x001980e0`, on a failed open) write go nowhere in
+this build. Confirmed (code). That the streams are `Debug/DebugStream.cpp`'s objects, whose path string has no code
+reference, is inferred.
 
 ## Data
 

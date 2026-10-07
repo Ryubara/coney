@@ -66,6 +66,21 @@ files. The script bindings are on [AI bindings](../references/bindings/ai.md). N
 | `0x00306690` / `0x003067d8` | `Tactic_Start` / `Tactic_Process` | [tactics](#tactics) | confirmed (code) |
 | `0x00293c68` / `0x002956d0` | `Formations_Update` / `Formation_Plan` | [formations](#formations) | confirmed (code) |
 
+The small helpers after `Scripting/ScriptUtilities.cpp`'s anchor (`0x003865d8`-`0x00386b30`, before
+`StringTable/`), used mostly by the AI and the player's targeting. That they are the rest of `ScriptUtilities.cpp`
+is inferred from position (no stub lies between its anchor `0x003864e0` and `StringTable/`). Names ours.
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x003868d0` | `SortByKeyAscending(items, n)` | `qsort` of 8-byte `{item, float key}` pairs, smallest key first (comparator `0x00386860`): "the nearest wins" in the targeting code (22 callers) | confirmed (code) |
+| `0x003868f8` | `SortByKeyDescending(items, n)` | the same, largest key first (comparator `0x00386898`); used by `Human_TeleportNear` | confirmed (code) |
+| `0x00386920` | `SortRecordsByKey(items, n)` | the same order on 32-byte records with the key at `+0x04` (`Player_PickTarget`) | confirmed (code) |
+| `0x00386950` | `KeyList_Contains(items, n, item)` | whether any 8-byte pair's first word is `item` (`Brain_ScanEnemies`) | confirmed (code) |
+| `0x003865d8` | `Points_Cluster(radius, points, n, callback)` | sorts pointers to points by x then y (comparator `0x003867f0`) and groups each point with those within `radius` of the group's first point (an x-window, then the squared distance), calling `callback(group, count)` per group; `0x00320c68` clusters a zone's live objects within 1 m | confirmed (code) |
+| `0x00386798` | `Heading_RelativeTo(object, point)` | the heading from the object's position to the point minus the object's own heading (`0x00335f48` of its transform `+0x10`), wrapped to 0-2π (`0x00335d08`) | confirmed (code); argument roles inferred |
+| `0x00386980` | `HashTable_Construct(table)` | an SGI-STL `hash_map` with at least 100 buckets: the next prime of the list at `0x0057dfd8` (193), buckets zeroed, no elements; for `Credits_Load` (`0x0050d33c`) and the Rumble character data map (`0x001f1748`) | confirmed (code) |
+| `0x003867f0` / `0x00386860` / `0x00386898` | the comparators (*made*) | x-then-y ascending; key ascending; key descending | confirmed (code) |
+
 ## Data
 
 ### The brain {#brain}
@@ -374,10 +389,10 @@ fire), when the last move failed (`+0x284`), or when the target is outside the g
 
 1. While actions are queued, wait.
 2. **Choose the target.** With threat response ≠ 0, the best-scoring valid enemy in the enemy list `+0x164`
-   (`0x0029f230`, scores `0x0029ce98`), set as the target. With threat response 0, only the current target, kept
-   while valid and holding an attack slot on it (else the target is cleared and the goal is done).
+   (`Brain_PickBestEnemy` `0x0029f230`, [the score](#enemy-score)), set as the target. With threat response 0, only
+   the current target, kept while valid and holding an attack slot on it (else the target is cleared and the goal is done).
 3. **No target**: done when the enemy list is empty, or when its nearest enemy is hidden in shadow (`+0x2d4`) or
-   fails `0x002225d8`; otherwise push a Spectate goal (`0x10`, `0x002b4098`, 1000 / 3000 / 2000 ms) and wait.
+   fails `0x002225d8`; otherwise push a [Spectate goal](#spectate) (`0x10`) and wait.
 4. **With a target** (`0x002ae2e8`), with `d` the distance and `R` = 1.1 × far: a new target resets the counter and
    sets `+0x2d3`.
     - **Armed** (holding a weapon, `0x00223ea0` or `0x00224000`), or **unarmed, `+0x2d3` set and `d` ≤ `R`**: when
@@ -423,7 +438,8 @@ actions). It has no time limit. **Process** (`0x002afa48`), each update:
 6. **Re-plan** when the target's heading turned more than 45°, he is within 1.6 m, he slowed from a run, or 250 ms
    have passed; a shout every 4-4.5 s (`0x002af928`). Otherwise wait while the move action runs.
 7. The last move failed (`+0x284`) → stop.
-8. **Gait 4 (run)**; 5 (sprint) when the target runs (gait > 3) and `0x00222fa0` > 50 (inferred: stamina).
+8. **Gait 4 (run)**; 5 (sprint) when the target runs (gait > 3) and the fighter's stamina is above 50 %
+   (`Human_GetStaminaPercent` `0x00222fa0`, [Sight](#sight)).
 9. **Stop** (when the target is in sight, `0x00222288`) if he cannot be attacked by this human now
    (`Brain_IsAttackableBy`, `0x00290ea8`), at any distance; and, within 0.75 × far (**3.75 m**), if his actions are
    blocked (he is busy, as when another Warrior is hitting him) or the charge is not armed and he walks or stands
@@ -454,6 +470,119 @@ The duration given to `Brain_Fight` (2000 or 8000 by the AI's own fights, −1 b
 Every **later** fight goal, pushed by Melee, gets **4000** whatever the duration was, so under `GoalFight` the
 second and later fight goals have a 4 s deadline. The engage goal has no time limit. Confirmed (code) at
 `0x0029ed58`, `0x0029eed8`, `0x002ade10`, `0x002ae2e8` and `0x002c0748`.
+
+#### Choosing among enemies: the score {#enemy-score}
+
+`Brain_PickBestEnemy(goal, flags)` (`0x0029f230`), called by Melee (flags `0xfffffffd`, every term but `0x2`) and by
+23 other goals with their own masks: the current target is taken as "the previous one", the target is cleared, and
+the 16 slots of the enemy list (brain `+0x164`) are walked. A slot whose human fails `Brain_ValidateEnemy` is
+skipped; every other gets a score (`Brain_ScoreEnemy`, below) and then the goal's own adjustment (goal vtable `+0x54`;
+every goal seen uses the default `Goal_AdjustEnemyScoreDefault` `0x0029f3a8`, which adds **3** when the candidate is
+the previous target). The best score wins only when it is **above 0** and above every earlier one (ties keep the
+first); after every 5 slots the walk stops early if a winner exists. The winner (or none) becomes the target
+(`Brain_SetTarget`). Confirmed (code).
+
+**`Brain_ValidateEnemy(brain, human)`** (`0x0028d358`) returns the human when he may be chosen: not dead or out of
+the fight (state flags `0x100000000`, `0x80000000`, `0x40000`), not being mugged (`0x200`), his brain's targetable
+byte `+0x120` set; when he is under arrest (`0x20000`, `0x00223b70`) only for a scorer of brain type 0 or 3; a human
+with an interrogation set (`+0x5a0`) who is grabbed from the rear or at 50 % health or less only while his `+0x360`
+is empty; and for a scorer whose `+0x14d` is set and whose gang has a turf (gang `+0x17c`), only inside it
+(`0x0028ff58`). Confirmed (code).
+
+**`Brain_ScoreEnemy(scorer, enemy, flags)`** (`0x0029ce98`) returns −999 for none, an enemy near a train this update
+(`Brain_IsNearTrain` `0x0028ab30`: brain `+0x2e0` equals the game time) or one the scorer may not take
+(`Brain_CanTakeSlotOn` `0x0028dc80`: the enemy's attack slots are full, the scorer holds none, and no current
+attacker is farther from the enemy than the scorer). Otherwise the sum of these terms, `w` being the weights that
+`CfgSetTargetingPoints` / `CfgSetTargetingPointsEx` set (values from `config_preload2.lua`; the executable's
+defaults in brackets where they differ):
+
+| Term (flag) | When | Points |
+| --- | --- | --- |
+| base | the scorer cannot chase him (`Brain_CanBeChased` `0x0028abc0` false on the enemy, or scorer `+0x2d3` clear, or the enemy outside the scorer gang's turf) | −5 (`0x00510b94`) |
+| `0x1` distance | always with this flag: beyond the scorer's sight range `R` (brain `+0x130`; a gang of kind 1 uses at least 30 m, `0x0028bf00`) the score is **−999** | + 4.0 × (`R` − distance) (`0x00510b4c`) [3.0] |
+| `0x2` near the leader | the scorer gang's leader (`Gang_GetLeader` `0x00165678`) is not the enemy and is within `R` of him | + 3.0 × (`R` − that distance) (`0x00510b50`) |
+| `0x4` enemy leads his gang | the enemy is his gang's leader and the scorer's brain is not type 3 | + 6 (`0x00510b54`) [3] |
+| `0x8` stunned | `0x100000` set and `0x80000` clear | + 1 (`0x00510b58`) |
+| `0x10` out of view | outside the scorer's field of view (`Human_IsInFieldOfView` `0x00222710` with brain `+0x12c`) | −5 (`0x00510b5c`) |
+| `0x20` down | knocked down (`0x80000`) | + 1 (`0x00510b60`) |
+| `0x40` grabbed | grabbed (`0x30`) | + 1 (`0x00510b64`) |
+| `0x80` grabbed from the rear | `0x20` | + 6 (`0x00510b68`) |
+| `0x200` targets me | the enemy's target (brain `+0x124`) is the scorer | + 4 (`0x00510b6c`) [1] |
+| `0x400` running | gait 4 with record `+0x08` clear | + 3 (`0x00510b70`) |
+| `0x800` train | `Brain_IsNearTrain` × 6 (`0x00510b74`); always 0 here, since such an enemy already returned −999 | 0 |
+| `0x1000` tagging | `0x2000000` | + 3 (`0x00510b78`) |
+| `0x2000` targets me armed | as `0x200`, and he holds a weapon (`0x00224060`) | + 3 (`0x00510b7c`) |
+| `0x4000` a player | the enemy has a pad (`+0x1b0` ≠ −1) | + 20 (`0x00510b80`) [3] |
+| `0x8000` arrested | `0x20000` | −10 (`0x00510b98`) |
+| `0x10000` police | the enemy's brain is type 1 | + 30 (`0x00510ba0`) |
+| always | no walkable straight line from the scorer to him (`0x002221b0`) | −5 (`0x00510b90`) [−5] |
+| always | he may not be attacked now (`Brain_IsAttackableBy(enemy brain, none)` false, [Sight](#sight)) | −10 (`0x00510b9c`) |
+| always | he is the scorer gang's chosen target (gang `+0x10`) | + 400 (`0x00510ba4`) |
+
+The last four, and `0x8000` and `0x10000`, have no script setter; the sixth argument of `CfgSetTargetingPoints` is
+read and dropped, and its ninth (`0x00510b84`, 3) is the previous-target bonus above. Since a winner needs a score
+above 0, an enemy beyond the sight range is never picked, and a near one that is out of view, unreachable in a
+straight line and not attackable may not be either. Confirmed (code) at the addresses cited; the values confirmed
+(disc) from `config_preload2.lua`.
+
+#### Sight and "may be attacked now" {#sight}
+
+- **`Human_HasLineOfSight(a, b, hit, exclude)`** (`0x00222288`): a ray from a's position + 1.7 m (z) to b's position +
+  1.7 m (`Ray_IsClear` `0x0024df40` → `WorldManager_RayCast`, [Collision](collision.md#ray-cast), mask 0); if it hits,
+  a second ray to b's position + 1.0 m. True when either reaches b. Without an exclusion list the rays pass through
+  materials 30 `LOW_FENCE`, 2 `GLASS`, 187 `STOREDOOR_GLASS`, 122 `RAILING`, 107 `CHAINLINK_NOCLIMB` and 1 `NONE`
+  (the list built in `Ray_IsClear`), so an AI **sees through** fences, railings and glass. Its distance is not limited;
+  callers test range themselves. Through `hit` it returns a word of the cast; Melee reads it as the material crossed
+  and, when it is one of 30, 2, 187, 122, 107, walks straight at the target (gait 4, out of the fight stance) instead of
+  fighting (inferred: to get round the fence or glass between them). Confirmed (code) for the rays; the meaning of
+  `hit` inferred.
+- **`Human_IsInFieldOfView(fov, human, point)`** (`0x00222710`): true when the angle between the human's facing and the
+  direction to the point is within fov / 2 (dot product against `cos(fov × 0.5)`). Confirmed (code).
+- **`Human_CanSeeHuman`** (`0x002223e8`) puts a range in front of the line of sight, and a shorter one for a target in
+  shadow (his brain `+0x2d4`); EngageEnemy's re-target uses 9 m and 4 m.
+- **`Brain_IsAttackableBy(target brain, attacker)`** (`0x00290ea8`): normally the target brain's byte `+0x11f`
+  ("attackable": 1 when the brain is made, `0x0028a570`; set by `GangSetAttackable` through `Gang_SetAttackable`
+  `0x0016bb58` and by the end of a scripted goal, `0x002d4248`; cleared by `GoalGrabTarget` while it holds,
+  `0x002bb560`). Two exceptions: a civilian (type 4) in a gang of kind 23 attacked by a Warrior (type 3) whose own
+  target is not that Warrior, and who has no target or an AI one, may be attacked only when he is the Warrior gang's
+  chosen target (gang `+0x10`); and a human of class 221 with `+0x11f` clear is still attackable by an attacker that
+  has no goal `0x1f`. Confirmed (code).
+- **Sprint check** (EngageEnemy step 8): `Human_GetStaminaPercent` (`0x00222fa0`) = stamina (record `+0x14a`) × 100 /
+  `Human_StaminaMax` (`0x00223188`, [Sprint](characters.md#sprint)); above 50 the AI sprints after a running target.
+  AI stamina drains and refills by the player's rules (the drain is keyed on gait 5, not on the pad). Confirmed (code).
+
+#### The Spectate goal {#spectate}
+
+Type `0x10` (`SpectateGoal_Init` `0x002b4098`, vtable `0x00540270`), arguments (keep distance, goal, brain, *join*,
+*may engage*, shortest and longest pause (ms), time limit, *taunt*). Fields: `+0x10` the watched human's handle,
+`+0x14` the next look, `+0x18` the next re-pick (now + 3 s), `+0x1c` / `+0x20` the pause range, `+0x24` the keep
+distance, `+0x28` *join*, `+0x29` *may engage*, `+0x2a` *taunt*, `+0x2b` may pick up a weapon (rolled at Start),
+`+0x2c` chase when far. Confirmed (code).
+
+- **Start** (`0x002b4200`): picks whom to watch (`SpectateGoal_PickTarget` `0x002b4158`): with *join*, the nearest
+  human of his own enemy list; otherwise the nearest member of the nearest other gang (`0x0016c808`). `+0x2b` =
+  `Random_Int(100)` < 25 × (a per-gang-kind number, `0x001644f8`); `+0x2c` = 50 % chance, when no goal `0x98` is on
+  the stack. **End** (`0x002b42f0`): target cleared, actions cleared, brain `+0x284` = 0.
+- **Process** (`0x002b4330`), each update: the target is cleared; a failed last move clears `+0x2c`. With *join*:
+  fight stance; for a brain of type other than 1 and 4 that may pick up a weapon and is empty-handed, every 30
+  updates the nearest pickable weapon within 15 m (`0x0029d5f0`) is fetched (`Goal_GetItem`). Every 3 s the watched
+  human is picked again. Then:
+    1. No valid watched human: done with *join*, else wait (until the time limit).
+    2. With *join* he is made an enemy (`0x0028ff78`); tackling → an attack action of kind `0x24`.
+    3. Unless the watched human's gang has `+0xdc` set, out of sight → done; in shadow (`+0x2d4`) and beyond 3 m → done.
+    4. With *join* and *may engage*, not after a failed move, when `0x00290588` allows a chase: an **EngageEnemy**
+       goal (taunt `0x8f`) when the target runs (one update in five) or `+0x2c` is set and he is beyond the far range.
+    5. Otherwise, with his actions free: fight stance; every pause (random between the two lengths) an optional taunt
+       (`0x002fb0f0`, with *taunt*); beyond 10 m a move toward him (gait 2, 4 when he runs or with *join*, radius far +
+       2 m); else with *join*, between the keep distance and 2 m more, 51 %: a watch action (`0x002feaf8`, 3 s);
+       else a move-to-human action that holds him between 0.95 × and 1 × the keep distance (4 s limit). The keep
+       distance 0 means the far range.
+
+Melee's Spectate (no target, [The Melee goal](#melee-goal) step 3) is `SpectateGoal_Init(k, goal, brain, join 1,
+may engage 1, 1000, 3000, 2000, taunt 1)`, with *k* = 0 (the far range, 5 m) or, when goal `0x98` is on the stack, a
+random distance between 0.75 × near and far: a 2 s spell watching the nearest enemy, with a taunt every 1-3 s, joining
+in with EngageEnemy when he runs. The dealer's wary goal is (8 m, join 0, 0, 2000, 4000, 8000, 0): he backs off to 8 m from
+the nearest fighter for up to 8 s.
 
 ### The attack action {#attack-action}
 
@@ -1037,53 +1166,178 @@ the chance (at most 100). Confirmed (code) at the addresses.
 
 #### GoalDealer {#dealer}
 
-Type `0x80` (`0x002c6c88`, constructor `0x002c6d90`, vtable `0x00540c90`); `level99_lesson2`'s `FlashDealer`. The
-class overrides the dealer type: 426-430 → 0 (flash), 431-435 → 2, 436-440 → 1 (weapons). Fields: `+0x10` home,
-`+0x24` state (1 at construction), `+0x28` type, `+0x2c` range, `+0x30` next scan, `+0x3a` run chance, `+0x3b` dirty
-chance, `+0x3c` option, `+0x3d` greeted, `+0x3e` player in range, `+0x41` dirty (rand100 < dirty chance, rolled in
-the constructor), `+0x42` dealing.
+Type `0x80` (`Goal_Dealer` `0x002c6c88`, constructor `DealerGoal_Init` `0x002c6d90`, vtable `0x00540c90`);
+`level99_lesson2`'s `FlashDealer` (`GoalDealer(dealer, 0, 17, 0, 0, false)`: type 0, range 17 m, run and dirty
+chances 0, no radar icon). The class overrides the dealer type: 426-430 → 0 (flash), 431-435 → 2 (spray paint),
+436-440 → 1 (weapons). Confirmed (code) at the addresses cited unless marked.
 
-- **Start** (`0x002c6e78`): threat response (brain `+0x21c`) 0, brain `+0xcc` |= 2, a spinning icon by type
-  (`dyn_flashdeal`, `dyn_weapdeal`), the home position, then Resume. **Resume** (`0x002c6f98`): fight stance on and
-  the type's idle. **End** (`0x002c70a0`): icon removed, the player's interaction target cleared if it is this dealer,
-  threat response back to 2.
-- **Process** (`0x002c7fd8`), in order:
-    - the player in range = distance ≤ range (`0x00419ee0`); leaving after a deal plays a gesture; beyond 2 × range
-      the greeting is forgotten;
-    - in range and in sight, the buy clip is loaded into the player's slot 668;
-    - states 4 and 5 run to a flag of kind 8 (`0x004177d8`) with a move-to-flag goal (gait 4);
-    - every 2 s while its threat response is 0, an enemy within 16 m and in sight makes it push goal `0x002b4098`
-      (inferred: wary) and gesture;
-    - more than 1 m from home and not playing 668: walk home (gait 4); more than 15° off the player: turn to him;
-    - the first time, a greeting gesture and, with the option, a radar icon (`0x002c7ee0`);
-    - state 1 with the player within 1.5 m: state 3, dealing, human `+0x1b2` = 1 (inferred: the player may now buy).
-- The run and dirty chances are not read by Process (open question).
+| Offset | Meaning |
+| --- | --- |
+| `+0x10` | home: the dealer's position when the goal starts |
+| `+0x24` | state: 1 waiting (set at construction and by the reset), 3 dealing, 4 run off after a rip-off, 5 run off when attacked |
+| `+0x28` / `+0x2c` | type / range (m) |
+| `+0x30` | next wary scan (ms) |
+| `+0x34` | next "cash" line (ms) |
+| `+0x38` | u16 deals made (the weapons dealer's stock count) |
+| `+0x3a` / `+0x3b` | run chance / dirty chance (percent) |
+| `+0x3c` | option: add a radar icon at the greeting |
+| `+0x3d` | greeted |
+| `+0x3e` | a player is in range |
+| `+0x3f` | a deal was completed this visit |
+| `+0x40` | the last refusal was "carrying the most" |
+| `+0x41` | dirty: `Random_Int(100) < dirty chance`, rolled once in the constructor |
+| `+0x42` | dealing (the offer was made this visit) |
+| `+0x43`, `+0x44` | per player: the buy clip is bound to his anim 668 |
+| `+0x45` | the money pair was started by this event |
+| `+0x46` | a fight is near (set by the wary scan) |
 
-**Buying** (confirmed (code) at `0x002c8708`, `0x00303178`, `0x002c74d8`). On entering state 3 the dealer sets human
-`+0x1b2` = 1 and registers, through his `+0x124`, a **kind-4 context record** ([Crimes](crimes.md#context-records),
-reach 1.75 m) whose prompt is `GSTRING.HUD` text `n` of his type. Triangle at it hands the press to the dealer, whose
-brain (`DealerBrain_OnEvent`) passes event 0 to the deal (`0x002c74d8`) while `GoalDealer` is on top. The table at
-`0x005110f8`, 8 bytes per dealer type `{u32 prompt text, u8 item, u8 price, u8 most carried, u8 amount}`:
+**Start** (`DealerGoal_Start` `0x002c6e78`): threat response (brain `+0x21c`) 0, brain `+0xcc` \|= 2, the type's
+spinning icon (`dyn_flashdeal`, `dyn_weapdeal`, `dyn_spraydeal`, [The icon](#dealer-icon)), the type's item in his
+pocket (`Human_SetPocketItem(dealer, item, 1)`), the home position, then Resume. **Resume** (`DealerGoal_Resume`
+`0x002c6f98`): fight stance **off** (`Human_LeaveFightStance`), `0x0021d848(dealer, 0)` (clears human `+0x3bf` and
+sets bit `0x200` of his model's flags; meaning not traced), and the kind-4 prompt registered (below). **End**
+(`0x002c70a0`): icon removed, the player's interaction target cleared if it is this dealer, threat response back
+to 2.
+
+##### Gestures and lines {#dealer-gestures}
+
+Every gesture is a **play-anim action** (`DealerGoal_QueueGesture` `0x002c7158` → `PlayAnimAction_Init`
+`0x002fa300`, vtable `0x00542be0`, blend in and out 0.5 s) of an anim id and a **variant**. The action's Start writes
+the variant to human `+0x3c4`, and the clip lookup (`Human_GetDynamicAnim` `0x00221a00`, called by
+`CharacterInstance_GetAnim` `0x00175080`) takes, in order: the human's own override for that anim id (seven slots of
+`0x28` bytes from human `+0x3c8`: a name, the loaded clip at `+0x20`, the anim id at `+0x24`); else entry *variant*
+of that anim id's group in his **gang's clip table** (gang `+0x1b0`, `GangClips_Get` `0x00163fc0`; a variant below 0
+picks a random entry); else the character's own clip for the id. The groups (`GangClips_GetGroup` `0x00163f10`): 603
+entries 0-7, 604 8-11, 595 12-16, 599 17-19, 598 20-22, 668 23-26. A gang made with kind 24 (`level99`'s
+`GangCreate(24, "FDealer", 0, 0)`) gets them filled (`GangClips_Set` `0x00164178`, from `Gang_Create`
+`0x0016cdf0`): 603 with the eight names at `0x0050cbc0`, 668 with the three at `0x0050cbe0`. The lines are speech
+commands ([Speech](../references/speech.md)) through `DealerGoal_Say` (`0x002c7248` → `0x002205e0`, volume 1.0).
+
+| Moment | Gesture (anim id, variant → clip) | Line |
+| --- | --- | --- |
+| greeting (the first time in range and in sight) | 668, random 0-1 → `dlr_becken_1` / `dlr_becken_2` | 94 |
+| the offer (state 1 → 3, the player within 1.5 m) | none | 95 |
+| no money | 603, random 2-3 → `dlr_refuse_1` / `dlr_refuse_2` | 97 `nocash` |
+| carrying the most | 603, random 2-3 | 101 `limit` |
+| rip-off | the push (below), no gesture | 105 `ripoff` |
+| a deal completed | none (the money pair) | 96 `cash`, at most every 5 s |
+| the player leaves after a deal | 603, random 5-6 → `dlr_thanks_1` / `dlr_thanks_2` | 98 |
+| the player leaves without one | 603, 4 → `dlr_goodbye1` | 99 (not after a "limit" refusal) |
+| a fight near him (wary) | 603, 7 → `dlr_nearfight` | 100 |
+
+603 is `ANIM_FIDGET_FIGHT` and 668 `ANIM_SPECIAL_ACTION` ([anim ids](../references/anim-ids.md)). Entry 0 of 603
+is `dlr_offer_flash`, entry 1 `money_give` and entry 2 of 668 `money_take`; no gesture here uses them (the gesture
+kinds 1 and 9 of `0x002c7158`, which would, have no caller). A dealer whose gang is not kind 24 plays his
+character's own 603 and 668 clips.
+
+##### The icon {#dealer-icon}
+
+The icon object's script type is `dyn_icon` (its record holds the pointer at `0x005131e4`: init `0x003e8fa0`, update
+`0x003e92e0`, message `0x003e9470`). Init (`DynIcon_Init`): the type's model, **attached to the human**
+(`Obj_Attach`), update interval 2 ticks, velocity zero, **angular velocity (0, 0, π)**: it turns about the world z
+axis at 180° per second, one turn in 2 s ([World objects](objects.md#objective-markers) for how an angular velocity is
+applied). Its local position: **(0, 0, 2.5)** m for `dyn_weapdeal`, `dyn_flashdeal` and `dyn_spraydeal` (model hashes
+`0x30f09efb`, `0x51d27ab6`, `0xd939c21d`); (0, 0, 2.25) for the other icons, except `dyn_cross` (at bone 11) and
+`dyn_cuffs` (detached at bone 11, turning at 90° per second); the player markers (`dyn_play_one`, `dyn_play_two`,
+their `_euro` forms) and `dyn_lizziestarget` do not turn. Inferred: the attachment's origin is the human's root at
+his feet, so the dealer's icon floats 2.5 m above the ground. Messages: 8 detach, `0x0a` show or hide, `0x15`
+remove, `0x20` hide, `0x34` the colour pair (`HuSetSpinningIconColor`).
+
+**The radar icon** (`DealerGoal_AddRadarIcon` `0x002c7ee0`, at the greeting, only with the option and when the dealer
+has no blip yet): blip type 2, 4 or 3 with icon 29, 31 or 30 at 0.8 for types 0, 1, 2 ([GUI](gui.md#radar-icons)).
+
+##### Process {#dealer-process}
+
+`DealerGoal_Process` (`0x002c7fd8`), each update, with *d* the nearest player's distance
+(`GameState_FindNearestPlayer` `0x00419ee0`):
+
+1. **Range**: `+0x3e` = (*d* ≤ range). Out of range: if he was in range last update and the dealer was dealing, the
+   leaving gesture and line (above; first a turn to him, only when the dealer's actions are not blocked); then the
+   **reset** (`DealerGoal_Reset` `0x002c7de8`): the dealer's own 668 override removed when a deal was made; `+0x3e`,
+   `+0x3f`, `+0x40`, `+0x42`, `+0x45` cleared; each player's 668 override removed; state 1 (unless 4 or 5); next scan
+   0. Beyond 2 × range the greeting is forgotten (`+0x3d` = 0).
+2. **In range**: the sight test `Human_HasLineOfSight(dealer, player)` (`0x00222288`, [Sight](#sight)); and, once per
+   visit for each player, `money_give.anm` is bound to that player's anim 668 (`Human_SetAnimOverride` `0x00221aa0`),
+   in sight or not, so the clip is loaded before the pair plays it. Nothing plays it here: the money pair does.
+3. Nothing more while the dealer's actions are blocked (brain `+0x2e` > 0).
+4. **State 4** (after a rip-off): brain `+0x26c` = 5 and a `GoalMoveToExitFlag` (`0x002da8f8`; gait 4, arrival 2 m,
+   flag message `0x66`) to the **nearest flag of activity 8** (`Flag_FindNearestByActivity` `0x004177d8`: of the
+   level's flags whose `+0xd0` is 8 and whose `+0xd4` is set, the nearest in a straight line to the dealer; with these
+   arguments there is no walkability test). With no such flag he stays. **State 5** (attacked, below): the same once
+   his current line has ended (the sound handle at human `+0x178`), with gait 5 set first (`0x0028aac0`).
+5. Not in sight, or no player: done for this update. The **dealer** busy (`0x00228258`: state flags `0x1f80974000`,
+   or record `+0x108` still ahead of the time): the prompt is withdrawn (`+0x1b2` = 0, vtable `+0x12c`); done.
+6. **Wary scan**, every 2 s while his threat response is 0: the nearest other live gang (`0x0016c978`) and its member
+   nearest the dealer. When that member is within 4 m of the dealer, the dealer within 4 m of home, the member someone's
+   target (his brain's attacker list `+0x1a4` is not empty) and in the dealer's sight: `+0x46` = 1, and unless the
+   dealer is talking, a [Spectate goal](#spectate) is pushed (keep 8 m, 2-4 s between looks, an 8 s limit) when the
+   member walks or stands (gait below 3); a turn to the player, the wary gesture and line; done.
+7. **Home**: more than 1 m from home and not playing 668: a move action home (gait 4, radius 1 m); done.
+8. **Facing**: more than 15° off the player: not yet greeted → turn to him (`TurnToPointAction`); done. Greeted → turn
+   (and done) only when the player stands (gait 0) within 2 m.
+9. While the dealer is talking: done. **State 1** and the player within **1.5 m**, not talking himself: the offer
+   line, `+0x1b2` = 1, the prompt registered, dealing (`+0x42`) = 1, **state 3**; done.
+10. Not greeted: a turn to him, the greeting gesture and line, the radar icon (with the option); greeted, state 1.
+11. Every update that gets here: `+0x1b2` = 1 and the **kind-4 prompt** registered through the dealer's vtable
+    `+0x124` (`GSTRING.HUD` text of his type, [Crimes](crimes.md#context-records), reach 1.75 m). So the prompt is
+    offered from the greeting on, not only in state 3, while the dealer is idle and the player in range and in sight.
+
+##### Buying {#dealer-buy}
+
+Triangle at the prompt sends message 0 to the dealer ([Crimes](crimes.md#triangle)); his brain
+(`DealerBrain_OnEvent` `0x00303178`) passes event 0 to the deal (`DealerGoal_OnBuy` `0x002c74d8`) while the top goal
+is `GoalDealer`. The table at `0x005110f8`, 8 bytes per type `{u32 prompt text, u8 item, u8 price, u8 most carried,
+u8 amount}`:
 
 | Type | Prompt | Item | Price | Most carried | Amount |
 | --- | --- | --- | --- | --- | --- |
 | 0 (flash) | 6 | 1 (flash) | $20 | 3 (4 with upgrade (6, 7)) | 1 |
-| 1 (weapons) | 7 | 4 | $50 | 8 | 1: a `dyn_swhbld_super` through a member of his gang within 10 m (`0x00165f80`, not traced further); the count is the goal's `+0x38` |
+| 1 (weapons) | 7 | 4 | $50 | 8 (counted on `+0x38`, the dealer's deals) | 1 |
 | 2 | 5 | 3 (spray paint) | $5 | 9 | 1 |
 
-The deal, for a player buyer: the dealer turns to him, state 3, then:
+The deal, for a buyer that is a player and a dealer neither down, dead nor busy: the dealer turns to him (when his
+actions are not blocked); unless already in state 3 his current line is cut (`0x0021ec38`); `+0x40` = 0, dealing,
+`+0x45` = 0, state 3. Then the first that applies:
 
-1. Money below the price: speech 97 `nocash` and a gesture; the prompt is withdrawn (`+0x1b2` = 0).
-2. Already carrying the most: speech 101 `limit`, a gesture, `+0x40` = 1; the prompt is withdrawn.
-3. A **dirty** dealer (`+0x41`): speech 105 `ripoff`, the price is taken and added to the dealer's money, when the buyer
-   is in reach he queues an action (`0x002fa5a0` with `0x15`; inferred: a shove), and he runs (state 4). Nothing is given.
-4. Otherwise the pair `money_take.anm` / `money_give.anm` plays on the dealer and the buyer
-   (`Human_PlayDynPair`); the deal completes once the pair is playing or cannot load: **the item's amount is
-   added** (with its pickup sound), **the price taken** and added to the dealer's money (at most 999), `+0x3f` = 1
-   and the count `+0x38` + 1. Speech 96 `cash` comes at most every 5 s.
+1. **Money** (item 2) below the price: the refusal gesture and `nocash`; `+0x34` = now + 5 s; the prompt is withdrawn
+   (`+0x1b2` = 0). With two players the deal is first offered to the other (`0x002c73b8`: within range, with the
+   money and room), and the prompt stays when he can buy.
+2. **Carrying the most**: the refusal gesture and `limit`, `+0x40` = 1, the rest as in 1.
+3. **Dirty** (`+0x41`): when the dealer is free (`0x002282d8`), the buyer within the reach of attack kind 11
+   (`Attack_ReachSquared` `0x00230d00`: kind 11 is anim 21, its reach from `AttackTable_GetReach`) and his actions
+   could be cleared, he faces the buyer at once (`Human_FaceHuman` `0x00221dd8`) and queues a **play-anim-id
+   action** (`PlayAnimIdAction_Init` `0x002fa5a0`, vtable `0x00542b60`) of anim **21 `ANIM_ATTACK_PUSH`** (`gen_push`),
+   random variant, no blend. The action only plays the clip (`0x0025a3e0`); it writes no command, so what the push
+   does to the buyer is whatever the clip's own strike does (not traced). In every case: `ripoff`, the price taken from
+   the buyer and added to the dealer's money (human `+0x370`, at most 999), the prompt withdrawn, and **state 4** (he
+   runs off). Nothing is given.
+4. **The weapons dealer** needs a member of the **buyer's** gang within 10 m of the buyer who is not busy and not
+   already holding `dyn_swhbld_super` (`Gang_FindMemberForItem` `0x00165f80`); without one, as in 2.
+5. **The money pair**, unless the dealer's front action is of type `0x16`: when both `money_take.anm` and
+   `money_give.anm` are in the level's animation cache (`0x0016f980`) and the dealer is not already in the pair (his
+   anim is not 668 and his state code `+0x14` is not 17), **start it and return**:
+   `Human_PlayDynPair(dealer, buyer, "money_take.anm", "money_give.anm")` (`0x00238828`) binds `money_take` to the
+   dealer's 668 and `money_give` to the buyer's, sets both state codes to 17 and makes each the other's partner
+   ([HuPlayDynPair](../references/bindings/character.md#huplaydynpair)); `+0x45` = 1. Nothing here aligns the two:
+   no position or heading is written beyond the dealer's turn above. When the pair **is** already playing, or either
+   clip is missing from the cache, the deal completes now.
+6. **Completion**: `cash` (at most every 5 s); the weapons dealer's chosen member drops what he holds and gets
+   `dyn_swhbld_super` in hand; for the other types the item's amount is added to the buyer's inventory
+   (`Inventory_AddItem`, with the pickup sound `vags/interface/powerup`); the price is taken and added to the dealer's
+   money (at most 999); `+0x3f` = 1, `+0x38` + 1.
 
-With two players, a refusal first offers the deal to the other one (`0x002c73b8`). Inferred: a second event 0
-completes the pair-anim path, since the first one returns once the pair starts.
+So, with the clips loaded, **one event 0 starts the pair and the deal completes on the next event 0 that arrives
+while the pair still plays**. Confirmed (code) at `0x002c74d8`. The only sender found is the triangle press; whether
+the buyer can press again during the pair (and so whether something else completes it) is an open question.
+
+**Attacked** (`DealerBrain_OnHit` `0x00302ff0`, events `0x10` and 1): a help call to his gang (30 m); then, when the
+dealer is not down and his top goal is the dealer goal, goal 1, or a Spectate goal without a fight goal, and his brain
+is not type 2: with `GoalDealer` on the stack its state becomes **5** and its **run chance** `+0x3a` is rolled (50 %
+without the goal). `Random_Int(100)` below it → a flee goal (`DealerFlee_Push` `0x002c88a8` → `0x002c8970`, vtable
+`0x00540c30`): after 25-50 ms he steps back to 2-4 m from the attacker, then runs at gait 5 to the nearest flag of
+activity 8 (`0x00416f08`) with line 9. Otherwise threat response 2, `Brain_Fight` for 15 s, and the same goal with
+its "fight" byte set, which after the step back puts `dyn_swhbld_super` in his hand and ends. So the run chance is
+read only when he is attacked.
 
 #### GoalRiot {#riot}
 
@@ -1460,6 +1714,128 @@ Class details, confirmed (code) unless marked:
   (`Goal_CallGang`, radius `range` or twice the member's brain `+0x140`).
 - **Vandalize** / **Steal**: each member's goal takes the zone, the delay and `leaderRange`; the vandal brain's
   `+0x28d` is set. Vandalize's code 1 comes from `0x0039a580(zone)` reporting nothing left to break.
+
+#### The Diego and Vargas fight {#boss-diego-vargas}
+
+`TacticBossScenarioA` (level 5, [binding](../references/bindings/ai.md#tacticbossscenarioa); tactic vtable
+`0x00543440`) gives each Hurricane a goal by character (`BossDiegoVargasTactic_AssignGoal` `0x00309ea0`, again on
+gang events 19 and 22). Confirmed (code) at the addresses cited unless marked.
+
+| Who, stage | Goal | Built from the tactic's tables |
+| --- | --- | --- |
+| Diego (120), any stage | BigBrawler (type `0x84`, `BigBrawlerGoal_Init` `0x002e8288`) | `diegoFatigue`, `diegoDamage`, `diegoProne` (all three), `diegoCycles[stage]`, no flag, no objects |
+| Vargas (119), stage 2 | BigThrower (`BigThrowerGoal_Init` `0x002ed0a8`, vtable `0x00542880`) | `flags[1]`, `vargasCycles[2]`, `vargasFatigue[2]`, `vargasDamage[2]`, `vargasObjects` |
+| Vargas, stage 3 | BigBrawler | `vargasFatigue`, `vargasDamage`, `vargasProne`, `vargasCycles[3]`, `flags[2]`, `vargasObjects` |
+| anyone else | StationaryThrower (`StationaryThrowerGoal_Init`) | `minionObjects` |
+
+After pushing a BigBrawler goal the tactic writes the stage into it (`BigBrawlerGoal_SetStage` `0x002e8840`, `+0x3f`).
+
+**What the bytes mean.**
+
+- **fatigue**: seconds. After a run of hits (BigBrawler) or a run of throws (BigThrower) the boss pushes a **tired
+  goal** (type `0x90`, `TiredGoal_Init` `0x002e7970`, vtable `0x00542a00`) lasting `fatigue × 1000` ms
+  (`BigBrawlerGoal_GetFatigueMs` `0x002e8818` reads entry `stage − 1`).
+- **damage**: percent of his maximum health. The tired goal ends early once he has lost more than `damage` % of his
+  maximum since it began (`+0x1a` = max × damage / 100, `+0x18` the health at the start;
+  `BigBrawlerGoal_GetDamagePercent` `0x002e8830`).
+- **cycles**: for the BigThrower, the throws before he tires (`+0x2a`; at half of them he taunts once, `0x002fb0f0`
+  kind 2; after a throw at or past half, a 2 s wait); 0 means he never tires. For the BigBrawler the byte is stored
+  (`+0x3d`) and **never read**.
+- **prone**: stored (`+0x3a`-`+0x3c`) and **never read**; no reader was found in the goal's functions or the tactic.
+- The defaults when a table is missing (`GoalBigBrawler` from a script): fatigue 5, 4, 3; damage 30, 20, 10; prone
+  100.
+
+**BigBrawler** (`0x002e8288`; fields `+0x10` a flag handle, `+0x14` the target's handle, `+0x18` state, `+0x1c` the
+re-pick time, `+0x20` the chosen attack kind (45 none), `+0x24`-`+0x33` eight object ids, `+0x34` fatigue[3], `+0x37`
+damage[3], `+0x3a` prone[3], `+0x3d` cycles, `+0x3f` stage, `+0x40`/`+0x41` the saved brain bytes `+0x0b`/`+0x0c`,
+`+0x42` the next object index, `+0x43` the flag step, `+0x44` the last attack was kind 12 or 13, `+0x45` hits
+taken, `+0x46` a counter flag). The constructor clears brain `+0x11e` (he cannot be chased) and, given a ninth
+argument, puts that object in his hand (the tactic passes none).
+
+- **Start** (`0x002e8418`): brain `+0x21c` = 0, may pick up off, field of view 2π, `+0x11e` = 0, human flags
+  `|= 0x223c0`, the human's vtable `+0xe4` with 1e9 (inferred: a hit-react resistance), and the brain bytes `+0x0b`,
+  `+0x0c` saved. **End** (`0x002e8530`): undoes them (threat response 2, field of view 1.92 rad) and restores the
+  two bytes.
+- **Process** (`BigBrawlerGoal_Process` `0x002e8f78`), by state: **0** (stage 1 only) a taunt, line `0x57` and anim 643
+  (`ANIM_RAGE_START`) after 0-750 ms, then 2. **1** pick the best enemy (with the goal's own score hook below); if he
+  is the current target and busy, close to the near range, taunt (`0x002fb868`) and wait 1 s; else an event 24
+  broadcast within 30 m (`0x00293768`), an EngageEnemy goal (taunt `0x47`) whose run-in distance `+0x30` is set to
+  6.25 (2.5 m), the cross + square special (kind 16) on an enemy already within 0.55 × far, else a 31 % taunt, a turn
+  to him, and brain `+0x0c` raised by one for Diego (`+0x0b` too, but it stays 0 for both bosses, below); then 2.
+  **2** fight: an object in hand is used on the
+  nearest enemy (`0x002faeb0` kind `0x10`; inferred: thrown); otherwise a target re-picked every 4 s, an attack kind chosen
+  (`Brain_PickAttack`) and kept until it can be queued in reach (moving in within its reach), with a 10 % shout
+  while closing. **3** the flag cycle (Vargas, stage 3): walk to the flag (0.5 m), turn toward the camera, play 549
+  `ANIM_GHETTO_PICK_UP` (the next of the eight objects appears in his hand, `0x002e8ee0` → `0x0024c280`, while the
+  tactic has fewer than two objects alive, `0x0030a680`), step 2 m back along the flag's heading, then 2.
+- **Hits** (`BigBrawlerGoal_OnHit` `0x002e8bc8`, from the tactic's event 1): a running boss shouts (line 8); in state 2
+  a help call (20 m) and one more hit counted; at the **sixth** hit the tired goal is pushed, the count reset, and with
+  a flag the state becomes 3.
+- **Attack warnings** (`BigBrawlerGoal_OnAttackWarning` `0x002e8858`, event `0x10`): in state 2, unless tired, a grab or
+  tackle he could escape is answered with command 3 (the counter); a player attacker becomes his target; an attacker
+  within 1.5 m, while the boss has 10 % health or more and is free, is shoved off: line 11 or 14 and anim 653
+  `ANIM_SPECIAL_ATTACK1_FRONT`.
+- **Score hook** (`BigBrawlerGoal_AdjustEnemyScore` `0x002e8620`, goal vtable `+0x54`): −999 beyond his sight range, or
+  when the enemy's task record (human `+0xd8`) holds a time (`+0x2c`) 751 ms or more in the past (meaning not traced);
+  in state 2 also beyond 1.15 × far (except Diego in stage 3),
+  else + 4 per metre inside the range, + 15 for a player, + 10 when knocked down; in state 1 + 4 per metre of distance
+  and + 20 for a player not in a hold (`0xe0000`).
+
+**The tired goal** (`0x90`; Start `0x002e7a68`, End `0x002e7b30`, Process `0x002e7f50`): Start saves and clears his
+god mode (human flag `0x10`), no-reaction (`0x800`) and unstunnable flags, clears `0x910`, sets `0x8000000`,
+**stuns him** (`Human_Stun`) and sets the deadline. Process: line `0x95` once, then line 8 while he stands stunned;
+when the deadline passes or the damage limit is reached, his saved god mode back and `0x800` set; then the stun is
+ended, and once he is free, god mode on, line `0x96` and anim 643; done on the next update. End restores the saved
+flags and clears `0x8000000`. So **fatigue** is how long he stays open and **damage** how much of his health the
+players may
+take in that window.
+
+**The health caps and the break** (`BossDiegoVargasTactic_CheckHealth` `0x0030a150`, each tactic update):
+
+1. **Diego, stage 1 at 66 % health or below** (stage 2: 33 %): unless the tired goal is on top, his health is put back
+   to **67 %** (34 %): he cannot go lower while not tired. While tired and not yet breaking, the **break** starts
+   (`TiredGoal_StartBreak` `0x002e7c18`): stun ended, fight stance off, flags `0x800` and god mode `0x10` set, anim
+   **671** `ANIM_SPECIAL_IDLE` chained to 672 (`0x0025a3e0`'s special case: held flag `0x20000`, state code 18), blend
+   0.3 s, line `0x22`, `+0x21` = 1; health set to exactly 66 % (33 %). While held flag `0x20000` lasts the tactic's
+   Process returns **18** (`TacAnimStart`) to the callback.
+2. **The break is done** (`TiredGoal_IsBreakDone` `0x002e7e68`) once his state code is 18 with no held flags left, and
+   **2 s** more have passed; the tactic then returns **1** (`TacFinished`). Until then, outside state 18 and not busy, god
+   mode is cleared again.
+3. **Vargas, stage 3**: at 66 % (first break) and 33 % (second, tactic `+0x69` = 1), the same start; when done,
+   `TiredGoal_EndBreak` (`0x002e7da8`) plays 673 `ANIM_SPECIAL_IDLE_END` (blend 0.3 s), clears `0x10` and `0x800`, and the
+   break count `+0x69` rises. Stage 3 reports 1 once neither boss is standing (`0x0030a458`).
+
+The clips 671-673 are `missing_anim_filler` in the anim id table, so the level supplies them (inferred: through the
+bosses' dynamic animations).
+
+**BigThrower** (Vargas, stage 2; Process `0x002ed718`): state 0 a taunt (line `0x11`, anim 643); 1 walk to the flag
+(0.5 m) or tire (above); 2 turn toward the camera and play 549 (`ghetto_pickup`; for others than Vargas the pickup clip
+is overridden with the name at `0x00567a88`), the next object appears in his hand (`0x002ed498`); 3 aim: turn within
+45°, line of sight (six misses drop the target), then 4; 4 throw (`0x002faeb0` kind `0x10`, 100 ms) and back to 1
+when the hand is empty. Start (`0x002ed168`) and End (`0x002ed260`) as the BigBrawler's, plus that override.
+
+#### Brain bytes `+0x0b` and `+0x0c` {#brain-boosts}
+
+- **`+0x0b`, turn boost** (`Brain_SetTurnBoost` `0x0028cdf8`, 56 callers; forced 0 for Diego and Vargas, classes
+  `0x77`, `0x78`, and for a class whose `+0x11b` is 6 or 7): an AI human's turn limit per update
+  (`Human_GetTurnRateForGait` `0x002212d0`, through `Human_MaxTurn`) is the gait's AI word × (b + 1) for b ≥ 0, or
+  ÷ (1 − b) for b < 0; a pad-controlled human ignores it. Above 0 it also swaps the AI's fight-stance walk (anim slot
+  14) from 372 to 380, the player's combat walk (`0x00243848`). EngageEnemy raises it by one for its run-in.
+  **`GoalRunCarrotRun`**: Start saves the byte (`RunCarrotGoal_Start` `0x002e1320`), End restores it, and every fourth
+  update `RunCarrotGoal_UpdateSpeed` sets it to the saved value + 0 (no boost), + 2 (a speed boost up to 0.5) or + 3
+  (above 0.5): a runner being caught turns 3 or 4 times as fast as normal, so he keeps to the path at speed. Confirmed
+  (code).
+- **`+0x0c`** (`Brain_SetStartBoost` `0x0028ce60`; forced 0 for a class whose `+0x11b` is 6 or 7): when above 0, an AI
+  that starts moving from rest gets state code 8 instead of 6 (`0x00243848`; what 8 changes is not traced).
+
+#### The Warriors' pick-ups {#warrior-pickups}
+
+`WarriorBrain_Think` (`0x003052f0`), every sixth think, while the brain may pick up (`+0x265`), holds nothing, and its
+gang kind's pick-up factor (`0x001644f8`) is not 0: with chance 25 × factor %, when its top goal allows it
+(`0x0029eaa0`), the nearest pickable object within 1.5 m (`0x0029d5f0`; a wider search when the gang's leader is free
+and its gang has a turf and no enemies) is fetched (`0x002faf98`). **`CfgWarriorWeapons(false)`** (game state
+`+0x5704` = 0) refuses an object whose type class (`+0x87`) is 4, a weapon; other objects are still taken. A Warrior
+holding a weapon of kind 4 or 6 with no enemies drops it unless its gang's tactic is type `0x26`. Confirmed (code).
 
 #### Spawners {#spawners}
 
@@ -2224,8 +2600,8 @@ when `GangCanFlee` turns it on.
   (`0x0022aae8`, `0x002fbef0`).
 - `GoalFollowPlayer`'s Process (vtable `0x00541d70`) and the formation's assignment mode `+0x275`.
 - What reads the turn action's `+0x10` (`ActLookAt`'s turn value) and the play-anim action's flag (loop or hold?).
-- What drives the dealer's run and dirty chances, and what goal `0x002b4098` (type `0x10`, Spectate; the dealer's wary
-  goal, the crowd's timed goal) does beyond waiting.
+- Whether the buyer can press triangle during the dealer's money pair (the deal completes on a second event 0,
+  [Buying](#dealer-buy)), and what the rip-off's `gen_push` clip does to the buyer.
 - Who sends a gang's event 18 (a member down or dead), and with which attacker: `Gang_OnEvent` reads it, but its
   sender was not found (`0x0022dd98` and `0x0022e020` are the arrest's).
 - What a scene's end passes to the callback `Goal_PlayAnimation` hands it (`0x00353f40`).

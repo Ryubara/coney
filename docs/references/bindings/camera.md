@@ -77,7 +77,7 @@ points while the path plays changes it from the next update.
 
 - **Evidence:** confirmed (code) at `0x0011cbb0`, `0x00142ac8`, `0x00142a58`; detail: traced
 - **Wrapper** `0x00366e18` (registered by `RegisterBindings`); **calls** `0x0011cbb0` `Camera_AddPoizoPoint`,
-  `0x00142ac8`, `0x00142a58` `PoizoCam_AddPoint`
+  `0x00142ac8` `CamSpline_AddPointAngles`, `0x00142a58` `PoizoCam_AddPoint`
 - **Used by** 6 of 467 script chunks (10 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
@@ -105,7 +105,7 @@ not taken from it.
 
 - **Evidence:** confirmed (code) at `0x0011cc68`, `0x00142d28`; detail: traced
 - **Wrapper** `0x00366f90` (registered by `RegisterBindings`); **calls** `0x0011cc68` `Camera_AddPoizoPointCam`,
-  `0x00142d28`
+  `0x00142d28` `CamSpline_AddPointFromCamera`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
@@ -151,7 +151,7 @@ CamAssignRevCamButton(button)
 Sets which button shows the reverse camera (0x0050b230).
 
 - **Evidence:** confirmed (code) at `0x0011e198`; detail: brief
-- **Wrapper** `0x003672a8` (registered by `RegisterBindings`); **calls** `0x0011e198`
+- **Wrapper** `0x003672a8` (registered by `RegisterBindings`); **calls** `0x0011e198` `Camera_AssignReverseButton`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Coney:** implemented
 
@@ -360,7 +360,7 @@ Sets up the win camera that circles the winner at the end of a Rumble match.
 0x001439d8, orbit 0x00143c78. Behaviour: [Rumble](../../research/rumble.md#win-camera).
 
 - **Evidence:** confirmed (code) at `0x0011c858`; detail: brief
-- **Wrapper** `0x00366360` (registered by `RegisterBindings`); **calls** `0x0011c858`
+- **Wrapper** `0x00366360` (registered by `RegisterBindings`); **calls** `0x0011c858` `Camera_CreateWin`
 - **Used by** 33 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: yes
 - **Coney:** implemented
 
@@ -481,7 +481,7 @@ CameraTransform(camera, object)
 Sets an object's matrix to its matrix combined with the camera's (attaching it to the view). No script calls it.
 
 - **Evidence:** confirmed (code) at `0x0011ba20`; detail: brief
-- **Wrapper** `0x003658c0` (registered by `RegisterBindings`); **calls** `0x0011ba20`
+- **Wrapper** `0x003658c0` (registered by `RegisterBindings`); **calls** `0x0011ba20` `Camera_AttachObjectToView`
 - **Used by** no script on the disc
 - **Coney:** not implemented
 
@@ -501,7 +501,7 @@ CameraTransformPoint(camera, pos)
 Transforms a point by a camera's matrix and writes it back into the table. No script calls it.
 
 - **Evidence:** confirmed (code) at `0x0011b970`; detail: brief
-- **Wrapper** `0x00365938` (registered by `RegisterBindings`); **calls** `0x0011b970`
+- **Wrapper** `0x00365938` (registered by `RegisterBindings`); **calls** `0x0011b970` `Camera_TransformPoint`
 - **Used by** no script on the disc
 - **Coney:** not implemented
 
@@ -518,7 +518,7 @@ No arguments.
 Returns the camera system's last target. No script calls it.
 
 - **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003673e8` (registered by `RegisterBindings`); **calls** `0x0011e188`
+- **Wrapper** `0x003673e8` (registered by `RegisterBindings`); **calls** `0x0011e188` `Camera_GetLastTarget`
 - **Used by** no script on the disc
 - **Coney:** not implemented
 
@@ -720,7 +720,7 @@ Registers or unregisters an object with the camera system (inferred: for camera 
 it.
 
 - **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00367388` (registered by `RegisterBindings`); **calls** `0x0011e130`
+- **Wrapper** `0x00367388` (registered by `RegisterBindings`); **calls** `0x0011e130` `Camera_RegisterObject`
 - **Used by** no script on the disc
 - **Coney:** not implemented
 
@@ -746,8 +746,8 @@ callback. Scripts use it to fly a path back to where it began.
 restores the original order.
 
 - **Evidence:** confirmed (code) at `0x0011cb70`, `0x00120038`, `0x00142578`; detail: traced
-- **Wrapper** `0x00366dd0` (registered by `RegisterBindings`); **calls** `0x0011cb70`, `0x00120038` `Cam_GetPoizo`,
-  `0x00142578`
+- **Wrapper** `0x00366dd0` (registered by `RegisterBindings`); **calls** `0x0011cb70` `Camera_ReversePoizo`,
+  `0x00120038` `Cam_GetPoizo`, `0x00142578` `PoizoCam_Reverse`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
 - **Coney:** not implemented
@@ -825,7 +825,7 @@ camera current. The leash rules then keep the camera where it was put until the 
 
 - **Evidence:** confirmed (code) at `0x0011c638`, `0x00125c50`; detail: traced
 - **Wrapper** `0x00365c60` (registered by `RegisterBindings`); **calls** `0x0011c638` `Camera_SetFollowPosition`,
-  `0x00125c50`
+  `0x00125c50` `Cam_Follow_SetPosition`
 - **Used by** 12 of 467 script chunks (17 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 7 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
@@ -871,7 +871,7 @@ CamSetGameAspect(aspect)
 Sets the game view's aspect ratio. No script calls it.
 
 - **Evidence:** inferred; detail: brief
-- **Wrapper** `0x003672e0` (registered by `RegisterBindings`); **calls** `0x0011e0e0`
+- **Wrapper** `0x003672e0` (registered by `RegisterBindings`); **calls** `0x0011e0e0` `Camera_SetGameAspect`
 - **Used by** no script on the disc
 - **Coney:** not implemented
 
@@ -890,7 +890,7 @@ CamSetHUDAspect(aspect)
 Sets the HUD's aspect ratio. No script calls it.
 
 - **Evidence:** inferred; detail: brief
-- **Wrapper** `0x00367318` (registered by `RegisterBindings`); **calls** `0x0011e100`
+- **Wrapper** `0x00367318` (registered by `RegisterBindings`); **calls** `0x0011e100` `Camera_SetHudAspect`
 - **Used by** no script on the disc
 - **Coney:** not implemented
 
@@ -909,7 +909,7 @@ CamSetHUDScale(scale)
 Sets the HUD scale. No script calls it.
 
 - **Evidence:** confirmed (code) at `0x0011e120`; detail: brief
-- **Wrapper** `0x00367350` (registered by `RegisterBindings`); **calls** `0x0011e120`
+- **Wrapper** `0x00367350` (registered by `RegisterBindings`); **calls** `0x0011e120` `Camera_SetHudScale`
 - **Used by** no script on the disc
 - **Coney:** not implemented
 
@@ -956,7 +956,7 @@ CamSetSplitMode(mode)
 Sets the split-screen layout and re-lays out the views.
 
 - **Evidence:** confirmed (code) at `0x0011e0a8`; detail: brief
-- **Wrapper** `0x00367270` (registered by `RegisterBindings`); **calls** `0x0011e0a8`
+- **Wrapper** `0x00367270` (registered by `RegisterBindings`); **calls** `0x0011e0a8` `Camera_SetSplitMode`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** implemented
 
@@ -1044,6 +1044,7 @@ to the start camera). At most 8 points (`PoizoCam_AddPoint` 0x00142a58); further
 
 - **Evidence:** confirmed (code) at `0x0011c9e0`, `0x00142368`; detail: traced
 - **Wrapper** `0x00366c80` (registered by `RegisterBindings`); **calls** `0x0011c9e0` `Camera_SetupPoizo`, `0x00142368`
+  `CamSpline_Start`
 - **Used by** 7 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: yes
 - **Later in the story:** 6 of 28 levels, first [`level87`](story.md#level87) (mission 3)
 - **Coney:** implemented
@@ -1124,6 +1125,6 @@ CamUseDeathCamera(human, ms, ms2)
 Switches to the death camera on a human, fades the screen, hides the HUD and stops the players.
 
 - **Evidence:** confirmed (code) at `0x0011daa8`; detail: brief
-- **Wrapper** `0x00366bd8` (registered by `RegisterBindings`); **calls** `0x0011daa8`
+- **Wrapper** `0x00366bd8` (registered by `RegisterBindings`); **calls** `0x0011daa8` `Camera_UseDeathCamera`
 - **Used by** 33 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

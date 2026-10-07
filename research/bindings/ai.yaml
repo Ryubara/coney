@@ -959,12 +959,13 @@
     the chasing gang and sets its speed to the gait's speed plus up to 6 m/s: by default the boost is
     `1 - d/distance` when that chaser is closer than `distance` (so a caught-up carrot sprints away), with
     `keepAhead` it is `min((d - distance) * 0.2, 1)`. It also raises a brain byte (`+0x0b`, 0/2/3 for boosts of
-    0, up to 0.5, above 0.5) that is restored when the goal ends.
+    0, up to 0.5, above 0.5) that is restored when the goal ends: the brain's turn boost, so the runner turns 3 or 4
+    times as fast while a chaser is close.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Speed is recomputed only while brain flags `+0x34 & 3` are clear. The meaning of brain `+0x0b` (set via
-    0x0028cdf8, forced 0 in some human states) is not traced; inferred: a panic/urgency level for the run animation.
+    Speed is recomputed only every fourth update (brain `+0x34 & 3` clear). Brain `+0x0b` (Brain_SetTurnBoost
+    0x0028cdf8) multiplies an AI human's turn limit by (b + 1); see the AI page (Brain bytes).
     No chaser alive: speed stays the gait's.
   usage: {chunks: 4, calls: 10, boot: false, mission1: false, result_used: false, levels: [5, 84, 20]}
 
@@ -1613,10 +1614,10 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the dealer."}
     - {name: dealerType, lua: number, ctype: int, desc: "Dealer type 0, 1 or 2; overridden by the human's character class when it is one of the dealer classes (0x1aa-0x1ae give 0, 0x1af-0x1b3 give 2, 0x1b4-0x1b8 give 1)."}
-    - {name: range, lua: number, ctype: float, default: 10, desc: "A distance in metres (default 10; inferred: how close the player must come to deal)."}
-    - {name: runChance, lua: number, ctype: unsigned, default: 50, desc: "Percentage chance (0-100, default 50) stored with the goal; scripts call it `chance2Run` (inferred: the dealer runs when approached)."}
+    - {name: range, lua: number, ctype: float, default: 10, desc: "Metres within which the dealer greets the nearest player and offers the deal (default 10)."}
+    - {name: runChance, lua: number, ctype: unsigned, default: 50, desc: "Percentage chance (0-100, default 50) that the dealer flees rather than fights when attacked; scripts call it `chance2Run`."}
     - {name: dirtyChance, lua: number, ctype: unsigned, desc: "Percentage chance (0-100) that this dealer is dirty: the goal rolls it once when made; scripts call it `chance2BDirty`."}
-    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
+    - {name: option, lua: boolean, default: true, desc: "Adds the dealer's radar icon at the greeting (default true)."}
   description: >-
     Makes a human act as a street dealer the player can buy flash from; whether this dealer is dirty is decided by a
     random roll against `dirtyChance` when the goal is made. Levels use it for the flash dealers, including the
@@ -1625,7 +1626,7 @@
   depth: thorough
   notes: >-
     Wrapper 0x002c6c88 remaps the type by class; constructor 0x002c6d90 rolls `random(100) < dirtyChance` into
-    `+0x41`. The other arguments' roles are inferred from the scripts' field names.
+    `+0x41`. The goal's behaviour is on the AI page (GoalDealer).
   usage: {chunks: 21, calls: 27, boot: false, mission1: true, result_used: false, levels: [87, 95, 34, 2, 3, 5, 86, 93, 31, 14, 51, 52, 82, 92, 83, 20, 11]}
   coney: implemented
 
@@ -1699,7 +1700,7 @@
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the bum."}
     - {name: bumType, lua: number, ctype: unsigned, desc: "Behaviour type 0, 1 or 2 (scripts give each bum of a group a different one; type 2 calls come with a chance and an extra number)."}
-    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
+    - {name: option, lua: boolean, default: true, desc: "Adds the dealer's radar icon at the greeting (default true)."}
     - {name: chance, lua: number, ctype: unsigned, desc: "A percentage, clamped to 100 (scripts use 75; inferred: the chance to beg or react)."}
     - {name: value, lua: number, ctype: int, default: 3, desc: "A number (default 3)."}
     - {name: callback, lua: string, desc: "Name of a Lua function called by the goal, or nil."}
@@ -2511,7 +2512,7 @@
     - {name: name1, lua: string, desc: "A name."}
     - {name: approach, lua: number, ctype: unsigned, default: 3, desc: "A distance (default 3)."}
     - {name: range, lua: number, ctype: unsigned, default: 6, desc: "A distance (default 6)."}
-    - {name: option, lua: boolean, default: true, desc: "A flag (default true)."}
+    - {name: option, lua: boolean, default: true, desc: "Adds the dealer's radar icon at the greeting (default true)."}
     - {name: target, lua: number, ctype: unsigned, desc: "A handle."}
     - {name: callback, lua: string, desc: "Name of the Lua function that receives the tactic's events, or nil."}
     - {name: option2, lua: boolean, default: true, desc: "A flag (default true)."}
@@ -2911,14 +2912,14 @@
     - {name: flags, lua: table, elem: number, count: 2, written_back: true, desc: "Two flag handles (tactic `+0x20`): Vargas's throwing spot in stage 2 and his spot in stage 3; a flag that stops resolving is cleared to the null handle."}
     - {name: vargasObjects, lua: table, elem: number, count: 8, written_back: true, desc: "Eight object type ids (kept as 16 bits, `+0x30`) Vargas picks up and throws."}
     - {name: minionObjects, lua: table, elem: number, count: 8, written_back: true, desc: "Eight object type ids (`+0x40`) the other gang members throw from a stationary-thrower goal."}
-    - {name: diegoFatigue, lua: table, elem: number, count: 3, written_back: true, desc: "Three bytes (`+0x50`) handed to Diego's boss goal, one per stage (inferred: fatigue times)."}
-    - {name: vargasFatigue, lua: table, elem: number, count: 3, written_back: true, desc: "Three bytes (`+0x53`) for Vargas's goals; stage 2 uses the second."}
-    - {name: diegoDamage, lua: table, elem: number, count: 3, written_back: true, desc: "Three damage percentages (`+0x56`) handed to Diego's boss goal."}
-    - {name: vargasDamage, lua: table, elem: number, count: 3, written_back: true, desc: "Three damage percentages (`+0x59`) for Vargas; stage 2 uses the second."}
-    - {name: diegoProne, lua: table, elem: number, count: 3, written_back: true, desc: "Three prone percentages (`+0x5c`) handed to Diego's boss goal."}
-    - {name: vargasProne, lua: table, elem: number, count: 3, written_back: true, desc: "Three prone percentages (`+0x5f`) for Vargas's stage-3 goal."}
-    - {name: diegoCycles, lua: table, elem: number, count: 3, written_back: true, desc: "Three cycle counts (`+0x62`); Diego's goal gets the one of the current stage."}
-    - {name: vargasCycles, lua: table, elem: number, count: 3, written_back: true, desc: "Three cycle counts (`+0x65`); Vargas's goal gets the one of the current stage."}
+    - {name: diegoFatigue, lua: table, elem: number, count: 3, written_back: true, desc: "Diego's tired time in seconds, per stage (`+0x50`)."}
+    - {name: vargasFatigue, lua: table, elem: number, count: 3, written_back: true, desc: "Vargas's tired time in seconds, per stage (`+0x53`)."}
+    - {name: diegoDamage, lua: table, elem: number, count: 3, written_back: true, desc: "Percent of Diego's maximum health the players may take while he is tired, per stage (`+0x56`)."}
+    - {name: vargasDamage, lua: table, elem: number, count: 3, written_back: true, desc: "Percent of Vargas's maximum health the players may take while he is tired, per stage (`+0x59`)."}
+    - {name: diegoProne, lua: table, elem: number, count: 3, written_back: true, desc: "Three bytes (`+0x5c`) stored in Diego's goal and never read."}
+    - {name: vargasProne, lua: table, elem: number, count: 3, written_back: true, desc: "Three bytes (`+0x5f`) stored in Vargas's stage-3 goal and never read."}
+    - {name: diegoCycles, lua: table, elem: number, count: 3, written_back: true, desc: "Three bytes (`+0x62`); Diego's goal stores the stage's one and never reads it."}
+    - {name: vargasCycles, lua: table, elem: number, count: 3, written_back: true, desc: "Throws before Vargas tires in stage 2 (`+0x65`; the stage-3 goal stores but ignores its own)."}
     - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
     Sets the Hurricanes' tactic for the Diego and Vargas fight (level 5). Each member gets a goal by character:
@@ -2930,8 +2931,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The wrapper writes every table back unchanged. Exact meaning of the fatigue, damage, prone and cycle bytes lives
-    in the boss goals (0x002e8288, 0x002ed0a8), not traced. Members are re-assigned goals on events 19 and 22
+    The wrapper writes every table back unchanged. Fatigue is the seconds a tired boss stays stunned, damage the
+    percent of his maximum health that ends it early, cycles Vargas's throws before he tires (stage 2); prone, and
+    the BigBrawler's cycles, are stored but never read (AI page, The Diego and Vargas fight). Members are re-assigned goals on events 19 and 22
     (OnEvent 0x0030a798); Vargas's stage-3 break count is tactic `+0x69`. Vtable 0x00543440.
   usage: {chunks: 1, calls: 3, boot: false, mission1: false, result_used: false, levels: [5]}
 

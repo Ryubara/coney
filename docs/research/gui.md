@@ -196,8 +196,9 @@ Every screen element derives from one base (`0x001a8e30`). A widget object has i
 interface vtable at `+0x6c`, and, for a menu screen, a screen-flow state at `+0x70` (its own vtable at `+0x88`, its
 transition map at `+0x78`). Confirmed (code) at the constructors `0x002077b8`, `0x00209bc0`, `0x001d3ef0`.
 
-Widget vtable slots (GCC 2 layout, offsets from the vtable start), from the screens read here; confirmed (code) for
-the calls, names inferred:
+Widget vtable slots (GCC 2 layout: a slot is an 8-byte `{s16 delta, fn}` pair, the call adds the delta at
+`vtable + slot` to the object and calls the function at `vtable + slot + 4`; offsets from the vtable start), from
+the screens read here; confirmed (code) for the calls, names inferred:
 
 | Slot | Role |
 | --- | --- |
@@ -205,11 +206,11 @@ the calls, names inferred:
 | `+0x38` | `Render`: add the widget's sprites |
 | `+0x48` | is visible |
 | `+0x60` | destructor |
-| `+0x68` | `Shutdown`: release children and resources |
-| `+0x6c` | setup with a rectangle, size, colour and flags (sprite and text widgets) |
-| `+0x74` | the widget's rectangle |
+| `+0x68` | `Shutdown`: release children and resources; in `BaseWidget` and `TextWidget` this slot is the setup with a rectangle, size, colour and flags, and `BaseWidget`'s shutdown is `+0x70` |
+| `+0x70` | the widget's rectangle |
 | `+0x88` | is active |
 | `+0x90` | take focus (`OptionGrid`: `0x001d4d28`) |
+| `+0x98` | drop focus |
 | `+0xa8` | `Init`: create children, once (`+0x0c` marks it done) |
 | `+0xb0` | how much of the text to show (0-1; text reveal) |
 
@@ -257,7 +258,7 @@ size `+0x1d0` (`0x001b9288`); shadow byte `+0x18c` = `0x80`; box right limit `+0
 (the PM screens pass 1, the Rumble screens 0); its first text is string `0x1a`, then the owner's (`0x001cec28`, at
 most `0x95` bytes).
 
-**`OptionGrid`** (`0x001d3ef0`, vtable `0x0053b768`: update `0x001d4f20`, render `0x001d52c8`, active `0x001d4418`,
+**`OptionGrid`** (`0x001d3ef0`, vtable `0x0053b768`: update `0x001d4f20`, render `0x001d52c8`, is ready (slot `+0x88`) `0x001d4418`,
 focus `0x001d4d28`, unfocus `0x001d4db8`; input interface `0x0053b740`, handler `0x001d4c40`):
 
 - **Setup** `0x001d4110(y, grid, rows, a2, owner)`: position (0, 0, y, 1); up to 5 **items-per-row** counts at
@@ -295,6 +296,43 @@ from the runtime: PM_Light's bar starts at x 0); fill colour `+0x28`, fill fract
 
 **`ScrollingMenu`** (`0x001e1338`, vtable `0x0053bfc8`), the Rumble lists: [Front end](frontend.md#rumble-screens).
 
+### The markup text widget's fields {#markup-text-fields}
+
+`MessageHUD` (`0x001b8f98`, about `0x1e4` bytes), confirmed (code) at the functions of
+[`GUI/MessageHUD.cpp`](#fn-messagehud):
+
+| Offset | Type | Field | Meaning |
+| --- | --- | --- | --- |
+| `+0x04` | u32 | changed | set by every text change |
+| `+0x0c` | u32 | created | |
+| `+0x20` | vec4 | anchor | `(x, 0, y, 1)` |
+| `+0x60` | char* | ownedText | a copy the widget frees on shutdown |
+| `+0x68`, `+0x6c` | char* | text, originalText | the text being laid out, and the one set |
+| `+0x70` | BaseWidget | icon | shown instead of text when its sprite word is set |
+| `+0x170` | u32 | endTime | `<DISPLAYTIME>` end, game ms; -1 never, 0 none |
+| `+0x174` | u32 | fadeTime | the prompt fade during a `<FREEZE>` |
+| `+0x178` | u32 | frozen | a `<FREEZE>` is running |
+| `+0x17c` | u8 | alignment | `Font_Draw` flags |
+| `+0x180` | u32 | proportional | |
+| `+0x184` | f32 | maxWidth | box right limit (10,000) |
+| `+0x188` | u32 | allowCR2 | enables `<CR2>` and `<CRM>` |
+| `+0x18c` | u8 | shadow | `0x80` |
+| `+0x190` | s32 | bgFontInstance | the `<BGFONT>` batch, -1 none |
+| `+0x194` | u32 | pendingSound | played once on the next draw |
+| `+0x198` | s32 | glyphBase | `<MONEYFONT>`'s base, -1 none |
+| `+0x19c` | u32 | fontSlot | 3 or 6 |
+| `+0x1a0` | u32 | paged | draw only the line window |
+| `+0x1a4`, `+0x1a8`, `+0x1ac` | u32 | firstLine, lastLine, lineCount | the line window of wrapped text |
+| `+0x1b0`, `+0x1b1` | u8 | alpha, alphaOverride | the fade's alpha; a fixed alpha |
+| `+0x1b4` | u32 | useAlphaOverride | |
+| `+0x1b8` | u32 | wordWrap | wrap at `+0x1d4` |
+| `+0x1bc` | u32 | drawn | drawn this frame |
+| `+0x1c0` | f32[4] | metrics | `Font_Size` record |
+| `+0x1d0` | f32 | baseSize | |
+| `+0x1d4` | f32 | wrapWidth | from `<AUTOINDENT f>` or set |
+| `+0x1d8` | u32 | colour | |
+| `+0x1dc`, `+0x1e0` | u32, u8 | stickTimer, stickGlyph | the animated stick glyphs (`<SDD>`...) |
+
 ### Markup tags {#markup}
 
 Text strings carry tags in angle brackets. The table at `0x0050d718` holds 66 tag strings of 61 bytes each; the
@@ -308,14 +346,14 @@ layout code (`0x001b9600`) compares the text after a `<` with each in turn and a
 | 3 | `<SOUND name>` | plays the sound (CRC-32 of the name) once, on the first frame shown |
 | 4 | `<FREEZE ms>` | sets the display end and freezes the game timer for `ms` (`0x00145ea8(gameTimer, ms, 2000)`) |
 | 5 | `<DISPLAYTIME ms>` | the text disappears after `ms`; in its last 1,000 ms its alpha is the remaining ms × 0.255 |
-| 6 | `<BOLD>` | |
+| 6 | `<BOLD>` | no effect: the layout has no case for it (confirmed (code) at `0x001b9600`) |
 | 7 | `<BIGFONT>` | font slot 6 (`big_font`) |
 | 8 | `<MONEYFONT>` | an icon font (glyph base set from the font) |
 | 9 | `<BGFONT>` | glyphs on a background (creates an instance over sheet 0, depth 8,000) |
 | 10, 11 | `<MONEYPLUS>`, `<MONEYMINUS>` | the icon characters `=` and `<` |
 | 12-16 | `<CENTER>`, `<CCENTER>`, `<RIGHT>`, `<RRIGHT>`, `<LEFT>` | alignment: `CENTER` (flags 6) and `RIGHT` (5) shift the whole line by its measured width; `CCENTER` and `RRIGHT` pass the same flags to each `Font_Draw` run, aligning each run about the pen; `LEFT` is 4 |
 | 17-20 | `<CR>`, `<CR2>`, `<CR3 f>`, `<CRM>` | new line; `CR2` only when the widget's `+0x188` is set and `*(s16)(W_GameState + 0x224)` < 2 (single player), `CR3` adds `f`, `CRM` only when `+0x188` and `+0x1b8` are set |
-| 21 | `<AUTOINDENT ...>` | |
+| 21 | `<AUTOINDENT f>` | not handled by the layout; at the start of a text it sets the wrap width (`+0x1d4`) to `f` (`MessageHUD_ReadAutoIndent`, `0x001bb390`) |
 | 22-32 | `<FIST>` ... `<BGCIRCLE>` | HUD icons, each a single character of the current font (`:`, `>`, `?`, `;`, `@`, `A`, `B`, `C`, `E`, `F`, `y`) |
 | 33-49 | `<S>`, `<O>`, `<T>`, `<ST>`, `<X>`, `<START>`, `<SELECT>`, `<R1>`, `<R2>`, `<R3>`, `<L1>`, `<L2>`, `<L3>`, `<DU>`, `<DD>`, `<DL>`, `<DR>` | **button glyphs**: characters `0x9f`, `0x9d`, `0x96`, `n`, `0x9e`, `0x97`, `0x93`, `0x9c`, `0x94`, `0x92`, `0xa0`, `0x95`, `0x91`, `0x9b`, `0x99`, `0x9a`, `0x98` |
 | 50, 51 | `<LAS>`, `<RAS>` | (no character set) |
@@ -414,7 +452,8 @@ glyph (both the sprite and its rectangle are cut).
 **Layout** (`0x001b9600`) runs twice for a visible widget, once to measure and once to draw. It splits the text at
 `<`, draws the runs between tags with the current font, size, colour and alignment, applies tags, and moves to a new
 line on `<CR>` by `h + lineGap` plus the extra of `<CR3 f>`. The widget's box is grown to the widest line; with
-`<CENTER>` each line is centred on the box. Confirmed (code); `BOLD`, `AUTOINDENT` and `CRM` are not worked out.
+`<CENTER>` each line is centred on the box. Confirmed (code). `CRM` is the soft break `MessageHUD_WordWrap`
+(`0x001bac20`) inserts when it wraps.
 
 ### Strings {#strings}
 
@@ -473,7 +512,7 @@ dot's handler (`0x003e5f20` → `0x0039bb18`) replaces the low half:
 ```
 
 So an **icon id is a rectangle index of `part_page0`** (371 rectangles, a 512 × 256 texture); the icons scripts and
-code use are 7-34 texels a side (disc check). `HUD_RadarSetIcon` (`0x001b2ca0`) draws icon 22 at 0.7 and tints icons
+code use are 7-34 texels a side (disc check). `HUD_RadarSetBlipIcon` (`0x001b2ca0`) draws icon 22 at 0.7 and tints icons
 29-31 `0x63db4bff` (green; colours here are `0xRRGGBBAA`, as `HUDAddRadarObject` packs them at `0x001b40f8`).
 
 | Radar field | Batch | Blip types |
@@ -503,6 +542,40 @@ dot's own states: 0 dim (alpha `0x80`), 1 full, 2 pulsing size (× 1.3), 10 grow
 `part_page0`; its `0x2A` dictionary and `0x4C` rectangles), cut rectangle *n* and scale it to fit 64 × 64. Coney's
 sheet reader ([Coney's implementation](#coneys-implementation)) already does the first two steps.
 
+#### Radar blip slots {#radar-blip-slots}
+
+A radar's fields and its 128 slots of `0x40` bytes (from radar `+0x920`). Confirmed (code) at `0x001c4d00`,
+`0x001c4ff8`, `0x001c5210`, `0x001c41a0`; meanings marked inferred where the code only shows the use.
+
+| Radar offset | Meaning |
+| --- | --- |
+| `+0x00` / `+0x04` | created / on (`HUDTurnOnRadar`) |
+| `+0x08` / `+0x0c` | shown (`Radar_Show`) / hidden (`Radar_HideAllBlips`) |
+| `+0x14` | enemy blips (types 5, 6, 8) may show when marked (inferred) |
+| `+0x18` | enemy marks never time out (inferred) |
+| `+0x20`, `+0x24`, `+0x28` | zoom, fast and rest radii ([HUD](hud.md#the-radar-on-screen)) |
+| `+0x38`-`+0x40` | disc colour state, old state, change time |
+| `+0x48`-`+0x60` | the sprite batches ([table above](#radar-icons)); `+0x48` holds icons 25 and 26 |
+| `+0x70` / `+0x80` | the player's position / matrix, copied by `Radar_Update` |
+| `+0x90` | which player |
+| `+0x2920` / `+0x2930` | zoom scale / the disc centre |
+
+| Slot offset | Type | Meaning |
+| --- | --- | --- |
+| `+0x00` | vec4 | fixed position (in-use 2) |
+| `+0x10` | handle | the tracked object |
+| `+0x14` | u32 | colour (`0xRRGGBBAA`) |
+| `+0x18` | u32 | icon last set (`0x45` at creation) |
+| `+0x20` | u32 | the batch the dot was made in |
+| `+0x24` | handle | the `hud_radar_dot` |
+| `+0x28` | ptr | the `BaseWidget` of a type-9 blip |
+| `+0x2c` | s16 | blip type |
+| `+0x2e` | s16 | mark timer, updates (300 per mark) |
+| `+0x30` | u8 | shown: always for types 7, 9, 10, 12; set by a mark for the others |
+| `+0x31` | u8 | in use: 1 follows its object, 2 a fixed point |
+| `+0x32` / `+0x33` | u8 | objective flash countdown (100) / phase |
+| `+0x34` | u32 | icon lock (`0x001c4640`) |
+
 ### The `METRICS1` file
 
 The one "font metrics" WAD entry is **`cn12.met`** (entry 3,743), next to **`cn12.bmp`** (entry 3,742, the 256 × 128
@@ -510,6 +583,366 @@ The one "font metrics" WAD entry is **`cn12.met`** (entry 3,743), next to **`cn1
 `code x0 y0 x1 y1 # 'c'` for the characters 32-126: pixel rectangles of a 12-point bitmap font. **No code in the PS2
 executable refers to it** (no `.met`, `.bmp` or `cn12` string), so the game does not use it; probably a leftover of a
 debug or PC tool (inferred).
+
+## Function index {#function-index}
+
+Every function of the GUI files this page covers, by source file in address order, with the name it has in Ghidra
+(ours). Rows link to the section that describes the behaviour where there is one. The files and ranges are from the
+[Source map](source-map.md#gui).
+
+### `GUI/BaseWidget.cpp` {#fn-basewidget}
+
+`0x001a1bf8`-`0x001a29c0`: `BaseWidget` (vtable `0x005394b8`, `0x100` bytes; a second copy of its slots at
+`0x0053a0d4`-`0x0053a10c` belongs to a subclass). Slot numbers are the `delta` offsets of the GCC 2 vtable
+([Widgets](#widgets)).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001a1bf8`, `0x001a1c80` | `BaseWidget_Construct`, `BaseWidget_Reset` | vtable, then hidden, inactive, sprite word 0, colour 0, size 0, anchor 0, instance -1, depth 10,000 (`+0xe4`) | confirmed (code) |
+| `0x001a1c30` | `BaseWidget_Destroy` | slot `+0x60`: releases; frees when the flag's bit 1 is set | confirmed (code) |
+| `0x001a1db8` | `BaseWidget_Setup` | slot `+0x68`, [The widget classes](#widget-classes) | confirmed (code) |
+| `0x001a1f10` | `BaseWidget_Release` | slot `+0x70`: an owned batch instance (`+0xc4`, `+0x0c` = 0) is freed, as is the shadow record `+0xec` | confirmed (code) |
+| `0x001a1fc8` | `BaseWidget_EnableShadow(on)` | slot `+0x78`: allocates the `0x80`-byte shadow sprite record (`ParticleContainer`) or frees it | confirmed (code) |
+| `0x001a2060` | `BaseWidget_SetPosition(pos, convert)` | slot `+0x08`: `+0x30`; converted through the device (slot `+0x90`) into the overlay position `+0x80` | confirmed (code) |
+| `0x001a2118`, `0x001a2120` | `BaseWidget_SetAnchor`, `BaseWidget_SetSize(w, h, widget, convert)` | anchor `+0xc0`; size `+0x90`/`+0x94` (h = w when h ≤ 0) | confirmed (code) |
+| `0x001a2190` | `BaseWidget_SetRect` | overrides the texture rectangle `+0xa4`-`+0xb0` | confirmed (code) |
+| `0x001a21b8`, `0x001a21e8` | `BaseWidget_Update`, `BaseWidget_UpdateSize(mode)` | slot `+0x30` calls slot `+0x98` with 1: mode 0 sets the width from the height, 1 the height from the width, by the rectangle's pixel aspect ([Size](#widget-classes)); anchor offset `+0xd0` | confirmed (code) |
+| `0x001a2538`, `0x001a25b8`, `0x001a25c0` | `BaseWidget_StartFade(widget, ms)`, `_CancelFade`, `_IsFadeDone` | the timed fade: duration `+0xf0`, end `+0xf4`; when done it hides the widget and returns 1 | confirmed (code) |
+| `0x001a2638`, `0x001a2648` | `BaseWidget_SetAlpha`, `BaseWidget_SetColour` (slot `+0x20`) | alpha `+0xf8` and `+0xb7`; colour `+0xb4` | confirmed (code) |
+| `0x001a2660`, `0x001a2690` | `BaseWidget_Render` (slot `+0x38`), `BaseWidget_RenderAlpha(alpha)` (slot `+0xa0`) | [The widget classes](#widget-classes) | confirmed (code) |
+| `0x001a2910`, `0x001a2918` | `BaseWidget_SetSpriteWord`, `BaseWidget_SetInstance(widget, inst)` | `+0xc8`; -1 makes the widget its own batch over the sprite word's sheet (`ResourceMgr_CreateInstance`, depth `+0xe4`, flags `+0xfc`) | confirmed (code) |
+
+### After `GUI/ChecklistMessageHUD.cpp` (no path string): the widget base {#fn-after-checklistmessagehud}
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001a8e30` | `Widget_Construct` | the base of every widget (vtable `0x00539978`): `+0x04` = 1, `+0x08` = 1, `+0x0c` = `+0x10` = 0, `+0x2c` = 1.0 ([Widgets](#widgets)) | confirmed (code) |
+| `0x001a8e78` | `Widget_Destroy` | slot `+0x60`; frees when the flag's bit 1 is set | confirmed (code) |
+| `0x001a8ea8` | `Widget_IsBatchResident(widget, inst)` | slot `+0x80` of many widget vtables: whether a batch instance is resident (byte `+0x11`) | confirmed (code) |
+
+### `GUI/GridContainer.cpp` {#fn-gridcontainer}
+
+`0x001ab620`-`0x001acb90`: a grid of child widgets with d-pad navigation, used by the Rumble arena screen
+(`0x001eabc0`). `GridContainer` (`0x001abad0`; vtable `0x00539b68`, input interface `0x00539b40` at `+0x7c`) holds
+`GridContainerItem`s (`0x70` bytes, vtable `0x00539c90`: a child at `+0x60`, its index `+0x64`) in a vector at
+`+0x84`-`+0x8c`. Fields: position `+0x20`, size `+0x30`, focused `+0x40`, input record `+0x60` (HUD player 0's),
+owner `+0x90` (its handler sees every command first), last command time `+0x94`, spacing `+0xa0` (x gap `+0xa0`, y
+gap `+0xa8`), vertical wrap `+0xb0`, horizontal wrap `+0xb4`, rows `+0xb8` and columns `+0xb9` (bytes), capacity
+`+0xbc` = rows × columns, selected `+0xc0`, owns children `+0xc4`, last move refused `+0xc8`. Each update lays the
+items in cells of width (W − gx (columns + 1)) / columns and height (H − gy (rows + 1)) / rows; the pen x advances
+by a cell plus gx for **every** item and is not reset at a new row (so only one-row grids lay out as a grid); the row
+is index / columns. Slots are the delta-word offsets (vtable entry − vtable − 4), as on this page's
+[widget slot table](#widgets). Confirmed (code).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001ab620` | `GridContainerItem_Construct(child, index)` | widget base, vtable `0x00539c90`, scale `+0x50` 1.0, `SetChild`, initialised | confirmed (code) |
+| `0x001ab6a0` | `GridContainerItem_Destroy` | slot `+0x60` | confirmed (code) |
+| `0x001ab6c8` | `GridContainerItem_SetChild` | slot `+0xc0`: child, index, and the child's rectangle size into `+0x30` | confirmed (code) |
+| `0x001ab718` / `0x001ab758` | `GridContainerItem_SetPosition` / `_SetSize` | own position `+0x20` / size `+0x30`, passed on to the child (its slots `+0x08` / `+0x10`) | confirmed (code) |
+| `0x001ab798` | `GridContainerItem_GetRect` | slot `+0x70`: `+0x30` with the height × the reveal (slot `+0xb0`) | confirmed (code) |
+| `0x001ab7f0` / `0x001ab838` | `GridContainerItem_Focus` / `_Unfocus` | slots `+0x90` / `+0x98`: the child's, and `+0x40` | confirmed (code) |
+| `0x001ab8e0` | `GridContainerItem_IsActive` | slot `+0x88`: a child, initialised, child active | confirmed (code) |
+| `0x001ab930` | `GridContainerItem_Update` | slot `+0x30`: child position, size and update; recentres itself vertically on the child's height; visible = reveal > 0 | confirmed (code) |
+| `0x001aba58` | `GridContainerItem_Render` | slot `+0x38`: the child's render when active and visible | confirmed (code) |
+| `0x001abad0` | `GridContainer_Construct` | widget base, the two vtables, empty vector | confirmed (code) |
+| `0x001abb70` | `GridContainer_Destroy` | slot `+0x60`: frees the vector storage | confirmed (code) |
+| `0x001abbf8` | `GridContainer_Shutdown` | slot `+0x68`: unfocus, delete the items (and their children's shutdown and delete when `+0xc4`), empty the vector | confirmed (code) |
+| `0x001abd30` | `GridContainer_Setup(pos, size, spacing, rows, columns, owner, ownsChildren)` | slot `+0xc0`: the fields above, selection 0, wraps off, initialised | confirmed (code) |
+| `0x001abe10` | `GridContainer_AddItem(child, index)` | slot `+0xc8`: below capacity, a new item appended | confirmed (code) |
+| `0x001abee8` | `GridContainer_IsActive` | slot `+0x88`: initialised and every item active | confirmed (code) |
+| `0x001abf60` | `GridContainer_IsSelectable(i)` | slot `+0xe0`: item `i` has a child whose slot `+0x58` test is true | confirmed (code) |
+| `0x001ac000` / `0x001ac0e8` | `GridContainer_MoveUp` / `_MoveDown` | slots `+0xe8` / `+0xf0`: step by the column count to the next selectable item (over the capacity, with `+0xb0` wrap, else stay); `Select(i, 1)` when it changed | confirmed (code) |
+| `0x001ac1d8` / `0x001ac2f8` | `GridContainer_MoveLeft` / `_MoveRight` | slots `+0xf8` / `+0x100`: step by 1 (wrap to the other end with `+0xb4`, else stay); no move: cue `0xe` and `+0xc8` = 1 | confirmed (code) |
+| `0x001ac400` | `GridContainer_Select(i, sound)` | slot `+0x108`: `i` clamped to the last item; when selectable, unfocus the old, focus `i`, cue 4 if `sound`; clears `+0xc8` | confirmed (code) |
+| `0x001ac4e8` | `GridContainer_GetSelectedChild` | slot `+0xd8` | confirmed (code) |
+| `0x001ac528` | `GridContainer_OnCommand(cmd)` | interface slot `+0x08`: the owner's handler first; else 0 up, 1 down, 2 left, 3 right; stamps `+0x94`; returns 1 | confirmed (code) |
+| `0x001ac620` / `0x001ac6b0` | `GridContainer_Focus` / `_Unfocus` | slots `+0x90` / `+0x98`: clears the input record (`0x00146000`), `+0x40`, the selected item's focus, stamps `+0x94` | confirmed (code) |
+| `0x001ac7d0` | `GridContainer_GetRect` | slot `+0x70` | confirmed (code) |
+| `0x001ac828` | `GridContainer_Update` | slot `+0x30`: when focused and 20 ms after the last command, the d-pad (mask `0xf000`) by the repeating query `0x001e93c0`, or the plain one `0x001e9518` after a refused move, then buttons (`0x001e9468`, mask `0xffff0fff`), input cleared; lays out and updates the items; recentres; visible = reveal > 0 | confirmed (code) |
+| `0x001acb90` | `GridContainer_Render` | slot `+0x38`: every item's render when active and visible | confirmed (code) |
+
+### `GUI/MessageHUD.cpp` {#fn-messagehud}
+
+`0x001b8f98`-`0x001bb4a0`: the markup text widget (class `MessageHUD`, vtable `0x0053a248`; its path string is
+passed by `MessageHUD_Shutdown`), the base of `UsageInfo`, the hint texts, the counter texts and message boxes. Its
+fields are in [The markup text widget's fields](#markup-text-fields); the tags in [Markup tags](#markup).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001b8f98` | `MessageHUD_Construct` | the markup text widget (vtable `0x0053a248`): widget base, box `BaseWidget` at `+0x70`, proportional `+0x180` = 1, font slot `+0x19c` = 3, active `+0x54` = 1, `+0x50` = 1.0 | confirmed (code) |
+| `0x001b9040` | `MessageHUD_Destroy` | slot `+0x60`: the box's destructor, then the widget base's | confirmed (code) |
+| `0x001b9090` | `MessageHUD_Setup` | slot `+0xc0` ([The widget classes](#widget-classes)): box sprite (depth 11,000), right limit `+0x184` = 10,000, reveal 1.0, shadow `+0x18c` = `0x80`, base size 1.0, font slot 6 or 3, `Font_Size` metrics `+0x1c0`, colour `+0x1d8` | confirmed (code) |
+| `0x001b9288` | `MessageHUD_SetBaseSize` | `+0x1d0` = size | confirmed (code) |
+| `0x001b9290` | `MessageHUD_Shutdown` | slot `+0x68`: when created, releases the icon sprite (`+0x70`), frees the owned text copy (`+0x60`), releases the `<BGFONT>` instance (`+0x190`), hides the widget and turns word wrap (`+0x1b8`) off | confirmed (code) |
+| `0x001b9370` | `MessageHUD_SetPosition` | slot `+0x08`: the anchor (`+0x20`), and moves the icon sprite with it | confirmed (code) |
+| `0x001b93a0` | `MessageHUD_GetIconSprite` | the icon sprite's word (`+0x138`); non-zero means the widget shows a sprite instead of text | confirmed (code) |
+| `0x001b93a8` | `MessageHUD_Measure` | word-wraps into a scratch copy when `+0x1b8` is set, then runs the layout in measure mode; returns the box `(x0, y0, x1, y1)` | confirmed (code) |
+| `0x001b9478` | `MessageHUD_SetAlignment` | byte `+0x17c`, passed to `Font_Draw` as its alignment flags | confirmed (code) |
+| `0x001b9480` | `MessageHUD_SetMetrics` | the `Font_Size` record (`+0x1c0`) and the proportional flag (`+0x180`) | confirmed (code) |
+| `0x001b94d0`, `0x001b94d8` | `MessageHUD_SetColour`, `MessageHUD_GetColour` | the base colour `+0x1d8` | confirmed (code) |
+| `0x001b94e0` | `MessageHUD_GetScaledMetrics` | the four metrics times the base size (`+0x1d0`) | confirmed (code) |
+| `0x001b9548` | `MessageHUD_Update` | slot `+0x30`: updates the icon sprite when there is no text; visible (slot `+0x40`) while the reveal (slot `+0xb0`) is above 0 | confirmed (code) |
+| `0x001b9600` | `MessageHUD_Layout` | the markup interpreter ([Text](#text), [Markup tags](#markup)). Measure mode makes one pass, draw mode two (the first fixes each line's width for `<RIGHT>` and `<CENTER>`). Tags 6 (`<BOLD>`) and 21 (`<AUTOINDENT>`) have no case here: `<BOLD>` does nothing and `<AUTOINDENT f>` is read by `MessageHUD_ReadAutoIndent`. While a `<FREEZE>` is running, text after the prompt line fades over 334 ms. The box's right edge is capped at `+0x184` × reveal | confirmed (code) |
+| `0x001bac20` | `MessageHUD_WordWrap` | splits the text at spaces, measures each line with its tags stripped, and inserts `<CRM>` before the word that takes the line past the wrap width (`+0x1d4`); the line count goes to `+0x1ac` | confirmed (code) |
+| `0x001baee0` | `MessageHUD_ClipToPage` | keeps only the wrapped lines from `+0x1a4` to `+0x1a8` (split at `<CRM>`): a scrolling page of a long text | confirmed (code) |
+| `0x001bafd0`, `0x001bb000` | `MessageHUD_PageUp`, `MessageHUD_PageDown` | move that line window by one line; false at the top or at the last line (`+0x1ac`) | confirmed (code) |
+| `0x001bb038` | `MessageHUD_Draw` | when visible, active and not expired: draws the icon, or copies the text, wraps it, clips it to the page (when `+0x1a0` is set), plays a pending `<SOUND>` (`+0x194`) and lays it out in draw mode; sets `+0x1bc` (drawn this frame) | confirmed (code) |
+| `0x001bb1c0` | `MessageHUD_Render` | slot `+0x38`: `MessageHUD_Draw` in the widget's colour | confirmed (code) |
+| `0x001bb1e0` | `MessageHUD_SetIcon` | drops the text and shows a sprite of the given word in its own batch; clears the end time and the freeze | confirmed (code) |
+| `0x001bb250` | `MarkupText_SetText` | points `+0x68` and `+0x6c` at the text (not copied), clears the icon, the end time, the freeze and the stick-glyph timer (`+0x1dc`) | confirmed (code) |
+| `0x001bb2b0` | `MessageHUD_ClearText` | clears the icon, the owned text, the end time and the freeze ([The HUD's frame](hud.md#the-huds-frame)) | confirmed (code) |
+| `0x001bb2f0` | `MarkupText_IsExpired` | true once the `<DISPLAYTIME>` end (`+0x170`, never for -1) has passed, or a `<FREEZE>` (`+0x178`) is over | confirmed (code) |
+| `0x001bb390` | `MessageHUD_ReadAutoIndent` | the wrap width (`+0x1d4`): the number after a leading `<AUTOINDENT f>`, or the width given | confirmed (code) |
+| `0x001bb440` | `MessageHUD_SetDisplayTime` | end time = now + ms (-1 leaves it), freeze off | confirmed (code) |
+| `0x001bb4a0` | `Hud_GreyLeadingZeros` | rewrites a digit string with its leading zeros in HUD colour tag 5 and the rest in tag 0: the grey zeros of the score ([Score and money](hud.md#score-and-money)) | confirmed (code) |
+
+### After `GUI/MissionSelectHUD.cpp` (no path string): `MultiLineTextWidget` and the HUD's bars {#fn-multilinetext}
+
+A translation unit without a path string runs from `0x001c16a8` to its static-init stub `0x001c3dc0`. Besides the
+HUD pieces in [HUD](hud.md#fn-hud-bars-panels), it holds `MultiLineTextWidget` (vtable `0x0053a550`, class string
+of the PM and Rumble screens' allocations): plain text (no markup) wrapped into at most 10 lines, used by the
+captions, the error screen and the profile and Rumble dialogs.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001c16a8`, `0x001c16f0` | `MultiLineText_Construct`, `MultiLineText_Destroy` | constructor and destructor (slot `+0x60`) | confirmed (code) |
+| `0x001c1718` | `MultiLineText_Shutdown` | slot `+0x68`: no lines, not created | confirmed (code) |
+| `0x001c1738` | `MultiLineText_Setup` | slot `+0x90` `(scale, widget, position, colour, flags, fontSlot)`: metrics `Font_Size(scale)` (`+0xa0`), colour `+0xb4`, `Font_Draw` flags `+0xb8`, font slot `+0xbc`, shadow `0x80` (`+0xc0`), wrap width 10,000 (`+0x9c`) | confirmed (code) |
+| `0x001c1800` | `MultiLineText_SetScale` | slot `+0x98`: new metrics, relaid out on the next update | confirmed (code) |
+| `0x001c1870` | `MultiLineText_WordLength` | the length of the word at a position (to a space, the end or a `<`) | confirmed (code) |
+| `0x001c18c0` | `MultiLineText_SetText` | slot `+0xa0` `(width, widget, text, force)`: text `+0x40` (not copied), wrap width `+0x9c` | confirmed (code) |
+| `0x001c1900` | `MultiLineText_Layout` | greedy word wrap: words are added while the line stays within `+0x9c` (a word wider than the width gets a line of its own); `<CR>` forces a break; at most 10 lines, each a `(start, end)` span at `+0x48`; box width `+0x30` = the widest line, height `+0x38` = lines × (`h` + `lineGap`) | confirmed (code) |
+| `0x001c1ae0` | `MultiLineText_IsLoaded` | slot `+0x88`: created and its font batch resident | confirmed (code) |
+| `0x001c1b10` | `MultiLineText_Update` | slot `+0x30`: relayout when the text, scale or width changed | confirmed (code) |
+| `0x001c1b58` | `MultiLineText_Render` | slot `+0x38`: one `Font_Draw` per line at `+0x20`'s x; the block is centred on y (`+0x44` = 0) or ends at y (`+0x44` ≠ 0) | confirmed (code) |
+
+### `GUI/RadarHUD.cpp` {#fn-radarhud}
+
+`0x001c41a0`-`0x001c6878`: the two radars (HUD `+0x15d0` and `+0x3f10`, [The radar](#radar-icons)); a radar is a
+plain struct, not a widget, with 128 blip slots of `0x40` bytes from `+0x920` (layout in
+[Radar blip slots](#radar-blip-slots)). The map disc is drawn by `Radar_Render` ([HUD](hud.md#the-radar-on-screen)).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001c3de0` | `Radar_Setup` | from `HUD_InitLevel`: the radar's sprite batches and map texture ([The radar](#radar-icons)); the first function after the stub `0x001c3dc0`, so the start of `RadarHUD.cpp` (inferred) | confirmed (code) |
+| `0x001c41a0` | `Radar_Shutdown` | from `HUD_ShutdownLevel`: resets all 128 slots (frees type-9 widgets, handle to none, colour, type, flags 0), releases the seven sprite batches `+0x48`-`+0x60`; `+0x10` = 1, created `+0x00` = 0 | confirmed (code) |
+| `0x001c42e0` | `Radar_IsCreated` | returns `+0x00` | confirmed (code) |
+| `0x001c42e8` | `Radar_HideAllBlips` | when created: hidden `+0x0c` = 1 and every used slot's dot (`0x001e9b38`) or widget (vtable `+0x40`, 0) hidden | confirmed (code) |
+| `0x001c4388`, `0x001c4448` | `Radar_Show`, `Radar_Hide` | only while the radar is on (`+0x04`): show or hide every used slot's dot or widget; show also clears `+0x0c` and sets shown `+0x08`, hide clears `+0x08` | confirmed (code) |
+| `0x001c4500` | `Radar_SetTintState` | the disc colour state ([HUD](hud.md#the-radar-on-screen)) | confirmed (code) |
+| `0x001c4528`, `0x001c45a0` | `Radar_SetBlipMode`, `Radar_SendSlotMode` | find the handle's slot on a layer, then send its dot message `0x19` with the mode ([Blip modes](#radar-icons)) | confirmed (code) |
+| `0x001c4640` | `Radar_SetBlipIconLock` | layer 0 slot `+0x34` = the value; while it is set `Radar_SetSlotIcon` and `Radar_SetBlipIcon` do nothing (its caller `HUD_RadarSetBlipIconLock`, `0x001b2bf0`, is the `flag` of `HUDSetRadarItemTexture`) | confirmed (code) |
+| `0x001c4690` | `Radar_SetSlotIcon(scale, radar, slot, icon)` | unless locked: the dot's two size floats (`+0xbc`, `+0xc0`) × `scale`, message `0x11` with the icon (the dot's rectangle), slot `+0x18` = icon | confirmed (code) |
+| `0x001c4768` | `Radar_SetBlipIcon(scale, radar, handle, icon, layer)` | the same by handle; a type-9 slot's widget gets the sprite word and the size instead | confirmed (code) |
+| `0x001c48c0`, `0x001c4960`, `0x001c49d0` | `Radar_SetBlipColour`, `Radar_SetSlotColour`, `Radar_ChangeBlipColour` | the dot's colour (`0x001e9ac0`) and slot `+0x14`, by handle and layer, by slot, or by handle on layer 0 | confirmed (code) |
+| `0x001c4a40` | `Radar_SetBlipType(radar, handle, type)` | changing to type 9 makes the slot's `BaseWidget` (size 1, depth 20,000, colour `0x005fd310`, sprite `0x16a` = 362, batch 2); leaving type 9 frees it; slot `+0x2c` = type | confirmed (code) |
+| `0x001c4be0` | `Radar_MarkBlip` | an enemy seen by the scanner: re-sends the slot's colour on a first mark, mark timer `+0x2e` = 300 updates, marked `+0x30` = 1 | confirmed (code) |
+| `0x001c4c88` | `Radar_IsObjectiveBlip` | layer 0 slot type is 10 | confirmed (code) |
+| `0x001c4d00` | `Radar_AddBlip` | [The radar](#radar-icons); also records the batch at `+0x20`, icon `0x45` at `+0x18`, flash counter `+0x32` = 100 and phase `+0x33` = 2; types 7, 9, 10 and 12 get `+0x30` = 1 (always shown) | confirmed (code) |
+| `0x001c4ff8` | `Radar_FreeSlot` | frees the widget, kills the dot (vtable `+0x4c`) in task phase 0, resets every field | confirmed (code) |
+| `0x001c5108` | `Radar_RemoveHandle` | frees the handle's slot when found | confirmed (code) |
+| `0x001c5158` | `Radar_FindFreeSlot` | first slot whose in-use byte `+0x31` is 0, or -1 | confirmed (code) |
+| `0x001c5188` | `Radar_FindSlot(radar, handle, layer)` | the (`layer` + 1)-th slot holding the handle, or -1 | confirmed (code) |
+| `0x001c5210` | `Radar_Update(radar, playerMatrix)` | per frame from `HUD_Update`; below the table | confirmed (code) |
+| `0x001c60b0` | `Radar_Render` | the map disc ([HUD](hud.md#the-radar-on-screen)) | confirmed (code) |
+| `0x001c6730` | `Radar_MoveSlotToBatch48` | recreates a slot's dot in batch `+0x48`, keeping its size and icon; `Radar_Update` does it for icons 25 and 26 (so batch `+0x48`, depth 10,000, holds those two) | confirmed (code) |
+| `0x001c6878` | `Radar_GetBlipPosition(out, radar, handle)` | the layer-0 dot's world position (its vtable `+0xac`); the instruction arrow uses it | confirmed (code) |
+
+**`Radar_Update`** (`0x001c5210`), each frame while the radar is created and on, confirmed (code):
+
+- The player's position and matrix are copied to `+0x70` and `+0x80`.
+- A slot in use with `+0x31` = 1 follows its object (position from the handle's vtable `+0xac`; a dead handle frees the
+  slot); `+0x31` = 2 is a fixed point (slot `+0x00`).
+- **Placement:** the offset from the player in x and y is turned by the camera; at distance `d` < zoom (`+0x20`) the
+  blip sits at offset × 0.12 / zoom from the disc centre (`+0x2930`, `+0x2938`), otherwise on the edge at 0.9 × 0.12
+  along its direction (`0x0050e9bc`). Screen x adds, screen y subtracts the offset's second component.
+- **Objectives (type 10):** when the object is more than 1 m (`0x0050e9ac`) above or below the player and within
+  20 m (`0x0050e9b8`, |dx| + |dy|), icons 27 and 28 are re-coloured and drawn at 0.9 (`0x0050e9b0`), icon 22 at 1.2
+  (`0x0050e9b4`), icons 74 and 75 left alone; the first time in a story level with hints on (`W_GameState + 0x56e2`,
+  not an Armies of the Night level), hint `0x16` is queued (game flag `0x10000000`). A new objective blip flashes for
+  100 updates (alpha toggled every 4) before it is drawn solid.
+- **Enemies (types 5, 6, 8):** inside the zoom they show only while the radar is shown, not hidden, its `+0x14` is
+  set and the slot is marked (`+0x30`). A police blip (type 8) within 0.9 × zoom of a story player whose brain is
+  type 1, while marked or `+0x18` is set, queues hint 8 once (flag `0x200`; not in levels 80 and 99). The mark timer
+  `+0x2e` counts down each update; at 0 the mark is cleared and the dot hidden unless `+0x18` is set.
+- **The player arrow (type 9):** the widget sits at the blip position, size 0.026 (`0x0050e9cc`), turned by the
+  difference between the camera's heading and the radar's; with two players and two views player 0's icon `0x16b`
+  becomes `0x169` or `0x15f`, player 1's `0x16a` `0x168` or `0x15e` (by `W_GameState + 0x90`); icons 25, 26 and those
+  four are not turned; size 0.035 for 25 and 26, 0.03 otherwise.
+- Icons 25 and 26 are moved to batch `+0x48` when not already there (`0x001c6730`).
+
+### `GUI/ScreenFlowController.cpp` {#fn-screenflowcontroller}
+
+`0x001c7e80`-`0x001c8710`: the screen stack the profile manager and the Rumble menu run on; its methods are reached
+through an interface vtable (`0x0053a9d8`, reused by `RM_Controller` and `PM_Controller`).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001c7e80` | `ScreenFlowController_Construct` | allocates the state stack (`SFC_States`, a list) at `+0` and the shared-data map (`SFC_SharedData`) at `+4` | confirmed (code) |
+| `0x001c8010` | `ScreenFlowController_AddTransition` | `(flow, state, code, next)`: state's map (state `+8`) entry `code` → `next` ([Screen flow](#screen-flow)) | confirmed (code) |
+| `0x001c80c8` | `ScreenFlowController_PushState` | the vtable entry for push | confirmed (code) |
+| `0x001c80e8` | `ScreenFlowController_Push` | `Exit` the old top, push, `Enter(flow)` the new one | confirmed (code) |
+| `0x001c81e8` | `ScreenFlowController_UnwindTo` | `Exit` every state, erase those above the target, `Enter` the target | confirmed (code) |
+| `0x001c82e8` | `ScreenFlowController_Pop` | `Exit` and free the top, `Enter` the new top | confirmed (code) |
+| `0x001c83c8` | `ScreenFlowController_Update` | the top's `Update`: `-0x100` stay, `-0xff` pop, else follow the map (unwind or push); true when empty | confirmed (code) |
+| `0x001c8590` | `ScreenFlowController_Destroy` | frees the stack and the shared-data map | confirmed (code) |
+| `0x001c8628` | `ScreenFlowController_GetTop` | the top state, 0 when empty | confirmed (code) |
+| `0x001c8658` / `0x001c8710` | `ScreenFlowController_SetShared` / `_GetShared` | shared-data map: set `key` → `value`; get (0 when absent) | confirmed (code) |
+
+### `GUI/SubTitle.cpp` {#fn-subtitle}
+
+The caption system, the object at `0x00619570` (HUD `+0x18d30`), `0x001ca898`-`0x001cb190`
+([Movies](movies.md#caption-text) has the format and drawing); the anchor `0x001cafa0` is its release. After it, the
+caption pager at HUD `+0x18e60`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001ca898` | `Captions_Construct` | text widget (class `0x001c16a8`) at `+0x60`, kind `+0x50` = 3, position (0.5, 0.8) | confirmed (code) |
+| `0x001ca908` | `Captions_SetPosition` | stores the position, adjusts it to the screen (`Camera_AdjustScreenPoint`), resets | confirmed (code) |
+| `0x001ca950` | `Captions_Draw` | [Movies](movies.md#caption-text) | confirmed (code) |
+| `0x001cab90` | `Captions_OnSubtitlesChunk` | chunk `0x51` handler: the chunk into `0x0050ea74` | confirmed (code) |
+| `0x001cabc0`, `0x001cacc0`, `0x001cad38` | `Captions_Init`, `_SelectLanguage`, `_SelectScene` | [Movies](movies.md#caption-text) | confirmed (code) |
+| `0x001cac78` | `Captions_Reset(captions, keep)` | clears the current caption (`+0x14`, `+0x1c`, the name `+0x24`, `+0x44`, `+0x48`) | confirmed (code) |
+| `0x001cae58` | `Captions_IsFreezing` | returns `+0x58` (a kind-2 caption, [Boot](boot.md#timers)) | confirmed (code) |
+| `0x001cae60` | `Captions_WaitTitleCard` | [Scenes](scenes.md#title-card) | confirmed (code) |
+| `0x001cafa0` | `Captions_Release` | from `WorldLevel_Release`: frees the Subtitles chunk, resets, releases the text widget | confirmed (code) |
+| `0x001cb000`, `0x001cb008` | `Captions_SetHoldFlag`, `Captions_GetHoldFlag` | `+0x4c` (scene caption event 6) | confirmed (code) |
+| `0x001cb010`, `0x001cb190` | `Captions_SetKind`, `Captions_Next` | [Movies](movies.md#caption-text) | confirmed (code) |
+| `0x001cb2a8` | `CaptionPager_Init` | once: screen effect (1.0, type 1, `ScreenFx_Queue`), `W_GameState + 0x438` = 1, `Captions_Init`, player 1's record bound | confirmed (code) |
+| `0x001cb340` | `CaptionPager_OnCommand` | command 1 shows the next caption (`Captions_Next`) and stamps the time `+0x70` | confirmed (code) |
+| `0x001cb398` | `CaptionPager_Update` | 250 ms after the last step: the pad pass with mask `0xf000`, then clears the input record | confirmed (code) |
+| `0x001cb418` | `CaptionPager_Render` | checks readiness only; draws nothing | confirmed (code) |
+
+### `GUI/TextEntryPad.cpp` {#fn-textentrypad}
+
+The name keyboard of PM_Create and the Rumble gang name ([Front end](frontend.md#pm-screens)); vtable `0x0053acc8`,
+input interface `0x0053aca0`; parts allocated with the file's tag: an `OptionGrid` (`+0x70`), a `UsageInfo` (`+0x74`)
+and a `TextWidget` (`+0x98`); the name buffer at `+0x7d`, its limit `+0x7c` = 25 bytes (PM_Create checks 8 itself).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001cc1a0`, `0x001cc210` | `TextEntryPad_Construct`, `TextEntryPad_Destroy` | widget base and vtables | confirmed (code) |
+| `0x001cc240` | `TextEntryPad_Shutdown` | shuts down and frees the grid, the text and the usage line | confirmed (code) |
+| `0x001cc2f0` | `TextEntryPad_Setup(pad, pos, ?, ?, onDone, owner, rumble)` | name text (size 1.2, font 3; size 2.0, font 6 for the profile style) at y `0x0050eb04` / `0x0050eb08`; usage line (string `0x1a` centred, or `0x1f` left-aligned); grid at y `0x0050eb0c` / `0x0050eb10`, rows of 12, cue 7, row gap 0.013, one item per character of string `0x97` (a space as size 0.94 code `0x20`), then `0x99` (OK) and `0x9a` (DEL); colour `0x005fd320` (`0x005fd328` profile style) | confirmed (code) |
+| `0x001cc998` | `TextEntryPad_SetText` | the buffer and the shown name | confirmed (code) |
+| `0x001cca08` | `TextEntryPad_IsReady` | grid and usage line ready | confirmed (code) |
+| `0x001cca80` | `TextEntryPad_OnCommand` | the owner's handler (`+0x78`) first; then on accept: OK with a name that is not all spaces plays `0xb` and calls `onDone(name)`, otherwise `0xe`; DEL removes the last character (`0xc`); a character is appended (an `_` item types a space, `0xa`) or refused at the limit (`0xe`), and at the limit the cursor jumps to OK; commands 0 and 1 on items 8 and 32 also jump to OK (inferred: the grid's edges) | confirmed (code) |
+| `0x001ccd08`, `0x001ccd90` | `TextEntryPad_Update`, `TextEntryPad_Render` | grid, text and usage line | confirmed (code) |
+
+### After `GUI/TextEntryPad.cpp` (no path string): `TextWidget` {#fn-after-textentrypad}
+
+`TextWidget` ([The widget classes](#widget-classes)), vtable `0x0053ae78`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001ccf88`, `0x001ccfc0` | `TextWidget_Construct`, `TextWidget_Destroy` | vtable, reset; delete frees when bit 0 | confirmed (code) |
+| `0x001ccff0` | `TextWidget_Reset` | empty text, invisible, inactive, shadow `+0xc4` = `0x80`, reveal `+0xc0` = 1.0, set-up `+0x58` = 0 | confirmed (code) |
+| `0x001cd060` | `TextWidget_Setup` | [The widget classes](#widget-classes); set-up `+0x58` = 1 | confirmed (code) |
+| `0x001cd180`, `0x001cd188` | `TextWidget_IsSetUp`, `TextWidget_Release` | read and clear `+0x58` | confirmed (code) |
+| `0x001cd190` | `TextWidget_SetPosition` | `+0x60` | confirmed (code) |
+| `0x001cd1b0`, `0x001cd1b8`, `0x001cd1c0` | `TextWidget_IsActive`, `_SetActive`, `_SetVisible` | `+0x54`, `+0x54`, `+0x50` | confirmed (code) |
+| `0x001cd1c8`, `0x001cd1d8` | `TextWidget_SetColour`, `TextWidget_SetAlpha` | colour `+0x5c`; its alpha byte `+0x5f` | confirmed (code) |
+| `0x001cd1e0` | `TextWidget_SetText` | copies the text to `+0x04`, line height `+0xb4` = metrics `+0x7c` + `+0x84`, width `+0xb0` by `Font_Measure` | confirmed (code) |
+| `0x001cd280` | `TextWidget_Update` | empty | confirmed (code) |
+| `0x001cd288` | `TextWidget_Render` | visible, active and not empty: `Font_Draw` at `+0x60`; with mode3D (`+0x74`) the text is placed in 3D at the widget's world position (`0x0017a1b0`, font 5) | confirmed (code) |
+
+### `UsageInfo` (`GUI/TutorialHUD.cpp`) {#fn-usageinfo}
+
+The button legend line ([The widget classes](#widget-classes)): vtable `0x0053b0f0`, `0x2d0` bytes, a markup text
+widget at `+0x40`, a 0x95-byte text buffer at `+0x230`, its rectangle at `+0x30`. It sits in `TutorialHUD.cpp`'s TU
+(before its stub `0x001cfea0`; inferred). Slots are offsets from the vtable start minus 4 (GCC 2 `{delta, fn}`).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001cea70` | `UsageInfo_Construct` | widget base, the markup text widget | confirmed (code) |
+| `0x001ceab0`, `0x001ceb00` | `UsageInfo_Destroy`, `UsageInfo_Shutdown` | slots `+0x60`, `+0x68`; shutdown clears the text and the created flag `+0x0c` | confirmed (code) |
+| `0x001ceb40` | `UsageInfo_Setup(info, pos, leftAlign)` | once: text at `pos`, size 1.0, colour `0x005fd310`, font slot 3, alignment 0 (left) when `leftAlign`, else 2 (centred); first text string `0x1a`; base size 1.0; stores the measured rectangle | confirmed (code) |
+| `0x001cec28` | `UsageInfo_SetText` | copies at most `0x95` bytes and sets them; nil is ignored | confirmed (code) |
+| `0x001cec78` | `UsageInfo_SetColour` | slot `+0x20`: the text colour (`0x001b94d0`) | confirmed (code) |
+| `0x001cec98` | `UsageInfo_SetAlpha(info, a)` | text `+0x1b1` = `a`, `+0x1b4` = 1 (alpha override); the menus' fades use it | confirmed (code) |
+| `0x001cecb0` | `UsageInfo_SetPosition` | slot `+0x08` | confirmed (code) |
+| `0x001cecd0` | `UsageInfo_GetRect` | slot `+0x70`: `(x, 0, height, w)` of the measured text | confirmed (code) |
+| `0x001ced38` | `UsageInfo_IsCreated` | slot `+0x88`: `+0x0c` | confirmed (code) |
+| `0x001ced40` / `0x001ced88` | `UsageInfo_Update` / `UsageInfo_Render` | slots `+0x30` / `+0x38`: update the text when ready; draw it when visible and ready | confirmed (code) |
+
+### `CircledText` (no path string) {#fn-circledtext}
+
+`0x001d0aa8`-`0x001d16e8`, in the TU that ends at the stub `0x001d2de0` with the `GameMenu` base. A widget class
+(vtable `0x0053b390`, `0x5fc` bytes; our name) drawing a text after up to two **circled characters**: a back sprite
+(`+0x140`), two circle sprites (`+0x250` + `0x100` × i) each with a one-character `TextWidget` (`+0x450` + `0xd0` ×
+i), and the main `TextWidget` (`+0x60`). The mission-select and game-stats screens build it; the allocator tag
+`CircledTextHeader` they pass is probably its owner's class (inferred). Fields: circle width/height `+0x5f0`/`+0x5f4`,
+circle count `+0x5f8`, text offset `+0x30`, circle offset `+0x240`, colours `+0x130` (normal, `0x005fd320`) and `+0x134`
+(focused, `0x005fd318`), reveal `+0x50`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001d0aa8` / `0x001d0b70` | `CircledText_Construct` / `_Destroy` | the parts above; slot `+0x60` | confirmed (code) |
+| `0x001d0c68` | `CircledText_Shutdown` | slot `+0x68`: releases every part | confirmed (code) |
+| `0x001d0d18` | `CircledText_Setup` | slot `+0xc0` `(circleW, circleH, owner, widget, pos, textOff, circleOff, metrics, backSprite, circleSprite, backInst, circleInst)`, once: text font flags 4; back sprite size 1.0, depth 8,400, grey (128, 128, 128); circles size 0.1, depth 8,500, red (160, 16, 16), sized `circleW` × `circleH`; spacing divisor `0x0050ec64` = 3 (2 with device flag `0x02`); character y offset `0x0050ec68` = `circleH` × 0.1; reveal 1.0 | confirmed (code) |
+| `0x001d0fe8`, `0x001d1008` | `CircledText_SetText`, `_SetCircled` | slots `+0xc8`, `+0xd0`: the main text; one character of the string per circle, count = its length | confirmed (code) |
+| `0x001d1098`, `0x001d1108`, `0x001d1178` | `_SetCircleColour`, `_SetCharColour`, `_SetBackColour` | slots `+0xd8`, `+0xe0`, `+0xe8` | confirmed (code) |
+| `0x001d1198` | `CircledText_IsReady` | slot `+0x88`: created and the circle batch (`+0x204`) resident | confirmed (code) |
+| `0x001d11c8` / `0x001d11f8` | `CircledText_SetReveal` / `_GetRect` | slots `+0xa8` / `+0x70`: reveal clamped to 0-1; the rectangle with its height × the reveal | confirmed (code) |
+| `0x001d1250` | `CircledText_Update` | slot `+0x30`: the back sprite over the rectangle, its texture rectangle cut by the reveal; circles left to right from the left edge + `circleOff`, each step `circleW` / 3, their height × the reveal; the main text after the last circle; visible while the reveal is above 0 | confirmed (code) |
+| `0x001d16e8` | `CircledText_Render` | slot `+0x38`: back sprite, text (focused colour when slot `+0xa0` is true), each circle and its character (recoloured to `+0x134` unless its colour is the colour-table entry 0) | confirmed (code) |
+
+### `OptionGridItem` (`GUI/OptionGrid.cpp`) {#fn-optiongriditem}
+
+`0x001d3bb0`-`0x001d3f78`, after the stub `0x001d3b90`, so the start of `OptionGrid.cpp`'s TU (inferred). The grid
+item (vtable `0x0053b818`, `0x60` bytes; [OptionGrid](#widget-classes)) wraps one widget (`+0x50`) and a code
+(`+0x54`); `+0x40` is focused, `+0x20` the position, `+0x30` the widget's rectangle.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001d3bb0` / `0x001d3c18` | `OptionGridItem_Construct` / `_Destroy` | from `OptionGrid_AddItem` (`0x001d4230`): widget, code, created; slot `+0x60` | confirmed (code) |
+| `0x001d3c40` / `0x001d3c90` | `OptionGridItem_SetWidget` / `_SetPosition` | keep the widget and copy its rectangle; set the position and forward it (widget slot `+0x08`) | confirmed (code) |
+| `0x001d3cd0` / `0x001d3d18` | `OptionGridItem_Focus` / `_Unfocus` | slots `+0x90` / `+0x98`: forward and set `+0x40` | confirmed (code) |
+| `0x001d3d60` / `0x001d3d98` | `OptionGridItem_SetColour` / `_GetColour` | slots `+0x20` / `+0x28`: forward; without a widget the colour is `0x005fd310` | confirmed (code) |
+| `0x001d3dd8` | `OptionGridItem_GetCode` | `+0x54`, read by `0x001d43f0` | confirmed (code) |
+| `0x001d3de0`, `0x001d3e30`, `0x001d3e90` | `OptionGridItem_IsReady`, `_Update`, `_Render` | slots `+0x88`, `+0x30`, `+0x38`: forward to the widget when it is ready | confirmed (code) |
+| `0x001d3ef0` / `0x001d3f78` | `OptionGrid_Construct` / `_Destroy` | vtable `0x0053b768`, input interface `0x0053b740` at `+0x6c`; the item array `+0x74` freed on destruction | confirmed (code) |
+
+### `GUI/OptionGrid.cpp` {#fn-optiongrid}
+
+`0x001d4000`-`0x001d5808`: `OptionGrid` (vtable `0x0053b768`, input interface `0x0053b740`) holding up to 50
+`OptionGridItem`s (0x60 bytes) that each wrap an `OptionGridTextWidget` (vtable `0x0053b8c8`, 0x200 bytes).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001d4000` | `OptionGrid_Shutdown` | Slot +0x68: when created (+0x0c), unfocuses, frees every item's text widget and OptionGridItem and empties the vector (+0x74..+0x78). | confirmed (code) |
+| `0x001d4110` | `OptionGrid_Setup` | Position (0,0,y,1), up to 5 per-row counts at +0xb0, owner +0x80, HUD pad 0 at +0x50, centre x 0.5, move cue 4, wrap on, row gap 0, selection 0. | confirmed (code) |
+| `0x001d4200` | `OptionGrid_SetPad` | Input record +0x50 = `HUD_GetVirtualPad(hud, player)`. | confirmed (code) |
+| `0x001d4230` | `OptionGrid_AddItem` | At most 50 items: allocates and sets up an OptionGridTextWidget, wraps it in an OptionGridItem with the item code, appends it. | confirmed (code) |
+| `0x001d43e8`, `0x001d43f0` | `OptionGrid_GetSelected`, `OptionGrid_GetItemCode` | Selected index +0xa4; item i's code (OptionGridItem +0x54). | confirmed (code) |
+| `0x001d4418` | `OptionGrid_IsReady` | Slot +0x88: 1 once every item is ready (item slot +0x88), latched in +0x10. gui.md's "active" name for this address is this readiness check. | confirmed (code) |
+| `0x001d44b8` | `OptionGrid_IsSelectable` | Item i exists and its text widget is active (slot +0x58). | confirmed (code) |
+| `0x001d4530`, `0x001d4570` | `OptionGrid_GetColumn`, `OptionGrid_ClampColumn` | Column of the selection within its row; a column clamped to a row's length - 1. | confirmed (code) |
+| `0x001d4590`, `0x001d45c8`, `0x001d45f8` | `OptionGrid_GetRowOf`, `OptionGrid_GetRowLast`, `OptionGrid_GetRowFirst` | Row of item i, and a row's last and first item index, from the per-row counts. | confirmed (code) |
+| `0x001d4628`, `0x001d4790` | `OptionGrid_MoveUp`, `OptionGrid_MoveDown` | With 2+ rows, the same column in the row above/below, wrapping, skipping unselectable items recursively; cue 0xe and +0xc4 set when the move lands on the same item. | confirmed (code) |
+| `0x001d48e0`, `0x001d4a30` | `OptionGrid_MoveLeft`, `OptionGrid_MoveRight` | Previous/next selectable item: across all items (wrap when +0x98) when +0x9c = 0, else within the row; cue 0xe when nothing else is selectable. | confirmed (code) |
+| `0x001d4b88` | `OptionGrid_Select` | Unfocus the old item, focus item i, play cue +0x94 when asked. | confirmed (code) |
+| `0x001d4c40` | `OptionGrid_OnCommand` | Input interface slot +0x08: owner's handler (+0x80) first; if it returns 0, commands 0-3 move; stamps +0x84 with the game time. | confirmed (code) |
+| `0x001d4d28`, `0x001d4db8` | `OptionGrid_Focus`, `OptionGrid_Unfocus` | Slots +0x90 / +0x98: clear the input record, focused +0x40 = 1 / 0, (un)focus the selected item, stamp +0x84. | confirmed (code) |
+| `0x001d4e48` | `OptionGrid_SetAlpha` | Alpha of one item (all when -1; the others 255) through the item colour slots +0x28/+0x20. | confirmed (code) |
+| `0x001d4f20` | `OptionGrid_Update` | Slot +0x30: when ready, focused and 20 ms after the last command, a d-pad pass (mask 0xf000; auto-repeat, or plain after a refused move) and a button pass (0xffff0fff); then lays rows out left-packed or centred from y +0x28, row step item height + gap +0xa0; total height +0x38; fewer than 3 items never wrap. | confirmed (code) |
+| `0x001d52c8` | `OptionGrid_Render` | Slot +0x38: when visible and ready, renders every item. | confirmed (code) |
+| `0x001d5350`, `0x001d5398`, `0x001d53f8` | `OptionGridTextWidget_Construct`, `_Destroy`, `_Shutdown` | Text widget +0x50 and separator text widget +0x120; destructor slot +0x60; shutdown slot +0x68 releases both. | confirmed (code) |
+| `0x001d5450` | `OptionGridTextWidget_Setup` | Slot +0xa8: text in `0x005fd310`; with a separator, a " : " text in the item colour after it; box width covers both. | confirmed (code) |
+| `0x001d55e8` | `OptionGridTextWidget_IsCreated` | Created (+0x0c) != 0; was undefined code, created by this pass. | confirmed (code) |
+| `0x001d55f8`, `0x001d56a0` | `OptionGridTextWidget_SetPosition`, `_Update` | Slot +0x08 moves text and separator (at x + text width); slot +0x30 updates both. | confirmed (code) |
+| `0x001d5700` | `OptionGridTextWidget_Render` | Slot +0x38: `0x005fd318` when active and focused, else the item colour +0x1f4 with alpha +0x1f3; separator alpha 255 or the text's by +0x1f8. | confirmed (code) |
+
+### After the Rumble result screen: `GUI/ScrollingMenu.cpp` start, file inferred {#fn-scrollingmenu-start}
+
+`0x001e09e8`-`0x001e0a98`: the first two `ScrollingMenuItem` methods (vtable `0x0053c190`), before the file's path
+string appears.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001e09e8` | `ScrollingMenuItem_Construct` | From `0x001e1830`: index +0x60, scale 1.0, alpha 255. | confirmed (code) |
+| `0x001e0a58` | `ScrollingMenuItem_SetIndex` | Slot +0xf0: index +0x60, refresh (slot +0xa8). | confirmed (code) |
 
 ## Coney's implementation
 
@@ -679,8 +1112,9 @@ TODO for the analysts, found while implementing:
 - **HUD icon tags 23-31:** their names and characters. The English strings use `<BOBJ>`, `<YOBJ>` and `<ROBJ>`, which
   are not among the names on this page.
 - **Layout details** (answered in [the tag table](#markup): `CCENTER` / `RRIGHT`, `CRM`, the closing tags and
-  `PULSE`'s triangle swing; and the y is the first line's centre, confirmed (runtime) for the light widget). Still
-  open: `<BOLD>` and `<AUTOINDENT>`; the two characters of each animated stick tag; whether the shadow is drawn per
+  `PULSE`'s triangle swing; and the y is the first line's centre, confirmed (runtime) for the light widget). `<BOLD>` and
+  `<AUTOINDENT>` answered too (the tag table). Still open: the two characters of each animated stick tag; whether the
+  shadow is drawn per
   glyph (Coney) or under the whole string first.
 - Names: the `@orig` tags call `0x00179808`, `0x00179958` and `0x00179c30` `Font_Size`, `Font_Measure` and
   `Font_Draw`, and `0x001b9600` `TextWidget_Layout`, all with file `(unknown)`.
@@ -704,7 +1138,7 @@ What the implementer still needs:
 
 ## Open questions
 
-- **Radar batch `+0x48`** and **blip type 12**: who uses them.
+- **Blip type 12**: who uses it (radar batch `+0x48` answered: icons 25 and 26, `0x001c6730`).
 - **What icons 22 and 355 show**, and the dealer type 2's role.
 - **The 2D sort key** (answered): the creation depth; see [Draw order](#draw-order).
 - **The sheet `0x349348bd`** behind the Quick Rumble menus (sheet-table record 12, inferred;

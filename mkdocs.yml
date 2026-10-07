@@ -121,6 +121,7 @@ nav:
           - Scripts (Lua): research/scripting.md
           - World flags: research/flags.md
           - Characters: research/characters.md
+          - "Animation system: code": research/animation.md
           - Inventory, unlockables and statistics: research/player-state.md
           - Profiles, options and saving: research/save.md
           - Combat: research/combat.md

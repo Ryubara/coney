@@ -703,8 +703,9 @@ The task manager's play tick (`0x003a3148` → `0x003a2ea0`, called first in mod
 every **second** call, so the characters step at 30 Hz with dt = 1/30. In order, confirmed (code), each step behind a
 debug switch that is on in play (`0x005e5350`-`0x005e5368`); the full list is on [Tasks](tasks.md#humans-update):
 
-1. Three animation managers (`0x00170c88`, `0x00171d38`, `0x00184568`); `Pads_Update`; the formations; the 60 player
-   records (`0x00146078`, below).
+1. The litter, ground fog and rain splashes (`0x00170c88`, `0x00171d38`, `0x00184568`,
+   [Graphics](graphics.md#code-camera-effects)); `Pads_Update`; the formations; the 60 player records (`0x00146078`,
+   below).
 2. The gangs, then the **brains** (`0x00293b28`, [AI](ai.md#update)), which write an AI human's command into its
    player record as a pad would.
 3. For every human with an instance, `0x0023bd78` (the instance's animation step, `0x00175610`), then

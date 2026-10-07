@@ -322,7 +322,8 @@ Called on every 60 Hz tick; its body runs only when `0x005104f4` is even, so **t
 step behind a debug switch that is on in play. Confirmed (code) at `0x00249108`; this corrects the order given
 before on [Characters](characters.md#update):
 
-1. The three animation managers (`0x00170c88`, `0x00171d38`, `0x00184568`).
+1. The litter, ground fog and rain splashes (`0x00170c88`, `0x00171d38`, `0x00184568`,
+   [Graphics](graphics.md#code-camera-effects)).
 2. `Pads_Update` (`0x001454a8`); with `0x005e5354`, the **formations** (`0x00293c68`: 41 records of 0x280 at
    `0x006ceaf0`, each `0x002956d0`).
 3. The 60 **per-player records** (`0x00146078`): pad to command. A record with no pad has its command `+0x20`

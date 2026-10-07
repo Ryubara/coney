@@ -1002,6 +1002,131 @@ What a screenshot-for-screenshot front end needs, one line per screen or feature
 | [ ] | No 2nd Controller | not made | text `0x3d`, waits for a second pad |
 | [x] | Input timing | repeat, 110 ms gap, release-to-accept; the `ScrollingMenu`'s 100 ms gap and end-stop | nothing |
 
+## Function index {#function-index}
+
+Every function of the front-end GUI files (profile manager, Rumble set-up, credits, mission select, statistics), by
+source file in address order, with the name it has in Ghidra (ours). Rows link to the section that describes the
+behaviour where there is one. The files and ranges are from the [Source map](source-map.md#gui).
+
+### `GUI/Credits.cpp` {#fn-credits}
+
+`0x001a8fb8`-`0x001aa108`: the end-credits scroll, the HUD element at HUD `+0xea30` (class `Credits`, vtable
+`0x00539a10`; `PreloadCredits` / `ShowCredits` / `CfgCredits`). A credit line is a `CreditData` record (`0x1c` bytes:
+`+0x00` style, `+0x04` / `+0x08` role and name in the credits string cache, `+0x0c` / `+0x10` its text widgets,
+`+0x14` index, `+0x18` gap after it) in the `CreditList` vector (`0x0050d340`). The scroll reuses a pool of 70
+`TextWidget`s: a line takes widgets when it starts at the bottom (y 1.1) and gives them back (hidden) once its bottom
+passes y −0.1; every update moves the live lines up **0.0025 overlay units** (a per-frame step, not timed). Style 0
+is a centred heading at scale 1.8; styles 2 and 3 a centred line at 0.9; style 1 a role (right-aligned, ending 0.01
+left of x 0.5) and a name (left-aligned from 0.01 right of it) at 0.9, the role shown only when it differs from the
+previous line's. When no widget is visible any more the element shuts down and calls the Lua function `CreditEnd`.
+Confirmed (code) at the addresses below.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001a8fb8` | `Credits_AddLine` | `CfgCredits(style, role, name)`: a new `CreditData` (style 4 becomes 2, texts interned by `0x00386d08` in the cache `0x0050d33c`, index = list size) appended to the list | confirmed (code) |
+| `0x001a90f8` | `Credits_Construct` | widget base (`0x001a8e30`), vtable `0x00539a10`, loaded flag `+0x44` = 0; from `HUD_Construct` | confirmed (code) |
+| `0x001a9130` | `Credits_Load` | `PreloadCredits`: list and `StringTableCache`, runs `credits.lua`, 70 `TextWidget`s at (0.5, 0, 1.1, 1), scale 1.8, colour `0x005fd310`, flags 4, hidden; top limit `+0x170` −0.1, start y `+0x174` 1.1, centre x `+0x178` 0.5, gutter `+0x17c` 0.02, step `+0x180` 0.0025 (`0x0050d344`), last role `+0x188` none, repeat count `+0x18c` 1; loaded `+0x44`, `+0x16c` = 8000 (not read by the scroll) | confirmed (code) |
+| `0x001a9480` | `Credits_Start` | `ShowCredits`: when loaded and not running, running `+0x0c` = 1, `+0x10` = 0, start time `+0x168` | confirmed (code) |
+| `0x001a94e8` | `Credits_Shutdown` | slot `+0x68`: when running, frees the 70 widgets, the records, the list and the cache; clears running and loaded | confirmed (code) |
+| `0x001a9608` | `Credits_CountFreeWidgets` | how many pool widgets are hidden (slot `+0x48` false) | confirmed (code) |
+| `0x001a9678` | `Credits_FindFreeWidget` | the first hidden pool widget, or 0 | confirmed (code) |
+| `0x001a96f0` | `Credits_LayoutCentred` | Font_Draw flags 6 (centred), `Font_Size(1.8)` for style 0 (`0x0050d348`) else 0.9 (`0x0050d34c`), at (x `+0x178`, y `+0x174`) | confirmed (code) |
+| `0x001a97c0` | `Credits_LayoutRole` | flags 5 (right-aligned), scale 0.9, at x = `+0x178` − gutter / 2 | confirmed (code) |
+| `0x001a9890` | `Credits_LayoutName` | flags 4 (left), scale 0.9, at x = `+0x178` + gutter / 2 | confirmed (code) |
+| `0x001a9960` | `Credits_AssignWidgets` | takes a pool widget (shown) for the line; style 1 takes a second one for the role only when the role differs from `+0x188` (else `+0x18c` += 1); lays them out | confirmed (code) |
+| `0x001a9a78` | `Credits_PlaceNewLine` | puts a new line's widgets at y + height / 2 | confirmed (code) |
+| `0x001a9b70` | `Credits_ScrollLine` | moves a live line's widgets by −`+0x180` in y | confirmed (code) |
+| `0x001a9c48` | `Credits_LineHeight` | the larger of the line's widgets' heights (`+0xb4`) | confirmed (code) |
+| `0x001a9c88` | `Credits_UpdateLine` | updates the line's widgets; when y + height < `+0x170` hides them and advances the first live line `+0x160` | confirmed (code) |
+| `0x001a9d78` | `Credits_GapAfter` | gap after a line: 0.05 after style 0 (`0x0050d354`); 0.08 (`0x0050d350`) after a style 2 or 1 line followed by style 0 or 3; 0.04 (`0x0050d358`) after a style-1 line when the next has a new role and 2+ names shared the old one; else 0 | confirmed (code) |
+| `0x001a9e90` | `Credits_Update` | slot `+0x30`, from the overlay pass `0x00156658`: sets `0x0063083c` while running; from line `+0x160` on, starts a line only while 2 or more widgets are free (assign, check, place, gap), else updates and scrolls it; the pen y advances by each height (half for the first) plus its gap; when no pool widget is visible: `Shutdown` and the script system's call of `CreditEnd` | confirmed (code) |
+| `0x001aa108` | `Credits_Render` | slot `+0x38`: each visible widget whose top is above `+0x174` drawn in `0x005fd310` | confirmed (code) |
+
+### `GUI/MissionSelectHUD.cpp` {#fn-missionselecthud}
+
+The mission select screen of `HUDShowMissionSelect` (`MissionSelect_Show`, mode functions `MissionSelect_Enter` /
+`_Update` / `_Exit` at `0x0015d648` / `0x0015d890` / `0x0015d728`): a map with one marker per area, and per area a
+list of the missions already completed, each with its checkpoints. The object (vtable `0x0053a408`, input interface
+`0x0053a3e0` at `+0x6c`) is built by `0x0015d4f8`. Areas are `MS_Area` records (`0x230` bytes), missions `MS_Mission`
+(`0x8c0` bytes), both allocated with those class strings. The mission records are the story table at W_GameState
+`+0x14d4` (`0x84` bytes each, count `+0x56d4`; level `+0x04`, checkpoint count `+0x08`, name `+0x49`, icon sprite
+`+0x78`, `+0x80` passed to the entry). The rest of the file is HUD code ([HUD](hud.md#fn-missionselecthud-hud)).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001bc028` | `MSMission_Delete` | deleting destructor: the entry widget at `+0x10` | confirmed (code) |
+| `0x001bc078` | `MSArea_Delete` | deleting destructor: marker `+0x130`, menu `+0x20`, mission vector `+0x0c` | confirmed (code) |
+| `0x001bc100` | `MissionSelect_IsMissionListed` | the filter (`+0x88`): a mission is listed when its level is 2-99 but not 95 (the hub) and not 60-65 (Armies of the Night), and `Unlocks_IsLevelComplete(level)` is true | confirmed (code) |
+| `0x001bc168`, `0x001bc208` | `MissionSelect_Construct`, `MissionSelect_Destroy` | sprites `+0xa0`, `+0x1b0`, `+0x590`, usage line `+0x2b0`; the destructor shuts down first | confirmed (code) |
+| `0x001bc2c0`, `0x001bc2f0` | `MissionSelect_TitleMetrics`, `MissionSelect_EntryMetrics` | `Font_Size(1.25)` and `Font_Size(0.92)` | confirmed (code) |
+| `0x001bc328`, `0x001bc3b8` | `MissionSelect_CreateFrameBatch`, `_CreateMapBatch` | batches over sheet-table record 20 (21 when `0x0050e894` is set: 16:9 or progressive): 40 sprites at depth 8,700 (`+0x8c`), 50 at 8,000 (`+0x90`) | confirmed (code) |
+| `0x001bc440` | `MissionSelect_CreateLogoBatch` | 2 sprites of record 25 (`gang_logos`) at depth 8,500 (`+0x94`) | confirmed (code) |
+| `0x001bc4b8`, `0x001bc530` | `MissionSelect_CreateIconBatchA`, `_B` | 12 sprites of record 22 (`+0x98`) and of record 23 (`+0x9c`), depth 8,500 | confirmed (code) |
+| `0x001bc5a8` | `MissionSelect_Build` | the batches, the background (rectangle 0, grey 144), the gang logo (`gang_logos` rectangle 11, white, with a shadow), a frame (rectangle 2, or 3 in the other set, grey 128), the area title (`CircledTextHeader`, `0x600` bytes, `+0x80`), the usage line (string `0x20`), placed from `0x0050e850`-`0x0050e890` | confirmed (code) |
+| `0x001bc930` | `MissionSelect_AddMission` | appends an `MS_Mission` to its area (found by the CRC-32 of the mission's area name) | confirmed (code) |
+| `0x001bca30` | `MissionSelect_FindArea` | the area with that name hash | confirmed (code) |
+| `0x001bca70` | `MissionSelect_AddArea` | a new `MS_Area` for a new area: its marker (record 20 rectangle 5, (170, 170, 170)) at the area's map point | confirmed (code) |
+| `0x001bcc48` | `MissionSelect_BuildAreas` | every listed mission into its area; the areas and each area's missions are then sorted | confirmed (code) |
+| `0x001bcdd8` | `MissionSelect_Init` | once: the layout for the video mode, the state (blink period 400 ms, no area chosen), the filter, the HUD's virtual pad 0, the areas, the first area shown, focus | confirmed (code) |
+| `0x001bd428` | `MissionSelect_Shutdown` | frees the areas and missions, the title, the sprites and the five batches | confirmed (code) |
+| `0x001bd6e8` | `MissionSelect_IsLoaded` | created, and the map and logo batches resident | confirmed (code) |
+| `0x001bd740` | `MissionSelect_IconBatchForMission` | record 23's icons for levels 2, 3, 5, 9, 11, 20, 31, 34, 51, 52, 54 and 55; record 22's for the rest | confirmed (code) |
+| `0x001bd838` | `MissionSelect_FillArea` | once per area: places its menu and makes an entry per mission: a `CircledTextHeader` with the mission's name in its colour (default (106, 65, 131)), its icon (`0x17000c` or `0x16000c`), the checkpoint count | confirmed (code) |
+| `0x001bdc10` | `MissionSelect_ShowArea` | fills the area at the cursor (`+0x584`) | confirmed (code) |
+| `0x001bdc48`, `0x001bdcd0` | `MissionSelect_NextArea`, `MissionSelect_PrevArea` | move the cursor with cue 4; at either end cue `0xe` and the refused flag (`+0x6a8`) | confirmed (code) |
+| `0x001bde18` | `MissionSelect_OnListCommand` | with the mission list open (`+0x6a4`): commands 0 and 1 step the checkpoint down or up within the mission's count (cue 4, or `0xe` at the ends); accept (4) opens the list, or with it open starts (`+0x69c` = 1), cue 8; back (5) closes the list, cue `0xf` | confirmed (code) |
+| `0x001be070` | `MissionSelect_OnMenuCommand` | commands 0-5 through the jump table `0x00554c50` while the area menu has focus | confirmed (code) |
+| `0x001be130` | `MissionSelect_OnCommand` | the input handler: one of the two above | confirmed (code) |
+| `0x001be198` | `MissionSelect_UpdateWidget` | slot `+0x30`: the d-pad (auto-repeat mask `0xf000`, or the plain query after a refusal) and buttons; a new area updates the title; the chosen area's marker pulses between 1× and 2× its size every 400 ms with a halo 1.55× its size in the area's colour; 2,300 ms after a start, `MissionSelect_OnAccept` | confirmed (code) |
+| `0x001bdd38` | `MissionSelect_OnAccept` | cue 8; the next level is the mission's (`0x0015d540`), the checkpoint the chosen one + 1 (`0x0015d560`), the start flag set (`0x0015d5a0`); from checkpoint 2 on it also resets the inventory (W_GameState `+0x480`, `0x0041e040`) and the players' stats | confirmed (code) |
+| `0x001be848` | `MissionSelect_Render` | background, map, halo, every marker, the title, the area menu, the usage line | confirmed (code) |
+
+### After `GUI/RadarHUD.cpp` (no path string): the message box {#fn-after-radarhud}
+
+The message box at `0x005e5840` ([The message box](#message-box)): constructor `0x001c6a20`, vtable `0x0053a880`,
+input interface `0x0053a858` at `+0x6c`; an `OptionGrid` at `+0x80`, a `UsageInfo` at `+0x150`, a text widget
+(class at `0x001c16a8`) at `+0x420`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001c6a20`, `0x001c6ac0` | `MessageBox_Construct`, `MessageBox_Destroy` | build and destroy the three parts; `+0x500` = -1 (no sound) | confirmed (code) |
+| `0x001c6b38` | `MessageBox_LoadSheet` | makes resource instance 3 (`part_page0`) resident if it is not | confirmed (code) |
+| `0x001c6b78` | `MessageBox_SetCallback` | `+0x4f8`: the owner's function run after a choice | confirmed (code) |
+| `0x001c6b80` | `MessageBox_Tick` | update and render when ready (mode 6) | confirmed (code) |
+| `0x001c6be8` | `MessageBox_Close` | calls its `Shutdown` | confirmed (code) |
+| `0x001c6c10` | `MessageBox_InitNoop` | empty | confirmed (code) |
+| `0x001c6c18` | `MessageBox_Init` | once: the layout globals by video mode (default x `0x0050ea24` = 0.02, y 0.9, grid y 0.75, usage y 0.8), the sheet, the usage line at (0.5, 0.8) with string `0x23`, the text at (0.5, 0.5) | confirmed (code) |
+| `0x001c6ed8` | `MessageBox_Shutdown` | releases text, usage line and grid; stops its sound `+0x514` if still playing | confirmed (code) |
+| `0x001c6f58` | `MessageBox_IsTiming` | game time − start (`+0x508`) < duration (`+0x50c`) | confirmed (code) |
+| `0x001c6fa8` | `MessageBox_HasChoices` | created and the grid active (`+0x8c`) | confirmed (code) |
+| `0x001c6fc8` | `MessageBox_ShowMessage(box, text, ms, style)` | [The message box](#message-box); text size 0.6 (`0x001c18c0`); style 1 colour (134, 26, 26) | confirmed (code) |
+| `0x001c7128` | `MessageBox_ShowChoice` | [The message box](#message-box); items size 1.15, colour `0x005fd320`, font 3, the cursor on `default` without a sound | confirmed (code) |
+| `0x001c7370` | `MessageBox_IsReady` | `part_page0` resident, the text ready and, while choosing, the grid | confirmed (code) |
+| `0x001c73e8` | `MessageBox_IsAcceptSoundDone` | the accept cue `+0x500` has stopped | confirmed (code) |
+| `0x001c7408` | `MessageBox_OnCommand` | while choosing (`+0x504`), command 4 (accept): stop choosing, cue 8 into `+0x500`, the chosen callback `+0x4f0[i]` into `+0x4fc` | confirmed (code) |
+| `0x001c7488` | `MessageBox_ClaimPad` | [The message box](#message-box) (`HUD_BindPad`) | confirmed (code) |
+| `0x001c7630`, `0x001c76a8` | `MessageBox_Update`, `MessageBox_Render` | update: claim a pad, text, usage line, grid, then `+0x4f8` if a choice was made this frame; render: text, and the usage line and grid while choosing | confirmed (code) |
+
+### `MS_Mission`: a mission-select tile (no path string) {#fn-ms-mission}
+
+`0x001d2e00`-`0x001d3b90`, its own TU (stub `0x001d3b90`; inferred), built by `MissionSelectHUD.cpp`'s
+`0x001bc930` with the allocator tag `MS_Mission` (vtable `0x0053b658`). A tile shows a mission's picture (`+0x70`), a
+black back strip (`+0x180`), a letter (`+0x380`, `'A'` + index), two stat lines (markup texts `+0x450`, `+0x640`) and a
+highlight frame (`+0x280`). Static colours `0x0062a180` (128, 100, 0, 255) and `0x0062a188` (106, 65, 130, 255).
+Confirmed (code).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x001d2e00` / `0x001d2e80` | `MSMission_Construct` / `_Destroy` | the parts above | confirmed (code) |
+| `0x001d2f10` | `MSMission_CreateParts` | back black, depth 7,500; picture white, depth 9,000.65; the two lines size 1.0, base size 0.9, colour `0x005fd310`, alignment 5; the letter; the frame (colour `0x005fd328`, shadow on, hidden) sized by the frame size kept at `0x0062a18c`/`0x0062a190` | confirmed (code) |
+| `0x001d31e8` | `MSMission_Setup` | slot `+0xc0`: rectangle, index, picture sprite (`+0x64`), frame sprite (`+0x170`); line 1 = string `0x6d` with the mission's score (`0x00423050`) in markup colour `861A1AFF` when it reaches the target from the unlockables (`0x00424298`), else `806400FF`; line 2 = string 100 with a count, `861A1AFF` when complete, else `6A4183FF`, or a fixed line when the level has none | confirmed (code) |
+| `0x001d34b0`, `0x001d34e8` | `MSMission_SetLetter`, `_SetHighlight` | slots `+0xc8`, `+0xd8` | confirmed (code) |
+| `0x001d34f0` | `MSMission_Shutdown` | slot `+0x68` | confirmed (code) |
+| `0x001d3558`, `0x001d35a0` | `MSMission_IsReady`, `_GetRect` | slots `+0x88` (created and the picture's batch resident, cached), `+0x70` (height × reveal) | confirmed (code) |
+| `0x001d35f8` | `MSMission_Update` | slot `+0x30`: the picture over the tile, its texture rectangle cut by the reveal; the back strip 0.96 × the tile's width, height × 0.745 × the reveal mapped to 0-1 (`0x0050ecd4`, 0.745 in the default mode); the two lines and the letter stacked up from the bottom edge, each shown only inside the tile; the frame at the letter when highlighted | confirmed (code) |
+| `0x001d3aa8` | `MSMission_Render` | slot `+0x38`: when ready, visible and active | confirmed (code) |
+| `0x001d3b30`, `0x001d3b90` | `MSMission_StaticInit`, `_GlobalCtor` | the two colours; the constructor stub (list entry `0x00534120`) | confirmed (code) |
+
 ## Coney's implementation
 
 **The start-up path** (`src/gamemodes/start_up_flow.h`, `StartUpFlow`), written from [the flow](#mode-flow) and

@@ -191,6 +191,7 @@ One countdown (or count-up) timer for the whole game, the object at `*0x0051504c
 | `+0x08` / `+0x0c` | s32 | current time / target time, ms |
 | `+0x10` | float | rate the elapsed time is multiplied by (its writer is not traced) |
 | `+0x14` | u32 | running (`W_StartStopWatch`'s argument; the update clears it at the target) |
+| `+0x18` / `+0x1c` | u32 / char* | shown on the HUD / the label drawn before the time; read by the HUD's stopwatch text (`StopWatchHud_UpdateMinutes`, `0x001cd5e8`, and `0x001cd748`; [HUD](hud.md#fn-after-textentrypad)), their writer not traced |
 | `+0x20` | char[32] | the callback's name, kept as text (empty for none) |
 | `+0x40` / `+0x48` | s32 | warning window (ms) / time of the last warning beep; `W_SetStopWatch` sets 0 / 1000 |
 

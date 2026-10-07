@@ -47,7 +47,7 @@ calls them the **`s` world** and the **`d` world**.
 | `0x0017de10` | `LightManager_SelectLights` | the lights for one atomic or sphere | confirmed (code) |
 | `0x00124778` | `Cam_Follow::Cam_Follow` | the player camera: field of view, near and far clip ([The player camera](#player-camera)) | confirmed (code) |
 | `0x00411d10` | `World_FindVisibleSectors(world, firstViewport)` | visibility pass for one camera | confirmed (code) |
-| `0x00411b98` | sector callback during the visibility pass | PVS, occluders, mark visible | confirmed (code) |
+| `0x00411b98` | `World_VisibilitySectorCallback` | PVS, occluders, mark visible | confirmed (code) |
 | `0x00411b20` | `World_CollectSector` (the world's sector render callback) | queues a sector whose atomic is loaded | confirmed (code) |
 | `0x00411990` | `World_RenderSectorAtomic(atomic, fadeEnd)` | fade-in, lights, default atomic render | confirmed (code) |
 | `0x004123e8` | `World_ResetVisibility` | clears the visible bits, sets the PVS view point | confirmed (code); file inferred |
@@ -59,6 +59,30 @@ calls them the **`s` world** and the **`d` world**.
 
 RenderWare function names (`RpWorldRender`, `RpWorldSetSectorRenderCallBack`, `RpPVSHook` and so on) are inferred from
 their arguments and their place in the RenderWare block, as on [Graphics](graphics.md#original-structure).
+
+### Small functions of `World/` {#small-functions}
+
+The rest of `World/` (`0x0040c5e0`-`0x004124f8`) besides the level loader's functions on
+[Level loading](level-loading.md#original-structure). Names are ours and match the local Ghidra project; all
+confirmed (code) at the address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0040c628` / `0x0040c648` / `0x0040c668` | `Wad_FindEntry` / `Wad_GetEntrySize` / `Wad_HasEntry` | the WAD object's lookups (its opener is `Wad_Open`, [File I/O](file-io.md#the-wad-index)): the index entry for a name, its size field (`+0x04`, no null check), whether it exists | confirmed (code) |
+| `0x0040c938` | `WorldManager_SetLoadPriority(scale)` | sets `0x005147cc`, the factor the [streaming update](#streaming) applies to the resource manager's distances (`LoadLevel` sets 0.001, the Rumble menu 10.0) | confirmed (code) |
+| `0x0040c948` | `World_Precache(name, radius, budget)` | pauses the frame pacer (`0x0050b734`) if it runs, then `WorldManager_Preload` around the named position when a level object exists, and resumes | confirmed (code) |
+| `0x0040ca18` | `Water_Set` (anchor of `World/WorldManagerLua.cpp`) | first call: allocates the level's `WaterEffect` (0x100 bytes, texture `water_tex`) into world manager `+0x5c`; later calls set its frame, its two heights and its textures | confirmed (code) |
+| `0x0040cc40` | `World_QueuePackToPrecache(name)` | `WorldManager_QueuePack` (`0x0040e1a0`) on the world manager: appends a pack name to the queue at `+0x0c`-`+0x24` that the preload loads at its end ([The world manager](level-loading.md#world-manager)) | confirmed (code) |
+| `0x0040cc70` | `ScreenFx_SetMotionAlpha(a)` | unless the screen effect `0x0051489c` is running, sets the motion-blur colour (white, alpha `a`) of both screen managers (`0x005fdeb8`, `0x005fdebc`, `+0x1a4` and `+0x1a8`) | confirmed (code) |
+| `0x0040cce8` / `0x0040cd28` | `ScreenFx_QueueMotionBlurAlpha` / `ScreenFx_QueueMotionBlurColour(time, rgba)` | queue a blur colour change on the screen manager `0x005fdeb8` (`0x0018c8c8`) | confirmed (code) |
+| `0x0040cd78` / `0x0040cda8` | `ResourceManager_SetDynamicAnimation` / `_SetCharacterModel` | forward to the resource manager `0x0050cd4c` (`0x0018abd0`, `0x0018ad40`) | confirmed (code) |
+| `0x0040cc68` | `PVS_CaptureSamplePoint` | empty: the PVS sampler was removed ([Debug](debug.md)) | confirmed (code) |
+| `0x0040cf18` | `LevelHeader_RegisterChunkHandler` | installs `0x0040ce30` as chunk `0x17`'s handler ([Chunk system](chunk-system.md#handlers-registered-at-run-time)) | confirmed (code) |
+| `0x0040e0b8` | `WorldManager_ResetVisibility` | clears `+0x34` and calls `World_ResetVisibility` on the `s` world (`+0x44`) and the `d` world (`+0x48`) when present | confirmed (code) |
+| `0x0040e8d0` | `WorldManager_GetSolidWorld` | returns the `s` world (`+0x44`) | confirmed (code) |
+| `0x004102f0` | `Atomic_SetModulateMaterialColour` | geometry flag `0x40` on an atomic's geometry ([Part file](#part-file), step 4) | confirmed (code) |
+| `0x00410558` | `World_Destroy` | the world's destructor: empties the 140 16-byte vectors at `+0x940`-`+0x1200` and frees their buffers from the STL pool | confirmed (code) |
+| `0x00411958` | `Material_SetAlphaCallback` | a material callback that sets the alpha byte of the material colour (`+0x04`); `World_RenderSectorAtomic` runs it over the materials for the fade-in | confirmed (code) |
 
 ## Data
 
@@ -275,6 +299,40 @@ always by `0.00197`. A textured white material thus reaches the GS as 128, and t
 1.0 (inferred from the GS's documented behaviour). The prelighting colours are unpacked unsigned (`V4_8`) and not
 scaled by the CPU, so they too are on the GS's scale, where 0x80 is full brightness (inferred).
 
+#### The pipeline unit {#pipeline-unit}
+
+The game's PS2 pipelines are one unit of their own, `0x00424ee8`-`0x00429b18`, linked between `Warriors/` and
+`Movie/`, with no path string (its directory is not known). It ends with the static-initialiser stub `0x00429af8`.
+It holds two groups: the pipelines of the **character models** (`0x30080`-`0x30082`) and those of the **world**
+(`0x30083`-`0x30088`, the table above). Each pipeline is a RenderWare PS2 all-in-one pipeline (made by `0x00461420`
+from a static descriptor, found again by id with `0x00461470`) with two callbacks: a first that always answers 1 and
+an **upload** callback that builds the material's data for the VU microcode (the colour scale above, the `0x3F0`
+words, texture and blend state). Names ours; confirmed (code) unless marked.
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x00429a98` | `Pipelines_CreateGame` | creates both groups at device start (from `Init`, [Graphics](graphics.md#start-up)); returns whether all were made | confirmed (code) |
+| `0x00424ee8` / `0x00426c30` | `CharPipelines_Construct` / `WorldPipelines_Construct` | empty constructors of the two groups' objects, which hold no data | confirmed (code) |
+| `0x00429a60` | `Pipelines_ConstructStatic` | constructs the static object `0x006fecb0` that holds both groups | confirmed (code) |
+| `0x00429ac8` / `0x00429af8` | `Pipelines_StaticInit` / its stub | the unit's static initialiser and stub | confirmed (code) |
+| `0x00424ef8` | `CharPipelines_Create` | makes `0x30081` (`0x004250a8`, kept in `0x00515068`), `0x30082` (`0x00426240`, `0x00515064`) and the atomic pipeline `0x30080` (`0x00424fd0`, `0x0051506c`) | confirmed (code) |
+| `0x00424f68` | `CharPipelines_AssignToAtomic(atomic)` | gives an atomic `0x30080` and each of its materials `0x30081` (the material callback `0x00424fb0`); called by the character model set-up `0x00174c18` (from `CharacterModel.cpp`'s `0x00178178`) | confirmed (code); that these are the character pipelines inferred from that caller |
+| `0x00424fb0` | `CharPipelines_SetMaterialPipe` (*made*) | material callback: material `+0x08` = `0x30081` | confirmed (code) |
+| `0x00424fd0` | `CharPipelines_CreateAtomicPipe` | the atomic pipeline `0x30080`, object callback `0x00425d78` | confirmed (code) |
+| `0x00425d78` | `CharPipelines_AtomicSetup` | the atomic's per-draw set-up: the geometry's instance data, the morph interpolation, re-instance flags when the geometry changed, a test of the bounding sphere against the camera's 6 frustum planes (inside: no clipping), the lighting mode from the geometry's flags | confirmed (code) |
+| `0x004250a8` | `CharPipelines_CreateMaterialPipe` | the material pipeline `0x30081`: microcode names `PS2user1.csl`-`PS2user4.csl` (`0x0052ea50`) and their unpack formats | confirmed (code) |
+| `0x004250a0` / `0x004273e8` / `0x004273f0` | `Pipe_AlwaysTrue` (*made*, three copies) | the pipelines' first callback: returns 1 | confirmed (code) |
+| `0x004252c8` | `CharPipelines_UploadMaterial` | upload callback of `0x30081` | confirmed (code) |
+| `0x00426240` | `CharPipelines_CreateMaterialPipe2` | a second material pipeline `0x30082` (32 microcode slots); nothing reads `0x00515064` back, so it is never used | confirmed (code); unused inferred |
+| `0x00426430` | `CharPipelines_UploadMaterial2` | upload callback of `0x30082` | confirmed (code) |
+| `0x00426c40` | `WorldPipelines_Create` | the material pipelines (`0x00426e28`), then the atomic pipeline `0x30083` (`0x00426d58`) | confirmed (code) |
+| `0x00426e28` | `WorldPipelines_CreateMaterialPipes` | `0x30084`, `0x30086`, `0x30087`, `0x30088` | confirmed (code) |
+| `0x00426e70` | `WorldPipelines_AtomicSetup` | object callback of `0x30083`: as `0x00425d78` | confirmed (code) |
+| `0x004275d0` | `WorldPipelines_UploadDual` | upload callback of the dual-texture `0x30086` | confirmed (code) |
+| `0x00428410` | `WorldPipelines_UploadEnvMap` | upload callback of the environment map `0x30087` | confirmed (code) |
+| `0x00428260` | `EnvMap_GetMatrix` | the environment map's texture matrix from the camera and the effect's frame (none: the camera alone), cached while camera, frame and frame counter stay the same | confirmed (code) |
+| `0x004290d8` | `WorldPipelines_UploadPlain` | upload callback shared by `0x30084` and `0x30088`; the only reader of `0x3F0` `+0x08` | confirmed (code) |
+
 ### The world object (0x2188 bytes) {#world-object}
 
 Built by `0x00410308`, confirmed (code) for the offsets; the names are ours.
@@ -423,7 +481,7 @@ Z write, `0x0e` fog. The world toggles `0x005e5380`-`0x005e5398` are all 1 (set 
 8. **The `d` world:** the same as the `s` world.
 9. The water effect (`0x00191dd8`, a phase that grows by 0.16 a frame).
 10. With Z write off: the instances of type `0x20`, then the second pass of list `+0xc98`. Then the remaining
-    effects (`0x00419da0`, ground fog `0x001712c0`, garbage `0x00171f58`, `0x001795f8`).
+    effects (`0x00419da0`, litter `0x001712c0`, ground fog `0x00171f58`, embers `0x001795f8`).
 
 **`World_RenderSectorAtomic`** (`0x00411990`): during the second after the atomic was read, set the alpha of every
 material colour to `255 × (1 - (fadeEnd - now) / 1000)`, afterwards to 255 (only when it changes); light the atomic
@@ -486,9 +544,10 @@ One colour is both: device `+0x440`, set through device slot `+0x48` ([Graphics]
 white from start-up (`GraphicsDevice_Open`) and black after `UnloadLevel`; a level sets it from its script, confirmed
 (code):
 
-- `SetFogColor(r, g, b)` (`0x0036e558` → `Level_SetFogColour`, `0x0040c868`): floats in 0 to 1, times 255, alpha 255.
-- `SetFogDistance(d)` (`0x0036e5f8` → `0x0040c908`): the device's fog start `+0x444` (0.5 by default), the fraction
-  of the far clip where fog begins.
+- `SetFogColor(r, g, b)` (`0x0036e558` → `Level_SetFogColour`, `0x0040c868`): floats in 0 to 1, times 255, alpha 255
+  (confirmed (code)).
+- `SetFogDistance(d)` (`0x0036e5f8` → `Level_SetFogDistance`, `0x0040c908`; confirmed (code)): the device's fog start
+  `+0x444` (0.5 by default), the fraction of the far clip where fog begins.
 
 **Disc check (corroboration):** `SetFogColor` appears in 66 compiled Lua files, covering 62 of the 64 levels that have
 a `.lev`; `SetFogDistance` in 14 levels. The colour values themselves are inside Lua bytecode and were not decoded.

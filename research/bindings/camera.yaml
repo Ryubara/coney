@@ -101,7 +101,7 @@
 - name: CameraTransform
   wrapper: 0x003658c0
   calls:
-    - {addr: 0x0011ba20}
+    - {addr: 0x0011ba20, name: Camera_AttachObjectToView}
   args:
     - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object."}
@@ -114,7 +114,7 @@
 - name: CameraTransformPoint
   wrapper: 0x00365938
   calls:
-    - {addr: 0x0011b970}
+    - {addr: 0x0011b970, name: Camera_TransformPoint}
   args:
     - {name: camera, lua: number, ctype: unsigned, desc: "Camera handle."}
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Table {x, y, z} overwritten with the point transformed by the camera's matrix."}
@@ -235,7 +235,7 @@
   wrapper: 0x00365c60
   calls:
     - {addr: 0x0011c638, name: Camera_SetFollowPosition}
-    - {addr: 0x00125c50}
+    - {addr: 0x00125c50, name: Cam_Follow_SetPosition}
   args:
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} in metres for the camera. Written back unchanged."}
     - {name: player, lua: number, ctype: int, desc: "Player index (default 0)."}
@@ -340,7 +340,7 @@
 - name: CameraCreateWin
   wrapper: 0x00366360
   calls:
-    - {addr: 0x0011c858}
+    - {addr: 0x0011c858, name: Camera_CreateWin}
   args:
     - {name: name, lua: string, desc: "Camera name."}
     - {name: target, lua: number, ctype: unsigned, desc: "Handle of the human to frame."}
@@ -510,7 +510,7 @@
 - name: CamUseDeathCamera
   wrapper: 0x00366bd8
   calls:
-    - {addr: 0x0011daa8}
+    - {addr: 0x0011daa8, name: Camera_UseDeathCamera}
   args:
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human who died."}
     - {name: ms, lua: number, ctype: unsigned, default: 6500, desc: "Duration in milliseconds (default 6500), used for the screen fade."}
@@ -525,7 +525,7 @@
   wrapper: 0x00366c80
   calls:
     - {addr: 0x0011c9e0, name: Camera_SetupPoizo}
-    - {addr: 0x00142368}
+    - {addr: 0x00142368, name: CamSpline_Start}
   args:
     - {name: camera, lua: number, ctype: unsigned, desc: "The camera the path starts from: its position and orientation become point 0, and its lens is the default."}
     - {name: seconds, lua: number, ctype: float, desc: "Time in seconds to travel from that start view to the first point added with CamAddPoizoPoint."}
@@ -552,9 +552,9 @@
 - name: CamReversePoizo
   wrapper: 0x00366dd0
   calls:
-    - {addr: 0x0011cb70}
+    - {addr: 0x0011cb70, name: Camera_ReversePoizo}
     - {addr: 0x00120038, name: Cam_GetPoizo}
-    - {addr: 0x00142578}
+    - {addr: 0x00142578, name: PoizoCam_Reverse}
   args:
     - {name: onEnd, lua: string, desc: "Name of the Lua function called when the reversed path ends (interned into the camera, `+0x2e8`), or nil."}
   results:
@@ -575,7 +575,7 @@
   wrapper: 0x00366e18
   calls:
     - {addr: 0x0011cbb0, name: Camera_AddPoizoPoint}
-    - {addr: 0x00142ac8}
+    - {addr: 0x00142ac8, name: CamSpline_AddPointAngles}
     - {addr: 0x00142a58, name: PoizoCam_AddPoint}
   args:
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "World position {x, y, z} of the point in metres. Written back unchanged."}
@@ -601,7 +601,7 @@
   wrapper: 0x00366f90
   calls:
     - {addr: 0x0011cc68, name: Camera_AddPoizoPointCam}
-    - {addr: 0x00142d28}
+    - {addr: 0x00142d28, name: CamSpline_AddPointFromCamera}
   args:
     - {name: camera, lua: number, ctype: unsigned, desc: "A camera whose current position and orientation become the point."}
     - {name: seconds, lua: number, ctype: float, desc: "Time in seconds to travel from this point to the next one (unused on the last point)."}
@@ -718,7 +718,7 @@
 - name: CamSetSplitMode
   wrapper: 0x00367270
   calls:
-    - {addr: 0x0011e0a8}
+    - {addr: 0x0011e0a8, name: Camera_SetSplitMode}
   args:
     - {name: mode, lua: number, ctype: unsigned, desc: "0 or 1: the two-player split-screen layout; other values are ignored."}
   description: >-
@@ -731,7 +731,7 @@
 - name: CamAssignRevCamButton
   wrapper: 0x003672a8
   calls:
-    - {addr: 0x0011e198}
+    - {addr: 0x0011e198, name: Camera_AssignReverseButton}
   args:
     - {name: button, lua: number, ctype: unsigned, desc: "Button id used for the reverse (look-behind) camera."}
   description: >-
@@ -744,7 +744,7 @@
 - name: CamSetGameAspect
   wrapper: 0x003672e0
   calls:
-    - {addr: 0x0011e0e0}
+    - {addr: 0x0011e0e0, name: Camera_SetGameAspect}
   args:
     - {name: aspect, lua: number, ctype: float, desc: "Aspect ratio (inferred: width over height)."}
   description: >-
@@ -756,7 +756,7 @@
 - name: CamSetHUDAspect
   wrapper: 0x00367318
   calls:
-    - {addr: 0x0011e100}
+    - {addr: 0x0011e100, name: Camera_SetHudAspect}
   args:
     - {name: aspect, lua: number, ctype: float, desc: "Aspect ratio (inferred)."}
   description: >-
@@ -768,7 +768,7 @@
 - name: CamSetHUDScale
   wrapper: 0x00367350
   calls:
-    - {addr: 0x0011e120}
+    - {addr: 0x0011e120, name: Camera_SetHudScale}
   args:
     - {name: scale, lua: number, ctype: float, desc: "HUD scale factor (stored at 0x0050b20c)."}
   description: >-
@@ -780,7 +780,7 @@
 - name: CamRegisterObject
   wrapper: 0x00367388
   calls:
-    - {addr: 0x0011e130}
+    - {addr: 0x0011e130, name: Camera_RegisterObject}
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of a world object."}
     - {name: "on", lua: boolean, desc: "true registers it with the camera system, false unregisters it."}
@@ -794,7 +794,7 @@
 - name: CamGetLastTarget
   wrapper: 0x003673e8
   calls:
-    - {addr: 0x0011e188}
+    - {addr: 0x0011e188, name: Camera_GetLastTarget}
   results:
     - {lua: number, desc: "A handle kept by the camera system (0x005d91b8), inferred to be the last camera target."}
   description: >-

@@ -9,8 +9,8 @@ about: |
 complete: |
   All fourteen classes the code makes are listed: types 10, 14 and 15 belong to no class. The types, tags and
   vtables are read from the executable; sizes and makers are from the factory `0x0011e1b0` and the getters. All
-  fourteen switches (0-13) are listed with the flag each sets and its default; switches 2 and 8 are read by rail-camera
-  code not traced further.
+  fourteen switches (0-13) are listed with the flag each sets and its default; switch 8's part in the rail camera's
+  choice of targets is not traced further.
 defaults: {source: "SLUS_212.15, camera factory 0x0011e1b0 and CamEnable 0x0011de58", evidence: confirmed-code}
 entries:
   - id: type-0
@@ -191,7 +191,7 @@ entries:
     read_by: "the rail camera"
     calls: 1
     scripts: [level83_c5_apartment.lua]
-    meaning: "A byte of the player's rail camera; not traced"
+    meaning: "Rail framing: the keep-in-frame tests (`0x00140ad0`, `0x00140d68`) also weigh how near the target is to the current segment's rail points (within 2 m)"
     evidence: inferred
   - id: switch-3
     kind: switch

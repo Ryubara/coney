@@ -298,6 +298,52 @@ rectangle: 0 ×20, 2 ×7, 3 ×10, 4 ×11. Fog colour (12, 12, 5), fog start 0.5,
 A reference screenshot at this spot (window capture, kept outside the repository) shows a dark blue night: a black-blue
 sky, walls lit flat grey-brown, the player lit cold from above.
 
+## Code index {#code-index}
+
+Every function of `LightManager.cpp` and the unnamed file before it (the queued 2D rings and the light records;
+inferred from position, between the stub `0x0017b1c0` and `LightManager.cpp`'s anchors), with what it does. Rows
+that only link are described above. Names are ours. Confirmed (code) at each address.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0017b1e0`, `0x0017b2e0` | `GroundRing_Queue`, `GroundRing_DrawQueued` | [HUD](hud.md#the-health-rings) | confirmed (code) |
+| `0x0017b8a8`, `0x0017bc28` | `Im2D_DrawTexturedRing`, `Im2D_DrawTexturedDisc` | [HUD](hud.md#the-health-rings) | confirmed (code) |
+| `0x0017bec8` | `Im2D_DrawArc(shape)` | the part (`+0xb4` per cent) of a ring as a fan of segments with its colours; the chase and lock-pick gauges | confirmed (code) |
+| `0x0017c2a8` | `Shape2D_Queue(shape)` | copies a 0xc0-byte shape into the queue at `0x005fd9f0` (at most 6, count `0x0050ccd8`) | confirmed (code) |
+| `0x0017c308` | `Shape2D_DrawQueued` | draws each queued shape (a full disc at 100 %, else an arc) and empties the queue, from the viewport pass (`0x00156658`, `0x00156978`) | confirmed (code) |
+| `0x0017c3c8`, `0x0017c468` | `Shape2D_StaticInit`, `Shape2D_StaticInitStub` | default colours (60, 60, 60) of a static shape record at `0x005fde70`: not needed (static initialiser) | confirmed (code) |
+| `0x0017c488` | `Colour_UnpackRgba32(out, rgba)` | a `0xRRGGBBAA` word to float RGBA | confirmed (code) |
+| `0x0017c508` | `Light_InitFromDescriptor` | [The light record](#record) | confirmed (code) |
+| `0x0017c690` | `Light_Destruct` | detaches the RenderWare light from its frame and destroys both | confirmed (code) |
+| `0x0017c700`, `0x0017c840` | `Light_GetDescriptor`, `Light_ApplyDescriptor` | [The light record](#record) | confirmed (code) |
+| `0x0017ca90` | `Light_SetOn(light, on)` | `+0x30` | confirmed (code) |
+| `0x0017ca98` | `Light_MarkDirty` | sets the record's first word to 1 | confirmed (code) |
+| `0x0017caa8` | `Light_UpdateFlickerAndCorona` | [Coronas and flicker](#coronas) | confirmed (code) |
+| `0x0017d0b0` | `Light_SetFlickerTiming` | [Flicker](#flicker) | confirmed (code) |
+| `0x0017d338` | `LightManager_Init` | [Fields](#manager-fields) | confirmed (code) |
+| `0x0017d510`, `0x0017d578` | `LightManager_AddLight`, `LightManager_AddLightThunk` | take the next free record of the pool and build it from a descriptor (the second only calls the first) | confirmed (code) |
+| `0x0017d598` | `LightManager_RemoveLight` | gives a record back to the pool and destroys its light | confirmed (code) |
+| `0x0017d640` | `LightManager_Construct` | [The light manager](#manager) | confirmed (code) |
+| `0x0017d880` | `LightManager_CullForViewport` | [Per viewport: the cull](#cull) | confirmed (code) |
+| `0x0017de10` | `LightManager_SelectLights` | [Per atomic: the selection](#select) | confirmed (code) |
+| `0x0017e490` | `LightGlow_OnLoaded` | chunk `0x4B` ([Chunk system](chunk-system.md)): each 40-byte record becomes a light; flickering kinds get a random phase, and some lose their flicker at random (40 % keep it) | confirmed (code) |
+| `0x0017e680` | `LightGlow_Release` | frees the chunk (level reset `0x0040c7f0`) | confirmed (code) |
+| `0x0017e6c0` | `LightManager_Reset` | removes every light except the built-in ones and clears the lists | confirmed (code) |
+| `0x0017e7e8` | `LightManager_ClearLists` | empties the per-viewport lists | confirmed (code) |
+| `0x0017e810` | `LightManager_UploadSelected` | [Per atomic: the selection](#select) | confirmed (code) |
+| `0x0017e930` | `CharAtomic_UploadLights` | atomic callback of the character pipelines: queues the selected lights for VU1 with the atomic's matrix scale | confirmed (code) |
+| `0x0017ea60` | `LightManager_BeginViewport` | [Per viewport: the cull](#cull) | confirmed (code) |
+| `0x0017ec38`, `0x0017ec80` | `LightManager_SetBrightness`, `LightManager_SetGammaOffset` | [The brightness option](#brightness) | confirmed (code) |
+| `0x0017ec78`, `0x0017ecc0` | `LightManager_Brightness`, `LightManager_GammaOffset` | the addresses of `+0x90` and `+0xa0` | confirmed (code) |
+| `0x0017ecc8` | `LightManager_AddOffsets(out, colour)` | `max(0, brightness + offset)` added to a colour ([Colour](#colour)) | confirmed (code) |
+| `0x0017ed60` | `LightManager_SetColourOffsets` | [The brightness option](#brightness) | confirmed (code) |
+| `0x0017ee88` | `Light_CoronaBatch(light)` | the light's corona batch: made on first use from sheet record 8 (`lighting`), 128 sprites, depth 10,000 | confirmed (code) |
+| `0x0017ef20` | `Light_SetFromScript` | `SetLight` | confirmed (code) |
+| `0x0017f160` | `Light_SetState(light, state)` | 2 removes the light, else on / off (`SetLight`'s short form) | confirmed (code) |
+| `0x0017f1b8` | `Light_SetFlicker` | `SetLightFlicker` | confirmed (code) |
+| `0x0017f218` | `LightManager_SetWorldAmbient` | `SetWorldAmbient` | confirmed (code) |
+| `0x0017f260`, `0x0017f268`, `0x0017f270` | `Shadow_SetColour_Stub`, `Shadow_SetLightOffset_Stub`, `Shadow_Enable_Stub` | empty: `SetShadowColor`, `SetShadowLightOffset` and `EnableShadow` do nothing | confirmed (code) |
+
 ## Coney's implementation {#coneys-implementation}
 
 `repo:src/graphics/light_manager.h` is the manager (pool, built-in lights, offsets, cull, selection, flicker, coronas);

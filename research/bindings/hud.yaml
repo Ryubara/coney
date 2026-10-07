@@ -662,14 +662,15 @@
   description: >-
     Creates or removes one of the HUD's scripted bars. Kinds 0, 1 and 3 share four generic bar slots (0x0060a1b0,
     0x3f0 bytes each; kinds 0 and 1 use slot 0): kind 0 a red (200, 30, 30) bar 0.17 × 0.025 at the top, kind 1 a
-    green (115, 183, 11) labelled bar 0.22 × 0.025 of the screen, kind 3 up to four labelled bars 0.07 apart with a
+    labelled bar 0.22 × 0.025 at the right whose fill shades from red (empty) to green (full), kind 3 up to four labelled bars 0.07 apart with a
     (217, 158, 12) fill. Kind 2 is a separate three-sprite gauge (0x0060b180). Fill them with HUDSetBarPercentage.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Kind 2's gauge (0x001a3720) starts with values 60 (`+0x348`) and 30 (`+0x340`) and a frame sprite 0x1a0007;
-    what it looks like on screen is not traced. Positions shift down by a constant in a two-player game
-    (0x00609e8c). The bars draw in the HUD pass ([HUD: render order](../../research/hud.md)).
+    Kind 2's gauge (0x001a3720) starts with values 60 (`+0x348`) and 30 (`+0x340`) and the marker sprite 0x1a0007
+    (sheet `chasebar`); its look is on [HUD: scripted bars](../../research/hud.md#scripted-bars). Positions shift
+    down by a constant in a two-player game (0x00609e8c). The bars draw in the HUD pass
+    ([HUD: render order](../../research/hud.md)).
   usage: {chunks: 28, calls: 100, boot: false, mission1: false, result_used: false, levels: [2, 3, 5, 81, 86, 93, 31, 51, 54, 55, 84, 82, 92, 20, 11]}
 
 - name: HUDEnableGenBar
@@ -695,13 +696,13 @@
   args:
     - {name: kind, lua: number, ctype: unsigned, desc: "The bar kind given to HUDEnableBar (0-3); other values do nothing."}
     - {name: fill, lua: number, ctype: float, desc: "Fill fraction 0-1 (clamped) for kinds 0, 1 and 3; for kind 2 the gauge's main value (`+0x340`), not clamped."}
-    - {name: fill2, lua: number, ctype: float, default: 1, desc: "Read but ignored (scripts pass 1 or the same value)."}
+    - {name: fill2, lua: number, ctype: float, default: 1, desc: "Kinds 1 and 2: the chase gauge's maximum (`+0x348`); ignored by kinds 0 and 3."}
     - {name: index, lua: number, ctype: unsigned, desc: "Which generic bar for kinds 1 and 3 (0-3)."}
     - {name: value2, lua: number, ctype: float, desc: "Kind 2's second gauge value (`+0x344`); also passed for kind 1 (scripts pass 0)."}
   description: >-
     Sets how full a HUD bar is: kinds 0, 1 and 3 store the clamped fraction in the generic bar (`+0x78`, only when
-    that bar exists); kind 2 sets the gauge's two values. Kind 1 also writes `fill` and `value2` into the kind-2
-    gauge.
+    that bar exists); kind 2 sets the chase gauge's value (`fill`), maximum (`fill2`) and minimum (`value2`). Kind 1
+    also writes those three into the kind-2 gauge.
   evidence: confirmed-code
   depth: thorough
   notes: >-
@@ -715,7 +716,7 @@
     - {addr: 0x001c22b0, name: HudGenericBar_SetWidth}
   args:
     - {name: index, lua: number, ctype: unsigned, desc: "Generic bar slot (0-3, as HUDEnableBar's kinds 0, 1 and 3 fill them); ignored when that bar does not exist."}
-    - {name: flag, lua: boolean, desc: "Read but ignored (scripts pass true)."}
+    - {name: flag, lua: boolean, desc: "The red-to-green gradient flag (HudBar `+0x60`): true makes the fill colour follow the fill again at the next draw, replacing `colour`; false keeps `colour`."}
     - {name: colour, lua: table, elem: number, count: 4, written_back: true, desc: "Fill colour {r, g, b, a}, each 0-255 (the low byte is kept); written back unchanged."}
     - {name: width, lua: number, ctype: float, desc: "Bar width as a fraction of the screen width (`+0x40`; × 0.7 when the HUD's layout flag 2 is set, inferred: widescreen)."}
   description: >-
@@ -1086,13 +1087,14 @@
   wrapper: 0x003708c8
   calls:
     - {addr: 0x001b4038, name: HUD_RadarSetIcon}
+    - {addr: 0x001b2bf0, name: HUD_RadarSetBlipIconLock}
   args:
     - {name: object, lua: number, ctype: unsigned, desc: "Handle of an object that already has a blip."}
     - {name: icon, lua: number, ctype: unsigned, desc: "Radar icon id (scripts use 27 and 28 for objective markers, 34 for items; icon 22 is drawn at 0.7 scale, icons 29-31 tinted green)."}
     - {name: scale, lua: number, ctype: float, default: 1, desc: "Icon scale (default 1)."}
-    - {name: flag, lua: boolean, desc: "A per-blip flag passed to both radars (scripts sometimes pass 1)."}
+    - {name: flag, lua: boolean, desc: "Icon lock (slot `+0x34`, `0x001c4640`), set after the icon: while it is set, icon and scale changes to this blip are ignored (including this call's own icon when the lock was already set), so a locked blip keeps its icon until a call with false unlocks it and a further call changes it; scripts sometimes pass 1."}
   description: >-
-    Changes the icon (and scale) of an object's radar blip on both radars.
+    Changes the icon (and scale) of an object's radar blip on both radars, then sets or clears its icon lock.
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 70, calls: 154, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}

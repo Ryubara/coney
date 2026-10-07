@@ -1367,22 +1367,23 @@
   calls:
     - {addr: 0x002946c0, name: Cfg_SetTargetingPoints}
   args:
-    - {name: f1, lua: number, ctype: float, desc: "Float score weight at 0x00510b4c."}
-    - {name: n2, lua: number, ctype: int, desc: "Integer weight at 0x00510b58."}
-    - {name: n3, lua: number, ctype: int, desc: "Integer weight at 0x00510b5c."}
-    - {name: n4, lua: number, ctype: int, desc: "Integer weight at 0x00510b60."}
-    - {name: n5, lua: number, ctype: int, desc: "Integer weight at 0x00510b64."}
+    - {name: f1, lua: number, ctype: float, desc: "Points per metre the enemy is inside the scorer's sight range (0x00510b4c)."}
+    - {name: n2, lua: number, ctype: int, desc: "Points for a stunned enemy (0x00510b58)."}
+    - {name: n3, lua: number, ctype: int, desc: "Points for an enemy outside the field of view (0x00510b5c)."}
+    - {name: n4, lua: number, ctype: int, desc: "Points for a knocked-down enemy (0x00510b60)."}
+    - {name: n5, lua: number, ctype: int, desc: "Points for a grabbed enemy (0x00510b64)."}
     - {name: n6, lua: number, ctype: int, desc: "Ignored: read but not stored."}
-    - {name: n7, lua: number, ctype: int, desc: "Integer weight at 0x00510b74."}
-    - {name: n8, lua: number, ctype: int, desc: "Integer weight at 0x00510b6c."}
-    - {name: n9, lua: number, ctype: int, desc: "Integer weight at 0x00510b84."}
+    - {name: n7, lua: number, ctype: int, desc: "Points per near-a-train flag (0x00510b74; never counts)."}
+    - {name: n8, lua: number, ctype: int, desc: "Points for an enemy who targets the scorer (0x00510b6c)."}
+    - {name: n9, lua: number, ctype: int, desc: "Points for keeping the previous target (0x00510b84)."}
   description: >-
     Stores the point weights the AI uses to score targets; config_preload2.lua sets them once. The sixth argument has
     no effect.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Callee 0x002946c0 never stores its sixth parameter. What each weight scores is not traced.
+    Callee 0x002946c0 never stores its sixth parameter. The score is Brain_ScoreEnemy (0x0029ce98); the terms are on
+    the AI page (Choosing among enemies).
   usage: {chunks: 1, calls: 1, boot: true, mission1: false, result_used: false}
 
 - name: CfgSetTargetingPointsEx
@@ -1390,15 +1391,15 @@
   calls:
     - {addr: 0x00294718, name: Cfg_SetTargetingPointsEx}
   args:
-    - {name: f1, lua: number, ctype: float, desc: "Float score weight at 0x00510b50."}
-    - {name: n2, lua: number, ctype: int, desc: "Integer weight at 0x00510b54."}
-    - {name: n3, lua: number, ctype: int, desc: "Integer weight at 0x00510b68."}
-    - {name: n4, lua: number, ctype: int, desc: "Integer weight at 0x00510b70."}
-    - {name: n5, lua: number, ctype: int, desc: "Integer weight at 0x00510b78."}
-    - {name: n6, lua: number, ctype: int, desc: "Integer weight at 0x00510b7c."}
-    - {name: n7, lua: number, ctype: int, desc: "Integer weight (may be negative) at 0x00510b90."}
-    - {name: n8, lua: number, ctype: int, desc: "Integer weight at 0x00510b94."}
-    - {name: n9, lua: number, ctype: int, desc: "Integer weight at 0x00510b80."}
+    - {name: f1, lua: number, ctype: float, desc: "Points per metre the enemy is inside the sight range of the scorer gang's leader (0x00510b50)."}
+    - {name: n2, lua: number, ctype: int, desc: "Points for an enemy who leads his gang (0x00510b54)."}
+    - {name: n3, lua: number, ctype: int, desc: "Points for an enemy grabbed from the rear (0x00510b68)."}
+    - {name: n4, lua: number, ctype: int, desc: "Points for a running enemy (0x00510b70)."}
+    - {name: n5, lua: number, ctype: int, desc: "Points for an enemy who is tagging (0x00510b78)."}
+    - {name: n6, lua: number, ctype: int, desc: "Points for an armed enemy who targets the scorer (0x00510b7c)."}
+    - {name: n7, lua: number, ctype: int, desc: "Points when no straight walkable line leads to the enemy (0x00510b90)."}
+    - {name: n8, lua: number, ctype: int, desc: "Base points when the scorer cannot chase the enemy (0x00510b94)."}
+    - {name: n9, lua: number, ctype: int, desc: "Points for an enemy who is a player (0x00510b80)."}
   description: >-
     Stores the remaining AI target-scoring weights, beside CfgSetTargetingPoints'.
   evidence: confirmed-code
@@ -1717,8 +1718,8 @@
   depth: thorough
   notes: >-
     The game state constructor (0x00418588) and another reset (0x00418c68) set it to 1. WarriorBrain_Think
-    (0x003055e0) also reads it, not traced. The player's own pickups are not affected (inferred: only brain code reads
-    it).
+    (0x003052f0, the read at 0x003055e0) applies the same rule to the Warriors' own pick-up search (AI page, The
+    Warriors' pick-ups). The player's own pickups are not affected (inferred: only brain code reads it).
   usage: {chunks: 1, calls: 2, boot: false, mission1: false, result_used: false, levels: [5]}
 
 - name: CfgCrimeResponders

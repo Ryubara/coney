@@ -21,8 +21,10 @@ restored.
 ## Original structure
 
 `Movie/PlayMovie.cpp` (path string `0x0058bfa8`) and `Movie/BinkMovie.cpp` (`0x0058bcf0`) hold the movie code
-(`0x00429a98`-`0x0042af64`); RAD's Bink library is linked in from about `0x004c1cd0` (inferred, from the calls). The
-caption system lives at `0x001ca950`-`0x001cb400` ([Boot](boot.md#timers) has its freeze link). Names are ours.
+(`0x00429b18`-`0x0042af64`; `0x00429a98` just before it creates the game's PS2 pipelines,
+[The streamed world](world.md#pipeline-unit)); RAD's Bink library is linked in from about `0x004c1cd0` (inferred, from
+the calls). The caption system lives at `0x001ca950`-`0x001cb400` ([Boot](boot.md#timers) has its freeze link).
+Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -32,9 +34,11 @@ caption system lives at `0x001ca950`-`0x001cb400` ([Boot](boot.md#timers) has it
 | `0x0042a718` | `Movie_AdvanceCaptions` | moves the caption scene on by the real time passed | confirmed (code) |
 | `0x0042a7f0` | `Movie_DrawCaptions` | draws the caption, then the 2D queue (`0x00185d20`) | confirmed (code) |
 | `0x00429b18` | `Movie_BuildUploadPacket` | the GS image transfer of one frame | confirmed (code) |
-| `0x00429e20` | (callback) | counts down the frames handed to the GIF (`0x0051545c`) | confirmed (code); its caller is not traced |
-| `0x00429e58` | (debug) | Bink's statistics, printed every 32 frames | confirmed (code) |
-| `0x00429a98` | (set-up) | Bink set-up at device start ([Graphics](graphics.md#start-up)) | confirmed (code) for the call |
+| `0x00429e20` | `Movie_StreamCallback` | counts down the frames handed to the GIF (`0x0051545c`) | confirmed (code); its caller is not traced |
+| `0x00429e58` | `BinkMovie_PrintStats` | called after each frame (`0x0042a56c`): reads Bink's statistics (`0x004c4610`) and every 32nd call prints them with `printf` (`0x004325e0`) to the console, which nothing shows; no effect on play | confirmed (code) |
+| `0x00429f50` / `0x00429fa8` | `BinkMovie_Alloc` / `BinkMovie_Free` | Bink's allocator: the current memory pool's allocate (64-byte aligned, tag at `0x0058bce8`, file `BinkMovie.cpp`) and free | confirmed (code) |
+| `0x0042a6c0` | `BinkMovie_Destroy(player, flags)` | the player's destructor: removes the GIF callback `0x00429e20` (`0x00151e68`) when it registered one (`+0x40`); frees itself when bit 0 of `flags` is set | confirmed (code) |
+| `0x004f6500` | `BinkMovie_Delete` | `delete player` from `Movie_Play` (`0x0042ad94`): the destructor, then the pool's free (link-once code) | confirmed (code) |
 | `0x0036c258` | `PlayMovie` binding | [Scenes and movies bindings](../references/bindings/scene.md) | confirmed (code) |
 | `0x001cab90` | chunk `0x51` handler | keeps the Subtitles chunk in `0x0050ea74` | confirmed (code) |
 | `0x001cabc0` | `Captions_Init` | resets the captions and picks the language | confirmed (code) |
