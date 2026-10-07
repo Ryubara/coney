@@ -1065,6 +1065,29 @@ members, confirmed (code):
 5. A gang with flag `+0xd3` and no living members calls the handler at `+0x158` with its id and is freed
    (`0x0016a1e8`).
 
+#### Deleting a gang {#gang-delete}
+
+`GangDelete(id)` (`0x00373200` → `0x0016a1e8`; ids of 32 and above do nothing) → `0x0016d068` → `0x00164738`,
+confirmed (code):
+
+1. Every gang in use clears this gang's bits from its enemy and friend masks.
+2. The gang's Lua message handlers are cleared, so the members' removal below calls no script handler.
+3. **Each member still in the gang is destroyed, at once**: taken out of the member list (`0x001664d8`: clears the
+   leader `+0x44` when it was the leader, offers event `0x16` to the gang's tactic), then `Human_Destroy(h, 0)`
+   ([Characters: destroying a human](characters.md#destroy)). Nothing is deferred: the humans, their held objects
+   (destroyed, not dropped), radar blips, HUD panel and pad (for a player) are gone when `GangDelete` returns.
+4. The tactic, if any, is stopped and freed.
+5. The record is reset (`0x00164808`): not in use, not suspended, members, spawners, timers and handlers cleared,
+   leader the null handle.
+
+**A player is no exception.** A listed player in the gang is destroyed like the others: its pad is freed and it is
+removed from the player list (the other player, if any, becomes player 1); no other human is made the player. Scripts
+move the player first with `HuChangePlayerGang` ([Characters: players](characters.md#players)); level 99 does so at
+checkpoint 2 ([the hand-over](characters.md#level99-handover)).
+
+**`GangBrFlush(id)`** (`0x0016ba18`) only clears the goals and actions of each current member's brain; it removes and
+destroys nothing. Called just before `GangDelete` in the same script step, as in level 99, it has no visible effect.
+
 #### Tactics {#tactics}
 
 A pool of 30 tactics of 0x90 at `0x006ea1b0` (mask `0x006ea1a0`; alloc `0x00306558`, free `0x003065b0`). Base fields:

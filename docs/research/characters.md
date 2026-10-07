@@ -39,7 +39,11 @@ string gives them.
 | `0x00217f08` / `0x00217ec8` | `Human_AllocSlot` / `Human_FreeSlot` | a free index below 60 in the object table | confirmed (code) |
 | `0x00218008` | `Human_Init` | type remap, model, ground snap, defaults | confirmed (code) |
 | `0x0021cda8` | `Human_SetName` | 15 characters at `+0x80` | confirmed (code) |
-| `0x00229c40` | `Human_MakePlayer` | for player 1: pad, HUD, camera target | confirmed (code) for the call; roles inferred |
+| `0x00229c40` | `Human_MakePlayer` | joins the player list, takes a pad and a HUD panel, brain type 0 ([Players](#players)) | confirmed (code) |
+| `0x0022a2a8` | `Human_ReleasePlayer` | the reverse: frees the pad and panel, leaves the player list, AI again | confirmed (code) |
+| `0x00419b10` / `0x00419c68` | `PlayerList_Add` / `PlayerList_Remove` | the game state's list of at most two players | confirmed (code) |
+| `0x0022a770` | `Gang_PickNextPlayer` | the gang member a player hand-over chooses | confirmed (code) |
+| `0x0021c7c8` | `Human_Destroy` | takes a human out of the world at once ([Destroying a human](#destroy)) | confirmed (code) |
 | `0x00228730` / `0x0021cb78` | static initialiser / constructor | builds the 60 humans at start-up | confirmed (code) |
 | `0x00228800` | `CharClass_Get(id)` | `0x00684620 + id × 0x1ac` | confirmed (code) |
 | `0x00383f38` → `0x00228af8` | `CfgChar` | fills a character class | confirmed (code) |
@@ -113,7 +117,8 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x1a0` | pointer | the physics body (0 for none) | confirmed (code) |
 | `+0x1a8` | int | the gait for the current speed (0, 1-5; `0x0022aeb0`), used by the lean | confirmed (code) |
 | `+0x1ac` | float | current speed (length of the velocity, written with it) | confirmed (code) |
-| `+0x1b0` | s8 | player index, -1 for none | confirmed (code) |
+| `+0x1b0` | s8 | **player slot**: the human's place in the game state's player list (0 or 1), -1 for a human that is not a player; set only by the list ([Players](#players)) | confirmed (code) |
+| `+0x1b1` | s8 | **hand-over priority**: `HuCreate`'s player argument, stored as given (1 Rembrandt, 2 Ash); the lowest non-zero value is the member a hand-over picks ([Players](#players)) | confirmed (code) |
 | `+0x1b8` / `+0x1b9` | u8 | [power class](#power-classes) of a non-player / of a player (64 for Rembrandt) | confirmed (code), runtime |
 | `+0x1d8` | int | material of the ground under the feet (5 when none) | confirmed (code) |
 | `+0x230` | vec4 | ground normal from the last snap (`+0x238` its `z`) | confirmed (code) |
@@ -125,6 +130,7 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x33c` | handle | the object being picked up, from the pick-up's message `0x14` until its clip event attaches it | confirmed (code), runtime |
 | `+0x348` / `+0x34c` | handle | two more objects a clip event `0x37` places on a bone (not traced) | confirmed (code) |
 | `+0x37c` (`+0xdf` as a word index) | int | model index in the Character List | confirmed (code) |
+| `+0x380` | int | HUD player panel (0 or 1), -1 for none ([Players](#players)) | confirmed (code) |
 | `+0x384` | int | airborne updates so far | confirmed (code) |
 | `+0x390` | vec4 | last ground position | confirmed (code) |
 | `+0x3a0` | float | vertical velocity, kept by the locomotion, integrated by gravity while airborne, 0 on landing | confirmed (code) |
@@ -490,7 +496,9 @@ confirmed (code):
    record (`+0x112`, or `+0x114` in levels 60-64); load or find the character; **snap to the ground**: cast a ray from
    the position plus (0, 0, 1) straight down for 2.5 m through `WorldManager_RayCast`
    ([Collision](collision.md)) and, on a hit, put the human on it 0.01 above (skipped in game modes `0xb` and `0x11`).
-4. Name (`+0x80`), player index (`+0x1b0`); for player 1, `Human_MakePlayer` (`0x00229c40`).
+4. Name (`+0x80`); the player argument goes to the hand-over priority `+0x1b1` as given; **only the value 1** calls
+   `Human_MakePlayer` (`0x00229c40`, [Players](#players)), whose result is ignored. `Human_Init` has already set the
+   player slot `+0x1b0` to -1 and added the human to its gang (`Gang_AddMember`).
 5. Return the handle (`+0x2c` of the slot) and write the snapped position back into the Lua table.
 
 The fifth argument (`"warr_sw"` in `level99.lua`) is not read by `0x00233d60`. **At runtime** Rembrandt was created at
@@ -500,6 +508,118 @@ The fifth argument (`"warr_sw"` in `level99.lua`) is not read by `0x00233d60`. *
 section's pack holds them), the instance is made at once (`0x00177b80`) and attached (`0x00217a98`). Otherwise the
 resource manager's update (`0x001897a8`) loads them later and attaches them then; the dynamic animations a script asks
 for (`SetDynamicAnimation`) go the same way into the slots at `+0x3c8`. Confirmed (code) for both paths.
+
+### Players: making one and giving one back {#players}
+
+A player is a human in the game state's **player list**, confirmed (code) at `0x00419b10` and `0x00419c68`:
+`W_GameState + 0x224` (s16) counts the players, `+0x228` holds their handles (two at most), and each player's slot
+number is kept in the human at `+0x1b0`. Adding a player (`0x00419b10`) does nothing when two are already listed;
+with no slot asked for it appends, otherwise it shifts the later players up. Removing one (`0x00419c68`) sets that
+human's `+0x1b0` to -1, empties the entry and **shifts the later players down**, rewriting their `+0x1b0`, so player 2
+becomes player 1 when player 1 goes. What the engine calls "the player" (the rings, Warrior commands, the
+`HuChangePlayerGang` test) is slot 0, the handle at `+0x228`.
+
+**`Human_MakePlayer(human, pad, panel, slot)`** (`0x00229c40`; `HuCreate` passes -1 for all three), confirmed (code):
+
+1. **Pick a pad.** A given pad is used when that pad record ([Front end](frontend.md#pad-record)) is connected
+   (`+0x4c`) and has no owner (`+0x42` = -1). Otherwise: the pad the front end assigned to the slot this human will
+   take (byte `+0x19` of one of the two profiles at `0x00600840` / `0x00600844`, one per player slot), else the first
+   of the 8 pad records that is connected and unowned.
+2. **No pad while someone is already player 1: give up.** When no pad was found and the list's slot 0 holds a human,
+   the function **returns 0 having changed nothing**: the human stays an AI. With an empty list it goes on without a
+   pad.
+3. Clear every current player's brain enemy list; **add the human to the player list** (`+0x1b0` = its slot).
+4. **HUD panel**: attach the first free panel of the two (or the one asked for) through `HUD_AttachPlayer`
+   ([HUD](hud.md#the-player-panel)); a panel still attached to another human is not free. The panel index goes to
+   `+0x380`; the game state's per-panel record (`+0x168 + panel × 0x5c`) is reset.
+5. **Pad ownership**: the pad record's `+0x42` = the player slot; the human's per-player record `+0x19` = the pad.
+6. **Brain**: goals and actions cleared, type **0** (player, [AI](ai.md#types)).
+7. **War chief**: `+0x3ac` = 1 unless another listed player is already chief (with `W_GameState + 0x158` set, only
+   one of the same gang kind counts); a chief becomes its gang's leader (gang `+0x44`).
+8. **Difficulty scaling**: health (record `+0x144`, `+0x146`) times a percentage, power maxima reloaded, attack damage
+   times another percentage (bytes `+5` and `+6` of the record `0x00222b58` returns; `Human_ReleasePlayer` divides
+   back).
+9. The war chief's default Warrior command 0 to its gang (`0x0041c4e0`, [AI](ai.md#warrior-commands)), the gang's
+   cached player data (`0x00166708`), physics body flag `0x400` and a wider body, the human flags of the table above.
+   Returns 1.
+
+`Human_MakePlayer` does **not** touch the camera: the follow camera keeps the human it was made with, and the hand-over
+below puts the new player on the camera target list.
+
+**`Human_ReleasePlayer(human, stats, releaseGrab)`** (`0x0022a2a8`), the reverse, confirmed (code): (with
+`releaseGrab`) end a grab between it and another player; free its pad (`+0x42` = -1); clear the players' enemy lists;
+brain type back to its class's (as `Human_Init` chose it), goals and actions cleared; the per-panel record reset;
+(with `stats`) the stats side; links between it and the players cleared (`0x00226e60`, `0x00226f70`, not traced);
+**remove it from the player list** (the others shift down); hide and detach its HUD panel, `+0x380` = -1; per-player
+record `+0x19` = -1 and `+0x1b` = 0 (AI-controlled); `Gang_AddMember` with its own gang; difficulty scaling undone,
+the AI flags back. The human stays in the world as an AI member of its gang.
+
+**`HuChangePlayerGang(gang)`** (`Players_ChangeGang`, `0x00239b80`), confirmed (code):
+
+1. When player 1 already belongs to `gang`, return at once.
+2. Every listed player of **player 1's gang** is released (`Human_ReleasePlayer(h, 0, 1)`), its pad remembered, and
+   taken off the camera target list ([Camera](camera.md)). Their count is the number of players to hand over (at
+   least 1).
+3. A listed player already in `gang` is released and made a player again with a remembered pad, and put on the
+   camera target list.
+4. For each player still owed: `Gang_PickNextPlayer(gang)` (`0x0022a770`) takes the gang's member that is not a
+   player with the **lowest non-zero `+0x1b1`**, else the first such member (with no member at all, outside level 99
+   and with `+0x158` clear, a non-player human of a kind-0 gang); `Human_MakePlayer(h, -1, -1, -1)` on it; on
+   success it joins the camera target list.
+
+`Gang_PickNextPlayer` is what makes `+0x1b1` matter: in the Warriors' gang Rembrandt (1) is chosen before Ash (2), and
+members created with 0 come last.
+
+#### The level 99 checkpoint 2 hand-over {#level99-handover}
+
+`P2.SetupLesson1` creates a new Warriors gang, a new Rembrandt (`HuCreate(..., 1, gang)`) and a new Ash
+(`HuCreate(..., 2, gang)`), calls `HuChangePlayerGang` on the new gang, then `GangBrFlush` and `GangDelete` on the old
+`Warriors2` gang (gang 0) that still holds the old Rembrandt and Ash. The script order is inferred from the
+disassembly; each step is confirmed (code) as above:
+
+1. **The new Rembrandt's `HuCreate`**: the old Rembrandt is still player 1 and owns pad 0. With one controller there is
+   no other connected unowned pad, so `Human_MakePlayer` **gives up at step 2**: the new Rembrandt is an AI Warrior
+   with priority 1, and nothing about the player changes. (With a second controller in port 2 it would briefly become
+   player 2 on that pad; the next step makes the outcome the same.)
+2. **The new Ash** (player argument 2): never a player; an AI Warrior with priority 2.
+3. **`HuChangePlayerGang(new gang)`**: the old Rembrandt (gang 0) is released and taken off the camera targets; the
+   list is now empty; `Gang_PickNextPlayer` picks the new Rembrandt (priority 1), which becomes player 1 on pad 0 (the
+   front end's pad for slot 0), takes HUD panel 0 (just freed) and is added to the camera targets.
+4. **`GangBrFlush(0)`** clears the old pair's goals and actions.
+5. **`GangDelete(0)`** destroys the old Rembrandt and the old Ash at once ([Destroying a human](#destroy),
+   [AI: deleting a gang](ai.md#gang-delete)).
+
+So the player moves with `HuChangePlayerGang`, not with `HuCreate`: an implementation that binds the player on any
+`HuCreate(..., 1, ...)` while a player exists diverges here, and one that ignores `HuChangePlayerGang` leaves the pad on
+a human that is then deleted.
+
+### Destroying a human {#destroy}
+
+`Human_Destroy(human, fromGangCleanup)` (`0x0021c7c8`) removes a human **at once**, inside the call; nothing is
+deferred to a later update. Confirmed (code); in order:
+
+1. Its vtable `+0x12c` (not traced); for a non-player of a kind-0 gang that is down or dead, its entry in a HUD list
+   of eight (HUD `+0x10`, `0x001a07f0`) is removed.
+2. Two effect handles (`+0x168`, `+0x180`) are stopped; the object at `+0x364` is destroyed (vtable `+0x4c`).
+3. With `fromGangCleanup` (0 from `GangDelete`): its gang's message handlers cleared and the gang's tactic told.
+4. **The held object** (`+0x338`) is dropped and then **destroyed** (vtable `+0x4c`, as `ObjDestroy`), so a weapon in
+   the hand does not stay on the ground; the two bone objects `+0x348` / `+0x34c` are destroyed; for a player, the
+   objects its per-panel record holds are destroyed; the object at `+0x358` is let go with a 120 s lifetime.
+5. A human that still has its instance is knocked out first (`Human_KnockOut`) and marked.
+6. A grab partner (`+0x360`) is sent message `0x15` and the handle cleared.
+7. **Radar**: a blip of the human is removed from both radars (HUD `+0x15d0` and `+0x3f10`, `0x001b2b58`,
+   [HUD](hud.md)).
+8. A spawner that made it is told (`GangSpawner_OnHumanGone`); the instance is released (`0x00217dd8`); its script
+   handlers and its brain are cleared.
+9. **A player**: the per-panel record is reset, the **HUD panel detached** (`0x001b22f0`) and `+0x380` = -1;
+   `+0x1b1` = 0; its **pad freed** (`+0x42` = -1) and it is **removed from the player list** (`0x00419c68`, the
+   others shift down).
+10. The 0x180 record's attachment freed, `+0xd4` = 0, the **handle freed** (the slot can be reused), the physics body
+    released.
+
+It does **not** take the human off the camera target list (the list holds handles, and a freed one no longer
+resolves: inferred from `0x00122248`), and it does not choose a new player: destroying the only player leaves the
+list empty. `HuDelete` is a different path ([HuDelete](../references/bindings/character.md#hudelete)).
 
 ### Where a level puts the player {#level-starts}
 

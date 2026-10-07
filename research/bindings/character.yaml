@@ -12,7 +12,7 @@
     - {name: pos, lua: table, elem: number, count: 3, written_back: true, desc: "Position {x, y, z} in metres, game axes with z up; written back with the ground-snapped position."}
     - {name: heading, lua: number, ctype: float, desc: "Facing in degrees, a rotation about the vertical axis."}
     - {name: unused, lua: string, desc: "A string the scripts pass (\"warr_sw\", \"warr_cl\", nil); not read by Human_Create."}
-    - {name: player, lua: number, ctype: int, desc: "Player index: 0 for an AI human, 1 for player 1 (takes pad 1, the HUD and the camera), 2 for player 2."}
+    - {name: player, lua: number, ctype: int, desc: "Hand-over priority, stored at +0x1b1: 1 also tries to make the human a player (Human_MakePlayer), which fails and leaves it an AI when a player 1 exists and no other pad is free; any other value (0, 2 for Ash) makes an AI human. A hand-over picks the lowest non-zero value."}
     - {name: gang, lua: number, ctype: int, desc: "Gang id (as returned by GangCreate) the human belongs to."}
     - {name: flag, lua: boolean, desc: "Stored at +0x19d of the human; the Rumble scripts pass true. Meaning not traced."}
   results:
@@ -23,7 +23,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Steps and offsets: Characters, creation. The model loads later if its files are not yet resident.
+    Steps and offsets: Characters, creation and players. The model loads later if its files are not yet resident.
+    Human_MakePlayer's result is ignored, so a second HuCreate(..., 1, ...) while a player exists normally leaves the
+    old player in control; level scripts then move the player with HuChangePlayerGang.
   usage: {chunks: 100, calls: 3411, boot: false, mission1: true, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 84, 82, 92, 83, 20, 11, 60, 61, 62, 63, 64]}
   coney: implemented
 
@@ -2522,7 +2524,11 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Returns at once if player 1 is already in that gang. Pad indices are kept in order.
+    Returns at once if player 1 is already in that gang. Each player of player 1's gang is released
+    (Human_ReleasePlayer 0x0022a2a8: pad and HUD panel freed, off the player list and the camera targets); then, per
+    player owed, the new gang's non-player member with the lowest non-zero HuCreate player argument (+0x1b1;
+    Rembrandt 1 before Ash 2) is made a player (Human_MakePlayer, pad -1) and added to the camera targets. The old
+    humans stay in the world as AI. Characters, players.
   usage: {chunks: 12, calls: 15, boot: false, mission1: true, result_used: false, levels: [3, 81, 51, 54, 55, 84, 92, 64]}
   coney: implemented
 

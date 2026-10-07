@@ -473,9 +473,14 @@ GangDelete(gang)
 
 **Returns** nothing.
 
-Deletes a gang: every other gang stops treating it as friend or enemy, and the slot is freed (0x0016d068).
+Deletes a gang and every human still in it: every other gang stops treating it as friend or enemy, each member is
+destroyed at once (with its held object, radar blip and, for a player, its pad and HUD panel), the tactic is freed and
+the slot is reset.
 
-**Notes.** What happens to members still in the world (0x00164738) is not traced.
+**Notes.** 0x0016d068 then 0x00164738: the gang's message handlers are cleared first, then each member is removed
+(0x001664d8) and Human_Destroy(h, 0) (0x0021c7c8) runs inside the call. A player in the gang is destroyed too and taken
+off the player list; no other human becomes the player, so scripts call HuChangePlayerGang first. Characters, destroying
+a human; AI, deleting a gang.
 
 - **Evidence:** confirmed (code) at `0x0016a1e8`; detail: traced
 - **Wrapper** `0x00373200` (registered by `RegisterBindings`); **calls** `0x0016a1e8`

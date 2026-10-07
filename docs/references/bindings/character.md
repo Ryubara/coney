@@ -887,7 +887,11 @@ Moves player control to the members of another gang: the current players' humans
 pads take over humans of the new gang, pulling a member from the gang when it has too few. Missions use it when the
 story switches which group of Warriors you play.
 
-**Notes.** Returns at once if player 1 is already in that gang. Pad indices are kept in order.
+**Notes.** Returns at once if player 1 is already in that gang. Each player of player 1's gang is released
+(Human_ReleasePlayer 0x0022a2a8: pad and HUD panel freed, off the player list and the camera targets); then, per player
+owed, the new gang's non-player member with the lowest non-zero HuCreate player argument (+0x1b1; Rembrandt 1 before Ash
+2) is made a player (Human_MakePlayer, pad -1) and added to the camera targets. The old humans stay in the world as AI.
+Characters, players.
 
 - **Evidence:** confirmed (code) at `0x00239b80`; detail: traced
 - **Wrapper** `0x0035d1a8` (registered by `RegisterBindings`); **calls** `0x00239b80` `Players_ChangeGang`
@@ -955,7 +959,7 @@ HuCreate(name, type, pos, heading, unused, player, gang, flag) -> number
 | 3 | `pos` | table of 3 numbers (t[1]..t[3]) | Position {x, y, z} in metres, game axes with z up; written back with the ground-snapped position. |
 | 4 | `heading` | number (single precision) | Facing in degrees, a rotation about the vertical axis. |
 | 5 | `unused` | string | A string the scripts pass ("warr_sw", "warr_cl", nil); not read by Human_Create. |
-| 6 | `player` | number, truncated to an integer | Player index: 0 for an AI human, 1 for player 1 (takes pad 1, the HUD and the camera), 2 for player 2. |
+| 6 | `player` | number, truncated to an integer | Hand-over priority, stored at +0x1b1: 1 also tries to make the human a player (Human_MakePlayer), which fails and leaves it an AI when a player 1 exists and no other pad is free; any other value (0, 2 for Ash) makes an AI human. A hand-over picks the lowest non-zero value. |
 | 7 | `gang` | number, truncated to an integer | Gang id (as returned by GangCreate) the human belongs to. |
 | 8 | `flag` | boolean (nil or 0 is false) | Stored at +0x19d of the human; the Rumble scripts pass true. Meaning not traced. |
 
@@ -964,7 +968,9 @@ HuCreate(name, type, pos, heading, unused, player, gang, flag) -> number
 Creates a human (character) in the world, snaps it to the ground and, for a player index of 1, makes it player 1's
 character. This is how every level script puts the Warriors, enemies and civilians into the world.
 
-**Notes.** Steps and offsets: Characters, creation. The model loads later if its files are not yet resident.
+**Notes.** Steps and offsets: Characters, creation and players. The model loads later if its files are not yet resident.
+Human_MakePlayer's result is ignored, so a second HuCreate(..., 1, ...) while a player exists normally leaves the old
+player in control; level scripts then move the player with HuChangePlayerGang.
 
 - **Evidence:** confirmed (code) at `0x00233d60`; detail: traced
 - **Wrapper** `0x00358428` (registered by `RegisterBindings`); **calls** `0x00233d60` `Human_Create`
