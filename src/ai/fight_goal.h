@@ -38,7 +38,7 @@ class FightGoal final : public Goal {
     /// 2. the tackle try (tryTackle());
     /// 3. done beyond the far melee range × 1.1 (it never closes a distance: the Melee goal beneath does);
     /// 4. every 30 updates, done without a walkable straight line to the target (the route planner's, when it has one);
-    /// 5. once a second, the re-target;
+    /// 5. once a second, the re-target to the nearest human straight ahead in the sector record;
     /// 6. the block try, giving up the active-attacker place;
     /// 7. while actions are queued, wait; once they end, give up the place;
     /// 8. past the deadline, done unless it still holds an attack slot;
@@ -50,7 +50,8 @@ class FightGoal final : public Goal {
     /// **Coney stand-ins**: the fight stance is not built (19 and 20 are the kinds out of it); the rows of
     /// Brain_CheckAttack about held objects (4, 6, 8) never apply, as an AI holds none; the police row applies when
     /// the target's own target is a cop; the reposition is a move to the ring's outer edge, standing within it
-    /// (ai-core's band-keeping move replaces it), with no taunt; the sectors are the target's quarters (ai::behind()).
+    /// (ai-core's band-keeping move replaces it), with no taunt; a threat (the re-target) is a valid enemy on the
+    /// brain's list.
     /// @orig 0x002b3ab0 FightGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
     /// Gives up the active-attacker place (the goal's suspend, docs/research/ai.md#attack-places).

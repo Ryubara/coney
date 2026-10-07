@@ -18,6 +18,7 @@
 #include "ai/move_action.h"
 #include "ai/route_planner.h"
 #include "ai/script_services.h"
+#include "ai/sectors.h"
 #include "ai/targeting.h"
 #include "animation/anim_math.h"
 #include "combat/reactions.h"
@@ -37,8 +38,6 @@ bool down(const Brain& brain) {
 constexpr float kStoppedSpeed = 0.05F;
 // A turn of the target beyond this re-plans the run, radians (45 degrees).
 constexpr float kReplanTurn = std::numbers::pi_v<float> / 4.0F;
-// The lead applies while the target faces within this of the runner's way, radians (stand-in for sectors 3-5).
-constexpr float kLeadAngle = std::numbers::pi_v<float> / 3.0F;
 // Degrees to radians.
 constexpr float kDegrees = std::numbers::pi_v<float> / 180.0F;
 // The run's gaits.
@@ -51,16 +50,16 @@ constexpr int kCopX1Percent = 50;
 constexpr int kCopX1GangPercent = 80;
 constexpr int kGangMemberClass = 10;
 
-// Whether another of `target`'s attackers stands nearer him on `brain`'s side of him (the near human of the sector A
-// approaches from). **Coney stand-in**: the sector record is not built, so the side is T's quarter.
-bool sideTaken(const Brain& brain, const Brain& target) {
-    const human::Human& t = target.human();
-    const combat::Side mine = combat::victimSide(t.position(), t.heading(), brain.human().position());
-    const float distance = brain.distanceTo(target);
-    return std::ranges::any_of(target.attackSlots(), [&](const Brain* other) {
-        return other != &brain && other->distanceTo(target) < distance &&
-               combat::victimSide(t.position(), t.heading(), other->human().position()) == mine;
-    });
+// Who is the near human in the sector of `target`'s record that `brain` approaches from (`Human_GetSectorOf` of A's
+// bearing from T): nobody, A himself, or another man.
+enum class ApproachSector : std::uint8_t { Free, Mine, Taken };
+ApproachSector approachSector(const Brain& brain, Brain& target) {
+    const int k = sectorOf(target.human(), brain.human().position());
+    const Brain* nearest = target.sectors(kSectorAgeMs)[k].nearest;
+    if (nearest == nullptr) {
+        return ApproachSector::Free;
+    }
+    return nearest == &brain ? ApproachSector::Mine : ApproachSector::Taken;
 }
 
 } // namespace
@@ -223,8 +222,12 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
     }
     // 11. The charge: an attack out of the run.
     if (distance <= kChargeRange && (m_charge || running)) {
-        // 11.1 Another man nearer him on A's side of him disarms the charge: A only moves.
-        if (sideTaken(brain, *target)) {
+        // 11.1 Another man the near one in the sector A comes from disarms the charge (A only moves); A himself waits.
+        const ApproachSector sector = approachSector(brain, *target);
+        if (sector == ApproachSector::Mine) {
+            return GoalStatus::Stop;
+        }
+        if (sector == ApproachSector::Taken) {
             m_charge = false;
         } else {
             // 11.2 The kind, once: a cop's X1 or tackle; anyone else's pick, which must be a charge kind.
@@ -259,8 +262,8 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
     }
     // 12. The move: at him, led by his facing and speed while he faces away, fanned out by attack slot.
     anim::Vec3 aim = them.position();
-    const anim::Vec3 toThem = anim::subtract(them.position(), human.position());
-    if (them.speed() > 0.0F && std::fabs(human::wrapAngle(them.heading() - human::headingOf(toThem))) < kLeadAngle) {
+    const int behindHim = sectorOf(them, human.position());
+    if (them.speed() > 0.0F && behindHim >= 3 && behindHim <= 5) {
         const std::vector<Brain*>& slots = target->attackSlots();
         const auto index = static_cast<int>(std::ranges::find(slots, &brain) - slots.begin());
         const float side = index % 2 == 0 ? -1.0F : 1.0F;

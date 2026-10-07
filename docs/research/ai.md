@@ -4601,8 +4601,8 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   gang kind from the scripts' calls. `Brain_CheckAttack` answers in the page's order; a waiting attacker holds the
   reposition ring. **Stand-ins**: the rows about held objects (4, 6, 8) never apply; the police row applies when the
   target's own target is a cop; the ring is a move to its outer edge, standing within it, with no taunt; the fight
-  stance is not built (the charge and the dive count as out of it); the sectors are the target's quarters, so "behind"
-  is his rear quarter and the snap's man is any attacker within 2.5 m beside or behind; the swing time reads the
+  stance is not built (the charge and the dive count as out of it); the re-target's threat is a valid enemy on the
+  brain's list; the swing time reads the
   attacker's own set, not the bat and bottle sets' clips (25 and 29 the throws, 26-28 the power strikes, 31 the
   struggle strikes 96 and 108, 32-34 the escapes 100 and 112).
 - **A fight's three goals** ([Closing on the target](#fight-approach), `repo:src/ai/melee_goal.h`,
@@ -4615,8 +4615,9 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   target facing away, stops and turns to him within 3.75 m when he is busy or the charge is not armed and he walks or
   stands, and attacks out of the run within 1.6 m with the charge armed: a cop's X1 (50 %, 80 % at a gang member) or
   tackle, anyone else's pick, which ends the run-in when it is not a charge kind, pressed as one attack action once it
-  can start (the X1 along the runner's heading); another attacker nearer the target on the same side of him disarms
-  the charge (the sector's stand-in). EngageEnemy stops for a target in sight it may
+  can start (the X1 along the runner's heading); another human the near one in the sector of the target's record
+  the runner comes from disarms the charge. The grab and snap tries, the grab's "behind" and the lead read
+  ai-core's [sector records](#neighbour-sectors). EngageEnemy stops for a target in sight it may
   not attack (`Brain_IsAttackableBy`), re-targets the nearest enemy it sees within 9 m, and gives up out of sight 20 m
   away. **Stand-ins**: the gang's wanted timer is not kept (the chase always allowed); Melee's own line-of-sight branch
   is not built; with no target but a valid enemy Melee spectates (without the shadow and may-spectate tests); a

@@ -42,7 +42,7 @@ struct AttackerView {
     bool holdsTarget = false;  ///< The human it holds (`+0xc4`) is T.
     bool heldByTarget = false; ///< T holds it (T's `+0xc4` is A).
     /// It holds an attack slot on the human beside or behind it (sector 2-6 of its sector record, flag bit 1, within
-    /// 2.5 m): the snap's target.
+    /// 1.5 m): the snap's target.
     bool snapTargetAside = false;
     int characterClass = -1;    ///< Its class (class `0x77` keeps a kind-4/6 object from 16-18).
     bool holdsKind4or6 = false; ///< An object of kind 4 or 6 in hand.

@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/attack_views.h"
 
-#include <cmath>
-#include <numbers>
+#include <algorithm>
+#include <initializer_list>
+#include <optional>
+#include <vector>
 
 #include "ai/attack_action.h"
 #include "ai/attack_places.h"
 #include "ai/brain.h"
 #include "ai/fight_goal.h"
 #include "ai/reaction_goals.h"
+#include "ai/sectors.h"
 #include "ai/targeting.h"
 #include "combat/attacks.h"
 #include "combat/combat_tuning.h"
@@ -23,9 +26,6 @@ namespace coney::ai {
 
 namespace {
 
-// The snap's human stands within this of A, and beyond this angle off his facing (sectors 2-6), radians.
-constexpr float kSnapRange = 2.5F;
-constexpr float kSnapAngle = 67.5F * std::numbers::pi_v<float> / 180.0F;
 // Below this speed short of the run speed a human is still at the run speed (`speed >= run - 0.01`).
 constexpr float kRunSpeedSlack = 0.01F;
 // The grab needs a fifth of the power meter.
@@ -46,7 +46,7 @@ bool downOrOut(const human::Human& human) {
 
 } // namespace
 
-AttackerView attackerViewOf(const Brain& attacker, const Brain* target) {
+AttackerView attackerViewOf(Brain& attacker, const Brain* target) {
     const human::Human& a = attacker.human();
     const human::Fighter& fighter = a.fighter();
     const combat::CombatMode mode = fighter.combat().mode();
@@ -69,12 +69,8 @@ AttackerView attackerViewOf(const Brain& attacker, const Brain* target) {
         const human::Human& t = target->human();
         view.holdsTarget = fighter.held() == &t;
         view.heldByTarget = t.fighter().held() == &a;
-        // The snap's human: the target, close and beside or behind.
-        const anim::Vec3 to = anim::subtract(t.position(), a.position());
-        const float distance = std::hypot(to.x, to.y);
-        view.snapTargetAside = attacker.hasAttackSlot() && distance <= kSnapRange && distance > 1e-4F &&
-                               std::fabs(human::wrapAngle(human::headingOf(to) - a.heading())) > kSnapAngle;
     }
+    view.snapTargetAside = snapSectorOf(attacker).has_value();
     return view;
 }
 
@@ -180,9 +176,24 @@ bool grabbedFromRear(const Brain& target) {
     return target.human().fighter().grabbedFromRear() || rearGrabberOf(target) != nullptr;
 }
 
-bool behind(const Brain& attacker, const Brain& target) {
-    const human::Human& t = target.human();
-    return combat::victimSide(t.position(), t.heading(), attacker.human().position()) == combat::Side::Rear;
+bool nearestIn(Brain& owner, const Brain& who, std::initializer_list<int> sectors) {
+    const Sectors& record = owner.sectors(kSectorAgeMs);
+    return std::ranges::any_of(sectors, [&](int k) { return record[k].nearest == &who; });
+}
+
+bool behind(const Brain& attacker, Brain& target) { return nearestIn(target, attacker, {3, 4, 5}); }
+
+std::optional<int> snapSectorOf(Brain& attacker) {
+    const Sectors& record = attacker.sectors(kSectorAgeMs);
+    const std::vector<Brain*>& slots = attacker.attackSlots();
+    for (const int k : {4, 5, 3, 6, 2}) {
+        const Sector& sector = record[k];
+        if ((sector.flags & sector_flag::kOccupied) != 0 && sector.nearest != nullptr &&
+            std::ranges::find(slots, sector.nearest) != slots.end()) {
+            return k;
+        }
+    }
+    return std::nullopt;
 }
 
 float capsuleRadius(const Brain& brain) { return human::bodyTuning().radius * brain.human().scale(); }

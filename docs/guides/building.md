@@ -701,6 +701,16 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level99 -
 
 `--screenshot` needs a window, so these runs are not `--headless`.
 
+### Shutdown order {#shutdown-order}
+
+`main` destroys things in reverse order of declaration, so whatever points at the sound output must be declared
+after it or reset before it. The level played on its own (`levelGameplay`, then `levelScripts`) is reset explicitly
+right after the run summaries, before the sound output goes: its scripts' binding context and play mode hold the game
+sound, and tearing them down afterwards read freed state and segfaulted `--play-level level95` at exit. Any new
+object that keeps a pointer into the sound output, the scene or the renderer follows the same rule. A ctest with
+`PASS_REGULAR_EXPRESSION` ignores the exit code, so `coney.exits_cleanly_level95` and `_level99` (with `CONEY_DISC`
+set) check the exit code alone.
+
 ### The debug menus {#the-debug-menus}
 
 Every run has Coney's debug menu, a trainer-style menu of its own (the original has none): press L3 and R3 together

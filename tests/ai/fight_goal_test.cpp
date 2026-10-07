@@ -142,15 +142,37 @@ TEST_CASE("without the gang's tackle value the meter is emptied and the fight go
     CHECK(gang.fightBook().tackle.value() == 0);
 }
 
-TEST_CASE("a rear-grabbed man is the grab's, and a man is behind another in his rear quarter", "[ai]") {
+TEST_CASE("a rear-grabbed man is the grab's, and a man is behind another as the near one in his sectors 3-5", "[ai]") {
     Scene scene;
     Brain& behindHim = scene.add({40.0F, 39.0F, 0.0F}, 0.0F, BrainType::Gang, onlyKind(1));
     Brain& before = scene.add({40.0F, 41.0F, 0.0F}, 180.0F, BrainType::Gang, onlyKind(1));
     CHECK(coney::ai::behind(behindHim, scene.playerBrain()));
     CHECK_FALSE(coney::ai::behind(before, scene.playerBrain()));
+    // A second man farther back in the same sector is not the near one.
+    Brain& farther = scene.add({40.0F, 38.7F, 0.0F}, 0.0F, BrainType::Gang, onlyKind(1));
+    scene.run(31); // past the record's 1 s age
+    CHECK_FALSE(coney::ai::behind(farther, scene.playerBrain()));
     CHECK_FALSE(coney::ai::grabbedFromRear(scene.playerBrain()));
     CHECK(coney::ai::rearGrabberOf(scene.playerBrain()) == nullptr);
     CHECK(coney::ai::capsuleRadius(scene.playerBrain()) > 0.0F);
+}
+
+TEST_CASE("the snap aims at the first attacker behind, then at a side, of the man's sector record", "[ai]") {
+    Scene scene;
+    Brain& player = scene.playerBrain();
+    // One attacker on his left (sector 2): the snap's sector.
+    Brain& left = scene.add({39.0F, 40.0F, 0.0F}, 270.0F, BrainType::Gang, onlyKind(1));
+    left.setTarget(&player);
+    REQUIRE(coney::ai::snapSectorOf(player) == 2);
+    // A man behind him who does not attack him is passed over.
+    Brain& idle = scene.add({40.0F, 39.0F, 0.0F}, 0.0F, BrainType::Gang, onlyKind(1));
+    scene.run(31); // past the record's 1 s age
+    CHECK(coney::ai::snapSectorOf(player) == 2);
+    // Once he attacks, behind comes first.
+    idle.setTarget(&player);
+    scene.run(31);
+    CHECK(coney::ai::snapSectorOf(player) == 4);
+    CHECK(coney::ai::attackerViewOf(player, &left).snapTargetAside);
 }
 
 TEST_CASE("the Melee goal's and the dealer's spectate arguments are the research's", "[ai]") {

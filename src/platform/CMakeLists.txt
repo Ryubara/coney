@@ -124,6 +124,14 @@ if(DEFINED ENV{CONEY_DISC} AND NOT "$ENV{CONEY_DISC}" STREQUAL "")
              COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 390 --play-level level99
                      --input-script "${PROJECT_SOURCE_DIR}/tests/support/play_walk.txt")
     set_tests_properties(coney.plays_level PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "play: 390 frames.*grounded")
+    # Levels played with the game's sound exit cleanly: a test with PASS_REGULAR_EXPRESSION ignores the exit code, so a
+    # crash after the summary line (a destructor reading the freed sound output) passed unseen. These check the exit
+    # code alone (docs/guides/building.md#shutdown-order).
+    foreach(level level95 level99)
+        add_test(NAME coney.exits_cleanly_${level}
+                 COMMAND coney --disc "$ENV{CONEY_DISC}" --headless --frames 60 --play-level ${level})
+        set_tests_properties(coney.exits_cleanly_${level} PROPERTIES TIMEOUT 120)
+    endforeach()
     # Rembrandt in the parkour sandbox headless: the same play mode and script on the sandbox's collision mesh, from
     # the run-up lane's spawn point (docs/guides/sandbox.md). Counts only.
     add_test(NAME coney.plays_sandbox

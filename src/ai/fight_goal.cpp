@@ -2,7 +2,6 @@
 #include "ai/fight_goal.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <memory>
 #include <numbers>
@@ -17,6 +16,7 @@
 #include "ai/fight_checks.h"
 #include "ai/move_to_human_action.h"
 #include "ai/route_planner.h"
+#include "ai/sectors.h"
 #include "ai/targeting.h"
 #include "combat/player_combat.h"
 #include "combat/reactions.h"
@@ -45,8 +45,6 @@ constexpr int kGrabKind = 22;
 constexpr int kCopX1Percent = 75;
 // The class whose moves into reach are short (`+0x11b` 13: the bosses).
 constexpr int kBossClass = 13;
-// The snap's human stands within this of A.
-constexpr float kSnapRange = 2.5F;
 // The grab's moves in: to the grab reach (1500 ms), and a refused grab's step back to 0.8 × near (+ 1 m, 1000 ms).
 constexpr std::uint32_t kGrabMoveMs = 1500;
 constexpr std::uint32_t kGrabRefusedMoveMs = 1000;
@@ -56,8 +54,6 @@ constexpr float kGrabRefusedBand = 1.0F;
 constexpr int kRearGrabPercent = 25;
 // Half a quarter turn, radians.
 constexpr float kQuarterTurn = std::numbers::pi_v<float> / 2.0F;
-// Degrees to radians.
-constexpr float kDegrees = std::numbers::pi_v<float> / 180.0F;
 
 // Whether `target` is down, out of the fight or arrested (state any of `0xe0000`).
 bool downOrOut(const Brain& target) {
@@ -79,13 +75,13 @@ bool claimPlace(Brain& brain, Brain& target) {
 }
 
 // Whether `brain` may start `kind` on `target` now (`Human_CanStartAttack`).
-bool canStart(const Brain& brain, const Brain& target, int kind) {
+bool canStart(Brain& brain, const Brain& target, int kind) {
     return canStartAttack(startGuardOf(brain, target, kind), attackerViewOf(brain, &target),
                           targetViewOf(target, brain), kind);
 }
 
 // Whether `brain` may use `kind` on `target` (`Human_CanUseAttackKind`).
-bool canUse(const Brain& brain, const Brain& target, int kind) {
+bool canUse(Brain& brain, const Brain& target, int kind) {
     return canUseAttackKind(attackerViewOf(brain, &target), targetViewOf(target, brain), kind);
 }
 
@@ -114,27 +110,34 @@ bool policeHaveHim(const Brain& brain, const Brain& target) {
     return brain.type() != BrainType::Cop && theirs != nullptr && theirs != &brain && theirs->type() == BrainType::Cop;
 }
 
-// The snap's stick: the first of A's attackers within 2.5 m behind him (sectors 3-5), then on either side (6, 2),
-// gives the stick's heading (behind: heading + π; a side: a quarter turn toward him).
-std::optional<float> snapHeading(const Brain& brain) {
-    const human::Human& a = brain.human();
-    std::optional<float> side;
-    for (const Brain* other : brain.attackSlots()) {
-        const anim::Vec3 to = anim::subtract(other->human().position(), a.position());
-        const float distance = std::hypot(to.x, to.y);
-        if (distance > kSnapRange || distance < 1e-4F) {
-            continue;
-        }
-        const float rel = human::wrapAngle(human::headingOf(to) - a.heading());
-        // Sectors 3-5 lie more than 112.5° off the facing; 2 and 6 between 67.5° and 112.5°.
-        if (std::fabs(rel) > 112.5F * kDegrees) {
-            return human::wrapAngle(a.heading() + std::numbers::pi_v<float>);
-        }
-        if (!side.has_value() && std::fabs(rel) > 67.5F * kDegrees) {
-            side = human::wrapAngle(a.heading() + (rel > 0.0F ? kQuarterTurn : -kQuarterTurn));
-        }
+// The snap's stick from the sector snapSectorOf() chose: behind him (3-5) straight back, at a side (2, 6) a quarter
+// turn toward that side. **Coney reading**: the page gives the stick in the original's clockwise stick angle (heading −
+// k × 45°); Coney's stick is a world heading, which grows to the left, so sector 2 (his left) is heading + 90°.
+std::optional<float> snapHeading(Brain& brain) {
+    const std::optional<int> sector = snapSectorOf(brain);
+    if (!sector.has_value()) {
+        return std::nullopt;
     }
-    return side;
+    const float heading = brain.human().heading();
+    if (*sector >= 3 && *sector <= 5) {
+        return human::wrapAngle(heading + std::numbers::pi_v<float>);
+    }
+    return human::wrapAngle(heading + (*sector == 2 ? kQuarterTurn : -kQuarterTurn));
+}
+
+// The fight goal's re-target (`0x002b3c30`): the nearest human in sector 0 of A's record (its first word; inferred to
+// be the nearest human) becomes the target when he is not already it, is a threat and no GrabTarget goal is on the
+// stack. **Coney stand-in**: a threat is a valid enemy on A's enemy list (`Brain_IsThreat`'s gang test is not built).
+void retargetFromSectors(Brain& brain) {
+    const Brain* ahead = brain.sectors(kSectorAgeMs)[0].nearest;
+    if (ahead == nullptr || ahead == brain.target() || brain.findGoal(GoalType::GrabTarget) != nullptr) {
+        return;
+    }
+    const std::vector<Brain*>& enemies = brain.enemies();
+    const auto listed = std::ranges::find(enemies, ahead);
+    if (listed != enemies.end() && Brain::fightable(**listed) && validEnemy(brain, **listed)) {
+        brain.setTarget(*listed);
+    }
 }
 
 } // namespace
@@ -181,7 +184,7 @@ GoalStatus FightGoal::process(Brain& brain) {
     if (brain.nowMs() >= m_retargetAtMs) {
         m_retargetAtMs = brain.nowMs() + kRetargetMs;
         Brain* before = target;
-        brain.retarget();
+        retargetFromSectors(brain);
         target = brain.target();
         if (target == nullptr || !brain.hasAttackSlot()) {
             return GoalStatus::Done;
@@ -302,9 +305,9 @@ bool FightGoal::tryGrab(Brain& brain, Brain& target) {
         }
         return false;
     }
-    const human::Human& t = target.human();
-    const combat::Side side = combat::victimSide(t.position(), t.heading(), brain.human().position());
-    const bool atSide = side == combat::Side::Left || side == combat::Side::Right;
+    // A's sector round T: 2 or 6 is at his side.
+    const int side = sectorOf(target.human(), brain.human().position());
+    const bool atSide = side == 2 || side == 6;
     const bool rearGrabbed = grabbedFromRear(target);
     const AttackWeights& weights = brain.attackWeights();
     if (m_kind == kGrabKind) {
@@ -318,10 +321,11 @@ bool FightGoal::tryGrab(Brain& brain, Brain& target) {
             m_kind = kX1Kind;
         }
     } else {
-        // A rear grab: empty-handed, behind him, when the gang's chance comes up.
+        // A rear grab: empty-handed, the near human in his sector 4 (straight behind), when the gang's chance comes up.
         const int g = brain.gangFight().rearGrab;
         if (brain.human().fighter().animSet() == 0 && g > 0 && weights[static_cast<std::size_t>(kGrabKind)] > 0 &&
-            behind(brain, target) && brain.rand100() < g * kRearGrabPercent && canStart(brain, target, kGrabKind)) {
+            nearestIn(target, brain, {4}) && brain.rand100() < g * kRearGrabPercent &&
+            canStart(brain, target, kGrabKind)) {
             m_kind = kGrabKind;
         }
     }
