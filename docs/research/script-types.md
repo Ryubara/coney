@@ -1073,6 +1073,32 @@ its pattern.
 Both swarm types keep three `sub_polar_bugs` children (`+0x14`, `+0x18`, `+0x1c`) while a view is within range of
 them (`0x003a51f8`), and drop them when none is. `part_garbage_flies` also has a looping sound.
 
+**`part_garbage_flies` in numbers**, confirmed (code) at `0x003d7e30`, `0x003d7f10`, `0x003e07a0`, `0x003e0980`
+unless marked:
+
+- **Each "swarm" is one fly.** A `sub_polar_bugs` task is a single sprite, so a pile has **three flies**. The sprite
+  is batch 0 (`part_page1`), rectangle 19 (`Task_SetRect(0x10013)`, the batch from the popped sprite word 0): a
+  16 × 16-texel fly seen from above, wings spread (texels (96, 237)-(112, 253) of the 512 × 256 sheet; disc data).
+- **Look**: colour `0x808080ff` (grey 128, alpha 255, on RenderWare's 0-255 scale), size `+0xc0` = 0.02, which the
+  [particle draw](particles.md#fog) doubles: a camera-facing square about 0.04 (metres, inferred). The previous
+  colour and size start at white alpha 0 and 0, so each fly fades and grows in over its first update.
+- **Motion**: about its centre (the emitter's position) on two angles `a` and `b`, each started at a random
+  0-2π: the new point is `centre + r × (sin²a cos b, sin²a sin b, sin a cos a)` with **`r` = 1.5 m** (the popped
+  float), so up to 1.5 m out and ±0.75 m up or down. Each update adds **0.628 rad (2π / 10) to `a` and 1.257 rad
+  (2π / 5) to `b`**, and is followed by one of 20 ticks (9 times in 11) or 10 ticks (2 in 11; `Random_Int(10)`
+  is 0-10 inclusive). The point goes to task `+0x30`; with flag `0x200` `Task_Integrate` (`0x003a2310`) makes it
+  the position at the next update, so the fly **jumps** to a new point 3-6 times a second (no interpolation found;
+  inferred). The `(6, 6, 6)` written at `+0x40` is the angular velocity, which a camera-facing sprite does not show.
+- **"A view in range"**: `Cameras_IsPointVisibleAny(50, position)`: the point is no more than **50 m outside** each
+  of the six frustum planes of some player view (the far plane included), so this is not a plain distance. While
+  that holds the pile checks every 60 ticks and respawns any missing fly; otherwise it sends the three `0x15` (done)
+  and checks every 120 ticks.
+- **Sound** (only when the popped parent handle is 0): `Sound_AddScriptEmitter(0, 0x49d14d16, position)`, a
+  `script_emitter` in [mode 3](sound.md#ambient) (a loop: started while a listener is within range, stopped beyond),
+  range −1 → the class's `far` + 10 = **20 m**, filter 0 (a player on covered ground does not count), emitter
+  volume 1 (`0x001172c8`). The sound (disc data, `BFW.SND` list): unnamed, streamed, 11,250 Hz, record volume 6,
+  class 68 (near 1 m, far 10 m, flags `0x27`: looping).
+
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
 | `0x003d7e30` | `PartGarbageFlies_Init` | `part_garbage_flies` init | flags 4, every 60 ticks, a sound emitter | confirmed (code) |
@@ -1175,6 +1201,21 @@ uses ([Shake and gun flash](#sub-shk)).
 
 `part_orange_neon` and `part_pink_neon` only place a `sub_neon_light` and end. The lights (kind `0x04`) keep two
 colours in their light record (`+0x80` and `+0x84`, the colour drawn) and a radius pair (`+0x8c`, `+0x90`).
+
+**The neon light in numbers**, confirmed (code) at `0x003da328`, `0x003da818`, `0x003e02a8`, `0x003e03d8`:
+
+- **Light**: a point light at the sign's own position (no offset, no parent), **radius 4 m**, lighting the world and
+  objects (flags `0x488`; [how a light type lights](#light-type-lights)). Colour (`0xRRGGBBAA`): orange
+  `0xffe3aeff` = **(255, 227, 174)**, pink `0xffafcfff` = **(255, 175, 207)**; the second colour is 0 (black).
+- **Flicker**: data `+0x00` = 15 (threshold), `+0x04` a counter, `+0x08` the colour, `+0x0c` black; the task's
+  attach-point byte (`+0x6c`) serves as the state. **Steady** (state 0): on, an update every 30 ticks, the counter
+  +1 each. On the update it passes 15, an **off spell** (state 1): a fade to black over 5 ticks, then updates every
+  15 ticks, each one jumping to black and fading back up to the colour over the interval, the counter growing by
+  1 + `Random_Int(interval)` (0 to the interval, inclusive), so the spell lasts about 2-3 such blinks. When it
+  passes 15, back to steady (a last 30-tick fade up). So: about **8 s on**, then **2-3 quick blinks** (about 0.5 s).
+- **The first cycle** is slower (inferred from the same code): the sign starts with an update every 60 ticks and the
+  target colour (`+0x84`) still black from `LightTask_Init`, so for its first 17 updates (about 17 s) it snaps to
+  the colour and fades to black over each second; the first off spell sets the target properly.
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
@@ -1306,9 +1347,9 @@ there ([Cars: hit effects](cars.md#hit-effects)).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |
-| `0x003e07a0` | `SubPolarBugs_Init` | `sub_polar_bugs` init | a bug sprite circling a point (radius 6), random phases, update every 20 | confirmed (code) |
+| `0x003e07a0` | `SubPolarBugs_Init` | `sub_polar_bugs` init | one bug sprite circling a point at the popped radius (1.5 m for the garbage flies), random phases, update every 20 ([Flies](#flies)) | confirmed (code) |
 | `0x003e0938` | `SubPolarBugs_OnMessage` | `sub_polar_bugs` message | `0x15`: marks it done | confirmed (code) |
-| `0x003e0980` | `SubPolarBugs_Update` | `sub_polar_bugs` update | moves on two angles (0.63 and 1.26 rad per update); ends when marked | confirmed (code) |
+| `0x003e0980` | `SubPolarBugs_Update` | `sub_polar_bugs` update | moves on two angles (0.63 and 1.26 rad per update), next update in 20 ticks or (2 in 11) 10; ends when marked | confirmed (code) |
 | `0x003e0b28` | `SubPoliceLight_Init` | `sub_police_light` init | a light attached to its parent, radius 5-10, flash interval popped | confirmed (code) |
 | `0x003e0d00` | `SubPoliceLight_OnMessage` | `sub_police_light` message | `0x15`: removed; 10: on or off | confirmed (code) |
 | `0x003e0e40` | `SubPoliceLight_Update` | `sub_police_light` update | alternates red and blue; dark in state 3 | confirmed (code) |
@@ -1429,6 +1470,38 @@ counter, `+0x3c` "check for duplicates" (set for model `0xbbbef927`, the Warrior
 ### Small lights and strobes {#small-lights-strobes}
 
 Emitters (`part_*`) that switch a light child on with `0x12` and off with `0x13`, and the lights themselves.
+
+#### How a light type lights {#light-type-lights}
+
+A type of kind `0x04` is made by `LightTaskManager_CreateByName` (`0x00390cb8`): `LightTask_Init` (`0x00390370`:
+flags `0xb`, update every 2, both colours 0), then the type's init, then `LightTask_SetParams(task, 0)`
+(`0x00390480`), which adds a record to the [light manager](lighting.md#record), the same kind of light `SetLight`
+makes: a **point** light (RenderWare `0x80`) at the task's position with radius `+0x8c` and colour `+0x80`
+(`0xRRGGBBAA`), **no corona**, no flicker effects, lighting objects and humans and, when the task's flags have `0x08`,
+**the world too** (lights field 3, else 1). It is on while flag `0x04` is clear. Every tick `LightTask_Update`
+(`0x003906b8`) colours it by **cross-fading** linearly from `+0x80` to `+0x84` over the update interval (t = time
+since the last update ÷ the interval, clamped at 1); each update first copies `+0x84` into `+0x80`
+(`LightTask_Process`, `0x00390970`), then the type's update may set a new `+0x84`. The falloff is the manager's:
+linear, `1 − d / radius` ([Lighting](lighting.md#world)). Confirmed (code).
+
+#### The strober and its alarm {#strober}
+
+**The `strober`** (`0x003e8408`, `0x003e8518`, confirmed (code)): at the position its emitter passes (the
+`part_strobe_red`'s own, no offset), **radius 10 m**, flags 8 (lights the world, objects and humans), update every
+10 ticks, colour red `0xff0000ff` = (255, 0, 0) to start. A step counter runs 1, 2, 3, 4, 1, ...: step 2 sets the
+target to red, step 3 to black `0x000000ff`, 4 and 1 leave it. With the cross-fade that is a **40-tick cycle**
+(2/3 s): **10 ticks fading up** from black to red, **10 fading down**, **20 black**; full red is reached only for an
+instant. The first red lasts about 30 ticks from the spawn. Message `0x13` clears its on flag and the next update
+ends it.
+
+**The alarm** (`0x003e85b8`, `0x001172c8`, confirmed (code)): hash `0xfae63afd` is
+`vags/ambient/alarms/alarmbell_loop` (CRC-32, checked), so `Sound_AddScriptEmitter` makes an `alarm_emitter`:
+[mode 3](sound.md#ambient), a loop that starts while a listener is within range and stops beyond, range −1 → the
+class's `far` + 10 = **30 m**, filter 2 (every player counts), emitter volume 1, at the emitter's position. It starts
+disabled; `0x12` enables it, `0x13` disables it. The sound (disc data, `BFW.SND` list): a bank sound, 22,050 Hz,
+record volume 100, class 1 (near 1 m, far 20 m, flags 3: looping).
+
+#### Functions {#small-lights-functions}
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |

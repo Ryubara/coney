@@ -1230,7 +1230,7 @@ The unit's other functions (`0x0010d758`-`0x0011b770`), by address; names are ou
 | `0x00117208` | `Sound_SetPositionFwd` | `Sound_SetPosition` with a copy of the position | confirmed (code) |
 | `0x00117238` | `Sound_PlayAtDefault2` | the same as `Sound_PlayAtDefault` (17 object-behaviour callers) | confirmed (code) |
 | `0x00117280` | `Sound_PlayMaterialPairAt` | `Sound_PlayMaterialPair(1.0, a, b, pos, default 5)`: glass and other objects | confirmed (code) |
-| `0x001172c8` | `Sound_AddScriptEmitter` | adds an emitter for an object behaviour: kind 0 with the hash of `vags/ambient/alarms/alarmbell_lo` is an `alarm_emitter`, kind 1 a `script_emitter`, else none; range -1, one sound | confirmed (code) |
+| `0x001172c8` | `Sound_AddScriptEmitter` | adds an emitter for an object behaviour: kind 0 with the hash of `vags/ambient/alarms/alarmbell_loop` (`0xfae63afd`) is an `alarm_emitter`, kind 1 a `script_emitter`, else none; range -1, one sound | confirmed (code) |
 | `0x001173e8` | `Sound_DisableEmitter` | switches an emitter off (`AmbientManager_EnableEmitter(…, 0)`) | confirmed (code) |
 | `0x00117420` | `Sound_SetEmitterEnabled` | `Ambient_SetEmitterEnabled` on the global manager (object behaviours) | confirmed (code) |
 | `0x00117450` | `PanTables_Build` | fills the pan-mode-1 gain tables at reset: left `0x005d8600` and right `0x005d8ba4`, 361 entries each, `left[a] = cos(45° + a/2)`, `right[a] = sin(45° + a/2)` for a = 0-360 (the two at a = 90 / 270 stored as 0) | confirmed (code) |

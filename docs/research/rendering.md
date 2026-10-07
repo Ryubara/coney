@@ -117,6 +117,12 @@ mipmaps; the sky box's Z values are near the top of the range (about 1,456,800 t
 translation being zeroed for it ([the background](level-loading.md#render-order)). The skyline that follows writes
 Z, then a second clear resets Z (colour masked) so the world, drawn with its own near and far planes, covers it.
 
+The background's models (sky box, cloud box, skyline, glows) carry no light flag and no normals, yet reach the GS
+lit by the world ambient: `level99`'s sky box (prelight 60), cloud box (70) and the skyline's prelight-0 vertices
+come out at 59, 64 and 29 of 128, `level100`'s sky box (70) at 64, prelight + 0.227 each. Inferred (Coney's models
+against the GS dumps, [Lighting](lighting.md#coneys-implementation)); the VU1 background path that ignores the flag
+has not been found in code.
+
 ### The world {#world}
 
 The streamed world's sectors are the only geometry minified with mipmaps: `MMIN` 5 (linear mipmap linear) with `L`
@@ -296,3 +302,8 @@ lines: a slight vertical blur that softens the image and hides the jagged edges 
 - `level80`'s pink lamp has one 254-vertex strip with a 64 × 32 `T8` texture in context 1 (alpha test GEQUAL `0x40`, no
   Z write) drawn after the world: which object draws it (a lamp shade, or a corona-like glow, [Lighting](lighting.md))
   is not known.
+- The front end's background reads a uniform (2, 6, 7) in the original's capture, including where no sky draws,
+  against the (1, 3, 5) the screen tint gives over black ([The front end](#front-end)). The [output](#output) merge
+  is a guess (`PMODE` `0x8067` mixes both read circuits), but it averages neighbouring lines and so cannot brighten a
+  uniform area; level 100's sky texture is near black. Speculative: the capture's own processing, or a draw not yet
+  matched.

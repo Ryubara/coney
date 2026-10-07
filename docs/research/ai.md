@@ -1815,6 +1815,7 @@ a "flag kind `0x12`" bit.
     5. Every 31 updates the point must still be in sight, else done. Done when within 1 m in plan but more than
        1.5 m apart in height.
     6. **Steering** round other humans ([below](#steering)) may replace the aim by a detour point (radius 0.3).
+       Steering is not reached on every update; see "The speed and the legs" below.
     7. Heading = the direction to the aim, or to the object `+0x3c` when set; write `+0x90`, `+0x118` and `+0x110`.
     8. **Speed**: with an object to face, the gait's speed. Otherwise turn on the spot (speed 0) while stopped and
        more than 30° off; else the **corner speed** (`0x002fc158`): each of the next 3 waypoints' corners
@@ -1824,6 +1825,25 @@ a "flag kind `0x12`" bit.
        down to the walking speed. It keeps the first corner's speed `+0x0c`, the second's `+0x44` and a braking
        distance² `+0x48`, and uses `+0x0c` while farther than that, else `+0x44`, never above the gait's speed.
     9. **Stuck** (`0x002fc330`): every 60 updates while moving, less than 0.2 m covered → brain `+0x284` = 3, done.
+- **The speed and the legs** (confirmed (code) at `0x002fc778`-`0x002fc7a8` and `0x002fc988`-`0x002fc998`):
+    - **Where the speed comes from.** Just before the route step, the update takes its speed: the steering override
+      (`+0x34`) while its count `+0x32` is non-zero, else the action's own `+0x40`. That one value goes by pointer to
+      `Route_Follow`, which may change it, then to the steering (step 6), and as the cap to the corner speed
+      (step 8).
+    - **When the override's count drops.** Only at the start of the steering call. An update that returns before
+      step 6 does not use one up.
+    - **Route_Follow's result.** With a route, any result but 1 ends the update there, before the steering, and is
+      the action's result. It returns:
+        - 0 while held at a claimed node within 2 m ([Steering](#steering) step 15);
+        - 0 on each update of a climb leg (`Route_ClimbLeg`: trying, or once the climb starts), and 2 after 31
+          failures;
+        - 0 or 2 for a jump or drop leg (`Route_StartJumpLeg`);
+        - 0 for a charge (`Route_SmashLeg`);
+        - 2 for a refused link;
+        - 0 when `Route_TryClimbNear` starts an early climb.
+    - So **steering never runs on climb, jump or charge legs**, nor while held at a node. It runs on walked legs
+      (kinds 1, 2 and `0x10`) and on the walk up to a climb. Once a climb has started (`+0x12` = 0), the climb itself
+      holds the human (step 1's busy test, inferred).
 - Brain `+0x284` says why a move failed: 1 no polygon or no route, 2 or 4 an edge it cannot take, 3 stuck.
 - **Nothing keeps a move going between actions** (confirmed (code)). `Brain_UpdateGoals` (`0x0028fbb0`) starts
   every think with `Brain_StopMove` (`0x0028ac18`): speed `+0x114` 0 (`Brain_SetMoveGait(brain, 0)`) and heading
@@ -2280,12 +2300,20 @@ drops several arguments) unless marked; not checked at run time. The names of th
 | `+0x10` | the predicted **contact point** of the last decision (C, step 10) |
 | `+0x20` | the brain |
 | `+0x24` | the human being avoided (non-zero = avoiding; `Steering_SetAvoiding` also raises the brain's turn boost) |
-| `+0x28` | u8, updates since the last decision; `Steering_Clear` sets 255, which forces a decision on the next update |
-| `+0x29` | u8, slow decisions in a row (step 5) |
+| `+0x28` | u8, updates since the last decision; `Steering_Clear` sets 255, which forces a decision on the next update; a move's Start seeds it with the human's index (below) |
+| `+0x29` | u8, slow decisions in a row (step 5); a move's Start seeds it with the human's index too |
 | `+0x2a` | enabled |
 | `+0x2b` | u8, decisions since the detour was taken (step 6) |
 | `+0x32` / `+0x34` | u16 updates left / the **speed override** (`Steering_SetSpeed(speed, n)`) |
 | `+0x3c` | the detour's **score** (below) |
+
+**A move's Start** (`Steering_ResetAvoidance`, `0x002890a8`, from the move action's Start) clears the held point to
+the origin, turns avoiding off, sets the score to −1e9 and `+0x2b` to 0. It writes the low byte of the human's
+**index** (human `+0x92`, his slot in the position table) into **both** `+0x28` and `+0x29`; it is not a node.
+Confirmed (code). It forces no decision as such: step 2 compares the old counter with 3 × the detail level, so the first
+call decides when the index is at least that (always at detail level 0), and a human with a lower index waits the rest.
+So the humans' decisions are staggered by index. The slow counter starts at the index as well, so the first × 10 of
+step 5 comes after 16 − index slow decisions, or on the first one for an index of 15 or more.
 
 **Speed overrides.** `Steering_SetSpeed` only stores a speed and a count of updates; the count drops by one at the
 start of every call. While it is non-zero the move action takes `+0x34` as its speed instead of its own (action
@@ -2296,17 +2324,22 @@ override acts from the next update on, for n updates.
 
 1. Not enabled, or brain `+0xec` set (inferred: held in a [waypoint queue](#queues)) → return 0. Human `+0x333` above
    2 → avoidance off, return 0.
-2. **Between decisions** (the counter `+0x28` below 3 × human `+0x333`; with `+0x333` = 0 it decides every update):
-   when avoiding, aim := held point and return 1, else return 0.
+2. **Between decisions**: the counter `+0x28` is read, stored back plus one, and the **old** value compared with 3 ×
+   human `+0x333` (with `+0x333` = 0 it decides every update). Below it: when avoiding, aim := held point and return
+   1, else return 0.
 3. **A decision**: counter 0, score := −1e9. When avoiding the arrival radius counts as 0, and if s is a standing
    gait (gait 0, below 0.5 m/s) aim := held point and return 1.
 4. Within 1 m of the destination (squared distance ≤ 1) → return 0.
 5. **Look-ahead.** L = 0.75 × the move's speed (the distance covered in 0.75 s). While that speed is below 4 the
-   counter `+0x29` counts up, and on the 16th such decision in a row L is × 10 once and the counter restarts; at 4 or
-   more it resets. `Humans_FindAhead` (`0x002274a8`) lists up to 60 humans within **min(2L, 10) m** of P, in every
-   direction, not counting me.
-6. **Expiry.** When avoiding, `+0x2b` counts decisions: while it is below 4 × ⌊11 − s⌋ the walk heads for the held
-   point instead of the aim; after that `Steering_Clear` ends the detour.
+   counter `+0x29` counts up (stored plus one), and when the new value reaches 16, L is × 10 once and the counter
+   goes to 0; at 4 or more it goes to 0. `Humans_FindAhead` (`0x002274a8`) lists up to 60 humans within
+   **min(2L, 10) m** of P, in every direction, not counting me.
+6. **Expiry.** When avoiding, `+0x2b` counts decisions. It is read, stored back plus one, and the **old** value
+   compared: while it is below 4 × trunc(11 − s) (s my human's speed `+0x1ac`, `Float_ToUInt`), the walk heads for the
+   held point instead of the aim; otherwise `Steering_Clear` ends the detour, which sets `+0x2b` back to 0. Only
+   `Steering_Clear`, `Steering_ResetAvoidance` and `Steering_Reset` write 0 there. `Steering_TryDetour` does
+   **not**, so a new detour taken while avoiding keeps the count of the old one. It counts only on decisions while
+   avoiding. Confirmed (code) at `0x0028935c`-`0x0028938c`.
 7. **My step.** D = the unit direction from P to that point, in plan (z = 0); S = D × min(L, its distance − the
    arrival radius).
 8. **The blocker.** `Steering_FindBlocker` (`0x00288cc8`): of the listed humans, skipping my target (brain `+0x124`)
@@ -2341,16 +2374,33 @@ override acts from the next update on, for n updates.
     | < cos 50° | < cos 45° | 3 |
 
 15. **Same route node** (cases 0-3): when both brains follow a route (the route state at brain `+0xe0`: `+0x04`
-    non-zero for both, and my `+0x16` set) and `RouteState_CurrentNode` (`0x0029b248`) is the same node for both,
-    the speed is **0.75 × his speed** for 5 updates; return 1, aim unchanged.
+    non-zero for both) and **I am held** (my route state's `+0x16` set, below), and `RouteState_CurrentNode`
+    (`0x0029b248`) is the same node for both, the speed is **0.75 × his speed** for 5 updates; return 1, aim
+    unchanged.
+
+    Route state `+0x16` is the **held** flag of `Route_Follow` (`0x0029aa88`). At detail level below 2, each update
+    claims the current waypoint (`Nav_ClaimWaypoint`). If it holds the claim and the next or the current leg is a
+    jump or run-climb (link bits 4 or `0x80`), it also checks that the link is free (`0x0029a3f0`, `0x0029a6c8`).
+    - **0 back** (another human keeps the node, or is on the link): `+0x16` = 1. Within 2 m of the waypoint he
+      stops there (brain `+0x90` the waypoint, speed 0, `Brain_StopMove`), and the follower returns 0.
+    - **Non-zero back**: `+0x16` = 0.
+    - `RouteState_Init` and `Route_Request` clear it, and at detail level 2 or more it is left as it was.
+
+    So step 15 slows me behind a human at the node I am queued for. Confirmed (code) at `0x0029ab94`-`0x0029acfc`
+    and `0x00289864`-`0x002898d4`. That the link checks return 0 for "taken" is inferred from this use.
 16. **Yielding** (cases 1-3): without right of way and with the contact within 3 m (|t × S|² < 9), cases 1 and 3 stop
     (speed 0 for 1 update) and case 2 matches his speed for 5 updates; return 1, aim unchanged.
 17. **The detour point X**:
     - **Case 0** (he stands): X = B + σE, σ = −1 when E · N ≥ 0, else +1: **1 m from his centre, perpendicular to
       my move, on the side of him that my line passes**. aim := X and `Steering_TryDetour(X)`; on success return 1.
-      Otherwise k = `Sectors_SectorOf(my position, X)` (one of 8 sectors of 45°; inferred: X's sector),
-      k' = (k + 4) mod 8, the opposite one, and X' = his position + 1 m along his facing + k' × 45°
-      (`Sectors_GetPoint`; his sector record refreshed when older than 1,000 ms). `TryDetour(X')`, and on success
+      Otherwise k = `Sectors_SectorOf(me, X)`: X's sector **relative to my own facing**. My human's vtable `+0xac`
+      fills a transform (position `+0x00`, rotation `+0x10`), and `Heading_RelativeTo` (`0x00386798`) takes the
+      heading from my position to X less my heading (`Quat_Heading` of my rotation), wrapped to 0-2π. Then
+      `Human_GetSectorOf` (`0x0029eb38`) maps it to 0-7, sector *k* centred on *k* × 45°. k' = (k + 4) mod 8.
+      X' = his position + 1 m along **his live facing** (his rotation in the position table, `0x00714b10`) +
+      k' × 45° (`Sectors_GetPoint` `0x0029e350`, with his sector record, refreshed when older than 1,000 ms, naming
+      him). So k is measured in my frame and applied in his. No stored heading is used. Confirmed (code) at
+      `0x002899a4`-`0x00289a24`. `TryDetour(X')`, and on success
       aim := X'. Return 1 either way (the aim stays X when both fail).
     - **Cases 1 and 2**: X = C + σρE. ρ = +1 when B is on E's side of my line (`Steering_SideSign`, E · (B − P) ≥ 0),
       else −1; σ = +1 when my segment P → aim crosses his B → Q (`Segment_Intersect2D`, `0x00337308`), else −1. So
@@ -2359,11 +2409,33 @@ override acts from the next update on, for n updates.
     - **Case 3**: X = B + `Steering_ClampStep(0.75 t)` + σE, σ = −1 when H · E ≥ 0, else +1. `Steering_ClampStep(f)`
       (`0x00288f40`) is his unit direction to his aim (his brain `+0x90`) × min(his brain `+0x114` × f, his distance
       to it). So **where he will be when we meet, then 1 m to the side he comes from** (behind him).
-18. **Corner check** (cases 1-3): when s minus `Move_CornerSpeedLimit` (`0x002fcd90`: the highest speed, stepping
-    the gait down, that still turns through the circle from P along my facing, `Quat_AxisX`, to X) is more than 1,
-    the speed is 0.75 × s for 1 update; return 1, no detour.
+18. **Corner check** (cases 1-3): when s minus `Move_CornerSpeedLimit(s, brain, A, P, X)` is more than 1, the speed
+    is 0.75 × s for 1 update; return 1, no detour. Here s is my human's speed `+0x1ac` and A my rotation's x axis
+    (`Quat_AxisX`, the side axis: forward is local y). `Move_CornerSpeedLimit` (`0x002fcd90`), confirmed (code):
+    1. **R** = `Math_CircleRadius2D(P, X, A)` (`0x003375d0`): the radius of the circle through P and X whose centre
+       lies from P along A, so the circle tangent to my facing at P. With *d* = X − P in plan, R = |d| / (2 |d̂ · A|).
+       It is 0 when X = P or when d̂ · A = 0, which is X dead ahead or behind.
+    2. For a gait *g*, the speed that turn allows is v(g) = 2R · tan(ω(g) / 2) / (1/30). Here ω(g) is the turn per
+       update (`Human_GetTurnRateForGait`, `0x002212d0`): 0.0436 rad (2.5°) at gait 5, 0.0698 (4°) at 4, 0.1047
+       (6°) at 3 and 0.2094 (12°) below, times the AI's turn boost (brain `+0x0b`: b + 1, or 1 / (1 − b) when
+       negative). 1/30 is `0x005102cc`. So it is the speed whose per-update chord, turning at that rate, stays on the
+       circle.
+    3. g₀ = `Human_GaitForSpeed(s)` (`0x0022aeb0`: 0 below 0.5 m/s, else the gait whose speed is nearest), and
+       v = v(g₀), **not** capped by g₀'s speed. When v ≥ s: return s.
+    4. Otherwise step down. Keep *best* = v, go to g − 1, stop below gait 1, and compute v' = min(the gait's speed
+       `Human_SpeedForGait`, v(g)). Go on while v' ≥ *best*, taking v' as the new best; stop at the first gait that
+       allows less.
+    5. Return min(s, best). It never returns 0 as "none fit": the result is the best of the tried gaits, and 0 only
+       when R = 0 (or s ≤ 0).
+
+    So the check fires when the detour bends harder than my speed allows by more than 1 m/s.
 19. Otherwise `Steering_TryDetour` (`0x00289010`): when the human can walk straight to the point
-    (`Human_CanWalkStraightTo`) and `Ground_ProbeBelow` does not return 1, avoiding := the blocker, score := t and
+    (`Human_CanWalkStraightTo`) and `Ground_ProbeBelow` does not return 1. `Ground_ProbeBelow` (`0x00249050`) casts a
+    ray from 0.1 m above the point straight down for 2 m, with mask 0, and returns 1 only when it hits a triangle
+    with flag bit 4 (`0x10`, the result's `+0x2c`), the bit the ground snap passes on as "under cover"
+    ([Collision: triangles](collision.md#triangles)). A point with no ground within 2.1 m, or on any other surface
+    first, passes. So it rules out detour points on those 1,052 marked triangles, not drops; what bit 4 marks is
+    inferred. When both tests pass, avoiding := the blocker, score := t and
     held point := the point; then aim := X. Return 1 either way. **Note:** in cases 1-3 the point checked and held is
     the **aim the move passed in**, not X (`a2` is the aim at `0x00289cfc`), so X steers only the deciding update and
     the human then heads for the held aim until the next decision; case 0 checks and holds its own point. Inferred to
