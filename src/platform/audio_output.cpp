@@ -20,6 +20,9 @@ namespace {
 constexpr std::string_view kMasterName = "Master";
 // The game time of one fixed step, ms.
 constexpr float kStepMilliseconds = 1000.0F / 30.0F;
+// Frames between tries to open a device again after a failed try: a second at 30 frames a second. Counted in frames,
+// not read from a clock, and rare, since opening a device can take a while.
+constexpr std::uint32_t kReopenRetryFrames = 30;
 
 } // namespace
 
@@ -45,6 +48,14 @@ std::expected<std::unique_ptr<AudioOutput>, Error> AudioOutput::start(AudioSink 
 }
 
 void AudioOutput::endFrame(std::uint32_t steps) {
+    // A device SDL gave up: open the default again (now, or when the wait after a failed try is over).
+    if (m_device && m_device->lost() && (m_reopenWait == 0 || --m_reopenWait == 0)) {
+        if (m_device->reopen()) {
+            ++m_reopens;
+        } else {
+            m_reopenWait = kReopenRetryFrames;
+        }
+    }
     m_game.update();
     m_sounds.update(static_cast<float>(steps) * kStepMilliseconds);
     if (m_offline) {

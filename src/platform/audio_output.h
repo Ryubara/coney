@@ -58,8 +58,14 @@ class AudioOutput final : public debug::AudioControls {
     [[nodiscard]] std::expected<void, Error> startEngine(const io::Wad& wad);
     /// Call once at the end of every frame, on the game thread, with the fixed steps the frame ran: runs the sound
     /// engine for their game time; offline, mixes one fixed step's frames (each frame of test mode is one step);
-    /// either way lets go of the sounds of voices that ended. The game's sound (game()) runs first.
+    /// either way lets go of the sounds of voices that ended. The game's sound (game()) runs first. When SDL gave the
+    /// device up, it opens the system's default device again, trying once a second (30 frames) until one opens; the
+    /// mixer and its voices carry on, so the sound resumes where it was.
     void endFrame(std::uint32_t steps);
+    /// SDL's id of the playback device (0 offline, or while the device is lost). For tests and logs.
+    [[nodiscard]] std::uint32_t deviceId() const { return m_device ? m_device->deviceId() : 0; }
+    /// How many times the device was lost and opened again.
+    [[nodiscard]] std::uint32_t deviceReopens() const { return m_reopens; }
     /// One line on where the sound goes, for the log at start-up.
     [[nodiscard]] std::string startLine() const;
     /// One line on what was mixed (offline: frames, peak and hash), for the log at the end. Counts only.
@@ -83,6 +89,8 @@ class AudioOutput final : public debug::AudioControls {
     audio::GameSound m_game;
     std::optional<audio::OfflineDevice> m_offline;
     std::unique_ptr<SdlAudioDevice> m_device;
+    std::uint32_t m_reopens = 0;    // devices opened again after a loss
+    std::uint32_t m_reopenWait = 0; // frames until the next try after a failed reopen
     std::shared_ptr<const audio::PcmSound> m_tone;
     audio::VoiceHandle m_toneVoice;
 };

@@ -240,7 +240,9 @@ build/dev/src/platform/coney --disc /path/to/warriors.iso --view-character --fps
 ### Sound {#sound}
 
 Coney plays through the system's default playback device at 48 kHz stereo and prints the device's name at start-up;
-when no device opens, it says why and runs silent. `--no-audio` opens no device. In test mode no device opens either:
+when no device opens, it says why and runs silent. When the default output changes, or a headset is plugged in or
+out, the sound moves to the new default device and carries on; if SDL gives the device up altogether, Coney opens the
+default device again, trying once a second until one opens. `--no-audio` opens no device. In test mode no device opens either:
 the sound is mixed offline, 1,600 frames (1/30 s) per frame, so a run mixes the same samples every time.
 `--audio-test` plays a synthesised tone sweep (220 to 880 Hz and back, looping) and prints at the end what was mixed;
 offline that is the frame count, the peak and a hash. The debug menus' Audio page sets the volumes and plays the same
@@ -722,10 +724,18 @@ original; the menus, [the world viewer](#the-world-viewer), [the character viewe
 | L3 and R3 together (the debug menu) | both stick presses | F4, or F and H together |
 | none (the developer overlay) | none | F1 |
 
-The first gamepad connected plays on port 1, the second on port 2; the keyboard always plays on port 1, alongside
-the first gamepad. Escape quits, unless the developer overlay has the keyboard (a text box in it is being typed
-in); while it has the keyboard, the keyboard does not play on port 1. A headless run reads no devices. L3 and R3
-pressed together open and close [the debug menu](debug-menu.md); the game never sees that chord. F1 shows and hides
+Gamepads can be connected and pulled out at any time. A gamepad that connects takes the first free port, port 1
+first, and the log says so (`gamepad: NAME on port 1`); one pulled out frees its port and the other port keeps its
+gamepad; a third waits for a free port. The keyboard always plays on port 1, alongside port 1's gamepad, and keeps
+playing when it goes. Coney does not pause or show the original's controller-removed screen. On Windows, SDL's
+DirectInput support is off: its device scan, which SDL repeats whenever any USB or Bluetooth device comes or goes,
+can freeze the window for seconds. Xbox (XInput) gamepads and those SDL drives directly (PlayStation, Switch and
+more) do not need it; for an older DirectInput-only gamepad, set the environment variable
+`SDL_JOYSTICK_DIRECTINPUT=1` before starting Coney.
+
+Escape quits, unless the developer overlay has the keyboard (a text box in it is being typed in); while it has the
+keyboard, the keyboard does not play on port 1. A headless run reads no devices. L3 and R3 pressed together open and
+close [the debug menu](debug-menu.md); the game never sees that chord. F1 shows and hides
 [the developer overlay](debug-menu.md#the-developer-overlay).
 
 A gamepad's sticks are squared off like a DualShock 2's: a modern stick reports a circle, about 0.71 on each axis at a

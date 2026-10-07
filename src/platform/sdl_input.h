@@ -2,10 +2,15 @@
 #pragma once
 
 #include <array>
+#include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 #include "core/error.h"
@@ -37,9 +42,10 @@ inline constexpr std::uint8_t kTriggerHeldPressure = 64;
 
 /// Pad input from SDL3: gamepads through SDL's gamepad API, laid out as a PS2 pad, and the keyboard on port 1.
 ///
-/// The first gamepad found plays on port 1, the second on port 2, in the order they were connected; a gamepad
-/// pulled out frees its port for the next. Port 1 is always connected, since the keyboard plays on it too; port 2
-/// only while it has a gamepad. The mapping (docs/guides/building.md#controls) is Coney's own: SDL names its face
+/// Gamepads can come and go at any time. Each port holds at most one: a gamepad that connects takes the first free
+/// port (port 1 first); one pulled out frees its port while the other port's gamepad stays where it is; a waiting
+/// third gamepad fills a freed port. Port 1 is always connected, since the keyboard plays on it too; port 2 only while
+/// it has a gamepad. The mapping (docs/guides/building.md#controls) is Coney's own: SDL names its face
 /// buttons by position, so south is cross, east circle, west square and north triangle on any gamepad.
 ///
 /// It reads device state, so it needs the window's event pump (Window::pumpEvents) to have run before each sample();
@@ -69,15 +75,31 @@ class SdlInput final : public InputSource {
     /// sample(). The SDL event watch calls it; safe from any thread.
     void notePress(std::uint32_t gamepad, std::uint16_t bit);
 
+    /// Notes that a gamepad was connected, removed or remapped, so the next sample() looks at SDL's list again. The
+    /// SDL event watch calls it; safe from any thread.
+    void noteDevicesChanged() { m_devicesChanged.store(true, std::memory_order_release); }
+
+    /// The SDL id of the gamepad on each port, port 1 first (0: none), as of the last sample(). For tests and logs.
+    [[nodiscard]] std::array<std::uint32_t, kPadPorts> portGamepads() const;
+
     /// Whether the keyboard plays on port 1 (it does by default). The developer overlay turns it off while it has the
     /// keyboard, so typing into it does not also move the player.
     void setKeyboardEnabled(bool enabled) { m_keyboardEnabled = enabled; }
 
+    /// Where to report gamepads taking and leaving ports, one line each (nothing by default).
+    void setLog(std::function<void(std::string_view)> log) { m_log = std::move(log); }
+
   private:
     SdlInput() = default;
 
-    // Opens gamepads that appeared and closes those that went away, keeping the others in their order.
+    // Closes the gamepads that went away and gives free ports to gamepads that are present but have none. Runs only
+    // after SDL reported a change (and once at the start): asking SDL for its list and opening devices on every step
+    // would retry a gamepad that fails to open on every frame, and an open can block for a while.
     void refreshGamepads();
+    // Closes the gamepad on `port`, if any, leaving the port free.
+    void closePort(std::size_t port);
+    // Logs `gamepad` (an SDL_Gamepad*) going `what` ("on", "left") `port`.
+    void logPort(std::string_view what, void* gamepad, std::size_t port) const;
 
     // A button press seen by the event watch and not sampled yet: the keyboard (gamepad 0) or an SDL gamepad id.
     struct Press {
@@ -88,13 +110,18 @@ class SdlInput final : public InputSource {
     std::vector<Press> m_presses; // guarded by m_pressMutex
     bool m_watching = false;      // the event watch is installed
 
-    // One open gamepad: SDL's id and its SDL_Gamepad*, kept opaque here.
+    // One port's gamepad: SDL's id (0: none) and its SDL_Gamepad*, kept opaque here.
     struct OpenGamepad {
-        std::uint32_t id;
-        void* handle;
+        std::uint32_t id = 0;
+        void* handle = nullptr;
     };
-    std::vector<OpenGamepad> m_gamepads; // in connection order: the first is port 1's
+    std::array<OpenGamepad, kPadPorts> m_ports{};
+    std::atomic<bool> m_devicesChanged{true}; // set by the event watch; true so the first sample looks for gamepads
+    // Samples left before another try at a gamepad that failed to open (0: none due): about a second of steps.
+    static constexpr std::uint32_t kOpenRetrySamples = 30;
+    std::uint32_t m_openRetry = 0;
     bool m_keyboardEnabled = true;
+    std::function<void(std::string_view)> m_log;
 };
 
 } // namespace coney::platform

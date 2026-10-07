@@ -85,6 +85,7 @@ add_executable(coney_tests
     platform/imgui_model_view_test.cpp
     platform/profile_folder_test.cpp
     platform/scene_stage_test.cpp
+    platform/sdl_devices_test.cpp
     platform/sdl_input_test.cpp
     platform/sprite_sheets_test.cpp
     platform/texture_dictionary_test.cpp

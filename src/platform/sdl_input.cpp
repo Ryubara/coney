@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <mutex>
 #include <span>
 #include <string>
@@ -139,10 +140,15 @@ void addKeyboard(PadSample& sample) {
 }
 
 // The SDL event watch: records each gamepad button and key press as it arrives, for the next sample, so a tap that is
-// over before the sample is still seen (SdlInput::notePress). Key repeats are not presses. Always keeps the event.
+// over before the sample is still seen (SdlInput::notePress), and notes gamepads connecting, going away or being
+// remapped (SdlInput::noteDevicesChanged). Key repeats are not presses. Always keeps the event. SDL may call it on
+// any thread, with its own locks held, so it only records: it never calls back into SDL.
 bool SDLCALL watchPresses(void* userdata, SDL_Event* event) {
     auto* input = static_cast<SdlInput*>(userdata);
-    if (event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
+    if (event->type == SDL_EVENT_GAMEPAD_ADDED || event->type == SDL_EVENT_GAMEPAD_REMOVED ||
+        event->type == SDL_EVENT_GAMEPAD_REMAPPED) {
+        input->noteDevicesChanged();
+    } else if (event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
         for (const auto& binding : kGamepadButtons) {
             if (static_cast<int>(binding.source) == static_cast<int>(event->gbutton.button)) {
                 input->notePress(event->gbutton.which, binding.bit);
@@ -183,6 +189,13 @@ std::uint8_t pressureFromTrigger(std::int16_t axis) {
 }
 
 std::expected<std::unique_ptr<SdlInput>, Error> SdlInput::start() {
+    // No DirectInput scan on Windows, unless the player asks for it (the SDL_JOYSTICK_DIRECTINPUT=1 environment
+    // variable, which wins over this). SDL repeats that scan on the thread that pumps events whenever any HID device
+    // comes or goes (a gamepad switched on, a wireless headset connecting), and DirectInput's enumeration can take
+    // seconds: 6 to 10 s measured on a machine with a wireless headset, 0.2 s without it. The window stopped
+    // responding meanwhile. XInput (Xbox) gamepads and those SDL drives over HIDAPI (PlayStation, Switch and more) do
+    // not need it; only older DirectInput-only gamepads do (docs/guides/building.md#controls).
+    SDL_SetHint(SDL_HINT_JOYSTICK_DIRECTINPUT, "0");
     if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD)) {
         return fail(ErrorCode::PlatformFailure,
                     std::string("could not start gamepad input: SDL_InitSubSystem(SDL_INIT_GAMEPAD) failed: ") +
@@ -198,10 +211,21 @@ SdlInput::~SdlInput() {
     if (m_watching) {
         SDL_RemoveEventWatch(watchPresses, this);
     }
-    for (const OpenGamepad& gamepad : m_gamepads) {
-        SDL_CloseGamepad(static_cast<SDL_Gamepad*>(gamepad.handle));
+    for (std::size_t port = 0; port < kPadPorts; ++port) {
+        closePort(port);
     }
     SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
+}
+
+void SdlInput::closePort(std::size_t port) {
+    OpenGamepad& gamepad = m_ports.at(port);
+    if (gamepad.handle != nullptr) {
+        // SDL keeps a removed gamepad's handle valid until it is closed, so this is safe after the device went away.
+        auto* handle = static_cast<SDL_Gamepad*>(gamepad.handle);
+        logPort("left", handle, port);
+        SDL_CloseGamepad(handle);
+    }
+    gamepad = OpenGamepad{};
 }
 
 void SdlInput::refreshGamepads() {
@@ -209,31 +233,67 @@ void SdlInput::refreshGamepads() {
     SDL_JoystickID* ids = SDL_GetGamepads(&count);
     const std::span<const SDL_JoystickID> present(ids, ids != nullptr ? static_cast<std::size_t>(count) : 0);
 
-    // Close the gamepads that went away; the others keep their order, and so their ports.
-    std::erase_if(m_gamepads, [present](const OpenGamepad& gamepad) {
-        if (std::ranges::find(present, gamepad.id) != present.end()) {
-            return false;
+    // A gamepad SDL no longer lists, or no longer has attached, gives up its port; the other port keeps its gamepad.
+    for (std::size_t port = 0; port < kPadPorts; ++port) {
+        const OpenGamepad& gamepad = m_ports.at(port);
+        if (gamepad.handle != nullptr && (std::ranges::find(present, gamepad.id) == present.end() ||
+                                          !SDL_GamepadConnected(static_cast<SDL_Gamepad*>(gamepad.handle)))) {
+            closePort(port);
         }
-        SDL_CloseGamepad(static_cast<SDL_Gamepad*>(gamepad.handle));
-        return true;
-    });
-    // Open the new ones, after the others.
+    }
+    // Gamepads without a port take the free ones, port 1 first, in SDL's order (the order they connected).
+    m_openRetry = 0;
     for (const SDL_JoystickID id : present) {
-        if (std::ranges::find(m_gamepads, id, &OpenGamepad::id) != m_gamepads.end()) {
+        if (std::ranges::find(m_ports, id, &OpenGamepad::id) != m_ports.end()) {
             continue;
         }
+        const auto free = std::ranges::find(m_ports, 0U, &OpenGamepad::id);
+        if (free == m_ports.end()) {
+            break;
+        }
         if (SDL_Gamepad* opened = SDL_OpenGamepad(id); opened != nullptr) {
-            m_gamepads.push_back(OpenGamepad{id, opened});
+            *free = OpenGamepad{.id = id, .handle = opened};
+            logPort("on", opened, static_cast<std::size_t>(free - m_ports.begin()));
+        } else {
+            // It may still be starting up: look again a second of samples from now, not on every one.
+            m_openRetry = kOpenRetrySamples;
         }
     }
     SDL_free(ids);
 }
 
+void SdlInput::logPort(std::string_view what, void* gamepad, std::size_t port) const {
+    if (m_log) {
+        const char* name = SDL_GetGamepadName(static_cast<SDL_Gamepad*>(gamepad));
+        m_log(std::format("gamepad: {} {} port {}\n", name != nullptr ? name : "unnamed", what, port + 1));
+    }
+}
+
+std::array<std::uint32_t, kPadPorts> SdlInput::portGamepads() const {
+    std::array<std::uint32_t, kPadPorts> ids{};
+    std::ranges::transform(m_ports, ids.begin(), &OpenGamepad::id);
+    return ids;
+}
+
 PortSamples SdlInput::sample(std::uint64_t /*frame*/) {
-    refreshGamepads();
+    // SDL's list only after it reported a change, or when a gamepad that failed to open is due another try.
+    const bool retry = m_openRetry > 0 && --m_openRetry == 0;
+    if (m_devicesChanged.exchange(false, std::memory_order_acq_rel) || retry) {
+        refreshGamepads();
+    }
     PortSamples samples{};
-    for (std::size_t port = 0; port < kPadPorts && port < m_gamepads.size(); ++port) {
-        samples.at(port) = readGamepad(static_cast<SDL_Gamepad*>(m_gamepads[port].handle));
+    for (std::size_t port = 0; port < kPadPorts; ++port) {
+        auto* gamepad = static_cast<SDL_Gamepad*>(m_ports.at(port).handle);
+        if (gamepad == nullptr) {
+            continue;
+        }
+        // Gone since the last look (its removal event is still on the way): free the port now, read nothing.
+        if (!SDL_GamepadConnected(gamepad)) {
+            closePort(port);
+            noteDevicesChanged();
+            continue;
+        }
+        samples.at(port) = readGamepad(gamepad);
     }
     // Port 1 always has the keyboard.
     samples[0].connected = true;
@@ -254,8 +314,8 @@ PortSamples SdlInput::sample(std::uint64_t /*frame*/) {
             continue;
         }
         if (press.gamepad != 0) {
-            const auto found = std::ranges::find(m_gamepads, press.gamepad, &OpenGamepad::id);
-            port = found == m_gamepads.end() ? kPadPorts : static_cast<std::size_t>(found - m_gamepads.begin());
+            const auto found = std::ranges::find(m_ports, press.gamepad, &OpenGamepad::id);
+            port = found == m_ports.end() ? kPadPorts : static_cast<std::size_t>(found - m_ports.begin());
         }
 
         if (port < kPadPorts) {

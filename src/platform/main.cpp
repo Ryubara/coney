@@ -799,6 +799,7 @@ int main(int argc, char** argv) {
         auto started = coney::platform::SdlInput::start();
         if (started) {
             devices = started->get();
+            devices->setLog(printText);
             input = std::move(*started);
         } else {
             std::fprintf(stderr, "coney: %s; running without pads\n", started.error().message.c_str());

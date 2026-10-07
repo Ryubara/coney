@@ -1046,9 +1046,11 @@ Coney's choices for the pads, where the original does something else or the page
   down). Digital inputs (keys, SDL buttons, scripts) report full pressure (255), so ties are the rule on PC: with the
   arrow keys, up and right gives right, down and left gives left.
 - SDL's triggers are axes: their travel becomes the L2 and R2 pressure bytes, and the button counts as held from a
-  quarter of the travel. SDL's face buttons are positional (south is cross on any gamepad). The first gamepad plays
-  on port 1, the second on port 2; the keyboard always plays on port 1, which is therefore always connected in a
-  windowed run. A headless run without a script has no input source: every record stays disconnected.
+  quarter of the travel. SDL's face buttons are positional (south is cross on any gamepad). A gamepad takes the
+  first free port when it connects and frees it when pulled out, the other port keeping its own; the keyboard always
+  plays on port 1, which is therefore always connected in a windowed run. The original's controller-removed screen
+  (mode 0xf, [Boot](boot.md)) is not shown ([Controls](../guides/building.md#controls)). A headless run without a
+  script has no input source: every record stays disconnected.
 - The Lua pad handlers (`src/core/pad_handlers.h`; `PadSetHandler` maps player 0 to port 1's record, any other to
   port 2's) are called during play only (`src/gamemodes/player_frame.h`), not on the front end.
 - Left out for now: the camera-turned left stick (`+0x00`, in game only), vibration, the owning player (`+0x42`) and
