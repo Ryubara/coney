@@ -205,7 +205,7 @@ both are the same.
 - **Evidence:** confirmed (code) at `0x00113ce8`; detail: traced
 - **Wrapper** `0x003729c0` (registered by `RegisterBindings`); **calls** `0x00113ce8`
 - **Used by** 3 of 467 script chunks (2225 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## EnableAmbientEmitter {#enableambientemitter}
 
@@ -263,7 +263,7 @@ count alternatives with up to three columns each.
 - **Evidence:** confirmed (code) at `0x00113d50`; detail: traced
 - **Wrapper** `0x00372ad8` (registered by `RegisterBindings`); **calls** `0x00113d50`
 - **Used by** 3 of 467 script chunks (260 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## NewAnimSound {#newanimsound}
 
@@ -288,7 +288,7 @@ Sets the sounds of one alternative of an animation sound event made with NewAnim
 - **Evidence:** confirmed (code) at `0x00113d88`; detail: traced
 - **Wrapper** `0x00372c78` (registered by `RegisterBindings`); **calls** `0x00113d88`
 - **Used by** 3 of 467 script chunks (507 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## NewMaterialSlots {#newmaterialslots}
 
@@ -321,7 +321,7 @@ LUA pool.
 - **Evidence:** confirmed (code) at `0x00113c58`; detail: traced
 - **Wrapper** `0x00372700` (registered by `RegisterBindings`); **calls** `0x00113c58`
 - **Used by** 3 of 467 script chunks (2227 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## NewMaterialSound {#newmaterialsound}
 
@@ -348,7 +348,7 @@ with the audio manager (0x00110db0).
 - **Evidence:** confirmed (code) at `0x00113c98`; detail: traced
 - **Wrapper** `0x003728c8` (registered by `RegisterBindings`); **calls** `0x00113c98`
 - **Used by** 3 of 467 script chunks (3296 references); boot to menu: yes; mission 1: no; result used: no
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## PlayAmbientEmitter {#playambientemitter}
 
@@ -494,7 +494,7 @@ Changes how many alternatives a material pair picks from, and restarts its choic
 - **Wrapper** `0x00372a38` (registered by `RegisterBindings`); **calls** `0x00113d18`
 - **Used by** 6 of 467 script chunks (18 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level81`](story.md#level81) (mission 8)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetupRadio {#setupradio}
 

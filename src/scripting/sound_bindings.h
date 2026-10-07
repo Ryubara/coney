@@ -79,6 +79,27 @@ class SoundHost {
     /// `SndSetPitchMod(pitch)`: the global pitch factor.
     virtual void setPitchFactor(float factor) = 0;
 
+    // ---- The sound matrix (docs/research/sound.md#sound-matrix); a host without one ignores them ----
+
+    /// `SndLoadMatrix(name)`: whether the name is new (the matrix emptied, `<name>_preload.lua` to run).
+    virtual bool loadSoundMatrix(std::string_view /*name*/) { return true; }
+    /// `NewMaterialSlots(m1, m2, count, columns, v1, v2, v3)`.
+    virtual void newMaterialSlots(std::uint32_t /*m1*/, std::uint32_t /*m2*/, std::uint32_t /*count*/,
+                                  std::uint32_t /*columns*/, const std::array<float, 3>& /*volumes*/) {}
+    /// `NewMaterialSound(i, m1, m2, s1, s2, s3)`: each sound's hash, 0 for `none`, nullopt to leave the column.
+    virtual void newMaterialSound(std::uint32_t /*index*/, std::uint32_t /*m1*/, std::uint32_t /*m2*/,
+                                  const std::array<std::optional<std::uint32_t>, 3>& /*sounds*/) {}
+    /// `SetNumberOfMaterialSlots(m1, m2, count)`.
+    virtual void setMaterialSlotCount(std::uint32_t /*m1*/, std::uint32_t /*m2*/, std::uint32_t /*count*/) {}
+    /// `DuplicateSoundMaterials(a, b)`.
+    virtual void duplicateSoundMaterials(std::uint32_t /*a*/, std::uint32_t /*b*/) {}
+    /// `NewAnimSlots(event, count, columns, v1, v2, v3)`.
+    virtual void newAnimSlots(std::uint32_t /*event*/, std::uint32_t /*count*/, std::uint32_t /*columns*/,
+                              const std::array<float, 3>& /*volumes*/) {}
+    /// `NewAnimSound(i, event, s1, s2, s3)`, as newMaterialSound().
+    virtual void newAnimSound(std::uint32_t /*index*/, std::uint32_t /*event*/,
+                              const std::array<std::optional<std::uint32_t>, 3>& /*sounds*/) {}
+
     // ---- Ambience ----
 
     /// `AddAmbientSound(index, sound)`: an entry of the ambient table.
@@ -147,7 +168,7 @@ class SoundHost {
 
 /// The sound bindings: the configuration the preloads make, the ambience, the music, the listener, the speech lines by
 /// name and the speech commands. All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 25> kSoundBindings{"AddAmbientSound",
+inline constexpr std::array<std::string_view, 31> kSoundBindings{"AddAmbientSound",
                                                                  "AddAmbientSoundEmitter2",
                                                                  "HuSay",
                                                                  "HuShutUp",
@@ -171,7 +192,13 @@ inline constexpr std::array<std::string_view, 25> kSoundBindings{"AddAmbientSoun
                                                                  "SoundStopAmbientTrack",
                                                                  "SoundStopMusicTrack",
                                                                  "SndSetNIDuck",
-                                                                 "SndSetPitchMod"};
+                                                                 "SndSetPitchMod",
+                                                                 "NewMaterialSlots",
+                                                                 "NewMaterialSound",
+                                                                 "DuplicateSoundMaterials",
+                                                                 "SetNumberOfMaterialSlots",
+                                                                 "NewAnimSlots",
+                                                                 "NewAnimSound"};
 
 /// The voice set a human of character type `type` speaks with: its `CfgChar` record's voice (argument 12, the type's
 /// `+0x118`) among `recorded`'s calls; -1 when the type has none.

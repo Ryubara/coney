@@ -358,6 +358,7 @@ add_library(
     audio/adpcm.cpp
     audio/ambient_emitters.cpp
     audio/game_sound.cpp
+    audio/material_sounds.cpp
     audio/mixer.cpp
     audio/music_player.cpp
     audio/object_sounds.cpp
@@ -367,6 +368,7 @@ add_library(
     audio/sound_bank.cpp
     audio/sound_data.cpp
     audio/sound_engine.cpp
+    audio/sound_matrix.cpp
     audio/sound_player.cpp
     audio/sound_stream.cpp
     audio/speech.cpp

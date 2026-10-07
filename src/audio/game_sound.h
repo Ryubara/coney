@@ -11,6 +11,8 @@
 #include <utility>
 
 #include "audio/ambient_emitters.h"
+#include "audio/material_sounds.h"
+#include "audio/sound_matrix.h"
 #include "audio/sound_player.h"
 #include "audio/speech.h"
 #include "audio/voice_table.h"
@@ -61,6 +63,11 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     [[nodiscard]] const VoiceTable& voices() const { return m_voices; }
     /// The humans' lines.
     [[nodiscard]] const Speech& speech() const { return m_speech; }
+    /// The sound matrix the preloads fill.
+    [[nodiscard]] SoundMatrix& matrix() { return m_matrix; }
+    [[nodiscard]] const SoundMatrix& matrix() const { return m_matrix; }
+    /// The matrix's players (contacts, objects, footsteps, animation sounds), into the engine.
+    [[nodiscard]] MaterialSoundPlayer& materialSounds() { return m_materialSounds; }
     /// What `SndSetListener` chose (0 the camera, 1 player 1).
     [[nodiscard]] int listenerMode() const { return m_listenerMode; }
     /// The listener the last update used.
@@ -74,6 +81,17 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void loadSoundBank(std::string_view name) override;
     void setNonDuckableDuck(float factor) override;
     void setPitchFactor(float factor) override;
+    bool loadSoundMatrix(std::string_view name) override;
+    void newMaterialSlots(std::uint32_t m1, std::uint32_t m2, std::uint32_t count, std::uint32_t columns,
+                          const std::array<float, 3>& volumes) override;
+    void newMaterialSound(std::uint32_t index, std::uint32_t m1, std::uint32_t m2,
+                          const std::array<std::optional<std::uint32_t>, 3>& sounds) override;
+    void setMaterialSlotCount(std::uint32_t m1, std::uint32_t m2, std::uint32_t count) override;
+    void duplicateSoundMaterials(std::uint32_t a, std::uint32_t b) override;
+    void newAnimSlots(std::uint32_t event, std::uint32_t count, std::uint32_t columns,
+                      const std::array<float, 3>& volumes) override;
+    void newAnimSound(std::uint32_t index, std::uint32_t event,
+                      const std::array<std::optional<std::uint32_t>, 3>& sounds) override;
     void addAmbientSound(int index, std::uint32_t sound) override;
     double addAmbientEmitter(const script::AmbientEmitterCall& call) override;
     void setAmbientEmitterPositions(std::string_view name, std::span<const std::array<float, 3>> positions) override;
@@ -110,6 +128,16 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void playCue(int cue) override;
 
   private:
+    // The engine as the matrix's players' sink: nothing plays until the SoundPlayer has an engine.
+    class EngineSink final : public SoundSink {
+      public:
+        explicit EngineSink(SoundPlayer& sounds) : m_sounds(sounds) {}
+        SoundHandle play(std::uint32_t hash, const SoundPlay& how) override;
+
+      private:
+        SoundPlayer& m_sounds;
+    };
+
     // Where the human with `handle` is, from the AI host's live humans, else where the scripts made him.
     [[nodiscard]] std::optional<SpeakerPlace> locate(double handle) const;
     // The handle of player 1's human, when the scripts made one.
@@ -125,6 +153,9 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     std::function<void(std::string_view)> m_log;
     script::ScriptSystem* m_scripts = nullptr;
     const script::BindingContext* m_context = nullptr;
+    EngineSink m_engineSink;
+    SoundMatrix m_matrix;
+    MaterialSoundPlayer m_materialSounds;
     AmbientEmitters m_emitters;
     VoiceTable m_voices;
     Speech m_speech;

@@ -251,16 +251,18 @@ void addHubWorldBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext&
         }
         return binding::none();
     });
-    // `SndLoadMatrix(name)`: a new name runs `<name>_preload.lua`. **Coney's**: the previous set's release has nothing
-    // to free (Coney keeps no matrix of its own).
+    // `SndLoadMatrix(name)`: a new name empties the game's sound matrix and runs `<name>_preload.lua`. The matrix is
+    // the sound's (it starts named `sound`, so the scripts' own `SndLoadMatrix("sound")` changes nothing); without
+    // sound the name is kept here.
     // @orig 0x00113490 Audio_LoadMatrix (unknown)
-    // @orig 0x00114628 AudioManager_LoadMatrix (unknown)
-    add(vm, "SndLoadMatrix", [&scripts, &state](A args) {
+    add(vm, "SndLoadMatrix", [&scripts, &state, context = &context](A args) {
         const std::string name = binding::string(args, 0);
-        if (name == state.hub.soundMatrix) {
+        const bool changed =
+            context->sound != nullptr ? context->sound->loadSoundMatrix(name) : name != state.hub.soundMatrix;
+        state.hub.soundMatrix = name;
+        if (!changed) {
             return binding::none();
         }
-        state.hub.soundMatrix = name;
         static_cast<void>(scripts.runFile(std::vformat(kMatrixPreload, std::make_format_args(name))));
         return binding::none();
     });

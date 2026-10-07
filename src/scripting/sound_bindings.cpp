@@ -106,6 +106,35 @@ bool commandsSilenced(const BindingContext& context, double human) {
     return status.has_value() && !status->soundCommands;
 }
 
+// Argument `i` as a float, `fallback` when it is absent or nil (the matrix volumes default to 1).
+float floatArgOr(std::span<const Value> args, std::size_t i, float fallback) {
+    return i < args.size() && !args[i].isNil() ? floatArg(args, i) : fallback;
+}
+
+// The three column volumes from argument `first` on.
+std::array<float, 3> volumesArg(std::span<const Value> args, std::size_t first) {
+    return {floatArgOr(args, first, 1.0F), floatArgOr(args, first + 1, 1.0F), floatArgOr(args, first + 2, 1.0F)};
+}
+
+// The three sound columns from argument `first` on: a name's hash, 0 for `none`, nothing for nil (the column stays).
+std::array<std::optional<std::uint32_t>, 3> matrixSoundsArg(std::span<const Value> args, std::size_t first) {
+    std::array<std::optional<std::uint32_t>, 3> sounds{};
+    for (std::size_t c = 0; c < sounds.size(); ++c) {
+        const std::size_t i = first + c;
+        if (i >= args.size() || args[i].type() != Value::Type::String) {
+            continue;
+        }
+        const std::string name = binding::string(args, i);
+        sounds.at(c) = name == "none" ? 0U : crc32(name);
+    }
+    return sounds;
+}
+
+// Argument `i` as an unsigned integer, `fallback` when it is absent or nil.
+std::uint32_t unsignedArgOr(std::span<const Value> args, std::size_t i, std::uint32_t fallback) {
+    return i < args.size() && !args[i].isNil() ? unsignedArg(args, i) : fallback;
+}
+
 // A binding that hands its arguments to the sound host when there is one and returns nothing. The host is read at each
 // call: main gives it once the audio has started.
 template <typename Body> NativeFunction soundCall(const BindingContext& context, Body body) {
@@ -302,6 +331,37 @@ void addSoundBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext& co
     // @orig 0x00113370 Sound_SetPitchMod (unknown)
     vm.registerFunction("SndSetPitchMod", soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
                             sound.setPitchFactor(floatArg(args, 0));
+                        }));
+
+    // The sound matrix the preloads fill (docs/research/sound.md#sound-matrix).
+    // @orig 0x00113c58 Snd_NewMaterialSlots (unknown)
+    vm.registerFunction("NewMaterialSlots", soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
+                            sound.newMaterialSlots(unsignedArg(args, 0), unsignedArg(args, 1), unsignedArg(args, 2),
+                                                   unsignedArgOr(args, 3, 1U), volumesArg(args, 4));
+                        }));
+    // @orig 0x00113c98 Snd_NewMaterialSound (unknown)
+    vm.registerFunction("NewMaterialSound", soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
+                            sound.newMaterialSound(unsignedArg(args, 0), unsignedArg(args, 1), unsignedArg(args, 2),
+                                                   matrixSoundsArg(args, 3));
+                        }));
+    // @orig 0x00113ce8 Snd_DuplicateSoundMaterials (unknown)
+    vm.registerFunction("DuplicateSoundMaterials",
+                        soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
+                            sound.duplicateSoundMaterials(unsignedArg(args, 0), unsignedArg(args, 1));
+                        }));
+    // @orig 0x00113d18 Snd_SetNumberOfMaterialSlots (unknown)
+    vm.registerFunction(
+        "SetNumberOfMaterialSlots", soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
+            sound.setMaterialSlotCount(unsignedArg(args, 0), unsignedArg(args, 1), unsignedArg(args, 2));
+        }));
+    // @orig 0x00113d50 Snd_NewAnimSlots (unknown)
+    vm.registerFunction("NewAnimSlots", soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
+                            sound.newAnimSlots(unsignedArg(args, 0), unsignedArg(args, 1), unsignedArgOr(args, 2, 1U),
+                                               volumesArg(args, 3));
+                        }));
+    // @orig 0x00113d88 Snd_NewAnimSound (unknown)
+    vm.registerFunction("NewAnimSound", soundCall(context, [](SoundHost& sound, std::span<const Value> args) {
+                            sound.newAnimSound(unsignedArg(args, 0), unsignedArg(args, 1), matrixSoundsArg(args, 2));
                         }));
 
     // The ambience.

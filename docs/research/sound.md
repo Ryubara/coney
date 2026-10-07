@@ -1287,8 +1287,16 @@ workers) that belong to this page, by address.
   48 kHz; SDL3's device or, in test mode, offline ([Building](../guides/building.md#sound)).
 - `SoundPlayer`: what game code calls (play by name hash, 2D or at a position, stop, pause); `engine()` for banks,
   music, the load screen and scenes. Main gives it the engine when a disc is given.
-- `ObjectSounds` (`repo:src/audio/object_sounds.h`): the glass panes' and doors' name-hash sounds, played through
-  `SoundPlayer` ([World objects](objects.md#coneys-implementation)).
+- `ObjectSounds` (`repo:src/audio/object_sounds.h`): the glass panes', doors' and barriers' sounds: a name hash as a
+  positional sound at the object through `SoundPlayer`, a material pair from the sound matrix
+  ([World objects](objects.md#coneys-implementation)).
+- `SoundMatrix` (`repo:src/audio/sound_matrix.h`) and `MaterialSoundPlayer` (`repo:src/audio/material_sounds.h`): the
+  [sound matrix](#sound-matrix) as the preloads' `NewMaterialSlots`, `NewMaterialSound`, `SetNumberOfMaterialSlots`,
+  `DuplicateSoundMaterials`, `NewAnimSlots` and `NewAnimSound` fill it (kept by `GameSound`; `SndLoadMatrix` empties it
+  for a new name), its lookups (alternatives in turn, the default material's fallback) and its players (a pair's
+  columns 2 then 1, a hit's column 1, an animation sound's column 1, the footstep remap) into the engine. A level
+  played alone (`--play-level`) gives its preloads the sound before they run. **Coney's stand-in**: `CAR_HOOD`'s
+  varied pitch is not applied (`0x003354e0` is not on this page).
 - `GameSound` (`game_sound.cpp`): the game's sound as the rest of the game drives it. The sound bindings
   (`repo:src/scripting/sound_bindings.cpp`: the preloads' configuration, the ambience, the music, `SndSetListener`,
   `HuSpeak`, `HuSpeakNI`, `HuShutUp`, `SoundPlayCommand`) reach it through the binding context; the front end's
@@ -1330,8 +1338,8 @@ comes), the pick draws from the game's random index, and the fades are the music
 (`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`), the game's own speech commands, and the clips' animation
 sounds (clip event 11, [Animation sounds](#anim-sounds)). The hub's sound bindings
 (`repo:src/scripting/hub_world_bindings.cpp`): `EnableAmbientEmitter` switches an emitter off (it stops its sound and
-plays nothing more) and on; `SoundPlay` plays a sound once at a point; `SndLoadMatrix` runs `<name>_preload.lua` when
-the name changes and frees nothing (Coney keeps no matrix); `HuSay` speaks a line with no callback.
+plays nothing more) and on; `SoundPlay` plays a sound once at a point; `SndLoadMatrix` empties the sound matrix and
+runs `<name>_preload.lua` when the name changes; `HuSay` speaks a line with no callback.
 
 ## Open questions
 

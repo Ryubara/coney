@@ -22,7 +22,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 4 |
 | [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 4 |
 | [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 14 |
-| [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 5 |
+| [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 6 |
 | [`level86`](#level86) | mission 9 | 245 | 17 | 17 | 4 |
 | [`level93`](#level93) | mission 10 | 295 | 24 | 24 | 3 |
 | [`level31`](#level31) | mission 11 | 266 | 9 | 9 | 2 |
@@ -397,7 +397,7 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level81: mission 8 {#level81}
 
-236 bindings, 20 new: 20 traced, 5 implemented in Coney (213 of all 236).
+236 bindings, 20 new: 20 traced, 6 implemented in Coney (214 of all 236).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
@@ -419,7 +419,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`ObjStartTrain`](world.md#objstarttrain) | World and objects | traced | confirmed (code) | not implemented |
 | [`WidgetSetColour`](effects.md#widgetsetcolour) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`HUDSetRadarZoomScale`](hud.md#hudsetradarzoomscale) | HUD and menus | traced | confirmed (code) | not implemented |
-| [`SetNumberOfMaterialSlots`](sound.md#setnumberofmaterialslots) | Sound and music | traced | confirmed (code) | not implemented |
+| [`SetNumberOfMaterialSlots`](sound.md#setnumberofmaterialslots) | Sound and music | traced | confirmed (code) | implemented |
 | [`GameIsOver`](level.md#gameisover) | Levels and game state | traced | confirmed (code) | not implemented |
 
 ## level86: mission 9 {#level86}

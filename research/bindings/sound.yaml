@@ -692,6 +692,7 @@
     0x00115cb0 ([Sound: the sound matrix](../../research/sound.md#sound-matrix)); the table is a 2D array indexed by the two materials (row stride 0x2fc) in the audio manager's sound
     table at +0x1e0, allocated from the Level Dynamic & LUA pool.
   usage: {chunks: 3, calls: 2227, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: NewMaterialSound
   wrapper: 0x003728c8
@@ -712,6 +713,7 @@
   notes: >-
     0x00115ee8.
   usage: {chunks: 3, calls: 3296, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: DuplicateSoundMaterials
   wrapper: 0x003729c0
@@ -728,6 +730,7 @@
   notes: >-
     0x00116438 copies the slot pointer between the two transposed table cells.
   usage: {chunks: 3, calls: 2225, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SetNumberOfMaterialSlots
   wrapper: 0x00372a38
@@ -744,6 +747,7 @@
   notes: >-
     0x00116480.
   usage: {chunks: 6, calls: 18, boot: true, mission1: false, result_used: false, levels: [81]}
+  coney: implemented
 
 - name: NewAnimSlots
   wrapper: 0x00372ad8
@@ -767,6 +771,7 @@
   notes: >-
     0x00116080.
   usage: {chunks: 3, calls: 260, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: NewAnimSound
   wrapper: 0x00372c78
@@ -785,6 +790,7 @@
   notes: >-
     0x001162a0.
   usage: {chunks: 3, calls: 507, boot: true, mission1: false, result_used: false}
+  coney: implemented
 
 - name: SndAllocateCharacterVoices
   wrapper: 0x00372d48

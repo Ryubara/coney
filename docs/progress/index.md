@@ -9,6 +9,13 @@ How far Coney has come, measured three ways:
 - **Researched:** the share of the game's own code that the [source map](../research/source-map.md) places in at
   least an original source file or directory. It says how much of the executable an analyst can already find their
   way around in, not how much is understood.
+- **Understood:** the share of the game's own functions (by bytes, and by count) that are researched in full: the
+  function has a meaningful name in the shared Ghidra project (not `FUN_<address>`), and a research page cites its
+  address in a table row or paragraph that states an evidence level, or says `not needed: <reason>` (the source
+  map's citations do not count: placing is not understanding); a script binding's wrapper counts when its
+  `research/bindings` entry has an `evidence`. Names and sizes come from `docs/progress/ghidra-functions.tsv`
+  (addresses, sizes and our names only), the citations from the pages themselves, so citing a function moves the
+  bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
   Approved by the owner's play-test, with its checkpoints and the script bindings it needs.
@@ -26,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,656 functions) |
+| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,679 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `█████████████████▍░░` | 86.7% named in Ghidra and cited with evidence (2,847,192 of 3,283,480 bytes; 9,647 of 11,379 functions, 84.8%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-501 reimplemented function(s) have no size yet and add no bytes.
+524 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -57,7 +64,7 @@ at the top of the repository's `README.md`.
 | Subsystem | Reimplemented | Share | Functions | Code (bytes) |
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
-| `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.8% | 65 | 57,368 |
+| `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.8% | 88 | 57,368 |
 | `Camera` | `▉░░░░░░░░░░░░░░░░░░░` | 4.4% | 61 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
@@ -181,6 +188,11 @@ at the top of the repository's `README.md`.
 | `0x00110018` | `SceneSound_Start` | `Audio` | not filled in |
 | `0x00110078` | `SceneSound_Stop` | `Audio` | not filled in |
 | `0x001102a0` | `SceneSound_IsReady` | `Audio` | not filled in |
+| `0x00110790` | `Sound_PlayMaterialHit` | `Audio` | not filled in |
+| `0x00110830` | `Sound_PlayMaterialPair` | `Audio` | not filled in |
+| `0x00110940` | `Sound_PlayMaterialPairPlain` | `Audio` | not filled in |
+| `0x00110a08` | `Sound_PlayAnimSound` | `Audio` | not filled in |
+| `0x00110aa8` | `Sound_RemapFootMaterial` | `Audio` | not filled in |
 | `0x00110b60` | `AmbientTrack_Play` | `Audio` | not filled in |
 | `0x00110c70` | `AmbientTrack_Stop` | `Audio` | not filled in |
 | `0x00111178` | `AudioManager_StartLoadScreen` | `Audio` | 688 |
@@ -211,6 +223,12 @@ at the top of the repository's `README.md`.
 | `0x00113920` | `Ambient_AddEmitter2` | `Audio` | 232 |
 | `0x00113a58` | `Ambient_SetEmitterPositions` | `Audio` | 208 |
 | `0x00113bc8` | `Audio_EnableAmbientEmitter` | `Audio` | 56 |
+| `0x00113c58` | `Snd_NewMaterialSlots` | `Audio` | not filled in |
+| `0x00113c98` | `Snd_NewMaterialSound` | `Audio` | not filled in |
+| `0x00113ce8` | `Snd_DuplicateSoundMaterials` | `Audio` | not filled in |
+| `0x00113d18` | `Snd_SetNumberOfMaterialSlots` | `Audio` | not filled in |
+| `0x00113d50` | `Snd_NewAnimSlots` | `Audio` | not filled in |
+| `0x00113d88` | `Snd_NewAnimSound` | `Audio` | not filled in |
 | `0x00113dd0` | `Sound_AllocateCharacterVoices` | `Audio` | 40 |
 | `0x00113df8` | `Sound_SetCommandSoundPercent` | `Audio` | 56 |
 | `0x00113ea8` | `Sound_EnableSystemMusic` | `Audio` | not filled in |
@@ -221,10 +239,22 @@ at the top of the repository's `README.md`.
 | `0x00114088` | `Audio_PauseSound` | `Audio` | 72 |
 | `0x001140d8` | `Sound_PlayCommand` | `Audio` | 160 |
 | `0x001141b0` | `Sound_CfgInterfaceSound` | `Audio` | 48 |
-| `0x00114628` | `AudioManager_LoadMatrix` | `Audio` | 152 |
+| `0x00114220` | `SoundMatrix_Init` | `Audio` | not filled in |
+| `0x00114628` | `SoundMatrix_Load` | `Audio` | 152 |
+| `0x001146c0` | `SoundMatrix_GetMaterialSounds` | `Audio` | not filled in |
+| `0x00114800` | `SoundMatrix_GetAnimSounds` | `Audio` | not filled in |
 | `0x00114b20` | `VoiceTable_NextLine` | `Audio` | 376 |
 | `0x00115bb0` | `VoiceTable_SetPercent` | `Audio` | 128 |
+| `0x00115c30` | `SoundMatrix_ClearMaterials` | `Audio` | not filled in |
+| `0x00115c80` | `SoundMatrix_ClearAnims` | `Audio` | not filled in |
+| `0x00115cb0` | `SoundMatrix_NewMaterialSlots` | `Audio` | not filled in |
+| `0x00115ee8` | `SoundMatrix_NewMaterialSound` | `Audio` | not filled in |
+| `0x00116080` | `SoundMatrix_NewAnimSlots` | `Audio` | not filled in |
+| `0x001162a0` | `SoundMatrix_NewAnimSound` | `Audio` | not filled in |
+| `0x00116438` | `SoundMatrix_DuplicateMaterials` | `Audio` | not filled in |
+| `0x00116480` | `SoundMatrix_SetMaterialCount` | `Audio` | not filled in |
 | `0x001164a8` | `VoiceTable_Build` | `Audio` | 784 |
+| `0x00117280` | `Sound_PlayMaterialPairAt` | `Audio` | not filled in |
 | `0x0011a170` | `Task_Update` | `Audio` | not filled in |
 | `0x0011b450` | `StereoSlot_Claim` | `Audio` | not filled in |
 | `0x0011b498` | `StereoSlot_Take` | `Audio` | not filled in |

@@ -1328,8 +1328,8 @@ Coney's stand-ins, where this page is silent:
   barrier's triangles stay on until its removal, standing for the body the break leaves (`dyn_door_wall_a`, whose
   body goes, and `dyn_door_vargas`, which is never removed, turn them off at the break). Thrown
   objects do not reach the objects yet: nothing is thrown in play.
-- Sounds: a name hash plays on the effects bus at its recorded volume, with no 3D attenuation or pan; a material
-  pair's sound and the lock pick's click are counted, not played (no sound matrix or interface cues yet). Shards,
+- Sounds: a name hash plays as a positional sound at the object, a material pair from the
+  [sound matrix](sound.md#sound-matrix); the lock pick's click is counted, not played (its cue is not traced). Shards,
   crimes beyond the `CrimeScene` flag, statistics, loose objects and models do nothing yet.
 - Shards (`gamemodes/level_object_services.h`, with [Particles](particles.md)): the culling step's two distance tests
   are one in Coney, player 1 within 10 m of the pane, and the budget is 158 particles left in the pool; dust and bursts

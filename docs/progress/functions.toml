@@ -248,6 +248,31 @@ name = "SceneSound_IsReady"
 subsystem = "Audio"
 
 [[function]]
+address = 0x00110790
+name = "Sound_PlayMaterialHit"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00110830
+name = "Sound_PlayMaterialPair"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00110940
+name = "Sound_PlayMaterialPairPlain"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00110a08
+name = "Sound_PlayAnimSound"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00110aa8
+name = "Sound_RemapFootMaterial"
+subsystem = "Audio"
+
+[[function]]
 address = 0x00110b60
 name = "AmbientTrack_Play"
 subsystem = "Audio"
@@ -420,6 +445,36 @@ subsystem = "Audio"
 size = 56
 
 [[function]]
+address = 0x00113c58
+name = "Snd_NewMaterialSlots"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00113c98
+name = "Snd_NewMaterialSound"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00113ce8
+name = "Snd_DuplicateSoundMaterials"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00113d18
+name = "Snd_SetNumberOfMaterialSlots"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00113d50
+name = "Snd_NewAnimSlots"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00113d88
+name = "Snd_NewAnimSound"
+subsystem = "Audio"
+
+[[function]]
 address = 0x00113dd0
 name = "Sound_AllocateCharacterVoices"
 subsystem = "Audio"
@@ -476,10 +531,25 @@ subsystem = "Audio"
 size = 48
 
 [[function]]
+address = 0x00114220
+name = "SoundMatrix_Init"
+subsystem = "Audio"
+
+[[function]]
 address = 0x00114628
-name = "AudioManager_LoadMatrix"
+name = "SoundMatrix_Load"
 subsystem = "Audio"
 size = 152
+
+[[function]]
+address = 0x001146c0
+name = "SoundMatrix_GetMaterialSounds"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00114800
+name = "SoundMatrix_GetAnimSounds"
+subsystem = "Audio"
 
 [[function]]
 address = 0x00114b20
@@ -494,10 +564,55 @@ subsystem = "Audio"
 size = 128
 
 [[function]]
+address = 0x00115c30
+name = "SoundMatrix_ClearMaterials"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00115c80
+name = "SoundMatrix_ClearAnims"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00115cb0
+name = "SoundMatrix_NewMaterialSlots"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00115ee8
+name = "SoundMatrix_NewMaterialSound"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00116080
+name = "SoundMatrix_NewAnimSlots"
+subsystem = "Audio"
+
+[[function]]
+address = 0x001162a0
+name = "SoundMatrix_NewAnimSound"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00116438
+name = "SoundMatrix_DuplicateMaterials"
+subsystem = "Audio"
+
+[[function]]
+address = 0x00116480
+name = "SoundMatrix_SetMaterialCount"
+subsystem = "Audio"
+
+[[function]]
 address = 0x001164a8
 name = "VoiceTable_Build"
 subsystem = "Audio"
 size = 784
+
+[[function]]
+address = 0x00117280
+name = "Sound_PlayMaterialPairAt"
+subsystem = "Audio"
 
 [[function]]
 address = 0x0011a170

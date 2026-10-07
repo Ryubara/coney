@@ -39,7 +39,12 @@ SoundVec facingOf(float headingDegrees) {
 } // namespace
 
 GameSound::GameSound(SoundPlayer& sounds, std::function<void(std::string_view)> log)
-    : m_sounds(sounds), m_log(std::move(log)) {}
+    : m_sounds(sounds), m_log(std::move(log)), m_engineSink(sounds), m_materialSounds(m_matrix, &m_engineSink) {}
+
+SoundHandle GameSound::EngineSink::play(std::uint32_t hash, const SoundPlay& how) {
+    SoundEngine* engine = m_sounds.engine();
+    return engine != nullptr ? engine->play(hash, how) : SoundHandle{};
+}
 
 void GameSound::connect(script::ScriptSystem* scripts, const script::BindingContext* context) {
     m_scripts = scripts;
@@ -97,6 +102,42 @@ void GameSound::setPitchFactor(float factor) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->setPitchFactor(factor);
     }
+}
+
+// ---- The sound matrix ----
+
+bool GameSound::loadSoundMatrix(std::string_view name) {
+    const bool changed = m_matrix.load(name);
+    if (changed) {
+        write(std::format("sound matrix {}\n", name));
+    }
+    return changed;
+}
+
+void GameSound::newMaterialSlots(std::uint32_t m1, std::uint32_t m2, std::uint32_t count, std::uint32_t columns,
+                                 const std::array<float, 3>& volumes) {
+    m_matrix.newMaterialSlots(m1, m2, count, columns, volumes);
+}
+
+void GameSound::newMaterialSound(std::uint32_t index, std::uint32_t m1, std::uint32_t m2,
+                                 const std::array<std::optional<std::uint32_t>, 3>& sounds) {
+    m_matrix.newMaterialSound(index, m1, m2, sounds);
+}
+
+void GameSound::setMaterialSlotCount(std::uint32_t m1, std::uint32_t m2, std::uint32_t count) {
+    m_matrix.setMaterialSlotCount(m1, m2, count);
+}
+
+void GameSound::duplicateSoundMaterials(std::uint32_t a, std::uint32_t b) { m_matrix.duplicateMaterials(a, b); }
+
+void GameSound::newAnimSlots(std::uint32_t event, std::uint32_t count, std::uint32_t columns,
+                             const std::array<float, 3>& volumes) {
+    m_matrix.newAnimSlots(event, count, columns, volumes);
+}
+
+void GameSound::newAnimSound(std::uint32_t index, std::uint32_t event,
+                             const std::array<std::optional<std::uint32_t>, 3>& sounds) {
+    m_matrix.newAnimSound(index, event, sounds);
 }
 
 // ---- Ambience ----
@@ -294,6 +335,8 @@ void GameSound::levelLoaded() {
     }
     engine->endLoadScreen();
     write(std::format("sound bank: {}\n", engine->bankName()));
+    write(std::format("sound matrix {}: {} material pairs, {} animation sounds\n", m_matrix.name(),
+                      m_matrix.materialEntries(), m_matrix.animEntries()));
     // Coney's stand-in: loading has ended, so SndLoadBank loads at once again (who clears +0x3fa58 is not traced).
     engine->setDeferBankLoads(false);
 }

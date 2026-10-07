@@ -100,8 +100,9 @@ LevelScripts::LevelScripts(const script::ScriptSource& source, std::string_view 
           source,
           [this](script::ScriptSystem& system, script::LuaVm& vm) { script::installBindings(system, vm, m_context); },
           log) {
-    // The HUD the scripts' HUD bindings act on, before the first Lua state (below).
+    // The HUD the scripts' HUD bindings act on and the sound the preloads configure, before the first Lua state.
     m_context.hud = &m_hud;
+    m_context.sound = options.sound;
     m_hud.setServices(script::hudServicesOf(m_context));
     if (options.randomTable.size() == GameRandom::kTableSize) {
         m_state.random.setTable(options.randomTable);

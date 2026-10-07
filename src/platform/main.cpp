@@ -293,10 +293,13 @@ coney::LevelScriptOptions levelScriptOptions(const coney::io::Wad& wad, std::str
 // The scripts of level `name` as the story reaches it at `checkpoint`, without the menus
 // (docs/guides/building.md#playing-a-level): the preloads, a fresh Lua state and the checkpoint, ready for gameplay to
 // run the level's script. The player's turning comes from the preloads' configuration.
-std::unique_ptr<coney::LevelScripts> levelScriptsFor(const coney::io::Wad& wad, std::string_view name, int checkpoint) {
+std::unique_ptr<coney::LevelScripts> levelScriptsFor(const coney::io::Wad& wad, std::string_view name, int checkpoint,
+                                                     coney::script::SoundHost* sound) {
     std::vector<std::uint32_t> table;
+    coney::LevelScriptOptions options = levelScriptOptions(wad, name, table);
+    options.sound = sound;
     auto scripts = std::make_unique<coney::LevelScripts>(coney::script::wadScriptSource(wad), name, checkpoint,
-                                                         printText, levelScriptOptions(wad, name, table));
+                                                         printText, options);
     applyTurnConfig(scripts->recorded());
     return scripts;
 }
@@ -533,7 +536,7 @@ int main(int argc, char** argv) {
     // `commandLine`, its play mode takes the command line's --start and --trace.
     const auto makeLevelGameplay = [&](const std::string& name, int checkpoint, bool commandLine) {
         levelGameplay.reset();
-        levelScripts = levelScriptsFor(*wad, name, checkpoint);
+        levelScripts = levelScriptsFor(*wad, name, checkpoint, gameSound);
         connectSound(levelScripts->scripts(), levelScripts->context());
         coney::LevelScripts& scripts = *levelScripts;
         // `--script-trace`: every binding call and call into the scripts, to a file the trace keeps open.
@@ -868,6 +871,7 @@ int main(int argc, char** argv) {
             audio = std::move(*started);
             playSounds = &audio->sounds();
             objectSounds.setPlayer(&audio->sounds());
+            objectSounds.setMaterialSounds(&audio->game().materialSounds());
             if (movieMode) {
                 movieMode->setMixer(&audio->sounds().mixer());
                 movieMode->setSoundStop([&audio] {

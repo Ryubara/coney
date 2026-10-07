@@ -79,6 +79,9 @@ struct LevelScriptOptions {
     /// When set (and rumble is not), the set-up is the one the Rumble menu leaves by default with this arena's level
     /// number: the menu's chunks run after the preloads (gui::rumbleMenuDefaults()).
     std::optional<int> rumbleArena;
+    /// The game's sound, given to the bindings before the preloads run, so their configuration (the music tracks, the
+    /// interface cues, the voices and the sound matrix) reaches it; null: none (it may still be given later).
+    script::SoundHost* sound = nullptr;
 };
 
 /// What the bindings ask of the game while a level's scripts run without the menus: there are no menus, modes or

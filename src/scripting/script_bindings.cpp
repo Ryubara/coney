@@ -1199,12 +1199,12 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     // World objects (config_preload3.lua: 1,279 calls).
     real("CfgObj"),
     // Sound configuration (config_preload.lua, config_preload2.lua, global.lua).
-    recording("DuplicateSoundMaterials"),
-    recording("NewAnimSlots"),
-    recording("NewAnimSound"),
-    recording("NewMaterialSlots"),
-    recording("NewMaterialSound"),
-    recording("SetNumberOfMaterialSlots"),
+    real("DuplicateSoundMaterials"),
+    real("NewAnimSlots"),
+    real("NewAnimSound"),
+    real("NewMaterialSlots"),
+    real("NewMaterialSound"),
+    real("SetNumberOfMaterialSlots"),
     // Unlockables and commands (global.lua).
     recording("AddCommand"),
     // Sound and music state.

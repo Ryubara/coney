@@ -51,6 +51,15 @@ class MusicHost final : public coney::script::BindingHost {
     void queueScreenEffect(int /*type*/, double /*seconds*/) override {}
 };
 
+// A matrix call's three columns as text: a hash in hex, `-` for a column left as it is.
+std::string columnsText(const std::array<std::optional<std::uint32_t>, 3>& sounds) {
+    std::string text;
+    for (const std::optional<std::uint32_t>& sound : sounds) {
+        text += sound ? std::format("{:#x} ", *sound) : std::string("- ");
+    }
+    return text;
+}
+
 // A sound host that keeps what it is asked.
 class RecordingSound final : public coney::script::SoundHost {
   public:
@@ -108,6 +117,29 @@ class RecordingSound final : public coney::script::SoundHost {
         calls.push_back(
             std::format("command {} {} {} {} {}", call.human, call.voiceSet, call.command, call.interrupt, callback));
         return 77.0;
+    }
+    void newMaterialSlots(std::uint32_t m1, std::uint32_t m2, std::uint32_t count, std::uint32_t columns,
+                          const std::array<float, 3>& volumes) override {
+        calls.push_back(
+            std::format("slots {} {} {} {} {} {} {}", m1, m2, count, columns, volumes[0], volumes[1], volumes[2]));
+    }
+    void newMaterialSound(std::uint32_t index, std::uint32_t m1, std::uint32_t m2,
+                          const std::array<std::optional<std::uint32_t>, 3>& sounds) override {
+        calls.push_back(std::format("material sound {} {} {} {}", index, m1, m2, columnsText(sounds)));
+    }
+    void setMaterialSlotCount(std::uint32_t m1, std::uint32_t m2, std::uint32_t count) override {
+        calls.push_back(std::format("slot count {} {} {}", m1, m2, count));
+    }
+    void duplicateSoundMaterials(std::uint32_t a, std::uint32_t b) override {
+        calls.push_back(std::format("duplicate {} {}", a, b));
+    }
+    void newAnimSlots(std::uint32_t event, std::uint32_t count, std::uint32_t columns,
+                      const std::array<float, 3>& volumes) override {
+        calls.push_back(std::format("anim slots {} {} {} {}", event, count, columns, volumes[0]));
+    }
+    void newAnimSound(std::uint32_t index, std::uint32_t event,
+                      const std::array<std::optional<std::uint32_t>, 3>& sounds) override {
+        calls.push_back(std::format("anim sound {} {} {}", index, event, columnsText(sounds)));
     }
     void gameplayEntered() override {}
     void levelLoadStarted(int /*levelNumber*/) override {}
@@ -294,4 +326,19 @@ TEST_CASE("the reverb's settings are kept", "[scripting][sound]") {
     CHECK(harness.state.story.reverbOn);
     harness.call("SoundEnableEffects", {Value()});
     CHECK_FALSE(harness.state.story.reverbOn);
+}
+
+TEST_CASE("the sound matrix bindings pass materials, counts, volumes and sound hashes", "[sound_bindings]") {
+    Harness h;
+    const std::uint32_t punch = coney::crc32("vags/test/punch_01");
+    h.call("NewMaterialSlots", {Value(9.0), Value(10.0), Value(2.0), Value(2.0), Value(0.9)});
+    h.call("NewMaterialSound", {Value(1.0), Value(9.0), Value(10.0), str("vags/test/punch_01"), str("none")});
+    h.call("DuplicateSoundMaterials", {Value(9.0), Value(10.0)});
+    h.call("SetNumberOfMaterialSlots", {Value(9.0), Value(10.0), Value(1.0)});
+    h.call("NewAnimSlots", {Value(1.0), Value(4.0)});
+    h.call("NewAnimSound", {Value(0.0), Value(1.0), Value(), str("vags/test/punch_01")});
+    CHECK(h.sound.calls == std::vector<std::string>{"slots 9 10 2 2 0.9 1 1",
+                                                    std::format("material sound 1 9 10 {:#x} 0x0 - ", punch),
+                                                    "duplicate 9 10", "slot count 9 10 1", "anim slots 1 4 1 1",
+                                                    std::format("anim sound 0 1 - {:#x} - ", punch)});
 }
