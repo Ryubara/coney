@@ -1933,15 +1933,16 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   search goes round (human `+0x4e0`) is left out; the flag messages (`0x19`) that change what is pickable are not
   modelled. The human does not steer during the clip. Every `TYPE_SPECIAL` is loot (the named mission items are not
   listed) and item 10's pickup sound is not played. The human's current context record is the nearest object with a
-  prompt in reach. A pick-up animation other than 5 plays 461 (as the bat did at runtime). A dropped object lands
-  0.3 m ahead of the feet, with no fall.
+  prompt in reach. The clip is the pick-up animation's pair; the drop before a left-handed or hat clip, and the
+  anim set pushed for the follow-on, are not modelled. A dropped object lands 0.3 m ahead of the feet, with no fall.
 - **A weapon in hand** ([A bat in hand](#bat), [Moving attacks with something in hand](#armed-moves)): the
   fighter's anim set stands for the held object's set. With set 1-3 square and cross take the armed branch (501, the
   grounded strike, the slot's swing; no walk attack, snaps or strike on a grabbed target), and the charge and dive are
-  unchanged; the rage is the [Rage](#rage) table's. **Not yet**: the armed branch's mugging, the blocks' clips of an
-  anim set, the weapon's damage bonus (`CfgObj` `+0x58` × the power class's factor), a breakable's hit kind 2 for the
-  moving attacks, and the throws of sets 4-6 (square, cross, the charge and the dive play the unarmed moves); a bat
-  never breaks.
+  unchanged; the rage is the [Rage](#rage) table's (not its gates on the attacker's brain and the victim's class, nor
+  ids `0x269`-`0x26c`'s table-2 award). **Not yet**: the armed branch's mugging, the blocks' clips of an anim set, the
+  weapon's damage bonus (`CfgObj` `+0x58` × the power class's factor), a breakable's hit kind 2 for the moving
+  attacks, and the throws of sets 4-6 (square, cross, the charge and the dive play the unarmed moves); a bat never
+  breaks.
 - **The held flags** ([Tasks](tasks.md#held-flags)): the bits each move holds where the research names none. Every
   attack the dispatcher starts (the walk attack, the snaps, the grounded and mounted strikes, the grab strikes, power
   strikes and throws) is built as `Attack_Start`'s (holds `0x7`, sets `0x1`); the charge and dive hold the run attack's
@@ -2095,6 +2096,8 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
 - **Class 13**: which character class it is (it gets hit armour and adds 2 s to a knockdown).
 - **The rage events**: the meaning of the events beyond the chain attacks' (`0x002653d8`, `0x00264fa0`).
 - **A weapon's rage** (answered): a bat's 34 gives 2, its 36, 37 and 38 give 11 ([Rage](#rage)).
+- **The strike back's rage**: "The other attacks" gives 104 (`0x68`) event 2 × 10 (14 rage), but a strike back
+  gave 1 at runtime; Coney keeps the runtime 1. Which id the award reads for it is open.
 - **The pick-up clip** (answered): a pair per pick-up animation, high above 0.8 m ([A bat in hand](#bat)).
 - **Commands `0x30`-`0x39`**: which scripts or weapons make them; `0x36`-`0x38` and the d-pad (`0x27`).
 - **Mini-game mode 2 at runtime** (answered from the code: modes 1 and 2 are uncuffing and lock picking,

@@ -50,7 +50,7 @@ TEST_CASE("each chain attack gives the rage seen at runtime", "[combat]") {
         CHECK(gainOf(row.animId, false) == row.gain);
     }
     // Ids with no award give nothing.
-    CHECK(gainOf(51, false) == 0);
+    CHECK(gainOf(300, false) == 0);
 }
 
 TEST_CASE("a blocked hit halves each award with a shift", "[combat]") {
@@ -118,20 +118,39 @@ TEST_CASE("each grab strike raises the throw bonus by 0.27, up to 2.0", "[combat
     CHECK(tracker.bonus() == Catch::Approx(1.0F));
 }
 
-TEST_CASE("a bat's square gives 2 rage, its cross and strikes 11, the armed run attack 5", "[combat]") {
-    // combat.md#rage's other attacks: 34 event 2 x 2, 36-38 event 1 x 2, 501 event 1 x 1 (halved when blocked).
+TEST_CASE("a bat's square gives 2 rage, its cross, grounded and mounting strikes 11, and the other attacks theirs",
+          "[combat]") {
     CHECK(gainOf(34, false) == 2);
     CHECK(gainOf(34, true) == 1);
-    for (const int id : {36, 37, 38}) {
-        CHECK(gainOf(id, false) == 11);
-        CHECK(gainOf(id, true) == 5);
+    for (const int strike : {36, 37, 38}) {
+        CHECK(gainOf(strike, false) == 11);
+        CHECK(gainOf(strike, true) == 5);
     }
+    // Eight bat crosses fill the meter's 78; seven leave it at 77.
+    const CombatTuning tuning;
+    RageMeter rage;
+    const RepeatTracker tracker;
+    int total = 0;
+    for (int hit = 0; hit < 7; ++hit) {
+        total += awardHitRage(rage, 36, false, tuning, 0, tracker);
+    }
+    CHECK(total == 77);
+    CHECK(gainOf(0, false) == 8);
+    CHECK(gainOf(0x1a, false) == 4);
+    CHECK(gainOf(0x74, true) == 7);
+    CHECK(gainOf(0xfa, true) == 1); // not halved
+    CHECK(gainOf(0x1e4, false) == 20);
+    CHECK(gainOf(0x290, false) == 17);
+    CHECK(gainOf(0x2a0, false) == 0);
+    // The armed run attack (event 1 × 1) and the knife's and baton's swings as the bat's.
     CHECK(gainOf(anim_id::kArmedAttackFromRun, false) == 5);
     CHECK(gainOf(anim_id::kArmedAttackFromRun, true) == 2);
-    // The knife's and baton's swings as the bat's.
     CHECK(gainOf(45, false) == 2);
     CHECK(gainOf(39, false) == 2);
     CHECK(gainOf(47, false) == 11);
-    // The armed run attack is an other kind: it never counts toward a repeat run.
+    // The bat's ids are kind 4 for the repeat tracker; only the bat SS2 (35) is square-ended.
+    CHECK(repeatKind(34) == RepeatKind::Other);
+    CHECK(repeatKind(36) == RepeatKind::Other);
+    CHECK(repeatKind(35) == RepeatKind::Square);
     CHECK(repeatKind(anim_id::kArmedAttackFromRun) == RepeatKind::Other);
 }

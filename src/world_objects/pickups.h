@@ -25,13 +25,14 @@ inline constexpr float kPickupSightLow = 1.0F;
 inline constexpr float kPickupSightHigh = 2.0F;
 /// An object at least this much ahead (the cosine to the facing) scores 3, from 0 up to it 2, behind 1.
 inline constexpr float kPickupAhead = 0.38F;
-/// An object up to this far above the feet is picked up low (463), higher high (464).
+/// An object up to this far above the feet is picked up with its pair's low clip, higher with the high one.
 inline constexpr float kPickupLowHeight = 0.8F;
-/// The pick-up clips: one-handed, low and high (a type's pick-up animation 5), and a weapon's from the ground.
+/// The left-handed pair (pick-up animation 5 `LeftHandPickUp`), low and high, and the one-handed low clip (0, 1 and
+/// any value above 7).
 inline constexpr int kPickupLowClip = 463;
 inline constexpr int kPickupHighClip = 464;
 inline constexpr int kPickupGroundClip = 461;
-/// The pick-up animation (`CfgObj` argument 14) of the one-handed clips.
+/// The pick-up animation (`CfgObj` argument 14) of the left-handed pair.
 inline constexpr int kPickupOneHanded = 5;
 /// The pick-up's blend into its clip, seconds.
 inline constexpr float kPickupBlend = 0.2F;
@@ -66,10 +67,10 @@ using SightBlocked = std::function<bool(anim::Vec3 from, anim::Vec3 to)>;
                                                       std::span<const PickupCandidate> candidates,
                                                       const SightBlocked& blocked);
 
-/// The pick-up clip for an object of pick-up animation `pickupAnim` `height` metres above the feet: the one-handed
-/// pair (kPickupOneHanded) kPickupLowClip up to kPickupLowHeight, else kPickupHighClip. **Coney stand-in**: any other
-/// animation plays kPickupGroundClip, as a bat (animation 1) on the ground did at runtime; how the others choose is
-/// not traced.
+/// The pick-up clip for an object of pick-up animation `pickupAnim` `height` metres above the feet: the animation's
+/// pair, low up to kPickupLowHeight, else high (0, 1 and above 7: 461/462; 2: 503/504; 3: 481/482; 4: 498/499;
+/// 5: 463/464; 6: 465 at any height; 7: 549/550; docs/research/combat.md#bat).
+/// @orig 0x0025e5a8 Human_PickUpMessage (unknown)
 [[nodiscard]] int pickupClip(int pickupAnim, float height);
 
 } // namespace coney::world_objects

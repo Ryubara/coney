@@ -74,12 +74,20 @@ TEST_CASE("the search skips what is out of reach, not pickable or out of sight f
     CHECK_FALSE(wo::searchPickup(kFeet, kFacingY, candidates, allBlocked).has_value());
 }
 
-TEST_CASE("a one-handed item up to 0.8 m above the feet is picked up low, higher high", "[pickups]") {
+TEST_CASE("each pick-up animation plays its pair, low up to 0.8 m above the feet, higher high", "[pickups]") {
     CHECK(wo::pickupClip(wo::kPickupOneHanded, 0.3F) == wo::kPickupLowClip);
     CHECK(wo::pickupClip(wo::kPickupOneHanded, 0.8F) == wo::kPickupLowClip);
     CHECK(wo::pickupClip(wo::kPickupOneHanded, 1.54F) == wo::kPickupHighClip);
     // A bat (pick-up animation 1) from the ground.
     CHECK(wo::pickupClip(1, 0.05F) == wo::kPickupGroundClip);
+    CHECK(wo::pickupClip(1, 1.0F) == 462);
+    CHECK(wo::pickupClip(0, 0.0F) == 461);
+    CHECK(wo::pickupClip(9, 0.0F) == 461);
+    CHECK(wo::pickupClip(2, 0.0F) == 503);
+    CHECK(wo::pickupClip(3, 1.2F) == 482);
+    CHECK(wo::pickupClip(4, 0.5F) == 498);
+    CHECK(wo::pickupClip(6, 1.5F) == 465);
+    CHECK(wo::pickupClip(7, 1.5F) == 550);
 }
 
 TEST_CASE("a placed objects file reads into records, emitters left out", "[pickups][placed_objects]") {

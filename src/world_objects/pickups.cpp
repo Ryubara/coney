@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "world_objects/pickups.h"
 
+#include <array>
 #include <cmath>
+#include <cstddef>
 
 namespace coney::world_objects {
 
@@ -60,10 +62,16 @@ std::optional<std::size_t> searchPickup(anim::Vec3 feet, anim::Vec3 facing, std:
 }
 
 int pickupClip(int pickupAnim, float height) {
-    if (pickupAnim != kPickupOneHanded) {
-        return kPickupGroundClip;
+    // Each animation's low clip; its high clip is the next id (6's hat clip has none).
+    constexpr std::array<int, 8> kLow{461, 461, 503, 481, 498, 463, 465, 549};
+    constexpr int kHatAnim = 6;
+    const int low = pickupAnim >= 0 && pickupAnim < static_cast<int>(kLow.size())
+                        ? kLow.at(static_cast<std::size_t>(pickupAnim))
+                        : kPickupGroundClip;
+    if (pickupAnim == kHatAnim || height <= kPickupLowHeight) {
+        return low;
     }
-    return height <= kPickupLowHeight ? kPickupLowClip : kPickupHighClip;
+    return low + 1;
 }
 
 } // namespace coney::world_objects

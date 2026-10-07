@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <utility>
 
 #include "combat/anim_ids.h"
 
@@ -10,35 +11,94 @@ namespace coney::combat {
 
 namespace {
 
-// One attack's counts.
+// One attack's counts of events 2 and 1.
 struct CountRow {
     int animId;
-    RageCounts counts;
+    int event2;
+    int event1;
 };
 
-// The research's table (docs/research/combat.md#rage): the chain and moving attacks, the knife's, baton's and bat's
-// attacks and the strikes and moving attacks of event 1 × 1; then Coney's two grab moves.
-constexpr std::array<CountRow, 38> kCounts{{
-    {.animId = 11, .counts = {.event2 = 0, .event1 = 1}},  {.animId = 12, .counts = {.event2 = 1, .event1 = 0}},
-    {.animId = 13, .counts = {.event2 = 1, .event1 = 1}},  {.animId = 14, .counts = {.event2 = 4, .event1 = 1}},
-    {.animId = 15, .counts = {.event2 = 2, .event1 = 2}},  {.animId = 16, .counts = {.event2 = 1, .event1 = 0}},
-    {.animId = 17, .counts = {.event2 = 3, .event1 = 2}},  {.animId = 18, .counts = {.event2 = 3, .event1 = 2}},
-    {.animId = 19, .counts = {.event2 = 3, .event1 = 0}},  {.animId = 20, .counts = {.event2 = 3, .event1 = 0}},
-    {.animId = 21, .counts = {.event2 = 1, .event1 = 0}},  {.animId = 22, .counts = {.event2 = 1, .event1 = 0}},
-    {.animId = 23, .counts = {.event2 = 1, .event1 = 0}},  {.animId = 24, .counts = {.event2 = 1, .event1 = 0}},
-    {.animId = 34, .counts = {.event2 = 2, .event1 = 0}},  {.animId = 35, .counts = {.event2 = 0, .event1 = 2}},
-    {.animId = 36, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 37, .counts = {.event2 = 0, .event1 = 2}},
-    {.animId = 38, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 39, .counts = {.event2 = 2, .event1 = 0}},
-    {.animId = 40, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 41, .counts = {.event2 = 0, .event1 = 2}},
-    {.animId = 42, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 43, .counts = {.event2 = 0, .event1 = 2}},
-    {.animId = 44, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 45, .counts = {.event2 = 2, .event1 = 0}},
-    {.animId = 46, .counts = {.event2 = 2, .event1 = 0}},  {.animId = 47, .counts = {.event2 = 0, .event1 = 2}},
-    {.animId = 48, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 49, .counts = {.event2 = 0, .event1 = 2}},
-    {.animId = 50, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 193, .counts = {.event2 = 0, .event1 = 1}},
-    {.animId = 194, .counts = {.event2 = 0, .event1 = 1}}, {.animId = 212, .counts = {.event2 = 0, .event1 = 1}},
-    {.animId = 490, .counts = {.event2 = 0, .event1 = 1}}, {.animId = 501, .counts = {.event2 = 0, .event1 = 1}},
-    {.animId = 76, .counts = {.event2 = 7, .event1 = 0}},  {.animId = 104, .counts = {.event2 = 1, .event1 = 0}},
+// The research's chain and moving attacks (docs/research/combat.md#rage), then Coney's two grab moves.
+constexpr std::array<CountRow, 16> kCounts{{
+    {.animId = 11, .event2 = 0, .event1 = 1},
+    {.animId = 12, .event2 = 1, .event1 = 0},
+    {.animId = 13, .event2 = 1, .event1 = 1},
+    {.animId = 14, .event2 = 4, .event1 = 1},
+    {.animId = 15, .event2 = 2, .event1 = 2},
+    {.animId = 16, .event2 = 1, .event1 = 0},
+    {.animId = 17, .event2 = 3, .event1 = 2},
+    {.animId = 18, .event2 = 3, .event1 = 2},
+    {.animId = 19, .event2 = 3, .event1 = 0},
+    {.animId = 20, .event2 = 3, .event1 = 0},
+    {.animId = 21, .event2 = 1, .event1 = 0},
+    {.animId = 22, .event2 = 1, .event1 = 0},
+    {.animId = 23, .event2 = 1, .event1 = 0},
+    {.animId = 24, .event2 = 1, .event1 = 0},
+    {.animId = 76, .event2 = 7, .event1 = 0},
+    {.animId = 104, .event2 = 1, .event1 = 0},
 }};
+
+// Counts of one event: `count` awards of event 2, 1, 0, 3 or 5.
+RageCounts onlyEvent(int event, int count) {
+    RageCounts counts;
+    switch (event) {
+    case 0:
+        counts.event0 = count;
+        break;
+    case 1:
+        counts.event1 = count;
+        break;
+    case 2:
+        counts.event2 = count;
+        break;
+    case 3:
+        counts.event3 = count;
+        break;
+    default:
+        counts.event5 = count;
+        break;
+    }
+    return counts;
+}
+
+// "The other attacks" (confirmed (code) at 0x002653d8): one award each, by id range.
+RageCounts otherAttack(int animId) {
+    const auto in = [animId](int first, int last) { return animId >= first && animId <= last; };
+    if (in(0, 1)) {
+        return onlyEvent(0, 1);
+    }
+    if (in(0x19, 0x1e)) {
+        return onlyEvent(5, 1);
+    }
+    if (animId == 34 || animId == 39 || in(45, 46)) {
+        return onlyEvent(2, 2); // a set's square
+    }
+    if (in(35, 38) || in(40, 44) || in(47, 50)) {
+        return onlyEvent(1, 2); // a set's cross, grounded and mounting strikes
+    }
+    if (in(51, 56) || in(0xdb, 0xe0)) {
+        return onlyEvent(2, 1);
+    }
+    if (animId == 0x68 || animId == 0x74 || animId == 0x78 || animId == 0x7a) {
+        return onlyEvent(2, 10);
+    }
+    if (animId == 0xc1 || animId == 0xc2 || animId == 0xd4 || animId == 0x1ea || animId == 0x1f5) {
+        return onlyEvent(1, 1);
+    }
+    if (animId == 0xfa) {
+        RageCounts counts = onlyEvent(2, 1);
+        counts.halvable = false;
+        return counts;
+    }
+    if (animId == 0x1e4 || animId == 0x1e6 || animId == 0x1e8 || animId == 0x1ec || animId == 0x1ee ||
+        animId == 0x1f0) {
+        return onlyEvent(3, 2);
+    }
+    if (in(0x285, 0x28b) || in(0x28d, 0x293)) {
+        return onlyEvent(1, 3);
+    }
+    return {};
+}
 
 // The repeat tracker: the gap that ends a run (ms), the hits of a run that set the flag, the throw bonus's step and
 // its cap.
@@ -52,10 +112,13 @@ constexpr float kThrowBonusMax = 2.0F;
 RageCounts rageCounts(int animId) {
     for (const CountRow& row : kCounts) {
         if (row.animId == animId) {
-            return row.counts;
+            RageCounts counts;
+            counts.event2 = row.event2;
+            counts.event1 = row.event1;
+            return counts;
         }
     }
-    return {};
+    return otherAttack(animId);
 }
 
 int awardPoints(int count, int value, bool blocked) {
@@ -76,9 +139,18 @@ int awardHitRage(RageMeter& rage, int animId, bool blocked, const CombatTuning& 
         return added;
     }
     // Each award goes through the formula on its own, so each is truncated on its own.
-    int added =
-        rage.add(static_cast<float>(awardPoints(counts.event2, kRageEvent2Points, blocked)), tuning, nowMs, gain);
-    added += rage.add(static_cast<float>(awardPoints(counts.event1, kRageEvent1Points, blocked)), tuning, nowMs, gain);
+    const bool halve = blocked && counts.halvable;
+    const std::array<std::pair<int, int>, 5> awards{{{counts.event2, kRageEvent2Points},
+                                                     {counts.event1, kRageEvent1Points},
+                                                     {counts.event0, kRageEvent0Points},
+                                                     {counts.event3, kRageEvent3Points},
+                                                     {counts.event5, kRageEvent5Points}}};
+    int added = 0;
+    for (const auto& [count, value] : awards) {
+        if (count != 0) {
+            added += rage.add(static_cast<float>(awardPoints(count, value, halve)), tuning, nowMs, gain);
+        }
+    }
     return added;
 }
 
