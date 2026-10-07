@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,721 functions) |
+| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,741 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,904 of 3,283,904 bytes; 11,422 of 11,422 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-566 reimplemented function(s) have no size yet and add no bytes.
+586 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -65,7 +65,7 @@ at the top of the repository's `README.md`.
 | --- | --- | --- | --- | --- |
 | `Animation` | `██████▉░░░░░░░░░░░░░` | 34.6% | 25 | 54,616 |
 | `Audio` | `█▌░░░░░░░░░░░░░░░░░░` | 7.8% | 88 | 57,368 |
-| `Camera` | `▉░░░░░░░░░░░░░░░░░░░` | 4.4% | 62 | 165,680 |
+| `Camera` | `▉░░░░░░░░░░░░░░░░░░░` | 4.4% | 63 | 165,680 |
 | `Core` | `████████████▌░░░░░░░` | 62.2% | 11 | 2,920 |
 | `Debug` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 74 | 195,624 |
 | `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 210 | 497,416 |
-| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 556 | 1,096,672 |
+| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 575 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
@@ -290,6 +290,7 @@ at the top of the repository's `README.md`.
 | `0x00122548` | `Camera_CanSeePoint` | `Camera` | 480 |
 | `0x00124d00` | `Cam_Follow_Reset` | `Camera` | not filled in |
 | `0x00124f38` | `Cam_Follow_PlaceBehind` | `Camera` | not filled in |
+| `0x001250a8` | `Cam_Follow_PlaceAtHeading` | `Camera` | not filled in |
 | `0x001254f0` | `Cam_Follow_StepZoom` | `Camera` | 152 |
 | `0x00125888` | `Cam_Follow_ApplyConfig` | `Camera` | not filled in |
 | `0x00125cc0` | `Cam_Follow_Activate` | `Camera` | not filled in |
@@ -778,6 +779,7 @@ at the top of the repository's `README.md`.
 | `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
+| `0x002221e0` | `Human_CanWalkStraightTo` | `Human` | not filled in |
 | `0x00222288` | `Human_HasLineOfSight` | `Human` | not filled in |
 | `0x002223e8` | `Human_CanSeeHuman` | `Human` | not filled in |
 | `0x00222710` | `Human_IsInFieldOfView` | `Human` | not filled in |
@@ -896,6 +898,8 @@ at the top of the repository's `README.md`.
 | `0x00239080` | `Human_SetTagColour` | `Human` | not filled in |
 | `0x00239188` | `Tag_SetPattern` | `Human` | not filled in |
 | `0x00239240` | `Human_EnableSoundCommands` | `Human` | 64 |
+| `0x002392c0` | `Human_EnableTagDoneSpeech` | `Human` | not filled in |
+| `0x00239300` | `Human_EnableTagCheer` | `Human` | not filled in |
 | `0x00239340` | `Human_Say` | `Human` | 48 |
 | `0x00239370` | `Human_Speak` | `Human` | 488 |
 | `0x00239558` | `Human_ShutUp` | `Human` | 72 |
@@ -1017,6 +1021,7 @@ at the top of the repository's `README.md`.
 | `0x0026c1d8` | `Grab_IntroEnd` | `Human` | 880 |
 | `0x0026cc18` | `Grab_Escape` | `Human` | 1,120 |
 | `0x0026dd08` | `Player_Throw` | `Human` | 2,288 |
+| `0x00273a68` | `Tag_SayNearbyLine` | `Human` | not filled in |
 | `0x00273ff0` | `TagGame_CatmullRom` | `Human` | not filled in |
 | `0x002741d8` | `TagGame_Init` | `Human` | not filled in |
 | `0x00274710` | `TagGame_Track` | `Human` | not filled in |
@@ -1088,6 +1093,7 @@ at the top of the repository's `README.md`.
 | `0x0028f928` | `Brain_OnEvent` | `Human` | 96 |
 | `0x0028fbb0` | `Brain_UpdateGoals` | `Human` | 632 |
 | `0x0028fe28` | `Brain_RunActions` | `Human` | 104 |
+| `0x0028fe90` | `Brain_GetSectors` | `Human` | not filled in |
 | `0x00290ea8` | `Brain_IsAttackableBy` | `Human` | not filled in |
 | `0x002911f8` | `Brain_GetAttackWeight` | `Human` | 32 |
 | `0x00291ed0` | `Ambient_MayGesture` | `Human` | not filled in |
@@ -1130,6 +1136,20 @@ at the top of the repository's `README.md`.
 | `0x0029b848` | `Route_ClimbLeg` | `Human` | 360 |
 | `0x0029baa8` | `Route_JumpLeg` | `Human` | not filled in |
 | `0x0029ce98` | `Brain_ScoreEnemy` | `Human` | not filled in |
+| `0x0029e250` | `Sectors_Construct` | `Human` | not filled in |
+| `0x0029e2b0` | `Sectors_Reset` | `Human` | not filled in |
+| `0x0029e350` | `Sectors_GetPoint` | `Human` | not filled in |
+| `0x0029e4b0` | `Sectors_ProbeWall` | `Human` | not filled in |
+| `0x0029e5d8` | `Sectors_Update` | `Human` | not filled in |
+| `0x0029e980` | `Sectors_GetCost` | `Human` | not filled in |
+| `0x0029e9c8` | `Sectors_IsBlocked` | `Human` | not filled in |
+| `0x0029ea10` | `Sectors_IsWall` | `Human` | not filled in |
+| `0x0029ea48` | `Sectors_IsFree` | `Human` | not filled in |
+| `0x0029eaa0` | `Sectors_AllClear` | `Human` | not filled in |
+| `0x0029ead8` | `Sectors_IsHeldBy` | `Human` | not filled in |
+| `0x0029eb10` | `Sectors_SectorOf` | `Human` | not filled in |
+| `0x0029eb38` | `Human_GetSectorOf` | `Human` | not filled in |
+| `0x0029ec90` | `Sectors_TurnWay` | `Human` | not filled in |
 | `0x0029ed58` | `Goal_Start` | `Human` | 128 |
 | `0x0029edd8` | `Goal_End` | `Human` | 88 |
 | `0x0029ee30` | `Goal_Resume` | `Human` | 112 |

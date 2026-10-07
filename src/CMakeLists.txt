@@ -276,6 +276,7 @@ target_sources(coney_core PRIVATE
     ai/hub_goals.cpp
     ai/scripted_hub.cpp
     ai/scripted_story.cpp
+    ai/sectors.cpp
     ai/spawners.cpp
     ai/story_goals.cpp
     ai/story_tactics.cpp

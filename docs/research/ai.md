@@ -4517,6 +4517,14 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   the waypoint (gait 4) and tries the player's climb start toward it each update (`PlayerRecord::climbToward`), giving
   up after 31 failed updates; a leg whose avoid bit is set is refused, but for a charge. `level99`'s Vermin climbs his
   fence this way.
+- **Neighbour sectors** (`Sectors`, `repo:src/ai/sectors.h`, `Brain::sectors`): eight 45° sectors per brain (0 ahead,
+  rising anticlockwise; an edge goes to the lower index on the left half), rebuilt when the caller's age (1000 or 500
+  ms) has passed: each human within 1.5 m counted, the nearest kept, the flags from his squared distance (3 below 1.5,
+  1 below 2.5), the free-player flag 8 for an AI within 5.5 m; the lazy wall probe 1.5 m out at the stored heading along
+  the path data's walkable line; the readers (blocked, free, wall, cost, all clear, held by, the turn way) and the
+  point in a sector. **Coney choices**: a record never built is always rebuilt (the original's clock is far past 0);
+  a player is busy for flag 8 when not standing or with a busy record bit; with no trains, the probe's train test
+  never fails.
 - **Scripted goals**: `MoveToFlagGoal` (offset target, radius, the face-the-flag turn, a new move each time one ends
   short, message 8 and the gang's notice through `FlagServices`), `TurnAction` (look-at, to a point, to a heading;
   15°, 3 s), `PlayDynAnimationGoal` with `PlayAnimAction` (slot 668), `AddressPersonGoal` with `PlayAnimationGoal`

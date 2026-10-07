@@ -282,6 +282,7 @@ target_sources(coney_tests PRIVATE
     ai/scripted_humans_test.cpp
     ai/riot_goals_test.cpp
     ai/scripted_story_test.cpp
+    ai/sectors_test.cpp
     ai/spawners_test.cpp
     ai/rumble_tactics_test.cpp
     ai/tactics_test.cpp

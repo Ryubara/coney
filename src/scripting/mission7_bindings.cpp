@@ -104,6 +104,24 @@ void addMission7Bindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext&
         }
         return binding::none();
     });
+    // `HuEnableTagCheer(human, enable)`: whether the crew may comment while the human tags (its `+0x19c`); `enable`
+    // defaults to true, and a handle no script-made human has does nothing.
+    // @orig 0x00239300 Human_EnableTagCheer (unknown)
+    vm.registerFunction("HuEnableTagCheer", [context = &context](std::span<const Value> args) {
+        if (HumanCreation* human = context->humans != nullptr ? context->humans->find(handleArg(args, 0)) : nullptr) {
+            human->tagCheer = args.size() < 2 || boolArg(args, 1);
+        }
+        return binding::none();
+    });
+    // `HuEnableTagDone(human, enable)`: whether the human may comment on a crew mate's tag (its `+0x19a`); `enable`
+    // defaults to true.
+    // @orig 0x002392c0 Human_EnableTagDoneSpeech (unknown)
+    vm.registerFunction("HuEnableTagDone", [context = &context](std::span<const Value> args) {
+        if (HumanCreation* human = context->humans != nullptr ? context->humans->find(handleArg(args, 0)) : nullptr) {
+            human->tagDoneSpeech = args.size() < 2 || boolArg(args, 1);
+        }
+        return binding::none();
+    });
     // `HuIsTagging(human)`: true while it sprays a tag.
     // @orig 0x002387e8 Human_IsTagging (unknown)
     vm.registerFunction("HuIsTagging", [context = &context](std::span<const Value> args) {

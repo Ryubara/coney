@@ -2,7 +2,6 @@
 #include "camera/cameras.h"
 
 #include <algorithm>
-#include <numbers>
 #include <utility>
 
 #include "camera/camera_lens.h"
@@ -103,7 +102,7 @@ void Cameras::setFollowHeading(float degrees) {
     if (m_follow == nullptr || !m_lastTarget) {
         return;
     }
-    m_follow->place(m_lastTarget->feet, m_follow->zoomDistance(), degrees * std::numbers::pi_v<float> / 180.0F);
+    m_follow->placeBehind(degrees);
 }
 
 const LockedCamera* Cameras::locked(double handle) const {

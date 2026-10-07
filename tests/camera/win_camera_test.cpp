@@ -4,6 +4,7 @@
 #include "camera/win_camera.h"
 
 #include <cmath>
+#include <numbers>
 #include <optional>
 #include <utility>
 
@@ -28,6 +29,7 @@ using coney::camera::WinCameraSettings;
 namespace {
 
 constexpr Vec3 kFeet{40.0F, 40.0F, 0.0F};
+constexpr float kPi = std::numbers::pi_v<float>;
 constexpr double kFollowHandle = 7.0;
 constexpr double kLockedHandle = 8.0;
 constexpr double kWinHandle = 9.0;
@@ -139,19 +141,29 @@ TEST_CASE("CamDelete forgets a locked camera, cutting to the follow camera, and 
     CHECK(rig.cameras.win() != nullptr);
 }
 
-TEST_CASE("CamSetFollowHeading swings the follow camera round its target once it has one", "[camera][rumble]") {
+TEST_CASE("CamSetFollowHeading places the follow camera round its target from the target's facing",
+          "[camera][rumble]") {
     Rig rig;
     const Vec3 start = rig.follow.position();
     rig.cameras.setFollowHeading(90.0F);
     CHECK(near(rig.follow.position(), start));
 
+    // The player at kFeet faces +y. 90 turns his forward clockwise to +x: the camera stands east of him looking west;
+    // -90 west; 180 behind him (south), 190 behind and 10 degrees to his left.
     rig.step();
+    const float across = 4.8F * std::cos(13.0F * kPi / 180.0F);
     rig.cameras.setFollowHeading(90.0F);
-    const Vec3 east = rig.follow.position();
+    CHECK(rig.follow.position().x - kFeet.x == Approx(across).margin(1e-3));
+    CHECK(rig.follow.position().y - kFeet.y == Approx(0.0F).margin(1e-3));
     rig.cameras.setFollowHeading(-90.0F);
-    const Vec3 west = rig.follow.position();
-    CHECK_FALSE(near(east, west));
-    const float eastOut = std::hypot(east.x - kFeet.x, east.y - kFeet.y);
-    const float westOut = std::hypot(west.x - kFeet.x, west.y - kFeet.y);
-    CHECK(eastOut == Approx(westOut).margin(1e-3));
+    CHECK(rig.follow.position().x - kFeet.x == Approx(-across).margin(1e-3));
+    rig.cameras.setFollowHeading(180.0F);
+    CHECK(rig.follow.position().x - kFeet.x == Approx(0.0F).margin(1e-3));
+    CHECK(rig.follow.position().y - kFeet.y == Approx(-across).margin(1e-3));
+    rig.cameras.setFollowHeading(190.0F);
+    CHECK(rig.follow.position().x - kFeet.x == Approx(-across * std::sin(10.0F * kPi / 180.0F)).margin(1e-3));
+    // It looks back at him at the target pitch.
+    CHECK(rig.follow.forward().x > 0.0F);
+    CHECK(rig.follow.position().z - rig.follow.lookAt().z ==
+          Approx(4.8F * std::sin(13.0F * kPi / 180.0F)).margin(1e-3));
 }

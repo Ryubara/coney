@@ -798,6 +798,11 @@ name = "Cam_Follow_PlaceBehind"
 subsystem = "Camera"
 
 [[function]]
+address = 0x001250a8
+name = "Cam_Follow_PlaceAtHeading"
+subsystem = "Camera"
+
+[[function]]
 address = 0x001254f0
 name = "Cam_Follow_StepZoom"
 subsystem = "Camera"
@@ -3585,6 +3590,11 @@ name = "Human_LaunchJump"
 subsystem = "Human"
 
 [[function]]
+address = 0x002221e0
+name = "Human_CanWalkStraightTo"
+subsystem = "Human"
+
+[[function]]
 address = 0x00222288
 name = "Human_HasLineOfSight"
 subsystem = "Human"
@@ -4263,6 +4273,16 @@ subsystem = "Human"
 size = 64
 
 [[function]]
+address = 0x002392c0
+name = "Human_EnableTagDoneSpeech"
+subsystem = "Human"
+
+[[function]]
+address = 0x00239300
+name = "Human_EnableTagCheer"
+subsystem = "Human"
+
+[[function]]
 address = 0x00239340
 name = "Human_Say"
 subsystem = "Human"
@@ -4935,6 +4955,11 @@ subsystem = "Human"
 size = 2288
 
 [[function]]
+address = 0x00273a68
+name = "Tag_SayNearbyLine"
+subsystem = "Human"
+
+[[function]]
 address = 0x00273ff0
 name = "TagGame_CatmullRom"
 subsystem = "Human"
@@ -5335,6 +5360,11 @@ subsystem = "Human"
 size = 104
 
 [[function]]
+address = 0x0028fe90
+name = "Brain_GetSectors"
+subsystem = "Human"
+
+[[function]]
 address = 0x00290ea8
 name = "Brain_IsAttackableBy"
 subsystem = "Human"
@@ -5572,6 +5602,76 @@ subsystem = "Human"
 [[function]]
 address = 0x0029ce98
 name = "Brain_ScoreEnemy"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029e250
+name = "Sectors_Construct"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029e2b0
+name = "Sectors_Reset"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029e350
+name = "Sectors_GetPoint"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029e4b0
+name = "Sectors_ProbeWall"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029e5d8
+name = "Sectors_Update"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029e980
+name = "Sectors_GetCost"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029e9c8
+name = "Sectors_IsBlocked"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029ea10
+name = "Sectors_IsWall"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029ea48
+name = "Sectors_IsFree"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029eaa0
+name = "Sectors_AllClear"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029ead8
+name = "Sectors_IsHeldBy"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029eb10
+name = "Sectors_SectorOf"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029eb38
+name = "Human_GetSectorOf"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029ec90
+name = "Sectors_TurnWay"
 subsystem = "Human"
 
 [[function]]

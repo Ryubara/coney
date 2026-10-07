@@ -1179,7 +1179,7 @@ a crew member may comment (speech command 80 `tagcheer`; `TagGame_Update`, 0x002
 - **Wrapper** `0x00364d88` (registered by `RegisterBindings`); **calls** `0x00239300` `Human_EnableTagCheer`
 - **Used by** 1 of 467 script chunks (1 reference); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level3`](story.md#level3) (mission 6)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuEnableTagDone {#huenabletagdone}
 
@@ -1204,7 +1204,7 @@ fumbled, 0x00273a68 picks a random gang member in range with this set to say tag
 - **Wrapper** `0x00364d28` (registered by `RegisterBindings`); **calls** `0x002392c0` `Human_EnableTagDoneSpeech`
 - **Used by** 3 of 467 script chunks (3 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level9`](story.md#level9) (mission 13)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## HuExitWorld {#huexitworld}
 

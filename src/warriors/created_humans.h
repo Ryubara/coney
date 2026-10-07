@@ -30,6 +30,11 @@ struct HumanCreation {
     /// Where the last `TeleportToFlag` put the human, with no ground snap; nothing while it stands where it was made.
     std::optional<world_objects::Placement> teleported{};
     std::uint32_t teleports = 0; ///< Teleports so far: a change tells a running level to move the human.
+    /// May comment on a crew mate's tag (`HuEnableTagDone`, human byte `+0x19a`; set when the human is made).
+    bool tagDoneSpeech = true;
+    /// While this human tags, a crew member may comment when the stick game snaps the cursor back
+    /// (`HuEnableTagCheer`, human byte `+0x19c`; set when the human is made).
+    bool tagCheer = true;
 };
 
 /// The humans the level scripts have created, in the order of the `HuCreate` calls: Coney's stand-in for the original's

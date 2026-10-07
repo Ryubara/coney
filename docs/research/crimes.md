@@ -714,20 +714,25 @@ messages ([Tag spots](#tag-spots)): `CfgTagSettings` and `ProcessTag` reach it f
 fade runs every second 60 Hz tick, and `spray()` is a CPU tagger's step (Rumble's Tag battle). `TagSession` is one
 player's spray: the paint from inventory item 3, the fraction sent to the spot (message `0x41`) as the game goes, and
 `Tag_End`'s spot side and wasted charge. In gameplay (`repo:src/gamemodes/gameplay_tag.cpp`) `HuTag` for player 1 with
-paint locks his movement where he stands and plays 334, turning him to the tag over half its length, then the loop
-335 (`Human::startTagSpray()`); when the loop starts, the session runs on pad 1's left stick, the spot gets its tagger
-(message `0x00`, which starts its own fade in) and `CfgTagStartCallback`'s function is called with (tagger, tag,
-flag) and no result asked ([above](#tag-callbacks)); an AI tagger's starts at once. A body something else takes during
-the intro ends it unsprayed (**Coney's reading**). Without paint he says 37 `nopaint` and gets event 14 with the tag and
-0. At the end the pad is freed, a finish has him say 83 `tagdone` and the tagger gets event 14 (the tag and whether it
-was finished). The story reaches `HuTag` through the spot's flag: the script gives the flag (activity 12) a message-0
-handler and a prompt with `SetMsgHandlerEx`, a kind-1 [context record](#context-records). Coney locates such a record's
-object whether it is a spawn record, a flag or a particle system (`LevelPickups::actionObject()`), shows its text as
-player 1's [action prompt](hud.md#action-prompts) and hands it triangle, whose handler calls `HuTag`. **Coney's
-stand-ins**: the tagger rather than a crew member says `tagdone`; the spray clips stop at the end (back to the
-idle); an AI human given `HuTag` becomes the spot's tagger at once (its fade in) without walking to the flag.
-Not yet: the slip's rumble and speech 80, the bonus event on a clean finish, the spray particles and the tag's
-drawing, the HUD grid, hint `0x10`, and buttons other than the stick ending a session.
+paint locks his movement where he stands and plays 334, turning him to the tag over half its length, then the loop 335
+(`Human::startTagSpray()`); when the loop starts, the session runs on pad 1's left stick, the spot gets its tagger
+(message `0x00`, which starts its own fade in) and `CfgTagStartCallback`'s function is called with (tagger, tag, flag)
+and no result asked ([above](#tag-callbacks)); an AI tagger's starts at once. A body something else takes during the
+intro ends it unsprayed (**Coney's reading**). Without paint he says 37 `nopaint` and gets event 14 with the tag and 0.
+At the end the pad is freed, a finish has a crew mate say 83 `tagdone` and the tagger gets event 14 (the tag and whether
+it was finished); a snap-back off the pattern has one say 80 `tagcheer` while the tagger's tag cheer is on
+(`HuEnableTagCheer`). The crew mate is picked as [Tag_SayNearbyLine](sound-events.md#tag-lines) does: only while player
+1 (Coney's war chief) last ordered defend, from his gang's members in slot order that are not the leader or a player,
+are free to act, have no actions queued and stand within his far melee range, each later one replacing the pick on a
+roll of 50 or more; the pick speaks only when his `HuEnableTagDone` switch is on. The story reaches `HuTag` through the
+spot's flag: the script gives the flag (activity 12) a message-0 handler and a prompt with `SetMsgHandlerEx`, a kind-1
+[context record](#context-records). Coney locates such a record's object whether it is a spawn record, a flag or a
+particle system (`LevelPickups::actionObject()`), shows its text as player 1's [action prompt](hud.md#action-prompts)
+and hands it triangle, whose handler calls `HuTag`. **Coney's stand-ins**: any picked crew mate may gesture (the gesture
+slots are not kept), and the busy test is the actions-blocked one; the spray clips stop at the end (back to the idle);
+an AI human given `HuTag` becomes the spot's tagger at once (its fade in) without walking to the flag. Not yet: the
+slip's rumble, the bonus event on a clean finish, the spray particles and the tag's drawing, the HUD grid, hint `0x10`,
+and buttons other than the stick ending a session.
 
 **Car stereos** (`repo:src/world_objects/cars.h`, 2026-10-06): `CarSpawnRadio` puts a stereo in a parked car;
 breaking window 15 ([Cars](cars.md#windows)), or a type-12 pane within 2 m (`ObjectServices::freeCarStereos`), frees

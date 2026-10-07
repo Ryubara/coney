@@ -130,9 +130,9 @@ class Cameras {
     [[nodiscard]] double createWin(double handle, double target, const WinCameraSettings& settings);
     /// The win camera, once made.
     [[nodiscard]] const WinCamera* win() const { return m_win ? &*m_win : nullptr; }
-    /// `CamSetFollowHeading(degrees)`: the follow camera swung round at once to view along `degrees` (0 facing +y),
-    /// at its distance from the target's last feet (**Coney's reading** of the angle). Nothing before the follow
-    /// camera has a target.
+    /// `CamSetFollowHeading(degrees)`: the follow camera placed at once `degrees` round its target from the target's
+    /// facing, clockwise (180 behind), at the nearest preset distance (FollowCamera::placeBehind()). Nothing before
+    /// the follow camera has a target.
     /// @orig 0x0011c2f0 Camera_SetFollowHeading (unknown)
     void setFollowHeading(float degrees);
 

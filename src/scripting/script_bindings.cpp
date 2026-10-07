@@ -888,6 +888,8 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("HUDSetBarPercentage"),
     real("HUDSetBarProperty"),
     real("HuActionDialog"),
+    real("HuEnableTagCheer"),
+    real("HuEnableTagDone"),
     real("HuIsTagging"),
     real("HuMarkReachable"),
     real("HuSetRageMode"),

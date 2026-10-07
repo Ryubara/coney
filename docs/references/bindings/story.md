@@ -20,14 +20,14 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level95`](#level95) | the hub | 323 | 91 | 91 | 90 |
 | [`level34`](#level34) | mission 4 | 204 | 17 | 17 | 17 |
 | [`level2`](#level2) | mission 5 | 243 | 19 | 19 | 4 |
-| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 5 |
+| [`level3`](#level3) | mission 6 | 259 | 22 | 22 | 6 |
 | [`level5`](#level5) | mission 7 | 274 | 16 | 16 | 14 |
 | [`level81`](#level81) | mission 8 | 236 | 20 | 20 | 7 |
 | [`level86`](#level86) | mission 9 | 245 | 17 | 17 | 4 |
 | [`level93`](#level93) | mission 10 | 295 | 24 | 24 | 4 |
 | [`level31`](#level31) | mission 11 | 266 | 9 | 9 | 3 |
 | [`level14`](#level14) | mission 12 | 226 | 6 | 6 | 2 |
-| [`level9`](#level9) | mission 13 | 225 | 6 | 6 | 1 |
+| [`level9`](#level9) | mission 13 | 225 | 6 | 6 | 2 |
 | [`level51`](#level51) | mission 14 | 256 | 6 | 6 | 1 |
 | [`level52`](#level52) | mission 15 | 235 | 4 | 4 | 0 |
 | [`level54`](#level54) | mission 16 | 241 | 7 | 7 | 1 |
@@ -345,12 +345,12 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level3: mission 6 {#level3}
 
-259 bindings, 22 new: 22 traced, 5 implemented in Coney (238 of all 259).
+259 bindings, 22 new: 22 traced, 6 implemented in Coney (239 of all 259).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
 | [`HuApplyDamageModifier`](character.md#huapplydamagemodifier) | Characters | traced | confirmed (code) | not implemented |
-| [`HuEnableTagCheer`](character.md#huenabletagcheer) | Characters | traced | confirmed (code) | not implemented |
+| [`HuEnableTagCheer`](character.md#huenabletagcheer) | Characters | traced | confirmed (code) | implemented |
 | [`HuHasHat`](character.md#huhashat) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSetAutoCombat`](character.md#husetautocombat) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSetNoReact`](character.md#husetnoreact) | Characters | traced | confirmed (code) | not implemented |
@@ -508,11 +508,11 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level9: mission 13 {#level9}
 
-225 bindings, 6 new: 6 traced, 1 implemented in Coney (214 of all 225).
+225 bindings, 6 new: 6 traced, 2 implemented in Coney (215 of all 225).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
-| [`HuEnableTagDone`](character.md#huenabletagdone) | Characters | traced | confirmed (code) | not implemented |
+| [`HuEnableTagDone`](character.md#huenabletagdone) | Characters | traced | confirmed (code) | implemented |
 | [`HuPutItemInPocket`](character.md#huputiteminpocket) | Characters | traced | confirmed (code) | implemented |
 | [`HuSetHelpHearRange`](character.md#husethelphearrange) | Characters | traced | confirmed (code) | not implemented |
 | [`HuSetIdleDialogMaxIter`](character.md#husetidledialogmaxiter) | Characters | traced | confirmed (code) | not implemented |

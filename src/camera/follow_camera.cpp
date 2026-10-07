@@ -241,10 +241,12 @@ void FollowCamera::setPitch(float degrees) {
     m_zoomLatched = false;
 }
 
-void FollowCamera::reset() {
-    // The distance: the current one clamped to the band, then the preset it is nearest by the halfway rule.
+void FollowCamera::placeBehind(float degrees) {
+    // The distance: the sprint zoom's saved edge while one is held, else the camera's own from the look-at point,
+    // clamped to the band, then the preset it is nearest by the halfway rule, with the zoom step after that preset.
     const FollowSettings& s = m_settings;
-    const float current = std::clamp(anim::distance(m_position, m_lookAt), bandNear(), bandFar());
+    const float own = m_savedNear != 0.0F ? m_savedNear : anim::distance(m_position, m_lookAt);
+    const float current = std::clamp(own, bandNear(), bandFar());
     float distance = s.maxDistance - kBandDepth;
     float step = s.minDistance;
     if (current <= s.minDistance + (s.defaultDistance - s.minDistance) / 2.0F) {
@@ -255,11 +257,23 @@ void FollowCamera::reset() {
         step = s.maxDistance;
     }
     stepZoom(step);
-    // Behind the target at that distance at the configured pitch, the look-at point snapped; the field of view back.
+    // The band moves to the preset, as deep as before, and the lower pitch limit follows its far edge.
+    m_bandNear = distance;
+    updateLowerPitch();
+    // The camera stands along the target's forward turned clockwise by `degrees` and looks back along it, so its view
+    // faces the target's heading turned by 180° − `degrees` (180: behind, looking where the target looks).
+    // place() snaps the look-at point.
+    const float turn = degrees == kBehindDegrees ? 0.0F : kPi - degrees * kRadians;
+    place(m_targetFeet, distance, m_targetHeading + turn);
+}
+
+void FollowCamera::reset() {
+    // The wanted near edge cleared and the target pitch back to the configured one, then behind the target at that
+    // pitch with the look-at point snapped; the field of view eases back.
     m_wantedNear = -1.0F;
     m_targetPitch = std::max(m_configuredPitch, m_lowerPitch);
-    place(m_targetFeet, distance, m_targetHeading);
-    m_wantedFov = s.fieldOfView;
+    placeBehind(kBehindDegrees);
+    m_wantedFov = m_settings.fieldOfView;
     m_fovRate = std::abs(m_wantedFov - m_fov);
 }
 

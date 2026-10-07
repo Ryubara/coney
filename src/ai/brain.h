@@ -13,6 +13,7 @@
 #include "ai/attack_kinds.h"
 #include "ai/goal.h"
 #include "ai/route_planner.h"
+#include "ai/sectors.h"
 #include "ai/targeting.h"
 #include "combat/stick.h"
 #include "human/human.h"
@@ -420,6 +421,15 @@ class Brain {
     [[nodiscard]] anim::Vec3 moveAim() const { return m_moveAim; }
     [[nodiscard]] float moveAimRadius() const { return m_moveAimRadius; }
     void setMoveAim(anim::Vec3 point, float radius);
+    /// The scene's brains (every brain, this one included), which the sector record counts round this one; Brains
+    /// gives it (null for none: the record stays empty).
+    void setPeers(const std::vector<std::unique_ptr<Brain>>* peers) { m_peers = peers; }
+    /// The neighbour sectors round this brain's human, rebuilt first when at least `maxAgeMs` old
+    /// (docs/research/ai.md#neighbour-sectors): callers pass kSectorAgeMs, or kSectorGiveWayAgeMs for giving way.
+    /// @orig 0x0028fe90 Brain_GetSectors (unknown)
+    [[nodiscard]] Sectors& sectors(std::uint64_t maxAgeMs);
+    /// The record as it stands, not refreshed.
+    [[nodiscard]] const Sectors& sectorRecord() const { return m_sectors; }
     /// The brain's slot among the scene's brains (its index, which staggers periodic work across brains).
     [[nodiscard]] std::size_t slot() const { return m_slot; }
     void setSlot(std::size_t slot) { m_slot = slot; }
@@ -477,13 +487,15 @@ class Brain {
     std::size_t m_actionFront = 0;                                     // +0x2f
     Brain* m_target = nullptr;                                         // +0x124
     std::vector<Brain*> m_enemies;                                     // +0x164
-    std::vector<Brain*> m_slots;                                       // +0x1a4
-    std::size_t m_slotCount = kDefaultAttackSlots;                     // +0x1e4
-    std::uint64_t m_nextAttackMs = 0;                                  // +0x1e8
-    std::uint64_t m_attackableAtMs = 0;                                // +0x1ec
-    int m_attackWarnings = 0;                                          // +0x200
-    float m_sightRange = kDefaultSightRange;                           // +0x130
-    float m_fieldOfView = kDefaultFieldOfView;                         // +0x12c
+    Sectors m_sectors;                                                 // 0x006e8318 + slot × 0x48
+    const std::vector<std::unique_ptr<Brain>>* m_peers = nullptr;
+    std::vector<Brain*> m_slots;                   // +0x1a4
+    std::size_t m_slotCount = kDefaultAttackSlots; // +0x1e4
+    std::uint64_t m_nextAttackMs = 0;              // +0x1e8
+    std::uint64_t m_attackableAtMs = 0;            // +0x1ec
+    int m_attackWarnings = 0;                      // +0x200
+    float m_sightRange = kDefaultSightRange;       // +0x130
+    float m_fieldOfView = kDefaultFieldOfView;     // +0x12c
     BrainSenses m_senses;
     int m_threatResponse = kDefaultThreatResponse; // +0x21c
     float m_meleeNear = kDefaultMeleeNear;         // +0x13c

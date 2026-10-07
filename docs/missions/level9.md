@@ -24,12 +24,12 @@ Rembrandt sprays new subway trains with the gang's name to spread it across the 
 
 ## What it needs {#needs}
 
-Its scripts can call 225 script bindings. 6 of them are new, which no earlier level of the story calls: 1 are
+Its scripts can call 225 script bindings. 6 of them are new, which no earlier level of the story calls: 2 are
 implemented in Coney and 6 are traced. The full list is on [the coverage page](../references/bindings/story.md#level9).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
-| [Characters](../references/bindings/character.md) | 4 | 1 |
+| [Characters](../references/bindings/character.md) | 4 | 2 |
 | [Configuration (Cfg)](../references/bindings/config.md) | 2 | 0 |
 
 Research:

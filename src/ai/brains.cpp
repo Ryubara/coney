@@ -12,6 +12,7 @@ Brain& Brains::add(human::Human& human, BrainType type, const FightSettings& set
     m_brains.back()->setSlot(m_brains.size() - 1);
     m_brains.back()->setPlanner(m_planner);
     m_brains.back()->setCollision(m_collision);
+    m_brains.back()->setPeers(&m_brains);
     return *m_brains.back();
 }
 

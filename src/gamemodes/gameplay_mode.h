@@ -310,9 +310,15 @@ class GameplayMode final : public GameMode {
     // function with the tagger, the tag and the flag, no result asked; nothing when no name is set.
     // @orig 0x00238f50 Tag_CallStartCallback (unknown)
     void callTagStart(double human, double tag, double flag);
-    // The tag spots' update every second 60 Hz tick, and player 1's stick game on pad 1's left stick; its end frees
-    // the pad, has him say 83 `tagdone` on a finish and sends him event 14 (Tag_End).
+    // The tag spots' update every second 60 Hz tick, and player 1's stick game on pad 1's left stick: a snap-back
+    // has a crew mate say 80 `tagcheer` when the tagger's tag cheer is on; its end frees the pad, has a crew mate say
+    // 83 `tagdone` on a finish and sends him event 14 (Tag_End).
     void updateTagging(const Pads& pads, double seconds);
+    // A crew mate of `tagger` says `command` (docs/research/sound-events.md#tag-lines): only for a war chief whose
+    // last Warrior command is defend; one member of his gang within his far melee range is picked, and he speaks
+    // only when he may comment on tags.
+    // @orig 0x00273a68 Tag_SayNearbyLine (unknown)
+    void sayTagLine(double tagger, std::uint32_t command);
     // The spray's start once its intro clip has played (0x0022e610): the stick game, message 0 to the tag, the start
     // callback.
     void beginTagSpray();

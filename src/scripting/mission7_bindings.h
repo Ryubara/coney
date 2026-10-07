@@ -20,10 +20,11 @@
 namespace coney::script {
 
 /// The bindings registered here; installBindings() registers them with addMission7Bindings().
-inline constexpr std::array<std::string_view, 15> kMission7Bindings{
-    "ActTurnTo",           "CarRemovePart",     "CfgWarriorWeapons", "EndRoomSmoke", "HUDEnableBar",
-    "HUDSetBarPercentage", "HUDSetBarProperty", "HuActionDialog",    "HuIsTagging",  "HuMarkReachable",
-    "HuSetRageMode",       "ObjEnablePhysics",  "SoundPreLoad",      "SoundStart",   "StartRoomSmoke"};
+inline constexpr std::array<std::string_view, 17> kMission7Bindings{
+    "ActTurnTo",           "CarRemovePart",     "CfgWarriorWeapons", "EndRoomSmoke",     "HUDEnableBar",
+    "HUDSetBarPercentage", "HUDSetBarProperty", "HuActionDialog",    "HuEnableTagCheer", "HuEnableTagDone",
+    "HuIsTagging",         "HuMarkReachable",   "HuSetRageMode",     "ObjEnablePhysics", "SoundPreLoad",
+    "SoundStart",          "StartRoomSmoke"};
 
 /// Registers kMission7Bindings in `vm`, acting on `context` (its humans, brains, cars, spawn records, state and sound);
 /// callbacks go through `scripts`, and the preloaded sounds take their handles from `nextHandle`.

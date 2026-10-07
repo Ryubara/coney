@@ -233,12 +233,23 @@ class FollowCamera {
     /// @orig 0x0011c3b8 Camera_SetFollowPitch (unknown)
     void setPitch(float degrees);
 
-    /// `CameraReset` on the follow camera: behind the target at the preset distance nearest the current one (clamped
-    /// to the band), with the zoom step after it, the look-at point snapped, the wanted near edge cleared, the target
-    /// pitch back to the configured one (reached at once) and the field of view easing back. The band is not moved.
+    /// `CameraReset` on the follow camera: the wanted near edge cleared, the target pitch back to the configured one,
+    /// then placeBehind(kBehindDegrees), and the field of view easing back.
     /// @orig 0x00124d00 Cam_Follow_Reset (Cam_Follow.cpp)
-    /// @orig 0x00124f38 Cam_Follow_PlaceBehind (Cam_Follow.cpp)
     void reset();
+
+    /// The heading CameraReset places the camera at: behind the target.
+    static constexpr float kBehindDegrees = 180.0F;
+
+    /// Places the camera at once `degrees` round the target from its facing (the target's forward turned clockwise
+    /// seen from above; 180 behind, 190 behind and 10° to its left), looking back at it at the target pitch, the
+    /// look-at point snapped. The distance is the preset nearest the current one (the sprint zoom's saved edge while
+    /// one is held) clamped to the band: the minimum up to halfway to the default, the default up to halfway to the
+    /// maximum, else the maximum − 0.5; the band moves there and the zoom step becomes the preset after it.
+    /// `CamSetFollowHeading(degrees)` (docs/research/camera.md#script-calls).
+    /// @orig 0x00124f38 Cam_Follow_PlaceBehind (Cam_Follow.cpp)
+    /// @orig 0x001250a8 Cam_Follow_PlaceAtHeading (Cam_Follow.cpp)
+    void placeBehind(float degrees);
 
     /// The follow camera made current directly (also at the end of a blend): the look-at point snapped, the camera
     /// kept in its direction from it at its distance clamped to the band, the hard band set to the band and the wanted

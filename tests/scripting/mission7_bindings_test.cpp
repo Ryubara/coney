@@ -222,6 +222,24 @@ TEST_CASE("The rage, reachable and tagging calls reach the character host", "[mi
     CHECK(h.call("HuIsTagging", {Value(5.0)}).front().isNil());
 }
 
+TEST_CASE("HuEnableTagCheer and HuEnableTagDone set the human's tag switches, true by default", "[mission7_bindings]") {
+    Harness h;
+    const coney::HumanCreation* human = h.humans.find(5.0);
+    REQUIRE(human != nullptr);
+    CHECK(human->tagCheer);
+    CHECK(human->tagDoneSpeech);
+    h.call("HuEnableTagCheer", {Value(5.0), Value()});
+    h.call("HuEnableTagDone", {Value(5.0), Value(0.0)});
+    CHECK_FALSE(human->tagCheer);
+    CHECK_FALSE(human->tagDoneSpeech);
+    // Left out, `enable` is true; a handle no human has does nothing.
+    h.call("HuEnableTagCheer", {Value(5.0)});
+    h.call("HuEnableTagDone", {Value(5.0), Value(1.0)});
+    h.call("HuEnableTagCheer", {Value(99.0), Value()});
+    CHECK(human->tagCheer);
+    CHECK(human->tagDoneSpeech);
+}
+
 TEST_CASE("ActTurnTo queues a turn to the point, its delay -1 when left out", "[mission7_bindings]") {
     Harness h;
     h.call("ActTurnTo", {Value(5.0), point(1.0F, 2.0F, 3.0F), Value(0.1)});

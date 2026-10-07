@@ -2965,6 +2965,7 @@
   notes: >-
     0x00273bf4 is the only reader of the byte.
   usage: {chunks: 3, calls: 3, boot: false, mission1: false, result_used: false, levels: [9]}
+  coney: implemented
 
 - name: HuEnableTagCheer
   wrapper: 0x00364d88
@@ -2981,6 +2982,7 @@
   notes: >-
     Rules of the stick game: [Crimes: tagging](../../research/crimes.md#tagging).
   usage: {chunks: 1, calls: 1, boot: false, mission1: false, result_used: false, levels: [3]}
+  coney: implemented
 
 - name: HuEnableOnFire
   wrapper: 0x00364de8

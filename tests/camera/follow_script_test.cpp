@@ -134,7 +134,7 @@ TEST_CASE("CamSetFollowAngle clamps to the pitch limits and turns the view at on
     CHECK(camera.targetPitch() == Approx(13.0F * kDegree));
 }
 
-TEST_CASE("CameraReset puts the camera behind the player at the nearest preset, the band left as it is", "[camera]") {
+TEST_CASE("CameraReset puts the camera behind the player at the nearest preset, the band moved there", "[camera]") {
     FollowCamera camera(kFeet, 0.0F);
     camera.configure(level99());
     // The player turned to face +x (heading -90°) and walked off: the reset swings the camera behind him.
@@ -153,6 +153,46 @@ TEST_CASE("CameraReset puts the camera behind the player at the nearest preset, 
     // In the 4.8-5.3 m band the preset is the default distance.
     camera.setZoom(FollowZoom::Default);
     camera.reset();
+    CHECK(coney::anim::distance(camera.position(), camera.lookAt()) == Approx(4.8F));
+    CHECK(camera.zoomDistance() == Approx(6.6F));
+}
+
+TEST_CASE("placing the camera round the player keeps its configuration and its target pitch", "[camera]") {
+    FollowCamera camera(kFeet, 0.0F);
+    camera.configure(level99());
+    camera.setPitch(10.0F);
+    // The player put 17 m away facing -y (a teleport, CamSetFollowHeading): behind him at the band's preset, 10°.
+    FollowTarget target = standing();
+    target.feet = Vec3{40.0F, 57.0F, 0.0F};
+    target.heading = 180.0F * kDegree;
+    camera.observe(target);
+    camera.placeBehind(FollowCamera::kBehindDegrees);
+    CHECK(camera.bandNear() == Approx(3.0F));
+    CHECK(camera.lookAt() == Vec3{40.0F, 57.0F, 1.4F});
+    CHECK(coney::anim::distance(camera.position(), camera.lookAt()) == Approx(3.0F));
+    CHECK(camera.position().y > 57.0F);
+    CHECK(camera.position().x == Approx(40.0F).margin(1e-4));
+    CHECK(pitchOf(camera) == Approx(10.0F * kDegree).margin(1e-4));
+    CHECK(camera.position() == camera.wanted());
+    // 90° turns his forward (-y) clockwise to -x: the camera stands west of him.
+    camera.placeBehind(90.0F);
+    CHECK(camera.position().x < 40.0F);
+    CHECK(camera.position().y == Approx(57.0F).margin(1e-4));
+}
+
+TEST_CASE("placing the camera mid-sprint takes the sprint zoom's saved edge and moves the band there", "[camera]") {
+    FollowCamera camera(kFeet, 0.0F);
+    camera.configure(level99());
+    camera.setZoom(FollowZoom::Default);
+    // Sprinting on the spot pulls the band in toward 3.0 m from the saved 4.8 m.
+    FollowTarget sprint = standing();
+    sprint.gait = coney::camera::kGaitSprint;
+    for (int i = 0; i < 6; ++i) {
+        camera.update(sprint, kRest, kRest, nullptr, kStep);
+    }
+    REQUIRE(camera.bandNear() < 4.5F);
+    camera.placeBehind(FollowCamera::kBehindDegrees);
+    CHECK(camera.bandNear() == Approx(4.8F));
     CHECK(coney::anim::distance(camera.position(), camera.lookAt()) == Approx(4.8F));
     CHECK(camera.zoomDistance() == Approx(6.6F));
 }

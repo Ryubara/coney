@@ -2180,9 +2180,11 @@ The world viewer keeps its own free camera with the player camera's lens
 - **The Rumble cameras** (`src/camera/win_camera.*`, [Rumble: win camera](rumble.md#win-camera)): `CameraCreateWin`
   sets up the one win camera on the winner, which starts again when made active (the scripts teleport the winner in
   the same frame) and orbits until replaced; its stop condition is not read. `CamDelete` forgets a locked camera,
-  cutting to the follow camera when it was current (**Coney choice**); `CamSetFollowHeading` places the follow camera
-  at its distance from the player's last feet along a world heading, where the original turns the player's facing
-  clockwise by the angle ([Script calls](#script-calls)), so 180 must put it behind him whichever way he faces.
+  cutting to the follow camera when it was current (**Coney choice**).
+- **`CamSetFollowHeading(degrees)`** (`FollowCamera::placeBehind()`, the placement `CameraReset` uses): the camera at
+  once along the player's forward turned clockwise by `degrees` (180 behind him), looking back at him at the target
+  pitch, at the preset distance nearest its own (the sprint zoom's saved edge while one is held) clamped to the band;
+  the band moves to that preset and the zoom step to the one after it.
 
 ## Notes for implementers
 
@@ -2254,3 +2256,5 @@ position, and `CamSetFollowPos` puts the follow camera at a point at once.
   `+0x330`.
 - **Scenes**: the "a scene is playing" flag at `0x0051489c + 0x410` (see
   [Scenes](#scenes)).
+- **Teleports**: whether `Teleport` / `TeleportToFlag` of a player (the human slot `+0x14c` they call) moves or resets his
+  follow camera.

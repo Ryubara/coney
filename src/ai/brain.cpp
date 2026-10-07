@@ -503,6 +503,20 @@ void Brain::forget(const Brain& other) {
     }
     std::erase(m_enemies, &other);
     std::erase(m_slots, &other);
+    m_sectors.forget(other);
+}
+
+Sectors& Brain::sectors(std::uint64_t maxAgeMs) {
+    // Rebuilt from every brain of the scene when due.
+    if (m_peers != nullptr && m_sectors.due(m_nowMs, maxAgeMs)) {
+        std::vector<const Brain*> others;
+        others.reserve(m_peers->size());
+        for (const std::unique_ptr<Brain>& peer : *m_peers) {
+            others.push_back(peer.get());
+        }
+        m_sectors.rebuild(*this, others, m_nowMs);
+    }
+    return m_sectors;
 }
 
 } // namespace coney::ai
