@@ -306,9 +306,9 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 | `0x001353b8` | `CamLocked_SetAngles` | Locked camera: heading, pitch and roll in°rees (`+0x200`/`+0x204`/`+0x208`), then the orientation (`0x001353e0`). | confirmed (code) |
 | `0x001353e0` | `CamLocked_BuildOrientation` | Locked camera orientation = rotation about z by the heading × about × by the pitch × about y by the roll. | confirmed (code) |
 | `0x001355f8` | `CamLocked_Activate` | Locked camera activation (vtable `+0x144`): one base update of 1/60 s. | confirmed (code) |
-| `0x00135680` | `FUN_00135680` | Locked camera update: placed, aimed 3 m ahead, kept out of walls, keeps its listed humans inside the view's sides, shake. [locked cameras](#locked-cameras). | confirmed (code) |
-| `0x001358d0` | `FUN_001358d0` | [`CamLockLocked`](../references/bindings/camera.md#camlocklocked) core: adds or removes a human in the locked camera's kept-in-view list (two entries). | confirmed (code) |
-| `0x00135960` | `FUN_00135960` | Pushes a listed human back inside the view when within 0.3 m of the left or right frustum plane, with a world ray and a ground snap. [locked cameras](#locked-cameras). | confirmed (code) |
+| `0x00135680` | `CamLocked_Update` | Locked camera update: placed, aimed 3 m ahead, kept out of walls, keeps its listed humans inside the view's sides, shake. [locked cameras](#locked-cameras). | confirmed (code) |
+| `0x001358d0` | `CamLocked_SetKeptHuman` | [`CamLockLocked`](../references/bindings/camera.md#camlocklocked) core: adds or removes a human in the locked camera's kept-in-view list (two entries). | confirmed (code) |
+| `0x00135960` | `CamLocked_PushHumanIntoView` | Pushes a listed human back inside the view when within 0.3 m of the left or right frustum plane, with a world ray and a ground snap. [locked cameras](#locked-cameras). | confirmed (code) |
 | `0x00135ca8` | `LockedCam_KeepHumansInView` | Runs the push for each human of the locked camera's list. [locked cameras](#locked-cameras). | confirmed (code) |
 
 ### `Cam_Mini`, the mini-game camera (type 8) {#fn-mini}
@@ -438,14 +438,14 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 | --- | --- | --- | --- |
 | `0x00142f98` | `CamBlend_Construct` | Cam_Transition (type 5, the blend camera) constructor, 0x240 bytes, vtable `0x00537610`: no source (`+0x210`) or destination (`+0x214`), start orientation identity, fov 60 (`+0x224`, `+0x22c`, `+0x230`), near 0.3 (`+0x228`), `+0x234` 1. | confirmed (code) |
 | `0x00143050` | `CamBlend_Destroy` | Cam_Transition destructor. | confirmed (code) |
-| `0x00143078` | `FUN_00143078` | Starts a blend: the duration and the cameras. [blends](#blends). | confirmed (code) |
+| `0x00143078` | `CamBlend_Start` | Starts a blend: the duration and the cameras. [blends](#blends). | confirmed (code) |
 | `0x00143090` | `CamBlend_GetAspect` | Blend camera vtable `+0x1fc`: the destination's aspect, mixed with the source's by t (`+0x220`) when there is a source. | confirmed (code) |
 | `0x00143130` | `CamBlend_GetLens234` | Blend camera vtable `+0x234`: the destination's value mixed with the source's by t. | confirmed (code) |
 | `0x001431d0` | `CamBlend_GetLens23c` | Blend camera vtable `+0x23c`: the destination's value mixed with the source's by t. | confirmed (code) |
 | `0x00143270` | `CamBlend_GetLens244` | Blend camera vtable `+0x244`: the larger of the source's and destination's values. | confirmed (code) |
 | `0x00143300` | `CamBlend_Activate` | Blend activation (vtable `+0x144`): snapshots the source's orientation, position, look-at, fov, near, far and draw distance (`+0x1e0`..`+0x230`) as the start, activates the destination (vtable `+0x144`); `+0x234` stays 1 only when the source is a scene or path camera. | confirmed (code) |
 | `0x00143540` | `CamBlend_Deactivate` | Blend camera vtable `+0x154`: releases itself when it is no longer its player's current camera. | confirmed (code) |
-| `0x00143590` | `FUN_00143590` | Blend update: destination (and source) updated, then a linear blend of look-at and position and a slerp of orientation by t, far clip min'd; at t = 1 the destination becomes current. [blends](#blends). | confirmed (code) |
+| `0x00143590` | `CamBlend_Update` | Blend update: destination (and source) updated, then a linear blend of look-at and position and a slerp of orientation by t, far clip min'd; at t = 1 the destination becomes current. [blends](#blends). | confirmed (code) |
 
 ### `Cam_Win` (type 13) {#fn-win}
 
@@ -455,9 +455,9 @@ The base camera's own methods, the frustum, the views and the shake, `0x00120868
 | --- | --- | --- | --- |
 | `0x00143918` | `CamWin_Construct` | Cam_Win (type 13) constructor, 0x200 bytes, vtable `0x005378d0`: no target (`+0x1e0`), distance 1 (`+0x1e4`), angle -10° (`+0x1e8`), height 1.4 (`+0x1ec`), speed 15°/s (`+0x1f0`), direction 1 (`+0x1f4`), orbiting (`+0x1f8`). [Rumble: win camera](rumble.md#win-camera). | confirmed (code) |
 | `0x001439b0` | `CamWin_Destroy` | Cam_Win destructor. | confirmed (code) |
-| `0x001439d8` | `FUN_001439d8` | Win camera start (vtable `+0x144`): look-at above the target, placed on its circle. [Rumble: win camera](rumble.md#win-camera). | confirmed (code) |
+| `0x001439d8` | `CamWin_Activate` | Win camera start (vtable `+0x144`): look-at above the target, placed on its circle. [Rumble: win camera](rumble.md#win-camera). | confirmed (code) |
 | `0x00143c58` | `CamWin_SetDirection` | Win camera: circling direction `+0x1f4` = 1 for a positive argument, else -1. | confirmed (code) |
-| `0x00143c78` | `FUN_00143c78` | Win camera update: circles the target. [Rumble: win camera](rumble.md#win-camera). | confirmed (code) |
+| `0x00143c78` | `CamWin_Update` | Win camera update: circles the target. [Rumble: win camera](rumble.md#win-camera). | confirmed (code) |
 
 ## Data
 
@@ -1080,6 +1080,18 @@ itself from `l99-warriors-fight-start` until lesson 1, and the street saves, rea
 target pitch to `degrees` clamped to `[+0x3b0, +0x3ac]`, turns the view to it at once (the wanted, previous and own
 positions all set to the result) and clears the sprint latch `+0x466`. Confirmed (code).
 
+`CamSetFollowHeading(degrees)` (`0x0011c2f0`, 14 calls in `level5`, `level80` and `level87`, all after a scene:
+170-200, once 0) is **relative to the target's facing, not a world heading**. It snaps player 0's look-at point and
+calls `Cam_Follow_PlaceBehind(degrees, −1)` (`0x00124f38`) on every follow camera, the same placement as
+`CameraReset` with 180 (above). `Cam_Follow_PlaceAtHeading` (`0x001250a8`) builds the direction `D` = the first
+listed target's forward (`Quat_AxisY` of its transform-table quaternion, `0x00714b10` + index × `0x20`; world +y
+when there is no target) turned by `degrees` about **−z** (`Quat_FromAxisAngle` `0x00335ea0` uses the axis
+(0, 0, −1) at `0x00511710`), so a positive angle turns **clockwise** seen from above, as the characters' headings do.
+The camera's orientation is turned so that its backward axis lies along `D`, then the camera is put at the look-at
+point + distance × `D` and pitched to the target pitch. So 180 stands it behind the player looking where he faces,
+190 behind and 10° round to his left (clockwise from his facing, seen from above), 0 in front looking at his face.
+Confirmed (code).
+
 ### Blends between cameras {#blends}
 
 `CameraMakeActive(camera, seconds > 0)` makes the blend camera (type 5) current when there is a previous camera and
@@ -1102,15 +1114,82 @@ the new one is not itself a blend (`0x0011ee08` → `0x00143078`). Its update (`
 
 A locked camera (type 1, `CameraCreateLocked`) stays where it was put, looking along its heading and pitch. Its update
 (`0x00135680`) places it, aims it at a point 3 m ahead along its forward, keeps it out of walls with a line-of-sight
-test from its position, runs `0x00135ca8` and applies the [shake](#shake). Its orientation is a rotation about z
-by the heading, then about x by the pitch, then about y by the roll, all in degrees (`0x001353e0`). Confirmed (code).
-`0x00135ca8` does not
+test from its position, runs `0x00135ca8` and applies the [shake](#shake). Its orientation comes from three angles
+in degrees, by the conventions of [Scripted camera angles](#scripted-angles). `0x00135ca8` does not
 track: each human `CamLockLocked` lists (none in `level99`) that comes within 0.3 m of the view's left or right edge
 is pushed back inside, an invisible wall at the frame's sides (confirmed (code)). The test point is 1.4 m above the
 physics body; the camera's planes 0 and 1 (camera `+0x70`, inward normals; left and right inferred) are tried in
 turn, and the first one the point is within 0.3 m of pushes it to exactly 0.3 m inside; the sideways part of the
 step is clipped by a world ray, and the feet are snapped to the ground (ray from 2.4 m up, 3.4 m long). Details in
 [`CamLockLocked`](../references/bindings/camera.md#camlocklocked). Confirmed (code).
+
+### Scripted camera angles {#scripted-angles}
+
+`CameraCreateLocked(name, {x, y, z}, fov, heading, pitch, roll, near, far)` (binding `0x00365d38`: Lua arguments 4,
+5 and 6 go to `+0x200`, `+0x204`, `+0x208`) and `CamAddPoizoPoint({x, y, z}, heading, pitch, roll, time,
+callback)` (binding `0x00366e18`) take the same three angles in degrees and turn them into the camera's
+orientation quaternion the same way: `CamLocked_BuildOrientation` (`0x001353e0`) and `CamSpline_AddPointAngles`
+(`0x00142ac8`) are the same code. Confirmed (code) at both:
+
+1. Three axis quaternions, each `(axis × sin(a/2), cos(a/2))` with `a` = angle × π/180 (`sinf` `0x004b8c40`,
+   `cosf` `0x004b8a70`): `qh` about world +z (`0x00511700`) by the heading, `qp` about +x (`0x005116e0`) by the
+   pitch, `qr` about +y (`0x005116f0`) by the roll.
+2. `q = qh ⊗ qp ⊗ qr`, Hamilton products (the vector-unit sequence at `0x00135568` computes
+   `(w1·v2 + w2·v1 + v1 × v2, w1·w2 − v1·v2)` with `qh` on the left, then the result times `qr`). With column
+   vectors that is `R = Rz(h) · Rx(p) · Ry(r)`: the pitch turns about the camera's own right axis after the
+   heading, and the roll about its own forward axis; the pitch is not about world x.
+3. `q` (x, y, z, w) is stored at `+0x20` (and `+0x1f0` for a locked camera, the orientation it keeps). It maps the
+   camera's local axes to the world ([Axes](#the-base-camera-object): +x right, +y forward, +z up), as
+   `Quat_AxisY` (`0x003363b0`: `(2(xy − wz), 1 − 2(x² + z²), 2(yz + wx))`) reads it.
+
+So, with `h`, `p`, `r` the script's angles:
+
+| Axis | World vector |
+| --- | --- |
+| forward (+y) | `(−sin h · cos p, cos h · cos p, sin p)` |
+| up (+z) | `(cos h · sin r + sin h · sin p · cos r, sin h · sin r − cos h · sin p · cos r, cos p · cos r)` |
+| right (+x) | `forward × up`; with `r` = 0 it is `(cos h, sin h, 0)` |
+
+- **Heading** 0 looks along world +y and **grows anticlockwise** seen from above (90 looks along −x). This is the
+  opposite way round from the characters' headings and `Vec_FromHeading` (`(sin h, cos h)`, clockwise,
+  [Maths](maths.md)): a camera heading `h` looks where a character heading `−h` faces.
+- **Pitch positive looks up**, negative looks down: every `level99` locked camera that looks down at the street has
+  a negative pitch (−2.7° to −27.7°).
+- **Roll positive** tips the camera's top toward its right (+x). No script in the levels read so far passes a roll
+  other than 0.
+- The locked update (`0x00135680`) then rebuilds the same orientation each frame: the eye is the position
+  (`+0x1e0`, also `+0x10`), the target the eye + 3 m × `Quat_AxisY(q)`, the up hint `Quat_AxisZ(q)` (`0x00336458`),
+  through `Mat_LookAtUp` (`0x00337168`) and `Mat_ToQuat`, so the roll survives (the default up hint of
+  `Mat_LookAt` would drop it). Its look-at point is that target.
+- The **view matrix** (world to camera) is the inverse of `[right, forward, up]` placed at the eye: camera-space
+  `(x, y, z) = (right · (P − eye), forward · (P − eye), up · (P − eye))`, with +y the depth; the lens is on
+  [The streamed world](world.md#player-camera).
+
+**Runtime check** (confirmed (runtime), PCSX2 2026-10-07, a copy of the owner's slot 10 in `level99` checkpoint 3,
+every locked camera object read from the handle table `0x006ebd38` slots `0x3c`-`0x6b`). The angles at
+`+0x200`-`+0x208` are the script's; `+0x20` equals the formula above to 5 decimals for all eight, and each
+camera made current (player 1's current-camera word `0x005d9150` pointed at it) showed its shot:
+
+| Camera | Position | h, p, r | fov / far | Quaternion `+0x20` (x, y, z, w) | Forward |
+| --- | --- | --- | --- | --- | --- |
+| `VerminCar` | 60.925, 43.425, 2.146 | 151.47183, −11.52631, 0 | 65 / 107.3 | −0.02474, −0.09732, 0.96427, 0.24515 | −0.4680, −0.8609, −0.1998 |
+| `PedCam` | 44.246, 39.242, 1.752 | 49.16566, −2.67624, 0 | 50 / 150 | −0.02124, −0.00971, 0.41589, 0.90911 | −0.7558, 0.6532, −0.0467 |
+| `VerminWait` | 50.613, 43.172, 1.936 | 21.78949, −6.02318, 0 | 50 / 72.6 | −0.05159, −0.00993, 0.18874, 0.98062 | −0.3691, 0.9234, −0.1049 |
+| `FenceCam` | 47.497, 37.941, 3.507 | 177.78334, −11.85450, 0 | 50 / 150 | −0.00200, −0.10325, 0.99447, 0.01924 | −0.0379, −0.9779, −0.2054 |
+| `ClimbPoizo` | 64.084, 15.313, 9.375 | 143.57188, −27.69311, 0 | 50 / 150 | −0.07480, −0.22733, 0.92229, 0.30348 | −0.5258, −0.7124, −0.4647 |
+| `JumpCam` | 57.213, −1.465, 6.173 | 88.01634, 0.31346, 0 | 50 / 150 | 0.00197, 0.00190, 0.69476, 0.71924 | −0.9994, 0.0346, 0.0055 |
+| `VerminFencePoizo` | 25.282, 6.984, 2.012 | −90.95051, −3.46206, 0 | 50 / 150 | −0.02118, 0.02154, −0.71262, 0.70090 | 0.9980, −0.0166, −0.0604 |
+| `BreakFencePoizo` | 23.674, 0.423, 1.087 | 178.03990, 4.13726, 0 | 50 / 150 | 0.00062, 0.03609, 0.99920, 0.01709 | −0.0341, −0.9968, 0.0721 |
+
+All eight have near 0.1. **Worked example**, `FenceCam` (`level99_lesson2`, checkpoint 3, the shot of Vermin going
+over the chain-link fence): `CameraCreateLocked("FenceCam", {47.497, 37.941, 3.507}, 50, 177.78334, −11.85450, 0,
+0.1, 150)`. `qh` = (0, 0, sin 88.892°, cos 88.892°) = (0, 0, 0.99981, 0.01934); `qp` = (sin −5.927°, 0, 0, cos
+−5.927°) = (−0.10326, 0, 0, 0.99465); `q = qh ⊗ qp` = (−0.00200, −0.10325, 0.99447, 0.01924), as read. Forward =
+(−sin 177.78° · cos 11.85°, cos 177.78° · cos 11.85°, sin −11.85°) = (−0.0379, −0.9779, −0.2054): south, 11.9°
+down. Up = (−0.0079, −0.2053, 0.9787), right = (−0.9993, 0.0387, 0); look-at point (47.383, 35.007, 2.891), as
+read at `+0x180`. View translation (right, forward, up rows times −eye) = (45.994, 39.622, 4.733). The frame
+looks down the alley at the fence from above head height; read with the pitch's sign flipped it would look 11.9°
+up, over the fence into the buildings.
 
 ### Path cameras {#path-cameras}
 
@@ -1444,9 +1523,11 @@ The world viewer keeps its own free camera with the player camera's lens
   the pitch, and the way back goes to the maximum distance less 0.5, as the page says.
 - **The zoom distance** starts at the maximum (6.6 m, upper pitch limit 40°), as read in the street, for a camera no
   script configures (the sandbox, `--play-level` without scripts).
-- **Locked cameras' angles**: the page does not give their conventions, so the heading is read as a human's (0 facing
-  +y, anticlockwise), the pitch positive looking down and the roll positive turning the top to the right. The line of
-  sight test, the blend's sphere push and keep-in-view's ray (for a range above 0) are left out.
+- **Locked cameras' angles**: the heading is read as the original's (0 facing +y, anticlockwise) and the roll
+  positive turning the top to the right, but **the pitch positive looking down, the opposite of the original**
+  ([Scripted camera angles](#scripted-angles): positive looks up), so every scripted shot that looks down at its
+  subject looks up by as much in Coney; path points share the reading. The line of sight test, the blend's sphere
+  push and keep-in-view's ray (for a range above 0) are left out.
 - **A follow camera that is not current** is not updated; it only notes where the player is, so a reset or the
   activation places it on him.
 - **The shake**: one shake on the manager, applied to whichever camera is current; the view offset (form not traced) is
@@ -1482,7 +1563,8 @@ The world viewer keeps its own free camera with the player camera's lens
   sets up the one win camera on the winner, which starts again when made active (the scripts teleport the winner in
   the same frame) and orbits until replaced; its stop condition is not read. `CamDelete` forgets a locked camera,
   cutting to the follow camera when it was current (**Coney choice**); `CamSetFollowHeading` places the follow camera
-  at its distance from the player's last feet along the heading (**Coney's reading** of the angle).
+  at its distance from the player's last feet along a world heading, where the original turns the player's facing
+  clockwise by the angle ([Script calls](#script-calls)), so 180 must put it behind him whichever way he faces.
 
 ## Notes for implementers
 

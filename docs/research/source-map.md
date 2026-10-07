@@ -131,7 +131,7 @@ pages. Names are ours.
 | `0x0019dfb0`-`0x001a1f10` | 16 KB | `GUI/` | `GlobalString_Get`/`_Set` (`0x0019ee70`, `0x0019eea0`), `Bar` (`0x001a0fd0`), the HUD meter (`0x001a1008`), soldier messages, [GUI](gui.md), [HUD](hud.md) | before `BaseWidget.cpp`'s path string; called from `GUI/` 232 times |
 | `0x002176b8`-`0x0021c7c8` | 21 KB | `Human/` | the human's set-up and contacts (`Human_Init`, `0x00218008`; `Human_OnContact`, `0x00219d50`; `Strike_Contact`, `0x0021b290`), [Characters](characters.md) | before `Human.cpp`'s path string; calls `Human/` 115 times and is called from it 123 |
 | `0x00273fa0`-`0x00323298` | 718 KB | `Human/` | the player's moves and combat (to `0x00287a18`, [Combat](combat.md)), then the AI: brains, goals, actions, tactics, formations ([AI](ai.md)); 8 static-init stubs | rodata between `cns/cnsplayertag.cpp` and Lua's; calls `Human/` 3,580 times. More `Human/` subdirectories like `cns/` would fit; a directory of its own between `Human/` and `lua-4.0.1/` cannot be ruled out |
-| `0x00335320`-`0x00338420` | 13 KB | (unnamed directory) | maths: random numbers (a table of 1,024, `Random_Int` `0x003353b8`), quaternions (`Quat_Slerp`, `0x00336a00`, [Physics](physics.md)), ray-triangle tests (`0x00337920`) | between Lua and `Memory/` (stubs `0x00335670`, `0x003383e0`); called from every directory, calls neither; a `Math/` directory would sort there (speculative) |
+| `0x00335320`-`0x00338420` | 13 KB | (unnamed directory) | [maths](maths.md): random numbers (a table of 1,024, `Random_Int` `0x003353b8`), quaternions (`Quat_Slerp`, `0x00336a00`, [Physics](physics.md)), ray-triangle tests (`0x00337920`) | between Lua and `Memory/` (stubs `0x00335670`, `0x003383e0`); called from every directory, calls neither; a `Math/` directory would sort there (speculative) |
 | `0x0033b1a0`-`0x0033c288` | 4 KB | `Memory/` | the heaps' block allocator, [Memory](memory.md) | called only from `Memory/` |
 | `0x0033c288`-`0x003418f8`, `0x00341a68`-`0x0034f740` | 82 KB | `Physics/` | `IPhysics`, bodies, sweeps, settling, [Physics](physics.md) | rodata between `physics.cpp` and `CollisionMesh.cpp`; ends at the stub `0x0034f718` |
 | `0x0034f740`-`0x00350538` | 3 KB | `RayCast/` | ground-height helpers and the material names (`Collision_MarchRay`, `0x0034f740`), [Collision](collision.md) | after `Physics/`'s last stub; uses the level's mesh |
@@ -571,7 +571,7 @@ What the [roadmap](../roadmap.md)'s "Boot the engine" step needs, with where it 
   394 KB of script types in `TaskEngine/` have no path strings. Splitting them into files needs other per-TU
   markers: the `MemoryStl.h` copies in `.rodata`, vtables in `.data`, or class tags passed to the allocator.
 - **Gangs' directory:** `GameModes/`, or a directory of their own between it and `Graphics/`?
-- **Maths unit** (`0x00335320`-`0x00338420`): random numbers, quaternions, ray-triangle tests; no page covers it.
+- **Maths unit** (`0x00335320`-`0x00338420`, documented on [Maths](maths.md)): which directory, if any, held it?
 - **Pipelines' directory** (`0x00424ee8`-`0x00429b18`): `Warriors/`, `Movie/` or a directory of their own?
 - **Directory walker** (`0x00153118`, `/%s%s%s/*`, in `Device/ps2/`): what calls it through which pointer, and
   for which device.

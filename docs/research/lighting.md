@@ -224,7 +224,8 @@ Coronas are separate from the **level world's glows**, the fixed `propglow` halo
 ### Flicker {#flicker}
 
 The effects word's bits 1-4 (`+0x08 & 0x1e`) select a mode; the step runs only while the light is visible (from the
-cull). Confirmed (code); `rand(n)` is the game's random 0 to n-1 (`0x003353b8`):
+cull). Confirmed (code); `rand(n)` is the game's random 0 to n inclusive (`Random_Int`, `0x003353b8`,
+[Maths](maths.md#random)):
 
 | Mode | Set by | Each time its timer runs out |
 | --- | --- | --- |

@@ -425,7 +425,8 @@ From `DS_PS2Device_Init` ([Boot](boot.md#device-initialisation)), step 6. Confir
 
 ### A frame {#a-frame}
 
-What [one in-game frame](boot.md#one-frame) does on the screen, confirmed (code) at `0x0015d160` and its callees:
+What [one in-game frame](boot.md#one-frame) does on the screen, confirmed (code) at `0x0015d160` and its callees
+(the GS state of each pass, measured: [Rendering](rendering.md#passes)):
 
 1. **Cameras** (`0x001562c8`): device slot `+0x28` with the player-1 camera's view window, near and far clip and fog
    distance and its matrix. That sets the main camera, each viewport's camera (fog distance = far clip × fog start)
