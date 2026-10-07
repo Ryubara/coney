@@ -190,6 +190,8 @@ anti-aliasing, and rendering interpolated between simulation steps so that motio
 30 Hz simulation. PS2-specific effects (the VU microcode's particles, glows and screen filters) are rewritten for the
 PC renderer from their research pages. Texture-replacement packs, made by players and keyed by texture name, load
 from a mods folder; Coney ships only the loader, never a pack.
+Each option's feasibility, approach, dependencies, cost and order, and the local AI-upscaling tool, are on
+[Enhancements plan](guides/enhancements.md).
 
 **Done when** the first mission plays at a widescreen resolution with anti-aliasing and interpolated rendering, and a
 test pack replaces a named texture.
