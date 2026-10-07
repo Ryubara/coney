@@ -15,7 +15,7 @@ enemies and wrecked cars.
 
 | # | Status | Note |
 | --- | --- | --- |
-| 1 | 🚧 In Progress | Every binding is in and the scripts run 20 s with no error; the bar staff's throws play their clip without a bottle. |
+| 1 | 🚧 In Progress | Plays from the intro through the fence, the car flippers' scene and the loot objective (store items taken with triangle count toward the $350). Pane, door and car hits reach the riot box as message 6 and a car's damaged parts send message 0x19, so breaking car parts fills the riot meter; props (newsstands, benches, trash) cannot be struck yet. The bar staff's throws play their clip without a bottle. |
 | 2 | 🚧 In Progress | The rioters roam their gang's turf, decide, pick fights and leave as the original does; their smashing and looting find nothing to act on yet. |
 | 3 | 🚧 In Progress | The riot waves and the wrecked car run; the forced crime level holds the police's interest. |
 | 4 | 🚧 In Progress | The riot waves run; how the checkpoint ends is not yet played through. |
@@ -65,6 +65,5 @@ coney_tests "[disc][story]"
 ## Open questions {#questions}
 
 - How Coney's objects and stores give the riot's smash and loot acts their targets (the original's are on the AI page).
-- What an exploded car looks like, and what its message 0x19 carries.
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

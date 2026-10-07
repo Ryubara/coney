@@ -130,14 +130,14 @@ void addMission4Bindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext&
 
     // ---- The cars.
     // `CarExplode(car, quiet)`: the wreck, and without `quiet` the car's message 0x19 to its own handler and the
-    // cars' general one. Coney stand-ins: the blast's effects and sound, its 300 damage to the humans within 5 m, the
-    // statistic and the alert to the AI nearby are not built, and the message's other object and number are 0.
+    // cars' general one, (car, NilHandle, -1, 1) (docs/research/cars.md). Coney stand-ins: the blast's effects and
+    // sound, its 300 damage to the humans within 5 m, the statistic and the alert to the AI nearby are not built.
     // @orig 0x0038dfa0 Car_Explode (unknown)
     vm.registerFunction("CarExplode", [context = &context, scripts = &scripts](std::span<const Value> args) {
         const double car = handleArg(args, 0);
         if (context->cars != nullptr && context->cars->explode(car) && !boolArg(args, 1) &&
             context->messages != nullptr) {
-            static_cast<void>(context->messages->deliverFromCar(*scripts, car, kCarExploded, 0.0, 0.0));
+            static_cast<void>(context->messages->deliverFromCar(*scripts, car, kCarExploded, 0.0, -1.0, true));
         }
         return binding::none();
     });

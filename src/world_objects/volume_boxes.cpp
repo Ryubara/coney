@@ -118,4 +118,13 @@ void VolumeBoxes::update(std::span<const BoxSubject> subjects, std::uint64_t now
     }
 }
 
+void VolumeBoxes::sendDamage(const std::array<float, 3>& human, const std::function<void(double box)>& send) const {
+    // The human's position decides, not the object's: a box hears the damage done from inside it.
+    for (const VolumeBox& box : m_boxes) {
+        if (box.enabled && box.kind == 0 && inside(box, human)) {
+            send(box.handle);
+        }
+    }
+}
+
 } // namespace coney::world_objects

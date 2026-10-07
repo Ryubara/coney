@@ -11,6 +11,7 @@
 #include <expected>
 #include <filesystem>
 #include <format>
+#include <fstream>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -535,6 +536,15 @@ int main(int argc, char** argv) {
         levelScripts = levelScriptsFor(*wad, name, checkpoint);
         connectSound(levelScripts->scripts(), levelScripts->context());
         coney::LevelScripts& scripts = *levelScripts;
+        // `--script-trace`: every binding call and call into the scripts, to a file the trace keeps open.
+        if (const std::optional<std::string> scriptTrace = options->scriptTraceFile; commandLine && scriptTrace) {
+            auto file = std::make_shared<std::ofstream>(*scriptTrace, std::ios::binary | std::ios::trunc);
+            if (*file) {
+                scripts.scripts().traceCalls([file](std::string_view line) { *file << line; });
+            } else {
+                std::fprintf(stderr, "coney: --script-trace: cannot write %s\n", scriptTrace->c_str());
+            }
+        }
         coney::GameplayMode::LevelLoader loader =
             [&renderer, &wad, &sectorBudget, &storyDebugDraw, &playSounds, &scripts, &options, commandLine](
                 const coney::LevelStart& start,

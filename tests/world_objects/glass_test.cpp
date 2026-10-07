@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
@@ -14,6 +15,7 @@
 #include "raycast/collision_mesh.h"
 #include "support/object_fixtures.h"
 #include "world/path_map.h"
+#include "world_objects/level_objects.h"
 
 using coney::world_objects::GlassPane;
 using coney::world_objects::GlassPanes;
@@ -230,4 +232,23 @@ TEST_CASE("a whole pane's body is a box 0.25 m proud of the glass; a broken pane
     // Broken, the body is gone.
     REQUIRE(panes.humanHit(handle, 42.0, fixture.world));
     CHECK(panes.bodiesTouching({4.0F, 12.0F, 1.0F}, 0.5F).empty());
+}
+
+TEST_CASE("a hit a pane takes is the attacker's damage done, from a human or a thrown object",
+          "[world_objects][glass]") {
+    // docs/research/scripting.md#triggers: Strike_Contact and a thrown object's hit send message 6 from the boxes the
+    // human (the thrower) stands in.
+    coney::test::ObjectWorldFixture fixture;
+    coney::world_objects::LevelObjects objects;
+    objects.world = fixture.world;
+    objects.glass.setType(1, GlassType{.brokenSprite = 6});
+    const double first = objects.glass.spawn(fixture.handle(), pane(1), objects.world).handle;
+    const double second = objects.glass.spawn(fixture.handle(), pane(1, 1.0F), objects.world).handle;
+    CHECK(objects.humanHit(first, coney::world_objects::ObjectHit{.attacker = 42.0}));
+    CHECK(fixture.services.damage == std::vector<std::pair<double, double>>{{42.0, first}});
+    // A hit the pane does not take is no damage.
+    CHECK_FALSE(objects.humanHit(first, coney::world_objects::ObjectHit{.attacker = 42.0}));
+    CHECK(fixture.services.damage.size() == 1);
+    CHECK(objects.thrownHit(second, coney::world_objects::ObjectHit{.attacker = 43.0}));
+    CHECK(fixture.services.damage.back() == std::pair<double, double>{43.0, second});
 }

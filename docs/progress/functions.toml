@@ -8511,6 +8511,11 @@ subsystem = "WorldObjects"
 size = 96
 
 [[function]]
+address = 0x00413018
+name = "VolumeBoxes_SendDamageMessage"
+subsystem = "WorldObjects"
+
+[[function]]
 address = 0x00413198
 name = "VolumeBox_ContainsObject"
 subsystem = "WorldObjects"

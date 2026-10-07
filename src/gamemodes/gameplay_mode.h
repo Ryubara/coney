@@ -291,6 +291,8 @@ class GameplayMode final : public GameMode {
     // The volume boxes' trigger update over the scripts' humans, their messages going to the objects' handlers
     // (docs/research/scripting.md#triggers). In the original the boxes update with the other tasks in the world step.
     void updateBoxes(std::uint64_t nowMs);
+    // Message 6 to every volume box `human` stands in: he damaged `object` (docs/research/scripting.md#triggers).
+    void sendDamageMessage(double human, double object);
     // The radios' update (Radio_Update): their sounds through the game's sound, the player's place and the progress.
     void updateRadios();
     // HuTag (docs/research/crimes.md#tagging): player 1 with paint starts the stick game at the spot, without paint

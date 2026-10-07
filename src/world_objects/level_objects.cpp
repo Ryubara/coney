@@ -11,6 +11,15 @@ constexpr int kLightThrownAnimSet = 5;
 } // namespace
 
 bool LevelObjects::humanHit(double object, const ObjectHit& hit) {
+    const bool took = takeHumanHit(object, hit);
+    // A strike that landed is damage done from where the attacker stands (Strike_Contact's message 6).
+    if (took && hit.attacker != kNoObject && world.services != nullptr) {
+        world.services->damageDone(hit.attacker, object);
+    }
+    return took;
+}
+
+bool LevelObjects::takeHumanHit(double object, const ObjectHit& hit) {
     if (glass.find(object) != nullptr) {
         return glass.humanHit(object, hit.attacker, world);
     }
@@ -26,10 +35,13 @@ bool LevelObjects::humanHit(double object, const ObjectHit& hit) {
 }
 
 bool LevelObjects::thrownHit(double object, const ObjectHit& hit) {
-    if (glass.find(object) != nullptr) {
-        return glass.thrownHit(object, hit.attacker, world);
+    const bool took =
+        glass.find(object) != nullptr ? glass.thrownHit(object, hit.attacker, world) : doors.hit(object, hit, world);
+    // A thrown object's hit is its thrower's damage (message 6 from the boxes he stands in).
+    if (took && hit.attacker != kNoObject && world.services != nullptr) {
+        world.services->damageDone(hit.attacker, object);
     }
-    return doors.hit(object, hit, world);
+    return took;
 }
 
 std::optional<double> LevelObjects::objectOfTriangle(std::uint32_t triangle) const {

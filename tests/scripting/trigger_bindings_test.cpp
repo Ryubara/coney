@@ -142,9 +142,9 @@ TEST_CASE("a message reaches its handler with the arguments its number takes", "
     // 0x12, died: (subject, attacker).
     h.messages.deliver(h.scripts, 5, 0x12, 100, 200, 7);
     CHECK(h.lastNumbers() == std::vector<double>{100, 200});
-    // 0x19: (self, other, n, flag), the flag not kept.
+    // 0x19: (self, other, n, flag), the flag 0 unless a car sends it (deliverFromCar()).
     h.messages.deliver(h.scripts, 5, 0x19, 100, 200, 7);
-    CHECK(h.lastNumbers() == std::vector<double>{5, 200, 7, -1});
+    CHECK(h.lastNumbers() == std::vector<double>{5, 200, 7, 0});
     // A number the table lists as (self, other).
     h.messages.deliver(h.scripts, 5, 0xb, 100, 200, 7);
     CHECK(h.lastNumbers() == std::vector<double>{5, 200});

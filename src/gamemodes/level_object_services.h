@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <string_view>
+#include <utility>
 
 #include "animation/anim_math.h"
 #include "effects/particles.h"
@@ -51,6 +52,26 @@ class LevelObjectServices final : public world_objects::ObjectServices {
         m_player = std::move(player);
     }
 
+    /// Damage a human does goes to `damage` from now on (empty: nowhere): gameplay sends the boxes' message 6.
+    void setDamageReceiver(std::function<void(double human, double object)> damage) { m_damage = std::move(damage); }
+    /// Passes the damage to the receiver (setDamageReceiver()).
+    void damageDone(double human, double object) override {
+        if (m_damage) {
+            m_damage(human, object);
+        }
+    }
+
+    /// A car's hit reports go to `hit` from now on (empty: nowhere): gameplay sends the car's message 0x19.
+    void setCarHitReceiver(std::function<void(double car, double human, int part, bool broke)> hit) {
+        m_carHit = std::move(hit);
+    }
+    /// Passes the report to the receiver (setCarHitReceiver()).
+    void carHit(double car, double human, int part, bool broke) override {
+        if (m_carHit) {
+            m_carHit(car, human, part, broke);
+        }
+    }
+
     void playSound(std::uint32_t nameHash, anim::Vec3 at) override;
     void playMaterialPair(std::uint8_t a, std::uint8_t b, anim::Vec3 at) override;
     void lockPickClick(double human) override;
@@ -85,6 +106,8 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     world_objects::ObjectServices* m_sounds;
     effects::ParticleSystems* m_particles = nullptr;
     std::function<std::optional<anim::Vec3>()> m_player;
+    std::function<void(double, double)> m_damage;            // setDamageReceiver()
+    std::function<void(double, double, int, bool)> m_carHit; // setCarHitReceiver()
     LevelCrimeServices m_crimes;
     GameState* m_state = nullptr;
     CreatedHumans* m_humans = nullptr;

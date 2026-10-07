@@ -185,7 +185,7 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
       [--headless] [--help] [--input-script FILE] [--view-text FONT TEXT] [--language CODE]
       [--view-world NAME] [--view-character [NAME]] [--anim CLIP]
       [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]] [--trace FILE]
-                   [--scene NAME]]
+                   [--script-trace FILE] [--scene NAME]]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
       [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE] [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
@@ -637,6 +637,17 @@ The columns, positions in metres (game axes, z up), angles in degrees, speeds in
 | `cam_distance`, `cam_pitch`, `cam_yaw` | the camera's distance from its look-at point, its pitch above it and the heading its view faces |
 | `band_near`, `target_pitch`, `auto_turn` | the leash band's near edge (the sprint zoom moves it), the target pitch, and the auto-centre rule's turn this step |
 | `command`, `health`, `power` | the command matched this step (0 for none; [Combat](../research/combat.md#commands)), the health and the power meter |
+
+`--script-trace FILE` (with `--play-level` and a level) writes what the level's scripts do to `FILE`, one line per
+call: every script binding they call, with its arguments and what it returned (`HUDSetObjective(0, "...", 0, nil)`,
+`HuCreate(...) -> 396`), and every call the engine makes into them by name, marked `>` (`> P1.EnterRiot(74, 398)`, a
+box's message, a scene's end). Short lists of numbers (a position) are shown whole, other tables as `{table}`. It is
+how a mission's run shows where its scripts wait. The file holds the game's own text (objectives, speech names): keep
+it out of the repository.
+
+```sh
+build/dev/src/platform/coney --disc /path/to/warriors.iso --play-level level34 --checkpoint 1 --headless --frames 1800 --script-trace ../../scratch/level34.trace
+```
 
 `--start X,Y,Z,HEADING[,DISTANCE,YAW]` (with `--play-level`) moves player 1, after the level's own start, to those
 feet (dropped onto the ground below) and heading in degrees, and with the last two puts the follow camera DISTANCE

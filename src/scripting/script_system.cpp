@@ -3,7 +3,12 @@
 
 #include <algorithm>
 #include <format>
+#include <memory>
 #include <optional>
+#include <span>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "core/assert.h"
 #include "scripting/lua_libraries.h"
@@ -18,6 +23,48 @@ constexpr int kMaxCallDepth = 200;
 
 // A function that does nothing: the original's `_ERRORMESSAGE` and `_ALERT`.
 std::expected<std::vector<Value>, Error> silent(std::span<const Value> /*args*/) { return std::vector<Value>{}; }
+
+// One value as a trace line shows it: numbers in short form, strings quoted, tables and functions by kind.
+std::string traced(const Value& value) {
+    switch (value.type()) {
+    case Value::Type::Nil:
+        return "nil";
+    case Value::Type::Number:
+        return std::format("{:g}", value.number().value_or(0.0));
+    case Value::Type::String:
+        return std::format("\"{}\"", value.string().value_or(std::string_view{}));
+    case Value::Type::Table: {
+        // A short list of numbers and strings (a position, a colour) is shown whole; anything else by kind.
+        constexpr int kShown = 8;
+        std::string text;
+        int shown = 0;
+        const Table& table = *value.table();
+        for (auto entry = table.next(Value()); entry; entry = table.next(entry->first)) {
+            const Value::Type type = entry->second.type();
+            if (++shown > kShown || (type != Value::Type::Number && type != Value::Type::String)) {
+                return "{table}";
+            }
+            const std::string item = entry->first.number()
+                                         ? traced(entry->second)
+                                         : std::format("{}={}", traced(entry->first), traced(entry->second));
+            text += text.empty() ? item : std::format(", {}", item);
+        }
+        return std::format("{{{}}}", text);
+    }
+    case Value::Type::Function:
+        return "function";
+    }
+    return "?";
+}
+
+// A call's arguments (or results), comma separated, as a trace line shows them.
+std::string tracedArgs(std::span<const Value> args) {
+    std::string text;
+    for (const Value& arg : args) {
+        text += text.empty() ? traced(arg) : std::format(", {}", traced(arg));
+    }
+    return text;
+}
 
 } // namespace
 
@@ -53,6 +100,45 @@ void ScriptSystem::create() {
     // Errors leave no trace in the game: both handlers do nothing. Coney logs errors itself (reportError()).
     m_vm->registerFunction("_ERRORMESSAGE", silent);
     m_vm->registerFunction("_ALERT", silent);
+    if (m_trace) {
+        wrapBindingsForTrace();
+    }
+}
+
+void ScriptSystem::traceCalls(Log trace) {
+    m_trace = trace ? std::make_shared<Log>(std::move(trace)) : nullptr;
+    if (m_vm && m_trace) {
+        wrapBindingsForTrace();
+    }
+}
+
+void ScriptSystem::wrapBindingsForTrace() {
+    // Collect first: setting globals while walking them would disturb the walk.
+    std::vector<std::pair<std::string, std::shared_ptr<const Function>>> natives;
+    Table& globals = m_vm->globals();
+    for (auto entry = globals.next(Value()); entry; entry = globals.next(entry->first)) {
+        const std::shared_ptr<const Function>& function = entry->second.function();
+        const std::optional<std::string_view> name = entry->first.string();
+        if (function && function->native && name && *name != "_ERRORMESSAGE" && *name != "_ALERT") {
+            natives.emplace_back(std::string(*name), function);
+        }
+    }
+    // A weak sink: a binding wrapped for an earlier trace stops writing once the trace is replaced or stopped.
+    const std::weak_ptr<Log> sink = m_trace;
+    for (auto& [name, function] : natives) {
+        m_vm->registerFunction(name, [sink, name, function](std::span<const Value> args) {
+            // The arguments are shown before the call: they live on the VM's stack, which a binding that calls back
+            // into the scripts reuses.
+            const std::string called = std::format("{}({})", name, tracedArgs(args));
+            auto results = function->native(args);
+            if (const std::shared_ptr<Log> trace = sink.lock(); trace && *trace) {
+                const std::string shown =
+                    results && !results->empty() ? std::format(" -> {}", tracedArgs(*results)) : std::string{};
+                (*trace)(std::format("{}{}\n", called, shown));
+            }
+            return results;
+        });
+    }
 }
 
 void ScriptSystem::destroy() {
@@ -165,6 +251,9 @@ std::optional<std::vector<Value>> ScriptSystem::callResults(std::string_view nam
         callArgs.push_back(self);
     }
     callArgs.insert(callArgs.end(), args.begin(), args.end());
+    if (m_trace && *m_trace) {
+        (*m_trace)(std::format("> {}({})\n", name, tracedArgs(args)));
+    }
     auto result = m_vm->call(function, callArgs);
     noteSkippedCalls();
     if (!result) {

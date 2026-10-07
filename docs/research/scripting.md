@@ -1227,7 +1227,12 @@ machine underneath is [Front end](frontend.md#coneys-implementation)'s.
   no longer resolves is skipped with no 4 and kept; **Coney stand-in**: a human the scripts made resolves for the whole
   level, `HuDelete`d or not (when the original's stops is not traced), so a deleted occupant leaves with 4 and
   `HuGetGang` still gives its gang. A human's events reach its own handlers through its brain, a flag arrival is
-  message 8 ([AI](ai.md#coney)).
+  message 8 ([AI](ai.md#coney)). **Message 6** (`VolumeBoxes::sendDamage()`): a pane, door or car hit that the
+  object took sends `(human, box, object)` to every enabled kind-0 box the attacker (a thrown object's thrower)
+  stands in. Not yet: props, the 30 m alert after it, and the boxes' every-fifth-frame round-robin (Coney updates
+  them every frame). **`--script-trace`** (`ScriptSystem::traceCalls()`,
+  [Building](../guides/building.md#tracing)) logs every binding call and every call into the scripts by name,
+  Coney's own tool.
 - **Trigger spheres** (`src/world_objects/trigger_spheres.h`, `TriggerSphereCfg` in `src/scripting/world_bindings.h`):
   a pool of 100, one per object, each checked every fifth frame (index modulo 5) with the boxes' rules, 3, 5 once per
   the sphere's 1000 ms and 4 going to the object's handler; gameplay finds the object among the scripts' humans, the

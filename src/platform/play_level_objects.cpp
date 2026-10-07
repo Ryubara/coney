@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "ai/ai_humans.h"
 #include "ai/brain.h"
@@ -433,8 +434,17 @@ void PlayLevelMode::stepObjects() {
         const anim::Vec3 ahead = human::facing(human.heading());
         // A car takes the hit itself (Strike_Contact calls its hit handler; no message 1), by where the player stands.
         if (m_cars != nullptr && m_cars->find(*attacked) != nullptr) {
-            const world_objects::CarPartMask struck = m_cars->humanHit(*attacked, feet);
+            std::vector<world_objects::CarHitReport> reports;
+            const world_objects::CarPartMask struck = m_cars->humanHit(*attacked, feet, &reports);
             m_print(std::format("objects: car {:.0f} hit, parts {:#x}\n", *attacked, struck));
+            // A car hit is damage done from where the player stands (message 6 from the boxes he is in), and the car
+            // reports each damaged part (its message 0x19).
+            if (world_objects::ObjectServices* services = m_objects->world.services; services != nullptr) {
+                services->damageDone(playerHandle(), *attacked);
+                for (const world_objects::CarHitReport& report : reports) {
+                    services->carHit(*attacked, playerHandle(), report.part, report.broke);
+                }
+            }
         } else {
             const world_objects::GlassPane* pane = m_objects->glass.find(*attacked);
             const bool took = m_objects->humanHit(

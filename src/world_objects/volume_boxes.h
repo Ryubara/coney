@@ -50,6 +50,8 @@ class VolumeBoxes {
     static constexpr int kEntered = 3;
     static constexpr int kLeft = 4;
     static constexpr int kInside = 5;
+    /// Damage done by a human standing inside (docs/research/scripting.md#triggers).
+    static constexpr int kDamaged = 6;
 
     /// What a box's message goes to: (the box, the message, the human).
     using Send = std::function<void(double box, int message, double human)>;
@@ -86,6 +88,12 @@ class VolumeBoxes {
     /// the box's update.
     /// @orig 0x00415378 VolumeBox_Update (unknown)
     void update(std::span<const BoxSubject> subjects, std::uint64_t nowMs, const Send& send);
+
+    /// Damage done by a human whose feet are at `human`: every enabled kind-0 box that `human` is inside goes to
+    /// `send` with message kDamaged, in the order the boxes were added. Whether the box has a handler for it is the
+    /// delivery's test. The 30 m alert that follows in the original (`0x00293768`) is not here.
+    /// @orig 0x00413018 VolumeBoxes_SendDamageMessage (unknown)
+    void sendDamage(const std::array<float, 3>& human, const std::function<void(double box)>& send) const;
 
   private:
     std::vector<VolumeBox> m_boxes;

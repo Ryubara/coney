@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <expected>
 #include <map>
+#include <memory>
 #include <span>
 #include <string>
 #include <string_view>
@@ -267,4 +268,37 @@ TEST_CASE("the update function gets the step in milliseconds every frame", "[scr
     // Note's argument is the step, 1/30 s in milliseconds.
     REQUIRE(h.notes.size() == 1);
     CHECK(h.notes[0].starts_with("33.33"));
+}
+
+TEST_CASE("the call trace shows the calls into the scripts and every binding call with its arguments",
+          "[script_system]") {
+    Harness h;
+    h.add("plain.lua", tableFunctionScript("f", "plain", false));
+    h.scripts.create();
+    std::vector<std::string> trace;
+    h.scripts.traceCalls([&trace](std::string_view line) { trace.emplace_back(line); });
+    REQUIRE(h.scripts.runFile("plain.lua"));
+    const std::array<Value, 1> args{Value(7.5)};
+    CHECK(h.scripts.call("T.f", args));
+    CHECK(trace == std::vector<std::string>{"> T.f(7.5)\n", "Note(\"plain\", 7.5)\n"});
+
+    // A short list of numbers is shown whole; the trace lasts into the next state.
+    trace.clear();
+    h.scripts.create();
+    auto position = std::make_shared<coney::script::Table>();
+    double key = 1.0;
+    for (const double v : {1.0, 2.5, -3.0}) {
+        REQUIRE(position->set(Value(key), Value(v)));
+        key += 1.0;
+    }
+    const std::array<Value, 2> noteArgs{Value(position), Value()};
+    CHECK(h.scripts.call("Note", noteArgs));
+    CHECK(trace == std::vector<std::string>{"> Note({1, 2.5, -3}, nil)\n", "Note({1, 2.5, -3}, nil)\n"});
+
+    // Stopped: nothing more.
+    trace.clear();
+    h.scripts.traceCalls({});
+    CHECK(h.scripts.call("Note", noteArgs));
+    CHECK(trace.empty());
+    CHECK(h.notes.size() == 3);
 }

@@ -60,12 +60,14 @@ class MessageHandlers {
     /// Delivers message `message` from car `car` as deliver() does: to the car's own handler, then to the cars'
     /// general one. **Coney choice**: both are called, the car's first (the reader of the manager's slots is not on
     /// the page). Returns whether either took it.
-    bool deliverFromCar(ScriptSystem& scripts, double car, int message, double other, double value) const;
+    /// `flag` is message 0x19's fourth argument, the number 1 or 0 (docs/research/cars.md).
+    bool deliverFromCar(ScriptSystem& scripts, double car, int message, double other, double value,
+                        bool flag = false) const;
 
   private:
     // Calls `function` with message `message`'s arguments, marshalled as deliver() describes.
     static bool call(ScriptSystem& scripts, std::string_view function, double object, int message, double subject,
-                     double other, double value);
+                     double other, double value, double flag = 0.0);
 
     std::map<std::pair<double, int>, std::string> m_handlers;
     std::map<double, std::string> m_prompts; // the objects' kind-1 context records

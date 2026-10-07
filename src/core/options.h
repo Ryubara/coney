@@ -124,6 +124,10 @@ struct Options {
     /// one CSV line per step (human::traceLine()), so feel comparisons can be repeated
     /// (docs/guides/building.md#tracing). Requires playLevel.
     std::optional<std::string> traceFile;
+    /// `--script-trace`: write every binding call the level's scripts make, and every call into them by name, to this
+    /// file, one line each with its arguments (script::ScriptSystem::traceCalls()), to see where a mission's scripts
+    /// wait. Requires playLevel with a level.
+    std::optional<std::string> scriptTraceFile;
     /// `--assets`: the folder holding Coney's own assets (its `sandbox` folder of layouts and textures), in place of
     /// the `assets` folder beside the executable.
     std::optional<std::string> assetsDir;

@@ -142,6 +142,14 @@ class ObjectServices {
     /// Scores statistic `category`-`event` for `human` (a perfect lock pick: bonus event 1-3,
     /// docs/references/statistics.md).
     virtual void scoreEvent(double /*human*/, int /*category*/, int /*event*/) {}
+    /// `human` damaged `object` (a landed strike, a thrown object's hit, a car hit): message 6 to every enabled volume
+    /// box he stands in (docs/research/scripting.md#triggers).
+    /// @orig 0x00413018 VolumeBoxes_SendDamageMessage (unknown)
+    virtual void damageDone(double /*human*/, double /*object*/) {}
+    /// A human's hit on `car` damaged `part` (1-25; -2 for the hit that left every part off), `broke` when it came off
+    /// now: the car's message 0x19, (car, human, part, flag) (docs/research/cars.md).
+    /// @orig 0x0038bea0 Car_OnHit (unknown)
+    virtual void carHit(double /*car*/, double /*human*/, int /*part*/, bool /*broke*/) {}
     /// The lock-pick dial's click on a missed press.
     virtual void lockPickClick(double /*human*/) {}
 };

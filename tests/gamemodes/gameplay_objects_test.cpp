@@ -12,6 +12,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -163,4 +164,23 @@ TEST_CASE("the level's objects' services pass the sounds on", "[gameplay][object
     CHECK(counting.sounds == 1);
     CHECK(counting.pairs == 1);
     CHECK(counting.clicks == 1);
+}
+
+TEST_CASE("the level's objects' services pass a human's damage to gameplay's receiver", "[gameplay][objects]") {
+    const auto files = objectScripts();
+    const coney::script::ScriptSource source =
+        [&files](std::string_view name) -> std::expected<std::vector<std::byte>, coney::Error> {
+        const auto found = files.find(name);
+        if (found == files.end()) {
+            return coney::fail(coney::ErrorCode::NotFound, "no such script");
+        }
+        return found->second;
+    };
+    coney::LevelScripts scripts(source, "level1", 1, [](std::string_view) {});
+    coney::LevelObjectServices services(scripts.scripts(), scripts.flags(), nullptr);
+    services.damageDone(1.0, 2.0); // no receiver: nothing
+    std::vector<std::pair<double, double>> heard;
+    services.setDamageReceiver([&heard](double human, double object) { heard.emplace_back(human, object); });
+    services.damageDone(3.0, 4.0);
+    CHECK(heard == std::vector<std::pair<double, double>>{{3.0, 4.0}});
 }

@@ -150,6 +150,11 @@ class ScriptSystem {
     /// Writes `line` (and a newline) to the log.
     void log(std::string_view line) const;
 
+    /// A developer's trace of what the scripts do: from now on (and in every state create() makes later) each call of
+    /// a binding, and each call C++ makes into the scripts by name, writes one line to `trace` with its arguments; an
+    /// empty `trace` stops it. Coney's own tool (`--script-trace`); the original has none.
+    void traceCalls(Log trace);
+
     /// The file `name` through the script source (a level's `_objs.txt`, which InitLevel reads beside the scripts).
     [[nodiscard]] std::expected<std::vector<std::byte>, Error> readFile(std::string_view name) const;
     /// Sets where world objects' handles come from: the bindings' counter, which installBindings() hands over, so
@@ -175,6 +180,8 @@ class ScriptSystem {
     void reportError(std::string_view where, const Error& error);
     // Logs, once per name, the calls the VM skipped because the global was unset.
     void noteSkippedCalls();
+    // Wraps every binding of the current state so that its calls write to the trace (traceCalls()).
+    void wrapBindingsForTrace();
 
     ScriptSource m_source;
     BindingInstaller m_install;
@@ -189,6 +196,7 @@ class ScriptSystem {
     std::uint64_t m_errors = 0;
     std::uint64_t m_skippedBefore = 0;    // skipped calls of the states destroyed so far
     std::set<std::string> m_skippedNames; // names already logged
+    std::shared_ptr<Log> m_trace;         // traceCalls()'s sink, shared with the wrapped bindings; null: no trace
 };
 
 } // namespace coney::script

@@ -279,7 +279,12 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     if (front == nullptr && input.command == combat::command::kSquarePressed) {
         if (const ObjectTarget* object = pickObjectTarget(input); object != nullptr) {
             in.target = combat::TargetKind::Breakable;
-            in.objectHeight = object->point.z - input.position.z;
+            // A car's aim point at the feet (its low parts, docs/research/cars.md) is made from where the feet
+            // were when the targets were given; the ground snap may have moved them by a hair since, which must not
+            // make it "below the feet" (194).
+            constexpr float kAtFeet = 0.01F;
+            const float height = object->point.z - input.position.z;
+            in.objectHeight = std::fabs(height) < kAtFeet ? 0.0F : height;
             m_objectTarget = object->handle;
         }
     }

@@ -26,7 +26,7 @@ constexpr std::string_view kUsage =
     "             [--profiles DIR]\n"
     "             [--view-world NAME] [--view-character [NAME]] [--anim CLIP]\n"
     "             [--play-level NAME [--spawn NAME | --checkpoint N] [--start X,Y,Z,H[,D,YAW]]\n"
-    "             [--trace FILE] [--scene NAME]] [--sandbox [NAME]]\n"
+    "             [--trace FILE] [--script-trace FILE] [--scene NAME]] [--sandbox [NAME]]\n"
     "             [--assets DIR]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
@@ -61,6 +61,8 @@ constexpr std::string_view kUsage =
     "                     him with its view facing YAW degrees; a test aid for trace scenarios\n"
     "  --trace FILE       with --play-level: write the player's and the camera's state after every\n"
     "                     step to FILE, one CSV line per step\n"
+    "  --script-trace FILE with --play-level levelN: write every script binding call, and every call\n"
+    "                     into the scripts, with its arguments to FILE, one line each\n"
     "  --scene NAME       with --play-level levelN: play the in-engine scene NAME (such as l99_c1) at\n"
     "                     once, with stand-ins in its roles and the player in his; a test aid\n"
     "  --sandbox [NAME]   fly round a sandbox test world: default (the default), parkour, or a\n"
@@ -210,6 +212,9 @@ std::expected<void, Error> checkSandbox(const Options& options) {
     }
     if (options.traceFile.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--trace needs --play-level: it traces the player");
+    }
+    if (options.scriptTraceFile.has_value() && !(options.playLevel && !sandboxOfPlayLevel(*options.playLevel))) {
+        return invalidArgument("--script-trace needs --play-level with a level: it traces the level's scripts");
     }
     if (options.start.has_value() && !options.playLevel.has_value()) {
         return invalidArgument("--start needs --play-level: it places the player");
@@ -513,6 +518,11 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
             }
         } else if (arg == "--trace") {
             if (auto value = takeValue(args, i, options.traceFile, "--trace", "the path of a CSV file"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+        } else if (arg == "--script-trace") {
+            if (auto value = takeValue(args, i, options.scriptTraceFile, "--script-trace", "the path of a text file");
+                !value) {
                 return std::unexpected(std::move(value.error()));
             }
         } else if (arg == "--scene") {

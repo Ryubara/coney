@@ -30,11 +30,12 @@ class LevelObjects {
 
     /// A human's landed hit on `object` (`Strike_Contact`): a pane breaks (with its alarm, window link, flags and
     /// statistic); a door or barrier takes the hit, and a `TYPE_BREAKANDENTER_DOOR` also reports a break-in at the
-    /// attacker. Returns whether the object took it.
+    /// attacker. A hit the object took is damage done by the attacker (ObjectServices::damageDone()). Returns whether
+    /// the object took it.
     /// @orig 0x0021b290 Strike_Contact (unknown)
     bool humanHit(double object, const ObjectHit& hit);
     /// A thrown object's hit on `object`, `hit.attacker` its thrower and `hit.kind` from thrownHitKind(): as humanHit()
-    /// without the break-in.
+    /// without the break-in; a hit taken is the thrower's damage done.
     /// @orig 0x00393538 Thrown_HitObject (unknown)
     bool thrownHit(double object, const ObjectHit& hit);
 
@@ -47,6 +48,10 @@ class LevelObjects {
     void tick() { doors.tick(world); }
     /// Forgets the level's panes and doors (its unload).
     void clear();
+
+  private:
+    // humanHit() without the damage message: the pane, door or barrier takes the hit.
+    bool takeHumanHit(double object, const ObjectHit& hit);
 };
 
 /// The hit kind of a thrown object of `objectType` in animation set `animSet`: 1, but 3 for a `TYPE_MISSIONTV` and 0

@@ -51,6 +51,8 @@ namespace coney {
 
 namespace {
 
+// A car's message: a hit's damaged part, its fire or its explosion (docs/research/cars.md).
+constexpr int kCarMessage = 0x19;
 // The materials a camera sees through: 30 `LOW_FENCE`, 2 `GLASS`, 122 `RAILING` and 107 `CHAINLINK_NOCLIMB`
 // (docs/research/ai.md#spawner-unseen).
 constexpr std::array<std::uint8_t, 4> kSeeThroughMaterials{30, 2, 122, 107};
@@ -199,6 +201,15 @@ GameplayMode::GameplayMode(graphics::RenderDevice& device, script::ScriptSystem&
       m_recorded(recorded), m_loader(std::move(loader)), m_log(std::move(log)),
       m_objectServices(scripts, flags, nullptr) {
     m_objectServices.setPlayers(&state, &humans);
+    // Damage a human does reaches the volume boxes he stands in as their message 6, (human, box, object).
+    m_objectServices.setDamageReceiver([this](double human, double object) { sendDamageMessage(human, object); });
+    // A human's car hit reaches the car's own handler and the cars' general one as message 0x19.
+    m_objectServices.setCarHitReceiver([this](double car, double human, int part, bool broke) {
+        if (m_context.messages != nullptr) {
+            static_cast<void>(m_context.messages->deliverFromCar(m_scripts, car, kCarMessage, human,
+                                                                 static_cast<double>(part), broke));
+        }
+    });
 }
 
 GameplayMode::~GameplayMode() {
@@ -718,6 +729,21 @@ void GameplayMode::updateBoxes(std::uint64_t nowMs) {
     m_context.boxes->update(subjects, nowMs, [this](double box, int message, double human) {
         m_context.messages->deliver(m_scripts, box, message, human, 0.0, 0.0);
     });
+}
+
+void GameplayMode::sendDamageMessage(double human, double object) {
+    if (m_context.boxes == nullptr || m_context.messages == nullptr || !m_scripted) {
+        return;
+    }
+    for (const world_objects::BoxSubject& subject : m_scripted->boxSubjects()) {
+        if (subject.handle != human) {
+            continue;
+        }
+        m_context.boxes->sendDamage(subject.position, [this, human, object](double box) {
+            m_context.messages->deliver(m_scripts, box, world_objects::VolumeBoxes::kDamaged, human, object, box);
+        });
+        return;
+    }
 }
 
 void GameplayMode::callTutorialCallback() {

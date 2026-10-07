@@ -79,6 +79,16 @@ struct CarPaint {
 /// The colour a paint word draws in: its bytes reversed (`0x00338240`).
 [[nodiscard]] CarPaint paintOf(std::uint32_t word);
 
+/// What one human hit did to a car, as the car's message 0x19 reports it (docs/research/cars.md): a part 1-25 damaged
+/// (`part`, `broke` when this hit took it off), or kCarHitAllBroken with `broke` true for the hit that left every part
+/// off.
+struct CarHitReport {
+    int part = 0;
+    bool broke = false;
+};
+/// CarHitReport::part for the hit that leaves every part of a car off.
+inline constexpr int kCarHitAllBroken = -2;
+
 /// The parked cars: `CarSpawn` makes one from the car pool (object manager `+0x844`, 18 cars) and the car bindings
 /// change it by its handle. Coney keeps the cars' state; the platform draws them with their models and makes them
 /// obstacles (src/platform/parked_cars.h).
@@ -155,10 +165,12 @@ class Cars {
     /// @orig 0x0038ab50 Car_DoExplode (unknown)
     bool explode(double handle);
     /// A plain human's strike from `standing` reached the car: each part carHumanHitParts() names takes
-    /// kHumanCarHitDamage (a window breaks at once). Returns the parts struck. **Coney's reading**: the gang lock
+    /// kHumanCarHitDamage (a window breaks at once). Returns the parts struck; `reports` (when given) gets what message
+    /// 0x19 says of the hit: each part 1-25 not already off that it damaged, then kCarHitAllBroken if it left every
+    /// part 1-25 off. **Coney's reading**: the gang lock
     /// (`+0x12d8`), the exploding car, message `0x19`, the effects and the statistic are not modelled yet.
     /// @orig 0x0038bea0 Car_OnHit (unknown)
-    CarPartMask humanHit(double handle, anim::Vec3 standing);
+    CarPartMask humanHit(double handle, anim::Vec3 standing, std::vector<CarHitReport>* reports = nullptr);
     /// Where a car's boot item is released (game axes): carBootPosition().
     [[nodiscard]] static anim::Vec3 bootPosition(const Car& car);
 

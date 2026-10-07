@@ -109,3 +109,19 @@ TEST_CASE("an occupant gone from the subjects leaves while its handle resolves, 
     CHECK(step(boxes, {}, 300).empty());
     CHECK(boxes.find(40)->occupants.size() == 1);
 }
+
+TEST_CASE("damage done from inside reaches every enabled kind-0 box the human stands in", "[volume_boxes]") {
+    // docs/research/scripting.md#triggers: VolumeBoxes_SendDamageMessage tests the human's position, not the object's.
+    VolumeBoxes boxes;
+    boxes.add(57, "vLevelVandal", 0, {-10, -10, -1}, {20, 20, 30}, true);
+    boxes.add(59, "vTier2Turf", 3, {0, 0, -1}, {5, 5, 10}, true);
+    boxes.add(60, "vOff", 0, {0, 0, -1}, {5, 5, 10}, false);
+    boxes.add(61, "vElsewhere", 0, {50, 50, -1}, {5, 5, 10}, true);
+    std::vector<double> heard;
+    boxes.sendDamage({1, 1, 0}, [&heard](double box) { heard.push_back(box); });
+    CHECK(heard == std::vector<double>{57}); // not the turf box (kind 3)
+    // Below the boxes' floor: none.
+    heard.clear();
+    boxes.sendDamage({1, 1, -5}, [&heard](double box) { heard.push_back(box); });
+    CHECK(heard.empty());
+}

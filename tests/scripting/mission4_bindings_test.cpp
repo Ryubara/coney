@@ -234,6 +234,11 @@ TEST_CASE(
     REQUIRE(h.recordedArgs.size() == 2);
     CHECK(h.recordedArgs[0].front().number() == 41.0);
     CHECK(h.recordedArgs[1].front().number() == 41.0);
+    // (car, NilHandle, -1, 1): docs/research/cars.md.
+    REQUIRE(h.recordedArgs[1].size() == 4);
+    CHECK(h.recordedArgs[1][1].number() == 0.0);
+    CHECK(h.recordedArgs[1][2].number() == -1.0);
+    CHECK(h.recordedArgs[1][3].number() == 1.0);
     // Exploded already: nothing more.
     h.call("CarExplode", {Value(41.0)});
     CHECK(h.recordedArgs.size() == 2);

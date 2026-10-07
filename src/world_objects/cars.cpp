@@ -186,16 +186,27 @@ bool Cars::explode(double handle) {
     return true;
 }
 
-CarPartMask Cars::humanHit(double handle, anim::Vec3 standing) {
+CarPartMask Cars::humanHit(double handle, anim::Vec3 standing, std::vector<CarHitReport>* reports) {
     const Car* car = find(handle);
     if (car == nullptr) {
         return 0;
     }
+    // Parts 1-25: the ones message 0x19 names (the body, part 0, is never reported).
+    constexpr std::uint32_t kReported = ((1U << kCarParts) - 1U) & ~1U;
+    const bool allOffBefore = (car->removedKept & kReported) == kReported;
     const CarPartMask struck = carHumanHitParts(*car, standing);
     for (std::uint32_t part = 0; part <= kLastPart; ++part) {
-        if ((struck & (1U << part)) != 0) {
-            static_cast<void>(damagePart(handle, part, kHumanCarHitDamage, false));
+        if ((struck & (1U << part)) == 0) {
+            continue;
         }
+        const bool wasOff = (car->removedKept & (1U << part)) != 0;
+        const bool broke = damagePart(handle, part, kHumanCarHitDamage, false);
+        if (reports != nullptr && part >= 1 && !wasOff) {
+            reports->push_back(CarHitReport{.part = static_cast<int>(part), .broke = broke});
+        }
+    }
+    if (reports != nullptr && !allOffBefore && (car->removedKept & kReported) == kReported) {
+        reports->push_back(CarHitReport{.part = kCarHitAllBroken, .broke = true});
     }
     return struck;
 }

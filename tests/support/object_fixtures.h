@@ -58,6 +58,7 @@ class RecordingServices final : public world_objects::ObjectServices {
     std::vector<Script> scripts;
     std::vector<std::pair<int, int>> scores;
     int clicks = 0;
+    std::vector<std::pair<double, double>> damage; // (human, object)
     bool wantShards = true;
 
     void playSound(std::uint32_t nameHash, anim::Vec3 /*at*/) override { sounds.push_back(nameHash); }
@@ -92,6 +93,7 @@ class RecordingServices final : public world_objects::ObjectServices {
     }
     void scoreEvent(double /*human*/, int category, int event) override { scores.emplace_back(category, event); }
     void lockPickClick(double /*human*/) override { ++clicks; }
+    void damageDone(double human, double object) override { damage.emplace_back(human, object); }
 };
 
 /// The synthetic level's door number.

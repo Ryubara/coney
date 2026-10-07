@@ -354,7 +354,12 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
 - **Explosion** (`CarExplode`, `repo:src/scripting/mission4_bindings.h`, `Cars::explode()`): a car not yet exploded
   takes instant damage on every part (so a boot item is lost) and is marked exploded; without `quiet` its message
   `0x19` goes to its own handler and then to the cars' general one (`SetGeneralCarMsgHandler`,
-  `MessageHandlers::setGeneralCar()`), with the car as self.
+  `MessageHandlers::setGeneralCar()`), with the car as self: `(car, NilHandle, -1, 1)`.
+- **A hit's message `0x19`** (`Cars::humanHit()` with its reports, delivered by gameplay through
+  `MessageHandlers::deliverFromCar()`): each part 1-25 not already off that the hit damaged sends `(car, human, part,
+  flag)`, the flag 1 when this hit took it off, and the hit that leaves every part 1-25 off then sends `(car, human,
+  -2, 1)`. The hit is also the human's damage done, message 6 to the volume boxes he stands in
+  ([Triggers](scripting.md#triggers)).
 - `platform::ParkedCars` (`repo:src/platform/parked_cars.h`) draws each car's first 26 atomics, less its removed parts,
   from the type's Object List model, and gives each car a box (12 triangles) that joins the level's collision mesh.
 
@@ -367,7 +372,8 @@ Coney's stand-ins, where this page is silent:
 - Every type uses the sedan's zone tables and box (the others' are not on the page yet); the car pass's candidate
   joins the object targets, nearest first, rather than coming before them.
 - Not yet in a car hit: the gang lock (`+0x12d8`), the exploding car, a player above the car skipping the cabin
-  table, the charge's and thrown objects' contact-point zones, message `0x19`, the first-hit effect and the statistic.
+  table, the charge's and thrown objects' contact-point zones, a molotov's fire (its `-1, 0` message), the first-hit
+  effect and the statistic.
 - The money pickup's 15 s life is not applied.
 - A name that is not one of the six types still makes a car, which draws nothing.
 - The explosion's look (the car is drawn as before, its parts' kept bits set), effects, sound, 300 damage within 5 m,

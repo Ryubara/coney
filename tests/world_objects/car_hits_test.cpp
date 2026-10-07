@@ -5,7 +5,9 @@
 #include "world_objects/car_hits.h"
 
 #include <cmath>
+#include <cstdint>
 #include <optional>
+#include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -99,4 +101,46 @@ TEST_CASE("the stereo and the boot item sit at offsets turned with the car", "[c
     CHECK(boot.y == Approx(-2.34F).margin(1e-4));
     REQUIRE(cars.spawn("car_van", Vec3{3, 4, 1}, Quat{}, 2) != nullptr);
     CHECK(Cars::bootPosition(*cars.find(2)) == Vec3{3, 4, 1});
+}
+
+TEST_CASE("a hit reports each part it damaged and whether it broke, and the hit that leaves every part off", "[cars]") {
+    // docs/research/cars.md: message 0x19 from Car_OnHit, (car, human, part, 1 if this hit broke it), and -2 once
+    // every part is off.
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 1) != nullptr);
+    const Vec3 standing{-1.6F, 0.5F, 0};
+    std::vector<coney::world_objects::CarHitReport> reports;
+    CHECK(cars.humanHit(1, standing, &reports) == bit(15));
+    REQUIRE(reports.size() == 1);
+    CHECK(reports[0].part == 15);
+    CHECK(reports[0].broke);
+    reports.clear();
+    CHECK(cars.humanHit(1, standing, &reports) == bit(14));
+    REQUIRE(reports.size() == 1);
+    CHECK(reports[0].part == 14);
+    CHECK_FALSE(reports[0].broke);
+    // Every part but the door off already: the hit that takes the door off is also the last.
+    for (std::uint32_t part = 1; part < coney::world_objects::kCarParts; ++part) {
+        if (part != 14) {
+            static_cast<void>(cars.damagePart(1, part, 1.0F, true));
+        }
+    }
+    // The door takes a plain hit's damage until it comes off.
+    constexpr int kMostHits = 20;
+    for (int hit = 0; hit < kMostHits; ++hit) {
+        reports.clear();
+        static_cast<void>(cars.humanHit(1, standing, &reports));
+        if (reports.empty() || reports.front().broke) {
+            break;
+        }
+    }
+    REQUIRE(reports.size() == 2);
+    CHECK(reports[0].part == 14);
+    CHECK(reports[0].broke);
+    CHECK(reports[1].part == coney::world_objects::kCarHitAllBroken);
+    CHECK(reports[1].broke);
+    // Nothing left to damage: no report.
+    reports.clear();
+    static_cast<void>(cars.humanHit(1, standing, &reports));
+    CHECK(reports.empty());
 }

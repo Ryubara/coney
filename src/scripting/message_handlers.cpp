@@ -50,11 +50,14 @@ std::string_view MessageHandlers::generalCarHandler(int message) const {
     return found == m_generalCar.end() ? std::string_view{} : std::string_view(found->second);
 }
 
-bool MessageHandlers::deliverFromCar(ScriptSystem& scripts, double car, int message, double other, double value) const {
-    const bool own = deliver(scripts, car, message, car, other, value);
+bool MessageHandlers::deliverFromCar(ScriptSystem& scripts, double car, int message, double other, double value,
+                                     bool flag) const {
+    const double number = flag ? 1.0 : 0.0;
+    const std::string_view own = handler(car, message);
+    const bool ownTook = !own.empty() && call(scripts, own, car, message, car, other, value, number);
     const std::string_view general = generalCarHandler(message);
-    const bool any = !general.empty() && call(scripts, general, car, message, car, other, value);
-    return own || any;
+    const bool any = !general.empty() && call(scripts, general, car, message, car, other, value, number);
+    return ownTook || any;
 }
 
 bool MessageHandlers::deliver(ScriptSystem& scripts, double object, int message, double subject, double other,
@@ -67,7 +70,7 @@ bool MessageHandlers::deliver(ScriptSystem& scripts, double object, int message,
 }
 
 bool MessageHandlers::call(ScriptSystem& scripts, std::string_view function, double object, int message, double subject,
-                           double other, double value) {
+                           double other, double value, double flag) {
     // The arguments by number (docs/research/scripting.md#message-handlers).
     std::vector<Value> args;
     bool asksResult = false;
@@ -121,7 +124,7 @@ bool MessageHandlers::call(ScriptSystem& scripts, std::string_view function, dou
         args = {Value(subject), Value(other), Value(value)};
         break;
     case 0x19:
-        args = {Value(object), Value(other), Value(value), Value()};
+        args = {Value(object), Value(other), Value(value), Value(flag)};
         break;
     default:
         args = {Value(object), Value(other)};
