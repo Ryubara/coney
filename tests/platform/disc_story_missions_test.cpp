@@ -6,11 +6,14 @@
 // moving when the stick is pushed. They run only when the environment variable CONEY_DISC names the disc and skip
 // otherwise; they print counts only (LEGAL.md).
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <expected>
+#include <format>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -36,6 +39,10 @@
 #include "human/player.h"
 #include "platform/play_level_mode.h"
 #include "platform/render_engine.h"
+#include "platform/scene_stage.h"
+#include "scenes/scene_disc.h"
+#include "scenes/scene_list.h"
+#include "scenes/scene_player.h"
 #include "scripting/config_strings.h"
 #include "scripting/script_system.h"
 #include "world/sector_budget.h"
@@ -66,33 +73,21 @@ struct MissionRun {
     std::vector<std::string> errors; // the scripts' error lines
 };
 
-// Plays `level` at `checkpoint` as `--play-level` does (the preloads, the level's script, gameplay over the play mode
-// with the scripts' AI and character configuration) for 20 s, the stick pushed forward for the last 2 s.
-MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int checkpoint) {
-    MissionRun run;
-    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
-    REQUIRE(engine.has_value());
-    if (!engine) {
-        return run;
-    }
-    coney::platform::RenderEngine& renderer = **engine;
-    coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
-    std::vector<std::string> log;
-    const auto print = [&log](std::string_view line) { log.emplace_back(line); };
+// The game's random table from the disc's executable; empty when it cannot be read.
+std::vector<std::uint32_t> randomTable(const coney::io::Wad& wad) {
+    auto words = coney::io::readExecutableWords(wad.disc(), coney::GameRandom::kExecutableName,
+                                                coney::GameRandom::kTableAddress, coney::GameRandom::kTableSize);
+    return words ? std::move(*words) : std::vector<std::uint32_t>{};
+}
 
-    // The scripts as the story reaches the level, with the game's random table.
-    coney::LevelScriptOptions options;
-    std::vector<std::uint32_t> table;
-    if (auto words = coney::io::readExecutableWords(wad.disc(), coney::GameRandom::kExecutableName,
-                                                    coney::GameRandom::kTableAddress, coney::GameRandom::kTableSize)) {
-        table = std::move(*words);
-        options.randomTable = table;
-    }
-    coney::LevelScripts scripts(coney::script::wadScriptSource(wad), level, checkpoint, print, options);
-    coney::GameplayMode::LevelLoader loader =
-        [&renderer, &wad, &budget, &scripts,
-         &print](const coney::LevelStart& start,
-                 const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
+// The level loader `--play-level` gives gameplay: the play mode at the scripts' player start, with the scripts' AI and
+// character configuration.
+coney::GameplayMode::LevelLoader playLoader(coney::platform::RenderEngine& renderer, const coney::io::Wad& wad,
+                                            coney::world::SectorBudget& budget, coney::LevelScripts& scripts,
+                                            const std::function<void(std::string_view)>& print) {
+    return [&renderer, &wad, &budget, &scripts,
+            print](const coney::LevelStart& start,
+                   const coney::ScriptedCast& cast) -> std::expected<std::unique_ptr<coney::GameMode>, coney::Error> {
         std::optional<coney::human::PlayerStart> playerStart;
         coney::platform::PlayerSetup setup;
         setup.ai = coney::ai::aiConfigFrom(scripts.recorded());
@@ -115,8 +110,32 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
         }
         return std::unique_ptr<coney::GameMode>(std::move(*mode));
     };
+}
+
+// Plays `level` at `checkpoint` as `--play-level` does (the preloads, the level's script, gameplay over the play mode
+// with the scripts' AI and character configuration) for 20 s, the stick pushed forward for the last 2 s.
+MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int checkpoint) {
+    MissionRun run;
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    if (!engine) {
+        return run;
+    }
+    coney::platform::RenderEngine& renderer = **engine;
+    coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
+    std::vector<std::string> log;
+    const std::function<void(std::string_view)> print = [&log](std::string_view line) { log.emplace_back(line); };
+
+    // The scripts as the story reaches the level, with the game's random table.
+    coney::LevelScriptOptions options;
+    const std::vector<std::uint32_t> table = randomTable(wad);
+    if (!table.empty()) {
+        options.randomTable = table;
+    }
+    coney::LevelScripts scripts(coney::script::wadScriptSource(wad), level, checkpoint, print, options);
     coney::GameplayMode gameplay(renderer, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(),
-                                 scripts.flags(), scripts.recorded(), std::move(loader), print);
+                                 scripts.flags(), scripts.recorded(), playLoader(renderer, wad, budget, scripts, print),
+                                 print);
     gameplay.setLevel(std::string(level));
 
     // 18 s with the pad at rest, then the stick 70 % forward for 2 s.
@@ -207,4 +226,74 @@ TEST_CASE("the disc's level34 plays each checkpoint without a script error or a 
                     checkpoint, run.humans, static_cast<unsigned long long>(run.scriptErrors), run.missingBindings,
                     run.travelled);
     }
+}
+
+TEST_CASE("the disc's level80 intro, skipped, gives the screen and the player back", "[disc][story]") {
+    // docs/research/scenes.md#skipping: the intro's camera track calls the end function three times while it plays
+    // (global.lua's NumCallBacks), and PreCashTheWorld fades back in only once those calls are spent. A skip that
+    // dropped them left the screen black for the rest of the level (the owner's "level80 flickers black").
+    std::optional<coney::io::Wad> wad = openDisc();
+    if (!wad) {
+        SKIP("CONEY_DISC is not set: no disc to check");
+    }
+    auto engine = coney::platform::RenderEngine::start(coney::platform::RenderBackend::Null, {});
+    REQUIRE(engine.has_value());
+    coney::platform::RenderEngine& renderer = **engine;
+    coney::world::SectorBudget budget(coney::world::kSectorPoolSize);
+    std::vector<std::string> log;
+    const std::function<void(std::string_view)> print = [&log](std::string_view line) { log.emplace_back(line); };
+    coney::LevelScriptOptions options;
+    const std::vector<std::uint32_t> table = randomTable(*wad);
+    if (!table.empty()) {
+        options.randomTable = table;
+    }
+    coney::LevelScripts scripts(coney::script::wadScriptSource(*wad), "level80", 1, print, options);
+    auto sceneList = coney::scenes::loadSceneList(*wad);
+    REQUIRE(sceneList.has_value());
+    coney::GameplayMode gameplay(renderer, scripts.scripts(), scripts.context(), scripts.state(), scripts.humans(),
+                                 scripts.flags(), scripts.recorded(),
+                                 playLoader(renderer, *wad, budget, scripts, print), print);
+    gameplay.setLevel("level80");
+    gameplay.setSceneMaker([&wad, &sceneList] {
+        return std::make_unique<coney::scenes::SceneSystem>(*sceneList, coney::scenes::wadSceneSource(*wad),
+                                                            coney::scenes::SceneSystem::ScriptCall{});
+    });
+
+    // Cross 3 s in (past the 2 s a scene waits before a button skips it), then 10 s more.
+    constexpr int kSkipFrame = 90;
+    constexpr int kFrames = 400;
+    auto input = coney::parseInputScript(std::format("{} tap cross\n", kSkipFrame));
+    REQUIRE(input.has_value());
+    coney::ScriptedInput pad(std::move(*input));
+    coney::GameModeStack stack;
+    stack.setInput(&pad);
+    stack.push(gameplay);
+    coney::GameTimer timer;
+    timer.setFixedStep(true);
+    // Each frame after the skip, whether the screen fade is fully black.
+    int frame = 0;
+    int blackAfterSkip = 0;
+    const auto sample = [&]() {
+        const auto* play = dynamic_cast<const coney::platform::PlayLevelMode*>(gameplay.level());
+        if (play != nullptr && frame > kSkipFrame + 2 && play->stage().fadeLevel() >= 1.0F) {
+            ++blackAfterSkip;
+        }
+        ++frame;
+        return true;
+    };
+    stack.runUntilEmpty(timer, sample, kFrames);
+    const auto* play = dynamic_cast<const coney::platform::PlayLevelMode*>(gameplay.level());
+    REQUIRE(play != nullptr);
+    const coney::anim::Vec3 at = play->player().human().position();
+    const bool teleported = std::ranges::any_of(
+        log, [](const std::string& line) { return line.starts_with("gameplay: player 1 teleported"); });
+    CHECK(scripts.scripts().errors() == 0);
+    CHECK(play->stage().fadeLevel() == 0.0F);
+    // Black only for the frames the end takes to fade back in (0.5 s), not for the rest of the level.
+    CHECK(blackAfterSkip < 30);
+    CHECK(teleported);
+    std::printf("  level80 checkpoint 1, intro skipped at frame %d: %d fully black frames after it, fade level %.2f "
+                "at frame %d, player 1 %s at (%.1f, %.1f)\n",
+                kSkipFrame, blackAfterSkip, static_cast<double>(play->stage().fadeLevel()), kFrames,
+                teleported ? "teleported" : "not teleported", static_cast<double>(at.x), static_cast<double>(at.y));
 }

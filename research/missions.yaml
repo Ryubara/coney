@@ -60,8 +60,9 @@ missions:
     research:
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "AI: scripted goals and actions", path: "research/ai.md#scripted"}
+      - {title: "Skipping a scene", path: "research/scenes.md#skipping"}
     test: "coney_tests \"[disc][story]\""
-    notes: "All four checkpoints play headless on the disc with no script error and player 1 moving under the pad (`tests/platform/disc_story_missions_test.cpp`); nobody has compared them with the original yet."
+    notes: "All four checkpoints play headless on the disc with no script error and player 1 moving under the pad (`tests/platform/disc_story_missions_test.cpp`); the checkpoint 1 intro, skipped, fades back in and moves player 1 to where the scene leaves him (the skip makes its three pending end-function calls, as the original does); nobody has compared them with the original yet."
   - level: 87
     group: story
     slot: story mission 3

@@ -6187,6 +6187,11 @@ address = 0x00354d98
 name = "SceneTrack_Events"
 subsystem = "Scene"
 size = 2104
+[[function]]
+address = 0x00355798
+name = "SceneTrack_Flush"
+subsystem = "Scene"
+
 
 [[function]]
 address = 0x00355ab8

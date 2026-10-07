@@ -74,6 +74,13 @@ class RecordingHost final : public scenes::SceneHost {
     bool soundtrackReady() override { return soundtrackBuffered; }
     void soundtrackStop() override { calls.emplace_back("soundtrack stop"); }
     bool soundtrackBuffered = true;
+    void sound(std::uint32_t hash, std::optional<double> /*object*/) override {
+        calls.push_back(std::format("sound {:#x}", hash));
+    }
+    void colouredFade(bool out, std::uint32_t rgb, float seconds) override {
+        calls.push_back(std::format("coloured {} {:#x} {}", out, rgb, seconds));
+    }
+    void rumble(int strength) override { calls.push_back(std::format("rumble {}", strength)); }
 
     // Whether a call equal to `call` was made.
     [[nodiscard]] bool made(std::string_view call) const { return std::ranges::find(calls, call) != calls.end(); }
@@ -108,7 +115,8 @@ struct Harness {
                                                                {2, 0, "tst_c1aa"},
                                                                {3, 0, "tst_long"},
                                                                {4, 0, "tst_wheel"},
-                                                               {5, 0, "tst_loop"}}};
+                                                               {5, 0, "tst_loop"},
+                                                               {6, 0, "tst_calls"}}};
     std::map<std::string, std::vector<std::byte>, std::less<>> files;
     std::vector<std::string> lua;
     RecordingHost host;
@@ -138,6 +146,21 @@ struct Harness {
             clip.duration = 3.0F;
         }
         files["tst_long"] = test::sceneHeaderRecord(longSpec).data();
+        // tst_long with its camera track as long as the scene and three calls of the end function (type 31) on it,
+        // at frames 10, 70 and 80 (level80's intro hands control around this way), and between them the events a
+        // skip's flush does (28 fade in, 76 rumble, 74 coloured fade, 27 fade out) and drops (13 sound).
+        test::SceneSpec callsSpec = longSpec;
+        callsSpec.name = "tst_calls";
+        callsSpec.part.camera->duration = 3.0F;
+        callsSpec.part.camera->events = {test::SceneEventBytes(10, 31),
+                                         test::SceneEventBytes(70, 31),
+                                         test::SceneEventBytes(72, 28).f32At(8, 0.75F),
+                                         test::SceneEventBytes(74, 13).u32At(8, 0x1234),
+                                         test::SceneEventBytes(76, 76).u16At(6, 4),
+                                         test::SceneEventBytes(78, 74).u32At(4, 0x80ff0000U).f32At(8, 1.0F),
+                                         test::SceneEventBytes(80, 31),
+                                         test::SceneEventBytes(85, 27).f32At(8, 1.0F)};
+        files["tst_calls"] = test::sceneHeaderRecord(callsSpec).data();
         files["tst_wheel"] = test::sceneHeaderRecord(objectSceneSpec("tst_wheel", false)).data();
         files["tst_loop"] = test::sceneHeaderRecord(objectSceneSpec("tst_loop", true)).data();
         system.setHost(&host);
@@ -359,6 +382,70 @@ TEST_CASE("a cinematic's start waits until its soundtrack is buffered or its pen
     h.step();
     h.step();
     CHECK(h.system.state(4) == scenes::SceneState::Playing);
+}
+
+TEST_CASE("a skip flushes the tracks' remaining events: n pending end calls give n + 1, fades at once", "[scenes]") {
+    // docs/research/scenes.md#skipping (SceneTrack_Flush): global.lua's PreCashTheWorld counts NumCallBacks down on
+    // each type-31 call and fades back in only once they are spent, so the flush's calls are what bring level80's
+    // skipped intro back from black. Fades are flushed at once; sounds are dropped; the camera's pop stops a rumble.
+    Harness h;
+    h.system.preload("tst_calls", "");
+    h.step();
+    REQUIRE(h.system.joinHuman(7.0, 6, 0, 2));
+    REQUIRE(h.system.play(6, Harness::cinematic()));
+    for (int i = 0; i < 62; ++i) {
+        h.step();
+    }
+    REQUIRE(h.system.state(6) == scenes::SceneState::Playing);
+    CHECK(h.lua == std::vector<std::string>{"PreCashTheWorld(6)"}); // frame 10's call, played out
+    h.host.calls.clear();
+    h.step(scenes::kSkipCross);
+    h.step();
+    CHECK(h.system.state(6) == scenes::SceneState::Ended);
+    // Frame 10's call, the two pending ones (70, 80), then the end's own with the scene id.
+    CHECK(h.lua == std::vector<std::string>(4, "PreCashTheWorld(6)"));
+    // The camera's pending events in track order, at once, before its pop; the pop sets the rumble back to 0.
+    const std::size_t fadeIn = h.host.indexOf("screen 0 0");
+    const std::size_t rumble = h.host.indexOf("rumble 102");
+    const std::size_t coloured = h.host.indexOf("coloured true 0xff0000 0");
+    const std::size_t pop = h.host.indexOf("camera end -1");
+    CHECK(fadeIn < rumble);
+    CHECK(rumble < coloured);
+    CHECK(coloured < pop);
+    CHECK(h.host.indexOf("rumble 0") > pop);
+    CHECK(h.host.indexOf("rumble 0") < h.host.calls.size());
+    CHECK_FALSE(h.host.made("screen 0 0.75"));
+    CHECK_FALSE(h.host.made("screen 1 1"));
+    CHECK_FALSE(h.host.made("sound 0x1234"));
+    // Nothing fires twice afterwards.
+    for (int i = 0; i < 40; ++i) {
+        h.step();
+    }
+    CHECK(h.lua.size() == 4);
+}
+
+TEST_CASE("a skipped looping scene with a loop point plays to the end of its pass", "[scenes]") {
+    Harness h;
+    scenes::PlayRequest looping{.kind = scenes::PlayKind::Fixed, .looping = true};
+    looping.skippable = true;
+    h.system.preload("tst_loop", "");
+    h.step();
+    REQUIRE(h.system.play(5, looping));
+    for (int i = 0; i < 75; ++i) { // past the 2 s before a button counts, half way through the third pass
+        h.step();
+    }
+    REQUIRE(h.system.state(5) == scenes::SceneState::Playing);
+    h.step(scenes::kSkipCross);
+    CHECK(h.host.made("screen 1 0"));
+    CHECK(h.system.stats().skipped == 1);
+    int updates = 0;
+    while (h.system.state(5) == scenes::SceneState::Playing && updates < 100) {
+        h.step(scenes::kSkipCross); // held: the skip is not made again
+        ++updates;
+    }
+    CHECK(updates >= 13);
+    CHECK(updates <= 16);
+    CHECK(h.system.stats().skipped == 1);
 }
 
 TEST_CASE("a bound human in a grab at the start is left out: not taken in, not posed, not placed", "[scenes]") {

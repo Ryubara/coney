@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,557 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,558 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-434 reimplemented function(s) have no size yet and add no bytes.
+435 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -69,7 +69,7 @@ at the top of the repository's `README.md`.
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
-| `Scene` | `████████████▌░░░░░░░` | 62.6% | 29 | 17,904 |
+| `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 202 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
 | `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 101 | 531,312 |
@@ -1186,6 +1186,7 @@ at the top of the repository's `README.md`.
 | `0x00354280` | `Scene_BindObject` | `Scene` | 248 |
 | `0x00354d28` | `Scene_FindTrackSoundtrack` | `Scene` | 112 |
 | `0x00354d98` | `SceneTrack_Events` | `Scene` | 2,104 |
+| `0x00355798` | `SceneTrack_Flush` | `Scene` | not filled in |
 | `0x00355ab8` | `SceneTrack_StepKeys` | `Scene` | 992 |
 | `0x003560a8` | `SceneTrack_Advance` | `Scene` | 224 |
 | `0x00356188` | `SceneTrack_Apply` | `Scene` | 264 |

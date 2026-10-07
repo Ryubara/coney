@@ -626,6 +626,11 @@ starts (1 human holding, 1 held), and finds no human holding, held or grabbed 90
 - A scene with roles but none bound ends when its tracks do; an aborted scene's end function is not called.
 - A track's events fire against the scene's frame (the part's start frame plus its time), the header's and the
   current part's alike.
+- A skip flushes the tracks as [Skipping](#skipping) says: in the end, each bound object's pending events (then its
+  end pose), each light's, then the camera's before its pop, only types 24, 25, 27, 28, 31, 74 and 76, fades at once,
+  and a rumble set back to 0 by the pop; a looping scene with a loop point plays out its pass. Before Coney did this,
+  `level80`'s skipped intro stayed black for the rest of the level: `PreCashTheWorld` fades back in only once its
+  three `NumCallBacks` are spent, by the camera track's type-31 calls.
 
 **The play mode's stage** (`repo:src/platform/scene_stage.*`, `repo:src/platform/play_level_scene.cpp`) is the
 `SceneHost` the play mode gives the scene system. It draws the scene camera's view (interpolated between steps, cut

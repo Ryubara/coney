@@ -48,6 +48,7 @@ Research:
 
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 - [AI: scripted goals and actions](../research/ai.md#scripted)
+- [Skipping a scene](../research/scenes.md#skipping)
 
 ## Run it in Coney {#run}
 
@@ -67,6 +68,8 @@ coney_tests "[disc][story]"
 ## Notes {#notes}
 
 All four checkpoints play headless on the disc with no script error and player 1 moving under the pad
-(`tests/platform/disc_story_missions_test.cpp`); nobody has compared them with the original yet.
+(`tests/platform/disc_story_missions_test.cpp`); the checkpoint 1 intro, skipped, fades back in and moves player 1 to
+where the scene leaves him (the skip makes its three pending end-function calls, as the original does); nobody has
+compared them with the original yet.
 
 [All missions](index.md) and [how a mission moves between states](index.md#lifecycle).

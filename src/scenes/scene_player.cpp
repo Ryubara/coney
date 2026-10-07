@@ -74,6 +74,11 @@ int rumbleStrength(std::uint16_t value) {
     return static_cast<int>(std::min(strength, 255.0F));
 }
 
+// The strength a skip's flush gives a rumble event: value × 25.5, at most 255.
+int flushedRumbleStrength(std::uint16_t value) {
+    return static_cast<int>(std::min(static_cast<float>(value) * 25.5F, 255.0F));
+}
+
 } // namespace
 
 /// One playing scene: the task the play bindings make (`SceneTask`, 30 updates a second), its runners and its start
@@ -346,8 +351,8 @@ class SceneTask {
 
     // Whether a skip button counts this update.
     [[nodiscard]] bool skipPressed(std::uint16_t buttons) const {
-        if (!m_request.skippable) {
-            return false;
+        if (!m_request.skippable || m_skipped) {
+            return false; // a skipped looping scene plays out its pass
         }
         if (m_request.chain && m_system.m_chainSkip) {
             return true; // a chained scene skips at once after a START skip
@@ -355,7 +360,9 @@ class SceneTask {
         return m_updates > kSkipDelayUpdates && (buttons & (kSkipCross | kSkipStart)) != 0;
     }
 
-    // A skip: the caption cleared, the view black at once, the scene stopped with the skip flag.
+    // A skip: the caption cleared, the view black at once, the scene stopped with the skip flag. A looping scene with
+    // a loop point is not cut short: the stop only ends its looping and it plays to the end of its pass.
+    // @orig 0x0039cbf0 SceneTask_Update (SceneTask.cpp)
     void skip(std::uint16_t buttons) {
         SceneHost& host = m_system.host();
         host.caption(m_slot.header->name, kCaptionClear);
@@ -365,8 +372,88 @@ class SceneTask {
         }
         m_skipped = true;
         ++m_system.m_stats.skipped;
+        if (m_loopPoint) {
+            m_request.looping = false;
+            return;
+        }
         endClips();
         m_slot.state = SceneState::Ending;
+    }
+
+    // A skipped scene's end fires what is left of a track's events, every one not yet reached in track order whatever
+    // its frame, but only a reduced set: show and hide, the fades and the coloured fade at once, the end-function
+    // call (once per event, so level80's intro, three callbacks, calls its end function four times) and the rumble.
+    // Sounds, lens, loop points, light colours, particles, captions and actions are dropped. Returns whether a rumble
+    // was set (the camera's pop sets it back to 0).
+    // @orig 0x00355798 SceneTrack_Flush (SceneCache.cpp)
+    bool flushTrack(TrackRun& run) {
+        constexpr int kAllFrames = std::numeric_limits<int>::max();
+        SceneHost& host = m_system.host();
+        const std::optional<double> object = run.target == Target::Object && objectHandle(run.index) != 0.0
+                                                 ? std::optional(objectHandle(run.index))
+                                                 : std::nullopt;
+        bool rumbled = false;
+        TrackRun header = run;
+        header.part = 0;
+        const KeyTrack* first = trackOf(header);
+        const KeyTrack* current = run.part == 0 ? nullptr : trackOf(run);
+        for (const KeyTrack* track : {first, current}) {
+            if (track == nullptr) {
+                continue;
+            }
+            const std::vector<SceneEvent>& events = track->events;
+            for (std::size_t i = 0; i < events.size(); ++i) {
+                const SceneEvent& event = events[i];
+                if (!due(event.frame, run.eventFrame, kAllFrames)) {
+                    continue;
+                }
+                ++m_system.m_stats.events;
+                switch (event.type) {
+                case kEventMessage12: {
+                    // A show is dropped when the track's next event is a hide.
+                    const bool hiddenNext = i + 1 < events.size() && events[i + 1].type == kEventMessage13;
+                    if (object && !hiddenNext) {
+                        host.objectMessage(*object, 0x12);
+                    }
+                    break;
+                }
+                case kEventMessage13:
+                    if (object) {
+                        host.objectMessage(*object, 0x13);
+                    }
+                    break;
+                case kEventFadeOut:
+                    host.screenEffect(ScreenEffect::FadeOut, 0.0F);
+                    break;
+                case kEventFadeIn:
+                    host.screenEffect(ScreenEffect::FadeIn, 0.0F);
+                    break;
+                case kEventCallEnd:
+                    callEnd();
+                    break;
+                case kEventColouredFade: {
+                    const std::uint32_t word = event.u32At(4);
+                    host.colouredFade((word & 0x80000000U) != 0, word & 0xffffffU, 0.0F);
+                    break;
+                }
+                case kEventRumble:
+                    host.rumble(flushedRumbleStrength(event.u16At(6)));
+                    rumbled = true;
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+        run.eventFrame = kAllFrames;
+        return rumbled;
+    }
+
+    // The runner of the object or light in slot `index`; null when it has none.
+    [[nodiscard]] TrackRun* runOf(Target target, std::size_t index) {
+        const auto found = std::ranges::find_if(
+            m_tracks, [&](const TrackRun& run) { return run.target == target && run.index == index; });
+        return found != m_tracks.end() ? &*found : nullptr;
     }
 
     // One update of the playing scene: the camera, object and light runners, then the roles, then the streaming.
@@ -768,26 +855,45 @@ class SceneTask {
             host.humanRelease(human, endPose);
             m_slot.roleHandles[role] = 0.0;
         }
-        // The objects (at their end poses when skipped), then the lights.
+        // The objects (when skipped, their tracks' remaining events, then their end poses), then the lights (their
+        // remaining events first when skipped).
+        bool rumbled = false;
         for (std::size_t i = 0; i < m_slot.objectHandles.size(); ++i) {
             const double object = m_slot.objectHandles[i];
             if (object == 0.0) {
                 continue;
             }
             if (m_skipped) {
+                if (TrackRun* run = runOf(Target::Object, i); run != nullptr) {
+                    rumbled = flushTrack(*run) || rumbled;
+                }
                 host.objectPose(object, toWorld(m_request.place, header.objects[i].end));
             }
             host.objectRelease(object);
             m_slot.objectHandles[i] = 0.0;
         }
-        for (const TrackRun& run : m_tracks) {
+        for (TrackRun& run : m_tracks) {
             if (run.target == Target::Light) {
+                if (m_skipped) {
+                    rumbled = flushTrack(run) || rumbled;
+                }
                 host.lightRelease(run.index);
             }
         }
-        // The camera back, the letterbox out, the brains on.
+        // The camera back (when skipped, its track's remaining events first; the pop stops any rumble they set), the
+        // letterbox out, the brains on.
         if (m_cameraBegun) {
+            if (m_skipped) {
+                for (TrackRun& run : m_tracks) {
+                    if (run.target == Target::Camera) {
+                        rumbled = flushTrack(run) || rumbled;
+                    }
+                }
+            }
             host.cameraEnd(m_request.blendCam);
+            if (rumbled) {
+                host.rumble(0);
+            }
         }
         if (m_request.cinematic && begun()) {
             host.screenEffect(ScreenEffect::LetterboxOut, kLetterboxSeconds);
