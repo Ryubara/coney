@@ -29,10 +29,11 @@ struct RageCounts {
     int event1 = 0; ///< Count B: awards of kRageEvent1Points.
 };
 
-/// The counts attack `animId` awards: the chain attacks 11-20 and the moving attacks 21-24 from the research's table;
-/// **Coney's choice** for the two grab moves seen at runtime but not mapped to events: the counter 76 (7 points, 10
-/// rage at runtime) and the strike back 104 (1 point, 1 rage); **Coney stand-in**: an anim set's square and cross
-/// (combat::animSetClips(), a bat's 34 and 36) count as `S1` and `X1`; every other id awards nothing.
+/// The counts attack `animId` awards, from the research's tables: the chain attacks 11-20, the moving attacks 21-24,
+/// the knife's, baton's and bat's attacks 34-50 (a set's square 2 × event 2, the rest 2 × event 1), and 193, 194, 212,
+/// 490 and the armed run attack 501 (1 × event 1); **Coney's choice** for the two grab moves seen at runtime but not
+/// mapped to events: the counter 76 (7 points, 10 rage at runtime) and the strike back 104 (1 point, 1 rage). Every
+/// other id awards nothing (the rows of events 0, 3 and 5 and the grab and mount strikes' are not built).
 [[nodiscard]] RageCounts rageCounts(int animId);
 
 /// The points of one award: `count × value`, halved with a shift for a blocked hit (`0x004ed9c8`).

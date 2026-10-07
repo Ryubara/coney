@@ -118,9 +118,20 @@ TEST_CASE("each grab strike raises the throw bonus by 0.27, up to 2.0", "[combat
     CHECK(tracker.bonus() == Catch::Approx(1.0F));
 }
 
-TEST_CASE("a bat's square and cross award as S1 and X1 (Coney's stand-in)", "[combat]") {
-    CHECK(rageCounts(34).event2 == rageCounts(anim_id::kAttackS1).event2);
-    CHECK(rageCounts(34).event1 == rageCounts(anim_id::kAttackS1).event1);
-    CHECK(rageCounts(36).event1 == rageCounts(anim_id::kAttackX1).event1);
-    CHECK(rageCounts(37).event1 == 0);
+TEST_CASE("a bat's square gives 2 rage, its cross and strikes 11, the armed run attack 5", "[combat]") {
+    // combat.md#rage's other attacks: 34 event 2 x 2, 36-38 event 1 x 2, 501 event 1 x 1 (halved when blocked).
+    CHECK(gainOf(34, false) == 2);
+    CHECK(gainOf(34, true) == 1);
+    for (const int id : {36, 37, 38}) {
+        CHECK(gainOf(id, false) == 11);
+        CHECK(gainOf(id, true) == 5);
+    }
+    CHECK(gainOf(anim_id::kArmedAttackFromRun, false) == 5);
+    CHECK(gainOf(anim_id::kArmedAttackFromRun, true) == 2);
+    // The knife's and baton's swings as the bat's.
+    CHECK(gainOf(45, false) == 2);
+    CHECK(gainOf(39, false) == 2);
+    CHECK(gainOf(47, false) == 11);
+    // The armed run attack is an other kind: it never counts toward a repeat run.
+    CHECK(repeatKind(anim_id::kArmedAttackFromRun) == RepeatKind::Other);
 }

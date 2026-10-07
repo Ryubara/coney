@@ -5,27 +5,6 @@
 
 namespace coney::combat {
 
-namespace {
-
-// The attack `animId` as anim set `set` plays it: `S1`, `X1` and the two strikes take the set's clips.
-int withAnimSet(int animId, int set) {
-    const AnimSetClips clips = animSetClips(set);
-    switch (animId) {
-    case anim_id::kAttackS1:
-        return clips.square;
-    case anim_id::kAttackX1:
-        return clips.cross;
-    case anim_id::kGroundedStrike1:
-        return clips.grounded;
-    case anim_id::kMountingStrike:
-        return clips.mounting;
-    default:
-        return animId;
-    }
-}
-
-} // namespace
-
 PlayerCombat::PlayerCombat(const AnimRangeList* ranges, std::uint64_t startMs, std::uint32_t seed)
     : m_ranges(ranges), m_random(seed), m_power(kPlayerPowerMax, kPlayerPowerRefillPerSecond, startMs),
       m_rage(kPlayerRageMax, kPlayerRageGainPercent, startMs) {}
@@ -326,24 +305,27 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
         }
         break;
     case command::kSquarePressed:
-        // Refused while +0x08 has any of 0x100101f (the attack phases, the grab bit, the duck, the run attack).
-        if ((phaseFlags(input) & kAttackRefusingPhases) == 0) {
-            SquareInput square;
-            square.target = input.target;
-            square.stick = input.stick;
-            square.gait = input.gait;
-            square.snapAttacks = tuning.snapAttacks;
-            square.snapTarget = input.snapTarget;
-            startAttack(input.target == TargetKind::Breakable ? objectAttack(input.objectHeight)
-                                                              : withAnimSet(squareAttack(square), input.animSet),
-                        tuning, out);
+    case command::kCrossLongHold: {
+        // Square (its press) and cross (its 0x10) are refused while +0x08 has any of 0x100101f (the attack phases, the
+        // grab bit, the duck, the run attack).
+        if ((phaseFlags(input) & kAttackRefusingPhases) != 0) {
+            break;
         }
+        const SquareInput attack{.target = input.target,
+                                 .stick = input.stick,
+                                 .gait = input.gait,
+                                 .phaseFlags = phaseFlags(input),
+                                 .heldSet = input.animSet,
+                                 .fightStance = input.fightStance,
+                                 .snapAttacks = tuning.snapAttacks,
+                                 .snapTarget = input.snapTarget};
+        const int animId = input.command == command::kSquarePressed ? squareAttack(attack) : crossAttack(attack);
+        // A breakable target: the object attack, by the point's height.
+        startAttack(animId == anim_id::kNone && input.target == TargetKind::Breakable ? objectAttack(input.objectHeight)
+                                                                                      : animId,
+                    tuning, out);
         break;
-    case command::kCrossLongHold:
-        if ((phaseFlags(input) & kAttackRefusingPhases) == 0) {
-            startAttack(withAnimSet(crossAttack(), input.animSet), tuning, out);
-        }
-        break;
+    }
     case command::kCircleTapped:
     case command::kCircleHeld:
         grabOrTackle(input, out);

@@ -256,9 +256,10 @@ TEST_CASE("L2 held and cross pressed charges at a run, and does nothing at a wal
     Runner walking(nullptr);
     const auto walked = walking.run("0 stick left 0 50\n2 press l2\n5 tap cross\n", 10,
                                     [](std::uint64_t, CombatInput& input) { input.gait = Gait::Walk; });
-    // The combination does nothing at a walk; the cross release's 0x10 that follows starts X1 as any cross tap does.
+    // The combination does nothing at a walk; the cross release's 0x10 that follows starts the walk attack, as any
+    // cross tap at a walk does.
     CHECK(walked[5].command == command::kL2Cross);
-    CHECK(starts(walked) == Starts{{6, anim_id::kAttackX1}});
+    CHECK(starts(walked) == Starts{{6, anim_id::kAttackFromWalk}});
 }
 
 TEST_CASE("a grab, a strike and a forward throw, with the power meter paying for both", "[combat]") {
@@ -425,4 +426,22 @@ TEST_CASE("a bat's anim set plays 34 for square and 36 for cross, with no chain 
         input.target = TargetKind::Grounded;
     });
     CHECK(starts(down) == Starts{{10, 37}});
+}
+
+TEST_CASE("square at a run plays 24 only with the record's +0x08 clear", "[combat]") {
+    // Square tests the run with +0x08 clear (0x00286cc8): a bit square does not refuse on, such as a start clip's
+    // 0x10000000, sends it on to S1 (combat.md#attacks).
+    const char* script = "0 stick left 0 100\n10 tap square\n";
+    for (const auto& [phase, expected] :
+         {std::pair{0U, anim_id::kAttackFromRun}, std::pair{0x10000000U, anim_id::kAttackS1}}) {
+        INFO("+0x08 " << phase);
+        Runner runner(nullptr);
+        const auto frames = runner.run(script, 12, [phase](std::uint64_t frame, CombatInput& input) {
+            input.gait = Gait::Run;
+            if (frame == 10) {
+                input.phase = phase;
+            }
+        });
+        CHECK(starts(frames) == Starts{{10, expected}});
+    }
 }

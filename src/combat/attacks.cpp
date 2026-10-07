@@ -13,6 +13,21 @@ bool walking(human::Gait gait) {
     return gait == human::Gait::Sneak || gait == human::Gait::Walk || gait == human::Gait::Jog;
 }
 
+// The run the run attacks test (`0x00223a60`, and for cross `0x00223a98`): gait 4 (cross: or 5) with the record's +0x08
+// clear, and the stick beyond 0.95 (`0x00225c10`). The fight stance is the caller's test: the armed 501 has none.
+bool atRun(const SquareInput& input, bool cross) {
+    const bool gait = input.gait == human::Gait::Run || (cross && input.gait == human::Gait::Sprint);
+    return gait && input.phaseFlags == 0 && input.stick.magnitude() > kSnapStick;
+}
+
+// The walk the walk attack tests: gait 1-3 with the stick at 0.12 or more, not in a fight stance.
+bool atWalk(const SquareInput& input) {
+    return !input.fightStance && walking(input.gait) && input.stick.magnitude() >= kWalkAttackStick;
+}
+
+// Whether `set` is a melee weapon's (knife, baton, bat), whose square and cross take the armed branch.
+bool meleeSet(int set) { return set >= 1 && set <= 3; }
+
 } // namespace
 
 int snapForStick(Stick stick) {
@@ -51,6 +66,10 @@ int snapOf(ChainButton button) {
 } // namespace
 
 int squareAttack(const SquareInput& input) {
+    // A weapon in hand takes its own branch.
+    if (meleeSet(input.heldSet)) {
+        return armedAttack(input, false);
+    }
     // The target's state first.
     switch (input.target) {
     case TargetKind::Grounded:
@@ -65,11 +84,11 @@ int squareAttack(const SquareInput& input) {
         break;
     }
     // Then the gait: a run attack, a walk attack; these come before the snap.
-    const float length = input.stick.magnitude();
-    if (input.gait == human::Gait::Run && input.phaseFlags == 0 && length > kSnapStick) {
+    // The run and walk attacks only outside a fight stance (`0x00228340`).
+    if (!input.fightStance && atRun(input, false)) {
         return anim_id::kAttackFromRun;
     }
-    if (walking(input.gait) && length >= kWalkAttackStick) {
+    if (atWalk(input)) {
         return anim_id::kAttackFromWalk;
     }
     // A snap, with a human on the stick's side that is not the current target; without one square goes on to S1.
@@ -81,14 +100,45 @@ int squareAttack(const SquareInput& input) {
     return anim_id::kAttackS1;
 }
 
-int crossAttack() { return anim_id::kAttackX1; }
+int crossAttack(const SquareInput& input) {
+    if (meleeSet(input.heldSet)) {
+        return armedAttack(input, true);
+    }
+    // The moving attacks as square's, the run also at a sprint; no snaps.
+    if (!input.fightStance && atRun(input, true)) {
+        return anim_id::kAttackFromRun;
+    }
+    if (atWalk(input)) {
+        return anim_id::kAttackFromWalk;
+    }
+    return anim_id::kAttackX1;
+}
+
+int armedAttack(const SquareInput& input, bool cross) {
+    const AnimSetClips clips = animSetClips(input.heldSet);
+    // The run attack first, then the target's state, then the slot's swing.
+    if (atRun(input, cross)) {
+        return anim_id::kArmedAttackFromRun;
+    }
+    switch (input.target) {
+    case TargetKind::Grounded:
+    case TargetKind::Mounted:
+        return clips.grounded;
+    case TargetKind::Breakable:
+        return anim_id::kNone;
+    case TargetKind::Grabbed:
+    case TargetKind::None:
+        break;
+    }
+    return cross ? clips.cross : clips.square;
+}
 
 AnimSetClips animSetClips(int set) {
     switch (set) {
     case 1:
-        return AnimSetClips{.square = 45, .cross = 47, .mounting = 50, .grounded = 49};
+        return AnimSetClips{.square = 45, .cross = 47, .mounting = 49, .grounded = 48};
     case 2:
-        return AnimSetClips{.square = 39, .cross = 41, .mounting = 44, .grounded = 43};
+        return AnimSetClips{.square = 39, .cross = 41, .mounting = 43, .grounded = 42};
     case 3:
         return AnimSetClips{.square = 34, .cross = 36, .mounting = 38, .grounded = 37};
     default:

@@ -192,6 +192,7 @@ target_sources(coney_tests PRIVATE
     human/climb_test.cpp
     human/combat_test.cpp
     human/combat_timing_test.cpp
+    human/moving_attacks_test.cpp
     human/being_hit_test.cpp
     human/human_grab_test.cpp
     human/script_state_test.cpp

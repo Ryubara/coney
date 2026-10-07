@@ -31,7 +31,8 @@ constexpr float kDegrees = std::numbers::pi_v<float> / 180.0F;
 
 // Whether `animId` is a moving attack, after which the run may go on.
 bool isMovingAttack(int animId) {
-    return animId == id::kRunningAttackCharge || animId == id::kRunningAttackDive || animId == id::kAttackFromRun;
+    return animId == id::kRunningAttackCharge || animId == id::kRunningAttackDive || animId == id::kAttackFromRun ||
+           animId == id::kArmedAttackFromRun;
 }
 
 // The horizontal distance between two points.
@@ -265,6 +266,7 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     in.nowMs = input.nowMs;
     in.helpless = helpless;
     in.animSet = m_animSet;
+    in.fightStance = lockTarget() != nullptr;
     m_snapTarget = nullptr;
     if (helpless) {
         return in;

@@ -76,7 +76,14 @@ struct SquareInput {
     Stick stick; ///< In the player's frame.
     human::Gait gait = human::Gait::Standing;
     std::uint32_t phaseFlags = 0; ///< The record's `+0x08`.
-    bool snapAttacks = true;      ///< CombatTuning::snapAttacks.
+    /// The held object's anim set (its `+0x87`; 0 with nothing in hand): 1-3 take the armed branch (armedAttack()).
+    int heldSet = 0;
+    /// In a fight stance (record `+0x00` bits `0x3`, `0x00228340`): no unarmed run or walk attack, so square goes on to
+    /// the snap test and `S1`, cross to `X1`; the armed run attack 501 does not test it. **Coney stand-in** for the
+    /// stance: the fighter is locked onto a target (Fighter::lockTarget()); the original's stance rules
+    /// (`0x0027ce90`, docs/research/combat.md) are not built.
+    bool fightStance = false;
+    bool snapAttacks = true; ///< CombatTuning::snapAttacks.
     /// The snap's search found a human on the stick's side that is not the current target (the caller searches:
     /// kSnapSearchRange, kSnapSearchCone, kSnapSearchHeight).
     bool snapTarget = false;
@@ -86,7 +93,8 @@ struct SquareInput {
 /// anim_id::kNone. It needs a target as well to play (squareAttack()).
 [[nodiscard]] int snapForStick(Stick stick);
 
-/// The attack square starts, in the original's order: 193 at a grounded target, 212 at a mounted one, 120 at a
+/// The attack square starts. With a knife, baton or bat in hand (SquareInput::heldSet 1-3) it is armedAttack()'s with
+/// the set's square slot. Otherwise, in the original's order: 193 at a grounded target, 212 at a mounted one, 120 at a
 /// grabbed one; an object attack at a breakable (anim_id::kNone here: objectAttack() picks the clip); at a run (gait 4)
 /// with no phase bit and the stick beyond 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the
 /// walk attack 23; only then, standing or sprinting, the snap of snapForStick() when snaps are on and the search found
@@ -96,13 +104,24 @@ struct SquareInput {
 /// @orig 0x00286cc8 Player_Square (unknown)
 [[nodiscard]] int squareAttack(const SquareInput& input);
 
-/// The attack cross (its 0x10) starts: `X1`. (A held weapon of types 4, 5 or 6 takes another routine; Coney has no
-/// weapons yet.)
+/// The attack cross (its 0x10) starts. With a knife, baton or bat in hand (SquareInput::heldSet 1-3) it is
+/// armedAttack()'s with the set's cross slot. Otherwise: at a run (gait 4 or 5) with no phase bit and the stick beyond
+/// 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the walk attack 23; else `X1`. Cross has
+/// no snaps and reads no target (docs/research/combat.md#attacks). **Coney's reading**: square's fields are reused;
+/// cross ignores the target and the snap's. (Sets 4-6 throw instead, `0x002880d8`; Coney has no throws yet.)
 /// @orig 0x00287a18 Player_Cross (unknown)
-[[nodiscard]] int crossAttack();
+[[nodiscard]] int crossAttack(const SquareInput& input);
 
-/// The clips an anim set puts in the slots square and cross read (docs/research/combat.md#bat): `S1`, `X1`, the
-/// grounded strike and the mounting strike. Set 0 is the defaults.
+/// The armed branch square and cross take with a knife, baton or bat in hand (docs/research/combat.md#armed-moves), in
+/// its order: at a run (gait 4, or for cross 4 or 5, with no phase bit and the stick beyond 0.95) 501; at a grounded or
+/// tackled target the set's grounded strike (slot `0x13`); at a breakable anim_id::kNone (objectAttack() picks the
+/// clip); otherwise the set's swing `swing` (slot `0x10` for square, `0x11` for cross). No walk attack, no snaps and
+/// no strike on a grabbed target: a walking player swings where he is. **Coney's reading**: the mugging this branch
+/// may start is not built.
+[[nodiscard]] int armedAttack(const SquareInput& input, bool cross);
+
+/// The clips an anim set puts in the slots the armed square and cross read (docs/research/combat.md#bat): `S1`, `X1`,
+/// the grounded strike and the mounting strike. Set 0 is the defaults.
 struct AnimSetClips {
     int square = anim_id::kAttackS1;          ///< Slot `0x10`.
     int cross = anim_id::kAttackX1;           ///< Slot `0x11`.
@@ -110,9 +129,8 @@ struct AnimSetClips {
     int grounded = anim_id::kGroundedStrike1; ///< Slot `0x13`.
 };
 
-/// The clips of anim set `set`: 1 (45, 47, 50, 49), 2 (39, 41, 44, 43) and 3, a bat's (34, 36, 38, 37); any other
-/// set keeps the defaults. **Coney's reading**: of the overrides only `S1`'s, `X1`'s and the two strikes' are
-/// applied; the walk and run attacks and the snaps stay as they are (which slots they read is not traced).
+/// The clips of anim set `set`: 1, a knife's (45, 47, 49, 48), 2, a baton's (39, 41, 43, 42) and 3, a bat's (34, 36,
+/// 38, 37); any other set keeps the defaults. The run and walk attacks and the snaps are constants, not slots.
 /// @orig 0x00253688 Human_ApplyAnimSet (unknown)
 [[nodiscard]] AnimSetClips animSetClips(int set);
 
@@ -121,8 +139,9 @@ struct AnimSetClips {
 /// @orig 0x00264178 Player_ObjectAttack (unknown)
 [[nodiscard]] int objectAttack(float height);
 
-/// Whether L2 + cross (the charge) or L2 + square (the dive) may start: at a run with no phase bit, or at a sprint.
-/// **Coney choice**: the dive takes the charge's conditions (the research gives them for the charge).
+/// Whether L2 + cross (the charge) or L2 + square (the dive) may start: at a run with no phase bit, or at a sprint;
+/// the same with a knife, baton or bat in hand. **Coney choice**: the dive takes the charge's conditions (the research
+/// gives them for the charge).
 /// @orig 0x0027d800 Player_Charge (unknown)
 /// @orig 0x0027d900 Player_Dive (unknown)
 [[nodiscard]] bool runningAttackAllowed(human::Gait gait, std::uint32_t phaseFlags);

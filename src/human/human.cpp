@@ -738,13 +738,16 @@ void Human::followClimb(const raycast::CollisionMesh* mesh) {
 
 void Human::step(const HumanInput& input, const raycast::CollisionMesh* mesh) {
     m_record = recordOf(input);
-    m_gaitBefore = gait();
     animate(mesh);
     updateState(mesh);
     updateActions(input.targets, mesh);
 }
 
 void Human::animate(const raycast::CollisionMesh* mesh) {
+    // The gait the last update's velocity left, before this update moves the body: the dispatcher's gait tests read it
+    // (fight()). It is taken here, in the first pass, so that step() and human::Humans, which runs the passes itself,
+    // both keep it.
+    m_gaitBefore = gait();
     if (m_outOfWorld) {
         return;
     }

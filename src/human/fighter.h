@@ -195,7 +195,7 @@ class Fighter {
     [[nodiscard]] const std::vector<int>& strikes() const { return m_strikes; }
     /// The object an object attack's hit struck this update (its handle); nothing otherwise.
     [[nodiscard]] std::optional<double> objectHit() const { return m_objectHit; }
-    /// The anim set a held weapon applies from now on (combat::animSetClips(); 0 for none): square's and cross's clips.
+    /// The held object's anim set from now on (0 for none), which square and cross branch on (combat::armedAttack()).
     void setAnimSet(int set) { m_animSet = set; }
     [[nodiscard]] int animSet() const { return m_animSet; }
 

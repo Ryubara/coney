@@ -28,6 +28,8 @@ inline constexpr int kAttackFromRun = 24;
 inline constexpr int kSnapRight = 25;
 inline constexpr int kSnapLeft = 27;
 inline constexpr int kSnapBack = 29;
+/// `SWINGABLE_OBJECT_ATTACK_FROM_RUN`: square or cross at a run with a knife, baton or bat (sets 1-3) in hand.
+inline constexpr int kArmedAttackFromRun = 501;
 
 inline constexpr int kGrabComboStrike1 = 51;
 inline constexpr int kGrabComboStrike2 = 53;

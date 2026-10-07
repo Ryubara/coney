@@ -162,7 +162,8 @@ class Human final : public Holdable {
     [[nodiscard]] PlayerRecord& record() { return m_record; }
     [[nodiscard]] const PlayerRecord& record() const { return m_record; }
 
-    /// The update's first pass, the animation step: every task advances (the clips' events moving the record's
+    /// The update's first pass, the animation step: the gait the last update left is kept for the dispatcher's gait
+    /// tests, then every task advances (the clips' events moving the record's
     /// `+0x08`), and a climb follows its clips. Nothing for a human out of the world.
     void animate(const raycast::CollisionMesh* mesh);
     /// The second pass, the state update: the record's stick turned by its camera; the locomotion (through the

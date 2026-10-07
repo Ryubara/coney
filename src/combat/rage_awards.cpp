@@ -5,7 +5,6 @@
 #include <array>
 
 #include "combat/anim_ids.h"
-#include "combat/attacks.h"
 
 namespace coney::combat {
 
@@ -17,24 +16,28 @@ struct CountRow {
     RageCounts counts;
 };
 
-// The research's table (docs/research/combat.md#rage), then Coney's two grab moves.
-constexpr std::array<CountRow, 16> kCounts{{
-    {.animId = 11, .counts = {.event2 = 0, .event1 = 1}},
-    {.animId = 12, .counts = {.event2 = 1, .event1 = 0}},
-    {.animId = 13, .counts = {.event2 = 1, .event1 = 1}},
-    {.animId = 14, .counts = {.event2 = 4, .event1 = 1}},
-    {.animId = 15, .counts = {.event2 = 2, .event1 = 2}},
-    {.animId = 16, .counts = {.event2 = 1, .event1 = 0}},
-    {.animId = 17, .counts = {.event2 = 3, .event1 = 2}},
-    {.animId = 18, .counts = {.event2 = 3, .event1 = 2}},
-    {.animId = 19, .counts = {.event2 = 3, .event1 = 0}},
-    {.animId = 20, .counts = {.event2 = 3, .event1 = 0}},
-    {.animId = 21, .counts = {.event2 = 1, .event1 = 0}},
-    {.animId = 22, .counts = {.event2 = 1, .event1 = 0}},
-    {.animId = 23, .counts = {.event2 = 1, .event1 = 0}},
-    {.animId = 24, .counts = {.event2 = 1, .event1 = 0}},
-    {.animId = 76, .counts = {.event2 = 7, .event1 = 0}},
-    {.animId = 104, .counts = {.event2 = 1, .event1 = 0}},
+// The research's table (docs/research/combat.md#rage): the chain and moving attacks, the knife's, baton's and bat's
+// attacks and the strikes and moving attacks of event 1 × 1; then Coney's two grab moves.
+constexpr std::array<CountRow, 38> kCounts{{
+    {.animId = 11, .counts = {.event2 = 0, .event1 = 1}},  {.animId = 12, .counts = {.event2 = 1, .event1 = 0}},
+    {.animId = 13, .counts = {.event2 = 1, .event1 = 1}},  {.animId = 14, .counts = {.event2 = 4, .event1 = 1}},
+    {.animId = 15, .counts = {.event2 = 2, .event1 = 2}},  {.animId = 16, .counts = {.event2 = 1, .event1 = 0}},
+    {.animId = 17, .counts = {.event2 = 3, .event1 = 2}},  {.animId = 18, .counts = {.event2 = 3, .event1 = 2}},
+    {.animId = 19, .counts = {.event2 = 3, .event1 = 0}},  {.animId = 20, .counts = {.event2 = 3, .event1 = 0}},
+    {.animId = 21, .counts = {.event2 = 1, .event1 = 0}},  {.animId = 22, .counts = {.event2 = 1, .event1 = 0}},
+    {.animId = 23, .counts = {.event2 = 1, .event1 = 0}},  {.animId = 24, .counts = {.event2 = 1, .event1 = 0}},
+    {.animId = 34, .counts = {.event2 = 2, .event1 = 0}},  {.animId = 35, .counts = {.event2 = 0, .event1 = 2}},
+    {.animId = 36, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 37, .counts = {.event2 = 0, .event1 = 2}},
+    {.animId = 38, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 39, .counts = {.event2 = 2, .event1 = 0}},
+    {.animId = 40, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 41, .counts = {.event2 = 0, .event1 = 2}},
+    {.animId = 42, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 43, .counts = {.event2 = 0, .event1 = 2}},
+    {.animId = 44, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 45, .counts = {.event2 = 2, .event1 = 0}},
+    {.animId = 46, .counts = {.event2 = 2, .event1 = 0}},  {.animId = 47, .counts = {.event2 = 0, .event1 = 2}},
+    {.animId = 48, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 49, .counts = {.event2 = 0, .event1 = 2}},
+    {.animId = 50, .counts = {.event2 = 0, .event1 = 2}},  {.animId = 193, .counts = {.event2 = 0, .event1 = 1}},
+    {.animId = 194, .counts = {.event2 = 0, .event1 = 1}}, {.animId = 212, .counts = {.event2 = 0, .event1 = 1}},
+    {.animId = 490, .counts = {.event2 = 0, .event1 = 1}}, {.animId = 501, .counts = {.event2 = 0, .event1 = 1}},
+    {.animId = 76, .counts = {.event2 = 7, .event1 = 0}},  {.animId = 104, .counts = {.event2 = 1, .event1 = 0}},
 }};
 
 // The repeat tracker: the gap that ends a run (ms), the hits of a run that set the flag, the throw bonus's step and
@@ -47,20 +50,6 @@ constexpr float kThrowBonusMax = 2.0F;
 } // namespace
 
 RageCounts rageCounts(int animId) {
-    // **Coney stand-in**: an anim set's square and cross (a bat's 34 and 36, sets 1 and 2's) award as S1 and X1 do;
-    // the events the weapon ids map to (0x22-0x2c among them) are not traced.
-    const auto setAttack = [animId](int set) {
-        const AnimSetClips clips = animSetClips(set);
-        return animId == clips.square  ? anim_id::kAttackS1
-               : animId == clips.cross ? anim_id::kAttackX1
-                                       : anim_id::kNone;
-    };
-    for (const int set : {1, 2, 3}) {
-        if (const int as = setAttack(set); as != anim_id::kNone) {
-            animId = as;
-            break;
-        }
-    }
     for (const CountRow& row : kCounts) {
         if (row.animId == animId) {
             return row.counts;

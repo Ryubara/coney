@@ -1779,7 +1779,7 @@ a seeded generator (`CombatRandom`), so a run with the same seed and input is th
 | File | What it does |
 | --- | --- |
 | `combat/commands.*` | the nine trigger tables (`CommandTables::street()` is the street's), and the matcher that turns each update's buttons into one command in the documented order, with the tap (1-6 samples), long hold (4th sample, or a release within 3) and history hold (7) counted per button |
-| `combat/attacks.*` | square's choice (target, run, walk, a snap with a target found, `S1`), cross's `X1`, the object attack's clip, the charge and dive condition, the chain table, `attackHitUpdate()` (the measured hits of the [timing table](#attacks)) and `AttackChain`: the chain read from the record's `+0x08` as the attack's clip holds it ([Tasks](tasks.md#held-flags)), one buffered press, the hit counted in updates, the attack over once its clip has given its bits back |
+| `combat/attacks.*` | square's choice (target, run, walk, a snap with a target found, `S1`), cross's (run, walk, `X1`), the armed branch of a knife, baton or bat in hand (501 at a run, the grounded strike, the set's swing), the object attack's clip, the charge and dive condition, the chain table, `attackHitUpdate()` (the measured hits of the [timing table](#attacks)) and `AttackChain`: the chain read from the record's `+0x08` as the attack's clip holds it ([Tasks](tasks.md#held-flags)), one buffered press, the hit counted in updates, the attack over once its clip has given its bits back |
 | `combat/anim_ranges.*` | the Anim Range List decoded from the character data's chunk (direction, reach, far range, damage, hit code, flags), and `applyClassDamage()`: a class's damage table written over it by the index → anim id table, scaled for a player |
 | `combat/reactions.*` | the hit code taken apart, the victim's side, `hitReaction()` (the strength, height and direction rules, the combo attacks 13-15 and 17-20, and the table at `0x00510798`), the dying reaction, the block reactions and when a block holds |
 | `combat/power_class.h` | a human's power class: the power maximum and refill, the hurt fraction and the power factor while hurt, the stun and ground times and the struggle divisor (`+0x36`); the player's and the street civilian's |
@@ -1869,8 +1869,8 @@ grabber's power running out ends the grab, with an escape when the grabber is hu
 **The clips** (anim ids, played through the human's animator, `AnimState::Attack` returning to the fight idle 358 and
 `AnimState::Hold` keeping its loop; an attack returns to the fight idle 358 while the player has a target and through
 389 to the idle 388 when he has none, **Coney's reading** of the runtime runs):
-the chains `S1` 12, `SS2` 16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15,
-`XS2` 14 and the snaps; the run attack 24 and the charge 0 and dive 1, after which the run resumes when the stick is
+the chains `S1` 12, `SS2` 16, `SSS3` 19, `SSX3` 17, `X1` 11, `XX2` 13, `SX2` 15, `XS2` 14 and the snaps;
+the run attack 24 (501 armed) and the charge 0 and dive 1, after which the run resumes when the stick is
 still at a run; the block 606, or the shuffle 607 with the stick pushed; rage 643; the grab 71, 72, then the hold 82
 (victim 73, then 83), or from the rear 71, 74, 84 (victim 75, 85); the miss 71, 69, 389; the tackle 4, 5, then 210
 (victim 6 when the player's 5 starts, then 207),
@@ -1897,6 +1897,8 @@ the victim's decisions, the grabbed player, the lock-on and the rage awards), `t
 player hit (the duck and its counter, the block, the floor, the armour, the stun, knockdown and mash, held in a grab,
 the rage and repeat tracker, the combat walk and the grab's turn), `tests/human/combat_timing_test.cpp` when every
 move takes a press and gives the stick back under button spam and partial stick,
+`tests/human/moving_attacks_test.cpp` every attack button at a walk, a run and a sprint with an analog stick, through
+both the characters' step and `Human::step`,
 with the disc's clip lengths, `tests/human/combat_test.cpp` the human with
 synthetic clips (the combo and its reactions and stun, the stun's 750 ms, the block holding the body while the stick at
 0.6 turns it, the grab, strike and throw with the rise 2 s later, the R1 spin and the L2 let-go, the tackle, the turn
@@ -1931,10 +1933,13 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   listed) and item 10's pickup sound is not played. The human's current context record is the nearest object with a
   prompt in reach. A pick-up animation other than 5 plays 461 (as the bat did at runtime). A dropped object lands
   0.3 m ahead of the feet, with no fall.
-- **A weapon in hand** ([A bat in hand](#bat)): of an anim set only square's, cross's and the two strikes' clips are
-  applied (not the blocks'; nor the armed run attack 501 or the loss of the walk attack and snaps,
-  [Moving attacks with something in hand](#armed-moves)); an anim set's square
-  and cross award rage as `S1` and `X1` do (the events of the weapon ids are not traced); a bat never breaks.
+- **A weapon in hand** ([A bat in hand](#bat), [Moving attacks with something in hand](#armed-moves)): the
+  fighter's anim set stands for the held object's set. With set 1-3 square and cross take the armed branch (501, the
+  grounded strike, the slot's swing; no walk attack, snaps or strike on a grabbed target), and the charge and dive are
+  unchanged; the rage is the [Rage](#rage) table's. **Not yet**: the armed branch's mugging, the blocks' clips of an
+  anim set, the weapon's damage bonus (`CfgObj` `+0x58` × the power class's factor), a breakable's hit kind 2 for the
+  moving attacks, and the throws of sets 4-6 (square, cross, the charge and the dive play the unarmed moves); a bat
+  never breaks.
 - **The held flags** ([Tasks](tasks.md#held-flags)): the bits each move holds where the research names none. Every
   attack the dispatcher starts (the walk attack, the snaps, the grounded and mounted strikes, the grab strikes, power
   strikes and throws) is built as `Attack_Start`'s (holds `0x7`, sets `0x1`); the charge and dive hold the run attack's
@@ -1964,7 +1969,14 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   List (to the side for 25 and 27, behind for 29), where the clip strikes, rather than straight ahead, and the hit
   lands on whoever stands within the far range on that side; the snap's target is not kept as the target (human
   `+0xc8`); the dispatcher's gait tests read the gait the last update's velocity left (so a square one update after
-  the stick is first pushed fully still snaps, as at runtime, though the run start has moved the body). **Stand-in**:
+  the stick is first pushed fully still snaps, as at runtime, though the run start has moved the body). That gait is
+  taken in the step's first pass (`Human::animate`), so the play mode's characters' step (`human::Humans`) and a lone
+  `Human::step` both give it. The run attacks also need the record's `+0x08` clear, as the code tests: a square or a
+  cross during the run start (`0x10000000`) plays `S1` or `X1`. In a [fight stance](#fight-stance) neither the unarmed run
+  nor the walk attack plays, so a square there goes on to the snap or `S1` and a cross to `X1`; the armed 501 does not
+  test the stance. **Stand-in**: the stance is the player locked onto a target (`Fighter::lockTarget()`), not the
+  original's own rules for entering and leaving it.
+  **Stand-in**:
   the clear line to the target (`0x00222a90`) is not tested. With the disc, `level99`'s lesson 7 passes:
   `repo:tests/platform/disc_level99_snaps_test.cpp`.
 - A side is "front" up to and including 45° and "rear" beyond 135°; a height difference beyond 1.5 m counts as 0.9 to
