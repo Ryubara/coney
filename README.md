@@ -35,7 +35,7 @@ so it is not counted.
 
 Working on: [Scripts](docs/roadmap.md#scripts), [Characters](docs/roadmap.md#characters),
 [Gameplay](docs/roadmap.md#gameplay), [Debug menu and test levels](docs/roadmap.md#debug-menu-and-test-levels), [Sound
-and video](docs/roadmap.md#sound-and-video).
+and video](docs/roadmap.md#sound-and-video), [Xbox assets (optional)](docs/roadmap.md#xbox-assets-optional).
 Per subsystem, the research coverage, the middleware and how it is all measured: [Progress](docs/progress/index.md).
 <!-- progress:end -->
 

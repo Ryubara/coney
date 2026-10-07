@@ -135,6 +135,24 @@ def _add_extract_command(groups: Any) -> None:
     )
     extract.add_argument("--verify", action="store_true", help="compare the file counts with the expected ones")
     extract.add_argument("--jobs", type=int, metavar="N", help="worker processes for decoding audio (default: up to 4)")
+    extract.add_argument(
+        "--xbox",
+        type=Path,
+        metavar="XBOX_DISC",
+        help="your Xbox disc (image, XISO or folder): its larger textures and HD movies replace the PS2 ones",
+    )
+    extract.add_argument(
+        "--xbox-index",
+        type=Path,
+        metavar="FILE",
+        help="the Xbox resource index (`xbox index`): read when it fits the disc, else built and written there",
+    )
+    extract.add_argument(
+        "--xbox-texture-map",
+        type=Path,
+        metavar="FILE",
+        help="also write the Xbox texture map there: which Xbox texture replaced which PS2 one (needs textures)",
+    )
 
 
 def _add_audio_commands(groups: Any) -> None:
@@ -194,6 +212,16 @@ def _add_xbox_commands(groups: Any) -> None:
     resources = commands.add_parser("resources", help="the resource index: counts and graphics-chunk kinds")
     resources.add_argument("disc", help=disc_help)
     resources.add_argument("--ps2", metavar="PS2_DISC", help=ps2_help)
+    index = commands.add_parser("index", help="write the resource index (xbox-resources.bin) to OUT_FILE")
+    index.add_argument("disc", help=disc_help)
+    index.add_argument("out_file", type=Path, help="where to write it (outside the repository)")
+    texture_map = commands.add_parser(
+        "texture-map", help="match every PS2 texture and write the texture map (xbox-textures.bin) to OUT_FILE"
+    )
+    texture_map.add_argument("ps2_disc", metavar="PS2_DISC", help="the PS2 disc (a folder or .iso)")
+    texture_map.add_argument("disc", help=disc_help)
+    texture_map.add_argument("out_file", type=Path, help="where to write it (outside the repository)")
+    texture_map.add_argument("--xbox-index", type=Path, metavar="FILE", help="the resource index, as for extract")
     textures = commands.add_parser("textures", help="texture chunk counts by format, mip count and size")
     textures.add_argument("disc", help=disc_help)
     textures.add_argument("--ps2", metavar="PS2_DISC", help=ps2_help)
@@ -394,6 +422,10 @@ def _run_xbox(args: argparse.Namespace) -> int:
         return xbox_cli.run_extract(args.disc, args.out_dir, args.names, args.only)
     if args.command == "resources":
         return xbox_cli.run_resources(args.disc, args.ps2)
+    if args.command == "index":
+        return xbox_cli.run_index(args.disc, args.out_file)
+    if args.command == "texture-map":
+        return xbox_cli.run_texture_map(args.ps2_disc, args.disc, args.out_file, args.xbox_index)
     return xbox_cli.run_textures(args.disc, args.ps2)
 
 
@@ -443,7 +475,9 @@ def _run(args: argparse.Namespace) -> int:
         from coney_tools import extract  # loads NumPy, which the other commands do not need
 
         disc_arg, out_dir = wad_cli.split_disc_and_target(args.paths, "OUT_DIR")
-        return extract.run(disc_arg, out_dir, args.only, args.verify, args.jobs)
+        return extract.run(
+            disc_arg, out_dir, args.only, args.verify, args.jobs, args.xbox, args.xbox_index, args.xbox_texture_map
+        )
     if args.group == "movies":
         return movies_cli.run_list(args.disc)
     if args.group == "progress":

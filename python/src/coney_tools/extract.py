@@ -28,6 +28,7 @@ from coney_tools import (
     extract_scenes,
     extract_wad,
     extract_worlds,
+    extract_xbox,
     lua4,
     movies,
     refs_extract,
@@ -65,6 +66,21 @@ EXPECTED: dict[str, dict[str, int]] = {
 _PIECE = 8 << 20
 
 
+def _write_texture_map(path: Path, identity: dict[str, str], xbox: extract_xbox.XboxSource) -> None:
+    """Write the Xbox texture map of this run's replacements (xbox_texture_map's layout); print its count and hash."""
+    from coney_tools import xbox_texture_map
+
+    ps2_dir = bytes.fromhex(identity.get(wad.DIR_FILE, "00" * 20))
+    texture_map = xbox_texture_map.make(ps2_dir, xbox.resources.index_sha1, xbox.replacements)
+    data = xbox_texture_map.to_bytes(texture_map)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    digest = hashlib.sha256(data).hexdigest()
+    _note(
+        f"xbox texture map: {len(texture_map.records)} records ({len(xbox.replacements)} replacements), sha256 {digest}"
+    )
+
+
 def _sha1(disc: Disc, name: str) -> str:
     """SHA-1 of one disc file, streamed."""
     digest = hashlib.sha1()
@@ -96,8 +112,20 @@ def extract_disc_files(disc: Disc, output: Output) -> Report:
     return report
 
 
-def extract_movies(disc: Disc, output: Output) -> Report:
-    """Copy every `PSS/*.BIK` as is, with its header values in `movies/index.json`."""
+def _movie_fields(header: movies.BinkHeader) -> dict[str, object]:
+    """The header values `movies/index.json` lists for a movie."""
+    return {
+        "width": header.width,
+        "height": header.height,
+        "frames": header.frames,
+        "fps": [header.fps_num, header.fps_den],
+        "audio": [{"rate": t.rate, "channels": t.channels, "codec": t.codec} for t in header.audio],
+    }
+
+
+def extract_movies(disc: Disc, output: Output, xbox: extract_xbox.XboxSource | None = None) -> Report:
+    """Copy every `PSS/*.BIK` as is, with its header values in `movies/index.json`; with an Xbox disc, its larger
+    version where extract_xbox.movie_choice takes it (the record then says `"source": "xbox"`)."""
     report = Report("movies")
     output.start("movies")
     listing = []
@@ -115,15 +143,16 @@ def extract_movies(disc: Disc, output: Output) -> Report:
         except movies.MovieError as error:
             report.problem(str(error))
         else:
-            record.update(
-                {
-                    "width": header.width,
-                    "height": header.height,
-                    "frames": header.frames,
-                    "fps": [header.fps_num, header.fps_den],
-                    "audio": [{"rate": t.rate, "channels": t.channels, "codec": t.codec} for t in header.audio],
-                }
-            )
+            record.update(_movie_fields(header))
+            choice = extract_xbox.movie_choice(name.split("/", 1)[1][:-4], header, xbox) if xbox else None
+            if xbox is not None and choice is not None:
+                path, xbox_header = choice
+                record.update(_movie_fields(xbox_header))
+                record.update({"source": "xbox", "xbox": path, "ps2": _movie_fields(header)})
+                record["file"] = extract_xbox.copy_movie(xbox, path, output, f"movies/{name.split('/', 1)[1].lower()}")
+                listing.append(record)
+                report.count("movies (xbox)")
+                continue
         with disc.open(name) as handle:
             pieces = wad.read_chunks(handle, size, _PIECE)
             record["file"] = output.write_stream("movies", f"movies/{name.split('/', 1)[1].lower()}", pieces)
@@ -154,9 +183,21 @@ def _note(message: str) -> None:
     print(f"coney-tools: {message}", file=sys.stderr, flush=True)
 
 
-def run(disc_arg: str | None, out: Path, only: list[str] | None, verify: bool, workers: int | None) -> int:
+def run(
+    disc_arg: str | None,
+    out: Path,
+    only: list[str] | None,
+    verify: bool,
+    workers: int | None,
+    xbox_path: Path | None = None,
+    xbox_index: Path | None = None,
+    xbox_texture_map: Path | None = None,
+) -> int:
     """Extract the types asked for (all by default) into `out`; print the summary; with `verify`, compare the counts
-    with the expected ones and return 1 on a difference."""
+    with the expected ones and return 1 on a difference. With `xbox_path` (the player's Xbox disc), the Xbox
+    version of an asset replaces the PS2 one where extract_xbox's rules say it is better; `xbox_index` is its
+    resource index file (read when it fits the disc, else built and written there); `xbox_texture_map` is where to
+    write the texture map (which Xbox texture replaced which PS2 one; needs the textures type)."""
     wad.refuse_inside_repo(out)
     wanted = list(TYPES) if not only else [t for t in TYPES if t in only]
     unknown = sorted(set(only or ()) - set(TYPES))
@@ -168,12 +209,19 @@ def run(disc_arg: str | None, out: Path, only: list[str] | None, verify: bool, w
     identity = {name: _sha1(disc, name) for name in (wad.ELF_FILE, wad.DIR_FILE) if disc.has(name)}
     reports: list[Report] = []
     facts = refs_extract.DiscFacts(disc, _known_names())
+    xbox = None
+    if xbox_path is not None and {"textures", "movies"} & set(wanted):
+        _note("indexing the Xbox disc's archive")
+        for path in (xbox_index, xbox_texture_map):
+            if path is not None:
+                wad.refuse_inside_repo(path)
+        xbox = extract_xbox.open_source(xbox_path, xbox_index)
     if "disc" in wanted:
         _note("copying the disc's other files")
         reports.append(extract_disc_files(disc, output))
     if "movies" in wanted:
         _note("copying the movies")
-        reports.append(extract_movies(disc, output))
+        reports.append(extract_movies(disc, output, xbox))
     wad_types = [t for t in _WAD_TYPES if t in wanted]
     if wad_types:
         _note("naming the WAD's entries (a full pass over the disc)")
@@ -185,7 +233,7 @@ def run(disc_arg: str | None, out: Path, only: list[str] | None, verify: bool, w
             elif kind == "scripts":
                 stages.append(extract_wad.ScriptsStage(output))
             elif kind == "textures":
-                stages.append(extract_wad.TexturesStage(output))
+                stages.append(extract_wad.TexturesStage(output, xbox=xbox))
             elif kind == "models":
                 textures = next((s for s in stages if isinstance(s, extract_wad.TexturesStage)), None)
                 stages.append(extract_models.ModelsStage(output, textures))
@@ -211,6 +259,11 @@ def run(disc_arg: str | None, out: Path, only: list[str] | None, verify: bool, w
         strings = set(facts.strings) if wad_types else _lua_strings(facts)
         jobs = workers if workers is not None else max(1, min(4, (os.cpu_count() or 2) - 1))
         reports.append(extract_audio.extract(disc, output, strings, facts.speech_command_names, jobs))
+    if xbox is not None:
+        identity["xbox default.xbe"] = xbox.identity()
+        if xbox_texture_map is not None and "textures" in wanted:
+            _write_texture_map(xbox_texture_map, identity, xbox)
+        xbox.close()
     output.save_manifest(identity)
     _note(f"done in {time.monotonic() - started:.0f} s")
     _print_summary(output, reports, wanted)

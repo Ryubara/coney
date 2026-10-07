@@ -55,7 +55,7 @@ at the top of the repository's `README.md`.
 | [Sound and video](../roadmap.md#sound-and-video) | in progress |
 | [Enhancements](../roadmap.md#enhancements) | not started |
 | [Script mods](../roadmap.md#script-mods) | not started |
-| [Xbox assets (optional)](../roadmap.md#xbox-assets-optional) | not started |
+| [Xbox assets (optional)](../roadmap.md#xbox-assets-optional) | in progress |
 | [The whole game](../roadmap.md#the-whole-game) | not started |
 | [Online multiplayer](../roadmap.md#online-multiplayer) | not started |
 

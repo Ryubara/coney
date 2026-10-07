@@ -15,12 +15,15 @@ import hashlib
 import struct
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from coney_tools import chunk_names, ps2tex, rw, wad, wad_kinds
 from coney_tools.chunks import Container, Resource
 from coney_tools.disc import Disc
 from coney_tools.extract_output import Output, Report, png_bytes
+
+if TYPE_CHECKING:
+    from coney_tools.xbox_source import XboxSource
 
 #: Resource shapes: what a resource is, from the chunk types it holds (docs/research/formats/wad-contents.md).
 SHAPE_TEXTURES = "textures"
@@ -283,6 +286,7 @@ class _Dictionary:
     textures: list[dict[str, Any]]
     sprites: list[list[float]] | None = None
     resource_hash: int | None = None  # the resource the dictionary came from; None for a streamed-world file
+    entry_hash: int | None = None  # the WARRIORS.DIR name hash of the streamed-world file it came from
 
 
 class TexturesStage:
@@ -293,15 +297,23 @@ class TexturesStage:
 
     KIND = "textures"
 
-    def __init__(self, output: Output) -> None:
-        """Start the type."""
+    def __init__(self, output: Output, xbox: XboxSource | None = None) -> None:
+        """Start the type; with `xbox` (the player's Xbox disc), its larger textures replace the PS2 ones at the
+        end (extract_xbox.upgrade_textures)."""
         self.output = output
         self.report = Report(self.KIND)
         output.start(self.KIND)
         self.dictionaries: list[_Dictionary] = []
+        self.xbox = xbox
 
     def _write(
-        self, folder: str, source: str, data: bytes, start: int, resource_hash: int | None = None
+        self,
+        folder: str,
+        source: str,
+        data: bytes,
+        start: int,
+        resource_hash: int | None = None,
+        entry_hash: int | None = None,
     ) -> _Dictionary | None:
         """Decode and write one dictionary; None (with a problem noted) when it does not parse."""
         try:
@@ -331,7 +343,7 @@ class TexturesStage:
                 record["file"] = self.output.write(self.KIND, f"{folder}/{texture.name}.png", png_bytes(pixels))
                 self.report.count("textures")
             listed.append(record)
-        dictionary = _Dictionary(folder, source, listed, resource_hash=resource_hash)
+        dictionary = _Dictionary(folder, source, listed, resource_hash=resource_hash, entry_hash=entry_hash)
         self.dictionaries.append(dictionary)
         self.report.count("dictionaries")
         return dictionary
@@ -339,9 +351,9 @@ class TexturesStage:
     def entry(self, entry: Entry) -> None:
         """The streamed world's dictionaries (the resources come through `item`)."""
         if entry.kind == wad_kinds.WORLD_STREAM:
-            self._write(f"textures/worlds/{entry.label()}", entry.label(), entry.data, 4)
+            self._write(f"textures/worlds/{entry.label()}", entry.label(), entry.data, 4, None, entry.record.hash)
         elif entry.kind == wad_kinds.SECTOR_PARTS:
-            self._write(f"textures/worlds/{entry.label()}", entry.label(), entry.data, 16)
+            self._write(f"textures/worlds/{entry.label()}", entry.label(), entry.data, 16, None, entry.record.hash)
 
     def item(self, item: Item) -> None:
         """A resource's texture dictionaries (and its sprite sheet, chunk `0x4C`)."""
@@ -356,7 +368,11 @@ class TexturesStage:
                 written.sprites = sprite_rectangles(item.chunk_bytes(index))
 
     def finish(self) -> None:
-        """Write the index."""
+        """Swap in the Xbox textures (with an Xbox disc), then write the index."""
+        if self.xbox is not None:
+            from coney_tools import extract_xbox  # loaded only for an Xbox disc
+
+            extract_xbox.upgrade_textures(self.output, self.dictionaries, self.xbox, self.report)
         listing = []
         for d in self.dictionaries:
             record: dict[str, Any] = {"folder": d.folder, "source": d.source}

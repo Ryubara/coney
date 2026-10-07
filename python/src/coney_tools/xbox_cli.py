@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""The `coney-tools xbox ...` commands: files, info, list, names, extract, resources and textures.
+"""The `coney-tools xbox ...` commands: files, info, list, names, extract, resources, index, texture-map
+and textures.
 
 They read the player's own Xbox disc and print counts, hashes and offsets only, so the survey in
 docs/research/xbox-assets.md can be repeated by anyone who owns the disc.
@@ -7,10 +8,12 @@ docs/research/xbox-assets.md can be repeated by anyone who owns the disc.
 
 from __future__ import annotations
 
+import hashlib
+import tempfile
 from collections import Counter
 from pathlib import Path
 
-from coney_tools import xbox
+from coney_tools import xbox, xbox_index
 from coney_tools.config import ConfigError
 from coney_tools.disc import Disc
 from coney_tools.wad import refuse_inside_repo
@@ -141,6 +144,31 @@ def run_resources(disc_arg: str, ps2_arg: str | None) -> int:
             both = ps2 & mine.by_type.get(chunk_type, set())
             print(f"  0x{chunk_type:02x} {label:<22} {len(both):6d} {len(ps2):6d}")
     return 0
+
+
+def run_index(disc_arg: str, out_file: Path) -> int:
+    """Write the resource index (xbox_index's layout) to `out_file`; print its record count and SHA-256."""
+    refuse_inside_repo(out_file)
+    disc = XboxDisc(Path(disc_arg))
+    index = xbox.load_index(disc)
+    data = xbox_index.to_bytes(xbox_index.build(disc, index, xbox.survey(disc, index)))
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    out_file.write_bytes(data)
+    records = (len(data) - xbox_index.HEADER_SIZE) // xbox_index.RECORD_SIZE
+    print(f"{out_file}: {records} records, {len(data)} bytes, sha256 {hashlib.sha256(data).hexdigest()}")
+    return 0
+
+
+def run_texture_map(ps2_arg: str, disc_arg: str, out_file: Path, index_file: Path | None) -> int:
+    """Match every PS2 texture against the Xbox disc and write the texture map to `out_file`.
+
+    It is `extract --only textures --xbox ... --xbox-texture-map` into a temporary folder that is deleted after.
+    """
+    from coney_tools import extract  # loads NumPy
+
+    refuse_inside_repo(out_file)
+    with tempfile.TemporaryDirectory(prefix="coney-texture-map-") as scratch:
+        return extract.run(ps2_arg, Path(scratch), ["textures"], False, None, Path(disc_arg), index_file, out_file)
 
 
 def run_textures(disc_arg: str, ps2_arg: str | None) -> int:

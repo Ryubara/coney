@@ -11,17 +11,18 @@ measured on [Xbox executable](xbox-executable.md).
 
 ## Purpose
 
-The decision: **the PS2 version stays the only reference for behaviour; the Xbox version may become an
-optional asset source.** A player who also owns the Xbox disc could point Coney at it, and Coney would load that
-disc's higher-quality assets in place of the PS2 ones wherever the two correspond, falling back to the PS2 disc
-everywhere else. This page is the feasibility survey for that: what is on the Xbox disc, how its archive and names
-work, which assets correspond to PS2 ones, how their formats differ, and what a resolver would need.
+The decision (owner, 2026-10-07): **Coney installs from the player's discs, and the Xbox disc is the preferred
+source of assets, the PS2 disc filling the gaps.** At install `coney-tools extract` converts the assets to open
+formats outside the repository; given the Xbox disc as well, it takes each asset from whichever disc has the better
+version. The PS2 version stays the only reference for behaviour, and level scripts, data tables and game text are
+not taken from either disc. This page says what is on the Xbox disc, how its archive, names and graphics formats
+work, how each kind of asset corresponds to the PS2's, and the rule that picks a disc per asset.
 
-The short answer: **feasible for textures and movies, with a modest gain; not worth it (or not possible) for
-models, levels and sound.** The Xbox port shares the game's data pipeline and most of its non-graphics data byte for
-byte, so names and resources line up almost perfectly, but it does not use RenderWare: every graphics asset is in an
-Xbox-only format that librw cannot read, and the gain is concentrated in textures (612 of 2,027 matched textures at
-twice the resolution, DXT-compressed with mipmaps) and in 720p versions of 15 of the 16 movies.
+The short answer, kind by kind ([Asset kinds](#asset-kinds)): **textures and movies gain; nothing else does.** 23,210 of
+the PS2's 26,308 textures have a matching Xbox texture that is larger, nearly all twice the width and height. The 16
+movies have 1280 × 720 versions, 15 of them as long as the PS2's. Models, animations, collision and the rest are the
+same data (the models re-encoded as float triangle lists), and the sound is the same recordings at the same or a lower
+sample rate, so those stay the PS2 disc's.
 
 ## Original structure
 
@@ -221,9 +222,8 @@ they agree with the stored width and height. Every texture is block-compressed: 
 DXT4/5, which are not swizzled on the Xbox. **Evidence:** inferred (all 18,245 parse; the format numbers are the
 XDK's).
 
-**Models (`0x47`) and worlds (`0x15`).** Not decoded. Matched models are about the same size on both: the 1,541
-shared model resources total 32,838,784 bytes of model chunks on the Xbox and 32,564,944 on the PS2 (first instance
-each), so there is no sign of more detailed meshes. **Evidence:** inferred.
+**Models (`0x47`) and worlds (`0x15`).** Decoded far enough to compare: [Models](#models), [Levels and the
+streamed world](#worlds).
 
 **Animations, characters, collision, paths.** Non-graphics chunks are the same data, often byte for byte: character
 data (`0x08`, 53 of 53), anim ranges (`0x45`, 53 of 53), bone offsets (`0x28`, 153 of 153), particle pages (`0x4c`,
@@ -242,18 +242,16 @@ the PS2 does not ship: 2 front-end or arena levels, 14 test levels (named `test.
 streamed world is
 split differently: 1,969 + 79 entries on the Xbox, 1,911 sector-atomics files + 159 world streams + 159 manifests on
 the PS2 ([Level files](formats/wad-contents.md#level-files)), with no manifests on the Xbox. A level's world can
-only be taken whole from one disc. **Evidence:** inferred.
+only be taken whole from one disc; its names are under [Levels and the streamed world](#worlds). **Evidence:**
+inferred.
 
 **Sound.** XACT replaces the PS2's sound banks and IOP files: 369 wave banks (`WBND` version 3; 368 streaming)
-hold 23,523 waves, all Xbox ADPCM except 2 PCM, mostly mono at 22,050 Hz (17,430) or 22,500 Hz (4,708), plus one
-sound bank (`SDBK`, also stored in the archive). The XBE's music cue names start `vags/xboxmusic/`. Nothing on the
-PS2 side maps to these by name yet. **Evidence:** inferred (header fields per the XDK's XACT bank layout).
+hold 23,523 waves, all Xbox ADPCM except 2 PCM, plus one sound bank (`SDBK`, also stored in the archive). How they
+map to the PS2's sounds: [Sound, speech and music](#sound). **Evidence:** inferred (header fields per the XDK's XACT
+bank layout).
 
-**Movies.** The PS2's 16 movies (`BIKi`, 640 × 448) exist on the Xbox as `<name>.bik` (640 × 480), `<name>_w.bik`
-(640 × 480) and `<name>_hd.bik` (1280 × 720 for 15; `trailer_hd.bik` is 640 ×
-480). Same Bink revision `i` on both. The XBE's `%s_hd`, `%s_w`, `%s_ls_%d_w` and `%s_w_pal` format strings show the
-same three-way choice for loading screens. **Evidence:** inferred (Bink headers); that `_w` means anamorphic
-widescreen is speculative.
+**Movies.** The PS2's 16 movies exist on the Xbox in three versions each: [Movies](#movies). The XBE's `%s_hd`,
+`%s_w`, `%s_ls_%d_w` and `%s_w_pal` format strings show the same three-way choice for loading screens.
 
 ### Quality of matched textures
 
@@ -281,6 +279,174 @@ not reproduce; the format shares are close either way.
 So about 30% of the textures double in resolution; the rest are the PS2 images re-encoded from 4- and 8-bit palettes
 to DXT, which trades palette banding for block artefacts rather than adding detail. **Evidence:** inferred.
 
+### Resource images {#resource-images}
+
+Every Xbox graphics object is a memory image the build tools wrote: a texture chunk (`0x2a`), a model chunk
+(`0x47`), a sector BSP chunk (`0x15`), and the streamed world's files ([below](#worlds)). One layout serves them all:
+
+| Offset | Type | Meaning |
+| --- | --- | --- |
+| `+0x00` | u32 | kind: 0 texture, 1 skinned model, 2 model, 3 model with a frame tree, 4 world sector, 5 world level, 6 sector BSP |
+| `+0x04` | u32 | tag: `0x6f`, `0x76`, `0x6d`, `0x67`, `0x6f`, `0x6a`, `0x66` in the same order |
+| `+0x08` | u32 | number of Direct3D resource headers |
+| `+0x0c` | u32 | `dataSize`: bytes of GPU data from `+0x80` (texels of every mip level, vertices, indices) |
+| `+0x10` | u32 | bytes of the resource headers after the data (padded to 16) |
+| `+0x14` | u32 | bytes of the object after the headers |
+| `+0x18`-`+0x7f` | | build-tool memory (stack and heap addresses, log text) |
+
+The headers are the XDK's: a texture's is 20 bytes (`Common`, `Data`, `Lock`, `Format`, `Size`), a vertex or index
+buffer's 12 (`Common`, `Data`, `Lock`); `Common` bits 16-18 give the type (0 vertex buffer, 1 index buffer, 4
+texture) and `Data` is the offset into the data block. **Evidence:** confirmed (code): the `0x47` reader (XBE
+`0x0009d030`, entry `0x47` of the chunk-type table at XBE `0x00458360`, also used by `0x09` and `0x25`) loads the
+image and dispatches on kind 1, 2 or 3; XBE `0x000bb190` walks the `+0x08` headers after the data, registering a
+texture (20 bytes) or vertex buffer (12) and rebasing an index buffer's `Data` (12); the object starts
+`dataSize + headersSize` after `+0x80`. The kind and tag pairs and the sizes are inferred from the data, which they
+fit in every graphics chunk and world file.
+
+A texture's `Format` word holds the D3D format (bits 8-15), the mip count (16-19) and log2 of the width (20-23) and
+height (24-27). Every texture on the disc is block-compressed and unswizzled: `0x0C` DXT1, `0x0E` DXT2/3, `0x0F`
+DXT4/5. The `0x0F` ones are **DXT5, straight alpha**: in 141 of 142 same-size matched textures with partly
+transparent texels the colours equal the PS2's, not the PS2's multiplied by alpha (inferred); the `0x0E` ones have
+no partly transparent texels to measure.
+
+### Asset kinds, Xbox against PS2 {#asset-kinds}
+
+| Kind | Xbox format | Correspondence | Coverage | Gain | Coney takes |
+| --- | --- | --- | --- | --- | --- |
+| Textures (resources) | DXT1/3/5 images, no names | resource hash, then position, checked by content | 578 of 2,343 larger | 2× width and height | **Xbox when larger** |
+| Textures (streamed world) | DXT images in `.xlev` / `.xsec` | level name, then content | 22,632 of 23,965 larger | 2× (33 more) | **Xbox when larger** |
+| Models | float triangle lists | resource hash | 1,541 of 1,541 | none: same meshes | PS2 |
+| Animations | the PS2's chunks | resource hash | 616 of 617 | none: same keys | PS2 (behaviour) |
+| Levels, collision, paths | the PS2's chunks | resource hash, level name | 64 of 64 | none | PS2 (behaviour) |
+| World geometry | Xbox vertex and index buffers | level name | every PS2 level | none known | PS2 |
+| Sound effects and speech | XACT, Xbox ADPCM | name hash in the sound list | 23,147 of 25,395 | none: same rates | PS2 |
+| Music | XACT, one wave bank a track | track name | 345 of 345 | none: 26,500 Hz against 30,000 | PS2 |
+| Movies | Bink `i`, three versions each | file name | 16 of 16 | 1280 × 720 | **Xbox `_hd` when as long** |
+
+#### Textures {#textures}
+
+Xbox textures carry no names, so each PS2 texture is matched by content
+([repo:python/src/coney_tools/xbox_match.py](repo:python/src/coney_tools/xbox_match.py)): an Xbox candidate is shrunk to
+the PS2 texture's size with a box filter, and the score is the mean colour difference weighted by both alphas plus the
+mean alpha difference (0-255 scale). Right pairs score about 5-15 (palette against DXT, plus the detail a larger texture
+adds; the colours carry no systematic offset: a fit over level99's matched texels gives Xbox = 0.91 × PS2 + 7 to 12 per
+channel); unrelated ones 25 and more. A low score alone is not enough: shrunk far enough, any texture of about the same
+colour scores low against a small or blurry PS2 one. So a match also needs the same structure: the correlation of the
+two textures' alpha-weighted luminance, at the PS2 size, of 0.5 or more (right pairs reach 0.9 and more; same-coloured
+wrong ones lie near 0). A match needs a score under 20, that structure (unless the PS2 texture is flat) and the same
+aspect ratio. The candidates of a resource's dictionary are the textures of the Xbox resource with the same hash (the
+one at the same position first, when both hold the same number); those of a streamed-world dictionary are all textures
+of the level's `.xlev` and `.xsec` files, since the PS2 splits a level's world differently (`s` and `d` halves, world
+streams and sector parts).
+
+The rule: **the Xbox texture replaces the PS2 one when it matches and is larger.** One of the same size is the PS2 image
+re-encoded from a palette to DXT blocks and stays PS2. One more than twice as wide needs a structure of 0.9 or more (a
+flat PS2 texture is never replaced by one): without that test, 183 world textures took an Xbox texture 4 to 32 times as
+wide, and by eye most were another picture of the same colour (a wooden box for a gravel ground); with it 33 remain, a
+fire-truck texture (128 to 512) and one concrete texture at 4 × 4 in 31 world files. Over the NTSC-U pair (`coney-tools
+extract --xbox`, 2026-10-07):
+
+| | Resource dictionaries | Streamed world | All |
+| --- | ---: | ---: | ---: |
+| PS2 textures | 2,343 | 23,965 | 26,308 |
+| Replaced by a larger Xbox texture | 578 | 22,632 | 23,210 |
+| ... twice the width and height | 578 | 22,599 | 23,177 |
+| ... 4 to 16 times | 0 | 33 | 33 |
+| Pixels of the replaced textures, PS2 | 8,656,656 | 92,966,024 | 101,622,680 |
+| Pixels of the replaced textures, Xbox | 34,626,624 | 372,094,496 | 406,721,120 |
+| Kept: the Xbox match is the same size | | | 1,711 |
+| Kept: no candidate matches | | | 1,354 |
+| Kept: no Xbox candidates (resource not on the Xbox) | | | 33 |
+
+**Evidence:** inferred (measured by the tool; samples scoring 10-36 were compared by eye: right pairs up to about
+18, wrong ones from about 25; the structure limits from 300 random 2× matches, 299 right and kept, and the 183 wider
+ones, compared by eye).
+
+#### Models {#models}
+
+Kind 2 (1,413 distinct resources, all single-mesh) has a 0x20-byte object after one vertex and one index buffer
+header:
+
+| Offset | Type | Meaning | Evidence |
+| --- | --- | --- | --- |
+| `+0x04` | u32 | FVF: `0x152` (position, normal, colour, one UV; 1,105), `0x252` (two UV sets; 210), `0x52` (no UV; 98) | confirmed (code) at XBE `0x000bd3c0` (set as the vertex shader); counts inferred |
+| `+0x08` | u8 | primitive type, 5 (triangle list) in all | confirmed (code) at XBE `0x000bd3c0` |
+| `+0x09` | u8 | vertex stride: 36, 44, 28 for the FVFs above | confirmed (code) at XBE `0x000bd3c0` |
+| `+0x0a` | u16 | 0 (814) or 1 (599); no reader found | inferred |
+| `+0x0c` | u16 | triangles (indices = 3 ×) | confirmed (code) at XBE `0x000bd3c0` |
+| `+0x10` | f32 | bounding radius | speculative |
+| `+0x18`, `+0x1c` | ptr | the vertex and index buffer headers (rebased on load) | confirmed (code) at XBE `0x000bd4e0` |
+
+Vertices are float positions, float normals, a D3DCOLOR and float UVs. The texture is not in the model: the draw
+binds the one its caller passes (XBE `0x000bd3c0`), as the PS2 takes the first texture of the dictionary the Object
+or Character List gives the model.
+
+Kind 1 (153 skinned characters) has a 0x820-byte object: 32 matrices of 64 bytes at `+0x04`, the triangle count
+(u16) at `+0x804` and the headers of two vertex streams and an index buffer at `+0x808`, `+0x80c`, `+0x810`
+(confirmed (code): XBE `0x000bec60` rebases them; XBE `0x000beca0` draws stream 0 with stride `0x20` and stream 1
+with stride `0x12`, loading one matrix per bone into vertex shader constants from `c60`, three registers each).
+Stream 0 is a float position, a packed normal (11:11:10 signed; unit length in every vertex sampled) and two float
+pairs, the first the UV; stream 1 is three s16 bone references (bone × 3, a constant-register offset; −3 for an
+unused one) and three float weights summing to 1. Inferred from the data, except the strides and the draw.
+
+Kind 3 (6 resources, in levels) is a tree of 0x68-byte nodes (`+0x50`, `+0x54`, `+0x58`: three node indices, −1 for
+none; `+0x60`, `+0x64`: vertex and index buffer), rebased by XBE `0x000b83a0` (confirmed (code)).
+
+**Against the PS2.** Each PS2 model is one atomic with one material too. Of 1,382 kind-2 pairs, 1,200 have the same
+triangle count, 104 more on the Xbox and 78 fewer, most of these an 82-triangle mesh standing in for many different
+PS2 models; of 153 skinned pairs, 145 are the same. In all, 321,262 Xbox triangles against 308,036 (kind 2) and
+183,893 against 184,029 (kind 1). The Xbox meshes are the PS2's at float precision as triangle lists: no gain, so
+models stay PS2. **Evidence:** inferred (counted against the PS2 clumps of the same resource hash).
+
+#### Animations {#animations}
+
+Keyframe chunks (`0x00`) match by resource hash (616 of 617) and have the same sizes. 71 are identical; in 326 only
+byte `+1` of the 8-byte keys differs, which the sampler does not read ([Animation data](formats/animation.md));
+in the other 290 the differences also reach the 24-byte events at the end, mostly their bytes `+0x0c`-`+0x17` (a
+transform's rotation and fields not traced). Animations are behaviour (events drive effects and paired moves), so the
+PS2's stay. **Evidence:** inferred (byte comparison).
+
+#### Levels and the streamed world {#worlds}
+
+The streamed world is named `ee_files\sectors\<level>.xlev` (79 entries, kind 5) and
+`ee_files\sectors\<level>_<n>.xsec` (1,969, kind 4): all 2,048 world entries take these names, and one more `.xsec`
+name hashes to a texture dictionary resource. **Evidence:** confirmed (name hash); the names were read from
+build-tool log text left in the images (`Writing sector: rundata_XBox/ee_files/sectors/level1_0.xsec`, `Saving BSP:
+.../sectors/level1.xlev`). A `.xlev` holds the level's textures and an object of sector records; a `.xsec` holds a
+sector's vertex and index buffers (stride 28: float position, packed normal, colour, float UV; inferred) and its own
+textures. Level resources, collision and paths are the PS2's data ([Formats, kind by kind](#formats-kind-by-kind)).
+The world geometry is not converted: the PS2 world is the reference and the Xbox one models the same city; only its
+textures are taken.
+
+#### Sound, speech and music {#sound}
+
+The Xbox **sound list** (chunk `0x29` of the global resource) has 23,523 records of 12 bytes `{u32 hash, u32 sound
+index, u16 wave bank, u8 volume, u8 class}`, sorted by hash. The hash is the PS2's (CRC-32 of the name), so a PS2
+sound finds its Xbox sound by name: 23,147 of the PS2's 25,395 hashes are on the Xbox, and 376 Xbox hashes are not on
+the PS2. The records per bank equal each bank's wave count (bank 0: 542, 1: 1,014, 2: 19,276 speech and voices,
+3: 2,228, 4: 99, then one each for 5-368). The sound index is global (it runs past a bank's wave count) and the sound
+bank `xbox000.xsb` (XACT `SDBK` version 11, 23,523 entries) maps it to a wave; that table is not decoded. A debug copy
+of the list, in another instance of the global resource, has the last 16 characters of each name in front of each
+record (28 bytes; the PS2's has the same, 32 bytes). **Evidence:** inferred (the counts and the shared hashes).
+
+The waves are Xbox ADPCM (4 bits a sample, like the PS2's ADPCM), mono at the PS2's rates (22,050 and 22,500 Hz for
+most effects and speech). The **music** is 364 one-wave banks, stereo at 26,500 Hz (two at 30,000), named
+`vags/xboxmusic/music/<track>` in the music list (chunk `0x31`, the PS2's 345 records with that prefix), against the
+PS2's 30,000, 44,100 and 32,250 Hz. The same recordings at no higher quality: the sound stays PS2.
+
+#### Movies {#movies}
+
+Each of the 16 PS2 movies (640 × 448, Bink `i`, 48,000 Hz stereo) has three Xbox versions: `<name>.bik` (640 × 480,
+4:3), `<name>_w.bik` (640 × 480, a 16:9 picture squeezed into 4:3) and `<name>_hd.bik` (1280 × 720, 16:9; 640 × 480
+for `trailer`). The 16:9 versions are rendered wider, not cropped: at the same frame the `_hd` picture shows more of
+the scene at both sides than the PS2's (compared by eye on `l9_in`; inferred). Most Xbox movies have 44,100 Hz audio;
+`plogo`, silent on the PS2, has a track. The frame counts and rates match the PS2's to 0.1 s except `l51_in` (609.7 s
+on the PS2, 617.7 s on the Xbox), a different cut. **Evidence:** inferred (Bink headers; frames by eye).
+
+The rule: **`_hd` replaces the PS2 movie when it has more pixels and lasts as long (to 0.5 s)**, since the subtitles are
+timed against the PS2's. Over the NTSC-U pair 15 of the 16 are replaced (14 at 1280 × 720, `trailer` at 640 × 480);
+`l51_in` stays the PS2's. A 16:9 movie needs the player to keep the file's aspect ratio ([Movies](movies.md)).
+
 ## Behaviour
 
 How the Xbox finds a file, for comparison with [File I/O](file-io.md): a name is prefixed with `ee_files\`,
@@ -301,49 +467,102 @@ graphics chunks by first words; 18,245 texture chunks (501,984,640 bytes), all r
 resources; and 4,038 names (3,957 from the PS2's names). The rest of this section is the plan for the engine.
 
 **Policy.** The PS2 disc is required and stays the reference for behaviour. The Xbox disc is optional, supplied by
-the player like the PS2 one, and only ever replaces *assets*: never scripts, scenes, levels, collision or anything
-the simulation reads. Its extra content (31 levels, 49 scene records, 36 scripts; most of the levels are test
-levels) is ignored.
+the player like the PS2 one, and only ever replaces *assets*, at install: never scripts, scenes, levels, collision,
+animations or anything the simulation reads. Its extra content (31 levels, 49 scene records, 36 scripts; most of the
+levels are test levels) is ignored.
 
-**Reading the disc.** An XDVDFS reader (the format is public: a volume descriptor at sector 32 of the partition and
-binary-tree directories) that finds the partition by its magic at `0x18300000` (XGD1) or `0x1FB20000` (XGD2), or
-reads an extracted folder; then `XBoxWad.idx` and the eight volumes as above. `coney-tools xbox` does this in
-Python; the engine needs the same in C++.
+**Extraction (done).** `coney-tools extract [DISC] OUT_DIR --xbox XBOX_DISC`
+([guide](../guides/coney-tools.md#extract)) reads the Xbox disc straight from the image (XDVDFS, then `XBoxWad.idx`
+and its volumes) and resolves per asset as [Asset kinds](#asset-kinds) says: the PS2 stages write everything, then
+each Xbox texture that matches and is larger is written over the PS2 file at the same path, and each `_hd` movie that
+is as long is copied in place of the PS2 one; the record in `textures/index.json` or `movies/index.json` gets
+`"source": "xbox"` and keeps the PS2 size. The folder therefore has the same files with or without the Xbox disc, and
+nothing reading it needs to know which disc an asset came from. Code:
+[repo:python/src/coney_tools/xbox_gfx.py](repo:python/src/coney_tools/xbox_gfx.py) (resource images, DXT),
+[repo:python/src/coney_tools/xbox_match.py](repo:python/src/coney_tools/xbox_match.py) (matching and the rule),
+[repo:python/src/coney_tools/xbox_source.py](repo:python/src/coney_tools/xbox_source.py) (the disc as a source) and
+[repo:python/src/coney_tools/extract_xbox.py](repo:python/src/coney_tools/extract_xbox.py) (the hooks).
 
-**The resolver.** It works below the chunk system, at **resource** level, keyed by the resource hash and the chunk
-type, because the WAD names of the PS2's models and textures are unknown:
+**What the engine needs.** The engine reads the discs' own formats, not the extracted PNGs, so to draw an Xbox
+texture it needs: the XDVDFS reader and `XBoxWad.idx`, the [texture
+map](#texture-map) to know which PS2 texture to swap, the [resource image](#resource-images) reader and DXT1/3/5
+textures (a DXT raster or a CPU decode). A 16:9 movie needs the movie player to keep the file's aspect ratio rather
+than 4:3.
 
-1. At start-up, index every Xbox resource (in packs and standalone) by `(resource hash, chunk type)`. One scan of
-   the 1.7 GB archive's headers; cache the result.
-2. When the PS2 loader decodes a texture dictionary (`0x2a`) whose resource hash has an Xbox counterpart with the
-   same number of textures, decode the Xbox texture instead. A resource whose counts differ (65) stays PS2.
-3. Movies: prefer `bik/<name>_hd.bik` (or `_w` for 4:3 widescreen output) from the Xbox disc when present.
+### Resource index {#resource-index}
 
-| Kind | Swap? | What Coney needs |
-| --- | --- | --- |
-| Textures | **yes** | A reader for the Xbox texture chunk (above), then either a DXT raster (librw's GL3 backend allocates S3TC rasters when the driver supports them) or a CPU decode (librw's `Image::setPixelsDXT` handles DXT1/3/5). librw's own Xbox support reads RenderWare Xbox streams, which these are not. Map each PS2 texture to its Xbox one by resource hash and position. |
-| Movies | **yes** | Nothing beyond the PS2 Bink path: same revision, different file names and sizes. |
-| Models | no | Xbox-only geometry format, no sign of more detail; decoding it is research for no visible gain. |
-| Levels, world | no | Different streamed-world split, Xbox-only world format; the world's textures could be swapped later if their resource hashes match (open question). |
-| Sound | not yet | XACT banks and Xbox ADPCM are documented formats, but the PS2's sounds would first have to be mapped to Xbox waves (no names). |
-| Scripts, scenes, animations, characters | never | Identical or behaviour data; the PS2 copy is the reference. |
+Finding an Xbox resource by its hash means parsing every pack and standalone resource of the archive (about 1 GB),
+so the result is kept in a file, `xbox-resources.bin` (`coney-tools xbox index`, or `extract --xbox-index`). It is
+Coney's own format, and the layout the engine's port reads. All values little-endian:
 
-**Recommended next step.** Once [First pixels](../roadmap.md#first-pixels) draws PS2 textures, add the texture
-path behind an option. Track it as the
-roadmap's [Xbox assets](../roadmap.md#xbox-assets-optional) milestone.
+```c
+struct XboxResourceIndexHeader {   // 32 bytes
+    char     magic[4];             // "CXRI"
+    uint32_t version;              // 1
+    uint32_t recordCount;
+    uint8_t  indexSha1[20];        // SHA-1 of the XBoxWad.idx it was built from; another value means rebuild
+};
+struct XboxResourceIndexRecord {   // 24 bytes, recordCount of them, sorted by (resourceHash, chunkType)
+    uint32_t resourceHash;         // the chunk container's resource hash, the same on both discs
+    uint16_t chunkType;            // 0x2a texture, 0x47 model, ...
+    uint16_t volume;               // index into XBoxWad.idx's volume list
+    uint64_t offset;               // byte offset of the chunk's data (after its 16-byte header) in that volume
+    uint32_t size;                 // bytes of chunk data
+    uint32_t entry;                // the XBoxWad.idx entry holding it
+};
+```
+
+Only the first instance of each resource hash is kept (packs repeat shared resources), every chunk of it, and the
+chunks of one key stay in resource order (a texture dictionary's `0x2a` chunks are its textures in order). Over the
+NTSC-U disc: 10,445 records (250,712 bytes) for 4,218 resource hashes; 2,312 of them are texture chunks. Code:
+[repo:python/src/coney_tools/xbox_index.py](repo:python/src/coney_tools/xbox_index.py).
+
+### Texture map {#texture-map}
+
+Which Xbox texture replaces which PS2 one is found by decoding and comparing both ([Textures](#textures)), far too
+slow for loading a level, so it is done once, at install, and kept in `xbox-textures.bin` (`coney-tools xbox
+texture-map`, or `extract --xbox-texture-map`). A reader looks a PS2 texture up by the dictionary it was loaded from
+and its name, and gets where the Xbox texture lies in the archive volumes. All values little-endian:
+
+```c
+struct XboxTextureMapHeader {      // 56 bytes
+    char     magic[4];             // "CXTM"
+    uint32_t version;              // 1
+    uint32_t recordCount;
+    uint32_t reserved;             // 0
+    uint8_t  ps2DirSha1[20];       // SHA-1 of the PS2 disc's WARRIORS.DIR it was made from
+    uint8_t  xboxIdxSha1[20];      // SHA-1 of the Xbox disc's XBoxWad.idx it was made from
+};
+struct XboxTextureMapRecord {      // 32 bytes, recordCount of them, sorted by (kind, ps2Key, nameHash)
+    uint32_t ps2Key;               // kind 0: the PS2 dictionary's resource hash; kind 1: the WARRIORS.DIR name hash
+                                   // of the streamed-world file (`_sec.wld`, `_ms<n>.sec`) holding the dictionary
+    uint32_t nameHash;             // CRC-32 of the PS2 texture's name, lower-cased
+    uint16_t kind;                 // 0 resource dictionary, 1 streamed-world dictionary
+    uint16_t textureNumber;        // the texture's position among the Xbox resource image's texture headers
+    uint16_t volume;               // index into XBoxWad.idx's volume list
+    uint16_t reserved;             // 0
+    uint64_t imageOffset;          // byte offset of the Xbox resource image in that volume
+    uint32_t imageSize;            // bytes of the resource image
+    uint16_t width, height;        // the Xbox texture's size
+};
+```
+
+A key that two PS2 textures share with different Xbox textures (two variants of one resource, a name used twice in one
+dictionary) is left out, so a reader never takes the wrong one. Over the NTSC-U pair: 23,210 records (742,776 bytes),
+one per replaced texture, none left out. Code:
+[repo:python/src/coney_tools/xbox_texture_map.py](repo:python/src/coney_tools/xbox_texture_map.py).
 
 ## Open questions
 
-1. **Texture names.** The Xbox texture chunk stores no name; PS2 materials refer to textures by name. Mapping by
-   resource hash and position works for the 2,027 equal-count resources; are the 65 others reordered, split or new
-   (the loading screens' `_w`/`_hd` variants are a candidate)?
-2. **DXT2/3 and DXT4/5.** The Xbox format code does not say whether alpha is premultiplied (DXT2, DXT4) or not
-   (DXT3, DXT5); the texture header's sixth word or the renderer's blend state would.
-3. **World textures.** Do the Xbox streamed-world entries (kinds 4 and 5) carry textures with resource hashes that
-   match the PS2 world streams' texture dictionaries? If so, level textures can be swapped without the geometry.
-4. **The index header's third word** (`0x00100000`) and the volumes' trailing `0xffffffff`: unused by the lookup;
+1. **DXT2/3.** Whether the `0x0E` textures are premultiplied (DXT2) or not (DXT3): none of the matched ones has
+   partly transparent texels to tell (the `0x0F` ones are straight DXT5).
+2. **The index header's third word** (`0x00100000`) and the volumes' trailing `0xffffffff`: unused by the lookup;
    probably a volume size limit and a flag.
-5. **Unnamed Xbox entries.** 6,546 of 10,587 (models, textures, characters, streamed world, 652 packs, 227
-   scripts, 18 text entries), as on the PS2; the subfolder scheme (`paks\`, `anims\`) suggests the rest also live in subfolders.
-6. **Sound mapping.** Which XACT cue or wave corresponds to which PS2 sound; the global resource's sound chunks
-   (`0x29`, `0x48`, `0x49`) differ between the discs and probably hold the mapping.
+3. **Unnamed Xbox entries.** 4,498 of 10,587 (models, textures, characters, 652 packs, 227 scripts, 18 text
+   entries) once the 2,048 world files are named; the subfolder scheme (`paks\`, `anims\`, `sectors\`) suggests the
+   rest also live in subfolders.
+4. **Sound index to wave.** The table in `xbox000.xsb` that maps the sound list's index to a wave bank entry; only
+   needed if an Xbox sound is ever wanted.
+5. **Model fields.** The kind-2 model's `+0x0a` (0 or 1) and the skinned vertex's second float pair.
+6. **Unmatched PS2 textures.** 1,354 PS2 textures with Xbox candidates find no match: art the Xbox port
+   changed, or candidates in another level's files.

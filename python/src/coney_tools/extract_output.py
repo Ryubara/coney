@@ -177,6 +177,13 @@ class Output:
         self.sizes.setdefault(kind, {})[path] = len(data)
         return path
 
+    def replace(self, kind: str, path: str, data: bytes) -> str:
+        """Overwrite a file this type already wrote (the Xbox version of an asset taking the PS2 one's place).
+        Raises ConfigError when `path` is not one of the type's files."""
+        if path not in self.files.get(kind, {}):
+            raise ConfigError(f"{path}: not a {kind} file of this extraction, so it cannot be replaced")
+        return self.write_claimed(kind, path, data)
+
     def write_stream(self, kind: str, wanted: str, pieces: Iterable[bytes]) -> str:
         """Write a large file piece by piece (a movie, a copied disc file), hashing as it goes."""
         path = self.claim(kind, wanted)

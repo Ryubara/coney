@@ -20,7 +20,7 @@ This page is kept current: a milestone's status changes in the same commit as th
 | [Sound and video](#sound-and-video) | in progress |
 | [Enhancements](#enhancements) | not started |
 | [Script mods](#script-mods) | not started |
-| [Xbox assets (optional)](#xbox-assets-optional) | not started |
+| [Xbox assets (optional)](#xbox-assets-optional) | in progress |
 | [The whole game](#the-whole-game) | not started |
 | [Online multiplayer](#online-multiplayer) | not started |
 
@@ -213,11 +213,10 @@ and moving the camera, say) and the game runs the same with the mods folder empt
 
 ## Xbox assets (optional)
 
-A player who also owns the Xbox version can point Coney at that disc too. Coney then loads its sharper textures and
-720p movies in place of the PS2 ones wherever the two correspond, through a resolver keyed by name and resource
-hash, and falls back to the PS2 disc everywhere else. The PS2 version stays the only reference for behaviour.
-Feasibility, formats and the plan: [Xbox assets](research/xbox-assets.md). The survey is a repeatable check:
-`coney-tools xbox` reads the Xbox disc's archive and reproduces its counts ([guide](guides/coney-tools.md#xbox)).
+A player who also owns the Xbox version gives the installer that disc too: `coney-tools extract --xbox` takes its
+larger textures and 720p movies in place of the PS2 ones wherever the two correspond, and the PS2 disc's assets
+everywhere else ([guide](guides/coney-tools.md#extract)); done for the extraction. The PS2 version stays the only
+reference for behaviour. Formats, the per-kind map and the rules: [Xbox assets](research/xbox-assets.md).
 
 **Done when** a level renders with the Xbox disc's textures and a movie plays from its HD version, and the game
 runs the same with or without the Xbox disc.
