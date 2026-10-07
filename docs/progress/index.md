@@ -9,13 +9,6 @@ How far Coney has come, measured three ways:
 - **Researched:** the share of the game's own code that the [source map](../research/source-map.md) places in at
   least an original source file or directory. It says how much of the executable an analyst can already find their
   way around in, not how much is understood.
-- **Understood:** the share of the game's own functions (by bytes, and by count) that are researched in full: the
-  function has a meaningful name in the shared Ghidra project (not `FUN_<address>`), and a research page cites its
-  address in a table row or paragraph that states an evidence level, or says `not needed: <reason>` (the source
-  map's citations do not count: placing is not understanding); a script binding's wrapper counts when its
-  `research/bindings` entry has an `evidence`. Names and sizes come from `docs/progress/ghidra-functions.tsv`
-  (addresses, sizes and our names only), the citations from the pages themselves, so citing a function moves the
-  bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
   Approved by the owner's play-test, with its checkpoints and the script bindings it needs.
@@ -28,12 +21,12 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 14.9%](https://img.shields.io/badge/reimplemented-14.9%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 15.4%](https://img.shields.io/badge/reimplemented-15.4%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,741 functions) |
+| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.4% of the game's own code (516,704 of 3,354,776 bytes, 1,770 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,096 of 3,283,904 bytes; 11,420 of 11,422 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
@@ -73,7 +66,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 74 | 195,624 |
 | `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 210 | 497,416 |
-| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 575 | 1,096,672 |
+| `Human` | `███▍░░░░░░░░░░░░░░░░` | 17.1% | 604 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
@@ -792,10 +785,13 @@ at the top of the repository's `README.md`.
 | `0x00223628` | `Human_BlockChance` | `Human` | 160 |
 | `0x00223800` | `Human_AttackDelay` | `Human` | 192 |
 | `0x00223cb0` | `Human_IsBusy` | `Human` | 136 |
+| `0x002240e8` | `Human_CanUseAttackKind` | `Human` | 1,680 |
+| `0x00224778` | `Human_CanStartAttack` | `Human` | 1,832 |
 | `0x00226448` | `Human_SpendPower` | `Human` | 200 |
 | `0x00226510` | `Human_PowerFraction` | `Human` | 192 |
 | `0x00227d28` | `Human_IsInSceneState` | `Human` | not filled in |
 | `0x00229570` | `Human_BannerKind` | `Human` | 176 |
+| `0x00229b60` | `AttackKind_IsCharge` | `Human` | 48 |
 | `0x0022a770` | `Gang_PickSwitchMember` | `Human` | 528 |
 | `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
@@ -815,6 +811,7 @@ at the top of the repository's `README.md`.
 | `0x0022fc00` | `Human_EndWounded` | `Human` | 232 |
 | `0x00231090` | `AttackKind_ToCommand` | `Human` | 264 |
 | `0x00231198` | `AttackKind_ChainDelay` | `Human` | 1,016 |
+| `0x00231590` | `Attack_GetNextAttackDelay` | `Human` | 1,192 |
 | `0x002325e0` | `MiniGame_Abort` | `Human` | not filled in |
 | `0x00233d60` | `Human_Create` | `Human` | 400 |
 | `0x00233ef0` | `Human_Delete` | `Human` | 112 |
@@ -1094,7 +1091,11 @@ at the top of the repository's `README.md`.
 | `0x0028fbb0` | `Brain_UpdateGoals` | `Human` | 632 |
 | `0x0028fe28` | `Brain_RunActions` | `Human` | 104 |
 | `0x0028fe90` | `Brain_GetSectors` | `Human` | not filled in |
+| `0x002906b8` | `Brain_CheckAttack` | `Human` | 1,912 |
+| `0x00290e78` | `Brain_SetAttackableTime` | `Human` | 48 |
 | `0x00290ea8` | `Brain_IsAttackableBy` | `Human` | not filled in |
+| `0x00291008` | `Brain_ClaimActiveAttacker` | `Human` | 368 |
+| `0x00291178` | `Brain_ReleaseActiveAttacker` | `Human` | 48 |
 | `0x002911f8` | `Brain_GetAttackWeight` | `Human` | 32 |
 | `0x00291ed0` | `Ambient_MayGesture` | `Human` | not filled in |
 | `0x00292330` | `Brain_SetDead` | `Human` | 112 |
@@ -1185,11 +1186,32 @@ at the top of the repository's `README.md`.
 | `0x002afa48` | `EngageEnemyGoal_Process` | `Human` | 2,728 |
 | `0x002b2b90` | `Brain_StartFight` | `Human` | 144 |
 | `0x002b2c20` | `FightGoal_Init` | `Human` | 184 |
+| `0x002b2e28` | `FightGoal_TryTackle` | `Human` | 416 |
+| `0x002b2fc8` | `FightGoal_Reposition` | `Human` | 920 |
+| `0x002b3360` | `FightGoal_TryGrab` | `Human` | 1,872 |
 | `0x002b3ab0` | `FightGoal_Process` | `Human` | 1,512 |
 | `0x002b4098` | `SpectateGoal_Init` | `Human` | 192 |
+| `0x002b4158` | `SpectateGoal_PickTarget` | `Human` | 164 |
+| `0x002b4200` | `SpectateGoal_Start` | `Human` | 240 |
+| `0x002b42f0` | `SpectateGoal_End` | `Human` | 64 |
+| `0x002b4330` | `SpectateGoal_Process` | `Human` | 1,736 |
+| `0x002b49f8` | `GroundedGoal_Init` | `Human` | 60 |
+| `0x002b4a38` | `GroundedGoal_Start` | `Human` | 96 |
+| `0x002b4aa8` | `GroundedGoal_Process` | `Human` | 224 |
 | `0x002b54d8` | `BlockGoal_Init` | `Human` | 72 |
 | `0x002b5520` | `BlockGoal_Start` | `Human` | 328 |
 | `0x002b5808` | `BlockGoal_Process` | `Human` | 656 |
+| `0x002b5a98` | `GrabbingGoal_Init` | `Human` | 52 |
+| `0x002b5ad0` | `GrabbingGoal_Start` | `Human` | 136 |
+| `0x002b5b58` | `GrabbingGoal_End` | `Human` | 64 |
+| `0x002b5b98` | `Grabbing_PickMove` | `Human` | 1,300 |
+| `0x002b60c0` | `GrabbingGoal_Process` | `Human` | 1,336 |
+| `0x002b65f8` | `MountingGoal_Init` | `Human` | 44 |
+| `0x002b6638` | `MountingGoal_Process` | `Human` | 480 |
+| `0x002b6818` | `GrabbedGoal_Init` | `Human` | 48 |
+| `0x002b6848` | `GrabbedGoal_Process` | `Human` | 828 |
+| `0x002b6b88` | `MountedGoal_Init` | `Human` | 44 |
+| `0x002b6bb8` | `MountedGoal_Process` | `Human` | 520 |
 | `0x002b75b8` | `Brain_Melee` | `Human` | 184 |
 | `0x002b9538` | `Goal_HoldFlag` | `Human` | 152 |
 | `0x002b9730` | `HoldFlagGoal_FilterTarget` | `Human` | 144 |

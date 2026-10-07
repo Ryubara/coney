@@ -3664,6 +3664,18 @@ subsystem = "Human"
 size = 136
 
 [[function]]
+address = 0x002240e8
+name = "Human_CanUseAttackKind"
+subsystem = "Human"
+size = 1680
+
+[[function]]
+address = 0x00224778
+name = "Human_CanStartAttack"
+subsystem = "Human"
+size = 1832
+
+[[function]]
 address = 0x00226448
 name = "Human_SpendPower"
 subsystem = "Human"
@@ -3685,6 +3697,12 @@ address = 0x00229570
 name = "Human_BannerKind"
 subsystem = "Human"
 size = 176
+
+[[function]]
+address = 0x00229b60
+name = "AttackKind_IsCharge"
+subsystem = "Human"
+size = 48
 
 [[function]]
 address = 0x0022a770
@@ -3791,6 +3809,12 @@ address = 0x00231198
 name = "AttackKind_ChainDelay"
 subsystem = "Human"
 size = 1016
+
+[[function]]
+address = 0x00231590
+name = "Attack_GetNextAttackDelay"
+subsystem = "Human"
+size = 1192
 
 [[function]]
 address = 0x002325e0
@@ -5365,9 +5389,33 @@ name = "Brain_GetSectors"
 subsystem = "Human"
 
 [[function]]
+address = 0x002906b8
+name = "Brain_CheckAttack"
+subsystem = "Human"
+size = 1912
+
+[[function]]
+address = 0x00290e78
+name = "Brain_SetAttackableTime"
+subsystem = "Human"
+size = 48
+
+[[function]]
 address = 0x00290ea8
 name = "Brain_IsAttackableBy"
 subsystem = "Human"
+
+[[function]]
+address = 0x00291008
+name = "Brain_ClaimActiveAttacker"
+subsystem = "Human"
+size = 368
+
+[[function]]
+address = 0x00291178
+name = "Brain_ReleaseActiveAttacker"
+subsystem = "Human"
+size = 48
 
 [[function]]
 address = 0x002911f8
@@ -5874,6 +5922,24 @@ subsystem = "Human"
 size = 184
 
 [[function]]
+address = 0x002b2e28
+name = "FightGoal_TryTackle"
+subsystem = "Human"
+size = 416
+
+[[function]]
+address = 0x002b2fc8
+name = "FightGoal_Reposition"
+subsystem = "Human"
+size = 920
+
+[[function]]
+address = 0x002b3360
+name = "FightGoal_TryGrab"
+subsystem = "Human"
+size = 1872
+
+[[function]]
 address = 0x002b3ab0
 name = "FightGoal_Process"
 subsystem = "Human"
@@ -5884,6 +5950,48 @@ address = 0x002b4098
 name = "SpectateGoal_Init"
 subsystem = "Human"
 size = 192
+
+[[function]]
+address = 0x002b4158
+name = "SpectateGoal_PickTarget"
+subsystem = "Human"
+size = 164
+
+[[function]]
+address = 0x002b4200
+name = "SpectateGoal_Start"
+subsystem = "Human"
+size = 240
+
+[[function]]
+address = 0x002b42f0
+name = "SpectateGoal_End"
+subsystem = "Human"
+size = 64
+
+[[function]]
+address = 0x002b4330
+name = "SpectateGoal_Process"
+subsystem = "Human"
+size = 1736
+
+[[function]]
+address = 0x002b49f8
+name = "GroundedGoal_Init"
+subsystem = "Human"
+size = 60
+
+[[function]]
+address = 0x002b4a38
+name = "GroundedGoal_Start"
+subsystem = "Human"
+size = 96
+
+[[function]]
+address = 0x002b4aa8
+name = "GroundedGoal_Process"
+subsystem = "Human"
+size = 224
 
 [[function]]
 address = 0x002b54d8
@@ -5902,6 +6010,72 @@ address = 0x002b5808
 name = "BlockGoal_Process"
 subsystem = "Human"
 size = 656
+
+[[function]]
+address = 0x002b5a98
+name = "GrabbingGoal_Init"
+subsystem = "Human"
+size = 52
+
+[[function]]
+address = 0x002b5ad0
+name = "GrabbingGoal_Start"
+subsystem = "Human"
+size = 136
+
+[[function]]
+address = 0x002b5b58
+name = "GrabbingGoal_End"
+subsystem = "Human"
+size = 64
+
+[[function]]
+address = 0x002b5b98
+name = "Grabbing_PickMove"
+subsystem = "Human"
+size = 1300
+
+[[function]]
+address = 0x002b60c0
+name = "GrabbingGoal_Process"
+subsystem = "Human"
+size = 1336
+
+[[function]]
+address = 0x002b65f8
+name = "MountingGoal_Init"
+subsystem = "Human"
+size = 44
+
+[[function]]
+address = 0x002b6638
+name = "MountingGoal_Process"
+subsystem = "Human"
+size = 480
+
+[[function]]
+address = 0x002b6818
+name = "GrabbedGoal_Init"
+subsystem = "Human"
+size = 48
+
+[[function]]
+address = 0x002b6848
+name = "GrabbedGoal_Process"
+subsystem = "Human"
+size = 828
+
+[[function]]
+address = 0x002b6b88
+name = "MountedGoal_Init"
+subsystem = "Human"
+size = 44
+
+[[function]]
+address = 0x002b6bb8
+name = "MountedGoal_Process"
+subsystem = "Human"
+size = 520
 
 [[function]]
 address = 0x002b75b8

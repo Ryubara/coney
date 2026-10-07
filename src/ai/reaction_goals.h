@@ -14,9 +14,8 @@
 
 namespace coney::ai {
 
-/// A reaction goal of one of the reaction types (GoalType::ReactGrabbing ... ReactStunned). **Coney choice**: its
-/// work is to hold the stack off; what the original's reaction goals press while they run (a struggle, a mash) is
-/// not traced, so they press nothing.
+/// A reaction goal that only holds the stack off: the stunned goal (`0x18`), whose presses are not traced. The fight
+/// reactions (grabbing, mounting, grabbed, mounted, grounded) are in ai/fight_reactions.h.
 class ReactionGoal final : public Goal {
   public:
     /// A reaction goal of `type`.

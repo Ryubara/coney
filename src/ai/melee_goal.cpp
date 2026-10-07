@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/melee_goal.h"
 
+#include <algorithm>
 #include <memory>
 
 #include "ai/brain.h"
 #include "ai/engage_goals.h"
 #include "ai/fight_goal.h"
+#include "ai/idle_goals.h"
 #include "ai/move_action.h"
 #include "ai/move_to_human_action.h"
 #include "ai/route_planner.h"
@@ -52,9 +54,16 @@ GoalStatus MeleeGoal::process(Brain& brain) {
             return GoalStatus::Done;
         }
     }
-    // 3. None to fight.
+    // 3. None to fight: done with no enemies, else a spell watching the nearest (keep distance 0: the far range). The
+    // original's scan has dropped the dead from the list by now; Coney's keeps them until the next think, so only a
+    // valid enemy counts.
     if (target == nullptr) {
-        return GoalStatus::Done;
+        const auto& enemies = brain.enemies();
+        if (std::ranges::none_of(enemies, [](const Brain* enemy) { return enemy != nullptr && valid(*enemy); })) {
+            return GoalStatus::Done;
+        }
+        brain.pushGoal(std::make_unique<SpectateGoal>(SpectateArgs::melee(0.0F)));
+        return GoalStatus::Stop;
     }
     // 4. With a target: a new one may be approached; a failed move stops the approach.
     if (target != m_lastTarget) {

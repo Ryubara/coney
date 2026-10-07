@@ -33,10 +33,8 @@ inline constexpr float kDealerTurnAngle = 0.2617994F;
 inline constexpr std::uint64_t kWaryPeriodMs = 2000;
 inline constexpr float kWaryDistance = 16.0F;
 inline constexpr float kGreetedTurnDistance = 2.0F;
-/// His walk home and away is a run (gait 4); the wary goal lasts 2-4 s.
+/// His walk home and away is a run (gait 4); the wary goal is SpectateArgs::dealerWary().
 inline constexpr int kDealerGait = 4;
-inline constexpr int kWaryMinMs = 2000;
-inline constexpr int kWaryMaxMs = 4000;
 
 /// One dealer type's deal (the table at `0x005110f8`, 8 bytes a type): the `GSTRING.HUD` prompt, the item sold, its
 /// price in dollars, the most a buyer may carry (0 for the item's own limit: the flash's 3, or 4 with the revive

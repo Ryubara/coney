@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 // Checks against the player's own disc that mission 1's play-through script passes `level99`'s combat tutorial up to
-// its rage lesson: the level plays as `--play-level level99 --checkpoint 1` plays it, headless, driven by the pad of
-// kLessonsScript and then kCourseScript (lessons 7-12), and lessons 7-10's tutorial callbacks must arm in order (the
-// snaps, the throws, the bats, the rage moves) with no script error (docs/research/scripting.md#level99-lessons). It
-// runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts only
+// its throw lesson: the level plays as `--play-level level99 --checkpoint 1` plays it, headless, driven by the pad of
+// kLessonsScript and then kCourseScript (lessons 7-12), and lessons 7-8's tutorial callbacks must arm in order (the
+// snaps, the throws) with no script error (docs/research/scripting.md#level99-lessons). It runs only when the
+// environment variable CONEY_DISC names the disc and skips otherwise; it prints counts and callback names only
 // (LEGAL.md).
 //
-// **Known gap**: the second wave and checkpoint 2 are not checked. The pad script is frame-locked, so it clears the
-// second wave only when every bum stands where an earlier Coney AI left it; any change to the AI's movement or fights
-// moves them. The checkpoint-2 check returns with an adaptive driver (walk to the nearest standing bum, then attack).
+// **Known gap**: lessons 9-12 (the bats, the rage moves, the second wave) and checkpoint 2 are not checked. The pad
+// script is frame-locked: its bat swings and the second wave land only when every bum stands where an earlier Coney AI
+// left it, and the AI now takes turns at its target and turns at the AI's own rates (docs/research/ai.md#coney). The
+// later lessons' checks return with an adaptive driver (walk to the nearest standing bum, then attack).
 
 #include <algorithm>
 #include <array>
@@ -89,7 +90,7 @@ std::optional<coney::io::Wad> openDisc() {
 
 } // namespace
 
-TEST_CASE("the disc's level99 combat tutorial: the play-through script passes lessons 1-10", "[disc][story][combat]") {
+TEST_CASE("the disc's level99 combat tutorial: the play-through script passes lessons 1-8", "[disc][story][combat]") {
     std::optional<coney::io::Wad> wad = openDisc();
     if (!wad) {
         SKIP("CONEY_DISC is not set: no disc to check");
@@ -167,13 +168,16 @@ TEST_CASE("the disc's level99 combat tutorial: the play-through script passes le
     }
     std::printf("  level99 course: checkpoint %g at frame %llu, %zu callbacks armed\n", scripts.state().checkPoint,
                 static_cast<unsigned long long>(frame), armed.size());
+    for (const std::string& callback : armed) {
+        std::printf("    armed %s\n", callback.c_str());
+    }
     if (armed.empty() || armed.back() != "P1.RageMoves") {
         for (const std::string& line : log) {
             UNSCOPED_INFO(line);
         }
     }
-    // Lessons 7-10's callbacks, in order.
-    const std::array<std::string_view, 4> later{"P1.Snaps", "P1.Throws", "P1.Weapons", "P1.RageMoves"};
+    // Lessons 7-8's callbacks, in order (lessons 9-10 are the known gap above).
+    const std::array<std::string_view, 2> later{"P1.Snaps", "P1.Throws"};
     auto at = armed.begin();
     for (const std::string_view callback : later) {
         at = std::find(at, armed.end(), callback);

@@ -248,7 +248,10 @@ target_sources(coney_core PRIVATE
     ai/ai_config.cpp
     ai/ai_humans.cpp
     ai/attack_action.cpp
+    ai/attack_choice.cpp
     ai/attack_kinds.cpp
+    ai/attack_places.cpp
+    ai/attack_views.cpp
     ai/block_goal.cpp
     ai/brain.cpp
     ai/brains.cpp
@@ -257,7 +260,10 @@ target_sources(coney_core PRIVATE
     ai/melee_goal.cpp
     ai/pedestrian_goal.cpp
     ai/perception.cpp
+    ai/fight_book.cpp
+    ai/fight_checks.cpp
     ai/fight_goal.cpp
+    ai/fight_reactions.cpp
     ai/formations.cpp
     ai/gangs.cpp
     ai/idle_goals.cpp

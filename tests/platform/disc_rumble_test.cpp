@@ -13,12 +13,14 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <map>
 #include <memory>
 #include <optional>
 #include <set>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -101,7 +103,15 @@ TEST_CASE("the disc's WAR PARTY hands the pad to a team-mate when the player goe
     CHECK(&play->player().human() != &play->player().body());
     CHECK(play->player().human().alive());
 
-    // The pad drives the team-mate now.
+    // The pad drives the team-mate now. The other gangs' brains are suspended (BrSuspend) so that none grabs him while
+    // the stick is pushed: the AI grabs and tackles (docs/research/ai.md#coney), and this checks only the pad.
+    for (const coney::HumanCreation& human : humans) {
+        if (human.gang != p11->gang) {
+            const std::array<coney::script::Value, 2> suspend{coney::script::Value(human.handle),
+                                                              coney::script::Value(true)};
+            CHECK(game.flow().scripts().call("BrSuspend", suspend));
+        }
+    }
     const coney::anim::Vec3 before = play->player().human().position();
     game.run(150);
     const coney::anim::Vec3 after = play->player().human().position();
@@ -145,10 +155,12 @@ TEST_CASE("the disc's King of the hill scores a point a tick for the gang whose 
     std::printf("  king of the hill: %s %u, %s %u after 15 s on top\n", rows[0].label.c_str(), rows[0].score,
                 rows[1].label.c_str(), rows[1].score);
 
-    // Held to 100: the movement lock, X.GameOver 4 s later and the result screen naming the Furies.
+    // Held to 100: the movement lock, X.GameOver 4 s later and the result screen naming the winner. Either gang may
+    // win: the Orphans' AI grabs, tackles and throws the idle Furies player off the top (docs/research/ai.md#coney).
     const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, 9000);
     REQUIRE(ended);
-    CHECK(game.flow().rumbleResult().winner().find("FURIES") != std::string::npos);
+    const std::string& winner = game.flow().rumbleResult().winner();
+    CHECK((winner.find("FURIES") != std::string::npos || winner.find("ORPHANS") != std::string::npos));
     // X.OffTopTier still runs for the fighters X.GameOver teleports off the top and those the win camera deletes;
     // each still has its gang (HuGetGang), so no script fails.
     CHECK(game.flow().scripts().errors() == 0);
@@ -211,7 +223,40 @@ TEST_CASE("the disc's Survival sends spawned enemies at the player until he fall
     // One player in arena 134, the pad left alone: the two spawners make the enemies out of his sight, beyond 15 m.
     coney::test::DiscGame game(*wad, coney::test::kQuickRumbleScript);
     game.chooseRumble(9, 134, 1);
-    game.run(1000 - game.frames());
+    // Each enemy is measured from the spawner's origin as it spawns (the camera at the player's height): the enemies
+    // grab, tackle and throw the player, so he and his camera do not stay where they started
+    // (docs/research/ai.md#coney).
+    std::map<double, std::array<float, 3>> playerAtSpawn;
+    const auto spawnOrigin = [&game]() -> std::optional<std::array<float, 3>> {
+        const coney::HumanCreation* player = game.flow().humans().player(1);
+        if (player == nullptr) {
+            return std::nullopt;
+        }
+        const std::array<coney::script::Value, 1> args{coney::script::Value(player->handle)};
+        const std::optional<std::vector<coney::script::Value>> at =
+            game.flow().scripts().callResults("HuGetPosition", args);
+        if (!at || at->empty() || !(*at)[0].table()) {
+            return std::nullopt;
+        }
+        const coney::platform::PlayLevelMode* play = game.play();
+        if (play == nullptr) {
+            return std::nullopt;
+        }
+        // The search's origin: the camera's position with the player's height (docs/research/ai.md#spawner-search).
+        const coney::anim::Vec3 eye = play->cameraEye();
+        const coney::script::Value& v = (*at)[0];
+        return std::array<float, 3>{eye.x, eye.y, static_cast<float>(v.table()->field("z").number().value_or(0.0))};
+    };
+    while (game.frames() < 1000) {
+        game.run(1);
+        for (const coney::HumanCreation& human : game.flow().humans().all()) {
+            if (human.name.starts_with("ENEMYspawner") && !playerAtSpawn.contains(human.handle)) {
+                if (const std::optional<std::array<float, 3>> at = spawnOrigin()) {
+                    playerAtSpawn.emplace(human.handle, *at);
+                }
+            }
+        }
+    }
     REQUIRE(game.stack().topId() == coney::GameplayMode::kId);
     const auto spawned = [&game] {
         return std::ranges::count_if(game.flow().humans().all(), [](const coney::HumanCreation& human) {
@@ -221,23 +266,21 @@ TEST_CASE("the disc's Survival sends spawned enemies at the player until he fall
     // Both spawners, ten and six alive at most.
     CHECK(spawned() >= 10);
     CHECK(spawned() <= 16);
-    // Each stands on a route node out of the camera's sight, beyond the spawners' 15 m (one node while the camera
-    // stays put, the search being the same each time).
-    const coney::HumanCreation* player = game.flow().humans().player(1);
-    REQUIRE(player != nullptr);
-    REQUIRE(player->position.has_value());
-    const std::array<float, 3> start = player->position.value_or(std::array<float, 3>{});
+    // Each stands on a route node out of the camera's sight, beyond the spawners' 15 m from the origin as it spawned
+    // (few nodes, the search being the same each time).
     float nearest = 1.0e9F;
     std::set<std::array<float, 3>> spots;
     for (const coney::HumanCreation& human : game.flow().humans().all()) {
-        if (human.name.starts_with("ENEMYspawner") && human.position) {
+        const auto there = playerAtSpawn.find(human.handle);
+        if (human.name.starts_with("ENEMYspawner") && human.position && there != playerAtSpawn.end()) {
             const std::array<float, 3>& at = *human.position;
-            nearest = std::min(nearest, std::hypot(at[0] - start[0], at[1] - start[1], at[2] - start[2]));
+            const std::array<float, 3>& from = there->second;
+            nearest = std::min(nearest, std::hypot(at[0] - from[0], at[1] - from[1], at[2] - from[2]));
             spots.insert(at);
         }
     }
     CHECK(nearest > 15.0F);
-    std::printf("  survival: nearest spawn %.1f m from the player's start, %zu spots\n", nearest, spots.size());
+    std::printf("  survival: nearest spawn %.1f m from the origin as it spawned, %zu spots\n", nearest, spots.size());
 
     // They beat him: SavePlayerStats ends the match with side 1's "win" and the time he lasted.
     const bool ended = game.runUntilTop(coney::RumbleResultMode::kId, 9000);

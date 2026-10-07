@@ -3,6 +3,7 @@
 
 #include <cstdint>
 
+#include "ai/attack_choice.h"
 #include "ai/goal.h"
 
 // Two goals that take one human to another: the move-to-human goal (`GoalMoveToHuman`), which runs to a human and stops
@@ -67,15 +68,18 @@ class MoveToHumanGoal final : public Goal {
 /// beyond the fight goal's range; it runs at him (gait 4, 5 when he runs), re-planning every 250 ms, and ends, handing
 /// back to the Melee goal, by stopping and turning to him: within 0.75 × the far melee range when he is busy, or when
 /// the charge is not armed and he walks or stands; or after a failed move. Armed (he was at least the far range away at
-/// its start, or he runs), it attacks out of the run within 1.6 m. It gives up only far off and out of sight, and has
-/// no time limit. It clears the target's `+0x1ec`, so the fight may attack him at once. The re-target takes the nearest
-/// enemy it can see within 9 m; out of sight is the line of sight (ai::lineOfSight()); it sprints only with more than
-/// half its stamina. **Coney stand-ins**: the target is busy while not standing or while his record holds an attack's
-/// flags (kAttackWaitFlags); the lead applies while he faces away from the runner (within 60°), fanned 9° per attack
-/// slot index; "actions blocked" ends nothing (a human down waits); the shouts, the taunt and brain `+0x0b` are not
-/// built. The binding's goal (`GoalEngageEnemy`, by handle) takes the enemy as its enemy and target, and where the
-/// fight's goal would end it pushes a fight goal and goes on (the wrapper `0x002af528` is not traced; its page says the
-/// human fights the enemy until he is out of range or gone).
+/// its start, or he runs), it attacks out of the run within 1.6 m: a cop's X1 (50 %, 80 % at a gang member) or tackle,
+/// anyone else's pick (ai::pickAttackFor()), which ends the run-in when it is not a charge kind; it presses once the
+/// kind can start, as one attack action (the X1 along the runner's heading); another attacker nearer the target on the
+/// runner's side of him disarms the charge (**Coney stand-in** for the sector record). It gives up only far off and out
+/// of sight, and has no time limit. It clears the target's `+0x1ec`, so the fight may attack him at once. The re-target
+/// takes the nearest enemy it can see within 9 m; out of sight is the line of sight (ai::lineOfSight()); it sprints
+/// only with more than half its stamina. **Coney stand-ins**: the target is busy while not standing or while his record
+/// holds an attack's flags (kAttackWaitFlags); the lead applies while he faces away from the runner (within 60°),
+/// fanned 9° per attack slot index; "actions blocked" ends nothing (a human down waits); the shouts, the taunt and
+/// brain `+0x0b` are not built. The binding's goal (`GoalEngageEnemy`, by handle) takes the enemy as its enemy and
+/// target, and where the fight's goal would end it pushes a fight goal and goes on (the wrapper `0x002af528` is not
+/// traced; its page says the human fights the enemy until he is out of range or gone).
 /// @orig 0x002af5b0 EngageEnemyGoal_Init (unknown)
 class EngageEnemyGoal final : public Goal {
   public:
@@ -85,13 +89,14 @@ class EngageEnemyGoal final : public Goal {
     EngageEnemyGoal(ScriptServices& services, double enemy)
         : Goal(GoalType::EngageEnemy), m_services(&services), m_enemy(enemy) {}
 
-    /// Arms the charge when the target is at least the far melee range away; notes a slow start (below a jog).
+    /// Arms the charge when the target is at least the far melee range away; notes a slow start (below a jog); raises
+    /// the turn boost by one, so the run-in turns faster.
     /// @orig 0x002af670 EngageEnemyGoal_Start (unknown)
     void start(Brain& brain) override;
     /// One update, as above.
     /// @orig 0x002afa48 EngageEnemyGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
-    /// Clears the actions.
+    /// Clears the actions and lowers the turn boost again.
     /// @orig 0x002af8d0 EngageEnemyGoal_End (unknown)
     void end(Brain& brain) override;
 
@@ -110,10 +115,12 @@ class EngageEnemyGoal final : public Goal {
 
     ScriptServices* m_services = nullptr;
     double m_enemy = 0;
-    bool m_charge = false;      // +0x35
-    bool m_startSlowly = false; // +0x34
-    bool m_stopping = false;    // +0x39
-    bool m_moved = false;       // a move has been queued
+    bool m_charge = false;            // +0x35
+    int m_chargeKind = kNoAttackKind; // +0x20, the charge's kind
+    bool m_boosted = false;           // Start raised the turn boost
+    bool m_startSlowly = false;       // +0x34
+    bool m_stopping = false;          // +0x39
+    bool m_moved = false;             // a move has been queued
     std::uint64_t m_nextPlanMs = 0;
     std::uint64_t m_nextRetargetMs = 0; // +0x1c
     float m_planHeading = 0.0F;         // the target's heading at the last plan

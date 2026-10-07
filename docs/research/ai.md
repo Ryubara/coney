@@ -4451,9 +4451,32 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   (a delay, Start, Update, an Abort that can refuse); goals start or resume only on an empty queue. A goal leaves the
   stack before its End runs: an End can reach Lua (a flag's message), whose handler may push the next goal (level99's
   `P1.ReachCenter` pushes `GoalAddressPerson`), which must stay on the stack.
-- **Fighting**: `FightGoal`, the weighted pick, `Brain_QueueAttack`'s chains timed by the chain clip's first event,
-  `AttackAction` (the command once in Start, the delay halved when the target targets the attacker or the brain is
-  type 3, then a wait on `0x5c0221f`), `MoveToHumanAction` (a heading and speed in the record's `move`, no stick).
+- **Fighting**: `FightGoal` in the original's order (`repo:src/ai/fight_goal.h`): the valid-enemy and slot check, the
+  tackle try, the 1.1 × far range, the walkable line every 30 updates, the re-target, the block try, the wait on the
+  actions, the deadline, the pick, `Brain_CheckAttack`, then the ring, the move into the kind's reach or the grab and
+  snap try and the press. `Brain_QueueAttack`'s chains are timed by the chain clip's first event; `AttackAction`
+  presses the command once in Start (the delay halved when the target targets the attacker or the brain is type 3,
+  then a wait on `0x5c0221f`), with a full stick along its angle when it has one, and, when neither human is busy,
+  moves the target's `+0x1ec` on by the kind's swing time over his spacing. `MoveToHumanAction` sets a heading and
+  speed in the record's `move` (no stick).
+- **The attack choice** (`repo:src/ai/attack_choice.h`, `repo:src/ai/attack_views.h`): `Human_CanUseAttackKind`'s table
+  and `Human_CanStartAttack`'s guard as pure tests over two views of the humans, and `Brain_PickAttack`'s draw with
+  every adjustment (the running rule, the hurt rule, the crowd on A, the busy target for the grab, the armed bonus,
+  the rear-grabbed bonus, the pattern read). `attackerViewOf` and `targetViewOf` fill the views from Coney's fighters.
+  **Stand-ins**: "free" is on its feet in no pair and not reacting; no AI holds an object, spray paint or cuffs; the
+  pattern read is not made; the kinds whose commands no Coney handler takes (8, 9, 11-13, 15, 18, 23, 34, 36, 41,
+  44) are left out of every pick.
+- **Taking turns** (`repo:src/ai/attack_places.h`, `repo:src/ai/fight_book.h`, `repo:src/ai/fight_checks.h`): each
+  brain keeps four active-attacker places, the two spacing bytes (raised by each slot claim to the attacker gang's
+  `CfgGang` values 2 and 3, a Warrior target keeping 1 standing, back to 1 when its slot list empties) and the tackle
+  meter, kept by the cops', gang soldiers' and Warriors' thinks. `CfgGang`'s values 2, 3, 5, 7 and 8 are read per
+  gang kind from the scripts' calls. `Brain_CheckAttack` answers in the page's order; a waiting attacker holds the
+  reposition ring. **Stand-ins**: the rows about held objects (4, 6, 8) never apply; the police row applies when the
+  target's own target is a cop; the ring is a move to its outer edge, standing within it, with no taunt; the fight
+  stance is not built (the charge and the dive count as out of it); the sectors are the target's quarters, so "behind"
+  is his rear quarter and the snap's man is any attacker within 2.5 m beside or behind; the swing time reads the
+  attacker's own set, not the bat and bottle sets' clips (25 and 29 the throws, 26-28 the power strikes, 31 the
+  struggle strikes 96 and 108, 32-34 the escapes 100 and 112).
 - **A fight's three goals** ([Closing on the target](#fight-approach), `repo:src/ai/melee_goal.h`,
   `repo:src/ai/engage_goals.h`): `Brain::fight` (with a duration, `GoalFight`'s none, a rioter's 8000 ms) pops any Melee
   or FindEnemy goal with everything above it and pushes FindEnemy, Melee and the fight goal, whose deadline is the
@@ -4462,10 +4485,14 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   2 when the straight line does not reach him) and an **EngageEnemy** goal beyond it; **FindEnemy** starts the fight
   again while the target can be fought. EngageEnemy runs at gait 4 (5 after a runner), re-plans every 250 ms, leads a
   target facing away, stops and turns to him within 3.75 m when he is busy or the charge is not armed and he walks or
-  stands, and attacks out of the run within 1.6 m with the charge armed. EngageEnemy stops for a target in sight it may
+  stands, and attacks out of the run within 1.6 m with the charge armed: a cop's X1 (50 %, 80 % at a gang member) or
+  tackle, anyone else's pick, which ends the run-in when it is not a charge kind, pressed as one attack action once it
+  can start (the X1 along the runner's heading); another attacker nearer the target on the same side of him disarms
+  the charge (the sector's stand-in). EngageEnemy stops for a target in sight it may
   not attack (`Brain_IsAttackableBy`), re-targets the nearest enemy it sees within 9 m, and gives up out of sight 20 m
   away. **Stand-ins**: the gang's wanted timer is not kept (the chase always allowed); Melee's own line-of-sight branch
-  is not built; with no valid target Melee ends rather than spectating; a human whose last move failed runs straight at
+  is not built; with no target but a valid enemy Melee spectates (without the shadow and may-spectate tests); a
+human whose last move failed runs straight at
   the target for 2 s and may approach again (the weapon pick-up, throw and positioning moves are not traced); the type-3
   AttackTarget gate and goal `0x35` are not built; past its deadline a fight goal ends only without an attack slot (the
   slot standing in for the target's active attackers). `level99`'s sparring Warriors are sent from 8.6-9.0 m ([the
@@ -4578,10 +4605,12 @@ gang of kind 19 made the enemy of the player's (the Warriors' kind), and an "eng
 whoever's gangs are not friends (`Humans::setOpposition`); without gangs, the humans added pad-controlled and the others
 fight each other, and only the former fight the sandbox's passive targets. A target is in reach within 0.9 × its first
 attack's far range; a move runs beyond 4 m, lasts 1000 or 2000 ms (2000 beyond twice the reach) and stops at 0.9 × the
-reach. The pacing timer resets only after an attack; with nothing else to do a fighter stands still. The target's
-`+0x1ec` takes the kind's unscaled `CfgAttackDelay`, whether or not either human is busy. Command `0x11` chains as
-square. A reaction goal clears the actions and the move. A block ends when its target is not on its feet (Coney has no
-state word). Each brain's generator is seeded by its slot.
+reach. Command `0x11` chains as
+square. A reaction goal clears the actions and the move. The fight reaction goals (grabbing, mounting, grabbed,
+mounted, grounded) are built in `repo:src/ai/fight_reactions.h`; their stand-ins: no trains, no presenting to a
+friendly player or front-grab hand-over press, the throw direction only the random left, ahead or right, no help call,
+and a held AI's presses reach no handler (its holder drives it). A block ends when its target is not on its feet
+(Coney has no state word). Each brain's generator is seeded by its slot.
 A think only counts (the types' think handlers are not traced).
 
 **Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
@@ -4616,8 +4645,13 @@ returning true when it runs (Coney's script system does not hand back the result
 next step after the health runs out, with no attacker. **Stand-in:** event 1 (damage taken, whose sender is not
 traced) is sent at the brains' step after a human's health falls, with the nearest other human that can fight as the
 attacker and the damage as its value. A formation slot is usable when the leader's planner finds the
-line to it walkable (always without a planner) and keeps the leader's height. The idle and spectate goals stand
-still (their Process is not traced). Both of a crowd reaction's clip actions are `PlayAnimAction`. The dealer rolls
+line to it walkable (always without a planner) and keeps the leader's height. The idle goal stands still (its Process is
+not traced); the spectate goal follows [its research](#spectate) for Melee and the dealer's wary goal, the crowd's
+spectators standing still (their arguments are not traced). Its stand-ins: a spectator holds no target but for the
+EngageEnemy run-in; no fight stance, taunt or weapon pick-up; the watch action is a turn to face him; the keep-distance
+move is a move action to the band's edge; the chase is always allowed; the tackling man's kind-`0x24` attack and the
+shadow test are not built; without join the watched man is the nearest member of any other gang. Both of a crowd
+reaction's clip actions are `PlayAnimAction`. The dealer rolls
 dirty at Start; his wary scan looks for members of enemy gangs. Player 1's triangle within 1.75 m of a dealer whose offer
 stands (after the objects' prompts and the stereos) makes the deal: the table's terms against the inventory, the item
 and money moved without notifying the inventory callbacks, and his line said at the buyer (96 at most every 5 s, 97,
@@ -4731,10 +4765,9 @@ within `range` of one of it. Scout melees with members that have enemies. **Stan
 Steal, AvoidEnemies and Scout hold their places, their goals not traced; banter, answering violence, the anim
 substitutions, HoldTheLine's 12 and 14 and Pursue's search time are not built.
 
-**Open in Coney.** An AI's own grabs and tackles are not built (the player grabs and tackles an AI's human,
-[Combat](combat.md#grab)); the pattern read at Start; the per-kind time `0x00231590` and the spacing bytes; the pick's
-adjustments; the move's sight checks; the steering round humans, choke points and the waypoint
-queues; the dynamic obstacles; the legs of edges 8, `0x10`,
+**Open in Coney.** The pattern read at Start and in the pick; the reposition's band-keeping move and taunt; the sector
+record; the move's sight checks;
+the steering round humans, choke points and the waypoint queues; the dynamic obstacles; the legs of edges 8, `0x10`,
 `0x40` and `0x80` (taken as plain walking, with `+0x284` 2 and 4 never set); the move's object to face; the turn clip
 (398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off and the gang's notice; the scene
 system, the dynamic clip slot and clips by id; the head look-ats; the sender of message 1 and its attacker; the gang's

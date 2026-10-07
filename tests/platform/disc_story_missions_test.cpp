@@ -44,7 +44,9 @@
 #include "scenes/scene_list.h"
 #include "scenes/scene_player.h"
 #include "scripting/config_strings.h"
+#include "scripting/lua_value.h"
 #include "scripting/script_system.h"
+#include "warriors/created_humans.h"
 #include "world/sector_budget.h"
 
 namespace {
@@ -155,6 +157,17 @@ MissionRun playMission(const coney::io::Wad& wad, std::string_view level, int ch
             UNSCOPED_INFO(line);
         }
         return run;
+    }
+    // The walk checks the pad alone: the other gangs' brains are suspended (BrSuspend) so that none grabs or downs
+    // the player in those 2 s (the AI grabs and tackles, docs/research/ai.md#coney).
+    if (const coney::HumanCreation* player = scripts.humans().player(1); player != nullptr) {
+        for (const coney::HumanCreation& human : scripts.humans().all()) {
+            if (human.handle != player->handle && (human.gang != player->gang || human.gang < 0)) {
+                const std::array<coney::script::Value, 2> suspend{coney::script::Value(human.handle),
+                                                                  coney::script::Value(true)};
+                (void)scripts.scripts().call("BrSuspend", suspend);
+            }
+        }
     }
     const float before = play->stats().travelled;
     stack.runUntilEmpty(timer, {}, 60);

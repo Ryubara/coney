@@ -159,7 +159,7 @@ GoalStatus DealerGoal::process(Brain& brain) {
         if (brain.threatResponse() == 0) {
             const Brain* enemy = nearestEnemy(brain, enemyDistance);
             if (enemy != nullptr && enemyDistance < kWaryDistance) {
-                brain.pushGoal(std::make_unique<SpectateGoal>(kWaryMinMs, kWaryMaxMs));
+                brain.pushGoal(std::make_unique<SpectateGoal>(SpectateArgs::dealerWary()));
                 brain.queueAction(TurnAction::toPoint(enemy->human().position()));
                 return GoalStatus::Stop;
             }

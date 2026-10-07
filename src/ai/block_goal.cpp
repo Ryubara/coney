@@ -8,6 +8,7 @@
 
 #include "ai/attack_action.h"
 #include "ai/attack_kinds.h"
+#include "ai/attack_views.h"
 #include "ai/brain.h"
 #include "ai/fight_goal.h"
 #include "combat/ai_counter.h"
@@ -104,8 +105,12 @@ GoalStatus BlockGoal::process(Brain& brain) {
     // 5. The block time runs: in its last second an extended block punishes.
     if (m_untilMs - now < static_cast<std::uint64_t>(kBlockLastMs) && m_patterned &&
         (flags & combat::kPhaseDuck) == 0) {
-        if (const std::optional<int> kind = pickAttack(punishingWeights(brain), brain.random()); kind.has_value()) {
-            queueAttack(brain, *kind);
+        if (brain.target() != nullptr) {
+            const std::optional<int> kind =
+                pickAttackFor(brain, *brain.target(), PickFilter::CanStart, punishingWeights(brain));
+            if (kind.has_value()) {
+                queueAttack(brain, *kind);
+            }
         }
         m_active = false;
         return GoalStatus::Stop;

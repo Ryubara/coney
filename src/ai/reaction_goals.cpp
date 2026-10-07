@@ -4,6 +4,7 @@
 #include <array>
 
 #include "ai/brain.h"
+#include "ai/fight_reactions.h"
 #include "combat/player_combat.h"
 
 namespace coney::ai {
@@ -40,7 +41,22 @@ std::unique_ptr<Goal> reactionGoalFor(const human::Human& human) {
                                              GoalType::ReactGrabbed,     GoalType::ReactTackled,
                                              GoalType::ReactKnockedDown, GoalType::ReactStunned};
     for (const GoalType type : kOrder) {
-        if (reactionHolds(type, human)) {
+        if (!reactionHolds(type, human)) {
+            continue;
+        }
+        // The fight reactions (docs/research/ai.md#fight-reactions); the stun only holds the stack off.
+        switch (type) {
+        case GoalType::ReactGrabbing:
+            return std::make_unique<GrabbingGoal>();
+        case GoalType::ReactTackling:
+            return std::make_unique<MountingGoal>();
+        case GoalType::ReactGrabbed:
+            return std::make_unique<HeldGoal>(false);
+        case GoalType::ReactTackled:
+            return std::make_unique<HeldGoal>(true);
+        case GoalType::ReactKnockedDown:
+            return std::make_unique<GroundedGoal>();
+        default:
             return std::make_unique<ReactionGoal>(type);
         }
     }

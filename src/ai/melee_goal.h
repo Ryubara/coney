@@ -28,10 +28,10 @@ class MeleeGoal final : public Goal {
     /// within `R`, it walks over in the fight stance when he is beyond 1 m and the straight line to him is not walkable
     /// (a move at gait 2, radius 1 m), else pushes a fight goal of kMeleeFightMs and processes it at once; unarmed and
     /// allowed beyond `R`, it pushes an EngageEnemy goal. **Coney stand-ins**: the line of sight always holds here; the
-    /// chase is always allowed (Coney keeps no gang wanted timers); with no valid target it is done rather than
-    /// spectating; and a human not allowed to approach (its last move failed) runs straight at the target (a
-    /// move-to-human action, 2 s) and may approach again, the original's weapon pick-up, throw and positioning moves
-    /// not being traced.
+    /// chase is always allowed (Coney keeps no gang wanted timers); with no target and enemies listed it spectates
+    /// (SpectateArgs::melee()) without the shadow and may-spectate tests; and a human not allowed to approach (its last
+    /// move failed) runs straight at the target (a move-to-human action, 2 s) and may approach again, the original's
+    /// weapon pick-up, throw and positioning moves not being traced.
     /// @orig 0x002aebf8 MeleeGoal_Process (unknown)
     /// @orig 0x002ae2e8 MeleeGoal_WithTarget (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;

@@ -11,6 +11,7 @@
 
 #include "ai/action.h"
 #include "ai/attack_kinds.h"
+#include "ai/fight_book.h"
 #include "ai/goal.h"
 #include "ai/route_planner.h"
 #include "ai/sectors.h"
@@ -136,7 +137,8 @@ struct FightSettings {
     /// `CfgAttackDelay` by kind (the table at `0x006b6658`), ms.
     std::array<int, kAttackKinds> attackDelaysMs = referenceAttackDelays();
     int baseBlockChance = kDefaultBaseBlockChance; ///< `CfgBaseChanceToBlock`, percent.
-    TargetingPoints targeting; ///< `CfgSetTargetingPoints` and `CfgSetTargetingPointsEx`: the enemy score's weights.
+    TargetingPoints targeting;  ///< `CfgSetTargetingPoints` and `CfgSetTargetingPointsEx`: the enemy score's weights.
+    GangFightTable gangFight{}; ///< `CfgGang` by gang kind: the spacing, hand-over, tackle and rear-grab values.
 };
 
 /// One human's brain.
@@ -298,6 +300,13 @@ class Brain {
     void pushFightGoals(int durationMs);
     /// Whether the Melee goal may send the human after its target (`+0x2d3`, set when the brain is made, by a new
     /// target and when a Melee goal ends; cleared when the last move failed).
+    /// Its fight books: the active-attacker places and spacing it gives its attackers, and its tackle meter
+    /// (docs/research/ai.md#attack-places). A slot claimed on it raises its spacing to the attacker's gang's `CfgGang`
+    /// values; its slot list emptied puts the spacing back to 1.
+    [[nodiscard]] FightBook& fightBook() { return m_fight; }
+    [[nodiscard]] const FightBook& fightBook() const { return m_fight; }
+    /// The `CfgGang` fight values of this brain's gang's kind (all 0 without a gang).
+    [[nodiscard]] GangFightValues gangFight() const;
     [[nodiscard]] bool mayApproach() const { return m_mayApproach; }
     void setMayApproach(bool may) { m_mayApproach = may; }
     /// Adds `enemy` to the enemy list (`+0x164`, up to 16), and this brain to `enemy`'s unless both are players'; when
@@ -468,6 +477,9 @@ class Brain {
     bool claimSlot(Brain& attacker);
     // Releases `attacker`'s slot on this brain's human.
     void releaseSlot(const Brain& attacker);
+    // Raises this human's spacing bytes to `attacker`'s gang's `CfgGang` values (a Warrior keeps one swinging at
+    // him on his feet).
+    void raiseSpacing(const Brain& attacker);
     // Adds `enemy` to the list only; returns whether it was added.
     bool listEnemy(Brain& enemy);
 
@@ -519,6 +531,7 @@ class Brain {
     int m_seenHealth = -1;
     ScriptServices* m_services = nullptr;
     bool m_mayApproach = true; // +0x2d3
+    FightBook m_fight;         // +0x1f0, +0x14a, +0x14b, +0x148
     bool m_attackable = true;  // +0x11f
     int m_turnBoost = 0;       // +0x0b
     // Goals popped while one of them may still be running (a goal's Process can start a new fight, which pops it):

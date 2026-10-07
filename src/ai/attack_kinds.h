@@ -50,20 +50,6 @@ using AttackWeights = std::array<std::uint8_t, kAttackKinds>;
 /// kind that presses cross first, `S1` (12) for every other.
 [[nodiscard]] std::uint32_t firstAnimOf(int kind);
 
-/// Whether Coney's humans can play attack kind `kind` against another human: its chain presses only square or cross
-/// (`0xf`, `0x10`) and the chain's steps (`0x11`, `0x12`), so the strikes and their chains; kind 10, the snap, too.
-/// **Coney choice**, standing in for the pick's filter "what the human can do now" (`0x002240e8`, not traced): the
-/// grabs and tackles between two humans, the specials, the moving attacks, the `SSS3` holds (kinds 8 and 9) and the
-/// commands no Coney path takes are left out.
-[[nodiscard]] bool playable(int kind);
-
-/// The weighted pick (`Brain_PickAttack`): a kind drawn from `weights` among the playable() kinds, each with the chance
-/// of its weight over their sum; nothing when they sum to 0. One draw of `random`. **Coney choice**: the adjustments
-/// for the number of attackers and the grab chance are not traced, so the weights are taken as they are.
-/// @orig 0x0028e708 Brain_PickAttack (unknown)
-/// @orig 0x002911f8 Brain_GetAttackWeight (unknown)
-[[nodiscard]] std::optional<int> pickAttack(const AttackWeights& weights, combat::CombatRandom& random);
-
 /// `Att_Normal`, the sparring and fence Warriors' and the street civilian's table (docs/research/ai.md#level99), for
 /// when the disc's configuration is not read.
 [[nodiscard]] AttackWeights attNormal();

@@ -7,10 +7,12 @@
 #include <memory>
 #include <numbers>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "ai/attack_action.h"
 #include "ai/attack_kinds.h"
+#include "ai/attack_views.h"
 #include "ai/brain.h"
 #include "ai/fight_goal.h"
 #include "ai/move_action.h"
@@ -18,6 +20,7 @@
 #include "ai/script_services.h"
 #include "ai/targeting.h"
 #include "animation/anim_math.h"
+#include "combat/reactions.h"
 #include "human/human.h"
 #include "human/locomotion.h"
 
@@ -41,6 +44,24 @@ constexpr float kDegrees = std::numbers::pi_v<float> / 180.0F;
 // The run's gaits.
 constexpr int kRunGait = 4;
 constexpr int kSprintGait = 5;
+// The charge's kinds for a cop: X1 50 % of the time (80 % against a gang member, class 10), else the tackle.
+constexpr int kChargeX1 = 0;
+constexpr int kChargeTackle = 21;
+constexpr int kCopX1Percent = 50;
+constexpr int kCopX1GangPercent = 80;
+constexpr int kGangMemberClass = 10;
+
+// Whether another of `target`'s attackers stands nearer him on `brain`'s side of him (the near human of the sector A
+// approaches from). **Coney stand-in**: the sector record is not built, so the side is T's quarter.
+bool sideTaken(const Brain& brain, const Brain& target) {
+    const human::Human& t = target.human();
+    const combat::Side mine = combat::victimSide(t.position(), t.heading(), brain.human().position());
+    const float distance = brain.distanceTo(target);
+    return std::ranges::any_of(target.attackSlots(), [&](const Brain* other) {
+        return other != &brain && other->distanceTo(target) < distance &&
+               combat::victimSide(t.position(), t.heading(), other->human().position()) == mine;
+    });
+}
 
 } // namespace
 
@@ -85,11 +106,19 @@ void EngageEnemyGoal::start(Brain& brain) {
     m_nextPlanMs = 0;
     m_nextRetargetMs = brain.nowMs() + kEngageRetargetMs;
     m_startSlowly = brain.human().gait() < human::Gait::Jog;
+    m_chargeKind = kNoAttackKind;
     const Brain* target = targetOf(brain);
     m_charge = target != nullptr && brain.distanceTo(*target) >= brain.meleeFar();
+    brain.setTurnBoost(brain.turnBoost() + 1);
+    m_boosted = true;
 }
 
-void EngageEnemyGoal::end(Brain& brain) { brain.clearActions(); }
+void EngageEnemyGoal::end(Brain& brain) {
+    brain.clearActions();
+    if (std::exchange(m_boosted, false)) {
+        brain.setTurnBoost(brain.turnBoost() - 1);
+    }
+}
 
 GoalStatus EngageEnemyGoal::beginStop(Brain& brain) {
     m_stopping = true;
@@ -194,11 +223,38 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
     }
     // 11. The charge: an attack out of the run.
     if (distance <= kChargeRange && (m_charge || running)) {
-        if (const std::optional<int> kind = pickAttack(brain.attackWeights(), brain.random()); kind.has_value()) {
-            brain.clearActions();
-            queueAttack(brain, *kind);
+        // 11.1 Another man nearer him on A's side of him disarms the charge: A only moves.
+        if (sideTaken(brain, *target)) {
             m_charge = false;
-            return GoalStatus::Stop;
+        } else {
+            // 11.2 The kind, once: a cop's X1 or tackle; anyone else's pick, which must be a charge kind.
+            if (m_chargeKind == kNoAttackKind) {
+                if (brain.type() == BrainType::Cop) {
+                    const int x1Percent =
+                        target->characterClass() == kGangMemberClass ? kCopX1GangPercent : kCopX1Percent;
+                    m_chargeKind = brain.rand100() < x1Percent ? kChargeX1 : kChargeTackle;
+                } else {
+                    const std::optional<int> kind = pickAttackFor(brain, *target, PickFilter::CanUse);
+                    if (!kind.has_value() || !isChargeKind(*kind)) {
+                        return beginStop(brain);
+                    }
+                    m_chargeKind = *kind;
+                }
+            }
+            // 11.3 The start test: one attack action, the X1 along A's heading.
+            if (canStartAttack(startGuardOf(brain, *target, m_chargeKind), attackerViewOf(brain, target),
+                               targetViewOf(*target, brain), m_chargeKind)) {
+                brain.clearActions();
+                if (brain.actionCount() > 0) {
+                    return GoalStatus::Stop;
+                }
+                const std::optional<float> heading =
+                    m_chargeKind == kChargeX1 ? std::optional<float>(human.heading()) : std::nullopt;
+                brain.queueAction(std::make_unique<AttackAction>(m_chargeKind, std::int16_t{0}, heading));
+                m_charge = false;
+                m_chargeKind = kNoAttackKind;
+                return GoalStatus::Stop;
+            }
         }
     }
     // 12. The move: at him, led by his facing and speed while he faces away, fanned out by attack slot.

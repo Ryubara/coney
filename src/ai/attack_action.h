@@ -2,6 +2,8 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
+#include <optional>
 
 #include "ai/action.h"
 #include "combat/commands.h"
@@ -20,15 +22,20 @@ inline constexpr std::uint32_t kAttackWaitFlags = 0x05c0221f;
 /// @orig 0x002fa918 AttackAction_Init (unknown)
 class AttackAction final : public Action {
   public:
-    /// A press of `kind` that starts `delayMs` after it reaches the front of the queue.
-    AttackAction(int kind, std::int16_t delayMs) : Action(delayMs), m_kind(kind) {}
+    /// A press of `kind` that starts `delayMs` after it reaches the front of the queue, with a full stick along
+    /// `stickHeading` (radians, Coney's heading convention; `Brain_QueueAttack`'s angle) when one is given.
+    AttackAction(int kind, std::int16_t delayMs, std::optional<float> stickHeading = std::nullopt)
+        : Action(delayMs), m_kind(kind), m_stickHeading(stickHeading) {}
+
+    /// A press of `kind` on the human himself after `delayMs` (the grounded goal's get-up attack, kind 42): it needs
+    /// no target and sets no pacing; it only writes the command.
+    [[nodiscard]] static std::unique_ptr<AttackAction> onSelf(int kind, std::int16_t delayMs);
 
     /// Checks the target (done when there is none or it has no health), sets the brain's next attack (`+0x1e8`) to
-    /// now + the attack delay (halved when the target's own target is this human or the brain is type 3) and the
-    /// target's `+0x1ec`, then writes the command; the snap (kind 10) also writes a full stick toward the target.
-    /// **Coney choices**: the target's `+0x1ec` takes the kind's `CfgAttackDelay` unscaled, standing in for the
-    /// separate per-kind time (`0x00231590`, not traced) and its spacing; it is set whether or not either human is
-    /// busy.
+    /// now + the attack delay (halved when the target's own target is this human or the brain is type 3); when
+    /// neither human is busy, sets the target's `+0x1ec` to the later of it and now, plus the kind's swing time over
+    /// the target's spacing (ai::swingTimeMs(), ai::attackableGapMs()); then writes the command, with a full stick
+    /// along the action's heading when it has one (the snap, kind 10, toward the target when none is given).
     /// @orig 0x002fa9a8 AttackAction_Start (unknown)
     [[nodiscard]] ActionStatus start(Brain& brain) override;
     /// Done once the record's `+0x08` has none of kAttackWaitFlags. The command is not written again.
@@ -46,7 +53,9 @@ class AttackAction final : public Action {
   private:
     int m_kind;
     combat::CommandId m_command = combat::command::kNone;
-    bool m_stick = false; // it wrote a stick, let go when it is done
+    std::optional<float> m_stickHeading; // +0x1c, the stick's heading
+    bool m_stick = false;                // it wrote a stick, let go when it is done
+    bool m_self = false;                 // pressed on himself, with no target
 };
 
 } // namespace coney::ai

@@ -14,6 +14,8 @@
 
 #include "ai/ai_config.h"
 #include "ai/attack_action.h"
+#include "ai/attack_kinds.h"
+#include "ai/attack_places.h"
 #include "ai/block_goal.h"
 #include "ai/brains.h"
 #include "ai/goal.h"
@@ -272,30 +274,6 @@ TEST_CASE("each brain thinks one character step in five, staggered by its slot, 
     }
 }
 
-TEST_CASE("the weighted pick draws each playable kind by its share of the weights", "[ai]") {
-    coney::ai::AttackWeights weights{};
-    weights[0] = 10;   // X1
-    weights[1] = 30;   // S1
-    weights[22] = 200; // a grab between humans: not playable, never drawn
-    coney::combat::CombatRandom random(7);
-    int x1 = 0;
-    constexpr int kDraws = 8000;
-    for (int k = 0; k < kDraws; ++k) {
-        const int kind = coney::ai::pickAttack(weights, random).value_or(-1);
-        REQUIRE((kind == 0 || kind == 1));
-        x1 += kind == 0 ? 1 : 0;
-    }
-    CHECK(x1 > kDraws * 22 / 100);
-    CHECK(x1 < kDraws * 28 / 100);
-    // The same seed draws the same kinds.
-    coney::combat::CombatRandom first(3);
-    coney::combat::CombatRandom second(3);
-    for (int k = 0; k < 50; ++k) {
-        CHECK(coney::ai::pickAttack(weights, first) == coney::ai::pickAttack(weights, second));
-    }
-    CHECK_FALSE(coney::ai::pickAttack(coney::ai::AttackWeights{}, random).has_value());
-}
-
 TEST_CASE("a Warrior waits the attack delay times its class's factor, halved when its target targets it", "[ai]") {
     Scene scene;
     Brain& gang = scene.add({41.0F, 40.0F, 0.0F}, 270.0F, BrainType::Gang);
@@ -304,12 +282,14 @@ TEST_CASE("a Warrior waits the attack delay times its class's factor, halved whe
     CHECK(gang.attackDelayMs(20, false, false) == 20000);
     CHECK(gang.attackDelayMs(1, false, true) == 2000);
 
-    // The attack action: the next attack is now + the delay, the target's is now + the kind's own delay.
+    // The attack action: the next attack is now + the delay; the target's is now + the kind's swing time over his
+    // spacing (1).
     gang.setTarget(&scene.playerBrain());
     REQUIRE(gang.queueAction(std::make_unique<coney::ai::AttackAction>(1, 0)));
     gang.update(stepMs(30));
     CHECK(gang.nextAttackMs() == stepMs(30) + 4000);
-    CHECK(scene.playerBrain().attackableAtMs() == stepMs(30) + 200);
+    CHECK(scene.playerBrain().attackableAtMs() ==
+          stepMs(30) + static_cast<std::uint64_t>(coney::ai::swingTimeMs(1, false, gang.human().anims())));
     // Targeted back by the target's brain: halved.
     scene.playerBrain().setTarget(&gang);
     REQUIRE(gang.queueAction(std::make_unique<coney::ai::AttackAction>(1, 0)));
@@ -591,8 +571,12 @@ TEST_CASE("a block extended while the target attacks punishes in its last second
         scene.run(1);
     }
     CHECK(scene.brains.nowMs() >= lastSecond);
-    // The punishing attack pressed at once: one of Att_Normal's kinds in the punishing set (31 or 42, square).
-    CHECK(gang.human().record().command == command::kSquarePressed);
+    // The punishing attack pressed at once: one of Att_Normal's kinds in the punishing set that can start (31 or 42,
+    // square; the tackle 21; the grab 22).
+    coney::combat::CombatRandom random(1);
+    const coney::combat::CommandId pressed = gang.human().record().command;
+    CHECK((pressed == command::kSquarePressed || pressed == coney::ai::commandOf(21, random) ||
+           pressed == coney::ai::commandOf(22, random)));
 }
 
 TEST_CASE("a reaction goal comes and goes one update after the state that calls for it", "[ai]") {

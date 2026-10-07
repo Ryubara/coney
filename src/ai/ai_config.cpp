@@ -120,6 +120,7 @@ AiConfig aiConfigFrom(const script::RecordedCalls& recorded, int type, int power
         }
     }
     readTargeting(recorded, config);
+    config.settings.gangFight = gangFightTableFrom(recorded);
     return config;
 }
 

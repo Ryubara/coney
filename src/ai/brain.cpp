@@ -6,6 +6,7 @@
 #include <limits>
 #include <utility>
 
+#include "ai/attack_views.h"
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
 #include "ai/melee_goal.h"
@@ -75,6 +76,10 @@ void Brain::think(std::uint64_t nowMs) {
     m_nowMs = nowMs;
     if (!m_dead) {
         ++m_thinks;
+    }
+    // The cop's, the gang soldier's and the Warrior's think handlers keep the tackle meter.
+    if (!m_dead && (m_type == BrainType::Cop || m_type == BrainType::Gang || m_type == BrainType::Warrior)) {
+        thinkTackle(*this);
     }
 }
 
@@ -372,10 +377,12 @@ void Brain::retarget() {
 
 bool Brain::claimSlot(Brain& attacker) {
     if (std::ranges::find(m_slots, &attacker) != m_slots.end()) {
+        raiseSpacing(attacker);
         return true;
     }
     if (m_slots.size() < m_slotCount) {
         m_slots.push_back(&attacker);
+        raiseSpacing(attacker);
         return true;
     }
     // Full: a closer attacker takes the farthest one's slot.
@@ -383,11 +390,32 @@ bool Brain::claimSlot(Brain& attacker) {
     if (farthest == m_slots.end() || distanceTo(attacker) >= distanceTo(**farthest)) {
         return false;
     }
+    m_fight.places.release(*farthest);
     *farthest = &attacker;
+    raiseSpacing(attacker);
     return true;
 }
 
-void Brain::releaseSlot(const Brain& attacker) { std::erase(m_slots, &attacker); }
+void Brain::releaseSlot(const Brain& attacker) {
+    std::erase(m_slots, &attacker);
+    m_fight.places.release(&attacker);
+    // The spacing returns to 1 once nobody targets this human (`Brain_SetTarget`).
+    if (m_slots.empty()) {
+        m_fight.spacing.reset();
+    }
+}
+
+void Brain::raiseSpacing(const Brain& attacker) {
+    const GangFightValues values = attacker.gangFight();
+    m_fight.spacing.raise(values.standingSpacing, values.downSpacing, m_type == BrainType::Warrior);
+}
+
+GangFightValues Brain::gangFight() const {
+    if (m_gang == nullptr || m_gang->kind() < 0 || m_gang->kind() >= static_cast<int>(kGangKinds)) {
+        return {};
+    }
+    return m_settings.gangFight[static_cast<std::size_t>(m_gang->kind())];
+}
 
 void Brain::setAttackSlotCount(std::size_t count) {
     m_slotCount = std::min(count, kMaxAttackSlots);

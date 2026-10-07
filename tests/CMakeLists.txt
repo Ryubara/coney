@@ -269,6 +269,9 @@ target_sources(coney_tests PRIVATE
     debug/tunables_test.cpp)
 # The AI humans' brains (docs/research/ai.md).
 target_sources(coney_tests PRIVATE
+    ai/attack_choice_test.cpp
+    ai/fight_goal_test.cpp
+    ai/fight_reactions_test.cpp
     ai/brain_test.cpp
     ai/disc_ai_config_test.cpp
     ai/disc_route_test.cpp

@@ -21,14 +21,6 @@ constexpr std::array<int, kAttackKinds> kCommands{0x10, 0x0f, 0x12, 0x12, 0x11, 
                                                   0x0d, 0x0f, 0x10, 0x0d, 0x19, -1,   0x05, 0x22, 0x11, 0x11, // 30-39
                                                   0x0d, 0x31, 0x0f, 0x10, 0x19};                              // 40-44
 
-// Whether `command` is one Coney's dispatcher takes from an AI against a human: square, cross, and a chain's steps.
-bool strikeCommand(int command) {
-    return command == static_cast<int>(combat::command::kSquarePressed) ||
-           command == static_cast<int>(combat::command::kCrossLongHold) ||
-           command == static_cast<int>(combat::command::kSquareChain) ||
-           command == static_cast<int>(combat::command::kCrossPressed) || command == -1;
-}
-
 } // namespace
 
 combat::CommandId commandOf(int kind, combat::CombatRandom& random) {
@@ -91,42 +83,6 @@ std::uint32_t firstAnimOf(int kind) {
     const bool cross = first >= 0 && first < static_cast<int>(kAttackKinds) &&
                        kCommands[static_cast<std::size_t>(first)] == static_cast<int>(combat::command::kCrossLongHold);
     return static_cast<std::uint32_t>(cross ? combat::anim_id::kAttackX1 : combat::anim_id::kAttackS1);
-}
-
-bool playable(int kind) {
-    if (kind < 0 || kind >= static_cast<int>(kAttackKinds) || kind == 8 || kind == 9) {
-        return false;
-    }
-    const std::vector<int> chain = chainOf(kind);
-    // A chain must start with a press that starts an attack on its own (square or cross), and every step must be one
-    // the chain takes.
-    const int first = kCommands[static_cast<std::size_t>(chain.front())];
-    if (first == static_cast<int>(combat::command::kSquareChain) ||
-        first == static_cast<int>(combat::command::kCrossPressed)) {
-        return false;
-    }
-    return std::ranges::all_of(chain,
-                               [](int step) { return strikeCommand(kCommands[static_cast<std::size_t>(step)]); });
-}
-
-std::optional<int> pickAttack(const AttackWeights& weights, combat::CombatRandom& random) {
-    int total = 0;
-    for (int kind = 0; kind < static_cast<int>(kAttackKinds); ++kind) {
-        total += playable(kind) ? weights[static_cast<std::size_t>(kind)] : 0;
-    }
-    if (total == 0) {
-        return std::nullopt;
-    }
-    // One draw in [0, total), then the kind whose share of the running sum holds it.
-    int draw = rollRange(random, 0, total - 1);
-    for (int kind = 0; kind < static_cast<int>(kAttackKinds); ++kind) {
-        const int weight = playable(kind) ? weights[static_cast<std::size_t>(kind)] : 0;
-        if (draw < weight) {
-            return kind;
-        }
-        draw -= weight;
-    }
-    return std::nullopt;
 }
 
 AttackWeights attNormal() {
