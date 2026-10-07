@@ -274,16 +274,6 @@ TEST_CASE("crime reporting, the stereo handler, joining and the store colour", "
     CHECK(h.state.player.multiplayerCallback == "InventoryPlayer2");
     h.first("SetMultiplayerCallback", {Value()});
     CHECK(h.state.player.multiplayerCallback.empty());
-
-    auto colour = std::make_shared<Table>();
-    for (int i = 1; i <= 4; ++i) {
-        REQUIRE(colour->set(Value(static_cast<double>(i)), Value(0.25 * i)).has_value());
-    }
-    h.first("EnterStore", {Value(colour)});
-    CHECK(h.state.player.storeTint.preset == coney::StoreTint::kInStore);
-    CHECK(h.state.player.storeTint.colour[3] == 1.0F);
-    h.first("ExitStore");
-    CHECK(h.state.player.storeTint.preset == coney::StoreTint::kOutside);
 }
 
 TEST_CASE("SetCheckPoint takes the checkpoint copy a restart puts back", "[player_bindings]") {

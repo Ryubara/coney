@@ -13,25 +13,10 @@
 
 namespace coney {
 
-/// The screen colour a store sets (`EnterStore` / `ExitStore`): colour preset 10 of the two per-player colour
-/// controllers at `0x005fdeb8`, switched to with a 0.25 s blend, and preset 9 again on leaving. That the controllers
-/// are the players' screen tint is inferred. **Coney's stand-in:** Coney has no colour controllers, so this keeps what
-/// a renderer would blend to (open item on docs/research/crimes.md).
-struct StoreTint {
-    /// The preset outside a store, and inside.
-    static constexpr int kOutside = 9;
-    static constexpr int kInStore = 10;
-    /// The blend between them, seconds.
-    static constexpr double kBlendSeconds = 0.25;
-
-    std::array<float, 4> colour{}; ///< Preset 10's colour {r, g, b, a}, each 0-1.
-    int preset = kOutside;         ///< The preset both controllers blend to.
-};
-
 /// What the game keeps about the players besides their humans, as the scripts reach it: the inventories (in the
 /// original at `W_GameState + 0x480`), the statistics (`0x006fe490`), the unlockables' records (`0x006fe998`; their
 /// bits are the profile's, GameState::saved), the mission stopwatch (`*0x0051504c`), the crime fields of the game
-/// state, the Lua pad handlers, a store's screen colour and the inventory's and stereo theft's callbacks. GameState
+/// state, the Lua pad handlers and the inventory's and stereo theft's callbacks. GameState
 /// holds one.
 ///
 /// `SetCheckPoint` takes a checkpoint copy of the inventories and the statistics (`0x0041e0b8`, `0x00422c60`) that a
@@ -45,7 +30,6 @@ struct PlayerState {
     StopWatch stopWatch;   ///< The mission stopwatch.
     CrimeReports crimes;   ///< Reporting, responders, wanted timers.
     PadHandlers pads;      ///< The Lua pad handlers.
-    StoreTint storeTint;   ///< The store colour.
 
     /// `CfgInventoryCallback(fn)` (inventory `+0xfd4`): called when a player picks up an inventory item.
     std::string pickupCallback;

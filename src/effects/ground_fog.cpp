@@ -2,8 +2,11 @@
 #include "effects/ground_fog.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstdint>
 #include <numbers>
+#include <vector>
 
 namespace coney::effects {
 
@@ -18,8 +21,11 @@ constexpr float kDriftSpread = 0.5F;
 constexpr float kSideSpread = 2.0F;
 // Below this a length is taken as none.
 constexpr float kTiny = 1e-6F;
-// The fade-in takes 9 / fadeSpeed steps.
+// The fade-in takes 9 / fadeSpeed updates; with a 0 alpha step, 0.6 / fadeSpeed.
 constexpr float kFadeSteps = 9.0F;
+constexpr float kSlowFadeSteps = 0.6F;
+// A wisp's updates before one whose previous alpha was 0 ends: it ends from its third.
+constexpr std::uint32_t kEndFromUpdate = 3;
 
 // The squared horizontal and vertical distance between two points.
 float distanceSquared(anim::Vec3 a, anim::Vec3 b) {
@@ -27,7 +33,30 @@ float distanceSquared(anim::Vec3 a, anim::Vec3 b) {
     return anim::dot(d, d);
 }
 
+// `colour`'s alpha replaced by `alpha`, packed `0xRRGGBBAA`.
+std::uint32_t packed(const std::array<std::uint8_t, 4>& colour, std::uint8_t alpha) {
+    return (static_cast<std::uint32_t>(colour[0]) << 24U) | (static_cast<std::uint32_t>(colour[1]) << 16U) |
+           (static_cast<std::uint32_t>(colour[2]) << 8U) | alpha;
+}
+
 } // namespace
+
+bool nearView(anim::Vec3 eye, const ViewWindow& window, anim::Vec3 point, float margin) {
+    // The signed distance to each plane, inward positive: near and far along the view, then the four sides through
+    // the eye, each normal the inward one of its edge of the view window.
+    const anim::Vec3 d = anim::subtract(point, eye);
+    const float ahead = anim::dot(d, window.forward);
+    if (ahead - window.nearClip < -margin || window.farClip - ahead < -margin) {
+        return false;
+    }
+    const auto side = [&d, ahead](anim::Vec3 axis, float tangent) {
+        // Planes at ±axis: inward normals (tangent × forward ∓ axis), normalised.
+        const float across = anim::dot(d, axis);
+        const float length = std::sqrt((tangent * tangent) + 1.0F);
+        return std::min(((tangent * ahead) - across) / length, ((tangent * ahead) + across) / length);
+    };
+    return side(window.right, window.tanHalfWidth) >= -margin && side(window.up, window.tanHalfHeight) >= -margin;
+}
 
 float GroundFog::unit() {
     // xorshift32, from the fog's own seed.
@@ -44,6 +73,19 @@ void GroundFog::start(const FogSettings& settings) {
     m_settings = settings;
     m_maxWisps = kDefaultMaxWisps;
     m_frames = static_cast<float>(kTopUpFrames - 1); // the first top-up comes with the first frame
+    m_ticks = 0.0F;
+    // The fade: ⌊9 / fadeSpeed⌋ updates (at least 1) of ⌊alpha / updates⌋ × ⌊fadeRate⌋ each, kept to a byte; a step
+    // that comes out 0 is 1, every 30 ticks, over ⌊0.6 / fadeSpeed⌋ updates.
+    const float speed = std::max(settings.fadeSpeed, 1e-6F);
+    m_fadeUpdates = std::max(1U, static_cast<std::uint32_t>(std::floor(kFadeSteps / speed)));
+    const auto rate = static_cast<std::uint32_t>(std::max(0.0F, std::floor(settings.fadeRate)));
+    m_alphaStep = static_cast<std::uint8_t>(((settings.colour[3] / m_fadeUpdates) * rate) & 0xFFU);
+    m_baseInterval = kUpdateTicks;
+    if (m_alphaStep == 0) {
+        m_alphaStep = 1;
+        m_baseInterval = kSlowUpdateTicks;
+        m_fadeUpdates = static_cast<std::uint32_t>(std::floor(kSlowFadeSteps / speed));
+    }
 }
 
 void GroundFog::stop() {
@@ -74,17 +116,46 @@ GroundFog::Wisp GroundFog::makeWisp(const EffectsViewer& viewer, float drift) {
     const float aimLength = std::sqrt(anim::dot(aim, aim));
     const float speed = drift * (kDriftMin + (kDriftSpread * unit()));
     wisp.velocity = aimLength > kTiny ? anim::scale(aim, speed / aimLength) : anim::Vec3{};
+    // Its size, from 0 at birth to the random size at its first update.
+    wisp.size = kMinSize + ((kMaxSize - kMinSize) * unit());
+    wisp.interval = m_baseInterval;
     return wisp;
+}
+
+bool GroundFog::update(Wisp& wisp, const EffectsViewer& viewer) const {
+    // The shared particle step: the current alpha and size become the previous ones.
+    wisp.previousAlpha = wisp.alpha;
+    wisp.previousSize = wisp.size;
+    // 1. Fade in while young and short of the colour's alpha.
+    const std::uint8_t target = m_settings->colour[3];
+    if (wisp.age < m_fadeUpdates && wisp.alpha < target) {
+        wisp.alpha = static_cast<std::uint8_t>(std::min<int>(wisp.alpha + m_alphaStep, target));
+    }
+    ++wisp.age;
+    // 2. Hide: far from the camera or out of its view (updating every tick), or too near (every 30 ticks).
+    const float distance = std::sqrt(distanceSquared(wisp.position, viewer.position));
+    wisp.hidden = false;
+    wisp.interval = m_baseInterval;
+    if (distance > kRadius ||
+        (viewer.window && !nearView(viewer.position, *viewer.window, wisp.position, kViewMargin))) {
+        wisp.hidden = true;
+        wisp.interval = kHiddenUpdateTicks;
+    } else if (distance < kHideWithin) {
+        wisp.hidden = true;
+        wisp.interval = kSlowUpdateTicks;
+    }
+    if (wisp.hidden) {
+        wisp.alpha = 0;
+    }
+    // 3. End: from its third update, a wisp that was hidden at its last.
+    return wisp.age < kEndFromUpdate || wisp.previousAlpha != 0;
 }
 
 void GroundFog::step(float seconds, const EffectsViewer& viewer) {
     if (!m_settings) {
         return;
     }
-    // Drop the wisps too far from the camera, then top the view up when a top-up is due.
-    std::erase_if(m_wisps, [&viewer](const Wisp& wisp) {
-        return distanceSquared(wisp.position, viewer.position) > kRadius * kRadius;
-    });
+    // Top the view up when a top-up is due.
     m_frames += seconds * kFramesPerSecond;
     if (m_frames >= static_cast<float>(kTopUpFrames)) {
         m_frames = std::fmod(m_frames - static_cast<float>(kTopUpFrames), static_cast<float>(kTopUpFrames));
@@ -93,15 +164,49 @@ void GroundFog::step(float seconds, const EffectsViewer& viewer) {
             m_wisps.push_back(makeWisp(viewer, m_settings->drift));
         }
     }
-    // Drift and fade in: each frame of the step is a fade step.
-    const float target = m_settings->colour[3];
-    const float steps = std::max(1.0F, std::floor(kFadeSteps / std::max(m_settings->fadeSpeed, 1e-6F)));
-    const float perFrame = target / steps * std::max(1.0F, std::trunc(m_settings->fadeRate));
+    // Drift, then run the whole ticks of the step: each wisp updates when its interval is up.
     for (Wisp& wisp : m_wisps) {
         wisp.position = anim::add(wisp.position, anim::scale(wisp.velocity, seconds));
-        wisp.alpha = std::min(target, wisp.alpha + (perFrame * seconds * kFramesPerSecond));
-        wisp.hidden = distanceSquared(wisp.position, viewer.position) < kHideWithin * kHideWithin;
     }
+    m_ticks += seconds * kFramesPerSecond;
+    for (; m_ticks >= 1.0F; m_ticks -= 1.0F) {
+        std::erase_if(m_wisps, [this, &viewer](Wisp& wisp) {
+            wisp.sinceUpdate += 1.0F;
+            if (wisp.sinceUpdate < static_cast<float>(wisp.interval)) {
+                return false;
+            }
+            wisp.sinceUpdate = 0.0F;
+            return !update(wisp, viewer);
+        });
+    }
+}
+
+ParticleSheet GroundFog::sheetOf(std::uint32_t sprite) {
+    constexpr std::uint32_t kFog01Record = 0x213;
+    return (sprite >> 16U) == kFog01Record ? ParticleSheet::PartFog01 : ParticleSheet::PartFog00;
+}
+
+std::vector<GroundFog::Drawn> GroundFog::drawn() const {
+    std::vector<Drawn> out;
+    if (!m_settings) {
+        return out;
+    }
+    // The batch takes the first kDrawnPerFrame wisps; hidden ones take their place but show nothing.
+    const std::size_t count = std::min(m_wisps.size(), kDrawnPerFrame);
+    for (std::size_t i = 0; i < count; ++i) {
+        const Wisp& wisp = m_wisps.at(i);
+        // Blended from the last update's values by the share of its interval gone (Colour_LerpRatio).
+        const float t = std::clamp((wisp.sinceUpdate + m_ticks) / static_cast<float>(wisp.interval), 0.0F, 1.0F);
+        const float alpha = static_cast<float>(wisp.previousAlpha) +
+                            ((static_cast<float>(wisp.alpha) - static_cast<float>(wisp.previousAlpha)) * t);
+        const auto byte = static_cast<std::uint8_t>(std::clamp(std::lround(alpha), 0L, 255L));
+        if (byte == 0) {
+            continue;
+        }
+        const float size = wisp.previousSize + ((wisp.size - wisp.previousSize) * t);
+        out.push_back(Drawn{wisp.position, packed(m_settings->colour, byte), kDrawnScale * size});
+    }
+    return out;
 }
 
 } // namespace coney::effects

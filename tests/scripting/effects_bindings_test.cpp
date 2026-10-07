@@ -129,6 +129,24 @@ TEST_CASE("QueueMotionBlurEffect blends the strength, or the whole colour from a
     CHECK(h.effects.motionBlur.current() == coney::effects::MotionBlur::Colour{10, 20, 30, 40});
 }
 
+TEST_CASE("SetLevelColour sets the level's tint at once; EnterStore and ExitStore blend over 0.25 s",
+          "[effects_bindings]") {
+    using Colour = coney::effects::ScreenTint::Colour;
+    Harness h;
+    // level87's overlay: each component x 255, truncated.
+    h.first("SetLevelColour", {list({0, 0.1, 0.18, 0.12})});
+    CHECK(h.effects.tint.current() == Colour{0, 25, 45, 30});
+    h.first("EnterStore", {list({0, 0, 0, 0})});
+    CHECK(h.effects.tint.look() == coney::effects::ScreenTint::kStoreLook);
+    h.effects.tint.step(0.125F);
+    CHECK(h.effects.tint.current() == Colour{0, 13, 23, 15});
+    h.effects.tint.step(0.125F);
+    CHECK_FALSE(h.effects.tint.drawn());
+    h.first("ExitStore");
+    h.effects.tint.step(0.25F);
+    CHECK(h.effects.tint.current() == Colour{0, 25, 45, 30});
+}
+
 TEST_CASE("Start3DFog, MaxFogParticles, End3DFog, StartGarbage and EndGarbage reach the level's effects",
           "[effects_bindings]") {
     Harness h;

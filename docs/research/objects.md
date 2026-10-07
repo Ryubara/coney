@@ -1264,9 +1264,12 @@ fades out first (`src/scripting/world_bindings.h`). Disc check (NTSC-U,
 
 **Placed objects** (`src/world_objects/placed_objects_file.h`, from [the objects file](#objs-file)): after the level
 script's main chunk, `runLevelScript` reads `<level>_objs.txt` through the script source and adds a spawn record per
-line, each with a handle from the world objects' counter; the `part` lines are skipped (no particle emitters from it
-yet). A missing file adds nothing. Disc check (NTSC-U, 2026-10-06, counts only): `level99` places 98 records of its
-112 lines.
+line, each with a handle from the world objects' counter, and makes a particle system of each `part` line's name at
+its pose there and then, with no handle and its other fields unused, whatever its zone. A missing file adds nothing.
+Disc check (NTSC-U, 2026-10-07, counts only), records and emitters of the lines: `level99` 98 and 14 of 112, `level80`
+212 and 30 of 242, `level87` 704 and 16 of 720, `level2` 468 and 30 of 498, `level3` 128 and 0 of 128, `level5` 615
+and 31 of 646, `level34` 380 and 7 of 387, `level95` 258 and 11 of 269; so every line is placed. Of the emitters,
+only the steam vents draw yet (the flies, neon, alarm strobes, air conditioner, dust and sparks make inert systems).
 
 **Pickable objects and objects in a scene** (`src/world_objects/pickups.h`, `src/gamemodes/level_pickups.h`): triangle
 takes the [pickable](#pickable) classes (`world_objects::pickable()`, the model-hash exceptions included); `CfgObj`'s

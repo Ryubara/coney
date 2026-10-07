@@ -1,11 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "world_objects/pickups.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
 
 namespace coney::world_objects {
+
+bool neverGlints(std::uint32_t modelHash) {
+    constexpr std::array<std::uint32_t, 7> kHoboFood{0x8733e003U, 0x1e3ab1b9U, 0x693d812fU, 0xe09f6c15U,
+                                                     0xc57ab00aU, 0x7056d232U, 0xb239f45dU};
+    return std::ranges::find(kHoboFood, modelHash) != kHoboFood.end();
+}
 
 bool pickable(std::string_view className, std::uint32_t modelHash) {
     // The model hashes a class's init treats apart (docs/research/objects.md#pickable).
@@ -18,7 +25,7 @@ bool pickable(std::string_view className, std::uint32_t modelHash) {
     if (className == "overhead_weapon") {
         return modelHash != kNotPickableOverhead;
     }
-    if (className == "pickup_item") {
+    if (className == kPickupItemClass) {
         return modelHash != kNotPickableItem;
     }
     if (className == "simple_object") {

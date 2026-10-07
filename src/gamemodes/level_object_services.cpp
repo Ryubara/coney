@@ -47,6 +47,45 @@ void LevelObjectServices::moveCrimeSceneFlag(anim::Vec3 at) {
     }
 }
 
+void LevelObjectServices::robStore(anim::Vec3 at, int gang) {
+    constexpr int kStoreActivity = 14;
+    constexpr float kStoreReach = 10.0F;
+    constexpr float kStrobeReach = 6.0F;
+    // The nearest store flag within reach of the break-in.
+    const world_objects::WorldFlag* store = nullptr;
+    float best = kStoreReach * kStoreReach;
+    for (const world_objects::WorldFlag& flag : m_flags.all()) {
+        if (flag.kind != kStoreActivity) {
+            continue;
+        }
+        const anim::Vec3 d{flag.position[0] - at.x, flag.position[1] - at.y, flag.position[2] - at.z};
+        if (const float distance = anim::dot(d, d); distance <= best) {
+            best = distance;
+            store = &flag;
+        }
+    }
+    if (store == nullptr) {
+        return;
+    }
+    // Robbed (group bit 16), by the offender's gang in bits 18-22 (31: none).
+    if (world_objects::WorldFlag* robbed = m_flags.find(store->handle)) {
+        constexpr std::uint32_t kRobbedBit = 1U << 16;
+        constexpr std::uint32_t kGangShift = 18;
+        constexpr std::uint32_t kGangMask = 0x1fU << kGangShift;
+        const std::uint32_t gangBits = (static_cast<std::uint32_t>(gang < 0 ? 31 : gang) << kGangShift) & kGangMask;
+        robbed->kind2 =
+            static_cast<int>((static_cast<std::uint32_t>(robbed->kind2) & ~kGangMask) | kRobbedBit | gangBits);
+    }
+    if (m_particles == nullptr) {
+        return;
+    }
+    // Its alarm: the strobe emitter nearest the flag.
+    const anim::Vec3 flagAt{store->position[0], store->position[1], store->position[2]};
+    if (effects::ParticleSystem* strobe = m_particles->nearestNamed("strobe", flagAt, kStrobeReach)) {
+        effects::ParticleSystems::setEmitting(*strobe, true);
+    }
+}
+
 void LevelObjectServices::setPlayers(GameState* state, CreatedHumans* humans) {
     m_state = state;
     m_humans = humans;

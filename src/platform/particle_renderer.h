@@ -4,6 +4,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <span>
 #include <string_view>
 
 #include "core/chunk_system.h"
@@ -35,6 +36,11 @@ class ParticleRenderer {
 
     /// Draws every shown system of `systems` through the current camera, which is at `view` (RenderWare's axes).
     void draw(const effects::ParticleSystems& systems, const world::CameraPose& view);
+    /// Draws `sprites` (game axes) through the current camera at `view`, each a rectangle of `sheet` tinted by its
+    /// colour, its alpha as given (no fade); added to what is behind them when `additive`, else blended by alpha. For
+    /// sprites no particle system owns (the glints, effects::Triglints).
+    void drawSprites(std::span<const effects::Particle> sprites, effects::ParticleSheet sheet, bool additive,
+                     const world::CameraPose& view);
 
   private:
     // The sheet `sheet` names, loading it on first use; null when it is ParticleSheet::None or did not load.

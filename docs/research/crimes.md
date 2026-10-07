@@ -704,9 +704,13 @@ from [AI: crimes](ai.md#crimes) and [Wanted](#wanted) (2026-10-06): `report()` f
 spawners, stores, statistics, the script callback and the HUD through a `CrimeServices` interface the play mode
 implements as those systems arrive; `update()` clears a gang's wanted state 10 s after its last report (held while
 forced). In play the objects' break-ins report through it (`repo:src/gamemodes/level_crime_services.h`: the crime
-callback, the `CrimeScene` flag and which humans are players; Coney's gangs, spawners, stores and HUD are not wired to
-it yet). `ReportCrime` switches reporting. `EnterStore` / `ExitStore` keep the store colour and preset
-(`StoreTint`) for a renderer, and `CfgSetSteroTheftHandler` keeps its callback's name.
+callback, the `CrimeScene` flag and which humans are players; Coney's gangs, spawners and HUD are not wired to it
+yet). A break-in marks the nearest store flag within 10 m robbed (the gang in bits 18-22) and switches on the alarm
+strobe (a `part_strobe_red` of the level's objects file) within 6 m of it (`LevelObjectServices::robStore`): its
+[strober](script-types.md#strober), a red light pulsing on a 40-tick cycle, and its `alarmbell_loop` emitter, heard
+within 30 m ([Particles](particles.md#coneys-implementation)); `ResetStore` switches the one within 7 m off. **Coney's
+stand-in**: the store's buyers are not done yet. `ReportCrime` switches reporting. `EnterStore` / `ExitStore` switch the
+[screen tint](graphics.md#looks), and `CfgSetSteroTheftHandler` keeps its callback's name.
 
 **Tagging** (`repo:src/warriors/tag_game.h`, `repo:src/warriors/tag_session.h`, `repo:src/world_objects/tag_spots.h`,
 2026-10-06): `tagPath()` samples `HuTagPattern`'s points along the Catmull-Rom curve into grid cells and `TagGame` is
@@ -789,5 +793,4 @@ the assault statistic is scored once per victim through the service.
 - The prompt widgets' base position and text style.
 - The lock-picking dial's rate at runtime (one step per drawn frame is inferred).
 - The responder spawn kind of a break-in (type 1) and of a custom crime (type 4).
-- Coney has no colour controllers (`0x005fdeb8`), so `EnterStore`'s tint is kept but not drawn.
 - Wiring the report's hostility, responders, robbed stores and HUD messages to Coney's gangs, spawners and HUD.

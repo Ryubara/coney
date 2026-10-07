@@ -285,6 +285,8 @@ void GameplayMode::endLevel() {
         m_context.lighting = nullptr;
     }
     m_lighting.reset();
+    m_systemLights.clear();
+    m_systemEmitters.clear();
 }
 
 void GameplayMode::enter() {
@@ -523,7 +525,8 @@ void GameplayMode::loadLevel() {
     }
     // InitLevel's script step: the level script creates player 1 at the checkpoint's start, before anything streams.
     const LevelStart& start =
-        m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName, m_context.spawnRecords));
+        m_start.emplace(runLevelScript(m_scripts, m_state, m_humans, m_flags, m_levelName, m_context.spawnRecords,
+                                       m_effects ? &m_effects->particles : nullptr));
     const HumanCreation* player = start.player ? &*start.player : nullptr;
     m_playerTeleports = player != nullptr ? player->teleports : 0;
     if (player != nullptr) {
@@ -714,9 +717,23 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         std::optional<effects::EffectsViewer> viewer;
         if (m_cameras && m_cameras->current().kind != camera::CameraKind::None) {
             const camera::CameraView& view = m_cameras->view();
-            viewer = effects::EffectsViewer{.position = view.position, .target = view.lookAt};
+            // Its view window: the 4:3 picture of its horizontal field of view.
+            const anim::Vec3 forward = camera::viewForward(view);
+            const anim::Vec3 up = camera::viewUp(view);
+            const float tanHalfWidth = std::tan(view.fieldOfView * 0.5F * std::numbers::pi_v<float> / 180.0F);
+            viewer = effects::EffectsViewer{.position = view.position,
+                                            .target = view.lookAt,
+                                            .window = effects::ViewWindow{.forward = forward,
+                                                                          .right = anim::cross(forward, up),
+                                                                          .up = up,
+                                                                          .tanHalfWidth = tanHalfWidth,
+                                                                          .tanHalfHeight = tanHalfWidth * 0.75F,
+                                                                          .nearClip = view.nearClip,
+                                                                          .farClip = view.farClip}};
         }
         m_effects->step(static_cast<float>(frame.seconds), viewer);
+        syncSystemLights();
+        syncSystemSounds();
     }
 
     // A script that teleported player 1 during the frame (the hub's door walk) moves him in the level.
@@ -776,6 +793,97 @@ void GameplayMode::reportHumanSounds() {
             m_context.sound->humanSound(call);
         }
     }
+}
+
+void GameplayMode::syncSystemLights() {
+    if (!m_effects || !m_lighting) {
+        return;
+    }
+    graphics::LightManager& lights = m_lighting->lights;
+    std::map<std::uint32_t, graphics::LightHandle> lit;
+    for (const effects::ParticleSystem& system : m_effects->particles.systems()) {
+        const std::optional<effects::SystemLight> light = effects::systemLight(system);
+        if (!light) {
+            continue;
+        }
+        // A point light at the system (no corona) in its colour now, lighting objects and humans, and the world too
+        // when the type's flag 0x08 is set (`LightTask_SetParams`).
+        graphics::LightDescriptor desc;
+        desc.type = graphics::LightType::Point;
+        desc.position = graphics::gameToRenderWare(light->position.x, light->position.y, light->position.z);
+        desc.colour = graphics::LightColour{light->colour.r, light->colour.g, light->colour.b, 1.0F};
+        desc.radius = light->radius;
+        desc.lights =
+            light->lightsWorld ? (graphics::kLightsObjects | graphics::kLightsWorld) : graphics::kLightsObjects;
+        const auto found = m_systemLights.find(system.serial);
+        const graphics::LightHandle handle = found != m_systemLights.end() ? found->second : lights.addLight(desc);
+        if (found != m_systemLights.end()) {
+            lights.setLight(handle, desc);
+        }
+        if (handle != 0) {
+            lit.emplace(system.serial, handle);
+        }
+    }
+    // The lights whose task ended, or whose system is gone, are given back.
+    for (const auto& [serial, handle] : m_systemLights) {
+        if (!lit.contains(serial)) {
+            lights.removeLight(handle);
+        }
+    }
+    m_systemLights = std::move(lit);
+}
+
+void GameplayMode::syncSystemSounds() {
+    if (!m_effects || m_context.sound == nullptr) {
+        return;
+    }
+    constexpr std::uint8_t kLoopMode = 3;
+    constexpr std::uint8_t kEveryPlayer = 2;
+    constexpr std::uint8_t kOffCoveredGround = 0;
+    constexpr std::uint32_t kFliesLoop = 0x49d14d16U;
+    std::map<std::uint32_t, SystemEmitter> kept;
+    for (const effects::ParticleSystem& system : m_effects->particles.systems()) {
+        const bool strobe = system.type->behaviour == effects::ParticleBehaviour::Strobe;
+        // Only the garbage flies themselves have a sound (their `_ns` spawner's and the light bugs' have none).
+        const bool flies = system.type->name == "part_garbage_flies";
+        if (!strobe && !flies) {
+            continue;
+        }
+        // The system's script emitter, made with it as an ambient loop (mode 3) heard within its class's far
+        // distance + 10 (range -1): a strobe's `alarm_emitter` plays alarmbell_loop to every player and starts off; a
+        // pile's plays its flies' loop to a player off covered ground, always on.
+        auto found = m_systemEmitters.find(system.serial);
+        if (found == m_systemEmitters.end()) {
+            script::AmbientEmitterCall call;
+            call.name = strobe ? "alarm_emitter" : "script_emitter";
+            call.from = {system.position.x, system.position.y, system.position.z};
+            call.to = call.from;
+            if (strobe) {
+                call.sound = "vags/ambient/alarms/alarmbell_loop";
+            } else {
+                call.soundHash = kFliesLoop;
+            }
+            call.mode = kLoopMode;
+            call.filter = strobe ? kEveryPlayer : kOffCoveredGround;
+            const auto id = static_cast<int>(m_context.sound->addAmbientEmitter(call));
+            const bool on = !strobe;
+            m_context.sound->enableAmbientEmitter(id, on);
+            found = m_systemEmitters.emplace(system.serial, SystemEmitter{id, on}).first;
+        }
+        // Messages 0x12 and 0x13 switch a strobe's emitter with it.
+        if (strobe && found->second.on != system.emitting) {
+            m_context.sound->enableAmbientEmitter(found->second.id, system.emitting);
+            found->second.on = system.emitting;
+        }
+        kept.emplace(*found);
+    }
+    // A system that is gone silences its emitter.
+    for (const auto& [serial, emitter] : m_systemEmitters) {
+        if (!kept.contains(serial) && emitter.on) {
+            m_context.sound->enableAmbientEmitter(emitter.id, false);
+        }
+    }
+    m_systemEmitters = std::move(kept);
 }
 
 void GameplayMode::updateRadios() {

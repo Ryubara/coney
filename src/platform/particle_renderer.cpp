@@ -31,6 +31,9 @@ bool additive(effects::ParticleBehaviour behaviour) {
     case effects::ParticleBehaviour::Inert:
     case effects::ParticleBehaviour::Puff:
     case effects::ParticleBehaviour::Steam:
+    case effects::ParticleBehaviour::Strobe:
+    case effects::ParticleBehaviour::Neon:
+    case effects::ParticleBehaviour::Flies:
     case effects::ParticleBehaviour::Spray:
     case effects::ParticleBehaviour::Shard:
     case effects::ParticleBehaviour::Explode:
@@ -102,6 +105,24 @@ struct Batch {
 // The most sprites one batch holds: its indices are 16-bit.
 constexpr std::size_t kBatchSprites = 16000;
 
+// Sets the render states the sprites draw with: depth tested but not written, both faces, filtered and clamped.
+void beginSprites() {
+    rw::SetRenderState(rw::ZTESTENABLE, 1);
+    rw::SetRenderState(rw::ZWRITEENABLE, 0);
+    rw::SetRenderState(rw::VERTEXALPHA, 1);
+    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
+    rw::SetRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
+    rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
+}
+
+// Puts back the states the solid draws expect.
+void endSprites() {
+    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    rw::SetRenderState(rw::ZWRITEENABLE, 1);
+    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+}
+
 } // namespace
 
 ParticleRenderer::ParticleRenderer(const io::Wad& wad, bool forDrawing, std::function<void(std::string_view)> print)
@@ -137,12 +158,7 @@ void ParticleRenderer::draw(const effects::ParticleSystems& systems, const world
     if (systems.particleCount() == 0) {
         return;
     }
-    rw::SetRenderState(rw::ZTESTENABLE, 1);
-    rw::SetRenderState(rw::ZWRITEENABLE, 0);
-    rw::SetRenderState(rw::VERTEXALPHA, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
-    rw::SetRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
-    rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
+    beginSprites();
     // The screen's right and up in the world: the camera pose's (its right is forward × up).
     const world::Vec3 right = view.right;
     const world::Vec3 up = view.up;
@@ -172,10 +188,31 @@ void ParticleRenderer::draw(const effects::ParticleSystems& systems, const world
         // One system's sprites share a sheet and a blend: draw them together.
         batch.flush(texture != nullptr ? texture->rwTexture()->raster : nullptr, additive(system.type->behaviour));
     }
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
-    rw::SetRenderState(rw::ZWRITEENABLE, 1);
-    rw::SetRenderState(rw::CULLMODE, rw::CULLBACK);
+    endSprites();
+}
+
+void ParticleRenderer::drawSprites(std::span<const effects::Particle> sprites, effects::ParticleSheet sheetOf, bool add,
+                                   const world::CameraPose& view) {
+    if (sprites.empty()) {
+        return;
+    }
+    beginSprites();
+    const graphics::SpriteSheet* spriteSheet = sheet(sheetOf);
+    const auto* texture =
+        spriteSheet != nullptr ? dynamic_cast<const SheetTexture*>(spriteSheet->texture.get()) : nullptr;
+    rw::Raster* raster = texture != nullptr ? texture->rwTexture()->raster : nullptr;
+    Batch batch;
+    for (const effects::Particle& sprite : sprites) {
+        const graphics::UvRect uv = spriteSheet != nullptr && sprite.rect < spriteSheet->page.rects.size()
+                                        ? spriteSheet->page.rect(sprite.rect)
+                                        : graphics::UvRect{};
+        batch.add(sprite, view.right, view.up, uv, channel(sprite.colour, 0));
+        if (batch.indices.size() >= kBatchSprites * 6) {
+            batch.flush(raster, add);
+        }
+    }
+    batch.flush(raster, add);
+    endSprites();
 }
 
 } // namespace coney::platform

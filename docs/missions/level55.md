@@ -25,7 +25,7 @@ A mission of the film's night. Finishing it unlocks the Punks, the Lizzies and t
 
 ## What it needs {#needs}
 
-Its scripts can call 226 script bindings. 8 of them are new, which no earlier level of the story calls: 1 are
+Its scripts can call 226 script bindings. 8 of them are new, which no earlier level of the story calls: 2 are
 implemented in Coney and 8 are traced. The full list is on [the coverage page](../references/bindings/story.md#level55).
 
 | Family | New bindings | In Coney |
@@ -33,7 +33,7 @@ implemented in Coney and 8 are traced. The full list is on [the coverage page](.
 | [Characters](../references/bindings/character.md) | 1 | 0 |
 | [AI](../references/bindings/ai.md) | 1 | 0 |
 | [World and objects](../references/bindings/world.md) | 1 | 1 |
-| [Effects and lighting](../references/bindings/effects.md) | 2 | 0 |
+| [Effects and lighting](../references/bindings/effects.md) | 2 | 1 |
 | [Sound and music](../references/bindings/sound.md) | 1 | 0 |
 | [Configuration (Cfg)](../references/bindings/config.md) | 2 | 0 |
 

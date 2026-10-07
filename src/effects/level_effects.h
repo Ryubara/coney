@@ -8,15 +8,17 @@
 #include "effects/motion_blur.h"
 #include "effects/particles.h"
 #include "effects/room_smoke.h"
+#include "effects/screen_tint.h"
 
 namespace coney::effects {
 
-/// A level's effects that scripts and the engine start: the particle systems, player 1's view's motion blur, ground
-/// fog and room smoke, and the litter round the camera. Gameplay owns one for each level, steps it after the level's
-/// step and hands it to the level to draw.
+/// A level's effects that scripts and the engine start: the particle systems, player 1's view's motion blur, screen
+/// tint, ground fog and room smoke, and the litter round the camera. Gameplay owns one for each level, steps it after
+/// the level's step and hands it to the level to draw.
 struct LevelEffects {
     ParticleSystems particles;
     MotionBlur motionBlur;
+    ScreenTint tint;
     GroundFog fog;
     CameraLitter litter;
     RoomSmoke smoke;
@@ -27,8 +29,17 @@ struct LevelEffects {
     /// fog and the litter wait).
     void step(float seconds, const std::optional<EffectsViewer>& viewer = std::nullopt) {
         particles.setViewer(viewer ? std::optional<anim::Vec3>(viewer->position) : std::nullopt);
+        // The fly piles' view test: the view's frustum widened by the margin (no window: every point is in view).
+        if (viewer) {
+            particles.setViewTest([eye = viewer->position, window = viewer->window](anim::Vec3 point, float margin) {
+                return !window || nearView(eye, *window, point, margin);
+            });
+        } else {
+            particles.setViewTest({});
+        }
         particles.step(seconds);
         motionBlur.step(seconds);
+        tint.step(seconds);
         if (viewer) {
             fog.step(seconds, *viewer);
             litter.step(seconds, viewer->position, litterRay);

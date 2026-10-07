@@ -593,9 +593,10 @@ mode 1 or backward in mode 2, clamped to the rail's ends, then looks at the targ
 projection counts.
 
 **Notes.** Placement: CamRail_PlaceLeading 0x0013e708; it raises the camera to target z + the height (CamModifyRail 1)
-when that is above 0 and pushes it out of world collision. Switch 7 adds the lead to the look-at point ([Camera:
-switches](../../research/camera.md#switches)). Mode 0 (after CamSetupRail, 0x0013d6b0): [Camera: rail
-cameras](../../research/camera.md#rail). No rail camera: nothing.
+when that is above 0 and pulls it back from world collision. Switch 7 (on by default and after every CamSetupRail)
+stands the camera off the rail, exactly the lead from the target in plan, and makes the look-at point the target point
+pushed out of the world; off, the camera stays on the rail ([Camera: leading](../../research/camera.md#rail-leading)).
+Mode 0 (after CamSetupRail, 0x0013d6b0): [Camera: rail cameras](../../research/camera.md#rail). No rail camera: nothing.
 
 - **Evidence:** confirmed (code) at `0x0011cf70`, `0x0013e708`; detail: traced
 - **Wrapper** `0x003666e8` (registered by `RegisterBindings`); **calls** `0x0011cf70` `Camera_SetRailLead`, `0x0013e708`
@@ -695,9 +696,9 @@ by the remaining time every frame (targets at `+0x374`-`+0x398`, times at `+0x3a
 field of view (2) and the height and distance to frame a chase.
 
 **Notes.** Setting 1 is a ceiling in mode 0: it lowers the camera, never raises it. Setting 5 (0x0013fac8) switches the
-rail to mode 3 (placement 0x0013dcc8, not traced) and back to mode 0 when switched off; setting 8 (0x0013fb30) turns 0
-into -0.05°. When an angle is switched on its current value starts from the camera's present angle (0x0013f9b0). Setting
-0 starts from the present distance.
+rail to mode 3 (placement 0x0013dcc8, camera.md#rail-mode3; the angle is its view pitch) and back to mode 0 when
+switched off; setting 8 (0x0013fb30) turns 0 into -0.05°. When an angle is switched on its current value starts from the
+camera's present angle (0x0013f9b0). Setting 0 starts from the present distance.
 
 - **Evidence:** confirmed (code) at `0x0011d228`, `0x0013d010`, `0x0013f930`; detail: traced
 - **Wrapper** `0x003668e8` (registered by `RegisterBindings`); **calls** `0x0011d228` `Camera_ModifyRail`, `0x0013d010`

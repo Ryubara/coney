@@ -1241,7 +1241,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     // Lighting, weather and screen effects of the level.
     stub("EndFog"),
     stub("EndRain"),
-    stub("SetLevelColour"),
+    real("SetLevelColour"),
     stub("SetShadowColor"),
     stub("SetShadowLightOffset"),
     // The HUD.

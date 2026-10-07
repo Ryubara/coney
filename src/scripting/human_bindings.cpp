@@ -18,6 +18,7 @@
 #include "human/human_flags.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/binding_args.h"
+#include "world_objects/spinning_icons.h"
 
 namespace coney::script {
 
@@ -343,14 +344,14 @@ NativeFunction makeEnableCommands(const BindingContext& context) {
     });
 }
 
-// `HuAttachSpinningIcon(human, object, param)`. **Coney choice**: dyn_p_one and dyn_p_two, which the original swaps for
-// the language's own icons, are kept as named (Coney plays the English disc).
+// `HuAttachSpinningIcon(human, object, bone)`: the icon of type world_objects::iconTypeName(object)
+// (docs/research/characters.md#spinning-icon).
 // @orig 0x00238a88 Human_AttachSpinningIcon (unknown)
 NativeFunction makeAttachSpinningIcon(const BindingContext& context) {
     return hostCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
         const std::string object = nameArg(args, 1);
         if (!object.empty()) {
-            host.setIcon(handleArg(args, 0), object, intArg(args, 2));
+            host.setIcon(handleArg(args, 0), world_objects::iconTypeName(object), intArg(args, 2));
         }
     });
 }

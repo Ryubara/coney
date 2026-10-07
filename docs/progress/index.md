@@ -28,17 +28,17 @@ at the top of the repository's `README.md`.
      and the roadmap's status table. Edit those, not this. -->
 ## Overall
 
-![Reimplemented: 15.6%](https://img.shields.io/badge/reimplemented-15.6%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
+![Reimplemented: 15.7%](https://img.shields.io/badge/reimplemented-15.7%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
 ![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.6% of the game's own code (523,420 of 3,354,776 bytes, 1,837 functions) |
+| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.7% of the game's own code (527,124 of 3,354,776 bytes, 1,859 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-628 reimplemented function(s) have no size yet and add no bytes.
+635 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -71,7 +71,7 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
-| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 77 | 195,624 |
+| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 79 | 195,624 |
 | `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 231 | 497,416 |
 | `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 623 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
@@ -81,7 +81,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████▏░░░░░░░░░░░░░` | 30.6% | 211 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.8% | 134 | 531,312 |
+| `TaskEngine` | `█▉░░░░░░░░░░░░░░░░░░` | 9.4% | 154 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 27 | 22,008 |
@@ -535,6 +535,7 @@ at the top of the repository's `README.md`.
 | `0x00185cc8` | `ResourceMgr_EmptyInstances` | `Graphics` | 88 |
 | `0x00185d20` | `ResourceMgr_RenderOverlay` | `Graphics` | 840 |
 | `0x0018c8c8` | `ScreenFx_BlendMotionBlur` | `Graphics` | not filled in |
+| `0x0018ca50` | `ScreenFx_DrawTint` | `Graphics` | 296 |
 | `0x0018cc60` | `ScreenQueueEffect` | `Graphics` | 504 |
 | `0x0018ce58` | `ScreenEffects_UpdateFade` | `Graphics` | not filled in |
 | `0x0018e070` | `ScreenFx_StartRoomSmoke` | `Graphics` | 136 |
@@ -542,8 +543,9 @@ at the top of the repository's `README.md`.
 | `0x0018e148` | `Fog3D_Start` | `Graphics` | not filled in |
 | `0x0018e2f0` | `Fog3D_SetMaxParticles` | `Graphics` | not filled in |
 | `0x0018e3c8` | `Fog3D_End` | `Graphics` | 168 |
-| `0x0018e6b8` | `EnterStore` | `Graphics` | 200 |
-| `0x0018e780` | `ExitStore` | `Graphics` | 80 |
+| `0x0018e5f0` | `ScreenFx_SetColourOverlay` | `Graphics` | 200 |
+| `0x0018e6b8` | `ScreenFx_EnterStore` | `Graphics` | 200 |
+| `0x0018e780` | `ScreenFx_ExitStore` | `Graphics` | 80 |
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
 | `0x00190770` | `ChunkReader_RenderwareTextureDic` | `Graphics` | 160 |
 | `0x00192688` | `AtomicPlugin_StreamRead` | `Graphics` | not filled in |
@@ -1705,6 +1707,8 @@ at the top of the repository's `README.md`.
 | `0x0038f378` | `Glass_Break` | `TaskEngine` | 496 |
 | `0x0038f8a8` | `GlassManager_Create` | `TaskEngine` | 424 |
 | `0x0038fab8` | `GlassTypes_Set` | `TaskEngine` | 40 |
+| `0x003906b8` | `LightTask_Update` | `TaskEngine` | not filled in |
+| `0x00390970` | `LightTask_Process` | `TaskEngine` | not filled in |
 | `0x00390f18` | `Cfg_AddObjectType` | `TaskEngine` | not filled in |
 | `0x003913d8` | `ObjectDb_FindByName` | `TaskEngine` | not filled in |
 | `0x00391c10` | `WorldObject_Remove` | `TaskEngine` | not filled in |
@@ -1780,19 +1784,37 @@ at the top of the repository's `README.md`.
 | `0x003c54b8` | `SubExplode_Update` | `TaskEngine` | not filled in |
 | `0x003c55e8` | `ScriptType_Find` | `TaskEngine` | not filled in |
 | `0x003ca658` | `Fog3D_WispInit` | `TaskEngine` | not filled in |
+| `0x003ca9d8` | `Fog3D_WispUpdate` | `TaskEngine` | not filled in |
 | `0x003cadd8` | `Fog3D_EmitterUpdate` | `TaskEngine` | not filled in |
+| `0x003d7f10` | `PartGarbageFlies_Update` | `TaskEngine` | 624 |
+| `0x003e02a8` | `SubNeonLight_Init` | `TaskEngine` | 264 |
+| `0x003e03d8` | `SubNeonLight_Update` | `TaskEngine` | 352 |
+| `0x003e07a0` | `SubPolarBugs_Init` | `TaskEngine` | 408 |
+| `0x003e0980` | `SubPolarBugs_Update` | `TaskEngine` | not filled in |
 | `0x003e29e8` | `GlassScript_Init` | `TaskEngine` | 936 |
 | `0x003e2d90` | `GlassScript_Message` | `TaskEngine` | 712 |
 | `0x003e4cb8` | `SubGlass_Update` | `TaskEngine` | 984 |
 | `0x003e77c0` | `HatObject_Wear` | `TaskEngine` | 404 |
 | `0x003e7958` | `HatObject_Drop` | `TaskEngine` | 480 |
+| `0x003e8408` | `Strober_Init` | `TaskEngine` | 168 |
+| `0x003e8518` | `Strober_Update` | `TaskEngine` | 160 |
 | `0x003e8fa0` | `DynIcon_Init` | `TaskEngine` | not filled in |
 | `0x003e92e0` | `DynIcon_Update` | `TaskEngine` | not filled in |
+| `0x003e96a0` | `SubGlint_Update` | `TaskEngine` | 224 |
 | `0x003e9828` | `ObjectiveMarker_SetShown` | `TaskEngine` | 192 |
 | `0x003e98e8` | `dyn_objective_Init` | `TaskEngine` | 544 |
 | `0x003e9b08` | `dyn_objective_Update` | `TaskEngine` | 216 |
+| `0x003eade8` | `SubTriglint_SpawnGlints` | `TaskEngine` | 336 |
+| `0x003eaf38` | `SubTriglint_RemoveGlints` | `TaskEngine` | 96 |
+| `0x003eaf98` | `SubTriglint_Init` | `TaskEngine` | 200 |
+| `0x003eb060` | `SubTriglint_OnMessage` | `TaskEngine` | 112 |
+| `0x003eb0d0` | `SubTriglint_Update` | `TaskEngine` | 144 |
+| `0x003f16e8` | `PickupItem_ShowGlint` | `TaskEngine` | 120 |
 | `0x003f17e0` | `PickupItem_Init` | `TaskEngine` | not filled in |
+| `0x003f69b8` | `PartSteam_Init` | `TaskEngine` | not filled in |
 | `0x003f6b40` | `Steam_HandleMessage` | `TaskEngine` | not filled in |
+| `0x003f6d70` | `PartSteamHuge_Init` | `TaskEngine` | not filled in |
+| `0x003f7138` | `PartSteamLarge_Init` | `TaskEngine` | not filled in |
 | `0x003f80f0` | `DoorSwing_SetUpType` | `TaskEngine` | 3,656 |
 | `0x003f9770` | `DoorSwing_StateCommand` | `TaskEngine` | 416 |
 | `0x003f9910` | `DoorSwing_OpenBy` | `TaskEngine` | 448 |

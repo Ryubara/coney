@@ -53,6 +53,7 @@
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 2, calls: 2, boot: true, mission1: false, result_used: false, levels: [55]}
+  coney: implemented
 
 - name: StartRain
   wrapper: 0x00368670

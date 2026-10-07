@@ -176,15 +176,18 @@ add_library(coney_core STATIC
     world_objects/trigger_spheres.cpp
     world_objects/object_services.cpp
     world_objects/volume_boxes.cpp)
-# Effects: the particle systems and the motion blur (docs/research/particles.md, docs/research/graphics.md#looks).
+# Effects: the particle systems, the motion blur and the screen tint (docs/research/particles.md, docs/research/graphics.md#looks).
 target_sources(coney_core PRIVATE
     effects/camera_litter.cpp
     effects/effect_culling.cpp
+    effects/glints.cpp
     effects/ground_fog.cpp
+    effects/light_tasks.cpp
     effects/motion_blur.cpp
     effects/particle_types.cpp
     effects/particles.cpp
     effects/room_smoke.cpp
+    effects/screen_tint.cpp
     scripting/effects_bindings.cpp
     scripting/car_bindings.cpp
     world_objects/car_hits.cpp

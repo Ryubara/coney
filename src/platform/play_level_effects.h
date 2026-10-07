@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <memory>
+#include <span>
 #include <string_view>
 #include <vector>
 
@@ -37,10 +38,19 @@ class PlayLevelEffects {
     void drawCars(const std::function<void(rw::Atomic*)>& render, graphics::CarPass pass);
     /// Draws the particle systems through the current camera at `view` (RenderWare's axes), after everything solid.
     void drawInScene(const world::CameraPose& view);
+    /// Draws the glints of the pickups and lock-pickable doors (effects::Triglints::sprites()) through the current
+    /// camera at `view`, blended by their alpha, after the particle systems.
+    void drawGlints(std::span<const effects::Particle> glints, const world::CameraPose& view);
     /// Lays the motion blur, then the room smoke, over the 3D frame, before the 2D overlays.
     void drawOverlay(RenderEngine& engine);
+    /// Lays the screen tint (effects::ScreenTint) over the whole screen: after the HUD, before the scene's captions
+    /// (docs/research/rendering.md#tint).
+    void drawTint(RenderEngine& engine);
 
   private:
+    // Draws the ground fog's wisps (effects::GroundFog::drawn()) through the current camera at `view`.
+    void drawFog(const world::CameraPose& view);
+
     RenderEngine& m_engine;
     const effects::LevelEffects* m_effects;
     ParticleRenderer m_particles;

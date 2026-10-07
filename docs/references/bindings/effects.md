@@ -625,7 +625,7 @@ Sets a full-screen colour overlay (screen effect 9) that tints the whole level, 
 - **Wrapper** `0x003683d0` (registered by `RegisterBindings`); **calls** `0x0018e5f0` `ScreenFx_SetColourOverlay`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: yes; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level55`](story.md#level55) (mission 17)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## SetLight {#setlight}
 

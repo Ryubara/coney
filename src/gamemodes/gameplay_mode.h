@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -316,6 +317,13 @@ class GameplayMode final : public GameMode {
     void sendDamageMessage(double human, double object);
     // The radios' update (Radio_Update): their sounds through the game's sound, the player's place and the progress.
     void updateRadios();
+    // The particle systems' light types in the level's light manager: one point light, in its colour this step, for
+    // each alarm strobe's `strober` and neon sign's light, none for one ended or gone
+    // (docs/research/script-types.md#light-type-lights).
+    void syncSystemLights();
+    // The particle systems' script emitters: an alarm strobe's alarm loop, on while it is
+    // (docs/research/script-types.md#strober), and a garbage pile's flies' loop (#flies).
+    void syncSystemSounds();
     // Hands the sounds the scripts' humans asked for this step (their clips' animation sounds, the hits they took) to
     // the game's sound, with what it reads of each (docs/research/sound-events.md).
     void reportHumanSounds();
@@ -428,11 +436,18 @@ class GameplayMode final : public GameMode {
     LevelObjectServices m_objectServices;
     world_objects::LevelObjects m_objects;
     std::unique_ptr<graphics::LevelLighting> m_lighting; // the level's, fresh for each (its scripts' lighting bindings)
-    std::unique_ptr<effects::LevelEffects> m_effects;    // before the level, which draws them
-    std::unique_ptr<world_objects::Cars> m_cars;         // the level's parked cars; before the level, which draws them
-    world_objects::TriggerSpheres m_spheres;             // the level's trigger spheres (TriggerSphereCfg)
-    world_objects::Radios m_radios;                      // the level's radios (SetupRadio)
-    world_objects::TagSpots m_tagSpots;                  // the level's tag spots (CfgTagSettings)
+    std::map<std::uint32_t, graphics::LightHandle> m_systemLights; // each particle system's light, by its serial
+    // A particle system's sound emitter: its id in the game's sound and whether it is on.
+    struct SystemEmitter {
+        int id = -1;
+        bool on = false;
+    };
+    std::map<std::uint32_t, SystemEmitter> m_systemEmitters; // each sounding system's emitter, by its serial
+    std::unique_ptr<effects::LevelEffects> m_effects;        // before the level, which draws them
+    std::unique_ptr<world_objects::Cars> m_cars; // the level's parked cars; before the level, which draws them
+    world_objects::TriggerSpheres m_spheres;     // the level's trigger spheres (TriggerSphereCfg)
+    world_objects::Radios m_radios;              // the level's radios (SetupRadio)
+    world_objects::TagSpots m_tagSpots;          // the level's tag spots (CfgTagSettings)
     // A spray whose intro clip plays: the stick game goes live after it.
     struct TagIntro {
         double human = 0;

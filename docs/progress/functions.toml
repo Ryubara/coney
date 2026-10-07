@@ -2189,6 +2189,12 @@ name = "ScreenFx_BlendMotionBlur"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0018ca50
+name = "ScreenFx_DrawTint"
+subsystem = "Graphics"
+size = 296
+
+[[function]]
 address = 0x0018cc60
 name = "ScreenQueueEffect"
 subsystem = "Graphics"
@@ -2228,14 +2234,20 @@ subsystem = "Graphics"
 size = 168
 
 [[function]]
+address = 0x0018e5f0
+name = "ScreenFx_SetColourOverlay"
+subsystem = "Graphics"
+size = 200
+
+[[function]]
 address = 0x0018e6b8
-name = "EnterStore"
+name = "ScreenFx_EnterStore"
 subsystem = "Graphics"
 size = 200
 
 [[function]]
 address = 0x0018e780
-name = "ExitStore"
+name = "ScreenFx_ExitStore"
 subsystem = "Graphics"
 size = 80
 
@@ -8851,6 +8863,16 @@ subsystem = "TaskEngine"
 size = 40
 
 [[function]]
+address = 0x003906b8
+name = "LightTask_Update"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x00390970
+name = "LightTask_Process"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x00390f18
 name = "Cfg_AddObjectType"
 subsystem = "TaskEngine"
@@ -9267,8 +9289,42 @@ name = "Fog3D_WispInit"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x003ca9d8
+name = "Fog3D_WispUpdate"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x003cadd8
 name = "Fog3D_EmitterUpdate"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003d7f10
+name = "PartGarbageFlies_Update"
+subsystem = "TaskEngine"
+size = 624
+
+[[function]]
+address = 0x003e02a8
+name = "SubNeonLight_Init"
+subsystem = "TaskEngine"
+size = 264
+
+[[function]]
+address = 0x003e03d8
+name = "SubNeonLight_Update"
+subsystem = "TaskEngine"
+size = 352
+
+[[function]]
+address = 0x003e07a0
+name = "SubPolarBugs_Init"
+subsystem = "TaskEngine"
+size = 408
+
+[[function]]
+address = 0x003e0980
+name = "SubPolarBugs_Update"
 subsystem = "TaskEngine"
 
 [[function]]
@@ -9302,6 +9358,18 @@ subsystem = "TaskEngine"
 size = 480
 
 [[function]]
+address = 0x003e8408
+name = "Strober_Init"
+subsystem = "TaskEngine"
+size = 168
+
+[[function]]
+address = 0x003e8518
+name = "Strober_Update"
+subsystem = "TaskEngine"
+size = 160
+
+[[function]]
 address = 0x003e8fa0
 name = "DynIcon_Init"
 subsystem = "TaskEngine"
@@ -9310,6 +9378,12 @@ subsystem = "TaskEngine"
 address = 0x003e92e0
 name = "DynIcon_Update"
 subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003e96a0
+name = "SubGlint_Update"
+subsystem = "TaskEngine"
+size = 224
 
 [[function]]
 address = 0x003e9828
@@ -9330,13 +9404,64 @@ subsystem = "TaskEngine"
 size = 216
 
 [[function]]
+address = 0x003eade8
+name = "SubTriglint_SpawnGlints"
+subsystem = "TaskEngine"
+size = 336
+
+[[function]]
+address = 0x003eaf38
+name = "SubTriglint_RemoveGlints"
+subsystem = "TaskEngine"
+size = 96
+
+[[function]]
+address = 0x003eaf98
+name = "SubTriglint_Init"
+subsystem = "TaskEngine"
+size = 200
+
+[[function]]
+address = 0x003eb060
+name = "SubTriglint_OnMessage"
+subsystem = "TaskEngine"
+size = 112
+
+[[function]]
+address = 0x003eb0d0
+name = "SubTriglint_Update"
+subsystem = "TaskEngine"
+size = 144
+
+[[function]]
+address = 0x003f16e8
+name = "PickupItem_ShowGlint"
+subsystem = "TaskEngine"
+size = 120
+
+[[function]]
 address = 0x003f17e0
 name = "PickupItem_Init"
 subsystem = "TaskEngine"
 
 [[function]]
+address = 0x003f69b8
+name = "PartSteam_Init"
+subsystem = "TaskEngine"
+
+[[function]]
 address = 0x003f6b40
 name = "Steam_HandleMessage"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003f6d70
+name = "PartSteamHuge_Init"
+subsystem = "TaskEngine"
+
+[[function]]
+address = 0x003f7138
+name = "PartSteamLarge_Init"
 subsystem = "TaskEngine"
 
 [[function]]

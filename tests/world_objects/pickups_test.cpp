@@ -5,7 +5,9 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -29,6 +31,16 @@ wo::PickupCandidate item(double handle, Vec3 position) {
 }
 
 } // namespace
+
+TEST_CASE("the hobo food never glints; other pickup items do", "[pickups]") {
+    using coney::world_objects::neverGlints;
+    for (const std::uint32_t food :
+         {0x8733e003U, 0x1e3ab1b9U, 0x693d812fU, 0xe09f6c15U, 0xc57ab00aU, 0x7056d232U, 0xb239f45dU}) {
+        CHECK(neverGlints(food));
+    }
+    CHECK_FALSE(neverGlints(0x2fd690d6U)); // dyn_carstereo: flag 0x8000 cleared instead
+    CHECK_FALSE(neverGlints(0U));
+}
 
 TEST_CASE("weapons and pickup items are picked up by triangle, power-ups and most props not", "[pickups]") {
     CHECK(wo::pickable("pickup_item", 1));
@@ -120,6 +132,16 @@ TEST_CASE("a placed objects file reads into records, emitters left out", "[picku
     CHECK(records.all()[0].zone == 26);
     CHECK(records.all()[1].handle == 101);
     CHECK(records.all()[1].flagName == "flag_a");
+
+    // The emitter line goes to its own callback, in order, taking no record and no handle.
+    wo::SpawnRecords again;
+    std::vector<std::string> emitters;
+    CHECK(wo::addPlacedObjects(
+              *objects, again, [&next] { return next++; },
+              [&emitters](const wo::PlacedObject& object) { emitters.push_back(object.name); }) == 2);
+    REQUIRE(emitters.size() == 1);
+    CHECK(emitters[0] == (*objects)[1].name);
+    CHECK(again.all()[0].handle == 102);
 }
 
 TEST_CASE("a placed objects file with a short line or a bad count does not read", "[pickups][placed_objects]") {

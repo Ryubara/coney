@@ -49,7 +49,7 @@ holds a camera by handle; the type says which class the handle is.
 | <span id="cam-switch-4"></span>4 | `0x0050b1c8` | `global` | 1 | 74 | `caps.lua`, `hifi.lua`, `kinghill.lua`, `level101.lua`, `level102.lua`, `level103.lua` | With `0x0050b1c4` (set by `0x00418ac8`), a player is a camera target only while he still counts |
 | <span id="cam-switch-5"></span>5 | follow camera `+0x468` | `per player` | 1 | 2 | `level81_chase.lua`, `level81_cracker.lua` | The follow camera's [sprint zoom](../research/camera.md#sprint-zoom) |
 | <span id="cam-switch-6"></span>6 | `0x0050b1d0` | `global` | 1 | 7 | `level60.lua`, `level61.lua`, `level62.lua`, `level63.lua`, `level64.lua` | Camera shake: off, the shake offset is not added to the view (the pad still rumbles) |
-| <span id="cam-switch-7"></span>7 | `0x0050b2ac` | `global` | 1 | 1 | `level54_park.lua` | The rail camera leads its look-at point along the target's way (`+0x35c`) |
+| <span id="cam-switch-7"></span>7 | `0x0050b2ac` | `global` | 1 | 1 | `level54_park.lua` | Leading rail modes: on, the camera stands off the rail, the lead (`+0x35c`) from the target in plan; off, it stays on the rail |
 | <span id="cam-switch-8"></span>8 | `0x0050b2b0` | `global` | 1 | 1 | `level81_chase.lua` | Part of the rail camera's choice of targets; not traced |
 | <span id="cam-switch-9"></span>9 | `0x0050b1d4` | `global` | 1 | 3 | `level55_subway.lua`, `level99_lesson2.lua` | Lets a power move's animation event `0x39` switch to the power camera (type 6) |
 | <span id="cam-switch-10"></span>10 | `0x0050b248`, `0x0050b249` | `both pads` | 1 | 1 | `level55_punkfight.lua` | Auto-follow: the follow camera swings behind the player |

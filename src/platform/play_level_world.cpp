@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The play mode's world objects and health rings: the scripts' spawn records brought in round the camera and drawn
 // with their models, tints and fades, the objective markers (docs/research/objects.md#objective-markers), the object
-// in player 1's hand, and the rings under player 1 and his target (docs/research/hud.md#the-health-rings).
+// in player 1's hand, the glints of the pickups and lock-pickable doors (docs/research/particles.md#glints), and the
+// rings under player 1 and his target (docs/research/hud.md#the-health-rings).
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -9,6 +10,7 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "animation/anim_clip.h"
 #include "animation/skeleton.h"
@@ -64,7 +66,7 @@ void PlayLevelMode::makeWorldObjects(const ScriptedCast& cast) {
     m_placed = std::make_unique<PlacedObjects>(m_wad, *m_objectList, m_print, true);
 }
 
-void PlayLevelMode::stepWorldObjects(world::Vec3 eye, std::uint32_t elapsedMs) {
+void PlayLevelMode::stepWorldObjects(world::Vec3 eye, const WorldView& worldView, std::uint32_t elapsedMs) {
     if (m_records == nullptr || m_objectTypes == nullptr) {
         return;
     }
@@ -78,6 +80,45 @@ void PlayLevelMode::stepWorldObjects(world::Vec3 eye, std::uint32_t elapsedMs) {
         return m_wornHats.contains(handle) || (m_pickups != nullptr && m_pickups->inHand(handle));
     };
     m_objectTasks.step(*m_records, *m_objectTypes, view);
+    // The glints, at 60 ticks a second of the step's game time.
+    stepGlints(worldView, static_cast<int>(std::lround(static_cast<double>(elapsedMs) * 60.0 / 1000.0)));
+}
+
+void PlayLevelMode::stepGlints(const WorldView& worldView, int ticks) {
+    // The owners: each `pickup_item` lying in the world (in this step's draws, so not in a hand and not hidden), and
+    // each door whose lock-pick glint is up.
+    std::vector<effects::GlintOwner> owners;
+    for (const world_objects::ObjectDraw& draw : m_objectTasks.draws()) {
+        const world_objects::SpawnRecord* record = draw.column ? nullptr : m_records->find(draw.handle);
+        const world_objects::ObjectType* type = record != nullptr ? m_objectTypes->find(record->typeName) : nullptr;
+        if (type != nullptr && type->className == world_objects::kPickupItemClass &&
+            !world_objects::neverGlints(type->modelHash)) {
+            owners.push_back(effects::GlintOwner{draw.handle, draw.position});
+        }
+    }
+    if (m_objects != nullptr) {
+        for (const world_objects::Door& door : m_objects->doors.doors()) {
+            if (door.glint && !door.removed && !door.ended) {
+                owners.push_back(effects::GlintOwner{door.handle, door.glintAt});
+            }
+        }
+    }
+    m_glints.sync(owners);
+    // Seen: in front of the camera, inside its view window, within the distance asked (game axes into RenderWare's).
+    const auto visible = [&worldView](anim::Vec3 point, float distance) {
+        const world::Vec3 at = toRenderWare(point);
+        const world::Vec3& eye = worldView.pose.position;
+        const world::Vec3 d{at.x - eye.x, at.y - eye.y, at.z - eye.z};
+        const float ahead =
+            d.x * worldView.pose.forward.x + d.y * worldView.pose.forward.y + d.z * worldView.pose.forward.z;
+        if (ahead <= 0.0F || d.x * d.x + d.y * d.y + d.z * d.z > distance * distance) {
+            return false;
+        }
+        const float across = d.x * worldView.pose.right.x + d.y * worldView.pose.right.y + d.z * worldView.pose.right.z;
+        const float upward = d.x * worldView.pose.up.x + d.y * worldView.pose.up.y + d.z * worldView.pose.up.z;
+        return std::fabs(across) <= ahead * worldView.halfWidth && std::fabs(upward) <= ahead * worldView.halfHeight;
+    };
+    m_glints.tick(ticks, visible);
 }
 
 void PlayLevelMode::stepRings(const Pad& pad, const WorldView& view, std::uint64_t nowMs) {
@@ -190,13 +231,15 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
     // the game time of the newest step (docs/research/ai.md#dealer-icon). Their ids are negative, apart from the
     // handles.
     double iconId = kIconIdBase;
+    const bool letterbox = m_stage->barHeight(m_hud->hud().nowMs()) > 0.0F;
     for (const human::Human* human : m_player->humans().humans()) {
         const std::string& icon = human->script().icon;
-        if (icon.empty() || !human->alive()) {
+        // Hidden while the letterbox is up (all but dyn_cross).
+        if (icon.empty() || !human->alive() || (letterbox && world_objects::hiddenByLetterbox(icon))) {
             continue;
         }
         const world_objects::IconPose pose =
-            world_objects::spinningIconPose(icon, human->position(), m_hud->hud().nowMs());
+            world_objects::spinningIconPose(icon, human->position(), human->heading(), m_hud->hud().nowMs());
         m_placed->place(iconId, crc32(icon), pose.position, pose.rotation, PlacedObjects::Look{.sizeCullExempt = true});
         iconId -= 1.0;
     }

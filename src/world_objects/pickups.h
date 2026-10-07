@@ -16,6 +16,16 @@
 
 namespace coney::world_objects {
 
+/// The class of the items lying in the world (docs/research/script-types.md#pickup-item): the store's jewellery,
+/// the cash, the bottles of pills; each keeps a glint while it lies (docs/research/particles.md#glints), unless
+/// neverGlints().
+inline constexpr std::string_view kPickupItemClass = "pickup_item";
+
+/// Whether a `pickup_item` of model `modelHash` (CRC-32 of the model's name) never glints: the seven hobo foods
+/// (`dyn_hobo_donut_a`/`_b`/`_c`, `dyn_hobo_hotdog`, `dyn_hobo_mug`, `dyn_hobo_salami`, `dyn_hobo_steak`), item
+/// `+0x20` set by `PickupItem_Init` (`0x003f17e0`; docs/research/script-types.md#pickup-item).
+[[nodiscard]] bool neverGlints(std::uint32_t modelHash);
+
 /// The search takes objects within this many metres of the human.
 inline constexpr float kPickupReach = 1.5F;
 /// The point the direction to an object is measured from lies this far behind the human.

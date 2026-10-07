@@ -398,24 +398,6 @@ void addWorldBindings(ScriptSystem& scripts, LuaVm& vm, GameState& state) {
         player.pads.setTargetHandler(binding::string(args, 0));
         return binding::none();
     });
-    // `EnterStore({r, g, b, a})`: preset 10 takes the colour and both controllers blend to it.
-    // @orig 0x0018e6b8 EnterStore (unknown)
-    add(vm, "EnterStore", [&player](std::span<const Value> args) {
-        if (!args.empty() && args[0].table() != nullptr) {
-            const Table& table = *args[0].table();
-            for (std::size_t i = 0; i < player.storeTint.colour.size(); ++i) {
-                const std::optional<double> value = table.get(Value(static_cast<double>(i + 1))).number();
-                player.storeTint.colour.at(i) = static_cast<float>(value.value_or(0.0));
-            }
-        }
-        player.storeTint.preset = StoreTint::kInStore;
-        return binding::none();
-    });
-    // @orig 0x0018e780 ExitStore (unknown)
-    add(vm, "ExitStore", [&player](std::span<const Value>) {
-        player.storeTint.preset = StoreTint::kOutside;
-        return binding::none();
-    });
 }
 
 } // namespace

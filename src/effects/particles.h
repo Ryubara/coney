@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "animation/anim_math.h"
+#include "effects/light_tasks.h"
 #include "effects/particle_types.h"
 
 namespace coney::effects {
@@ -57,6 +58,18 @@ struct Particle {
         std::uint32_t fromColour = 0;               ///< The colour it started the stage at.
     };
     std::optional<Stages> stages;
+    /// A fly (`sub_polar_bugs`, docs/research/script-types.md#flies): it jumps to a new point on its two angles round
+    /// its pile at each update. Unset for every other sprite.
+    struct Fly {
+        float a = 0.0F;           ///< The angle from the pile's up axis, radians.
+        float b = 0.0F;           ///< The angle round it, radians.
+        float due = 0.0F;         ///< Seconds until its next update.
+        float interval = 0.0F;    ///< Seconds between its last update and its next.
+        bool grown = false;       ///< Its first update is done: it has faded and grown in.
+        std::uint32_t colour = 0; ///< Its full colour, `0xRRGGBBAA`.
+        float size = 0.0F;        ///< Its full size, metres across.
+    };
+    std::optional<Fly> fly;
 };
 
 /// A steam vent's configuration: `CfgSteam(object, colour, interval, puffInterval, size, growth, life, speed, rise,
@@ -75,6 +88,23 @@ struct SteamSettings {
     bool still = false;                 ///< Not blown by the global vector at `0x006f31a0` (inferred: wind).
 };
 
+/// A steam vent's settings before any `CfgSteam` (its init's built-in values, docs/research/particles.md#steam), for
+/// `part_steam`, `part_steam_large` and `part_steam_huge`; none for another type.
+/// @orig 0x003f69b8 PartSteam_Init (unknown)
+/// @orig 0x003f7138 PartSteamLarge_Init (unknown)
+/// @orig 0x003f6d70 PartSteamHuge_Init (unknown)
+[[nodiscard]] std::optional<SteamSettings> defaultSteam(std::string_view typeName);
+
+/// The light a system's light type gives now (an alarm strobe's `strober`, a neon sign's `sub_neon_light`): a point
+/// light with no corona at the system, lighting objects and humans, and the world when `lightsWorld`
+/// (docs/research/script-types.md#light-type-lights).
+struct SystemLight {
+    anim::Vec3 position;
+    LightColourNow colour; ///< Each channel 0-1.
+    float radius = 0.0F;   ///< Metres; the falloff is linear.
+    bool lightsWorld = false;
+};
+
 /// One live particle system: the original's particle task (docs/research/particles.md#task-fields), with the sprites
 /// it has made.
 struct ParticleSystem {
@@ -91,9 +121,17 @@ struct ParticleSystem {
     float age = 0.0F;                   ///< Seconds since its spawn.
     float emitDue = 0.0F;               ///< Seconds until a stream type makes its next sprite.
     bool started = false;               ///< Whether its first step (a burst's emission) has run.
-    std::optional<SteamSettings> steam; ///< A steam vent's `CfgSteam`; unset until then.
+    std::optional<SteamSettings> steam; ///< A steam vent's settings: defaultSteam(), then `CfgSteam`'s.
+    std::optional<LightTask> light;     ///< Its light type's task: a strobe's `strober`, a neon's light.
+    float lightTicks = 0.0F;            ///< Ticks (1/60 s) its light has yet to run.
+    std::uint32_t serial = 0;           ///< Its spawn's number, unique while the systems live (for its light).
     std::vector<Particle> particles;
 };
+
+/// The light `system`'s light type gives now: an alarm strobe's from its switching on (message `0x12`) until the
+/// update after it is switched off, a neon sign's always (docs/research/script-types.md#strober, #neon-signs); none
+/// for another type.
+[[nodiscard]] std::optional<SystemLight> systemLight(const ParticleSystem& system);
 
 /// The particle manager: the pool of particle systems scripts and the engine spawn by type name, each stepped on the
 /// fixed step and drawn as sprites by the platform (src/platform/particle_renderer.h).
@@ -157,6 +195,14 @@ class ParticleSystems {
     /// @orig 0x00397610 Particle_End (unknown)
     bool setEmitting(double handle, bool on);
 
+    /// The system nearest `at` whose type name contains `part` (a substring test, as the alarm's `strstr`) within
+    /// `within` metres; null for none.
+    [[nodiscard]] ParticleSystem* nearestNamed(std::string_view part, anim::Vec3 at, float within);
+    /// Message `0x12` or `0x13` to `system`: on or off (a stream's sprites). An alarm strobe switched on makes a new
+    /// `strober` (`PartStrobeRed_OnMessage`); switched off, its `strober`'s on flag is cleared and its next update ends
+    /// it.
+    static void setEmitting(ParticleSystem& system, bool on);
+
     /// `CfgSteam`: the steam vent `handle` names is configured (a `puffInterval` of 0 is taken as 1: the original
     /// divides by it). False when no system has the handle; **Coney choice**: the original does not check the type,
     /// and a system of another type keeps the settings unused.
@@ -165,6 +211,10 @@ class ParticleSystems {
     bool configureSteam(double handle, const SteamSettings& settings);
     /// Where the camera is, for the steam vents' near test (none: no vent puffs).
     void setViewer(std::optional<anim::Vec3> viewer) { m_viewer = viewer; }
+    /// Whether a point is no more than a margin (metres) outside a player view's frustum (`Cameras_IsPointVisibleAny`).
+    using ViewTest = std::function<bool(anim::Vec3 point, float margin)>;
+    /// The view test the fly piles use (empty: no view, so no flies).
+    void setViewTest(ViewTest test) { m_viewTest = std::move(test); }
 
     /// One step of `seconds`: each system follows its parent, makes and moves its sprites, and ends when its type's
     /// behaviour says so.
@@ -199,6 +249,18 @@ class ParticleSystems {
     void stepSteam(ParticleSystem& system, float seconds);
     // One update of a steam puff (`0x003f6460`): its velocity dragged, its size grown, its alpha faded.
     void updatePuff(Particle& puff);
+    // A fly pile's update: every 60 ticks while a view is within 50 m it keeps three flies, otherwise every 120 it
+    // has none.
+    // @orig 0x003d7f10 PartGarbageFlies_Update (unknown)
+    void stepFlyPile(ParticleSystem& system, float seconds);
+    // A new fly of `system` on random angles, faded and shrunk to nothing until its first update.
+    // @orig 0x003e07a0 SubPolarBugs_Init (unknown)
+    [[nodiscard]] Particle makeFly(const ParticleSystem& system);
+    // A fly's update: on round its angles to its next point, the next update in 20 ticks or (2 in 11) 10.
+    // @orig 0x003e0980 SubPolarBugs_Update (unknown)
+    void updateFly(Particle& fly, anim::Vec3 centre);
+    // A fly's step: its updates as they come round, and its fade and growth until the first.
+    void stepFly(Particle& fly, anim::Vec3 centre, float seconds);
 
     // A system of `typeName` at `at` holding `particle` alone, made at once; false when the pool or the budget is full.
     bool spawnSprite(std::string_view typeName, anim::Vec3 at, anim::Quat rotation, const Particle& particle);
@@ -217,8 +279,10 @@ class ParticleSystems {
     static bool stepStages(Particle& particle, float seconds);
 
     std::uint32_t m_random;
+    std::uint32_t m_serial = 0; // the last spawn's number
     Locator m_locator;
     std::optional<anim::Vec3> m_viewer;
+    ViewTest m_viewTest;
     // Systems a step asked for (a `sub_explode`'s `part_explosion`), spawned once the step is over.
     std::vector<std::pair<anim::Vec3, anim::Quat>> m_pendingExplosions;
 };

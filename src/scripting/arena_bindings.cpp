@@ -19,6 +19,7 @@
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
 #include "world_objects/spawn_records.h"
+#include "world_objects/spinning_icons.h"
 
 namespace coney::script {
 
@@ -277,15 +278,14 @@ void addCharacterBindings(LuaVm& vm, const BindingContext& context) {
         }
         return binding::none();
     });
-    // `GangAttachSpinningIcon(gang, icon, arg)`: -1 does nothing. **Coney stand-in**: the two icon names swapped for
-    // another language's (`0x002271f0`) are not, as their names are not on the page.
+    // `GangAttachSpinningIcon(gang, icon, bone)`: -1 does nothing; each member gets world_objects::iconTypeName(icon).
     // @orig 0x0016b2c8 Gang_AttachSpinningIcon (unknown)
-    vm.registerFunction("GangAttachSpinningIcon",
-                        humanCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
-                            if (const int gang = intArg(args, 0); gang != -1) {
-                                host.setGangIcon(gang, binding::string(args, 1), intArg(args, 2));
-                            }
-                        }));
+    vm.registerFunction(
+        "GangAttachSpinningIcon", humanCall(context, [](HumanBindingHost& host, std::span<const Value> args) {
+            if (const int gang = intArg(args, 0); gang != -1) {
+                host.setGangIcon(gang, world_objects::iconTypeName(binding::string(args, 1)), intArg(args, 2));
+            }
+        }));
     // `GangRemoveSpinningIcon(gang)`: -1 does nothing.
     // @orig 0x0016b358 Gang_RemoveSpinningIcon (unknown)
     vm.registerFunction("GangRemoveSpinningIcon",

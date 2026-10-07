@@ -10,9 +10,9 @@
 namespace coney::script {
 
 /// The bindings over the players' state (GameState::player, warriors/player_state.h): the inventory and money, the
-/// statistics, the unlockables' records, the mission stopwatch, crime reporting, the Lua pad handlers, a store's screen
-/// colour and the second player's join flag. All real; installBindings() registers them.
-inline constexpr std::array<std::string_view, 44> kPlayerBindings{
+/// statistics, the unlockables' records, the mission stopwatch, crime reporting, the Lua pad handlers and the second
+/// player's join flag. All real; installBindings() registers them.
+inline constexpr std::array<std::string_view, 42> kPlayerBindings{
     "CfgHuInventoryCallback",
     "CfgInventoryCallback",
     "CfgInventoryItem",
@@ -21,8 +21,6 @@ inline constexpr std::array<std::string_view, 44> kPlayerBindings{
     "CfgSetStatTypeMax",
     "CfgSetStatValue",
     "CfgSetSteroTheftHandler",
-    "EnterStore",
-    "ExitStore",
     "GiveMoney",
     "InvGetMoney",
     "InvGetSpraycanCharges",

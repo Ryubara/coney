@@ -41,9 +41,11 @@ struct PlacedObject {
 [[nodiscard]] std::expected<std::vector<PlacedObject>, Error> parsePlacedObjects(std::string_view text);
 
 /// Adds a spawn record to `records` for every line that is not an emitter, each with a handle from `nextHandle`, as
-/// `ObjRecord_Add` takes them (no unlockable check). Returns how many were added. **Coney's choice**: the emitters
-/// are skipped; Coney makes no particle tasks from the file yet.
+/// `ObjRecord_Add` takes them (no unlockable check), and hands each emitter line to `onEmitter` (when set), in the
+/// file's order: the original makes a particle task of the line's name at its pose there and then, whatever its zone
+/// (docs/research/objects.md#objs-file). Returns how many records were added.
 std::size_t addPlacedObjects(std::span<const PlacedObject> objects, SpawnRecords& records,
-                             const std::function<double()>& nextHandle);
+                             const std::function<double()>& nextHandle,
+                             const std::function<void(const PlacedObject&)>& onEmitter = {});
 
 } // namespace coney::world_objects

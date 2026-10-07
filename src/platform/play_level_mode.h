@@ -25,6 +25,7 @@
 #include "core/interpolation.h"
 #include "core/options.h"
 #include "debug/play_controls.h"
+#include "effects/glints.h"
 #include "fileio/wad.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/gameplay_mode.h"
@@ -279,6 +280,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     /// The level's world objects (the scripts' spawn records brought in round the camera, the objective markers):
     /// what the newest step draws (play_level_world.cpp).
     [[nodiscard]] const world_objects::ObjectTasks& worldObjects() const { return m_objectTasks; }
+    /// The glints of the pickups and lock-pickable doors the newest step keeps (docs/research/particles.md#glints).
+    [[nodiscard]] const effects::Triglints& glints() const { return m_glints; }
     /// The health rings and L1 markers the newest step queued.
     [[nodiscard]] const hud::HealthRings& healthRings() const { return m_rings; }
     /// The parked cars' parts that came off in the newest step (world_objects::Cars::takeBreaks()), in order: where a
@@ -425,8 +428,13 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
 
     // Loads the Object List the world objects' models come by (only when the engine draws).
     void makeWorldObjects(const ScriptedCast& cast);
-    // The world objects' step round the camera at `eye` (RenderWare's axes), after the scripts and scenes.
-    void stepWorldObjects(world::Vec3 eye, std::uint32_t elapsedMs);
+    // The world objects' step round the camera at `eye` (RenderWare's axes), after the scripts and scenes, then the
+    // glints of the pickups and lock-pickable doors among them, seen through `view`.
+    void stepWorldObjects(world::Vec3 eye, const WorldView& view, std::uint32_t elapsedMs);
+    // The glints' step (docs/research/particles.md#glints): a triglint for each `pickup_item` lying in the world and
+    // each lock-pickable door, then `ticks` 60 Hz ticks of their blink, a point seen when it is inside `view`'s window
+    // within the triglint's distance.
+    void stepGlints(const WorldView& view, int ticks);
     // The health rings' step: player 1 and his target, the triggers from `pad`, the camera's heading from `view`.
     void stepRings(const Pad& pad, const WorldView& view, std::uint64_t nowMs);
     // Draws this step's world objects (lit as objects) and the object in player 1's hand at `snapshot`'s pose
@@ -580,6 +588,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     world_objects::SpawnRecords* m_records = nullptr;
     const world_objects::ObjectTypes* m_objectTypes = nullptr;
     world_objects::ObjectTasks m_objectTasks;
+    effects::Triglints m_glints;
     std::unique_ptr<world_objects::ObjectList> m_objectList; // before the models that read it
     std::unique_ptr<PlacedObjects> m_placed;
     // The hats: the fittings (read once from the recorded `CfgHat` calls), each human's, the handles worn, those

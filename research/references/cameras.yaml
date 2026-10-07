@@ -245,8 +245,8 @@ entries:
     read_by: "`0x0013e708` (rail camera)"
     calls: 1
     scripts: [level54_park.lua]
-    meaning: "The rail camera leads its look-at point along the target's way (`+0x35c`)"
-    evidence: inferred
+    meaning: "Leading rail modes: on, the camera stands off the rail, the lead (`+0x35c`) from the target in plan; off, it stays on the rail"
+    evidence: confirmed-code
   - id: switch-8
     kind: switch
     number: 8

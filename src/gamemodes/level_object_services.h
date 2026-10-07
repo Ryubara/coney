@@ -34,7 +34,9 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     LevelObjectServices(script::ScriptSystem& scripts, world_objects::WorldFlags& flags,
                         world_objects::ObjectServices* sounds)
         : m_scripts(scripts), m_flags(flags), m_sounds(sounds),
-          m_crimes(scripts, [this](const CrimePosition& at) { moveCrimeSceneFlag(anim::Vec3{at[0], at[1], at[2]}); }) {}
+          m_crimes(
+              scripts, [this](const CrimePosition& at) { moveCrimeSceneFlag(anim::Vec3{at[0], at[1], at[2]}); },
+              [this](const CrimePosition& at, int gang) { robStore(anim::Vec3{at[0], at[1], at[2]}, gang); }) {}
 
     /// Crimes and statistics go to `state`'s players, whose humans are `humans` (both may be null: none); both must
     /// outlive their use.
@@ -80,6 +82,11 @@ class LevelObjectServices final : public world_objects::ObjectServices {
     void callScript(std::string_view function, double human, double door) override;
     /// Moves the level's `CrimeScene` flag (kCrimeSceneFlag) to `at`.
     void moveCrimeSceneFlag(anim::Vec3 at) override;
+    /// A break-in at `at` by gang `gang` (-1 none; `GameState_ReportCrime`, docs/research/crimes.md#stores): the
+    /// nearest store flag (activity 14) within 10 m is marked robbed (group bit 16, the gang in bits 18-22), and the
+    /// particle system nearest it within 6 m whose type name contains `strobe` (its alarm) gets message `0x12`.
+    /// **Coney's stand-in**: the store's buyers and browsers are not switched off yet.
+    void robStore(anim::Vec3 at, int gang);
     /// Reports the crime to the game state's crime reports at the scripts' time, asking for responders.
     void reportCrime(int type, anim::Vec3 at, double offender) override;
     /// Scores statistic `category`-`event` for `human` when he is a player.

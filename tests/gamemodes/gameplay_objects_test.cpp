@@ -18,6 +18,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
+#include "effects/particles.h"
 #include "gamemodes/game_mode.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_object_services.h"
@@ -183,4 +184,41 @@ TEST_CASE("the level's objects' services pass a human's damage to gameplay's rec
     services.setDamageReceiver([&heard](double human, double object) { heard.emplace_back(human, object); });
     services.damageDone(3.0, 4.0);
     CHECK(heard == std::vector<std::pair<double, double>>{{3.0, 4.0}});
+}
+
+TEST_CASE("a break-in lights the alarm strobe nearest the store's flag", "[gameplay][objects]") {
+    const auto files = objectScripts();
+    const coney::script::ScriptSource source =
+        [&files](std::string_view name) -> std::expected<std::vector<std::byte>, coney::Error> {
+        const auto found = files.find(name);
+        if (found == files.end()) {
+            return coney::fail(coney::ErrorCode::NotFound, "no such script");
+        }
+        return found->second;
+    };
+    coney::LevelScripts scripts(source, "level1", 1, [](std::string_view) {});
+    coney::LevelObjectServices services(scripts.scripts(), scripts.flags(), nullptr);
+    // A store front (activity 14) at the origin, its alarm 3 m away and another strobe 30 m away.
+    (void)scripts.flags().add(900.0, "storeFront", {0.0F, 0.0F, 0.0F}, 0.0F, 14);
+    coney::effects::ParticleSystems particles;
+    coney::effects::ParticleSystem* alarm = particles.spawn("part_strobe_red", coney::anim::Vec3{3.0F, 0.0F, 2.0F});
+    REQUIRE(alarm != nullptr);
+    const std::uint32_t alarmSerial = alarm->serial;
+    REQUIRE(particles.spawn("part_strobe_red", coney::anim::Vec3{30.0F, 0.0F, 2.0F}) != nullptr);
+    services.setParticles(&particles, {});
+    // A break-in 20 m from the store finds no store: nothing lights.
+    services.robStore(coney::anim::Vec3{20.0F, 0.0F, 0.0F}, 3);
+    for (const coney::effects::ParticleSystem& system : particles.systems()) {
+        CHECK_FALSE(system.emitting);
+    }
+    services.robStore(coney::anim::Vec3{2.0F, 2.0F, 0.0F}, 3);
+    for (const coney::effects::ParticleSystem& system : particles.systems()) {
+        CHECK(system.emitting == (system.serial == alarmSerial));
+    }
+    // The store is robbed by gang 3.
+    const coney::world_objects::WorldFlag* store = scripts.flags().find(900.0);
+    REQUIRE(store != nullptr);
+    const auto group = static_cast<std::uint32_t>(store->kind2);
+    CHECK((group & (1U << 16)) != 0);
+    CHECK(((group >> 18) & 0x1fU) == 3);
 }

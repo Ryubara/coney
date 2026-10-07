@@ -104,9 +104,10 @@ void markZone(world_objects::SpawnRecords& records, std::uint32_t zone, bool rem
 }
 
 // `ResetStore(store)`: a store front flag (activity 14) loses its robbed bit, its byte 8-15 becomes 0xff and its gang
-// field 31 (no gang). **Coney stand-in**: the alarm strobe within 7 m is not modelled, so its message 0x13 is not sent.
+// field 31 (no gang), and the alarm strobe within 7 m of it is switched off (message 0x13).
 // @orig 0x0041ddd8 Store_Reset (unknown)
-void resetStore(world_objects::WorldFlags& flags, double handle) {
+void resetStore(world_objects::WorldFlags& flags, effects::ParticleSystems* particles, double handle) {
+    constexpr float kStrobeReach = 7.0F;
     world_objects::WorldFlag* flag = flags.find(handle);
     if (flag == nullptr || flag->kind != kStoreActivity) {
         return;
@@ -114,6 +115,12 @@ void resetStore(world_objects::WorldFlags& flags, double handle) {
     auto group = static_cast<std::uint32_t>(flag->kind2);
     group = (group & ~kRobbedBit & ~kStoreGangMask) | kStoreByte | kStoreGangMask;
     flag->kind2 = static_cast<int>(group);
+    if (particles != nullptr) {
+        const anim::Vec3 at{flag->position[0], flag->position[1], flag->position[2]};
+        if (effects::ParticleSystem* strobe = particles->nearestNamed("strobe", at, kStrobeReach)) {
+            effects::ParticleSystems::setEmitting(*strobe, false);
+        }
+    }
 }
 
 } // namespace
@@ -280,9 +287,10 @@ void addHubWorldBindings(ScriptSystem& scripts, LuaVm& vm, const BindingContext&
     // and no second pad, so there is never a second player to make or to give back; nothing changes.
     // @orig 0x0041dd90 Game_CheckMultiplayer (unknown)
     add(vm, "CheckMultiplayer", [](A) { return binding::none(); });
-    add(vm, "ResetStore", [flags = context.flags](A args) {
+    add(vm, "ResetStore", [flags = context.flags, &context](A args) {
         if (flags != nullptr) {
-            resetStore(*flags, static_cast<double>(unsignedArg(args, 0)));
+            resetStore(*flags, context.effects != nullptr ? &context.effects->particles : nullptr,
+                       static_cast<double>(unsignedArg(args, 0)));
         }
         return binding::none();
     });

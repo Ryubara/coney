@@ -368,14 +368,49 @@ wide. **Coney's stand-ins**: sizes and colours move linearly through each stage;
 by alpha and the embers add; an ember's random 0.6-1.5 is its size × 0.2 m; the embers' landing sparks, the
 explosion's light and the debris lying flat on landing are not built.
 
-**Steam vents** (`part_steam`, [`CfgSteam`](../references/bindings/config.md#cfgsteam)) follow [Steam
-vents](#steam): nothing before `CfgSteam`, then while on one puff every `interval` frames (60 a second) when the camera
+**Steam vents** (`part_steam`, `part_steam_large`, `part_steam_huge`,
+[`CfgSteam`](../references/bindings/config.md#cfgsteam)) follow [Steam vents](#steam): each starts with its init's
+built-in values (`effects::defaultSteam`; the vents of a level's objects file get no `CfgSteam`), then while on one puff
+every `interval` frames (60 a second) when the camera
 is within 20 m, every 60 frames otherwise; a puff starts along the vent's −x axis at `speed` with z the `rise`
 (× 0.8-1.2), its size × 0.8-1.2, and every `puffInterval` frames for round(life × 60) / puffInterval updates its
 velocity is the start velocity less the drag's share of the life (× 0.75-1.15), its size grows by `growth`
 × 0.8-1.2 and its alpha falls linearly to 0; it draws `part_page1` rectangle 42-44. **Coney's readings**: both near
 tests are distances from the camera; the wind (`0x006f31a0`) is not traced, so no puff is blown; the particle budget's
 short-alpha rule is left out.
+
+**Glints** (`repo:src/effects/glints.h`, drawn by `PlayLevelMode` with the world objects) follow [Glints](#glints):
+each step every `pickup_item` lying in the world (brought in round the camera, not in a hand, not hidden; not the
+seven hobo foods that [never glint](script-types.md#pickup-item)) and every door whose lock-pick glint is up ([World
+objects](objects.md#lock-pick)) has a triglint, removed with its glints when its owner goes; the triglint checks every
+60 ticks whether a camera sees its position within 30 m (inside the view window) and drops or makes its three glints;
+each glint toggles after 30 ticks and then every 20-30 ticks (`Random_Int(10)` from the game's table, read from the
+disc's executable, on the triglints' own index), drawn while on at its offset, its size × 0.15, white at alpha 128,
+`part_page1` rectangle 41. **Coney's stand-ins**: a new glint starts off; the particles' stream starts at index 0 when
+the level starts and only the glints draw from it; the sprites are added to what is behind them, as Coney's other
+flashes are.
+
+**Light types** (`repo:src/effects/light_tasks.h`, lit by `GameplayMode` in the level's [light
+manager](lighting.md#record)) follow [How a light type lights](script-types.md#light-type-lights): a point light with
+no corona at its system, lighting objects and humans and, with flag `0x08`, the world, whose colour cross-fades from
+the colour at the last update to the target over the update interval, a tick at a time. An alarm strobe
+(`part_strobe_red`) makes a [strober](script-types.md#strober) when switched on (message `0x12`: red for 30 ticks,
+then 10 ticks up to red, 10 down, 20 black) whose next update after `0x13` ends it, and an `alarm_emitter` ambient
+loop of `alarmbell_loop` (mode 3, filter 2, 30 m), on while the strobe is. `part_orange_neon` and `part_pink_neon` place
+their [neon light](script-types.md#neon-signs) at once (4 m, faded out over each second for its first 16 updates, then
+steady for 16 updates of 30 ticks between off spells of 1 + `Random_Int(15)` steps a 15-tick blink). **Coney's
+stand-ins**: the neon's draws come from the particles' generator, not the game's table; the sign's own task stays (it
+ends after its first update in the original), holding the light.
+
+**Fly piles** (`part_garbage_flies`, `part_garbage_flies_ns`, `part_light_bugs`) follow [Flies and
+bugs](script-types.md#flies): 60 ticks after its spawn and then every 60 ticks while a view's frustum widened by 50 m
+holds the pile, it keeps three flies, and otherwise drops them and looks again in 120 ticks. A fly is `part_page1`
+rectangle 19, grey `0x808080ff`, 0.04 m across, faded and grown in from white at alpha 0 over its first update; it
+jumps to `centre + 1.5 × (sin²a cos b, sin²a sin b, sin a cos a)` at each update, its angles stepping by 2π/10 and
+2π/5, the next update in 20 ticks or, when `Random_Int(10)` is below 2, in 10. A `part_garbage_flies` also has a
+`script_emitter` loop of sound `0x49d14d16` (mode 3, filter 0, 20 m). **Coney's readings**: `part_garbage_flies_ns`
+is the pile itself without the sound (its child's emitter is skipped because it has a parent; inferred); the flies
+are dropped at once rather than at their next update, and their draws come from the particles' generator.
 
 ## Open questions
 

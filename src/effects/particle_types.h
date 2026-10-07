@@ -18,6 +18,8 @@ enum class ParticleSheet : std::uint8_t {
     PartPage1, ///< `part_page1`, sheet record 1.
     PartFire,  ///< `part_fire`, sheet record 7: the flames' 36 rectangles.
     Lighting,  ///< `lighting`, sheet record 8: the glows.
+    PartFog00, ///< `part_fog_00`, sheet record 530: the ground fog's wisp, one rectangle over the whole texture.
+    PartFog01, ///< `part_fog_01`, sheet record 531: the other fog wisp.
 };
 
 /// The resource name of `sheet` (empty for ParticleSheet::None).
@@ -40,6 +42,9 @@ enum class ParticleBehaviour : std::uint8_t {
     Fireball,  ///< `sub_fireball`: one staged, drifting ball of fire (traced).
     Embers,    ///< `sub_explosion_embers`: a falling fire sprite (partly traced).
     Debris,    ///< `sub_debris`: a thrown, falling chip that fades at the end of its life (partly traced).
+    Strobe,    ///< An alarm strobe: off until message `0x12` (a break-in), then its `strober` (systemLight()).
+    Neon,      ///< A neon sign: its `sub_neon_light`, the type's colour (systemLight()).
+    Flies,     ///< A pile's flies: three `sub_polar_bugs` jumping round it while a view is near.
 };
 
 /// One particle system type Coney knows.

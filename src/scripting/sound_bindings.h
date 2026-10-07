@@ -23,6 +23,7 @@ struct AmbientEmitterCall {
     std::array<float, 3> to{};   ///< The second point (the same as `from` for a point source).
     int index = -1;              ///< The first ambient-table entry, or -1 to play `sound`.
     std::string sound;           ///< The sound name when `index` is -1.
+    std::uint32_t soundHash = 0; ///< The sound's hash when `index` is -1 and `sound` is empty (an unnamed sound).
     std::uint32_t count = 0;     ///< How many table entries from `index` it picks from.
     float range = -1.0F;         ///< Metres from `from` (-1: the first sound's far distance + 10).
     int plays = -1;              ///< Plays before it switches itself off (-1 without limit).

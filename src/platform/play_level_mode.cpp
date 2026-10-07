@@ -18,7 +18,9 @@
 #include "camera/cameras.h"
 #include "characters/character_data.h"
 #include "characters/character_rig.h"
+#include "core/game_random.h"
 #include "core/game_timer.h"
+#include "fileio/executable.h"
 #include "gamemodes/game_mode_stack.h"
 #include "graphics/human_blood.h"
 #include "human/human_animator.h"
@@ -231,6 +233,11 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     m_scenery->setLighting(&m_lights->scene());
     m_print(m_lights->summary());
     makeTargets(m_texture);
+    // The glints' blink draws from the game's random table when the disc's executable has the NTSC-U one.
+    if (auto table = io::readExecutableWords(wad.disc(), GameRandom::kExecutableName, GameRandom::kTableAddress,
+                                             GameRandom::kTableSize)) {
+        m_glints.setTable(*table);
+    }
     // The brains plan their moves on the level's routes, when it has path data.
     if (const world::PathMap* paths = m_scenery->pathMap(); paths != nullptr) {
         m_planner = std::make_unique<ai::RoutePlanner>(*paths);
@@ -440,7 +447,7 @@ void PlayLevelMode::stepFrozen(const FrameTime& frame) {
     m_drawDistance.commit();
     const WorldView stepView = stepSceneryView(frame);
     m_scenery->findVisible(stepView);
-    stepWorldObjects(stepView.pose.position, 0);
+    stepWorldObjects(stepView.pose.position, stepView, 0);
     ++m_stats.frames;
 }
 
@@ -575,7 +582,7 @@ ModeResult PlayLevelMode::update(GameModeStack& stack, const FrameTime& frame) {
                    static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
     m_scenery->findVisible(stepView);
     // The world objects round the camera, after the scripts and the scenes moved them.
-    stepWorldObjects(eye, static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
+    stepWorldObjects(eye, stepView, static_cast<std::uint32_t>(std::lround(frame.seconds * 1000.0)));
     // The HUD's step (docs/research/hud.md#the-huds-frame), with the player's rage on panel 0.
     hud::HudFrame hudFrame;
     hudFrame.nowMs = millisecondsOf(frame.gameTicks);
@@ -739,6 +746,10 @@ void PlayLevelMode::render(const RenderTime& time) {
         m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawOverlay(engine); });
     }
     m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hud->draw(engine); });
+    // The level's screen tint covers the HUD, as the original's screen effects follow it.
+    if (m_levelEffects) {
+        m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawTint(engine); });
+    }
     m_engine.addFrameOverlay([this, nowMs](RenderEngine& engine) { m_stage->drawOverlay(engine, nowMs); });
     // A layer over all of them (the pause menu), added last so it draws last.
     if (m_overlay != nullptr) {
@@ -763,6 +774,7 @@ void PlayLevelMode::render(const RenderTime& time) {
         drawDebugLines(snapshot);
         if (m_levelEffects) {
             m_levelEffects->drawInScene(blended.pose);
+            m_levelEffects->drawGlints(m_glints.sprites(), blended.pose);
         }
     });
 }

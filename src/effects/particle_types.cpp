@@ -19,6 +19,13 @@ constexpr std::uint32_t kSmoke = 0xA0A0A0A0U;
 constexpr std::uint32_t kWarmGlow = 0xFFD890C0U;
 constexpr std::uint32_t kPoliceGlow = 0xFF3020C0U;
 constexpr std::uint32_t kGlass = 0xC8E0F0B0U;
+constexpr std::uint32_t kStrobeRed = 0xFF0000FFU;
+// The neon signs' light colours (docs/research/script-types.md#neon-signs).
+constexpr std::uint32_t kNeonOrange = 0xffe3aeffU;
+constexpr std::uint32_t kNeonPink = 0xffafcfffU;
+// A fly's grey and its drawn size, twice its `+0xc0` of 0.02 (docs/research/script-types.md#flies).
+constexpr std::uint32_t kFlyGrey = 0x808080ffU;
+constexpr float kFlySize = 0.04F;
 
 // The types Coney knows, sorted by name (findParticleType() searches it in halves). Sheets and rectangles are the
 // research's traced sprites (docs/references/particles.md); behaviours, sizes and colours are Coney's stand-ins, but
@@ -26,7 +33,8 @@ constexpr std::uint32_t kGlass = 0xC8E0F0B0U;
 // whose recipe is traced (docs/research/script-types.md#part-explosion; their motion is in particles.cpp). Types whose
 // sprite is traced to a sheet Coney does not load yet (the unnamed flame sheets, `part_tv`), to the doubtful rectangle
 // 54, or that draw on the HUD, are left out and so make Inert systems. `part_steam` draws its `sub_smoke` puffs,
-// `part_page1` rectangles 42-44 (docs/research/particles.md#steam).
+// `part_page1` rectangles 42-44 (docs/research/particles.md#steam); **Coney's stand-in**: the large and huge vents
+// draw theirs the same way (how their puffs differ is not read).
 constexpr std::array kTypes{
     ParticleType{"blo_splat", PartPage1, 5, Spray, kBlood, 0.12F},
     ParticleType{"blood_drop", PartPage1, 52, Spray, kBlood, 0.05F},
@@ -45,9 +53,17 @@ constexpr std::array kTypes{
     ParticleType{"part_firebarrel", PartFire, 0, Flames, kWhite, 0.7F},
     ParticleType{"part_firebarrel_ns", PartFire, 0, Flames, kWhite, 0.7F},
     ParticleType{"part_firetruck_lights", Lighting, 2, Glow, kPoliceGlow, 1.2F},
+    ParticleType{"part_garbage_flies", PartPage1, 19, Flies, kFlyGrey, kFlySize},
+    ParticleType{"part_garbage_flies_ns", PartPage1, 19, Flies, kFlyGrey, kFlySize},
     ParticleType{"part_gun_flash", Lighting, 2, Flash, kWarmGlow, 0.8F},
+    ParticleType{"part_light_bugs", PartPage1, 19, Flies, kFlyGrey, kFlySize},
+    ParticleType{"part_orange_neon", None, 0, Neon, kNeonOrange, 0.0F},
+    ParticleType{"part_pink_neon", None, 0, Neon, kNeonPink, 0.0F},
     ParticleType{"part_s_fire", PartFire, 0, Flames, kWhite, 0.6F},
     ParticleType{"part_steam", PartPage1, 42, Steam, kSmoke, 0.25F},
+    ParticleType{"part_steam_huge", PartPage1, 42, Steam, kSmoke, 2.5F},
+    ParticleType{"part_steam_large", PartPage1, 42, Steam, kSmoke, 0.75F},
+    ParticleType{"part_strobe_red", None, 0, Strobe, kStrobeRed, 0.0F},
     ParticleType{"part_torch_flame", PartFire, 0, Flames, kWhite, 0.3F},
     ParticleType{"part_torch_flame_ns", PartFire, 0, Flames, kWhite, 0.3F},
     ParticleType{"spark", PartPage1, 41, Sparks, kSpark, 0.08F},
@@ -92,6 +108,10 @@ std::string_view sheetName(ParticleSheet sheet) {
         return "part_fire";
     case Lighting:
         return "lighting";
+    case PartFog00:
+        return "part_fog_00";
+    case PartFog01:
+        return "part_fog_01";
     }
     return {};
 }

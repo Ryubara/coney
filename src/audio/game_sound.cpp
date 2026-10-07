@@ -291,7 +291,9 @@ double GameSound::addAmbientEmitter(const script::AmbientEmitterCall& call) {
                                     .from = SoundVec{call.from[0], call.from[1], call.from[2]},
                                     .to = SoundVec{call.to[0], call.to[1], call.to[2]},
                                     .slot = call.index,
-                                    .sound = call.index == -1 ? crc32(call.sound) : 0,
+                                    .sound = call.index != -1     ? 0
+                                             : call.sound.empty() ? call.soundHash
+                                                                  : crc32(call.sound),
                                     .count = call.count,
                                     .range = call.range,
                                     .plays = call.plays,

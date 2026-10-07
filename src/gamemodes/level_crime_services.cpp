@@ -21,6 +21,12 @@ void LevelCrimeServices::callCrimeCallback(const std::string& function, int gang
     (void)m_scripts.call(function, args);
 }
 
+void LevelCrimeServices::markStoreRobbed(const CrimePosition& at, int offenderGang) {
+    if (m_robStore) {
+        m_robStore(at, offenderGang);
+    }
+}
+
 void LevelCrimeServices::moveCrimeScene(const CrimePosition& at) {
     if (m_moveScene) {
         m_moveScene(at);

@@ -3083,6 +3083,13 @@ state at `0x005fdeb8` `+0x1e8` / `+0x1ec` is set (inferred: a scene or camera ef
 gets its draw fields `+0xc8` / `+0xcc` set to −255 / −256 (inferred: hidden). Messages: 8 detach, `0x0a` show or hide, `0x15`
 remove, `0x20` hide, `0x34` a colour fade (`HuSetSpinningIconColor`, [the spinning icon](characters.md#spinning-icon)).
 
+**Coney's icons** (`repo:src/world_objects/spinning_icons.h`, drawn by `PlayLevelMode` with the world objects): a
+human's icon is the type `iconTypeName()` gives (`dyn_p_one` / `dyn_p_two` become `dyn_play_one` / `dyn_play_two`),
+placed 2.5 or 2.25 m above his feet, its rotation his heading plus a half turn plus the spin (half rate for the cuffs,
+none for the markers), and not drawn while the letterbox is up (all but `dyn_cross`). **Coney's stand-ins**: the spin's
+phase follows the game time; `dyn_cross` and `dyn_cuffs` sit at 2.25 m and the cuffs stay attached; the colour fades
+(`HuSetSpinningIconColor`) are not drawn.
+
 **The radar icon** (`DealerGoal_AddRadarIcon` `0x002c7ee0`, at the greeting, only with the option and when the dealer
 has no blip yet): blip type 2, 4 or 3 with icon 29, 31 or 30 at 0.8 for types 0, 1, 2 ([GUI](gui.md#radar-icons)).
 

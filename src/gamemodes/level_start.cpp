@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "core/assert.h"
+#include "effects/particles.h"
 #include "gui/global_strings.h"
 #include "gui/rumble_mode_gui/rumble_data.h"
 #include "gui/rumble_mode_gui/rumble_menu.h"
@@ -26,9 +27,11 @@ namespace {
 // The script frames runLevelScriptAlone() runs after the start: one second of the fixed 1/30 s step.
 constexpr std::uint64_t kSettleSteps = 30;
 
-// Reads `<level>_objs.txt` through the scripts' source and adds its objects to `records`, logging the count, or why
-// there were none.
-void loadPlacedObjects(script::ScriptSystem& scripts, world_objects::SpawnRecords& records, std::string_view level) {
+// Reads `<level>_objs.txt` through the scripts' source and adds its objects to `records` and its emitters to
+// `particles` (when given: a particle system of the line's name at its pose, its fields past the pose unused, and no
+// handle, as the loader keeps none), logging the counts, or why there were none.
+void loadPlacedObjects(script::ScriptSystem& scripts, world_objects::SpawnRecords& records, std::string_view level,
+                       effects::ParticleSystems* particles) {
     const std::string name = std::format("{}_objs.txt", level);
     const auto bytes = scripts.readFile(name);
     if (!bytes) {
@@ -41,16 +44,26 @@ void loadPlacedObjects(script::ScriptSystem& scripts, world_objects::SpawnRecord
         scripts.log(std::format("level: {}: {}", name, objects.error().message));
         return;
     }
-    const std::size_t added =
-        world_objects::addPlacedObjects(*objects, records, [&scripts] { return scripts.nextObjectHandle(); });
-    scripts.log(std::format("level: {} placed {} objects of {} lines", name, added, objects->size()));
+    std::size_t emitters = 0;
+    const std::size_t added = world_objects::addPlacedObjects(
+        *objects, records, [&scripts] { return scripts.nextObjectHandle(); },
+        [particles, &emitters](const world_objects::PlacedObject& object) {
+            if (particles != nullptr &&
+                particles->spawn(object.name, anim::Vec3{object.position[0], object.position[1], object.position[2]},
+                                 anim::Quat{object.rotation[0], object.rotation[1], object.rotation[2],
+                                            object.rotation[3]}) != nullptr) {
+                ++emitters;
+            }
+        });
+    scripts.log(
+        std::format("level: {} placed {} objects and {} emitters of {} lines", name, added, emitters, objects->size()));
 }
 
 } // namespace
 
 LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, CreatedHumans& humans,
                           world_objects::WorldFlags& flags, std::string_view level,
-                          world_objects::SpawnRecords* records) {
+                          world_objects::SpawnRecords* records, effects::ParticleSystems* particles) {
     // The humans and flags of the level before are gone: the original's unload frees every slot and the flag pool.
     humans.clear();
     flags.clear();
@@ -59,7 +72,7 @@ LevelStart runLevelScript(script::ScriptSystem& scripts, GameState& state, Creat
 
     // Step 7: the level's placed objects, into the spawn records.
     if (records != nullptr) {
-        loadPlacedObjects(scripts, *records, level);
+        loadPlacedObjects(scripts, *records, level, particles);
     }
 
     // InitLevel's own two flags, at the origin facing 0, made through AddFlag so their handles come from the same

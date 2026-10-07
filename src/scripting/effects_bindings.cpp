@@ -75,11 +75,41 @@ NativeFunction makeQueueMotionBlurEffect(const BindingContext& context) {
     };
 }
 
+// A table argument `{r, g, b, a}` (0-1 each) as the screen tint stores it: each × 255, truncated.
+effects::ScreenTint::Colour tintArg(std::span<const Value> args) {
+    const auto component = [&args](std::size_t k) { return effects::ScreenTint::byteOf(tableNumber(args, 0, k)); };
+    return effects::ScreenTint::Colour{component(1), component(2), component(3), component(4)};
+}
+
+// `SetLevelColour({r, g, b, a})`, `EnterStore({r, g, b, a})` and `ExitStore()`: the screen tint's looks 9 and 10
+// (docs/research/rendering.md#tint).
+void addTintBindings(LuaVm& vm, const BindingContext& context) {
+    vm.registerFunction("SetLevelColour", [context = &context](std::span<const Value> args) {
+        if (context->effects != nullptr) {
+            context->effects->tint.setLevelColour(tintArg(args));
+        }
+        return binding::none();
+    });
+    vm.registerFunction("EnterStore", [context = &context](std::span<const Value> args) {
+        if (context->effects != nullptr) {
+            context->effects->tint.enterStore(tintArg(args));
+        }
+        return binding::none();
+    });
+    vm.registerFunction("ExitStore", [context = &context](std::span<const Value>) {
+        if (context->effects != nullptr) {
+            context->effects->tint.exitStore();
+        }
+        return binding::none();
+    });
+}
+
 } // namespace
 
 void addEffectsBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     vm.registerFunction("QueueMotionBlurEffect", makeQueueMotionBlurEffect(context));
     vm.registerFunction("SpawnParticle", makeSpawnParticle(context, std::move(nextHandle)));
+    addTintBindings(vm, context);
 }
 
 } // namespace coney::script

@@ -14,10 +14,13 @@ add_executable(coney_tests
     core/options_test.cpp
     core/pad_test.cpp
     effects/effect_culling_test.cpp
+    effects/glints_test.cpp
     effects/ground_fog_test.cpp
+    effects/light_tasks_test.cpp
     effects/motion_blur_test.cpp
     effects/particles_test.cpp
     effects/room_smoke_test.cpp
+    effects/screen_tint_test.cpp
     fileio/disc_test.cpp
     fileio/executable_test.cpp
     fileio/reader_test.cpp

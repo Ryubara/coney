@@ -119,10 +119,14 @@ std::expected<std::vector<PlacedObject>, Error> parsePlacedObjects(std::string_v
 }
 
 std::size_t addPlacedObjects(std::span<const PlacedObject> objects, SpawnRecords& records,
-                             const std::function<double()>& nextHandle) {
+                             const std::function<double()>& nextHandle,
+                             const std::function<void(const PlacedObject&)>& onEmitter) {
     std::size_t added = 0;
     for (const PlacedObject& object : objects) {
         if (object.emitter()) {
+            if (onEmitter) {
+                onEmitter(object);
+            }
             continue;
         }
         SpawnRecord record;

@@ -31,7 +31,7 @@ missions` sets each entry's `usage.levels` from the disc.
 | [`level51`](#level51) | mission 14 | 256 | 6 | 6 | 1 |
 | [`level52`](#level52) | mission 15 | 235 | 4 | 4 | 0 |
 | [`level54`](#level54) | mission 16 | 241 | 7 | 7 | 1 |
-| [`level55`](#level55) | mission 17 | 226 | 8 | 8 | 1 |
+| [`level55`](#level55) | mission 17 | 226 | 8 | 8 | 2 |
 | [`level84`](#level84) | mission 18 | 219 | 8 | 8 | 0 |
 | [`level82`](#level82) | flashback 1 | 250 | 4 | 4 | 0 |
 | [`level92`](#level92) | flashback 2 | 237 | 8 | 8 | 4 |
@@ -559,14 +559,14 @@ missions` sets each entry's `usage.levels` from the disc.
 
 ## level55: mission 17 {#level55}
 
-226 bindings, 8 new: 8 traced, 1 implemented in Coney (208 of all 226).
+226 bindings, 8 new: 8 traced, 2 implemented in Coney (209 of all 226).
 
 | Binding | Category | Detail | Evidence | Coney |
 | --- | --- | --- | --- | --- |
 | [`HuButtonMiniGame`](character.md#hubuttonminigame) | Characters | traced | confirmed (code) | not implemented |
 | [`TacticBossScenarioB`](ai.md#tacticbossscenariob) | AI | traced | confirmed (code) | not implemented |
 | [`GetHitpoints`](world.md#gethitpoints) | World and objects | traced | confirmed (code) | implemented |
-| [`SetLevelColour`](effects.md#setlevelcolour) | Effects and lighting | traced | confirmed (code) | not implemented |
+| [`SetLevelColour`](effects.md#setlevelcolour) | Effects and lighting | traced | confirmed (code) | implemented |
 | [`SpawnAreaEffect`](effects.md#spawnareaeffect) | Effects and lighting | traced | confirmed (code) | not implemented |
 | [`SoundSetMusicStateCallback`](sound.md#soundsetmusicstatecallback) | Sound and music | traced | confirmed (code) | not implemented |
 | [`CfgExcludedVandalizeZone`](config.md#cfgexcludedvandalizezone) | Configuration (Cfg) | traced | confirmed (code) | not implemented |

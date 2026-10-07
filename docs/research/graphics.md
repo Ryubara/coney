@@ -302,14 +302,26 @@ Coney (`effects::MotionBlur`, `repo:src/effects/motion_blur.h`; `platform::Motio
 and strength linearly over the time given and lays the last frame over the new one at that strength, a stand-in for
 the drawing [above](#motion-blur); the looks' own blur values are not applied yet.
 
+**The screen tint** (`effects::ScreenTint`, `repo:src/effects/screen_tint.h`, drawn by `PlayLevelEffects::drawTint`)
+follows [Level tint](rendering.md#tint): `SetLevelColour` stores look 9's colour (each float × 255, truncated) and
+switches to it, `EnterStore` look 10's with a 0.25 s blend, `ExitStore` back to look 9 over 0.25 s; each frame,
+after the HUD and before the scene's captions, a full-screen quad of the colour is blended over the screen at the
+alpha byte × 128 / 255 (truncated) out of 128; an alpha of 0 is not drawn. **Coney's readings**: `SetLevelColour`
+switches at once (look 9's in time is 0); the blend is linear, each byte rounded; the other looks' tints (rage,
+heat, the follower looks) are not modelled, so the tint is always the base look's.
+
 **Ground fog and litter** (`effects::GroundFog`, `repo:src/effects/ground_fog.h`; `effects::CameraLitter`,
 `repo:src/effects/camera_litter.h`): Coney has one view, so one fog emitter.
 [`Start3DFog`](../references/bindings/effects.md#start3dfog) starts it over: every 5 frames it tops the view up to 20
-wisps (`MaxFogParticles` lowers it), at most 10 at a time, within 20 m of the camera's target and 0.5-2 m above it,
-fading in over 9 / fadeSpeed frames to the colour's alpha; a wisp more than 20 m from the camera is dropped and one
-within 4 m hidden. Each wisp drifts from birth [toward the camera](particles.md#fog), aimed up to 2 m to either side
-along the camera's x axis, at drift × 1.75-2.25 m/s. **Coney's stand-ins**: a fade step is a frame, adding alpha ×
-fadeRate / steps; the wisps are not drawn yet (the renderer does not load the `part_fog_00` / `_01` sheets).
+wisps (`MaxFogParticles` lowers it), at most 10 at a time, within 20 m of the camera's target and 0.5-2 m above it.
+Each wisp drifts from birth [toward the camera](particles.md#fog), aimed up to 2 m to either side along the camera's
+x axis, at drift × 1.75-2.25 m/s, and updates every 2 ticks: its alpha rises by ⌊alpha / steps⌋ × ⌊fadeRate⌋ for
+⌊9 / fadeSpeed⌋ updates (a 0 step is 1, every 30 ticks), it is hidden more than 20 m from the camera, more than 5 m
+outside its view or within 4 m, and from its third update one hidden at its last update ends. `PlayLevelEffects`
+draws the first 10 wisps of the pool each frame as camera-facing squares of rectangle 0 of `part_fog_00` (or
+`part_fog_01` for record 531), 2 × a random 1-4 across (growing from 0 over the first update), their alpha and size
+blended between updates, alpha-blended with the 3D sprites. **Coney's stand-ins**: the fog's own generator, not the
+particles' stream; the camera flag that hides wisps within 10 m is not modelled.
 `StartGarbage(kind)` arms the [litter](particles.md#garbage): 64 pieces on the 8 × 8 grid round the camera with the
 kind's rectangles and sizes, a grey, a wind threshold and a 600-900-update life; at 30 Hz each falls (9.8 m/s²
 edge-on, half lying flat), lands on what the collision ray meets and lies down over up to 8 updates; a ground ray every

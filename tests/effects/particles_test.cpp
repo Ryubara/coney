@@ -3,6 +3,7 @@
 // streams that last, attached systems, hiding and killing, a pane's shards, and the same run from the same seed.
 #include "effects/particles.h"
 
+#include <cmath>
 #include <cstddef>
 #include <optional>
 
@@ -180,15 +181,19 @@ TEST_CASE("a stream switched off makes no sprites until it is switched on again"
     CHECK_FALSE(systems.find(2)->particles.empty());
 }
 
-TEST_CASE("a steam vent puffs as CfgSteam configures it, faster near the camera", "[particles]") {
+TEST_CASE("a steam vent puffs with its built-in values or as CfgSteam configures it, faster near the camera",
+          "[particles]") {
     ParticleSystems systems;
     ParticleSystem* vent = systems.spawn("part_steam", Vec3{10, 0, 0}, {}, 0, 5);
     REQUIRE(vent != nullptr);
     CHECK(vent->type->behaviour == ParticleBehaviour::Steam);
     systems.setViewer(Vec3{0, 0, 0});
-    // Before CfgSteam it makes nothing.
-    run(systems, 30);
-    CHECK(systems.particleCount() == 0);
+    // Before CfgSteam it has its init's built-in values: on, white at alpha 64, a puff every 17 frames.
+    REQUIRE(vent->steam.has_value());
+    CHECK(vent->steam.value_or(coney::effects::SteamSettings{}).colour == 0xffffff40U);
+    CHECK(vent->steam.value_or(coney::effects::SteamSettings{}).interval == 17);
+    CHECK(coney::effects::defaultSteam("part_steam_huge").value_or(coney::effects::SteamSettings{}).puffInterval == 30);
+    CHECK_FALSE(coney::effects::defaultSteam("part_fire").has_value());
     coney::effects::SteamSettings steam{.colour = 0x808080FFU,
                                         .interval = 10,
                                         .puffInterval = 0,
@@ -269,4 +274,80 @@ TEST_CASE("a fireball grows from 3.2 m across through its stages from transparen
     CHECK(ball.size >= 3.2F);
     CHECK(ball.size <= 3.52F);
     CHECK((ball.colour & 0xffU) < 0x24U);
+}
+
+TEST_CASE("an alarm strobe's strober lights from its switching on until the update after its switching off",
+          "[particles]") {
+    ParticleSystems systems;
+    ParticleSystem* strobe = systems.spawn("part_strobe_red", Vec3{1, 2, 3}, {}, 0, 5.0);
+    REQUIRE(strobe != nullptr);
+    CHECK_FALSE(strobe->emitting);
+    CHECK_FALSE(coney::effects::systemLight(*strobe).has_value());
+    CHECK(systems.nearestNamed("strobe", Vec3{1, 2, 0}, 6.0F) == strobe);
+    CHECK(systems.nearestNamed("strobe", Vec3{1, 20, 0}, 6.0F) == nullptr);
+    CHECK(systems.nearestNamed("steam", Vec3{1, 2, 0}, 6.0F) == nullptr);
+    ParticleSystems::setEmitting(*strobe, true);
+    const std::optional<coney::effects::SystemLight> lit = coney::effects::systemLight(*strobe);
+    REQUIRE(lit.has_value());
+    CHECK(lit.value_or(coney::effects::SystemLight{}).radius == 10.0F);
+    CHECK(lit.value_or(coney::effects::SystemLight{}).colour.r == 1.0F);
+    CHECK(lit.value_or(coney::effects::SystemLight{}).lightsWorld);
+    run(systems, 20); // 40 ticks: faded to black
+    REQUIRE(coney::effects::systemLight(systems.systems()[0]).has_value());
+    CHECK(coney::effects::systemLight(systems.systems()[0]).value_or(coney::effects::SystemLight{}).colour.r == 0.0F);
+    // Switched off, it ends at its next update (tick 50).
+    CHECK(systems.setEmitting(5.0, false));
+    run(systems, 4);
+    CHECK(coney::effects::systemLight(systems.systems()[0]).has_value());
+    run(systems, 1);
+    CHECK_FALSE(coney::effects::systemLight(systems.systems()[0]).has_value());
+}
+
+TEST_CASE("a neon sign gives its light in its colour from the start", "[particles]") {
+    ParticleSystems systems;
+    const ParticleSystem* sign = systems.spawn("part_pink_neon", Vec3{1, 2, 3});
+    REQUIRE(sign != nullptr);
+    const std::optional<coney::effects::SystemLight> light = coney::effects::systemLight(*sign);
+    REQUIRE(light.has_value());
+    CHECK(light.value_or(coney::effects::SystemLight{}).radius == 4.0F);
+    CHECK(light.value_or(coney::effects::SystemLight{}).colour.g == 175.0F / 255.0F);
+    run(systems, 600); // 20 s: the sign stays
+    REQUIRE(systems.systems().size() == 1);
+    CHECK(coney::effects::systemLight(systems.systems()[0]).has_value());
+}
+
+TEST_CASE("a garbage pile keeps three flies jumping round it while a view is near, none otherwise", "[particles]") {
+    ParticleSystems systems;
+    REQUIRE(systems.spawn("part_garbage_flies", Vec3{10, 20, 1}) != nullptr);
+    bool seen = true;
+    systems.setViewTest([&seen](Vec3 /*point*/, float margin) { return seen && margin == 50.0F; });
+    run(systems, 29); // 58 ticks: the pile's first update is at 60
+    CHECK(systems.systems()[0].particles.empty());
+    run(systems, 1);
+    const auto& flies = systems.systems()[0].particles;
+    REQUIRE(flies.size() == 3);
+    for (const coney::effects::Particle& fly : flies) {
+        // On the 1.5 m surface round the pile, from part_page1 rectangle 19, faded and grown to nothing at first.
+        const Vec3 d = coney::anim::subtract(fly.position, Vec3{10, 20, 1});
+        CHECK(std::sqrt(coney::anim::dot(d, d)) <= 1.5F + 1e-4F);
+        CHECK(std::abs(d.z) <= 0.75F + 1e-4F);
+        CHECK(fly.rect == 19);
+        CHECK(fly.size == 0.0F);
+        CHECK((fly.colour & 0xffU) == 0);
+    }
+    // Over the first update's 20 ticks each grows in; afterwards it is grey at 0.04 and jumps on.
+    const Vec3 before = flies[0].position;
+    run(systems, 5);
+    CHECK(systems.systems()[0].particles[0].size > 0.0F);
+    CHECK(systems.systems()[0].particles[0].size < 0.04F);
+    run(systems, 6);
+    CHECK(systems.systems()[0].particles[0].size == 0.04F);
+    CHECK(systems.systems()[0].particles[0].colour == 0x808080ffU);
+    const Vec3 after = systems.systems()[0].particles[0].position;
+    CHECK((after.x != before.x || after.y != before.y || after.z != before.z));
+    // No view near at the next pile update (tick 120): the flies go.
+    seen = false;
+    run(systems, 20);
+    CHECK(systems.systems()[0].particles.empty());
+    CHECK(systems.particleCount() == 0);
 }

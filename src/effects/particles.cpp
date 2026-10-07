@@ -44,6 +44,40 @@ constexpr float kShardSpin = 8.0F;
 constexpr float kFramesPerSecond = 60.0F;
 constexpr float kSteamNear = 20.0F;
 constexpr float kSteamFarFrames = 60.0F;
+// The fly piles (docs/research/script-types.md#flies): three flies each, kept while a view is within 50 m (checked
+// every 60 ticks), dropped otherwise (checked every 120); each fly circles 1.5 m out, its angles stepping by 2π/10 and
+// 2π/5, its next update in 20 ticks or, when Random_Int(10) is below 2, 10.
+// A timer this close to 0 has come round (a step of 1/60 s or 1/30 s, rounding and all).
+constexpr float kTickSlack = 1e-4F;
+constexpr std::size_t kFliesPerPile = 3;
+constexpr float kFlyViewMargin = 50.0F;
+constexpr float kFlyPileNearFrames = 60.0F;
+constexpr float kFlyPileFarFrames = 120.0F;
+constexpr float kFlyRadius = 1.5F;
+constexpr float kFlyStepA = 2.0F * std::numbers::pi_v<float> / 10.0F;
+constexpr float kFlyStepB = 2.0F * std::numbers::pi_v<float> / 5.0F;
+constexpr float kFlyFrames = 20.0F;
+constexpr float kFlyQuickFrames = 10.0F;
+constexpr std::uint32_t kFlyQuickDraw = 10;
+constexpr std::uint32_t kFlyQuickBelow = 2;
+
+// A fly's point on angles `a` and `b` round `centre`: r × (sin²a cos b, sin²a sin b, sin a cos a).
+anim::Vec3 flyPoint(anim::Vec3 centre, float a, float b) {
+    const float sa = std::sin(a);
+    return anim::Vec3{centre.x + (kFlyRadius * sa * sa * std::cos(b)), centre.y + (kFlyRadius * sa * sa * std::sin(b)),
+                      centre.z + (kFlyRadius * sa * std::cos(a))};
+}
+
+// `from` to `to` (`0xRRGGBBAA`) by `t` in each channel.
+std::uint32_t lerpColour(std::uint32_t from, std::uint32_t to, float t) {
+    std::uint32_t out = 0;
+    for (unsigned shift = 0; shift < 32; shift += 8) {
+        const auto a = static_cast<float>((from >> shift) & 0xffU);
+        const auto b = static_cast<float>((to >> shift) & 0xffU);
+        out |= (static_cast<std::uint32_t>(std::lround(a + ((b - a) * t))) & 0xffU) << shift;
+    }
+    return out;
+}
 constexpr float kSteamSpreadMin = 0.8F;
 constexpr float kSteamSpread = 0.4F;
 constexpr float kPuffSpeedMin = 0.75F;
@@ -94,6 +128,9 @@ bool endsWhenEmpty(ParticleBehaviour behaviour) {
     case ParticleBehaviour::Glow:
     case ParticleBehaviour::Flames:
     case ParticleBehaviour::Steam:
+    case ParticleBehaviour::Strobe:
+    case ParticleBehaviour::Neon:
+    case ParticleBehaviour::Flies:
         return false;
     }
     return false;
@@ -151,6 +188,35 @@ float ParticleSystems::unit() {
     return static_cast<float>(draw(kSteps - 1U)) / static_cast<float>(kSteps);
 }
 
+std::optional<SteamSettings> defaultSteam(std::string_view typeName) {
+    // The vents' inits (docs/research/particles.md#steam): on, at 1 m/s along the vent's -x axis, with a life in puff
+    // updates; CfgSteam replaces them.
+    const auto vent = [](float rise, float dragV, float size, float growth, std::uint32_t colour, std::uint32_t life,
+                         std::uint32_t puffInterval, std::uint32_t interval) {
+        SteamSettings steam;
+        steam.colour = colour;
+        steam.interval = interval;
+        steam.puffInterval = puffInterval;
+        steam.size = size;
+        steam.growth = growth;
+        steam.life = static_cast<float>(life * puffInterval) / kFramesPerSecond;
+        steam.speed = 1.0F;
+        steam.rise = rise;
+        steam.dragV = dragV;
+        return steam;
+    };
+    if (typeName == "part_steam") {
+        return vent(0.25F, 0.0F, 0.25F, 0.125F, 0xffffff40U, 11, 10, 17);
+    }
+    if (typeName == "part_steam_large") {
+        return vent(0.45F, 0.0F, 0.75F, 0.02F, 0xffffff54U, 11, 10, 6);
+    }
+    if (typeName == "part_steam_huge") {
+        return vent(0.75F, -0.3F, 2.5F, 0.32F, 0xffffff40U, 4, 30, 7);
+    }
+    return std::nullopt;
+}
+
 ParticleSystem* ParticleSystems::spawn(std::string_view typeName, anim::Vec3 position, anim::Quat rotation,
                                        double parent, double handle, std::optional<std::uint32_t> colour,
                                        std::optional<std::uint16_t> rect) {
@@ -166,6 +232,15 @@ ParticleSystem* ParticleSystems::spawn(std::string_view typeName, anim::Vec3 pos
     system.parent = parent;
     system.colour = colour.value_or(system.type->colour);
     system.rect = rect.value_or(system.type->rect);
+    system.steam = defaultSteam(system.type->name);
+    system.serial = ++m_serial;
+    // An alarm strobe starts off: its light waits for message 0x12 (`PartStrobeRed_Init`). A neon sign places its
+    // light at once.
+    if (system.type->behaviour == ParticleBehaviour::Strobe) {
+        system.emitting = false;
+    } else if (system.type->behaviour == ParticleBehaviour::Neon) {
+        system.light = makeNeonLight(system.type->colour);
+    }
     // `sub_shack_puff` takes rectangle 42 plus a random 0-1 (docs/research/particles.md#sprite-words).
     if (!rect && system.type->name.starts_with("sub_shack_puff")) {
         system.rect = static_cast<std::uint16_t>(system.rect + draw(1));
@@ -374,6 +449,9 @@ Particle ParticleSystems::makeParticle(ParticleSystem& system) {
     switch (type.behaviour) {
     case ParticleBehaviour::Inert:
     case ParticleBehaviour::Explosion:
+    case ParticleBehaviour::Strobe:
+    case ParticleBehaviour::Neon:
+    case ParticleBehaviour::Flies:
         break;
     case ParticleBehaviour::Explode: {
         // The flash: a random roll, then its three stages.
@@ -491,8 +569,44 @@ bool ParticleSystems::setEmitting(double handle, bool on) {
     if (handle == 0 || found == m_systems.end()) {
         return false;
     }
-    found->emitting = on;
+    setEmitting(*found, on);
     return true;
+}
+
+ParticleSystem* ParticleSystems::nearestNamed(std::string_view part, anim::Vec3 at, float within) {
+    ParticleSystem* nearest = nullptr;
+    float best = within * within;
+    for (ParticleSystem& system : m_systems) {
+        if (system.type->name.find(part) == std::string_view::npos) {
+            continue;
+        }
+        const anim::Vec3 d = anim::subtract(system.position, at);
+        if (const float distance = anim::dot(d, d); distance <= best) {
+            best = distance;
+            nearest = &system;
+        }
+    }
+    return nearest;
+}
+
+void ParticleSystems::setEmitting(ParticleSystem& system, bool on) {
+    // A strobe switched on makes a new `strober`; switched off, its `strober` ends at its next update.
+    if (system.type->behaviour == ParticleBehaviour::Strobe) {
+        if (on && !system.emitting) {
+            system.light = makeStrober();
+            system.lightTicks = 0.0F;
+        } else if (!on && system.light) {
+            system.light->ending = true;
+        }
+    }
+    system.emitting = on;
+}
+
+std::optional<SystemLight> systemLight(const ParticleSystem& system) {
+    if (!system.light || system.light->done) {
+        return std::nullopt;
+    }
+    return SystemLight{system.position, lightColour(*system.light), system.light->radius, system.light->lightsWorld};
 }
 
 bool ParticleSystems::configureSteam(double handle, const SteamSettings& settings) {
@@ -521,6 +635,78 @@ void ParticleSystems::stepSteam(ParticleSystem& system, float seconds) {
     const float frames =
         near ? static_cast<float>(std::max<std::uint32_t>(system.steam->interval, 1)) : kSteamFarFrames;
     system.emitDue = std::max(system.emitDue + (frames / kFramesPerSecond), 0.0F);
+}
+
+void ParticleSystems::stepFlyPile(ParticleSystem& system, float seconds) {
+    // The pile's update comes round every 60 or 120 ticks, the first 60 ticks after its spawn.
+    if (system.age == 0.0F) {
+        system.emitDue = kFlyPileNearFrames / kFramesPerSecond;
+    }
+    system.emitDue -= seconds;
+    if (system.emitDue > kTickSlack) {
+        return;
+    }
+    if (m_viewTest && m_viewTest(system.position, kFlyViewMargin)) {
+        // Near a view: the flies that are missing are made again.
+        while (system.particles.size() < kFliesPerPile && m_particles < kParticleBudget) {
+            system.particles.push_back(makeFly(system));
+            ++m_particles;
+        }
+        system.emitDue += kFlyPileNearFrames / kFramesPerSecond;
+    } else {
+        // No view near: the flies are told they are done (message 0x15) and go.
+        m_particles -= system.particles.size();
+        system.particles.clear();
+        system.emitDue += kFlyPileFarFrames / kFramesPerSecond;
+    }
+    system.emitDue = std::max(system.emitDue, 0.0F);
+}
+
+Particle ParticleSystems::makeFly(const ParticleSystem& system) {
+    Particle fly;
+    fly.life = 0.0F;
+    fly.fades = false;
+    fly.rect = system.rect;
+    fly.size = 0.0F;
+    // It fades in from white at alpha 0 and grows from nothing over its first update.
+    fly.colour = 0xffffff00U;
+    Particle::Fly& state = fly.fly.emplace();
+    state.a = unit() * 2.0F * std::numbers::pi_v<float>;
+    state.b = unit() * 2.0F * std::numbers::pi_v<float>;
+    state.interval = kFlyFrames / kFramesPerSecond;
+    state.due = state.interval;
+    state.colour = system.colour;
+    state.size = system.type->size;
+    fly.position = flyPoint(system.position, state.a, state.b);
+    return fly;
+}
+
+void ParticleSystems::updateFly(Particle& fly, anim::Vec3 centre) {
+    Particle::Fly& state = *fly.fly;
+    state.grown = true;
+    state.a += kFlyStepA;
+    state.b += kFlyStepB;
+    fly.position = flyPoint(centre, state.a, state.b);
+    const float frames = draw(kFlyQuickDraw) < kFlyQuickBelow ? kFlyQuickFrames : kFlyFrames;
+    state.interval = frames / kFramesPerSecond;
+    state.due += state.interval;
+}
+
+void ParticleSystems::stepFly(Particle& fly, anim::Vec3 centre, float seconds) {
+    Particle::Fly& state = *fly.fly;
+    state.due -= seconds;
+    while (state.due <= kTickSlack) {
+        updateFly(fly, centre);
+    }
+    // Before its first update it fades and grows in, linearly over the update's interval.
+    if (!state.grown) {
+        const float t = std::clamp(1.0F - (state.due / state.interval), 0.0F, 1.0F);
+        fly.size = state.size * t;
+        fly.colour = lerpColour(0xffffff00U, state.colour, t);
+    } else {
+        fly.size = state.size;
+        fly.colour = state.colour;
+    }
 }
 
 void ParticleSystems::updatePuff(Particle& puff) {
@@ -572,11 +758,26 @@ bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
         case ParticleBehaviour::Explosion:
         case ParticleBehaviour::Flames:
         case ParticleBehaviour::Steam:
+        case ParticleBehaviour::Strobe:
+        case ParticleBehaviour::Neon:
+        case ParticleBehaviour::Flies:
             break;
         }
     }
     if (behaviour == ParticleBehaviour::Steam) {
         stepSteam(system, seconds);
+    }
+    // A light type runs a whole tick at a time; an ended one is dropped.
+    if (system.light) {
+        constexpr float kWholeTick = 0.999F; // a step of 1/60 s is a tick, rounding and all
+        system.lightTicks += seconds * kFramesPerSecond;
+        while (system.lightTicks >= kWholeTick && !system.light->done) {
+            system.lightTicks -= 1.0F;
+            tickLight(*system.light, [this](std::uint32_t n) { return draw(n); });
+        }
+        if (system.light->done) {
+            system.light.reset();
+        }
     }
     // A stream makes its sprites as its interval comes round.
     if (behaviour == ParticleBehaviour::Flames && system.emitting) {
@@ -613,11 +814,18 @@ bool ParticleSystems::stepSystem(ParticleSystem& system, float seconds) {
         if (behaviour == ParticleBehaviour::Glow) {
             particle.position = system.position;
         }
+        if (particle.fly) {
+            stepFly(particle, system.position, seconds);
+        }
         if (behaviour == ParticleBehaviour::Flames && particle.life > 0.0F) {
             const auto frame = static_cast<std::uint16_t>(std::min<float>(
                 kFlameFrames - 1, std::floor(particle.age / particle.life * static_cast<float>(kFlameFrames))));
             particle.rect = static_cast<std::uint16_t>(system.rect + frame);
         }
+    }
+    // A fly pile's update, after its flies' step so that new flies start their first update now.
+    if (behaviour == ParticleBehaviour::Flies) {
+        stepFlyPile(system, seconds);
     }
     const std::size_t before = system.particles.size();
     std::erase_if(system.particles, [](const Particle& p) {
