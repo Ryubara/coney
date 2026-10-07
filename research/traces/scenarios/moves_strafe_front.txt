@@ -1,0 +1,5 @@
+5 press l1
+15 stick left -55 83
+21 tap square
+23 stick left 0 0
+70 release l1

@@ -61,7 +61,7 @@ A part record, `p` < 26:
 | `+0x02` | the part removed with it, `0xff` none (`Car_RemovePartBits` reads `0x0057e5b2 + 0x5f0 × type + 0x30 × p`) |
 | `+0x03` | `0x01` on the doors, `0x10` on the bonnet and boot |
 | `+0x10` | the part's box, vec3 in metres |
-| `+0x20` | float: 0.1, 0.5 on the wheels |
+| `+0x20` | float: the restitution a loose piece bounces with ([Physics](physics.md#cars)); 0.1, 0.5 on the wheels |
 
 The part ids with what we read them to be (inferred from the side bits and boxes): 0 body, 1 roof, 2 and 3 the front
 and back bumpers (2.36 m across), 4 bonnet, 5 boot, 6 and 7 front and back panels, 8 and 9 headlights, 10-13 side
@@ -153,6 +153,10 @@ makes it **fly off** (`0x0038a010`): bit in `+0x11f4`, a lifetime of 360 at the 
 outward from the car (a hit: the record's side bits pick the direction, 3-6 m/s and a small spin; the explosion: away
 from the car's centre and up, 12-16 m/s, a larger spin, with a `sub_flaming_debris` particle system on the piece).
 A quiet explosion puts those parts in `+0x11f0` instead (hidden, no piece).
+A flying piece has no body of its own: `Car_UpdateLoosePart` (`0x00387f18`) falls, sweeps and bounces it each update
+and counts the lifetime down, so a piece lasts 360 ticks (6 s); below 91 it sends message `0x15` to the object held
+in `+0x8c`, and at 0 the part is removed (put in `+0x11f0`). [Physics](physics.md#cars) has the steps. Confirmed (code)
+at that address.
 
 ### Explosion {#explode}
 
@@ -373,8 +377,8 @@ Coney's stand-ins, where this page is silent:
 
 ## Open questions
 
-- What the part record's `+0x20` float is, what sets the draw mask `+0x11fc`, and how long a flying piece lasts
-  (`+0x94` = 360: ticks or updates) and what removes it.
+- What sets the draw mask `+0x11fc`. (Answered: the part record's `+0x20` is the bounce restitution, and a flying
+  piece lasts 360 ticks before `0x00387f18` removes it; [Physics](physics.md#cars).)
 - What the object a car holds at `+0x1204` is (released when it explodes; part 15 coming off makes it pickable).
 - The lookup that takes a car to its Object List record.
 - Which atomics the paint tints, how cars are lit, and how the type record's boxes make a car's collision.

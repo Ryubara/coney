@@ -291,8 +291,22 @@ compiled out, or reaches the string some other way); its code lies somewhere bet
 | `OptionMenu.cpp` | `0x001d5900`-`0x001dab10` | 77 | `0x001dab10` | `0x001d5b30`; `0x001d86a8` (`OptionItemLightingType`, `OptionItemOnOffType`) |
 | `ScrollingMenu.cpp` | `0x001e0a98`-`0x001e1a38` | 16 | | `0x001e0a98`; `0x001e1550`; `0x001e1830` (`ScrollingMenuItem`) |
 | `ControlMenuHUD.cpp` | `0x001e3520`-`0x001e5478` | 29 | `0x001e5478` | `0x001e3828` (`ScrollingMenu`); `0x001e3d98` |
-| `GameStats.cpp` | `0x00215150`-`0x00216908` | 8 | `0x00216e90` | `0x00215150` (`861A1AFF`, `806400FF`); `0x002155a8` (`ScrollingMenu`, `CircledTextHeader`); `0x00215ce8` (`GS_Mission`), +2 more |
+| `GameStats.cpp` | `0x00214d08`-`0x00216908` | 13 | `0x00216e90` | `0x00215150` (`861A1AFF`, `806400FF`); `0x002155a8` (`ScrollingMenu`, `CircledTextHeader`); `0x00215ce8` (`GS_Mission`), +2 more |
 | `GameStatsSubItem.cpp` | `0x00216eb0`-`0x002176b8` | 3 | | `0x00216eb0` (`861A1AFF`, `806400FF`); `0x00217350` (`BaseWidget`, `ScrollingTextWidget`); `0x002175f8` |
+
+The function-by-function pass over `GUI/` ([GUI](gui.md), [HUD](hud.md), [Front end](frontend.md)) settled these
+boundaries (inferred from the stubs and what the code does; the [coverage](#coverage) counts predate them):
+
+- **`HUDInterface.cpp`** runs to its stub `0x001b3ea8`: everything from `0x001ad588` to there is the HUD object's
+  methods ([HUD](hud.md#fn-hudinterface)), and `HUDLua.cpp`'s code starts after it.
+- **After `MissionSelectHUD.cpp`** (which ends at its stub `0x001c1688`) comes a unit with no path string,
+  `0x001c16a8` to its stub `0x001c3dc0`: `MultiLineTextWidget`, the HUD's generic bars and the counter panels
+  ([GUI](gui.md#fn-multilinetext)). `RadarHUD.cpp` starts right after that stub, at `Radar_Setup` (`0x001c3de0`).
+- **After `PM_TooManyProfiles.cpp`** comes another unit with no path string, `0x0020db98` to its stub `0x00211c80`:
+  the player panel base, the target panel and the Armies of the Night panel (`ANHud`), whose colours that stub's
+  initialiser sets ([HUD](hud.md#fn-player-panel-base)). So `0x00211c80` is not `PM_TooManyProfiles.cpp`'s stub.
+- **`GameStats.cpp`** starts at `0x00214d08`: the five sprite-batch makers before its first anchor come after the
+  player panel's static initialiser and serve only the statistics screen ([Front end](frontend.md#fn-gamestats)).
 
 ### GUI/RumbleModeGUI
 
@@ -330,7 +344,7 @@ compiled out, or reaches the string some other way); its code lies somewhere bet
 | `PM_NumPlayers.cpp` | `0x0020b208`-`0x0020b698` | 2 | | `0x0020b208` (`TextWidget`, `OptionGrid`); `0x0020b5e8` |
 | `PM_Profile.cpp` | `0x0020be68`-`0x0020c510` | 2 | | `0x0020be68` (`TextWidget`, `OptionGrid`); `0x0020c460` |
 | `PM_Subtitles.cpp` | `0x0020cab8`-`0x0020ceb8` | 2 | | `0x0020cab8` (`TextWidget`, `OptionGrid`); `0x0020ce08` |
-| `PM_TooManyProfiles.cpp` | `0x0020d3a0`-`0x0020d890` | 2 | `0x00211c80` | `0x0020d3a0` (`%s%d%s`, `MultiLineTextWidget`); `0x0020d7a8` |
+| `PM_TooManyProfiles.cpp` | `0x0020d3a0`-`0x0020d890` | 2 | | `0x0020d3a0` (`%s%d%s`, `MultiLineTextWidget`); `0x0020d7a8` |
 
 ### Human
 

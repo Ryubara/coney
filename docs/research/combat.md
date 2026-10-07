@@ -2083,6 +2083,38 @@ The power strike is `press cross`, then `tap square` a frame later, while grabbi
 the stick at 100 % stepped anticlockwise every update, under 90° a step (for example 30° steps: `stick left 100 0`,
 `87 50`, `50 87`, `0 100`, `-50 87`, ...), about 12 turns in all; no other button until it ends.
 
+## Code index {#code-index}
+
+Every combat function of the human code (`0x002176b8`-`0x00288000`) that the sections above do not walk through, in
+address order, with what it does. Names are ours, as in the local Ghidra project, where each function also carries a
+plate comment. The rest of the human code is indexed on [Characters](characters.md#code-index).
+
+### Grabs, tackles and three-person moves {#code-grabs}
+
+The state changes that start and end a grab, a tackle, its hold and a three-person (tandem) move, and the throw links.
+The state bits are in [State flags](#state-flags); push weight is the human's attribute 7 (vtable `+0xe4`), set to 1e9
+to make a body immovable and back to 1.0.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x0022af48` | `Human_GoDown` | Pushes move style 0xf, makes the body immovable, goes down (0x0022f4f8) and clears stance; a pad player leaves the lock and drops the target, and tutorial hints 24 or 25 may show. | confirmed (code) |
+| `0x0022b1a0` | `Tandem_LinkThree` | Ends a grab and links grabber, victim and attacker in a three-person move (states 0x1000 / 0x2000). | confirmed (code) |
+| `0x0022b328` | `Tandem_Unlink` | Ends a three-person move: clears the states and links, restores push weight and body group, and puts the victim down. | confirmed (code) |
+| `0x0022b5a8` | `Tandem_UnlinkQuiet` | Like Tandem_Unlink without putting anyone down. | confirmed (code) |
+| `0x0022b760` | `Tandem_BreakFromVictim` | Breaks a three-person move from the victim's side, then Tandem_Unlink. | confirmed (code) |
+| `0x0022b960` | `Grab_BreakOnHit` | Breaks the grab, tackle or tag a hit human is in, stunning and damaging by the anim's knockdown value. | confirmed (code) |
+| `0x0022bce0` | `Throw_ClearLink` | Clears the thrower's state 0x1000 and link, restores push weight and body, then the victim's side. | confirmed (code) |
+| `0x0022bdc0` | `Throw_ClearVictimLink` | Clears the thrown human's state 0x2000 and link; puts it down or stuns it by its state. | confirmed (code) |
+| `0x0022c388` | `Tackle_End` | Ends a tackle on both humans: pops style 0xc and puts the victim down. | confirmed (code) |
+| `0x0022c548` | `Tackle_Mount` | Turns a tackle into the mount: clears 0x400 / 0x800, makes both immovable and sets the mounted states. | confirmed (code) |
+| `0x0022cb00` | `Grab_End` | Ends a grab: clears the grab states 0xc0, restores weights and styles, the mug camera and speech. | confirmed (code) |
+| `0x0022cd78` | `Grab_StartMug` | Turns a rear grab into a mugging (0x100 / 0x200) and reads the mug parameters. | confirmed (code) |
+| `0x0022d030` | `Tackle_StartHold` | From a tackle to the hold (0x8000000000 / 0x10000000000), starting the mini camera. | confirmed (code) |
+| `0x0022d1f8` | `Tackle_EndHold` | From the hold back to the tackle (0x400 / 0x800). | confirmed (code) |
+| `0x00230930` | `Attack_FarReachSquared` | Squared far range of an attack kind for a human, from the attack table's far range or fixed values by gait and held object; the AI's stand and avoid goals use it. | confirmed (code) |
+| `0x00230d00` | `Attack_ReachSquared` | Squared reach of an attack kind for a human: kind to anim id to AttackTable_GetReach, with fixed values for some kinds. | confirmed (code) |
+| `0x00232be8` | `Grab_EndBoth` | Ends a grab between two humans (Grab_End, 0x00280548) and sets state 0x20000000 on both. | confirmed (code) |
+
 ## Coney's implementation
 
 `src/combat/` holds the player's combat rules as a self-contained core: it decides, and `src/human/` plays what it

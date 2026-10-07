@@ -1365,6 +1365,13 @@ at runtime for Vermin (3.5 m/s up, 9.55 m/s across a 4.1 m gap); the rest is in
   and record `+0x08` gets `0x40` (the fences stop blocking, [Walls and steps](#walls)); on failure the climb ends
   in the idle or the combat idle. A running climb ends in a gait blend, a standing one in the idle.
 - While clips 437-460 play, `+0x5b9` is 1 (`Human_StateUpdate`).
+- **From P2 on nothing collides.** While record `+0x08` has `0x40`, `Human_Move` (`0x0023d8c8`) skips the wall
+  sweep (`PhysicsBody_Sweep`) and the ground snap and adds the velocity and the clip's root motion (`+0x2f0`), height
+  included, straight to the position (`Object_SetPosition`); the other path zeroes the height and leaves it to the
+  snap. The teleport at P1's end goes through body vtable `+0x1c` with no sweep, `0x4000` stops the body re-posing
+  (`0x003422d0`), and `Human_GetPosition` returns `+0x2c0` while `0x40` is set. So a climbed face of any material
+  (a parapet of material 107 with triangle flag `0x80`, say) stops the body only during P1; the skip of materials 30,
+  31 and 122 in `Human_OnContact` covers only contacts that still reach it. Confirmed (code).
 - **The first clip runs during the move.** The same call sets the move to the start point (`0x0023d2b8`: over 1/60 s,
   or 1/15 s when the turn `0x0023cf88` takes 1/30 s) and installs the three clip tasks (`0x00105990`, `0x001754e8`),
   so P1's clock starts on the climb's first update, not after the move. Confirmed (code). At runtime (the slot 7
@@ -1398,6 +1405,535 @@ The vertical part of a climb is the single move at P2's start: the feet do not r
 
 **In an input script**: standing, `stick left 0 50` toward the obstacle and `tap triangle` within reach; from a run,
 `stick left 0 100` and `tap triangle` when the face is 4.5 m away or less.
+
+## Code index {#code-index}
+
+Every function of the human code in `0x002176b8`-`0x00288000` that the sections above do not walk through, in address
+order, with what it does. Names are ours, as in the local Ghidra project, where each function also carries a plate
+comment. Combat functions are indexed on [Combat](combat.md#code-index) and the crimes' on
+[Crimes](crimes.md#code-index).
+
+### The human core {#code-core}
+
+`0x002176b8`-`0x00233ef0`, around `Human.cpp`'s path string (`0x0021c7c8`): pose writes, fire and hit effects, the grab
+sound, voice lines and anim sounds, the record's accessors and state-flag tests, the class tables, targets, getting up
+and the overlay clips. Field offsets are on the human object ([above](#the-human-object)) and the record
+([above](#the-record)); the pose slot is the human's entry (`+0x92`) in the task pose table at `0x00714b00`, `0x20`
+bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`, a held flag one of record `+0x08`.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00217a70` | `Human_GetClump` | The human's clump from its render instance (`+0xd8`), or 0 without one. | confirmed (code) |
+| `0x00217dd8` | `Human_ReleaseInstance` | Knocks the human out, clears state bit 0, releases its dynamic anim slots (`+0x3c8`) and gives its character instance back to the resource manager. | confirmed (code) |
+| `0x00219238` | `Human_StartBurning` | Sets the burn end time, sets state 0x4000 (burning), starts the fire effect (0x0021adf8), deals health + 1 damage, drops a held kind 4 or 6 object, breaks any pair and says the burning command. | confirmed (code) |
+| `0x00219320` | `Human_FindPickupNear` | Overlap test around the human for world objects it may pick up: skips door leaves and objects it cannot see, then picks up the first that fits. | confirmed (code) |
+| `0x00219638` | `Human_ApplyTypeScale` | Per character type (`+0xcc`) model scale (for example 1.03 for type 0x21, 0.98 for 0x15); stores it with Human_StoreScale. | confirmed (code) |
+| `0x00219a28` | `HazardSphere_Contains` | True when the human is inside any active fire hazard sphere of the table at 0x0065ff50 (gated by 0x00510170). | confirmed (code) |
+| `0x00219ad0` | `Human_IgniteInHazard` | Sets the human on fire when HazardSphere_Contains says it stands in a fire hazard. | confirmed (code) |
+| `0x0021ada0` | `Human_EmptyStub1` | Empty function (returns at once); a vtable placeholder. | confirmed (code) |
+| `0x0021ada8` | `Human_EmptyStub2` | Empty function (returns at once); a vtable placeholder. | confirmed (code) |
+| `0x0021adb0` | `Human_StopHeatEffect` | Stops the heat-distortion effect `+0x6c4` and resets it to -1. | confirmed (code) |
+| `0x0021adf8` | `Human_StartFireEffect` | Spawns fire particles on random bones (eight tries) and starts the heat-distortion effect stored in `+0x6c4`. | confirmed (code) |
+| `0x0021b048` | `Human_SetPosition` | Writes the position into the human's pose slot (0x00714b00 + slot x 0x20) and pushes the pose to the task. | confirmed (code) |
+| `0x0021b100` | `Human_SetRotation` | Writes the quaternion into the pose slot (`+0x10`) and pushes the pose to the task. | confirmed (code) |
+| `0x0021b148` | `Human_PrepareGrabSound` | Prepares anim sound 0x3c (the grab sound) at the human for the partner's sound handle `+0x180`, when not already prepared. | confirmed (code) |
+| `0x0021b1f0` | `Human_StopGrabSound` | Stops the prepared grab sound `+0x180`. | confirmed (code) |
+| `0x0021b228` | `Human_StartGrabSound` | Starts the prepared grab sound `+0x180`; when it was not prepared plays anim sound 0x3c at the human instead. | confirmed (code) |
+| `0x0021c080` | `Human_ClearStrikeContacts` | Clears the physics body's struck-body contact list when the body exists. | confirmed (code) |
+| `0x0021c418` | `Human_CapsuleOverlaps` | Builds a capsule of the human's height at a pose and asks physics whether it collides with anything; used by a placement check (0x002b8ad8). | confirmed (code) |
+| `0x0021cce8` | `Human_Destruct` | Human destructor: releases speech, effects, the body and the record before the base object destructor. | confirmed (code) |
+| `0x0021cf20` | `Human_FreePhysicsBody` | Destroys the human's physics body `+0x1a0` and clears the pointer. | confirmed (code) |
+| `0x0021cf80` | `Human_GetHeadLookOffset` | Rotates the offset `+0x500` by the human's orientation; Human_UpdateHeadLook uses it as the look origin. | confirmed (code) |
+| `0x0021d080` | `Human_GetPosition` | The human's position: the carried pose `+0x2c0` while grabbed or carried, else the pose slot. | confirmed (code) |
+| `0x0021d0e0` | `Human_GetHeading` | The heading angle of the human's orientation (Quat_Heading on the pose slot). | confirmed (code) |
+| `0x0021d118` | `Player_GetMoveHeading` | The player's stick heading when the stick is pushed past 0.01, else the human's facing (0x00254310). | confirmed (code) |
+| `0x0021d310` | `Human_ResetStats` | Resets the brain, then health, power and stamina from the character class and reapplies the class damage ranges. | confirmed (code) |
+| `0x0021d530` | `Human_GetScriptPrompt` | Returns the prompt of the human's script handler (`+0xe8`). | confirmed (code) |
+| `0x0021d550` | `Human_GetScriptValue` | Returns the value of the human's script handler (`+0xe8`). | confirmed (code) |
+| `0x0021d570` | `Human_HasScriptHandler` | True when the script handler (`+0xe8`) has a handler or the force flag `+0x1b2` is set. | confirmed (code) |
+| `0x0021d848` | `Human_SetPushable` | Clears (on) or sets (off) body flag 0x200 and stores the choice in `+0x3bf`. | confirmed (code) |
+| `0x0021d880` | `Human_SpawnParticleAbove` | Spawns a named particle at the human's feet plus 1 m. | confirmed (code) |
+| `0x0021d928` | `Human_SpawnHitEffect` | Spawns the hit particle and blood for a strike on a human, facing the camera; counts hits for a tutorial hint and queues a screen effect. | confirmed (code) |
+| `0x0021de48` | `Human_SpawnBloodEffect` | Spawns blood particles for a hit at a bone, scaled by how hurt the human is. | confirmed (code) |
+| `0x0021e3a8` | `Human_GetSoundVolumeScale` | 1.0, or the combat-framing volume (game state `+0x24c`) for a player while the camera frames a fight. | confirmed (code) |
+| `0x0021e940` | `Human_UpdateSpeech` | Per update speech: when the line ends, clears speaking state and runs the end callback once; while it plays, moves the stream to the head and faces the partner. | confirmed (code) |
+| `0x0021ec30` | `Human_GetSpeechHandle` | Returns the current speech line handle `+0x178`. | confirmed (code) |
+| `0x0021ec38` | `Human_StopSpeech` | Stops the current line when alive and forced (or already flagged), ends the speaking pose and marks it stopped without callback. | confirmed (code) |
+| `0x0021ed28` | `Human_SayCopLine` | Says a cop command line; on success stores a callback hash so the script hears when it ends. | confirmed (code) |
+| `0x0021ede0` | `Human_PlayNextVoiceLine` | Plays the next line of voice bank 0x29 at the human when the shared voice slot 0x005e6d80 is free, and takes that slot. | confirmed (code) |
+| `0x0021ee50` | `Human_PlayVoiceByName` | Hashes a fixed name (0x005d91e0) and plays it through Human_PlayVoiceAt. | confirmed (code) |
+| `0x0021ee88` | `Human_PlayVoiceAt` | Plays a voice line by hash at the human's position into `+0x168` unless one is already playing. | confirmed (code) |
+| `0x0021efb0` | `Human_UpdateVoicePosition` | Moves the voice line `+0x168` to the human's position; false when none plays. | confirmed (code) |
+| `0x0021f058` | `Human_StopVoice` | Stops the voice line `+0x168` when it plays. | confirmed (code) |
+| `0x0021f0a0` | `Player_PrepareLine` | For a player: prepares a line by hash at the human into `+0x17c`, reusing it when the same hash is already prepared. | confirmed (code) |
+| `0x0021f1d0` | `Player_StopPreparedLine` | For a player: stops the prepared line `+0x17c`. | confirmed (code) |
+| `0x0021f208` | `Player_StartPreparedLine` | For a player: stops other speech and starts the prepared line `+0x17c` as the current line `+0x178`. | confirmed (code) |
+| `0x0021f290` | `Human_PlayFootstep` | Plays the material pair of a material and the ground under the human (`+0x1d8`, remapped): twice as loud for a player, half when hidden in shadow ([Sound](sound.md#anim-sounds)). | confirmed (code) |
+| `0x0021f410` | `Human_SayAnimLine` | An anim entry's first sound as a speech line, only when the human may speak; over a playing line only when asked, cutting it when asked ([Sound](sound.md#anim-sounds)). | confirmed (code) |
+| `0x0021f548` | `Human_PlayAnimSound` | Plays an anim entry of the sound matrix at a point, owned by the human; a player's louder, with extra columns under combat framing ([Sound](sound.md#anim-sounds)). | confirmed (code) |
+| `0x0021f700` | `Human_OnAnimSoundEvent` | Clip event 11 (message 0x8b): by the anim sound id plays the matrix entry, a footstep or material pair, a speech line or a command ([Sound](sound.md#anim-sounds)). | confirmed (code) |
+| `0x00220360` | `Human_HasIdleDialogLine` | True when the idle dialogue line for the human's voice, level and line counter exists. | confirmed (code) |
+| `0x00220430` | `Human_PlayIdleDialogLine` | Plays the human's next idle dialogue line and advances its counter. | confirmed (code) |
+| `0x002207d0` | `Human_SayObjectLine` | Says a command about an object unless the game mode is 0xb or the object is one of three types (by hash). | confirmed (code) |
+| `0x002208f0` | `Human_SayStateResponse` | Plays a state response line when the human can speak and the listener is within the line's range less 20 m. | confirmed (code) |
+| `0x00220df0` | `Hit_ResolveBlock` | Decides a hit's outcome: blocking or ducking (or class 13 with flag 4) blocks; else picks a reaction from the attack flags and height difference and plays the impact sound. | confirmed (code) |
+| `0x00221080` | `Human_RestoreControl` | Restores the control function `+0x1bc` (a member-function pointer: `+0x1be` -1, `+0x1c0` the function) from the copy saved at `+0x1c4`; with none saved, a human without a brain task gets Human_PlayerLocomotion, others Human_UpdateControl (0x00227c48). Ends the wheelchair's control. | confirmed (code) |
+| `0x00221a00` | `Human_GetDynamicAnim` | Clip for an anim id: an override slot (`+0x3c8`, 7 x 0x28) else the gang clip table entry of the variant `+0x3c4`. | confirmed (code) |
+| `0x00221aa0` | `Human_SetAnimOverride` | Puts a clip into one of the seven override slots (`+0x3c8`) for an anim id, or releases the slot when the clip is 0; marks the state when the current anim is overridden. | confirmed (code) |
+| `0x00221c20` | `Human_TurnToFacePoint` | Heading from the human to a point (Math_Atan2), then Human_TurnToOver over the given time. | confirmed (code) |
+| `0x00221dd8` | `Human_FaceHuman` | Turns the human toward another (or away with the flag) through Human_TurnToOver. | confirmed (code) |
+| `0x00221ed0` | `Human_SetCarryMoveStyle` | Pushes the move style for a carried object kind; on a wheelchair (style 0x14) kinds 4 and 6 go through 0x00253e68; 0 pops it. | confirmed (code) |
+| `0x002221b0` | `Human_CanWalkStraightToHuman` | Human_CanWalkStraightTo on another human's position. | confirmed (code) |
+| `0x00222370` | `Human_HasClearRayTo` | Ray_IsClear from the human's position (eye height added) to a point. | confirmed (code) |
+| `0x00222508` | `Human_CanSeePoint` | A point within range, in the field of view and with a clear ray. | confirmed (code) |
+| `0x002225d8` | `Human_MaySpectate` | For the spectate goal: true unless the brain is a cop; gang members (class type 10) with fewer than three fights, and AI watching a player standing lower than 1.9 m above, may spectate. | confirmed (code) |
+| `0x002226e0` | `Human_IsHumanInFieldOfView` | Human_IsInFieldOfView on another human's position. | confirmed (code) |
+| `0x00222710` | `Human_IsInFieldOfView` | Whether a point is within the human's field of view (cosine of half the angle). | confirmed (code) |
+| `0x00222868` | `Human_AddSprayPaint` | Adds spray cans: an AI keeps its own count `+0x374` (0-9); a player's goes to inventory item 4. | confirmed (code) |
+| `0x00222908` | `Human_GetCuffCount` | Handcuffs held: a player's from inventory item 5; an AI with brain type 1 always has one; other AI use `+0x378`. | confirmed (code) |
+| `0x00222980` | `Human_AddCuffs` | Adds handcuffs: inventory item 5 for a player, else `+0x378` clamped at 0. | confirmed (code) |
+| `0x00222a48` | `Human_ReactToThreat` | Asks the human's brain to take another human as the nearest threat (Brain_FindNearestThreat); called from every brain's event handler. | confirmed (code) |
+| `0x00222ad8` | `Human_GetPadRecord` | The human's per-player record in the game state (`+0x168` + player x 0x5c), or player 0's for an AI. | confirmed (code) |
+| `0x00222c98` | `Human_ApplyClassFlags` | Copies the class record's switches (`+0x3a`-`+0x3f`) into the human flags `+0xe0` (bits 0x80, 0x1000000000, 0x2000000000, 0x800000000, and the paired bits 0x200000/0x400000 and 0x400/0x200). | confirmed (code) |
+| `0x00222e40` | `Human_GetHealth` | Health, record `+0x144` (100 without a record). | confirmed (code) |
+| `0x00222e60` | `Human_GetMaxHealth` | Maximum health, record `+0x146` (100 without a record). | confirmed (code) |
+| `0x00222e80` | `Human_SetHealthPercentRaw` | Sets health to a percentage of the maximum, rounded. | confirmed (code) |
+| `0x00222f48` | `Human_GetPowerPercent` | Power `+0x148` as a percentage of the maximum power. | confirmed (code) |
+| `0x00223280` | `Human_GetStaminaDrain` | Stamina cost of the current state: blocking, tackling, grabbing with a hold timer, or grabbing (globals 0x005101e4-0x005101f0); 0 for a brainless human when 0x005102a8 is set. | confirmed (code) |
+| `0x00223348` | `Human_GetSprintDrain` | Stamina cost of sprinting (0x005101f4), else 0. | confirmed (code) |
+| `0x002233a8` | `Human_GetClassChainDelay` | Class record byte `+0x36` (used by the chain and grab timings). | confirmed (code) |
+| `0x002233c8` | `Human_GetClassReactFlag` | Class record byte `+0x38` (read by Human_PlayReaction). | confirmed (code) |
+| `0x002233e8` | `Human_ClearPower` | Sets power `+0x148` to 0. | confirmed (code) |
+| `0x00223400` | `Human_FillPower` | Sets power `+0x148` to the maximum. | confirmed (code) |
+| `0x002234f8` | `Human_BeginTalkPose` | Moves the talk state `+0x1c` from an even value to the odd "talking" value when a line starts. | confirmed (code) |
+| `0x00223548` | `Human_EndTalkPose` | Moves the talk state `+0x1c` back to the even value when a line ends. | confirmed (code) |
+| `0x002235a0` | `Human_SetTalkState` | Sets the talk state `+0x1c` unless a line is playing (odd value). | confirmed (code) |
+| `0x00223720` | `Human_GetStunTime` | Class stun time `+0x30`, scaled by `+0x10` while hurt. | confirmed (code) |
+| `0x00223790` | `Human_GetDownTime` | Class down time `+0x34`, scaled by `+0x14` while hurt. | confirmed (code) |
+| `0x002238e0` | `Human_IsTackled` | State flag 0x800 (the tackled victim). | confirmed (code) |
+| `0x00223900` | `Human_IsTackling` | State flag 0x400 (tackling, mounted). | confirmed (code) |
+| `0x00223940` | `Human_IsGrabbedFromFront` | State flag 0x10. | confirmed (code) |
+| `0x00223960` | `Human_IsGrabbedFromRear` | State flag 0x20. | confirmed (code) |
+| `0x002239a0` | `Human_IsGrabbingFront` | State flag 0x40. | confirmed (code) |
+| `0x002239c0` | `Human_IsGrabbingRear` | State flag 0x80. | confirmed (code) |
+| `0x00223a00` | `Human_HasState2000` | State flag 0x2000 (paired attacks and the camera power read it). | confirmed (code) |
+| `0x00223b98` | `Human_IsKnockedDown` | State flag 0x80000, with a record. | confirmed (code) |
+| `0x00223bc0` | `Human_IsStunnedStanding` | Stunned (0x100000) and not knocked down (0x80000). | confirmed (code) |
+| `0x00223c30` | `Human_HasHeld300000` | Held flags 0x300000 (the taunt and spectate code test it). | confirmed (code) |
+| `0x00223c50` | `Human_IsHiddenFromBrain` | With the player record flag `+0x1b` set: hidden in shadow and the brain flag `+0x2d5` clear. | confirmed (code) |
+| `0x00223d38` | `Human_IsBusyForScriptAnim` | Holds a kind 4 or 6 object, is busy, or has any of the action state flags 0x7bf9e9f7ff0. | confirmed (code) |
+| `0x00223e48` | `Human_IsClassType12` | Character class type `+0x11b` is 12. | confirmed (code) |
+| `0x00223e78` | `Human_HoldsSet6` | The held object's anim set is 6. | confirmed (code) |
+| `0x00223ea0` | `Human_HeldIsThrowable` | Held object anim set 5; set 1 with type 11 (knife); or sets 1-3 for a player or when asked. | confirmed (code) |
+| `0x00223f58` | `Human_HeldCanBeThrown` | Like Human_HeldIsThrowable for the throw velocity: set 5, a knife, or sets 1-3 for a player. | confirmed (code) |
+| `0x00224080` | `Human_HeldIsHeavy` | The held object's anim set is neither 1 nor 5. | confirmed (code) |
+| `0x002240e8` | `Human_CanUseAttackKind` | Whether the human can start attack kind n on a target now: per-kind checks of its own and the target's state flags, held objects, spray paint, cuffs, and the brain's targets for kind 10. | confirmed (code) |
+| `0x00224ea0` | `Human_ClassCanFlee` | Class record byte `+0x41` set (read by Brain_Think). | confirmed (code) |
+| `0x00224ec8` | `Human_ShouldFleeHurt` | Class record byte `+0x42` set and health under 30 %. | confirmed (code) |
+| `0x00224fd0` | `Human_IsFreeForCommand` | None of the state flags 0x2c01c0f0c00 or held flags 0xc08000. | confirmed (code) |
+| `0x00225030` | `Human_IsFreeForSnap` | Not in a high or mid busy state and neither grabbed from the front nor grabbing. | confirmed (code) |
+| `0x002250a0` | `Human_IsMidOrBusy` | The other is 0.7-1.3 m above (or under -0.7 m), or the human is in an attack phase that blocks a mid attack. | confirmed (code) |
+| `0x00225200` | `Human_IsHighOrBusy` | The other is 1.3-1.8 m above (or under -0.7 m), or the human is in a grab or attack phase that blocks a new attack. | confirmed (code) |
+| `0x00225390` | `Human_IsIdleUnderControl` | Under Human_UpdateControl or the step control (0x00243420) with no action state or held flags. | confirmed (code) |
+| `0x00225500` | `Human_IsNotDown` | Not in states 0xe0000. | confirmed (code) |
+| `0x002256a0` | `Human_CanBeGrabbed` | Whether the human may be grabbed or tackled by another: not down or in a scene, within 0.25 m of height, and none of the blocking state or held flags. | confirmed (code) |
+| `0x00225998` | `Human_IsAtRunSpeed` | Running or sprinting and moving at the run speed (less 0.01). | confirmed (code) |
+| `0x00225f58` | `Human_IsFreeForFidget` | No held flags, no action state flags and nothing held: the fidget and taunt actions may start. | confirmed (code) |
+| `0x00225fc8` | `Human_SetCarriedItemName` | Copies an item name into the human's 31-character buffer `+0x257` and clears `+0x276`. | confirmed (code) |
+| `0x002262f0` | `Human_CallMugCallback` | Calls the script's mug callback (`HuSetMugCallback`, `+0x5a4`) with the human's handle and the outcome, through the script system 0x00512b04. | confirmed (code) |
+| `0x002265d0` | `Human_SetStateFlag` | Record `+0x00` \|= bits. | confirmed (code) |
+| `0x00226620` | `Human_ClearStateFlag` | Record `+0x00` &= ~bits. | confirmed (code) |
+| `0x00226688` | `Human_ClearHeldFlag` | Record `+0x08` &= ~bits. | confirmed (code) |
+| `0x002266d8` | `Human_GetAttackerHandle` | Writes the attacker handle for the attack table: record `+0xc0` when it resolves, else the human's own handle. | confirmed (code) |
+| `0x002267c8` | `Human_ClearFoe` | Record `+0xcc` = null. | confirmed (code) |
+| `0x002267e8` | `Human_SetLastHitObject` | Records the world object that hit the human (record `+0xd0` handle, `+0x124` type, `+0x11c` position); an object of kind 8 sets it on fire and gives the foe player combat statistic 6. | confirmed (code) |
+| `0x00226910` | `Human_SetPartner` | Record `+0xc8` = another human's handle. | confirmed (code) |
+| `0x00226950` | `Human_GetPartner` | Record `+0xc8` resolved. | confirmed (code) |
+| `0x00226978` | `Human_ClearPartner` | Record `+0xc8` = null. | confirmed (code) |
+| `0x00226998` | `Human_SetGrabOther` | Record `+0xc4` = the other human of a grab. | confirmed (code) |
+| `0x002269d8` | `Human_GetGrabOther` | Record `+0xc4` resolved, the other human of a grab. | confirmed (code) |
+| `0x00226a00` | `Human_ClearGrabOther` | Record `+0xc4` = null. | confirmed (code) |
+| `0x00226a20` | `Human_GetHeadPoint` | The upper point of the human's capsule segment: feet + `+0x4e8` - 0.16 x scale. | confirmed (code) |
+| `0x00226aa0` | `Human_GetLedSlotPoint` | Point n (`+0x1e0` + n x 0x10) of the led formation after refreshing it (0x0023cd30). | confirmed (code) |
+| `0x00226af8` | `Human_SetTargetFromHandle` | Sets the target from a handle: a player sets its own human or object target; an AI sets the brain's target and `+0x128`; skipped while a player with record flag `+0x1b` is locked on. | confirmed (code) |
+| `0x00226e20` | `Human_GetTargetHandle` | The target handle `+0xc8`, refreshed from the brain first for an AI. | confirmed (code) |
+| `0x00226ea8` | `Human_GetTargetResolved` | The target `+0xc8` resolved, refreshed from the brain first for an AI. | confirmed (code) |
+| `0x00226ee8` | `Human_SyncTargetFromBrain` | Copies the brain's object target (`+0x128`) and human target into the human's targets. | confirmed (code) |
+| `0x00227010` | `Human_SetHeldObject` | Stores the held object's handle in `+0x338` (null for none). | confirmed (code) |
+| `0x00227060` | `Human_GetObjectTarget` | `+0x33c` resolved (door, flag, lock). | confirmed (code) |
+| `0x002270d0` | `Human_CanPickUpType` | For class kind 3, false for types 0x29, 0x2b, 0x2d and 0x31-0x36; other classes may pick up an item unless their class list (`+0x14c`) excludes it. | confirmed (code) |
+| `0x002271c0` | `Human_ResetRenderState` | Clears the render instance's flag `+0x2b` and resets it (0x004df008); used when a preview or flag human is shown again. | confirmed (code) |
+| `0x00227408` | `Human_HasOverheadIcon` | The overhead icon `+0x360` resolves. | confirmed (code) |
+| `0x00227428` | `Human_HasOverheadIconType` | True when the overhead icon `+0x360` is a world object of the given type. | confirmed (code) |
+| `0x002274a0` | `Human_EmptyStub3` | Empty function called by Human_StateUpdate. | confirmed (code) |
+| `0x00227738` | `Humans_FindNear` | Collects up to n humans of the game state's list (`+0x224`, `+0x228`) within a radius of a point, skipping one human and an optional filter; distances squared go beside each. | confirmed (code) |
+| `0x002278a8` | `Humans_FindNearSegment` | Finds humans whose pose slot lies near a segment (Segment_ClosestPoint), skipping one; used by Route_IsLinkBusy. | confirmed (code) |
+| `0x00227a38` | `Human_IsButtonTapControl` | State flag 0x100000000000 (button-tap movement, Human_SetButtonTapControl). | confirmed (code) |
+| `0x00227a60` | `Human_IsInWheelchair` | State flag 0x80000000000 (wheelchair control). | confirmed (code) |
+| `0x00227b78` | `Human_SetFightStanceControl` | Control function `+0x1bc` = Human_FightStanceMove (lock-on). | confirmed (code) |
+| `0x00227c28` | `Human_SetAirControl` | Control function `+0x1bc` = Human_AirControl (jumps). | confirmed (code) |
+| `0x00227c48` | `Human_SetUpdateControl` | Control function `+0x1bc` = Human_UpdateControl, the default. | confirmed (code) |
+| `0x00227c68` | `Human_HasTarget` | State flag 0x4. | confirmed (code) |
+| `0x00227c88` | `Human_IsLocked` | State flags 0x8 and 0x4 (the L1 lock). | confirmed (code) |
+| `0x00227e18` | `Human_HasStateFlag80000000` | State flag 0x80000000 (true without a record). | confirmed (code) |
+| `0x00227fb8` | `Human_IsOnFire` | State flag 0x4000. | confirmed (code) |
+| `0x00228000` | `Human_IsWorkingOut` | State flag 0x20000000000 (the workout). | confirmed (code) |
+| `0x00228028` | `Human_IsInSpecial` | State flag 0x40000000000 (a special move, Human_StopSpecial). | confirmed (code) |
+| `0x00228070` | `Human_IsMugging` | State flag 0x100. | confirmed (code) |
+| `0x00228090` | `Human_IsBeingMugged` | State flag 0x200. | confirmed (code) |
+| `0x002280b0` | `Human_HasState8000000` | State flag 0x8000000 (read by the death and lethal reactions). | confirmed (code) |
+| `0x002280d0` | `Human_HasState10000000` | State flag 0x10000000 (read by the lethal reaction and AI). | confirmed (code) |
+| `0x002280f0` | `Human_IsInMugMeter` | State flags 0x18000000000 (the mug meter shows). | confirmed (code) |
+| `0x00228118` | `Human_HasState8000000000` | State flag 0x8000000000 (read with holds and pair breaks). | confirmed (code) |
+| `0x00228140` | `Human_HasState10000000000` | State flag 0x10000000000 (read with pair breaks). | confirmed (code) |
+| `0x00228188` | `Human_IsStalkingTarget` | State flags 0x8 and 0x200000. | confirmed (code) |
+| `0x002281d8` | `Human_IsThrowingAt` | State flags 0x1000 (throwing) and 0x200000; brains treat it as an attack warning. | confirmed (code) |
+| `0x00228258` | `Human_IsBusy` | State flags 0x1f80974000, or record `+0x108` still ahead of the game time. | confirmed (code) |
+| `0x002282d8` | `Human_IsFree` | No held flags 0x2fefefff and no state flags 0x7bf9e9f7ff0. | confirmed (code) |
+| `0x00228360` | `Human_HasState800000` | State flag 0x800000 (read when pending damage applies). | confirmed (code) |
+| `0x002283a8` | `Human_ClearDownLatch` | Clears state flag 0x40000000. | confirmed (code) |
+| `0x002283c8` | `Human_HasDownLatch` | State flag 0x40000000 (down; read by the corpse cull). | confirmed (code) |
+| `0x002283e8` | `Human_HasHeld400000` | Held flag 0x400000 (an airborne body; car and thrown hits read it). | confirmed (code) |
+| `0x00228408` | `Human_HasHeld4000` | Held flag 0x4000 (picking up an item). | confirmed (code) |
+| `0x00228448` | `Human_HasHeld20080000` | Held flags 0x20080000 (a step or turn plays). | confirmed (code) |
+| `0x00228468` | `Human_HasHeld8000000` | Held flag 0x8000000 (reviving). | confirmed (code) |
+| `0x00228500` | `Human_HasHeld20000000` | Held flag 0x20000000 (turning). | confirmed (code) |
+| `0x00228520` | `Human_HasHeld100` | Held flag 0x100 (a fidget plays). | confirmed (code) |
+| `0x00228540` | `Human_HasHeld20000` | Held flag 0x20000. | confirmed (code) |
+| `0x00228630` | `Human_SetState20000000` | Sets state flag 0x20000000 (the victim just before a tackle hit). | confirmed (code) |
+| `0x00228658` | `Human_GetLastHitObject` | Record `+0xd0` resolved: the world object that last hit the human. | confirmed (code) |
+| `0x00228680` | `Human_GetLastHitObjectHandle` | Record `+0xd0` as a handle (null without a record). | confirmed (code) |
+| `0x002286a0` | `Human_IsSwingingHeld` | Held flag 0x800000, or 0x1000010 while holding an object and playing one of eleven weapon swing clips (0x1d3-0x229). | confirmed (code) |
+| `0x002287e0` | `Humans_StaticInitAll` | Static initialiser: Humans_StaticInit(1, 0xffff). | confirmed (code) |
+| `0x00228818` | `SpeedClass_Get` | Speed class record `0x006b6548` + class x 0x18. | confirmed (code) |
+| `0x00228830` | `PowerClass_Get` | Power class record `0x006619a0` + class x 0x44. | confirmed (code) |
+| `0x00228848` | `WarriorClass_Get` | Warrior class record `0x006b65c0` + class x 14. | confirmed (code) |
+| `0x002288c0` | `Cfg_SetPowerClass` | `CfgPowerClass`: fills a power class record. | confirmed (code) |
+| `0x00228a70` | `Cfg_SetWarriorClass` | `CfgWarriorClass`: fills a Warrior class record. | confirmed (code) |
+| `0x00228ad8` | `Cfg_SetWarriorUpgrade` | `CfgWarriorUpgrade`: four bytes at 0x006b6650. | confirmed (code) |
+| `0x00228ca8` | `Cfg_SetAttackDelay` | `CfgAttackDelay`: one word per attack at 0x006b6658. | confirmed (code) |
+| `0x00228cc0` | `HatSet_Reset` | Clears a hat-fit set's owner and names its 48 slots `none`. | confirmed (code) |
+| `0x00228e68` | `HatSet_FindSlot` | Index of the slot named as an object type in a hat-fit set, or -1. | confirmed (code) |
+| `0x00228ed0` | `HatSet_SetSlotName` | Writes a slot's 23-character name in a hat-fit set. | confirmed (code) |
+| `0x00228f08` | `HatSet_HasOwner` | True when one of the 51 hat-fit sets is owned by the character type. | confirmed (code) |
+| `0x00229110` | `Anim_LevelVariant` | Maps an anim id to a level's own variant for ten levels (by the current level id), else 0. | confirmed (code) |
+| `0x002294c8` | `Humans_ResetClassTables` | At start-up: clears the power classes' in-use bytes (`+0x43`) and resets all hat-fit sets. | confirmed (code) |
+| `0x00229550` | `Humans_StaticInit` | Humans_ResetClassTables(1, 0xffff). | confirmed (code) |
+| `0x00229570` | `Human_GetPortraitKind` | The crew-portrait kind for the character id `+0xcc` (kinds 0-11). | confirmed (code) |
+| `0x00229620` | `Human_DropOverlayTask` | Removes a type-5 top task, turns every strike shape off and clears the combo count `+0xbc`. | confirmed (code) |
+| `0x002296c0` | `Task_SendMessage28` | Sends message 28 (a handle and a point) to a task, stamping a type-2 object's time `+0x50` one frame back. | confirmed (code) |
+| `0x00229770` | `Task_SendMessage4` | Sends message 4 (int, float, int, int) to a task. | confirmed (code) |
+| `0x00229820` | `Object_AsKind40` | The object when its kind flags (vtable `+0x24`) include 0x40, else 0. | confirmed (code) |
+| `0x002298b8` | `Human_DistanceSq` | Squared distance between two objects' positions (0 if either is null). | confirmed (code) |
+| `0x00229aa8` | `Human_DistSqToLedSlot` | Squared distance from an object to a led formation's slot point. | confirmed (code) |
+| `0x0022a980` | `Player_UnbindPad` | Unbinds a player's pad slot from the HUD and raises the pad-error message. | confirmed (code) |
+| `0x0022aa78` | `Player_BindPad` | Binds the human as a player on a pad: player record `+0x19` = pad, `+0x1b` set when asked. | confirmed (code) |
+| `0x0022aae8` | `Human_SimulateMove` | Simulates a walk toward a heading at a trial speed (gait turn rates), giving the end point; route tests use it. | confirmed (code) |
+| `0x0022ae30` | `Human_ScaleTurnRate` | Multiplies by the turn-rate factor 0x005102cc. | confirmed (code) |
+| `0x0022c618` | `Human_ClearState8000000` | Clears state 0x8000000, restores push weight and puts the human down when knocked down. | confirmed (code) |
+| `0x0022d2d8` | `Human_BeginSpecialState` | Sets state 0x40000000000 and starts the special (0x002349a0). | confirmed (code) |
+| `0x0022d310` | `Human_EndSpecialState` | Clears state 0x40000000000 and ends the special (0x00234b30). | confirmed (code) |
+| `0x0022d348` | `Human_StartWorkout` | Sets state 0x20000000000 and calls the workout start callback. | confirmed (code) |
+| `0x0022d380` | `Human_EndWorkout` | Clears state 0x20000000000, stops the workout clip and calls the end callback. | confirmed (code) |
+| `0x0022dd08` | `Human_GetClassSpinAngle` | 2 pi, or (n - 1) x 6 pi for a Warrior class byte `+0xb` above 1. | confirmed (code) |
+| `0x0022f3c8` | `Human_GetUp` | Ends being down unless dead or knocked out: restores push weight, pops the down styles (0xe, 0xf); a stunned human (0x100000) goes to style 0xe with a fresh stun timer, else into the fight stance; clears 0x4000080000. | confirmed (code) |
+| `0x0022f4f8` | `Human_SetDownTimers` | Sets the down end time (record `+0x104`, class down time, doubled by an attack with anim flag 0x100, +2 s from a class-13 attacker) and the stun end `+0x100` (doubled by anim flag 0x200); stuns when asked and not already stunned. | confirmed (code) |
+| `0x0022f9e0` | `Human_SetStunTimer` | Sets the stun end time record `+0x100` from the class stun time, doubled by an attack with anim flag 0x200. | confirmed (code) |
+| `0x0022fa78` | `Human_StartWounded` | Clears the fight states, drops what is held, pushes the wounded style and tells the brain the human is knocked out. | confirmed (code) |
+| `0x0022fc00` | `Human_EndWounded` | Clears state 0x10000, restores push weight and pops the wounded style (0xd). | confirmed (code) |
+| `0x0022fce8` | `Human_Ignite` | Sets the human burning (Human_StartBurning) unless fireproof, down, in a scene or busy; AI catch fire only when walking, jogging or running. | confirmed (code) |
+| `0x0022fe10` | `Human_Extinguish` | Clears state 0x4000, the burn time and the heat effect. | confirmed (code) |
+| `0x0022fe48` | `Human_EnterFightStance` | Starts the stance timer and sets state 0x1. | confirmed (code) |
+| `0x0022fed0` | `Human_LeaveFightStanceThunk` | Calls Human_LeaveFightStance. | confirmed (code) |
+| `0x002300c0` | `Human_LeaveShadow` | When hidden (0x200000), not running and with a target, clears the hidden state. | confirmed (code) |
+| `0x002301f0` | `Player_UpdateHiddenLoopSound` | For a player: prepares the hidden-in-shadow loop line when hidden, stops it when not. | confirmed (code) |
+| `0x002302a8` | `Human_ResetToOneHealth` | Unless dead: knocks off the hat, clears flag 0x10, sets the counters `+0x118` and `+0x5d2` to 100, clears the foe and sets health to 1. | confirmed (code) |
+| `0x00230598` | `Human_WakeUp` | Wakes a knocked-out human: body back on, state cleared, styles popped, the cuffs icon removed, brain resumed. | confirmed (code) |
+| `0x002306e8` | `Human_ReleaseBody` | Stops speech, clears the brain's enemies, clears the pose-slot entry at 0x00715390 and frees the physics body. | confirmed (code) |
+| `0x00230740` | `Human_CreditDefeat` | When a human is beaten: credits the foe player (combat statistic 7 for a gang brain, crime statistics for others), tears down the brain, removes it from the radar and its overhead icon. | confirmed (code) |
+| `0x00231ac8` | `Human_PlayHeldIdle` | Plays a held-object idle clip (0x25a for a knife, 0x25c when asked) when no held flags are set. | confirmed (code) |
+| `0x00231b60` | `Human_StopFidget` | With a fidget playing (held 0x100): drops the overlay while moving, else rebuilds the idle tasks. | confirmed (code) |
+| `0x00231bd8` | `Human_PlayLookAround` | Pushes overlay clip 0x29e with held flag 0x20000 when free. | confirmed (code) |
+| `0x00231c20` | `Human_StopLookAround` | Drops the overlay while held flag 0x20000 is set. | confirmed (code) |
+| `0x00231c58` | `Human_StopTaunt` | With held flags 0x300000: drops the overlay while moving, else rebuilds the idle tasks. | confirmed (code) |
+| `0x002320a0` | `Human_CanPush` | Whether one human pushes another on contact, by their stances and states (from Human_OnPushContact). | confirmed (code) |
+| `0x002323d0` | `Humans_DestroyAll` | At level unload: flushes deferred anim tasks and destroys every human handle. | confirmed (code) |
+| `0x00232430` | `Human_GetClipTimeLeft` | Time left in the top clip, or in the one under it (at least 0.1 s) when the top has ended. | confirmed (code) |
+| `0x00232538` | `Humans_EndAllRage` | Ends rage mode for every human in rage (flag 0x80000). | confirmed (code) |
+| `0x00232b78` | `Human_CancelThrowAim` | Leaves throw aiming when the control function is Human_MoveThrowAim. | confirmed (code) |
+| `0x00233830` | `Human_CopRadioChatter` | For a cop brain, every 360 updates plays the next radio voice line. | confirmed (code) |
+| `0x00233890` | `Human_SayGoalLine` | Speaks the line for an AI goal event: commands or cop lines chosen by the event and the level. | confirmed (code) |
+| `0x00233b08` | `Human_SwapHeldObjects` | Swaps two humans' held objects, each picking up the other's with its pickup clip. | confirmed (code) |
+| `0x00233c40` | `Cfg_SetAutoCloseMode` | `CfgAutoCloseMode`: sets 0x00510228. | confirmed (code) |
+
+### Script functions {#code-script}
+
+The engine side of the `Hu*` and `Cfg*` script functions (`0x00233ef0`-`0x00238b18`); each row names its script
+function. A setter with a flag turns that bit of the human flags `+0xe0` on or off; a `Cfg*` setter writes one global
+the human code reads.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00233ef0` | `Human_Delete` | Marks the human dead (0x200000000), clears its foe and its script handlers. | confirmed (code) |
+| `0x00233f60` | `Human_SwapPlayerControl` | Moves player control from one human to another, swapping their camera targets. | confirmed (code) |
+| `0x00234038` | `Human_SetNoTarget` | Human flag 0x100000000000 on or off: the human cannot be targeted. | confirmed (code) |
+| `0x002340a8` | `Human_SetNoAutoLock` | Human flag 0x8000000000 on or off: no automatic lock-on. | confirmed (code) |
+| `0x00234118` | `Human_SetAutoCombat` | Human flag 0x200000000000 on or off. | confirmed (code) |
+| `0x00234318` | `Human_SetButtonTapControl` | Puts the human under button-tap movement (or back): saves control, swaps the commands and sets the state. | confirmed (code) |
+| `0x00234530` | `Cfg_SetWorkoutParams` | Fills the workout parameter tables at 0x00510690-0x005106b0. | confirmed (code) |
+| `0x002345d8` | `Human_SetWorkoutParams` | Sets three workout values at 0x00510680. | confirmed (code) |
+| `0x002345f8` | `Human_SetWorkoutCallbacks` | Interns the workout start, rep and end Lua callbacks. | confirmed (code) |
+| `0x002346a0` | `Workout_CallStart` | Calls the workout start callback with the human. | confirmed (code) |
+| `0x00234768` | `Workout_CallRep` | Calls the workout repetition callback with the human. | confirmed (code) |
+| `0x00234830` | `Workout_CallEnd` | Calls the workout end callback with the human. | confirmed (code) |
+| `0x002348f8` | `Human_SetSpecialCallbacks` | Interns the special-move start, step and end Lua callbacks. | confirmed (code) |
+| `0x002349a0` | `Special_CallStart` | Calls the special start callback with the human. | confirmed (code) |
+| `0x00234a68` | `Special_CallStep` | Calls the special step callback with the human. | confirmed (code) |
+| `0x00234b30` | `Special_CallEnd` | Calls the special end callback with the human. | confirmed (code) |
+| `0x00234bf8` | `Human_StartSpecial` | Script: puts a clip on anim 0x2a0 and starts the special action. | confirmed (code) |
+| `0x00234cb0` | `Human_StopSpecial` | Script: ends a running special with action 0x1e. | confirmed (code) |
+| `0x00234d08` | `Human_SetAccurate` | `HuSetAccurate`: human flag 0x40000 on or off. | confirmed (code) |
+| `0x00234d70` | `Human_MakeBeatUp` | Script: holds the brain and knocks the human down lying, dropping what it holds. | confirmed (code) |
+| `0x00234e58` | `Human_MakeGrounded` | Script: lays the human down, or lifts the down latch. | confirmed (code) |
+| `0x00234ef8` | `Human_SetLockMovement` | `HuLockMovement`: human flag 0x200000000 on or off; the rumble menus use it on preview fighters. | confirmed (code) |
+| `0x00234f68` | `Human_GetHandleByIndex` | `HuGet`: the handle of human n, or null. | confirmed (code) |
+| `0x00234fb8` | `Human_GetPlayerHandle` | `HuGetPlayer`: the handle of the game state's human n. | confirmed (code) |
+| `0x00235010` | `Human_FindByName` | `HuFind`: the first human whose name matches. | confirmed (code) |
+| `0x002350c8` | `Human_SetTireless` | Human flag 0x4000000 on or off. | confirmed (code) |
+| `0x00235130` | `Human_SetManualStun` | Human flag 0x8000000 on or off. | confirmed (code) |
+| `0x00235198` | `Human_SetNoReact` | Human flag 0x800 on or off. | confirmed (code) |
+| `0x00235200` | `Human_SetAutoEscape` | `HuSetAutoEscape`: human flag 0x20000 on or off. | confirmed (code) |
+| `0x00235268` | `Human_SetPushable` | `HuSetPushable`: resolves the handle and calls the human's pushable setter (0x0021d848). | confirmed (code) |
+| `0x002352b0` | `Human_GetPositionRef` | `HuGetPosition`: the human's position, or the zero vector 0x005116c0. | confirmed (code) |
+| `0x002352f8` | `Human_GetHeadingDegrees` | `HuGetHeading`: the heading of the pose-slot rotation, from an arctangent approximation. | confirmed (code) |
+| `0x00235478` | `Human_GetGangType` | `HuGetGangType`: the brain's gang (`+0x20c`), -1 without a human. | confirmed (code) |
+| `0x002354b8` | `Human_SetStunned` | `HuSetStunned`: stuns the human or ends the stun. | confirmed (code) |
+| `0x00235530` | `Human_GetHat` | `HuHasHat`: the handle of the worn hat `+0x364`, or null. | confirmed (code) |
+| `0x002355a0` | `Human_SetStrong` | `HuSetStrong`: byte `+0x3b9`. | confirmed (code) |
+| `0x002355e0` | `Human_IsGrabbed` | `HuIsGrabbed`: any of state flags 0x830 (grabbed from the front or rear, tackled). | confirmed (code) |
+| `0x00235628` | `Human_IsAlive` | `HuIsAlive`: not down or dead and up. | confirmed (code) |
+| `0x00235688` | `Human_IsDead` | `HuIsDead`: dead (true without a human). | confirmed (code) |
+| `0x002356c8` | `Human_IsInScene` | `HuIsInScene`: in a scene state. | confirmed (code) |
+| `0x00235718` | `Human_IsArrested` | `HuIsArrested`: cuffed. | confirmed (code) |
+| `0x00235758` | `Human_IsPlayer` | `HuIsAPlayer`: player index `+0x1b0` is not -1. | confirmed (code) |
+| `0x00235798` | `Human_IsHidden` | `HuIsHidden`: the brain's hidden byte `+0x2d4`. | confirmed (code) |
+| `0x002357d8` | `Human_IsMuggedByHandle` | `HuIsMugged`: being mugged. | confirmed (code) |
+| `0x00235818` | `Human_IsProne` | `HuIsProne`: in states 0xe0000 or 0x2000. | confirmed (code) |
+| `0x00235890` | `Human_GetCharType` | `HuGetCharType`: the character type `+0xcc`. | confirmed (code) |
+| `0x002358c8` | `Human_SetDamage` | `HuSetDamage`: queues pending damage from an attacker's held object. | confirmed (code) |
+| `0x002359a0` | `Human_SetDemiGodMode` | `HuSetDemiGodMode`: human flag 0x20000000000 and the minimum health 0x0051024c. | confirmed (code) |
+| `0x00235a28` | `Human_SetGodMode` | `HuSetGodMode`: human flag 0x10; the tired goal also uses it. | confirmed (code) |
+| `0x00235a88` | `Human_SetKillerMode` | `HuSetKillerMode`: human flag 0x20. | confirmed (code) |
+| `0x00235ae8` | `Human_SetUntouchable` | AI only (two goal functions): human flags 0x2c0 together (ungrabbable, ungroundable, reduced reactions). | confirmed (code) |
+| `0x00235b68` | `Human_SetFastClimber` | `HuSetFastClimber`: a human flag on or off. | confirmed (code) |
+| `0x00235bc8` | `Human_SetUngrabbable` | `HuSetUngrabbable`: human flag 0x40. | confirmed (code) |
+| `0x00235c28` | `Human_SetUngroundable` | `HuSetUngroundable`: human flag 0x80. | confirmed (code) |
+| `0x00235c88` | `Human_SetUnstunnable` | `HuSetUnstunnable`: human flag 0x100. | confirmed (code) |
+| `0x00235ce8` | `Human_SetIncreasedReact` | `HuSetIncreasedReact`: human flag 0x200000. | confirmed (code) |
+| `0x00235d50` | `Human_SetReducedReact` | `HuSetReducedReact`: human flag 0x200. | confirmed (code) |
+| `0x00235db0` | `Human_SetRevivable` | `HuSetRevivable`: a human flag on or off. | confirmed (code) |
+| `0x00235e10` | `Human_SetDoubleDamage` | `HuSetDoubleDamage`: human flag 0x4000. | confirmed (code) |
+| `0x00235e70` | `Human_SetUnarrestable` | `HuSetUnarrestable`: human flag 0x8000, removing a pending arrest prompt. | confirmed (code) |
+| `0x00235f10` | `Cfg_SetClimbWithGhetto` | `CfgClimbWithGhetto`: sets 0x00510250. | confirmed (code) |
+| `0x00235f20` | `Human_SetOnFire` | `HuSetOnFire`: ignites or extinguishes the human. | confirmed (code) |
+| `0x00235f80` | `HumanHandle_IsOnFire` | `HuIsOnFire`: state 0x4000. | confirmed (code) |
+| `0x00235fc0` | `Human_SetFireProof` | `HuSetFireProof`: human flag 0x800000, extinguishing when set. | confirmed (code) |
+| `0x002360f8` | `Human_ScriptDrop` | `HuDrop`: knocks off the hat, drops the held object and gear as asked. | confirmed (code) |
+| `0x00236188` | `Human_SetUnlockedGear` | `HuAttachGear`: attaches or removes the unlocked gear. | confirmed (code) |
+| `0x002361e8` | `Cfg_SetGearData` | `CfgGearData`: fills the gear transforms at 0x00715480. | confirmed (code) |
+| `0x00236420` | `Cfg_SetButtonHeldFrames` | `CfgButtonHeldFrames`: frames for a held button, clamped to 2-7 (0x0050b708). | confirmed (code) |
+| `0x00236450` | `Cfg_SetGrabCounterWithAttack` | `CfgGrabCounterWithAttack`: sets 0x00510254. | confirmed (code) |
+| `0x00236460` | `Cfg_SetPlayerRunButton` | `CfgPlayerRunButton`: sets 0x00510258. | confirmed (code) |
+| `0x00236470` | `Cfg_SetStickDeflection` | `CfgStickDeflection`: sets 0x005102e8. | confirmed (code) |
+| `0x00236480` | `Cfg_SetPlayerCombatWalkOnly` | `CfgPlayerCombatWalkOnly`: sets 0x0051031c. | confirmed (code) |
+| `0x00236490` | `Cfg_SetQueueGrappleCombos` | `CfgQueueGrappleCombos`: sets 0x0051025c. | confirmed (code) |
+| `0x002364d8` | `Cfg_SetAttackFromIdle` | `CfgAttackFromIdle`: sets 0x00510270. | confirmed (code) |
+| `0x002364e8` | `Cfg_SetDamageEndurance` | `CfgDamageEndurance`: sets 0x00510274. | confirmed (code) |
+| `0x002364f8` | `Cfg_SetPowerEndurance` | `CfgPowerEndurance`: sets 0x00510278. | confirmed (code) |
+| `0x00236978` | `Human_ForceEnableReticule` | `HuForceEnableReticule`: sets 0x005104f8. | confirmed (code) |
+| `0x002369b8` | `Human_SetRageFrac` | `HuSetRageFrac`: sets the rage meter to a fraction of its maximum. | confirmed (code) |
+| `0x00236a68` | `Human_SetFullRage` | `HuSetFullRage`: fills the rage meter. | confirmed (code) |
+| `0x00236ad0` | `Human_SetPreventRage` | `HuSetPreventRage`: human flag 0x2000000. | confirmed (code) |
+| `0x00236b38` | `Human_SetLockedRage` | `HuSetLockedRage`: human flag 0x100000 and the rage meter held where it is. | confirmed (code) |
+| `0x00236be0` | `Rage_ResetConfig` | At level unload: clears the stereo, lock-pick and rage handlers and the rage handler table 0x006b6810. | confirmed (code) |
+| `0x00236c28` | `Cfg_SetRagePoints` | `CfgRagePoints`: three values at 0x005108d8-0x005108e4. | confirmed (code) |
+| `0x00236c48` | `Cfg_SetRagePowerMode` | `CfgRagePowerMode`: sets 0x00510298. | confirmed (code) |
+| `0x00236c58` | `Cfg_SetRageHandlers` | `CfgRageHandlers`: interns the rage Lua handlers (0x00510290, 0x00510294, table 0x006b6810). | confirmed (code) |
+| `0x00237128` | `Human_SetRageMode` | `HuSetRageMode`: starts or ends rage (human flag 0x80000) for a player. | confirmed (code) |
+| `0x002371d8` | `Human_SetBlurMode` | `HuSetBlurMode`: a player's screen blur (0x0051029c). | confirmed (code) |
+| `0x002372a8` | `Human_GiveCuffs` | `HuGiveCuffs`: adds handcuffs (inventory item 5 for a player). | confirmed (code) |
+| `0x00237328` | `Human_SetKeepWeapon` | `HuSetKeepWeapon`: human flag 0x2000; Diego's boss goal uses it. | confirmed (code) |
+| `0x00237388` | `Human_SetKeepHat` | `HuSetKeepHat`: human flag 0x10000000000. | confirmed (code) |
+| `0x002373f8` | `Human_SetHardToStun` | `HuSetHardToStun`: human flag 0x1000000000. | confirmed (code) |
+| `0x00237468` | `Human_SetNoThrowWeapon` | `HuSetNoThrowWeapon`: human flag 0x4000000000. | confirmed (code) |
+| `0x002374d8` | `Human_SetNoEscape` | `HuSetNoEscape`: human flag 0x2000000000. | confirmed (code) |
+| `0x00237548` | `Human_SetCanBlockKD` | `HuSetCanBlockKD`: human flag 0x400000000. | confirmed (code) |
+| `0x002375b8` | `Human_SetBlockFromReact` | `HuSetBlockFromReact`: human flag 0x800000000. | confirmed (code) |
+| `0x00237628` | `Human_SetWounded` | `HuSetWounded`: starts or ends the wounded state. | confirmed (code) |
+| `0x002376a0` | `Human_SetWoundable` | `HuSetWoundable`: a human flag on or off. | confirmed (code) |
+| `0x00237700` | `Human_SetArrested` | `HuSetArrested`: arrests or frees the human ([Crimes](crimes.md#arrest)); the bum goal uses it too. | confirmed (code) |
+| `0x00237778` | `Human_SetConscious` | `HuSetConscious`: knocks out or wakes the human. | confirmed (code) |
+| `0x002377f8` | `Human_Revive` | `HuRevive`: revives the human. | confirmed (code) |
+| `0x00237848` | `Human_SetHealth` | `HuSetHealth`: health `+0x144`, at most the maximum. | confirmed (code) |
+| `0x002378a8` | `Human_SetHealthPercent` | `HuSetHealthPercent`: health as a percentage of the maximum. | confirmed (code) |
+| `0x00237958` | `Human_SetBlockJump` | `HuBlockJump`: human flag 0x10000000. | confirmed (code) |
+| `0x002379c0` | `Human_SetBlockClimb` | `HuBlockClimb`: human flag 0x20000000. | confirmed (code) |
+| `0x00237a28` | `Human_BlockGrab` | `HuBlockGrab`: human flags 0xc0000000 (both grabs). | confirmed (code) |
+| `0x00237a98` | `Human_SetBlockFrontGrab` | `HuBlockFrontGrab`: human flag 0x40000000. | confirmed (code) |
+| `0x00237b00` | `Human_SetBlockRearGrab` | `HuBlockRearGrab`: human flag 0x80000000. | confirmed (code) |
+| `0x00237b70` | `Human_SetBlockTackle` | `HuBlockTackle`: human flag 0x100000000. | confirmed (code) |
+| `0x00237be0` | `Human_SetMaxHealth` | `HuSetMaxHealth`: maximum health `+0x146`, and health with it. | confirmed (code) |
+| `0x00237c38` | `Human_GetHealthPercent` | `HuGetHealthPercent`: health as a percentage of the maximum. | confirmed (code) |
+| `0x00237c78` | `Human_SetMass` | `HuSetMass`: the body's mass. | confirmed (code) |
+| `0x00237d08` | `Human_GetHeldObjectType` | `HuWhatAmIHolding`: the held object's type. | confirmed (code) |
+| `0x00237d48` | `Human_GetHeldObject` | `HuGetHeldObject`: the held object's handle, or null. | confirmed (code) |
+| `0x00237db8` | `Human_IsInCombat` | `HuInCombat`: whether the human fights. | confirmed (code) |
+| `0x00237e00` | `Human_SetIdleAnim` | `HuSetIdleAnim`: overrides the idle clip. | confirmed (code) |
+| `0x00237e70` | `Human_Kill` | `HuKill`: kills the human. | confirmed (code) |
+| `0x00238030` | `Human_SetShadow` | `HuShadow`: the render instance's shadow switch (`+0x2b4`). | confirmed (code) |
+| `0x00238078` | `Human_SetName` | `HuSetName`: the human's name. | confirmed (code) |
+| `0x002380c0` | `Human_GetControlName` | `HuGetControlName`: the name of the control the human is under. | confirmed (code) |
+| `0x00238158` | `Human_GetMoney` | `HuGetMoney`: money `+0x370`. | confirmed (code) |
+| `0x002381f0` | `Human_RemoveItemInPocket` | `HuRemoveItemInPocket`: clears the pocket item (`+0x250`, `+0x254`). | confirmed (code) |
+| `0x00238230` | `Human_SetCarriedItemName` | `HuSetCarriedItem`: the carried item name (`+0x278`). | confirmed (code) |
+| `0x00238288` | `Human_CanSee` | `HuCanSee`: whether the human sees another. | confirmed (code) |
+| `0x002383a0` | `Human_SetLOSRange` | `HuSetLOSRange`: sight range `+0x130`. | confirmed (code) |
+| `0x002383e8` | `Human_SetHearRange` | `HuSetHearRange`: hearing range `+0x134`. | confirmed (code) |
+| `0x00238430` | `Human_SetHelpHearRange` | `HuSetHelpHearRange`: the range for hearing calls for help `+0x138`. | confirmed (code) |
+| `0x00238478` | `Human_ExitWorld` | `HuExitWorld`: takes the human out of the world. | confirmed (code) |
+| `0x002384f8` | `Human_EnableController` | `HuEnableController`: the player record flag `+0x1b` (pad control on or off). | confirmed (code) |
+| `0x002385f8` | `Human_PlaceHatOnHead` | `HuPlaceHatOnHead`: puts a hat object on the human's head. | confirmed (code) |
+| `0x00238640` | `Human_SetPedReaction` | `HuSetPedReaction`: the pedestrian reaction `+0x270`. | confirmed (code) |
+| `0x00238690` | `Human_UseAnim` | Plays an anim by id on the human (scripts and many AI goals). | confirmed (code) |
+| `0x00238748` | `Human_UseAnyAnim` | `HuUseAnyAnim`: plays any clip by name. | confirmed (code) |
+| `0x002387a8` | `Human_AreActionsBlocked` | `HuAreActionsBlocked`: whether the human cannot act. | confirmed (code) |
+| `0x002387e8` | `Human_IsTagging` | `HuIsTagging`: state 0x2000000. | confirmed (code) |
+| `0x00238828` | `Human_PlayDynPair` | `HuPlayDynPair`: a paired dynamic clip on two humans; the dealer goal uses it to sell. | confirmed (code) |
+| `0x00238948` | `Human_PlayDynAnim` | `HuPlayDynAnim`: a dynamic clip on the human. | confirmed (code) |
+| `0x002389e8` | `Human_PlayDynamicAnim` | `HuPlayDynamicAnim`: a dynamic clip by name. | confirmed (code) |
+| `0x00238a88` | `Human_AttachSpinningIcon` | `HuAttachSpinningIcon`: the spinning icon over the human (`+0x360`); AI crime and dealer goals use it. | confirmed (code) |
+| `0x00238ae0` | `Human_RemoveSpinningIcon` | `HuRemoveSpinningIcon`: removes it. | confirmed (code) |
+| `0x00238b18` | `Human_SetSpinningIconColor` | `HuSetSpinningIconColor`: messages the icon's colour. | confirmed (code) |
+| `0x00238bd8` | `Human_StartWorkout` | `HuWorkout`: starts a workout on the human (Human_StartWorkout state, start callback). | confirmed (code) |
+| `0x00238cd8` | `Human_SetWorkoutBlend` | `HuSetWorkoutBlend`: the workout blend `+0x670`. | confirmed (code) |
+| `0x00238d30` | `Human_StopWorkout` | `HuStopWorkout`: ends the workout and its clip. | confirmed (code) |
+| `0x00238f10` | `Cfg_SetTagStartCallback` | `CfgTagStartCallback`: interns the tag-start Lua callback (0x006b6870). | confirmed (code) |
+| `0x00239080` | `Human_SetTagColour` | `HuTagColor`: the tag colour `+0x640`. | confirmed (code) |
+| `0x00239188` | `Tag_SetPattern` | `HuTagPattern`: the tag's button pattern. | confirmed (code) |
+| `0x002391a8` | `Human_SetTagDifficulty` | `HuTagDifficulty`: the three tag difficulty values 0x0051093c-0x00510944. | confirmed (code) |
+| `0x002391c0` | `Human_SetIdleDialogMaxIter` | `HuSetIdleDialogMaxIter`: the idle-dialogue line count `+0x197`. | confirmed (code) |
+| `0x00239200` | `Human_EnableSpeaking` | `HuEnableSpeaking`: switch `+0x198`. | confirmed (code) |
+| `0x00239240` | `Human_EnableSoundCommands` | `HuEnableSoundCommands`: switch `+0x199`, which every speech path checks. | confirmed (code) |
+| `0x00239280` | `Human_EnableOnFireSpeech` | `HuEnableOnFire`: the on-fire speech switch `+0x19b`. | confirmed (code) |
+| `0x002392c0` | `Human_EnableTagDoneSpeech` | `HuEnableTagDone`: the tag-done speech switch `+0x19a`. | confirmed (code) |
+| `0x00239300` | `Human_EnableTagCheer` | `HuEnableTagCheer`: the tag-cheer switch `+0x19c`. | confirmed (code) |
+| `0x00239340` | `Human_Say` | `HuSay`: Human_Speak with the default arguments. | confirmed (code) |
+| `0x00239370` | `Human_Speak` | `HuSpeak`: plays a named speech line on the human with an optional Lua end callback (interned through the script system). | confirmed (code) |
+| `0x00239558` | `Human_ShutUp` | `HuShutUp`: stops the human's line; the roof boss banter uses it. | confirmed (code) |
+| `0x002395a0` | `Human_SpeakInterrupt` | `HuSpeakNI`: the variant of `HuSpeak` that Human_ActionDialog and AI dialogue call. | confirmed (code) |
+| `0x00239788` | `Human_ActionDialog` | `HuActionDialog`: a line spoken to a partner (`+0x18c`), whom the speaker faces. | confirmed (code) |
+| `0x00239850` | `Human_GetHUD` | `HuGetHUD`: the HUD slot of the human's player (`+0x380`). | confirmed (code) |
+| `0x00239888` | `GameState_SetWarChiefHUD` | `HuSetWarChiefHUD`: the game state's war-chief HUD switch. | confirmed (code) |
+| `0x002398b0` | `Human_SetWarChief` | `HuSetWarChief`: makes the human the war chief (the commanding player), re-binding player slots; GameState_SyncPlayers uses it. | confirmed (code) |
+| `0x00239e08` | `GameState_SwitchPlayer` | `HuSwitchPlayer`: switches the controlled player in the game state. | confirmed (code) |
+| `0x00239e30` | `Human_MarkReachable` | `HuMarkReachable`: byte `+0x11e`. | confirmed (code) |
+| `0x00239e78` | `Human_SetMugCallback` | `HuSetMugCallback`: interns the mug Lua callback into `+0x5a4` ([Crimes](crimes.md#mugging)). | confirmed (code) |
+| `0x00239ee0` | `Human_SetMug` | `HuSetMug`: the mug settings `+0x5b0`. | confirmed (code) |
+| `0x0023a058` | `Human_TeleportFollowers` | `HuTeleportFollowers`: moves the human's gang followers (brain `+0x20c`) to it. | confirmed (code) |
+| `0x0023a210` | `Human_SetNormalMode` | `HuSetNormalMode`: clears the special modes; AI goals use it. | confirmed (code) |
+| `0x0023a258` | `Human_SetRubberNeck` | `HuRubberNeck`: human flag 0x1000000 on or off. | confirmed (code) |
+| `0x0023a2c0` | `Human_SetBlockLook` | `HuBlockLook`: human flag 0x1000 on or off. | confirmed (code) |
+| `0x0023a328` | `Human_SetForceLook` | `HuForceLook`: human flag 0x10000 on or off. | confirmed (code) |
+| `0x0023a390` | `Human_SetLookPos` | `HuSetLookPos`: a point for the head to look at. | confirmed (code) |
+| `0x0023a3b8` | `Human_SetLookTarget` | `HuSetLookTarget`: an object for the head to look at. | confirmed (code) |
+| `0x0023a460` | `Human_ClearLook_Stub` | `HuClearLook`: empty in this build. | confirmed (code) |
+| `0x0023a468` | `Human_IsAimingAt` | `HuIsAimingAt`: a player's aim target `+0x634` is the given object. | confirmed (code) |
+| `0x0023a4e0` | `SetDeathTimer` | `SetDeathTimer`: three death-timer values at 0x0051078c-0x00510794. | confirmed (code) |
+| `0x0023a540` | `Cfg_SetCombo` | `CfgCombo`: sets 0x005102b0. | confirmed (code) |
+| `0x0023a550` | `Cfg_SetSnap` | `CfgSnap`: sets 0x005102b4. | confirmed (code) |
+| `0x0023a560` | `Cfg_SetButtonMash` | `CfgButtonMash`: the mash target, decay and gain ([Crimes](crimes.md#uncuffing)). | confirmed (code) |
+| `0x0023a588` | `Cfg_SetStrafe` | `CfgStrafe`: sets 0x005104a8. | confirmed (code) |
+| `0x0023a598` | `Cfg_SetAutoLock` | `CfgAutoLock`: sets 0x005104b4. | confirmed (code) |
+| `0x0023a5a8` | `Cfg_SetAutoLockAndCombat` | `CfgAutoLockAndCombat`: sets 0x005104b8. | confirmed (code) |
+| `0x0023a5b8` | `Cfg_SetAutoCombat` | `CfgAutoCombat`: sets 0x005104b0. | confirmed (code) |
+| `0x0023a5c8` | `Cfg_SetLockOn` | `CfgLockOn`: sets 0x005104ac. | confirmed (code) |
+| `0x0023a5d8` | `Cfg_SetCombatTimeout` | `CfgCombatTimeout`: sets 0x00510994. | confirmed (code) |
+| `0x0023a5e8` | `Cfg_SetStrafeRStick` | `CfgStrafeRStick`: sets 0x005104d0. | confirmed (code) |
+| `0x0023a5f8` | `Cfg_SetTurnRate` | `CfgTurnRate`: sets 0x00510304, 0x00510308, 0x0051030c, 0x00510310, 0x00510314, 0x00510318. | confirmed (code) |
+| `0x0023a630` | `Cfg_SetCombatDistances` | `CfgDistances`: sets 0x005104bc, 0x005104c0, 0x005104c4. | confirmed (code) |
+| `0x0023a658` | `Cfg_SetBurnRates` | `CfgBurnRates`: sets 0x005101e4, 0x005101e8, 0x005101ec, 0x005101f0, 0x005101f4. | confirmed (code) |
+| `0x0023a7a0` | `Cfg_SetTurnRates` | `CfgSetTurnRates`: sets 0x005101b0, 0x005101b8, 0x005101c0, 0x005101c8, 0x005101d0, 0x005101d8. | confirmed (code) |
+| `0x0023a970` | `Cfg_SetJumpIsAction` | `CfgJumpIsAction`: sets 0x0051099c. | confirmed (code) |
+| `0x0023a980` | `Cfg_SetPickupIsAction` | `CfgPickupIsAction`: sets 0x005109a0. | confirmed (code) |
+| `0x0023a990` | `Cfg_SetPickupIsGrab` | `CfgPickupIsGrab`: sets 0x005109a4. | confirmed (code) |
+| `0x0023a9a0` | `Cfg_SetBurnTime` | `CfgBurnTime`: sets 0x00510220. | confirmed (code) |
+| `0x0023ad88` | `Human_SetVoiceIndex` | `HuSetVoiceIndex`: the voice `+0x3b0`. | confirmed (code) |
+| `0x0023adc8` | `Human_GetVoiceIndex` | `HuGetVoiceIndex`: the voice `+0x3b0`. | confirmed (code) |
+| `0x0023ae00` | `Human_SetStateRespVoiceIndex` | `HuSetStateRespVoiceIndex`: the state-response voice `+0x3b4`. | confirmed (code) |
+| `0x0023ae40` | `Human_LockPad` | `HuLockPad`: the player record's pad lock `+0x1e`. | confirmed (code) |
+| `0x0023ae90` | `Human_LockPadMovement` | `HuLockPadMovement`: the player record's movement lock `+0x1f`. | confirmed (code) |
+| `0x0023aee0` | `Human_StartButtonMiniGame` | `HuButtonMiniGame`: starts mode 5 of the mini-game record with its buttons, times and Lua callback. | confirmed (code) |
+| `0x0023b0e0` | `Human_SetScale` | `HuSetScale`: the human's model scale. | confirmed (code) |
+| `0x0023b128` | `CNS_SetMissionInfoEnabled` | `CNSEnableMissionInfo`: sets 0x005109ac. | confirmed (code) |
+| `0x0023b138` | `Human_TeleportNear` | `HuTeleportNearHuman`: puts the human at a free point near another human, facing it. | confirmed (code) |
+| `0x0023b778` | `Human_SetSlowMo` | `HuSetSlowMo`: a player's slow motion (`+0x3bb`, the time factor 0x005102cc). | confirmed (code) |
+| `0x0023b838` | `Humans_InitAnimHandles` | Static initialiser: fills the handle records at 0x006b6710 with null handles and clip 0x2d2. | confirmed (code) |
+| `0x0023bc80` | `Humans_StaticInitAnimHandles` | Humans_InitAnimHandles(1, 0xffff). | confirmed (code) |
+| `0x0023bcf0` | `Human_ClearVelocity` | Zeroes the task velocity and `+0x3a0`, clears the bone cache's `+0x460` and marks the move dirty (`+0x255`). | confirmed (code) |
+| `0x0023be98` | `Task_SendHandleMessage0` | Sends message 0 with a handle to a task (Human_PickUpObject). | confirmed (code) |
+| `0x0023cd30` | `Human_UpdateLedSlots` | When the move is dirty (`+0x255`), recomputes the led formation's slot points (`+0x1e0`) around the human. | confirmed (code) |
+| `0x0023ceb8` | `Task_SetVelocityXYZ` | Sets a task's velocity from three floats (w = 1). | confirmed (code) |
+| `0x0023cf00` | `Human_SetMoveVelocity` | Sets the velocity `+0x30`, its speed `+0x1ac` and the gait for that speed `+0x1a8`, and marks the move dirty. | confirmed (code) |
+| `0x0023cf70` | `Human_ClearTurn` | Clears the turn state `+0x300`, `+0x304`, `+0x331`, `+0x332`; attacks and climbs call it before steering. | confirmed (code) |
+| `0x0023d630` | `Human_SetRotationThunk` | Calls Human_SetRotation. | confirmed (code) |
+| `0x0023d660` | `Human_UpdateLod` | Distance to the nearest camera (`+0x334`), told to the resource manager; the detail level `+0x333` (0-4) from the thresholds at 0x005102f0, raised by time since the last update. | confirmed (code) |
+| `0x0023dc50` | `Human_EmptyStub4` | Empty function (Player_TryJump calls it). | confirmed (code) |
+| `0x0023e7e0` | `Player_UpdateHideOrder` | Orders the player's Warriors to hide when the player hides (brain `+0x2d5`), from Human_SnapToGround. | confirmed (code) |
+| `0x0023f9d0` | `Brain_CheckMoveArrival` | Whether an AI's move reached its target point (from Human_StateUpdate). | confirmed (code) |
+| `0x0023fb00` | `Human_ControlHandlerName` | The name of the control function `+0x1bc` for `HuGetControlName`. | confirmed (code) |
+| `0x00240800` | `Human_RegisterContextAction` | Human vtable `+0x124`: registers a context action with the actionable manager (`+0x664`). | confirmed (code) |
+| `0x00240850` | `Human_UnregisterContextAction` | Human vtable `+0x12c`: unregisters it. | confirmed (code) |
+| `0x00240890` | `Human_SetContextRecord` | Sets the context record `+0x660`. | confirmed (code) |
+| `0x00242ce0` | `Human_ButtonTapMove` | The button-tap control function: steps the human forward by tapped buttons. | confirmed (code) |
+| `0x002432b0` | `Human_EnterStepControl` | Saves the control and installs the step control (0x00243420) unless busy (state 0x180f3ff0); TakeStepAction_Start. | confirmed (code) |
+| `0x00243360` | `Human_LeaveStepControl` | Leaves the step control: Human_UpdateControl, or Human_MoveAttached while grabbed or mugged. | confirmed (code) |
+| `0x00243420` | `Human_StepControl` | The step control function: for a pad player, picks the right control (stance, button tap, wheelchair or locomotion) once the step ends. | confirmed (code) |
+| `0x002445f8` | `Human_SetButtonTapMoveControl` | Control function = Human_ButtonTapMove and clears its counters `+0x670`, `+0x674`. | confirmed (code) |
+| `0x00244620` | `Human_SetWheelchairMoveControl` | Control function = Human_MoveWheelchair. | confirmed (code) |
+| `0x00244640` | `Human_SetButtonTapSequence` | Copies up to 16 button ids (null-terminated) into `+0x67c` and resets the index `+0x678`. | confirmed (code) |
+| `0x002446a8` | `Human_SetButtonTapParam` | Sets `+0x6bc` for the button-tap control. | confirmed (code) |
+| `0x002446b0` | `Human_SetThrowAimState` | Enters throw aiming: the control function and the aim point. | confirmed (code) |
+| `0x00247a08` | `Human_SetFallStartPoint` | `+0x2c0` = the given point when it is on the nav mesh, else `+0x2b0`. | confirmed (code) |
+| `0x00247a50` | `Nav_StraightDistance` | The distance to a point when it lies on the nav mesh and a walkable line reaches it, else 0; AI move goals use it. | confirmed (code) |
+| `0x00247fc0` | `Human_StrikeShapeOn` | Turns a strike shape on (message 0x8f). | confirmed (code) |
+| `0x00248110` | `Human_StrikeShapeOff` | Turns a strike shape off (message 0x90). | confirmed (code) |
+| `0x002482e0` | `Human_CanHeadLook` | Whether the head may turn to look. | confirmed (code) |
+| `0x00248428` | `Human_UpdateHeadLook` | Turns the head toward the look target each update. | confirmed (code) |
+| `0x00248980` | `Human_GetLookPoint` | The point the head looks at: for AI the brain's target point (`+0x90`) when within 90 degrees of its heading `+0x110`, else ahead; for a player from the target. | confirmed (code) |
+| `0x00249050` | `Ground_ProbeBelow` | A ray straight down from 0.1 m above a point; true when it hits the level. | confirmed (code) |
+| `0x00249bf8` | `Brain_InstallTypeHandlers` | Installs the handlers for a brain's type (17 types, table 0x0055ce40), using the owner's type for type 5. | confirmed (code) |
+| `0x0024b190` | `Reticule_FindRecentFadeIn` | A reticule that started fading in recently. | confirmed (code) |
+| `0x0024b3d8` | `Reticules_UpdateTarget` | Updates the target reticule over the player's target and the timed hints (0x0051054c). | confirmed (code) |
+| `0x0024bf78` | `Reticules_ResetStatic` | Static initialiser: 0x006c7310 = -1. | confirmed (code) |
+| `0x0024bfa0` | `Reticules_StaticInit` | Reticules_ResetStatic(1, 0xffff). | confirmed (code) |
+| `0x0024bfc0` | `Human_SpawnHat` | Creates the hat object by name at the human, pins it and stores its handle `+0x364`. | confirmed (code) |
+| `0x0024c1a0` | `Human_SendHatScene` | Sends the hat message 0x32 (attach 6, the scene state) at a scene's start and end. | confirmed (code) |
+| `0x0024c560` | `Human_PlaceObjectInHand` | Puts a world object into the hand by its type record, unless picking up already (held 0x4000). | confirmed (code) |
+| `0x0024c7b0` | `Human_StickThrownKnife` | Sticks a thrown knife into the human. | confirmed (code) |
+| `0x0024cac8` | `Human_DetachProp` | Detaches the object `+0x358`, marks its body dirty and drops it (message 0x3e). | confirmed (code) |
+| `0x0024cbb0` | `Human_DropCarriedProp` | Releases the carried prop `+0x348` and spawns the loose one at the human. | confirmed (code) |
+| `0x0024cd30` | `Human_AttachCarriedProp` | Attaches the prop `+0x34c` to attach point 0x13 with its type's offset. | confirmed (code) |
+| `0x0024ce40` | `Human_ReleaseCarriedProps` | Drops a held kind-0x27 object and clears the carried props `+0x348`, `+0x34c`. | confirmed (code) |
+| `0x0024cef0` | `Player_AttachGear` | For a player with the unlocked gear (unlockables 6/5, 6/6): spawns the gear pieces on its bones from the transforms at 0x00715480. | confirmed (code) |
+| `0x0024d340` | `Player_RemoveGear` | Destroys a player's gear objects. | confirmed (code) |
+| `0x0024d420` | `Player_MessageGear` | Sends message 10 with a value to each gear object. | confirmed (code) |
+| `0x0024e1f8` | `Nav_IsOnMesh` | True when a point lies in a nav area. | confirmed (code) |
+| `0x0024e478` | `Nav_GetWalkingDistance` | `WalkingDistance`: the length of the path between two points. | confirmed (code) |
+| `0x0024e608` | `Path_LengthFrom` | The length of a path from a point through its corners. | confirmed (code) |
+| `0x00250398` | `Seg_ClosestPoint` | The closest point of a segment to a point, and its distance. | confirmed (code) |
+| `0x00250b10` | `NavLink_ClearAvoidByKind` | Clears the avoid mark of links of a kind (glass broken, doors opened). | confirmed (code) |
+| `0x00250bb8` | `NavLink_SetKindNearest` | Sets the kind of the nearest link pair to a point. | confirmed (code) |
+| `0x00250db0` | `NavLink_ConvertJumpToDoor` | `ConvertJumpToDoor`: turns a jump link into a door link. | confirmed (code) |
 
 ## Coney's implementation
 

@@ -79,6 +79,48 @@ two-instruction methods had no function in Ghidra and were made there (marked *m
 | `0x00154ee8` | `Gpu_DmaHangCallback(active, value)` | the callback the graphics driver calls while it waits for the GPU ([Graphics](graphics.md)): keeps `value` in `0x0050c6a8`, or prints `DMA Hang` when it is `0xcdcdcdcd` | confirmed (code) |
 | `0x00155a90` / `0x00155b10` | `StreamManager_StaticInit` / its stub | the unit's static initialiser: sets 22 words `0x005e5348`-`0x005e539c` to 1 (the world toggles, [The streamed world](world.md)); the stub ends `StreamManager.cpp` | confirmed (code) |
 
+The `Device/ps2/` file code and its neighbours, names ours. The pads and player commands in the same region are on
+[Input](input.md); the game clock on [Boot](boot.md#timers). The `host0:` calls (`0x00441910` and its neighbours)
+are unnamed in Ghidra; that they are the SDK's `open`, `close`, `read`, `write` and `lseek` is inferred from their
+arguments (`0x602` = write, create, truncate).
+
+| Address | Name | Role | Evidence |
+| --- | --- | --- | --- |
+| `0x00145888` | `DS_PS2Device_MountFileSys(dev, fs)` | appends to the mounted list (`+0x04`, `+0x08`) and makes it current (`+0x90`) | confirmed (code) |
+| `0x001458b0` | `DS_PS2Device_SaveCurrentFileSys` | device slot `+0x88`: `+0x88` = `+0x90` | confirmed (code) |
+| `0x001458c0` | `Device_AlwaysTrue` | returns 1; asked by the script loaders before each file (`ScriptSystem_DoFileLua`, `InitLevel`) | confirmed (code) |
+| `0x001458c8` / `0x001458d8` | `Loading_HasCallback` / `Loading_SetCallback(fn)` | the loading-screen callback `0x0050b728` that `PS2StreamFile_Wait` and the world preload call while they block; setting one calls it once at once | confirmed (code) |
+| `0x00148230` | `DS_PS2Device_InitIop` | the IOP reboot and modules ([Boot](boot.md#device-initialisation)) | confirmed (code) |
+| `0x001482d8` / `0x001482e0` / `0x00148358` | `Iop_LoadRetryHook` / `Iop_LoadModuleRetry(path)` / `Iop_LoadModules` | load one module, retrying until it loads (the hook between tries is empty); the six modules in order | confirmed (code) |
+| `0x001483e8` / `0x00148460` / `0x001484d8` | `DS_PS2Device_CreateStreamFileSys` / `_CreateHostFileSys` / `_CreateDefaultFileSys` | [above](#original-structure) | confirmed (code) |
+| `0x00148580` / `0x001485a8` | `DS_PS2Device_StaticInit` / its stub | the static device's vtable `0x00537c80`; the stub ends `DS_PS2Device.cpp` | confirmed (code) |
+| `0x00148820` | `DS_PS2Device_Slot68` | device slot `+0x68`: empty | confirmed (code) |
+| `0x00148828` | `DS_PS2Device_GetHeap(dev, out)` | slot `+0x70`: fills 2 KB at `0x01fef800` with `0xcd` and gives the main heap's size, `0x018d7c94` ([Memory](memory.md)) | confirmed (code) |
+| `0x001488f8` | `DS_PS2Device_InitInput` | slot `+0xa0`: `Pads_Init`, then `AudioManager_Reset` | confirmed (code) |
+| `0x001485c8` | `PS2FileSys_Construct(fs, root)` | vtable `0x00537d38`, root path (255 chars) at `+0x04` | confirmed (code) |
+| `0x00148708` | `PS2FileSys_MakePath(fs, name)` | root + name into `+0x104` | confirmed (code) |
+| `0x00148748` / `0x001487b0` | `PS2FileSys_Exists` / `_GetSize` | slots `+0x50` / `+0x58`: open a `PS2DbgFile` on the stack, close it | confirmed (code) |
+| `0x00148608` / `0x001486c0` | `PS2FileSys_Open(fs, name, mode)` / `_Close` | slots `+0x60` / `+0x68`: allocates a `PS2DbgFile` (vtable `0x00537ef8`, tag `PS2DbgFile`) / releases and frees it | confirmed (code) |
+| `0x00149248` | `PS2DbgFile_Open(file, name, mode)` | opens `host0:<name>`, read (mode 0) or write, create, truncate (mode 1); the handle at `+0x04` | confirmed (code) |
+| `0x001492c8` / `0x001492e8` / `0x00149308` | `PS2DbgFile_Close` / `_Read` / `_Write` | close (called directly), and slots `+0x50`, `+0x58` | confirmed (code) |
+| `0x00149328` / `0x00149348` / `0x00149370` | `PS2DbgFile_Seek` / `_Tell` / `_GetSize` | slots `+0x60`, `+0x68`: `lseek` from the start / from the current position; the size by seeking to the end and back | confirmed (code) |
+| `0x00148920` | `PS2StreamFileSys_Construct` | the pool of 10 stream files ([PS2StreamFileSys](#ps2streamfilesys)) | confirmed (code) |
+| `0x00148a50` / `0x00148a70` | `PS2StreamFile_Construct` / `_Destroy` | vtable `0x00537db0`, request −1 / back to the file base vtable, frees itself when bit 0 is set | confirmed (code) |
+| `0x00148aa0` | `PS2StreamFileSys_Open` | [above](#original-structure) | confirmed (code) |
+| `0x00148ba8` / `0x00148bf0` | `PS2StreamFileSys_GetSize` / `_Exists` | `./ee_files/` + name, looked up in the WAD (`Wad_GetEntrySize`, `Wad_HasEntry`) | confirmed (code) |
+| `0x00148c38` | `PS2StreamFile_IsDone` | slot `+0x50`: the IOP stream 0 is not busy | confirmed (code) |
+| `0x00148c60` | `PS2StreamFileSys_Update` | slot `+0x70`: services the IOP client (`0x0050bce4`, its slot `+0x10`) | confirmed (code) |
+| `0x00148c90` | `PS2StreamFile_Wait` | [Synchronous reads](#synchronous-reads) | confirmed (code) |
+| `0x00148db0` | `PS2StreamFileSys_Close(fs, file)` | cancels the stream (an empty call), clears the open file, destroys the file in place and returns it to the free list | confirmed (code) |
+| `0x00148e30` | `Device_SetCombination(n, text)` | copies `text` (128 chars) to `0x0050b830` and stores `n` with the name `Combination4` to `Combination7` (n = 1-4) at `0x0050b7a8`; nothing calls it and nothing reads them | confirmed (code); role unknown |
+| `0x00148f60` / `0x00148f98` | `Timer_Construct` / `Timer_Reset` | vtable `0x00537e98`; total 0, last count = now ([Timers](boot.md#timers)) | confirmed (code) |
+| `0x00148fc8` / `0x00148fd8` | `Timer_ReadCount` / `Timer_GetTicks` | COP0 `Count`; the 64-bit total | confirmed (code) |
+| `0x00149040` | `DVDWadIndex_Create(path)` | allocates the 8-byte index (tag `DVDWadIndex`) and reads it | confirmed (code) |
+| `0x00149160` / `0x001490b8` | `DVDWadIndex_Construct` / `_Find` | [DVDWadIndex](#the-wad-index) | confirmed (code) |
+| `0x00149410` | `IopStream_Start` | [above](#original-structure) | confirmed (code) |
+| `0x001494d0` / `0x001494d8` | `IopStream_Cancel` / `IopStream_IsBusy` | empty / stream 0's busy flag (`MS_GetStreamInfo`) | confirmed (code) |
+| `0x00149500` | `IopStream_SetName` | copies the entry's name into the request | confirmed (code); role inferred |
+
 The same unit also holds the push-or-pop helpers of several game modes, documented on their own pages:
 `PauseMenu_Toggle` (`0x00154f28`, [Pause](pause.md)), `MissionSelect_Show` (`0x00155180`: pushes mode 0x10 unless
 it is on top, after storing the two Lua callbacks), `GameStats_Show` (`0x001551e0`: mode 0x13 with a close callback),

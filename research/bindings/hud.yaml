@@ -1098,6 +1098,10 @@
     - {name: flag, lua: boolean, desc: "Icon lock (slot `+0x34`, `0x001c4640`), set after the icon: while it is set, icon and scale changes to this blip are ignored (including this call's own icon when the lock was already set), so a locked blip keeps its icon until a call with false unlocks it and a further call changes it; scripts sometimes pass 1."}
   description: >-
     Changes the icon (and scale) of an object's radar blip on both radars, then sets or clears its icon lock.
+  notes: >-
+    Corrected from earlier readings that took the fourth argument for a colour or tint: it is the blip's icon lock
+    (`Radar_SetBlipIconLock`, `0x001c4640`), and no colour is involved. Coney stores the icon and scale but does not
+    yet keep the lock, so a locked blip's icon can still change in Coney.
   evidence: confirmed-code
   depth: thorough
   usage: {chunks: 70, calls: 154, boot: true, mission1: true, result_used: false, levels: [80, 87, 95, 34, 2, 3, 5, 81, 86, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}

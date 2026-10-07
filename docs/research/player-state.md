@@ -14,7 +14,8 @@ are listed in [Inventory items](../references/inventory.md), [Unlockables](../re
 ## Original structure
 
 `W_UnlockManager.cpp` holds the unlockables manager ([Source map](source-map.md)); the end-of-mission screen is
-`GUI/GameStats.cpp` (the path is a string at `0x00559f70`). Names are ours.
+`GUI/GameStats.cpp` (the path is a string at `0x00559f70`); its line items (`GameStatsSubItem.cpp`) run on past
+`0x002176b8` into the human code's range. Names are ours.
 
 | Address | Name | Role | Evidence |
 | --- | --- | --- | --- |
@@ -26,6 +27,10 @@ are listed in [Inventory items](../references/inventory.md), [Unlockables](../re
 | `0x004211d8` | `Stats_CategoryPoints(stats, group)` | the sum of counts × points of a category | confirmed (code) |
 | `0x00422a90` | `Stats_CategoryScore` | the same, harmony inverted | confirmed (code) |
 | `0x00422b00` | `Stats_CategoryPercent` | a score as a percentage of its maximum, at most 100 | confirmed (code) |
+| `0x002176b8` | `GameStatsSubItem_IsReady` | Stats-screen sub item (vtable 0x0053ef48): ready once its texture batch (`+0x68`, `+0xc4`) is resident and its child widget answers ready; caches the answer in `+0x10`. | confirmed (code) |
+| `0x00217730` | `GameStatsSubItem_GetScaledRect` | Stats-screen sub item: copies the item's rect (`+0x30`) with its height multiplied by the item's scale method (vtable `+0xb4`). | confirmed (code) |
+| `0x00217788` | `GameStatsSubItem_Layout` | Stats-screen sub item: lays out its label and value widgets inside its rect, centring by half sizes and using the font size. | confirmed (code) |
+| `0x002179e8` | `GameStatsSubItem_Draw` | Stats-screen sub item: when visible and both child widgets exist, draws the two children (`+0x68`, `+0x6c`). | confirmed (code) |
 
 ## Data
 

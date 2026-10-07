@@ -1402,6 +1402,10 @@ HUDSetRadarItemTexture(object, icon, scale, flag)
 
 Changes the icon (and scale) of an object's radar blip on both radars, then sets or clears its icon lock.
 
+**Notes.** Corrected from earlier readings that took the fourth argument for a colour or tint: it is the blip's icon
+lock (`Radar_SetBlipIconLock`, `0x001c4640`), and no colour is involved. Coney stores the icon and scale but does not
+yet keep the lock, so a locked blip's icon can still change in Coney.
+
 - **Evidence:** confirmed (code) at `0x001b4038`, `0x001b2bf0`; detail: traced
 - **Wrapper** `0x003708c8` (registered by `RegisterBindings`); **calls** `0x001b4038` `HUD_RadarSetIcon`, `0x001b2bf0`
   `HUD_RadarSetBlipIconLock`

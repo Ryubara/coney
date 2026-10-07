@@ -1737,7 +1737,7 @@ screens](#pm-screens).
 | `0x002077b8`, `0x002078c0` | `PM_Greet_Construct`, `PM_Greet_Destroy` | constructor (controller field, the three vtables, the flow-state part at `+0x70` with an empty transition map at `+0x78`); destructor (Shutdown, frees the map, `Widget_Destroy`) | confirmed (code) |
 | `0x002079a0` | `PM_Greet_Init` | builds the widgets once (`+0x0c` created): the logo (menu_system rectangle 0) and the blinking press-START text `0x76` | confirmed (code) |
 | `0x00207cb8` | `PM_Greet_Shutdown` | releases the logo sprite and the text, clears created | confirmed (code) |
-| `0x00207d48` | `PM_Greet_Enter` | also sets `0x006fecc0` = 1 and calls `0x00145670` (resets eight per-pad callbacks to `0x001499e8`, not traced), then Init | confirmed (code) |
+| `0x00207d48` | `PM_Greet_Enter` | also sets `0x006fecc0` = 1 and calls `0x00145670` (`Pads_ResetStateMachines`: every `libpad` record back to its first state, [Input](input.md#libpad)), then Init | confirmed (code) |
 | `0x00207da0` | `PM_Greet_Exit` | clears `0x006fecc0`, then Shutdown | confirmed (code) |
 | `0x00207dd0` | `PM_Greet_StateUpdate` | result `+0x74` = `-0x100` (stay), runs Update and Render, returns the result | confirmed (code) |
 | `0x00207e28` | `PM_Greet_Update` | START gives result 0 (`PM_Mode`), cue 9, and clears the load-screen flag `0x0050f5b8`; the 1,500 ms blink; after 70 s idle calls Lua `Menu.playMovie(2)` (attract) and sets `+0xac` | confirmed (code) |
@@ -2256,9 +2256,11 @@ TODO for the analysts, found while implementing:
   (`0x00159ae0`) and `Mode5::Exit` (`0x00159ab8`) until the research database names them.
 - Does `legal_screen_euro` have a 16:9 counterpart in another region's build, or does the flag `0x02` with 16:9 pick
   `legal_screen_w`?
-- Names and file for the pad functions (`0x00144a08`-`0x00144bf0`, `0x00144fb0`, `0x001454a8`): the tags use our
-  names (above) and `(unknown)`. What is the second argument of `0x00144a80`, `0x00144a30` and `0x00144ad0`, passed
-  as 0 by every caller on this page?
+- File for the pad functions (`0x00144a08`-`0x00144bf0`, `0x00144fb0`, `0x001454a8`): the tags use `(unknown)`;
+  only `Device/ps2/` is known ([Input](input.md)). The second argument of `0x00144a80` and `0x00144a30` is answered:
+  a sample offset `n` (7 when 8 or more), but the code compares `prev(n)` with the word at ring index `+ n − 1`, not
+  `prev(n + 1)`, so only `n` = 0 gives "pressed" or "released"; every caller passes 0. Confirmed (code) from the
+  instructions.
 - `Pad_Update` order: are the hold counters counted from the word before the diagonal rule (as step 3 before step 4
   reads, and as Coney does) or after it? Before means a direction the rule drops still auto-repeats.
 - The diagonal rule with equal pressures: which direction wins (strict or non-strict comparison, and in which

@@ -187,6 +187,25 @@ the picture to the TV (field mode with a two-line anti-flicker mix) is on [The P
 driver](ps2-render.md#video-output). For Coney this means: a **640 × 448 logical screen** (4:3; 16:9 when the widescreen
 option is on), 32-bit colour with a Z buffer.
 
+**The camera constants per mode** (`RwDevice_Init`, `0x001945cc`-`0x001946b0`, and `RwDevice_SetWidescreen`,
+`0x00194e28`), confirmed (code). The 3D aspect goes to every camera (`Cameras_SetAspectAll`, `0x00122ca0`: global
+`0x0050b204` and each camera's `+0x4c`), the overlay aspect to `0x0050b208` (`Camera_StoreHudAspect`, `0x00122d38`):
+
+| Mode | 3D aspect | Overlay aspect | Overlay scale `0x0050b20c` | Field of view added `0x0050b178` | Device flags |
+| --- | --- | --- | --- | --- | --- |
+| Interlaced 4:3 (default) | 1.3333 (`0x3faaaa8f`) | 1.45 | 1.0 | 0 | `0x01` |
+| Interlaced 16:9 | **1.6667** (`0x3fd5551d`) | 1.6667 | 1.1 | 0 | `0x01` + `0x04` |
+| Progressive (480p; device `+0x458`) | 1.59 (`0x3fcb851f`) | 1.59 | 1.0 | **3°** | `0x20` (+ `0x04` when 16:9 is chosen) |
+
+A camera's view window is `(tan(h) × 0.75 × aspect, tan(h) × 0.75)` with `h` half of (field of view + the added
+degrees) ([The streamed world](world.md#player-camera)), so 16:9 widens the picture by 1.25 and keeps its height: the
+player camera's 65° gives (0.637, 0.478) in 4:3 and **(0.796, 0.478)** in 16:9, and (0.804, 0.506) in progressive
+mode. The 16:9 window is 5:3 rather than 16:9 (1.667 against 1.778), so on a 16:9 screen the original is stretched
+about 6.7 % sideways (inferred from the constants). In progressive mode the 16:9 choice sets the flag but keeps the
+1.59 aspect. The overlay camera's window `(scale × overlay aspect × 0.5, scale × 0.5)` is (0.725, 0.5) in 4:3,
+(0.917, 0.55) in 16:9 and (0.795, 0.5) in progressive mode ([2D drawing](#2d-drawing)). The HUD's own 16:9 positions
+are on [HUD](hud.md).
+
 ### RenderWare plugins {#plugins}
 
 `Init` attaches, in this order (confirmed (code); plugin identities from their RenderWare plugin ids, inferred):
@@ -309,8 +328,12 @@ one, confirmed (code):
    `[+0x1ac, +0x1b0]` (`0x0017a258`), never below the floor `+0x1b4`; at 0 nothing is drawn (except in look 5).
 2. While the alpha is 111 or more the rain layer's colour gets alpha 0, and gets its colour back below that, so rain
    is not drawn twice.
-3. The source is device slot `+0x140`'s raster (`0x00596e18`, inferred to be the frame just shown) over the view's
-   rectangle (slot `+0xa0`).
+3. The source is device slot `+0x140`'s raster (`0x00596e18`) over the view's rectangle (slot `+0xa0`). It is **the
+   other frame buffer**, the previous frame, read in place: nothing copies it. Confirmed (runtime) from a PCSX2 GS
+   dump of the `level99` arena (re-frame): the blur is one full-screen fan drawn after the tint, textured from the
+   other frame buffer (`CT32` 1024 × 512, `TBW` 10, `TBP` = that buffer's `FBP` × 32, `TCC` 0, nearest filtering),
+   vertex colour `0x80808080` with alpha 7 (the old frame at 7/128, about 5.5 %), blend `0x44`, Z always, no Z
+   write. A port with one back buffer must keep the last presented frame itself.
 4. **Looks 0, 2, 3, 4 and 7** draw it as a **9 × 9 grid** (slots `+0xf8`, `+0x100`; `0x00193298`, `0x001939b8`):
    each frame every vertex's texture coordinates move by sin and cos of a phase (+0.5 a frame) × 0.001 × 0.9 with a
    random sign × 5 (look 0) or 3 (the others), clamped to the rectangle, so the old frame shimmers. The vertices'
@@ -626,6 +649,30 @@ The humans in view are drawn in the world pass after the `s` world ([The streame
    `0x00469ef8`), which runs the character pipelines ([The streamed world](world.md#pipeline-unit)).
 6. **Shadow**: the blob ([Lighting](lighting.md#humans)).
 
+**The bone matrices** (`CharacterInstance_UpdateSkeleton(inst, full)`, `0x00177240`), confirmed (code). This is the
+matrix palette the skin is drawn with; `HumanRender_Draw` passes `full` = 1.
+
+1. The source is the human's **bone cache** (`Human_GetBoneCache`, `0x0023bca0`: `0x006b6880` + human index ×
+   `0x470`, [Combat: the bone cache](combat.md#grab-posing)): 34 entries of 32 bytes, entry `b` holding a position
+   (vec4) at `+b × 0x20` and a rotation quaternion `(x, y, z, w)` at `+b × 0x20 + 0x10`, in the model's z-up frame
+   and already composed through the parent table (model space, not parent-relative).
+2. For each pose bone `b` from 2 to 33 (with `full` = 0, bone 2 only): `L_b` = the rotation as a matrix
+   (`Quat_ToMatrix`) with the position × the human's scale (`Human_GetScale`) as its translation.
+3. `R` = the human's world transform: the rotation and position of the object transform table `0x00714b00` at the
+   human's index (`+0x92`), 32 bytes each ([Characters](characters.md#ground)).
+4. Each skin matrix `i = b − 2` (the matrix array of the first atomic's hierarchy, 64 bytes each, flags word `+0x0c` =
+   3) = `Mat_MulSwapYZ(R, L_b)` (`0x00336940`): the row-vector product `L_b × R` (bone first, then the human's
+   placement), re-expressed in RenderWare's y-up axes: a game vector `(x, y, z)` becomes `(x, z, −y)`, so the
+   product's rows become `(r0)`, `(r2)`, `(−r1)` with each row's components reordered the same way.
+5. When the human's scale is not 1, each matrix is also scaled by `(s, s, s)` before it (`0x0047ce40`, pre-concat),
+   so with the scaled translations the whole skinned body is scaled by `s` about the human's origin.
+6. Then the hierarchy's frame is marked dirty for RenderWare (`0x00483bf8`).
+
+So skin matrix `i` belongs to HAnim node `i` (pose bone `i + 2`, [Characters](characters.md#character-geometry)), and
+a vertex is placed, inferred from RenderWare's skinning and the disc's inverse bind matrices, as
+`Σ weight_k × (v × inverseBind_k × skin_k)` over its up to four weights. Whether the VU1 microcode renormalises the
+weights was not read.
+
 ### Drawing a car {#car-draw}
 
 Cars are drawn twice in the world pass ([The streamed world](world.md#a-frame)): `CarInstance_Render(car, opaque)`
@@ -653,6 +700,25 @@ Each pass stores `opaque` at the instance's `+0x41`, selects the objects' lights
    **dual** material (4) gets that second texture as its dual texture (`0x00465810`). That `0x0070ad18` is
    RenderWare's current camera, so that the reflection follows the view, is inferred.
 6. Draw it with the saved render callback (`0x005fd030`), then set the material's texture back to none.
+
+### Distance: fades and level of detail {#lod}
+
+What changes with distance, from the draw paths read (confirmed (code) for each item; that there is nothing else is
+inferred from those paths):
+
+| What | Rule | Where |
+| --- | --- | --- |
+| World, everything | the far clip is the draw distance: 115 m for the player camera, shrinking when the frame rate drops or scenery is missing | [The streamed world](world.md#a-frame) |
+| Fog | linear from draw distance × fog start (57.5 m) to the draw distance (115 m) | [The streamed world](world.md#fog) |
+| Humans | fade out from 60 to 70 m (draw distance 70 m, fade 10 m); beyond, not queued | [Drawing a human](#human-draw) |
+| World objects | by screen size: radius / squared distance under 0.0004 not drawn, faded between 0.0004 and 0.0005 (some types exempt) | [World objects](objects.md) |
+| Cars | none: drawn while their parts are in view | [Drawing a car](#car-draw) |
+| Textures | the mip level by distance, `log2(distance) + K` | [Texture dictionaries](#texture-formats) |
+| Skyline | its own near and far clip (39 to 560 m) | [Level loading](level-loading.md#render-order) |
+
+**No geometry level of detail**: a world sector, a human, a car part and an object each have one model, drawn whole
+or not at all. The `s` and `d` worlds are streamed by distance ([The streamed world](world.md#streaming)), which
+changes what is loaded, not how detailed it is.
 
 ### The first screen {#first-screen}
 
@@ -853,7 +919,7 @@ used here:
 | `0x001770d8` | `TaskStack_TopClipProgress` | for a clip task (type 3) with flags `0x48000`: current time / length, else 0 | confirmed (code) |
 | `0x001771a0` | `TaskStack_TopCallEvent(arg)` | when the top task has flag `0x80` and slot `+0x110` agrees, calls its slot `+0xb8` | confirmed (code) |
 | `0x00177210` | `Clump_GetFirstAtomicCb` | atomic callback: keeps the atomic's geometry | confirmed (code) |
-| `0x00177240` | `CharacterInstance_UpdateSkeleton(inst, full)` | writes the sampled bones into the clump's matrices, scaled by the human's scale (`0x0023bca0`, `Human_GetScale`), then updates the skin | confirmed (code) |
+| `0x00177240` | `CharacterInstance_UpdateSkeleton(inst, full)` | [the bone matrices](#human-draw) | confirmed (code) |
 | `0x001774d0` | `ResourceMgr_HasCharacter(rm, desc, dataOnly, needRef)` | is resident for a character: data, and unless `dataOnly` texture dictionary and model ([Characters](characters.md#files)) | confirmed (code) |
 | `0x001775d8` | `ResourceMgr_CharacterFits` | fits, for a character's model, data and textures in turn | confirmed (code) |
 | `0x00177b00` | `ResourceMgr_RequestCharacter(rm, desc, dataOnly)` | request its model, data and textures | confirmed (code) |
@@ -1448,8 +1514,8 @@ Still for the analysts:
 - **The overlay world** (`ResourceManager + 0x9034`) rendered before the sprites. The sort order of the queued
   PTanks is answered on [GUI](gui.md#draw-order): ascending key; that the 2D key is the creation depth is inferred.
 - **librw and PS2 alpha:** does librw's PS2 native texture reader scale palette alpha from 0-128 to 0-255?
-- **How the blur slot `+0x108` draws** (answered): see [Motion blur](#motion-blur). Who passes the previous frame to
-  slot `+0x140` and when it is captured is still to trace.
+- **How the blur slot `+0x108` draws** (answered): see [Motion blur](#motion-blur). The previous frame is the other
+  frame buffer, not a capture (answered, confirmed (runtime)).
 - **Texture dictionary list order** for name lookups (newest first is RenderWare's usual behaviour; not read here).
 - **The remaining slots**: `+0x148`
   (`0x004dee48`), `+0x180` (`0x004e3820`), and the byte `+0x448`.
@@ -1464,5 +1530,10 @@ Still for the analysts:
   at the front end that record holds `PMODE` = `0x8067`: both read circuits on, mixed with the fixed alpha `0x80`
   (`MMOD` = 1), `SMODE2` = 1, the two circuits' frame buffers one address step apart (the usual two-circuit
   anti-flicker set-up; inferred). A half-and-half mix of two copies of the picture keeps its brightness, so the
-  70 % is in the drawn colours or in PCSX2's capture (open). confirmed (runtime) for the values, read from EE memory
-  over PINE at `0x0070f610`.
+  70 % is in the drawn colours or in PCSX2's capture. confirmed (runtime) for the values, read from EE memory
+  over PINE at `0x0070f610`. **Answered for text** (confirmed (runtime), PCSX2 GS dumps of `level99`): the HUD text
+  sprites reach the GS with vertex colour `0x59` (89), RenderWare's halving of the game's grey 178 (`0x005fd310`,
+  [GUI](gui.md)), and the GS's texture modulate gives 89 × 255 / 128 = 177 on white texels, the 178 measured. So
+  the dimness is the game's own colours and the capture is faithful: a *Faithful* grade needs no brightness curve,
+  only the line averaging above. That the legal image is drawn the same way (a 178 grey vertex colour) is
+  inferred.

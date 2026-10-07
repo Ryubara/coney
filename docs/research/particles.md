@@ -229,6 +229,39 @@ The start (and, inferred, each respawn) gives a piece a wind push of at least 10
 The wind vector is written by `Wind_Manager`'s code (`0x00407318`, `0x00407758`; not read); steam puffs read the same
 vector. Confirmed (code) for the reads; that it is wind is inferred from the name.
 
+### Glints {#glints}
+
+The small blinking stars on pickups and on lock-pickable doors. Confirmed (code) at each address; the constants were
+read from the executable.
+
+**Who makes them.** A `pickup_item` that is not held and has no glint creates a `sub_triglint` at its position
+(`PickupItem_ShowGlint`, `0x003f16e8`) and removes it with message `0x15` (`PickupItem_RemoveGlint`, `0x003f1760`).
+A pickable door makes one the same way ([World objects](objects.md)). That the jewellery in the store's cabinets
+are `pickup_item`s is inferred.
+
+**`sub_triglint`** (init `0x003eaf98`, update `0x003eb0d0`, message `0x003eb060`) draws nothing itself. It hides
+itself (flags `+0x54` = 4), updates every 60 ticks and owns three `sub_glint`s. On each update it keeps them only while
+its position is visible to a camera within 30 m (`Cameras_IsPointVisibleAny(30, position)`): it removes them when the
+point is not visible and spawns them again when it is (`SubTriglint_SpawnGlints`, `0x003eade8`;
+`SubTriglint_RemoveGlints`, `0x003eaf38`). Message `0x15` removes the glints and the triglint. The three glints sit
+at the triglint's position plus fixed offsets (no rotation), with fixed sizes:
+
+| Glint | Offset (m), `0x006f3160` (set by `0x003ee2a0`) | Size, `0x005146c0` | Drawn size (× 0.15) |
+| --- | --- | --- | --- |
+| 1 | (0, 0.043, 0.067) | 1.3 | 0.195 |
+| 2 | (−0.071, −0.025, −0.027) | 0.75 | 0.1125 |
+| 3 | (0.061, −0.032, −0.040) | 0.65 | 0.0975 |
+
+**`sub_glint`** (init `0x003e9560`, update `0x003e96a0`, message `0x003e9780`): one sprite, sprite word `0x40029`
+(batch 4, `part_page1`, rectangle 41), its size the given size × 0.15.
+
+- **Unattached** (the triglint's): the first update comes after 30 ticks. Each update then toggles it, on for one
+  interval and off for the next, and picks the next interval at random from 20 to 30 ticks (`Random_Int(10)` + 20).
+  So each star blinks about once a second, out of step with the other two.
+- **Attached** to an object (flags `0x80010`): it updates every 2 ticks and stays on.
+- **On** means colour `+0xb4` = `0xffffff80` (white, alpha 128 on RenderWare's 0-255 scale, so half transparent) and
+  size `+0xc0` = the drawn size. **Off** means alpha 0 and size 0.
+
 ## Coney's implementation {#coneys-implementation}
 
 `effects::ParticleSystems` (`repo:src/effects/particles.h`) is the particle manager: a pool of 1,400 systems spawned

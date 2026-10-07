@@ -114,6 +114,7 @@ nav:
           - Lighting: research/lighting.md
           - "Rendering: a frame's passes": research/rendering.md
           - Start-up and the front end: research/frontend.md
+          - "Input: pads and player commands": research/input.md
           - GUI, sprite sheets and text: research/gui.md
           - In-game HUD: research/hud.md
           - Pause menu and mission failed: research/pause.md
@@ -128,11 +129,14 @@ nav:
           - Inventory, unlockables and statistics: research/player-state.md
           - Profiles, options and saving: research/save.md
           - Combat: research/combat.md
+          - "Combat moves: table and frame data": research/combat-moves.md
+          - "Combat: where Coney differs": research/combat-diffs.md
           - Crimes and context actions: research/crimes.md
           - Tasks (the TaskEngine): research/tasks.md
           - "World objects: tint, glass, doors": research/objects.md
           - AI humans: research/ai.md
           - "AI code index: brains, actions and tactics": research/ai-code.md
+          - "AI goals: the code of every goal class": research/ai-goals.md
           - Cars: research/cars.md
           - Camera: research/camera.md
           - Scenes (cutscenes): research/scenes.md

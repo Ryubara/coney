@@ -1,0 +1,3 @@
+20 stick left -83 -55
+20 tap square
+21 stick left 0 0

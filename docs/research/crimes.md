@@ -604,6 +604,36 @@ values, `0x002c0ca8`). So in the shipped game the level stays 0 (inferred) and *
 **Severity** does nothing: `CrimeIsHappening`'s fourth argument and the report's `severity` argument are never read
 (confirmed (code) at `0x0037a2f8`, `0x0041b6e0`, `0x0041b8b0`); its radius and flags are not read either.
 
+## Code index {#code-index}
+
+Every crime function of the human code (`0x002176b8`-`0x00288000`) that the sections above do not walk through, in
+address order, with what it does. Names are ours, as in the local Ghidra project, where each function also carries a
+plate comment. The rest of the human code is indexed on [Characters](characters.md#code-index).
+
+### Mini-games, mugging and tags {#code-crimes}
+
+The start and end of each mode of the [mini-game record](#mini-game-record), the mug and the tag spray.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00228588` | `Human_IsInButtonMiniGame` | A player whose mini-game record mode (`+0x46`) is 5, `HuButtonMiniGame`. | confirmed (code) |
+| `0x002285c0` | `Human_IsStealingStereo` | A player whose mini-game record mode is 3, the car stereo. | confirmed (code) |
+| `0x002285f8` | `Human_IsPickingLock` | A player whose mini-game record mode is 2, lock picking. | confirmed (code) |
+| `0x0022ceb8` | `Mug_End` | Turns a mugging back into a rear grab, withdraws the hint and calls the mug callback. | confirmed (code) |
+| `0x0022df88` | `ObjectMash_Start` | Starts mini-game mode 4 (a mash on an object): meter 2 x 0x005102c0, immovable, blocking cleared. | confirmed (code) |
+| `0x0022e330` | `ObjectMash_End` | Ends mode 4: clears the meter, hides it and marks the object 0x8000 (0x0024c560). | confirmed (code) |
+| `0x0022e4c0` | `ButtonMiniGame_Start` | Starts mini-game mode 5 (`HuButtonMiniGame`). | confirmed (code) |
+| `0x0022e558` | `ButtonMiniGame_End` | Ends mode 5 and releases the object target. | confirmed (code) |
+| `0x0022e610` | `Tag_StartSpray` | Starts spraying a tag: state 0x2000000, action, voice, particle and the script's start callback. | confirmed (code) |
+| `0x00236508` | `Cfg_SetStereoTheftHandler` | `CfgSetSteroTheftHandler`: interns the stereo theft's Lua handler (0x0051027c). | confirmed (code) |
+| `0x00236548` | `StereoTheft_CallHandler` | Calls the stereo theft handler with two values; StereoTheft_End uses it. | confirmed (code) |
+| `0x002365f0` | `Cfg_SetLockPickHandlers` | `CfgSetLockPickHandler`: interns the lock picking's start handler (0x00510288) and its two end handlers (0x00510284, 0x00510280). | confirmed (code) |
+| `0x00236698` | `Cfg_SetLockPickStageFailHandler` | `CfgSetLockPickStageFailHandler`: interns the handler 0x0051028c. | confirmed (code) |
+| `0x002366d8` | `LockPick_CallStageFail` | Calls the stage-fail handler; LockPick_JudgePress uses it. | confirmed (code) |
+| `0x00236780` | `LockPick_CallStart` | Calls the start handler; LockPick_Start uses it. | confirmed (code) |
+| `0x00236828` | `LockPick_CallEndA` | Calls the first end handler (0x00510284); LockPick_End uses it. | confirmed (code) |
+| `0x002368d0` | `LockPick_CallEndB` | Calls the second end handler (0x00510280); LockPick_End uses it. | confirmed (code) |
+
 ## Coney's implementation
 
 **Lock picking** (`repo:src/world_objects/lock_pick.h`, 2026-10-06): `LockPickDial` turns the current pin 0.1 rad ×

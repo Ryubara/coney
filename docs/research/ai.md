@@ -1832,11 +1832,13 @@ when the hand is empty. Start (`0x002ed168`) and End (`0x002ed260`) as the BigBr
 #### The Warriors' pick-ups {#warrior-pickups}
 
 `WarriorBrain_Think` (`0x003052f0`), every sixth think, while the brain may pick up (`+0x265`), holds nothing, and its
-gang kind's pick-up factor (`0x001644f8`) is not 0: with chance 25 × factor %, when its top goal allows it
-(`0x0029eaa0`), the nearest pickable object within 1.5 m (`0x0029d5f0`; a wider search when the gang's leader is free
-and its gang has a turf and no enemies) is fetched (`0x002faf98`). **`CfgWarriorWeapons(false)`** (game state
-`+0x5704` = 0) refuses an object whose type class (`+0x87`) is 4, a weapon; other objects are still taken. A Warrior
-holding a weapon of kind 4 or 6 with no enemies drops it unless its gang's tactic is type `0x26`. Confirmed (code).
+gang kind's pick-up factor (`0x001644f8`) is not 0: with chance 25 × factor %, when nobody is close around it
+(`0x0029eaa0`: none of its eight [sectors](ai-code.md#sectors) has bit 0 or 1 set, inferred a human within 2.5 m; this
+corrects an earlier reading as a goal check), the nearest pickable object within 1.5 m (`0x0029d5f0`; a wider search
+when the gang's leader is free and its gang has a turf and no enemies) is fetched (`0x002faf98`).
+**`CfgWarriorWeapons(false)`** (game state `+0x5704` = 0) refuses an object whose type class (`+0x87`) is 4, a weapon;
+other objects are still taken. A Warrior holding a weapon of kind 4 or 6 with no enemies drops it unless its gang's
+tactic is type `0x26`. Confirmed (code).
 
 #### Spawners {#spawners}
 
