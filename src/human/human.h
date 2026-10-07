@@ -189,7 +189,7 @@ class Human final : public Holdable {
     [[nodiscard]] anim::Pose pose() const { return m_animator.pose(m_bindRotations); }
 
     /// The skeleton its strike shapes are posed on: its character's (not owned; it must outlive the human). Null (the
-    /// default): it has no strike shapes, and its moving attacks land at a hit update as its other attacks do.
+    /// default): it has no strike shapes, and its attacks land at their hit update (combat::attackHitUpdate()).
     void setSkeleton(const anim::Skeleton* skeleton) { m_skeleton = skeleton; }
     /// Which of its strike shapes its clips' events have switched on (human/strike_shapes.h), and what they struck.
     [[nodiscard]] const StrikeShapes& strikeShapes() const { return m_strikes; }
@@ -203,7 +203,9 @@ class Human final : public Holdable {
     using StrikeContact = std::function<void(Human& human, std::span<const PosedShape> shapes)>;
     /// The strike test, after every human's move (human::Humans): while any strike shape is on, its posed shapes
     /// meet each of `victims` (the humans it fights) whose spine or head they overlap, each once while the shapes stay
-    /// on, and a moving attack (combat::strikesWithShapes()) hits it there (Fighter::strikeContact()); then `contact`
+    /// on, swept from where each shape was posed the update before (sweptShapesMeet()), and the free attack playing
+    /// (Fighter::strikesWithShapes()) hits it there (Fighter::strikeContact()); then
+    /// `contact`
     /// (may be null) hears the shapes. **Coney choices**: the capsule is taken as the 2 m upright capsule of its
     /// radius; the struck victims are the humans it fights, not every body near it.
     /// @orig 0x0033f110 Human_TestStrikes (unknown)
@@ -225,6 +227,8 @@ class Human final : public Holdable {
     [[nodiscard]] bool airborne() const { return m_airborne; }
     /// The human fell more than kOutOfWorldDepth below the mesh; it stays put until spawned again.
     [[nodiscard]] bool outOfWorld() const { return m_outOfWorld; }
+    /// With a skeleton and in the world, its spine and head shapes are posed each update for the strike test.
+    [[nodiscard]] bool struckByShapes() const override { return m_skeleton != nullptr && !m_outOfWorld; }
     /// The ground normal from the last snap.
     [[nodiscard]] anim::Vec3 groundNormal() const { return m_groundNormal; }
     /// The vertical speed at the last landing (negative), 0 before any.
@@ -657,6 +661,9 @@ class Human final : public Holdable {
     const BodyContact* m_bodyContact = nullptr; // setBodyContact(), the step's
     const anim::Skeleton* m_skeleton = nullptr; // setSkeleton()
     StrikeShapes m_strikes;
+    // The shapes on as they were posed the update before, in the world: each one's strike is tested along its move
+    // since (sweptShapesMeet()). A shape just switched on has none, so its first update is tested where it stands.
+    std::vector<PosedShape> m_strikesBefore;
     std::uint32_t m_strikeAnim = 0;            // the anim whose events switched the strike shapes on
     bool m_chargeStopped = false;              // the charge playing met a wall head-on (moveOnGround())
     std::vector<ObjectTarget> m_objectTargets; // the breakable objects square may strike

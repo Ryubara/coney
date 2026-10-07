@@ -14,7 +14,8 @@ void registerCombatTunables(TunableRegistry& registry) {
         .range(1, 30, 1)
         .units("samples")
         .describe("Samples circle or triangle must be held for the hold commands (tackle)");
-    registry.add(kCategory, "Snap attacks", &tuning.snapAttacks).describe("Square snaps to a side or back");
+    registry.add(kCategory, "Snap needs target", &tuning.snapNeedsTarget)
+        .describe("CfgSnap: a snap needs a target; off, the stick alone snaps");
 
     // The hit of S1 (and of every attack whose hit was not measured), in updates from the press; the phases come from
     // the clips' events.

@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.6% of the game's own code (521,924 of 3,354,776 bytes, 1,805 functions) |
+| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.6% of the game's own code (521,924 of 3,354,776 bytes, 1,808 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,192 of 3,284,000 bytes; 11,423 of 11,425 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-600 reimplemented function(s) have no size yet and add no bytes.
+603 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 77 | 195,624 |
 | `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 210 | 497,416 |
-| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 613 | 1,096,672 |
+| `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 616 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
@@ -1003,6 +1003,8 @@ at the top of the repository's `README.md`.
 | `0x00253688` | `Human_ApplyAnimSet` | `Human` | not filled in |
 | `0x00254078` | `Human_ComputeSpeeds` | `Human` | not filled in |
 | `0x002542e8` | `AnimRange_Damage` | `Human` | 40 |
+| `0x00254418` | `AttackTable_GetOffset` | `Human` | not filled in |
+| `0x00254508` | `AttackTable_GetFarRange` | `Human` | not filled in |
 | `0x002548f0` | `AnimRange_ApplyClassDamage` | `Human` | not filled in |
 | `0x00254e78` | `Human_UpdateBlockState` | `Human` | 1,736 |
 | `0x00255540` | `Human_UpdateWorkout` | `Human` | 1,976 |
@@ -1055,6 +1057,7 @@ at the top of the repository's `README.md`.
 | `0x00277958` | `Pair_CheckPlace` | `Human` | 456 |
 | `0x00278018` | `Tag_StartSprayClips` | `Human` | not filled in |
 | `0x00279f50` | `Player_CarTargetFilter` | `Human` | not filled in |
+| `0x0027a4b0` | `Player_FindAttackTarget` | `Human` | not filled in |
 | `0x0027a6c0` | `Player_PickTarget` | `Human` | not filled in |
 | `0x0027bc48` | `Mash_IsQuitCommand` | `Human` | not filled in |
 | `0x0027bcd8` | `Mash_IsAlternation` | `Human` | not filled in |

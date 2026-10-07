@@ -67,6 +67,13 @@ struct BodyPlacement {
 /// Whether two posed shapes overlap (their segments, or points, nearer than the sum of the radii).
 [[nodiscard]] bool shapesOverlap(const PosedShape& a, const PosedShape& b);
 
+/// Whether shape `to`, swept from where it was posed the update before (`from`, the same shape), meets `part`: the
+/// test along each shape's move since the last update (`Human_TestStrikes` `0x0033f110` tests from a shape's previous
+/// posed point, `+0x20`, to its new one, `+0x50`, in the world; docs/research/combat-moves.md#reach). A sphere sweeps
+/// a capsule from its old centre to its new one. **Coney's reading** for a segment: its new place and the paths of
+/// its two ends.
+[[nodiscard]] bool sweptShapesMeet(const PosedShape& from, const PosedShape& to, const PosedShape& part);
+
 /// Whether a posed shape overlaps the triangle `p0`, `p1`, `p2`.
 [[nodiscard]] bool shapeTouchesTriangle(const PosedShape& shape, anim::Vec3 p0, anim::Vec3 p1, anim::Vec3 p2);
 

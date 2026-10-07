@@ -22,6 +22,7 @@
 #include "combat/anim_ids.h"
 #include "combat/anim_ranges.h"
 #include "combat/combat_script.h"
+#include "combat/combat_tuning.h"
 #include "combat/commands.h"
 #include "combat/player_combat.h"
 #include "combat/stick_games.h"
@@ -176,6 +177,20 @@ TEST_CASE("circle held tackles: the target is mounted and square strikes it", "[
     CHECK(fight.target().damageTaken() == 61); // 219 or 221
 }
 
+namespace {
+
+// Turns the street's auto-lock off for one test, so a target taken does not turn the player to face it.
+struct NoAutoLock {
+    NoAutoLock() { coney::combat::combatTuning().autoLockAndCombat = false; }
+    NoAutoLock(const NoAutoLock&) = delete;
+    NoAutoLock& operator=(const NoAutoLock&) = delete;
+    NoAutoLock(NoAutoLock&&) = delete;
+    NoAutoLock& operator=(NoAutoLock&&) = delete;
+    ~NoAutoLock() { coney::combat::combatTuning() = coney::combat::CombatTuning{}; }
+};
+
+} // namespace
+
 TEST_CASE("an attack turns to a target off to the side within its range", "[human][combat]") {
     const FightCharacter character;
     // The target 0.9 m ahead and 0.6 m to the right: within the 1.25 m far range, 34° off.
@@ -188,6 +203,8 @@ TEST_CASE("an attack turns to a target off to the side within its range", "[huma
 
 TEST_CASE("an attack turns and slides onto its target at a constant rate up to its first event", "[human][combat]") {
     const FightCharacter character;
+    // Not locked on (the street's auto-lock off), so the stance does not face the target before the attack.
+    const NoAutoLock unlocked;
     // The target 1.1 m ahead and 0.4 m to the right (1.17 m, 20° off), within the 1.25 m far range.
     Fight fight(character, 1.1F, 0.4F);
     struct Sample {
@@ -206,11 +223,11 @@ TEST_CASE("an attack turns and slides onto its target at a constant rate up to i
     REQUIRE(k >= 1);
     REQUIRE(samples.size() > k + 12);
     CHECK(samples[k].heading == samples[k - 1].heading);
-    // The synthetic X1's first event (the window at frame 5, rate 0.75) comes 0.222 s in: the steer lasts 0.322 s, 9
-    // updates at one rate and two thirds of one more, then stops; no easing.
-    const float steerTime = (5.0F / 30.0F / 0.75F) + 0.1F;
+    // The synthetic X1's first event (the window at frame 5, rate 0.75) comes 0.222 s in: the turn and the slide last
+    // 0.322 s, 9 updates at one rate and two thirds of one more, then stop; no easing (combat-moves.md#reach).
+    const float turnTime = (5.0F / 30.0F / 0.75F) + 0.1F;
     const float angle = std::atan2(-0.4F, 1.1F);
-    const float perUpdate = angle * (1.0F / 30.0F) / steerTime;
+    const float perUpdate = angle * (1.0F / 30.0F) / turnTime;
     for (std::size_t i = k + 1; i <= k + 9; ++i) {
         INFO("update " << i - k);
         CHECK(samples[i].heading - samples[i - 1].heading == Approx(perUpdate).margin(1e-4));
@@ -220,7 +237,7 @@ TEST_CASE("an attack turns and slides onto its target at a constant rate up to i
     CHECK(samples[k + 10].heading == Approx(angle).margin(1e-3));
     // The slide (the synthetic clips carry no root motion): a constant step to stand at the clip's 1 m reach.
     const float distance = std::hypot(0.4F, 1.1F);
-    const float stepLength = (distance - 1.0F) * (1.0F / 30.0F) / steerTime;
+    const float stepLength = (distance - 1.0F) * (1.0F / 30.0F) / turnTime;
     for (std::size_t i = k + 1; i <= k + 9; ++i) {
         const Vec3 a = samples[i - 1].position;
         const Vec3 b = samples[i].position;
@@ -270,6 +287,8 @@ TEST_CASE("a snap turns the player so a human on the stick's side sits at the sn
     // The target 0.6 m ahead and 1.0 m to the right: 1.17 m away (inside the snap's 1.25 m far range), 59° right of
     // the facing, so 31° off the stick pushed to the right.
     Fight fight(character, 0.6F, 1.0F);
+    // The current target 0.9 m ahead (the stance takes the nearest within 2 m): a snap goes only for another human.
+    static_cast<void>(fight.addTarget(character, 0.9F, 0.0F));
     const Played played = play(fight, kSnapRightScript, 40);
     CHECK(playedClip(played, id::kSnapRight));
     CHECK_FALSE(playedClip(played, id::kAttackS1));
@@ -290,6 +309,7 @@ TEST_CASE("a snap turns the player so a human on the stick's side sits at the sn
 TEST_CASE("a snap backwards strikes a human behind the player", "[human][combat]") {
     const FightCharacter character;
     Fight fight(character, -1.0F);
+    static_cast<void>(fight.addTarget(character, 0.9F, 0.0F));
     const Played played = play(fight, "10 stick left 0 -100\n11 tap square\n12 stick left 0 0\n", 40);
     CHECK(playedClip(played, id::kSnapBack));
     CHECK(fight.target().damageTaken() == 31);
@@ -318,14 +338,41 @@ TEST_CASE("without a human within 2 m and 45 degrees of the stick square is an S
     }
 }
 
-TEST_CASE("a snap does not make its human the target, so the next snap may strike it again", "[human][combat]") {
+TEST_CASE("square with the stick to the side in S1's wind-up snaps to a human within 25's far range, else plays SS2",
+          "[human][combat]") {
+    const FightCharacter character;
+    // S1 at the human 0.9 m ahead, then the stick fully to the left and square in its wind-up: the chain buffers a
+    // left snap and plays it when the window opens if a human on the left is within the far range of 25 (1.25 m in
+    // the fixture), else the plain square step (docs/research/combat-moves.md#input).
+    const std::string script = "11 tap square\n13 stick left -100 0\n14 tap square\n15 stick left 0 0\n";
+    SECTION("a human 1.0 m to the left") {
+        Fight fight(character, 0.9F);
+        static_cast<void>(fight.addTarget(character, 0.0F, -1.0F));
+        const Played played = play(fight, script, 60);
+        CHECK(playedClip(played, id::kAttackS1));
+        CHECK(playedClip(played, id::kSnapLeft));
+        CHECK_FALSE(playedClip(played, id::kAttackSS2));
+    }
+    SECTION("a human 1.8 m to the left") {
+        Fight fight(character, 0.9F);
+        static_cast<void>(fight.addTarget(character, 0.0F, -1.8F));
+        const Played played = play(fight, script, 60);
+        CHECK(playedClip(played, id::kAttackSS2));
+        CHECK_FALSE(playedClip(played, id::kSnapLeft));
+    }
+}
+
+TEST_CASE("a snap makes its human the target, so square with the stick at it again plays S1", "[human][combat]") {
     const FightCharacter character;
     Fight fight(character, 0.0F, 1.1F);
+    // The current target ahead; the snap's human to the right.
+    static_cast<void>(fight.addTarget(character, 0.9F, 0.0F));
     const Played played =
         play(fight, std::string(kSnapRightScript) + "50 stick left 100 0\n51 tap square\n52 stick left 0 0\n", 80);
-    CHECK(fight.human().fighter().target() == nullptr);
-    CHECK(fight.target().damageTaken() == 62);
-    CHECK_FALSE(playedClip(played, id::kAttackS1));
+    CHECK(fight.human().fighter().target() == &fight.target());
+    CHECK(playedClip(played, id::kSnapRight));
+    CHECK(playedClip(played, id::kAttackS1));
+    CHECK(fight.target().damageTaken() == 31 + 17);
 }
 
 TEST_CASE("walking, square with the stick fully to the side is the walk attack, not a snap", "[human][combat]") {

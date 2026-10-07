@@ -58,8 +58,10 @@ inline constexpr float kSteerMaxSlide = 13.0F;
 inline constexpr float kSteerMaxSlideSpeed = 50.0F;
 /// The target's lead: its velocity × (the steer's time + this), seconds.
 inline constexpr float kSteerLeadExtraSeconds = 0.1F;
-/// A lead longer than this (m) that carries the target farther away is halved.
+/// A lead longer than this (m) that carries the target farther away ...
 inline constexpr float kSteerLeadHalveBeyond = 1.0F;
+/// ... and is cut to this long (m).
+inline constexpr float kSteerLeadCut = 0.5F;
 /// The reach is longer by this for a target scaled above kSteerBigScale, and shorter by kSteerRearReach from behind.
 inline constexpr float kSteerBigReach = 0.07F;
 inline constexpr float kSteerBigScale = 1.1F;
@@ -81,7 +83,8 @@ struct SteerGoal {
 
 /// Where an attacker standing at `from` should stand to strike a target at `target` moving at `targetVelocity` with
 /// a reach of `reach`, `seconds` before the attack's first event: the target led by its velocity × (`seconds` +
-/// kSteerLeadExtraSeconds) (half that when the lead is longer than kSteerLeadHalveBeyond and carries it farther away),
+/// kSteerLeadExtraSeconds) (cut to kSteerLeadCut when the lead is longer than kSteerLeadHalveBeyond and carries it
+/// farther away),
 /// less `reach` along the line from the attacker. Horizontal; both points keep `from`'s height.
 [[nodiscard]] SteerGoal attackSteerGoal(anim::Vec3 from, anim::Vec3 target, anim::Vec3 targetVelocity, float reach,
                                         float seconds);

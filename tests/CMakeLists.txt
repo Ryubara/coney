@@ -226,12 +226,14 @@ target_sources(coney_tests PRIVATE
     human/traversal_test.cpp
     human/turn_and_slide_test.cpp
     human/humans_test.cpp
+    human/strike_hits_test.cpp
     human/locomotion_gate_test.cpp)
 # Combat (docs/research/combat.md).
 target_sources(coney_tests PRIVATE
     combat/ai_counter_test.cpp
     combat/anim_ranges_test.cpp
     combat/commands_test.cpp
+    combat/attack_target_test.cpp
     combat/attacks_test.cpp
     combat/being_hit_test.cpp
     combat/disc_combat_test.cpp

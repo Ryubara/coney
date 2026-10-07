@@ -15,8 +15,10 @@ struct CombatTuning {
     /// runtime; the file says 5).
     int historyHoldSamples = 7;
 
-    /// Square snaps to a side or back attack when the stick is beyond kSnapStick (`CfgSnap`, 1).
-    bool snapAttacks = true;
+    /// `CfgSnap` (`0x005102b4`, 1): on, a snap (the stick beyond kSnapStick off the facing) needs a snap target, fresh
+    /// or from the chain's buffer (within kChainSnapRange there); off, the stick alone snaps
+    /// (docs/research/combat.md#attacks, docs/research/combat-moves.md#input).
+    bool snapNeedsTarget = true;
 
     /// The update, from the press, at which `S1`'s hit lands at runtime, and every attack's whose hit was not measured
     /// (combat::attackHitUpdate()). The phases come from the clips' events (docs/research/tasks.md#held-flags).

@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <numbers>
 #include <optional>
 #include <utility>
@@ -14,6 +15,7 @@
 #include "animation/anim_task.h"
 #include "combat/ai_counter.h"
 #include "combat/anim_ids.h"
+#include "combat/attack_target.h"
 #include "combat/combat_tuning.h"
 #include "combat/grab.h"
 #include "combat/lock_on.h"
@@ -21,6 +23,7 @@
 #include "combat/reactions.h"
 #include "core/pad.h"
 #include "human/fighter_clips.h"
+#include "human/strike_shapes.h"
 
 namespace coney::human {
 
@@ -39,6 +42,13 @@ constexpr std::uint32_t kChargeFlags = 0x1400000;
 bool isMovingAttack(int animId) {
     return animId == id::kRunningAttackCharge || animId == id::kRunningAttackDive || animId == id::kAttackFromRun ||
            animId == id::kArmedAttackFromRun;
+}
+
+// Whether `clip` switches a strike shape on (one bone's, or all of them): its attack strikes through the shapes.
+bool switchesStrikeShapes(const anim::AnimClip& clip) {
+    return std::ranges::any_of(clip.events, [](const anim::ClipEvent& event) {
+        return event.type == kEventStrikeOn || event.type == kEventStrikeAllOn;
+    });
 }
 
 // The horizontal distance between two points.
@@ -111,36 +121,108 @@ const ObjectTarget* Fighter::pickObjectTarget(const FighterInput& input) const {
     return found != nullptr ? found : nearest(kObjectWideConeDegrees);
 }
 
-Combatant* Fighter::pickTarget(const FighterInput& input, float range) {
-    // The heading searched along: the stick's when it is pushed, else the facing. The stick is in the facing frame,
-    // its angle positive to the right, and headings grow to the left.
-    const float along =
-        input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees) : input.heading;
-    // The nearest standing target within `reach` (and `cone` degrees of the heading, when given).
-    const auto nearest = [&](float reach, float cone) -> Combatant* {
-        Combatant* best = nullptr;
-        float bestDistance = reach;
-        for (Combatant* target : input.targets) {
-            if (target->state() != TargetState::Standing || target->health().depleted() || !target->targetable() ||
-                std::fabs(target->position().z - input.position.z) > kPickHeight) {
-                continue;
-            }
-            const anim::Vec3 to = anim::subtract(target->position(), input.position);
-            const float distance = std::hypot(to.x, to.y);
-            const float off = std::fabs(wrapAngle(headingOf(to) - along));
-            if (distance <= bestDistance && (cone <= 0.0F || off <= cone * kDegrees)) {
-                best = target;
-                bestDistance = distance;
-            }
+namespace {
+
+// Whether `target` may be an attack's target: standing, with health left, targetable and at most 2 m above or below
+// `from` (the enemy filters `0x00279410` / `0x00279568`; the gang test is the targets list's).
+bool fightable(const Combatant& target, const anim::Vec3& from) {
+    return target.state() == TargetState::Standing && !target.health().depleted() && target.targetable() &&
+           std::fabs(target.position().z - from.z) <= kPickHeight;
+}
+
+// The nearest fightable target of `input` within `reach` and, when `cone` is above 0, within `cone` degrees of the
+// heading `along`; null for none.
+Combatant* nearestFightable(const FighterInput& input, float along, float reach, float cone) {
+    Combatant* best = nullptr;
+    float bestDistance = reach;
+    for (Combatant* target : input.targets) {
+        if (!fightable(*target, input.position)) {
+            continue;
         }
-        return best;
-    };
-    // **Coney choice**: the third pass (humans × 0.7 within 135°) never finds one the second (× 0.9 at any angle)
-    // missed, so it is left out.
-    if (Combatant* found = nearest(range * kPickConeScale, kPickConeDegrees); found != nullptr) {
+        const anim::Vec3 to = anim::subtract(target->position(), input.position);
+        const float distance = std::hypot(to.x, to.y);
+        const float off = std::fabs(wrapAngle(headingOf(to) - along));
+        if (distance <= bestDistance && (cone <= 0.0F || off <= cone * kDegrees)) {
+            best = target;
+            bestDistance = distance;
+        }
+    }
+    return best;
+}
+
+// The search's last resort: the current target, when it is still fightable within `range`.
+Combatant* keptTarget(const FighterInput& input, const Combatant* current, float range) {
+    if (current == nullptr || !fightable(*current, input.position) ||
+        flatDistance(input.position, current->position()) > range) {
+        return nullptr;
+    }
+    const auto found = std::ranges::find(input.targets, current);
+    return found != input.targets.end() ? *found : nullptr;
+}
+
+// The heading a search runs along: the stick's when it is pushed (its angle is positive to the right, headings grow to
+// the left), else the facing turned by `offset`.
+float aimHeading(const FighterInput& input, float offset) {
+    return input.stick.magnitude() > kPickStick ? input.heading - (input.stick.angleDegrees() * kDegrees)
+                                                : wrapAngle(input.heading + offset);
+}
+
+} // namespace
+
+Combatant* Fighter::pickTarget(const FighterInput& input, float range, const Combatant* current) {
+    const float along = aimHeading(input, 0.0F);
+    // The passes in order; the first that finds anyone ends the search. (The objects' passes between them are
+    // pickObjectTarget()'s.)
+    if (Combatant* found = nearestFightable(input, along, range * kPickConeScale, kPickConeDegrees); found != nullptr) {
         return found;
     }
-    return nearest(range * kPickAnyScale, 0.0F);
+    if (current == nullptr) {
+        if (Combatant* found = nearestFightable(input, along, range * kPickAnyScale, 0.0F); found != nullptr) {
+            return found;
+        }
+    }
+    if (Combatant* found = nearestFightable(input, along, range * kPickWideScale, 0.0F); found != nullptr) {
+        return found;
+    }
+    return keptTarget(input, current, range);
+}
+
+Combatant* Fighter::findAttackTarget(const FighterInput& input, int farId) const {
+    const float far = reachOf(farId);
+    const float along = aimHeading(input, attackDirection(farId));
+    if (Combatant* found = nearestFightable(input, along, far, kPickConeDegrees); found != nullptr) {
+        return found;
+    }
+    if (m_target == nullptr) {
+        if (Combatant* found = nearestFightable(input, along, far, 0.0F); found != nullptr) {
+            return found;
+        }
+    }
+    return keptTarget(input, m_target, far);
+}
+
+Combatant* Fighter::attackTargetOf(int animId, const FighterInput& input, bool chainStep) const {
+    const bool cross = !chainStep && input.command == combat::command::kCrossLongHold;
+    const bool armed = m_animSet >= 1 && m_animSet <= 3;
+    const combat::AttackTarget how = combat::attackTarget(animId, cross, armed, chainStep, lockTarget() != nullptr);
+    switch (how.search) {
+    case combat::TargetSearch::KeepCurrent: {
+        // A player re-picks with none, or with one beyond 3 m; a human no player controls keeps what it has.
+        const bool repick = m_target == nullptr ||
+                            (m_player && flatDistance(input.position, m_target->position()) > combat::kKeepTargetRange);
+        if (!repick) {
+            return keptTarget(input, m_target, std::numeric_limits<float>::max());
+        }
+        return pickTarget(input, how.range, m_target);
+    }
+    case combat::TargetSearch::Pick:
+        return pickTarget(input, how.range, m_target);
+    case combat::TargetSearch::FindAttack:
+        return findAttackTarget(input, how.farId);
+    case combat::TargetSearch::Snap:
+        break;
+    }
+    return nullptr;
 }
 
 const Combatant* Fighter::lockTarget() const {
@@ -238,8 +320,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     if (m_mountPending && m_held != nullptr && animator.animId() == clips::kMountingIdle) {
         seatMount(input, animator, heading);
     }
-    // A moving attack of a human with strike shapes lands through them instead (strikeContact()).
-    if (out.hitAnim != id::kNone && !(input.strikeShapes && combat::strikesWithShapes(out.hitAnim))) {
+    // An attack's hit; on a body with strike shapes a free attack lands through them instead (landHit()).
+    if (out.hitAnim != id::kNone) {
         if ((out.hitAnim == id::kBreakObjectLow || out.hitAnim == id::kBreakObjectMid) && m_objectTarget) {
             m_objectHit = std::exchange(m_objectTarget, std::nullopt);
         } else {
@@ -271,12 +353,17 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
                              .heading = heading,
                              .nowMs = input.nowMs,
                              .targets = input.targets,
-                             .stepSeconds = input.stepSeconds});
+                             .stepSeconds = input.stepSeconds},
+                animator.flags());
     noteClip(animator);
 }
 
 void Fighter::noteClip(const HumanAnimator& animator) {
     m_lastClip = animator.animId();
+    // Once another clip has taken the top, the attack's shapes are no longer its.
+    if (m_shapeAttack != id::kNone && m_lastClip != clips::clipOf(m_shapeAttack)) {
+        m_shapeAttack = id::kNone;
+    }
     m_clipSeen = m_lastClip;
     const anim::AnimTask* top = animator.tasks().top();
     m_clipTimeSeen = top != nullptr ? top->time() : 0.0F;
@@ -337,12 +424,12 @@ combat::CombatInput Fighter::combatInput(const FighterInput& input, const HumanA
     }
     in.grabTargetInReach = m_candidate != nullptr;
     // Square with the stick asking for a snap: the snap's own search. The current target found means no snap.
-    if (input.command == combat::command::kSquarePressed && tuning.snapAttacks &&
-        combat::snapForStick(input.stick) != id::kNone) {
+    if (input.command == combat::command::kSquarePressed && combat::snapForStick(input.stick) != id::kNone) {
         Combatant* found = snapTarget(input);
         m_snapTarget = found != m_target ? found : nullptr;
     }
     in.snapTarget = m_snapTarget != nullptr;
+    in.chain = chainTargets(input);
     // The record's +0x08: the bits the clips playing hold (an attack's phases, the grab bit, the duck's).
     in.phase = animator.flags();
     in.fromRear = m_rear;
@@ -379,10 +466,7 @@ Holdable* Fighter::strongGrappleTarget(const FighterInput& input) {
     return target->holdable();
 }
 
-float Fighter::snapOffset(int animId) const {
-    if (animId != id::kSnapRight && animId != id::kSnapLeft && animId != id::kSnapBack) {
-        return 0.0F;
-    }
+float Fighter::attackDirection(int animId) const {
     const combat::AnimRange* range = m_ranges != nullptr && animId >= 0
                                          ? m_ranges->find(static_cast<std::uint32_t>(clips::clipOf(animId)))
                                          : nullptr;
@@ -390,7 +474,11 @@ float Fighter::snapOffset(int animId) const {
         // x is to the attacker's right, y ahead; headings grow to the left.
         return std::atan2(-range->directionX, range->directionY);
     }
-    // The snaps' directions on the disc: (1, 0) right, (-1, 0) left, (0, -1) back (formats/animation.md).
+    // Without one, the snaps' directions on the disc: (1, 0) right, (-1, 0) left, (0, -1) back (formats/animation.md);
+    // every other attack straight ahead.
+    if (animId != id::kSnapRight && animId != id::kSnapLeft && animId != id::kSnapBack) {
+        return 0.0F;
+    }
     if (animId == id::kSnapBack) {
         return std::numbers::pi_v<float>;
     }
@@ -398,6 +486,11 @@ float Fighter::snapOffset(int animId) const {
 }
 
 Combatant* Fighter::snapTarget(const FighterInput& input) {
+    // Along the stick's direction (its angle is positive to the right, headings grow to the left).
+    return snapTarget(input, input.heading - (input.stick.angleDegrees() * kDegrees));
+}
+
+Combatant* Fighter::snapTarget(const FighterInput& input, float along) {
     // Humans that can be fought: standing (not down, grabbed or tackled), with health left, targetable.
     std::vector<combat::TargetCandidate> candidates;
     candidates.reserve(input.targets.size());
@@ -406,11 +499,46 @@ Combatant* Fighter::snapTarget(const FighterInput& input) {
                                                                              target->state() == TargetState::Standing &&
                                                                              !target->health().depleted()});
     }
-    // Along the stick's direction (its angle is positive to the right, headings grow to the left).
-    const float along = input.heading - (input.stick.angleDegrees() * kDegrees);
     const std::size_t found = combat::nearestInCone(input.position, facing(along), candidates, combat::kSnapSearchRange,
                                                     combat::kSnapSearchCone, combat::kSnapSearchHeight);
     return found != combat::kNoTarget ? input.targets[found] : nullptr;
+}
+
+combat::ChainTargets Fighter::chainTargets(const FighterInput& input) {
+    combat::ChainTargets targets;
+    if (!m_combat.chain().active()) {
+        return targets;
+    }
+    // `Human_IsHighOrBusy` (`0x00225200`): the target down, or the attacker 1.3 to 1.8 m above it.
+    if (m_target != nullptr) {
+        const float above = input.position.z - m_target->position().z;
+        targets.targetLow = m_target->state() == TargetState::Grounded ||
+                            (above > combat::kLowTargetAboveMin && above < combat::kLowTargetAboveMax);
+    }
+    // The snap the chain would play: this update's press (which replaces the buffer), else the buffered one. Its
+    // target is searched for within the far range of 25, whatever its side.
+    int snap = combat::chainSnap(combat::chainButton(input.command, input.stick));
+    if (snap == id::kNone) {
+        snap = combat::chainSnap(m_combat.chain().buffered());
+    }
+    if (snap == id::kNone) {
+        return targets;
+    }
+    // **Coney's reading**: the search runs along the buffered snap's side of the facing (the stick may have moved
+    // since the press). The current target found means no snap, as for a fresh one.
+    Combatant* found = snapTarget(input, input.heading + attackDirection(snap));
+    if (found == nullptr || found == m_target) {
+        return targets;
+    }
+    const float far = m_ranges != nullptr ? m_ranges->farRange(static_cast<std::size_t>(id::kSnapRight)) : 0.0F;
+    const float range = far > 0.0F ? far : combat::kChainSnapRange;
+    const anim::Vec3 to = anim::subtract(found->position(), input.position);
+    if (std::hypot(to.x, to.y) <= range) {
+        targets.snapInReach = true;
+        // The snap steers onto it as a fresh one does.
+        m_snapTarget = found;
+    }
+    return targets;
 }
 
 void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode before, const FighterInput& input,
@@ -420,7 +548,9 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
     // goes to the idle through its builder, whose fade holds 0x10000000 for 5 updates: the stick turns him on the spot
     // and he takes presses, then the walk start begins (docs/research/tasks.md#locomotion-gate).
     if (out.blocking) {
-        if (!animator.drivingClipPlaying() || animator.settling()) {
+        // An attack in its end phase gives way at once (the dispatcher only blocks there or with no attack playing).
+        const bool endPhase = (animator.flags() & combat::kPhaseEnd) != 0;
+        if (!animator.drivingClipPlaying() || animator.settling() || endPhase) {
             playBlock(input, animator);
         }
     } else if (m_combat.mode() == combat::CombatMode::Free && animator.state() == AnimState::Hold &&
@@ -497,7 +627,7 @@ void Fighter::playDecisions(const combat::CombatOutput& out, combat::CombatMode 
         consumed = true;
     }
     if (out.startAnim != id::kNone && !consumed) {
-        playAttack(out.startAnim, input, animator, heading);
+        playAttack(out.startAnim, input, animator, heading, out.chainStep);
     }
 }
 
@@ -515,45 +645,56 @@ void Fighter::playBlock(const FighterInput& input, HumanAnimator& animator) {
     animator.playCombat(clips::kNoClips, wanted, AnimState::Hold);
 }
 
-void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading) {
+void Fighter::playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading,
+                         bool chainStep) {
+    const float fade = chainStep ? kCombatFade : kAttackFade;
     const auto clip = clips::one(clips::clipOf(animId));
     // The start announces the attack to the humans around (event 0x10, `0x0021d5c0`); each one's brain decides
     // whether its range and field of view take it in. **Coney choice**: it goes to everyone this human can fight.
     for (Combatant* other : input.targets) {
         other->announceAttack(input.position);
     }
+    // Whether this attack strikes through its shapes: a free attack (not a strike in a hold) of a human with shapes
+    // whose clip switches one on. Its hit has no fixed update (docs/research/combat-moves.md#timing).
+    m_shapeAttack = id::kNone;
     const HeldFlags held = isMovingAttack(animId) ? clips::kMovingAttackHolds : clips::kAttackHolds;
     // Mounted on a tackled victim, the strike returns to the mount.
     if (m_combat.mode() == combat::CombatMode::Tackling) {
         animator.playCombat(clip, clips::kMountingIdle, AnimState::Hold, kCombatFade, held);
         return;
     }
-    steer(animId, input, animator, heading);
+    const anim::AnimClip* own = animator.anims().clip(clips::clipOf(animId));
+    if (input.strikeShapes && own != nullptr && switchesStrikeShapes(*own)) {
+        m_shapeAttack = animId;
+    }
+    steer(animId, input, animator, heading, chainStep);
     // A moving attack with the stick still at a run: the run resumes after it.
     if (isMovingAttack(animId) && input.stick.magnitude() > locomotionTuning().runThreshold) {
-        animator.playCombatThenRun(clip, kCombatFade, held);
+        animator.playCombatThenRun(clip, fade, held);
         return;
     }
     // With a target the fight idle follows; with none the attack ends in 389, then the idle, as at runtime with
     // nobody near (docs/research/combat.md#input-return). **Coney's reading**: the target kept decides between the
     // two (the original's test is not traced).
     if (m_target != nullptr) {
-        animator.playCombat(clip, kAnimFightIdle, AnimState::Attack, kCombatFade, held);
+        animator.playCombat(clip, kAnimFightIdle, AnimState::Attack, fade, held);
         return;
     }
     const std::array<std::uint32_t, 2> settle{clips::clipOf(animId), kAnimNormalFromFight};
-    animator.playCombat(settle, clips::kIdle, AnimState::Attack, kCombatFade, held);
+    animator.playCombat(settle, clips::kIdle, AnimState::Attack, fade, held);
 }
 
-void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading) {
+void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading,
+                    bool chainStep) {
     m_steer.clear();
-    // A snap steers onto the human its own search found.
+    // A snap steers onto the human its own search found, which becomes the target (docs/research/combat.md#attacks).
     if (m_snapTarget != nullptr && (animId == id::kSnapRight || animId == id::kSnapLeft || animId == id::kSnapBack)) {
+        m_target = m_snapTarget;
         steerSnap(animId, input, heading);
         return;
     }
     const float far = reachOf(animId);
-    Combatant* target = pickTarget(input, far);
+    Combatant* target = attackTargetOf(animId, input, chainStep);
     if (target == nullptr) {
         return;
     }
@@ -564,19 +705,22 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     if (distance < 1e-4F) {
         return;
     }
+    // The steer turns the attack's direction, not the front, at the target.
+    const float direction = attackDirection(animId);
     // Beyond the far range it only turns, a little, at once.
     if (distance > far) {
         const float cap = kAttackTurnCapDegrees * kDegrees;
-        heading = wrapAngle(heading + std::clamp(wrapAngle(headingOf(to) - heading), -cap, cap));
+        heading = wrapAngle(heading + std::clamp(wrapAngle(headingOf(to) - direction - heading), -cap, cap));
         return;
     }
-    // Within it, the time to the clip's first event: the target is led by it + 0.1 s, and the steer lasts as long.
-    // **Coney's reading** of the clamp: at runtime X1 (first event at frame 5, 0.208 s at rate 0.8) turned for 9.25
-    // updates, the time to the event + 0.1 s.
+    // Within it, the target is led by the time to the clip's first event + 0.1 s, and the turn and the slide last as
+    // long: at runtime X1 (first event at frame 5, rate 0.8) turned and slid for 9.25 updates, and S1 slid over 3
+    // (combat-moves.md#reach). **Coney's reading**: the special slides over the time to the event alone, as 653 stood
+    // at its reach by k3 (first event at frame 2, rate 0.75) whatever the start; what sets its shorter time is not
+    // traced.
     const auto clipId = static_cast<std::uint32_t>(clips::clipOf(animId));
     const anim::AnimClip* clip = animator.clip(clipId);
     const float toEvent = clip != nullptr ? firstContactTime(*clip, animator.anims().rate(clipId)) : 0.0F;
-    const float seconds = toEvent + kSteerLeadExtraSeconds;
     const float reach = steerReach(clipId, *target, input, distance);
     // Turn to face the led target and slide to stand at the reach from it, each at a constant rate over the steer's
     // time, from the next state update (the dispatcher runs after it, docs/research/combat.md#targets). **Coney's
@@ -584,14 +728,16 @@ void Fighter::steer(int animId, const FighterInput& input, const HumanAnimator& 
     // is nearer than the reach (the original's XX2 at a target 0.83 m away, inside its 1.12 m reach, turned under 1°).
     const SteerGoal goal = attackSteerGoal(input.position, target->position(), target->velocity(), reach, toEvent);
     const anim::Vec3 toAim = anim::subtract(goal.aim, input.position);
-    m_steer.turnToOver(heading, std::hypot(toAim.x, toAim.y) > 1e-4F ? headingOf(toAim) : headingOf(to), seconds);
-    m_steer.moveToOver(input.position, goal.stand, seconds);
+    const float aim = std::hypot(toAim.x, toAim.y) > 1e-4F ? headingOf(toAim) : headingOf(to);
+    const float seconds = toEvent + kSteerLeadExtraSeconds;
+    const bool special = animId == id::kSpecial || animId == id::kSpecialRage;
+    m_steer.turnToOver(heading, wrapAngle(aim - direction), seconds);
+    m_steer.moveToOver(input.position, goal.stand, special ? toEvent : seconds);
 }
 
 void Fighter::steerSnap(int animId, const FighterInput& input, float heading) {
-    // **Coney's readings**: the snap's target is handed to the steer only, not kept as the target (human +0xc8; the
-    // page does not say the snap writes it); and "turns onto it" puts the target along the snap's own direction (its
-    // side, the Anim Range List's), where its clip strikes, not straight ahead.
+    // The turn puts the target along the snap's own direction (its side, the Anim Range List's offset), where its clip
+    // strikes, not straight ahead (docs/research/combat-moves.md#targeting).
     const Combatant* target = m_snapTarget;
     const anim::Vec3 to = anim::subtract(target->position(), input.position);
     const float distance = std::hypot(to.x, to.y);
@@ -606,7 +752,7 @@ void Fighter::steerSnap(int animId, const FighterInput& input, float heading) {
         attackSteerGoal(input.position, target->position(), target->velocity(), reach, combat::kSnapSteerSeconds);
     const anim::Vec3 toAim = anim::subtract(goal.aim, input.position);
     const float aim = std::hypot(toAim.x, toAim.y) > 1e-4F ? headingOf(toAim) : headingOf(to);
-    m_steer.turnToOver(heading, wrapAngle(aim - snapOffset(animId)), combat::kSnapSteerSeconds);
+    m_steer.turnToOver(heading, wrapAngle(aim - attackDirection(animId)), combat::kSnapSteerSeconds);
     m_steer.moveToOver(input.position, goal.stand, combat::kSnapSteerSeconds);
 }
 
@@ -635,10 +781,22 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input, const H
         victim = m_held;
         heldMove = true;
     } else {
-        // A snap strikes to its side (**Coney's reading**: the side its clip's direction gives, not the front).
-        victim = inFront(input, reachOf(animId), true, snapOffset(animId));
+        // A target without strike shapes: the attack's own target when it stands in reach, else the nearest in front of
+        // the attack's direction (a snap strikes to its side). **Coney stand-in** for a strike test against it.
+        const float reach = reachOf(animId);
+        const bool ownInReach =
+            m_target != nullptr &&
+            (m_target->state() == TargetState::Standing || m_target->state() == TargetState::Grounded) &&
+            std::ranges::find(input.targets, m_target) != input.targets.end() &&
+            flatDistance(input.position, m_target->position()) <= reach;
+        victim = ownInReach ? m_target : inFront(input, reach, true, attackDirection(animId));
     }
     if (victim == nullptr || (!heldMove && flatDistance(input.position, victim->position()) > reachOf(animId))) {
+        return;
+    }
+    // A free attack that strikes through its shapes lands on a body with shapes only where a shape touches it (the
+    // strike test, strikeContact()); a target without shapes takes it here, at the hit update.
+    if (!heldMove && strikesWithShapes(animId) && victim->struckByShapes()) {
         return;
     }
     applyHit(*victim, animId, damage, heldMove, input.position, input.nowMs, animator);
@@ -701,7 +859,7 @@ void Fighter::earnRage(int animId, std::uint64_t nowMs, bool isThrow) {
     }
 }
 
-void Fighter::trackTarget(const FighterInput& input) {
+void Fighter::trackTarget(const FighterInput& input, std::uint32_t phase) {
     const combat::CombatTuning& tuning = combat::combatTuning();
     // A target that left the fight is dropped: gone from the list, out of health, or down.
     if (m_target != nullptr) {
@@ -717,6 +875,32 @@ void Fighter::trackTarget(const FighterInput& input) {
     if (m_target == nullptr &&
         (input.command == combat::command::kL1Pressed || input.command == combat::command::kL1Held)) {
         m_target = pickTarget(input, tuning.targetDropDistance);
+    }
+    if (!m_player) {
+        return;
+    }
+    // The player's stance (`0x0027ce90`), unless L1 or a hold keeps the target: running (gait 4 or 5 with +0x08 clear)
+    // drops it; otherwise the nearest enemy within 2 m becomes the target when there is none (and +0x08 holds nothing
+    // outside 0x320100), or replaces one beyond 3 m (with +0x08 clear). **Coney's readings**: L2 held alone does not
+    // drop it (a grab's let-go is L2 too; which lock bits refuse the drop is not settled), and the stance timer and the
+    // alerted-enemy rule that keep the stance on are not modelled (Coney's stance is the lock, lockTarget()).
+    if (m_l1Held || m_held != nullptr) {
+        return;
+    }
+    const bool running = (input.gait == Gait::Run || input.gait == Gait::Sprint) && phase == 0;
+    if (running) {
+        m_target = nullptr;
+        return;
+    }
+    Combatant* nearest = nearestFightable(input, input.heading, kStanceTrackRange, 0.0F);
+    if (nearest == nullptr || flatDistance(input.position, nearest->position()) > kStanceEnterRange) {
+        return;
+    }
+    if (m_target == nullptr && (phase & ~kStanceTakeAllowed) == 0) {
+        m_target = nearest;
+    } else if (m_target != nullptr && phase == 0 &&
+               flatDistance(input.position, m_target->position()) > kStanceSwapRange) {
+        m_target = nearest;
     }
 }
 

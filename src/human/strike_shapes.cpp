@@ -145,6 +145,17 @@ bool shapesOverlap(const PosedShape& a, const PosedShape& b) {
     return segmentDistanceSquared(a.a, a.b, b.a, b.b) < reach * reach;
 }
 
+bool sweptShapesMeet(const PosedShape& from, const PosedShape& to, const PosedShape& part) {
+    if (shapesOverlap(to, part)) {
+        return true;
+    }
+    // Each end's path from its old place to its new one, at the shape's radius.
+    const auto path = [&](anim::Vec3 start, anim::Vec3 end) {
+        return shapesOverlap(PosedShape{.a = start, .b = end, .radius = to.radius, .bone = to.bone}, part);
+    };
+    return path(from.a, to.a) || path(from.b, to.b);
+}
+
 bool shapeTouchesTriangle(const PosedShape& shape, anim::Vec3 p0, anim::Vec3 p1, anim::Vec3 p2) {
     // A segment crossing the triangle's plane inside it touches it; otherwise the nearest of the segment's ends and
     // the triangle's edges decides.

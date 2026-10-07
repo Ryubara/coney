@@ -10,15 +10,16 @@ using coney::human::Gait;
 
 namespace {
 
-// Square's attack for a stick, a gait and a target, with snaps on, a human found for a snap and no attack phase.
-int square(Stick stick, Gait gait = Gait::Standing, TargetKind target = TargetKind::None, bool snaps = true,
+// Square's attack for a stick, a gait and a target, with snaps needing a target, a human found for a snap and no attack
+// phase.
+int square(Stick stick, Gait gait = Gait::Standing, TargetKind target = TargetKind::None, bool needsTarget = true,
            std::uint32_t phase = 0, bool snapTarget = true) {
     SquareInput input;
     input.target = target;
     input.stick = stick;
     input.gait = gait;
     input.phaseFlags = phase;
-    input.snapAttacks = snaps;
+    input.snapNeedsTarget = needsTarget;
     input.snapTarget = snapTarget;
     return squareAttack(input);
 }
@@ -38,13 +39,15 @@ TEST_CASE("square picks its attack by target, then stick and gait", "[combat]") 
     // Standing, or a stick short of a snap: S1.
     CHECK(square({}) == anim_id::kAttackS1);
     CHECK(square({0.7F, 0.4F}) == anim_id::kAttackS1);
-    // Full stick off the facing with a human found there: a snap to that side, unless snaps are off.
+    // Full stick off the facing with a human found there: a snap to that side.
     CHECK(square({0.98F, 0.1F}) == anim_id::kSnapRight);
     CHECK(square({-0.97F, -0.2F}) == anim_id::kSnapLeft);
     CHECK(square({0.1F, -0.99F}) == anim_id::kSnapBack);
-    CHECK(square({0.98F, 0.1F}, Gait::Standing, TargetKind::None, false) == anim_id::kAttackS1);
-    // No human there (or only the current target): no snap, square goes on to S1.
+    // No human there (or only the current target): no snap, square goes on to S1; with `CfgSnap` off the stick alone
+    // snaps.
     CHECK(square({0.98F, 0.1F}, Gait::Standing, TargetKind::None, true, 0, false) == anim_id::kAttackS1);
+    CHECK(square({0.98F, 0.1F}, Gait::Standing, TargetKind::None, false, 0, false) == anim_id::kSnapRight);
+    CHECK(square({0.68F, 0.72F}, Gait::Standing, TargetKind::None, false, 0, false) == anim_id::kAttackS1);
     // Full stick ahead, or under 45° off it, is no snap.
     CHECK(square({0.0F, 0.99F}) == anim_id::kAttackS1);
     CHECK(square({0.68F, 0.72F}) == anim_id::kAttackS1);
@@ -110,12 +113,50 @@ TEST_CASE("the chain table continues S1, X1 and SS2 and ends everything else", "
 }
 
 TEST_CASE("the chain buffers cross's press and square's, the snap by the stick", "[combat]") {
-    CHECK(chainButton(command::kCrossPressed, {}, true) == ChainButton::Cross);
-    CHECK(chainButton(command::kCrossLongHold, {}, true) == ChainButton::None);
-    CHECK(chainButton(command::kSquarePressed, {0.3F, 0.3F}, true) == ChainButton::Square);
-    CHECK(chainButton(command::kSquarePressed, {0.99F, 0.0F}, true) == ChainButton::SnapRight);
-    CHECK(chainButton(command::kSquarePressed, {0.99F, 0.0F}, false) == ChainButton::Square);
-    CHECK(chainButton(command::kCircleTapped, {}, true) == ChainButton::None);
+    CHECK(chainButton(command::kCrossPressed, {}) == ChainButton::Cross);
+    CHECK(chainButton(command::kCrossLongHold, {}) == ChainButton::None);
+    CHECK(chainButton(command::kSquarePressed, {0.3F, 0.3F}) == ChainButton::Square);
+    CHECK(chainButton(command::kSquarePressed, {0.99F, 0.0F}) == ChainButton::SnapRight);
+    CHECK(chainButton(command::kCircleTapped, {}) == ChainButton::None);
+    CHECK(chainSnap(ChainButton::SnapBack) == anim_id::kSnapBack);
+    CHECK(chainSnap(ChainButton::Square) == anim_id::kNone);
+}
+
+TEST_CASE("a buffered snap plays only with a snap target in reach, else the square step; CfgSnap off needs none",
+          "[combat]") {
+    // S1's window with a left snap buffered.
+    const auto play = [](bool snapInReach, bool needsTarget) {
+        CombatTuning tuning;
+        tuning.snapNeedsTarget = needsTarget;
+        AttackChain chain;
+        chain.start(anim_id::kAttackS1, tuning);
+        chain.update(ChainButton::SnapLeft, kPhaseWindUp, tuning);
+        return chain.update(ChainButton::None, kPhaseChainWindow, tuning, ChainTargets{.snapInReach = snapInReach})
+            .started;
+    };
+    CHECK(play(true, true) == anim_id::kSnapLeft);
+    CHECK(play(false, true) == anim_id::kAttackSS2);
+    CHECK(play(false, false) == anim_id::kSnapLeft);
+}
+
+TEST_CASE("no step from S1 or X1 plays at a low target; SS2's step still does", "[combat]") {
+    const CombatTuning tuning;
+    const ChainTargets low{.targetLow = true};
+    for (const int first : {anim_id::kAttackS1, anim_id::kAttackX1}) {
+        AttackChain chain;
+        chain.start(first, tuning);
+        chain.update(ChainButton::Square, kPhaseWindUp, tuning, low);
+        CHECK(chain.update(ChainButton::None, kPhaseChainWindow, tuning, low).started == anim_id::kNone);
+        // The press is dropped: the target getting up later in the window plays nothing.
+        CHECK(chain.buffered() == ChainButton::None);
+        CHECK(chain.update(ChainButton::None, kPhaseChainWindow, tuning).started == anim_id::kNone);
+        CHECK(chain.animId() == first);
+    }
+    AttackChain second;
+    second.start(anim_id::kAttackS1, tuning);
+    second.update(ChainButton::Square, kPhaseChainWindow, tuning);
+    second.update(ChainButton::Square, kPhaseWindUp, tuning, low);
+    CHECK(second.update(ChainButton::None, kPhaseChainWindow, tuning, low).started == anim_id::kAttackSSS3);
 }
 
 TEST_CASE("the chain takes its phases from the record: a hit 2 updates in, the end once the clip's bits are gone",
@@ -309,16 +350,4 @@ TEST_CASE("in a fight stance neither unarmed moving attack plays; the armed run 
     // The armed run attack does not test the stance.
     CHECK(squareAttack(in(Gait::Run, 3)) == anim_id::kArmedAttackFromRun);
     CHECK(squareAttack(in(Gait::Walk, 3)) == animSetClips(3).square);
-}
-
-TEST_CASE("the moving attacks strike humans through their shapes, the others at their hit update",
-          "[combat][attacks]") {
-    using coney::combat::strikesWithShapes;
-    namespace id = coney::combat::anim_id;
-    CHECK(strikesWithShapes(id::kRunningAttackCharge));
-    CHECK(strikesWithShapes(id::kRunningAttackDive));
-    CHECK(strikesWithShapes(id::kAttackFromRun));
-    CHECK(strikesWithShapes(id::kAttackFromWalk));
-    CHECK_FALSE(strikesWithShapes(id::kAttackX1));
-    CHECK_FALSE(strikesWithShapes(id::kArmedAttackFromRun));
 }

@@ -119,6 +119,17 @@ class Fight {
         m_targets.push_back(m_target.get());
     }
 
+    // Adds another target `ahead` metres in front of the player and `sideways` to its right, facing `targetHeading`;
+    // it is stepped with the first. Returns it.
+    coney::human::TargetHuman& addTarget(const FightCharacter& character, float ahead, float sideways,
+                                         float targetHeading = std::numbers::pi_v<float>) {
+        m_others.push_back(std::make_unique<coney::human::TargetHuman>(
+            character.anims, coney::human::AnimSlots::player(), test::identityBind(), 600,
+            anim::Vec3{40.0F + sideways, 40.0F + ahead, 0.0F}, targetHeading));
+        m_targets.push_back(m_others.back().get());
+        return *m_others.back();
+    }
+
     // Runs `frames` updates of `script`, calling `each` after every update with its index.
     template <typename Each> void run(std::string_view script, std::uint64_t frames, Each each) {
         for (const test::PadFrame& frame : test::playScript(script, frames)) {
@@ -136,6 +147,9 @@ class Fight {
                                                   .targets = m_targets},
                          m_mesh.get());
             m_target->step();
+            for (const auto& other : m_others) {
+                other->step();
+            }
             each(m_frame++);
         }
     }
@@ -151,6 +165,7 @@ class Fight {
     std::unique_ptr<raycast::CollisionMesh> m_mesh;
     coney::human::Human m_human;
     std::unique_ptr<coney::human::TargetHuman> m_target;
+    std::vector<std::unique_ptr<coney::human::TargetHuman>> m_others;
     std::vector<coney::human::Combatant*> m_targets;
     combat::CommandTables m_tables = combat::CommandTables::street();
     combat::CommandMatcher m_matcher;

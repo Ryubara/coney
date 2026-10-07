@@ -47,10 +47,7 @@ int snapForStick(Stick stick) {
     return anim_id::kNone;
 }
 
-namespace {
-
-// The snap attack a buffered snap plays.
-int snapOf(ChainButton button) {
+int chainSnap(ChainButton button) {
     switch (button) {
     case ChainButton::SnapRight:
         return anim_id::kSnapRight;
@@ -62,8 +59,6 @@ int snapOf(ChainButton button) {
         return anim_id::kNone;
     }
 }
-
-} // namespace
 
 int squareAttack(const SquareInput& input) {
     // A weapon in hand takes its own branch.
@@ -91,8 +86,9 @@ int squareAttack(const SquareInput& input) {
     if (atWalk(input)) {
         return anim_id::kAttackFromWalk;
     }
-    // A snap, with a human on the stick's side that is not the current target; without one square goes on to S1.
-    if (input.snapAttacks && input.snapTarget) {
+    // A snap, with a human on the stick's side that is not the current target, or with `CfgSnap` off for the stick
+    // alone; without one square goes on to S1.
+    if (!input.snapNeedsTarget || input.snapTarget) {
         if (const int snap = snapForStick(input.stick); snap != anim_id::kNone) {
             return snap;
         }
@@ -157,7 +153,7 @@ bool runningAttackAllowed(human::Gait gait, std::uint32_t phaseFlags) {
     return (gait == human::Gait::Run && phaseFlags == 0) || gait == human::Gait::Sprint;
 }
 
-ChainButton chainButton(CommandId command, Stick stick, bool snapAttacks) {
+ChainButton chainButton(CommandId command, Stick stick) {
     if (command == command::kCrossPressed) {
         return ChainButton::Cross;
     }
@@ -166,7 +162,7 @@ ChainButton chainButton(CommandId command, Stick stick, bool snapAttacks) {
     if (command != command::kSquarePressed && command != command::kSquareChain) {
         return ChainButton::None;
     }
-    switch (snapAttacks ? snapForStick(stick) : anim_id::kNone) {
+    switch (snapForStick(stick)) {
     case anim_id::kSnapRight:
         return ChainButton::SnapRight;
     case anim_id::kSnapLeft:
@@ -196,8 +192,8 @@ int nextChainAttack(int current, ChainButton button) {
     default:
         break;
     }
-    if (next != anim_id::kNone && snapOf(button) != anim_id::kNone) {
-        return snapOf(button);
+    if (next != anim_id::kNone && chainSnap(button) != anim_id::kNone) {
+        return chainSnap(button);
     }
     return next;
 }
@@ -224,11 +220,6 @@ int attackHitUpdate(int animId, const CombatTuning& tuning) {
     return found != kMeasured.end() ? found->hit : tuning.hitUpdate;
 }
 
-bool strikesWithShapes(int animId) {
-    return animId == anim_id::kRunningAttackCharge || animId == anim_id::kRunningAttackDive ||
-           animId == anim_id::kAttackFromWalk || animId == anim_id::kAttackFromRun;
-}
-
 bool AttackChain::start(int animId, const CombatTuning& tuning) {
     m_hit = attackHitUpdate(animId, tuning);
     m_current = animId;
@@ -245,7 +236,8 @@ void AttackChain::cancel() {
     m_buffered = ChainButton::None;
 }
 
-ChainStep AttackChain::update(ChainButton press, std::uint32_t flags, const CombatTuning& tuning) {
+ChainStep AttackChain::update(ChainButton press, std::uint32_t flags, const CombatTuning& tuning,
+                              ChainTargets targets) {
     ChainStep step;
     if (!active()) {
         return step;
@@ -268,8 +260,16 @@ ChainStep AttackChain::update(ChainButton press, std::uint32_t flags, const Comb
 
     // With the window open, a buffered press plays the next attack, or ends the chain where the table has none.
     if ((flags & kPhaseChainWindow) != 0 && m_buffered != ChainButton::None) {
-        const int next = nextChainAttack(m_current, m_buffered);
+        // A snap with nobody in reach (while snaps need a target) plays the plain square step.
+        const bool snap = chainSnap(m_buffered) != anim_id::kNone;
+        const ChainButton button =
+            snap && tuning.snapNeedsTarget && !targets.snapInReach ? ChainButton::Square : m_buffered;
         m_buffered = ChainButton::None;
+        // No step from S1 or X1 at a low target.
+        if (targets.targetLow && (m_current == anim_id::kAttackS1 || m_current == anim_id::kAttackX1)) {
+            return step;
+        }
+        const int next = nextChainAttack(m_current, button);
         if (next != anim_id::kNone) {
             if (start(next, tuning)) {
                 step.hit = next;

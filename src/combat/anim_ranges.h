@@ -45,7 +45,9 @@ class AnimRangeList {
     /// Anim `id`'s damage (`+0x0a`); 0 for an id without a record.
     /// @orig 0x002542e8 AnimRange_Damage (unknown)
     [[nodiscard]] int damage(std::size_t id) const;
-    /// Anim `id`'s far range in metres: `+0x08` × 0.001, or the reach × 1.25 when that is 0; 0 without a record.
+    /// Anim `id`'s far range in metres: `+0x08` × 0.001, or the reach × 1.25 when the stored value is not above the
+    /// reach (0 among them); 0 without a record (docs/research/combat.md#targets).
+    /// @orig 0x00254508 AttackTable_GetFarRange (unknown)
     [[nodiscard]] float farRange(std::size_t id) const;
 
     /// Replaces anim `id`'s damage, as the character class's damage table does to a human's copy of the list when

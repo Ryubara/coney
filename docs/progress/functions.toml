@@ -4823,6 +4823,16 @@ subsystem = "Human"
 size = 40
 
 [[function]]
+address = 0x00254418
+name = "AttackTable_GetOffset"
+subsystem = "Human"
+
+[[function]]
+address = 0x00254508
+name = "AttackTable_GetFarRange"
+subsystem = "Human"
+
+[[function]]
 address = 0x002548f0
 name = "AnimRange_ApplyClassDamage"
 subsystem = "Human"
@@ -5102,6 +5112,11 @@ subsystem = "Human"
 [[function]]
 address = 0x00279f50
 name = "Player_CarTargetFilter"
+subsystem = "Human"
+
+[[function]]
+address = 0x0027a4b0
+name = "Player_FindAttackTarget"
 subsystem = "Human"
 
 [[function]]

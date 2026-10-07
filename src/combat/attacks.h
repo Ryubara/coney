@@ -45,6 +45,10 @@ inline constexpr std::uint32_t kAttackRefusingPhases = 0x0100101f;
 /// The `+0x08` bits that refuse a special: cross + square's 653 and circle + cross's strong grapple (`Player_Special`,
 /// `0x00287730`, docs/research/combat.md#strong-grapple).
 inline constexpr std::uint32_t kSpecialRefusingPhases = 0xaeebf7ff;
+/// The `+0x08` bits under which R1 may still block (`Human_CanFight`, `0x00224f28`): among an attack's phases only its
+/// end phase 0x4, so a block cuts the end phase but not the wind-up, window or recovery
+/// (docs/research/combat-moves.md#input).
+inline constexpr std::uint32_t kBlockAllowedPhases = 0x20081404;
 
 /// The stick length beyond which square snaps or attacks from a run.
 inline constexpr float kSnapStick = 0.95F;
@@ -84,9 +88,9 @@ struct SquareInput {
     /// stance: the fighter is locked onto a target (Fighter::lockTarget()); the original's stance rules
     /// (`0x0027ce90`, docs/research/combat.md) are not built.
     bool fightStance = false;
-    bool snapAttacks = true; ///< CombatTuning::snapAttacks.
+    bool snapNeedsTarget = true; ///< CombatTuning::snapNeedsTarget.
     /// The snap's search found a human on the stick's side that is not the current target (the caller searches:
-    /// kSnapSearchRange, kSnapSearchCone, kSnapSearchHeight).
+    /// kSnapSearchRange, kSnapSearchCone, kSnapSearchHeight). Only read while snaps need a target.
     bool snapTarget = false;
 };
 
@@ -99,7 +103,8 @@ struct SquareInput {
 /// grabbed one; an object attack at a breakable (anim_id::kNone here: objectAttack() picks the clip); at a run (gait 4)
 /// with no phase bit and the stick beyond 0.95 the run attack 24; walking (gait 1-3) with the stick at 0.12 or more the
 /// walk attack 23; only then, standing or sprinting, the snap of snapForStick() when snaps are on and the search found
-/// a target (SquareInput::snapTarget); otherwise `S1`. So a snap comes from a player who has not started to walk.
+/// a target (SquareInput::snapTarget), or with `CfgSnap` off for the stick alone; otherwise `S1`. So a snap comes from
+/// a player who has not started to walk.
 /// **Coney choice**: a grounded target takes 193, never 194.
 /// The snap itself is `0x00264460` (docs/research/combat.md#attacks).
 /// @orig 0x00286cc8 Player_Square (unknown)
@@ -151,27 +156,45 @@ struct AnimSetClips {
 enum class ChainButton : std::uint8_t { None, Cross, Square, SnapRight, SnapLeft, SnapBack };
 
 /// What `command` with the stick gives the chain: cross pressed (0x12) is Cross, square pressed (0xf) is Square or,
-/// with the stick beyond 0.95 off the front and snaps on, the snap of that side. Anything else is None (so cross's
-/// 0x10 on the release is not buffered a second time).
-[[nodiscard]] ChainButton chainButton(CommandId command, Stick stick, bool snapAttacks);
+/// with the stick beyond 0.95 off the front, the snap of that side (whether it plays as one is the chain's test,
+/// ChainTargets). Anything else is None (so cross's 0x10 on the release is not buffered a second time).
+///  0x00280630 Player_BufferChain (unknown)
+[[nodiscard]] ChainButton chainButton(CommandId command, Stick stick);
+
+/// The snap a buffered snap press plays (25, 27 or 29), or anim_id::kNone for any other press.
+[[nodiscard]] int chainSnap(ChainButton button);
+
+/// The low target (`Human_IsHighOrBusy`, `0x00225200`, docs/research/combat-moves.md#square): the attacker's point more
+/// than this many metres above the target's ...
+inline constexpr float kLowTargetAboveMin = 1.3F;
+/// ... and less than this many (or the target down).
+inline constexpr float kLowTargetAboveMax = 1.8F;
+
+/// A buffered snap plays as one only with a snap target within this many metres (the far range of 25 on the disc;
+/// docs/research/combat-moves.md#input) while snaps need a target.
+inline constexpr float kChainSnapRange = 1.3F;
+
+/// What the chain's next step reads of the targets (docs/research/combat-moves.md#input), found by the caller.
+struct ChainTargets {
+    /// The snap's search, along the buffered snap's side, found a human that is not the current target within
+    /// kChainSnapRange.
+    bool snapInReach = false;
+    /// The current target is low (`Human_IsHighOrBusy`, `0x00225200`): down, or 1.3 to 1.8 m below the attacker.
+    bool targetLow = false;
+};
 
 /// The chain table: the attack `button` plays after `current`, or anim_id::kNone when the chain ends there. S1 → SS2 or
 /// SX2, X1 → XS2 or XX2, SS2 → SSS3 or SSX3; a buffered snap plays wherever a square would continue.
 /// **Coney choice**: SS2 then square is always `SSS3` (19), never its `_HOLD` variant 20 (19 every time at runtime).
 [[nodiscard]] int nextChainAttack(int current, ChainButton button);
 
-/// The update, counted from its clip's start, at which attack `animId`'s hit lands (0: on the start), as measured at
-/// runtime (docs/research/combat.md#attacks): `S1` CombatTuning::hitUpdate (2), `X1` 8, `SS2` 4, `SSS3` and `SSX3` 7,
-/// `XX2` 10, `SX2` 7, `XS2` 9, the grab strikes 51, 53 and 55 1, the power strike 57 0. **Coney choice**: every attack
-/// not measured hits as `S1` does (its hit event is not mapped).
+/// The update, counted from its clip's start, at which attack `animId`'s hit lands (0: on the start) when it does not
+/// strike through strike shapes (Fighter::strikesWithShapes(): a move in a hold, or a target or attacker without
+/// shapes), as measured at runtime (docs/research/combat.md#attacks): `S1` CombatTuning::hitUpdate (2), `X1` 8, `SS2`
+/// 4, `SSS3` and `SSX3` 7, `XX2` 10, `SX2` 7, `XS2` 9, the grab strikes 51, 53 and 55 1, the power strike 57 0. **Coney
+/// choice**: every attack not measured hits as `S1` does (its hit event is not mapped). **Coney stand-in** for the
+/// bodies without shapes: in the original no attack has a fixed hit update (docs/research/combat-moves.md#timing).
 [[nodiscard]] int attackHitUpdate(int animId, const CombatTuning& tuning);
-
-/// Whether attack `animId` strikes the humans it meets through the attacker's strike shapes, across the window its
-/// clip's events open (human/strike_shapes.h), rather than at a hit update: the moving attacks, the charge (0), the
-/// dive (1), the walk attack (23) and the run attack (24) (docs/research/combat.md#moving-strikes). **Coney choice**:
-/// every other clip (the standing attacks, whose clips switch hand shapes on too, and the reactions that switch every
-/// shape on) hits a human only at its hit update, and its shapes strike objects alone.
-[[nodiscard]] bool strikesWithShapes(int animId);
 
 /// What one update of an attack did.
 struct ChainStep {
@@ -198,10 +221,14 @@ class AttackChain {
     /// Stops the attack and forgets the chain (a hit taken, a grab).
     void cancel();
 
-    /// Advances one update with this update's chain press and the record's `+0x08` as the update starts.
+    /// Advances one update with this update's chain press and the record's `+0x08` as the update starts. The step a
+    /// buffered press plays reads `targets`: a buffered snap with snaps needing a target
+    /// (CombatTuning::snapNeedsTarget) and none in reach plays the plain square step instead; a step from `S1` or `X1`
+    /// is not played at a low target, and the press is dropped (**Coney's reading**: the research does not say whether
+    /// it waits).
     /// @orig 0x00280630 Player_UpdateChain (unknown)
     /// @orig 0x00280708 Player_UpdateChain (unknown)
-    ChainStep update(ChainButton press, std::uint32_t flags, const CombatTuning& tuning);
+    ChainStep update(ChainButton press, std::uint32_t flags, const CombatTuning& tuning, ChainTargets targets = {});
     /// The update at which the attack playing hits.
     [[nodiscard]] int hitUpdate() const { return m_hit; }
 

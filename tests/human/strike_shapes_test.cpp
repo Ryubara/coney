@@ -120,6 +120,24 @@ TEST_CASE("shapes overlap within their radii; segments by their nearest points",
     CHECK(human::shapesOverlap(across, upright));
 }
 
+TEST_CASE("a strike is tested along each shape's move since the last update, as X1's hook crosses the spine",
+          "[human][strike]") {
+    // The target's spine, upright, 1.0 m ahead; a hand sphere crossing in front of its top from right to left
+    // (combat-moves.md#reach): neither end of the move overlaps, the path does.
+    const human::PosedShape spine{.a = {0.0F, 1.0F, 1.1F}, .b = {0.0F, 1.0F, 1.5F}, .radius = 0.18F, .bone = 3};
+    const human::PosedShape from{.a = {0.25F, 0.78F, 1.6F}, .b = {0.25F, 0.78F, 1.6F}, .radius = 0.087F, .bone = 25};
+    const human::PosedShape to{.a = {-0.25F, 0.78F, 1.6F}, .b = {-0.25F, 0.78F, 1.6F}, .radius = 0.087F, .bone = 25};
+    CHECK_FALSE(human::shapesOverlap(from, spine));
+    CHECK_FALSE(human::shapesOverlap(to, spine));
+    CHECK(human::sweptShapesMeet(from, to, spine));
+    // A shape just switched on has no move: only where it stands counts.
+    CHECK_FALSE(human::sweptShapesMeet(to, to, spine));
+    // A segment's ends sweep too.
+    const human::PosedShape armFrom{.a = {0.6F, 0.78F, 1.6F}, .b = {0.3F, 0.78F, 1.6F}, .radius = 0.087F, .bone = 24};
+    const human::PosedShape armTo{.a = {-0.3F, 0.78F, 1.6F}, .b = {-0.6F, 0.78F, 1.6F}, .radius = 0.087F, .bone = 24};
+    CHECK(human::sweptShapesMeet(armFrom, armTo, spine));
+}
+
 TEST_CASE("a shape touches a triangle it crosses or reaches with its radius", "[human][strike]") {
     // A wall in the plane y = 0, from x 0 to 2 and z 0 to 2.
     const Vec3 p0{0.0F, 0.0F, 0.0F};

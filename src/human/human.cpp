@@ -1025,8 +1025,10 @@ void Human::noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeI
     if (top == nullptr || top->eventClip() == nullptr) {
         return;
     }
-    // From the clip's start when it began this step (or another clip took the top), else from where it was.
-    const bool same = top == before && top->animId() == beforeId && top->time() >= beforeTime;
+    // From the clip's start when it began this step (or another clip took the top, or it had not advanced yet: a clip
+    // started by the last actions pass, whose frame-0 events, such as S1's hand, are still to fire), else from where it
+    // was.
+    const bool same = top == before && top->animId() == beforeId && top->time() >= beforeTime && beforeTime > 0.0F;
     const int from = same ? anim::eventFrame(beforeTime) : -1;
     const int to = anim::eventFrame(top->time());
     for (const anim::ClipEvent& event : top->eventClip()->events) {
@@ -1069,11 +1071,21 @@ std::vector<PosedShape> Human::posedStrikeShapes(bool targets) const {
 
 void Human::testStrikes(std::span<Human* const> victims, const StrikeContact* contact) {
     if (!m_strikes.anyOn() || m_skeleton == nullptr || m_outOfWorld) {
+        m_strikesBefore.clear();
         return;
     }
     const std::vector<PosedShape> shapes = posedStrikeShapes(false);
+    // Where each shape was posed the update before; one just switched on stands where it is.
+    std::vector<PosedShape> before = shapes;
+    for (PosedShape& shape : before) {
+        const auto found = std::ranges::find(m_strikesBefore, shape.bone, &PosedShape::bone);
+        if (found != m_strikesBefore.end()) {
+            shape = *found;
+        }
+    }
+    m_strikesBefore = shapes;
     const int animId = static_cast<int>(m_animator.animId());
-    if (combat::strikesWithShapes(animId)) {
+    if (m_fighter.strikesWithShapes(animId)) {
         for (Human* victim : victims) {
             // A body is struck once while the shapes stay on; one far beyond any shape's reach is not posed.
             const anim::Vec3 to = anim::subtract(victim->position(), m_position);
@@ -1082,10 +1094,11 @@ void Human::testStrikes(std::span<Human* const> victims, const StrikeContact* co
                 continue;
             }
             const std::vector<PosedShape> body = victim->posedStrikeShapes(true);
-            const bool met = std::ranges::any_of(shapes, [&body](const PosedShape& shape) {
-                return std::ranges::any_of(body,
-                                           [&shape](const PosedShape& part) { return shapesOverlap(shape, part); });
-            });
+            bool met = false;
+            for (std::size_t i = 0; i < shapes.size() && !met; ++i) {
+                met = std::ranges::any_of(
+                    body, [&](const PosedShape& part) { return sweptShapesMeet(before[i], shapes[i], part); });
+            }
             if (met) {
                 m_strikes.markStruckHuman(victim);
                 m_fighter.strikeContact(*victim, animId, m_position, m_updates * 1000 / 30, m_animator);

@@ -95,7 +95,8 @@ float AnimRangeList::farRange(std::size_t id) const {
     if (range == nullptr) {
         return 0.0F;
     }
-    return range->far != 0.0F ? range->far : range->reach * kFarFromReach;
+    // A stored far range not above the reach (0 among them) gives way to the reach × 1.25.
+    return range->far > range->reach ? range->far : range->reach * kFarFromReach;
 }
 
 int applyClassDamage(AnimRangeList& list, std::span<const std::int16_t> values, int playerPercent) {

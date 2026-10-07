@@ -121,9 +121,9 @@ TEST_CASE("the steer's goal is the target led by its velocity, short of it by th
     const auto coming = attackSteerGoal(Vec3{}, Vec3{0.0F, 1.5F, 0.0F}, Vec3{0.0F, -1.5F, 0.0F}, 1.0F, 0.2F);
     CHECK(coming.aim.y == Approx(1.05F));
     CHECK(coming.stand.y == Approx(0.05F));
-    // A lead over 1 m that carries it away is halved: 5 m/s × 0.3 s = 1.5 m, so 0.75 m.
+    // A lead over 1 m that carries it away is cut to 0.5 m: 5 m/s × 0.3 s = 1.5 m, so 0.5 m.
     const auto fleeing = attackSteerGoal(Vec3{}, Vec3{0.0F, 1.5F, 0.0F}, Vec3{0.0F, 5.0F, 0.0F}, 1.0F, 0.2F);
-    CHECK(fleeing.aim.y == Approx(2.25F));
+    CHECK(fleeing.aim.y == Approx(2.0F));
     // The same lead towards the attacker is kept whole; a target nearer than the reach puts the goal behind him.
     const auto rushing = attackSteerGoal(Vec3{}, Vec3{0.0F, 2.5F, 0.0F}, Vec3{0.0F, -5.0F, 0.0F}, 1.2F, 0.2F);
     CHECK(rushing.aim.y == Approx(1.0F));

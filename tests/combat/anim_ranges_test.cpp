@@ -29,16 +29,17 @@ void record(Bytes& bytes, std::int16_t x, std::int16_t y, float reach, std::int1
 } // namespace
 
 TEST_CASE("an Anim Range List decodes each record's direction, ranges, damage, kind and flags", "[combat]") {
-    // Three ids: a forward attack with a far range, a snap right whose far range is left to the reach, and an id with
-    // no range data.
+    // Four ids: a forward attack with a far range, a snap right whose far range is left to the reach, an id with no
+    // range data and one whose stored far range is short of its reach.
     Bytes bytes;
-    bytes.u32(3);
+    bytes.u32(4);
     record(bytes, 0, 1000, 1.5F, 2499, 17, 10, 0x1000);
     record(bytes, 999, -12, 2.0F, 0, 31, 10, 0);
     record(bytes, 0, 0, 0.0F, 0, 0, 0, 0);
+    record(bytes, 0, 1000, 2.0F, 1500, 0, 0, 0);
     auto list = AnimRangeList::parse(bytes.span());
     REQUIRE(list.has_value());
-    REQUIRE(list->size() == 3);
+    REQUIRE(list->size() == 4);
 
     const auto* first = list->find(0);
     REQUIRE(first != nullptr);
@@ -57,9 +58,11 @@ TEST_CASE("an Anim Range List decodes each record's direction, ranges, damage, k
     CHECK(snap->directionY == Approx(-0.012F));
     CHECK(list->farRange(1) == Approx(2.5F));
     CHECK(list->damage(1) == 31);
+    // A stored far range not above the reach gives way to the reach × 1.25, too.
+    CHECK(list->farRange(3) == Approx(2.5F));
 
     // Past the list: no record, no damage, no range.
-    CHECK(list->find(3) == nullptr);
+    CHECK(list->find(4) == nullptr);
     CHECK(list->damage(400) == 0);
     CHECK(list->farRange(400) == 0.0F);
 }

@@ -31,11 +31,11 @@ CombatOutput PlayerCombat::update(const CombatInput& input, const CombatTuning& 
 
     // 2. The chain. **Coney choice**: the attack playing still counts the updates to its hit under a held R1 or a
     // dropping phase (the original's clip plays on); only the press is not read.
-    const ChainButton press =
-        blockOnly || dropped ? ChainButton::None : chainButton(input.command, input.stick, tuning.snapAttacks);
-    const ChainStep step = m_chain.update(press, phase, tuning);
+    const ChainButton press = blockOnly || dropped ? ChainButton::None : chainButton(input.command, input.stick);
+    const ChainStep step = m_chain.update(press, phase, tuning, input.chain);
     if (step.started != anim_id::kNone) {
         out.startAnim = step.started;
+        out.chainStep = true;
     }
     if (step.hit != anim_id::kNone) {
         out.hitAnim = step.hit;
@@ -135,7 +135,11 @@ void PlayerCombat::startHolding() {
 bool PlayerCombat::updateBlock(const CombatInput& input, CombatOutput& out) {
     // A block starts only on R1 held on a pad (the record's buttons): an AI's command 4 alone never starts one
     // (docs/research/ai.md#block).
-    const bool r1 = m_mode == CombatMode::Free && input.inFight && (input.buttons & pad::kR1) != 0;
+    // `Human_CanFight` (`0x00224f28`) lets it through only with no held bit outside 0x20081404: so a block cuts an
+    // attack's end phase (0x4) but waits through its wind-up, window and recovery
+    // (docs/research/combat-moves.md#input).
+    const bool canFight = (phaseFlags(input) & ~kBlockAllowedPhases) == 0;
+    const bool r1 = m_mode == CombatMode::Free && input.inFight && canFight && (input.buttons & pad::kR1) != 0;
     const bool keep =
         m_blocking && ((input.command == command::kL1R1 && !m_rage.full()) || input.command == command::kL1Released);
     if (!r1 && !keep) {
@@ -144,6 +148,10 @@ bool PlayerCombat::updateBlock(const CombatInput& input, CombatOutput& out) {
     }
     m_blocking = true;
     out.blocking = true;
+    // A block cutting an attack's end phase ends the attack and its chain.
+    if ((phaseFlags(input) & kPhaseEnd) != 0) {
+        m_chain.cancel();
+    }
     // L1 + R1 with a full meter starts rage from the block.
     if (input.command == command::kL1R1 && m_rage.start(input.nowMs)) {
         out.rageStarted = true;
@@ -333,7 +341,7 @@ void PlayerCombat::updateCommands(const CombatInput& input, const CombatTuning& 
                                  .phaseFlags = phaseFlags(input),
                                  .heldSet = input.animSet,
                                  .fightStance = input.fightStance,
-                                 .snapAttacks = tuning.snapAttacks,
+                                 .snapNeedsTarget = tuning.snapNeedsTarget,
                                  .snapTarget = input.snapTarget};
         const int animId = input.command == command::kSquarePressed ? squareAttack(attack) : crossAttack(attack);
         // A breakable target: the object attack, by the point's height.

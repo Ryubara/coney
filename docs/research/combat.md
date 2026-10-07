@@ -640,8 +640,11 @@ Confirmed (runtime), PCSX2 2.9.94, copies of slot 10, scenario
 
 **In Coney** ([`human/strike_shapes.h`](repo:src/human/strike_shapes.h)): the clip events switch the ten shapes, which
 are posed on the drawn skeleton every update, and each human's strike test runs after its move against the spine and
-head of the humans it fights and against the doors' enabled triangles and the panes' bodies. Only the four moving
-attacks hit a human this way; the other attacks still land at their measured hit update. A charge whose sweep loses
+head of the humans it fights and against the doors' enabled triangles and the panes' bodies. Every free attack hits
+a human this way, each shape tested along its move since the last update (from where it was posed the update
+before, none on its first update), as [where the attacker stands](combat-moves.md#reach) gives; the moves in a
+hold, and a body without shapes, still land at the measured hit update. The doors and panes are met where the
+shapes stand. A charge whose sweep loses
 more than half its move to a wall stops dead until its clip ends, and a broken barrier's triangles stand for its body
 until its removal. In Coney's play-through the charge strikes the fence on its 11th update, 1.06 m from the line, and
 stops 0.51 m from it 3 updates later; the original strikes on the 10th update at 0.80 m and stops 2 updates later at
@@ -2007,8 +2010,9 @@ Beyond the range it only turns (`0x00276008`), capped at 8. Confirmed (code).
   not above the reach, reach × 1.25), `+0x0`/`+0x2` an offset in mm (`0x00254418`) and `+0xc` flags (`0x00254d60`).
   `Attack_Start` steers only when a target is locked and its distance (`0x00229960`) is within the far range; with
   flag `0x8` and the global `0x005102c4` set it uses the variant `0x00275678` instead.
-- **The goal.** The target's position plus its velocity × (`T` + 0.1) (only half that lead when the full lead would
-  carry it more than 1 m and farther away), minus the reach along the line from the human: the human should stand
+- **The goal.** The target's position plus its velocity × (`T` + 0.1) (cut to 0.5 m long when the full lead would
+  carry it more than 1 m and farther away; [where the attacker stands](combat-moves.md#reach)), minus the reach along
+  the line from the human: the human should stand
   at the reach from where the target will be.
 - **The turn** (`0x0023cf88`): the heading to the goal minus the current facing, wrapped to (−π, π]; skipped under
   0.01 rad. It stores the rate (angle / `T`) in human `+0x308` and `T` in `+0x304` (flag `+0x332`).
@@ -2696,13 +2700,21 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   (`combat::movingStrikeWindow()`, [Objects](objects.md#coneys-implementation)); its hit on a human still lands 2
   updates in (the strike shapes are not built). The block's release plays the idle at once, and its fade holds
   `0x10000000` for its 5 updates:
-  the stick turns the player but the walk start waits for the fade, as at runtime. Coney never sets state code 5.
+  the stick turns the player but the walk start waits for the fade, as at runtime. R1 held blocks only when the record holds
+  no phase outside `0x20081404` (`Human_CanFight`), so it cuts an attack's end phase and ends its chain but waits
+  through the wind-up, window and recovery ([Input](combat-moves.md#input)). A new attack fades in over 0.2 s; a
+  chain step keeps the 0.1 s combat fade (**Coney's reading**: the original swaps it into the running task). Coney
+  never sets state code 5. A buffered snap plays only with a snap target within 25's far range (with `CfgSnap`
+  on), else the plain square step, and no step from `S1` or `X1` plays while the target is low (down, or 1.3 to
+  1.8 m below), as [Input](combat-moves.md#input) gives. **Coney's readings**: the buffered snap's search runs along
+  its side of the facing, not the stick of the moment, and a step refused at a low target drops its press. With
+  `CfgSnap` off (the debug menu's "Snap needs target") the stick alone snaps, fresh or buffered.
 - **The characters' step** ([Tasks](tasks.md#humans-update)): it runs on Coney's fixed 1/30 s step, the original's
   30 Hz characters' update, without the 60 Hz tick or the timing wheel, which wait for the world's objects; the brains
   are an empty hook until the AI lands; the context actions (triangle) are refused while the dispatcher would drop a
   command or the human is busy.
 - `SS2`, square is always `SSS3` (19), never 20; a grounded target takes 193, never 194; the dive takes the charge's
-  conditions; a buffered snap plays where a square would continue the chain, without a search of its own.
+  conditions.
 - **The snap** (`squareAttack` in `repo:src/combat/attacks.cpp`, the search and steer in `repo:src/human/fighter.cpp`)
   follows [Attacks](#attacks): the run and walk attacks first, then the snap only when `Fighter::snapTarget` finds a
   human within 2 m, 45° of the stick and 2 m in height, standing, with health left and targetable, that is not the
@@ -2749,8 +2761,10 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   second missed); beyond the far range the attacker turns at most 8° at once (read as degrees). Within it the steer
   follows [The steer in detail](#targets): from the update after the clip starts it turns at angle / `T` and slides at
   (goal − position) / `T`, on top of the clip's root motion, the last update only for the time left. **Coney's
-  readings**: `T` is the time to the clip's first event + 0.1 s (the code's clamp reads as the time to the event, but
-  X1 at runtime turned for 9.25 updates, 0.208 s + 0.1 s), and the lead is the target's velocity × the same `T`; the
+  readings**: the turn and the slide last the time to the clip's first event + 0.1 s (X1 at runtime turned and slid
+  for 9.25 updates, 0.208 s + 0.1 s, [where the attacker stands](combat-moves.md#reach)), but the special's slide
+  (653, 645) the time to the event alone (653 stands at its reach by k3 at runtime); the lead is the target's velocity ×
+  (the time + 0.1 s), cut to 0.5 m as above; the
   turn faces the led target, not the standing point, which lies behind the attacker when the target is inside the
   reach (the runtime `XX2` at 0.83 m, inside its 1.12 m reach, turned under 1°). A reaction cuts the steer.
 - **Posing a grab** follows [Posing a grab](#grab-posing): circle plays 71, then 72 (from the front) or 74 (from the
@@ -2869,7 +2883,9 @@ table read from the disc (`CfgChar` waits for the script runner's tables; the va
   The locomotion gate (answered, [Tasks](tasks.md#locomotion-gate)). The block's 5 updates after release (answered):
   the idle's fade holding `0x10000000`, not the state code.
 - **The steer's time**: the code clamps `T` to the time to the first event + 0.1 s, which reads as the time to the
-  event, while X1 at runtime turned for that time + 0.1 s; Coney uses the runtime's ([Target selection](#targets)).
+  event, while X1 at runtime turned and slid for that time + 0.1 s and 653 slid for the time to the event alone.
+  Coney gives the special the shorter slide ([Target selection](#targets)); what sets it in the original is not
+  traced.
 - **`XX2` against a walking target**: in `combat_cross` the original's target walks up (0.83 → 0.91 m) and the bodies
   push apart on `XX2` (0.25 m/s against Coney's 0.81); Coney's sandbox target stands still and has no body contact.
 - **The grab at runtime**: the placement is confirmed ([Grab pose at runtime](#grab-pose-runtime)); still open are

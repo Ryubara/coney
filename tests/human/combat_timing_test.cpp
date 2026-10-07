@@ -545,8 +545,10 @@ TEST_CASE("square then cross spammed plays S1 and SX2, which plays to its end", 
 }
 
 TEST_CASE("a snap plays to its end under square spam, then the stick at rest gives S1", "[human][combat][timing]") {
-    // A human 1.1 m to the right for the snap to find (docs/research/combat.md#attacks).
+    // A human 1.1 m to the right for the snap to find (docs/research/combat.md#attacks), and the current target ahead
+    // (the stance takes the nearest within 2 m; a snap never goes for the current target).
     Fight fight(timingCharacter(), 0.0F, 1.1F);
+    static_cast<void>(fight.addTarget(timingCharacter(), 0.9F, 0.0F));
     // The stick flicked fully right for one update with square (combat.md#input-scripts), then square every 2.
     const std::string script = "10 stick left 100 0\n10 tap square\n11 stick left 0 0\n" + taps("square", 12, 60, 2);
     const Timeline line = Timeline::record(fight, script, 80);
@@ -621,10 +623,11 @@ TEST_CASE("R1 held blocks; let go, a press is taken at once but the stick moves 
         // The block holds the body: the stick at 60 % turns him with the shuffle and moves him nowhere.
         CHECK(line.travelled(11, 89) < 0.01F);
         CHECK(line.at(25).clip == 607);
-        // Cross under the block plays X1 on the release, to its end, then the block's clip again (the closing 389
-        // gives way to it).
+        // Cross under the block plays X1 on the release; the held R1 cuts it as its end phase opens (update 20 of its
+        // 30, as R1 cut S1 at runtime, combat-moves.md#input), and the block's clip plays again.
         CHECK(line.startsOf(id::kAttackX1) == std::vector<int>{31});
-        checkPlayedFully(line, id::kAttackX1, 31, 30.0F);
+        checkPlayedFully(line, id::kAttackX1, 31, 20.0F);
+        CHECK(line.endOf(id::kAttackX1, 31) - 31 < 30);
         CHECK(line.at(line.endOf(id::kAttackX1, 31)).clip == 607);
         // Let go at 90: the idle for 5 updates with the body held, then the walk start (at runtime 388 for 5, then
         // 413).

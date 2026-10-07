@@ -21,16 +21,16 @@ TEST_CASE("the combat tunables edit the values combat reads, defaulting to the r
     CHECK(registry.find("Combat/Mash target")->defaultValue() == 1000.0);
 
     registry.set("Combat/History hold", 5);
-    registry.set("Combat/Snap attacks", 0);
+    registry.set("Combat/Snap needs target", 0);
     registry.applyPending();
     CHECK(coney::combat::combatTuning().historyHoldSamples == 5);
-    CHECK_FALSE(coney::combat::combatTuning().snapAttacks);
+    CHECK_FALSE(coney::combat::combatTuning().snapNeedsTarget);
 
     // Back to the researched values, so other tests see combat as it is.
     registry.resetAll();
     registry.applyPending();
     CHECK(coney::combat::combatTuning().historyHoldSamples == 7);
-    CHECK(coney::combat::combatTuning().snapAttacks);
+    CHECK(coney::combat::combatTuning().snapNeedsTarget);
     CHECK(registry.removeCategory("Combat") == 39);
 }
 

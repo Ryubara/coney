@@ -47,6 +47,7 @@ struct CombatInput {
     bool fightStance = false;       ///< In a fight stance (SquareInput::fightStance).
     bool grabTargetInReach = false; ///< The search found someone to grab for this circle or circle + cross.
     bool snapTarget = false;        ///< The snap's search found a human that is not the target (SquareInput).
+    ChainTargets chain;             ///< What the chain's next step reads of the targets (AttackChain::update()).
     bool fromRear = false;          ///< Holding the victim from behind.
     bool wallInReach = false;       ///< A wall within a throw's reach.
     bool victimMuggable = false;    ///< The held victim may be mugged.
@@ -61,6 +62,7 @@ struct CombatInput {
 /// What one update decided.
 struct CombatOutput {
     int startAnim = anim_id::kNone; ///< Start this clip now.
+    bool chainStep = false;         ///< startAnim is the chain's next attack, played from its buffer.
     int hitAnim = anim_id::kNone;   ///< An attack's hit landed this update...
     int hitDamage = 0;              ///< ... doing this much (strikeDamage()).
     bool blocking = false;          ///< The block branch ran (state `0x8001`).

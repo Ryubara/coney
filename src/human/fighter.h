@@ -50,10 +50,21 @@ enum class PairStage : std::uint8_t {
 /// list has none (**Coney's choice**), and in front of the attacker (within 90° of its facing).
 inline constexpr float kDefaultStrikeReach = 2.0F;
 /// The target search (`Player_PickTarget`): humans within the range × 1.1 and this many degrees of the stick's heading
-/// (or the facing with the stick at rest), else within the range × 0.9 at any angle.
+/// (or the facing with the stick at rest); with no current target, within the range × 0.9 at any angle; then within
+/// the range × 0.7 at any angle (docs/research/combat-moves.md#targeting).
 inline constexpr float kPickConeDegrees = 54.0F;
 inline constexpr float kPickConeScale = 1.1F;
 inline constexpr float kPickAnyScale = 0.9F;
+inline constexpr float kPickWideScale = 0.7F;
+/// The player's fight stance each update (`0x0027ce90`, docs/research/combat.md#fight-stance): the nearest enemy is
+/// tracked within this many metres, ...
+inline constexpr float kStanceTrackRange = 6.0F;
+/// ... one within this many metres is taken as the target (and locked with the street's `CfgAutoLockAndCombat`), ...
+inline constexpr float kStanceEnterRange = 2.0F;
+/// ... and a target beyond this many metres is swapped for that nearest one.
+inline constexpr float kStanceSwapRange = 3.0F;
+/// The `+0x08` bits under which the stance may still take a target (`0x320100`): any other held bit refuses it.
+inline constexpr std::uint32_t kStanceTakeAllowed = 0x320100;
 /// The stick length above which its heading leads the search.
 inline constexpr float kPickStick = 0.01F;
 /// Targets more than this far above or below are skipped.
@@ -91,7 +102,7 @@ struct FighterInput {
     std::span<Combatant* const> targets;     ///< The humans that can be fought.
     float stepSeconds = kStepSeconds;        ///< The characters' step: 1/30 s, less in slow motion.
     std::span<const ObjectTarget> objects{}; ///< The breakable objects square may strike.
-    bool strikeShapes = false; ///< The moving attacks strike through the human's shapes (strikeContact()).
+    bool strikeShapes = false; ///< The human has strike shapes: its free attacks strike through them (strikeContact()).
 };
 
 /// The camera shake a reaction asks for (docs/research/camera.md#shake): on the attacker's camera when a player hit,
@@ -179,9 +190,14 @@ class Fighter {
     [[nodiscard]] TurnAndSlideStep takeSteer(float dt) { return m_steer.step(dt); }
     /// The attack's steer still under way.
     [[nodiscard]] const TurnAndSlide& steering() const { return m_steer; }
-    /// The target human the search would pick for an attack of `range` metres (null for none).
+    /// The target human the search would pick for an attack of `range` metres with `current` as the current target
+    /// (null for none): the nearest standing enemy within range × 1.1 and 54° of the stick's heading (the facing with
+    /// the stick at rest); with no current target, within range × 0.9 at any angle; then within range × 0.7 at any
+    /// angle. With none found, the current target when it is standing within range; else null. A human target is
+    /// always searched for again (only an object target is kept as it is, which this search does not pick).
     /// @orig 0x0027a6c0 Player_PickTarget (unknown)
-    [[nodiscard]] static Combatant* pickTarget(const FighterInput& input, float range);
+    [[nodiscard]] static Combatant* pickTarget(const FighterInput& input, float range,
+                                               const Combatant* current = nullptr);
     // Square's object target, with no human in front: of `input.objects` within the object attack's far range, the
     // nearest within 54° of the stick's heading (the facing at rest), else within 135°. Null for none.
     // **Coney choices**: the range is the object attack's far range (the original approaches from farther, not built);
@@ -190,11 +206,16 @@ class Fighter {
     // Circle + cross's search (combat::nearestInCone() along the stick, combat::strongGrappleRange()): makes the human
     // found the target and returns it when it may be grabbed, else null.
     Holdable* strongGrappleTarget(const FighterInput& input);
+    // What the chain's next step reads of the targets (docs/research/combat-moves.md#input): whether the current target
+    // is low, and for the snap this update's press or the buffer holds, the snap's search along that snap's side.
+    [[nodiscard]] combat::ChainTargets chainTargets(const FighterInput& input);
     /// The snap's target: the nearest human within combat::kSnapSearchRange, combat::kSnapSearchCone of the stick's
     /// direction and combat::kSnapSearchHeight, standing, with health left and targetable (null for none).
     /// **Coney stand-in**: the clear line to it (`0x00222a90`) is not tested.
     /// The original's search is `0x0027aa38(h, 0x80)` (docs/research/combat.md#attacks).
     [[nodiscard]] static Combatant* snapTarget(const FighterInput& input);
+    /// The same search along heading `along` (radians).
+    [[nodiscard]] static Combatant* snapTarget(const FighterInput& input, float along);
     /// Hits that reached a target, and the damage they did.
     [[nodiscard]] int hitsLanded() const { return m_hitsLanded; }
     [[nodiscard]] int damageDealt() const { return m_damageDealt; }
@@ -202,7 +223,15 @@ class Fighter {
     /// block alike), oldest first: what the combat tutorial's callback hears (docs/research/hud.md#tutorial-callback).
     /// An AI's hits are not kept.
     [[nodiscard]] const std::vector<int>& strikes() const { return m_strikes; }
-    /// A strike shape of this human's moving attack `animId` met `victim` in the strike test (Human::testStrikes(),
+    /// Whether `animId` is the free attack playing that strikes through the human's strike shapes: started out of a
+    /// hold by a human with shapes (FighterInput::strikeShapes) from a clip that switches one on. Such an attack hits a
+    /// body with shapes only where one of its shapes touches the body's spine or head (Human::testStrikes()), so its
+    /// hit has no fixed update and can miss; a target without shapes takes it at its hit update
+    /// (docs/research/combat-moves.md#timing).
+    [[nodiscard]] bool strikesWithShapes(int animId) const {
+        return animId != combat::anim_id::kNone && animId == m_shapeAttack;
+    }
+    /// A strike shape of this human's attack `animId` met `victim` in the strike test (Human::testStrikes(),
     /// human/strike_shapes.h): the hit lands as a free hit does, with the clip's Anim Range List damage, from
     /// `position` at game time `nowMs`, earning its rage; strikes() reports it after the update's actions. `animator`
     /// is the attacker's, for the hit's sound.
@@ -343,12 +372,20 @@ class Fighter {
     // --- fighter.cpp: the update, the attacks and the targets.
 
     // The nearest standing (or grounded, with `grounded`) target within `range` in front of the player: within 90° of
-    // its facing turned by `offset` radians (a snap's side, snapOffset()).
+    // its facing turned by `offset` radians (an attack's direction, attackDirection()).
     [[nodiscard]] Combatant* inFront(const FighterInput& input, float range, bool grounded, float offset = 0.0F) const;
-    // For a snap `animId`, the angle from the facing (radians, positive to the left, as headings) towards the other
-    // human: the Anim Range List's direction (`+0x00`, `+0x02`), or without one its side (right, left or back); 0 for
-    // any other attack.
-    [[nodiscard]] float snapOffset(int animId) const;
+    // The angle of attack `animId`'s direction from the facing (radians, positive to the left, as headings): the Anim
+    // Range List's offset (`+0x00`, `+0x02`), a unit vector in the attacker's frame; without one a snap's side (right,
+    // left or back) and 0 for any other attack. An attack's steer turns this direction, not the front, at its target.
+    // @orig 0x00254418 AttackTable_GetOffset (unknown)
+    [[nodiscard]] float attackDirection(int animId) const;
+    // `Player_FindAttackTarget`: one search at the far range of `farId` (not × 1.1) within 54° of the aim (the stick's
+    // heading above 0.01, else the facing turned to `farId`'s direction); with no current target, at any angle at the
+    // same range; the nearest, else the current target when it is standing within that range.
+    // @orig 0x0027a4b0 Player_FindAttackTarget (unknown)
+    [[nodiscard]] Combatant* findAttackTarget(const FighterInput& input, int farId) const;
+    // The target attack `animId` goes for (combat::attackTarget()): `chainStep` when the chain's buffer played it.
+    [[nodiscard]] Combatant* attackTargetOf(int animId, const FighterInput& input, bool chainStep) const;
     // The strike reach of attack `animId`.
     [[nodiscard]] float reachOf(int animId) const;
     // The dispatcher's input from the world: square's target, circle's search, the hold, and the record's +0x08.
@@ -359,13 +396,13 @@ class Fighter {
     void playDecisions(const combat::CombatOutput& out, combat::CombatMode before, const FighterInput& input,
                        HumanAnimator& animator, float& heading);
     // Plays an attack the dispatcher started (`animId`), with what follows it, turning and sliding to its target.
-    void playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading);
+    void playAttack(int animId, const FighterInput& input, HumanAnimator& animator, float& heading, bool chainStep);
     // Turns (and within the far range slides) towards the target of attack `animId`, as Attack_Start steers: within
     // the far range the turn and the slide onto the reach are spread at a constant rate over the time to the clip's
     // first event, from the next state update (m_steer); beyond it the facing turns at once, capped.
     // @orig 0x002761c8 Attack_SteerToTarget (unknown)
     // @orig 0x00276008 Attack_TurnToTarget (unknown)
-    void steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading);
+    void steer(int animId, const FighterInput& input, const HumanAnimator& animator, float& heading, bool chainStep);
     // A snap's steer onto the target its search found (m_snapTarget): the turn and the slide onto the reach over
     // combat::kSnapSteerSeconds, from the next state update, when it is within the snap's far range; nothing beyond.
     // The original's snap (`0x00264460`) steers so (docs/research/combat.md#attacks).
@@ -393,8 +430,11 @@ class Fighter {
     void earnRage(int animId, std::uint64_t nowMs, bool isThrow = false);
     // Remembers the clip playing at the end of the update and its time (the pair's moments, the duck's window).
     void noteClip(const HumanAnimator& animator);
-    // Keeps the target or drops it (gone, out of health, down, or too far without L1 or a hold), and lets L1 pick one.
-    void trackTarget(const FighterInput& input);
+    // Keeps the target or drops it (gone, out of health, down, or too far without L1 or a hold), lets L1 pick one, and
+    // runs a player's fight-stance target rules: a run drops the target, the nearest enemy within 2 m is taken, and a
+    // target beyond 3 m is swapped for it. `phase` is the record's `+0x08`.
+    // @orig 0x0027ce90 Player_UpdateSprint (unknown)
+    void trackTarget(const FighterInput& input, std::uint32_t phase);
 
     // --- fighter_grab.cpp: a grab the player holds.
 
@@ -513,11 +553,12 @@ class Fighter {
     float m_grabTurn = 0.0F;       // the grab's stick turn of the last update, radians
     int m_duckCounters = 0;        // the duck counters played
     int m_hitsLanded = 0;
-    int m_animSet = 0;                    // the anim set a held weapon applied (record +0x10's top)
-    std::vector<int> m_strikes;           // a player's struck hits' anim ids in the last update
-    std::optional<double> m_objectTarget; // the object square's object attack aims at
-    std::optional<double> m_objectHit;    // the object an object attack struck this update
-    std::vector<int> m_shapeStrikes;      // strikeContact()'s hits since the last update, for strikes()
+    int m_animSet = 0;                          // the anim set a held weapon applied (record +0x10's top)
+    std::vector<int> m_strikes;                 // a player's struck hits' anim ids in the last update
+    std::optional<double> m_objectTarget;       // the object square's object attack aims at
+    std::optional<double> m_objectHit;          // the object an object attack struck this update
+    std::vector<int> m_shapeStrikes;            // strikeContact()'s hits since the last update, for strikes()
+    int m_shapeAttack = combat::anim_id::kNone; // the free attack playing that strikes through the shapes
     int m_damageDealt = 0;
 
     // The victim side.

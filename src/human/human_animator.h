@@ -96,6 +96,10 @@ inline constexpr float kJumpFade = 0.1F;
 inline constexpr float kLandFade = 0.0F;
 /// The fade into a combat clip, seconds. **Coney's choice** (the combat builders are not researched).
 inline constexpr float kCombatFade = 0.1F;
+/// A new attack enters over this long from the pose before it (`AnimTaskChained_Construct(0.2, ...)` in `Attack_Start`
+/// and `Attack_StartSolo`, docs/research/combat-moves.md#input). **Coney's reading**: a chain step, which the original
+/// swaps into the running task (its blend not traced), keeps kCombatFade.
+inline constexpr float kAttackFade = 0.2F;
 /// The fight idle (358, `ANIM_FIGHT_IDLE`) the attacks return to (docs/research/combat.md#attacks).
 inline constexpr std::uint32_t kAnimFightIdle = 358;
 /// 389 `NORMAL_FROM_FIGHT`, which a move ends in with the stick at rest: it holds neither a press nor the stick, which

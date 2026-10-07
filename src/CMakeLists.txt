@@ -302,6 +302,7 @@ target_sources(coney_core PRIVATE
 target_sources(coney_core PRIVATE
     combat/ai_counter.cpp
     combat/anim_ranges.cpp
+    combat/attack_target.cpp
     combat/attacks.cpp
     combat/being_hit.cpp
     combat/combat_tuning.cpp

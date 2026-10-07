@@ -211,14 +211,20 @@ TEST_CASE("a snap: the full stick 90 degrees off the facing, then square, with a
     CHECK(starts(none) == Starts{{71, anim_id::kAttackS1}});
 }
 
-TEST_CASE("R1 held blocks and reads nothing else; cross under it still attacks", "[combat]") {
+TEST_CASE("R1 held blocks and reads nothing else; cross under it still attacks, and the block cuts its end phase",
+          "[combat]") {
     Runner runner(nullptr);
     const auto frames = runner.run("200 press r1\n205 tap cross\n210 stick left 80 0\n230 stick left 0 0\n"
                                    "230 release r1\n",
                                    235);
-    for (std::size_t frame = 200; frame < 230; ++frame) {
+    for (std::size_t frame = 200; frame <= 206; ++frame) {
         CHECK(frames[frame].out.blocking);
     }
+    // X1's wind-up and window refuse the block (Human_CanFight); its end phase, from update 20, lets it cut in.
+    for (std::size_t frame = 207; frame < 226; ++frame) {
+        CHECK_FALSE(frames[frame].out.blocking);
+    }
+    CHECK(frames[226].out.blocking);
     CHECK_FALSE(frames[231].out.blocking);
     // Cross pressed and released while blocking plays X1 on the release.
     CHECK(starts(frames) == Starts{{206, anim_id::kAttackX1}});

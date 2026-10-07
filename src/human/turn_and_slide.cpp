@@ -83,12 +83,14 @@ float firstContactTime(const anim::AnimClip& clip, float rate) {
 }
 
 SteerGoal attackSteerGoal(anim::Vec3 from, anim::Vec3 target, anim::Vec3 targetVelocity, float reach, float seconds) {
-    // The target where it will be: led by its velocity, halved when a long lead carries it away from the attacker.
+    // The target where it will be: led by its velocity, a long lead that carries it away from the attacker cut to
+    // kSteerLeadCut (docs/research/combat-moves.md#reach).
     anim::Vec3 lead{targetVelocity.x * (seconds + kSteerLeadExtraSeconds),
                     targetVelocity.y * (seconds + kSteerLeadExtraSeconds), 0.0F};
     const anim::Vec3 away{target.x - from.x, target.y - from.y, 0.0F};
-    if (std::hypot(lead.x, lead.y) > kSteerLeadHalveBeyond && anim::dot(lead, away) > 0.0F) {
-        lead = anim::scale(lead, 0.5F);
+    if (const float leadLength = std::hypot(lead.x, lead.y);
+        leadLength > kSteerLeadHalveBeyond && anim::dot(lead, away) > 0.0F) {
+        lead = anim::scale(lead, kSteerLeadCut / leadLength);
     }
     const anim::Vec3 ahead{target.x + lead.x, target.y + lead.y, from.z};
     // Back from there by the reach, along the line from the attacker.
