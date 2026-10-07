@@ -780,6 +780,58 @@ Points an implementer needs:
 - **3.5**: who sends a barrier's script message 2 is not traced; its class update (`0x003b3220`) reports done once the
   barrier has broken (data `+0x00`), which is inferred to make the object system send it.
 
+### `level34.lua` (mission 4) {#level34}
+
+Story mission 4, loaded from the hub's checkpoint 1: the riot. Vermin is player 1, Snow player 2, Ash the third
+Warrior. Read from the disassembly of `level34.lua` and its three chapter scripts; the bindings each call reaches are
+on [Story coverage](../references/bindings/story.md#level34). Inferred unless marked.
+
+- **`Main`**: fog colour, HUD hidden then restored with the radar, `SetSpawnMax(45)`, the start callback `StartGame`,
+  then the checkpoint table: checkpoints **1, 2 and 3 all run `level34_riot`** (`P1.SetupRiot`), each with its own
+  Warriors set-up at a different spot of the street; 4 `level34_gate` / `P2.SetupGate`; 5 `level34_park` /
+  `P3.SetupPark`.
+- **`RunLevel`**: at checkpoints 1-3 stores the checkpoint as Lua save float 1 (the riot's **section**, 1-3), then
+  reads floats 1-5 back (`F.LoadSaveData`: section, riot done, radios done, loot done, muggings so far); the
+  Warriors; `preLoadFile` of the chapter; the pedestrian flag net (`SetupFlagNet`, 34 nodes, as in
+  [`level2`](#level2)); the follow camera; car colours from a 21-colour table; `CarPlaceInTrunkOnDetach` on four
+  cars (a crowbar, a bat, item 5, a revival); the anim preloads; the tag spots (`TagInfo.SetupTags("Tag", 7,
+  checkpoint)`).
+- **`StartGame`** (the start callback): at checkpoints 2-4 the riot ambient track, the 3D fog (`Start3DFog`) with
+  `MaxFogParticles(10)` and a screen effect; at 4 also `ForceCrimeLevel(true)` and a crime at the cop search flag
+  (`CrimeIsHappening`, type 7), so the police are already after the Warriors; at 5 the distant-traffic track; from 3
+  on the molotov car is already blown up (`CarExplode`); every light off, then the subway lights (checkpoint 1) or
+  the wall light.
+- **The riot's three objectives** (objective line 0; each one completed is saved as its target in a Lua float and
+  shown as done by `P1.CheckRiotStatus` on a reload; partial progress is not saved):
+    - **Riot meter** (a HUD bar, `HUDGetNewPH(3, ...)`, its text in per cent): 200 points. `vLevelVandal` hears
+      message 6 (an object inside damaged; only a Warrior counts): a newsstand gives 3, another prop (`GetRTTI` bit
+      `0x08`) 1, an object with bit `0x400` 2; every car message 25 from a Warrior with its flag true
+      (`SetGeneralCarMsgHandler`) gives 3. The first point ever counts as 1 %. At 35 % a tutorial line.
+    - **Loot**: $350 of money picked up (`CfgMoneyCallback`; the start counts both players' money at that moment).
+      On a reload with the loot not done, both players' money is set to 0.
+    - **Car radios**: 3 picked up (`CfgInventoryCallback`, item 11 `dyn_carstereo`), from the three cars given a
+      radio by `CarSpawnRadio`.
+    - **Bonus**: 10 pedestrians mugged (`HuSetMugCallback` on both players, successes only) on line 1 with a counter;
+      the tenth unlocks `UM_Unlock(34, 1, 2)`. The count is saved (float 5) at every checkpoint.
+    - All three done (`F.CheckObjectives`) runs **`P1.HeadToGate`**.
+- **No scripted failure**: none of the four chunks calls `HUDLaunchMissionFailed` and the script protects no one; the
+  mission fails only in the engine's own ways (a player falling out of the world,
+  [Level loading](level-loading.md#a-frame-of-play)).
+
+| Checkpoint | Chapter | What happens | Ends with |
+| --- | --- | --- | --- |
+| 1 | `level34_riot`, section 1 | Riot extras (`GangRiotCivs1`, suspended until the intro ends), six roof throwers (`GoalStationaryThrower` with bottles, speakers, TVs, boxes and drum kits; one hit by a Warrior fights), the dealer factory (flash and paint), riot and wanted gangs with turf boxes, the police spawner, 17 object zones on. The intro scene `l34_c1` (the three Warriors and the subway door; callbacks 1 and 2 switch lights); at its end the riot ambient at 0.15, tunnel effects and an objective with a radar marker out of the subway. `vIntro` (a player) wakes the car flippers and plays the preloaded scene `l34_car_flip`, after which the loot objective starts and the flippers riot (`GoalRiot`). `vEnterRiot` (a Warrior) starts the riot meter, the fog and the full ambient. `vStartIntroLooters` sets a looter gang wrecking zone 51 (`TacticVandalize`); two looters talking (trigger sphere 10 m), two TV looters who fall out and fight, a weapon-break tutorial box | `vSection2` entered by a player: muggings and tags saved, float 1 = 2, **`SetCheckPoint(2)`**, section 1's encounters removed, section 2 set up. Finishing the riot meter or the loot while still in section 1 also calls `SetCheckPoint(2)` (the section stays 1) |
+| 2 | `level34_riot`, section 2 | (Entered at 2: the flipped car replaced by a fresh `CarSpawn`.) The pharmacy owner with a bat (a line and an attack when a player reaches `vNearPanzerStore`; Panzers spawn off-screen 2 s later and `TacticSteal`), Huns wrecking zone 29 at `vNearHunStore` (a throw tutorial), a hardware owner waving the player in (sphere 5 m) who fights if hit, meat and radio looters (they talk, then leave or fight), a molotov thrower at `vNearMolotovCar` (`GoalThrowObject`; the car blows up 1 s after), a Moonrunner tagging. The riot spawners run while a player is in `vSection2` (message 3 starts, 4 stops them). `vCarPoizo` (a Warrior): roof throwers paused, a locked camera, the Warriors' brains off, that Warrior warped to `fStereoWarp`, Vermin's line about the stereos; at its end the radio objective with its counter and a marker to the section 3 gate, brains back on 1 s later | `vSection3` or `vSection3Gate` entered by a player: the police scene `l34_c3` (eight riot cops with batons, eight extras, the three Warriors, brain-off and suspended meanwhile), then the gate `DblGt01` opens, wanted gangs and cops spawn, a scatter tutorial, `ForceCrimeLevel(true)` and a crime at `fCopSearch1`; float 1 = 3, **`SetCheckPoint(3)`**, section 2 removed |
+| 3 | `level34_riot`, section 3 | The music-store owner and his men with bats (sphere 7 m: a random line when Warriors or wanted gangs come near), wanted gangs and cops spawning while a player is in `vSection3`; whichever objectives are not done yet | **`P1.HeadToGate`** (all three objectives): the riot gangs leave through exits, level cops spawn as enemies of everyone, the turf boxes move to the riot turf, muggings and tags saved, **`SetCheckPoint(4)`**, `preLoadFile("level34_gate")` |
+| 4 | `level34_gate` | Entered fresh: riot extras, wanted gangs, cops, level cops, the factory and the mugging bonus are set up again. Then an objective to `fFinalGate` (`ObjectiveSetup`, the `global.lua` helper), the gate `DblGt00` opens for the player, a line, the objective on line 2. At the gate (`P2.AtGate`): the park scene preloaded, `DblGt02` opens, an objective and marker to the Furies | `vNearFuries` entered by a Warrior: every riot gang removed, the factory shut, **`SetCheckPoint(5)`**, `preLoadFile("level34_park")` |
+| 5 | `level34_park` | Eleven Furies, three at the fence and two hurt Rogues (wounded, god mode). The scene `l34_c4` (preloaded when continuing: the gate closes, the fog ends). Then the objective and marker to the subway exit, Vermin's lines every 15 s, system music on (tracks `160b_risen2` and `the_fight_loop_01`). The fence Furies shake the fence (two sound emitters); entering `vEnterDiamond` or `vFuryConfront`, or 5 s after the first fence Fury arrives, sets the Furies attacking (`TacticAttack`) and kills the two Rogues. Beating the Furies is not required | `vSubwayExit` entered by a Warrior: the scene `l34_c2` with **`Final`** true and the park gangs removed; its end runs `PreCashTheWorld`, which calls **`HUDLaunchMissionComplete()`** ([how a mission ends](#level99)); mode 1's `Exit` then plays **`L34_OUT`** (the level record asks for an outro, [Movies](movies.md)) |
+
+Engine behaviour this mission needs beyond its bindings: message 6 from a [volume box](#triggers) when a Warrior
+damages an object inside it, car message 25 with its flag, the money and inventory callbacks, the mugging callback,
+gang tactics' callback codes (1, 5, 6, 9) and the police answering a forced crime level
+([Crimes](crimes.md)). Open: which class has run-time type bit `0x400` (its vtable `0x0057e408`, whose type slot
+`0x0038da54` returns it, sits among the car functions).
+
 ### `level2.lua` (mission 5) {#level2}
 
 Story mission 5, loaded from the hub's checkpoint 2: the Warriors (six, Cleon player 1 and Fox player 2) against the

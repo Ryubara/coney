@@ -116,6 +116,7 @@ missions:
         4: {status: in-progress, note: "The riot waves run; how the checkpoint ends is not yet played through."}
         5: {status: in-progress, note: "The scripts run with no error; the checkpoint is not yet played to its end."}
     research:
+      - {title: "The mission's scripts, checkpoint by checkpoint", path: "research/scripting.md#level34"}
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
       - {title: "The fourth mission's brain and human calls", path: "research/ai.md#coney"}
       - {title: "Spawners", path: "research/ai.md#spawners"}
