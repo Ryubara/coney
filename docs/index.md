@@ -10,6 +10,9 @@ Windows, Linux and macOS.
 | Section | What's in it |
 | --- | --- |
 | [Roadmap](roadmap.md) | The milestones from an empty window to the whole game, and where we are |
+| [Changelog](changelog.md) | Every change to Coney, newest first, written from the project's history |
 | [Progress](progress/index.md) | How much of the game is reimplemented and researched, overall and per subsystem |
+| [Missions](missions/index.md) | Which story missions, flashbacks and bonus stages Coney can play, checkpoint by checkpoint |
 | [Research](research/overview.md) | How the original game works: disc, executable, file formats, engine subsystems |
-| [Guides](guides/writing-docs.md) | How to set up, use the tools, and contribute |
+| [Game references](references/index.md) | Lists of the game's characters, gangs, objects, cars, levels, scenes and more |
+| [Guides](guides/building.md) | How to build and play Coney, use the tools, and contribute |
