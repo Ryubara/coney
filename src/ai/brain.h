@@ -270,18 +270,24 @@ class Brain {
 
     // --- Fighting (docs/research/ai.md#targets).
 
-    /// `GoalFight(human, target)`: clears the actions, then fight(), with **Coney's stand-in** for the melee goal
-    /// beneath the fight goal (CloseInGoal, unless a melee goal or the fight goal is on the stack's top already): it
-    /// runs the human at a target beyond the fight goal's range and fights again within it.
+    /// `GoalFight(human, target)`: clears the actions, then fight() with no time limit (kNoFightLimit).
     /// @orig 0x002b2b90 Brain_StartFight (unknown)
     void startFight(Brain& target);
     /// Fights `target` when the threat response allows it: adds it to the enemies, takes it as the target (claiming an
-    /// attack slot on it) and pushes the fight goal, except while its gang has a tactic (the tactic fights), for a
-    /// human down or out of health, or when the fight goal is on top already; it pops nothing Coney builds (goals 8
-    /// and `0x41`). Returns false when the threat response is 0.
+    /// attack slot on it) and pushes the fight's goals (pushFightGoals()) for `durationMs` (kNoFightLimit for none).
+    /// Returns false when the threat response is 0.
     /// @orig 0x0028d2e8 Brain_Fight (unknown)
+    bool fight(Brain& target, int durationMs = kNoFightLimit);
+    /// Pushes the fight's three goals (docs/research/ai.md#targets): nothing while its gang has a tactic (the tactic
+    /// fights) or for a human down or out of health; otherwise it pops any Melee (8) or FindEnemy (`0x41`) goal with
+    /// every goal above it, then pushes FindEnemy, Melee and the fight goal (the top), each given `durationMs`.
+    /// **Coney choice**: the type-3 brain's AttackTarget (9) gate is left out (Coney builds no such goal).
     /// @orig 0x0028d190 Brain_PushFightGoal (unknown)
-    bool fight(Brain& target);
+    void pushFightGoals(int durationMs);
+    /// Whether the Melee goal may send the human after its target (`+0x2d3`, set when the brain is made, by a new
+    /// target and when a Melee goal ends; cleared when the last move failed).
+    [[nodiscard]] bool mayApproach() const { return m_mayApproach; }
+    void setMayApproach(bool may) { m_mayApproach = may; }
     /// Adds `enemy` to the enemy list (`+0x164`, up to 16), and this brain to `enemy`'s unless both are players'; when
     /// its gang's tactic does not leave the members their own goals, the tactic hears of it (event `0xb`). Nothing when
     /// `enemy` is listed already or the list is full.
@@ -470,6 +476,10 @@ class Brain {
     bool m_downReported = false;
     int m_seenHealth = -1;
     ScriptServices* m_services = nullptr;
+    bool m_mayApproach = true; // +0x2d3
+    // Goals popped while one of them may still be running (a goal's Process can start a new fight, which pops it):
+    // freed once the update is over.
+    std::vector<std::unique_ptr<Goal>> m_retired;
 };
 
 /// Delivers `event` to `brain`'s human as `Human_OnEvent` does: its own script handlers first (`SetMsgHandler`, through

@@ -12,6 +12,11 @@ namespace coney::ai {
 
 class Brain;
 
+/// A fight's duration meaning none (`GoalFight` passes −1, docs/research/ai.md#fight-durations).
+inline constexpr int kNoFightLimit = -1;
+/// The duration of every fight goal a Melee goal pushes, ms (its `+0x18`).
+inline constexpr int kMeleeFightMs = 4000;
+
 /// The goal types Coney builds, by the original's type ids (the vtable's `+0x0c`, docs/research/ai.md#goals).
 enum class GoalType : std::uint8_t {
     Idle = 0x00,               ///< IdleGoal: stands in place.
@@ -19,7 +24,7 @@ enum class GoalType : std::uint8_t {
     MoveToExitFlag = 0x02,     ///< MoveToExitFlagGoal: leaves the scene through an exit flag.
     MoveToUseFlag = 0x04,      ///< MoveToUseFlagGoal.
     MoveToHuman = 0x06,        ///< MoveToHumanGoal.
-    Melee = 0x08,              ///< The melee goals: MeleeGoal (a tactic's), CloseInGoal (under GoalFight's fight goal).
+    Melee = 0x08,              ///< MeleeGoal (a fight's), TacticMeleeGoal (the attack tactic's stand-in).
     EngageEnemy = 0x0b,        ///< EngageEnemyGoal.
     Fight = 0x0f,              ///< FightGoal.
     Spectate = 0x10,           ///< SpectateGoal: stands and watches for a while.

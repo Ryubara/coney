@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,560 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,568 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-437 reimplemented function(s) have no size yet and add no bytes.
+445 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -64,7 +64,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
 | `Graphics` | `██▏░░░░░░░░░░░░░░░░░` | 10.5% | 64 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
-| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 489 | 1,096,672 |
+| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 497 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -994,8 +994,14 @@ at the top of the repository's `README.md`.
 | `0x002ad530` | `PeddlerGoal_End` | `Human` | 80 |
 | `0x002ad6c0` | `PeddlerGoal_Process` | `Human` | 1,024 |
 | `0x002add08` | `Goal_Melee` | `Human` | not filled in |
+| `0x002ade10` | `MeleeGoal_Init` | `Human` | not filled in |
+| `0x002ade60` | `MeleeGoal_End` | `Human` | not filled in |
+| `0x002ae2e8` | `MeleeGoal_WithTarget` | `Human` | not filled in |
+| `0x002aebf8` | `MeleeGoal_Process` | `Human` | not filled in |
 | `0x002af528` | `Goal_EngageEnemy` | `Human` | 136 |
 | `0x002af5b0` | `EngageEnemyGoal_Init` | `Human` | 192 |
+| `0x002af670` | `EngageEnemyGoal_Start` | `Human` | not filled in |
+| `0x002af8d0` | `EngageEnemyGoal_End` | `Human` | not filled in |
 | `0x002afa48` | `EngageEnemyGoal_Process` | `Human` | 2,728 |
 | `0x002b2b90` | `Brain_StartFight` | `Human` | 144 |
 | `0x002b2c20` | `FightGoal_Init` | `Human` | 184 |
@@ -1014,6 +1020,8 @@ at the top of the repository's `README.md`.
 | `0x002bb4c0` | `GrabTargetGoal_Start` | `Human` | 184 |
 | `0x002bb598` | `GrabTargetGoal_End` | `Human` | 176 |
 | `0x002bb858` | `GrabTargetGoal_Process` | `Human` | 1,384 |
+| `0x002c0430` | `FindEnemyGoal_Init` | `Human` | not filled in |
+| `0x002c0748` | `FindEnemyGoal_Process` | `Human` | not filled in |
 | `0x002c6c88` | `Goal_Dealer` | `Human` | 264 |
 | `0x002c6d90` | `DealerGoal_Init` | `Human` | 232 |
 | `0x002c6e78` | `DealerGoal_Start` | `Human` | 288 |

@@ -95,9 +95,8 @@ struct RiotServices {
 /// then it leaves through the nearest exit flag in its gang's turf. **Coney stand-ins** where Coney lacks the part:
 /// the shouts, the taunt and the head glances are not made (no speech or glances yet); a roam destination is not
 /// dropped to the ground and "on an area" and "reached in a straight line" are both the planner's straight-line test;
-/// the move deadline's human `+0x333` term is 0; a running move is replaced, not retargeted; the fight's 8 s deadline
-/// is not built (see tryPickFight()); smash and loot are whatever the services find (the scripted story finds none
-/// yet); the actions-blocked check is not made.
+/// the move deadline's human `+0x333` term is 0; a running move is replaced, not retargeted; smash and loot are
+/// whatever the services find (the scripted story finds none yet); the actions-blocked check is not made.
 /// @orig 0x002d0e98 Goal_Riot (unknown)
 /// @orig 0x002d0f68 RiotGoal_Init (unknown)
 class RiotGoal final : public Goal {

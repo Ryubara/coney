@@ -11,13 +11,16 @@
 
 #include "ai/address_person_goal.h"
 #include "ai/brain.h"
+#include "ai/engage_goals.h"
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
 #include "ai/goal.h"
 #include "ai/idle_goals.h"
+#include "ai/melee_goal.h"
 #include "ai/play_anim_action.h"
 #include "ai/play_dyn_animation_goal.h"
 #include "ai/script_services.h"
+#include "ai/story_goals.h"
 #include "ai/tactic_crowd.h"
 #include "support/ai_fixtures.h"
 
@@ -196,56 +199,104 @@ TEST_CASE("GoalFight pushes no fight goal for a member of a gang under a tactic"
     CHECK(brain.findGoal(GoalType::Fight) == nullptr);
 }
 
-TEST_CASE("GoalFight from beyond the fight goal's range closes on the target and attacks", "[ai][scripted]") {
-    // level99's sparring Warriors are sent from about 9 m (docs/research/ai.md#level99-fight): the fight goal ends at
-    // once out of range, and the melee goal beneath it runs the human in and fights again.
+TEST_CASE("GoalFight pushes FindEnemy, Melee and the fight goal, replacing the last fight's and what is above it",
+          "[ai][scripted]") {
+    // Brain_PushFightGoal (docs/research/ai.md#targets): the old Melee and FindEnemy go with everything above them.
     AiScene scene;
-    Brain& brain = scene.add({40.0F, 49.0F, 0.0F}, 180.0F);
-    REQUIRE(brain.distanceTo(scene.player()) > brain.meleeFar() * coney::ai::kFightRangeScale);
+    Brain& brain = scene.add({40.0F, 42.0F, 0.0F}, 180.0F);
+    brain.pushGoal(std::make_unique<coney::ai::IdleGoal>());
     brain.startFight(scene.player());
-    REQUIRE(brain.goalCount() == 2);
+    REQUIRE(brain.goalCount() == 4);
     CHECK(brain.topGoal()->type() == GoalType::Fight);
     CHECK(brain.findGoal(GoalType::Melee) != nullptr);
-    scene.run(1);
-    CHECK(brain.topGoal() != nullptr);
-    CHECK(brain.topGoal()->type() == GoalType::Melee);
-    CHECK(brain.actionCount() == 1);
+    CHECK(brain.findGoal(GoalType::FindEnemy) != nullptr);
 
-    float nearest = brain.distanceTo(scene.player());
-    bool attacked = false;
-    for (int k = 0; k < 300 && !attacked; ++k) {
-        scene.run(1);
-        nearest = std::min(nearest, brain.distanceTo(scene.player()));
-        attacked = brain.nextAttackMs() > 0;
-    }
-    CHECK(nearest < brain.meleeFar());
-    CHECK(attacked);
-    CHECK(brain.findGoal(GoalType::Melee) != nullptr);
+    brain.pushGoal(std::make_unique<coney::ai::IdleGoal>());
+    brain.startFight(scene.player());
+    CHECK(brain.goalCount() == 4);
+    CHECK(brain.topGoal()->type() == GoalType::Fight);
 }
 
-TEST_CASE("GoalFight gives no melee goal under a tactic, at threat response 0 or over a fight already on top",
-          "[ai][scripted]") {
+TEST_CASE("GoalFight starts nothing at threat response 0 and pushes no goal under a tactic", "[ai][scripted]") {
     AiScene scene;
     Brain& brain = scene.add({40.0F, 49.0F, 0.0F}, 180.0F);
     brain.setThreatResponse(0);
     brain.startFight(scene.player());
     CHECK(brain.goalCount() == 0);
+    CHECK(brain.target() == nullptr);
 
     brain.setThreatResponse(2);
-    brain.pushGoal(std::make_unique<coney::ai::FightGoal>());
-    brain.startFight(scene.player());
-    CHECK(brain.goalCount() == 1);
-    CHECK(brain.findGoal(GoalType::Melee) == nullptr);
-
-    brain.flush();
     const int gang = scene.brains.gangs().create(19, "Crowd");
     scene.brains.gangs().addMember(gang, brain);
     scene.brains.gangs().setTactic(gang, std::make_unique<coney::ai::TacticCrowd>("", true, 0));
     brain.startFight(scene.player());
-    CHECK(brain.findGoal(GoalType::Melee) == nullptr);
+    CHECK(brain.goalCount() == 0);
+    CHECK(brain.target() == &scene.player());
 }
 
-TEST_CASE("the melee goal under GoalFight ends when its target is out of health", "[ai][scripted]") {
+TEST_CASE("GoalFight from beyond the fight goal's range runs in with EngageEnemy and charges out of the run",
+          "[ai][scripted]") {
+    // level99's sparring Warriors are sent from about 9 m (docs/research/ai.md#fight-approach): the fight goal ends
+    // at once, the Melee goal pushes EngageEnemy, which runs at the standing target with the charge armed and attacks
+    // within 1.6 m.
+    AiScene scene;
+    Brain& brain = scene.add({40.0F, 49.0F, 0.0F}, 180.0F);
+    REQUIRE(brain.distanceTo(scene.player()) > brain.meleeFar() * coney::ai::kFightRangeScale);
+    brain.startFight(scene.player());
+    scene.run(1);
+    REQUIRE(brain.topGoal() != nullptr);
+    CHECK(brain.topGoal()->type() == GoalType::EngageEnemy);
+    CHECK(static_cast<const coney::ai::EngageEnemyGoal*>(brain.topGoal())->chargeArmed());
+
+    float nearest = brain.distanceTo(scene.player());
+    bool charged = false;
+    for (int k = 0; k < 300 && !charged; ++k) {
+        scene.run(1);
+        nearest = std::min(nearest, brain.distanceTo(scene.player()));
+        const coney::ai::Goal* top = brain.topGoal();
+        charged = brain.nextAttackMs() > 0 && top != nullptr && top->type() == GoalType::EngageEnemy;
+    }
+    CHECK(charged);
+    CHECK(nearest <= coney::ai::kChargeRange);
+    CHECK(brain.findGoal(GoalType::Melee) != nullptr);
+}
+
+TEST_CASE("the run-in stops within 0.75 of the far range of a standing target when the charge is not armed",
+          "[ai][scripted]") {
+    AiScene scene;
+    Brain& brain = scene.add({40.0F, 44.5F, 0.0F}, 180.0F);
+    brain.addEnemy(scene.player());
+    brain.setTarget(&scene.player());
+    brain.pushGoal(std::make_unique<coney::ai::EngageEnemyGoal>());
+    scene.run(1);
+    REQUIRE(brain.topGoal() != nullptr);
+    CHECK_FALSE(static_cast<const coney::ai::EngageEnemyGoal*>(brain.topGoal())->chargeArmed());
+    CHECK(runOutOfGoals(scene, brain, 200));
+    const float distance = brain.distanceTo(scene.player());
+    CHECK(distance <= coney::ai::kEngageStopShare * brain.meleeFar());
+    CHECK(distance > coney::ai::kChargeRange);
+    CHECK(brain.nextAttackMs() == 0);
+}
+
+TEST_CASE("the FindEnemy goal starts the fight again while the target can be fought, and ends without one",
+          "[ai][scripted]") {
+    AiScene scene;
+    Brain& brain = scene.add({40.0F, 42.0F, 0.0F}, 180.0F);
+    brain.addEnemy(scene.player());
+    brain.setTarget(&scene.player());
+    brain.pushGoal(std::make_unique<coney::ai::FindEnemyGoal>(coney::ai::kNoFightLimit, 0));
+    scene.run(1);
+    CHECK(brain.findGoal(GoalType::Melee) != nullptr);
+    CHECK(brain.goalCount() == 3);
+
+    brain.flush();
+    brain.setTarget(nullptr);
+    brain.pushGoal(std::make_unique<coney::ai::FindEnemyGoal>(coney::ai::kNoFightLimit, 0));
+    scene.player().human().fighter().health().set(0);
+    CHECK(runOutOfGoals(scene, brain, 2));
+}
+
+TEST_CASE("a fight's goals all end when its target is out of health", "[ai][scripted]") {
     AiScene scene;
     Brain& brain = scene.add({40.0F, 49.0F, 0.0F}, 180.0F);
     brain.startFight(scene.player());
@@ -253,4 +304,15 @@ TEST_CASE("the melee goal under GoalFight ends when its target is out of health"
     REQUIRE(brain.findGoal(GoalType::Melee) != nullptr);
     scene.player().human().fighter().health().set(0);
     CHECK(runOutOfGoals(scene, brain, 30));
+}
+
+TEST_CASE("a Melee goal past its time limit ends without running", "[ai][scripted]") {
+    AiScene scene;
+    Brain& brain = scene.add({40.0F, 49.0F, 0.0F}, 180.0F);
+    brain.addEnemy(scene.player());
+    brain.setTarget(&scene.player());
+    brain.pushGoal(std::make_unique<coney::ai::MeleeGoal>(0));
+    scene.run(1);
+    CHECK(brain.goalCount() == 0);
+    CHECK(brain.actionCount() == 0);
 }

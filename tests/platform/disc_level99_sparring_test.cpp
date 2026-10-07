@@ -6,8 +6,9 @@
 // the Warriors, `P1.SetupWarriors`, docs/research/ai.md#level99-save), the scene `l99_c5` plays and its return
 // function `P1.SendWarriors` gives each of the three sparring Warriors `GoalFight` on a player who stands still
 // (the recording `warriors_passive`, docs/research/ai.md#level99-fight). Then each Warrior must close on the player
-// and attack him. It runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints
-// counts and distances only (LEGAL.md).
+// and attack him, running in with the EngageEnemy goal the Melee goal pushes (docs/research/ai.md#fight-approach). It
+// runs only when the environment variable CONEY_DISC names the disc and skips otherwise; it prints counts, distances
+// and speeds only (LEGAL.md).
 
 #include <algorithm>
 #include <array>
@@ -30,6 +31,7 @@
 #include "ai/brain.h"
 #include "ai/brains.h"
 #include "ai/gangs.h"
+#include "ai/goal.h"
 #include "characters/character_types.h"
 #include "core/error.h"
 #include "core/game_random.h"
@@ -98,7 +100,9 @@ struct Watched {
     const coney::ai::Brain* brain = nullptr;
     float startDistance = 0.0F;
     float nearest = 1e9F;
-    int attacks = 0; // attack actions started (its next-attack time moved on)
+    int attacks = 0;      // attack actions started (its next-attack time moved on)
+    bool engaged = false; // seen running in with an EngageEnemy goal on top
+    float fastest = 0.0F; // its highest speed, m/s
     std::uint64_t lastNextAttack = 0;
 };
 
@@ -226,6 +230,9 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
         for (Watched& watched : warriors) {
             const coney::anim::Vec3 at = watched.brain->human().position();
             watched.nearest = std::min(watched.nearest, std::hypot(at.x - now.x, at.y - now.y));
+            watched.fastest = std::max(watched.fastest, watched.brain->human().speed());
+            const coney::ai::Goal* top = watched.brain->topGoal();
+            watched.engaged = watched.engaged || (top != nullptr && top->type() == coney::ai::GoalType::EngageEnemy);
             if (watched.brain->nextAttackMs() != watched.lastNextAttack) {
                 watched.lastNextAttack = watched.brain->nextAttackMs();
                 ++watched.attacks;
@@ -235,10 +242,13 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
     const int healthAfter = play()->player().human().fighter().health().value();
     int closed = 0;
     int attacked = 0;
+    int engaged = 0;
     for (const Watched& watched : warriors) {
-        std::printf("  level99 sparring Warrior: %.2f m from the player when sent, nearest %.2f m, %d attacks, %zu "
-                    "goals\n",
-                    watched.startDistance, watched.nearest, watched.attacks, watched.brain->goalCount());
+        std::printf("  level99 sparring Warrior: %.2f m from the player when sent, %s at up to %.1f m/s, nearest "
+                    "%.2f m, %d attacks, %zu goals\n",
+                    watched.startDistance, watched.engaged ? "ran in" : "did not run in", watched.fastest,
+                    watched.nearest, watched.attacks, watched.brain->goalCount());
+        engaged += watched.engaged ? 1 : 0;
         closed += watched.nearest < kCloseRange ? 1 : 0;
         attacked += watched.attacks > 0 ? 1 : 0;
     }
@@ -250,6 +260,7 @@ TEST_CASE("the disc's level99: the sparring Warriors of the last lesson close on
         }
     }
     CHECK(warriors.size() == 3);
+    CHECK(engaged == 3);
     CHECK(closed == 3);
     CHECK(attacked == 3);
     CHECK(scripts.scripts().errors() == 0);

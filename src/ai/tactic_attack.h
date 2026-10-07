@@ -35,10 +35,10 @@ inline constexpr std::uint64_t kAttackIdleCheckMs = 3000;
 /// takes the nearest gang enemy (nearestGangEnemy()) as an enemy and the target; done when there is none; beyond
 /// kInReachShare of the far melee range it runs to him (MoveToHumanAction, 2 s at a time); within, it pushes the fight
 /// goal, and takes over again when that ends.
-class MeleeGoal final : public Goal {
+class TacticMeleeGoal final : public Goal {
   public:
     /// A melee goal over the gangs of `gangs` (which must outlive it).
-    explicit MeleeGoal(Gangs& gangs) : Goal(kMeleeGoal), m_gangs(&gangs) {}
+    explicit TacticMeleeGoal(Gangs& gangs) : Goal(kMeleeGoal), m_gangs(&gangs) {}
 
     [[nodiscard]] GoalStatus process(Brain& brain) override;
 

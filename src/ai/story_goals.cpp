@@ -198,6 +198,17 @@ Brain* nearestHostileWithin(Brain& brain, std::span<Brain* const> candidates, fl
 }
 
 GoalStatus FindEnemyGoal::process(Brain& brain) {
+    if (m_limitMs != 0 && brain.nowMs() >= m_limitMs) {
+        return GoalStatus::Done;
+    }
+    // The target still there: the fight again (this goal is popped and the three pushed anew).
+    if (Brain* target = brain.target(); target != nullptr && Brain::fightable(*target) &&
+                                        !target->human().outOfWorld() && brain.fight(*target, m_durationMs)) {
+        return brain.topGoal() == this ? GoalStatus::Stop : GoalStatus::Again;
+    }
+    if (!m_searches) {
+        return GoalStatus::Done;
+    }
     if (brain.nowMs() < m_nextSearchMs) {
         return GoalStatus::Stop;
     }
@@ -207,8 +218,8 @@ GoalStatus FindEnemyGoal::process(Brain& brain) {
     }
     // The candidates: every brain the gangs know (the members of every gang in use), and player 1's.
     const std::vector<Brain*> candidates = knownBrains(brain);
-    if (Brain* enemy = nearestHostile(brain, candidates); enemy != nullptr) {
-        static_cast<void>(brain.fight(*enemy));
+    if (Brain* enemy = nearestHostile(brain, candidates); enemy != nullptr && brain.fight(*enemy, m_durationMs)) {
+        return brain.topGoal() == this ? GoalStatus::Stop : GoalStatus::Again;
     }
     return GoalStatus::Stop;
 }

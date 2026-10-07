@@ -48,7 +48,7 @@ Brain* nearestGangEnemy(Brain& brain, Gangs& gangs) {
     return nearest;
 }
 
-GoalStatus MeleeGoal::process(Brain& brain) {
+GoalStatus TacticMeleeGoal::process(Brain& brain) {
     Brain* enemy = nearestGangEnemy(brain, *m_gangs);
     if (enemy == nullptr) {
         return GoalStatus::Done;
@@ -73,7 +73,7 @@ GoalStatus MeleeGoal::process(Brain& brain) {
 
 void giveMelee(Brain& brain, Gangs& gangs) {
     if (brain.findGoal(kMeleeGoal) == nullptr) {
-        brain.pushGoal(std::make_unique<MeleeGoal>(gangs));
+        brain.pushGoal(std::make_unique<TacticMeleeGoal>(gangs));
     }
 }
 

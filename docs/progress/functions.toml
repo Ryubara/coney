@@ -5081,6 +5081,26 @@ name = "Goal_Melee"
 subsystem = "Human"
 
 [[function]]
+address = 0x002ade10
+name = "MeleeGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002ade60
+name = "MeleeGoal_End"
+subsystem = "Human"
+
+[[function]]
+address = 0x002ae2e8
+name = "MeleeGoal_WithTarget"
+subsystem = "Human"
+
+[[function]]
+address = 0x002aebf8
+name = "MeleeGoal_Process"
+subsystem = "Human"
+
+[[function]]
 address = 0x002af528
 name = "Goal_EngageEnemy"
 subsystem = "Human"
@@ -5091,6 +5111,16 @@ address = 0x002af5b0
 name = "EngageEnemyGoal_Init"
 subsystem = "Human"
 size = 192
+
+[[function]]
+address = 0x002af670
+name = "EngageEnemyGoal_Start"
+subsystem = "Human"
+
+[[function]]
+address = 0x002af8d0
+name = "EngageEnemyGoal_End"
+subsystem = "Human"
 
 [[function]]
 address = 0x002afa48
@@ -5199,6 +5229,16 @@ address = 0x002bb858
 name = "GrabTargetGoal_Process"
 subsystem = "Human"
 size = 1384
+
+[[function]]
+address = 0x002c0430
+name = "FindEnemyGoal_Init"
+subsystem = "Human"
+
+[[function]]
+address = 0x002c0748
+name = "FindEnemyGoal_Process"
+subsystem = "Human"
 
 [[function]]
 address = 0x002c6c88

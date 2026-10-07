@@ -308,10 +308,9 @@ bool RiotGoal::tryPickFight(Brain& brain) {
             !other->attackSlots().empty() || !straightLine(brain, position, other->human().position())) {
             continue;
         }
-        // Threat response 2, then the fight (Coney stand-in: its 8 s deadline is not built, and the taunt is not
-        // said).
+        // Threat response 2, then the fight of 8 s (Coney stand-in: the taunt is not said).
         brain.setThreatResponse(kFightThreatResponse);
-        return brain.fight(*other);
+        return brain.fight(*other, static_cast<int>(kRiotFightMs));
     }
     return false;
 }

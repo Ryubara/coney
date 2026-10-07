@@ -8,8 +8,10 @@
 
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
+#include "ai/melee_goal.h"
 #include "ai/reaction_goals.h"
 #include "ai/script_services.h"
+#include "ai/story_goals.h"
 #include "ai/tactic.h"
 #include "human/locomotion.h"
 
@@ -64,6 +66,7 @@ void Brain::update(std::uint64_t nowMs) {
     m_attackWarnings = 0;
     m_lastUpdateMs = nowMs;
     ++m_updates;
+    m_retired.clear();
 }
 
 void Brain::think(std::uint64_t nowMs) {
@@ -123,9 +126,10 @@ void Brain::popGoal() {
     }
     // Off the stack before its End: an End can reach Lua (a flag's message 8), whose handler may push the next goal
     // (level99's `P1.ReachCenter` pushes GoalAddressPerson), which must stay above, not be popped in its place.
-    const std::unique_ptr<Goal> ended = std::move(m_goals.back());
+    std::unique_ptr<Goal> ended = std::move(m_goals.back());
     m_goals.pop_back();
     ended->end(*this);
+    m_retired.push_back(std::move(ended));
     if (Goal* top = topGoal(); top != nullptr) {
         top->m_resumePending = top->m_started;
     } else {
@@ -203,7 +207,10 @@ void Brain::processGoals() {
         }
         switch (top->process(*this)) {
         case GoalStatus::Done:
-            popGoal();
+            // A goal that changed the stack under itself (a new fight pops the old one's goals) is not popped again.
+            if (topGoal() == top) {
+                popGoal();
+            }
             break;
         case GoalStatus::Stop:
             return;
@@ -263,38 +270,43 @@ void Brain::runActions() {
 
 void Brain::startFight(Brain& target) {
     clearActions();
-    if (m_threatResponse == 0 || &target == this) {
-        return;
-    }
-    // Coney's stand-in for the melee goal Brain_PushFightGoal leaves beneath the fight goal: it closes on the target
-    // whenever the fight goal ends out of range. Not under a tactic, nor beneath a fight goal already on top.
-    const bool tactic = m_gang != nullptr && m_gang->tactic() != nullptr;
-    const Goal* top = topGoal();
-    if (!tactic && (top == nullptr || top->type() != GoalType::Fight) && findGoal(GoalType::Melee) == nullptr) {
-        pushGoal(std::make_unique<CloseInGoal>());
-    }
-    fight(target);
+    static_cast<void>(fight(target, kNoFightLimit));
 }
 
-bool Brain::fight(Brain& target) {
+bool Brain::fight(Brain& target, int durationMs) {
     if (m_threatResponse == 0 || &target == this) {
         return false;
     }
     addEnemy(target);
     setTarget(&target);
-    // The fight goal: not under a tactic, which fights for the gang, nor for a human down or out of health, nor when
-    // one is on top already.
+    pushFightGoals(durationMs);
+    return true;
+}
+
+void Brain::pushFightGoals(int durationMs) {
+    // Not under a tactic, which fights for the gang, nor for a human down or out of health.
     if (m_gang != nullptr && m_gang->tactic() != nullptr) {
-        return true;
+        return;
     }
     if (m_human->fighter().health().depleted() || m_human->state() == human::TargetState::Grounded) {
-        return true;
+        return;
     }
-    const Goal* top = topGoal();
-    if (top == nullptr || top->type() != GoalType::Fight) {
-        pushGoal(std::make_unique<FightGoal>());
+    // The last fight's Melee and FindEnemy go, with everything above them.
+    const auto oldest = std::ranges::find_if(m_goals, [](const std::unique_ptr<Goal>& goal) {
+        return goal->type() == GoalType::Melee || goal->type() == GoalType::FindEnemy;
+    });
+    const auto keep = static_cast<std::size_t>(oldest - m_goals.begin());
+    // Coney's searching FindEnemy (GoalMelee's stand-in) stays a searching one.
+    const bool searches = std::any_of(oldest, m_goals.end(), [](const std::unique_ptr<Goal>& goal) {
+        return goal->type() == GoalType::FindEnemy && static_cast<const FindEnemyGoal&>(*goal).searches();
+    });
+    while (m_goals.size() > keep) {
+        popGoal();
     }
-    return true;
+    // Goal_Melee's two, then the fight goal on top.
+    pushGoal(std::make_unique<FindEnemyGoal>(durationMs, m_nowMs, searches));
+    pushGoal(std::make_unique<MeleeGoal>(durationMs));
+    pushGoal(std::make_unique<FightGoal>(durationMs));
 }
 
 bool Brain::listEnemy(Brain& enemy) {

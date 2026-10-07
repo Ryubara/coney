@@ -105,18 +105,33 @@ class TravelPathGoal final : public Goal {
     int m_current = -1;
 };
 
-/// `GoalMelee`'s finding goal (type 0x41): once a second, the nearest standing human hostile to the human (its gang's
-/// enemy, or on its enemy list) within its sight range is fought (Brain::fight()), which pushes the fight goal over
-/// this one; when that fight ends this one looks again. **Coney choices**: the search values (90, 30, 10) and the
-/// melee goal's 4000 ms are not traced, so the search is the brain's sight range; it never ends by itself.
-/// @orig 0x002add08 Goal_Melee (unknown)
+/// The FindEnemy goal (type `0x41`, docs/research/ai.md#find-enemy), the bottom of a fight's three goals: it runs once
+/// the Melee goal above it has ended. Past its time limit (the push + its duration; none for kNoFightLimit) it is done;
+/// while the brain's target can still be fought it starts the fight again (Brain::fight() with its duration, which
+/// pops it and pushes the three goals again); with no such target it is done.
+/// **Coney stand-in** for `GoalMelee` and the crew's attack command (a *searching* goal, the default constructor): with
+/// no target it looks once a second for the nearest standing human hostile to the human (its gang's enemy, or on its
+/// enemy list) within its sight range and fights him, and never ends by itself; the original's best-enemy scoring and
+/// the search values (90, 30, 10) are not traced. A fight started under a searching goal keeps a searching one.
+/// @orig 0x002c0430 FindEnemyGoal_Init (unknown)
+/// @orig 0x002c0748 FindEnemyGoal_Process (unknown)
 class FindEnemyGoal final : public Goal {
   public:
-    FindEnemyGoal() : Goal(GoalType::FindEnemy) {}
-    /// The search, once a second.
+    /// The searching goal (`GoalMelee`'s stand-in): no time limit.
+    FindEnemyGoal() : Goal(GoalType::FindEnemy), m_searches(true) {}
+    /// A fight's goal of `durationMs` (kNoFightLimit for none), pushed at `nowMs`; `searches` as above.
+    FindEnemyGoal(int durationMs, std::uint64_t nowMs, bool searches = false)
+        : Goal(GoalType::FindEnemy), m_durationMs(durationMs), m_searches(searches),
+          m_limitMs(durationMs < 0 ? 0 : nowMs + static_cast<std::uint64_t>(durationMs)) {}
+    /// One update, as above.
     [[nodiscard]] GoalStatus process(Brain& brain) override;
+    /// Whether it searches for an enemy when it has none (the stand-in).
+    [[nodiscard]] bool searches() const { return m_searches; }
 
   private:
+    int m_durationMs = kNoFightLimit;
+    bool m_searches = false;
+    std::uint64_t m_limitMs = 0; // +0x20; 0 for none
     std::uint64_t m_nextSearchMs = 0;
 };
 

@@ -1830,15 +1830,24 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
 - **Fighting**: `FightGoal`, the weighted pick, `Brain_QueueAttack`'s chains timed by the chain clip's first event,
   `AttackAction` (the command once in Start, the delay halved when the target targets the attacker or the brain is
   type 3, then a wait on `0x5c0221f`), `MoveToHumanAction` (a heading and speed in the record's `move`, no stick).
-- **`GoalFight` from afar** (`CloseInGoal`, a **stand-in** for the melee goal `Brain_PushFightGoal` leaves beneath
-  the fight goal, [GoalRiot](#riot); its Process is not traced): `GoalFight` (`Brain::startFight`) pushes it under the
-  fight goal unless the gang has a tactic, the threat response is 0, or a melee goal or the fight goal is on top
-  already. When the fight goal ends with its target beyond the far melee range × 1.1, this goal runs the human at the
-  target (`MoveToHumanAction`, 2 s at a time, stopping at 90 % of the far range) and pushes the fight goal again
-  within that range; it waits while either human is down, while actions are queued and while the target has no
-  attack slot for it, and ends when there is no target or it is out of health. `level99`'s sparring Warriors are sent
-  from 8.6-9.0 m ([the sparring fight](#level99-fight)): without it their fight goals ended at once and they stood
-  still. `coney_tests "the disc's level99: the sparring Warriors*"` checks that all three close in and attack.
+- **A fight's three goals** ([Closing on the target](#fight-approach), `repo:src/ai/melee_goal.h`,
+  `repo:src/ai/engage_goals.h`): `Brain::fight` (with a duration, `GoalFight`'s none, a rioter's 8000 ms) pops any
+  Melee or FindEnemy goal with everything above it and pushes FindEnemy, Melee and the fight goal, whose deadline
+  is the duration. The fight goal never closes a distance; the **Melee** goal (no limit or the duration from its first
+  run) keeps the current target while valid or takes the nearest valid enemy, pushes a fight goal of 4000 ms within
+  1.1 × the far range (after a walk at gait 2 when the straight line does not reach him) and an **EngageEnemy** goal
+  beyond it; **FindEnemy** starts the fight again while the target can be fought. EngageEnemy runs at gait 4 (5 after
+  a runner), re-plans every 250 ms, leads a target facing away, stops and turns to him within 3.75 m when he is busy
+  or the charge is not armed and he walks or stands, and attacks out of the run within 1.6 m with the charge armed.
+  **Stand-ins**: the enemies' scores, the line-of-sight tests, `Brain_IsAttackableBy` and the gang's wanted timer are
+  not traced (the nearest enemy, always in sight, always attackable, the chase always allowed); with no valid target
+  Melee ends rather than spectating; a human whose last move failed runs straight at the target for 2 s and may
+  approach again (the weapon pick-up, throw and positioning moves are not traced); the sprint ignores stamina; "out
+  of sight" is beyond the sight range; the type-3 AttackTarget gate and goal `0x35` are not built; past its deadline
+  a fight goal ends only without an attack slot (the slot standing in for the target's active attackers).
+  `level99`'s sparring Warriors are sent from 8.6-9.0 m ([the sparring fight](#level99-fight)) and run in this way:
+  `coney_tests "the disc's level99: the sparring Warriors*"` checks that all three run in with EngageEnemy, close in
+  and attack.
 - **Blocking**: `BlockGoal` never produces a block: Coney's block starts only on R1 held in the record's buttons,
   which only a pad writes, so its command 4 does nothing. It turns the human's hit reactions off
   (`Fighter::setHitReactionsOff`, bit `0x800`) from its start until its sixth update with the human free; rolls the
@@ -1950,14 +1959,14 @@ still (their Process is not traced). Both of a crowd reaction's clip actions are
 dirty at Start; his wary scan looks for members of enemy gangs.
 
 **The Rumble tactics** (`src/ai/tactic_attack.*`, `src/ai/tactic_confront.*`, [Rumble mode](rumble.md#coney)).
-`TacticAttack` and `TacticConfront` follow the table above. **Stand-ins:** the melee goal (8) takes the nearest member
-of an enemy gang as the enemy and target, runs to him (2 s at a time) beyond the fight goal's reach (90 % of the far
-melee range) and pushes the fight goal within it (the original's: [The Melee goal](#melee-goal)); the confront goal
-(60) closes on the other gang's leader to its distance and waits. **Coney choices:** a gang's leader is its first
-standing member not a player's (else the first standing); the confront's gang radii are 0 and there is always a
-way between the leaders, so 9 never fires; the attack's coordinated sub-tactics, `PedReaction` exception and spot
-line, and the confront's postures and formation are not built. A tactic replaced from inside its own update or
-callback is freed after the gangs' update, as the original queues the free (`0x00306630`).
+`TacticAttack` and `TacticConfront` follow the table above. **Stand-ins:** the tactic's melee goal (8,
+`TacticMeleeGoal`) takes the nearest member of an enemy gang as the enemy and target, runs to him (2 s at a time) beyond
+the fight goal's reach (90 % of the far melee range) and pushes the fight goal within it (the original's: [The Melee
+goal](#melee-goal)); the confront goal (60) closes on the other gang's leader to its distance and waits. **Coney
+choices:** a gang's leader is its first standing member not a player's (else the first standing); the confront's gang
+radii are 0 and there is always a way between the leaders, so 9 never fires; the attack's coordinated sub-tactics,
+`PedReaction` exception and spot line, and the confront's postures and formation are not built. A tactic replaced from
+inside its own update or callback is freed after the gangs' update, as the original queues the free (`0x00306630`).
 
 **The character bindings' goals and gangs** (`src/ai/scripted_humans.*`, `src/ai/scripted_goals.*`). `GoalBackoff`
 (`0x9b`), `GoalBumLogic` (`0x4f`) and `GoalMoveToUseFlag` (4) are built from their constructors; **stand-ins** for their
@@ -1989,10 +1998,9 @@ taken as a cone of half the field of view widened by the sphere.
 **The scripts' goals at one human** (`src/ai/engage_goals.*`). `GoalMoveToHuman` (6) drops and re-issues a move
 (`MoveAction`, its gait and radius) to where the target is every second, waits 30 updates after a failed route, and
 ends within its radius in 3D, when the target is no longer alive in the world, or when its human is down.
-`GoalEngageEnemy` (11) runs at the enemy (`MoveToHumanAction`, 1 s at a time) beyond an attack's reach and pushes the
-fight goal within it, ending when the enemy is gone or down. **Stand-ins**: the engage goal follows the enemy at any
-range and leaves out its `+0x34` flag (the original's goal is now traced: [EngageEnemy](#engage-enemy), which runs
-with a move action, stops and hands back to the Melee goal rather than pushing the fight goal itself); the
+`GoalEngageEnemy` (11) is the fight's run-in ([EngageEnemy](#engage-enemy), above) at the enemy by handle, taking him
+as its enemy and target; **stand-in** for the untraced wrapper `0x002af528`: where the fight's goal would end, it
+pushes a fight goal of 4000 ms and goes on, so it fights the enemy until he is gone or down. The
 valid-target test `0x0028d4b0` is taken as alive and in the world. `BrSetType` sets types 1-6 (0 and past 6 are
 ignored, **stand-in**: 0's pad hand-over is not built), `BrSetAttackWeight` one kind's weight.
 `CfgSetDefaultFollowSlotSet` writes its sets into every formation in use and keeps them for those made later
@@ -2013,8 +2021,9 @@ node with no links; the variant `chance` picks and the two flags are kept, not u
 brain dead (not a player's) and walk to the exit flag; **stand-ins** for the camera tests: arriving within 8 m of
 player 1 picks the nearest other exit (activity 8), arriving farther is `HuDelete`, and every 8 s a human more than
 60 m from player 1 is killed (`HuKill`). `GoalTravelPath` (`0x38`) pushes a `GoalMoveToFlag` per point of an
-`AddPath` path (a number handle, as Coney's VM has no user types), then stops, loops or turns round. `GoalMelee` with
-no target pushes a finding goal (`0x41`; **stand-in**: the nearest hostile within the sight range, once a second).
+`AddPath` path (a number handle, as Coney's VM has no user types), then stops, loops or turns round. `GoalMelee`
+pushes a finding goal (`0x41`) and fights a target it names; **stand-in**: with no target this FindEnemy searches for
+the nearest hostile within the sight range, once a second, and a fight started under it keeps a searching one.
 `GoalThrowObject` (`0x5d`) walks into range and turns; **stand-in** for the throw: what it holds is let go.
 `GoalPlayDynIdle` (`0x23`) walks to the flag, turns to its heading and stands for its time; the clips are kept, not
 played. `GangExitWorld` sends each AI member out; once none is alive the callback gets the gang's id and the gang is
@@ -2038,8 +2047,7 @@ destination, the turf every 79th, else the 10 m wander, else a point 5 m away; a
 rolling over each second, 30 failed moves to leave), the acts counting down, the fight pick (gang soldiers only, the
 sixth argument letting the player be picked) and the exit flag in the gang's turf at gait 4. **Stand-ins**: the
 smash and loot searches find nothing (no vandalisable objects or store loot are hooked), so an act only counts down;
-the fight's 8 s deadline is not built (Coney's fight goal ends at once beyond melee range, the melee goals beneath it
-not being built); a turf box's centre and radius are its middle and half its diagonal; "on an area" and "reached in
+a turf box's centre and radius are its middle and half its diagonal; "on an area" and "reached in
 a straight line" are both the planner's straight-line test and no point is dropped to the ground; human `+0x333` is
 0; a running move is replaced rather than retargeted; the shouts, taunt and head glances are not made.
 

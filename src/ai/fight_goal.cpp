@@ -22,16 +22,16 @@ constexpr std::uint64_t kRetargetMs = 1000;
 // The move stops this share of the reach inside it, so the next attack finds the target in reach.
 constexpr float kMoveStopShare = 0.9F;
 
-// A fresh attack timer: now + a random 750-1000 ms + `extraMs`.
-std::uint64_t attackTimer(Brain& brain, std::uint64_t extraMs) {
-    return brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), kAttackTimerMinMs, kAttackTimerMaxMs)) +
-           extraMs;
+// A fresh attack timer: now + a random 750-1000 ms.
+std::uint64_t attackTimer(Brain& brain) {
+    return brain.nowMs() + static_cast<std::uint64_t>(rollRange(brain.random(), kAttackTimerMinMs, kAttackTimerMaxMs));
 }
 
 } // namespace
 
 void FightGoal::start(Brain& brain) {
-    m_attackAtMs = attackTimer(brain, m_extraDelayMs);
+    m_attackAtMs = attackTimer(brain);
+    m_deadlineMs = m_durationMs < 0 ? brain.nowMs() : brain.nowMs() + static_cast<std::uint64_t>(m_durationMs);
     m_retargetAtMs = brain.nowMs() + kRetargetMs;
 }
 
@@ -62,7 +62,11 @@ GoalStatus FightGoal::process(Brain& brain) {
     if (brain.actionCount() > 0) {
         return GoalStatus::Stop;
     }
-    // 5. The pacing: the goal's timer, this brain's next attack and the target's.
+    // 5. Past the deadline, only while still one of the target's attackers.
+    if (brain.nowMs() >= m_deadlineMs && !brain.hasAttackSlot()) {
+        return GoalStatus::Done;
+    }
+    // The pacing: the goal's timer, this brain's next attack and the target's.
     const std::uint64_t now = brain.nowMs();
     if (now < m_attackAtMs || now < brain.nextAttackMs() || now < target->attackableAtMs()) {
         return GoalStatus::Stop;
@@ -81,33 +85,8 @@ GoalStatus FightGoal::process(Brain& brain) {
         return GoalStatus::Stop;
     }
     queueAttack(brain, *kind);
-    m_attackAtMs = attackTimer(brain, 0);
+    m_attackAtMs = attackTimer(brain);
     return GoalStatus::Stop;
-}
-
-GoalStatus CloseInGoal::process(Brain& brain) {
-    Brain* target = brain.target();
-    if (target == nullptr || !Brain::fightable(*target)) {
-        return GoalStatus::Done;
-    }
-    // Waits while either is down, while the human is busy, and while the target's attack slots are all taken.
-    const human::Human& human = brain.human();
-    if (human.fighter().health().depleted() || human.state() == human::TargetState::Grounded ||
-        target->human().state() == human::TargetState::Grounded || brain.actionCount() > 0) {
-        return GoalStatus::Stop;
-    }
-    brain.setTarget(target);
-    if (!brain.hasAttackSlot()) {
-        return GoalStatus::Stop;
-    }
-    // Beyond the fight goal's range: run at the target, stopping inside the reach. Within it: the fight goal again.
-    const float reach = kInReachShare * brain.meleeFar();
-    if (brain.distanceTo(*target) > brain.meleeFar() * kFightRangeScale) {
-        brain.queueAction(std::make_unique<MoveToHumanAction>(kLongMoveMs, reach));
-        return GoalStatus::Stop;
-    }
-    brain.pushGoal(std::make_unique<FightGoal>());
-    return GoalStatus::Again;
 }
 
 void queueAttack(Brain& brain, int kind) {

@@ -243,6 +243,7 @@ target_sources(coney_core PRIVATE
     ai/brains.cpp
     ai/dealer_goal.cpp
     ai/engage_goals.cpp
+    ai/melee_goal.cpp
     ai/pedestrian_goal.cpp
     ai/fight_goal.cpp
     ai/formations.cpp
