@@ -313,8 +313,10 @@ real names, found from the code, bear this out: `level51s_ms12.sec` and `level51
 
 ## Coney's implementation
 
-Not started. `coney-tools wad` should classify entries with the structural tests above and parse the
-[chunk container](#chunk-container); the per-type readers come with each format's page.
+`coney-tools extract` classifies every entry with the structural tests above
+([python/src/coney_tools/wad_kinds.py](repo:python/src/coney_tools/wad_kinds.py)), parses the
+[chunk container](#chunk-container) and hands each distinct resource to the decoder of its shape; what each kind
+becomes is on [Asset inventory](inventory.md).
 
 ## Open questions
 

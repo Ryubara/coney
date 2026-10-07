@@ -86,6 +86,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     check_title_parser.add_argument("file", help="a file whose first line (not blank, not #) is the title; - for stdin")
     _add_wad_commands(groups)
+    _add_extract_command(groups)
     _add_audio_commands(groups)
     _add_movies_commands(groups)
     _add_xbox_commands(groups)
@@ -118,6 +119,22 @@ def _add_wad_commands(groups: Any) -> None:
     names.add_argument("paths", nargs="+", metavar="[DISC] OUT_FILE", help=f"[DISC] ({disc_help}) and OUT_FILE")
     scene_check = commands.add_parser("scenes", help="parse every scene record of scene_list.cnk; counts and hashes")
     scene_check.add_argument("disc", nargs="?", help=disc_help)
+
+
+def _add_extract_command(groups: Any) -> None:
+    """Register `coney-tools extract [DISC] OUT_DIR`."""
+    from coney_tools.extract_types import TYPES  # the type list only; the extractor itself loads NumPy
+
+    disc_help = "a folder (mounted disc) or .iso image; default: game_dir in coney.local.toml"
+    extract = groups.add_parser(
+        "extract", help="extract every asset of your disc to open formats in OUT_DIR (outside the repository)"
+    )
+    extract.add_argument("paths", nargs="+", metavar="[DISC] OUT_DIR", help=f"[DISC] ({disc_help}) and OUT_DIR")
+    extract.add_argument(
+        "--only", nargs="+", metavar="TYPE", choices=list(TYPES), help=f"just these types: {', '.join(TYPES)}"
+    )
+    extract.add_argument("--verify", action="store_true", help="compare the file counts with the expected ones")
+    extract.add_argument("--jobs", type=int, metavar="N", help="worker processes for decoding audio (default: up to 4)")
 
 
 def _add_audio_commands(groups: Any) -> None:
@@ -422,6 +439,11 @@ def _run(args: argparse.Namespace) -> int:
         return _run_xbox(args)
     if args.group == "audio":
         return _run_audio(args)
+    if args.group == "extract":
+        from coney_tools import extract  # loads NumPy, which the other commands do not need
+
+        disc_arg, out_dir = wad_cli.split_disc_and_target(args.paths, "OUT_DIR")
+        return extract.run(disc_arg, out_dir, args.only, args.verify, args.jobs)
     if args.group == "movies":
         return movies_cli.run_list(args.disc)
     if args.group == "progress":

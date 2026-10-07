@@ -156,6 +156,10 @@ class Disc:
         else:
             raise ConfigError(f"{path}: not a folder or an ISO image (does it exist?)")
 
+    def names(self) -> list[str]:
+        """Every file of the disc root and its folders, upper case, `/` separated (`IOP/BFW.SND`), sorted."""
+        return sorted(self._folder if self._folder is not None else self._iso or {})
+
     def has(self, name: str) -> bool:
         """Whether the disc root holds `name`; any case, with a `;1` suffix or trailing dot ignored, as in C++."""
         key = _clean_name(name).upper()

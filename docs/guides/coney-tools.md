@@ -1,7 +1,8 @@
 # The coney-tools command line
 
-`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers ten groups:
-`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**, [`audio`](#audio),
+`coney-tools` is Coney's own command line (see [Conventions](conventions.md#python)). This page covers eleven groups:
+`wad`, which reads the game's archive, `WARRIORS.DIR` and `WARRIORS.WAD`, from **your own disc**,
+[`extract`](#extract), which turns every asset of the disc into open formats, [`audio`](#audio),
 which reads its sound data, [`movies`](#movies), which reads the movies' headers, [`xbox`](#xbox), which
 reads the Xbox disc's archive, [`progress`](#progress), which keeps the progress tables of the README and the docs
 current, [`natives`](#natives), which renders the script-binding masterlist, [`refs`](#refs), which builds the
@@ -56,7 +57,7 @@ match an entry. It writes one name per line to the output file and prints how ma
 minutes because it reads the whole WAD. Whether a names list may be published is an open legal question, so the
 tool always recovers the names from your disc and the list is never committed.
 
-## extract
+## wad extract {#wad-extract}
 
 ```sh
 uv run --project python coney-tools wad extract [DISC] ../../scratch/wad [--names FILE] [--only HASH_OR_NAME ...]
@@ -81,6 +82,34 @@ Parses every record `scene_list.cnk` lists (scene headers and the segments of lo
 cameras and lights, total frames, broken segment chains, how many headers' frame counts differ from their parts, the
 event types seen, and SHA-256 digests of the list and of the records. Records whose list names are cut to 16
 characters are found by content. Exits 1 when a record fails to parse.
+
+## extract: every asset in open formats {#extract}
+
+```sh
+uv run --project python coney-tools extract [DISC] OUT_DIR [--only TYPE ...] [--verify] [--jobs N]
+```
+
+Reads your disc once and writes every asset into `OUT_DIR` (outside the repository, like `wad extract`): the
+folder Coney's install step will produce, and that the engine and mods will read. Each type has its own top folder:
+
+| Type | Writes |
+| --- | --- |
+| `disc` | `disc/`: the executable, the IOP modules and image and `SYSTEM.CNF`, copied; `disc/files.json` lists every disc file with its size and SHA-1 |
+| `movies` | `movies/*.bik`, copied, and `movies/index.json` (size, frames, rate, audio tracks) |
+| `audio` | `audio/sounds/<name>.wav` (streamed sounds, named as the game names them, `unnamed/<hash>.wav` otherwise), `audio/banks/<bank>/<name>.wav`, `audio/music/<track>.wav`, and `sounds.json`, `music.json`, `classes.json` |
+| `scripts` | `scripts/<name>.lua`: the compiled Lua chunks as stored (not source), and `scripts/index.json` |
+| `textures` | `textures/<dictionary>/<texture>.png`, the streamed world's in `textures/worlds/<file>/`, and `textures/index.json` (sizes, depth, mipmaps, filter, addressing, sprite rectangles) |
+| `index` | `index/wad.json`: every WAD entry's kind, name and resources, and every resource's chunks |
+| `raw` | what no decoder takes yet, as stored, each with a `.json` description: `raw/<kind>/<name>` and `raw/resources/<shape>/<name>.res` |
+
+`--only` limits the run to some types; the others' files and records stay as an earlier run left them. A dictionary
+or resource is named by its recovered name, or by its hash in hex. `manifest.json` lists every file with its SHA-256
+and, per type, the file count, the bytes and a digest over the type's files, so two runs (or two discs) can be compared
+with it. The output is deterministic. At the end the command prints, per type, the files, bytes and digest and the
+stage's counts; `--verify` then compares each type's file count with the expected one for the NTSC-U disc and exits 1
+on a difference. `--jobs` sets the worker processes that decode the audio (default up to four). A full run takes
+about ten minutes and writes about 9.5 GB, most of it WAV. Which formats are decoded and which are still raw:
+[Asset inventory](../research/formats/inventory.md).
 
 ## audio {#audio}
 

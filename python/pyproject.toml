@@ -4,8 +4,9 @@ version = "0.1.0"
 description = "Coney's own automation: local configuration and repository checks, later the WAD and emulator tools"
 requires-python = ">=3.12"
 license = "GPL-3.0-or-later"
-# PyYAML reads the research database (research/*.yaml) for `coney-tools natives` and `coney-tools refs`.
-dependencies = ["pyyaml>=6", "pillow>=10"]
+# PyYAML reads the research database (research/*.yaml) for `coney-tools natives` and `coney-tools refs`; Pillow
+# writes PNGs; NumPy decodes textures, geometry and audio in bulk for `coney-tools extract`.
+dependencies = ["pyyaml>=6", "pillow>=10", "numpy>=2"]
 
 [project.scripts]
 coney-tools = "coney_tools.cli:main"
