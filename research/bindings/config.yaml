@@ -553,7 +553,8 @@
   evidence: inferred
   depth: brief
   notes: >-
-    Storage confirmed (code) at 0x0023a588.
+    Storage confirmed (code) at 0x0023a588. Read only by the follow camera (0x0012b084): with CfgStrafeRStick also on,
+    a locked-on player's right stick stops turning the camera (camera.md#right-stick).
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 
 - name: CfgStrafeRStick
@@ -567,7 +568,9 @@
   evidence: inferred
   depth: brief
   notes: >-
-    Storage confirmed (code) at 0x0023a5e8.
+    Storage confirmed (code) at 0x0023a5e8. Read by Human_FightStanceMove (0x002424a8) and the follow camera
+    (0x0012b074): with CfgStrafe also on, a locked-on player's right stick stops turning the camera
+    (camera.md#right-stick).
   usage: {chunks: 0, calls: 0, boot: false, mission1: false, result_used: false}
 
 - name: CfgAutoCombat

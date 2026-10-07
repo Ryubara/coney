@@ -659,9 +659,10 @@ CamLockRail(on, player)
 
 Locks or releases a player's rail camera (camera type 9) by setting its byte `+0x3e4`. While locked, the rail update
 (0x0013d6b0) no longer moves the camera along its rail after the target: it keeps its position and view from the
-previous frame, while still keeping its targets in frame. It stays locked until `CamLockRail(false)`: neither
-`CamSetupRail` nor `CameraMakeActive` clears it. The rail camera also holds itself for one update at a time while its
-look-at point is past the rail's end. Armies of the Night (levels 60-64) uses it to hold the side-scrolling view.
+previous frame; targets that leave the frame are pushed back into it (the humans move, not the camera,
+camera.md#rail-frame). It stays locked until `CamLockRail(false)`: neither `CamSetupRail` nor `CameraMakeActive` clears
+it. The rail camera also holds itself for one update at a time while its look-at point is past the rail's end. Armies of
+the Night (levels 60-64) uses it to hold the side-scrolling view.
 
 **Notes.** A player with no rail camera is skipped (Camera_GetPlayerRail returns none). Modes 1 and 2 ignore the lock;
 mode 3 sets it itself at the rail's ends. Every reader and writer: [Camera: rail
@@ -682,7 +683,7 @@ CamModifyRail(param, value, seconds, player)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `param` | number, truncated to an unsigned integer | Which setting: 0 the most the camera stays from its target point in plan (m, 0 off), 1 the most it stands above the target's feet (m, negative off), 2 field of view (degrees, negative ignored), 3 the target point's shift along the rail (m), 4 the look-at point's further shift along the rail (m), 5 an angle that switches the rail to mode 3, 8 a fixed look-at pitch (degrees; below -360 switches 5 and 8 off), 9 the look-at offset's height (m); 6 and 7 not traced; others do nothing. Meanings for mode 0: [Camera: rail cameras](../../research/camera.md#rail). |
+| 1 | `param` | number, truncated to an unsigned integer | Which setting: 0 the most the camera stays from its target point in plan (m, 0 off), 1 the most it stands above the target's feet (m, negative off), 2 field of view (degrees, negative ignored), 3 the target point's shift along the rail (m), 4 the look-at point's further shift along the rail (m), 5 an angle that switches the rail to mode 3, 8 a fixed look-at pitch (degrees; below -360 switches 5 and 8 off), 9 the look-at offset's height (m); 6 is eased but never read; 7 is mode 3's margin for keeping the targets inside the view's sides (m); others do nothing. Meanings for mode 0: [Camera: rail cameras](../../research/camera.md#rail). |
 | 2 | `value` | number (single precision) | The new value, in the setting's unit. |
 | 3 | `seconds` | number (single precision) | Time in seconds to ease linearly from the current value to the new one; 0 for at once. |
 | 4 | `player` | number, truncated to an integer; default -1 | Player index, or -1 (default) for every player's rail camera. |
@@ -1119,14 +1120,22 @@ CamUseDeathCamera(human, ms, ms2)
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `human` | number, truncated to an unsigned integer | Handle of the human who died. |
-| 2 | `ms` | number, truncated to an unsigned integer; default 6500 | Duration in milliseconds (default 6500), used for the screen fade. |
-| 3 | `ms2` | number, truncated to an unsigned integer; default 1500 | A second time in milliseconds (default 1500). |
+| 2 | `ms` | number, truncated to an unsigned integer; default 6500 | Milliseconds: the screen tint blends to dark red (0xd0000014) over this time, and the blur, once it starts, rises over it. |
+| 3 | `ms2` | number, truncated to an unsigned integer; default 1500 | Milliseconds before the blur pulse starts rising (Rumble Survival's 100000 means no blur in practice). |
 
 **Returns** nothing.
 
-Switches to the death camera on a human, fades the screen, hides the HUD and stops the players.
+Cuts player 1 to the death camera (Cam_Failed, type 12) looking straight down on `human`, the same shot the game over
+uses with (6500, 1500): saves the current camera, tint and HUD state, blends player 1's screen tint to dark red over
+`ms`, arms a blur that starts after `ms2`, hides the HUD and removes every player's and the human's overhead icon. It
+stops no one. Nothing returns to the old camera: the script makes another camera active, and the HUD and tint are
+restored only by the mission-failed menu's checkpoint retry.
 
-- **Evidence:** confirmed (code) at `0x0011daa8`; detail: brief
+**Notes.** 0x0011daa8. The activation picks a target (last target or nearer player) but CamFailed_SetTarget(human) then
+overrides it. It also sets 0x0050b1e8 = 1 and 0x0050b1ec = 0 (player 1's view on, player 2's off) until
+Cameras_DecideViews next sets them. camera.md#death-camera.
+
+- **Evidence:** confirmed (code) at `0x0011daa8`; detail: traced
 - **Wrapper** `0x00366bd8` (registered by `RegisterBindings`); **calls** `0x0011daa8` `Camera_UseDeathCamera`
 - **Used by** 33 of 467 script chunks (33 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** not implemented

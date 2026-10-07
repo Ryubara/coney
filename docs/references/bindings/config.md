@@ -2767,7 +2767,8 @@ CfgStrafe(enabled)
 
 Stores a strafe flag for the player controls; never called by the scripts.
 
-**Notes.** Storage confirmed (code) at 0x0023a588.
+**Notes.** Storage confirmed (code) at 0x0023a588. Read only by the follow camera (0x0012b084): with CfgStrafeRStick
+also on, a locked-on player's right stick stops turning the camera (camera.md#right-stick).
 
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035de90` (registered by `RegisterBindings`); **calls** `0x0023a588`
@@ -2788,7 +2789,8 @@ CfgStrafeRStick(enabled)
 
 Stores a right-stick strafe flag; never called by the scripts.
 
-**Notes.** Storage confirmed (code) at 0x0023a5e8.
+**Notes.** Storage confirmed (code) at 0x0023a5e8. Read by Human_FightStanceMove (0x002424a8) and the follow camera
+(0x0012b074): with CfgStrafe also on, a locked-on player's right stick stops turning the camera (camera.md#right-stick).
 
 - **Evidence:** inferred; detail: brief
 - **Wrapper** `0x0035dec0` (registered by `RegisterBindings`); **calls** `0x0023a5e8`
