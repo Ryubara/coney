@@ -24,6 +24,7 @@ DebugSession::DebugSession(TunableRegistry& tunables, DebugServices services, In
     addConsolePage(*this);
     addCheatsPage(*this);
     addLevelsPage(*this);
+    addMissionsPage(*this);
     addPlayerPage(*this);
     addCameraPage(*this);
     addSpawnerPage(*this);

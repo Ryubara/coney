@@ -111,6 +111,7 @@ Dear ImGui (MIT licence) is pinned in `cmake/deps.cmake` and used only in `src/p
 | Lua console | a Lua line to run in the script state, a file to run, and the output |
 | Cheats | the 27 retail cheat codes, each sent to the script's cheat callback |
 | Levels | the levels to play (or the level table's, in the front end), a name to type, and the sandbox layouts |
+| Missions | the story's 18 missions in order (number, title, level, checkpoints); choose a mission, then a checkpoint, to start it there |
 | Player | where the player is and how it moves (plotted), his character type and a change of it, freezing him, teleports |
 | Camera | the follow camera's eye, target and distance (plotted), a reset behind the player, the free camera, its values |
 | Spawner | objects put in front of the player in a sandbox: a crate, a fence, a wall, a ramp, stairs, a pillar, a ball |
@@ -140,6 +141,13 @@ modes run with a disc, the page lists instead every level with a streamed world 
 play mode or sandbox viewer on top. *Sandbox layouts* lists the layouts in the sandbox folder
 ([Sandbox](sandbox.md)); choosing one plays it at the start of the next frame, in place of the play mode or sandbox
 viewer on top: with Rembrandt when there is a disc for his character, else with the free camera.
+
+**Missions.** The page lists the story's missions in order, each tagged with its level and its checkpoint count
+(`1. New Blood`, `level99, 3 cp`); a mission opens a page with one action per checkpoint, which starts the level there
+as `--play-level LEVEL --checkpoint N` does: in a `--play-level` run it replaces the play mode at the start of the next
+frame, in the story it sets the checkpoint (`SetCheckPoint`) and asks the level flow for the level, as `runNextMission`
+does. The list is `src/debug/story_missions.cpp`, which a Python test checks against `research/missions.yaml` and the
+[levels list](../references/levels.md). The hub (`level95`) between the missions is not listed: the Levels page loads it.
 
 **Player, Camera, Spawner and AI fighters** act on the mode the player plays in (`--play-level`, or a sandbox from
 Levels), through `debug::PlayControls` (`src/debug/play_controls.h`), which the play mode implements; elsewhere they say

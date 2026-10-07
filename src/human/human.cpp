@@ -239,6 +239,11 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
 }
 
 void Human::locomote(bool gated) {
+    // A human no pad drives follows its brain by the AI's own rules.
+    if (m_moveSpeed.has_value() && m_record.move.has_value() && !m_record.padDriven) {
+        aiLocomote(gated);
+        return;
+    }
     const Speeds& speeds = m_animator.speeds();
     // The current speed is the velocity's length as the original measures it (vtable `+0x94`), in single precision
     // rounded toward zero as the PS2's unit rounds: at a steady run it comes out a few units in the last place either
@@ -283,6 +288,38 @@ void Human::locomote(bool gated) {
     // the state code is 5 or 6, the clip alone moves it. Standing (no gait blend yet), the update the start clip
     // begins does not move the body either: at runtime the first update with the stick pushed began the start clip at
     // speed 0. Otherwise the velocity follows the facing.
+    const anim::Vec3 direction = facing(m_heading);
+    const bool clipMoves = gated || !m_animator.gaitBlendPlaying();
+    const float horizontal = clipMoves ? 0.0F : newSpeed;
+    m_velocity = anim::Vec3{direction.x * horizontal, direction.y * horizontal, m_velocity.z};
+}
+
+void Human::aiLocomote(bool gated) {
+    // The speed: a wounded human asked to move walks; otherwise the brain's, reached at the AI's rates
+    // (docs/research/characters.md#ai-locomotion).
+    constexpr float kMovingAsk = 0.1F;
+    const Speeds& speeds = m_animator.speeds();
+    const float current = ps2::length(m_velocity.x, m_velocity.y);
+    const float asked = *m_moveSpeed;
+    const bool wounded = m_script.wounded;
+    const float target = wounded && asked > kMovingAsk ? speeds.walk : asked;
+    const float newSpeed = aiApproachSpeed(current, target);
+    // The facing turns to the brain's heading by a constant step (no ease), only while the brain asks for a speed (or
+    // the human is wounded). At speed 0 the original turns more than 15° off with a turn clip (395-398); **Coney
+    // stand-in**: those clips are not played, so the human turns on the spot at the standing word instead.
+    constexpr float kTurnClipAngle = 15.0F * kPi / 180.0F;
+    const float wanted = m_record.move->heading;
+    const int boost = m_record.move->turnBoost;
+    const float error = wrapAngle(wanted - m_heading);
+    float limit = 0.0F;
+    if (asked > 0.0F || wounded) {
+        limit = aiMaxTurn(gaitOfSpeed(current, speeds), boost, wounded);
+    } else if (std::fabs(error) > kTurnClipAngle) {
+        limit = aiMaxTurn(Gait::Standing, boost, wounded);
+    }
+    m_heading = std::fabs(error) <= limit ? wanted : wrapAngle(m_heading + std::copysign(limit, error));
+    m_turn = TurnState{};
+    // The locomotion gate, as for the player: a clip moving the body, or a start clip not yet blending.
     const anim::Vec3 direction = facing(m_heading);
     const bool clipMoves = gated || !m_animator.gaitBlendPlaying();
     const float horizontal = clipMoves ? 0.0F : newSpeed;

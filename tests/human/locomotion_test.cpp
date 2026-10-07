@@ -229,3 +229,29 @@ TEST_CASE("the lean follows the turn by 0.625 a step, clamped by gait", "[locomo
     const float back = coney::human::leanStep(0.5F * kDegree, 0.0F, 7.5F, Gait::Run);
     CHECK(back == Approx(0.5F * kDegree * 0.375F));
 }
+
+TEST_CASE("an AI turns a constant 12, 6, 4 or 2.5 degrees an update by gait, times its turn boost",
+          "[locomotion][ai]") {
+    using coney::human::aiMaxTurn;
+    CHECK(aiMaxTurn(Gait::Standing, 0, false) == Approx(12.0F * kDegree));
+    CHECK(aiMaxTurn(Gait::Walk, 0, false) == Approx(12.0F * kDegree));
+    CHECK(aiMaxTurn(Gait::Jog, 0, false) == Approx(6.0F * kDegree));
+    CHECK(aiMaxTurn(Gait::Run, 0, false) == Approx(4.0F * kDegree));
+    CHECK(aiMaxTurn(Gait::Sprint, 0, false) == Approx(2.5F * kDegree));
+    // A boost of 1 doubles it, -1 halves it; wounded it is 0.375 degrees whatever the boost.
+    CHECK(aiMaxTurn(Gait::Run, 1, false) == Approx(8.0F * kDegree));
+    CHECK(aiMaxTurn(Gait::Run, -1, false) == Approx(2.0F * kDegree));
+    CHECK(aiMaxTurn(Gait::Run, 3, true) == Approx(0.375F * kDegree));
+}
+
+TEST_CASE("an AI starts at 2 m/s, gains 1.067 an update until 2 m/s short, then 0.267, and slows 1.067 an update",
+          "[locomotion][ai]") {
+    using coney::human::aiApproachSpeed;
+    CHECK(aiApproachSpeed(0.0F, 7.8F) == Approx(2.0F));
+    CHECK(aiApproachSpeed(0.0F, 1.6F) == Approx(1.6F));
+    CHECK(aiApproachSpeed(2.0F, 7.8F) == Approx(2.0F + 32.0F / 30.0F));
+    CHECK(aiApproachSpeed(6.0F, 7.8F) == Approx(6.0F + 8.0F / 30.0F));
+    CHECK(aiApproachSpeed(7.7F, 7.8F) == Approx(7.8F));
+    CHECK(aiApproachSpeed(7.8F, 0.0F) == Approx(7.8F - 32.0F / 30.0F));
+    CHECK(aiApproachSpeed(1.6F, 1.0F) == Approx(1.0F));
+}

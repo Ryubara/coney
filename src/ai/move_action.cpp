@@ -241,9 +241,11 @@ float MoveAction::cornerTrial(const Brain& brain, anim::Vec3 corner, anim::Vec3 
         if (speed <= floor) {
             return floor;
         }
-        // The human comes into the corner at `speed` and turns at its gait's rate until it faces the way out: its
-        // path is an arc of radius speed / rate, sampled by the radius's band.
-        const float rate = human::maxTurn(human::gaitOfSpeed(speed, speeds)) / human::kStepSeconds;
+        // The human comes into the corner at `speed` and turns at its gait's AI rate (with the brain's turn boost)
+        // until it faces the way out: its path is an arc of radius speed / rate, sampled by the radius's band.
+        const float rate =
+            human::aiMaxTurn(human::gaitOfSpeed(speed, speeds), brain.turnBoost(), brain.human().script().wounded) /
+            human::kStepSeconds;
         const float radius = speed / rate;
         const int samples = cornerSamples(radius);
         const float duration = std::fabs(turn) / rate;

@@ -925,13 +925,13 @@ name = "PoizoCam_Update"
 subsystem = "Camera"
 
 [[function]]
-address = 0x00142ac8
-name = "CamSpline_AddPointAngles"
+address = 0x00142a58
+name = "PoizoCam_AddPoint"
 subsystem = "Camera"
 
 [[function]]
-address = 0x00142a58
-name = "PoizoCam_AddPoint"
+address = 0x00142ac8
+name = "CamSpline_AddPointAngles"
 subsystem = "Camera"
 
 [[function]]
@@ -3495,6 +3495,11 @@ subsystem = "Human"
 size = 152
 
 [[function]]
+address = 0x002212d0
+name = "Human_GetTurnRateForGait"
+subsystem = "Human"
+
+[[function]]
 address = 0x002213d8
 name = "Human_MaxTurn"
 subsystem = "Human"
@@ -4428,6 +4433,11 @@ subsystem = "Human"
 size = 1272
 
 [[function]]
+address = 0x00243848
+name = "Human_UpdateControl"
+subsystem = "Human"
+
+[[function]]
 address = 0x00244e78
 name = "Human_MoveAttached"
 subsystem = "Human"
@@ -5105,6 +5115,11 @@ size = 440
 [[function]]
 address = 0x0028c5d8
 name = "Brain_OnArrested"
+subsystem = "Human"
+
+[[function]]
+address = 0x0028cdf8
+name = "Brain_SetTurnBoost"
 subsystem = "Human"
 
 [[function]]

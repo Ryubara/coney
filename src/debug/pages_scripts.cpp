@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "debug/debug_session.h"
+#include "debug/story_missions.h"
 #include "sandbox/sandbox_layout.h"
 
 namespace coney::debug {
@@ -359,6 +360,43 @@ void addLevelsPage(DebugSession& session) {
             page.add(logItem("Log", [&session] { return session.log().last(4); }));
         },
         "Load any level of the level table by name, or a sandbox layout.");
+}
+
+void addMissionsPage(DebugSession& session) {
+    session.model().addPage(
+        "Missions",
+        [&session](MenuPage& page) {
+            for (const StoryMission& mission : storyMissions()) {
+                // The label is the mission's place in the story and its title; the tag the level and its checkpoints.
+                MenuItem item = submenuItem(std::format("{}. {}", mission.number, mission.title), [&session, mission] {
+                    auto sub = std::make_shared<MenuPage>(std::format("Mission {}", mission.number));
+                    sub->add(watchItem("Level", [mission] { return std::string(mission.level); }));
+                    for (int checkpoint = 1; checkpoint <= mission.checkpoints; ++checkpoint) {
+                        sub->add(actionItem(std::format("Checkpoint {}", checkpoint),
+                                            [&session, mission, checkpoint] {
+                                                const auto& loader = session.services().loadLevelAt;
+                                                if (!loader) {
+                                                    session.print("missions: cannot start a mission in this run");
+                                                    return;
+                                                }
+                                                session.print(
+                                                    loader(mission.level, checkpoint)
+                                                        ? std::format("missions: starting {} at checkpoint {}",
+                                                                      mission.level, checkpoint)
+                                                        : std::format("missions: {} could not be started",
+                                                                      mission.level));
+                                            }))
+                            .withHelp("Starts the mission's level from this checkpoint, with the player as the script "
+                                      "makes him.");
+                    }
+                    sub->add(logItem("Log", [&session] { return session.log().last(3); }));
+                    return sub;
+                });
+                item.detail = std::format("{}, {} cp", mission.level, mission.checkpoints);
+                page.add(std::move(item));
+            }
+        },
+        "The story's 18 missions in order; jump to any mission or checkpoint.");
 }
 
 } // namespace coney::debug

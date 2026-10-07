@@ -978,13 +978,26 @@ int main(int argc, char** argv) {
             startUp->menuLoadLevel(name);
             return true;
         };
+        // The Missions page: the checkpoint is set as runNextMission sets it, then the level chosen.
+        debugServices.loadLevelAt = [&startUp](std::string_view name, int checkpoint) {
+            startUp->state().checkPoint = checkpoint;
+            startUp->menuLoadLevel(name);
+            return true;
+        };
     }
     // Without the level flow, a level the Levels page asks for replaces the play mode at the start of the next frame
     // (playLevelNamed below); the page lists every level with a world on the disc.
     std::optional<std::string> pendingLevel;
+    int pendingCheckpoint = 1;
     if (!startUp && wad) {
-        debugServices.loadLevel = [&pendingLevel](std::string_view name) {
+        debugServices.loadLevel = [&pendingLevel, &pendingCheckpoint](std::string_view name) {
             pendingLevel = std::string(name);
+            pendingCheckpoint = 1;
+            return true;
+        };
+        debugServices.loadLevelAt = [&pendingLevel, &pendingCheckpoint](std::string_view name, int checkpoint) {
+            pendingLevel = std::string(name);
+            pendingCheckpoint = checkpoint;
             return true;
         };
         debugServices.playableLevels = [&wad] { return coney::platform::playableLevelNames(*wad); };
@@ -1100,7 +1113,7 @@ int main(int argc, char** argv) {
     // Plays level `name` (`level2`) in place of the play mode or sandbox viewer on top. The mode it replaces goes
     // first, so its sectors leave the budget before the level loads; the name is checked before that, so a typo keeps
     // it.
-    const auto playLevelNamed = [&](const std::string& name) {
+    const auto playLevelNamed = [&](const std::string& name, int checkpoint) {
         if (auto worlds = coney::platform::worldNamesFor(*wad, name); !worlds) {
             debugSession.print("levels: " + worlds.error().message);
             return;
@@ -1115,9 +1128,9 @@ int main(int argc, char** argv) {
         }
         playLevel.reset();
         sandboxViewer.reset();
-        makeLevelGameplay(name, 1, false);
+        makeLevelGameplay(name, checkpoint, false);
         modes.push(*levelGameplay);
-        debugSession.print(std::format("levels: playing {}", name));
+        debugSession.print(std::format("levels: playing {} at checkpoint {}", name, checkpoint));
     };
     // The developer overlay (F1), only with a window; without it the pad menu still works.
     std::unique_ptr<coney::platform::ImGuiOverlay> devOverlay;
@@ -1154,7 +1167,8 @@ int main(int argc, char** argv) {
     std::optional<coney::platform::Window> window = renderer.window();
     // The window's events go past the developer overlay first; while it has the keyboard, the keyboard pad is off.
     coney::FrameHooks hooks;
-    hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingLevel, &playLevelNamed] {
+    hooks.beginFrame = [&window, &devOverlay, devices, &pendingSandbox, &playSandbox, &pendingLevel, &pendingCheckpoint,
+                        &playLevelNamed] {
         // A sandbox or level the Levels page asked for, between two frames.
         if (pendingSandbox) {
             const std::string name = *pendingSandbox;
@@ -1164,7 +1178,7 @@ int main(int argc, char** argv) {
         if (pendingLevel) {
             const std::string name = *pendingLevel;
             pendingLevel.reset();
-            playLevelNamed(name);
+            playLevelNamed(name, pendingCheckpoint);
         }
         if (!window) {
             return true;

@@ -47,6 +47,9 @@ struct DebugServices {
     std::function<GameState*()> gameState;
     /// Starts the level named `name` (`level2`); returns false when it cannot. Empty: levels cannot be loaded yet.
     std::function<bool(std::string_view name)> loadLevel;
+    /// Starts level `name` at `checkpoint` (1 to the level's sections): the Missions page's jump. As loadLevel, plus
+    /// the checkpoint the level's scripts start from. Empty: missions cannot be jumped to in this run.
+    std::function<bool(std::string_view name, int checkpoint)> loadLevelAt;
     /// The levels the play mode can play (`level2`), listed on the Levels page in place of the game state's level
     /// table; empty: the table is listed.
     std::function<std::vector<std::string>()> playableLevels;

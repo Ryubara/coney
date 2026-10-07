@@ -9,13 +9,6 @@ How far Coney has come, measured three ways:
 - **Researched:** the share of the game's own code that the [source map](../research/source-map.md) places in at
   least an original source file or directory. It says how much of the executable an analyst can already find their
   way around in, not how much is understood.
-- **Understood:** the share of the game's own functions (by bytes, and by count) that are researched in full: the
-  function has a meaningful name in the shared Ghidra project (not `FUN_<address>`), and a research page cites its
-  address in a table row or paragraph that states an evidence level, or says `not needed: <reason>` (the source
-  map's citations do not count: placing is not understanding); a script binding's wrapper counts when its
-  `research/bindings` entry has an `evidence`. Names and sizes come from `docs/progress/ghidra-functions.tsv`
-  (addresses, sizes and our names only), the citations from the pages themselves, so citing a function moves the
-  bar in the same commit. How to refresh it: [Research workflow](../guides/research-workflow.md#understood).
 - **Milestones:** the status table of the [roadmap](../roadmap.md).
 - **Missions:** the [mission checklist](../missions/index.md): each story level's status, from Not Started to
   Approved by the owner's play-test, with its checkpoints and the script bindings it needs.
@@ -33,12 +26,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,697 functions) |
+| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,700 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `██████████████████▋░` | 93.0% named in Ghidra and cited with evidence (3,054,860 of 3,283,904 bytes; 10,503 of 11,422 functions, 92.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-542 reimplemented function(s) have no size yet and add no bytes.
+545 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,7 +66,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 72 | 195,624 |
 | `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 205 | 497,416 |
-| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 544 | 1,096,672 |
+| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 547 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
@@ -760,6 +753,7 @@ at the top of the repository's `README.md`.
 | `0x0021e400` | `Human_PlaySpeech` | `Human` | 664 |
 | `0x0021e698` | `Human_PlaySpeechInterrupt` | `Human` | 680 |
 | `0x0021ec38` | `Human_StopSpeech` | `Human` | 152 |
+| `0x002212d0` | `Human_GetTurnRateForGait` | `Human` | not filled in |
 | `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
 | `0x002217f0` | `Human_LaunchJump` | `Human` | not filled in |
@@ -924,6 +918,7 @@ at the top of the repository's `README.md`.
 | `0x00240e38` | `Human_PlayerLocomotion` | `Human` | not filled in |
 | `0x00241b90` | `Human_FightStanceMove` | `Human` | 3,160 |
 | `0x002427e8` | `Human_WheelchairControl` | `Human` | 1,272 |
+| `0x00243848` | `Human_UpdateControl` | `Human` | not filled in |
 | `0x00244e78` | `Human_MoveAttached` | `Human` | 1,176 |
 | `0x00245310` | `Human_MoveGrabbing` | `Human` | 1,552 |
 | `0x00245920` | `Human_HandleMessage` | `Human` | 8,248 |
@@ -1047,6 +1042,7 @@ at the top of the repository's `README.md`.
 | `0x0028bf00` | `Brain_GetSightRange` | `Human` | not filled in |
 | `0x0028c1a8` | `Brain_InstallHandlers` | `Human` | 440 |
 | `0x0028c5d8` | `Brain_OnArrested` | `Human` | not filled in |
+| `0x0028cdf8` | `Brain_SetTurnBoost` | `Human` | not filled in |
 | `0x0028cfe0` | `Brain_SetTarget` | `Human` | 432 |
 | `0x0028d190` | `Brain_PushFightGoal` | `Human` | 344 |
 | `0x0028d2e8` | `Brain_Fight` | `Human` | 112 |

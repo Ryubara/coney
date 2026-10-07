@@ -112,8 +112,9 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     if (m_cast.brains != nullptr) {
         swapPlayerModel(std::move(*loaded), *model);
         m_type = type;
-        m_print(std::format("player: type {} drawn as {} (the level's scripts hold the player: class and health kept)\n",
-                            type, *model));
+        m_print(
+            std::format("player: type {} drawn as {} (the level's scripts hold the player: class and health kept)\n",
+                        type, *model));
         return {};
     }
 

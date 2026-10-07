@@ -121,9 +121,9 @@ TEST_CASE("the play pages say so when no player plays", "[debug]") {
     }
     // The pages come after Levels, and Debug draw needs no player.
     const auto titles = session.model().pageTitles();
-    CHECK(titles == std::vector<std::string>{"Time", "Tunables", "Natives", "Lua console", "Cheats", "Levels", "Player",
-                                             "Camera", "Spawner", "AI fighters", "HUD", "Debug draw", "Display",
-                                             "Audio", "Input"});
+    CHECK(titles == std::vector<std::string>{"Time", "Tunables", "Natives", "Lua console", "Cheats", "Levels",
+                                             "Missions", "Player", "Camera", "Spawner", "AI fighters", "HUD",
+                                             "Debug draw", "Display", "Audio", "Input"});
     CHECK(session.model().openPage("Debug draw")->items().size() == 6);
 }
 

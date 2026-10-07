@@ -811,8 +811,10 @@ disassembly of the script (ids and counts only); the moves themselves are confir
 | 11 | finish the second wave | the gang's message 18 with none standing | any | [AI](ai.md#level99) |
 | 12 | the Warriors (after the scene `l99_c5`) | the 50-second stopwatch; a hint the first time the player holds a grab (anim callback on 82 / 84) | any | [Stopwatch](#stopwatch), [anim callbacks](characters.md#anim-callbacks) |
 
-Then the scene `l99_c6` and `P1.Cleanup` (checkpoint 2). Coney passes all twelve with the disc, driven by mission
-1's play-through pad script (`repo:tests/platform/disc_level99_course_test.cpp`). Points an implementer needs:
+Then the scene `l99_c6` and `P1.Cleanup` (checkpoint 2). Coney's disc test checks lessons 1-10, driven by mission
+1's play-through pad script (`repo:tests/platform/disc_level99_course_test.cpp`). The pad script is frame-locked, so
+lessons 11-12 (the second wave and checkpoint 2) wait for an adaptive driver: any change to the AI's movement moves the
+bums. Points an implementer needs:
 
 - **6**: from the rear hold the hit is scored with the spin's id 80, not 57, so only a front grab passes the first step.
 - **10**: the rage special is cross + square while raging (645 / 647); the last step wants the extension of the rage

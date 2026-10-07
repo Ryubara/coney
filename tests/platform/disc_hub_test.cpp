@@ -63,8 +63,8 @@ struct HubRun {
     bool standing = false;
     float travelled = 0.0F;
     std::size_t humans = 0;
-    bool changed = false;     // whether Change character took (when asked)
-    std::string modelAfter;   // the player's model after it
+    bool changed = false;   // whether Change character took (when asked)
+    std::string modelAfter; // the player's model after it
 };
 
 // Plays `level95` at `checkpoint` as `--play-level` does (the preloads, the level's script, gameplay over the play

@@ -18,6 +18,7 @@
 #include "characters/anim_set.h"
 #include "combat/anim_ranges.h"
 #include "combat/commands.h"
+#include "human/body.h"
 #include "human/climb.h"
 #include "human/combatant.h"
 #include "human/fighter.h"
@@ -60,6 +61,8 @@ struct HumanInput {
 struct BrainMove {
     float heading = 0.0F; ///< Radians, 0 facing +y.
     float speed = 0.0F;   ///< m/s; 0 stands.
+    /// The brain's turn boost (`+0x0b`): its gait turn limits × (boost + 1), or ÷ (1 − boost) below 0.
+    int turnBoost = 0;
 };
 
 /// A human's per-player record (`0x00660f50 + i × 0x2c`, docs/research/ai.md#brain): what drives it each update. A
@@ -264,6 +267,8 @@ class Human final : public Holdable {
     /// The body's scale (`+0x65c`).
     [[nodiscard]] float scale() const { return m_scale; }
     [[nodiscard]] float bodyScale() const override { return m_scale; }
+    /// The radius of its collision capsule (the shape's `+0x40`, 0.35 m, × its scale): human::walkingRadius().
+    [[nodiscard]] float capsuleRadius() const { return walkingRadius(m_scale); }
     /// `HuSetScale`: the body's scale, not range-checked. Coney's body (its capsule, its walls' radius, its root
     /// motion) is sized from the scale at each use, so the body follows at once.
     /// @orig 0x0023b0e0 Human_SetScale (unknown)
@@ -466,6 +471,10 @@ class Human final : public Holdable {
 
     // The locomotion: target speed, skid, turn, acceleration; sets the horizontal velocity, none while `gated`.
     void locomote(bool gated);
+    // A brain-driven human's locomotion (no pad): the brain's speed approached at the AI's rates, the facing turned to
+    // the brain's heading by a constant step, no skid. Sets the horizontal velocity, none while `gated`.
+    // @orig 0x00243848 Human_UpdateControl (unknown)
+    void aiLocomote(bool gated);
     // `wheelchairControl` for a pad-driven human with the wheelchair flag: L1 and R1 push, one alone turns, cross
     // brakes; the sticks are not read (docs/research/characters.md#wheelchair).
     void wheelchairControl(bool locked);

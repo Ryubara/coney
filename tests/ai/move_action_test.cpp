@@ -12,8 +12,10 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "ai/ai_config.h"
@@ -181,10 +183,12 @@ TEST_CASE("a move round the U follows its route's waypoints and stays on the pol
 }
 
 TEST_CASE("running into a tight corner, the move slows to a speed that keeps it on the polygons", "[ai][move]") {
-    // An L whose corner leaves 0.5 m beyond its node: at the run the turn would swing out of it.
+    // An L whose corner leaves 0.75 m beyond its node on the way in: at the run the turn would swing out of it. The
+    // side leaves 3.25 m: past the waypoint the move asks for the run again and the human speeds up while still turning
+    // at the run's 4° an update, swinging out about 3 m (docs/research/ai.md#move-action).
     coney::test::PathBuilder builder;
     const std::uint32_t bottom = builder.rectangle(40.0F, 49.5F, 40.0F, 42.0F);
-    const std::uint32_t side = builder.rectangle(48.0F, 49.5F, 40.0F, 54.0F);
+    const std::uint32_t side = builder.rectangle(48.0F, 52.0F, 40.0F, 54.0F);
     builder.node(bottom, 42.0F, 41.0F);
     builder.node(bottom, 48.75F, 41.0F);
     builder.node(side, 48.75F, 52.0F);
@@ -513,4 +517,30 @@ TEST_CASE("a route jump's arc is the first vertical speed that comes down on the
     CHECK(arc->y == 0.0F);
     // Too far for any speed up to 5.75 m/s: nothing.
     CHECK_FALSE(coney::ai::routeJumpVelocity({30.0F, 0.0F, 0.0F}).has_value());
+}
+
+TEST_CASE("a running AI turns 4 degrees an update, 8 with a turn boost of 1, and never eases", "[ai][move]") {
+    MoveScene scene;
+    Brain& brain = scene.add({20.0F, 20.0F, 0.0F}, 0.0F);
+    const float run = brain.human().speeds().run;
+    // Up to a run along +y, then asked to run along -x.
+    scene.runUntil(60, [] { return false; }, [&] { brain.setMoveHeading(0.0F, run); });
+    REQUIRE(brain.human().gait() == coney::human::Gait::Run);
+    const auto turnSteps = [&](int boost) {
+        brain.setTurnBoost(boost);
+        const float before = brain.human().heading();
+        brain.setMoveHeading(radians(90.0F), run);
+        scene.runUntil(1, [] { return true; }, [] {});
+        const float first = coney::human::wrapAngle(brain.human().heading() - before);
+        const float mid = brain.human().heading();
+        scene.runUntil(1, [] { return true; }, [] {});
+        const float second = coney::human::wrapAngle(brain.human().heading() - mid);
+        return std::pair{first, second};
+    };
+    const auto [a, b] = turnSteps(0);
+    CHECK(a == Catch::Approx(radians(4.0F)).margin(1e-4));
+    CHECK(b == Catch::Approx(radians(4.0F)).margin(1e-4));
+    const auto [c, d] = turnSteps(1);
+    CHECK(c == Catch::Approx(radians(8.0F)).margin(1e-4));
+    CHECK(d == Catch::Approx(radians(8.0F)).margin(1e-4));
 }

@@ -128,6 +128,27 @@ struct TurnState {
 /// The player's turn limit per update in a combat stance (state `0x00228340`), radians: 24° in play.
 [[nodiscard]] float stanceTurn();
 
+/// An AI human's turn limit per update for a gait (the table's AI words, which `CfgSetTurnRates` leaves alone),
+/// radians: 12° walking or standing, 6° jogging, 4° running, 2.5° sprinting, multiplied by `boost` + 1 for a turn boost
+/// (brain `+0x0b`) of 0 or more and divided by 1 − `boost` below 0; a wounded human turns 0.375° whatever the gait or
+/// boost. The turn is a constant step: no easing (docs/research/ai.md#ai-turn).
+/// @orig 0x002212d0 Human_GetTurnRateForGait (unknown)
+[[nodiscard]] float aiMaxTurn(Gait gait, int boost, bool wounded);
+
+/// An AI human's speed this update from `current` toward the brain's `asked` speed, m/s (`Human_UpdateControl`,
+/// docs/research/characters.md#ai-locomotion): from rest min(asked, 2.0); speeding up 0.267 m/s an update (8 m/s²),
+/// or 1.067 (32 m/s²) while that would still leave more than 2 m/s to go, never past `asked`; slowing down 1.067 an
+/// update, never below `asked`.
+/// @orig 0x00243848 Human_UpdateControl (unknown)
+[[nodiscard]] float aiApproachSpeed(float current, float asked);
+
+/// An AI's first speed from rest, m/s; the gentle and the fast acceleration a second; the gap below which the gentle
+/// one is used.
+inline constexpr float kAiStartSpeed = 2.0F;
+inline constexpr float kAiGentleAcceleration = 8.0F;
+inline constexpr float kAiFastAcceleration = 32.0F;
+inline constexpr float kAiGentleGap = 2.0F;
+
 /// What `CfgSetTurnRates` does for the player: the six player turn limits of the table at 0x005101b0, in degrees, in
 /// the script's order (two special states', sprint, run, jog, walk, combat stance). A value outside 0 to 90 leaves the
 /// old one, as the original does; the first (two special states Coney does not model) is dropped, and missing values

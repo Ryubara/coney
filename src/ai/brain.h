@@ -391,6 +391,11 @@ class Brain {
     void setMove(anim::Vec3 way, float speed);
     /// The same along `heading` (radians, 0 facing +y). At speed 0 the human turns on the spot to it.
     void setMoveHeading(float heading, float speed);
+    /// The turn boost (`+0x0b`, `Brain_SetTurnBoost`): an AI human's gait turn limits × (boost + 1), or ÷ (1 − boost)
+    /// below 0 (human::aiMaxTurn()); 0 when made. Goals raise it for a run-in and restore it at their end.
+    /// @orig 0x0028cdf8 Brain_SetTurnBoost (unknown)
+    void setTurnBoost(int boost);
+    [[nodiscard]] int turnBoost() const { return m_turnBoost; }
     /// Asks the human to climb this update toward `direction` (the route's climb leg).
     void requestClimb(anim::Vec3 direction);
     /// Stops the move: the human stands (its speed 0).
@@ -503,6 +508,7 @@ class Brain {
     ScriptServices* m_services = nullptr;
     bool m_mayApproach = true; // +0x2d3
     bool m_attackable = true;  // +0x11f
+    int m_turnBoost = 0;       // +0x0b
     // Goals popped while one of them may still be running (a goal's Process can start a new fight, which pops it):
     // freed once the update is over.
     std::vector<std::unique_ptr<Goal>> m_retired;

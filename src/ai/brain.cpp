@@ -435,11 +435,19 @@ void Brain::press(combat::CommandId command) { m_human->record().command = comma
 void Brain::setMove(anim::Vec3 way, float speed) {
     const float length = std::hypot(way.x, way.y);
     const float heading = length > 1e-4F ? human::headingOf(way) : m_human->heading();
-    m_human->record().move = human::BrainMove{.heading = heading, .speed = speed};
+    m_human->record().move = human::BrainMove{.heading = heading, .speed = speed, .turnBoost = m_turnBoost};
 }
 
 void Brain::setMoveHeading(float heading, float speed) {
-    m_human->record().move = human::BrainMove{.heading = human::wrapAngle(heading), .speed = speed};
+    m_human->record().move =
+        human::BrainMove{.heading = human::wrapAngle(heading), .speed = speed, .turnBoost = m_turnBoost};
+}
+
+void Brain::setTurnBoost(int boost) {
+    m_turnBoost = boost;
+    if (m_human->record().move.has_value()) {
+        m_human->record().move->turnBoost = boost;
+    }
 }
 
 void Brain::setMoveAim(anim::Vec3 point, float radius) {

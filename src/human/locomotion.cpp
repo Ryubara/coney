@@ -101,6 +101,51 @@ float maxTurn(Gait gait) {
     return locomotionTuning().walkTurnDegrees * kDegrees;
 }
 
+float aiMaxTurn(Gait gait, int boost, bool wounded) {
+    // The AI words of the table at 0x005101b0 (walk and stand 0x005101d0, jog 0x005101c8, run 0x005101c0, sprint
+    // 0x005101b8; wounded a quarter of the grab word 0x005101b0).
+    constexpr float kWalk = 12.0F;
+    constexpr float kJog = 6.0F;
+    constexpr float kRun = 4.0F;
+    constexpr float kSprint = 2.5F;
+    constexpr float kWoundedFactor = 0.25F;
+    constexpr float kGrabWord = 1.5F;
+    if (wounded) {
+        return kGrabWord * kWoundedFactor * kDegrees;
+    }
+    float degrees = kWalk;
+    switch (gait) {
+    case Gait::Jog:
+        degrees = kJog;
+        break;
+    case Gait::Run:
+        degrees = kRun;
+        break;
+    case Gait::Sprint:
+        degrees = kSprint;
+        break;
+    case Gait::Standing:
+    case Gait::Sneak:
+    case Gait::Walk:
+        break;
+    }
+    const auto b = static_cast<float>(boost);
+    return (boost >= 0 ? degrees * (b + 1.0F) : degrees / (1.0F - b)) * kDegrees;
+}
+
+float aiApproachSpeed(float current, float asked) {
+    constexpr float kStep = 1.0F / 30.0F;
+    if (current <= 0.0F) {
+        return std::min(asked, kAiStartSpeed);
+    }
+    if (current > asked) {
+        return std::max(asked, current - kAiFastAcceleration * kStep);
+    }
+    const float gentle = current + kAiGentleAcceleration * kStep;
+    const float next = asked - gentle > kAiGentleGap ? current + kAiFastAcceleration * kStep : gentle;
+    return std::min(asked, next);
+}
+
 float stanceTurn() { return locomotionTuning().stanceTurnDegrees * kDegrees; }
 
 void setPlayerTurnRates(std::span<const float> degrees) {
