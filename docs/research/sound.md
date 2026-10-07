@@ -73,10 +73,11 @@ Fields used here (offsets from `*(0x0050aa84)`); defaults from `0x0010f618` and 
 | `+0x00`, `+0x04`, `+0x08` | the task list: head, tail, count (tasks linked by `+0x08` previous, `+0x0c` next) |
 | `+0x20` | two listeners of 32 bytes, `{position, vector}`, copied in each update (one per player) |
 | `+0x64` | the music player (below) |
-| `+0x1d8`, `+0x1dc` | "a non-duckable sound is playing" flags (set by tasks with `+0xa4` = 0, cleared each update) |
+| `+0x1d8`, `+0x1dc` | "a non-duckable sound is playing" flags (set by tasks with `+0xa4` = 0, cleared each update; both also set for the whole update while a cinematic runs, scene state `+0x410`, `0x00112b10`) |
 | `+0x1e0` | the sound matrix: material and animation sound tables, the voice table at `+0x34`, interface cues |
-| `+0x24268`, `+0x24274` | handles of the music-like stereo bed and of the ambient track |
-| `+0x24270` | set: new 3D sounds and stereo sounds play virtually (set during the load screen) |
+| `+0x24268`, `+0x24274` | handles of the scene soundtrack ([Scene soundtracks](#scene-sound)) and of the ambient track |
+| `+0x2426c` | the scene soundtrack has been started (set by scene event 13, cleared by its stop) |
+| `+0x24270` | set: new positional sounds and 2D mono sounds play virtually (set during the load screen; stereo sounds are exempt) |
 | `+0x3fa20` | **sound-effect volume**, 0-1 (options; default 0.9, *runtime* 0.9) |
 | `+0x3fa24` | paused (`SoundPauseSound`); pitch updates stop |
 | `+0x3fa28` | the next load-screen number, 0-6 (random at start-up, `0x0010f768`) |
@@ -164,8 +165,10 @@ at `+0x3b0`. `HuSetStateRespVoiceIndex` stores a second set at `+0x3b4` for its 
    sound is; a sound of priority 21 or above is refused once 5 have started this update.
 3. Take a free task, link it at the tail, give it the next id.
 4. **3D cull.** A positional sound farther than `far + 10` m from the listener that does not loop plays virtually;
-   during the load screen (`+0x24270`) every positional or stereo sound does.
-5. **Voice** (`0x00112560`): a streamed stereo sound takes a stream pair; a streamed mono sound the first free stream
+   during the load screen (`+0x24270`) every positional sound does (unless the flag at `0x00512c14` is set, not
+   traced) and every 2D sound that is not stereo. A stereo sound is never made virtual by the load screen.
+5. **Voice** (`0x00112560`): a streamed stereo sound takes a stream pair, 1+2 or 3+4, shared with the music
+   ([Stream pairs](#stream-pairs)), and never fails; a streamed mono sound the first free stream
    channel of 5-9 (10-12 for class flag `0x20`), or, failing that and with priority below 12, a victim's; a bank
    sample the first free SPU2 voice of 13-47, or a victim's. No voice: virtual.
 6. **Length**: `AudioDevice_Duration(size, rate)` in ms, whole seconds only (`0x0014d2d8`); a virtual sound of
@@ -406,14 +409,109 @@ An in-engine scene ([Scenes](scenes.md#events)) plays one **scene soundtrack**: 
 [stereo table](formats/audio.md)) as long as the scene (*speculative*: it carries the scene's dialogue). It runs in
 two steps, so the stream is buffering before the first frame:
 
-1. **Preload** (`0x0010ff68`, called from scene load `0x00352098` and from `SoundPreLoadScene`, `0x00114178`): the hash
-   comes from the first type-13 clip event of a role (`0x00101c58`) or, failing that, of the camera track
-   (`0x00354d28`). It stops the previous scene sound, claims a stereo stream pair (`0x0011b450`, falling back to
-   `0x00112d60` when none is free) and prepares the sound without starting it (`0x001100e8` → `0x00111f78`), keeping
-   its task in the manager at `+0x24268`. *Confirmed (code).*
-2. **Start**: scene event 13 (`0x00110018`) starts that prepared task and sets `+0x2426c`. *Confirmed (code).*
+1. **Preload** (`0x0010ff68`): called from the record's fix-up (`0x00352098`) and each streamed segment's
+   (`0x00352788`), from the music update for a pending soundtrack (`0x0010df30`, below) and from `SoundPreLoadScene`
+   (`0x00114178`). A fix-up preloads once for **every** role whose clip has a type-13 event (its first,
+   `0x00101c58`) and then for the camera track's (`0x00354d28`), each call replacing the last, so the last one
+   wins. Each call: stop the current soundtrack if its task is alive (`0x00110078`, which also clears `+0x2426c`),
+   claim a stream pair ([Stream pairs](#stream-pairs)), then prepare the sound without starting it (`0x001100e8` →
+   `0x00111f78` → `AudioManager_NewTask`, duckable, volume and pitch 1): the stream is set up and primed
+   (`0x0011b128`, device slots `0x94` and `0x74`) but not started (task `+0x9c` = 0). The task's handle goes to
+   `+0x24268` and to the music player's `+0x08`. It goes through `NewTask`'s rules, but the load-screen flag
+   (`+0x24270`) spares stereo sounds and the 3D cull does not apply to a 2D sound, so a scene loaded while the load
+   screen is up is prepared on a real pair, not virtually; only the admission (more than 240 tasks) could refuse
+   it. *Confirmed (code).*
+2. **Start**: scene event 13 (`0x00110018`, from the camera track at `0x00355200` and from a role's clip at
+   `0x001024ec`) starts **whatever task `+0x24268` holds** (`0x00110258` → device slot `0x7c`, task `+0x9c` = 1) and
+   sets `+0x2426c` to 1, or to 0 when the handle is dead. It reads no hash: nothing checks that the prepared sound is
+   this scene's. A dead handle starts nothing, and a virtual task (no stream) is refused by the device
+   (`0x0014c968`), so neither is heard. *Confirmed (code).*
 
-Music ducks to 0.75 while it plays ([Music](#music)). Scene events 14 and 71 play a sound by hash at a human's
+Between the two, **the scene's start waits for the soundtrack** (`0x0039d870`, at `0x0039de14`, in start step 6 of
+[Scenes](scenes.md#starting)), for a cinematic (`+0xed`) or when the current level's id is `0x3c` (which level is
+not traced). It re-enters the start (state 4) while the task in `+0x24268` is alive but its stream is not yet
+primed (`0x001102a0` → device slot `0x84`, `0x0014c9c0`: a stream's status byte 1; a virtual task counts as ready),
+or while the task is dead and a hash is pending. While it waits and both stereo slots hold music (the slot bytes
+read as `0x0101`, `0x0011b760`), it turns the system music off (remembering it in the scene task's `+0xf0`) and
+stops the music (`0x00110528` → `SoundStopMusicTrack`), which frees a pair for the pending soundtrack. A dead task
+with nothing pending does not hold the scene. The start's 10 s give-up still applies. *Confirmed (code).* A
+non-cinematic scene (`ScenePlayFixedScene`, most `ScenePlayAnimation` calls) does not wait.
+
+`AudioManager_Update` (`0x0010f810`) clears `+0x2426c` on every update in which the soundtrack's handle is dead,
+so the flag means "a started soundtrack is still alive". *Confirmed (code)* at `0x0010f894`.
+
+*Runtime* (PCSX2 2.9.94, level99, a scratch state taken before the Warriors' fight lesson, the audio manager read
+over PINE every 30 ms): the soundtrack is class 224, flags `0x04` (streamed, 2D, played once), priority 3. Scene
+one was prepared on pair 1+2 as the cinematic began (scene state `+0x410` 1), started 0.28 s later (`+0x2426c` = 1)
+and **kept playing after the scene ended** (`+0x410` 0, task still live and started); 0.4 s later the next scene's
+fix-up found it alive and stopped it, found pair 1+2 still marked as a scene sound, recorded the hash as pending,
+and the music update prepared it again on pair 1+2 0.43 s later, before that cinematic's start; event 13 then
+started it. A third scene's soundtrack outlived its scene by 0.47 s and then ended by itself, and `+0x2426c` fell
+to 0 with it. Mono streams (ambience, voices) sat on channels 5-10 throughout.
+
+#### Stream pairs {#stream-pairs}
+
+Stereo streams use two pairs: **1+2** (slot 0) and **3+4** (slot 1). The music
+player's first two bytes (manager `+0x64`, `+0x65`) record each slot's user: 0 free, 1 a music channel, 2 a stereo
+sound (in practice the scene soundtrack). Mono streams use only 5-9 (and 10-12), so **ambient emitters, speech
+lines and voices never compete with a scene soundtrack**. Confirmed (code) at `0x0011b450`, `0x0011b498`,
+`0x0011b750`; confirmed (runtime): music on 3+4 with a soundtrack prepared on 1+2, slot bytes 2 and 1.
+
+- **The preload's claim** (`0x0011b450`): refused when either slot already holds a stereo sound; otherwise slot 0
+  if free, else slot 1 if free, else refused. The result only gates the preload; the pair itself is picked again
+  when the task is made.
+- **Its fallback** (`0x00112d60` → `0x0011b558`), when refused: if the previous soundtrack's task is still alive,
+  every slot holding a stereo sound is freed, that task is stopped, and the preload goes on. Otherwise the hash is
+  stored as **pending** (music player `+0x04`) and nothing is prepared now. The preload stops a live soundtrack
+  first, and a stopped task whose `+0xe4` is clear is freed at once (`0x00112c60`), so after one scene's soundtrack
+  the next scene's preload takes the pending path (seen at runtime): its slot stays marked until the next music
+  update.
+- **Each music update** (`0x0010df30`): first, if a hash is pending and the claim would succeed, preload it and
+  clear the pending hash; then free every slot marked as a stereo sound when the task in music player `+0x08` is
+  dead (`0x0011b5e8`). So a pending soundtrack is prepared on the music update after the one that frees its slot
+  (0.43 s after the fix-up in the runtime trace above). A cinematic's start waits for it (above). A scene that does
+  not wait and reaches event 13 first starts nothing, and the later re-preload is never started: that scene plays
+  silent. *Inferred* from the code; not seen.
+- **Making the task** (`0x00112560` → `0x0011b498(…, 2)`): slot 0 if free, else slot 1 if free. With both taken:
+  while a started soundtrack is alive (`+0x2426c`) or a cinematic runs (`+0x410`), no slot; otherwise a slot holding
+  a stereo sound is taken over (`0x0011b6c0`: the current soundtrack's hash goes to pending and its task is
+  stopped). With no slot the pair number is still made from −1 (`0x0011b750` gives pair 3), so the sound plays on
+  3+4 over whatever uses them; a stereo sound never goes virtual for want of a pair. Confirmed (code).
+- **Music** claims a pair the same way (`MusicChannel_Update`, state Queued, `0x0011b498(…, 1)`): when both slots
+  are in use, no started soundtrack is alive and no cinematic runs, **a queued track takes the soundtrack's
+  pair**, stopping the prepared soundtrack and leaving its hash pending; it is prepared again when a pair frees
+  (a cross-fade's old track ending, or the cinematic start stopping the music). While a started soundtrack is
+  alive or a cinematic runs, the track waits in Queued. Confirmed (code). For a cinematic this only delays the
+  scene; a scene that does not wait can lose its soundtrack this way (*inferred*).
+
+**Ending.** Nothing stops the soundtrack when a scene ends normally: the end (`SceneTask_End`, `0x0039f450`) stops
+it only when the scene was **skipped** (task `+0xe4`), and the abort (`0x0039ec60`) only for a cinematic (`+0xed`);
+both through `0x00110078`, whose only other caller is the preload; freeing the scene task and unloading the slot
+do not stop it. Otherwise it runs to its own end or until the next preload stops it; at runtime two unskipped
+soundtracks outlived their scenes by 0.4-0.5 s (above). Confirmed (code); confirmed (runtime) for the unskipped end.
+
+**Several scenes loaded.** Each load's fix-up preloads its own soundtrack and stops the previous one, so with two
+scenes loaded only the last loaded one's soundtrack is prepared. Playing a scene whose slot is already loaded
+(`Scene_Play`, `0x00353818`, the start `0x0039d870`) preloads nothing: the only callers of `0x0010ff68` are the two
+fix-ups, the pending re-preload and `SoundPreLoadScene`. So a scene played after another scene was loaded later
+starts **the other scene's soundtrack** (the start's wait sees a ready task and event 13 starts it), and a scene
+played again from its loaded slot after its soundtrack has ended starts nothing (dead handle, nothing pending).
+Segment fix-ups preload too, which would stop the playing soundtrack mid-scene if a later segment carried a
+type-13 event (*inferred* not to happen: each scene names one stereo sound, below). Confirmed (code).
+
+**Other things that silence scene sound.**
+
+- The soundtrack is 2D: its volume is `record volume × sound volume (+0x3fa20) × fade × pan` ([Task
+  update](#three-d)); the music volume, the music duck and the 3D rules do not touch it.
+- While a cinematic runs the manager's non-duckable flags are set (`0x00112b10`), so every duckable directional
+  sound not owned by a player is scaled by the duck factor (`+0x3faac`, 0.2). Events 14 and 71 play duckable
+  sounds with no owner (`0x0010fdd0`, last argument 1), so directional voice lines among them play at a fifth.
+  Confirmed (code).
+- `Human_PlaySpeech` plays nothing while a scene plays ([Saying a speech command](#speech)), and the start stops
+  every human's held sound for a cinematic with roles ([Scenes](scenes.md#starting)).
+- `SoundPauseSound` pauses every voice, the soundtrack included.
+
+Music ducks to 0.75 while a cinematic runs ([Music](#music)). Scene events 14 and 71 play a sound by hash at a human's
 position (the human transform at `0x00714b00 + index × 0x20`) only when that human's speech handle (`+0x168`) is idle,
 storing the handle at `0x0021ef58`; event 71 on a car goes through `0x00110258`. *Confirmed (code).*
 
@@ -470,7 +568,8 @@ also name streamed mono sounds 280 times and bank sounds 4 times: the event 14/7
 
 Coney's stand-ins where this page is open, each marked in the code: the directional table is 1 (as loud behind as in
 front); the `+0x268` state factors, the `+0x5b7` owner duck and level 82's ambient swap are not applied; a stereo
-sound effect takes channels 5+6 or 7+8; the random factors come from the engine's own seeded source (the game's shared
+sound effect takes channels 5+6 or 7+8 (the original's pairs are 1+2 and 3+4, shared with the music, [Stream
+pairs](#stream-pairs)); the random factors come from the engine's own seeded source (the game's shared
 one would shift the scripts' draws); `SoundStopMusicTrack` fades a playing track over one bar. The speech and
 ambience stand-ins: an emitter plays one sound at a time, waiting a random whole number of seconds in its two delays
 before the first and after each one ends (level99's pairs, 1-3 to 10-30, read as seconds), from a random point of its
@@ -500,7 +599,9 @@ with no callback.
 - What human `+0x16c` does for the command lines of step 3.
 - When the game itself says each speech command (fights, crowds, the police).
 - What `a8` (the play call's third volume factor, `+0xa8`) is used for by each caller.
-- Which stream channels a stereo sound effect claims (`0x0011b450`, its fallback `0x00112d60`).
+- How long a primed but unstarted soundtrack survives: `Tasks_Update` frees a real task when the device reports its
+  voice idle (`0x0014d168`), and whether a primed stream reads as idle was not seen (the trace's waits were under
+  0.5 s). What task `+0xe4` is (a stopped task with it set is not freed at once, `0x00112c60`).
 - How fast `SoundStopMusicTrack` (`0x0010d9a0`) fades a playing track, and which random the pitch and volume factors
   draw from.
 - Whether a scene soundtrack holds the dialogue alone or a full mix, and what the 20 unused stereo sounds are.

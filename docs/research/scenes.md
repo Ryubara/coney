@@ -319,10 +319,12 @@ The task's update (`0x0039cbf0`) runs every **2 ticks** (30 a second, `Task_SetU
    around it is preloaded** with a 10 s budget and the camera definition's radius, loading `<scene>.pak` when it
    exists (`WorldManager_Preload`, [Level loading](level-loading.md#preload)); 3 comes in step 6.
 5. Wait until every bound human's character instance and model are loaded (requesting them), then every bound object.
-6. Cinematic: **system music off** (`0x0041a008(0)`, game state `+0x3f8` = 0, [Sound](sound.md); whether it was on
-   is kept in the task's `+0xf0`, and the end turns it back on only then); state 3; wait one more update;
-   then clear pad flags `0x40` and `0x800` on every player, and unless `chain`, clear the chain-skip flag
-   (`0x0051489c + 0x56e4`).
+6. Cinematic (or level id `0x3c`): wait until the prepared soundtrack's stream is primed, or its pending re-preload
+   has run, stopping the music when it holds both stereo pairs ([Sound: scene
+   soundtracks](sound.md#scene-sound)). Cinematic: **system music off** (`0x0041a008(0)`, game state `+0x3f8` = 0,
+   [Sound](sound.md); whether it was on is kept in the task's `+0xf0`, and the end turns it back on only then);
+   state 3; wait one more update; then clear pad flags `0x40` and `0x800` on every player, and unless `chain`,
+   clear the chain-skip flag (`0x0051489c + 0x56e4`).
 7. While the delay has not run out, step every bound human toward its start mark (`0x0039d618`, 0.1); wait until all
    arrive or the delay ends.
 8. Wait while the scene's **title card** shows, if it has one (`0x001cae60(0x00619570)`, [Subtitles](#title-card)).
@@ -438,6 +440,11 @@ State 7 (all clips done, or a part ended with no roles) calls the end (`0x0039f4
    = 1). For `level99` this is `PreCashTheWorld`, which calls `ReturnFunc` and fades in over 0.5 s.
 8. Cinematic and not `final`: preload the world around the camera again, loading `<scene>_end.pak` when it exists.
 9. When skipped and `BlendCam` > 0: fade in over `BlendCam` seconds.
+
+The **scene soundtrack** is stopped by the end only when the scene was skipped, and by the abort only for a
+cinematic; an unskipped scene's soundtrack plays on to its own end or until the next scene's preload stops it
+([Sound: scene soundtracks](sound.md#scene-sound)). Confirmed (code) at `0x0039f450`, `0x0039ec60`; confirmed
+(runtime) for an unskipped level99 scene.
 
 The next update sees state 8 with no humans left and frees the task and **unloads the slot** (`0x00353bf0`,
 `0x00351da0`): one user less, and with no user left the slot is emptied, so a scene is loaded again for its next
