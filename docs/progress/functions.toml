@@ -5315,6 +5315,11 @@ subsystem = "Human"
 size = 184
 
 [[function]]
+address = 0x002c74d8
+name = "DealerGoal_Deal"
+subsystem = "Human"
+
+[[function]]
 address = 0x002c7fd8
 name = "DealerGoal_Process"
 subsystem = "Human"

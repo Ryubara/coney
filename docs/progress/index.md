@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,589 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,590 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-466 reimplemented function(s) have no size yet and add no bytes.
+467 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -64,7 +64,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
 | `Graphics` | `██▏░░░░░░░░░░░░░░░░░` | 10.5% | 65 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
-| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 506 | 1,096,672 |
+| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 507 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -1036,6 +1036,7 @@ at the top of the repository's `README.md`.
 | `0x002c6d90` | `DealerGoal_Init` | `Human` | 232 |
 | `0x002c6e78` | `DealerGoal_Start` | `Human` | 288 |
 | `0x002c70a0` | `DealerGoal_End` | `Human` | 184 |
+| `0x002c74d8` | `DealerGoal_Deal` | `Human` | not filled in |
 | `0x002c7fd8` | `DealerGoal_Process` | `Human` | 2,256 |
 | `0x002caf78` | `IdleGoal_Init` | `Human` | 160 |
 | `0x002cc348` | `Goal_AddressPerson` | `Human` | 192 |

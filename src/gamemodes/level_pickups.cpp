@@ -165,6 +165,15 @@ void LevelPickups::stereoStolen(int player, double human, double car) {
     }
 }
 
+int LevelPickups::carried(int player, int item) const { return m_state.player.inventory.count(player, item); }
+
+int LevelPickups::itemLimit(int item) const { return m_state.player.inventory.limit(item); }
+
+void LevelPickups::dealerSold(int player, int item, int amount, int price) {
+    script::addInventoryItem(m_scripts, m_state, player, item, amount, false);
+    script::addInventoryItem(m_scripts, m_state, player, item::kMoney, -price, false);
+}
+
 std::optional<combat::MuggingParams> LevelPickups::muggingOverride() const {
     const InterrogateOverride& set = m_state.characters.interrogate.front();
     if (!set.active()) {

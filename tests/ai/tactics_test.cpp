@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -17,7 +18,9 @@
 #include "ai/goal.h"
 #include "ai/idle_goals.h"
 #include "ai/tactic_crowd.h"
+#include "human/human.h"
 #include "support/ai_fixtures.h"
+#include "warriors/inventory.h"
 
 using coney::ai::Brain;
 using coney::ai::GoalType;
@@ -188,4 +191,70 @@ TEST_CASE("GoalDealer waits while the player is out of range", "[ai][dealer]") {
     CHECK_FALSE(goal->greeted());
     CHECK_FALSE(goal->dealing());
     CHECK(dealer.actionCount() == 0);
+}
+
+TEST_CASE("a dealer's terms follow the table: the flash for $20, weapons for $50, spray paint for $5", "[ai][dealer]") {
+    const std::optional<coney::ai::DealTerms> flash = coney::ai::dealTerms(0);
+    REQUIRE(flash.has_value());
+    CHECK(flash->item == coney::item::kRevive);
+    CHECK(flash->price == 20);
+    CHECK(flash->amount == 1);
+    CHECK(coney::ai::dealTerms(1)->price == 50);
+    CHECK(coney::ai::dealTerms(2)->item == coney::item::kSprayPaint);
+    CHECK_FALSE(coney::ai::dealTerms(3).has_value());
+}
+
+TEST_CASE("a dealing dealer refuses a buyer short of money or at the limit, and sells to one with $20",
+          "[ai][dealer]") {
+    AiScene scene;
+    Brain& dealer = scene.add({41.2F, 40.0F, 0.0F}, 0.0F);
+    dealer.pushGoal(std::make_unique<coney::ai::DealerGoal>(scene.services, 0, 10.0F, 50, 0, false));
+    auto* goal = dynamic_cast<coney::ai::DealerGoal*>(dealer.topGoal());
+    REQUIRE(goal != nullptr);
+    if (goal == nullptr) {
+        return;
+    }
+    // Not yet dealing: nothing.
+    CHECK(goal->deal(dealer, scene.player(), 100, 0, 3) == coney::ai::DealOutcome::NotDealing);
+    for (int k = 0; k < 300 && !goal->offering(); ++k) {
+        scene.run(1);
+    }
+    REQUIRE(goal->offering());
+    // $20 and no flash: sold, his money up by the price; the offer stays.
+    CHECK(goal->deal(dealer, scene.player(), 20, 0, 3) == coney::ai::DealOutcome::Sold);
+    CHECK(goal->sales() == 1);
+    CHECK(goal->sold());
+    CHECK(dealer.human().script().money == 20);
+    CHECK(goal->offering());
+    // Three flashes carried (the limit): refused, and the offer is withdrawn.
+    CHECK(goal->deal(dealer, scene.player(), 20, 3, 3) == coney::ai::DealOutcome::AtLimit);
+    CHECK_FALSE(goal->offering());
+}
+
+TEST_CASE("a dealer refuses a buyer with less than the price; a dirty one keeps it and leaves", "[ai][dealer]") {
+    AiScene scene;
+    Brain& poor = scene.add({41.2F, 40.0F, 0.0F}, 0.0F);
+    poor.pushGoal(std::make_unique<coney::ai::DealerGoal>(scene.services, 0, 10.0F, 50, 0, false));
+    Brain& dirty = scene.add({38.8F, 40.0F, 0.0F}, 0.0F);
+    dirty.pushGoal(std::make_unique<coney::ai::DealerGoal>(scene.services, 0, 10.0F, 50, 100, false));
+    auto* first = dynamic_cast<coney::ai::DealerGoal*>(poor.topGoal());
+    auto* second = dynamic_cast<coney::ai::DealerGoal*>(dirty.topGoal());
+    REQUIRE(first != nullptr);
+    REQUIRE(second != nullptr);
+    if (first == nullptr || second == nullptr) {
+        return;
+    }
+    for (int k = 0; k < 300 && !(first->offering() && second->offering()); ++k) {
+        scene.run(1);
+    }
+    REQUIRE(first->offering());
+    REQUIRE(second->offering());
+    CHECK(first->deal(poor, scene.player(), 19, 0, 3) == coney::ai::DealOutcome::NoCash);
+    CHECK_FALSE(first->offering());
+    CHECK(poor.human().script().money == 0);
+    CHECK(second->dirty());
+    CHECK(second->deal(dirty, scene.player(), 20, 0, 3) == coney::ai::DealOutcome::RippedOff);
+    CHECK(second->state() == coney::ai::DealerState::Leaving);
+    CHECK(dirty.human().script().money == 20);
+    CHECK(second->sales() == 0);
 }

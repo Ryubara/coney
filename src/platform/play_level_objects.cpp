@@ -10,6 +10,8 @@
 
 #include "ai/ai_humans.h"
 #include "ai/brain.h"
+#include "ai/dealer_goal.h"
+#include "ai/goal.h"
 #include "characters/character_class.h"
 #include "combat/anim_ids.h"
 #include "combat/anim_ranges.h"
@@ -23,6 +25,7 @@
 #include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
 #include "scripting/object_bindings.h"
+#include "warriors/inventory.h"
 #include "world_objects/glass.h"
 
 namespace coney::platform {
@@ -117,6 +120,10 @@ void PlayLevelMode::bindPickups(LevelPickups* pickups) {
                 return true;
             }
         }
+        // A dealer's offer (kind 4) after the objects' prompts and the stereos.
+        if (!m_pickups->actionObject(feet).has_value() && tryDeal(human)) {
+            return true;
+        }
         const TriangleOutcome outcome = m_pickups->triangle(playerHandle(), feet, human::facing(human.heading()),
                                                             script.heldObject != world_objects::kNoObject, blocked);
         switch (outcome.result) {
@@ -165,6 +172,43 @@ const world_objects::Car* PlayLevelMode::stereoInReach(anim::Vec3 feet) const {
         }
     }
     return best;
+}
+
+bool PlayLevelMode::tryDeal(human::Human& human) {
+    if (m_ai == nullptr || m_pickups == nullptr) {
+        return false;
+    }
+    const anim::Vec3 feet = human.position();
+    ai::Brains& brains = m_ai->brains();
+    for (std::size_t i = 0; i < brains.size(); ++i) {
+        ai::Brain& brain = brains.at(i);
+        ai::Goal* goal = brain.topGoal();
+        if (goal == nullptr || goal->type() != ai::GoalType::Dealer) {
+            continue;
+        }
+        auto& dealer = static_cast<ai::DealerGoal&>(*goal);
+        const anim::Vec3 at = brain.human().position();
+        if (!dealer.offering() || std::hypot(at.x - feet.x, at.y - feet.y) > ai::kDealReach ||
+            std::fabs(at.z - (feet.z + 1.0F)) > LevelPickups::kPromptHeight) {
+            continue;
+        }
+        // The deal's terms against player 1's money and item; the dealer decides, the inventory follows.
+        const std::optional<ai::DealTerms> terms = ai::dealTerms(dealer.type());
+        if (!terms) {
+            continue;
+        }
+        const ai::DealOutcome outcome =
+            dealer.deal(brain, m_ai->playerBrain(), m_pickups->carried(0, item::kMoney),
+                        m_pickups->carried(0, terms->item), m_pickups->itemLimit(terms->item));
+        if (outcome == ai::DealOutcome::Sold) {
+            m_pickups->dealerSold(0, terms->item, terms->amount, terms->price);
+        } else if (outcome == ai::DealOutcome::RippedOff) {
+            m_pickups->dealerSold(0, terms->item, 0, terms->price);
+        }
+        m_print(std::format("deal: dealer {} outcome {}\n", i, static_cast<int>(outcome)));
+        return outcome != ai::DealOutcome::NotDealing;
+    }
+    return false;
 }
 
 void PlayLevelMode::giveObjectTargets() {

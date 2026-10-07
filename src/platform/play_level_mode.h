@@ -332,6 +332,10 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void bindPickups(LevelPickups* pickups);
     // The car whose freed stereo is in reach of feet at `feet` (a kind-3 context record), nearest first; null for none.
     [[nodiscard]] const world_objects::Car* stereoInReach(anim::Vec3 feet) const;
+    // Player 1's triangle at a dealer offering a deal (a kind-4 context record, docs/research/ai.md#dealer): the first
+    // whose offer is within ai::kDealReach in plan and whose feet are within the prompt height of the human's waist
+    // deals. Returns whether one took the press.
+    bool tryDeal(human::Human& human);
     // Player 1's square may strike the level's whole glass panes, aiming at their centres.
     void giveObjectTargets();
     // Player 1's pick-up that reached its clip's event this step: the object is taken.

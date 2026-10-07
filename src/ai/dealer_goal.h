@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include "ai/goal.h"
 #include "animation/anim_math.h"
@@ -37,6 +38,34 @@ inline constexpr int kDealerGait = 4;
 inline constexpr int kWaryMinMs = 2000;
 inline constexpr int kWaryMaxMs = 4000;
 
+/// One dealer type's deal (the table at `0x005110f8`, 8 bytes a type): the `GSTRING.HUD` prompt, the item sold, its
+/// price in dollars, the most a buyer may carry (0 for the item's own limit: the flash's 3, or 4 with the revive
+/// upgrade, is the inventory's) and how many one deal gives.
+struct DealTerms {
+    int prompt = 0;
+    int item = 0;
+    int price = 0;
+    int mostCarried = 0;
+    int amount = 0;
+};
+
+/// The terms of a dealer of `type` (dealerTypeFor()): 0 the flash, 1 weapons, 2 spray paint; nothing for another.
+[[nodiscard]] std::optional<DealTerms> dealTerms(int type);
+
+/// How a buyer's triangle at a dealing dealer ends (docs/research/ai.md#dealer).
+enum class DealOutcome : std::uint8_t {
+    NoCash,    ///< Less money than the price: the offer is withdrawn.
+    AtLimit,   ///< Already carrying the most: the offer is withdrawn.
+    RippedOff, ///< A dirty dealer took the price and gave nothing; he leaves.
+    Sold,      ///< The price taken and the item given.
+    NotDealing ///< He is not offering a deal.
+};
+
+/// The reach of a dealer's offer (context record kind 4, `CfgActionDistance`), m in plan.
+inline constexpr float kDealReach = 1.75F;
+/// The most money a dealer holds.
+inline constexpr int kDealerMostMoney = 999;
+
 /// The kind of goods a dealer sells, from `GoalDealer`'s type or his class: 0 flash, 1 weapons, 2 the third kind.
 /// Classes 426-430 sell flash, 431-435 the third kind and 436-440 weapons, whatever the type says.
 /// @orig 0x002c6c88 Goal_Dealer (unknown)
@@ -71,6 +100,21 @@ class DealerGoal final : public Goal {
     /// @orig 0x002c7fd8 DealerGoal_Process (unknown)
     [[nodiscard]] GoalStatus process(Brain& brain) override;
 
+    /// Whether he offers a deal (state 3, human `+0x1b2` = 1): the buyer's triangle within kDealReach reaches deal().
+    [[nodiscard]] bool offering() const { return m_offering && m_state == DealerState::Dealing; }
+    /// A buyer's triangle at the offer (event 0, `DealerBrain_OnEvent`), the buyer holding `money` dollars and
+    /// `carried` of the item, which the inventory holds to `itemLimit`. The dealer turns to `buyer`; then, as the
+    /// outcome says, the offer is withdrawn (no cash, at the limit), he takes the price and leaves (dirty), or he
+    /// sells: his money rises by the price (to at most kDealerMostMoney) and his sales count. The caller moves the
+    /// buyer's money and item. **Coney choices**: the dealer's speech and gestures and the pair `money_take.anm` /
+    /// `money_give.anm` are not played (the original completes the deal at once when the pair cannot load), and a
+    /// dirty dealer queues no shove.
+    /// @orig 0x002c74d8 DealerGoal_Deal (unknown)
+    [[nodiscard]] DealOutcome deal(Brain& brain, const Brain& buyer, int money, int carried, int itemLimit);
+    /// The deals made (`+0x38`) and whether one was (`+0x3f`).
+    [[nodiscard]] int sales() const { return m_sales; }
+    [[nodiscard]] bool sold() const { return m_sold; }
+
     /// His state, kind of goods, whether he is dirty, has greeted the player and is dealing, and whether the player is
     /// in range.
     [[nodiscard]] DealerState state() const { return m_state; }
@@ -96,6 +140,10 @@ class DealerGoal final : public Goal {
     bool m_playerInRange = false;               // +0x3e
     bool m_dirty = false;                       // +0x41
     bool m_dealing = false;                     // +0x42
+    int m_sales = 0;                            // +0x38
+    bool m_sold = false;                        // +0x3f
+    bool m_atLimit = false;                     // +0x40
+    bool m_offering = false;                    // the dealer human's +0x1b2
 };
 
 } // namespace coney::ai

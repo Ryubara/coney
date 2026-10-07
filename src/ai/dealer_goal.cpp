@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/dealer_goal.h"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -12,7 +13,9 @@
 #include "ai/move_action.h"
 #include "ai/script_services.h"
 #include "ai/turn_action.h"
+#include "human/human.h"
 #include "human/locomotion.h"
+#include "warriors/inventory.h"
 
 namespace coney::ai {
 
@@ -63,6 +66,21 @@ const Brain* nearestEnemy(const Brain& dealer, float& distance) {
 
 } // namespace
 
+std::optional<DealTerms> dealTerms(int type) {
+    // The table at `0x005110f8`: {prompt, item, price, most carried, amount}; the flash's most carried is the
+    // inventory's revive limit.
+    switch (type) {
+    case kFlashType:
+        return DealTerms{.prompt = 6, .item = item::kRevive, .price = 20, .mostCarried = 0, .amount = 1};
+    case kWeaponType:
+        return DealTerms{.prompt = 7, .item = 4, .price = 50, .mostCarried = 8, .amount = 1};
+    case kThirdType:
+        return DealTerms{.prompt = 5, .item = item::kSprayPaint, .price = 5, .mostCarried = 9, .amount = 1};
+    default:
+        return std::nullopt;
+    }
+}
+
 int dealerTypeFor(int characterClass, int type) {
     if (characterClass >= kFlashClassFirst && characterClass < kThirdClassFirst) {
         return kFlashType;
@@ -85,6 +103,7 @@ void DealerGoal::start(Brain& brain) {
 void DealerGoal::end(Brain& brain) {
     brain.setThreatResponse(kDefaultThreatResponse);
     m_dealing = false;
+    m_offering = false;
 }
 
 GoalStatus DealerGoal::process(Brain& brain) {
@@ -150,8 +169,41 @@ GoalStatus DealerGoal::process(Brain& brain) {
     if (m_state == DealerState::Waiting && distance < kDealDistance) {
         m_state = DealerState::Dealing;
         m_dealing = true;
+        m_offering = true;
     }
     return GoalStatus::Stop;
+}
+
+DealOutcome DealerGoal::deal(Brain& brain, const Brain& buyer, int money, int carried, int itemLimit) {
+    const std::optional<DealTerms> terms = dealTerms(m_type);
+    if (!offering() || !terms) {
+        return DealOutcome::NotDealing;
+    }
+    // 1. He turns to the buyer.
+    brain.queueAction(TurnAction::toPoint(buyer.human().position()));
+    // 2. Too little money, or carrying the most already: the offer is withdrawn.
+    if (money < terms->price) {
+        m_offering = false;
+        return DealOutcome::NoCash;
+    }
+    const int most = terms->mostCarried > 0 ? std::min(terms->mostCarried, itemLimit) : itemLimit;
+    if (carried >= most) {
+        m_atLimit = true;
+        m_offering = false;
+        return DealOutcome::AtLimit;
+    }
+    // 3. A dirty dealer keeps the price and runs.
+    int& takings = brain.human().script().money;
+    takings = std::min(kDealerMostMoney, takings + terms->price);
+    if (m_dirty) {
+        m_state = DealerState::Leaving;
+        m_offering = false;
+        return DealOutcome::RippedOff;
+    }
+    // 4. The sale.
+    m_sold = true;
+    ++m_sales;
+    return DealOutcome::Sold;
 }
 
 } // namespace coney::ai

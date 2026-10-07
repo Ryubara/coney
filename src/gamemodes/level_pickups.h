@@ -132,6 +132,14 @@ class LevelPickups {
     /// @orig 0x0022e020 StereoTheft_End (unknown)
     void stereoStolen(int player, double human, double car);
 
+    /// How many of item `item` player `player` (0 or 1) holds, and the most the inventory lets a player hold.
+    [[nodiscard]] int carried(int player, int item) const;
+    [[nodiscard]] int itemLimit(int item) const;
+    /// A dealer sold player `player` (0 or 1) `amount` of item `item` for `price` dollars: the item given and the price
+    /// taken (an amount of 0: a dirty dealer kept the price). **Coney's reading**: neither notifies the inventory
+    /// callbacks (the research names only the pickup sound, which Coney does not play).
+    void dealerSold(int player, int item, int amount, int price);
+
     /// The mugging record `SetInterrogateParam` set (set 0-2's override) while its required time is not 0; nothing for
     /// the defaults (docs/research/combat.md#mugging).
     [[nodiscard]] std::optional<combat::MuggingParams> muggingOverride() const;
