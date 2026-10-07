@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "animation/anim_math.h"
+#include "combat/stick_games.h"
 #include "scripting/message_handlers.h"
 #include "scripting/script_system.h"
 #include "warriors/game_state.h"
@@ -130,6 +131,18 @@ class LevelPickups {
     /// research does not say).
     /// @orig 0x0022e020 StereoTheft_End (unknown)
     void stereoStolen(int player, double human, double car);
+
+    /// The mugging record `SetInterrogateParam` set (set 0-2's override) while its required time is not 0; nothing for
+    /// the defaults (docs/research/combat.md#mugging).
+    [[nodiscard]] std::optional<combat::MuggingParams> muggingOverride() const;
+
+    /// Player `player` (0 or 1), human `mugger`, ended a mugging of a human no player controls (`success` or not). On
+    /// success the victim's `victimMoney` dollars go to the player (item 2) and it is left with none; then the mugger's
+    /// `callback` (`HuSetMugCallback`) is called with the mugger and the success (1 or nil), as for every end of a
+    /// mugging. **Coney's reading**: the money notifies as a pickup does, and the callback runs when the game ends
+    /// rather than at the end of its clip; a victim's interrogation (`+0x5a0`) and pocket items are not modelled.
+    /// @orig 0x0022ceb8 Mugging_End (unknown)
+    void mugEnded(int player, double mugger, const std::string& callback, int& victimMoney, bool success);
 
     /// A scene moved object `handle` to `position`, turned by `rotation`: its record keeps the pose. **Coney's
     /// reading**: with no object tasks, the record's pose stands for the object's (the original writes it when the

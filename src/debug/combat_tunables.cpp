@@ -49,7 +49,7 @@ void registerCombatTunables(TunableRegistry& registry) {
     registry.add(kCategory, "Mugging stick", &tuning.muggingStick).range(0, 1, 0.05);
     registry.add(kCategory, "Mugging time", &tuning.muggingRequiredMs).range(0, 60000, 100).units("ms");
     registry.add(kCategory, "Mugging period", &tuning.muggingPeriodMs).range(0, 60000, 100).units("ms");
-    registry.add(kCategory, "Mugging fail time", &tuning.muggingFailMs).range(0, 120000, 1000).units("ms");
+    registry.add(kCategory, "Mugging off-target time", &tuning.muggingFailMs).range(0, 120000, 1000).units("ms");
     registry.add(kCategory, "Mugging tolerance", &tuning.muggingToleranceDegrees).range(0, 180, 1).units("deg");
 
     // The stereo theft.

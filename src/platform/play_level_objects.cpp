@@ -5,12 +5,16 @@
 #include <cstdint>
 #include <format>
 #include <optional>
+#include <string>
+#include <utility>
 
 #include "characters/character_class.h"
 #include "combat/anim_ids.h"
 #include "combat/anim_ranges.h"
+#include "combat/player_combat.h"
 #include "combat/stick_games.h"
 #include "human/fighter.h"
+#include "human/human.h"
 #include "human/locomotion.h"
 #include "platform/play_level_mode.h"
 #include "raycast/collision_mesh.h"
@@ -184,6 +188,7 @@ void PlayLevelMode::stepPickups() {
         }
         m_theftCar.reset();
     }
+    stepMugging(human);
     if (const std::optional<double> taken = human.takePickedUp()) {
         const TakeResult result = m_pickups->take(*taken, 0);
         if (result == TakeResult::InHand) {
@@ -201,6 +206,26 @@ void PlayLevelMode::stepPickups() {
     }
     m_heldObject = script.heldObject;
     human.fighter().setAnimSet(m_pickups->animSetOf(script.heldObjectName));
+}
+
+void PlayLevelMode::stepMugging(human::Human& human) {
+    // The next mugging runs with SetInterrogateParam's record while the scripts have one set.
+    combat::PlayerCombat& fight = human.fighter().combat();
+    fight.setMuggingOverride(m_pickups->muggingOverride());
+    const bool mugging = fight.mode() == combat::CombatMode::Mugging;
+    const bool wasMugging = std::exchange(m_wasMugging, mugging);
+    if (!wasMugging || mugging) {
+        return;
+    }
+    // The mugging ended this step: won, lost, or broken off (a let-go, a hit). The victim still held on a win.
+    const bool success = human.fighter().last().game == combat::GameResult::Succeeded;
+    auto* victim = dynamic_cast<human::Human*>(human.fighter().held());
+    int none = 0;
+    int& money = victim != nullptr ? victim->script().money : none;
+    const int taken = success ? money : 0;
+    m_pickups->mugEnded(0, playerHandle(), human.script().mugCallback, money, success);
+    m_print(std::format("mugging: {}{}\n", success ? "succeeded" : "ended without success",
+                        taken > 0 ? std::format(", ${} taken", taken) : std::string{}));
 }
 
 double PlayLevelMode::playerHandle() const {

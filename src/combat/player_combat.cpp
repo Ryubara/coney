@@ -215,7 +215,7 @@ void PlayerCombat::updateGrabbing(const CombatInput& input, const CombatTuning& 
         m_mode = CombatMode::Tackling;
         break;
     case GrabAction::Mug:
-        m_mugging.emplace(input.nowMs, m_random);
+        m_mugging.emplace(input.nowMs, m_random, m_muggingOverride.value_or(muggingParams(tuning)));
         m_mode = CombatMode::Mugging;
         break;
     case GrabAction::LetGo:

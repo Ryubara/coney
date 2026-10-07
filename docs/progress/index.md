@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,568 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,580 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-445 reimplemented function(s) have no size yet and add no bytes.
+457 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -64,7 +64,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
 | `Graphics` | `██▏░░░░░░░░░░░░░░░░░` | 10.5% | 64 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
-| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 497 | 1,096,672 |
+| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 502 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
@@ -72,7 +72,7 @@ at the top of the repository's `README.md`.
 | `Scene` | `████████████▌░░░░░░░` | 62.6% | 30 | 17,904 |
 | `Scripting` | `██████░░░░░░░░░░░░░░` | 30.2% | 202 | 197,192 |
 | `StringTable` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 1,064 |
-| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 101 | 531,312 |
+| `TaskEngine` | `█▊░░░░░░░░░░░░░░░░░░` | 8.5% | 108 | 531,312 |
 | `Utils` | `░░░░░░░░░░░░░░░░░░░░` | n/a | 0 | not placed yet |
 | `World` | `▌░░░░░░░░░░░░░░░░░░░` | 2.6% | 32 | 24,344 |
 | `WorldObjects` | `████▎░░░░░░░░░░░░░░░` | 21.5% | 26 | 22,008 |
@@ -682,8 +682,11 @@ at the top of the repository's `README.md`.
 | `0x0022a770` | `Gang_PickSwitchMember` | `Human` | 528 |
 | `0x0022ae40` | `Human_SpeedForGait` | `Human` | 112 |
 | `0x0022aeb0` | `Human_GaitOfVelocity` | `Human` | not filled in |
+| `0x0022ceb8` | `Mugging_End` | `Human` | not filled in |
 | `0x0022d790` | `LockPick_Start` | `Human` | 376 |
 | `0x0022d908` | `LockPick_End` | `Human` | 824 |
+| `0x0022dd98` | `StereoTheft_Start` | `Human` | not filled in |
+| `0x0022e020` | `StereoTheft_End` | `Human` | not filled in |
 | `0x0022e848` | `Tag_End` | `Human` | not filled in |
 | `0x0022f100` | `Human_KnockDown` | `Human` | 712 |
 | `0x0022f658` | `Human_Stun` | `Human` | 640 |
@@ -886,6 +889,7 @@ at the top of the repository's `README.md`.
 | `0x00276998` | `Pair_AlignStart` | `Human` | 1,024 |
 | `0x00276d98` | `Pair_SnapAttach` | `Human` | 600 |
 | `0x00277958` | `Pair_CheckPlace` | `Human` | 456 |
+| `0x00279f50` | `Player_CarTargetFilter` | `Human` | not filled in |
 | `0x0027a6c0` | `Player_PickTarget` | `Human` | not filled in |
 | `0x0027c120` | `Player_UpdateActions` | `Human` | 3,120 |
 | `0x0027ce90` | `Player_UpdateSprint` | `Human` | not filled in |
@@ -908,6 +912,7 @@ at the top of the repository's `README.md`.
 | `0x002843f8` | `Player_StartRage` | `Human` | 1,320 |
 | `0x00284920` | `Player_GrabOrTackle` | `Human` | 896 |
 | `0x002854b0` | `Brain_SetInterrogateOverride` | `Human` | 112 |
+| `0x002855f8` | `Mugging_NewTarget` | `Human` | not filled in |
 | `0x002856b8` | `Player_UpdateMugging` | `Human` | 3,736 |
 | `0x00286cc8` | `Player_Square` | `Human` | 2,664 |
 | `0x00287730` | `Player_Special` | `Human` | 392 |
@@ -1406,7 +1411,13 @@ at the top of the repository's `README.md`.
 | `0x0038a4d8` | `Car_DamagePart` | `TaskEngine` | not filled in |
 | `0x0038ab18` | `Car_TryExplode` | `TaskEngine` | 56 |
 | `0x0038ab50` | `Car_DoExplode` | `TaskEngine` | 1,432 |
+| `0x0038b520` | `Car_FacingParts` | `TaskEngine` | not filled in |
+| `0x0038b8d0` | `Car_HitZoneParts` | `TaskEngine` | not filled in |
+| `0x0038bb48` | `Car_UpdateTransform` | `TaskEngine` | not filled in |
+| `0x0038bea0` | `Car_OnHit` | `TaskEngine` | not filled in |
 | `0x0038c7d8` | `Car_RemovePartBits` | `TaskEngine` | not filled in |
+| `0x0038c868` | `Car_SpawnStereo` | `TaskEngine` | not filled in |
+| `0x0038c990` | `Car_AimPoint` | `TaskEngine` | not filled in |
 | `0x0038d188` | `Car_ReleaseTrunkItem` | `TaskEngine` | not filled in |
 | `0x0038d528` | `Car_SetTrunkItemKind` | `TaskEngine` | not filled in |
 | `0x0038d538` | `Car_SetTrunkObject` | `TaskEngine` | not filled in |
@@ -1418,6 +1429,7 @@ at the top of the repository's `README.md`.
 | `0x0038e068` | `Car_Repair` | `TaskEngine` | not filled in |
 | `0x0038e0f0` | `Car_PlaceInTrunkOnDetach` | `TaskEngine` | not filled in |
 | `0x0038e538` | `CarManager_SetMsgHandler` | `TaskEngine` | 88 |
+| `0x0038e860` | `Cars_FindNear` | `TaskEngine` | not filled in |
 | `0x0038f378` | `Glass_Break` | `TaskEngine` | 496 |
 | `0x0038f8a8` | `GlassManager_Create` | `TaskEngine` | 424 |
 | `0x0038fab8` | `GlassTypes_Set` | `TaskEngine` | 40 |

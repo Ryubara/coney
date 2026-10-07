@@ -158,6 +158,7 @@ class Fighter {
     [[nodiscard]] const combat::CombatOutput& last() const { return m_last; }
     /// The victim held in a grab, a tackle or a mugging; null when none.
     [[nodiscard]] const Holdable* held() const { return m_held; }
+    [[nodiscard]] Holdable* held() { return m_held; }
     /// The hold is from the victim's rear (a grab from behind, after a spin or in the mugging).
     [[nodiscard]] bool fromRear() const { return m_rear; }
     /// How the grab's two bodies are held together now.

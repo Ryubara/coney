@@ -336,6 +336,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void giveObjectTargets();
     // Player 1's pick-up that reached its clip's event this step: the object is taken.
     void stepPickups();
+    // Player 1's mugging: the scripts' record for the next one, and the end of one (the money, the mug callback).
+    void stepMugging(human::Human& human);
     // Player 1's handle, as the scripts know him; the nil handle without a cast.
     [[nodiscard]] double playerHandle() const;
 
@@ -435,6 +437,7 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     double m_heldObject = 0.0;             // what player 1 held at the last step (world_objects::kNoObject for nothing)
     world_objects::Cars* m_cars = nullptr; // the level's parked cars, for their stereos; not owned
     std::optional<double> m_theftCar;      // the car whose stereo player 1 is stealing
+    bool m_wasMugging = false;             // player 1 was mugging at the last step
     LevelPickups* m_pickups = nullptr;     // the level's loose objects for the pick-up; not owned
     std::optional<world_objects::LockPick> m_lockPick;
     int m_lockPickDifficulty = 0;

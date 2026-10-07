@@ -3294,6 +3294,11 @@ name = "Human_GaitOfVelocity"
 subsystem = "Human"
 
 [[function]]
+address = 0x0022ceb8
+name = "Mugging_End"
+subsystem = "Human"
+
+[[function]]
 address = 0x0022d790
 name = "LockPick_Start"
 subsystem = "Human"
@@ -4587,6 +4592,11 @@ address = 0x002854b0
 name = "Brain_SetInterrogateOverride"
 subsystem = "Human"
 size = 112
+
+[[function]]
+address = 0x002855f8
+name = "Mugging_NewTarget"
+subsystem = "Human"
 
 [[function]]
 address = 0x002856b8

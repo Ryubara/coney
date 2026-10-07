@@ -108,6 +108,9 @@ class PlayerCombat {
     void startHolding();
     /// Starts the duck's counter `animId` (617-620) as an attack with its hit timing: the block and any chain end.
     void startCounter(int animId, const CombatTuning& tuning);
+    /// The mugging record the next mugging runs with in place of the tuning's: `SetInterrogateParam`'s override
+    /// while it is set; nothing for the defaults.
+    void setMuggingOverride(const std::optional<MuggingParams>& params) { m_muggingOverride = params; }
 
     [[nodiscard]] CombatMode mode() const { return m_mode; }
     [[nodiscard]] bool blocking() const { return m_blocking; }
@@ -163,6 +166,7 @@ class PlayerCombat {
     CombatMode m_mode = CombatMode::Free;
     bool m_blocking = false;
     std::optional<MuggingGame> m_mugging;
+    std::optional<MuggingParams> m_muggingOverride; // SetInterrogateParam's record, while set
     std::optional<StereoTheft> m_theft;
     std::optional<ButtonMash> m_mash;
     float m_mashFactor = 1.5F;

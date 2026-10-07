@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cmath>
+#include <numbers>
 #include <vector>
 
 #include "scripting/player_bindings.h"
@@ -161,6 +162,32 @@ void LevelPickups::stereoStolen(int player, double human, double car) {
     if (!m_state.player.stereoTheftHandler.empty()) {
         const std::array<script::Value, 2> args{script::Value(human), script::Value(car)};
         static_cast<void>(m_scripts.call(m_state.player.stereoTheftHandler, args));
+    }
+}
+
+std::optional<combat::MuggingParams> LevelPickups::muggingOverride() const {
+    const InterrogateOverride& set = m_state.characters.interrogate.front();
+    if (!set.active()) {
+        return std::nullopt;
+    }
+    constexpr float kDegrees = 180.0F / std::numbers::pi_v<float>;
+    return combat::MuggingParams{.requiredMs = static_cast<int>(set.timesMs[0]),
+                                 .periodMs = static_cast<int>(set.timesMs[1]),
+                                 .offTargetMs = static_cast<int>(set.timesMs[2]),
+                                 .toleranceDegrees = set.anglesRadians[0] * kDegrees,
+                                 .gapDegrees = set.anglesRadians[1] * kDegrees};
+}
+
+void LevelPickups::mugEnded(int player, double mugger, const std::string& callback, int& victimMoney, bool success) {
+    // The victim's money goes to the player.
+    if (success && victimMoney > 0) {
+        script::addInventoryItem(m_scripts, m_state, player, item::kMoney, victimMoney, true);
+        victimMoney = 0;
+    }
+    // Every end calls the mugger's callback with the mugger and the success (Lua 4: true is 1, false nil).
+    if (!callback.empty()) {
+        const std::array<script::Value, 2> args{script::Value(mugger), success ? script::Value(1.0) : script::Value()};
+        static_cast<void>(m_scripts.call(callback, args));
     }
 }
 

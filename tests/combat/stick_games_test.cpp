@@ -67,20 +67,20 @@ TEST_CASE("the mugging succeeds after 5 s with the stick held on its moving targ
         result =
             mugging.update(msAt(update), Stick{0.7F * std::sin(radians), 0.7F * std::cos(radians)}, tuning, random);
         if (mugging.targetDegrees() != lastTarget) {
-            // Each move turns the target by at least the tolerance plus 20°.
+            // Each new angle lies more than the re-roll gap (60°) plus 20° from the last.
             float turn = std::fabs(mugging.targetDegrees() - lastTarget);
             turn = std::fmin(turn, 360.0F - turn);
-            CHECK(turn >= 70.0F - 0.01F);
+            CHECK(turn > 80.0F);
             lastTarget = mugging.targetDegrees();
             ++moves;
         }
     }
     CHECK(result == GameResult::Succeeded);
     CHECK(update == 150); // 5000 ms of game time
-    CHECK(moves == 1);    // at 2500 ms
+    CHECK(moves == 1);    // at 2500 ms on target
 }
 
-TEST_CASE("the mugging gains nothing off target or with the stick at 0.5 or less, and fails at 50 s", "[combat]") {
+TEST_CASE("the mugging gains nothing with the stick at 0.5 or less, and fails past 50 s off target", "[combat]") {
     const CombatTuning tuning;
     CombatRandom random(3);
     MuggingGame mugging(0, random);
@@ -96,7 +96,8 @@ TEST_CASE("the mugging gains nothing off target or with the stick at 0.5 or less
         onTarget += mugging.onTarget() ? 1 : 0;
     }
     CHECK(result == GameResult::Failed);
-    CHECK(update == 1500);
+    CHECK(update == 1501);
+    CHECK(mugging.offTargetMs() > 50000);
     CHECK(onTarget == 0);
     CHECK(mugging.progressMs() == 0);
 }
@@ -160,4 +161,43 @@ TEST_CASE("the button mash fills on alternating L1 and R1 and loses 15 an update
         CHECK(held.update(command::kL1Held, 1.5F, tuning) == GameResult::Running);
     }
     CHECK(held.meter() == 0);
+}
+
+TEST_CASE("SetInterrogateParam's mugging: the off-target time adds up and the target moves with the progress",
+          "[combat]") {
+    // The tutorial's record: 5 s on target, a new angle every 2.5 s of it, 20 s off target, 40° tolerance, 60° gap.
+    const CombatTuning tuning;
+    CombatRandom random(7);
+    const MuggingParams lesson{
+        .requiredMs = 5000, .periodMs = 2500, .offTargetMs = 20000, .toleranceDegrees = 40.0F, .gapDegrees = 60.0F};
+    MuggingGame mugging(0, random, lesson);
+    // On the target at 0.8 (a partial deflection) or pointed away from it, by the update.
+    const auto stickAt = [&mugging](bool on) {
+        const float degrees = mugging.targetDegrees() + (on ? 30.0F : 120.0F);
+        const float radians = degrees * std::numbers::pi_v<float> / 180.0F;
+        return Stick{0.8F * std::sin(radians), 0.8F * std::cos(radians)};
+    };
+    // 1 s on (30° off the angle is inside 40°), 2 s away, 1 s on: the target has not moved (2 s of progress).
+    std::uint64_t update = 0;
+    const float first = mugging.targetDegrees();
+    const auto run = [&](int updates, bool on) {
+        GameResult result = GameResult::Running;
+        for (int i = 0; i < updates && result == GameResult::Running; ++i) {
+            ++update;
+            result = mugging.update(msAt(update), stickAt(on), tuning, random);
+        }
+        return result;
+    };
+    CHECK(run(30, true) == GameResult::Running);
+    CHECK(run(60, false) == GameResult::Running);
+    CHECK(run(30, true) == GameResult::Running);
+    CHECK(mugging.targetDegrees() == first);
+    CHECK(mugging.offTargetMs() == 2000);
+    // Another 0.5 s on target passes 2.5 s of progress: a new angle.
+    CHECK(run(16, true) == GameResult::Running);
+    CHECK(mugging.targetDegrees() != first);
+    // 18 s more away from it passes the 20 s allowance: failed, though the progress was never reset.
+    CHECK(run(600, false) == GameResult::Failed);
+    CHECK(mugging.offTargetMs() > 20000);
+    CHECK(mugging.offTargetMs() <= 20000 + 34);
 }

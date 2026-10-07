@@ -6,12 +6,15 @@
 
 #include <cstddef>
 #include <expected>
+#include <numbers>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "core/error.h"
@@ -245,4 +248,36 @@ TEST_CASE("a stolen stereo pays $15 and a car stereo, then calls the theft handl
     CHECK(h.state.player.inventory.count(0, item::kCarStereo) == 1);
     CHECK(h.items == std::vector<double>{item::kMoney, item::kCarStereo});
     CHECK(heard == std::vector<double>{181, 142});
+}
+
+TEST_CASE("a mugging's end pays the victim's money on success and calls the mug callback every time",
+          "[level_pickups]") {
+    Harness h;
+    coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    std::vector<std::pair<double, bool>> heard;
+    h.scripts.vm().registerFunction("Mugged", [&heard](std::span<const Value> args) -> coney::script::binding::Results {
+        heard.emplace_back(args[0].number().value_or(-1.0), !args[1].isNil());
+        return std::vector<Value>{};
+    });
+    int money = 18;
+    pickups.mugEnded(0, 181, "Mugged", money, false);
+    CHECK(money == 18);
+    pickups.mugEnded(0, 181, "Mugged", money, true);
+    CHECK(money == 0);
+    CHECK(h.state.player.inventory.count(0, item::kMoney) == 18);
+    CHECK(heard == std::vector<std::pair<double, bool>>{{181, false}, {181, true}});
+}
+
+TEST_CASE("SetInterrogateParam's set 0 overrides the mugging while its time is not 0", "[level_pickups]") {
+    Harness h;
+    const coney::LevelPickups pickups(h.scripts, h.state, h.records, h.types);
+    CHECK_FALSE(pickups.muggingOverride().has_value());
+    coney::InterrogateOverride& set = h.state.characters.interrogate.front();
+    set.timesMs = {5000, 2500, 20000, 0};
+    set.anglesRadians = {40.0F * std::numbers::pi_v<float> / 180.0F, 60.0F * std::numbers::pi_v<float> / 180.0F};
+    const std::optional<coney::combat::MuggingParams> params = pickups.muggingOverride();
+    REQUIRE(params.has_value());
+    CHECK(params.value_or(coney::combat::MuggingParams{}).offTargetMs == 20000);
+    CHECK(params.value_or(coney::combat::MuggingParams{}).toleranceDegrees == Catch::Approx(40.0F));
+    CHECK(params.value_or(coney::combat::MuggingParams{}).gapDegrees == Catch::Approx(60.0F));
 }

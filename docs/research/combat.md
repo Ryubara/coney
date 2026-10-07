@@ -2030,9 +2030,14 @@ runtime. When the scripts recorded no `CfgChar` call of his type he plays the fi
   not move in between); the place a move checks is the current hold's point (the strikes' points are the front
   hold's); the victim's turn spreads evenly over the alignment's updates and a slide under 0.01 m is left out; the
   moves of a hold switch both humans with no fade, the let-go keeps the combat fade.
-- The mugging: the 50° tolerance; a random first target; each move between the tolerance plus 20° and 360° less that;
-  the period counts game time. The theft: clockwise steps neither add nor take away; the 250 ms pause ignores the
-  stick. The mash: the first press counts, a press's gain is truncated, and other commands are ignored.
+- The mugging (`MuggingGame`, `LevelPickups::mugEnded()`): the record is `SetInterrogateParam`'s set 0 while its
+  required time is set, else the runtime one (5 s, 2.5 s, 50 s off target, 50°, 60°), not the per-class table; the
+  target angles are drawn evenly (the first at random). At the end, the victim's money goes to the player (it
+  notifies) and the mugger's callback runs with (mugger, 1 or nil) when the game ends or is broken off, not at its
+  clip's end; the speech, the hints, the victim's interrogation and pocket item, and the empty-handed victim's
+  `no_item` end are not built, so a victim with no money still gives a success. The theft: clockwise steps neither
+  add nor take away; the 250 ms pause ignores the stick. The mash: the first press counts, a press's gain is
+  truncated, and other commands are ignored.
 - The block is read only when the player is free (not grabbing, tackling, mugging or in a theft); it turns the player
   towards the stick at the standing turn rate.
 - The stun's loop is 356, as seen at runtime (the code names 355 as a stunned reaction's return).

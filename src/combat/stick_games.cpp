@@ -10,8 +10,10 @@ namespace coney::combat {
 namespace {
 
 constexpr float kPi = std::numbers::pi_v<float>;
-// The mugging target moves by at least its tolerance plus this, degrees.
+// A new mugging target angle lies more than the re-roll gap plus this from the last, degrees.
 constexpr float kMugMoveMargin = 20.0F;
+// The most tries a new mugging target angle gets to clear the gap.
+constexpr int kMugRerolls = 64;
 
 // `degrees` wrapped into (-180, 180].
 float wrapDegrees(float degrees) {
@@ -51,8 +53,16 @@ int mashSide(CommandId command) {
 
 } // namespace
 
-MuggingGame::MuggingGame(std::uint64_t startMs, CombatRandom& random)
-    : m_startMs(startMs), m_lastMs(startMs), m_lastMoveMs(startMs) {
+MuggingParams muggingParams(const CombatTuning& tuning) {
+    return MuggingParams{.requiredMs = tuning.muggingRequiredMs,
+                         .periodMs = tuning.muggingPeriodMs,
+                         .offTargetMs = tuning.muggingFailMs,
+                         .toleranceDegrees = tuning.muggingToleranceDegrees,
+                         .gapDegrees = tuning.muggingGapDegrees};
+}
+
+MuggingGame::MuggingGame(std::uint64_t startMs, CombatRandom& random, const MuggingParams& params)
+    : m_params(params), m_lastMs(startMs) {
     m_target = wrapDegrees((random.unit() * 360.0F) - 180.0F);
 }
 
@@ -60,31 +70,40 @@ GameResult MuggingGame::update(std::uint64_t nowMs, Stick stick, const CombatTun
     const std::uint64_t elapsed = nowMs > m_lastMs ? nowMs - m_lastMs : 0;
     m_lastMs = nowMs;
 
-    // Time with the stick on target counts towards the mugging.
+    // On target: the stick out past the gate and within the tolerance of the angle.
     const float off = std::fabs(wrapDegrees(stick.angleDegrees() - m_target));
-    m_onTarget = stick.magnitude() > tuning.muggingStick && off <= tuning.muggingToleranceDegrees;
-    if (m_onTarget) {
-        m_progress += elapsed;
+    m_onTarget = stick.magnitude() > tuning.muggingStick && off <= m_params.toleranceDegrees;
+    if (!m_onTarget) {
+        // The time off target adds up over the whole mugging; past the allowance it fails.
+        m_offTarget += elapsed;
+        return m_offTarget > static_cast<std::uint64_t>(std::max(m_params.offTargetMs, 0)) ? GameResult::Failed
+                                                                                           : GameResult::Running;
     }
-    if (m_progress >= static_cast<std::uint64_t>(std::max(tuning.muggingRequiredMs, 0))) {
+    const std::uint64_t before = m_progress;
+    m_progress += elapsed;
+    if (m_progress >= static_cast<std::uint64_t>(std::max(m_params.requiredMs, 0))) {
         return GameResult::Succeeded;
     }
-    if (nowMs - m_startMs >= static_cast<std::uint64_t>(std::max(tuning.muggingFailMs, 0))) {
-        return GameResult::Failed;
-    }
-
-    // Every period the target moves on.
-    if (tuning.muggingPeriodMs > 0 && nowMs - m_lastMoveMs >= static_cast<std::uint64_t>(tuning.muggingPeriodMs)) {
-        moveTarget(tuning, random);
-        m_lastMoveMs = nowMs;
+    // Each multiple of the period the progress passes brings a new target angle.
+    if (m_params.periodMs > 0) {
+        const auto period = static_cast<std::uint64_t>(m_params.periodMs);
+        if (m_progress / period > before / period) {
+            moveTarget(random);
+        }
     }
     return GameResult::Running;
 }
 
-void MuggingGame::moveTarget(const CombatTuning& tuning, CombatRandom& random) {
-    const float least = std::min(tuning.muggingToleranceDegrees + kMugMoveMargin, 180.0F);
-    const float turn = least + (random.unit() * (360.0F - (2.0F * least)));
-    m_target = wrapDegrees(m_target + turn);
+void MuggingGame::moveTarget(CombatRandom& random) {
+    const float least = m_params.gapDegrees + kMugMoveMargin;
+    float next = m_target;
+    for (int attempt = 0; attempt < kMugRerolls; ++attempt) {
+        next = wrapDegrees((random.unit() * 360.0F) - 180.0F);
+        if (std::fabs(wrapDegrees(next - m_target)) > least) {
+            break;
+        }
+    }
+    m_target = next;
 }
 
 float stereoStageTurns(std::uint8_t warriorTheftByte) { return warriorTheftByte == 2 ? 3.0F : 1.0F; }

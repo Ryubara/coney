@@ -49,14 +49,15 @@ struct CombatTuning {
     int mashDecay = 15;
     int mashPressGain = 250;
 
-    /// The mugging: the stick length that counts, the time on target it needs, how often the target angle moves, the
-    /// time after which it fails (ms), and the on-target tolerance (degrees). **Coney choice**: of the two tolerances
-    /// read (50° and 60°) the first applies.
+    /// The mugging (docs/research/combat.md#mugging): the stick length that counts, the time on target it needs, the
+    /// time on target between moves of the target angle, the total time off target allowed (ms), the on-target
+    /// tolerance and the re-roll gap (degrees), as the record seen at runtime has them.
     float muggingStick = 0.5F;
     int muggingRequiredMs = 5000;
     int muggingPeriodMs = 2500;
     int muggingFailMs = 50000;
     float muggingToleranceDegrees = 50.0F;
+    float muggingGapDegrees = 60.0F;
 
     /// The stereo theft (mode 3): the stick length both samples need, the largest turn an update may make (degrees),
     /// the pause after a stage (ms) and the stages to succeed.
