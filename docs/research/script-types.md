@@ -1694,13 +1694,17 @@ inferred from the values.
 
 ### `pickup_item` {#pickup-item}
 
-The class of items lying in the world ([Objects](objects.md#object-types)). Data: `+0x10` its glint, `+0x14` state
-(0 lying, 1 picked up, 2 used), `+0x18` a counter, `+0x1c` the update interval (60 ticks, 15 after a pick-up), `+0x20`
-"never glints" (seven model hashes). While it lies within 30 m on screen (`0x003a51f8`) it keeps a `sub_triglint`
-glint. Messages: 0 picked up (flag `0x100000`, the taker gets message `0x14`), 8 detach, 10 shown or hidden, `0x19`
-flag `0x8000`, `0x1b` handed to a human (he gets messages 3 and `0x17` with its type record), `0x1c` used, `0x20` glint
-off, `0x30` thrown with a velocity of 4-6. The update ends it two updates after it is used, or when it falls faster
-than 500 (out of the world, inferred).
+The class of items lying in the world ([Objects](objects.md#object-types)). Data: `+0x10` its glint, `+0x14` state (0
+lying, 1 picked up, 2 used), `+0x18` a counter, `+0x1c` the update interval (60 ticks, 15 after a pick-up), `+0x20`
+"never glints", set when the model's name hash (CRC-32 of the name) is one of seven, all hobo food: `0x8733e003`
+`dyn_hobo_donut_a`, `0x1e3ab1b9` `dyn_hobo_donut_b`, `0x693d812f` `dyn_hobo_donut_c`, `0xe09f6c15` `dyn_hobo_hotdog`,
+`0xc57ab00a` `dyn_hobo_mug`, `0x7056d232` `dyn_hobo_salami` and `0xb239f45d` `dyn_hobo_steak` (confirmed (code) at
+`0x003f17e0` for the hashes; the names matched by computing the CRC-32 of the game's model names). One more hash,
+`0x2fd690d6` `dyn_carstereo`, instead clears flag `0x8000` at init (its meaning not traced). While it lies within 30 m
+on screen (`0x003a51f8`) it keeps a `sub_triglint` glint. Messages: 0 picked up (flag `0x100000`, the taker gets message
+`0x14`), 8 detach, 10 shown or hidden, `0x19` flag `0x8000`, `0x1b` handed to a human (he gets messages 3 and `0x17`
+with its type record), `0x1c` used, `0x20` glint off, `0x30` thrown with a velocity of 4-6. The update ends it two
+updates after it is used, or when it falls faster than 500 (out of the world, inferred).
 
 | Address | Name | Role | What it does | Evidence |
 | --- | --- | --- | --- | --- |

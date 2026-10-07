@@ -473,7 +473,7 @@ Coney's stand-ins, where this page is silent:
   piece lasts 360 ticks before `0x00387f18` removes it; [Physics](physics.md#cars).)
 - What the object a car holds at `+0x1204` is (released when it explodes; part 15 coming off makes it pickable).
 - The lookup that takes a car to its Object List record.
-- Which atomics the paint tints, how cars are lit, and how the type record's boxes make a car's collision.
+- Which atomics the paint tints and how cars are lit (the boxes of the collision: [Physics](physics.md#cars)).
 - Where a car's stereo sits (answered: [Windows, hits and the stereo](#windows)) and the effect kinds of message
   `0x3f` (answered: [Hit effects](#hit-effects)). Still open: what `0x002936a8` and `0x00413018` report for a car hit,
   what clears `+0x11ec`, and which parts hit bits 26-29 stand for.

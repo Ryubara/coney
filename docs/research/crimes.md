@@ -633,6 +633,25 @@ The start and end of each mode of the [mini-game record](#mini-game-record), the
 | `0x00236780` | `LockPick_CallStart` | Calls the start handler; LockPick_Start uses it. | confirmed (code) |
 | `0x00236828` | `LockPick_CallEndA` | Calls the first end handler (0x00510284); LockPick_End uses it. | confirmed (code) |
 | `0x002368d0` | `LockPick_CallEndB` | Calls the second end handler (0x00510280); LockPick_End uses it. | confirmed (code) |
+| `0x00272878` | `Mug_OnStartEnd` | End hook of the mug start: starts the mug proper, or with no victim left resets a player's mug camera. | confirmed (code) |
+| `0x002729a8` | `Mug_Start` | Starts a mugging: the paired clips, the mug camera (CamMug_Start) and the mug meter (HUD_MugMeterStart). | confirmed (code) |
+| `0x00273668` | `Mug_PlayVictimLoop343` | Player_UpdateMugging: the victim loops 343 after a 1/6 s fade. | confirmed (code) |
+| `0x00273820` | `Mug_PlayVictimLoop341` | Player_UpdateMugging: the victim loops 341 after a 1/6 s fade. | confirmed (code) |
+| `0x002739d8` | `TagGame_Difficulty` | The stick game's difficulty record from the Warrior's class byte +9. | confirmed (code) |
+| `0x00273a68` | `Tag_SayNearbyLine` | Has a random nearby gang member say a line while a player tags. | confirmed (code) |
+| `0x00273fa0` | `Vec2_Scale` | A 2D vector times a scalar. | confirmed (code) |
+| `0x00273fc0` | `Vec2_Add` | The sum of two 2D vectors. | confirmed (code) |
+| `0x00273ff0` | `Tag_CatmullRomPoint` | A point on the uniform Catmull-Rom curve through the pattern points ([Tagging](#tagging)). | confirmed (code) |
+| `0x00274188` | `Tag_SetPatternPoints` | Copies the pattern's count and 64 (x, y) points to 0x00510914 / 0x006cd978. | confirmed (code) |
+| `0x002745e8` | `Tag_HasStickGame` | Whether the stick game record's +0x514 is set. | confirmed (code) |
+| `0x002745f8` | `Tag_IsComplete` | Whether the tag's progress has reached 1.0. | confirmed (code) |
+| `0x00274638` | `Tag_GetChargeLeft` | The charge left: 1 - elapsed / the difficulty's time, from +0x518. | confirmed (code) |
+| `0x002748a0` | `Tag_IsPaused` | The stick game's paused flag (+0x500). | confirmed (code) |
+| `0x00274e38` | `Tag_GetProgress` | The painted fraction +0x508 / +0x268 (1.0 once +0x508 + +0x264 reaches it). | confirmed (code) |
+| `0x00277ed8` | `Tag_OnIntroEnd` | End hook of 334 ANIM_TAGGING_INTRO: starts the spray when the tag still exists, else ends the spray clips. | confirmed (code) |
+| `0x00277f28` | `Tag_StartSprayEffect` | While tagging: sends message 0x13 with the player colour, and starts the spray voice and particle. | confirmed (code) |
+| `0x00278210` | `Tag_RestartSprayClips` | Requeues the spray clips (the spray effect hook) when the tag still exists, dropping a kind 4 or 6 weapon. | confirmed (code) |
+| `0x002783b0` | `Tag_EndSprayClips` | The spray's end clip and the idle (the stance idle in a fight stance), then Tag_End. | confirmed (code) |
 
 ### Game-state functions {#warriors-functions}
 

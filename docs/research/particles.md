@@ -256,8 +256,10 @@ at the triglint's position plus fixed offsets (no rotation), with fixed sizes:
 (batch 4, `part_page1`, rectangle 41), its size the given size × 0.15.
 
 - **Unattached** (the triglint's): the first update comes after 30 ticks. Each update then toggles it, on for one
-  interval and off for the next, and picks the next interval at random from 20 to 30 ticks (`Random_Int(10)` + 20).
-  So each star blinks about once a second, out of step with the other two.
+  interval and off for the next, and picks the next interval at random from 20 to 30 ticks (`Random_Int(10)` + 20:
+  `0x003353b8` returns the raw number mod (n + 1), unsigned, so 0-10 inclusive, 11 values; the raw number is the next
+  entry of the game's fixed 1,024-entry table `0x005117e0` on stream `0x006eb8b8`, the particles' stream,
+  [Maths](maths.md); confirmed (code)). So each star blinks about once a second, out of step with the other two.
 - **Attached** to an object (flags `0x80010`): it updates every 2 ticks and stays on.
 - **On** means colour `+0xb4` = `0xffffff80` (white, alpha 128 on RenderWare's 0-255 scale, so half transparent) and
   size `+0xc0` = the drawn size. **Off** means alpha 0 and size 0.

@@ -1021,16 +1021,116 @@ jump and fall.
 
 #### Steering round humans {#steering}
 
-`Human_SteerAroundHumans` (`0x00289138`, avoidance state at brain `+0xa0`); confirmed (code) for the structure, the
-names of the cases inferred. It runs only at gait 2 or less, deciding again every gait × 3 updates:
+`Human_SteerAroundHumans` (`0x00289138`) bends a [move action](#move-action)'s walk round the one human most in the
+way. `MoveAction_Update` (`0x002fc5c0`) calls it every update with the steering state (brain `+0xa0`), the move's
+speed for this update, its **aim point** (the next path point, in and out), its destination (action `+0x10`) and its
+arrival radius (action `+0x2c`). Confirmed (code) from the disassembly of `0x00289138`-`0x00289d60` (the decompiler
+drops several arguments) unless marked; not checked at run time. The names of the cases are ours.
 
-- it looks ahead min(1.5 × speed, 10 m) (× 10 when slow and blocked for 16 checks) among up to 60 humans
-  (`0x002274a8`), and `0x00288cc8` picks the one in the way;
-- by the relative bearing and the other's heading (thresholds 30°, 45° and 50°) it sidesteps, overtakes or goes round
-  on the free side (`0x00337308`), or yields;
-- the faster human has right of way (the lower address on a tie); the one yielding slows to 0, or to 0.75 × speed
-  within 3 m; two humans heading for the same route node follow at 0.75 × speed;
-- the other's motion is predicted from its velocity for a player and from its brain `+0x90` for an AI.
+**The state** (brain `+0xa0`; helpers on [AI code: steering](ai-code.md#brain-steering)):
+
+| Offset | What |
+| --- | --- |
+| `+0x00` | the **held point**: the point stored by the last successful detour, used as the aim between decisions |
+| `+0x10` | the predicted **contact point** of the last decision (C, step 10) |
+| `+0x20` | the brain |
+| `+0x24` | the human being avoided (non-zero = avoiding; `Steering_SetAvoiding` also raises the brain's turn boost) |
+| `+0x28` | u8, updates since the last decision; `Steering_Clear` sets 255, which forces a decision on the next update |
+| `+0x29` | u8, slow decisions in a row (step 5) |
+| `+0x2a` | enabled |
+| `+0x2b` | u8, decisions since the detour was taken (step 6) |
+| `+0x32` / `+0x34` | u16 updates left / the **speed override** (`Steering_SetSpeed(speed, n)`) |
+| `+0x3c` | the detour's **score** (below) |
+
+**Speed overrides.** `Steering_SetSpeed` only stores a speed and a count of updates; the count drops by one at the
+start of every call. While it is non-zero the move action takes `+0x34` as its speed instead of its own (action
+`+0x40`, read at `0x002fc778`), and the brain's move speed `+0x114` follows from that (`Brain_SetMoveSpeed`). So an
+override acts from the next update on, for n updates.
+
+**One call**, in order (P my position, s my speed, human `+0x1ac`):
+
+1. Not enabled, or brain `+0xec` set (inferred: held in a [waypoint queue](#queues)) → return 0. Human `+0x333` above
+   2 → avoidance off, return 0.
+2. **Between decisions** (the counter `+0x28` below 3 × human `+0x333`; with `+0x333` = 0 it decides every update):
+   when avoiding, aim := held point and return 1, else return 0.
+3. **A decision**: counter 0, score := −1e9. When avoiding the arrival radius counts as 0, and if s is a standing
+   gait (gait 0, below 0.5 m/s) aim := held point and return 1.
+4. Within 1 m of the destination (squared distance ≤ 1) → return 0.
+5. **Look-ahead.** L = 0.75 × the move's speed (the distance covered in 0.75 s). While that speed is below 4 the
+   counter `+0x29` counts up, and on the 16th such decision in a row L is × 10 once and the counter restarts; at 4 or
+   more it resets. `Humans_FindAhead` (`0x002274a8`) lists up to 60 humans within **min(2L, 10) m** of P, in every
+   direction, not counting me.
+6. **Expiry.** When avoiding, `+0x2b` counts decisions: while it is below 4 × ⌊11 − s⌋ the walk heads for the held
+   point instead of the aim; after that `Steering_Clear` ends the detour.
+7. **My step.** D = the unit direction from P to that point, in plan (z = 0); S = D × min(L, its distance − the
+   arrival radius).
+8. **The blocker.** `Steering_FindBlocker` (`0x00288cc8`): of the listed humans, skipping my target (brain `+0x124`)
+   and anyone behind (D · (B − P) < 0), the one whose 0.63 m disc (`0x00289d68`) a ray from P along the relative step
+   (S minus his predicted step) hits first. His predicted step is his facing × 0.75 × his speed when his brain
+   `+0x04` is 0 (inferred: a player), else `Steering_ClampStep(0.75)` toward his aim (below). It returns him and
+   **t** = the hit distance ÷ the relative step's length: the fraction of the 0.75 s step at which the two touch
+   (1e9 for none). No blocker → when avoiding aim := held point and return 1, else return 0.
+9. When I lead a formation (human `+0x1a4`) and he is one of its followers, his own steering gets the gait-0 speed for
+   5 updates (`Steering_SetGait`, so he stops); this call goes on.
+10. **Keep the old detour?** When avoiding and the stored contact point `+0x10` is nearer to P than the new one
+    (|t × S|), aim := held point and return 1. Otherwise `+0x10` := **C = P + t × S**, where I would meet him.
+11. **Vectors**, all in plan and of unit length unless said: B his position; Q his predicted point, B + his facing
+    (`Quat_AxisY`, 1 m) when his brain `+0x04` is 0, else his brain's aim point `+0x90`; N = (B − P) normalised, the
+    bearing to him; H = (Q − B) normalised, his heading; **E = D × my up axis** (`Quat_AxisZ`), that is (Dy, −Dx):
+    perpendicular to my move, 1 m long. Two dot products choose the case: **b = D · N** (how straight ahead he is)
+    and **h = D · H** (how alike our headings are), against **cos 30°, cos 50° and cos 45°**.
+12. **Right of way**: I have it when s is above his speed (human `+0x1ac`), or equal and my human's address is the
+    lower.
+13. **Standing** (case 0): his brain `+0x04` is 0 and his speed below 0.05; or his brain's move speed `+0x114` is ≤ 0;
+    or his steering override is active (`+0x32` ≠ 0) with a speed ≤ 0.
+14. **The case** otherwise, tested in this order:
+
+    | b (bearing) | h (headings) | Case |
+    | --- | --- | --- |
+    | ≥ cos 30° | < −cos 45° (coming at me) | 1, head-on |
+    | ≥ cos 30° | > cos 45° (same way) | 2, overtake, only with right of way; without it return 0 (follow) |
+    | cos 50° to cos 30° | \|h\| > cos 45° | 2 |
+    | ≥ cos 50° | \|h\| ≤ cos 45° (crossing) | 3, crossing |
+    | < cos 50° | ≥ cos 45° (same way, off to the side) | none: without right of way the speed is 0.75 × s for 15 updates; return 0 |
+    | < cos 50° | < cos 45° | 3 |
+
+15. **Same route node** (cases 0-3): when both brains follow a route (the route state at brain `+0xe0`: `+0x04`
+    non-zero for both, and my `+0x16` set) and `RouteState_CurrentNode` (`0x0029b248`) is the same node for both,
+    the speed is **0.75 × his speed** for 5 updates; return 1, aim unchanged.
+16. **Yielding** (cases 1-3): without right of way and with the contact within 3 m (|t × S|² < 9), cases 1 and 3 stop
+    (speed 0 for 1 update) and case 2 matches his speed for 5 updates; return 1, aim unchanged.
+17. **The detour point X**:
+    - **Case 0** (he stands): X = B + σE, σ = −1 when E · N ≥ 0, else +1: **1 m from his centre, perpendicular to
+      my move, on the side of him that my line passes**. aim := X and `Steering_TryDetour(X)`; on success return 1.
+      Otherwise k = `Sectors_SectorOf(my position, X)` (one of 8 sectors of 45°; inferred: X's sector),
+      k' = (k + 4) mod 8, the opposite one, and X' = his position + 1 m along his facing + k' × 45°
+      (`Sectors_GetPoint`; his sector record refreshed when older than 1,000 ms). `TryDetour(X')`, and on success
+      aim := X'. Return 1 either way (the aim stays X when both fail).
+    - **Cases 1 and 2**: X = C + σρE. ρ = +1 when B is on E's side of my line (`Steering_SideSign`, E · (B − P) ≥ 0),
+      else −1; σ = +1 when my segment P → aim crosses his B → Q (`Segment_Intersect2D`, `0x00337308`), else −1. So
+      **1 m sideways from where we would meet**, away from his side, or towards it when our paths cross (he is
+      moving over to the other side).
+    - **Case 3**: X = B + `Steering_ClampStep(0.75 t)` + σE, σ = −1 when H · E ≥ 0, else +1. `Steering_ClampStep(f)`
+      (`0x00288f40`) is his unit direction to his aim (his brain `+0x90`) × min(his brain `+0x114` × f, his distance
+      to it). So **where he will be when we meet, then 1 m to the side he comes from** (behind him).
+18. **Corner check** (cases 1-3): when s minus `Move_CornerSpeedLimit` (`0x002fcd90`: the highest speed, stepping
+    the gait down, that still turns through the circle from P along my facing, `Quat_AxisX`, to X) is more than 1,
+    the speed is 0.75 × s for 1 update; return 1, no detour.
+19. Otherwise `Steering_TryDetour` (`0x00289010`): when the human can walk straight to the point
+    (`Human_CanWalkStraightTo`) and `Ground_ProbeBelow` does not return 1, avoiding := the blocker, score := t and
+    held point := the point; then aim := X. Return 1 either way. **Note:** in cases 1-3 the point checked and held is
+    the **aim the move passed in**, not X (`a2` is the aim at `0x00289cfc`), so X steers only the deciding update and
+    the human then heads for the held aim until the next decision; case 0 checks and holds its own point. Inferred to
+    be a slip in the original; a faithful port keeps it.
+
+**The score `+0x3c`** is t, the fraction of the 0.75 s step at which the two would touch (smaller is sooner). It is
+−1e9 at every decision and after `Steering_Clear`, t once a detour is taken, and 0 after `Steering_EndAvoid`. Nothing
+in this function or its helpers reads it: a new detour is weighed against the held one by the contact points'
+distances (step 10). Who reads it is not traced.
+
+**The return value**: 0 = no steering, the move keeps its own aim; 1 = steering, and the aim may have changed. On 1
+the move action recomputes its direction to the aim and uses an arrival radius of **0.3 m** (brain `+0x118`) for
+this update instead of its own; either way the aim goes to brain `+0x90` (`0x002fc9a0`-`0x002fca98`).
 
 #### Waypoint queues {#queues}
 

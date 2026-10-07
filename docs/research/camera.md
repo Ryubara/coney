@@ -789,19 +789,37 @@ With one target that is a player (with any other target, only a 1.0 m sphere pus
    target does not count for the cameras, while the camera aims, `+0x454`, or while the target plays clip 1). Its
    forward `f`, the view's direction `v` (from the camera of the last update `+0x1e0` to the look-at point) and `L =
    max(0.75, 0.15 × band near edge)`: `L` is scaled by allowed ÷ wanted distance when the world holds the camera in, and
-   by 0.4 while the target has state flag `0xc0`. A world ray (`WorldManager_RayCast` `0x0040db88`, at `0x00133604`)
+   by 0.4 while the target has state flag `0x40` or `0x80` (mask `0xc0`: he is grabbing someone from the front or the
+   rear, [Combat](combat.md#state-flags)). A world ray (`WorldManager_RayCast` `0x0040db88`, at `0x00133604`)
    from the look-at point along `f`, `L − 0.5 × L × |f · v|` long, gives the lead point `P` = look-at + `f` × (the free
    length − 0.01). So running away from the camera the aim point is about 0.36 m ahead of the look-at point (0.375 −
    0.01 at the default band; runtime 0.363 standing, 0.365 running).
-2. **Height.** With `d` = the human's body point height `+0x4e8` − 1.0 (`+0x4e0` is the body point's offset from the
-   feet, runtime 1.035 m standing, 0.93-1.0 running, 2.37 at the top of a fence vault): nothing (`P` stays at the
-   look-at height) while `|d|` ≤ 0.27 unless the human has a state flag of `0xe2c00`. Otherwise `d` is scaled by
-   `max(0, (0.27 − |d|) × 0.9 / 0.27 + 0.1)` when `|d|` ≤ 0.27, by `min(1, (|d| − 0.27) × 0.9 / 0.27 + 0.1)` up to
-   0.54, and kept beyond; a negative `d` is lowered by `(offset z − 1) × 0.6` more when the look-at offset is above
-   1.25 m (0.24 in `level99`). The height goal `zt` = look-at height + `d`; the new height is the old aim point's height
-   moved 35% toward `zt`, but where that does not lie between the look-at height and `zt` it is `zt` itself. (With
-   `+0x465`, the target takeover of `0x00126558`, no dead band and 75%.) While `+0x450` is set (not traced), the old
-   aim point is moved instead by 0.22 × (`+0x4e0` − (0, 0, 1)), or swayed sideways by up to ±0.028 m.
+2. **Height.** With `d` = the human's body point height `+0x4e8` − 1.0 (the [body point](#body-point) `+0x4e0` is the
+   hips' position in the body's frame, runtime 1.035 m standing, 0.93-1.0 running, 2.37 at the top of a fence vault,
+   0.62 landing). **While the target runs or sprints** (below) this step is replaced. Otherwise: nothing (`P` stays at
+   the look-at height) while `|d|` ≤ 0.27, unless the human has any of the state flags `0xe2c00`: `0x400` tackling (on
+   top of the victim), `0x800` being tackled, `0x2000` (not named; paired attacks read it), `0x20000` arrested,
+   `0x40000` knocked out, `0x80000` knocked down ([Combat](combat.md#state-flags),
+   [Characters](characters.md#the-record), `Human_EndDownState` `0x0025e250`), so on the ground or in a tackle the
+   height follows the body with no dead band. Otherwise `d` is scaled by `max(0, (0.27 − |d|) × 0.9 / 0.27 + 0.1)` when
+   `|d|` ≤ 0.27, by `min(1, (|d| − 0.27) × 0.9 / 0.27 + 0.1)` up to 0.54, and kept beyond; a negative `d` is lowered by
+   `(offset z − 1) × 0.6` more when the look-at offset is above 1.25 m (0.24 in `level99`). The height goal `zt` =
+   look-at height + `d`; the new height is the old aim point's height moved 35% toward `zt`, but where that does not lie
+   between the look-at height and `zt` it is `zt` itself; the result is stored as the look-at point's height `+0x188`
+   (`0x001339c0`). (With `+0x465`, the target takeover of `0x00126558`, no dead band and 75%.)
+
+   **Running and sprinting** (`0x00133674`-`0x001337d0`), confirmed (code): `+0x450` is a switch the constructor sets
+   to 1 (`0x00124940`, its only writer), so it is always on. The update (`0x0012b310`-`0x0012b3f4`) passes the
+   collision step two flags of this update: **sprinting** (gait `+0x1a8` 5 with no blocking record flags,
+   `0x00223a98`) and **running or sprinting** (that, or gait 4, `0x00223a60`); both are 0 under the takeover `+0x465`.
+   While either is set the height step above is skipped and the old aim point is moved instead:
+   - **running** (gait 4): by 0.22 × (`+0x4e0` − (0, 0, 1)), the body point's offset as it is, not turned by the
+     human's heading; the sway `+0x3f8` is set to 0. So the aim point bobs with the hips: 0.22 × (0.93-1.0 − 1), a
+     little below its old height each update;
+   - **sprinting**: a sideways **sway**. The sway `+0x3f8` moves by `+0x3f4` × 0.028 × a random number in 0.125-0.25
+     (`0x00335420`), 0.0035-0.007 m an update; past ±0.028 it is held at `+0x3f4` × 0.028 and the direction `+0x3f4`
+     (1.0 at construction) flips. The aim point moves sideways by the sway along the view's horizontal side axis (the
+     unit cross product made at `0x00130b68`) and up by (2 × |sway| − 0.028) × 0.6, so between −0.017 and +0.017 m.
 3. **Push.** Unless the camera aims, `P` is pushed out of the world by a sphere of radius 1.0 (0.95 with two targets ×
    the target's scale; `CollisionMesh_SpherePush`).
 4. **Lag** `+0x418`, worked out afresh each update from 0.06: × (1 + (1 − `c`) × 0.5) where `c` = `|unit(velocity) ·
@@ -819,6 +837,24 @@ With one target that is a player (with any other target, only a 1.0 m sphere pus
 
 The camera's yaw and pitch therefore lag the look-at point: the trace's `cam_pitch` (camera to look-at) is not the
 pitch of the view; the view's pitch is camera to `+0x240`.
+
+#### The body point {#body-point}
+
+A human's `+0x4e0` (`+0x4e8` its height) is **pose bone 2** of his skeleton (HAnim node 0, the hips: the parent of the
+spine and of both legs, [Animation](formats/animation.md)), its position in the model's frame: z up, the model facing
+`+y`, relative to the feet and **not turned by the human's heading**, times the human's scale (`+0x65c`, 0.97 for
+Rembrandt). Confirmed (code): each update `Human_StateUpdate` (`0x0023fea8`, vtable `+0x13c`, at `0x002400d4`) calls the
+human's bone transform (vtable `+0xbc`, `Human_GetBoneTransform` `0x0023bde8`) with bone 2 and the destination
+`+0x4e0` (the 32-byte entry: position at `+0x4e0`, rotation at `+0x4f0`); in the same call it fetches bone 0 (the root,
+for the root motion), 3 into `+0x540`, 5 into `+0x520` and 6 into `+0x500` (the head look's origin). The bone comes from
+the per-update bone cache ([Combat](combat.md#grab-posing)), built from the playing pose and already composed through
+the parent table, so it is the animated hips, not the clip's root track. With no model instance (`+0xd8` 0) it is not
+written and keeps its old value. Its position is the pelvis channel's: the idle's pelvis height 1.067 × 0.97 = 1.035,
+the runtime value standing (inferred from that match).
+
+**When**: in the human's state update, after the state function and the head look and before the root motion and the
+move. The cameras update at the end of the same 30 Hz step ([Coney](#coneys-implementation)), so the camera reads this
+update's value; whether the clip time has already been advanced in this step when the cache is built is not traced.
 
 ### Climbs {#climbs}
 
@@ -1179,7 +1215,7 @@ calls and constants; the overall reading is inferred:
   given up (0), the player's position is kept in `+0x2c0`, and the camera pulls in to the hit instead. `+0x479` is
   cleared when the view is not fully blocked (inferred). Confirmed (code) before `0x001325cc`.
 - **Sphere pushes** (`CollisionMesh_SpherePush`) with radius 1.0 and half the wanted distance push the camera out of
-  walls; a small sway (`+0x3f8`, at most 0.028 rad, from a random value between 0.125 and 0.25) is added while pushed.
+  walls. (The sway `+0x3f8` is the sprint's, at most 0.028 m: [The aim point](#aim-point) step 2.)
   The [aim point](#aim-point) gets its own 1.0 m push. **Wall push** (only while `+0x464` is set, set by [choose a clear
   heading](#collision-helpers); one view per player; the final position's distance in front of a near-vertical face,
   `|n.z|` < cos 10°, under 1.05 × the near-plane radius, or the main ray blocked): a sphere push of the near-plane
@@ -1645,8 +1681,19 @@ So, with `h`, `p`, `r` the script's angles:
   [Maths](maths.md)): a camera heading `h` looks where a character heading `−h` faces.
 - **Pitch positive looks up**, negative looks down: every `level99` locked camera that looks down at the street has
   a negative pitch (−2.7° to −27.7°).
-- **Roll positive** tips the camera's top toward its right (+x). No script in the levels read so far passes a roll
-  other than 0.
+- **Roll positive** tips the camera's top toward its right (+x). Of the 362 `CameraCreateLocked` and
+  `CamAddPoizoPoint` calls in the disc's scripts (constant arguments), **7 pass a roll**, all locked cameras and all
+  small: `level87`'s tag cameras `one` −0.1°, `ten` **−4.6°**, `eleven` 0.9°, `thirteen` 0.4°; `level95`'s two
+  new-item shots 0.4°; `level84_final`'s `MercyCam` 0.4°. At 0.4° the horizon tips about 2 pixels across half the 640
+  width (320 × tan 0.4°), so only `ten` shows clearly. The other rolls in the game: the **mugging shot's Dutch tilt**
+  of 15° or 11° ([Mini-game and mugging cameras](#mini-mug)), and the follow camera's eased roll
+  (`Cam_Follow_EaseRoll` `0x0012ac58`: `q` = orientation ⊗ (0, sin(r/2), 0, cos(r/2)), a turn about the camera's
+  own +y, its view axis), whose target `+0x404` only the constructor writes (0), so it stays 0.
+- **What the view needs for a roll**: nothing beyond the camera's own axes. The original draws through the current
+  camera's orientation quaternion (`+0x20`): the view matrix below takes **up = `Quat_AxisZ(q)`** with right and
+  forward from the same `q`, so a roll tips the picture with no separate step. A port that rebuilds the view from
+  the eye, the look-at point and the world's +z drops it; one that carries `Quat_AxisZ(q)` (or `q` itself) to the
+  renderer keeps it. To see it, use `level87`'s camera `ten`.
 - The locked update (`0x00135680`) then rebuilds the same orientation each frame: the eye is the position
   (`+0x1e0`, also `+0x10`), the target the eye + 3 m × `Quat_AxisY(q)`, the up hint `Quat_AxisZ(q)` (`0x00336458`),
   through `Mat_LookAtUp` (`0x00337168`) and `Mat_ToQuat`, so the roll survives (the default up hint of
@@ -1813,12 +1860,12 @@ update at `0x0012bb00`-`0x0012bbe8`; confirmed (runtime) as noted.
   pitch, the **target pitch becomes 15°**. The band eases by `d × 4.5 × dt` per update (no timer, [Sprint
   zoom](#sprint-zoom) step 4), so 4.8 → 4.44, 4.134, 3.874, …, 2.4 in about 50 updates (runtime, to 0.001 m); the
   zoom step follows it (30° below 3.72 m).
-- **Each update while on**: `0x0012e9a8` takes the enemy's point (its position plus half its `+0x4e0` vector, the body
-  point's offset from the feet, so about 0.5 m up ([The aim point](#aim-point)); an object's position + 0.5 m) and the
-  angle at the look-at point between the camera's horizontal view and the direction to the enemy; outside 25°-29° it
-  yaws by `(angle − 27°) × 0.455` toward 27°; the turn is capped at 640°/s (`11.17` rad/s) when the enemy is more than
-  29° off, not when it is under 25°. So **the enemy is held 27° off the view's centre**, beside the player. This counts
-  as this update's turn: auto-follow and keep-in-view do not run.
+- **Each update while on**: `0x0012e9a8` takes the enemy's point (its position plus half its [body point](#body-point)
+  `+0x4e0`, the hips in the body's frame, not turned by his heading, so about 0.5 m up; an object's position + 0.5 m)
+  and the angle at the look-at point between the camera's horizontal view and the direction to the enemy; outside
+  25°-29° it yaws by `(angle − 27°) × 0.455` toward 27°; the turn is capped at 640°/s (`11.17` rad/s) when the enemy is
+  more than 29° off, not when it is under 25°. So **the enemy is held 27° off the view's centre**, beside the player.
+  This counts as this update's turn: auto-follow and keep-in-view do not run.
 - **On exit**: the wanted near edge is set back to the saved `+0x3cc`, which is cleared; the band eases back the same
   way (runtime: 2.4 → 2.76, 3.066, …, 4.8). **The target pitch stays 15°** until the next `CameraReset` or
   `CfgFollowCamera` (runtime: 15° 150 updates later).
@@ -1845,11 +1892,12 @@ cited addresses:
 1. **When.** `W_GameState + 0x14c` is 1 (a failure: the players are out or busted, [Combat](combat.md#defeat)), the
    level is not an Armies level, the game-state flags `+0x152` do not have bit 2 (with it the countdown goes to 0 at
    once and the menu comes with no shot), and player 0's camera is not already type 12.
-2. **Start**, once: `Cam_GetFailed(1)` makes the camera on first use (`0x0050b170`); player 0's current camera is
-   kept in `+0x1e4`, and `Camera_MakeActive(0, failed, 0)` makes the shot current with **no blend** (a cut), which
-   runs the activation above (target, then placement). It saves the screen tint (`+0x1f8`), the HUD state (`+0x1fc`),
-   the ambience level (`+0x1f0`) and the music volume (`+0x1f4`), starts a **6.5 s** tint blend to `0xd0000014`
-   (inferred: a dark, nearly opaque tint) and a blur pulse (1500 ms), hides the HUD and removes the overhead icons.
+2. **Start**, once: `Cam_GetFailed(1)` makes the camera on first use (`0x0050b170`); player 0's current camera is kept
+   in `+0x1e4`, and `Camera_MakeActive(0, failed, 0)` makes the shot current with **no blend** (a cut), which runs the
+   activation above (target, then placement). It saves the screen tint (`+0x1f8`), the HUD state (`+0x1fc`), the
+   ambience level (`+0x1f0`) and the music volume (`+0x1f4`), starts a **6.5 s** tint blend to `0xd0000014` (bytes red
+   0x14, green 0, blue 0, alpha 0xd0: a dark red at 104/128, 81%, [Rendering](rendering.md#tint)) and a blur pulse (1500
+   ms), hides the HUD and removes the overhead icons.
 3. **Placement** (`0x001238a8`): the look-at point is the human's transform position (the feet); a ray straight up
    from it, near plane + 5 m long, gives the height (hit distance − near plane: **5 m** with nothing above); the
    camera is put that far above the feet, pitched **−88.28°** about its x axis (a half-angle of −0.7704 rad), then
@@ -2063,10 +2111,10 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
   function, the flight started again (**Coney's reading**: each point keeps its own function). A point's angles turn
   it as a locked camera's do (`camera::scriptedOrientation()`, the same code in the original); **Coney's choice**: the
   look-at point is 3 m ahead;
-- the **combat camera** ([Combat camera](#combat-camera)): with L1 held while the player has a fight target (`Fighter::target()`)
-  the band's wanted near edge goes to 2.4 m (4.8, 4.44, 4.134, ... at 4.5/s) and the target pitch to 15°, the enemy's
-  point (position + half its velocity) is turned toward 27° off the view's centre (0.455 of the excess, at most
-  640°/s beyond 29°), and on release the saved band comes back while the pitch stays;
+- the **combat camera** ([Combat camera](#combat-camera)): with L1 held while the player has a fight target
+  (`Fighter::target()`) the band's wanted near edge goes to 2.4 m (4.8, 4.44, 4.134, ... at 4.5/s) and the target pitch
+  to 15°, the enemy's point (position + half its velocity) is turned toward 27° off the view's centre (0.455 of the
+  excess, at most 640°/s beyond 29°), and on release the saved band comes back while the pitch stays;
 - the **shake** ([Shake](#shake)) at the three strengths, 0.66 in combat, its time counted with the characters' step,
   and the rumble byte it drives. Player 1's camera shakes when a reaction plays to his hit (at the hit code's strength
   bits), when he reacts himself from strength 2, and at level 1 when his rage starts (`Fighter::reactionShake()`,

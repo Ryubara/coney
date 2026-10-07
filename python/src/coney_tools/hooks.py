@@ -60,7 +60,8 @@ from coney_tools.pine import Memory, Read
 #: kernel leaves unused; it held only zeros in every state checked (`0x00095100`-`0x00100000`).
 CAVE_BASE = 0x000A0000
 CAVE_SIZE = 0x200
-MAX_HOOKS = 32
+#: 64 caves end at 0x000A8000, below the call block (CALL_BASE).
+MAX_HOOKS = 64
 #: The ring: a u32 count of entries ever written, then RING_ENTRIES entries of ENTRY_SIZE bytes from RING_BASE + 0x10.
 RING_BASE = 0x000B0000
 RING_ENTRIES = 4096

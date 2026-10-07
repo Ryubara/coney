@@ -366,3 +366,19 @@ address = 0x00391c10
 # addiu sp,sp,-0x50; lui v1,0x4
 original = [0x27bdffb0, 0x3c030004]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "object" }, { value = "[a0 + 0x10]", name = "x", type = "f32" }, { value = "[a0 + 0x14]", name = "y", type = "f32" }, { value = "[a0 + 0x112]", name = "type", type = "u16" }]
+
+[hook.settle-start]
+description = "Each call of IPhysics_StartSettle (0x00340fe0, from WorldObject_OnContact on a ground contact): the object, its type, the contact normal and the axis mask (the type's CfgObj axis byte +0x85)."
+research = "docs/research/physics.md#settle"
+address = 0x00340fe0
+# addiu sp,sp,-0xa0; lui v0,0x4
+original = [0x27bdff60, 0x3c020004]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a1", name = "object" }, { value = "[a1 + 0x112]", name = "type", type = "u16" }, { value = "[a2 + 0x0]", name = "nx", type = "f32" }, { value = "[a2 + 0x4]", name = "ny", type = "f32" }, { value = "[a2 + 0x8]", name = "nz", type = "f32" }, { value = "a3", name = "axes" }]
+
+[hook.object-contact]
+description = "Each call of WorldObject_OnContact (0x00394050, a world object's sweep contact): the object, its flags (+0x54), the object hit (0 for the level), the normal's z and the contact point's z."
+research = "docs/research/physics.md#settle"
+address = 0x00394050
+# addiu sp,sp,-0xc0; sq s3,0x70(sp)
+original = [0x27bdff40, 0x7fb30070]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "object" }, { value = "[a0 + 0x54]", name = "flags" }, { value = "[a1 + 0x40]", name = "hit" }, { value = "[a1 + 0x58]", name = "nz", type = "f32" }, { value = "[a1 + 0x98]", name = "pz", type = "f32" }]

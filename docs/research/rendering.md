@@ -69,11 +69,11 @@ of the texture), and every opaque vertex's alpha is `0x80`.
 over" mix by the source alpha (texture alpha × vertex alpha / 128). Only the character overlay pass uses another
 value ([Characters](#characters)).
 
-**Fog** is the GS's per-vertex fog: each vertex carries a fog value F (255 = no fog, 0 = all fog), interpolated
-across the primitive, and the pixel becomes (F × colour + (255 − F) × `FOGCOL`) / 255 after texturing and before
-blending. `FOGCOL` was (12, 12, 5) in every `level99` view and (17, 12, 15) in `level80`'s (it is the level's fog colour,
-confirmed (runtime)); how F is computed from
-the distance is RenderWare's linear fog ([PS2 render driver](ps2-render.md#fog)).
+**Fog** is the GS's per-vertex fog: each vertex carries a fog value F (255 = no fog, 0 = all fog), interpolated across
+the primitive, and the pixel becomes (F × colour + (255 − F) × `FOGCOL`) / 255 after texturing and before blending.
+`FOGCOL` was (12, 12, 5) in every `level99` view and (17, 12, 15) in `level80`'s (it is the level's fog colour,
+confirmed (runtime)); how F is computed from the distance is RenderWare's linear fog ([PS2 render
+driver](ps2-render.md#fog)).
 
 The two GS contexts are used deliberately: **context 1** for the first pass of everything (alpha test on:
 `ATST` GEQUAL, `AREF` `0x40`, `AFAIL` `FB_ONLY`), **context 2** for second passes, sprites and text (alpha test off,
@@ -212,6 +212,32 @@ the compiled level scripts). The fog colour and the clear colour are the level s
 | `level34` | 0.02, 0.02, 0.02 | (5, 5, 5) | none, in the intro scene and in play (the subway tunnel at the start) |
 | `level95` | 0.05, 0.05, 0.02 | (12, 12, 5) | (19, 19, 38), 31 |
 
+**How the fill is drawn** (`ScreenFx_DrawTint` `0x0018ca50` → `ScreenFx_FillViewport` `0x0018cc20` → device slot
+`+0x130`, `RwDevice_FillViewport` `0x001959a8`), confirmed (code) at those addresses:
+
+1. **The colour.** `SetLevelColour` (`0x0018e5f0`) and `EnterStore` (`0x0018e6b8`) take the script's four floats
+   0-1 and store each × 255, truncated (`Float_ToUInt`), as the look's packed tint, bytes red, green, blue, alpha
+   (look 9 and look 10). The tint blend (`ScreenFx_BlendTintTo`) lerps the packed colour from `+0x1bc` to the target
+   `+0x1c4` by the time left ([Looks](graphics.md#looks)); a tint whose alpha byte is 0 is not drawn, nor any tint
+   while the current look is 2 with `+0x1b8` 0.
+2. **The fill.** Four RwIm2D vertices over the viewport, each vertex colour the tint's four bytes as floats
+   0-255, with the raster unset (`rwRENDERSTATETEXTURERASTER` 0), culling off (state 20 = 1), vertex alpha on
+   (state 12 = 1), fog off (state 14 = 0) and Z write off (state 8 = 0, put back on after), drawn as a triangle
+   strip. The source and destination blends are not set, so the current ones apply: the driver default
+   `SRCALPHA` / `INVSRCALPHA`.
+3. **What reaches the GS** (confirmed (runtime), the dumps above): `ALPHA` = `0x44`, that is A = Cs, B = Cd,
+   C = As, D = Cd, so **Cd' = (Cs − Cd) × As / 128 + Cd** per channel, clamped (`COLCLAMP` 1); `FIX` is not used.
+   **RGB is passed 0-255 as stored; the alpha is scaled to 0-128**: As = the alpha byte × 128 / 255, truncated.
+   Every level matches: `level2`'s overlay (0.15, 0.18, 0.2, 0.22) is stored (38, 45, 51, 56) and drawn
+   (38, 45, 51) with As 28; `level87`'s (0, 0.1, 0.18, 0.12) is (0, 25, 45, 30), drawn with As 15; the table's
+   (0.03, 0.08, 0.12, 0.2) is (7, 20, 30, 51), drawn with As 25 (`level80`). Below 255, × 128/255 truncated
+   and ÷ 2 truncated give the same As; at 255 the scale gives 128, which no dump shows (inferred from the driver's
+   colour conversion elsewhere, `0x0049ea80`, which maps alpha by × `0x808081` >> 24: 255 → 128).
+
+So in 0-1 terms the wash is `out = dst + (round_down(255 × rgb) / 255 − dst) × As / 128`: the opacity is about the
+script's alpha (0.12 → 15/128 = 0.117), **not** twice it, and the colour is not halved. The game-over tint
+`0xd0000014` ([Camera](camera.md#death-camera)) is red 20, green 0, blue 0 at As 104 (81%).
+
 ### Motion blur {#screen-overlays}
 
 In the arena view (not in the street, store, car or fence views) one more full-screen fan follows the tint
@@ -249,6 +275,6 @@ lines: a slight vertical blur that softens the image and hides the jagged edges 
 ## Open questions
 
 - The views not captured yet: rain, interiors with lights, water, glass breaking, split screen.
-- `level80`'s pink lamp has one 254-vertex strip with a 64 × 32 `T8` texture in context 1 (alpha test GEQUAL `0x40`,
-  no Z write) drawn after the world: which object draws it (a lamp shade, or a corona-like glow, [Lighting](lighting.md))
+- `level80`'s pink lamp has one 254-vertex strip with a 64 × 32 `T8` texture in context 1 (alpha test GEQUAL `0x40`, no
+  Z write) drawn after the world: which object draws it (a lamp shade, or a corona-like glow, [Lighting](lighting.md))
   is not known.

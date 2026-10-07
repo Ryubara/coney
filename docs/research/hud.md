@@ -692,6 +692,25 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
   0.06, colour **(128, 128, 128, 255)**, font slot 3 (`part_page0`), not visible; `+0x468` the player.
 - **Place** (`ActionPrompt_Update`, `0x0019f528`): one player: x 0.5, centred; y = base + the raise `+0x46c`. Two
   players: x 0.33 or 0.66 (`0x0050cfcc` / `0x0050cfd0`, 0.25 / 0.74 in 16:9).
+- **Text, alignment and size.** The widget itself is left-aligned: its alignment byte `+0x17c` is 0 from the constructor
+  (`0x001b8f98`), and nothing on the prompt's path sets it (runtime: 0 for both prompts). The centring comes from the
+  **text**: every HUD string the code picks for the prompt (strings 0, 1, 4 and 9) opens with `<CENTER>`, which centres
+  the line on the pen at x 0.5 by its measured width ([Markup](gui.md#markup)); then `<COLOR B2B2B2FF>` and `<SIZE
+  1.0>`. Runtime (PCSX2 2.9.94, `level99`, the string table `0x00600048`): 19 of the 397 HUD strings open with
+  `<CENTER>`. Size: `MessageHUD_Setup` (`0x001b9090`) gets the size 0.06 (an overlay height, from the HUD's init) and a
+  font scale of 1.0 (`Font_Size(1.0)` into `+0x1c0`); font slot 3 (`part_page0`), since the last argument (0 from the
+  HUD's init) is not 6. So the text is drawn at size 0.06 × 1.0 in colour (178, 178, 178, 255), the tag's, not the
+  widget's (128, 128, 128, 255). Confirmed (code) for the widget, confirmed (runtime) for the strings' tags; the prompts
+  from action objects (`+0x10`) and talkable humans were not checked.
+- **No separate icon without the cycle.** With the cycle off (`+0x45c` = 0) `ActionPrompt_Update` only sets the text's
+  visibility from `+0x460`; the icon widget `+0x480` is neither placed nor updated, and `ActionPrompt_Render` draws it
+  only while `+0x45c` is set. The box under it is style 1 (`BoxedText_SetupBox(…, 1)`, `0x001e6f50`), which sets up **no
+  backdrop** (`+0x204` = 0) and **no box icon** (`+0x208` = 0), so `BoxedText_Render` (`0x001e7750`) draws the text
+  alone. The button on screen is part of the text: the strings wrap a button tag in `<MONEYFONT>` (`<ST>` in 0, 1 and 9;
+  `<SDL>`, the animated stick, in 4), drawn as a glyph of the font in line with the words. A text that parses as a
+  number is instead a **sprite word**: `ActionPrompt_SetText` hands it to `ActionPrompt_SetNumberText` (`0x0019f128`) →
+  `MessageHUD_SetIcon` (`0x001bb1e0`), which drops the text and shows that sprite in the widget's own box `+0x70`.
+  Confirmed (code).
 - **The raise** (`ActionPrompt_SetRaise`, `0x0019f430`, each HUD update) keeps the prompt clear of the texts below it:
   while the hint box shows (box `+0x3a8` set and no scroll-in), raise = 0.05 (`0x0050d500`) − the box's height (`+0x3b0`);
   otherwise −0.02 (`0x0050d504`) − the showing scroll-in's height (scroll-in `+0x578`, 0 when none). A prompt of more
@@ -752,11 +771,16 @@ alpha about 0.73, and a few areas (inside buildings the player can enter) a ligh
 disc shows the world through its streets and a grey tint elsewhere. Confirmed (disc) for the file and contents; the
 meaning of the lighter areas is inferred.
 
-**Nothing is drawn without the map**: `Radar_Render` draws the disc only when the map instance (`+0x94`) exists and
-is resident, and the blip batch `+0x96` is resident; there is no plain grey disc. It ignores the page's rectangle and
-maps `u`, `v` over the **whole texture** (the page's texture, `**(page + 0x14)`), so values outside 0-1 fall to the
-texture's own wrap addressing (inferred: the draw sets no addressing state). The texel is multiplied by the disc
-colour below (vertex colour; inferred, the Im2D default). Confirmed (code) at `0x001c60b0`.
+**Nothing is drawn without the map**: `Radar_Render` draws the disc only when the map instance (`+0x94`) exists and is
+resident, and the blip batch `+0x96` is resident; there is no plain grey disc. It ignores the page's rectangle and maps
+`u`, `v` over the **whole texture** (the page's texture, `**(page + 0x14)`), and values outside 0-1 are **clamped** to
+the edge texels, not wrapped: confirmed (runtime) by the GS dumps of `level99` ([Rendering: HUD](rendering.md#hud)),
+where the radar is the only clamped texture of the frame, although the texture's own flags (`0x1102`) say wrap, so the
+radar's draw path sets the addressing (where is not traced). The fans are drawn in GS context 1 with alpha test GEQUAL
+`0x40` (of `0x80`) and `AFAIL` `FB_ONLY`, Z test always, no Z write (confirmed (runtime), same dumps). Since a failing
+pixel is still blended into the colour and the draw writes no Z anyway, the test changes nothing on screen: low-alpha
+texels (the streets) are blended at their own alpha, not dropped (inferred from the GS register meanings). The texel is
+multiplied by the disc colour below (vertex colour; inferred, the Im2D default). Confirmed (code) at `0x001c60b0`.
 
 **Where the map is read.** The level record's three floats map world metres to the texture
 (`W_GameState + 0x14d4 + index × 0x84`, set by `CfgLevelName` arguments 13-15, [binding](../references/bindings/config.md#cfglevelname)):
@@ -1190,7 +1214,7 @@ at `0x001a29c0`, `0x001a2f68`, `0x001a3360` and `0x001a3458`:
 | Part | Player 0 | Player 1 | Size | What |
 | --- | --- | --- | --- | --- |
 | Button sprite | (0.09, 0.59) | (0.885, 0.59) | 0.12 | the sprite word given to `HUD_MashMeterShow`; instance 2, depth 11,000, grey 128, centred |
-| Bar | left end (0.02, 0.65) | (0.815, 0.65) | 0.2 × 0.025 | `HudBar_Draw(0, bar, 0, 0)` (no flash, no trail); sprite word `0x30050`: `menu_system` rectangles 80 (back), 81 (fill), 82 and 83 (end caps); back grey 128, fill (225, 186, 65); fill = meter ÷ target ([Crimes](crimes.md#triangle)) |
+| Bar | left end (0.02, 0.65) | (0.815, 0.65) | 0.2 × 0.025 | `HudBar_Draw(0, bar, 0, 0)` (no flash, no trail); sprite word `0x30050`: batch 3 (`part_page0`) rectangles 80 (back), 81 (fill), 82 and 83 (end caps); back grey 128, fill (225, 186, 65); fill = meter ÷ target ([Crimes](crimes.md#triangle)) |
 | Text 1 | (0.045, 0.65) | (1.015, 0.65) | 0.04 | character `0x96`, the **triangle** glyph |
 | Text 2 | (0.05, 0.59) | (0.845, 0.59) | 0.04 | character `0xa0`, the **L1** glyph |
 | Text 3 | (0.21, 0.59) | (1.005, 0.59) | 0.04 | character `0x9c`, the **R1** glyph |
@@ -1199,6 +1223,14 @@ The texts are `TextWidget`s in **font slot 3** (`part_page0`, whose characters `
 [GUI: markup](gui.md#markup)), grey 128, `Font_Draw` flags 1 (right-aligned, [GUI](gui.md#widget-classes)), so x is
 the glyph's right edge (inferred from the flag). They are **not** HUD string ids: each is the `"%c"` of one code.
 Blink half period: **400 ms**.
+
+**Which sheet:** a bar's sprite word is not a sheet-table record. `HudBar_Draw` (`0x001a1138`) takes its high half
+(`+0x2e`) as a **resource instance** (`ResourceMgr_Instance`, a slot of [the instance table](gui.md#resource-instances))
+and its low half as the first rectangle of that instance's sheet; only `BaseWidget_SetInstance(-1)` (`0x001a2918`)
+reads the high half as a sheet-table record (`ResourceMgr_SheetRecord`). Instance 3 is `part_page0`: confirmed
+(runtime), PCSX2 2.9.94, `level99`, slot 3's name hash is `part_page0`'s CRC-32, as on the main menu; slot 11, the
+mug meter's batch 11, is `hud_minigames`. So `0x30050` is `part_page0` rectangles 80-83 and the rage and mug bars'
+`0x30036` `part_page0` 54-57. Sheet-table record 3 is `menu_system` (6 rectangles), which these bars never use.
 
 **Render** (`0x001a3360`): only while the meter's button id (`+0x04`) is not 0 (slot `+0x5c` returns it). The button
 sprite, then the bar, then one text by phase = (timer ms mod 800) / 400: with sprite word `0x171` (`part_page0`
@@ -1596,11 +1628,31 @@ at run time).
 | Centre disc | a textured disc, the whole circle | 41 (`0x0050d6b0`) | (191, 191, 191, 255) | `hud_minigames` rectangle 12 (the lock face with its keyhole), mapped by the rectangle's centre and radius, turned by π/2 |
 
 Both wedges are centred on angle π, which with y down on screen is **straight up** from the centre (12 o'clock); the
-segments outside the wedge are drawn with a zero colour, so only the wedge shows. Which band is the good zone and
-which the perfect one follows from the sizes (band 1 the larger good zone, band 2 the perfect one; inferred, the
-judge's bounds are on [Crimes: lock picking](crimes.md#lockpick)). The disc is queued last, so it covers the
-wedges' centre and only the parts outside radius 41 would show, which a 40-pixel wedge never reaches; inferred from
+segments outside the wedge are drawn with a zero colour, so only the wedge shows (whole segments, below). Which band is
+the good zone and which the perfect one follows from the sizes (band 1 the larger good zone, band 2 the perfect one;
+inferred, the judge's bounds are on [Crimes: lock picking](crimes.md#lockpick)). The disc is queued last, so it covers
+the wedges' centre and only the parts outside radius 41 would show, which a 40-pixel wedge never reaches; inferred from
 the radii: the wedges show only where the disc's texture is transparent.
+
+**Draw order, frame and extent** (confirmed (code) unless marked):
+
+- **Order.** The shapes are drawn **after every sprite batch**: `GameMode_DrawOverlays` (`0x00156658`) renders the HUD's
+  sprites (`HUD_Render`, then `ResourceMgr_RenderOverlay`), the captions, the intro and the credits, and only then
+  `Shape2D_DrawQueued`. So the wedges and the disc lie **on top of** the pins whatever the pins' depths (8,000-10,000
+  only order the sprite batches among themselves), and within the shapes the queue order holds: band 1, band 2, then the
+  disc. Inferred from the art: the disc's lock face hides the pins' middle, and the pins show around it and through its
+  transparent parts.
+- **Frame.** The pixels are the device's screen size, read when the centre is projected (`Camera_ProjectToScreen`
+  `0x00198460` scales by device slots `+0xa8` / `+0xb0`): **640 × 448** in the default mode (confirmed (runtime), PCSX2
+  2.9.94, `level99`: `+0x44c` / `+0x450` = 640 / 448). The radii 40 and 41 are in that frame, not scaled with the
+  overlay, so a port should scale them by its height ÷ 448.
+- **Extent.** `Im2D_DrawArc` (`0x0017bec8`) colours whole rim vertices: with n = 32 segments and p the per cent, k =
+  floor(n × p / 100 / 2); rim vertex j (0 to n, starting at the wedge's middle) gets the colour when j ≤ k, and, with
+  the mirror flag `+0xb8` the dial sets, also when n − j ≤ k; every other rim vertex gets colour 0 (alpha 0), while the
+  fan's centre vertex keeps the colour. With p = 0 (k = 0) nothing is coloured. So the solid part is 2k whole segments
+  (k × 11.25° each side), and the next segment on each side **fades** from the colour to clear across its triangle
+  (vertex colours interpolate). Example: 35 % gives k = 5, so 112.5° solid plus a fading 11.25° on each side, not the
+  exact 126°.
 
 ### `GUI/HUDLua.cpp`: the scripted bars {#fn-hudlua-bars}
 
@@ -1661,7 +1713,7 @@ mug meter's layout is a table of `0x90` bytes per player at `0x00622e50`, rebuil
 | `0x001becb0` | `HudMoney_Update` | [Score and money](#score-and-money): the `±$N` line for 1,000 ms, counting by (difference / 16) ± 1 per frame with cue `0x10`, grey leading zeros (`Hud_GreyLeadingZeros`) | confirmed (code) |
 | `0x001bf068` | `HudMoney_Render` | the counter while the shown value is above 0 | confirmed (code) |
 | `0x001bf090` | `MugMeter_ApplyLayout` | rebuilds the layout table for the current video mode | confirmed (code) |
-| `0x001bf7e0` | `MugMeter_Setup` | two dark (32, 32, 32) bars (sprite word `0x30036`: `menu_system` rectangles 54-57), two `hud_minigames` sprites (rectangles 5 and 6, grey 128, batch 11), three arrows (rectangles 7-9, (225, 186, 65)), the prompt (string `0x180`) | confirmed (code) |
+| `0x001bf7e0` | `MugMeter_Setup` | two dark (32, 32, 32) bars (sprite word `0x30036`: batch 3 (`part_page0`) rectangles 54-57), two `hud_minigames` sprites (rectangles 5 and 6, grey 128, batch 11), three arrows (rectangles 7-9, (225, 186, 65)), the prompt (string `0x180`) | confirmed (code) |
 | `0x001bfcc0` | `MugMeter_SetFills` | both bars' fills, clamped to 0-1 | confirmed (code) |
 | `0x001bfd30` | `MugMeter_SetStick` | the stick dot moves by 0.01 × stick from its rest point; a stick beyond 0.5 in one of eight directions (and within 0.1 on the other axis for the four straight ones) picks the arrows' position and angle from `0x00622f70` and `0x0050e924`-`0x0050e940` | confirmed (code) |
 | `0x001c0640` | `MugMeter_SetArrowsOn` | `HUDMugMeterSet`: `+0x84c` | confirmed (code) |
@@ -1681,7 +1733,7 @@ second record (`+0x90`); its x values are in the last column.
 
 | Part | Sprite | Place | Size | Player 1 x |
 | --- | --- | --- | --- | --- |
-| Bar 1 (`+0x10`) | `menu_system` 54-57 (back, fill, caps), back (32, 32, 32) | left end (0.09, 0.57) | 0.2 × 0.014 | 0.74 |
+| Bar 1 (`+0x10`) | `part_page0` 54-57 (back, fill, caps), back (32, 32, 32) | left end (0.09, 0.57) | 0.2 × 0.014 | 0.74 |
 | Bar 2 (`+0x80`) | the same | left end (0.09, 0.545) | 0.2 × 0.025 | 0.74 |
 | Stick base (`+0x100`) | `hud_minigames` 6, a black ball; grey 128, depth 11,000 | (0.04, 0.55) | 0.06 (square) | 0.935 |
 | Stick dot (`+0x200`) | `hud_minigames` 5, a grey disc | (0.04 + 0.01 × sx, 0.55 − 0.01 × sy) | 0.05 (square) | 0.935 |
@@ -1904,19 +1956,42 @@ What the player sees during the tagging stick game ([Crimes](crimes.md#tagging))
 | `0x001cb6f0`, `0x001cb778` | `TagHud_Setup`, `TagHud_Release` | the frame sprite: `part_page0` rectangle 93, size 0.04, depth 11,000, (191, 191, 191, 191) | confirmed (code) |
 | `0x001cb798` | `TagHud_Render(widget, human)` | below the table | confirmed (code) |
 
-**The panel** (`0x001cb798`), only while the human has a tag game (human `+0xd4` → `+0x13c`) and batch 3
-(`part_page0`) is resident. Cell (x, y) of the 256 × 256 grid is drawn at the player's origin plus x × 0.0025 and
-y × 0.0025 along the overlay camera's axes. Player 0's origin is GUI (0.01, 0.70), player 1's (0.76, 0.70)
-(`0x0050ea90`, stride `0x30`). Confirmed (code):
+**The panel** (`0x001cb798`), drawn each frame only while the human has a tag game (human `+0xd4` → `+0x13c`) and batch
+3 (`part_page0`) is resident. Default video mode (device flag `0x01`), values from the layout record at `0x0050ea90`
+(stride `0x30` per player) and the sprite sizes `0x0050eaf0`-`0x0050eaf8`. Confirmed (code) unless marked.
 
-- the **path**: one rectangle-64 sprite of size 0.015 per path point but the last 3, grey 100 + 155 × i / n
-  (darker at the start);
-- the **painted cells**: rectangle 62, size 0.03, in the player's colour (human `+0x640`) at alpha 205;
-- the **cursor**: rectangle 63, size 0.04, flashing between white and black every 250 ms (`0x00338240`) unless the
-  game is paused (`0x002748a0`), then white;
-- the **frame** (the widget of `TagHud_Setup`) at origin + (0.01, 0.07), size 0.07;
-- the **charge bar**: rectangle 78 in the player's colour, 0.0255 wide and 0.045 × the charge left
-  (`0x00274638`) high, at origin + (0.01 − 0.0565, 0.07 − 0.03), growing upward.
+**Frame of reference.** The player's origin is GUI (0.01, 0.70) for player 0 and (0.76, 0.70) for player 1. It is turned
+into overlay space first (device slot `+0x90`, `0x00195238`; [Graphics](graphics.md#2d-drawing)): X = (x − 0.5) × 640 /
+448 and Y = 0.5 − y, so (−0.700, −0.200) for player 0. Everything after that is in **overlay units, Y up**. Cell (x, y)
+of the 256 × 256 grid sits at origin + (x × 0.0025, y × 0.0025): the code adds x along the first row of an identity
+matrix and y along its third, the depth slot holding 1.1, and then `Mat_SwapYZ` (`0x003368d8`) negates the middle
+component and swaps it with the third, giving (X + 0.0025 x, Y + 0.0025 y, −1.1). So **a larger cell y draws higher** on
+screen, and the whole grid spans 0.64 overlay units. Sprite sizes are given to the batch directly as width and height,
+both the same value, in overlay units, which are square on screen (1.595 × 1.1 units over 640 × 448 pixels, about 401
+pixels per unit).
+
+- the **path**: `part_page0` rectangle 64, size 0.015, one per path point (tag `+0x26c`, byte pairs; count `+0x268`)
+  except the last 3, grey 100 + 155 × i / n, alpha 255 (darker at the start);
+- the **painted cells**: rectangle 62, size 0.03, one per painted cell (tag `+0x0c`, byte pairs; count `+0x08`), in the
+  player's colour (human `+0x640`) at alpha 205;
+- the **cursor**: rectangle 63, size 0.04, at the tag's `+0x4f0`, two **floats** (x, y) in grid cells, so it moves
+  smoothly between cells and is not snapped (inferred: the stick-driven cursor of [the stick game](crimes.md)). Its
+  colour fades between white and black, alpha 255, over 250 ms, reversing every 250 ms (game clock mod 500,
+  `Colour_LerpRatio` `0x00338240`), and is plain white while the game is paused (`Tag_IsPaused`, `0x002748a0`);
+- the **frame**, the widget of `TagHud_Setup` (`part_page0` rectangle 93, colour (191, 191, 191, **191**), depth
+  11,000): its position is set in overlay space (flag 0) at origin + (0.01, 0.07), size 0.07 (a widget size, the overlay
+  height). Its alpha 191 is fixed at setup and it is drawn with the rest of the panel, so it shows on every frame the
+  panel does, not otherwise;
+- the **charge bar**: rectangle 78 in the player's colour at alpha 255, 0.0255 wide and 0.045 × c high. Its **bottom**
+  is fixed at origin + (0.0648 − 0.0565, 0.075 − 0.03) = origin + (0.0083, 0.045) and its centre is placed half its
+  height above that, so it **grows upward** from the bottom (overlay Y up). Here c is `Tag_GetChargeLeft`
+  (`0x00274638`): 1 − (game clock − the charge's start, tag `+0x518`) ÷ the charge time of the tag difficulty (13,000,
+  11,000 or 9,500 ms, [Crimes](crimes.md)), the fraction of the current charge still left; 1.0 when the elapsed time is
+  not below the charge time (an unsigned compare, so also before the start).
+
+The other video modes rewrite the record (`TagHud_ApplyVideoMode`, `0x001cb468`): without flag `0x01` the origin is
+(0.012, 0.68), step 0.0018, bar 0.02 × 0.038 at (−0.055, −0.042), frame 0.06; with flag `0x02` the sizes become 0.012,
+0.02 and 0.03.
 
 ### After `GUI/TextEntryPad.cpp` (no path string): text progress, stopwatch and hint texts {#fn-after-textentrypad}
 

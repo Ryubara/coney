@@ -2285,12 +2285,22 @@ back to 1.0.
 | `0x00263380` | `Grab_StartPairedMove` | Starts a paired move on the victim: spends power, aligns the pair, deals AnimRange damage (doubled by state 0x4000), plays clip n on the attacker and n + 1 on the victim, or a death reaction when it defeats. | confirmed (code) |
 | `0x00263eb8` | `Human_AttackObject` | Attacks an object or car: slot 19's clip (slot 17 when the object is over 1 m up), turning to it by the first event when it is within 1.5 x the far range and beyond half the reach. | confirmed (code) |
 | `0x00264878` | `Player_StartDive` | Starts the dive attack ([Moving attacks](#run-attacks)). | confirmed (code) |
+
+### Hit reactions, paired moves and the mount {#code-reactions}
+
+`0x00265c28`-`0x00279050`: the handlers that turn pending damage into a reaction by the victim's state
+([Damage](#damage), [Hit codes](#hit-codes)), the pair-break clips, grab strikes, cuffing, the mount's end hooks, the
+alignment helpers and revives.
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
 | `0x00265c28` | `Human_IsDamageDefeating` | Whether damage would defeat the human: tripled when cuffed; never with human flag 0x10 or 0x20000000000, knocked out or state 0x100000000; else health (+0x144) at most the damage. | confirmed (code) |
 | `0x00265cd8` | `Hit_MaybeQueueHint15` | A player hit by an attack id 11-24 that does not defeat it, not blocking, outside Armies levels: queues game hint 15 once unlocked. | confirmed (code) |
 | `0x00266b50` | `Hit_IsReactionWeakened` | The strength -1 test: victim flag 0x200, or a combo id against a victim without 0x400 that is not hurt ([Hit codes](#hit-codes)). | confirmed (code) |
 | `0x00266c40` | `Hit_IsReactionStrengthened` | The strength +1 test: attacker flag 0x200000 and victim 0x400, or a combo id ([Hit codes](#hit-codes)). | confirmed (code) |
 | `0x00266fd8` | `Hit_PickDyingReaction` | The dying reaction: strength 2, half the time the DIE set 304-315, else 292 ([Hit codes](#hit-codes)). | confirmed (code) |
 | `0x00267338` | `Hit_GetSideFromPoint` | The side (0 front within 45 degrees, 3 left, 1 right, 2 behind) of a point around the human ([Hit codes](#hit-codes)). | confirmed (code) |
+| `0x002678c8` | `Human_PlayGangDeathReaction` | The lethal reaction for Human_PlayLethalReaction: blends out, plays the death reaction (held 0x2000) and breaks a pair; a gang member says 13 near ([Damage](#damage)). | confirmed (code) |
 | `0x00268430` | `HitReact_InSpecial` | Pending damage while in a special state: ends it and plays 674, or knocks the human down (198, then 674). | confirmed (code) |
 | `0x002686e8` | `HitReact_WhileOut` | Pending damage while knocked out or in states 0x100000000 / 0x80000000: health 1 when flagged, a lying reaction, held flag 0x400. | confirmed (code) |
 | `0x002688d0` | `HitReact_WhileGrabbed` | Pending damage from a third human while grabbed: ends the grab and plays a pair-break reaction, a stun or a paired reaction. | confirmed (code) |
@@ -2329,6 +2339,125 @@ back to 1.0.
 | `0x0026ec10` | `Grab_SpinToFront` | The rear-to-front spin before a power strike: states 0x40 / 0x10, move styles 7 / 8, 80 and 81 ([In the grab](#grabbing)). | confirmed (code) |
 | `0x0026f2c8` | `Grab_PullOffTackler` | Grabs a tackler off its victim: 214 on the grabber, 215 on the tackler, the victim gets up with 199. | confirmed (code) |
 | `0x0026f760` | `Tandem_OnAttackerEnd` | End hook of the tandem attacker's end clip: unlinks it. | confirmed (code) |
+| `0x0026f840` | `Tandem_OnEnd` | End hook of a tandem clip: unlinks the three quietly. | confirmed (code) |
+| `0x00270028` | `Tackle_OnVictimRiseEnd` | End hook on a tackled victim left alone: ends the tackle and plays the rise, unless it is dead or out. | confirmed (code) |
+| `0x002700a8` | `Mount_OnStrikeEnd` | End hook of a mount strike or the grounded mount: gets off when the victim is over 0.2 m up or down, beyond max(reach + 0.34, reach x 1.2) or not clear; else re-places the mounter at clip 210's offset, scores the move, and may let a player victim reverse it. | confirmed (code) |
+| `0x00270560` | `Tackle_OnIntroEnd` | End of the tackle's run-in: a target in front with human flag 0x20000 (or a player that counters) plays the counter (Attack_StartPaired kind 9); otherwise the mount starts from front or behind ([Grab and tackle](#grab)). | confirmed (code) |
+| `0x00270a70` | `Mount_CheckVictim` | During a mount strike: gets off when the victim is no longer tackled, or is dead or out; clears record +0xb8 and +0xbc. | confirmed (code) |
+| `0x00270f88` | `Mount_OnGetOffEnd` | End hook of getting off: ends the tackle. | confirmed (code) |
+| `0x00270fc0` | `Mount_OnVictimGetOffEnd` | End hook of the victim's get-off clip: ends the tackle (or clears 0x800 and sets 0x20000000 alone) and clears the down timers. | confirmed (code) |
+| `0x00271028` | `Mount_OnGetOffThrowEnd` | End hook: clears the throw link of a mounter that was throwing. | confirmed (code) |
+| `0x00271060` | `Mount_OnVictimThrowEnd` | End hook: clears the victim's throw link when it has state 0x2000. | confirmed (code) |
+| `0x00271098` | `Mount_GetOff` | Gets the mounter off the victim and ends the tackle ([The mount](#mount)). | confirmed (code) |
+| `0x00271808` | `Mount_ReturnToFrontGrab` | From the mount back to a front grab (Grab_Link) ([The mount](#mount)). | confirmed (code) |
+| `0x00271b30` | `Mount_StartOnGrounded` | Mounts a grounded target: clip 237 + its side (far range x 1.25 for a player), steered on, then Pair_LinkMount ([Grab and tackle](#grab)). | confirmed (code) |
+| `0x00272310` | `Mount_OnReversalEnd` | End hook of the mount reversal: links the reversed mount (the victim on top); gets off when the new victim has human flag 0x20000. | confirmed (code) |
+| `0x002723a8` | `Mount_OnReversedEnd` | End hook of the reversed mounter's clip: clears its throw link when alone. | confirmed (code) |
+| `0x002723e8` | `Mount_StartReversal` | The mounted victim's reversal: 242 then 210 on the victim, 243 then 207 on the mounter. | confirmed (code) |
+| `0x00274ee0` | `Revive_Finish` | Ends a revive: the partner takes the item, interface cue 0x17, the revived says 75 revive_thank and is healed. | confirmed (code) |
+| `0x002752a0` | `Revive_Start` | Starts reviving a downed partner; says 76 revive_reasure. | confirmed (code) |
+| `0x002759c0` | `Human_AlignToObject` | Turns and moves the human onto an object's side (front, back or a side) at the attack table's offset and reach for a clip, over a time. | confirmed (code) |
+| `0x002766b0` | `Human_AlignToPoint` | Turns and moves the human toward a point over 0.1 s (a script message). | confirmed (code) |
+| `0x00276810` | `Human_AlignForObjectAttack` | Turns and moves the human to an object at a clip's reach and offset, by the clip's first event at most. | confirmed (code) |
+| `0x00276ff0` | `Human_AlignToHuman` | Turns and moves the human to another at a clip's reach and offset over a time. | confirmed (code) |
+| `0x00277248` | `Human_AlignToVictimFacing` | Places the human at a clip's offset from another along that one's facing, over a time (the mount's 210, [The mount](#mount)). | confirmed (code) |
+| `0x00277b20` | `Pair_AlignForMove` | Aligns a free victim for a paired move: refused beyond the far range, then both turned and the attacker placed at the clip's offset and reach over 1/60 s. | confirmed (code) |
+| `0x00278ef8` | `Human_IsFreeableBy` | Whether a helper may free a human: a friend or the same gang (or human flag bit 0x80 of +0xe1), and cuffed or dead or out. | confirmed (code) |
+| `0x00278fa0` | `Human_IsRevivableBy` | Whether a helper may revive a human: a friend or the same gang, knocked out and not cuffed. | confirmed (code) |
+| `0x00279050` | `Human_FindFreeable` | Lists the visible humans within 3 m that Human_IsFreeableBy accepts. | confirmed (code) |
+
+### Targets and commands {#code-targets}
+
+`0x002790a8`-`0x0027c0f8`: the target searches and their filters ([Target selection](#targets)) and one small test per
+[command](#commands).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x002790a8` | `Target_AngleFromAimHeading` | The absolute angle between the heading to another and record +0xd4 (the heading the pick wrote), 0 to pi. | confirmed (code) |
+| `0x002792c8` | `TargetFilter_LockFirst` | The L1 search's first filter (6 m, 63 degrees): a targetable human of another gang, not friendly, not down or airborne, within the angle; a player's own record decides some cases. | confirmed (code) |
+| `0x002797b0` | `TargetFilter_AnyAngle` | An enemy human at any angle: other gang, not friendly, within 2 m of height, not down or airborne. | confirmed (code) |
+| `0x002798c0` | `TargetFilter_AlongFirst` | Human_FindTargetAlong's first filter: an enemy human within the angle, not down, without some held flags. | confirmed (code) |
+| `0x00279a08` | `TargetFilter_AlongThird` | Human_FindTargetAlong's last filter: an enemy human within the angle that is not dead. | confirmed (code) |
+| `0x00279b30` | `TargetFilter_AlongSecond` | Human_FindTargetAlong's second filter: an enemy human within the angle, with fewer held-flag limits. | confirmed (code) |
+| `0x00279c48` | `TargetFilter_NearAhead` | The L1 search's near pass: a targetable human within the angle and 2 m of height, not down. | confirmed (code) |
+| `0x00279d38` | `TargetFilter_KnockedOut` | The L1 search's last pass: a targetable human that is knocked out or dead. | confirmed (code) |
+| `0x0027a1e8` | `TargetFilter_ThrowObject` | The throw-target pick's object filter: within the angle and height, a world object that is a strike target. | confirmed (code) |
+| `0x0027a2f8` | `Human_FindTargetAlong` | A script message's target pick: humans within the vector's length and 54 degrees of its heading, through three filters, nearest first. | confirmed (code) |
+| `0x0027ad80` | `Player_PickThrowTarget` | Picks a throw target within the range (20 m for a melee throw): humans within 27 degrees, then objects and glass; sets record +0xd4 / +0xd8. | confirmed (code) |
+| `0x0027b058` | `Attack_FindNearestInReach` | The charge and dive's target: the nearest human within the clip's reach and 54 degrees, then objects and glass. | confirmed (code) |
+| `0x0027b2a8` | `Player_FindLockTarget` | The L1 lock-on search: humans within 6 m and 63 degrees, then enemies within 4 m and 6 m, any angle within 4 m, near ahead, a car within 1 m, then 2.5 m passes; the first in a clear line. | confirmed (code) |
+| `0x0027b548` | `Player_LockOnTarget` | L1 pressed or held: makes the lock-on search's result the human or object target. | confirmed (code) |
+| `0x0027b5c0` | `PlayerCmd_IsAny` | This sample's command is not 0. | confirmed (code) |
+| `0x0027b5e0` | `PlayerCmd_IsCrossLongHold` | Command 0x10 (cross released after a tap, or held 4 samples). | confirmed (code) |
+| `0x0027b608` | `PlayerCmd_IsSquarePressOnly` | Command 0xf (square pressed). | confirmed (code) |
+| `0x0027b630` | `PlayerCmd_IsL2Cross` | Command 0x20 (L2 + cross). | confirmed (code) |
+| `0x0027b658` | `PlayerCmd_IsL2Square` | Command 0x21 (L2 + square). | confirmed (code) |
+| `0x0027b680` | `PlayerCmd_IsCrossPress` | Command 0x12 (cross pressed, or the AI's chain cross). | confirmed (code) |
+| `0x0027b6a8` | `PlayerCmd_IsSquarePress` | Command 0xf or 0x11 (square pressed, or the AI's chain square). | confirmed (code) |
+| `0x0027b700` | `PlayerCmd_IsCommand14` | Command 0x14. | confirmed (code) |
+| `0x0027b728` | `PlayerCmd_IsCommand13` | Command 0x13. | confirmed (code) |
+| `0x0027b750` | `PlayerCmd_IsR1Press` | Command 3 (R1 pressed). | confirmed (code) |
+| `0x0027b778` | `PlayerCmd_IsCommand17` | Command 0x17. | confirmed (code) |
+| `0x0027b7a0` | `PlayerCmd_IsCircleTap` | Command 0xd (circle tapped). | confirmed (code) |
+| `0x0027b7c8` | `PlayerCmd_IsCircleHold` | Command 0xe (circle held 7 samples). | confirmed (code) |
+| `0x0027b7f0` | `PlayerCmd_IsCrossSquareB` | Command 0x22 (cross + square). | confirmed (code) |
+| `0x0027b818` | `PlayerCmd_IsCommand30` | Command 0x30. | confirmed (code) |
+| `0x0027b840` | `PlayerCmd_IsCrossSquare` | Command 0x22 (cross + square). | confirmed (code) |
+| `0x0027b868` | `PlayerCmd_IsCircleCross` | Command 0x23 (circle + cross). | confirmed (code) |
+| `0x0027b890` | `PlayerCmd_IsCircleTriangle` | Command 0x24 (circle + triangle). | confirmed (code) |
+| `0x0027b8b8` | `PlayerCmd_IsCommand39` | Command 0x39. | confirmed (code) |
+| `0x0027b8e0` | `PlayerCmd_IsL1Held` | Command 6 (L1 held). | confirmed (code) |
+| `0x0027b908` | `PlayerCmd_IsL1Release` | Command 8 (L1 released). | confirmed (code) |
+| `0x0027b930` | `PlayerCmd_IsL1Press` | Command 7 (L1 pressed). | confirmed (code) |
+| `0x0027b960` | `PlayerCmd_IsR1Held` | Command 4 (R1 held). | confirmed (code) |
+| `0x0027b9e8` | `PlayerCmd_IsL2Held` | Command 5 (L2 held). | confirmed (code) |
+| `0x0027ba10` | `PlayerCmd_IsTriangle` | Command 0xa (triangle pressed). | confirmed (code) |
+| `0x0027ba38` | `PlayerCmd_IsTriangleHold` | Command 0xb (triangle held 7 samples). | confirmed (code) |
+| `0x0027ba68` | `PlayerCmd_IsOtherInput` | A command other than 0, 1, 2, 6-8, 0xa-0xc, 0x10, 0x12, 0x16 and 0x25-0x2c; the mini-games, the tag, the stereo and the mugging test it. | confirmed (code) |
+| `0x0027bb28` | `PlayerCmd_IsCommand37` | Command 0x37. | confirmed (code) |
+| `0x0027bb50` | `PlayerCmd_IsCommand38` | Command 0x38. | confirmed (code) |
+| `0x0027bb78` | `PlayerCmd_IsCommand36` | Command 0x36. | confirmed (code) |
+| `0x0027bba0` | `PlayerCmd_IsCommand33` | Command 0x33. | confirmed (code) |
+| `0x0027bbd0` | `PlayerCmd_IsDpadRight` | Command 0x28 (d-pad right, the flash). | confirmed (code) |
+| `0x0027bbf8` | `PlayerCmd_IsDpadLeft` | Command 0x27 (d-pad left). | confirmed (code) |
+| `0x0027bc20` | `PlayerCmd_IsCommand32` | Command 0x32. | confirmed (code) |
+| `0x0027bcc8` | `Mash_ResetAlternation` | Clears the mash alternation 0x0051097c. | confirmed (code) |
+| `0x0027bd98` | `PlayerCmd_IsGrabSpin` | Command 0x00510988 (R1 pressed) or 0x19: spins a grab. | confirmed (code) |
+| `0x0027bdf8` | `PlayerCmd_IsSquareAny` | Command 0x11 or 0xf (square, or the AI's chain square). | confirmed (code) |
+| `0x0027be50` | `PlayerCmd_IsCrossAny` | Command 0x12 or 0x10 (cross pressed or released). | confirmed (code) |
+| `0x0027bea8` | `PlayerCmd_IsGrabReverse` | Command 0x00510988 (R1 pressed) or 0x19, for a grabbed or tackled human: reverses it. | confirmed (code) |
+| `0x0027bf08` | `PlayerCmd_IsLetGo` | Command 5 (L2 held): lets go of a grab or mount. | confirmed (code) |
+| `0x0027bf30` | `PlayerCmd_IsCircleAny` | Command 0x1e, 0xd or 0xe (circle pressed, tapped or held). | confirmed (code) |
+| `0x0027bf98` | `PlayerCmd_IsCommand31` | Command 0x31 or the one at 0x0051098c (the mount). | confirmed (code) |
+| `0x0027bff0` | `PlayerCmd_IsCircleAnyB` | Command 0x1e, 0xd or 0xe (circle), for the mount and the grab. | confirmed (code) |
+| `0x0027c058` | `PlayerCmd_IsR2Held` | Command 1 (R2 held). | confirmed (code) |
+| `0x0027c080` | `PlayerCmd_IsR2Released` | Command 2 (R2 released). | confirmed (code) |
+| `0x0027c0a8` | `PlayerCmd_IsL1R1` | Command 0x1f (L1 + R1). | confirmed (code) |
+| `0x0027c0d0` | `PlayerCmd_IsDpadUp` | Command 0x26 (d-pad up). | confirmed (code) |
+| `0x0027c0f8` | `PlayerCmd_IsDpadDown` | Command 0x25 (d-pad down). | confirmed (code) |
+
+### Grab ends, holds and the stick games {#code-holds}
+
+From `0x00280548`: ending a grab, the per-player action delay, and the stick games of the cuffing hold and of a mugged
+player ([Mugging](#mugging)).
+
+| Address | Name | What it does | Evidence |
+| --- | --- | --- | --- |
+| `0x00280548` | `Grab_End` | Ends a grab: clears the victim's +0xc0 and restores the attached and grabbing controls to their defaults. | confirmed (code) |
+| `0x00280d20` | `Grab_StickDirectionBits` | The stick's direction relative to the grabber's facing as a direction bit (0x80 with the stick at rest), for the hold's end. | confirmed (code) |
+| `0x00280ee0` | `Player_AnnounceObjective` | Announces the current objective (the pause menu's text). | confirmed (code) |
+| `0x00280f08` | `Player_AnnounceBonusObjective` | Announces the bonus objective. | confirmed (code) |
+| `0x00280f30` | `PlayerRec_GetActionDelayLeft` | The per-player action delay left (+0x50 past now), or -1 with none. | confirmed (code) |
+| `0x00280fa0` | `PlayerRec_ClearActionDelay` | Clears the per-player action delay (+0x4d, +0x50). | confirmed (code) |
+| `0x00280fd8` | `PlayerRec_SetActionDelay` | Sets the per-player action delay: +0x4d = 1, +0x50 = now + ms (3000 after an uncuff). | confirmed (code) |
+| `0x00281048` | `Float_NearlyEqual` | Whether two floats differ by less than a tolerance. | confirmed (code) |
+| `0x00281070` | `Climb_IsSpaceClear` | Whether a sphere of the human's capsule radius at a point overlaps nothing. | confirmed (code) |
+| `0x00281368` | `Human_RestoreBodyAfterClimb` | Clears body flag 0x4000 and resets the body's fields; reports the anim's sound to the AI as a noise. | confirmed (code) |
+| `0x00282b68` | `Hold_GetParams` | The cuffing hold's stick-game record, by the held human's class byte +0x11b and a Warrior's difficulty byte +7. | confirmed (code) |
+| `0x00283078` | `Hold_GetParamsB` | The cuffing hold's second parameter record, by the Warrior's difficulty byte +7. | confirmed (code) |
+| `0x002833c0` | `Player_UpdateCuffHold` | The holder's side of the cuffing hold (state 0x8000000000): the stick game with the mug meter; when it ends, cuffs (+0x5b4 set) or gets off. | confirmed (code) |
+| `0x00283a30` | `Player_UpdateMugHold` | The held human's side of the cuffing hold (state 0x10000000000): the stick game (state byte +0x128); says 8 swear. | confirmed (code) |
+| `0x00286550` | `Player_UpdateMuggedGame` | A player being mugged: the victim's stick game with the mug meter (Mug_GetParams, Mug_GetPlayerVictimParams). | confirmed (code) |
 
 ### Game-state functions {#warriors-functions}
 

@@ -1,7 +1,8 @@
 # Physics
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`). Static reading in Ghidra
-(2026-10-06, the whole of `Physics/` on 2026-10-07); no runtime claims yet.
+(2026-10-06, the whole of `Physics/` on 2026-10-07); the game under PCSX2 2.9.94 (PINE, hooks and `pcsx2 record`, in
+`level99`, 2026-10-07).
 
 ## Purpose
 
@@ -259,23 +260,42 @@ first and fastest at the end, like something tipping over.
 
 Confirmed (runtime) in a level: a settle slot filled by hand (an object, start = its rotation, end a quarter turn,
 acceleration 0.02, speed 0) read `t` = 0.02, 0.12, 0.2, 0.3, 0.42, 0.56, 0.72, 0.9 on successive samples, then 1.0
-with the slot freed and the object's flags `0x40000` → `0x8000000`, 0.21 s after the slot was written. A landing that
-starts a settle on its own was not produced: an object lifted and marked airborne through memory did not fall.
+with the slot freed and the object's flags `0x40000` → `0x8000000`, 0.21 s after the slot was written. A real
+landing is in [Settling a landed object](#settle).
 
 ### Settling a landed object {#settle}
 
 `WorldObject_OnContact` (`0x00394050`) gets the contact (hit object at `+0x40`, normal at `+0x50`, point at
-`+0x90`). Confirmed (code): when the contact is the ground (no hit object and normal z > 0.7), the object's kind has
-the `ObjectAttribs` byte `+0x85` set, and it is neither settling nor settled (`0x8040000`), it starts a settle
-(`0x00340fe0`): the first free slot (or the object's own), start = its current rotation, speed 0, its angular
-velocity zeroed (vtable `+0x7c` with the zero vector `0x005116c0`, inferred), flag `0x40000`. With all 64 slots busy
-nothing happens. The end rotation (`0x00340d08`) turns the object by the smallest angle that lines up its local axis
-nearest the contact normal (`0x00340b38`, among the axes a mask allows) with that normal, the turn wrapped to ±90°:
-it comes to rest on its nearest face.
+`+0x90`). Confirmed (code): when no human holds the object (flag `0x10`), it did not break on this contact (both
+wear bytes `+0x10d` and `+0x10e` non-zero, [Contacts](#contacts)), the contact is the ground (no hit object and
+normal z > 0.7), its type's **`axis`** byte (`+0x85`, [`CfgObj`](../references/bindings/config.md#cfgobj)
+argument 10) is not 0, and it is neither settling nor settled (`0x8040000`), it starts a settle
+(`IPhysics_StartSettle`, `0x00340fe0`): the first free slot (or the object's own), start = its current rotation,
+speed 0, its angular velocity zeroed (vtable `+0x7c` with the zero vector `0x005116c0`, inferred), flag `0x40000`.
+With all 64 slots busy nothing happens.
+
+The end rotation (`Settle_ComputeTarget`, `0x00340d08`) turns the object by the smallest angle that lines up one of
+its local axes with the contact normal, the turn wrapped to ±90°: it comes to rest on its nearest face. The axis
+(`Settle_NearestAxis`, `0x00340b38`) is the one whose positive direction is nearest the normal **among the axes the
+type's `axis` byte allows**: the byte is passed through unchanged (`lbu a3,0x85(v0)` at `0x003946ec`), bit 0 is the
+local x axis, bit 1 y, bit 2 z ([AXIS](../references/enums.md#axis): `X` 1, `Y` 2, `XY` 3, `Z` 4, `XZ` 5, `YZ` 6,
+`XYZ` 7). Bit 3, in `XZ_ROUND` 13 and `YZ_ROUND` 14, is tested but the axis it picks is never read, so a `_ROUND`
+type settles like `XZ` or `YZ`. Confirmed (code). Of the 1,371 object types loaded in `level99`, 855 have `axis` 0
+and never settle, 197 are `Z`, 119 `XYZ`, 76 `X`, 54 `XZ` (the brick, the beer bottle), 30 `XY`, 28 `Y`, 4 `YZ`
+and 8 `XZ_ROUND` (the bats and the pool cue); confirmed (runtime), read from the object database.
 
 On a later ground contact with `0x8000000` set, the object stops: velocity and angular velocity zeroed, flags
 `0x4000000` (airborne) and `0x8000000` cleared, `0x2000000` (grounded) set. Removing an object (`0x00391c10`)
 cancels its settle.
+
+Confirmed (runtime), a brick dropped from the player's hand (scenario `physics_brick_settle`: `Human_DropHeld` called
+on the player standing in the street of quick-save slot 6, no input): the brick (type 203, `axis` `XZ`) fell from
+z 1.18 with its interval 2 ticks and its vertical velocity falling by 0.5226 m/s per update (15.68 × 1/30). Its
+first floor contact (normal (0, 0, 1), at −5.49 m/s) started a settle with axis mask 5 and answered `0x20002`: the
+brick bounced up at 0.54 m/s while the flags held `0x40000`. Its second floor contact, 12 ticks later, found it
+settled (`0x8000000`, the settle's 11 ticks done) and stopped it: velocity 0, flags airborne and settled cleared,
+grounded set, and its interval back to 20 ticks two updates later. Two runs gave the same sequence, one update
+apart.
 
 ### Queries: the sort-and-sweep {#queries}
 
@@ -443,13 +463,12 @@ What follows is inferred from the code above.
 
 ## Coney's implementation
 
-Coney has the walking body's sweep (`src/human/body.h`, `src/raycast/`) but no `IPhysics`, no world objects and no
-step yet. When world objects come, the settle is a per-object tween run on Coney's fixed step, not a separate pass.
+Coney has the walking body's sweep (`src/human/body.h`, `src/raycast/`) and placed world objects
+(`src/world_objects/`), but no `IPhysics`, no flying objects and no step yet. When objects fly, the settle is a
+per-object tween run on Coney's fixed step, not a separate pass.
 
 ## Open questions
 
 - What the human attributes 1 and 7 that weigh the push sphere's push are.
 - Which classes the four other task vtables with the empty contact handler are (the car's message `0x3f` is
   answered: [Cars: hit effects](cars.md#hit-effects)).
-- Where the axis mask of `0x00340b38` comes from for a settle.
-- A runtime check of a settle started by a real landing (a thrown bottle); the step's 11 ticks are confirmed.

@@ -10,7 +10,7 @@ How RenderWare's PS2 driver, linked into the game, turns the game's drawing into
 video mode and how the picture is sent to the TV, how GS memory is split, and what each RenderWare render state becomes
 in GS registers. [Graphics](graphics.md) covers the game's device object, the cameras, the frame and the flip; [The
 streamed world](world.md#pipeline-unit) covers the game's own four PS2 pipelines; the GS state measured per pass of a
-frame is being written up separately (the frame analysis). Coney draws through librw on a PC GPU, so most of this is
+frame is [Rendering](rendering.md#passes). Coney draws through librw on a PC GPU, so most of this is
 background. What changes the picture is listed under [What a reimplementation must
 keep](#what-a-reimplementation-must-keep).
 
@@ -115,6 +115,7 @@ behaviour; inferred). With the second circuit one line lower, **every line on th
 lines of the frame buffer**: a vertical two-tap filter, the usual PS2 anti-flicker. The picture is slightly soft
 vertically and thin horizontal lines do not flicker between fields. It does not change the brightness: the two copies
 are the same picture ([Graphics](graphics.md#open-questions) keeps the 70 % brightness seen in PCSX2 open).
+The same registers read from a frame's GS dump are in [Rendering: Output](rendering.md#output).
 
 ### GS memory {#gs-memory}
 
@@ -166,7 +167,9 @@ Confirmed (code).
 `AREF` `0x40` on the GS's alpha scale, where `0x80` is 1.0, is **0.5**. So for a cut-out texture (foliage, fences,
 hair), the opaque half writes Z and hides what is drawn after it, while the transparent half is blended over what is
 already there without occluding later draws. Which draws come later decides how the edges look (the pass order is on
-[The streamed world](world.md#a-frame)).
+[The streamed world](world.md#a-frame)). The frame dumps agree: every first pass uses context 1 with
+this test, and the second passes, sprites and text use context 2's own `TEST_2`, off or `NOTEQUAL` 0
+([Rendering](rendering.md#shared-state), confirmed (runtime)).
 
 ### Blending {#blending}
 

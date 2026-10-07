@@ -1,0 +1,49 @@
+description = "slot 6, no input: the player drops his beer bottle, is given a brick and drops it; the landings and the settle"
+research = "docs/research/physics.md#settle"
+input = "physics_brick_settle.txt"
+updates = 200
+fields = ["player"]
+
+[original]
+slot = 6
+patches = ["scripted-pad", "right-stick", "call-brains", "settle-start", "object-contact"]
+setup = [
+  { address = "0x000c0000", type = "u32", value = "0x5f6e7964", frame = 0, until = 0 },
+  { address = "0x000c0004", type = "u32", value = "0x63697262", frame = 0, until = 0 },
+  { address = "0x000c0008", type = "u32", value = "0x0000006b", frame = 0, until = 0 },
+]
+calls = [
+  { function = "0x00257f38", args = ["player"], frame = 3 },
+  { function = "0x00238540", args = ["u32(player + 0x90)", "0x000c0000"], frame = 60 },
+  { function = "0x00257f38", args = ["player"], frame = 100 },
+]
+
+[coney]
+level = "sandbox:combat"
+args = ["--spawn", "start"]
+
+# The brick's task: the same address in every run from this state (0x00eeec80 on 2026-10-07).
+[[field]]
+name = "brick_z"
+address = "0x00eeec98"
+type = "f32"
+
+[[field]]
+name = "brick_qw"
+address = "0x00eeecac"
+type = "f32"
+
+[[field]]
+name = "brick_flags"
+address = "0x00eeecd4"
+type = "u32"
+
+[[field]]
+name = "brick_interval"
+address = "0x00eeecee"
+type = "u16"
+
+[[field]]
+name = "brick_vz"
+address = "0x00eeecb8"
+type = "f32"
