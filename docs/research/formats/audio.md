@@ -30,7 +30,9 @@ the SPU2 is cited as such; everything else is from this executable.
 | `0x0010efe0`-`0x0010f2f0` | sound record accessors | the fields below, one function each | confirmed (code) |
 | `0x0014c620` | `AudioDevice_LoadBank(name, partial)` | reads `<name>.msb` into sound RAM and `<name>.msd` into IOP memory | confirmed (code) |
 | `0x0014caf8` | `AudioDevice_Start(task)` | starts a sound: a stream from `BFW.SND` or a bank sample by hash | confirmed (code) |
-| `0x0014d528` / `0x0014d590` | `AudioDevice_StartMusic` | opens `MUSIC.SND` on a stream pair and starts it | confirmed (code) |
+| `0x0014d528` | `AudioDevice_OpenMusic` | device slot `+0x20`: opens `MUSIC.SND` on a stream pair (IOP command `0x1f`) and sets the track's range (`0x29`) | confirmed (code) |
+| `0x0014d590` | `AudioDevice_PrepareMusic` | slot `+0x128`: sizes the buffers, plays the parent stream muted, links the child, sets the MIB end offset, preloads (`0x2f`) | confirmed (code) |
+| `0x0014d738` | `AudioDevice_StartMusic` | slot `+0x130`: starts the music (command `0x2e`); details on [Sound](../sound.md) | confirmed (code) |
 | `0x00150078` | `RateToPitch(rate)` | `rate × 4096 / 48000`, the SPU2 pitch word | confirmed (code) |
 | `0x0014d2d8` | `AudioDevice_Duration(size, rate)` | `⌊⌊size × 3.5⌋ / (2 × rate)⌋ × 1000` ms: whole seconds only | confirmed (code) |
 

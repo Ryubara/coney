@@ -48,9 +48,42 @@ def safe_path(text: str) -> str:
     return "/".join(safe_part(p) for p in text.replace("\\", "/").split("/") if p not in ("", ".", ".."))
 
 
+def _scalar(value: Any) -> bool:
+    """Whether a JSON value holds no list or object."""
+    return not isinstance(value, (list, tuple, dict))
+
+
+def _encode(value: Any, depth: int, out: list[str]) -> None:
+    """Append `value`'s JSON: a list or object of plain values on one line (a key, a vertex, a record), anything
+    deeper indented two spaces a level, so large tables stay readable and small."""
+    if isinstance(value, dict):
+        entries: list[tuple[str | None, Any]] = list(value.items())
+        opening, closing = "{", "}"
+    elif isinstance(value, (list, tuple)):
+        entries = [(None, v) for v in value]
+        opening, closing = "[", "]"
+    else:
+        entries = []
+    if not entries or all(_scalar(v) for _, v in entries):
+        out.append(json.dumps(value, ensure_ascii=False))
+        return
+    pad = "  " * (depth + 1)
+    out.append(opening + "\n")
+    for index, (key, item) in enumerate(entries):
+        out.append(pad)
+        if key is not None:
+            out.append(json.dumps(key, ensure_ascii=False) + ": ")
+        _encode(item, depth + 1, out)
+        out.append(",\n" if index < len(entries) - 1 else "\n")
+    out.append("  " * depth + closing)
+
+
 def dumps(value: Any) -> bytes:
-    """JSON as the extractor writes it: UTF-8, two-space indent, keys in the order given, a final newline."""
-    return (json.dumps(value, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    """JSON as the extractor writes it: UTF-8, keys in the order given, a final newline; a list or object of plain
+    values on one line, anything deeper indented two spaces a level."""
+    out: list[str] = []
+    _encode(value, 0, out)
+    return ("".join(out) + "\n").encode("utf-8")
 
 
 def png_bytes(rgba: npt.NDArray[np.uint8]) -> bytes:
@@ -98,8 +131,14 @@ class Output:
     def start(self, kind: str) -> None:
         """Begin (or redo) a type: delete the files an earlier run recorded for it (only those the manifest lists)
         and forget them."""
+        folders: set[Path] = set()
         for path in self.files.get(kind, {}):
             (self.root / path).unlink(missing_ok=True)
+            folders.update((self.root / path).parents)
+        # Folders the deleted files leave empty go too (deepest first; a folder still in use stays).
+        for folder in sorted(folders, key=lambda f: len(f.parts), reverse=True):
+            if folder != self.root and self.root in folder.parents and folder.is_dir() and not any(folder.iterdir()):
+                folder.rmdir()
         self.files[kind] = {}
         self.sizes[kind] = {}
         self._taken = {path: k for path, k in self._taken.items() if k != kind}
@@ -124,7 +163,10 @@ class Output:
 
     def write(self, kind: str, wanted: str, data: bytes) -> str:
         """Write `data` at a path claimed for `wanted`; returns the path used (relative, `/` separated)."""
-        path = self.claim(kind, wanted)
+        return self.write_claimed(kind, self.claim(kind, wanted), data)
+
+    def write_claimed(self, kind: str, path: str, data: bytes) -> str:
+        """Write `data` at a path `claim` already gave out (when another file must name it before it is written)."""
         target = self.root / path
         try:
             target.parent.mkdir(parents=True, exist_ok=True)

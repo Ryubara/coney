@@ -282,6 +282,7 @@ class _Dictionary:
     source: str
     textures: list[dict[str, Any]]
     sprites: list[list[float]] | None = None
+    resource_hash: int | None = None  # the resource the dictionary came from; None for a streamed-world file
 
 
 class TexturesStage:
@@ -299,7 +300,9 @@ class TexturesStage:
         output.start(self.KIND)
         self.dictionaries: list[_Dictionary] = []
 
-    def _write(self, folder: str, source: str, data: bytes, start: int) -> _Dictionary | None:
+    def _write(
+        self, folder: str, source: str, data: bytes, start: int, resource_hash: int | None = None
+    ) -> _Dictionary | None:
         """Decode and write one dictionary; None (with a problem noted) when it does not parse."""
         try:
             textures = ps2tex.parse_dictionary(data, start)
@@ -328,7 +331,7 @@ class TexturesStage:
                 record["file"] = self.output.write(self.KIND, f"{folder}/{texture.name}.png", png_bytes(pixels))
                 self.report.count("textures")
             listed.append(record)
-        dictionary = _Dictionary(folder, source, listed)
+        dictionary = _Dictionary(folder, source, listed, resource_hash=resource_hash)
         self.dictionaries.append(dictionary)
         self.report.count("dictionaries")
         return dictionary
@@ -346,7 +349,9 @@ class TexturesStage:
         for index, chunk in enumerate(item.resource.chunks):
             if chunk.type == 0x2A:
                 for start in dictionaries_in(item.data, chunk.offset, chunk.offset + chunk.size):
-                    written = self._write(f"textures/{item.label()}", item.label(), item.data, start)
+                    written = self._write(
+                        f"textures/{item.label()}", item.label(), item.data, start, item.resource.hash
+                    )
             elif chunk.type == 0x4C and written is not None:
                 written.sprites = sprite_rectangles(item.chunk_bytes(index))
 
@@ -354,7 +359,10 @@ class TexturesStage:
         """Write the index."""
         listing = []
         for d in self.dictionaries:
-            record: dict[str, Any] = {"folder": d.folder, "source": d.source, "textures": d.textures}
+            record: dict[str, Any] = {"folder": d.folder, "source": d.source}
+            if d.resource_hash is not None:
+                record["resource"] = f"{d.resource_hash:08x}"
+            record["textures"] = d.textures
             if d.sprites is not None:
                 record["sprites"] = d.sprites
             listing.append(record)

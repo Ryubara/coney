@@ -157,6 +157,8 @@ nav:
           - Audio data: research/formats/audio.md
           - RenderWare streams: research/formats/renderware.md
           - Compiled Lua chunks: research/formats/lua-chunks.md
+          - Global lists: research/formats/global-lists.md
+          - Memory card icon: research/formats/memory-card-icon.md
       - Xbox assets (optional): research/xbox-assets.md
       - Xbox executable (evaluation): research/xbox-executable.md
   - Game references:

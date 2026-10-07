@@ -138,6 +138,65 @@ The palette packet's image is the colours as RGBA bytes: 16 × 16 for an 8-bit t
 **Disc check:** every 8-bit palette is 16 × 16 (32,542 textures, `paletteSize` 1,104 = `0x50` + 1,024), every 4-bit
 one 8 × 3 (9,669, 176 = `0x50` + 96).
 
+### Clump (section `0x10`) {#clump}
+
+RenderWare's own layout. Inferred from the public format and checked on the disc (every clump below reads to its
+end). The parts an extractor needs:
+
+| Section | What it holds |
+| --- | --- |
+| struct | atomic count (and light and camera counts, always 0 here) |
+| frame list (`0x0E`) | per frame a 3x3 rotation (right, up, at), a position, the parent (-1 for a root) and flags; each frame's extension may hold a frame name (`0x253F2FE`) and an HAnim plugin (`0x11E`: version, bone id, and on the root the hierarchy: bone count, flags, key size, then `{id, index, flags}` per bone) |
+| geometry list (`0x1A`) | the geometries: struct (format flags, triangle count, vertex count, morph target count; then the bounding sphere), material list (`0x08`), extension: mesh plugin (`0x50E`), native data (`0x510`), skin (`0x116`) |
+| atomic (`0x14`) | struct (frame index, geometry index, flags), extension with the game's plugin `0x3F0` ([The streamed world](../world.md#atomic-plugin)) |
+
+A **material** (`0x07`) has a struct with its RGBA colour and a textured flag, an optional texture section (`0x06`:
+sampling word, then the texture name and mask as strings) and an extension that may hold MatFX (`0x120`, its effect
+type). Every geometry is PS2 native (format bit `0x01000000`): the vertex data is not in the struct but in the
+`0x510` section, one DMA chain per mesh (below). The **mesh plugin** (`0x50E`) gives `{u32 strip, u32 meshes,
+u32 indices}` and per mesh `{u32 vertex count, u32 material}`.
+
+**Skin** (`0x116`, PS2): bone count, used-bone count, the most weights per vertex and a padding word, the used bones'
+indices, then one 4x4 inverse bind matrix per bone (16 floats, column-major right, up, at, position, the fourth
+components not meaningful). The weights themselves are in the DMA chain (below). Disc check (corroboration): the
+153 skinned models each have 32 bones and 32 matrices ([Characters](../characters.md#files)).
+
+The models' **materials name no texture** a model can use: the game gives each model the textures of the dictionary
+its Object List or Character List record names ([Level loading](../level-loading.md#the-object-list),
+[Characters](../characters.md#files)); props take the dictionary's first texture. Disc check (corroboration): of the
+1,477 model resources, 153 are skinned characters and 1,324 props or scene models.
+
+### PS2 native geometry {#native-geometry}
+
+The `0x510` section holds a platform word (4, the PS2) and then per mesh `{u32 size, u32 flags}` and `size` bytes of
+DMA chain for vector unit 1 (the struct header's own size is not to be trusted:
+[The streamed world](../world.md#part-file)). The chain's tags (`cnt`, `ref`, `ret`; a `ref` address counts 16-byte
+units from the chain's start) carry VIF codes; each batch is `STCYCL`, one `UNPACK` per attribute to vector-unit
+addresses 0, 1, 2, ..., `ITOP` (the batch's vertex count) and a microprogram start. In a triangle strip every batch
+after the first repeats the last two vertices of the one before. Two layouts occur:
+
+| Layout | Used by | Slot 0 | Slot 1 | Slot 2 | Slot 3 | Slot 4 |
+| --- | --- | --- | --- | --- | --- | --- |
+| the game's packed one | streamed world, props, characters, the level's sky models | position `V4_16` times atomic plugin `0x3F0 +0x00` | texture coordinates `V4_16` (two sets) or `V2_16` (one) times `0x3F0 +0x04` | colour `V4_8` unsigned, 128 = full | normal `V4_8` signed, /127 | skinned only: `V4_32`, four weights (floats) whose low 10 bits hold `(bone + 1) << 2` (0 unused) |
+| RenderWare's default one | the level's light-glow world | position `V3_32` floats | texture coordinates `V2_32` floats | colour `V4_8` | normal `V3_8` | |
+
+The packed layout is [The streamed world](../world.md#ps2-world-geometry)'s, confirmed (runtime) there; the same
+decoding gives every prop, character and sky model on the disc. The skin weights' encoding is inferred from the disc:
+with their low bits cleared, the weights of each of the 302,305 skinned vertices add up to 1 within 0.0001, and the
+bone numbers run 0 to 31, under the 32 bones. Disc check (corroboration, `coney-tools extract`): all 1,477 models
+and 64 glow worlds decode with no problem.
+
+### World (section `0x0B`) {#world}
+
+RenderWare's world: a struct (here 64 bytes: the root's origin and counts, format flags at `+0x24`, the bounding box's
+maximum at `+0x28` and minimum at `+0x34`), a material list, then the sector tree: plane sectors (`0x0A`) with two
+children each and atomic sectors (`0x09`). An atomic sector's struct gives its material base, triangle and vertex
+counts and box (maximum at `+0x0c`, minimum at `+0x18`); its extension holds the mesh plugin and native data, as a
+geometry's, and on the streamed world the game's sector plugin `0x3F1`
+([The streamed world](../world.md#sector-plugin)). A sector mesh's material indexes the world's material list. Inferred
+from the public format; disc check (corroboration): the 159 streamed worlds' 16,074 sectors and the 64 glow worlds
+read this way.
+
 ### The older streams (stamp `0x1803FFFF`) {#older-streams}
 
 Five WAD entries (unnamed, entries 3,793-3,797) carry the 3.6.0.3 stamp. Four start with an empty texture dictionary
@@ -154,7 +213,11 @@ The game reads these streams only through RenderWare; what it does with the resu
 
 The engine reads textures and clumps with librw (`src/platform/texture_dictionary.cpp`) and the packed PS2 geometry
 with its own decoder ([The streamed world](../world.md#coneys-implementation)). `coney-tools extract` decodes the
-textures above to PNG without RenderWare ([python/src/coney_tools/ps2tex.py](repo:python/src/coney_tools/ps2tex.py)).
+textures above to PNG without RenderWare ([python/src/coney_tools/ps2tex.py](repo:python/src/coney_tools/ps2tex.py)),
+and the clumps and worlds to glTF 2.0 with its own section reader and DMA-chain decoder
+([rwclump.py](repo:python/src/coney_tools/rwclump.py),
+[ps2mesh.py](repo:python/src/coney_tools/ps2mesh.py)). Positions keep RenderWare's axes; a skinned model's
+glTF skin takes the skin plugin's inverse bind matrices.
 
 ## Open questions
 

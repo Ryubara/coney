@@ -99,8 +99,14 @@ folder Coney's install step will produce, and that the engine and mods will read
 | `audio` | `audio/sounds/<name>.wav` (streamed sounds, named as the game names them, `unnamed/<hash>.wav` otherwise), `audio/banks/<bank>/<name>.wav`, `audio/music/<track>.wav`, and `sounds.json`, `music.json`, `classes.json` |
 | `scripts` | `scripts/<name>.lua`: the compiled Lua chunks as stored (not source), and `scripts/index.json` |
 | `textures` | `textures/<dictionary>/<texture>.png`, the streamed world's in `textures/worlds/<file>/`, and `textures/index.json` (sizes, depth, mipmaps, filter, addressing, sprite rectangles) |
+| `models` | `models/<name>.gltf` and `.bin`: every model as glTF 2.0, a character with its skin, each textured from `../textures/`; `models/index.json` (dictionary, counts, bone offsets) |
+| `animations` | `animations/<clip>.json` (root channels, a rotation channel per bone, events), `animations/characters/<name>.json` (clips, the 722 anim slots, the range list) and `animations/index.json` |
+| `levels` | `levels/<level>/`: `collision.json` and `collision.gltf`, `paths.json`, `occluders.json`, `subtitles.json`, the sky models and the light glows as glTF, `level.json` and the file as stored (`source.lev`) |
+| `worlds` | `worlds/<world>/world.gltf`: the streamed world assembled, every part's atomics at their sectors; `world.json` (manifest, sectors); parts no sector names in `unused/` |
+| `scenes` | `scenes/<record>.json`: every in-engine scene record (roles, poses, clips, object, camera and light tracks) and `scenes/list.json` |
+| `data` | `data/global/*.json` (Character, Object, Anim and Dependency Lists, sprite sheet table), `data/objects/<level>.json` (placed objects), `data/fonts/`, `data/icon/` (the memory card icon as glTF and PNG) |
 | `index` | `index/wad.json`: every WAD entry's kind, name and resources, and every resource's chunks |
-| `raw` | what no decoder takes yet, as stored, each with a `.json` description: `raw/<kind>/<name>` and `raw/resources/<shape>/<name>.res` |
+| `raw` | what no decoder takes, as stored, each with a `.json` description: only the five old RenderWare files no code reads |
 
 `--only` limits the run to some types; the others' files and records stay as an earlier run left them. A dictionary
 or resource is named by its recovered name, or by its hash in hex. `manifest.json` lists every file with its SHA-256
@@ -108,8 +114,9 @@ and, per type, the file count, the bytes and a digest over the type's files, so 
 with it. The output is deterministic. At the end the command prints, per type, the files, bytes and digest and the
 stage's counts; `--verify` then compares each type's file count with the expected one for the NTSC-U disc and exits 1
 on a difference. `--jobs` sets the worker processes that decode the audio (default up to four). A full run takes
-about ten minutes and writes about 9.5 GB, most of it WAV. Which formats are decoded and which are still raw:
-[Asset inventory](../research/formats/inventory.md).
+about 15 minutes and writes about 11 GB, most of it WAV and scene JSON. Models, levels and worlds are glTF 2.0 that
+any viewer opens, textured from `textures/`; coordinates keep the axes the game stores. Which formats are decoded
+and which are still raw: [Asset inventory](../research/formats/inventory.md).
 
 ## audio {#audio}
 

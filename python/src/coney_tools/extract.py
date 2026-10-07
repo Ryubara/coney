@@ -18,7 +18,21 @@ import sys
 import time
 from pathlib import Path
 
-from coney_tools import extract_audio, extract_raw, extract_wad, lua4, movies, refs_extract, wad
+from coney_tools import (
+    extract_anims,
+    extract_audio,
+    extract_data,
+    extract_levels,
+    extract_models,
+    extract_raw,
+    extract_scenes,
+    extract_wad,
+    extract_worlds,
+    lua4,
+    movies,
+    refs_extract,
+    wad,
+)
 from coney_tools.config import ConfigError, find_repo_root
 from coney_tools.disc import Disc
 from coney_tools.extract_output import Output, Report
@@ -26,7 +40,7 @@ from coney_tools.extract_types import TYPES
 from coney_tools.wad_cli import open_disc
 
 #: The WAD stages, in the order they see each entry.
-_WAD_TYPES = ("index", "scripts", "textures", "raw")
+_WAD_TYPES = ("index", "scripts", "textures", "models", "animations", "levels", "worlds", "scenes", "data", "raw")
 #: Disc files other stages read; `disc` copies the rest.
 _HANDLED_FILES = {wad.WAD_FILE, wad.DIR_FILE, "IOP/BFW.SND", "IOP/MUSIC.SND"}
 
@@ -38,8 +52,14 @@ EXPECTED: dict[str, dict[str, int]] = {
         "audio": 25743,
         "scripts": 468,
         "textures": 26309,
+        "models": 2955,
+        "animations": 1929,
+        "levels": 1025,
+        "worlds": 825,
+        "scenes": 2766,
+        "data": 79,
         "index": 1,
-        "raw": 14452,
+        "raw": 10,
     },
 }
 _PIECE = 8 << 20
@@ -166,6 +186,21 @@ def run(disc_arg: str | None, out: Path, only: list[str] | None, verify: bool, w
                 stages.append(extract_wad.ScriptsStage(output))
             elif kind == "textures":
                 stages.append(extract_wad.TexturesStage(output))
+            elif kind == "models":
+                textures = next((s for s in stages if isinstance(s, extract_wad.TexturesStage)), None)
+                stages.append(extract_models.ModelsStage(output, textures))
+            elif kind == "animations":
+                stages.append(extract_anims.AnimationsStage(output))
+            elif kind == "levels":
+                textures = next((s for s in stages if isinstance(s, extract_wad.TexturesStage)), None)
+                stages.append(extract_levels.LevelsStage(output, textures))
+            elif kind == "worlds":
+                textures = next((s for s in stages if isinstance(s, extract_wad.TexturesStage)), None)
+                stages.append(extract_worlds.WorldsStage(output, textures))
+            elif kind == "scenes":
+                stages.append(extract_scenes.ScenesStage(output))
+            elif kind == "data":
+                stages.append(extract_data.DataStage(output, lambda h: names.get(h) or facts.resource_name(h)))
             elif kind == "raw":
                 stages.append(extract_raw.RawStage(output))
         _note(f"reading the WAD for {', '.join(wad_types)}")

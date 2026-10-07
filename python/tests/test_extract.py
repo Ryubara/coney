@@ -178,11 +178,11 @@ def make_disc(root: Path, entries: list[tuple[int, bytes]]) -> Disc:
 def test_the_wad_pass_classifies_and_writes_each_kind(tmp_path: Path) -> None:
     _, _, textures = made_up_texture()
     lua = bytes.fromhex("1b4c7561400104040420060908") + b"made up"
-    scene = struct.pack("<II", 32, 0) + b"made_up_scene\0\0\0" + bytes(8)
+    junk = b"nothing any decoder knows" + bytes(7)
     entries = [
         (0x1111, resource(0xAAAA, [(0x2A, textures)])),
         (0x2222, lua),
-        (0x3333, scene),
+        (0x3333, junk),
         (0x4444, resource(0xBBBB, [(0x47, b"not really a clump")])),
     ]
     disc = make_disc(tmp_path / "disc", entries)
@@ -198,10 +198,9 @@ def test_the_wad_pass_classifies_and_writes_each_kind(tmp_path: Path) -> None:
     files = {kind: sorted(record) for kind, record in output.files.items()}
     assert files["scripts"] == ["scripts/index.json", "scripts/made_up.lua"]
     assert files["textures"] == ["textures/0000aaaa/made_up.png", "textures/index.json"]
-    assert "raw/scene/00003333.scn" in files["raw"]
-    assert "raw/resources/model/0000bbbb.res.json" in files["raw"]
+    assert files["raw"] == ["raw/unknown/00003333.bin", "raw/unknown/00003333.bin.json"]
     index = json.loads((tmp_path / "out" / "index" / "wad.json").read_text(encoding="utf-8"))
-    assert [e["kind"] for e in index["entries"]] == ["resource", "lua", "scene", "resource"]
+    assert [e["kind"] for e in index["entries"]] == ["resource", "lua", "unknown", "resource"]
     assert index["resources"]["0000aaaa"]["shape"] == "textures"
 
 
@@ -226,6 +225,6 @@ def test_kinds_by_their_structure() -> None:
 
 
 def test_a_raw_entry_is_described() -> None:
-    manifest = struct.pack("<III", 100, 120, 1) + struct.pack("<II", 10, 20)
-    entry = extract_wad.Entry(WadEntry(0, 0, len(manifest), 7), manifest, "world-manifest", None, None)
-    assert extract_raw.describe(entry) == {"world_size": 100, "world_heap": 120, "parts": [[10, 20]]}
+    data = struct.pack("<IIII", 1, 2, 3, 0xDEADBEEF)
+    entry = extract_wad.Entry(WadEntry(0, 0, len(data), 7), data, "unknown", None, None)
+    assert extract_raw.describe(entry) == {"words": ["00000001", "00000002", "00000003", "deadbeef"]}
