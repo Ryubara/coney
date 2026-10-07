@@ -19,6 +19,7 @@
 #include "effects/ground_fog.h"
 #include "effects/level_effects.h"
 #include "effects/particles.h"
+#include "effects/screen_tint.h"
 #include "gui/global_strings.h"
 #include "scripting/lua_value.h"
 #include "scripting/lua_vm.h"
@@ -139,12 +140,24 @@ TEST_CASE("SetLevelColour sets the level's tint at once; EnterStore and ExitStor
     h.first("EnterStore", {list({0, 0, 0, 0})});
     CHECK(h.effects.tint.look() == coney::effects::ScreenTint::kStoreLook);
     h.effects.tint.step(0.125F);
-    CHECK(h.effects.tint.current() == Colour{0, 13, 23, 15});
+    CHECK(h.effects.tint.current() == Colour{0, 12, 22, 15}); // each byte truncated
     h.effects.tint.step(0.125F);
     CHECK_FALSE(h.effects.tint.drawn());
     h.first("ExitStore");
     h.effects.tint.step(0.25F);
     CHECK(h.effects.tint.current() == Colour{0, 25, 45, 30});
+}
+
+TEST_CASE("the tint bindings set the context's own tint (the front end's) before the level's effects",
+          "[effects_bindings]") {
+    using Colour = coney::effects::ScreenTint::Colour;
+    Harness h;
+    coney::effects::ScreenTint frontEnd;
+    h.context.tint = &frontEnd;
+    // level100's overlay (0.03, 0.08, 0.12, 0.17): each x 255, truncated.
+    h.first("SetLevelColour", {list({0.03, 0.08, 0.12, 0.17})});
+    CHECK(frontEnd.current() == Colour{7, 20, 30, 43});
+    CHECK_FALSE(h.effects.tint.drawn());
 }
 
 TEST_CASE("Start3DFog, MaxFogParticles, End3DFog, StartGarbage and EndGarbage reach the level's effects",

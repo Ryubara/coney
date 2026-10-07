@@ -162,6 +162,11 @@ namespace coney {
 
 void LevelFlowMode::makeScenes() {
     dropScenes();
+    // The world's lights and tint reach the bindings with or without a scene system.
+    if (m_context != nullptr) {
+        m_context->lighting = m_scene ? m_scene->lighting() : nullptr;
+        m_context->tint = m_scene ? m_scene->tint() : nullptr;
+    }
     if (!m_sceneMaker) {
         return;
     }
@@ -177,7 +182,6 @@ void LevelFlowMode::makeScenes() {
     m_scenes->setHost(m_scene ? m_scene->sceneHost() : nullptr);
     if (m_context != nullptr) {
         m_context->scenes = m_scenes.get();
-        m_context->lighting = m_scene ? m_scene->lighting() : nullptr;
     }
     m_profileManager.setScenes(m_scenes.get());
 }
@@ -189,6 +193,9 @@ void LevelFlowMode::dropScenes() {
         }
         if (m_scene && m_context->lighting != nullptr && m_context->lighting == m_scene->lighting()) {
             m_context->lighting = nullptr;
+        }
+        if (m_scene && m_context->tint != nullptr && m_context->tint == m_scene->tint()) {
+            m_context->tint = nullptr;
         }
     }
     m_profileManager.setScenes(nullptr);

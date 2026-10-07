@@ -425,7 +425,7 @@ Set at every `HintBox_Update` (`0x001cdc80`), default mode, confirmed (code) and
 | --- | --- | --- |
 | `+0x00`, `+0x08` | 0.016, 1.0 | the text's x, and the bottom it sits on (one player) |
 | `+0x10`, `+0x18` | 0.245, 1.0 | the same in a split screen |
-| `+0x28` | 0.73 | the wrap width (inferred: the measured box is 0.73 wide) |
+| `+0x28` | 0.73 | a width matching the measured box (0.73 wide); the text itself wraps at the widget's own `+0x1d4`, 0.74 with one player ([Hints](#hints-hudsettutorialtext); inferred: `+0x1d4` read 0.74 at runtime, and the `level99` fence-climbing hint is one line in a box about 0.726 wide, PCSX2 `slot07`) |
 | `+0x40` | `0x80000000` | box colour, black at alpha 128 |
 | `+0x50`, `+0x54` | -0.018, -0.035 | box offset from the text's top-left |
 | `+0x60`, `+0x64` | 0.03, 0.035 | box size beyond the text's |
@@ -2544,6 +2544,11 @@ blending with Z test and no Z write; flat shading gives a triangle its last vert
 clock, black first; the fight stance is a lock-on or a block; a hit's pulse is the health lost in the step; the
 civilian's class byte is Rembrandt's 35; the camera's heading is that of its forward. Not built: a boss's three
 bands, the Rumble team disc and pointer, two players' rings and icons.
+
+**Wrapping** (`repo:src/hud/hint_box.h`, `wrapText`) follows `MessageHUD_WordWrap` (`0x001bac20`,
+[GUI](gui.md)): a break before the word that takes the line past the width, each line measured with its tags
+stripped (a button icon takes no width), a leading `<AUTOINDENT f>` giving the width. The hint box wraps at 0.74, the
+scroll-in messages at 0.7 (`0x0050ea50`); Coney has one player, so the split widths (0.52) are not used.
 
 **Coney's stand-ins** (marked in the code): text sizes read as the glyph height (`(0.04, 0.05)` as w × h, 0.05 as h);
 the counter slots' `x0` 0 and lines at y 0.104 and 0.154, the count 0.022 right of its icon; handcuff and key icons

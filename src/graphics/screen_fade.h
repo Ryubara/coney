@@ -57,6 +57,9 @@ class ScreenFade {
     /// Draws a fade of `level` (0 clear, 1 black) over the logical screen: nothing at 0 or less. A render that blends
     /// the level of the last two steps draws through this.
     static void draw(RenderDevice& device, float level);
+    /// Draws `colour` over the whole logical screen, blended by its alpha (0-255): the fade's quad, which the level's
+    /// screen tint shares (effects::ScreenTint, docs/research/rendering.md#tint).
+    static void drawWash(RenderDevice& device, Rgba colour);
 
   private:
     // Idle; asked for, waiting for the frame that marks it running; running.

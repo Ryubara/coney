@@ -81,24 +81,32 @@ effects::ScreenTint::Colour tintArg(std::span<const Value> args) {
     return effects::ScreenTint::Colour{component(1), component(2), component(3), component(4)};
 }
 
+// The tint the tint bindings set: the context's own (the front end's), else the level's effects', else none.
+effects::ScreenTint* tintOf(const BindingContext& context) {
+    if (context.tint != nullptr) {
+        return context.tint;
+    }
+    return context.effects != nullptr ? &context.effects->tint : nullptr;
+}
+
 // `SetLevelColour({r, g, b, a})`, `EnterStore({r, g, b, a})` and `ExitStore()`: the screen tint's looks 9 and 10
 // (docs/research/rendering.md#tint).
 void addTintBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("SetLevelColour", [context = &context](std::span<const Value> args) {
-        if (context->effects != nullptr) {
-            context->effects->tint.setLevelColour(tintArg(args));
+        if (effects::ScreenTint* tint = tintOf(*context)) {
+            tint->setLevelColour(tintArg(args));
         }
         return binding::none();
     });
     vm.registerFunction("EnterStore", [context = &context](std::span<const Value> args) {
-        if (context->effects != nullptr) {
-            context->effects->tint.enterStore(tintArg(args));
+        if (effects::ScreenTint* tint = tintOf(*context)) {
+            tint->enterStore(tintArg(args));
         }
         return binding::none();
     });
     vm.registerFunction("ExitStore", [context = &context](std::span<const Value>) {
-        if (context->effects != nullptr) {
-            context->effects->tint.exitStore();
+        if (effects::ScreenTint* tint = tintOf(*context)) {
+            tint->exitStore();
         }
         return binding::none();
     });

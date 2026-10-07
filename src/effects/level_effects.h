@@ -3,6 +3,7 @@
 
 #include <optional>
 
+#include "effects/blur_pulse.h"
 #include "effects/camera_litter.h"
 #include "effects/ground_fog.h"
 #include "effects/motion_blur.h"
@@ -13,12 +14,17 @@
 namespace coney::effects {
 
 /// A level's effects that scripts and the engine start: the particle systems, player 1's view's motion blur, screen
-/// tint, ground fog and room smoke, and the litter round the camera. Gameplay owns one for each level, steps it after
-/// the level's step and hands it to the level to draw.
+/// tint and blur pulse, ground fog and room smoke, and the litter round the camera. Gameplay owns one for each level,
+/// steps it after the level's step and hands it to the level to draw.
 struct LevelEffects {
     ParticleSystems particles;
     MotionBlur motionBlur;
+    /// The screen tint: SetLevelColour's and the stores' looks, and the blends the cameras ask for (the game-over
+    /// shot and CamUseDeathCamera: `tint.blendTintTo(ScreenTint::kGameOver, seconds)`).
     ScreenTint tint;
+    /// The blur pulse: `ScreenQueueEffect` 4 and 5, and the cameras' (`blurPulse.start(seconds, delayMs)`,
+    /// `blurPulse.end(0)`).
+    BlurPulse blurPulse;
     GroundFog fog;
     CameraLitter litter;
     RoomSmoke smoke;
@@ -40,6 +46,7 @@ struct LevelEffects {
         particles.step(seconds);
         motionBlur.step(seconds);
         tint.step(seconds);
+        blurPulse.step(seconds);
         if (viewer) {
             fog.step(seconds, *viewer);
             litter.step(seconds, viewer->position, litterRay);

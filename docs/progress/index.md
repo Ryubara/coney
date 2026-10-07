@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.8% of the game's own code (529,132 of 3,354,776 bytes, 1,931 functions) |
+| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.8% of the game's own code (529,132 of 3,354,776 bytes, 1,940 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,220 of 3,284,028 bytes; 11,424 of 11,426 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-703 reimplemented function(s) have no size yet and add no bytes.
+712 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -71,8 +71,8 @@ at the top of the repository's `README.md`.
 | `Device/ps2` | `██░░░░░░░░░░░░░░░░░░` | 9.8% | 26 | 62,808 |
 | `FileIO` | `███▍░░░░░░░░░░░░░░░░` | 17.0% | 10 | 7,120 |
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
-| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 79 | 195,624 |
-| `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 231 | 497,416 |
+| `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 12.0% | 87 | 195,624 |
+| `GUI` | `████░░░░░░░░░░░░░░░░` | 19.8% | 232 | 497,416 |
 | `Human` | `███▌░░░░░░░░░░░░░░░░` | 17.3% | 689 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 8 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
@@ -500,6 +500,7 @@ at the top of the repository's `README.md`.
 | `0x00179808` | `Font_Size` | `Graphics` | 240 |
 | `0x00179958` | `Font_Measure` | `Graphics` | 728 |
 | `0x00179c30` | `Font_Draw` | `Graphics` | 1,408 |
+| `0x0017a258` | `Colour_LerpPacked` | `Graphics` | not filled in |
 | `0x0017a560` | `Occluders_Load` | `Graphics` | not filled in |
 | `0x0017ae38` | `ColourTable_Init` | `Graphics` | not filled in |
 | `0x0017b2e0` | `GroundRing_DrawQueued` | `Graphics` | 1,480 |
@@ -539,9 +540,15 @@ at the top of the repository's `README.md`.
 | `0x00185cc8` | `ResourceMgr_EmptyInstances` | `Graphics` | 88 |
 | `0x00185d20` | `ResourceMgr_RenderOverlay` | `Graphics` | 840 |
 | `0x0018c8c8` | `ScreenFx_BlendMotionBlur` | `Graphics` | not filled in |
+| `0x0018c988` | `ScreenFx_BlendTintTo` | `Graphics` | not filled in |
 | `0x0018ca50` | `ScreenFx_DrawTint` | `Graphics` | 296 |
+| `0x0018cb78` | `ScreenFx_FinishTintBlend` | `Graphics` | not filled in |
 | `0x0018cc60` | `ScreenQueueEffect` | `Graphics` | 504 |
 | `0x0018ce58` | `ScreenEffects_UpdateFade` | `Graphics` | not filled in |
+| `0x0018d058` | `ScreenFx_StartBlurPulse` | `Graphics` | not filled in |
+| `0x0018d1d0` | `ScreenFx_DrawBlurPulse` | `Graphics` | not filled in |
+| `0x0018d450` | `ScreenFx_QueueEffect` | `Graphics` | not filled in |
+| `0x0018dac0` | `ScreenFx_Render` | `Graphics` | not filled in |
 | `0x0018e070` | `ScreenFx_StartRoomSmoke` | `Graphics` | 136 |
 | `0x0018e0f8` | `ScreenFx_EndRoomSmoke` | `Graphics` | 80 |
 | `0x0018e148` | `Fog3D_Start` | `Graphics` | not filled in |
@@ -553,6 +560,7 @@ at the top of the repository's `README.md`.
 | `0x001906e8` | `ChunkReader_TextureDictionaryTid` | `Graphics` | 136 |
 | `0x00190770` | `ChunkReader_RenderwareTextureDic` | `Graphics` | 160 |
 | `0x00192688` | `AtomicPlugin_StreamRead` | `Graphics` | not filled in |
+| `0x00193d80` | `RwDevice_BlurPass` | `Graphics` | not filled in |
 | `0x00195238` | `RwDevice::GuiToOverlay` | `Graphics` | 248 |
 | `0x00195330` | `RwDevice::GuiWidthToOverlay` | `Graphics` | 120 |
 | `0x00197168` | `Instance_Render` | `Graphics` | 328 |
@@ -637,6 +645,7 @@ at the top of the repository's `README.md`.
 | `0x001b8ed0` | `LockPickDial_Render` | `GUI` | 128 |
 | `0x001b8f98` | `MessageHUD::MessageHUD` | `GUI` | not filled in |
 | `0x001b9600` | `TextWidget_Layout` | `GUI` | 5,664 |
+| `0x001bac20` | `MessageHUD_WordWrap` | `GUI` | not filled in |
 | `0x001bf7e0` | `MugMeter_Setup` | `GUI` | not filled in |
 | `0x001bfcc0` | `MugMeter_SetFills` | `GUI` | not filled in |
 | `0x001bfd30` | `MugMeter_SetStick` | `GUI` | not filled in |

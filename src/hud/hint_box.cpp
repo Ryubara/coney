@@ -69,7 +69,34 @@ MarkupTimes markupTimesOf(std::string_view text) {
     return times;
 }
 
+// The width of the last line of marked-up `line` as the original's word wrap measures it: the text after the last
+// line break, with every tag stripped (a button icon counts for nothing).
+float strippedWidth(std::string_view line, const gui::TextStyle& style, const gui::FontLookup& fonts) {
+    std::string plain;
+    for (const gui::MarkupToken& token : gui::parseMarkup(line)) {
+        if (token.kind == gui::MarkupToken::Kind::Text) {
+            plain += token.text;
+        } else if (token.kind == gui::MarkupToken::Kind::Tag &&
+                   (token.tag == gui::MarkupTag::Cr || token.tag == gui::MarkupTag::Cr2 ||
+                    token.tag == gui::MarkupTag::Cr3 || token.tag == gui::MarkupTag::Crm)) {
+            plain.clear();
+        }
+    }
+    return gui::layoutText(plain, style, fonts).width;
+}
+
 std::string wrapText(std::string_view text, const gui::TextStyle& style, const gui::FontLookup& fonts, float width) {
+    // A leading <AUTOINDENT f> gives the wrap width instead.
+    if (const std::vector<gui::MarkupToken> tokens = gui::parseMarkup(text);
+        !tokens.empty() && tokens.front().kind == gui::MarkupToken::Kind::Tag &&
+        tokens.front().tag == gui::MarkupTag::AutoIndent) {
+        float autoWidth = 0.0F;
+        const std::string_view argument = tokens.front().argument;
+        if (const auto [end, error] = std::from_chars(argument.data(), argument.data() + argument.size(), autoWidth);
+            error == std::errc{} && autoWidth > 0.0F) {
+            width = autoWidth;
+        }
+    }
     std::string done;
     std::string line;
     for (const std::string& word : wordsOf(text)) {
@@ -78,9 +105,7 @@ std::string wrapText(std::string_view text, const gui::TextStyle& style, const g
             candidate += ' ';
         }
         candidate += word;
-        // The layout's width is its widest line; the lines before the last <CR> already fit, so this measures the
-        // line being built.
-        if (!line.empty() && gui::layoutText(candidate, style, fonts).width > width) {
+        if (!line.empty() && strippedWidth(candidate, style, fonts) > width) {
             done += line + "<CR>";
             line = word;
         } else {
@@ -188,7 +213,7 @@ gui::TextStyle HintBox::textStyle() {
 const std::string& HintBox::wrapped(const gui::TextStyle& style, const gui::FontLookup& fonts) const {
     if (m_showing && m_wrappedFrom != m_showing->text) {
         m_wrappedFrom = m_showing->text;
-        m_wrapped = wrapText(m_showing->text, style, fonts, kHintWrapWidth - kHintBoxExtra.width);
+        m_wrapped = wrapText(m_showing->text, style, fonts, kHintWrapWidth);
     }
     return m_wrapped;
 }

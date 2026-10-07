@@ -46,6 +46,12 @@ class PlayLevelEffects {
     /// Lays the screen tint (effects::ScreenTint) over the whole screen: after the HUD, before the scene's captions
     /// (docs/research/rendering.md#tint).
     void drawTint(RenderEngine& engine);
+    /// The view's screen effects in the original's order (docs/research/graphics.md#blur-pulse): the blur pulse, which
+    /// replaces the screen with its blurred copy, then the tint.
+    /// @orig 0x0018dac0 ScreenFx_Render (ScreenEffectsManager.cpp)
+    void drawScreenEffects(RenderEngine& engine);
+    /// Whether the screen effects go before the HUD this frame: while a blur pulse runs.
+    [[nodiscard]] bool screenEffectsFirst() const;
 
   private:
     // Draws the ground fog's wisps (effects::GroundFog::drawn()) through the current camera at `view`.

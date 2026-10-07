@@ -14,6 +14,7 @@
 #include "animation/anim_math.h"
 #include "core/error.h"
 #include "core/interpolation.h"
+#include "effects/screen_tint.h"
 #include "fileio/wad.h"
 #include "gamemodes/front_end_scene.h"
 #include "graphics/level_lighting.h"
@@ -92,6 +93,7 @@ class FrontEndWorldScene final : public FrontEndScene, public scenes::SceneHost 
 
     [[nodiscard]] scenes::SceneHost* sceneHost() override { return this; }
     [[nodiscard]] graphics::LevelLighting* lighting() override { return &m_lighting; }
+    [[nodiscard]] effects::ScreenTint* tint() override { return &m_tint; }
 
     // ---- scenes::SceneHost ----
     void objectPose(double object, const scenes::ScenePose& pose) override;
@@ -136,7 +138,9 @@ class FrontEndWorldScene final : public FrontEndScene, public scenes::SceneHost 
     std::unique_ptr<WorldSet> m_set;
     std::unique_ptr<world::LevelObject> m_level;
     graphics::LevelLighting m_lighting;
-    SceneLighting m_sceneLighting; // after the lighting it reads, before the renderer that draws with it
+    effects::ScreenTint m_tint;
+    std::optional<std::uint64_t> m_lastStepMs; // the game time of the last update(), which the tint's blend steps from
+    SceneLighting m_sceneLighting;             // after the lighting it reads, before the renderer that draws with it
     WorldRenderer m_renderer;
     float m_pendingDistance = 0.0F;
     std::optional<Interpolated<CameraState>> m_camera; // the scene camera at the last two steps; none: the script's

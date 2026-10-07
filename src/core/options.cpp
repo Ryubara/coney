@@ -31,8 +31,8 @@ constexpr std::string_view kUsage =
     "             [--assets DIR]\n"
     "             [--dev-overlay N]\n"
     "             [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]\n"
-    "             [--fps-cap N] [--vsync on|off] [--show-fps] [--no-audio | --audio-test]\n"
-    "             [--skip-movies]\n"
+    "             [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps]\n"
+    "             [--no-audio | --audio-test] [--skip-movies]\n"
     "\n"
     "  --disc PATH        the game's disc: a mounted disc, a folder of its files or an ISO image\n"
     "  --load ENTRY       load a WAD entry (a name such as level1.lev, or a hash such as 0x7e23a6f2)\n"
@@ -90,6 +90,8 @@ constexpr std::string_view kUsage =
     "  --fps-cap N        draw at most N frames a second (0, the default: no cap); the game runs at\n"
     "                     its fixed 30 steps a second whatever the rate; 30 draws one frame per step\n"
     "  --vsync on|off     wait for the display's vertical blank when presenting (default on)\n"
+    "  --line-blend on|off  soften the picture as the PS2's video output does, each line the mean of\n"
+    "                     two neighbouring lines (default on); off shows the frame as drawn\n"
     "  --show-fps         print the frame and step rates once a second\n"
     "  --no-audio         run with no sound output (no audio device is opened)\n"
     "  --skip-movies      skip every movie at once, as if it had ended (by default they play, in\n"
@@ -532,6 +534,7 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
     std::optional<std::string> fpsCapArg;     // as typed, likewise
     std::optional<std::string> kindArg;       // as typed, likewise
     std::optional<std::string> vsyncArg;      // as typed, likewise
+    std::optional<std::string> lineBlendArg;  // as typed, likewise
     std::optional<std::string> checkpointArg; // as typed, likewise
     std::optional<std::string> startArg;      // as typed, likewise
     std::optional<std::string> rumbleArg;     // as typed, likewise
@@ -735,6 +738,15 @@ std::expected<Options, Error> parseOptions(std::span<const std::string_view> arg
                 return invalidArgument(std::format("--vsync needs on or off, got \"{}\"", setting));
             }
             options.vsync = setting == "on";
+        } else if (arg == "--line-blend") {
+            if (auto value = takeValue(args, i, lineBlendArg, "--line-blend", "on or off"); !value) {
+                return std::unexpected(std::move(value.error()));
+            }
+            const std::string setting = lineBlendArg.value_or(std::string{});
+            if (setting != "on" && setting != "off") {
+                return invalidArgument(std::format("--line-blend needs on or off, got \"{}\"", setting));
+            }
+            options.lineBlend = setting == "on";
         } else if (arg == "--no-audio") {
             options.noAudio = true;
         } else if (arg == "--skip-movies") {

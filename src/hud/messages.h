@@ -25,7 +25,8 @@ struct ScrollInMessage {
 };
 
 /// The queued messages (`ScrollInHUD.cpp`, HUD `+0x8dd0`): the objectives' messages. The front message shows at its
-/// place, its text block centred on the place's y, and is removed once its time has passed plus kScrollInTailMs.
+/// place, wrapped at kScrollInWrapWidth (`ScrollIn_ShowMessage`, `0x001c8e08`), its text block centred on the place's
+/// y, and is removed once its time has passed plus kScrollInTailMs.
 ///
 /// Coney's choices: a message's cue plays when it comes to the front; it fades out over its tail; the original's
 /// y offset (`0x0050ea58`) is taken as 0 (not on the page).

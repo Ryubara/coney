@@ -120,6 +120,11 @@ bool PlacedObjects::visible(double handle) const {
     return found != m_objects.end() && found->second.visible;
 }
 
+const PlacedObjects::Look* PlacedObjects::look(double handle) const {
+    const auto found = m_objects.find(handle);
+    return found != m_objects.end() ? &found->second.look : nullptr;
+}
+
 int PlacedObjects::alphaOf(const Placed& object, rw::Atomic* atomic, const DrawOptions& options) const {
     float alpha = static_cast<float>(object.look.tint & 0xFFU);
     if (!options.camera) {

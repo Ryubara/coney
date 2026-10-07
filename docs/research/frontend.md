@@ -2044,17 +2044,21 @@ mission-complete mode's kinds 2 and 3. Coney's stand-ins, each because the resea
 - The front end's `InitLevel` loads `level100`'s streamed worlds and level file (`FrontEndScene`,
   `src/platform/front_end_scene.h`) and makes the front end's scene system over the disc's scene list
   (`LevelFlowMode::setScenes`), then runs the scripts. Until the front end finishes, the scene bindings work on that
-  system and the lighting bindings on the world's light manager (`global.lua`'s lights for level 100). The menus step
-  the scenes, then the world, and draw it under their 2D pass; both go when the front end finishes. So
+  system, the lighting bindings on the world's light manager (`global.lua`'s lights for level 100) and the tint
+  bindings on the world's screen tint (`global.lua`'s `SetLevelColour`, level 100's overlay (7, 20, 30) at 21 / 128).
+  The menus step the scenes, then the world, and draw it under their 2D pass, then the tint over their text and the
+  fade over that ([Rendering: the front end](rendering.md#front-end)); all go when the front end finishes. So
   `WonderWheelAnim` plays `WonderWheel_100` (id 34) as the script asks. `SceneAddObject` resolves each of the 29
   objects (live, pinned; [Objects: spawning](objects.md#spawning)), and the scene's tracks pose them, drawn with
   their types' models ([Objects: models](objects.md#models)) and lit as world objects, shown and hidden by messages
-  `0x12` and `0x13`. The view is the scene's camera (`camera01`). Before it starts, and after it ends, the script's
-  camera, which sees nothing, gives the black background alone. At runtime in Coney (960 × 720 window, PM_Mode) the
+  `0x12` and `0x13`, each in its spawn's tint ([Objects: the tint](objects.md#tint)): the carts' `0x888888FF` and the
+  wheel's `0x474542FF` darken them to the original's (the carts' vertex colour 68 of 128). The view is the scene's
+  camera (`camera01`). Before it starts, and after it ends, the script's camera, which sees nothing, gives the black
+  background alone. At runtime in Coney (960 × 720 window, PM_Mode) the
   neon outline spans logical x 325-602 and y 51-408 of 640 × 448, with the sign near (411, 215); the runtime's are
   335-615, 53-408 and (410, 217). **Coney's choices:** when the scene camera starts, the world within 150 m of it is
   preloaded at once (the original streams it during the menus' fade in); the scene's own lights are counted, not
-  made; the objects' tint, pulse and fade are not drawn; the dependency list and packs are not loaded. An attract
+  made; the objects' pulse and fade are not drawn; the dependency list and packs are not loaded. An attract
   movie stops and restarts the wheel as in the original ([Background: stop and restart](#background)): `stopScene`
   ends it at once (no loop point), the movie mode stops the game clock while it plays, the scene ends and its one user's
   unload empties its slot on the first two updates after it, and `Menu.movieFinished`'s `startScene` 500 ms later
@@ -2304,7 +2308,7 @@ What the implementer still needs:
   usage lines and sounds, and `ShowRumbleModeIntro`.
 - The bindings that are stubs today (cameras, scenes, particles, sound, `PadSetHandler`), each with its subsystem;
   the list is the binding table in `src/scripting/script_bindings.cpp` ([Scripts](scripting.md#coneys-implementation)).
-- For the background: the objects' tint, the scene's lights, the level's dependency list and packs.
+- For the background: the scene's lights, the level's dependency list and packs.
 
 ## Open questions
 

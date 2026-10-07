@@ -13,6 +13,7 @@
 #include "characters/character_class.h"
 #include "characters/starting_money.h"
 #include "core/assert.h"
+#include "effects/level_effects.h"
 #include "scenes/scene_player.h"
 #include "scripting/ai_bindings.h"
 #include "scripting/anim_callbacks.h"
@@ -233,12 +234,21 @@ NativeFunction makeMenuLoadLevel(const Factory& factory) {
     };
 }
 
-// `ScreenQueueEffect(type, seconds)`: queues a fade (0 in, 1 out).
+// `ScreenQueueEffect(type, seconds)`: queues a fade (0 in, 1 out), the letterbox (2, 3) or the blur pulse (4 start, 5
+// end; docs/references/screen-effects.md#queue).
+// @orig 0x0018d450 ScreenFx_QueueEffect (ScreenEffectsManager.cpp)
 NativeFunction makeScreenQueueEffect(const Factory& factory) {
     return [context = factory.context](std::span<const Value> args) {
         const int type = static_cast<int>(binding::number(args, 0));
         const double seconds = binding::number(args, 1);
         context->host->queueScreenEffect(type, seconds);
+        if (context->effects != nullptr) {
+            if (type == 4) {
+                context->effects->blurPulse.queueStart();
+            } else if (type == 5) {
+                context->effects->blurPulse.queueEnd(static_cast<float>(seconds));
+            }
+        }
         // In play the screen's effects are the scenes' host's (the play mode's stage), whose fades a scene's own use.
         if (context->scenes != nullptr) {
             context->scenes->queueScreenEffect(type, static_cast<float>(seconds));

@@ -380,7 +380,11 @@ the lighting bindings (`repo:src/scripting/lighting_bindings.h`) fill a level's 
 directional and point light to the prelighting and clamps. Sectors, the background and humans are lit as the callers
 above say, each human by the sphere of his posed body; humans also get the shadow dimming (its fall and its rise),
 the fade from 60 to 70 m and a blob shadow (`repo:src/graphics/human_lighting.h`). A disc test checks `level99`'s
-values against the table above (all match). Coney's choices:
+values against the table above (all match). The background's models (sky box, cloud box, skyline, glows) carry no
+light flag and no normals, and librw would draw them by their prelighting alone; Coney lights them for the draw, since
+the original adds the world ambient all the same: `level99`'s sky box (prelight 60), cloud box (70) and skyline's
+unlit vertices (0) reach the GS as 59, 64 and 29 of 128 (street dump), `level100`'s sky box (70) as 64, prelight +
+0.227 each. Inferred (Coney's models against the GS dumps). Coney's choices:
 
 - The flicker steps with the simulation (game time per step) for the lights the cull would keep, drawing from the
   manager's own random sequence, not the game's; a burst starts with its pause.

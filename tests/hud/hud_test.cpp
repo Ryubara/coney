@@ -297,6 +297,21 @@ TEST_CASE("a long hint wraps at spaces outside tags to the box's width", "[hud]"
     CHECK(coney::hud::wrapText("short", style, fonts, 0.70F) == "short");
 }
 
+TEST_CASE("the wrap measures each line with its tags stripped and takes a leading AUTOINDENT's width", "[hud]") {
+    const coney::graphics::Font font = coney::test::testFont();
+    const coney::gui::FontLookup fonts = [&font](int) { return &font; };
+    const coney::gui::TextStyle style = coney::hud::HintBox::textStyle();
+    // A button icon takes no width: a line that fits without it fits with it.
+    const float plain = coney::gui::layoutText("press  to climb", style, fonts).width;
+    CHECK(coney::hud::wrapText("press <T> to climb", style, fonts, plain) == "press <T> to climb");
+    CHECK(coney::hud::wrapText("press <T> to climb", style, fonts, plain * 0.9F).find("<CR>") != std::string::npos);
+    // Only the line being built counts: the lines before a break are not measured again.
+    CHECK(coney::hud::wrapText("press<CR>to climb", style, fonts, plain * 0.8F) == "press<CR>to climb");
+    // <AUTOINDENT f> sets the width.
+    CHECK(coney::hud::wrapText("<AUTOINDENT 0.01>one two", style, fonts, 10.0F).find("<CR>") != std::string::npos);
+    CHECK(coney::hud::kHintWrapWidth == 0.74F);
+}
+
 TEST_CASE("counter panels: five to take, shown for a time after a change, in rows from the top", "[hud]") {
     KeepingAudio audio;
     coney::hud::CounterPanels panels;

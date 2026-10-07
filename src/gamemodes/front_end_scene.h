@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "core/error.h"
+#include "effects/screen_tint.h"
 #include "gamemodes/game_mode.h"
 #include "graphics/level_lighting.h"
 #include "scenes/scene_host.h"
@@ -43,6 +44,9 @@ class FrontEndScene {
     /// The front-end level's lights and fog, which its scripts' lighting bindings fill (`global.lua`'s lights for
     /// level 100); null for a world without them.
     [[nodiscard]] virtual graphics::LevelLighting* lighting() { return nullptr; }
+    /// The front-end level's screen tint, which `global.lua`'s `SetLevelColour` sets (level 100's overlay) and the
+    /// menus draw after their text (docs/research/rendering.md#front-end); null for a world without one.
+    [[nodiscard]] virtual effects::ScreenTint* tint() { return nullptr; }
 };
 
 /// Loads the front-end scene of the level named `level` (`level100`); fails as the level's files do.

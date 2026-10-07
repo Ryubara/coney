@@ -142,6 +142,8 @@ inline constexpr std::uint32_t kObjectiveMessageMs = 8000;
 inline constexpr float kMessageTextHeight = 0.05F;
 /// A scroll-in message stays this long past its time.
 inline constexpr std::uint32_t kScrollInTailMs = 500;
+/// A scroll-in message's wrap width with one player (`0x0050ea50`; 0.52 split).
+inline constexpr float kScrollInWrapWidth = 0.7F;
 /// The HUD strings of the objective headers, slot 0 and slot 1, and their `CfgHUDColor` slots.
 inline constexpr std::array<std::uint32_t, 2> kObjectiveHeaderStrings{0xe5, 0xe6};
 inline constexpr std::array<int, 2> kObjectiveHeaderColours{4, 6};
@@ -182,8 +184,9 @@ inline constexpr float kCycleIconSize = 0.1F;
 /// The text's x and the bottom it sits on, one player.
 inline constexpr float kHintTextX = 0.016F;
 inline constexpr float kHintBottom = 1.0F;
-/// The wrap width (inferred).
-inline constexpr float kHintWrapWidth = 0.73F;
+/// The text widget's wrap width with one player (its `+0x1d4`, read at runtime; 0.52 split). The box layout's own
+/// 0.73 (`+0x28`, docs/research/hud.md) matches the measured box; the text wraps at the widget's own width.
+inline constexpr float kHintWrapWidth = 0.74F;
 /// The box's offset from the text's top-left, and its size beyond the text's.
 inline constexpr GuiPoint kHintBoxOffset{-0.018F, -0.035F};
 inline constexpr GuiSize kHintBoxExtra{0.03F, 0.035F};

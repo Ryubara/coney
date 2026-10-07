@@ -59,7 +59,11 @@ void ScreenFade::draw(RenderDevice& device, float level) {
         return;
     }
     const auto alpha = static_cast<std::uint8_t>(std::clamp(std::lround(std::min(level, 1.0F) * 255.0F), 0L, 255L));
-    const LogicalQuad quad{0.0F, 0.0F, kLogicalWidth, kLogicalHeight, UvRect{}, Rgba{0, 0, 0, alpha}};
+    drawWash(device, Rgba{0, 0, 0, alpha});
+}
+
+void ScreenFade::drawWash(RenderDevice& device, Rgba colour) {
+    const LogicalQuad quad{0.0F, 0.0F, kLogicalWidth, kLogicalHeight, UvRect{}, colour};
     device.drawQuads(nullptr, std::span(&quad, 1));
 }
 

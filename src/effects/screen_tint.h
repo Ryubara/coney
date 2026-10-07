@@ -14,8 +14,10 @@ namespace coney::effects {
 /// screen, HUD included, as `dst + (rgb − dst) × As / 128` with As = alpha × 128 / 255, truncated; an alpha of 0 is not
 /// drawn.
 ///
-/// **Coney's readings** where the pages are silent: `SetLevelColour` changes the tint at once (look 9's in time is 0);
-/// the blend is linear in the time and each byte rounded; the other looks (the rage and heat tints, the follower looks)
+/// The blend is linear, each byte truncated (docs/research/graphics.md#tint-blend). **Coney's readings** where the
+/// pages are silent or Coney differs: `SetLevelColour` changes the tint at once (look 9's in time is 0); the blend is
+/// timed by the fixed steps, not the original's real-time clock (they differ only while paused or slowed); the other
+/// looks (the rage and heat tints, the follower looks)
 /// are not modelled, so the current look is always the base look.
 class ScreenTint {
   public:
@@ -41,6 +43,8 @@ class ScreenTint {
     [[nodiscard]] static int gsAlphaOf(std::uint8_t alpha) { return alpha * 128 / 255; }
     /// How much of the tint's colour covers the screen for an alpha byte: the GS alpha / 128 (0 to 1).
     [[nodiscard]] static float opacityOf(std::uint8_t alpha) { return static_cast<float>(gsAlphaOf(alpha)) / 128.0F; }
+    /// That opacity as a blending device's source alpha (0-255), rounded: what the wash over the screen is drawn with.
+    [[nodiscard]] static std::uint8_t deviceAlphaOf(std::uint8_t alpha);
 
     /// `SetLevelColour({r, g, b, a})`: look 9's colour, and look 9 the base look.
     /// @orig 0x0018e5f0 ScreenFx_SetColourOverlay (ScreenEffectsManager.cpp)
@@ -51,6 +55,24 @@ class ScreenTint {
     /// `ExitStore()`: back to look 9 over 0.25 s.
     /// @orig 0x0018e780 ScreenFx_ExitStore (ScreenEffectsManager.cpp)
     void exitStore();
+
+    /// The game-over tint (`0xd0000014` packed as alpha, blue, green, red): a dark red at alpha 0xd0, drawn at 104/128
+    /// (docs/research/rendering.md#tint, docs/research/camera.md#death-camera).
+    static constexpr Colour kGameOver{0x14, 0x00, 0x00, 0xD0};
+
+    /// Blends from the colour now to `target` over `seconds`, at once when 0: the game-over shot and
+    /// `CamUseDeathCamera` (to kGameOver), the pause menu, and a retry putting the saved target() back at once. The
+    /// look is left as it is: a later `EnterStore`, `ExitStore` or `SetLevelColour` blends on from wherever this one
+    /// has got to.
+    /// @orig 0x0018c988 ScreenFx_BlendTintTo (ScreenEffectsManager.cpp)
+    void blendTintTo(Colour target, float seconds) { blendTo(target, seconds); }
+    /// Jumps the tint to its target (the level's end cutting the game-over blend short).
+    /// @orig 0x0018cb78 ScreenFx_FinishTintBlend (ScreenEffectsManager.cpp)
+    void finishBlend() { m_elapsed = m_seconds; }
+    /// The colour the tint is blending to (what the game-over shot saves to put back on a retry).
+    [[nodiscard]] Colour target() const { return m_to; }
+    /// Whether the blend has reached its target (the death camera stops turning then).
+    [[nodiscard]] bool blendDone() const { return m_elapsed >= m_seconds; }
 
     /// Advances the blend by `seconds`.
     void step(float seconds);

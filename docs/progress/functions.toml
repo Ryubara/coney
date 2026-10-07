@@ -1987,6 +1987,11 @@ subsystem = "Graphics"
 size = 1408
 
 [[function]]
+address = 0x0017a258
+name = "Colour_LerpPacked"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x0017a560
 name = "Occluders_Load"
 subsystem = "Graphics"
@@ -2213,10 +2218,20 @@ name = "ScreenFx_BlendMotionBlur"
 subsystem = "Graphics"
 
 [[function]]
+address = 0x0018c988
+name = "ScreenFx_BlendTintTo"
+subsystem = "Graphics"
+
+[[function]]
 address = 0x0018ca50
 name = "ScreenFx_DrawTint"
 subsystem = "Graphics"
 size = 296
+
+[[function]]
+address = 0x0018cb78
+name = "ScreenFx_FinishTintBlend"
+subsystem = "Graphics"
 
 [[function]]
 address = 0x0018cc60
@@ -2227,6 +2242,26 @@ size = 504
 [[function]]
 address = 0x0018ce58
 name = "ScreenEffects_UpdateFade"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x0018d058
+name = "ScreenFx_StartBlurPulse"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x0018d1d0
+name = "ScreenFx_DrawBlurPulse"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x0018d450
+name = "ScreenFx_QueueEffect"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x0018dac0
+name = "ScreenFx_Render"
 subsystem = "Graphics"
 
 [[function]]
@@ -2290,6 +2325,11 @@ size = 160
 [[function]]
 address = 0x00192688
 name = "AtomicPlugin_StreamRead"
+subsystem = "Graphics"
+
+[[function]]
+address = 0x00193d80
+name = "RwDevice_BlurPass"
 subsystem = "Graphics"
 
 [[function]]
@@ -2774,6 +2814,11 @@ address = 0x001b9600
 name = "TextWidget_Layout"
 subsystem = "GUI"
 size = 5664
+
+[[function]]
+address = 0x001bac20
+name = "MessageHUD_WordWrap"
+subsystem = "GUI"
 
 [[function]]
 address = 0x001bf7e0

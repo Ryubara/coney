@@ -445,9 +445,25 @@ the drawing [above](#motion-blur); the looks' own blur values are not applied ye
 follows [Level tint](rendering.md#tint): `SetLevelColour` stores look 9's colour (each float × 255, truncated) and
 switches to it, `EnterStore` look 10's with a 0.25 s blend, `ExitStore` back to look 9 over 0.25 s; each frame,
 after the HUD and before the scene's captions, a full-screen quad of the colour is blended over the screen at the
-alpha byte × 128 / 255 (truncated) out of 128; an alpha of 0 is not drawn. **Coney's readings**: `SetLevelColour`
-switches at once (look 9's in time is 0); the blend is linear, each byte rounded; the other looks' tints (rage,
-heat, the follower looks) are not modelled, so the tint is always the base look's.
+alpha byte × 128 / 255 (truncated) out of 128; an alpha of 0 is not drawn. The blend is linear, each byte
+truncated (`0x0017a258`). `ScreenTint::blendTintTo` is `ScreenFx_BlendTintTo` (`0x0018c988`) for the cameras (the
+game-over shot and `CamUseDeathCamera` blend to `ScreenTint::kGameOver`, `0xd0000014`) and `finishBlend` its finish
+(`0x0018cb78`). **Coney's readings**: `SetLevelColour` switches at once (look 9's in time is 0); the blend is timed
+by the fixed steps, not the original's real-time clock (they differ only while paused or slowed); the other looks'
+tints (rage, heat, the follower looks) are not modelled, so the tint is always the base look's or the last blend's.
+
+**The blur pulse** (`effects::BlurPulse`, `repo:src/effects/blur_pulse.h`, drawn by `RenderEngine::blurScreen`):
+`start(seconds, delayMs)` and `end(seconds)` are `ScreenFx_StartBlurPulse` (`0x0018d058`) forward and reversed,
+`ScreenQueueEffect` 4 and 5 queue look 5's (in 1.25 s, out 4 s, a 360 ms hold, 28 passes, offsets 0.002 and
+0.003). Each step runs the original's draw-time update (`0x0018d1d0`): the delay, the rise or fall, the hold and the
+auto-end; the level × 28 (truncated) is the pass count. While it runs past its delay the view is replaced, before the
+tint, by the [blur pass](#motion-blur): half size, the passes, stretched back, opaque; the screen effects then go
+before the HUD. **Coney's readings**: the delay and hold are timed by the fixed steps; the offsets are scaled from
+the original's 512 × 256 texture to the same share of a half-size screen (its half-size image taken as 320 × 224);
+one pulse, player 1's view's. On the front end the tint is the
+front-end world's (`FrontEndScene::tint()`, which the level flow hands to the bindings as the context's `tint`), and
+the menus draw it after their text and before their fade, as the title frame does
+([The front end](rendering.md#front-end)).
 
 **Ground fog and litter** (`effects::GroundFog`, `repo:src/effects/ground_fog.h`; `effects::CameraLitter`,
 `repo:src/effects/camera_litter.h`): Coney has one view, so one fog emitter.

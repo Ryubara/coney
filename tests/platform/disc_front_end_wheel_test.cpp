@@ -142,6 +142,13 @@ TEST_CASE("the disc's front end plays the Wonder Wheel scene behind the menus", 
     // Track events 24 and 25 (messages 0x12 and 0x13) show and hide some of them as the scene plays.
     const std::size_t drawn = world->objects()->drawable();
     CHECK(drawn > 20);
+    // Each is drawn with its spawn's tint (docs/research/objects.md#tint): the carts' 0x888888FF darkens them to the
+    // original's vertex colour 68 of 128, the wheel's 0x474542FF its lattice.
+    CHECK(partsWhere([world](const auto& r) {
+              const coney::platform::PlacedObjects::Look* look = world->objects()->look(r.handle);
+              return look != nullptr && look->tint == r.tint;
+          }) == 29);
+    CHECK(partsWhere([](const auto& r) { return r.tint == 0x888888FFU; }) == 24);
 
     // The wheel turns and its rim carts ride round: two seconds on, their poses have changed.
     const auto handleOf = [&flow](std::string_view type) {

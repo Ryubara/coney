@@ -28,6 +28,12 @@ scenes::ScenePose blend(const scenes::ScenePose& a, const scenes::ScenePose& b, 
                              .rotation = anim::slerp(a.rotation, b.rotation, alpha)};
 }
 
+// How a spawned object looks: its spawn's tint (`ObjSpawn`'s seventh argument), which multiplies its model's colours
+// (docs/research/objects.md#tint): the carts' 0x888888FF and the wheel's 0x474542FF darken them to the original's.
+PlacedObjects::Look lookOf(const world_objects::SpawnRecord& record) {
+    return PlacedObjects::Look{.tint = record.tint};
+}
+
 } // namespace
 
 WorldView sceneCameraWorldView(const scenes::ScenePose& pose, const scenes::SceneLens& lens) {
@@ -84,6 +90,12 @@ FrontEndWorldScene::FrontEndWorldScene(RenderEngine& engine, std::function<void(
 FrontEndWorldScene::~FrontEndWorldScene() = default;
 
 void FrontEndWorldScene::update(std::uint64_t nowMs) {
+    // The tint's blend by the game time since the last step (none on the first).
+    if (m_lastStepMs && nowMs > *m_lastStepMs) {
+        m_tint.step(static_cast<float>(nowMs - *m_lastStepMs) / 1000.0F);
+    }
+    m_lastStepMs = nowMs;
+
     // The scene camera the scenes' update ended, started or moved: an end drops it, a start cuts to it, a move
     // becomes the newest step.
     if (m_cameraEnded) {
@@ -176,7 +188,7 @@ void FrontEndWorldScene::syncObjects() {
         } else {
             m_placed.emplace(record.handle, Interpolated<scenes::ScenePose>(pose));
         }
-        m_objects->place(record.handle, type->modelHash, pose.position, pose.rotation);
+        m_objects->place(record.handle, type->modelHash, pose.position, pose.rotation, lookOf(record));
         m_objects->setVisible(record.handle, !m_hidden.contains(record.handle));
     }
 }
@@ -192,7 +204,7 @@ void FrontEndWorldScene::placeObjects(float alpha) {
             continue;
         }
         const scenes::ScenePose pose = blend(poses.previous(), poses.current(), alpha);
-        m_objects->place(handle, type->modelHash, pose.position, pose.rotation);
+        m_objects->place(handle, type->modelHash, pose.position, pose.rotation, lookOf(*record));
     }
 }
 

@@ -139,6 +139,19 @@ class RenderEngine final : public graphics::RenderDevice {
     void setVsync(bool on) { m_vsync = on; }
     /// Whether present() waits for the vertical blank.
     [[nodiscard]] bool vsync() const { return m_vsync; }
+    /// Chooses whether present() softens the frame as the PS2's video output does (on, the default): each line becomes
+    /// the mean of itself and the line one of the original's 448 below it, after the modes' 2D layers and before the
+    /// debug menus (docs/research/rendering.md#output). Off shows the frame as drawn, sharper than the original.
+    void setLineBlend(bool on) { m_lineBlend = on; }
+    /// Whether present() blends neighbouring lines.
+    [[nodiscard]] bool lineBlend() const { return m_lineBlend; }
+    /// Replaces the logical screen with a blurred copy of itself, the blur pulse's drawing (device slot `+0x108`,
+    /// docs/research/graphics.md#blur-pulse): the screen drawn at half size, that image drawn `passes` times onto
+    /// itself with one edge moved in by half of (`offsetU`, `offsetV`) of the original's 512 x 256 blur texture, the
+    /// side flipping each pass, then stretched back over the screen, opaque. 0 passes still leaves the half-size copy.
+    /// Only between beginFrame() and present(); draws nothing with the NULL backend.
+    /// @orig 0x00193d80 RwDevice_BlurPass (unknown)
+    void blurScreen(int passes, float offsetU, float offsetV);
     /// Sets what present() draws over every frame just before it ends it: the debug menus' overlay
     /// (src/gui/debug_menu_view.h), which so draws over whatever mode runs. Empty for nothing. It is called with this
     /// device, still inside the frame, so it may draw quads.
@@ -160,11 +173,15 @@ class RenderEngine final : public graphics::RenderDevice {
     /// Clears the whole window to `clear` and starts the camera's update: the part both beginFrame()s share.
     void startFrame(graphics::Rgba clear);
     /// Draws quads already in window pixels with `raster` (null: flat colour) in the 2D states.
-    void drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads);
-    // Sets the 2D pass's render states with `raster` (null: flat colour).
-    void set2dStates(rw::Raster* raster);
+    /// `opaque` replaces what is below (ONE / ZERO) instead of blending by alpha.
+    void drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads, bool opaque = false);
+    // Sets the 2D pass's render states with `raster` (null: flat colour); `opaque` as drawWindowQuads().
+    void set2dStates(rw::Raster* raster, bool opaque = false);
     // Binds `texture`'s filter and addressing (`wrap` or clamped) and returns its raster; null for no texture.
     rw::Raster* bindTexture(const graphics::Texture* texture, bool wrap);
+    /// Copies the window rectangle (`x`, `y`, `width`, `height`, from the top left) into `raster`, (re)made at that
+    /// size when it is missing or another size; false when it cannot be made.
+    bool copyToRaster(rw::Raster*& raster, int x, int y, int width, int height);
     // drawQuads() and drawWrappedQuads(): the texture's filter, `wrap` or clamped addressing, the quads mapped from
     // logical pixels to the window.
     void drawTexturedQuads(const graphics::Texture* texture, std::span<const graphics::LogicalQuad> quads, bool wrap);
@@ -175,24 +192,31 @@ class RenderEngine final : public graphics::RenderDevice {
     void createCamera();
     /// Destroys the camera and its buffers, if any.
     void destroyCamera() noexcept;
+    /// The line blend of setLineBlend() over the logical screen: the frame copied into m_lineRaster, laid back over
+    /// itself one original line higher at half strength. OpenGL only.
+    void blendLines();
     /// Reads the back buffer, summarises it and writes it as a PNG, for requestCapture().
     [[nodiscard]] std::expected<CapturedFrame, Error> captureBackBuffer(const std::string& path) const;
     /// Stops librw and, with the OpenGL backend, SDL, if this object started them.
     void shutDown() noexcept;
 
     RenderBackend m_backend;
-    std::string m_title;             // librw keeps a pointer to it until the window is made
-    void* m_sdlWindow = nullptr;     // SDL_Window*, written by librw's GL3 device when it creates the window
-    rw::Camera* m_camera = nullptr;  // what frames are cleared and drawn through (OpenGL only)
-    graphics::Extent m_frameSize;    // size of the camera's buffers, or the requested size for NULL
-    graphics::Rgba m_clearColour;    // of the current frame, for the capture's statistics
-    graphics::ScreenRect m_viewport; // where the logical screen is in the window (graphics::fitLogicalScreen())
-    bool m_inFrame = false;          // between beginFrame() and present()
-    bool m_librwStarted = false;     // librw has reached Engine::start and must be stopped
-    bool m_sdlStarted = false;       // this object holds a reference to SDL's video subsystem
-    bool m_glStubbed = false;        // the NULL backend's stand-in for glDeleteTextures is installed
-    bool m_vsync = true;             // present() waits for the vertical blank
-    bool m_logicalFrame = false;     // the logical screen fills the frame (WindowDesc::logicalFrame)
+    std::string m_title;                // librw keeps a pointer to it until the window is made
+    void* m_sdlWindow = nullptr;        // SDL_Window*, written by librw's GL3 device when it creates the window
+    rw::Camera* m_camera = nullptr;     // what frames are cleared and drawn through (OpenGL only)
+    graphics::Extent m_frameSize;       // size of the camera's buffers, or the requested size for NULL
+    graphics::Rgba m_clearColour;       // of the current frame, for the capture's statistics
+    graphics::ScreenRect m_viewport;    // where the logical screen is in the window (graphics::fitLogicalScreen())
+    bool m_inFrame = false;             // between beginFrame() and present()
+    bool m_librwStarted = false;        // librw has reached Engine::start and must be stopped
+    bool m_sdlStarted = false;          // this object holds a reference to SDL's video subsystem
+    bool m_glStubbed = false;           // the NULL backend's stand-in for glDeleteTextures is installed
+    bool m_vsync = true;                // present() waits for the vertical blank
+    bool m_logicalFrame = false;        // the logical screen fills the frame (WindowDesc::logicalFrame)
+    bool m_lineBlend = true;            // present() blends neighbouring lines (setLineBlend())
+    rw::Raster* m_lineRaster = nullptr; // the frame's copy for blendLines(), the logical screen's size
+    rw::Raster* m_blurRaster = nullptr; // blurScreen()'s copies: the screen, then its half-size image
+    rw::Raster* m_halfRaster = nullptr;
 
     std::uint64_t m_presented = 0; // frames presented so far
     std::optional<std::uint64_t> m_captureFrame;

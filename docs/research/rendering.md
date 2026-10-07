@@ -170,6 +170,10 @@ dropped), blend `0x44`, Z test GEQUAL, **no Z write**, fog on with the vertex fo
 batch (17 sprites, grey `0x7f`, alpha 3-38, the same particle page, context 2, NOTEQUAL 0, fog, no Z write), confirmed
 (runtime).
 
+The fixed fog value means a sprite takes 1/255 of the fog colour at any distance, never the world's distance fog.
+Coney (`repo:src/platform/particle_renderer.cpp`) draws its 3D sprites (particles, glints, fog wisps) with fog off,
+rounding that 1/255 to nothing.
+
 ### Health rings and blood {#rings}
 
 In a fight (`level99`, the Bumper Bash yard, a GS dump with Rembrandt hit and an enemy targeted; confirmed (runtime))
@@ -295,6 +299,11 @@ show the same 640-wide buffer, one from line 0 (`DISPLAY1` height 448) and one f
 `DISPFB2` `DBY` 1), mixed half and half (`ALP` `0x80`), so every output line is the average of two neighbouring frame
 lines: a slight vertical blur that softens the image and hides the jagged edges of thin lines. The driver side is
 [The picture on the TV](ps2-render.md#video-output).
+
+Coney (`RenderEngine::setLineBlend`, `repo:src/platform/render_engine.h`) does the same by default after the game's
+2D layers and before the debug menus: the frame is copied and laid back over itself at half strength, shifted up by
+one of the original's 448 lines at the window's size, the last line clamped. `--line-blend off` shows the frame as
+drawn ([Building](../guides/building.md)); reference renders are never blended.
 
 ## Open questions
 

@@ -28,9 +28,12 @@ struct MarkupTimes {
 /// Reads the `<DISPLAYTIME>` and `<FREEZE>` tags of marked-up `text`; a tag whose argument is not a number is skipped.
 [[nodiscard]] MarkupTimes markupTimesOf(std::string_view text);
 
-/// Breaks marked-up `text` into lines no wider than `width` (GUI) laid out in `style` with `fonts`: at spaces outside
-/// tags, greedily, by inserting `<CR>`; a word wider than the width stays on its own line. Coney's: the page gives the
-/// hint box a wrap width but not the rule.
+/// Breaks marked-up `text` into lines no wider than `width` (GUI) laid out in `style` with `fonts`, as the original's
+/// word wrap does (docs/research/gui.md, `MessageHUD_WordWrap`): at spaces outside tags, greedily, a break before the
+/// word that takes the line past the width, each line measured with its tags stripped (so a button icon takes no
+/// width); a leading `<AUTOINDENT f>` makes `f` the width. Coney inserts `<CR>` where the original inserts `<CRM>`
+/// (the same break here); a word wider than the width stays on its own line.
+/// @orig 0x001bac20 MessageHUD_WordWrap (unknown)
 [[nodiscard]] std::string wrapText(std::string_view text, const gui::TextStyle& style, const gui::FontLookup& fonts,
                                    float width);
 

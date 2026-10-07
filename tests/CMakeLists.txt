@@ -21,6 +21,7 @@ add_executable(coney_tests
     effects/particles_test.cpp
     effects/room_smoke_test.cpp
     effects/screen_tint_test.cpp
+    effects/blur_pulse_test.cpp
     fileio/disc_test.cpp
     fileio/executable_test.cpp
     fileio/reader_test.cpp

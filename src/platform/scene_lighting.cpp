@@ -241,7 +241,15 @@ void SceneLighting::drawWorldAtomic(rw::Atomic* atomic) {
 
 void SceneLighting::drawBackgroundAtomic(rw::Atomic* atomic) {
     useLights(m_lighting.lights.select(0.0F, sphereOf(atomic), false, false, false));
+    // The background's models carry no light flag (nor normals), so librw would draw them by their prelighting
+    // alone; the original adds the world's ambient to them all the same (level99's sky box: prelight 60 + 0.227
+    // reaches the GS as 59 of 128; docs/research/lighting.md#coneys-implementation). Lit for the draw: with no normals
+    // the directional lights add nothing.
+    rw::Geometry* geometry = atomic->geometry;
+    const rw::uint32 flags = geometry->flags;
+    geometry->flags |= rw::Geometry::LIGHT;
     renderInRig(atomic);
+    geometry->flags = flags;
 }
 
 void SceneLighting::drawHumanAtomic(rw::Atomic* atomic, bool hidden) {

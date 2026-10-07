@@ -185,6 +185,12 @@ void RenderEngine::createCamera() {
 }
 
 void RenderEngine::destroyCamera() noexcept {
+    for (rw::Raster** raster : {&m_lineRaster, &m_blurRaster, &m_halfRaster}) {
+        if (*raster != nullptr) {
+            (*raster)->destroy();
+            *raster = nullptr;
+        }
+    }
     if (m_camera == nullptr) {
         return;
     }
@@ -308,7 +314,7 @@ void RenderEngine::drawTexturedQuads(const graphics::Texture* texture, std::span
     drawWindowQuads(raster, mapped);
 }
 
-void RenderEngine::set2dStates(rw::Raster* raster) {
+void RenderEngine::set2dStates(rw::Raster* raster, bool opaque) {
     // The 2D pass's states (docs/research/graphics.md#2d-drawing): no depth test or write, no culling, no fog, blended
     // by the vertex and texture alpha over what is already drawn.
     rw::SetRenderState(rw::ZTESTENABLE, 0);
@@ -316,13 +322,13 @@ void RenderEngine::set2dStates(rw::Raster* raster) {
     rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
     rw::SetRenderState(rw::FOGENABLE, 0);
     rw::SetRenderState(rw::VERTEXALPHA, 1);
-    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
-    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+    rw::SetRenderState(rw::SRCBLEND, opaque ? rw::BLENDONE : rw::BLENDSRCALPHA);
+    rw::SetRenderState(rw::DESTBLEND, opaque ? rw::BLENDZERO : rw::BLENDINVSRCALPHA);
     rw::SetRenderStatePtr(rw::TEXTURERASTER, raster);
 }
 
-void RenderEngine::drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads) {
-    set2dStates(raster);
+void RenderEngine::drawWindowQuads(rw::Raster* raster, std::span<const graphics::LogicalQuad> quads, bool opaque) {
+    set2dStates(raster, opaque);
 
     // Four corners and two triangles per quad, clockwise from the top left, as the device's screen quads.
     const float nearZ = rw::im2d::GetNearZ();
@@ -444,6 +450,10 @@ void RenderEngine::present() {
     for (const std::function<void(RenderEngine&)>& overlay : std::exchange(m_frameOverlays, {})) {
         overlay(*this);
     }
+    // The video output's softening covers everything the game draws, but not the debug menus.
+    if (m_lineBlend && m_camera != nullptr) {
+        blendLines();
+    }
     if (m_presentOverlay) {
         m_presentOverlay(*this);
     }
@@ -462,6 +472,114 @@ void RenderEngine::present() {
         m_capture = std::unexpected(Error{ErrorCode::PlatformFailure, "the headless renderer draws no frames"});
     }
     ++m_presented;
+}
+
+bool RenderEngine::copyToRaster(rw::Raster*& raster, int x, int y, int width, int height) {
+    if (raster != nullptr && (raster->width != width || raster->height != height)) {
+        raster->destroy();
+        raster = nullptr;
+    }
+    if (raster == nullptr) {
+        raster = rw::Raster::create(width, height, 32, static_cast<rw::int32>(rw::Raster::TEXTURE) | rw::Raster::C8888);
+        if (raster == nullptr) {
+            return false;
+        }
+    }
+    // GL counts the frame buffer's rows from the bottom. librw's 2D drawing samples the copy with v = 0 at the
+    // rectangle's top (measured: drawn that way, the copy shows the screen the right way up).
+    auto* native = PLUGINOFFSET(rw::gl3::Gl3Raster, raster, rw::gl3::nativeRasterOffset);
+    rw::gl3::bindTexture(native->texid);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, x, m_frameSize.height - (y + height), width, height);
+    return true;
+}
+
+void RenderEngine::blurScreen(int passes, float offsetU, float offsetV) {
+    CONEY_ASSERT(m_inFrame);
+    const graphics::ScreenRect viewport = m_viewport;
+    if (m_camera == nullptr || viewport.width < 2 || viewport.height < 2) {
+        return;
+    }
+    rw::SetRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
+    rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
+    const auto left = static_cast<float>(viewport.x);
+    const auto top = static_cast<float>(viewport.y);
+    const int halfWidth = viewport.width / 2;
+    const int halfHeight = viewport.height / 2;
+    const graphics::Rgba white{255, 255, 255, 255};
+
+    // 1. The screen at half size, drawn into its own top-left quarter (scratch: the last step covers all of it).
+    if (!copyToRaster(m_blurRaster, viewport.x, viewport.y, viewport.width, viewport.height)) {
+        return;
+    }
+    const graphics::LogicalQuad half{
+        left, top, static_cast<float>(halfWidth), static_cast<float>(halfHeight), graphics::UvRect{}, white};
+    drawWindowQuads(m_blurRaster, std::span<const graphics::LogicalQuad>(&half, 1), true);
+
+    // 2. The passes: the half-size image onto itself with one edge moved in by half the offset, the low edges (u0, v0)
+    // for a positive offset and the high edges for a negative one, the sign flipping each pass, resampled linearly.
+    // The offsets are in UV units of the original's 512 x 256 texture, whose half-size image is 320 x 224 (inferred:
+    // a 640 x 448 screen at half size), so they are scaled to the same share of the image here.
+    const float stepU = offsetU / 2.0F * (512.0F / 320.0F);
+    const float stepV = offsetV / 2.0F * (256.0F / 224.0F);
+    bool lowEdge = true;
+    for (int pass = 0; pass < passes; ++pass) {
+        if (!copyToRaster(m_halfRaster, viewport.x, viewport.y, halfWidth, halfHeight)) {
+            return;
+        }
+        graphics::LogicalQuad quad = half;
+        if (lowEdge) {
+            quad.uv.u0 += stepU;
+            quad.uv.v0 += stepV;
+        } else {
+            quad.uv.u1 -= stepU;
+            quad.uv.v1 -= stepV;
+        }
+        drawWindowQuads(m_halfRaster, std::span<const graphics::LogicalQuad>(&quad, 1), true);
+        lowEdge = !lowEdge;
+    }
+
+    // 3. Stretched back over the whole screen, its edges inset by one texel, opaque.
+    if (!copyToRaster(m_halfRaster, viewport.x, viewport.y, halfWidth, halfHeight)) {
+        return;
+    }
+    const float texelU = 1.0F / static_cast<float>(halfWidth);
+    const float texelV = 1.0F / static_cast<float>(halfHeight);
+    const graphics::LogicalQuad whole{left,
+                                      top,
+                                      static_cast<float>(viewport.width),
+                                      static_cast<float>(viewport.height),
+                                      graphics::UvRect{texelU, texelV, 1.0F - texelU, 1.0F - texelV},
+                                      white};
+    drawWindowQuads(m_halfRaster, std::span<const graphics::LogicalQuad>(&whole, 1), true);
+    rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
+    rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
+}
+
+void RenderEngine::blendLines() {
+    const graphics::ScreenRect viewport = m_viewport;
+    if (viewport.width <= 0 || viewport.height <= 0) {
+        return;
+    }
+    // 1. The frame as drawn, copied.
+    if (!copyToRaster(m_lineRaster, viewport.x, viewport.y, viewport.width, viewport.height)) {
+        return;
+    }
+
+    // 2. Laid over itself at half strength, shifted so that each window row shows the frame one original line (448 to
+    // the screen's height) below it: the PS2's second read circuit starts one line down (DISPFB2's DBY 1) and the
+    // two are mixed half and half (PMODE's ALP 0x80). Past the copy's bottom edge it is clamped, as the original's last
+    // line has no line below it. Filtered linearly, so a window that is not a whole
+    // number of lines per original line still blends exactly one original line.
+    const float shift = 1.0F / graphics::kLogicalHeight;
+    rw::SetRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
+    rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
+    const graphics::LogicalQuad quad{static_cast<float>(viewport.x),
+                                     static_cast<float>(viewport.y),
+                                     static_cast<float>(viewport.width),
+                                     static_cast<float>(viewport.height),
+                                     graphics::UvRect{0.0F, shift, 1.0F, 1.0F + shift},
+                                     graphics::Rgba{255, 255, 255, 128}};
+    drawWindowQuads(m_lineRaster, std::span<const graphics::LogicalQuad>(&quad, 1));
 }
 
 void RenderEngine::requestCapture(std::uint64_t frameIndex, std::string path) {

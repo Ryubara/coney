@@ -45,3 +45,21 @@ TEST_CASE("the tint starts clear; the level's colour is at once and a store's bl
     tint.reset();
     CHECK_FALSE(tint.drawn());
 }
+
+TEST_CASE("the game-over tint blends from the level's, can be finished early and put back at once", "[screen_tint]") {
+    ScreenTint tint;
+    tint.setLevelColour(Colour{7, 20, 30, 51});
+    CHECK(ScreenTint::gsAlphaOf(ScreenTint::kGameOver.a) == 104);
+    const Colour saved = tint.target();
+    tint.blendTintTo(ScreenTint::kGameOver, 6.5F);
+    CHECK_FALSE(tint.blendDone());
+    tint.step(3.25F);
+    CHECK(tint.current() == Colour{13, 10, 15, 129}); // each byte truncated
+    tint.finishBlend();
+    CHECK(tint.blendDone());
+    CHECK(tint.current() == ScreenTint::kGameOver);
+    // A retry: the saved tint again, at once.
+    tint.blendTintTo(saved, 0.0F);
+    CHECK(tint.blendDone());
+    CHECK(tint.current() == Colour{7, 20, 30, 51});
+}

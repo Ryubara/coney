@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "core/game_timer.h"
+#include "effects/screen_tint.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gui/text_layout.h"
 
@@ -123,9 +124,16 @@ ModeResult ProfileManagerMode::update(GameModeStack& stack, const FrameTime& fra
 }
 
 void ProfileManagerMode::render(const RenderTime& time) {
-    // The menus' 2D pass, then the fade over everything.
+    // The menus' 2D pass, the front-end level's tint over it (drawn last in the original's title frame,
+    // docs/research/rendering.md#front-end), then the fade over everything.
     const auto overlay = [this, &time] {
         m_pass.draw(m_device, m_camera);
+        if (const effects::ScreenTint* tint = m_scene != nullptr ? m_scene->tint() : nullptr;
+            tint != nullptr && tint->drawn()) {
+            const effects::ScreenTint::Colour colour = tint->current();
+            graphics::ScreenFade::drawWash(
+                m_device, graphics::Rgba{colour.r, colour.g, colour.b, effects::ScreenTint::deviceAlphaOf(colour.a)});
+        }
         graphics::ScreenFade::draw(m_device, lerp(m_fadeLevel.previous(), m_fadeLevel.current(), time.alpha));
     };
     // The front-end world behind them, or black without one.

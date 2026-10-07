@@ -105,8 +105,8 @@ class LevelFlowMode final : public GameMode {
 
     /// Makes the front end's scene system (over the disc's scene list); null or empty: no scenes.
     using SceneMaker = std::function<std::unique_ptr<scenes::SceneSystem>()>;
-    /// Makes a scene system with `maker` each time the front end starts, and hands it (and the world's lights) to the
-    /// bindings through `context` while the front end is loaded. `context` must outlive the mode.
+    /// Makes a scene system with `maker` each time the front end starts, and hands it (and the world's lights and
+    /// screen tint) to the bindings through `context` while the front end is loaded. `context` must outlive the mode.
     void setScenes(SceneMaker maker, script::BindingContext* context) {
         m_sceneMaker = std::move(maker);
         m_context = context;

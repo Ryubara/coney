@@ -28,7 +28,7 @@ so it is not counted.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.8% of the game's own code (529,132 of 3,354,776 bytes, 1,931 functions) |
+| **Reimplemented** | `███▏░░░░░░░░░░░░░░░░` | 15.8% of the game's own code (529,132 of 3,354,776 bytes, 1,940 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,220 of 3,284,028 bytes; 11,424 of 11,426 functions, 100.0%) |
 | **[Milestones](docs/roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |

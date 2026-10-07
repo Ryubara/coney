@@ -411,6 +411,8 @@ int main(int argc, char** argv) {
     }
     coney::platform::RenderEngine& renderer = **engine;
     renderer.setVsync(options->vsync);
+    // Reference renders are model sheets, not the game's picture: drawn as they are.
+    renderer.setLineBlend(options->lineBlend && !options->renderReferences.has_value());
 
     if (!options->loads.empty()) {
         if (!wad) {

@@ -50,8 +50,9 @@ void MotionBlurPass::apply(RenderEngine& engine, effects::MotionBlur::Colour col
         m_height = viewport.height;
     }
 
-    // 1. The kept frame over the new one: the screen's quad in the blur's colour and strength. The texture was copied
-    // from the frame buffer, whose rows run bottom up, so its v runs from the bottom.
+    // 1. The kept frame over the new one: the screen's quad in the blur's colour and strength. librw's 2D drawing
+    // samples the copy with v = 0 at the screen's top (measured with RenderEngine's copies, which are made the same
+    // way).
     if (m_kept) {
         rw::SetRenderState(rw::ZTESTENABLE, 0);
         rw::SetRenderState(rw::ZWRITEENABLE, 0);
@@ -70,7 +71,7 @@ void MotionBlurPass::apply(RenderEngine& engine, effects::MotionBlur::Colour col
             float x, y, u, v;
         };
         const std::array<Corner, 4> corners{
-            {{left, top, 0, 1}, {right, top, 1, 1}, {right, bottom, 1, 0}, {left, bottom, 0, 0}}};
+            {{left, top, 0, 0}, {right, top, 1, 0}, {right, bottom, 1, 1}, {left, bottom, 0, 1}}};
         const float nearZ = rw::im2d::GetNearZ();
         const float recipZ = 1.0F / camera->nearPlane;
         std::array<rw::gl3::Im2DVertex, 4> vertices{};

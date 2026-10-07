@@ -95,6 +95,8 @@ class PlacedObjects {
     [[nodiscard]] rw::Atomic* atomicOf(std::uint32_t modelHash);
     /// Whether object `handle` is placed and shown.
     [[nodiscard]] bool visible(double handle) const;
+    /// How object `handle` looks; null when it is not placed.
+    [[nodiscard]] const Look* look(double handle) const;
 
   private:
     // One placed object.

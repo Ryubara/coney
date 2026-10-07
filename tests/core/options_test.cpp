@@ -306,6 +306,7 @@ TEST_CASE("the frame pacing options default to no cap with vsync on, outside tes
     REQUIRE(plain.has_value());
     CHECK_FALSE(plain->fpsCap.has_value());
     CHECK(plain->vsync);
+    CHECK(plain->lineBlend);
     CHECK_FALSE(plain->showFps);
     CHECK_FALSE(coney::isTestMode(*plain));
 
@@ -326,6 +327,10 @@ TEST_CASE("the frame pacing options refuse bad values and test mode", "[options]
     CHECK_FALSE(parse(std::array<std::string_view, 1>{"--fps-cap"}).has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 2>{"--vsync", "maybe"}).has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--vsync", "on", "--vsync", "off"}).has_value());
+    CHECK_FALSE(parse(std::array<std::string_view, 2>{"--line-blend", "half"}).has_value());
+    auto sharp = parse(std::array<std::string_view, 2>{"--line-blend", "off"});
+    REQUIRE(sharp.has_value());
+    CHECK_FALSE(sharp->lineBlend);
     // Test mode is lockstep with no clock: a cap or a rate report means nothing there.
     CHECK_FALSE(parse(std::array<std::string_view, 4>{"--fps-cap", "60", "--frames", "3"}).has_value());
     CHECK_FALSE(parse(std::array<std::string_view, 2>{"--show-fps", "--headless"}).has_value());

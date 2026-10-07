@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "gui/text_layout.h"
+#include "hud/hint_box.h"
 
 namespace coney::hud {
 
@@ -67,14 +68,18 @@ void ScrollInQueue::render(const HudCanvas& canvas) const {
     const ScrollInMessage& message = m_queue.front();
     gui::TextStyle style = messageStyle(message.place.x);
     style.fade = fade();
-    drawMessage(canvas, message.text, style, message.place.y);
+    if (canvas.text.fonts) {
+        drawMessage(canvas, wrapText(message.text, style, canvas.text.fonts, kScrollInWrapWidth), style,
+                    message.place.y);
+    }
 }
 
 float ScrollInQueue::showingHeight(const gui::FontLookup& fonts) const {
     if (!showing() || !fonts) {
         return 0.0F;
     }
-    return gui::layoutText(m_queue.front().text, messageStyle(m_queue.front().place.x), fonts).height;
+    const gui::TextStyle style = messageStyle(m_queue.front().place.x);
+    return gui::layoutText(wrapText(m_queue.front().text, style, fonts, kScrollInWrapWidth), style, fonts).height;
 }
 
 } // namespace coney::hud

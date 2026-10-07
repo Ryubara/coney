@@ -746,10 +746,16 @@ void PlayLevelMode::render(const RenderTime& time) {
     if (m_levelEffects) {
         m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawOverlay(engine); });
     }
+    // The blur pulse, then the level's screen tint. They cover the HUD, as the original's screen effects follow it,
+    // except while a blur pulse runs: then they go first and the HUD stays sharp over them
+    // (docs/research/rendering.md#tint).
+    const bool effectsFirst = m_levelEffects && m_levelEffects->screenEffectsFirst();
+    if (effectsFirst) {
+        m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawScreenEffects(engine); });
+    }
     m_engine.addFrameOverlay([this](RenderEngine& engine) { m_hud->draw(engine); });
-    // The level's screen tint covers the HUD, as the original's screen effects follow it.
-    if (m_levelEffects) {
-        m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawTint(engine); });
+    if (m_levelEffects && !effectsFirst) {
+        m_engine.addFrameOverlay([this](RenderEngine& engine) { m_levelEffects->drawScreenEffects(engine); });
     }
     m_engine.addFrameOverlay([this, nowMs](RenderEngine& engine) { m_stage->drawOverlay(engine, nowMs); });
     // A layer over all of them (the pause menu), added last so it draws last.

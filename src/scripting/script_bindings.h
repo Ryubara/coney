@@ -24,6 +24,7 @@ class Cameras;
 
 namespace coney::effects {
 struct LevelEffects;
+class ScreenTint;
 } // namespace coney::effects
 
 namespace coney::world_objects {
@@ -196,11 +197,14 @@ struct BindingContext {
     camera::Cameras* cameras = nullptr;          ///< Player 1's cameras, which the camera bindings drive; null: none.
     graphics::LevelLighting* lighting = nullptr; ///< The lights and fog the lighting bindings set; null keeps none.
     effects::LevelEffects* effects = nullptr;    ///< The level's particles and motion blur; null: none drawn.
-    SoundHost* sound = nullptr;                  ///< The game's sound (sound_bindings.h); null plays nothing.
-    world_objects::Cars* cars = nullptr;         ///< The level's parked cars (`CarSpawn`); null keeps none.
-    world_objects::Radios* radios = nullptr;     ///< The level's radios (`SetupRadio`); null keeps none.
-    world_objects::TagSpots* tagSpots = nullptr; ///< The level's tag spots (`CfgTagSettings`); null keeps none.
-    hud::Hud* hud = nullptr;                     ///< The HUD the HUD bindings act on; null acts on none.
+    /// The screen tint `SetLevelColour`, `EnterStore` and `ExitStore` set, before the level effects' own (the front
+    /// end's, which has no level effects); null: the effects' tint, or none.
+    effects::ScreenTint* tint = nullptr;
+    SoundHost* sound = nullptr;                       ///< The game's sound (sound_bindings.h); null plays nothing.
+    world_objects::Cars* cars = nullptr;              ///< The level's parked cars (`CarSpawn`); null keeps none.
+    world_objects::Radios* radios = nullptr;          ///< The level's radios (`SetupRadio`); null keeps none.
+    world_objects::TagSpots* tagSpots = nullptr;      ///< The level's tag spots (`CfgTagSettings`); null keeps none.
+    hud::Hud* hud = nullptr;                          ///< The HUD the HUD bindings act on; null acts on none.
     world_objects::TriggerSpheres* spheres = nullptr; ///< The level's trigger spheres (`TriggerSphereCfg`); null: none.
     world_objects::FlagNet* flagNet = nullptr;        ///< The level's flag network (`FlagNetAddLink`); null: none.
     /// What a crime the scripts report reaches (`CrimeIsHappening`): the level's gangs, police and HUD; null reports

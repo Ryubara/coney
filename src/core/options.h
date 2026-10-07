@@ -205,6 +205,9 @@ struct Options {
     std::optional<int> fpsCap;
     /// `--vsync on|off`: whether a present waits for the display's vertical blank; on by default. Needs a window.
     bool vsync = true;
+    /// `--line-blend on|off`: whether each shown line is the mean of two neighbouring lines, as the PS2's video output
+    /// softens the picture (docs/research/rendering.md#output); on by default. Reference renders never blend.
+    bool lineBlend = true;
     /// `--show-fps`: print the frame and step rates once a second, and their totals at the end. Not in test mode.
     bool showFps = false;
     /// `--kind`: the lists `--render-references` renders; unset renders all of them. Requires renderReferences.

@@ -188,6 +188,7 @@ target_sources(coney_core PRIVATE
     effects/particles.cpp
     effects/room_smoke.cpp
     effects/screen_tint.cpp
+    effects/blur_pulse.cpp
     scripting/effects_bindings.cpp
     scripting/car_bindings.cpp
     world_objects/car_hits.cpp

@@ -8,13 +8,18 @@ namespace coney::effects {
 
 namespace {
 
-// One channel `t` of the way from `from` to `to`, rounded.
+// One channel `t` of the way from `from` to `to`: from × (1 − t) + to × t in floats, truncated.
+// @orig 0x0017a258 Colour_LerpPacked (unknown)
 std::uint8_t mix(std::uint8_t from, std::uint8_t to, float t) {
-    const float value = static_cast<float>(from) + (static_cast<float>(to) - static_cast<float>(from)) * t;
-    return static_cast<std::uint8_t>(std::clamp(std::lround(value), 0L, 255L));
+    const float value = static_cast<float>(from) * (1.0F - t) + static_cast<float>(to) * t;
+    return static_cast<std::uint8_t>(std::clamp(static_cast<int>(value), 0, 255));
 }
 
 } // namespace
+
+std::uint8_t ScreenTint::deviceAlphaOf(std::uint8_t alpha) {
+    return static_cast<std::uint8_t>(std::clamp(std::lround(opacityOf(alpha) * 255.0F), 0L, 255L));
+}
 
 std::uint8_t ScreenTint::byteOf(double component) {
     // Float_ToUInt of the component × 255; **Coney's choice**: kept to its low byte, a negative as 0.

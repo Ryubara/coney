@@ -23,12 +23,14 @@
 #include "core/error.h"
 #include "core/game_timer.h"
 #include "core/input_script.h"
+#include "effects/screen_tint.h"
 #include "gamemodes/front_end_scene.h"
 #include "gamemodes/game_mode_stack.h"
 #include "gamemodes/gameplay_mode.h"
 #include "gamemodes/level_flow_mode.h"
 #include "gamemodes/memory_card_mode.h"
 #include "gamemodes/profile_manager_mode.h"
+#include "graphics/render_device.h"
 #include "gui/global_strings.h"
 #include "gui/profile_management_gui/pm_new_game_screens.h"
 #include "scenes/scene_list.h"
@@ -362,6 +364,65 @@ TEST_CASE("start-up: the front end loads level100's scene, the menus step and dr
     run.stack.pop();
     run.frames(2);
     CHECK(destroyed >= 1);
+}
+
+namespace {
+
+// A front-end scene with a screen tint, drawing the menus' overlay through itself.
+struct TintScene final : coney::FrontEndScene {
+    coney::effects::ScreenTint screenTint;
+    void update(std::uint64_t /*nowMs*/) override {}
+    void render(const coney::RenderTime& /*time*/, const std::function<void()>& overlay) override {
+        if (overlay) {
+            overlay();
+        }
+    }
+    [[nodiscard]] coney::effects::ScreenTint* tint() override { return &screenTint; }
+};
+
+} // namespace
+
+TEST_CASE("start-up: the front end's tint reaches the bindings and is drawn over the menus' text", "[frontend]") {
+    Run run("");
+    TintScene* scene = nullptr;
+    int loads = 0;
+    run.flow->levelFlow().setScenes({}, &run.flow->context());
+    run.flow->levelFlow().setSceneLoader(
+        [&scene,
+         &loads](std::string_view /*level*/) -> std::expected<std::unique_ptr<coney::FrontEndScene>, coney::Error> {
+            auto made = std::make_unique<TintScene>();
+            scene = made.get();
+            ++loads;
+            return made;
+        });
+    run.frames(160);
+    REQUIRE(scene != nullptr);
+    REQUIRE(run.stack.topId() == ProfileManagerMode::kId);
+    CHECK(run.flow->context().tint == &scene->screenTint);
+
+    // level100's overlay, as global.lua's SetLevelColour stores it: (7, 20, 30) at 43, drawn at 21 / 128.
+    scene->screenTint.setLevelColour({7, 20, 30, 43});
+    run.device.draws.clear();
+    run.frames(1);
+    const coney::graphics::Rgba wash{7, 20, 30, coney::effects::ScreenTint::deviceAlphaOf(43)};
+    CHECK(wash.a == 42);
+    const auto isTint = [&wash](const coney::test::RecordedDraw& draw) {
+        return draw.texture == nullptr && draw.quads.size() == 1 && draw.quads[0].colour == wash;
+    };
+    const auto tint = std::ranges::find_if(run.device.draws, isTint);
+    REQUIRE(tint != run.device.draws.end());
+    // After the menus' text (a textured draw), as the original's title frame draws it last.
+    CHECK(std::any_of(run.device.draws.begin(), tint,
+                      [](const coney::test::RecordedDraw& draw) { return draw.texture != nullptr; }));
+
+    // The front end finished: its tint leaves the bindings with the scene. Without gameplay the level flow starts the
+    // front end again, whose new scene's tint the bindings then set.
+    REQUIRE(loads == 1);
+    run.flow->menuLoadLevel("level100");
+    run.stack.pop();
+    run.frames(2);
+    REQUIRE(loads == 2);
+    CHECK(run.flow->context().tint == &scene->screenTint);
 }
 
 TEST_CASE("start-up: a scene that fails to load leaves a black background and the menus", "[frontend]") {

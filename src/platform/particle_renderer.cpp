@@ -105,18 +105,25 @@ struct Batch {
 // The most sprites one batch holds: its indices are 16-bit.
 constexpr std::size_t kBatchSprites = 16000;
 
-// Sets the render states the sprites draw with: depth tested but not written, both faces, filtered and clamped.
-void beginSprites() {
+// Sets the render states the sprites draw with: depth tested but not written, both faces, filtered and clamped, and
+// no distance fog: the original gives every sprite vertex the fixed fog value 254 of 255, so a sprite takes 1/255 of
+// the fog colour wherever it is (docs/research/rendering.md#sprites), which Coney rounds to none. Returns whether fog
+// was on, for endSprites().
+bool beginSprites() {
+    const bool fogged = rw::GetRenderState(rw::FOGENABLE) != 0;
+    rw::SetRenderState(rw::FOGENABLE, 0);
     rw::SetRenderState(rw::ZTESTENABLE, 1);
     rw::SetRenderState(rw::ZWRITEENABLE, 0);
     rw::SetRenderState(rw::VERTEXALPHA, 1);
     rw::SetRenderState(rw::CULLMODE, rw::CULLNONE);
     rw::SetRenderState(rw::TEXTUREFILTER, rw::Texture::LINEAR);
     rw::SetRenderState(rw::TEXTUREADDRESS, rw::Texture::CLAMP);
+    return fogged;
 }
 
-// Puts back the states the solid draws expect.
-void endSprites() {
+// Puts back the states the solid draws expect, and the fog as it was.
+void endSprites(bool fogged) {
+    rw::SetRenderState(rw::FOGENABLE, fogged ? 1 : 0);
     rw::SetRenderState(rw::SRCBLEND, rw::BLENDSRCALPHA);
     rw::SetRenderState(rw::DESTBLEND, rw::BLENDINVSRCALPHA);
     rw::SetRenderState(rw::ZWRITEENABLE, 1);
@@ -158,7 +165,7 @@ void ParticleRenderer::draw(const effects::ParticleSystems& systems, const world
     if (systems.particleCount() == 0) {
         return;
     }
-    beginSprites();
+    const bool fogged = beginSprites();
     // The screen's right and up in the world: the camera pose's (its right is forward × up).
     const world::Vec3 right = view.right;
     const world::Vec3 up = view.up;
@@ -188,7 +195,7 @@ void ParticleRenderer::draw(const effects::ParticleSystems& systems, const world
         // One system's sprites share a sheet and a blend: draw them together.
         batch.flush(texture != nullptr ? texture->rwTexture()->raster : nullptr, additive(system.type->behaviour));
     }
-    endSprites();
+    endSprites(fogged);
 }
 
 void ParticleRenderer::drawSprites(std::span<const effects::Particle> sprites, effects::ParticleSheet sheetOf, bool add,
@@ -196,7 +203,7 @@ void ParticleRenderer::drawSprites(std::span<const effects::Particle> sprites, e
     if (sprites.empty()) {
         return;
     }
-    beginSprites();
+    const bool fogged = beginSprites();
     const graphics::SpriteSheet* spriteSheet = sheet(sheetOf);
     const auto* texture =
         spriteSheet != nullptr ? dynamic_cast<const SheetTexture*>(spriteSheet->texture.get()) : nullptr;
@@ -212,7 +219,7 @@ void ParticleRenderer::drawSprites(std::span<const effects::Particle> sprites, e
         }
     }
     batch.flush(raster, add);
-    endSprites();
+    endSprites(fogged);
 }
 
 } // namespace coney::platform

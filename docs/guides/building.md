@@ -188,7 +188,8 @@ coney [--disc PATH] [--load ENTRY]... [--view-txd ENTRY] [--view-sheet SHEET] [-
                    [--script-trace FILE] [--scene NAME] [--camera X,Y,Z,QX,QY,QZ,QW[,FOV]] [--freeze-world]]
       [--render-size WxH]
       [--sandbox [NAME]] [--assets DIR] [--render-references DIR [--kind KIND] [--only NAME]... [--names FILE]]
-      [--fps-cap N] [--vsync on|off] [--show-fps] [--tunables FILE] [--no-audio | --audio-test]
+      [--fps-cap N] [--vsync on|off] [--line-blend on|off] [--show-fps] [--tunables FILE]
+      [--no-audio | --audio-test]
       [--skip-movies] [--rumble TYPE [--arena N] [--gang-size N]]
       [--profiles DIR] [--dev-overlay N]
 ```
@@ -224,6 +225,7 @@ so motion is smooth above 30 frames a second and the game's speed never changes
 | --- | --- |
 | `--fps-cap N` | at most N frames a second; 0, the default, is no cap. 30 is the original's rhythm: one step and one frame, nothing blended |
 | `--vsync on\|off` | wait for the display's vertical blank when presenting (on, the default) or not (frames may tear) |
+| `--line-blend on\|off` | soften the picture as the PS2's video output does, each shown line the mean of two neighbouring lines of the original's 448 (on, the default; [Rendering](../research/rendering.md#output)), or show the frame as drawn, sharper than the original (off); reference renders are never blended |
 | `--show-fps` | print the frame and step rates once a second, and the totals when Coney stops |
 
 The default, no cap with vsync on, draws one frame per refresh of the display. With vsync off and no cap Coney draws

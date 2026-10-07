@@ -4,15 +4,17 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <utility>
 #include <vector>
 
+#include "effects/blur_pulse.h"
 #include "effects/glints.h"
 #include "effects/ground_fog.h"
 #include "effects/screen_tint.h"
 #include "graphics/render_device.h"
-#include "graphics/screen.h"
+#include "graphics/screen_fade.h"
 
 namespace coney::platform {
 
@@ -74,21 +76,27 @@ void PlayLevelEffects::drawOverlay(RenderEngine& engine) {
     }
 }
 
+void PlayLevelEffects::drawScreenEffects(RenderEngine& engine) {
+    if (m_effects == nullptr) {
+        return;
+    }
+    if (const std::optional<int> passes = m_effects->blurPulse.passes(); passes && engine.drawsPixels()) {
+        const effects::BlurPulse::Look& look = m_effects->blurPulse.look();
+        engine.blurScreen(*passes, look.offsetU, look.offsetV);
+    }
+    drawTint(engine);
+}
+
+bool PlayLevelEffects::screenEffectsFirst() const { return m_effects != nullptr && m_effects->blurPulse.running(); }
+
 void PlayLevelEffects::drawTint(RenderEngine& engine) {
     if (m_effects == nullptr || !m_effects->tint.drawn()) {
         return;
     }
     // The wash blends dst + (rgb - dst) x As / 128: the device's source alpha is that opacity on its 0-255 scale.
     const effects::ScreenTint::Colour colour = m_effects->tint.current();
-    const float opacity = effects::ScreenTint::opacityOf(colour.a);
-    const auto alpha = static_cast<std::uint8_t>(std::clamp(std::lround(opacity * 255.0F), 0L, 255L));
-    const graphics::LogicalQuad quad{0.0F,
-                                     0.0F,
-                                     graphics::kLogicalWidth,
-                                     graphics::kLogicalHeight,
-                                     graphics::UvRect{},
-                                     graphics::Rgba{colour.r, colour.g, colour.b, alpha}};
-    engine.drawQuads(nullptr, std::span(&quad, 1));
+    graphics::ScreenFade::drawWash(
+        engine, graphics::Rgba{colour.r, colour.g, colour.b, effects::ScreenTint::deviceAlphaOf(colour.a)});
 }
 
 } // namespace coney::platform
