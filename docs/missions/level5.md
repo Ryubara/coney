@@ -39,6 +39,7 @@ implemented in Coney and 16 are traced. The full list is on [the coverage page](
 
 Research:
 
+- [The mission's scripts, checkpoint by checkpoint](../research/scripting.md#level5)
 - [Story order and what loads each level](../research/scripting.md#run-next-mission)
 
 ## Run it in Coney {#run}

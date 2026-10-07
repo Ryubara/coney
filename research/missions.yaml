@@ -166,6 +166,7 @@ missions:
       count: 4
       default: not-started
     research:
+      - {title: "The mission's scripts, checkpoint by checkpoint", path: "research/scripting.md#level5"}
       - {title: "Story order and what loads each level", path: "research/scripting.md#run-next-mission"}
   - level: 81
     group: story

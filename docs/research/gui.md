@@ -436,6 +436,16 @@ The chunk types `0x0F`-`0x13` (English to German string tables) and `StringTable
 other screens (credits, Rumble mode); they do not occur in the WAD ([WAD
 contents](formats/wad-contents.md#chunk-types)).
 
+**The string cache** (`StringTable/StringTableCache.cpp`, our name `StringTableCache`) interns strings: one copy of
+each distinct text, so callers can keep the returned pointer. `StringTableCache_Intern(cache, text)` (`0x00386d08`)
+hashes the text (`h = h × 5 + c` over its bytes, signed), looks it up in an STL hash set (buckets at `+0x08`-`+0x0c`,
+element count `+0x14`), and on a miss copies it into the `Level Dynamic & LUA Pool` (tag `char`, align 16), inserts
+the copy and adds its length + 1 to the byte total `+0x18`; it returns the stored copy, or 0 for a null text. The
+destructor (`0x00386b30`) frees every copy from the same pool, clears the set and frees its buckets. Callers: the
+credits list (`0x001a94e8`, `0x001a8fb8`) and the Rumble character data (`0x001f1fa8`, and `0x001fdfe0`, which can
+first copy the text and change its case through `0x00435e70`) into the cache at `0x0050f4f0`. Confirmed (code) at
+the cited addresses.
+
 ### The radar {#radar-icons}
 
 `GUI/RadarHUD.cpp` (`0x001c41a0`-`0x001c6878`). The HUD object `0x00600840` holds two radars, one per player, at

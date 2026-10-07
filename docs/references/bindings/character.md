@@ -520,8 +520,10 @@ Makes two humans exchange lines: each is given its line as by HuSpeakNI (cutting
 look-at target and the sound flag off), the first with no callback and the second with `callback`, and each has the
 other's handle stored as its conversation partner (human `+0x18c`).
 
-**Notes.** Both lines are issued in the same call; whether the sound system plays them one after the other or together
-is not traced. Readers of human `+0x18c` are not traced.
+**Notes.** Both lines start in the same call and play together (each a mono stream, no queue between humans); the
+partner link `+0x18c` is read only by Human_UpdateSpeech (0x0021e940), which clears both links once the partners are
+within 10 m and stops nothing still playing. That they overlap audibly is not checked at runtime ([Scripts:
+level5](../../research/scripting.md#level5)).
 
 - **Evidence:** confirmed (code) at `0x00239788`, `0x002395a0`; detail: traced
 - **Wrapper** `0x003650d0` (registered by `RegisterBindings`); **calls** `0x00239788` `Human_ActionDialog`, `0x002395a0`
@@ -3753,12 +3755,15 @@ HuSetRageMode(human, on)
 
 **Returns** nothing.
 
-Starts or ends rage for a human. On: 0x00236d28 calls a Lua function with the human, sets the raging flag (`0x80000`),
-clears the rage hold timer, shows the player's HUD rage state 2 and tells his camera; off: when the player human with
-the same player number is raging, 0x00236fb8 ends it (HUD state 3) and clears the flag.
+Starts or ends rage for a human. On: Human_StartRageMode (0x00236d28) calls a Lua function with the human, sets the
+raging flag (`0x80000`), clears the rage hold timer, shows the player's HUD rage state 2 and tells his camera; off: when
+the player human with the same player number is raging, Human_EndRageMode (0x00236fb8) ends it (HUD state 3) and clears
+the flag.
 
-**Notes.** The Lua function's name is read from 0x006b6830 at run time (not traced). Rage itself:
-[Combat](../../research/combat.md#rage).
+**Notes.** The Lua function is the first name given to CfgRageHandlers (copied to 0x006b6830 by Cfg_SetRageHandlers);
+global.lua registers `SetRageMode` there, which sets god mode, unstunnable, reduced and increased reaction, ungrabbable,
+ungroundable and keep-weapon on the human; ending calls the second name, `ClrRageMode`, which clears them ([Scripts:
+level5](../../research/scripting.md#level5)). Rage itself: [Combat](../../research/combat.md#rage).
 
 - **Evidence:** confirmed (code) at `0x00237128`; detail: traced
 - **Wrapper** `0x00359478` (registered by `RegisterBindings`); **calls** `0x00237128` `Human_SetRageMode`

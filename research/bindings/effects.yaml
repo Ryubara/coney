@@ -181,8 +181,9 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The record's own alpha byte is always 0; the visible alpha comes only from the drift range. How the drift blends
-    from one target to the next (0x0019b2a8, 0x0019b070) is not traced. Layers: [Graphics](../../research/graphics.md).
+    The record's own alpha byte is always 0; the visible alpha comes only from the drift range. The texture
+    (`room_smoke_overlay`), the blend from one drift to the next (0x0019b2a8) and the camera follow (0x0019b070):
+    [Graphics](../../research/graphics.md#room-smoke).
   usage: {chunks: 8, calls: 8, boot: false, mission1: false, result_used: false, levels: [5, 81, 93, 55, 11]}
 
 - name: EndRoomSmoke

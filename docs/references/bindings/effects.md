@@ -1084,9 +1084,9 @@ with the colour that slowly scrolls and changes. Every 4-20 s (random) it picks 
 `amount`, a scale of 1.63-1.93 by 1.0-1.2, and an alpha between the fourth and fifth colour values. Calling it while the
 layer runs passes the new settings to the running effect. EndRoomSmoke stops it.
 
-**Notes.** The record's own alpha byte is always 0; the visible alpha comes only from the drift range. How the drift
-blends from one target to the next (0x0019b2a8, 0x0019b070) is not traced. Layers:
-[Graphics](../../research/graphics.md).
+**Notes.** The record's own alpha byte is always 0; the visible alpha comes only from the drift range. The texture
+(`room_smoke_overlay`), the blend from one drift to the next (0x0019b2a8) and the camera follow (0x0019b070):
+[Graphics](../../research/graphics.md#room-smoke).
 
 - **Evidence:** confirmed (code) at `0x0018e070`, `0x0018bae0`, `0x0019add0`, `0x0019b198`, `0x0019b4c0`; detail: traced
 - **Wrapper** `0x00368ec0` (registered by `RegisterBindings`); **calls** `0x0018e070` `ScreenFx_StartRoomSmoke`,

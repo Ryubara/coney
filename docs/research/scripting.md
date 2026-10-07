@@ -944,6 +944,78 @@ Engine behaviour this mission needs beyond its bindings: [kind-2 boxes](#trigger
 camera](camera.md#rail) mode 0 and [GoalDevilRun](ai.md#devil-run). Open: who sends the gallery box message 6 when
 an object inside it is damaged.
 
+### `level5.lua` (mission 7) {#level5}
+
+Story mission 7: Ajax and Cochise after Sanchez in Hurricane turf, the bar, the chase across the yards and the boss
+fight with Diego and Vargas. Ajax is player 1, Cochise player 2. Read from the disassembly of `level5.lua` and its
+four chapter scripts; bindings on [Story coverage](../references/bindings/story.md#level5). Inferred unless marked.
+
+- **The main chunk** sets `CHAPTER = GetCheckPoint()` and a chapter table (1 `level5_chapter1`, 2
+  `level5_chapter1a`, 3 `level5_chapter2`, 4 `level5_chapter3`), then runs `Main` and `RunMission`, as in
+  [`level3`](#level3): `RunMission` `preLoadFile`s the chapter with its `Setup`; **`NextMission`** runs the chapter's
+  `Cleanup`, sets `LastChapter`, adds 1 to `CHAPTER`, **`SetCheckPoint(CHAPTER)`**, saves the tags and runs
+  `RunMission`. A chapter's `Setup` checks `LastChapter` to tell "continued in place" from "entered at this
+  checkpoint" (then it waits for its start callback and plays its opening scene itself).
+- **`Main`**: fog colour, fog distance 0, the tag spots, the radar, the chapter's Warriors (checkpoint 1: Rembrandt,
+  Ajax, Cochise, Snow outside; 2: the same four in the bar; 3 and 4: Ajax and Cochise only), the follow camera, car
+  colours, `SetSpawnMax(30)`. At checkpoint 1 the bum and idle anims are preloaded. The **bonus flags** ("Car",
+  "Bar") are packed into Lua save float 1 (`EncodeU32`): written at checkpoint 1, read back from 2 on, and a done
+  bonus is shown done; `SetupFlagNet` (the pedestrian net) runs from checkpoint 3 (chapter 1 runs it itself).
+- **Helpers in `level5.lua`** used by the chapters:
+    - **`StartChase{Human, MaxDistance, FailDialog, Reason}`**: every 50 ms the distance from the chased human to
+      the nearer player is checked; at `MaxDistance` (35 when not given) or more a 5 s watch starts, and getting
+      back within range cancels it. When it runs out the player says `FailDialog` and its end calls
+      **`HUDLaunchMissionFailed(Reason)`**. `EndChase` stops it. Several tables pass `Distance` instead, which
+      `StartChase` does not read, so those chases use 35.
+    - **`SRun`** (Sanchez's run): entering volume *n* of the run's list (a human of gang type 0, a Warrior)
+      disables it, Sanchez says line *n*, and if path *n* exists he runs it with `GoalRunCarrotRun(..., 5, 1,
+      GangWarriors, 13)` (keeping ahead of the Warriors); the next volume is then armed. `SRun.WarpSanchez` teleports
+      him over a pile (a chair-break sound and a line).
+    - **`SetUpPOIZOCAM{Cam, SayVag, SayVag2, Human, Human2, bActionDialog, Time, Delay, Callback, bSkippable,
+      ...}`**, the in-game cut-away: spotting off, Warriors deactivated, **rage ended on both players**
+      (`HuSetRageMode(false)`) and normal mode, fade, the camera switched, any non-Warrior gang that comes within
+      5 m of a Warrior suspended (trigger spheres), the listener moved; then one line, two lines one after the other
+      (the second started from the first's end callback), or both through `HuActionDialog`; skippable with the
+      pad (`RegisterPOIZOCallback`, a `global.lua` helper on pad bits 64 and 2048). `POIZOCamBack` undoes it all
+      and calls `Callback(skipped)`.
+    - **`SetSanchezMode`**: Sanchez is god-mode, ungrabbable, ungroundable, untargetable, unreachable, does not
+      react and never wants a weapon, so he can only be chased.
+    - **`SwitchNodeStack` / `SwitchNode`**: when a listed crate stack, skid or trash can breaks (message 2, or 1
+      for the last two) the nearby path jump node is turned into a door node (`ConvertJumpToDoor` at its
+      `fNodeSwitch` flag), opening the way for the AI.
+
+| Checkpoint | Chapter | What happens | Ends with |
+| --- | --- | --- | --- |
+| 1 | `level5_chapter1` | Fade out; four Hurricanes at a car (suspended, playing idle clips), the stoop crowds and civilians, zone 1, the car's music (a looping emitter) and a radio in it (`CarSpawnRadio`; stealing it, `CfgSetSteroTheftHandler`, stops the music), car parts 17 and 21 removed. Start callback: brains off, the scene `l5_c8_b` (the Warriors and four civilians); then a line, an objective to `fObjective01` (`ObjectiveSetup`, callback `C1.OpenBar`), the passing-train sound scene `Harlem_Subsound` every 30 s. `vAdvCombat`: a wall-smash tutorial. `volCar[1]` entered by a Warrior (or a Hurricane hit by one): the Warriors warped, three bums with molotovs (`GoalBumLogic`), the scene `l5_c4`; then the Hurricanes confront (`CONFRONT` tactic), the dealer factory (revive, paint), trunk items, a backup spawner, the **car bonus** (line 1 in per cent and HUD bar 1: 15 car messages 25 with the flag true on that car, or one whose third argument is −1, complete it, `UM_Unlock(5, 1, 2)`, music off, the "Car" flag saved) | the objective reached: a locked camera on the bar's front, the train stopped, the wanted level cleared, the arriving Warrior put at the door, the cut-away with one skippable line; its end runs `NextMission` → **`SetCheckPoint(2)`** |
+| 2 | `level5_chapter1a` | The bar: Sanchez (`SetSanchezMode`), the bartender (god mode), two Hurricane gangs (`CONFRONT`, aggressive), three bar girls; zones 10 and 6. The scene `l5_c2` (entered at 2: from the start callback), then room smoke (`StartRoomSmoke`), the bar's music loop, a line, the fight objective, a rage tutorial after 7 s | every Hurricane of both gangs dead (message 18 counts down): 3 s, the scene `l5_c5`; Rembrandt and Snow deleted, the music tracks set, `NextMission` → **`SetCheckPoint(3)`** |
+| 3 | `level5_chapter2` | **The chase.** The scene `l5_t16_000`, then Sanchez with a spinning icon and a flashing radar marker, spotting off, the objective, `StartChase` (33 m, fail line `l5_t16_012`, reason `LEVEL5.MF`), his first run. `volFightF1[1]` (once Sanchez has reached `volSanEnd[1]`): a door closes, the chase ends, the scene `l5_t9_004`, four Hurricanes fight, two more 1 s later; "back-timer" boxes restart and stop a chase watch while player 1 is between them. All six down: the scenes `l5_t8_000` and `l5_chase_poizo2`, Sanchez runs to a gate, a new chase (60 m, line `l5_t16_013`). Then the yards (zone 3): `volSanDoor01` arms the second run, `volFightPit[1]` stops the chase for the scene `l5_t9_010` and three pit gangs (`MANPILE`, `HANGINGOUT`) 3 s later, `volFightPit[2]` sends Sanchez on, `volSanWarp` boxes warp him over piles, `volSanGo[1]` adds a bum blocker, `volSanGo[2]` starts the third run and a chase (35 m) | `volStartHouse` entered by a Warrior: the chase ends, `NextMission` → **`SetCheckPoint(4)`** |
+| 4 | `level5_chapter3` | **The boss fight.** Rembrandt and Snow rejoin; Diego with his weapon; lights and music off; zone 5; continuing in place, player 1's health is set to 1170. The scene `l5_c6`, then a locked opening camera, the boss rail camera (`CamSetupRail`, two points), `TacticBossScenarioA` stage 1 with the boss HUD bars (bar 3, two names), Warrior commands limited to 1, 2 and 4 (command 1 issued), Warrior weapons off. The tactic's callback: code 1 ends a stage (stage 2: the scene `l5_c7`, Vargas fights in god mode; stage 3: the scene `l5_c8`, two tenants join, a second Vargas breaks through a door 5 s later); code 18 (Diego down) puts the camera on Diego and backs the Warriors off 5 m with rage ended. Diego's bar never shows below 66 % in stage 1 or 33 % in stage 2. Hitting the plaster drops a chandelier (the scene `l5_chandelier`) | stage 3's callback: the tenants leave, Diego suspended; 3 s later (waiting while a player is tagging) the Warriors are stilled, a line, a 2 s fade, the scene `l5_c3` with **`Final`** true (its callback 1 breaks the glass within 10 m of `fSanDead`); `PreCashTheWorld` then calls **`HUDLaunchMissionComplete()`** ([how a mission ends](#level99)). The level has no outro movie |
+
+**Fail states**: only the Sanchez chase in checkpoint 3 calls `HUDLaunchMissionFailed` (a player more than the
+chase distance from him for 5 s); no one else is protected (Sanchez and the bartender cannot be hurt).
+
+**The two binding questions** (confirmed (code)):
+
+- **`HuSetRageMode(human, true)`** calls the Lua function whose name `CfgRageHandlers` stored first (copied to
+  `0x006b6830` by `Cfg_SetRageHandlers`, `0x00236c58`). `global.lua` registers `CfgRageHandlers("SetRageMode",
+  "ClrRageMode", "RageFull", 20000, 5000)` at boot, so it is **`SetRageMode`**, which sets god mode, unstunnable,
+  reduced and increased reaction, ungrabbable, ungroundable and keep-weapon on the human (and locks rage with the
+  rage cheat on). `Human_StartRageMode` (`0x00236d28`) passes the human and a flag (a count at `0x0051489c +
+  0x268` below 1). Ending rage (`Human_EndRageMode`, `0x00236fb8`) calls the second name, `ClrRageMode`, which
+  clears the same flags. `Rage_ResetConfig` (`0x00236be0`) clears the three names.
+- **`HuActionDialog`'s two lines start together**, not one after the other: `Human_ActionDialog` (`0x00239788`)
+  starts the first speaker's line and then the second's in the same call, each through `Human_PlaySpeechCutting`
+  (`0x0021e698`), which plays a mono stream at once (mono streams use channels 5-12, [Sound](sound.md#stream-pairs))
+  with no queue between humans. The partner link (human `+0x18c`) is only read by `Human_UpdateSpeech`
+  (`0x0021e940`): while a line plays and the partner is within 10 m it calls `Human_StopSpeech` (`0x0021ec38`) on
+  both without force, which stops nothing that is still playing, and clears both links. The callback runs when the
+  second speaker's line ends. That the lines overlap audibly is not checked at runtime. This mission uses it only
+  in cut-aways with `bActionDialog`; the two-line form without it (`SayVag2`) does wait for the first line.
+
+Engine behaviour this mission needs beyond its bindings: [kind-0 volume boxes](#triggers) for a Warrior, message 8
+from a flag when a human reaches it (the banter switches), message 18 on a death, car message 25 with its flag
+and third argument, `ConvertJumpToDoor` on a path node, and `TacticBossScenarioA`'s callback codes 1 and 18.
+
 ### Errors in a fresh state {#errors-in-a-fresh-state}
 
 Two level scripts stopped in Coney's fresh Lua state (scripts read with the disassembly; the bindings' code

@@ -39,8 +39,8 @@ material names (`0x0034f740`-`0x0034fc08`) lie just before, after `Physics/`'s l
 | `0x0034f950` | `Collision_DropToGround` | ground height under a point | confirmed (code) |
 | `0x0034fa28` | `Collision_DropToMarkedGround` | the same, skipping triangles whose area byte is 0 | confirmed (code) |
 | `0x0034f740` | `Collision_MarchRay` | a long ray cast in steps | confirmed (code) |
-| `0x0034fba0` | (none) | switches the triangles inside a game object's box on or off | confirmed (code) |
-| `0x0034fc08` | (none) | material id to name (`MATERIAL_*`) | confirmed (code) |
+| `0x0034fba0` | `CollisionMesh_SetEnabledInVolume` | switches the triangles inside a game object's box on or off | confirmed (code) |
+| `0x0034fc08` | `CollisionMaterial_GetName` | material id to name (`MATERIAL_*`) | confirmed (code) |
 
 ## Data
 

@@ -24,35 +24,48 @@ follows it without a path string. Names below are ours unless they are path or t
 | File | Class (role) | Evidence |
 | --- | --- | --- |
 | `Memory/MemoryClump.cpp` | `MemoryPoolClump`: a bump allocator over one block taken from a parent pool | confirmed (code), anchor `0x00338420` (tag `MemoryPoolClumpInternal`) |
-| `Memory/MemoryFilter.cpp` | a filtering pool; not used on the retail path traced here | confirmed (code) for the file; role open |
+| `Memory/MemoryFilter.cpp` | `MemoryFilter`: a pool that wraps another and forwards every call to it, the base of `MemoryPoolTrack`; not used on retail | confirmed (code), anchor `0x003388c0` |
 | `Memory/MemoryHeap.cpp` | `MemoryPoolHeap`: a general-purpose heap over one block taken from a parent pool | confirmed (code), anchors `0x003389a0` (tag `u8`), `0x00338b38` |
 | `Memory/MemoryPriv.cpp` | `PrivMemoryManager`: the memory manager, its heap stack and its pool registry | confirmed (code), anchor `0x00338e10` (tags `MemoryPoolHeap`, `All System`) |
 | `Memory/MemoryTrack.cpp` | `MemoryPoolTrack`: a debug wrapper that tracks a pool's allocations | confirmed (code), anchors `0x00339e28`, `0x0033a050` |
 | `Memory/WarriorsMemory.cpp` | the game's own pools (`Level Dynamic & LUA Memory`) and its free lists | confirmed (code), anchor `0x0033afe0` |
 | (no path string, `0x0033b1a0`-`~0x0033c288`) | the block allocator under every `MemoryPoolHeap` | confirmed (code) for the code; its origin is discussed under [The heap allocator](#the-heap-allocator) |
 
-Key functions:
+Functions, by class. A "slot" is the vtable offset ([The pool interface](#pool-interface)); names are ours and match
+the local Ghidra project. All confirmed (code) at the cited addresses unless the row says otherwise.
 
-| Address | Name | Role | Evidence |
-| --- | --- | --- | --- |
-| `0x0033afc8` | `MemoryManager_SetGlobal` | points the global `0x005127e4` at the manager object `0x006eb958` | confirmed (code) |
-| `0x0033b128` | static initialiser of `WarriorsMemory.cpp` | gives the manager its vtable `0x005444e0` and an empty heap stack | confirmed (code) |
-| `0x00338e10` | `MemoryManager_Init` (manager slot `+0xb0`) | builds the boot pool tree | confirmed (code) |
-| `0x003395b8` / `0x003395d8` | `MemoryManager_Push` / `_Pop` (slots `+0xb8` / `+0xc0`) | the heap stack | confirmed (code) |
-| `0x00339610` | `MemoryManager_RegisterPool` (slot `+0xc8`) | names a pool in the registry | confirmed (code) |
-| `0x003397a0` | `MemoryManager_UnregisterPool` (slot `+0xd0`) | | confirmed (code) |
-| `0x003398f0`, `0x00339988` | `MemoryManager_Track` (slots `+0xd8`, `+0xe0`) | wrap a pool in `MemoryPoolTrack` when debug memory exists; on retail return the pool unchanged | confirmed (code) |
-| `0x003389a0` | `MemoryPoolHeap_InitInParent(heap, parent, size, name)` | takes `size` bytes from `parent` and builds a heap in them | confirmed (code) |
-| `0x00338bf0` | `MemoryPoolHeap_Alloc` | | confirmed (code) |
-| `0x00338d30` | `MemoryPoolHeap_LargestFreeBlock` | | confirmed (code) |
-| `0x00338b38` | `MemoryPoolHeap_Destroy(heap, parent)` | gives the block back to `parent` | confirmed (code) |
-| `0x00338420` | `MemoryPoolClump_InitInParent(clump, parent, size, name)` | takes `size` bytes (aligned to 128) from `parent` | confirmed (code) |
-| `0x00338528` / `0x00338578` | `MemoryPoolClump_Alloc` / `_Free` | | confirmed (code) |
-| `0x003384b0` | `MemoryPoolClump_Destroy(clump, parent)` | | confirmed (code) |
-| `0x0033afe0` | `WarriorsMemory_Init` | step 3 of [initialisation](boot.md#initialisation-order) | confirmed (code) |
-| `0x0040d688` | `WorldManager_CreatePools` | `Sector Pool`, `Sector Pool 2` | confirmed (code) |
-| `0x00192908` | `RwMemory_Alloc` | RenderWare's allocation hook: the `Filter Pool` or the current heap | confirmed (code) |
-| `0x0032c758` | `Lua_Realloc` | Lua's allocator: always the `Level Dynamic & LUA Pool` | confirmed (code) |
+| Address | Name | Role |
+| --- | --- | --- |
+| `0x0033afc8` | `MemoryManager_SetGlobal` | points the global `0x005127e4` at the manager object `0x006eb958` |
+| `0x0033b128` / `0x0033b168` | `WarriorsMemory_StaticInit` / its stub | give the manager its vtable `0x005444e0` and an empty heap stack; the stub calls it with `(1, 0xffff)` |
+| `0x00338680` | `MemoryPoolTable_Clear` | boot step 1: zeroes the 50 words at `0x00715628` and the word `0x005127e0`, which no other code references |
+| `0x00338e10` | `MemoryManager_Init` (slot `+0xb0`) | builds the boot [pool tree](#the-pool-tree) |
+| `0x003395b8` / `0x003395d8` | `MemoryManager_Push` / `_Pop` (slots `+0xb8` / `+0xc0`) | the [heap stack](#the-heap-stack) |
+| `0x00339a20`, `0x00339a58`, `0x00339a90`, `0x00339ac8`, `0x00339880`, `0x003398b8`, `0x00339d10` | `MemoryManager_Alloc`, `_Free`, `_Realloc`, `_SetOption`, `_LargestFreeBlock`, `_GetFreeBytes`, `_DescribeBlock` (slots `+0x50`, `+0x58`, `+0x60`, `+0x68`, `+0x80`, `+0x88`, `+0xa0`) | forward to the pool on top of the heap stack |
+| `0x00339b00` | `MemoryManager_CheckEmpty` (slot `+0x70`) | true when every pool on the stack is empty |
+| `0x00339878` / `0x003395e8` | `MemoryManager_GetRange` / `_Destroy` (slots `+0x78` / `+0x90`) | returns 0 / only calls its own `CheckEmpty` |
+| `0x00339610` / `0x003397a0` | `MemoryManager_RegisterPool` / `_UnregisterPool` (slots `+0xc8` / `+0xd0`) | the [registry](#registry-records) |
+| `0x003398f0`, `0x00339988` | `MemoryManager_TrackPool`, `_TrackPool2` (slots `+0xd8`, `+0xe0`) | wrap a pool in a [`MemoryPoolTrack`](#filter) when debug memory exists; on retail return the pool unchanged; the two differ only in their source line |
+| `0x00339b80`, `0x00339c10`, `0x00339bf0`, `0x00339c80`, `0x00339cb8` | `MemoryManager_FindPoolByRange`, `_FindNameByRange`, `_FindPoolByName`, `_FindPoolByAddress`, `_FindNameByAddress` (slots `+0xe8`, `+0xf0`, `+0xf8`, `+0x100`, `+0x108`) | registry lookups |
+| `0x00339cf0` / `0x00339d48` | `MemoryManager_ReportLeaks` (slot `+0x98`) / `MemoryRegistry_PrintTree` | walks the registry; the printing is compiled out |
+| `0x003393c0`, `0x00339448`, `0x00339518` | `MemoryRegistry_InsertSibling`, `_FindContaining`, `_FindByName` | the registry's tree operations |
+| `0x003389a0` / `0x00338a78` | `MemoryPoolHeap_InitInParent(heap, parent, size, name)` / `_InitDescriptor` | takes `size` bytes from `parent` and lays the block allocator's descriptor in them |
+| `0x00338bf0`, `0x00338cc0`, `0x00338ce0` | `MemoryPoolHeap_Alloc`, `_Free`, `_Realloc` | call the [block allocator](#the-heap-allocator) |
+| `0x00338d08`, `0x00338d30`, `0x00338df8` | `MemoryPoolHeap_GetRange`, `_LargestFreeBlock`, `_GetFreeBytes` | |
+| `0x00338b38` | `MemoryPoolHeap_Destroy(heap, parent)` | gives the block back to `parent` |
+| `0x00338420` / `0x00338498` | `MemoryPoolClump_InitInParent(clump, parent, size, name)` / `_InitInPlace(clump, block, size)` | takes `size` bytes (aligned to 128) from `parent` / uses a block given by the caller (the boot clumps) |
+| `0x00338528` / `0x00338578` / `0x003385c8` | `MemoryPoolClump_Alloc` / `_Free` / `_Realloc` | `Realloc` returns 0 |
+| `0x00338650`, `0x003385d0`, `0x00338618`, `0x00338640`, `0x00338610` | `MemoryPoolClump_SetOption`, `_CheckEmpty`, `_GetRange`, `_GetFreeBytes`, `_ReportLeaks` | `ReportLeaks` is empty |
+| `0x003384b0` | `MemoryPoolClump_Destroy(clump, parent)` | |
+| `0x003386d8`-`0x003388c0` | `MemoryFilter_Construct` and its eleven forwarding methods | [the filter base](#filter) |
+| `0x00339e28`-`0x0033af78` | `MemoryPoolTrack_*` | [the tracking pool](#filter) |
+| `0x0033ab98` / `0x0033ab28` | `MemoryManager_DumpToHost` / `MemoryDump_Printf` | [Debug](debug.md): every pool block to `host0:memdump.txt` |
+| `0x0033b9d0`, `0x0033b650`, `0x0033bfa8`, `0x0033bf70` | `HeapAlloc_Malloc`, `_Free`, `_Realloc`, `_AlignedAlloc` | the [block allocator](#the-heap-allocator)'s entry points |
+| `0x0033b1a0`, `0x0033b778`, `0x0033b810`, `0x0033b6f8`, `0x0033c268` | `HeapAlloc_FreeInternal`, `_Initialize`, `_MoreCore`, `_MoreCoreAligned`, `_GetDefault` | its internals |
+| `0x0033afe0` | `WarriorsMemory_Init` | step 3 of [initialisation](boot.md#initialisation-order) |
+| `0x0040d688` | `WorldManager_CreatePools` | `Sector Pool`, `Sector Pool 2` |
+| `0x00192908` | `RwMemory_Alloc` | RenderWare's allocation hook: the `Filter Pool` or the current heap |
+| `0x0032c758` | `Lua_Realloc` | Lua's allocator: always the `Level Dynamic & LUA Pool` |
 
 ## Data
 
@@ -77,6 +90,7 @@ heap stack (`0x00339a20` and its neighbours), so "allocate from the manager" mea
 | `+0x88` | `FreeBytes()` | total free | size minus used | confirmed (code) |
 | `+0x90` | `Destroy(parent)` | returns the block to `parent` | same | confirmed (code) |
 | `+0x98` | report leaks | empty | empty | confirmed (code) |
+| `+0xa0` | a per-pointer query (`DescribeBlock`, our name) | empty (shared default) | empty (shared default) | confirmed (code) that only the filter and the tracker forward it; meaning inferred |
 | `+0xa8` | `Contains(address)` (shared, `0x004f0520`) | through `GetRange` | same | confirmed (code) |
 
 Note the clump's `LargestFreeBlock` returning 0: only a heap can answer "is there room for N bytes", which is why
@@ -141,6 +155,27 @@ neighbours above and below in address order, `+0x18`/`+0x1c` the first and last 
 contains it, so the registry is a tree of pools by address containment (`0x00339448`, `0x003393c0`). Lookups by
 range (slots `+0xe8`, `+0xf0`) and by address (`+0x100`, `+0x108`) exist; their callers were not traced. The only
 walk found (`0x00339d48`, slot `+0x98`) prints nothing on retail.
+
+### MemoryFilter and MemoryPoolTrack {#filter}
+
+Debug-only classes; on retail nothing creates them, because the manager's `TrackPool` slots return the pool itself
+when there is no debug arena (`+0x1c` is 0). Confirmed (code) at the cited addresses.
+
+**`MemoryFilter`** (`Memory/MemoryFilter.cpp`): `+0x04` the wrapped pool, `+0x08` a name of up to 63 characters
+(`0x003386d8`). Each method (`0x00338708`-`0x00338890`) forwards the same slot to the wrapped pool; `Destroy`
+(`0x003388c0`) checks itself empty, destroys the wrapped pool into the parent, and frees the wrapped pool's object.
+
+**`MemoryPoolTrack`** (0x60 bytes, vtable `0x005445f8`, constructor `0x0033a6f0`), a `MemoryFilter` that records
+every live allocation in an STL map keyed by address (`+0x48`, its nodes tagged `STL` / `STL Debug Allocation`;
+`+0x50` the record count). `Alloc` (`0x0033a7d0`) forwards and then records; `Free` (`0x0033a8a8`) removes the record
+(`0x0033a050`) and forwards, asking the manager to report when the pointer is unknown; `Realloc` (`0x0033a948`)
+removes, forwards and records the result. A record (`TrackInfo`, 100 bytes from the debug heap, `0x00339e28`) holds
+the pointer, size, alignment, tag (31 characters), the source file's last path component (RenderWare's
+`/home/ack/System/rwsdk370/` prefix stripped by `0x0033a690`), line, flag and the debug name or `none`.
+`SetOption` (`0x0033ae38`) takes `which` 1 and 3 as report modes (`+0x58`, `+0x5c`); `ReportLeaks` (`0x0033aed0`)
+then dumps to the host (`0x0033ab98`), or walks the records (`0x0033aa30`, which only spins a delay loop per record
+on retail: its printing is compiled out). `CheckEmpty` (`0x0033af38`) is true when no record is left; `Destroy`
+(`0x0033af78`) checks and then destroys as the filter does.
 
 ### Globals
 
@@ -271,6 +306,19 @@ hooks for free, reallocate and "more memory" (the last pointed at a function tha
 `0x00338948`). This is the layout of the classic GNU `malloc` (block and fragment tables, power-of-two fragments)
 with a descriptor per heap as in `mmalloc` (inferred from the structure; no strings name it).
 
+The pieces, confirmed (code): `0x0033bf70` rounds the size up to the alignment and calls `HeapAlloc_Malloc`
+(`0x0033b9d0`), which defers to a malloc hook (`+0x24`) when one is set, initialises the descriptor on first use
+(`0x0033b778`: the 12-byte block table, flag 2), serves sizes up to 512 (at least 8) from the power-of-two fragment
+lists, and larger sizes from the free block runs, else from new core (`0x0033b810`, which doubles the block table
+when it no longer covers the heap; `0x0033b6f8` pads the core to 1 KB). `HeapAlloc_Free` (`0x0033b650`) honours a
+list of aligned pointers (`+0xa4`) and a free hook (`+0x20`), then `0x0033b1a0`: a run of blocks merges with its
+free neighbours in the address-ordered free list (and a run of at least 8 blocks at the top of the heap goes back
+through the "more memory" hook), a fragment goes back to its size's list, and a block whose fragments are all free
+is freed whole. `HeapAlloc_Realloc` (`0x0033bfa8`) frees on size 0, allocates on a null pointer, keeps a fragment
+whose size class still fits, and shrinks a run in place. A null descriptor means the default one, the first heap
+set up (`0x005127f4`, `0x0033c268`). Coney replaces all of this with ordinary allocation
+([What a reimplementation must keep](#what-a-reimplementation-must-keep)).
+
 **Alignment.** The heap aligns by rounding the size up to a multiple of `align` before allocating
 (`0x0033bf70`): a fragment of 2^k bytes is aligned to 2^k and blocks to 1 KB, so any alignment up to 1 KB holds
 (inferred from the layout). The clump aligns its bump offset to `align` relative to its block, which is aligned to
@@ -387,6 +435,5 @@ own, frees 43 parts and is short of room in 435 of 15,945 frames.
   block (as opposed to the free total) at a level start.
 - **How much fragmentation matters**: whether `LargestFreeBlock` and `FreeBytes` differ enough in play to change
   an eviction. A runtime log of both at each `ResourceManager_MakeRoom` call would tell.
-- **`MemoryFilter.cpp`**: what the filter class does; `Filter Memory` is a plain `MemoryPoolHeap`.
 - **The registry lookups** (slots `+0xe8` to `+0x108`): who calls them, if anyone, on retail.
 - **The heap stack's capacity**: 16 is inferred from the next global.

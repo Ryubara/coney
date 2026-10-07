@@ -289,6 +289,64 @@ its grid cell round the camera. `EndGarbage` stops it. **Coney's readings**: the
 is lifted, tumbled or pushed at the start; a piece's orientation is one tilt value; a piece that lands is put on the
 hit; the pieces are not drawn yet (they are cards, not the renderer's camera-facing sprites).
 
+#### Room smoke {#room-smoke}
+
+Layer 3, `OE_RoomSmoke` (`OverlayEffects/OE_RoomSmoke.cpp`, 0x100 bytes, vtable `0x00539140`), started by
+[`StartRoomSmoke`](../references/bindings/effects.md#startroomsmoke), is **one screen-filling sprite** of the sheet
+**`room_smoke_overlay`** that scrolls sideways, follows the camera's tilt and slowly changes its size and alpha.
+Confirmed (code) at the functions cited unless a line says otherwise.
+
+- **Texture.** Sprite word `0x130000`: sheet-table record 19, rectangle 0
+  ([sprite words](particles.md#sprite-words)). **Disc check (corroboration):** record 19's name hash is `0x834dd0f0`,
+  the CRC-32 of `room_smoke_overlay`; it is a 256 × 256 texture with one rectangle covering the whole of it
+  (texel-inset by 1/1024), linear filtering and **wrap** addressing in U and V (texture filter-and-address word
+  `0x1102`). The wrap matters: the texture coordinates below run past 1. (Record 18 is `fog_overlay`, same shape.)
+- **Start** (`OE_RoomSmoke_Construct`, `0x0019add0`): the overlay-effect base (`0x0019ba70`); the script's record
+  (`0x0019aff8`: tint RGB `+0x9c`, alpha 0 at `+0x9f`, lowest and highest alpha `+0xa0`/`+0xa1`, amount `+0xa4`); a
+  random U offset 0-1 (`+0xd8`); one `OE_Particle` sprite widget ([`BaseWidget`](gui.md#widget-classes)) set up with
+  size 1.0, depth 10,000, GUI position (0.5, 0, 0.2, 1) (centred across, `y` 0.2), the tint, visible, sprite word
+  `0x130000`, an instance of its own, anchored at its centre. Then two drifts are picked: the first is both the
+  "from" (`+0xa8`) and the current drift (`+0xb8`), the second the "to" (`+0xc8`); the blend clock (`+0xe0`) starts
+  at the real-time clock's now (`0x0050b8b8` slot `+0x30`, milliseconds).
+- **A drift** (`OE_RoomSmoke_PickDrift`, `0x0019b198`), each value uniform random: a U scroll per update of
+  0.0005-0.0015 × amount with a random sign, a width scale of 1.63-1.93, a height scale of 1.0-1.2, and an alpha (an
+  integer from the lowest to the highest alpha); picking one also sets the **blend time** `+0xe4`: 4,000-20,000 ms
+  (an integer).
+- **One drift into the next** (`OE_RoomSmoke_BlendDrift`, `0x0019b2a8`, first thing each update):
+  `t = min((now - start) / blendTime, 1)` on the real-time clock, and the current scroll, width scale, height scale
+  and alpha are `from × (1 - t) + to × t` (straight lines, no easing; the alpha rounded to a byte and written into
+  the sprite's colour). When `t` reaches 1: from = to, start = now, and a new "to" is picked with its own blend time.
+  So the haze never rests: it moves along a chain of random targets, each reached in 4-20 s.
+- **The camera** (`OE_RoomSmoke_FollowCamera`, `0x0019b070`), with the player camera's look vector (camera slot
+  `+0x220`) of the effect's view:
+    - **tilt → height on the screen:** the pitch (`0x0019b7d8`: `acos(look · (0, 0, -1)) - 90°`, in degrees),
+      clamped to [-50°, 10°], mapped linearly onto [-10, 10] (`Math_MapRange`, `0x00337568`), clamped, then onto
+      [-0.25, 0.26]: the sprite's GUI `y` (`+0xf8`). Pitch -50° puts the sprite's centre at `y` -0.25 (above the top
+      of the screen), 0° at 0.175, 10° at 0.26; which sign is looking up is inferred from the vector, not seen;
+    - **turn → scroll:** the heading (`0x0019b6a8`, the look vector's angle in the ground plane) in degrees, clamped
+      to ±180 and mapped onto [0, 0.9999], is kept per view (`0x0019b968`, effect `+0x20 + 4 × view`); twice the
+      change since the last update (old − new) is added to this update's scroll, so turning the camera slides the
+      haze sideways (a whole turn, about two texture widths).
+- **The sprite** (`OE_RoomSmoke_Update`, `0x0019b4c0`, the effect's slot `+0x18`): size (`0x001a2120`) width
+  1.3 × width scale and height = height scale × `*0x0050cf00` (1.0; the update rewrites it to 1.0 in progressive or
+  `0x02` mode), in overlay units (the screen is 1.595 wide and 1.1 high, [2D drawing](#2d-drawing)), so about 2.1-2.5
+  × 1.0-1.2: wider than the screen and about as high; the position; the tint with the drift's alpha; the U offset
+  `+0xd8` += scroll, wrapped into [0, 1]; texture rectangle (U, -0.1)-(U + 1, 0.9) (`0x001a2190`): one whole repeat
+  of the texture across the sprite, shifted a tenth up.
+- **Drawing:** the widget's sprite in the overlay pass ([2D drawing](#2d-drawing)): Z test and write off, the
+  instance's blending, source alpha over inverse source alpha ([GUI](gui.md#resource-instances)), so the haze is an
+  alpha-blended layer over the scene, with alpha (0-255) from the drift.
+- **Cadence** (`OverlayEffect_Tick`, `0x0019bc10`, called by the manager's update `0x0018bf68` for each layer that
+  is on, while the view's player camera exists): nothing while the game clock is paused (`0x0050b734` slot `+0x20`)
+  or in game mode 10 or 12; when more than 1000 / 30 ms of game time (`*(0x0050b734) + 0x48`) have passed since the
+  last tick (`0x0019bd90`, rate byte `+0x10` = 30), each visible widget's own update runs (it copies the sheet
+  rectangle and sets the width from the height and the rectangle's shape) and then the effect's, which overrides
+  both; then each visible widget is drawn, every frame, unless `0x00512c44` is set. So the drift advances at most
+  30 times a second of game time while the blend runs on real time.
+- **Again while running:** `StartRoomSmoke` on a running layer passes the new record to slot `+0x20`
+  (`0x0019aff8`), which also picks a new "to" and sets its blend time to 1 ms, so the next update jumps to it.
+  `EndRoomSmoke` deletes the effect (`0x0018bd48`) and its widget with it (`0x0019bab8`).
+
 ## Behaviour
 
 ### Start-up {#start-up}

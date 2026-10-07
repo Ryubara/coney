@@ -639,13 +639,17 @@
     - {name: human, lua: number, ctype: unsigned, desc: "Handle of the human."}
     - {name: "on", lua: boolean, desc: "true starts rage; false ends it if the player of that human is raging."}
   description: >-
-    Starts or ends rage for a human. On: 0x00236d28 calls a Lua function with the human, sets the raging flag
-    (`0x80000`), clears the rage hold timer, shows the player's HUD rage state 2 and tells his camera; off: when the
-    player human with the same player number is raging, 0x00236fb8 ends it (HUD state 3) and clears the flag.
+    Starts or ends rage for a human. On: Human_StartRageMode (0x00236d28) calls a Lua function with the human, sets
+    the raging flag (`0x80000`), clears the rage hold timer, shows the player's HUD rage state 2 and tells his camera;
+    off: when the player human with the same player number is raging, Human_EndRageMode (0x00236fb8) ends it (HUD
+    state 3) and clears the flag.
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    The Lua function's name is read from 0x006b6830 at run time (not traced). Rage itself:
+    The Lua function is the first name given to CfgRageHandlers (copied to 0x006b6830 by Cfg_SetRageHandlers);
+    global.lua registers `SetRageMode` there, which sets god mode, unstunnable, reduced and increased reaction,
+    ungrabbable, ungroundable and keep-weapon on the human; ending calls the second name, `ClrRageMode`, which clears
+    them ([Scripts: level5](../../research/scripting.md#level5)). Rage itself:
     [Combat](../../research/combat.md#rage).
   usage: {chunks: 9, calls: 18, boot: false, mission1: false, result_used: false, levels: [5, 81, 51, 84, 82, 20, 11]}
 
@@ -3078,8 +3082,10 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Both lines are issued in the same call; whether the sound system plays them one after the other or together is
-    not traced. Readers of human `+0x18c` are not traced.
+    Both lines start in the same call and play together (each a mono stream, no queue between humans); the
+    partner link `+0x18c` is read only by Human_UpdateSpeech (0x0021e940), which clears both links once the
+    partners are within 10 m and stops nothing still playing. That they overlap audibly is not checked at runtime
+    ([Scripts: level5](../../research/scripting.md#level5)).
   usage: {chunks: 7, calls: 21, boot: false, mission1: false, result_used: false, levels: [5, 51, 84, 82, 20, 11]}
 
 - name: HuPlayDynAnim
