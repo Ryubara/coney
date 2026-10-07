@@ -725,7 +725,7 @@ GangIsWanted(gang, current) -> boolean
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | Gang id (slot 0-31). |
-| 2 | `current` | boolean (nil or 0 is false); default true | true (the default) asks about one wanted flag (+0x5e8), false about the other (+0x5f0); the two are inferred to be 'wanted now' and 'wanted pending' by the police. |
+| 2 | `current` | boolean (nil or 0 is false); default true | true (the default, when the argument is absent) asks about the police wanted timer (+0x5e8), false about the second timer (+0x5f0), which a gang call (GoalCallGang, a scout's call) and GangRespond set. A nil passed explicitly counts as false. |
 
 **Returns** boolean (1 for true, nil for false): true (1) when the chosen wanted flag is set; nil when it is not, when
 the gang id is -1 or when the slot is not in use.
@@ -734,8 +734,9 @@ Asks whether a gang is wanted by the police. With the second argument true (the 
 +0x5e8, with false the one at +0x5f0; a gang id of -1 or a slot not in use gives false. global.lua asks it about the
 player's gang.
 
-**Notes.** Which flag means 'wanted now' and which 'wanted pending' is inferred from the police code that sets them; the
-reads are confirmed (0x0016b580).
+**Notes.** The reads are confirmed (0x0016b580); the default comes from 0x00409318, which returns the default only when
+the argument is missing and 0 for a nil that is present, so `GangIsWanted(g, nil)` asks about +0x5f0. level87's chapter
+5 polls it that way to fail the stealth section on a completed call ([Stealth](../../research/stealth.md#spotted)).
 
 - **Evidence:** confirmed (code) at `0x0016b580`; detail: traced
 - **Wrapper** `0x0035f5c0` (registered by `RegisterBindings`); **calls** `0x0016b580`

@@ -401,8 +401,11 @@ Four icon-plus-number widgets, each shown only while its count is at least 1 (co
 | `+0x1ac0` | 6 skeleton keys | rectangle of `0x00212840` | blue | `0x001aadf0` |
 
 They fill four **slots** in the order above, each counter taking the first free one (`0x00213718`). A slot's
-position is an offset from the panel's base; x is relative to `x0` = `0x00510040` (player 0) or `0x00510044`
-(player 1), and the slots move right as the money's digits grow. Line 1 is y `0x00510048`, line 2 y `0x0051004c`:
+position is an offset from the panel's base; x is relative to `x0` = `0x00510040` (player 0, **0.0**) or `0x00510044`
+(player 1, **0.089**), and the slots move right as the money's digits grow. Line 1 is y `0x00510048` (**0.104**), line
+2 y `0x0051004c` (**0.146**); values read from the executable. The slots live in a static record per panel layout,
+`0x0050fec0` + layout × `0xc0`: four slots of `0x30` bytes, each x `+0x00`, y `+0x08` and the item it holds `+0x20`
+(0-3 in the order above, **4 = free**; every update first frees all four). Confirmed (code) at `0x00213770`:
 
 | Money | Slot 0 | Slot 1 | Slot 2 | Slot 3 |
 | --- | --- | --- | --- | --- |
@@ -744,8 +747,8 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
     3. **The action object** in reach (`0x00240888`): its prompt `+0x10`, and its hint `+0x14` is queued in the hint box
        **at priority 0** once (remembered at HUD `+0x177bc` per player, withdrawn by `0x001b3e20` when the object or its
        hint changes or none is in reach).
-    4. Else a talkable human within 1.5 m whose brain state is 0 or 3 (`ActionPrompt_FindNearbyHuman`, `0x001acd60`):
-       the HUD string its interface names (ids 1-388), its own text, or string 9.
+    4. Else a **talkable** human within 1.5 m (`ActionPrompt_FindNearbyHuman`, `0x001acd60`): see [the talk
+       prompt](#talk-prompt).
 
     The strings are `GSTRING.HUD` entries ([Strings](gui.md#strings)); the action objects and their kinds:
     [Crimes](crimes.md#triangle).
@@ -801,6 +804,35 @@ icon sprite at `+0x480`. Confirmed (code) unless marked:
   frame](#the-huds-frame)).
 - **Mini-game widgets:** the lock-picking dial (HUD `+0xf420` + player × `0x540`), the stereo theft's (`+0xfea0` +
   player × `0xb10`) and the mash meter (`+0xebc0` + player × `0x430`), [Crimes](crimes.md).
+
+#### The talk prompt {#talk-prompt}
+
+Step 4 of the prompt's text, `ActionPrompt_FindNearbyHuman` (`0x001acd60`). Confirmed (code) at `0x001acd60`,
+`0x0021d530`-`0x0021d570`, `0x00303404`, `0x00305bfc`, `0x00384aa0`, `0x00384b30` unless marked:
+
+- **Who is searched**: `Humans_FindAhead` (`0x002274a8`) lists up to 100 humans within **1.5 m** of the player's
+  position (the same search as the revive test); the **first** in the list's order that passes is taken.
+- **Talkable** means both: the human's byte **`+0x1b2`** is set, and his brain type (brain `+0x04`, [AI](ai.md#types))
+  is **0** (a player: the other player in co-op) or **3** (a Warrior). The human's interface at `+0x70` (vtable
+  `0x0053f020`) also asks "has a message-0 handler or `+0x1b2`" (slot `+0x50`, `0x0021d570`), which `+0x1b2` already
+  answers. Gang leaders, bums, dealers and shopkeepers also get `+0x1b2` from their goals (`InfoTactic_Seat`,
+  `BumLogicGoal_Setup`, `DealerGoal_Process`, `ShopkeeperGoal_Process`, `AddressTactic_PushApproach`), but their brain
+  types (2, 4, 5, 6) fail this test; their prompts come from the kind-4 and kind-5 context records of step 3
+  (`InfoTactic_Seat` and `BumLogicGoal_Setup` register kind 5 with HUD strings 8 and 10).
+- **Who sets it**: the brains, every think; no Lua binding. `WarriorBrain_Think` (`0x00305bfc`) and `PlayerBrain_Think`
+  (`0x00303404`) write `+0x1b2` = 1 exactly when [the swap prompt](ai.md#think-warrior)'s conditions hold (else 0),
+  and then write the text of `GSTRING.HUD` string **`0xc`** (both hold an object), **`0xd`** (he holds) or **`0xe`**
+  (the player holds) straight into the human's message-handler component (human `+0xe8`): `+0x7c` = that text,
+  `+0x78` = 0.
+- **Its text**, in order: the component's `+0x78` read as a `GSTRING.HUD` id when it is **1-388** (slot `+0x20`,
+  `0x0021d530`, message 0 only); else the text at `+0x7c` when not null (slot `+0x28`, `0x0021d550`); else HUD string
+  **9**. `+0x78` is written only by `ScriptHandler_SetSlot` (`0x00384aa0`), whose one caller, `SetMsgHandler`, passes 0,
+  and by the brains above (0), so the id branch is never taken (inferred: no other writer found). `+0x7c` is the swap
+  text, or the `prompt` of [`SetMsgHandlerEx`](../references/bindings/script.md#setmsghandlerex)`(human, 0, callback,
+  prompt)` (`ScriptHandler_SetSlotEx`, `0x00384b30`, which also zeroes `+0x78`); a Warrior's brain overwrites that text
+  whenever it sets the swap prompt.
+- **In practice** the talk prompt is the **swap-weapons prompt** of a Warrior (or the co-op partner) beside the
+  player, strings `0xc`-`0xe`; triangle then sends the event-0 prompt (`WarriorBrain_OnPrompt`, `0x00306040`).
 
 ### The instruction arrow (`HUDEnableInstArrow`)
 
@@ -928,7 +960,8 @@ to 0 (`0x0017b8a8`), a soft edge. Confirmed (code). Measured (runtime): the whol
 **(100, 120, 200, 240)** (blue), state 2 (100, 50, 50, 140) (no caller sets it); a change of state blends from
 the old colour to the new over 500 ms. The state (radar `+0x38`, the previous `+0x3c`, the change's time `+0x40`) is
 set by `0x001c4500`, which only `Human_SnapToGround` (`0x0023eab8`) calls for the player, with 1 or 0 by what the player
-stands on (`0x001b26a8` / `0x001b2790`; the condition is not traced). Confirmed (code). The `(143, 143, 143, 255)`
+stands on (`0x001b26a8` / `0x001b2790`): blue on shadow ground where he may hide, grey otherwise
+([Stealth: the HUD cue](stealth.md#hud-cue)). Confirmed (code). The `(143, 143, 143, 255)`
 written at `0x001c60b0` is a stack word the drawing does not read.
 
 **On and off:** `HUDTurnOnRadar` / `HUDTurnOffRadar` set radar `+0x04` and the HUD's `+0x177b0`. During a screen fade
@@ -1202,12 +1235,33 @@ second after he lets go. Confirmed (code) at `0x001af010` unless marked.
 
 ### The spinner {#hud-spinner}
 
-A sprite at HUD `+0xe050` (`0x001ae378`: size 0.09, sprite word `0x5c` in batch 3, colour (191, 191, 191, 255), at
-(0.95, 0.83) in the default mode, (0.9, 0.76) or (1.09, 0.77) in the others). While shown (`+0xe054`), each update adds
-`+0x19128` to the angle `0x0050d50c` and redraws it. `HUD_SetSpinner(rate, hud, on)` (`0x001b24d0`) is called by the
-memory-card screen, the preload indicator and by `HUD_Render` itself when the front-end flag `0x0050f5b0` is 1 and the
-fade is full: then the HUD draws **only** the spinner, at the rate (game timer ms) × 0.001, and the overlay hook
-`0x001613f0`. Confirmed (code); that it is the "loading" icon is inferred from its callers.
+A sprite at HUD `+0xe050` (`0x001ae378`: size 0.09, depth 11,000, `part_page0` rectangle **92** (sprite word `0x5c`,
+batch 3), colour (191, 191, 191, 255), **not visible** and active from the set-up, at (0.95, 0.83) in the default
+mode, (0.9, 0.76) or (1.09, 0.77) in the others). It is level loading's "blinking element" `0x0060e890` (HUD
+`0x00600840` + `0xe050`). Confirmed (code) unless marked:
+
+- **It blinks; it does not turn.** While shown (`+0xe054`), `HUD_Update` (`0x001b0580`-`0x001b0658`) adds the rate
+  `+0x19128` to the global `0x0050d50c` and then writes **0** to the widget's rotation (`+0xa0`, radians), re-places it
+  by video mode and updates it. Nothing reads `0x0050d50c` (its only two references are that read and write), and
+  `LoadScreen_DrawPulse` (`0x001613f0`) also zeroes the rotation (`0x0060e930`) before drawing. So the rate is dead:
+  the widget is always drawn upright, whatever `+0x19128` holds.
+- **The blink** is `LoadScreen_DrawPulse`'s: the colour (170, 43, 43) × 1.3 = **(221, 56, 56, 255)**, faded linearly to
+  transparent over the first 1,100 ms of each 2,200 ms of the real-time clock (`0x0050b8b8` slot `+0x34`, ms) and
+  back over the second ([Level loading](level-loading.md#memory-card-screen)). The colour it leaves stays on the
+  widget; nothing restores the grey.
+- **The rate argument.** Every caller passes the real-time clock's milliseconds × 0.001 (seconds since the clock
+  started, the clock value itself, not a frame time): `HUD_Render` (`0x001b18a4`), `Preload_DrawLoadingIndicator`
+  (`0x00161600`) and `MemCardLoadScreen_Tick` (`0x001619d0`). Since the angle is dead, a reimplementation can ignore it.
+- **Drawn by `HUD_Render`** (`0x001b1688`) in two places. (1) The **fade branch**: no letterbox, captions not freezing,
+  the profile manager done (`PM_IsDone`, flag `0x0050f5b0` = 1), HUD `+0xea3c` and `+0xe53c` both 0, player 1's
+  fade level (`0x005fdeb8 + 0x1d8`) at least 1.0 (the screen fully faded), and the top game mode not `0x14`: shown,
+  updated, drawn by `LoadScreen_DrawPulse`, hidden again, and **nothing else** of the HUD is drawn that frame.
+  (2) The **normal branch**, while the HUD is shown (`+0x177a0`): `BaseWidget_Render` on it right after the
+  instruction arrow (`0x001b1a48`), which draws only while it is visible (`+0xe054`).
+- **Who leaves it visible:** `HUD_SetSpinner(rate, hud, on)` (`0x001b24d0`) is turned off again in the same call by
+  `HUD_Render`'s fade branch and by `Preload_DrawLoadingIndicator`, but `MemCardLoadScreen_Tick` only turns it **on**.
+  So after the start-up memory-card load it stays visible, drawn by the normal branch in its last pulse colour, until
+  the next fade branch turns it off (inferred from the code; not seen at runtime).
 
 ### What `level99` uses
 
@@ -1416,18 +1470,62 @@ toward it. Wanted is blue `(0x23, 0x53, 0xbc, 0xff)` (`0x006007e0`), the second 
 TU ends at the static-init stub `0x001aad70`, whose initialiser sets these colours; whether it is `Credits.cpp` itself
 is not known. Confirmed (code); names ours.
 
+**How an arc is drawn**, confirmed (code) at `0x001a5e38`, `0x0017b8a8`, `0x001aaba8`, `0x001c60b0`,
+`0x001b0108` unless marked:
+
+- **No texture.** `RingArc_Draw` sets the ring record's texture (`+0x5c` of the record it hands
+  `Im2D_DrawTexturedRing`) to 0, so the helper computes no texture coordinates and ends the strip with no raster: each
+  arc is a **flat-colour triangle strip** (primitive 4) of 17 vertex pairs (16 segments, `+0x2c`), both vertices of a
+  pair at alpha 255 (`+0xf4`, `+0xf5`), in the arc's colour (`+0x20`, the blue or orange above).
+- **The back colour `0x006007f0`** = (180, 0, 0, 0) is stored as each arc's second colour (`+0x24`), but
+  `HudCrimePanel_Render` overwrites both colours with the arc's own before every draw and `RingArc_Draw` reads only
+  the first: it is never seen.
+- **The centre** is the radar disc's own: `HUD_Update` passes the same vector to the disc (radar `+0x2930`) and to
+  `HudCrimePanel_SetPosition` (`0x001b015c`; one player (0.49, 1.0, −0.31, 1) from `0x0050d428`, rewritten per video
+  mode, [the disc's position](#the-radar-on-screen)), and both draws use the point (x, third, −second) =
+  **(x, −0.31, −1)** of the overlay camera's space, so the arcs are **concentric with the disc**. The `(0.5, 1, −0.31,
+  1)` of the set-up is replaced on the first update.
+- **Radii in pixels.** The drawer's begin (renderer `0x0050cdb4 + 4`, slot `+0x08`) projects that centre to screen
+  pixels, and every vertex is the pixel centre plus an offset, as for [the lock-pick dial's
+  shapes](#lock-pick-dial-layout) (inferred: the same drawer): vertex = centre + k × (rx × sin a, ry × cos a), with
+  k = inner / outer for the first of a pair and 1 for the second. `rx` = outer × fx and `ry` = outer × fy, by device
+  flags: `0x01` set and `0x20` clear **(1.1, 1.0)** (the default) or (0.8, 1.0) in 16:9; `0x01` and `0x20` set (0.85,
+  1.0); `0x01` clear (0.75, 1.0) or (0.65, 1.15) in 16:9. So in the default mode the blue pair is a band 54-57.6 px
+  high and 59.4-63.4 px wide from the centre, the orange 57.6-61.2 / 63.4-67.3 px; the disc's measured soft edge
+  (about 55 × 50 px) lies just inside (inferred, from the disc's measured size).
+- **Angles**: a starts at the arc's start (0) and steps by (end − start) × shown fill / 16, in radians. With screen y
+  down (inferred, the pixel convention), a = 0 is straight **below** the centre; the 0 → 180° arc grows up the
+  **right** side and the 0 → −180° arc up the **left**, the pair meeting at the top when full.
+
+**The crime message** (`HudCrimePanel_OnMessage`, `0x001aa720`, from `HUD_SetWanted`), confirmed (code) unless marked:
+
+- The panel's own widget `+0x450` is set up (size `0x0050d380` = 1.0, scale 1.0, colour `0x0050d384` = bytes
+  (255, 191, 96, 96), font slot 6) and placed every update at **(0.5, 0.4)** (`0x0050d390`, `0x0050d394`), and `+0x890`
+  gets global string `0xe4`, but **nothing draws either**: `HudCrimePanel_Render` draws only the arcs, and no other
+  code reaches them (no reference to HUD `+0x17c20` or `+0x186d0`; the boxed-text renderer's five callers are other
+  widgets). Inferred: left over.
+- What shows is the **copy** in the HUD's centred announcement (`+0xe150`, `MarkupText_SetText(0x0060e990, …)`):
+  centred at **(0.5, 0.25)** in the default mode (`HUD_Update` places it each update from `0x0050d470`, 0.35 in one
+  other mode; [Announcements](#announcements-and-other-messages)), drawn by `HUD_Render` while the HUD is shown (and
+  while hidden when `+0x177a8` is set). Its set-up in `HUD_InitLevel` (`0x001ade48`) uses size 1.0 and colour
+  `0x6060bfff` (inferred for the size: the register also stored as the position's w).
+- **How long:** nothing in the radar frame clears the copy: clearing the message (−1, 14 once the gang is no longer
+  wanted, or any number above 14) shuts only the unseen `+0x450` and `+0x890`. The copy lasts as its markup says
+  (`<DISPLAYTIME>`) or until the next centred text replaces it (inferred, as for the announcements; the crime texts
+  come from `CfgCrimeMessage` in the scripts and their tags were not read).
+
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
 | `0x001aa238` | `HudCrimePanel_GetMessage` | crime message `i` from the table `0x006007f8` | confirmed (code) |
 | `0x001aa250` | `HudCrimePanel_SetMessage` | `CfgCrimeMessage(i, text)` (via `0x0041d9c8`): interns `text` (`0x003864e0`) into `0x006007f8[i]` | confirmed (code) |
-| `0x001aa290` | `HudCrimePanel_Setup(panel, player)` | from the HUD level set-up `0x001ad588`: the four arcs at (0.5, 1, −0.31, 1), back colour `0x006007f0`; text anchor `+0xa80` = (0.37, 0, −0.4, 1); player `+0xa90`; set up `+0xa98` = 1; then hidden (`0x001aa6c0`) and the custom text cleared | confirmed (code) |
+| `0x001aa290` | `HudCrimePanel_Setup(panel, player)` | from the HUD level set-up `0x001ad588`: the four arcs at (0.5, 1, −0.31, 1) (moved onto the radar disc's centre each update), back colour `0x006007f0` (never seen, [above](#fn-radar-frame)); text anchor `+0xa80` = (0.37, 0, −0.4, 1); player `+0xa90`; set up `+0xa98` = 1; then hidden (`0x001aa6c0`) and the custom text cleared | confirmed (code) |
 | `0x001aa5c0` | `HudCrimePanel_Shutdown` | from `0x001ae980`: hidden, not set up, both texts reset (`0x001e72c0`, `0x001b9290`), arcs off (`+0x30` of each) | confirmed (code) |
 | `0x001aa630` | `HudCrimePanel_SetPosition(panel, pos)` | from `HUD_Update`: every arc's centre = (pos.x, pos[1], −0.31, pos.w) | confirmed (code) |
 | `0x001aa678` | `HudCrimePanel_SetCustomText` | `+0x00` = the script system's current custom-crime text (its slot `+0xc8`); from `SpawnCustomCrime` | confirmed (code) |
 | `0x001aa6b8` | `HudCrimePanel_IsEnabled` | `+0xa98` | confirmed (code) |
 | `0x001aa6c0` | `HudCrimePanel_Hide` | `HideHud`: `+0xa94` = 1; when set up, arcs and message off | confirmed (code) |
 | `0x001aa6f0` | `HudCrimePanel_Show` | `RestoreHud`: `+0xa94` = 0; when set up, arcs and message on | confirmed (code) |
-| `0x001aa720` | `HudCrimePanel_OnMessage(panel, msg)` | from the HUD message `0x001b2520`: `msg` 0-13 (unless the same text is already up) sets the `+0x450` widget up (scale 1.0, font slot 6, colour `0x6060bfff`) with crime message `msg` (message 4: the custom text) and copies it to the HUD's centred text `+0xe150`; `+0x890` gets global string `0xe4`; 14 keeps the text while player 1's gang is wanted; negative or other: cleared; `+0xaa0` = `msg` | confirmed (code) |
+| `0x001aa720` | `HudCrimePanel_OnMessage(panel, msg)` | from the HUD message `0x001b2520`: `msg` 0-13 (unless the same text is already up) sets the `+0x450` widget up (scale 1.0, font slot 6, colour `0x6060bfff`) with crime message `msg` (message 4: the custom text) and copies it to the HUD's centred text `+0xe150`, the copy that shows ([above](#fn-radar-frame)); `+0x890` gets global string `0xe4`; 14 keeps the text while player 1's gang is wanted; negative or other: cleared; `+0xaa0` = `msg` | confirmed (code) |
 | `0x001aa950` | `HudCrimePanel_ClearMessage` | both texts reset, `+0xa9c` = 0 | confirmed (code) |
 | `0x001aa9b0` | `HudCrimePanel_Update` | from `HUD_Update`: inner arcs' target `+0x38` / `+0x148` and outer `+0x258` / `+0x368` from the two gang timers (time left × 0.0001, clamped, 1 above 0.9; 0 when the timer is 0); message at (0.5, 0, 0.4, 1) | confirmed (code) |
 | `0x001aaba8` | `HudCrimePanel_Render` | from `HUD_Render`, when set up and shown: inner pair blue when either inner target or value is above 0.03; outer pair orange, at the outer radii if the inner pair drew, else at the inner | confirmed (code) |
@@ -1514,7 +1612,7 @@ neighbours.
 | Address | Name | What it does | Evidence |
 | --- | --- | --- | --- |
 | `0x001ad588` | `HUD_InitLevel` | per-level set-up (from `InitLevel`, `0x0015fe90`): the layout floats for the video mode, then every part of [the HUD object](#hud-object) that is not yet set up, the two player panels (`ANHud` panels allocated in levels 60-69, otherwise the static ones at `+0x19130`), the Armies of the Night widgets (`0x0041d110`); ends hidden (`HUD_Hide`) with `+0x177a4` = `+0x177ac` = `+0x177b4` = 1 | confirmed (code) |
-| `0x001ae378` | `HUD_SetupSpinner` | the loading/saving spinner at `+0xe050`: a sprite (size 0.09, sprite word `0x5c` in batch 3, colour (191, 191, 191, 255)) at (0.95, 0.83) in the default mode, spin rate `+0x19128` = 0.2 ([Spinner](#hud-spinner)) | confirmed (code) |
+| `0x001ae378` | `HUD_SetupSpinner` | the loading/saving spinner at `+0xe050`: a sprite (size 0.09, sprite word `0x5c` in batch 3, colour (191, 191, 191, 255)) at (0.95, 0.83) in the default mode, rate `+0x19128` = 0.2 (unused: the sprite never turns, [Spinner](#hud-spinner)) | confirmed (code) |
 | `0x001ae4d8` | `HUD_EnsureVirtualPads` | allocates the two `0x2c`-byte player input records (tag `VirtualPad`) at HUD `+0x00`/`+0x04` when missing: pad index `+0x19` = -1, bound `+0x1b` = 0 | confirmed (code) |
 | `0x001ae5a0` | `HUD_ResetPadBindings` | unbinds both players and sets every [pad record](frontend.md#pad-record)'s owner `+0x42` to -1 (from `PM_Greet`) | confirmed (code) |
 | `0x001ae638` | `HUD_AssignPadToPlayer(hud, player)` | [pad binding](#hud-pads) for one player | confirmed (code) |
@@ -1724,11 +1822,53 @@ default mode.
   in an `ANHud` panel (levels 60-69) both slots are empty functions. The panel's update (`PlayerHUD_RefreshTallyMarks`,
   `0x00214bc8`) counts the gang's living members into `+0x413c` and lays out the same pattern of strokes and bars
   (`PlayerHUD_LayoutTallyMarks`, `0x00213e68`, the nine sprites at `+0x4150`, in the player's colour) from the panel's
-  origin (`0x0050fa10` by panel layout `+0x40f4`) with the offsets, steps and size of the panel layout table
-  (`0x0050fc30` + layout × `0x240`: `+0x1f0`, `+0x200`, `+0x210`, `+0x220`, `+0x230`), plus a y shift of
-  `0x005100a0` or `0x005100a4`, chosen by fields `+0x68`/`+0x80` and `+0x98`/`+0xb0` of the record `0x0050fec0` +
-  layout × `0xc0`, and `0x005100c4` more in a level numbered 100 or more (`0x00213eb4`-`0x00213f40`). Confirmed (code)
-  for the structure; the panel tally's numbers are not worked out here. No header is drawn there.
+  origin (`+0x40e0`, the [panel base](#the-player-panel-layout-0x0050fa10) by panel layout `+0x40f4`) with the panel
+  layout table's entries. No header is drawn there. See [the panel's tally](#panel-tally) for the numbers.
+
+#### The panel's tally (players 0 and 1) {#panel-tally}
+
+`PlayerHUD_LayoutTallyMarks(panel, shifted)` (`0x00213e68`) lays out mark *i* (0-based, *i* < the living count
+`+0x413c`) from the panel table `T` = `0x0050fa40` + layout × `0x240` (the table of [the panel
+layout](#the-player-panel-layout-0x0050fa10)). Values read from the executable (the default mode; other modes
+rewrite the table, `0x00211ef8`); confirmed (code) at `0x00213e68`, `0x00213770`, `0x00214138`:
+
+| Table entry | Meaning | Player 0 | Player 1 |
+| --- | --- | --- | --- |
+| `+0x1f0` | x of the first stroke (and of every crossing bar's base) | −0.095 | −0.006 |
+| `+0x1f8` | y of every mark | 0.104 | 0.104 |
+| `+0x200` | x base of the strokes after the first bar (*i* > 4) | −0.10 | −0.01 |
+| `+0x210` | a stroke's size (an overlay height) | 0.04 | 0.04 |
+| `+0x214` | a crossing bar's size | 0.017 | 0.017 |
+| `+0x220` | a stroke's step per mark | 0.015 | 0.015 |
+| `+0x230` | a crossing bar's step per mark | 0.005 | 0.005 |
+
+```text
+stroke, i < 5     x = base.x + T+0x1f0 + T+0x220 × i
+crossing bar      x = base.x + T+0x1f0 + T+0x230 × i      (i % 5 = 4)
+stroke, i > 4     x = base.x + T+0x200 + T+0x220 × i
+every mark        y = base.y + T+0x1f8 + shift
+```
+
+Every mark is turned by `0x005100a8` = **3.3 rad**, as the [gang-count indicator](#gang-count-indicator)'s, and its
+size is the table's times `0x00510050` = 1.0. With the bases (0.10, 0.05) and (0.785, 0.05) the strokes of player 0
+start at x 0.005 (bar at 0.025, the sixth stroke at 0.075) and player 1's at 0.779 (bar 0.799, sixth 0.85).
+
+**The shift** moves the tally below the money and the item counters:
+
+- `shifted` is 0 → no shift. `PlayerHUD_Update` (`0x00214138`, each update while the tally is on, `+0x4130`) passes
+  what `PlayerHUD_UpdateCounters` (`0x00213770`) returned: **1** when the money (`+0x444`) is 1-999 or any item
+  counter is shown, else 0 (money 0 or less, or 1,000 or more, with no counter).
+- `shifted` is 1 → **0.09** (`0x005100a4`) when slot 2 or slot 3 of the [counter slots](#item-counters) sits on line 2
+  (its y equals 0.146) and holds an item (its `+0x20` is not 4); otherwise **0.045** (`0x005100a0`).
+- In a level numbered 100 or more (`0x0041d160`) a further **−0.03** (`0x005100c4`), whatever `shifted` is.
+
+So player 0's marks sit at y 0.154 with nothing above them, 0.199 under one row of counters and 0.244 under two.
+
+**Who turns it on:** `HUD_SetNumIndicator` (`0x001b4438`) through the interface slots `+0x48` (on, `+0x4130`) and `+0x50`
+(gang, `+0x4140`). The interface's slot `+0x60` (`PlayerHUD_RefreshTallyMarks`, `0x00214bc8`, which lays out with
+`shifted` 0) and slot `+0x68` (`0x00214c28`) have no caller found (no direct reference; inferred unused). The marks
+are drawn by the panel's own render (`PlayerHUD_Render`, `0x00213290`) at the panel's fade alpha, while the tally is
+on. Confirmed (code).
 
 #### The lock-pick dial layout {#lock-pick-dial-layout}
 
@@ -2253,9 +2393,9 @@ Confirmed (code) at `0x00210e48`, `0x00211938`, `0x002102f0`.
 | `0x002131f0` | `PlayerHUD_Shutdown` | slot `+0x18`: the base shutdown, tally off (`+0x4130`), the Warrior command display, the tally sprites released | confirmed (code) |
 | `0x00213290` | `PlayerHUD_Render` | slot `+0x38`: fade, rage flashing, the parts ([The rage meter](#the-rage-meter)) | confirmed (code) |
 | `0x00213718`, `0x00213770` | `PlayerHUD_FindCounterSlot`, `PlayerHUD_UpdateCounters` | the [item counters](#item-counters): the slot (of four, `0x0050fee0` + player × `0xc0`) holding an item or the first free one; the counters' slots, places and counts | confirmed (code) |
-| `0x00213e68` | `PlayerHUD_LayoutTallyMarks` | `+0x413c` marks from the origin `+0x40e0` with the table's `+0x1f0`, `+0x200` and `+0x210`, every fifth crossing the four before (as the [gang-count indicator](#gang-count-indicator)) | confirmed (code) |
+| `0x00213e68` | `PlayerHUD_LayoutTallyMarks(panel, shifted)` | `+0x413c` marks from the origin `+0x40e0` with the table's `+0x1f0`-`+0x230`, every fifth crossing the four before, shifted below the counters ([The panel's tally](#panel-tally)) | confirmed (code) |
 | `0x00214138` | `PlayerHUD_Update` | slot `+0x40`: values, colours and positions each frame ([The rage meter](#the-rage-meter) and the sections after it) | confirmed (code) |
-| `0x00214bc8`, `0x00214c28` | `PlayerHUD_RefreshTallyMarks`, `PlayerHUD_RenderTallyMarks` | slot `+0x60`: when the tally is on, origin from `0x0050fa10`, count = living members of gang `+0x4140` (`0x0016a458`), laid out; slot `+0x68`: the marks drawn at full alpha. Who sets the tally on is not traced | confirmed (code) |
+| `0x00214bc8`, `0x00214c28` | `PlayerHUD_RefreshTallyMarks`, `PlayerHUD_RenderTallyMarks` | slot `+0x60`: when the tally is on, origin from `0x0050fa10`, count = living members of gang `+0x4140` (`0x0016a458`), laid out unshifted; slot `+0x68`: the marks drawn at full alpha. No caller found (inferred unused): `PlayerHUD_Update` and `PlayerHUD_Render` do the live work; `HUD_SetNumIndicator` turns the tally on ([The panel's tally](#panel-tally)) | confirmed (code) |
 | `0x00214cb0`, `0x00214ce8` | `PlayerHUD_StaticInit`, `PlayerHUD_StaticInitStub` | static initialiser (ctor list `0x0053414c`): the colour `0x00640c40` = (128, 0, 0, 111) | confirmed (code) |
 
 ### Game-state functions {#warriors-functions}
@@ -2429,8 +2569,7 @@ prompt widget's colour) centred on the prompt's anchor, its word swapping every 
 - **The caption pager** (HUD `+0x18e60`, [GUI](gui.md#fn-subtitle)): which script or mode creates it and whose
   command 1 steps the captions (`0x001cb340`).
 - Who sets HUD `+0x177a8` (the centred announcement while hidden).
-- The radar: the active camera's slot `+0xc4` third value (`w`, measured about 1.33); what the player stands on for
-  the blue disc colour.
+- The radar: the active camera's slot `+0xc4` third value (`w`, measured about 1.33).
 - The health rings: the shape of `part_page1` rectangle 1 (the ring's band), what the power class byte `+0x40` is
   meant as, the blend state the world pass leaves, and a runtime look at a target's ring, the rage-full flashes and a
   boss's bands.
@@ -2438,11 +2577,13 @@ prompt widget's colour) centred on the prompt's anchor, its word swapping every 
 - Human state flag `0x200000`, which turns the banner blue-grey.
 - The layouts of the other video modes (16:9, progressive, PAL) that `0x00211ef8`, `0x001af010` and `0x001cdc80` apply
   (the radar's are [above](#the-radar-on-screen)).
-- The values at `0x00510040`/`0x00510044` (slot `x0`) and `0x00510048`/`0x0051004c` (the counter lines), and the
-  counters' text offset.
+- The counters' text offset.
 - The money's icon (rectangle and sheet) and where the score's and the money's popups sit.
 - The size arguments of the HUD's texts: a glyph's height, or `(w, h)`, or a `Font_Size` scale.
 - Whether the built-in announcements (`0x00622e20`) are `GSTRING.ANNOUNCE`.
 - Whether the money's cue `0x10` plays once or every counting frame.
 - The counter panels' text layout and alignment, and a bar panel's look.
 - Player 1's score, money and counter offsets.
+- The scripted bars ([above](#scripted-bars)): which sheet and rectangles kind 0's sprite word `0x020a0000`
+  names, kind 3's bar size, and the depths of the chase gauge's three sprites (Coney draws kind 0 with the generic
+  meter, kind 3 at kind 1's size and the gauge in one batch).

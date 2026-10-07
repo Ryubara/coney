@@ -508,10 +508,11 @@ the 36 of their clips), then 168 / 167; the victim lost **400** (50 + 350) on th
 
 ### Stealth: hiding and the stealth kill {#stealth}
 
-**Hiding** has no button: a human on shadowed ground (collision triangle flag `0x10`) moving with move style `0x14`
-enters state `0x200000` (`Human_EnterShadow`, `0x0022ff88`) and leaves it 4 s after the shadow ends
-(`Human_LeaveShadow`, `0x002300c0`). Hidden, the idle is 630 `STEALTH_IDLE` and the walk 633 `STEALTH_WALK`
-(about 2.31 m/s); the brain flag `+0x2d4` is set and the player's gang is ordered to hold. Confirmed (code).
+**Hiding** has no button: a player on shadow ground (collision triangle flag `0x10`) whom nobody hunts enters state
+`0x200000` and move style `0x14` (`Human_EnterShadow`, `0x0022ff88`); off the shadow he leaves it at once, or after
+4 s when he walks with a target (`Human_LeaveShadow`, `0x002300c0`). Hidden, the idle is 630 `STEALTH_IDLE` and the
+walk 633 `STEALTH_WALK` (about 2.31 m/s); the brain flag `+0x2d4` is set and his Warriors are told to hide. The
+rules, the guards' sight and the HUD cue: [Stealth](stealth.md). Confirmed (code).
 
 **The stealth kill** (`Player_UpdateActionsHidden`, `0x0027e040`): hidden, with **L1 held** (state bit `0x8`, the L1
 target lock; its release sets `0x20000000`), square, cross or circle starts `Player_StartStealthKill`

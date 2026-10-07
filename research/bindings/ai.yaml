@@ -3162,11 +3162,11 @@
     - {addr: 0x0031a268, name: Tactic_Scout}
   args:
     - {name: gang, lua: number, ctype: int, desc: "The gang index."}
-    - {name: value1, lua: number, ctype: int, desc: "A number (scripts use 0 and 5)."}
-    - {name: value2, lua: number, ctype: int, desc: "A number (scripts use 0 and 15)."}
-    - {name: range, lua: number, ctype: float, default: 40, desc: "Radius in metres of the call for help; below 0 twice the member's brain +0x140 is used (not traced) (default 40)."}
-    - {name: value3, lua: number, ctype: float, default: 10, desc: "A number (default 10)."}
-    - {name: value4, lua: number, ctype: float, default: 30, desc: "A number (default 30)."}
+    - {name: callCount, lua: number, ctype: int, desc: "How many responders a member's call queues (byte, tactic `+0x50`, handed to Goal_CallGang and on to Responders_QueueGangCall); level87 passes 10; it must not be 0 for responders to come."}
+    - {name: callDelaySec, lua: number, ctype: int, desc: "Seconds before those responders are dispatched (byte, `+0x51`); scripts use 0 and 15."}
+    - {name: range, lua: number, ctype: float, default: 40, desc: "Radius in metres of the call (`+0x20`): the caller runs to the farthest phone flag within it. Below 0 twice the member's brain +0x140 is used and no phone is sought."}
+    - {name: roamRadius, lua: number, ctype: float, default: 10, desc: "How far from his post each member wanders, in metres (`+0x24`, the Scout goal's radius); 0 keeps him at the post."}
+    - {name: roamArc, lua: number, ctype: float, default: 30, desc: "Width in degrees of the arc about his post heading that he wanders in (`+0x28`)."}
     - {name: callback, lua: string, desc: "Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`."}
   description: >-
     Has a gang scout for enemies (type 0x27), as in the stealth sections: each member gets a `Scout` (or `PathScout`)
@@ -3176,7 +3176,7 @@
   depth: thorough
   notes: >-
     Constructor 0x0031a430 (vtable 0x00543da0): Start 0x0031af98, Process 0x0031b030, event 0x0031b1b0 (0x0031a818).
-    Behaviour: [AI](../../research/ai.md#tactic-kinds).
+    Behaviour: [Stealth: scouts](../../research/stealth.md#scouts), [AI](../../research/ai.md#tactic-kinds).
   usage: {chunks: 7, calls: 16, boot: false, mission1: false, result_used: false, levels: [87, 81, 14, 51, 82]}
   coney: implemented
 

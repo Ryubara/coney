@@ -1348,7 +1348,7 @@ A lookout who stands at a post facing a heading and looks about.
 | `0x002d70a0` | `Scout_ClipsLoaded` | helper | all three dyn slots loaded | confirmed (code) |
 | `0x002d70e0` | `Scout_LookAround` | helper | every 45 updates a look-around (1.5 s) | confirmed (code) |
 | `0x002d7130` | `Scout_PickPoint` | helper | a reachable point on the turf around the heading | confirmed (code) |
-| `0x002d73b8` | `ScoutGoal_Process` | Process | walks back to the post, turns to the heading, plays the clips and looks about | inferred |
+| `0x002d73b8` | `ScoutGoal_Process` | Process | back to the post, turns to the heading, every 4 s a look clip (20 %) or a fidget, roams within the radius and arc ([Stealth: scouts](stealth.md#scouts)) | confirmed (code) |
 
 ### PathScout (type 0x70) {#goal-path-scout}
 

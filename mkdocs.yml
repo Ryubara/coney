@@ -132,6 +132,7 @@ nav:
           - "Combat moves: table and frame data": research/combat-moves.md
           - "Combat: where Coney differs": research/combat-diffs.md
           - Crimes and context actions: research/crimes.md
+          - "Stealth: hiding, guards and distractions": research/stealth.md
           - Tasks (the TaskEngine): research/tasks.md
           - "World objects: tint, glass, doors": research/objects.md
           - AI humans: research/ai.md

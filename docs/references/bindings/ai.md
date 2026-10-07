@@ -3992,17 +3992,17 @@ Riot police behaviour around a point. No script calls it.
 ## TacticScout {#tacticscout}
 
 ```lua
-TacticScout(gang, value1, value2, range, value3, value4, callback)
+TacticScout(gang, callCount, callDelaySec, range, roamRadius, roamArc, callback)
 ```
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
 | 1 | `gang` | number, truncated to an integer | The gang index. |
-| 2 | `value1` | number, truncated to an integer | A number (scripts use 0 and 5). |
-| 3 | `value2` | number, truncated to an integer | A number (scripts use 0 and 15). |
-| 4 | `range` | number (single precision); default 40 | Radius in metres of the call for help; below 0 twice the member's brain +0x140 is used (not traced) (default 40). |
-| 5 | `value3` | number (single precision); default 10 | A number (default 10). |
-| 6 | `value4` | number (single precision); default 30 | A number (default 30). |
+| 2 | `callCount` | number, truncated to an integer | How many responders a member's call queues (byte, tactic `+0x50`, handed to Goal_CallGang and on to Responders_QueueGangCall); level87 passes 10; it must not be 0 for responders to come. |
+| 3 | `callDelaySec` | number, truncated to an integer | Seconds before those responders are dispatched (byte, `+0x51`); scripts use 0 and 15. |
+| 4 | `range` | number (single precision); default 40 | Radius in metres of the call (`+0x20`): the caller runs to the farthest phone flag within it. Below 0 twice the member's brain +0x140 is used and no phone is sought. |
+| 5 | `roamRadius` | number (single precision); default 10 | How far from his post each member wanders, in metres (`+0x24`, the Scout goal's radius); 0 keeps him at the post. |
+| 6 | `roamArc` | number (single precision); default 30 | Width in degrees of the arc about his post heading that he wanders in (`+0x28`). |
 | 7 | `callback` | string | Name of the Lua function the tactic calls with (gang id, code), or nil; the codes are those of `TacticGetString`. |
 
 **Returns** nothing.
@@ -4012,7 +4012,7 @@ a member hit, attacked or spotting someone fights him and calls his gang over, a
 whether any member is fighting (checked every 200 ms). No code is sent from Process.
 
 **Notes.** Constructor 0x0031a430 (vtable 0x00543da0): Start 0x0031af98, Process 0x0031b030, event 0x0031b1b0
-(0x0031a818). Behaviour: [AI](../../research/ai.md#tactic-kinds).
+(0x0031a818). Behaviour: [Stealth: scouts](../../research/stealth.md#scouts), [AI](../../research/ai.md#tactic-kinds).
 
 - **Evidence:** confirmed (code) at `0x0031a268`; detail: traced
 - **Wrapper** `0x003776d8` (registered by `RegisterBindings`); **calls** `0x0031a268` `Tactic_Scout`

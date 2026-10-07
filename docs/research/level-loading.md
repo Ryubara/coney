@@ -505,7 +505,8 @@ picture 2 with the bar at 80 % about 18 s in, then the movie. Confirmed (runtime
 Start (`0x001620a0`): the same camera set-up; picture 0 `memory_card_screen` (`_w` with the 16:9 flag; `_sp`, `_fr`,
 `_it`, `_ge` for languages 1-4), picture 1 `memory_card_loading` (or `_w`); end = start + 21,000 ms; tick for 200 ms.
 Tick (`0x001619d0`): picture 0 for the first 5,000 ms, then picture 1, with the same placement and 200 ms fades and no
-bar. While picture 1 shows, `0x001613f0` draws the HUD's element at `0x0060e890` (HUD `0x00600840` + `0xe050`) over it
+bar. While picture 1 shows, `0x001613f0` draws the HUD's element at `0x0060e890` (HUD `0x00600840` + `0xe050`,
+[the spinner](hud.md#hud-spinner): `part_page0` rectangle 92, never turned) over it
 in (170, 43, 43) × 1.3 = (221, 56, 56), fading out over 1,100 ms and in over 1,100 ms (a 2,200 ms cycle of the
 real-time clock). Finish (`0x001618f0`): tick until now ≥ the moment of the call + 200. All twelve names exist on the
 disc (corroboration).
@@ -1003,8 +1004,6 @@ with several atomics are the cars, drawn as [Cars](../references/cars.md) instea
 - **A level's load time on the PS2**, which Coney's 3,000 ms hold stands for (only level99's "a few seconds" is seen).
 - **The loading screen's flag** `0x0050f5b8`: only `PM_Greet` writes it (to 0), yet it read 1 in a level99 state;
   what sets it again?
-- **The blinking HUD element** at `0x0060e890` (memory-card screen, preload indicator): its sheet and rectangle (a red
-  "W" at runtime, inferred).
 - **`0x0063eec2`**, the number in a Rumble arena's `rumble_<g>` picture name: the game type or the arena?
 - **The Object List's models**: how the game gives an object's untextured material its dictionary's texture
   ([The Object List's models](#the-object-list)); the record's untraced fields are on

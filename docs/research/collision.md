@@ -122,7 +122,7 @@ Flags, confirmed (code) at `0x00350778` and `0x00351468` unless stated:
 | --- | --- |
 | 0 (`0x0001`) | **enabled**; set on every triangle at load, switched by `CollisionMesh_SetEnabledInBox` |
 | 1 (`0x0002`) | **two-sided** |
-| 2-10 (`0x07fc`) | type bits: a query skips a triangle when `flags & 0xfff & mask & ~0x801` is non-zero. Known meanings: bit 2 (`0x0004`) **climbable by a player** and bit 7 (`0x0080`) **climbable** (by anyone), read from a ray's result by `Climb_TryStart` (`0x002826f0`, [Characters](characters.md#climb)); bits 4 and 5 under the feet, below. The rest are not traced |
+| 2-10 (`0x07fc`) | type bits: a query skips a triangle when `flags & 0xfff & mask & ~0x801` is non-zero. Known meanings: bit 2 (`0x0004`) **climbable by a player** and bit 7 (`0x0080`) **climbable** (by anyone), read from a ray's result by `Climb_TryStart` (`0x002826f0`, [Characters](characters.md#climb)); bit 4 (`0x0010`) **shadow ground**, where a human may hide ([Stealth](stealth.md#shadow-ground)); bit 5 (`0x0020`) sets human byte `+0x5b7` under the feet (`0x002195e0`). The rest are not traced |
 | 11 (`0x0800`) | testable while disabled, if the query's mask has `0x800` |
 | 12-15 | a value 1 to 15; never read by the queries on this page (meaning unknown). The physics sweep of a walking body reads bits 14-15 as an index (`0x00347c08`, not traced) |
 
@@ -295,11 +295,9 @@ on these rays.
 
 ## Open questions
 
-- **Flag bits 2-10 and 12-15** (partly answered: bits 2 and 7 mark climbable triangles), and the masks the callers
-  pass: which other bits mean what (stairs, no-camera, water?). The
-  characters' ground snap passes bits 4 and 5 of the triangle under the feet on: bit 4 to a per-player "under cover"
-  state (`0x0028ef00`), bit 5 to `0x002195e0` (inferred from the callees, [Characters](characters.md#ground)). The
-  follow camera's rays use mask `0x200` ([Camera](camera.md#collision)).
+- **Flag bits 3, 6, 8-10 and 12-15** (bits 2 and 7 mark climbable triangles, bit 4 shadow ground, bit 5 human
+  `+0x5b7`), and the masks the callers pass: which other bits mean what (stairs, no-camera, water?). The follow
+  camera's rays use mask `0x200` ([Camera](camera.md#collision)).
 - **The area byte** (`+0x09`): what the 125 values number.
 - **`level118`'s header**: is that level's grid usable as it is (its `y` scale is 0)?
 - **The cameras' and characters' use** (partly answered): characters stand on the ground by a ray 1.0 m above the

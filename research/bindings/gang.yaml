@@ -128,7 +128,7 @@
     - {addr: 0x0016b580}
   args:
     - {name: gang, lua: number, ctype: int, desc: "Gang id (slot 0-31)."}
-    - {name: current, lua: boolean, default: true, desc: "true (the default) asks about one wanted flag (+0x5e8), false about the other (+0x5f0); the two are inferred to be 'wanted now' and 'wanted pending' by the police."}
+    - {name: current, lua: boolean, default: true, desc: "true (the default, when the argument is absent) asks about the police wanted timer (+0x5e8), false about the second timer (+0x5f0), which a gang call (GoalCallGang, a scout's call) and GangRespond set. A nil passed explicitly counts as false."}
   results:
     - {lua: boolean, desc: "true (1) when the chosen wanted flag is set; nil when it is not, when the gang id is -1 or when the slot is not in use."}
   description: >-
@@ -138,8 +138,10 @@
   evidence: confirmed-code
   depth: thorough
   notes: >-
-    Which flag means 'wanted now' and which 'wanted pending' is inferred from the police code that sets them; the
-    reads are confirmed (0x0016b580).
+    The reads are confirmed (0x0016b580); the default comes from 0x00409318, which returns the default only when the
+    argument is missing and 0 for a nil that is present, so `GangIsWanted(g, nil)` asks about +0x5f0. level87's
+    chapter 5 polls it that way to fail the stealth section on a completed call
+    ([Stealth](../../research/stealth.md#spotted)).
   usage: {chunks: 13, calls: 25, boot: true, mission1: false, result_used: true, levels: [80, 87, 95, 34, 2, 3, 5, 93, 31, 14, 9, 51, 52, 54, 55, 82, 92, 83, 20, 11]}
   coney: implemented
 
