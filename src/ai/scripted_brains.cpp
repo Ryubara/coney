@@ -88,6 +88,8 @@ void ScriptedBrains::bind(double handle, Brain& brain, int gang) {
     brain.setServices(this);
     // Its anim starts, for the scripts' animation callbacks (the queue is bounded by what one step can start).
     brain.human().setAnimStartHook([this, handle](std::uint32_t anim) { m_animStarts.emplace_back(handle, anim); });
+    // Its sounds, which gameplay hands to the game's sound each step.
+    brain.human().reportSounds(true);
     if (gang >= 0) {
         m_owner->gangs().addMember(gang, brain);
     }

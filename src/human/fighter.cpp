@@ -29,6 +29,11 @@ namespace {
 namespace id = combat::anim_id;
 
 constexpr float kDegrees = std::numbers::pi_v<float> / 180.0F;
+// A hit is one step stronger in its sound with these Anim Range flags, or from this anim id (`Hit_ResolveBlock`).
+constexpr std::uint16_t kStrongerHitFlags = 0x600;
+constexpr int kStrongerHitAnim = 11;
+// The record bits of the run attack, the charge and the dive: a strike with them also sounds as body on body.
+constexpr std::uint32_t kChargeFlags = 0x1400000;
 
 // Whether `animId` is a moving attack, after which the run may go on.
 bool isMovingAttack(int animId) {
@@ -44,7 +49,7 @@ float flatDistance(const anim::Vec3& a, const anim::Vec3& b) { return std::hypot
 Fighter::Fighter(const combat::AnimRangeList* ranges, std::uint32_t seed, const FighterProfile& profile)
     : m_ranges(ranges), m_flags(profile.player ? flag::kPlayerFlags : 0), m_combat(ranges, 0, seed),
       m_health(profile.health > 0 ? profile.health : kPlayerHealth), m_victim(profile.powerClass, seed),
-      m_grabbedRandom(seed + 1U), m_player(profile.player) {}
+      m_grabbedRandom(seed + 1U), m_player(profile.player), m_bossClass(profile.bossClass) {}
 
 bool Fighter::holdsMovement(const HumanAnimator& animator) const {
     return m_combat.blocking() || m_combat.mode() != combat::CombatMode::Free || grabbed() || m_holdState.has_value() ||
@@ -238,7 +243,7 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         if ((out.hitAnim == id::kBreakObjectLow || out.hitAnim == id::kBreakObjectMid) && m_objectTarget) {
             m_objectHit = std::exchange(m_objectTarget, std::nullopt);
         } else {
-            landHit(out.hitAnim, out.hitDamage, input);
+            landHit(out.hitAnim, out.hitDamage, input, animator);
         }
     }
 
@@ -618,7 +623,7 @@ float Fighter::steerReach(std::uint32_t clipId, const Combatant& target, const F
     return reach;
 }
 
-void Fighter::landHit(int animId, int damage, const FighterInput& input) {
+void Fighter::landHit(int animId, int damage, const FighterInput& input, const HumanAnimator& animator) {
     // The victim: the thrown one for a throw, the held one for a move in a hold, else whoever stands in reach.
     Combatant* victim = nullptr;
     bool heldMove = false;
@@ -636,12 +641,13 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input) {
     if (victim == nullptr || (!heldMove && flatDistance(input.position, victim->position()) > reachOf(animId))) {
         return;
     }
-    applyHit(*victim, animId, damage, heldMove, input.position, input.nowMs);
+    applyHit(*victim, animId, damage, heldMove, input.position, input.nowMs, animator);
 }
 
-void Fighter::strikeContact(Combatant& victim, int animId, anim::Vec3 position, std::uint64_t nowMs) {
+void Fighter::strikeContact(Combatant& victim, int animId, anim::Vec3 position, std::uint64_t nowMs,
+                            const HumanAnimator& animator) {
     const int damage = m_ranges != nullptr ? combat::strikeDamage(*m_ranges, animId) : 0;
-    applyHit(victim, animId, damage, false, position, nowMs);
+    applyHit(victim, animId, damage, false, position, nowMs, animator);
     // Reported with the next actions pass's strikes(), which starts from these.
     if (m_player) {
         m_shapeStrikes.push_back(m_strikes.back());
@@ -650,7 +656,7 @@ void Fighter::strikeContact(Combatant& victim, int animId, anim::Vec3 position, 
 }
 
 void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker,
-                       std::uint64_t nowMs) {
+                       std::uint64_t nowMs, const HumanAnimator& animator) {
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clips::clipOf(animId)) : nullptr;
     // A move in a hold plays its own victim clips; a free hit picks the victim's reaction. A player's hits ignore
     // hit armour.
@@ -662,7 +668,9 @@ void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove,
                            .react = !heldMove,
                            .ignoresArmour = m_player || hasFlag(flag::kIncreasedReact),
                            .attackerFlag200000 = hasFlag(flag::kIncreasedReact),
-                           .attackerIsPlayer = m_player});
+                           .attackerIsPlayer = m_player,
+                           .strikeMaterial = strikeMaterialOf(animId, range, animator),
+                           .charge = (animator.flags() & kChargeFlags) != 0});
     ++m_hitsLanded;
     m_damageDealt += damage;
     if (m_player) {
@@ -672,6 +680,19 @@ void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove,
     // attacker), then goes into the repeat tracker; a throw takes the bonus its grab strikes built.
     earnRage(animId, nowMs, clips::isThrow(animId));
     m_repeat.note(animId, nowMs);
+}
+
+std::uint32_t Fighter::strikeMaterialOf(int animId, const combat::AnimRange* range,
+                                        const HumanAnimator& animator) const {
+    // The strength: the hit code's (**Coney's reading** of the reaction's bits 4-5), one more for the Anim Range
+    // flags 0x600 or anim 11, at most 3 (docs/research/sound-events.md#strike-human).
+    int strength = range != nullptr ? combat::decodeHitCode(range->kind).strength : 0;
+    if ((range != nullptr && (range->flags & kStrongerHitFlags) != 0) || animId == kStrongerHitAnim) {
+        ++strength;
+    }
+    const anim::AnimClip* clip = animator.anims().clip(clips::clipOf(animId));
+    const StrikeLimb limb = clip != nullptr ? strikeLimbOfClip(clip->name) : StrikeLimb::Hand;
+    return strikeMaterial(limb, std::min(strength, 3), m_bossClass);
 }
 
 void Fighter::earnRage(int animId, std::uint64_t nowMs, bool isThrow) {

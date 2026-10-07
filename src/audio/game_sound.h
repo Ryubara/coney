@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "audio/ambient_emitters.h"
+#include "audio/human_sound_events.h"
 #include "audio/material_sounds.h"
 #include "audio/sound_matrix.h"
 #include "audio/sound_player.h"
@@ -63,6 +64,9 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     [[nodiscard]] const VoiceTable& voices() const { return m_voices; }
     /// The humans' lines.
     [[nodiscard]] const Speech& speech() const { return m_speech; }
+    /// One line on the game's sound for the end of a run: the humans' sounds asked for and the matrix's sounds started
+    /// (counts only).
+    [[nodiscard]] std::string summary() const;
     /// The sound matrix the preloads fill.
     [[nodiscard]] SoundMatrix& matrix() { return m_matrix; }
     [[nodiscard]] const SoundMatrix& matrix() const { return m_matrix; }
@@ -81,6 +85,8 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     void loadSoundBank(std::string_view name) override;
     void setNonDuckableDuck(float factor) override;
     void setPitchFactor(float factor) override;
+    /// The human's animation or hit sound (HumanSoundEvents), with his type's traits.
+    void humanSound(const script::HumanSoundCall& call) override;
     bool loadSoundMatrix(std::string_view name) override;
     void newMaterialSlots(std::uint32_t m1, std::uint32_t m2, std::uint32_t count, std::uint32_t columns,
                           const std::array<float, 3>& volumes) override;
@@ -133,10 +139,41 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
       public:
         explicit EngineSink(SoundPlayer& sounds) : m_sounds(sounds) {}
         SoundHandle play(std::uint32_t hash, const SoundPlay& how) override;
+        void stop(SoundHandle sound) override;
 
       private:
         SoundPlayer& m_sounds;
     };
+
+    // The speech side of the humans' sounds: the lines and commands through Speech and the voice table.
+    class Voices final : public HumanVoices {
+      public:
+        explicit Voices(GameSound& owner) : m_owner(owner) {}
+        [[nodiscard]] bool speaking(double human) const override;
+        void stopLine(double human) override;
+        bool sayLine(const script::HumanSoundCall& who, std::uint32_t hash, float volume, bool cut) override;
+        bool sayCommand(const script::HumanSoundCall& who, std::uint32_t command, float volume, bool interrupt,
+                        bool duckable) override;
+        // **Coney's stand-in** for the brains' reaction-kind slots (not built): a camera within 30 m, and at most two
+        // humans saying gesture lines at a time.
+        // @orig 0x00291ed0 Ambient_MayGesture (unknown)
+        bool mayGesture(const script::HumanSoundCall& who) override;
+        [[nodiscard]] bool scenePlaying() const override;
+
+      private:
+        GameSound& m_owner;
+        std::vector<double> m_gesturing; // who holds a gesture slot while his line plays
+    };
+
+    // The traits of a human of `type` from the `CfgChar` records (and `CfgBreathingSound`), and whether `human` may
+    // speak.
+    [[nodiscard]] HumanTraits traitsOf(int type, double human) const;
+    // The voice set of a human of `type`, -1 for none.
+    [[nodiscard]] int voiceSetOf(int type) const;
+    // A speech command `call` at `volume`, duckable or not; its line's handle. Nothing during a cinematic.
+    // @orig 0x002205e0 Human_SayCommand (unknown)
+    std::optional<double> sayCommandAt(const script::CommandCall& call, std::string_view callback, float volume,
+                                       bool duckable);
 
     // Where the human with `handle` is, from the AI host's live humans, else where the scripts made him.
     [[nodiscard]] std::optional<SpeakerPlace> locate(double handle) const;
@@ -156,6 +193,10 @@ class GameSound final : public script::SoundHost, public FrontEndAudio {
     EngineSink m_engineSink;
     SoundMatrix m_matrix;
     MaterialSoundPlayer m_materialSounds;
+    Voices m_humanVoices{*this};
+    std::uint64_t m_animSounds = 0;   // the humans' animation sounds asked for
+    std::uint64_t m_impactSounds = 0; // the humans' hit sounds asked for
+    HumanSoundEvents m_humanSounds;
     AmbientEmitters m_emitters;
     VoiceTable m_voices;
     Speech m_speech;

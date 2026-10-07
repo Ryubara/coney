@@ -32,6 +32,9 @@ struct CharacterType {
     std::vector<std::uint8_t> attacks; ///< `+0x11e`: the attack table (an AI's attack weights), each clamped to a byte.
     std::string model;                 ///< The model name (`warr_re_cv`); empty when the call gave none.
     std::optional<int> warrior;        ///< `+0x118`: the Warrior index of a playable character (inferred).
+    /// `+0x14b`, `CfgChar`'s 13th argument: 1 for the women's types, whose vocal animation sounds use the `_female`
+    /// entries (docs/research/sound-events.md#players).
+    std::optional<int> female;
 };
 
 /// The type `call` (a recorded `CfgChar` call's arguments) configures; nothing when its first argument is not a number.

@@ -220,6 +220,7 @@ target_sources(coney_core PRIVATE
     human/body.cpp
     human/climb.cpp
     human/human.cpp
+    human/human_sounds.cpp
     human/human_animator.cpp
     human/human_held.cpp
     human/human_script.cpp
@@ -361,6 +362,7 @@ add_library(
     audio/adpcm.cpp
     audio/ambient_emitters.cpp
     audio/game_sound.cpp
+    audio/human_sound_events.cpp
     audio/material_sounds.cpp
     audio/mixer.cpp
     audio/music_player.cpp

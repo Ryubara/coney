@@ -27,6 +27,7 @@ constexpr std::size_t kDamage = 6;
 constexpr std::size_t kAttacks = 7;
 constexpr std::size_t kDamageScale = 8;
 constexpr std::size_t kWarrior = 11;
+constexpr std::size_t kFemale = 12;
 
 // `CfgPowerClass`'s arguments (docs/references/bindings/config.md#cfgpowerclass), 0-based, and the fields they fill.
 constexpr std::size_t kPowerMax = 1;         // +0x28
@@ -106,6 +107,7 @@ std::optional<CharacterType> parseCfgChar(std::span<const script::Value> call) {
     parsed.speedClass = wholeAt(call, kSpeedClass);
     parsed.health = wholeAt(call, kHealth);
     parsed.warrior = wholeAt(call, kWarrior);
+    parsed.female = wholeAt(call, kFemale);
     // The damage table times the class's scale, as 16-bit values (truncated: **Coney choice**).
     const double scale = numberAt(call, kDamageScale).value_or(1.0);
     for (const double value : listAt(call, kDamage)) {

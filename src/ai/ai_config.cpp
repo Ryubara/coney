@@ -38,6 +38,7 @@ void readCharacter(std::span<const script::Value> call, AiConfig& config) {
     if (parsed->behaviour) {
         config.fighter.brain = brainTypeOf(*parsed->behaviour);
     }
+    config.fighter.category = parsed->category.value_or(0);
     if (parsed->health.has_value() && *parsed->health >= 1) {
         config.fighter.health = *parsed->health;
     }

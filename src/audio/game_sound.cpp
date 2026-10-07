@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "audio/game_sound.h"
 
+#include <algorithm>
 #include <cmath>
 #include <format>
 #include <numbers>
@@ -11,8 +12,12 @@
 #include "camera/camera_view.h"
 #include "camera/cameras.h"
 #include "characters/character_class.h"
+#include "characters/character_types.h"
 #include "core/name_hash.h"
+#include "human/fighter.h"
+#include "scenes/scene_player.h"
 #include "scripting/ai_bindings.h"
+#include "scripting/human_bindings.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "warriors/created_humans.h"
@@ -39,11 +44,21 @@ SoundVec facingOf(float headingDegrees) {
 } // namespace
 
 GameSound::GameSound(SoundPlayer& sounds, std::function<void(std::string_view)> log)
-    : m_sounds(sounds), m_log(std::move(log)), m_engineSink(sounds), m_materialSounds(m_matrix, &m_engineSink) {}
+    : m_sounds(sounds), m_log(std::move(log)), m_engineSink(sounds), m_materialSounds(m_matrix, &m_engineSink),
+      m_humanSounds(m_materialSounds, m_humanVoices, [this](std::int32_t low, std::int32_t high) {
+          SoundEngine* engine = m_sounds.engine();
+          return engine != nullptr ? engine->random(low, high) : low;
+      }) {}
 
 SoundHandle GameSound::EngineSink::play(std::uint32_t hash, const SoundPlay& how) {
     SoundEngine* engine = m_sounds.engine();
     return engine != nullptr ? engine->play(hash, how) : SoundHandle{};
+}
+
+void GameSound::EngineSink::stop(SoundHandle sound) {
+    if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
+        engine->stop(sound);
+    }
 }
 
 void GameSound::connect(script::ScriptSystem* scripts, const script::BindingContext* context) {
@@ -102,6 +117,124 @@ void GameSound::setPitchFactor(float factor) {
     if (SoundEngine* engine = m_sounds.engine(); engine != nullptr) {
         engine->setPitchFactor(factor);
     }
+}
+
+// ---- The humans' sounds ----
+
+std::string GameSound::summary() const {
+    return std::format("game sound: {} animation sounds and {} hit sounds asked for, {} matrix sounds started\n",
+                       m_animSounds, m_impactSounds, m_materialSounds.started());
+}
+
+void GameSound::humanSound(const script::HumanSoundCall& call) {
+    ++(call.sound.kind == human::HumanSound::Kind::Anim ? m_animSounds : m_impactSounds);
+    if (m_sounds.engine() == nullptr) {
+        return;
+    }
+    m_humanSounds.play(call, traitsOf(call.characterType, call.human));
+}
+
+HumanTraits GameSound::traitsOf(int type, double human) const {
+    HumanTraits traits;
+    if (m_context == nullptr) {
+        return traits;
+    }
+    if (m_context->recorded != nullptr) {
+        const script::RecordedCalls& recorded = *m_context->recorded;
+        // The type's last CfgChar record: its women's voices and its class.
+        const std::span<const std::vector<script::Value>> chars = recorded.calls("CfgChar");
+        for (auto call = chars.rbegin(); call != chars.rend(); ++call) {
+            const std::optional<characters::CharacterType> parsed = characters::parseCfgChar(*call);
+            if (parsed && parsed->type == type) {
+                traits.female = parsed->female.value_or(0) == 1;
+                traits.bossClass = parsed->category.value_or(0) == human::kBossCategory;
+                break;
+            }
+        }
+        // CfgBreathingSound's first argument is the combat factor (game state +0x24c).
+        if (const std::span<const std::vector<script::Value>> breathing = recorded.calls("CfgBreathingSound");
+            !breathing.empty() && !breathing.back().empty()) {
+            if (const std::optional<double> factor = breathing.back().front().number(); factor) {
+                traits.combatFactor = static_cast<float>(*factor);
+            }
+        }
+    }
+    // HuEnableSoundCommands(false) silences him.
+    if (m_context->ai != nullptr) {
+        if (script::HumanBindingHost* humans = m_context->ai->humans(); humans != nullptr) {
+            const std::optional<script::HumanStatus> status = humans->status(human);
+            traits.canSpeak = !status || status->soundCommands;
+        }
+    }
+    return traits;
+}
+
+int GameSound::voiceSetOf(int type) const {
+    return m_context != nullptr && m_context->recorded != nullptr ? script::voiceSetOfType(*m_context->recorded, type)
+                                                                  : -1;
+}
+
+bool GameSound::Voices::speaking(double human) const {
+    const SoundEngine* engine = m_owner.m_sounds.engine();
+    return engine != nullptr && m_owner.m_speech.speaking(*engine, human);
+}
+
+void GameSound::Voices::stopLine(double human) {
+    if (SoundEngine* engine = m_owner.m_sounds.engine(); engine != nullptr) {
+        m_owner.m_speech.shutUp(*engine, human);
+    }
+}
+
+bool GameSound::Voices::sayLine(const script::HumanSoundCall& who, std::uint32_t hash, float volume, bool /*cut*/) {
+    SoundEngine* engine = m_owner.m_sounds.engine();
+    if (engine == nullptr || scenePlaying()) {
+        return false;
+    }
+    // A cutting line (HuSpeakNI's kind) is not modelled apart (the human's +0x194): every line may be cut.
+    const SpeakerPlace at{.position = SoundVec{who.position[0], who.position[1], who.position[2]},
+                          .facing = facingOf(who.headingDegrees)};
+    return m_owner.m_speech.say(*engine, who.human, hash, at, true, {}, std::nullopt, volume).valid();
+}
+
+bool GameSound::Voices::sayCommand(const script::HumanSoundCall& who, std::uint32_t command, float volume,
+                                   bool interrupt, bool duckable) {
+    if (!m_owner.traitsOf(who.characterType, who.human).canSpeak) {
+        return false;
+    }
+    const script::CommandCall call{.human = who.human,
+                                   .voiceSet = m_owner.voiceSetOf(who.characterType),
+                                   .command = command,
+                                   .interrupt = interrupt,
+                                   .target = 0.0};
+    return m_owner.sayCommandAt(call, {}, volume, duckable).has_value();
+}
+
+bool GameSound::Voices::mayGesture(const script::HumanSoundCall& who) {
+    constexpr float kGestureRange = 30.0F;
+    constexpr std::size_t kGestureSlots = 2;
+    // The slots of those who no longer speak free up.
+    std::erase_if(m_gesturing, [this](double human) { return !speaking(human); });
+    if (m_owner.m_context == nullptr || m_owner.m_context->cameras == nullptr) {
+        return false;
+    }
+    const anim::Vec3 camera = m_owner.m_context->cameras->view().position;
+    const float dx = camera.x - who.position[0];
+    const float dy = camera.y - who.position[1];
+    const float dz = camera.z - who.position[2];
+    const bool holds = std::ranges::find(m_gesturing, who.human) != m_gesturing.end();
+    if ((dx * dx) + (dy * dy) + (dz * dz) > kGestureRange * kGestureRange ||
+        (!holds && m_gesturing.size() >= kGestureSlots)) {
+        return false;
+    }
+    if (!holds) {
+        m_gesturing.push_back(who.human);
+    }
+    return true;
+}
+
+bool GameSound::Voices::scenePlaying() const {
+    const script::BindingContext* context = m_owner.m_context;
+    return context != nullptr && context->scenes != nullptr && context->scenes->cinematicActive();
 }
 
 // ---- The sound matrix ----
@@ -285,6 +418,11 @@ void GameSound::shutUp(double human, bool /*force*/) {
 }
 
 std::optional<double> GameSound::sayCommand(const script::CommandCall& call, std::string_view callback) {
+    return sayCommandAt(call, callback, 1.0F, true);
+}
+
+std::optional<double> GameSound::sayCommandAt(const script::CommandCall& call, std::string_view callback, float volume,
+                                              bool duckable) {
     SoundEngine* engine = m_sounds.engine();
     if (engine == nullptr || call.voiceSet < 0) {
         return std::nullopt;
@@ -300,8 +438,8 @@ std::optional<double> GameSound::sayCommand(const script::CommandCall& call, std
     if (!line) {
         return std::nullopt;
     }
-    const SoundHandle sound =
-        m_speech.say(*engine, call.human, *line, *at, call.interrupt, std::string(callback), call.human);
+    const SoundHandle sound = m_speech.say(*engine, call.human, *line, *at, call.interrupt, std::string(callback),
+                                           call.human, volume, duckable);
     if (!sound.valid()) {
         return std::nullopt;
     }

@@ -248,6 +248,19 @@ class Human final : public Holdable {
     /// Called with each anim id the human starts playing, for the scripts' animation callbacks
     /// (docs/research/characters.md#anim-callbacks); empty for none.
     void setAnimStartHook(std::function<void(std::uint32_t animId)> hook) { m_animator.setStartHook(std::move(hook)); }
+    /// The sounds its updates asked for since the last call, oldest first: its clips' animation sounds (clip event
+    /// 11) and the hit sounds of the hits it took (docs/research/sound-events.md). Kept only once asked for
+    /// (reportSounds()), so a human nobody listens to keeps none.
+    [[nodiscard]] std::vector<HumanSound> takeSounds();
+    /// Starts (or stops) keeping its sounds for takeSounds().
+    void reportSounds(bool on);
+    /// Adds a sound the level found for this human, such as his strike on the level, an object or a car. It is kept
+    /// for takeSounds() only while he reports sounds.
+    void reportSound(const HumanSound& sound);
+    /// The material of the ground under the feet (`+0x1d8`): the triangle the last ground snap hit, `CONCRETE` (5)
+    /// before any. **Coney's reading**: the snap's triangle (docs/research/sound.md#anim-sounds names `+0x1d8` the
+    /// ground under the human).
+    [[nodiscard]] std::uint8_t groundMaterial() const { return m_groundMaterial; }
     [[nodiscard]] const Speeds& speeds() const { return m_animator.speeds(); }
     /// Stamina (record `+0x14a`).
     [[nodiscard]] const Stamina& stamina() const { return m_stamina; }
@@ -587,6 +600,9 @@ class Human final : public Holdable {
     std::uint32_t m_blockedUpdates = 0;
     anim::Vec3 m_lastGround;
     anim::Vec3 m_groundNormal{0.0F, 0.0F, 1.0F};
+    std::uint8_t m_groundMaterial = 5;       // groundMaterial(): CONCRETE until the first snap
+    bool m_reportSounds = false;             // reportSounds()
+    std::vector<HumanSound> m_contactSounds; // reportSound()
     float m_lastLandingSpeed = 0.0F;
     std::uint32_t m_landings = 0;
     Stamina m_stamina;

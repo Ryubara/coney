@@ -641,6 +641,7 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         }
     }
     if (m_scripted) {
+        reportHumanSounds();
         m_scripted->runAnimCallbacks();
         m_scripted->humanHost().runRageHandlers();
         m_scripted->storyHost().update();
@@ -688,6 +689,43 @@ ModeResult GameplayMode::updateWorld(GameModeStack& stack, const FrameTime& fram
         overlay->playFrame(frame, stack.pads());
     }
     return result;
+}
+
+void GameplayMode::reportHumanSounds() {
+    if (!m_scripted) {
+        return;
+    }
+    const ai::Brain* player = m_scripted->player();
+    for (const auto& [handle, brain] : m_scripted->bound()) {
+        human::Human& body = brain->human();
+        const std::vector<human::HumanSound> sounds = body.takeSounds();
+        if (sounds.empty() || m_context.sound == nullptr) {
+            continue;
+        }
+        const anim::Vec3 feet = body.position();
+        const ai::Brain* target = brain->target();
+        script::HumanSoundCall call{.human = handle,
+                                    .characterType = brain->characterClass(),
+                                    .position = {feet.x, feet.y, feet.z},
+                                    .headingDegrees = body.heading() * 180.0F / std::numbers::pi_v<float>,
+                                    .player = brain == player,
+                                    .ground = body.groundMaterial(),
+                                    .hiddenInShadow = false,
+                                    .combatFraming = false,
+                                    .burning = false,
+                                    .targetIsPlayer = target != nullptr && target == player,
+                                    .hasThrowTarget = false,
+                                    .heldMaterial = std::nullopt,
+                                    .heldModel = 0,
+                                    .heldType = 0,
+                                    .sound = {}};
+        // **Coney's stand-ins** for what Coney's humans do not have yet: no sneaking in shadow, no burning, no world
+        // object in hand, no throw; the camera's combat framing is not told apart.
+        for (const human::HumanSound& sound : sounds) {
+            call.sound = sound;
+            m_context.sound->humanSound(call);
+        }
+    }
 }
 
 void GameplayMode::updateRadios() {

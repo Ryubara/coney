@@ -1286,6 +1286,10 @@ int main(int argc, char** argv) {
     if (audio && options->audioTest) {
         printText(audio->summary());
     }
+    // A level played in test mode: what its humans asked to be heard (counts only).
+    if (audio && testMode && levelGameplay) {
+        printText(audio->game().summary());
+    }
 
     // The level played on its own goes before the sound output (declared further down, so destroyed first), whose
     // game sound its scripts' binding context and play mode still point at: tearing those down afterwards read freed

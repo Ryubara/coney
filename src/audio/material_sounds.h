@@ -20,6 +20,8 @@ class SoundSink {
 
     /// Starts the sound `hash` as `how` says (SoundEngine::play()); its handle, invalid when nothing plays.
     virtual SoundHandle play(std::uint32_t hash, const SoundPlay& how) = 0;
+    /// Stops a sound play() started (nothing for one that ended).
+    virtual void stop(SoundHandle /*sound*/) {}
 };
 
 /// The sound matrix's players (docs/research/sound.md#sound-matrix): what contacts, objects, footsteps and the
@@ -74,14 +76,21 @@ class MaterialSoundPlayer {
     /// @orig 0x00110aa8 Sound_RemapFootMaterial (unknown)
     [[nodiscard]] static FootMaterial remapFootMaterial(std::uint32_t ground);
 
+    /// One sound (none for hash 0) at `at`, positional and duckable, owned by `owner` (0 none); its handle.
+    SoundHandle playSound(std::uint32_t hash, float volume, float pitch, SoundVec at, std::uint32_t owner = 0);
+    /// Stops a sound playSound() started.
+    void stop(SoundHandle sound) {
+        if (m_sink != nullptr) {
+            m_sink->stop(sound);
+        }
+    }
+
     /// Sounds started (counting each column), for tests and logs.
     [[nodiscard]] std::uint64_t started() const { return m_started; }
     /// Lookups that found no entry.
     [[nodiscard]] std::uint64_t unmatched() const { return m_unmatched; }
 
   private:
-    // Starts one sound (none for hash 0) at `at`.
-    void start(std::uint32_t hash, float volume, float pitch, SoundVec at, std::uint32_t owner);
     // The pair's two columns, column 2 first, the second at `secondPitch`.
     void playPair(float volume, std::uint32_t a, std::uint32_t b, SoundVec at, std::uint32_t fallback,
                   std::uint32_t owner, float secondPitch);

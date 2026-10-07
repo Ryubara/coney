@@ -33,12 +33,12 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,700 functions) |
+| **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,708 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **Understood** | `██████████████████▊░` | 93.7% named in Ghidra and cited with evidence (3,076,568 of 3,283,904 bytes; 10,615 of 11,422 functions, 92.9%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-545 reimplemented function(s) have no size yet and add no bytes.
+553 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -73,7 +73,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 106 | 100,440 |
 | `Graphics` | `██▍░░░░░░░░░░░░░░░░░` | 11.7% | 72 | 195,624 |
 | `GUI` | `███▉░░░░░░░░░░░░░░░░` | 19.5% | 205 | 497,416 |
-| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 547 | 1,096,672 |
+| `Human` | `███▏░░░░░░░░░░░░░░░░` | 15.4% | 555 | 1,096,672 |
 | `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 4 | 79,032 |
@@ -757,9 +757,16 @@ at the top of the repository's `README.md`.
 | `0x0021d080` | `Human_GetPosition` | `Human` | 96 |
 | `0x0021d428` | `Human_GetFormation` | `Human` | 80 |
 | `0x0021d4e8` | `Human_OnEvent` | `Human` | 72 |
+| `0x0021e3a8` | `Human_GetSoundVolumeScale` | `Human` | not filled in |
 | `0x0021e400` | `Human_PlaySpeech` | `Human` | 664 |
 | `0x0021e698` | `Human_PlaySpeechInterrupt` | `Human` | 680 |
 | `0x0021ec38` | `Human_StopSpeech` | `Human` | 152 |
+| `0x0021f290` | `Human_PlayFootstep` | `Human` | not filled in |
+| `0x0021f410` | `Human_SayAnimLine` | `Human` | not filled in |
+| `0x0021f548` | `Human_PlayAnimSound` | `Human` | not filled in |
+| `0x0021f700` | `Human_OnAnimSoundEvent` | `Human` | not filled in |
+| `0x002205e0` | `Human_SayCommand` | `Human` | not filled in |
+| `0x00220ac8` | `Human_PlayImpactSound` | `Human` | not filled in |
 | `0x002212d0` | `Human_GetTurnRateForGait` | `Human` | not filled in |
 | `0x002213d8` | `Human_MaxTurn` | `Human` | not filled in |
 | `0x00221760` | `Human_GaitForSpeed` | `Human` | not filled in |
@@ -1076,6 +1083,7 @@ at the top of the repository's `README.md`.
 | `0x0028fe28` | `Brain_RunActions` | `Human` | 104 |
 | `0x00290ea8` | `Brain_IsAttackableBy` | `Human` | not filled in |
 | `0x002911f8` | `Brain_GetAttackWeight` | `Human` | 32 |
+| `0x00291ed0` | `Ambient_MayGesture` | `Human` | not filled in |
 | `0x00292330` | `Brain_SetDead` | `Human` | 112 |
 | `0x00292410` | `Brain_SetType` | `Human` | 80 |
 | `0x00292460` | `Brain_SetPedType` | `Human` | 72 |

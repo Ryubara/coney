@@ -98,7 +98,9 @@ TEST_CASE("the alignment lasts a tenth of the time to the first contact, over th
     // No contact event: the duration (72's two updates at rate 0.75).
     CHECK(alignSeconds(clip, 0.75F) == Approx(0.1F * 0.467F / 0.75F));
     // A contact event (type 9) at frame 6: 0.2 s.
-    clip.events.push_back(coney::anim::ClipEvent{.frame = 6, .type = 9, .word = 0, .position = {}, .rotation = {}});
-    clip.events.push_back(coney::anim::ClipEvent{.frame = 3, .type = 8, .word = 0, .position = {}, .rotation = {}});
+    clip.events.push_back(
+        coney::anim::ClipEvent{.frame = 6, .type = 9, .value = 0, .word = 0, .position = {}, .rotation = {}});
+    clip.events.push_back(
+        coney::anim::ClipEvent{.frame = 3, .type = 8, .value = 0, .word = 0, .position = {}, .rotation = {}});
     CHECK(alignSeconds(clip, 1.0F) == Approx(0.02F));
 }

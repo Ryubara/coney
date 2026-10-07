@@ -86,8 +86,8 @@ class AnimTask {
     /// A task that has finished and hands over to another gives it up here once (ClipThenNextTask); others return
     /// null.
     [[nodiscard]] virtual std::unique_ptr<AnimTask> takeReplacement() { return nullptr; }
-    /// The clip whose events fire as the task plays (a clip task's own); null for a task whose events Coney does not
-    /// fire (a gait blend).
+    /// The clip whose events fire as the task plays (a clip task's own, a gait blend's leading clip); null for a task
+    /// whose events Coney does not fire.
     [[nodiscard]] virtual const AnimClip* eventClip() const { return nullptr; }
 
     /// Gives the task `held` bits of its human's record `+0x08` to hold (the task's `+0x24`), of which it sets `set`
@@ -196,6 +196,8 @@ class GaitBlendTask final : public AnimTask {
     [[nodiscard]] float time() const override;
     [[nodiscard]] float duration() const override;
     [[nodiscard]] std::uint32_t animId() const override;
+    /// The leading clip: its events fire, the other's are muted (docs/research/formats/animation.md).
+    [[nodiscard]] const AnimClip* eventClip() const override;
 
     /// Sets the target, clamped to 0-4; rounded to the nearest whole number unless the flags have kTaskContinuous.
     /// @orig 0x0010a500 GaitBlend_SetTarget (AnimationBlend.cpp)
@@ -286,6 +288,16 @@ class AnimTaskStack {
     /// gait blend moves to another clip: where the original resolves an id to a clip and runs the animation
     /// callbacks (`CharacterInstance_GetAnim`, docs/research/characters.md#anim-callbacks). Empty for none.
     void setStartHook(std::function<void(std::uint32_t animId)> hook) { m_startHook = std::move(hook); }
+    /// Keeps (`keep`) every event of the newest task's clip whose frame is passed, after the held-flag events have
+    /// moved the record, for takeEvents(): the human acts on the rest (clip event 11, the animation sounds,
+    /// docs/research/sound.md#anim-sounds). Off by default: an owner that never takes them keeps none.
+    /// @orig 0x00101dd8 Anim_FireEvents (unknown)
+    void keepEvents(bool keep) {
+        m_keepEvents = keep;
+        m_events.clear();
+    }
+    /// The events kept since the last call, in the order they were passed.
+    [[nodiscard]] std::vector<ClipEvent> takeEvents() { return std::exchange(m_events, {}); }
 
     /// The outgoing weight of a fade `elapsed` seconds into `duration`: 1 at the start, 0 at the end and after;
     /// 0 for a zero duration.
@@ -314,6 +326,8 @@ class AnimTaskStack {
     std::vector<Layer> m_layers;                    // newest first
     std::uint32_t m_flags = 0;                      // the human's record +0x08
     std::function<void(std::uint32_t)> m_startHook; // setStartHook()
+    std::vector<ClipEvent> m_events;                // keepEvents(), takeEvents()
+    bool m_keepEvents = false;
 };
 
 /// The root's motion in a pose: section A as sampled (already scaled by its task's rate), and bone 0's rotation read

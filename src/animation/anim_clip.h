@@ -53,6 +53,10 @@ struct RotationKey {
 struct ClipEvent {
     std::uint16_t frame = 0;
     std::uint16_t type = 0;
+    std::int16_t value = 0; ///< The s16 at +4, the value several types use (docs/research/animation.md#clip-queries).
+    /// The u32 at +8, the same bytes as the position's x and y unscaled: the word types 11 (the animation sound id) and
+    /// 12 send with their messages (docs/research/sound.md#anim-sounds).
+    std::uint32_t argument = 0;
     std::uint16_t word = 0; ///< The u16 at +6.
     Vec3 position;          ///< +8: scaled as a position key.
     Quat rotation;          ///< +0xe: x, y, z, with w rebuilt as a rotation key's.

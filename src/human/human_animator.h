@@ -208,6 +208,10 @@ class HumanAnimator {
     void clearFlags(std::uint32_t bits) { m_tasks.clearFlags(bits); }
     /// Called with each anim id the human starts playing (anim::AnimTaskStack::setStartHook()).
     void setStartHook(std::function<void(std::uint32_t animId)> hook) { m_tasks.setStartHook(std::move(hook)); }
+    /// Keeps the clip events the animation passes (anim::AnimTaskStack::keepEvents()).
+    void keepEvents(bool keep) { m_tasks.keepEvents(keep); }
+    /// The clip events passed since the last call (anim::AnimTaskStack::takeEvents()).
+    [[nodiscard]] std::vector<anim::ClipEvent> takeEvents() { return m_tasks.takeEvents(); }
     [[nodiscard]] AnimState state() const { return m_state; }
     /// `HuUseAnim`'s replacement for the idle (anim kUseAnimIds[0], human `+0x3c8`): `clip` (which must outlive its
     /// use; null puts the character's own idle back) plays wherever the idle would, under the idle's anim id, and at

@@ -40,6 +40,7 @@ struct FighterClass {
     int type = kFighterType;
     BrainType brain = BrainType::Gang; ///< From the class's behaviour byte.
     int health = 1400;                 ///< The class's `+0x116`.
+    int category = 0;                  ///< The class's `+0x11b` (13: the bosses and big fighters).
     /// The class's damage table (`CfgChar`'s, × its damage scale), written over the human's Anim Range List; empty
     /// keeps the list's own.
     std::vector<std::int16_t> damage;

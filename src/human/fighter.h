@@ -21,6 +21,7 @@
 #include "human/holdable.h"
 #include "human/human_animator.h"
 #include "human/human_flags.h"
+#include "human/human_sounds.h"
 #include "human/locomotion.h"
 #include "human/turn_and_slide.h"
 #include "human/victim.h"
@@ -100,6 +101,9 @@ struct ReactionShake {
     bool attackerIsPlayer = false; ///< A player's hit.
 };
 
+/// The character class category (`+0x11b`) of the bosses and big fighters (`Human_IsClass13`, `0x00223e20`).
+inline constexpr int kBossCategory = 13;
+
 /// What kind of fighter a human is: the rules that differ between a player and a human no player controls.
 struct FighterProfile {
     /// A player (human `+0x1b0` not -1): its hits ignore the victim's hit armour; as a victim it has the human flags
@@ -110,6 +114,9 @@ struct FighterProfile {
     combat::PowerClass powerClass = combat::kPlayerPowerClass;
     /// Its health's maximum (record `+0x146`).
     int health = 0;
+    /// Its class's `+0x11b` is kBossCategory (the bosses and big fighters): its punches sound as `BOSS_FIST` and a hit
+    /// on it as on the head (docs/research/sound-events.md#strike-human).
+    bool bossClass = false;
 };
 
 /// A grab another human has caught the player in, at the end of its intro (docs/research/combat.md#grabbed).
@@ -197,9 +204,11 @@ class Fighter {
     [[nodiscard]] const std::vector<int>& strikes() const { return m_strikes; }
     /// A strike shape of this human's moving attack `animId` met `victim` in the strike test (Human::testStrikes(),
     /// human/strike_shapes.h): the hit lands as a free hit does, with the clip's Anim Range List damage, from
-    /// `position` at game time `nowMs`, earning its rage; strikes() reports it after the update's actions.
+    /// `position` at game time `nowMs`, earning its rage; strikes() reports it after the update's actions. `animator`
+    /// is the attacker's, for the hit's sound.
     ///  0x0021b290 Strike_Contact (unknown)
-    void strikeContact(Combatant& victim, int animId, anim::Vec3 position, std::uint64_t nowMs);
+    void strikeContact(Combatant& victim, int animId, anim::Vec3 position, std::uint64_t nowMs,
+                       const HumanAnimator& animator);
     /// The object an object attack's hit struck this update (its handle); nothing otherwise.
     [[nodiscard]] std::optional<double> objectHit() const { return m_objectHit; }
     /// Starts the stereo theft (mode 3) at game time `nowMs`, a stage `stageTurns` turns of the stick: 683
@@ -216,6 +225,8 @@ class Fighter {
     /// The target the fight stance is locked onto (combat::lockedOn()): it has one and the lock-on settings lock; null
     /// otherwise. Locked, the human faces it every update and walks in the combat walk.
     [[nodiscard]] const Combatant* lockTarget() const;
+    /// The sounds its hits asked for since the last call (the hit sound of a hit it took), oldest first.
+    [[nodiscard]] std::vector<HumanSound> takeSounds() { return std::exchange(m_sounds, {}); }
     /// Whether it fights as a player (FighterProfile::player).
     [[nodiscard]] bool player() const { return m_player; }
 
@@ -366,10 +377,17 @@ class Fighter {
     // The block's clip: the shuffle with the stick pushed, the sustain otherwise.
     static void playBlock(const FighterInput& input, HumanAnimator& animator);
     // Lands a hit of attack `animId` and `damage`, and gives the rage it earns.
-    void landHit(int animId, int damage, const FighterInput& input);
+    void landHit(int animId, int damage, const FighterInput& input, const HumanAnimator& animator);
     // Applies a hit of attack `animId` and `damage` to `victim` from `attacker` (`heldMove`: a move in a hold, which
-    // plays its own victim clips), counts it and gives the rage it earns at `nowMs`.
-    void applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker, std::uint64_t nowMs);
+    // plays its own victim clips), counts it and gives the rage it earns at `nowMs`; `animator` is the attacker's.
+    void applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker, std::uint64_t nowMs,
+                  const HumanAnimator& animator);
+    // The striking material of attack `animId` (record `range`, may be null) for its hit sound: the limb its clip
+    // strikes with and the hit's strength (docs/research/sound-events.md#strike-human).
+    [[nodiscard]] std::uint32_t strikeMaterialOf(int animId, const combat::AnimRange* range,
+                                                 const HumanAnimator& animator) const;
+    // Reports the hit sound of `hit` landing on this human, struck as `struck` (docs/research/sound-events.md).
+    void reportHitSound(const IncomingHit& hit, std::uint32_t struck);
     // Gives the rage hit `animId` earns (`isThrow`: the throw bonus), only to a human that may rage (flag 0x2000000,
     // `Human_AddRage`).
     void earnRage(int animId, std::uint64_t nowMs, bool isThrow = false);
@@ -516,7 +534,8 @@ class Fighter {
     std::uint32_t m_clipSeen = 0;                 // the clip playing at the end of the last update, and its time
     float m_clipTimeSeen = 0.0F;
     combat::CombatRandom m_grabbedRandom;
-    combat::RepeatTracker m_repeat; // halves the rage of a long run of one kind; the throw bonus
+    combat::RepeatTracker m_repeat;   // halves the rage of a long run of one kind; the throw bonus
+    std::vector<HumanSound> m_sounds; // takeSounds()
     int m_hitsTaken = 0;
     int m_hitsBlocked = 0;
     int m_hitsDucked = 0;
@@ -524,6 +543,7 @@ class Fighter {
     int m_holdUnkept = 0; // own updates held since the grabber last kept the hold (keepHold())
     // The flags, together so the class packs.
     bool m_player = true;         // FighterProfile::player
+    bool m_bossClass = false;     // FighterProfile::bossClass
     bool m_l1Held = false;        // L1 held this update (record +0x00 0x8)
     bool m_tacklePending = false; // the tackle's intro plays; the victim reacts when its hit clip starts
     bool m_mountPending = false;  // the grab's mount (118) plays; the victim moves to the mount's point at 210

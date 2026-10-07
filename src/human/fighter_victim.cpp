@@ -11,6 +11,7 @@
 #include "combat/being_hit.h"
 #include "combat/combat_tuning.h"
 #include "combat/rage_awards.h"
+#include "combat/reactions.h"
 #include "human/fighter_clips.h"
 
 // The fighter's victim side: the player hit (a duck, a block, the health floor, the hit armour, the reaction, the stun,
@@ -84,11 +85,27 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     }
     const combat::CombatTuning& tuning = combat::combatTuning();
     const IncomingHit hit = m_victim.takePending();
+    // The hit sound's struck material, before the hit changes anything (Hit_ResolveBlock): down or dead, then a block
+    // or a duck, then a boss-class body, then the shape struck.
+    const bool down = m_victim.grounded();
+    const std::uint32_t struck = [&] {
+        if (down) {
+            return material::kDead;
+        }
+        if (m_combat.blocking()) {
+            return material::kBlock;
+        }
+        // **Coney's stand-in** for the shape struck (Coney's strikes do not test bones): a high hit strikes the head.
+        constexpr int kHighHit = 2;
+        return m_bossClass || combat::decodeHitCode(hit.code).height == kHighHit ? material::kHead : material::kTorso;
+    }();
     // 1. A duck lets the attack pass over the body.
     if (animator.animId() == clips::clipOf(combat::kBlockDodge) && animator.drivingClipPlaying()) {
+        reportHitSound(hit, material::kBlock);
         ++m_hitsDucked;
         return;
     }
+    reportHitSound(hit, struck);
     const VictimFrame here = frame(input);
     // 2. A held block cancels the hit with its block reaction, unless the hit breaks it.
     if (m_combat.blocking() && hit.react) {
@@ -160,6 +177,30 @@ void Fighter::takePending(const FighterInput& input, HumanAnimator& animator) {
     // The reaction shakes the players' cameras at the hit code's strength (docs/research/camera.md#shake).
     m_reactionShake =
         ReactionShake{.level = combat::decodeHitCode(hit.code).strength, .attackerIsPlayer = hit.attackerIsPlayer};
+}
+
+void Fighter::reportHitSound(const IncomingHit& hit, std::uint32_t struck) {
+    // A charging body's strike (Strike_Contact, before the hit's own sound): `HUMAN` against `HUMAN` at the attacker.
+    if (hit.charge) {
+        m_sounds.push_back(HumanSound{.kind = HumanSound::Kind::Impact,
+                                      .material1 = material::kHuman,
+                                      .material2 = material::kHuman,
+                                      .volume = 1.0F,
+                                      .victimDown = false,
+                                      .ownerIsPlayer = hit.attackerIsPlayer,
+                                      .at = hit.attacker});
+    }
+    // Only a strike that names its material, on a human with health left, sounds; it sounds at the attacker, his.
+    if (hit.strikeMaterial == 0 || m_health.depleted()) {
+        return;
+    }
+    m_sounds.push_back(HumanSound{.kind = HumanSound::Kind::Impact,
+                                  .material1 = hit.strikeMaterial,
+                                  .material2 = struck,
+                                  .volume = 1.0F,
+                                  .victimDown = m_victim.grounded(),
+                                  .ownerIsPlayer = hit.attackerIsPlayer,
+                                  .at = hit.attacker});
 }
 
 bool Fighter::stepVictim(const FighterInput& input, HumanAnimator& animator) {

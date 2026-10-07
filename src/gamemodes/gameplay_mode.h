@@ -295,6 +295,9 @@ class GameplayMode final : public GameMode {
     void sendDamageMessage(double human, double object);
     // The radios' update (Radio_Update): their sounds through the game's sound, the player's place and the progress.
     void updateRadios();
+    // Hands the sounds the scripts' humans asked for this step (their clips' animation sounds, the hits they took) to
+    // the game's sound, with what it reads of each (docs/research/sound-events.md).
+    void reportHumanSounds();
     // HuTag (docs/research/crimes.md#tagging): player 1 with paint starts the stick game at the spot, without paint
     // says 37 `nopaint` and gets event 14 unfinished; another human is the spot's tagger at once (Coney's stand-in
     // for the walk to the flag). A spray that starts calls the start callback.

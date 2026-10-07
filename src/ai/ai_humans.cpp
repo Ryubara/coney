@@ -78,8 +78,10 @@ Brain& AiHumans::spawn(const human::PlayerCharacter& character, const AiConfig& 
                                        human::kPlayerBodyScale, &character.ranges(), kind.damage, 0);
     human::Human& made = *entry.human;
     made.setSkeleton(&character.skeleton());
-    made.setFighterProfile(
-        human::FighterProfile{.player = false, .powerClass = config.powerClass, .health = kind.health});
+    made.setFighterProfile(human::FighterProfile{.player = false,
+                                                 .powerClass = config.powerClass,
+                                                 .health = kind.health,
+                                                 .bossClass = kind.category == human::kBossCategory});
     made.spawn(mesh, feet, headingDegrees);
     entry.current = snapshotOf(made);
     entry.previous = entry.current;

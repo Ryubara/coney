@@ -17,6 +17,7 @@
 #include "human/fighter.h"
 #include "human/human.h"
 #include "human/human_animator.h"
+#include "human/human_sounds.h"
 #include "human/pair_placement.h"
 #include "human/target_human.h"
 #include "human/victim.h"
@@ -535,4 +536,42 @@ TEST_CASE("six X1 hits in a row on the target halve the seventh's rage", "[human
     CHECK(gains.at(0) == 5);
     CHECK(gains.at(5) == 5);
     CHECK(gains.at(6) == 2);
+}
+
+TEST_CASE("a hit reports its sound at the attacker, a charge's body pair first, and contacts only while reporting",
+          "[human][combat][sound]") {
+    namespace material = coney::human::material;
+    const FightCharacter character;
+    Fight fight(character, 30.0F);
+    fight.human().reportSounds(true);
+    IncomingHit hit = hitOf(12, 14, 0x0a, 0x800);
+    hit.strikeMaterial = material::kFist;
+    hit.charge = true;
+    hit.attackerIsPlayer = true;
+    fight.human().takeHit(hit);
+    fight.run("", 1);
+    std::vector<coney::human::HumanSound> sounds;
+    for (const coney::human::HumanSound& sound : fight.human().takeSounds()) {
+        if (sound.kind == coney::human::HumanSound::Kind::Impact) {
+            sounds.push_back(sound);
+        }
+    }
+    REQUIRE(sounds.size() == 2);
+    CHECK(sounds[0].material1 == material::kHuman);
+    CHECK(sounds[0].material2 == material::kHuman);
+    CHECK(sounds[1].material1 == material::kFist);
+    CHECK(sounds[1].material2 == material::kHead); // code 0x0a strikes high
+    CHECK(sounds[1].ownerIsPlayer);
+    CHECK(sounds[1].at.y == Approx(kInFront.y));
+
+    // A contact the level reports is kept while the human reports sounds, and dropped otherwise.
+    const coney::human::HumanSound wall{.kind = coney::human::HumanSound::Kind::Impact,
+                                        .material1 = material::kFist,
+                                        .material2 = 116,
+                                        .volume = 116.0F};
+    fight.human().reportSound(wall);
+    CHECK(fight.human().takeSounds().size() == 1);
+    fight.human().reportSounds(false);
+    fight.human().reportSound(wall);
+    CHECK(fight.human().takeSounds().empty());
 }

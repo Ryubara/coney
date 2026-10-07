@@ -37,7 +37,8 @@ AnimClip clipWith(float frames, std::initializer_list<std::pair<std::uint16_t, s
     AnimClip clip;
     clip.duration = frames / 30.0F;
     for (const auto& [frame, type] : events) {
-        clip.events.push_back(ClipEvent{.frame = frame, .type = type, .word = 0, .position = {}, .rotation = {}});
+        clip.events.push_back(
+            ClipEvent{.frame = frame, .type = type, .value = 0, .word = 0, .position = {}, .rotation = {}});
     }
     return clip;
 }

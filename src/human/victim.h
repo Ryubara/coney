@@ -29,6 +29,10 @@ struct IncomingHit {
     bool ignoresArmour = false;      ///< The attacker is a player, raging, or has flag `0x200000` or `0x4000`.
     bool attackerFlag200000 = false; ///< The attacker's flag `0x200000` (strength + 1).
     bool attackerIsPlayer = false;   ///< A player's hit: its reaction shakes the attacker's camera.
+    /// The strike's material for its hit sound (human::strikeMaterial(), `Hit_ResolveBlock`); 0 for none.
+    std::uint32_t strikeMaterial = 0;
+    /// The attacker holds `0x1400000` (the run attack, the charge or the dive): the bodies' `HUMAN` pair sounds too.
+    bool charge = false;
 };
 
 /// What a human taking hits is, for its reaction (docs/research/combat.md#hit-codes).

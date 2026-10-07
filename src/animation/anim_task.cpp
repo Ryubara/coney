@@ -199,6 +199,11 @@ float GaitBlendTask::duration() const {
     return m_clips[upperLeads() ? lower + 1 : lower].clip->duration;
 }
 
+const AnimClip* GaitBlendTask::eventClip() const {
+    const std::size_t lower = lowerIndex();
+    return m_clips[upperLeads() ? lower + 1 : lower].clip;
+}
+
 std::uint32_t GaitBlendTask::animId() const {
     const std::size_t lower = lowerIndex();
     return m_clips[upperLeads() ? lower + 1 : lower].animId;
@@ -254,6 +259,9 @@ void AnimTaskStack::fireEvents(AnimTask& task, const AnimClip& clip, float befor
         const bool passed = wrapped ? (frame > from || frame <= to) : (frame > from && frame <= to);
         if (passed) {
             applyHeldFlagEvent(event.type, task, m_flags);
+            if (m_keepEvents) {
+                m_events.push_back(event);
+            }
         }
     }
 }
@@ -296,7 +304,9 @@ void AnimTaskStack::advance(float seconds) {
     // finished clip-then-next task gives back its bits and gives way to its next task, which starts.
     for (std::size_t i = 0; i < m_layers.size(); ++i) {
         Layer& layer = m_layers[i];
-        const AnimClip* clip = i == 0 ? layer.task->eventClip() : nullptr;
+        // A task with its events muted (task flag 0x10) fires none.
+        const bool muted = (layer.task->flags() & kTaskEventsMuted) != 0;
+        const AnimClip* clip = i == 0 && !muted ? layer.task->eventClip() : nullptr;
         const float before = layer.task->time();
         const std::uint32_t idBefore = layer.task->animId();
         layer.task->advance(seconds);
@@ -305,7 +315,12 @@ void AnimTaskStack::advance(float seconds) {
             m_startHook(layer.task->animId());
         }
         if (clip != nullptr) {
-            const float after = layer.task->eventClip() == clip ? layer.task->time() : clip->duration;
+            float after = layer.task->eventClip() == clip ? layer.task->time() : clip->duration;
+            // A gait blend's clips share one normalised time: when the lead passes to the other clip of the pair, the
+            // old leader's events fire up to the shared time, not to its end.
+            if (layer.task->type() == AnimTaskType::GaitBlend) {
+                after = layer.task->normalisedTime() * clip->duration;
+            }
             fireEvents(*layer.task, *clip, before, after, after < before);
         }
         if (std::unique_ptr<AnimTask> next = layer.task->takeReplacement(); next) {

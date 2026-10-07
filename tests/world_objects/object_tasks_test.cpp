@@ -176,7 +176,7 @@ TEST_CASE("a held object hangs from its bone at the take event's offset, slid to
     // A take event on bone 25 at (0.1, 0, 0), no turn; a grip of 0.39 m along the object's y.
     coney::anim::AnimClip clip;
     clip.events.push_back(coney::anim::ClipEvent{
-        .frame = 7, .type = 9, .word = 25, .position = Vec3{0.1F, 0, 0}, .rotation = coney::anim::Quat{}});
+        .frame = 7, .type = 9, .value = 0, .word = 25, .position = Vec3{0.1F, 0, 0}, .rotation = coney::anim::Quat{}});
     const std::optional<coney::world_objects::HeldAttachment> held =
         coney::world_objects::heldAttachment(clip, 0.5F, 0.39F);
     REQUIRE(held.has_value());

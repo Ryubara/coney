@@ -30,7 +30,8 @@ AnimClip eventClip(float frames, const std::vector<std::pair<std::uint16_t, std:
     AnimClip clip;
     clip.duration = frames / anim::kClipFrameRate;
     for (const auto& [frame, type] : events) {
-        clip.events.push_back(ClipEvent{.frame = frame, .type = type, .word = 0, .position = {}, .rotation = {}});
+        clip.events.push_back(
+            ClipEvent{.frame = frame, .type = type, .value = 0, .word = 0, .position = {}, .rotation = {}});
     }
     return clip;
 }

@@ -2,6 +2,7 @@
 // The play mode's part of the level's glass panes and doors (docs/research/objects.md#coneys-implementation): their
 // world, their ticks, player 1's hits on them and the lock pick (docs/research/crimes.md#lockpick).
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <format>
@@ -24,6 +25,7 @@
 #include "human/fighter.h"
 #include "human/fighter_clips.h"
 #include "human/human.h"
+#include "human/human_sounds.h"
 #include "human/humans.h"
 #include "human/locomotion.h"
 #include "human/locomotion_gate.h"
@@ -52,6 +54,30 @@ constexpr std::uint8_t kPlayerTheftByte = 2;
 constexpr float kLockPickReach = 1.5F;
 // The record bits a run attack, a charge or a dive holds, which make a human's hit kind 2 (docs/research/objects.md).
 constexpr std::uint32_t kRunAttackOrCharge = 0x1400000;
+// The record bits with which a strike on the level makes no sound (Strike_Contact).
+constexpr std::uint32_t kLevelStrikeQuiet = 0x400800;
+// The attacker's anim ids whose strikes on the level make no sound.
+constexpr std::array<std::uint32_t, 3> kLevelStrikeQuietAnims{2, 4, 0x1b2};
+// The volume of a strike on the level (Strike_Contact's 116, which the engine's 1 caps).
+constexpr float kLevelStrikeVolume = 116.0F;
+// A player's strike on a car sounds at half volume, which his doubling makes whole.
+constexpr float kPlayerCarStrikeVolume = 0.5F;
+// What the strike shapes mark struck once one has met the level (no object has this handle).
+constexpr double kLevelStruck = -1.0;
+
+// Reports the sound of a human's strike on the level, an object or a car at his feet: his fist, or his body
+// (`HUMAN`) while he charges, against `struck` (docs/research/sound-events.md#strike-object).
+// @orig 0x0021b290 Strike_Contact (unknown)
+void reportStrikeSound(human::Human& human, std::uint32_t struck, float volume, bool player) {
+    const bool charging = (human.gateInput().flags & kRunAttackOrCharge) != 0;
+    human.reportSound(human::HumanSound{.kind = human::HumanSound::Kind::Impact,
+                                        .material1 = charging ? human::material::kHuman : human::material::kFist,
+                                        .material2 = struck,
+                                        .volume = volume,
+                                        .victimDown = false,
+                                        .ownerIsPlayer = player,
+                                        .at = human.position()});
+}
 // The buttons that leave a lock pick running: cross presses, L1, R2, the d-pad and SELECT do nothing to it
 // (docs/research/crimes.md#lockpick); any other press abandons it.
 constexpr std::uint16_t kLockPickKeeps =
@@ -424,6 +450,10 @@ void PlayLevelMode::stepObjects() {
             std::vector<world_objects::CarHitReport> reports;
             const world_objects::CarPartMask struck = m_cars->humanHit(*attacked, feet, &reports);
             m_print(std::format("objects: car {:.0f} hit, parts {:#x}\n", *attacked, struck));
+            // A strike that reached a part sounds on the hood.
+            if (struck != 0) {
+                reportStrikeSound(m_player->human(), human::material::kCarHood, kPlayerCarStrikeVolume, true);
+            }
             // A car hit is damage done from where the player stands (message 6 from the boxes he is in), and the car
             // reports each damaged part (its message 0x19).
             if (world_objects::ObjectServices* services = m_objects->world.services; services != nullptr) {
@@ -473,8 +503,11 @@ void PlayLevelMode::strikeObjects(human::Human& human, std::span<const human::Po
     const anim::Vec3 feet = human.position();
     // A body not struck since the shapes came on takes message 1, with the hit kind of the attack record.
     human::StrikeShapes& strikes = human.strikeShapes();
-    const auto strike = [&](double object, anim::Vec3 point) {
+    const bool player = &human == &m_player->human();
+    const auto strike = [&](double object, anim::Vec3 point, std::uint8_t material) {
         strikes.markStruck(object);
+        // The object sounds as its type's material before it takes the hit.
+        reportStrikeSound(human, material, 1.0F, player);
         const bool took = m_objects->humanHit(
             object, world_objects::ObjectHit{
                         .attacker = handleOf(human),
@@ -504,7 +537,7 @@ void PlayLevelMode::strikeObjects(human::Human& human, std::span<const human::Po
                                                    corner(triangle, 2));
             });
             if (met != shapes.end()) {
-                strike(door.handle, met->a);
+                strike(door.handle, met->a, door.material);
                 break;
             }
         }
@@ -517,9 +550,42 @@ void PlayLevelMode::strikeObjects(human::Human& human, std::span<const human::Po
             const anim::Vec3 at = anim::lerp(shape.a, shape.b, static_cast<float>(i) / static_cast<float>(steps));
             for (const double pane : m_objects->glass.bodiesTouching(at, shape.radius)) {
                 if (!strikes.struck(pane)) {
-                    strike(pane, at);
+                    strike(pane, at, world_objects::material::kGlass);
                 }
             }
+        }
+    }
+    // Then the level itself.
+    strikeLevel(human, shapes, player);
+}
+
+void PlayLevelMode::strikeLevel(human::Human& human, std::span<const human::PosedShape> shapes, bool player) {
+    if (m_objects == nullptr || m_objects->world.collision == nullptr) {
+        return;
+    }
+    human::StrikeShapes& strikes = human.strikeShapes();
+    const std::uint32_t anim = human.animator().animId();
+    if (strikes.struck(kLevelStruck) || (human.gateInput().flags & kLevelStrikeQuiet) != 0 ||
+        std::ranges::find(kLevelStrikeQuietAnims, anim) != kLevelStrikeQuietAnims.end()) {
+        return;
+    }
+    // **Coney's stand-in** for the shapes' contact with the level mesh: each shape's segment as a ray against the
+    // level's triangles (an object's triangles are the objects' own strike above); the turn limits and state
+    // 0x4000000 that also keep it quiet are not modelled.
+    for (const human::PosedShape& shape : shapes) {
+        const anim::Vec3 along = anim::subtract(shape.b, shape.a);
+        const float length = anim::length(along);
+        if (length < 1e-4F) {
+            continue;
+        }
+        const raycast::Ray ray{.origin = {shape.a.x, shape.a.y, shape.a.z},
+                               .direction = {along.x / length, along.y / length, along.z / length},
+                               .length = length};
+        const std::optional<raycast::RayHit> hit = m_objects->world.collision->rayCast(ray, {}, 0);
+        if (hit && !m_objects->objectOfTriangle(hit->triangle)) {
+            strikes.markStruck(kLevelStruck);
+            reportStrikeSound(human, hit->material, kLevelStrikeVolume, player);
+            return;
         }
     }
 }

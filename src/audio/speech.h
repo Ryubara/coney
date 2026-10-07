@@ -34,12 +34,13 @@ class Speech {
         std::optional<double> arg;
     };
 
-    /// Plays the line `hash` at `at` for `human`. While he says another line, `interrupt` cuts it off (its callback
-    /// dropped); without it nothing plays. The line's handle, invalid when nothing plays.
+    /// Plays the line `hash` at `at` for `human` at `volume` (`duckable` false: a line that ducks the others). While
+    /// he says another line, `interrupt` cuts it off (its callback dropped); without it nothing plays. The line's
+    /// handle, invalid when nothing plays.
     /// @orig 0x0021e400 Human_PlaySpeech (unknown)
     /// @orig 0x0021e698 Human_PlaySpeechInterrupt (unknown)
     SoundHandle say(SoundEngine& engine, double human, std::uint32_t hash, const SpeakerPlace& at, bool interrupt,
-                    std::string callback, std::optional<double> arg);
+                    std::string callback, std::optional<double> arg, float volume = 1.0F, bool duckable = true);
     /// Whether `human` is saying a line.
     [[nodiscard]] bool speaking(const SoundEngine& engine, double human) const;
     /// Stops the line `human` is saying (its callback dropped).

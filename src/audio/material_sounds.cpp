@@ -15,17 +15,18 @@ constexpr std::uint32_t kHalfVolumeFoot = 0x23;
 
 } // namespace
 
-void MaterialSoundPlayer::start(std::uint32_t hash, float volume, float pitch, SoundVec at, std::uint32_t owner) {
+SoundHandle MaterialSoundPlayer::playSound(std::uint32_t hash, float volume, float pitch, SoundVec at,
+                                           std::uint32_t owner) {
     if (hash == 0 || m_sink == nullptr) {
-        return;
+        return {};
     }
     SoundPlay how;
     how.volume = volume;
     how.pitch = pitch;
     how.owner = owner;
     how.position = at;
-    static_cast<void>(m_sink->play(hash, how));
     ++m_started;
+    return m_sink->play(hash, how);
 }
 
 void MaterialSoundPlayer::playPair(float volume, std::uint32_t a, std::uint32_t b, SoundVec at, std::uint32_t fallback,
@@ -36,8 +37,8 @@ void MaterialSoundPlayer::playPair(float volume, std::uint32_t a, std::uint32_t 
         return;
     }
     // Column 2 first, then column 1.
-    start(sounds->sounds[1], volume * sounds->volumes[1], 1.0F, at, owner);
-    start(sounds->sounds[0], volume * sounds->volumes[0], secondPitch, at, owner);
+    static_cast<void>(playSound(sounds->sounds[1], volume * sounds->volumes[1], 1.0F, at, owner));
+    static_cast<void>(playSound(sounds->sounds[0], volume * sounds->volumes[0], secondPitch, at, owner));
 }
 
 void MaterialSoundPlayer::playMaterialPair(float volume, std::uint32_t a, std::uint32_t b, SoundVec at,
@@ -58,7 +59,7 @@ void MaterialSoundPlayer::playMaterialHit(float volume, std::uint32_t a, std::ui
         ++m_unmatched;
         return;
     }
-    start(sounds->sounds[0], volume * sounds->volumes[0], 1.0F, at, owner);
+    static_cast<void>(playSound(sounds->sounds[0], volume * sounds->volumes[0], 1.0F, at, owner));
 }
 
 void MaterialSoundPlayer::playAnimSound(float volume, std::uint32_t event, SoundVec at, std::uint32_t owner) {
@@ -67,7 +68,7 @@ void MaterialSoundPlayer::playAnimSound(float volume, std::uint32_t event, Sound
         ++m_unmatched;
         return;
     }
-    start(sounds->sounds[0], volume * sounds->volumes[0], 1.0F, at, owner);
+    static_cast<void>(playSound(sounds->sounds[0], volume * sounds->volumes[0], 1.0F, at, owner));
 }
 
 MaterialSoundPlayer::FootMaterial MaterialSoundPlayer::remapFootMaterial(std::uint32_t ground) {

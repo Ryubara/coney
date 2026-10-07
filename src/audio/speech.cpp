@@ -7,7 +7,7 @@
 namespace coney::audio {
 
 SoundHandle Speech::say(SoundEngine& engine, double human, std::uint32_t hash, const SpeakerPlace& at, bool interrupt,
-                        std::string callback, std::optional<double> arg) {
+                        std::string callback, std::optional<double> arg, float volume, bool duckable) {
     if (speaking(engine, human)) {
         if (!interrupt) {
             return {};
@@ -15,8 +15,13 @@ SoundHandle Speech::say(SoundEngine& engine, double human, std::uint32_t hash, c
         shutUp(engine, human);
     }
     // The owner is the speaker, so his lines are a player's when he is one (SoundEngine::setPlayerOwners()).
-    const SoundHandle sound = engine.play(
-        hash, SoundPlay{.owner = static_cast<std::uint32_t>(human), .position = at.position, .facing = at.facing});
+    SoundPlay how;
+    how.volume = volume;
+    how.duckable = duckable;
+    how.owner = static_cast<std::uint32_t>(human);
+    how.position = at.position;
+    how.facing = at.facing;
+    const SoundHandle sound = engine.play(hash, how);
     if (!sound.valid()) {
         return {};
     }

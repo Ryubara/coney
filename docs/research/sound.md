@@ -1310,6 +1310,27 @@ workers) that belong to this page, by address.
   music stopped, the level's emitters and lines forgotten). Each frame it puts the listener at player 1's camera
   (`SndSetListener(1)`: at player 1, 1.8 m above his feet), runs the ambient emitters and moves each line to its
   speaker; when a line ends it calls the line's script callback.
+- **The humans' sounds** (`HumanSoundEvents`, `repo:src/audio/human_sound_events.h`, from
+  [Sound events](sound-events.md)): a human keeps the type-11 clip events his animation passes (the newest task's
+  clip, a gait blend's leading clip, none from a task with flag `0x10`) and the hits he takes in an outbox
+  (`repo:src/human/human_sounds.h`); gameplay hands each scripted human's to `GameSound` every step with what the
+  sounds read of him (player or not, the ground under him, his heading, his target). `HumanSoundEvents` plays
+  `Human_OnAnimSoundEvent`'s table: footsteps and body falls on the remapped ground, the fixed kick pairs, the cloth
+  and swooshes, the fence rattles, the spray loop, the vocal ids as his lines (a woman's from her entries) and the
+  speech-command ids through `Speech`; and `Human_PlayImpactSound` for a landed strike, the striking material from
+  the limb and strength (`Hit_ResolveBlock`'s tables), the struck one `DEAD` on the ground, `BLOCK` when blocking or
+  ducking, `HEAD` for a boss or a high hit, else `TORSO`; a charging attacker's strike adds `HUMAN` against
+  `HUMAN`. A human's strike shapes on the level (`FIST` against the triangle met, at 116, once while the shapes stay
+  on, unless his bits `0x400800` or anims 2, 4 and `0x1b2` keep it quiet) and on a pane or door (against its type's
+  material), and player 1's object attack on a car (`CAR_HOOD` at 0.5 when a part was reached), sound as his, `HUMAN`
+  instead of `FIST` while he charges ([Sound events](sound-events.md#strike-object)). The SA id is the event's
+  32-bit word at `+8`.
+  **Coney's stand-ins**: the striking limb comes from the strike clip's name (`kick`, `stomp`, `knee` a foot;
+  `headbutt` the head; else a hand), not the striking shape's bone; nobody is hidden in shadow, burning or holding a
+  world object, the camera's combat framing is not told apart (the combat factor never applies), and only the
+  scripts' humans report sounds; there are no punch bags (`BAG`); a strike shape meets the level when its segment,
+  as a ray, crosses a level triangle, without the turn limits and state `0x4000000`; a pane sounds as `GLASS`; a
+  thrown human against the level (`Human_OnContact`) does not sound yet.
 - `VoiceTable` (`voice_table.cpp`, [The voice table](#voice-table)), `AmbientEmitters` (`ambient_emitters.cpp`,
   [Ambience](#ambience)) and `Speech` (`speech.cpp`, [Saying a speech command](#speech)): one line per human at a
   time, positional and directional at him, cut off by an interrupting one.
@@ -1340,8 +1361,8 @@ random track of the mood each frame's surroundings give when the mood changes; t
 health left targets player 1 with a fight or melee goal, else 0 (the hunted mood 2, its chase goals not built, never
 comes), the pick draws from the game's random index, and the fades are the music player's own. `SoundSetEffect` and
 `SoundEnableEffects` are kept in the game state only. Not built yet: reverb, the other ambient bindings
-(`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`), the game's own speech commands, and the clips' animation
-sounds (clip event 11, [Animation sounds](#anim-sounds)). The hub's sound bindings
+(`AddAmbientSoundEmitter`, `SetAmbientEmitterVolumeMod`) and the game's own speech commands outside the animation
+sounds. The hub's sound bindings
 (`repo:src/scripting/hub_world_bindings.cpp`): `EnableAmbientEmitter` switches an emitter off (it stops its sound and
 plays nothing more) and on; `SoundPlay` plays a sound once at a point; `SndLoadMatrix` empties the sound matrix and
 runs `<name>_preload.lua` when the name changes; `HuSay` speaks a line with no callback.

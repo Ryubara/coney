@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 
+#include "human/human_sounds.h"
 #include "scripting/lua_vm.h"
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
@@ -48,6 +49,26 @@ struct CommandCall {
     double target = 0.0;       ///< A human the speaker looks at for the line.
 };
 
+/// A human's sound as gameplay hands it to the game's sound (docs/research/sound-events.md): what his update asked for
+/// and what choosing its sounds reads of him.
+struct HumanSoundCall {
+    double human = 0.0;              ///< His script handle (the sounds' owner, his lines' speaker).
+    int characterType = -1;          ///< His `HuCreate` type (its `CfgChar` record: voice set, women's voices, class).
+    std::array<float, 3> position{}; ///< His feet.
+    float headingDegrees = 0.0F;     ///< His facing, degrees (0 along +y).
+    bool player = false;             ///< A player (human `+0x1b0` not -1).
+    std::uint32_t ground = 0;        ///< The ground's material under him (`+0x1d8`); 0 the default.
+    bool hiddenInShadow = false;     ///< Sneaking in shadow (state `0x200000`): his footsteps at half volume.
+    bool combatFraming = false;      ///< The camera frames his fight (`Camera_IsCombatFraming`).
+    bool burning = false;            ///< He burns (`+0x19b`).
+    bool targetIsPlayer = false;     ///< His target is a player (some lines louder).
+    bool hasThrowTarget = false;     ///< He has a target to throw at (a human or a flag).
+    std::optional<std::uint32_t> heldMaterial; ///< The material of the world object in his hand (type `+100`).
+    std::uint32_t heldModel = 0;               ///< That object's model hash (`+0xc4`).
+    int heldType = 0;                          ///< That object's type (`+0x86`; 8 a Molotov).
+    human::HumanSound sound;                   ///< What he asked for.
+};
+
 /// What the sound bindings and gameplay ask of the game's sound: configuration, the ambience, the music, the listener,
 /// the humans' speech and the level's loading. The audio implements it (audio/game_sound.h); a context without one
 /// (a test, `--no-audio`) plays nothing, and a speech binding then runs its callback at once, as when no line plays.
@@ -78,6 +99,11 @@ class SoundHost {
     virtual void setNonDuckableDuck(float factor) = 0;
     /// `SndSetPitchMod(pitch)`: the global pitch factor.
     virtual void setPitchFactor(float factor) = 0;
+
+    // ---- The humans' sounds (docs/research/sound-events.md) ----
+
+    /// A human's animation sound or hit sound, played as the game chooses it. Ignored by default.
+    virtual void humanSound(const HumanSoundCall& /*call*/) {}
 
     // ---- The sound matrix (docs/research/sound.md#sound-matrix); a host without one ignores them ----
 

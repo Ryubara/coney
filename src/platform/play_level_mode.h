@@ -350,9 +350,12 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     void stepObjects();
     // The strike test's objects (`Strike_Contact`'s object branch, docs/research/combat.md#moving-strikes): `human`'s
     // posed strike `shapes` strike each door or barrier whose enabled triangles they touch and each pane whose body
-    // they reach, once while the shapes stay on, with message 1 of the attack record's hit kind. **Coney's
-    // stand-ins**: the level mesh's impact sound and a car's hit are not made here.
+    // they reach, once while the shapes stay on, with message 1 of the attack record's hit kind, each sounding as
+    // its type's material; then the level (strikeLevel()). **Coney's stand-in**: a car's hit is not made here.
     void strikeObjects(human::Human& human, std::span<const human::PosedShape> shapes);
+    // The strike shapes' contact with the level mesh: once while the shapes stay on, the fist (or the charging body)
+    // against the triangle met, as `human`'s sound (`player`: he is player 1; docs/research/sound-events.md).
+    void strikeLevel(human::Human& human, std::span<const human::PosedShape> shapes, bool player);
     // The handle `human` goes by as an attacker: player 1's, its brain's, else none.
     [[nodiscard]] double handleOf(const human::Human& human) const;
     // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the

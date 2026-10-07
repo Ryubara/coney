@@ -3477,6 +3477,11 @@ subsystem = "Human"
 size = 72
 
 [[function]]
+address = 0x0021e3a8
+name = "Human_GetSoundVolumeScale"
+subsystem = "Human"
+
+[[function]]
 address = 0x0021e400
 name = "Human_PlaySpeech"
 subsystem = "Human"
@@ -3493,6 +3498,36 @@ address = 0x0021ec38
 name = "Human_StopSpeech"
 subsystem = "Human"
 size = 152
+
+[[function]]
+address = 0x0021f290
+name = "Human_PlayFootstep"
+subsystem = "Human"
+
+[[function]]
+address = 0x0021f410
+name = "Human_SayAnimLine"
+subsystem = "Human"
+
+[[function]]
+address = 0x0021f548
+name = "Human_PlayAnimSound"
+subsystem = "Human"
+
+[[function]]
+address = 0x0021f700
+name = "Human_OnAnimSoundEvent"
+subsystem = "Human"
+
+[[function]]
+address = 0x002205e0
+name = "Human_SayCommand"
+subsystem = "Human"
+
+[[function]]
+address = 0x00220ac8
+name = "Human_PlayImpactSound"
+subsystem = "Human"
 
 [[function]]
 address = 0x002212d0
@@ -5274,6 +5309,11 @@ address = 0x002911f8
 name = "Brain_GetAttackWeight"
 subsystem = "Human"
 size = 32
+
+[[function]]
+address = 0x00291ed0
+name = "Ambient_MayGesture"
+subsystem = "Human"
 
 [[function]]
 address = 0x00292330

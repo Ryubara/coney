@@ -33,6 +33,15 @@ std::int16_t s16At(std::span<const std::byte> bytes, std::size_t at) {
                                      static_cast<std::uint16_t>(std::to_integer<std::uint16_t>(bytes[at + 1]) << 8U));
 }
 
+// The unsigned 32-bit little-endian value at `at` of `bytes`, which the caller has checked holds it.
+std::uint32_t u32At(std::span<const std::byte> bytes, std::size_t at) {
+    std::uint32_t value = 0;
+    for (std::size_t i = 0; i < 4; ++i) {
+        value |= std::to_integer<std::uint32_t>(bytes[at + i]) << (8U * i);
+    }
+    return value;
+}
+
 // A position from three stored integers.
 Vec3 decodePosition(std::int16_t x, std::int16_t y, std::int16_t z) {
     return Vec3{static_cast<float>(x) * kPositionScaleXy, static_cast<float>(y) * kPositionScaleXy,
@@ -124,6 +133,8 @@ std::vector<ClipEvent> readEvents(std::span<const std::byte> bytes, std::size_t 
         ClipEvent event;
         event.frame = static_cast<std::uint16_t>(s16At(e, 0));
         event.type = static_cast<std::uint16_t>(s16At(e, 2));
+        event.value = s16At(e, 4);
+        event.argument = u32At(e, 8);
         event.word = static_cast<std::uint16_t>(s16At(e, 6));
         event.position = decodePosition(s16At(e, 8), s16At(e, 10), s16At(e, 12));
         event.rotation = decodeRotation(s16At(e, 14), s16At(e, 16), s16At(e, 18));

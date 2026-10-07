@@ -141,6 +141,32 @@ Human::Human(const characters::AnimSet& anims, const AnimSlots& slots,
     std::ranges::copy(bindRotations, m_bindRotations.begin());
 }
 
+std::vector<HumanSound> Human::takeSounds() {
+    std::vector<HumanSound> sounds;
+    // Clip event 11 carries the animation sound's id in its argument (0 plays nothing).
+    for (const anim::ClipEvent& event : m_animator.takeEvents()) {
+        if (event.type == kEventAnimSound) {
+            sounds.push_back(HumanSound{.kind = HumanSound::Kind::Anim, .animSound = event.argument});
+        }
+    }
+    sounds.insert(sounds.end(), m_contactSounds.begin(), m_contactSounds.end());
+    m_contactSounds.clear();
+    std::vector<HumanSound> hits = m_fighter.takeSounds();
+    sounds.insert(sounds.end(), hits.begin(), hits.end());
+    return sounds;
+}
+
+void Human::reportSound(const HumanSound& sound) {
+    if (m_reportSounds) {
+        m_contactSounds.push_back(sound);
+    }
+}
+
+void Human::reportSounds(bool on) {
+    m_reportSounds = on;
+    m_animator.keepEvents(on);
+}
+
 void Human::setFighterProfile(const FighterProfile& profile) {
     m_profile = profile;
     m_fighter = Fighter(m_ranges, 1, m_profile);
@@ -232,6 +258,7 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
         if (const auto hit = mesh->rayCast(ray, {}, 0); hit) {
             position.z = position.z + kSnapAbove - hit->t + kSpawnGap;
             m_groundNormal = fromMesh(hit->normal);
+            m_groundMaterial = hit->material;
         }
     }
     m_position = position;
@@ -431,6 +458,7 @@ void Human::snapToGround(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
         m_position = feet;
         m_lastGround = feet;
         m_groundNormal = fromMesh(hit->normal);
+        m_groundMaterial = hit->material;
         return;
     }
     // Nothing within 0.5 m below the feet: the human starts to fall.
@@ -539,6 +567,7 @@ void Human::moveInAir(const raycast::CollisionMesh& mesh) {
                                .length = kSnapLength};
         if (const auto hit = mesh.rayCast(ray, passThrough(), 0); hit && hit->normal.z > kFloorNormalZ) {
             m_groundNormal = fromMesh(hit->normal);
+            m_groundMaterial = hit->material;
             m_velocity.z = m_landingSpeed;
             land(anim::Vec3{feet.x, feet.y, m_landingFloorZ + kSnapAbove - hit->t});
             return;
@@ -931,6 +960,10 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     // (fight()). It is taken here, in the first pass, so that step() and human::Humans, which runs the passes itself,
     // both keep it.
     m_gaitBefore = gait();
+    // Nobody listens to its sounds: the hits' are dropped (the clips keep none).
+    if (!m_reportSounds) {
+        static_cast<void>(m_fighter.takeSounds());
+    }
     if (m_outOfWorld) {
         return;
     }
@@ -1052,7 +1085,7 @@ void Human::testStrikes(std::span<Human* const> victims, const StrikeContact* co
             });
             if (met) {
                 m_strikes.markStruckHuman(victim);
-                m_fighter.strikeContact(*victim, animId, m_position, m_updates * 1000 / 30);
+                m_fighter.strikeContact(*victim, animId, m_position, m_updates * 1000 / 30, m_animator);
             }
         }
     }

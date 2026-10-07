@@ -21,7 +21,8 @@ TEST_CASE("an attacker's clip warns by its events 0x24 (duck) and 0x26 (early bl
     // A clip with a duck event at frame 3 (0.1 s): found in the update that passes it, once.
     coney::anim::AnimClip clip;
     clip.duration = 0.6F;
-    clip.events.push_back(coney::anim::ClipEvent{.frame = 3, .type = 0x24, .word = 0, .position = {}, .rotation = {}});
+    clip.events.push_back(
+        coney::anim::ClipEvent{.frame = 3, .type = 0x24, .value = 0, .word = 0, .position = {}, .rotation = {}});
     CHECK_FALSE(warningBetween(clip, -1.0F, 0.0F).has_value());
     CHECK_FALSE(warningBetween(clip, 0.0F, 0.0667F).has_value());
     CHECK(warningBetween(clip, 0.0667F, 0.1F) == AttackWarning::Duck);
