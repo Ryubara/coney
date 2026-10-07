@@ -11,16 +11,32 @@ namespace {
 
 constexpr float kRadians = std::numbers::pi_v<float> / 180.0F;
 
+// The Hamilton product `a * b`: b's turn first, then a's.
+anim::Quat multiply(anim::Quat a, anim::Quat b) {
+    return anim::Quat{a.w * b.x + b.w * a.x + (a.y * b.z - a.z * b.y), a.w * b.y + b.w * a.y + (a.z * b.x - a.x * b.z),
+                      a.w * b.z + b.w * a.z + (a.x * b.y - a.y * b.x), a.w * b.w - (a.x * b.x + a.y * b.y + a.z * b.z)};
+}
+
 } // namespace
 
+anim::Quat scriptedOrientation(float headingDegrees, float pitchDegrees, float rollDegrees) {
+    // One turn per axis, (axis * sin(a / 2), cos(a / 2)), multiplied heading, pitch, roll.
+    const float h = headingDegrees * kRadians * 0.5F;
+    const float p = pitchDegrees * kRadians * 0.5F;
+    const float r = rollDegrees * kRadians * 0.5F;
+    const anim::Quat heading{0.0F, 0.0F, std::sin(h), std::cos(h)};
+    const anim::Quat pitch{std::sin(p), 0.0F, 0.0F, std::cos(p)};
+    const anim::Quat roll{0.0F, std::sin(r), 0.0F, std::cos(r)};
+    return multiply(multiply(heading, pitch), roll);
+}
+
 CameraView LockedCamera::view() const {
-    // The forward of the heading (0 facing +y, anticlockwise) tipped down by the pitch.
-    const float heading = headingDegrees * kRadians;
-    const float pitch = pitchDegrees * kRadians;
-    const anim::Vec3 forward{-std::sin(heading) * std::cos(pitch), std::cos(heading) * std::cos(pitch),
-                             -std::sin(pitch)};
+    // Turned by its angles; it aims at the point kAimDistance along its forward, and keeps its roll.
+    const anim::Quat orientation = scriptedOrientation(headingDegrees, pitchDegrees, rollDegrees);
+    const anim::Vec3 forward =
+        anim::transformDirection(anim::matrixFromQuat(orientation), anim::Vec3{0.0F, 1.0F, 0.0F});
     return CameraView{.position = position,
-                      .orientation = lookRotation(forward, rollDegrees * kRadians),
+                      .orientation = orientation,
                       .lookAt = anim::add(position, anim::scale(forward, kAimDistance)),
                       .fieldOfView = fieldOfView,
                       .nearClip = nearClip,

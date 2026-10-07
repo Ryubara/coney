@@ -266,6 +266,22 @@ void Gangs::setTargetable(int id, bool on) {
     }
 }
 
+void Gangs::setAttackable(int id, bool on) {
+    if (const Gang* gang = find(id); gang != nullptr) {
+        for (Brain* member : gang->m_members) {
+            member->setAttackable(on);
+        }
+    }
+}
+
+void Gangs::forget(const Brain& brain) {
+    for (int id = 0; id < static_cast<int>(kGangSlots); ++id) {
+        if (Gang* gang = find(id); gang != nullptr && gang->m_chosenTarget == &brain) {
+            gang->m_chosenTarget = nullptr;
+        }
+    }
+}
+
 void Gangs::setMessageHandler(int id, int message, std::string function) {
     Gang* gang = find(id);
     if (gang == nullptr) {

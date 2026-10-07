@@ -750,7 +750,7 @@ restores the original order.
   `0x00120038` `Cam_GetPoizo`, `0x00142578` `PoizoCam_Reverse`
 - **Used by** 2 of 467 script chunks (2 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 1 of 28 levels, first [`level14`](story.md#level14) (mission 12)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## CamSetFollowAngle {#camsetfollowangle}
 

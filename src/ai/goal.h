@@ -92,6 +92,11 @@ class Goal {
     virtual void end(Brain& /*brain*/) {}
     /// One update's work (`+0x44`).
     [[nodiscard]] virtual GoalStatus process(Brain& brain) = 0;
+    /// Its adjustment of `scorer`'s score for an enemy it may pick (vtable `+0x54`, ai::pickBestEnemy()): by default
+    /// the previous target (`previous`) gets TargetingPoints::previousTarget more.
+    /// @orig 0x0029f3a8 Goal_AdjustEnemyScoreDefault (unknown)
+    [[nodiscard]] virtual float adjustEnemyScore(const Brain& scorer, const Brain& candidate, const Brain* previous,
+                                                 float score) const;
 
   private:
     friend class Brain;

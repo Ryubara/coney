@@ -116,6 +116,14 @@ NativeFunction makeGangSetMsgHandler(const BindingContext& context) {
     });
 }
 
+// `GangSetAttackable(gang, on)`: `on` left out is true.
+// @orig 0x0035f790 GangSetAttackable (unknown)
+NativeFunction makeGangSetAttackable(const BindingContext& context) {
+    return hostCall(context, [](AiBindingHost& host, std::span<const Value> args) {
+        host.gangSetAttackable(intArg(args, 0), args.size() < 2 || boolArg(args, 1));
+    });
+}
+
 // `GangSetThreatResponse(gang, response)`.
 // @orig 0x0035f1f8 GangSetThreatResponse (unknown)
 NativeFunction makeGangSetThreatResponse(const BindingContext& context) {
@@ -143,6 +151,7 @@ void addGangBindings(LuaVm& vm, const BindingContext& context) {
     vm.registerFunction("GangGetStandingCount", makeGangGetStandingCount(context));
     vm.registerFunction("GangMakeEnemies", makeGangMakeEnemies(context));
     vm.registerFunction("GangMakeFriends", makeGangMakeFriends(context));
+    vm.registerFunction("GangSetAttackable", makeGangSetAttackable(context));
     vm.registerFunction("GangSetMsgHandler", makeGangSetMsgHandler(context));
     vm.registerFunction("GangSetThreatResponse", makeGangSetThreatResponse(context));
     vm.registerFunction("GangSuspend", makeGangSuspend(context));

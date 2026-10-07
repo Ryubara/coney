@@ -9,6 +9,7 @@
 #include "ai/fight_goal.h"
 #include "ai/gangs.h"
 #include "ai/melee_goal.h"
+#include "ai/perception.h"
 #include "ai/reaction_goals.h"
 #include "ai/script_services.h"
 #include "ai/story_goals.h"
@@ -48,7 +49,8 @@ void Brain::update(std::uint64_t nowMs) {
         const float distance = std::hypot(to.x, to.y);
         const float off =
             distance > 1e-4F ? std::fabs(human::wrapAngle(human::headingOf(to) - m_human->heading())) : 0.0F;
-        if (distance <= m_sightRange && off <= m_fieldOfView) {
+        if (distance <= m_sightRange && off <= m_fieldOfView &&
+            lineOfSight(m_collision, m_human->position(), attacker).clear) {
             deliverEvent(*this, BrainEvent{.id = kEventAttackWarning});
         }
     }
@@ -465,6 +467,14 @@ void Brain::releaseStick() {
 float Brain::distanceTo(const Brain& other) const {
     const anim::Vec3 to = anim::subtract(other.human().position(), m_human->position());
     return std::hypot(to.x, to.y);
+}
+
+bool Brain::canSee(const Brain& other, float range) const {
+    return canSeeHuman(m_collision, *m_human, other.human(), range);
+}
+
+bool Brain::hasLineOfSight(const Brain& other) const {
+    return lineOfSight(m_collision, m_human->position(), other.human().position()).clear;
 }
 
 bool Brain::fightable(const Brain& other) { return !other.human().fighter().health().depleted(); }

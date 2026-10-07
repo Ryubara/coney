@@ -166,16 +166,12 @@ enum class ChainButton : std::uint8_t { None, Cross, Square, SnapRight, SnapLeft
 /// not measured hits as `S1` does (its hit event is not mapped).
 [[nodiscard]] int attackHitUpdate(int animId, const CombatTuning& tuning);
 
-/// The updates, counted from a moving attack's clip start, during which its strike shapes are on: from `on` up to but
-/// not including `off` (docs/research/combat.md#moving-strikes).
-struct StrikeWindow {
-    int on = 0;
-    int off = 0;
-};
-
-/// The strike window of moving attack `animId`, measured at runtime: the charge 3-16, the dive 1-23, the run attack
-/// 1-7 and the walk attack 4-10; nothing for any other clip.
-[[nodiscard]] std::optional<StrikeWindow> movingStrikeWindow(int animId);
+/// Whether attack `animId` strikes the humans it meets through the attacker's strike shapes, across the window its
+/// clip's events open (human/strike_shapes.h), rather than at a hit update: the moving attacks, the charge (0), the
+/// dive (1), the walk attack (23) and the run attack (24) (docs/research/combat.md#moving-strikes). **Coney choice**:
+/// every other clip (the standing attacks, whose clips switch hand shapes on too, and the reactions that switch every
+/// shape on) hits a human only at its hit update, and its shapes strike objects alone.
+[[nodiscard]] bool strikesWithShapes(int animId);
 
 /// What one update of an attack did.
 struct ChainStep {

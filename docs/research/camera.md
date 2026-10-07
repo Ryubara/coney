@@ -1485,6 +1485,8 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
 - **blends** ([Blends](#blends)): `CameraBlend` lerps the position and look-at point and slerps the orientation from
   the view shown when it began to the destination's live view, linear in time, the far clip never growing; at the end
   the destination becomes current directly, which runs the follow camera's activation (`FollowCamera::activate()`).
+  A cut (`Cameras::cuts()` counts them) is drawn as a jump: a frame drawn between two steps takes the new camera
+  whole instead of sweeping from the old one, as the original draws only whole steps.
   A **locked camera** looks along its angles at a point 3 m ahead, its far clip at most 150. While it is current it
   keeps the humans `CamLockLocked` lists inside its sides (`camera::keepInView()`, `repo:src/camera/locked_camera.h`):
   the head point 1.4 m up is pushed to 0.3 m inside the left side, or else the right, the move's part along the side
@@ -1496,7 +1498,10 @@ by `src/human/player.*` and drawn by `--play-level` ([Building](../guides/buildi
   from a camera's view, `CamAddPoizoPoint` / `CamAddPoizoPointCam` append up to 8 points, and while it is current it
   flies the Catmull-Rom curve (each end point's neighbour standing in for the missing one), slerping the
   orientations, and gameplay calls each point's function as it is reached and the end function at the last, where
-  it stays. **Coney's choices**: a point's angles are read as a locked camera's, and the look-at point is 3 m ahead;
+  it stays. `CamReversePoizo` flies it back: the points reversed, each segment's time moved with it, the new end
+  function, the flight started again (**Coney's reading**: each point keeps its own function). A point's angles turn
+  it as a locked camera's do (`camera::scriptedOrientation()`, the same code in the original); **Coney's choice**: the
+  look-at point is 3 m ahead;
 - the **combat camera** ([Combat camera](#combat-camera)): with L1 held while the player has a fight target (`Fighter::target()`)
   the band's wanted near edge goes to 2.4 m (4.8, 4.44, 4.134, ... at 4.5/s) and the target pitch to 15°, the enemy's
   point (position + half its velocity) is turned toward 27° off the view's centre (0.455 of the excess, at most
@@ -1528,11 +1533,11 @@ The world viewer keeps its own free camera with the player camera's lens
   the pitch, and the way back goes to the maximum distance less 0.5, as the page says.
 - **The zoom distance** starts at the maximum (6.6 m, upper pitch limit 40°), as read in the street, for a camera no
   script configures (the sandbox, `--play-level` without scripts).
-- **Locked cameras' angles**: the heading is read as the original's (0 facing +y, anticlockwise) and the roll
-  positive turning the top to the right, but **the pitch positive looking down, the opposite of the original**
-  ([Scripted camera angles](#scripted-angles): positive looks up), so every scripted shot that looks down at its
-  subject looks up by as much in Coney; path points share the reading. The line of sight test, the blend's sphere
-  push and keep-in-view's ray (for a range above 0) are left out.
+- **Locked cameras**: their angles and path points' are turned into a view as the original does
+  (`camera::scriptedOrientation()`: `q = qz(heading) × qx(pitch) × qy(roll)`, heading anticlockwise from +y, a positive
+  pitch looking up, [Scripted camera angles](#scripted-angles)), and the play mode draws through the camera's own up,
+  so a roll shows. The line of sight test, the blend's sphere push and keep-in-view's ray (for a range above 0) are
+  left out.
 - **A follow camera that is not current** is not updated; it only notes where the player is, so a reset or the
   activation places it on him.
 - **The shake**: one shake on the manager, applied to whichever camera is current; the view offset (form not traced) is
@@ -1540,8 +1545,7 @@ The world viewer keeps its own free camera with the player camera's lens
   same 65 %. Coney has one player camera, so a player's hit shakes player 1's. The animation event that starts a shake
   is not wired: its type is not traced.
 - **Slow motion**: the combat timers (stun, ground and game time, `nowMs`) still count whole updates of 1/30 s, and the
-  cameras update by the frame's 1/30 s; whether the original's game time follows the step is not traced. A locked
-  camera's roll is not drawn yet: the play mode builds its view from the eye and look-at point with the world's up.
+  cameras update by the frame's 1/30 s; whether the original's game time follows the step is not traced.
 - **The sprint time** `+0x36c` counts only at the sprint gait and is zeroed off it, so every sprint arms the zoom (a
   run before the sprint, as in the street's runs, would otherwise keep it from arming). A sprint that starts while
   the band is still going back saves the band it was going back to, so a quick second sprint does not keep a band

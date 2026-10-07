@@ -13,6 +13,7 @@
 #include "ai/attack_kinds.h"
 #include "ai/goal.h"
 #include "ai/route_planner.h"
+#include "ai/targeting.h"
 #include "combat/stick.h"
 #include "human/human.h"
 
@@ -22,6 +23,10 @@
 // brains' place in the characters' step (ai::Brains), before every human's dispatcher, so what a brain writes is taken
 // that same update as a pad's press would be.
 // Research: docs/research/ai.md#brain, docs/research/ai.md#update-goals, docs/research/ai.md#targets
+
+namespace coney::raycast {
+class CollisionMesh;
+} // namespace coney::raycast
 
 namespace coney::ai {
 
@@ -54,8 +59,7 @@ inline constexpr std::size_t kMaxAttackSlots = 16;
 /// A brain's defaults, the sparring Warriors' of `level99` as read at runtime (docs/research/ai.md#level99): attackers
 /// allowed on one human at once (`+0x1e4`, `BrSetNumAttackSlots`), the melee ranges near and far (`+0x13c`, `+0x140`,
 /// `BrSetMeleeRange`; a fight ends beyond the far range × 1.1), and the range (`+0x130`) and field of view (`+0x12c`, a
-/// half-angle in radians) within which a brain counts an attack's start (event `0x10`). **Coney choice**: no line of
-/// sight is tested (Coney has none yet).
+/// half-angle in radians) within which a brain counts an attack's start (event `0x10`), with a clear line of sight.
 inline constexpr std::size_t kDefaultAttackSlots = 4;
 inline constexpr float kDefaultMeleeNear = 3.0F;
 inline constexpr float kDefaultMeleeFar = 5.0F;
@@ -131,6 +135,7 @@ struct FightSettings {
     /// `CfgAttackDelay` by kind (the table at `0x006b6658`), ms.
     std::array<int, kAttackKinds> attackDelaysMs = referenceAttackDelays();
     int baseBlockChance = kDefaultBaseBlockChance; ///< `CfgBaseChanceToBlock`, percent.
+    TargetingPoints targeting; ///< `CfgSetTargetingPoints` and `CfgSetTargetingPointsEx`: the enemy score's weights.
 };
 
 /// One human's brain.
@@ -317,6 +322,12 @@ class Brain {
     /// The attackers holding a slot on this brain's human (`+0x1a4`), and setting how many it allows (`+0x1e4`).
     [[nodiscard]] const std::vector<Brain*>& attackSlots() const { return m_slots; }
     void setAttackSlotCount(std::size_t count);
+    /// How many attackers it allows at once (`+0x1e4`).
+    [[nodiscard]] std::size_t attackSlotCount() const { return m_slotCount; }
+    /// Attackable (`+0x11f`, `GangSetAttackable`; 1 when a brain is made): other AI may attack its human now
+    /// (ai::attackableBy()).
+    [[nodiscard]] bool attackable() const { return m_attackable; }
+    void setAttackable(bool attackable) { m_attackable = attackable; }
     /// Threat response (`+0x21c`, `GangSetThreatResponse`): 0 never fights. **Coney choice**: 2 until set, as
     /// `level99` sets its fighters.
     void setThreatResponse(int response) { m_threatResponse = response; }
@@ -335,7 +346,7 @@ class Brain {
     [[nodiscard]] std::uint64_t attackableAtMs() const { return m_attackableAtMs; }
     void setAttackableAtMs(std::uint64_t ms) { m_attackableAtMs = ms; }
     /// How many attacks on the human were announced since the last update and seen (`+0x200`): the starts (event
-    /// `0x10`) within the range and field of view.
+    /// `0x10`) within the range and field of view, with a clear line of sight to the attacker.
     [[nodiscard]] int attackWarnings() const { return m_attackWarnings; }
     /// The range and field of view (half-angle, radians) an announced attack must be within (`+0x130`, `+0x12c`).
     void setSight(float range, float fieldOfView);
@@ -390,6 +401,13 @@ class Brain {
     /// The route planner of the level's path data (null when there is none: a move then goes straight).
     [[nodiscard]] RoutePlanner* planner() const { return m_planner; }
     void setPlanner(RoutePlanner* planner) { m_planner = planner; }
+    /// The level's collision the brain's sight rays are cast through (null for none: every line of sight is clear).
+    [[nodiscard]] const raycast::CollisionMesh* collision() const { return m_collision; }
+    void setCollision(const raycast::CollisionMesh* collision) { m_collision = collision; }
+    /// Whether this brain's human can see `other`'s (ai::canSeeHuman()) within `range`.
+    [[nodiscard]] bool canSee(const Brain& other, float range) const;
+    /// Whether the line of sight to `other`'s human is clear (ai::lineOfSight()).
+    [[nodiscard]] bool hasLineOfSight(const Brain& other) const;
     /// Why the last move failed (`+0x284`).
     [[nodiscard]] MoveFailure moveFailure() const { return m_moveFailure; }
     void setMoveFailure(MoveFailure failure) { m_moveFailure = failure; }
@@ -467,6 +485,7 @@ class Brain {
     float m_meleeFar = kDefaultMeleeFar;           // +0x140
     int m_goalsRanOut = 0;
     RoutePlanner* m_planner = nullptr;
+    const raycast::CollisionMesh* m_collision = nullptr;
     MoveFailure m_moveFailure = MoveFailure::None; // +0x284
     anim::Vec3 m_moveAim;                          // +0x90
     float m_moveAimRadius = 0.0F;                  // +0x118
@@ -483,6 +502,7 @@ class Brain {
     int m_seenHealth = -1;
     ScriptServices* m_services = nullptr;
     bool m_mayApproach = true; // +0x2d3
+    bool m_attackable = true;  // +0x11f
     // Goals popped while one of them may still be running (a goal's Process can start a new fight, which pops it):
     // freed once the update is over.
     std::vector<std::unique_ptr<Goal>> m_retired;

@@ -75,6 +75,7 @@ void Cameras::deleteCamera(double handle) {
         return;
     }
     if (m_current.kind == CameraKind::Locked && m_current.handle == handle) {
+        ++m_cuts;
         setCurrent(CameraRef{.kind = m_follow != nullptr ? CameraKind::Follow : CameraKind::None});
     }
 }
@@ -212,6 +213,14 @@ bool Cameras::addPathPoint(const PathPoint& point) {
     return true;
 }
 
+bool Cameras::reversePath(std::string onEnd) {
+    if (!m_path) {
+        m_path.emplace();
+    }
+    m_path->reverse(std::move(onEnd));
+    return true;
+}
+
 bool Cameras::addPathPointFrom(double camera, float seconds, std::string onReach) {
     const std::optional<CameraRef> ref = find(camera);
     if (!m_path || !ref) {
@@ -290,6 +299,7 @@ void Cameras::switchTo(CameraRef ref, float seconds) {
         m_current = ref;
         return;
     }
+    ++m_cuts;
     setCurrent(ref);
 }
 
@@ -392,6 +402,7 @@ void Cameras::beginScene(const CameraView& view) {
         m_stack.push_back(m_current);
     }
     m_sceneView = view;
+    ++m_cuts;
     setCurrent(CameraRef{.kind = CameraKind::Scene, .handle = 0.0});
 }
 

@@ -18,6 +18,7 @@
 #include "human/target_human.h"
 #include "platform/play_level_mode.h"
 #include "platform/play_lighting.h"
+#include "world_objects/cars.h"
 #include "world_objects/doors.h"
 #include "world_objects/level_objects.h"
 #include "world_objects/object_list.h"
@@ -148,6 +149,12 @@ void PlayLevelMode::drawWorldObjects(const human::PlayerSnapshot& snapshot) {
             const bool listed = m_objectList != nullptr && m_objectList->findByHash(door.modelHash) != nullptr;
             m_placed->place(door.handle, listed ? door.modelHash : door.fallbackHash, door.position, door.rotation,
                             PlacedObjects::Look{.tint = door.tint});
+        }
+    }
+    // Each car's stereo, until a theft takes it (docs/research/cars.md#windows).
+    if (m_cars != nullptr) {
+        for (const world_objects::StereoDraw& stereo : world_objects::stereoDraws(*m_cars)) {
+            m_placed->place(stereo.handle, stereo.modelHash, stereo.position, stereo.rotation, PlacedObjects::Look{});
         }
     }
     // The object in player 1's hand (docs/research/objects.md#held): the pick-up clip's take event gives the bone and

@@ -311,13 +311,14 @@ TEST_CASE("in a fight stance neither unarmed moving attack plays; the armed run 
     CHECK(squareAttack(in(Gait::Walk, 3)) == animSetClips(3).square);
 }
 
-TEST_CASE("a moving attack's strike shapes are on for its measured window", "[combat][attacks]") {
-    const auto charge = coney::combat::movingStrikeWindow(coney::combat::anim_id::kRunningAttackCharge);
-    REQUIRE(charge.has_value());
-    CHECK(charge->on == 3);
-    CHECK(charge->off == 16);
-    CHECK(coney::combat::movingStrikeWindow(coney::combat::anim_id::kRunningAttackDive)->off == 23);
-    CHECK(coney::combat::movingStrikeWindow(coney::combat::anim_id::kAttackFromRun)->off == 7);
-    CHECK(coney::combat::movingStrikeWindow(coney::combat::anim_id::kAttackFromWalk)->on == 4);
-    CHECK_FALSE(coney::combat::movingStrikeWindow(coney::combat::anim_id::kAttackX1).has_value());
+TEST_CASE("the moving attacks strike humans through their shapes, the others at their hit update",
+          "[combat][attacks]") {
+    using coney::combat::strikesWithShapes;
+    namespace id = coney::combat::anim_id;
+    CHECK(strikesWithShapes(id::kRunningAttackCharge));
+    CHECK(strikesWithShapes(id::kRunningAttackDive));
+    CHECK(strikesWithShapes(id::kAttackFromRun));
+    CHECK(strikesWithShapes(id::kAttackFromWalk));
+    CHECK_FALSE(strikesWithShapes(id::kAttackX1));
+    CHECK_FALSE(strikesWithShapes(id::kArmedAttackFromRun));
 }

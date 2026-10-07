@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "ai/melee_goal.h"
 
-#include <limits>
 #include <memory>
 
 #include "ai/brain.h"
@@ -10,6 +9,7 @@
 #include "ai/move_action.h"
 #include "ai/move_to_human_action.h"
 #include "ai/route_planner.h"
+#include "ai/targeting.h"
 #include "human/human.h"
 
 namespace coney::ai {
@@ -27,27 +27,6 @@ constexpr std::uint32_t kStraightRunMs = 2000;
 // Whether `other` can be fought now: health left and in the world (the original's valid-target test `0x0028d4b0`).
 bool valid(const Brain& other) { return Brain::fightable(other) && !other.human().outOfWorld(); }
 
-// The target to fight: the current one while valid and listed, else the nearest valid enemy (**stand-in** for the
-// enemies' scores); null when there is none.
-Brain* chooseTarget(Brain& brain) {
-    Brain* current = brain.target();
-    Brain* nearest = nullptr;
-    float best = std::numeric_limits<float>::max();
-    for (Brain* enemy : brain.enemies()) {
-        if (!valid(*enemy)) {
-            continue;
-        }
-        if (enemy == current) {
-            return current;
-        }
-        if (const float distance = brain.distanceTo(*enemy); distance < best) {
-            best = distance;
-            nearest = enemy;
-        }
-    }
-    return nearest;
-}
-
 } // namespace
 
 void MeleeGoal::start(Brain& brain) {
@@ -62,13 +41,10 @@ GoalStatus MeleeGoal::process(Brain& brain) {
     if (brain.actionCount() > 0) {
         return GoalStatus::Stop;
     }
-    // 2. The target.
+    // 2. The target: the best-scoring enemy (every term but the leader's).
     Brain* target = nullptr;
     if (brain.threatResponse() != 0) {
-        target = chooseTarget(brain);
-        if (target != nullptr) {
-            brain.setTarget(target);
-        }
+        target = pickBestEnemy(brain, this, score_term::kMelee);
     } else {
         target = brain.target();
         if (target == nullptr || !valid(*target) || !brain.hasAttackSlot()) {

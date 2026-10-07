@@ -1291,7 +1291,8 @@ Coney's stand-ins for the world objects, where this page is silent:
 - **In play** (`repo:src/gamemodes/gameplay_mode.h`, `repo:src/platform/play_level_objects.cpp`): gameplay owns the
   level's `LevelObjects`; the boot scripts' recorded `CfgSetGlassProperties` calls are applied before the level script
   spawns into them. The play mode gives them the level's collision mesh and path data, ticks them twice a step, and
-  sends player 1's landed hit to the pane or door the strike meets. A broken barrier is removed at its next 60-tick
+  sends each human's strike-shape contacts to the pane or door the shapes meet
+  ([Combat](combat.md#moving-strikes)). A broken barrier is removed at its next 60-tick
   update: its handlers get message 2 (itself, `NilHandle`) and its spawn record goes for good. It draws each swinging
   door's leaves (hinged at
   their positions, `w` the type's `CfgObj` argument 15, swinging by the 28-tick slerp of [Leaves](#leaves)) and each
@@ -1303,7 +1304,7 @@ Coney's stand-ins for the world objects, where this page is silent:
 - **Disc check (NTSC-U, counts only):** `coney_tests "[disc][objects]"`: `level2` places its 26 doors (14 swinging, 12
   barriers, 21 leaves), every type configured by a `CfgObj`, and 25 panes; 19 glass types are set. `coney
   --play-level level2` hands all of them to the play mode; three plain punches (4 damage each) break a 10-hitpoint
-  `dyn_door_fence` barrier, whose triangles then let the strike through.
+  `dyn_door_fence` barrier.
 
 Coney's stand-ins, where this page is silent:
 
@@ -1321,12 +1322,11 @@ Coney's stand-ins, where this page is silent:
   its leaves once broken. Game state bits 2 and 4 are not read. An
   object type no `CfgObj` names is a swinging door of 100 hitpoints.
 - Square with no human in front aims at a whole pane (its centre) as `Player_PickTarget`'s object pass does
-  ([Combat](combat.md#targets)); the object attack's hit breaks that pane. Doors are not object targets yet. Any other
-  hit meets a pane or door along a ray 1 m above the feet, along the facing, as long as the attack's reach. A moving
-  attack (the charge, dive, run and walk attacks) casts that ray every update of its strike window
-  ([Combat](combat.md#moving-strikes)) instead of its strike shapes, 0.8 m long (1.05 m for the dive: where the shapes
-  first met the fence), striking each object once per window; the broken fence does not stop the charge, whose
-  triangles are off at once. Thrown
+  ([Combat](combat.md#targets)); the object attack's hit breaks that pane. Doors are not object targets yet. Every other
+  hit reaches an object through the strike shapes ([Combat](combat.md#moving-strikes)): a segment shape meets a
+  pane's box as spheres every 5 cm along it, and a door through its two triangles while they are enabled. A broken
+  barrier's triangles stay on until its removal, standing for the body the break leaves (`dyn_door_wall_a`, whose
+  body goes, and `dyn_door_vargas`, which is never removed, turn them off at the break). Thrown
   objects do not reach the objects yet: nothing is thrown in play.
 - Sounds: a name hash plays on the effects bus at its recorded volume, with no 3D attenuation or pan; a material
   pair's sound and the lock pick's click are counted, not played (no sound matrix or interface cues yet). Shards,

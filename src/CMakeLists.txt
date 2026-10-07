@@ -227,12 +227,14 @@ target_sources(coney_core PRIVATE
     human/locomotion.cpp
     human/pair_placement.cpp
     human/fighter.cpp
+    human/fighter_counter.cpp
     human/fighter_grab.cpp
     human/fighter_script.cpp
     human/fighter_victim.cpp
     human/player.cpp
     human/player_trace.cpp
     human/stamina.cpp
+    human/strike_shapes.cpp
     human/target_human.cpp
     human/turn_and_slide.cpp
     human/victim.cpp)
@@ -250,6 +252,7 @@ target_sources(coney_core PRIVATE
     ai/engage_goals.cpp
     ai/melee_goal.cpp
     ai/pedestrian_goal.cpp
+    ai/perception.cpp
     ai/fight_goal.cpp
     ai/formations.cpp
     ai/gangs.cpp
@@ -273,6 +276,7 @@ target_sources(coney_core PRIVATE
     ai/story_goals.cpp
     ai/story_tactics.cpp
     ai/tactic.cpp
+    ai/targeting.cpp
     ai/tactic_attack.cpp
     ai/tactic_confront.cpp
     ai/tactic_domination.cpp
@@ -281,6 +285,7 @@ target_sources(coney_core PRIVATE
     ai/turn_action.cpp)
 # Combat: the player's commands, attack chains, damage, grabs and meters (docs/research/combat.md).
 target_sources(coney_core PRIVATE
+    combat/ai_counter.cpp
     combat/anim_ranges.cpp
     combat/attacks.cpp
     combat/being_hit.cpp

@@ -95,6 +95,10 @@ class Gang {
     /// the first member that is. Null when none is. **Coney choice**: "down" is Coney's grounded state.
     /// @orig 0x00165678 Gang_GetLeader (unknown)
     [[nodiscard]] Brain* leader() const;
+    /// The gang's chosen target (`+0x10`): the enemy its members score 400 points more and the Warriors may hit when a
+    /// street civilian (ai::attackableBy()); null for none.
+    [[nodiscard]] Brain* chosenTarget() const { return m_chosenTarget; }
+    void setChosenTarget(Brain* target) { m_chosenTarget = target; }
 
     /// `member`'s event, before its brain has it (`Gang_OnEvent`): while scripts run, the message handler for the
     /// event's id is called: for 18 with (member, other, standing()), for 2 with (member, other, the headcount), for
@@ -118,6 +122,7 @@ class Gang {
     bool m_suspended = false;
     bool m_invincible = false;
     std::vector<Brain*> m_members;
+    Brain* m_chosenTarget = nullptr;
     std::unique_ptr<Tactic> m_tactic;
     std::map<int, std::string> m_handlers;
     GangOrders m_orders;
@@ -197,6 +202,11 @@ class Gangs {
     /// human::ScriptState::targetable). Later members keep their own.
     /// @orig 0x0016bac0 Gang_SetTargetable (unknown)
     void setTargetable(int id, bool on);
+    /// `GangSetAttackable`: the attackable byte (brain `+0x11f`) of every current member; later members keep their own.
+    /// @orig 0x0016bb58 Gang_SetAttackable (unknown)
+    void setAttackable(int id, bool on);
+    /// Forgets `brain` as any gang's chosen target: it is going away.
+    void forget(const Brain& brain);
     /// `GangSetMsgHandler`: the Lua function `function` handles message `message` (empty clears it).
     /// @orig 0x00164bb8 Gang_SetMessageHandler (unknown)
     void setMessageHandler(int id, int message, std::string function);

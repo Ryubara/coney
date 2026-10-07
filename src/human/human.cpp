@@ -3,12 +3,14 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <memory>
 #include <numbers>
 #include <optional>
 
 #include "animation/anim_clip.h"
 #include "animation/anim_task.h"
+#include "combat/anim_ids.h"
 #include "combat/attacks.h"
 #include "combat/being_hit.h"
 #include "combat/combat_tuning.h"
@@ -25,6 +27,17 @@ namespace coney::human {
 namespace {
 
 constexpr float kPi = std::numbers::pi_v<float>;
+// A human's capsule (docs/research/physics.md): its radius and height before the body scale.
+constexpr float kStrikeCapsuleRadius = 0.35F;
+constexpr float kStrikeCapsuleHeight = 2.0F;
+// Beyond this between the feet no strike shape can meet another body's (each reaches well under 1.5 m from its feet),
+// so the victim is not posed.
+constexpr float kStrikeBroadReach = 3.0F;
+// **Coney's reading** of a charge stopping dead at a wall (docs/research/combat.md#moving-strikes): `Human_OnContact`
+// answers the slide response, which takes the move into the wall away, so a charge whose sweep kept less than this
+// share of its move met the wall head-on; it then does not move again before its clip ends, as seen at runtime (why is
+// not traced).
+constexpr float kChargeStopShare = 0.5F;
 // The idle a pick-up returns to (388, the plain idle).
 constexpr std::uint32_t kPickUpIdle = 388;
 // The sweep slides along what it hits up to this many times.
@@ -194,6 +207,8 @@ void Human::spawn(const raycast::CollisionMesh* mesh, anim::Vec3 position, float
     m_stamina = Stamina(staminaTuning().maximum);
     m_sprinting = false;
     m_jumping = false;
+    m_strikes.clear();
+    m_chargeStopped = false;
     m_lean = 0.0F;
     // A placement first breaks any pair the human is in (Human_SetTransform calls Human_BreakPair,
     // docs/research/combat.md#pair-break), so its partner is let go; then the fighting starts afresh and the flags the
@@ -407,13 +422,32 @@ void Human::moveOnGround(const raycast::CollisionMesh& mesh) {
     // On the ground the velocity has no z: walking climbs only through the snap. A slope slows the human, uphill and
     // downhill alike.
     m_velocity.z = 0.0F;
+    // A charge stopped dead against a wall stays stopped until its clip ends.
+    const bool charging = m_animator.animId() == static_cast<std::uint32_t>(combat::anim_id::kRunningAttackCharge);
+    m_chargeStopped = m_chargeStopped && charging;
+    if (m_chargeStopped) {
+        m_velocity.x = 0.0F;
+        m_velocity.y = 0.0F;
+        snapToGround(mesh, m_position);
+        return;
+    }
     const float factor = slopeFactor(m_groundNormal.z);
     const anim::Vec3 displacement{m_velocity.x * factor * m_stepSeconds, m_velocity.y * factor * m_stepSeconds, 0.0F};
     anim::Vec3 feet = m_position;
     if (const auto moved = sweep(mesh, m_position, displacement); moved) {
         feet = *moved;
         m_blockedUpdates = 0;
-        keepSlidVelocity(anim::subtract(*moved, m_position), displacement, factor);
+        const anim::Vec3 slid = anim::subtract(*moved, m_position);
+        if (charging && anim::length(slid) < kChargeStopShare * anim::length(displacement)) {
+            // The charge met a wall head-on: it goes on to the wall along its own line, with no slide, and stops.
+            const anim::Vec3 along = anim::normalise(displacement);
+            feet = anim::add(m_position, anim::scale(along, std::max(0.0F, anim::dot(slid, along))));
+            m_velocity.x = 0.0F;
+            m_velocity.y = 0.0F;
+            m_chargeStopped = true;
+        } else {
+            keepSlidVelocity(slid, displacement, factor);
+        }
     } else {
         // Blocked: the body stays and its horizontal velocity goes.
         m_velocity.x = 0.0F;
@@ -552,7 +586,8 @@ void Human::fight(std::span<Combatant* const> targets) {
                                   .nowMs = nowMs,
                                   .targets = targets,
                                   .stepSeconds = m_stepSeconds,
-                                  .objects = m_objectTargets},
+                                  .objects = m_objectTargets,
+                                  .strikeShapes = m_skeleton != nullptr},
                      m_animator, m_heading);
 }
 
@@ -829,6 +864,7 @@ void Human::animate(const raycast::CollisionMesh* mesh) {
     }
     sendWarnings(before, beforeId, beforeTime);
     noteSlowMotion(before, beforeId, beforeTime);
+    noteStrikeEvents(before, beforeId, beforeTime);
 }
 
 void Human::noteSlowMotion(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
@@ -855,6 +891,86 @@ void Human::noteSlowMotion(const anim::AnimTask* before, std::uint32_t beforeId,
         }
     }
     m_slowMotionEvent = found;
+}
+
+void Human::noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {
+    const anim::AnimTask* top = m_animator.tasks().top();
+    if (m_strikes.anyOn() && (top == nullptr || top->animId() != m_strikeAnim)) {
+        m_strikes.clear();
+    }
+    if (top == nullptr || top->eventClip() == nullptr) {
+        return;
+    }
+    // From the clip's start when it began this step (or another clip took the top), else from where it was.
+    const bool same = top == before && top->animId() == beforeId && top->time() >= beforeTime;
+    const int from = same ? anim::eventFrame(beforeTime) : -1;
+    const int to = anim::eventFrame(top->time());
+    for (const anim::ClipEvent& event : top->eventClip()->events) {
+        const bool strike = event.type == kEventStrikeOn || event.type == kEventStrikeOff ||
+                            event.type == kEventStrikeAllOn || event.type == kEventStrikeAllOff;
+        if (strike && event.frame > from && event.frame <= to) {
+            m_strikes.onEvent(event);
+            m_strikeAnim = top->animId();
+        }
+    }
+}
+
+BodyPlacement Human::placement() const {
+    return BodyPlacement{.feet = m_position, .heading = m_heading, .lean = m_lean, .scale = m_scale};
+}
+
+std::vector<PosedShape> Human::posedStrikeShapes(bool targets) const {
+    if (m_skeleton == nullptr) {
+        return {};
+    }
+    std::vector<StrikeShapeDef> defs;
+    if (targets) {
+        std::ranges::copy_if(strikeShapeDefs(), std::back_inserter(defs), &StrikeShapeDef::target);
+    } else {
+        defs = m_strikes.active();
+    }
+    const auto bones = anim::boneTransforms(*m_skeleton, pose());
+    std::vector<PosedShape> posed = poseStrikeShapes(defs, bones, placement());
+    // The capsule, while its strike flag is on: upright, its radius round the 2 m from the feet up.
+    if (!targets && m_strikes.capsuleOn()) {
+        const float radius = kStrikeCapsuleRadius * m_scale;
+        const float top = kStrikeCapsuleHeight * m_scale;
+        posed.push_back(PosedShape{.a = anim::add(m_position, anim::Vec3{0.0F, 0.0F, radius}),
+                                   .b = anim::add(m_position, anim::Vec3{0.0F, 0.0F, top - radius}),
+                                   .radius = radius,
+                                   .bone = -1});
+    }
+    return posed;
+}
+
+void Human::testStrikes(std::span<Human* const> victims, const StrikeContact* contact) {
+    if (!m_strikes.anyOn() || m_skeleton == nullptr || m_outOfWorld) {
+        return;
+    }
+    const std::vector<PosedShape> shapes = posedStrikeShapes(false);
+    const int animId = static_cast<int>(m_animator.animId());
+    if (combat::strikesWithShapes(animId)) {
+        for (Human* victim : victims) {
+            // A body is struck once while the shapes stay on; one far beyond any shape's reach is not posed.
+            const anim::Vec3 to = anim::subtract(victim->position(), m_position);
+            if (victim == this || m_strikes.struckHuman(victim) || victim->m_skeleton == nullptr ||
+                victim->outOfWorld() || std::hypot(to.x, to.y) > kStrikeBroadReach) {
+                continue;
+            }
+            const std::vector<PosedShape> body = victim->posedStrikeShapes(true);
+            const bool met = std::ranges::any_of(shapes, [&body](const PosedShape& shape) {
+                return std::ranges::any_of(body,
+                                           [&shape](const PosedShape& part) { return shapesOverlap(shape, part); });
+            });
+            if (met) {
+                m_strikes.markStruckHuman(victim);
+                m_fighter.strikeContact(*victim, animId, m_position, m_updates * 1000 / 30);
+            }
+        }
+    }
+    if (contact != nullptr && *contact) {
+        (*contact)(*this, shapes);
+    }
 }
 
 void Human::sendWarnings(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime) {

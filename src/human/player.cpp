@@ -121,6 +121,7 @@ Player::Player(const PlayerCharacter& character, const raycast::CollisionMesh* m
     if (playerClass.powerClass) {
         m_human.setFighterProfile(FighterProfile{.player = true, .powerClass = *playerClass.powerClass});
     }
+    m_human.setSkeleton(&character.skeleton());
     m_humans.add(m_human, true);
     m_human.spawn(mesh, start.position, start.headingDegrees);
     m_camera = camera::FollowCamera(m_human.position(), m_human.heading());
@@ -162,6 +163,8 @@ PlayerSnapshot Player::capture() const {
         const float ahead = std::max(anim::distance(view.position, view.lookAt), 1.0F);
         snapshot.cameraEye = view.position;
         snapshot.cameraTarget = anim::add(view.position, anim::scale(camera::viewForward(view), ahead));
+        snapshot.cameraUp = camera::viewUp(view);
+        snapshot.cameraCuts = m_cameras->cuts();
         snapshot.fieldOfView = view.fieldOfView;
         snapshot.nearClip = view.nearClip;
         snapshot.farClip = view.farClip;
@@ -191,13 +194,17 @@ PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot&
     if (alpha <= 0.0F) {
         return previous;
     }
+    // Across a cut the camera jumps, as the original's does.
+    const PlayerSnapshot& from = previous.cameraCuts == current.cameraCuts ? previous : current;
     return PlayerSnapshot{.feet = anim::lerp(previous.feet, current.feet, alpha),
                           .heading =
                               wrapAngle(previous.heading + wrapAngle(current.heading - previous.heading) * alpha),
                           .lean = previous.lean + (current.lean - previous.lean) * alpha,
                           .pose = anim::blendPoses(previous.pose, current.pose, alpha),
-                          .cameraEye = anim::lerp(previous.cameraEye, current.cameraEye, alpha),
-                          .cameraTarget = anim::lerp(previous.cameraTarget, current.cameraTarget, alpha),
+                          .cameraEye = anim::lerp(from.cameraEye, current.cameraEye, alpha),
+                          .cameraTarget = anim::lerp(from.cameraTarget, current.cameraTarget, alpha),
+                          .cameraUp = anim::lerp(from.cameraUp, current.cameraUp, alpha),
+                          .cameraCuts = current.cameraCuts,
                           .fieldOfView = current.fieldOfView,
                           .nearClip = current.nearClip,
                           .farClip = current.farClip};

@@ -153,6 +153,10 @@ class Cameras {
     /// camera or for a handle that names no camera.
     /// @orig 0x0011cc68 Camera_AddPoizoPointCam (unknown)
     bool addPathPointFrom(double camera, float seconds, std::string onReach);
+    /// `CamReversePoizo`: the path camera flown back (PathCamera::reverse()), made first when there is none; true, as
+    /// the original's always has one.
+    /// @orig 0x0011cb70 Camera_ReversePoizo (unknown)
+    bool reversePath(std::string onEnd);
     /// The path camera, once made.
     [[nodiscard]] const PathCamera* path() const { return m_path ? &*m_path : nullptr; }
     /// The script functions the path camera reached since the last call (its points' and its end's), in order: the
@@ -245,6 +249,9 @@ class Cameras {
     [[nodiscard]] bool blending() const { return m_blend.has_value(); }
     /// What the current camera shows, after the last update (with the shake's offset while switch 6 is on).
     [[nodiscard]] const CameraView& view() const { return m_view; }
+    /// How many cuts (a switch with no blend) there have been: a renderer drawing between two steps must not sweep the
+    /// view across one, as the original draws only whole steps.
+    [[nodiscard]] std::uint32_t cuts() const { return m_cuts; }
 
   private:
     // The view of the camera `ref` names now, without the shake.
@@ -274,6 +281,7 @@ class Cameras {
     WinCameraSettings m_winSettings;
     Placer m_place;
     CameraRef m_current;
+    std::uint32_t m_cuts = 0;
     std::optional<CameraBlend> m_blend; // toward m_current
     std::vector<CameraRef> m_stack;
     CameraView m_sceneView;

@@ -24,6 +24,22 @@ std::uint32_t componentByte(float component) {
     return static_cast<std::uint32_t>(scaled);
 }
 
+// A window's burst direction in world axes (`0x0038a830`): along the car's −x for the left windows 15 and 19, +x for
+// 17 and 21; zero for any other part. **Coney's reading**: the part frame's x taken as the car's x (the windows'
+// frames are not turned on the page).
+anim::Vec3 windowBurst(const Car& car, std::uint32_t part) {
+    float side = 0.0F;
+    if (part == 15 || part == 19) {
+        side = -1.0F;
+    } else if (part == 17 || part == 21) {
+        side = 1.0F;
+    }
+    if (side == 0.0F) {
+        return anim::Vec3{};
+    }
+    return anim::transformDirection(anim::matrixFromQuat(anim::normalise(car.rotation)), anim::Vec3{side, 0.0F, 0.0F});
+}
+
 } // namespace
 
 std::uint32_t packCarColour(const std::array<float, 4>& components) {
@@ -163,6 +179,13 @@ bool Cars::damagePart(double handle, std::uint32_t part, float amount, bool inst
     }
     car->removedKept |= bit;
     car->dirty = true;
+    m_breaks.push_back(CarPartBreak{.car = handle,
+                                    .part = part,
+                                    .window = (kCarWindowParts & bit) != 0,
+                                    .instant = instant,
+                                    .burst = windowBurst(*car, part),
+                                    .carPosition = car->position,
+                                    .carRotation = car->rotation});
     if (part == kBootPart && !instant && car->trunkLoaded) {
         car->trunkLoaded = false;
         releaseTrunk(*car);
@@ -258,5 +281,19 @@ bool Cars::takeStereo(double handle) {
 }
 
 anim::Vec3 Cars::stereoPosition(const Car& car) { return carStereoPosition(car); }
+
+std::vector<StereoDraw> stereoDraws(const Cars& cars) {
+    static const std::uint32_t modelHash = crc32(kCarStereoType);
+    std::vector<StereoDraw> draws;
+    for (const Car& car : cars.all()) {
+        if (car.stereo == StereoState::InCar || car.stereo == StereoState::Freed) {
+            draws.push_back(StereoDraw{.handle = car.handle + 0.25,
+                                       .modelHash = modelHash,
+                                       .position = Cars::stereoPosition(car),
+                                       .rotation = car.rotation});
+        }
+    }
+    return draws;
+}
 
 } // namespace coney::world_objects

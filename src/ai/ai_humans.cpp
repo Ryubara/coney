@@ -77,6 +77,7 @@ Brain& AiHumans::spawn(const human::PlayerCharacter& character, const AiConfig& 
         std::make_unique<human::Human>(character.anims(), human::AnimSlots::player(), anim::referenceRotations(),
                                        human::kPlayerBodyScale, &character.ranges(), kind.damage, 0);
     human::Human& made = *entry.human;
+    made.setSkeleton(&character.skeleton());
     made.setFighterProfile(
         human::FighterProfile{.player = false, .powerClass = config.powerClass, .health = kind.health});
     made.spawn(mesh, feet, headingDegrees);

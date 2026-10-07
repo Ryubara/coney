@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "animation/anim_task.h"
+#include "combat/ai_counter.h"
 #include "combat/anim_ids.h"
 #include "combat/combat_tuning.h"
 #include "combat/grab.h"
@@ -142,7 +143,8 @@ const Combatant* Fighter::lockTarget() const {
 }
 
 void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& heading) {
-    m_strikes.clear();
+    // The strikes reported are the strike test's of this update's state pass, then this update's own.
+    m_strikes = std::exchange(m_shapeStrikes, {});
     m_objectHit.reset();
     const combat::CombatTuning& tuning = combat::combatTuning();
     const combat::CombatMode before = m_combat.mode();
@@ -150,6 +152,7 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     m_reactionShake.reset();
     m_rageStarted = false;
     m_l1Held = (input.buttons & pad::kL1) != 0;
+    m_counterPressed = false;
     // The flags the meters follow: a locked rage meter, tireless power. A demi-god at or below its health floor is a
     // god from now on (0x00256f28).
     m_combat.rage().setLocked(hasFlag(flag::kRageLocked), input.nowMs);
@@ -179,7 +182,19 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     }
     takeNotice(input, animator);
     takePending(input, animator);
-    const bool cannotAct = stepVictim(input, animator) || grabbed() || m_holdState.has_value();
+    const bool reacting = stepVictim(input, animator);
+    // An AI's counter press (command 3) is kept for the grabber or tackler whose intro it answers. A tackle holds its
+    // victim from the intro's start (Coney's stand-in), so a human held only that way may still press it.
+    const bool waitingForTackle = m_holdState == TargetState::Held && !m_holdAttached;
+    m_counterPressed = !m_player && input.command == combat::command::kR1Pressed &&
+                       combat::aiCounterAllowed(combat::AiCounterSide{
+                           .padControlled = false,
+                           .standing = !reacting && !grabbed() && m_held == nullptr && !m_victim.grounded() &&
+                                       (!m_holdState.has_value() || waitingForTackle),
+                           .phaseFlags = animator.flags(),
+                           .holdingObject = m_animSet != 0,
+                           .hurt = hurt()});
+    const bool cannotAct = reacting || grabbed() || m_holdState.has_value();
     if (cannotAct) {
         // Only the meters run; a held player struggles.
         m_last = m_combat.update(combatInput(input, animator, true), tuning);
@@ -190,11 +205,17 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         return;
     }
 
-    // 2. A grab's alignment turns, then its pair's moments as the grabber's clips change.
+    // 2. A grab or tackle of this human's own that the victim's counter answered ends here.
+    if (answerCounter(input, animator, heading)) {
+        noteClip(animator);
+        return;
+    }
+
+    // 3. A grab's alignment turns, then its pair's moments as the grabber's clips change.
     stepAlignment(heading);
     followPairClips(input, animator, heading);
 
-    // 3. The duck's counter takes a square or cross in its window; then the dispatcher decides, and the fighter plays
+    // 4. The duck's counter takes a square or cross in its window; then the dispatcher decides, and the fighter plays
     // what it decided.
     combat::CombatInput in = combatInput(input, animator, false);
     if (duckCounter(input, animator)) {
@@ -204,7 +225,7 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     m_last = out;
     playDecisions(out, before, input, animator, heading);
 
-    // 4. The tackle's hit, then the attack's.
+    // 5. The tackle's hit, then the attack's.
     if (m_tacklePending && m_held != nullptr &&
         (animator.animId() == clips::kTackleHit || animator.animId() == clips::kMountingIdle)) {
         mountVictim(input, animator, heading);
@@ -212,7 +233,8 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
     if (m_mountPending && m_held != nullptr && animator.animId() == clips::kMountingIdle) {
         seatMount(input, animator, heading);
     }
-    if (out.hitAnim != id::kNone) {
+    // A moving attack of a human with strike shapes lands through them instead (strikeContact()).
+    if (out.hitAnim != id::kNone && !(input.strikeShapes && combat::strikesWithShapes(out.hitAnim))) {
         if ((out.hitAnim == id::kBreakObjectLow || out.hitAnim == id::kBreakObjectMid) && m_objectTarget) {
             m_objectHit = std::exchange(m_objectTarget, std::nullopt);
         } else {
@@ -220,7 +242,7 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         }
     }
 
-    // 5. A hold ends when the victim has no health left, and a tackle when the power meter is empty (**Coney's
+    // 6. A hold ends when the victim has no health left, and a tackle when the power meter is empty (**Coney's
     // choice**: the research ends a grab at 0 power, which the dispatcher does; the tackle is taken to end alike).
     const combat::CombatMode mode = m_combat.mode();
     const bool holding = mode == combat::CombatMode::Grabbing || mode == combat::CombatMode::Tackling ||
@@ -229,7 +251,7 @@ void Fighter::update(const FighterInput& input, HumanAnimator& animator, float& 
         (m_held->health().depleted() || (mode == combat::CombatMode::Tackling && m_combat.power().value() == 0))) {
         releaseHold(animator, false);
     }
-    // 6. A spin the dispatcher started lets go of the offset; an attached victim follows the grabber: its transform
+    // 7. A spin the dispatcher started lets go of the offset; an attached victim follows the grabber: its transform
     // times the stored offset. Then the target is kept or dropped.
     detachForSpin(animator);
     if (m_pair == PairStage::Attached && m_held != nullptr) {
@@ -614,18 +636,33 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input) {
     if (victim == nullptr || (!heldMove && flatDistance(input.position, victim->position()) > reachOf(animId))) {
         return;
     }
+    applyHit(*victim, animId, damage, heldMove, input.position, input.nowMs);
+}
+
+void Fighter::strikeContact(Combatant& victim, int animId, anim::Vec3 position, std::uint64_t nowMs) {
+    const int damage = m_ranges != nullptr ? combat::strikeDamage(*m_ranges, animId) : 0;
+    applyHit(victim, animId, damage, false, position, nowMs);
+    // Reported with the next actions pass's strikes(), which starts from these.
+    if (m_player) {
+        m_shapeStrikes.push_back(m_strikes.back());
+        m_strikes.pop_back();
+    }
+}
+
+void Fighter::applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker,
+                       std::uint64_t nowMs) {
     const combat::AnimRange* range = m_ranges != nullptr ? m_ranges->find(clips::clipOf(animId)) : nullptr;
     // A move in a hold plays its own victim clips; a free hit picks the victim's reaction. A player's hits ignore
     // hit armour.
-    victim->hit(IncomingHit{.damage = damage,
-                            .attackAnim = animId,
-                            .code = range != nullptr ? range->kind : 0,
-                            .flags = range != nullptr ? range->flags : std::uint16_t{0},
-                            .attacker = input.position,
-                            .react = !heldMove,
-                            .ignoresArmour = m_player || hasFlag(flag::kIncreasedReact),
-                            .attackerFlag200000 = hasFlag(flag::kIncreasedReact),
-                            .attackerIsPlayer = m_player});
+    victim.hit(IncomingHit{.damage = damage,
+                           .attackAnim = animId,
+                           .code = range != nullptr ? range->kind : 0,
+                           .flags = range != nullptr ? range->flags : std::uint16_t{0},
+                           .attacker = attacker,
+                           .react = !heldMove,
+                           .ignoresArmour = m_player || hasFlag(flag::kIncreasedReact),
+                           .attackerFlag200000 = hasFlag(flag::kIncreasedReact),
+                           .attackerIsPlayer = m_player});
     ++m_hitsLanded;
     m_damageDealt += damage;
     if (m_player) {
@@ -633,8 +670,8 @@ void Fighter::landHit(int animId, int damage, const FighterInput& input) {
     }
     // The hit earns its rage (**Coney choice**: never the blocked award, as a blocked hit is not reported back to the
     // attacker), then goes into the repeat tracker; a throw takes the bonus its grab strikes built.
-    earnRage(animId, input.nowMs, clips::isThrow(animId));
-    m_repeat.note(animId, input.nowMs);
+    earnRage(animId, nowMs, clips::isThrow(animId));
+    m_repeat.note(animId, nowMs);
 }
 
 void Fighter::earnRage(int animId, std::uint64_t nowMs, bool isThrow) {

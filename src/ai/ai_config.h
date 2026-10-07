@@ -54,7 +54,8 @@ struct AiConfig {
 };
 
 /// The configuration from `recorded` (the calls the configuration and level scripts made): the last `CfgChar` call of
-/// `type`, the last `CfgPowerClass` call of `powerClass`, every `CfgAttackDelay` and the last `CfgBaseChanceToBlock`;
+/// `type`, the last `CfgPowerClass` call of `powerClass`, every `CfgAttackDelay`, the last `CfgBaseChanceToBlock` and
+/// the last `CfgSetTargetingPoints` and `CfgSetTargetingPointsEx`;
 /// what the calls do not give keeps the reference values (attNormal(), kWarriorPowerClass, referenceAttackDelays()).
 [[nodiscard]] AiConfig aiConfigFrom(const script::RecordedCalls& recorded, int type = kFighterType,
                                     int powerClass = kFighterPowerClass);

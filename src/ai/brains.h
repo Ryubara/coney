@@ -35,6 +35,9 @@ class Brains {
     void setPlanner(RoutePlanner* planner);
     /// The planner setPlanner() gave (null for none).
     [[nodiscard]] RoutePlanner* planner() const { return m_planner; }
+    /// Gives every brain, and each added later, the level's collision for its sight rays (null for none).
+    void setCollision(const raycast::CollisionMesh* collision);
+    [[nodiscard]] const raycast::CollisionMesh* collision() const { return m_collision; }
 
     /// One step: the game time advances by one step; the formations, then the gangs (their tactics) step; each enabled
     /// brain whose human is in the world thinks when `index % 5 == step % 5` and updates; then every player brain's
@@ -80,6 +83,7 @@ class Brains {
     std::vector<std::unique_ptr<Brain>> m_brains;
     std::uint64_t m_steps = 0;
     RoutePlanner* m_planner = nullptr;
+    const raycast::CollisionMesh* m_collision = nullptr;
 };
 
 } // namespace coney::ai

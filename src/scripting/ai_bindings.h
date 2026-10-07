@@ -207,6 +207,8 @@ class AiBindingHost {
     virtual void gangBrFlush(int /*gang*/) {}
     /// `GangSetThreatResponse(gang, response)`.
     virtual void gangSetThreatResponse(int /*gang*/, int /*response*/) {}
+    /// `GangSetAttackable(gang, on)`.
+    virtual void gangSetAttackable(int /*gang*/, bool /*on*/) {}
     /// `GangMakeEnemies(a, b)` and `GangMakeFriends(a, b)`.
     virtual void gangMakeEnemies(int /*a*/, int /*b*/) {}
     virtual void gangMakeFriends(int /*a*/, int /*b*/) {}

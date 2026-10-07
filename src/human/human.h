@@ -14,6 +14,7 @@
 
 #include "animation/anim_math.h"
 #include "animation/anim_pose.h"
+#include "animation/skeleton.h"
 #include "characters/anim_set.h"
 #include "combat/anim_ranges.h"
 #include "combat/commands.h"
@@ -27,6 +28,7 @@
 #include "human/locomotion_gate.h"
 #include "human/script_state.h"
 #include "human/stamina.h"
+#include "human/strike_shapes.h"
 #include "human/target_human.h"
 #include "human/victim.h"
 #include "raycast/collision_mesh.h"
@@ -182,6 +184,27 @@ class Human final : public Holdable {
     /// The pose to draw now.
     [[nodiscard]] anim::Pose pose() const { return m_animator.pose(m_bindRotations); }
 
+    /// The skeleton its strike shapes are posed on: its character's (not owned; it must outlive the human). Null (the
+    /// default): it has no strike shapes, and its moving attacks land at a hit update as its other attacks do.
+    void setSkeleton(const anim::Skeleton* skeleton) { m_skeleton = skeleton; }
+    /// Which of its strike shapes its clips' events have switched on (human/strike_shapes.h), and what they struck.
+    [[nodiscard]] const StrikeShapes& strikeShapes() const { return m_strikes; }
+    [[nodiscard]] StrikeShapes& strikeShapes() { return m_strikes; }
+    /// Its strike shapes posed in the world now: the ones switched on (and the capsule while its strike flag is on),
+    /// or with `targets` the spine and the head, which a strike is tested against (flag `0x4`). Empty without a
+    /// skeleton.
+    [[nodiscard]] std::vector<PosedShape> posedStrikeShapes(bool targets) const;
+    /// What a human's switched-on strike shapes meet beyond the humans (the level's objects): `shapes`, posed now.
+    /// Humans::setStrikeContact() gives it.
+    using StrikeContact = std::function<void(Human& human, std::span<const PosedShape> shapes)>;
+    /// The strike test, after every human's move (human::Humans): while any strike shape is on, its posed shapes
+    /// meet each of `victims` (the humans it fights) whose spine or head they overlap, each once while the shapes stay
+    /// on, and a moving attack (combat::strikesWithShapes()) hits it there (Fighter::strikeContact()); then `contact`
+    /// (may be null) hears the shapes. **Coney choices**: the capsule is taken as the 2 m upright capsule of its
+    /// radius; the struck victims are the humans it fights, not every body near it.
+    /// @orig 0x0033f110 Human_TestStrikes (unknown)
+    void testStrikes(std::span<Human* const> victims, const StrikeContact* contact);
+
     [[nodiscard]] anim::Vec3 position() const override { return m_position; }
     /// Radians, 0 facing +y, anticlockwise from above.
     [[nodiscard]] float heading() const override { return m_heading; }
@@ -291,6 +314,7 @@ class Human final : public Holdable {
     [[nodiscard]] bool attached() const override { return m_fighter.holdAttached(); }
     void keepHold() override { m_fighter.keepHold(); }
     [[nodiscard]] std::optional<TargetState> takeBrokenHold() override { return m_fighter.takeBrokenHold(); }
+    [[nodiscard]] std::optional<CounterPress> takeCounterPress() override { return m_fighter.takeCounterPress(); }
     /// Moves it there and stops it (its velocity goes).
     void place(anim::Vec3 position, float headingRadians) override;
     /// An AI's jump (`Human_BeginJump` with argument 1, then `Human_LaunchJump`, docs/research/ai.md#route-jump): from
@@ -476,6 +500,13 @@ class Human final : public Holdable {
     // sendWarnings() finds a warning.
     // @orig 0x00101dd8 Anim_FireEvents (unknown)
     void noteSlowMotion(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
+    // Switches the strike shapes by the events of the clip playing that this step's animation passed (as the held
+    // flags' events fire, anim::eventFrame()). **Coney choice**: when another clip takes the top before the one that
+    // switched them on ends its window, they go off, as its own off event would have switched them.
+    // @orig 0x00101dd8 Anim_FireEvents (unknown)
+    void noteStrikeEvents(const anim::AnimTask* before, std::uint32_t beforeId, float beforeTime);
+    // The world placement of the body the strike shapes are posed on.
+    [[nodiscard]] BodyPlacement placement() const;
     // Stamina's drain and refill, then the sprint flag, for this update's L2.
     void updateMeters(bool sprintHeld);
     // Triangle: a climb (stick above the dead zone), then the context action, then a jump.
@@ -555,7 +586,11 @@ class Human final : public Holdable {
     std::optional<double> m_pickedUp; // the object a pick-up reached, until takePickedUp()
     ContextAction m_contextAction;
     const BodyContact* m_bodyContact = nullptr; // setBodyContact(), the step's
-    std::vector<ObjectTarget> m_objectTargets;  // the breakable objects square may strike
+    const anim::Skeleton* m_skeleton = nullptr; // setSkeleton()
+    StrikeShapes m_strikes;
+    std::uint32_t m_strikeAnim = 0;            // the anim whose events switched the strike shapes on
+    bool m_chargeStopped = false;              // the charge playing met a wall head-on (moveOnGround())
+    std::vector<ObjectTarget> m_objectTargets; // the breakable objects square may strike
     std::optional<ClimbProbe> m_climbProbe;
     std::vector<std::uint16_t> m_nearby; // scratch for the wall test
 };

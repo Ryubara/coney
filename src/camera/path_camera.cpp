@@ -27,11 +27,7 @@ anim::Vec3 catmullRom(anim::Vec3 p0, anim::Vec3 p1, anim::Vec3 p2, anim::Vec3 p3
 } // namespace
 
 anim::Quat orientationOf(float headingDegrees, float pitchDegrees, float rollDegrees) {
-    LockedCamera locked;
-    locked.headingDegrees = headingDegrees;
-    locked.pitchDegrees = pitchDegrees;
-    locked.rollDegrees = rollDegrees;
-    return locked.view().orientation;
+    return scriptedOrientation(headingDegrees, pitchDegrees, rollDegrees);
 }
 
 void PathCamera::setup(const CameraView& start, float seconds, std::string onEnd, float fieldOfView, float farClip) {
@@ -64,6 +60,25 @@ void PathCamera::activate() {
     if (m_active) {
         return;
     }
+    m_segment = 0;
+    m_elapsed = 0.0F;
+    m_active = !m_points.empty();
+    m_finished = false;
+}
+
+void PathCamera::reverse(std::string onEnd) {
+    // Segment k of the reversed path is segment n - 2 - k of the old one, so its time moves with it; the new last
+    // point's time is unused.
+    const std::size_t n = m_points.size();
+    std::vector<float> times(n, 0.0F);
+    for (std::size_t k = 0; k + 1 < n; ++k) {
+        times[k] = m_points[n - 2 - k].seconds;
+    }
+    std::ranges::reverse(m_points);
+    for (std::size_t k = 0; k < n; ++k) {
+        m_points[k].seconds = times[k];
+    }
+    m_onEnd = std::move(onEnd);
     m_segment = 0;
     m_elapsed = 0.0F;
     m_active = !m_points.empty();

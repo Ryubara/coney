@@ -10,6 +10,7 @@
 #include "ai/attack_kinds.h"
 #include "ai/brain.h"
 #include "ai/fight_goal.h"
+#include "combat/ai_counter.h"
 #include "combat/anim_ids.h"
 #include "combat/attacks.h"
 
@@ -19,8 +20,6 @@ namespace {
 
 // The record `+0x08` bit that, on the target, ends the block (`0x00228560`).
 constexpr std::uint32_t kTargetBusyFlag = 0x400;
-// The record `+0x08` bits a human must have none of to counter (`0xfc7eaf7`).
-constexpr std::uint32_t kCounterBusyFlags = 0x0fc7eaf7;
 
 // A block's length, and each extension's: a random 1-3 s from now.
 std::uint64_t blockEnd(Brain& brain) {
@@ -140,18 +139,16 @@ void BlockGoal::reactionsOff(Brain& brain) const {
 
 bool counterTest(const Brain& brain) {
     const human::Human& human = brain.human();
-    if ((human.animator().flags() & kCounterBusyFlags) != 0 || human.fighter().hurt() ||
-        brain.counterChance() <= 0.0F || !targetAimsHere(brain)) {
+    if ((human.animator().flags() & combat::kAiCounterBusyPhases) != 0 || human.fighter().hurt() ||
+        brain.counterChance() <= 0.0F || brain.type() != BrainType::Warrior || !targetAimsHere(brain)) {
         return false;
     }
     const human::Human& target = brain.target()->human();
-    if (target.state() == human::TargetState::Grounded) {
+    if (target.state() == human::TargetState::Grounded ||
+        !combat::faceToFace(human.position(), human.heading(), target.position(), target.heading())) {
         return false;
     }
-    const auto clip = static_cast<int>(target.animator().animId());
-    const bool grabbing = clip >= combat::anim_id::kGrabMiss && clip <= combat::anim_id::kGrabPlayerIntro;
-    const bool tackling = clip >= combat::anim_id::kTackleMiss && clip <= combat::anim_id::kTacklePlayerIntro;
-    return grabbing || tackling;
+    return combat::aiCounterFor(static_cast<int>(target.animator().animId())) != combat::anim_id::kNone;
 }
 
 bool tryBlock(Brain& brain) {

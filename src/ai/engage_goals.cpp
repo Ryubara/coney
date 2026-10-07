@@ -16,6 +16,7 @@
 #include "ai/move_action.h"
 #include "ai/route_planner.h"
 #include "ai/script_services.h"
+#include "ai/targeting.h"
 #include "animation/anim_math.h"
 #include "human/human.h"
 #include "human/locomotion.h"
@@ -137,7 +138,8 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
             Brain* nearest = nullptr;
             float best = kEngageSeeRange;
             for (Brain* enemy : brain.enemies()) {
-                if (Brain::fightable(*enemy) && !enemy->human().outOfWorld() && brain.distanceTo(*enemy) < best) {
+                if (Brain::fightable(*enemy) && !enemy->human().outOfWorld() && brain.distanceTo(*enemy) < best &&
+                    brain.canSee(*enemy, kEngageSeeRange)) {
                     best = brain.distanceTo(*enemy);
                     nearest = enemy;
                 }
@@ -167,9 +169,16 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
     if (brain.moveFailure() != MoveFailure::None) {
         return beginStop(brain);
     }
-    // 8. Run; sprint after a runner.
-    const int gait = running ? kSprintGait : kRunGait;
-    // 9. Close by: stop for a busy target, or for one who walks or stands when the charge is not armed.
+    // 8. Run; sprint after a runner while the stamina is above half (`Human_GetStaminaPercent`).
+    const human::Stamina& stamina = human.stamina();
+    const bool fresh = stamina.maximum() > 0 && stamina.value() * 100 / stamina.maximum() > kEngageSprintStamina;
+    const int gait = running && fresh ? kSprintGait : kRunGait;
+    // 9. In sight, stop for a target this human may not attack now, at any distance; close by, stop for a busy target,
+    // or for one who walks or stands when the charge is not armed.
+    const bool inSight = brain.hasLineOfSight(*target);
+    if (inSight && !attackableBy(*target, &brain)) {
+        return beginStop(brain);
+    }
     if (distance <= kEngageStopShare * brain.meleeFar()) {
         const bool busy =
             them.state() != human::TargetState::Standing || (them.animator().flags() & kAttackWaitFlags) != 0;
@@ -178,8 +187,9 @@ GoalStatus EngageEnemyGoal::process(Brain& brain) {
         }
         m_charge = m_charge || running;
     }
-    // 10. Give up when he is far off and out of sight.
-    if (distance >= kEngageGiveUpRange && distance > brain.sightRange()) {
+    // 10. Give up when he is out of sight and far off (**Coney choice**: brain `+0x28d` and the gang's `+0xdc` are
+    // taken as clear, so 20 m).
+    if (!inSight && distance >= kEngageGiveUpRange) {
         return GoalStatus::Done;
     }
     // 11. The charge: an attack out of the run.

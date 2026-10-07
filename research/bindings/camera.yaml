@@ -570,6 +570,7 @@
     It does not make the path camera current; it moves only while it is player 0's camera. Calling it twice restores
     the original order.
   usage: {chunks: 2, calls: 2, boot: false, mission1: false, result_used: false, levels: [14]}
+  coney: implemented
 
 - name: CamAddPoizoPoint
   wrapper: 0x00366e18

@@ -4,14 +4,17 @@
 #include "camera/path_camera.h"
 
 #include <cmath>
+#include <numbers>
 #include <string>
 #include <vector>
 
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "animation/anim_math.h"
 #include "camera/camera_view.h"
 
+using Catch::Approx;
 using coney::anim::Quat;
 using coney::anim::Vec3;
 using coney::camera::CameraView;
@@ -91,4 +94,46 @@ TEST_CASE("a path point's angles turn the camera as a locked camera's do", "[cam
     const Vec3 forward{0.0F, 1.0F, 0.0F};
     CHECK(near(coney::anim::transformDirection(coney::anim::matrixFromQuat(ahead), forward), forward));
     CHECK(near(coney::anim::transformDirection(coney::anim::matrixFromQuat(left), forward), Vec3{-1.0F, 0.0F, 0.0F}));
+    // A negative pitch looks down, as a locked camera's does (docs/research/camera.md#scripted-angles).
+    const Quat down = orientationOf(0.0F, -30.0F, 0.0F);
+    CHECK(coney::anim::transformDirection(coney::anim::matrixFromQuat(down), forward).z ==
+          Approx(-std::sin(30.0F * std::numbers::pi_v<float> / 180.0F)).margin(1e-5));
+}
+
+TEST_CASE("CamReversePoizo flies the path back from its end, the times moved with their segments", "[camera][path]") {
+    // From the origin 1 s to 10 m ("reached" there), then 2 s on to 20 m; flown back: 2 s from 20 m to 10 m, then
+    // 1 s to the origin.
+    PathCamera path;
+    path.setup(CameraView{.position = Vec3{}, .orientation = Quat{}, .lookAt = Vec3{}, .fieldOfView = 50.0F}, 1.0F,
+               "ended", 0.0F, 0.0F);
+    path.addPoint(
+        PathPoint{.position = Vec3{10.0F, 0.0F, 0.0F}, .orientation = Quat{}, .seconds = 2.0F, .onReach = "reached"});
+    path.addPoint(
+        PathPoint{.position = Vec3{20.0F, 0.0F, 0.0F}, .orientation = Quat{}, .seconds = 0.0F, .onReach = {}});
+    std::vector<std::string> fired;
+    path.activate();
+    path.update(3.0F, fired);
+    REQUIRE(path.finished());
+    fired.clear();
+    path.reverse("back");
+    CHECK_FALSE(path.finished());
+    CHECK(near(path.view().position, Vec3{20.0F, 0.0F, 0.0F}));
+    REQUIRE(path.points().size() == 3);
+    CHECK(path.points()[0].seconds == 2.0F);
+    CHECK(path.points()[1].seconds == 1.0F);
+    CHECK(path.points()[2].seconds == 0.0F);
+    // Each point keeps its own function: "reached" at 10 m after 2 s, then the new end function at the origin.
+    path.update(1.5F, fired);
+    CHECK(fired.empty());
+    path.update(0.5F, fired);
+    CHECK(fired == std::vector<std::string>{"reached"});
+    path.update(1.0F, fired);
+    CHECK(path.finished());
+    CHECK(fired == std::vector<std::string>{"reached", "back"});
+    CHECK(near(path.view().position, Vec3{}));
+    // Reversing again puts the order and the times back.
+    path.reverse({});
+    CHECK(near(path.points()[1].position, Vec3{10.0F, 0.0F, 0.0F}));
+    CHECK(path.points()[0].seconds == 1.0F);
+    CHECK(path.points()[1].seconds == 2.0F);
 }

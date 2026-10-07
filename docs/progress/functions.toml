@@ -593,6 +593,11 @@ name = "Camera_SetupPoizo"
 subsystem = "Camera"
 
 [[function]]
+address = 0x0011cb70
+name = "Camera_ReversePoizo"
+subsystem = "Camera"
+
+[[function]]
 address = 0x0011cbb0
 name = "Camera_AddPoizoPoint"
 subsystem = "Camera"
@@ -765,6 +770,11 @@ name = "Cam_Follow_Collide"
 subsystem = "Camera"
 
 [[function]]
+address = 0x001353e0
+name = "CamLocked_BuildOrientation"
+subsystem = "Camera"
+
+[[function]]
 address = 0x00135680
 name = "Cam_Locked_Update"
 subsystem = "Camera"
@@ -785,8 +795,18 @@ name = "LockedCam_KeepHumansInView"
 subsystem = "Camera"
 
 [[function]]
+address = 0x00142578
+name = "PoizoCam_Reverse"
+subsystem = "Camera"
+
+[[function]]
 address = 0x001426c0
 name = "PoizoCam_Update"
+subsystem = "Camera"
+
+[[function]]
+address = 0x00142ac8
+name = "CamSpline_AddPointAngles"
 subsystem = "Camera"
 
 [[function]]
@@ -1641,6 +1661,11 @@ address = 0x0016bac0
 name = "Gang_SetTargetable"
 subsystem = "GameModes"
 size = 152
+
+[[function]]
+address = 0x0016bb58
+name = "Gang_SetAttackable"
+subsystem = "GameModes"
 
 [[function]]
 address = 0x0016bbf0
@@ -3355,6 +3380,21 @@ name = "Human_LaunchJump"
 subsystem = "Human"
 
 [[function]]
+address = 0x00222288
+name = "Human_HasLineOfSight"
+subsystem = "Human"
+
+[[function]]
+address = 0x002223e8
+name = "Human_CanSeeHuman"
+subsystem = "Human"
+
+[[function]]
+address = 0x00222710
+name = "Human_IsInFieldOfView"
+subsystem = "Human"
+
+[[function]]
 address = 0x00222980
 name = "Human_AddCuffs"
 subsystem = "Human"
@@ -4256,6 +4296,26 @@ subsystem = "Human"
 size = 8248
 
 [[function]]
+address = 0x00247fc0
+name = "Human_StrikeShapeOn"
+subsystem = "Human"
+
+[[function]]
+address = 0x00248110
+name = "Human_StrikeShapeOff"
+subsystem = "Human"
+
+[[function]]
+address = 0x00248170
+name = "Human_StrikeAllOn"
+subsystem = "Human"
+
+[[function]]
+address = 0x00248270
+name = "Human_StrikeAllOff"
+subsystem = "Human"
+
+[[function]]
 address = 0x00248df0
 name = "Human_Lean"
 subsystem = "Human"
@@ -4281,6 +4341,11 @@ size = 2040
 [[function]]
 address = 0x0024d810
 name = "Pickup_Search"
+subsystem = "Human"
+
+[[function]]
+address = 0x0024df40
+name = "Ray_IsClear"
 subsystem = "Human"
 
 [[function]]
@@ -4464,6 +4529,18 @@ name = "Human_BreakPair"
 subsystem = "Human"
 
 [[function]]
+address = 0x00258e88
+name = "Human_CanCounterGrab"
+subsystem = "Human"
+size = 624
+
+[[function]]
+address = 0x002590f8
+name = "Human_CanCounterTackle"
+subsystem = "Human"
+size = 624
+
+[[function]]
 address = 0x00259578
 name = "Human_ChooseAnimState"
 subsystem = "Human"
@@ -4509,6 +4586,12 @@ address = 0x002625a8
 name = "Attack_Start"
 subsystem = "Human"
 size = 792
+
+[[function]]
+address = 0x00262ac8
+name = "Attack_StartPaired"
+subsystem = "Human"
+size = 2232
 
 [[function]]
 address = 0x00263c90
@@ -4676,6 +4759,12 @@ name = "Player_UpdateSprint"
 subsystem = "Human"
 
 [[function]]
+address = 0x0027d6e0
+name = "Player_TryCounterGrab"
+subsystem = "Human"
+size = 288
+
+[[function]]
 address = 0x0027d800
 name = "Player_Charge"
 subsystem = "Human"
@@ -4818,6 +4907,16 @@ subsystem = "Human"
 size = 1480
 
 [[function]]
+address = 0x0028abc0
+name = "Brain_CanBeChased"
+subsystem = "Human"
+
+[[function]]
+address = 0x0028bf00
+name = "Brain_GetSightRange"
+subsystem = "Human"
+
+[[function]]
 address = 0x0028c1a8
 name = "Brain_InstallHandlers"
 subsystem = "Human"
@@ -4840,6 +4939,11 @@ address = 0x0028d2e8
 name = "Brain_Fight"
 subsystem = "Human"
 size = 112
+
+[[function]]
+address = 0x0028d358
+name = "Brain_ValidateEnemy"
+subsystem = "Human"
 
 [[function]]
 address = 0x0028d538
@@ -4888,6 +4992,11 @@ address = 0x0028db20
 name = "Brain_ClearActions"
 subsystem = "Human"
 size = 104
+
+[[function]]
+address = 0x0028dc80
+name = "Brain_CanTakeSlotOn"
+subsystem = "Human"
 
 [[function]]
 address = 0x0028de48
@@ -4954,6 +5063,11 @@ address = 0x0028fe28
 name = "Brain_RunActions"
 subsystem = "Human"
 size = 104
+
+[[function]]
+address = 0x00290ea8
+name = "Brain_IsAttackableBy"
+subsystem = "Human"
 
 [[function]]
 address = 0x002911f8
@@ -5181,6 +5295,11 @@ name = "Route_JumpLeg"
 subsystem = "Human"
 
 [[function]]
+address = 0x0029ce98
+name = "Brain_ScoreEnemy"
+subsystem = "Human"
+
+[[function]]
 address = 0x0029ed58
 name = "Goal_Start"
 subsystem = "Human"
@@ -5215,6 +5334,16 @@ address = 0x0029f098
 name = "Goal_TryBlock"
 subsystem = "Human"
 size = 408
+
+[[function]]
+address = 0x0029f230
+name = "Brain_PickBestEnemy"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029f3a8
+name = "Goal_AdjustEnemyScoreDefault"
+subsystem = "Human"
 
 [[function]]
 address = 0x002a4cb8
@@ -6258,6 +6387,11 @@ name = "PhysicsBody_Sweep"
 subsystem = "Physics"
 
 [[function]]
+address = 0x0033f110
+name = "Human_TestStrikes"
+subsystem = "Physics"
+
+[[function]]
 address = 0x003477c0
 name = "PhysicsBody_PushOutOfWalls"
 subsystem = "Physics"
@@ -6723,6 +6857,11 @@ subsystem = "Scripting"
 size = 104
 
 [[function]]
+address = 0x0035f790
+name = "GangSetAttackable"
+subsystem = "Scripting"
+
+[[function]]
 address = 0x0035fc80
 name = "BrSetNumFollowSlots"
 subsystem = "Scripting"
@@ -6876,6 +7015,11 @@ address = 0x00366360
 name = "CameraCreateWin"
 subsystem = "Scripting"
 size = 440
+
+[[function]]
+address = 0x00366dd0
+name = "lua_CamReversePoizo"
+subsystem = "Scripting"
 
 [[function]]
 address = 0x00367030

@@ -151,6 +151,14 @@ NativeFunction makeCamAddPoizoPoint(const BindingContext& context) {
     };
 }
 
+// `CamReversePoizo(onEnd) -> boolean`: the path camera flown back to where it began.
+// @orig 0x00366dd0 lua_CamReversePoizo (unknown)
+NativeFunction makeCamReversePoizo(const BindingContext& context) {
+    return [context = &context](std::span<const Value> args) {
+        return binding::boolean(context->cameras != nullptr && context->cameras->reversePath(nameArg(args, 0)));
+    };
+}
+
 // `CamAddPoizoPointCam(camera, seconds, onReach) -> boolean`.
 // @orig 0x0011cc68 Camera_AddPoizoPointCam (unknown)
 NativeFunction makeCamAddPoizoPointCam(const BindingContext& context) {
@@ -411,6 +419,7 @@ NativeFunction makeProcessTag(const BindingContext& context) {
 void addStoryEffectsBindings(LuaVm& vm, const BindingContext& context, std::function<double()> nextHandle) {
     vm.registerFunction("CamAddPoizoPoint", makeCamAddPoizoPoint(context));
     vm.registerFunction("CamAddPoizoPointCam", makeCamAddPoizoPointCam(context));
+    vm.registerFunction("CamReversePoizo", makeCamReversePoizo(context));
     vm.registerFunction("CameraGetActive", makeCameraGetActive(context));
     vm.registerFunction("CameraSetClipping", makeCameraSetClipping(context));
     vm.registerFunction("CfgSteam", makeCfgSteam(context));

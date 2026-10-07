@@ -415,6 +415,12 @@ first 26 atomics of each car, each at its frame and given the dictionary's first
   `Cars::humanHit()`: an intact window shields its door, each part takes 0.115. `PlayLevelMode` offers each car the
   player can target among the object targets and passes the strike to `Cars::humanHit()`. The stereo and the boot
   item sit at the documented offsets.
+- **The stereo's model** (`world_objects::stereoDraws()`): the play mode draws `dyn_carstereo` at the stereo's offset,
+  turned with the car, while it is in the car or freed, and no more once stolen.
+- **Parts coming off** (`Cars::takeBreaks()`, `PlayLevelMode::carBreaks()`): each part that comes off is reported
+  once, with whether it is a window, whether the damage was instant, and a window's burst side (the car's −x for 15
+  and 19, +x for 17 and 21). It is the hook for the window's shatter and glass sound, which wait for message
+  `0x3f`'s effect kinds (below).
 - **Explosion** (`CarExplode`, `repo:src/scripting/mission4_bindings.h`, `Cars::explode()`): a car not yet exploded
   takes instant damage on every part (so a boot item is lost) and is marked exploded; without `quiet` its message
   `0x19` goes to its own handler and then to the cars' general one (`SetGeneralCarMsgHandler`,

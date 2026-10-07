@@ -18,6 +18,13 @@
 
 namespace coney::human {
 
+/// An AI's counter press (command 3) as its grabber or tackler takes it: what each counter does to the attacker, from
+/// the counterer's Anim Range List (docs/research/ai.md#block).
+struct CounterPress {
+    int grabDamage = 0;   ///< 76 `GRAB_FRONT_COUNTER`'s damage.
+    int tackleDamage = 0; ///< 9 `TACKLE_FRONT_COUNTER`'s damage.
+};
+
 /// A combatant a grab or a tackle can hold.
 class Holdable : public Combatant {
   public:
@@ -45,6 +52,9 @@ class Holdable : public Combatant {
     virtual void face(anim::Vec3 point) = 0;
     /// Its own anim set (an escape's grabber side plays from it).
     [[nodiscard]] virtual const characters::AnimSet& anims() const = 0;
+    /// Its AI counter press (command 3) of its last update, made while it could counter (Fighter's test), once:
+    /// the grabber whose intro it answers takes it. None for one no brain drives (the default).
+    [[nodiscard]] virtual std::optional<CounterPress> takeCounterPress() { return std::nullopt; }
 };
 
 } // namespace coney::human

@@ -606,6 +606,17 @@ Confirmed (runtime), PCSX2 2.9.94, copies of slot 10, scenario
 [`charge_fence`](repo:research/traces/scenarios/charge_fence.toml) (hooks `strike-shape`, `strike-contact`,
 `barrier-hit` and `object-remove`); the open-ground run turned the stick to 100 % straight back.
 
+**In Coney** ([`human/strike_shapes.h`](repo:src/human/strike_shapes.h)): the clip events switch the ten shapes, which
+are posed on the drawn skeleton every update, and each human's strike test runs after its move against the spine and
+head of the humans it fights and against the doors' enabled triangles and the panes' bodies. Only the four moving
+attacks hit a human this way; the other attacks still land at their measured hit update. A charge whose sweep loses
+more than half its move to a wall stops dead until its clip ends, and a broken barrier's triangles stand for its body
+until its removal. In Coney's play-through the charge strikes the fence on its 11th update, 1.06 m from the line, and
+stops 0.51 m from it 3 updates later; the original strikes on the 10th update at 0.80 m and stops 2 updates later at
+0.42 m. The AI does not charge a human yet (its attack pick takes only the square and cross strikes and the snap),
+so the charge against a human is untested in play. Not made yet: the level mesh's impact sound, a car struck by the
+shapes, and the weapon spheres of a held object.
+
 ### When input and the stick come back {#input-return}
 
 **At runtime** (confirmed (runtime)), PCSX2 2.9.94, a copy of slot 1 (the street, Rembrandt, nobody within 14 m),

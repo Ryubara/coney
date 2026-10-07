@@ -26,6 +26,7 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
     // The AI on the level's brains, whose gangs the scripts made, planning on the level's routes.
     m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, fighters, *cast.brains);
     m_ai->brains().setPlanner(m_planner.get());
+    m_ai->brains().setCollision(&m_scenery->collision());
     // The humans created so far, and the calls held for them, in the scripts' order; later ones as they come.
     const std::size_t held = cast.scripted->held();
     // A human the scripts delete leaves the world (its brain unbound by then).

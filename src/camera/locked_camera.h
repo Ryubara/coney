@@ -24,9 +24,8 @@ struct LockedCamera {
     static constexpr float kMaxFarClip = 150.0F;
 
     anim::Vec3 position;
-    /// **Coney's reading** of the angles, which the pages do not give: the heading as a human's (0 facing +y,
-    /// anticlockwise from above), the pitch positive looking down (as the follow camera's), the roll positive turning
-    /// the top to the right.
+    /// The script's angles, degrees, read as scriptedOrientation() reads them: the heading 0 facing +y and growing
+    /// anticlockwise from above, the pitch positive looking up, the roll positive tipping the top to the right.
     float headingDegrees = 0.0F;
     float pitchDegrees = 0.0F;
     float rollDegrees = 0.0F;
@@ -36,11 +35,20 @@ struct LockedCamera {
     /// `CamLockLocked`'s humans (camera `+0x20c`), each listed once, kept inside the frame's sides (keepInView()).
     std::vector<double> keptInView;
 
-    /// Its view: at its position, facing along its angles, looking at the point kAimDistance ahead, the far clip at
-    /// most kMaxFarClip. The original's line-of-sight test from its position is left out.
+    /// Its view: at its position, turned by scriptedOrientation(), looking at the point kAimDistance ahead along its
+    /// forward, the far clip at most kMaxFarClip. The original's line-of-sight test from its position is left out.
     /// @orig 0x00135680 Cam_Locked_Update (unknown)
     [[nodiscard]] CameraView view() const;
 };
+
+/// The orientation a script's heading, pitch and roll (degrees) give a locked camera or a path point:
+/// `q = qz(heading) * qx(pitch) * qy(roll)`, each about its axis by the right-hand rule, so the pitch turns about the
+/// camera's own right axis after the heading and the roll about its own forward axis. Its forward (+y) is
+/// `(-sin h cos p, cos h cos p, sin p)`: heading 0 looks along +y and 90 along -x, a positive pitch looks up.
+/// Research: docs/research/camera.md#scripted-angles
+/// @orig 0x001353e0 CamLocked_BuildOrientation (unknown)
+/// @orig 0x00142ac8 CamSpline_AddPointAngles (unknown)
+[[nodiscard]] anim::Quat scriptedOrientation(float headingDegrees, float pitchDegrees, float rollDegrees);
 
 /// The distances keepInView() works with, metres (docs/references/bindings/camera.md#camlocklocked).
 struct KeepInViewRules {

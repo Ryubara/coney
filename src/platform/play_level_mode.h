@@ -30,6 +30,7 @@
 #include "graphics/render_device.h"
 #include "hud/health_rings.h"
 #include "human/player.h"
+#include "human/strike_shapes.h"
 #include "human/target_human.h"
 #include "platform/character_mesh.h"
 #include "platform/hud_layer.h"
@@ -262,6 +263,9 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     [[nodiscard]] const world_objects::ObjectTasks& worldObjects() const { return m_objectTasks; }
     /// The health rings and L1 markers the newest step queued.
     [[nodiscard]] const hud::HealthRings& healthRings() const { return m_rings; }
+    /// The parked cars' parts that came off in the newest step (world_objects::Cars::takeBreaks()), in order: where a
+    /// car window's shatter and its glass sound start (docs/research/cars.md#windows).
+    [[nodiscard]] const std::vector<world_objects::CarPartBreak>& carBreaks() const { return m_carBreaks; }
     /// How many world objects the last frame drew (0 without pixels).
     [[nodiscard]] std::size_t objectsDrawn() const { return m_placed ? m_placed->drawn() : 0; }
 
@@ -337,11 +341,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // The lock pick before the player's step: triangle at a pickable door starts one; while one runs the dial turns,
     // cross judges a pin and triangle or another button abandons. Returns whether it holds the pad this step.
     bool stepLockPick(const Pad& pad);
-    // After the player's step: his landed hit sent to the pane or door it struck, then the objects' two 60 Hz ticks.
+    // After the player's step: his object attack's hit sent to its object, then the objects' two 60 Hz ticks.
     void stepObjects();
-    // Player 1's strike along his facing, `reach` long, at the pane or door it meets: message 1 to it with `animId`'s
-    // kind. Returns the object struck, if one took the ray.
-    std::optional<double> strikeAhead(int animId, float reach);
+    // The strike test's objects (`Strike_Contact`'s object branch, docs/research/combat.md#moving-strikes): `human`'s
+    // posed strike `shapes` strike each door or barrier whose enabled triangles they touch and each pane whose body
+    // they reach, once while the shapes stay on, with message 1 of the attack record's hit kind. **Coney's
+    // stand-ins**: the level mesh's impact sound and a car's hit are not made here.
+    void strikeObjects(human::Human& human, std::span<const human::PosedShape> shapes);
+    // The handle `human` goes by as an attacker: player 1's, its brain's, else none.
+    [[nodiscard]] double handleOf(const human::Human& human) const;
     // Gives player 1 triangle's pick-up over `pickups` (may be null: none): the search, with sight rays through the
     // level's collision, starts the pick-up on him.
     void bindPickups(LevelPickups* pickups);
@@ -464,18 +472,15 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     double m_heldObject = 0.0;             // what player 1 held at the last step (world_objects::kNoObject for nothing)
     world_objects::Cars* m_cars = nullptr; // the level's parked cars, for their stereos; not owned
     std::optional<double> m_theftCar;      // the car whose stereo player 1 is stealing
-    bool m_wasMugging = false;             // player 1 was mugging at the last step
-    std::optional<bool> m_mugEnding;       // a decided mugging's result, until its end clip finishes
-    std::uint32_t m_mugEndClip = 0;        // that end clip
-    LevelPickups* m_pickups = nullptr;     // the level's loose objects for the pick-up; not owned
+    std::vector<world_objects::CarPartBreak> m_carBreaks; // car parts off in the newest step (carBreaks())
+    bool m_wasMugging = false;                            // player 1 was mugging at the last step
+    std::optional<bool> m_mugEnding;                      // a decided mugging's result, until its end clip finishes
+    std::uint32_t m_mugEndClip = 0;                       // that end clip
+    LevelPickups* m_pickups = nullptr;                    // the level's loose objects for the pick-up; not owned
     std::optional<world_objects::LockPick> m_lockPick;
     int m_lockPickDifficulty = 0;
     bool m_flashRingRequest = false;      // a flash used: the HUD's ring request (docs/research/hud.md)
     script::SoundHost* m_sound = nullptr; // the game's sound for the dealers' lines; not owned
-    // Player 1's moving attack: the clip, the updates since it started, and the objects its strike shapes have struck.
-    std::uint32_t m_strikeClip = 0xffffffffU;
-    int m_strikeAge = 0;
-    std::vector<double> m_struck;
     // The --trace file (closed when unset) and the steps traced.
     std::optional<std::ofstream> m_trace;
     std::uint64_t m_traceSteps = 0;

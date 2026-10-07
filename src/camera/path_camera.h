@@ -38,6 +38,11 @@ class PathCamera {
     /// below 0 is kept as 0.
     /// @orig 0x00142a58 PoizoCam_AddPoint (unknown)
     void addPoint(const PathPoint& point);
+    /// `CamReversePoizo`: the points put in reverse order, each time moved to the point that now leads into its segment
+    /// (a point's time is to the next), the end function `onEnd`, and the flight started again from the new first
+    /// point. **Coney's reading**: each point keeps its own function.
+    /// @orig 0x00142578 PoizoCam_Reverse (unknown)
+    void reverse(std::string onEnd);
     /// Starts the flight from point 0 (the camera made current, `+0x33c`); nothing while it flies already.
     void activate();
     /// One update of `seconds` while it is the current camera: along the curve, each point reached adding its
@@ -64,9 +69,9 @@ class PathCamera {
     bool m_finished = false;
 };
 
-/// The orientation of a camera turned `headingDegrees` (0 facing +y, anticlockwise from above), pitched
-/// `pitchDegrees` (positive looking down) and rolled `rollDegrees` (positive turning the top to the right), as a
-/// locked camera reads its angles.
+/// The orientation of a path point turned `headingDegrees` (0 facing +y, anticlockwise from above), pitched
+/// `pitchDegrees` (positive looking up) and rolled `rollDegrees` (positive tipping the top to the right): the same as
+/// a locked camera's, scriptedOrientation() (docs/research/camera.md#scripted-angles).
 [[nodiscard]] anim::Quat orientationOf(float headingDegrees, float pitchDegrees, float rollDegrees);
 
 } // namespace coney::camera

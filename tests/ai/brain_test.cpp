@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <numbers>
 #include <span>
 #include <string>
 #include <utility>
@@ -17,6 +18,7 @@
 #include "ai/brains.h"
 #include "ai/goal.h"
 #include "ai/reaction_goals.h"
+#include "combat/ai_counter.h"
 #include "combat/anim_ids.h"
 #include "combat/commands.h"
 #include "combat/reactions.h"
@@ -369,6 +371,29 @@ TEST_CASE("a brain counts the attack starts its range and field of view take in"
     CHECK(gang.attackWarnings() == 0);
 }
 
+TEST_CASE("a brain does not count an attack start it has no line of sight to", "[ai][sight]") {
+    Scene scene;
+    Brain& gang = scene.add({40.0F, 50.0F, 0.0F}, 0.0F, BrainType::Gang);
+    // A wall 1 m ahead of the AI, between it and the attacker 2 m ahead.
+    const auto walled =
+        coney::test::makeMesh(coney::test::join(coney::test::floorAt(0.0F, 0.0F, 80.0F, 0.0F, 80.0F),
+                                                coney::test::wallFacingMinusY(51.0F, 30.0F, 50.0F, 0.0F, 4.0F, 0, 5)));
+    gang.setCollision(walled.get());
+    std::vector<std::string> log;
+    auto goal = std::make_unique<LoggingGoal>("g", log);
+    LoggingGoal& seen = *goal;
+    REQUIRE(gang.pushGoal(std::move(goal)));
+    gang.human().announceAttack({40.0F, 52.0F, 0.0F});
+    gang.update(stepMs(1));
+    REQUIRE(seen.warnings.size() == 1);
+    CHECK(seen.warnings[0] == 0);
+    // In the open the same start is counted.
+    gang.setCollision(scene.mesh.get());
+    gang.human().announceAttack({40.0F, 52.0F, 0.0F});
+    gang.update(stepMs(2));
+    CHECK(seen.warnings[1] == 1);
+}
+
 TEST_CASE("an AI's block goal writes R1 held but never blocks; it has no pad", "[ai]") {
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.5F, 0.0F}, 180.0F, BrainType::Gang);
@@ -454,74 +479,83 @@ bool inGrabIntro(const Human& human) {
 
 } // namespace
 
-TEST_CASE("the counter test passes only against a target in a grab's or a tackle's intro that aims at the human",
+TEST_CASE("the counter test passes only for a Warrior's brain against a grab's or a tackle's intro aimed at it",
           "[ai]") {
     Scene scene;
-    Brain& gang = scene.add({40.0F, 41.2F, 0.0F}, 180.0F, BrainType::Gang);
-    gang.setTarget(&scene.playerBrain());
+    Brain& warrior = scene.add({40.0F, 41.2F, 0.0F}, 180.0F, BrainType::Warrior);
+    warrior.setTarget(&scene.playerBrain());
     scene.run(2);
     // The player idle: nothing to counter.
-    CHECK_FALSE(coney::ai::counterTest(gang));
+    CHECK_FALSE(coney::ai::counterTest(warrior));
     // The player starts a grab (circle tapped); while its intro plays and it aims at the AI, the test passes.
-    scene.playerBrain().setTarget(&gang);
+    scene.playerBrain().setTarget(&warrior);
     scene.player().record().command = command::kCircleTapped;
     bool sawGrab = false;
     for (int k = 0; k < 20; ++k) {
         scene.step.update(scene.mesh.get());
         scene.player().record().command = command::kNone;
         sawGrab = sawGrab || inGrabIntro(scene.player());
-        CHECK(coney::ai::counterTest(gang) == inGrabIntro(scene.player()));
+        CHECK(coney::ai::counterTest(warrior) == inGrabIntro(scene.player()));
     }
     CHECK(sawGrab);
     // A counter chance of 0 never counters.
-    coney::human::FighterProfile profile = gang.human().fighterProfile();
+    coney::human::FighterProfile profile = warrior.human().fighterProfile();
     profile.powerClass.counterChance = 0.0F;
-    gang.human().setFighterProfile(profile);
-    CHECK_FALSE(coney::ai::counterTest(gang));
+    warrior.human().setFighterProfile(profile);
+    CHECK_FALSE(coney::ai::counterTest(warrior));
 }
 
-TEST_CASE("the counter is rolled on every update of the block time and writes R1 pressed against a grab", "[ai]") {
+TEST_CASE("only a type-3 brain facing the grabber may counter", "[ai]") {
     Scene scene;
     Brain& gang = scene.add({40.0F, 41.2F, 0.0F}, 180.0F, BrainType::Gang);
-    coney::human::FighterProfile profile = gang.human().fighterProfile();
-    profile.powerClass.counterChance = 1.0F; // rand100 is always under 100
-    gang.human().setFighterProfile(profile);
+    Brain& turned = scene.add({39.0F, 40.0F, 0.0F}, 90.0F, BrainType::Warrior);
     gang.setTarget(&scene.playerBrain());
+    turned.setTarget(&scene.playerBrain());
     scene.playerBrain().setTarget(&gang);
     scene.run(2);
-    REQUIRE(gang.pushGoal(std::make_unique<coney::ai::BlockGoal>()));
-    // Whether the player was in a grab's intro and whether the grab held the AI before the brains ran, and what the
-    // AI's record holds after them.
-    struct Seen {
-        bool intro = false;
-        bool held = false;
-        coney::combat::CommandId written = command::kNone;
-    };
-    std::vector<Seen> seen;
-    scene.step.setBrains([&scene, &seen, &gang](std::span<Human* const> /*humans*/) {
-        const bool intro = inGrabIntro(scene.player());
-        const bool held = gang.human().fighter().holdState().has_value();
-        scene.brains.update();
-        seen.push_back(Seen{.intro = intro, .held = held, .written = gang.human().record().command});
-    });
+    scene.player().record().command = command::kCircleTapped;
+    scene.step.update(scene.mesh.get());
+    scene.player().record().command = command::kNone;
+    REQUIRE(inGrabIntro(scene.player()));
+    // A gang soldier (type 2) never counters, and a Warrior the player does not aim at does not either.
+    CHECK_FALSE(coney::ai::counterTest(gang));
+    CHECK_FALSE(coney::ai::counterTest(turned));
+    // The face-to-face test alone: the player faces +y, a human 1.2 m ahead facing it passes, one beside it fails.
+    CHECK(coney::combat::faceToFace({40.0F, 40.0F, 0.0F}, 0.0F, {40.0F, 41.2F, 0.0F}, std::numbers::pi_v<float>));
+    CHECK_FALSE(
+        coney::combat::faceToFace({40.0F, 40.0F, 0.0F}, 0.0F, {38.8F, 40.0F, 0.0F}, -std::numbers::pi_v<float> / 2));
+}
+
+TEST_CASE("an AI's counter in the block time answers the player's grab with 76, the player playing 77", "[ai]") {
+    Scene scene;
+    Brain& warrior = scene.add({40.0F, 41.2F, 0.0F}, 180.0F, BrainType::Warrior);
+    coney::human::FighterProfile profile = warrior.human().fighterProfile();
+    profile.powerClass.counterChance = 1.0F; // rand100 is always under 100
+    warrior.human().setFighterProfile(profile);
+    warrior.setTarget(&scene.playerBrain());
+    scene.playerBrain().setTarget(&warrior);
+    scene.run(2);
+    REQUIRE(warrior.pushGoal(std::make_unique<coney::ai::BlockGoal>()));
+    const int health = scene.player().fighter().health().value();
     scene.run(3);
     scene.player().record().command = command::kCircleTapped;
     scene.step.update(scene.mesh.get());
     scene.player().record().command = command::kNone;
-    scene.run(15);
-    // Once the grab holds the AI its reaction goal holds the block off and it writes nothing (the counter 76 that its
-    // R1 pressed in the intro asks for is not built, so the grab goes on).
+    REQUIRE(inGrabIntro(scene.player()));
+    // The AI presses R1 (command 3) in the intro; the player's next update plays the pair.
     bool countered = false;
-    bool held = false;
-    for (const Seen& update : seen) {
-        const coney::combat::CommandId wanted =
-            update.held ? command::kNone : (update.intro ? command::kR1Pressed : command::kR1Held);
-        CHECK(update.written == wanted);
-        countered = countered || update.written == command::kR1Pressed;
-        held = held || update.held;
+    for (int k = 0; k < 6 && !countered; ++k) {
+        scene.run(1);
+        countered = warrior.human().animator().animId() == coney::combat::kAiGrabCounter;
     }
-    CHECK(countered);
-    CHECK(held);
+    REQUIRE(countered);
+    CHECK(scene.player().animator().animId() == coney::combat::kAiGrabCounter + 1);
+    // Never held: the grab ended with the counter. The player takes 76's damage (30) and is stunned.
+    CHECK_FALSE(warrior.human().fighter().holdState().has_value());
+    CHECK(scene.player().fighter().pairStage() == coney::human::PairStage::None);
+    scene.run(1);
+    CHECK(scene.player().fighter().health().value() == health - 30);
+    CHECK(scene.player().fighter().victim().stunned());
 }
 
 TEST_CASE("a block extended while the target attacks punishes in its last second", "[ai]") {

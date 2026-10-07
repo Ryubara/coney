@@ -76,8 +76,19 @@ void Humans::update(const raycast::CollisionMesh* mesh, std::span<Combatant* con
     for (Human* human : m_humans) {
         human->animate(mesh);
     }
-    for (Human* human : m_humans) {
-        human->updateState(mesh);
+    // Each human's strike test runs in its state update, after its move (the humans it fights, and the level's
+    // objects).
+    for (std::size_t slot = 0; slot < m_humans.size(); ++slot) {
+        m_humans[slot]->updateState(mesh);
+        if (m_humans[slot]->strikeShapes().anyOn()) {
+            m_victims.clear();
+            for (std::size_t other = 0; other < m_humans.size(); ++other) {
+                if (other != slot && opposed(slot, other)) {
+                    m_victims.push_back(m_humans[other]);
+                }
+            }
+            m_humans[slot]->testStrikes(m_victims, m_strikeContact ? &m_strikeContact : nullptr);
+        }
     }
     // 5. Every human's actions, first to last on one step and last to first on the next.
     const bool forward = m_steps % 2 == 0;

@@ -223,6 +223,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     void gangBrDead(int gang, bool dead) override;
     void gangBrFlush(int gang) override;
     void gangSetThreatResponse(int gang, int response) override;
+    void gangSetAttackable(int gang, bool on) override;
     void gangMakeEnemies(int a, int b) override;
     void gangMakeFriends(int a, int b) override;
     void gangSetMsgHandler(int gang, int message, std::string_view handler) override;

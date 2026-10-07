@@ -76,9 +76,11 @@ class BlockGoal final : public Goal {
     bool m_reactionsBack = false;    // the hit reactions were turned back on
 };
 
-/// The counter test (`0x0027d6e0`'s, inferred in part): the human free (record `+0x08` none of `0xfc7eaf7`) and not
-/// hurt, its counter chance above 0, and its target aiming at it and playing a grab's intro (69-71) or a tackle's (2-4)
-/// on its feet. **Coney choices**: the face-to-face test and the class / type gate are not built.
+/// The counter test (`0x0027d6e0`'s): the human free (record `+0x08` none of `0xfc7eaf7`) and not hurt, its counter
+/// chance above 0, a brain of type 3 (the gate `0x00223e20` while the byte `*(0x0051489c) + 0x56e3` is 0), and its
+/// target aiming at it, on its feet, face to face (combat::faceToFace(), inferred) and playing a grab's intro (69-71)
+/// or a tackle's (2-4) (combat::aiCounterFor()). **Coney reading**: the gate's other way in, a class whose `+0x11b`
+/// is 13, is left out (Coney does not keep that class byte), and the byte is taken as 0.
 [[nodiscard]] bool counterTest(const Brain& brain);
 
 /// The fight goal's block try: with an attack announced (`+0x200` not 0), a roll under the block chance (a quarter of

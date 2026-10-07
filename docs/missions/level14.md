@@ -25,13 +25,13 @@ little more, so its summary is still to be written from the script.
 
 ## What it needs {#needs}
 
-Its scripts can call 226 script bindings. 6 of them are new, which no earlier level of the story calls: 1 are
+Its scripts can call 226 script bindings. 6 of them are new, which no earlier level of the story calls: 2 are
 implemented in Coney and 6 are traced. The full list is on [the coverage page](../references/bindings/story.md#level14).
 
 | Family | New bindings | In Coney |
 | --- | --- | --- |
 | [AI](../references/bindings/ai.md) | 2 | 0 |
-| [Cameras](../references/bindings/camera.md) | 1 | 0 |
+| [Cameras](../references/bindings/camera.md) | 1 | 1 |
 | [World and objects](../references/bindings/world.md) | 2 | 0 |
 | [Scenes and movies](../references/bindings/scene.md) | 1 | 1 |
 

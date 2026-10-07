@@ -779,6 +779,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     // The story missions' cameras, particles, fog, litter and sound (story_effects_bindings.h).
     real("CamAddPoizoPoint"),
     real("CamAddPoizoPointCam"),
+    real("CamReversePoizo"),
     real("CamSetupPoizo"),
     real("CameraGetActive"),
     real("CameraSetClipping"),
@@ -978,6 +979,7 @@ constexpr auto kBindings = std::to_array<BindingInfo>({
     real("GangBrDead"),
     real("GangBrFlush"),
     real("GangSetThreatResponse"),
+    real("GangSetAttackable"),
     real("GangMakeEnemies"),
     real("GangMakeFriends"),
     real("GangSetMsgHandler"),

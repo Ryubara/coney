@@ -56,6 +56,45 @@ void readPowerClass(std::span<const script::Value> call, AiConfig& config) {
     config.powerClass = characters::parseCfgPowerClass(call, config.powerClass);
 }
 
+// Argument `index` of `call` truncated to an integer, else `fallback`.
+int intAt(std::span<const script::Value> call, std::size_t index, int fallback) {
+    const std::optional<double> value = numberAt(call, index);
+    return value.has_value() ? static_cast<int>(*value) : fallback;
+}
+
+// The enemy score's weights from the last `CfgSetTargetingPoints` and `CfgSetTargetingPointsEx` calls (each argument
+// that is a number replaces its weight; CfgSetTargetingPoints' sixth is read and dropped by the original).
+void readTargeting(const script::RecordedCalls& recorded, AiConfig& config) {
+    TargetingPoints& points = config.settings.targeting;
+    const std::span<const std::vector<script::Value>> plain = recorded.calls("CfgSetTargetingPoints");
+    if (!plain.empty()) {
+        const std::span<const script::Value> call = plain.back();
+        points.perMetre = static_cast<float>(numberAt(call, 0).value_or(points.perMetre));
+        points.stunned = intAt(call, 1, points.stunned);
+        points.outOfView = intAt(call, 2, points.outOfView);
+        points.down = intAt(call, 3, points.down);
+        points.grabbed = intAt(call, 4, points.grabbed);
+        points.nearTrain = intAt(call, 6, points.nearTrain);
+        points.targetsMe = intAt(call, 7, points.targetsMe);
+        points.previousTarget = intAt(call, 8, points.previousTarget);
+        ++config.callsRead;
+    }
+    const std::span<const std::vector<script::Value>> extra = recorded.calls("CfgSetTargetingPointsEx");
+    if (!extra.empty()) {
+        const std::span<const script::Value> call = extra.back();
+        points.leaderPerMetre = static_cast<float>(numberAt(call, 0).value_or(points.leaderPerMetre));
+        points.enemyLeads = intAt(call, 1, points.enemyLeads);
+        points.grabbedFromRear = intAt(call, 2, points.grabbedFromRear);
+        points.running = intAt(call, 3, points.running);
+        points.tagging = intAt(call, 4, points.tagging);
+        points.targetsMeArmed = intAt(call, 5, points.targetsMeArmed);
+        points.noWalkableLine = intAt(call, 6, points.noWalkableLine);
+        points.cannotChase = intAt(call, 7, points.cannotChase);
+        points.player = intAt(call, 8, points.player);
+        ++config.callsRead;
+    }
+}
+
 } // namespace
 
 AiConfig aiConfigFrom(const script::RecordedCalls& recorded, int type, int powerClass) {
@@ -79,6 +118,7 @@ AiConfig aiConfigFrom(const script::RecordedCalls& recorded, int type, int power
             ++config.callsRead;
         }
     }
+    readTargeting(recorded, config);
     return config;
 }
 

@@ -319,7 +319,7 @@ TEST_CASE("other swinging doors ignore hits; a destroyed one hits itself", "[wor
     CHECK(doors.hitpoints(cabin) == 8);
 }
 
-TEST_CASE("a barrier: links charged through, boards, hidden, then removed at its next update",
+TEST_CASE("a barrier: links charged through, boards, hidden, then removed with its body at its next update",
           "[world_objects][doors]") {
     coney::test::ObjectWorldFixture fixture;
     Doors doors;
@@ -340,7 +340,8 @@ TEST_CASE("a barrier: links charged through, boards, hidden, then removed at its
     // A charge (16) breaks the 6 left.
     doors.hit(handle, hitBy(HitKind::Charge), fixture.world);
     CHECK(doors.find(handle)->hidden);
-    CHECK_FALSE(fixture.enabled(0));
+    // Its triangles stand for the body the break leaves, until the removal.
+    CHECK(fixture.enabled(0));
     CHECK_FALSE(fixture.paths.edges()[0].avoid);
     CHECK(fixture.services.spawned.size() == 3);
     CHECK_FALSE(doors.hit(handle, hitBy(HitKind::Plain), fixture.world));
@@ -350,6 +351,7 @@ TEST_CASE("a barrier: links charged through, boards, hidden, then removed at its
     tick(doors, fixture, coney::world_objects::kBarrierInterval);
     CHECK(doors.takeRemoved() == std::vector<double>{handle});
     CHECK(doors.find(handle)->removed);
+    CHECK_FALSE(fixture.enabled(0));
     tick(doors, fixture, coney::world_objects::kBarrierInterval);
     CHECK(doors.takeRemoved().empty());
 }

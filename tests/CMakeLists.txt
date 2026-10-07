@@ -209,14 +209,17 @@ target_sources(coney_tests PRIVATE
     human/jump_test.cpp
     human/locomotion_test.cpp
     human/pair_placement_test.cpp
+    human/player_snapshot_test.cpp
     human/player_trace_test.cpp
     human/stamina_test.cpp
+    human/strike_shapes_test.cpp
     human/traversal_test.cpp
     human/turn_and_slide_test.cpp
     human/humans_test.cpp
     human/locomotion_gate_test.cpp)
 # Combat (docs/research/combat.md).
 target_sources(coney_tests PRIVATE
+    combat/ai_counter_test.cpp
     combat/anim_ranges_test.cpp
     combat/commands_test.cpp
     combat/attacks_test.cpp
@@ -265,6 +268,7 @@ target_sources(coney_tests PRIVATE
     ai/formations_test.cpp
     ai/gangs_test.cpp
     ai/move_action_test.cpp
+    ai/perception_test.cpp
     ai/route_planner_test.cpp
     ai/scripted_goals_test.cpp
     ai/scripted_hub_test.cpp
@@ -273,7 +277,8 @@ target_sources(coney_tests PRIVATE
     ai/scripted_story_test.cpp
     ai/spawners_test.cpp
     ai/rumble_tactics_test.cpp
-    ai/tactics_test.cpp)
+    ai/tactics_test.cpp
+    ai/targeting_test.cpp)
 # The sound engine, its data and streams, the mixer and the game-facing sound calls (docs/research/sound.md).
 target_sources(coney_tests PRIVATE audio/adpcm_test.cpp audio/disc_sound_test.cpp audio/game_sound_test.cpp
                                    audio/mixer_test.cpp audio/music_player_test.cpp audio/object_sounds_test.cpp

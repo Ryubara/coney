@@ -46,11 +46,12 @@ constexpr Vec3 kFeet{40.0F, 40.0F, 0.0F};
 constexpr double kFollowHandle = 7.0;
 constexpr double kLockedHandle = 8.0;
 
-// A locked camera east of the player looking west, as the tutorial's cut-aways are made.
+// A locked camera east of the player looking west and down, as the tutorial's cut-aways are made (their pitches are
+// negative).
 LockedCamera cutAway() {
     return LockedCamera{.position = Vec3{50.0F, 40.0F, 3.0F},
                         .headingDegrees = 90.0F,
-                        .pitchDegrees = 10.0F,
+                        .pitchDegrees = -10.0F,
                         .rollDegrees = 0.0F,
                         .fieldOfView = 50.0F,
                         .nearClip = 0.1F,
@@ -83,6 +84,7 @@ struct Rig {
 
 TEST_CASE("a locked camera looks along its heading and pitch at a point 3 m ahead, its far clip at most 150",
           "[camera]") {
+    // Heading 90 looks along -x; pitch -10 looks down.
     const CameraView view = cutAway().view();
     const Vec3 forward = coney::camera::viewForward(view);
     CHECK(near(forward, Vec3{-std::cos(10.0F * kDegree), 0.0F, -std::sin(10.0F * kDegree)}));
@@ -95,6 +97,69 @@ TEST_CASE("a locked camera looks along its heading and pitch at a point 3 m ahea
     rolled.pitchDegrees = 0.0F;
     rolled.rollDegrees = 90.0F;
     CHECK(near(coney::camera::viewUp(rolled.view()), Vec3{0.0F, 1.0F, 0.0F}));
+}
+
+TEST_CASE("a scripted camera's angles turn it as the original's do: heading anticlockwise, pitch up, roll right",
+          "[camera]") {
+    // level99's fence shot, CameraCreateLocked(..., heading 177.78334, pitch -11.8545, roll 0): the original's
+    // quaternion and forward read at runtime (docs/research/camera.md#scripted-angles).
+    const coney::anim::Quat q = coney::camera::scriptedOrientation(177.78334F, -11.8545F, 0.0F);
+    CHECK(q.x == Approx(-0.00200F).margin(5e-5));
+    CHECK(q.y == Approx(-0.10325F).margin(5e-5));
+    CHECK(q.z == Approx(0.99447F).margin(5e-5));
+    CHECK(q.w == Approx(0.01924F).margin(5e-5));
+    LockedCamera fence = cutAway();
+    fence.headingDegrees = 177.78334F;
+    fence.pitchDegrees = -11.8545F;
+    CHECK(near(coney::camera::viewForward(fence.view()), Vec3{-0.0379F, -0.9779F, -0.2054F}, 1e-4F));
+    // A positive pitch looks up; the heading grows anticlockwise from +y.
+    const auto turned = [](float h, float p, float r, Vec3 axis) {
+        return coney::anim::transformDirection(coney::anim::matrixFromQuat(coney::camera::scriptedOrientation(h, p, r)),
+                                               axis);
+    };
+    const Vec3 ahead{0.0F, 1.0F, 0.0F};
+    CHECK(near(turned(0.0F, 30.0F, 0.0F, ahead), Vec3{0.0F, std::cos(30.0F * kDegree), std::sin(30.0F * kDegree)}));
+    CHECK(near(turned(90.0F, 0.0F, 0.0F, ahead), Vec3{-1.0F, 0.0F, 0.0F}));
+    CHECK(near(turned(-90.0F, 0.0F, 0.0F, ahead), Vec3{1.0F, 0.0F, 0.0F}));
+    // The pitch turns about the camera's own right axis after the heading, not about world x.
+    const float h = 60.0F * kDegree;
+    const float p = -20.0F * kDegree;
+    CHECK(near(turned(60.0F, -20.0F, 0.0F, ahead),
+               Vec3{-std::sin(h) * std::cos(p), std::cos(h) * std::cos(p), std::sin(p)}));
+    // The roll turns about the camera's own forward: the up of heading h, pitch p, roll r.
+    const float r = 15.0F * kDegree;
+    CHECK(near(turned(60.0F, -20.0F, 15.0F, Vec3{0.0F, 0.0F, 1.0F}),
+               Vec3{std::cos(h) * std::sin(r) + std::sin(h) * std::sin(p) * std::cos(r),
+                    std::sin(h) * std::sin(r) - std::cos(h) * std::sin(p) * std::cos(r), std::cos(p) * std::cos(r)}));
+}
+
+TEST_CASE("the story's scripted shots get the original's orientation from their angles", "[camera]") {
+    // Heading, pitch and roll of a sample of the story levels' locked cameras and path points, with the quaternion
+    // the original builds from them (docs/research/camera.md#scripted-angles): looking down, looking up, rolled,
+    // turned both ways and nearly straight down.
+    struct Shot {
+        float heading, pitch, roll;
+        coney::anim::Quat expected;
+    };
+    const std::array<Shot, 10> shots{{
+        {151.472F, -11.5263F, 0.0F, {-0.0247F, -0.0973F, 0.9643F, 0.2451F}},    // level99 VerminCar
+        {-90.9505F, -3.46206F, 0.0F, {-0.0212F, 0.0215F, -0.7126F, 0.7009F}},   // level99 VerminFencePoizo
+        {179.0F, 18.7462F, 0.0F, {0.0014F, 0.1629F, 0.9866F, 0.0086F}},         // level99 DealerPoizo
+        {-163.123F, -3.89276F, 0.0F, {-0.0050F, 0.0336F, -0.9886F, 0.1467F}},   // level80 StartCam1
+        {-38.9021F, 21.1778F, -0.1F, {0.1730F, -0.0620F, -0.3275F, 0.9268F}},   // level87 tag camera one
+        {-43.8407F, -5.98782F, -4.6F, {-0.0634F, -0.0177F, -0.3706F, 0.9265F}}, // level87 tag camera ten
+        {114.641F, 12.0142F, 0.9F, {0.0499F, 0.0923F, 0.8375F, 0.5363F}},       // level87 tag camera eleven
+        {-118.461F, -3.43204F, 0.0F, {-0.0153F, 0.0257F, -0.8588F, 0.5114F}},   // level87 street path point
+        {-88.8169F, -73.0261F, 0.0F, {-0.4251F, 0.4164F, -0.5624F, 0.5742F}},   // level3 chase FixCam10
+        {179.424F, -26.5746F, 0.4F, {-0.0046F, -0.2298F, 0.9732F, 0.0057F}},    // level95 clubhouse, rolled
+    }};
+    for (const Shot& shot : shots) {
+        const coney::anim::Quat q = coney::camera::scriptedOrientation(shot.heading, shot.pitch, shot.roll);
+        CHECK(q.x == Approx(shot.expected.x).margin(2e-4));
+        CHECK(q.y == Approx(shot.expected.y).margin(2e-4));
+        CHECK(q.z == Approx(shot.expected.z).margin(2e-4));
+        CHECK(q.w == Approx(shot.expected.w).margin(2e-4));
+    }
 }
 
 TEST_CASE("a blend lerps the points and slerps the orientation linearly in time; the far clip never grows",
@@ -124,8 +189,10 @@ TEST_CASE("CameraMakeActive with 0 s cuts; with 1 s it blends from the view show
           "[camera]") {
     Rig rig;
     CHECK(rig.cameras.current().kind == CameraKind::Follow);
+    const std::uint32_t cuts = rig.cameras.cuts();
     rig.cameras.makeActive(kLockedHandle, 0.0F);
     CHECK(rig.cameras.current().kind == CameraKind::Locked);
+    CHECK(rig.cameras.cuts() == cuts + 1);
     rig.step();
     const CameraView locked = cutAway().view();
     CHECK(near(rig.cameras.view().position, locked.position));
@@ -148,6 +215,8 @@ TEST_CASE("CameraMakeActive with 0 s cuts; with 1 s it blends from the view show
     CHECK(more >= 15);
     CHECK(more <= 16);
     CHECK(rig.cameras.current().kind == CameraKind::Follow);
+    // A blend, even when it hands over at its end, is not a cut.
+    CHECK(rig.cameras.cuts() == cuts + 1);
     rig.step();
     CHECK(near(rig.cameras.view().position, rig.follow.position()));
     // A handle that names no camera changes nothing.

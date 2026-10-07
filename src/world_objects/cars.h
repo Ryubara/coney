@@ -7,6 +7,7 @@
 #include <functional>
 #include <optional>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "animation/anim_math.h"
@@ -58,6 +59,20 @@ struct Car {
     double trunkObject = 0;                 ///< `+0x120c`: the object in the boot, 0 for none.
     std::uint8_t trunkMoney = 0;            ///< `+0x12e5`: else the dollars a `dyn_money` pickup will hold.
     bool exploded = false;                  ///< `+0x12d5`: it has blown up.
+};
+
+/// A part that came off a car, for what shows and sounds it: the hook a window's shatter and its sound are made from
+/// (docs/research/cars.md#windows). The original plays a part's first-hit effect on a hit (`0x0038a830`: windows 15
+/// and 19 burst along the part frame's −x, 17 and 21 along +x); which effect and sound that is, is not on the page
+/// yet, so Coney only reports the break.
+struct CarPartBreak {
+    double car = 0;           ///< The car's handle.
+    std::uint32_t part = 0;   ///< The part id (0-25).
+    bool window = false;      ///< One of the windows 15, 17, 19, 21 (kCarWindowParts).
+    bool instant = false;     ///< Knocked off by instant damage (the car exploding), not a hit.
+    anim::Vec3 burst{};       ///< A window's burst direction in world axes: the car's −x for 15/19, +x for 17/21.
+    anim::Vec3 carPosition{}; ///< The car's place (game axes), for finding the part's atomic in its model.
+    anim::Quat carRotation{}; ///< The car's turn.
 };
 
 /// What `Car_UpdateRender` makes of a paint word for the model: `CarSetColor`'s `{c1, c2, c3, c4}` stored in that
@@ -184,10 +199,17 @@ class Cars {
     /// Where a car's stereo sits (game axes): carStereoPosition().
     [[nodiscard]] static anim::Vec3 stereoPosition(const Car& car);
 
+    /// The parts that came off since the last call (damagePart()), in order, once: the presentation's hook for a
+    /// window's shatter and sound and a part's fall.
+    [[nodiscard]] std::vector<CarPartBreak> takeBreaks() { return std::exchange(m_breaks, {}); }
+
     /// Every car, oldest first.
     [[nodiscard]] const std::vector<Car>& all() const { return m_cars; }
     /// Forgets every car: the level is unloaded.
-    void clear() { m_cars.clear(); }
+    void clear() {
+        m_cars.clear();
+        m_breaks.clear();
+    }
 
   private:
     // `Car_ReleaseTrunkItem`: the boot's object moved to the boot, or a `dyn_money` pickup of its dollars made there.
@@ -195,10 +217,30 @@ class Cars {
     void releaseTrunk(Car& car);
 
     std::vector<Car> m_cars;
+    std::vector<CarPartBreak> m_breaks; // parts off since the last takeBreaks()
     effects::ParticleSystems* m_particles = nullptr;
     SpawnRecords* m_records = nullptr;
     NextHandle m_nextHandle;
 };
+
+/// The stereo's object type, which `CarSpawnRadio` adds to the world objects (docs/research/cars.md#windows).
+inline constexpr std::string_view kCarStereoType = "dyn_carstereo";
+
+/// One car stereo to draw: its model (the CRC-32 of kCarStereoType, as every object type's model hash is) at its
+/// place in the car, turned with the car.
+struct StereoDraw {
+    /// The key it is drawn under: **Coney's stand-in** for the stereo's own world-object handle, which Coney does not
+    /// make: the car's handle + 0.25 (cars are not drawn as placed objects, so it meets no other key).
+    double handle = 0;
+    std::uint32_t modelHash = 0; ///< The Object List key of its model.
+    anim::Vec3 position{};       ///< Where it sits (game axes).
+    anim::Quat rotation{};       ///< The car's turn.
+};
+
+/// The stereos `cars` draw: one per car whose stereo is in it or freed by its broken window, none once taken. The
+/// original moves the stereo with the car's transform each update (`0x0038bb48`); Coney's cars stand still, so it is
+/// the car's pose at Cars::stereoPosition().
+[[nodiscard]] std::vector<StereoDraw> stereoDraws(const Cars& cars);
 
 /// The part removed with `part` (a door's window), or nothing: doors 14, 16, 18, 20 take windows 15, 17, 19, 21
 /// (docs/research/cars.md#type-record; the same in every type, inferred).

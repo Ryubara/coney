@@ -136,6 +136,7 @@ std::expected<void, Error> PlayLevelMode::changeCharacter(int type) {
     if (m_planner) {
         m_ai->brains().setPlanner(m_planner.get());
     }
+    m_ai->brains().setCollision(&m_scenery->collision());
     for (const human::PlayerStart& fighter : fighters) {
         addFighter(fighter.position, fighter.headingDegrees);
     }

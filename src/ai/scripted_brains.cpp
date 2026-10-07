@@ -587,6 +587,13 @@ void ScriptedBrains::gangSetThreatResponse(int gang, int response) {
     m_owner->gangs().setThreatResponse(gang, response);
 }
 
+void ScriptedBrains::gangSetAttackable(int gang, bool on) {
+    if (held([this, gang, on] { gangSetAttackable(gang, on); })) {
+        return;
+    }
+    m_owner->gangs().setAttackable(gang, on);
+}
+
 void ScriptedBrains::gangMakeEnemies(int a, int b) {
     if (held([this, a, b] { gangMakeEnemies(a, b); })) {
         return;

@@ -244,6 +244,7 @@
     0x002bb614). Brain_IsAttackableBy has extra rules for an attacker of character type 0xdd and for police
     (gang kind 0x17) brains of kind 4, not traced further.
   usage: {chunks: 4, calls: 7, boot: false, mission1: false, result_used: false, levels: [93, 9, 54]}
+  coney: implemented
 
 - name: GangSetHearRange
   wrapper: 0x0035f7f8

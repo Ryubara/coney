@@ -26,6 +26,8 @@ inline constexpr int kMoveToHumanRetryUpdates = 30;
 inline constexpr float kChargeRange = 1.6F;
 inline constexpr float kEngageStopShare = 0.75F;
 inline constexpr float kEngageGiveUpRange = 20.0F;
+/// The runner sprints after a running target only with more stamina than this, percent (`0x00222fa0`).
+inline constexpr int kEngageSprintStamina = 50;
 inline constexpr std::uint64_t kEngageReplanMs = 250;
 inline constexpr std::uint64_t kEngageRetargetMs = 2000;
 inline constexpr float kEngageMoveRadius = 0.5F;
@@ -64,16 +66,16 @@ class MoveToHumanGoal final : public Goal {
 /// The engage-enemy goal (type 11): the run-in (docs/research/ai.md#engage-enemy). The Melee goal pushes it at a target
 /// beyond the fight goal's range; it runs at him (gait 4, 5 when he runs), re-planning every 250 ms, and ends, handing
 /// back to the Melee goal, by stopping and turning to him: within 0.75 × the far melee range when he is busy, or when
-/// the charge is not armed and he walks or stands; or after a failed move. Armed (he was at least the far range away
-/// at its start, or he runs), it attacks out of the run within 1.6 m. It gives up only far off and out of sight, and
-/// has no time limit. It clears the target's `+0x1ec`, so the fight may attack him at once.
-/// **Coney stand-ins**: the line of sight and `Brain_IsAttackableBy` always hold, so the stop "at any distance" never
-/// happens; out of sight is beyond the sight range; the sprint ignores stamina; the target is busy while not standing
-/// or while his record holds an attack's flags (kAttackWaitFlags); the lead applies while he faces away from the
-/// runner (within 60°), fanned 9° per attack slot index; "actions blocked" ends nothing (a human down waits); the
-/// shouts, the taunt and brain `+0x0b` are not built. The binding's goal (`GoalEngageEnemy`, by handle) takes the enemy
-/// as its enemy and target, and where the fight's goal would end it pushes a fight goal and goes on (the wrapper
-/// `0x002af528` is not traced; its page says the human fights the enemy until he is out of range or gone).
+/// the charge is not armed and he walks or stands; or after a failed move. Armed (he was at least the far range away at
+/// its start, or he runs), it attacks out of the run within 1.6 m. It gives up only far off and out of sight, and has
+/// no time limit. It clears the target's `+0x1ec`, so the fight may attack him at once. The re-target takes the nearest
+/// enemy it can see within 9 m; out of sight is the line of sight (ai::lineOfSight()); it sprints only with more than
+/// half its stamina. **Coney stand-ins**: the target is busy while not standing or while his record holds an attack's
+/// flags (kAttackWaitFlags); the lead applies while he faces away from the runner (within 60°), fanned 9° per attack
+/// slot index; "actions blocked" ends nothing (a human down waits); the shouts, the taunt and brain `+0x0b` are not
+/// built. The binding's goal (`GoalEngageEnemy`, by handle) takes the enemy as its enemy and target, and where the
+/// fight's goal would end it pushes a fight goal and goes on (the wrapper `0x002af528` is not traced; its page says the
+/// human fights the enemy until he is out of range or gone).
 /// @orig 0x002af5b0 EngageEnemyGoal_Init (unknown)
 class EngageEnemyGoal final : public Goal {
   public:

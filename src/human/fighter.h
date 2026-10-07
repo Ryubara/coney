@@ -90,6 +90,7 @@ struct FighterInput {
     std::span<Combatant* const> targets;     ///< The humans that can be fought.
     float stepSeconds = kStepSeconds;        ///< The characters' step: 1/30 s, less in slow motion.
     std::span<const ObjectTarget> objects{}; ///< The breakable objects square may strike.
+    bool strikeShapes = false; ///< The moving attacks strike through the human's shapes (strikeContact()).
 };
 
 /// The camera shake a reaction asks for (docs/research/camera.md#shake): on the attacker's camera when a player hit,
@@ -194,6 +195,11 @@ class Fighter {
     /// block alike), oldest first: what the combat tutorial's callback hears (docs/research/hud.md#tutorial-callback).
     /// An AI's hits are not kept.
     [[nodiscard]] const std::vector<int>& strikes() const { return m_strikes; }
+    /// A strike shape of this human's moving attack `animId` met `victim` in the strike test (Human::testStrikes(),
+    /// human/strike_shapes.h): the hit lands as a free hit does, with the clip's Anim Range List damage, from
+    /// `position` at game time `nowMs`, earning its rage; strikes() reports it after the update's actions.
+    ///  0x0021b290 Strike_Contact (unknown)
+    void strikeContact(Combatant& victim, int animId, anim::Vec3 position, std::uint64_t nowMs);
     /// The object an object attack's hit struck this update (its handle); nothing otherwise.
     [[nodiscard]] std::optional<double> objectHit() const { return m_objectHit; }
     /// Starts the stereo theft (mode 3) at game time `nowMs`, a stage `stageTurns` turns of the stick: 683
@@ -250,6 +256,11 @@ class Fighter {
     /// Puts back a broken hold taken from the fighter this one replaces (a placement starts the fighting afresh, but
     /// the grabber must still hear of the break).
     void setBrokenHold(std::optional<TargetState> broken) { m_brokenFrom = broken; }
+    /// The AI counter (command 3) this human (one no pad drives) pressed on its last update while free to counter
+    /// (combat::aiCounterAllowed()), with what each counter would deal from its Anim Range List, once: the grabber or
+    /// tackler whose intro is under way takes it and plays the pair (answerCounter()).
+    /// Research: docs/research/ai.md#block
+    [[nodiscard]] std::optional<CounterPress> takeCounterPress();
     /// The grabbing player's movement: with the hold standing still (no move playing) and the stick beyond
     /// CombatTuning::grabTurnStick, turns `heading` towards the stick's heading `stickHeading` + 180° (the grabber's
     /// back to the stick) by combat::grabTurnStep() and returns the pair's backward walk (m/s, world axes); zero
@@ -292,6 +303,8 @@ class Fighter {
     [[nodiscard]] bool rageStarted() const { return m_rageStarted; }
     /// Held in another human's grab.
     [[nodiscard]] bool grabbed() const { return m_grabbed.has_value(); }
+    /// Held in another human's grab from behind.
+    [[nodiscard]] bool grabbedFromRear() const { return m_grabbed.has_value() && m_grabbed->fromRear; }
     /// The player's health (record `+0x144`).
     [[nodiscard]] const combat::Health& health() const { return m_health; }
     [[nodiscard]] combat::Health& health() { return m_health; }
@@ -354,6 +367,9 @@ class Fighter {
     static void playBlock(const FighterInput& input, HumanAnimator& animator);
     // Lands a hit of attack `animId` and `damage`, and gives the rage it earns.
     void landHit(int animId, int damage, const FighterInput& input);
+    // Applies a hit of attack `animId` and `damage` to `victim` from `attacker` (`heldMove`: a move in a hold, which
+    // plays its own victim clips), counts it and gives the rage it earns at `nowMs`.
+    void applyHit(Combatant& victim, int animId, int damage, bool heldMove, anim::Vec3 attacker, std::uint64_t nowMs);
     // Gives the rage hit `animId` earns (`isThrow`: the throw bonus), only to a human that may rage (flag 0x2000000,
     // `Human_AddRage`).
     void earnRage(int animId, std::uint64_t nowMs, bool isThrow = false);
@@ -378,6 +394,12 @@ class Fighter {
     // A strong grapple's connect has ended in the hold: the victim takes the strike's damage, reported as the hold's
     // id (docs/research/combat.md#strong-grapple).
     void landGrapple(const FighterInput& input);
+    // During its grab's or tackle's intro, the victim's counter press (Holdable::takeCounterPress()), face to face:
+    // the hold ends, the victim plays the counter (76 or 9) and this human the reaction from the victim's set (77 or
+    // 10), takes the counter's damage and is stunned. Returns whether it played.
+    // @orig 0x0027d6e0 Player_TryCounterGrab (unknown)
+    // @orig 0x00262ac8 Attack_StartPaired (unknown)
+    bool answerCounter(const FighterInput& input, HumanAnimator& animator, float heading);
     // A power move in a grab (57, 63 and their extensions) has played out: the grab ends, the grabber settling through
     // 389 as queued, the victim on the ground, to get up after its time (docs/research/combat.md#grabbing).
     void endPowerMove();
@@ -477,6 +499,7 @@ class Fighter {
     std::vector<int> m_strikes;           // a player's struck hits' anim ids in the last update
     std::optional<double> m_objectTarget; // the object square's object attack aims at
     std::optional<double> m_objectHit;    // the object an object attack struck this update
+    std::vector<int> m_shapeStrikes;      // strikeContact()'s hits since the last update, for strikes()
     int m_damageDealt = 0;
 
     // The victim side.
@@ -512,6 +535,7 @@ class Fighter {
     bool m_holdAttached = false;    // placed by that grabber each update
     bool m_rageStarted = false;     // rage started in the last update
     bool m_counterAsked = false;    // the duck's counter was asked for (record +0x14 = 0xe)
+    bool m_counterPressed = false;  // command 3 pressed on the last update while free to counter (an AI's)
     bool m_hitReactionsOff = false; // human +0xe0 0x800
 };
 

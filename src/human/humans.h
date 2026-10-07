@@ -52,13 +52,16 @@ class Humans {
     void setBrains(BrainsHook brains) { m_brains = std::move(brains); }
     /// Sets what an airborne human's body touches (Human::BodyContact), given to every human it steps; empty: nothing.
     void setBodyContact(Human::BodyContact contact) { m_bodyContact = std::move(contact); }
+    /// Sets what a human's switched-on strike shapes meet beyond the humans (Human::testStrikes()); empty: nothing.
+    void setStrikeContact(Human::StrikeContact contact) { m_strikeContact = std::move(contact); }
 
     /// One characters' step, in the original's order (docs/research/tasks.md#humans-update): the records no pad
     /// drives lose their command; the brains write theirs; every human's animation; every human's state update (the
-    /// locomotion); every human's actions (the dispatcher from its record, against the passive `targets` and the
-    /// humans it is opposed to, as add() and setOpposition() say), the order alternating between first-to-last and
-    /// last-to-first from one step to the next. `mesh` is what they stand on (may be null). Every human advances by
-    /// `stepSeconds`, the characters' step, which slow motion shortens (docs/research/camera.md#slow-motion).
+    /// locomotion, then its strike test against the humans it is opposed to and setStrikeContact()'s objects); every
+    /// human's actions (the dispatcher from its record, against the passive `targets` and the humans it is opposed to,
+    /// as add() and setOpposition() say), the order alternating between first-to-last and last-to-first from one step
+    /// to the next. `mesh` is what they stand on (may be null). Every human advances by `stepSeconds`, the characters'
+    /// step, which slow motion shortens (docs/research/camera.md#slow-motion).
     /// @orig 0x00249108 Humans_Update (unknown)
     void update(const raycast::CollisionMesh* mesh, std::span<Combatant* const> targets = {},
                 float stepSeconds = kStepSeconds);
@@ -82,6 +85,8 @@ class Humans {
     std::vector<Combatant*> m_scratch; // gatherTargets()'s list
     BrainsHook m_brains;
     Human::BodyContact m_bodyContact;
+    Human::StrikeContact m_strikeContact;
+    std::vector<Human*> m_victims; // the strike test's list
     std::uint64_t m_steps = 0;
 };
 

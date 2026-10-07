@@ -30,9 +30,9 @@ to run it.
 | [Mission 7: Adios Amigo](level5.md) | `level5` | 🚧 In Progress | 0 of 4 | 0 | 14 of 16 |
 | [Mission 8: Encore](level81.md) | `level81` | ⬜ Not Started | 0 of 5 | 0 | 5 of 20 |
 | [Mission 9: Payin' The Cost](level86.md) | `level86` | ⬜ Not Started | 0 of 4 | 0 | 4 of 17 |
-| [Mission 10: Destroyed](level93.md) | `level93` | ⬜ Not Started | 0 of 6 | 0 | 2 of 24 |
+| [Mission 10: Destroyed](level93.md) | `level93` | ⬜ Not Started | 0 of 6 | 0 | 3 of 24 |
 | [Mission 11: Boys In Blue](level31.md) | `level31` | ⬜ Not Started | 0 of 6 | 0 | 2 of 9 |
-| [Mission 12: Set Up](level14.md) | `level14` | ⬜ Not Started | 0 of 3 | 0 | 1 of 6 |
+| [Mission 12: Set Up](level14.md) | `level14` | ⬜ Not Started | 0 of 3 | 0 | 2 of 6 |
 | [Mission 13: All-City](level9.md) | `level9` | ⬜ Not Started | 0 of 3 | 0 | 1 of 6 |
 | [Mission 14: Desperate Dudes](level51.md) | `level51` | ⬜ Not Started | 0 of 7 | 0 | 1 of 6 |
 | [Mission 15: No Permits, No Parley](level52.md) | `level52` | ⬜ Not Started | 0 of 4 | 0 | 0 of 4 |

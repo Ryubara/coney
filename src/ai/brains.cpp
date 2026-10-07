@@ -11,6 +11,7 @@ Brain& Brains::add(human::Human& human, BrainType type, const FightSettings& set
     m_brains.push_back(std::make_unique<Brain>(human, type, settings, seed));
     m_brains.back()->setSlot(m_brains.size() - 1);
     m_brains.back()->setPlanner(m_planner);
+    m_brains.back()->setCollision(m_collision);
     return *m_brains.back();
 }
 
@@ -21,6 +22,7 @@ void Brains::remove(const human::Human& human) {
         return;
     }
     m_gangs.removeMember(**found);
+    m_gangs.forget(**found);
     m_formations.forget(**found);
     for (const std::unique_ptr<Brain>& other : m_brains) {
         other->forget(**found);
@@ -41,6 +43,13 @@ void Brains::setPlanner(RoutePlanner* planner) {
     m_planner = planner;
     for (const std::unique_ptr<Brain>& brain : m_brains) {
         brain->setPlanner(planner);
+    }
+}
+
+void Brains::setCollision(const raycast::CollisionMesh* collision) {
+    m_collision = collision;
+    for (const std::unique_ptr<Brain>& brain : m_brains) {
+        brain->setCollision(collision);
     }
 }
 

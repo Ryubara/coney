@@ -238,6 +238,7 @@ PlayLevelMode::PlayLevelMode(RenderEngine& engine, const io::Wad& wad, std::uniq
     } else {
         m_ai = std::make_unique<ai::AiHumans>(*m_player, *m_character, setup.ai);
         m_ai->brains().setPlanner(m_planner.get());
+        m_ai->brains().setCollision(&m_scenery->collision());
         for (const sandbox::FighterPoint& point : m_scenery->fighters()) {
             addFighter(point.position, point.headingDegrees);
         }
@@ -358,13 +359,14 @@ std::string PlayLevelMode::fightersState() const {
 }
 
 WorldView PlayLevelMode::view(const human::PlayerSnapshot& snapshot, float drawDistance) const {
-    // The follow camera, in RenderWare's axes.
+    // The current camera, in RenderWare's axes, kept upright by its up (a scripted camera's roll tips it,
+    // docs/research/camera.md#locked-cameras).
     const world::Vec3 position = toRenderWare(snapshot.cameraEye);
     const anim::Vec3 look = anim::subtract(snapshot.cameraTarget, snapshot.cameraEye);
     const anim::Vec3 forwardGame = anim::length(look) > 1e-6F ? anim::normalise(look) : anim::Vec3{0.0F, 1.0F, 0.0F};
     const anim::Vec3 forward = directionToRenderWare(forwardGame);
-    const anim::Vec3 worldUp{0.0F, 1.0F, 0.0F};
-    anim::Vec3 right = anim::cross(forward, worldUp);
+    const anim::Vec3 upHint = directionToRenderWare(snapshot.cameraUp);
+    anim::Vec3 right = anim::cross(forward, anim::length(upHint) > 1e-6F ? upHint : anim::Vec3{0.0F, 1.0F, 0.0F});
     right = anim::length(right) > 1e-6F ? anim::normalise(right) : anim::Vec3{-1.0F, 0.0F, 0.0F};
     const anim::Vec3 up = anim::cross(right, forward);
     // Through the current camera's lens (a locked camera's is narrower), its far clip capping the draw distance

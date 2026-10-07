@@ -2622,29 +2622,47 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   `AttackAction` (the command once in Start, the delay halved when the target targets the attacker or the brain is
   type 3, then a wait on `0x5c0221f`), `MoveToHumanAction` (a heading and speed in the record's `move`, no stick).
 - **A fight's three goals** ([Closing on the target](#fight-approach), `repo:src/ai/melee_goal.h`,
-  `repo:src/ai/engage_goals.h`): `Brain::fight` (with a duration, `GoalFight`'s none, a rioter's 8000 ms) pops any
-  Melee or FindEnemy goal with everything above it and pushes FindEnemy, Melee and the fight goal, whose deadline
-  is the duration. The fight goal never closes a distance; the **Melee** goal (no limit or the duration from its first
-  run) keeps the current target while valid or takes the nearest valid enemy, pushes a fight goal of 4000 ms within
-  1.1 × the far range (after a walk at gait 2 when the straight line does not reach him) and an **EngageEnemy** goal
-  beyond it; **FindEnemy** starts the fight again while the target can be fought. EngageEnemy runs at gait 4 (5 after
-  a runner), re-plans every 250 ms, leads a target facing away, stops and turns to him within 3.75 m when he is busy
-  or the charge is not armed and he walks or stands, and attacks out of the run within 1.6 m with the charge armed.
-  **Stand-ins**: the enemies' scores, the line-of-sight tests, `Brain_IsAttackableBy` and the gang's wanted timer are
-  not traced (the nearest enemy, always in sight, always attackable, the chase always allowed); with no valid target
-  Melee ends rather than spectating; a human whose last move failed runs straight at the target for 2 s and may
-  approach again (the weapon pick-up, throw and positioning moves are not traced); the sprint ignores stamina; "out
-  of sight" is beyond the sight range; the type-3 AttackTarget gate and goal `0x35` are not built; past its deadline
-  a fight goal ends only without an attack slot (the slot standing in for the target's active attackers).
-  `level99`'s sparring Warriors are sent from 8.6-9.0 m ([the sparring fight](#level99-fight)) and run in this way:
-  `coney_tests "the disc's level99: the sparring Warriors*"` checks that all three run in with EngageEnemy, close in
-  and attack.
+  `repo:src/ai/engage_goals.h`): `Brain::fight` (with a duration, `GoalFight`'s none, a rioter's 8000 ms) pops any Melee
+  or FindEnemy goal with everything above it and pushes FindEnemy, Melee and the fight goal, whose deadline is the
+  duration. The fight goal never closes a distance; the **Melee** goal (no limit or the duration from its first run)
+  takes the best-scoring enemy (below), pushes a fight goal of 4000 ms within 1.1 × the far range (after a walk at gait
+  2 when the straight line does not reach him) and an **EngageEnemy** goal beyond it; **FindEnemy** starts the fight
+  again while the target can be fought. EngageEnemy runs at gait 4 (5 after a runner), re-plans every 250 ms, leads a
+  target facing away, stops and turns to him within 3.75 m when he is busy or the charge is not armed and he walks or
+  stands, and attacks out of the run within 1.6 m with the charge armed. EngageEnemy stops for a target in sight it may
+  not attack (`Brain_IsAttackableBy`), re-targets the nearest enemy it sees within 9 m, and gives up out of sight 20 m
+  away. **Stand-ins**: the gang's wanted timer is not kept (the chase always allowed); Melee's own line-of-sight branch
+  is not built; with no valid target Melee ends rather than spectating; a human whose last move failed runs straight at
+  the target for 2 s and may approach again (the weapon pick-up, throw and positioning moves are not traced); the type-3
+  AttackTarget gate and goal `0x35` are not built; past its deadline a fight goal ends only without an attack slot (the
+  slot standing in for the target's active attackers). `level99`'s sparring Warriors are sent from 8.6-9.0 m ([the
+  sparring fight](#level99-fight)) and run in this way: `coney_tests "the disc's level99: the sparring Warriors*"`
+  checks that all three run in with EngageEnemy, close in and attack.
+- **Sight and targeting** (`repo:src/ai/perception.h`, `repo:src/ai/targeting.h`, [Sight](#sight),
+  [the score](#enemy-score)): the line of sight is the two rays (1.7 m, then 1.0 m) through the level's collision mesh,
+  passing the six see-through materials; the field of view and `Human_CanSeeHuman` (range, then the line); the brains
+  get the mesh from `Brains::setCollision`, and an attack warning needs the line too. `Brain_ValidateEnemy`,
+  `Brain_CanBeChased`, `Brain_IsAttackableBy` (the attackable byte `+0x11f`, `GangSetAttackable`, and the street
+  civilian and dog exceptions), `Brain_CanTakeSlotOn`, `Brain_ScoreEnemy` with every term and the weights of
+  `CfgSetTargetingPoints` / `CfgSetTargetingPointsEx` (read from the scripts' calls), and `Brain_PickBestEnemy` with
+  the goals' adjustment (the previous target's 3 points). **Stand-ins**: Coney has no shadows, trains, fires,
+  muggings, interrogations, tagging or turf-only rule, so those tests pass and those terms give nothing; only the
+  level's static collision blocks a sight ray; a gang's chosen target (`+0x10`) is kept but nothing sets it yet.
 - **Blocking**: `BlockGoal` never produces a block: Coney's block starts only on R1 held in the record's buttons,
   which only a pad writes, so its command 4 does nothing. It turns the human's hit reactions off
   (`Fighter::setHitReactionsOff`, bit `0x800`) from its start until its sixth update with the human free; rolls the
-  counter on every update of the block time (`BlockGoal::counterRoll`: the roll, then `counterTest`, a grab's or a
-  tackle's intro on a target aiming at the human) and writes command 3 on success; extends the block while the
-  target still attacks, which stops the rolls and queues a punishing attack in the block's last second.
+  counter on every update of the block time (`BlockGoal::counterRoll`: the roll, then `counterTest`: a type-3 brain,
+  free and not hurt, face to face with a target aiming at it in a grab's or a tackle's intro) and writes command 3 on
+  success; extends the block while the target still attacks, which stops the rolls and queues a punishing attack in
+  the block's last second.
+- **The counter** (`repo:src/combat/ai_counter.h`, `Fighter::answerCounter`): command 3 from a human no pad drives,
+  free, unhurt and empty-handed, is kept for one update; the human in a grab's or tackle's intro at it takes it on its
+  own update when the two face each other, and the pair plays: the hold ends, the counterer plays 76 (9 against a
+  tackle) and the attacker 77 (10) from the counterer's set, takes the counter's damage from the counterer's Anim
+  Range List and stands stunned after it. **Coney readings**: the class-13 way through the type gate is left out and
+  its byte `*(0x0051489c) + 0x56e3` taken as 0, so only the Warriors' brains counter; the tackle counter ends as the
+  grab's (stunned); no power is spent; Coney's tackle holds its victim from the intro's start, whose reaction goal
+  then holds the block goal off, so in play only grabs are countered.
 - **Reactions**: grabbing, tackling, grabbed, knocked down and stunned, one update after the state.
 - **Configuration** (`aiConfigFrom`): the class's `CfgChar`, power class 40's `CfgPowerClass`, `CfgAttackDelay` and
   `CfgBaseChanceToBlock` from the scripts' recorded calls. Without the disc the reference values stand in: power
@@ -2716,7 +2734,7 @@ attack's far range; a move runs beyond 4 m, lasts 1000 or 2000 ms (2000 beyond t
 reach. The pacing timer resets only after an attack; with nothing else to do a fighter stands still. The target's
 `+0x1ec` takes the kind's unscaled `CfgAttackDelay`, whether or not either human is busy. Command `0x11` chains as
 square. A reaction goal clears the actions and the move. A block ends when its target is not on its feet (Coney has no
-state word); the counter test leaves out the face-to-face and class gates. Each brain's generator is seeded by its slot.
+state word). Each brain's generator is seeded by its slot.
 A think only counts (the types' think handlers are not traced).
 
 **Coney choices for moving.** The inside test counts an edge going down in y as +1 (the sign under which the route
@@ -2866,10 +2884,9 @@ within `range` of one of it. Scout melees with members that have enemies. **Stan
 Steal, AvoidEnemies and Scout hold their places, their goals not traced; banter, answering violence, the anim
 substitutions, HoldTheLine's 12 and 14 and Pursue's search time are not built.
 
-**Open in Coney.** The dispatcher's answer to an AI's command 3 (76 against a grab, 9 against a tackle, as paired moves)
-is not built, nor are an AI's own grabs and tackles (the player grabs and tackles an AI's human,
+**Open in Coney.** An AI's own grabs and tackles are not built (the player grabs and tackles an AI's human,
 [Combat](combat.md#grab)); the pattern read at Start; the per-kind time `0x00231590` and the spacing bytes; the pick's
-adjustments; line of sight (the move's sight checks); the steering round humans, choke points and the waypoint
+adjustments; the move's sight checks; the steering round humans, choke points and the waypoint
 queues; the dynamic obstacles; the legs of edges 8, `0x10`,
 `0x40` and `0x80` (taken as plain walking, with `+0x284` 2 and 4 never set); the move's object to face; the turn clip
 (398) on the spot; GoalMoveToFlag's interval gesture, the fight stance's switch-off and the gang's notice; the scene

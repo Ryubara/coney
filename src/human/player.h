@@ -91,19 +91,22 @@ class PlayerCharacter {
 /// What drawing the player needs from one simulation step, and nothing else: drawing reads only these, so a renderer
 /// can draw between two steps by interpolating the previous and the current one.
 struct PlayerSnapshot {
-    anim::Vec3 feet;           ///< The human's position (game axes).
-    float heading = 0.0F;      ///< Radians, 0 facing +y.
-    float lean = 0.0F;         ///< The body's lean into a turn, radians, positive to the left (Human::lean()).
-    anim::Pose pose;           ///< The blended animation pose.
-    anim::Vec3 cameraEye;      ///< The current camera's position.
-    anim::Vec3 cameraTarget;   ///< A point ahead on its view direction (the follow camera's look-at point).
-    float fieldOfView = 65.0F; ///< The current camera's lens: horizontal degrees, near and far clip.
+    anim::Vec3 feet;         ///< The human's position (game axes).
+    float heading = 0.0F;    ///< Radians, 0 facing +y.
+    float lean = 0.0F;       ///< The body's lean into a turn, radians, positive to the left (Human::lean()).
+    anim::Pose pose;         ///< The blended animation pose.
+    anim::Vec3 cameraEye;    ///< The current camera's position.
+    anim::Vec3 cameraTarget; ///< A point ahead on its view direction (the follow camera's look-at point).
+    anim::Vec3 cameraUp{0.0F, 0.0F, 1.0F}; ///< Its up: world +z, or tipped by a scripted camera's roll.
+    std::uint32_t cameraCuts = 0;          ///< The cameras' cut count (Cameras::cuts()): a change is a cut.
+    float fieldOfView = 65.0F;             ///< The current camera's lens: horizontal degrees, near and far clip.
     float nearClip = 0.1F;
     float farClip = 115.0F;
 };
 
 /// The snapshot `alpha` (0 to 1) of the way from `previous` to `current`: positions lerped, the heading along the
-/// shorter way round, the pose blended as two animation poses are (each bone's rotation slerped). Returns `current`
+/// shorter way round, the pose blended as two animation poses are (each bone's rotation slerped); across a camera cut
+/// the camera is `current`'s. Returns `current`
 /// itself at alpha 1 or more and `previous` at 0 or less, so a render at alpha 1 (test mode, `--fps-cap 30`) draws
 /// exactly the newest step (docs/guides/conventions.md#update-and-render).
 [[nodiscard]] PlayerSnapshot interpolate(const PlayerSnapshot& previous, const PlayerSnapshot& current, float alpha);

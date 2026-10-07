@@ -4,6 +4,7 @@
 #include "world_objects/cars.h"
 
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <string_view>
 
@@ -100,6 +101,51 @@ TEST_CASE("a stereo is put in, freed by a broken window, then taken once", "[car
     CHECK(cars.find(4)->stereo == StereoState::Taken);
     CHECK_FALSE(cars.takeStereo(4));
     CHECK(Cars::stereoPosition(*cars.find(4)).z > 0.0F);
+}
+
+TEST_CASE("each part coming off is reported once, a window with its burst side", "[cars]") {
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{}, Quat{}, 4) != nullptr);
+    CHECK(cars.damagePart(4, 15, 0.115F, false));
+    CHECK_FALSE(cars.damagePart(4, 15, 0.115F, false)); // already off: nothing more
+    CHECK_FALSE(cars.damagePart(4, 14, 0.115F, false)); // a door takes 0.115 and stays
+    CHECK(cars.damagePart(4, 17, 0.115F, false));
+    auto breaks = cars.takeBreaks();
+    REQUIRE(breaks.size() == 2);
+    CHECK(breaks[0].car == 4);
+    CHECK(breaks[0].part == 15);
+    CHECK(breaks[0].window);
+    CHECK_FALSE(breaks[0].instant);
+    CHECK(breaks[0].burst.x < -0.99F); // the left window bursts along the car's -x
+    CHECK(breaks[1].part == 17);
+    CHECK(breaks[1].burst.x > 0.99F);
+    CHECK(cars.takeBreaks().empty());
+    // The explosion knocks off every other part, instant, the door not a window.
+    CHECK(cars.explode(4));
+    breaks = cars.takeBreaks();
+    CHECK(breaks.size() == 24);
+    CHECK(breaks.front().instant);
+    CHECK_FALSE(breaks.front().window);
+}
+
+TEST_CASE("a stereo is drawn in its car until a theft takes it", "[cars]") {
+    Cars cars;
+    REQUIRE(cars.spawn("car_osedan", Vec3{10, 20, 1}, Quat{}, 4) != nullptr);
+    REQUIRE(cars.spawn("car_osedan", Vec3{0, 0, 1}, Quat{}, 5) != nullptr);
+    CHECK(coney::world_objects::stereoDraws(cars).empty());
+    cars.spawnRadio(4);
+    auto draws = coney::world_objects::stereoDraws(cars);
+    REQUIRE(draws.size() == 1);
+    CHECK(draws[0].modelHash == coney::crc32("dyn_carstereo"));
+    CHECK(draws[0].handle == 4.25);
+    // The car's position + (-0.75, 0.25, 0.1), unturned.
+    CHECK(std::fabs(draws[0].position.x - 9.25F) < 1e-4F);
+    CHECK(std::fabs(draws[0].position.y - 20.25F) < 1e-4F);
+    CHECK(std::fabs(draws[0].position.z - 1.1F) < 1e-4F);
+    CHECK(cars.freeStereo(4));
+    CHECK(coney::world_objects::stereoDraws(cars).size() == 1);
+    CHECK(cars.takeStereo(4));
+    CHECK(coney::world_objects::stereoDraws(cars).empty());
 }
 
 TEST_CASE("a boot's item is released when the boot is knocked off, not when removed or blown off", "[cars]") {

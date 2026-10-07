@@ -1030,7 +1030,7 @@ brains of kind 4, not traced further.
   `Brain_IsAttackableBy`
 - **Used by** 4 of 467 script chunks (7 references); boot to menu: no; mission 1: no; result used: no
 - **Later in the story:** 3 of 28 levels, first [`level93`](story.md#level93) (mission 10)
-- **Coney:** not implemented
+- **Coney:** implemented
 
 ## GangSetCustomSpotDialog {#gangsetcustomspotdialog}
 
