@@ -108,6 +108,8 @@ class Human final : public Holdable {
     /// Gravity while airborne, m/s² (1.6 g), and the fastest fall, m/s.
     static constexpr float kGravity = 15.68F;
     static constexpr float kMaxFallSpeed = 50.0F;
+    /// The record `+0x08` bits under which an AI's jump is refused (`Human_BeginJump`).
+    static constexpr std::uint32_t kAiJumpRefuseFlags = 0x5cfeafb;
     /// The ground snap: a ray from this high above the feet, this long, straight down.
     static constexpr float kSnapAbove = 1.0F;
     static constexpr float kSnapLength = 1.5F;
@@ -200,6 +202,8 @@ class Human final : public Holdable {
     [[nodiscard]] anim::Vec3 groundNormal() const { return m_groundNormal; }
     /// The vertical speed at the last landing (negative), 0 before any.
     [[nodiscard]] float lastLandingSpeed() const { return m_lastLandingSpeed; }
+    /// How many times it has landed (a fall or a jump), for a move that must notice a landing.
+    [[nodiscard]] std::uint32_t landings() const { return m_landings; }
     /// The last stick intent, after the camera's turn.
     [[nodiscard]] const StickIntent& intent() const { return m_intent; }
     [[nodiscard]] const HumanAnimator& animator() const { return m_animator; }
@@ -289,6 +293,12 @@ class Human final : public Holdable {
     [[nodiscard]] std::optional<TargetState> takeBrokenHold() override { return m_fighter.takeBrokenHold(); }
     /// Moves it there and stops it (its velocity goes).
     void place(anim::Vec3 position, float headingRadians) override;
+    /// An AI's jump (`Human_BeginJump` with argument 1, then `Human_LaunchJump`, docs/research/ai.md#route-jump): from
+    /// any gait, standing too, launched at `velocity` with the jump's clip. Refused (false) in the air, while climbing,
+    /// or while the record `+0x08` holds any of kAiJumpRefuseFlags.
+    /// @orig 0x0023db48 Human_BeginJump (unknown)
+    /// @orig 0x002217f0 Human_LaunchJump (unknown)
+    bool launchJump(anim::Vec3 velocity);
     void face(anim::Vec3 point) override;
     [[nodiscard]] const characters::AnimSet& anims() const override { return m_animator.anims(); }
 
@@ -499,6 +509,7 @@ class Human final : public Holdable {
     anim::Vec3 m_lastGround;
     anim::Vec3 m_groundNormal{0.0F, 0.0F, 1.0F};
     float m_lastLandingSpeed = 0.0F;
+    std::uint32_t m_landings = 0;
     Stamina m_stamina;
     bool m_sprinting = false;
     bool m_jumping = false;

@@ -389,6 +389,7 @@ void Human::snapToGround(const raycast::CollisionMesh& mesh, anim::Vec3 feet) {
 void Human::land(anim::Vec3 feet) {
     m_landingPending = false;
     m_lastLandingSpeed = m_velocity.z;
+    ++m_landings;
     m_position = feet;
     m_lastGround = feet;
     m_airborne = false;
@@ -674,6 +675,18 @@ bool Human::tryJump(const raycast::CollisionMesh* mesh, anim::Vec3 direction) {
     const anim::Vec3 way = flatUnit(m_velocity);
     const float forward = launchSpeed(takeOff, m_animator.speeds());
     m_velocity = anim::Vec3{way.x * forward, way.y * forward, jumpTuning().upSpeed};
+    m_jumping = true;
+    m_airborne = true;
+    m_airborneUpdates = 0;
+    m_animator.startJump();
+    return true;
+}
+
+bool Human::launchJump(anim::Vec3 velocity) {
+    if (m_airborne || m_climbRun || (m_animator.flags() & kAiJumpRefuseFlags) != 0) {
+        return false;
+    }
+    m_velocity = velocity;
     m_jumping = true;
     m_airborne = true;
     m_airborneUpdates = 0;

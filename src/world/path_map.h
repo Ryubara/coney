@@ -53,6 +53,7 @@ struct PathNode {
     anim::Vec3 position;         ///< `+0x00`.
     std::uint32_t firstEdge = 0; ///< Its first edge in PathMap::edges() (the `+0x10` pointer, handed out in order).
     std::uint32_t edgeCount = 0; ///< `+0x14`.
+    std::uint8_t pair = 0;       ///< `+0x1e`: not 0 for a node of a jump edge, shared with its partner.
 };
 
 /// A route edge (a D record, 8 bytes): one way from the node that owns it to `to`.
@@ -93,6 +94,10 @@ class PathMap {
     [[nodiscard]] std::span<PathPolygon> mutablePolygons() { return m_polygons; }
     /// The edges leaving node `node`.
     [[nodiscard]] std::span<const PathEdge> edgesOf(std::uint32_t node) const;
+    /// The partner of a jump edge's node `node`: the node it links to with the same non-zero pair byte (`+0x1e`);
+    /// nothing for a node with no pair byte or no such link (docs/research/ai.md#route-jump).
+    /// @orig 0x002510f8 PathNode_FindPartner (unknown)
+    [[nodiscard]] std::optional<std::uint32_t> partnerOf(std::uint32_t node) const;
 
     /// Whether (x, y) lies inside `polygon`: outside its box no; else the winding number of the edges listed for the
     /// point's slab (every edge when it has no lists), each edge that crosses the point's row to its left counting

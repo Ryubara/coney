@@ -494,3 +494,23 @@ TEST_CASE("GoalPlayDynAnimation plays the named level clip as anim 668, holding 
     REQUIRE(coney::ai::goalPlayDynAnimation(brain, scripted, "missing", "", true));
     CHECK(scene.runUntil(10, [&] { return brain.goalCount() == 0; }, [] {}) < 10);
 }
+
+TEST_CASE("a route jump's arc is the first vertical speed that comes down on the point at 10 m/s or less across",
+          "[ai][move]") {
+    // A drop of 2 m takes sqrt(2 / 7.84) s; a quadratic with no real root gives 0.
+    CHECK(std::fabs(coney::ai::largerRoot(coney::ai::kHalfGravity, 0.0F, -2.0F) - std::sqrt(2.0F / 7.84F)) < 1e-5F);
+    CHECK(coney::ai::largerRoot(1.0F, 0.0F, 1.0F) == 0.0F);
+    CHECK(coney::ai::largerRoot(0.0F, 2.0F, -4.0F) == 2.0F);
+    // 4.12 m across, 0.05 m up: 0.5 and 1.25 m/s never reach the height, 2.0 and 2.75 land too fast across; 3.5 m/s
+    // comes down in 0.4317 s, 9.546 m/s across.
+    const std::optional<coney::anim::Vec3> arc = coney::ai::routeJumpVelocity({4.12F, 0.0F, 0.05F});
+    REQUIRE(arc.has_value());
+    if (!arc) {
+        return;
+    }
+    CHECK(arc->z == 3.5F);
+    CHECK(std::fabs(arc->x - 9.546F) < 0.01F);
+    CHECK(arc->y == 0.0F);
+    // Too far for any speed up to 5.75 m/s: nothing.
+    CHECK_FALSE(coney::ai::routeJumpVelocity({30.0F, 0.0F, 0.0F}).has_value());
+}

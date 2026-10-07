@@ -25,11 +25,11 @@ at the top of the repository's `README.md`.
 
 | | Progress | Share |
 | --- | --- | --- |
-| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,584 functions) |
+| **Reimplemented** | `██▉░░░░░░░░░░░░░░░░░` | 14.6% of the game's own code (488,548 of 3,354,776 bytes, 1,589 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
-461 reimplemented function(s) have no size yet and add no bytes.
+466 reimplemented function(s) have no size yet and add no bytes.
 
 ## Milestones
 
@@ -64,8 +64,8 @@ at the top of the repository's `README.md`.
 | `GameModes` | `██████▌░░░░░░░░░░░░░` | 32.6% | 105 | 100,440 |
 | `Graphics` | `██▏░░░░░░░░░░░░░░░░░` | 10.5% | 65 | 195,624 |
 | `GUI` | `███▊░░░░░░░░░░░░░░░░` | 18.9% | 186 | 497,416 |
-| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 502 | 1,096,672 |
-| `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 5 | 12,544 |
+| `Human` | `███░░░░░░░░░░░░░░░░░` | 15.0% | 506 | 1,096,672 |
+| `Maths (unnamed)` | `█░░░░░░░░░░░░░░░░░░░` | 5.3% | 6 | 12,544 |
 | `Memory` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 0 | 15,976 |
 | `Physics` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 3 | 79,032 |
 | `RayCast` | `░░░░░░░░░░░░░░░░░░░░` | 0.0% | 11 | 9,824 |
@@ -837,6 +837,7 @@ at the top of the repository's `README.md`.
 | `0x00250c50` | `NavLinks_OpenByNumber` | `Human` | 176 |
 | `0x00250d00` | `NavLinks_CloseByNumber` | `Human` | 176 |
 | `0x00251070` | `Route_LegKind` | `Human` | 56 |
+| `0x002510f8` | `PathNode_FindPartner` | `Human` | not filled in |
 | `0x00251150` | `Route_NearestNode` | `Human` | 56 |
 | `0x002511c8` | `Route_Search` | `Human` | 480 |
 | `0x002513a8` | `Route_Build` | `Human` | 728 |
@@ -975,9 +976,12 @@ at the top of the repository's `README.md`.
 | `0x00299510` | `GameState_SetSpawnMax` | `Human` | not filled in |
 | `0x0029a8c0` | `Route_Request` | `Human` | 352 |
 | `0x0029aa88` | `Route_Follow` | `Human` | 856 |
+| `0x0029ade0` | `Route_JumpArc` | `Human` | not filled in |
+| `0x0029b2b8` | `Route_JumpPoints` | `Human` | not filled in |
 | `0x0029b4b8` | `Route_CanSkip` | `Human` | 544 |
 | `0x0029b6d8` | `Route_MoveOn` | `Human` | 368 |
 | `0x0029b848` | `Route_ClimbLeg` | `Human` | 360 |
+| `0x0029baa8` | `Route_JumpLeg` | `Human` | not filled in |
 | `0x0029ed58` | `Goal_Start` | `Human` | 128 |
 | `0x0029edd8` | `Goal_End` | `Human` | 88 |
 | `0x0029ee30` | `Goal_Resume` | `Human` | 112 |
@@ -1159,6 +1163,7 @@ at the top of the repository's `README.md`.
 | `0x00336a00` | `QuaternionSlerp` | `Maths (unnamed)` | 440 |
 | `0x00336bb8` | `VectorLerp` | `Maths (unnamed)` | 64 |
 | `0x00336bf8` | `QuaternionNlerp` | `Maths (unnamed)` | 160 |
+| `0x003378b0` | `Math_LargerRoot` | `Maths (unnamed)` | not filled in |
 | `0x00337920` | `RayTriangle_OneSided` | `Maths (unnamed)` | not filled in |
 | `0x00337a60` | `RayTriangle_TwoSided` | `Maths (unnamed)` | not filled in |
 | `0x0033e278` | `PhysicsBody_Sweep` | `Physics` | not filled in |

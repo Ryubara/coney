@@ -4178,6 +4178,11 @@ subsystem = "Human"
 size = 56
 
 [[function]]
+address = 0x002510f8
+name = "PathNode_FindPartner"
+subsystem = "Human"
+
+[[function]]
 address = 0x00251150
 name = "Route_NearestNode"
 subsystem = "Human"
@@ -4964,6 +4969,16 @@ subsystem = "Human"
 size = 856
 
 [[function]]
+address = 0x0029ade0
+name = "Route_JumpArc"
+subsystem = "Human"
+
+[[function]]
+address = 0x0029b2b8
+name = "Route_JumpPoints"
+subsystem = "Human"
+
+[[function]]
 address = 0x0029b4b8
 name = "Route_CanSkip"
 subsystem = "Human"
@@ -4980,6 +4995,11 @@ address = 0x0029b848
 name = "Route_ClimbLeg"
 subsystem = "Human"
 size = 360
+
+[[function]]
+address = 0x0029baa8
+name = "Route_JumpLeg"
+subsystem = "Human"
 
 [[function]]
 address = 0x0029ed58
@@ -6026,6 +6046,11 @@ address = 0x00336bf8
 name = "QuaternionNlerp"
 subsystem = "Maths (unnamed)"
 size = 160
+
+[[function]]
+address = 0x003378b0
+name = "Math_LargerRoot"
+subsystem = "Maths (unnamed)"
 
 [[function]]
 address = 0x00337920

@@ -42,6 +42,26 @@ inline constexpr float kCornerSpeedStep = 1.0F;
 /// The braking distance is the distance covered in this long at the first corner's speed (**Coney choice**, s).
 inline constexpr float kBrakingSeconds = 0.5F;
 
+/// A jump leg (docs/research/ai.md#route-jump): the fastest a drop or a jump crosses in plan (m/s), half the fall's
+/// gravity, the jump's first and last vertical speed and its step (m/s), and how near (3D) its waypoint a landing
+/// keeps the route.
+inline constexpr float kJumpMaxAcross = 10.0F;
+inline constexpr float kHalfGravity = 7.84F;
+inline constexpr float kJumpFirstUp = 0.5F;
+inline constexpr float kJumpLastUp = 5.5F;
+inline constexpr float kJumpUpStep = 0.75F;
+inline constexpr float kLandingKeepsRoute = 1.5F;
+
+/// The larger real root of a t² + b t + c = 0, or 0 when there is none (a linear equation's root when `a` is 0).
+/// @orig 0x003378b0 Math_LargerRoot (unknown)
+[[nodiscard]] float largerRoot(float a, float b, float c);
+
+/// The launch velocity of an AI's route jump across `way` (the landing point less the take-off point): the first
+/// vertical speed from kJumpFirstUp in steps of kJumpUpStep whose arc comes down to `way`'s height at no more than
+/// kJumpMaxAcross in plan, and the plan speed that lands it on the point; nothing past kJumpLastUp.
+/// @orig 0x0029ade0 Route_JumpArc (unknown)
+[[nodiscard]] std::optional<anim::Vec3> routeJumpVelocity(anim::Vec3 way);
+
 /// What a move is asked to do (`MoveAction_Init`'s arguments).
 struct MoveRequest {
     anim::Vec3 point;         ///< Where to go.
@@ -101,6 +121,15 @@ class MoveAction final : public Action {
     // Returns the action's status when the leg decided this update, nothing when the move goes on as a walk.
     // @orig 0x0029b848 Route_ClimbLeg (unknown)
     [[nodiscard]] std::optional<ActionStatus> followLeg(Brain& brain, anim::Vec3 position, anim::Vec3 aim);
+    // A jump leg's handler, on every update while the leg is new: aims at the landing point and turns the body to it,
+    // then drops off the edge at the speed that lands on the point when that is under kJumpMaxAcross (the point lower
+    // and the leg not avoided), else jumps; a refused jump ends the move.
+    // @orig 0x0029baa8 Route_JumpLeg (unknown)
+    [[nodiscard]] ActionStatus jumpLeg(Brain& brain, anim::Vec3 position, anim::Vec3 aim);
+    // The update the human lands during the move (`Human_Land`'s part for a move action): near the jump leg's
+    // waypoint the route goes on (past it when the arc reached it); otherwise the move ends and is planned again.
+    // @orig 0x0023e090 Human_Land (unknown)
+    [[nodiscard]] std::optional<ActionStatus> landed(Brain& brain, anim::Vec3 position);
     // The stuck test, once per update of moving.
     // @orig 0x002fc330 MoveAction_Stuck (unknown)
     [[nodiscard]] bool stuck(anim::Vec3 position);
@@ -122,6 +151,14 @@ class MoveAction final : public Action {
     std::size_t m_climbIndex = 0;
     std::uint32_t m_climbFails = 0;
     bool m_wasClimbing = false;
+    // A jump leg: what the handler did (route state 1 a jump, 2 a drop), the human's landings counted so far, the
+    // launch's speed in plan, and whether the landing waypoint was reached.
+    enum class JumpState : std::uint8_t { None, Drop, Jumped };
+    JumpState m_jump = JumpState::None;
+    std::uint32_t m_landings = 0;
+    float m_launchAcross = 0.0F;
+    bool m_airArrived = false;
+    std::size_t m_jumpIndex = 0; // the waypoint index m_jump is for
 };
 
 } // namespace coney::ai

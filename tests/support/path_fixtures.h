@@ -37,6 +37,7 @@ class PathBuilder {
         m_vertices.push_back(anim::Vec3{x0, y1, 0.0F});
         m_polygons.push_back(polygon);
         m_nodesOf.emplace_back();
+        m_pairsOf.emplace_back();
         return static_cast<std::uint32_t>(m_polygons.size() - 1);
     }
 
@@ -69,12 +70,16 @@ class PathBuilder {
         polygon.slabStarts.fill(-1);
         m_polygons.push_back(polygon);
         m_nodesOf.emplace_back();
+        m_pairsOf.emplace_back();
         return static_cast<std::uint32_t>(m_polygons.size() - 1);
     }
 
-    /// Adds a route node at (x, y, 0) owned by polygon `polygon`. Nodes are numbered when built, polygon by polygon
-    /// in the order added.
-    void node(std::uint32_t polygon, float x, float y) { m_nodesOf.at(polygon).push_back(anim::Vec3{x, y, 0.0F}); }
+    /// Adds a route node at (x, y, z) owned by polygon `polygon`, with the jump pair byte `pair` (`+0x1e`). Nodes are
+    /// numbered when built, polygon by polygon in the order added.
+    void node(std::uint32_t polygon, float x, float y, std::uint8_t pair = 0, float z = 0.0F) {
+        m_nodesOf.at(polygon).push_back(anim::Vec3{x, y, z});
+        m_pairsOf.at(polygon).push_back(pair);
+    }
 
     /// Links the nodes `a` and `b` (indices as built) both ways with `flags`, the avoid bit and a door number.
     void link(std::uint32_t a, std::uint32_t b, std::uint16_t flags = 1, bool avoid = false, std::uint16_t door = 0) {
@@ -90,17 +95,21 @@ class PathBuilder {
     [[nodiscard]] world::PathMap build() const {
         std::vector<world::PathPolygon> polygons = m_polygons;
         std::vector<anim::Vec3> positions;
+        std::vector<std::uint8_t> pairs;
         for (std::size_t p = 0; p < polygons.size(); ++p) {
             polygons[p].hasNodes = !m_nodesOf[p].empty();
             polygons[p].firstNode = static_cast<std::uint32_t>(positions.size());
             polygons[p].nodeCount = static_cast<std::uint32_t>(m_nodesOf[p].size());
             positions.insert(positions.end(), m_nodesOf[p].begin(), m_nodesOf[p].end());
+            pairs.insert(pairs.end(), m_pairsOf[p].begin(), m_pairsOf[p].end());
         }
         std::vector<world::PathNode> nodes;
         std::vector<world::PathEdge> edges;
         for (std::uint32_t n = 0; n < positions.size(); ++n) {
-            world::PathNode made{
-                .position = positions[n], .firstEdge = static_cast<std::uint32_t>(edges.size()), .edgeCount = 0};
+            world::PathNode made{.position = positions[n],
+                                 .firstEdge = static_cast<std::uint32_t>(edges.size()),
+                                 .edgeCount = 0,
+                                 .pair = pairs[n]};
             for (const Link& link : m_links) {
                 if (link.from == n) {
                     edges.push_back(
@@ -126,6 +135,7 @@ class PathBuilder {
     std::vector<anim::Vec3> m_vertices;
     std::vector<world::PathPolygon> m_polygons;
     std::vector<std::vector<anim::Vec3>> m_nodesOf;
+    std::vector<std::vector<std::uint8_t>> m_pairsOf;
     std::vector<Link> m_links;
 };
 

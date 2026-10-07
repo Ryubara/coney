@@ -301,3 +301,51 @@ TEST_CASE("a blocked straight line takes the route; the follower names a climb l
     follower.passWaypoint(planner, {2.0F, 4.3F, 0.0F});
     CHECK(follower.onLastLeg());
 }
+
+TEST_CASE("a jump leg's take-off is the nearest queue point on its edge and its landing the position projected across",
+          "[ai][routes]") {
+    // Two roofs with a 2 m gap. The take-off edge (nodes 1 and 2, pair 1) runs along the near roof's edge, the landing
+    // edge (nodes 3 and 4, pair 2) along the far one's; jump links cross the gap.
+    coney::test::PathBuilder builder;
+    const std::uint32_t near = builder.rectangle(0.0F, 4.0F, 0.0F, 4.0F);
+    const std::uint32_t far = builder.rectangle(6.0F, 10.0F, 0.0F, 4.0F);
+    builder.node(near, 3.5F, 1.0F, 1);
+    builder.node(near, 3.5F, 3.0F, 1);
+    builder.node(far, 6.5F, 1.0F, 2);
+    builder.node(far, 6.5F, 3.0F, 2);
+    builder.link(0, 1);
+    builder.link(2, 3);
+    builder.link(0, 2, coney::ai::edge_flag::kJumpDown);
+    builder.link(1, 3, coney::ai::edge_flag::kJumpDown);
+    const coney::world::PathMap map = builder.build();
+    CHECK(map.partnerOf(0) == std::optional<std::uint32_t>{1});
+    CHECK(map.partnerOf(2) == std::optional<std::uint32_t>{3});
+    CHECK(coney::ai::RouteFollower::isJumpLeg(coney::ai::edge_flag::kJumpDown));
+    CHECK_FALSE(coney::ai::RouteFollower::isJumpLeg(coney::ai::edge_flag::kJumpDown | coney::ai::edge_flag::kClimb));
+
+    RoutePlanner planner(map);
+    const Vec3 start{1.0F, 2.1F, 0.0F};
+    const Vec3 destination{9.0F, 2.0F, 0.0F};
+    auto plan = planner.request(start, destination);
+    REQUIRE(plan.has_value());
+    std::optional<coney::ai::Route> route = std::move(plan->route);
+    REQUIRE(route.has_value());
+    if (!route) {
+        return;
+    }
+    REQUIRE(route->nodes().size() == 2);
+    coney::ai::RouteFollower follower(planner, std::move(*route), start, destination);
+    // The edge is 2 m: three points from the partner to the node, (3.5, 1), (3.5, 2) and (3.5, 3); (3.5, 2) is
+    // nearest. The take-off is never skipped, though the landing is in a straight line on no polygon.
+    const Vec3 takeOff = follower.waypoint(planner, start);
+    CHECK(takeOff == Vec3{3.5F, 2.0F, 0.0F});
+    CHECK(follower.atJump());
+    CHECK_FALSE(follower.onJumpLeg());
+    // Reached one update's travel early at 6 m/s (0.2 m): at 0.4 m it is not yet, with the lead it is.
+    CHECK(follower.waypoint(planner, {3.1F, 2.0F, 0.0F}) == takeOff);
+    const Vec3 landing = follower.waypoint(planner, {3.1F, 2.0F, 0.0F}, 6.0F);
+    CHECK(follower.onJumpLeg());
+    // The landing: the position projected onto the far edge's line.
+    CHECK(landing.x == 6.5F);
+    CHECK(std::fabs(landing.y - 2.0F) < 1e-5F);
+}

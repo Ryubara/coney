@@ -2042,7 +2042,11 @@ takes any edge that links back. The walkable line crosses every edge of the two 
 finds the start's area from the point, and has no hazard spheres (Coney has no fire to add them). A climb leg's climb
 that has ended moves the
 follower on past the leg's waypoint (the original's step there is open); the fast climber's early start within
-4.5 m, the jump legs (kind 4), the charge (`0x40`), the link's clear test and the waypoint claims are not built.
+4.5 m, the charge (`0x40`), the link's clear test and the waypoint claims are not built. A jump leg (kind 4) takes
+its take-off and landing points, the drop or the arc and the 1.5 m landing test as above; the brain does not run while
+the human is airborne, so the move notices the landing by the human's landing count, and the arc counts as having
+reached the landing point when it lands within the waypoint radius plus one update's travel at the launch's plan
+speed (the original tests the arrival in the air, every update).
 A corner is the turn at the next two waypoints, simulated as an arc at the gait's turn rate
 from the waypoint, the trial falling by 1 m/s; the braking distance is 0.5 s at the first corner's speed, within which
 the slower of the two corners' speeds is used. A move clears `+0x284` at its start and waits while the human is busy

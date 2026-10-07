@@ -32,12 +32,13 @@ class RouteFollower {
     /// Follows `route` (taken over, its nodes on `planner`'s map) from `start` to `destination`.
     RouteFollower(const RoutePlanner& planner, Route route, anim::Vec3 start, anim::Vec3 destination);
 
-    /// The waypoint for a human at `position`: when it is within kWaypointRadius of the current one, or on every
-    /// kSkipAheadSteps-th call, the follower moves on, skipping waypoints it reaches in a straight line on `map`
-    /// (onto a leg longer than kLongLeg only when it turns less than kSkipTurnLimit). The route is freed once the
-    /// destination is the waypoint.
+    /// The waypoint for a human at `position` moving at `speed` (m/s): when it is within kWaypointRadius of the
+    /// current one (a jump's take-off within kWaypointRadius plus one update's travel, the arrival test `0x0023f9d0`),
+    /// or on every kSkipAheadSteps-th call, the follower moves on, skipping waypoints it reaches in a straight line on
+    /// `map` (onto a leg longer than kLongLeg only when it turns less than kSkipTurnLimit; never past a waypoint whose
+    /// leg on is not walked, kind 1 or 2). The route is freed once the destination is the waypoint.
     /// @orig 0x0029aa88 Route_Follow (unknown)
-    [[nodiscard]] anim::Vec3 waypoint(const RoutePlanner& planner, anim::Vec3 position);
+    [[nodiscard]] anim::Vec3 waypoint(const RoutePlanner& planner, anim::Vec3 position, float speed = 0.0F);
     /// The waypoints still ahead, the current first (the destination last): what the corner speed looks at.
     [[nodiscard]] std::vector<anim::Vec3> ahead() const;
     /// The index of the current waypoint (the destination is the last).
@@ -47,6 +48,12 @@ class RouteFollower {
     /// @orig 0x00251070 Route_LegKind (unknown)
     [[nodiscard]] std::uint16_t legKind() const { return m_legKinds[m_index]; }
     [[nodiscard]] bool legAvoided() const { return m_legAvoided[m_index]; }
+    /// Whether the leg to the current waypoint is a jump leg (kind 4): the current waypoint is the landing point.
+    [[nodiscard]] bool onJumpLeg() const { return isJumpLeg(m_legKinds[m_index]); }
+    /// Whether the current waypoint is a jump leg's take-off or landing: the route is kept for it.
+    [[nodiscard]] bool atJump() const { return onJumpLeg() || (!onLastLeg() && isJumpLeg(m_legKinds[m_index + 1])); }
+    /// Whether a leg of `kind` is a jump leg: kind 4, not a climb (docs/research/ai.md#route-jump).
+    [[nodiscard]] static bool isJumpLeg(std::uint16_t kind);
     /// Moves on past the current waypoint, as when it is reached (a climb over its leg has ended beyond it).
     void passWaypoint(const RoutePlanner& planner, anim::Vec3 position) { moveOn(planner, position, true); }
     /// Whether the destination is the waypoint (the route is freed).
@@ -61,7 +68,13 @@ class RouteFollower {
     // @orig 0x0029b4b8 Route_CanSkip (unknown)
     [[nodiscard]] bool canSkip(const RoutePlanner& planner, anim::Vec3 position) const;
 
+    // Puts the current waypoint where a jump leg wants it: a take-off at the human's point in the queue along its
+    // edge, a landing at the human's position projected onto the landing edge (docs/research/ai.md#route-jump).
+    // @orig 0x0029b2b8 Route_JumpPoints (unknown)
+    void placeJumpPoint(const RoutePlanner& planner, anim::Vec3 position);
+
     std::optional<Route> m_route;
+    std::vector<std::uint32_t> m_nodes;    // the route's nodes, one per waypoint but the destination
     std::vector<anim::Vec3> m_points;      // the nodes' positions, then the destination
     std::vector<std::uint16_t> m_legKinds; // each waypoint's leg kind (0 for the first and the destination)
     std::vector<bool> m_legAvoided;        // each waypoint's leg's avoid bit

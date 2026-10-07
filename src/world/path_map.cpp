@@ -144,6 +144,7 @@ std::expected<PathMap, Error> PathMap::decode(std::span<const std::byte> chunk) 
         PathNode node;
         node.position = anim::Vec3{loadF32(chunk, at), loadF32(chunk, at + 4), loadF32(chunk, at + 8)};
         node.edgeCount = static_cast<std::uint16_t>(loadS16(chunk, at + 0x14));
+        node.pair = std::to_integer<std::uint8_t>(chunk[at + 0x1e]);
         node.firstEdge = nextEdge;
         nextEdge += node.edgeCount;
         map.m_nodes.push_back(node);
@@ -224,6 +225,19 @@ std::expected<PathMap, Error> PathMap::checked(PathMap map) {
 std::span<const PathEdge> PathMap::edgesOf(std::uint32_t node) const {
     const PathNode& owner = m_nodes.at(node);
     return std::span(m_edges).subspan(owner.firstEdge, owner.edgeCount);
+}
+
+std::optional<std::uint32_t> PathMap::partnerOf(std::uint32_t node) const {
+    const std::uint8_t pair = m_nodes.at(node).pair;
+    if (pair == 0) {
+        return std::nullopt;
+    }
+    for (const PathEdge& edge : edgesOf(node)) {
+        if (edge.to != node && m_nodes.at(edge.to).pair == pair) {
+            return edge.to;
+        }
+    }
+    return std::nullopt;
 }
 
 bool PathMap::inside(const PathPolygon& polygon, float x, float y) const { return winding(polygon, x, y) > 0; }

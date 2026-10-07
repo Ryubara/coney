@@ -32,6 +32,9 @@ int cornerSamples(float turnRadius) {
     return turnRadius < 7.0F ? 6 : 7;
 }
 
+// The updates in a second: one update's travel is the speed over this (the arrival test's lead).
+constexpr float kUpdatesPerSecond = 30.0F;
+
 // Whether a point lies on a walkable polygon.
 bool onPolygons(const world::PathMap& map, anim::Vec3 point) { return map.polygonAt(point.x, point.y).has_value(); }
 
@@ -54,6 +57,7 @@ float gaitSpeed(const human::Speeds& speeds, int gait) {
 
 ActionStatus MoveAction::start(Brain& brain) {
     const anim::Vec3 position = brain.human().position();
+    m_landings = brain.human().landings();
     if (planDistance(position, m_request.point) <= kMoveNothingToDo) {
         return finish(brain);
     }
@@ -86,6 +90,20 @@ ActionStatus MoveAction::update(Brain& brain) {
         m_movingSteps = 0;
     }
     m_wasClimbing = climbing;
+    // A landing since the last update (docs/research/ai.md#route-jump) keeps the route or ends the move. **Coney
+    // stand-in**: the brain does not run in the air, so the arrival test the original runs there is judged at the
+    // landing: the landing waypoint counts as reached within its radius plus one update's travel at the launch speed.
+    if (human.landings() != m_landings) {
+        m_landings = human.landings();
+        if (m_follower && m_follower->onJumpLeg() && m_jump != JumpState::None) {
+            m_airArrived =
+                planDistance(human.position(), m_follower->ahead().front()) - (m_launchAcross / kUpdatesPerSecond) <=
+                kWaypointRadius;
+        }
+        if (const std::optional<ActionStatus> status = landed(brain, human.position())) {
+            return *status;
+        }
+    }
     if (climbing || human::stickBusy(human.gateInput())) {
         return ActionStatus::Running;
     }
@@ -93,8 +111,9 @@ ActionStatus MoveAction::update(Brain& brain) {
     const anim::Vec3 position = human.position();
     // 2. Now and then, a route whose point has come into a straight line is dropped.
     RoutePlanner* planner = brain.planner();
+    // Not near a jump leg, which the straight line would cut across.
     if (m_follower && planner != nullptr && (m_updates + brain.slot()) % kStraightCheckSteps == 0 &&
-        planner->lineClear(position, m_request.point)) {
+        !m_follower->atJump() && planner->lineClear(position, m_request.point)) {
         m_follower.reset();
     }
     // 3. Arrived; or close in plan but on another level.
@@ -107,7 +126,7 @@ ActionStatus MoveAction::update(Brain& brain) {
     anim::Vec3 aim = m_request.point;
     float aimRadius = m_request.radius;
     if (m_follower && planner != nullptr) {
-        aim = m_follower->waypoint(*planner, position);
+        aim = m_follower->waypoint(*planner, position, human.speed());
         aimRadius = m_follower->onLastLeg() ? m_request.radius : kWaypointRadius;
     }
     brain.setMoveAim(aim, aimRadius);
@@ -137,6 +156,10 @@ std::optional<ActionStatus> MoveAction::followLeg(Brain& brain, anim::Vec3 posit
         return std::nullopt;
     }
     const std::uint16_t kind = m_follower->legKind();
+    // A jump leg: dropped off or jumped, whatever its avoid bit.
+    if (m_follower->onJumpLeg()) {
+        return jumpLeg(brain, position, aim);
+    }
     // A leg whose link is avoided is refused (a closed door), but for a charge, which is not built: walked.
     if (m_follower->legAvoided() && (kind & edge_flag::kCharge) == 0) {
         brain.setMoveFailure((kind & edge_flag::kDoor) != 0 ? MoveFailure::EdgeTen : MoveFailure::Edge);
@@ -253,6 +276,93 @@ bool MoveAction::stuck(anim::Vec3 position) {
 ActionStatus MoveAction::finish(Brain& brain) {
     brain.stopMove();
     return ActionStatus::Done;
+}
+
+ActionStatus MoveAction::jumpLeg(Brain& brain, anim::Vec3 position, anim::Vec3 aim) {
+    // A new leg starts with nothing done.
+    if (m_follower->index() != m_jumpIndex) {
+        m_jumpIndex = m_follower->index();
+        m_jump = JumpState::None;
+        m_airArrived = false;
+    }
+    // A jump made waits for its landing.
+    if (m_jump == JumpState::Jumped) {
+        return ActionStatus::Running;
+    }
+    // 1. Aim at the landing point and turn the body to it at once.
+    human::Human& human = brain.human();
+    human.face(aim);
+    const anim::Vec3 way = anim::subtract(aim, position);
+    const float across = std::hypot(way.x, way.y);
+    m_stuckFrom = position;
+    m_movingSteps = 0;
+    // 2. A drop: the point lower, the leg not avoided and the speed that lands on it under the limit; set again each
+    // update until the human leaves the ground.
+    if (!m_follower->legAvoided()) {
+        const float fall = largerRoot(kHalfGravity, 0.0F, way.z);
+        if (fall > 0.0F && across / fall < kJumpMaxAcross) {
+            brain.setMoveHeading(human.heading(), across / fall);
+            m_launchAcross = across / fall;
+            m_jump = JumpState::Drop;
+            return ActionStatus::Running;
+        }
+    }
+    // Otherwise a jump whose arc ends on the point; refused, the move ends and is planned again.
+    const std::optional<anim::Vec3> velocity = routeJumpVelocity(way);
+    if (!velocity || !human.launchJump(*velocity)) {
+        return finish(brain);
+    }
+    m_launchAcross = std::hypot(velocity->x, velocity->y);
+    brain.stopMove();
+    m_jump = JumpState::Jumped;
+    return ActionStatus::Running;
+}
+
+std::optional<ActionStatus> MoveAction::landed(Brain& brain, anim::Vec3 position) {
+    // Near the jump leg's waypoint after a drop or a jump the route goes on: past the waypoint when the arc reached
+    // it, else the leg's handler runs again from here.
+    if (m_follower && brain.planner() != nullptr && m_jump != JumpState::None && m_follower->onJumpLeg() &&
+        anim::distance(position, m_follower->ahead().front()) <= kLandingKeepsRoute) {
+        if (m_airArrived) {
+            m_follower->passWaypoint(*brain.planner(), position);
+        }
+        m_jump = JumpState::None;
+        m_airArrived = false;
+        m_stuckFrom = position;
+        m_movingSteps = 0;
+        return std::nullopt;
+    }
+    // Any other landing, a fall off an edge too: the move ends, and its goal plans again from here.
+    return finish(brain);
+}
+
+float largerRoot(float a, float b, float c) {
+    if (std::fabs(a) < 1e-12F) {
+        return std::fabs(b) < 1e-12F ? 0.0F : -c / b;
+    }
+    const float discriminant = (b * b) - (4.0F * a * c);
+    if (discriminant < 0.0F) {
+        return 0.0F;
+    }
+    const float root = std::sqrt(discriminant);
+    return std::max((-b + root) / (2.0F * a), (-b - root) / (2.0F * a));
+}
+
+std::optional<anim::Vec3> routeJumpVelocity(anim::Vec3 way) {
+    const float across = std::hypot(way.x, way.y);
+    const anim::Vec3 unit = across > 1e-6F ? anim::Vec3{way.x / across, way.y / across, 0.0F} : anim::Vec3{};
+    // The lowest vertical speed whose arc comes down to the point's height slowly enough across; the last tried is
+    // the first past kJumpLastUp.
+    for (float up = kJumpFirstUp;; up += kJumpUpStep) {
+        const float time = largerRoot(-kHalfGravity, up, -way.z);
+        if (time > 0.0F && across / time <= kJumpMaxAcross) {
+            const float speed = across / time;
+            return anim::Vec3{unit.x * speed, unit.y * speed, up};
+        }
+        if (up > kJumpLastUp) {
+            return std::nullopt;
+        }
+    }
 }
 
 } // namespace coney::ai
