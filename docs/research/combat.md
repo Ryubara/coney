@@ -1018,6 +1018,19 @@ At runtime (slot 1, a bat 1 m ahead): triangle started clip **461** with set 3, 
 later and the hand held the bat the update after. Confirmed (runtime). `Human_PlaceItemInHand` (`0x00238540`,
 `HuPlaceItemInHand`) is the scripted way to arm a human; the pick-up does not use it.
 
+**In the hand.** The bat hangs from **pose bone 25, the right hand** (bone 19 is the left, which the left-hand pick-up
+clips use), at the offset clip 461's **type-9 event at frame 7** gives; the attachment and its maths are on
+[World objects: objects in a human's hand](objects.md#held). The event (confirmed (runtime), read from Rembrandt's
+clip 461 in memory; 462 has the same event at frame 4, and his 481, 482, 498 and 499 are the same two clips): bone
+25, position `(47, 88, 54)` → (0.0459, 0.0860, 0.0264) m, rotation `(22788, 4078, −23079)` →
+(0.6954, 0.1245, −0.7043, 0.0690). The bat's stored local pose is that position × Rembrandt's scale 0.97, slid
+0.39 m (`dyn_bat_tuff`'s `CfgObj` `+0x70`) along the bat's own `y`: **(0.1500, −0.2908, −0.0053)** with the rotation
+unchanged. The hand at idle sits at (0.29, −0.03, 1.05) in the model frame, on the human's right (`+x` with the model
+facing `+y`). At runtime (PCSX2 2.9.94, slot 1 copy, [World objects](objects.md#held) has the inputs) the local pose
+did not change through the idle, a walk (stick 60 % up), the square swing 34, the block (R1) and a run (stick 100 %
+up): no bat clip moves it, so the bat swings with the hand alone. Confirmed (runtime); a screenshot of the swing showed
+the bat in Rembrandt's right hand.
+
 **The anim set.** A human keeps a stack of up to 3 anim sets (record `+0x0c` the depth, the sets as bytes at `+0x10`;
 push `0x00253ed0`, pop `0x00253f28`). Applying one (`0x00253688`) resets the clip slots (record `+0x28` + slot × 4)
 from the defaults at `0x005105d8` (a player's slot `0xe` is always 380) and then writes the set's overrides. Square
@@ -1038,7 +1051,8 @@ Set 1 overrides with 45, 47, 49, 50, 48 and set 2 with 39, 41, 43, 44, 42 (the s
 cross, grounded, mounting, `0x14`); which weapons use them is not traced. At runtime the stack's depth was 1 with a
 bat placed. Confirmed (runtime).
 
-**Losing it.** Triangle with nothing to take drops the held bat at once, with no clip (`0x00257f38`); confirmed
+**Losing it.** Triangle with nothing to take drops the held bat at once, with no clip (`0x00257f38`, falling from
+the hand under physics: [Drop](objects.md#held)); confirmed
 (runtime). A weapon **breaks** only on its message 1 (`0x003fd600`): shatter particles, hidden (`0x100000`), message 7
 to its holder (data `+0x18`; the human's message 7 pops sets 1-5), and state −5 deletes it on its next update.
 Confirmed (code); what sends message 1 is not traced. At runtime 12 bat hits on a civilian (64 damage each, 34 and 37

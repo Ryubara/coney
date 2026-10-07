@@ -2,8 +2,8 @@
 
 Verified against: `SLUS_212.15` (NTSC-U, SHA1 `e9cb2cc49aa046b9e494313dce2f5038ed17b2f4`), static analysis only
 (Ghidra), a disc check (2026-10-06) of what the scripts pass and of the Object List and the `WonderWheel_100`
-scene, reported as counts and values, and, for the [objective markers](#objective-markers) only, PCSX2 2.9.94 over
-PINE in `level99` at the tutorial's first hint (2026-10-06).
+scene, reported as counts and values, and, for the [objective markers](#objective-markers) and
+[held objects](#held) only, PCSX2 2.9.94 over PINE in `level99` (2026-10-06).
 
 ## Purpose
 
@@ -48,6 +48,10 @@ The code sits in `TaskEngine/`, in the stretches placed by position
 | `0x003e98e8` / `0x003e9b08` / `0x003e9be0` | `dyn_objective` init / update / message | an objective marker's disc ([Objective markers](#objective-markers)) | confirmed (code) |
 | `0x003e9828` | `ObjectiveMarker_SetShown` | a marker's shown state, passed on to its column | confirmed (code) |
 | `0x003e9d60` / `0x003e9fd8` / `0x003e9ea0` | `sub_objective_column` init / update / message | the marker's column | confirmed (code) |
+| `0x003a1810` / `0x003a1858` | `Obj_Attach` / `Obj_Detach` | parent, bone and local pose; detaching keeps the world pose ([Held objects](#held)) | confirmed (code) |
+| `0x003a19b0` / `0x003a1ad8` | `Obj_GetWorldPose` / `Obj_GetPoseNow` | vtable `+0xa4` / `+0xac`: an attached object's pose through its parent's bone | confirmed (code), runtime |
+| `0x003fe490` / `0x003fe6b8` | `MeleeWeapon_Take` / `MeleeWeapon_Detach` | messages `0x1b` / `0x1c` of `melee_weapon` | confirmed (code) |
+| `0x00257f38` / `0x002586d8` | `Human_DropHeld` / `Human_ReleaseThrow` | a held object let go: dropped / thrown | confirmed (code) |
 | `0x003a53f0` | `Obj_SpawnChildByName` | creates an object by name at an object's pose, attached to it | confirmed (code) |
 | `0x00396bd0` | `Obj_SetColour` | `ObjColor`: packs `{r, g, b, a}` into the tint word | confirmed (code) |
 | `0x0038fab8` | `GlassTypes_Set` | `CfgSetGlassProperties`: one entry of the glass type table | confirmed (code) |
@@ -533,6 +537,107 @@ The search also refuses bit `0x10`, bit `0x4000000`, an object whose type value 
 vtable `+0xdc`) is 75 or more unless the human's record `+0x11b` is 13, the model hash `0xd2cfcd44` for a non-player,
 and anything out of sight. At runtime (slot 1) `dyn_masks`, the cash register and the swinging doors had no `0x8000`.
 
+### Objects in a human's hand {#held}
+
+One mechanism carries every object a human holds (a bat, a bottle, a brick, a stolen stereo, a hat being picked
+up): the object is **attached to one bone** of the human's skeleton at a **fixed local offset**, and both the bone
+and the offset come from an **event in the clip that puts it in the hand**, not from `CfgObj` or a weapon table. The
+bat is the worked case ([Combat: a bat in hand](combat.md#bat)); what the human does with it (anim sets, strikes,
+`+0x338`) is there too.
+
+**The attachment** (confirmed (code) at `0x003a1810`, `0x003a1858`, `0x003a19b0`): world object fields
+
+| Field | Meaning |
+| --- | --- |
+| `+0x54` bit `0x10` | attached |
+| `+0x58` | the parent task (here the human) |
+| `+0x6d` | u8, the parent's **pose bone** ([Animation: bone transforms](formats/animation.md#bone-transforms)); 0 means the parent's own transform |
+| `+0x10` / `+0x20` | while attached: the **local** position (vec4) and rotation (quaternion `x, y, z, w`) in the bone's frame |
+
+`Obj_Attach` (`0x003a1810`) sets the bit, the parent and the bone. `Obj_Detach` (`0x003a1858`) first writes the
+object's current world pose into `+0x10` / `+0x20`, then clears the bit and the parent, so a detached object starts
+exactly where it was drawn.
+
+**The world pose** (`Obj_GetWorldPose`, `0x003a19b0`, slot `+0xa4` of the world-object vtables, e.g. `0x00544c00`):
+unattached, `+0x10` / `+0x20`; attached, three transforms composed with `0x003359b0` (rotation `qa · qb`, position
+`pa + qa · pb`, no scale):
+
+```text
+world = parent's world transform (its vtable +0x9c: for a human, its position and rotation)
+      ∘ the bone's transform, when the bone is not 0 and the parent is a human with a model instance
+      ∘ the object's local (+0x10, +0x20)
+```
+
+A human's bone transform (`0x0023bde8`, its vtable `+0xbc`) is the bone's entry of the per-update bone cache
+([Combat: the bone cache](combat.md#grab-posing)'s `0x006b6880` + index × `0x470`, built once per update from the playing
+pose, model space) with the **position multiplied by the human's scale** (`+0x65c`, 0.97 for Rembrandt) and the
+rotation as is. The object itself is never scaled. `0x003a1ad8` (vtable `+0xac`, the pose extrapolated to now) does
+the same for an attached object, the local rotation advanced by its angular velocity (`+0x40`, zero while held).
+
+**At runtime** (confirmed (runtime), PCSX2 2.9.94, slot 1 copy, the player 1 m behind a `dyn_bat_tuff`, triangle,
+then stick 60 % up for 35 updates, square, R1 held 30 updates, stick 100 % up for 30 updates, triangle): the bat's
+RenderWare frame matrix (its instance `+0x1c` atomic → frame, LTM at `+0x50`, axes as `(x, z, −y)`) equalled
+human transform ∘ (scaled bone 25) ∘ local to within 0.005 m and 0.005 in every axis component on 256 of 257 held
+updates, read from the values of the update before the draw; the one exception was one update's run distance
+(0.26 m at 7.8 m/s). So the draw uses the pose of the latest update, with no smoothing or lag of its own.
+
+**Clip events that place a held object** (confirmed (code) at `0x00101dd8`, which sends the human message
+`0x80 + type` with the event's bone (`+6`), position and rotation ([Animation: events](formats/animation.md)); the
+human's handler is `0x00245920`):
+
+| Event | Message | What the human does |
+| --- | --- | --- |
+| 9 | `0x89` | the object being picked up (human `+0x33c`) is sent message `0x1b` **take**, with the human, the bone, the event's position × the human's scale, its rotation, and whether the human is in a scene |
+| `0x36` | `0xb6` | the same (the left-hand clips 463 / 464 use it, bone 19) |
+| `0x22` | `0xa2` | with a pick target and nothing in hand, as 9; otherwise the held object (`+0x338`) gets message `0x32`: **re-attach** at this bone and offset, nothing else. `GhettoPickUp`'s clips 549 / 550 carry one per frame from 13 to 39, animating the object in the hand |
+| `0x34` / `0x35` | `0xb4` / `0xb5` | as 9 / `0x22`, only for object types 24 and 27 |
+| `0x37` | `0xb7` | writes bone and offset straight into the object at human `+0x348` (or `+0x34c`); what those hold is not traced |
+| 10 | `0x8a` | **release** with something in hand: a throw (`0x002586d8`) under state flags `0x1000010`, else a drop (`0x00257f38`) under `0x4000` or in a scene |
+
+**Take** (message `0x1b`; `melee_weapon` `0x003fe490`, `simple_object` `0x003ef188`, confirmed (code)): velocity and
+angular velocity zeroed, attached to the human at the bone, flags `0x6000000` cleared, the local pose set to the
+event's. When the human is **not** in a scene, the local position is then moved along the object's own `y` axis by the
+type's float at `CfgObj` `+0x70` (the local rotation applied to `(0, v, 0)`), so a model whose origin is not at its
+grip is slid to it (0.39 m for `dyn_bat_tuff`). The object then sends the human message 3 (applies its anim set and
+puts it in `+0x338`, [Combat: a bat in hand](combat.md#bat)) and message `0x17` (with `CfgObj` `+0x68`; not traced).
+There is **no blend**: the object stays where it lay until the event's update and is in the hand on the next draw.
+`melee_weapon` keeps the event's position in its data block too, and moves the local position again along `y` by
+`CfgObj` `+0x70` / `+0x74` on its messages `0x12` / `0x13` (senders not traced).
+
+**Scripted placement** (`HuPlaceItemInHand`, `0x00238540` → `0x0024c280` → `0x0024c6d8` → `0x00101360`, confirmed
+(code)): drops what the human holds, creates the object by name at the human's position, and reads the **first type-9
+event** of the low pick-up clip its `pickup_anim` selects ([Combat: the pick-up clip](combat.md#bat)) without playing
+it, sending the object message `0x1b` at once; the `+0x70` slide applies when object `+0x110` is −1. Unlike the clip
+path the event's position is not multiplied by the human's scale. A left-hand or hat pick-up clip has no type-9 event,
+so nothing is attached.
+
+**Drop** (`0x00257f38`, triangle with nothing to take, a pick-up of a two-handed or hat object, a scene's release;
+confirmed (code)): pops the anim set the object pushed, records the human as its last holder (object `+0x11c`) unless
+the type is 24 or 27, makes its physics body (`Obj_CreatePhysicsBody`), reschedules its task, and sends it message
+`0x1c` **detach** with a zero velocity. If the object (flags `0x30000` without `0x400`) now lies farther than
+0.35 × scale − 0.01 m from the human across the ground, it is pulled back to that distance. A removal time is set
+(object `+0x120` = now + 120 s for type 11, 1 ms for type 39, a game setting at `0x0051489c` `+0x26c` for most
+weapons, none for model hash `0x03c5256c`). It then falls under physics from the hand's pose. At runtime the bat
+dropped from the hand came to rest on the ground (`z` 0.3, the ground's height there), flags `0xc321a081`
+(confirmed (runtime)).
+
+**Throw** (`0x002586d8` on event 10, confirmed (code)): as the drop, but the physics body is made per the type
+(`CfgObj` `+0x84` = 2 or `+0x5a` ≠ 1, else `0x003923b8`), the velocity comes from `Human_ComputeThrowVelocity`, and
+the human's target is told (`0x0021d5c0`). **Detach** (`melee_weapon` `0x003fe6b8`): the velocity, given in the
+holder's frame, is turned by the holder's world rotation. A thrown object (velocity not zero) of anim set 1 or 2 takes
+the holder's rotation and the angular velocity (−4π, 0, 0) rad/s (its vtable `+0x7c`); five model hashes get the
+holder's rotation and (−8π, 0, 0); anything else keeps its own rotation and gets (0, 0, −kπ), `k` random in 5-7. A
+drop keeps its rotation and gets no spin. Which frame the angular velocity is in is not traced.
+`simple_object`'s detach only detaches.
+
+**Holstering.** No code moves a weapon to another bone (back or belt): a human holds one object (`+0x338`), in the
+hand its clip event named, until it is dropped, thrown or broken; a weapon not in a hand is a free object. Inferred
+from the senders of messages `0x1b` and `0x32` above (all clip events or the scripted placement).
+
+`HuRender` (`0x00237e98`) draws a human and then every object attached to it that is not hidden (flag 4), giving each
+the human's alpha (confirmed (code)). In the normal draw an attached object skips the small-size fade and is drawn
+only within its parent's `ObjShow` distance ([Drawing](#tint)).
+
 ### How they get into a level {#placement}
 
 Glass and doors come from level scripts: `SpawnBreakableGlass` (929 calls in 32 chunks) and `SpawnDoor` (484 in
@@ -824,5 +929,7 @@ Coney's stand-ins, where this page is silent:
   hold the Wonder Wheel's models.
 - What the first camera's vtable `+0x214` returns (the streaming-out distance).
 - The shard size of a large shatter; whether `0x003353b8(rng, 2) < 2` is 2 in 3 (as read here) or always.
+- Held objects: what fills human `+0x348` / `+0x34c` (event `0x37`), what message `0x17` to the holder does, who
+  sends `melee_weapon` messages `0x12` / `0x13`, and the frame of a thrown object's angular velocity.
 - `dyn_door_vargas`' second object, and the leaf models of `dyn_door_chainlnk_pick` (no `dyn_dr_chainlnk_pick` record).
 - What a cabin door's leaves do once it breaks, and where the wreck pieces and boards appear.

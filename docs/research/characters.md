@@ -121,6 +121,9 @@ Confirmed (code); offsets with "runtime" were checked on Rembrandt.
 | `+0x298` / `+0x29c` | float | turn this update / smoothed lean (radians) | confirmed (code) |
 | `+0x2c0` | vec4 | where a fall will end (`Human_StartFall`); a climb's start point (`Climb_Start`) | confirmed (code) |
 | `+0x2f0` | vec4 | external push velocity, added to the velocity when moving | confirmed (code) |
+| `+0x338` | handle | the object **in the hand** (Nil when none); pose bone 25 is the right hand (runtime), 19 the left (inferred from the left-hand pick-up clips) ([World objects: objects in a human's hand](objects.md#held)) | confirmed (code), runtime |
+| `+0x33c` | handle | the object being picked up, from the pick-up's message `0x14` until its clip event attaches it | confirmed (code), runtime |
+| `+0x348` / `+0x34c` | handle | two more objects a clip event `0x37` places on a bone (not traced) | confirmed (code) |
 | `+0x37c` (`+0xdf` as a word index) | int | model index in the Character List | confirmed (code) |
 | `+0x384` | int | airborne updates so far | confirmed (code) |
 | `+0x390` | vec4 | last ground position | confirmed (code) |
