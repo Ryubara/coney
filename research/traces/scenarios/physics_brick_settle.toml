@@ -6,7 +6,7 @@ fields = ["player"]
 
 [original]
 slot = 6
-patches = ["scripted-pad", "right-stick", "call-brains", "settle-start", "object-contact"]
+patches = ["scripted-pad", "right-stick", "call-brains", "settle-start", "object-contact", "object-update", "bounce", "object-set-velocity"]
 setup = [
   { address = "0x000c0000", type = "u32", value = "0x5f6e7964", frame = 0, until = 0 },
   { address = "0x000c0004", type = "u32", value = "0x63697262", frame = 0, until = 0 },

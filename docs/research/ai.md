@@ -112,8 +112,12 @@ used.
 | `+0x120` | u8 | targetable / attack-slot flags |
 | `+0x124` | handle | the **target** |
 | `+0x110` / `+0x114` | float | the heading to move along / the speed ([Moving](#moving)) |
-| `+0x12c` | float | field of view (`BrSetFOV`) |
+| `+0x12c` | float | field of view (`BrSetFOV`), radians: 1.92 (110°) when made; civilians π/2, dealers 2π, Warriors π |
+| `+0x130` | float | sight range: 30 m when made; civilians 15 m, Warriors 55 m ([The enemy scan](#enemy-scan)) |
+| `+0x134` / `+0x138` | float | hearing radius: 50 m, and 20 m for event 20 (`Brain_IsInHearRange` `0x002935d8`) |
 | `+0x13c` / `+0x140` | float | melee range near / far (`BrSetMeleeRange`): **3.0 / 5.0 m** for every brain ([below](#melee-range)) |
+| `+0x144` | u32 | the enemy-scan interval: 2000 ms, cops 1000 ms |
+| `+0x15c` / `+0x160` | fn / u32 | the enemy-scan filter / the time of the last scan |
 | `+0x14a`, `+0x14b` | u8 | attack spacing |
 | `+0x152` | u8 | attackers on this human (player brain, counted every 300 updates) |
 | `+0x164` | handle[16] | the **enemy list** |
@@ -125,13 +129,14 @@ used.
 | `+0x208` | ptr | an attack-weight table that overrides `+0x298` |
 | `+0x20c` | ptr | the human's **gang** ([Gangs](#gangs)) |
 | `+0x212` | s8 | the formation this human follows in, −1 none ([Formations](#formations)) |
-| `+0x21c` | int | **threat response** (`GangSetThreatResponse`): 0 never fights; **2** when the brain is made (`0x0028a570`, from `Human_Init`, the store at `0x0028a878`) |
+| `+0x21c` | int | **threat response** (`GangSetThreatResponse`): 0 never fights; **2** when the brain is made (`0x0028a570`, from `Human_Init`, the store at `0x0028a878`); the civilian, dealer and shopkeeper thinks set it to 0 once no fight goal remains ([Brain types](#brain-type-handlers)) |
 | `+0x220` | int | damage response |
 | `+0x265` / `+0x266` / `+0x267` | u8 | wants a weapon / a hat / reacts to violence |
 | `+0x26c` | int | ped type |
 | `+0x284` | int | why the last move failed: 1 no route, 2 or 4 an edge, 3 stuck |
 | `+0x298` | u8[45] | **attack weights**, one per attack kind (`BrSetAttackWeight`; filled from the class's `Att_*` table) |
-| `+0x2d1` / `+0x2d2` | u8 | world-flag use allowed / its chance |
+| `+0x2d1` / `+0x2d2` | u8 | world-flag use allowed / a chance byte (1 / 10 when made; no reader of `+0x2d2` found, [World flags](#ai-flags)) |
+| `+0x2d4` / `+0x2d5` | u8 | hidden in shadow (`Brain_SetHiddenInShadow`) / sees a hidden human within 2 m ([The enemy scan](#enemy-scan)) |
 | `+0x2d8` | u8 | join the player's gang |
 
 ### Types {#types}
@@ -150,7 +155,7 @@ again. `Brains_RegisterTypeHandlers` (`0x0028a360`) fills the tables at `0x00715
 | 3 | **the Warriors** (48) | `0x0028fbb0` | `0x003052f0` | `0x003063b0` |
 | 4 | civilians and bums (116) | `0x0028fbb0` | `0x002fef40` | `0x002ffb30` |
 | 5 | dealers (15) | `0x0028fbb0` | `0x00302cd8` | `0x00303178` |
-| 6 | the `civl_co_di` kind (441) | `0x0028fbb0` | `0x00303f10` | `0x00304228` |
+| 6 | the `civl_co_di` kind (441): shopkeepers, [below](#think-shopkeeper) | `0x0028fbb0` | `0x00303f10` | `0x00304228` |
 
 So type 3 is the Warriors' brain, which an ally Warrior runs (this answers [Combat](combat.md#open-questions)'s "brain
 type 3"). The player's update `0x003035d8` only keeps books (target validity, attackers counted, the follower check
@@ -178,7 +183,7 @@ with ten unused, all on [AI goal types](../references/goal-types.md) with the bi
 | `0x12`-`0x1a` | reaction goals | | [below](#reaction-goals) |
 | `0x1b` | **Blocking** | `0x002b54d8` (vtable `0x0053feb0`) | [below](#block) |
 | `0x1f` | GrabTarget | `0x002bb458` | |
-| `0x21` | PlayAnimation (a scene) | `0x002e4980` | pushed by `GoalAddressPerson` |
+| `0x21` | PlayAnimation (a scene) | `0x002e4980` | pushed by `GoalAddressPerson` ([rows](ai-goals.md#goal-play-animation)) |
 | `0x22` | PlayDynAnimation | `0x002d2eb0` | [`GoalPlayDynAnimation`](#dyn-animation) |
 | `0x29` | JoinCinematic | `0x002e53e0` (vtable `0x005421f0`) | `GoalJoinCinematic` (`0x002e5300`); Process `0x002e5618` |
 | `0x30` | TrackHuman | `0x002df250` | [`GoalTrackHuman`](#formations) |
@@ -189,7 +194,7 @@ with ten unused, all on [AI goal types](../references/goal-types.md) with the bi
 | `0x69` / `0x73` | Pedestrian / Patrol | `0x002aae30` / `0x002c1338` | `FlagNetTraverse` |
 | `0x6b` / `0x72` | PedReaction / Hostile | `0x002aa558` / `0x002d55d8` | pushed by the civilian think |
 | `0x80` | Dealer | `0x002c6d90` | [`GoalDealer`](#dealer) |
-| `0x85` | BigFighter | `0x002e9cd0` (vtable `0x00542940`) | |
+| `0x85` | BigFighter | `0x002e9cd0` (vtable `0x00542940`) | `GoalBigFighter` (`0x002e9c60`); taunt, guard, attack, pick up ([rows](ai-goals.md#goal-big-fighter)) |
 | `0x9b` | Backoff | `0x002d92e8` | |
 
 ### Actions {#actions}
@@ -252,10 +257,16 @@ the brains.
 
 ### Handlers {#handlers}
 
-`Brain_InstallHandlers` (`0x0028c1a8`): a brain with `+0x09` set ("dead", `BrDead`) gets A = `Brain_UpdateGoals`
-and B, C = empty stubs (`0x004edd40`, `0x004edd48`), so only what the script pushed runs; a type-0 brain set dead also
-gives up the pad (per-player `+0x1b` = 0). Otherwise A, B and C come from the type's tables. `level99` makes its enemy
-gangs dead (`GangBrDead(true)`) while it scripts them, then lifts it for the fights.
+`Brain_InstallHandlers` (`0x0028c1a8`): a brain with `+0x09` set ("dead", `BrDead`) gets A = `Brain_UpdateGoals` and B,
+C = empty stubs (`0x004edd40` returns, `0x004edd48` returns 0): no think handler (the type's B, which pushes the type's
+own goals, [Think handlers](#brain-type-handlers)) and no events, but A is the same update every live type uses, so
+**the goal stack and the actions still run** ([one update](#update-goals); its skip tests read the gang's `+0xd4` and
+the brain's `+0x0a`, never `+0x09`). `BrDead` itself (`Brain_SetDead` `0x00292330`) only clears the actions and sets the
+byte (`Brain_SetHeld`, which reinstalls the handlers); goals already on the stack, such as a follow goal, go on running
+and queue new actions. To freeze a human a script also flushes it (`BrFlush`) or suspends its gang (`GangSuspend`, as
+`kinghill` does to its non-player gangs). Confirmed (code); a type-0 brain set dead also gives up the pad (per-player
+`+0x1b` = 0). Otherwise A, B and C come from the type's tables. `level99` makes its enemy gangs dead
+(`GangBrDead(true)`) while it scripts them, then lifts it for the fights.
 
 ### Brain_UpdateGoals: one update {#update-goals}
 
@@ -305,6 +316,85 @@ fight goal resumed from the stack; the stunned goal `0x18` came with `0x100000`,
 `0x12` goals with the civilian's own tackle and grab. So the reaction goal lags the state by one update, because the
 brains run before the human's state update ([Tasks](tasks.md#humans-update)).
 
+#### The fight reaction goals {#fight-reactions}
+
+Each runs as [the reaction goal](#reaction-goals) while its state lasts, and ends (2, actions cleared) when it
+clears. They pick with `Human_CanStartAttack` and queue with the kind's chain delay (`AttackKind_ChainDelay`) unless
+said. Confirmed (code) at each address.
+
+- **Grabbing** (`0x12`, the grabber).
+    - **Start** (`0x002b5ad0`) rolls a **hand-over flag** `+0x14`: `Random_Int(100)` < the gang's `CfgGang` value 5
+      (`+0x6f`) × 10. A FollowAndDefend (`0x35`) or HoldFlag (`0x7d`) goal on the stack clears it.
+    - **Process** (`0x002b60c0`):
+        1. Not grabbing: done.
+        2. Near a train (`Brain_IsNearTrain`): write command 5 every update (inferred: let go).
+        3. The target is the held man (`+0xc4`). While actions are queued, wait.
+        4. **Presenting him.** This happens in a rear grab when the nearest player is friendly to A, is not busy
+           and is within near (3 m), and player 1 exists and is not in state 2. The timer `+0x10` (now + 3000 ms,
+           set on the first such update) must not yet have run out.
+        5. **A front grab with the flag**, when the victim has two or more slot holders: queue a set-command
+           action (command `0x19`, `0x21`; inferred: shove him off to the others) and wait.
+        6. **A rear grab with the flag**, when the victim has a number of slot holders other than 1, or while
+           presenting. Find the nearest player among the victim's slot holders, else the nearest of his active
+           attackers, and turn to face him (`TurnToPointAction`). Wait. (Holding him up for a friend to hit.)
+        7. Otherwise pick a kind and act on it:
+            - 45: wait;
+            - 24 (a strike in the grab): 40 % of the time two kind-24 attacks, the second after the chain delay;
+            - 25 or 29 (the throws): the stick angle from `Grabbing_PickMove`;
+            - 26-28 (power strikes): no angle.
+    - **Grabbing_PickMove** (`0x002b5b98`) picks a direction *d* (0 left, 1 ahead, 2 right, 3 behind the grabber,
+      angle = heading + *d* × 90° − 90°). The first rule that gives one wins:
+        1. With a HoldFlag goal (`0x7d`), away from its flag: flag in A's sector 0, 1 or 7 → 3; 2 → 2; 3-5 → 1;
+           6 → 0.
+        2. For a class whose record byte `+0x39` is 1, a random choice among the walls next to them: the victim's
+           sector 4 → 1, the victim's 6 → 0, the victim's 2 → 2, A's sector 4 → 3. Failing that, a random choice
+           among the sides where a human not friendly to A stands next to the victim. (Into a wall or into his
+           mates.)
+        3. With the gang's tactic of type 2 (Defend), away from the defended human, as in 1.
+        4. Otherwise `Random_Int(3)`: left, ahead or right, never behind.
+- **Mounting** (`0x13`, the tackler on top, `0x002b6638`).
+    1. Not tackling: done.
+    2. Near a train: command 5.
+    3. The target is the held man. Pick a kind; 45 and 36 do nothing.
+    4. Kind 35 (the ground punches): 40 % of the time two of them, chained.
+- **Grabbed** (`0x14`, `0x002b6848`).
+    1. Not grabbed and not being mugged: done.
+    2. A grabber who is a friend: nothing.
+    3. A civilian (type 4) not in a standing reaction calls for help every 30 updates (`Gang_BroadcastHelpCall`,
+       10 m).
+    4. With threat response 0, other than a dealer or a class-221 human, he only waits.
+    5. Otherwise the grabber becomes the target.
+    6. Once he has been mugged, the latch `+0x10` stops all struggling.
+    7. Otherwise pick a kind:
+        - **31** (the struggle strike) is queued with delay = chain delay × (1 − max(0, (health % / 100 − `h`) /
+          (1 − `h`))), `h` being the class's hurt fraction (`+0x04`); a class-221 human uses 0. So a healthy man
+          struggles at once and a hurt one waits the full chain delay.
+        - Any other kind gets a stick angle of his heading or heading + π (50/50): push forward or back.
+- **Mounted** (`0x15`, tackled, `0x002b6bb8`): as Grabbed (help call, threat-response rule), without the mugging
+  latch. Every kind uses the health-scaled delay and no angle.
+- **Grounded** (`0x17`, `0x002b4aa8`; Start `0x002b4a38` notes the time).
+    1. While knocked down and someone holds an attack slot on him, queue kind 42 **on himself**. The delay is
+       max(0, 1900 − min(time down, 2000)) ms.
+    2. A target hidden in shadow is dropped.
+
+    So about 1.9 s after going down, a man still under attack plays kind 42 (anim 250), which `0x002240e8` allows
+    only from this goal (inferred: a get-up attack). This corrects [AI goals](ai-goals.md#goal-reactions)' "against
+    the target".
+
+#### Who backs off (FightBackOff) {#fight-back-off-pusher}
+
+The only caller of `FightBackOffGoal_Init` (`0x002b7140`) is `GuardSubTactic_Order` (`0x003221e8`), one of the Attack
+tactic's coordinated [sub-tactics](ai-code.md#t2-sub-tactics). Confirmed (code). With its back-off option (`+0x17`)
+the order does these things:
+
+- The **gang leader** gets FightBackOff with no time limit, after `Brain_PopToGoalBase` / `Brain_MarkGoalBase`. He
+  keeps 1.75 × far plus 1-2 m from his target, faces him and taunts ([FightBackOff](ai-goals.md#goal-fight-back-off)).
+- Every other non-player member joins the leader's formation (set 3, min(2 × others, 9) slots, shape 3.0) and gets
+  FollowAndDefend (3.0) on him. Without the option the members also get the attack table `0x00511438` as their
+  override.
+
+So FightBackOff is the leader hanging back while his men guard him. No script pushes it.
+
 ### Events {#events}
 
 `Brain_OnEvent` (`0x0028f928`) runs the perception's handler (`0x00299100` on `+0xf8`), then the reaction goal's
@@ -312,6 +402,334 @@ event slot if one is active (`0x0028f988`), then handler C. Event `0x10` is the 
 ([below](#block)). Handler C is where a brain answers the world: the civilian's (`0x002ffb30`) takes event `0x14`
 (violence nearby) and may start a fight through `Brain_Fight`; the type event handlers are among `Brain_Fight`'s
 callers.
+
+### Brain types: think and event handlers {#brain-type-handlers}
+
+What each brain type does at its think (one character step in five, [The update](#update)) and with each event
+([Events](#events)). Confirmed (code) at the addresses cited unless marked; "every *n* thinks" counts the think
+counter brain `+0x38`, so it is every 5 × *n* steps. `R` is the sight range (`Brain_GetSightRange` `0x0028bf00`,
+[The enemy scan](#enemy-scan)). Goal ids are on [AI goal types](../references/goal-types.md).
+
+`Human_CanSeeHuman` and its squared near and shadow distances are under [Sight](#sight).
+
+#### The event record {#event-record}
+
+Every handler takes the brain and a record: `+0x00` the human who caused it (the attacker, the aggressor), `+0x04`
+the other party (the attacker in event 1, the crime object in event `0x17`), `+0x0c` and `+0x11` flag bytes, `+0x20`
+the **event id**, `+0x24` a third object or human (the victim in event `0x14`, the offender in event 7). Field roles
+inferred from the readers below.
+
+| Id | Meaning | Who answers it |
+| --- | --- | --- |
+| 0 | triangle pressed on this human (the prompt) | player, Warrior, dealer (buying), shopkeeper, bum |
+| 1 | he was hit (`+0x04` the hitter; `+0x11` = 1 when it counts as an attack) | cop, gang, civilian, dealer, Warrior, shopkeeper, shared |
+| 2 | reset: target, actions, goals and enemies cleared | shared (cops ignore it) |
+| 6, 7 | an object taken or a theft (offender at `+0x24` for 7; inferred) | cop and civilian (7), shopkeeper (6, 7) |
+| 9, `0x11` | (not read by any brain type; cops drop them) | cop |
+| 10 | a shopkeeper's customer check (inferred) | shopkeeper; cops drop it |
+| `0xb` | a new enemy, sent by [the enemy scan](#enemy-scan) | shared, Warrior; player and shopkeeper drop it |
+| `0xc` | (dropped by the player, the Warriors and cops) | — |
+| `0xd` | the goal stack became empty ([Brain_UpdateGoals](#update-goals)) | goals and tactics |
+| `0xf` | "use this flag" (a free tag spot nearby; inferred) | sent by the gang think to itself |
+| `0x10` | the [attack warning](#block) | every type |
+| `0x14` | violence seen (`+0x00` the aggressor, `+0x24` the victim; `+0x04` 0 for a fight between humans) | cop, gang, civilian, Warrior, shopkeeper; the player drops it |
+| `0x15` | a fight lull: his attackers answer with a taunt (inferred) | shared |
+| `0x17` | a crime seen (`+0x04` the crime object, which gives its position) | cop, gang, civilian |
+| `0x18` | danger near (a fire, a car; `Brain_OnDangerNear` `0x00291728`) | Warrior |
+
+Hearing: an event reaches a brain only within its hearing radius (`Brain_IsInHearRange` `0x002935d8`: brain `+0x134`,
+50 m when the brain is made; `+0x138`, 20 m, for event 20). Confirmed (code) at `0x0028a570` for the defaults.
+
+#### The shared event handler {#shared-events}
+
+`Brain_DefaultOnEvent` (`0x00292d80`) is every type's fallback (each type handler passes the ids it does not take):
+
+1. **1** with `+0x11` set: a help call to his gang within 20 m (`Gang_BroadcastHelpCall` `0x00293640`) naming the
+   hitter.
+2. **2**: target cleared, actions, goals and the enemy list cleared.
+3. **`0xb`** (a new enemy), unless that enemy is throwing at him: a help call within 20 m flagged "new enemy"; an
+   Investigate goal (`0x5e`) on top is popped; when the top is then Chase (`0xc`), its actions are cleared.
+4. **`0x10`** (the attack warning):
+    1. The near radius is 3 m (9), or 0 when the attacker is hidden in shadow, throwing, and this brain's `+0x2d4` is
+       clear. Unless `Human_CanSeeHuman(+0x12c, R, near, 2 m, self, attacker)` and the attacker is not friendly,
+       nothing more.
+    2. Brain `+0x200` + 1 (the [block](#block)'s trigger); unless `Human_ReactToThreat` already holds, the two gangs
+       are made enemies (`Brain_MakeGangsEnemies` `0x00290328`); a help call within 20 m.
+    3. By the top goal: StationaryShooter (`0x8d`) with free actions: clear the actions and, with `Goal_TryBlock(goal,
+       90)`, command 4 (block). BigFighter / BigFighterA (`0x85`, `0x86`): the goal's own handler (`0x002ea0b8`,
+       `0x002ebe20`). Fight (`0xf`): when his target may be countered (`Human_CanCounterTackle` or
+       `Human_CanCounterGrab` against it) and `Random_Int(100)` < `Human_CounterChance`, clear the actions and, on an
+       empty queue, **command 3** (the counter).
+    4. When the attacker has a pad or is a Warrior (type 3): `Brain_TryPatternBlock` (`0x00292158`).
+5. **`0x15`**: for each human holding an attack slot on him (brain `+0x1a4`), except classes `0x77`, `0x6a` and
+   `0xb2`, whose gang kind's field `0x6d` is not 4, whose top goal is Fight (`0xf`) or BigFighter
+   (`0x85`), and who is not a Warrior under a tactic that answers 2 at slot `+0x34`:
+    - his own target: a taunt of kind 4 (id 0, or `0xf` under BigFighter; class `0x80` only while it holds `+0x364`);
+    - any other: skipped when nearer than the middle of his melee ranges ((near + far) / 2), else a taunt of kind 3,
+      id `0x10` or `0x8f` at 50 %.
+   The taunter clears his actions, walks off (gait 0), turns to the human (start delay 50-100 ms) and taunts
+   (`TauntAction_Init`); a non-target also delays his next attack by twice the taunt clip's length (anim 598 or 599).
+   Under the Moe boss tactic (`0xc`), a BigFighter's taunt tells the tactic (`BossMoeTactic_FireAnimDone`).
+
+What sends event `0x15` is not traced.
+
+#### Cops (type 1) {#think-cop}
+
+**Think** (`CopBrain_Think` `0x00300678`):
+
+1. `Brain_MaybeSpotPlayers` (`0x0028fae8`).
+2. The radar blip: mode 2 when a player (player 2 too in co-op) is in his enemy list, 3 while his top goal is
+   CallForBackup (`0x79`), else 0; kept in human `+0x19e` and brain `+0x28c`.
+3. Threat response set, no fight goal, no Chase goal (`0xc`) and a non-empty enemy list: brain `+0x28f` = 1 and
+   `Brain_PushFightGoal(brain, −1)` (no time limit).
+4. **Pursuit counter** brain `+0x148` (s16), when he has a target: + the target's gait when the target moves (gait ≠
+   0) and either holds an object or moves along the cop's facing (velocity · facing ≥ 0), up to 36; else − 2, down to
+   0. Its reader is not traced (inferred: how hard the target is running from him).
+5. With crime type 12 (Trespassing) enabled, every 3 thinks, the gang having no tactic: when he may respond
+   (`CopBrain_CanRespond` `0x00302038`) or already has a fight or chase goal, `CopBrain_ChaseTarget` (`0x00301248`).
+6. Every 17 thinks: the nearest **store flag** (activity 14) with group bit `0x10000` within 20 m; the nearest player
+   to it within 10 m whose human byte `+0x5b7` is set, a valid enemy, and he may respond → **crime 1** (break and
+   enter), below. Then the think ends.
+7. Every 20 thinks: each enabled **tag spot** (activity 12) within `R` with a human on it (flag `+0xdc`) who is not
+   friendly and to whom a clear ray runs, if he may respond → **crime 13** (vandalism), the spot passed along.
+8. Every 4 thinks: each player picking a lock or stealing a stereo whom he sees (`Human_CanSeeHuman(+0x12c, R, 0.4 ×
+   R, 2 m)`, the 0.4 × `R` being squared too) → crime 1 (lock) or 11 (theft).
+9. Every 8 thinks: each player holding a world object of type hash `0x3c4e590b` whom he sees (as 8) → crime 11.
+
+**Responding to a crime** (steps 6-9 and the event handler): pop a MoveToUseFlag goal (4) on top; count the backup
+needed (`CopBrain_CountBackup` `0x00302118`); brain `+0x28f` = 0; `Brain_PushFightGoal(−1)`; when backup is needed,
+`Goal_CallForBackup(cop, offender, crime, count)` (`0x002c4710`, goal `0x79`); then `Goal_SpotCriminal(cop, crime,
+offender's position, offender, victim, flag)` (`0x002c4060`, goal `0x78`) on top. [Crimes and the police](#crimes)
+has the report itself.
+
+**Events** (`CopBrain_OnEvent` `0x00302340`):
+
+- **1** with `+0x11` = 1, and **`0x10`**: `CopBrain_ReportCrime(cop, attacker)` (`0x00301cf8`): nothing for a
+  friendly attacker; one throwing at him first calls for help (`Brain_CallForHelp` `0x00291d08`, done if answered);
+  `+0x200` + 1. Without a fight goal and up: when the attacker is beyond `R` or out of line of sight, the cop treats
+  it as a crime seen (`Brain_OnCrimeSeen` with event `0x17`) and stops. Otherwise a help call within 30 m, the gangs
+  made enemies, a **crime report of type 2** (cop assault) at the attacker, MoveToUseFlag popped, backup counted;
+  when not busy, `Brain_Fight(attacker, −1)` (brain `+0x28f` = the attacker hidden in shadow) or, already
+  fighting, `Brain_AddEnemy` + `Brain_SetTarget`; CallForBackup (crime 2) when needed.
+- **2, 9, 10, `0xc`, `0x11`**: dropped.
+- **7** (a theft; offender at `+0x24`): not blocked, no gang tactic, may respond, the offender not friendly, in his
+  field of view and a clear ray to him → crime 11, as above.
+- **`0x14`** (violence seen), with threat response and up: the side to take (`Brain_PickSideInFight` `0x002912b0`).
+    - **None** (a fight between strangers): not blocked, no tactic, may respond, the aggressor not friendly; the
+      backup for crime 6 (gang fight). None needed: when the aggressor's gang last called (gang `+0x5f4`) more than
+      30 s ago or never, and he is in line of sight, `Goal_LeaveArea(cop, aggressor's position, 2, aggressor)`
+      (`0x002c4ec8`, goal `0x7a`: warn, then walk away). Needed: fight goal, CallForBackup and SpotCriminal for
+      crime 6.
+    - **A side**, if he is a valid enemy: the crime by the victim's brain type: civilian, gang, shopkeeper or dealer
+      (4, 2, 6, 5) → 8 (mugging) when the offender is mugging, else 0 (assault); a cop victim (when the offender is
+      not the event's `+0x24` and byte `+0x0c` is 0) → 2; else 14 (none). A civilian assault while two gangs fight
+      within his far range of the victim (`Humans_TwoGangsFighting` `0x0029e168`) is ignored; so is everything while
+      he has a target, is blocked, or holds SpotCriminal, CallForBackup or LeftTurf (`0x78`, `0x79`, `0x3f`).
+      Without a fight goal: MoveToUseFlag popped; with a Respond goal (`0x74`) above the goal base (brain `+0x2d`)
+      only when `Human_CanSeeHuman(+0x12c, R, 3 m, 2 m)` sees the offender; gangs made enemies; `+0x28f` = 0;
+      `Brain_Fight(offender, −1)`. With one: gangs made enemies, `Brain_SetTarget(offender)`. Then, with no gang
+      tactic and (no fight goal before, or the offender's gang `+0x5e8` clear): CallForBackup when needed and
+      SpotCriminal for the crime. Last, with no HelpRespond goal (`0x1d`) above the base, `Gang_SendHelper(cop,
+      offender, 0, −1)` (`0x002b75b8`).
+- **`0x17`**: `Brain_OnCrimeSeen(brain, event, 0)` (`0x00291668`, then `CopBrain_OnCrimeSeen` `0x00301538`).
+- Others: [the shared handler](#shared-events).
+
+#### Gang soldiers (type 2) {#think-gang}
+
+**Think** (`GangBrain_Think` `0x00304608`):
+
+1. `Brain_MaybeSpotPlayers`.
+2. Unless human `+0x19e` is 4 or 5 (a blip a goal owns, such as CallGang's), the radar blip: 2 when a player is in
+   his enemy list, else 0.
+3. Threat response set, no fight goal and a non-empty enemy list: `Brain_PushFightGoal(−1)`.
+4. The pursuit counter, as the cop's (step 4).
+5. **A weapon**, every 6 thinks: wants one (`+0x265`), holds nothing, and his gang kind's pick-up factor *f*
+   (`GangConfig_GetField6E` `0x001644f8`) is not 0: with chance 25 × *f* %, when no human is within 1.5 m (his
+   sectors refreshed if older than 1 s, `0x0028fe90`; `Sectors_AllClear` `0x0029eaa0`), the nearest pickable object
+   within **2 m** (`Ai_FindObject` `0x0029d5f0`, mask `0x30000`); for a gang of kind 1 any, else not one whose
+   type class (`+0x87`) is 4: actions cleared and, on an empty queue, a pick-up action (`0x002faf98`, kind `0x21`).
+6. **A hat**, every 12 thinks, when he may go for one (`Brain_CanSeekHat` `0x0028bfa8`: allowed (`+0x266`), not busy,
+   bare-headed (`+0x364` empty), nobody attacking him, class `0x82`-`0x86`, a top goal that is not EngageEnemy,
+   GetItem or LeftTurf, and the gang tactic, if any, allows it): his class's hat (class `+0x14c`) within **10 m** →
+   `Goal_GetItem(human, 4, hat)` unless a GetItem goal is already above the goal base.
+7. Every 15 thinks, with no target, no held flags and none of the busy states `0x7bf9e9f7ff0`: the first free
+   (`+0xdc` none), enabled **tag spot** (activity 12) within 10 m with a clear ray → he sends himself event `0xf`
+   with the flag (inferred: go and tag it; the reader is the goal on top).
+
+**Events** (`GangBrain_OnEvent` `0x00304fa8`):
+
+- **1** with `+0x11` set, the hitter not friendly: a hitter throwing at him first gets a help call (done if
+  answered); the gangs made enemies unless already threats. By the top goal: GrabTarget (`0x1f`) → its broken-grab
+  handler; BumLogic (`0x4f`) → the bum gives the hitter an item (`Bum_GiveItem`), done; the boss goals `0x8b`,
+  `0x8a`, `0x85`, `0x86`, `0x89` → their handlers; a Riot goal (`0x54`) anywhere on the stack → `Riot_OnAttacked`.
+  None of them, or one that declines: when not busy, `Brain_Fight(hitter, −1, 1)`, or `Brain_AddEnemy` +
+  `Brain_SetTarget` when already fighting; when busy and the hitter is a player, a help call within 30 m and the
+  hitter's head turns to him for 3 s.
+- **`0x14`** with `+0x04` = 0, his gang not of kind `0x17`: `Brain_OnViolenceSeen` (below).
+- **`0x17`**: `Brain_OnCrimeSeen` → `GangBrain_OnCrimeSeen` (`0x00304c78`): when he may react
+  (`Brain_MayReactToCrime`) and, for a crime with an offender, the offender is a threat to him: without a Mark goal
+  (`0x9a`), nothing when two gangs fight within the far range of the scene; then an **Investigate** goal (`0x5e`,
+  `InvestigateGoal_Init(5 m, point, offender, 2, 0, line 13, chance)`) at the offender's (or the crime object's)
+  position, the chance `0x00510ade` for a lookout (Scout `0x6f` or PathScout `0x70` on the stack) else `0x00510add`;
+  with a Mark goal, a **ReactNoise** goal (`0x99`) at the point instead.
+- Others: the shared handler.
+
+**`Brain_OnViolenceSeen`** (`0x00291960`), used by gang members and Warriors:
+
+1. Without a Mark goal (`0x9a`): with threat response, away from trains, no target, no held flags, actions free, and
+   a top goal other than EngageEnemy, GetItem and LeftTurf: the side to take (`Brain_PickSideInFight`).
+    - A **Warrior** whose chosen side is busy (grabbing, held...) and within 1.1 × his far range: his head turns to
+      him for 3 s and, at 10 % when he may gesture (`Ambient_MayGesture`), actions cleared, a turn to him and a taunt
+      (kind 3, id `0x10`); done.
+    - Otherwise `Brain_Fight(side, −1, 0)` (or `Brain_SetTarget` when fighting) and, with no HelpRespond goal above the
+      base, `Gang_SendHelper(self, side, 0, −1)`.
+2. With a Mark goal: when a side is found, a ReactNoise goal on top (popping an earlier one) at the side's position.
+
+#### Civilians (type 4) {#think-civilian}
+
+**Think** (`CivilianBrain_Think` `0x002fef40`):
+
+1. `Brain_MaybeSpotPlayers`; timer B (`+0x2c8`) cleared once past.
+2. Only while his gang has no tactic. Threat response set and no fight goal → target cleared, **threat response
+   0** (a civilian calms down as soon as his fight ends).
+3. **Reacting to the player**, when all hold: the script's response byte `+0x228` is 1
+   ([binding](../references/bindings/ai.md)), timer B is 0, class `+0x11b` is not 6, he may react
+   (`CivilianBrain_CanReactToCrime` `0x002ff198`), the nearest player is within **10 m**, that player's brain `+0x2d5`
+   is clear, nobody in the player's gang is under attack (`Gang_AnyMemberHasAttackers`), and he has line of sight.
+   A MoveToUseFlag goal on top is popped; then ped type 3 (brain `+0x26c`) pushes **Hostile** (`0x72`,
+   `HostileGoal_Push(10 m, …)`), any other **PedReaction** (`0x6b`) saying line `0xaf`.
+
+**Events** (`CivilianBrain_OnEvent` `0x002ffb30`):
+
+- **0**: a bum (class `+0x11b` 6 or 7) under BumLogic (`0x4f`) takes the money (`Bum_TakeMoney`).
+- **1**: a bum with BumLogic anywhere on the stack gives the hitter an item (`Bum_GiveItem`); then, with `+0x11` = 1,
+  the attack warning below.
+- **`0x10`** → `CivilianBrain_OnAttackWarning(brain, attacker)` (`0x002ff898`): one throwing at him first calls for
+  help; a help call within 30 m; when he may react: MoveToUseFlag (4) or PlaySpecialIdle (`0x23`) on top is popped;
+  ped type 3 and the attacker not friendly → threat 2 and `Brain_Fight(attacker, −1, 0)`; otherwise
+  **PedReaction** (`0x6b`, no line). A CallPolice goal (`0x6d`) or Peddler (`0x50`) on top hears of it too. A
+  non-friendly attacker raises `+0x200`; when he is busy and the attacker has a pad, the attacker's head turns to him
+  for 3 s.
+- **7** (a theft by the human at `+0x24`, within 15 m): when he may react, the crime can be reported
+  (`GameState_CanReportCrime` `0x0041cf80`), `Random_Int(100)` ≤ 60, the thief in his field of view and in line of
+  sight, a spawner in state 1 exists and game state `+0x29f` is set: MoveToUseFlag popped, he becomes the crime's
+  reporter and pushes **CallPolice** (`0x6d`, `CallPoliceGoal_Push(self, 11, thief's position, −1, thief)`).
+- **`0x14`** (violence seen), unless his brain is "dead" (`+0x09`) or he does not react to violence (`+0x267`):
+    1. No side (strangers fighting): ped type 3 ignores it; others within 15 m of the victim who may react pop
+       MoveToUseFlag and push PedReaction (no line) toward the human at `+0x24`.
+    2. A side, unless the other party's top goal is Hostile (`0x72`): the crime kind as the cop's (4, 2, 6, 5 → 8 or
+       0; a cop victim → 2 with chance 100 %; else 14), the chance otherwise `0x00510adf`. Only within 15 m of the
+       offender and when he may react; MoveToUseFlag popped.
+    3. Ped type 3 in a gang of kind other than `0x17`: nothing more. Ped type 3 in a kind-`0x17` gang, his human
+       `+0x3b8` clear and the victim's `+0x3b8` = 1: threat 2, `Brain_Fight(offender, −1, 0)`, line `0xcd`; done.
+    4. **Calling the police**, when the crime can be reported, the kind is not 14, the offender's gang last called 40
+       s ago or more (or never), `Random_Int(100)` ≤ the chance, line of sight, the crime is not an assault on a
+       civilian while two gangs fight within his far range, and the crime has responders (game state `+0x294 +
+       kind`): with a spawner in state 1 (and, for a cop victim, fewer than 4 humans within 10 m of the offender),
+       he reports and pushes **CallPolice** (kind, the offender's position, victim, offender); a player offender may
+       queue tutorial hint 7 once. With no spawner in state 1 but one in state 0: he reports and pushes **CallGang**
+       (`0x6e`, `Goal_CallGang(15 m, self, offender, 2, 0, 0)`).
+    5. Otherwise, any but ped type 3: **PedReaction** (`0x6b`) against the offender, no line.
+- **`0x17`** within 15 m of the crime object: `Brain_OnCrimeSeen` (→ `CivilianBrain_OnCrimeSeen` `0x002ff2b0`).
+- Others: the shared handler.
+
+#### Dealers (type 5) {#think-dealer}
+
+**Think** (`DealerBrain_Think` `0x00302cd8`): `Brain_MaybeSpotPlayers`; threat response set and no fight goal →
+threat response 0; every 5 thinks, while fighting (threat response set), wanting a weapon (`+0x265`), empty-handed
+and not blocked: the nearest pickable object within 2 m (mask `0x30000`) → actions cleared, a pick-up action (kind
+`0x21`).
+
+**Events** (`DealerBrain_OnEvent` `0x00303178`): **0** under Dealer (`0x80`) → `DealerGoal_OnBuy`
+([Buying](#dealer-buy)); **1** with `+0x11` = 1 and **`0x10`** → `DealerBrain_OnHit` (`0x00302ff0`,
+[Buying](#dealer-buy)); **`0xb`** and **`0x14`** dropped; others the shared handler. Confirmed (code).
+
+#### Shopkeepers (type 6) {#think-shopkeeper}
+
+Type 6 (the `civl_co_di` class kind) is the **shopkeeper**: its handlers serve the Shopkeeper goal (`0x82`).
+
+**Think** (`CivlCoDiBrain_Think` `0x00303f10`): the same as the dealer's think.
+
+**Events** (`CivlCoDiBrain_OnEvent` `0x00304228`); `ShopkeeperBrain_OnDisturbance` (`0x00304070`) is the
+shopkeeper's **disturbance handler** `(brain, offender, reason, object, call help)`: a thrower first calls for help;
+with call help, a help call within 30 m; when he is free to fight (`Brain_IsFreeToFight` `0x00304030`) and has a
+Shopkeeper goal, goals above it are popped and the goal is told (`ShopkeeperGoal_OnDisturbed`); a non-friendly
+offender raises `+0x200`.
+
+- **0** under Shopkeeper: the goal's prompt handler (`0x002e63e0`, the sale; [AI goals](ai-goals.md)).
+- **1** with `+0x11` = 1: disturbance (the hitter, reason 1, no object, call help).
+- **6, 7**, with a Shopkeeper goal: when the store's box (the goal's `+0x3c` handle) contains the object (event `+0x04`
+  for 6, `+0x00` for 7): disturbance (the human at `+0x24`, reason 0, the object, no call).
+- **10**, with a Shopkeeper goal whose `+0x54` and `+0x30` are clear: when a player is within the goal's range
+  (`+0x38` × 0.25, at least 16; compared with a squared distance, inferred), goals above the Shopkeeper goal are
+  popped.
+- **`0xb`**: dropped. **`0x10`**: disturbance (the attacker, reason 1, call help). **`0x14`**: disturbance (the side
+  `Brain_PickSideInFight` picks, reason 2, no call).
+- Others: the shared handler.
+
+#### The Warriors (type 3) {#think-warrior}
+
+**Think** (`WarriorBrain_Think` `0x003052f0`):
+
+1. `Brain_MaybeSpotPlayers`; threat response set, no fight goal and enemies → `Brain_PushFightGoal(−1)`; the pursuit
+   counter as the cop's.
+2. **Pick-ups**, every 6 thinks: [The Warriors' pick-ups](#warrior-pickups). The search is 1.5 m with mask
+   `0x10000`; the mask is `0x30000` (and the search's last flag 1) when his gang's leader is neither grabbing from
+   behind nor tagging, the gang's `+0x32` is 1, a member of the gang is under attack and his own enemy list is empty.
+   The object must also pass `WorldObject_CanBePickedBy`.
+3. Outside co-op (game state `+0x158` = 0): holding a weapon of kind 4 or 6 with an empty enemy list and no steal
+   tactic (`0x26`) → he drops it.
+4. Every 8 thinks: holding a world object whose type byte `+0x64` is `0x9a` while his human `+0x5b7` is clear → drop
+   it (inferred: loot only inside a store).
+5. **Hats** for classes `0x12`, `0x14` and `0xbc`, every 6 thinks, under the follow (`0x12`) or hold (3) tactic and
+   with no hostiles counted (`+0x152` = 0): unless his `+0x364` already holds the named hat object (`0x0056a2d0`), the
+   `dyn_warr_cb` object within 20 m → `Goal_GetItem(4)` unless a GetItem goal is above the goal base.
+6. **The pick-up window** `0x00510a9c` (`AI_SetPickupWindow`): once its time passes it is cleared; then, when he is
+   free (not busy, not blocked, no held flags `0x1c1ee60`), the first player carrying (`+0x364`) a world object of
+   type hash `0xbbbef927` within 10 m and in line of sight: actions cleared, a turn to him, a wait action, and line
+   `0x6d` at him.
+7. **The swap prompt** (human `+0x1b2`): the nearest player within 1.5 m, not blocked, no held flags, gait below 3;
+   one of them holding an object; this Warrior not sparring (`+0x2e5` clear), not blocked, standing (gait 0), in the
+   player's gang (or `+0x121` set), with no attacker slots taken on him, and on the right side of the player
+   (`Human_GetSideOf` = 0). The prompt string is `0xc` (both hold), `0xd` (he holds) or `0xe` (the player holds);
+   the swap itself is the event-0 prompt (`WarriorBrain_OnPrompt` `0x00306040`).
+8. Timer `+0x2dc`: once past, cleared with byte `+0x2e4`.
+9. **Getting out of the way**, every 12 thinks, when he is out of the fight stance, not in shadow, not busy or
+   blocked, standing, with no target, no attackers, and a top goal other than GetItem (`0x2c`) and PlaySpecialIdle
+   (`0x23`):
+    - when a ray toward a point ahead of him (his near range, 3 m, inferred) is blocked and a player is within 30 m:
+      actions cleared (unless the front one is of class 8) and a turn (toward the player, inferred);
+    - the nearest member of his gang within 1 m who is free, has neither Scatter (`0x37`) nor HoldPosition (`0x36`)
+      and no actions is pushed aside (`Brain_PushAside`).
+
+**Events** (`WarriorBrain_OnEvent` `0x003063b0`): **0** → `WarriorBrain_OnPrompt`; **1** → first
+`WarriorBrain_OnHitByChief` (`0x00306190`); otherwise, with `+0x11` set and a non-friendly hitter: gangs made enemies
+unless already threats and, unless one of the busy states `0x1f80974000` holds, `Brain_Fight(hitter, −1, 1)`;
+**`0xb`**: the new enemy noted (brain `+0x27c`, flag `+0x280` = 1), consumed; **`0xc`** consumed; **`0x14`** with
+`+0x04` = 0 → `Brain_OnViolenceSeen`; **`0x18`** → `Brain_OnDangerNear`; then (except for consumed ids) the shared
+handler.
+
+#### The player (type 0) {#think-player}
+
+**Update** (`PlayerBrain_Update` `0x003035d8`, every step; it pushes no goals of its own on him):
+
+1. `Brain_UpdateAlertness`; a target that is no longer up is dropped.
+2. Every 300 updates, `+0x152` = how many AI humans of all 32 gangs hold him in their enemy lists.
+3. Every 2 s (brain `+0x160`), `PlayerBrain_ScanNearEnemies(7.5 m, target)` (`0x0028af88`).
+4. `WarChief_AutoCommand` ([Automatic commands](#warrior-auto-commands)) every update; every 40 updates
+   `WarChief_CheckCrewInRange`.
+5. Brain `+0x110` = his heading.
+6. While `+0x2e4` is set (a Warrior is hitting back at him, [`WarriorBrain_OnHitByChief`](ai-code.md#brain-types)),
+   every 13 updates each AI member of his gang within 15 m who is free, not sparring (`+0x2e5` clear) and has no
+   TauntPlayer goal gets **TauntPlayer** (`0x63`, `TauntPlayerGoal_Push(member, chief, 1, −1)` `0x002d09f0`): the
+   taunting ring ([TauntPlayer](ai-goals.md#goal-taunt-player)).
+
+**Think** (`PlayerBrain_Think` `0x00303260`): in two-player play only (game state `+0x224` = 2, `+0x158` = 0) and
+unless his `+0x3ac` is 1: the swap prompt between the two players, as the Warrior's step 7 (within 1.5 m, both out
+of the fight stance, not blocked, standing, one holding something, the other player's attack slots empty).
+
+**Events** (`PlayerBrain_OnEvent` `0x00303e90`): **0** → `PlayerBrain_OnPrompt` (`0x00303468`); **`0xb`**, **`0xc`**,
+**`0x14`** dropped; others the shared handler (so the attack warning, `0x10`, reaches a player's brain too).
 
 ### Starting a fight and choosing the target {#targets}
 
@@ -330,32 +748,310 @@ callers.
 - **`Brain_SetTarget`** releases the old target's attack slot and claims one on the new target
   (`Brain_ClaimAttackSlot`, `0x0028df30`): the target's list `+0x1a4` holds at most `+0x1e4` attackers, and a closer
   attacker takes the slot of the farthest.
-- **Re-targeting**: the fight goal looks for the nearest threat once a second (`0x0028fe90`, `0x00290138`).
+- **Re-targeting**: once a second the fight goal takes the human nearest him in his sector record (`Brain_GetSectors`
+  `0x0028fe90`, refreshed when older than 1 s; its first word read as the nearest human, inferred) as the target
+  (`Brain_SetTarget`) when that human is not already the target, is a threat (`Brain_IsThreat` `0x00290138`,
+  [The enemy scan](#enemy-scan)) and no GrabTarget goal (`0x1f`) is on the stack. Confirmed (code) at `0x002b3c30`.
 
 ### The fight goal {#fight}
 
-`FightGoal_Process` (`0x002b3ab0`), each update while the fight goal is on top:
+The fight goal attacks a target already within reach; [Closing on the target](#fight-approach) brings it there.
 
-1. No valid target or no attack slot (`Brain_HasAttackSlot`) → done. A target farther than (`+0x140` × 1.1)² → done
-   (5.5 m with the usual 5 m far range). The fight goal never closes a distance itself: the Melee goal beneath it
-   does, and pushes it again ([Closing on the target](#fight-approach)).
-2. Every 30 updates `0x002221b0`; once a second, re-target.
-3. **The block try** (`Goal_TryBlock`, [below](#block)).
-4. While actions are queued, wait.
-5. **The deadline**: `FightGoal_Init` sets `+0x20` = now + a random 750-1000 ms and `+0x24` = now + its duration
-   argument. Once `+0x24` has passed, the goal ends unless the fighter is still one of the target's active
-   attackers (`0x002911a8`), the target's byte `+0x11f` is set (`0x00290ea8`) and the fighter has no goal `0x35`;
-   a class-13 fighter without `+0x29` ends at once ([GoalRiot](#riot) for the 8 s case). `GoalFight` passes −1, so
-   its deadline (now − 1, unsigned) is already past and these checks run from the first update. This corrects the
-   earlier reading of these checks as attack pacing.
-6. **Pick the attack** (`Brain_PickAttack`, `0x0028e708`): a weighted random choice over the 45 kinds. The weights
-   are `Brain_GetAttackWeight` (`0x002911f8`: the brain's `+0x298`, or the override at `+0x208`), filtered by what
-   the human can do now (`0x002240e8`) and adjusted for the number of attackers and the grab chance.
-7. The fight stance on or off (`0x0022fef0` / `0x0022fe80`).
-8. Target **out of reach** (`0x00230d00`): queue a move-to-human action (`MoveToHumanAction_Init`, vtable
-   `0x005431e0`) with a 1000 or 2000 ms limit. **In reach**: queue the attack (`Brain_QueueAttack`); a class whose
-   `+0x11b` is 13, 6 or 7 taunts instead one time in five (`0x002205e0`, anim `0x11`).
-9. Otherwise reposition (`0x002b2fc8`).
+**The deadline**: `FightGoal_Init` sets `+0x20` = now + a random 750-1000 ms and `+0x24` = now + its duration
+argument. Once `+0x24` has passed, the goal ends unless the fighter is still one of the target's active
+attackers (`0x002911a8`), the target's byte `+0x11f` is set (`0x00290ea8`) and the fighter has no goal `0x35`;
+a class-13 fighter without `+0x29` ends at once ([GoalRiot](#riot) for the 8 s case). `GoalFight` passes −1, so
+its deadline (now − 1, unsigned) is already past and these checks run from the first update. This corrects the
+earlier reading of these checks as attack pacing.
+
+#### The fight goal in order {#fight-order}
+
+`FightGoal_Process` (`0x002b3ab0`), every update. Confirmed (code); this corrects an earlier reading that put the
+block try before the range checks and left out the tackle try.
+
+1. The update counter `+0x18` is raised by 1.
+2. **Done** when the target fails `Brain_ValidateEnemy`, or when it holds no attack slot for A.
+3. **The tackle try** (`FightGoal_TryTackle`, [below](#try-tackle)). When it queued a tackle, wait.
+4. **Done** when the target is beyond 1.1 × far (5.5 m), unless A holds a throwable object or one of kind 4 or 6.
+5. Every 30 updates, **done** when there is no walkable straight line to the target (`0x002221b0`).
+6. **Re-target** at most once a second (`+0x14`), from A's sector record ([re-targeting](#targets)).
+7. **The block try** (`Goal_TryBlock`). When it pushed a block, A gives up his active-attacker place on T and waits.
+8. While actions are queued, wait. When the last attack ended (`+0x28`), give up the active-attacker place.
+9. **The deadline** (`+0x24`, [The durations](#fight-durations)).
+10. When no kind is chosen (`+0x10` = 45), **pick** one (`Brain_PickAttack` with `Human_CanUseAttackKind`).
+11. **The stance.** Drop the fight stance for kinds 19 and 20, and always for a class whose `+0x11b` is 6 or 7.
+    Otherwise take the stance.
+12. **May A attack now?** `Brain_CheckAttack(B, kind, T holds an object)` (`0x002906b8`,
+    [below](#check-attack)).
+    - Any answer but 1: [reposition](#fight-reposition) and wait.
+    - Answer 1 and the target is beyond the kind's reach (`Attack_ReachSquared` `0x00230d00`): queue a
+      move-to-human action and wait.
+        - It holds between 2 × T's capsule radius and max(reach, that + 0.1 m).
+        - Its limit is 2000 ms, or 1000 ms for a class-13 fighter or with a FollowAndDefend goal (`0x35`).
+    - Answer 1 and in reach:
+        1. **The grab and snap try** ([below](#try-grab)). When it returns 1, wait. It may change the kind and set
+           the stick angle.
+        2. When `Human_CanStartAttack` refuses the kind: for kind 22, also queue a move to between 0.8 × near and
+           0.8 × near + 1 m (1000 ms). Then pick again with `Human_CanStartAttack` and wait.
+        3. Otherwise **queue the attack** (`Brain_QueueAttack(angle, B, T, kind, 0)`) and clear the kind to 45.
+           Note that A holds an active-attacker place (`+0x28` = 1).
+        4. A class whose `+0x11b` is 13, 6 or 7, or a dealer (type 5), may say line `0x11` (a taunt) after it: 20 %,
+           when gestures are allowed (`Ambient_MayGesture`).
+
+`Brain_QueueAttack`'s first argument is the **stick angle** in radians, −1 for none. It is written with the command
+([The attack action](#attack-action)).
+
+#### Picking the attack kind {#pick-attack}
+
+`Brain_PickAttack(B, T, filter)` (`0x0028e708`) returns one of the 45 [attack kinds](#attack-kinds), or 45 for none.
+`filter` is a member-function pointer called as `filter(A, T, kind)`. It is passed as one 64-bit value in the old GCC
+layout, `s16` delta, `s16` index (−1 for a non-virtual function; otherwise a vtable slot), then the function address; so
+the constants the decompiler shows, `0x002240e8ffff0000` and `0x00224778ffff0000` (read at `0x00563ff8` by
+`0x002b5768`), are delta 0, index −1 and the function, not a kind mask. `Brain_PickAttack` applies the delta to A and
+calls through the vtable when the index is not negative (`0x0028e708`). Confirmed (code). Two filters are used:
+
+- `Human_CanUseAttackKind` (`0x002240e8`) by the fight goal's first pick, by FightGoal Resume and by EngageEnemy;
+- `Human_CanStartAttack` (`0x00224778`) by every other caller. It is the same per-kind test plus range, and the
+  fight goal falls back to it when a kind cannot start.
+
+Confirmed (code) at `0x0028e708` unless marked.
+
+1. **Set-up.**
+    - `n` = the number of attack slots taken on T (T's brain list `+0x1a4`); `m` = T's maximum (`+0x1e4`, 4 by
+      default).
+    - `c` = the number of slots taken on A himself (B `+0x1a4`); `M` = B `+0x1e4`.
+    - `running` = A at gait 4 or 5 with no held flags (`0x00223a60`, `0x00223a98`).
+    - `armed` = A holds an object.
+    - `rear` = T is grabbed from the rear (state `0x20`).
+    - **The pattern read**: when T is pad-controlled, T's target is A, and A's class threshold
+      `t = (16 − class +0x37) / 16` (`0x002236c8`) is above 0:
+        - `f` = the larger of T's two pattern bytes (`+0x5d0`, `+0x5d1`) × 0.05 (`0x00418398`);
+        - `pattern` = (`t` ≤ `f`).
+2. **T cannot be approached.** This is when `Brain_CanBeChased` on T's brain (`0x0028abc0`) is false, or B
+   `+0x2d3` is clear. Return kind 0 (`X1`) when A holds a throwable object or one of kind 4 or 6; otherwise
+   return 45.
+3. **The armed bonus.** `bonus` = 100, or 0 for a class whose `+0x11b` is 9, 10 or 13.
+4. **Candidates.** For every kind `k` from 0 to 44 that passes `filter`, these rules apply in order:
+    1. **Running.** While `running`, only kinds 0, 19, 20 and 21 are candidates. When not running, 19 and 20
+       (the charge and the dive) are not candidates. Kinds 0 and 21 are always allowed.
+       (`AttackKind_IsCharge` `0x00229b60` is true for 0 and 19-21.)
+    2. **The hurt rule.** Kinds 31-34 and 42-44 (the moves made while grabbed or on the ground) are left out when
+       A is hurt (`0x00222ff8`) and B is attackable (`Brain_IsAttackableBy(B, none)`).
+    3. **The weight.** `w` = the weight: B `+0x298[k]`, or the override table at B `+0x208`.
+    4. **Crowded.** When `c` > 1:
+        - kinds 10, 25 and 36: `w` += `w` × `c` / `M` (the snap, the throw from a grab);
+        - kinds 14, 21 and 24: `w` ×= 1 − `c` / `M` (the tackles, a strike in a grab).
+    5. **A busy target.** For kind 22 (the grab) when `n` > 1: `w` += `w` × `n` / `m`.
+    6. **Armed.** When `armed`, kinds 0-9 with `w` ≠ 0 get `w` += `bonus`.
+    7. **A rear-grabbed target.** When `rear`, kind 22 with `w` ≠ 0 gets `w` += 200.
+    8. **The pattern.** When `pattern`, kinds 6-9 (the three-hit enders) get `w` += `w` × `f`.
+
+    Each scaled weight is truncated to an integer. The kind and its weight are appended, and `w` is added to the
+    total.
+5. **The draw.** `r` = `Random_Int(total)`. The answer is the first candidate whose running sum of weights exceeds
+   `r`. With no candidates, or a total of 0, the answer is 45.
+
+So a crowded AI favours the snap and the throw and gives up tackles. Several attackers on one target make grabs
+likelier. A weapon in hand makes the plain strikes likelier by a flat 100. A rear-grabbed target, held by a gang
+mate, invites a grab (+200).
+
+**The per-kind test** `Human_CanUseAttackKind(A, T, k)` (`0x002240e8`), confirmed (code). "A free" below means A's
+state word has none of `0x7bf9e9f7ff0`.
+
+| Kinds | Allowed when |
+| --- | --- |
+| 0, 1 | A holds a world object whose type byte `+0x87` is 1-3: A free. Otherwise as 2-9. |
+| 2-9, 11 | A free, and T's state has none of `0xe3000` |
+| 10 (snap) | A free, and A holds an attack slot on the human in sector 2, 3, 4, 5 or 6 of his [sector record](#neighbour-sectors) (flag bit 1, within 1.5 m). That is a human to his side or behind. |
+| 12, 13 (grounded strikes) | T ≠ A. Either T is high or busy (`Human_IsHighOrBusy` `0x00225200`), or T lacks state `0x2000` and has held flag `0x400000`. Then A free. |
+| 14 | T is A (1), or T is knocked down and A is free |
+| 15 | A free; then A holds spray paint (1), or A is not pad-controlled |
+| 16-18 | A free and T has none of `0x40100f0800`; for class `0x77` only without an object of kind 4 or 6 in hand |
+| 19, 20 (charge, dive) | A free, T not down (`Human_IsNotDown` `0x00225500`), A at run speed |
+| 21 (tackle) | A free, T's human flag `+0xe0` bit `0x40` clear, T free, T without held flag `0x40` |
+| 22 (grab) | A free, A's power meter (record `+0x148`) ≥ his maximum power / 5, T's `+0xe0` bit `0x40` clear, and T's state none of `0x7bfdc8f7fd0` |
+| 23 | A holds a throwable object |
+| 24-30 (moves in a grab) | A grabbing (`0xc0`), none of `0x7bf9e9f7f00`, and the human A holds (`+0xc4`) is T |
+| 31, 33, 34 | A grabbed (`0x30`), none of `0x7bf9e9f7f00`, and T holds A (T `+0xc4` = A) |
+| 32 | A grabbed from the rear (`0x20`), none of `0x7bf9e9f7f00`, and T `+0xc4` ≠ A |
+| 35-40 (moves while mounted) | A tackling (`0x400`), none of `0x7bf9e9f73f0`, A `+0xc4` = T |
+| 41 | the same, and A carries cuffs |
+| 42-44 | A knocked down (`0x80000`) with the Grounded reaction goal (`0x17`) running: allowed. Otherwise A tackled (`0x800`), none of `0x7bf9e9f73f0`, and T `+0xc4` = A. |
+| others | never |
+
+`Human_CanStartAttack(A, T, k)` (`0x00224778`) first refuses in these cases:
+
+- T has held flags `0xc08200`, unless T has state `0x2000` and A has state `0x1000`;
+- A has held flags `0x5c7eee0`;
+- A has damage pending (record `+0x118`);
+- the distance is beyond the kind's far reach.
+
+It then runs the same per-kind state tests. Confirmed (code) for the guard and the reach; the per-kind cases were
+read for 10-15 only and are inferred to mirror the table for the rest.
+
+#### May A attack now: Brain_CheckAttack {#check-attack}
+
+`Brain_CheckAttack(B, kind, armed target)` (`0x002906b8`) returns 1 for "go". Every other value is a reason to wait,
+which [the reposition](#fight-reposition) reads. The tests run in this order. Confirmed (code); the meanings in
+brackets are inferred.
+
+| Result | When |
+| --- | --- |
+| 2 | B's own next-attack time (`+0x1e8`) has not come |
+| 0 | the kind is 45 |
+| 3 | T may not be attacked by A (`Brain_IsAttackableBy`) |
+| 1 | a charge kind (0, 19-21) while A is out of the fight stance (a charge needs no place) |
+| 4 | The target holds an object, A's brain is not type 3, the game mode word is not 60-64, and neither T nor T's target is busy. Then, when A is empty-handed, his turn boost `+0x0b` < 1, and A and T face each other (facing dot < 0), and A is his gang's leader or within 15 m of him. (Hold back from an armed man near the leader.) |
+| 8 | Only for an empty-handed A who is not yet one of T's active attackers (and not class 13 or 6). Another human in T's slot list, not A, not busy, without held flag `0x300000` and holding a heavy object (`0x00224080`: anim set not 1 or 5), is ready to attack (his cooldown passed). (Let him go first.) |
+| 5 | The police have him. This applies when A is not a cop and T's target is not A. Either T's gang is wanted (`+0x5e8`) and a cop holds a slot on T, or T's target is a cop. For a cop A, it applies when T's target threatens him (`0x00290138`). Also for a cop when T is tackled or has state `0x10000000` or `0x10000000000` and is held by someone other than A. |
+| 6 | A holds a throwable object or one of kind 4 or 6, and a gang mate in a 40° cone ahead (`Gang_NearestInCone` `0x0029df78`) is tackling or is nearer than T. A shuffle action is queued. (Do not throw through a friend.) |
+| 7 | A is a Warrior (type 3), T is class 13 and not targeting A, A is empty-handed and not yet an active attacker, and a player in T's slot list who is busy tackling, throwing or front-grabbing stands within 0.75 × near of T. (Do not hit the boss while a player has him.) |
+| 1 | A takes, or already has, one of T's **active-attacker places** (`Brain_ClaimActiveAttacker`, [below](#attack-places)) |
+| 1 / 0 | kind 22 only: 1 when A is the near human in sector 3, 4 or 5 of T's record (behind him), else 0 |
+| 0 | otherwise (no place free) |
+
+#### Attack slots, active places and spacing {#attack-places}
+
+A target limits his attackers twice. Confirmed (code) at the addresses cited.
+
+- **Attack slots** (T brain `+0x1a4`, at most `+0x1e4`, 4 by default from `Brain_Init` `0x0028a570`) are taken when an
+  attacker targets him (`Brain_ClaimAttackSlot` `0x0028df30`, from `Brain_SetTarget`). A full list gives the slot of
+  the farthest holder to a nearer newcomer, or to one forced in, and clears the holder's target.
+- **Active-attacker places** (T brain `+0x1f0`, four handles) are taken by `Brain_ClaimActiveAttacker`
+  (`0x00291008`) only when an attack is about to be queued. Only the first `s` places are used:
+    - `s` is T's **spacing byte** `+0x14a`;
+    - while T is down, out of the fight or arrested (state any of `0xe0000`), `s` is `+0x14b`.
+- **The spacing bytes** start at 1 (`0x0028a570`). Each slot claim raises them:
+    - `+0x14a` to at least the attacker's gang's `CfgGang` value 2 (gang record byte `+0x6c`);
+    - `+0x14b` to at least its value 3 (`+0x6d`);
+    - a Warrior target (type 3) keeps `+0x14a` at 1.
+
+  Both return to 1 when T's slot list empties (`Brain_SetTarget` `0x0028cfe0`).
+
+  So `CfgGang`'s second and third values are **how many of that gang may swing at one standing (or one downed) man
+  at once**.
+- **A claim succeeds** in three cases:
+    - A already has a place;
+    - a free place exists and either T's `+0x1ec` has passed or someone already holds a place;
+    - A is T's own target and `+0x1ec` has passed, in which case A displaces the first holder.
+
+  A holder is released when his fight goal next waits (`+0x28`, `Brain_ReleaseActiveAttacker` `0x00291178`), when he
+  blocks, and when the fight goal is suspended.
+- **When T may be attacked again** (`+0x1ec`, `Brain_SetAttackableTime` `0x00290e78`): the attack action's Start, when
+  neither human is busy, adds `t` to max(`+0x1ec`, now).
+    - `t` = `Attack_GetNextAttackDelay(A, kind)` (`0x00231590`) × 1.0 (`0x00510ad0`) / `s`, rounded. When `s` is 0,
+      `t` is used unscaled.
+    - `Attack_GetNextAttackDelay` is the **playing time** in ms of the kind's anim on A:
+        - 11-21 for kinds 0-9 (kind 0: 11, or 194 against a downed target);
+        - 25 for 10, 21 for 11, 193 / 194 for 12 / 13, 237 for 14, 664 for 15;
+        - the longer of 653 / 655 for 16, and of 657 / 659 for 17;
+        - 0 / 1 for 19 / 20;
+        - 3 + 5 for 21, 70 + 72 for 22, 466 + 467 for 23;
+        - the throw clips for 25-29; 118 for 30; the grab-escape clips for 31-34; 225 for 35-39, 248 for 40, 252 for
+          41, 246 for 43, 242 for 44;
+        - the object set's clips when A holds a bat or bottle set (sets 2, 3), with kinds 0, 1 and 5;
+        - 100 ms for anything else, and for kinds 0 and 1 against a downed target.
+
+  So the gap a target gets between attacks is one swing's length shared among the `s` attackers allowed.
+
+#### The reposition {#fight-reposition}
+
+When `Brain_CheckAttack` says wait, the fight goal calls `FightGoal_Reposition(d², goal, T, reason)` (`0x002b2fc8`). It
+queues a fidget now and then, and always a move-to-human action that **holds A in a ring** round T. Confirmed (code).
+
+1. **A is close-in** when all of these hold:
+    - T is empty-handed, or both are armed and A is one of fewer than two slot holders;
+    - the reason is not 7, 8 or 3;
+    - T's own target is A, or T has no target and A is first in T's slot list.
+2. **A tactic ring** applies when A's gang has a tactic of type 2 (Defend) or `0xd`.
+3. **The ring's radii:**
+    - inner = 2 × T's capsule radius when close-in or in a tactic ring, else (near + far) / 2 = **4 m**;
+    - outer = 0.95 × far = **4.75 m**, and never less than inner + 0.1 m;
+    - for reason 5 (the police have him), a non-cop uses inner = 3 × far = 15 m and outer = 16 m;
+    - the limit is 2000 ms, or 6000 ms for reason 5.
+4. **A taunt**, once per random 1000-2000 ms (`+0x20`). All of these must hold:
+    - T is at least 2.75 m away (a quarter of (1.1 × far)²);
+    - fewer than two humans hold slots on A;
+    - A is not close-in, not in a tactic ring, and T is empty-handed;
+    - gestures are allowed.
+
+   For reason 7 it happens only 11 % of the time. It is a fidget action on anim `0x25b` with speech line `0x11`. A
+   Warrior uses line `0xc3` instead 31 % of the time, when the game flag `0x56e1` is set.
+5. **The move-to-human action** (inner, outer, the limit above).
+
+So waiting attackers circle in a band of 4-4.75 m (5 m far range), and the one T is fighting stays close. The
+"shuffle" is this band-keeping move, not a dedicated sidestep.
+
+#### The tackle try {#try-tackle}
+
+`FightGoal_TryTackle(goal, T)` (`0x002b2e28`), step 3 of the fight goal. Confirmed (code).
+
+- `k` = A's gang's `CfgGang` value 7 (gang record byte `+0x70`).
+    - When `k` is 0, or B's tackle weight (kind 21) is 0: clear B's **tackle meter** (brain `+0x148`, s16) and do
+      nothing.
+    - When the meter ≤ (7 − `k`) × 6: do nothing. With `k` = 1 the threshold is 36, the meter's cap, so it never
+      fires.
+- The kind is 21 (the tackle). A cop (type 1) uses kind 0 (`X1`) instead 75 % of the time.
+- It goes ahead only when all of these hold:
+    - `Human_CanStartAttack` passes (in reach);
+    - T may be attacked by A;
+    - T's gang is not wanted with a cop already on him;
+    - A takes an active-attacker place (not forced).
+
+  It then queues the attack (no angle), clears the meter, notes the place, and the goal waits.
+- **The tackle meter** is kept by the think handlers of cops (`0x00300908`), gang soldiers (`0x00304840`) and the
+  Warriors (`0x0030543c`). These run once per 0.2 s.
+    - It rises by T's gait (`+0x1a8`, capped at 36) while T moves and either holds a weapon (`0x00224060`) or moves
+      away (T's velocity, `0x003a1f00`, has a non-negative dot product with A's facing).
+    - Otherwise it falls by 2 (not below 0).
+
+  So a target who keeps running off, or who swings a weapon, is tackled sooner, and a high `k` makes it faster.
+
+#### The grab and snap try {#try-grab}
+
+`FightGoal_TryGrab(d², goal, T, &angle)` (`0x002b3360`) runs once A may attack and is in reach. It returns 1 to
+make the fight goal wait. Confirmed (code). Sectors are the eight 45° sectors of [the sector record](#neighbour-sectors)
+(sector *k* at record `+8k`, flags at `+8k + 4`). The stick angle of a sector *k* is A's heading − *k* × 45°.
+
+- The angle starts at −1.
+- **Kind 10 (the snap)**: the first of A's sectors 4, 5, 3, 6, 2 whose near human (flag bit 1) has A's attack slot
+  gives the stick angle: heading + π for 3-5, heading + π/2 for 6, heading − π/2 for 2. The kind becomes 1 (square),
+  so the press is square with the stick to that side or back. This is how the player's snap is made
+  ([Combat](combat.md)).
+- **Kind 22 (the grab)**: when A is in T's sector 2 or 6 (at his side) and T is grabbed from the rear, A moves in
+  (move-to-human, 2 × T's radius to the grab reach, 1500 ms) and returns 1. At his side otherwise, the grab becomes
+  kind 0 (`X1`).
+- **Kinds 12, 13 (strikes on a downed man)**: when T is tackled, or has state `0x2000` or `0x10000000000`, and a
+  friend of A holds him (T `+0xc4`), A moves in to 0.6 × near to 0.6 × near + 1 m (1500 ms) and returns 1.
+- **Other kinds: a rear grab.** All of these must hold:
+    - A is empty-handed;
+    - A's gang's `CfgGang` value 8 (`+0x71`) `g` is above 0, and B's grab weight is above 0;
+    - A is the near human in T's sector 4 (behind him);
+    - `Random_Int(100)` < `g` × 25;
+    - the grab can start.
+
+  The kind then becomes 22.
+- **Then, for all kinds:** when T is grabbed from the rear, the kind is not 22, and the grab is usable
+  (`Human_CanUseAttackKind`), the kind becomes 22 and the try returns 1. "Usable" needs one of these:
+    - B's grab weight is above 0;
+    - B has goal `0x88`;
+    - the game word `+0x158` is set.
+
+  A man held from behind by a mate gets grabbed in front.
+- **A heavy object in hand** (`0x00224080`):
+    - Take the nearest gang mate who is not T and not busy.
+    - Kinds 1, 3 and 5-9 with that mate within near (3 m): the kind becomes 0 and the try returns 1.
+    - Kinds 0, 2 and 4: the try returns 0 when any of these hold:
+        - the mate is tackled, or has state `0x10000000` or `0x10000000000`;
+        - T is beyond far;
+        - the mate is both farther than T and farther than 1.6 m.
+    - Otherwise:
+        - against a rear-grabbed T, the kind is picked again with `Human_CanStartAttack`;
+        - against T grabbing from the rear or mugging, the try returns 0;
+        - else A steps in to the kind's reach (1500 ms).
+
+      The try then returns 1. (Inferred: a swing with a heavy object is shortened or held back when a mate stands
+      close.)
 
 The fight goal's own time limit (goal `+0x08`) is always −1 (`FightGoal_Init`); its duration goes only to `+0x24`.
 
@@ -433,7 +1129,7 @@ actions). It has no time limit. **Process** (`0x002afa48`), each update:
    (`0x00221cd8`, 0.3) and end (2).
 3. Target no longer valid, hidden in shadow, or `0x00290588` refusing → stop.
 4. Every 2 s (not class 13): the nearest enemy replaces the target when it differs, the target is farther than far
-   and the new one is seen (`Human_CanSeeHuman`, 9 m / 4 m).
+   and the new one is seen (`Human_CanSeeHuman`, near 3 m, in shadow 2 m).
 5. The target brain's `+0x1ec` is cleared (he may be attacked at once).
 6. **Re-plan** when the target's heading turned more than 45°, he is within 1.6 m, he slowed from a run, or 250 ms
    have passed; a shout every 4-4.5 s (`0x002af928`). Otherwise wait while the move action runs.
@@ -446,14 +1142,7 @@ actions). It has no time limit. **Process** (`0x002afa48`), each update:
    (when he runs, it arms the charge instead).
 10. **Give up** (done) when the target is out of sight, at least 10 m away, and either 20 m away or brain `+0x28d`
     set, and his gang's `+0xdc` is 0.
-11. **Charge**: within 1.6 m with the charge armed or the target running, pick an attack kind once (kept in
-    `+0x20` until used). A type-1 brain takes kind 0 (50 %, 80 % for a class whose `+0x11b` is 10, always when the
-    target has human flag `0x40`) or 21. Any other brain takes `Brain_PickAttack` with mask `0x2240e8ffff0000`, and
-    a kind that is not a charge kind (0 or 19-21, `AttackKind_IsCharge` `0x00229b60`) **stops the run-in** (step 2):
-    no charge, Melee takes over. The kind must then pass `Human_CanStartAttack` (`0x00224778`; for 19 and 20 the
-    fighter must be at the run speed, for 21 have a fifth of his power, [Combat](combat.md#ai-attacks)), else the
-    run-in goes on moving and tries again next update. Then queue the [attack action](#attack-action) (kind 0 with
-    the fighter's facing as its angle), set the gait and disarm. Confirmed (code) at `0x002afa48`.
+11. **Charge**: within 1.6 m with the charge armed or the target running, [below](#engage-charge).
 12. **Move**: aim at the target's position led by his facing × his speed (`+0x1ac`), turned 9° per attack slot
     index, alternating sides, when he faces away (sector 3-5 of `0x0029eb38`; inferred: to fan the attackers out);
     aim straight at him when no lead applies or the led point is not reachable in a walkable line (`0x002221e0`).
@@ -461,6 +1150,31 @@ actions). It has no time limit. **Process** (`0x002afa48`), each update:
     random 0-500 ms start delay the first time when "start slowly").
 
 When EngageEnemy ends, Melee is on top again and, now within `R`, pushes the fight goal.
+
+#### The charge in EngageEnemy {#engage-charge}
+
+Step 11 of `EngageEnemyGoal_Process` (`0x002afa48`) runs within the run-in distance (`+0x30`, 2.56 → 1.6 m) and when
+T runs (gait > 2) or the charge is armed (`+0x35`). Confirmed (code).
+
+1. **A taken sector.** Take the sector of T's record that A approaches from (`Human_GetSectorOf`
+   `0x0029eb38` of A's bearing relative to T's heading). When another human is the near one there, the charge is
+   disarmed and A only moves (step 12). When A himself is that human, A waits this update.
+2. **The kind** (once; `+0x20`, 45 = none):
+    - A **cop** (type 1) takes kind 0 (`X1`) with 50 % (80 % against a gang member, class `+0x11b` 10), else 21 (the
+      tackle). It is forced to 0 when T's `+0xe0` has bit `0x40`.
+    - **Anyone else** uses `Brain_PickAttack(B, T, Human_CanUseAttackKind)`. When that is not a charge kind
+      (`AttackKind_IsCharge` `0x00229b60`: 0, 19, 20, 21), the engage goal **stops** (step 2 of the goal: halt, turn
+      to T, end). Melee then pushes a fight goal.
+3. **The start test.** When `Human_CanStartAttack(A, T, kind)` (`0x00224778`) passes:
+    1. Clear the actions; when an action refuses, wait.
+    2. Queue one attack action directly (not `Brain_QueueAttack`), no delay. Kind 0 carries A's heading as the
+       stick angle.
+    3. Restore the move gait, disarm, and clear the kind.
+
+   When it fails, A keeps running in (step 12).
+
+So a running AI's charge is the run-in `X1`, the L2 charge or dive (19, 20 when its table has weight there) or the
+tackle. Anything else ends the run-in and becomes a fight goal.
 
 #### The durations {#fight-durations}
 
@@ -543,8 +1257,10 @@ straight line and not attackable may not be either. Confirmed (code) at the addr
   `hit` inferred.
 - **`Human_IsInFieldOfView(fov, human, point)`** (`0x00222710`): true when the angle between the human's facing and the
   direction to the point is within fov / 2 (dot product against `cos(fov × 0.5)`). Confirmed (code).
-- **`Human_CanSeeHuman`** (`0x002223e8`) puts a range in front of the line of sight, and a shorter one for a target in
-  shadow (his brain `+0x2d4`); EngageEnemy's re-target uses 9 m and 4 m.
+- **`Human_CanSeeHuman(fov, range, near², shadow², looker, target)`** (`0x002223e8`): false beyond `range`; a target
+  hidden in shadow (his brain `+0x2d4`) only when the squared distance is below `shadow²`; within `near²` (squared
+  distance) the field of view is skipped, else `Human_IsInFieldOfView(fov)` must pass; then the line of sight decides.
+  EngageEnemy's re-target passes 9 and 4 (3 m and 2 m). Confirmed (code).
 - **`Brain_IsAttackableBy(target brain, attacker)`** (`0x00290ea8`): normally the target brain's byte `+0x11f`
   ("attackable": 1 when the brain is made, `0x0028a570`; set by `GangSetAttackable` through `Gang_SetAttackable`
   `0x0016bb58` and by the end of a scripted goal, `0x002d4248`; cleared by `GoalGrabTarget` while it holds,
@@ -555,6 +1271,57 @@ straight line and not attackable may not be either. Confirmed (code) at the addr
 - **Sprint check** (EngageEnemy step 8): `Human_GetStaminaPercent` (`0x00222fa0`) = stamina (record `+0x14a`) × 100 /
   `Human_StaminaMax` (`0x00223188`, [Sprint](characters.md#sprint)); above 50 the AI sprints after a running target.
   AI stamina drains and refills by the player's rules (the drain is keyed on gait 5, not on the pad). Confirmed (code).
+
+#### The enemy scan {#enemy-scan}
+
+How an AI finds enemies on its own: the enemy list (brain `+0x164`, 16 slots) is rebuilt by a periodic scan, and the
+fight and Melee goals pick from it ([the score](#enemy-score)). Confirmed (code) at the addresses cited.
+
+**When** (`Brain_MaybeScanEnemies` `0x0028fa18`, from `Brain_UpdateGoals` each update): when the gang changed since
+the last scan (gang `+0x34` ≥ brain `+0x160`), or when `+0x160` + interval has passed. The interval is brain `+0x144`
+(2000 ms, cops 1000 ms) × 4 in the fight stance or when the human's detail level `+0x333` is above 0 (× 1 otherwise),
+so a calm AI near the camera scans every 2 s and a fighting one every 8 s. A scan also needs a token
+(`AI_TakeScanToken` `0x00293cd0`): at most 5 scans run in one update across all brains; a refused brain tries again
+on the next update.
+
+**The detail level** human `+0x333` (`Human_UpdateLod` `0x0023d660`, each move): from the distance `d` to the nearest
+camera, plus 0.01 m per ms since the time at the human's draw record `+0xd8` `+0x2c` (inferred: time since last drawn):
+0 below 30 m, 1 below 60 m, 2 below 100 m, 3 below 115 m, else 4 (thresholds `0x005102f0`; the switch `0x005102d4`
+is 1, 0 would force level 0). The AI uses it to do less far away: [steering](#steering) is off above 2, the
+[corner speed](#move-action) and the [riot](#riot) scale with it.
+
+**The scan** (`Brain_ScanEnemies(brain, filter)` `0x0028b358`). A human who is down or dead empties his list. Else,
+with `R` the sight range (`Brain_GetSightRange` `0x0028bf00`: `+0x130`, at least 30 m in a gang of kind 1) and `c` =
+cos(field of view / 2):
+
+1. For each of the 32 gangs that is active (gang `+0x18`) and an enemy of his (`Gang_IsEnemyOf` `0x00168fe0`: the
+   enemy bit of the other's id in gang `+0x38`; never between kinds 1 and 23, nor during a global truce), each of its
+   16 members within `R`:
+    1. A member hidden in shadow (his brain `+0x2d4`) is skipped beyond 2 m, and within 2 m unless the scanner's
+       `+0x2d5` is set.
+    2. Unless the member's gang is always seen (gang `+0xdc`): `Human_MaySpectate` (`0x002225d8`) must allow him:
+       always for a Warrior and for a brain that may not start a fight (unless its class `+0x11b` is 10); otherwise,
+       with fewer than 3 fights (`+0x2d0`), an AI scanner lists only a member less than 1.9 m above him.
+    3. The filter `+0x15c` must accept him: `Brain_IsValidEnemyOf` (`0x0029bf60`, `Brain_ValidateEnemy` on the
+       scanner's brain) for every type but the Warriors, whose filter is `Filter_IsThreatTo` (`0x0029bf98`): a cop
+       only within 10 m and when `Brain_IsThreat` (`0x00290138`, below) calls him a threat; a civilian (type
+       4) only of ped type 3 with a threat response and not grabbed from the rear; any other only when he is such a
+       threat; each then `Brain_ValidateEnemy`.
+    4. Unless his gang is always seen, sight: within the near radius (3 m; for a cop scanning a running member 5.2 m,
+       for a member walking or standing 1.5 m) only the line of sight counts, unless the member is a player sneaking
+       in shadow (`Human_IsHiddenFromBrain` `0x00223c50`); beyond it, or when sneaking, he must also be in front
+       (direction · facing > `c`). Then `Human_HasLineOfSight` must pass.
+2. The scanner gang's chosen target (gang `+0x10`) is added when it passes `Brain_ValidateEnemy`.
+3. Old entries not found again are kept while within `R`, still valid, and within 3 m or in line of sight; others are
+   dropped. Each old entry's hostile count (his brain `+0x152`) is lowered first.
+4. More than 16: sorted by distance, the 16 nearest kept. Each human new to the list is sent to the scanner's own
+   event handler as event `0xb` (a new enemy; a tactic hears of it through `Brain_AddEnemy`); every listed human's
+   brain `+0x152` is raised by one (`Brain_CountHostile` `0x0028ef20`), and the radar marks the list
+   (`HUD_RadarMarkEnemies`).
+
+**`Brain_IsThreat(brain, other)`** (`0x00290138`; also `Human_ReactToThreat` `0x00222a48`, which the type
+event handlers call): never himself; a Warrior whose `+0x2e5` is set (hitting back at his chief) and the chief are
+threats to each other; otherwise a threat when the gangs are enemies or both are players.
 
 #### The Spectate goal {#spectate}
 
@@ -589,6 +1356,150 @@ random distance between 0.75 × near and far: a 2 s spell watching the nearest e
 in with EngageEnemy when he runs. The dealer's wary goal is (8 m, join 0, 0, 2000, 4000, 8000, 0): he backs off to 8 m from
 the nearest fighter for up to 8 s.
 
+#### Fetching an object: GetItem and the object search {#get-item}
+
+**The object search** `Ai_FindObject(A, needRay, filter, claim, needReach, centre, allowLow)` (`0x0029d5f0`) is the
+general search behind every AI pick-up and smash (21 callers: Spectate, Melee,
+the Warriors' think, Riot, Destroy, Steal and others). Confirmed (code).
+
+1. List the world objects round `centre` (A's position by default; `ObjectManager_FindObjects` on the object list
+   `+0x840`, at most 384), nearest first.
+2. Take the first object that passes all of these:
+    1. It is not attached to a task (not held or carried).
+    2. Its flags (vtable `+0x54`) lack bit 26.
+    3. It is not claimed by A's own gang: object `+0xec` is the gang and `+0xf0` the claim's end.
+    4. The caller's `filter` object accepts it. This is where each caller's radius and kind test live, for example
+       15 m and pickable for Spectate, and 20 m and breakable for Riot.
+    5. For an AI A, no player stands within 1 m of it.
+    6. With `needRay`, a clear ray from A to it (`Human_HasClearRayTo`, mask 8). Unless `allowLow`, the ray must
+       not end in result 2 (inferred: blocked low).
+    7. With `needReach`, a navigation polygon under it (within the larger of the type's half-sizes `+0x78`,
+       `+0x7c`) that A can reach (`Nav_CanReach`).
+3. With `claim`, the object is claimed for A's gang for **5000 ms**, so gang mates do not run for the same object.
+
+**GetItem** (type `0x2c`; Init `0x002dc7a0`).
+
+- **Fields:**
+    - `+0x20` the object's handle;
+    - `+0x28` the gait;
+    - `+0x10` a standing point beside the object;
+    - `+0x24` its type record;
+    - `+0x2c` tries;
+    - `+0x30` the saved turn boost;
+    - `+0x31` picked;
+    - `+0x32` the point is valid.
+- **Start** (`0x002dc7f8`) drops an object of kind 4 or 6 already in hand, raises the turn boost by 1, drops the
+  target and runs Resume.
+- **Resume** (`0x002dc8b0`) finds the point beside the object: the polygon under it within its half-size. With none,
+  the goal will end.
+
+**Process** (`0x002dc9f8`), each update. Confirmed (code).
+
+1. The object is gone: done. Otherwise look at it (500 ms).
+2. The object's bit 26 is set: wait. A pick-up is in progress (held flag `0x4000`): note it (`+0x31`) and wait.
+3. **Someone holds the object.**
+    - A himself: done.
+    - A friend: done.
+    - An enemy: he becomes the target.
+        - Within 1.1 × far, or A armed, with a line of sight: push a fight goal (1000 ms).
+        - Else, when `Brain_MayEngage` allows: push EngageEnemy.
+        - Else: done.
+4. **Nobody holds the object.**
+    1. When it was picked (`+0x31`): done.
+    2. While actions are queued, wait.
+    3. Without the point, after a failed move (brain `+0x284`, then cleared), or after 11 tries: done.
+    4. **Clear the way.** Take the nearest non-friend among A's slot holders who is nearer the object than A is. When
+       he is within 1 m of A, not class 13, and kind 17 can start, A targets him and queues **kind 17** (the
+       circle + cross special).
+    5. **Within 1.5 m:**
+        - Wait while A has any held flag but `0x40000000`.
+        - With a clear ray to the object (`Human_HasClearRayTo`, mask 0):
+            - When the ray result is not 2: queue a **pick-up action** (`PickUpItemAction_Init`, `0x21`) and count
+              a try.
+            - When the ray result is 2: step to the point (when beyond 0.4 m; gait 3, radius 0.36 m), turn to the
+              object, and press **cross** (`Brain_QueueAttack` kind 0 on himself, delay 33 ms). This is the
+              player's context pick-up press.
+        - Without a clear ray: turn to it when more than 15° off, else count a try.
+    6. **Walk** to the point out of the fight stance: gait 3 within 3 m, else the goal's gait, radius 0.36 m.
+
+#### Objects in an AI's hands {#ai-objects}
+
+Who fetches an object, and when an AI lets go. Confirmed (code) at the addresses cited.
+
+**Fetching** (each pushes GetItem, [above](#get-item), on what `Ai_FindObject` returns):
+
+| Who | When | Search |
+| --- | --- | --- |
+| Melee (`Melee_TryPickUpWeapon` `0x002ade90`) | brain `+0x265` set, actions free, empty-handed; every 20 updates, or when asked | weapons (filter `0x0053f2d0`, mask `0x20000`; also throwables `0x30000` when the target is within 15 m and asked), 20 m, or 10 m when asked; gait 4 |
+| Spectate | joined, not a cop or civilian, 25 × gang factor % rolled at Start; every 30 updates | pickable within 15 m ([Spectate](#spectate)) |
+| The Warriors' think | [The Warriors' pick-ups](#warrior-pickups) | 1.5 m |
+| FollowAndAttack / FollowAndDefend / FollowPlayer | `+0x265`, not blocked; every 20 updates or within 15 m of the enemy | smash or throw objects, 20 m |
+| AvoidEnemies | empty-handed | throwables |
+| Riot, DestroyCar (`DestroyCar_GetWeapon` `0x002ddd48`, 10 m), Destroy, WarriorVandalSteal, the Wander tactic | to smash something | breakables / weapons |
+| ObjectThrower, ManWeaponPile, ObjectPile, Steal | their own objects | below |
+
+**Using.** A held weapon changes the [attack pick](#pick-attack) (the armed term) and the fight goal's range test
+(armed fighters fight at any range within 1.1 × far). A held throwable is thrown by pressing cross aimed at a
+point (human `+0x128` holds the aim's handle): AvoidEnemies throws at an enemy close enough (attack kind 23, unless
+the object is of type class 6 with `+0x5a` 0, or class 1 within 2 m); VandalizeItem throws at the object.
+
+**ObjectThrower** (type `0x4e`, `ObjectThrowerGoal_Init` `0x002a3f50(goal, brain, maxThrows, search radius, pace s,
+stop radius, flag1, flag2, flag3, callback)`; Process `0x002a4230`):
+
+1. Fight stance on; wait while actions run or a flag (other than `0x40000000`) is held.
+2. Every 15 updates: done (2) when a hostile is visible within the stop radius (`HandleList_FillVisible`); done
+   after `maxThrows` throws (0 = no limit). Every 45 updates he glances at his nearest enemy (2 s).
+3. Holding a throwable (or kind 4 / 6): turn to one of the up-to-three target flags at random, aim there
+   (`+0x128`), queue cross (kind 0) after a random pace/2 to pace seconds; count the throw.
+4. Empty-handed: after every third throw (from the third on), 50 %: turn to the player's camera and taunt (kind 3,
+   line `0x10`) once. Else every 5 updates the nearest weapon within the search radius: drop what he holds, push
+   GetItem (gait 2).
+
+**Letting go.**
+
+- Speed: running faster than the run speed drops a kind-4/6 object (step 2 of Speed control, [above](#ai-gaits)).
+- A Warrior with no enemies drops a kind-4/6 weapon unless his gang's tactic is steal (`0x26`)
+  ([pick-ups](#warrior-pickups)).
+- GetItem's Start, DestroyItem's and DestroyCar's Start, Cower's Start, CallGang's init and RunFromTrain
+  (`RunFromTrainGoal_DropEverything` `0x002f9a80`) drop what is held.
+
+#### World flags {#ai-flags}
+
+An AI uses a flag ([World flags](flags.md#activities)) only when its brain's `+0x2d1` is set (1 when made;
+`Brain_SetWorldFlagUse`, `Gang_SetCanUseWorldFlagsById`): `Human_NearestUsableFlag` (`0x00417670`) returns 0
+otherwise. The chance byte `+0x2d2` (10 when made) is written by the same setters but no reader was found. Confirmed
+(code).
+
+- **Pedestrians** (`0x002ab4b8`, the pedestrian goal's move step): every 20 updates, when he may chat and has
+  walked far enough from his last stop, the nearest usable flag within 10 m that he can walk straight to in under
+  15 m gets a **MoveToUseFlag** goal (radius 0.3 m, his gait); a re-use timer at goal `+0x6c` (65 s, inferred)
+  keeps him from going back at once.
+- **HangOut**, **Patrol**, the **TravelPath** and **Wander** tactics look up a usable flag the same way.
+- **MoveToUseFlag** (`0x002dbc10`): done when his actions are blocked or the flag is disabled. Walk to it (up to 3
+  tries); while walking, within 5 m, every 15 updates: a human within 0.75 m of the flag ends the goal. At the
+  radius: turn to the flag's heading (beyond 15°, turn rate 0.2), then he is placed on the flag's point and heading
+  and plays the activity's clips (enter, idle, exit, [Activities](flags.md#activities); the clip states after this
+  are not traced).
+
+#### Cover, cars and trains {#ai-hazards}
+
+- **Hiding** is only the hold command's hide tactic and Scatter ([Warrior commands](#warrior-commands)): Hide
+  (`0x58`) walks to a wall point near a hiding flag (gait 3 near the leader, else 5), out of the shadow, then turns
+  to face out. Shadow itself is the human's hidden state (`Human_IsHiddenInShadow`, state `0x200000`) that
+  [the enemy scan](#enemy-scan) reads; an AI never seeks shadow on its own (no other goal sets it). Inferred from
+  the setters' callers.
+- **Cars.** No goal in the AI range drives or enters a car: cars run on their own paths ([Cars](cars.md)). AIs meet
+  cars three ways: DestroyCar (`0x2e`) smashes one from a spot round it; the Pursue tactic, on a crime event (23) at
+  a car, has members within 30 m drop an Investigate goal and a chasing member push Investigate at the crime point
+  (`Chase_InvestigateCar` `0x002b0c88`, 5 m, line 13), unless the offender is friendly; the Wander tactic's
+  `Tactic_VandalizeCars` (`0x00316590`). Confirmed (code).
+- **Trains.** The train (`TrainRecord_Update` `0x00413d90`) pushes **RunFromTrain** (type 7) on a human near its
+  track: he drops everything, turn boost 3, and sprints (gait 5) to a safe point beside the track, or along it when
+  no side is clear ([its rows](ai-goals.md#goal-run-from-train)). While a train is near, the enemy score rules the
+  human out (`Brain_IsNearTrain`, [the score](#enemy-score)).
+- **Doors and breakables on a route.** Doors are route links ([Following a route](#route-follow)); a follower stuck
+  on the way to his formation slot smashes a breakable within 1.5 m (VandalizeItem, [FollowFormation](#warrior-follow)).
+
 ### The attack action {#attack-action}
 
 The attack action (vtable `0x00542ce0`, `AttackAction_Init` `0x002fa918`):
@@ -600,8 +1511,9 @@ The attack action (vtable `0x00542ce0`, `AttackAction_Init` `0x002fa918`):
   kind** (`0x00228870` reads `0x006b6658 + kind × 4`); `config_preload2.lua` sets 200 for most kinds, 400 for 12 and
   13, 500 for 19 and 21, 1000 for 20, 300 for 32-34 and 0 for 23, 31 and 42. When neither human is busy, it sets the target
   brain's `+0x1ec` (when it may be attacked next, `0x00290e78`) from a **separate per-kind time** (`0x00231590`:
-  the attacker's clip length for the kind), divided by the target brain's spacing byte `+0x14a` (or `+0x14b` when it
-  is down), which the attacking gang's `CfgGang` sets ([Combat](combat.md#ai-attacks)).
+  the attacker's clip length for the kind, [Attack slots, active places and spacing](#attack-places)), scaled by
+  `0x00510ad0` / the target brain's spacing byte `+0x14a` (or `+0x14b`, by `0x00223b48`) when that is not 0; the
+  attacking gang's `CfgGang` sets those bytes ([Combat](combat.md#ai-attacks)).
   This corrects the earlier reading that both took the attack delay. Then it writes the command
   (`AttackKind_ToCommand`) into the per-player record `+0x20` (`PlayerRecord_SetCommand`, `0x00147ef0`) and, when
   the action has an angle (`+0x1c` ≥ 0), a stick of magnitude 1.0 at that angle.
@@ -673,9 +1585,10 @@ them grabs.
        `0x5c0221f`, `0x00228428`) and its own target is this human, `+0x10` = now + a random 1000-3000 ms and `+0x15` =
        1; otherwise `+0x16` = 0, so the goal ends on a later update. Write command 4.
     5. **The block time runs**:
-        - In its **last second** (`+0x10` − now < 1000), when `+0x15` = 1 and the human is not ducking
-          (`0x00223b28`), queue a **punishing attack** (`0x002b5718`): `Brain_PickAttack` with mask
-          `0x224778ffff0000` (class `0x6a` instead takes kind `0x10` or `0x11`, class `0x59` kind `0x10`), then
+        - In its **last second** (`+0x10` − now < 1000), when `+0x15` = 1 and the human is not ducking (`0x00223b28`),
+          queue a **punishing attack** (`0x002b5718`): `Brain_PickAttack` with the filter `Human_CanStartAttack`
+          (`0x00224778`; the value `0x00224778ffff0000` is that member-function pointer, [Picking the attack
+          kind](#pick-attack)) (class `0x6a` instead takes kind `0x10` or `0x11`, class `0x59` kind `0x10`), then
           `Brain_QueueAttack` and `+0x16` = 0.
         - Otherwise, with a target and `+0x15` = 0, **roll the counter**: rand100 < `Human_CounterChance`
           (`0x002235f8`: the power class's `+0x24` × 100) **and** the counter test below passes → write **command 3**
@@ -731,6 +1644,91 @@ From 8 m behind the player (confirmed (runtime)): a turn on the spot (clip 398),
 7.80 m/s, then at 1.29 m a charge (`0x20`). Closer, the move-to-human action walks in the fight-stance clips 372-380 at
 about 2.3 m/s.
 
+#### Gaits and speeds {#ai-gaits}
+
+An AI never writes a stick: a goal or action sets the brain's move speed `+0x114`, usually from a **gait**, and the
+human's control turns that into velocity ([Turning](#ai-turn), below for the speed). Confirmed (code) at the
+addresses cited.
+
+- `Brain_SetMoveGait(brain, gait)` (`0x0028aac0`): speed = `Human_SpeedForGait(human, gait)`, 0 for gait 0;
+  `Brain_SetMoveSpeed` (`0x0028ab28`) stores any speed directly (FollowFormation, DevilRun, RunCarrot set speeds
+  between gaits).
+- `Human_SpeedForGait` (`0x0022ae40`, jump table `0x0055bec0`) reads the human's anim record (`+0xd4`) speeds
+  ([Speed classes](characters.md#speed-classes)) without the `+0x3a4` multiplier; a human with no anim record gets 0.
+- `Human_GaitForSpeed` (`0x00221760`) maps back: 5 at or above the sprint speed, 4 at or above the run, 3 the jog, 2
+  the walk, else 0. The move action and the steering use it to tell standing from moving.
+
+| Gait | Name | Record field | Rembrandt (m/s) |
+| --- | --- | --- | --- |
+| 0 | stand | - | 0 |
+| 1 | sneak walk | `+0x16c` | 1.585 |
+| 2 | walk | `+0x170` | 1.629 |
+| 3 | jog | `+0x174` | 4.857 |
+| 4 | run | `+0x178` | 7.801 |
+| 5 | sprint | `+0x17c` | 10.245 |
+| (stance) | fight-stance walk | `+0x164` | 3.429 (clip 380; 372 for an AI with turn boost ≤ 0, [brain bytes](#brain-boosts)) |
+
+The speeds are each class's own clip speeds; Rembrandt's are confirmed (runtime) on [Characters](characters.md).
+
+**The gait each goal asks for** (the gait argument of its move actions; confirmed (code) at each Process):
+
+| Gait | Goals |
+| --- | --- |
+| the script's argument | MoveToFlag (1), MoveToFlagNetFlag (3), MoveToUseFlag (4), MoveToPosition (5), MoveToHuman (6), TravelPath (`0x38`), Wander (`0x3a`), DestroyItem, DestroyCar, Patrol (`0x73`) |
+| 2 (walk) | pedestrians and their flags (`0x69`, PedFlag, AreaWalker, Hooker, Peddler), StandIdle, Mark, Scout, PathScout, Backoff, Ring, StandGround, Confront, CopPatrol, CopInteract, CopperGuardArrested, BigThrower's hold, the walk back of HoldPosition |
+| 3 (jog) | ChaseSupport (3 m), GetItem within 3 m of the object, BigThrower, StationaryShooter's return, Hide near the leader |
+| 4 (run) | EngageEnemy, [GoalRiot](#riot), Investigate, Respond, RiotCop, Tag, GrabTarget, Mace, Grabber, BigDefender, LeftTurf (back into the turf), FollowAndAttack / FollowAndDefend beyond reach, the Melee goal's GetItem |
+| 5 (sprint) | Scatter, RunFromTrain, CallGang, Hide away from the leader; EngageEnemy after a running target while stamina is above 50 % ([Sight](#sight)) |
+| chosen | Shadow: the leader's gait (2 at first, 3 beyond 50 m); AvoidEnemies: 5, or 4 below 50 % power, or the goal's own; FollowFormation and FollowObject: a speed between walk and 1.25 × sprint ([follow](#warrior-follow)); Spectate: 2, or 4 when the watched man runs |
+
+**Speed control** (`Human_UpdateControl` `0x00243848`, the non-pad branch), each update, with `v*` = brain `+0x114`:
+
+1. `Brain_UpdateGait`; a gait change rebuilds the human's move anims.
+2. The wanted speed `w`: wounded and `v*` > 0.1 → the walk speed; in the fight stance and `v*` > 0.1 → the stance
+   walk (`+0x164`), else 0; otherwise `v*`, at most 25 m/s. Running faster than the run speed with a held object of
+   kind 4 or 6 **drops it**, except an object of type class 6 whose `+0x5a` is 0.
+3. **Starting** (current speed 0, `w` > 0): unless the anim set's kind is 3 or 7 or its `+0x18` is 4, the human's
+   action becomes 6 (a run start) when `w` ≥ the run speed, 8 instead with the start boost `+0x0c` above 0, or 5
+   (the walk start) when `w` is exactly the walk speed; the first update's speed is min(`w`, 2 m/s).
+4. **Accelerating**: + 8 m/s² × the step (0.267 m/s per update at 30 Hz), or + 32 m/s² (1.067 m/s per update) while
+   more than 2 m/s short, never past `w`.
+5. **Slowing**: − 32 m/s² (1.067 m/s per update) down to `w`. Diego and Vargas (classes `0x77`, `0x78`) running or
+   sprinting with `w` = 0 stop at once with action 9 (a stop clip).
+6. **Far away** (detail level `+0x333` 2 or more, [The enemy scan](#enemy-scan)) and no held flag of `0x310c0880`:
+   velocity = `w` along brain `+0x110`, and the heading is **set** to `+0x110` at once (no turn limit, no clips).
+7. Otherwise the turn ([Turning](#ai-turn)). **Stopped** (`w` = 0): when the heading error is above 15° and no
+   flag is held, a turn on the spot starts (`Human_StartTurnOnSpot`, the clip is [Human](characters.md)'s); within
+   15° nothing turns. A rear grabber turns at twice the limit and walks.
+
+#### Turning {#ai-turn}
+
+A human with no pad (per-player `+0x1b` = 0) is moved by `Human_UpdateControl` (`0x00243848`, the default control
+`Human_SetUpdateControl` `0x00227c48` installs), not by the stick code (`Human_PlayerLocomotion` `0x00240e38`). Each
+update it turns the human's heading toward brain `+0x110` by at most `Human_MaxTurn` (`0x002213d8`), **linearly**:
+the eased turn of `CfgTurnRate` (`0x00510308`-`0x00510310`) is read only on the pad path, in the air and while
+grabbing, so it does not apply to the AI. While moving faster than a jog, a large heading change may instead start a
+turn clip (`0x0025c5b8`, [Human](characters.md)); the switch `0x005104e8` is 1. Confirmed (code).
+
+`Human_MaxTurn` picks one word of a pair at `0x005101b0` ([Movement constants](characters.md#movement-constants)):
+the player's word for a pad human whose brain is not dead, the **AI word** otherwise. In order:
+
+| State | Pair | AI word per update | Boost applies |
+| --- | --- | --- | --- |
+| turn-limited (two human flags) | fixed | 4° or 6° (both kinds) | no |
+| wounded | `0x005101b0` × 0.25 | 0.375° | no |
+| grabbing, blocking or ducking | `0x005101b0` | 1.5° | no |
+| sprinting (gait 5) | `0x005101b8` | 2.5° | yes |
+| running (gait 4) | `0x005101c0` | 4° | yes |
+| jogging (gait 3) | `0x005101c8` | 6° | yes |
+| fight stance | `0x005101d8` | 24° | no |
+| held flags `0x1000080` | `0x005101b8` × 0.25 | 0.625° | no |
+| otherwise (walk, stand) | `0x005101d0` | 12° | yes |
+
+"Boost applies": the gait rows go through `Human_GetTurnRateForGait` (`0x002212d0`), which multiplies the AI word by
+the [turn boost](#brain-boosts) `+0x0b` (× (b + 1), or ÷ (1 − b) when negative); the other rows do not. At 30 Hz a
+walking AI turns 360°/s, a running one 120°/s, unboosted. Confirmed (code); the AI words are `.data` values that
+`CfgSetTurnRates` does not change.
+
 #### The move action {#move-action}
 
 Vtable `0x00542f20`, confirmed (code) at the addresses cited. `MoveAction_Init` (`0x002fb9e8`) takes the radius, the
@@ -756,11 +1754,49 @@ a "flag kind `0x12`" bit.
        more than 30° off; else the **corner speed** (`0x002fc158`): each of the next 3 waypoints' corners
        (`0x002fbd18`) farther than 0.35 m is simulated at a trial speed (`0x0022aae8`, `0x002fbef0`; 4 to 7 sample
        points by turn radius, bands 3, 5 and 7 m), and every predicted point must lie in a path polygon
-       (`0x00250708`, `0x0024f718`); each failure lowers the trial speed by 1 + 0.75 × human `+0x333`, down to the
-       walking speed. It keeps the first corner's speed `+0x0c`, the second's `+0x44` and a braking distance²
-       `+0x48`, and uses `+0x0c` while farther than that, else `+0x44`, never above the gait's speed.
+       (`0x00250708`, `0x0024f718`); each failure lowers the trial speed by 1 + 0.75 × the detail level `+0x333`,
+       down to the walking speed. It keeps the first corner's speed `+0x0c`, the second's `+0x44` and a braking
+       distance² `+0x48`, and uses `+0x0c` while farther than that, else `+0x44`, never above the gait's speed.
     9. **Stuck** (`0x002fc330`): every 60 updates while moving, less than 0.2 m covered → brain `+0x284` = 3, done.
 - Brain `+0x284` says why a move failed: 1 no polygon or no route, 2 or 4 an edge it cannot take, 3 stuck.
+
+#### The move-to-human action (MoveMelee) {#move-melee}
+
+Type 2, `MoveMelee` (vtable `0x005431e0`), made by `MoveToHumanAction_Init(near, far, action, brain, human, delay,
+limit)` (`0x002fcf50`): the fight's footwork, which keeps a distance band from one human. The fight goal's approach,
+[the reposition](#fight-reposition), Spectate and Backoff use it. Confirmed (code) at the addresses cited.
+
+Fields: `+0x0c` the human's handle, `+0x10` / `+0x14` near² / far², `+0x18` the side counter, `+0x1c` the radial
+counter, `+0x20` the time limit (made absolute at Start), `+0x24` "no stance" (class `+0x11b` 6 or 7,
+`Brain_IsKind6Or7` `0x002fd128`), `+0x25` the saved turn boost.
+
+- **Start** (`0x002fcff0`): the limit becomes now + limit; a "no stance" human leaves the fight stance; the turn
+  boost is saved. **Abort** (`0x002fd068`, never refused): a "no stance" human turns to face the human; the turn
+  boost is restored.
+- **Update** (`0x002fd4e8`), each update, with `d²` the squared distance:
+    1. Done (2) while the mover is in a standing reaction, or when the human is no longer up.
+    2. With the radial counter at 0 and the limit not passed: `d²` < near² → counter −10 (back off); `d²` > far² →
+       +10 (close in), and when also within the mover's far melee range (`+0x140`) the turn boost is raised by one
+       (with conditions on the two facings, the human's state and held objects).
+    3. With the side counter at 0 and the limit not passed, the side (`MoveMeleeAction_PickSide` `0x002fd158`): 2 →
+       side counter +10 (circle one way), 6 → −10 (the other way), both clearing the radial counter; 8 → none.
+    4. The move direction: radial counter > 0 → toward the human, gait 4 (run; 2 for "no stance"); < 0 → away
+       from him, gait 2; each update the counter steps one toward 0. A side counter adds ±1 × the mover's right
+       vector (gait at least 2) and steps toward 0 likewise.
+    5. **Done** when `d²` lies in the band, the side counter is 0 and |radial counter| < 6. After the time limit,
+       done once both counters are 0.
+    6. Brain `+0x110` = the heading of the move for a "no stance" human; otherwise he keeps facing the human while
+       he steps (inferred from the vectors: the stance walk strafes). The aim point `+0x90` = his position + 2 × the
+       move direction, radius 0; brain `+0x11c` (strafe) = not "no stance"; the gait goes to `Brain_SetMoveGait`.
+- **The side** (`0x002fd158`, from the mover's [sector record](#neighbour-sectors), at most 1 s old): keep circling
+  while the sector the mover is heading into is free; else prefer whichever of sectors 2 and 6 (beside the human) is
+  free and less crowded (`Sectors_GetCost`: flags + 2 × humans); with both free, the side by the human's flag
+  `0x10000`. When the two sides cost the same: straight in (8), unless the human is grabbed from the rear or grabbing
+  from the rear; then, when the human is a threat, circle toward his back (sector 4, or 0 for a rear grab), raising
+  the turn boost by one when the mover is one of his active attackers.
+
+So a waiting attacker backs off over 10 updates when too close, runs in over 10 when too far, and circles 10 updates
+at a time to a free side, facing his man.
 
 #### Path planning {#path-planning}
 
@@ -900,7 +1936,7 @@ state `+0x0c` = 3 (kind 8) or 4 (kind `0x80`), brain `+0x11d` = 1, and the clips
 waypoint changes). When the **next** leg is 8 or `0x80`, a human with flag `0x2` (human `+0xe0`, a fast climber,
 `HuSetFastClimber`) running faster than gait 3 starts the climb early, within 4.5 m of the waypoint (`0x0029b9b0`).
 
-Before a leg of kind 4 or `0x80`, with human `+0x333` < 2, the link must be clear: another human on it
+Before a leg of kind 4 or `0x80`, with the detail level `+0x333` < 2, the link must be clear: another human on it
 (`0x0029a3f0`, `0x0029a6c8`, [Jump legs](#route-jump)) makes this one hold with speed 0 when within 2 m of the
 waypoint. Every waypoint is
 also claimed in a table of 40 `{node, human}` at `0x006ce978` (`0x00293e40`): the nearer human keeps it and the
@@ -1000,7 +2036,7 @@ reports mode `0x11`):
   to any landing during a move, a fall off an edge included.
 
 **The clear test, claims and queue for a lone human.** The clear test (`0x0029a3f0`, before a leg of kind 4, with
-human `+0x333` < 2) looks only at other humans: one within 4 m in plan and ahead of this one (along its facing),
+the detail level `+0x333` < 2) looks only at other humans: one within 4 m in plan and ahead of this one (along its facing),
 among those `0x002278a8` gathers along the leg and `0x00290230` accepts, blocks the link when it is moving (a move
 action and a speed above 0); one standing is pushed aside (`0x0028a248`) and the link counts as blocked for that
 update. Blocked and within 2 m (3D) of the waypoint, the human holds there with speed 0. The claim (`0x00293e40`) is
@@ -1018,6 +2054,136 @@ window at x = 47.76, where the two type-11 panes stand (x 47.40); he fell 4 m in
 waypoint, and the move action ended on that update; nine updates later a new route took him along the street and up
 the fence (route state 3 at (56.78, 7.24)). Putting the player in `vReachWindow` without his own jump gave the same
 jump and fall.
+
+#### Neighbour sectors {#neighbour-sectors}
+
+Each human has a record of who stands round him in eight 45° sectors. The fight's footwork
+([MoveMelee](#move-melee)), the grab and snap tries, [the steering](#steering) and giving way all read it.
+Confirmed (code) at the addresses cited, except where marked. Code index: [Neighbour sectors](ai-code.md#sectors).
+
+**The record**: 60 records of 0x48 bytes at `0x006e8318`, one per human slot (`Sectors_GetOwner` `0x0029e470`
+maps back). Per sector *k* (0-7), 8 bytes at `+8k`:
+
+| Offset | Type | Meaning |
+| --- | --- | --- |
+| `+0` | handle | the **nearest human** in the sector (the null handle when none) |
+| `+4` | u16 | **flags**: 1 someone within 1.5 m, 2 someone very close (below), 4 no walkable line out (a wall), 8 a free player near |
+| `+6` | u8 | 1 while the wall probe has still to run |
+| `+7` | u8 | **how many** humans stand in the sector within 1.5 m |
+
+Then `+0x40` holds the owner's heading at the last refresh and `+0x44` that time (ms). The distance is not kept: it
+exists only while the record is rebuilt. `Sectors_Construct` (`0x0029e250`) clears the handles. `Sectors_Reset`
+(`0x0029e2b0`, also called from `Brain_Init`) zeroes the heading and time and sets every probe byte.
+
+**Sector numbering** (`Sectors_SectorOf` `0x0029eb10` → `Human_GetSectorOf` `0x0029eb38`): take the bearing of the
+point from the owner minus the owner's heading, wrapped to [0, 2π). **Sector *k* is centred on *k* × 45°**, with
+edges at ±22.5° (0.3927 rad), so 0 is straight ahead. A heading grows to the left ([Combat: axes](combat.md#grab)),
+so the index rises **anticlockwise** seen from above: 2 is his left, 4 behind, 6 his right. A bearing exactly on an
+edge goes to the lower index on the left half (0 to π) and to the higher index on the right half.
+
+**Refreshing** (`Brain_GetSectors(brain, maxAge)` `0x0028fe90` → `Sectors_Update` `0x0029e5d8`): the record is
+rebuilt when now ≥ `+0x44` + maxAge; otherwise it is returned as it is. Callers pass 1000 ms (MoveMelee, the
+steering, the fight goal's re-target and grab tries) or 500 ms (giving way). A rebuild:
+
+1. Stores the owner's current heading at `+0x40` and gives every sector the null handle, count 0 and probe byte 1.
+2. Lists up to 60 humans within **1.5 m** of the owner, in every direction, each with his **squared** distance
+   (`Humans_FindAhead(1.5, …, mask 1)` `0x002274a8`). Despite its name this is a plain radius search round a point.
+   It takes every human slot whose word at `0x00715390` has bit 1 set, except the owner. There is no state check,
+   so downed and busy humans count.
+3. Each listed human raises his sector's count by one. The nearest in each sector becomes its handle.
+4. The flags are rewritten from the nearest human's squared distance *d²*: *d²* < 1.5 → **3** (bits 1 and 2,
+   within 1.22 m); otherwise *d²* < 2.5 → **1**. Every listed human is within 1.5 m (*d²* ≤ 2.25), so in practice:
+    - bit 1 means "someone in the sector";
+    - bit 2 means "someone within 1.22 m";
+    - an empty sector gets 0, which also clears bit 4.
+
+   (The thresholds look like metres compared against a squared distance. What is described here is what the code
+   does.)
+5. **Bit 8** is set only when the owner is an AI (human `+0x1b0` = −1). It marks a nearby player who is not already
+   part of this fight (inferred meaning). Each player human is checked (game state `+0x228`, count `+0x224`). Bit 8
+   is set in the player's sector when all of these hold:
+    - he is not busy (`Human_IsBusy`);
+    - he is within **5.5 m** (30.25 squared);
+    - he is not the owner's target (brain `+0x124`) and not the target of the owner's target;
+    - his own target is neither the owner nor the owner's target.
+6. Sets `+0x44` = now.
+
+**The wall probe** (`Sectors_ProbeWall` `0x0029e4b0`) runs lazily, at most once per sector per rebuild, and only
+when a reader needs it (the probe byte is 1):
+
+- **The point**: 1.5 m from the owner's position at heading `+0x40` + *k* × 45°, at the owner's height (the
+  direction is flat, inferred from `Vec_FromHeading`).
+- **The test**: bit 4 is set when `Human_CanWalkStraightTo(owner, point, 0)` (`0x002221e0`) fails. This is not a
+  physics ray. It fails in two cases:
+    - a train's path is in the way, unless the owner's brain is already near a train;
+    - there is no walkable straight line on the navigation mesh (`Nav_IsWalkableLine` from the owner's polygon,
+      [Path planning](#path-planning)).
+- **After the probe** the probe byte is 0. Only the next rebuild clears bit 4. `Sectors_ResetHeading` (`0x0029e2e8`,
+  used only by BigThrower) re-arms the probes with a new heading but keeps an old bit 4.
+
+**Readers** (`0x0029e980`-`0x0029eb10`):
+
+| Function | Answer |
+| --- | --- |
+| `Sectors_IsBlocked` `0x0029e9c8` | true at once when bit 2 is set; otherwise probe, then any of bits 2, 4 or 8 (a very close human, a wall or a free player) |
+| `Sectors_IsFree` `0x0029ea48` | none of bits 1, 2 or 8; then probe, and no wall |
+| `Sectors_IsWall` `0x0029ea10` | probe, then bit 4 |
+| `Sectors_GetCost` `0x0029e980` | probe, then flags + 2 × count |
+| `Sectors_AllClear` `0x0029eaa0` | no sector has bit 1 or 2 (no human within 1.5 m at all) |
+| `Sectors_IsHeldBy` `0x0029ead8` | whether the given human is the nearest in a sector |
+| `Sectors_TurnWay` `0x0029ec90` | +1 or −1, the shorter way round from one sector to another |
+
+**A point in a sector** (`Sectors_GetPoint(distance, out, record, k)` `0x0029e350`): the owner's position plus
+*distance* along his **current** heading + *k* × 45° (not the stored `+0x40`), at his height (inferred, as for the
+probe). The steering passes 1 m ([Steering round humans](#steering), the standing case). The other caller is
+`Human_DropCarried` (`0x00232c60`).
+
+**Giving way** (`Brain_GiveWayTo(mover, stander, moverPos, moverStep)` `0x00289ed0`). It is called from
+`Brain_PushAside` (`0x0028a248`), which the steering calls for a standing blocker.
+
+1. It acts only when all of these hold:
+    - the stander's brain is not a player's (type ≠ 0), or its byte `+9` is set;
+    - neither human threatens the other (`0x00222a48`, checked both ways);
+    - the stander is idle under AI control (`0x00225390`).
+2. Take the point on the mover's line (his position + his step) closest to the stander (`Line_ClosestPoint`
+   `0x00336e08`). Let *s* be the stander's sector **of the direction from that point to him**, which points straight
+   away from the mover's path.
+3. With the stander's record at most 500 ms old, try the sectors in this order (mod 8): *s*, *s* + 1, *s* + 2,
+   *s* − 1, *s* + 3, *s* + 4, *s* − 2. *s* − 3 is never tried. The first sector that is `Sectors_IsFree` wins. So
+   he prefers to step straight off the path, then leans anticlockwise. (`Sectors_TurnWay` is called with *s* and
+   the mover's sector, but its answer is unused.)
+4. **A free sector**: clear his actions. When that is refused, report success without moving. Otherwise queue a
+   `GiveWay` action (`GiveWayAction_Init` `0x002fe568`) with:
+    - the heading of that sector's centre;
+    - a start delay of `Random_Int(125)` ms (0-124);
+    - the turn-boost flag, set when the mover is a player at gait 3 or more.
+
+   The step is a single `TakeStep` ([Actions](ai-code.md#actions)): he looks at the mover for up to 2 s, then steps
+   once on that heading. The step's length is the step clip's; no distance is passed.
+5. **No free sector**: go through the candidate sectors in the same order. For each one that has a nearest human,
+   ask that human to give way in turn (`Brain_PushAside`, recursively). The first who does wins. If none does, the
+   result is nothing (0).
+
+**The blocker test** (`Steering_FindBlocker(state, list, n, myPos, myDir, myStep, outFrac)` `0x00288cc8`) runs over
+the list from `Humans_FindAhead`: every human within min(2 `L`, 10 m) of the walker, in any direction
+([Steering](#steering)).
+
+1. Skip the walker's target (brain `+0x124`) and anyone behind him: the dot product of the walker's unit move
+   direction with the offset to the other human is below 0.
+2. Predict the other human's step:
+    - a player: his facing × 0.75 × his speed `+0x1ac`;
+    - an AI: toward his brain's aim point `+0x90`, of length min(the distance to it, 0.75 × his brain speed
+      `+0x114`) (`Steering_ClampStep` `0x00288f40`).
+3. Let *r* be the relative step: my step − his. A ray from my position along *r*, of length |*r*|, is tested against
+   a **disc of radius 0.63 m** round him (`Steering_RayHitsHuman` `0x00289d68`; 0.3969 = 0.63²). There is no hit
+   when:
+    - he is farther than |*r*| + 0.63;
+    - he lies behind the ray;
+    - the ray misses the disc.
+
+   Otherwise the result is the hit distance *t*, measured to the disc's edge.
+4. The blocker is the human with the smallest *t* / |*r*|. That fraction is also returned. So the test sweeps a circle
+   along the relative motion over one step; it is not a corridor or a cone.
 
 #### Steering round humans {#steering}
 
@@ -1069,7 +2235,8 @@ override acts from the next update on, for n updates.
    (S minus his predicted step) hits first. His predicted step is his facing × 0.75 × his speed when his brain
    `+0x04` is 0 (inferred: a player), else `Steering_ClampStep(0.75)` toward his aim (below). It returns him and
    **t** = the hit distance ÷ the relative step's length: the fraction of the 0.75 s step at which the two touch
-   (1e9 for none). No blocker → when avoiding aim := held point and return 1, else return 0.
+   (1e9 for none; [the ray test](#neighbour-sectors)). No blocker → when avoiding aim := held point and return 1, else
+   return 0.
 9. When I lead a formation (human `+0x1a4`) and he is one of its followers, his own steering gets the gait-0 speed for
    5 updates (`Steering_SetGait`, so he stops); this call goes on.
 10. **Keep the old detour?** When avoiding and the stored contact point `+0x10` is nearer to P than the new one
@@ -1132,6 +2299,74 @@ distances (step 10). Who reads it is not traced.
 the move action recomputes its direction to the aim and uses an arrival radius of **0.3 m** (brain `+0x118`) for
 this update instead of its own; either way the aim goes to brain `+0x90` (`0x002fc9a0`-`0x002fca98`).
 
+`Brain_GiveWayTo` (`0x00289ed0`) and `Brain_PushAside` (`0x0028a248`) are the standing side of it: an AI standing in
+a mover's way steps into a free 45° sector round it ([Giving way](#neighbour-sectors)).
+
+#### Giving way {#giving-way}
+
+A standing AI in a mover's way steps aside one sector (45°) with a **GiveWay** action. Confirmed (code) at
+`Brain_GiveWayTo` (`0x00289ed0`) unless marked. The step itself, its clips and how it ends are on the Human side:
+[Characters: Step control](characters.md#step-control).
+
+**Entry.** `Brain_PushAside(mover, stander, point, step)` (`0x0028a248`) is the only way in. Its seven callers
+are:
+
+- `Route_IsLinkBusy` and `Route_IsJumpLinkBusy` (a human on a route link);
+- `Gang_ClearWayForLeader`;
+- `WarriorBrain_Think`;
+- `SaveHumanGoal_Process`;
+- `Brain_GiveWayTo` itself (below);
+- the script's `ActGiveWay` (`Action_GiveWay`, `0x002fe4b0`). Here the other human is the mover, his position the
+  point and his forward axis the step, for a stander with fewer than 8 queued actions.
+
+`Brain_PushAside` checks the stander's brain flags `+0xcc`, then calls `Brain_GiveWayTo`:
+
+- bit 1 set: the stander is already giving way, and the answer is yes;
+- bit 2 or bit 4 set: the answer is no;
+- otherwise it sets bit 4 on both brains for the call, so the recursion below cannot loop, and clears it after.
+
+**The tests**, all needed, else no:
+
+1. The stander's brain has a task (`+0x04` ≠ 0) or its `+0x09` is set.
+2. **Neither is a threat to the other.** `Human_IsThreatTo` (`0x00222a48`) must be false both ways. It is
+   `Brain_IsThreat` on the two brains ([Characters: Step control](characters.md#step-control) gives the exact
+   test).
+3. **The stander is idle under its control.** `Human_IsIdleUnderControl` (`0x00225390`) needs these:
+   - the control is `Human_UpdateControl` or the step control;
+   - no state bit of `0x7bf9e1f3ff0`;
+   - no held flag.
+
+**Which way.** All angles are relative to the stander's facing `f` (`Quat_Heading` of its transform-table rotation)
+and wrapped to 0-2π. `Human_GetSectorOf` (`0x0029eb38`) gives the sector, 0-7, each 45° wide and centred on k × 45°,
+rising anticlockwise:
+
+1. The mover's path is the line through `point` and `point + step`. `Line_ClosestPoint` (`0x00336e08`) gives the
+   point `c` on that **infinite** line nearest the stander: `a + d · dot(p − a, d)`, with `d` the unit direction.
+2. `s` is the sector of the heading from `c` to the stander: straight away from the path.
+3. The sector of the mover's own heading is also computed, and `Sectors_TurnWay` (the shorter way round) is called
+   with both. Its result is unused (confirmed (code): the return value is dropped).
+4. The stander's sector record is refreshed when it is older than **500 ms** (`Brain_GetSectors(brain, 500)`,
+   [AI code: Neighbour sectors](ai-code.md#sectors)).
+5. Sectors are tried in the order **s, s+1, s+2, s−1, s+3, s+4, s−2**, modulo 8. That is seven of the eight; s−3 is
+   never tried. The first **free** sector wins. `Sectors_IsFree` (`0x0029ea48`) needs no near human (flags `0xb`
+   clear) and no wall: the sector is probed on first use and bit `0x4` must stay clear.
+
+**A free sector.** All queued actions are popped (`Brain_ClearActions`; when one refuses, the answer is still yes but
+nothing is queued). Then a GiveWay action is allocated:
+
+- heading **f + sector × 45°**;
+- the mover as the human to look at;
+- a start delay of `Random_Int(125)` = **0-124 ms**;
+- the **boost flag**: set when the mover is a pad player (`+0x1b0` ≠ −1) whose stored gait `+0x1a8` is 3 or more,
+  so the stander **dashes** away from a jogging or running player, and steps for anything slower.
+
+`GiveWayAction_Init` (`0x002fe568`) sets brain `+0xcc` bit 1 while it lives. A distance from the mover to the point
+is computed and not used.
+
+**No free sector.** For the same seven sectors, in order, the human in each sector (when any) is asked to make room:
+`Brain_PushAside(stander, that human, the stander's own position, step)`. The first yes ends the search with yes.
+So a crowd can ripple outwards, at most one level deep per call because of bit 4. With no yes, the answer is no.
+
 #### Waypoint queues {#queues}
 
 20 records of 0x90 at `0x006cde30` (mask `0x006ce970`), updated after the brains (`0x00299778`); inferred: queues at
@@ -1142,14 +2377,338 @@ humans than points, else `0x00299b50`), then up to 5 passes swap pairs whose pat
 
 ### Civilians {#civilians}
 
-The civilian think (`0x002fef40`) refreshes its perception every 1.5 or 6 s (`0x0028fae8`) and reacts to a nearby
-player by pushing goal `0x72` (flee) or `0x6b`. Its event handler (`0x002ffb30`) reacts to violence (event `0x14`)
-and may fight (`Brain_Fight`) when its threat response allows.
+The civilian think and events are under [Civilians (type 4)](#think-civilian): toward a nearby player a civilian of
+ped type 3 pushes Hostile (`0x72`, 10 m), others a PedReaction (`0x6b`) with line `0xaf`.
+
+### How the scripts drive the AI {#script-control}
+
+The level scripts never run AI code themselves. They work six levers, all through the bindings on [AI
+bindings](../references/bindings/ai.md) and [Gang bindings](../references/bindings/gang.md). This section says what each
+lever does to a brain and how the levers interact. The usage counts were read from the compiled scripts of levels 99,
+80, 87, 2, 3, 5, 34 and 95 (each chunk with its chapters, without the `scenetest` files); they count each binding's name
+read in the code, which is almost always a call. Confirmed (code) at the addresses cited unless marked.
+
+#### The levers and their order {#script-levers}
+
+1. **The goal stack.** Every `Goal*` binding that the eight levels use resolves the human and calls `Brain_PushGoal`
+   (`0x0028d758`) once, checked for all 27 of their workers: the new goal goes **on top**, the old top is suspended (it
+   resumes when the new one ends), and the human's queued actions are cleared. No `Goal*` binding flushes first, so a
+   script that wants the goal to be the only one calls `BrFlush` (or `BrFlushGoals`) just before, as the scripts usually
+   do ([Goals](#goals), [one update](#update-goals)). `GoalJoinCinematic` with its last argument 1 also runs the goal's
+   first update at once. `GoalMelee` pushes two goals (FindEnemy, then Melee).
+2. **Actions.** `ActLookAt`, `ActTurnTo` and `ActTurnToDir` queue one action behind any queued ones; the goal on top
+   keeps running ([ActLookAt](#look-at)).
+3. **The gang's tactic.** A `Tactic*` binding finds the gang, builds the tactic and sets it (`0x00165640`), which ends
+   and frees the gang's old tactic. When it starts, **every member that is not a player is flushed** (goals and actions)
+   and the tactic gives the goals ([Tactics](#tactics)). A tactic of type `0x12` or above owns its members' goals and
+   gives them again on events 17, 19 and 22; under any tactic `Brain_PushFightGoal` does nothing, so a member's own
+   fights come from the tactic. `TacticClear` ends and frees it (`Gang_StopTactic`). The tactic's Lua callback receives
+   (gang id, code) for each non-zero Process result and event code (`TacFinished` ... `TacAnimStart`, [Scripted
+   tactics](#tactic-kinds)); the strategy library [below](#script-strategies) is built on it.
+4. **The brain's own handlers.** Between script calls, a brain's think and event handlers ([Brain
+   types](#brain-type-handlers)) keep pushing goals of their own: a fight (`Brain_Fight`, which needs threat response
+   `+0x21c` ≠ 0, and pushes nothing under a tactic), a reaction to violence (`+0x267`), an investigation (`+0x224`) and
+   so on. They push on top of a scripted goal, which resumes afterwards. The script turns them off in three ways:
+    - `BrDead(h, true)` / `GangBrDead(gang, true)`: the brain keeps only `Brain_UpdateGoals` and no think or event
+      handler, so **only what the script pushed runs** ([Handlers](#handlers)). Actions are cleared; goals stay.
+    - `BrSetThreatResponse(h, 0)` / `GangSetThreatResponse(gang, 0)`: no fights; `BrSetReactToViolence(h, false)`: no
+      reaction to violence; `BrSetInvestigateResponse` / `GangSetInvestigateResponse` set how it answers noises
+      (`+0x224`, [Investigate](ai-goals.md#goal-investigate)).
+    - Suspension, below.
+5. **Freezing.** `BrSuspend(h, on)` (`Brain_SetSuspended` `0x002923a0`) clears the human's actions and sets brain
+   `+0x0a`; `GangSuspend(gang, on)` sets gang `+0xd4`. While either holds, `Brain_UpdateGoals` keeps only the time: no
+   goal, reaction goal or action runs ([one update](#update-goals); the brain's own flag counts only while the human is
+   not held).
+6. **Relations and perception.** `GangMakeEnemies` / `GangMakeFriends` (both ways), `GangMakeEnemiesOfType`,
+   `GangMakeNeutralOfType`, `GangSetTargetable` (brain `+0x120`), `GangSetAlwaysSeen`, `BrSetFOV`, `GangSetHearRange`
+   and `GangSetRespondPercentage` change whom the [enemy scan](#enemy-scan) lists and who answers violence; they push
+   nothing themselves.
+
+**Members joined later.** Every `Gang*` setter that writes brains (threat, investigate, targetable, world flags, dead,
+flush) walks the gang's **current** members only (`0x0016b3d0`, `0x0016b4f0`, `0x0016bac0`, `0x0016be30`, `0x0016aa98`,
+`0x0016ba18`). A human added afterwards (`GangAddMember`, or a spawner) keeps his own values (threat response 2 from
+`Brain_Init`). Spawned members are configured by the spawner's Lua callback instead (`GangCallback`
+[below](#script-strategies)).
+
+**Order matters.** Because a tactic's Start flushes its members, a goal pushed before `Tactic*` is lost, and a goal
+pushed after it is replaced the next time the tactic re-gives goals (types `0x12` and above). Scripts that script a gang
+member therefore clear the tactic first (`TacticClear`, 43 uses) and often make the gang dead (inferred from the call
+order).
+
+#### Brain and gang bindings in effect {#script-binding-effects}
+
+| Binding | Worker | What it does to the brain |
+| --- | --- | --- |
+| `BrFlush` | `0x00292530` | ends and frees every goal (callbacks fire, "completed" 0), then clears the actions |
+| `BrFlushGoals` | `0x00292618` | the goals only (`Brain_ClearGoals`) |
+| `BrDead(h, on)` | `0x00292330` | `+0x09`; clears the actions, reinstalls the handlers ([Handlers](#handlers)) |
+| `BrSuspend(h, on)` | `0x002923a0` | clears the actions; `+0x0a` (the update is skipped) |
+| `BrSetType(h, t)` | `0x00292410` | stores the type and installs that type's handlers (`0x0028ceb8`, `0x0028c1a8`); level 95 makes humans type 2 (gang) |
+| `BrSetPedType(h, t)` | `0x00292460` | `+0x26c`; 3 makes a civilian fight back ([Civilians](#think-civilian)) |
+| `BrSetThreatResponse` | `0x00292708` | `+0x21c` (0 never fights) |
+| `BrSetInvestigateResponse` | `0x002927a8` | `+0x224` |
+| `BrSetReactToViolence` | `0x00292bc8` | `+0x267` |
+| `BrSetThugWantsWeapon` | `0x00292848` | `+0x265` (may fetch weapons, [Objects](#ai-objects)) |
+| `BrCanUseWorldFlags` | `0x00292c10` | `+0x2d1` / `+0x2d2` ([World flags](#ai-flags)) |
+| `BrSetFOV` | `0x002928d8` | degrees to radians into `+0x12c` |
+| `BrSetNumFollowSlots`, `BrSetFollowSlotSet`, `BrSetFollowSlot` | `0x00292a60`, `0x00292ac0`, `0x00292b10` | the formation slots round a leader ([Formations](#formations)) |
+| `SetInterrogateParam` | `0x002854b0` | overrides the interrogation values (level 99's lesson) |
+| `GangCreate` | `0x0016a1c8` | a gang record of the given type (at most 10 members, 16 for police and type `0x17`); no brain changes |
+| `GangAddMember(gang, h)` | `0x0016a3f8` | moves the human into the gang: his actions, target and goals are cleared as he leaves the old one, then his brain's gang `+0x20c` is set ([gang bindings](../references/bindings/gang.md#gangaddmember)) |
+| `GangSuspend` | `0x0016a220` | gang `+0xd4` (members' updates skipped) |
+| `GangBrDead` | `0x0016aa98` | `Brain_SetDead` on each current member |
+| `GangBrFlush` | `0x0016ba18` | clears each current member's goals and actions |
+| `GangSetThreatResponse` / `GangSetInvestigateResponse` | `0x0016b3d0` / `0x0016b4f0` | `+0x21c` / `+0x224` of current members |
+| `GangSetTargetable` | `0x0016bac0` | `+0x120` of current members |
+| `GangCanUseWorldFlags` | `0x0016be30` | `+0x2d1` / `+0x2d2` of current members |
+| `GangInvincible` | `0x0016a260` | current and later members invincible (human flag `0x10`, gang `+0xd8`) |
+| `GangEnableAttackStrategies` | `0x0016a2a8` | gang `+0xd9` (the attack tactic's sub-tactics, [Attack sub-tactics](ai-code.md#t2-sub-tactics)) |
+| `GangEngageEnemy(gang, h)` | `0x0016a870` | pushes EngageEnemy on `h` for every member |
+| `GangExitWorld(gang, flag, fn, delete)` | `0x0016a670` | pushes MoveToExitFlag (gait 4) to the flag, or to the farthest exit flag (activity 8) ahead of player 1, on every member; with `delete`, the gang is freed once they are gone |
+| `GangSetMsgHandler` | `0x0016ab38` | a Lua handler per event id ([Events](#gang-events)) |
+| `GangMakeEnemies` / `GangMakeFriends` | `0x0016acf0` / `0x0016ad80` | both gangs' enemy and friend masks |
+
+#### The strategy library {#script-strategies}
+
+`global.lua` and a library copied into each of `level2`, `level3`, `level5` and `level87` (byte-identical transition
+tables in all four) run gangs as a script-side state machine on top of the tactics. Read from the compiled scripts; what
+the bindings then do is confirmed (code) as cited.
+
+- **`Super[gang]`** is a table per gang. `GangSetup(def, constructor, …)` makes the gang with `def.Function`, stores the
+  table and applies its fields: `Turf`, `Friends`, `Enemies`, `GangDeadMsg` (through `DefaultGang`); `Speed` (default
+  1); `SetThreat` → `GangSetThreatResponse`; `Investigate` → `GangSetInvestigateResponse` (−1 when unset or 0);
+  `WFlagPercent` → `GangCanUseWorldFlags(gang, true, n)`; `Leader` → `GangSetLeader`; `Wanted` → a crime of kind 6 at
+  the leader (`CrimeIsHappening`); `GangNet`; and, unless `AttackStratsOff`, `GangEnableAttackStrategies(gang, true)`.
+  Unless `Halt` is set it starts `DefaultTactic` (default `HANGINGOUT`).
+- **Spawned members** run `GangCallback(h, gang, …)` (the spawner's Lua callback): the first becomes the `Leader` (and
+  with `Wanted` the crime is raised again), the `DefaultTactic` is started again unless `Halt`, `WFlagPercent` gives
+  `BrCanUseWorldFlags(h, true, 99)`, then `OnSpawn`. `GangStartTactic(gang)` starts the `DefaultTactic` and sets threat
+  response 1 on the current members.
+- **The tactic wrappers** (`ATTACK`, `AVOID`, `CONFRONT`, `CROWD`, `DEFEND`, `HANGINGOUT`, `HOLDTHELINE`, `HOMEIN`,
+  `IDLE`, `MANPILE`, `MOVETOFLAG`, `PURSUE`, `STEAL`, `TRAVELPATH`, `TRAVERSEFLAGNET`, `USEFLAG`, `VANDALIZE`,
+  `WALKINGTALL`, `WANDERWALK`) each take the gang, fill unset `Super` fields with defaults, call one `Tactic*` with the
+  callback name `"Strategy"`, and store their own function in `Super[gang].state`. Each sets a default `StrategyPreset`
+  when none is set (`StratHunter` for most; `StratAvoid`, `StratDefend`, `StratHoldLine`, `StratHomeIn`, `StratManPile`,
+  `StratTravel`, `StratFlagNet`, `StratWorldFlag`, `StratVandalize`, `StratWalkTall` and `StratRunAround` for their own
+  tactic). `DEFEND` defends `Super.object` (2.25 m) while it lives, else attacks; `HOMEIN` moves to the player's
+  position; `FLEE` clears the tactic and sends each living member out of the world.
+- **`Strategy(gang, code)`**, called by every tactic's callback: a gang with no members has its tactic cleared and its
+  `Super` entry dropped. Otherwise `IdleCallback` runs when set, then `StrategyPreset(gang, code, state)` (or
+  `StratHunter`). A preset builds a table from code to the next wrapper, by the current state, and calls the entry for
+  `code`. A state the preset does not list takes **any** code to one wrapper (`ATTACK` for most presets, `DEFEND` for
+  `StratDefend`, `MANPILE` for `StratManPile`). In a listed state, a code with no entry, or with an entry set to nil
+  (shown as "stay"), changes nothing; except that `StratAggressive`, `StratPassive` and `StratPussy` then go to
+  `CONFRONT` unless already there.
+
+The transitions of the presets (codes as `TacticGetString` names them; 13 is `TacMemberDied`, 12 `TacBehindLine`, 11
+`TacHumanToDefendDead`, 9 `TacNoEnemies`):
+
+| Preset | State | Code → next |
+| --- | --- | --- |
+| `StratHunter` (the default) | `HANGINGOUT` | 3 SeeEnemy → `CONFRONT`; 5 Damage, 6 Attacked → `ATTACK`; 4 SeePlayer stay |
+| | `MOVETOFLAG` | as `HANGINGOUT`, and 8 Arrived → `HANGINGOUT` |
+| | `IDLE` | 3, 5, 6 → `ATTACK`; 4 stay |
+| | `CONFRONT` | 1 Finished, 5, 6 → `ATTACK`; 2 TimeOut → `PURSUE`; 9 → `HANGINGOUT`; 7 InRange stay |
+| | `ATTACK` | 9 → `PURSUE`; 13 → `ATTACK` (started again) |
+| | `PURSUE` | 5, 6, 7 → `ATTACK`; 9 → `HANGINGOUT` |
+| | any other | any code → `ATTACK` |
+| `StratAggressive` | `ATTACK` | 9 → `PURSUE`; 13 → `ATTACK` |
+| | `PURSUE` | 5, 6, 7 → `ATTACK` |
+| | `CONFRONT` | 1, 5, 6 → `ATTACK`; 2 → `PURSUE`; 7 stay |
+| | any other | 3, 7 → `CONFRONT`; 5, 6 → `ATTACK`; other codes → `CONFRONT` |
+| `StratPassive` | `ATTACK` | 13 → `ATTACK` |
+| | `CONFRONT` | 1, 5, 6 → `ATTACK`; 7 stay |
+| | any other | as `StratAggressive` |
+| `StratPursue` | `ATTACK` | 9 → `PURSUE` |
+| | `PURSUE` | 5, 6, 7 → `ATTACK` |
+| `StratAvoid` | `HANGINGOUT` | 3 → `AVOID`; 5, 6 → `ATTACK`; 4 stay |
+| | `AVOID` | 5, 6 → `ATTACK` |
+| | `ATTACK` | 9 → `HANGINGOUT`; 13 stay |
+| `StratAlwaysAvoid` | any | any code → `AVOID` |
+| `StratHoldLine` | `HANGINGOUT` | 3 → `HOLDTHELINE`; 5, 6 → `ATTACK` |
+| | `HOLDTHELINE` | 9 → `HANGINGOUT`; 12 → `ATTACK` |
+| | `ATTACK` / `PURSUE` | as `StratHunter` |
+| `StratDefend` | `DEFEND` | 9 → `DEFEND` (again); 11 → `ATTACK` |
+| | `ATTACK` | 9 → `DEFEND`; 13 stay |
+| `StratManPile` | `HANGINGOUT` | 3, 5, 6 → `MANPILE` |
+| | `MANPILE` | 1, 5, 6 → `ATTACK`; 13 stay |
+| | `ATTACK` | 9 → `MANPILE`; 13 stay |
+| `StratPussy` | `CONFRONT` | 1, 5, 6 → `FLEE`; 7 stay |
+| | any other | 3, 7 → `CONFRONT`; 5, 6 → `FLEE` |
+| `StratShadowEnemy` | `HANGINGOUT` | as `StratHunter` |
+| | `CONFRONT` | 1, 2, 5, 6 → `ATTACK`; 9 → `PURSUE` |
+| | `ATTACK` | 9 → `HANGINGOUT` |
+| | `PURSUE` | 5, 6, 7 → `ATTACK`; 9 → `HANGINGOUT` |
+| `StratTravel`, `StratFlagNet`, `StratRunAround`, `StratVandalize`, `StratGangNet`, `StratHomeIn` | the moving state (`TRAVELPATH`, `TRAVERSEFLAGNET`, `WANDERWALK`, `VANDALIZE`, `MOVETOFLAG`, `HOMEIN`) | 3 → `CONFRONT`; 5, 6 → `ATTACK`; `VANDALIZE` 1 → `ATTACK`; `HOMEIN` 8 → `HANGINGOUT`; `MOVETOFLAG` 8 → the gang's next flag (`sNEXTGANGFLAG`) |
+| | `CONFRONT` | 1, 5, 6 → `ATTACK`; 2 → `PURSUE` (`StratHomeIn`: `HOMEIN`); 9 → the moving state |
+| | `PURSUE` | 5, 6, 7 → `ATTACK`; 9 → the moving state |
+| | `ATTACK` | 9 → `PURSUE` (`StratRunAround`, `StratVandalize`: the moving state) |
+| `StratWalkTall` | `WALKINGTALL` | 5, 6, 7 → `ATTACK`; 8 → `HANGINGOUT` |
+| | `HANGINGOUT` | 3 → `WALKINGTALL`; 5, 6 → `ATTACK` |
+| `StratWorldFlag` | `USEFLAG` | 7 → `ATTACK` |
+| | `ATTACK` / `PURSUE` | 9 → `USEFLAG` |
+
+So a level's gangs mostly loiter (`HANGINGOUT`), square up to an enemy they see (`CONFRONT`), fight when hit or when the
+confrontation ends (`ATTACK`), chase when their enemies are gone (`PURSUE`) and go back to loitering when the chase
+finds nobody. An implementer needs the tactics and the callback codes; the library itself runs as script.
+
+#### Usage by level {#script-usage}
+
+Times each binding is named in the level's scripts:
+
+| Binding | 99 | 80 | 87 | 2 | 3 | 5 | 34 | 95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| [`GoalMoveToFlag`](../references/bindings/ai.md#goalmovetoflag) | 14 | 10 | 7 | 17 | 12 | 4 | 1 | 12 |
+| [`GoalPlayDynIdle`](../references/bindings/ai.md#goalplaydynidle) | - | - | 4 | - | 7 | - | - | 17 |
+| [`GoalBumLogic`](../references/bindings/ai.md#goalbumlogic) | 2 | 2 | 7 | 3 | - | 4 | - | 3 |
+| [`GoalMoveToUseFlag`](../references/bindings/ai.md#goalmovetouseflag) | 3 | 1 | 3 | - | 2 | 9 | - | - |
+| [`GoalPlayDynAnimation`](../references/bindings/ai.md#goalplaydynanimation) | 6 | - | 4 | 1 | - | - | - | 7 |
+| [`GoalFight`](../references/bindings/ai.md#goalfight) | 3 | 2 | - | 1 | - | - | 10 | 1 |
+| [`GoalBackoff`](../references/bindings/ai.md#goalbackoff) | - | - | - | - | 10 | 6 | - | - |
+| [`GoalMoveToExitFlag`](../references/bindings/ai.md#goalmovetoexitflag) | - | 2 | - | 1 | - | - | 11 | - |
+| [`GoalAddressPerson`](../references/bindings/ai.md#goaladdressperson) | 5 | - | 1 | 4 | - | - | - | 2 |
+| [`GoalDealer`](../references/bindings/ai.md#goaldealer) | 2 | - | 2 | 1 | 1 | 1 | 1 | 4 |
+| [`GoalBigLedgeThrower`](../references/bindings/ai.md#goalbigledgethrower) | - | - | - | - | 7 | - | - | - |
+| [`GoalBoxer`](../references/bindings/ai.md#goalboxer) | - | - | - | - | - | - | - | 6 |
+| [`GoalRiot`](../references/bindings/ai.md#goalriot) | - | - | - | - | - | - | 5 | - |
+| [`GoalRunCarrotRun`](../references/bindings/ai.md#goalruncarrotrun) | - | - | - | - | - | 5 | - | - |
+| [`GoalTravelPath`](../references/bindings/ai.md#goaltravelpath) | - | 3 | - | - | - | 2 | - | - |
+| [`GoalDevilRun`](../references/bindings/ai.md#goaldevilrun) | - | - | - | - | 4 | - | - | - |
+| [`GoalAreaWalker`](../references/bindings/ai.md#goalareawalker) | - | - | - | - | - | - | 2 | 1 |
+| [`GoalPlayGenAnim`](../references/bindings/ai.md#goalplaygenanim) | - | - | - | - | - | 1 | - | 2 |
+| [`GoalThrowObject`](../references/bindings/ai.md#goalthrowobject) | - | - | 1 | - | - | - | 1 | 1 |
+| [`GoalGuardFlag`](../references/bindings/ai.md#goalguardflag) | - | - | - | - | 2 | - | - | - |
+| [`GoalJoinCinematic`](../references/bindings/ai.md#goaljoincinematic) | - | 2 | - | - | - | - | - | - |
+| [`GoalMelee`](../references/bindings/ai.md#goalmelee) | - | - | 2 | - | - | - | - | - |
+| [`GoalTag`](../references/bindings/ai.md#goaltag) | - | - | - | - | 2 | - | - | - |
+| [`GoalBumLogicTrigger`](../references/bindings/ai.md#goalbumlogictrigger) | - | - | 1 | - | - | - | - | - |
+| [`GoalGrabTarget`](../references/bindings/ai.md#goalgrabtarget) | - | - | - | - | - | - | - | 1 |
+| [`GoalLeadChase`](../references/bindings/ai.md#goalleadchase) | - | - | - | 1 | - | - | - | - |
+| [`GoalPeddler`](../references/bindings/ai.md#goalpeddler) | - | - | - | - | - | - | - | 1 |
+| [`GoalShopkeeper`](../references/bindings/ai.md#goalshopkeeper) | - | - | - | - | - | - | - | 1 |
+| [`GoalStationaryThrower`](../references/bindings/ai.md#goalstationarythrower) | - | - | - | - | - | - | 1 | - |
+| [`GoalTrackHuman`](../references/bindings/ai.md#goaltrackhuman) | 1 | - | - | - | - | - | - | - |
+| [`ActLookAt`](../references/bindings/ai.md#actlookat) | 7 | - | 2 | - | - | 3 | 1 | 18 |
+| [`ActTurnTo`](../references/bindings/ai.md#actturnto) | - | - | - | - | - | 1 | - | - |
+| [`ActTurnToDir`](../references/bindings/ai.md#actturntodir) | - | - | - | 1 | - | - | - | - |
+| [`BrFlush`](../references/bindings/ai.md#brflush) | 17 | 16 | 13 | 12 | 19 | 9 | 6 | 48 |
+| [`BrDead`](../references/bindings/ai.md#brdead) | 8 | 21 | 9 | 5 | 21 | - | 1 | 22 |
+| [`BrSetThreatResponse`](../references/bindings/ai.md#brsetthreatresponse) | - | - | 4 | 2 | - | 6 | 19 | 7 |
+| [`BrSetInvestigateResponse`](../references/bindings/ai.md#brsetinvestigateresponse) | - | - | 1 | 2 | - | 1 | 10 | 11 |
+| [`BrSetReactToViolence`](../references/bindings/ai.md#brsetreacttoviolence) | - | - | - | 2 | - | 4 | 10 | 9 |
+| [`BrSetThugWantsWeapon`](../references/bindings/ai.md#brsetthugwantsweapon) | 1 | 9 | 4 | 2 | 3 | 1 | - | 5 |
+| [`BrSuspend`](../references/bindings/ai.md#brsuspend) | 8 | - | - | - | - | 2 | - | 7 |
+| [`BrSetType`](../references/bindings/ai.md#brsettype) | - | - | - | - | 1 | - | - | 10 |
+| [`BrFlushGoals`](../references/bindings/ai.md#brflushgoals) | - | - | - | - | - | 10 | - | - |
+| [`BrSetFollowSlot`](../references/bindings/ai.md#brsetfollowslot) | 8 | - | - | - | - | - | - | - |
+| [`BrSetPedType`](../references/bindings/ai.md#brsetpedtype) | - | - | - | - | - | 2 | 2 | - |
+| [`BrSetFOV`](../references/bindings/ai.md#brsetfov) | - | - | 2 | - | - | - | - | - |
+| [`BrCanUseWorldFlags`](../references/bindings/ai.md#brcanuseworldflags) | - | - | - | - | - | 1 | - | - |
+| [`BrHasEnemies`](../references/bindings/ai.md#brhasenemies) | - | - | - | - | - | - | - | 1 |
+| [`BrSetFollowSlotSet`](../references/bindings/ai.md#brsetfollowslotset) | 1 | - | - | - | - | - | - | - |
+| [`BrSetNumFollowSlots`](../references/bindings/ai.md#brsetnumfollowslots) | 1 | - | - | - | - | - | - | - |
+| [`GangCreate`](../references/bindings/gang.md#gangcreate) | 15 | 19 | 50 | 37 | 40 | 47 | 36 | 59 |
+| [`GangSetMsgHandler`](../references/bindings/gang.md#gangsetmsghandler) | 1 | 8 | 24 | 33 | 13 | 7 | 11 | 27 |
+| [`GangSuspend`](../references/bindings/gang.md#gangsuspend) | 8 | 9 | 7 | 15 | 30 | 16 | 20 | 3 |
+| [`GangStartSpawner`](../references/bindings/gang.md#gangstartspawner) | - | - | 10 | 9 | 11 | 7 | 33 | 31 |
+| [`GangMakeEnemies`](../references/bindings/gang.md#gangmakeenemies) | 5 | 6 | 2 | 9 | 11 | 1 | 43 | 5 |
+| [`GangBrDead`](../references/bindings/gang.md#gangbrdead) | 33 | 3 | 16 | 6 | 2 | 5 | 9 | 1 |
+| [`GangAddSpawner`](../references/bindings/gang.md#gangaddspawner) | 1 | - | 13 | 7 | 7 | 9 | 11 | 23 |
+| [`GangSetInvestigateResponse`](../references/bindings/gang.md#gangsetinvestigateresponse) | - | - | 11 | 8 | 5 | 13 | 5 | - |
+| [`GangAddMember`](../references/bindings/gang.md#gangaddmember) | - | 9 | 2 | 3 | - | 9 | - | 5 |
+| [`GangAddTurfBox`](../references/bindings/gang.md#gangaddturfbox) | - | 6 | - | 6 | - | - | 10 | 1 |
+| [`GangMakeFriends`](../references/bindings/gang.md#gangmakefriends) | 4 | - | - | 6 | - | - | 12 | 1 |
+| [`GangExitWorld`](../references/bindings/gang.md#gangexitworld) | - | - | 1 | 1 | - | 2 | 11 | 4 |
+| [`GangBrFlush`](../references/bindings/gang.md#gangbrflush) | 2 | 4 | - | - | 3 | 3 | 3 | 1 |
+| [`GangGetHeadCount`](../references/bindings/gang.md#ganggetheadcount) | - | - | 6 | - | 3 | 4 | - | 3 |
+| [`GangSetThreatResponse`](../references/bindings/gang.md#gangsetthreatresponse) | 5 | - | - | 2 | - | 2 | 3 | - |
+| [`GangCanFlee`](../references/bindings/gang.md#gangcanflee) | - | - | - | 6 | - | - | - | 5 |
+| [`GangRemoveTurfBox`](../references/bindings/gang.md#gangremoveturfbox) | - | 3 | - | - | - | - | 6 | - |
+| [`GangGetLeader`](../references/bindings/gang.md#ganggetleader) | - | - | - | - | 8 | - | - | - |
+| [`GangIsASpawner`](../references/bindings/gang.md#gangisaspawner) | - | - | - | - | - | - | - | 7 |
+| [`GangClearHandlers`](../references/bindings/gang.md#gangclearhandlers) | - | - | - | - | - | - | - | 6 |
+| [`GangIsWanted`](../references/bindings/gang.md#gangiswanted) | - | - | 2 | - | - | 1 | - | 3 |
+| [`GangSetMaxConcurrent`](../references/bindings/gang.md#gangsetmaxconcurrent) | - | - | - | - | - | - | 6 | - |
+| [`GangCanUseWorldFlags`](../references/bindings/gang.md#gangcanuseworldflags) | - | - | - | 3 | - | 1 | - | 1 |
+| [`GangSetSpawnerMustBeOffScreen`](../references/bindings/gang.md#gangsetspawnermustbeoffscreen) | - | - | - | - | 4 | - | 1 | - |
+| [`GangGetStandingCount`](../references/bindings/gang.md#ganggetstandingcount) | - | 2 | 1 | - | - | - | - | 1 |
+| [`GangMakeEnemiesOfType`](../references/bindings/gang.md#gangmakeenemiesoftype) | - | - | - | - | 4 | - | - | - |
+| [`GangMakeNeutralOfType`](../references/bindings/gang.md#gangmakeneutraloftype) | - | - | - | - | - | - | - | 4 |
+| [`GangSetHearRange`](../references/bindings/gang.md#gangsethearrange) | - | - | 4 | - | - | - | - | - |
+| [`GangSetRespondPercentage`](../references/bindings/gang.md#gangsetrespondpercentage) | - | - | 4 | - | - | - | - | - |
+| [`GangClearBums`](../references/bindings/gang.md#gangclearbums) | - | - | - | - | - | - | - | 3 |
+| [`GangClearWanted`](../references/bindings/gang.md#gangclearwanted) | - | - | - | - | - | 1 | - | 2 |
+| [`GangEnableAttackStrategies`](../references/bindings/gang.md#gangenableattackstrategies) | - | - | - | 3 | - | - | - | - |
+| [`GangClearResponders`](../references/bindings/gang.md#gangclearresponders) | - | - | 2 | - | - | - | - | - |
+| [`GangEngageEnemy`](../references/bindings/gang.md#gangengageenemy) | - | 2 | - | - | - | - | - | - |
+| [`GangSetAlwaysSeen`](../references/bindings/gang.md#gangsetalwaysseen) | - | - | - | - | 1 | 1 | - | - |
+| [`GangGoodToGo`](../references/bindings/gang.md#ganggoodtogo) | - | - | - | - | - | - | - | 1 |
+| [`GangInvincible`](../references/bindings/gang.md#ganginvincible) | 1 | - | - | - | - | - | - | - |
+| [`GangSetLeader`](../references/bindings/gang.md#gangsetleader) | - | - | - | - | - | - | - | 1 |
+| [`GangSetTargetable`](../references/bindings/gang.md#gangsettargetable) | 1 | - | - | - | - | - | - | - |
+| [`TacticClear`](../references/bindings/ai.md#tacticclear) | - | 4 | 3 | 10 | 3 | 6 | 6 | 11 |
+| [`TacticAttack`](../references/bindings/ai.md#tacticattack) | - | - | 2 | 2 | 4 | 2 | 10 | 4 |
+| [`TacticConfront`](../references/bindings/ai.md#tacticconfront) | - | - | 1 | 1 | 3 | 1 | - | 11 |
+| [`TacticMoveToFlag`](../references/bindings/ai.md#tacticmovetoflag) | - | - | 4 | 3 | 6 | 3 | - | - |
+| [`TacticCrowd`](../references/bindings/ai.md#tacticcrowd) | 2 | - | 1 | 3 | 2 | 1 | - | - |
+| [`TacticHanginOut`](../references/bindings/ai.md#tactichanginout) | - | - | 2 | 2 | 2 | 3 | - | - |
+| [`TacticScout`](../references/bindings/ai.md#tacticscout) | - | - | 9 | - | - | - | - | - |
+| [`TacticTravelPath`](../references/bindings/ai.md#tactictravelpath) | - | - | 2 | 2 | 2 | 2 | - | 1 |
+| [`TacticWalkinTall`](../references/bindings/ai.md#tacticwalkintall) | - | - | 2 | 2 | 2 | 2 | - | - |
+| [`TacticAvoidEnemies`](../references/bindings/ai.md#tacticavoidenemies) | - | - | 1 | 2 | 3 | 1 | - | - |
+| [`TacticUseFlag`](../references/bindings/ai.md#tacticuseflag) | - | 1 | 3 | 1 | 1 | 1 | - | - |
+| [`TacticVandalize`](../references/bindings/ai.md#tacticvandalize) | - | - | 1 | 1 | 1 | 1 | 2 | - |
+| [`TacticWander`](../references/bindings/ai.md#tacticwander) | - | - | 1 | 1 | 1 | 1 | - | 2 |
+| [`TacticDefend`](../references/bindings/ai.md#tacticdefend) | - | - | 1 | 1 | 2 | 1 | - | - |
+| [`TacticIdle`](../references/bindings/ai.md#tacticidle) | - | - | 1 | 1 | 1 | 1 | - | 1 |
+| [`TacticPursue`](../references/bindings/ai.md#tacticpursue) | - | - | 1 | 1 | 1 | 1 | - | 1 |
+| [`TacticSteal`](../references/bindings/ai.md#tacticsteal) | - | - | 1 | 1 | 1 | 1 | 1 | - |
+| [`TacticHoldTheLine`](../references/bindings/ai.md#tacticholdtheline) | - | - | 1 | 1 | 1 | 1 | - | - |
+| [`TacticManWeaponPile`](../references/bindings/ai.md#tacticmanweaponpile) | - | - | 1 | 1 | 1 | 1 | - | - |
+| [`TacticBossScenarioA`](../references/bindings/ai.md#tacticbossscenarioa) | - | - | - | - | - | 3 | - | - |
+| [`TacticTrigger`](../references/bindings/ai.md#tactictrigger) | - | - | - | 1 | - | - | - | - |
+| [`SetInterrogateParam`](../references/bindings/ai.md#setinterrogateparam) | 2 | - | - | - | - | - | - | - |
+
+What each level does with them, from the call sites (arguments read from the compiled scripts):
+
+- **99 (the first mission)**: the crew and the lesson gangs are scripted dead (`GangBrDead`, 33) and walked with
+  `GoalMoveToFlag`; `GoalAddressPerson` starts the teacher's scenes; the sparring partners fight with `GoalFight(h,
+  player, 0)` after `GangSetThreatResponse(gang, 2)`; player 2 is frozen with `BrSuspend` during the lessons; the
+  player's follow slots are laid out with `BrSetNumFollowSlots(player, 4)` and `BrSetFollowSlot` at 1 m, then 2 m;
+  `SetInterrogateParam` sets and resets the interrogation lesson's values; `GoalTrackHuman(h, player, 0.5)` keeps a
+  watcher on his spot (0.5 m) tracking the player; `GoalDealer` and `GoalBumLogic` run the dealer and the bum ([The
+  first mission's cast](#level99)).
+- **80**: turf boxes (`GangAddTurfBox`, `GangRemoveTurfBox`) bound each fight; `GangEngageEnemy` sends a gang of cops at
+  one human; `GoalTravelPath` walks cops and a bum along paths; `GoalJoinCinematic` puts two humans into the kiss scene;
+  the destroyers fight the player with `GoalFight(h, player, −1)`; `BrDead` (21) scripts the actors.
+- **87**: the strategy library; the stealth chapter gives its guards `TacticScout(gang, 10, 0, 10, 0, 20,
+  "ch5.StealthSpotted")`, `GangSetHearRange(gang, 1, 3)`, `GangSetRespondPercentage(gang, 100)` and one guard a 270°
+  field of view (`BrSetFOV`); two thugs are turned into fighters with `BrSetThreatResponse(h, 2)` and `GoalMelee`.
+- **2**: the strategy library; `GangEnableAttackStrategies(gang, true)` and `GangCanFlee(gang, false)` on the clinic's
+  gangs; `TacticTrigger(gang, 1, true)` sets the bums' crowd cheering; `GoalLeadChase` runs Jesse's chase: he runs on
+  while the chaser is within 30 m (the 50, 70 and 90 passed after it are stored but unused).
+- **3**: the strategy library; `GoalBigLedgeThrower` (the balcony thrower, with up to three object types),
+  `GoalDevilRun` (the rooftop runners, with speeds and boost distances from the chapter's table), `GoalBackoff`
+  (fighters held 1 m back for 2000 ms), `GoalGuardFlag` (the gate guards, 0.5 m), `GoalTag` (the gang leader sprays a
+  tag), `GangMakeEnemiesOfType(gang, 20)` and `(gang, 0)`, `BrSetType(h, 2)`.
+- **5**: the strategy library; `GoalRunCarrotRun` for Sanchez's run ahead of the Warriors (after `BrFlushGoals`),
+  `TacticBossScenarioA` for the Diego and Vargas fight ([its section](#boss-diego-vargas)), `GoalBackoff(player, …, 5,
+  5000)` to hold the players back during scenes, `BrSetPedType(h, 3)` for civilians who fight back.
+- **34 (the riot)**: rioters with `GoalRiot(h, 10, 100, 2, fight, gangFight)` ([GoalRiot](#riot): within 10 m of a
+  player, always act, two acts, a fight chance of 0 or 25 %); the looters get `BrSetThreatResponse(h, 0)` and
+  `BrSetReactToViolence(h, false)`; `GangSetMaxConcurrent` paces the riot spawner (3, 6, 10); `TacticAttack` and
+  `GoalFight(h, player, −1)` for the Furies; `GoalMoveToExitFlag` and `GangExitWorld` clear them out;
+  `GoalStationaryThrower`.
+- **95 (the hub)**: `GoalPlayDynIdle` and `ActLookAt` for the hub's idle humans; `GoalBoxer(h, HeavyBag)` at the
+  clubhouse; `BrSetType(h, 2)` and `GangMakeNeutralOfType(GangWarriors, 19)` for side-job gangs; `GoalShopkeeper`,
+  `GoalPeddler`, `GoalGrabTarget` (the vigilante job's stalker), `GangClearBums`, and spawners checked with
+  `GangIsASpawner`.
 
 ### Scripted goals and actions {#scripted}
 
-What `level99`'s scripts give a brain directly. Confirmed (code) at the addresses cited unless marked; argument names
-and defaults are on [AI bindings](../references/bindings/ai.md).
+What `level99`'s scripts give a brain directly ([How the scripts drive the AI](#script-control) has the overview).
+Confirmed (code) at the addresses cited unless marked; argument names and defaults are on [AI
+bindings](../references/bindings/ai.md).
 
 - **Lua callbacks.** A goal that takes a callback name interns it through the script system (`*(0x00512b04)`, vtable
   `+0xcc`; 0 for none) and calls back in its **End** through vtable `+0xa4`, which is `ScheduleFuncArg2`
@@ -1378,7 +2937,7 @@ has no blip yet): blip type 2, 4 or 3 with icon 29, 31 or 30 at 0.8 for types 0,
 
 ##### Process {#dealer-process}
 
-`DealerGoal_Process` (`0x002c7fd8`), each update, with *d* the nearest player's distance
+`DealerGoal_Process` (`0x002c7fd8`; confirmed (code)), each update, with *d* the nearest player's distance
 (`GameState_FindNearestPlayer` `0x00419ee0`):
 
 1. **Range**: `+0x3e` = (*d* ≤ range). Out of range: if he was in range last update and the dealer was dealing, the
@@ -1494,14 +3053,14 @@ there is no player (`GameState_FindNearestPlayer` gives the nearest and its squa
       (below); started → state 3. Then if *r* < act chance and *g*: state 1 or 2 (a new draw < 50: loot). Otherwise
       **state 3**. So a decision that neither fights nor acts ends the riot, and a player outside the gang's turf
       ends it at once.
-    - **Roaming**: when the move deadline `+0x20` has passed it becomes now + 1000 + 1000 × human `+0x333` ms (the
-      roll-over is what lets a new destination replace a running move); when `+0x24` has passed it becomes now + a
-      random 4000-4500 ms and, with shout, the rioter says speech command `0x59` (`0x002205e0`); every 90 brain updates
-      a random head glance (`0x00231cd0`, 750 ms, 22.5°-67.5° to a side, inferred from its maths). While a move is
-      running and the deadline has not rolled over, nothing more. With no failed move (brain `+0x284` = 0) it picks
-      a destination (below) and gives a move action to it (`MoveAction_Init`, arrival 0.5 m, gait 4), retargeting a
-      running move action instead when there is one. After a failed move, `+0x38` counts up: at 30 → state 3; every
-      5th clears `+0x284` so the next update tries again.
+    - **Roaming**: when the move deadline `+0x20` has passed it becomes now + 1000 + 1000 × detail level `+0x333`
+      ms (the roll-over is what lets a new destination replace a running move); when `+0x24` has passed it becomes now +
+      a random 4000-4500 ms and, with shout, the rioter says speech command `0x59` (`0x002205e0`); every 90 brain
+      updates a random head glance (`0x00231cd0`, 750 ms, 22.5°-67.5° to a side, inferred from its maths). While a move
+      is running and the deadline has not rolled over, nothing more. With no failed move (brain `+0x284` = 0) it picks a
+      destination (below) and gives a move action to it (`MoveAction_Init`, arrival 0.5 m, gait 4), retargeting a
+      running move action instead when there is one. After a failed move, `+0x38` counts up: at 30 → state 3; every 5th
+      clears `+0x284` so the next update tries again.
 - **1, smash.** The target is a **world object within 20 m** (`0x0029d5f0`, the object search `0x0039a850`, up to
   384, sorted by `0x003868d0` (inferred: by distance), the first that passes): not broken (object `+0x54` bit
   `0x10`), class flags
@@ -1946,6 +3505,60 @@ is overridden with the name at `0x00567a88`), the next object appears in his han
 45°, line of sight (six misses drop the target), then 4; 4 throw (`0x002faeb0` kind `0x10`, 100 ms) and back to 1
 when the hand is empty. Start (`0x002ed168`) and End (`0x002ed260`) as the BigBrawler's, plus that override.
 
+##### The BossDiego program {#boss-diego-ops}
+
+**No script calls `GoalBossDiego`.** The Diego fight uses `TacticBossScenarioA` ([Diego and
+Vargas](ai.md#boss-diego-vargas)), so this goal is never built in play. Confirmed (code) for the interpreter;
+confirmed (disc), per [AI bindings](../references/bindings/ai.md#goalbossdiego), that no script uses it.
+
+**The binding's arguments** (`Goal_BossDiego` `0x002a1aa8`, `BossDiegoGoal_Start` `0x002a1b50`):
+
+- **The variant** `+0x10`:
+    - variant 0 runs the program at `0x00510e28`, keeps his weapon, resets the inventory and gives one revive;
+    - variant 1 runs `0x00510d28` with 3500 health and a 1 s start delay.
+- **Three flag handles** `+0x14`-`+0x1c`.
+- **The rest of Start**: melee ranges 1 / 2 m, steering off, threat and damage response 0, and the game flag `+0x430`
+  set.
+
+**The program** is a list of (op, argument) s16 pairs. `BossDiegoScript_Next` (`0x0029fa28`) reads them:
+
+- a negative op jumps back by that many pairs;
+- op `0x97` jumps to label *n*;
+- op `0x96` is label *n*;
+- op 100 is "fetch the next pair". Every op below returns to 100 when it is done.
+
+`+0x34` is the op's timer and `+0x2c` a counter.
+
+| Op | Does |
+| --- | --- |
+| 101 | calm: threat and damage response 0, no pick-ups |
+| 105 | fight-ready: pick-ups on, responses 2, a PathBlocker goal (10) |
+| 110 | the attack weight override = table *arg* of `0x00510c40` (45 bytes each) |
+| 115 | fight player 1 (game `+0x228`): responses 2, target, `Goal_Melee`(*arg* s) |
+| 116 | the target (or player 1). Beyond 2 m: calm, normal mode, and run to him (gait 5, radius 1.0 or 1.5 m, 50/50), then op 117. Within 2 m: `Goal_Melee`(3-6 s). |
+| 117 / 118 | When idle, the counter rises. At 2 the counter resets and op 125 runs with a random 5-9 s. Otherwise responses 2 and `Goal_Melee`(3-6 s). |
+| 120 / 121 | target player 1 / the current target |
+| 125 → 126 → 127 | calm, untargeted and stunned for *arg* s; then unstunned, normal mode and no-react; once idle, responses 2 |
+| 130 | god mode = (*arg* ≠ 0) |
+| 140 / 141 | Alternate every 10 s between `Goal_Melee`(10 s) and `Goal_AvoidEnemies`(20 m, 30 m). |
+| 160-163 | Calm, no pick-ups, then walk to flag *arg* (0-3 from the goal's handles, 4 the named flag at `0x00562ba8`). The gait is 2, 4, 4 or 3; the radius 1 m, or 5 m for 162. |
+| 180 → 181 | clear actions; after 200 ms call the Lua function named at `0x00562bb8` when it exists |
+| 192 / 199 | wait for the timer |
+| 193 | 50 %: jump to label *arg* |
+| 194 | anim slot 4 = clip `0x198` (*arg* 0) or `0x203` (1) |
+| 195 / 196 / 197 | A Lua call, then clear, unstunned and no-react, and jump to label 2, 3 or 1. Op 196 also makes the human at `0x006e9404` pop to his goal `0x48` and run op 197. |
+| 198 | wait *arg* s |
+| 201 | with an object in hand, press cross at the target (a throw); wait *arg* s |
+| 202 | after the timer, count `+0x3c` + 1 |
+| 203 | responses 2 |
+| 204 | a porcelain weapon in hand: one of 19 names at `0x00510bc8` (*arg* 0) or of 2 at `0x00510bc0` (*arg* 1) |
+| 205 | look at the target; wait *arg* s |
+| 210 | the player's gang avoids him (*arg* 1, `BossDiego_GangAvoid`) or stops (0) |
+| 211 | press cross (*arg* 0), cross + square (1) or circle + cross (2, 3), then calm |
+| 212 | *arg* 0: auto-escape, double damage, no-react, untouchable, flags `0x8000100`; *arg* 1: auto-escape and untouchable only |
+
+Not needed for any level: Coney can leave `GoalBossDiego` out until a script calls it.
+
 #### Brain bytes `+0x0b` and `+0x0c` {#brain-boosts}
 
 - **`+0x0b`, turn boost** (`Brain_SetTurnBoost` `0x0028cdf8`, 56 callers; forced 0 for Diego and Vargas, classes
@@ -1964,12 +3577,13 @@ when the hand is empty. Start (`0x002ed168`) and End (`0x002ed260`) as the BigBr
 
 `WarriorBrain_Think` (`0x003052f0`), every sixth think, while the brain may pick up (`+0x265`), holds nothing, and its
 gang kind's pick-up factor (`0x001644f8`) is not 0: with chance 25 × factor %, when nobody is close around it
-(`0x0029eaa0`: none of its eight [sectors](ai-code.md#sectors) has bit 0 or 1 set, inferred a human within 2.5 m; this
-corrects an earlier reading as a goal check), the nearest pickable object within 1.5 m (`0x0029d5f0`; a wider search
-when the gang's leader is free and its gang has a turf and no enemies) is fetched (`0x002faf98`).
-**`CfgWarriorWeapons(false)`** (game state `+0x5704` = 0) refuses an object whose type class (`+0x87`) is 4, a weapon;
-other objects are still taken. A Warrior holding a weapon of kind 4 or 6 with no enemies drops it unless its gang's
-tactic is type `0x26`. Confirmed (code).
+(`0x0029eaa0`: none of its eight [sectors](#neighbour-sectors) has flag bit 1 or 2 set, that is no human within 1.5 m
+([Neighbour sectors](#neighbour-sectors)); this corrects an earlier reading as a goal check), the nearest pickable
+object within 1.5 m (`0x0029d5f0`) is fetched (`0x002faf98`). When the leader is free, the gang's `+0x32` is 1, a member
+is under attack and the Warrior's own enemy list is empty, the search's filter mask is `0x30000` instead of `0x10000`
+and its last flag 1; the radius stays 1.5 m. **`CfgWarriorWeapons(false)`** (game state `+0x5704` = 0) refuses an object
+whose type class (`+0x87`) is 4, a weapon; other objects are still taken. A Warrior holding a weapon of kind 4 or 6 with
+no enemies drops it unless its gang's tactic is type `0x26`. Confirmed (code).
 
 #### Spawners {#spawners}
 
@@ -2164,14 +3778,44 @@ The command tactics, by command (constructor, vtable, type id; confirmed (code))
 | Command | Constructor | Vtable | Type | Members get |
 | --- | --- | --- | --- | --- |
 | 0 follow | `WarriorFollowTactic_Create` `0x00310e00` (init `0x00310e90`, distance 9.0) | `0x005438c0` | `0x12` | `FollowPlayer` ([below](#warrior-follow)) |
-| 1 attack | `WarriorAttackTactic_Create` `0x00320530` (init `0x003205b0`, member goals `0x00320618`) | `0x00544160` | `0x01` | `FollowAndAttack` (`0x34`, `0x002bbdc0`) on the chief; dogs (class 221) `AvoidEnemies` |
+| 1 attack | `WarriorAttackTactic_Create` `0x00320530` (init `0x003205b0`, member goals `0x00320618`) | `0x00544160` | `0x01` | [`FollowAndAttack`](ai-goals.md#goal-follow-and-attack) (`0x34`, `0x002bbdc0`) on the chief; dogs (class 221) `AvoidEnemies` (4 m, 8, 8) ([code](ai-code.md#t2-warrior-attack)) |
 | 2 defend | `Tactic_Defend` round the chief (given 2.25) | `0x00543800` | `0x02` | `FollowAndDefend` ([table](#tactic-kinds)) |
-| 3 hold | `0x00313400` (init `0x00313490`, given 1.5), or `0x003128a0` (init `0x003128f8`) | `0x005439e0` / `0x00543980` | `0x03` / `0x13` | not traced |
-| 4 scatter | `0x00319570` (init `0x00319600`, given 75.0) | `0x00543d40` | `0x25` | not traced |
-| 5 steal / wreck | `0x00320b60` (init `0x00320be0`) | `0x005441c0` | `0x26` | not traced |
+| 3 hold | `WarriorHoldTactic_Create` `0x00313400` (init `0x00313490`, given 1.5), or `WarriorHoldTactic2_Create` `0x003128a0` (init `0x003128f8`) | `0x005439e0` / `0x00543980` | `0x03` / `0x13` | type 3: [`HoldPosition`](ai-goals.md#goal-hold-position) at his own spot, radius 1.5 m, and a turn outward; type `0x13`: [`Hide`](ai-goals.md#goal-hide) (`0x58`) at a wall point near the nearest hiding flag ([code](ai-code.md#t1-hold), [hide](ai-code.md#t1-hide)) |
+| 4 scatter | `WarriorScatterTactic_Create` `0x00319570` (init `0x00319600`, given 75.0) | `0x00543d40` | `0x25` | [`Scatter`](ai-goals.md#goal-scatter) (`0x37`) to one of up to six hiding flags within 75 m ([code](ai-code.md#t2-warrior-scatter)) |
+| 5 steal / wreck | `WarriorStealTactic_Create` `0x00320b60` (init `0x00320be0`) | `0x005441c0` | `0x26` | [`WarriorVandalSteal`](ai-goals.md#goal-warrior-vandal-steal) (`0x83`); dogs `AvoidEnemies` (7, 12, 12) ([code](ai-code.md#t2-warrior-steal)) |
 
 The names follow, attack, hold, scatter and wreck are read from the lines (inferred). The follow, second hold,
 scatter and steal tactics are of type `0x12` or above, so they own their members' goals (`+0x3c`, [Tactics](#tactics)).
+
+What each command tactic does, confirmed (code) at the addresses on [the code index](ai-code.md#tactics-code). Every
+one gives each living member that is not a player and not the chief a goal at Start, after flushing him. In a
+two-player game a Warrior of player 1's gang more than 10 m from player 1 and nearer the other player gets
+`FollowAndDefend` on that player instead. Once the chief's line ends, a random free member answers (`0x003069f0`):
+`attack_resp` (132), `scatter_resp` (159), `vandal_resp` (140) or, at a store, `steal_resp` (141); the hold answers
+with line `0x85`. None of their Process functions ever ends the tactic (they return 0); a new command replaces it.
+
+- **Attack** (`0x01`): `FollowAndAttack` (`0x34`) on the chief, whose Process fights the best enemy within 60 m of
+  the chief ([its row](ai-goals.md#goal-follow-and-attack)). Event 19 gives all goals again; 22 with `+8` = 1 gives
+  that member his goal again.
+- **Hold** (`0x03`): `HoldTactic_GiveMemberGoal` (`0x00313718`) pops each member to his goal base and pushes
+  HoldPosition (`0x36`) at his own position with radius 1.5 m (the tactic's `+0x20`); `HoldTactic_GiveGoals`
+  (`0x00313508`) then queues a turn to a heading spread 360° / (members − 1) from the chief's, after 0-1 s with
+  enemies about, else 2-4 s. HoldPosition's Process (`0x002be818`): with no enemy, a 30 % fidget every 3 s inside the
+  radius, a walk back outside it; an enemy not targeting him: turn to him; one targeting him: a fight goal (4000 ms)
+  when in sight and reach from inside the radius, else turn and shuffle. Events 17 (`+4` = 0), 19 and 22 (`+8` = 1)
+  hold again; 20 (violence) makes a free member look at the fighter for 3 s and taunt at 10 %.
+- **Hide** (`0x13`, the hold for a gang whose brain `+0x2d5` is set): from the hiding flag (activity `0x21`) nearest
+  the chief, ten 10 m rays 15° apart find wall points; each member gets Hide (`0x58`) at a free wall point at least
+  1 m from the chief. Events 1 and 16 (a player attacked while hidden in shadow): when no free member is left, the
+  attack command is dispatched for the chief; another gang's tactic stops.
+- **Scatter** (`0x25`): up to six hiding flags (activity `0x21`) within 75 m of the chief and at least 10 m from him,
+  reachable, nearest first; members get Scatter (`0x37`) to them in turn, at a random navigable point 1-1.5 m from the
+  flag (no flags: Scatter with no flag). Events 1 and 16 on a member at his flag: he moves on to the farthest flag
+  with no player within 5 m, or with none fights (Melee) for 10 s.
+- **Steal / wreck** (`0x26`): every 2 s the store flag (activity `0xe`) within 12 m of the chief and reachable is
+  picked again; its zone's objects are clustered (1 m). Members get WarriorVandalSteal (`0x83`), which steals from the
+  zone's clusters (an object is claimed for 5 s when no enemy stands within 1.5 m of it) or, with no store, wrecks
+  what is near.
 
 #### The default command: follow {#warrior-follow}
 
@@ -2196,11 +3840,15 @@ command gives nothing) and always rebuilds the tactic.
 `+0x28` the next banter check; `+0x2c` the idle timer; `+0x30` "the leader is a player"; `+0x31` started):
 
 - **Start** (`0x003111a8`) gives the members their goals (`WarriorFollowTactic_GiveGoals` `0x00310f38`): the chief's
-  formation takes slot set 9 (`0x00295dd8`); every member that is not the chief, not a player and not down is flushed
-  and gets **`GoalFollowPlayer(9 m, chief, mode 3)`** (`0x002de380`, type `0x32`, vtable `0x00541d70`). In a
-  two-player game a Warrior of the first player's gang more than 10 m from him whose nearest player is the other one
-  gets `FollowAndDefend` (`0x35`, `0x002bca20`) on that player instead. Start also fills the gang's anim group 604
-  with ten idle clips (`0x00169468`; End `0x00311230` undoes it).
+  formation takes slot set 9 (`0x00295dd8`); every member that is not the chief, not a player (human `+0x1b0` = −1) and
+  not down is flushed and gets **`GoalFollowPlayer(9 m, chief, mode 3)`** (`0x002de380`, type `0x32`, vtable
+  `0x00541d70`). In a two-player game a Warrior of the first player's gang more than 10 m from him whose nearest player
+  is the other one gets `FollowAndDefend` (`0x35`, `0x002bca20`) on that player instead. "Not down" is
+  `Human_IsDownOrDead` (`0x00227e60`) returning 0: the human has its record (`+0xd4`) and none of the state bits
+  `0x180050000` (`0x100000000` dead, `0x80000000` dying, `0x40000` knocked out, `0x10000` tackled;
+  [Combat](combat.md#state-flags)). It does not read the brain's `+0x09` (`BrDead`), the health, or knocked down
+  (`0x80000`): a member made dead to the AI still gets the follow goal. Confirmed (code). The binding `HuIsAlive` is the
+  same test. Start also fills the gang's anim group 604 with ten idle clips (`0x00169468`; End `0x00311230` undoes it).
 - **Process** (`0x00311638`): done (1) when the gang has no leader; every 8 s the chief's slot set is re-picked
   (`0x00295db0`, one of two); every 1 s (0.25 s while the chief holds something) a banter check: when no scene plays,
   no member has an enemy and every member has been idle for 25 s, one member says an idle line and looks at the
@@ -2222,14 +3870,55 @@ fight mode it widens its field of view to 2π, keeps a valid target, else takes 
 the leader's target, enters the fight stance and **turns to the target** within the far melee range (the near one
 when the target is busy) or moves to him (`MoveToHumanAction`, 3 s); it does **not attack**. Out of fight mode it
 leaves the stance, may fetch a pickable object (the roll of [the Warriors' pick-ups](#warrior-pickups), every 30
-updates), every 2-4 s turns as its mode says (mode 3: toward the leader's heading when more than 60° off), and every
-3-6 s, at 30 %, queues a fidget (`PlayFidget`, `0x002f9f48`).
+updates), every 2-4 s turns as its mode says, and every 3-6 s, unless its own or the leader's brain `+0x2d5` is set,
+at 30 % (Warriors only while standing) queues a fidget (`PlayFidget`, `0x002f9f48`). The **modes** (goal `+0x18`,
+the init's last argument; confirmed (code) at `0x002de7c0`):
+
+| Mode | Every 2-4 s | Used by |
+| --- | --- | --- |
+| 1 | turn to face the way the leader faces (a point one leader-facing ahead of himself) | event 19 of the follow tactic |
+| 2 | turn to face the opposite way (watching the rear) | |
+| 3 | turn toward the leader when more than 60° off, slowly (turn boost −8) | the follow tactic |
+| 4 | look at the leader's target (`LookAtAction`) when he has one | |
+| other | nothing | |
+
+**`FollowFormation`** (type `0x33`, `FollowFormationGoal_Init` `0x002dfba8`, vtable `0x00541c50`; arguments: arrival
+distance (0.75 m from the follow code), leader, a turn-with-leader flag, time limit). Confirmed (code):
+
+- **Start** (`0x002dfc30`): saves human `+0xf4` and the start boost; a Warrior also gets human flags `0x100`, `0x200`
+  (restored at End `0x002dfe68`). Then **Resume** (`0x002dfcd0`): joins the leader's formation, takes the follow
+  point; when the leader runs (gait above 3) and the flag is set, turns to the leader's heading. On levels `0xe`,
+  `0x33`, `0x34` and `0x52` a Warrior's `+0xf4` gets bit `0x100`.
+- **Process** (`0x002e0088`):
+    1. Done (2) when the leader is invalid, the last move failed (brain `+0x284`), or he is no longer a follower of
+       the leader's formation. Wait while the front action is of kind 6. Out of the fight stance when the leader is.
+    2. Every 6 updates, without a slot yet, the follow point is refreshed into the running move.
+    3. Every *n* updates (*n* a random 2-7 drawn at init) the leader's gait is noted; "the leader just stopped" = it
+       was above 3 and is now below 3. Unless he just stopped, nothing more while a check time (now + 1000 ms) has
+       not passed and actions are queued.
+    4. The follow point: its slot point, radius = the arrival distance; without one, the follower ahead of him in
+       the formation's queue, radius 2.5 m.
+    5. No straight walkable distance to the point (`Nav_StraightDistance`): a counter starts; every 15th count with
+       no nav polygon or no reachable node near the point, a breakable object within 1.5 m is smashed
+       (VandalizeItem); he waits until the counter reaches 30.
+    6. The leader standing (his speed gives gait 0) and the follower within the radius: done (2).
+    7. Beyond 0.2 m: a move action to the point (radius 0.1 m at a slot, else 2.5 m) at the speed below, or the
+       running move's speed and radius updated. A new move by a follower who has attackers (brain `+0x1a4`) and a
+       clear `+0x2d5` also turns him to face the point and raises his start boost by one.
+- **The speed** (`FollowFormation_PickSpeed` `0x002dfef8`), with `d` the distance, `v` the leader's speed capped at
+  1.25 × the sprint speed: within the arrival distance, `v`. Beyond it, `f` = 0.1 × (`d` − arrival distance); when
+  `v` < 2 m/s, `f` += 4 × `f` × max(`v` − walk speed, 0); `f` += 1 when `v` > 2 m/s, the leader's `+0x2d5` is set, or
+  the follower has attackers. Gait `g` = run (4) beyond 8 m or with the leader's `+0x2d5`, jog (3) beyond 4 m, else
+  walk (2). Speed = max(speed of `g`, `v`) × `f`, clamped to [walk speed, 1.25 × sprint speed]. So a follower far
+  behind runs, near his slot matches the leader, and slows to a walk on arrival.
 
 #### Automatic commands {#warrior-auto-commands}
 
 What turns a following crew into a fighting one is the chief's own brain. `PlayerBrain_Update` (`0x003035d8`) calls
-`WarChief_AutoCommand` (`0x00303988`) on every update with the chief's target (brain `+0x124`). For a war chief,
-while game state `+0x431` is set (always: `InitLevel` sets it and no script clears it), it unlocks his menu every 10
+`WarChief_AutoCommand` (`0x00303988`) on every update with the chief's target (brain `+0x124`). For a war chief, while
+game state `+0x431` is set (`InitLevel` sets it; `WCEnableAutomaticSwitching(false)` clears it, which only the Rumble
+arena scripts call: `brawl`, `kinghill`, `royal`, `survival` and `tagbt`, read from the compiled scripts; the binding
+(`0x00374a00`) reads an absent argument as true and nil, the scripts' `false`, as false), it unlocks his menu every 10
 updates and then, by his last command (confirmed (code)):
 
 - **0, follow**: when he is mugging (`0x100`), tagging or in a player mode 2 or 3 (record `+0x46`; not traced),
@@ -2734,7 +4423,7 @@ workers) that belong to this page, by address.
 | `0x0041da50` / `0x0041da60` / `0x0041da70` | `Cfg_SetTurfInvasion` / `Cfg_SetGrappleCounters` / `GameState_SetPowerupPickup` | `CfgEnableTurfInvasion` (byte `+0x56e1`), `CfgEnableGrappleCounters` (`+0x56e3`), `CfgPowerupPickup` (`+0x56e5`) | confirmed (code) |
 | `0x0041db08` / `0x0041dbe8` | `GameState_EnableAllWarriorCommands` / `GameState_EnableWarriorCommand` | the per-player allowed bytes `+0x41e + player × 7 + command`: all seven for every war chief / one for one human; both tell the command display (`WarCommandDisplay_SetAllowed`) | confirmed (code) |
 | `0x0041dc80` / `0x0041dcf0` / `0x0041dd40` | `GameState_IssueWarriorCommandFor` / `GameState_LockWarriorCommands` / `GameState_SetWarriorCommandCallback` | `WarriorCommand_Dispatch` for a human / byte `+0x418 + player` / the callback name | confirmed (code) |
-| `0x0041dd68` | `GameState_SetAutoSwitch` | byte `+0x431` (1 at set-up) | confirmed (code) |
+| `0x0041dd68` | `GameState_SetAutoSwitch` | `WCEnableAutomaticSwitching`: byte `+0x431` (1 at set-up), which turns the war chief's [automatic commands](#warrior-auto-commands) on or off | confirmed (code) |
 
 ## Coney's implementation {#coney}
 
@@ -3044,12 +4733,19 @@ when `GangCanFlee` turns it on.
 
 ## Open questions {#open-questions}
 
+- Movement and world use: MoveToUseFlag's clip states once he is on the flag; the pedestrian's flag re-use timer
+  (goal `+0x6c`, 65 s inferred); the gait AvoidEnemies keeps in its `+0x3c`; why ChaseSupport jogs within 3 m;
+  ManWeaponPile's Process (`0x002a3498`, not read).
+- Who sends events `0x15`, 6, 9, 10 and `0x11`, and who reads event `0xf` (the tag-spot message); what reads the
+  tackle meter brain `+0x148` besides the fight goal, and what brain `+0x28f` controls.
+- The per-gang `CfgGang` values 2, 3, 5, 7 and 8 (attackers at once, tackle and rear-grab chances) as
+  `config_preload2.lua` sets them; what commands 5 and `0x19` do in a grab (inferred: let go, shove off); the
+  target's pattern bytes `+0x5d0` / `+0x5d1`; `Human_CanStartAttack`'s cases beyond kinds 10-15.
 - `GoalBumLogic`'s begging (type 2's prompt, the chance, the callback, the 12 s timer) and what sets `+0x36`; what
   `GoalBackoff`, `GoalMoveToUseFlag` and the pedestrian goal (`0x69`, with its two variants
   and `FlagNetTraverse`'s flags) do each update (Process), and the use-flag goal's two floats; what
   `GangInvincible` sets on a member (`0x0016a000`).
 
-- The attack pick's adjustments in detail (`0x002240e8` and the attacker-count terms), and the two tokens.
 - Link kind 2 and mask bit `0x100` in play, polygon `+0x02`, the globals `0x005105a0` and `0x005112b4`, and the
   goals that search with the mask `0x13` (`0x002aafd0`, `0x002c1470`).
 - Which record `+0x08` bits the play-anim action's clip holds (`0x0025a3e0`), its rate for a dynamic clip and its blend
@@ -3071,8 +4767,6 @@ when `GangCanFlee` turns it on.
 - The tactic event codes (`TacticGetString`, `0x00315c58`) passed to a tactic's callback.
 - Whether `CfgSetDefaultFollowSlotSet` (`0x00294788`) rewrites the slots of formations in use or only the pool's
   defaults for formations made later.
-- What the hold, scatter and steal command tactics (types `0x03`, `0x13`, `0x25`, `0x26`) give their members.
-- The perception struct (`+0xf8`).
 - A turf box's radius `+0x40` (Coney: half its diagonal). Human `+0x333` is the detail level from the camera
   distance ([Characters](characters.md#ai-locomotion)).
 - The hold's damage (`0x00510acc`) of `GoalGrabTarget` and the boxing attack weights (`0x00511120`) of

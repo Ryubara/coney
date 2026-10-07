@@ -90,7 +90,7 @@ Stands at a pile and throws objects from it at the player, with Vargas's lines.
 | `0x002a31f0` | `Goal_ManWeaponPile` | binding | `GoalManWeaponPile` | confirmed (code) |
 | `0x002a3320` | `ManWeaponPileGoal_Init` | init | vtable `0x0053f370` | confirmed (code) |
 | `0x002a3498` | `ManWeaponPileGoal_Process` | Process | picks up an object from the pile, aims and throws it, says a line | inferred |
-| `0x002a3d90` | `ManWeaponPileGoal_End` | End | when it took over the object at `[0x00512b04]` (`+0x20`), hands it back (its slots `+0x4c`, `+0x8c`) | confirmed (code) |
+| `0x002a3d90` | `ManWeaponPileGoal_End` | End | when the goal has a Lua callback (`+0x20`), calls it through the script system `[0x00512b04]` with the human's handle ([Scripted goals](ai.md#scripted)) | confirmed (code) |
 
 ### ObjectThrower (type 0x4e) {#goal-object-thrower}
 
@@ -100,9 +100,9 @@ Throws objects found near him at a target.
 | --- | --- | --- | --- | --- |
 | `0x002a3e50` | `Goal_ObjectThrower` | binding | `GoalObjectThrower` | confirmed (code) |
 | `0x002a3f50` | `ObjectThrowerGoal_Init` | init | vtable `0x0053f310` | confirmed (code) |
-| `0x002a4138` | `ObjectThrowerGoal_End` | End | leaves the fight stance, clears human `+0x128` and object flag `0x40000`, hands back the object at `[0x00512b04]` | confirmed (code) |
-| `0x002a4230` | `ObjectThrowerGoal_Process` | Process | finds an object, picks it up and throws it | inferred |
-| `0x002a4aa0` | `LineTestCache_Reset` | reset | on a full reset clears the handle at `0x006e93f8` that `Brain_LineTest` caches | inferred |
+| `0x002a4138` | `ObjectThrowerGoal_End` | End | leaves the fight stance, clears human `+0x128` and object flag `0x40000`, calls the goal's Lua callback with the human's handle | confirmed (code) |
+| `0x002a4230` | `ObjectThrowerGoal_Process` | Process | fight stance; ends when a hostile is visible within the stop radius or after `maxThrows`; turns to a random target flag, aims and presses cross after pace/2 to pace seconds; empty-handed fetches the nearest weapon with GetItem ([ObjectThrower](ai.md#ai-objects)) | confirmed (code) |
+| `0x002a4aa0` | `LineTestCache_Reset` | reset | on a full reset clears the handle at `0x006e93f8` that `BossTactic_Process` caches | inferred |
 | `0x002a4ac8` | `LineTestCache_StaticInit` | static init | from the static initialiser table (`0x00534174`): calls the reset | confirmed (code) |
 
 ### AreaWalker (type 0x47) {#goal-area-walker}
@@ -137,7 +137,7 @@ Stands in the player's way and pushes him back.
 | `0x002a58a8` | `Goal_PathBlocker` | binding | `GoalPathBlocker` | confirmed (code) |
 | `0x002a5958` | `PathBlockerGoal_Init` | init | vtable `0x0053f9d0` | confirmed (code) |
 | `0x002a5a90` | `PathBlockerGoal_Process` | Process | moves between the player and the blocked way, shoves him when close | inferred |
-| `0x002a5fd8` | `PathBlockerGoal_End` | End | hands back the object at `[0x00512b04]` when it took it over | confirmed (code) |
+| `0x002a5fd8` | `PathBlockerGoal_End` | End | calls the goal's Lua callback (when set) with the human's handle | confirmed (code) |
 
 ### PedLogicPath (type 0x44) and PedLogicFlag (type 0x45) {#goal-ped-logic}
 
@@ -347,7 +347,7 @@ Chases an enemy who runs, with a radar blip when the chaser is after the player'
 | `0x002b0970` | `ChaseGoal_Resume` | Resume | out of sight: a move to his last point (gait 4, 2 within 8 m); the run anim set | confirmed (code) |
 | `0x002b0b60` | `ChaseGoal_Suspend` | Suspend | the normal anim set, releases the flag | confirmed (code) |
 | `0x002b0bf0` | `ChaseGoal_End` | End | restores the brain bytes, drops the target, removes the blip | confirmed (code) |
-| `0x002b0c88` | `Chase_DodgeCar` | event | from `0x003181e8`: a car coming at the chaser pushes a dodge goal (`0x002cf8f8`, 5 m) | inferred |
+| `0x002b0c88` | `Chase_InvestigateCar` | event | from `PursueTactic_OnCar` `0x003181e8` on a crime event (23) at a car: unless the offender is friendly, pushes Investigate (`0x002cf8f8`, type `0x5e`) at the crime point (5 m, line 13, the offender's handle) ([Cover, cars and trains](ai.md#ai-hazards)) | confirmed (code) |
 | `0x002b0ed8` | `Chase_PlayGangClip` | helper | the gang's clip `0x29c`, else anim `0x29e` after 500-750 ms | confirmed (code) |
 | `0x002b0fd0` | `Chase_PickSearchPoint` | helper | a random point ahead within the search cone, reachable | confirmed (code) |
 | `0x002b1230` | `Chase_Search` | helper | the target lost beyond 5 m (10 m when hidden): walk to a search point, else a gang clip | confirmed (code) |
@@ -377,9 +377,9 @@ Joins a gang leader's chase in formation.
 | `0x002b2d00` | `FightGoal_Resume` | Resume | picks an attack kind against the target | inferred |
 | `0x002b2d70` | `FightGoal_Suspend` | Suspend | releases its attack slot on the target (`0x00291178`), clears `+0x28` | confirmed (code) |
 | `0x002b2dd8` | `FightGoal_End` | End | clears the actions | confirmed (code) |
-| `0x002b2e28` | `FightGoal_TryTackle` | helper | with a tackle weight (kind 21), a type-1 brain 75 % of the time: queues the tackle when the target can be attacked | confirmed (code) |
-| `0x002b2fc8` | `FightGoal_Reposition` | helper | step 9 of the fight goal: a fidget (`0x25b`) or a shuffle around the target | confirmed (code) |
-| `0x002b3360` | `FightGoal_TryGrab` | helper | a grab (kind 22) or the right move against a grabbed, tackled or held target; a move in when friendly | confirmed (code) |
+| `0x002b2e28` | `FightGoal_TryTackle` | helper | the tackle try, first in the fight goal; driven by the gang's `CfgGang` value 7 and the brain's tackle meter `+0x148`; a cop picks `X1` over the tackle 75 % of the time ([The tackle try](ai.md#try-tackle)) | confirmed (code) |
+| `0x002b2fc8` | `FightGoal_Reposition` | helper | while `Brain_CheckAttack` says wait: holds the attacker in a ring 4-4.75 m from the target with a move-to-human action, a taunt fidget every 1-2 s ([The reposition](ai.md#fight-reposition)) | confirmed (code) |
+| `0x002b3360` | `FightGoal_TryGrab` | helper | the grab and snap try before an attack in reach: snap stick angles from the sectors, side grab to `X1`, a rear grab at `CfgGang` value 8 × 25 % ([The grab and snap try](ai.md#try-grab)) | confirmed (code) |
 
 ### Spectate (type 0x10) {#goal-spectate}
 
@@ -402,7 +402,7 @@ Goals for what happens to the body: grabbed, tackled, on the ground, stunned, on
 | `0x002b49f8` | `GroundedGoal_Init` | init | Grounded (`0x17`), vtable `0x00540210` | confirmed (code) |
 | `0x002b4a38` | `GroundedGoal_Start` | Start | notes the attacker (brain `+0x124`) and the start time | confirmed (code) |
 | `0x002b4aa0` | `GroundedGoal_WantsCounter` | helper | Grounded never counters: 0 | confirmed (code) |
-| `0x002b4aa8` | `GroundedGoal_Process` | Process | Grounded: may queue attack kind 42 against the target from the ground | inferred |
+| `0x002b4aa8` | `GroundedGoal_Process` | Process | Grounded: after about 1.9 s queues kind 42 on himself (a get-up, inferred) ([reactions](ai.md#fight-reactions)) | inferred |
 | `0x002b4b88` | `StunnedGoal_Init` | init | Stunned (`0x18`), vtable `0x005401b0` | confirmed (code) |
 | `0x002b4bb8` | `StunnedGoal_Process` | Process | Stunned: no target; done when no longer stunned | confirmed (code) |
 | `0x002b4c00` | `OnFireGoal_Init` | init | OnFire (`0x19`), vtable `0x0053ff70` | confirmed (code) |
@@ -419,15 +419,15 @@ Goals for what happens to the body: grabbed, tackled, on the ground, stunned, on
 | `0x002b5a98` | `GrabbingGoal_Init` | init | Grabbing (`0x12`), vtable `0x00540150` | confirmed (code) |
 | `0x002b5ad0` | `GrabbingGoal_Start` | Start | a let-go chance of the class value × 10 %, none with a FollowAndDefend (`0x35`) goal; goal `0x7d`'s flag | confirmed (code) |
 | `0x002b5b58` | `GrabbingGoal_End` | End | when still grabbing, clears the hold timer (`+0x148` of the held record) | confirmed (code) |
-| `0x002b5b98` | `Grabbing_PickMove` | helper | the move on the held human: by direction (8 sectors) to a flag, a friend or a wall | inferred |
+| `0x002b5b98` | `Grabbing_PickMove` | helper | the direction of a throw or push from a grab (left, ahead, right, behind): away from a held flag, into a wall or an enemy, else random ([reactions](ai.md#fight-reactions)) | confirmed (code) |
 | `0x002b60b0` | `Grabbing_NoDelay` | helper | −1.0 (no delay) | confirmed (code) |
-| `0x002b60c0` | `GrabbingGoal_Process` | Process | near a train sets command 5; else grab attacks (kind 24 and others) | inferred |
+| `0x002b60c0` | `GrabbingGoal_Process` | Process | Grabbing: near a train command 5; a rear grab holds the victim up for a friend; else kind 24 (twice at 40 %), the throws 25/29 by `Grabbing_PickMove`, or 26-28 ([reactions](ai.md#fight-reactions)) | confirmed (code) |
 | `0x002b65f8` | `MountingGoal_Init` | init | Mounting (`0x13`, the tackler on top), vtable `0x005400f0` | confirmed (code) |
-| `0x002b6638` | `MountingGoal_Process` | Process | punches on the ground (kind 35 40 % of the time) | inferred |
+| `0x002b6638` | `MountingGoal_Process` | Process | Mounting: near a train command 5; else a picked kind (45 and 36 do nothing), kind 35 twice chained 40 % of the time ([reactions](ai.md#fight-reactions)) | confirmed (code) |
 | `0x002b6818` | `GrabbedGoal_Init` | init | Grabbed (`0x14`), vtable `0x00540090` | confirmed (code) |
-| `0x002b6848` | `GrabbedGoal_Process` | Process | calls the gang for help, struggles with attacks | inferred |
+| `0x002b6848` | `GrabbedGoal_Process` | Process | Grabbed: a civilian calls for help every 30 updates (10 m); with a threat response the grabber becomes the target and he struggles ([reactions](ai.md#fight-reactions)) | confirmed (code) |
 | `0x002b6b88` | `MountedGoal_Init` | init | Mounted (`0x15`, tackled), vtable `0x00540030` | confirmed (code) |
-| `0x002b6bb8` | `MountedGoal_Process` | Process | calls for help, struggles | inferred |
+| `0x002b6bb8` | `MountedGoal_Process` | Process | Mounted: calls for help and struggles ([reactions](ai.md#fight-reactions)) | confirmed (code) |
 | `0x002b6dc0` | `ArrestedGoal_Init` | init | Arrested (`0x16`), vtable `0x0053ffd0` | confirmed (code) |
 | `0x002b6df8` | `ArrestedGoal_Start` | Start | releases the target of an AttackTarget goal (9) on the stack | confirmed (code) |
 | `0x002b6e78` | `ArrestedGoal_End` | End | leaves the fight stance | confirmed (code) |
@@ -570,7 +570,7 @@ best enemy near the chief, or stay with him.
 | `0x002bbe00` | `FollowAndAttackGoal_Start` | Start | joins the leader's formation, fight stance off, then Resume | confirmed (code) |
 | `0x002bbe98` | `FollowAndAttackGoal_End` | End | leaves the leader's formation, then Suspend | confirmed (code) |
 | `0x002bbf30` | `FollowAndAttackGoal_Suspend` | Suspend | unless the leader is standing idle, `0x00231b60` on the human (inferred: stops his move) | inferred |
-| `0x002bbfa0` | `FollowAndAttackGoal_TryPickUp` | helper | for a brain allowed to chase (`+0x265`), not blocked and (when asked) empty-handed: every 20 updates, or within 15 m of the enemy, a smash or throw object (Riot_FindSmashTarget, 20 m or 3 m) it may pick up gets a GetItem goal (kind 4); returns 1 then | confirmed (code) |
+| `0x002bbfa0` | `FollowAndAttackGoal_TryPickUp` | helper | for a brain allowed to chase (`+0x265`), not blocked and (when asked) empty-handed: every 20 updates, or within 15 m of the enemy, a smash or throw object (Ai_FindObject, 20 m or 3 m) it may pick up gets a GetItem goal (kind 4); returns 1 then | confirmed (code) |
 | `0x002bc198` | `FollowAndAttackGoal_Process` | Process | the best enemy within 60 m of the leader: changing target resets `+0x2d3`; unarmed and chasable within 1.1 x far, or in sight, push a fight goal (4000 ms), beyond it an EngageEnemy run-in, unless a pick-up comes first; not chasable: move-to-human or shuffle in the stance; no enemy: within 8 m of the leader, in the stance (his or the leader's) turns to the leader once the enemy list is empty, else every 4 s to the leader's heading, a 30 % fidget every 3 s; farther, push FollowFormation (0.75 m, 2000 ms) | confirmed (code) |
 
 ### FollowAndDefend (type 0x35) {#goal-follow-and-defend}
@@ -824,9 +824,13 @@ A warning to an offender: two lines, then his gang is wanted for 10 s.
 | --- | --- | --- | --- | --- |
 | `0x002c6c88` | `Goal_Dealer` | pusher | GoalDealer: the dealer type from his class (426-430 flash, 431-435 spray paint, 436-440 weapons), pushes the goal (ai.md#dealer) | confirmed (code) |
 | `0x002c6d90` | `DealerGoal_Init` | init | ai.md#dealer has the fields | confirmed (code) |
+| `0x002c6e78` | `DealerGoal_Start` | Start | threat response (brain `+0x21c`) 0, brain `+0xcc` ORed with 2; the spinning icon by dealer type (`+0x28`: 0 dyn_flashdeal, 1 dyn_weapdeal, 2 the icon at `0x00565668`); puts the type's item (table `0x005110fc`, 8-byte rows) in his pocket; home = his current position (`+0x10`..`+0x1c`); then Resume (vtable `+0x34`) ([Dealer](ai.md#dealer)) | confirmed (code) |
+| `0x002c6f98` | `DealerGoal_Resume` | Resume | leaves fight stance, not pushable (Human_SetPushable 0), registers the kind-4 buy prompt with the type's global string (table `0x005110f8`) ([Dealer](ai.md#dealer)) | confirmed (code) |
 | `0x002c7020` | `DealerGoal_Suspend` | Suspend | withdraws the prompt (`+0x1b2` = 0, vtable 300), pushable, and resets the visit (DealerGoal_Reset) | confirmed (code) |
+| `0x002c70a0` | `DealerGoal_End` | End | removes the spinning icon; if he is the game state's dealer customer (`+0x284`) that is reset to the default (`0x006ebd30`); threat response 2, clears brain `+0xcc` bit 2; then the base End (vtable `+0x3c`) ([Dealer](ai.md#dealer)) | confirmed (code) |
 | `0x002c7158` | `DealerGoal_QueueGesture` | helper | queues a dealer gesture (ai.md#dealer-gestures) | confirmed (code) |
 | `0x002c7248` | `DealerGoal_Say` | helper | says the dealer's line for a kind (ai.md#dealer-gestures) | confirmed (code) |
+| `0x002c73b8` | `DealerGoal_CanOtherPlayerBuy` | helper | From DealerGoal_OnBuy with two players: 1 when the other player is within the goal's range (`+0x2c`, squared distance) and can buy: money (item 2) at least the price byte `0x005110fd` and, except for type 1, a count of the item below the cap byte `0x005110fe` ([Dealer](ai.md#dealer-buy)) | confirmed (code) |
 | `0x002c7c20` | `DealerGoal_FinishPair` | helper | when the money pair was started by this deal (`+0x45`): the 'cash' line at most every 5 s, then the deal's completion (the weapons dealer's blade to the chosen member, else the item to the buyer's inventory), the price taken and added to the dealer's money (at most 999), `+0x3f` set and a deal counted | confirmed (code) |
 | `0x002c7de8` | `DealerGoal_Reset` | helper | resets the visit when the player leaves (ai.md#dealer-process) | confirmed (code) |
 | `0x002c88a8` | `DealerFlee_Push` | pusher | pushes the flee-or-fight goal when the dealer is attacked (ai.md#dealer-buy) | confirmed (code) |
@@ -980,3 +984,958 @@ Steal the objects of a zone for the steal tactic; its Process is outside this ra
 | `0x002ce350` | `StealGoal_Suspend` | Suspend | drops the target | confirmed (code) |
 | `0x002ce370` | `StealGoal_ListWitnesses` | helper | fills the visible humans within 8 m (filter `0x0029c1f0`) and clears `+0x14` | inferred |
 | `0x002ce3b8` | `StealGoal_FaceTarget` | helper | turns to the target more than 60 deg off (a moving target only when he faces this way) | inferred |
+
+### Steal (type 0x5c): the Process {#goal-steal-process}
+
+The last function of the Steal class (vtable `0x005416b0`); its other functions sit just below this range.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002ce5c8` | `StealGoal_Process` | Process | every half to full interval: when the object to steal is gone, finds another; pushes GetItem (`0x2c`) on it; with an enemy (`Brain_PickBestEnemy`) shuffles in the fight stance (2 s) beyond the far range, else pushes a fight goal (2000 ms) | confirmed (code) |
+
+### HangOut (type 0x3b) {#goal-hang-out}
+
+Gang members hanging about on their turf near their leader, in his formation, using flags and harassing passers-by.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002ce808` | `HangOutGoal_Init` | init | vtable `0x00541650`; the centre point, the radius, the harass option `+0x49` | confirmed (code) |
+| `0x002ce870` | `HangOutGoal_Start` | Start | joins the gang leader's formation; next harass check 1.5 s on | confirmed (code) |
+| `0x002ce8e8` | `HangOutGoal_End` | End | `0x0025f450` on the human, leaves the leader's formation | confirmed (code) |
+| `0x002ce960` | `HangOutGoal_Suspend` | Suspend | with the gang tactic of type `0x18`, tells it the member left (`0x00312310`); clears the idle flag `+0x48` | confirmed (code) |
+| `0x002ce9e0` | `HangOut_TryHarass` | helper | when the harass option is on, the 1.5 s check has come and the brain is type 2: unless he is the leader of a gang of two or more, and while fewer than the gang's share already harass (goal `0x3d`), picks a passer-by from the gang's list `+0x88` in sight and pushes Harass on him (10 m, or 6 m within 6 m); 0 when pushed | confirmed (code) |
+| `0x002ced60` | `HangOut_IsIdleLong` | helper | while idling (`+0x48`), 1 when the human's current anim has run 5 s or more (from the tactic at `0x00312430`) | confirmed (code) |
+| `0x002cedb0` | `HangOutGoal_Process` | Process | outside the radius walks back to a random point in it (on the turf, on the navigation areas); inside: harass check, a fidget (`0x25b`) when facing the centre, a nearby usable flag (MoveToUseFlag, within 10 m), or FollowFormation to his slot; waits 4-8 s between | confirmed (code) |
+
+### ThrowObject (type 0x5d) {#goal-throw-object}
+
+Walks to a flag and throws what he holds.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002cf480` | `Goal_ThrowObject` | binding | `Goal_ThrowObject`: pushes the goal on a human | confirmed (code) |
+| `0x002cf530` | `ThrowObjectGoal_Init` | init | vtable `0x005415f0`; the flag, the range, the gait, a Lua callback (`*(0x00512b04)` `+0xcc`) | confirmed (code) |
+| `0x002cf5d0` | `ThrowObjectGoal_End` | End | clears object flag `0x40000` and human `+0x128`; calls the Lua callback ([Scripted goals](ai.md#scripted)) | confirmed (code) |
+| `0x002cf690` | `ThrowObjectGoal_Process` | Process | done unless he holds something throwable; walks to within range of the flag, turns to it (15°), throws | confirmed (code) |
+
+### Investigate (type 0x5e) {#goal-investigate}
+
+Goes to look at a point: a noise, a hit or a crime at a car (pushed by `Chase_InvestigateCar` `0x002b0c88` with 5 m on a
+crime event at a car). Cops may call backup from it.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002cf8f8` | `InvestigateGoal_Init` | init | vtable `0x00541590`; the point, the radius, flags for the line and the turn | confirmed (code) |
+| `0x002cf980` | `InvestigateGoal_Start` | Start | stops speech; turns to the point; counts the brain's investigations (`+0x2d0`, timer A 30 s) | confirmed (code) |
+| `0x002cfad0` | `InvestigateGoal_Resume` | Resume | the cautious anim set `0x00566350` | confirmed (code) |
+| `0x002cfb18` | `InvestigateGoal_Suspend` | Suspend | marks interrupted unless actions are blocked; normal anim set; restores the turn boost | confirmed (code) |
+| `0x002cfb90` | `InvestigateGoal_End` | End | brain `+0x284` = 1; a closing line unless chasing | confirmed (code) |
+| `0x002cfc40` | `Investigate_CallBackup` | helper | a cop who sees a fight within 10 m near a cop-call flag (activity `0xe`, within 10 m): counts the backup (`CopBrain_CountBackup`), pushes a fight and calls it (`0x002c4710`, `0x002c4060`); 1 when done | confirmed (code) |
+| `0x002cff18` | `Investigate_SayLine` | helper | queues a play-sound action of the line | confirmed (code) |
+| `0x002cff70` | `Investigate_LookAround` | helper | the line, then the gang's clip `0x29c` or anim `0x29e` after 500-750 ms; counts `+0x35` | confirmed (code) |
+| `0x002d0100` | `InvestigateGoal_Process` | Process | a cop: radio chatter, gives up when two gangs fight within the far range, calls backup; walks to the point and looks around | confirmed (code) |
+
+### TauntPlayer (type 0x63) {#goal-taunt-player}
+
+The ring round a chief who fights one of his own Warriors. `PlayerBrain_Update` (`0x003035d8`), every 13 updates while
+the player's brain `+0x2e4` is set ([fight mode](ai.md#warrior-follow)), pushes it on each free member of his gang
+within 15 m that has no TauntPlayer goal.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d09f0` | `TauntPlayerGoal_Push` | pusher | pushes the goal on one human against another (from `PlayerBrain_Update`) | confirmed (code) |
+| `0x002d0aa8` | `TauntPlayerGoal_Init` | init | vtable `0x00541530`; the target, the option `+0x18` | confirmed (code) |
+| `0x002d0ae0` | `TauntPlayerGoal_End` | End | leaves the fight stance | confirmed (code) |
+| `0x002d0b00` | `TauntPlayerGoal_Process` | Process | done when the target's `+0x2e4` clears or (option) an outsider attacks either; looks at him, turns to him (60°), keeps 0.75 × far to that + 2 m in the fight stance (move-to-human, 3 s), and every 6-6.5 s a taunt (`0x10`, 30 % `0x8f`) | confirmed (code) |
+
+### Riot (type 0x54): helpers {#goal-riot-helpers}
+
+Helpers of [GoalRiot](ai.md#riot).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d1080` | `RiotGoal_Start` | Start | saves the brain's type `+0x21c` and `+0x28d` | confirmed (code) |
+| `0x002d1100` | `Riot_OnAttacked` | event | from `GangBrain_OnEvent`: unless in the 3 s cool-down or fighting, fights back (`Brain_Fight`, 8000) a free attacker or another rioter, with line `0x11` | confirmed (code) |
+| `0x002d11f8` | `Riot_AfterFight` | helper | from FindEnemy's End (`0x002c04e8`): line `0x58`, type 0, a 3 s cool-down | confirmed (code) |
+| `0x002d1288` | `RiotGoal_TryPickFight` | helper | `RiotGoal_TryPickFight` ([the fight](ai.md#riot)) | confirmed (code) |
+| `0x002d1498` | `Riot_PointNearPlayer` | helper | when the nearest player is 15 m or more away, a reachable point 15 m from him; the move deadline 10 s on | confirmed (code) |
+| `0x002d15d0` | `Riot_PointInTurf` | helper | a reachable point in one of the gang's turf boxes; the move deadline 10 s on | confirmed (code) |
+
+### Harass (type 0x3d) {#goal-harass}
+
+A gang member follows a passer-by, jeering, while he stays near.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d2318` | `HarassGoal_Push` | pusher | pushes the goal on a free human against another | confirmed (code) |
+| `0x002d23e8` | `HarassGoal_Init` | init | vtable `0x00541470`; the target, the give-up distance `+0x18`, the leader leash `+0x1c` | confirmed (code) |
+| `0x002d2438` | `HarassGoal_Start` | Start | the harass walk (override `0x2a1`, set `0x00566388`); notes the target's gang | confirmed (code) |
+| `0x002d24a8` | `HarassGoal_Resume` | Resume | the harass walk; clears the enemy bits between the two gangs so it does not count as war | confirmed (code) |
+| `0x002d2538` | `HarassGoal_Suspend` | Suspend | the walk override off | confirmed (code) |
+| `0x002d2560` | `HarassGoal_End` | End | the walk off; frees the gang's harass claim (`+0xe2`); clears the enemy bits | confirmed (code) |
+| `0x002d2600` | `HarassGoal_Process` | Process | done when the target goes, is beyond the give-up distance or 1.15 × the leash from the leader; the first harasser claims the gang; walks beside him, line `0x58` every 3 s | confirmed (code) |
+
+### PlayDynAnimation (type 0x22) {#goal-play-dyn-animation}
+
+[GoalPlayDynAnimation](ai.md#dyn-animation).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d2df8` | `Goal_PlayDynamicAnimation` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it (needs a clip name) | confirmed (code) |
+| `0x002d2eb0` | `PlayDynAnimGoal_Init` | init | vtable `0x00541410`; the clip into the human's dyn slot (`+0x468`, anim 668), the Lua callback | confirmed (code) |
+| `0x002d3038` | `PlayDynAnimGoal_Destroy` | Destroy | releases the dyn slot | confirmed (code) |
+| `0x002d3060` | `PlayDynAnimGoal_Process` | Process | waits for the clip, plays anim 668 once, done ([GoalPlayDynAnimation](ai.md#dyn-animation)) | confirmed (code) |
+
+### Scatter (type 0x37) {#goal-scatter}
+
+Runs away from a point, to up to three flags in turn, shoving an enemy who blocks the way.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d3150` | `ScatterGoal_Init` | init | vtable `0x00541290`; the point, the option, the radius 0.5 | confirmed (code) |
+| `0x002d31b0` | `ScatterGoal_Start` | Start | saves the type and boosts, drops a kind-4 or 6 object, attack table `0x00511038` | confirmed (code) |
+| `0x002d3258` | `ScatterGoal_Resume` | Resume | type 0, turn boost + 1 | confirmed (code) |
+| `0x002d3290` | `ScatterGoal_Suspend` | Suspend | type 2, boosts back, out of the shadow | confirmed (code) |
+| `0x002d32f8` | `ScatterGoal_End` | End | restores the type and boosts, clears the actions, the target and the attack table | confirmed (code) |
+| `0x002d3380` | `Scatter_NextPoint` | helper | the next flag away (8 tries, at most three) with a 2 m radius; else AvoidEnemies (far, 20 m) or a run point (`AvoidEnemies_PickPoint`); 1 when a flag | confirmed (code) |
+| `0x002d3560` | `Scatter_IsNear` | helper | within 5 m of the point (from the tactic at `0x00319ff8`) | confirmed (code) |
+| `0x002d35b8` | `ScatterGoal_Process` | Process | a non-friend within 1 m who can be hit gets attack kind 17; runs (gait 5) to the point, out of the shadow | confirmed (code) |
+
+### PlayDynIdle (type 0x23) {#goal-play-dyn-idle}
+
+Goes to a flag and plays a level-loaded idle there (in, loop, out clips).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d3940` | `Goal_PlayDynamicIdle` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it (needs a clip name) | confirmed (code) |
+| `0x002d3a18` | `PlayDynIdleGoal_Init` | init | vtable `0x005413b0`; the flag, up to three clips into the dyn slots (anims 668 or 671 on), the Lua callback | confirmed (code) |
+| `0x002d3c08` | `PlayDynIdleGoal_Start` | Start | not pushable | confirmed (code) |
+| `0x002d3c40` | `PlayDynIdleGoal_End` | End | pushable; with the out clip, plays it (`0x2a1`) and sets state `0x20000000` | confirmed (code) |
+| `0x002d3d08` | `PlayDynIdleGoal_Destroy` | Destroy | releases the dyn slots | confirmed (code) |
+| `0x002d3d58` | `PlayDynIdleGoal_Process` | Process | walks to the flag (1 m), turns to its heading (15°), then plays the clips in turn | confirmed (code) |
+
+### PlaySpecialIdle (type 0x25) {#goal-play-special-idle}
+
+A scripted idle at a point, with a line.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d4138` | `PlaySpecialIdleGoal_Init` | init | vtable `0x00541350`; sets human flags `0x810` (saved), not pushable, clears `+0x11e`/`+0x11f`, breaks a pair | confirmed (code) |
+| `0x002d4248` | `PlaySpecialIdleGoal_Destroy` | Destroy | restores the flags, pushable, `+0x11e`/`+0x11f` = 1 (also the end of a scripted goal) | confirmed (code) |
+| `0x002d42c0` | `PlaySpecialIdleGoal_Process` | Process | the point on the ground (3 tries); walks there with a line, turns (60°), plays the idle | confirmed (code) |
+
+### PlayGenAnim (type 0x26) {#goal-play-gen-anim}
+
+Plays one generic clip.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d4628` | `Goal_PlayGenericAnimation` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002d46b8` | `PlayGenAnimGoal_Init` | init | vtable `0x005412f0`; the kind, the Lua callback | confirmed (code) |
+| `0x002d4748` | `PlayGenAnimGoal_End` | End | calls the Lua callback | confirmed (code) |
+| `0x002d47d0` | `PlayGenAnimGoal_Process` | Process | kind 0 or 1 picks anim `0x2d2` or `0x299`; plays it once, done | confirmed (code) |
+
+### StandIdle (type 0x3e) {#goal-stand-idle}
+
+Stands at the spot where it was given, facing the same way.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d48a0` | `Goal_StandIdle` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002d4920` | `StandIdleGoal_Init` | init | vtable `0x00541230`; the human's position and heading, an anim set by name | confirmed (code) |
+| `0x002d49e8` | `StandIdleGoal_Start` | Start | nothing | confirmed (code) |
+| `0x002d4a18` | `StandIdleGoal_Suspend` | Suspend | the normal anim set | confirmed (code) |
+| `0x002d4a58` | `StandIdleGoal_End` | End | nothing | confirmed (code) |
+| `0x002d4a80` | `StandIdleGoal_Process` | Process | walks back beyond 0.75 m, turns back beyond 15°, then the anim set | confirmed (code) |
+
+### Cower (type 0x11) {#goal-cower}
+
+A civilian crouches in fear, with three dyn clips, and may run.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d4c38` | `Goal_Cower` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002d4cb8` | `CowerGoal_Init` | init | vtable `0x005411d0` | confirmed (code) |
+| `0x002d4cf8` | `CowerGoal_Start` | Start | may not chase; turn boost + 1; drops what he holds; flag `0x100`; loads the clips | confirmed (code) |
+| `0x002d4da0` | `CowerGoal_End` | End | restores them; releases the clips | confirmed (code) |
+| `0x002d4e10` | `Cower_SetClips` | helper | on: one of two clip sets (51 %) into slots `+0x468`/`+0x490`/`+0x4b8` (anims `0x2a0`, `0x29f`, `0x2a1`); off: releases them | confirmed (code) |
+| `0x002d4f00` | `Cower_ClipsLoaded` | helper | all three dyn slots loaded | confirmed (code) |
+| `0x002d4f40` | `Cower_FindThreat` | helper | the nearest threat within 3 × far, noted at `+0x10` | inferred |
+| `0x002d4fc0` | `Cower_RunAway` | helper | a run point 10 m off (`Ai_FindOpenPoint`) | inferred |
+| `0x002d4fe8` | `CowerGoal_Process` | Process | looks at the threat every 45 updates; cowers while he is near, may run | confirmed (code) |
+
+### Hostile (type 0x72) {#goal-hostile}
+
+A civilian's angry reaction ([Civilians](ai.md#civilians)).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d5540` | `HostileGoal_Push` | pusher | pushes the goal on a human against another | confirmed (code) |
+| `0x002d55d8` | `HostileGoal_Init` | init | vtable `0x00541170`; the target, the range | confirmed (code) |
+| `0x002d5648` | `HostileGoal_End` | End | stops the fidget | confirmed (code) |
+| `0x002d5668` | `Hostile_GrabWeapon` | helper | with nothing in hand, a smashable object within 5 m to pick up (GetItem); 1 when pushed | confirmed (code) |
+| `0x002d5798` | `Hostile_Attack` | helper | timer B 20 s; a civilian of kind 3 fights the target (makes the gangs enemies when no threat yet), line `0x11` | confirmed (code) |
+| `0x002d58b8` | `HostileGoal_Process` | Process | looks at the target; done beyond 1.1 × the range; may attack or grab a weapon; else faces him | confirmed (code) |
+
+### CallGang (type 0x6e) {#goal-call-gang}
+
+A gang member runs off to call his gang, with a radar blip, a spinning icon and a tutorial hint (`0x17`).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d5c28` | `Goal_CallGang` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it (the target is the second argument) | confirmed (code) |
+| `0x002d5cf0` | `CallGangGoal_Init` | init | vtable `0x00541110`; the target's position, the options; loads the call clips | confirmed (code) |
+| `0x002d5db8` | `CallGangGoal_Start` | Start | picks the phone flag; human `+0x19e` = 4 and state bit 2; a radar blip in mode 4; a type-4 caller turns to the target; may queue tutorial hint `0x17`; view 2π | confirmed (code) |
+| `0x002d5f98` | `CallGangGoal_End` | End | removes the icon and the blip | confirmed (code) |
+| `0x002d6050` | `CallGangGoal_Destroy` | Destroy | releases the clips; clears the game's dealer customer | confirmed (code) |
+| `0x002d6080` | `CallGang_SetClips` | helper | the call clips (`0x00566420`, anim `0x29c`; a second, `0x29d`) or their release | confirmed (code) |
+| `0x002d6130` | `CallGang_FindPhone` | helper | with the phone option, the nearest phone flag (activity 6) within range | confirmed (code) |
+| `0x002d6228` | `CallGangGoal_FindCallSpot` | helper | a spot to call from: ray casts round the caller pick the side with most room; 1 when the point is on his turf and he can walk straight to it or reach it (`Nav_CanReach`) | confirmed (code) |
+| `0x002d6638` | `CallGangGoal_Process` | Process | state 0: when idle, says line `0xa9`, a spinning icon, looks at the target, plays the call clip (`0x29c`); state 1: moves (gait 5) to the phone flag or a call spot; state 2: when idle, the second line (`0x16`) and the call; then done | confirmed (code) |
+
+### Scout (type 0x6f) {#goal-scout}
+
+A lookout who stands at a post facing a heading and looks about.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d6ca0` | `ScoutGoal_Init` | init | vtable `0x005410b0`; the post and heading, saves the type and chase byte | confirmed (code) |
+| `0x002d6db0` | `ScoutGoal_Start` | Start | the scout clips; may not chase; sets `+0x28d` | confirmed (code) |
+| `0x002d6e10` | `ScoutGoal_Resume` | Resume | a radar blip; drops a kind-4 or 6 object; type 0, `+0x144` = 500, not pushable | confirmed (code) |
+| `0x002d6ef0` | `ScoutGoal_Suspend` | Suspend | the type back, idle tasks, pushable | confirmed (code) |
+| `0x002d6f98` | `ScoutGoal_End` | End | releases the clips, restores the bytes | confirmed (code) |
+| `0x002d7000` | `Scout_SetClips` | helper | three scout clips (`0x00566458`, `0x00566468`, `0x00566478`) or their release | confirmed (code) |
+| `0x002d70a0` | `Scout_ClipsLoaded` | helper | all three dyn slots loaded | confirmed (code) |
+| `0x002d70e0` | `Scout_LookAround` | helper | every 45 updates a look-around (1.5 s) | confirmed (code) |
+| `0x002d7130` | `Scout_PickPoint` | helper | a reachable point on the turf around the heading | confirmed (code) |
+| `0x002d73b8` | `ScoutGoal_Process` | Process | walks back to the post, turns to the heading, plays the clips and looks about | inferred |
+
+### PathScout (type 0x70) {#goal-path-scout}
+
+A lookout who walks a list of flags back and forth.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d7878` | `PathScoutGoal_Init` | init | vtable `0x00541050`; the flag list, loop or ping-pong, saves the brain bytes | confirmed (code) |
+| `0x002d7938` | `PathScoutGoal_Start` | Start | the scout clips (not for a cop) | confirmed (code) |
+| `0x002d79a8` | `PathScoutGoal_Resume` | Resume | drops a kind-4 or 6 object; type 0 and a radar blip (not for a cop); not pushable | confirmed (code) |
+| `0x002d7a98` | `PathScoutGoal_Suspend` | Suspend | idle tasks, pushable | confirmed (code) |
+| `0x002d7b50` | `PathScoutGoal_End` | End | releases the clips, restores the bytes | confirmed (code) |
+| `0x002d7bc8` | `PathScout_SetClips` | helper | the same three scout clips, or their release | confirmed (code) |
+| `0x002d7c68` | `PathScout_ClipsLoaded` | helper | all three dyn slots loaded | confirmed (code) |
+| `0x002d7ca8` | `PathScout_LookAround` | helper | a look-around now and then (wider at a flag) | confirmed (code) |
+| `0x002d7d10` | `PathScout_NextIndex` | helper | the next flag: steps by ±1, loops or turns back at the ends | confirmed (code) |
+| `0x002d7d80` | `PathScout_WalkToFlag` | helper | walks to the flag; near it aims the move along the flag's heading and looks ahead | confirmed (code) |
+| `0x002d7fe0` | `PathScout_TimedLine` | helper | every 16 s the line | confirmed (code) |
+| `0x002d8028` | `PathScout_SayLine` | helper | line `0x17` when he may gesture | confirmed (code) |
+| `0x002d80c8` | `PathScoutGoal_Process` | Process | a state machine: walk to the flag, pause and look, go on | confirmed (code) |
+
+### ReactNoise (type 0x99) {#goal-react-noise}
+
+Stops, waits, turns and looks at a noise.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d84e0` | `ReactNoiseGoal_Init` | init | vtable `0x00540ff0`; the point, the kind | confirmed (code) |
+| `0x002d8518` | `ReactNoiseGoal_Start` | Start | loads the clip | confirmed (code) |
+| `0x002d8550` | `ReactNoiseGoal_End` | End | brain `+0x284` = 1; releases the clip; idle tasks | confirmed (code) |
+| `0x002d85d0` | `ReactNoise_SetClip` | helper | clip `0x00566488` into slot `+0x3c8` (anim `0x29c`) or its release | confirmed (code) |
+| `0x002d8618` | `ReactNoise_ClipLoaded` | helper | the slot loaded | confirmed (code) |
+| `0x002d8630` | `ReactNoiseGoal_Process` | Process | a wait (250-500 ms), a second, turn and look (2 s), then the clip | confirmed (code) |
+
+### Mark (type 0x9a) {#goal-mark}
+
+A civilian who strolls about his spot, chats and reacts to being approached; the name is the executable's.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d87b0` | `Goal_Mark` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002d8848` | `MarkGoal_Init` | init | vtable `0x00540f90` | confirmed (code) |
+| `0x002d88d8` | `MarkGoal_Start` | Start | notes his spot, clears `+0x120`, loads the clips | confirmed (code) |
+| `0x002d8930` | `MarkGoal_End` | End | `+0x120` = 1, releases the clips | confirmed (code) |
+| `0x002d8958` | `Mark_SetClips` | helper | clips `0x00566498` (anim `0x29d`) and `0x005664b0` (`0x253`) or their release | confirmed (code) |
+| `0x002d89c8` | `Mark_ClipLoaded` | helper | the first clip loaded | confirmed (code) |
+| `0x002d89e0` | `Mark_SetState` | helper | enters or leaves a reaction (2: looks at the partner and plays `0x253`); a new spot on leaving | confirmed (code) |
+| `0x002d8b10` | `MarkGoal_React` | helper | the reaction: 0 plays clip `0x29d` when idle; 2 counts updates, looks at the partner (update 15) or turns its head (30), ends the reaction from update 45 | confirmed (code) |
+| `0x002d8db0` | `MarkGoal_FindChatPartner` | helper | a chat partner: a seen human within 5 m with no goal, of the pedestrian goal (`0x69`) or brain type 4, in his view | confirmed (code) |
+| `0x002d8ee0` | `MarkGoal_Process` | Process | strays back when beyond the radius (every 4 updates); within a fifth of it, may start a chat with a partner; else strolls to the next flag point | confirmed (code) |
+
+### Backoff (type 0x9b) {#goal-backoff}
+
+Keeps a distance from a human, in the fight stance.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d9238` | `Goal_Backoff` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002d92e8` | `BackoffGoal_Init` | init | vtable `0x00540f30`; the human, the distance | confirmed (code) |
+| `0x002d9380` | `BackoffGoal_End` | End | leaves the fight stance | confirmed (code) |
+| `0x002d93a0` | `BackoffGoal_Process` | Process | done beyond the distance; keeps the distance band (move-to-human, 2 s), looks at him; every 3 updates checks behind him | confirmed (code) |
+
+### Boxer (type 0x9e) {#goal-boxer}
+
+A boxer sparring with a target.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d97c0` | `Goal_Boxer` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002d9848` | `BoxerGoal_Init` | init | vtable `0x00540ed0`; the target | confirmed (code) |
+| `0x002d9870` | `BoxerGoal_Start` | Start | attack table `0x00511120`, the boxing clip `0x005664c0` (anim `0x25b`) | confirmed (code) |
+| `0x002d98b0` | `BoxerGoal_End` | End | clears them, drops the target | confirmed (code) |
+| `0x002d98f8` | `BoxerGoal_Process` | Process | picks an attack (`Brain_PickAttack` with the filter `Human_CanUseAttackKind`), checks it, moves into its reach and queues it | confirmed (code) |
+
+### The open-direction search {#goal-open-point}
+
+A helper several goals share, and the reset of two lists beside it.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002d9ce0` | `AiLists_Reset` | reset | on a full reset clears the lists at `0x006e9f48` and `0x006ea068` | confirmed (code) |
+| `0x002d9d20` | `AiLists_StaticInit` | static init | calls the reset | confirmed (code) |
+| `0x002d9d40` | `Ai_FindOpenPoint` | helper | four rays (`WorldManager_RayCast`) ahead and to the sides of the human; a point in the most open direction at the distance, 2-4 tries (from OnFire, PedReaction, Cower, AvoidEnemies and others) | confirmed (code) |
+
+### The MoveTo goals (types 1-6) {#goal-move-to}
+
+[GoalMoveToFlag](ai.md#move-to-flag) and its siblings: to an exit flag, a flag-net flag, a flag to use, a position, a
+human.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002da4a0` | `MoveToFlagGoal_End` | End | MoveToFlag: when arrived, message 8 to the flag and the gang's event ([GoalMoveToFlag](ai.md#move-to-flag)) | confirmed (code) |
+| `0x002da810` | `Goal_MoveToExitFlag` | binding | `Goal_MoveToExitFlag` (type 2): a non-cop brain is held | confirmed (code) |
+| `0x002da960` | `GoalMoveToExitFlag_Start` | Start | MoveToExitFlag: the flag point (or a point on its circle); a camera check 8 s on | confirmed (code) |
+| `0x002daa20` | `MoveToExitFlagGoal_End` | End | MoveToExitFlag: when arrived, the gang's event; clears brain `+0x2d7` | confirmed (code) |
+| `0x002daac8` | `MoveToExitFlagGoal_Resume` | Resume | MoveToExitFlag: clears the actions and the target | confirmed (code) |
+| `0x002dab00` | `MoveToExit_GlanceAround` | helper | a glance to a side (500 ms), forced or every 120 updates for a civilian at gait 5 | confirmed (code) |
+| `0x002dacf8` | `GoalMoveToExitFlag_Process` | Process | MoveToExitFlag: one health; every 8 s a line when seen; done when out of every camera's sight | confirmed (code) |
+| `0x002db390` | `MoveToFlagNetFlagGoal_Push` | pusher | MoveToFlagNetFlag (type 3): pushes the goal on a human | confirmed (code) |
+| `0x002db458` | `MoveToFlagNetFlagGoal_Init` | init | vtable `0x00542070`; the flag, the gait, the radius | confirmed (code) |
+| `0x002db4a8` | `MoveToFlagNetFlagGoal_Start` | Start | the target: a point on the flag's circle | confirmed (code) |
+| `0x002db508` | `MoveToFlagNetFlagGoal_End` | End | when arrived, the gang's event | confirmed (code) |
+| `0x002db5a0` | `MoveToFlagNetFlagGoal_Resume` | Resume | clears the actions | confirmed (code) |
+| `0x002db5c0` | `MoveToFlagNetFlagGoal_Process` | Process | inside the radius, done; else a move action (at most 4 tries) | confirmed (code) |
+| `0x002db6b0` | `Goal_MoveToUseFlag` | binding | `Goal_MoveToUseFlag` (type 4) | confirmed (code) |
+| `0x002db768` | `MoveToUseFlagGoal_Init` | init | vtable `0x00542010`; the flag (taken, `Flag_SetUser`), the gait, the option; drops the target | confirmed (code) |
+| `0x002db810` | `MoveToUseFlagGoal_Start` | Start | the flag's clips into the dyn slots (anims `0x29c` or `0x29f` on); not pushable; may not chase | confirmed (code) |
+| `0x002db918` | `MoveToUseFlagGoal_End` | End | an out clip while in use, idle tasks, frees the slots, pushable, line `0x20` when set, stops speech | confirmed (code) |
+| `0x002dbaa0` | `MoveToUseFlagGoal_Destroy` | Destroy | releases the flag | confirmed (code) |
+| `0x002dbb50` | `MoveToUseFlagGoal_Resume` | Resume | clears the actions and the state | confirmed (code) |
+| `0x002dbb80` | `MoveToUseFlagGoal_Suspend` | Suspend | stops speech | confirmed (code) |
+| `0x002dbba8` | `UseFlag_IsSeatKind` | helper | whether the flag's activity is one of a list of kinds (0, 2, 3, 6 and others) | inferred |
+| `0x002dbbf0` | `UseFlag_PhoneLine` | helper | −1 unless the flag's activity is 6 (a phone) | inferred |
+| `0x002dbc10` | `MoveToUseFlagGoal_Process` | Process | done when the flag is gone; walks to it; clears the way of humans within 0.75 m; uses it with the clips | confirmed (code) |
+| `0x002dc278` | `MoveToPositionGoal_Init` | init | MoveToPosition (type 5), vtable `0x00541fb0`; the point, the gait, the radius, a time limit | confirmed (code) |
+| `0x002dc2d0` | `MoveToPositionGoal_Start` | Start | nothing | confirmed (code) |
+| `0x002dc2f8` | `MoveToPositionGoal_End` | End | clears the actions | confirmed (code) |
+| `0x002dc318` | `MoveToPositionGoal_Resume` | Resume | clears the actions | confirmed (code) |
+| `0x002dc338` | `MoveToPositionGoal_Process` | Process | done at the time limit or inside the radius; else a move action (at most 4 tries) | confirmed (code) |
+| `0x002dc458` | `Goal_MoveToHuman` | binding | `Goal_MoveToHuman` (type 6) | confirmed (code) |
+| `0x002dc4f8` | `MoveToHumanGoal_Init` | init | vtable `0x00541f50` | confirmed (code) |
+| `0x002dc540` | `MoveToHumanGoal_Start` | Start | nothing | confirmed (code) |
+| `0x002dc578` | `MoveToHumanGoal_Process` | Process | done when cuffed or the human is gone; re-plans every second; moves to him | confirmed (code) |
+
+### GetItem (type 0x2c) {#goal-get-item}
+
+Walks to a world object and picks it up.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002dc708` | `Goal_GetItem` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002dc7a0` | `GetItemGoal_Init` | init | vtable `0x00541ef0`; the object, the kind | confirmed (code) |
+| `0x002dc7f8` | `GetItemGoal_Start` | Start | the object's type record; drops other things; turn boost + 1; drops the target | confirmed (code) |
+| `0x002dc8b0` | `GetItemGoal_Resume` | Resume | a point beside the object on the ground; none when gone | confirmed (code) |
+| `0x002dc9d8` | `GetItemGoal_End` | End | restores the turn boost | confirmed (code) |
+| `0x002dc9f8` | `GetItemGoal_Process` | Process | looks at it; done when someone else holds it or he has it; walks to it and picks it up | confirmed (code) |
+
+### DestroyItem (type 0x2d) and VandalizeItem (type 0x2f) {#goal-destroy-item}
+
+Smashing a world object.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002dd0c8` | `DestroyItemGoal_Push` | pusher | pushes DestroyItem on a human | confirmed (code) |
+| `0x002dd148` | `DestroyItemGoal_Init` | init | vtable `0x00541e90`; the object | confirmed (code) |
+| `0x002dd180` | `DestroyItemGoal_Start` | Start | drops the target and a held object of a set | confirmed (code) |
+| `0x002dd1d8` | `DestroyItemGoal_End` | End | clears the actions and the target | confirmed (code) |
+| `0x002dd210` | `DestroyItemGoal_Process` | Process | done when broken; walks beside it and hits it | confirmed (code) |
+| `0x002dd6f8` | `VandalizeItemGoal_Start` | Start | VandalizeItem: drops the target | confirmed (code) |
+| `0x002dd720` | `VandalizeItemGoal_Process` | Process | VandalizeItem: at most three hits; with a throwable in hand, throws it at the object | confirmed (code) |
+
+### DestroyCar (type 0x2e) {#goal-destroy-car}
+
+Smashing a car, from a spot round it.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002ddb40` | `DestroyCarGoal_Push` | pusher | pushes the goal on a human | confirmed (code) |
+| `0x002ddbd0` | `DestroyCarGoal_Init` | init | vtable `0x00541dd0`; the car, the leash | confirmed (code) |
+| `0x002ddc18` | `DestroyCarGoal_Start` | Start | drops the target and a held object; takes a spot round the car (`Car_FindSpotOfHuman`) | confirmed (code) |
+| `0x002ddca0` | `DestroyCarGoal_Suspend` | Suspend | frees the spot; drops the target | confirmed (code) |
+| `0x002ddd08` | `DestroyCarGoal_End` | End | clears the actions | confirmed (code) |
+| `0x002ddd48` | `DestroyCar_GetWeapon` | helper | with nothing in hand, a smashable object within 10 m to pick up (GetItem) | confirmed (code) |
+| `0x002dde50` | `DestroyCarGoal_Process` | Process | done when gone or past the leash from the leader; fetches a weapon, walks to the spot, hits the car | confirmed (code) |
+
+### FollowPlayer (type 0x32) {#goal-follow-player}
+
+[The default command: follow](ai.md#warrior-follow).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002de2c8` | `Goal_FollowPlayer` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it (leader and follower handles) | confirmed (code) |
+| `0x002de380` | `FollowPlayerGoal_Init` | init | vtable `0x00541d70`; the leader, distance², mode | confirmed (code) |
+| `0x002de3c8` | `FollowPlayerGoal_Start` | Start | saves the turn boost; with the gang's `+0xdd` 1 or 2 pushes FollowFormation (0.75 m) | confirmed (code) |
+| `0x002de498` | `FollowPlayerGoal_End` | End | restores the turn boost and view (`+0x12c`); leaves the leader's formation | confirmed (code) |
+| `0x002de540` | `FollowPlayerGoal_Resume` | Resume | joins the leader's formation, leaves the fight stance; next turn 1-2 s, next fidget 2-3 s | confirmed (code) |
+| `0x002de608` | `FollowPlayerGoal_Suspend` | Suspend | clears the actions and the target; restores the turn boost | confirmed (code) |
+| `0x002de650` | `FollowPlayerGoal_IsFightMode` | helper | `FollowPlayerGoal_IsFightMode` ([fight mode](ai.md#warrior-follow)) | confirmed (code) |
+| `0x002de7c0` | `FollowPlayerGoal_Process` | Process | [`GoalFollowPlayer`'s Process](ai.md#warrior-follow) | confirmed (code) |
+
+### TrackHuman (type 0x30) {#goal-track-human}
+
+[Formations and follow slots](ai.md#formations).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002df1a8` | `Goal_TrackHuman` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it (tracker and tracked handles) | confirmed (code) |
+| `0x002df330` | `TrackHumanGoal_End` | End | leaves the tracked human's formation | confirmed (code) |
+
+### FollowObject (type 0x31) {#goal-follow-object}
+
+Follows an object (a car or a thing), matching speed.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002df6c0` | `Goal_FollowObject` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002df760` | `FollowObjectGoal_Init` | init | vtable `0x00541cb0` | confirmed (code) |
+| `0x002df7a0` | `FollowObjectGoal_PickSpeed` | helper | `FollowObjectGoal_PickSpeed`: between walk and sprint by distance | confirmed (code) |
+| `0x002df890` | `FollowObjectGoal_Start` | Start | nothing | confirmed (code) |
+| `0x002df8b8` | `FollowObjectGoal_Resume` | Resume | the object's position as the target | confirmed (code) |
+| `0x002df908` | `FollowObjectGoal_Process` | Process | retargets the running move and its speed every n updates | confirmed (code) |
+
+### FollowFormation (type 0x33) {#goal-follow-formation}
+
+[Formations and follow slots](ai.md#formations).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002dfb00` | `Goal_FollowFormation` | binding | `Goal_FollowFormation` (0.75 m) | confirmed (code) |
+| `0x002dfba8` | `FollowFormationGoal_Init` | init | vtable `0x00541c50`; a random 2-7 counter | confirmed (code) |
+| `0x002dfc30` | `FollowFormationGoal_StartBytes` | Start | saves `+0xf4` and, for a Warrior, human flags `0x100`/`0x200` (sets them) | confirmed (code) |
+| `0x002dfcd0` | `FollowFormationGoal_Start` | Resume | `FollowFormationGoal_Start` (the Resume slot): joins the formation, takes the follow point, turns with a running leader | confirmed (code) |
+| `0x002dfe68` | `FollowFormationGoal_End` | End | restores the Warrior's flags and the start boost | confirmed (code) |
+| `0x002dfef8` | `FollowFormation_PickSpeed` | helper | the speed by distance to the slot: walk, run (4-8 m) or the leader's | confirmed (code) |
+| `0x002e0088` | `FollowFormationGoal_Process` | Process | done when the leader is gone or a move failed; follows the slot point | confirmed (code) |
+
+### TravelPath (type 0x38), LeadChase (type 0x49) and RunCarrotRun (type 0x4a) {#goal-travel-path}
+
+Walking a path of flags, alone, leading a chase, or as the carrot ([GoalDevilRun](ai.md#devil-run) for the devil run).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e05a8` | `Goal_TravelPath` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002e0670` | `Goal_TravelPath2` | binding | `Goal_TravelPath2` (with a time limit) | confirmed (code) |
+| `0x002e07d0` | `GoalTravelPath_NextPoint` | helper | `GoalTravelPath_NextPoint`: forward, back or looping | confirmed (code) |
+| `0x002e0918` | `TravelPath_FaceFlag` | helper | whether to face the flag's heading | inferred |
+| `0x002e0950` | `TravelPath_CurrentFlag` | helper | the flag at the current index | confirmed (code) |
+| `0x002e0968` | `GoalTravelPath_Process` | Process | pushes MoveToFlag to each point in turn | confirmed (code) |
+| `0x002e0a78` | `Goal_LeadChase` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002e0b48` | `LeadChaseGoal_Init` | init | LeadChase: a TravelPath with four distances², vtable `0x00541b90` | confirmed (code) |
+| `0x002e0c20` | `LeadChaseGoal_Start` | Start | the first flag; the nearest chaser | confirmed (code) |
+| `0x002e0c48` | `LeadChaseGoal_End` | End | when finished, the gang's event | confirmed (code) |
+| `0x002e0ce0` | `LeadChase_FindChaser` | helper | the nearest chaser within 50 m | confirmed (code) |
+| `0x002e0dc8` | `LeadChaseGoal_Process` | Process | waits for the chaser when he falls behind, runs on when close; slows on low power | confirmed (code) |
+| `0x002e1140` | `Goal_RunCarrot` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002e1230` | `RunCarrotGoal_Init` | init | vtable `0x00541b30`; makes a TravelPath sub-goal (`+0x10`) for the path; the gang that chases (`+0x1c`); the hostile flag `+0x25` | confirmed (code) |
+| `0x002e1330` | `RunCarrotGoal_End` | End | restores the turn boost, ends the move sub-goal ([brain boosts](ai.md#brain-boosts)) | confirmed (code) |
+| `0x002e1388` | `RunCarrotGoal_Free` | Destroy | ends and frees the TravelPath sub-goal | confirmed (code) |
+| `0x002e13c0` | `RunCarrotGoal_UpdateSpeed` | helper | the nearest chaser's distance sets the speed between the gait's and the maximum, and the turn boost + 0, 2 or 3 ([brain boosts](ai.md#brain-boosts)); passes the speed to the running move | confirmed (code) |
+| `0x002e15e8` | `RunCarrotGoal_Process` | Process | every fourth update the speed; runs the MoveToFlag sub-goal to each path point in turn; done at the end of the path | confirmed (code) |
+
+### DevilRun (type 0x98) {#goal-devil-run}
+
+[GoalDevilRun](ai.md#devil-run).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e18d8` | `DevilRunGoal_Start` | Start | saves the turn boost, threat response and view; speed = the gait's; view 2π ([GoalDevilRun](ai.md#devil-run)) | confirmed (code) |
+| `0x002e1950` | `DevilRunGoal_End` | End | restores the turn boost, threat response and view | confirmed (code) |
+| `0x002e1998` | `DevilRunGoal_Resume` | Resume | threat response 0; update counter 16 | confirmed (code) |
+| `0x002e19b0` | `DevilRunGoal_SegmentOf` | helper | the path segment nearest a position ([GoalDevilRun](ai.md#devil-run)) | confirmed (code) |
+| `0x002e1ad0` | `DevilRun_IsPastPoint` | helper | whether a point lies past another along a direction, by the goal's way (`+0x3c`) | confirmed (code) |
+| `0x002e1b60` | `DevilRunGoal_FindHindmostSegment` | helper | the hindmost gang member's segment; 0 when the gang has nobody left | confirmed (code) |
+| `0x002e1c18` | `DevilRunGoal_ChooseChaser` | helper | the chaser: the live gang member farthest back along the hindmost segment | confirmed (code) |
+| `0x002e1e10` | `DevilRunGoal_Pace` | helper | the pace: a hostile runner attacks a close chaser (Melee and engage goals); else speed and turn boost blend by the distance | confirmed (code) |
+| `0x002e2230` | `DevilRunGoal_Process` | Process | hindmost segment every 17 updates, chaser every 29, pace every 7; a move to the path's last point at the current speed | confirmed (code) |
+
+### Wander (type 0x3a) {#goal-wander}
+
+Walks between random points in the gang's turf boxes.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e28f8` | `WanderGoal_Init` | init | vtable `0x00541a70` | confirmed (code) |
+| `0x002e2958` | `WanderGoal_Start` | Start | leaves the fight stance | confirmed (code) |
+| `0x002e2988` | `WanderGoal_Process` | Process | every 30 s a new turf box; random points in it, waits between | confirmed (code) |
+
+### Shadow (type 0xe) {#goal-shadow}
+
+Keeps near a gang's leader.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e2d28` | `ShadowGoal_Init` | init | vtable `0x00541a10`; the gang | confirmed (code) |
+| `0x002e2d90` | `ShadowGoal_Process` | Process | follows the gang's leader; re-plans every 2 s or when his gait changes or he is 50 m off | confirmed (code) |
+
+### AvoidEnemies (type 0x20) {#goal-avoid-enemies}
+
+Keeps away from enemies (the Diego fight's `BossDiego_GangAvoid` gives it to the Warriors).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e3090` | `Goal_AvoidEnemies` | binding | script binding: resolves the human, makes the goal with the script's arguments and pushes it | confirmed (code) |
+| `0x002e3180` | `AvoidEnemiesGoal_Init` | init | vtable `0x005419b0`; the distances, options, a time limit | confirmed (code) |
+| `0x002e3218` | `AvoidEnemiesGoal_Start` | Start | saves the type and chase byte, view 2π, type 0; joins the leader's formation with a leash | confirmed (code) |
+| `0x002e32f0` | `AvoidEnemiesGoal_Resume` | Resume | clears the target | confirmed (code) |
+| `0x002e3318` | `AvoidEnemiesGoal_End` | End | restores them; leaves the formation | confirmed (code) |
+| `0x002e33d0` | `AvoidEnemies_PointBehindFriends` | helper | a point behind a friend of his gang ahead, on the turf, reachable | inferred |
+| `0x002e3588` | `AvoidEnemies_PickPoint` | helper | half the time (with a leash) the point behind friends, else `Ai_FindOpenPoint` | confirmed (code) |
+| `0x002e3630` | `AvoidEnemiesGoal_Process` | Process | every 1.5 s lists enemies in sight; runs from the nearest | confirmed (code) |
+
+### Confront (type 0x3c): the start {#goal-confront-start}
+
+The first functions of the Confront class (vtable `0x00541950`); its Process (`0x002e4388`) follows this range.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e3fe8` | `ConfrontGoal_Init` | init | vtable `0x00541950`; the other gang, the option | confirmed (code) |
+| `0x002e4038` | `ConfrontGoal_Start` | Start | notes his position; measures the distance to the other gang's leader | confirmed (code) |
+| `0x002e4188` | `ConfrontGoal_Resume` | Resume | stops the taunt | confirmed (code) |
+| `0x002e41b0` | `ConfrontGoal_End` | End | stops the taunt | confirmed (code) |
+| `0x002e41d0` | `Confront_LookAtRival` | helper | looks at the nearest rival within 4.75 m; every 30 updates a random rival | inferred |
+
+### Confront (type 0x3c): the Process {#goal-confront-process}
+
+The Process of the Confront goal (its init and Start are in [Confront: the start](#goal-confront-start)); the gang
+tactic is [TacticConfront](ai.md#tactics).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e4388` | `ConfrontGoal_Process` | Process | needs both gangs' leaders; every 15 updates the leader check `0x002e41d0`; the leader with the face-off option stops taunting and clears his actions once within the stop distance of the other leader, else walks to him and turns to face him (beyond 15 degrees); a member stays in his leader's formation (FollowFormation, speed 0.75) when farther from the other gang than his slot, else turns to the leader's facing | confirmed (code) |
+
+### PlayAnimation (type 0x21) {#goal-play-animation}
+
+Plays a scene ([Scenes](scenes.md)) on one human; pushed by `Goal_PlayAnimation` (`0x002e48e8`).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e4980` | `PlayAnimationGoal_Init` | init | vtable `0x00542370`; the scene, the role, an option, and a Lua callback name looked up through the script system (`*(0x00512b04)` `+0xcc`) | confirmed (code) |
+| `0x002e4a50` | `PlayAnimationGoal_End` | End | stops the scene (`Scene_StopWrap`) | confirmed (code) |
+
+### PlayParlayAnimation (type 0x24) {#goal-play-parlay-animation}
+
+The parley scene with the player's answer: the player picks one of two replies with a button in a window of the scene.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e4ab8` | `Goal_PushPlayParlayAnimation` | pusher | pushes the goal on a human's brain (called by `Brain_PlayScene` `0x002cb5d0`) | confirmed (code) |
+| `0x002e4b30` | `PlayParlayAnimationGoal_Init` | init | vtable `0x00542310`; the scene, the human, the start time; resets the answer word `+0x412` of the player-1 record (`*(0x0051489c)`) to 2 (none) | confirmed (code) |
+| `0x002e4b88` | `PlayParlayAnimationGoal_Start` | Start | binds the human to the scene and plays it | confirmed (code) |
+| `0x002e4be0` | `PlayParlayAnimationGoal_Process` | Process | ends (2) when the human is gone; from 3 s to 5 s after the start reads pad 0's pressed buttons: bit `0x4000` writes answer 1, bit `0x1000` answer 0 (cross and triangle in the standard PS2 layout, inferred), then stops the scene; otherwise ends when the scene finishes | confirmed (code) |
+
+### JoinScene (type 0x27) {#goal-join-scene}
+
+`GoalJoinScene`: walk to a point, face a heading, and wait there as a role in a playing scene.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e4cf0` | `Goal_JoinScene` | binding | `Goal_JoinScene`: builds the heading from an angle, pushes the goal; with the run-now option processes it at once | confirmed (code) |
+| `0x002e4e28` | `JoinSceneGoal_Init` | init | vtable `0x005422b0`; the point, the heading quaternion, the scene and role, the gait | confirmed (code) |
+| `0x002e4e70` | `JoinSceneGoal_Start` | Start | steering off; binds the human to the scene's role; queues a move action to the point at the gait and a turn to the heading | confirmed (code) |
+| `0x002e4fe8` | `JoinSceneGoal_End` | End | steering back on | confirmed (code) |
+| `0x002e5010` | `JoinSceneGoal_Process` | Process | once the actions are done, ends when the scene has finished | confirmed (code) |
+
+### JoinFixedScene (type 0x28) {#goal-join-fixed-scene}
+
+`GoalJoinFixedScene`: as JoinScene, but the point and facing are the role's start in the scene.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e5048` | `Goal_JoinFixedScene` | binding | `Goal_JoinFixedScene`: pushes the goal; optionally processes it at once | confirmed (code) |
+| `0x002e5128` | `JoinFixedSceneGoal_Init` | init | vtable `0x00542250`; the scene, the role, the gait; binds the human to the role | confirmed (code) |
+| `0x002e51a8` | `JoinFixedSceneGoal_Start` | Start | the class's Start (vtable `0x00542250` `+0x24`, despite its name): steering off, move action to the role's start (`Scene_GetRoleStart`), then a turn to its facing | confirmed (code) |
+| `0x002e52a0` | `JoinFixedSceneGoal_End` | End | steering back on | confirmed (code) |
+| `0x002e52c8` | `JoinFixedSceneGoal_Process` | Process | once the actions are done, ends when the scene has finished | confirmed (code) |
+
+### JoinAnimation (type 0x2a) {#goal-join-animation}
+
+`GoalJoinAnimation`: as JoinFixedScene, reading the role's start with the other flag of `Scene_GetRoleStart` and
+arriving within 0.1 m.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e5650` | `Goal_JoinAnimation` | binding | `Goal_JoinAnimation`: pushes the goal | confirmed (code) |
+| `0x002e56f0` | `JoinAnimationGoal_Init` | init | vtable `0x00542190`; the scene, the role, the gait; binds the human to the role | confirmed (code) |
+| `0x002e5770` | `JoinAnimationGoal_Start` | Start | steering off; move action to the role's start (radius 0.1 m, no delay), then a turn to its facing | confirmed (code) |
+| `0x002e5870` | `JoinAnimationGoal_End` | End | steering back on | confirmed (code) |
+| `0x002e5898` | `JoinAnimationGoal_Process` | Process | once the actions are done, ends when the scene has finished | confirmed (code) |
+
+### Shopkeeper (type 0x82) {#goal-shopkeeper}
+
+`GoalShopkeeper`: a store clerk who idles with store props and reacts to trouble in the store's box (the store crimes:
+[Crimes](crimes.md)). Its Process is `ShopkeeperGoal_Process` (`0x002e6668`).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e58d0` | `Shopkeeper_FlagSearchCallback` | helper | callback for the flag search in the Process: among flags in the store box, keeps the nearest free usable flag with clips and, with the any-flag option, the nearest flag of any kind | confirmed (code) |
+| `0x002e5a00` | `Goal_Shopkeeper` | binding | `Goal_Shopkeeper`: pushes the goal | confirmed (code) |
+| `0x002e5ae0` | `ShopkeeperGoal_Init` | init | vtable `0x005423d0`; the store box, the options (`+0x57` broom, `+0x5a`), two Lua callback names (disturbed, robbed: inferred) | confirmed (code) |
+| `0x002e5bf0` | `ShopkeeperGoal_Start` | Start | brain `+0x21c` = 0, brain flag 2; 30 % chance of a phone variant; notes his post; with the broom option puts a broom in his hand; resets | confirmed (code) |
+| `0x002e5d00` | `ShopkeeperGoal_Resume` | Resume | sets the idle clip overrides by variant (broom, phone, cower), leaves the fight stance, next fidget in 10-20 s; brain type 6 | confirmed (code) |
+| `0x002e5e50` | `ShopkeeperGoal_Suspend` | Suspend | clears the clip overrides and releases his flag | confirmed (code) |
+| `0x002e5f40` | `ShopkeeperGoal_End` | End | brain `+0x21c` = 2, clears brain flag 2, resets | confirmed (code) |
+| `0x002e5fa0` | `ShopkeeperGoal_OnDisturbed` | event | `ShopkeeperGoal_OnDisturbed`: a disturbance inside the store box (or by an intruder in it): clears his actions, calls the Lua callback once, and by kind cowers, says line `0xbc` or turns hostile toward a non-friendly offender | confirmed (code) |
+| `0x002e63e0` | `ShopkeeperGoal_OnPlayerAction` | event | from the civilian brain's event handler: when the player acts on him (not busy): turns to him; kind 7 gives the player 20-47 money (item 2, `Inventory_AddItem`; a robbery, inferred), kind 9 has the player say line `0xc5` | confirmed (code) |
+| `0x002e65b0` | `ShopkeeperGoal_Reset` | helper | `ShopkeeperGoal_Reset`: unless robbed (state 11) clears the reaction bytes, restores the idle clip, clears the target; brain type 6 | confirmed (code) |
+
+### Shot tests (shared by the shooter goals) {#goal-shot-tests}
+
+Ray tests used by `ShooterGoal_Fire` and the StationaryShooterB fire code below.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e7608` | `Goal_LineTest` | helper | `Goal_LineTest`: casts the shot ray against bodies (`IPhysics_RayCastBodies`) and the world; keeps the nearer hit and writes its point and normal to the result (`+0x90`, `+0xa0`) | confirmed (code) |
+| `0x002e77a0` | `Shot_CanHitHuman` | helper | 1 when a ray from the gun to the human's chest (1.7 m up) over a range hits him before anything else; 0 when he is knocked down | confirmed (code) |
+
+### Fatigued (type 0x90) {#goal-tired}
+
+The tired spell of a boss after a run of hits or throws: [The Diego and Vargas fight](ai.md#boss-diego-vargas).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e7970` | `TiredGoal_Init` | init | `TiredGoal_Init`: vtable `0x00542a00`; deadline (fatigue ms), damage limit (percent of max health) | confirmed (code) |
+| `0x002e7a68` | `TiredGoal_Start` | Start | `TiredGoal_Start`: saves the god / no-react / unstunnable flags, clears them, stuns him, sets the deadline | confirmed (code) |
+| `0x002e7b30` | `TiredGoal_End` | End | `TiredGoal_End`: restores the flags, ends the stun, clears `0x8000000` | confirmed (code) |
+| `0x002e7c18` | `TiredGoal_StartBreak` | helper | `TiredGoal_StartBreak`: damage limit reached: god mode, anims 671 then 672, line `0x22` | confirmed (code) |
+| `0x002e7da8` | `TiredGoal_EndBreak` | helper | `TiredGoal_EndBreak`: anim 673 after a break | confirmed (code) |
+| `0x002e7e68` | `TiredGoal_IsBreakDone` | helper | `TiredGoal_IsBreakDone`: 1 two seconds after the break clips end (state code 18) | confirmed (code) |
+| `0x002e7f50` | `TiredGoal_Process` | Process | `TiredGoal_Process`: stays stunned until the deadline or the damage limit, then recovers (line `0x96`, anim 643) | confirmed (code) |
+
+### BigBrawler (type 0x84) {#goal-big-brawler}
+
+Diego, and Vargas at stage 3: [The Diego and Vargas fight](ai.md#boss-diego-vargas).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e81b8` | `Goal_BigBrawler` | binding | `Goal_BigBrawler` (Lua `GoalBigBrawler`): pushes the goal with default tables | confirmed (code) |
+| `0x002e8288` | `BigBrawlerGoal_Init` | init | `BigBrawlerGoal_Init`: vtable `0x005429a0`; flag, cycles, fatigue, damage and prone tables, 8 objects, an item in hand | confirmed (code) |
+| `0x002e8418` | `BigBrawlerGoal_Start` | Start | `BigBrawlerGoal_Start`: no threat response or pick-ups, all-round sight, flags `0x223c0`; saves the brain boosts | confirmed (code) |
+| `0x002e84f0` | `BigBrawlerGoal_RestoreBoosts` | Resume | `BigBrawlerGoal_RestoreBoosts`: restores the brain's turn and start boosts | confirmed (code) |
+| `0x002e8530` | `BigBrawlerGoal_End` | End | `BigBrawlerGoal_End`: undoes Start | confirmed (code) |
+| `0x002e8620` | `BigBrawlerGoal_AdjustEnemyScore` | score | `BigBrawlerGoal_AdjustEnemyScore`: range, player and knocked-down bonuses by state | confirmed (code) |
+| `0x002e8818` | `BigBrawlerGoal_GetFatigueMs` | helper | `BigBrawlerGoal_GetFatigueMs`: fatigue of the stage x 1000 | confirmed (code) |
+| `0x002e8830` | `BigBrawlerGoal_GetDamagePercent` | helper | `BigBrawlerGoal_GetDamagePercent`: damage of the stage | confirmed (code) |
+| `0x002e8840` | `BigBrawlerGoal_SetStage` | helper | `BigBrawlerGoal_SetStage`: the stage byte `+0x3f` (below 4) | confirmed (code) |
+| `0x002e8858` | `BigBrawlerGoal_OnAttackWarning` | event | `BigBrawlerGoal_OnAttackWarning` (event `0x10`): counters an escapable grab or tackle, retargets, shoves off a near attacker | confirmed (code) |
+| `0x002e8bc8` | `BigBrawlerGoal_OnHit` | event | `BigBrawlerGoal_OnHit` (tactic event 1): help call at 20 m, counts hits; the sixth pushes the tired goal | confirmed (code) |
+| `0x002e8da8` | `BigBrawlerGoal_NextObject` | helper | `BigBrawlerGoal_NextObject`: the next of the eight object types to spawn in hand | confirmed (code) |
+| `0x002e8ee0` | `BigBrawlerGoal_SpawnObjectInHand` | helper | `BigBrawlerGoal_SpawnObjectInHand`: in state 3, the next object into his hand | confirmed (code) |
+| `0x002e8f38` | `BigBrawlerGoal_Reset` | helper | `BigBrawlerGoal_Reset`: state 1, no attack kind, grab flag clear | confirmed (code) |
+| `0x002e8f78` | `BigBrawlerGoal_Process` | Process | `BigBrawlerGoal_Process`: states 0 taunt, 1 engage, 2 fight, 3 flag and object cycle | confirmed (code) |
+
+### BigFighter (type 0x85) {#goal-big-fighter}
+
+A giant boss fighter (Lua `GoalBigFighter`; the Moe boss tactic sets its level). A small state machine `+0x24`: 0 taunt,
+1 guard (block or duck and counter), 2 attack, 3 pick up an object; it tires after hits with the break clips of the
+[tired goal](#goal-tired). "Giant" is a model scale above 1.1.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002e9c60` | `Goal_BigFighter` | binding | `Goal_BigFighter`: pushes the goal | confirmed (code) |
+| `0x002e9cd0` | `BigFighterGoal_Init` | init | vtable `0x00542940`; level 1, attack kind none (`0x2d`); the world object at human `+0x364` (his weapon) | confirmed (code) |
+| `0x002e9d88` | `BigFighterGoal_Start` | Start | no threat response, all-round sight, steering off; saves the turn boost and the class record's `+0x1c`; at level 1 zeroes attack weight `0x10`; a giant gets flags `0x80020280` and the heavy push factor | confirmed (code) |
+| `0x002e9e90` | `BigFighterGoal_Suspend` | Suspend | restores the saved turn boost | confirmed (code) |
+| `0x002e9eb0` | `BigFighterGoal_End` | End | undoes Start | confirmed (code) |
+| `0x002e9fd0` | `BigFighterGoal_AdjustEnemyScore` | score | -20 for an enemy who is down or stunned standing | confirmed (code) |
+| `0x002ea038` | `BigFighterGoal_SetLevel` | helper | sets the level `+0x25` (from the Moe tactic) and the attack weights `0x10` and `0xb` it allows | inferred |
+| `0x002ea0b8` | `BigFighterGoal_OnAttackWarning` | event | outside a break: clears a move, counters an escapable tackle or grab (command 3), retargets the attacker | confirmed (code) |
+| `0x002ea218` | `BigFighterGoal_OnHit` | event | from the Virgil tactic and the gang brain: in a break, ends it; holding an object, drops to state 1; otherwise a help call at 20 m and a hit count: at 2 (a giant: more) switches state (`0x002ea3c8`) | confirmed (code) |
+| `0x002ea3a0` | `BigFighterGoal_PickAttack` | helper | `Brain_PickAttack` with the given mask | confirmed (code) |
+| `0x002ea3c8` | `BigFighterGoal_SetState` | helper | 1 guard: clears actions, 1.25 s timer, 50 % chance of the duck variant, ends a stun, block flag `0x800`, releases his attack slot; 2 attack: clears the guard flags; 3: pick up the object | confirmed (code) |
+| `0x002ea6f0` | `BigFighterGoal_StartBreak` | helper | ends the stun and the fight stance, anims 671 then 672, line `0x22` once | confirmed (code) |
+| `0x002ea840` | `BigFighterGoal_EndBreak` | helper | at state code 18 and free hands, anim 673 | confirmed (code) |
+| `0x002ea8f8` | `BigFighterGoal_UpdateBreak` | helper | at state code 18: after 4 s goes to the break's end; else starts the break | confirmed (code) |
+| `0x002ea9b8` | `BigFighterGoal_ClearBreak` | helper | after a break, clears the block flag and the break state | confirmed (code) |
+| `0x002ea9f0` | `BigFighterGoal_Stagger` | helper | clears actions, ends the stun and fight stance, anim 668 | confirmed (code) |
+| `0x002eab08` | `BigFighterGoal_IsGiant` | helper | 1 when the human's scale is above 1.1 | confirmed (code) |
+| `0x002eab50` | `BigFighterGoal_WantsCounter` | helper | from `Brain_WantsCounter`: a normal-size fighter ducking against attack `0x101` presses command `0x10` | confirmed (code) |
+| `0x002eabc8` | `BigFighterGoal_Process` | Process | state 0: taunts (anim 643); state 1: guards, counters escapable grabs (command 3) or blocks (command 4), after the timer attacks with a 45/30/25 % chance by level (`Brain_QueueAttack`); state 2: re-picks the best enemy every 4 s, holds his attack slot, closes in (MoveToHuman at 0.95 x near) or shuffles, lines `0x47` / `0xe` / 8; state 3: walks to and picks up his object | confirmed (code) |
+
+### BigFighterA (type 0x86) {#goal-big-fighter-a}
+
+A variant of BigFighter pushed by the Chatterbox boss tactic (`0x0030e1d8`): the same guard and attack states, plus a
+recovery when his health falls to 15 %.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002ebb38` | `BigFighterAGoal_Init` | init | vtable `0x005428e0`; attack kind none, level 1 | confirmed (code) |
+| `0x002ebbb0` | `BigFighterAGoal_Start` | Start | no threat response, all-round sight, steering off, brain `+0x2d3` = 1; a giant gets flags `0x80020380` | confirmed (code) |
+| `0x002ebca0` | `BigFighterAGoal_End` | End | undoes Start; pushable again | confirmed (code) |
+| `0x002ebdb8` | `BigFighterAGoal_AdjustEnemyScore` | score | -20 for an enemy who is down or stunned standing | confirmed (code) |
+| `0x002ebe20` | `BigFighterAGoal_OnAttackWarning` | event | as BigFighter's | confirmed (code) |
+| `0x002ebf98` | `BigFighterAGoal_OnHit` | event | a thrown object of kind `0x1d` clears his guard; stunned at 15 % health or less counts and resets health; otherwise a help call and, when the hit leaves 15 % or less, a state change | confirmed (code) |
+| `0x002ec1d8` | `BigFighterAGoal_PickAttack` | helper | `Brain_PickAttack` with the given mask | confirmed (code) |
+| `0x002ec200` | `BigFighterAGoal_SetState` | helper | as BigFighter's, and pushable in guard | confirmed (code) |
+| `0x002ec460` | `BigFighterAGoal_ClearBreak` | helper | after a break, clears the block flag and the break state | confirmed (code) |
+| `0x002ec4a0` | `BigFighterAGoal_AllowsReaction` | helper | from `Brain_TopGoal86Allows`: 1 outside the recovery; in state 3 clears his guard flag | confirmed (code) |
+| `0x002ec4e8` | `BigFighterAGoal_IsGiant` | helper | 1 when the human's scale is above 1.1 | confirmed (code) |
+| `0x002ec530` | `BigFighterAGoal_CheckRecover` | helper | at 15 % health or less (once armed): resets health, block and stun flags, plays anim 665 (with anim 11 first near a point) | confirmed (code) |
+| `0x002ec780` | `BigFighterAGoal_Process` | Process | as BigFighter's: taunt (anim 643 after 0-750 ms), guard, attack with `Brain_PickAttack` and `Brain_QueueAttack`, close in or shuffle, lines `0xe` / `0x47` / 8 | confirmed (code) |
+
+### BigThrower (type 0x87) {#goal-big-thrower}
+
+Vargas at stage 2: [The Diego and Vargas fight](ai.md#boss-diego-vargas).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002ecfe8` | `Goal_BigThrower` | binding | `Goal_BigThrower` (Lua `GoalBigThrower`): pushes the goal | confirmed (code) |
+| `0x002ed0a8` | `BigThrowerGoal_Init` | init | `BigThrowerGoal_Init`: vtable `0x00542880`; flag, cycles (throws before tiring), fatigue, damage, 8 objects | confirmed (code) |
+| `0x002ed168` | `BigThrowerGoal_Start` | Start | `BigThrowerGoal_Start`: as BigBrawler's, plus the pick-up clip override | confirmed (code) |
+| `0x002ed260` | `BigThrowerGoal_End` | End | `BigThrowerGoal_End`: undoes Start | confirmed (code) |
+| `0x002ed348` | `BigThrowerGoal_GetFatigueMs` | helper | `BigThrowerGoal_GetFatigueMs`: fatigue x 1000 | confirmed (code) |
+| `0x002ed358` | `BigThrowerGoal_GetDamagePercent` | helper | `BigThrowerGoal_GetDamagePercent`: the damage percent | confirmed (code) |
+| `0x002ed360` | `BigThrowerGoal_NextObject` | helper | `BigThrowerGoal_NextObject`: the next object type to spawn in hand | confirmed (code) |
+| `0x002ed498` | `BigThrowerGoal_SpawnObjectInHand` | helper | `BigThrowerGoal_SpawnObjectInHand`: in state 2, the next object into his hand | confirmed (code) |
+| `0x002ed4f0` | `BigThrowerGoal_HoldDistance` | helper | `BigThrowerGoal_HoldDistance`: keeps his distance while his hand is busy | confirmed (code) |
+| `0x002ed718` | `BigThrowerGoal_Process` | Process | `BigThrowerGoal_Process`: taunt, walk to the flag, pick up, aim, throw; tires after the cycles | confirmed (code) |
+
+### BigLedgeThrower (type 0x8a) {#goal-big-ledge-thrower}
+
+`GoalBigLedgeThrower`: a thrower on a ledge or post who taunts and throws spawned objects down at his enemy; also pushed
+by the Chatterbox and Virgil boss tactics.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002edf20` | `Goal_BigLedgeThrower` | binding | `Goal_BigLedgeThrower` (Lua): pushes the goal | confirmed (code) |
+| `0x002edff8` | `BigLedgeThrowerGoal_Init` | init | `BigLedgeThrowerGoal_Init`: vtable `0x00542820`; his post and heading, up to 8 object types, the wait, an option, a throw clip loaded into the dynamic slot (anim 598) | confirmed (code) |
+| `0x002ee198` | `BigLedgeThrowerGoal_Start` | Start | all-round sight, steering off, flags `0x601c0`, heavy push factor; character `0x87` gets `0x200` (and `0x10` with the option); others except `0xb2` get the pick-up clip override (anim 549) | confirmed (code) |
+| `0x002ee2c8` | `BigLedgeThrowerGoal_End` | End | undoes Start | confirmed (code) |
+| `0x002ee3a8` | `BigLedgeThrowerGoal_Destroy` | Destroy | releases the dynamic clip slot | confirmed (code) |
+| `0x002ee3d0` | `BigLedgeThrowerGoal_PlayTaunt` | helper | plays the taunt clip (the dynamic one, or another when the enemy is below him) and a line | confirmed (code) |
+| `0x002ee4f0` | `BigLedgeThrowerGoal_FaceTarget` | helper | turns toward the enemy when more than 22.5 degrees off | confirmed (code) |
+| `0x002ee608` | `BigLedgeThrowerGoal_MaybeTaunt` | helper | with free hands: 50 % chance to face the enemy and taunt (line `0xb`), else line `0xb` when silent | confirmed (code) |
+| `0x002ee6e0` | `BigLedgeThrowerGoal_NextObject` | helper | the next object type after the last one used, round the list | confirmed (code) |
+| `0x002ee758` | `BigLedgeThrowerGoal_SpawnObjectInHand` | helper | in state 2, the next object into his hand | confirmed (code) |
+| `0x002ee7b0` | `BigLedgeThrowerGoal_Process` | Process | `BigLedgeThrowerGoal_Process`: fight stance; with no enemy turns to his heading and taunts (line `0x57`, anim 643); back to the post when more than 0.5 m off; picks the best enemy, spawns an object, aims and throws (command `0x10`), waits; sometimes runs (gait 4) to a point 3-5 m away | confirmed (code) |
+
+### StationaryThrower (type 0x8c) {#goal-stationary-thrower}
+
+`GoalStationaryThrower`: stay at a spot and throw spawned objects at visible enemies (the Diego and Vargas minions,
+[above](ai.md#boss-diego-vargas)).
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002eee50` | `Goal_StationaryThrower` | binding | `Goal_StationaryThrower` (Lua): pushes the goal | confirmed (code) |
+| `0x002eeee0` | `StationaryThrowerGoal_Init` | init | `StationaryThrowerGoal_Init`: vtable `0x005427c0`; his spot (current position), up to 8 object types | confirmed (code) |
+| `0x002eef78` | `StationaryThrowerGoal_Start` | Start | all-round sight, steering off, flag `0x40000` (`0x800` without a boss tactic), heavy push factor, the pick-up clip override (anim 549) | confirmed (code) |
+| `0x002ef058` | `StationaryThrowerGoal_End` | End | undoes Start | confirmed (code) |
+| `0x002ef130` | `StationaryThrowerGoal_SpawnObjectInHand` | helper | in state 1, the next object into his hand | confirmed (code) |
+| `0x002ef188` | `StationaryThrowerGoal_NextObject` | helper | the next object type, skipping while the Diego and Vargas tactic has no free object slot | confirmed (code) |
+| `0x002ef2c0` | `StationaryThrowerGoal_Process` | Process | `StationaryThrowerGoal_Process`: with no enemy, every 5 updates picks a visible one within 0.75 x sight; walks back when more than 0.5 m off; state 1 pick up, state 2 turn to the enemy (500-1000 ms) and throw (command `0x10`), then waits; 20 % taunt | confirmed (code) |
+
+### StationaryShooter (type 0x8d) {#goal-stationary-shooter}
+
+A gunman at a post with the level-55 gun clips (aim, turn 60 / 120 degrees, three reloads); pushed by the Lizzies boss
+tactic (`BossLizziesTactic_AssignGoal` `0x0030ab58`, [code](ai-code.md#t1-boss-lizzies)). His shots use the same steps
+as `ShooterGoal_Fire` ([below](#goal-shooter)) through his own copies of the helpers.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002ef7a8` | `StationaryShooterGoal_Init` | init | vtable `0x00542760`; spread angles, his post, the delays `+0x44` / `+0x46`, the flags | confirmed (code) |
+| `0x002ef8c0` | `StationaryShooterGoal_Start` | Start | all-round sight, steering off, flags `0x2210`; loads the gun clips | confirmed (code) |
+| `0x002ef990` | `StationaryShooterGoal_End` | End | undoes Start; releases the gun clips | confirmed (code) |
+| `0x002efa58` | `StationaryShooterGoal_LoadGunClips` | helper | loads (1) or releases (0) the seven gun clips in the dynamic slots (anims 388-393, 671-673) | confirmed (code) |
+| `0x002efb48` | `StationaryShooterGoal_IsLoading` | helper | 1 while a dynamic clip of his gang is still loading | inferred |
+| `0x002efbe8` | `StationaryShooterGoal_ReturnToPost` | helper | 1 at his post (within 0.5 m); else walks back and waits 1.5 s | confirmed (code) |
+| `0x002efcc0` | `StationaryShooterGoal_FaceTarget` | helper | at his post, turns the body toward the target | confirmed (code) |
+| `0x002efdc8` | `StationaryShooterGoal_SignalGun` | helper | sends message `0x34` with two numbers to the gun he holds (human `+0x360`): ammo and reload state, inferred | inferred |
+| `0x002efe68` | `StationaryShooterGoal_ApplySpread` | helper | copy of `ShooterGoal_ApplySpread` | confirmed (code) |
+| `0x002f0178` | `StationaryShooterGoal_LineTest` | helper | copy of `Goal_LineTest` | confirmed (code) |
+| `0x002f0318` | `StationaryShooterGoal_PickTarget` | helper | with two players, prefers one within 4 m of his flag who is a valid enemy, at random when both are | confirmed (code) |
+| `0x002f04b8` | `StationaryShooterGoal_CanHitHuman` | helper | copy of `Shot_CanHitHuman` | confirmed (code) |
+| `0x002f0690` | `StationaryShooterGoal_IsNearestThreat` | helper | 1 when he is the target's nearest threat | confirmed (code) |
+| `0x002f06d0` | `StationaryShooterGoal_WarnTarget` | helper | sends message 1 (a shot warning, kind 2) to the target | confirmed (code) |
+| `0x002f0788` | `StationaryShooterGoal_ImpactEffects` | helper | at a world hit, spawns the dust puff and the spark emitter particles | confirmed (code) |
+| `0x002f0930` | `StationaryShooterGoal_Say` | helper | a speech line of a kind (0-4) unless one is playing | confirmed (code) |
+| `0x002f0a50` | `StationaryShooterGoal_Fire` | helper | one shot: spread, ray to 30 m, damage when it can hit a human, impact effects or a warning, the gunshot sound, the fire clip (668) and the wait | confirmed (code) |
+| `0x002f0ec0` | `StationaryShooterGoal_Process` | Process | faces the target; at his post loops the aim clip, picks a target, fires and reloads (clip 673, gun message), speaks; waits between shots | confirmed (code) |
+
+### StationaryShooterA (type 0x8e) and the shared shooter code {#goal-shooter}
+
+The gunman goal of the Luther boss tactic (`BossLutherTactic_AssignGoal` `0x0030c510`); its Start, End, Resume and
+Suspend are shared with LutherShooter.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f13a8` | `ShooterGoal_Init` | init | `ShooterGoal_Init`: vtable `0x005426e8`; spread angles, his post, the fire delays `+0x3c` / `+0x3e` | confirmed (code) |
+| `0x002f14b0` | `ShooterGoal_Start` | Start | all-round sight, steering off, flags `0x2200`, heavy push factor, fight stance | confirmed (code) |
+| `0x002f1568` | `ShooterGoal_End` | End | undoes Start | confirmed (code) |
+| `0x002f1648` | `ShooterGoal_FaceTarget` | helper | unless held or busy, turns the body toward the target | confirmed (code) |
+| `0x002f1718` | `ShooterGoal_ApplySpread` | helper | `ShooterGoal_ApplySpread`: turns the aim by random angles within the spread | confirmed (code) |
+| `0x002f19d8` | `ShooterGoal_Fire` | helper | `ShooterGoal_Fire`: no shot at a downed or falling target; spread, ray to 30 m (`Goal_LineTest`), pending damage to a human hit (`Shot_CanHitHuman`), impact particles, a warning to the target when he is its nearest threat, the gunshot sound, the fire clip (668), a wait of the delay plus up to 1 s | confirmed (code) |
+| `0x002f1f90` | `ShooterGoal_IsNearestThreat` | helper | 1 when he is the target's nearest threat | confirmed (code) |
+| `0x002f1fd0` | `ShooterGoal_WarnTarget` | helper | sends message 1 (a shot warning, kind 2) to the target | confirmed (code) |
+| `0x002f2088` | `ShooterGoal_ImpactEffects` | helper | at a world hit, the dust puff and spark particles | confirmed (code) |
+| `0x002f2230` | `ShooterGoal_Say` | helper | a speech line from one of six tables by kind, unless one is playing | confirmed (code) |
+| `0x002f2398` | `ShooterGoal_OnGunEvent` | event | from the Luther tactic: when a held object of a given type is used, starts the tactic's slow motion | confirmed (code) |
+| `0x002f2438` | `ShooterGoal_OnHit` | event | from the Luther tactic: kind 1 looks round and says line `0xc`; kinds 2, 3 and 5 turn and slide him over clip 268's play time, with a line | confirmed (code) |
+| `0x002f2600` | `ShooterGoal_PickVisiblePlayer` | helper | picks the nearest player in sight and line of sight who is not yet an enemy; no callers found (unused) | inferred |
+| `0x002f27a0` | `ShooterGoal_HitSoundHash` | helper | hash of a random gunshot-hit sound name; no callers found (unused) | inferred |
+| `0x002f2818` | `ShooterGoal_CheckLowHealth` | helper | once, at 17.5 % health or less, sets flag `0x10` and the low-health byte | confirmed (code) |
+| `0x002f28b8` | `StationaryShooterAGoal_Process` | Process | heals to 50 % once when at 99 %; faces the target and looks at it every 30 updates; taunts (line `0x57`, anim 643) without a target; fires (`ShooterGoal_Fire`), turns with the turn clips (405, 406) or the dive clip (665), the low-health clip (670) | confirmed (code) |
+
+### LutherShooter (type 0x9d) {#goal-luther-shooter}
+
+`GoalLutherShooter`: the shooter goal with up to three scripted clips and a Lua callback.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f3118` | `Goal_LutherShooter` | binding | `Goal_LutherShooter` (Lua): pushes the goal | confirmed (code) |
+| `0x002f3220` | `LutherShooterGoal_Init` | init | `LutherShooterGoal_Init`: `ShooterGoal_Init`, vtable `0x00542670`, the Lua callback, up to three clips into the dynamic slots (anims 598 on) | confirmed (code) |
+| `0x002f3390` | `LutherShooterGoal_Destroy` | Destroy | releases the dynamic clip slots | confirmed (code) |
+| `0x002f33e8` | `LutherShooterGoal_PickVisiblePlayer` | helper | copy of `0x002f2600`; no callers found (unused) | inferred |
+| `0x002f3570` | `LutherShooterGoal_HitSoundHash` | helper | copy of `0x002f27a0`; no callers found (unused) | inferred |
+| `0x002f3600` | `LutherShooterGoal_Process` | Process | `LutherShooterGoal_Process`: faces and looks at the target; by state plays the scripted clips (598 on) or the special clip (670), then fires with `ShooterGoal_Fire` | confirmed (code) |
+
+### StationaryShooterB (type 0x8f) {#goal-stationary-shooter-b}
+
+A gunman moving between a set of flags, firing in a cone; pushed by the Birdie boss tactic
+(`BossBirdieTactic_AssignGoal` `0x0030ceb8`, [code](ai-code.md#t1-boss-birdie)), which sets and reads his state.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f3a20` | `StationaryShooterBGoal_Init` | init | vtable `0x00542610`; up to 8 flags, the cone angles (degrees, halved to radians), the fire delays, an option | confirmed (code) |
+| `0x002f3b38` | `StationaryShooterBGoal_Start` | Start | all-round sight, steering off, flags `0x2204`, clears block and stun, fight stance; state 1 unless the option | confirmed (code) |
+| `0x002f3c70` | `StationaryShooterBGoal_Resume` | Resume | picks a flag beyond a distance, unblocks, waits 2 s | confirmed (code) |
+| `0x002f3db8` | `StationaryShooterBGoal_End` | End | undoes Start | confirmed (code) |
+| `0x002f3e60` | `StationaryShooterBGoal_SetBlock` | helper | clears (1) or sets (0) the block flag `0x800` | confirmed (code) |
+| `0x002f3e98` | `StationaryShooterBGoal_FaceTarget` | helper | turns toward the target from his current flag | confirmed (code) |
+| `0x002f3f98` | `StationaryShooterBGoal_ApplySpread` | helper | random aim within the cone, clamped by its limits | confirmed (code) |
+| `0x002f42c0` | `StationaryShooterBGoal_Fire` | helper | as `ShooterGoal_Fire`: spread, ray to 30 m, pending damage, effects, warning, sound, fire clip, wait | confirmed (code) |
+| `0x002f4980` | `StationaryShooterBGoal_IsNearestThreat` | helper | 1 when he is the target's nearest threat | confirmed (code) |
+| `0x002f49c0` | `StationaryShooterBGoal_WarnTarget` | helper | sends message 1 (a shot warning) to the target | confirmed (code) |
+| `0x002f4a78` | `StationaryShooterBGoal_ImpactEffects` | helper | impact particles beyond a distance | confirmed (code) |
+| `0x002f4c68` | `StationaryShooterBGoal_Say` | helper | kind 2 line `0x11`, kind 3 line `0x8f` | confirmed (code) |
+| `0x002f4cf0` | `StationaryShooterBGoal_AdjustEnemyScore` | score | -999 unless the enemy is gangless (a player) with a clear line from the gun | confirmed (code) |
+| `0x002f4e10` | `StationaryShooterBGoal_FindDownedPlayer` | helper | with a gun, looks for a downed player within sight | inferred |
+| `0x002f52b0` | `StationaryShooterBGoal_SetState` | helper | sets the state `+0x24` and its time (from the tactic) | confirmed (code) |
+| `0x002f52c8` | `StationaryShooterBGoal_IsDone` | helper | 1 in state 4 (read by the tactic) | confirmed (code) |
+| `0x002f52e8` | `StationaryShooterBGoal_Process` | Process | stunned: waits; faces and looks at the target; state 0 taunt (line `0x57`); 1 fire; 2 move flag; 3 the special clip (670) and line `0x10`; 4 done | confirmed (code) |
+| `0x002f5988` | `StationaryShooterBGoal_OnHurt` | event | from the gang brain: when his health falls to the given value, line `0x28` and, with a gun, a fall: turns and plays clip 668 | inferred |
+
+### Mace (type 0x91) {#goal-mace}
+
+A fighter with a can of mace (clip `fem_mace`, object `dyn_mace`), pushed by the Moe boss tactic: she fights, then keeps
+away for a while.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f5b88` | `MaceGoal_Init` | init | vtable `0x005425b0`; saves and zeroes brain `+0x21c`, saves human `+0x640` and sets it to `0xefefefff` | confirmed (code) |
+| `0x002f5c00` | `MaceGoal_Start` | Start | brain `+0x208` = table `0x00511220`, all-round sight, the mace clip on anim slot `0x15`, the mace in hand, flag `0x2000` | confirmed (code) |
+| `0x002f5ca0` | `MaceGoal_End` | End | undoes Start | confirmed (code) |
+| `0x002f5d50` | `MaceGoal_Process` | Process | fight phase: no weapon and beyond 1.1 x near or out of sight, EngageEnemy; sight blocked by a few obstacle kinds, runs to him (gait 4); else FightGoal (1 s); avoid phase: unless the enemy has his back to her, AvoidEnemies (near to 2 x near) for 4-8 s | confirmed (code) |
+
+### Grabber (type 0x92) {#goal-grabber}
+
+A Roof boss minion (`BossRoofTactic_AssignGoal` `0x0030b948`) who grabs an enemy from behind and turns him toward the
+nearest gang mate.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f60e8` | `GrabberGoal_Init` | init | vtable `0x00542550` | confirmed (code) |
+| `0x002f6120` | `GrabberGoal_Start` | Start | brain `+0x208` = table `0x00511250`, `+0x21c` = 0, all-round sight | confirmed (code) |
+| `0x002f6180` | `GrabberGoal_Resume` | Resume | picks the best enemy | confirmed (code) |
+| `0x002f61e0` | `GrabberGoal_AdjustEnemyScore` | score | -20 for an enemy who is down | confirmed (code) |
+| `0x002f6220` | `GrabberGoal_NearestGangMate` | helper | the gang mate (of 16) nearest a point | confirmed (code) |
+| `0x002f6318` | `GrabberGoal_AllowsReaction` | helper | from `Brain_UpdateReactionGoal`: 0 while he grabs or tackles his target (no reaction goal), else 1 | confirmed (code) |
+| `0x002f63b8` | `GrabberGoal_Process` | Process | first: turns to the camera, a sound and anim 643; with no enemy follows a gang mate; far or out of sight: EngageEnemy; blocked: runs; holding from behind: turns the victim toward the nearest mate; else a grab command (or a tackle follow-up) | confirmed (code) |
+
+### BigDefender (type 0x88) {#goal-big-defender}
+
+A Roof boss minion who guards the gang leader.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f6878` | `BigDefenderGoal_Init` | init | vtable `0x005424f0` | confirmed (code) |
+| `0x002f68b0` | `BigDefenderGoal_Start` | Start | all-round sight, flags `0x80020380` | confirmed (code) |
+| `0x002f6938` | `BigDefenderGoal_Resume` | Resume | picks the best enemy | confirmed (code) |
+| `0x002f69d8` | `BigDefenderGoal_AdjustEnemyScore` | score | a bonus for an enemy holding an attack slot on the leader, twice that for the leader's target | confirmed (code) |
+| `0x002f6a80` | `BigDefenderGoal_Process` | Process | first: turns to the camera and anim 643; then as the Grabber's: EngageEnemy, FightGoal, MoveToHuman or a shuffle | confirmed (code) |
+
+### BigBull (type 0x89) {#goal-big-bull}
+
+A heavy Roof boss minion who rushes his target; after six standing reactions in a row he blocks.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f6e28` | `BigBullGoal_Init` | init | vtable `0x00542490`; all-round sight, flags `0x80020280` | confirmed (code) |
+| `0x002f6ef0` | `BigBullGoal_Resume` | Resume | clears flag `0x10`, heavy push factor | confirmed (code) |
+| `0x002f6f48` | `BigBullGoal_Suspend` | Suspend | normal push factor | confirmed (code) |
+| `0x002f6f88` | `BigBullGoal_End` | End | does nothing | confirmed (code) |
+| `0x002f7028` | `BigBullGoal_AdjustEnemyScore` | score | -999 beyond sight range or out of line of sight; else + (sight - distance) x the range factor, +20 for a player | confirmed (code) |
+| `0x002f7120` | `BigBullGoal_TurnToCharge` | helper | turns toward the target when more than 60 degrees off | inferred |
+| `0x002f7328` | `BigBullGoal_OnEvent` | event | from the gang brain: outside a charge, flags `+0x1f` (hit) | inferred |
+| `0x002f7348` | `BigBullGoal_Process` | Process | counts standing reactions (6 sets the block flag); first: turns, sound and anim 643; a stun spell with line 8; FightGoal (4 s), MoveToHuman (0.5-0.9 x near, 2 s or 6 s) or a taunt | confirmed (code) |
+
+### HideAndSeek (type 0x9c) {#goal-hide-and-seek}
+
+The Virgil boss (`BossVirgilTactic_AssignGoal` `0x0030d960`): he hides in the shadow at one of the flags of kind `0x21`
+within 40 m and fights whoever finds him, then hides again.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f7bd0` | `HideAndSeekGoal_Init` | init | vtable `0x00542430`; clears the hiding flag list | confirmed (code) |
+| `0x002f7c48` | `HideAndSeekGoal_Start` | Start | flags `0x80820380`, collects the flags, goes to a hiding flag, raises the turn boost, all-round sight; sets the global `0x0050b1dc` | confirmed (code) |
+| `0x002f7d18` | `HideAndSeekGoal_End` | End | undoes Start; clears `0x0050b1dc` | confirmed (code) |
+| `0x002f7dd0` | `HideAndSeekGoal_CollectFlags` | helper | the flags of kind `0x21` within 40 m of him | confirmed (code) |
+| `0x002f7ee0` | `HideAndSeekGoal_MoveToHidingFlag` | helper | drops his enemies, picks another hiding flag at random and puts him there facing its heading | confirmed (code) |
+| `0x002f8030` | `HideAndSeekGoal_SetHidden` | helper | enters (1) or leaves (0) the shadow-hidden state | confirmed (code) |
+| `0x002f80b0` | `HideAndSeekGoal_Found` | helper | found by a human: unblocks, makes him an enemy and the target, fights for 2 s | confirmed (code) |
+| `0x002f8138` | `HideAndSeekGoal_DropEnemies` | helper | makes every enemy drop him as target | confirmed (code) |
+| `0x002f8240` | `HideAndSeekGoal_OnAttackWarning` | event | from the Virgil tactic, when found: counters an escapable grab or tackle, retargets | confirmed (code) |
+| `0x002f8400` | `HideAndSeekGoal_OnTouched` | event | from the Virgil tactic: a non-friendly human touching him finds him | confirmed (code) |
+| `0x002f8468` | `HideAndSeekGoal_Process` | Process | hidden: waits in the shadow; found: fights (MoveToHuman, attacks, lines), after a while hides again | confirmed (code) |
+
+### LeftTurf (type 0x3f) {#goal-left-turf}
+
+A gang member who has left his turf walks back into it, fighting whoever blocks him; pushed by the base event handler
+(`Goal_DefaultOnEvent` `0x0029ef80`) and the guard goals' handlers.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f8c90` | `LeftTurfGoal_Init` | init | vtable `0x00542a60`; the point where he left the turf (brain `+0x230`) | confirmed (code) |
+| `0x002f8d88` | `LeftTurfGoal_NearestTurfBox` | helper | the gang's turf box nearest a point | inferred |
+| `0x002f8e70` | `LeftTurfGoal_Process` | Process | ends when he is in the turf; aims 2 m inside past the exit point; when reachable runs there (gait 4), in the fight stance with a valid target (FightGoal 2 s when blocked, line `0x47`); else every 1 s a random point in a turf box; gives up after 30 updates | confirmed (code) |
+
+### RunFromTrain (type 7) {#goal-run-from-train}
+
+Pushed by the train (`TrainRecord_Update` `0x00413d90`) on a human near its track: he drops what he is doing and runs
+off the track.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f9358` | `RunFromTrainGoal_Init` | init | vtable `0x00542ac0`; the train record | confirmed (code) |
+| `0x002f93b0` | `RunFromTrainGoal_IsSafePoint` | helper | 1 when a point clear of the track has ground below (4 m) and a straight walk to it | confirmed (code) |
+| `0x002f95e0` | `RunFromTrainGoal_SprintTo` | helper | a move action to the point at gait 5 (sprint); from standing, sets the heading and gait 4 at once | confirmed (code) |
+| `0x002f96d0` | `RunFromTrainGoal_TryFlee` | helper | tries each side of the track for a safe point and sprints there | confirmed (code) |
+| `0x002f9980` | `RunFromTrainGoal_FleeAlongTrack` | helper | with no side clear, sprints to the projected point along the track | confirmed (code) |
+| `0x002f9a80` | `RunFromTrainGoal_DropEverything` | helper | drops a held object, breaks a pair, ends a minigame, cancels a throw aim and a stun, unpins a target object | confirmed (code) |
+| `0x002f9b90` | `RunFromTrainGoal_Start` | Start | turn boost 3, flags `0x100` and `0x800` (saved), drops everything | confirmed (code) |
+| `0x002f9c18` | `RunFromTrainGoal_End` | End | restores the turn boost and flags | confirmed (code) |
+| `0x002f9c88` | `RunFromTrainGoal_Process` | Process | ends when the train is no longer near; clears actions every 250 ms; projects his point on the track and flees | confirmed (code) |
+
+### Action base {#goal-action-base}
+
+The first function of the action code after the goals.
+
+| Address | Name | Role | What it does | Evidence |
+| --- | --- | --- | --- | --- |
+| `0x002f9de0` | `Action_AbortAndDestroy` | helper | a started action is aborted first (vtable `+0x1c`, 0 when it refuses); then destroyed (`+0x24`); 1 when gone (from `Brain_PopAction`) | confirmed (code) |

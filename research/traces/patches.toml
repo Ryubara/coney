@@ -382,3 +382,27 @@ address = 0x00394050
 # addiu sp,sp,-0xc0; sq s3,0x70(sp)
 original = [0x27bdff40, 0x7fb30070]
 log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "object" }, { value = "[a0 + 0x54]", name = "flags" }, { value = "[a1 + 0x40]", name = "hit" }, { value = "[a1 + 0x58]", name = "nz", type = "f32" }, { value = "[a1 + 0x98]", name = "pz", type = "f32" }]
+
+[hook.object-update]
+description = "Each call of WorldObject_Update (0x00395b70, a world object's wheel update, before it integrates): the object, its position z, its velocity z, its flags and its interval."
+research = "docs/research/physics.md#settle"
+address = 0x00395b70
+# addiu sp,sp,-0x20; sq s0,0x10(sp)
+original = [0x27bdffe0, 0x7fb00010]
+log = [{ value = "[0x005104f4]", name = "ticks" }, { value = "a0", name = "object" }, { value = "[a0 + 0x18]", name = "z", type = "f32" }, { value = "[a0 + 0x38]", name = "vz", type = "f32" }, { value = "[a0 + 0x54]", name = "flags" }, { value = "[a0 + 0x6e]", name = "interval", type = "u16" }]
+
+[hook.bounce]
+description = "Each call of PhysicsVec_Bounce (0x0033d8f0, contact code 2 and the loose car parts): the restitution, the velocity's z before the bounce and the normal's z."
+research = "docs/research/physics.md#attributes"
+address = 0x0033d8f0
+# move a2,a0; lq v0,0x0(a1)
+original = [0x0080302d, 0x78a20000]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "f12", name = "e" }, { value = "a0", name = "v" }, { value = "[a0 + 0x8]", name = "vz", type = "f32" }, { value = "[a1 + 0x8]", name = "nz", type = "f32" }]
+
+[hook.object-set-velocity]
+description = "Each call of WorldObject_SetVelocity (0x003925f8, a world object's vtable +0x74): the caller, the object and the new velocity's z."
+research = "docs/research/physics.md#settle"
+address = 0x003925f8
+# addiu sp,sp,-0x10; sd ra,0x0(sp)
+original = [0x27bdfff0, 0xffbf0000]
+log = [{ value = "[0x005104f4]", name = "ticks" }, "ra", { value = "a0", name = "object" }, { value = "[a1 + 0x8]", name = "vz", type = "f32" }]

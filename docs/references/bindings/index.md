@@ -24,7 +24,7 @@ YAML, never these pages. CI runs `coney-tools natives render --check`, which fai
 
 | Category | Bindings | Used by scripts | Boot to menu | Mission 1 | Traced |
 | --- | --- | --- | --- | --- | --- |
-| [Characters](character.md): one human: creation, state, health, animation, commands, the player's crew | 204 | 172 | 29 | 51 | 167 |
+| [Characters](character.md): one human: creation, state, health, animation, commands, the player's crew | 204 | 172 | 29 | 51 | 168 |
 | [AI](ai.md): goals, actions, brains and gang tactics that drive non-player characters | 146 | 114 | 16 | 24 | 110 |
 | [Gangs](gang.md): gangs: creation, membership, spawners, relations | 57 | 53 | 18 | 14 | 51 |
 | [Cameras](camera.md): creating, switching and moving cameras | 41 | 34 | 4 | 9 | 30 |
@@ -39,7 +39,7 @@ YAML, never these pages. CI runs `coney-tools natives render --check`, which fai
 | [Configuration (Cfg)](config.md): the Cfg* tables the config scripts fill: characters, objects, levels, sounds | 117 | 100 | 70 | 13 | 97 |
 | [Utilities](util.md): numbers, platform queries and generic object queries | 8 | 7 | 6 | 2 | 7 |
 | [Debug](debug.md): developer leftovers: network debugging, sample capture, detail flags | 5 | 3 | 0 | 1 | 3 |
-| **All** | **956** | **802** | **266** | **215** | **766** |
+| **All** | **956** | **802** | **266** | **215** | **767** |
 
 ## Conventions {#conventions}
 
@@ -126,9 +126,9 @@ have no wrapper address or usage counts. There are none yet.
 
 | | Bindings |
 | --- | --- |
-| confirmed (code) | 860 |
+| confirmed (code) | 861 |
 | confirmed (runtime) | 0 |
-| inferred | 70 |
+| inferred | 69 |
 | speculative | 26 |
-| detail: traced | 766 |
-| detail: brief | 190 |
+| detail: traced | 767 |
+| detail: brief | 189 |

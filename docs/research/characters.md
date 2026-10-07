@@ -974,6 +974,103 @@ this test is the move action's business ([AI, The move action](ai.md#move-action
 carried props (`0x0024ce40`) and, after a state 18 or with held flag `0x20000`, its animation is rebuilt
 (`0x0025f450`); a human in a scene state also lets go of its props.
 
+### Step control {#step-control}
+
+The `TakeStep` and `GiveWay` actions ([AI code](ai-code.md#actions)) move an AI one step by swapping its control
+function for the **step control** (`Human_StepControl`, `0x00243420`) for a single update. Confirmed (code) at the
+addresses cited.
+
+**Starting a step.** `TakeStepAction_Start` (`0x002fe3a8`) writes the action's one argument, a **heading** in radians,
+into the brain's heading `+0x110`, then calls `Human_EnterStepControl` (`0x002432b0`). The step has no distance
+argument: the clip decides how far the body goes. `Human_EnterStepControl` does nothing when either of these holds:
+
+- the human has any of state bits **`0x180f3ff0`**. That is `0x10`-`0x2000`: grabbed or grabbing, mugging or
+  mugged, the tackle and mount, and a paired power move ([Combat: State flags](combat.md#state-flags)). It is also
+  `0x10000`-`0x80000` (`0x10000` is hurt) and `0x8000000` and `0x10000000`, whose meanings are not traced;
+- the step control is already installed.
+
+Otherwise it saves the current control (`Human_SaveControl`: `+0x1bc` copied to `+0x1c4`) and installs the step
+control (`+0x1bc` = `0x00243420`, the member-function pointer form `+0x1be` = −1).
+
+**One update of the step control, for an AI.** The per-player record's `+0x1b` is 0 for an AI.
+
+1. **No move from the control.** The two outputs are the zero vector (`0x005116c0`) and the human's current rotation
+   (transform table `0x00714b10`). Any displacement comes from the clip's root motion; inferred from the
+   [one-clip arrival](#ai-locomotion), which uses the same clips and measures their root displacement.
+2. **Wait while not free.** The control returns at once, still installed, while any of these holds:
+   - `Human_IsBusy`: state `0x79b9e1e0f30`, airborne, state `0x100000000`, the per-player `+0x1e`, or a held flag
+     of `0xaeebf7ff`;
+   - grabbing;
+   - `+0x280` is not −1;
+   - wounded;
+   - state `0xe0000`;
+   - any held flag.
+
+   The step then starts on the first free update.
+3. **Pick the clip.** Let `d` be the brain's heading `+0x110` minus the facing, wrapped to −π..π. The turn boost is
+   brain `+0x0b` ([AI](ai.md#brain-boosts)). The facing to end on is the heading, offset so that the clip's own
+   direction points along the heading:
+
+   | `d` | End facing | Fight stance | Boost 0 or below | Boost above 0 |
+   | --- | --- | --- | --- | --- |
+   | within ±22.5° (π/8) | heading | 366 `ANIM_FIGHT_MOVEMENT_STEP_FORWARD` | 401 `ANIM_MOVEMENT_STEP_FORWARD` | 403 `ANIM_MOVEMENT_DASH_FORWARD` |
+   | 112.5° (5π/8) or more either way | heading − π | 367 `..._STEP_BACKWARD` | 402 `ANIM_MOVEMENT_STEP_BACKWARD` | 404 `ANIM_MOVEMENT_DASH_BACKWARD` |
+   | 22.5° to 112.5°, positive | heading − π/2 | 365 `..._STEP_RIGHT` | 400 `ANIM_MOVEMENT_STEP_RIGHT` | 406 `ANIM_MOVEMENT_DASH_RIGHT` |
+   | 22.5° to 112.5°, negative | heading + π/2 | 364 `..._STEP_LEFT` | 399 `ANIM_MOVEMENT_STEP_LEFT` | 405 `ANIM_MOVEMENT_DASH_LEFT` |
+
+   In a fight stance the boost is ignored. The clip ids are the [anim ids](../references/anim-ids.md#anim-364).
+4. **Play it.** `Human_PlayOneShotClip` (`0x0025cb90`) plays the clip:
+   - a blend-out of the current pose over 0.1 s, then the clip chained in over 0.2 s;
+   - after the clip, the idle loops (slot 0, or slot 11 in a fight stance);
+   - while the clip plays it holds held flag **`0x80000`**, with state code 0 and the push sphere off.
+
+   The clip-end callback (`0x0025c5b0`) is an empty function.
+5. **Turn during the clip.** The human is not turned first. `Human_TurnToOver` (`0x0023cf88`) turns it to the end
+   facing at a constant rate over **half the clip's play time** (`Anim_GetPlayTime` × 0.5), while the clip plays.
+   The angle is negated before the call, the same convention as [turning on the spot](#ai-locomotion). A turn under
+   0.01 rad is skipped.
+6. **Leave.** `Human_LeaveStepControl` (`0x00243360`) runs in the same update. It restores the saved control
+   (`Human_RestoreControl`), then sets `+0x1bc` to `Human_UpdateControl` (`0x00243848`), or to `Human_MoveAttached`
+   (`0x00244e78`) while grabbed or being mugged. So the step control is installed for a single update, unless step 2
+   held it.
+
+For a pad player (`+0x1b` set) the step control restores the saved control. It then picks the player's control and
+runs it in the same update: air when turn-limited (state `0x400000000`), the fight stance with a target, button tap,
+the wheelchair, or else `PlayerLocomotion` (`0x00240e38`).
+
+**How the action ends.**
+
+- **Update** (`TakeStepAction_Update`, `0x002fe428`) returns running (0) while held flags **`0x20080000`**
+  (`Human_HasHeld20080000`, `0x00228448`: `0x80000` the step clip, `0x20000000` a turn clip) are set, or while the
+  step control is still installed. Otherwise it returns done (2). The step lasts as long as its clip.
+- **Abort** (`0x002fe3d8`) always calls `Human_LeaveStepControl`. A forced abort succeeds; a polite one is refused
+  while `0x20080000` is held.
+
+**GiveWay.** `GiveWayAction_Start` (`0x002fe5d8`) runs these steps in order:
+
+1. The AI looks at the other human for 2000 ms (`Brain_LookAtTarget`, weight 0.5).
+2. With the action's boost flag (`+0x14`), it saves the turn boost `+0x0b` and raises it by 1. A boost of 0
+   therefore becomes 1, which selects the **dash** clips.
+3. It runs `TakeStepAction_Start`.
+
+Abort restores the saved boost. `Brain_GiveWayTo` (`0x00289ed0`) sets the boost flag when the mover is a pad player
+(`+0x1b0` ≠ −1) whose stored gait `+0x1a8` is 3 (jog) or more, so an AI dashes out of a running player's way and
+steps out of a walker's.
+
+**Who may give way** (`Brain_GiveWayTo`, before its free-sector search, which is in
+[AI: Giving way](ai.md#giving-way)). All of these must hold:
+
+- the stander's brain has a task (`+0x04` ≠ 0) or its `+0x09` is set;
+- **neither human is a threat to the other**: `Human_IsThreatTo` (`0x00222a48`) is false both ways. It is
+  `Brain_IsThreat` on the two brains: the gangs are enemies (`Gang_IsEnemyOf` on brain `+0x20c`), or both are pad
+  players, with a Warrior's (type 3) `+0x2e5` mode able to force it either way. It tests only; nothing is changed;
+- **the stander is idle under its control**: `Human_IsIdleUnderControl` (`0x00225390`). Its control is
+  `Human_UpdateControl` or the step control, it has no state bit of **`0x7bf9e1f3ff0`**, and it has **no held flag
+  at all**.
+
+Then a free sector gives a GiveWay action on the sector's heading (the stander's facing + sector × 45°), started
+after a random 0-124 ms.
+
 ### Wheelchair control {#wheelchair}
 
 [`HuSetWheelchairControl`](../references/bindings/character.md#husetwheelchaircontrol) (`0x00234188`), confirmed
@@ -1626,7 +1723,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x00222868` | `Human_AddSprayPaint` | Adds spray cans: an AI keeps its own count `+0x374` (0-9); a player's goes to inventory item 4. | confirmed (code) |
 | `0x00222908` | `Human_GetCuffCount` | Handcuffs held: a player's from inventory item 5; an AI with brain type 1 always has one; other AI use `+0x378`. | confirmed (code) |
 | `0x00222980` | `Human_AddCuffs` | Adds handcuffs: inventory item 5 for a player, else `+0x378` clamped at 0. | confirmed (code) |
-| `0x00222a48` | `Human_ReactToThreat` | Asks the human's brain to take another human as the nearest threat (Brain_FindNearestThreat); called from every brain's event handler. | confirmed (code) |
+| `0x00222a48` | `Human_IsThreatTo` | Whether human b is a threat to human a: Brain_IsThreat on their two brains (gangs enemies, or both pad players; a Warrior's +0x2e5 mode overrides). A test only; Brain_GiveWayTo needs it false both ways ([Step control](#step-control)). | confirmed (code) |
 | `0x00222ad8` | `Human_GetPadRecord` | The human's per-player record in the game state (`+0x168` + player x 0x5c), or player 0's for an AI. | confirmed (code) |
 | `0x00222c98` | `Human_ApplyClassFlags` | Copies the class record's switches (`+0x3a`-`+0x3f`) into the human flags `+0xe0` (bits 0x80, 0x1000000000, 0x2000000000, 0x800000000, and the paired bits 0x200000/0x400000 and 0x400/0x200). | confirmed (code) |
 | `0x00222e40` | `Human_GetHealth` | Health, record `+0x144` (100 without a record). | confirmed (code) |
@@ -1668,7 +1765,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x00225030` | `Human_IsFreeForSnap` | Not in a high or mid busy state and neither grabbed from the front nor grabbing. | confirmed (code) |
 | `0x002250a0` | `Human_IsMidOrBusy` | The other is 0.7-1.3 m above (or under -0.7 m), or the human is in an attack phase that blocks a mid attack. | confirmed (code) |
 | `0x00225200` | `Human_IsHighOrBusy` | The other is 1.3-1.8 m above (or under -0.7 m), or the human is in a grab or attack phase that blocks a new attack. | confirmed (code) |
-| `0x00225390` | `Human_IsIdleUnderControl` | Under Human_UpdateControl or the step control (0x00243420) with no action state or held flags. | confirmed (code) |
+| `0x00225390` | `Human_IsIdleUnderControl` | Under Human_UpdateControl or the step control with no state 0x7bf9e1f3ff0 and no held flag; the stander test of Brain_GiveWayTo ([Step control](#step-control)). | confirmed (code) |
 | `0x00225500` | `Human_IsNotDown` | Not in states 0xe0000. | confirmed (code) |
 | `0x002256a0` | `Human_CanBeGrabbed` | Whether the human may be grabbed or tackled by another: not down or in a scene, within 0.25 m of height, and none of the blocking state or held flags. | confirmed (code) |
 | `0x00225998` | `Human_IsAtRunSpeed` | Running or sprinting and moving at the run speed (less 0.01). | confirmed (code) |
@@ -1729,7 +1826,7 @@ bytes each. A human flag is a bit of `+0xe0`, a state flag one of record `+0x00`
 | `0x002283c8` | `Human_HasDownLatch` | State flag 0x40000000 (down; read by the corpse cull). | confirmed (code) |
 | `0x002283e8` | `Human_HasHeld400000` | Held flag 0x400000 (an airborne body; car and thrown hits read it). | confirmed (code) |
 | `0x00228408` | `Human_HasHeld4000` | Held flag 0x4000 (picking up an item). | confirmed (code) |
-| `0x00228448` | `Human_HasHeld20080000` | Held flags 0x20080000 (a step or turn plays). | confirmed (code) |
+| `0x00228448` | `Human_HasHeld20080000` | Held flags 0x20080000: a turn clip (0x20000000) or a step clip (0x80000) plays; TakeStep waits on it and refuses an abort ([Step control](#step-control)). | confirmed (code) |
 | `0x00228468` | `Human_HasHeld8000000` | Held flag 0x8000000 (reviving). | confirmed (code) |
 | `0x00228500` | `Human_HasHeld20000000` | Held flag 0x20000000 (turning). | confirmed (code) |
 | `0x00228520` | `Human_HasHeld100` | Held flag 0x100 (a fidget plays). | confirmed (code) |
@@ -2037,9 +2134,9 @@ the human code reads.
 | `0x00240850` | `Human_UnregisterContextAction` | Human vtable `+0x12c`: unregisters it. | confirmed (code) |
 | `0x00240890` | `Human_SetContextRecord` | Sets the context record `+0x660`. | confirmed (code) |
 | `0x00242ce0` | `Human_ButtonTapMove` | The button-tap control function: steps the human forward by tapped buttons. | confirmed (code) |
-| `0x002432b0` | `Human_EnterStepControl` | Saves the control and installs the step control (0x00243420) unless busy (state 0x180f3ff0); TakeStepAction_Start. | confirmed (code) |
+| `0x002432b0` | `Human_EnterStepControl` | Saves the control (+0x1bc to +0x1c4) and installs the step control (0x00243420) unless state 0x180f3ff0 or already installed; from TakeStepAction_Start ([Step control](#step-control)). | confirmed (code) |
 | `0x00243360` | `Human_LeaveStepControl` | Leaves the step control: Human_UpdateControl, or Human_MoveAttached while grabbed or mugged. | confirmed (code) |
-| `0x00243420` | `Human_StepControl` | The step control function: for a pad player, picks the right control (stance, button tap, wheelchair or locomotion) once the step ends. | confirmed (code) |
+| `0x00243420` | `Human_StepControl` | The step control function (+0x1bc while a TakeStep runs): for an AI, one step clip by the angle between brain +0x110 and the facing (step, dash or fight shuffle), turned over half the clip, then leaves at once; waits while busy ([Step control](#step-control)). | confirmed (code) |
 | `0x002445f8` | `Human_SetButtonTapMoveControl` | Control function = Human_ButtonTapMove and clears its counters `+0x670`, `+0x674`. | confirmed (code) |
 | `0x00244620` | `Human_SetWheelchairMoveControl` | Control function = Human_MoveWheelchair. | confirmed (code) |
 | `0x00244640` | `Human_SetButtonTapSequence` | Copies up to 16 button ids (null-terminated) into `+0x67c` and resets the index `+0x678`. | confirmed (code) |

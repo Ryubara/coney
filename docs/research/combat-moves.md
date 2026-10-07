@@ -239,6 +239,8 @@ the transform):
 | 653 from 1.6 m | 1.591 / 1.663 / **1.617** | the same | **k7** | 1.172 / 1.120 |
 | 653 from 1.9 m | 1.779 / 1.738 / **1.617** | the same | **k7** | 1.172 / 1.120 |
 | `S1` from 1.5 m | 1.319 / 1.176 (no back slide; reach 1.03) | | **k3** | 1.176 / 1.034 |
+| `X1` from 1.0 / 1.3 / 1.6 m | a straight slide from k3 to k11 (below) | ends at 0.878-0.879 m | **k9** | 0.903 / 0.890, 0.976 / 0.930, 1.048 / 0.970 |
+| `X1` from 1.9 m | turns only (the far range is 1.90 m): 1.886 at k3, 1.747 at k10 | | **miss** | |
 
 From k3 on, the three 653 runs are the same to the millimetre: the steer ends at 1.62 m (the reach 1.58 m and the
 attack's offset) by k3, and the clip then carries the attacker 0.50 m forward to 1.12 m by the end of k7. The
@@ -260,6 +262,54 @@ After k7 of 653 the hands are 0.24-0.28 m from the target's spine bone (0.51-0.5
 1.500), right hand (33.204, 36.960, 1.471), spine (33.345, 36.778, 1.403), head (33.342, 36.831, 1.959). `S1`'s
 left hand is 0.30 m from the head after k3.
 
+**`X1` against a standing target** (confirmed (runtime), PCSX2 2026-10-07, slot 6, the same still PoizoCiv; cross
+tapped at k0, clip 11 from k2; the strike shapes read from the bodies themselves, as below). Two rules of the test
+decide where `X1` lands, and they hold for every move:
+
+- **The test is swept** (confirmed (code), `Human_TestStrikes` `0x0033f110`): each enabled shape is tested along its
+  move since the last update, from its previous posed point to the new one (shape `+0x20` to `+0x50` for a sphere),
+  not only where it ends. A shape is posed only while it is on, so its first posed update has no sweep (previous =
+  current). `X1`'s right hand never overlaps the target where it ends: at the contact the static gap is +0.013 m
+  from a 1.0 m start and +0.040 m from 1.6 m; only the sweep across the target's front touches.
+- **Hook steps and samples**: a `strike-contact` (or `strike-shape`) call logged at step N happens in the update
+  that produces the sample of step N + 1: the target's health first drops in that sample (also in the `S1` and 653
+  runs above), and the shapes that overlap are the ones posed in it. So "contact k9" in the table is the update
+  whose result is sample k10, the hand sweeping from its k9 point to its k10 point.
+
+**The slide.** From every start within the far range the attacker slides in a straight line from k3 to k11, by
+(start − 0.879) / 9 per update (0.080 m from 1.6 m, 0.047 m from 1.3 m, 0.013 m from 1.0 m: forward even from 1.0 m,
+inside the 1.02 m reach, unlike 653's slide back), and stands **0.878-0.879 m** from the target at k12 whatever the
+start. `Attack_SteerToTarget` sends the attacker to the target's point less the reach (1.02 m) by
+`Human_MoveToOver` over at most the time to the clip's first event + 0.1 s (confirmed (code)); the other 0.14 m is
+the clip's own forward motion or the target point not being the feet (inferred, not separated). So at the contact
+the attacker is **still moving in**: 0.890 m (from 1.0 m), 0.930 m (from 1.3 m), 0.970 m (from 1.6 m) after the
+contact update, never 1.02 m.
+
+**The hand and the target at contact.** In the attacker's frame (forward, right, up from his feet, metres; samples
+after each update; the attacker's scale 0.97 makes the hand sphere's radius 0.087). The hand's path is the same to
+the millimetre from every start; the target's shapes sit at the distance d:
+
+| Sample | Right hand sphere (25), r 0.087 | Target spine segment (3), r 0.18 | Target head (6), r 0.15 |
+| --- | --- | --- | --- |
+| k8 (first posed) | 0.009, +0.459, 1.627 | (d − 0.013, −0.03, 1.112) to (d + 0.003, −0.03, 1.492) | d − 0.06, 0.00, 1.781 |
+| k9 | 0.732, +0.233, 1.668 | the same | the same |
+| k10 (contact) | 0.823, −0.223, 1.536 | (d − 0.013, +0.04, 1.112) to (d + 0.003, +0.04, 1.492) | d − 0.06, +0.07, 1.781 |
+| k11 | 0.647, −0.592, 1.374 | (target recoiling) | |
+| k12 | 0.389, −0.707, 1.172 | | |
+
+The hand comes in at shoulder height and crosses from the attacker's right to his left in front of the target, a
+hook; between k9 and k10 it passes the top of the spine segment (1.49 m) where it meets the right-to-left line,
+0.78 m ahead at 1.60 m high. With the attacker standing still through that update, the sweep touches the spine only
+when the distance after the update is at most **1.019 m** (the head at 1.00 m); an attacker still moving forward
+carries the start of the sweep back with him (the sweep is in world space), which costs reach: the 1.6 m run, 0.078 m
+forward in that update, hit with 0.022 m to spare at 0.970 m. Measured swept gaps (spine / head) at k10: −0.105 /
+−0.059 (from 1.0 m), −0.064 / −0.028 (1.3 m), −0.022 / +0.013 (1.6 m). From 1.9 m, with no slide, the hand stays
+0.68 m short.
+
+So a `X1` stance of 1.02 m with a static overlap test misses by a few centimetres on two counts: the original's
+attacker is 0.89-0.97 m away when the hand crosses (and 0.88 m when the slide ends), and its hand is tested along
+its sweep.
+
 **A walking target** changes this through the lead. PoizoCiv walking in at 1.63 m/s (its AI on, placed until update
 9): the 653 steer stopped near 1.7 m by k3 and contact came at k7 from 1.0 and 1.6 m and **k8** from 1.9 m (the
 shapes' last live update), at 1.15-1.21 m. Pinned in place but still in its walk (velocity 1.6 m/s toward the
@@ -267,8 +317,9 @@ attacker, position written every update), the lead put the attacker 1.9-1.95 m a
 1.0 and 1.9 m, as did `S1` from 1.5 m. So runs against a pinned walking target, as some earlier ones on this page
 were, understate what reaches (inferred; the right snap's miss may be this).
 
-Scenarios: `moves_reach653_10`, `moves_reach653_16`, `moves_reach653_19`, `moves_reachS1_15` (still target) and
-`moves_reach653_19_walk` (walking).
+Scenarios: `moves_reach653_10`, `moves_reach653_16`, `moves_reach653_19`, `moves_reachS1_15`, `moves_reachX1_10`,
+`moves_reachX1_13`, `moves_reachX1_16`, `moves_reachX1_19` (still target; the `X1` ones but the last also read
+the bodies' shapes) and `moves_reach653_19_walk` (walking).
 
 ### Square, in order {#square}
 

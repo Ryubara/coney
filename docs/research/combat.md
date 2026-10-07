@@ -1489,32 +1489,59 @@ It works through these cases, confirmed (code):
    busy), the mission fails at once.
 5. When others are free, and player 1 is cuffed (not out) or holds a flash (item 1), and game state
    `+0x414 + player` is 0, it **waits**. Every 37 updates it asks whether a free member has a route to him
-   (`Gang_CanReachToHelp`, `0x00169ea0`). A yes resets the count at `+0x56e6`; the 4th no in a row fails the mission.
+   (`Gang_CanReachToHelp`, `0x00169ea0`; [who can help](#defeat-helpers)). A yes resets the count at `+0x56e6`; the
+   4th no in a row fails the mission.
    A knocked-out player without a flash fails at once.
 
-A failure sets `+0x14c` = 1 and the menu's title (`MissionFailed_SetReason`, `0x001d1fb8`): `GSTRING.HUD` 21 with
-game state `+0x118` = 1 when player 1 is cuffed (busted), else 20 with `+0x118` = 0
-([Text labels](../references/text-labels.md#text-gstring-hud)).
+A failure sets `+0x14c` = 1 and the menu's title (`MissionFailed_SetReason`, `0x001d1fb8`): `GSTRING.HUD` 21 with game
+state `+0x118` = 1 when player 1 is cuffed (busted), else 20 with `+0x118` = 0 ([Text
+labels](../references/text-labels.md#text-gstring-hud)).
 
 **The hand-off** (`Gm_Level_Update`, `0x00158728`), confirmed (code):
 
 1. While `+0x14c` is 1 or 2, a countdown at level mode `+0x28` runs down by one per update. `Gm_Level_Enter` and
-   `Gm_Level_Resume` set it to **180**; for anything but a story failure it is first capped at 90.
-2. On a story failure (not an Armies level) the first update does the following, unless game state `+0x152` bit
-   `0x2` is set:
-   - makes the **failed camera** (`Cam_GetFailed(1)`) active for player 1;
-   - blends the screen tint to `0xd0000014` over 6.5 s and starts a 1.5 s blur pulse;
-   - hides the HUD and removes the players' overhead icons;
-   - keeps the music volume, then fades it toward 0.7 while the failed camera runs.
+`Gm_Level_Resume` set it to **180**; for anything but a story failure it is first capped at 90. 2. On a story failure
+(not an Armies level) the first update does the following, unless game state `+0x152` bit `0x2` is set: - makes the
+**failed camera** (`Cam_GetFailed(1)`) active for player 1; - blends the screen tint to `0xd0000014` over 6.5 s and
+starts a 1.5 s blur pulse; - hides the HUD and removes the players' overhead icons; - keeps the music volume, then fades
+it toward 0.7 while the failed camera runs.
 
-   At 180 the system music stops.
-3. A pad's newly pressed button bit `0x40` cuts the countdown to 10 and the tint to 1/3 s. Game state `+0x152`
-   bit `0x2` cuts it to 0.
-4. At 0, `MissionFailed_Toggle` pushes mode `0xc`, the [mission-failed screen](pause.md#the-mission-failed-screen)
-   (`ANGameOver_Toggle` on an Armies level). A level end of 2 launches the mission-complete screen instead.
+At 180 the system music stops. 3. A pad's newly pressed button bit `0x40` cuts the countdown to 10 and the tint to 1/3
+s. Game state `+0x152` bit `0x2` cuts it to 0. 4. At 0, `MissionFailed_Toggle` pushes mode `0xc`, the [mission-failed
+screen](pause.md#the-mission-failed-screen) (`ANGameOver_Toggle` on an Armies level). A level end of 2 launches the
+mission-complete screen instead.
 
-So the screen comes 180 updates (6 s at 30 updates a second, inferred) after the failure, with the reason set by
-the engine. `HUDLaunchMissionFailed` is only the scripts' own route.
+So the screen comes 180 updates (6 s at 30 updates a second, inferred) after the failure, with the reason set by the
+engine. `HUDLaunchMissionFailed` is only the scripts' own route.
+
+#### Who can help {#defeat-helpers}
+
+Both tests walk the 16 member slots (gang `+0x48`) of the gang passed in (player 1's) and skip empty slots and the
+downed player himself. Players count as members like anyone else. Confirmed (code):
+
+- **`Gang_NoneAbleToHelp(gang, player)`** (`0x00169dd8`) returns 1 when no other member is free. A member is free when
+  he is not cuffed (state `0x20000`), not knocked out (`Human_IsKnockedOut` `0x00227dd8`: state `0x40000`) and not held
+  (`0x00227d98`: state `0x10000`, the flag a tackled or grabbed victim carries, [above](#state-flags)). Both state tests
+  also count a human with no record (`+0xd4` = 0) as not free. The "busy" of case 4 is only that `0x10000` test. **An
+  empty gang (no live handle) returns 0**, so it does not fail at once and goes on to the route test, which then says
+  no.
+- **`Gang_CanReachToHelp(gang, player)`** (`0x00169ea0`) returns 1 when some member has a route to him; 0 when the
+  player is null or the gang has no live handle. The goal is the player's position (`+0x2b0`) put on the navigation
+  mesh: `Nav_FindPolygonUnder` (`0x00252410`, height 0) drops it to marked ground within 10 m, else to the nearest
+  polygon edge within 2 m (else it stays where it was), and `Nav_FindArea` (`0x00250708`) finds its area. **No area →
+  0**, without trying any member. Then each member in slot order that is not cuffed (`Human_IsCuffed` ≠ 1) and not down
+  or dead (`Human_IsDownOrDead` `0x00227e60` ≠ 1: dead, dying, knocked out or `0x10000`; [AI](ai.md#warrior-follow)) is
+  tested with `Nav_CanReach(his position, goal, his area found from his position, the goal's area, 1, 0xffff)`
+  (`0x0024e078`); the first yes returns 1. There is no distance limit.
+- **`Nav_CanReach`**: no area at either end → no. Two different areas must both be on the route graph (area `s16 +0x02`
+  ≠ 0), else no. A walkable straight line between the points (`Nav_IsWalkableLine`) → yes. Otherwise each end's nearest
+  node it reaches in a straight line must exist, and `Route_Find` with mask `0xffff` must return a route; with the 5th
+  argument 1, as here, a route with any blocked edge (`PathNode_IsEdgeBlocked`) counts as no. ([AI: path
+  planning](ai.md#path-planning) for the graph.)
+
+So a stand-in that always finds a route never fails on the 4th try. The faithful check fails when the player stands off
+the mesh (no area), when every free member is in an area off the graph, or when every route crosses a blocked edge (a
+link with a negative cost, `NavNode_IsLinkBlocked` `0x002510a8`).
 
 ### Being hit, at runtime {#being-hit-runtime}
 

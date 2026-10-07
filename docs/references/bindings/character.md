@@ -208,7 +208,7 @@ other categories and how to read an entry are on the [masterlist](index.md).
 | [`TurnWarriorCommands`](#turnwarriorcommands) | - | 2 | no | no | confirmed (code) |
 | [`WalkingDistance`](#walkingdistance) | number | 5 | no | no | confirmed (code) |
 | [`WCEnableAllCommands`](#wcenableallcommands) | - | 20 | no | yes | confirmed (code) |
-| [`WCEnableAutomaticSwitching`](#wcenableautomaticswitching) | - | 5 | no | no | inferred |
+| [`WCEnableAutomaticSwitching`](#wcenableautomaticswitching) | - | 5 | no | no | confirmed (code) |
 | [`WCEnableCommand`](#wcenablecommand) | - | 25 | no | no | confirmed (code) |
 | [`WCIssueCommand`](#wcissuecommand) | - | 25 | no | yes | confirmed (code) |
 | [`WCLockCommands`](#wclockcommands) | - | 10 | no | no | confirmed (code) |
@@ -5183,13 +5183,15 @@ WCEnableAutomaticSwitching(on)
 
 | # | Argument | Read as | Meaning |
 | --- | --- | --- | --- |
-| 1 | `on` | boolean (nil or 0 is false); default true | Default true; stored at game state +0x431. |
+| 1 | `on` | boolean (nil or 0 is false); default true | True (also when the argument is absent) turns the automatic commands on; stored at game state +0x431. |
 
 **Returns** nothing.
 
-Stores whether the game may switch the player automatically to another gang member (inferred from the name).
+Turns the war chief's automatic commands on or off ([AI](../../research/ai.md#warrior-auto-commands)): while the byte is
+set, the chief's brain orders his crew to fight or follow by what he does. `InitLevel` sets it; only the Rumble arenas
+(`brawl`, `kinghill`, `royal`, `survival`, `tagbt`) turn it off.
 
-- **Evidence:** inferred; detail: brief
+- **Evidence:** confirmed (code) at `0x0041dd68`; detail: traced
 - **Wrapper** `0x00374a00` (registered by `RegisterBindings`); **calls** `0x0041dd68` `GameState_SetAutoSwitch`
 - **Used by** 5 of 467 script chunks (6 references); boot to menu: no; mission 1: no; result used: no
 - **Coney:** implemented

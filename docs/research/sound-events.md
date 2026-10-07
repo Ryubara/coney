@@ -163,6 +163,35 @@ and with a target he cannot see (`Human_HasLineOfSight` `0x00222288`), instead t
 empty, or its human not speaking (`+0x178` dead). The human then takes that slot. So at most two humans of a
 reaction kind make these gesture lines at a time. Confirmed (code).
 
+### Crew lines while tagging {#tag-lines}
+
+Two tag lines come from a crew member, not the tagger, through `Tag_SayNearbyLine(tagger, command)` (`0x00273a68`).
+Confirmed (code):
+
+| When | Command | Caller | Gate on the tagger |
+| --- | --- | --- | --- |
+| the cursor snaps back after more than 4 off-track updates ([Crimes](crimes.md#tagging) step 3) | 80 `tagcheer` | `TagGame_Update` (`0x002748a8`) | his `+0x19c` set; no random chance |
+| the stick game is finished (`Tag_IsComplete`) and was not stopped by the 300-cell cap (game `+0x4fc` = 0) | 83 `tagdone` | `Tag_UpdatePlayer` (`0x00273c60`), not `Tag_End` | none (`+0x19c` is not read) |
+
+1. **Gate.** Nothing unless the tagger is a war chief (`+0x3ac` = 1) and his player's last Warrior command (game state
+   `0x0051489c` `+0x41a` + his `+0x1b0`) is 2, [defend](ai.md#warrior-commands).
+2. **Candidates**: the 16 member slots (gang `+0x48`) of the tagger's gang (his brain `+0x20c`), in slot order. A slot
+   counts when it holds a human who is not the gang's leader (`Gang_GetLeader` `0x00165678`, normally the tagger
+   himself), not a player (`+0x1b0` = −1), not busy (`0x00228258`), whose actions are not blocked (`0x00228228`), whose
+   brain has no queued actions (`+0x2e` ≤ 0), and who is within the **tagger's** far melee range (his brain `+0x140`,
+   5.0 m unless `BrSetMeleeRange` changed it; [AI](ai.md#melee-range)) of the tagger, by the squared distance between
+   their positions.
+3. **Pick**: not the nearest. The first counting slot is taken; every later counting slot replaces it when
+   `Random_Int(100)` (stream `0x006eb8a0`) is 50 or more. So the last counting slot wins at 50 %, the one before at 25
+   %, and the first at 1/2^(n−1) of n.
+4. **Speak**: only the picked member is then tested: `Ambient_MayGesture` ([above](#command-ids)) and **his own**
+   `+0x19a` (`HuEnableTagDone`) must both pass, or nobody speaks (no second choice). He says the command through
+   `Human_SayCommand(1.0, member, command, no callback, no interrupt, uncut 1, null target, duckable 1)`.
+
+So `+0x19c` (`HuEnableTagCheer`, read on the tagger) gates only the cheer, while `+0x19a` (`HuEnableTagDone`, read on
+the speaker) gates both lines. `Human_Init` (`0x00218008`) sets `+0x198` to `+0x19c` all to 1 (one register holding 1,
+stores at `0x0021810c`-`0x0021811c`), so both are on for every human until a script clears them.
+
 ## Hits and contacts {#hits}
 
 ### A strike on a human {#strike-human}
@@ -323,7 +352,7 @@ speaker's voice set has no line for says nothing. The triggers are the functions
 | `0x002af670` | `EngageEnemyGoal_Start` | 71 `engage` (1, -) | confirmed (code) |
 | `0x002678c8` | `Human_PlayGangDeathReaction` | 13 `near` (1, IC) | confirmed (code) |
 | `0x00269b80` | `Hit_PlayBegReaction` | 73 `beg` (1, -C) | confirmed (code) |
-| `0x00273a68` | `Tag_SayNearbyLine` | a nearby human (of 16, gesture, `+0x19a`) says the tag code's command (1, -) | confirmed (code) |
+| `0x00273a68` | `Tag_SayNearbyLine` | a crew member near a war-chief tagger says 80 `tagcheer` or 83 `tagdone` (1, -); [Crew lines while tagging](#tag-lines) | confirmed (code) |
 | `0x00274ee0` | `Revive_Finish` | 75 `revive_thank` (1, I) | confirmed (code) |
 | `0x002752a0` | `Revive_Start` | 76 `revive_reasure` (1, I) | confirmed (code) |
 | `0x00283a30` | `Player_UpdateMugHold` | 8 `swear` (1, I) | confirmed (code) |

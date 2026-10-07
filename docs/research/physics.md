@@ -119,6 +119,38 @@ Body vtable: `+0x08` destructor (`0x00341a00`), `+0x10` `Update` (`0x00341c10`),
 `+0x20` `AddShape` (`0x00341aa8`), `+0x28` `GetShapes` (`0x00341ae0`), `+0x30` / `+0x38` / `+0x40` the ignore
 list, `+0x48` `GetContactScale` (`0x00341e18`: 1.0 for a contact with a body, 0.98 with the mesh).
 
+**World-object bodies** (`Obj_CreatePhysicsBody`, `0x00391d48`), from the type ([`CfgObj`](../references/bindings/config.md#cfgobj)),
+confirmed (code): `shape` 1 (`OBB`) is a box with half-extents `size / 2` (`+0x78`, `PhysicsBox_SetSize`
+`0x00342dc0`); `shape` 2 (`SPHERE`) a sphere of radius `size.x / 2`; both offset by `centre` (type `+0x1c`,
+`Object_GetAttachOffset` `0x003917d8`). Other shapes get no body, except one class (the RTTI check against
+`0x00580ec8`) that gets a 0.75 m sphere with flag 4. The flags are then `0x80000500` plus a bit per `PHYFLAG` bit of
+`CfgObj` argument 12 (`+0x5e`), the [layers](#layers) below; object kinds `0x1d`, `0x21`, `0x22`, `0xf`, `0x1a` and
+`0x1f` add `0x800`, `1`, `2`, `0x100` or the object flag `0x200` (per kind, as listed at `0x00392160`).
+
+#### Collision layers {#layers}
+
+Body flag bits that a mover's mask selects ([Sweeping a body](#sweep)), named by the scripts' `PHYFLAG` table
+([enums](../references/enums.md#phyflag)), which `Obj_CreatePhysicsBody` maps one to one (confirmed (code)):
+
+| `PHYFLAG` | Value | Body flag | Who meets a body with it |
+| --- | --- | --- | --- |
+| `BLOCKOBJECTS` | 1 | `0x2` | a flying world object's sweep |
+| `BLOCKHUMANS` | 2 | `0x4` | a walking human's sweep |
+| `MELEETARGET` | 4 | `0x10` | strikes |
+| `WEAPONTARGET` | 8 | `0x8` | weapon strikes |
+| `JUMPTARGET` | 16 | `0x40` | an airborne (or holding) human's sweep |
+| `CHARGETARGET` | 32 | `0x20` | a human whose capsule has flag 2 (charging) |
+| `RAYCASTTARGET` | 64 | `0x2000` | rays |
+| `COMBATPASSTHROUGH` | 128 | `0x10000` | |
+| `THROWNWEAPONTARGET` | 256 | `0x20000` | thrown weapons |
+| `RUNTARGET` | 512 | `0x40000` | a human above gait 3 (running) |
+
+The "who" column for strikes, rays and thrown weapons is inferred from the names. Confirmed (runtime), the body flags
+in `level99`'s street: humans `0x2203f` (`0x2223f`, `0x2343f`), cars `0x2211a`, glass panes `0x7a`, world objects
+`0x500` (no layer) up to `0x5057e`. So **a walking human meets other humans** (answered `4`, [Contacts](#contacts))
+and the objects with `BLOCKHUMANS`, but **not a car's or a glass pane's body**; what keeps a walker out of a parked
+car is not this sweep (open).
+
 The create functions take the first free body of a pool (owner 0), set the owner (`0x00341a68`) and flags, and add it to
 the body vector and the sorted list (`IPhysics_AddBody` `0x00340668`); the free functions undo that
 (`IPhysics_RemoveBody` `0x00340700`, which first clears the owner from every ignore list) and clear the shape's in-use
@@ -173,11 +205,30 @@ lengths and the capsule (height `0x00219890`, radius `0x00219860` of the human) 
   fall; 0.35 × scale when cuffed; never under 0.2 × scale.
 - **The push sphere** (`0x003420d0`): a 2.0 m sphere from the 30 pool, switched on by set-piece actions (workout,
   uncuff, the action clips through `0x0021c058`). While it is on, `0x003425c0` (from the human's update
-  `0x0023d8c8`) overlaps it with the other humans and adds to each free one's pending push-out (body `+0x50`) a push
-  away from this human, weighed by both humans' attributes 1 and 7: bystanders are nudged out of the animation's
-  way. The weights' meaning is inferred.
+  `0x0023d8c8`) overlaps it with the other humans (options `0x2012`, mask `0x40`) and adds to the pending push-out
+  (body `+0x50`) of each one that is not its target, has no player number and has no body flag `0x200` a push of
+  **0.25 m × w(this) / (w(other) × k(other))** along the line from this human to the other: bystanders are nudged
+  out of the animation's way. w is [attribute](#attributes) 1, 82.0 for every human, so it cancels; k is attribute 7,
+  the other's push weight (1.0, or 1e9 while it must not move). Confirmed (code) at `0x003425c0`.
 - `GetContactScale` (`+0x48`, `0x00342288`): 0.25 while airborne, else 1.0. `+0x50` (`0x00342130`) tells the human
   (`0x00219b08`).
+
+### Attributes {#attributes}
+
+An owner answers numbered float attributes through its vtable `+0xd0` (and sets them through `+0xe0`). Confirmed
+(code) for the human (`0x00221260`, setter `0x002212b0`) and the world object (`WorldObject_GetFloatProperty`,
+`0x00395e40`); the names are inferred from use:
+
+| # | Human | World object | Read by |
+| --- | --- | --- | --- |
+| 1 | 82.0 | its type's `+0x62` (`CfgObj` argument 6; 10 or 50 for most types) | the push sphere ([The human body](#human-body)); a weight |
+| 7 | `+0x27c`: the push weight, 1.0, set to 1e9 to make the human immovable (grabs, arrests, [Combat](combat.md#code-grabs)) | 1.0 | the push sphere |
+| 8 | 0 | its type's `+0x88` (`CfgObj` argument 11, named `mass` in the scripts): 0.1 for 1,359 of the 1,371 types, 0.2 for 7 (the cue ball among them), 0.15 and 0.4 for one each, 0 for 3 | contact code 2's bounce: the restitution |
+| others | 0 | 0 | |
+
+The values per type are confirmed (runtime), read from `level99`'s object database. The bounce
+(`PhysicsVec_Bounce`, `0x0033d8f0`) is `v −= n (v·n)(1 + e)` when `v·n < 0`; a brick
+that hit the floor at 5.4 m/s came back up at 0.54 m/s ([Settling](#settle)).
 
 ### Ignore lists {#ignore-lists}
 
@@ -276,7 +327,9 @@ With all 64 slots busy nothing happens.
 
 The end rotation (`Settle_ComputeTarget`, `0x00340d08`) turns the object by the smallest angle that lines up one of
 its local axes with the contact normal, the turn wrapped to ±90°: it comes to rest on its nearest face. The axis
-(`Settle_NearestAxis`, `0x00340b38`) is the one whose positive direction is nearest the normal **among the axes the
+(`Settle_NearestAxis`, `0x00340b38`) is the one whose positive direction is nearest the normal (the smallest
+`acos(axis · n)`, not `|axis · n|`; the ±90° wrap then lets the negative end land on the floor too, so an allowed
+axis pointing straight down can lose to one lying flat, which is turned through 90°) **among the axes the
 type's `axis` byte allows**: the byte is passed through unchanged (`lbu a3,0x85(v0)` at `0x003946ec`), bit 0 is the
 local x axis, bit 1 y, bit 2 z ([AXIS](../references/enums.md#axis): `X` 1, `Y` 2, `XY` 3, `Z` 4, `XZ` 5, `YZ` 6,
 `XYZ` 7). Bit 3, in `XZ_ROUND` 13 and `YZ_ROUND` 14, is tested but the axis it picks is never read, so a `_ROUND`
@@ -284,18 +337,33 @@ type settles like `XZ` or `YZ`. Confirmed (code). Of the 1,371 object types load
 and never settle, 197 are `Z`, 119 `XYZ`, 76 `X`, 54 `XZ` (the brick, the beer bottle), 30 `XY`, 28 `Y`, 4 `YZ`
 and 8 `XZ_ROUND` (the bats and the pool cue); confirmed (runtime), read from the object database.
 
-On a later ground contact with `0x8000000` set, the object stops: velocity and angular velocity zeroed, flags
+While it settles (`0x40000` only), a floor contact starts nothing new and answers `0x20002`: a bounce with the
+type's restitution, then the move's velocity scaled by the mesh contact scale 0.98 (its z only when upward);
+a wall or a body answers `2`, the same bounce with no scale: no friction, the tangential velocity is kept.
+Confirmed (code) at `0x00394050` and `0x0033e278`, and the 0.98 at runtime (−5.4886 m/s became +0.5379, not
++0.5489). On a later ground contact with `0x8000000` set, the object stops: velocity and angular velocity zeroed, flags
 `0x4000000` (airborne) and `0x8000000` cleared, `0x2000000` (grounded) set. Removing an object (`0x00391c10`)
 cancels its settle.
 
 Confirmed (runtime), a brick dropped from the player's hand (scenario `physics_brick_settle`: `Human_DropHeld` called
-on the player standing in the street of quick-save slot 6, no input): the brick (type 203, `axis` `XZ`) fell from
-z 1.18 with its interval 2 ticks and its vertical velocity falling by 0.5226 m/s per update (15.68 × 1/30). Its
-first floor contact (normal (0, 0, 1), at −5.49 m/s) started a settle with axis mask 5 and answered `0x20002`: the
-brick bounced up at 0.54 m/s while the flags held `0x40000`. Its second floor contact, 12 ticks later, found it
-settled (`0x8000000`, the settle's 11 ticks done) and stopped it: velocity 0, flags airborne and settled cleared,
-grounded set, and its interval back to 20 ticks two updates later. Two runs gave the same sequence, one update
-apart.
+on the player standing in the street of quick-save slot 6, no input; hooks on the object's update, its velocity
+setter, the contact handler and the bounce, so every value below is the game's own, per update):
+
+| Ticks after the drop | What happens |
+| --- | --- |
+| 0 | the drop: velocity set to 0 (`Human_DropHeld` clears `+0x10c`, so the [holder start](#movers) is not used); flags `0x4000000` airborne |
+| 1 | first update: `vz` = −0.2613 (dt 1/60: the drop's message 28 stamps the object's last-update time a tick back, `Task_SendMessage28` `0x002296c0`, [Characters](characters.md#code-index)) |
+| 3-19, every 2 | `vz −= 0.5226` (dt 1/30, interval 2 ticks), then the sweep moves it |
+| 20 | floor contact at −5.49 m/s: `WorldObject_OnContact` starts the settle (axis mask 5) and answers `0x20002`; the bounce (`e` = 0.1, the type's `+0x88`, [Attributes](#attributes)) gives +0.5379 m/s |
+| 22-28, every 2 | while settling, `vz` drops by only **0.2613** per update (+0.2766, +0.0153, −0.2459, −0.5072, −0.7685): the update's dt is 1/60, not 1/30 (the step's settle turn re-poses the object every tick, which inferred stamps its time) |
+| 31 | the settle ends (11 ticks after it started): flags `0x40000` → `0x8000000` |
+| 32 | `vz −= 0.5225` (dt 1/30 again), then the second floor contact finds it settled and answers `0x10003`: back to 0.01 above the floor, velocity 0 (set three times: the handler, the sweep, the object), airborne and settled cleared, grounded set |
+| 36 | interval back to 20 ticks |
+
+The brick (`OBB` 0.07 × 0.21 × 0.10 m, centre (0, 0, 0)) came to rest flat on its 0.21 × 0.07 face with its origin
+at z 0.2831: the floor (0.2231, where the player stands) + its half-height 0.05 + the 0.01 back-off. Four runs gave
+this sequence; one other run met the floor one update earlier at a different contact point, and its velocity was 0
+after each bounce (not explained).
 
 ### Queries: the sort-and-sweep {#queries}
 
@@ -333,11 +401,12 @@ So `+0x14` is the classic sort-and-sweep bound: the step's refresh keeps it from
 2. **Against the mesh** (`0x0033d340`): the first shape's mesh sweep (`+0xe0` by type, through `0x0033d2d8` with
    the wall threshold −0.65). For a human (type mask `0x40`) in the air, also the landing segment (`0x0023e408`),
    whose hit becomes a contact flagged `0x80`.
-3. **Against the bodies** (`PhysicsBody_SweepHumanMask`, `0x0033d498`): the candidates of the swept box, filtered by
-   a type mask that depends on the mover (2 for a non-human; for a human 4, or `0x44` while airborne or holding
-   (`0x800`), plus `0x20` when the capsule has flag `0x2`, `0x40000` from a state counter above 3, and a bit per
-   grab partner); same non-zero group skipped; owner asked (`+0x110`); each enabled shape of the candidate (body
-   vtable `+0x28`) through the sweep table.
+3. **Against the bodies** (`PhysicsBody_SweepHumanMask`, `0x0033d498`): the candidates of the swept box whose
+   **body flags** (`+0x40`; the type mask is −1) share a bit with a mask that depends on the mover
+   ([collision layers](#layers)): 2 `BLOCKOBJECTS` for a non-human; for a human 4 `BLOCKHUMANS`, or `0x44` (and
+   `JUMPTARGET`) while airborne or holding (`0x800`), plus `0x20` `CHARGETARGET` when the capsule has flag `0x2`,
+   `0x40000` `RUNTARGET` above gait 3, and `0x80000 << player`; same non-zero group skipped; owner asked
+   (`+0x110`); each enabled shape of the candidate (body vtable `+0x28`) through the sweep table. Confirmed (code).
 4. Contacts are inserted sorted by fraction (`0x0033d718`) and resolved ([Contacts](#contacts)).
 
 ### The shape-pair tables {#dispatch}
@@ -469,6 +538,10 @@ per-object tween run on Coney's fixed step, not a separate pass.
 
 ## Open questions
 
-- What the human attributes 1 and 7 that weigh the push sphere's push are.
+- How an object of a type with `axis` 0 comes to rest: nothing in its contact handler clears airborne, so it would
+  keep bouncing at interval 2 (inferred); the throwable ones (`dyn_lawnchair_a`, `_b`) break on their first contact
+  (runtime).
+- What the holder's `+0x5f0` and `+0x600` are (a thrown object's start position and velocity, [Movers](#movers);
+  the hand and the throw, inferred).
 - Which classes the four other task vtables with the empty contact handler are (the car's message `0x3f` is
   answered: [Cars: hit effects](cars.md#hit-effects)).

@@ -242,7 +242,15 @@ The update (`0x001fad40`) runs four phases (byte `+0xe4`), confirmed (code):
    clear; "3" plays a sound and loads a random `dj_start_01`-`10`, which plays with the last word. After **4,000 ms**
    the screen calls the Lua function `onDone` with no arguments and closes.
 
-The fighters' brains are off throughout, so nobody moves until `FinishCountdown` (inferred from the scripts).
+**The world keeps running under the intro.** The screen is only a HUD widget: `HUD_Update` (`0x001af010`) updates it
+(`0x001fad40`) after `Gm_Level_Update` (`0x00158728`) has already ticked the tasks and the game mode
+(`TaskManager_Tick`, `GameMode_Tick`) for the frame, and nothing in that frame reads whether the intro is open. The
+intro pushes no game mode and sets no freeze flag. What it does set each update is the pause menu's START cool-down
+(`0x0050eddc` record `+0x20ac` = 1, [Pause](pause.md)), so START cannot pause the game while it shows; once the prompt
+is up it also takes the HUD pad's buttons `0xf000`. Confirmed (code). So humans, brains and gangs update throughout.
+What keeps a fighter still is only what the scripts did to him: `BrDead` alone does not, because a dead brain still runs
+the goals on its stack, including those its gang's tactic gives it ([AI: handlers](ai.md#handlers)). That the fighters
+do move during the intro is inferred, not yet seen at runtime.
 
 ## The win camera {#win-camera}
 

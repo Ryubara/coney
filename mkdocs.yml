@@ -151,6 +151,7 @@ nav:
           - Maths: research/maths.md
           - "Link-once code (templates, inlines)": research/link-once.md
           - Debug features and leftovers: research/debug.md
+          - Cut and unused content: research/cut-content.md
       - File formats:
           - Asset inventory: research/formats/inventory.md
           - WARRIORS.DIR / .WAD: research/formats/wad-dir.md

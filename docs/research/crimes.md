@@ -469,7 +469,8 @@ calls no script itself.
 3. The cursor is **on track** within 6 cells of a path point no more than 4 points ahead of or behind the progress;
    progress moves to the nearest such point. Off track for more than 4 updates while the stick moves, the cursor
    snaps back to the path at the progress, the controller rumbles, and the game pauses for the pause time; a crew
-   member may comment (speech 80 `tagcheer`, when the tagger's `+0x19c` is set).
+   member may comment (speech 80 `tagcheer`, when the tagger's `+0x19c` is set; [who
+   speaks](sound-events.md#tag-lines)).
 4. **Paint**: each charge lasts the charge time; when it runs out the next charge is spent (item 3 − 1), the cursor
    snaps back and the game pauses. With no charge left the tag ends unfinished.
 5. **Finished** when the progress is within 4 points of the path's end; painting 300 cells first ends it unfinished.
@@ -485,8 +486,9 @@ The **tuning**, by the Warrior class's byte `+0x09` (1-3, 0 counting as 1), from
 | 3 | 9,500 ms | 500 ms | 0.073 |
 | `HuTagDifficulty` defaults | 15,000 ms | 1,000 ms | 0.06 |
 
-**The end** (`Tag_End`, `0x0022e848`), confirmed (code): finished, the tag is marked sprayed (messages `0x41` 1.0 and
-`0x19` 3), a crew member says 83 `tagdone`, and a clean finish scores bonus event 1-3; unfinished with less than 30 %
+**The end**, confirmed (code): on a finish the player's update (`Tag_UpdatePlayer`) marks the tag sprayed (`+0x3ba`,
+messages `0x41` 1.0 and `0x19` 3) and a crew member says 83 `tagdone` ([who speaks](sound-events.md#tag-lines)); then
+`Tag_End` (`0x0022e848`): a clean finish scores bonus event 1-3; unfinished with less than 30 %
 of the current charge left, one more charge is spent. The tagger's flag is freed, the **tagger** gets event `0xe`
 (the tag's handle and whether it was finished, through its own vtable `+0x44`) and the **tag object** (human
 `+0x36c`) gets message `0x13`. Hint `0x10` in level `0x57`.

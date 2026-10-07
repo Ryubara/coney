@@ -3719,10 +3719,12 @@
   calls:
     - {addr: 0x0041dd68, name: GameState_SetAutoSwitch}
   args:
-    - {name: "on", lua: boolean, default: true, desc: "Default true; stored at game state +0x431."}
+    - {name: "on", lua: boolean, default: true, desc: "True (also when the argument is absent) turns the automatic commands on; stored at game state +0x431."}
   description: >-
-    Stores whether the game may switch the player automatically to another gang member (inferred from the name).
-  evidence: inferred
-  depth: brief
+    Turns the war chief's automatic commands on or off ([AI](../../research/ai.md#warrior-auto-commands)): while the
+    byte is set, the chief's brain orders his crew to fight or follow by what he does. `InitLevel` sets it; only the
+    Rumble arenas (`brawl`, `kinghill`, `royal`, `survival`, `tagbt`) turn it off.
+  evidence: confirmed-code
+  depth: thorough
   usage: {chunks: 5, calls: 6, boot: false, mission1: false, result_used: false}
   coney: implemented

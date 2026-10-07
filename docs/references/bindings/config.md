@@ -1480,12 +1480,12 @@ CfgObj(name, className, hitpoints, v4, v5, v6, centre, size, shape, axis, mass, 
 | 3 | `hitpoints` | number, truncated to an integer | 16-bit value at +0x58: a door's or barrier's hitpoints (0x003fb5f8, 0x003b2f40); for a held weapon, damage added to the hit (0x0021b290). |
 | 4 | `v4` | number, truncated to an integer | Byte at +0x5a. |
 | 5 | `v5` | number, truncated to an integer | Byte at +0x5b. |
-| 6 | `v6` | number, truncated to an integer | 16-bit value at +0x62. |
+| 6 | `v6` | number, truncated to an integer | 16-bit weight at +0x62: the object's physics attribute 1 (0x00395e40), which weighs pushes (a human's is 82.0); 10 or 50 for most types. |
 | 7 | `centre` | table of 3 numbers (t[1]..t[3]) | Collision centre offset {x, y, z} in metres. |
 | 8 | `size` | table of 3 numbers (t[1]..t[3]) | Collision box size {x, y, z} in metres (+0x78). |
 | 9 | `shape` | number, truncated to an unsigned integer | Physics shape (PHYS table: NONE, OBB, ...), byte at +0x84. |
 | 10 | `axis` | number, truncated to an unsigned integer | Main axis (AXIS table), byte at +0x85. |
-| 11 | `mass` | number (single precision) | Float at +0x88 (0.1 for hats; mass or weight, inferred). |
+| 11 | `mass` | number (single precision) | Float at +0x88: not a mass but the bounce restitution, the object's physics attribute 8 (0x00395e40) that contact code 2 bounces with ([Physics](../../research/physics.md#contacts)); 0.1 for 1,359 of the 1,371 types. |
 | 12 | `v12` | number, truncated to an unsigned integer | 16 bits at +0x5e; meaning not traced. |
 | 13 | `material` | number, truncated to an unsigned integer | Surface material (MATERIAL table), byte at +0x64: a door's collision triangles and impact sounds use it (0x003a37b8 case 3). |
 | 14 | `pickupAnim` | number, truncated to an unsigned integer | Animation used to pick it up (ANIM table), byte at +0x65. |

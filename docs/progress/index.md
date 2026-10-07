@@ -29,13 +29,13 @@ at the top of the repository's `README.md`.
 ## Overall
 
 ![Reimplemented: 14.9%](https://img.shields.io/badge/reimplemented-14.9%25-orange) ![Researched: 95.9%](https://img.shields.io/badge/researched-95.9%25-green)
-![Understood: 93.7%](https://img.shields.io/badge/understood-93.7%25-green)
+![Understood: 100.0%](https://img.shields.io/badge/understood-100.0%25-green)
 
 | | Progress | Share |
 | --- | --- | --- |
 | **Reimplemented** | `███░░░░░░░░░░░░░░░░░` | 14.9% of the game's own code (498,932 of 3,354,776 bytes, 1,721 functions) |
 | **Researched** | `███████████████████▏` | 95.9% placed in a source file or directory (3,217,920 bytes) |
-| **Understood** | `██████████████████▊░` | 93.7% named in Ghidra and cited with evidence (3,076,568 of 3,283,904 bytes; 10,615 of 11,422 functions, 92.9%) |
+| **Understood** | `████████████████████` | 100.0% named in Ghidra and cited with evidence (3,283,904 of 3,283,904 bytes; 11,422 of 11,422 functions, 100.0%) |
 | **[Milestones](../roadmap.md)** | `█████▊░░░░░░░░░░░░░░` | 4 of 14 done |
 
 566 reimplemented function(s) have no size yet and add no bytes.
@@ -103,7 +103,7 @@ at the top of the repository's `README.md`.
 | `GameModes` | `████████████████████` | 100.0% | 450 of 450 | 450 | 450 | 98,632 |
 | `Graphics` | `████████████████████` | 100.0% | 630 of 630 | 630 | 630 | 191,888 |
 | `GUI` | `████████████████████` | 100.0% | 1,725 of 1,725 | 1,725 | 1,725 | 492,072 |
-| `Human` | `████████████████▏░░░` | 80.8% | 2,502 of 3,309 | 3,309 | 2,502 | 1,079,972 |
+| `Human` | `████████████████████` | 100.0% | 3,309 of 3,309 | 3,309 | 3,309 | 1,079,972 |
 | `Maths (unnamed)` | `████████████████████` | 100.0% | 72 of 72 | 72 | 72 | 12,288 |
 | `Memory` | `████████████████████` | 100.0% | 89 of 89 | 89 | 89 | 15,504 |
 | `Physics` | `████████████████████` | 100.0% | 183 of 183 | 183 | 183 | 78,580 |
@@ -118,7 +118,7 @@ at the top of the repository's `README.md`.
 | `Movie` | `████████████████████` | 100.0% | 11 of 11 | 11 | 11 | 5,136 |
 | `link-once` | `████████████████████` | 100.0% | 651 of 651 | 651 | 651 | 95,912 |
 | Unattributed | `████████████████████` | 100.0% | 44 of 44 | 44 | 44 | 20,936 |
-| **All** | `██████████████████▊░` | 93.7% | 10,615 of 11,422 | 11,422 | 10,615 | 3,283,904 |
+| **All** | `████████████████████` | 100.0% | 11,422 of 11,422 | 11,422 | 11,422 | 3,283,904 |
 
 ## Research coverage
 

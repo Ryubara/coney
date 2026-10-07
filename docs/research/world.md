@@ -224,7 +224,7 @@ Every atomic gets 16 bytes (offset in `0x0050cd98`; registered by `0x001927d8`);
 | Offset | Stream | Default | Meaning | Evidence |
 | --- | --- | --- | --- | --- |
 | `+0x00` | float | 1.0 | uploaded to VU memory by the game's four custom PS2 pipelines (`0x004252c8`, `0x00426430`, `0x004275d0`, `0x00428410`); **the scale of the packed 16-bit vertex positions** ([PS2 world geometry](#ps2-world-geometry)) | upload confirmed (code); scale confirmed (runtime) by Coney's disc test; that the microcode applies it this way inferred |
-| `+0x04` | float | 1.0 | uploaded next to `+0x00` in the same quadword (`+0x00` as `x`, `+0x04` as `z`; `0x001928c0`, `0x001928f0`); **the scale of the packed 16-bit texture coordinates** | upload confirmed (code); scale confirmed (runtime) by Coney's viewer, visually; the microcode was not read |
+| `+0x04` | float | 1.0 | uploaded next to `+0x00` in the same quadword (`+0x00` as `x`, `+0x04` as `z`; `0x001928c0`, `0x001928f0`); **the scale of the packed 16-bit texture coordinates** | upload confirmed (code); scale confirmed (runtime) by Coney's viewer, visually; the dual microcode applies it to both sets, confirmed (code) ([Pipelines](#pipelines)) |
 | `+0x08` | u32 | 0 | read by `0x004290d8` | confirmed (code); meaning unknown |
 | `+0x0c` | | 0 | not streamed: the game object that owns the atomic (getter `0x00192870`, used by the object renderers) | confirmed (code); meaning inferred |
 
@@ -290,8 +290,34 @@ inferred from the shared microcode, not used. `0x30086` is the dual-texture pipe
 **Disc check (corroboration):** in the streamed worlds' part files, 9,516 materials carry MatFX effect 4 (dual), all
 with the blend `SRCALPHA` / `INVSRCALPHA` and a second texture; 2,467 carry effect 1 (bump map), which keeps its stored
 pipeline. So the **second texture-coordinate set** is, inferred, the coordinates of a dual material's second texture,
-alpha-blended over the first (decals, grime, painted markings); the `0x3F0 +0x04` scale presumably applies to it too.
-How the microcode at `0x004fc870` draws the second pass was not read.
+alpha-blended over the first (decals, grime, painted markings).
+
+**The dual pipeline's upload and microcode** (`0x004275d0`, `0x004fc870`), confirmed (code) from the disassembly of
+the VU1 program (our own decoding of the `MPG` blocks of the DMA chain at `0x004fc870`):
+
+- **Both coordinate sets are scaled by `0x3F0 +0x04`.** The upload unpacks ten quadwords to VU1 address `0x3bc`
+  (956); the eighth, at **963**, is the scale quadword (`+0x00` as `x`, `+0x04` as `z`). The microcode loads it
+  (`LQ.xz vf6, 963(vi0)`, at VU address `0x0011`) and, for every vertex, converts the whole texture-coordinate
+  quadword (both sets, `V4_16`: s1, t1, s2, t2) to float and multiplies **all four** components by its `z`
+  (`ITOF0.xyzw vf14, vf14`, then `MULz.xyzw vf14, vf14, vf6z`, at `0x0023` / `0x0027`). Positions are multiplied
+  by `x` the same way, the normals by 1/127, and the prelighting is only converted to float.
+- **The second pass's blend comes from the material, not the microcode.** The upload writes `ALPHA_2` from the 64-bit
+  word at `+0x28` of the material's dual effect. `RpMatFXMaterialSetDualBlendModes` (`0x004658d0`) stores the source and
+  destination blend at the effect's `+0x04` / `+0x08` and rebuilds that word (`0x00465e78`) as **`table[dst][src]` with
+  `FIX` `0x80`**, from a 6 × 6 byte table at `0x0052e620` over zero, one, source alpha, inverse source alpha,
+  destination alpha and any other mode. Source alpha over inverse source alpha gives **`0x44`** (the ordinary alpha
+  blend); one and one gives `0x68` (additive); unsupported pairs give `0xaa`. Every dual material in the streamed worlds
+  is source alpha / inverse source alpha (disc check above), so in the retail worlds the second pass is always `0x44`; a
+  faithful port can still convert the pair through the same table.
+- The rest of `TEST_2` is the global Z test (`0x00596de8` & `0x70000`) with no alpha test (the effect's `+0x38`, 0). The
+  fog colour of the second pass is the effect's `+0x30` unless that is `0x1000000`, the default (`0x00465f88`), when it
+  is the current fog colour (`0x00596df8`); other writers of `+0x30` were not searched.
+
+**Runtime corroboration** (the GS dumps of the [reference views](rendering.md#reference-views) and the level dumps,
+fourteen dumps, 1,684 dual pairs): each context-2 strip draws the same screen positions as the context-1 strip before it
+with different texture coordinates (the second set), and in most pairs the coordinates of both passes are multiples of
+the same power of two, the scale (in the rest, inferred, one set's raw values were all even or its coordinates whole
+numbers, so its step looks coarser or finer).
 
 **Vertex colour range**, confirmed (code) at the uploads `0x004252c8` and `0x00426430`: the **material colour** is
 scaled by `1/255` for an untextured material and by `0.0019700117` (about `0.5/255`) for a textured one; alpha
@@ -695,7 +721,8 @@ one on the plane's axis, the side `collectSectors` takes it to be.
 above):
 
 - **`0x3F0 +0x04`**: the texture-coordinate scale. The code shows both floats uploaded in one quadword; the microcode
-  that applies them was not read, so the evidence stays Coney's visual check ([Atomic plugin](#atomic-plugin)).
+  of the plain pipelines was not read, so for them the evidence stays Coney's visual check; the dual pipeline's
+  microcode multiplies both texture-coordinate sets by it, confirmed (code) ([Pipelines](#pipelines)).
 - **Vertex colour range**: consistent with 0x80 = 1.0, so Coney's doubling stays; the CPU halves textured material
   colours for the same reason ([Pipelines](#pipelines)). The lit result is clamped at 1.0 before the material
   multiplies it ([Lighting: the maths](lighting.md#world)), confirmed (runtime). The world is lit by Coney's light manager
@@ -819,8 +846,9 @@ Some pairs are byte-identical (`level91`/`level97`, `level119`/`level120`).
 
 ## Open questions
 
-- **The microcode**: how the VU1 programs at `0x005045a0`, `0x004fc870` and `0x004ff1c0` use the `0x3F0` scales,
-  the prelighting and the lights, and how the dual pass draws (a PCSX2 look at VU1 memory would settle `+0x04`).
+- **The microcode**: how the VU1 programs at `0x005045a0` and `0x004ff1c0` use the `0x3F0` scales, the
+  prelighting and the lights. The dual program `0x004fc870` scales both texture-coordinate sets by `+0x04`
+  ([Pipelines](#pipelines)); its lighting part was not read.
 - **MatFX effect 1** (bump map, 2,467 materials): which pipeline it ends up with, and whether it draws differently.
 - **The two atomic pipelines `0x30082` and `0x30083`:** only one atomic uses `0x30082`; how the two differ.
 - **The native data struct size** that exceeds its section ([Part file](#part-file)).

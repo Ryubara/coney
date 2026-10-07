@@ -1268,12 +1268,12 @@
     - {name: hitpoints, lua: number, ctype: int, desc: "16-bit value at +0x58: a door's or barrier's hitpoints (0x003fb5f8, 0x003b2f40); for a held weapon, damage added to the hit (0x0021b290)."}
     - {name: v4, lua: number, ctype: int, desc: "Byte at +0x5a."}
     - {name: v5, lua: number, ctype: int, desc: "Byte at +0x5b."}
-    - {name: v6, lua: number, ctype: int, desc: "16-bit value at +0x62."}
+    - {name: v6, lua: number, ctype: int, desc: "16-bit weight at +0x62: the object's physics attribute 1 (0x00395e40), which weighs pushes (a human's is 82.0); 10 or 50 for most types."}
     - {name: centre, lua: table, elem: number, count: 3, written_back: true, desc: "Collision centre offset {x, y, z} in metres."}
     - {name: size, lua: table, elem: number, count: 3, written_back: true, desc: "Collision box size {x, y, z} in metres (+0x78)."}
     - {name: shape, lua: number, ctype: unsigned, desc: "Physics shape (PHYS table: NONE, OBB, ...), byte at +0x84."}
     - {name: axis, lua: number, ctype: unsigned, desc: "Main axis (AXIS table), byte at +0x85."}
-    - {name: mass, lua: number, ctype: float, desc: "Float at +0x88 (0.1 for hats; mass or weight, inferred)."}
+    - {name: mass, lua: number, ctype: float, desc: "Float at +0x88: not a mass but the bounce restitution, the object's physics attribute 8 (0x00395e40) that contact code 2 bounces with ([Physics](../../research/physics.md#contacts)); 0.1 for 1,359 of the 1,371 types."}
     - {name: v12, lua: number, ctype: unsigned, desc: "16 bits at +0x5e; meaning not traced."}
     - {name: material, lua: number, ctype: unsigned, desc: "Surface material (MATERIAL table), byte at +0x64: a door's collision triangles and impact sounds use it (0x003a37b8 case 3)."}
     - {name: pickupAnim, lua: number, ctype: unsigned, desc: "Animation used to pick it up (ANIM table), byte at +0x65."}
