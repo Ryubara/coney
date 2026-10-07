@@ -3,17 +3,21 @@
 // callback, the start sequence, the tracks and the roles' clips, segment streaming, the skip and the end.
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <map>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include "scenes/letterbox.h"
+#include "scenes/scene_cache.h"
 #include "scenes/scene_player.h"
 #include "support/scene_fixtures.h"
 
@@ -73,11 +77,32 @@ class RecordingHost final : public scenes::SceneHost {
     }
 };
 
-// A scene system over a list of `tst_c1`, its segment and a long one-part scene `tst_long` (3 s), recording the Lua
-// calls it makes.
+// An object scene of one second, like the front end's Wonder Wheel: one object track and nothing else, with a loop
+// point (event 29 at frame 0, restarting from frame 0) when `loopPoint` is set.
+test::SceneSpec objectSceneSpec(std::string name, bool loopPoint) {
+    test::SceneSpec spec;
+    spec.name = std::move(name);
+    spec.objects = {test::RoleSpec{"wheel", {5.0F, 5.0F, 0.0F}, 0.0F, {5.0F, 5.0F, 0.0F}, 0.0F}};
+    test::TrackSpec track{.duration = 1.0F,
+                          .positions = {{0, {0.0F, 0.0F, 0.0F}}, {30, {3.0F, 0.0F, 0.0F}}},
+                          .rotations = {},
+                          .events = {}};
+    if (loopPoint) {
+        track.events.push_back(test::SceneEventBytes(0, 29).u16At(4, 0));
+    }
+    spec.part.objects = {track};
+    return spec;
+}
+
+// A scene system over a list of `tst_c1`, its segment, a long one-part scene `tst_long` (3 s) and the object scenes
+// `tst_wheel` (no loop point) and `tst_loop` (a loop point), recording the Lua calls it makes.
 struct Harness {
-    scenes::SceneList list{std::vector<scenes::SceneListEntry>{
-        {0, 0, "tst_first"}, {1, 0, "tst_c1"}, {2, 0, "tst_c1aa"}, {3, 0, "tst_long"}}};
+    scenes::SceneList list{std::vector<scenes::SceneListEntry>{{0, 0, "tst_first"},
+                                                               {1, 0, "tst_c1"},
+                                                               {2, 0, "tst_c1aa"},
+                                                               {3, 0, "tst_long"},
+                                                               {4, 0, "tst_wheel"},
+                                                               {5, 0, "tst_loop"}}};
     std::map<std::string, std::vector<std::byte>, std::less<>> files;
     std::vector<std::string> lua;
     RecordingHost host;
@@ -107,6 +132,8 @@ struct Harness {
             clip.duration = 3.0F;
         }
         files["tst_long"] = test::sceneHeaderRecord(longSpec).data();
+        files["tst_wheel"] = test::sceneHeaderRecord(objectSceneSpec("tst_wheel", false)).data();
+        files["tst_loop"] = test::sceneHeaderRecord(objectSceneSpec("tst_loop", true)).data();
         system.setHost(&host);
     }
 
@@ -130,7 +157,7 @@ struct Harness {
 
 } // namespace
 
-TEST_CASE("a preloaded scene calls its callback once it arrives; a second preload only counts a user", "[scenes]") {
+TEST_CASE("a preloaded scene calls its callback once it arrives; a second preload only adds a user", "[scenes]") {
     Harness h;
     CHECK(h.system.preload("c1", "gPlayCutScene") == 1);
     CHECK(h.system.state(1) == scenes::SceneState::Loading);
@@ -143,13 +170,54 @@ TEST_CASE("a preloaded scene calls its callback once it arrives; a second preloa
     CHECK(h.system.preload("tst_c1", "again") == 1);
     h.step();
     CHECK(h.lua.size() == 1);
-    CHECK(h.system.cache().find(1)->users == 1);
+    CHECK(h.system.cache().find(1)->users == 2);
     // An unknown name is scene 0, which this list holds but the files do not: it fails to load and frees its slot.
     CHECK(h.system.preload("nothing", "cb") == 0);
     h.step();
     CHECK(h.system.state(0) == scenes::SceneState::Empty);
+    // Each unload is one user less; the record stays, idle, until the last one goes.
+    h.system.unload(1);
+    CHECK(h.system.state(1) == scenes::SceneState::Loaded);
+    CHECK(h.system.cache().find(1)->users == 1);
+    CHECK(h.system.isPreloaded("tst_c1"));
     h.system.unload(1);
     CHECK(h.system.state(1) == scenes::SceneState::Empty);
+    CHECK_FALSE(h.system.isPreloaded("tst_c1"));
+}
+
+TEST_CASE("the cache counts users: 1 on arrival, one more per request, the slot freed at 0", "[scenes]") {
+    const scenes::SceneList list(std::vector<scenes::SceneListEntry>{{0, 0, "s00"}});
+    std::vector<std::byte> record = test::sceneHeaderRecord(test::SceneSpec{}).data(); // copied by each read
+    scenes::SceneCache cache(list, [&record](std::string_view) { return record; });
+    using Calls = std::vector<std::pair<std::string, std::uint32_t>>;
+    REQUIRE(cache.request(0, "first", 1) != nullptr);
+    CHECK(cache.find(0)->users == 0); // still loading
+    CHECK(cache.service() == Calls{{"first", 0}});
+    CHECK(cache.find(0)->users == 1);
+    // A request of a scene in any state but empty only adds a user: no callback, and a playing one plays on.
+    for (const scenes::SceneState state :
+         {scenes::SceneState::Loaded, scenes::SceneState::Playing, scenes::SceneState::Ended}) {
+        cache.find(0)->state = state;
+        REQUIRE(cache.request(0, "again", 2) != nullptr);
+        CHECK(cache.service().empty());
+        CHECK(cache.find(0)->state == state);
+    }
+    CHECK(cache.find(0)->users == 4);
+    // An unload of an ended scene with users left: back to Loaded, the record kept.
+    cache.unload(0);
+    CHECK(cache.find(0)->users == 3);
+    CHECK(cache.find(0)->state == scenes::SceneState::Loaded);
+    CHECK(cache.find(0)->header != nullptr);
+    cache.unload(0);
+    cache.unload(0);
+    CHECK(cache.find(0) != nullptr);
+    cache.unload(0);
+    CHECK(cache.find(0) == nullptr);
+    // A request while the file is still on its way counts too: two users once it arrives.
+    REQUIRE(cache.request(0, "cb", 3) != nullptr);
+    REQUIRE(cache.request(0, "other", 4) != nullptr);
+    CHECK(cache.service() == Calls{{"cb", 0}});
+    CHECK(cache.find(0)->users == 2);
 }
 
 TEST_CASE("a cinematic starts, plays its parts, streams its segment and ends with its end function", "[scenes]") {
@@ -291,7 +359,7 @@ TEST_CASE("START skips and sets the chain skip; a stop ends a starting scene; fr
     CHECK(h.system.state(3) == scenes::SceneState::Ended);
 }
 
-TEST_CASE("a looping fixed scene keeps playing until it is stopped", "[scenes]") {
+TEST_CASE("a looping scene without a loop point plays until stopped, then ends at once", "[scenes]") {
     Harness h;
     h.system.preload("tst_c1", "");
     h.step();
@@ -302,12 +370,83 @@ TEST_CASE("a looping fixed scene keeps playing until it is stopped", "[scenes]")
     }
     CHECK(h.system.state(1) == scenes::SceneState::Playing);
     CHECK(h.system.cache().segmentsRead() == 1); // the one segment stays in its buffer from pass to pass
-    h.system.stop(1, false);                     // only stops the looping
-    for (int i = 0; i < 60; ++i) {
+    // No event 29 on any track or clip: a stop that is not forced ends it mid-pass, like any other scene.
+    h.system.stop(1, false);
+    CHECK(h.system.state(1) == scenes::SceneState::Ending);
+    h.step();
+    CHECK(h.system.state(1) == scenes::SceneState::Ended);
+    CHECK(h.system.stats().ended == 1);
+    h.step(); // freed, its one user gone: the slot is empty
+    CHECK(h.system.state(1) == scenes::SceneState::Empty);
+}
+
+TEST_CASE("a looping scene with a loop point only stops looping and ends after its pass", "[scenes]") {
+    Harness h;
+    const scenes::PlayRequest looping{.kind = scenes::PlayKind::Fixed, .looping = true};
+    h.system.preload("tst_loop", "");
+    h.step();
+    REQUIRE(h.system.play(5, looping));
+    for (int i = 0; i < 45; ++i) { // the first update starts it; then half way through the second pass
         h.step();
     }
-    CHECK(h.system.state(1) == scenes::SceneState::Empty);
-    CHECK(h.system.stats().ended == 1);
+    REQUIRE(h.system.state(5) == scenes::SceneState::Playing);
+    h.system.stop(5, false);
+    int updates = 0;
+    while (h.system.state(5) == scenes::SceneState::Playing && updates < 100) {
+        h.step();
+        ++updates;
+    }
+    // The pass runs out (about 15 more updates), not a third one.
+    CHECK(updates >= 14);
+    CHECK(updates <= 16);
+
+    // A forced stop ends even a scene with a loop point at once.
+    h.step();
+    h.step();
+    REQUIRE(h.system.state(5) == scenes::SceneState::Empty);
+    h.system.preload("tst_loop", "");
+    h.step();
+    REQUIRE(h.system.play(5, looping));
+    for (int i = 0; i < 10; ++i) {
+        h.step();
+    }
+    h.system.stop(5, true);
+    CHECK(h.system.state(5) == scenes::SceneState::Ending);
+}
+
+TEST_CASE("the front end's wheel: stopped, unloaded, preloaded again, it plays afresh from frame 0", "[scenes]") {
+    Harness h;
+    const scenes::PlayRequest wheel{.kind = scenes::PlayKind::Fixed, .looping = true};
+    // startScene: not preloaded, so ScenePreload; the callback plays it looping.
+    CHECK_FALSE(h.system.isPreloaded("tst_wheel"));
+    h.system.preload("tst_wheel", "startScene");
+    h.step();
+    CHECK(h.lua == std::vector<std::string>{"startScene(4)"});
+    REQUIRE(h.system.play(4, wheel));
+    for (int i = 0; i < 21; ++i) {
+        h.step();
+    }
+    REQUIRE(h.system.frame(4).has_value());
+    CHECK(h.system.frame(4).value_or(-1.0F) == Approx(20.0F).margin(0.01F));
+
+    // stopScene: no loop point, so the scene ends mid-pass and its slot empties; nothing updates during the movie.
+    h.system.stop(4, false);
+    h.step();
+    h.step();
+    CHECK(h.system.state(4) == scenes::SceneState::Empty);
+
+    // startScene again: the slot is empty, so the record loads afresh, the callback comes and it plays from frame 0.
+    CHECK_FALSE(h.system.isPreloaded("tst_wheel"));
+    h.system.preload("tst_wheel", "startScene");
+    h.step();
+    CHECK(h.lua == std::vector<std::string>{"startScene(4)", "startScene(4)"});
+    REQUIRE(h.system.cache().find(4) != nullptr);
+    CHECK(h.system.cache().find(4)->users == 1);
+    REQUIRE(h.system.play(4, wheel));
+    h.step();
+    REQUIRE(h.system.frame(4).has_value());
+    CHECK(h.system.frame(4).value_or(-1.0F) == Approx(0.0F).margin(0.01F));
+    CHECK(h.system.stats().started == 2);
 }
 
 TEST_CASE("a full set of slots evicts the least recently requested idle scene", "[scenes]") {

@@ -288,6 +288,10 @@ chunk and `<movie>_sub.scn` in steps of 0.166 s, drawn only with the subtitle op
 over a fake decoder (`tests/movies/`) and the disc check `coney_tests "[disc][movies]"` (`LOGO`: 115 frames, 368,640
 16-bit samples).
 
+While a movie plays the game clock stands still, as it does while `Movie_Play` blocks: the movie mode steps 1/30 s
+of its own time but advances no game time (`GameMode::stopsGameClock`), so the mode below resumes where it was, its
+scripts' delayed calls and scenes included ([Front end: background](frontend.md#background)).
+
 **Coney stand-ins:** the movie's clock is the game's fixed step, not Bink's real-time pacing, so test mode runs the
 same every time (a 29.97 movie shows no new frame on about one step in a thousand); YUV to RGB uses the BT.601 studio
 matrix; the captions are read from `level<n>.lev` for `L<n>_IN` and `L<n>_OUT` whatever level is loaded, and drawn in

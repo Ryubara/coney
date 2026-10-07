@@ -134,7 +134,9 @@ class SceneTask {
         if (m_slot.state != SceneState::Playing) {
             return;
         }
-        if (m_request.looping && !force) {
+        // Only a scene with the loop-point flag finishes its pass; any other, looping or not, ends at once, mid-pass
+        // (so the front end's Wonder Wheel stops when an attract movie starts and is loaded afresh after it).
+        if (m_loopPoint && !force) {
             // @orig 0x003a0be8 SceneTask_StopLooping (SceneTask.cpp)
             m_request.looping = false;
             return;
@@ -300,6 +302,8 @@ class SceneTask {
         if (m_request.freeze) {
             host.suspendBrains(true);
         }
+        // The loop-point flag (+0xec): a looping scene whose runners or role clips have a loop point.
+        m_loopPoint = m_request.looping && hasLoopPoint();
         m_slot.state = SceneState::Playing;
         ++m_system.m_stats.started;
         // Frame 0: every runner's first events and pose.
@@ -311,6 +315,27 @@ class SceneTask {
                 stepRole(role, 0.0F);
             }
         }
+    }
+
+    // Whether a runner's track or a role in the scene's clip, in the header's part, has an event 29 (loop point).
+    // @orig 0x0039d870 SceneTask_Start (SceneTask.cpp)
+    [[nodiscard]] bool hasLoopPoint() {
+        const auto loops = [](const std::vector<SceneEvent>& events) {
+            return std::ranges::any_of(events, [](const SceneEvent& event) { return event.type == kEventLoopPoint; });
+        };
+        for (const TrackRun& run : m_tracks) {
+            if (const KeyTrack* track = trackOf(run); track != nullptr && loops(track->events)) {
+                return true;
+            }
+        }
+        for (const RoleRun& run : m_roles) {
+            if (run.inScene) {
+                if (const RoleClip* clip = clipOf(run); clip != nullptr && loops(clip->events)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // ---- Playing ----
@@ -805,6 +830,7 @@ class SceneTask {
     bool m_cameraBegun = false;
     bool m_skipped = false;
     std::uint16_t m_loopFrame = 0;
+    bool m_loopPoint = false;   // +0xec: a non-forced stop only ends the looping
     std::size_t m_humansIn = 0; // +0x1e
     SceneLens m_lens;
     std::vector<RoleRun> m_roles;

@@ -109,6 +109,8 @@ class MovieMode final : public GameMode, public MoviePlayer {
     void playMovie(std::string_view name) override;
 
     [[nodiscard]] std::uint32_t id() const override { return kId; }
+    /// The game clock stands still while a movie plays: nothing else runs while `Movie_Play` blocks.
+    [[nodiscard]] bool stopsGameClock() const override { return true; }
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override;
     /// Draws the due frame unscaled, centred on the screen over black, then the caption.
     /// @orig 0x00429b18 Movie_BuildUploadPacket (BinkMovie.cpp)

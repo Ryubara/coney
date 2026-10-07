@@ -78,6 +78,8 @@ bool SceneCache::readHeader(SceneSlot& slot) {
     slot.objectHandles.assign(slot.header->objects.size(), 0.0);
     slot.suffixes.assign(1, slot.header->firstSegment);
     slot.state = SceneState::Loaded;
+    // The arrival adds the first user (0x00353158); a request made while the file loaded has added one already.
+    ++slot.users;
     slot.callbackDue = !slot.callback.empty();
     if (m_onLoaded) {
         m_onLoaded(*slot.header);
@@ -114,8 +116,18 @@ std::expected<SceneSlot*, Error> SceneCache::loadNow(std::uint32_t id, std::uint
 }
 
 void SceneCache::unload(std::uint32_t id) {
-    if (SceneSlot* slot = find(id); slot != nullptr) {
+    SceneSlot* slot = find(id);
+    if (slot == nullptr) {
+        return;
+    }
+    if (slot->users > 0) {
+        --slot->users;
+    }
+    // The last user gone: the slot is emptied. Otherwise another request still holds the record, idle again.
+    if (slot->users == 0) {
         clear(*slot);
+    } else {
+        slot->state = SceneState::Loaded;
     }
 }
 

@@ -1115,12 +1115,12 @@ mission-complete mode's kinds 2 and 3. Coney's stand-ins, each because the resea
   neon outline spans logical x 325-602 and y 51-408 of 640 × 448, with the sign near (411, 215); the runtime's are
   335-615, 53-408 and (410, 217). **Coney's choices:** when the scene camera starts, the world within 150 m of it is
   preloaded at once (the original streams it during the menus' fade in); the scene's own lights are counted, not
-  made; the objects' tint, pulse and fade are not drawn; the dependency list and packs are not loaded. **Gap**: after
-  an attract movie, `Menu.movieFinished`'s `startScene` asks for the scene with `ScenePreload`, but the scene is still
-  playing out the pass `stopScene` left it, so the preload only adds a user and calls nothing back
-  ([Scenes: loading](scenes.md#loading)). The wheel then stops at the end of that 20 s pass and the background goes
-  black. In the original a non-forced stop ends this scene at once and its slot is emptied before the restart, so
-  `startScene` loads and plays it afresh ([Background: stop and restart](#background)).
+  made; the objects' tint, pulse and fade are not drawn; the dependency list and packs are not loaded. An attract
+  movie stops and restarts the wheel as in the original ([Background: stop and restart](#background)): `stopScene`
+  ends it at once (no loop point), the movie mode stops the game clock while it plays, the scene ends and its one user's
+  unload empties its slot on the first two updates after it, and `Menu.movieFinished`'s `startScene` 500 ms later
+  loads it afresh and plays it from frame 0. The disc test `[disc][frontend][scenes]` checks this with the movie
+  skipped.
 - A flow made without a level loader (the tests without a disc) has no gameplay: after finishing the front end,
   `update` logs `level start requested: <level>` and starts the front end again, so the player is back on the menus.
 - Without a script system (no disc), or when `Menu.onStart` did not push the menus, the level flow calls

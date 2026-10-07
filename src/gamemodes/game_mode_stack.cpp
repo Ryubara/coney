@@ -102,8 +102,11 @@ LoopCounts GameModeStack::runUntilEmpty(GameTimer& timer, FrameClock& clock, con
             }
             ++ran;
             m_holding = false;
-            const std::uint64_t advanced = timer.update();
-            updateTop(FrameTime{m_steps, GameTimer::toSeconds(advanced), timer.ticks(), advanced});
+            // A mode that stops the game clock (a movie) still steps 1/30 s of its own time, but game time stays.
+            const bool clockStill = top()->stopsGameClock();
+            const std::uint64_t advanced = clockStill ? 0 : timer.update();
+            const double seconds = GameTimer::toSeconds(clockStill ? GameTimer::kFixedStepTicks : advanced);
+            updateTop(FrameTime{m_steps, seconds, timer.ticks(), advanced});
             ++m_steps;
             ++counts.steps;
         }

@@ -4,8 +4,9 @@
 // the start-up path reaches PM_Greet with level100's world loaded as the front-end scene and the front end's scene
 // system made over the disc's scene list, as main sets them up; then `level100.lua`'s WonderWheelAnim plays
 // `WonderWheel_100` (scene 34) looping through its camera, its 29 objects bound, live and drawn, the wheel turning.
-// After an attract movie it plays out its last pass and ends (an open question on frontend.md). It runs only when the
-// environment variable CONEY_DISC names the disc and skips otherwise. It prints counts only (LEGAL.md).
+// An attract movie stops it at once; after the movie it is loaded again and plays from its first frame
+// (frontend.md#background). It runs only when the environment variable CONEY_DISC names the disc and skips otherwise.
+// It prints counts only (LEGAL.md).
 
 #include <algorithm>
 #include <cmath>
@@ -167,10 +168,8 @@ TEST_CASE("the disc's front end plays the Wonder Wheel scene behind the menus", 
     }
 
     // Idle on PM_Greet: the attract movie (L1_IN, the second after the start-up's) comes round after about 70 s.
-    // Menu.playMoviePostFade's stopScene (SceneStop, not forced) ends the looping; Menu.movieFinished's startScene asks
-    // for the scene again, but ScenePreload of a scene that is still playing only adds a user and calls nothing back
-    // (docs/research/scenes.md#loading), so the scene plays out its last 20 s pass and ends, its camera with it
-    // (docs/research/frontend.md#coneys-implementation, an open question).
+    // Menu.playMoviePostFade's stopScene (SceneStop, not forced) ends the scene at once, mid-pass: it has no loop point
+    // (docs/research/scenes.md#ending). The movie is skipped here (no player), as if it had ended at once.
     const float passSeconds = scenes->length(34);
     std::uint64_t idle = 0;
     while (std::ranges::count(flow.services().movies(), std::string("L1_IN")) < 2 && idle < 2400) {
@@ -178,23 +177,35 @@ TEST_CASE("the disc's front end plays the Wonder Wheel scene behind the menus", 
         ++idle;
     }
     CHECK(std::ranges::count(flow.services().movies(), std::string("L1_IN")) == 2);
+    CHECK_FALSE(scenes->playing());
+    // Two updates on, it has ended, its one user gone and its slot emptied, its camera popped (black).
+    stack.runUntilEmpty(timer, {}, 2);
+    CHECK(scenes->stats().ended == 1);
+    CHECK(scenes->state(34) == coney::scenes::SceneState::Empty);
+    CHECK_FALSE(world->cameraActive());
+    // 500 ms after the movie Menu.movieFinished's startScene finds it not preloaded, loads it afresh and its callback
+    // plays it again from the first frame (docs/research/frontend.md#background).
     std::uint64_t after = 0;
-    while (flow.levelFlow().scenes() != nullptr && flow.levelFlow().scenes()->playing() && after < 1000) {
+    while (scenes->state(34) != coney::scenes::SceneState::Playing && after < 100) {
         stack.runUntilEmpty(timer, {}, 1);
         ++after;
     }
-    CHECK(after > 0);
-    CHECK(static_cast<float>(after) <= passSeconds * 30.0F);
-    // A second on, the scene has ended and the script's camera (black) is current again.
-    stack.runUntilEmpty(timer, {}, 30);
-    CHECK(flow.levelFlow().scenes()->stats().ended == 1);
-    CHECK_FALSE(world->cameraActive());
+    CHECK(scenes->state(34) == coney::scenes::SceneState::Playing);
+    CHECK(scenes->stats().started == 2);
+    const std::optional<float> restartFrame = scenes->frame(34);
+    REQUIRE(restartFrame.has_value());
+    CHECK(restartFrame.value_or(-1.0F) < 2.0F);
+    CHECK(world->cameraActive());
+    // Past the end of the pass it was stopped in, it is still turning.
+    stack.runUntilEmpty(timer, {}, static_cast<std::uint64_t>(passSeconds * 30.0F) + 30);
+    CHECK(scenes->state(34) == coney::scenes::SceneState::Playing);
+    CHECK(scenes->stats().ended == 1);
     CHECK(flow.scripts().errors() == 0);
     for (const std::string& line : log) {
         UNSCOPED_INFO(line);
     }
     std::printf("  front end: scene 34 played; %zu of 29 objects placed, %zu drawn; a %.0f s pass; the attract movie "
-                "after %llu frames, the scene ending %llu frames later; %llu script errors\n",
+                "after %llu frames, the scene playing again %llu frames after it ended; %llu script errors\n",
                 world->objects()->placed(), drawn, static_cast<double>(passSeconds),
                 static_cast<unsigned long long>(idle), static_cast<unsigned long long>(after),
                 static_cast<unsigned long long>(flow.scripts().errors()));

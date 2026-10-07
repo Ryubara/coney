@@ -110,7 +110,8 @@ class SceneSystem {
     std::uint32_t preload(std::string_view name, std::string_view callback);
     /// `SceneIsPreloaded(name)`: a slot holds that scene loaded and idle.
     [[nodiscard]] bool isPreloaded(std::string_view name) const;
-    /// `SceneUnload(id)`: frees the slot while the scene is loaded and not playing.
+    /// `SceneUnload(id)`: one user less while the scene is loaded and not playing; the slot is freed at 0.
+    /// @orig 0x00351da0 SceneSlot_Unload (SceneCache.cpp)
     void unload(std::uint32_t id);
     /// `SceneSetCallback(name)`: the function every scene calls with no arguments as it starts; empty clears it.
     void setGlobalCallback(std::string_view name) { m_globalCallback = std::string(name); }
@@ -120,7 +121,8 @@ class SceneSystem {
     /// @orig 0x003a13d0 SceneTask_Create (SceneTask.cpp)
     bool play(std::uint32_t id, const PlayRequest& request);
     /// `SceneStop(id, force)`: a starting scene ends at once; a playing one has its clips ended (state 6 while a role
-    /// is busy, then 7); a looping one that is not forced only stops looping.
+    /// is busy, then 7); only a looping one with a loop point (event 29) that is not forced stops looping instead and
+    /// ends after its pass.
     /// @orig 0x00353a10 Scene_Stop (SceneCache.cpp)
     void stop(std::uint32_t id, bool force);
     /// `SceneDone(id)`: false while the scene is starting or playing, true otherwise (also when not loaded).

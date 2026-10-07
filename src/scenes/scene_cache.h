@@ -47,7 +47,7 @@ struct SceneSlot {
     std::optional<std::size_t> current;
     /// The suffix of part k's record at k - 1: the header's first suffix, then each loaded segment's next one.
     std::vector<std::string> suffixes;
-    std::uint32_t users = 0;         ///< `+0x34`: `ScenePreload` calls on the scene since it loaded.
+    std::uint32_t users = 0;         ///< `+0x34`: 1 when the record arrives, +1 per later request, -1 per unload.
     std::string callback;            ///< `+0x38`: the `ScenePreload` callback, called once when the record arrives.
     bool callbackDue = false;        ///< The record has arrived and the callback is still to be called.
     std::uint64_t lastRequestMs = 0; ///< `+0x3c`: for eviction.
@@ -76,7 +76,8 @@ class SceneCache {
     /// A cache that finds names in `list` and reads records through `source`.
     SceneCache(const SceneList& list, SceneRecordSource source) : m_list(&list), m_source(std::move(source)) {}
 
-    /// `ScenePreload`'s worker: a scene loaded or loading gets one more user and nothing else; otherwise a slot is
+    /// `ScenePreload`'s worker: a scene loaded or loading, in any state (idle, playing, ended), gets one more user and
+    /// nothing else (no callback, no restart); otherwise a slot is
     /// taken (SceneSlot_Get's order: the slot holding the id, an empty slot, a slot whose scene has ended, the least
     /// recently requested idle or ended one, unloaded first) and the record requested, with `callback` (empty for
     /// none) to be called with the id when it arrives. Returns the slot; null when every slot plays a scene or `id`
@@ -85,7 +86,8 @@ class SceneCache {
     /// @orig 0x00353298 SceneSlot_Get (SceneCache.cpp)
     SceneSlot* request(std::uint32_t id, std::string_view callback, std::uint64_t nowMs);
 
-    /// Delivers the requested records: each is decoded into its slot (state Loaded), and its callback, when it has
+    /// Delivers the requested records: each is decoded into its slot (state Loaded, one more user), and its callback,
+    /// when it has
     /// one, is returned with the id for the caller to call. A record that fails to read or decode empties its slot and
     /// is logged.
     /// @orig 0x00352430 Scene_Loaded (SceneCache.cpp)
@@ -102,7 +104,8 @@ class SceneCache {
     [[nodiscard]] SceneSlot* find(std::uint32_t id);
     [[nodiscard]] const SceneSlot* find(std::uint32_t id) const;
 
-    /// Frees the slot holding `id`.
+    /// One user less for the slot holding `id` (never below 0): at 0 the record and segments are freed and the slot
+    /// emptied, so the scene loads afresh for its next play; otherwise the record stays and goes back to Loaded.
     /// @orig 0x00351da0 SceneSlot_Unload (SceneCache.cpp)
     void unload(std::uint32_t id);
 

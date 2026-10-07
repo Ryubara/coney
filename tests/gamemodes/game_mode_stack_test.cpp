@@ -32,6 +32,7 @@ class LoggingMode final : public GameMode {
     ModeResult update(GameModeStack& stack, const FrameTime& frame) override {
         m_log.push_back(m_name + ".update");
         seconds.push_back(frame.seconds);
+        ticks.push_back(frame.gameTicks);
         if (pushOnFirstUpdate != nullptr) {
             stack.push(*pushOnFirstUpdate);
             pushOnFirstUpdate = nullptr;
@@ -46,10 +47,13 @@ class LoggingMode final : public GameMode {
     void exit() override { m_log.push_back(m_name + ".exit"); }
     void resume() override { m_log.push_back(m_name + ".resume"); }
     void suspend() override { m_log.push_back(m_name + ".suspend"); }
+    [[nodiscard]] bool stopsGameClock() const override { return stillClock; }
 
     GameMode* pushOnFirstUpdate = nullptr; ///< Pushed onto the stack during the next update, then cleared.
     std::vector<double> seconds;           ///< The step each update was given.
     std::vector<float> alphas;             ///< The alpha each render was given.
+    std::vector<std::uint64_t> ticks;      ///< The game time after each update.
+    bool stillClock = false;               ///< Whether game time stands still while this mode is on top.
 
   private:
     std::string m_name;
@@ -124,6 +128,24 @@ TEST_CASE("the run loop steps at exactly 1/30 s until the stack is empty", "[gam
     for (const double seconds : mode.seconds) {
         CHECK(seconds == GameTimer::toSeconds(GameTimer::kFixedStepTicks));
     }
+}
+
+TEST_CASE("a mode that stops the game clock steps 1/30 s but game time stands still under it", "[game_mode_stack]") {
+    std::vector<std::string> log;
+    LoggingMode menus("menus", 0x12, log, 3);
+    LoggingMode movie("movie", 0x110, log, 4);
+    movie.stillClock = true;
+    menus.pushOnFirstUpdate = &movie;
+    GameModeStack stack;
+    stack.push(menus);
+    GameTimer timer;
+    CHECK(stack.runUntilEmpty(timer, {}, std::nullopt) == 7);
+    // The movie's four steps are whole steps of its own time; the menus see game time go on from where they left it.
+    CHECK(movie.seconds == std::vector<double>(4, GameTimer::toSeconds(GameTimer::kFixedStepTicks)));
+    CHECK(movie.ticks == std::vector<std::uint64_t>(4, GameTimer::kFixedStepTicks));
+    CHECK(menus.ticks == std::vector<std::uint64_t>{GameTimer::kFixedStepTicks, 2 * GameTimer::kFixedStepTicks,
+                                                    3 * GameTimer::kFixedStepTicks});
+    CHECK(timer.ticks() == 3 * GameTimer::kFixedStepTicks);
 }
 
 TEST_CASE("the run loop stops at the frame limit or when the frame hook says so", "[game_mode_stack]") {

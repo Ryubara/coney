@@ -78,6 +78,11 @@ class GameMode {
     /// Called when another mode is pushed on top of this one.
     virtual void suspend() {}
 
+    /// Whether game time stands still while this mode is on top: its steps are still 1/30 s each (FrameTime::seconds)
+    /// but advance no ticks. A movie does this, as the original's `Movie_Play` blocks the main loop with the game timer
+    /// in it (docs/research/movies.md#movie-play), so the scripts' delayed calls and the scenes resume where they were.
+    [[nodiscard]] virtual bool stopsGameClock() const { return false; }
+
     /// Whether enter() has run and exit() has not: the original's state field (0 or 1).
     [[nodiscard]] bool entered() const { return m_entered; }
 
