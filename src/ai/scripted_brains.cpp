@@ -390,6 +390,7 @@ void ScriptedBrains::humanDelete(double human) {
     if (brain->gang() != nullptr) {
         m_deletedGangs[human] = brain->gang()->id();
     }
+    m_priorities.erase(human);
     unbind(human);
     if (m_remover) {
         m_remover(*brain);
@@ -485,7 +486,65 @@ void ScriptedBrains::gangDelete(int gang) {
     if (held([this, gang] { gangDelete(gang); })) {
         return;
     }
+    // Each member still in the gang goes at once (docs/research/ai.md#gang-delete), before the gang is freed, so no
+    // message handler of the gang hears of it. A copy: deleting a member edits the list.
+    if (const Gang* found = m_owner->gangs().find(gang); found != nullptr) {
+        const std::vector<Brain*> members = found->members();
+        for (Brain* member : members) {
+            if (member == m_player) {
+                m_owner->gangs().removeMember(*member);
+                continue;
+            }
+            const double handle = member->handle();
+            m_owner->gangs().removeMember(*member);
+            m_priorities.erase(handle);
+            unbind(handle);
+            if (m_remover) {
+                m_remover(*member);
+            }
+        }
+    }
     m_owner->gangs().remove(gang);
+}
+
+bool ScriptedBrains::changePlayerGang(int gang) {
+    if (held([this, gang] { changePlayerGang(gang); })) {
+        return false;
+    }
+    const Gang* to = m_owner->gangs().find(gang);
+    if (m_player == nullptr || to == nullptr || m_player->gang() == to) {
+        return false;
+    }
+    // Gang_PickNextPlayer: the member that is not the player with the lowest non-zero priority, else the first.
+    Brain* chosen = nullptr;
+    int best = 0;
+    for (Brain* member : to->members()) {
+        if (member == m_player || member->type() == BrainType::Player) {
+            continue;
+        }
+        const auto found = m_priorities.find(member->handle());
+        const int priority = found != m_priorities.end() ? found->second : 0;
+        if (priority > 0 && (best == 0 || priority < best)) {
+            chosen = member;
+            best = priority;
+        } else if (chosen == nullptr) {
+            chosen = member;
+        }
+    }
+    if (chosen == nullptr || !m_handOver) {
+        return false;
+    }
+    // The play mode puts the player in its place and takes it out of the world; the brains then name the player by
+    // its handle, in its gang, and the old handle names no one (the human it named would be deleted with its gang).
+    m_handOver(*chosen);
+    const double handle = chosen->handle();
+    const int characterClass = chosen->characterClass();
+    m_owner->gangs().removeMember(*chosen);
+    unbind(handle);
+    unbind(m_player->handle());
+    m_player->setCharacterClass(characterClass);
+    bind(handle, *m_player, gang);
+    return true;
 }
 
 void ScriptedBrains::gangAddMember(int gang, double human) {
@@ -661,6 +720,7 @@ void ScriptedBrains::humanCreated(const HumanCreation& human) {
         return;
     }
     if (Brain* made = m_spawner(human); made != nullptr) {
+        m_priorities[human.handle] = human.playerIndex;
         made->setCharacterClass(human.type);
         bind(human.handle, *made, human.gang);
     }

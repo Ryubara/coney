@@ -6,6 +6,7 @@
 #include <expected>
 #include <format>
 #include <memory>
+#include <numbers>
 #include <string>
 #include <utility>
 
@@ -37,6 +38,8 @@ void PlayLevelMode::makeCast(const ScriptedCast& cast, const ai::AiConfig& fight
             m_print(std::format("player: the pad passes from human {} to human {}\n", from.handle(), to.handle()));
         },
         sceneName() != "level99");
+    // HuChangePlayerGang hands player 1 to a member of another gang: the player takes its place.
+    cast.scripted->setHandOver([this](const ai::Brain& to) { takePlace(to); });
     cast.scripted->release([this](const HumanCreation& human) { return castHuman(human); });
     m_print(std::format("cast: {} humans from the level's scripts, {} AI ({} models); {} calls held for them run\n",
                         cast.humans != nullptr ? cast.humans->all().size() : 0, m_ai->count(), m_castCharacters.size(),
@@ -71,6 +74,48 @@ ai::Brain* PlayLevelMode::castHuman(const HumanCreation& human) {
     mesh.normals.resize(mesh.positions.size());
     m_fighterMeshes.push_back(std::move(mesh));
     return &brain;
+}
+
+void PlayLevelMode::takePlace(const ai::Brain& to) {
+    // **Coney's stand-in** for HuChangePlayerGang's hand-over (docs/research/characters.md#level99-handover): the
+    // original makes the chosen AI human player 1 and leaves the old one in the world as an AI until its gang is
+    // deleted. Coney has one player human, so he takes the chosen human's place instead: put where it stands (spawned
+    // there: nothing held, the camera behind him), drawn as its model, named by its handle; the chosen human leaves the
+    // world, and the brains name the player by its handle (ai::ScriptedBrains::changePlayerGang()).
+    const human::Human& chosen = to.human();
+    const human::PlayerStart start{.position = chosen.position(),
+                                   .headingDegrees = chosen.heading() * 180.0F / std::numbers::pi_v<float>};
+    const double oldHandle = m_ai->playerBrain().handle();
+    m_player->teleport(&m_scenery->collision(), start);
+    m_player->setStart(start);
+    m_ai->remove(chosen);
+    // The scenes know player 1 by the new handle from now on (level99's l99_c2 joins him by it).
+    m_playerHandle = to.handle();
+    const HumanCreation* made = m_cast.humans != nullptr ? m_cast.humans->find(to.handle()) : nullptr;
+    if (made != nullptr && !made->model.empty() && made->model != m_model) {
+        if (auto loaded = loadCharacter(m_engine, m_wad, made->model); loaded) {
+            // He keeps animating with the character he was made with (every character has the same 34 bones); only
+            // the model drawn changes. The old mesh goes before the dictionaries whose texture it holds.
+            m_mesh =
+                std::make_unique<CharacterMesh>(loaded->character->assets().model, textureOf(loaded->dictionaries));
+            m_positions.assign(loaded->character->assets().model.vertices.size(), anim::Vec3{});
+            m_normals.assign(m_positions.size(), anim::Vec3{});
+            if (m_playerCharacter) {
+                m_retired.push_back(std::move(m_playerCharacter));
+            }
+            m_playerCharacter = std::move(loaded->character);
+            m_playerDictionaries = std::move(loaded->dictionaries);
+            m_model = made->model;
+        } else {
+            m_print(std::format("cast: model {} not loaded ({}); player 1 keeps {}\n", made->model,
+                                loaded.error().message, m_model));
+        }
+    }
+    if (made != nullptr) {
+        m_type = made->type;
+    }
+    m_print(std::format("player: handed to human {} (was {}) at ({:.2f}, {:.2f}, {:.2f})\n", to.handle(), oldHandle,
+                        start.position.x, start.position.y, start.position.z));
 }
 
 ai::BrainType PlayLevelMode::castBrainType(int type) const {

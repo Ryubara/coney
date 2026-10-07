@@ -1708,7 +1708,10 @@ in `repo:src/world/path_map.h`), each original function tagged with `@orig` in t
   `Brains` and `ScriptedBrains` before its script runs and holds every AI call on a human (`ScriptedBrains::hold`)
   until the play mode has loaded the level and made the humans; `release` then makes each `HuCreate`d human (player 1
   bound to the player's brain, the others AI humans of the class `aiConfigFrom` gives their type, drawn with their own
-  model, `repo:src/platform/play_level_cast.cpp`) and replays the held calls in order. A teleport moves an AI human;
+  model, `repo:src/platform/play_level_cast.cpp`) and replays the held calls in order. A later `HuCreate` of player 1
+  is an AI human until `HuChangePlayerGang` hands player 1 over ([Characters](characters.md#coneys-implementation)),
+  and `GangDelete` takes every member but player 1 out of the world at once ([Deleting a gang](#gang-delete)).
+  A teleport moves an AI human;
   `GetPosition` and the look-ats read a human's live position.
 - **Routes** (`world::PathMap`, `RoutePlanner`): the path data decoded ([Path data](level-loading.md#path-data)), the
   inside test, the walkable-line test, the request (the human's polygon, the straight line, the ends' nodes within 30

@@ -34,6 +34,7 @@
 #include "scripting/script_bindings.h"
 #include "scripting/script_system.h"
 #include "support/ai_fixtures.h"
+#include "warriors/created_humans.h"
 #include "warriors/game_state.h"
 #include "world_objects/flags.h"
 
@@ -413,4 +414,65 @@ TEST_CASE("WCIssueCommand reaches a player's crew only while the command is enab
     CHECK(level.scripted->storyHost().warriorCommand() == 3);
     CHECK(level.call("HuChangePlayerGang", {Value(4.0), Value(1.0)}).number() == 1.0);
     CHECK(level.scripted->humanHost().playerGang() == 4);
+}
+
+TEST_CASE("HuChangePlayerGang hands player 1 to the new gang's lowest priority; GangDelete deletes its members",
+          "[ai][scripted]") {
+    Level level;
+    Brain& player = level.scene.player();
+    // The play mode's parts: a created human is an AI human of the scene; the hand-over and the deletions are noted.
+    level.scripted->release([&level](const coney::HumanCreation& human) -> Brain* {
+        return &level.scene.add({human.position ? (*human.position)[0] : 44.0F, 40.0F, 0.0F}, 0.0F);
+    });
+    std::vector<double> handedTo;
+    level.scripted->setHandOver([&handedTo](const Brain& to) { handedTo.push_back(to.handle()); });
+    std::vector<double> removed;
+    level.scripted->setRemover([&removed](Brain& brain) { removed.push_back(brain.handle()); });
+    // level99's checkpoint 2 set-up: the old gang holds player 1 and his team-mate; the new one Ash (2) and Rembrandt
+    // (1), Ash made first.
+    const auto create = [&level](std::string_view name, double priority, double gang) {
+        const std::array<double, 3> at{50.0, 40.0, 0.0};
+        auto position = std::make_shared<coney::script::Table>();
+        for (std::size_t i = 0; i < at.size(); ++i) {
+            REQUIRE(position->set(Value(static_cast<double>(i + 1)), Value(at.at(i))).has_value());
+        }
+        return level
+            .call("HuCreate", {Value(std::string(name)), Value(30.0), Value(position), Value(0.0), Value("warr_sw"),
+                               Value(priority), Value(gang)})
+            .number()
+            .value_or(0.0);
+    };
+    const double oldGang = level.call("GangCreate", {Value(0.0), Value("Warriors2")}).number().value_or(-1.0);
+    level.call("GangAddMember", {Value(oldGang), Value(1.0)});
+    const double oldAsh = create("Ash", 2.0, oldGang);
+    const double newGang = level.call("GangCreate", {Value(0.0), Value("Warriors")}).number().value_or(-1.0);
+    const double ash = create("Ash", 2.0, newGang);
+    const double rembrandt = create("Rembrandt", 1.0, newGang);
+    REQUIRE(oldAsh != 0.0);
+    REQUIRE(rembrandt != 0.0);
+    // The second player 1 stays an AI human while player 1 is listed.
+    CHECK(level.scripted->brain(rembrandt) != &player);
+
+    level.call("HuChangePlayerGang", {Value(newGang)});
+    CHECK(handedTo == std::vector<double>{rembrandt});
+    CHECK(level.scripted->brain(rembrandt) == &player);
+    CHECK(level.scripted->brain(1.0) == nullptr);
+    CHECK(player.handle() == rembrandt);
+    REQUIRE(player.gang() != nullptr);
+    CHECK(player.gang()->id() == static_cast<int>(newGang));
+    CHECK(level.scripted->brain(ash) != nullptr);
+    // Already in the gang: nothing more.
+    level.call("HuChangePlayerGang", {Value(newGang)});
+    CHECK(handedTo.size() == 1);
+
+    // The old gang goes with the old team-mate in it; the player, in the new gang, stays.
+    level.call("GangDelete", {Value(oldGang)});
+    CHECK(removed == std::vector<double>{oldAsh});
+    CHECK(level.scripted->brain(oldAsh) == nullptr);
+    CHECK(level.scripted->brain(rembrandt) == &player);
+    // A gang deleted with player 1 in it keeps him: Coney has no other human to give him.
+    level.call("GangDelete", {Value(newGang)});
+    CHECK(removed == std::vector<double>{oldAsh, ash});
+    CHECK(level.scripted->brain(rembrandt) == &player);
+    CHECK(player.gang() == nullptr);
 }

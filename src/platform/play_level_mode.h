@@ -305,6 +305,8 @@ class PlayLevelMode final : public GameMode, public debug::PlayControls, public 
     // with a position an AI human of its type's class, drawn as its model, snapped as `HuCreate` snaps. Returns its
     // brain; null for a creation with no position.
     ai::Brain* castHuman(const HumanCreation& human);
+    // HuChangePlayerGang's hand-over to `to` (a cast human): the player is moved, drawn and named as it, and it leaves.
+    void takePlace(const ai::Brain& to);
     // The brain type a human of character type `type` fights as: its class's, as castHuman() makes it.
     [[nodiscard]] ai::BrainType castBrainType(int type) const;
     // A character to draw and animate a human as, and its texture.

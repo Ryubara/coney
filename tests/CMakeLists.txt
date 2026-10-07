@@ -76,6 +76,7 @@ add_executable(coney_tests
     platform/disc_level99_hud_test.cpp
     platform/disc_level99_scene_grab_test.cpp
     platform/disc_level99_snaps_test.cpp
+    platform/disc_level99_street_test.cpp
     platform/disc_level99_world_test.cpp
     platform/disc_story_missions_test.cpp
     platform/disc_story_start_test.cpp

@@ -284,6 +284,7 @@ void ScriptedHumans::changePlayerGang(int gang, bool stamp) {
     if (stamp) {
         m_gangChangeMs = m_scripted->owner().nowMs();
     }
+    m_scripted->changePlayerGang(gang);
 }
 
 std::optional<int> ScriptedHumans::playerIndex(double handle) const {

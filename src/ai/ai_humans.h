@@ -98,6 +98,7 @@ class AiHumans {
     [[nodiscard]] const Brains& brains() const { return *m_brains; }
     /// The brain of the human the pad drives (the player's own until switchPlayer()).
     [[nodiscard]] Brain& playerBrain() { return *m_playerBrain; }
+    [[nodiscard]] const Brain& playerBrain() const { return *m_playerBrain; }
     /// `human`'s brain (null for a human that is not one of these, or the player's).
     [[nodiscard]] Brain* brainOf(const human::Human& human) { return m_brains->find(human); }
     [[nodiscard]] const AiConfig& config() const { return m_config; }

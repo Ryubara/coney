@@ -1594,6 +1594,16 @@ reference images' pose, camera and lights, are Coney's own. For the human:
   run it. A level that places player 1 at a flag (the hub, the Rumble arenas) starts him on the flag ([World
   flags](flags.md#coneys-implementation)). The character's lights (ambient 0.45, one directional 0.7) stand in for the
   LightManager, and he is drawn between the level's two worlds.
+- **Handing the player over** (`ScriptedBrains::changePlayerGang`, `PlayLevelMode::takePlace`, from
+  [Players](#players)): a later `HuCreate` with player argument 1 makes an AI human (the argument is kept as its
+  priority), and `HuChangePlayerGang` picks the gang's member as `Gang_PickNextPlayer` does. **Coney's stand-in**:
+  Coney has one player human, so instead of making the chosen human the player and leaving the old one in the world
+  until its gang is deleted, the player's human takes the chosen one's place (spawned where it stands, drawn as its
+  model, named by its handle, in its gang) and the chosen human leaves the world; the old handle names no one. The
+  end state after level 99's `GangDelete(0)` ([the hand-over](#level99-handover)) is the original's.
+  `GangDelete` deletes the gang's members at once ([AI](ai.md#coney)); player 1, with no other human to go to, is only
+  taken out of the gang. `tests/platform/disc_level99_street_test.cpp` plays the end of the combat course into the
+  street with the disc.
 - **The model** (`src/characters/character_class.h`, from [From a type to a model](#type-to-model)):
   `characterClassOf` is `Human_Init`'s switch, `modelRecordType` the player's plain-alias rule (a player made as a
   plain alias is drawn as the class's own type; a variant keeps its own), and `modelNameFor` takes the model name from

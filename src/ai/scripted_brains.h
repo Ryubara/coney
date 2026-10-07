@@ -95,6 +95,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
         m_switcher = std::move(switcher);
         m_switchToKindZero = anyKindZero;
     }
+    /// Puts player 1 in the place of the brain `to` (`HuChangePlayerGang`'s hand-over), which the play mode does;
+    /// the brains then name the player by `to`'s handle (changePlayerGang()). Empty: no hand-over is made.
+    using HandOver = std::function<void(const Brain& to)>;
+    void setHandOver(HandOver handOver) { m_handOver = std::move(handOver); }
     /// Whether calls are being held.
     [[nodiscard]] bool holding() const { return m_holding; }
     /// A human `HuCreate` made while holding, not deleted since: its gang and player index.
@@ -201,6 +205,10 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     double switchPlayer(double human, bool storyMode) override;
     /// The gang calls: Gangs' members of the same names.
     [[nodiscard]] int gangCreate(int kind, std::string_view name) override;
+    /// `GangDelete`: every member still in the gang is deleted at once (out of the world, its handle naming no one),
+    /// then the gang is freed. **Coney's choice**: player 1, who has no other human to go to, is only taken out of
+    /// the gang. Research: docs/research/ai.md#gang-delete
+    /// @orig 0x0016a1e8 Gang_FreeWhenEmpty (unknown)
     void gangDelete(int gang) override;
     void gangAddMember(int gang, double human) override;
     void gangBrDead(int gang, bool dead) override;
@@ -218,8 +226,15 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     [[nodiscard]] int gangHeadCount(int gang, bool living) override;
     /// Gang::standing(), with the humans created for it while holding; 0 for no gang.
     [[nodiscard]] int gangStandingCount(int gang) override;
+    /// `HuChangePlayerGang`'s hand-over (`Players_ChangeGang`): nothing when player 1 is in `gang` already;
+    /// otherwise the gang's member that is not the player with the lowest non-zero priority (HuCreate's player
+    /// argument), else its first, takes player 1 (the hand-over, setHandOver()) and the player joins `gang` under its
+    /// handle; the old handle names no one. Nothing for a gang with no such member. Returns whether he was handed
+    /// over. Research: docs/research/characters.md#players
+    /// @orig 0x00239b80 Players_ChangeGang (unknown)
+    bool changePlayerGang(int gang);
     /// Makes the human with the spawner and binds its brain to the handle, in `human`'s gang, with its type as the
-    /// brain's class; nothing without a spawner.
+    /// brain's class, keeping its priority (HuCreate's player argument); nothing without a spawner.
     void humanCreated(const HumanCreation& human) override;
     /// Moves a bound AI human there, with no ground snap; the player's teleport is the level's (GameplayMode).
     void humanTeleported(double handle, const world_objects::Placement& placement) override;
@@ -288,6 +303,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     Spawner m_spawner;
     Remover m_remover;
     Switcher m_switcher;
+    HandOver m_handOver;
     bool m_switchToKindZero = false;
     bool m_holding = false;
     std::vector<std::function<void()>> m_held; // the calls held, oldest first
@@ -296,6 +312,7 @@ class ScriptedBrains final : public script::AiBindingHost, public FlagServices, 
     std::unique_ptr<ScriptedHub> m_hub;
     std::map<double, HeldHuman> m_heldHumans; // the humans created while holding, by handle
     std::map<double, int> m_deletedGangs;     // the gang of each human deleted from one, by handle
+    std::map<double, int> m_priorities;       // HuCreate's player argument of each human made, by handle
 };
 
 } // namespace coney::ai

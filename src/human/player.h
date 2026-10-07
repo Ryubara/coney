@@ -185,6 +185,8 @@ class Player {
     [[nodiscard]] camera::FollowCamera& camera() { return m_camera; }
     /// Where a human that fell out of the world is put back: the start it was made at.
     [[nodiscard]] const PlayerStart& start() const { return m_start; }
+    /// Makes `start` where a fall out of the world puts the human back: a level script making player 1 again.
+    void setStart(const PlayerStart& start) { m_start = start; }
     /// How often the human has been put back at the start.
     [[nodiscard]] std::uint32_t respawns() const { return m_respawns; }
     /// The state after the last update and the one before it (the same until the first update).

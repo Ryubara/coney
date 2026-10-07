@@ -72,8 +72,9 @@ class ScriptedHumans final : public script::HumanBindingHost {
     /// Keeps the clip in the slot when `loaded`; slot 0 makes the human unpushable while it is set. While calls are
     /// held it answers `loaded` and sets the slot when the human is made.
     bool useAnim(double human, int slot, std::string_view anim, bool loaded) override;
-    /// **Coney stand-in**: Coney has one player and no second pad, so the take-over of the gang's members is not
-    /// built; nothing happens when player 1 is in that gang already, otherwise the gang is noted (playerGang()).
+    /// Nothing when player 1 is in that gang already; otherwise the gang is noted (playerGang()) and player 1 handed
+    /// to its next player (ScriptedBrains::changePlayerGang()). Coney has one player, so there is no second to hand
+    /// over. Research: docs/research/characters.md#players
     void changePlayerGang(int gang, bool stamp) override;
     /// 0 for player 1's human.
     [[nodiscard]] std::optional<int> playerIndex(double handle) const override;
